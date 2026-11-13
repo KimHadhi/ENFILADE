@@ -36,8 +36,6 @@ public sealed class CombatHitAudio : MonoBehaviour
     private readonly List<Pending> pending = new List<Pending>();
     private readonly Dictionary<Layer, AudioClip> previous = new Dictionary<Layer, AudioClip>();
     private VoiceRing flat, voices;
-    public HitSound LastSound { get; private set; }
-    public int PlayCount { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Subscribe()
@@ -135,8 +133,7 @@ public sealed class CombatHitAudio : MonoBehaviour
 
     private void Queue(HitSound sound, bool skeet, bool spatial, Vector3 point, float volume)
     {
-        LastSound = sound; PlayCount++;
-        foreach (var step in Steps(sound)) Add(step, spatial, point, volume);
+                foreach (var step in Steps(sound)) Add(step, spatial, point, volume);
         if (skeet) foreach (var step in SkeetBonus) Add(step, spatial, point, volume);
     }
 

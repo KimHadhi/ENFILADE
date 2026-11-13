@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -48,7 +47,7 @@ public static class CameraCulling
         {
             int layer = LayerMask.NameToLayer(id);
             if (layer < 0 || !GameTables.TryGetRow(TableName, id, out var row) || !row.TryGetValue("distance", out string text)
-                || !float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float distance) || distance <= 0f)
+                || !TableCells.TryNumber(text, out float distance) || distance <= 0f)
                 continue;
             distances[layer] = distance;
             any = true;

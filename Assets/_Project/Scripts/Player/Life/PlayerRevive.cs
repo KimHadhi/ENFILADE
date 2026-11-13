@@ -28,7 +28,7 @@ public sealed class PlayerRevive : MonoBehaviour
     private void Start()
     {
         var input = GetComponent<PlayerInput>();
-        interact = (input != null ? input.actions : InputSystem.actions)?.FindAction("Player/Interact", false);
+        interact = (input != null ? input.actions : InputSystem.actions).OrNull()?.FindAction("Player/Interact", false);
     }
 
     private void Update()

@@ -36,7 +36,7 @@ public static class GunFeelDirector
         // kill, and are destroyed on death, so a corpse copy carries the kill. A target that shows its own hits (the hub's
         // steel targets: sparks, a lead splash, a swing) doesn't flash red as a body does.
         bool enemy = report.Target is EnemyHealth;
-        if ((!kill || !enemy) && !(report.Target is IOwnHitFeedback)) HitFlashRenderer.For(report.Target)?.Flash(hit.Point, critical);
+        if ((!kill || !enemy) && !(report.Target is IOwnHitFeedback)) HitFlashRenderer.For(report.Target).OrNull()?.Flash(hit.Point, critical);
         if (enemy && hit.Kind != DamageKind.Fall && (hit.Method != DamageMethod.Shove || kill)) ImpactVfx.Blood(hit.Point, hit.Direction, critical, kill, shot, report.Target);
         // A knife's cut of light where it landed, short and bold, on every PC (KnifeHitFx).
         if (blade && !(report.Target is IOwnHitFeedback)) KnifeHitFx.Play(hit.Point, hit.Direction, MeleeKnife.Heavy(hit), critical);

@@ -520,7 +520,7 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         ToNeutralPose(live.avatar, model);
 
         Transform hips = Bone(HumanBodyBones.Hips), spine = Bone(HumanBodyBones.Spine), waistTop = Bone(HumanBodyBones.Chest);
-        Transform head = Bone(HumanBodyBones.Head), upperBody = waistTop ?? spine, neck = Bone(HumanBodyBones.Neck) ?? head;
+        Transform head = Bone(HumanBodyBones.Head), upperBody = waistTop.OrNull() ?? spine, neck = Bone(HumanBodyBones.Neck).OrNull() ?? head;
         Transform leftLeg = Bone(HumanBodyBones.LeftUpperLeg), rightLeg = Bone(HumanBodyBones.RightUpperLeg);
         Transform leftKnee = Bone(HumanBodyBones.LeftLowerLeg), rightKnee = Bone(HumanBodyBones.RightLowerLeg);
         Transform leftArm = Bone(HumanBodyBones.LeftUpperArm), rightArm = Bone(HumanBodyBones.RightUpperArm);

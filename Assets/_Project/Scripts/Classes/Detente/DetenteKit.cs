@@ -369,7 +369,7 @@ public sealed class DetenteKit : MonoBehaviour
     // A friend's health is theirs on their own PC; this player's is here.
     private void Heal(PlayerMovement patient, float amount)
     {
-        if (patient == movement) receiver?.Heal(amount);
+        if (patient == movement) receiver.OrNull()?.Heal(amount);
         else if (patient.TryGetComponent(out PlayerNetworkCombat network))
         {
             // A friend's heal fills the gauge by the health it gives back, as this PC sees their health (their own PC
@@ -408,7 +408,7 @@ public sealed class DetenteKit : MonoBehaviour
         if (Time.time < nextSection) return;
         nextSection = Time.time + SectionEvery;
         int most = Mathf.Max(0, Mathf.RoundToInt(Number("resurrections", 1f)));
-        if (waves == null) waves = FindAnyObjectByType<WaveManager>();
+        if (waves == null) waves = SceneOne<WaveManager>.Get();
         int wave = waves != null && waves.IsRunning ? waves.CurrentStatus.Wave : -1;
         if (wave != lastWave) { if (lastWave >= 0 || wave >= 0) raisesLeft = most; lastWave = wave; }
         if (CampaignRun.TryCheckpoint(out Vector3 checkpoint))

@@ -63,11 +63,11 @@ public sealed class HeadStandShakeOff : MonoBehaviour
         throwLeft = throwSeconds;
         standing = 0f;
         player.VerticalVelocity = Mathf.Max(player.VerticalVelocity, throwLift);
-        EnemyParryRecoil.For(under)?.Kick(throwDirection, lurchDegrees, lurchSeconds);
-        var shove = GetComponent<PlayerShoveAudio>() ?? gameObject.AddComponent<PlayerShoveAudio>();
+        EnemyParryRecoil.For(under).OrNull()?.Kick(throwDirection, lurchDegrees, lurchSeconds);
+        var shove = GetComponent<PlayerShoveAudio>().OrNull() ?? gameObject.AddComponent<PlayerShoveAudio>();
         shove.Play(ShoveImpactKind.Enemy);
         float side = Vector3.Dot(transform.right, throwDirection) < 0f ? 1f : -1f;
-        GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(viewJolt.x, 0f, viewJolt.y * side));
+        GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(new Vector3(viewJolt.x, 0f, viewJolt.y * side));
         under = null;
     }
 

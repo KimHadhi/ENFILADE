@@ -174,7 +174,7 @@ public sealed class ZombieRunner : MonoBehaviour
         {
             case Phase.Chase: Chase(player, dt); break;
             case Phase.Charge: Charge(player, dt); break;
-            case Phase.Leap: Leap(dt); break;
+            case Phase.Leap: Leap(); break;
             case Phase.Skid: Skid(player, dt); break;
             case Phase.Rest: Rest(dt); break;
         }
@@ -277,7 +277,7 @@ public sealed class ZombieRunner : MonoBehaviour
     }
 
     // In the air from where it leapt to the spot it aimed at, over the leap's windup (EnemyCombatAI).
-    private void Leap(float dt)
+    private void Leap()
     {
         if (!combat.IsPouncing)
         {

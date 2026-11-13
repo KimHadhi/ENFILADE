@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -65,8 +64,7 @@ public sealed partial class HubLobby : MonoBehaviour
 
     /// <summary>A number from Tables/Hub (row Default).</summary>
     public static float Number(string column, float fallback)
-        => GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue(column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(TableName, TableRow, column, fallback);
 
     /// <summary>This player is ready to set off (as this PC last heard).</summary>
     public static bool IsReady(PlayerMovement someone) => active != null && active.ready.Contains(MatchResults.SeatOf(someone));
@@ -93,7 +91,7 @@ public sealed partial class HubLobby : MonoBehaviour
     {
         interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         screen = gameObject.AddComponent<CampaignScreen>();
-        tracker = FindFirstObjectByType<MissionTracker>();
+        tracker = SceneOne<MissionTracker>.Get();
         panel = HubPanel.Make();
         readyBoard = HubReadyBoard.Make();
         Listen();
@@ -139,8 +137,8 @@ public sealed partial class HubLobby : MonoBehaviour
         ShowStations();
         // The objective line keeps out of the results' way, and comes back after them.
         if (!ResultsShow.IsPlaying) ShowObjective();
-        else if (shownParty >= 0) { shownParty = -1; tracker?.ClearObjective(); }
-        panel?.Show(chapter, countdown);
+        else if (shownParty >= 0) { shownParty = -1; tracker.OrNull()?.ClearObjective(); }
+        panel.OrNull()?.Show(chapter, countdown);
     }
 
     // ---- Ready and the count (the host, or the PC alone) ----

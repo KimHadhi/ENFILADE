@@ -208,7 +208,7 @@ public sealed class ZombieCharger : MonoBehaviour
         {
             Stop();
             if (melee != null) melee.Interrupt(wallStun);
-            HitFlashRenderer.For(this)?.WhiteFlash(.12f);
+            HitFlashRenderer.For(this).OrNull()?.WhiteFlash(.12f);
             return;
         }
         if (NavMesh.Raycast(transform.position, transform.position + heading * (step + .5f), out _, NavMesh.AllAreas)) { BeginSkid(); return; }
@@ -271,7 +271,7 @@ public sealed class ZombieCharger : MonoBehaviour
         if (rousing && !wasRousing)
         {
             GameAudio.PlayAt(Bellow(), transform.position + Vector3.up * 1.6f, AudioChannel.Combat, 1f, 5f, 70f);
-            HitFlashRenderer.For(this)?.WhiteFlash(.15f);
+            HitFlashRenderer.For(this).OrNull()?.WhiteFlash(.15f);
         }
         wasRousing = rousing;
         // On another PC: fast, and the way it faces. Shoved or thrown it moves fast too, but not head first.

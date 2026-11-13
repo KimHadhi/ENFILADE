@@ -78,7 +78,7 @@ public sealed class KillConfirmEffect : MonoBehaviour
         HitStop(heavy, settings);
         var view = Camera.main;
         if (view != null)
-            CameraViewPunch.For(view)?.Punch(new Vector3(-.35f, Random.Range(-.25f, .25f), Random.Range(-1.2f, 1.2f)) * (heavy ? 1.3f : 1f),
+            CameraViewPunch.For(view).OrNull()?.Punch(new Vector3(-.35f, Random.Range(-.25f, .25f), Random.Range(-1.2f, 1.2f)) * (heavy ? 1.3f : 1f),
                 heavy ? -1.6f : -1.1f, heavy ? .3f : .22f);
     }
 

@@ -235,7 +235,7 @@ public sealed partial class CampaignRun : MonoBehaviour
 
     private void Start()
     {
-        tracker = FindFirstObjectByType<MissionTracker>();
+        tracker = SceneOne<MissionTracker>.Get();
         screen = gameObject.AddComponent<CampaignScreen>();
         interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         Listen();

@@ -68,16 +68,15 @@ public sealed class SettingsMenu : MonoBehaviour
 
     private bool ChatTookEscape()
     {
-        if (chat == null) chat = FindAnyObjectByType<SinglePlayerChatManager>();
+        if (chat == null) chat = SceneOne<SinglePlayerChatManager>.Get();
         return chat != null && chat.BlocksMissionInputThisFrame;
     }
 
     private void Open()
     {
         IsOpen = true;
-        if (!MainMenuScreen.IsOpen && !GameSession.IsOnline) GamePause.Set(true);
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        if (!MainMenuScreen.IsOpen && !GameSession.IsOnline) GamePause.Take(this);
+        InputHold.Take(this, Held.Cursor);
         EnsureEventSystem();
         view.Show(true);
     }
@@ -89,10 +88,8 @@ public sealed class SettingsMenu : MonoBehaviour
         view.Show(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
         GameSettings.Save();
-        if (MainMenuScreen.IsOpen) return;
-        GamePause.Set(false);
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        InputHold.Release(this);
+        GamePause.Release(this);
     }
 
     private void LeaveToMainMenu()
@@ -124,6 +121,7 @@ public sealed class SettingsMenu : MonoBehaviour
     {
         if (!IsOpen) return;
         IsOpen = false;
-        GamePause.Set(false);
+        InputHold.Release(this);
+        GamePause.Release(this);
     }
 }

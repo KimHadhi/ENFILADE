@@ -6,16 +6,22 @@ using System.Text;
 /// One parsed balance table: row id → (field name → raw cell text). Two layouts are accepted:
 /// a row table whose first column is the row id and whose other headers are field names, and a key table with the
 /// header "key,value" whose keys read "Row.field". Rows or headers starting with '#' and empty cells are skipped.
+/// Row ids and field names do not mind upper or lower case, so a mod's column "Damage" lands on "damage".
+/// What looks like a slip of the hand (a row written twice, a cell cut in two by a comma without quotes) is kept in
+/// <see cref="Problems"/> for whoever loads the table to say out loud; the table is read as well as it can be anyway.
 /// </summary>
 public sealed class CsvTable
 {
     private readonly Dictionary<string, Dictionary<string, string>> rows =
         new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> problems = new List<string>();
 
-    public string Name { get; }
     public IEnumerable<string> RowIds => rows.Keys;
 
-    private CsvTable(string name) { Name = name; }
+    /// <summary>What looked wrong in the text, a line each, in words for the person who wrote the table.</summary>
+    public IReadOnlyList<string> Problems => problems;
+
+    private CsvTable() { }
 
     public bool TryGetRow(string id, out IReadOnlyDictionary<string, string> row)
     {
@@ -24,18 +30,30 @@ public sealed class CsvTable
         return found;
     }
 
-    public static CsvTable Parse(string text, string name)
+    public static CsvTable Parse(string text)
     {
-        var table = new CsvTable(name);
-        var records = ReadRecords(text);
+        var table = new CsvTable();
+        var records = ReadRecords(text ?? "");
         if (records.Count == 0) return table;
         var header = records[0];
         bool keyLayout = header.Count > 1 && IsHeader(header[0], "key") && IsHeader(header[1], "value");
+        if (!keyLayout) table.CheckHeader(header);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (int r = 1; r < records.Count; r++)
         {
             var record = records[r];
             string first = record[0].Trim();
             if (first.Length == 0 || first[0] == '#') continue;
+            // Cells past the last header belong to no column. The usual cause is a comma inside a cell that was not
+            // put in quotes: the cell ends at the comma and the rest slides one column along.
+            for (int c = header.Count; c < record.Count; c++)
+                if (record[c].Trim().Length > 0)
+                {
+                    table.problems.Add($"'{first}' 줄에 칸이 {record.Count}개인데 열은 {header.Count}개입니다. 쉼표가 든 칸은 \"큰따옴표\"로 감싸야 합니다(안 그러면 쉼표에서 잘립니다)."); // dev-text
+                    break;
+                }
+            if (!seen.Add(first))
+                table.problems.Add(keyLayout ? $"'{first}'가 두 번 있습니다. 아래 줄의 값을 씁니다." : $"'{first}' 줄이 두 번 있습니다. 아래 줄의 칸이 위 줄을 덮습니다."); // dev-text
             if (keyLayout)
             {
                 if (record.Count < 2) continue;
@@ -62,7 +80,7 @@ public sealed class CsvTable
         if (other == null) return;
         foreach (var row in other.rows)
         {
-            if (!rows.TryGetValue(row.Key, out var cells)) rows[row.Key] = cells = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!rows.TryGetValue(row.Key, out var cells)) rows[row.Key] = cells = NewCells();
             foreach (var cell in row.Value) cells[cell.Key] = cell.Value;
         }
     }
@@ -71,8 +89,22 @@ public sealed class CsvTable
     {
         raw = raw.Trim();
         if (field.Length == 0 || raw.Length == 0) return;
-        if (!rows.TryGetValue(id, out var cells)) rows[id] = cells = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!rows.TryGetValue(id, out var cells)) rows[id] = cells = NewCells();
         cells[field] = raw;
+    }
+
+    private static Dictionary<string, string> NewCells() => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    // Two columns of one name: the later one would silently win every row.
+    private void CheckHeader(List<string> header)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int c = 1; c < header.Count; c++)
+        {
+            string field = header[c].Trim();
+            if (field.Length > 0 && field[0] != '#' && !names.Add(field))
+                problems.Add($"'{field}' 열이 두 번 있습니다. 뒤쪽 열의 값을 씁니다."); // dev-text
+        }
     }
 
     private static bool IsHeader(string cell, string expected) => string.Equals(cell.Trim(), expected, StringComparison.OrdinalIgnoreCase);

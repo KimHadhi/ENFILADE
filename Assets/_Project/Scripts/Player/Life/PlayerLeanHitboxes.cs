@@ -59,6 +59,6 @@ public sealed class PlayerLeanHitboxes : MonoBehaviour
         Physics.SyncTransforms();
     }
     public static bool Replaces(Collider collider) => collider is CharacterController
-        && collider.GetComponent<PlayerLeanHitboxes>()?.UsesSplitBody == true;
+        && collider.GetComponent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody == true;
     private void OnDisable() { if (lower != null) lower.enabled = false; if (upper != null) upper.enabled = false; }
 }

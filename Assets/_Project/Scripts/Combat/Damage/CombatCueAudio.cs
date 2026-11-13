@@ -10,7 +10,6 @@ public sealed class CombatCueAudio : MonoBehaviour
     private AudioClip previousBlock, previousParry, previousParryBreak, previousGrab;
     private bool paused;
     public CombatCue LastCue { get; private set; }
-    public int PlayCount { get; private set; }
     // The pitch the attack cue was started at (a grab's is lower, a leap's higher, a brute's lowest: EnemyCombatAI.CuePitch).
     private float cuePitch = 1f;
     /// <summary>
@@ -19,14 +18,14 @@ public sealed class CombatCueAudio : MonoBehaviour
     /// </summary>
     public static CombatCueAudio Play(GameObject owner, CombatCue cue, float pitch = 1f, bool inWorld = false, float gain = 1f)
     {
-        var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
+        var audio = owner.GetComponent<CombatCueAudio>().OrNull() ?? owner.AddComponent<CombatCueAudio>();
         audio.Emit(cue, pitch, inWorld, gain); return audio;
     }
     /// <summary>Makes the owner's cue voice now (at spawn), so the first cue of a fight adds no components mid-frame.</summary>
     public static void Prepare(GameObject owner)
     {
         if (owner == null || !Application.isPlaying) return;
-        var audio = owner.GetComponent<CombatCueAudio>() ?? owner.AddComponent<CombatCueAudio>();
+        var audio = owner.GetComponent<CombatCueAudio>().OrNull() ?? owner.AddComponent<CombatCueAudio>();
         audio.EnsureSource();
     }
     private void EnsureSource()
@@ -38,7 +37,7 @@ public sealed class CombatCueAudio : MonoBehaviour
     private void Emit(CombatCue cue, float pitch, bool inWorld, float gain)
     {
         bool wasAttack = LastCue == CombatCue.EnemyAttackStart;
-        LastCue = cue; PlayCount++;
+        LastCue = cue; 
         if (cue == CombatCue.EnemyAttackStart) cuePitch = pitch;
         var settings = CombatFeedbackSettings.Instance;
         if (settings == null || !Application.isPlaying) return;

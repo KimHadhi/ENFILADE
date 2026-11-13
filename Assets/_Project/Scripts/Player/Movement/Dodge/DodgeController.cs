@@ -33,7 +33,7 @@ public sealed class DodgeController
         // [카메라 연출 추가] 닷지 발동 시 순간적인 FOV 펀치와 방향별 기울임
         // Q/E already moves and rolls the camera through MovementLean. Its defensive
         // micro window must not also add the full step-dodge zoom/rotation impulse.
-        var camFx = kind == DodgeKind.Step ? PlayerRoster.Local?.GetComponent<PlayerCameraEffects>() : null;
+        var camFx = kind == DodgeKind.Step ? PlayerRoster.Local.OrNull()?.GetComponent<PlayerCameraEffects>() : null;
         if (camFx != null)
         {
             // side: -1(좌), 1(우), 0(후방)

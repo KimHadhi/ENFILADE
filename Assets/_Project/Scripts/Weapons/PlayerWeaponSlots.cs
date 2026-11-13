@@ -57,8 +57,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
             melee = GetComponent<PlayerMeleeCombat>();
             if (melee == null) melee = gameObject.AddComponent<PlayerMeleeCombat>();
             GameTables.Bind(PlayerMovement.TableName, "Fists", melee);
-            for (int i = 0; i < SlotCount; i++) RawWeapon(i)?.BindTable();
-            if (player?.IsLocal != false && GetComponent<WeaponCrosshairSelector>() == null) gameObject.AddComponent<WeaponCrosshairSelector>();
+            for (int i = 0; i < SlotCount; i++) RawWeapon(i).OrNull()?.BindTable();
+            if (player.OrNull()?.IsLocal != false && GetComponent<WeaponCrosshairSelector>() == null) gameObject.AddComponent<WeaponCrosshairSelector>();
         }
         SetSelection(Mathf.Clamp(selectedSlot, -1, SlotCount - 1));
     }
@@ -75,7 +75,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     /// <summary>Some slot of these holds a gun.</summary>
     public static bool HoldsAnyGun(PlayerWeaponSlots slots)
     {
-        for (int i = 0; i < SlotCount; i++) if (slots.GetWeapon(i)?.Category == WeaponCategory.Ranged) return true;
+        for (int i = 0; i < SlotCount; i++) if (slots.GetWeapon(i).OrNull()?.Category == WeaponCategory.Ranged) return true;
         return false;
     }
     // This gun may go in this slot: the slot's own kind, or a gun in the special slot for a Schießhund's Desperado (and on
@@ -99,7 +99,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         int count = 0;
         for (int i = 0; i < SlotCount; i++)
         {
-            if (GetWeapon(i)?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
+            if (GetWeapon(i).OrNull()?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
             GetRuntime(i).RefillAmmo();
             count++;
         }
@@ -111,7 +111,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     {
         for (int i = 0; i < SlotCount; i++)
         {
-            if (GetWeapon(i)?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
+            if (GetWeapon(i).OrNull()?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
             var gun = GetRuntime(i);
             if (gun.Ammo < gun.Data.MagazineSize || gun.ReserveAmmo < gun.Data.InitialReserveAmmo) return true;
         }
@@ -219,8 +219,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         holsterLeft = 0f;
         if (controller == null) controller = GetComponent<WeaponController>();
         if (melee == null) melee = GetComponent<PlayerMeleeCombat>();
-        melee?.CancelAction();
-        player?.Abilities?.Combat.CancelShove();
+        melee.OrNull()?.CancelAction();
+        player.OrNull()?.Abilities?.Combat.CancelShove();
         selectedSlot = index;
         controller.Equip(GetRuntime(index));
         SelectionChanged?.Invoke(index);
@@ -229,8 +229,8 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     {
         for (int i = 0; i < SlotCount; i++)
             if (weapons[i] != null) { savedAmmo[i] = weapons[i].Ammo; savedReserve[i] = weapons[i].ReserveAmmo; savedData[i] = weapons[i].Data; }
-        melee?.CancelAction();
-        player?.Abilities?.Combat.CancelShove();
+        melee.OrNull()?.CancelAction();
+        player.OrNull()?.Abilities?.Combat.CancelShove();
         if (controller != null) controller.Equip(null);
     }
 }

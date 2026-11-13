@@ -20,7 +20,7 @@ public sealed class PerfectDefenseHUD : MonoBehaviour
         shade.rectTransform.offsetMin = shade.rectTransform.offsetMax = Vector2.zero;
         var label = new GameObject("Counter prompt", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
         label.transform.SetParent(root.transform, false); label.raycastTarget = false;
-        label.font = CombatFeedbackSettings.Instance?.promptFont;
+        label.font = CombatFeedbackSettings.Instance.OrNull()?.promptFont;
         label.text = Texts.Get("hud.counter.prompt"); label.fontSize = 24; label.alignment = TextAlignmentOptions.Center;
         // Warm white over the red rim (it was ice blue over a navy one).
         label.color = new Color(1f, .9f, .9f);

@@ -124,7 +124,7 @@ public static class Throwables
 
     /// <summary>A number of the rules row (Tables/GrenadeRules, row Default).</summary>
     public static float Rule(string name, float fallback)
-        => GameTables.TryGetRow(RulesTable, RulesRow, out var row) ? row.Number(name, fallback) : fallback;
+        => GameTables.Number(RulesTable, RulesRow, name, fallback);
 
     private static void Load()
     {
@@ -322,7 +322,7 @@ public static class Throwables
     public static Material Look(Color color)
     {
         if (looks.TryGetValue(color, out var made) && made != null) return made;
-        var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Universal Render Pipeline/Simple Lit");
+        var lit = Shader.Find("Universal Render Pipeline/Lit").OrNull() ?? Shader.Find("Universal Render Pipeline/Simple Lit");
         made = new Material(lit) { hideFlags = HideFlags.DontSave, name = "Throwable " + ColorUtility.ToHtmlStringRGB(color) };
         if (made.HasProperty("_BaseColor")) made.SetColor("_BaseColor", color);
         if (made.HasProperty("_Smoothness")) made.SetFloat("_Smoothness", .35f);

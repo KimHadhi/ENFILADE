@@ -43,7 +43,7 @@ Mission.counterHeight,43,남은 수 칸의 높이(px). 중간 높이. 글자 칸
 Mission.symbolSize,38,느낌표 글자 크기
 Mission.titleSize,19,목표 글자 크기
 Mission.counterSize,24,남은 수의 큰 숫자 크기. 전체 수(/ 17)는 이것의 68%로 흐리게
-Mission.accent,#EF8542,미션 바의 한 가지 강조색: 느낌표 칸, 남은 수 칸 왼쪽 선, OBJECTIVE, 진행 선의 채워진 부분
+Mission.accent,#EF8542,"미션 바의 한 가지 강조색: 느낌표 칸, 남은 수 칸 왼쪽 선, OBJECTIVE, 진행 선의 채워진 부분"
 Mission.trackShade,0.32,진행 선의 아직 안 채운 부분: 강조색을 이 비율로 어둡게
 Mission.lineHeight,3,세 칸이 올라선 진행 선의 두께(px)
 Mission.lineGap,2,진행 선과 그 위 칸들 사이 틈(px)
@@ -84,7 +84,7 @@ Stance.popSeconds,0.14,자세가 바뀌면 새 그림이 분홍으로 커졌다�
 Stance.popScale,1.35,자세가 바뀐 순간 새 그림의 크기 배율. 그림 가운데에서 커져 제 자리 안에 머문다
 Rank.insignia,30,초상화 아래 클래스 휘장의 한 변(px). 이번 판 성장까지 더한 휘장이 나온다
 Rank.next,16,막대 끝에 흐리게 서는 다음 휘장의 한 변(px)
-Rank.thickness,5,휘장 옆 진행 막대의 굵기(px). 흰색은 판 시작 때 쌓인 몫, 분홍은 이번 판 처치, 연분홍은 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫
+Rank.thickness,5,"휘장 옆 진행 막대의 굵기(px). 흰색은 판 시작 때 쌓인 몫, 분홍은 이번 판 처치, 연분홍은 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫"
 Rank.below,22,초상화 그림 아래 가장자리에서 휘장 줄 가운데까지(px)
 Rank.floatSeconds,0.9,처치 때 막대 위에 뜨는 작은 +경험치가 떠 있는 시간(초)
 Rank.floatRise,10,그동안 올라가는 높이(px)

@@ -155,7 +155,7 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         {
             knifeShakeAt = 0f;
             var view = Camera.main;
-            if (view != null) CameraViewPunch.For(view)?.Punch(new Vector3(0f, 0f, -.6f * Throwables.Rule("knifeRoll", 2f)));
+            if (view != null) CameraViewPunch.For(view).OrNull()?.Punch(new Vector3(0f, 0f, -.6f * Throwables.Rule("knifeRoll", 2f)));
         }
         var aimed = Throwables.Of(armKind);
         if (holding && (arm == Arm.Draw || arm == Arm.Hold) && aimed != null)

@@ -105,7 +105,7 @@ internal static partial class OutfitDresser
         return (under, over);
     }
 
-    private static bool Drawn(Renderer renderer, HashSet<Renderer> gone) =>
+    internal static bool Drawn(Renderer renderer, HashSet<Renderer> gone) =>
         renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy && !gone.Contains(renderer);
 
     // The look's items that exist, sit in their own slot and were made for this character, in the slots' order. Anything

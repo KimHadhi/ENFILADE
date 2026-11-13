@@ -55,7 +55,7 @@ public sealed partial class ClassKit
             bountyPoints -= need;
             if (desperado != null && desperado.Ammo < RoundMax) desperado.LoadRound();
         }
-        slots?.NotifyAmmo();
+        slots.OrNull()?.NotifyAmmo();
     }
 
     // The class key on a foe: a duel with it (HoundDuel). Refused while it waits, or with no foe under the crosshair.

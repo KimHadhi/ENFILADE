@@ -84,7 +84,7 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void Exit()
     {
-        if (kind == State.StepDodge) ctx.DodgePassThrough?.Finish();
+        if (kind == State.StepDodge) ctx.DodgePassThrough.OrNull()?.Finish();
         if (kind == State.DashPush) ctx.Abilities.Combat.EndDashPush();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(initialSpeed, ctx.WalkSpeed));
         bool completedStep = kind == State.StepDodge && !interrupted && stepElapsed >= Mathf.Max(0.05f, Duration) - 0.00001f;
@@ -103,7 +103,7 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void OnColliderHit(ControllerColliderHit hit)
     {
-        if (ctx.DodgePassThrough?.IsResolving == true) return;
+        if (ctx.DodgePassThrough.OrNull()?.IsResolving == true) return;
         if (hit.normal.y >= Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return;
         if (Vector3.Dot(ctx.Abilities.ActionDirection, -hit.normal) < 0.55f) return;
         if (kind == State.DashPush && hit.collider.GetComponentInParent<IBreakable>() != null) return;

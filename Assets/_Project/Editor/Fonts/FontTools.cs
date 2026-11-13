@@ -303,7 +303,7 @@ public static class FontTools
             string path = AssetDatabase.GUIDToAssetPath(guid);
             var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             if (asset == null || !path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)) continue;
-            var table = CsvTable.Parse(asset.text, asset.name);
+            var table = CsvTable.Parse(asset.text);
             foreach (string id in table.RowIds)
             {
                 if (!table.TryGetRow(id, out var row)) continue;

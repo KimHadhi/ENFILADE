@@ -10,7 +10,7 @@ public sealed partial class ShopMenu
         // Looked for once an opening: a scene without a chat mustn't be searched every frame.
         if (chat == null && !chatLooked)
         {
-            chat = FindAnyObjectByType<SinglePlayerChatManager>();
+            chat = SceneOne<SinglePlayerChatManager>.Get();
             chatLooked = true;
         }
         return chat != null && chat.BlocksMissionInputThisFrame;

@@ -61,7 +61,7 @@ public sealed class CampaignBlast : MonoBehaviour
         var effects = mine.GetComponentInChildren<PlayerCameraEffects>();
         if (effects != null) effects.ApplyCameraImpulse(new Vector3(-8f * share, 0f, (Random.value < .5f ? -4f : 4f) * share), 4f * share);
         var eye = Camera.main;
-        if (eye != null) CameraViewPunch.For(eye)?.Punch(new Vector3(-1.5f * share, 0f, 0f), 0f, .5f * share);
+        if (eye != null) CameraViewPunch.For(eye).OrNull()?.Punch(new Vector3(-1.5f * share, 0f, 0f), 0f, .5f * share);
     }
 
     // What it names, charred: the colour it is drawn with (a map surface's top colour too) turned to the row's burnt.

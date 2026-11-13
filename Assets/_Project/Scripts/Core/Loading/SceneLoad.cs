@@ -26,14 +26,11 @@ public static class SceneLoad
     /// <summary>A load started here is still going (until the new scene has woken).</summary>
     public static bool Busy { get; private set; }
 
-    /// <summary>The scene being loaded, while Busy.</summary>
-    public static string Target { get; private set; }
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
         Busy = false;
-        Target = null;
+        
     }
 
     /// <summary>
@@ -44,11 +41,11 @@ public static class SceneLoad
     {
         if (!Application.isPlaying || string.IsNullOrEmpty(scene) || Busy) return false;
         Busy = true;
-        Target = scene;
+        
         if (LoadingScreen.Run(Load(scene)) == null)
         {
             Busy = false;
-            Target = null;
+            
             SceneManager.LoadScene(scene);
         }
         return true;
@@ -70,7 +67,7 @@ public static class SceneLoad
         {
             Application.backgroundLoadingPriority = before;
             Busy = false;
-            Target = null;
+            
             LoadingScreen.Hide();
             yield break;
         }
@@ -88,7 +85,7 @@ public static class SceneLoad
         while (!load.isDone) yield return null;
         Application.backgroundLoadingPriority = before;
         Busy = false;
-        Target = null;
+        
     }
 
     // How hard the loading thread works while the screen is up (Unity's own steps: Low, BelowNormal, Normal, High).

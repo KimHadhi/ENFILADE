@@ -111,18 +111,12 @@ public static class GunSetups
     private static void Load()
     {
         if (data != null) return;
-        data = new Store();
-        try
-        {
-            if (File.Exists(FilePath)) JsonUtility.FromJsonOverwrite(File.ReadAllText(FilePath), data);
-        }
-        catch (Exception problem) { Debug.LogWarning($"[GunSetups] {FilePath} couldn't be read ({problem.Message}); guns start as they come."); }
+        data = SaveFile.Read(FilePath, JsonUtility.FromJson<Store>) ?? new Store();
         if (data.guns == null) data.guns = new List<Entry>();
     }
 
     private static void Save()
     {
-        try { File.WriteAllText(FilePath, JsonUtility.ToJson(data, true)); }
-        catch (Exception problem) { Debug.LogWarning($"[GunSetups] {FilePath} couldn't be written ({problem.Message})."); }
+        SaveFile.Write(FilePath, JsonUtility.ToJson(data, true));
     }
 }

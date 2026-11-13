@@ -176,7 +176,7 @@ internal sealed class DressedBody
     private static Transform Bone(Animator animator, Part part) => part switch
     {
         Part.Head => animator.GetBoneTransform(HumanBodyBones.Head),
-        Part.Chest => animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine),
+        Part.Chest => animator.GetBoneTransform(HumanBodyBones.Chest).OrNull() ?? animator.GetBoneTransform(HumanBodyBones.Spine),
         Part.Pelvis => animator.GetBoneTransform(HumanBodyBones.Hips),
         Part.LeftThigh => animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg),
         Part.RightThigh => animator.GetBoneTransform(HumanBodyBones.RightUpperLeg),

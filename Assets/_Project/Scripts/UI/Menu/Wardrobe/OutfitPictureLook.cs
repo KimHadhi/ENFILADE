@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -147,8 +146,7 @@ public static class OutfitPictureLook
     }
 
     private static float Number(string row, string field, float fallback) =>
-        GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string text)
-        && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        GameTables.Number(TableName, row, field, fallback);
 
     private static string Text(string row, string field, string fallback) =>
         GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string text) && !string.IsNullOrWhiteSpace(text)

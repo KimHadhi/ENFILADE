@@ -407,8 +407,7 @@ public static class SettingsWidgets
             char c = raw >= '０' && raw <= '９' ? (char)('0' + (raw - '０')) : raw == '．' || raw == ',' ? '.' : raw;
             if ((c >= '0' && c <= '9') || c == '.' || (c == '-' && clean.Length == 0)) clean.Append(c);
         }
-        return float.TryParse(clean.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
-            out number) && !float.IsNaN(number) && !float.IsInfinity(number);
+        return TableCells.TryNumber(clean.ToString(), out number);
     }
 
     public static Button ActionButton(Transform parent, string text, bool primary, Action clicked)

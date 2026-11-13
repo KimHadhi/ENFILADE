@@ -159,7 +159,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         runner = killer != null ? killer.GetComponent<PlayerNetworkCorpse>() : null;
         lying.Add(this);
         if (id != 0UL) byId[id] = this;
-        HitFlashRenderer.For(this)?.KillFlash(hit.Point, hit.IsCritical ? .16f : .11f);
+        HitFlashRenderer.For(this).OrNull()?.KillFlash(hit.Point, hit.IsCritical ? .16f : .11f);
         doll = taken;
         if (doll == null) { lieUntil = lieSeconds; Trim(mostCorpses); return; }
         doll.Lay(simulated, muscleSeconds);

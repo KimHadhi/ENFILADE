@@ -8,7 +8,6 @@ public sealed class MovementDive
     private bool usedInAir;
     private float flightTime;
     public float RecoveryRemaining { get; private set; }
-    public int EntrySerial { get; private set; }
     /// <summary>Backlog 135: a dive launched mostly sideways, -1 left, +1 right, 0 otherwise (PlayerBody.SideDive lays the body on its side).</summary>
     public int Side { get; private set; }
     internal float PoseProgress
@@ -56,7 +55,7 @@ public sealed class MovementDive
 
     internal void BeginFlight()
     {
-        flightTime = 0f; usedInAir = true; EntrySerial++;
+        flightTime = 0f; usedInAir = true; 
         ctx.Posture.BeginDive();
     }
 

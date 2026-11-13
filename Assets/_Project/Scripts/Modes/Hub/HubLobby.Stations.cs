@@ -431,7 +431,7 @@ public sealed partial class HubLobby
             case Act.Class:
                 if (string.Equals(pick.Id, ClassGrowth.CurrentId, System.StringComparison.OrdinalIgnoreCase)) return;
                 ClassGrowth.Choose(pick.Id);
-                ClassKit.Local?.Rekit();
+                ClassKit.Local.OrNull()?.Rekit();
                 foreach (var other in picks)
                     if (other.Act == Act.Class && other.Frame != null) other.Frame.enabled = other == pick;
                 KitSound.Play(KitSound.Cue.Buy, .8f);

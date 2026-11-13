@@ -67,7 +67,7 @@ public sealed class PlayerKnock : MonoBehaviour, ITableBound
                 QueryTriggerInteraction.Ignore) || Mathf.Abs(wall.normal.y) > .6f) return;
         readyAt = Time.time + cooldown;
         Rap(wall.point, wall.normal);
-        GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(-.6f, 0f, Random.value < .5f ? -.4f : .4f));
+        GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(new Vector3(-.6f, 0f, Random.value < .5f ? -.4f : .4f));
         Knocked?.Invoke(wall.point, wall.normal);
     }
 

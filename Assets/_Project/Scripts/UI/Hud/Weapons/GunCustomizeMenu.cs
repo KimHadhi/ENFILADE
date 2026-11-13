@@ -73,7 +73,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
     private TextMeshProUGUI detailTitle, detailBody, message;
     private RectTransform detail;
     private float messageLeft, alpha;
-    private bool open, closing, playerMapWas, combatMapWas;
+    private bool open, closing;
     // The frame it opened on: the C that opened it still reads as pressed in this frame's Update, and once the menu existed
     // it closed it again at once (user, 2026-11-09: "C 눌러도 메뉴 나왔다 바로 사라지고").
     private int openedFrame = -1;
@@ -115,9 +115,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         weapon.Customizing = true;
         Say(null, KitStyle.Text);
         OpenSlot(slots.Count > 0 ? slots[0] : null);
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        HoldInput(true);
+        InputHold.Take(this);
     }
 
     // The gun goes back to the hands as the menu fades; the cursor and the player's input come back once it's gone.
@@ -137,29 +135,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         if (weapon != null) weapon.Customizing = false;
         if (canvas != null) canvas.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-        HoldInput(false);
-        if (SettingsMenu.IsOpen) return;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
-    // The player's move and combat input wait while customizing, as for the shop; whatever was on comes back after.
-    private void HoldInput(bool hold)
-    {
-        var actions = InputSystem.actions;
-        if (actions == null) return;
-        var moves = actions.FindActionMap("Player", false);
-        var combat = actions.FindActionMap("Combat", false);
-        if (hold)
-        {
-            playerMapWas = moves != null && moves.enabled;
-            combatMapWas = combat != null && combat.enabled;
-            moves?.Disable();
-            combat?.Disable();
-            return;
-        }
-        if (playerMapWas) moves?.Enable();
-        if (combatMapWas) combat?.Enable();
+        InputHold.Release(this);
     }
 
     private void Update()

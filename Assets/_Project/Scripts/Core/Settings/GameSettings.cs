@@ -221,25 +221,19 @@ public sealed class GameSettings
         Apply();
     }
 
-    public static void Save()
-    {
-        try { File.WriteAllText(FilePath, JsonUtility.ToJson(Current, true)); }
-        catch (Exception e) { Debug.LogWarning($"[Settings] Could not save {FilePath}: {e.Message}"); }
-    }
+    /// <summary>Written whole or not at all (SaveFile): the file holds every key and every character's clothes.</summary>
+    public static void Save() => SaveFile.Write(FilePath, JsonUtility.ToJson(Current, true));
 
-    // Saved values over the preset, so a setting added later starts at its preset default.
+    // Saved values over the preset, so a setting added later starts at its preset default. A file cut short by a crash
+    // gives way to the one saved before it (SaveFile); no file at all is a fresh start.
     private static GameSettings Load()
     {
-        var settings = GameSettingsPreset.Copy();
-        try
+        var settings = SaveFile.Read(FilePath, text =>
         {
-            if (File.Exists(FilePath)) JsonUtility.FromJsonOverwrite(File.ReadAllText(FilePath), settings);
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"[Settings] {FilePath} could not be read; using defaults. {e.Message}");
-            settings = GameSettingsPreset.Copy();
-        }
+            var read = GameSettingsPreset.Copy();
+            JsonUtility.FromJsonOverwrite(text, read);
+            return read;
+        }) ?? GameSettingsPreset.Copy();
         settings.Clamp();
         return settings;
     }

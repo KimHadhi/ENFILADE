@@ -59,7 +59,7 @@ public sealed partial class GreyboxBuilder
     private void Skyline()
     {
         if (!GameTables.TryGetRow(SkylineTable, sceneName, out var row)) return;
-        float x0 = Number(row, "x0", 0f), x1 = Number(row, "x1", 0f), z0 = Number(row, "z0", 0f), z1 = Number(row, "z1", 0f);
+        float x0 = row.Number("x0", 0f), x1 = row.Number("x1", 0f), z0 = row.Number("z0", 0f), z1 = row.Number("z1", 0f);
         if (x1 <= x0 || z1 <= z0) return;
         var materials = new List<Material>();
         foreach (string part in Text(row, "looks").Split(';'))
@@ -73,12 +73,12 @@ public sealed partial class GreyboxBuilder
             Debug.LogWarning("[Greybox] " + SkylineTable + " " + sceneName + ": none of its looks has a MapSurfaces row with its textures; no city beyond the edge.");
             return;
         }
-        float gap = Number(row, "gap", 8f), depth = Mathf.Max(8f, Number(row, "depth", 34f)), street = Number(row, "street", 10f);
-        int rings = Mathf.Clamp(Mathf.RoundToInt(Number(row, "rings", 2f)), 1, 4);
-        float widthMin = Mathf.Max(6f, Number(row, "widthMin", 16f)), widthMax = Mathf.Max(widthMin, Number(row, "widthMax", 32f));
-        int floorsMin = Mathf.Max(1, Mathf.RoundToInt(Number(row, "floorsMin", 4f)));
-        int floorsMax = Mathf.Max(floorsMin, Mathf.RoundToInt(Number(row, "floorsMax", 14f)));
-        uint state = (uint)Mathf.RoundToInt(Number(row, "seed", 1f)) * 2654435761u + 12345u;
+        float gap = row.Number("gap", 8f), depth = Mathf.Max(8f, row.Number("depth", 34f)), street = row.Number("street", 10f);
+        int rings = Mathf.Clamp(Mathf.RoundToInt(row.Number("rings", 2f)), 1, 4);
+        float widthMin = Mathf.Max(6f, row.Number("widthMin", 16f)), widthMax = Mathf.Max(widthMin, row.Number("widthMax", 32f));
+        int floorsMin = Mathf.Max(1, Mathf.RoundToInt(row.Number("floorsMin", 4f)));
+        int floorsMax = Mathf.Max(floorsMin, Mathf.RoundToInt(row.Number("floorsMax", 14f)));
+        uint state = (uint)Mathf.RoundToInt(row.Number("seed", 1f)) * 2654435761u + 12345u;
         float reach = gap + rings * (depth + street) + 30f;
         // Ground out to past the last ring (the map's own ground stops at its edge).
         Box("바깥 땅 서", x0 - reach, x0, -.5f, 0f, z0 - reach, z1 + reach, Road, solid: false);

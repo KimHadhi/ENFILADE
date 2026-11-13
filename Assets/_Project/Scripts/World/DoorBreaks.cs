@@ -47,7 +47,7 @@ internal static class DoorBreaks
     {
         reader.ReadValueSafe(out Report report);
         var door = Find(report.Door);
-        if (door != null) door.Shatter(report.Point, report.Speed, report.Quiet != 0);
+        if (door != null) door.Shatter(report.Point, report.Quiet != 0);
         // The host passes on what a guest broke.
         var network = GameSession.Network;
         if (network == null || !network.IsServer || sender == NetworkManager.ServerClientId) return;

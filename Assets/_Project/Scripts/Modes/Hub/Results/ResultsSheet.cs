@@ -155,7 +155,7 @@ public sealed class ResultsSheet : MonoBehaviour
             ("results.mine.healing", Mathf.RoundToInt(me.Healing).ToString("N0")),
             ("results.mine.revives", me.Revives.ToString("N0")),
             ("results.mine.streak", me.BestStreak.ToString("N0")),
-            ("results.mine.farthest", me.Farthest > 0f ? me.Farthest.ToString("0.0") + " m" : "-"),
+            ("results.mine.farthest", me.Farthest > 0f ? me.Farthest.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m" : "-"),
             ("results.mine.downs", me.Downs.ToString("N0")),
         };
         float y = Header + 36f;

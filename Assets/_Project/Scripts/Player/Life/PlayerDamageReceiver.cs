@@ -67,9 +67,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             return DamageResult.Ignored;
         }
         if (!isActiveAndEnabled || !IsAlive || hit.Amount <= 0f || float.IsNaN(hit.Amount) || float.IsInfinity(hit.Amount) || hit.Id <= 0) return DamageResult.Ignored;
-        if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
-        recent.Enqueue(hit.Id);
-        if (recent.Count > 256) seen.Remove(recent.Dequeue());
+        if (seen.Contains(hit.Id)) return DamageResult.Duplicate;
+        Remember(hit.Id);
         // A Schießhund's duel (HoundDuel): a called-out foe's blow on anyone but its hound lands on nothing (and says whose
         // duel it was), and so does any other foe's on a hound holding the Ace card.
         var duel = HoundDuel.Blocking(movement, hit);
@@ -84,7 +83,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if (KnightCover.Covers(movement, hit, out PlayerMovement coverer))
         {
             Vector3 attacker = hit.Source.transform.position;
-            if (coverer.IsLocal) KnightCover.Local?.Covered(movement, attacker);
+            if (coverer.IsLocal) KnightCover.Local.OrNull()?.Covered(movement, attacker);
             else if (coverer.TryGetComponent(out PlayerNetworkCombat knightNet)) knightNet.SendCovered(movement, attacker);
             HitResolved?.Invoke(hit, DamageResult.Parried);
             return DamageResult.Parried;
@@ -129,13 +128,21 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         LoseHealth(hit.IsFatal ? Health : amount - absorbed);
         LastShieldTaken = absorbed;
         LastHealthTaken = Mathf.Max(0f, healthBefore - Health);
-        melee?.NotifyDamaged();
+        melee.OrNull()?.NotifyDamaged();
         HitResolved?.Invoke(hit, DamageResult.Damaged);
         if (shieldBroke) { ShieldBreaks++; ShieldBroken?.Invoke(hit); }
         // Flesh only when health was reached; the shield's own sound is ShieldFeedback's.
         if ((movement == null || movement.IsLocal) && LastHealthTaken > 0f) CombatHitAudio.PlayPlayerHit(hit);
         if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown())) Die();
         return DamageResult.Damaged;
+    }
+
+    // A blow is judged once: the last 256 ids are kept, the oldest forgotten as new ones come.
+    private void Remember(long id)
+    {
+        if (!seen.Add(id)) return;
+        recent.Enqueue(id);
+        if (recent.Count > 256) seen.Remove(recent.Dequeue());
     }
 
     private void LoseHealth(float amount)
@@ -149,7 +156,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         // Someone who dies on the ground stays lying there.
         bool wasDowned = IsDowned;
         SetDowned(false);
-        if (!wasDowned) movement?.ResetVelocity();
+        if (!wasDowned) movement.OrNull()?.ResetVelocity();
         Died?.Invoke();
     }
 
@@ -164,8 +171,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     {
         Health = downedHealth;
         SetDowned(true);
-        movement?.ResetVelocity();
-        GetComponent<PlayerDamageFeedback>()?.Clear();
+        movement.OrNull()?.ResetVelocity();
+        GetComponent<PlayerDamageFeedback>().OrNull()?.Clear();
     }
 
     /// <summary>Time on the ground wears them down.</summary>
@@ -181,7 +188,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     {
         Health = Mathf.Clamp(health, 1f, MaximumHealth);
         SetDowned(false);
-        movement?.Abilities.ReturnToLocomotion();
+        movement.OrNull()?.Abilities.ReturnToLocomotion();
     }
 
     /// <summary>On someone else's copy: the health their own PC reports.</summary>
@@ -193,8 +200,8 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     {
         Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear();
         SetDowned(false);
-        movement?.ResetVelocity();
-        GetComponent<PlayerDamageFeedback>()?.Clear();
+        movement.OrNull()?.ResetVelocity();
+        GetComponent<PlayerDamageFeedback>().OrNull()?.Clear();
     }
 
     public void SetShield(float amount) { shield = PlayerStats.NonNegative(amount); }
@@ -246,10 +253,11 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if (movement != null && movement.Execution != null && movement.Execution.IsExecuting) return DamageResult.Ignored;
         if (!isActiveAndEnabled || !IsAlive || hit.Amount <= 0f || hit.Id <= 0 || hit.Kind != DamageKind.Attack
             || movement == null || !movement.Abilities.StepTrail.IsActive) return DamageResult.Ignored;
-        if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
-        recent.Enqueue(hit.Id);
-        if (recent.Count > 256) seen.Remove(recent.Dequeue());
+        if (seen.Contains(hit.Id)) return DamageResult.Duplicate;
+        // Too late to evade (the trail outlasts the window): the blow is not used up, so it still lands if it reaches
+        // the body. Before 0.9.4 a blow that only brushed a stale trail was marked as dealt with and could no longer hurt.
         if (!movement.Abilities.Dodge.TryEvade()) return DamageResult.Ignored;
+        Remember(hit.Id);
         HitResolved?.Invoke(hit, DamageResult.Evaded);
         return DamageResult.Evaded;
     }

@@ -73,7 +73,7 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
             if (stats == null)
             {
                 // Repair already-loaded scene instances when this dependency is added by a script reload.
-                stats = GetComponent<PlayerStats>() ?? gameObject.AddComponent<PlayerStats>();
+                stats = GetComponent<PlayerStats>().OrNull() ?? gameObject.AddComponent<PlayerStats>();
                 stats.Changed += Publish;
             }
             return stats;

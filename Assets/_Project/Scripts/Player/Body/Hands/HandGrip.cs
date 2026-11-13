@@ -366,10 +366,10 @@ internal sealed partial class HandGrip
         float follow = Time.deltaTime > 0f ? 1f - Mathf.Exp(-Time.deltaTime / .06f) : 1f;
         for (int i = 0; i < ledgePose.Length; i++) displayedLedgePose[i] = Quaternion.Slerp(displayedLedgePose[i], ledgePose[i], follow);
         ApplyPose(displayedLedgePose, weight);
-        normals?.SetWeight(left, weight);
+        normals.OrNull()?.SetWeight(left, weight);
     }
 
-    public void ClearLedgeSkin() => normals?.SetWeight(left, 0f);
+    public void ClearLedgeSkin() => normals.OrNull()?.SetWeight(left, 0f);
 
     /// <summary>The way the palm faces, as measured on this hand.</summary>
     public Vector3 PalmFacing => hand.TransformDirection(palmInHand);

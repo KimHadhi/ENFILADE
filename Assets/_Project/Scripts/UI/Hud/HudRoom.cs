@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -165,11 +164,5 @@ public static class HudRoom
             if (claims[i].Owner == null || now - claims[i].Frame > 1) claims.RemoveAt(i);
     }
 
-    private static float Number(string field, float fallback)
-    {
-        if (GameTables.TryGetRow(HudCamera.TableName, "Room", out var row) && row.TryGetValue(field, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-            return value;
-        return fallback;
-    }
+    private static float Number(string field, float fallback) => GameTables.Number(HudCamera.TableName, "Room", field, fallback);
 }

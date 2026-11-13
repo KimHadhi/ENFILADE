@@ -62,7 +62,7 @@ public sealed partial class FieldPickups
         else if (kind == Kind.Heal || kind == Kind.Shield) AdaptiveHealthHUD.Blink(KitStyle.Ice, kind == Kind.Shield);
         var player = PlayerRoster.Local;
         var weapons = player != null ? player.GetComponentInChildren<WeaponController>() : null;
-        if (weapons != null) FPSBody.Holding(weapons)?.Reach();
+        if (weapons != null) FPSBody.Holding(weapons).OrNull()?.Reach();
     }
 
     // The list's icon for a kind; a gun has none and shows a gun's outline.

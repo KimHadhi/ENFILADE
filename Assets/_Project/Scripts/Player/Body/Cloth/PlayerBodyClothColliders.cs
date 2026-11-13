@@ -404,7 +404,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         // its fingers, so it runs past the knuckles; a fist curls that joint back in.
         if (finger == null) return;
         float width = Vector3.Distance(wrist.position, finger.position) * palm;
-        into.Add(new ArmBone(wrist, animator.GetBoneTransform(fingerMiddle) ?? finger, width, width, side));
+        into.Add(new ArmBone(wrist, animator.GetBoneTransform(fingerMiddle).OrNull() ?? finger, width, width, side));
     }
 
     private static void Span(Transform from, Transform to, float start, float end, int side, List<ArmBone> into)
@@ -415,8 +415,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
 
     private void MakeHead(Animator animator, List<ColliderComponent> into)
     {
-        Transform head = animator.GetBoneTransform(HumanBodyBones.Head), neck = animator.GetBoneTransform(HumanBodyBones.Neck) ?? head;
-        Transform upperBody = animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine);
+        Transform head = animator.GetBoneTransform(HumanBodyBones.Head), neck = animator.GetBoneTransform(HumanBodyBones.Neck).OrNull() ?? head;
+        Transform upperBody = animator.GetBoneTransform(HumanBodyBones.Chest).OrNull() ?? animator.GetBoneTransform(HumanBodyBones.Spine);
         Transform leftArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm), rightArm = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
         if (head == null || upperBody == null || leftArm == null || rightArm == null) return;
         float shoulders = Vector3.Distance(leftArm.position, rightArm.position);

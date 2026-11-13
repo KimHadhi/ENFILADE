@@ -250,7 +250,7 @@ public sealed class ThrownStone : MonoBehaviour
     private static Material Look()
     {
         if (look != null) return look;
-        var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Universal Render Pipeline/Simple Lit");
+        var lit = Shader.Find("Universal Render Pipeline/Lit").OrNull() ?? Shader.Find("Universal Render Pipeline/Simple Lit");
         look = new Material(lit) { hideFlags = HideFlags.DontSave, name = "Thrown Stone" };
         var grey = new Color(.33f, .32f, .3f);
         if (look.HasProperty("_BaseColor")) look.SetColor("_BaseColor", grey);

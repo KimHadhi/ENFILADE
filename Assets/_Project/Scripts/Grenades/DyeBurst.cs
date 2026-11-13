@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 public static class DyeBurst
 {
-    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine)
+    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower)
     {
         if (info == null) return;
         float radius = Mathf.Max(.5f, info.Radius);

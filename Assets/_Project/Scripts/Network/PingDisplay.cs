@@ -1,4 +1,3 @@
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -13,8 +12,7 @@ public static class PingDisplay
 
     public static int Shown(int measuredMs)
     {
-        float divisor = GameTables.TryGetRow(Table, Row, out var row) && row.TryGetValue(Column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) && value > 0f ? value : 1f;
-        return Mathf.Max(1, Mathf.RoundToInt(measuredMs / divisor));
+        float divisor = GameTables.Number(Table, Row, Column, 1f);
+        return Mathf.Max(1, Mathf.RoundToInt(measuredMs / (divisor > 0f ? divisor : 1f)));
     }
 }

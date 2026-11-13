@@ -77,14 +77,13 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         instance = this;
         IsOpen = true;
-        Time.timeScale = 1f;
         // The class growth of a game left without its ending first, while the score still holds it (ClassGrowth.Leave).
         ClassGrowth.Leave();
         CombatFeedHUD.ResetScore();
         PlayerPerks.Clear(); // perks last a campaign; back at the title screen it starts bare
         MatchResults.Clear(); // a chapter's results wait for the hub it leads back to, not for a later visit from here
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // The title screen has the pointer for as long as it is there.
+        InputHold.Take(this, Held.Cursor);
         SettingsMenu.EnsureEventSystem();
         preview = gameObject.AddComponent<MainMenuPreview>();
         gameObject.AddComponent<SkinPortraits>(); // under the preview's light, for both character screens
@@ -184,6 +183,7 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         if (instance == this) instance = null;
         IsOpen = false;
+        InputHold.Release(this);
         GameSettings.Changed -= ShowLook;
         ProfilePicture.Changed -= ShowPicture;
         browser?.StopSearching();
@@ -489,14 +489,14 @@ public sealed class MainMenuScreen : MonoBehaviour
     // There is something to choose: more than one character, or more than one look of the only one.
     private static bool CanChooseCharacter()
     {
-        var skins = PlayerBodyProfile.Load()?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
+        var skins = PlayerBodyProfile.Load().OrNull()?.Skins.Where(skin => skin != null && skin.Model != null).ToArray();
         return skins != null && skins.Length > 0 && (skins.Length > 1 || skins[0].Variants.Count > 1);
     }
 
     private void ShowLook()
     {
         var bodies = PlayerBodyProfile.Load();
-        var skin = bodies?.CurrentSkin;
+        var skin = bodies.OrNull()?.CurrentSkin;
         if (skin == null) return;
         var variant = bodies.CurrentVariant;
         if (lookLabel != null) lookLabel.text = variant != null ? skin.DisplayName + "  ·  " + variant.DisplayName : skin.DisplayName;

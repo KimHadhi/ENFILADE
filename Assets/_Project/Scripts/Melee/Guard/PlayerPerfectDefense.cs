@@ -69,14 +69,14 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         if (receiver != null) receiver.HitResolved -= OnResolved;
         player = owner; receiver = owner.DamageReceiver;
         receiver.HitResolved += OnResolved;
-        timeEffects = GetComponent<CombatTimeEffects>() ?? gameObject.AddComponent<CombatTimeEffects>();
+        timeEffects = GetComponent<CombatTimeEffects>().OrNull() ?? gameObject.AddComponent<CombatTimeEffects>();
         // The evade and block cues play on this body: their voice is made now, not on the first perfect evade.
         CombatCueAudio.Prepare(gameObject);
         if (Application.isPlaying && owner.IsLocal && GetComponent<PerfectDefenseHUD>() == null) gameObject.AddComponent<PerfectDefenseHUD>();
         // The slip's numbers, the head moves and the edge light are made at spawn, not in the first fight.
         if (Application.isPlaying && owner.IsLocal) { MicroSlip.For(owner); CombatHeadMotion.For(owner); CombatEdgeGlint.For(owner); DodgeFlash.For(owner); }
     }
-    private void OnEnable() { var owner = GetComponent<PlayerMovement>(); if (owner?.DamageReceiver != null) Initialize(owner); }
+    private void OnEnable() { var owner = GetComponent<PlayerMovement>(); if (owner.OrNull()?.DamageReceiver != null) Initialize(owner); }
     private void OnResolved(DamageHit hit, DamageResult result)
     {
         if (result == DamageResult.Blocked)
@@ -124,7 +124,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         var settings = CombatFeedbackSettings.Instance;
         remaining = settings != null ? settings.counterWindowSeconds : 1f;
         timeEffects.RequestSlowdown(this, settings != null ? settings.perfectTimeScale : .08f, remaining, attacker);
-        if (slipped) MicroSlip.For(player)?.LockOn(attacker);
+        if (slipped) MicroSlip.For(player).OrNull()?.LockOn(attacker);
     }
     private static MeleeCombatTarget AttackerOf(DamageHit hit) => hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
     private void Remember(MeleeCombatTarget target) { if (target != null && !evaded.Contains(target)) evaded.Add(target); }
@@ -152,7 +152,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     {
         guard = Mathf.Max(0f, guard - Mathf.Max(0f, realDeltaTime));
         if (!CounterAvailable) return;
-        if (player == null || !player.DamageReceiver.IsAlive || player.Execution?.IsExecuting == true || !AnyLeft()) { Cancel(); return; }
+        if (player == null || !player.DamageReceiver.IsAlive || player.Execution.OrNull()?.IsExecuting == true || !AnyLeft()) { Cancel(); return; }
         remaining = Mathf.Max(0f, remaining - Mathf.Max(0f, realDeltaTime));
         if (remaining <= 0f) Cancel();
     }
@@ -173,13 +173,13 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         elbow = backElbow; elbowSide = bearing >= 0f ? 1 : -1;
         if (keepLook) slip.KeepOn(target, counterDashTimeout + .25f);
         if (backElbow && elbowGlance > 0f)
-            CombatHeadMotion.For(this)?.Glance(elbowSide * elbowGlance, elbowGlanceTiming.x, elbowGlanceTiming.y, elbowGlanceTiming.z);
-        player.MeleeCombat?.CancelAction(); player.Abilities.Combat.CancelShove();
+            CombatHeadMotion.For(this).OrNull()?.Glance(elbowSide * elbowGlance, elbowGlanceTiming.x, elbowGlanceTiming.y, elbowGlanceTiming.z);
+        player.MeleeCombat.OrNull()?.CancelAction(); player.Abilities.Combat.CancelShove();
         player.Abilities.Dodge.CancelWindow();
         if (player.CurrentState == PlayerMovement.MovementState.StepDodge) player.Abilities.ReturnToLocomotion();
-        player.DodgePassThrough?.Finish();
-        GetComponent<WeaponController>()?.Runtime?.Interrupt();
-        GetComponent<PlayerWeaponInput>()?.RequireTriggerRelease();
+        player.DodgePassThrough.OrNull()?.Finish();
+        GetComponent<WeaponController>().OrNull()?.Runtime?.Interrupt();
+        GetComponent<PlayerWeaponInput>().OrNull()?.RequireTriggerRelease();
         // In close first, then the punch (TickStrike). No dodge starts meanwhile.
         striking = target; strikeTime = lastGap = lastStep = 0f;
         player.HorizontalVelocity = Vector3.zero;
@@ -211,7 +211,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     private void TickStrike(float dt)
     {
         var target = striking;
-        if (target == null || !target.IsAvailable || player == null || !player.DamageReceiver.IsAlive || player.Execution?.IsExecuting == true)
+        if (target == null || !target.IsAvailable || player == null || !player.DamageReceiver.IsAlive || player.Execution.OrNull()?.IsExecuting == true)
         { striking = null; EndDash(); return; }
         player.Abilities.Dodge.HoldOff(DodgeHold);
         if (dt <= 0f) return;
@@ -270,10 +270,10 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         // The guard after a counter starts at the punch.
         guard = counterGuardSeconds;
         bool landed = result == DamageResult.Damaged;
-        if (!elbow) { player.MeleeCombat?.ShowCounterPunch(landed); return; }
-        player.MeleeCombat?.ShowCounterElbow(landed, elbowSide);
+        if (!elbow) { player.MeleeCombat.OrNull()?.ShowCounterPunch(landed); return; }
+        player.MeleeCombat.OrNull()?.ShowCounterElbow(landed, elbowSide);
         // Out of sight behind: the edge on its side lights as it lands.
-        if (landed && elbowGlint > 0f) CombatEdgeGlint.For(this)?.Show(elbowSide, elbowGlintColor, elbowGlint, elbowGlintSeconds);
+        if (landed && elbowGlint > 0f) CombatEdgeGlint.For(this).OrNull()?.Show(elbowSide, elbowGlintColor, elbowGlint, elbowGlintSeconds);
     }
     // The nearest thing between the eyes and the point that is neither this body nor the target.
     private bool FirstInWay(Vector3 from, Vector3 to, MeleeCombatTarget target, out RaycastHit first)
@@ -303,7 +303,7 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     public void Cancel()
     {
         remaining = 0f; striking = null; evaded.Clear();
-        timeEffects?.Release(this);
+        timeEffects.OrNull()?.Release(this);
         EndDash();
     }
     private void OnDisable() { Cancel(); if (receiver != null) receiver.HitResolved -= OnResolved; }

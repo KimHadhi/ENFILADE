@@ -64,7 +64,7 @@ public sealed class MovementMotor
 
     internal void Move(float dt)
     {
-        ctx.DodgePassThrough?.BeforeMove();
+        ctx.DodgePassThrough.OrNull()?.BeforeMove();
         ctx.Abilities.Landing.BeforeMove();
         float startY = ctx.transform.position.y;
         lastMoveGroundNormal = Vector3.zero;
@@ -97,7 +97,7 @@ public sealed class MovementMotor
         ctx.Abilities.StepTrail.RecordMovement();
         // Measure controller travel after posture rebasing, before dodge exit corrections.
         ctx.Abilities.Landing.AfterMove(dt, ctx.transform.position.y - startY);
-        ctx.DodgePassThrough?.AfterMove();
+        ctx.DodgePassThrough.OrNull()?.AfterMove();
         if ((lastMoveFlags & CollisionFlags.Above) != 0 && VerticalVelocity > 0f) VerticalVelocity = 0f;
         Carrier = (lastMoveFlags & CollisionFlags.Below) != 0 ? carrierCandidate : null;
         if (Carrier != null) carrierPosition = Carrier.transform.position;

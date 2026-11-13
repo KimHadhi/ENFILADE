@@ -41,7 +41,15 @@
 
 | 필요한 것 | 쓰는 것 |
 | --- | --- |
-| 표의 한 줄에서 칸 읽기 | [TableCells](Core/Tables/TableCells.cs): `row.Number("damage", 10f)`, `row.Text("name")`, `row.Vector("wrist", fallback)`, `TableCells.Parts("a\|b")` |
+| 표의 한 줄에서 칸 읽기 | [TableCells](Core/Tables/TableCells.cs): `row.Number("damage", 10f)`, `row.Whole("copies", 1)`, `row.Flag("on", true)`, `row.Text("name")`, `row.Vector("wrist", fallback)`, `TableCells.Parts("a\|b")` |
+| 표·줄·칸을 알 때 칸 하나 읽기 | [GameTables](Core/Tables/GameTables.cs): `GameTables.Number("Money", "Default", "dropAmount", 500f)`, `GameTables.Flag(…)`, `GameTables.Text(…)` |
+| 사람이 쓴 글자를 숫자·켬끔으로 | [TableCells](Core/Tables/TableCells.cs): `TryNumber`, `TryWhole`, `TryFlag` (표·모드·콘솔 모두 이 셋으로만 읽는다. `float.TryParse`를 직접 쓰지 않는다) |
+| Unity 오브젝트에 `?.`·`??` 쓰기 | [UnityNull](Core/Common/UnityNull.cs): `thing.OrNull()?.Method()`, `a.OrNull() ?? b` (파괴된 오브젝트를 살아 있다고 보지 않게) |
+| 게임 멈추기 | [GamePause](Core/Time/GamePause.cs): `GamePause.Take(this)` / `GamePause.Release(this)` (여러 화면이 겹쳐도 마지막 화면이 닫힐 때 풀린다) |
+| 게임을 느리게 | [WorldTime](Core/Time/WorldTime.cs): `WorldTime.Hold(this, 0.3f)` / `WorldTime.Release(this)` (`Time.timeScale`을 직접 쓰지 않는다) |
+| 메뉴가 입력·커서를 가져가기 | [InputHold](UI/Shared/InputHold.cs): `InputHold.Take(this, Held.All)` / `InputHold.Release(this)` |
+| 씬에 하나뿐인 것 찾기 | [SceneOne](Core/Scene/SceneOne.cs): `SceneOne<WaveManager>.Get()` (프레임마다 찾지 않는다) |
+| 플레이어 파일 저장·읽기 | [SaveFile](Core/Common/SaveFile.cs): `SaveFile.Write(path, json)`, `SaveFile.Read(path, JsonUtility.FromJson<Data>)` (통째로 바꿔 쓰고, 깨진 파일은 앞 사본으로) |
 | 이징 곡선 | [Ease](Core/Common/Ease.cs): `Ease.Out`, `Ease.InOut`, `Ease.Smooth`, 프레임 수와 무관한 따라가기 `Ease.Share(rate, dt)` |
 | 트랜스폼을 이름으로 찾기, 경로 | [Hierarchy](Core/Common/Hierarchy.cs): `Hierarchy.Find(root, name)`, `Hierarchy.PathOf(part, root)` |
 | 메시·본 가중치 읽기 | [MeshTools](Core/Common/MeshTools.cs): `MeshOf(renderer)`, `BoxOf(bounds, matrix)`, `Strongest(weight)` |

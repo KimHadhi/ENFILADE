@@ -158,7 +158,7 @@ public sealed class HudCamera : MonoBehaviour
             if (hasLast)
             {
                 Vector3 before = lastWorldRotation * Vector3.forward, after = now * Vector3.forward;
-                float yawRate = Mathf.DeltaAngle(Yaw(before), Yaw(after)) / dt;
+                float yawRate = Mathf.DeltaAngle(MovementFixtures.YawOf(before), MovementFixtures.YawOf(after)) / dt;
                 float pitchRate = Mathf.DeltaAngle(Pitch(before), Pitch(after)) / dt;
                 float strength = Mathf.Clamp01(GameSettings.Current.hudSway);
                 target = new Vector2(Mathf.Clamp(-yawRate * look.lag, -look.max, look.max),
@@ -180,6 +180,5 @@ public sealed class HudCamera : MonoBehaviour
         leanRoll = GameSettings.Current.hudFollowsLean && player != null ? player.LeanRoll * look.share : 0f;
     }
 
-    private static float Yaw(Vector3 forward) => Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
     private static float Pitch(Vector3 forward) => Mathf.Asin(Mathf.Clamp(forward.y, -1f, 1f)) * Mathf.Rad2Deg;
 }

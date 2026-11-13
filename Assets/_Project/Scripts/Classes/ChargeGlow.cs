@@ -24,7 +24,7 @@ public sealed class ChargeGlow : MonoBehaviour
     private static Material glowMaterial;
 
     private PlayerMovement player;
-    private float until, total = 1f;
+    private float until;
     private Light lamp;
     private BodyShell shell;
 
@@ -61,7 +61,7 @@ public sealed class ChargeGlow : MonoBehaviour
     private void Kindle(PlayerMovement who, float seconds)
     {
         player = who;
-        total = seconds;
+        
         until = Time.time + seconds;
         enabled = true;
         if (lamp == null)

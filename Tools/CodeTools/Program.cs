@@ -72,6 +72,12 @@ static class Program
                     Set(args, "--except"), Set(args, "--only"), args.Contains("--dry"));
                 break;
             case "dupes": Dupes.Report(); break;
+            case "audit": Audit.Run(); break;
+            case "ornull": Fixes.OrNull(args.Contains("--dry")); break;
+            case "numbers": Numbers.Run(args.Contains("--dry")); break;
+            case "cells": Numbers.Cells(args.Contains("--dry")); break;
+            case "writeonly": WriteOnly.Run(args.Contains("--dry")); break;
+            case "unparam": Fixes.DropParameters(args[1].Split(','), args.Contains("--dry")); break;
             case "split":
             {
                 string Opt(string name) { int at = Array.IndexOf(args, name); return at >= 0 ? args[at + 1] : null; }

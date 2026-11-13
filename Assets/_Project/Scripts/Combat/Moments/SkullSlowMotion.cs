@@ -4,10 +4,10 @@ using UnityEngine;
 /// When a kill streak first turns into the kill feed's skull (one past KillFeed's mostNumeral), the whole game slows for a
 /// moment. In a room every PC slows as the host's word of that kill reaches it (PlayerNetworkScore.KillRpc), so the world
 /// stays one; alone, as the kill counts (GunFeelDirector). It runs on real time: it eases down to `scale`, holds, and eases
-/// back up. Esc's pause still stops the game, and the counter slowdown and hit stops give way while it runs
-/// (CombatTimeEffects lets an outside time scale take over). The screen (SlowMotionLook) and the sound (SlowMotionSound)
-/// follow Depth, and VfxTimeStep keeps the effects moving every frame. Numbers: Tables/SkullSlowMotion, one row for all
-/// three.
+/// back up. It is a hold on WorldTime: Esc's pause still stops the game and the slowdown carries on after it, and beside
+/// the counter's slow motion or a hit stop the world runs at the slower of the two. The screen (SlowMotionLook) and the
+/// sound (SlowMotionSound) follow Depth, and VfxTimeStep keeps the effects moving every frame. Numbers:
+/// Tables/SkullSlowMotion, one row for all three.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SkullSlowMotion : MonoBehaviour
@@ -22,7 +22,7 @@ public sealed class SkullSlowMotion : MonoBehaviour
     private float briefHold = .5f;
 
     private static SkullSlowMotion instance;
-    private float age = -1f, fixedBaseline = .02f, holding = 2.5f;
+    private float age = -1f, holding = 2.5f;
 
     /// <summary>How slowed the game is now: 0 at normal speed, 1 at the slowest.</summary>
     public static float Depth { get; private set; }
@@ -54,8 +54,6 @@ public sealed class SkullSlowMotion : MonoBehaviour
             holding = holdFor;
             return;
         }
-        // Read under any slowdown already running: CombatTimeEffects scales the physics step with the time scale.
-        if (Time.timeScale > 0f) fixedBaseline = Time.fixedDeltaTime / Time.timeScale;
         age = 0f;
         holding = holdFor;
     }
@@ -69,14 +67,11 @@ public sealed class SkullSlowMotion : MonoBehaviour
 
     private void Update()
     {
-        if (age < 0f || Time.timeScale <= 0f) return;
+        if (age < 0f || GamePause.IsPaused) return;
         age += Time.unscaledDeltaTime;
         if (age - easeIn - holding >= easeOut) { Stop(); return; }
-        float slowed = Slowed();
-        Depth = Mathf.SmoothStep(0f, 1f, slowed);
-        float now = Mathf.Lerp(1f, scale, Depth);
-        Time.timeScale = now;
-        Time.fixedDeltaTime = fixedBaseline * now;
+        Depth = Mathf.SmoothStep(0f, 1f, Slowed());
+        WorldTime.Hold(this, Mathf.Lerp(1f, scale, Depth));
     }
 
     /// <summary>Makes the slowdown's screen and sound before the first skull, so its first frame builds nothing (CombatWarmup).
@@ -98,8 +93,7 @@ public sealed class SkullSlowMotion : MonoBehaviour
     private void Stop()
     {
         age = -1f; Depth = 0f;
-        if (Time.timeScale > 0f) Time.timeScale = 1f;
-        Time.fixedDeltaTime = fixedBaseline;
+        WorldTime.Release(this);
     }
 
     private void OnDestroy()

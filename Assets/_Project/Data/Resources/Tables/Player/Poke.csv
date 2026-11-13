@@ -40,7 +40,7 @@ Touch.grid,.006,몸 표면을 점으로 줄이는 간격(m). 작을수록 정확
 Touch.bakeVertices,20000,처음 가리킬 때 친구 몸 표면을 한 프레임에 이만큼(정점 수)씩 읽는다(몸마다 한 번 / 옷을 바꾸면 다시)
 Touch.lose,.08,시선이 잠깐(초) 빗나가도 누르던 곳을 계속 누른다(가장자리 떨림 방지)
 Touch.slide,.06,누르던 곳에서 한 번에 이보다(m) 멀리 옮기면 앞 자국은 되돌아오고 새로 누른다
-Sound.volume,.55,누를 때 '뽁' 소리 크기(이동 음량 채널). Resources/Audio/Poke/Press·Lift에 소리 파일을 넣으면 그걸 쓴다
+Sound.volume,.55,누를 때 '뽁' 소리 크기(이동 음량 채널). Art/Resources/Audio/Poke/Press·Lift에 소리 파일을 넣으면 그걸 쓴다
 Sound.lift,.6,손끝을 뗄 때 소리 크기(누를 때의 몫)
 Sound.near,1,이 거리(m)까지는 다 들린다
 Sound.far,12,이 거리(m)에서 안 들린다

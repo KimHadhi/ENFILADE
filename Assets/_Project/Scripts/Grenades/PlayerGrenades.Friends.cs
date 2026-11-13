@@ -43,7 +43,7 @@ public sealed partial class PlayerGrenades
         released = true;
         if (thrownKind == Throwable.Knife)
         {
-            var knife = ThrownKnife.Throw(id, from, velocity, movement, false);
+            var knife = ThrownKnife.Throw(from, velocity, movement, false);
             if (knife != null) knives[id] = knife;
             Throwables.Play("KnifeThrow", from, .8f, 1.5f, 20f);
             Throwables.Play("KnifeThrowCloth", from, .7f, 1.5f, 15f);

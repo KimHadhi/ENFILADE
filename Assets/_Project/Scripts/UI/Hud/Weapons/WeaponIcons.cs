@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -148,7 +147,7 @@ public static class WeaponIcons
     public static float Number(string row, string field, float fallback)
     {
         string raw = Text(row, field, null);
-        return raw != null && float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        return raw != null && TableCells.TryNumber(raw, out float value) ? value : fallback;
     }
 
     private static string Text(string row, string field, string fallback)

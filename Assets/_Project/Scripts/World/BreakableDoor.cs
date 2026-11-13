@@ -35,12 +35,12 @@ public class BreakableDoor : MonoBehaviour, IBreakable
     public void Break(Vector3 hitPoint, Vector3 hitNormal, float impactSpeed)
     {
         if (IsBroken) return;
-        Shatter(hitPoint, impactSpeed, false);
+        Shatter(hitPoint, false);
         DoorBreaks.Tell(this, hitPoint, impactSpeed);
     }
 
     /// <summary>Breaks it on this PC only; quiet for a door that was down before this PC joined.</summary>
-    internal void Shatter(Vector3 hitPoint, float impactSpeed, bool quiet)
+    internal void Shatter(Vector3 hitPoint, bool quiet)
     {
         if (IsBroken) return;
         IsBroken = true;

@@ -41,8 +41,6 @@ internal sealed class FPSBodyRig
     private static readonly Element[] Layout = BuildLayout();
 
     public KRigComponent Component { get; private set; }
-    public Transform Skeleton { get; private set; }
-    public Transform Head { get; private set; }
     public Transform IkWeaponBone { get; private set; }
     /// <summary>The camera element under the head; its child, the camera socket, is where FPSAF's Ads lines the sight up.</summary>
     public Transform Camera { get; private set; }
@@ -172,8 +170,8 @@ internal sealed class FPSBodyRig
             }
         }
 
-        result.Skeleton = skeleton;
-        result.Head = head;
+        
+        
         result.IkWeaponBone = transforms[IkWeaponBoneIndex];
         result.WeaponBoneRight = transforms[WeaponBoneRightIndex];
         result.CameraSocket = transforms[CameraSocketIndex];

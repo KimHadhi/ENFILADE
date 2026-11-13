@@ -52,7 +52,7 @@ public sealed partial class DeathScreen
     {
         if (TowerRun.TryCheckpoint(out _)) return "death.next.wipe.tower";
         if (CampaignRun.TryCheckpoint(out _)) return "death.next.wipe.campaign";
-        if (waves == null) waves = FindFirstObjectByType<WaveManager>();
+        if (waves == null) waves = SceneOne<WaveManager>.Get();
         if (waves != null && waves.IsRunning) return "death.next.wipe.waves";
         return "death.next.wipe.start";
     }

@@ -281,9 +281,7 @@ public sealed class MeleeKnife : MonoBehaviour
         if (heavyCharge < 0f)
         {
             heavyCharge = DefaultHeavyCharge;
-            if (GameTables.TryGetRow(PlayerMovement.TableName, "Fists", out var row) && row.TryGetValue("heavyPunchCharge", out string text)
-                && float.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float read))
-                heavyCharge = read;
+            heavyCharge = GameTables.Number(PlayerMovement.TableName, "Fists", "heavyPunchCharge", heavyCharge);
         }
         return heavyCharge;
     }

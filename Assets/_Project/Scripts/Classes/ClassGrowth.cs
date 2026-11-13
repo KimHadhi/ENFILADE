@@ -166,7 +166,7 @@ public static class ClassGrowth
             foreach (string id in GameTables.RowIds(ClassTable))
             {
                 first ??= id;
-                if (GameTables.TryGetRow(ClassTable, id, out var row) && row.TryGetValue("ready", out string ready) && ready.Trim() == "1") return id;
+                if (GameTables.Flag(ClassTable, id, "ready", false)) return id;
             }
             return first ?? "Default";
         }
@@ -244,8 +244,7 @@ public static class ClassGrowth
     }
 
     private static float Number(string column, float fallback)
-        => GameTables.TryGetRow(GrowthTable, GrowthRow, out var row) && row.TryGetValue(column, out string text)
-            && float.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(GrowthTable, GrowthRow, column, fallback);
 
     private static bool Known(string id) => GameTables.TryGetRow(ClassTable, id, out _);
 
@@ -259,22 +258,12 @@ public static class ClassGrowth
 
     private static void Load()
     {
-        data = null;
-        try
-        {
-            if (File.Exists(FilePath)) data = JsonUtility.FromJson<Data>(File.ReadAllText(FilePath));
-        }
-        catch (Exception problem)
-        {
-            Debug.LogWarning("[클래스] 성장 파일을 읽지 못했어요: " + problem.Message);
-        }
-        if (data == null) data = new Data();
+        data = SaveFile.Read(FilePath, JsonUtility.FromJson<Data>) ?? new Data();
         if (data.classes == null) data.classes = new List<Entry>();
     }
 
     private static void Save()
     {
-        try { File.WriteAllText(FilePath, JsonUtility.ToJson(Current, true)); }
-        catch (Exception problem) { Debug.LogWarning("[클래스] 성장을 저장하지 못했어요: " + problem.Message); }
+        SaveFile.Write(FilePath, JsonUtility.ToJson(Current, true));
     }
 }

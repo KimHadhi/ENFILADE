@@ -100,7 +100,7 @@ public static class BodyShapes
     {
         value = 0f;
         return look != null && option != null && look.TryGet(option.Entry, out var pick)
-            && float.TryParse(pick.Item, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+            && TableCells.TryNumber(pick.Item, out value);
     }
 
     /// <summary>Writes the option's value into the outfit; null takes it out, back to the model as it came.</summary>

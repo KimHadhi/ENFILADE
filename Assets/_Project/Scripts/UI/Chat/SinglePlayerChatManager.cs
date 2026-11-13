@@ -43,8 +43,6 @@ public class SinglePlayerChatManager : MonoBehaviour
     private TMP_FontAsset lineFont;
     private bool commandsReady;
     private int lastClosedFrame = -1;
-    private CursorLockMode previousCursorLock;
-    private bool previousCursorVisible, playerMapEnabled, combatMapEnabled;
     private readonly List<string> submittedInputs = new List<string>();
     private int inputHistoryIndex;
     private string pendingDraft = "";
@@ -86,7 +84,7 @@ public class SinglePlayerChatManager : MonoBehaviour
     {
         PlayerChat.Heard -= OnHeard;
         GameTables.Reloaded -= OnTablesReloaded;
-        if (isChatOpen) CloseChat(false);
+        if (isChatOpen) CloseChat();
         if (ownsCycleChannelAction) cycleChannelAction?.Disable();
         cycleChannelAction = null; ownsCycleChannelAction = false;
     }
@@ -118,7 +116,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void Start()
     {
-        CloseChat(sendText: false);
+        CloseChat();
         chatInput.onSubmit.AddListener(OnInputSubmit);
         if (channelButton != null) channelButton.onClick.AddListener(CycleInputChannel);
         RefreshInputChannel();
@@ -126,7 +124,7 @@ public class SinglePlayerChatManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (isChatOpen) CloseChat(false);
+        if (isChatOpen) CloseChat();
         if (chatInput != null) chatInput.onSubmit.RemoveListener(OnInputSubmit);
         if (channelButton != null) channelButton.onClick.RemoveListener(CycleInputChannel);
     }
@@ -150,14 +148,14 @@ public class SinglePlayerChatManager : MonoBehaviour
         if (isChatOpen && Keyboard.current.downArrowKey.wasPressedThisFrame) RecallInput(1);
         if (isChatOpen && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            CloseChat(sendText: false);
+            CloseChat();
         }
 
         if (isChatOpen && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (EventSystem.current != null && !EventSystem.current.IsPointerOverGameObject())
             {
-                CloseChat(sendText: false);
+                CloseChat();
             }
         }
     }
@@ -196,20 +194,8 @@ public class SinglePlayerChatManager : MonoBehaviour
     public void OpenChat()
     {
         if (isChatOpen || chatInput == null) return;
-        previousCursorLock = Cursor.lockState;
-        previousCursorVisible = Cursor.visible;
         isChatOpen = true;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        if (Controls != null)
-        {
-            playerMapEnabled = playerInput.actions.FindActionMap("Player")?.enabled ?? false;
-            combatMapEnabled = playerInput.actions.FindActionMap("Combat")?.enabled ?? false;
-            playerInput.actions.FindActionMap("Player")?.Disable();
-            playerInput.actions.FindActionMap("Combat")?.Disable();
-        }
+        InputHold.Take(this);
 
         // 1. 전체 배경 켜기
         if (chatBoxBackground != null)
@@ -239,19 +225,13 @@ public class SinglePlayerChatManager : MonoBehaviour
         RequestScrollToBottom();
     }
 
-    public void CloseChat(bool sendText)
+    public void CloseChat()
     {
         bool wasOpen = isChatOpen;
         isChatOpen = false;
         lastClosedFrame = Time.frameCount;
 
-        if (wasOpen) { Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible; }
-
-        if (wasOpen && playerInput != null)
-        {
-            if (playerMapEnabled) playerInput.actions.FindActionMap("Player")?.Enable();
-            if (combatMapEnabled) playerInput.actions.FindActionMap("Combat")?.Enable();
-        }
+        if (wasOpen) InputHold.Release(this);
 
         // 1. 전체 배경 끄기
         if (chatBoxBackground != null)
@@ -306,7 +286,7 @@ public class SinglePlayerChatManager : MonoBehaviour
         if (!isChatOpen) return;
         SubmitText(text);
         chatInput.text = string.Empty;
-        CloseChat(sendText: true);
+        CloseChat();
     }
 
     public void SubmitText(string text)

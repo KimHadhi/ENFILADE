@@ -35,7 +35,6 @@ public sealed class ThrownKnife : MonoBehaviour
     private Vector3 onBone;
     private Quaternion turnOnBone;
 
-    internal ushort Id { get; private set; }
     /// <summary>
     /// How hard a knife's hit jolts its zombie, as a gun's flinch multiplier does a shot's (EnemyHitReaction: the shove
     /// back, the slow, the stagger of a headshot): GrenadeRules knifeFlinch.
@@ -48,14 +47,14 @@ public sealed class ThrownKnife : MonoBehaviour
     private static void ResetStatics() => knives.Clear();
 
     /// <summary>Throws one from the hand at this velocity. mine: this PC's player threw it, and its hit is theirs to land.</summary>
-    internal static ThrownKnife Throw(ushort id, Vector3 from, Vector3 velocity, PlayerMovement thrower, bool mine)
+    internal static ThrownKnife Throw(Vector3 from, Vector3 velocity, PlayerMovement thrower, bool mine)
     {
         var info = Throwables.Of(Throwable.Knife);
         var host = new GameObject("Thrown Knife") { layer = GoreGibs.Layer };
         RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(from, Quaternion.LookRotation(velocity.sqrMagnitude > 1e-4f ? velocity : Vector3.forward));
         var knife = host.AddComponent<ThrownKnife>();
-        knife.Id = id;
+        
         knife.thrower = thrower;
         knife.mine = mine;
         knife.velocity = velocity;

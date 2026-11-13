@@ -99,7 +99,7 @@ public sealed class GrenadeArm : PathArm
         if (weight <= 0f || !GrenadeArmPath.Sample(clip, time, out var key))
         {
             posedBefore = false;
-            ShowHeld(false);
+            ShowHolder(false);
             HeldPoint = hand.position;
             return;
         }
@@ -129,7 +129,7 @@ public sealed class GrenadeArm : PathArm
 
     private void OnDisable()
     {
-        ShowHeld(false);
+        ShowHolder(false);
         if (hands != null) hands.LendOffHand(this, 0f);
     }
 
@@ -274,7 +274,7 @@ public sealed class GrenadeArm : PathArm
     {
         if (!show || kind == Throwable.None)
         {
-            ShowHeld(false);
+            ShowHolder(false);
             HeldPoint = hand.position;
             return;
         }
@@ -290,7 +290,7 @@ public sealed class GrenadeArm : PathArm
         // A body imported at another scale (an avatar's armature at 100) must not scale the throwable with it.
         float scale = transform.lossyScale.x;
         holder.localScale = Vector3.one / Mathf.Max(1e-4f, Mathf.Abs(scale));
-        ShowHeld(true);
+        ShowHolder(true);
         HeldPoint = held.transform.position;
     }
 
@@ -312,11 +312,6 @@ public sealed class GrenadeArm : PathArm
         var skin = GetComponentInChildren<SkinnedMeshRenderer>();
         int layer = skin != null ? skin.gameObject.layer : gameObject.layer;
         foreach (var part in holder.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = layer;
-    }
-
-    private void ShowHeld(bool show)
-    {
-        if (holder != null && holder.gameObject.activeSelf != show) holder.gameObject.SetActive(show);
     }
 
     private void OnDestroy()

@@ -265,7 +265,7 @@ public sealed partial class WeaponController : MonoBehaviour
             return;
         }
 
-        if (muzzlePoint == null) muzzlePoint = owner.GetComponentInChildren<MuzzleEffects>(true)?.transform;
+        if (muzzlePoint == null) muzzlePoint = owner.GetComponentInChildren<MuzzleEffects>(true).OrNull()?.transform;
         // The gun rides the eyes, which the camera leaves behind in the F5 view, so it stays in the body's hands.
         eyes = Application.isPlaying && movement != null ? PlayerView.EyesOf(movement) : null;
         if (eyes == aimOrigin) eyes = null;
@@ -274,8 +274,8 @@ public sealed partial class WeaponController : MonoBehaviour
         presentation = FPSBody.Attach(this, weaponRoot, muzzlePoint);
         viewCamera = aimOrigin.GetComponent<Camera>();
         cameraEffects = owner.GetComponentInChildren<PlayerCameraEffects>();
-        crosshair = movement?.IsLocal != false ? DynamicCrosshairView.FindHud() : null;
-        dodgeActivation = movement?.Abilities?.Dodge.Activation ?? 0;
+        crosshair = movement.OrNull()?.IsLocal != false ? DynamicCrosshairView.FindHud() : null;
+        dodgeActivation = movement.OrNull()?.Abilities?.Dodge.Activation ?? 0;
         // Shot/reload presentation (sound, muzzle, brass, camera kick) subscribes to this controller's events.
         if (Application.isPlaying && GetComponent<WeaponFeedback>() == null) gameObject.AddComponent<WeaponFeedback>();
         if (Application.isPlaying && GetComponent<MuzzleLight>() == null) gameObject.AddComponent<MuzzleLight>();
@@ -355,7 +355,7 @@ public sealed partial class WeaponController : MonoBehaviour
     public void Equip(WeaponRuntime weapon)
     {
         Initialize();
-        look?.ClearRecoil();
+        look.OrNull()?.ClearRecoil();
         Runtime?.Interrupt();
         ResetPresentation();
 
@@ -379,7 +379,7 @@ public sealed partial class WeaponController : MonoBehaviour
     public void InterruptForSurvival(bool shove = false)
     {
         Runtime?.Interrupt(); AimBlend = 0f;
-        cameraEffects?.RefreshWeaponFov();
+        cameraEffects.OrNull()?.RefreshWeaponFov();
         if (crosshair != null) crosshair.SetCombatHidden(false);
         survivalInterrupted = true;
         if (shove) shoveRecovery = missedShoveRecovery;
@@ -429,12 +429,12 @@ public sealed partial class WeaponController : MonoBehaviour
             crosshair.SetPatternSpread(0f);
             crosshair.SetCombatHidden(false);
         }
-        cameraEffects?.RefreshWeaponFov();
+        cameraEffects.OrNull()?.RefreshWeaponFov();
     }
 
     private void OnDisable()
     {
-        look?.ClearRecoil();
+        look.OrNull()?.ClearRecoil();
         if (Runtime != null)
         {
             savedAmmo = Runtime.Ammo;

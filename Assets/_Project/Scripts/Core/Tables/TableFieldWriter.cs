@@ -9,7 +9,8 @@ internal enum TableWrite { NotFound, Written, Invalid }
 /// <summary>
 /// Writes one table cell into a field by name: a serialized (public or [SerializeField]) field of the object or its base
 /// classes, otherwise a public settable property (NavMeshAgent.speed). Lists use ';' or '|': "0.35;0.2;0.1".
-/// Vectors also accept "(10, 28)". Numbers use '.' as decimal point; a trailing '%' is ignored.
+/// Vectors also accept "(10, 28)". Numbers, whole numbers and yes/no are read by TableCells (TryNumber, TryWhole,
+/// TryFlag), the same as a row read by hand. A column's name need not match the field's upper and lower case.
 /// </summary>
 internal static class TableFieldWriter
 {
@@ -42,18 +43,29 @@ internal static class TableFieldWriter
         for (var t = type; t != null && found == null; t = t.BaseType)
         {
             var field = t.GetField(name, Declared);
-            if (field != null && !field.IsInitOnly && !field.IsLiteral
-                && (field.IsPublic || field.IsDefined(typeof(SerializeField), false)))
-                found = field;
+            if (field != null && Writable(field)) found = field;
         }
+        // A column written in another case than the field ("Damage" for damage) still means that field: a mod's table
+        // need not match the code letter for letter. The exact name, looked for first, wins where both exist.
+        for (var t = type; t != null && found == null; t = t.BaseType)
+            foreach (var field in t.GetFields(Declared))
+                if (string.Equals(field.Name, name, StringComparison.OrdinalIgnoreCase) && Writable(field))
+                {
+                    found = field;
+                    break;
+                }
         if (found == null)
         {
-            var property = type.GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+            var property = type.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
             if (property != null && property.GetSetMethod() != null && property.GetIndexParameters().Length == 0) found = property;
         }
         members[(type, name)] = found;
         return found;
     }
+
+    // A field a table may set: what the inspector would show (public, or marked [SerializeField]) and can be written.
+    private static bool Writable(FieldInfo field)
+        => !field.IsInitOnly && !field.IsLiteral && (field.IsPublic || field.IsDefined(typeof(SerializeField), false));
 
     private static bool TryConvert(string raw, Type type, out object value)
     {
@@ -62,22 +74,18 @@ internal static class TableFieldWriter
         if (type == typeof(string)) { value = raw; return true; }
         if (type == typeof(float))
         {
-            if (!TryFloat(raw, out float number)) return false;
+            if (!TableCells.TryNumber(raw, out float number)) return false;
             value = number; return true;
         }
         if (type == typeof(int))
         {
-            if (!TryFloat(raw, out float number) || Mathf.Round(number) != number || Math.Abs(number) > int.MaxValue) return false;
-            value = (int)number; return true;
+            if (!TableCells.TryWhole(raw, out int whole)) return false;
+            value = whole; return true;
         }
         if (type == typeof(bool))
         {
-            switch (raw.ToLowerInvariant())
-            {
-                case "true": case "1": case "yes": case "y": case "o": value = true; return true;
-                case "false": case "0": case "no": case "n": case "x": value = false; return true;
-                default: return false;
-            }
+            if (!TableCells.TryFlag(raw, out bool on)) return false;
+            value = on; return true;
         }
         if (type.IsEnum)
         {
@@ -98,7 +106,7 @@ internal static class TableFieldWriter
             var v = Vector4.zero;
             for (int i = 0; i < size; i++)
             {
-                if (!TryFloat(parts[i], out float component)) return false;
+                if (!TableCells.TryNumber(parts[i], out float component)) return false;
                 v[i] = component;
             }
             value = size == 2 ? (object)(Vector2)v : size == 3 ? (object)(Vector3)v : v;
@@ -127,13 +135,6 @@ internal static class TableFieldWriter
             value = array; return true;
         }
         return false;
-    }
-
-    private static bool TryFloat(string raw, out float value)
-    {
-        raw = raw.Trim().TrimEnd('%').Trim();
-        return float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
-            && !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     private static string TypeName(Type type)

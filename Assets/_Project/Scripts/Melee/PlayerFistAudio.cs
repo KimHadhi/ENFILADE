@@ -15,9 +15,6 @@ public sealed class PlayerFistAudio : MonoBehaviour
     private const int SwingVoices = 2, HitVoices = 4;
     private VoiceRing swingVoices, hitVoices;
     private AudioClip previousSwing, previousHit, previousHeavy, previousWall;
-    public FistSound LastSound { get; private set; }
-    public AudioClip LastClip { get; private set; }
-    public int PlayCount { get; private set; }
     /// <summary>A fist sound started on this player, for the other PCs to play too.</summary>
     public event System.Action<FistSound> Played;
 
@@ -58,8 +55,7 @@ public sealed class PlayerFistAudio : MonoBehaviour
     }
     private void Emit(FistSound sound, AudioClip clip, float volume)
     {
-        LastSound = sound; LastClip = clip; PlayCount++;
-        // The class knife in the melee slot sounds as a blade instead (MeleeKnife); the fist sound still goes to the other
+                // The class knife in the melee slot sounds as a blade instead (MeleeKnife); the fist sound still goes to the other
         // PCs, whose copy plays the knife's the same way.
         if (isActiveAndEnabled && Application.isPlaying && MeleeKnife.Sounds(this, sound)) { Played?.Invoke(sound); return; }
         if (clip == null || !isActiveAndEnabled || !Application.isPlaying) return;

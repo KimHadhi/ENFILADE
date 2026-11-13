@@ -168,14 +168,14 @@ public sealed class PlayerFootsteps : MonoBehaviour
         string cue = player.IsCrouchStance ? "StepSneak" : speed < runSpeed ? "StepWalk" : "StepRun";
         Vector3 point = reading.GroundPoint;
         LastSurface = surface;
-        Sounds()?.Play(cue, point, surface);
+        Sounds().OrNull()?.Play(cue, point, surface);
         Stepped?.Invoke(new Step(isLeft, point, surface, speed));
     }
 
     private void LiftOff(in PlayerBody.FootReading reading)
     {
         if (player.IsCrouchStance || GroundSpeed() < releaseSpeed) return;
-        Sounds()?.Play("StepRelease", reading.GroundPoint, Surfaces.Of(reading.Surface));
+        Sounds().OrNull()?.Play("StepRelease", reading.GroundPoint, Surfaces.Of(reading.Surface));
     }
 
     // Each foot has its own contact height; idle and locomotion clips need not match the model's rest pose.

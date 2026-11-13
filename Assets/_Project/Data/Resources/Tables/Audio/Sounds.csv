@@ -187,7 +187,7 @@ Voice/StrainHard,1,0.95,1,Beatrun Faith.StrainHard
 Voice/StrainMedium,1,0.9,1.05,Beatrun Faith.StrainMedium
 Voice/StrainSoft,1,0.9,1.05,Beatrun Faith.StrainSoft
 Bullets/Steel/Head,0.9,0.97,1.03,허브 사격장 강철 과녁의 머리 판에 총알이 맞을 때 나는 높은 '팅'(SteelTarget). 판이 있는 곳에서 3D로 나고 소리가 판에서 돌아오는 시간만큼 늦게 들린다(RangeTargets.csv soundSpeed). 지름 23cm 둥근 강철판의 고유 진동(1.2kHz 위 1·1.73·2.32·3.9배)을 합성(Tools/Audio/steel_target.py)
-Bullets/Steel/Body,0.9,0.97,1.03,강철 과녁의 몸통 판에 맞을 때 나는 낮은 '깡'(약 330Hz 위로 촘촘한 배음, 판 무게의 짧은 둔탁함). 산탄 여러 알이 한꺼번에 맞으면 한 번으로 합쳐 커진다. Tools/Audio/steel_target.py
+Bullets/Steel/Body,0.9,0.97,1.03,"강철 과녁의 몸통 판에 맞을 때 나는 낮은 '깡'(약 330Hz 위로 촘촘한 배음, 판 무게의 짧은 둔탁함). 산탄 여러 알이 한꺼번에 맞으면 한 번으로 합쳐 커진다. Tools/Audio/steel_target.py"
 Bullets/Steel/Down,0.85,0.95,1.03,강철 과녁이 쓰러져 땅에 닿을 때 나는 철컹(낮은 쿵·받침대 덜컹·몸통 판의 둔한 울림). 일어설 때는 몸통 소리가 작게 난다. Tools/Audio/steel_target.py
 Bullets/Ricochet,0.7,1,1,총알이 비스듬히 맞고 튕길 때(도탄). ArcCW 베이스(워크숍 2131057232) ricochet01~05. ArcCW처럼 높낮이 변화 없이 다섯 개 중에서 고른다
 Guns/Pistol/Shot,1,1,1,권총 발사. Hi-Octane Weapon Sounds(워크숍 3810863466) pistol_fire. 쏠 때마다의 높낮이는 GunFeel gunshotPitchJitter

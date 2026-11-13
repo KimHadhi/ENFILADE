@@ -59,7 +59,7 @@ internal sealed class EliteLight
         foreach (var candidate in owner.GetComponentsInChildren<Animator>())
         {
             if (!candidate.isHuman) continue;
-            at = candidate.GetBoneTransform(bone) ?? candidate.GetBoneTransform(otherwise);
+            at = candidate.GetBoneTransform(bone).OrNull() ?? candidate.GetBoneTransform(otherwise);
             break;
         }
         return at != null;

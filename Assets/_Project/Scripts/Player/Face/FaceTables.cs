@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -154,12 +153,8 @@ public static class FaceTables
     {
         Load();
         if (numbers.TryGetValue(key, out float value)) return value;
-        value = fallback;
         int dot = key.IndexOf('.');
-        if (dot > 0 && GameTables.TryGetRow(LifeTable, key.Substring(0, dot), out var row)
-            && row.TryGetValue(key.Substring(dot + 1), out string cell)
-            && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float read))
-            value = read;
+        value = dot > 0 ? GameTables.Number(LifeTable, key.Substring(0, dot), key.Substring(dot + 1), fallback) : fallback;
         numbers[key] = value;
         return value;
     }
@@ -235,7 +230,7 @@ public static class FaceTables
                 float scale = 1f;
                 string name = text.Substring(1).Trim();
                 int star = name.LastIndexOf(ScaleMark);
-                if (star > 0 && float.TryParse(name.Substring(star + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out float times))
+                if (star > 0 && TableCells.TryNumber(name.Substring(star + 1), out float times))
                 {
                     scale = Mathf.Max(0f, times);
                     name = name.Substring(0, star).Trim();
@@ -251,7 +246,7 @@ public static class FaceTables
             }
             float weight = 100f;
             int mark = text.LastIndexOf(WeightMark);
-            if (mark > 0 && float.TryParse(text.Substring(mark + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out float read))
+            if (mark > 0 && TableCells.TryNumber(text.Substring(mark + 1), out float read))
             {
                 weight = Mathf.Clamp(read, 0f, 100f);
                 text = text.Substring(0, mark);
@@ -292,7 +287,7 @@ public static class FaceTables
             bool read = true;
             for (int a = 0; a < 3 && read; a++)
             {
-                read = float.TryParse(axes[a].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value);
+                read = TableCells.TryNumber(axes[a].Trim(), out float value);
                 euler[a] = value;
             }
             if (read) bones.Add(new Bone(text.Substring(0, mark).Trim(), euler));

@@ -84,7 +84,7 @@ public sealed class PlayerExecution : MonoBehaviour
     {
         player = GetComponent<PlayerMovement>();
         var camera = GetComponentInChildren<Camera>(); aim = camera != null ? PlayerView.EyesOf(this) : transform;
-        if (Application.isPlaying && player?.IsLocal != false && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
+        if (Application.isPlaying && player.OrNull()?.IsLocal != false && GetComponent<ExecutionHUD>() == null) gameObject.AddComponent<ExecutionHUD>();
         // Paired executions for what the zombie is doing, on every PC's copy of the player too (ExecutionPairPlayer).
         if (Application.isPlaying) ExecutionPairPlayer.For(gameObject);
         // The class's knife through every execution, on every PC's copy of the player too (ExecutionKnife).
@@ -93,7 +93,7 @@ public sealed class PlayerExecution : MonoBehaviour
     private void Start()
     {
         var input = GetComponent<PlayerInput>();
-        interact = (input != null ? input.actions : InputSystem.actions)?.FindAction("Player/Interact", false);
+        interact = (input != null ? input.actions : InputSystem.actions).OrNull()?.FindAction("Player/Interact", false);
         buttons = GetComponent<PlayerWeaponInput>();
     }
     private bool CanOffer => isActiveAndEnabled && player != null && player.IsInitialized && player.InputAvailable
@@ -112,7 +112,7 @@ public sealed class PlayerExecution : MonoBehaviour
         victim = target; IsExecuting = true; elapsed = 0f; impacted = false;
         executing.Remove(this); executing.Add(this);
         foreach (var enemy in MeleeCombatTarget.Active)
-            if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
+            if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
     }
     private void Update()
     {
@@ -183,19 +183,19 @@ public sealed class PlayerExecution : MonoBehaviour
         // arm met nothing. The dash stops at dashStopDistance either way.
         approaching = Gap(target, out _) > dashStopDistance;
         executing.Remove(this); executing.Add(this);
-        player.PerfectDefense?.Cancel();
+        player.PerfectDefense.OrNull()?.Cancel();
         // Pressed during the parry's hit stop: the deathblow goes now, not once time lets go.
         var timeEffects = GetComponent<CombatTimeEffects>();
         var parry = GetComponent<ParryFeedback>();
         if (timeEffects != null && parry != null) timeEffects.Release(parry);
-        player.MeleeCombat?.CancelAction();
+        player.MeleeCombat.OrNull()?.CancelAction();
         player.HorizontalVelocity = Vector3.zero;
         CombatCueAudio.Play(gameObject, CombatCue.Grab);
-        GetComponent<WeaponController>()?.Runtime?.Interrupt();
-        GetComponent<PlayerWeaponInput>()?.RequireTriggerRelease();
+        GetComponent<WeaponController>().OrNull()?.Runtime?.Interrupt();
+        GetComponent<PlayerWeaponInput>().OrNull()?.RequireTriggerRelease();
         // Cancel windups immediately; newly spawned enemies also consult Suppresses in their own update.
         foreach (var enemy in MeleeCombatTarget.Active)
-            if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
+            if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
         Started?.Invoke(target); return true;
     }
     public void Tick(float dt)
@@ -242,7 +242,7 @@ public sealed class PlayerExecution : MonoBehaviour
         {
             for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) RestoreAmmo(slots.GetRuntime(i));
         }
-        else RestoreAmmo(GetComponent<WeaponController>()?.Runtime);
+        else RestoreAmmo(GetComponent<WeaponController>().OrNull()?.Runtime);
     }
     private void RestoreAmmo(WeaponRuntime weapon)
     {
@@ -288,7 +288,7 @@ public sealed class PlayerExecution : MonoBehaviour
         if (victim != null) victim.ReleaseExecution(this);
         victim = null;
         if (!wasExecuting) return;
-        GetComponent<PlayerWeaponInput>()?.RequireTriggerRelease();
+        GetComponent<PlayerWeaponInput>().OrNull()?.RequireTriggerRelease();
         Ended?.Invoke();
     }
     public void Retreat(NavMeshAgent agent, float dt)

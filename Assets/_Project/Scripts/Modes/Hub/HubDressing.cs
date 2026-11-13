@@ -57,7 +57,7 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
     private SinglePlayerChatManager chat;
     private Camera main, view;
     private int mainMask, heldSlot = -1, openedFrame, settleLeft;
-    private bool open, masked, mainPost, mapsHeld, playerMapWas, combatMapWas;
+    private bool open, masked, mainPost;
     private RectTransform canvas;
     private MainMenuWardrobe wardrobe;
     // The way the player is asked to face (world yaw, degrees): to the glass, then as turned.
@@ -115,7 +115,7 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
         look = who.GetComponent<PlayerLook>();
         slots = who.GetComponent<PlayerWeaponSlots>();
         headMotion = CombatHeadMotion.For(who);
-        chat = FindAnyObjectByType<SinglePlayerChatManager>();
+        chat = SceneOne<SinglePlayerChatManager>.Get();
         open = true;
         openedFrame = Time.frameCount;
         who.MoveTo(Spot() + Vector3.up * .05f);
@@ -124,9 +124,7 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
         // The gun away: slung on the back it shows in the glass, and the hands hang free.
         heldSlot = slots != null && !slots.HandsFull ? slots.SelectedSlot : -1;
         if (heldSlot >= 0) slots.SelectSlot(-1);
-        HoldInput(true);
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        InputHold.Take(this);
         SettingsMenu.EnsureEventSystem();
         MakeView();
         BuildCanvas();
@@ -207,28 +205,6 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
     }
 
     // The player's moving and fighting wait, as for the results; whatever was on comes back after.
-    private void HoldInput(bool hold)
-    {
-        var actions = InputSystem.actions;
-        if (actions == null) return;
-        var moves = actions.FindActionMap("Player", false);
-        var combat = actions.FindActionMap("Combat", false);
-        if (hold)
-        {
-            if (mapsHeld) return;
-            mapsHeld = true;
-            playerMapWas = moves != null && moves.enabled;
-            combatMapWas = combat != null && combat.enabled;
-            moves?.Disable();
-            combat?.Disable();
-            return;
-        }
-        if (!mapsHeld) return;
-        mapsHeld = false;
-        if (playerMapWas) moves?.Enable();
-        if (combatMapWas) combat?.Enable();
-    }
-
     // ---- The screen: the title screen's wardrobe over the mirror ----
 
     private void BuildCanvas()
@@ -358,8 +334,8 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
         // Round to the asked way through the look itself, as the results turn the lineup (PlayerLook takes it this frame),
         // and looking level: the spine and head bend with the view, and the look down at the glass bowed the reflection.
         float off = Mathf.DeltaAngle(mine.transform.eulerAngles.y, facing);
-        if (Mathf.Abs(off) > .2f) headMotion?.Turn(off * Mathf.Min(1f, dt * TurnRate));
-        look?.EasePitch(0f, 1f - Mathf.Exp(-PitchRate * dt));
+        if (Mathf.Abs(off) > .2f) headMotion.OrNull()?.Turn(off * Mathf.Min(1f, dt * TurnRate));
+        look.OrNull()?.EasePitch(0f, 1f - Mathf.Exp(-PitchRate * dt));
         if (highlighted != null) OutfitGhost.Breathe(Time.unscaledTime);
     }
 
@@ -538,13 +514,8 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
             main.GetUniversalAdditionalCameraData().renderPostProcessing = mainPost;
         }
         masked = false;
-        HoldInput(false);
+        InputHold.Release(this);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-        if (!SettingsMenu.IsOpen)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
         if (slots != null && heldSlot >= 0) slots.SelectSlot(heldSlot);
         heldSlot = -1;
     }

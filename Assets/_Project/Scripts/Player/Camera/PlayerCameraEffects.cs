@@ -192,7 +192,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         if (body == null || !body.isActiveAndEnabled || body.BodyAnimator == null || body.View != targetCamera)
         {
             targetCamera.position = origin + offset + HeadDisplacement;
-            movement.GetComponent<PlayerLeanHitboxes>()?.Sync(offset);
+            movement.GetComponent<PlayerLeanHitboxes>().OrNull()?.Sync(offset);
         }
     }
 

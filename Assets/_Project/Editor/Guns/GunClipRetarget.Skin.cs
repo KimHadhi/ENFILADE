@@ -92,7 +92,7 @@ internal static partial class GunClipRetarget
                 return null;
             }
             CheckFacing(source, body, skin);
-            if (Mathf.Abs(Mathf.DeltaAngle(Yaw(source.InverseTransformDirection(SourceForward(source))), 0f)) > 10f)
+            if (Mathf.Abs(Mathf.DeltaAngle(MovementFixtures.YawOf(source.InverseTransformDirection(SourceForward(source))), 0f)) > 10f)
                 Debug.LogWarning($"GunClipRetarget: {arms.name} does not face +Z in its own model space; the guns may sit turned on the bodies.", arms);
 
             var made = new List<GunBakes.Entry>();
@@ -252,7 +252,7 @@ internal static partial class GunClipRetarget
         try
         {
             ResetRootRotation(instance.transform);
-            float turn = Mathf.DeltaAngle(Yaw(instance.transform.InverseTransformDirection(Forward(instance.transform))), armsYaw);
+            float turn = Mathf.DeltaAngle(MovementFixtures.YawOf(instance.transform.InverseTransformDirection(Forward(instance.transform))), armsYaw);
             if (Mathf.Abs(turn) > .5f)
                 foreach (Transform child in instance.transform)
                     child.RotateAround(instance.transform.position, instance.transform.up, turn);

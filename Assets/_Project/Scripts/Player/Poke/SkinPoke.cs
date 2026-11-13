@@ -346,9 +346,9 @@ public sealed class SkinPoke : MonoBehaviour
 
     // A recording in Resources/Audio/Poke (Press, Lift) plays if there is one; else a made one.
     private static AudioClip PressClip => pressClip != null ? pressClip
-        : pressClip = Resources.Load<AudioClip>("Audio/Poke/Press") ?? Synth("Poke Press", 780f, 330f, .11f, .6f);
+        : pressClip = Resources.Load<AudioClip>("Audio/Poke/Press").OrNull() ?? Synth("Poke Press", 780f, 330f, .11f, .6f);
     private static AudioClip LiftClip => liftClip != null ? liftClip
-        : liftClip = Resources.Load<AudioClip>("Audio/Poke/Lift") ?? Synth("Poke Lift", 360f, 840f, .08f, .2f);
+        : liftClip = Resources.Load<AudioClip>("Audio/Poke/Lift").OrNull() ?? Synth("Poke Lift", 360f, 840f, .08f, .2f);
 
     // A rounded little chirp gliding from one pitch to another (Hz) over its length (s), with a soft lower body.
     private static AudioClip Synth(string name, float from, float to, float length, float body)

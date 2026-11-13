@@ -139,13 +139,18 @@ public static class GameMods
             {
                 string tables = Path.Combine(folder, TablesFolder);
                 if (Directory.Exists(tables))
-                    foreach (string file in Directory.GetFiles(tables, "*.csv", SearchOption.AllDirectories))
+                {
+                    // In name order, so "the first one found" is the same file on every PC (the disk's own order is not).
+                    string[] files = Directory.GetFiles(tables, "*.csv", SearchOption.AllDirectories);
+                    Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+                    foreach (string file in files)
                     {
                         string table = Path.GetFileNameWithoutExtension(file);
                         if (mod.Tables.ContainsKey(table))
                             Debug.LogWarning("[Mods] " + name + ": " + table + ".csv가 두 곳에 있습니다. 먼저 찾은 것을 씁니다.");
                         else mod.Tables[table] = file;
                     }
+                }
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
             {
@@ -162,18 +167,58 @@ public static class GameMods
         return found;
     }
 
-    // A file's text, or null when it isn't there or can't be read (Excel holds an open file to itself).
+    // A file's text, or null when it isn't there or can't be read. The file is opened so that a program that has it
+    // open for writing (a text editor, a spreadsheet) does not shut the game out.
     private static string Read(string path, bool quiet = false)
     {
         try
         {
-            return File.Exists(path) ? File.ReadAllText(path) : null;
+            if (!File.Exists(path)) return null;
+            byte[] bytes;
+            using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            {
+                bytes = new byte[file.Length];
+                int read = 0;
+                while (read < bytes.Length)
+                {
+                    int got = file.Read(bytes, read, bytes.Length - read);
+                    if (got <= 0) break;
+                    read += got;
+                }
+                if (read < bytes.Length) Array.Resize(ref bytes, read);
+            }
+            return Decode(bytes, path, quiet);
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {
             if (!quiet) Debug.LogWarning("[Mods] " + path + " 을 읽지 못했습니다(다른 프로그램이 열어 두었나요?): " + error.Message);
             return null;
         }
+    }
+
+    // Bytes as text. The game's files are UTF-8; a spreadsheet's plain "CSV" on a Korean PC is CP949 instead, which
+    // read as UTF-8 turns every Korean letter into a box. Such a file is read in the PC's own code page where that
+    // is there, and either way the maker is told how to save it.
+    private static string Decode(byte[] bytes, string path, bool quiet)
+    {
+        if (bytes.Length >= 2 && ((bytes[0] == 0xFF && bytes[1] == 0xFE) || (bytes[0] == 0xFE && bytes[1] == 0xFF)))
+            return (bytes[0] == 0xFF ? Encoding.Unicode : Encoding.BigEndianUnicode).GetString(bytes, 2, bytes.Length - 2);
+        int start = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        try
+        {
+            return new UTF8Encoding(false, true).GetString(bytes, start, bytes.Length - start);
+        }
+        catch (DecoderFallbackException) { }
+        string text = null;
+        try
+        {
+            text = Encoding.GetEncoding(949).GetString(bytes);
+        }
+        catch (Exception error) when (error is ArgumentException || error is NotSupportedException) { }
+        if (!quiet)
+            Debug.LogWarning("[Mods] " + path + " 은 UTF-8이 아닙니다. " + (text != null ? "한국어 Windows 글자(CP949)로 읽었습니다. " : "한글이 깨져 보일 수 있습니다. ")
+                + "엑셀에서는 'CSV UTF-8(쉼표로 분리)'로 저장해 주세요.");
+        return text ?? Encoding.UTF8.GetString(bytes, start, bytes.Length - start);
     }
 
     private static string FirstLine(string text)

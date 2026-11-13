@@ -118,7 +118,7 @@ public sealed class DamagePopupManager : MonoBehaviour
             var numbers = groups[g].numbers;
             for (int i = numbers.Count - 1; i >= 0; i--)
             {
-                numbers[i].Tick(dt, layout, settings);
+                numbers[i].Tick(dt, layout);
                 if (off || numbers[i].Finished(settings)) { Return(numbers[i]); numbers.RemoveAt(i); }
             }
             if (numbers.Count == 0) Close(g);

@@ -32,7 +32,7 @@ public sealed class BountySkulls : MonoBehaviour
     private void LateUpdate()
     {
         marked.Clear();
-        if (PackFx.Number(Use, "on", 1f) > .5f)
+        if (PackFx.On(Use))
             foreach (var hunter in PlayerRoster.All)
             {
                 if (hunter == null) continue;

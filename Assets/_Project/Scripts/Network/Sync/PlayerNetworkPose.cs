@@ -129,7 +129,7 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
     {
         var settings = GameSettings.Current;
         // Outfits are kept under the character actually worn, the profile's default when none was picked.
-        string skinId = PlayerBodyProfile.Load()?.CurrentSkin?.Id ?? settings.characterSkin;
+        string skinId = PlayerBodyProfile.Load().OrNull()?.CurrentSkin?.Id ?? settings.characterSkin;
         string look = OutfitLook.Join(PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant),
             OutfitLook.SavedText(skinId));
         if (skin.Value.ToString() != look) skin.Value = look;

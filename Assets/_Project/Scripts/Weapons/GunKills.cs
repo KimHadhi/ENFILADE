@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -164,15 +163,7 @@ public static class GunKills
     private static Data Load()
     {
         if (data != null) return data;
-        try
-        {
-            if (File.Exists(FilePath)) data = JsonUtility.FromJson<Data>(File.ReadAllText(FilePath));
-        }
-        catch (Exception problem)
-        {
-            Debug.LogWarning("[킬 카운트] 기록 파일을 읽지 못했어요: " + problem.Message);
-        }
-        if (data == null) data = new Data();
+        data = SaveFile.Read(FilePath, JsonUtility.FromJson<Data>) ?? new Data();
         if (data.guns == null) data.guns = new List<Entry>();
         // Before rank-ups waited for the look-over, each was announced in the fight as it came: none of theirs waits.
         foreach (var entry in data.guns)
@@ -183,16 +174,10 @@ public static class GunKills
     private static void Save()
     {
         if (data == null) return;
-        try
-        {
-            File.WriteAllText(FilePath, JsonUtility.ToJson(data, true));
-            dirty = false;
-            savedAt = Time.unscaledTime;
-        }
-        catch (Exception problem)
-        {
-            Debug.LogWarning("[킬 카운트] 기록 파일을 쓰지 못했어요: " + problem.Message);
-        }
+        // Not written (the disk full, the file held): it stays to be saved, and is tried again at the next save.
+        if (!SaveFile.Write(FilePath, JsonUtility.ToJson(data, true))) return;
+        dirty = false;
+        savedAt = Time.unscaledTime;
     }
 
     // The thresholds from the table, lowest first, the first always 0.
@@ -204,7 +189,7 @@ public static class GunKills
             var list = new List<int>();
             if (GameTables.TryGetRow(TableName, "Ranks", out var row) && row.TryGetValue("kills", out string raw))
                 foreach (string part in raw.Split(';'))
-                    if (int.TryParse(part.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int at) && at >= 0) list.Add(at);
+                    if (TableCells.TryWhole(part.Trim(), out int at) && at >= 0) list.Add(at);
             if (list.Count == 0) list.AddRange(DefaultRanks);
             list.Sort();
             if (list[0] != 0) list.Insert(0, 0);

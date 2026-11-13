@@ -25,7 +25,7 @@ public static class PlayerConsoleCommands
                 else if (part.Equals("exploder", StringComparison.OrdinalIgnoreCase) || part == "자폭") { kind = ZombieKind.Exploder; rank ??= EnemyRank.Elite; }
                 else if (part.Equals("charger", StringComparison.OrdinalIgnoreCase) || part == "돌진") { kind = ZombieKind.Charger; rank ??= EnemyRank.Elite; }
                 else if (char.IsLetter(part[0]) && Enum.TryParse(part, true, out ZombieKind named)) { kind = named; rank ??= EnemyRank.Elite; } // ninja, candyman, breadbag: any kind by its name
-                else if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1) return usage;
+                else if (!TableCells.TryWhole(part, out count) || count < 1) return usage;
             }
             if (!p.DamageReceiver.IsAlive) return "사망 상태입니다. /revive를 먼저 사용하세요.";
             return ConsoleEnemySpawner.Spawn(p, count, rank, calm, kind);
@@ -39,7 +39,7 @@ public static class PlayerConsoleCommands
             foreach (string part in args.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 // A number first: Enum.TryParse would take "3" as a wake too.
-                if (int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index)) { if (index < 0) return usage; only = index; }
+                if (TableCells.TryWhole(part, out int index)) { if (index < 0) return usage; only = index; }
                 else if (Enum.TryParse(part, true, out ConsolePoseTest.Wake way)) wake = way;
                 else if (char.IsLetter(part[0]) && Enum.TryParse(part, true, out ZombieKind named)) kind = named;
                 else return usage;
@@ -57,7 +57,7 @@ public static class PlayerConsoleCommands
             string text = args.Trim();
             if (text.Equals("clear", StringComparison.OrdinalIgnoreCase)) return ConsoleDummyPlayers.Clear();
             int count = 1;
-            if (text.Length > 0 && (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) || count < 1))
+            if (text.Length > 0 && (!TableCells.TryWhole(text, out count) || count < 1))
                 return "사용법: /dummy [수량] 또는 /dummy clear";
             return ConsoleDummyPlayers.Spawn(p, count);
         }));
@@ -68,7 +68,7 @@ public static class PlayerConsoleCommands
             int count = slots != null ? slots.RefillAmmo() : 0;
             if (slots == null)
             {
-                var runtime = p.GetComponentInChildren<WeaponController>(true)?.Runtime;
+                var runtime = p.GetComponentInChildren<WeaponController>(true).OrNull()?.Runtime;
                 if (runtime != null && runtime.Data.Category == WeaponCategory.Ranged) { runtime.RefillAmmo(); count = 1; }
             }
             return count > 0 ? $"총기 {count}정의 탄창과 예비탄을 보충했습니다." : "탄약을 보충할 총기를 보유하고 있지 않습니다.";
@@ -83,7 +83,7 @@ public static class PlayerConsoleCommands
             string list = string.Join(", ", guns.ConvertAll(gun => gun.name));
             string wanted = Plain(args);
             if (wanted.Length == 0) return $"사용법: /gun 이름 — 있는 총: {list}";
-            WeaponData found = guns.Find(gun => Plain(gun.name) == wanted || Plain(gun.DisplayName) == wanted)
+            WeaponData found = guns.Find(gun => Plain(gun.name) == wanted || Plain(gun.DisplayName) == wanted).OrNull()
                 ?? guns.Find(gun => Plain(gun.name).Contains(wanted) || Plain(gun.DisplayName).Contains(wanted));
             if (found == null) return $"'{args.Trim()}' 총이 없습니다. 있는 총: {list}";
             var slots = p.GetComponentInChildren<PlayerWeaponSlots>(true);
@@ -142,7 +142,7 @@ public static class PlayerConsoleCommands
         {
             int grade = 0;
             if (!string.IsNullOrWhiteSpace(args)
-                && (!int.TryParse(args.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out grade) || grade < 0 || grade >= CounterBanner.Grades))
+                && (!TableCells.TryWhole(args.Trim(), out grade) || grade < 0 || grade >= CounterBanner.Grades))
                 return "사용법: /counter [0~" + (CounterBanner.Grades - 1) + "]";
             if (!p.TryGetComponent(out ShoveCounter counter)) return "카운터를 쓸 수 없는 상태입니다.";
             counter.PreviewBanner(grade);
@@ -184,7 +184,7 @@ public static class PlayerConsoleCommands
         router.Register("maxhp", "값 또는 +증가량/-감소량 — 최대 HP 설정/증감 (최소 1, 자동 회복 없음)", args => WithPlayer(resolvePlayer, p =>
         {
             string text = args.Trim();
-            if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+            if (!TableCells.TryNumber(text, out float value)
                 || float.IsNaN(value) || float.IsInfinity(value))
                 return "사용법: /maxhp 200 (지정), /maxhp +10 (증가), /maxhp -10 (감소). 최대 HP는 최소 1입니다.";
             bool relative = text[0] == '+' || text[0] == '-';
@@ -238,7 +238,7 @@ public static class PlayerConsoleCommands
 
     internal static bool Amount(string args, out float amount)
     {
-        return float.TryParse(args,NumberStyles.Float,CultureInfo.InvariantCulture,out amount)
+        return TableCells.TryNumber(args, out amount)
             && !float.IsNaN(amount) && !float.IsInfinity(amount) && amount >= 0f;
     }
     private static string Usage(string syntax) => "사용법: /" + syntax + " · 0 이상의 숫자를 입력하세요 (소수점: .).";

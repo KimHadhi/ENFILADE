@@ -137,7 +137,7 @@ public sealed partial class ShopMenu : MonoBehaviour
     private float messageLeft, spentAt = float.NegativeInfinity;
     // The money shown: counts up as the panel opens, runs down after a buy (won).
     private double moneyShown;
-    private bool open, playerMapWas, combatMapWas;
+    private bool open;
     // The frame it opened on: the F that opened it still reads as pressed in this frame's Update, which would close it again
     // at once whenever this Update runs after the counter's (the same trap the gun's customize menu fell into, 2026-11-09).
     private int openedFrame = -1;
@@ -179,9 +179,7 @@ public sealed partial class ShopMenu : MonoBehaviour
         Say(null, KitStyle.Text);
         ShowPage(null, CardsFrom);
         Refresh();
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        HoldInput(true);
+        InputHold.Take(this);
     }
 
     // The X goes red and turns while the panel slides away; the cursor and the player's input come back once it's gone.
@@ -199,29 +197,7 @@ public sealed partial class ShopMenu : MonoBehaviour
         closedFrame = Time.frameCount;
         if (canvas != null) canvas.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-        HoldInput(false);
-        if (SettingsMenu.IsOpen) return;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
-    // The player's move and combat input wait while shopping, as for the chat; whatever was on comes back after.
-    private void HoldInput(bool hold)
-    {
-        var actions = InputSystem.actions;
-        if (actions == null) return;
-        var moves = actions.FindActionMap("Player", false);
-        var combat = actions.FindActionMap("Combat", false);
-        if (hold)
-        {
-            playerMapWas = moves != null && moves.enabled;
-            combatMapWas = combat != null && combat.enabled;
-            moves?.Disable();
-            combat?.Disable();
-            return;
-        }
-        if (playerMapWas) moves?.Enable();
-        if (combatMapWas) combat?.Enable();
+        InputHold.Release(this);
     }
 
     private void Update()

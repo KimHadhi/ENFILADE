@@ -49,7 +49,8 @@ public sealed class PlayerLook : MonoBehaviour
 
     private void Start()
     {
-        // 게임 시작 시 기본 마우스 가둠
+        // The view takes the pointer as the game starts, unless a screen that needs it is up (InputHold).
+        if (InputHold.Any(Held.Cursor)) return;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }

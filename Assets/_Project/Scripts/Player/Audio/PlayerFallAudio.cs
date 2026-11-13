@@ -75,7 +75,7 @@ public sealed class PlayerFallAudio : MonoBehaviour
             if (view != null) head = view.transform;
         }
         Vector3 point = head != null ? head.position : transform.position + Vector3.up * 1.6f;
-        voices?.Play(HeartbeatCue, point, null, beatVolume);
+        voices.OrNull()?.Play(HeartbeatCue, point, null, beatVolume);
         beatVolume = Mathf.Min(1f, beatVolume + heartbeatVolumeStep);
     }
 }

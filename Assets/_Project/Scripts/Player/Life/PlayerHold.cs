@@ -382,7 +382,7 @@ public sealed class PlayerHold : MonoBehaviour
         {
             breakFreeAt = Time.time + Mathf.Max(0f, BreakFreeEvery);
             ThrowOff(false);
-            GetComponent<PlayerFistAudio>()?.PlayHeavyHit();
+            GetComponent<PlayerFistAudio>().OrNull()?.PlayHeavyHit();
             return true;
         }
         if (!CanBurstShield || Time.time - pinnedAt < shieldBurstFrom) return false;
@@ -410,7 +410,7 @@ public sealed class PlayerHold : MonoBehaviour
             {
                 Vector3 away = Vector3.ProjectOnPlane(holder.Enemy.transform.position - transform.position, Vector3.up);
                 away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
-                holder.Enemy.GetComponent<EnemyCombatAI>()?.CancelAttack();
+                holder.Enemy.GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
                 if (holder.Melee != null && holder.Melee.IsAvailable)
                 {
                     if (holder.Melee.Steadfast) holder.Melee.Interrupt(shieldBurstKnockdown);
@@ -435,7 +435,7 @@ public sealed class PlayerHold : MonoBehaviour
         Vector3 to = target.transform.position + Vector3.up * .8f - view.position;
         to = to.sqrMagnitude > 1e-4f ? to.normalized : view.forward;
         Vector3 contact = view.position + Vector3.Slerp(view.forward, to, .6f).normalized * .7f;
-        GetComponent<ParryFeedback>()?.CounterBurst(contact, (to * .35f + view.up * .5f).normalized, 1.2f);
+        GetComponent<ParryFeedback>().OrNull()?.CounterBurst(contact, (to * .35f + view.up * .5f).normalized, 1.2f);
         if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
     }
 
@@ -572,7 +572,7 @@ public sealed class PlayerHold : MonoBehaviour
     }
 
     private void Jolt(Vector2 jolt)
-        => GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(jolt.x, 0f, jolt.y * (Random.value < .5f ? -1f : 1f)));
+        => GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(new Vector3(jolt.x, 0f, jolt.y * (Random.value < .5f ? -1f : 1f)));
 
     // In a room the host runs the zombies: it hears who holds this player from their own PC.
     private void Share(EnemyHealth enemy, bool holding, HoldKind kind)

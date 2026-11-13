@@ -64,7 +64,7 @@ public static class Wallet
             if (shares.Length == 0) return 1f;
             int players = Mathf.Max(1, PlayerRoster.All.Count);
             string pick = shares[Mathf.Clamp(players - 1, 0, shares.Length - 1)];
-            return float.TryParse(pick, NumberStyles.Float, CultureInfo.InvariantCulture, out float share) ? Mathf.Max(0f, share) : 1f;
+            return TableCells.TryNumber(pick, out float share) ? Mathf.Max(0f, share) : 1f;
         }
     }
 
@@ -133,10 +133,8 @@ public static class Wallet
     }
 
     private static float Number(string column, float fallback)
-        => GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue(column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(TableName, TableRow, column, fallback);
 
     private static string Text(string column, string fallback)
-        => GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue(column, out string text) && text.Trim().Length > 0
-            ? text.Trim() : fallback;
+        => GameTables.Text(TableName, TableRow, column, fallback);
 }

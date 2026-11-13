@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -44,7 +43,7 @@ public static class GrenadePackFx
         {
             int colon = entry.LastIndexOf(':');
             string path = colon > 0 ? entry.Substring(0, colon) : entry;
-            int count = colon > 0 && int.TryParse(entry.Substring(colon + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1;
+            int count = colon > 0 && TableCells.TryWhole(entry.Substring(colon + 1), out int n) ? n : 1;
             foreach (var part in Named(root, path))
             {
                 if (!part.gameObject.activeInHierarchy || !part.TryGetComponent(out ParticleSystem system)) continue;
@@ -81,23 +80,13 @@ public static class GrenadePackFx
     private static IEnumerable<Transform> Named(Transform root, string list)
     {
         foreach (string part in TableCells.Parts(list))
-            foreach (var found in Matching(root, part)) yield return found;
+            foreach (var found in PackFx.PartsNamed(root, part)) yield return found;
     }
 
     private static Transform First(Transform root, string part)
     {
         if (string.IsNullOrWhiteSpace(part)) return null;
-        foreach (var found in Matching(root, part.Trim())) return found;
+        foreach (var found in PackFx.PartsNamed(root, part.Trim())) return found;
         return null;
-    }
-
-    private static IEnumerable<Transform> Matching(Transform root, string part)
-    {
-        bool path = part.IndexOf('/') >= 0;
-        foreach (var t in root.GetComponentsInChildren<Transform>(true))
-        {
-            if (t == root) continue;
-            if (path ? Hierarchy.PathOf(t, root) == part : t.name == part) yield return t;
-        }
     }
 }

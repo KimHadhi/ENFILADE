@@ -112,7 +112,7 @@ public sealed class PlayerFixtureAudio : MonoBehaviour
     private void Cue(string cue, string surface, bool atHands = false)
     {
         Vector3 point = transform.position + (atHands ? Vector3.up * 1.6f : Vector3.zero);
-        Sounds()?.Play(cue, point, surface);
+        Sounds().OrNull()?.Play(cue, point, surface);
     }
 
     private CharacterSounds Sounds() => sounds != null ? sounds : sounds = GetComponent<CharacterSounds>();

@@ -39,12 +39,12 @@ Fists.guardBreakPostureDamage,55,가드 브레이크 자세 피해
 Defense.parryOpensCounter,false,패링이 반격 창을 연다. 반격 스킬이 생기기 전에는 끈다(완벽 회피의 반격은 그대로)
 Defense.postureBreakTimeScale,0.3,패링으로 체간을 무너뜨린 순간의 시간 배율
 Defense.postureBreakSlowSeconds,0.35,그 슬로모션 길이(실제 초). 처형을 시작하면 바로 끝난다. 0이면 끈다
-Defense.counterGuardSeconds,0.5,반격한 뒤 무적 시간(실제 초). 반격 창이 열린 동안과 달려드는 동안에도 무적이고, 회피 판정은 무적보다 먼저 본다
+Defense.counterGuardSeconds,0.5,"반격한 뒤 무적 시간(실제 초). 반격 창이 열린 동안과 달려드는 동안에도 무적이고, 회피 판정은 무적보다 먼저 본다"
 Defense.counterDashSpeed,14,반격 때 공격자에게 달려드는 속도(m/s)
-Defense.counterDashTimeout,0.35,이 시간(초) 안에 붙지 못해도 그 자리에서 주먹을 낸다. 그때는 빗나갈 수 있다. 가는 길이 다른 적에게 막히면 기다리지 않고 바로 낸다. 멈추는 거리 + 속도 × 이 시간(지금 5.4m, 내 몸 가운데에서 상대 몸 표면까지) 안의 적만 반격할 수 있다. 달려드는 동안에는 회피가 나가지 않는다
+Defense.counterDashTimeout,0.35,"이 시간(초) 안에 붙지 못해도 그 자리에서 주먹을 낸다. 그때는 빗나갈 수 있다. 가는 길이 다른 적에게 막히면 기다리지 않고 바로 낸다. 멈추는 거리 + 속도 × 이 시간(지금 5.4m, 내 몸 가운데에서 상대 몸 표면까지) 안의 적만 반격할 수 있다. 달려드는 동안에는 회피가 나가지 않는다"
 Defense.counterStopDistance,0.5,달려들기를 멈추는 거리(m). 내 몸 가운데에서 상대 몸 표면까지
 Defense.counterStrikeReach,1.4,반격 주먹이 닿는 거리(m). 눈에서 상대 몸까지이고 사이에 막힌 것이 없어야 맞는다. 다른 적이 사이에 끼어 있으면 그 적이 맞는다
-Defense.counterPickDegreesPerMetre,10,한 번에 여러 적의 공격을 피했을 때 반격할 적 고르기: 1m 더 먼 것을 시선에서 이만큼(도) 더 벗어난 것과 같게 친다. 달려들기가 닿는 적 중에서 고르고, 닿는 적이 없으면 누르는 순간 반격 창과 슬로 모션이 끝난다
+Defense.counterPickDegreesPerMetre,10,"한 번에 여러 적의 공격을 피했을 때 반격할 적 고르기: 1m 더 먼 것을 시선에서 이만큼(도) 더 벗어난 것과 같게 친다. 달려들기가 닿는 적 중에서 고르고, 닿는 적이 없으면 누르는 순간 반격 창과 슬로 모션이 끝난다"
 Defense.elbowFromAngle,60,반격할 적이 시선에서 이 각도(도)보다 벗어나 있으면(옆이나 뒤) 주먹 대신 팔꿈치로 뒤를 찍는다. 안쪽이면 곧은 주먹
 Defense.elbowGlance,40,팔꿈치 반격 때 그 적 쪽 어깨 너머로 돌아보는 각도(도). 조준은 그대로 둔다
 Defense.elbowGlanceTiming,0.1;0.05;0.15,그 돌아보기의 나가기;머무르기;돌아오기(실제 초)
@@ -59,7 +59,7 @@ Slip.dip,0.06,비키는 동안 머리가 숙여지는 깊이(m)
 Slip.glint,0.35,공격이 지나간 쪽 화면 가장자리가 빛나는 세기(0~1). 0이면 끈다
 Slip.glintSeconds,0.35,그 빛이 사라지는 시간(실제 초)
 Slip.glintColor,#E0EDF7,그 빛의 색
-Slip.lockAngle,40,슬립하면 시선이 공격한 적에게 붙는다(비켜 돌기). 그 적이 시선에서 이 각도(도) 안에 있을 때만. 슬립하는 동안 머리가 비켜 나갔다 돌아와도 적이 화면 가운데에 있고, 곧은 주먹 반격은 달려드는 동안에도 그 적을 본다. 0이면 끈다
+Slip.lockAngle,40,"슬립하면 시선이 공격한 적에게 붙는다(비켜 돌기). 그 적이 시선에서 이 각도(도) 안에 있을 때만. 슬립하는 동안 머리가 비켜 나갔다 돌아와도 적이 화면 가운데에 있고, 곧은 주먹 반격은 달려드는 동안에도 그 적을 본다. 0이면 끈다"
 Slip.lockRate,20,시선이 그 적에게 도는 빠르기(1/초). 남은 각도 중 이 비율을 1초에 돈다
 Slip.lockLetGo,5,붙어 있는 동안 마우스로 이 각도(도)만큼 돌리면 놓는다. 다른 적을 반격할 때
 DodgeLook.ghostAlpha,0.5,스텝 회피의 잔상(사용자가 보낸 대시 VFX 영상 그대로이되 잔상은 내 캐릭터 그대로 비쳐 보임): 막 남은 잔상이 덮는 정도(0~1. 1이면 안 비침). 시작 자리에 하나와 도착하는 몸 바로 뒤에 잔영 하나. 옷마다 제 텍스처·색으로 그린다
@@ -224,7 +224,7 @@ Counter.cameraFov,-7,순간 줌(시야각 도). 음수면 당겨진다
 Counter.cameraTrauma,0.35,흔들림
 Counter.burstGrowth,1.6,카운터 폭발(자세 붕괴 패링 연출)의 크기 배수
 Counter.contactDistance,0.7,폭발이 터지는 곳: 눈앞에서 적 쪽으로 이 거리(m)
-Counter.bannerSeconds,0.85,COUNTER 연출 시간(실제 초). 세 프레임 화면 반전, 핑크 사선, 사선에 잘린 COUNTER가 맞붙었다가 갈라지며 빠진다.
+Counter.bannerSeconds,0.85,"COUNTER 연출 시간(실제 초). 세 프레임 화면 반전, 핑크 사선, 사선에 잘린 COUNTER가 맞붙었다가 갈라지며 빠진다."
 Counter.baseGrade,0,COUNTER 연출의 기본 단계(0~3). 0은 사선만. 1은 검은 판·빗금·눈금이 붙고 2는 얇은 사선 둘·핑크 잔상·마름모가 더해지고 3은 집중선과 내려찍기까지. 카운터를 강화하는 스킬이 생기면 이 값을 올린다
 Counter.chainSeconds,8,앞 카운터 뒤 이 시간(실제 초) 안에 또 카운터하면 연출이 한 단계씩 올라간다(연속 카운터). 0이면 안 올라간다
 Teammate.radius,0.15,팀원과 나란히 설 때 각자 몸 반지름(m). 두 사람 가운데 사이가 이것의 두 배까지 붙는다. 이동용 몸통(0.3)끼리는 옆으로는 통과하고 서로 비켜선다
@@ -262,7 +262,7 @@ Posture.transitionSharpness,14,자세가 바뀔 때 캡슐 높이·눈높이가 
 Posture.slideTransitionSharpness,8.5,슬라이드·다이브 때 자세가 바뀌는 빠르기
 # 이동: 걷기·질주·점프 (Move 행 → PlayerMovement),,
 Move.walkSpeed,4.9,걷기 속도(m/s). 0.7.28에 살짝 묵직하게 5.2에서 낮춤. 옆·뒤로 갈 때는 이 속도까지만
-Move.sprintSpeed,7.9,질주 속도(m/s). Shift는 바로, W만은 sprintBuildTime에 이른다
+Move.sprintSpeed,7.9,"질주 속도(m/s). Shift는 바로, W만은 sprintBuildTime에 이른다"
 Move.crouchSpeed,2.8,웅크려 이동하는 속도(m/s)
 Move.proneSpeed,1.6,엎드려 기는 속도(m/s)
 Move.supineSpeed,1.6,누워서 이동하는 속도(m/s)
@@ -349,7 +349,7 @@ Ability.mantleDuration,0.45,바·사다리 꼭대기처럼 경로를 따로 쓰�
 Ability.vaultRate,1,넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본
 Ability.vaultSurgeDistance,3,달리며 낮은 장애물 앞에서 일찍 누른 점프는 넘기가 걸리는 자리까지 이만큼(m) 앞에서도 그 자리로 빠르게 달려가 바로 넘는다. 순간이동 없이 땅을 달려가며 달리기 동작도 빨라진다. 0이면 Beatrun처럼 장애물 앞면 약 1.2m 안에서 눌러야 넘는다(2026-11-06 사용자 요청: 대기 말고 빠르고 시원하게)
 Ability.vaultSurgeSpeed,11,그렇게 달려가는 가장 느린 속도(m/s). 질주(7.9)의 약 1.4배. 이미 더 빠르면 그 속도를 유지한다. 넘기 자체는 누르기 전 달리던 속도로 한다: 이 속도로 들어가면 넘기 클립이 빨리 감기처럼 잘려 보였다(2026-11-06 사용자)
-Ability.vaultSurgeKick,25;120,달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전과 시야각을 넓히는 양(도/초, 스프링에 주는 속도). 속도에 따른 시야각 넓힘이 그 뒤를 잇는다. 화면 흔들림 설정을 따른다
+Ability.vaultSurgeKick,25;120,"달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전과 시야각을 넓히는 양(도/초, 스프링에 주는 속도). 속도에 따른 시야각 넓힘이 그 뒤를 잇는다. 화면 흔들림 설정을 따른다"
 Ability.warpKong,0,긴 넘기(kong)를 클립의 손이 장애물을 짚는 대로 옮긴다(KINEMATION Motion Warping 방식). 0이면 Beatrun 직선 경로. 2026-11-07 꺼 둠: 클립에서 손 짚는 순간을 재는 규칙이 Beatrun 클립을 잘못 읽어(kong은 못 찾고 over는 0.54초로 늦게 잡음) 모션이 어긋났다
 Ability.warpOver,0,보통 넘기(over)를 손 짚는 대로 옮긴다. kong을 확인한 뒤 켠다
 Ability.warpOverHigh,0,높은 넘기를 손 짚는 대로 옮긴다. kong과 over를 확인한 뒤 켠다
@@ -471,7 +471,7 @@ Ability.shovePostureDamage,8,V 밀치기 자세 피해
 Ability.shoveDamage,5,V 밀치기 피해
 Ability.shoveCooldown,0.5,V 밀치기 재사용 대기(초)
 Ability.shoveFatigueStart,4,밀치기 피로(L4D2): 총·주먹 밀치기를 연속 이 번째부터 다음 밀치기까지 대기가 길어진다
-Ability.shoveFatigueMost,7,연속 이 번째에 대기가 가장 길어지고, 계속 밀치는 동안 그대로다
+Ability.shoveFatigueMost,7,"연속 이 번째에 대기가 가장 길어지고, 계속 밀치는 동안 그대로다"
 Ability.shoveFatigueInterval,1.2,가장 긴 밀치기 대기(초)
 Ability.shoveFatigueRecovery,1,밀치지 않고 이만큼(초) 지날 때마다 연속 횟수가 하나 준다
 # 능력: 돌진 밀치기 (총·주먹 모두 달리며 V. Dynamic Landing Push),,
@@ -582,7 +582,7 @@ Body.punchClipSpeed,1.6,주먹질 클립 재생 속도. 클립을 다 뻗는 프
 Body.punchBlendIn,0.04,주먹질 클립이 팔을 넘겨받는 시간(초)
 Body.punchBlendOut,0.12,주먹질 클립이 팔을 주먹 위치로 돌려주는 시간(초)
 Body.punchEyeSteady,0.7,주먹질로 머리가 앞으로 나갈 때 카메라를 눈에서 고정 위치 쪽으로 옮기는 비율(0~1). 머리도 몸을 굽혀 그 카메라로 오므로(HeadReach) 머리와 화면은 나머지만 움직인다. 0이면 머리를 그대로 따라간다. 이전 값 0.5
-Body.kick,enf_kick_front,재장전 중 V로 차는 발차기(ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다. enf_kick_front는 블렌더 밀치기 작업실(ArtSource/Shove)의 앞차기 시안이다: 10프레임(0.3초)에 발바닥이 가슴 높이로 나가서, 똑바로 볼 때 1인칭 화면 아래에 발끝이 보인다. 다시 다듬어 '게임에 보내기'하면 이 이름 그대로 바뀐다. 예전 Beatrun 클립은 kick
+Body.kick,enf_kick_front,"재장전 중 V로 차는 발차기(ShoveMoves)에 다리만 이 클립을 한 번 따른다. 엉덩이와 상체와 팔은 하던 대로 둔다. enf_kick_front는 블렌더 밀치기 작업실(ArtSource/Shove)의 앞차기 시안이다: 10프레임(0.3초)에 발바닥이 가슴 높이로 나가서, 똑바로 볼 때 1인칭 화면 아래에 발끝이 보인다. 다시 다듬어 '게임에 보내기'하면 이 이름 그대로 바뀐다. 예전 Beatrun 클립은 kick"
 Body.kickClipSpeed,1,발차기 클립 재생 속도. 1이면 발이 가장 멀리 나가는 때(0.33초)가 발이 닿는 때(Shove.kickHitTime 0.3초)와 거의 맞는다
 Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
 Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다
@@ -612,9 +612,9 @@ Body.fallClipSpeed,7.2,이보다 빠르게 떨어지면 빠른 낙하 애니메�
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
 Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)
 Body.ladderHeadShift,0.2,사다리에서 눈을 카메라 높이에 맞추려고 몸 전체를 위아래로 옮기는 최대 거리(m). 가로대 클립과 미끄러지기 클립의 머리 높이 차이를 몸이 흡수해 카메라가 머리 안에 있다
-Body.turnStartAngle,60,서 있을 때 시선이 다리에서 이만큼 돌아가면 다리가 시선 쪽으로 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다
+Body.turnStartAngle,60,"서 있을 때 시선이 다리에서 이만큼 돌아가면 다리가 시선 쪽으로 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다"
 Body.turnSpeed,150,다리가 시선 쪽으로 도는 가장 빠른 빠르기(도/초)
-Body.turnSteps,0,1이면 제자리 돌기 때 다리가 돌기 클립(Body.turnLeft/turnRight)으로 발을 옮긴다. 0이면 선 자세 그대로 제자리에서 돈다. 클립의 걸음은 클립 자신이 도는 각도·빠르기에 맞춰져 있는데 그 회전은 빼고 몸이 따로 돌아서, 1이면 걸음 중간에 다리가 옆으로 갔다가 클립이 끝날 때 돌아온다
+Body.turnSteps,0,"1이면 제자리 돌기 때 다리가 돌기 클립(Body.turnLeft/turnRight)으로 발을 옮긴다. 0이면 선 자세 그대로 제자리에서 돈다. 클립의 걸음은 클립 자신이 도는 각도·빠르기에 맞춰져 있는데 그 회전은 빼고 몸이 따로 돌아서, 1이면 걸음 중간에 다리가 옆으로 갔다가 클립이 끝날 때 돌아온다"
 Body.turnEaseTime,0.08,Body.turnSteps가 0일 때 다리가 돌기 시작하고 멈추는 부드러움(초)
 Body.turnClipSpeed,1.5,제자리 돌기 클립 재생 속도 (Body.turnSteps가 1일 때)
 Body.spineBendDown,0.45,내려다볼 때 시선 각도 중 허리가 맡는 비율. 나머지는 목·머리가 맡는다
@@ -629,7 +629,7 @@ Body.animationViewStrength,0.65,선택된 행동의 머리 움직임을 카메�
 Body.animationViewLimits,18;12;10,강도 적용 전 카메라에 더할 애니메이션의 위아래;좌우;기울기 제한 각도(도)
 Body.animationViewTime,0.1,카메라에 더할 애니메이션 회전만 부드럽게 잇는 응답 시간(초). 마우스 입력은 즉시 반영
 Body.eyeViewAhead,0.02,카메라를 눈보다 이만큼 앞에 둔다(m). 카메라는 항상 눈을 따라간다
-Body.eyeAdjust,0;0,캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m);앞(m). 얼굴 안쪽이 보이면 앞을 늘리고, 눈보다 높거나 낮게 보이면 위를 조절
+Body.eyeAdjust,0;0,"캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m);앞(m). 얼굴 안쪽이 보이면 앞을 늘리고, 눈보다 높거나 낮게 보이면 위를 조절"
 Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이보다 가까운 것은 잘라 낸다(m)
 Body.slideTurnLimit,120,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체는 90도까지 돌고 나머지는 머리가 돈다. 75는 좁았다(친구 피드백 C11). 뒤로 미끄러지는 슬라이드(뒤로 달리다 슬라이딩·벽에 튕김)는 몸이 향한 쪽 기준이고 그 방향은 슬라이드 내내 그대로다
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
@@ -643,13 +643,13 @@ Body.headReachLimits,6;12,머리를 카메라로 데려갈 때 뼈마다 굽는 
 Body.bodySwayTime,0.12,설정의 몸 흔들림을 낮췄을 때 카메라가 눈의 흔들림을 부드럽게 따라가는 시간(초)
 Body.runCalm,0.45,땅에서 달릴 때 1인칭 카메라가 눈의 흔들림 중 이만큼을 부드러운 길(bodySwayTime)로 잡아 준다. 달리는 사람의 눈이 머리가 흔들려도 앞을 가만히 보듯. 머리는 그 카메라로 굽힌다(HeadReach). 0이면 전처럼 눈을 그대로 따라간다. 설정의 1인칭 몸 흔들림과 함께 곱해진다
 Body.runCalmSpeeds,2;4,달리기 흔들림 잡기가 시작되는 속도;다 잡히는 속도(m/s)
-Body.vaultLeadLimit,45,넘는 동안 시선이 몸보다 이 각도(도) 넘게 앞서면 다리까지 몸 전체가 시선을 따라 돈다. 시선은 제한하지 않고, 실제 눈에 붙은 카메라가 자기 목 안을 보지 않게 한다
+Body.vaultLeadLimit,45,"넘는 동안 시선이 몸보다 이 각도(도) 넘게 앞서면 다리까지 몸 전체가 시선을 따라 돈다. 시선은 제한하지 않고, 실제 눈에 붙은 카메라가 자기 목 안을 보지 않게 한다"
 Body.vaultTurnFrom,0.65;0.75,넘기 클립이 이만큼 지나면 몸이 시선을 따라 돈다: 보통·긴 넘기;높은 넘기. Beatrun과 같은 값. 시선은 처음부터 자유
 Body.vaultHandAhead,0.25,넘기 클립을 잴 때 손이 엉덩이보다 팔 길이의 이 비율 넘게 앞으로 뻗으면(어깨보다 아래에서) 장애물을 짚는 손으로 본다. 클립마다 숫자를 적지 않고 클립에서 직접 잰다
 Body.vaultHandPass,0.6,짚은 손은 엉덩이가 그 손을 팔 길이의 이 비율만큼 지나가면 뗀 것으로 본다
 Body.vaultHandLift,0.15,또는 짚은 손이 가장 낮던 데서 팔 길이의 이 비율만큼 들리면 뗀 것으로 본다
 Body.vaultPlantWindow,0.65,손은 클립의 이 앞부분 안에서 짚는다고 본다
-Body.vaultBodyOnClip,1,빠른 넘기(kong·over)에서 몸은 넘기를 시작한 높이에 머물고 클립이 직접 몸을 들어 넘긴다. Beatrun 클립은 발밑이 바닥에 있다고 보고 스스로 몸을 들어 올리는데 이동 캡슐도 가슴 높이로 올라가 몸이 두 번 올라갔다(손이 윗면보다 0.5~1.1 m 위, 2026-11-07). 캡슐 경로는 그대로. 0이면 예전처럼 몸이 캡슐을 따라 올라간다
+Body.vaultBodyOnClip,1,"빠른 넘기(kong·over)에서 몸은 넘기를 시작한 높이에 머물고 클립이 직접 몸을 들어 넘긴다. Beatrun 클립은 발밑이 바닥에 있다고 보고 스스로 몸을 들어 올리는데 이동 캡슐도 가슴 높이로 올라가 몸이 두 번 올라갔다(손이 윗면보다 0.5~1.1 m 위, 2026-11-07). 캡슐 경로는 그대로. 0이면 예전처럼 몸이 캡슐을 따라 올라간다"
 Body.vaultFeetClear,0.05,빠른 넘기에서 몸을 낮게 둘 때 발이 발밑 바닥이나 곧 넘을 윗면 위로 남기는 틈(m)
 Body.vaultFeetAhead,0.2,빠른 넘기에서 발이 가로로 나아가는 길을 이 시간(초)만큼 미리 보고 윗면에 닿기 전에 몸을 올린다. 착지로 내려오는 발은 미리 보지 않는다(착지 직전에 몸이 떴다 떨어졌다)
 Body.vaultHeightSmooth,0.06;0.15,빠른 넘기에서 몸 높이가 따라가는 부드러움(초): 올라갈 때;내려올 때. 발 규칙 때문에 몸이 튀어 오르내리던 버벅거림을 없앤다(2026-11-07)

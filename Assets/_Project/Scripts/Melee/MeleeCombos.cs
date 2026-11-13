@@ -300,7 +300,7 @@ public sealed class MeleeCombos : MonoBehaviour
         if (beat.finisherStop > 0f && TryGetComponent(out CombatTimeEffects time))
             time.RequestSlowdown(this, beat.finisherStopScale, beat.finisherStop, target);
         if (view == null) view = GetComponentInChildren<Camera>();
-        CameraViewPunch.For(view)?.ImpactPunch(new Vector3(-2.5f, 0f, 0f), -4f, .15f);
+        CameraViewPunch.For(view).OrNull()?.ImpactPunch(new Vector3(-2.5f, 0f, 0f), -4f, .15f);
     }
 
     // The nearest one the crosshair rests on within reach, nothing solid between.
@@ -438,7 +438,7 @@ public sealed class MeleeCombos : MonoBehaviour
         if (beatOpen ? BeatLead < -beat.late : beatStep > 0 && clock - lastThrow > .5f) LoseBeat();
         else if ((beatOpen || beatStep > 0) && (Melee == null || !Melee.IsActive)) LoseBeat();
         // The beat's ring is made the first time the fists come out, not in the first fight.
-        if (hud == null && Mine && Melee != null && Melee.IsActive) hud = GetComponent<ComboBeatHUD>() ?? gameObject.AddComponent<ComboBeatHUD>();
+        if (hud == null && Mine && Melee != null && Melee.IsActive) hud = GetComponent<ComboBeatHUD>().OrNull() ?? gameObject.AddComponent<ComboBeatHUD>();
     }
 
     private void TickDash(float dt)
@@ -446,7 +446,7 @@ public sealed class MeleeCombos : MonoBehaviour
         var target = dashTarget;
         var melee = Melee;
         if (target == null || !target.IsAvailable || melee == null || !melee.IsActive || !player.DamageReceiver.IsAlive
-            || player.Execution?.IsExecuting == true) { CancelDash(); return; }
+            || player.Execution.OrNull()?.IsExecuting == true) { CancelDash(); return; }
         player.Abilities?.Dodge.HoldOff(DodgeHold);
         var body = target.GetComponentInChildren<Collider>();
         if (body == null) { CancelDash(); return; }
@@ -462,7 +462,7 @@ public sealed class MeleeCombos : MonoBehaviour
             // The look comes round onto them on the way, so the fist goes where the eyes are.
             Transform eyes = PlayerView.EyesOf(player);
             if (eyes != null)
-                CombatHeadMotion.For(player)?.Turn(PlayerPerfectDefense.Bearing(eyes, target) * (1f - Mathf.Exp(-LookRate * Mathf.Min(.05f, Time.unscaledDeltaTime))));
+                CombatHeadMotion.For(player).OrNull()?.Turn(PlayerPerfectDefense.Bearing(eyes, target) * (1f - Mathf.Exp(-LookRate * Mathf.Min(.05f, Time.unscaledDeltaTime))));
             return;
         }
         dashTarget = null;

@@ -54,7 +54,7 @@ public sealed class PlayerLife : MonoBehaviour
 
     private void Start()
     {
-        waves = FindFirstObjectByType<WaveManager>();
+        waves = SceneOne<WaveManager>.Get();
         if (waves != null) waves.WaveStarted += OnWaveStarted;
         receiver.Died += OnDied;
     }

@@ -13,7 +13,7 @@ public sealed partial class TowerRun
         ShowDoors();
         ShowScanners();
         Announce(mine, myLane);
-        ShowHud(mine, myLane);
+        ShowHud(myLane);
         ShowObjective(mine, myLane);
         Prompt(mine);
         Fetch(mine);
@@ -152,7 +152,7 @@ public sealed partial class TowerRun
         CombatFeedHUD.Award(Texts.Format("tower.feed.floor", floor), Mathf.Max(0, plan.Of(floor).reward));
     }
 
-    private void ShowHud(PlayerMovement mine, int myLane)
+    private void ShowHud(int myLane)
     {
         if (hud == null) return;
         bool countShown = counting && (phase == Phase.Gate || phase == Phase.Boarding);

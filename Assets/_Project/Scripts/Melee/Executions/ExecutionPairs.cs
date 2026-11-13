@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -101,27 +100,27 @@ public static class ExecutionPairs
             if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
             // A row the workspace never sent (no clips, no length) is no pair yet: that state keeps the old execution. The
             // Knife row only seats the Blender workspace's preview knife.
-            float length = Number(row, "length", 0f);
+            float length = row.Number("length", 0f);
             if (length <= 0f || pairs.Count >= byte.MaxValue) continue;
             pairs.Add(new ExecutionPair
             {
                 Id = id,
                 Index = (byte)pairs.Count,
-                Takedown = string.Equals(Text(row, "kind"), "takedown", StringComparison.OrdinalIgnoreCase),
-                PlayerClip = Text(row, "playerClip"),
-                ZombieClip = Text(row, "zombieClip"),
+                Takedown = string.Equals(row.Text("kind"), "takedown", StringComparison.OrdinalIgnoreCase),
+                PlayerClip = row.Text("playerClip"),
+                ZombieClip = row.Text("zombieClip"),
                 Length = length,
-                Kill = Mathf.Clamp(Number(row, "kill", length * .4f), 0f, length),
-                Offset = new Vector2(Number(row, "right", 0f), Number(row, "forward", -.5f)),
-                Yaw = Number(row, "yaw", 0f),
-                Turn = Mathf.Clamp01(Number(row, "turn", 0f)),
-                Align = Mathf.Max(.01f, Number(row, "align", .2f)),
-                BlendIn = Mathf.Max(.01f, Number(row, "blendIn", .12f)),
-                BlendOut = Mathf.Max(.01f, Number(row, "blendOut", .25f)),
-                HitBone = Bone(Text(row, "hitBone"), HumanBodyBones.Neck),
-                Fall = new Vector3(Number(row, "fallRight", 0f), Number(row, "fallUp", 0f), Number(row, "fallForward", 1f)),
-                StartHips = new Vector2(Number(row, "zHipsRight", 0f), Number(row, "zHipsForward", 0f)),
-                StartHeadYaw = Number(row, "zHeadYaw", 0f),
+                Kill = Mathf.Clamp(row.Number("kill", length * .4f), 0f, length),
+                Offset = new Vector2(row.Number("right", 0f), row.Number("forward", -.5f)),
+                Yaw = row.Number("yaw", 0f),
+                Turn = Mathf.Clamp01(row.Number("turn", 0f)),
+                Align = Mathf.Max(.01f, row.Number("align", .2f)),
+                BlendIn = Mathf.Max(.01f, row.Number("blendIn", .12f)),
+                BlendOut = Mathf.Max(.01f, row.Number("blendOut", .25f)),
+                HitBone = Bone(row.Text("hitBone"), HumanBodyBones.Neck),
+                Fall = new Vector3(row.Number("fallRight", 0f), row.Number("fallUp", 0f), row.Number("fallForward", 1f)),
+                StartHips = new Vector2(row.Number("zHipsRight", 0f), row.Number("zHipsForward", 0f)),
+                StartHeadYaw = row.Number("zHeadYaw", 0f),
                 LeftHand = Hold(row, "l"),
                 RightHand = Hold(row, "r"),
             });
@@ -130,10 +129,10 @@ public static class ExecutionPairs
 
     private static ExecutionPair.Contact Hold(IReadOnlyDictionary<string, string> row, string prefix)
     {
-        string bone = Text(row, prefix + "Bone");
+        string bone = row.Text(prefix + "Bone");
         if (string.IsNullOrEmpty(bone)) return default;
-        return new ExecutionPair.Contact(Bone(bone, HumanBodyBones.Head), Number(row, prefix + "From", 0f), Number(row, prefix + "To", 0f),
-            new Vector3(Number(row, prefix + "Right", 0f), Number(row, prefix + "Up", 0f), Number(row, prefix + "Forward", 0f)));
+        return new ExecutionPair.Contact(Bone(bone, HumanBodyBones.Head), row.Number(prefix + "From", 0f), row.Number(prefix + "To", 0f),
+            new Vector3(row.Number(prefix + "Right", 0f), row.Number(prefix + "Up", 0f), row.Number(prefix + "Forward", 0f)));
     }
 
     /// <summary>
@@ -153,12 +152,4 @@ public static class ExecutionPairs
         }
         return Enum.TryParse(name, true, out HumanBodyBones bone) ? bone : fallback;
     }
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string column)
-        => row != null && row.TryGetValue(column, out string value) ? value.Trim() : "";
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback)
-        => row != null && row.TryGetValue(column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            && !float.IsNaN(value) && !float.IsInfinity(value) ? value : fallback;
 }

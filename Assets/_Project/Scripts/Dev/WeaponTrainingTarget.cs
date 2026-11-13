@@ -18,7 +18,7 @@ public sealed class WeaponTrainingTarget : MonoBehaviour, IDamageReceiver, IComb
         ResetTarget();
     }
     [ContextMenu("Reset Target")]
-    public void ResetTarget() { Health = maximumHealth; seen.Clear(); recent.Clear(); GetComponent<MeleeCombatTarget>()?.ResetPosture(); }
+    public void ResetTarget() { Health = maximumHealth; seen.Clear(); recent.Clear(); GetComponent<MeleeCombatTarget>().OrNull()?.ResetPosture(); }
     public DamageResult ReceiveHit(DamageHit hit)
     {
         if (hit.Id <= 0 || hit.Amount <= 0f || Health <= 0f) return DamageResult.Ignored;

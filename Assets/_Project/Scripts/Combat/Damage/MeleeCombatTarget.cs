@@ -178,7 +178,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (Steadfast) duration = Mathf.Min(duration, SteadfastStun);
         stunRemaining = Mathf.Max(stunRemaining, duration);
         StopAgent();
-        GetComponent<EnemyCombatAI>()?.CancelAttack();
+        GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
         Interrupted?.Invoke();
     }
     public void KnockDown(Vector3 direction, float duration)
@@ -211,7 +211,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         if (!IsAvailable || owner == null || grabber != null || executor != null || Steadfast) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
-        grabber = owner; bargeKnockdown = 0f; StopAgent(); GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke();
+        grabber = owner; bargeKnockdown = 0f; StopAgent(); GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack(); Interrupted?.Invoke();
         if (IsCopy) network.SendInterrupt(GrabHold);
         return true;
     }
@@ -237,7 +237,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (owner == null || !CanBeExecutedBy(owner)) return false;
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
         executor = owner; shoveRemaining = bargeKnockdown = 0f; StopAgent();
-        GetComponent<EnemyCombatAI>()?.CancelAttack(); Interrupted?.Invoke();
+        GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack(); Interrupted?.Invoke();
         // The execution starts at once; the host says no if someone else got there first.
         if (IsCopy) network.AskExecution();
         return true;
@@ -266,7 +266,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             shownDown = down;
             if (down) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
             // A zombie's body falls on a doll that follows the host's (ZombieBody); only a plain capsule is tipped over.
-            if (!TryGetComponent(out ZombieBody zombie) || !zombie.Wears) EnemyParryRecoil.For(this)?.Lie(fall, down);
+            if (!TryGetComponent(out ZombieBody zombie) || !zombie.Wears) EnemyParryRecoil.For(this).OrNull()?.Lie(fall, down);
         }
         if (Time.time < predictedUntil) return;
         Posture = posture;

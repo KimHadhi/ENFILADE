@@ -90,7 +90,7 @@ public sealed partial class ResultsShow : MonoBehaviour
     private float createdAt, preparedAt, smoothSince;
     // Frames the results' camera has drawn since the stage was set.
     private int framesSeen;
-    private bool mapsHeld, playerMapWas, combatMapWas, prepared, showing;
+    private bool prepared, showing;
     // The console's /results <pose>: the next show has everyone strike it.
     private static string forcedPose;
 

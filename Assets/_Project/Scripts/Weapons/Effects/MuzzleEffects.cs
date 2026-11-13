@@ -132,17 +132,13 @@ public sealed class MuzzleEffects : MonoBehaviour, ITableBound
         if (GameTables.TryGetRow(TableName, gun.name, out var row))
             look = new GunLook
             {
-                length = Number(row, "length", length), width = Number(row, "width", width),
-                core = Hue(row, "coreColor", coreColor).linear * Number(row, "coreBrightness", coreBrightness),
-                glow = Hue(row, "glowColor", glowColor).linear * Number(row, "glowBrightness", glowBrightness),
+                length = row.Number("length", length), width = row.Number("width", width),
+                core = Hue(row, "coreColor", coreColor).linear * row.Number("coreBrightness", coreBrightness),
+                glow = Hue(row, "glowColor", glowColor).linear * row.Number("glowBrightness", glowBrightness),
             };
         looks[gun] = look;
         return look;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, System.Globalization.NumberStyles.Float,
-            System.Globalization.CultureInfo.InvariantCulture, out float value) ? value : fallback;
 
     private static Color Hue(IReadOnlyDictionary<string, string> row, string key, Color fallback)
         => row.TryGetValue(key, out string text) && !string.IsNullOrWhiteSpace(text) && ColorUtility.TryParseHtmlString(text.Trim(), out var value)

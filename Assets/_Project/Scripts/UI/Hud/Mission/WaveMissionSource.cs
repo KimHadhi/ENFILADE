@@ -15,7 +15,7 @@ public sealed class WaveMissionSource : MonoBehaviour
     private void OnEnable()
     {
         // The HUD is a prefab shared between scenes, so it finds this scene's waves itself.
-        if (waves == null) waves = FindFirstObjectByType<WaveManager>();
+        if (waves == null) waves = SceneOne<WaveManager>.Get();
         if (waves != null) waves.ObjectiveChanged += Refresh;
         Refresh();
     }

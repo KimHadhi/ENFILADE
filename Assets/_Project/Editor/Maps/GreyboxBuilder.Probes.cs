@@ -39,7 +39,7 @@ public sealed partial class GreyboxBuilder
     private float ProbeSpacing()
     {
         if (probeSpacing >= 0f) return probeSpacing;
-        float spacing = GameTables.TryGetRow(LookTable, sceneName, out var row) ? Number(row, "probeSpacing", 0f) : 0f;
+        float spacing = GameTables.TryGetRow(LookTable, sceneName, out var row) ? row.Number("probeSpacing", 0f) : 0f;
         return probeSpacing = spacing > 0f ? Mathf.Clamp(spacing, ProbeSpacingLeast, ProbeSpacingMost) : 0f;
     }
 

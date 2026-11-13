@@ -218,7 +218,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         bodyReset = null;
         content = KitStyle.Stretch("Content", root);
         reveal = growNext ? content.gameObject.AddComponent<KitReveal>() : null;
-        reveal?.Hide();
+        reveal.OrNull()?.Hide();
         growAt = .04f;
         var profile = PlayerBodyProfile.Load();
         var skins = profile == null ? new List<PlayerBodyProfile.Skin>() : profile.Skins.Where(s => s != null && s.Model != null).ToList();
@@ -239,7 +239,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
             else BuildSlots(right, skin);
         }
         BuildBadge();
-        reveal?.Open();
+        reveal.OrNull()?.Open();
         growNext = false;
     }
 

@@ -48,9 +48,6 @@ public sealed class DevConsole : MonoBehaviour
     private SinglePlayerChatManager chat;
     private int recallIndex, highlight;
     private bool recalling, refocus, settingText, caretToEnd;
-    private CursorLockMode cursorLock;
-    private bool cursorVisible, playerMapOn, combatMapOn;
-    private PlayerInput controls;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -135,7 +132,7 @@ public sealed class DevConsole : MonoBehaviour
 
     private SinglePlayerChatManager FindChat()
     {
-        if (chat == null) chat = FindAnyObjectByType<SinglePlayerChatManager>();
+        if (chat == null) chat = SceneOne<SinglePlayerChatManager>.Get();
         return chat;
     }
 
@@ -267,20 +264,7 @@ public sealed class DevConsole : MonoBehaviour
     private void Open()
     {
         IsOpen = true;
-        cursorLock = Cursor.lockState;
-        cursorVisible = Cursor.visible;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        controls = PlayerRoster.Local != null ? PlayerRoster.Local.GetComponent<PlayerInput>() : null;
-        if (controls != null)
-        {
-            var player = controls.actions.FindActionMap("Player");
-            var combat = controls.actions.FindActionMap("Combat");
-            playerMapOn = player != null && player.enabled;
-            combatMapOn = combat != null && combat.enabled;
-            player?.Disable();
-            combat?.Disable();
-        }
+        InputHold.Take(this);
         SettingsMenu.EnsureEventSystem();
         root.gameObject.SetActive(true);
         SetInput("");
@@ -300,14 +284,7 @@ public sealed class DevConsole : MonoBehaviour
             && events.currentSelectedGameObject.transform.IsChildOf(root)) events.SetSelectedGameObject(null);
         input.DeactivateInputField();
         root.gameObject.SetActive(false);
-        Cursor.lockState = cursorLock;
-        Cursor.visible = cursorVisible;
-        if (controls != null)
-        {
-            if (playerMapOn) controls.actions.FindActionMap("Player")?.Enable();
-            if (combatMapOn) controls.actions.FindActionMap("Combat")?.Enable();
-        }
-        controls = null;
+        InputHold.Release(this);
     }
 
     private void Run(string line)

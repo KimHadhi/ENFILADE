@@ -9,17 +9,16 @@ public sealed class PlayerShoveAudio : MonoBehaviour
     private const float OthersReach = 25f;
     private AudioSource source;
     private AudioClip previousEnemyClip;
-    public ShoveImpactKind LastImpact { get; private set; }
     public AudioClip LastClip { get; private set; }
     /// <summary>A shove's impact sounded on this player, for the other PCs to play too.</summary>
     public event System.Action<ShoveImpactKind> Played;
 
     public void Play(ShoveImpactKind impact)
     {
-        LastImpact = impact; LastClip = null;
+         LastClip = null;
         // None comes as a shove starts (ShoveSweep): the swing itself, SoundCues ShoveSwing (a COD MWII swipe), from the body.
         if (impact == ShoveImpactKind.None && isActiveAndEnabled && Application.isPlaying)
-            GetComponent<CharacterSounds>()?.Play("ShoveSwing", transform.position + Vector3.up * 1.3f);
+            GetComponent<CharacterSounds>().OrNull()?.Play("ShoveSwing", transform.position + Vector3.up * 1.3f);
         var settings = CombatFeedbackSettings.Instance;
         if (impact == ShoveImpactKind.None || settings == null || !isActiveAndEnabled) return;
         LastClip = impact == ShoveImpactKind.Enemy ? PickEnemyClip(settings.shoveEnemySounds) : settings.shoveWorldSound;

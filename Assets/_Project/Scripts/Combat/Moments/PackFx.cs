@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -48,7 +47,7 @@ public sealed class PackFx : MonoBehaviour
     /// </summary>
     public static GameObject Play(string use, Vector3 at, Quaternion facing, bool self = false)
     {
-        if (!Application.isPlaying || string.IsNullOrEmpty(use) || Number(use, "on", 1f) < .5f) return null;
+        if (!Application.isPlaying || string.IsNullOrEmpty(use) || !On(use)) return null;
         var library = PackFxLibrary.Instance;
         var prefab = library != null ? library.Find(Text(use, "prefab")) : null;
         if (prefab == null) return null;
@@ -204,7 +203,7 @@ public sealed class PackFx : MonoBehaviour
         {
             int colon = part.LastIndexOf(':');
             string path = colon > 0 ? part.Substring(0, colon) : part;
-            int count = colon > 0 && int.TryParse(part.Substring(colon + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1;
+            int count = colon > 0 && TableCells.TryWhole(part.Substring(colon + 1), out int n) ? n : 1;
             foreach (var found in PartsNamed(copy.transform, path))
             {
                 if (!found.gameObject.activeInHierarchy || !found.TryGetComponent(out ParticleSystem system)) continue;
@@ -253,7 +252,7 @@ public sealed class PackFx : MonoBehaviour
     private static Color Times(Color a, Color tint) => new Color(a.r * tint.r, a.g * tint.g, a.b * tint.b, a.a);
 
     // A part by its path under the copy ("Loop/FuzzAlpha_Soft": every one there) or by its name anywhere in it.
-    private static IEnumerable<Transform> PartsNamed(Transform root, string part)
+    internal static IEnumerable<Transform> PartsNamed(Transform root, string part)
     {
         bool path = part.IndexOf('/') >= 0;
         foreach (var t in root.GetComponentsInChildren<Transform>(true))
@@ -263,10 +262,12 @@ public sealed class PackFx : MonoBehaviour
         }
     }
 
+    /// <summary>Whether a use is on (its row's "on" cell; on when the cell is empty).</summary>
+    public static bool On(string use) => GameTables.Flag(TableName, use, "on", true);
+
     /// <summary>A number from Tables/PackFx.csv, or the fallback.</summary>
     public static float Number(string row, string key, float fallback)
-        => GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(key, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(TableName, row, key, fallback);
 
     /// <summary>Words from Tables/PackFx.csv (a prefab's name, a list of parts), or empty.</summary>
     public static string Text(string row, string key)

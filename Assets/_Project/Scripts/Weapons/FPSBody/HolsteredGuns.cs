@@ -417,7 +417,7 @@ public sealed class HolsteredGuns : MonoBehaviour, ITableBound
     {
         right = up = forward = hips = neck = Vector3.zero;
         var hipsBone = animator.GetBoneTransform(HumanBodyBones.Hips);
-        var neckBone = animator.GetBoneTransform(HumanBodyBones.Neck) ?? animator.GetBoneTransform(HumanBodyBones.Head);
+        var neckBone = animator.GetBoneTransform(HumanBodyBones.Neck).OrNull() ?? animator.GetBoneTransform(HumanBodyBones.Head);
         if (hipsBone == null || neckBone == null) return false;
         hips = hipsBone.position;
         neck = neckBone.position;

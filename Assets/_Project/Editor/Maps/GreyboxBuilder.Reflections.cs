@@ -48,7 +48,7 @@ public sealed partial class GreyboxBuilder
         float lowX = Mathf.Min(x0, x1), lowY = Mathf.Min(y0, y1), lowZ = Mathf.Min(z0, z1);
         float sizeX = Mathf.Abs(x1 - x0), sizeY = Mathf.Abs(y1 - y0) / floors, sizeZ = Mathf.Abs(z1 - z0);
         int alongX = Mathf.Max(1, Mathf.RoundToInt(sizeX / segment)), alongZ = Mathf.Max(1, Mathf.RoundToInt(sizeZ / segment));
-        reflections ??= Root("◤━━ 반사 프로브 (Tables/MapReflections, 실내)");
+        if (reflections == null) reflections = Root("◤━━ 반사 프로브 (Tables/MapReflections, 실내)");
         for (int floor = 0; floor < floors; floor++)
             for (int i = 0; i < alongX; i++)
                 for (int j = 0; j < alongZ; j++)
@@ -77,7 +77,7 @@ public sealed partial class GreyboxBuilder
 
     // A row's number, else Default's, else the fallback.
     private static float Value(IReadOnlyDictionary<string, string> row, IReadOnlyDictionary<string, string> basics, string key, float fallback)
-        => Number(row, key, basics != null ? Number(basics, key, fallback) : fallback);
+        => row.Number(key, basics != null ? basics.Number(key, fallback) : fallback);
 
     // For the build's report; baked is whether the map's lighting bake ran through (it bakes the probes too).
     private string ReflectionReport(bool baked)

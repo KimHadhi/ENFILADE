@@ -153,10 +153,10 @@ public sealed class ParryFeedback : MonoBehaviour
         duckRemaining = duckSeconds;
         SetDuck(duckLevel);
         if (fists == null) fists = GetComponentInChildren<FistsView>();
-        fists?.Deflect(side, handSweepSeconds, handSweepAttack, handSweepHold, handSweep);
+        fists.OrNull()?.Deflect(side, handSweepSeconds, handSweepAttack, handSweepHold, handSweep);
         var punch = CameraViewPunch.For(view.GetComponent<Camera>());
         float knock = broken ? 1.5f : 1f;
-        punch?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z) * knock, cameraFov * knock, cameraTrauma * knock);
+        punch.OrNull()?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z) * knock, cameraFov * knock, cameraTrauma * knock);
         KillConfirmEffect.Parry(broken ? BreakLook() : ContactLook());
         Burst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, growth, broken);
         if (target != null) Reel(target, toAttacker, contact, broken);
@@ -165,7 +165,7 @@ public sealed class ParryFeedback : MonoBehaviour
         if (stop > 0f)
         {
             if (timeEffects == null) timeEffects = GetComponent<CombatTimeEffects>();
-            timeEffects?.RequestSlowdown(this, hitStopScale, stop);
+            timeEffects.OrNull()?.RequestSlowdown(this, hitStopScale, stop);
         }
         if (broken) chain = 0;
     }
@@ -183,12 +183,12 @@ public sealed class ParryFeedback : MonoBehaviour
     });
     private void Reel(MeleeCombatTarget target, Vector3 toAttacker, Vector3 contact, bool broken)
     {
-        if (enemyFlashSeconds > 0f) HitFlashRenderer.For(target)?.WhiteFlash(enemyFlashSeconds);
+        if (enemyFlashSeconds > 0f) HitFlashRenderer.For(target).OrNull()?.WhiteFlash(enemyFlashSeconds);
         Vector3 away = Vector3.ProjectOnPlane(toAttacker, Vector3.up);
         if (away.sqrMagnitude < .0001f) return;
         away.Normalize();
         target.ReceiveShove(away * (broken ? breakPushSpeed : enemyPushSpeed), contact);
-        EnemyParryRecoil.For(target)?.Kick(away, broken ? breakLeanDegrees : enemyLeanDegrees, broken ? breakLeanSeconds : enemyLeanSeconds);
+        EnemyParryRecoil.For(target).OrNull()?.Kick(away, broken ? breakLeanDegrees : enemyLeanDegrees, broken ? breakLeanSeconds : enemyLeanSeconds);
         if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, broken);
     }
     /// <summary>
@@ -200,8 +200,8 @@ public sealed class ParryFeedback : MonoBehaviour
         if (view == null || target == null) return;
         Burst(contact, (away * .35f + Vector3.up * .5f).normalized, broken ? breakBoost : 1f, broken);
         CombatCueAudio.Play(target.gameObject, broken ? CombatCue.ParryBreak : CombatCue.Parry, 1f, true);
-        if (enemyFlashSeconds > 0f) HitFlashRenderer.For(target)?.WhiteFlash(enemyFlashSeconds);
-        EnemyParryRecoil.For(target)?.Kick(away, broken ? breakLeanDegrees : enemyLeanDegrees, broken ? breakLeanSeconds : enemyLeanSeconds);
+        if (enemyFlashSeconds > 0f) HitFlashRenderer.For(target).OrNull()?.WhiteFlash(enemyFlashSeconds);
+        EnemyParryRecoil.For(target).OrNull()?.Kick(away, broken ? breakLeanDegrees : enemyLeanDegrees, broken ? breakLeanSeconds : enemyLeanSeconds);
     }
     private ParryScreenLook ContactLook() => new ParryScreenLook
     {

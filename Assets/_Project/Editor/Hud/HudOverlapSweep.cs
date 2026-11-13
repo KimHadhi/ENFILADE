@@ -284,7 +284,7 @@ public static class HudOverlapSweep
     }
 
     private static PropertyInfo SizeProperty(EditorWindow view)
-        => view?.GetType().GetProperty("selectedSizeIndex", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        => view.OrNull()?.GetType().GetProperty("selectedSizeIndex", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
     private static int SelectedSize()
     {

@@ -144,7 +144,7 @@ static class Rewrite
         return text.ToString();
     }
 
-    static IMethodSymbol Named(Build build, string spec)
+    public static IMethodSymbol Named(Build build, string spec)
     {
         // "Type.Method/3" or "Outer.Inner.Method/2"
         int slash = spec.LastIndexOf('/');
@@ -161,6 +161,27 @@ static class Rewrite
             if (found.Count > 1) throw new Exception("more than one " + spec);
         }
         throw new Exception("no method " + spec);
+    }
+
+    /// Static methods grouped by what they do (Signature): each group of two or more is one body written more than once.
+    public static List<List<IMethodSymbol>> SameBodies(Build build, int least = 40)
+    {
+        var groups = new Dictionary<string, List<IMethodSymbol>>();
+        foreach (var compilation in build.All)
+            foreach (var tree in compilation.SyntaxTrees)
+            {
+                if (!Project.IsProject(Project.Rel(tree.FilePath))) continue;
+                var model = compilation.GetSemanticModel(tree);
+                foreach (var method in tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>())
+                {
+                    if (model.GetDeclaredSymbol(method) is not IMethodSymbol symbol || symbol.MethodKind != MethodKind.Ordinary || symbol.IsGenericMethod) continue;
+                    string signature = Signature(model, method, symbol);
+                    if (signature == null || signature.Length < least) continue;
+                    if (!groups.TryGetValue(signature, out var list)) groups[signature] = list = new();
+                    list.Add(symbol);
+                }
+            }
+        return groups.Values.Where(g => g.Count > 1).ToList();
     }
 
     /// Takes the named methods ("Type.Method/2") out of their files, with their comments.

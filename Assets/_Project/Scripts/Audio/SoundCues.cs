@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -79,7 +78,7 @@ public static class SoundCues
             foreach (string part in (sounds ?? "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
                 if (TryParse(part, out var item)) items.Add(item);
                 else Report($"'{id}': can't read '{part.Trim()}'. Write bank/key, then *volume or +delay.");
-            float.TryParse(noise, NumberStyles.Float, CultureInfo.InvariantCulture, out float reach);
+            TableCells.TryNumber(noise, out float reach);
             cues[id] = new Cue { Id = id, Items = items.ToArray(), Noise = Mathf.Max(0f, reach) };
         }
         return cues;
@@ -101,7 +100,7 @@ public static class SoundCues
         for (int i = 1; i < tokens.Length; i++)
         {
             string token = tokens[i];
-            if (token.Length < 2 || !float.TryParse(token.Substring(1), NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            if (token.Length < 2 || !TableCells.TryNumber(token.Substring(1), out float value))
                 return false;
             if (token[0] == '*') volume = Mathf.Max(0f, value);
             else if (token[0] == '+') delay = Mathf.Max(0f, value);

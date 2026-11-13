@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
@@ -77,15 +76,14 @@ public sealed class MapAmbience : MonoBehaviour
         var sound = new Sound();
         string[] clips = row.Text("clips").Split(Split, StringSplitOptions.RemoveEmptyEntries);
         string[] levels = row.Text("volumes").Split(Split, StringSplitOptions.RemoveEmptyEntries);
-        if (float.TryParse(row.Text("fadeIn"), NumberStyles.Float, CultureInfo.InvariantCulture, out float fade))
+        if (TableCells.TryNumber(row.Text("fadeIn"), out float fade))
             sound.FadeIn = Mathf.Max(.01f, fade);
         for (int i = 0; i < clips.Length; i++)
         {
             string path = clips[i].Trim();
             var clip = Resources.Load<AudioClip>(path);
             if (clip == null) { Debug.LogWarning($"[Ambience] {id}: no clip at Resources/{path} yet."); continue; }
-            float volume = i < levels.Length && float.TryParse(levels[i].Trim(), NumberStyles.Float,
-                CultureInfo.InvariantCulture, out float v) ? Mathf.Clamp01(v) : 1f;
+            float volume = i < levels.Length && TableCells.TryNumber(levels[i].Trim(), out float v) ? Mathf.Clamp01(v) : 1f;
             var source = gameObject.AddComponent<AudioSource>();
             source.clip = clip;
             source.loop = true;

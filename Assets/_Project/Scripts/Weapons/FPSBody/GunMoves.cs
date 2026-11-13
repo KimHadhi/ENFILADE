@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -15,15 +14,13 @@ internal sealed class GunMove
 
     /// <summary>How long it plays (s), its last key.</summary>
     public float Length => times[times.Length - 1];
-    /// <summary>When it strikes (s): the line "#impact=" of its file, else 0.</summary>
-    public float Impact { get; }
 
     public GunMove(float[] times, Vector3[] moves, Quaternion[] turns, float impact)
     {
         this.times = times;
         this.moves = moves;
         this.turns = turns;
-        Impact = impact;
+        
     }
 
     /// <summary>The gun's move and turn <paramref name="time"/> seconds in, between its keys.</summary>
@@ -68,13 +65,13 @@ internal static class GunMoves
         }
         if (cache.TryGetValue(name, out var move)) return move;
         var file = Resources.Load<TextAsset>(Folder + name);
-        move = file != null ? Parse(file.text, name) : null;
+        move = file != null ? Parse(file.text) : null;
         if (move == null) Debug.LogWarning($"GunMoves: Resources/{Folder}{name}.csv is missing or holds no keys; that move plays nothing.");
         cache[name] = move;
         return move;
     }
 
-    private static GunMove Parse(string text, string name)
+    private static GunMove Parse(string text)
     {
         var times = new List<float>();
         var moves = new List<Vector3>();
@@ -86,7 +83,7 @@ internal static class GunMoves
             if (line.Length == 0) continue;
             if (line.StartsWith("#impact=", System.StringComparison.OrdinalIgnoreCase))
             {
-                float.TryParse(line.Substring(8), NumberStyles.Float, CultureInfo.InvariantCulture, out impact);
+                TableCells.TryNumber(line.Substring(8), out impact);
                 continue;
             }
             if (line[0] == '#' || char.IsLetter(line[0])) continue;
@@ -95,7 +92,7 @@ internal static class GunMoves
             var values = new float[8];
             bool read = true;
             for (int i = 0; i < 8 && read; i++)
-                read = float.TryParse(cells[i], NumberStyles.Float, CultureInfo.InvariantCulture, out values[i]);
+                read = TableCells.TryNumber(cells[i], out values[i]);
             // Out of order or unreadable rows are left out rather than bending the curve.
             if (!read || (times.Count > 0 && values[0] <= times[times.Count - 1])) continue;
             var turn = new Quaternion(values[4], values[5], values[6], values[7]);

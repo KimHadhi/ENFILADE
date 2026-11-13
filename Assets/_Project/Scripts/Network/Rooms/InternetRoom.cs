@@ -534,8 +534,8 @@ public sealed class InternetRoom : INetworkHandler
     private static string StunServers => Setting("stunServers", DefaultStunServers);
 
     private static string Setting(string id, string fallback)
-        => GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue(Column, out string text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : fallback;
+        => GameTables.Text(Table, id, Column, fallback);
 
     private static float Number(string id, float fallback)
-        => float.TryParse(Setting(id, ""), NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(Table, id, Column, fallback);
 }

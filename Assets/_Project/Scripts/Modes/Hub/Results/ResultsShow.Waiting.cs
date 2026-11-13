@@ -86,7 +86,7 @@ public sealed partial class ResultsShow
         MakeCamera();
         MakePoses();
         HideBodies();
-        HoldInput(true);
+        InputHold.Take(this, Held.Keys);
     }
 
     private void MakeCamera()
@@ -149,32 +149,10 @@ public sealed partial class ResultsShow
         hiddenSet.Clear();
     }
 
-    private void HoldInput(bool hold)
-    {
-        var actions = InputSystem.actions;
-        if (actions == null) return;
-        var moves = actions.FindActionMap("Player", false);
-        var combat = actions.FindActionMap("Combat", false);
-        if (hold)
-        {
-            if (mapsHeld) return;
-            mapsHeld = true;
-            playerMapWas = moves != null && moves.enabled;
-            combatMapWas = combat != null && combat.enabled;
-            moves?.Disable();
-            combat?.Disable();
-            return;
-        }
-        if (!mapsHeld) return;
-        mapsHeld = false;
-        if (playerMapWas) moves?.Enable();
-        if (combatMapWas) combat?.Enable();
-    }
-
     // The player has the stage, the camera and the controls back.
     private void Release()
     {
-        HoldInput(false);
+        InputHold.Release(this);
         ClearStage();
         if (view != null) view.enabled = false;
     }

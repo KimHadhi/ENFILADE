@@ -347,7 +347,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         var result = player.IsNetworkDriven ? DamageResult.Ignored : Strike();
         // A brute's blow at planks smashes into them, seen on every PC alike (each at its own swing's end).
         if (move == AttackMove.Swing) ZombieBreach.Smash(transform);
-        if (!finisher && result != DamageResult.Parried && meleeTarget?.IsStunned != true)
+        if (!finisher && result != DamageResult.Parried && meleeTarget.OrNull()?.IsStunned != true)
         { comboIndex++; BeginWindup(); }
     }
 

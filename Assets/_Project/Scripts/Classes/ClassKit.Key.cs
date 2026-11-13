@@ -16,7 +16,7 @@ public sealed partial class ClassKit
             MomentHUD.Charge(PlayerClass.Ability(AssaultRow, "chargeSeconds", 7f), PlayerClass.Ability(AssaultRow, "chargeRadius", 15f));
             Charged?.Invoke(at);
             // The phantom cavalry card rides out with it (ClassCards).
-            cards?.Charged(at);
+            cards.OrNull()?.Charged(at);
             return;
         }
         if (PlayerClass.Is(PlayerClass.Knight)) { Taunt(); return; }

@@ -24,7 +24,7 @@ public static class ShoveSweep
             soundPlayed = false; impact = ShoveImpactKind.None;
             // A grab or a leap landing just after this shove is countered (G&B-3).
             ShoveCounter.Shoved(owner, view != null ? view.forward : owner.transform.forward);
-            player.GetComponent<PlayerShoveAudio>()?.Play(ShoveImpactKind.None);
+            player.GetComponent<PlayerShoveAudio>().OrNull()?.Play(ShoveImpactKind.None);
             window.Begin(aim, duration); PlayFeedback();
         }
         public void Tick(float dt) { window.Tick(dt, aim); PlayFeedback(); }
@@ -40,7 +40,7 @@ public static class ShoveSweep
             if (soundPlayed || impact == ShoveImpactKind.None || player == null) return;
             var audio = player.GetComponent<PlayerShoveAudio>();
             if (audio == null && Application.isPlaying) audio = player.gameObject.AddComponent<PlayerShoveAudio>();
-            audio?.Play(impact); soundPlayed = true;
+            audio.OrNull()?.Play(impact); soundPlayed = true;
         }
     }
     private static int Apply(PlayerMovement player, Vector3 origin, Vector3 forward, float damage,
@@ -60,7 +60,7 @@ public static class ShoveSweep
             var receiver = collider.GetComponentInParent<IDamageReceiver>();
             var shove = posture != null ? posture : collider.GetComponentInParent<IShoveReceiver>();
             var body = collider.attachedRigidbody;
-            Object identity = (Object)posture ?? receiver as Object ?? shove as Object ?? body;
+            Object identity = ((Object)posture).OrNull() ?? (receiver as Object).OrNull() ?? (shove as Object).OrNull() ?? body;
             if ((identity != null && contacted.Contains(identity)) || (posture != null && !posture.IsAvailable)) continue;
             if (!TryGetContactPoint(collider, origin, forward, reach, cone, out Vector3 point)) continue;
             Vector3 delta = point - origin;

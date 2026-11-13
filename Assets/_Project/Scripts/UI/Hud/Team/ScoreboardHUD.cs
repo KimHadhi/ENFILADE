@@ -66,10 +66,10 @@ public sealed class ScoreboardHUD : MonoBehaviour
 
     private void Start()
     {
-        waves = FindFirstObjectByType<WaveManager>();
-        tracker = FindFirstObjectByType<MissionTracker>();
+        waves = SceneOne<WaveManager>.Get();
+        tracker = SceneOne<MissionTracker>.Get();
         var input = GetComponent<PlayerInput>();
-        show = (input != null ? input.actions : InputSystem.actions)?.FindAction(ShowAction, false);
+        show = (input != null ? input.actions : InputSystem.actions).OrNull()?.FindAction(ShowAction, false);
         ownsShow = show != null && !show.enabled;
         if (ownsShow) show.Enable();
         var host = new GameObject("Scoreboard", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
@@ -315,7 +315,7 @@ public sealed class ScoreboardHUD : MonoBehaviour
         RefreshRank();
         int seconds = Mathf.FloorToInt(Time.timeSinceLevelLoad);
         played.text = Texts.Format("score.played", (seconds / 60).ToString("00"), (seconds % 60).ToString("00"));
-        if (tracker == null) tracker = FindFirstObjectByType<MissionTracker>();
+        if (tracker == null) tracker = SceneOne<MissionTracker>.Get();
         objectives.Refresh(tracker);
         if (perksDirty)
         {

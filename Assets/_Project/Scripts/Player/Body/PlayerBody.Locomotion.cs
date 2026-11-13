@@ -500,7 +500,7 @@ public sealed partial class PlayerBody
         text.Append($" · 분당 {steps:0}걸음 · 미끄러짐 {slide:0.00} m/s · 골반 {yaw:0}° · 다리 {legLength:0.00} m");
         foreach (var channel in channels)
             if (channel.Gait != null && channel.Target > .05f)
-                text.Append($"\n  {channel.Playable.GetAnimationClip()?.name} {channel.Target:0.00} ({channel.Gait.Speed * GaitScale:0.00} m/s, "
+                text.Append($"\n  {channel.Playable.GetAnimationClip().OrNull()?.name} {channel.Target:0.00} ({channel.Gait.Speed * GaitScale:0.00} m/s, "
                     + $"분당 {120f / Mathf.Max(.01f, channel.Gait.Stride):0}걸음)");
         return text.ToString();
     }

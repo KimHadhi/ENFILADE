@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -148,9 +147,9 @@ public static class KillFlairs
                 foreach (string part in when.Split(';', ',', ' ', '+'))
                     if (part.Length > 0 && Enum.TryParse(part.Trim(), true, out KillMarks mark)) flair.When |= mark;
                     else if (part.Trim().Length > 0) Debug.LogWarning($"[KillFlairs] {TableName}.csv [{id}] when: '{part}' is not a KillMarks name.");
-            flair.Multi = Whole(cells, "multi", 0);
-            flair.Priority = Whole(cells, "priority", 0);
-            flair.On = Whole(cells, "on", 1) != 0;
+            flair.Multi = cells.Whole("multi", 0);
+            flair.Priority = cells.Whole("priority", 0);
+            flair.On = cells.Flag("on", true);
             if (cells.TryGetValue("icon", out string icon) && !Enum.TryParse(icon.Trim(), true, out flair.Icon))
                 Debug.LogWarning($"[KillFlairs] {TableName}.csv [{id}] icon: '{icon}' is not one of {string.Join(", ", Enum.GetNames(typeof(Icon)))}.");
             if (cells.TryGetValue("row", out string rowText))
@@ -164,19 +163,13 @@ public static class KillFlairs
             }
             // The stamp's words: a Texts row (feed.flair.<id>) the cell names, or plain words.
             if (cells.TryGetValue("text", out string text)) flair.Text = Texts.Cell(text);
-            flair.Delay = Number(cells, "delay", 0f);
-            flair.Seconds = Mathf.Max(.1f, Number(cells, "seconds", 1f));
-            flair.Above = Mathf.Max(0f, Number(cells, "above", 0f));
-            flair.Below = Mathf.Max(0f, Number(cells, "below", 0f));
+            flair.Delay = cells.Number("delay", 0f);
+            flair.Seconds = Mathf.Max(.1f, cells.Number("seconds", 1f));
+            flair.Above = Mathf.Max(0f, cells.Number("above", 0f));
+            flair.Below = Mathf.Max(0f, cells.Number("below", 0f));
             flairs.Add(flair);
         }
         flairs.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         return flairs;
     }
-
-    private static int Whole(IReadOnlyDictionary<string, string> cells, string field, int fallback)
-        => cells.TryGetValue(field, out string raw) && int.TryParse(raw.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : fallback;
-
-    private static float Number(IReadOnlyDictionary<string, string> cells, string field, float fallback)
-        => cells.TryGetValue(field, out string raw) && float.TryParse(raw.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
 }

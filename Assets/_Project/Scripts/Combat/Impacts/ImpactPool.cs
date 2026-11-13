@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -193,14 +192,11 @@ public sealed class ImpactPool : MonoBehaviour
         foreach (string id in GameTables.RowIds(TableName))
         {
             if (!GameTables.TryGetRow(TableName, id, out var cells)) continue;
-            int copies = int.TryParse(Cell(cells, "copies"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int count) ? count : 1;
-            float scale = float.TryParse(Cell(cells, "scale"), NumberStyles.Float, CultureInfo.InvariantCulture, out float size) ? size : 1f;
-            float.TryParse(Cell(cells, "lightness"), NumberStyles.Float, CultureInfo.InvariantCulture, out float lightness);
-            float.TryParse(Cell(cells, "holeSize"), NumberStyles.Float, CultureInfo.InvariantCulture, out float holeSize);
-            float.TryParse(Cell(cells, "holeVary"), NumberStyles.Float, CultureInfo.InvariantCulture, out float holeVary);
-            float holeStretch = float.TryParse(Cell(cells, "holeStretch"), NumberStyles.Float, CultureInfo.InvariantCulture, out float stretch) ? stretch : 1f;
-            float exitScale = float.TryParse(Cell(cells, "exitScale"), NumberStyles.Float, CultureInfo.InvariantCulture, out float exit) ? exit : 1f;
-            float.TryParse(Cell(cells, "holeSeconds"), NumberStyles.Float, CultureInfo.InvariantCulture, out float holeSeconds);
+            int copies = cells.Whole("copies", 1);
+            float scale = cells.Number("scale", 1f), lightness = cells.Number("lightness", 0f);
+            float holeSize = cells.Number("holeSize", 0f), holeVary = cells.Number("holeVary", 0f);
+            float holeStretch = cells.Number("holeStretch", 1f), exitScale = cells.Number("exitScale", 1f);
+            float holeSeconds = cells.Number("holeSeconds", 0f);
             var row = new Row { Presets = new List<Preset>(), ExitPresets = new List<Preset>(), Scale = scale, Lightness = lightness,
                 HoleSize = holeSize, HoleVary = Mathf.Max(0f, holeVary), HoleStretch = Mathf.Max(1f, holeStretch),
                 ExitScale = Mathf.Max(.1f, exitScale), HoleSeconds = Mathf.Max(0f, holeSeconds) };

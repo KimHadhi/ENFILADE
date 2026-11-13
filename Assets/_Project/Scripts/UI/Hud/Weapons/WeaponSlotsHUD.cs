@@ -499,8 +499,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     }
 
     private static float Number(string row, string field, float fallback)
-        => GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string raw)
-            && float.TryParse(raw.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(TableName, row, field, fallback);
 
     // One number per slot, ;-separated; a missing or unreadable one keeps its fallback.
     private static void Numbers(string row, string field, float[] into, float[] fallback)
@@ -508,7 +507,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         string[] parts = GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string raw)
             ? raw.Split(';') : Array.Empty<string>();
         for (int i = 0; i < into.Length; i++)
-            into[i] = i < parts.Length && float.TryParse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+            into[i] = i < parts.Length && TableCells.TryNumber(parts[i].Trim(), out float value)
                 ? value : i < fallback.Length ? fallback[i] : 0f;
     }
 }

@@ -107,7 +107,7 @@ public sealed class HoldReveal : MonoBehaviour
     private List<GameObject> Show(ZombieGrip grip)
     {
         var copies = new List<GameObject>();
-        if (grip.TryGetComponent(out EnemyHealth health)) HitFlashRenderer.For(health)?.SetHolder(1f);
+        if (grip.TryGetComponent(out EnemyHealth health)) HitFlashRenderer.For(health).OrNull()?.SetHolder(1f);
         if (material == null) return copies;
         grip.GetComponentsInChildren(found);
         foreach (var source in found)

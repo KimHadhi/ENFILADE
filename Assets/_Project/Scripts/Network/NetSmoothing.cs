@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -152,7 +151,6 @@ public static class NetSmoothing
         return sorted[Mathf.Clamp(Mathf.FloorToInt(share * (count - 1)), 0, count - 1)];
     }
 
-    private static float Number(string row, float fallback)
-        => GameTables.TryGetRow("Network", row, out var cells) && cells.TryGetValue("value", out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+    internal static float Number(string row, float fallback)
+        => GameTables.Number("Network", row, "value", fallback);
 }

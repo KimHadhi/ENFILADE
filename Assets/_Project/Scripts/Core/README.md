@@ -8,11 +8,12 @@
 
 | 폴더 | 스크립트 | 무엇 |
 | --- | ---: | --- |
-| [Common](Common/) | 3 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)) |
+| [Common](Common/) | 6 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)), Unity 오브젝트의 진짜 null([UnityNull](Common/UnityNull.cs)), 플레이어 파일 쓰기·읽기([SaveFile](Common/SaveFile.cs)), 숫자 표기 고정([GameCulture](Common/GameCulture.cs)) |
 | [Loading](Loading/) | 6 | 로딩 화면과 첫 사용 준비 |
 | [Mods](Mods/) | 1 | Mods 폴더 읽기 (GameMods) |
-| [Scene](Scene/) | 2 | 실행 중 하이어라키 폴더, 대기 카메라 |
-| [Settings](Settings/) | 10 | 저장되는 설정, 키 설정, 화면, 일시정지 |
+| [Scene](Scene/) | 3 | 실행 중 하이어라키 폴더, 대기 카메라, 씬에 하나뿐인 것 찾기([SceneOne](Scene/SceneOne.cs)) |
+| [Settings](Settings/) | 14 | 저장되는 설정, 키 설정(주제별 파일), 화면 |
+| [Time](Time/) | 2 | 게임 속도의 주인([WorldTime](Time/WorldTime.cs))과 일시정지([GamePause](Time/GamePause.cs)) |
 | [Tables](Tables/) | 4 | CSV 표 읽기와 적용 (GameTables, CsvTable, TableCells, TableFieldWriter) |
 | [Texts](Texts/) | 2 | 화면 글자 (Texts, TextKey) |
 

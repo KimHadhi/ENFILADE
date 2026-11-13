@@ -23,7 +23,6 @@ public sealed class MovementInput
     /// <summary>Dive / prone (Player/Dive) was pressed this frame.</summary>
     public bool DivePressed { get; private set; }
     public bool ShovePressed { get; private set; }
-    public bool SprintHeld { get; private set; }
     public bool LeanPressed { get; private set; }
     public int LeanSide { get; private set; }
     internal bool SprintButtonHeld
@@ -78,7 +77,7 @@ public sealed class MovementInput
         ShovePressed = available && InputFocus.Pressed(shoveAction);
         if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;
-        SprintHeld = move && SprintButtonHeld;
+        
         int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
         LeanSide = move ? (settings.leanToggle ? leanLatched : heldSide) : 0;
         LeanPressed = move && LeanSide != 0 && (InputFocus.Pressed(leanLeftAction) || InputFocus.Pressed(leanRightAction));

@@ -219,7 +219,7 @@ public abstract class ZombieElite : MonoBehaviour
     {
         var key = new Color(color.r, color.g, color.b, shine);
         if (paints.TryGetValue(key, out var made) && made != null) return made;
-        var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Universal Render Pipeline/Simple Lit");
+        var lit = Shader.Find("Universal Render Pipeline/Lit").OrNull() ?? Shader.Find("Universal Render Pipeline/Simple Lit");
         made = new Material(lit) { name = "Elite Prop", hideFlags = HideFlags.DontSave };
         if (made.HasProperty("_BaseColor")) made.SetColor("_BaseColor", color);
         if (made.HasProperty("_Smoothness")) made.SetFloat("_Smoothness", shine);

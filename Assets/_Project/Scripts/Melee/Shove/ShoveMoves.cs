@@ -151,7 +151,7 @@ public sealed class ShoveMoves : MonoBehaviour
         BeginSweep(true);
         // The other PCs hear of it as a kick; crouched, their copy sweeps (ShowKick), and so does the body (PlayerBody.Sweep).
         Kicked?.Invoke();
-        MeleeCombos.For(player)?.OpenLink();
+        MeleeCombos.For(player).OrNull()?.OpenLink();
         return true;
     }
 
@@ -162,9 +162,9 @@ public sealed class ShoveMoves : MonoBehaviour
         SweepArcVfx.Play(transform, sweepForward, sweepArc, sweepRadius, sweepSeconds);
         if (!mine) return;
         sweepClock = 0f; sweepPrev = sweepArc * .5f; swept.Clear();
-        GetComponent<PlayerFistAudio>()?.PlaySwing();
+        GetComponent<PlayerFistAudio>().OrNull()?.PlaySwing();
         ShoveCounter.Shoved(player, sweepForward);
-        CombatHeadMotion.For(player)?.Move(new Vector3(0f, -sweepView.x, 0f), new Vector3(sweepView.y, 0f, -sweepView.z),
+        CombatHeadMotion.For(player).OrNull()?.Move(new Vector3(0f, -sweepView.x, 0f), new Vector3(sweepView.y, 0f, -sweepView.z),
             .05f, sweepSeconds * .6f, .2f);
     }
 
@@ -225,7 +225,7 @@ public sealed class ShoveMoves : MonoBehaviour
     private void SweepStrike(MeleeCombatTarget target, Collider collider, Vector3 away, MovementAbilitySettings settings)
     {
         Vector3 point = collider.bounds.ClosestPoint(transform.position + Vector3.up * .25f);
-        var audio = GetComponent<PlayerShoveAudio>() ?? gameObject.AddComponent<PlayerShoveAudio>();
+        var audio = GetComponent<PlayerShoveAudio>().OrNull() ?? gameObject.AddComponent<PlayerShoveAudio>();
         if (ShoveCounter.TryShoveCounter(player, target, point)) { audio.Play(ShoveImpactKind.Enemy); return; }
         var receiver = target.GetComponent<IDamageReceiver>() ?? collider.GetComponentInParent<IDamageReceiver>();
         bool landed = true;
@@ -282,8 +282,8 @@ public sealed class ShoveMoves : MonoBehaviour
     private void Swing()
     {
         swung = true;
-        GetComponent<PlayerFistAudio>()?.PlaySwing();
-        GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
+        GetComponent<PlayerFistAudio>().OrNull()?.PlaySwing();
+        GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(
             new Vector3(kickViewPunch.x, UnityEngine.Random.Range(-kickViewPunch.y, kickViewPunch.y), 0f));
     }
 
@@ -329,7 +329,7 @@ public sealed class ShoveMoves : MonoBehaviour
         var posture = collider.GetComponentInParent<MeleeCombatTarget>();
         var receiver = collider.GetComponentInParent<IDamageReceiver>();
         var shove = posture != null ? posture : collider.GetComponentInParent<IShoveReceiver>();
-        var audio = GetComponent<PlayerShoveAudio>() ?? gameObject.AddComponent<PlayerShoveAudio>();
+        var audio = GetComponent<PlayerShoveAudio>().OrNull() ?? gameObject.AddComponent<PlayerShoveAudio>();
         // A zombie late in a grab or a leap is countered instead, as by a shove (ShoveCounter): its own return and show.
         if (posture != null && posture.IsAvailable && ShoveCounter.TryShoveCounter(player, posture, point))
         {

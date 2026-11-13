@@ -361,10 +361,7 @@ public static class OutfitPictures
                 data.pieces.Add(pair.Key);
                 data.framings.Add(pair.Value);
             }
-            string path = Path.Combine(Application.persistentDataPath, PersistentFolder, PersistentFramings);
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            File.WriteAllText(path, JsonUtility.ToJson(data, true));
-            return true;
+            return SaveFile.Write(Path.Combine(Application.persistentDataPath, PersistentFolder, PersistentFramings), JsonUtility.ToJson(data, true));
         }
         catch (Exception problem)
         {
@@ -380,8 +377,7 @@ public static class OutfitPictures
         try
         {
             string path = Path.Combine(Application.persistentDataPath, PersistentFolder, PersistentFramings);
-            if (!File.Exists(path)) return persistent;
-            var data = JsonUtility.FromJson<Stored>(File.ReadAllText(path));
+            var data = SaveFile.Read(path, JsonUtility.FromJson<Stored>);
             for (int i = 0; data != null && i < data.pieces.Count && i < data.framings.Count; i++) persistent[data.pieces[i]] = data.framings[i];
         }
         catch (Exception problem)

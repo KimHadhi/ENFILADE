@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // PerkCardScreen: Opening, picking, closing. One part of the class; the rest is in PerkCardScreen.cs and the files beside it.
 public sealed partial class PerkCardScreen
@@ -122,36 +121,14 @@ public sealed partial class PerkCardScreen
     // Alone the game stops, the cursor comes out and every key waits; in a room only the combat keys wait.
     private void Hold(bool hold)
     {
-        bool alone = !GameSession.IsOnline;
-        var actions = InputSystem.actions;
-        var moves = actions != null ? actions.FindActionMap("Player", false) : null;
-        var combat = actions != null ? actions.FindActionMap("Combat", false) : null;
         if (hold)
         {
-            holdingCombatMap = combat != null;
-            combatMapWas = combat != null && combat.enabled;
-            combat?.Disable();
-            holdingPlayerMap = alone && moves != null;
-            playerMapWas = holdingPlayerMap && moves.enabled;
-            if (holdingPlayerMap) moves.Disable();
-            paused = alone && !GamePause.IsPaused;
-            if (paused) GamePause.Set(true);
-            if (alone)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
+            bool alone = !GameSession.IsOnline;
+            InputHold.Take(this, alone ? Held.All : Held.Combat);
+            if (alone) GamePause.Take(this);
             return;
         }
-        if (holdingCombatMap && combatMapWas) combat?.Enable();
-        if (holdingPlayerMap && playerMapWas) moves?.Enable();
-        holdingCombatMap = holdingPlayerMap = false;
-        if (paused) GamePause.Set(false);
-        paused = false;
-        if (!SettingsMenu.IsOpen && !ShopMenu.IsOpen)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        InputHold.Release(this);
+        GamePause.Release(this);
     }
 }

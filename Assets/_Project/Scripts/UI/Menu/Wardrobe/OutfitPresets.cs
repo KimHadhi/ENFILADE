@@ -310,9 +310,7 @@ public static class OutfitPresets
         presets = new List<OutfitPreset>();
         try
         {
-            string path = Path.Combine(Root, ListFile);
-            if (!System.IO.File.Exists(path)) return;
-            var stored = JsonUtility.FromJson<Stored>(System.IO.File.ReadAllText(path));
+            var stored = SaveFile.Read(Path.Combine(Root, ListFile), JsonUtility.FromJson<Stored>);
             if (stored?.presets == null) return;
             foreach (var preset in stored.presets)
                 if (preset != null && !string.IsNullOrEmpty(preset.id)) presets.Add(preset);
@@ -328,9 +326,8 @@ public static class OutfitPresets
     {
         try
         {
-            Directory.CreateDirectory(Root);
             var stored = new Stored { presets = presets ?? new List<OutfitPreset>() };
-            System.IO.File.WriteAllText(Path.Combine(Root, ListFile), JsonUtility.ToJson(stored, true));
+            SaveFile.Write(Path.Combine(Root, ListFile), JsonUtility.ToJson(stored, true));
         }
         catch (Exception problem)
         {

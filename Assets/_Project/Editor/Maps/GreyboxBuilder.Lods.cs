@@ -30,7 +30,7 @@ public sealed partial class GreyboxBuilder
     {
         if (lodCull >= 0f) return lodCull;
         if (!GameTables.TryGetRow(LodTable, sceneName, out var row)) GameTables.TryGetRow(LodTable, "Default", out row);
-        lodCull = Mathf.Clamp(row != null ? Number(row, "cull", LodCullFallback) : LodCullFallback, LodCullLeast, LodCullMost);
+        lodCull = Mathf.Clamp(row != null ? row.Number("cull", LodCullFallback) : LodCullFallback, LodCullLeast, LodCullMost);
         return lodCull;
     }
 

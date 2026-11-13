@@ -119,7 +119,7 @@ public sealed class KitHitView : MonoBehaviour
     private static GameObject Handler(GameObject target)
     {
         if (target == null) return null;
-        return ExecuteEvents.GetEventHandler<IPointerClickHandler>(target) ?? ExecuteEvents.GetEventHandler<IPointerDownHandler>(target)
+        return ExecuteEvents.GetEventHandler<IPointerClickHandler>(target).OrNull() ?? ExecuteEvents.GetEventHandler<IPointerDownHandler>(target).OrNull()
             ?? ExecuteEvents.GetEventHandler<IPointerEnterHandler>(target);
     }
 

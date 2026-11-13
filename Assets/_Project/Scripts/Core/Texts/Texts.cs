@@ -57,7 +57,8 @@ public static class Texts
     {
         string template = Get(id);
         if (values == null || values.Length == 0) return template;
-        try { return string.Format(CultureInfo.CurrentCulture, template, values); }
+        // Numbers go in the way the game writes them on every PC (GameCulture), whatever Windows' region says.
+        try { return string.Format(CultureInfo.InvariantCulture, template, values); }
         // A slip in the table ({ without its number) must never break the screen showing it: the words go up as written.
         catch (FormatException) { return template; }
     }

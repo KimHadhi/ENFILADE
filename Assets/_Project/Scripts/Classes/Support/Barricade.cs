@@ -512,7 +512,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         {
             nextShare = Time.time + ShareEvery;
             dirty = false;
-            Network?.ShareBarricadeHealth(id, health);
+            Network.OrNull()?.ShareBarricadeHealth(id, health);
         }
     }
 
@@ -597,7 +597,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         Shake();
         KitSound.Play(KitSound.Cue.Splinter, Near(.5f));
         if (Authority) Wear(damage);
-        else Network?.SendBarricadeHit(id, damage);
+        else Network.OrNull()?.SendBarricadeHit(id, damage);
         return DamageResult.Blocked;
     }
 
@@ -608,7 +608,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         dirty = true;
         Planked();
         if (health > 0f) return;
-        Network?.ShareBarricadeHealth(id, 0f);
+        Network.OrNull()?.ShareBarricadeHealth(id, 0f);
         Break();
     }
 

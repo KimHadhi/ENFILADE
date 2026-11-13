@@ -19,7 +19,7 @@ public static class GrenadeBursts
             case Throwable.Flash: FlashBurst.Play(at, info, thrower, mine); break;
             case Throwable.Smoke: SmokeScreen.Spawn(at, info); break;
             case Throwable.Mist: MistField.Spawn(at, info); break;
-            case Throwable.Dye: DyeBurst.Play(at, info, thrower, mine); break;
+            case Throwable.Dye: DyeBurst.Play(at, info, thrower); break;
             // A claymore fires one way from where it lies (ClaymoreMine); a copy that never saw it set down bursts all round.
             case Throwable.Claymore: FragBlast.Play(at, info, thrower, mine); break;
         }

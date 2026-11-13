@@ -320,10 +320,8 @@ public static class GunSkins
                 if (row.TryGetValue("kind", out string kind)) Enum.TryParse(kind, true, out skin.Kind);
                 if (row.TryGetValue("gun", out string gun)) skin.Gun = gun.Trim();
                 if (row.TryGetValue("pattern", out string pattern)) Enum.TryParse(pattern, true, out skin.Pattern);
-                if (row.TryGetValue("scale", out string scale) && float.TryParse(scale, System.Globalization.NumberStyles.Float,
-                        System.Globalization.CultureInfo.InvariantCulture, out float s)) skin.Scale = s;
-                if (row.TryGetValue("size", out string size) && int.TryParse(size, System.Globalization.NumberStyles.Integer,
-                        System.Globalization.CultureInfo.InvariantCulture, out int side)) skin.Size = side;
+                skin.Scale = row.Number("scale", skin.Scale);
+                skin.Size = row.Whole("size", skin.Size);
                 if (row.TryGetValue("material", out string material)) skin.Material = material.Trim();
                 if (row.TryGetValue("replaces", out string replaces)) skin.Replaces = replaces.Trim();
                 if (row.TryGetValue("colors", out string colors))

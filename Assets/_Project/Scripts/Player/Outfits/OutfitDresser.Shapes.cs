@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 // OutfitDresser: blend shapes that follow the body. One part of the class; the rest is in OutfitDresser.cs and the files beside it.
@@ -17,7 +16,7 @@ internal static partial class OutfitDresser
             int equals = pair.IndexOf('=');
             string name = (equals < 0 ? pair : pair.Substring(0, equals)).Trim();
             float weight = 100f;
-            if (equals >= 0 && !float.TryParse(pair.Substring(equals + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out weight))
+            if (equals >= 0 && !TableCells.TryNumber(pair.Substring(equals + 1), out weight))
             {
                 Warn($"셰이프키 '{pair}'의 값을 읽지 못했습니다.");
                 continue;

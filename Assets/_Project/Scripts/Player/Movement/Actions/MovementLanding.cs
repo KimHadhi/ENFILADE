@@ -226,7 +226,7 @@ public sealed class MovementLanding
         ctx.Actions.ClearJumpBuffer();
 
         // [카메라 연출 추가] 구르기 시작 시 피치(x축)를 강하게 앞으로 쏠리게 함
-        if (!inPlace) ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
+        if (!inPlace) ctx.GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
 
         return true;
     }

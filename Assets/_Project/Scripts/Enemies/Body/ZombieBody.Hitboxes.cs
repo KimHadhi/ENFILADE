@@ -170,7 +170,7 @@ public sealed partial class ZombieBody
         var parts = new List<FitPart>();
         Vector3 up = Model.transform.up, forward = Model.transform.forward;
         FitHead(points, parts, up, forward);
-        FitTorso(points, parts, up, forward);
+        FitTorso(points, parts, forward);
         FitLimb(points, parts, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm);
         FitLimb(points, parts, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
         FitLimb(points, parts, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm);
@@ -249,7 +249,7 @@ public sealed partial class ZombieBody
 
     // A box per spine bone up to the neck, along the bone to the next one, as wide (side to side) and deep (front to back)
     // as most of its vertices; the hips' box also reaches down over the seat.
-    private void FitTorso(Dictionary<int, List<Vector3>> points, List<FitPart> parts, Vector3 up, Vector3 forward)
+    private void FitTorso(Dictionary<int, List<Vector3>> points, List<FitPart> parts, Vector3 forward)
     {
         var chain = new List<HumanBodyBones>();
         foreach (var bone in new[] { HumanBodyBones.Hips, HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest, HumanBodyBones.Neck })

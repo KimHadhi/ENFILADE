@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -142,6 +141,6 @@ public static class GunGrips
     {
         value = 0f;
         return row.TryGetValue(column, out string text) && !string.IsNullOrWhiteSpace(text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+            && TableCells.TryNumber(text, out value);
     }
 }

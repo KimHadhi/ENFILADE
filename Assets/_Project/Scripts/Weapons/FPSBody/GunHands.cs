@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -58,6 +57,5 @@ public static class GunHands
     }
 
     private static float Number(IReadOnlyDictionary<string, string> row, string column)
-        => row.TryGetValue(column, out string text) && !string.IsNullOrWhiteSpace(text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : 0f;
+        => row.Number(column, 0f);
 }

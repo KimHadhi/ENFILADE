@@ -47,7 +47,7 @@ public sealed class PlayerCombatActions
             || ctx.IsLandingRecovery)
         { CancelShove(); return; }
         shoveSweep.Tick(dt);
-        if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>()?.ConfirmShoveHit();
+        if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>().OrNull()?.ConfirmShoveHit();
     }
 
     internal bool TryShove()
@@ -63,7 +63,7 @@ public sealed class PlayerCombatActions
             cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
             return true;
         }
-        weapon?.InterruptForSurvival(true);
+        weapon.OrNull()?.InterruptForSurvival(true);
         // The gun swings through its bash on every PC (ShoveMoves.Bashed → FPSBody.Bash, PlayerNetworkCombat).
         ShoveMoves.For(ctx).Bash();
         cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
@@ -72,7 +72,7 @@ public sealed class PlayerCombatActions
         shoveSweep.Begin(ctx, eyes, ctx.AbilitySettings.shoveDamage,
             ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
         ShoveMoves.For(ctx).Lunge(eyes, ctx.AbilitySettings.shoveSweepReach, ctx.AbilitySettings.interactionLayers);
-        if (shoveSweep.HitCount > 0) weapon?.ConfirmShoveHit();
+        if (shoveSweep.HitCount > 0) weapon.OrNull()?.ConfirmShoveHit();
         return true;
     }
     private static bool Reloading(WeaponController weapon) => weapon != null && weapon.Runtime != null && weapon.Runtime.IsReloading;
@@ -87,7 +87,7 @@ public sealed class PlayerCombatActions
             || speed < Mathf.Max(.1f, settings.dashPushMinSpeed) || Vector3.Dot(run, forward) < speed * RunAlignment) return false;
         // Reloading, even on the run, V is the kick that keeps the reload (TryShove).
         if (Reloading(ctx.GetComponent<WeaponController>())) return false;
-        ctx.GetComponent<WeaponController>()?.InterruptForSurvival();
+        ctx.GetComponent<WeaponController>().OrNull()?.InterruptForSurvival();
         contacted.Clear(); attackId = DamageHit.NewAttackId();
         DashSpeed = speed * settings.dashPushSpeedScale;
         ctx.Abilities.ActionDirection = forward;
@@ -135,7 +135,7 @@ public sealed class PlayerCombatActions
             var breakable = collider.GetComponentInParent<IBreakable>();
             if (breakable != null && DashSpeed >= ctx.DoorBreakSpeedThreshold)
             {
-                if (contacted.Add(breakable as Object ?? collider)) breakable.Break(point, hit.normal, DashSpeed);
+                if (contacted.Add((breakable as Object).OrNull() ?? collider)) breakable.Break(point, hit.normal, DashSpeed);
                 continue;
             }
             // Something already touching the body (a wall alongside) is not in the way ahead.
@@ -167,15 +167,15 @@ public sealed class PlayerCombatActions
 
         // The dash stops dead on the body it hit, and the run with it.
         ctx.Actions.Momentum.Stop();
-        ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
+        ctx.GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(
             new Vector3(-20f, UnityEngine.Random.Range(-5f, 5f), UnityEngine.Random.Range(-8f, 8f)), -20f);
         // Shares time ownership with perfect defense.
-        var timeEffects = ctx.GetComponent<CombatTimeEffects>() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
+        var timeEffects = ctx.GetComponent<CombatTimeEffects>().OrNull() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
         timeEffects.RequestSlowdown(ctx, .1f, .08f);
         ctx.RaiseDashPushHit(point);
         BashImpact.Play(point, direction, 1.3f, ctx);
         // With the fists out the punch comes straight back after it, as the spinning backfist (MeleeCombos link).
-        MeleeCombos.For(ctx)?.OpenLink();
+        MeleeCombos.For(ctx).OrNull()?.OpenLink();
     }
     internal void Reset() { CancelShove(); cooldown = dashCooldown = DashSpeed = 0f; attackId = 0; contacted.Clear(); Fatigue.Reset(); }
 }

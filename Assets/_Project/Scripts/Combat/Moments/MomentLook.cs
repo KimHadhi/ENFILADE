@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -100,7 +99,7 @@ public static class MomentLook
 
     /// <summary>A number from Tables/MomentFx.csv, row.key, or the fallback.</summary>
     public static float Number(string row, string key, float fallback)
-        => TryText(row, key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(TableName, row, key, fallback);
 
     /// <summary>A colour from Tables/MomentFx.csv (#RRGGBB or #RRGGBBAA), or the fallback.</summary>
     public static Color Colour(string row, string key, Color fallback)
@@ -113,7 +112,7 @@ public static class MomentLook
     public static string Text(string row, string key, string fallback) => Texts.Cell(TryText(row, key, out string text) ? text : fallback);
 
     /// <summary>Whether a moment's look is on (row.on, 1 by default).</summary>
-    public static bool On(string row) => Number(row, "on", 1f) > .5f;
+    public static bool On(string row) => GameTables.Flag(TableName, row, "on", true);
 
     private static bool TryText(string row, string key, out string text)
     {

@@ -133,7 +133,7 @@ public sealed class ResultsMannequin : MonoBehaviour
         if (face != null) face.Unscaled = face.Watched = face.Showing = true;
         var mannequin = host.AddComponent<ResultsMannequin>();
         mannequin.face = face;
-        mannequin.Bind(model, pose ?? profile.Find(MainMenuPreview.IdleClip));
+        mannequin.Bind(model, pose.OrNull() ?? profile.Find(MainMenuPreview.IdleClip));
         return mannequin;
     }
 

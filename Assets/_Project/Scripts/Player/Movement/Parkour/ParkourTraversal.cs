@@ -18,8 +18,6 @@ public sealed class ParkourTraversal
     public float ObstacleProgress { get; internal set; }
     /// <summary>A warped move's clip times (s) its hands are down from and until (WarpedTraversal); zero without one.</summary>
     public Vector2 ObstacleSupport { get; internal set; }
-    /// <summary>Climbing off a ladder's top: how far short of the floor's edge the warp kept the hands (m) to keep the feet out of the wall.</summary>
-    public float EdgeShortfall { get; internal set; }
     /// <summary>
     /// The clip time (s) a vault carried by its clip's hands is at (WarpedTraversal); the body plays its clip there. Negative
     /// when the clip runs by itself.
@@ -237,7 +235,7 @@ public sealed class ParkourTraversal
         surge = way * speed;
         surgeLeft = gap / speed + SurgeSpare;
         // The push sells the burst: the view dips forward a little and widens, and the speed widens it further on its own.
-        ctx.GetComponentInChildren<PlayerCameraEffects>()?.ApplyCameraImpulse(
+        ctx.GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(
             new Vector3(settings.vaultSurgeKick.x, 0f, 0f), settings.vaultSurgeKick.y);
         return true;
     }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -195,7 +194,7 @@ public sealed partial class GreyboxBuilder
     // and on a floor along the turn.
     private DecalProjector Project(DecalKind kind, Vector3 point, Vector3 normal, float turn, Vector2 size)
     {
-        decalRoot ??= Root("◤━━ 데칼 (Tables/MapDecals)");
+        if (decalRoot == null) decalRoot = Root("◤━━ 데칼 (Tables/MapDecals)");
         var host = new GameObject(kind.Id);
         host.transform.SetParent(decalRoot, false);
         bool flat = Mathf.Abs(Vector3.Dot(normal, Vector3.up)) > .9f;
@@ -232,9 +231,9 @@ public sealed partial class GreyboxBuilder
                 var kind = new DecalKind
                 {
                     Id = id, Align = Text(row, "align").ToLowerInvariant(), Material = material,
-                    Width = Mathf.Max(.05f, Number(row, "width", 1f)), Height = Mathf.Max(.05f, Number(row, "height", 1f)),
-                    Vary = Mathf.Clamp(Number(row, "vary", .3f), 0f, .9f), Far = Mathf.Max(5f, Number(row, "far", 40f)),
-                    Opacity = Mathf.Clamp01(Number(row, "opacity", 1f)), Spin = Number(row, "spin", 0f) > .5f
+                    Width = Mathf.Max(.05f, row.Number("width", 1f)), Height = Mathf.Max(.05f, row.Number("height", 1f)),
+                    Vary = Mathf.Clamp(row.Number("vary", .3f), 0f, .9f), Far = Mathf.Max(5f, row.Number("far", 40f)),
+                    Opacity = Mathf.Clamp01(row.Number("opacity", 1f)), Spin = row.Number("spin", 0f) > .5f
                 };
                 string name = Text(row, "group");
                 if (!decalGroups.TryGetValue(name, out var list)) decalGroups[name] = list = new List<DecalKind>();
@@ -257,7 +256,7 @@ public sealed partial class GreyboxBuilder
             int star = item.IndexOf('*');
             string group = (star < 0 ? item : item.Substring(0, star)).Trim();
             float density = .05f;
-            if (star >= 0 && !float.TryParse(item.Substring(star + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out density)) continue;
+            if (star >= 0 && !TableCells.TryNumber(item.Substring(star + 1), out density)) continue;
             if (group.Length > 0 && density > 0f) spec.Add((group, density));
         }
         return spec;

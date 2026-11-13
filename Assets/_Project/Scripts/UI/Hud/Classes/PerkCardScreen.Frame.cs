@@ -47,7 +47,7 @@ public sealed partial class PerkCardScreen
     {
         if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || SettingsMenu.IsOpen || GamePause.IsPaused
             || HubDressing.IsOpen) return true;
-        if (chat == null) chat = FindAnyObjectByType<SinglePlayerChatManager>();
+        if (chat == null) chat = SceneOne<SinglePlayerChatManager>.Get();
         return chat != null && chat.BlocksMissionInputThisFrame;
     }
 

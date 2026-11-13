@@ -81,7 +81,7 @@ public sealed class FistsView : MonoBehaviour
             nextRight = !right;
             // The view whips round against the swing as the body turns into it, and settles.
             float across = right ? 1f : -1f;
-            CombatHeadMotion.For(this)?.Move(Vector3.zero, new Vector3(0f, -across * SpinYaw, across * SpinRoll), SpinOut, SpinHold, SpinBack);
+            CombatHeadMotion.For(this).OrNull()?.Move(Vector3.zero, new Vector3(0f, -across * SpinYaw, across * SpinRoll), SpinOut, SpinHold, SpinBack);
             // Its whip is the view's turn; the knock as it lands is still the punch's (PlayerMeleeCombat.FeelThrow).
             melee.FeelThrow(right, true);
             Thrown?.Invoke(right, charge);

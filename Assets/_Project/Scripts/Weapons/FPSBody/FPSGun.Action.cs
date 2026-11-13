@@ -149,7 +149,7 @@ public sealed partial class FPSGun
     }
 
     /// <summary>The trigger let go (Weapon.OnFireReleased): the recoil settles.</summary>
-    internal void StopFire(RecoilAnimation recoil) => recoil?.Stop();
+    internal void StopFire(RecoilAnimation recoil) => recoil.OrNull()?.Stop();
 
     /// <summary>
     /// Our reload began (Weapon.OnReload): its clip on the body, its gun-part clip on the gun, its camera motion, all from

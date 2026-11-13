@@ -140,6 +140,6 @@ public sealed class BashImpact : MonoBehaviour
         if (by == null || !by.IsLocal || by.IsNetworkDriven || knockFrame == Time.frameCount) return;
         knockFrame = Time.frameCount;
         var view = by.GetComponentInChildren<Camera>();
-        CameraViewPunch.For(view)?.ImpactPunch(new Vector3(-1.1f * size, Random.Range(-.8f, .8f), Random.Range(-1.4f, 1.4f)), -1.2f * size, .06f * size);
+        CameraViewPunch.For(view).OrNull()?.ImpactPunch(new Vector3(-1.1f * size, Random.Range(-.8f, .8f), Random.Range(-1.4f, 1.4f)), -1.2f * size, .06f * size);
     }
 }

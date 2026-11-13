@@ -64,7 +64,7 @@ public sealed class MovementLean
         slipActivation = ctx.Abilities.Dodge.Activation;
         slipTime = 0f;
         slipStart = lean; // No camera teleport on the hit frame.
-        MicroSlip.For(ctx)?.Show(ctx, side);
+        MicroSlip.For(ctx).OrNull()?.Show(ctx, side);
     }
     private float CollisionLimitedLean(int side)
     {

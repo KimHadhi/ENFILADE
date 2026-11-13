@@ -16,7 +16,7 @@ public sealed partial class WeaponController
             (health != null && !health.IsAlive))
             return;
 
-        var dodge = movement?.Abilities?.Dodge;
+        var dodge = movement.OrNull()?.Abilities?.Dodge;
         int activation = dodge?.Activation ?? 0;
         if (activation != dodgeActivation)
         {
@@ -218,12 +218,12 @@ public sealed partial class WeaponController
             timeSinceShot = 0f;
             // The shot lets the choke out; held down the sights it draws in again for the next.
             chokeCharge = chokePop = 0f;
-            look?.ApplyRecoil(recoil, weaponData);
+            look.OrNull()?.ApplyRecoil(recoil, weaponData);
             presentation?.OnShot(weaponData, recoil);
             UpdateSpread();
         }
         UpdateCrosshair();
-        cameraEffects?.RefreshWeaponFov();
+        cameraEffects.OrNull()?.RefreshWeaponFov();
     }
 
     // A pellet takes the point its place in the ring shows only while that lies within about 40 degrees of where the

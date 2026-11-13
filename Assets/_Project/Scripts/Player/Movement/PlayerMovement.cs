@@ -335,11 +335,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
         Execution = GetComponent<PlayerExecution>();
         if (Execution == null) Execution = gameObject.AddComponent<PlayerExecution>();
         GameTables.Bind(TableName, "Execution", Execution);
-        PerfectDefense = GetComponent<PlayerPerfectDefense>() ?? gameObject.AddComponent<PlayerPerfectDefense>();
+        PerfectDefense = GetComponent<PlayerPerfectDefense>().OrNull() ?? gameObject.AddComponent<PlayerPerfectDefense>();
         GameTables.Bind(TableName, "Defense", PerfectDefense);
         PerfectDefense.Initialize(this);
         if (Application.isPlaying && IsLocal && GetComponent<ParryFeedback>() == null) GameTables.Bind(TableName, "Parry", gameObject.AddComponent<ParryFeedback>());
-        DodgePassThrough =GetComponent<DodgeEnemyPassThrough>() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();
+        DodgePassThrough =GetComponent<DodgeEnemyPassThrough>().OrNull() ?? gameObject.AddComponent<DodgeEnemyPassThrough>();
         if (GetComponent<PlayerLeanHitboxes>() == null) gameObject.AddComponent<PlayerLeanHitboxes>();
         // The "[F] climb down" prompt over a ladder's top in reach (backlog 141).
         if (Application.isPlaying && IsLocal && GetComponent<LadderPromptHUD>() == null) gameObject.AddComponent<LadderPromptHUD>();
@@ -555,9 +555,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public void ResetVelocity()
     {
-        PerfectDefense?.Cancel(); DodgePassThrough?.Finish();
-        Execution?.Cancel();
-        MeleeCombat?.CancelAction();
+        PerfectDefense.OrNull()?.Cancel(); DodgePassThrough.OrNull()?.Finish();
+        Execution.OrNull()?.Cancel();
+        MeleeCombat.OrNull()?.CancelAction();
         if (!IsInitialized) return;
         if (IsNetworkDriven) { StateMachine.Mirror(MovementState.Standing); return; }
         if (Posture.airBodyTucked || Posture.airCrouching) Posture.RebaseAirCrouchFeet();

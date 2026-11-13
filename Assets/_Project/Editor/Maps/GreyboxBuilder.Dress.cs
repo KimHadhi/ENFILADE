@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -187,7 +186,7 @@ public sealed partial class GreyboxBuilder
         float height = half.y * 2f;
         string solid = ArtSolid(kind);
         bool cap = solid == "cap";
-        if (!cap && float.TryParse(solid, NumberStyles.Float, CultureInfo.InvariantCulture, out float upTo) && upTo > 0f)
+        if (!cap && TableCells.TryNumber(solid, out float upTo) && upTo > 0f)
             height = Mathf.Min(height, upTo);
         else if (!cap && height > SolidBandLow && height < SolidBandTop)
             height = height < SolidBandLow + SolidBandSink ? SolidBandLow : SolidBandTop;
@@ -263,8 +262,8 @@ public sealed partial class GreyboxBuilder
             case "stretch": fit = ArtFit.Stretch; break;
             default: fit = ArtFit.Native; break;
         }
-        yaw = Number(row, "yaw", 0f);
-        scale = Number(row, "scale", 1f);
+        yaw = row.Number("yaw", 0f);
+        scale = row.Number("scale", 1f);
         return true;
     }
 
@@ -272,7 +271,7 @@ public sealed partial class GreyboxBuilder
     // to a look, gone once it is small on screen (FitLods), and static like the rest of the map.
     private GameObject Place(GameObject prefab, Vector3 point, float yaw, Vector3 scale, bool hang)
     {
-        dressing ??= Root("◤━━ 꾸밈 (Tables/MapArt, 보이기만 함)");
+        if (dressing == null) dressing = Root("◤━━ 꾸밈 (Tables/MapArt, 보이기만 함)");
         var bounds = BoundsOf(prefab);
         var copy = Spawn(prefab);
         copy.transform.SetParent(dressing, true);

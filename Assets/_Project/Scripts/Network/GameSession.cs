@@ -168,16 +168,12 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     // (PlayerNetworkPose sends every tick). Netcode's own default is 30; the user asked whether it could be 120 (2026-11-11
     // playtest: "팀원 30hz로 보내나. 이거 120hz까지 늘릴 수 있나"), so it is Network.csv's tickRate, 120. Zombies' positions
     // go out as often, which /net shows; every PC in a room must use the same number or joining fails.
-    private static uint TickRate => (uint)Mathf.Clamp(Mathf.RoundToInt(TableNumber("tickRate", 120f)), 10, 240);
+    private static uint TickRate => (uint)Mathf.Clamp(Mathf.RoundToInt(NetSmoothing.Number("tickRate", 120f)), 10, 240);
 
     // A copy is drawn a little in the past so the next position has always come in by the time it is needed: two ticks
     // was Netcode's own buffer at 30 a second (66 ms), which at 120 would leave 17 ms for every bump in the connection.
     // Network.csv's bufferSeconds keeps it about that long in time instead, as extra ticks on top of Netcode's two.
-    private static int BufferTicks => Mathf.Max(0, Mathf.RoundToInt(TableNumber("bufferSeconds", .05f) * TickRate) - 2);
-
-    private static float TableNumber(string row, float fallback)
-        => GameTables.TryGetRow("Network", row, out var cells) && cells.TryGetValue("value", out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+    private static int BufferTicks => Mathf.Max(0, Mathf.RoundToInt(NetSmoothing.Number("bufferSeconds", .05f) * TickRate) - 2);
 
     private static CountingTransport AddTransport(GameObject host)
     {

@@ -114,7 +114,7 @@ public static class PlayerClass
     /// Schießhund's own mark (<paramref name="target"/>) its bounty's debuff, and on a zombie its bounty dye
     /// splashed the dye's. AttackTrace multiplies it in with the perk cards' for this PC's shots only.
     /// </summary>
-    public static float GunFactor(bool headshot, Component target = null)
+    public static float GunFactor(Component target = null)
     {
         var kit = ClassKit.Local;
         if (kit == null) return 1f;
@@ -250,6 +250,6 @@ public static class PlayerClass
     /// dealt its cards, so a class's numbers grow for its own player.
     /// </summary>
     public static float Ability(string classRow, string name, float fallback)
-        => (GameTables.TryGetRow(AbilityTable, classRow, out var row) ? row.Number(name, fallback) : fallback)
+        => GameTables.Number(AbilityTable, classRow, name, fallback)
             + PlayerPerks.AbilityBonus(classRow, name);
 }

@@ -144,7 +144,7 @@ public sealed class PingMarks : MonoBehaviour
             Enemy = enemy, Foe = foe, By = by, Bounty = bounty, Until = Time.time + Mathf.Max(.5f, seconds), Since = Time.unscaledTime
         };
         Reveal(mark);
-        HitFlashRenderer.For(enemy)?.SetPing(1f, bounty ? BountyColor : PingColor);
+        HitFlashRenderer.For(enemy).OrNull()?.SetPing(1f, bounty ? BountyColor : PingColor);
         mark.Marker = KitStyle.TopLeft(bounty ? "Bounty mark" : "Ping mark", canvas, Vector2.zero, new Vector2(140f, 60f));
         mark.Marker.anchorMin = mark.Marker.anchorMax = Vector2.zero;
         mark.Marker.pivot = new Vector2(.5f, 0f);

@@ -91,7 +91,7 @@ public sealed class PlayerBodyProfile : ScriptableObject
         return null;
     }
 
-    public GameObject ModelOf(Skin skin) => skin?.Model ?? model;
+    public GameObject ModelOf(Skin skin) => (skin?.Model).OrNull() ?? model;
 
     /// <summary>A skin and its colour set as one string, "skin#variant", or the skin alone when there is no colour set.</summary>
     public static string LookId(string skinId, string variantId) =>

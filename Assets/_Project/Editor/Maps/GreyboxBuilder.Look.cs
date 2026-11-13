@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -32,27 +31,27 @@ public sealed partial class GreyboxBuilder
         else
         {
             PrepareSkyTexture(skyPath);
-            RenderSettings.skybox = SkyMaterial(AssetDatabase.LoadAssetAtPath<Texture2D>(skyPath), Number(row, "skyExposure", 1f),
-                Number(row, "skyRotation", 0f));
+            RenderSettings.skybox = SkyMaterial(AssetDatabase.LoadAssetAtPath<Texture2D>(skyPath), row.Number("skyExposure", 1f),
+                row.Number("skyRotation", 0f));
         }
         if (sun != null)
         {
-            sun.transform.rotation = Quaternion.Euler(Number(row, "sunPitch", 50f), Number(row, "sunYaw", 0f), 0f);
+            sun.transform.rotation = Quaternion.Euler(row.Number("sunPitch", 50f), row.Number("sunYaw", 0f), 0f);
             sun.color = Colour(row, "sunColor", Color.white);
-            sun.intensity = Number(row, "sunIntensity", 1f);
+            sun.intensity = row.Number("sunIntensity", 1f);
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = Mathf.Clamp01(Number(row, "shadowStrength", 1f));
+            sun.shadowStrength = Mathf.Clamp01(row.Number("shadowStrength", 1f));
             // Nothing is lightmapped. With probes (GreyboxBuilder.Probes) the sun is Mixed with Baked Indirect: drawn
             // and shadowed live as before, its bounce baked; without them it is plain realtime.
             sun.lightmapBakeType = BakesProbes ? LightmapBakeType.Mixed : LightmapBakeType.Realtime;
             RenderSettings.sun = sun;
         }
         RenderSettings.ambientMode = AmbientMode.Skybox;
-        RenderSettings.ambientIntensity = Number(row, "ambientIntensity", 1f);
+        RenderSettings.ambientIntensity = row.Number("ambientIntensity", 1f);
         RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox;
         RenderSettings.defaultReflectionResolution = 128;
-        RenderSettings.reflectionIntensity = Number(row, "reflectionIntensity", 1f);
-        float density = Number(row, "fogDensity", 0f);
+        RenderSettings.reflectionIntensity = row.Number("reflectionIntensity", 1f);
+        float density = row.Number("fogDensity", 0f);
         RenderSettings.fog = density > 0f;
         RenderSettings.fogMode = FogMode.Exponential;
         RenderSettings.fogDensity = density;
@@ -65,7 +64,7 @@ public sealed partial class GreyboxBuilder
         ProbeLighting(lighting);
         AssetDatabase.CreateAsset(lighting, lightingPath);
         Lightmapping.lightingSettings = lighting;
-        return skyFile + ", 해 " + Number(row, "sunPitch", 50f) + "°, 안개 " + density;
+        return skyFile + ", 해 " + row.Number("sunPitch", 50f) + "°, 안개 " + density;
     }
 
     // An equirectangular sky wants its full 4K, no mip maps (they draw a thin seam where the picture wraps around),
@@ -120,10 +119,6 @@ public sealed partial class GreyboxBuilder
 
     private static string Text(IReadOnlyDictionary<string, string> row, string key)
         => row.TryGetValue(key, out string text) ? text.Trim() : "";
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => row.TryGetValue(key, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            ? value : fallback;
 
     private static Color Colour(IReadOnlyDictionary<string, string> row, string key, Color fallback)
         => row.TryGetValue(key, out string text) && ColorUtility.TryParseHtmlString(text.Trim(), out Color colour) ? colour : fallback;

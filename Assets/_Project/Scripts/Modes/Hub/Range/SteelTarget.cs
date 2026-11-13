@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -50,27 +49,23 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
             GameTables.TryGetRow(TableName, zombie ? "Zombie" : "Plate", out var row);
             return new Shape
             {
-                TorsoWidth = N(row, "torsoWidth", zombie ? .46f : .6f), TorsoHeight = N(row, "torsoHeight", zombie ? .62f : .9f),
-                TorsoBottom = N(row, "torsoBottom", zombie ? .85f : 1f), ShoulderCut = N(row, "shoulderCut", zombie ? .1f : .03f),
-                FootCut = N(row, "footCut", .04f), Thickness = Mathf.Max(.004f, N(row, "thickness", zombie ? .012f : .02f)),
-                HeadRadius = N(row, "headRadius", zombie ? .115f : .15f), HeadDrop = N(row, "headDrop", zombie ? .17f : .21f),
-                PostTop = N(row, "postTop", zombie ? 1.9f : 2.42f), PostBack = Mathf.Max(.08f, N(row, "postBack", zombie ? .24f : .26f)),
+                TorsoWidth = TableCells.Number(row, "torsoWidth", zombie ? .46f : .6f), TorsoHeight = TableCells.Number(row, "torsoHeight", zombie ? .62f : .9f),
+                TorsoBottom = TableCells.Number(row, "torsoBottom", zombie ? .85f : 1f), ShoulderCut = TableCells.Number(row, "shoulderCut", zombie ? .1f : .03f),
+                FootCut = TableCells.Number(row, "footCut", .04f), Thickness = Mathf.Max(.004f, TableCells.Number(row, "thickness", zombie ? .012f : .02f)),
+                HeadRadius = TableCells.Number(row, "headRadius", zombie ? .115f : .15f), HeadDrop = TableCells.Number(row, "headDrop", zombie ? .17f : .21f),
+                PostTop = TableCells.Number(row, "postTop", zombie ? 1.9f : 2.42f), PostBack = Mathf.Max(.08f, TableCells.Number(row, "postBack", zombie ? .24f : .26f)),
                 Paint = C(row, "paint", new Color(.93f, .92f, .88f)), HeadPaint = C(row, "headPaint", KitStyle.Accent),
                 Steel = C(row, "steel", new Color(.16f, .17f, .18f)),
-                RockHz = N(row, "rockHz", 1.6f), RockSeconds = N(row, "rockSeconds", .45f), RockKick = N(row, "rockKick", zombie ? 9f : 4f),
-                RockMost = N(row, "rockMost", zombie ? 22f : 12f), RiseKick = N(row, "riseKick", 70f),
-                HeadHz = N(row, "headHz", 1.15f), HeadSeconds = N(row, "headSeconds", 1.3f), HeadKick = N(row, "headKick", zombie ? 75f : 45f),
-                HeadBack = N(row, "headBack", zombie ? 50f : 40f), HeadFront = N(row, "headFront", 35f), HeadBounce = N(row, "headBounce", .35f),
-                SplashSize = N(row, "splashSize", .1f), SplashSeconds = N(row, "splashSeconds", 7f), SplashFade = N(row, "splashFade", 1.5f),
-                SplashMost = Mathf.Clamp(Mathf.RoundToInt(N(row, "splashMost", 24f)), 1, 128),
-                RingReach = N(row, "ringReach", 160f), SoundSpeed = N(row, "soundSpeed", 343f), RingGap = N(row, "ringGap", .03f),
-                MeleePush = N(row, "meleePush", 4f), ForwardMost = N(row, "forwardMost", 70f),
+                RockHz = TableCells.Number(row, "rockHz", 1.6f), RockSeconds = TableCells.Number(row, "rockSeconds", .45f), RockKick = TableCells.Number(row, "rockKick", zombie ? 9f : 4f),
+                RockMost = TableCells.Number(row, "rockMost", zombie ? 22f : 12f), RiseKick = TableCells.Number(row, "riseKick", 70f),
+                HeadHz = TableCells.Number(row, "headHz", 1.15f), HeadSeconds = TableCells.Number(row, "headSeconds", 1.3f), HeadKick = TableCells.Number(row, "headKick", zombie ? 75f : 45f),
+                HeadBack = TableCells.Number(row, "headBack", zombie ? 50f : 40f), HeadFront = TableCells.Number(row, "headFront", 35f), HeadBounce = TableCells.Number(row, "headBounce", .35f),
+                SplashSize = TableCells.Number(row, "splashSize", .1f), SplashSeconds = TableCells.Number(row, "splashSeconds", 7f), SplashFade = TableCells.Number(row, "splashFade", 1.5f),
+                SplashMost = Mathf.Clamp(Mathf.RoundToInt(TableCells.Number(row, "splashMost", 24f)), 1, 128),
+                RingReach = TableCells.Number(row, "ringReach", 160f), SoundSpeed = TableCells.Number(row, "soundSpeed", 343f), RingGap = TableCells.Number(row, "ringGap", .03f),
+                MeleePush = TableCells.Number(row, "meleePush", 4f), ForwardMost = TableCells.Number(row, "forwardMost", 70f),
             };
         }
-
-        private static float N(IReadOnlyDictionary<string, string> row, string key, float fallback)
-            => row != null && row.TryGetValue(key, out string text)
-                && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
 
         private static Color C(IReadOnlyDictionary<string, string> row, string key, Color fallback)
             => row != null && row.TryGetValue(key, out string text) && ColorUtility.TryParseHtmlString(text.Trim(), out Color color) ? color : fallback;
@@ -423,7 +418,7 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
             var ring = rings[i];
             if (ring.Due > now) continue;
             rings.RemoveAt(i);
-            bank ??= SoundBank.Load(BankId);
+            if (bank == null) bank = SoundBank.Load(BankId);
             var clip = bank != null ? bank.Pick(ring.Key) : null;
             if (clip == null) continue;
             var tuning = bank.SettingsOf(ring.Key);

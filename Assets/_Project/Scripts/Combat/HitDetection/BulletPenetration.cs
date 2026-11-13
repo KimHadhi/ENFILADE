@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>Where a bullet goes on from a hit (BulletPenetration.Onward).</summary>
@@ -245,7 +244,7 @@ public static class BulletPenetration
         float value = Unlisted;
         foreach (string id in Surfaces.Fallbacks(surface))
             if (GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue(Column, out string cell)
-                && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+                && TableCells.TryNumber(cell, out float parsed))
             {
                 value = Mathf.Max(.001f, parsed);
                 break;
@@ -262,7 +261,7 @@ public static class BulletPenetration
             bodyCost = -1f;
             foreach (string id in Surfaces.Fallbacks(FleshRow))
                 if (GameTables.TryGetRow(Table, id, out var row) && row.TryGetValue(PierceColumn, out string cell)
-                    && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+                    && TableCells.TryNumber(cell, out float parsed))
                 {
                     bodyCost = Mathf.Max(0f, parsed);
                     break;

@@ -160,7 +160,7 @@ public sealed class ZombieExploder : MonoBehaviour
         {
             // Faster as it runs out.
             nextFlash = Time.time + Mathf.Lerp(.28f, .07f, fuse / fuseSeconds);
-            HitFlashRenderer.For(this)?.WhiteFlash(.05f);
+            HitFlashRenderer.For(this).OrNull()?.WhiteFlash(.05f);
         }
         if (fuse < fuseSeconds || !Runs) return;
         health.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), health.Health + 1f, DamageKind.Fall, transform.position + Vector3.up,

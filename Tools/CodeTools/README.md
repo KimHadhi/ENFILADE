@@ -26,6 +26,11 @@ Unity를 켜지 않고 게임 코드 전체를 읽어서 검사하고 정리하�
 | `dead` | 죽은 코드와 "쓰기만 하고 읽지 않는" 멤버 → `dead.txt`, `dead.json` |
 | `dupes` / `clones` | 같은 메서드 사본 / 이름만 다른 닮은꼴 → `dupes.txt`, `clones.txt` |
 | `outline <파일>` | 한 파일의 멤버와 줄 수 (큰 파일을 어떻게 나눌지 볼 때) |
+| `audit` | 논리 오류와 약속 어김을 찾는다 → `audit.txt` (아래 "audit가 찾는 것") |
+| `ornull [--dry]` | Unity 오브젝트에 쓴 `?.`·`??`·`??=`에 `.OrNull()`을 붙인다 |
+| `unparam Type.Method/3:이름,…` | 아무도 읽지 않는 매개변수를 선언과 모든 호출부에서 뺀다 |
+| `numbers [--dry]` / `cells [--dry]` | `float.TryParse(…Invariant…)`를 `TableCells.TryNumber`로 / "줄을 찾고 칸을 꺼내 읽기"를 `GameTables.Number`·`row.Number` 한 줄로 |
+| `writeonly [--dry]` | 쓰기만 하고 읽지 않는 필드·자동 프로퍼티에 쓰는 문장을 지운다 (`dead` 먼저. 그 뒤 `kill`이 선언을 지운다). 손으로 볼 것은 `writeonly-left.txt` |
 | `kill [--skip serialized,structField] [--except @목록] [--dry]` | 죽은 선언을 주석째 지운다. 다 죽은 파일은 `.meta`와 함께 지운다 |
 | `forwarders [--dry]` | 인자를 그대로 넘기기만 하는 static 한 줄 메서드의 호출부가 진짜 대상을 바로 부르게 한다 |
 | `dedupe [--homes 파일] [--map 파일] [--dry]` | 사본들의 호출부를 "집" 하나로 돌린다. 그 뒤 `kill`이 사본을 지운다 |
@@ -33,6 +38,18 @@ Unity를 켜지 않고 게임 코드 전체를 읽어서 검사하고 정리하�
 | `split <파일> [--names "A;B"] [--parts "이름:시작-끝,…"] [--titles "이름=설명;…"]` | 큰 클래스를 partial 파일로 나눈다 (`// ---- 주제 ----` 줄에서, 또는 줄 범위로) |
 | `usings [--dry]` | 아무것도 쓰지 않는 `using` 줄을 지운다 (에디터·플레이어 구성 둘 다에서 안 쓸 때만) |
 | `remove Type.Method/2,…` | 이름 붙인 메서드를 지운다 |
+
+## audit가 찾는 것
+
+코드: 콜백이 붙잡은 반복 변수, 끝을 하나 넘는 반복, 양쪽이 같은 비교, 같은 조건 두 번, null일 때만 쓰이는 값, 분수가 필요한 정수 나눗셈,
+Unity 오브젝트의 `?.`·`??`·`is null`, 양쪽 가지가 같은 `?:`, 자기 자신에 대입, 벡터 성분 실수, 마지막을 안 뽑는 `Random.Range`,
+PC 언어로 읽고 쓰는 숫자, 뒤집힌 `Clamp`, 잘못 쓴 Unity 메시지 이름, `base` 없는 `NetworkBehaviour.OnDestroy`, 아무도 안 읽는 매개변수,
+받기만 하고 놓지 않는 이벤트, 이름만 다른 같은 몸통, `WorldTime` 밖에서 쓰는 `Time.timeScale`·`fixedDeltaTime`.
+
+데이터: 없는 레이어·태그·셰이더·Resources 이름·표·줄·글자 id, 표에 없는 열을 읽는 코드, `Texts.Format`의 인자 수, 표의 두 번 나온 줄·열,
+열보다 칸이 많은 줄(따옴표 없는 쉼표가 칸을 자른 것).
+
+찾은 것이 모두 오류는 아니다(격자 계산의 정수 나눗셈, 한 번만 거는 static 이벤트 등). 새로 생긴 줄만 보면 된다.
 
 ## 죽은 코드를 어떻게 아는가
 

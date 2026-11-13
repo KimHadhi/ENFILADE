@@ -284,7 +284,7 @@ public sealed partial class GreyboxBuilder
     /// </summary>
     public void Blast(string name, Vector3 at, string step, float delay, string use, params GameObject[] scorched)
     {
-        blasts ??= Root("◤━━ 연출 (CampaignBlast: 단계가 시작되면 터짐)");
+        if (blasts == null) blasts = Root("◤━━ 연출 (CampaignBlast: 단계가 시작되면 터짐)");
         var host = new GameObject(name, typeof(CampaignBlast));
         host.transform.SetParent(blasts, false);
         host.transform.position = at;
@@ -436,7 +436,7 @@ public sealed partial class GreyboxBuilder
     /// </summary>
     public void Ambience(string sound, float x0, float x1, float y0, float y1, float z0, float z1, int priority = 1)
     {
-        ambience ??= Root("◤━━ 환경음 구역 (Tables/Ambience의 id)");
+        if (ambience == null) ambience = Root("◤━━ 환경음 구역 (Tables/Ambience의 id)");
         var area = new GameObject("환경음 " + sound).AddComponent<AmbienceArea>();
         area.transform.SetParent(ambience, false);
         area.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f);

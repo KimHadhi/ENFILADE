@@ -103,6 +103,5 @@ public static class LadderFit
     }
 
     private static float Read(string field, float fallback)
-        => GameTables.TryGetRow(PlayerMovement.TableName, "Ability", out var row) && row.TryGetValue(field, out string cell)
-            && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(PlayerMovement.TableName, "Ability", field, fallback);
 }

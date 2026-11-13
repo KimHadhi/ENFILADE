@@ -228,7 +228,7 @@ internal static partial class GunClipRetarget
         try
         {
             ResetRootRotation(copy.transform);
-            return Yaw(copy.transform.InverseTransformDirection(SourceForward(copy.transform)));
+            return MovementFixtures.YawOf(copy.transform.InverseTransformDirection(SourceForward(copy.transform)));
         }
         finally
         {
@@ -245,8 +245,6 @@ internal static partial class GunClipRetarget
         root.rotation = Quaternion.identity;
         foreach (var (child, position, rotation) in children) child.SetPositionAndRotation(position, rotation);
     }
-
-    private static float Yaw(Vector3 direction) => Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
 
     private static Vector3 Forward(Transform body)
     {

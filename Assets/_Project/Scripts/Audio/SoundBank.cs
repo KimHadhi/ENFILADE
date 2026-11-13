@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -90,8 +89,7 @@ public sealed class SoundBank : ScriptableObject
 
     private static void Read(IReadOnlyDictionary<string, string> row, string column, ref float value)
     {
-        if (row.TryGetValue(column, out string raw)
-            && float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed)) value = parsed;
+        value = row.Number(column, value);
     }
 
     private void OnEnable()

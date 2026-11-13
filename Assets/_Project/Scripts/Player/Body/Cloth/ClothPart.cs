@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using MagicaCloth2;
 using UnityEngine;
 
@@ -247,8 +246,8 @@ public sealed class ClothPart
         {
             int colon = pair.IndexOf(':');
             if (colon < 0
-                || !float.TryParse(pair.Substring(0, colon).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float depth)
-                || !float.TryParse(pair.Substring(colon + 1).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float share)) continue;
+                || !TableCells.TryNumber(pair.Substring(0, colon).Trim(), out float depth)
+                || !TableCells.TryNumber(pair.Substring(colon + 1).Trim(), out float share)) continue;
             keys.Add(new Keyframe(Mathf.Clamp01(depth), Mathf.Max(0f, share)));
         }
         if (keys.Count < 2) return null;

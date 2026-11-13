@@ -115,7 +115,7 @@ public sealed partial class GreyboxBuilder
             AssetDatabase.CreateAsset(material, path);
         }
         else if (material.shader != shader) material.shader = shader;
-        float tile = Mathf.Max(.05f, Number(row, "tile", 3f));
+        float tile = Mathf.Max(.05f, row.Number("tile", 3f));
         material.SetTexture("_BaseMap", side.Colour);
         material.SetTexture("_BumpMap", side.Normal);
         material.SetTexture("_RoughnessMap", side.Roughness);
@@ -127,13 +127,13 @@ public sealed partial class GreyboxBuilder
         material.SetTexture("_TopRoughnessMap", top.Roughness);
         material.SetTexture("_TopOcclusionMap", top.Occlusion);
         material.SetColor("_TopColor", Colour(row, "topTint", Color.white));
-        material.SetFloat("_TopTile", Mathf.Max(.05f, Number(row, "topTile", tile)));
-        material.SetFloat("_RoughnessScale", Mathf.Max(0f, Number(row, "roughness", 1f)));
-        material.SetFloat("_Metallic", Mathf.Clamp01(Number(row, "metallic", 0f)));
-        material.SetFloat("_BumpScale", Mathf.Max(0f, Number(row, "normal", 1f)));
-        material.SetFloat("_OcclusionStrength", Mathf.Clamp01(Number(row, "ao", 1f)));
-        material.SetFloat("_Variation", Mathf.Clamp(Number(row, "variation", .12f), 0f, .5f));
-        material.SetFloat("_VariationSize", Mathf.Max(.5f, Number(row, "variationSize", 9f)));
+        material.SetFloat("_TopTile", Mathf.Max(.05f, row.Number("topTile", tile)));
+        material.SetFloat("_RoughnessScale", Mathf.Max(0f, row.Number("roughness", 1f)));
+        material.SetFloat("_Metallic", Mathf.Clamp01(row.Number("metallic", 0f)));
+        material.SetFloat("_BumpScale", Mathf.Max(0f, row.Number("normal", 1f)));
+        material.SetFloat("_OcclusionStrength", Mathf.Clamp01(row.Number("ao", 1f)));
+        material.SetFloat("_Variation", Mathf.Clamp(row.Number("variation", .12f), 0f, .5f));
+        material.SetFloat("_VariationSize", Mathf.Max(.5f, row.Number("variationSize", 9f)));
         material.SetFloat("_ObjectSpace", 0f);
         SetWindows(material, Text(row, "windows"));
         EditorUtility.SetDirty(material);
@@ -202,15 +202,15 @@ public sealed partial class GreyboxBuilder
             material.SetFloat("_Windows", 0f);
             return;
         }
-        float spacing = Mathf.Max(.5f, Number(row, "spacing", 3f)), floor = Mathf.Max(1f, Number(row, "floor", 3f));
-        float sill = Number(row, "sill", .9f);
+        float spacing = Mathf.Max(.5f, row.Number("spacing", 3f)), floor = Mathf.Max(1f, row.Number("floor", 3f));
+        float sill = row.Number("sill", .9f);
         material.SetFloat("_Windows", 1f);
-        material.SetVector("_WindowSize", new Vector4(Number(row, "width", 1.2f), Number(row, "height", 1.5f), Number(row, "frame", .08f), 0f));
+        material.SetVector("_WindowSize", new Vector4(row.Number("width", 1.2f), row.Number("height", 1.5f), row.Number("frame", .08f), 0f));
         material.SetVector("_WindowGrid", new Vector4(spacing, 0f, spacing, 0f));
-        material.SetVector("_WindowRows", new Vector4(floor, sill, Number(row, "ground", sill), 9999f));
+        material.SetVector("_WindowRows", new Vector4(floor, sill, row.Number("ground", sill), 9999f));
         material.SetColor("_WindowColor", Colour(row, "glass", new Color(.16f, .19f, .22f)));
-        material.SetFloat("_WindowGloss", Mathf.Clamp01(Number(row, "gloss", .9f)));
-        material.SetFloat("_WindowVariety", Mathf.Clamp01(Number(row, "variety", .35f)));
+        material.SetFloat("_WindowGloss", Mathf.Clamp01(row.Number("gloss", .9f)));
+        material.SetFloat("_WindowVariety", Mathf.Clamp01(row.Number("variety", .35f)));
     }
 
     // Each look with windows that covers boxes of the layout, its grid fitted to them once the layout stands: across,

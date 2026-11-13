@@ -129,7 +129,7 @@ public sealed partial class FPSGun
     internal void Unequip(FPSAnimator animator, RecoilAnimation recoil, FPSBodyAssets assets)
     {
         EndCycle();
-        recoil?.Stop();
+        recoil.OrNull()?.Stop();
         if (assets.unEquipMotion != null) animator.LinkAnimatorLayer(assets.unEquipMotion);
     }
 

@@ -353,7 +353,7 @@ internal static class UnderwearFit
                 for (int y = y0; y <= y1; y++)
                     for (int z = z0; z <= z1; z++)
                     {
-                        long cell = Key(x, y, z);
+                        long cell = SkinCover.Cell(x, y, z);
                         if (!cells.TryGetValue(cell, out var list)) cells[cell] = list = new List<int>();
                         list.Add(triangle);
                     }
@@ -373,7 +373,7 @@ internal static class UnderwearFit
                 for (int y = y0; y <= y1; y++)
                     for (int z = z0; z <= z1; z++)
                     {
-                        if (!cells.TryGetValue(Key(x, y, z), out var list)) continue;
+                        if (!cells.TryGetValue(SkinCover.Cell(x, y, z), out var list)) continue;
                         foreach (int triangle in list)
                         {
                             if (seen[triangle] == mark) continue;
@@ -393,8 +393,6 @@ internal static class UnderwearFit
 
         private int Floor(float value) => Mathf.FloorToInt(value / size);
     }
-
-    private static long Key(int x, int y, int z) => ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (long)(z & 0x1FFFFF);
 
     // Where a ray meets a triangle (Möller-Trumbore): its distance along the ray, and the triangle's weights there; -1 for none.
     private const float EdgeSlack = 1e-4f;

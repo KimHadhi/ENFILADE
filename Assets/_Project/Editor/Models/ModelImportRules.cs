@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -231,7 +230,7 @@ internal sealed class ModelImportRules : AssetPostprocessor
             }
         }
         context.DependsOnSourceAsset(listPath);
-        var list = CsvTable.Parse(File.ReadAllText(listPath), Path.GetFileName(listPath));
+        var list = CsvTable.Parse(File.ReadAllText(listPath));
         var importer = (ModelImporter)assetImporter;
         var clips = importer.defaultClipAnimations;
         foreach (var clip in clips)
@@ -290,12 +289,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
     }
 
     private static bool Flag(System.Collections.Generic.IReadOnlyDictionary<string, string> row, string column)
-        => row != null && row.TryGetValue(column, out string value) && value.Trim() == "1";
+        => row.Flag(column, false);
 
     private static float Number(System.Collections.Generic.IReadOnlyDictionary<string, string> row, string column)
-        => row != null && row.TryGetValue(column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-            && !float.IsNaN(value) && !float.IsInfinity(value) ? value : 0f;
+        => row.Number(column, 0f);
 
     private void OnPreprocessTexture()
     {

@@ -112,7 +112,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
 
     private void Awake()
     {
-        if (GetComponent<MeleeCombatTarget>() == null) gameObject.AddComponent<MeleeCombatTarget>();
+        melee = GetComponent<MeleeCombatTarget>().OrNull() ?? gameObject.AddComponent<MeleeCombatTarget>();
         // Bullet flinch (push, slow, interrupt) applies to existing prefabs without migration.
         reaction = GetComponent<EnemyHitReaction>();
         if (reaction == null) reaction = gameObject.AddComponent<EnemyHitReaction>();
@@ -124,7 +124,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         if (mind == null) mind = gameObject.AddComponent<ZombieMind>();
         network = GetComponent<EnemyNetwork>();
         GameTables.Bind(TableName, string.IsNullOrWhiteSpace(tableId) ? CombatDamageEvents.BaseName(gameObject) : tableId.Trim(),
-            this, GetComponent<EnemyCombatAI>(), GetComponent<MeleeCombatTarget>(), GetComponent<NavMeshAgent>(), reaction);
+            this, GetComponent<EnemyCombatAI>(), melee, GetComponent<NavMeshAgent>(), reaction);
         // A shambler's hold on a player plays out here (ZombieGrip; the held player's PlayerHold decides it).
         if (GetComponent<ZombieGrip>() == null) gameObject.AddComponent<ZombieGrip>();
         // Its kind (shambler or runner) goes on top of that row (ZombieType, Tables/ZombieKinds).
@@ -211,7 +211,6 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     // What a hit's amount is multiplied by here and now: more while it lies knocked down.
     private float LyingScale()
     {
-        if (melee == null) melee = GetComponent<MeleeCombatTarget>();
         return body != null && body.Wears && melee != null && melee.IsLying ? body.LyingDamage : 1f;
     }
 

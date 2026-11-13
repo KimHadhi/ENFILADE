@@ -135,7 +135,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     {
         // PlayerLook updates after input processing. Include this frame's final camera rotation.
         if (Time.timeScale <= 0f || (player != null && player.IsNetworkDriven)) return;
-        if (!IsActive || !player.InputAvailable || player.Execution?.IsExecuting == true) { CancelAction(); return; }
+        if (!IsActive || !player.InputAvailable || player.Execution.OrNull()?.IsExecuting == true) { CancelAction(); return; }
         if (IsGuardBreaking) return;
         if (MovementBlocksAttack) { SuspendActionsForMovement(); return; }
         punchSweep.Tick(0f); shoveSweep.Tick(0f);
@@ -145,7 +145,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
-        if (!IsActive || player.Execution?.IsExecuting == true) { CancelAction(); return; }
+        if (!IsActive || player.Execution.OrNull()?.IsExecuting == true) { CancelAction(); return; }
         cooldown = Mathf.Max(0f, cooldown - dt);
         shoveRest = Mathf.Max(0f, shoveRest - dt);
         shoveWait = Mathf.Max(0f, shoveWait - dt);
@@ -188,7 +188,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (frame.ShovePressed && player.IsCrouching && cooldown <= 0f && shoveWait <= 0f)
         {
             punchSweep.Cancel(); charging = shovePending = false; IsGuarding = false; parryRemaining = 0f;
-            ShoveMoves.For(player)?.TrySweep();
+            ShoveMoves.For(player).OrNull()?.TrySweep();
         }
         else if (frame.ShovePressed && cooldown <= 0f && shoveWait <= 0f)
         { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; parryRemaining = 0f; }
@@ -210,7 +210,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
                     shoveWait = 0.55f;
                     shoveRest = player.Abilities.Combat.Fatigue.Spend(shoveWait, player.AbilitySettings);
                     Shove();
-                    combos?.OpenLink();
+                    combos.OrNull()?.OpenLink();
                 }
             }
             else if (!frame.ShoveHeld) shovePending = false;
@@ -297,9 +297,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         lungeRemaining = player.IsGrounded ? 0.1f : 0f;
         // The beat counts from the punch leaving, before the sweep can land on its first sample (MeleeCombos).
-        combos?.OnPunchThrown(strike);
+        combos.OrNull()?.OnPunchThrown(strike);
         // Swing first: the sweep can land on its first sample inside Begin.
-        punchLanded = false; punchCharge = charge; fistAudio?.PlaySwing();
+        punchLanded = false; punchCharge = charge; fistAudio.OrNull()?.PlaySwing();
         throwFelt = landFeltLater = false;
         // A Knight's fists hit harder, flesh and posture (PlayerClass).
         float fist = PlayerClass.FistFactor(player);
@@ -337,9 +337,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         // One hit cue per punch, even when it lands on several targets; and one beat waiting after it (MeleeCombos).
         if (!punchLanded)
         {
-            if (punchCharge >= heavyPunchCharge) fistAudio?.PlayHeavyHit();
-            else fistAudio?.PlayHit();
-            combos?.OnPunchLanded();
+            if (punchCharge >= heavyPunchCharge) fistAudio.OrNull()?.PlayHeavyHit();
+            else fistAudio.OrNull()?.PlayHit();
+            combos.OrNull()?.OnPunchLanded();
             // The knock needs the hand, which FistsView picks just after the sweep's first sample: a punch landing on it
             // gets its knock from FeelThrow.
             if (throwFelt) FeelLanding();
@@ -391,18 +391,18 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private void OnPunchWallHit()
     {
         cooldown = 0f;
-        fistAudio?.PlayWallHit();
+        fistAudio.OrNull()?.PlayWallHit();
     }
     public void ShowCounterPunch(bool landed)
     {
-        if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
+        if (IsActive) { fistAudio.OrNull()?.PlaySwing(); if (landed) fistAudio.OrNull()?.PlayHeavyHit(); }
         Punched?.Invoke(1f);
     }
     /// <summary>The counter's back elbow, driven back on the attacker's side (+1 right): the fist pulls back past the shoulder.</summary>
     public event Action<int> Elbowed;
     public void ShowCounterElbow(bool landed, int side)
     {
-        if (IsActive) { fistAudio?.PlaySwing(); if (landed) fistAudio?.PlayHeavyHit(); }
+        if (IsActive) { fistAudio.OrNull()?.PlaySwing(); if (landed) fistAudio.OrNull()?.PlayHeavyHit(); }
         Elbowed?.Invoke(side);
     }
     /// <summary>
@@ -433,14 +433,14 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             parryRemaining = 0f;
             var attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
             // A Knight's parry wears the attacker down harder: a pack zombie breaks on its second (PlayerClass).
-            attacker?.ApplyPostureDamage(25f * PlayerClass.ParryPostureFactor(player), 0.8f);
+            attacker.OrNull()?.ApplyPostureDamage(25f * PlayerClass.ParryPostureFactor(player), 0.8f);
             // The deflect plants the feet: the hit stop holds everything, then the legs stay put a moment longer.
             if (parryFeedback == null) parryFeedback = GetComponent<ParryFeedback>();
             float stop = parryFeedback != null ? parryFeedback.HitStopFor(attacker != null && attacker.IsStaggered) : 0f;
             rootUntil = Time.unscaledTime + stop + parryRootSeconds;
             player.HorizontalVelocity = Vector3.zero;
             // An attack press now goes straight back at them (MeleeCombos riposte).
-            combos?.OpenRiposte(attacker);
+            combos.OrNull()?.OpenRiposte(attacker);
         }
         return true;
     }
@@ -466,7 +466,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         {
             grabRecoveryRemaining -= dt;
             // Landed, it hands the punch straight back as the spinning backfist; V waits on its own.
-            if (grabRecoveryRemaining <= 0f) { CancelAction(); shoveWait = guardBreakCooldown; combos?.OpenLink(); }
+            if (grabRecoveryRemaining <= 0f) { CancelAction(); shoveWait = guardBreakCooldown; combos.OrNull()?.OpenLink(); }
             return;
         }
         Vector3 center = player.transform.position + Vector3.up * Mathf.Min(1f, player.ProneColliderHeight + 0.5f);
@@ -479,7 +479,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             grabConnected = true;
             grabRecoveryRemaining = guardBreakRecovery;
             target.ApplyPostureDamage(guardBreakPostureDamage, guardBreakStun);
-            fistAudio?.PlayHeavyHit();
+            fistAudio.OrNull()?.PlayHeavyHit();
             BashImpact.Play(targetCollider.bounds.ClosestPoint(aim.position), Vector3.ProjectOnPlane(aim.forward, Vector3.up), 1.1f, player);
         }
         else if (grabTime >= guardBreakApproachTimeout) CancelAction();
@@ -520,12 +520,12 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public void CancelAction()
     {
         punchSweep.Cancel(); shoveSweep.Cancel();
-        combos?.CancelDash();
+        combos.OrNull()?.CancelDash();
         if (target != null) target.Release(this);
         target = null; targetCollider = null;
         if (guardAttemptHeld && !defenseConnected) pendingWhiff = true;
         charging = shovePending = IsGuarding = guardAttemptHeld = false;
         chargeTime = shoveTime = lungeRemaining = parryRemaining = guardBufferRemaining = 0f;
     }
-    private void OnDisable() { CancelAction(); input?.RequireTriggerRelease(); }
+    private void OnDisable() { CancelAction(); input.OrNull()?.RequireTriggerRelease(); }
 }

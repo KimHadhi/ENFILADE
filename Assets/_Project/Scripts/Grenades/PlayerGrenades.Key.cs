@@ -20,7 +20,7 @@ public sealed partial class PlayerGrenades
         {
             if (count <= 0) { GrenadeHUD.Refused(); return; }
             if (Time.time < readyAt) return;
-            Begin(info);
+            Begin();
             return;
         }
         if ((arm != Arm.Draw && arm != Arm.Hold) || letGo) return;
@@ -52,7 +52,7 @@ public sealed partial class PlayerGrenades
 
     // G pressed: the off hand goes for it. Whatever the gun was doing with that hand stops (a reload, the sights), as a
     // shove stops them.
-    private void Begin(ThrowableInfo info)
+    private void Begin()
     {
         StartArm(kind);
         pressedAt = Time.time;

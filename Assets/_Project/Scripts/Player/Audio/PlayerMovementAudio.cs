@@ -290,7 +290,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     private void Cue(string cue, string surface, bool atHands = false)
     {
         Vector3 point = transform.position + (atHands ? Vector3.up * 1.2f : Vector3.zero);
-        Sounds()?.Play(cue, point, surface);
+        Sounds().OrNull()?.Play(cue, point, surface);
     }
 
     // What the player stands on, else the default surface.

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -130,9 +129,7 @@ public sealed class ReverbArea : MonoBehaviour
     {
         if (tableRead) return fadeTime;
         tableRead = true;
-        if (GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue("fadeTime", out string raw)
-            && float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-            fadeTime = Mathf.Max(0f, value);
+        fadeTime = Mathf.Max(0f, GameTables.Number(TableName, TableRow, "fadeTime", fadeTime));
         return fadeTime;
     }
 

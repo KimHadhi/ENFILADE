@@ -138,7 +138,7 @@ public static class MatchResults
         if (tally.TryGetComponent(out PlayerNetworkPose pose) && pose.IsSpawned && !string.IsNullOrEmpty(pose.Look)) return pose.Look;
         if (!tally.TryGetComponent(out PlayerMovement someone) || !someone.IsLocal) return "";
         var settings = GameSettings.Current;
-        string skinId = PlayerBodyProfile.Load()?.CurrentSkin?.Id ?? settings.characterSkin;
+        string skinId = PlayerBodyProfile.Load().OrNull()?.CurrentSkin?.Id ?? settings.characterSkin;
         return OutfitLook.Join(PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant), OutfitLook.SavedText(skinId));
     }
 }

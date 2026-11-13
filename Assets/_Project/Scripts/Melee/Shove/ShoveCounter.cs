@@ -132,13 +132,13 @@ public sealed class ShoveCounter : MonoBehaviour
         if (player != null)
         {
             player.Abilities?.Combat.RefreshShove();
-            player.GetComponentInChildren<PlayerMeleeCombat>()?.RefreshShove();
+            player.GetComponentInChildren<PlayerMeleeCombat>().OrNull()?.RefreshShove();
             if (player.TryGetComponent(out ShoveMoves moves)) moves.RefreshKick();
         }
         Vector3 away = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
         away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
         // Its grab or leap ends here and now; the host's ends with the stagger or the fall it hears of.
-        target.GetComponent<EnemyCombatAI>()?.CancelAttack();
+        target.GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
         if (airborne)
         {
             var health = target.GetComponent<EnemyHealth>();
@@ -160,7 +160,7 @@ public sealed class ShoveCounter : MonoBehaviour
             var camera = GetComponentInChildren<Camera>();
             view = camera != null ? camera.transform : null;
         }
-        if (timeEffects == null) timeEffects = GetComponent<CombatTimeEffects>() ?? gameObject.AddComponent<CombatTimeEffects>();
+        if (timeEffects == null) timeEffects = GetComponent<CombatTimeEffects>().OrNull() ?? gameObject.AddComponent<CombatTimeEffects>();
         if (hitStopSeconds > 0f) timeEffects.RequestSlowdown(this, hitStopScale, hitStopSeconds, target);
         if (slowSeconds > 0f) timeEffects.RequestSlowdown(slowOwner, slowScale, hitStopSeconds + slowSeconds, target);
 
@@ -170,9 +170,9 @@ public sealed class ShoveCounter : MonoBehaviour
         if (view != null)
         {
             var punch = CameraViewPunch.For(view.GetComponent<Camera>());
-            punch?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z), cameraFov, cameraTrauma);
+            punch.OrNull()?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z), cameraFov, cameraTrauma);
             Vector3 contact = view.position + Vector3.Slerp(view.forward, toAttacker, .6f).normalized * contactDistance - view.up * .05f;
-            GetComponent<ParryFeedback>()?.CounterBurst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, burstGrowth);
+            GetComponent<ParryFeedback>().OrNull()?.CounterBurst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, burstGrowth);
             // The bash's own shock on top, the biggest of them (For Honor's bash, BashImpact).
             BashImpact.Play(contact, away, 1.8f, player);
             if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
@@ -185,7 +185,7 @@ public sealed class ShoveCounter : MonoBehaviour
             Hold = hitStopSeconds + slowSeconds * .5f, Fade = .5f, Filter = new Color(1f, .93f, .96f), VignetteColor = new Color(.3f, .02f, .1f)
         });
         CombatCueAudio.Play(gameObject, CombatCue.ParryBreak, .82f);
-        HitFlashRenderer.For(target)?.WhiteFlash(.14f);
+        HitFlashRenderer.For(target).OrNull()?.WhiteFlash(.14f);
         ShowBanner(NextGrade());
     }
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using UnityEngine;
 
@@ -38,7 +37,7 @@ public static class CardCommands
         var card = PlayerPerks.Find(parts[0]);
         if (card == null) return "그런 카드가 없다: " + parts[0] + " (card list)";
         int times = 1;
-        if (parts.Length > 1 && !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out times)) return "단계는 숫자로";
+        if (parts.Length > 1 && !TableCells.TryWhole(parts[1], out times)) return "단계는 숫자로";
         for (int i = 0; i < Mathf.Max(1, times) && PlayerPerks.Level(card.Id) < card.Levels; i++) PlayerPerks.Raise(card.Id);
         string other = Mine(card) ? "" : " (다른 클래스 카드라 효과가 없을 수 있다)";
         return card.Name + " " + PlayerPerks.Level(card.Id) + "/" + card.Levels + "단계" + other;

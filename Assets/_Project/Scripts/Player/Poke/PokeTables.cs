@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>Where a friend's fingertip may poke a character (SkinPoke): only these give under it.</summary>
 public enum PokeZone { None, Cheek, Belly, Arm, Shoulder, HeadTop }
@@ -70,7 +69,7 @@ public static class PokeTables
     }
 
     private static float Cell(IReadOnlyDictionary<string, string> row, string column)
-        => row.TryGetValue(column, out string text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : 0f;
+        => row.Number(column, 0f);
 
     /// <summary>F held this long (s) turns into a point; a shorter press stays the ping it always was.</summary>
     public static float HoldAfter => Number("Point.holdAfter", .25f);
@@ -80,12 +79,8 @@ public static class PokeTables
     {
         Listen();
         if (numbers.TryGetValue(key, out float value)) return value;
-        value = fallback;
         int dot = key.IndexOf('.');
-        if (dot > 0 && GameTables.TryGetRow(TableName, key.Substring(0, dot), out var row)
-            && row.TryGetValue(key.Substring(dot + 1), out string cell)
-            && float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float read))
-            value = read;
+        value = dot > 0 ? GameTables.Number(TableName, key.Substring(0, dot), key.Substring(dot + 1), fallback) : fallback;
         numbers[key] = value;
         return value;
     }

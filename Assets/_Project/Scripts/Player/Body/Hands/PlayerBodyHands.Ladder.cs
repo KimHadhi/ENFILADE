@@ -25,7 +25,7 @@ public sealed partial class PlayerBodyHands
     private Ladder heldLadder;
     private int ladderStepsSeen;
     private bool wasOnLadder, wasSliding;
-    private bool ladderTopExit, ladderExitFirstLeft;
+    private bool ladderTopExit;
     private float ladderExitProgress, ladderSlideBlend, ladderCatchDuration;
 
     private void UpdateLadder(bool onLadder, bool leavingLadder, float dt)
@@ -113,8 +113,7 @@ public sealed partial class PlayerBodyHands
         var ladder = traversal.Obstacle.ExitLadder;
         if (!ladderTopExit || heldLadder != ladder)
         {
-            ladderExitFirstLeft = player.Abilities.Fixtures.LadderLeftHand;
-            if (heldLadder != ladder || !wasOnLadder)
+                        if (heldLadder != ladder || !wasOnLadder)
             {
                 // Handles a character/model rebind during the exit without borrowing an unrelated old hold.
                 heldLadder = ladder;

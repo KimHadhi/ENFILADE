@@ -86,7 +86,7 @@ internal sealed class VrcPrefab
         var owner = Find<GameObject>(Reference(document, "m_GameObject"));
         var bone = new PhysBone
         {
-            Root = Find<Transform>(Reference(document, "rootTransform")) ?? (owner != null ? owner.transform : null),
+            Root = Find<Transform>(Reference(document, "rootTransform")).OrNull() ?? (owner != null ? owner.transform : null),
             Endpoint = Vector(document, "endpointPosition"),
             Integration = (int)Number(document, "integrationType"),
             LimitType = (int)Number(document, "limitType"),
@@ -115,7 +115,7 @@ internal sealed class VrcPrefab
         foreach (long id in References(document, "colliders"))
         {
             if (!documents.TryGetValue(id, out var collider) || !IsScript(collider, PhysBoneColliderScript)) continue;
-            var on = Find<Transform>(Reference(collider, "rootTransform")) ?? Find<Transform>(Reference(collider, "m_GameObject"));
+            var on = Find<Transform>(Reference(collider, "rootTransform")).OrNull() ?? Find<Transform>(Reference(collider, "m_GameObject"));
             if (on != null) bone.Colliders.Add(on);
         }
         PhysBones.Add(bone);
@@ -141,7 +141,7 @@ internal sealed class VrcPrefab
     private static float Number(string document, string field)
     {
         var match = Regex.Match(document, @"^  " + field + @": ([^\r\n{]+)", RegexOptions.Multiline);
-        return match.Success && float.TryParse(match.Groups[1].Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+        return match.Success && TableCells.TryNumber(match.Groups[1].Value.Trim(), out float value)
             ? value : 0f;
     }
 
@@ -172,7 +172,7 @@ internal sealed class VrcPrefab
         foreach (Match key in Regex.Matches(block.Groups[1].Value,
                      @"time: (\S+)\s+value: (\S+)\s+inSlope: (\S+)\s+outSlope: (\S+)\s+tangentMode: \S+\s+weightedMode: (\S+)\s+inWeight: (\S+)\s+outWeight: (\S+)"))
         {
-            float Part(int group) => float.TryParse(key.Groups[group].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : 0f;
+            float Part(int group) => TableCells.TryNumber(key.Groups[group].Value, out float v) ? v : 0f;
             keys.Add(new Keyframe(Part(1), Part(2), Part(3), Part(4), Part(6), Part(7)) { weightedMode = (WeightedMode)(int)Part(5) });
         }
         return keys.Count > 0 ? new AnimationCurve(keys.ToArray()) : null;
@@ -182,7 +182,7 @@ internal sealed class VrcPrefab
     {
         var match = Regex.Match(document, @"^  " + field + @": \{x: ([^,]+), y: ([^,]+), z: ([^}]+)\}", RegexOptions.Multiline);
         if (!match.Success) return Vector3.zero;
-        float Axis(int group) => float.TryParse(match.Groups[group].Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : 0f;
+        float Axis(int group) => TableCells.TryNumber(match.Groups[group].Value.Trim(), out float v) ? v : 0f;
         return new Vector3(Axis(1), Axis(2), Axis(3));
     }
 }

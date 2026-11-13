@@ -66,8 +66,8 @@ public sealed class MicroSlip : MonoBehaviour
     internal void Show(PlayerMovement player, int side)
     {
         if (player == null || !player.IsLocal || player.IsNetworkDriven) return;
-        if (dip > 0f) CombatHeadMotion.For(player)?.Dip(dip, slipSeconds, holdSeconds, returnSeconds);
-        if (glint > 0f) CombatEdgeGlint.For(player)?.Show(-side, glintColor, glint, glintSeconds);
+        if (dip > 0f) CombatHeadMotion.For(player).OrNull()?.Dip(dip, slipSeconds, holdSeconds, returnSeconds);
+        if (glint > 0f) CombatEdgeGlint.For(player).OrNull()?.Show(-side, glintColor, glint, glintSeconds);
     }
 
     /// <summary>The slipped blow came from attacker: the look locks onto them for as long as the slip lasts, if they stand
@@ -107,7 +107,7 @@ public sealed class MicroSlip : MonoBehaviour
         // Whatever the look turned beyond the lock's own turn is the player's: enough of it and the lock lets go.
         if (measured && (ownTurn += Mathf.Abs(Mathf.DeltaAngle(lastYaw + asked, yaw))) > lockLetGo) { LetGo(); return; }
         asked = PlayerPerfectDefense.Bearing(eyes, locked) * (1f - Mathf.Exp(-lockRate * dt));
-        CombatHeadMotion.For(owner)?.Turn(asked);
+        CombatHeadMotion.For(owner).OrNull()?.Turn(asked);
         lastYaw = yaw; measured = true;
     }
 

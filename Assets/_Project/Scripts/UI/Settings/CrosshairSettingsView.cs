@@ -92,7 +92,7 @@ public sealed class CrosshairSettingsView
     private void ShowPreview()
     {
         preview.HoldShape = GameSettings.Current.steadyCrosshair;
-        preview.Show(PlayerCrosshairs.For(kind) ?? PlayerCrosshairs.Design(kind));
+        preview.Show(PlayerCrosshairs.For(kind).OrNull() ?? PlayerCrosshairs.Design(kind));
     }
 
     // Six rows at most, so a section always fits under the preview.

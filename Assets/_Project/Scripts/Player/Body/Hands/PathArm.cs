@@ -76,6 +76,12 @@ public abstract class PathArm : MonoBehaviour
         return next != null ? next.position - bone.position : bone.rotation * jointAxis;
     }
 
+    // What the hand holds (under the holder) shows only while the arm has it out.
+    protected void ShowHolder(bool show)
+    {
+        if (holder != null && holder.gameObject.activeSelf != show) holder.gameObject.SetActive(show);
+    }
+
     internal static void Turn(Transform bone, Vector3 now, Vector3 want, float share)
     {
         if (now.sqrMagnitude < 1e-12f || want.sqrMagnitude < 1e-12f) return;

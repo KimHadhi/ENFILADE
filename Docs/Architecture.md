@@ -159,6 +159,15 @@ Unity 없이 몇 초 만에 도는 구조 검사가 있다. 문서 링크가 끊
 - **큰 클래스는 주제별 파일로.** 한 파일이 600줄을 넘어가면 `// ---- 주제 ----` 줄로 구획을 긋고 `클래스.주제.cs`(partial)로 나눈다(`Check-Code.ps1 split`). 본 파일 `클래스.cs`에는 필드와 수명 주기(Awake·Update)와 밖에서 부르는 것만 남는다. 지금 나뉘어 있는 것: FPSBody, FPSGun, WeaponController, HandGrip, ZombieMind, ShopMenu, TowerRun, CampaignRun, PlayerNetworkCombat, PlayerGrenades, ClassKit, OutfitDresser, OutfitStudio, MainMenuWardrobe, PerkCardScreen, ResultsShow, DeathScreen, KillFlairFx, FieldPickups와 편집기의 CampaignMaps(장별), GreyboxBuilder, TowerMap, TacticalGunSetup, GunClipRetarget.
 - **프리팹에 옛 조각을 남기지 않는다.** 코드가 새로 그리게 된 화면 조각은 프리팹에서도 지운다. 숨기기만 하면 그 조각이 붙잡은 그림과 스크립트가 계속 남는다.
 
+0.9.4에서는 논리 오류를 찾으면서, 같은 실수가 여러 곳에서 나던 자리를 "한 곳이 맡는다"로 바꿨다.
+
+- **여럿이 건드리는 값은 주인이 하나다.** 게임 속도는 [WorldTime](../Assets/_Project/Scripts/Core/Time/WorldTime.cs), 일시정지는 [GamePause](../Assets/_Project/Scripts/Core/Time/GamePause.cs), 입력 맵과 커서는 [InputHold](../Assets/_Project/Scripts/UI/Shared/InputHold.cs)만 쓴다. 쓰는 쪽은 자기 이름으로 잡고(`Take`/`Hold`) 놓는다(`Release`). 예전에는 화면마다 "열 때 값을 기억했다가 닫을 때 되돌리기"를 따로 해서, 두 화면이 겹치면 서로의 값을 덮었다(카드 고르는 중에 Esc 메뉴를 열었다 닫으면 게임이 풀림, 상점 위에서 채팅을 닫으면 이동이 풀림). 잡은 쪽이 씬과 함께 사라지면 저절로 놓인다.
+- **글자를 값으로 바꾸는 곳은 하나다.** 표·모드·콘솔의 숫자는 `TableCells.TryNumber`·`TryWhole`, 켬/끔은 `TryFlag`로만 읽는다. 표의 칸 하나는 `GameTables.Number(표, 줄, 칸, 기본값)`이나 `row.Number(칸, 기본값)`. 숫자를 쓰고 읽는 방식은 PC의 지역 설정과 무관하다([GameCulture](../Assets/_Project/Scripts/Core/Common/GameCulture.cs)).
+- **표는 잘못 쓴 것을 말해 준다.** 쉼표가 든 칸을 따옴표 없이 쓰면 그 칸은 쉼표에서 잘린다. 표를 읽을 때 그런 줄, 두 번 나온 줄·열을 콘솔에 알린다([CsvTable](../Assets/_Project/Scripts/Core/Tables/CsvTable.cs)의 `Problems`). 열 이름은 대소문자를 가리지 않는다.
+- **플레이어 파일은 통째로 쓴다.** 설정·성장·기록·킬 수·총 설정·저장한 옷차림은 [SaveFile](../Assets/_Project/Scripts/Core/Common/SaveFile.cs)로 쓰고 읽는다. 쓰는 도중 꺼져도 앞 파일이 남고, 깨진 파일은 바로 앞 사본(`.bak`)으로 되돌린다.
+- **Unity 오브젝트에는 `?.`·`??`를 그냥 쓰지 않는다.** 파괴된 오브젝트는 `== null`이지만 `?.`에는 살아 있는 것으로 보인다. `thing.OrNull()?.…`로 쓴다.
+- **검사기가 지킨다.** `Check-Code.ps1 audit`가 위 약속(게임 속도를 다른 곳에서 씀, Unity 오브젝트의 `?.`, 표에 없는 줄·칸·글자 id, 잘린 표 줄 …)과 흔한 실수를 찾는다. 0이 아닌 줄은 `Logs/CodeTools/audit.txt`에서 본다.
+
 ## 0.9.0에서 바뀐 자리
 
 예전 문서나 기억에 남은 경로는 아래 표로 바꿔 읽는다. 파일 이름과 클래스 이름은 그대로다.

@@ -359,12 +359,12 @@ internal static class VrcSway
                     Words = row.TryGetValue("words", out var words)
                         ? words.Split('|').Select(word => word.Trim()).Where(word => word.Length > 0).ToArray() : Array.Empty<string>(),
                 };
-                kind.SoftHz = Number(row, "softHz", kind.SoftHz);
-                kind.FirmHz = Number(row, "firmHz", kind.FirmHz);
-                kind.DeadBounce = Number(row, "deadBounce", kind.DeadBounce);
-                kind.LiveBounce = Number(row, "liveBounce", kind.LiveBounce);
-                kind.FeltSpeed = Number(row, "feltSpeed", kind.FeltSpeed);
-                kind.Slide = Number(row, "slide", kind.Slide);
+                kind.SoftHz = row.Number("softHz", kind.SoftHz);
+                kind.FirmHz = row.Number("firmHz", kind.FirmHz);
+                kind.DeadBounce = row.Number("deadBounce", kind.DeadBounce);
+                kind.LiveBounce = row.Number("liveBounce", kind.LiveBounce);
+                kind.FeltSpeed = row.Number("feltSpeed", kind.FeltSpeed);
+                kind.Slide = row.Number("slide", kind.Slide);
                 if (string.Equals(id, FleshRow, StringComparison.OrdinalIgnoreCase)) read.rest = kind;
                 else read.kinds.Add(kind);
             }
@@ -380,10 +380,6 @@ internal static class VrcSway
                     if (boneName.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0) return kind;
             return rest;
         }
-
-        private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) =>
-            row.TryGetValue(column, out var text) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-                ? value : fallback;
     }
 
     // Pull (and in VRChat's advanced mode stiffness) as Magica's angle restoration, at a depth; below zero, the values

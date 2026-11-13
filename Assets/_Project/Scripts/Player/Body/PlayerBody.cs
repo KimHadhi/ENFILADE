@@ -234,7 +234,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         SetUpFeet();
         BindFeetClearance();
         hands = GetComponent<PlayerBodyHands>();
-        hands?.BindAnimator(animator);
+        hands.OrNull()?.BindAnimator(animator);
         GameSettings.Changed += OnSettingsChanged;
 
         graph = HostGraph();

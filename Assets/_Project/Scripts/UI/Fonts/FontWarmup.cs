@@ -108,7 +108,7 @@ public sealed class FontWarmup : MonoBehaviour
         var seen = new HashSet<char>();
         foreach (var asset in Resources.LoadAll<TextAsset>(GameTables.ResourcesFolder))
         {
-            var table = CsvTable.Parse(asset.text, asset.name);
+            var table = CsvTable.Parse(asset.text);
             foreach (string id in table.RowIds)
             {
                 if (!table.TryGetRow(id, out var row)) continue;

@@ -47,7 +47,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
         ctx.Abilities.Traversal.ObstacleProgress = 0f;
         ctx.Abilities.Traversal.ObstacleClipTime = -1f;
         ctx.Abilities.Traversal.ObstacleSupport = Vector2.zero;
-        ctx.Abilities.Traversal.EdgeShortfall = 0f;
+        
         warp =target.ExitLadder != null ? StartLadderWarp(target) : StartWarp(target);
         straightLine = warp == null && target.StraightLine ? new StraightLineTraversal(ctx, target, entryVelocity.magnitude) : null;
         path = target.StraightLine ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
@@ -145,7 +145,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
             ctx.Abilities.Traversal.ObstacleProgress = warp.Progress;
             ctx.Abilities.Traversal.ObstacleClipTime = warp.Complete ? -1f : warp.ClipTime;
             ctx.Abilities.Traversal.ObstacleSupport = new Vector2(warp.PlantTime, warp.ReleaseTime);
-            ctx.Abilities.Traversal.EdgeShortfall = warp.EdgeShortfall;
+            
             return;
         }
         if (straightLine != null)

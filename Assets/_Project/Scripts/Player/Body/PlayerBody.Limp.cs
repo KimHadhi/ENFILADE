@@ -15,7 +15,7 @@ public sealed partial class PlayerBody
     {
         limp = dead = true;
         feet?.LetGo();
-        hands?.LetGo();
+        hands.OrNull()?.LetGo();
         if (animator != null)
         {
             animator.writeDefaultValuesOnDisable = false;

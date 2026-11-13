@@ -208,7 +208,7 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         if (asleep && !bursting) mark.burst = -1f;
         if (mark.burst >= 0f) mark.burst += dt;
         mark.fill = calling ? mind.CallShare : Mathf.MoveTowards(mark.fill, bursting ? 1f : suspicion, dt * 3f);
-        Draw(mark, mind, view, head, looking, bursting, calling);
+        Draw(mark, view, head, looking, bursting, calling);
     }
 
     // Forgets zombies that are gone.
@@ -223,7 +223,7 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         foreach (var pair in keep) moods[pair.Key] = pair.Value;
     }
 
-    private void Draw(Mark mark, ZombieMind mind, Camera view, Vector3 head, bool looking, bool bursting, bool calling)
+    private void Draw(Mark mark, Camera view, Vector3 head, bool looking, bool bursting, bool calling)
     {
         float t = bursting ? mark.burst : 0f;
         // Calling, the '!' doesn't fade with the burst: it stays till the call goes out or the caller falls.

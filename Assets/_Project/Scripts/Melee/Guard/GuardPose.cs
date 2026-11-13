@@ -87,7 +87,7 @@ public sealed class GuardPose : MonoBehaviour
             fists.Deflect(side, numbers.seconds, numbers.attack, numbers.hold, numbers.sweep);
             return;
         }
-        GuardPoseArm.Of(player)?.Strike(new GuardPoseArm.Shape
+        GuardPoseArm.Of(player).OrNull()?.Strike(new GuardPoseArm.Shape
         {
             Seconds = numbers.seconds, Attack = numbers.attack, Hold = numbers.hold, Curl = numbers.gunCurl,
             From = numbers.gunFrom, Wrist = numbers.gunWrist, Elbow = numbers.gunElbow,

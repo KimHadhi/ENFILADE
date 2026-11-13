@@ -144,7 +144,7 @@ internal static class SkinCover
         foreach (var renderer in own)
         {
             if (renderer == null || (mapped && !clothing.Contains(renderer.name))) continue;
-            bool solid = Solid(renderer, gone), shown = made.Shown.Contains(renderer);
+            bool solid = OutfitDresser.Drawn(renderer, gone), shown = made.Shown.Contains(renderer);
             if (!solid && !shown) continue;
             var cloth = ClothOf(renderer, toModel, skinId, settings);
             if (solid) now.Add((renderer, cloth));
@@ -152,14 +152,14 @@ internal static class SkinCover
         }
         if (items != null)
             foreach (var renderer in items)
-                if (Solid(renderer, gone)) now.Add((renderer, ClothOf(renderer, toModel, skinId, settings)));
+                if (OutfitDresser.Drawn(renderer, gone)) now.Add((renderer, ClothOf(renderer, toModel, skinId, settings)));
         var skin = new List<SkinnedMeshRenderer>();
         var dressed = new List<SkinnedMeshRenderer>();
         foreach (var renderer in own)
-            if (renderer is SkinnedMeshRenderer mesh && Solid(mesh, gone)) (mapped && pieces.Contains(mesh.name) ? dressed : skin).Add(mesh);
+            if (renderer is SkinnedMeshRenderer mesh && OutfitDresser.Drawn(mesh, gone)) (mapped && pieces.Contains(mesh.name) ? dressed : skin).Add(mesh);
         if (items != null)
             foreach (var renderer in items)
-                if (renderer is SkinnedMeshRenderer mesh && Solid(mesh, gone)) dressed.Add(mesh);
+                if (renderer is SkinnedMeshRenderer mesh && OutfitDresser.Drawn(mesh, gone)) dressed.Add(mesh);
         var cover = new Cover { Now = now, Then = then, Made = made, ToModel = toModel, Skin = skinId, Settings = settings };
         var skinOn = new HashSet<string>(StringComparer.Ordinal);
         foreach (var mesh in skin) Check(mesh, null, cover, released, skinOn);
@@ -176,9 +176,6 @@ internal static class SkinCover
         public string Skin;
         public Values Settings;
     }
-
-    private static bool Solid(Renderer renderer, HashSet<Renderer> gone) =>
-        renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy && !gone.Contains(renderer);
 
     private static void Listen()
     {
@@ -351,7 +348,7 @@ internal static class SkinCover
         return false;
     }
 
-    private static long Cell(int x, int y, int z) => ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (long)(z & 0x1FFFFF);
+    internal static long Cell(int x, int y, int z) => ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (long)(z & 0x1FFFFF);
 
     // The model's space is the root's own, fitted scale and all taken out: the meshes as made, in the units they were
     // made in (metres for every model here, whose roots stand at scale 1 in their files), so the reach is in metres.

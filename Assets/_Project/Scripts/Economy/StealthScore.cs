@@ -1,4 +1,3 @@
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -23,6 +22,5 @@ public static class StealthScore
     public static int Witness => Number("witness", 30);
 
     private static int Number(string column, int fallback)
-        => GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue(column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? Mathf.Max(0, Mathf.RoundToInt(value)) : fallback;
+        => Mathf.Max(0, Mathf.RoundToInt(GameTables.Number(TableName, TableRow, column, fallback)));
 }

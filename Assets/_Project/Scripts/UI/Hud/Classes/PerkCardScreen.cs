@@ -88,7 +88,7 @@ public sealed partial class PerkCardScreen : MonoBehaviour
     private readonly List<Spark> sparks = new List<Spark>();
     private readonly List<Burst> bursts = new List<Burst>();
     private readonly System.Random random = new System.Random(6026);
-    private bool open, closing, paused, playerMapWas, combatMapWas, holdingPlayerMap, holdingCombatMap, popped;
+    private bool open, closing, popped;
     private int picked = -1, dealt;
     private float openedAt, endedAt, shake, baseHealth = -1f, shownExtra;
 

@@ -94,7 +94,7 @@ public static class ZombieMeal
                 graph.Evaluate(0f);
             }
             finally { graph.Destroy(); }
-            var chestBone = animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine)
+            var chestBone = animator.GetBoneTransform(HumanBodyBones.Chest).OrNull() ?? animator.GetBoneTransform(HumanBodyBones.Spine).OrNull()
                 ?? animator.GetBoneTransform(HumanBodyBones.Hips);
             Vector3 floor = copy.transform.position;
             Vector3 chest = chestBone != null ? new Vector3(chestBone.position.x, floor.y, chestBone.position.z) : floor;

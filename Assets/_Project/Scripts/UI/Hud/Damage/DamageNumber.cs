@@ -111,7 +111,7 @@ public sealed class DamageNumber
     /// <summary>Settled width (canvas px at full size), for keeping the numbers on screen.</summary>
     public float Width(CombatFeedbackSettings settings) => width * Settled(settings);
 
-    public void Tick(float dt, DamageNumberLayout layout, CombatFeedbackSettings settings)
+    public void Tick(float dt, DamageNumberLayout layout)
     {
         SinceHit += dt; slideAge += dt; popAge += dt; rollAge += dt; markAge += dt; cutAge += dt; killAge += dt;
         if (leaveAge >= 0f) leaveAge += dt;

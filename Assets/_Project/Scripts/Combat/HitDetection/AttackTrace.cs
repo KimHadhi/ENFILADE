@@ -137,7 +137,7 @@ public static class AttackTrace
             // ...and their class: its own guns' bonus, an Assault's adrenaline, a CHARGE they are in, a Ghost's stacks, a
             // Schießhund's mark and Desperado (PlayerClass), whose round in its mark's head ends it (Finish).
             bool mine = attack.Method == DamageMethod.Bullet && PlayerPerks.IsMine(attack.Source);
-            float perk = mine ? PlayerPerks.GunFactor(headshot) * PlayerClass.GunFactor(headshot, receiver as Component) : 1f;
+            float perk = mine ? PlayerPerks.GunFactor(headshot) * PlayerClass.GunFactor(receiver as Component) : 1f;
             float amount = attack.Amount * share * (headshot ? headshotMultiplier : 1f) * perk;
             if (mine && fresh && share > 0f) amount = PlayerClass.Finish(amount, headshot, receiver, hit.point, shooter);
             if (fresh && share > 0f)
@@ -163,7 +163,7 @@ public static class AttackTrace
             || Throwables.Passes(hit.collider)
             || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !CampaignCanTarget.Is(hit.collider)
                 && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
-                || hit.collider.GetComponentInParent<PlayerLeanHitboxes>()?.UsesSplitBody != true));
+                || hit.collider.GetComponentInParent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody != true));
 
     public static bool FirstExternalHit(GameObject owner, Vector3 origin, Vector3 direction, float range, int layers, out RaycastHit hit)
         => FirstExternalHit(owner, origin, direction, range, layers, null, out hit);

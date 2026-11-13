@@ -79,7 +79,7 @@ public static class FragBlast
         var effects = mine.GetComponentInChildren<PlayerCameraEffects>();
         if (effects != null) effects.ApplyCameraImpulse(new Vector3(-10f * share, 0f, (Random.value < .5f ? -5f : 5f) * share), 6f * share);
         var eye = Camera.main;
-        if (eye != null) CameraViewPunch.For(eye)?.Punch(new Vector3(-2f * share, 0f, 0f), 0f, .6f * share);
+        if (eye != null) CameraViewPunch.For(eye).OrNull()?.Punch(new Vector3(-2f * share, 0f, 0f), 0f, .6f * share);
     }
 
     private static void Hurt(Vector3 at, ThrowableInfo info, float radius, GameObject source, Vector3 way, float spread)

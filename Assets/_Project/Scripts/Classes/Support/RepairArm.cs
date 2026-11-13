@@ -190,11 +190,6 @@ public sealed class RepairArm : PathArm
         holder.SetPositionAndRotation(at - turn * (Vector3.up * loop.Grip), turn);
     }
 
-    private void ShowHolder(bool show)
-    {
-        if (holder != null && holder.gameObject.activeSelf != show) holder.gameObject.SetActive(show);
-    }
-
     // The four fingers closed round the handle by the path's curl, shared over their joints; the thumb across the palm and
     // on round it as far as the path closes it (GrenadeArm.Fingers, the whole of both).
     private void Fingers(Vector3 along, Vector3 palm, float curl, float thumb)

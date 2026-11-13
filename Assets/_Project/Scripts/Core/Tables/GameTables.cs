@@ -89,6 +89,18 @@ public static class GameTables
         return data != null && data.TryGetRow(id ?? "", out row);
     }
 
+    /// <summary>One cell as a number: the fallback when the table, the row or the cell is missing or is no number.</summary>
+    public static float Number(string table, string id, string field, float fallback)
+        => TryGetRow(table, id, out var row) ? row.Number(field, fallback) : fallback;
+
+    /// <summary>One cell as a yes or a no (TableCells.TryFlag), or the fallback.</summary>
+    public static bool Flag(string table, string id, string field, bool fallback)
+        => TryGetRow(table, id, out var row) ? row.Flag(field, fallback) : fallback;
+
+    /// <summary>One cell's words, or the fallback when the table, the row or the cell is missing.</summary>
+    public static string Text(string table, string id, string field, string fallback = "")
+        => TryGetRow(table, id, out var row) ? row.Text(field, fallback) : fallback;
+
     /// <summary>The game's own text of a table, with no mod laid over it, or null when there is no such table: for
     /// tools that show a table as it is written (the surface picker, /mods export).</summary>
     public static string SourceText(string table)
@@ -143,13 +155,17 @@ public static class GameTables
 
     private static CsvTable Load(string table)
     {
+        // No name is no table (a row id that was never filled in), not a crash in the dictionary.
+        if (string.IsNullOrEmpty(table)) return null;
         if (loaded.TryGetValue(table, out var cached)) return cached;
         string text = SourceText(table);
-        CsvTable parsed = text != null ? CsvTable.Parse(text, table) : null;
+        CsvTable parsed = text != null ? CsvTable.Parse(text) : null;
+        if (parsed != null) Tell(parsed, table + ".csv");
         // Mods in load order, each over what came before; a table only a mod has is that mod's alone.
         foreach (var layer in GameMods.TableTexts(table))
         {
-            var over = CsvTable.Parse(layer.Value, table);
+            var over = CsvTable.Parse(layer.Value);
+            Tell(over, $"모드 {layer.Key}의 {table}.csv");
             if (parsed == null) parsed = over;
             else parsed.Overlay(over);
         }
@@ -170,6 +186,12 @@ public static class GameTables
             else sources[asset.name] = asset;
         }
         return sources;
+    }
+
+    // What the reader found odd in a table's text (CsvTable.Problems), said once, naming whose file it is.
+    private static void Tell(CsvTable parsed, string whose)
+    {
+        foreach (string problem in parsed.Problems) Report($"{whose}: {problem}", null);
     }
 
     private static string Describe(string table, string id) => id.Length > 0 ? $"{table}.csv [{id}]" : $"{table}.csv";

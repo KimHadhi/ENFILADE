@@ -1,4 +1,3 @@
-using System.Globalization;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -101,7 +100,7 @@ public static class FriendlyFire
         bool changed = on != Enabled;
         rule = on;
         if (!changed) return;
-        var chat = Object.FindFirstObjectByType<SinglePlayerChatManager>();
+        var chat = SceneOne<SinglePlayerChatManager>.Get();
         if (chat != null) chat.AddBroadcast(on ? Texts.Get("ff.host.on") : Texts.Get("ff.host.off"));
     }
 
@@ -113,6 +112,5 @@ public static class FriendlyFire
     }
 
     private static float Number(string row, float fallback)
-        => GameTables.TryGetRow(Table, row, out var values) && values.TryGetValue(Column, out string text)
-            && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : fallback;
+        => GameTables.Number(Table, row, Column, fallback);
 }

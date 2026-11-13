@@ -68,7 +68,7 @@ public sealed class MeleeAttackSweep
                 contact.point, forward, player.gameObject, true, posture, isCritical: head, method: MeleeKnife.MethodOf(player)));
             if (result == DamageResult.Blocked || result == DamageResult.Parried) { Cancel(); break; }
             if (result != DamageResult.Damaged) continue;
-            collider.GetComponentInParent<MeleeCombatTarget>()?.ApplyPostureDamage(posture);
+            collider.GetComponentInParent<MeleeCombatTarget>().OrNull()?.ApplyPostureDamage(posture);
             hitCount++; onDamage?.Invoke();
             if (hitCount >= maxTargets) { Cancel(); break; }
         }

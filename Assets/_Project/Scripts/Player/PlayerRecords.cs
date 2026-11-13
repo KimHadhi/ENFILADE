@@ -242,16 +242,7 @@ public static class PlayerRecords
 
     private static void Load()
     {
-        data = null;
-        try
-        {
-            if (File.Exists(FilePath)) data = JsonUtility.FromJson<Data>(File.ReadAllText(FilePath));
-        }
-        catch (Exception problem)
-        {
-            Debug.LogWarning("[기록] 기록 파일을 읽지 못했어요: " + problem.Message);
-        }
-        if (data == null) data = new Data();
+        data = SaveFile.Read(FilePath, JsonUtility.FromJson<Data>) ?? new Data();
         if (data.chapters == null) data.chapters = new List<Chapter>();
         if (data.recent == null) data.recent = new List<Game>();
         Upgrade(data);
@@ -291,7 +282,6 @@ public static class PlayerRecords
 
     private static void Save()
     {
-        try { File.WriteAllText(FilePath, JsonUtility.ToJson(Current, true)); }
-        catch (Exception problem) { Debug.LogWarning("[기록] 기록을 저장하지 못했어요: " + problem.Message); }
+        SaveFile.Write(FilePath, JsonUtility.ToJson(Current, true));
     }
 }

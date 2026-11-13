@@ -205,7 +205,7 @@ public sealed partial class TowerRun : MonoBehaviour
 
     private void Start()
     {
-        tracker = FindFirstObjectByType<MissionTracker>();
+        tracker = SceneOne<MissionTracker>.Get();
         screen = gameObject.AddComponent<CampaignScreen>();
         hud = TowerHUD.Make(transform);
         interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;

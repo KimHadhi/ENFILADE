@@ -11,7 +11,6 @@ public sealed class ChatEntry
     public ChatChannel Channel { get; }
     public string Speaker { get; }
     public string Body { get; }
-    public DateTime CreatedAt { get; }
     public Color SpeakerColor { get; }
     /// <summary>
     /// The player who said or typed it, so the line can show their profile tile and colour; null for system notices,
@@ -29,7 +28,7 @@ public sealed class ChatEntry
         Who = who;
         Mine = who != null && who.IsLocal;
         SpeakerColor = speakerColor ?? ChatStyle.SpeakerColor(who, channel);
-        CreatedAt = DateTime.Now;
+        
     }
 }
 

@@ -9,7 +9,7 @@ Assault.chargeRadius,15,CHARGE가 닿는 반경(m)
 Assault.chargeDamage,25,CHARGE 동안 총 피해 +%
 Assault.chargeSpeed,25,CHARGE 동안 이동 속도 +%
 Point.reloadShare,1,들지 않은 총이 저절로 장전되는 데 걸리는 시간(그 총 장전 시간의 배수). 0.5면 절반
-Point.kataSeconds,8,건 카타(포인트 클래스 기술 키) 시간(초): 총 바꾸기가 즉시이고, 바꿔 든 총은 예비탄을 쓰지 않고 꽉 찬 채로 나오며, 달리면서 쏴도 퍼지지 않는다
+Point.kataSeconds,8,"건 카타(포인트 클래스 기술 키) 시간(초): 총 바꾸기가 즉시이고, 바꿔 든 총은 예비탄을 쓰지 않고 꽉 찬 채로 나오며, 달리면서 쏴도 퍼지지 않는다"
 Point.kataCooldown,35,건 카타를 다시 쓸 수 있을 때까지(초). 쓴 때부터 센다
 Ghost.hunterMax,5,헤드 헌터 스택 최대. 헤드샷 한 발에 1스택(산탄 여러 알이 머리에 맞아도 1). 나중에 고스트 카드가 늘린다(옛 메모의 처음 최대는 2)
 Ghost.hunterDamage,7,헤드 헌터 스택 하나당 총 피해 +%. 곱연산(5스택이면 1.07^5 = 약 +40%)
@@ -30,7 +30,7 @@ Knight.tauntRadius,12,도발(클래스 기술 키): 이 반경(m) 안에서 이�
 Knight.tauntSeconds,6,도발이 가는 시간(초)
 Knight.tauntCooldown,25,도발을 쓴 때부터 다시 쓸 수 있을 때까지(초)
 Knight.tauntTaken,.6,도발 동안 받는 피해에 한 번 더 곱하는 배수(.75 × .6 = .45)
-Knight.coverReach,15,원호 방어(나이트 클래스 기술 키): 꾹 누르면 바닥에 이만큼(m)의 원이 뜨고, 그 안에서 보이는 동료를 바라보면 나이트 화면에서만 그 동료가 빛난다. 놓으면 그 동료에게 원호가 열린다. 도발은 0.8.171부터 이것으로 바뀌어 Knight.taunt*는 쓰지 않는다
+Knight.coverReach,15,"원호 방어(나이트 클래스 기술 키): 꾹 누르면 바닥에 이만큼(m)의 원이 뜨고, 그 안에서 보이는 동료를 바라보면 나이트 화면에서만 그 동료가 빛난다. 놓으면 그 동료에게 원호가 열린다. 도발은 0.8.171부터 이것으로 바뀌어 Knight.taunt*는 쓰지 않는다"
 Knight.coverAngle,8,원호할 동료를 고를 때 조준선에서 이 각도(도) 안
 Knight.coverWindow,1,원호가 열려 있는 시간(초). 그동안 그 동료에게 오는 적의 공격(잡기처럼 막을 수 없는 것 빼고)을 나이트가 대신 패리해 튕겨 내고 그 곁으로 순간이동한다
 Knight.coverCooldown,12,원호로 공격을 튕겨 낸 뒤 다시 쓰기까지(초)
