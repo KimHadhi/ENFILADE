@@ -362,7 +362,7 @@ public sealed partial class FPSBody
         for (int i = 0; i < bones.Length; i++) saved[i] = (bones[i].localPosition, bones[i].localRotation);
         try
         {
-            pose.SampleAnimation(animator.gameObject, 0f);
+            ClipSampler.Sample(pose, animator.gameObject, 0f);
             Vector3 ahead = Vector3.Cross(root.InverseTransformPoint(rightLeg.position) - root.InverseTransformPoint(leftLeg.position), Vector3.up);
             if (ahead.sqrMagnitude < 1e-8f) return false;
             ahead.Normalize();

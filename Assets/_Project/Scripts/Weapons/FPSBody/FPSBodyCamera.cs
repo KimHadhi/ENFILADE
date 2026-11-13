@@ -58,7 +58,7 @@ public sealed class FPSBodyCamera : FPSCameraController
     internal void HoldGunMotion(AnimationClip pose)
     {
         if (pose == null || !BuildRig()) return;
-        pose.SampleAnimation(rig, 0f);
+        ClipSampler.Sample(pose, rig, 0f);
         rest = Quaternion.Inverse(rig.transform.rotation) * cameraBone.rotation;
         Play(ref idle, 0, pose, 1f);
         actionLeft = 0f;

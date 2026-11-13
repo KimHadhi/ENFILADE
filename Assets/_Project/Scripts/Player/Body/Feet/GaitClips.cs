@@ -95,7 +95,7 @@ internal static class GaitClips
         {
             for (int i = 0; i < count; i++)
             {
-                clip.SampleAnimation(animator.gameObject, i * step);
+                ClipSampler.Sample(clip, animator.gameObject, i * step);
                 hip[i] = root.InverseTransformPoint(hips.position);
                 feet[0][i] = root.InverseTransformPoint(leftFoot.position);
                 feet[1][i] = root.InverseTransformPoint(rightFoot.position);

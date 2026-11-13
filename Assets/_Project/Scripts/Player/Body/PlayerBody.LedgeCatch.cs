@@ -82,7 +82,7 @@ public sealed partial class PlayerBody
         for (int i = 0; i < bones.Length; i++) poses[i] = (bones[i].localPosition, bones[i].localRotation, bones[i].localScale);
         try
         {
-            clip.SampleAnimation(animator.gameObject, 0f);
+            ClipSampler.Sample(clip, animator.gameObject, 0f);
             catchWrists = (root.InverseTransformPoint(leftWrist.position) + root.InverseTransformPoint(rightWrist.position)) * .5f;
         }
         finally

@@ -26,7 +26,8 @@ internal struct GunContact
 /// build. The remade clips carry joint angles only: on a body with other arm lengths the hands were somewhere else at every
 /// moment, and the gun stayed in the right hand (the user, 2026-11-12, asking whether a hand offset per character would fix
 /// it; one offset fixes one moment).
-/// Nothing of it is drawn, it never moves, and it has no Animator, so a clip's curves write its bones as they are.
+/// Nothing of it is drawn, it never moves, and its own Animator is gone, so a clip's curves write its bones as they are
+/// (ClipSampler: SampleAnimation in the editor; in a build a graph through an Animator with no avatar, added for it).
 /// </summary>
 internal sealed class GunArms
 {
@@ -95,7 +96,7 @@ internal sealed class GunArms
     internal bool Sample(AnimationClip clip, float time)
     {
         if (copy == null || clip == null) return false;
-        clip.SampleAnimation(copy, Mathf.Clamp(time, 0f, clip.length));
+        ClipSampler.Sample(clip, copy, Mathf.Clamp(time, 0f, clip.length));
         return true;
     }
 

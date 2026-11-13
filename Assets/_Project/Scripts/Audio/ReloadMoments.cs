@@ -167,7 +167,7 @@ public static class ReloadMoments
         var start = new Vector3[parts.Length];
         for (int i = 0; i < samples; i++)
         {
-            clip.SampleAnimation(model, i * step);
+            ClipSampler.Sample(clip, model, i * step);
             for (int p = 0; p < parts.Length; p++)
             {
                 Vector3 local = parts[p].localPosition;

@@ -94,12 +94,12 @@ internal static class ObstacleClipContacts
         float arm;
         try
         {
-            clip.SampleAnimation(animator.gameObject, 0f);
+            ClipSampler.Sample(clip, animator.gameObject, 0f);
             arm = (Vector3.Distance(leftShoulder.position, leftElbow.position) + Vector3.Distance(leftElbow.position, leftHand.position))
                 / Mathf.Max(1e-4f, Mathf.Abs(root.lossyScale.y));
             for (int i = 0; i < count; i++)
             {
-                clip.SampleAnimation(animator.gameObject, i * step);
+                ClipSampler.Sample(clip, animator.gameObject, i * step);
                 leftSamples[i] = root.InverseTransformPoint(leftHand.position);
                 rightSamples[i] = root.InverseTransformPoint(rightHand.position);
                 hipSamples[i] = root.InverseTransformPoint(hips.position);

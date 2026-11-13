@@ -119,7 +119,7 @@ public sealed partial class FPSBody
         for (int i = 0; i < bones.Length; i++) saved[i] = (bones[i].localPosition, bones[i].localRotation);
         try
         {
-            pose.SampleAnimation(animator.gameObject, 0f);
+            ClipSampler.Sample(pose, animator.gameObject, 0f);
             right = ArmOf(root, false);
             left = ArmOf(root, true);
             return right.Valid && left.Valid;

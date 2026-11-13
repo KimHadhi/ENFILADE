@@ -114,7 +114,7 @@ public sealed class PackMagazineRounds : MonoBehaviour
             for (int b = 0; b < bones.Length; b++) copied[b] = copy.transform.Find(paths[b]);
             for (int s = 0; s < Samples; s++)
             {
-                belt.SampleAnimation(copy, belt.length * EmptyShare * s / (Samples - 1));
+                ClipSampler.Sample(belt, copy, belt.length * EmptyShare * s / (Samples - 1));
                 for (int b = 0; b < bones.Length; b++)
                 {
                     var posed = copied[b] != null ? copied[b] : bones[b];
