@@ -68,20 +68,20 @@ public sealed class MovementInput
         var settings = GameSettings.Current;
         bool move = available && moving;
         if (move) UpdateLatches(settings);
-        JumpPressed = move && Pressed(jumpAction);
+        JumpPressed = move && InputFocus.Pressed(jumpAction);
         JumpHeld = move && Held(jumpAction);
-        CrouchPressed = move && Pressed(crouchAction);
+        CrouchPressed = move && InputFocus.Pressed(crouchAction);
         CrouchHeld = available && (settings.crouchToggle ? crouchLatched : Held(crouchAction));
-        DodgePressed = move && Pressed(dodgeAction);
-        DivePressed = move && Pressed(diveAction);
-        InteractPressed = move && Pressed(interactAction);
-        ShovePressed = available && Pressed(shoveAction);
+        DodgePressed = move && InputFocus.Pressed(dodgeAction);
+        DivePressed = move && InputFocus.Pressed(diveAction);
+        InteractPressed = move && InputFocus.Pressed(interactAction);
+        ShovePressed = available && InputFocus.Pressed(shoveAction);
         if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;
         SprintHeld = move && SprintButtonHeld;
         int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
         LeanSide = move ? (settings.leanToggle ? leanLatched : heldSide) : 0;
-        LeanPressed = move && LeanSide != 0 && (Pressed(leanLeftAction) || Pressed(leanRightAction));
+        LeanPressed = move && LeanSide != 0 && (InputFocus.Pressed(leanLeftAction) || InputFocus.Pressed(leanRightAction));
     }
 
     // Toggle mode: a press latches, a second press releases. Leaving the crouch, slide or air-tuck states (dive,
@@ -94,27 +94,26 @@ public sealed class MovementInput
     // press during a dodge flips it for when the dodge ends.
     private void UpdateLatches(GameSettings settings)
     {
-        bool sprintPressed = Pressed(sprintAction);
+        bool sprintPressed = InputFocus.Pressed(sprintAction);
         bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
             || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning
             || ctx.CurrentState == PlayerMovement.MovementState.StepDodge;
-        if (!settings.crouchToggle || !crouchState || sprintPressed || Pressed(jumpAction) || Pressed(diveAction))
+        if (!settings.crouchToggle || !crouchState || sprintPressed || InputFocus.Pressed(jumpAction) || InputFocus.Pressed(diveAction))
             crouchLatched = false;
-        if (settings.crouchToggle && Pressed(crouchAction)) crouchLatched = !crouchLatched;
+        if (settings.crouchToggle && InputFocus.Pressed(crouchAction)) crouchLatched = !crouchLatched;
 
         bool leanState = ctx.CurrentState == PlayerMovement.MovementState.Standing
             || ctx.CurrentState == PlayerMovement.MovementState.Crouching;
         if (!settings.leanToggle || !leanState || sprintPressed) leanLatched = 0;
-        int pressedSide = (Pressed(leanRightAction) ? 1 : 0) - (Pressed(leanLeftAction) ? 1 : 0);
+        int pressedSide = (InputFocus.Pressed(leanRightAction) ? 1 : 0) - (InputFocus.Pressed(leanLeftAction) ? 1 : 0);
         if (settings.leanToggle && pressedSide != 0) leanLatched = leanLatched == pressedSide ? 0 : pressedSide;
     }
     private static bool Held(InputAction action) => action != null && action.IsPressed();
-    private static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();
 
     /// <summary>
     /// The shove key went down this frame, whether or not control is locked: pinned by a runner the player lies locked
     /// in a heavy landing, and ShovePressed stays false all the while, but V still bursts the shield (PlayerHold).
     /// </summary>
-    internal bool ShoveKeyPressed => Pressed(shoveAction);
+    internal bool ShoveKeyPressed => InputFocus.Pressed(shoveAction);
     public Vector2 Move => moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
 }

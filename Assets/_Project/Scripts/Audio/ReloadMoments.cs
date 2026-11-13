@@ -132,16 +132,8 @@ public static class ReloadMoments
         measured[(gun, empty)] = new Moments(Share(magOut), Share(magIn), Share(boltBack), Share(boltForward));
         // The magazine itself, for GunMagazine: where it is under the model and when it is farthest off (the pouch).
         if (magOut >= 0f && magIn >= 0f)
-            magazines[(gun, empty)] = new Magazine(PathOf(parts[magazine], model.transform), Share(magOut),
+            magazines[(gun, empty)] = new Magazine(Hierarchy.PathOf(parts[magazine], model.transform), Share(magOut),
                 Share(FarthestAt(travel, magazine, samples)), Share(magIn), OffSight(parts[magazine], model));
-    }
-
-    // Its path under the model, for finding the same part on any copy of the gun.
-    private static string PathOf(Transform part, Transform root)
-    {
-        string path = part.name;
-        for (var at = part.parent; at != null && at != root; at = at.parent) path = at.name + "/" + path;
-        return path;
     }
 
     // How far the part sits off the gun's sight line in the pose the model is in (its idle): a magazine sits in the gun,

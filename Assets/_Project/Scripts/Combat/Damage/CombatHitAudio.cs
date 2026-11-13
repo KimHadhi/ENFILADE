@@ -33,13 +33,11 @@ public sealed class CombatHitAudio : MonoBehaviour
     private struct Pending { public Layer layer; public float remaining, volume; public bool spatial; public Vector3 point; }
 
     private static CombatHitAudio instance;
-    public static CombatHitAudio Instance => instance;
     private readonly List<Pending> pending = new List<Pending>();
     private readonly Dictionary<Layer, AudioClip> previous = new Dictionary<Layer, AudioClip>();
     private VoiceRing flat, voices;
     public HitSound LastSound { get; private set; }
     public int PlayCount { get; private set; }
-    public int PendingCount => pending.Count;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Subscribe()

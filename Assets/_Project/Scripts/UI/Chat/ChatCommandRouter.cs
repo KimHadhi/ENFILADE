@@ -14,8 +14,6 @@ public sealed class ChatCommandRouter
         commands[name] = new Command { Help = help, Run = handler };
     }
 
-    public bool Unregister(string name) => commands.Remove(name);
-
     /// <summary>
     /// Commands for a half-typed name (no slash): those starting with it in name order, then those merely containing it.
     /// Fills <paramref name="into"/> with name and help, at most <paramref name="most"/>.

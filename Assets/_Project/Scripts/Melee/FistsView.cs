@@ -112,9 +112,9 @@ public sealed class FistsView : MonoBehaviour
         if (spinElapsed < 0f) return;
         float t = spinElapsed / SpinSeconds;
         if (t >= 1f) { spinElapsed = -1f; return; }
-        float weight = t < SpinWind ? EaseOut(t / SpinWind) : t < SpinWind + SpinWhip ? 1f
-            : 1f - EaseInOut((t - SpinWind - SpinWhip) / (1f - SpinWind - SpinWhip));
-        float swing = t < SpinWind ? 0f : EaseOut(Mathf.Clamp01((t - SpinWind) / SpinWhip));
+        float weight = t < SpinWind ? Ease.Out(t / SpinWind) : t < SpinWind + SpinWhip ? 1f
+            : 1f - Ease.InOut((t - SpinWind - SpinWhip) / (1f - SpinWind - SpinWhip));
+        float swing = t < SpinWind ? 0f : Ease.Out(Mathf.Clamp01((t - SpinWind) / SpinWhip));
         Transform hand = spinRight ? right : left, other = spinRight ? left : right;
         float across = spinRight ? 1f : -1f;
         Vector3 wound = new Vector3(-across * .12f, -.1f, .22f), whipped = new Vector3(across * .31f, -.03f, .36f);
@@ -123,8 +123,6 @@ public sealed class FistsView : MonoBehaviour
         hand.localRotation = Quaternion.Slerp(hand.localRotation, pose, weight);
         other.localPosition += new Vector3(across * .04f, .03f, -.05f) * weight;
     }
-    private static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
-    private static float EaseInOut(float x) { x = Mathf.Clamp01(x); return x < .5f ? 4f * x * x * x : 1f - Mathf.Pow(-2f * x + 2f, 3f) * .5f; }
     private float ElbowAmount()
     {
         if (elbowElapsed < 0f) return 0f;

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
 /// A held perk as a small slanted badge: a pink bar, its icon, its name and a pip per level (the levels it has in pink).

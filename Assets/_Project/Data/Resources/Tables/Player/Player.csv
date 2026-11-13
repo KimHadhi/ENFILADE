@@ -703,7 +703,6 @@ Hands.thumbBend,20,편하게 둔 엄지의 바깥 두 마디가 손바닥 쪽으
 Hands.ladderHandSpacing,0.32,사다리를 잡는 두 손의 좌우 간격(m). 좁은 사다리는 가로대 안쪽으로 제한
 Hands.ladderReachArc,0.08,다음 가로대로 옮기는 손이 사다리 앞쪽으로 떨어지는 거리(m)
 Hands.ladderPalmClearance,0.0015,실제 손바닥 두께를 반영한 뒤 사다리 가로대 앞면에 남기는 여유(m)
-Hands.ladderExitRelease,0.1;0.14,꼭대기로 넘어가는 동작에서 위쪽 손·지지 손이 가로대를 놓기 시작하는 진행률(0~1). 0.12 구간 동안 부드럽게 놓는다
 Hands.gunFingerWrap,1,총을 쥔 손가락을 캐릭터마다 잰 손가락 길이로 총 굵기만 한 봉을 감싸게 하는 정도(0~1). 0이면 KINEMATION 손가락 각도 그대로
 # 카메라: 이동 펀치 (Punch 행 → PlayerMovementPunch. Beatrun 시점 흔들림. Esc 메뉴 화면 흔들림이 곱해진다),,
 Punch.stiffness,65,펀치가 제자리로 돌아오는 힘 (Source 65)

@@ -552,14 +552,14 @@ internal static class OutfitDresser
     /// </summary>
     internal static bool CopiesOwn(Renderer renderer, Transform frame, Renderer[] own, Transform ownFrame)
     {
-        var mesh = MeshOf(renderer);
+        var mesh = MeshTools.MeshOf(renderer);
         if (mesh == null) return false;
         Vector3 middle = Middle(renderer, mesh, frame);
         const float near = OutfitSkeleton.SamePlace * OutfitSkeleton.SamePlace;
         foreach (var mine in own)
         {
             if (mine == null || !string.Equals(mine.name, renderer.name, StringComparison.OrdinalIgnoreCase)
-                || MeshOf(mine) is not Mesh theirs || theirs.vertexCount != mesh.vertexCount) continue;
+                || MeshTools.MeshOf(mine) is not Mesh theirs || theirs.vertexCount != mesh.vertexCount) continue;
             if ((theirs.bounds.size - mesh.bounds.size).sqrMagnitude <= near && (Middle(mine, theirs, ownFrame) - middle).sqrMagnitude <= near)
                 return true;
         }
@@ -569,10 +569,6 @@ internal static class OutfitDresser
     // Where the middle of a mesh stands as its file made it, in its model's frame.
     private static Vector3 Middle(Renderer renderer, Mesh mesh, Transform frame) =>
         frame.InverseTransformPoint(renderer.transform.TransformPoint(mesh.bounds.center));
-
-    private static Mesh MeshOf(Renderer renderer) =>
-        renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
-        : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
 
     // What of the character the item takes the place of on this character (OutfitFits.csv replaces), or null when it
     // takes its whole slot as pieces do.

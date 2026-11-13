@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEngine;
 
 /// <summary>
 /// The 하드코딩 검사 (ENFILADE → 글자 → 하드코딩 검사, the 글자 편집기's 검사 tab) and the editor's "쓰는 곳". Every word a

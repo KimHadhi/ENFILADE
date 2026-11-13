@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -82,32 +81,27 @@ public sealed class KnifeSwing
         foreach (string id in GameTables.RowIds(table))
         {
             if (!GameTables.TryGetRow(table, id, out var row)) continue;
-            float cycle = Number(row, "cycle", -1f);
+            float cycle = row.Number("cycle", -1f);
             if (cycle < 0f) continue;
             var key = new Key
             {
                 Cycle = cycle,
-                Wrist = Vector(row, "wrist", new Vector3(.2f, -.2f, .32f)),
-                Elbow = Vector(row, "elbow", new Vector3(.3f, -.45f, .05f)),
-                Along = Vector(row, "along", Vector3.forward),
-                Palm = Vector(row, "palm", Vector3.left),
-                Curl = Number(row, "curl", 150f),
-                Thumb = Number(row, "thumb", 80f),
-                Held = Number(row, "held", 1f) > .5f,
+                Wrist = TableCells.Vector(row, "wrist", new Vector3(.2f, -.2f, .32f)),
+                Elbow = TableCells.Vector(row, "elbow", new Vector3(.3f, -.45f, .05f)),
+                Along = TableCells.Vector(row, "along", Vector3.forward),
+                Palm = TableCells.Vector(row, "palm", Vector3.left),
+                Curl = row.Number("curl", 150f),
+                Thumb = row.Number("thumb", 80f),
+                Held = row.Number("held", 1f) > .5f,
             };
             key.Along = key.Along.sqrMagnitude > 1e-8f ? key.Along.normalized : Vector3.forward;
             key.Palm = key.Palm.sqrMagnitude > 1e-8f ? key.Palm.normalized : Vector3.left;
             clip.keys.Add(key);
-            if (clip.Hit < 0f && Number(row, "hit", 0f) > .5f) clip.Hit = cycle;
+            if (clip.Hit < 0f && row.Number("hit", 0f) > .5f) clip.Hit = cycle;
         }
         if (clip.keys.Count == 0) return null;
         clip.keys.Sort((x, y) => x.Cycle.CompareTo(y.Cycle));
         clip.Length = clip.keys[clip.keys.Count - 1].Cycle;
         return clip;
     }
-
-    private static Vector3 Vector(IReadOnlyDictionary<string, string> row, string name, Vector3 fallback)
-        => new Vector3(Number(row, name + "X", fallback.x), Number(row, name + "Y", fallback.y), Number(row, name + "Z", fallback.z));
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

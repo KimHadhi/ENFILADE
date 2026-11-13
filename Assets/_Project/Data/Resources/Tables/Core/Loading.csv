@@ -3,7 +3,7 @@
 Screen.fadeIn,0.15,화면이 덮이는 데 걸리는 시간(초)
 Screen.fadeOut,0.35,준비가 끝나고 화면이 걷히는 시간(초)
 Screen.leastShown,0.5,화면이 한 번 뜨면 적어도 이만큼 머문다(초). 빨리 끝나도 번쩍이지 않게
-Screen.pictureAlpha,0.32,뒤에 깔리는 맵 사진(Resources/UI/Maps)의 진하기(0~1)
+Screen.pictureAlpha,0.45,뒤에 깔리는 맵 사진(Resources/UI/Maps)이 어둠 사이로 비치는 정도(0~1). 0이면 사진이 안 보이고 1이면 그대로 보인다
 Screen.pictureDrift,0.05,화면이 떠 있는 동안 맵 사진이 천천히 커지는 정도(비율)
 Screen.barEase,0.15,막대가 실제 진행을 따라잡는 시간(초)
 Screen.spin,220,작은 분홍 네모가 도는 빠르기(도/초). 네모가 멈춰 있으면 그 프레임이 오래 걸리는 중이다

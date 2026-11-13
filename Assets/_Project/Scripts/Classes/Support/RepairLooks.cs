@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -126,7 +125,7 @@ public sealed class RepairLooks : MonoBehaviour
         if (tool == Tool.None) return;
         prop = new GameObject(tool.ToString()).transform;
         GameTables.TryGetRow(RepairArm.Table, RepairArm.RowId(tool), out var row);
-        string path = Text(row, "model");
+        string path = TableCells.Text(row, "model");
         bool placed = path.Length > 0;
         var model = Resources.Load<GameObject>(placed ? path : "ClassProps/" + tool);
         if (model != null) Place(Instantiate(model, prop, false).transform, row, placed);
@@ -148,8 +147,8 @@ public sealed class RepairLooks : MonoBehaviour
             tip.SetParent(prop, false);
             // The flame leaves the model's nozzle where the row says (its mouth and way in the tool's axes), else the parts'.
             bool mouth = model != null && Has(row, "tipX");
-            tip.localPosition = mouth ? Vec(row, "tip", PartsNozzleMouth) : PartsNozzleMouth;
-            Vector3 way = mouth ? Vec(row, "tipDir", PartsNozzleWay) : PartsNozzleWay;
+            tip.localPosition = mouth ? TableCells.Vector(row, "tip", PartsNozzleMouth) : PartsNozzleMouth;
+            Vector3 way = mouth ? TableCells.Vector(row, "tipDir", PartsNozzleWay) : PartsNozzleWay;
             tip.localRotation = Quaternion.LookRotation(way.sqrMagnitude > 1e-8f ? way.normalized : Vector3.forward);
             flame = tip.gameObject.AddComponent<LineRenderer>();
             flame.useWorldSpace = true;
@@ -192,8 +191,8 @@ public sealed class RepairLooks : MonoBehaviour
     {
         if (byRow)
         {
-            Quaternion turn = Quaternion.Euler(Number(row, "turnX", 0f), Number(row, "turnY", 0f), Number(row, "turnZ", 0f));
-            model.localPosition = Vec(row, "at", Vector3.zero) + turn * model.localPosition;
+            Quaternion turn = Quaternion.Euler(TableCells.Number(row, "turnX", 0f), TableCells.Number(row, "turnY", 0f), TableCells.Number(row, "turnZ", 0f));
+            model.localPosition = TableCells.Vector(row, "at", Vector3.zero) + turn * model.localPosition;
             model.localRotation = turn * model.localRotation;
         }
         foreach (var body in model.GetComponentsInChildren<Rigidbody>(true)) Destroy(body);
@@ -205,16 +204,7 @@ public sealed class RepairLooks : MonoBehaviour
         foreach (var levels in model.GetComponentsInChildren<LODGroup>(true)) levels.ForceLOD(0);
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string key)
-        => row != null && row.TryGetValue(key, out string value) && value != null ? value.Trim() : "";
-
-    private static bool Has(IReadOnlyDictionary<string, string> row, string key) => Text(row, key).Length > 0;
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback)
-        => float.TryParse(Text(row, key), NumberStyles.Float, CultureInfo.InvariantCulture, out float read) ? read : fallback;
-
-    private static Vector3 Vec(IReadOnlyDictionary<string, string> row, string name, Vector3 fallback)
-        => new Vector3(Number(row, name + "X", fallback.x), Number(row, name + "Y", fallback.y), Number(row, name + "Z", fallback.z));
+    private static bool Has(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key).Length > 0;
 
     private void Part(string name, PrimitiveType shape, Vector3 at, Vector3 size, Material material, Quaternion? turn = null)
     {

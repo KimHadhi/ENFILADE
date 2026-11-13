@@ -64,7 +64,6 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     public bool IsCountering => striking != null;
     /// <summary>Waiting to counter, dashing in or just countered: hits pass through.</summary>
     public bool Shields => CounterAvailable || IsCountering || guard > 0f;
-    public float Remaining => remaining;
     public void Initialize(PlayerMovement owner)
     {
         if (receiver != null) receiver.HitResolved -= OnResolved;

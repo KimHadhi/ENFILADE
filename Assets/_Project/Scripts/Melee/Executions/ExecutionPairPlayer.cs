@@ -81,9 +81,6 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         return player.TryGetComponent(out ExecutionPairPlayer pairs) ? pairs : player.AddComponent<ExecutionPairPlayer>();
     }
 
-    /// <summary>The pair playing on this PC's copy of the player, or null.</summary>
-    public ExecutionPair Playing => playing ? pair : null;
-
     private void OnEnable()
     {
         movement = GetComponent<PlayerMovement>();

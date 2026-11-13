@@ -81,8 +81,8 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
     private void Pose(float width, float elapsed, float length, float dt)
     {
         float strip = width - TabWidth;
-        float grow = on ? Ease(age / GrowSeconds) : 1f;
-        float left = on ? 1f : 1f - Ease(ending / CutSeconds);
+        float grow = on ? Ease.Out(age / GrowSeconds) : 1f;
+        float left = on ? 1f : 1f - Ease.Out(ending / CutSeconds);
         float shown = strip * Mathf.Min(grow, left);
         // The tape grows out from the tab and, at the end, is cut back to it.
         tape.anchoredPosition = new Vector2(TabWidth, 0f);
@@ -114,27 +114,15 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
         track.sizeDelta = new Vector2(trackWidth, 3f);
         trackFill.rectTransform.sizeDelta = new Vector2(trackWidth * share, 3f);
         head.anchoredPosition = new Vector2(trackWidth * share, 0f);
-        gone.text = Clock(elapsed);
-        whole.text = Clock(length);
+        gone.text = DeathCard.Clock(elapsed);
+        whole.text = DeathCard.Clock(length);
         // The kit's label sits stretched in its own box: the box is what moves.
         ((RectTransform)whole.rectTransform.parent).anchoredPosition = new Vector2(LineLeft + trackWidth + WholeGap, 0f);
-        float lineShow = on ? Ease((age - .1f) / GrowSeconds) : left;
+        float lineShow = on ? Ease.Out((age - .1f) / GrowSeconds) : left;
         track.parent.GetComponent<CanvasGroup>().alpha = lineShow;
     }
 
     private float Lap() => Mathf.Max(80f, run.GetPreferredValues(Words).x);
-
-    private static float Ease(float t)
-    {
-        t = Mathf.Clamp01(t);
-        return 1f - (1f - t) * (1f - t) * (1f - t);
-    }
-
-    private static string Clock(float seconds)
-    {
-        int whole = Mathf.Max(0, Mathf.FloorToInt(seconds));
-        return (whole / 60) + ":" + (whole % 60).ToString("00");
-    }
 
     private void Build()
     {

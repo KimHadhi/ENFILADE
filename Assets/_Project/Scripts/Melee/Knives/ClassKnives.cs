@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -114,50 +113,46 @@ public static class ClassKnives
     {
         if (!GameTables.TryGetRow(Table, id, out var row)) return null;
         var knife = new Knife { Id = id };
-        knife.Model = Text(row, "model", knife.Model);
-        knife.Motion = Text(row, "motion", knife.Motion);
-        knife.Held = new Vector3(Number(row, "heldSide", knife.Held.x), Number(row, "heldPalm", knife.Held.y), Number(row, "heldAlong", knife.Held.z));
+        knife.Model = row.Text("model", knife.Model);
+        knife.Motion = row.Text("motion", knife.Motion);
+        knife.Held = new Vector3(row.Number("heldSide", knife.Held.x), row.Number("heldPalm", knife.Held.y), row.Number("heldAlong", knife.Held.z));
         knife.Blade = Way(row, "blade", knife.Blade);
         knife.Edge = Way(row, "edge", knife.Edge);
-        knife.Scale = Mathf.Max(.01f, Number(row, "scale", 1f));
-        knife.DrawSound = Text(row, "drawSound", knife.DrawSound);
-        knife.StabSound = Text(row, "stabSound", knife.StabSound);
-        knife.SheathSound = Text(row, "sheathSound", knife.SheathSound);
+        knife.Scale = Mathf.Max(.01f, row.Number("scale", 1f));
+        knife.DrawSound = row.Text("drawSound", knife.DrawSound);
+        knife.StabSound = row.Text("stabSound", knife.StabSound);
+        knife.SheathSound = row.Text("sheathSound", knife.SheathSound);
         // In the melee slot: the grip picks the blade's default way and the stab clip; any column may override it.
-        knife.Name = Text(row, "name", knife.Name);
+        knife.Name = row.Text("name", knife.Name);
         string file = knife.Model.Substring(knife.Model.LastIndexOf('/') + 1);
-        knife.Icon = Text(row, "icon", file.Length > 0 ? file : knife.Icon);
-        knife.MeleeReverse = string.Equals(Text(row, "meleeGrip", "forward"), "reverse", System.StringComparison.OrdinalIgnoreCase);
-        knife.MeleeHeld = new Vector3(Number(row, "meleeHeldSide", knife.Held.x), Number(row, "meleeHeldPalm", knife.Held.y),
-            Number(row, "meleeHeldAlong", knife.Held.z));
+        knife.Icon = row.Text("icon", file.Length > 0 ? file : knife.Icon);
+        knife.MeleeReverse = string.Equals(row.Text("meleeGrip", "forward"), "reverse", System.StringComparison.OrdinalIgnoreCase);
+        knife.MeleeHeld = new Vector3(row.Number("meleeHeldSide", knife.Held.x), row.Number("meleeHeldPalm", knife.Held.y),
+            row.Number("meleeHeldAlong", knife.Held.z));
         knife.MeleeBlade = Way(row, "meleeBlade", knife.MeleeReverse ? ReverseBlade : ForwardBlade);
         knife.MeleeEdge = Way(row, "meleeEdge", Vector3.forward);
-        knife.DrawClip = Text(row, "drawClip", knife.DrawClip);
-        knife.GuardClip = Text(row, "guardClip", knife.GuardClip);
-        knife.SlashClip = Text(row, "slashClip", knife.SlashClip);
-        knife.BackslashClip = Text(row, "backslashClip", knife.BackslashClip);
-        knife.StabClip = Text(row, "stabClip", knife.MeleeReverse ? "KnifeMeleeStabReverse" : knife.StabClip);
-        knife.Slash = Mathf.Max(0f, Number(row, "slash", knife.Slash));
-        knife.Stab = Mathf.Max(0f, Number(row, "stab", knife.Stab));
-        knife.SlashPosture = Mathf.Max(0f, Number(row, "slashPosture", knife.SlashPosture));
-        knife.StabPosture = Mathf.Max(0f, Number(row, "stabPosture", knife.StabPosture));
-        knife.HeadFactor = Mathf.Max(0f, Number(row, "headFactor", knife.HeadFactor));
-        knife.BackFactor = Mathf.Max(0f, Number(row, "backFactor", knife.BackFactor));
-        knife.Reach = Number(row, "reach", knife.Reach);
-        knife.SwingSound = Text(row, "swingSound", knife.SwingSound);
-        knife.HitSound = Text(row, "hitSound", knife.HitSound);
-        knife.HeavyHitSound = Text(row, "heavyHitSound", knife.HeavyHitSound);
-        knife.WallSound = Text(row, "wallSound", knife.WallSound);
+        knife.DrawClip = row.Text("drawClip", knife.DrawClip);
+        knife.GuardClip = row.Text("guardClip", knife.GuardClip);
+        knife.SlashClip = row.Text("slashClip", knife.SlashClip);
+        knife.BackslashClip = row.Text("backslashClip", knife.BackslashClip);
+        knife.StabClip = row.Text("stabClip", knife.MeleeReverse ? "KnifeMeleeStabReverse" : knife.StabClip);
+        knife.Slash = Mathf.Max(0f, row.Number("slash", knife.Slash));
+        knife.Stab = Mathf.Max(0f, row.Number("stab", knife.Stab));
+        knife.SlashPosture = Mathf.Max(0f, row.Number("slashPosture", knife.SlashPosture));
+        knife.StabPosture = Mathf.Max(0f, row.Number("stabPosture", knife.StabPosture));
+        knife.HeadFactor = Mathf.Max(0f, row.Number("headFactor", knife.HeadFactor));
+        knife.BackFactor = Mathf.Max(0f, row.Number("backFactor", knife.BackFactor));
+        knife.Reach = row.Number("reach", knife.Reach);
+        knife.SwingSound = row.Text("swingSound", knife.SwingSound);
+        knife.HitSound = row.Text("hitSound", knife.HitSound);
+        knife.HeavyHitSound = row.Text("heavyHitSound", knife.HeavyHitSound);
+        knife.WallSound = row.Text("wallSound", knife.WallSound);
         return knife;
     }
 
     private static Vector3 Way(IReadOnlyDictionary<string, string> row, string name, Vector3 fallback)
     {
-        var way = new Vector3(Number(row, name + "X", fallback.x), Number(row, name + "Y", fallback.y), Number(row, name + "Z", fallback.z));
+        var way = new Vector3(row.Number(name + "X", fallback.x), row.Number(name + "Y", fallback.y), row.Number(name + "Z", fallback.z));
         return way.sqrMagnitude > 1e-8f ? way.normalized : fallback;
     }
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string key, string fallback) => TableCells.Text(row, key, fallback);
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

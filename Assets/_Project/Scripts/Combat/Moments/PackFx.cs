@@ -196,11 +196,11 @@ public sealed class PackFx : MonoBehaviour
             if (string.IsNullOrEmpty(only))
                 foreach (var system in copy.GetComponentsInChildren<ParticleSystem>(true)) Tint(system, tint);
             else
-                foreach (string part in Parts(only))
+                foreach (string part in TableCells.Parts(only))
                     foreach (var found in PartsNamed(copy.transform, part))
                         if (found.TryGetComponent(out ParticleSystem system)) Tint(system, tint);
         }
-        foreach (string part in Parts(Text(use, "pop")))
+        foreach (string part in TableCells.Parts(Text(use, "pop")))
         {
             int colon = part.LastIndexOf(':');
             string path = colon > 0 ? part.Substring(0, colon) : part;
@@ -225,7 +225,7 @@ public sealed class PackFx : MonoBehaviour
 
     private static void Drop(Transform root, string list)
     {
-        foreach (string part in Parts(list))
+        foreach (string part in TableCells.Parts(list))
             foreach (var found in PartsNamed(root, part)) found.gameObject.SetActive(false);
     }
 
@@ -252,13 +252,6 @@ public sealed class PackFx : MonoBehaviour
 
     private static Color Times(Color a, Color tint) => new Color(a.r * tint.r, a.g * tint.g, a.b * tint.b, a.a);
 
-    private static IEnumerable<string> Parts(string list)
-    {
-        if (string.IsNullOrWhiteSpace(list)) yield break;
-        foreach (string part in list.Split('|'))
-            if (!string.IsNullOrWhiteSpace(part)) yield return part.Trim();
-    }
-
     // A part by its path under the copy ("Loop/FuzzAlpha_Soft": every one there) or by its name anywhere in it.
     private static IEnumerable<Transform> PartsNamed(Transform root, string part)
     {
@@ -266,15 +259,8 @@ public sealed class PackFx : MonoBehaviour
         foreach (var t in root.GetComponentsInChildren<Transform>(true))
         {
             if (t == root) continue;
-            if (path ? PathOf(t, root) == part : t.name == part) yield return t;
+            if (path ? Hierarchy.PathOf(t, root) == part : t.name == part) yield return t;
         }
-    }
-
-    private static string PathOf(Transform t, Transform root)
-    {
-        string path = t.name;
-        for (var up = t.parent; up != null && up != root; up = up.parent) path = up.name + "/" + path;
-        return path;
     }
 
     /// <summary>A number from Tables/PackFx.csv, or the fallback.</summary>

@@ -12,15 +12,7 @@ internal static class PreviewHumanoid
         if (animator == null || animator.avatar == null || !animator.avatar.isHuman) return null;
         string humanName = HumanTrait.BoneName[(int)bone];
         foreach (var mapped in animator.avatar.humanDescription.human)
-            if (mapped.humanName == humanName) return Find(body, mapped.boneName);
-        return null;
-    }
-
-    public static Transform Find(Transform root, string name)
-    {
-        if (root.name == name) return root;
-        foreach (Transform child in root)
-            if (Find(child, name) is Transform found) return found;
+            if (mapped.humanName == humanName) return Hierarchy.Find(body, mapped.boneName);
         return null;
     }
 }

@@ -65,13 +65,6 @@ public sealed class PlayerFace : MonoBehaviour
     private int fearNext;
 
     /// <summary>
-    /// A callout <paramref name="speaker"/> said, heard on this PC (PlayerCallouts.Hear): their face says it with them
-    /// for as long as the voice lasts, the mouth moving to it.
-    /// </summary>
-    public static void Said(PlayerMovement speaker, CalloutLines.Line line, AudioSource voice) =>
-        Said(speaker, line, voice, Vector3.zero, false);
-
-    /// <summary>
     /// As above, with what the callout is about (the zombie it pings, the spot it pins) for the body's point and the head's
     /// turn (CalloutGesture); the caller's face comes up in the callout feed too (CalloutFeedHUD).
     /// </summary>

@@ -72,15 +72,6 @@ public static class ExecutionPairs
 
     private static void Forget() => loaded = false;
 
-    public static IReadOnlyList<ExecutionPair> All
-    {
-        get
-        {
-            Load();
-            return pairs;
-        }
-    }
-
     /// <summary>The pair for a zombie state (its row id), or null.</summary>
     public static ExecutionPair Find(string id)
     {

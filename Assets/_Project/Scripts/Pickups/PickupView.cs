@@ -53,8 +53,6 @@ public sealed class PickupView : MonoBehaviour
         ring.gameObject.SetActive(true);
     }
 
-    public bool Taking => taken >= 0f;
-
     private void Build(FieldPickups.Kind kind, WeaponData weapon)
     {
         block = new MaterialPropertyBlock();
@@ -118,10 +116,10 @@ public sealed class PickupView : MonoBehaviour
 
         float breathe = .7f + .3f * Mathf.Sin(time * 4.5f + phase);
         Color rim = targeted ? KitStyle.Accent : tint;
-        Paint(outlines, With(rim, (targeted ? 1f : .75f * breathe)));
-        Paint(beamRenderer, With(tint, .7f * (1f - far)));
-        Paint(coreRenderer, With(Color.Lerp(tint, Color.white, .7f), .5f * (1f - far)));
-        Paint(poolRenderer, With(tint, .32f));
+        Paint(outlines, KitStyle.With(rim, (targeted ? 1f : .75f * breathe)));
+        Paint(beamRenderer, KitStyle.With(tint, .7f * (1f - far)));
+        Paint(coreRenderer, KitStyle.With(Color.Lerp(tint, Color.white, .7f), .5f * (1f - far)));
+        Paint(poolRenderer, KitStyle.With(tint, .32f));
     }
 
     private void Update()
@@ -136,11 +134,11 @@ public sealed class PickupView : MonoBehaviour
         model.localPosition = Vector3.up * (Lift + .25f * ease);
         float size = Mathf.Lerp(RingFrom, RingTo, ease);
         ring.localScale = new Vector3(size, 1f, size);
-        Paint(ringRenderer, With(tint, .9f * (1f - k)));
-        Paint(beamRenderer, With(tint, .8f * (1f - k)));
-        Paint(coreRenderer, With(Color.white, .6f * (1f - k)));
-        Paint(poolRenderer, With(tint, .32f * (1f - k)));
-        Paint(outlines, With(tint, 1f - k));
+        Paint(ringRenderer, KitStyle.With(tint, .9f * (1f - k)));
+        Paint(beamRenderer, KitStyle.With(tint, .8f * (1f - k)));
+        Paint(coreRenderer, KitStyle.With(Color.white, .6f * (1f - k)));
+        Paint(poolRenderer, KitStyle.With(tint, .32f * (1f - k)));
+        Paint(outlines, KitStyle.With(tint, 1f - k));
         if (k >= 1f) Destroy(gameObject);
     }
 
@@ -155,8 +153,6 @@ public sealed class PickupView : MonoBehaviour
         block.SetColor(ColorId, color);
         renderer.SetPropertyBlock(block);
     }
-
-    private static Color With(Color color, float alpha) => new Color(color.r, color.g, color.b, alpha);
 
     // ---- Shared art ----
 

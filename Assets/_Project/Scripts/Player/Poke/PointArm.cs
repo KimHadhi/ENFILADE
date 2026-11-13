@@ -474,7 +474,7 @@ public sealed class PointArm : MonoBehaviour
                 if (bone == null) break;
                 Vector3 want = DrawnWay(drawn, finger, joint);
                 if (want.sqrMagnitude < 1e-6f) continue;
-                Turn(bone, JointWay(finger, joint), drawnTurn * want, 1f);
+                PathArm.Turn(bone, JointWay(finger, joint), drawnTurn * want, 1f);
             }
     }
 
@@ -548,7 +548,7 @@ public sealed class PointArm : MonoBehaviour
             if (bone == null) break;
             Vector3 bendAxis = Vector3.Cross(over, palm);
             if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? bend2 : bend3, bendAxis.normalized) * over;
-            Turn(bone, JointWay(Thumb, joint), over, thumb);
+            PathArm.Turn(bone, JointWay(Thumb, joint), over, thumb);
         }
     }
 
@@ -562,7 +562,7 @@ public sealed class PointArm : MonoBehaviour
             var bone = fingers[finger * 3 + joint];
             if (bone == null) return;
             angle += joint == 0 ? first : joint == 1 ? second : third;
-            Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle * share, curl) * way, 1f);
+            PathArm.Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle * share, curl) * way, 1f);
         }
     }
 
@@ -572,13 +572,6 @@ public sealed class PointArm : MonoBehaviour
         var bone = fingers[finger * 3 + joint];
         var next = joint < 2 ? fingers[finger * 3 + joint + 1] : finger == Index ? indexTip : null;
         return next != null ? next.position - bone.position : bone.rotation * jointAxis;
-    }
-
-    private static void Turn(Transform bone, Vector3 now, Vector3 want, float share)
-    {
-        if (now.sqrMagnitude < 1e-12f || want.sqrMagnitude < 1e-12f) return;
-        var turn = Quaternion.FromToRotation(now, want);
-        bone.rotation = (share >= 1f ? turn : Quaternion.Slerp(Quaternion.identity, turn, share)) * bone.rotation;
     }
 
     // The index's tip: its tip bone, else past its last joint by most of the middle joint's length; a hand with no

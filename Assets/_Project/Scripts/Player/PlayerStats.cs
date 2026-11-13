@@ -45,5 +45,5 @@ public sealed class PlayerStats : MonoBehaviour, ITableBound
         if (changed) Changed?.Invoke();
     }
 
-    private static float NonNegative(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
+    internal static float NonNegative(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
 }

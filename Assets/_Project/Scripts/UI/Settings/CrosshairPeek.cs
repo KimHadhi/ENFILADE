@@ -25,7 +25,7 @@ public sealed class CrosshairPeek : MonoBehaviour, IPointerDownHandler, IPointer
         chip.sizeDelta = new Vector2(214f, 30f);
         W.Fill(chip, new Color(0f, 0f, 0f, .6f));
         var label = W.Label(chip, Texts.Get("crosshair.peek"), 15f, W.Text, TextAlignmentOptions.Center);
-        W.Stretch(label.rectTransform);
+        KitStyle.Stretch(label.rectTransform);
         var peek = chip.gameObject.AddComponent<CrosshairPeek>();
         peek.kind = kind;
         var canvas = box.GetComponentInParent<Canvas>(true).rootCanvas; // the menu builds while still hidden

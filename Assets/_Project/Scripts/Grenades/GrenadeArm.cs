@@ -24,35 +24,15 @@ using MovementState = PlayerMovement.MovementState;
 /// first-person camera was placed earlier, so the view never moves with the arm.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 7)]
-public sealed class GrenadeArm : MonoBehaviour
+public sealed class GrenadeArm : PathArm
 {
-    // The fingers in order (index, middle, ring, little, thumb), three joints each from the knuckle out.
-    private const int Index = 0, Middle = 1, Ring = 2, Little = 3, Thumb = 4;
-    private static readonly HumanBodyBones[] FirstJoints =
-    {
-        HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftRingProximal,
-        HumanBodyBones.LeftLittleProximal, HumanBodyBones.LeftThumbProximal,
-    };
-    // A finger's whole curl shared out over its joints, knuckle first: a real finger closes most at the knuckle and the
-    // middle joint, and its last joint follows (the Blender workspace bends its drafts the same way).
-    private static readonly float[] CurlShare = { .4f, .35f, .25f };
-
-    private PlayerMovement movement;
-    private PlayerBodyHands hands;
-    private Animator animator;
-    private Transform eyes, upper, lower, hand, holder;
-    private readonly Transform[] fingers = new Transform[15];
-    // The bones the throw turns, and how the frame had them, to ease from.
-    private readonly Transform[] turned = new Transform[18];
-    private readonly Quaternion[] framed = new Quaternion[18];
-    private int turnedCount, drivenFrame = -1;
     // A finger joint's own length axis (the rig's, from the index's middle joint), for a last joint with no tip bone; the
     // hand's own way out from the wrist, for a hand with no fingers.
-    private Vector3 jointAxis, handAxis, releaseLocal;
+    private Vector3 releaseLocal;
     // own: the throw's own ease (armIn, armOut); weight: what is posed, never ahead of the hand lent off the gun.
-    private float armLength, handLength, own, weight, time, fade = 1f;
+    private float time, fade = 1f;
     private Throwable kind, heldKind;
-    private bool bound, wanted, holds, hasRelease, posedBefore;
+    private bool wanted, holds, hasRelease, posedBefore;
     private string clip = "", shownClip = "";
     // The arm as last posed (the clip's moment after any blend), and the moment a new clip blends from.
     private GrenadeArmPath.Key shown, from;
@@ -247,36 +227,6 @@ public sealed class GrenadeArm : MonoBehaviour
         Hold(key.Held && holds);
     }
 
-    // The hand's rotation that lays its run (wrist to middle knuckle) along the clip's and its palm facing as the clip's.
-    private void TurnHand(Vector3 along, Vector3 palm)
-    {
-        Vector3 alongNow = AlongNow();
-        Vector3 palmNow = PalmNow(alongNow);
-        if (alongNow.sqrMagnitude < 1e-10f || palmNow.sqrMagnitude < 1e-10f) return;
-        hand.rotation = Quaternion.LookRotation(along, palm) * Quaternion.Inverse(Quaternion.LookRotation(alongNow, palmNow)) * hand.rotation;
-    }
-
-    private Transform Knuckle() => fingers[Middle * 3] != null ? fingers[Middle * 3] : fingers[Index * 3];
-
-    // Out from the wrist along the hand: to the middle knuckle (the index's on a hand without one), else the hand's own way.
-    private Vector3 AlongNow()
-    {
-        var knuckle = Knuckle();
-        return knuckle != null ? knuckle.position - hand.position : hand.rotation * handAxis;
-    }
-
-    // The way the palm faces now, from the knuckles, as the clips were measured (grenade_tools.hand_frame): out of the
-    // palm, square to the hand's run. A hand with no fingers is taken as palm down.
-    private Vector3 PalmNow(Vector3 along)
-    {
-        var index = fingers[Index * 3];
-        var side = fingers[Little * 3] != null ? fingers[Little * 3] : fingers[Ring * 3] != null ? fingers[Ring * 3] : fingers[Middle * 3];
-        Vector3 palm = index != null && side != null && side != index ? -Vector3.Cross(along, index.position - side.position) : Vector3.zero;
-        if (palm.sqrMagnitude < 1e-12f) palm = Vector3.down;
-        palm = Vector3.ProjectOnPlane(palm, along);
-        return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
-    }
-
     // Each of the four fingers closed toward the palm by its own curl in the clip (GrenadeRules gripCurl of it), shared
     // over its joints; the thumb across the palm toward the little finger's side and on toward the fingertips, over the
     // throwable, as far as the clip closes it (GrenadeRules gripThumb of it).
@@ -309,21 +259,6 @@ public sealed class GrenadeArm : MonoBehaviour
             if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 15f : 20f, bendAxis.normalized) * over;
             Turn(bone, JointWay(Thumb, joint), over, close);
         }
-    }
-
-    // Which way a finger joint runs now: to its next joint, else along the rig's joint axis.
-    private Vector3 JointWay(int finger, int joint)
-    {
-        var bone = fingers[finger * 3 + joint];
-        var next = joint < 2 ? fingers[finger * 3 + joint + 1] : null;
-        return next != null ? next.position - bone.position : bone.rotation * jointAxis;
-    }
-
-    private static void Turn(Transform bone, Vector3 now, Vector3 want, float share)
-    {
-        if (now.sqrMagnitude < 1e-12f || want.sqrMagnitude < 1e-12f) return;
-        var turn = Quaternion.FromToRotation(now, want);
-        bone.rotation = (share >= 1f ? turn : Quaternion.Slerp(Quaternion.identity, turn, share)) * bone.rotation;
     }
 
     // ---- The throwable in the hand ----

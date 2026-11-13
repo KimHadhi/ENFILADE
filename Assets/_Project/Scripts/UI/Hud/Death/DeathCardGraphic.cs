@@ -55,7 +55,7 @@ public sealed class DeathCardGraphic : MaskableGraphic
         Rect r = rectTransform.rect;
         if (r.width < 1f || r.height < 1f) return;
         float a = color.a;
-        Color ink = Tint(Ink, plateAlpha * a), pink = Tint(KitStyle.Accent, a), ice = Tint(KitStyle.Ice, a);
+        Color ink = KitStyle.With(Ink, plateAlpha * a), pink = KitStyle.With(KitStyle.Accent, a), ice = KitStyle.With(KitStyle.Ice, a);
         switch (shape)
         {
             case Shape.Title: Title(vh, r, ink, pink, ice); break;
@@ -73,41 +73,39 @@ public sealed class DeathCardGraphic : MaskableGraphic
             Vector2 end = Vector2.Lerp(from, to, reveal);
             float endThick = Mathf.Lerp(SlashThick, SlashThin, reveal);
             Taper(vh, from, end, SlashThick, endThick, pink);
-            Taper(vh, from, end, SlashThick * SlashCore, endThick * SlashCore, Tint(KitStyle.Ice, pink.a * .9f));
+            Taper(vh, from, end, SlashThick * SlashCore, endThick * SlashCore, KitStyle.With(KitStyle.Ice, pink.a * .9f));
         }
         Vector2 bottomLeft = new Vector2(r.xMin, r.yMin), bottomRight = new Vector2(r.xMax - slant, r.yMin);
         Vector2 topRight = new Vector2(r.xMax, r.yMax), topLeft = new Vector2(r.xMin + slant, r.yMax);
-        Poly(vh, ink, bottomLeft, bottomRight, topRight, topLeft);
+        BandGraphic.Poly(vh, ink, bottomLeft, bottomRight, topRight, topLeft);
         // A quiet near-white rule along the bottom, inside the plate.
         float rule = r.yMin + 12f;
-        Poly(vh, Tint(ice, ice.a * .32f), new Vector2(r.xMin + 30f, rule), new Vector2(r.xMax - slant - 30f, rule),
+        BandGraphic.Poly(vh, KitStyle.With(ice, ice.a * .32f), new Vector2(r.xMin + 30f, rule), new Vector2(r.xMax - slant - 30f, rule),
             new Vector2(r.xMax - slant - 30f + .6f, rule + 2.5f), new Vector2(r.xMin + 30.6f, rule + 2.5f));
         // The pink triangle in the top left corner, along the top edge and down the slanted left one.
         float depth = Mathf.Min(CornerDeep, r.height * .5f);
         Vector2 down = new Vector2(r.xMin + slant * (1f - depth / r.height), r.yMax - depth);
-        Poly(vh, pink, topLeft, topLeft + new Vector2(CornerWide, 0f), down);
+        BandGraphic.Poly(vh, pink, topLeft, topLeft + new Vector2(CornerWide, 0f), down);
         // The pink shard past the right tip, and a smaller one past it.
-        Poly(vh, pink, new Vector2(r.xMax + 8f, r.yMax), new Vector2(r.xMax + 40f, r.yMax), new Vector2(r.xMax + 14f, r.yMax - 26f));
-        Poly(vh, pink, new Vector2(r.xMax + 48f, r.yMax - 5f), new Vector2(r.xMax + 62f, r.yMax - 5f), new Vector2(r.xMax + 52f, r.yMax - 16f));
+        BandGraphic.Poly(vh, pink, new Vector2(r.xMax + 8f, r.yMax), new Vector2(r.xMax + 40f, r.yMax), new Vector2(r.xMax + 14f, r.yMax - 26f));
+        BandGraphic.Poly(vh, pink, new Vector2(r.xMax + 48f, r.yMax - 5f), new Vector2(r.xMax + 62f, r.yMax - 5f), new Vector2(r.xMax + 52f, r.yMax - 16f));
     }
 
     private void Band(VertexHelper vh, Rect r, Color ink, Color pink)
     {
-        Poly(vh, ink, new Vector2(r.xMin, r.yMin), new Vector2(r.xMax - slant, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin + slant, r.yMax));
-        Poly(vh, pink, new Vector2(r.xMin + 10f, r.yMin), new Vector2(r.xMin + 16f, r.yMin),
+        BandGraphic.Poly(vh, ink, new Vector2(r.xMin, r.yMin), new Vector2(r.xMax - slant, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin + slant, r.yMax));
+        BandGraphic.Poly(vh, pink, new Vector2(r.xMin + 10f, r.yMin), new Vector2(r.xMin + 16f, r.yMin),
             new Vector2(r.xMin + 16f + slant, r.yMax), new Vector2(r.xMin + 10f + slant, r.yMax));
     }
 
     private static void Tile(VertexHelper vh, Rect r, Color ink, Color pink)
     {
         float c = Mathf.Min(TileCut, r.height * .3f);
-        Poly(vh, ink, new Vector2(r.xMin + c, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax - c),
+        BandGraphic.Poly(vh, ink, new Vector2(r.xMin + c, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax - c),
             new Vector2(r.xMax - c, r.yMax), new Vector2(r.xMin, r.yMax), new Vector2(r.xMin, r.yMin + c));
-        Poly(vh, pink, new Vector2(r.xMin, r.yMax + 4f), new Vector2(r.xMin + 52f, r.yMax + 4f),
+        BandGraphic.Poly(vh, pink, new Vector2(r.xMin, r.yMax + 4f), new Vector2(r.xMin + 52f, r.yMax + 4f),
             new Vector2(r.xMin + 52f, r.yMax + 6.5f), new Vector2(r.xMin, r.yMax + 6.5f));
     }
-
-    private static Color Tint(Color colour, float alpha) => new Color(colour.r, colour.g, colour.b, alpha);
 
     // A strip from a to b, as thick as the two widths at its ends.
     private static void Taper(VertexHelper vh, Vector2 a, Vector2 b, float widthA, float widthB, Color colour)
@@ -115,20 +113,6 @@ public sealed class DeathCardGraphic : MaskableGraphic
         Vector2 along = b - a;
         if (along.sqrMagnitude < 1e-4f) return;
         Vector2 side = new Vector2(-along.y, along.x).normalized * .5f;
-        Poly(vh, colour, a + side * widthA, b + side * widthB, b - side * widthB, a - side * widthA);
-    }
-
-    // A convex polygon, its points in order round it.
-    private static void Poly(VertexHelper vh, Color colour, params Vector2[] points)
-    {
-        int first = vh.currentVertCount;
-        var vertex = UIVertex.simpleVert;
-        vertex.color = colour;
-        foreach (var point in points)
-        {
-            vertex.position = point;
-            vh.AddVert(vertex);
-        }
-        for (int i = 1; i < points.Length - 1; i++) vh.AddTriangle(first, first + i, first + i + 1);
+        BandGraphic.Poly(vh, colour, a + side * widthA, b + side * widthB, b - side * widthB, a - side * widthA);
     }
 }

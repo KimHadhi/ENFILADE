@@ -75,7 +75,7 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         if (font != null) counter.font = font;
         // The prefab clips the count with "…". TMP once could not find it here, warned and cut the count plainly (user,
         // 2026-11-11); ClippedOverflow keeps "…" wherever TMP will find it for this font and style.
-        counter.overflowMode = CombatUIAssets.ClippedOverflow(counter);
+        counter.overflowMode = FontRoles.ClippedOverflow(counter);
         // The count's big number and small total are tags; the prefab's text had them switched off.
         counter.richText = true;
         Anchor();

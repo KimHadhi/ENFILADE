@@ -422,10 +422,10 @@ public sealed class ResultsShow : MonoBehaviour
         float close = Mathf.Max(.2f, HubLobby.Number("showClose", .55f)) + pose.Reach * .8f;
         float far = Mathf.Max(close, HubLobby.Number("showFar", 1.7f));
         // Hand to face, on a curve bent through the chest when the hand is below it.
-        float glide = Smooth((time - HandHold) / (sweep - HandHold));
+        float glide = Ease.Smooth((time - HandHold) / (sweep - HandHold));
         Vector3 bend = hand.y < chest.y - .05f ? chest : (hand + eyes) * .5f;
         Vector3 along = Bezier(hand, bend, eyes, glide);
-        float back = Smooth((time - sweep) / pull);
+        float back = Ease.Smooth((time - sweep) / pull);
         float settle = Mathf.Clamp01((time - sweep - pull) / Mathf.Max(.5f, seat.ShotLength - sweep - pull));
         float distance = Mathf.Lerp(close, far, back) * (1f - .06f * settle);
         // Round to one side and from a little below: wider while it glides, closing in as it settles.
@@ -472,12 +472,6 @@ public sealed class ResultsShow : MonoBehaviour
         light.innerSpotAngle = 20f;
         light.shadows = LightShadows.None;
         return light;
-    }
-
-    private static float Smooth(float x)
-    {
-        x = Mathf.Clamp01(x);
-        return x * x * (3f - 2f * x);
     }
 
     private static Vector3 Bezier(Vector3 from, Vector3 bend, Vector3 to, float t)
@@ -707,7 +701,7 @@ public sealed class ResultsShow : MonoBehaviour
     private void Pose()
     {
         curtain.color = new Color(0f, 0f, 0f, 1f - Mathf.Clamp01(age / .35f));
-        float headerIn = Out((age - .1f) / .3f);
+        float headerIn = Ease.Out((age - .1f) / .3f);
         header.anchoredPosition = new Vector2(80f - 160f * (1f - headerIn), -40f);
         var now = ShotOn(age);
         // A cut: a white blink, and the player of the new shot strikes their pose.
@@ -721,7 +715,7 @@ public sealed class ResultsShow : MonoBehaviour
             seat.SpotGroup.alpha = live ? 1f : 0f;
             if (!live) continue;
             // The name slides in from the left; the titles slam on down the left one after another, as the camera settles.
-            float nameIn = Out(local / .22f);
+            float nameIn = Ease.Out(local / .22f);
             seat.Name.anchoredPosition = new Vector2(80f - 120f * (1f - nameIn), 118f);
             for (int i = 0; i < seat.Slams.Count; i++)
             {
@@ -744,13 +738,13 @@ public sealed class ResultsShow : MonoBehaviour
         if (row && prevAge < groupAt) KitSound.Play(KitSound.Cue.Escape, .5f);
         foreach (var seat in seats)
         {
-            float plateIn = row ? Out((age - groupAt - seat.Index * .06f) / .2f) : 0f;
+            float plateIn = row ? Ease.Out((age - groupAt - seat.Index * .06f) / .2f) : 0f;
             seat.PlateGroup.alpha = plateIn;
             if (!row) continue;
             Vector2 feet = OnScreen(seat.Feet);
             seat.Plate.anchoredPosition = feet + new Vector2(0f, -46f - 20f * (1f - plateIn));
         }
-        float high = Out((age - highlightsAt) / .25f);
+        float high = Ease.Out((age - highlightsAt) / .25f);
         highlights.localScale = new Vector3(1f, high, 1f);
         float count = Mathf.Clamp01((age - highlightsAt) / .6f);
         foreach (var (label, value, award) in counters)
@@ -767,8 +761,6 @@ public sealed class ResultsShow : MonoBehaviour
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
         return local;
     }
-
-    private static float Out(float x) { x = 1f - Mathf.Clamp01(x); return 1f - x * x * x; }
 
     /// <summary>m:ss, or h:mm:ss past an hour.</summary>
     public static string Clock(float seconds)

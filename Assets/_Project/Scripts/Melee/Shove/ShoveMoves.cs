@@ -82,9 +82,6 @@ public sealed class ShoveMoves : MonoBehaviour
     /// shown, on another's copy: the gun swings through its bash (FPSBody.Bash). The shove's own PC judges what it hit.
     /// </summary>
     public event Action Bashed;
-    /// <summary>A kick is under way on this player's own PC: from the press until the foot lands (kickHitTime). The leg
-    /// clip plays on longer, on every PC (PlayerBody.Kick).</summary>
-    public bool IsKicking => kickClock >= 0f;
 
     private void Awake() => player = GetComponent<PlayerMovement>();
 

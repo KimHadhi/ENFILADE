@@ -89,7 +89,7 @@ internal sealed class GunSurface
     }
 
     // On from the part up to the gun, whether the gun itself is on or not.
-    private static bool Worn(Transform part, Transform gun)
+    internal static bool Worn(Transform part, Transform gun)
     {
         for (var at = part; at != null && at != gun; at = at.parent)
             if (!at.gameObject.activeSelf) return false;

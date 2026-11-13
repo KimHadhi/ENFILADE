@@ -100,11 +100,11 @@ public sealed class HudBoard : MaskableGraphic, ITableBound
 
         // The glass: darkest at the outer edge, thinning across the first half, nearly clear at the inner edge.
         float mid = Mathf.Lerp(fillInner, fillOuter, .26f);
-        Span(mesh, 0f, .45f, bottom, top, Tint(Glass, fillOuter), Tint(Glass, mid));
-        Span(mesh, .45f, 1f, bottom, top, Tint(Glass, mid), Tint(Glass, fillInner));
+        Span(mesh, 0f, .45f, bottom, top, KitStyle.With(Glass, fillOuter), KitStyle.With(Glass, mid));
+        Span(mesh, .45f, 1f, bottom, top, KitStyle.With(Glass, mid), KitStyle.With(Glass, fillInner));
 
         // The grid fades toward the inner edge; its columns are what pack tighter with depth.
-        Color gridOut = Tint(Color.white, gridAlpha), gridIn = Tint(Color.white, gridAlpha * .45f);
+        Color gridOut = KitStyle.With(Color.white, gridAlpha), gridIn = KitStyle.With(Color.white, gridAlpha * .45f);
         for (float x = gridStep; x < r.width - 1f; x += gridStep)
         {
             float f = x / r.width;
@@ -115,7 +115,7 @@ public sealed class HudBoard : MaskableGraphic, ITableBound
             Span(mesh, 0f, 1f, y, y + 1f, gridOut, gridIn);
 
         // Ticks under the top edge and over the bottom one.
-        Color tickOut = Tint(Color.white, tickAlpha), tickIn = Tint(Color.white, tickAlpha * .35f);
+        Color tickOut = KitStyle.With(Color.white, tickAlpha), tickIn = KitStyle.With(Color.white, tickAlpha * .35f);
         for (float x = 0f; x < r.width - Line; x += tickStep)
         {
             float f0 = x / r.width, f1 = (x + Line) / r.width;
@@ -125,7 +125,7 @@ public sealed class HudBoard : MaskableGraphic, ITableBound
         }
 
         // The closed outline: the outer edge strongest, the inner one fainter, the top and bottom shading between.
-        Color edgeOut = Tint(Color.white, lineAlpha), edgeIn = Tint(Color.white, innerLineAlpha);
+        Color edgeOut = KitStyle.With(Color.white, lineAlpha), edgeIn = KitStyle.With(Color.white, innerLineAlpha);
         Span(mesh, 0f, Line / r.width, bottom, top, edgeOut, edgeOut);
         Span(mesh, 1f - Line / r.width, 1f, bottom, top, edgeIn, edgeIn);
         Span(mesh, 0f, 1f, top - Line, top, edgeOut, edgeIn);
@@ -135,12 +135,10 @@ public sealed class HudBoard : MaskableGraphic, ITableBound
         Box(mesh, -2f, -2f + TabWidth, top - TabFromTop - TabLength, top - TabFromTop, accent);
         Bracket(mesh, -OuterGap, top + OuterGap, 1f, -1f, OuterArm, OuterThick, accent);
         Bracket(mesh, -OuterGap, bottom - OuterGap, 1f, 1f, OuterArm, OuterThick, accent);
-        Color small = Tint(Color.white, .55f);
+        Color small = KitStyle.With(Color.white, .55f);
         Bracket(mesh, r.width + InnerGap, top + InnerGap, -1f, -1f, InnerArm, InnerThick, small);
         Bracket(mesh, r.width + InnerGap, bottom - InnerGap, -1f, 1f, InnerArm, InnerThick, small);
     }
-
-    private static Color Tint(Color c, float alpha) { c.a = alpha; return c; }
 
     // x measured in from the outer edge (px); the board's local x, mirrored for the right side.
     private float X(float fromOuter)

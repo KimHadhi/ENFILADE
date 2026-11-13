@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>What one step of a campaign chapter asks of the players (Tables/CampaignSteps, kind).</summary>
 public enum CampaignStepKind
@@ -48,27 +47,23 @@ public sealed class CampaignStep
         var steps = new List<CampaignStep>();
         foreach (string id in GameTables.RowIds(TableName))
         {
-            if (!GameTables.TryGetRow(TableName, id, out var row) || !string.Equals(Text(row, "chapter"), chapter, StringComparison.OrdinalIgnoreCase))
+            if (!GameTables.TryGetRow(TableName, id, out var row) || !string.Equals(row.Text("chapter"), chapter, StringComparison.OrdinalIgnoreCase))
                 continue;
-            if (!Enum.TryParse(Text(row, "kind"), true, out CampaignStepKind kind)) continue;
+            if (!Enum.TryParse(row.Text("kind"), true, out CampaignStepKind kind)) continue;
             // The words are Texts rows (mission.<step>.title …) the cells name, or plain words in a modder's table.
             steps.Add(new CampaignStep
             {
-                Id = id, Kind = kind, Spot = Text(row, "spot"), Title = Texts.Cell(Text(row, "title")),
-                Description = Texts.Cell(Text(row, "description")), Done = Texts.Cell(Text(row, "done")),
-                Prompt = Texts.Cell(Text(row, "prompt")), Order = (int)Number(row, "order", 0f),
-                Radius = Number(row, "radius", 4f), Seconds = Number(row, "seconds", 0f),
-                Horde = (int)Number(row, "horde", 0f), Rate = Number(row, "rate", 0f), Count = (int)Number(row, "count", 1f),
-                Music = Text(row, "music"), PeakBosses = (int)Number(row, "peakBoss", 0f), Manned = Number(row, "manned", 0f) > 0f
+                Id = id, Kind = kind, Spot = row.Text("spot"), Title = Texts.Cell(row.Text("title")),
+                Description = Texts.Cell(row.Text("description")), Done = Texts.Cell(row.Text("done")),
+                Prompt = Texts.Cell(row.Text("prompt")), Order = (int)row.Number("order", 0f),
+                Radius = row.Number("radius", 4f), Seconds = row.Number("seconds", 0f),
+                Horde = (int)row.Number("horde", 0f), Rate = row.Number("rate", 0f), Count = (int)row.Number("count", 1f),
+                Music = row.Text("music"), PeakBosses = (int)row.Number("peakBoss", 0f), Manned = row.Number("manned", 0f) > 0f
             });
         }
         steps.Sort((a, b) => a.Order.CompareTo(b.Order));
         return steps;
     }
-
-    internal static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
-
-    internal static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }
 
 /// <summary>
@@ -89,8 +84,8 @@ public sealed class CampaignChapter
         if (!GameTables.TryGetRow(TableName, scene, out var row)) return null;
         return new CampaignChapter
         {
-            Title = Texts.Cell(CampaignStep.Text(row, "title")), Next = CampaignStep.Text(row, "next"),
-            Intro = Texts.Lines(Texts.Cell(CampaignStep.Text(row, "intro"))), Outro = Texts.Lines(Texts.Cell(CampaignStep.Text(row, "outro")))
+            Title = Texts.Cell(row.Text("title")), Next = row.Text("next"),
+            Intro = Texts.Lines(Texts.Cell(row.Text("intro"))), Outro = Texts.Lines(Texts.Cell(row.Text("outro")))
         };
     }
 }

@@ -350,7 +350,7 @@ public sealed class ShopMenu : MonoBehaviour
                 if (player.CombatInputLocked) return Texts.Get("shop.refuse.now");
                 return null;
             case Kind.Ammo:
-                return slots == null || !HoldsAnyGun(slots) ? Texts.Get("shop.refuse.nogun") : !slots.NeedsAmmo() ? Texts.Get("shop.refuse.ammofull") : null;
+                return slots == null || !PlayerWeaponSlots.HoldsAnyGun(slots) ? Texts.Get("shop.refuse.nogun") : !slots.NeedsAmmo() ? Texts.Get("shop.refuse.ammofull") : null;
             case Kind.Heal:
                 return receiver.Health >= receiver.MaximumHealth - .5f ? Texts.Get("shop.refuse.healthfull") : null;
             case Kind.Shield:
@@ -407,12 +407,6 @@ public sealed class ShopMenu : MonoBehaviour
         return false;
     }
 
-    private static bool HoldsAnyGun(PlayerWeaponSlots slots)
-    {
-        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) if (slots.GetWeapon(i)?.Category == WeaponCategory.Ranged) return true;
-        return false;
-    }
-
     // ---- What it sells ----
 
     private void LoadStock()
@@ -427,11 +421,11 @@ public sealed class ShopMenu : MonoBehaviour
         var byId = new Dictionary<string, GunGroup>(StringComparer.OrdinalIgnoreCase);
         foreach (string id in GameTables.RowIds(TableName))
         {
-            if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(Text(row, "kind"), true, out Kind kind)) continue;
+            if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(row.Text("kind"), true, out Kind kind)) continue;
             // A Texts row the cell names (shop.<id>.name), or plain words; empty takes the gun's name.
-            string name = Texts.Cell(Text(row, "name"));
-            float amount = Number(row, "amount", 0f);
-            int order = (int)Number(row, "order", 0f);
+            string name = Texts.Cell(row.Text("name"));
+            float amount = row.Number("amount", 0f);
+            int order = (int)row.Number("order", 0f);
             if (kind == Kind.Category)
             {
                 if (byId.ContainsKey(id)) continue;
@@ -441,11 +435,11 @@ public sealed class ShopMenu : MonoBehaviour
                 continue;
             }
             WeaponData weapon = null;
-            if (kind == Kind.Gun && !guns.TryGetValue(Text(row, "weapon"), out weapon)) continue;
+            if (kind == Kind.Gun && !guns.TryGetValue(row.Text("weapon"), out weapon)) continue;
             stock.Add(new Item
             {
-                Id = id, Kind = kind, Weapon = weapon, Price = (long)Number(row, "price", 0f), Amount = amount, Order = order,
-                Group = kind == Kind.Gun ? Text(row, "category") : "",
+                Id = id, Kind = kind, Weapon = weapon, Price = (long)row.Number("price", 0f), Amount = amount, Order = order,
+                Group = kind == Kind.Gun ? row.Text("category") : "",
                 Name = name.Length > 0 ? name : weapon != null ? weapon.DisplayName : id,
                 Detail = DetailOf(kind, weapon, amount)
             });
@@ -536,10 +530,6 @@ public sealed class ShopMenu : MonoBehaviour
 
     // Ammo, health and the shield are what a fight runs out of: the big tiles.
     private static bool IsBig(Kind kind) => kind == Kind.Ammo || kind == Kind.Heal || kind == Kind.Shield;
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // Each kind's bar down a card's left side: guns white (the pink is the menus' one accent, and too near heal's red),
     // ammo cyan, heal red, shield green.
@@ -676,7 +666,7 @@ public sealed class ShopMenu : MonoBehaviour
     private string Note(Item item, PlayerWeaponSlots slots)
     {
         if (item.Kind == Kind.Gun && slots != null && item.Weapon != null && Holds(slots, item.Weapon)) return Texts.Get("shop.note.owned");
-        if (item.Kind == Kind.Ammo && slots != null && HoldsAnyGun(slots) && !slots.NeedsAmmo()) return Texts.Get("shop.note.ammofull");
+        if (item.Kind == Kind.Ammo && slots != null && PlayerWeaponSlots.HoldsAnyGun(slots) && !slots.NeedsAmmo()) return Texts.Get("shop.note.ammofull");
         if (item.Kind == Kind.Heal && player.DamageReceiver.Health >= player.DamageReceiver.MaximumHealth - .5f) return Texts.Get("shop.note.healthfull");
         if (item.Kind == Kind.Shield && player.DamageReceiver.Shield >= item.Amount - .5f) return Texts.Get("shop.note.shield");
         if (item.Kind == Kind.Syringe) return DetenteKit.Local == null ? Texts.Get("shop.note.notdetente") : DetenteKit.Local.Full ? Texts.Get("shop.note.syringefull") : "";

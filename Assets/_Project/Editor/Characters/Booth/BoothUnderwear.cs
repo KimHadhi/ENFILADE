@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -97,7 +96,7 @@ internal static class BoothUnderwear
                     Debug.Log($"[BOOTH] {source.Id}: CharacterParts.csv에 이 캐릭터의 옷 줄이 없어 속옷을 속옷 칸에 넣지 않았습니다. 옷 줄을 적은 뒤 다시 가져오면 들어갑니다.");
                 continue;
             }
-            var listed = new HashSet<string>(rows.SelectMany(row => Split(table.Cell(row, partsColumn))), StringComparer.OrdinalIgnoreCase);
+            var listed = new HashSet<string>(rows.SelectMany(row => TableCells.Parts(table.Cell(row, partsColumn))), StringComparer.OrdinalIgnoreCase);
             var frame = Frame.Of(source.Character, source.Prefab);
             foreach (var renderer in Underwear(source.Prefab))
             {
@@ -140,7 +139,7 @@ internal static class BoothUnderwear
         foreach (var source in outfits)
         {
             var named = new HashSet<string>(table.Rows.Where(row => ModelOf(row).Equals(source.Id, StringComparison.OrdinalIgnoreCase))
-                .SelectMany(row => Split(table.Cell(row, partsColumn))), StringComparer.OrdinalIgnoreCase);
+                .SelectMany(row => TableCells.Parts(table.Cell(row, partsColumn))), StringComparer.OrdinalIgnoreCase);
             var frame = Frame.Of(source.Character, source.Prefab);
             foreach (var renderer in Underwear(source.Prefab))
             {
@@ -213,8 +212,8 @@ internal static class BoothUnderwear
         both = false;
         bool top = Named(renderer.name, TopWords, TopPieces), bottom = Named(renderer.name, BottomWords, BottomPieces);
         if (top != bottom) return top ? Top : Bottom;
-        if (frame == null || !(MeshOf(renderer) is Mesh mesh)) return Top;
-        var box = BoxOf(mesh.bounds, frame.ToCharacter * renderer.transform.localToWorldMatrix);
+        if (frame == null || !(MeshTools.MeshOf(renderer) is Mesh mesh)) return Top;
+        var box = MeshTools.BoxOf(mesh.bounds, frame.ToCharacter * renderer.transform.localToWorldMatrix);
         both = box.min.y < frame.Hips + .02f && box.max.y > frame.Chest - .02f;
         return both || box.center.y > (frame.Hips + frame.Chest) * .5f ? Top : Bottom;
     }
@@ -226,22 +225,6 @@ internal static class BoothUnderwear
         string tail = cut >= 0 && cut < name.Length - 1 ? name.Substring(cut + 1) : name;
         return tail.Replace('_', ' ').Trim();
     }
-
-    private static Mesh MeshOf(Renderer renderer) =>
-        renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
-        : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
-
-    private static Bounds BoxOf(Bounds local, Matrix4x4 matrix)
-    {
-        var box = new Bounds(matrix.MultiplyPoint3x4(local.center), Vector3.zero);
-        for (int i = 0; i < 8; i++)
-            box.Encapsulate(matrix.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents,
-                new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
-        return box;
-    }
-
-    private static IEnumerable<string> Split(string list) =>
-        (list ?? "").Split('|').Select(entry => entry.Trim()).Where(entry => entry.Length > 0);
 
     // The first row that matches, or -1.
     private static int Find(IEnumerable<int> rows, Func<int, bool> match)

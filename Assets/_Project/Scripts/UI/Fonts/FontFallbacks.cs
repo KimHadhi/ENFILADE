@@ -30,9 +30,6 @@ public static class FontFallbacks
         installed = false; authoredFallbacks = null; authoredEmoji = null; added.Clear();
     }
 
-    /// <summary>The operating-system fonts added this session.</summary>
-    public static IReadOnlyList<TMP_FontAsset> Added => added;
-
     /// <summary>
     /// Add the installed families of these ';'-separated lists to TMP's fallbacks, once per session. Families this
     /// machine lacks are skipped quietly: the list names fonts of several systems.

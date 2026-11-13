@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
@@ -9,6 +10,18 @@ public static class PlayerRoster
 {
     private static readonly List<PlayerMovement> players = new List<PlayerMovement>();
     public static IReadOnlyList<PlayerMovement> All => players;
+
+    /// <summary>The network owner id of a player's object; 0 alone or before it is spawned.</summary>
+    public static ulong IdOf(PlayerMovement player)
+        => player.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.OwnerClientId : 0UL;
+
+    /// <summary>The player a network owner id stands for among those playing on this PC; null when there is none.</summary>
+    public static PlayerMovement ById(ulong id)
+    {
+        foreach (var someone in All)
+            if (someone != null && (someone.IsLocal || someone.IsNetworkDriven) && IdOf(someone) == id) return someone;
+        return null;
+    }
     public static PlayerMovement Local { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

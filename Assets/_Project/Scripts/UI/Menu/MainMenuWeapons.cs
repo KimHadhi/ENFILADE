@@ -311,7 +311,7 @@ public sealed class MainMenuWeapons : MonoBehaviour
         var label = KitStyle.Flat(KitStyle.TopLeft("Name", chip, new Vector2(textX, 0f), new Vector2(ChipWidth - textX - 6f, ChipHeight)), skin.Name, 14f,
             TextAlignmentOptions.MidlineLeft, worn ? KitStyle.Text : KitStyle.With(KitStyle.Text, .8f));
         label.fontStyle = FontStyles.Normal;
-        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
+        label.overflowMode = FontRoles.ClippedOverflow(label);
         var button = chip.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         button.targetGraphic = back;

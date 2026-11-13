@@ -201,13 +201,9 @@ public sealed class WeaponData : ScriptableObject
     public float NoiseRadius => Mathf.Max(0f, noiseRadius);
     public float SuppressedNoise => Mathf.Clamp01(suppressedNoise);
     public float GripRecoil => Mathf.Clamp01(gripRecoil);
-    /// <summary>For the customize menu's stats: where body damage starts to fall off and where it bottoms out (m).</summary>
-    public float FalloffStart => falloffStart;
-    public float FalloffEnd => falloffEnd;
     /// <summary>For the customize menu's stats: how far each shot climbs (degrees), before its random share.</summary>
     public float RecoilVertical => recoilVertical > 0f ? recoilVertical : recoilPerShot.x;
     public float GripAimTime => Mathf.Clamp(gripAimTime, .1f, 1f);
-    public Vector2 RecoilPerShot => recoilPerShot;
     public float RecoilResponse => Mathf.Clamp(recoilResponse, 8f, 50f);
     public float RecoilRetention => Mathf.Clamp01(recoilRetention);
     public int InitialReserveAmmo => Mathf.Max(0, initialReserveAmmo);

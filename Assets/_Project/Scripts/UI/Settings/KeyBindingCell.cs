@@ -46,7 +46,7 @@ public sealed class KeyBindingCell : MonoBehaviour, IPointerDownHandler, IPointe
         cell.mark.raycastTarget = false;
         KitSkew.On(cell.mark, Slant);
         cell.label = SettingsWidgets.Label(rect, "", 19f, SettingsWidgets.Text, TextAlignmentOptions.Center);
-        SettingsWidgets.Stretch(cell.label.rectTransform);
+        KitStyle.Stretch(cell.label.rectTransform);
         cell.label.richText = false; // a key named "<" or "[" is the key, not a tag
         cell.Paint();
         return cell;

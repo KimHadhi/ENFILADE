@@ -36,7 +36,6 @@ public sealed class ThrownKnife : MonoBehaviour
     private Quaternion turnOnBone;
 
     internal ushort Id { get; private set; }
-    internal bool Mine => mine;
     /// <summary>
     /// How hard a knife's hit jolts its zombie, as a gun's flinch multiplier does a shot's (EnemyHitReaction: the shove
     /// back, the slow, the stagger of a headshot): GrenadeRules knifeFlinch.
@@ -44,7 +43,6 @@ public sealed class ThrownKnife : MonoBehaviour
     internal static float Flinch => Mathf.Max(0f, Throwables.Rule("knifeFlinch", 1.5f));
     /// <summary>It has come to rest (in a body, a wall or on the floor) and can be taken back.</summary>
     internal bool Landed => state != State.Flying;
-    internal static IReadOnlyList<ThrownKnife> All => knives;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => knives.Clear();
@@ -82,23 +80,12 @@ public sealed class ThrownKnife : MonoBehaviour
     // ahead of the middle it spins about; a model without a marker is taken as pointing +Z, TipAhead out.
     private static float PointFirst(GameObject model, Transform spinner)
     {
-        var tip = model != null ? Find(model.transform, "Tip") : null;
+        var tip = model != null ? Hierarchy.Find(model.transform, "Tip") : null;
         if (tip == null) return TipAhead;
         Vector3 local = spinner.InverseTransformPoint(tip.position);
         if (local.sqrMagnitude < 1e-6f) return TipAhead;
         model.transform.localRotation = Quaternion.Inverse(Quaternion.LookRotation(local.normalized, Vector3.up)) * model.transform.localRotation;
         return local.magnitude;
-    }
-
-    private static Transform Find(Transform root, string name)
-    {
-        if (root.name == name) return root;
-        for (int i = 0; i < root.childCount; i++)
-        {
-            var found = Find(root.GetChild(i), name);
-            if (found != null) return found;
-        }
-        return null;
     }
 
     // A thin white streak behind it in flight, fading as it goes (the addon's sprite trail), gone once it lands.

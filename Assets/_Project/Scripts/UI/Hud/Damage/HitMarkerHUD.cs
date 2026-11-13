@@ -173,9 +173,6 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private bool pierced;
     private float age = 99f, lifetime = .2f, scale = 1f, headAge = 99f, breakAge = 99f, pace = 1f;
 
-    public HitMarkerKind LastKind => kind;
-    /// <summary>The last marker came through or off something on the way, so its ticks trail tails.</summary>
-    public bool LastPierced => pierced;
     private bool IsShowing => age < lifetime;
 
     /// <summary>share: the part of the target's health the hit took, which sizes body and head markers. pierced: the bullet
@@ -551,8 +548,8 @@ public sealed class HitMarkerHUD : MonoBehaviour
             // The texture's bright end faces the aim point: as it is on the right, turned 180° on the left.
             float side = i == 0 ? 1f : -1f, turn = i == 0 ? 0f : 180f;
             var middle = new Vector2(side * (inner + length * .5f), 0f);
-            Place(flareGlows[i], middle, new Vector2(length, width * h.flareGlowWidth), turn, WithAlpha(light, h.flareGlowAlpha * flareFade));
-            Place(flareHalves[i], middle, new Vector2(length, width), turn, WithAlpha(light, flareFade));
+            Place(flareGlows[i], middle, new Vector2(length, width * h.flareGlowWidth), turn, KitStyle.With(light, h.flareGlowAlpha * flareFade));
+            Place(flareHalves[i], middle, new Vector2(length, width), turn, KitStyle.With(light, flareFade));
         }
         float rt = h.riseSeconds > 0f ? Mathf.Clamp01(a / h.riseSeconds) : 1f;
         float riseIn = Mathf.Lerp(h.riseFrom, h.riseDrift, rt);
@@ -564,7 +561,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
             if (!on) continue;
             float side = i == 0 ? 1f : -1f;
             Place(riseHalves[i], new Vector2(0f, side * (riseIn + riseLength * .5f)), new Vector2(riseLength, Mathf.Lerp(h.riseWidth, h.riseEndWidth, rt)),
-                i == 0 ? 90f : -90f, WithAlpha(light, h.riseAlpha * Square(1f - rt)));
+                i == 0 ? 90f : -90f, KitStyle.With(light, h.riseAlpha * Square(1f - rt)));
         }
         for (int i = 0; i < 2; i++)
         {
@@ -575,7 +572,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
             var rect = flareDiamonds[i].rectTransform;
             rect.anchoredPosition = GhostSlant * (Diamonds[i].x * Mathf.Lerp(.7f, 1f, flareOpen));
             rect.sizeDelta = Vector2.one * (Diamonds[i].y * Mathf.Lerp(1.3f, 1f, flareOpen));
-            flareDiamonds[i].color = WithAlpha(h.color, Diamonds[i].z * h.diamonds * flareFade * flareOpen);
+            flareDiamonds[i].color = KitStyle.With(h.color, Diamonds[i].z * h.diamonds * flareFade * flareOpen);
         }
 
         // The thin ring snapping out through the lines, white for a frame or two, a soft dark ring under it, and a fainter
@@ -591,7 +588,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
             headRingEdge.Set(radius, lineWidth + 2f);
             headRingEdge.color = new Color(0f, 0f, 0f, h.ringEdgeAlpha * strength * strength);
             headRing.Set(radius, lineWidth);
-            headRing.color = WithAlpha(Color.Lerp(Color.white, h.color, Mathf.Clamp01((a - .02f) / .03f)), strength);
+            headRing.color = KitStyle.With(Color.Lerp(Color.white, h.color, Mathf.Clamp01((a - .02f) / .03f)), strength);
         }
         float echo = a - h.echoDelay;
         bool echoOn = h.echoTo > 0f && echo >= 0f && echo < h.echoSeconds;
@@ -600,7 +597,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         {
             float et = Mathf.Clamp01(echo / Mathf.Max(.01f, h.echoSeconds));
             echoRing.Set(Mathf.Lerp(h.ringFrom, h.echoTo, 1f - Cube(1f - et)), Mathf.Lerp(h.echoWidth, h.echoEndWidth, et));
-            echoRing.color = WithAlpha(h.color, h.echoAlpha * Square(1f - et));
+            echoRing.color = KitStyle.With(h.color, h.echoAlpha * Square(1f - et));
         }
 
         // Sparks flying out between the lines' directions, from outside the lines; every other one shorter and nearer.
@@ -608,7 +605,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         bool sparkOn = a < h.sparkSeconds;
         float burst = 1f - Cube(1f - st);
         Color hot = Color.Lerp(Color.white, h.color, Mathf.Clamp01(a / .04f));
-        Color spark = WithAlpha(Color.Lerp(Color.white, hot, Mathf.Clamp01(st * 1.6f)), 1f - st);
+        Color spark = KitStyle.With(Color.Lerp(Color.white, hot, Mathf.Clamp01(st * 1.6f)), 1f - st);
         float distance = Mathf.Lerp(h.sparkFrom, h.sparkTo, burst), sparkLength = Mathf.Lerp(h.sparkLength, h.sparkEndLength, st);
         float sparkWidth = Mathf.Lerp(h.sparkWidth, h.sparkEndWidth, st);
         for (int i = 0; i < sparks.Length; i++)
@@ -635,12 +632,12 @@ public sealed class HitMarkerHUD : MonoBehaviour
             starRoot.localRotation = Quaternion.Euler(0f, 0f, h.starTurn * (1f - Square(1f - Mathf.Clamp01(a / total))));
             float heat = Mathf.Clamp01((a - open) / Mathf.Max(.01f, settle - open)), alpha = Square(1f - fade);
             Color gold = Color.Lerp(Color.white, h.color, heat);
-            star.color = WithAlpha(gold, alpha);
+            star.color = KitStyle.With(gold, alpha);
             // The turned second star stays whiter, so the eight points read as two layers of light.
             starCross.rectTransform.localScale = Vector3.one * h.crossScale;
-            starCross.color = WithAlpha(Color.Lerp(gold, Color.white, .55f), alpha * .9f);
+            starCross.color = KitStyle.With(Color.Lerp(gold, Color.white, .55f), alpha * .9f);
             starGlow.rectTransform.localScale = Vector3.one * h.glowScale;
-            starGlow.color = WithAlpha(Color.Lerp(Color.white, h.glowColor, heat), alpha * h.glowStrength);
+            starGlow.color = KitStyle.With(Color.Lerp(Color.white, h.glowColor, heat), alpha * h.glowStrength);
         }
     }
 
@@ -679,7 +676,6 @@ public sealed class HitMarkerHUD : MonoBehaviour
         image.color = color;
     }
 
-    private static Color WithAlpha(Color color, float alpha) { color.a = alpha; return color; }
     private static float Square(float x) => x * x;
     private static float Cube(float x) => x * x * x;
     private static float Smooth(float x) => x * x * (3f - 2f * x);

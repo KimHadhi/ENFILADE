@@ -40,18 +40,13 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     private const float GlowHeight = 28f, SweepWidth = 22f;
     /// <summary>0..1 heartbeat envelope while executable (1 on the "lub"), 0 otherwise.</summary>
     public float Heartbeat { get; private set; }
-    /// <summary>Unscaled seconds since the enemy last became executable.</summary>
-    public float ExecutableAge => executableAge;
     private Transform uiRoot;
     private readonly HealthLossTrail trail = new HealthLossTrail();
-    public bool IsStaggerVisible => staggerPanel != null && staggerPanel.gameObject.activeSelf;
     private readonly RaycastHit[] occlusionHits = new RaycastHit[16];
     public float HealthRatio { get; private set; }
     public float PostureRatio { get; private set; }
-    public bool IsVisible => panel != null && panel.gameObject.activeSelf;
     /// <summary>Right edge of the draining loss trail, 0..1 (equals HealthRatio when idle).</summary>
     public float TrailRatio { get; private set; }
-    public string DisplayName => nameLabel != null ? nameLabel.text : CombatDamageEvents.DisplayNameOf(this);
 
     private void OnEnable()
     {
@@ -405,7 +400,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         nameLabel.fontSize = 13f; nameLabel.fontStyle = FontStyles.Bold; nameLabel.color = NameColor;
         nameLabel.alignment = TextAlignmentOptions.Bottom; nameLabel.raycastTarget = false;
         nameLabel.textWrappingMode = TextWrappingModes.NoWrap;
-        nameLabel.overflowMode = CombatUIAssets.ClippedOverflow(nameLabel);
+        nameLabel.overflowMode = FontRoles.ClippedOverflow(nameLabel);
         nameLabel.text = CombatDamageEvents.DisplayNameOf(this);
 
         // Executable glow sits behind the bar; the flash and sweep go on top of it (below).

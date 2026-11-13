@@ -6,14 +6,6 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerStats))]
 public sealed class UltimateCharge : MonoBehaviour, ITableBound
 {
-    // HUD-local values remain useful outside Play; gameplay values belong to the player.
-    public static UltimateCharge ResolveHUDSource(Component view, UltimateCharge authored)
-    {
-        if (!Application.IsPlaying(view.gameObject)) return authored;
-        var hud = view.GetComponentInParent<AdaptiveHealthHUD>();
-        var player = hud != null ? hud.ResolvePlayer() : null;
-        return player != null && player.Ultimate != null ? player.Ultimate : authored;
-    }
     [SerializeField, Min(0)] private float currentCharge;
     // What fills the gauge is what a player gives the fight, not how many times their gun went off (the user, 2026-11-12,
     // on the old charge a hit: "굉장히 옛날에 만들어 둔 건데 개편해도 될 듯"). A hit counted 3% a pellet, so a shotgun's
@@ -89,11 +81,8 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
     }
     public float MaximumCharge => Stats.UltimateCapacityPercent;
     public float RequiredCharge => Stats.UltimateCostPercent;
-    public float CurrentCharge => Mathf.Clamp(NonNegative(currentCharge), 0f, MaximumCharge);
+    public float CurrentCharge => Mathf.Clamp(PlayerStats.NonNegative(currentCharge), 0f, MaximumCharge);
     public bool IsReady => MaximumCharge > 0f && CurrentCharge >= RequiredCharge;
-    public float FillRatio => MaximumCharge > 0f ? CurrentCharge / MaximumCharge : 0f;
-    public float ReadinessRatio => MaximumCharge <= 0f ? 0f : RequiredCharge <= 0f ? 1f : Mathf.Clamp01(CurrentCharge / RequiredCharge);
-    public float ThresholdRatio => MaximumCharge > 0f ? Mathf.Clamp01(RequiredCharge / MaximumCharge) : 0f;
     public event Action Changed;
     public event Action<bool> ReadinessChanged;
 
@@ -107,25 +96,15 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
     void ITableBound.OnTableApplied() => OnValidate();
     private void Update() { if (dirty) Publish(); }
 
-    public void SetValues(float current, float maximum, float required)
-    {
-        currentCharge = NonNegative(current);
-        Stats.SetUltimateLimits(maximum, required);
-        Publish();
-    }
-
-    /// <summary>Level-up changes preserve stored charge, clamping only if capacity shrinks.</summary>
-    public void SetLimits(float maximum, float required) => SetValues(CurrentCharge, maximum, required);
-
     public void SetCurrentCharge(float current)
     {
-        currentCharge = NonNegative(current);
+        currentCharge = PlayerStats.NonNegative(current);
         Publish();
     }
 
     public void AddCharge(float amount)
     {
-        double sum = (double)CurrentCharge + NonNegative(amount);
+        double sum = (double)CurrentCharge + PlayerStats.NonNegative(amount);
         SetCurrentCharge((float)Math.Min(sum, MaximumCharge));
     }
 
@@ -151,6 +130,4 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
         if (changed) Changed?.Invoke();
         if (readinessChanged) ReadinessChanged?.Invoke(ready);
     }
-
-    private static float NonNegative(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
 }

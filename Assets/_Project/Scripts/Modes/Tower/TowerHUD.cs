@@ -36,10 +36,10 @@ public sealed class TowerHUD : MonoBehaviour
         FeelUI.SetupOverlay(gameObject, 60);
         countRoot = FeelUI.Rect("Count", transform);
         Top(countRoot, CountTop, CountSize);
-        var plate = Panel("Plate", countRoot, KitStyle.Panel);
-        Stretch(plate.rectTransform);
+        var plate = FeelUI.Panel("Plate", countRoot, KitStyle.Panel);
+        KitStyle.Stretch(plate.rectTransform);
         KitSkew.On(plate, 14f);
-        var edge = Panel("Edge", countRoot, KitStyle.Accent);
+        var edge = FeelUI.Panel("Edge", countRoot, KitStyle.Accent);
         edge.rectTransform.anchorMin = new Vector2(0f, 0f);
         edge.rectTransform.anchorMax = new Vector2(1f, 0f);
         edge.rectTransform.pivot = new Vector2(.5f, 0f);
@@ -61,11 +61,11 @@ public sealed class TowerHUD : MonoBehaviour
             var slot = FeelUI.Rect("Lane " + Letter(i), laneRoot);
             slot.sizeDelta = LaneSize;
             slot.anchoredPosition = new Vector2(-width * .5f + LaneSize.x * .5f + i * (LaneSize.x + LaneGap), 0f);
-            lanePlates[i] = Panel("Plate", slot, KitStyle.Panel);
-            Stretch(lanePlates[i].rectTransform);
+            lanePlates[i] = FeelUI.Panel("Plate", slot, KitStyle.Panel);
+            KitStyle.Stretch(lanePlates[i].rectTransform);
             KitSkew.On(lanePlates[i], 10f);
             laneTexts[i] = Text("Words", slot, 21f, KitStyle.Text);
-            Stretch(laneTexts[i].rectTransform);
+            KitStyle.Stretch(laneTexts[i].rectTransform);
         }
         laneRoot.gameObject.SetActive(false);
     }
@@ -113,21 +113,6 @@ public sealed class TowerHUD : MonoBehaviour
         rect.pivot = new Vector2(.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -down);
         rect.sizeDelta = size;
-    }
-
-    private static void Stretch(RectTransform rect)
-    {
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
-    }
-
-    private static Image Panel(string name, Transform parent, Color color)
-    {
-        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
-        image.raycastTarget = false;
-        image.color = color;
-        return image;
     }
 
     private static TextMeshProUGUI Text(string name, Transform parent, float size, Color color)

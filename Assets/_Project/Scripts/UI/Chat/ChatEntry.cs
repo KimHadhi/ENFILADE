@@ -88,12 +88,4 @@ public static class ChatStyle
     // User text cannot close the noparse span and inject TMP formatting.
     public static string Literal(string text) => "<noparse>" + Regex.Replace(text ?? string.Empty,
         "</noparse", "</nopar\u200Bse", RegexOptions.IgnoreCase) + "</noparse>";
-
-    public static string Format(ChatEntry entry)
-    {
-        string channel = ColorUtility.ToHtmlStringRGB(ColorFor(entry.Channel));
-        string speaker = ColorUtility.ToHtmlStringRGB(entry.SpeakerColor);
-        string who = string.IsNullOrWhiteSpace(entry.Speaker) ? "" : $" <color=#{speaker}>{Literal(entry.Speaker)}:</color>";
-        return $"<color=#{channel}>[{Label(entry.Channel)}]</color>{who} <color=#EBEEF4>{Literal(entry.Body)}</color>";
-    }
 }

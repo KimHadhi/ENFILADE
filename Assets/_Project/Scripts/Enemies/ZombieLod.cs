@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -69,12 +67,10 @@ public static class ZombieLod
         if (read) return;
         read = true;
         if (!GameTables.TryGetRow(TableName, TableRow, out var row)) return;
-        on = Number(row, "enabled", 1f) > 0f;
-        far = Number(row, "far", far);
-        thinkFar = Number(row, "thinkFar", thinkFar);
-        chaseFar = Number(row, "chaseFar", chaseFar);
-        hordeLookGap = Number(row, "hordeLookGap", hordeLookGap);
+        on = row.Number("enabled", 1f) > 0f;
+        far = row.Number("far", far);
+        thinkFar = row.Number("thinkFar", thinkFar);
+        chaseFar = row.Number("chaseFar", chaseFar);
+        hordeLookGap = row.Number("hordeLookGap", hordeLookGap);
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
 }

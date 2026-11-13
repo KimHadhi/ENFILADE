@@ -67,9 +67,6 @@ public sealed class ShoveCounter : MonoBehaviour
     private Vector3 shoveForward;
     private int chain;
 
-    /// <summary>The banner's grade for a lone counter, for a skill that strengthens the counter to raise.</summary>
-    public int BaseGrade { get => baseGrade; set => baseGrade = Mathf.Clamp(value, 0, CounterBanner.Grades - 1); }
-
     // The afterglow's own claim on time, apart from the hit stop's (CombatTimeEffects keeps one per owner).
     private Object slowOwner;
 

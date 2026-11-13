@@ -70,8 +70,6 @@ public sealed class DeathCard
     private float startedAt = -1f, wordAt = -1f;
     private bool still;
 
-    public bool Built => cardHost != null;
-
     /// <summary>Makes the canvases ahead of the first death (DeathScreen.Prepare), hidden.</summary>
     public void Build()
     {

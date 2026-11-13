@@ -17,7 +17,6 @@ public sealed class MeleeAttackSweep
     private long attackId;
     private Action onDamage, onWorldHit;
     private bool worldHit;
-    public bool IsActive => window.IsActive;
     public MeleeAttackSweep() { window = new AimSweepWindow(Sample); }
     public void Begin(PlayerMovement owner, Transform view, float damage, float posture, float reach,
         float radius, float duration, int maxTargets, LayerMask layers, Action onDamage = null, Action onWorldHit = null)

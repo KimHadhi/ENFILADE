@@ -94,8 +94,6 @@ public sealed class PokeBody : MonoBehaviour
     private bool baked;
     private int steppedFrame = -1;
 
-    /// <summary>The player this body is.</summary>
-    public PlayerMovement Player => player;
     /// <summary>Every renderer of the body (skin, hair, clothes, worn pieces): what a poke on it may bend.</summary>
     internal IReadOnlyList<Renderer> Renderers => parts;
 

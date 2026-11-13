@@ -36,12 +36,6 @@ public static class SettingsWidgets
         return image;
     }
 
-    public static void Stretch(RectTransform rect)
-    {
-        rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
-    }
-
     public static LayoutElement Size(Component target, float width = -1f, float height = -1f, float flexibleWidth = -1f,
         float flexibleHeight = -1f)
     {
@@ -119,7 +113,7 @@ public static class SettingsWidgets
         fill.sizeDelta = Vector2.zero;
         Fill(fill, Accent);
         var handleArea = Rect("Handle Area", root);
-        Stretch(handleArea);
+        KitStyle.Stretch(handleArea);
         handleArea.offsetMin = new Vector2(KnobRoom, 0f); handleArea.offsetMax = new Vector2(-KnobRoom, 0f);
         var handle = Rect("Handle", handleArea);
         handle.sizeDelta = new Vector2(6f, -4f);
@@ -168,7 +162,7 @@ public static class SettingsWidgets
             var image = Fill(option, Surface);
             KitSkew.On(image, Slant * .8f);
             var label = Label(option, options[i], 19f, Muted, TextAlignmentOptions.Center);
-            Stretch(label.rectTransform);
+            KitStyle.Stretch(label.rectTransform);
             images.Add(image); labels.Add(label);
             var button = option.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
@@ -213,7 +207,7 @@ public static class SettingsWidgets
         Size(box, flexibleWidth: 1f);
         KitSkew.On(Fill(box, Surface), Slant * .8f);
         value = Label(box, "", 19f, Text, TextAlignmentOptions.Center);
-        Stretch(value.rectTransform);
+        KitStyle.Stretch(value.rectTransform);
         forward = Arrow(root, ">", () => Step(1));
         Show();
         return root;
@@ -227,7 +221,7 @@ public static class SettingsWidgets
         KitSkew.On(image, Slant * .8f);
         var label = Label(rect, glyph, 21f, Text, TextAlignmentOptions.Center);
         label.richText = false; // a lone "<" is the glyph, not a tag
-        Stretch(label.rectTransform);
+        KitStyle.Stretch(label.rectTransform);
         var button = rect.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(() => clicked());
@@ -240,7 +234,7 @@ public static class SettingsWidgets
         var root = Rect("Scroll", parent);
         Size(root, flexibleWidth: 1f, flexibleHeight: 1f);
         var viewport = Rect("Viewport", root);
-        Stretch(viewport);
+        KitStyle.Stretch(viewport);
         viewport.offsetMax = new Vector2(-16f, 0f); // room for the bar
         viewport.gameObject.AddComponent<RectMask2D>();
         Fill(viewport, Color.clear); // the wheel also works between rows
@@ -258,7 +252,7 @@ public static class SettingsWidgets
         bar.sizeDelta = new Vector2(4f, 0f);
         Fill(bar, Track);
         var slidingArea = Rect("Sliding Area", bar);
-        Stretch(slidingArea);
+        KitStyle.Stretch(slidingArea);
         var handle = Rect("Handle", slidingArea);
         handle.sizeDelta = Vector2.zero;
         var scrollbar = bar.gameObject.AddComponent<Scrollbar>();
@@ -279,7 +273,7 @@ public static class SettingsWidgets
     public static RectTransform Window(Transform canvas, string name, float width, out RectTransform shade)
     {
         shade = Rect(name, canvas);
-        Stretch(shade);
+        KitStyle.Stretch(shade);
         Fill(shade, new Color(0f, 0f, 0f, .72f));
         var panel = Rect("Panel", shade);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
@@ -303,7 +297,7 @@ public static class SettingsWidgets
     {
         KitStyle.Cut(panel, new Color(1f, 1f, 1f, .12f));
         var fill = Rect("Fill", panel);
-        Stretch(fill);
+        KitStyle.Stretch(fill);
         fill.offsetMin = new Vector2(1f, 1f); fill.offsetMax = new Vector2(-1f, -1f);
         KitStyle.Cut(fill, KitStyle.Panel);
         fill.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
@@ -338,11 +332,11 @@ public static class SettingsWidgets
         line.sizeDelta = new Vector2(0f, 2f);
         Fill(line, Track).raycastTarget = false;
         var viewport = Rect("Viewport", root);
-        Stretch(viewport);
+        KitStyle.Stretch(viewport);
         viewport.offsetMin = new Vector2(10f, 0f); viewport.offsetMax = new Vector2(-10f, 0f);
         viewport.gameObject.AddComponent<RectMask2D>();
         var text = Label(viewport, string.Empty, 19f, Text);
-        Stretch(text.rectTransform);
+        KitStyle.Stretch(text.rectTransform);
         var input = root.gameObject.AddComponent<TMP_InputField>();
         input.textViewport = viewport; input.textComponent = text; input.targetGraphic = image;
         input.fontAsset = text.font; input.pointSize = text.fontSize;
@@ -424,7 +418,7 @@ public static class SettingsWidgets
         var image = Fill(rect, primary ? Accent : Surface);
         KitSkew.On(image, Slant);
         var label = Label(rect, text, 21f, primary ? OnAccent : Text, TextAlignmentOptions.Center);
-        Stretch(label.rectTransform);
+        KitStyle.Stretch(label.rectTransform);
         label.fontStyle = primary ? FontStyles.Bold : FontStyles.Normal;
         var button = rect.gameObject.AddComponent<Button>();
         button.targetGraphic = image;

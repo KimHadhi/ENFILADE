@@ -69,7 +69,6 @@ public sealed class KnightCover : MonoBehaviour
     /// <summary>A Knight whose cover may be used now; seconds until it may (0: now), and how much of that wait is left.</summary>
     public bool Ready => PlayerClass.Is(PlayerClass.Knight) && Time.time >= readyAt;
     public float Wait => Mathf.Max(0f, readyAt - Time.time);
-    public float WaitShare => Mathf.Clamp01(Wait / wait);
     /// <summary>The key held to choose a friend, and the friend under the crosshair who can be covered now (or null).</summary>
     public bool Planning => planning;
     public PlayerMovement Aimed => aimed;
@@ -219,7 +218,7 @@ public sealed class KnightCover : MonoBehaviour
         GuardPose.Strike(movement, attacker); // the parry stance with it, on every PC (the user: "특유의 패링 자세와 함께")
         if (!TryGetComponent(out CounterBanner banner)) banner = gameObject.AddComponent<CounterBanner>();
         banner.Play(.85f, CounterBanner.Grades - 1, "COVER", Color.white);
-        AlertHUD.Self(Texts.Format("class.knight.cover.done", NameOf(ally)));
+        AlertHUD.Self(Texts.Format("class.knight.cover.done", PlayerTally.NameOf(ally)));
     }
 
     // To the friend's side, between them and the threat, facing it, with the streak for everyone.
@@ -394,10 +393,6 @@ public sealed class KnightCover : MonoBehaviour
         glowLight.transform.position = feet + Vector3.up * 1.2f;
         glowLight.intensity = 1.8f * beat * strength;
     }
-
-    private static string NameOf(PlayerMovement player)
-        => player != null && player.TryGetComponent(out PlayerTally tally) && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName
-            : player != null ? player.name : "";
 
     private static float Number(string name, float fallback) => PlayerClass.Ability(Row, name, fallback);
 }

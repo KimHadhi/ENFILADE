@@ -34,9 +34,6 @@ public sealed class EnfiladedFinale : MonoBehaviour
     private Texture2D shot;
     private float age = -1f, length = 3f;
 
-    /// <summary>True while it plays.</summary>
-    public static bool Playing => instance != null && instance.age >= 0f;
-
     /// <summary>The tower is through: the frozen moment and ENFILADED!!, with <paramref name="heading"/> and
     /// <paramref name="under"/> on its plate, for <paramref name="seconds"/> (real s).</summary>
     public static void Play(string heading, string under, float seconds)
@@ -62,7 +59,7 @@ public sealed class EnfiladedFinale : MonoBehaviour
 
         frame = FeelUI.Rect("Frame", transform).gameObject.AddComponent<RawImage>();
         frame.raycastTarget = false;
-        Stretch(frame.rectTransform);
+        KitStyle.Stretch(frame.rectTransform);
         var shader = Resources.Load<Shader>(ShaderPath);
         if (shader != null)
         {
@@ -77,9 +74,9 @@ public sealed class EnfiladedFinale : MonoBehaviour
 
         slant = FeelUI.Rect("Slant", transform);
         slant.localRotation = Quaternion.Euler(0f, 0f, Lean);
-        band = Panel("Band", slant, KitStyle.Accent);
+        band = FeelUI.Panel("Band", slant, KitStyle.Accent);
         band.rectTransform.sizeDelta = new Vector2(0f, BandHeight);
-        var seam = Panel("Seam", band.rectTransform, KitStyle.Ink);
+        var seam = FeelUI.Panel("Seam", band.rectTransform, KitStyle.Ink);
         seam.rectTransform.anchorMin = new Vector2(0f, 0f);
         seam.rectTransform.anchorMax = new Vector2(1f, 0f);
         seam.rectTransform.pivot = new Vector2(.5f, 0f);
@@ -93,7 +90,7 @@ public sealed class EnfiladedFinale : MonoBehaviour
         word = Text("Letters", wordRoot, WordSize, KitStyle.Ice);
         shadow.text = ghost.text = word.text = Texts.Get("tower.finale.word");
 
-        plate = Panel("Plate", slant, new Color(.024f, .024f, .031f, .94f));
+        plate = FeelUI.Panel("Plate", slant, new Color(.024f, .024f, .031f, .94f));
         plate.rectTransform.pivot = new Vector2(0f, .5f);
         plate.rectTransform.sizeDelta = new Vector2(980f, 104f);
         plate.rectTransform.anchoredPosition = new Vector2(-470f, -BandHeight * .5f - 70f);
@@ -107,8 +104,8 @@ public sealed class EnfiladedFinale : MonoBehaviour
         line.rectTransform.sizeDelta = new Vector2(920f, 34f);
         line.rectTransform.anchoredPosition = new Vector2(490f, -24f);
 
-        flash = Panel("Flash", transform, Color.white);
-        Stretch(flash.rectTransform);
+        flash = FeelUI.Panel("Flash", transform, Color.white);
+        KitStyle.Stretch(flash.rectTransform);
         canvas.enabled = false;
     }
 
@@ -179,8 +176,6 @@ public sealed class EnfiladedFinale : MonoBehaviour
         Pose(age);
     }
 
-    private static float Out(float x) { x = 1f - Mathf.Clamp01(x); return 1f - x * x * x; }
-
     private void Pose(float t)
     {
         float leave = Mathf.Clamp01((t - (length - OutSeconds)) / OutSeconds);
@@ -188,22 +183,22 @@ public sealed class EnfiladedFinale : MonoBehaviour
         flash.color = new Color(1f, 1f, 1f, 1f - Mathf.Clamp01(t / FlashSeconds));
         if (grade != null)
         {
-            grade.SetFloat("_Mix", Out((t - GradeFrom) / GradeSeconds));
+            grade.SetFloat("_Mix", Ease.Out((t - GradeFrom) / GradeSeconds));
             grade.SetFloat("_Zoom", 1f + .07f * Mathf.Clamp01(t / length));
             grade.SetFloat("_Phase", t * .6f);
         }
-        float bars = BarHeight * Out(t / .3f);
+        float bars = BarHeight * Ease.Out(t / .3f);
         top.rectTransform.sizeDelta = bottom.rectTransform.sizeDelta = new Vector2(0f, bars);
 
         // The band tears across from the left; the word slams down onto it as it does.
-        float open = Out((t - BandFrom) / BandSeconds);
+        float open = Ease.Out((t - BandFrom) / BandSeconds);
         band.rectTransform.sizeDelta = new Vector2(3200f * open, BandHeight);
         band.rectTransform.anchoredPosition = new Vector2(-1600f * (1f - open), 0f);
 
         float slam = Mathf.Clamp01((t - WordFrom) / SlamSeconds);
         bool shown = t >= WordFrom;
         word.enabled = shadow.enabled = ghost.enabled = shown;
-        float scale = shown ? Mathf.Lerp(2.6f, 1f, Out(slam)) : 1f;
+        float scale = shown ? Mathf.Lerp(2.6f, 1f, Ease.Out(slam)) : 1f;
         float shaking = Mathf.Clamp01(1f - (t - WordFrom - SlamSeconds) / ShakeSeconds);
         Vector2 jolt = t >= WordFrom + SlamSeconds && shaking > 0f
             ? new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)) * Shake * shaking * shaking : Vector2.zero;
@@ -212,39 +207,24 @@ public sealed class EnfiladedFinale : MonoBehaviour
         word.alpha = Mathf.Clamp01((t - WordFrom) / .05f);
         // Behind the letters: the ink shadow set down and to the right, the ghost split off the other way and drawn back in.
         shadow.rectTransform.anchoredPosition = new Vector2(14f, -12f);
-        float split = 1f - Out((t - WordFrom - SlamSeconds) / .4f);
+        float split = 1f - Ease.Out((t - WordFrom - SlamSeconds) / .4f);
         ghost.rectTransform.anchoredPosition = new Vector2(-10f - 34f * split, 8f + 16f * split);
         ghost.alpha = .85f * Mathf.Clamp01((t - WordFrom) / .05f);
 
-        float under = Out((t - PlateFrom) / PlateSeconds);
+        float under = Ease.Out((t - PlateFrom) / PlateSeconds);
         plate.rectTransform.localScale = new Vector3(under, 1f, 1f);
         title.alpha = line.alpha = Mathf.Clamp01((t - PlateFrom - .1f) / .2f);
     }
 
     private Image Bar(string name, bool up)
     {
-        var bar = Panel(name, transform, KitStyle.Ink);
+        var bar = FeelUI.Panel(name, transform, KitStyle.Ink);
         var rect = bar.rectTransform;
         rect.anchorMin = new Vector2(0f, up ? 1f : 0f);
         rect.anchorMax = new Vector2(1f, up ? 1f : 0f);
         rect.pivot = new Vector2(.5f, up ? 1f : 0f);
         rect.anchoredPosition = Vector2.zero;
         return bar;
-    }
-
-    private static void Stretch(RectTransform rect)
-    {
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
-    }
-
-    private static Image Panel(string name, Transform parent, Color color)
-    {
-        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
-        image.raycastTarget = false;
-        image.color = color;
-        return image;
     }
 
     private static TextMeshProUGUI Text(string name, Transform parent, float size, Color color)

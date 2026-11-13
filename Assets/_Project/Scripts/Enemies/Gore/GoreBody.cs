@@ -59,8 +59,6 @@ internal sealed class GoreBody
         foreach (var bone in human) if (!ReferenceEquals(bone, null)) parts.Remove(bone);
     }
 
-    public bool IsCut(BodyPart part) => cut[(int)part];
-
     /// <summary>Still on the body: neither it nor the part it hangs from is cut.</summary>
     public bool Has(BodyPart part)
     {

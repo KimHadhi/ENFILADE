@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
-using UnityEngine.InputSystem;
 using UnityEngine.Playables;
-using UnityEngine.Rendering;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
@@ -111,7 +109,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     internal bool UpperBodyFromFramework { get; set; }
     internal Transform View => view;
     internal bool IsDead => dead;
-    internal Vector2 LedgeGrip => ledgeGrip;
     /// <summary>Where the eyes are this frame, after the spine has bent with the view.</summary>
     internal Vector3 EyePosition => head != null ? head.TransformPoint(eyeLocal) : transform.position;
     internal PlayerBodyProfile.Skin Skin => loadedSkin;

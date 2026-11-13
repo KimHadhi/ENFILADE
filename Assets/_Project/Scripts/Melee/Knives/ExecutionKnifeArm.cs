@@ -316,7 +316,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
                 var bone = side.Fingers[finger * 3 + joint];
                 if (bone == null) break;
                 angle += curl * CurlShare[joint];
-                Turn(bone, JointWay(side, finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
+                PathArm.Turn(bone, JointWay(side, finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
             }
         }
         float close = Mathf.Clamp01(thumb / 90f);
@@ -328,7 +328,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
             if (bone == null) break;
             Vector3 bendAxis = Vector3.Cross(over, palm);
             if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 15f : 20f, bendAxis.normalized) * over;
-            Turn(bone, JointWay(side, Thumb, joint), over, close);
+            PathArm.Turn(bone, JointWay(side, Thumb, joint), over, close);
         }
     }
 
@@ -337,13 +337,6 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         var bone = side.Fingers[finger * 3 + joint];
         var next = joint < 2 ? side.Fingers[finger * 3 + joint + 1] : null;
         return next != null ? next.position - bone.position : bone.rotation * side.JointAxis;
-    }
-
-    private static void Turn(Transform bone, Vector3 now, Vector3 want, float share)
-    {
-        if (now.sqrMagnitude < 1e-12f || want.sqrMagnitude < 1e-12f) return;
-        var turn = Quaternion.FromToRotation(now, want);
-        bone.rotation = (share >= 1f ? turn : Quaternion.Slerp(Quaternion.identity, turn, share)) * bone.rotation;
     }
 
     private static Transform Find(Transform root, string name)

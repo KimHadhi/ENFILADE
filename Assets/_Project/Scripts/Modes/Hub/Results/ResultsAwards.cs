@@ -42,7 +42,7 @@ public static class ResultsAwards
             all.Add(new Award
             {
                 Id = id, Stat = Cell(row, "stat", id), Unit = Cell(row, "unit", ""),
-                Order = Mathf.RoundToInt(Number(row, "order", all.Count + 1)), Least = Number(row, "least", 1f)
+                Order = Mathf.RoundToInt(row.Number("order", all.Count + 1)), Least = row.Number("least", 1f)
             });
         }
         all.Sort((a, b) => a.Order.CompareTo(b.Order));
@@ -113,6 +113,4 @@ public static class ResultsAwards
 
     private static string Cell(IReadOnlyDictionary<string, string> row, string key, string fallback)
         => row.TryGetValue(key, out string text) && text.Trim().Length > 0 ? text.Trim() : fallback;
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

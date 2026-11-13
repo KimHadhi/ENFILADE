@@ -30,9 +30,6 @@ public sealed class MistField : MonoBehaviour
     private readonly Dictionary<MeleeCombatTarget, float> pushedAt = new Dictionary<MeleeCombatTarget, float>();
     private readonly List<MeleeCombatTarget> stale = new List<MeleeCombatTarget>();
 
-    /// <summary>How many fields stand now, on this PC.</summary>
-    public static int Count => live.Count;
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => live.Clear();
 
@@ -52,14 +49,6 @@ public sealed class MistField : MonoBehaviour
         live.Add(field);
         Throwables.Play("Smoke", at + Vector3.up * .2f, .7f, 3f, 40f, 1.35f);
         return field;
-    }
-
-    /// <summary>Whether this point stands in a field.</summary>
-    public static bool Inside(Vector3 point)
-    {
-        foreach (var field in live)
-            if (field != null && field.Covers(point)) return true;
-        return false;
     }
 
     private bool Covers(Vector3 point)

@@ -51,15 +51,6 @@ public sealed class DyeMarks : MonoBehaviour
         return false;
     }
 
-    /// <summary>Whether anyone's dye is on this foe now.</summary>
-    public static bool IsDyed(Component enemy)
-    {
-        if (instance == null || enemy == null) return false;
-        foreach (var mark in instance.marks)
-            if (mark.Enemy != null && mark.Enemy.gameObject == enemy.gameObject && Time.time < mark.Until) return true;
-        return false;
-    }
-
     /// <summary>
     /// A bullet's factor from the dye (PlayerClass.GunFactor, for this PC's Schießhund's shots): 1 + GrenadeRules
     /// dyeDamage % on a foe it dyed, else 1.

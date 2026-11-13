@@ -360,7 +360,7 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
             darkness = In(t, look.vignetteSeconds);
             blurred = In(t - look.blurDelay, look.blurSeconds);
             inkLevel = In(t, look.inkSeconds);
-            bloodLevel = Smooth((t - look.bloodDelay) / Mathf.Max(.01f, look.bloodSeconds));
+            bloodLevel = Ease.Smooth((t - look.bloodDelay) / Mathf.Max(.01f, look.bloodSeconds));
             muffled = In(t, look.muffleSeconds);
             return;
         }
@@ -379,12 +379,6 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
         if (seconds <= 0f) return t >= 0f ? 1f : 0f;
         float x = Mathf.Clamp01(t / seconds);
         return 1f - (1f - x) * (1f - x);
-    }
-
-    private static float Smooth(float x)
-    {
-        x = Mathf.Clamp01(x);
-        return x * x * (3f - 2f * x);
     }
 
     // ---- The words ----
@@ -450,7 +444,7 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
         var source = lastBlow.Source;
         if (source == null) return null;
         var someone = source.GetComponentInParent<PlayerMovement>();
-        if (someone != null) return someone == player ? null : NameOf(someone);
+        if (someone != null) return someone == player ? null : PlayerTally.ColoredNameOf(someone);
         var enemy = source.GetComponentInParent<EnemyHealth>();
         return Pink(enemy != null ? CombatDamageEvents.DisplayNameOf(enemy) : CombatDamageEvents.DisplayNameOf(source.transform));
     }
@@ -462,7 +456,7 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
         if (source == null) return Texts.Get(hit.Kind == DamageKind.Fall ? "death.cause.fall" : "death.cause.unknown");
         var someone = source.GetComponentInParent<PlayerMovement>();
         if (someone != null)
-            return someone == player ? Texts.Get("death.cause.self") : Texts.Format("death.cause.friend", NameOf(someone));
+            return someone == player ? Texts.Get("death.cause.self") : Texts.Format("death.cause.friend", PlayerTally.ColoredNameOf(someone));
         var enemy = source.GetComponentInParent<EnemyHealth>();
         string name = enemy != null ? CombatDamageEvents.DisplayNameOf(enemy) : CombatDamageEvents.DisplayNameOf(source.transform);
         bool elite = enemy != null && (enemy.IsStandout
@@ -510,10 +504,6 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
 
     private static string Pink(string name) => "<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent) + ">" + name + "</color>";
 
-    private static string NameOf(PlayerMovement someone)
-        => someone.TryGetComponent(out PlayerTally theirs)
-            ? "<color=#" + ColorUtility.ToHtmlStringRGB(theirs.Color) + ">" + theirs.DisplayName + "</color>" : someone.name;
-
     // ---- The preview ----
 
     private string StartPreview(string args)
@@ -530,7 +520,7 @@ public sealed class DeathScreen : MonoBehaviour, IHudPreview
                 case "full": shortOne = false; break;
                 case "fall": cause = Texts.Get("death.cause.fall"); break;
                 case "bleed": cause = Texts.Format("death.cause.bleed_by", Pink(Texts.Get(ZombieType.NameId(ZombieKind.Shambler)))); break;
-                case "friend": cause = Texts.Format("death.cause.friend", NameOf(player)); break;
+                case "friend": cause = Texts.Format("death.cause.friend", PlayerTally.ColoredNameOf(player)); break;
                 default:
                     if (!Enum.TryParse(word, true, out ZombieKind kind) || int.TryParse(word, out _))
                         return "모르는 말: " + word + " — /death [좀비 종류 / fall / bleed / friend] [wipe] [short / full]"; // dev-text

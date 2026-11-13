@@ -97,9 +97,6 @@ public static class GunKills
         return rank;
     }
 
-    /// <summary>How many ranks there are.</summary>
-    public static int RankCount => Ranks.Length;
-
     /// <summary>The kills the rank after this one starts at; -1 past the last.</summary>
     public static int NextAt(int rank) => rank + 1 < Ranks.Length ? Ranks[rank + 1] : -1;
 

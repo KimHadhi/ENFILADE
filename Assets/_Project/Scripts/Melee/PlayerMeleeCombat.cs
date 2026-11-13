@@ -71,8 +71,6 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private readonly ShoveSweep.Attack shoveSweep = new ShoveSweep.Attack();
     public bool IsGuarding { get; private set; }
     public bool IsParryActive => parryRemaining > 0f;
-    public int ParrySpamCount => spamCount;
-    public float ParryRemaining => parryRemaining;
     public bool IsCharging => charging;
     public float ChargeRatio => charging ? Mathf.Clamp01(chargeTime / fullChargeTime) : 0f;
     public bool IsGuardBreaking => target != null;

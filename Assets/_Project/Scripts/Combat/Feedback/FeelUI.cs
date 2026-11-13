@@ -85,4 +85,13 @@ public static class FeelUI
         shadowed[font] = material;
         return material;
     }
+
+    /// <summary>A plain coloured rect that takes no clicks; the caller sizes it.</summary>
+    public static Image Panel(string name, Transform parent, Color color)
+    {
+        var image = Rect(name, parent).gameObject.AddComponent<Image>();
+        image.raycastTarget = false;
+        image.color = color;
+        return image;
+    }
 }

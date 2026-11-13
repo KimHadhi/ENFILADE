@@ -157,14 +157,10 @@ public sealed class ClassKit : MonoBehaviour
     public float TauntShare => tauntUntil > Time.time ? Mathf.Clamp01((tauntUntil - Time.time) / tauntTotal) : 0f;
     /// <summary>A Knight whose taunt may be used now.</summary>
     public bool TauntReady => PlayerClass.Is(PlayerClass.Knight) && Time.time >= tauntReadyAt;
-    /// <summary>Seconds until a Knight's taunt may be used again (0: now), and how much of that wait is left, 0 to 1.</summary>
-    public float TauntWait => Mathf.Max(0f, tauntReadyAt - Time.time);
-    public float TauntWaitShare => Mathf.Clamp01(TauntWait / tauntWait);
 
     /// <summary>A Schießhund whose duel may be called now; seconds until it may (0: now), and how much of that wait is left.</summary>
     public bool DuelReady => PlayerClass.Is(PlayerClass.Schiesshund) && Time.time >= duelReadyAt;
     public float DuelWait => Mathf.Max(0f, duelReadyAt - Time.time);
-    public float DuelWaitShare => Mathf.Clamp01(DuelWait / duelWait);
     /// <summary>A Point whose Gun Kata may be used now; seconds until it may (0: now); how much of one under way is left (0: none).</summary>
     public bool KataReady => PlayerClass.Is(PlayerClass.Point) && Time.time >= kataReadyAt;
     public float KataWait => Mathf.Max(0f, kataReadyAt - Time.time);

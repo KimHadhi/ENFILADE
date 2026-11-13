@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -228,7 +227,7 @@ internal static class SkinCover
     // Every vertex of the mesh, as made (kept for the run).
     private static Patch WholeOf(Renderer renderer, Matrix4x4 toModel, string skinId)
     {
-        var mesh = MeshOf(renderer);
+        var mesh = MeshTools.MeshOf(renderer);
         if (mesh == null) return null;
         var id = (skinId ?? "", renderer.name, mesh.GetInstanceID());
         if (wholes.TryGetValue(id, out var patch)) return patch;
@@ -358,7 +357,7 @@ internal static class SkinCover
     // made in (metres for every model here, whose roots stand at scale 1 in their files), so the reach is in metres.
     private static Cloth ClothOf(Renderer renderer, Matrix4x4 toModel, string skinId, Values settings)
     {
-        var mesh = MeshOf(renderer);
+        var mesh = MeshTools.MeshOf(renderer);
         if (mesh == null) return null;
         var id = (skinId ?? "", renderer.name, mesh.GetInstanceID());
         if (cloths.TryGetValue(id, out var cloth)) return cloth;
@@ -367,7 +366,7 @@ internal static class SkinCover
         if (!mesh.isReadable)
         {
             cloth.BoxOnly = true;
-            cloth.Box = BoxOf(mesh.bounds, matrix);
+            cloth.Box = MeshTools.BoxOf(mesh.bounds, matrix);
             Warn($"{mesh.name}: 메시를 읽을 수 없어(Read/Write 꺼짐) 옷이 덮는 곳을 상자로만 잽니다.");
         }
         else
@@ -428,36 +427,21 @@ internal static class SkinCover
         return made;
     }
 
-    private static Mesh MeshOf(Renderer renderer) =>
-        renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
-        : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
-
-    private static Bounds BoxOf(Bounds local, Matrix4x4 matrix)
-    {
-        var box = new Bounds(matrix.MultiplyPoint3x4(local.center), Vector3.zero);
-        for (int i = 0; i < 8; i++)
-            box.Encapsulate(matrix.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents,
-                new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
-        return box;
-    }
-
     private static Values Settings()
     {
         if (values.HasValue) return values.Value;
         var read = new Values { Reach = .03f, Keep = .9f, Share = .85f, MaxMoved = .3f, MovedFrom = .0005f };
         if (GameTables.TryGetRow(TableName, "Default", out var cells))
         {
-            read.Reach = Mathf.Max(.002f, Number(cells, "reach", read.Reach));
-            read.Keep = Mathf.Clamp01(Number(cells, "keep", read.Keep));
-            read.Share = Mathf.Clamp01(Number(cells, "share", read.Share));
-            read.MaxMoved = Mathf.Clamp01(Number(cells, "maxMoved", read.MaxMoved));
-            read.MovedFrom = Mathf.Max(0f, Number(cells, "movedFrom", read.MovedFrom));
+            read.Reach = Mathf.Max(.002f, cells.Number("reach", read.Reach));
+            read.Keep = Mathf.Clamp01(cells.Number("keep", read.Keep));
+            read.Share = Mathf.Clamp01(cells.Number("share", read.Share));
+            read.MaxMoved = Mathf.Clamp01(cells.Number("maxMoved", read.MaxMoved));
+            read.MovedFrom = Mathf.Max(0f, cells.Number("movedFrom", read.MovedFrom));
         }
         values = read;
         return read;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> cells, string column, float fallback) => TableCells.Number(cells, column, fallback);
 
     private static void Warn(string message)
     {

@@ -163,9 +163,6 @@ public sealed class GameSettings
     public static GameSettings Current => current ??= Load();
     private static string FilePath => Path.Combine(Application.persistentDataPath, FileName);
 
-    /// <summary>A separate copy of the defaults, from the preset asset when there is one.</summary>
-    public static GameSettings Defaults() => GameSettingsPreset.Copy();
-
     /// <summary>Clamps the values and tells listeners. Call after editing <see cref="Current"/>.</summary>
     public static void Apply()
     {
@@ -177,7 +174,7 @@ public sealed class GameSettings
     public static void ResetToDefaults(SettingsGroup group)
     {
         var s = Current;
-        var d = Defaults();
+        var d = GameSettingsPreset.Copy();
         switch (group)
         {
             case SettingsGroup.Sound:
@@ -233,7 +230,7 @@ public sealed class GameSettings
     // Saved values over the preset, so a setting added later starts at its preset default.
     private static GameSettings Load()
     {
-        var settings = Defaults();
+        var settings = GameSettingsPreset.Copy();
         try
         {
             if (File.Exists(FilePath)) JsonUtility.FromJsonOverwrite(File.ReadAllText(FilePath), settings);
@@ -241,7 +238,7 @@ public sealed class GameSettings
         catch (Exception e)
         {
             Debug.LogWarning($"[Settings] {FilePath} could not be read; using defaults. {e.Message}");
-            settings = Defaults();
+            settings = GameSettingsPreset.Copy();
         }
         settings.Clamp();
         return settings;

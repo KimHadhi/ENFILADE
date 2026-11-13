@@ -69,7 +69,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         panel.gameObject.SetActive(beingHelped || helping);
         if (!beingHelped && !helping) return;
         float progress = beingHelped ? life.RescueProgress : revive.Progress;
-        who.text = beingHelped ? Texts.Format("life.rescued_by", NameOf(life.Rescuer)) : Texts.Format("life.rescuing", NameOf(revive.Candidate));
+        who.text = beingHelped ? Texts.Format("life.rescued_by", PlayerTally.ColoredNameOf(life.Rescuer)) : Texts.Format("life.rescuing", PlayerTally.ColoredNameOf(revive.Candidate));
         secondsLeft.text = Texts.Format("hud.seconds", ((1f - progress) * revive.Seconds).ToString("0.0"));
         fill.sizeDelta = new Vector2((PanelWidth - Inset * 2f) * progress, BarHeight);
     }
@@ -87,7 +87,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
             case PlayerSpectate.Mode.Follow:
                 // The one watched may have just left; the next frame moves on.
                 var target = spectate.Target;
-                watching.text = target != null ? Texts.Format("life.spectate.watching", NameOf(target)) : "";
+                watching.text = target != null ? Texts.Format("life.spectate.watching", PlayerTally.ColoredNameOf(target)) : "";
                 keys.text = Texts.Get("life.spectate.follow_keys");
                 break;
             case PlayerSpectate.Mode.Free:
@@ -100,9 +100,6 @@ public sealed class PlayerLifeHUD : MonoBehaviour
                 break;
         }
     }
-
-    private static string NameOf(PlayerMovement player)
-        => player.TryGetComponent(out PlayerTally tally) ? "<color=#" + ColorUtility.ToHtmlStringRGB(tally.Color) + ">" + tally.DisplayName + "</color>" : player.name;
 
     private void Build()
     {

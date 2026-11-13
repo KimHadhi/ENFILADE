@@ -34,7 +34,6 @@ public sealed class SoundBank : ScriptableObject
     [NonSerialized] private readonly Dictionary<string, Settings> settings = new Dictionary<string, Settings>(StringComparer.OrdinalIgnoreCase);
     [NonSerialized] private readonly Dictionary<string, int> lastPick = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-    public string Id => id;
     public IReadOnlyList<Entry> Entries => entries;
 
     public static SoundBank Load(string bankId) => Resources.Load<SoundBank>(ResourceFolder + "/" + bankId);

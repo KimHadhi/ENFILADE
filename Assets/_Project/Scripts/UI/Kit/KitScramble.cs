@@ -25,10 +25,6 @@ public sealed class KitScramble : MonoBehaviour
     /// <summary>Decodes into <paramref name="value"/> after <paramref name="delay"/> over <paramref name="length"/> (s).</summary>
     public void Decode(string value, float delay = 0f, float length = .5f) => Begin(value, delay, length, false);
 
-    /// <summary>Types <paramref name="value"/> out after <paramref name="delay"/>, <paramref name="perSecond"/> letters a second.</summary>
-    public void Type(string value, float delay = 0f, float perSecond = 60f)
-        => Begin(value, delay, (value?.Length ?? 0) / Mathf.Max(1f, perSecond), true);
-
     /// <summary>Shows the whole text at once, stopping whatever was running.</summary>
     public void Settle()
     {

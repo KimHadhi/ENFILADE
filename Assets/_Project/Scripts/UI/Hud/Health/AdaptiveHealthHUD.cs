@@ -313,8 +313,6 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         shieldGraphic.SetGlint(flair != null ? flair.ShieldGlint : Color.clear);
     }
 
-    public void BindPlayer(PlayerMovement target) { player = target; dirty = true; }
-
     public void StopPreview()
     {
         if (visualRoot == null) return;

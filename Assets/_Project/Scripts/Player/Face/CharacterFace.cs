@@ -174,9 +174,6 @@ public sealed class CharacterFace : MonoBehaviour
         if (mood != null && slotOf.TryGetValue(mood, out var slot)) slot.On = on;
     }
 
-    /// <summary>The mouth makes the vowels of what <paramref name="source"/> plays, as long as it plays.</summary>
-    public void Speak(AudioSource source) => Speak(source, null, 0f);
-
     /// <summary>
     /// The mouth says <paramref name="text"/>: following what <paramref name="source"/> plays for as long as it plays
     /// (its loudness, and the line's own vowels syllable by syllable), or with no voice at all (no clip: a line a voice
@@ -296,7 +293,7 @@ public sealed class CharacterFace : MonoBehaviour
         var names = new List<string>();
         foreach (var bone in rest)
         {
-            var at = FindBone(transform, bone.Name);
+            var at = Hierarchy.Find(transform, bone.Name);
             if (at == null) continue;
             found.Add(new Ear { Bone = at, Rest = at.localRotation, FromRest = Quaternion.Inverse(Quaternion.Euler(bone.Euler)) });
             names.Add(bone.Name);
@@ -324,17 +321,6 @@ public sealed class CharacterFace : MonoBehaviour
             }
         }
         return any ? turns : null;
-    }
-
-    private static Transform FindBone(Transform under, string name)
-    {
-        if (under.name == name) return under;
-        for (int i = 0; i < under.childCount; i++)
-        {
-            var found = FindBone(under.GetChild(i), name);
-            if (found != null) return found;
-        }
-        return null;
     }
 
     // The key on every mesh of the character that has it (the face, and a mask made to follow it), or -1.
@@ -409,7 +395,7 @@ public sealed class CharacterFace : MonoBehaviour
         if (dt <= 0f || (!Unscaled && GamePause.IsPaused)) return;
         clock += dt;
         Choose();
-        Ease(dt);
+        EaseWeights(dt);
         Blink(dt);
         Glance(dt);
         Pose(dt);
@@ -433,7 +419,7 @@ public sealed class CharacterFace : MonoBehaviour
         }
     }
 
-    private void Ease(float dt)
+    private void EaseWeights(float dt)
     {
         foreach (var slot in slots)
         {
@@ -458,9 +444,9 @@ public sealed class CharacterFace : MonoBehaviour
         float close = Mathf.Max(.01f, FaceTables.Number("Blink.close", .06f));
         float shut = Mathf.Max(0f, FaceTables.Number("Blink.shut", .04f));
         float lift = Mathf.Max(.01f, FaceTables.Number("Blink.open", .11f));
-        if (blinkTime < close) closed = Smooth(blinkTime / close);
+        if (blinkTime < close) closed = Ease.Smooth(blinkTime / close);
         else if (blinkTime < close + shut) closed = 1f;
-        else if (blinkTime < close + shut + lift) closed = 1f - Smooth((blinkTime - close - shut) / lift);
+        else if (blinkTime < close + shut + lift) closed = 1f - Ease.Smooth((blinkTime - close - shut) / lift);
         else
         {
             closed = 0f;
@@ -663,12 +649,6 @@ public sealed class CharacterFace : MonoBehaviour
         float mean = Mathf.Max(.2f, FaceTables.Number(everyKey, every));
         float range = Mathf.Max(0f, FaceTables.Number(spreadKey, spread));
         return Mathf.Max(.15f, mean + UnityEngine.Random.Range(-range, range));
-    }
-
-    private static float Smooth(float t)
-    {
-        t = Mathf.Clamp01(t);
-        return t * t * (3f - 2f * t);
     }
 
     private static void Warn(string message)

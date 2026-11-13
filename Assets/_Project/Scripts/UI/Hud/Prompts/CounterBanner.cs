@@ -249,7 +249,7 @@ public sealed class CounterBanner : MonoBehaviour
         focus.rectTransform.offsetMin = focus.rectTransform.offsetMax = Vector2.zero;
         focus.Accent = KitStyle.Accent;
 
-        var slash = Rect("Slash", root.transform);
+        var slash = FeelUI.Rect("Slash", root.transform);
         slash.localRotation = Quaternion.Euler(0f, 0f, Lean);
         line = Panel("Line", slash, KitStyle.Accent);
         var white = KitStyle.Ice; white.a = .95f;
@@ -264,8 +264,8 @@ public sealed class CounterBanner : MonoBehaviour
         ring.rectTransform.localScale = new Vector3(1f, RingFlat, 1f);
 
         // What comes down as one at grade 3: the plate and everything on it.
-        body = Rect("Body", slash);
-        var plates = Rect("Plate", body);
+        body = FeelUI.Rect("Body", slash);
+        var plates = FeelUI.Rect("Plate", body);
         plateGroup = plates.gameObject.AddComponent<CanvasGroup>();
         plateGroup.blocksRaycasts = plateGroup.interactable = false;
         frame = Panel("Frame", plates, KitStyle.Accent);
@@ -295,7 +295,7 @@ public sealed class CounterBanner : MonoBehaviour
         var font = GunFeelSettings.Instance.scoreFont != null ? GunFeelSettings.Instance.scoreFont : CombatUIAssets.ResolveFont(null);
         ghost = Word("Afterimage", body, font);
         ghost.rectTransform.sizeDelta = new Vector2(1700f, 320f);
-        var words = Rect("Word", body);
+        var words = FeelUI.Rect("Word", body);
         wordGroup = words.gameObject.AddComponent<CanvasGroup>();
         wordGroup.blocksRaycasts = wordGroup.interactable = false;
         topWord = Half("Top half", words, font, true);
@@ -317,7 +317,7 @@ public sealed class CounterBanner : MonoBehaviour
     private RectTransform Half(string name, RectTransform parent, TMP_FontAsset font, bool top)
     {
         // A mask on one side of the line (stencil, so it holds at the slash's lean).
-        var side = Rect(name, parent);
+        var side = FeelUI.Rect(name, parent);
         side.pivot = new Vector2(.5f, top ? 0f : 1f);
         side.sizeDelta = new Vector2(2800f, 420f);
         var shape = side.gameObject.AddComponent<Image>();
@@ -348,15 +348,6 @@ public sealed class CounterBanner : MonoBehaviour
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.color = KitStyle.Ink;
         return text;
-    }
-
-    private static RectTransform Rect(string name, Transform parent)
-    {
-        var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
-        rect.sizeDelta = Vector2.zero;
-        return rect;
     }
 
     private static Image Panel(string name, Transform parent, Color color)

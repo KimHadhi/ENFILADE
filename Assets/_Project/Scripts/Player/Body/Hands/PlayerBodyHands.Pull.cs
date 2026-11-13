@@ -111,7 +111,7 @@ public sealed partial class PlayerBodyHands
     private float PullOverTop(float arm, float dt)
     {
         var obstacle = player.Abilities.Traversal.Obstacle;
-        bool over = Climbing(player.CurrentState) && ClearsTop(obstacle.Kind) && !body.IsDead && left != null && right != null
+        bool over = Climbing(player.CurrentState) && obstacle.Kind.ClearsTop() && !body.IsDead && left != null && right != null
             && obstacle.Surface != null && body.InQuickVault;
         if (!over && pulled <= 0f)
         {

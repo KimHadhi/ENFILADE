@@ -11,7 +11,6 @@ public sealed class DodgeController
     public DodgeKind Kind { get; private set; }
     public int LeanSide { get; private set; }
     public int Activation { get; private set; }
-    public float CooldownRemaining => cooldown;
     public bool IsInvulnerable => remaining > 0f;
     public bool HasSucceeded => successEmitted;
     public bool CanStart => Time.unscaledTime >= heldOffUntil && cooldown <= 0f && (remaining <= 0f || successEmitted);

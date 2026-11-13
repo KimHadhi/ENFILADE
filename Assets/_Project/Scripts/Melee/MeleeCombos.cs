@@ -170,7 +170,6 @@ public sealed class MeleeCombos : MonoBehaviour
     public int BeatStep => beatStep;
     public int BeatSteps => Mathf.Max(1, beat.steps);
 
-    public RiposteNumbers Riposte => riposte;
     /// <summary>Closing in for a combo strike: the fists take no other press meanwhile.</summary>
     public bool IsDashing => dashTarget != null;
     /// <summary>A parry's riposte can still go (real time).</summary>

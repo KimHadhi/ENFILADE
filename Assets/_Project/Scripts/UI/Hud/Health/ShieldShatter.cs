@@ -80,12 +80,6 @@ public sealed class ShieldShatter
         Apply();
     }
 
-    public void Stop()
-    {
-        age = Seconds;
-        Apply();
-    }
-
     private void Apply()
     {
         bool playing = IsPlaying;

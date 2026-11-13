@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -163,13 +162,11 @@ public static class StealthLight
         if (read) return;
         read = true;
         if (!GameTables.TryGetRow(TableName, TableRow, out var row)) return;
-        on = Number(row, "enabled", 1f) > 0f;
-        darkAt = Number(row, "darkAt", darkAt);
-        brightAt = Number(row, "brightAt", brightAt);
-        darkShare = Number(row, "darkShare", darkShare);
-        darkRange = Number(row, "darkRange", darkRange);
-        every = Mathf.Max(.05f, Number(row, "every", every));
+        on = row.Number("enabled", 1f) > 0f;
+        darkAt = row.Number("darkAt", darkAt);
+        brightAt = row.Number("brightAt", brightAt);
+        darkShare = row.Number("darkShare", darkShare);
+        darkRange = row.Number("darkRange", darkRange);
+        every = Mathf.Max(.05f, row.Number("every", every));
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
 }

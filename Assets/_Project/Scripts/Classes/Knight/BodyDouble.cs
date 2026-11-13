@@ -29,15 +29,6 @@ public sealed class BodyDouble : MonoBehaviour
         shadow.Begin(seconds);
     }
 
-    /// <summary>The double goes at once (the class changed, the Knight fell).</summary>
-    public static void Hide(Component knight)
-    {
-        if (knight == null) return;
-        var body = knight.GetComponentInParent<PlayerMovement>();
-        var host = body != null ? body.gameObject : knight.gameObject;
-        if (host.TryGetComponent(out BodyDouble shadow)) shadow.until = 0f;
-    }
-
     private void Begin(float seconds)
     {
         if (!enabled || Time.time >= until) { since = Time.time; placed = false; nextBake = 0f; }

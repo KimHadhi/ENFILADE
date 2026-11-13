@@ -42,8 +42,6 @@ public sealed class HitFlashRenderer : MonoBehaviour
         }
     }
 
-    public bool IsFlashing => slots.Count > 0;
-
     public static HitFlashRenderer For(Component target)
     {
         if (target == null) return null;

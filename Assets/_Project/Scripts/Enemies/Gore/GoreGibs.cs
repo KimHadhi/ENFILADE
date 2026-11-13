@@ -31,7 +31,6 @@ internal sealed class GoreGibs
     private readonly List<Vector3> positions = new List<Vector3>(), normals = new List<Vector3>(), piecePositions = new List<Vector3>(),
         pieceNormals = new List<Vector3>();
     private readonly List<Vector2> uvs = new List<Vector2>(), pieceUvs = new List<Vector2>();
-    private readonly List<int> triangles = new List<int>();
     private Mesh baked;
     private readonly ZombieGore owner;
 

@@ -189,14 +189,6 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         return bearing.sqrMagnitude > .000001f ? bearing.normalized : local.y < 0f ? Vector2.down : Vector2.up;
     }
 
-    public bool TryGetIndicator(int index, out Vector3 worldOrigin, out Vector2 direction, out float opacity)
-    {
-        worldOrigin = default; direction = default; opacity = 0f;
-        if (index < 0 || index >= ActiveHitCount || !Hits[index].Directional) return false;
-        worldOrigin = Hits[index].Origin; direction = Hits[index].Direction; opacity = Hits[index].Alpha;
-        return true;
-    }
-
     /// <summary>Blood amount (0..1) toward a screen point in -1..1 space. The shader turns it into the liquid front.</summary>
     public float BloodAt(Vector2 point)
     {

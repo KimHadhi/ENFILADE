@@ -50,8 +50,6 @@ public sealed class CombatFeedHUD : MonoBehaviour
     // The money shown, rolling up to the balance (won; double, as a float can't hold big sums to the won).
     private double totalShown;
 
-    public string StreakText => streakLabel != null ? streakLabel.text : string.Empty;
-
     private static CombatFeedHUD Get()
     {
         if (instance == null)
@@ -203,7 +201,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.killFeed) return;
         var settings = GunFeelSettings.Instance;
-        Get().AddRow(NameOf(who), grave ? CombatUIAssets.Skull : null, Color.white, what, grave ? KillRed : settings.scoreColor, false, 0, grave);
+        Get().AddRow(PlayerTally.ColoredNameOf(who), grave ? CombatUIAssets.Skull : null, Color.white, what, grave ? KillRed : settings.scoreColor, false, 0, grave);
     }
 
     private static int StreakOf(PlayerMovement who) => who != null && who.TryGetComponent(out PlayerTally tally) ? tally.Streak : 0;
@@ -216,10 +214,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
     // Alone there's only one name it could be.
     private static string Credit(PlayerMovement who, string weapon)
-        => GameSession.IsOnline && who != null ? NameOf(who) + "  " + weapon : weapon;
-
-    private static string NameOf(PlayerMovement who)
-        => who.TryGetComponent(out PlayerTally tally) ? "<color=#" + ColorUtility.ToHtmlStringRGB(tally.Color) + ">" + tally.DisplayName + "</color>" : who.name;
+        => GameSession.IsOnline && who != null ? PlayerTally.ColoredNameOf(who) + "  " + weapon : weapon;
 
     private static string MultiKillName(int count)
         => count == 2 ? Texts.Get("feed.multi.double") : count == 3 ? Texts.Get("feed.multi.triple") : count == 4 ? Texts.Get("feed.multi.quad")
@@ -426,7 +421,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
         {
             // A headshot's mark after the weapon: the skull, Counter-Strike's way (WeaponIcons.Headshot), or the burst before it.
             var skull = WeaponIcons.For(WeaponIcons.Headshot);
-            AddRow(who != null ? NameOf(who) : "", headshot ? (skull != null ? skull.texture : CombatUIAssets.CriticalBurst) : null, mark,
+            AddRow(who != null ? PlayerTally.ColoredNameOf(who) : "", headshot ? (skull != null ? skull.texture : CombatUIAssets.CriticalBurst) : null, mark,
                 target, accent, mine, streak, headshot, fire, picture, flairs);
         }
         else

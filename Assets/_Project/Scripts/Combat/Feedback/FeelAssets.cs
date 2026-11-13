@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, glintGlow, hairLine, streakTaper;
+    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, hairLine, streakTaper;
     private static readonly Dictionary<int, Texture2D> hollowGlints = new Dictionary<int, Texture2D>(), hollowGlows = new Dictionary<int, Texture2D>();
     /// <summary>How many times taller than the line it shows a <see cref="HairLine"/> quad is drawn: its fading outer
     /// thirds add up to one more third, so the line shows two thirds of the quad's height.</summary>
@@ -145,12 +145,6 @@ public static class FeelAssets
         Mathf.Max(Mathf.Clamp01((.2f - Mathf.Sqrt(u * u + v * v)) * 24f), Mathf.Max(GlintRay(u, v), GlintRay(v, u)));
 
     private static float GlintRay(float along, float across) => Mathf.Clamp01((.14f * (1f - Mathf.Abs(along)) - Mathf.Abs(across)) * 32f);
-
-    /// <summary>
-    /// The glint blurred: a soft round core and four soft rays that thin and fade toward their tips. Added behind the crisp
-    /// glint, it makes the headshot star give off light instead of sitting on it.
-    /// </summary>
-    public static Texture2D GlintGlow => glintGlow != null ? glintGlow : glintGlow = Generate("Feel Glint Glow", 128, 128, GlowCoverage);
 
     private static float GlowCoverage(float u, float v) =>
         Mathf.Max(Mathf.Exp(-(u * u + v * v) / (2f * .2f * .2f)), Mathf.Max(GlowRay(u, v), GlowRay(v, u)));

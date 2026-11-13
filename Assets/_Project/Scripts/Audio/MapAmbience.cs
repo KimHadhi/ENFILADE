@@ -75,9 +75,9 @@ public sealed class MapAmbience : MonoBehaviour
             return null;
         }
         var sound = new Sound();
-        string[] clips = Text(row, "clips").Split(Split, StringSplitOptions.RemoveEmptyEntries);
-        string[] levels = Text(row, "volumes").Split(Split, StringSplitOptions.RemoveEmptyEntries);
-        if (float.TryParse(Text(row, "fadeIn"), NumberStyles.Float, CultureInfo.InvariantCulture, out float fade))
+        string[] clips = row.Text("clips").Split(Split, StringSplitOptions.RemoveEmptyEntries);
+        string[] levels = row.Text("volumes").Split(Split, StringSplitOptions.RemoveEmptyEntries);
+        if (float.TryParse(row.Text("fadeIn"), NumberStyles.Float, CultureInfo.InvariantCulture, out float fade))
             sound.FadeIn = Mathf.Max(.01f, fade);
         for (int i = 0; i < clips.Length; i++)
         {
@@ -143,6 +143,4 @@ public sealed class MapAmbience : MonoBehaviour
         sound.Playing = false;
         foreach (var layer in sound.Layers) if (layer != null) layer.Stop();
     }
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
 }

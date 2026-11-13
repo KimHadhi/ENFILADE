@@ -166,7 +166,7 @@ public sealed class KillFlairFx
                     chipWords.text = shown.ToString();
                 }
             }
-            if (strike != null && strike.gameObject.activeSelf) strike.rectTransform.localScale = new Vector3(Ease((t - .12f) / .13f), 1f, 1f);
+            if (strike != null && strike.gameObject.activeSelf) strike.rectTransform.localScale = new Vector3(Ease.Out((t - .12f) / .13f), 1f, 1f);
             if (frame != null && frame.gameObject.activeSelf)
             {
                 float s = Mathf.Clamp01(t / .13f);
@@ -183,26 +183,26 @@ public sealed class KillFlairFx
             if (tag != null && tag.gameObject.activeSelf)
             {
                 float s = Mathf.Clamp01(t / .14f);
-                tag.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.9f, 1f, Ease(s));
+                tag.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.9f, 1f, Ease.Out(s));
                 tag.alpha = s * show;
             }
             if (veil != null && veil.gameObject.activeSelf)
             {
                 // The black lifts off the row from its right end in .18 s (a takedown out of the dark).
-                veil.Cover(0f, t < 0f ? 1f : 1f - Ease(t / .18f));
+                veil.Cover(0f, t < 0f ? 1f : 1f - Ease.Out(t / .18f));
                 if (t > .2f) veil.gameObject.SetActive(false);
             }
             if (beam != null && beam.gameObject.activeSelf)
             {
-                beam.rectTransform.localScale = new Vector3(Ease(t / .14f), 1f, 1f);
+                beam.rectTransform.localScale = new Vector3(Ease.Out(t / .14f), 1f, 1f);
                 SetAlpha(beam, t < 0f ? 0f : 1f - Mathf.Clamp01((t - .14f) / .18f));
             }
             if (markRing != null && markRing.gameObject.activeSelf)
             {
                 float s = Mathf.Clamp01(t / .26f), pop = Mathf.Clamp01(t / .16f);
-                markRing.rectTransform.localScale = Vector3.one * Mathf.Lerp(.4f, 2.2f, Ease(s));
+                markRing.rectTransform.localScale = Vector3.one * Mathf.Lerp(.4f, 2.2f, Ease.Out(s));
                 SetAlpha(markRing, t < 0f ? 0f : 1f - s);
-                mark.rectTransform.localScale = Vector3.one * (t < 0f ? 1f : pop < .7f ? Mathf.Lerp(2f, .9f, Ease(pop / .7f)) : Mathf.Lerp(.9f, 1f, (pop - .7f) / .3f));
+                mark.rectTransform.localScale = Vector3.one * (t < 0f ? 1f : pop < .7f ? Mathf.Lerp(2f, .9f, Ease.Out(pop / .7f)) : Mathf.Lerp(.9f, 1f, (pop - .7f) / .3f));
             }
             NameTint = (pieces & KillFlairs.Row.Name) != 0 ? Mathf.Clamp01((t - .15f) / .12f) : 0f;
             AccentTint = (pieces & KillFlairs.Row.Accent) != 0 ? show : 0f;
@@ -233,7 +233,7 @@ public sealed class KillFlairFx
                 // One lap round the plate's outline in .6 s, its slanted ends included, then the lit edge fades.
                 Color colour = play.ColourOf(flair);
                 colour.a = t < 0f ? 0f : 1f - Mathf.Clamp01((t - .6f) / .25f);
-                plate.Trace(Ease(t / .6f) * 1.0f, .35f, colour, 2.5f);
+                plate.Trace(Ease.Out(t / .6f) * 1.0f, .35f, colour, 2.5f);
                 traced = true;
             }
             Kick = (pieces & KillFlairs.Row.Kick) != 0 && t >= 0f && t <= KickSeconds
@@ -356,9 +356,9 @@ public sealed class KillFlairFx
             float heat, reach = 1f;
             switch (kind)
             {
-                case KillFlairs.Icon.Fire: heat = Out(t, life); reach = Ease(t / FireReach); break;
-                case KillFlairs.Icon.Engulf: heat = Out(t, life); reach = Ease(t / EngulfReach); break;
-                case KillFlairs.Icon.Gild: heat = Out(t, life); reach = Ease(t / GildReach); break;
+                case KillFlairs.Icon.Fire: heat = Out(t, life); reach = Ease.Out(t / FireReach); break;
+                case KillFlairs.Icon.Engulf: heat = Out(t, life); reach = Ease.Out(t / EngulfReach); break;
+                case KillFlairs.Icon.Gild: heat = Out(t, life); reach = Ease.Out(t / GildReach); break;
                 case KillFlairs.Icon.Trail: heat = Mathf.Clamp01(t / .06f) * Out(t, life); break;
                 case KillFlairs.Icon.Flash: heat = t < 0f ? 0f : 1f - Mathf.Clamp01(t / .2f); break;
                 // A tint, and the flash under a spark, a ring, a cut or crossing lines: full at once, gone over its seconds.
@@ -376,7 +376,7 @@ public sealed class KillFlairFx
                     if (echoes[i] == null || !echoes[i].gameObject.activeSelf) continue;
                     // Two quick draws: each slides in from the left onto the gun and is gone as it lands.
                     float s = Mathf.Clamp01((t - i * .09f) / .26f);
-                    echoes[i].rectTransform.anchoredPosition = new Vector2(Mathf.Lerp(-22f - i * 12f, 0f, Ease(s / .7f)), 0f);
+                    echoes[i].rectTransform.anchoredPosition = new Vector2(Mathf.Lerp(-22f - i * 12f, 0f, Ease.Out(s / .7f)), 0f);
                     var c = echoes[i].color;
                     c.a = t < i * .09f ? 0f : s < .7f ? .9f * (s / .7f) : .9f * (1f - (s - .7f) / .3f);
                     echoes[i].color = c;
@@ -397,7 +397,7 @@ public sealed class KillFlairFx
                 if (ring != null && ring.gameObject.activeSelf)
                 {
                     float s = Mathf.Clamp01(t / .28f);
-                    ring.rectTransform.localScale = Vector3.one * Mathf.Lerp(.3f, 2.3f, Ease(s));
+                    ring.rectTransform.localScale = Vector3.one * Mathf.Lerp(.3f, 2.3f, Ease.Out(s));
                     SetAlpha(ring, t < 0f ? 0f : 1f - s);
                     if (s >= 1f) ring.gameObject.SetActive(false);
                 }
@@ -405,7 +405,7 @@ public sealed class KillFlairFx
             case KillFlairs.Icon.Slash:
                 if (slash != null && slash.gameObject.activeSelf)
                 {
-                    slash.rectTransform.localScale = new Vector3(Ease(t / .13f), 1f, 1f);
+                    slash.rectTransform.localScale = new Vector3(Ease.Out(t / .13f), 1f, 1f);
                     SetAlpha(slash, t < 0f ? 0f : 1f - Mathf.Clamp01((t - .13f) / .13f));
                     if (t > .3f) slash.gameObject.SetActive(false);
                 }
@@ -415,8 +415,8 @@ public sealed class KillFlairFx
                 {
                     if (rays[i] == null || !rays[i].gameObject.activeSelf) continue;
                     float s = Mathf.Clamp01(t / .17f), angle = (90f + (i - 2.5f) * 36f) * Mathf.Deg2Rad;
-                    rays[i].rectTransform.anchoredPosition = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Mathf.Lerp(5f, 15f, Ease(s));
-                    rays[i].rectTransform.localScale = new Vector3(Mathf.Lerp(.3f, 1f, Ease(s)), 1f, 1f);
+                    rays[i].rectTransform.anchoredPosition = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Mathf.Lerp(5f, 15f, Ease.Out(s));
+                    rays[i].rectTransform.localScale = new Vector3(Mathf.Lerp(.3f, 1f, Ease.Out(s)), 1f, 1f);
                     SetAlpha(rays[i], t < 0f ? 0f : 1f - s);
                     if (s >= 1f) rays[i].gameObject.SetActive(false);
                 }
@@ -426,7 +426,7 @@ public sealed class KillFlairFx
                 {
                     if (crosses[i] == null || !crosses[i].gameObject.activeSelf) continue;
                     float s = Mathf.Clamp01((t - i * .08f) / .18f);
-                    crosses[i].rectTransform.localScale = new Vector3(Ease(s), 1f, 1f);
+                    crosses[i].rectTransform.localScale = new Vector3(Ease.Out(s), 1f, 1f);
                     SetAlpha(crosses[i], t < i * .08f ? 0f : 1f - Mathf.Clamp01((t - i * .08f - .18f) / .14f));
                     if (t > i * .08f + .34f) crosses[i].gameObject.SetActive(false);
                 }
@@ -806,7 +806,7 @@ public sealed class KillFlairFx
     {
         float s = Mathf.Clamp01(t / Slam);
         // 2.3x and flat, down past its size, and back: a slam, not a fade.
-        float scale = s < .7f ? Mathf.Lerp(2.3f, .92f, Ease(s / .7f)) : Mathf.Lerp(.92f, 1f, (s - .7f) / .3f);
+        float scale = s < .7f ? Mathf.Lerp(2.3f, .92f, Ease.Out(s / .7f)) : Mathf.Lerp(.92f, 1f, (s - .7f) / .3f);
         piece.localScale = Vector3.one * scale;
         piece.localRotation = Quaternion.Euler(0f, 0f, tilt);
         group.alpha = (t >= 0f ? Mathf.Clamp01(s / .4f) : 0f) * show;
@@ -819,7 +819,7 @@ public sealed class KillFlairFx
             var speck = specks[i];
             if (speck == null) continue;
             float s = Mathf.Clamp01(t / .26f);
-            speck.rectTransform.anchoredPosition = speckWay[i] * Ease(s);
+            speck.rectTransform.anchoredPosition = speckWay[i] * Ease.Out(s);
             var c = speck.color;
             c.a = t < 0f ? 0f : 1f - s;
             speck.color = c;
@@ -828,7 +828,6 @@ public sealed class KillFlairFx
 
     // Full until the flair's seconds are up, then gone over Fade.
     private static float Out(float t, float life) => t < 0f ? 0f : 1f - Mathf.Clamp01((t - life) / Fade);
-    private static float Ease(float s) { s = Mathf.Clamp01(s); return 1f - (1f - s) * (1f - s) * (1f - s); }
     private static float Back(float s) { s = Mathf.Clamp01(s); return 1f + 2.2f * Mathf.Pow(s - 1f, 3f) + 1.2f * Mathf.Pow(s - 1f, 2f); }
     private static Color Clear(Color c) { c.a = 0f; return c; }
 

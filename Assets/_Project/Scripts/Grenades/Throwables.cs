@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -125,7 +124,7 @@ public static class Throwables
 
     /// <summary>A number of the rules row (Tables/GrenadeRules, row Default).</summary>
     public static float Rule(string name, float fallback)
-        => GameTables.TryGetRow(RulesTable, RulesRow, out var row) ? Number(row, name, fallback) : fallback;
+        => GameTables.TryGetRow(RulesTable, RulesRow, out var row) ? row.Number(name, fallback) : fallback;
 
     private static void Load()
     {
@@ -138,37 +137,33 @@ public static class Throwables
             if (!Enum.TryParse(id, true, out Throwable kind) || kind == Throwable.None) continue;
             var info = new ThrowableInfo
             {
-                Kind = kind, Id = id.Trim().ToLowerInvariant(), Class = Text(row, "class"), Callout = Text(row, "callout"),
-                Carry = Mathf.Max(0, Mathf.RoundToInt(Number(row, "carry", 3f))),
-                Refill = Mathf.Max(0, Mathf.RoundToInt(Number(row, "refill", 1f))),
-                Fuse = Mathf.Max(0f, Number(row, "fuse", 1.5f)), Cooks = Number(row, "cooks", 0f) > .5f,
-                Speed = Mathf.Max(1f, Number(row, "speed", 16f)), Lift = Number(row, "lift", 2.5f),
-                Gravity = Mathf.Max(0f, Number(row, "gravity", 1f)), Bounce = Mathf.Clamp01(Number(row, "bounce", .3f)),
-                Size = Mathf.Max(.01f, Number(row, "size", .08f)), Radius = Mathf.Max(0f, Number(row, "radius", 5f)),
-                Damage = Number(row, "damage", 0f), Edge = Number(row, "edge", 0f), Head = Number(row, "head", 0f),
-                Seconds = Mathf.Max(0f, Number(row, "seconds", 0f)), Posture = Number(row, "posture", 0f),
-                Knock = Number(row, "knock", 0f), Heal = Number(row, "heal", 0f), Push = Number(row, "push", 0f),
-                PlayerDamage = Number(row, "playerDamage", 0f), PlayerEdge = Number(row, "playerEdge", 0f),
-                Noise = Number(row, "noise", 0f), Price = Number(row, "price", 0f),
+                Kind = kind, Id = id.Trim().ToLowerInvariant(), Class = row.Text("class"), Callout = row.Text("callout"),
+                Carry = Mathf.Max(0, Mathf.RoundToInt(row.Number("carry", 3f))),
+                Refill = Mathf.Max(0, Mathf.RoundToInt(row.Number("refill", 1f))),
+                Fuse = Mathf.Max(0f, row.Number("fuse", 1.5f)), Cooks = row.Number("cooks", 0f) > .5f,
+                Speed = Mathf.Max(1f, row.Number("speed", 16f)), Lift = row.Number("lift", 2.5f),
+                Gravity = Mathf.Max(0f, row.Number("gravity", 1f)), Bounce = Mathf.Clamp01(row.Number("bounce", .3f)),
+                Size = Mathf.Max(.01f, row.Number("size", .08f)), Radius = Mathf.Max(0f, row.Number("radius", 5f)),
+                Damage = row.Number("damage", 0f), Edge = row.Number("edge", 0f), Head = row.Number("head", 0f),
+                Seconds = Mathf.Max(0f, row.Number("seconds", 0f)), Posture = row.Number("posture", 0f),
+                Knock = row.Number("knock", 0f), Heal = row.Number("heal", 0f), Push = row.Number("push", 0f),
+                PlayerDamage = row.Number("playerDamage", 0f), PlayerEdge = row.Number("playerEdge", 0f),
+                Noise = row.Number("noise", 0f), Price = row.Number("price", 0f),
             };
-            if (ColorUtility.TryParseHtmlString(Text(row, "tint"), out Color tint)) info.Tint = tint;
-            info.ThrowsOut = string.Equals(Text(row, "cookOut"), "throw", StringComparison.OrdinalIgnoreCase);
-            info.Places = Number(row, "places", 0f) > .5f;
-            info.Arm = Text(row, "arm");
-            info.HeldAt = new Vector3(Number(row, "heldAcross", info.HeldAt.x), Number(row, "heldPalm", info.HeldAt.y),
-                Number(row, "heldAlong", info.HeldAt.z));
-            info.HeldTurn = new Vector3(Number(row, "heldTurnX", info.HeldTurn.x), Number(row, "heldTurnY", info.HeldTurn.y),
-                Number(row, "heldTurnZ", info.HeldTurn.z));
-            info.Grip = new Vector3(Number(row, "gripX", 0f), Number(row, "gripY", 0f), Number(row, "gripZ", 0f));
-            info.Icon = Text(row, "icon");
+            if (ColorUtility.TryParseHtmlString(row.Text("tint"), out Color tint)) info.Tint = tint;
+            info.ThrowsOut = string.Equals(row.Text("cookOut"), "throw", StringComparison.OrdinalIgnoreCase);
+            info.Places = row.Number("places", 0f) > .5f;
+            info.Arm = row.Text("arm");
+            info.HeldAt = new Vector3(row.Number("heldAcross", info.HeldAt.x), row.Number("heldPalm", info.HeldAt.y),
+                row.Number("heldAlong", info.HeldAt.z));
+            info.HeldTurn = new Vector3(row.Number("heldTurnX", info.HeldTurn.x), row.Number("heldTurnY", info.HeldTurn.y),
+                row.Number("heldTurnZ", info.HeldTurn.z));
+            info.Grip = new Vector3(row.Number("gripX", 0f), row.Number("gripY", 0f), row.Number("gripZ", 0f));
+            info.Icon = row.Text("icon");
             if (info.Icon.Length == 0) info.Icon = DefaultIcon(kind);
             kinds[kind] = info;
         }
     }
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // ---- Who threw what ----
 

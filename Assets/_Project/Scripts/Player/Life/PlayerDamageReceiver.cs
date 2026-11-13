@@ -10,7 +10,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     [SerializeField, Min(1f)] private float maximumHealth = 100f;
     public float MaximumHealth => ValidMaximum(maximumHealth);
     [SerializeField, Min(0f)] private float shield;
-    public float Shield => NonNegative(shield);
+    public float Shield => PlayerStats.NonNegative(shield);
     private readonly HashSet<long> seen = new HashSet<long>();
     private readonly Queue<long> recent = new Queue<long>();
     private PlayerMovement movement;
@@ -197,7 +197,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         GetComponent<PlayerDamageFeedback>()?.Clear();
     }
 
-    public void SetShield(float amount) { shield = NonNegative(amount); }
+    public void SetShield(float amount) { shield = PlayerStats.NonNegative(amount); }
 
     /// <summary>
     /// The whole shield goes at once and breaks as if a hit had taken it (ShieldBroken: ShieldFeedback's break, sound and
@@ -211,8 +211,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         ShieldBroken?.Invoke(cause);
         return true;
     }
-    public void AddShield(float amount) { shield = (float)Math.Min(float.MaxValue, (double)Shield + NonNegative(amount)); }
-    private static float NonNegative(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
+    public void AddShield(float amount) { shield = (float)Math.Min(float.MaxValue, (double)Shield + PlayerStats.NonNegative(amount)); }
 
     /// <summary>Change capacity while preserving current HP unless refill is requested.</summary>
     public void SetMaximumHealth(float maximum, bool refill = false)
@@ -232,7 +231,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     private void OnValidate()
     {
         maximumHealth = ValidMaximum(maximumHealth);
-        shield = NonNegative(shield);
+        shield = PlayerStats.NonNegative(shield);
         if (healthInitialized) Health = Mathf.Clamp(Health, 0f, maximumHealth);
     }
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -312,7 +311,7 @@ internal static class UnderwearFit
                 var mesh = MeshOf(renderer);
                 if (mesh == null) continue;
                 var matrix = toModel * renderer.transform.localToWorldMatrix;
-                if (!near.Intersects(BoxOf(mesh.bounds, matrix))) continue;
+                if (!near.Intersects(MeshTools.BoxOf(mesh.bounds, matrix))) continue;
                 if (!mesh.isReadable)
                 {
                     Warn($"{mesh.name}: 메시를 읽을 수 없어(Read/Write 꺼짐) 그 밑의 속옷을 눌러 넣지 못합니다.");
@@ -444,33 +443,22 @@ internal static class UnderwearFit
         renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
         : renderer != null && renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
 
-    private static Bounds BoxOf(Bounds local, Matrix4x4 matrix)
-    {
-        var box = new Bounds(matrix.MultiplyPoint3x4(local.center), Vector3.zero);
-        for (int i = 0; i < 8; i++)
-            box.Encapsulate(matrix.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents,
-                new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
-        return box;
-    }
-
     private static Values Settings()
     {
         if (values.HasValue) return values.Value;
         var read = new Values { Hide = .9f, KeyShare = .85f, Margin = .003f, Press = .02f, Facing = .3f, Cell = .025f };
         if (GameTables.TryGetRow(TableName, "Default", out var cells))
         {
-            read.Hide = Mathf.Clamp01(Number(cells, "hide", read.Hide));
-            read.KeyShare = Mathf.Clamp01(Number(cells, "keyShare", read.KeyShare));
-            read.Margin = Mathf.Max(0f, Number(cells, "margin", read.Margin));
-            read.Press = Mathf.Max(0f, Number(cells, "press", read.Press));
-            read.Facing = Mathf.Clamp01(Number(cells, "facing", read.Facing));
-            read.Cell = Mathf.Max(.005f, Number(cells, "cell", read.Cell));
+            read.Hide = Mathf.Clamp01(cells.Number("hide", read.Hide));
+            read.KeyShare = Mathf.Clamp01(cells.Number("keyShare", read.KeyShare));
+            read.Margin = Mathf.Max(0f, cells.Number("margin", read.Margin));
+            read.Press = Mathf.Max(0f, cells.Number("press", read.Press));
+            read.Facing = Mathf.Clamp01(cells.Number("facing", read.Facing));
+            read.Cell = Mathf.Max(.005f, cells.Number("cell", read.Cell));
         }
         values = read;
         return read;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> cells, string column, float fallback) => TableCells.Number(cells, column, fallback);
 
     private static void Warn(string message)
     {

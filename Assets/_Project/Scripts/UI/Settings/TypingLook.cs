@@ -58,7 +58,7 @@ public sealed class TypingLook : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private static GameObject BuildFrame(RectTransform box)
     {
         var root = SettingsWidgets.Rect("Typing Frame", box);
-        SettingsWidgets.Stretch(root);
+        KitStyle.Stretch(root);
         Edge(root, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, Frame));
         Edge(root, Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, Frame));
         Edge(root, Vector2.zero, new Vector2(0f, 1f), new Vector2(Frame, 0f));

@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Multiplayer plan stage 5B: a campaign chapter played as a run of objectives. The chapter's steps (Tables/
@@ -634,7 +633,7 @@ public sealed class CampaignRun : MonoBehaviour
         string text = null;
         // A field pickup looked at has [F] first (FieldPickups).
         bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.DamageReceiver.IsDowned && !FieldPickups.Targeting;
-        bool pressed = able && TakesInput() && interact != null && interact.WasPressedThisFrame();
+        bool pressed = able && InputFocus.TakesPlayInput() && interact != null && interact.WasPressedThisFrame();
         int door = able ? NearestDoor(mine) : -1;
         // One [F] at a time: a step's button (this one's, or a later one's with nothing but getting there before it, C4),
         // then a can in hand, then a door, then a can to pick up.
@@ -764,7 +763,7 @@ public sealed class CampaignRun : MonoBehaviour
     private void ThrowCan()
     {
         var mine = PlayerRoster.Local;
-        if (mine == null || !mine.IsInitialized || mine.IsDead || mine.DamageReceiver.IsDowned || !TakesInput()) return;
+        if (mine == null || !mine.IsInitialized || mine.IsDead || mine.DamageReceiver.IsDowned || !InputFocus.TakesPlayInput()) return;
         // The fire key (Combat/Fire, the left button unless the key window says otherwise): the hands hold the can, not a gun.
         if (!KeyBindings.Pressed("Combat/Fire")) return;
         int carried = fuel.CarriedBy(mine);
@@ -1008,8 +1007,4 @@ public sealed class CampaignRun : MonoBehaviour
         if (reported.Add(name ?? "")) Debug.LogWarning("[Campaign] the scene has no spot named '" + name + "' under 진행 자리.", this);
         return null;
     }
-
-    // As the mouse look: not while the cursor is free (chat, menus), the window is in the background or the console is open.
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard
-        && !ShopMenu.TakesKeyboard && !PerkCardScreen.TakesKeyboard;
 }

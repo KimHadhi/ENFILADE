@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -130,22 +129,20 @@ internal sealed class CampaignMusic
         var song = new Song { Peak = float.PositiveInfinity, Volume = 1f, FadeIn = 1f, FadeOut = 3f };
         if (GameTables.TryGetRow(TableName, id, out var row))
         {
-            string path = CampaignStep.Text(row, "clip");
+            string path = row.Text("clip");
             if (path.Length > 0) song.Clip = Resources.Load<AudioClip>(path);
             if (song.Clip == null) Debug.LogWarning($"[Campaign] song {id}: no clip at Resources/{path} yet; its time still runs.");
-            song.Start = Mathf.Max(0f, Number(row, "start", 0f));
-            song.Peak = Number(row, "peak", float.PositiveInfinity);
-            song.Volume = Mathf.Clamp01(Number(row, "volume", 1f));
-            song.FadeIn = Mathf.Max(.01f, Number(row, "fadeIn", 1f));
-            song.FadeOut = Mathf.Max(.01f, Number(row, "fadeOut", 3f));
-            song.Board = Mathf.Max(0f, Number(row, "board", 0f));
+            song.Start = Mathf.Max(0f, row.Number("start", 0f));
+            song.Peak = row.Number("peak", float.PositiveInfinity);
+            song.Volume = Mathf.Clamp01(row.Number("volume", 1f));
+            song.FadeIn = Mathf.Max(.01f, row.Number("fadeIn", 1f));
+            song.FadeOut = Mathf.Max(.01f, row.Number("fadeOut", 3f));
+            song.Board = Mathf.Max(0f, row.Number("board", 0f));
         }
         else Debug.LogWarning($"[Campaign] Tables/Music has no song '{id}'.");
         songs[id] = song;
         return song;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // Live table edits and a new Play session read the songs again.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

@@ -120,7 +120,7 @@ public sealed class ZombieRunner : MonoBehaviour
     internal Vector3 LeapSpot(PlayerMovement player, float airTime)
     {
         Vector3 stands = player.transform.position;
-        Vector3 lead = Vector3.ClampMagnitude(Flat(player.ActualVelocity) * (Mathf.Max(0f, airTime) * pounceLead), pounceLeadMost);
+        Vector3 lead = Vector3.ClampMagnitude(ZombieElite.Flat(player.ActualVelocity) * (Mathf.Max(0f, airTime) * pounceLead), pounceLeadMost);
         if (lead.sqrMagnitude < 1e-4f) return stands;
         // Off the ground it can run on (over a ledge, into a wall), it aims at where they stand instead.
         return NavMesh.SamplePosition(stands + lead, out NavMeshHit ground, 1f, NavMesh.AllAreas)
@@ -211,7 +211,7 @@ public sealed class ZombieRunner : MonoBehaviour
     {
         cooldownLeft -= dt;
         if (player == null || combat == null || combat.IsPreparingAttack) return;
-        Vector3 to = Flat(player.transform.position - transform.position);
+        Vector3 to = ZombieElite.Flat(player.transform.position - transform.position);
         float distance = to.magnitude;
         if (distance < .01f || Mathf.Abs(player.transform.position.y - Feet.y) > chargeHeight) return;
         // A player already pinned by as many as can pin them is left to them.
@@ -221,7 +221,7 @@ public sealed class ZombieRunner : MonoBehaviour
             // Close, it faces them, which an agent stopped short of them doesn't, and leaps once it may.
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(to),
                 Mathf.Max(90f, agent.angularSpeed) * dt);
-            if (cooldownLeft <= 0f && Vector3.Angle(Flat(transform.forward), to) <= pounceAngle && CanLeapAt(player) && Sees(player))
+            if (cooldownLeft <= 0f && Vector3.Angle(ZombieElite.Flat(transform.forward), to) <= pounceAngle && CanLeapAt(player) && Sees(player))
                 BeginLeap(player);
             return;
         }
@@ -241,7 +241,7 @@ public sealed class ZombieRunner : MonoBehaviour
     {
         chargeTime += dt;
         if (player == null) { BeginSkid(); return; }
-        Vector3 to = Flat(player.transform.position - transform.position);
+        Vector3 to = ZombieElite.Flat(player.transform.position - transform.position);
         float distance = to.magnitude;
         float off = distance > .01f ? Vector3.Angle(heading, to) : 0f;
         if ((sightLeft -= dt) <= 0f) { sightLeft = SightEvery; sees = Sees(player); }
@@ -270,7 +270,7 @@ public sealed class ZombieRunner : MonoBehaviour
         // To the spot the leap is committed to (EnemyCombatAI.Pounce asked LeapSpot for it).
         Vector3 spot = combat.PounceSpot;
         leapTo = new Vector3(spot.x, leapFrom.y, spot.z);
-        Vector3 way = Flat(leapTo - leapFrom);
+        Vector3 way = ZombieElite.Flat(leapTo - leapFrom);
         if (way.sqrMagnitude > 1e-4f) heading = way.normalized;
         transform.rotation = Quaternion.LookRotation(heading);
         Halt();
@@ -312,7 +312,7 @@ public sealed class ZombieRunner : MonoBehaviour
         }
         if (player != null)
         {
-            Vector3 to = Flat(player.transform.position - transform.position);
+            Vector3 to = ZombieElite.Flat(player.transform.position - transform.position);
             if (to.sqrMagnitude > 1e-4f)
                 heading = Vector3.RotateTowards(heading, to.normalized, chargeTurn * .5f * Mathf.Deg2Rad * dt, 0f);
         }
@@ -353,8 +353,6 @@ public sealed class ZombieRunner : MonoBehaviour
     }
 
     private Vector3 Feet => agent != null ? transform.position - Vector3.up * agent.baseOffset : transform.position;
-
-    private static Vector3 Flat(Vector3 value) => Vector3.ProjectOnPlane(value, Vector3.up);
 
     private void OnDisable() => phase = Phase.Chase;
 }

@@ -168,7 +168,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         // Leans are the drafts' CSS degrees, clockwise.
         root.localRotation = Quaternion.Euler(0f, 0f, -shape.Lean[index]);
         slot.plate = MakeShape(root, "Plate", SlotShape.Kind.Plate, shape.Cut);
-        Stretch(slot.plate.rectTransform);
+        KitStyle.Stretch(slot.plate.rectTransform);
         slot.icon = MakePicture(root, new Vector2(1f, .5f));
         slot.outline = MakeOutline(root, new Vector2(1f, .5f));
         slot.empty = FeelUI.ScoreLabel("Empty", root, 13f, TextAlignmentOptions.MidlineRight);
@@ -180,12 +180,12 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         slot.shard = MakeShape(root, "Shard", SlotShape.Kind.Shard);
         Place(slot.shard.rectTransform, Vector2.one, Vector2.one, new Vector2(9f, 7f), new Vector2(7f, 7f));
         slot.flash = MakeShape(root, "Flash", SlotShape.Kind.Plate, shape.Cut);
-        Stretch(slot.flash.rectTransform);
+        KitStyle.Stretch(slot.flash.rectTransform);
         // The number's tab stands out past the plate's left side, over everything on it.
         slot.tab = MakeShape(root, "Tab", SlotShape.Kind.Tab, 0f, 5f);
         Place(slot.tab.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-12f, -9f), new Vector2(28f, 28f));
         slot.number = MakeNumber(slot.tab.rectTransform, index, 20f);
-        Stretch(slot.number.rectTransform);
+        KitStyle.Stretch(slot.number.rectTransform);
         slot.number.alignment = TextAlignmentOptions.Center;
         return slot;
     }
@@ -209,7 +209,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             slot.flash.color = new Color(1f, 1f, 1f, Flash(slot, now));
             slot.number.color = Color.Lerp(KitStyle.Soft, KitStyle.Accent, on);
             // The pink line is drawn along the top as the card turns, and is simply gone once it isn't in hand.
-            slot.bar.rectTransform.localScale = new Vector3(i == selected ? Ease((now - slot.popAt) / Mathf.Max(.01f, shape.Bar)) : 0f, 1f, 1f);
+            slot.bar.rectTransform.localScale = new Vector3(i == selected ? Ease.Out((now - slot.popAt) / Mathf.Max(.01f, shape.Bar)) : 0f, 1f, 1f);
             // The icon a little under the middle, lifting as the card opens for its name under it; drawn dark on the light card.
             float iconWidth = Mathf.LerpUnclamped(shape.Icon, shape.IconHeld, slot.on);
             var iconRect = slot.icon.rectTransform;
@@ -232,7 +232,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         root.pivot = new Vector2(1f, 0f);
         root.localRotation = Quaternion.Euler(0f, 0f, -shape.Lean[index]);
         slot.plate = MakeShape(root, "Card", SlotShape.Kind.Plate, shape.Cut);
-        Stretch(slot.plate.rectTransform);
+        KitStyle.Stretch(slot.plate.rectTransform);
         slot.icon = MakePicture(root, new Vector2(.5f, .5f));
         slot.outline = MakeOutline(root, new Vector2(.5f, .5f));
         slot.hatch = FeelUI.Rect("Empty", root).gameObject.AddComponent<RawImage>();
@@ -249,7 +249,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         bar.anchorMin = new Vector2(0f, 1f); bar.anchorMax = Vector2.one; bar.pivot = new Vector2(0f, 1f);
         bar.sizeDelta = new Vector2(0f, 3f); bar.anchoredPosition = Vector2.zero;
         slot.flash = MakeShape(root, "Flash", SlotShape.Kind.Plate, shape.Cut);
-        Stretch(slot.flash.rectTransform);
+        KitStyle.Stretch(slot.flash.rectTransform);
         slot.number = MakeNumber(root, index, 17f);
         Place(slot.number.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(7f, -5f), new Vector2(24f, 18f));
         slot.number.alignment = TextAlignmentOptions.TopLeft;
@@ -399,16 +399,14 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     {
         float k = (now - slot.popAt) / .16f;
         if (k < 0f || k >= 1f || shape.Kick <= 0f) return 0f;
-        return k < .55f ? Mathf.Lerp(-shape.Kick, 3f, Ease(k / .55f)) : Mathf.Lerp(3f, 0f, (k - .55f) / .45f);
+        return k < .55f ? Mathf.Lerp(-shape.Kick, 3f, Ease.Out(k / .55f)) : Mathf.Lerp(3f, 0f, (k - .55f) / .45f);
     }
 
     private float Flash(Slot slot, float now)
     {
         float t = (now - slot.popAt) / Mathf.Max(.01f, shape.Flash);
-        return t < 0f || t >= 1f ? 0f : .9f * (1f - Ease(t));
+        return t < 0f || t >= 1f ? 0f : .9f * (1f - Ease.Out(t));
     }
-
-    private static float Ease(float s) { s = Mathf.Clamp01(s); return 1f - (1f - s) * (1f - s) * (1f - s); }
 
     // ---- pieces ----
 
@@ -452,12 +450,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         rect.pivot = pivot;
         rect.anchoredPosition = position;
         rect.sizeDelta = size;
-    }
-
-    private static void Stretch(RectTransform rect)
-    {
-        rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
     }
 
     // An empty card's diagonal stripes (the drafts' repeating 45° gradient): 3 px on, 5 off, tiling.

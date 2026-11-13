@@ -258,10 +258,6 @@ public static class KeyBindings
     public static string PathOf(InputAction action, int index) =>
         action != null && index >= 0 && index < action.bindings.Count ? action.bindings[index].effectivePath ?? "" : "";
 
-    /// <summary>The key this slot has in the asset ("" for none).</summary>
-    public static string DefaultOf(InputAction action, int index) =>
-        action != null && index >= 0 && index < action.bindings.Count ? action.bindings[index].path ?? "" : "";
-
     public static bool IsDefault(InputAction action, int index) =>
         action == null || index < 0 || index >= action.bindings.Count || !action.bindings[index].hasOverrides;
 

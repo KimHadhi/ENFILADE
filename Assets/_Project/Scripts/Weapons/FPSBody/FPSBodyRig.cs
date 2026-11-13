@@ -36,9 +36,7 @@ internal sealed class FPSBodyRig
     }
 
     // Element indices the code needs (the demo rig's order).
-    public const int SkeletonIndex = 0, ChestIndex = 13, UpperChestIndex = 14, NeckIndex = 40, HeadIndex = 41, CameraIndex = 45,
-        CameraSocketIndex = 46, IkWeaponBoneIndex = 48,
-        WeaponBoneLeftIndex = 39, WeaponBoneRightIndex = 78, WeaponBoneIndex = 84;
+    public const int ChestIndex = 13, UpperChestIndex = 14, NeckIndex = 40, HeadIndex = 41, CameraIndex = 45, CameraSocketIndex = 46, IkWeaponBoneIndex = 48, WeaponBoneRightIndex = 78;
 
     private static readonly Element[] Layout = BuildLayout();
 
@@ -217,13 +215,4 @@ internal sealed class FPSBodyRig
     /// body has none (an avatar without an UpperChest): turning a stand-in turns nothing.
     /// </summary>
     public bool IsBodyBone(Transform bone) => bone != null && !added.Contains(bone.gameObject);
-
-    /// <summary>Removes what the layout added to the body.</summary>
-    public void Remove()
-    {
-        if (Component != null) Object.Destroy(Component);
-        for (int i = added.Count - 1; i >= 0; i--)
-            if (added[i] != null) Object.Destroy(added[i]);
-        added.Clear();
-    }
 }

@@ -62,8 +62,6 @@ public sealed class OutfitLibrary : ScriptableObject
 
     [SerializeField] private Entry[] entries = Array.Empty<Entry>();
 
-    public IReadOnlyList<Entry> Entries => entries ?? Array.Empty<Entry>();
-
     public static OutfitLibrary Load() => Resources.Load<OutfitLibrary>(ResourcePath);
 
     /// <summary>

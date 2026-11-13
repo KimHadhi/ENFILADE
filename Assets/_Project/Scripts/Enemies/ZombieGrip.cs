@@ -67,8 +67,6 @@ public sealed class ZombieGrip : MonoBehaviour
     public PlayerMovement Held => held;
     /// <summary>It kneels over a player lying on the ground, eating them (ZombieBody shows the feeding).</summary>
     public bool Feeding => held != null ? feeding : shown && shownFeeding;
-    /// <summary>A runner pins the player it holds (where that is known).</summary>
-    public bool Pinning => held != null && pinning;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearStatics() => holding.Clear();
@@ -124,14 +122,6 @@ public sealed class ZombieGrip : MonoBehaviour
         shownFeeding = eat;
         // Seen holding someone on this PC too: it stands out through walls while it does (HoldReveal).
         if (shown) HoldReveal.Watch(this);
-    }
-
-    /// <summary>The shamblers holding this player now, on this PC.</summary>
-    internal static int CountHolding(PlayerMovement player)
-    {
-        int count = 0;
-        foreach (var grip in holding) if (grip != null && grip.held == player) count++;
-        return count;
     }
 
     /// <summary>The runners pinning this player now, on this PC (the host knows them all).</summary>

@@ -184,7 +184,7 @@ public sealed partial class MainMenuWardrobe
         {
             var name = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(textAt, 10f), new Vector2(room - (worn ? WornTag + WornGap : 0f), 30f)),
                 preset.name, 22f, TextAlignmentOptions.MidlineLeft, worn ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
-            name.overflowMode = CombatUIAssets.ClippedOverflow(name);
+            name.overflowMode = FontRoles.ClippedOverflow(name);
             if (worn)
             {
                 var mark = KitStyle.TopLeft("Worn", plate, new Vector2(textAt + room - WornTag, 13f), new Vector2(WornTag, 24f));

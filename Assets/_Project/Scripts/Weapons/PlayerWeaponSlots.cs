@@ -71,6 +71,13 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         && (data == null || data.Category == GetSlotCategory(index));
     private WeaponData RawWeapon(int index) => index == 0 ? slot1 : index == 1 ? slot2 : index == 2 ? slot3 : index == 3 ? slot4 : null;
     public WeaponData GetWeapon(int index) => Fits(index, RawWeapon(index)) ? RawWeapon(index) : null;
+
+    /// <summary>Some slot of these holds a gun.</summary>
+    public static bool HoldsAnyGun(PlayerWeaponSlots slots)
+    {
+        for (int i = 0; i < SlotCount; i++) if (slots.GetWeapon(i)?.Category == WeaponCategory.Ranged) return true;
+        return false;
+    }
     // This gun may go in this slot: the slot's own kind, or a gun in the special slot for a Schießhund's Desperado (and on
     // someone else's copy, whatever their own PC put there).
     private bool Fits(int index, WeaponData data) => IsCompatible(index, data) || (index == SpecialSlot && data != null
@@ -175,10 +182,6 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (!CanReadInput || sidearmOnly || handsFull || index < 0 || index >= SlotCount) return false;
         return SelectSlot(selectedSlot == index ? -1 : index);
     }
-    public void ToggleSlot(int index)
-    {
-        if (index >= 0 && index < SlotCount) SelectSlot(selectedSlot == index ? -1 : index);
-    }
     // Explicit selection is idempotent; -1 holsters everything. Number keys use ToggleSlot semantics.
     public bool SelectSlot(int index)
     {
@@ -209,17 +212,6 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (index == selectedSlot) SetSelection(index);
         SlotActivity?.Invoke();
         return true;
-    }
-    // Field object spawning/dropping belongs to the future pickup system.
-    public bool TryAcquire(WeaponData data, out WeaponData replaced)
-    {
-        replaced = null;
-        if (data == null || (player != null && player.CombatInputLocked)) return false;
-        for (int i = 0; i < SlotCount; i++)
-            if (IsCompatible(i, data) && RawWeapon(i) == null) return TrySetWeapon(i, data);
-        if (!IsCompatible(selectedSlot, data)) return false;
-        replaced = SelectedWeapon;
-        return TrySetWeapon(selectedSlot, data);
     }
     private void SetSelection(int index)
     {

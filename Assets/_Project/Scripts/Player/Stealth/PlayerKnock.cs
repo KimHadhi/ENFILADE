@@ -57,7 +57,7 @@ public sealed class PlayerKnock : MonoBehaviour, ITableBound
     private void Update()
     {
         if (movement == null || !movement.IsLocal || !movement.InputAvailable || movement.IsDead || movement.IsHeld
-            || movement.CombatInputLocked || !TakesInput()) return;
+            || movement.CombatInputLocked || !InputFocus.TakesInput()) return;
         if (key == null) key = KeyBindings.Find("Player/Knock");
         if (!KeyBindings.Pressed(key) || Time.time < readyAt) return;
         var eye = Camera.main;
@@ -137,6 +137,4 @@ public sealed class PlayerKnock : MonoBehaviour, ITableBound
         clip.hideFlags = HideFlags.HideAndDontSave;
         return clip;
     }
-
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
 }

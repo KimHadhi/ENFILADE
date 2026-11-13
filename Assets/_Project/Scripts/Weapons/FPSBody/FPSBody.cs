@@ -1079,42 +1079,6 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         held.HasHipMuzzle = true;
     }
 
-    // The support hand under the handguard: the bake left the wrist about 5 cm to the side of the gun's line (probe,
-    // 2026-11-08), so the hand sat open beside the gun, and a reload's end went back to that. With FPSAF holding the gun
-    // and no reload, the wrist moves onto the line under the bore (same height, same place along it, same turn), the arm
-    // bending to it; a reload lets go and it comes back over leftGripEase.
-    private float leftGripWeight;
-    private const float LeftGripEase = .25f;
-
-    private void LeftHandUnderGun(float dt)
-    {
-        bool grip = Framework >= .999f && !held.HandsBusy && held.AimPoint != null;
-        leftGripWeight = Mathf.MoveTowards(leftGripWeight, grip ? 1f : 0f, dt / LeftGripEase);
-        var upper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
-        var lower = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
-        var hand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
-        if (leftGripWeight <= 0f || upper == null || lower == null || hand == null || muzzle == null) return;
-        var aim = held.AimPoint;
-        Vector3 along = aim.forward, right = Vector3.Cross(aim.up, along).normalized;
-        float side = Vector3.Dot(hand.position - muzzle.position, right);
-        Vector3 target = hand.position - right * side * Mathf.SmoothStep(0f, 1f, leftGripWeight);
-        Quaternion turn = hand.rotation;
-        Vector3 a = upper.position, b = lower.position, c = hand.position;
-        float ab = (b - a).magnitude, bc = (c - b).magnitude;
-        // Near full reach the arm eases in rather than snapping straight (ArmIK.Soften).
-        target = ArmIK.Soften(a, target, ab + bc);
-        float reach = Mathf.Clamp((target - a).magnitude, Mathf.Abs(ab - bc) + .001f, ab + bc - .001f);
-        Vector3 axis = Vector3.Cross(a - b, c - b);
-        if (axis.sqrMagnitude > 1e-8f)
-        {
-            float now = Vector3.Angle(a - b, c - b);
-            float want = Mathf.Acos(Mathf.Clamp((ab * ab + bc * bc - reach * reach) / (2f * ab * bc), -1f, 1f)) * Mathf.Rad2Deg;
-            lower.rotation = Quaternion.AngleAxis(want - now, axis.normalized) * lower.rotation;
-        }
-        upper.rotation = Quaternion.FromToRotation(hand.position - a, target - a) * upper.rotation;
-        hand.rotation = turn;
-    }
-
     /// <summary>A reload is playing (its own fingers hold the magazine and bolt).</summary>
     internal bool ReloadingGun => HoldsGun && held.HandsBusy;
 

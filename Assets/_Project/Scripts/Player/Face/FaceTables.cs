@@ -178,11 +178,11 @@ public static class FaceTables
             if (!GameTables.TryGetRow(MoodTable, id, out var row) || byId.ContainsKey(id)) continue;
             var mood = new Mood
             {
-                Id = id, Priority = Mathf.RoundToInt(Float(row, "priority", 0f)),
-                In = Mathf.Max(.01f, Float(row, "in", .1f)), Out = Mathf.Max(.01f, Float(row, "out", .3f)),
-                Hold = Mathf.Max(0f, Float(row, "hold", 0f)),
-                Blink = Mathf.Clamp01(Float(row, "blink", 1f)), Talk = Mathf.Clamp01(Float(row, "talk", 1f)),
-                Pool = Mathf.Max(0f, Float(row, "pool", 0f))
+                Id = id, Priority = Mathf.RoundToInt(row.Number("priority", 0f)),
+                In = Mathf.Max(.01f, row.Number("in", .1f)), Out = Mathf.Max(.01f, row.Number("out", .3f)),
+                Hold = Mathf.Max(0f, row.Number("hold", 0f)),
+                Blink = Mathf.Clamp01(row.Number("blink", 1f)), Talk = Mathf.Clamp01(row.Number("talk", 1f)),
+                Pool = Mathf.Max(0f, row.Number("pool", 0f))
             };
             moods.Add(mood);
             byId[id] = mood;
@@ -193,24 +193,24 @@ public static class FaceTables
         foreach (string id in GameTables.RowIds(PresetTable))
         {
             if (!GameTables.TryGetRow(PresetTable, id, out var row)) continue;
-            string skin = Lower(Cell(row, "skin")), preset = Lower(Cell(row, "preset"));
+            string skin = Lower(row.Text("skin")), preset = Lower(row.Text("preset"));
             if (skin.Length == 0 || preset.Length == 0) continue;
-            presets[(skin, preset)] = Parse(skin, Cell(row, "keys"), out _);
-            var bones = ParseBones(Cell(row, "bones"));
+            presets[(skin, preset)] = Parse(skin, row.Text("keys"), out _);
+            var bones = ParseBones(row.Text("bones"));
             if (bones != null) presetBones[(skin, preset)] = bones;
         }
         foreach (string id in GameTables.RowIds(KeyTable))
         {
             if (!GameTables.TryGetRow(KeyTable, id, out var row)) continue;
-            string skin = Cell(row, "skin"), set = Cell(row, "mood");
-            var keys = Parse(Lower(skin), Cell(row, "keys"), out var presetBonesOf);
+            string skin = row.Text("skin"), set = row.Text("mood");
+            var keys = Parse(Lower(skin), row.Text("keys"), out var presetBonesOf);
             if (skin.Length == 0 || set.Length == 0 || keys.Length == 0)
             {
                 Debug.LogWarning($"[Faces] {KeyTable}.csv [{id}]: skin·mood·keys가 비어 있어 건너뜁니다.");
                 continue;
             }
             sets[(Lower(skin), Lower(set))] = keys;
-            string bonesCell = Cell(row, "bones");
+            string bonesCell = row.Text("bones");
             Bone[] bones = null;
             // "@KemonoEar_Down": a preset's ears (Ichigo's creator animates hers apart from the faces).
             if (bonesCell.Length > 1 && bonesCell[0] == PresetMark) presetBones.TryGetValue((Lower(skin), Lower(bonesCell.Substring(1))), out bones);
@@ -299,10 +299,6 @@ public static class FaceTables
         }
         return bones.Count > 0 ? bones.ToArray() : null;
     }
-
-    private static float Float(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
-
-    private static string Cell(IReadOnlyDictionary<string, string> row, string column) => TableCells.Text(row, column);
 
     private static string Lower(string text) => (text ?? "").Trim().ToLowerInvariant();
 }

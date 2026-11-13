@@ -77,7 +77,7 @@ public sealed class ZombieCharger : MonoBehaviour
     /// <summary>It moves itself (winding up, charging or sliding to a stop): its chase waits (EnemyChaseAI).</summary>
     public bool Driving => phase != Phase.Chase;
     /// <summary>Running at its quarry as this PC sees it (the host's phase, or a copy's speed and heading): RAILGUN reads it (SpecialKills).</summary>
-    public bool IsCharging => Runs ? phase == Phase.Charge : seenVelocity.magnitude >= ramSpeed && Vector3.Dot(seenVelocity.normalized, Flat(transform.forward).normalized) > .7f;
+    public bool IsCharging => Runs ? phase == Phase.Charge : seenVelocity.magnitude >= ramSpeed && Vector3.Dot(seenVelocity.normalized, ZombieElite.Flat(transform.forward).normalized) > .7f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => bellow = null;
@@ -160,7 +160,7 @@ public sealed class ZombieCharger : MonoBehaviour
         if (breach == null) TryGetComponent(out breach);
         if (breach != null && breach.Driving) return;
         if (cooldownLeft > 0f || player == null || (mind != null && !mind.Ready)) return;
-        Vector3 to = Flat(player.transform.position - transform.position);
+        Vector3 to = ZombieElite.Flat(player.transform.position - transform.position);
         float distance = to.magnitude;
         if (distance < closest || distance > chargeRange || Mathf.Abs(player.transform.position.y - Feet.y) > chargeHeight || !Sees(player)) return;
         phase = Phase.Windup;
@@ -176,7 +176,7 @@ public sealed class ZombieCharger : MonoBehaviour
     {
         if (quarry != null)
         {
-            Vector3 to = Flat(quarry.transform.position - transform.position);
+            Vector3 to = ZombieElite.Flat(quarry.transform.position - transform.position);
             if (to.sqrMagnitude > 1e-4f) heading = to.normalized;
         }
         if ((left -= dt) > 0f) return;
@@ -193,7 +193,7 @@ public sealed class ZombieCharger : MonoBehaviour
         chargeTime += dt;
         if (quarry != null && !quarry.IsDead)
         {
-            Vector3 to = Flat(quarry.transform.position - transform.position);
+            Vector3 to = ZombieElite.Flat(quarry.transform.position - transform.position);
             if (to.sqrMagnitude > 1e-4f)
             {
                 if (Vector3.Angle(heading, to) >= passedAngle) { BeginSkid(); return; }
@@ -248,7 +248,6 @@ public sealed class ZombieCharger : MonoBehaviour
         => !Physics.Linecast(Feet + Vector3.up * 1.6f, player.transform.position + Vector3.up, sightMask, QueryTriggerInteraction.Ignore);
 
     private Vector3 Feet => agent != null ? transform.position - Vector3.up * agent.baseOffset : transform.position;
-    private static Vector3 Flat(Vector3 value) => Vector3.ProjectOnPlane(value, Vector3.up);
 
     // ---- Every PC: its light, its bellow, and this PC's own player run into ----
 
@@ -264,7 +263,7 @@ public sealed class ZombieCharger : MonoBehaviour
         float dt = Time.deltaTime;
         // How it is seen to move, eased: a copy's steps come in bursts.
         if (placed && dt > 0f)
-            seenVelocity = Vector3.Lerp(seenVelocity, Flat(transform.position - lastPlace) / dt, 1f - Mathf.Exp(-12f * dt));
+            seenVelocity = Vector3.Lerp(seenVelocity, ZombieElite.Flat(transform.position - lastPlace) / dt, 1f - Mathf.Exp(-12f * dt));
         lastPlace = transform.position;
         placed = true;
 
@@ -277,7 +276,7 @@ public sealed class ZombieCharger : MonoBehaviour
         wasRousing = rousing;
         // On another PC: fast, and the way it faces. Shoved or thrown it moves fast too, but not head first.
         bool charging = Runs ? phase == Phase.Charge
-            : seenVelocity.magnitude >= ramSpeed && Vector3.Dot(seenVelocity.normalized, Flat(transform.forward).normalized) > .7f;
+            : seenVelocity.magnitude >= ramSpeed && Vector3.Dot(seenVelocity.normalized, ZombieElite.Flat(transform.forward).normalized) > .7f;
         if (charging) Ram();
 
         // The light: steady as it walks, flaring while it bellows and runs.

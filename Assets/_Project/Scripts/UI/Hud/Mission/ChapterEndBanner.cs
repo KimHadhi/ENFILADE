@@ -53,7 +53,7 @@ public sealed class ChapterEndBanner : MonoBehaviour
 
         var slant = FeelUI.Rect("Slant", transform);
         slant.localRotation = Quaternion.Euler(0f, 0f, Lean);
-        band = Panel("Band", slant, KitStyle.Accent);
+        band = FeelUI.Panel("Band", slant, KitStyle.Accent);
         capLeft = HudShapes.Make<HazardGraphic>("Hazard left", slant, KitStyle.Ink);
         capRight = HudShapes.Make<HazardGraphic>("Hazard right", slant, KitStyle.Ink);
         capLeft.Stripe = capRight.Stripe = 18f;
@@ -71,7 +71,7 @@ public sealed class ChapterEndBanner : MonoBehaviour
         word.rectTransform.sizeDelta = new Vector2(1600f, BandHeight);
         word.rectTransform.anchoredPosition = new Vector2(0f, 6f);
 
-        plate = Panel("Plate", slant, new Color(.024f, .024f, .031f, .92f));
+        plate = FeelUI.Panel("Plate", slant, new Color(.024f, .024f, .031f, .92f));
         plate.rectTransform.sizeDelta = new Vector2(900f, 96f);
         plate.rectTransform.anchoredPosition = new Vector2(40f, -BandHeight * .5f - 62f);
         KitSkew.On(plate, 22f);
@@ -105,17 +105,15 @@ public sealed class ChapterEndBanner : MonoBehaviour
         Pose(age);
     }
 
-    private static float Out(float x) { x = 1f - Mathf.Clamp01(x); return 1f - x * x * x; }
-
     private void Pose(float t)
     {
-        float arrive = Out(t / InSeconds), leave = Mathf.Clamp01((t - (length - OutSeconds)) / OutSeconds);
+        float arrive = Ease.Out(t / InSeconds), leave = Mathf.Clamp01((t - (length - OutSeconds)) / OutSeconds);
         group.alpha = 1f - leave;
         blink.color = new Color(1f, 1f, 1f, BlinkMost * (1f - Mathf.Clamp01(t / BlinkSeconds)));
         top.rectTransform.sizeDelta = bottom.rectTransform.sizeDelta = new Vector2(0f, BarHeight * arrive);
 
         // The band opens along its lean from the middle; its ends, ticks and diamonds follow it out.
-        float open = Out((t - .08f) / .26f), width = Reach * 2f * open;
+        float open = Ease.Out((t - .08f) / .26f), width = Reach * 2f * open;
         band.rectTransform.sizeDelta = new Vector2(width, BandHeight);
         bool ends = width > 400f;
         capLeft.enabled = capRight.enabled = left.enabled = right.enabled = ends;
@@ -130,17 +128,17 @@ public sealed class ChapterEndBanner : MonoBehaviour
         ticks.rectTransform.sizeDelta = new Vector2(Mathf.Min(width, 1500f), 22f);
 
         // The word tightens from wide as the band opens; the plate under it follows a beat later.
-        float set = Out((t - .14f) / .3f);
+        float set = Ease.Out((t - .14f) / .3f);
         word.characterSpacing = Mathf.Lerp(WideSpacing, 6f, set);
         word.alpha = Mathf.Clamp01((t - .1f) / .12f);
-        float under = Out((t - .3f) / .3f);
+        float under = Ease.Out((t - .3f) / .3f);
         plate.rectTransform.localScale = new Vector3(under, 1f, 1f);
         title.alpha = line.alpha = Mathf.Clamp01((t - .42f) / .2f);
     }
 
     private Image Bar(string name, bool up)
     {
-        var bar = Panel(name, transform, KitStyle.Ink);
+        var bar = FeelUI.Panel(name, transform, KitStyle.Ink);
         var rect = bar.rectTransform;
         rect.anchorMin = new Vector2(0f, up ? 1f : 0f);
         rect.anchorMax = new Vector2(1f, up ? 1f : 0f);
@@ -151,18 +149,10 @@ public sealed class ChapterEndBanner : MonoBehaviour
 
     private static Image Fill(string name, Transform parent, Color color)
     {
-        var image = Panel(name, parent, color);
+        var image = FeelUI.Panel(name, parent, color);
         image.rectTransform.anchorMin = Vector2.zero;
         image.rectTransform.anchorMax = Vector2.one;
         image.rectTransform.offsetMin = image.rectTransform.offsetMax = Vector2.zero;
-        return image;
-    }
-
-    private static Image Panel(string name, Transform parent, Color color)
-    {
-        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
-        image.raycastTarget = false;
-        image.color = color;
         return image;
     }
 

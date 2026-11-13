@@ -50,20 +50,6 @@ public sealed partial class GreyboxBuilder
     private Transform decalRoot;
     private int decalsLaid, decalsSkipped;
 
-    /// <summary>
-    /// A decal of <paramref name="group"/> (Tables/MapDecals) on the surface at <paramref name="point"/> facing
-    /// <paramref name="normal"/>, turned <paramref name="turn"/> degrees about it, variant <paramref name="pick"/> (-1: by
-    /// place), sized by <paramref name="scale"/>. Laid as told: the spread's checks are for spots it picks itself.
-    /// </summary>
-    public DecalProjector Decal(string group, Vector3 point, Vector3 normal, float turn = 0f, int pick = -1, float scale = 1f)
-    {
-        var kinds = DecalGroup(group);
-        if (kinds == null || decalsLaid >= DecalMost) return null;
-        uint index = pick >= 0 ? (uint)pick : SpotHash(point);
-        var kind = kinds[(int)(index % (uint)kinds.Count)];
-        return Project(kind, point, normal, turn, new Vector2(kind.Width, kind.Height) * scale);
-    }
-
     // Every box of the layout that wears a surface with decals takes them (see the class), once the layout stands.
     private void Decals()
     {

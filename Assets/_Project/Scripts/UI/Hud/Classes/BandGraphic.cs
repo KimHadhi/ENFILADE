@@ -100,7 +100,7 @@ public sealed class BandGraphic : MaskableGraphic
         Poly(vh, pink, new Vector2(tip + 36f, h - 4f), new Vector2(tip + 48f, h - 4f), new Vector2(tip + 39f, h - 13f));
     }
 
-    private static void Poly(VertexHelper vh, Color color, params Vector2[] points)
+    internal static void Poly(VertexHelper vh, Color color, params Vector2[] points)
     {
         int first = vh.currentVertCount;
         var vertex = UIVertex.simpleVert;

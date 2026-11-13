@@ -49,9 +49,6 @@ public sealed partial class PlayerBodyHands
     private float edgeWaits = 1f, shoulderSpan;
 
     private static bool Climbing(MovementState state) => state == MovementState.Vault || state == MovementState.Mantle;
-    // The quick vaults lift the feet over the top on their own arc, which holding the body back would drag through it; the
-    // body comes straight down for their hands instead (PlayerBodyHands.Pull).
-    private static bool ClearsTop(VaultKind kind) => kind.ClearsTop();
     // The quick moves onto or over a low top: the hands reach out from the start, press while the arm reaches and let go on
     // an S-curve, and never hold the body back (PlayerBodyHands.Pull). Climbing onto a low top (Onto) went the high moves'
     // way: both hands pulled to the edge in a tenth of a second, the body held back behind them up to 1.8 arm lengths and
@@ -61,7 +58,7 @@ public sealed partial class PlayerBodyHands
     // The high vault over a wall: the body is held back for planted hands, so they let go late, with the body already well
     // over the top, and its clip then throws the hand that pushed off up past the face, where a thin wall leaves nothing to
     // press. Measured on vaultoverhigh: the right hand leaves the top a third of the way in and rises to head height.
-    private static bool PushesOver(MovementState state, VaultKind kind) => state == MovementState.Vault && !ClearsTop(kind);
+    private static bool PushesOver(MovementState state, VaultKind kind) => state == MovementState.Vault && !kind.ClearsTop();
     // The high moves first take the capsule to the wall (ObstacleTarget.Approach), and both their clips start with the hands
     // over the head and bring them down onto the top only later (measured on vaultoverhigh and vaultontohigh), so the hands
     // reached up into the air above and beyond the top before they met it. Here they reach for their place from the start.

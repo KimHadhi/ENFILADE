@@ -194,7 +194,7 @@ public sealed class ServerBrowserView
     private static Image Behind(RectTransform row, string name, float grow, Color color)
     {
         var rect = W.Rect(name, row);
-        W.Stretch(rect);
+        KitStyle.Stretch(rect);
         rect.offsetMin = new Vector2(-grow * .5f, -grow * .5f);
         rect.offsetMax = new Vector2(grow * .5f, grow * .5f);
         rect.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
@@ -214,7 +214,7 @@ public sealed class ServerBrowserView
         if (picture != null)
         {
             var image = W.Rect("Picture", frame);
-            W.Stretch(image);
+            KitStyle.Stretch(image);
             var raw = image.gameObject.AddComponent<RawImage>();
             raw.texture = picture;
             raw.raycastTarget = false;

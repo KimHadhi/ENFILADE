@@ -911,7 +911,7 @@ public sealed partial class GreyboxBuilder
         return fixture.GetComponent<T>();
     }
 
-    private static void Set(Object target, System.Action<SerializedObject> change)
+    internal static void Set(Object target, System.Action<SerializedObject> change)
     {
         var so = new SerializedObject(target);
         change(so);

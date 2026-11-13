@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
-using KINEMATION.FPSAnimationFramework.Runtime.Core;
 using KINEMATION.FPSAnimationFramework.Runtime.Playables;
 using KINEMATION.FPSAnimationPack.Scripts.Weapon;
 using KINEMATION.ProceduralRecoilAnimationSystem.Runtime;
@@ -435,7 +434,7 @@ internal static class TacticalGunSetup
             }
         }
         // A suppressor that is part of the gun's own model is a muzzle choice too, shown by its size.
-        if (!string.IsNullOrEmpty(builtInSuppressor) && FindDeep(gun.transform, builtInSuppressor) is Transform built)
+        if (!string.IsNullOrEmpty(builtInSuppressor) && Hierarchy.Find(gun.transform, builtInSuppressor) is Transform built)
             muzzles.Add(new GunAttachments.Choice { kind = GunAttachments.Kind.Suppressor, bone = built });
         // Every gun gets one, empty or not, so a gun made before them is made again once (Run).
         var parts = gun.AddComponent<GunAttachments>();
@@ -990,11 +989,11 @@ internal static class TacticalGunSetup
                 {
                     copy.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                     copy.transform.localScale = Vector3.one;
-                    var hand = FindDeep(copy.transform, "hand_l");
-                    var index = FindDeep(copy.transform, "index_01_l");
-                    var middle = FindDeep(copy.transform, "middle_01_l");
-                    var ring = FindDeep(copy.transform, "ring_01_l");
-                    var pinky = FindDeep(copy.transform, "pinky_01_l");
+                    var hand = Hierarchy.Find(copy.transform, "hand_l");
+                    var index = Hierarchy.Find(copy.transform, "index_01_l");
+                    var middle = Hierarchy.Find(copy.transform, "middle_01_l");
+                    var ring = Hierarchy.Find(copy.transform, "ring_01_l");
+                    var pinky = Hierarchy.Find(copy.transform, "pinky_01_l");
                     if (hand != null && index != null && middle != null && ring != null && pinky != null)
                     {
                         Quaternion toHand = Quaternion.Inverse(hand.rotation);
@@ -1018,14 +1017,6 @@ internal static class TacticalGunSetup
         facing = operatorFacing;
         palm = operatorPalm;
         return operatorFound;
-    }
-
-    private static Transform FindDeep(Transform root, string name)
-    {
-        if (root.name == name) return root;
-        foreach (Transform child in root)
-            if (FindDeep(child, name) is Transform found) return found;
-        return null;
     }
 
     private static bool IsPack(MonoBehaviour script)
@@ -1094,7 +1085,7 @@ internal static class TacticalGunSetup
         return made;
     }
 
-    private static FPSAnimationAsset BodyAsset(FPSAnimationAsset template, string path, float blendIn, float blendOut)
+    internal static FPSAnimationAsset BodyAsset(FPSAnimationAsset template, string path, float blendIn, float blendOut)
     {
         if (template == null) return null;
         var made = AssetDatabase.LoadAssetAtPath<FPSAnimationAsset>(path);
@@ -1114,7 +1105,7 @@ internal static class TacticalGunSetup
         return made;
     }
 
-    private static AnimationClip Clip(string path)
+    internal static AnimationClip Clip(string path)
     {
         foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
             if (asset is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal)) return clip;

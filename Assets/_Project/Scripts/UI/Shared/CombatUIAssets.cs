@@ -162,9 +162,6 @@ public static class CombatUIAssets
         return material;
     }
 
-    /// <summary>Ellipsis when TMP can draw "…" for this text's font and style, else Truncate (FontRoles.ClippedOverflow).</summary>
-    public static TextOverflowModes ClippedOverflow(TMP_Text text) => FontRoles.ClippedOverflow(text);
-
     /// <summary>The preferred font, else the Prompt text role's face (Fonts.csv).</summary>
     public static TMP_FontAsset ResolveFont(TMP_FontAsset preferred) => preferred != null ? preferred : FontRoles.Font(FontRoles.Prompt);
 

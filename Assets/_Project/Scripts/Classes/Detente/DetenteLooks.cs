@@ -86,9 +86,6 @@ public sealed class DetenteLooks : MonoBehaviour
         if (friend != null) asked.Remove(friend);
     }
 
-    /// <summary>Whether this PC shows <paramref name="friend"/>'s call for healing now.</summary>
-    public static bool IsAsking(PlayerMovement friend) => friend != null && asked.TryGetValue(friend, out var look) && look != null;
-
     /// <summary>The line at the foot of this PC's screen (an offered treatment's answer); null or empty hides it.</summary>
     public static void Prompt(string text)
     {

@@ -53,7 +53,4 @@ public static class MapTable
             ? named.Trim() : id;
         return Resources.Load<Texture2D>(PictureFolder + file);
     }
-
-    /// <summary>The Resources path pictures are saved under (for the editor's picture tool).</summary>
-    public static string PictureResource(string id) => PictureFolder + id;
 }

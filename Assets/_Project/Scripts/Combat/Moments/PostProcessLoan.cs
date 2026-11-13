@@ -20,8 +20,6 @@ public static class PostProcessLoan
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession() { owners.Clear(); lent = null; neutral = null; }
 
-    public static bool Holds(object owner) => lent != null && owners.Contains(owner);
-
     public static void Take(object owner)
     {
         if (owner == null) return;

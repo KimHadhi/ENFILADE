@@ -31,7 +31,6 @@ public sealed class CalloutFeedHUD : MonoBehaviour
     private const int Order = 26;
     // Most windows ever kept (the table's Feed.most is capped by it).
     private const int MostWindows = 3;
-    private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
 
     private sealed class Window
     {
@@ -210,7 +209,7 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         window.name.rectTransform.anchorMax = Vector2.one;
         window.name.rectTransform.offsetMin = new Vector2(6f, 0f);
         window.name.rectTransform.offsetMax = new Vector2(-6f, 0f);
-        window.name.overflowMode = CombatUIAssets.ClippedOverflow(window.name);
+        window.name.overflowMode = FontRoles.ClippedOverflow(window.name);
         return window;
     }
 
@@ -315,7 +314,7 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         {
             var window = order[i];
             window.y = Mathf.Lerp(window.y, Slot(i, columnTop), 1f - Mathf.Exp(-dt * 14f));
-            float slide = (1f - Smooth(window.pop)) * 60f;
+            float slide = (1f - Ease.Smooth(window.pop)) * 60f;
             // The right edge is shared: the weapon slots stand there while they show and a long kill feed reaches down past
             // Feed.top (the overlap check measured a window 107.5 px over the slots in play, 2026-11-13). The window keeps
             // the edge while it is free and steps in past whatever shows beside it, back out once that has gone.
@@ -326,7 +325,7 @@ public sealed class CalloutFeedHUD : MonoBehaviour
             window.root.localRotation = Quaternion.Euler(0f, (FaceTables.Number("Feed.yaw", -8f) - i * FaceTables.Number("Feed.fan", 3f)) * tilt,
                 FaceTables.Number("Feed.roll", -1.2f) * tilt * (i % 2 == 0 ? 1f : -1f));
             // Shown only once it has a picture: the texture is black before its first draw.
-            window.group.alpha = window.drawn ? Smooth(window.pop) : 0f;
+            window.group.alpha = window.drawn ? Ease.Smooth(window.pop) : 0f;
         }
         Draw(now);
     }
@@ -498,11 +497,5 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         ownFoundAt = Time.unscaledTime;
         own.Clear();
         if (mine != null) mine.GetComponentsInChildren(true, own);
-    }
-
-    private static float Smooth(float t)
-    {
-        t = Mathf.Clamp01(t);
-        return t * t * (3f - 2f * t);
     }
 }

@@ -19,8 +19,6 @@ public sealed class SigilGraphic : MaskableGraphic
     public float Progress { get => progress; set { value = Mathf.Clamp01(value); if (!Mathf.Approximately(progress, value)) { progress = value; SetVerticesDirty(); } } }
     /// <summary>The stamp ring's way out, 0 to 1; below 0 none.</summary>
     public float Ring { get => ring; set { if (!Mathf.Approximately(ring, value)) { ring = value; SetVerticesDirty(); } } }
-    /// <summary>The sigil's turn (radians, counter-clockwise).</summary>
-    public float Turn { get => turn; set { if (!Mathf.Approximately(turn, value)) { turn = value; SetVerticesDirty(); } } }
     /// <summary>The moment's colour for its strokes.</summary>
     public Color Tint { get => tint; set { if (tint != value) { tint = value; SetVerticesDirty(); } } }
 

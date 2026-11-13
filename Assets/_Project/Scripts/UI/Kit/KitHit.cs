@@ -59,15 +59,6 @@ public static class KitHit
             && (x - box.xMin) / cut.x + (point.y - box.yMin) / cut.y >= 1f;
     }
 
-    /// <summary>The drawn outline of <paramref name="graphic"/> in its own space, its corners in order round it.</summary>
-    public static void Outline(Graphic graphic, List<Vector2> into)
-    {
-        into.Clear();
-        if (graphic == null) return;
-        var box = graphic.rectTransform.rect;
-        Outline(box, SlantOf(graphic), CutOf(graphic, box), Vector2.zero, into);
-    }
-
     /// <summary>An outline as <see cref="Inside"/> tests it, moved by <paramref name="offset"/>, corners in order round it.</summary>
     public static void Outline(Rect box, float slant, Vector2 cut, Vector2 offset, List<Vector2> into)
     {

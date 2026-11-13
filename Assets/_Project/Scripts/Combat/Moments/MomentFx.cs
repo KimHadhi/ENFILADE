@@ -210,13 +210,12 @@ public sealed class MomentFx : MonoBehaviour
 
     // ---- Timing ----
 
-    private static float Out(float k) { k = Mathf.Clamp01(k); return 1f - (1f - k) * (1f - k) * (1f - k); }
     // 0 before t0, up over a, held h, down over b (falling fast first: a crisp exit).
     private static float Window(float t, float t0, float a, float h, float b)
     {
         float k = t - t0;
         if (k <= 0f) return 0f;
-        if (k < a) return Out(k / a);
+        if (k < a) return Ease.Out(k / a);
         if (k < a + h) return 1f;
         float o = (k - a - h) / Mathf.Max(.001f, b);
         return o < 1f ? (1f - o) * (1f - o) : 0f;
@@ -234,20 +233,20 @@ public sealed class MomentFx : MonoBehaviour
     // A class sigil on the ground round the player: drawn turning into place, stamped, held a moment, gone.
     private void GroundSigil(float t)
     {
-        float draw = Out(t / .25f), a = Window(t, 0f, .05f, .62f, .3f);
+        float draw = Ease.Out(t / .25f), a = Window(t, 0f, .05f, .62f, .3f);
         Vector3 middle = at + Vector3.up * .03f, right = Aside, up = direction;
         float radius = value;
         shapes.Sigil(sigil, middle, right, up, radius * 2f, draw, FxShapes.With(colour, a), .035f, .12f, (1f - draw) * -.6f);
         shapes.Ring(middle, right, up, radius * 1.08f, .03f, FxShapes.With(colour, .8f * a), 72);
         shapes.Ticks(middle, right, up, radius * 1.12f, 12, .14f, .025f, FxShapes.With(colour, .8f * a), -t * .4f, 3);
         float stamp = t - .25f;
-        if (stamp > 0f && stamp < .2f) shapes.Ring(middle, right, up, radius * 1.08f * Mathf.Lerp(1f, 1.45f, Out(stamp / .2f)), .05f, FxShapes.With(Color.white, 1f - stamp / .2f), 72);
+        if (stamp > 0f && stamp < .2f) shapes.Ring(middle, right, up, radius * 1.08f * Mathf.Lerp(1f, 1.45f, Ease.Out(stamp / .2f)), .05f, FxShapes.With(Color.white, 1f - stamp / .2f), 72);
     }
 
     // The Détente's cross running out over the ground to its reach, a ring at its edge, fading as it goes.
     private void Expand(float t)
     {
-        float k = Mathf.Clamp01(t / .6f), radius = Mathf.Lerp(1f, value, Out(k)), a = (1f - k) * Mathf.Clamp01(t / .04f);
+        float k = Mathf.Clamp01(t / .6f), radius = Mathf.Lerp(1f, value, Ease.Out(k)), a = (1f - k) * Mathf.Clamp01(t / .04f);
         Vector3 middle = at + Vector3.up * .03f;
         shapes.Sigil(MomentLook.Sigil.Detente, middle, Aside, direction, radius * 2f, 1f, FxShapes.With(colour, a * .9f), .05f, .16f);
         shapes.Ring(middle, Aside, direction, radius * 1.04f, .06f, FxShapes.With(Color.white, a * .7f), 96);
@@ -256,7 +255,7 @@ public sealed class MomentFx : MonoBehaviour
     // A white tiger's head in outline before the Ghost, drawn as by one pen, held, and gone growing faint.
     private void Tiger(float t)
     {
-        float draw = Out(t / .32f), a = Window(t, 0f, .06f, .62f, .3f), grow = 1f + .06f * Mathf.Clamp01((t - .7f) / .3f);
+        float draw = Ease.Out(t / .32f), a = Window(t, 0f, .06f, .62f, .3f), grow = 1f + .06f * Mathf.Clamp01((t - .7f) / .3f);
         shapes.Sigil(MomentLook.Sigil.Tiger, at, shapes.Right, shapes.Up, value * grow, draw, FxShapes.With(PaleBlue, a), .022f, .09f);
     }
 
@@ -265,15 +264,15 @@ public sealed class MomentFx : MonoBehaviour
     {
         Vector3 head = at, feet = extra == default ? at - Vector3.up * 1.8f : extra, chest = Vector3.Lerp(feet, head, .62f);
         float size = MomentLook.Number("Bounty", "diamond", 1.1f);
-        float draw = Out(t / .18f), a = Window(t, 0f, .03f, .52f, .22f), shrink = 1f - .25f * Mathf.Clamp01((t - .55f) / .25f);
+        float draw = Ease.Out(t / .18f), a = Window(t, 0f, .03f, .52f, .22f), shrink = 1f - .25f * Mathf.Clamp01((t - .55f) / .25f);
         shapes.Sigil(MomentLook.Sigil.Hound, head, shapes.Right, shapes.Up, size * shrink, draw, FxShapes.With(Teal, a), .03f, .1f, (1f - draw) * Mathf.PI * .25f);
         float stamp = t - .18f;
-        if (stamp > 0f && stamp < .16f) shapes.Ring(head, shapes.Right, shapes.Up, size * .5f * Mathf.Lerp(1f, 1.55f, Out(stamp / .16f)), .03f, FxShapes.With(Color.white, 1f - stamp / .16f));
+        if (stamp > 0f && stamp < .16f) shapes.Ring(head, shapes.Right, shapes.Up, size * .5f * Mathf.Lerp(1f, 1.55f, Ease.Out(stamp / .16f)), .03f, FxShapes.With(Color.white, 1f - stamp / .16f));
         // The seal of ticks over the ground.
         float seal = Mathf.Clamp01((t - .08f) / .42f);
         if (seal > 0f && seal < 1f)
         {
-            float radius = Mathf.Lerp(.5f, MomentLook.Number("Bounty", "seal", 3f), Out(seal));
+            float radius = Mathf.Lerp(.5f, MomentLook.Number("Bounty", "seal", 3f), Ease.Out(seal));
             Vector3 floor = feet + Vector3.up * .04f;
             shapes.Ring(floor, Vector3.right, Vector3.forward, radius, .045f, FxShapes.With(Teal, 1f - seal), 72);
             shapes.Ticks(floor, Vector3.right, Vector3.forward, radius, 12, .3f, .04f, FxShapes.With(Teal, 1f - seal), t * .4f, 3);
@@ -285,13 +284,13 @@ public sealed class MomentFx : MonoBehaviour
             for (int i = 0; i < 16; i++)
             {
                 Vector3 way = new Vector3(Hash(i, 1) * 2f - 1f, Hash(i, 2) * 1.4f - .4f, Hash(i, 3) * 2f - 1f).normalized;
-                float reach = .35f + 2.1f * Out(burst) * (.75f + .5f * Hash(i, 4));
+                float reach = .35f + 2.1f * Ease.Out(burst) * (.75f + .5f * Hash(i, 4));
                 Vector3 tip = chest + way * reach, tail = chest + way * Mathf.Max(.35f, reach - .6f);
                 shapes.Glow(tail, tip, FxShapes.With(i % 3 == 0 ? Color.white : Teal, 1f - burst), .022f, .07f);
             }
         }
         // A hairline stands up out of the body into the sky, seen across the map.
-        float up = Out((t - .05f) / .09f), sky = 1f - Mathf.Clamp01((t - .15f) / .5f);
+        float up = Ease.Out((t - .05f) / .09f), sky = 1f - Mathf.Clamp01((t - .15f) / .5f);
         if (up > 0f && sky > 0f) shapes.Glow(feet + Vector3.up * .05f, feet + Vector3.up * (MomentLook.Number("Bounty", "sky", 22f) * up), FxShapes.With(Teal, sky), .03f, .14f);
         // The bounty paid: a few gold glints falling.
         float fall = t - .06f;
@@ -307,7 +306,7 @@ public sealed class MomentFx : MonoBehaviour
     // A plain bounty: a small CLAIMED plate slammed beside the head, held a beat, rising away.
     private void BountyPlain(float t, Camera eye)
     {
-        float a = Window(t, 0f, .03f, .24f, .18f), slam = Mathf.Lerp(1.6f, 1f, Out(t / .06f)), rise = .35f * Mathf.Clamp01((t - .27f) / .2f);
+        float a = Window(t, 0f, .03f, .24f, .18f), slam = Mathf.Lerp(1.6f, 1f, Ease.Out(t / .06f)), rise = .35f * Mathf.Clamp01((t - .27f) / .2f);
         float w = .62f * slam, h = .19f * slam;
         Vector3 middle = at + shapes.Right * .45f + Vector3.up * (.12f + rise);
         Vector3 r = shapes.Right * (w * .5f), u = shapes.Up * (h * .5f);
@@ -333,7 +332,7 @@ public sealed class MomentFx : MonoBehaviour
     private void Reversal(float t)
     {
         Vector3 from = at - direction * .2f - Vector3.up * .3f, to = at + direction * 1.8f - Vector3.up * .9f;
-        float head = Out(t / .13f), a = 1f - Mathf.Clamp01((t - .12f) / .34f);
+        float head = Ease.Out(t / .13f), a = 1f - Mathf.Clamp01((t - .12f) / .34f);
         const int Steps = 14;
         for (int i = 0; i < Steps; i++)
         {
@@ -348,7 +347,7 @@ public sealed class MomentFx : MonoBehaviour
         if (ring > 0f && ring < 1f)
         {
             Vector3 floor = at + direction * .6f - Vector3.up * 1.2f;
-            shapes.Ring(floor, Vector3.right, Vector3.forward, Mathf.Lerp(.3f, 2.6f, Out(ring)), .06f, FxShapes.With(Pink, 1f - ring), 64);
+            shapes.Ring(floor, Vector3.right, Vector3.forward, Mathf.Lerp(.3f, 2.6f, Ease.Out(ring)), .06f, FxShapes.With(Pink, 1f - ring), 64);
         }
         float chips = t - .12f;
         if (chips > 0f && chips < .35f)
@@ -365,7 +364,7 @@ public sealed class MomentFx : MonoBehaviour
     {
         Vector3 side = Vector3.Cross(direction, Vector3.up).normalized;
         if (side.sqrMagnitude < .5f) side = shapes.Right;
-        float cut = Out(t / .06f), a = 1f - Mathf.Clamp01((t - .06f) / .26f);
+        float cut = Ease.Out(t / .06f), a = 1f - Mathf.Clamp01((t - .06f) / .26f);
         Vector3 from = at - side * .55f + Vector3.up * .25f, to = at + side * .55f - Vector3.up * .25f;
         Vector3 bow = -direction * .22f;
         shapes.Blade(from, Vector3.Lerp(from, to, cut), .17f, FxShapes.With(Violet, .6f * a), bow, 12, 1f);
@@ -376,13 +375,13 @@ public sealed class MomentFx : MonoBehaviour
             {
                 float angle = i * Mathf.PI * 2f / 10f + Hash(i, 1) * .5f;
                 Vector3 way = shapes.Right * Mathf.Cos(angle) + shapes.Up * Mathf.Sin(angle);
-                float reach = .15f + .9f * Out(spark) * (.6f + .4f * Hash(i, 2));
+                float reach = .15f + .9f * Ease.Out(spark) * (.6f + .4f * Hash(i, 2));
                 shapes.Blade(at + way * Mathf.Max(.1f, reach - .25f), at + way * reach, .025f, FxShapes.With(i % 2 == 0 ? Color.white : Violet, 1f - spark));
             }
         float ring = Mathf.Clamp01(t / .3f);
-        if (ring < 1f) shapes.Ring(at, shapes.Right, shapes.Up, Mathf.Lerp(.2f, 1.2f, Out(ring)), .035f, FxShapes.With(Color.white, .9f * (1f - ring)));
+        if (ring < 1f) shapes.Ring(at, shapes.Right, shapes.Up, Mathf.Lerp(.2f, 1.2f, Ease.Out(ring)), .035f, FxShapes.With(Color.white, .9f * (1f - ring)));
         // The shield's flash: a kite shield standing where the blow was turned.
-        float shield = Window(t, 0f, .04f, .12f, .15f), s = .38f * Mathf.Lerp(1.35f, 1f, Out(t / .06f));
+        float shield = Window(t, 0f, .04f, .12f, .15f), s = .38f * Mathf.Lerp(1.35f, 1f, Ease.Out(t / .06f));
         if (shield > 0f)
         {
             Vector3 r = shapes.Right * s, u = shapes.Up * s;
@@ -395,7 +394,7 @@ public sealed class MomentFx : MonoBehaviour
     // A gun drawn in the Gun Kata: two orange arcs whirl round it the way a cylinder spins, a glint at their meeting.
     private void KataDraw(float t)
     {
-        float spin = Out(t / .25f) * Mathf.PI * 1.7f, a = 1f - Mathf.Clamp01((t - .1f) / .22f), radius = .2f + .06f * Out(t / .25f);
+        float spin = Ease.Out(t / .25f) * Mathf.PI * 1.7f, a = 1f - Mathf.Clamp01((t - .1f) / .22f), radius = .2f + .06f * Ease.Out(t / .25f);
         shapes.Ring(at, shapes.Right, shapes.Up, radius, .018f, FxShapes.With(colour, a), 16, spin, spin + Mathf.PI * .65f);
         shapes.Ring(at, shapes.Right, shapes.Up, radius, .018f, FxShapes.With(colour, a), 16, spin + Mathf.PI, spin + Mathf.PI * 1.65f);
         Spark(at + (shapes.Right * Mathf.Cos(spin) + shapes.Up * Mathf.Sin(spin)) * radius, .08f, FxShapes.With(Color.white, a));
@@ -406,7 +405,7 @@ public sealed class MomentFx : MonoBehaviour
     {
         float k = Mathf.Clamp01(t / .45f);
         if (k >= 1f) return;
-        float radius = Mathf.Lerp(.6f, value, Out(k));
+        float radius = Mathf.Lerp(.6f, value, Ease.Out(k));
         Vector3 floor = at + Vector3.up * .04f;
         shapes.Ring(floor, Vector3.right, Vector3.forward, radius, .05f, FxShapes.With(colour, 1f - k), 120);
         shapes.Ticks(floor, Vector3.right, Vector3.forward, radius, 40, .22f, .035f, FxShapes.With(colour, 1f - k), 0f, 5);
@@ -438,7 +437,7 @@ public sealed class MomentFx : MonoBehaviour
     {
         Vector3 floor = at + Vector3.up * .05f;
         float radius = Mathf.Max(1f, value) * .5f;
-        float draw = Out(t / .12f), hold = t < CardFx.ShellFall ? 1f : 0f;
+        float draw = Ease.Out(t / .12f), hold = t < CardFx.ShellFall ? 1f : 0f;
         if (hold > 0f)
         {
             shapes.Sigil(MomentLook.Sigil.Target, floor, Vector3.right, Vector3.forward, radius * 2f, draw, FxShapes.With(Color.white, .9f), .04f, .12f, t * 2f);
@@ -449,8 +448,8 @@ public sealed class MomentFx : MonoBehaviour
             float burst = Mathf.Clamp01((t - CardFx.ShellFall) / .3f);
             if (burst < 1f)
             {
-                shapes.Ring(floor, Vector3.right, Vector3.forward, radius * Mathf.Lerp(1f, 2.4f, Out(burst)), .08f, FxShapes.With(Color.white, 1f - burst), 72);
-                shapes.Ring(floor, Vector3.right, Vector3.forward, radius * Mathf.Lerp(.6f, 1.6f, Out(burst)), .05f, FxShapes.With(Pink, 1f - burst), 72);
+                shapes.Ring(floor, Vector3.right, Vector3.forward, radius * Mathf.Lerp(1f, 2.4f, Ease.Out(burst)), .08f, FxShapes.With(Color.white, 1f - burst), 72);
+                shapes.Ring(floor, Vector3.right, Vector3.forward, radius * Mathf.Lerp(.6f, 1.6f, Ease.Out(burst)), .05f, FxShapes.With(Pink, 1f - burst), 72);
             }
         }
         float fall = Mathf.Clamp01(t / CardFx.ShellFall);
@@ -466,7 +465,7 @@ public sealed class MomentFx : MonoBehaviour
     // The gauntlet's flash: a star where it struck, and on the ground the cone it stunned (seen from the Knight's own eyes too).
     private void Flash(float t)
     {
-        float draw = Out(t / .08f), a = Window(t, 0f, .03f, .16f, .14f);
+        float draw = Ease.Out(t / .08f), a = Window(t, 0f, .03f, .16f, .14f);
         shapes.Sigil(MomentLook.Sigil.Star, at, shapes.Right, shapes.Up, MomentLook.Number("Flash", "star", .5f), draw, FxShapes.With(Color.white, a), .02f, .07f);
         // The cone from the Knight, along the ground: two edges and the arc at its reach.
         Vector3 way = Vector3.ProjectOnPlane(direction, Vector3.up);
@@ -475,7 +474,7 @@ public sealed class MomentFx : MonoBehaviour
         if (Physics.Raycast(origin + Vector3.up * .5f, Vector3.down, out RaycastHit ground, 3f, ~(1 << 31), QueryTriggerInteraction.Ignore)) origin = ground.point;
         else origin.y -= 1.25f;
         origin += Vector3.up * .04f;
-        float reach = Mathf.Max(1f, PlayerClass.Ability("Knight", "gauntletReach", 5f)) * Out(t / .1f);
+        float reach = Mathf.Max(1f, PlayerClass.Ability("Knight", "gauntletReach", 5f)) * Ease.Out(t / .1f);
         float half = Mathf.Clamp(PlayerClass.Ability("Knight", "gauntletAngle", 70f), 1f, 180f) * .5f * Mathf.Deg2Rad;
         float cone = Window(t, 0f, .04f, .2f, .18f);
         Vector3 left = Quaternion.AngleAxis(-half * Mathf.Rad2Deg, Vector3.up) * way, right = Quaternion.AngleAxis(half * Mathf.Rad2Deg, Vector3.up) * way;
@@ -493,7 +492,7 @@ public sealed class MomentFx : MonoBehaviour
         Vector3 across = (shapes.Right * -.55f - shapes.Up).normalized, side = Vector3.Cross(shapes.Forward, across).normalized;
         for (int i = 0; i < 3; i++)
         {
-            float start = i * .045f, k = Out((t - start) / .07f);
+            float start = i * .045f, k = Ease.Out((t - start) / .07f);
             if (k <= 0f) continue;
             float fade = 1f - Mathf.Clamp01((t - .16f - start) / .22f);
             if (fade <= 0f) continue;

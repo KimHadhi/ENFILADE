@@ -109,8 +109,8 @@ public sealed class PlayerSpectate : MonoBehaviour
         if (!dead) { dead = true; diedAt = Time.time; }
         if (view == null) view = body != null ? body.View : null;
         if (view == null) return;
-        bool controls = TakesInput();
-        bool forward = controls && Pressed(next), back = controls && Pressed(previous), swapped = controls && Pressed(swap);
+        bool controls = InputFocus.TakesInput();
+        bool forward = controls && InputFocus.Pressed(next), back = controls && InputFocus.Pressed(previous), swapped = controls && InputFocus.Pressed(swap);
         if (Current == Mode.None)
         {
             if (!forward && !back && !swapped && Time.time - diedAt < deathViewSeconds) return;
@@ -217,9 +217,9 @@ public sealed class PlayerSpectate : MonoBehaviour
     private void Follow(float dt)
     {
         Vector3 eyes = targetBody != null ? targetBody.EyePosition : target.transform.position + Vector3.up * 1.6f;
-        pivot = pivotOf == target ? Vector3.Lerp(pivot, eyes, Ease(PivotRate, dt)) : eyes;
+        pivot = pivotOf == target ? Vector3.Lerp(pivot, eyes, Ease.Share(PivotRate, dt)) : eyes;
         pivotOf = target;
-        float turn = Ease(followRate, dt);
+        float turn = Ease.Share(followRate, dt);
         float theirPitch = targetLook != null ? Mathf.DeltaAngle(0f, targetLook.localEulerAngles.x) : 0f;
         yaw = Mathf.LerpAngle(yaw, target.transform.eulerAngles.y, turn);
         pitch = Mathf.Lerp(pitch, theirPitch * followPitchShare, turn);
@@ -259,11 +259,4 @@ public sealed class PlayerSpectate : MonoBehaviour
         }
         return nearest >= reach ? to : from + way * Mathf.Max(Mathf.Min(ClosestToEyes, reach), nearest - WallGap);
     }
-
-    private static float Ease(float rate, float dt) => rate <= 0f ? 1f : 1f - Mathf.Exp(-rate * dt);
-
-    // As the mouse look: not while the cursor is free (chat, menus), the window is in the background or the console is open.
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
-
-    private static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();
 }

@@ -57,8 +57,6 @@ public sealed partial class HubLobby : MonoBehaviour
     public static bool IsActive => active != null;
     /// <summary>The chapter the party will set off to.</summary>
     public static string Chapter => active != null ? active.chapter : "";
-    /// <summary>Seconds left before setting off, or negative while not counting.</summary>
-    public static float Countdown => active != null ? active.countdown : -1f;
     /// <summary>A station is looked at, so F works it: nothing else takes that F (PlayerPing, as CampaignRun.Offering).</summary>
     public static bool Offering => active != null && active.aimed != null && !ResultsShow.IsPlaying;
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -290,22 +289,20 @@ internal static class FaceFit
         };
         if (GameTables.TryGetRow(TableName, "Default", out var cells))
         {
-            read.Clearance = Mathf.Max(0f, Number(cells, "clearance", read.Clearance));
-            read.EyeLift = Number(cells, "eyeLift", read.EyeLift);
-            read.NoseWidth = Mathf.Max(.001f, Number(cells, "noseWidth", read.NoseWidth));
-            read.NoseBelow = Mathf.Max(.006f, Number(cells, "noseBelow", read.NoseBelow));
-            read.BrowWidth = Mathf.Max(.001f, Number(cells, "browWidth", read.BrowWidth));
-            read.BrowHeight = Mathf.Max(.001f, Number(cells, "browHeight", read.BrowHeight));
-            read.Front = Mathf.Max(0f, Number(cells, "front", read.Front));
-            read.ChestClear = Mathf.Max(0f, Number(cells, "chestClear", read.ChestClear));
-            read.MostTilt = Mathf.Clamp(Number(cells, "mostTilt", read.MostTilt), 0f, 60f);
-            read.Hide = Mathf.Clamp01(Number(cells, "hide", read.Hide));
+            read.Clearance = Mathf.Max(0f, cells.Number("clearance", read.Clearance));
+            read.EyeLift = cells.Number("eyeLift", read.EyeLift);
+            read.NoseWidth = Mathf.Max(.001f, cells.Number("noseWidth", read.NoseWidth));
+            read.NoseBelow = Mathf.Max(.006f, cells.Number("noseBelow", read.NoseBelow));
+            read.BrowWidth = Mathf.Max(.001f, cells.Number("browWidth", read.BrowWidth));
+            read.BrowHeight = Mathf.Max(.001f, cells.Number("browHeight", read.BrowHeight));
+            read.Front = Mathf.Max(0f, cells.Number("front", read.Front));
+            read.ChestClear = Mathf.Max(0f, cells.Number("chestClear", read.ChestClear));
+            read.MostTilt = Mathf.Clamp(cells.Number("mostTilt", read.MostTilt), 0f, 60f);
+            read.Hide = Mathf.Clamp01(cells.Number("hide", read.Hide));
         }
         values = read;
         return read;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> cells, string column, float fallback) => TableCells.Number(cells, column, fallback);
 
     private static void Warn(string message)
     {

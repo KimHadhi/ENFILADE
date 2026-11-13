@@ -39,23 +39,23 @@ public sealed class DamageNumber
 
     public DamageNumber(Transform parent, CombatFeedbackSettings settings)
     {
-        root = Rect("Damage Number", parent);
+        root = FeelUI.Rect("Damage Number", parent);
         group = root.gameObject.AddComponent<CanvasGroup>();
         group.interactable = group.blocksRaycasts = false;
-        content = Rect("Content", root);
+        content = FeelUI.Rect("Content", root);
 
-        glow = Rect("Kill Glow", content).gameObject.AddComponent<Image>();
+        glow = FeelUI.Rect("Kill Glow", content).gameObject.AddComponent<Image>();
         glow.sprite = CombatUIAssets.SoftGlow;
         glow.type = Image.Type.Sliced;
         glow.raycastTarget = false;
-        slash = Rect("Kill Slash", content).gameObject.AddComponent<RawImage>();
+        slash = FeelUI.Rect("Kill Slash", content).gameObject.AddComponent<RawImage>();
         slash.texture = CombatUIAssets.SlashLine;
         slash.raycastTarget = false;
-        cut = Rect("Counter Cut", content).gameObject.AddComponent<RawImage>();
+        cut = FeelUI.Rect("Counter Cut", content).gameObject.AddComponent<RawImage>();
         cut.texture = CombatUIAssets.BladeSlash;
         cut.raycastTarget = false;
         cut.rectTransform.pivot = new Vector2(1f, .5f); // grows from its top-right end toward the bottom-left
-        bar = Rect("Bar", content).gameObject.AddComponent<Image>();
+        bar = FeelUI.Rect("Bar", content).gameObject.AddComponent<Image>();
         bar.raycastTarget = false;
 
         var font = CombatUIAssets.ResolveFont(settings.damageFont);
@@ -63,7 +63,7 @@ public sealed class DamageNumber
         label = Label("Damage", content, font);
         var outline = CombatUIAssets.Outlined(label.font, DarkOutline, .24f);
         if (outline != null) { label.fontSharedMaterial = outline; shade.fontSharedMaterial = outline; }
-        mark = Rect("Mark", content).gameObject.AddComponent<RawImage>();
+        mark = FeelUI.Rect("Mark", content).gameObject.AddComponent<RawImage>();
         mark.raycastTarget = false;
         root.gameObject.SetActive(false);
     }
@@ -347,7 +347,7 @@ public sealed class DamageNumber
 
     private static TextMeshProUGUI Label(string name, Transform parent, TMP_FontAsset font)
     {
-        var text = Rect(name, parent).gameObject.AddComponent<TextMeshProUGUI>();
+        var text = FeelUI.Rect(name, parent).gameObject.AddComponent<TextMeshProUGUI>();
         if (font != null) text.font = font;
         text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
@@ -355,14 +355,5 @@ public sealed class DamageNumber
         text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
         return text;
-    }
-
-    private static RectTransform Rect(string name, Transform parent)
-    {
-        var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
-        rect.sizeDelta = Vector2.zero;
-        return rect;
     }
 }

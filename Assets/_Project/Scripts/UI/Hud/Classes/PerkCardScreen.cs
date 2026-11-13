@@ -479,7 +479,7 @@ public sealed class PerkCardScreen : MonoBehaviour
         var keyboard = Keyboard.current;
         bool able = player.IsInitialized && receiver != null && receiver.IsAlive && !player.IsDowned;
         // Every card taken, the full gauge buys the class's ultimate instead (Docs/Features/ClassCards.md: ClassCards.Ultimate).
-        bool cards = AnyLeft(), ultimate = !cards && ClassCards.Local != null && ClassCards.Local.HasUltimate;
+        bool cards = PlayerPerks.AnyLeft(), ultimate = !cards && ClassCards.Local != null && ClassCards.Local.HasUltimate;
         bool ready = able && player.Ultimate != null && player.Ultimate.IsReady && (cards || ultimate);
         if (open && !able && picked < 0) Close();
 
@@ -519,11 +519,6 @@ public sealed class PerkCardScreen : MonoBehaviour
         if (chat == null) chat = FindAnyObjectByType<SinglePlayerChatManager>();
         return chat != null && chat.BlocksMissionInputThisFrame;
     }
-
-    // A card left to deal: this player's class's cards count, another class's don't (PlayerPerks.Dealable). The hub deals
-    // by the same rule: its cards are practice ones (PlayerPerks.IsPractising) that go when it is left, so its range can
-    // be played through to the ultimate as a mission is.
-    private static bool AnyLeft() => PlayerPerks.AnyLeft();
 
     private void ShowPrompt(bool show, bool cards)
     {

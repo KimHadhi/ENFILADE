@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UI;
 
 public sealed class WaveManager : MonoBehaviour
 {
@@ -128,9 +126,6 @@ public sealed class WaveManager : MonoBehaviour
         currentWave = totalEnemiesThisWave = defeatedEnemies = spawned = 0;
         NotifyObjective();
     }
-
-    // Preserve the existing public stop entry point as a complete stop.
-    public void StopWaves() => AbortWaves();
 
     /// <summary>After a wipe: the enemies go, and it all starts again from the first wave.</summary>
     public void RestartFromFirst()

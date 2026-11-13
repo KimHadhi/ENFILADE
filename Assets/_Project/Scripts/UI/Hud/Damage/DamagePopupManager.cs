@@ -18,7 +18,6 @@ public sealed class DamagePopupManager : MonoBehaviour
     private const int MaxNumbers = 48, Prewarm = 12;
     private const float ColumnGap = 2f;
     private static DamagePopupManager instance;
-    public static DamagePopupManager Instance => instance;
     public int ActiveCount { get; private set; }
 
     [SerializeField] private DamageNumberLayout layout = new DamageNumberLayout();

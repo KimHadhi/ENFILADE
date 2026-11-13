@@ -106,7 +106,7 @@ public abstract class ZombieElite : MonoBehaviour
     }
 
     protected Vector3 Feet => agent != null ? transform.position - Vector3.up * agent.baseOffset : transform.position;
-    protected static Vector3 Flat(Vector3 value) => Vector3.ProjectOnPlane(value, Vector3.up);
+    internal static Vector3 Flat(Vector3 value) => Vector3.ProjectOnPlane(value, Vector3.up);
 
     /// <summary>Nothing solid between its eyes and the player's chest.</summary>
     protected bool Sees(PlayerMovement player)

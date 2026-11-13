@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 /// <summary>
@@ -339,14 +338,5 @@ internal sealed class TextSheet
         {
             return "";
         }
-    }
-
-    internal static string Escape(string words) => words.Replace("\n", "\\n");
-
-    internal static string Describe(IEnumerable<(bool error, string what)> problems)
-    {
-        var text = new StringBuilder();
-        foreach (var (error, what) in problems) text.Append(error ? "✖ " : "· ").AppendLine(what);
-        return text.ToString().TrimEnd();
     }
 }

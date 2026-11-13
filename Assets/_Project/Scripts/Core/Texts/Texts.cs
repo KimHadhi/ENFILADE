@@ -80,15 +80,6 @@ public static class Texts
         return IsIdCell(cell) ? Get(cell) : KeyBindings.Relabel(Unescape(cell));
     }
 
-    /// <summary>A text cell's words (<see cref="Cell"/>) with {0}, {1} ... filled in.</summary>
-    public static string FormatCell(string cell, params object[] values)
-    {
-        string template = Cell(cell);
-        if (values == null || values.Length == 0) return template;
-        try { return string.Format(CultureInfo.CurrentCulture, template, values); }
-        catch (FormatException) { return template; }
-    }
-
     /// <summary>Whether a table cell names a row of this table, rather than holding words itself.</summary>
     public static bool IsId(string cell) => !string.IsNullOrWhiteSpace(cell) && IsIdCell(cell.Trim());
 

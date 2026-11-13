@@ -24,9 +24,6 @@ public sealed partial class ZombieBody
     private (Vector2 hips, float head) riseCrawlShape;
     private bool crawling, watchingCrawl;
 
-    /// <summary>It lost a leg and crawls.</summary>
-    public bool Crawling => crawling;
-
     // Getting up: the crawl's push-up for a crawler, else the clip for how it lies.
     private AnimationClipPlayable RisePlayable() => crawling ? riseCrawl : riseFaceDown ? riseDown : riseUp;
     private float RiseLength => crawling ? riseCrawlLength : riseFaceDown ? riseDownLength : riseUpLength;

@@ -10,9 +10,7 @@ public sealed partial class PlayerBodyHands
     private float ladderReachArc = .08f;
     [SerializeField, Min(0f), Tooltip("Palm clearance from the front of the rung (m).")]
     private float ladderPalmClearance = .0015f;
-    [SerializeField, Tooltip("Top-exit animation fractions when the high hand, then the supporting hand, starts letting go (0–1).")]
-    private Vector2 ladderExitRelease = new Vector2(.18f, .24f);
-    private const float ExitGatherEnd = .08f, ExitReleaseFade = .12f;
+    private const float ExitGatherEnd = .08f;
     private const float RailSectionAngle = -45f;
 
     private sealed class LadderHand

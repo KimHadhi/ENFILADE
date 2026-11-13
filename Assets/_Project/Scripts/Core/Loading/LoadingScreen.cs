@@ -33,7 +33,7 @@ public sealed class LoadingScreen : MonoBehaviour
     [Tooltip("Least seconds it stays up once shown, so a quick load never flashes.")]
     public float leastShown = .5f;
     [Tooltip("How much of the map's picture shows through the dark (0-1).")]
-    public float pictureAlpha = .32f;
+    public float pictureAlpha = .45f;
     [Tooltip("How much bigger the map's picture slowly grows while the screen is up (share).")]
     public float pictureDrift = .05f;
     [Tooltip("Seconds the bar takes to catch up with the work done.")]
@@ -46,6 +46,7 @@ public sealed class LoadingScreen : MonoBehaviour
     private Canvas canvas;
     private CanvasGroup group;
     private RawImage picture;
+    private Graphic shade;
     private AspectRatioFitter pictureFit;
     private TextMeshProUGUI title, stage, percent;
     private RectTransform fill, spinner;
@@ -57,9 +58,6 @@ public sealed class LoadingScreen : MonoBehaviour
     /// <summary>Raised once the screen has faded all the way out.</summary>
     public static event Action Lifted;
 
-    /// <summary>The screen is up or coming up (not yet asked to lift).</summary>
-    public static bool Showing => instance != null && instance.wanted;
-
     /// <summary>Anything of the screen is on the display, fading included.</summary>
     public static bool Visible => instance != null && instance.visible;
 
@@ -68,9 +66,6 @@ public sealed class LoadingScreen : MonoBehaviour
     /// drawn for warming without anyone seeing it.
     /// </summary>
     public static bool Covered => instance != null && instance.coveredFrame >= 0 && Time.frameCount > instance.coveredFrame;
-
-    /// <summary>How far the bar has been told the work is (0-1).</summary>
-    public static float Progress => instance != null ? instance.target : 0f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -181,7 +176,7 @@ public sealed class LoadingScreen : MonoBehaviour
         pictureFit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
         pictureFit.aspectRatio = 16f / 9f;
         picture.enabled = false;
-        KitStyle.Fill(KitStyle.Stretch("Shade", root), KitStyle.With(KitStyle.Night, .55f));
+        shade = KitStyle.Fill(KitStyle.Stretch("Shade", root), KitStyle.With(KitStyle.Night, 1f - Mathf.Clamp01(pictureAlpha)));
 
         var block = Corner("Block", root, new Vector2(Margin, Margin), new Vector2(BarWidth + 200f, 240f));
 
@@ -257,6 +252,8 @@ public sealed class LoadingScreen : MonoBehaviour
             percent.text = whole + "%";
         }
         spinner.localRotation = Quaternion.Euler(0f, 0f, spinner.localEulerAngles.z - spin * dt);
+        // The dark over the picture leaves pictureAlpha of it showing; read every frame so a table reload shows at once.
+        shade.color = KitStyle.With(KitStyle.Night, 1f - Mathf.Clamp01(pictureAlpha));
         if (picture.enabled)
             picture.rectTransform.localScale = Vector3.one * (1f + pictureDrift * Mathf.Clamp01((Time.unscaledTime - shownAt) / 8f));
     }

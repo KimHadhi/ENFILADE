@@ -828,9 +828,6 @@ public sealed class FPSGun : MonoBehaviour
     // hold has it (its z), and over how far behind that the slide fades out (m).
     private float reachSlide, reachSlideAt, reachSlideFade = .1f;
 
-    /// <summary>How far the support palm comes back along a bare handguard on this body (m); 0 when its arm reaches.</summary>
-    internal float ReachSlide => reachSlide;
-
     /// <summary>
     /// The support palm comes <paramref name="slide"/> back along a bare handguard from the plain hold's place
     /// (<paramref name="at"/>, its z in the gun's frame), fading out over <paramref name="fade"/> behind it (FPSBody.FitToReach).

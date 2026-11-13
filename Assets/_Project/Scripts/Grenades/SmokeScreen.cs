@@ -113,14 +113,6 @@ public sealed class SmokeScreen : MonoBehaviour
         return best;
     }
 
-    /// <summary>This point stands in a cloud.</summary>
-    public static bool Inside(Vector3 point)
-    {
-        foreach (var cloud in live)
-            if (cloud != null && (point - cloud.Middle).sqrMagnitude <= cloud.Radius * cloud.Radius) return true;
-        return false;
-    }
-
     private static float HideLength => Mathf.Max(.2f, Throwables.Rule("smokeHide", 1.6f));
 
     // Where a line (from, unit way) enters and leaves a sphere, as distances along it; both +inf when it misses.

@@ -53,11 +53,11 @@ public sealed class ProfileView
         var size = W.Size(frame, width: PictureSize, height: PictureSize);
         size.minWidth = size.minHeight = PictureSize;
         var image = W.Rect("Image", frame);
-        W.Stretch(image);
+        KitStyle.Stretch(image);
         picture = image.gameObject.AddComponent<RawImage>();
         picture.raycastTarget = false;
         letter = W.Label(frame, "", 64f, KitStyle.Ink, TextAlignmentOptions.Center);
-        W.Stretch(letter.rectTransform);
+        KitStyle.Stretch(letter.rectTransform);
         letter.fontStyle = FontStyles.Bold;
         var bar = W.Rect("Accent", frame);
         bar.anchorMin = Vector2.zero;

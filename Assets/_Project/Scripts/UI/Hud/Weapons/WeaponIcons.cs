@@ -140,11 +140,9 @@ public static class WeaponIcons
         if (string.IsNullOrWhiteSpace(id) || (found.TryGetValue(id.Trim(), out var sprite) && sprite != null && theirs.Contains(sprite))
             || !GameTables.TryGetRow(SpanTable, id.Trim(), out var cells))
             return new Vector4(0f, 1f, 0f, 1f);
-        front = Cell(cells, "front", .5f);
-        return new Vector4(Cell(cells, "left", 0f), Cell(cells, "right", 1f), Cell(cells, "bottom", 0f), Cell(cells, "top", 1f));
+        front = cells.Number("front", .5f);
+        return new Vector4(cells.Number("left", 0f), cells.Number("right", 1f), cells.Number("bottom", 0f), cells.Number("top", 1f));
     }
-
-    private static float Cell(IReadOnlyDictionary<string, string> cells, string field, float fallback) => TableCells.Number(cells, field, fallback);
 
     /// <summary>A number of WeaponIcons.csv (`Row.field`), for the HUD parts that show the icons.</summary>
     public static float Number(string row, string field, float fallback)

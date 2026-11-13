@@ -40,7 +40,7 @@ public static class GrenadePackFx
                 main.startDelay = 0f;
                 system.Play(false);
             }
-        foreach (string entry in List(PackFx.Text(use, "fire")))
+        foreach (string entry in TableCells.Parts(PackFx.Text(use, "fire")))
         {
             int colon = entry.LastIndexOf(':');
             string path = colon > 0 ? entry.Substring(0, colon) : entry;
@@ -76,18 +76,11 @@ public static class GrenadePackFx
         if (part.TryGetComponent(out ParticleSystemRenderer renderer)) renderer.enabled = false;
     }
 
-    private static IEnumerable<string> List(string list)
-    {
-        if (string.IsNullOrWhiteSpace(list)) yield break;
-        foreach (string part in list.Split('|'))
-            if (!string.IsNullOrWhiteSpace(part)) yield return part.Trim();
-    }
-
     // Every part a list names, as PackFx names them: by its path under the copy ("Burst/FuzzAdd": every one there) or by
     // its name anywhere in it.
     private static IEnumerable<Transform> Named(Transform root, string list)
     {
-        foreach (string part in List(list))
+        foreach (string part in TableCells.Parts(list))
             foreach (var found in Matching(root, part)) yield return found;
     }
 
@@ -104,14 +97,7 @@ public static class GrenadePackFx
         foreach (var t in root.GetComponentsInChildren<Transform>(true))
         {
             if (t == root) continue;
-            if (path ? PathOf(t, root) == part : t.name == part) yield return t;
+            if (path ? Hierarchy.PathOf(t, root) == part : t.name == part) yield return t;
         }
-    }
-
-    private static string PathOf(Transform t, Transform root)
-    {
-        string path = t.name;
-        for (var up = t.parent; up != null && up != root; up = up.parent) path = up.name + "/" + path;
-        return path;
     }
 }

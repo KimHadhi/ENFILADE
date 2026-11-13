@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// Stage 6A: dropping money for friends, after GMod Horde's drop money. In a room, G drops a bundle of dropAmount
@@ -92,7 +91,7 @@ public sealed class MoneyDrops : MonoBehaviour
         if (!listening || !network.IsListening || player == null || !player.IsInitialized) return;
         bool able = !player.IsDead && !player.DamageReceiver.IsDowned;
         // Player/DropMoney (J unless the key window says otherwise; G went to the quick grenade, PlayerGrenades).
-        if (able && TakesInput() && KeyBindings.Pressed("Player/DropMoney")) DropSome();
+        if (able && InputFocus.TakesInput() && KeyBindings.Pressed("Player/DropMoney")) DropSome();
         if (able) TouchBundles();
         Animate();
     }
@@ -230,7 +229,4 @@ public sealed class MoneyDrops : MonoBehaviour
         int mask = Physics.DefaultRaycastLayers & ~(1 << 31) & ~LayerMask.GetMask("Enemy");
         return Physics.Raycast(at + Vector3.up * .5f, Vector3.down, out RaycastHit hit, 4f, mask, QueryTriggerInteraction.Ignore) ? hit.point : at;
     }
-
-    // As the mouse look: not while the cursor is free (chat, menus), the window is in the background or the console is open.
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
 }

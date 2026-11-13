@@ -175,7 +175,7 @@ public sealed class SpecialKillStamp : MonoBehaviour
     {
         float age = stamp.Age;
         // Slam: in flat and wide, then square.
-        float slam = Ease(age / SlamSeconds);
+        float slam = Ease.Out(age / SlamSeconds);
         float leave = Mathf.Clamp01((age - Hold) / LeaveSeconds);
         var scale = new Vector3(Mathf.Lerp(1.7f, 1f, slam), Mathf.Lerp(.55f, 1f, slam) * Mathf.Lerp(1f, .3f, leave * leave), 1f);
         stamp.Plate.localScale = scale;
@@ -186,21 +186,15 @@ public sealed class SpecialKillStamp : MonoBehaviour
         stamp.Back.color = Color.Lerp(stamp.Colour, dark, Mathf.Clamp01(age / FlashSeconds));
         stamp.Word.color = Color.Lerp(Color.white, KitStyle.Text, Mathf.Clamp01(age / .1f));
         // A thin line sweeps out through it either way, then fades.
-        float sweep = Ease((age - SweepFrom) / SweepSeconds);
+        float sweep = Ease.Out((age - SweepFrom) / SweepSeconds);
         stamp.Sweep.sizeDelta = new Vector2(SweepLength * sweep, 3f);
         Color line = stamp.Colour;
         line.a = age < SweepFrom ? 0f : 1f - Mathf.Clamp01((age - SweepFrom - SweepSeconds) / SweepFade);
         stamp.Line.color = line;
         // The reason slides in from the left under the plate.
-        float note = Ease((age - NoteFrom) / NoteSeconds);
+        float note = Ease.Out((age - NoteFrom) / NoteSeconds);
         stamp.NoteRect.anchoredPosition = new Vector2(Mathf.Lerp(-24f, 0f, note), -PlateHeight * .5f - 16f);
         stamp.Note.alpha = note;
-    }
-
-    private static float Ease(float t)
-    {
-        t = Mathf.Clamp01(t);
-        return 1f - (1f - t) * (1f - t) * (1f - t);
     }
 
     private Stamp Build()

@@ -90,7 +90,6 @@ public sealed class ShieldFeedback : MonoBehaviour
     private float paneLife = 1f;
 
     public Color Tint => color;
-    public int HitCount => hitCount;
 
     private void Awake()
     {

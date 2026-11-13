@@ -16,8 +16,6 @@ public sealed class SoundLoop
         GameAudio.SetGain(source, 0f);
     }
 
-    public AudioClip Clip => source != null ? source.clip : null;
-
     /// <summary>Starts the clip, or switches to it; the level carries on fading from where it is.</summary>
     public void Play(AudioClip clip, float pitch)
     {

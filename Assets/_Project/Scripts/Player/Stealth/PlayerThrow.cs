@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
 
 /// <summary>
@@ -57,7 +56,7 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     {
         // Player/Throw (T unless the key window says otherwise).
         var key = KeyBindings.Find("Player/Throw");
-        bool able = movement != null && movement.InputAvailable && key != null && TakesInput() && !movement.IsDead && !movement.IsHeld
+        bool able = movement != null && movement.InputAvailable && key != null && InputFocus.TakesInput() && !movement.IsDead && !movement.IsHeld
             && !movement.CombatInputLocked;
         var eye = Camera.main;
         if (!able || eye == null) { StopAim(); return; }
@@ -109,8 +108,6 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
 
     /// <summary>A friend's stone, seen here: this PC throws its own copy (the host's is the one its zombies hear).</summary>
     internal void ShowThrow(Vector3 from, Vector3 velocity) => ThrownStone.Throw(from, velocity, gameObject, noise, size, life, volume);
-
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
 }
 
 /// <summary>

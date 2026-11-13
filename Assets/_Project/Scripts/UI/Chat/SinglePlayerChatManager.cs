@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using TMPro;
 using System;
@@ -49,7 +48,6 @@ public class SinglePlayerChatManager : MonoBehaviour
     private readonly List<string> submittedInputs = new List<string>();
     private int inputHistoryIndex;
     private string pendingDraft = "";
-    public IReadOnlyList<ChatEntry> History => history.AsReadOnly();
     public bool IsChatOpen => isChatOpen;
     public bool BlocksMissionInputThisFrame => isChatOpen || Time.frameCount == lastClosedFrame;
     public event Action<ChatEntry> MessageAdded;
@@ -335,7 +333,6 @@ public class SinglePlayerChatManager : MonoBehaviour
     private void OnHeard(PlayerChat from, string speaker, string text)
         => AddEntry(new ChatEntry(ChatChannel.Note, speaker, text, null, from != null ? from.GetComponent<PlayerMovement>() : null));
 
-    public void AddDialogue(string speaker, string text) => AddMessage(ChatChannel.Dialogue, speaker, text);
     public void AddDialogue(string speaker, string text, Color speakerColor) => AddEntry(new ChatEntry(ChatChannel.Dialogue, speaker, text, speakerColor));
     public void AddBroadcast(string text) => AddMessage(ChatChannel.Broadcast, Texts.Get("chat.system"), text);
     public void AddMessage(ChatChannel channel, string speaker, string text) => AddEntry(new ChatEntry(channel, speaker, text));
@@ -360,11 +357,6 @@ public class SinglePlayerChatManager : MonoBehaviour
             if (follow) RequestScrollToBottom();
         }
         MessageAdded?.Invoke(entry);
-    }
-
-    public void AddMessage(string formattedMessage)
-    {
-        AddBroadcast(formattedMessage);
     }
 
     public void ClearHistory()

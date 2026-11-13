@@ -76,8 +76,6 @@ public sealed class PunchSocket : IDisposable
     /// own, so the address one server saw is no use to anybody else.
     /// </summary>
     public bool Reachable => reachable;
-    /// <summary>Friends connected through this socket right now (the host's side).</summary>
-    public int Peers => Volatile.Read(ref peerCount);
     /// <summary>The outside address changed under a running room. Raised on the socket's own thread.</summary>
     public event Action OutsideChanged;
 

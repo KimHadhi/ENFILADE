@@ -75,8 +75,6 @@ public static class TowerLayout
 
     /// <summary>The floor number (1-10) a fight level is; 0 for a hall.</summary>
     public static int FloorOf(int level) => IsHall(level) ? 0 : level - level / 4;
-    /// <summary>The level of floor 1-10.</summary>
-    public static int LevelOf(int floor) => floor + (floor - 1) / 3;
     /// <summary>The floor number of the n-th floor (0-based) of a stretch.</summary>
     public static int FloorNumber(int segment, int index) => FloorOf(FirstLevel(segment) + index);
 
@@ -128,10 +126,6 @@ public static class TowerLayout
 
     /// <summary>Where the players start, on the square in front of the tower's west face.</summary>
     public static Vector3 StartSpot => new Vector3(WestEnd - 14f, .05f, 0f);
-
-    /// <summary>A door in an end wall: the middle of its opening, on the floor.</summary>
-    public static Vector3 DoorAt(int level, int lane, bool east, bool endHalf)
-        => new Vector3(east ? RoomLength + Wall * .5f : -Wall * .5f, FloorY(level), endHalf ? EndHalf(lane) : StartHalf(lane));
 
     /// <summary>A hall's scanner for a lane: in front of the lane's departure door, to its side, so the doorway stays clear.</summary>
     public static Vector3 ScannerAt(int segment, int lane)

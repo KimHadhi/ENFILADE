@@ -39,7 +39,7 @@ public sealed class ObjectiveLogPanel
             var row = new DoneRow { root = FeelUI.Rect("Done", root) };
             Plate(row.root, DonePlate);
             Tick(row.root);
-            row.label = Label("Label", row.root, 18f, TextAlignmentOptions.Left);
+            row.label = FeelUI.ScoreLabel("Label", row.root, 18f, TextAlignmentOptions.Left);
             row.label.color = Accent;
             Place(row.label.rectTransform, TextInset, 0f, Width - TextInset * 2f, DoneHeight);
             row.label.alignment = TextAlignmentOptions.MidlineLeft;
@@ -50,8 +50,8 @@ public sealed class ObjectiveLogPanel
         current = FeelUI.Rect("Current", root);
         Plate(current, CurrentPlate);
         Tick(current);
-        title = Label("Title", current, 21f, TextAlignmentOptions.MidlineLeft);
-        counter = Label("Counter", current, 19f, TextAlignmentOptions.MidlineRight);
+        title = FeelUI.ScoreLabel("Title", current, 21f, TextAlignmentOptions.MidlineLeft);
+        counter = FeelUI.ScoreLabel("Counter", current, 19f, TextAlignmentOptions.MidlineRight);
         counter.color = Accent;
         track = FeelUI.Rect("Track", current);
         var trackFill = track.gameObject.AddComponent<UnityEngine.UI.Image>();
@@ -61,7 +61,7 @@ public sealed class ObjectiveLogPanel
         var barFill = fill.gameObject.AddComponent<UnityEngine.UI.Image>();
         barFill.color = Accent;
         barFill.raycastTarget = false;
-        detail = Label("Detail", current, 16f, TextAlignmentOptions.TopLeft);
+        detail = FeelUI.ScoreLabel("Detail", current, 16f, TextAlignmentOptions.TopLeft);
         detail.color = Soft;
         detail.textWrappingMode = TextWrappingModes.Normal;
         Place(title.rectTransform, TextInset, 0f, Width - 120f, CurrentHeight);
@@ -99,9 +99,6 @@ public sealed class ObjectiveLogPanel
         track.gameObject.SetActive(numeric);
         if (numeric) fill.sizeDelta = new Vector2((Width - TextInset * 2f) * objective.Progress, ProgressHeight);
     }
-
-    private static TextMeshProUGUI Label(string name, Transform parent, float size, TextAlignmentOptions alignment)
-        => FeelUI.ScoreLabel(name, parent, size, alignment);
 
     private static SlantedHealthGraphic Plate(RectTransform rect, Color color)
     {

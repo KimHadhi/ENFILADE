@@ -62,8 +62,6 @@ public sealed class KillConfirmEffect : MonoBehaviour
     public static float Showing => instance != null ? instance.Weight : 0f;
     /// <summary>The look currently playing (meaningful only while Weight > 0).</summary>
     public KillScreen Current { get; private set; }
-    /// <summary>True only while an effect runs on a camera whose post-processing was borrowed for it.</summary>
-    public bool IsBorrowingPostProcessing => PostProcessLoan.Holds(this);
 
     /// <summary>heavy = headshot kills and executions.</summary>
     public static void Trigger(KillScreen kind, bool heavy)

@@ -13,8 +13,6 @@ public sealed class ExecutionHUD : MonoBehaviour
     // The verb is a Texts id, not words: the table's words take the keys in as {0}, where a language wants them.
     private string keys = "[F]", verb = "execution.prompt";
     private float appearance;
-    public float Opacity => group != null ? group.alpha : 0f;
-    public float PromptScale => prompt != null ? prompt.localScale.x : 1f;
     private void OnEnable() => execution = GetComponent<PlayerExecution>();
     private void LateUpdate()
     {

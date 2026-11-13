@@ -160,7 +160,7 @@ public sealed class DevConsole : MonoBehaviour
         W.Fill(edge, W.Accent);
 
         var body = W.Rect("Body", root);
-        W.Stretch(body);
+        KitStyle.Stretch(body);
         var layout = body.gameObject.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset((int)Padding, (int)Padding, 14, 14);
         layout.spacing = 8f;
@@ -170,10 +170,10 @@ public sealed class DevConsole : MonoBehaviour
         var header = W.Rect("Header", body);
         W.Size(header, height: 26f, flexibleHeight: 0f);
         var title = W.Label(header, "개발자 콘솔", 19f, W.Accent);
-        W.Stretch(title.rectTransform);
+        KitStyle.Stretch(title.rectTransform);
         var hint = W.Label(header, "` 또는 Esc 닫기 · Tab 자동 완성 · 위/아래 고르기·이전 명령 · help 명령어 목록 · log 로그 거르기",
             15f, W.Muted, TextAlignmentOptions.MidlineRight);
-        W.Stretch(hint.rectTransform);
+        KitStyle.Stretch(hint.rectTransform);
 
         var content = W.ScrollArea(body);
         scroll = content.GetComponentInParent<ScrollRect>();

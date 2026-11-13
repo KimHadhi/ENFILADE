@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
@@ -18,36 +17,17 @@ using MovementState = PlayerMovement.MovementState;
 /// cloth comes after, so a sleeve follows.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 9)]
-public sealed class RepairArm : MonoBehaviour
+public sealed class RepairArm : PathArm
 {
     public const string Table = "RepairArms";
     // How quickly the arm takes the tool up and goes back to the gun (s, 0 to full), never ahead of the hand lent off it.
     private const float TakeUp = .15f, PutAway = .2f;
-    // The fingers in order (index, middle, ring, little, thumb), three joints each from the knuckle out, and a finger's
-    // curl shared out over its joints, knuckle first (GrenadeArm's).
-    private const int Index = 0, Middle = 1, Ring = 2, Little = 3, Thumb = 4;
-    private static readonly HumanBodyBones[] FirstJoints =
-    {
-        HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftRingProximal,
-        HumanBodyBones.LeftLittleProximal, HumanBodyBones.LeftThumbProximal,
-    };
-    private static readonly float[] CurlShare = { .4f, .35f, .25f };
 
     /// <summary>The hammer met the planks (the path's strike key), on this PC's copy of the arm.</summary>
     public event Action Struck;
 
-    private PlayerMovement movement;
-    private PlayerBodyHands hands;
-    private Animator animator;
-    private Transform eyes, upper, lower, hand, holder;
-    private readonly Transform[] fingers = new Transform[15];
-    private readonly Transform[] turned = new Transform[18];
-    private readonly Quaternion[] framed = new Quaternion[18];
-    private int turnedCount, drivenFrame = -1;
-    private Vector3 jointAxis, handAxis;
-    private float armLength, handLength, own, weight, clock;
+    private float clock;
     private RepairLooks.Tool tool, playing;
-    private bool bound;
 
     /// <summary>Where the tool rides in the palm: RepairLooks puts its model under it (Wear).</summary>
     public Transform Holder => holder;
@@ -215,34 +195,6 @@ public sealed class RepairArm : MonoBehaviour
         if (holder != null && holder.gameObject.activeSelf != show) holder.gameObject.SetActive(show);
     }
 
-    // The hand's rotation that lays its run (wrist to middle knuckle) along the path's and its palm facing as the path's.
-    private void TurnHand(Vector3 along, Vector3 palm)
-    {
-        Vector3 alongNow = AlongNow();
-        Vector3 palmNow = PalmNow(alongNow);
-        if (alongNow.sqrMagnitude < 1e-10f || palmNow.sqrMagnitude < 1e-10f) return;
-        hand.rotation = Quaternion.LookRotation(along, palm) * Quaternion.Inverse(Quaternion.LookRotation(alongNow, palmNow)) * hand.rotation;
-    }
-
-    private Transform Knuckle() => fingers[Middle * 3] != null ? fingers[Middle * 3] : fingers[Index * 3];
-
-    private Vector3 AlongNow()
-    {
-        var knuckle = Knuckle();
-        return knuckle != null ? knuckle.position - hand.position : hand.rotation * handAxis;
-    }
-
-    // Out of the palm, square to the hand's run, from the knuckles as the path was measured (GrenadeArm.PalmNow's).
-    private Vector3 PalmNow(Vector3 along)
-    {
-        var index = fingers[Index * 3];
-        var side = fingers[Little * 3] != null ? fingers[Little * 3] : fingers[Ring * 3] != null ? fingers[Ring * 3] : fingers[Middle * 3];
-        Vector3 palm = index != null && side != null && side != index ? -Vector3.Cross(along, index.position - side.position) : Vector3.zero;
-        if (palm.sqrMagnitude < 1e-12f) palm = Vector3.down;
-        palm = Vector3.ProjectOnPlane(palm, along);
-        return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
-    }
-
     // The four fingers closed round the handle by the path's curl, shared over their joints; the thumb across the palm and
     // on round it as far as the path closes it (GrenadeArm.Fingers, the whole of both).
     private void Fingers(Vector3 along, Vector3 palm, float curl, float thumb)
@@ -272,20 +224,6 @@ public sealed class RepairArm : MonoBehaviour
             if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 15f : 20f, bendAxis.normalized) * over;
             Turn(bone, JointWay(Thumb, joint), over, close);
         }
-    }
-
-    private Vector3 JointWay(int finger, int joint)
-    {
-        var bone = fingers[finger * 3 + joint];
-        var next = joint < 2 ? fingers[finger * 3 + joint + 1] : null;
-        return next != null ? next.position - bone.position : bone.rotation * jointAxis;
-    }
-
-    private static void Turn(Transform bone, Vector3 now, Vector3 want, float share)
-    {
-        if (now.sqrMagnitude < 1e-12f || want.sqrMagnitude < 1e-12f) return;
-        var turn = Quaternion.FromToRotation(now, want);
-        bone.rotation = (share >= 1f ? turn : Quaternion.Slerp(Quaternion.identity, turn, share)) * bone.rotation;
     }
 
     // ---- A tool's loop: its row of Tables/RepairArms and its path table ----
@@ -318,11 +256,11 @@ public sealed class RepairArm : MonoBehaviour
             if (!GameTables.TryGetRow(RepairArm.Table, id, out var row)) return null;
             var loop = new Loop
             {
-                Table = Text(row, "table"),
-                Held = new Vector3(Number(row, "heldSide", 0f), Number(row, "heldPalm", .35f), Number(row, "heldAlong", .8f)),
-                Handle = new Vector3(Number(row, "handleX", -1f), Number(row, "handleY", 0f), Number(row, "handleZ", 0f)),
-                Face = new Vector3(Number(row, "faceX", 0f), Number(row, "faceY", 0f), Number(row, "faceZ", 1f)),
-                Grip = Number(row, "grip", 0f),
+                Table = row.Text("table"),
+                Held = new Vector3(row.Number("heldSide", 0f), row.Number("heldPalm", .35f), row.Number("heldAlong", .8f)),
+                Handle = new Vector3(row.Number("handleX", -1f), row.Number("handleY", 0f), row.Number("handleZ", 0f)),
+                Face = new Vector3(row.Number("faceX", 0f), row.Number("faceY", 0f), row.Number("faceZ", 1f)),
+                Grip = row.Number("grip", 0f),
             };
             if (string.IsNullOrEmpty(loop.Table) || loop.Handle.sqrMagnitude < 1e-6f || loop.Face.sqrMagnitude < 1e-6f) return null;
             loop.Handle.Normalize();
@@ -332,16 +270,12 @@ public sealed class RepairArm : MonoBehaviour
             foreach (string key in GameTables.RowIds(loop.Table))
             {
                 if (!GameTables.TryGetRow(loop.Table, key, out var at)) continue;
-                float cycle = Number(at, "cycle", -1f);
+                float cycle = at.Number("cycle", -1f);
                 if (cycle < 0f) continue;
                 loop.Length = Mathf.Max(loop.Length, cycle);
-                if (loop.Strike < 0f && Number(at, "strike", 0f) > .5f) loop.Strike = cycle;
+                if (loop.Strike < 0f && at.Number("strike", 0f) > .5f) loop.Strike = cycle;
             }
             return loop.Length > 0f ? loop : null;
         }
-
-        private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
-
-        private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
     }
 }

@@ -117,8 +117,6 @@ public sealed class PlayerHold : MonoBehaviour
             return false;
         }
     }
-    /// <summary>How far their struggle against the hook has got (0-1).</summary>
-    public float Struggle => IsDragged ? Mathf.Clamp01(struggle) : 0f;
 
     /// <summary>Some zombie holds them.</summary>
     public bool IsHeld => holders.Count > 0;

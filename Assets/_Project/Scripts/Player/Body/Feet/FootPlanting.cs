@@ -93,8 +93,6 @@ internal sealed class FootPlanting
     private float hipFloor, lastFloor, strideDrop;
     private bool settled;
 
-    /// <summary>How far the stride's stretch has the hips down this frame (m).</summary>
-    public float StrideDrop => strideDrop;
     // The stride's hips follow a reach this quickly (s): fast enough for a step, slow enough that one frame's reach never
     // pops the hips (and the camera on the eyes).
     private const float StrideDropTime = .05f;
@@ -165,13 +163,6 @@ internal sealed class FootPlanting
         Weight = 0f;
         settled = OnGround = false;
     }
-
-    /// <summary>
-    /// After the clips have posed the legs: the ankles held within their limits, then, while <paramref name="onFeet"/>,
-    /// the feet on the ground under them and the hips dropped for the lower one. <paramref name="floor"/> is the capsule's
-    /// floor (world height).
-    /// </summary>
-    public void Plant(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt) => Plant(onFeet, floor, ground, tuning, dt, Stride.None);
 
     /// <summary>As <see cref="Plant(bool, float, LayerMask, in Tuning, float)"/>, the stride stretched by
     /// <paramref name="stride"/> while the feet stand.</summary>

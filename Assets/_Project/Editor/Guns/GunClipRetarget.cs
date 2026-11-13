@@ -279,10 +279,10 @@ internal static class GunClipRetarget
 
             var source = baker.SourcePreviewInstance.transform;
             var body = baker.TargetPreviewInstance.transform;
-            var sourceWeapon = Find(source, WeaponBone);
+            var sourceWeapon = Hierarchy.Find(source, WeaponBone);
             var cameraRig = CameraRigOf(assets, arms);
             var sourceCamera = cameraRig != null ? AddCameraFrom(source, cameraRig) : AddCameraSocket(source);
-            var bodyWeapon = Find(body, WeaponBone);
+            var bodyWeapon = Hierarchy.Find(body, WeaponBone);
             if (sourceWeapon == null || bodyWeapon == null)
             {
                 Debug.LogWarning($"GunClipRetarget: {arms.name} or {target.name} has no {WeaponBone}; the guns can't be placed.", profile);
@@ -686,8 +686,8 @@ internal static class GunClipRetarget
     // FPSBody's probe compares the hands in play with it.
     private static void MeasureGrip(Transform body, Transform weapon, ref GunBakes.Entry entry)
     {
-        var right = Human(body, HumanBodyBones.RightHand);
-        var left = Human(body, HumanBodyBones.LeftHand);
+        var right = PreviewHumanoid.Bone(body, HumanBodyBones.RightHand);
+        var left = PreviewHumanoid.Bone(body, HumanBodyBones.LeftHand);
         float scale = Mathf.Max(1e-6f, Mathf.Abs(body.lossyScale.x));
         Quaternion toGun = Quaternion.Inverse(weapon.rotation);
         if (right != null) entry.rightGripPosition = toGun * (right.position - weapon.position) / scale;
@@ -709,14 +709,14 @@ internal static class GunClipRetarget
 
     private static Placement Measure(Transform body, Transform weapon, Transform source, Transform sourceWeapon, float fit)
     {
-        var shoulder = Human(body, HumanBodyBones.LeftUpperArm);
-        var elbow = Human(body, HumanBodyBones.LeftLowerArm);
-        var wrist = Human(body, HumanBodyBones.LeftHand);
+        var shoulder = PreviewHumanoid.Bone(body, HumanBodyBones.LeftUpperArm);
+        var elbow = PreviewHumanoid.Bone(body, HumanBodyBones.LeftLowerArm);
+        var wrist = PreviewHumanoid.Bone(body, HumanBodyBones.LeftHand);
         if (shoulder == null || elbow == null || wrist == null) return new Placement { miss = 0f, extension = 0f };
         float arm = Vector3.Distance(shoulder.position, elbow.position) + Vector3.Distance(elbow.position, wrist.position);
         return new Placement
         {
-            miss = Mathf.Max(Miss(wrist, FindLike(source, "hand_l")), Miss(Human(body, HumanBodyBones.RightHand), FindLike(source, "hand_r"))),
+            miss = Mathf.Max(Miss(wrist, FindLike(source, "hand_l")), Miss(PreviewHumanoid.Bone(body, HumanBodyBones.RightHand), FindLike(source, "hand_r"))),
             extension = arm > 1e-5f ? Vector3.Distance(shoulder.position, wrist.position) / arm : 0f
         };
 
@@ -768,7 +768,7 @@ internal static class GunClipRetarget
     {
         move = pocket = Vector3.zero;
         reach = 0f;
-        var hand = Human(body, HumanBodyBones.RightHand);
+        var hand = PreviewHumanoid.Bone(body, HumanBodyBones.RightHand);
         if (hand == null) return false;
         // The bake is at 1/fit of the size the body plays at; the gun is its true size in game.
         Quaternion gun = weapon.rotation * stock.frame;
@@ -786,10 +786,10 @@ internal static class GunClipRetarget
     private static bool Pocket(Transform body, Vector3 facing, Vector3 pointing, out Vector3 pocket)
     {
         pocket = default;
-        var shoulder = Human(body, HumanBodyBones.RightUpperArm);
-        var neck = Human(body, HumanBodyBones.Neck);
-        if (neck == null) neck = Human(body, HumanBodyBones.UpperChest);
-        if (neck == null) neck = Human(body, HumanBodyBones.Chest);
+        var shoulder = PreviewHumanoid.Bone(body, HumanBodyBones.RightUpperArm);
+        var neck = PreviewHumanoid.Bone(body, HumanBodyBones.Neck);
+        if (neck == null) neck = PreviewHumanoid.Bone(body, HumanBodyBones.UpperChest);
+        if (neck == null) neck = PreviewHumanoid.Bone(body, HumanBodyBones.Chest);
         if (shoulder == null || neck == null) return false;
         Vector3 up = body.up, side = Vector3.Cross(up, facing).normalized, along = pointing.normalized;
         Vector3 joint = shoulder.position;
@@ -806,7 +806,7 @@ internal static class GunClipRetarget
         front = float.NegativeInfinity;
         var skip = new List<Transform>();
         foreach (var bone in new[] { HumanBodyBones.RightLowerArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.Head })
-            if (Human(body, bone) is Transform found) skip.Add(found);
+            if (PreviewHumanoid.Bone(body, bone) is Transform found) skip.Add(found);
         var vertices = new List<Vector3>();
         bool any = false;
         foreach (var renderer in body.GetComponentsInChildren<SkinnedMeshRenderer>())
@@ -856,8 +856,8 @@ internal static class GunClipRetarget
     {
         try
         {
-            var right = Human(body, HumanBodyBones.RightHand);
-            var left = Human(body, HumanBodyBones.LeftHand);
+            var right = PreviewHumanoid.Bone(body, HumanBodyBones.RightHand);
+            var left = PreviewHumanoid.Bone(body, HumanBodyBones.LeftHand);
             var sourceRight = FindLike(source, "hand_r");
             var sourceLeft = FindLike(source, "hand_l");
             string Gap(Transform hand, Transform gun) => hand != null && gun != null ? Vector3.Distance(hand.position, gun.position).ToString("0.000") : "-";
@@ -889,10 +889,10 @@ internal static class GunClipRetarget
     private static bool Eyes(Transform body, Vector3 facing, out Vector3 eyes)
     {
         eyes = default;
-        var head = Human(body, HumanBodyBones.Head);
+        var head = PreviewHumanoid.Bone(body, HumanBodyBones.Head);
         if (head == null) return false;
-        var left = Human(body, HumanBodyBones.LeftEye);
-        var right = Human(body, HumanBodyBones.RightEye);
+        var left = PreviewHumanoid.Bone(body, HumanBodyBones.LeftEye);
+        var right = PreviewHumanoid.Bone(body, HumanBodyBones.RightEye);
         Vector3 forward = facing, up = body.up;
         if (left != null && right != null)
         {
@@ -915,8 +915,8 @@ internal static class GunClipRetarget
     {
         eyes = default;
         frame = Quaternion.identity;
-        var left = Human(body, HumanBodyBones.LeftUpperLeg);
-        var right = Human(body, HumanBodyBones.RightUpperLeg);
+        var left = PreviewHumanoid.Bone(body, HumanBodyBones.LeftUpperLeg);
+        var right = PreviewHumanoid.Bone(body, HumanBodyBones.RightUpperLeg);
         if (left == null || right == null) return false;
         Vector3 ahead = Vector3.Cross(body.InverseTransformPoint(right.position) - body.InverseTransformPoint(left.position), Vector3.up);
         if (ahead.sqrMagnitude < 1e-8f) return false;
@@ -974,8 +974,8 @@ internal static class GunClipRetarget
 
     private static Vector3 Forward(Transform body)
     {
-        var left = Human(body, HumanBodyBones.LeftUpperArm);
-        var right = Human(body, HumanBodyBones.RightUpperArm);
+        var left = PreviewHumanoid.Bone(body, HumanBodyBones.LeftUpperArm);
+        var right = PreviewHumanoid.Bone(body, HumanBodyBones.RightUpperArm);
         if (left == null || right == null) return body.forward;
         Vector3 forward = Vector3.Cross(right.position - left.position, body.up);
         return forward.sqrMagnitude > 1e-6f ? forward.normalized : body.forward;
@@ -984,16 +984,12 @@ internal static class GunClipRetarget
     // The way the hips face (from the thighs, as EyeFrame takes it); without both thighs, the shoulders' way.
     private static Vector3 HipsForward(Transform body)
     {
-        var left = Human(body, HumanBodyBones.LeftUpperLeg);
-        var right = Human(body, HumanBodyBones.RightUpperLeg);
+        var left = PreviewHumanoid.Bone(body, HumanBodyBones.LeftUpperLeg);
+        var right = PreviewHumanoid.Bone(body, HumanBodyBones.RightUpperLeg);
         if (left == null || right == null) return Forward(body);
         Vector3 forward = Vector3.Cross(right.position - left.position, body.up);
         return forward.sqrMagnitude > 1e-6f ? forward.normalized : Forward(body);
     }
-
-    private static Transform Human(Transform body, HumanBodyBones bone) => PreviewHumanoid.Bone(body, bone);
-
-    private static Transform Find(Transform root, string name) => PreviewHumanoid.Find(root, name);
 
     private static Transform FindLike(Transform root, string name)
     {

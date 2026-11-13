@@ -41,7 +41,7 @@ public sealed class CrosshairPreview
         view = Draw(Box);
 
         hint = W.Label(Box, Texts.Get("crosshair.preview.hint"), 15f, W.Muted, TextAlignmentOptions.BottomLeft);
-        W.Stretch(hint.rectTransform);
+        KitStyle.Stretch(hint.rectTransform);
         hint.rectTransform.offsetMin = new Vector2(12f, 8f);
         var button = Box.gameObject.AddComponent<Button>();
         button.targetGraphic = dark;

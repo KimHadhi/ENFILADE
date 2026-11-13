@@ -173,7 +173,7 @@ public sealed class CanBlastEffect : MonoBehaviour
         }
 
         float wave = 1f - Part(e, 0f, .34f);
-        if (wave > 0f) Ring(Mathf.Lerp(.5f, blastReach, EaseOut(Part(e, 0f, .3f))), RingLine, Tint(Hot, wave));
+        if (wave > 0f) Ring(Mathf.Lerp(.5f, blastReach, KitReveal.EaseOut(Part(e, 0f, .3f))), RingLine, Tint(Hot, wave));
 
         float sparks = 1f - Part(e, .17f, .5f);
         if (sparks > 0f)
@@ -222,7 +222,6 @@ public sealed class CanBlastEffect : MonoBehaviour
     }
 
     private static float Part(float t, float from, float to) => Mathf.Clamp01((t - from) / (to - from));
-    private static float EaseOut(float x) => 1f - (1f - x) * (1f - x) * (1f - x);
     // The same every time for the same number: a shape drawn from it can be held for a frame and drawn again.
     private static float Noise(int n) => Mathf.Repeat(Mathf.Sin(n * 127.1f + 311.7f) * 43758.5453f, 1f);
 

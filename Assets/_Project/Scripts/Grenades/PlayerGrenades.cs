@@ -179,7 +179,7 @@ public sealed class PlayerGrenades : MonoBehaviour
     private void Hand(ThrowableInfo info)
     {
         var key = KeyBindings.Find("Player/Grenade");
-        bool able = info != null && key != null && movement.InputAvailable && TakesInput() && Able();
+        bool able = info != null && key != null && movement.InputAvailable && InputFocus.TakesInput() && Able();
         if (!able)
         {
             // Hands taken going for it or holding it: the pin goes back, nothing spent; but a flashbang already burning
@@ -211,8 +211,6 @@ public sealed class PlayerGrenades : MonoBehaviour
     }
 
     private bool HandsFull() => TryGetComponent(out PlayerWeaponSlots slots) && slots.HandsFull;
-
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard;
 
     // The body can throw: alive and up, not held, not climbing, hanging or vaulting, the hands not full; standing or
     // crouched (walking and in the air too) or sliding (GrenadeArm lifts the arm in the same states).

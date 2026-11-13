@@ -121,7 +121,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public event Action LadderSlideStopped;
 
     public MovementState CurrentState => StateMachine != null ? StateMachine.CurrentState : MovementState.Standing;
-    public MovementState PreviousState => StateMachine != null ? StateMachine.PreviousState : MovementState.Standing;
     public float CurrentStateDuration { get => StateMachine.Duration; set => StateMachine.Duration = value; }
     public bool IsGrounded => Motor.isGrounded;
     /// <summary>On the ground, crawling and waiting to be got up (PlayerLife). Prone, and the prone controls for getting up do nothing.</summary>
@@ -177,7 +176,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     private CombatTimeEffects timeEffects;
     public bool LandedThisFrame => Motor.landedThisFrame;
     public bool IsSliding => StateMachine != null && StateMachine.IsIn<SlidingGroupState>();
-    public bool IsJustSliding => Abilities != null && Abilities.Slide.IsJustSlide;
     public bool IsDiving => StateMachine != null && StateMachine.IsIn<DivingGroupState>();
     public bool IsCrouching => CurrentState == MovementState.Crouching;
     /// <summary>
@@ -227,7 +225,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float AirControlSharpness => airControlSharpness;
 
     public float SlideMinStartSpeed => slideMinStartSpeed;
-    public float SlideKickBoost => slideKickBoost;
     public float SlideFriction => slideFriction;
     public float DiveSlideFriction => diveSlideFriction;
     public float SupineSlideFriction => supineSlideFriction;
@@ -243,16 +240,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float SlideCooldownTimer { get => Actions.slideCooldownTimer; set => Actions.slideCooldownTimer = value; }
     public float SlideSteerSharpness => slideSteerSharpness;
     public float SlideLookSteerRate => slideLookSteerRate;
-    public float GroundSnapDistance => groundSnapDistance;
 
     public float DoorBreakSpeedThreshold => doorBreakSpeedThreshold;
     public float DoorBreakSpeedRetention => doorBreakSpeedRetention;
     public float WallBounceBounciness => wallBounceBounciness;
     public float SupineBounceThreshold => supineBounceThreshold;
-
-    public float DiveAirResistance => diveAirResistance;
-    public float DiveMomentumRetention => diveMomentumRetention;
-    public float AirborneTimer => Motor.airborneTimer;
 
     public float StandingColliderHeight => Posture.standingColliderHeight;
     /// <summary>
@@ -263,7 +255,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float CrouchColliderHeight => crouchColliderHeight;
     public float ProneColliderHeight => proneColliderHeight;
 
-    public Vector3 GroundNormal => Motor.groundNormal;
     public float SprintProgress { get => Actions.sprintProgress; set => Actions.sprintProgress = value; }
     /// <summary>The built-up run speed (m/s), see MovementMomentum.</summary>
     public float RunSpeed => Actions != null ? Actions.Momentum.Speed : walkSpeed;
@@ -280,7 +271,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public InputAction SprintAction => Input.sprintAction;
     public InputAction DiveAction => Input.diveAction;
-    public InputAction JumpAction => Input.jumpAction;
 
 
     private void Awake() => EnsureInitialized();
@@ -559,11 +549,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float GetSpeedScaledPop(float speed) => Actions.GetSpeedScaledPop(speed);
     public float GetSlideSlopeDot(Vector3 direction) => Motor.GetSlideSlopeDot(direction);
     public bool IsSlideStepContact(ControllerColliderHit hit) => Motor.IsSlideStepContact(hit);
-    public bool HasGroundAhead(Vector3 direction, float distanceAhead, float checkDepth) => Motor.HasGroundAhead(direction, distanceAhead, checkDepth);
     public bool HasCeilingAbove(float height) => Posture.HasCeilingAbove(height);
     public bool HasCeilingAhead(Vector3 direction, float distance, float height) => Posture.HasCeilingAhead(direction, distance, height);
     public bool HasVentCeilingAhead(Vector3 direction, float forwardDistance = 0.5f) => Posture.HasVentCeilingAhead(direction, forwardDistance);
-    public void UpdateHeightsAndTransform(float dt) => Posture.UpdateHeightsAndTransform(dt);
 
     public void ResetVelocity()
     {

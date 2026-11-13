@@ -114,21 +114,6 @@ public sealed class FxShapes
         Blade(a, b, core, With(Color.Lerp(color, Color.white, .7f), color.a));
     }
 
-    /// <summary>A round shape in the plane of `across` × `tall`, bright in the middle and fading to `rim`.</summary>
-    public void Disc(Vector3 middle, Vector3 across, Vector3 tall, Color inner, Color rim, int segments = 20)
-    {
-        if (inner.a <= .004f && rim.a <= .004f) return;
-        int first = vertices.Count;
-        vertices.Add(middle); colors.Add(inner);
-        for (int i = 0; i < segments; i++)
-        {
-            float angle = i * Mathf.PI * 2f / segments;
-            vertices.Add(middle + across * Mathf.Cos(angle) + tall * Mathf.Sin(angle));
-            colors.Add(rim);
-        }
-        for (int i = 0; i < segments; i++) Both(first, first + 1 + (i + 1) % segments, first + 1 + i);
-    }
-
     /// <summary>A ring in the plane of `across` × `tall` (flat on the ground: Vector3.right, Vector3.forward).</summary>
     public void Ring(Vector3 middle, Vector3 across, Vector3 tall, float radius, float width, Color color, int segments = 48,
         float fromAngle = 0f, float toAngle = Mathf.PI * 2f)

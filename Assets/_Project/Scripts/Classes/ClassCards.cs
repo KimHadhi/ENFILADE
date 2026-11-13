@@ -37,7 +37,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class ClassCards : MonoBehaviour
 {
-    private const string GhostRow = PlayerClass.GhostRow, PointRow = "Point", AssaultRow = "Assault", KnightRow = PlayerClass.KnightRow;
+    private const string GhostRow = PlayerClass.GhostRow, AssaultRow = "Assault", KnightRow = PlayerClass.KnightRow;
     private static readonly Color Violet = new Color(.62f, .32f, 1f);
 
     // A shadow double's blow waiting to land: on whom, how hard, where and which way.

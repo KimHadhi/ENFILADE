@@ -156,7 +156,7 @@ public sealed partial class ZombieBody
                 var toWorld = skin.transform.localToWorldMatrix;
                 for (int v = 0; v < vertices.Count; v++)
                 {
-                    int index = Strongest(weights[v]);
+                    int index = MeshTools.Strongest(weights[v]);
                     if (index < 0 || index >= bones.Length) continue;
                     int part = partOf[index];
                     if (part < 0) continue;
@@ -219,16 +219,6 @@ public sealed partial class ZombieBody
                 return part;
             }
         return -1;
-    }
-
-    private static int Strongest(in BoneWeight weight)
-    {
-        int index = weight.boneIndex0;
-        float best = weight.weight0;
-        if (weight.weight1 > best) { best = weight.weight1; index = weight.boneIndex1; }
-        if (weight.weight2 > best) { best = weight.weight2; index = weight.boneIndex2; }
-        if (weight.weight3 > best) index = weight.boneIndex3;
-        return best > 0f ? index : -1;
     }
 
     // The head: a sphere round the middle of the head's vertices, taking in FitShare of them; then down the neck a capsule

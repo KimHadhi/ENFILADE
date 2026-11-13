@@ -66,7 +66,7 @@ public sealed class CombatCueAudio : MonoBehaviour
         source.PlayOneShot(clip, Mathf.Clamp01(volume * Mathf.Max(0f, gain)));
     }
     // Avoid repeating the same variant when another non-null clip is available.
-    private static AudioClip Pick(AudioClip[] clips, ref AudioClip previous)
+    internal static AudioClip Pick(AudioClip[] clips, ref AudioClip previous)
     {
         if (clips == null || clips.Length == 0) return null;
         int alternatives = 0; AudioClip fallback = null;

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -75,9 +74,9 @@ public sealed class MapGrade : MonoBehaviour
         var split = profile.Add<SplitToning>();
         split.shadows.Override(Colour(row, "shadowTint"));
         split.highlights.Override(Colour(row, "highlightTint"));
-        split.balance.Override(Mathf.Clamp(Number(row, "tintBalance", 0f), -100f, 100f));
-        float contrast = Mathf.Clamp(Number(row, "contrast", 0f), -.5f, .6f);
-        float darkColour = Mathf.Clamp(Number(row, "shadowSaturation", 1f), 0f, 2f);
+        split.balance.Override(Mathf.Clamp(row.Number("tintBalance", 0f), -100f, 100f));
+        float contrast = Mathf.Clamp(row.Number("contrast", 0f), -.5f, .6f);
+        float darkColour = Mathf.Clamp(row.Number("shadowSaturation", 1f), 0f, 2f);
         bool steeper = Mathf.Abs(contrast) > .001f, darker = Mathf.Abs(darkColour - 1f) > .001f;
         if (steeper || darker)
         {
@@ -127,8 +126,6 @@ public sealed class MapGrade : MonoBehaviour
         Destroy(profile);
         profile = null;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     // A split toning colour as written (#808080, mid-grey, mixes nothing in).
     private static Color Colour(IReadOnlyDictionary<string, string> row, string key)

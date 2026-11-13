@@ -27,7 +27,6 @@ public sealed class CameraViewPunch : MonoBehaviour
     private float appliedFov;
     private bool applied;
     private float damageTrauma, damageNoiseTime;
-    public float DamageTrauma => damageTrauma;
 
     /// <summary>
     /// Forward of the steady (unpunched) view this frame, valid from this component's LateUpdate on. Screen-space UI that

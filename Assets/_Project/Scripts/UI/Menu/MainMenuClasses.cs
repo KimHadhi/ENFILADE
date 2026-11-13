@@ -123,7 +123,7 @@ public sealed class MainMenuClasses : MonoBehaviour
         var role = KitStyle.Flat(KitStyle.TopLeft("Role", plate, new Vector2(TextX + 2f, 44f), new Vector2(LeftWidth - TextX - 240f, 22f)), info.Role, 14f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
         role.fontStyle = FontStyles.Normal;
-        role.overflowMode = CombatUIAssets.ClippedOverflow(role);
+        role.overflowMode = FontRoles.ClippedOverflow(role);
         // Its rank insignia at the right end, at a lean of its own; 준비 중 or 선택됨 left of it.
         var rank = Rank(plate, info.Id, PlateInsignia, chosen ? 1f : .8f);
         rank.anchorMin = rank.anchorMax = new Vector2(1f, .5f);

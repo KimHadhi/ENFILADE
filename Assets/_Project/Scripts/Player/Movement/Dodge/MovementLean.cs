@@ -50,9 +50,9 @@ public sealed class MovementLean
         // Out at least as far as the slip needs, further if the key holds the lean further that way.
         float outward = slipSide * Mathf.Max(clear, held * slipSide);
         float back = slip.SlipSeconds + slip.HoldSeconds;
-        if (slipTime < slip.SlipSeconds) lean = Mathf.Lerp(slipStart, outward, EaseOut(slipTime / slip.SlipSeconds));
+        if (slipTime < slip.SlipSeconds) lean = Mathf.Lerp(slipStart, outward, Ease.Out(slipTime / slip.SlipSeconds));
         else if (slipTime < back) lean = outward;
-        else if (slipTime < back + slip.ReturnSeconds) lean = Mathf.Lerp(outward, held, EaseInOut((slipTime - back) / slip.ReturnSeconds));
+        else if (slipTime < back + slip.ReturnSeconds) lean = Mathf.Lerp(outward, held, Ease.InOut((slipTime - back) / slip.ReturnSeconds));
         else { lean = held; slipTime = -1f; }
     }
 
@@ -66,8 +66,6 @@ public sealed class MovementLean
         slipStart = lean; // No camera teleport on the hit frame.
         MicroSlip.For(ctx)?.Show(ctx, side);
     }
-    private static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
-    private static float EaseInOut(float x) { x = Mathf.Clamp01(x); return x < .5f ? 4f * x * x * x : 1f - Mathf.Pow(-2f * x + 2f, 3f) * .5f; }
     private float CollisionLimitedLean(int side)
     {
         float target = side;

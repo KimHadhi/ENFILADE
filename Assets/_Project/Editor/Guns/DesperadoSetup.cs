@@ -198,9 +198,9 @@ internal static class DesperadoSetup
             look.transform.localPosition = Vector3.zero;
             look.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             look.transform.localScale = Vector3.one;
-            Transform frame = Find(look.transform, "Fatebringer_Frame"), crane = Find(look.transform, "Fatebringer_Crane"),
-                cylinder = Find(look.transform, "Fatebringer_Cylinder"), rounds = Find(look.transform, "Fatebringer_Rounds"),
-                ironAim = Find(look.transform, "IronAim");
+            Transform frame = Hierarchy.Find(look.transform, "Fatebringer_Frame"), crane = Hierarchy.Find(look.transform, "Fatebringer_Crane"),
+                cylinder = Hierarchy.Find(look.transform, "Fatebringer_Cylinder"), rounds = Hierarchy.Find(look.transform, "Fatebringer_Rounds"),
+                ironAim = Hierarchy.Find(look.transform, "IronAim");
             Transform bodyBone = FindBone(root, look.transform, "Body"), craneBone = FindBone(root, look.transform, "CylinderHolder"),
                 cylinderBone = FindBone(root, look.transform, "Cylinder"), roundBone = FindBone(root, look.transform, "Ammo_01");
             if (frame == null || crane == null || cylinder == null || rounds == null || ironAim == null
@@ -292,14 +292,6 @@ internal static class DesperadoSetup
         Directory.CreateDirectory(MaterialsFolder);
         AssetDatabase.CreateAsset(material, path);
         return material;
-    }
-
-    private static Transform Find(Transform root, string name)
-    {
-        if (root.name == name) return root;
-        for (int i = 0; i < root.childCount; i++)
-            if (Find(root.GetChild(i), name) is Transform found) return found;
-        return null;
     }
 
     // A transform of the R08's by name, outside the Fatebringer model (whose parts share no names with the rig's).

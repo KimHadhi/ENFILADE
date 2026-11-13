@@ -71,8 +71,6 @@ public sealed class ZombieBreach : MonoBehaviour
     private bool inReach;
     private string boundKind;
 
-    /// <summary>The planks it is going at, or null.</summary>
-    public Barricade Target => target;
     /// <summary>It walks itself, to the planks and standing at them: EnemyChaseAI leaves it be.</summary>
     public bool Driving => target != null;
     /// <summary>At the planks: EnemyCombatAI swings at them (Face).</summary>

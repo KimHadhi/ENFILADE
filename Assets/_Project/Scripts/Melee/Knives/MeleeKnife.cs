@@ -57,9 +57,6 @@ public sealed class MeleeKnife : MonoBehaviour
     /// <summary>The player has their class knife out in the melee slot (the fists' slot), on this PC's copy of them.</summary>
     public static bool Out(PlayerMovement who) => Active(who) != null;
 
-    /// <summary>The knife in hand now; null while the melee slot is not out.</summary>
-    public ClassKnives.Knife Knife => IsOut ? KnifeNow() : null;
-
     private bool IsOut => melee != null && melee.IsActive;
 
     // ---- What the knife deals, in place of the fists (PlayerMeleeCombat, MeleeAttackSweep) ----

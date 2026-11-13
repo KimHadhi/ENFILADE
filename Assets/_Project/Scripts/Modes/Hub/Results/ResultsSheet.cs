@@ -49,10 +49,10 @@ public sealed class ResultsSheet : MonoBehaviour
         // A hitch pauses the sheet rather than eating its time (ResultsShow.Step).
         age += ResultsShow.Step();
         group.alpha = Mathf.Clamp01(age / .2f);
-        sheet.localScale = Vector3.one * Mathf.Lerp(.97f, 1f, Out(age / .25f));
+        sheet.localScale = Vector3.one * Mathf.Lerp(.97f, 1f, Ease.Out(age / .25f));
         foreach (var (tile, at) in tiles)
         {
-            float t = Out((age - at) / .18f);
+            float t = Ease.Out((age - at) / .18f);
             tile.localScale = new Vector3(1f, Mathf.Lerp(.6f, 1f, t), 1f);
             var fade = tile.GetComponent<CanvasGroup>();
             if (fade != null) fade.alpha = t;
@@ -196,6 +196,4 @@ public sealed class ResultsSheet : MonoBehaviour
         timer = KitStyle.Bar("Timer", sheet, new Vector2(40f, Height - 6f), new Vector2(Width - 80f, 3f), KitStyle.Accent);
         timer.rectTransform.pivot = new Vector2(0f, 1f);
     }
-
-    private static float Out(float x) { x = 1f - Mathf.Clamp01(x); return 1f - x * x * x; }
 }

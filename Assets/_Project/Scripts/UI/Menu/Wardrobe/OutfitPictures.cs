@@ -239,9 +239,9 @@ public static class OutfitPictures
         if (!GameTables.TryGetRow(TableName, piece, out var row)) return OutfitFraming.Auto;
         return new OutfitFraming
         {
-            yaw = Number(row, "yaw", 0f), pitch = Number(row, "pitch", 0f), zoom = Mathf.Max(.05f, Number(row, "zoom", 1f)),
-            x = Number(row, "x", 0f), y = Number(row, "y", 0f), roll = Number(row, "roll", 0f),
-            part = Mathf.RoundToInt(Number(row, "part", 0f))
+            yaw = row.Number("yaw", 0f), pitch = row.Number("pitch", 0f), zoom = Mathf.Max(.05f, row.Number("zoom", 1f)),
+            x = row.Number("x", 0f), y = row.Number("y", 0f), roll = row.Number("roll", 0f),
+            part = Mathf.RoundToInt(row.Number("part", 0f))
         };
     }
 
@@ -390,8 +390,6 @@ public static class OutfitPictures
         }
         return persistent;
     }
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string column, float fallback) => TableCells.Number(row, column, fallback);
 
     /// <summary>A piece's row of Tables/OutfitPictures.csv (id,yaw,pitch,zoom,x,y,roll,part), as the editor writes it.</summary>
     public static string Row(string piece, OutfitFraming framing) =>

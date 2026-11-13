@@ -110,7 +110,7 @@ internal sealed class CampaignCans
     public int CarriedBy(PlayerMovement player)
     {
         if (player == null) return -1;
-        ulong id = IdOf(player);
+        ulong id = PlayerRoster.IdOf(player);
         for (int i = 0; i < state.Length; i++) if (state[i].Mode == (byte)Mode.Carried && state[i].Carrier == id) return i;
         return -1;
     }
@@ -144,19 +144,19 @@ internal sealed class CampaignCans
                     || (can.Position - who.transform.position).sqrMagnitude > (Reach + ReachSlack) * (Reach + ReachSlack))
                     return false;
                 can.Mode = (byte)Mode.Carried;
-                can.Carrier = IdOf(who);
+                can.Carrier = PlayerRoster.IdOf(who);
                 break;
             case Act.Drop:
-                if (can.Mode != (byte)Mode.Carried || can.Carrier != IdOf(who)) return false;
+                if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who)) return false;
                 can.Mode = (byte)Mode.Lying;
                 can.Position = Ground(who.transform.position + who.transform.forward * DropAhead, who.gameObject.layer);
                 break;
             case Act.Pour:
-                if (can.Mode != (byte)Mode.Carried || can.Carrier != IdOf(who) || !mayPour) return false;
+                if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who) || !mayPour) return false;
                 can.Mode = (byte)Mode.Poured;
                 break;
             case Act.Throw:
-                if (can.Mode != (byte)Mode.Carried || can.Carrier != IdOf(who)) return false;
+                if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who)) return false;
                 if (aim.sqrMagnitude < 1e-4f) aim = who.transform.forward;
                 aim.Normalize();
                 can.Mode = (byte)Mode.Flying;
@@ -184,7 +184,7 @@ internal sealed class CampaignCans
         state[index] = can;
         timeLeft[index] = FireSeconds;
         nextBurn[index] = FireEvery;
-        setOffBy[index] = shooter != null ? IdOf(shooter) : 0UL;
+        setOffBy[index] = shooter != null ? PlayerRoster.IdOf(shooter) : 0UL;
         Blast(can.Position, shooter);
         changed = true;
     }
@@ -200,7 +200,7 @@ internal sealed class CampaignCans
             switch ((Mode)state[i].Mode)
             {
                 case Mode.Carried:
-                    var carrier = CarrierOf(state[i].Carrier);
+                    var carrier = PlayerRoster.ById(state[i].Carrier);
                     if (carrier != null && !carrier.IsDead && !carrier.DamageReceiver.IsDowned) break;
                     state[i].Mode = (byte)Mode.Lying;
                     state[i].Position = carrier != null ? Ground(carrier.transform.position, carrier.gameObject.layer)
@@ -211,7 +211,7 @@ internal sealed class CampaignCans
                     Fly(i, dt);
                     break;
                 case Mode.Burning:
-                    if ((nextBurn[i] -= dt) <= 0f) { nextBurn[i] += FireEvery; Burn(state[i].Position, CarrierOf(setOffBy[i])); }
+                    if ((nextBurn[i] -= dt) <= 0f) { nextBurn[i] += FireEvery; Burn(state[i].Position, PlayerRoster.ById(setOffBy[i])); }
                     if ((timeLeft[i] -= dt) > 0f) break;
                     state[i].Mode = (byte)Mode.Gone;
                     timeLeft[i] = GoneSeconds;
@@ -323,7 +323,7 @@ internal sealed class CampaignCans
     public void ReceiveAsk(ulong sender, FastBufferReader reader, System.Func<PlayerMovement, bool> mayPour)
     {
         reader.ReadValueSafe(out Ask ask);
-        var who = CarrierOf(sender);
+        var who = PlayerRoster.ById(sender);
         if (who != null) Apply((Act)ask.Act, ask.Index, who, mayPour(who), ask.Aim);
     }
 
@@ -369,7 +369,7 @@ internal sealed class CampaignCans
                 can.SetPositionAndRotation(state[i].Position, turn);
                 continue;
             }
-            var carrier = CarrierOf(state[i].Carrier);
+            var carrier = PlayerRoster.ById(state[i].Carrier);
             if (carrier == null) continue;
             if (carrier == mine && view != null)
             {
@@ -403,17 +403,6 @@ internal sealed class CampaignCans
             }
         }
         if (mode != Mode.Burning && fires[index] != null) { fires[index].PutOut(); fires[index] = null; }
-    }
-
-    // A player's id in the cans' state: their client in a room, 0 alone.
-    private static ulong IdOf(PlayerMovement player)
-        => player.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.OwnerClientId : 0UL;
-
-    private static PlayerMovement CarrierOf(ulong id)
-    {
-        foreach (var someone in PlayerRoster.All)
-            if (someone != null && (someone.IsLocal || someone.IsNetworkDriven) && IdOf(someone) == id) return someone;
-        return null;
     }
 
     // What a can lands on and comes down onto: everything but enemies and, unless -1, the players' own layer (31).

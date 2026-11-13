@@ -28,6 +28,16 @@ public sealed class PlayerTally : MonoBehaviour
     private long earnedAtStart;
 
     public string DisplayName { get; private set; } = "";
+
+    /// <summary>The name a player goes by on screen: the one they chose, else their object's; "" for no one.</summary>
+    public static string NameOf(PlayerMovement player)
+        => player != null && player.TryGetComponent(out PlayerTally tally) && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName
+            : player != null ? player.name : "";
+
+    /// <summary>A player's name in their seat's colour, as rich text.</summary>
+    public static string ColoredNameOf(PlayerMovement someone)
+        => someone.TryGetComponent(out PlayerTally theirs)
+            ? "<color=#" + ColorUtility.ToHtmlStringRGB(theirs.Color) + ">" + theirs.DisplayName + "</color>" : someone.name;
     public int Kills { get; private set; }
     public int Executions { get; private set; }
     public int Downs { get; private set; }

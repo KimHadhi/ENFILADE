@@ -34,7 +34,7 @@ public sealed class KinemationClipEvents : MonoBehaviour
     private void HideBoneByName(string boneName)
     {
         if (string.IsNullOrEmpty(boneName) || hidden.ContainsKey(boneName)) return;
-        var bone = Find(transform, boneName);
+        var bone = Hierarchy.Find(transform, boneName);
         if (bone == null) return;
         hidden[boneName] = (bone, bone.localScale);
         bone.localScale = Vector3.zero;
@@ -53,13 +53,5 @@ public sealed class KinemationClipEvents : MonoBehaviour
         foreach (var (bone, scale) in hidden.Values)
             if (bone != null) bone.localScale = scale;
         hidden.Clear();
-    }
-
-    private static Transform Find(Transform root, string name)
-    {
-        if (root.name == name) return root;
-        foreach (Transform child in root)
-            if (Find(child, name) is Transform found) return found;
-        return null;
     }
 }

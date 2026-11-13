@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
@@ -184,16 +183,16 @@ public sealed class FieldPickups : MonoBehaviour
                 if (entry.weapon != null && !guns.ContainsKey(entry.weapon.name)) guns[entry.weapon.name] = entry.weapon;
         foreach (string id in GameTables.RowIds(TableName))
         {
-            if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(Text(row, "kind"), true, out Kind kind)) continue;
+            if (!GameTables.TryGetRow(TableName, id, out var row) || !Enum.TryParse(row.Text("kind"), true, out Kind kind)) continue;
             WeaponData weapon = null;
-            if (kind == Kind.Gun && !guns.TryGetValue(Text(row, "weapon"), out weapon)) continue;
+            if (kind == Kind.Gun && !guns.TryGetValue(row.Text("weapon"), out weapon)) continue;
             // A Texts row the cell names (pickup.<id>.name), or plain words; empty takes the gun's name.
-            string name = Texts.Cell(Text(row, "name"));
+            string name = Texts.Cell(row.Text("name"));
             if (string.IsNullOrEmpty(name)) name = weapon != null ? weapon.DisplayName : id;
             rows.Add(new Row
             {
-                Name = name, Kind = kind, Weapon = weapon, Amount = Number(row, "amount", 0f),
-                SpotWeight = Mathf.Max(0f, Number(row, "spot", 0f)), DropWeight = Mathf.Max(0f, Number(row, "drop", 0f))
+                Name = name, Kind = kind, Weapon = weapon, Amount = row.Number("amount", 0f),
+                SpotWeight = Mathf.Max(0f, row.Number("spot", 0f)), DropWeight = Mathf.Max(0f, row.Number("drop", 0f))
             });
             if (rows.Count >= 255) break;
         }
@@ -295,7 +294,7 @@ public sealed class FieldPickups : MonoBehaviour
     private void ReceiveAsk(ulong sender, FastBufferReader reader)
     {
         reader.ReadValueSafe(out ushort id);
-        Take(id, sender, PlayerOf(sender));
+        Take(id, sender, PlayerRoster.ById(sender));
     }
 
     private void ReceiveLeave(ulong sender, FastBufferReader reader)
@@ -441,7 +440,7 @@ public sealed class FieldPickups : MonoBehaviour
             case Kind.Ammo:
                 // Room for the class throwable alone is reason enough to take it (PlayerGrenades).
                 if (PlayerGrenades.HasRoom(player)) return null;
-                if (slots == null || !HoldsAnyGun(slots)) return Texts.Get("pickup.refuse.nogun");
+                if (slots == null || !PlayerWeaponSlots.HoldsAnyGun(slots)) return Texts.Get("pickup.refuse.nogun");
                 return RoomForAmmo(slots) ? null : Texts.Get("pickup.refuse.ammofull");
             case Kind.Heal: return receiver.Health >= receiver.MaximumHealth - .5f ? Texts.Get("pickup.refuse.healthfull") : null;
             case Kind.Shield: return receiver.Shield >= row.Amount - .5f ? Texts.Get("pickup.refuse.shield") : null;
@@ -543,12 +542,6 @@ public sealed class FieldPickups : MonoBehaviour
         return 0;
     }
 
-    private static bool HoldsAnyGun(PlayerWeaponSlots slots)
-    {
-        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) if (slots.GetWeapon(i)?.Category == WeaponCategory.Ranged) return true;
-        return false;
-    }
-
     // ---- The [F] prompt (the HUD's kit, beside the crosshair) and what a pickup shows ----
 
     private void ShowPrompt()
@@ -636,7 +629,7 @@ public sealed class FieldPickups : MonoBehaviour
 
         // The [F] prompt: a key square, then a dark plate with the name and what it gives over a line of its colour,
         // leaning at its own angle just below and right of the crosshair.
-        promptRoot = Rect("Prompt", promptHost.transform);
+        promptRoot = FeelUI.Rect("Prompt", promptHost.transform);
         promptRoot.anchoredPosition = new Vector2(70f, -50f);
         promptRoot.localRotation = Quaternion.Euler(0f, 0f, 5f);
         keyBox = Panel("Key", promptRoot, new Vector2(0f, 0f), new Vector2(52f, 52f), KitStyle.Ice);
@@ -663,15 +656,6 @@ public sealed class FieldPickups : MonoBehaviour
         gunPicture.preserveAspect = true;
         gunPicture.gameObject.SetActive(false);
         promptRoot.gameObject.SetActive(false);
-    }
-
-    private static RectTransform Rect(string name, Transform parent)
-    {
-        var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
-        rect.sizeDelta = Vector2.zero;
-        return rect;
     }
 
     // A box with its top-left corner at `at` (y down from the parent's middle).
@@ -742,16 +726,6 @@ public sealed class FieldPickups : MonoBehaviour
         return -1;
     }
 
-    private static ulong IdOf(PlayerMovement player)
-        => player.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.OwnerClientId : 0UL;
-
-    private static PlayerMovement PlayerOf(ulong client)
-    {
-        foreach (var someone in PlayerRoster.All)
-            if (someone != null && (someone.IsLocal || someone.IsNetworkDriven) && IdOf(someone) == client) return someone;
-        return null;
-    }
-
     // Down onto whatever is under it, players (layer 31) and enemies aside.
     private static Vector3 Ground(Vector3 at)
     {
@@ -759,8 +733,4 @@ public sealed class FieldPickups : MonoBehaviour
         return Physics.Raycast(at + Vector3.up * .5f, Vector3.down, out RaycastHit hit, GroundSearch, mask, QueryTriggerInteraction.Ignore)
             ? hit.point : at;
     }
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string key) => TableCells.Text(row, key);
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

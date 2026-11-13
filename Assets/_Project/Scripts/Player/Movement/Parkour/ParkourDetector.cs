@@ -48,7 +48,6 @@ public sealed class ParkourDetector
     private readonly RaycastHit[] traversalHits = new RaycastHit[32];
     internal VaultFinder Vaults { get; }
     internal ParkourDetector(PlayerMovement context) { ctx = context; walls = new WallDetector(ctx); Vaults = new VaultFinder(ctx, this); }
-    private static bool IsBar(Collider collider) => collider != null && collider.GetComponentInParent<SwingBar>() != null;
     private float Radius(float height) => Mathf.Max(0.05f, Mathf.Min(ctx.ControllerRadius, height * 0.5f) - 0.025f);
     private void Capsule(Vector3 feet, float height, out Vector3 bottom, out Vector3 top, out float radius)
     {

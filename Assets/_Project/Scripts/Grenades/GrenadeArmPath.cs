@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -67,7 +66,6 @@ public static class GrenadeArmPath
         public bool EyeSpace = true;
         public float ViewFov = 58.72f;
 
-        public Clip DrawClip => ClipOf(DrawTable);
         public Clip HoldClip => ClipOf(HoldTable);
         public Clip ThrowClip => ClipOf(ThrowTable);
         /// <summary>The tap's own clip; null when it has none (a tap then runs the draw at the tap's speed and throws).</summary>
@@ -121,9 +119,6 @@ public static class GrenadeArmPath
         var clip = Load(table);
         return clip.Keys.Count > 1 ? clip : null;
     }
-
-    /// <summary>Whether a table has a clip at all (two keys or more).</summary>
-    public static bool Ready(string table) => ClipOf(table) != null;
 
     /// <summary>A clip's arm at this time (s at its own speed), between the two keys round it, held at its ends. False when there is no clip.</summary>
     public static bool Sample(string table, float cycle, out Key key)
@@ -180,28 +175,28 @@ public static class GrenadeArmPath
             if (!GameTables.TryGetRow(table, id, out var row)) continue;
             var key = new Key
             {
-                Cycle = Number(row, "cycle", -1f),
+                Cycle = row.Number("cycle", -1f),
                 Wrist = Vector(row, "wrist"),
                 Elbow = Vector(row, "elbow"),
                 Along = Vector(row, "along"),
                 Palm = Vector(row, "palm"),
-                Curl = Number(row, "curl", 0f),
-                Thumb = Number(row, "thumb", 0f),
-                Held = Number(row, "held", 0f) > .5f,
+                Curl = row.Number("curl", 0f),
+                Thumb = row.Number("thumb", 0f),
+                Held = row.Number("held", 0f) > .5f,
             };
             if (key.Cycle < 0f || key.Along.sqrMagnitude < 1e-6f || key.Palm.sqrMagnitude < 1e-6f) continue;
             // A table from before each finger had its own (the shove workspace's loops, a modder's) closes all four alike.
-            key.CurlIndex = Number(row, "curlIndex", key.Curl);
-            key.CurlMiddle = Number(row, "curlMiddle", key.Curl);
-            key.CurlRing = Number(row, "curlRing", key.Curl);
-            key.CurlLittle = Number(row, "curlLittle", key.Curl);
+            key.CurlIndex = row.Number("curlIndex", key.Curl);
+            key.CurlMiddle = row.Number("curlMiddle", key.Curl);
+            key.CurlRing = row.Number("curlRing", key.Curl);
+            key.CurlLittle = row.Number("curlLittle", key.Curl);
             // Square the facing to the run, so a rounded cell never skews the hand.
             key.Along.Normalize();
             key.Palm = Vector3.ProjectOnPlane(key.Palm, key.Along);
             if (key.Palm.sqrMagnitude < 1e-6f) continue;
             key.Palm.Normalize();
-            if (pin < 0f && Number(row, "pin", 0f) > .5f) pin = key.Cycle;
-            if (release < 0f && Number(row, "release", 0f) > .5f) release = key.Cycle;
+            if (pin < 0f && row.Number("pin", 0f) > .5f) pin = key.Cycle;
+            if (release < 0f && row.Number("release", 0f) > .5f) release = key.Cycle;
             clip.Keys.Add(key);
         }
         clip.Keys.Sort((a, b) => a.Cycle.CompareTo(b.Cycle));
@@ -220,27 +215,23 @@ public static class GrenadeArmPath
         {
             if (!GameTables.TryGetRow(MotionsTable, id, out var row)) continue;
             var motion = new Motion { Id = id.Trim() };
-            motion.DrawTable = Text(row, "draw", motion.DrawTable);
-            motion.HoldTable = Text(row, "hold", motion.HoldTable);
-            motion.ThrowTable = Text(row, "throw", motion.ThrowTable);
+            motion.DrawTable = row.Text("draw", motion.DrawTable);
+            motion.HoldTable = row.Text("hold", motion.HoldTable);
+            motion.ThrowTable = row.Text("throw", motion.ThrowTable);
             // An empty tap cell is no tap clip of its own (the draw runs at the tap's speed into the throw).
             motion.TapTable = row.TryGetValue("tap", out string tap) ? tap.Trim() : motion.TapTable;
-            motion.DrawSpeed = Mathf.Max(.05f, Number(row, "drawSpeed", motion.DrawSpeed));
-            motion.TapSpeed = Mathf.Max(.05f, Number(row, "tapSpeed", motion.TapSpeed));
-            motion.ThrowSpeed = Mathf.Max(.05f, Number(row, "throwSpeed", motion.ThrowSpeed));
-            motion.Fade = Mathf.Max(0f, Number(row, "fade", motion.Fade));
+            motion.DrawSpeed = Mathf.Max(.05f, row.Number("drawSpeed", motion.DrawSpeed));
+            motion.TapSpeed = Mathf.Max(.05f, row.Number("tapSpeed", motion.TapSpeed));
+            motion.ThrowSpeed = Mathf.Max(.05f, row.Number("throwSpeed", motion.ThrowSpeed));
+            motion.Fade = Mathf.Max(0f, row.Number("fade", motion.Fade));
             motion.EyeSpace = !row.TryGetValue("space", out string space) || string.IsNullOrWhiteSpace(space)
                 || string.Equals(space.Trim(), "eye", System.StringComparison.OrdinalIgnoreCase);
-            float fov = Number(row, "viewFov", motion.ViewFov);
+            float fov = row.Number("viewFov", motion.ViewFov);
             motion.ViewFov = fov > 0f ? Mathf.Clamp(fov, 10f, 150f) : 0f;
             motions[motion.Id] = motion;
         }
     }
 
-    private static string Text(IReadOnlyDictionary<string, string> row, string name, string fallbackValue) => TableCells.Text(row, name, fallbackValue);
-
     private static Vector3 Vector(IReadOnlyDictionary<string, string> row, string name)
-        => new Vector3(Number(row, name + "X", 0f), Number(row, name + "Y", 0f), Number(row, name + "Z", 0f));
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallbackValue) => TableCells.Number(row, key, fallbackValue);
+        => new Vector3(row.Number(name + "X", 0f), row.Number(name + "Y", 0f), row.Number(name + "Z", 0f));
 }

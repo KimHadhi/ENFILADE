@@ -1,4 +1,3 @@
-using UnityEngine;
 
 public sealed class DivingState : MovementBaseState
 {

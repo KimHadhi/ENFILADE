@@ -129,6 +129,6 @@ internal sealed class BoothTable
         return table.Save(TextsPath, "이름 글자");
     }
 
-    private static string Quote(string cell) =>
+    internal static string Quote(string cell) =>
         cell.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0 ? "\"" + cell.Replace("\"", "\"\"") + "\"" : cell;
 }

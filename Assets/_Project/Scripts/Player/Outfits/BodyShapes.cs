@@ -258,8 +258,8 @@ public static class BodyShapes
         foreach (string id in GameTables.RowIds(TableName))
         {
             if (!GameTables.TryGetRow(TableName, id, out var cells)) continue;
-            string skin = Cell(cells, "skin"), option = Cell(cells, "option"), group = Cell(cells, "group");
-            var kind = Cell(cells, "kind").ToLowerInvariant() switch
+            string skin = cells.Text("skin"), option = cells.Text("option"), group = cells.Text("group");
+            var kind = cells.Text("kind").ToLowerInvariant() switch
             {
                 "slider" => Kind.Slider,
                 "pair" => Kind.Pair,
@@ -267,7 +267,7 @@ public static class BodyShapes
                 _ => (Kind)(-1),
             };
             var keys = new List<string[]>();
-            foreach (string part in Cell(cells, "keys").Split(ListSeparator))
+            foreach (string part in cells.Text("keys").Split(ListSeparator))
             {
                 var names = new List<string>();
                 foreach (string key in part.Split(KeySeparator))
@@ -284,6 +284,4 @@ public static class BodyShapes
             options.Add(new Option { Skin = skin, Id = option, Group = group.Length > 0 ? group : Groups[0], Kind = kind, Keys = keys });
         }
     }
-
-    private static string Cell(IReadOnlyDictionary<string, string> cells, string column) => TableCells.Text(cells, column);
 }

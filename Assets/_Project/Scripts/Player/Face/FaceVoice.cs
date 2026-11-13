@@ -35,8 +35,6 @@ internal static class FaceVoice
             vowel = Vowel[at];
             syllable = Syllable[at];
         }
-
-        public void Sample(float time, out float open, out int vowel) => Sample(time, out open, out vowel, out _);
     }
 
     // Each kana from ぁ (U+3041) to ゖ (U+3096), its vowel (a i u e o) or '-' for one that adds no syllable of its own

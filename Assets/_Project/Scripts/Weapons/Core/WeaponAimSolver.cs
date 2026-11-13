@@ -5,10 +5,6 @@ public static class WeaponAimSolver
 {
     private static readonly Collider[] muzzleOverlaps = new Collider[32];
 
-    public static Vector3 AimPoint(GameObject owner, Transform view, float range, int layers)
-        => AttackTrace.FirstExternalHit(owner, view.position, view.forward, range, layers, out var hit)
-            ? hit.point : view.position + view.forward * range;
-
     /// <summary>
     /// Whether the gun must go to high ready: the aim point behind the muzzle or far off to the side (the gun would turn to
     /// the face or over-converge), something between the eyes and the muzzle, the muzzle inside something, or something just

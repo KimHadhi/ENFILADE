@@ -250,7 +250,7 @@ public sealed class GrenadeHUD : MonoBehaviour
         text.raycastTarget = false;
         text.alignment = TextAlignmentOptions.MidlineLeft;
         text.textWrappingMode = TextWrappingModes.NoWrap;
-        text.overflowMode = CombatUIAssets.ClippedOverflow(text);
+        text.overflowMode = FontRoles.ClippedOverflow(text);
         return text;
     }
 

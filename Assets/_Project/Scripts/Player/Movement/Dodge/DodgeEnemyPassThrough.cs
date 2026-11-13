@@ -15,7 +15,6 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
     private Vector3 lastSafe;
     private bool hasSafe;
     private Vector3 travelDirection;
-    public int IgnoredCount => ignored.Count;
     public bool IsResolving { get; private set; }
     public bool HasEnemyOverlap => body != null && EnemyAt(transform.position);
     // Only the intersecting part of a dodge ignores slow motion. Invulnerability still uses game time.

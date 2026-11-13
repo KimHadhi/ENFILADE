@@ -54,18 +54,6 @@ public sealed class CardFx : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => boom = null;
 
-    /// <summary>
-    /// Draws <paramref name="kind"/> at <paramref name="at"/>, going or facing <paramref name="direction"/>;
-    /// <paramref name="value"/> is its size (Claws, Flash: m), its reach (Blast, Cavalry: m), its blast's reach (Shell: m),
-    /// the double's seconds (Shadow) or the class's number (Ultimate, MomentLook.IndexOf). <paramref name="mine"/>: this
-    /// PC's own player made it.
-    /// </summary>
-    public static void Play(Kind kind, Vector3 at, Vector3 direction, float value, bool mine)
-    {
-        var network = GameSession.Network;
-        Play(kind, at, direction, value, mine, network != null ? network.LocalClientId : 0ul);
-    }
-
     /// <summary>As Play above; <paramref name="from"/> is the client whose player made it (CardNet).</summary>
     public static void Play(Kind kind, Vector3 at, Vector3 direction, float value, bool mine, ulong from)
     {
@@ -242,9 +230,9 @@ public sealed class CardFx : MonoBehaviour
             Vector3 offset = -swing * size * .18f * copy;
             Vector3 from = at + offset - swing * size * .6f - bend * size * .1f, to = at + offset + swing * size * .6f - bend * size * .1f;
             Vector3 end = Vector3.Lerp(from, to, reach);
-            Blade(matterVertices, matterColors, matterTriangles, from, end, bend * size * .35f, size * .12f, With(new Color(.12f, .02f, .2f), .7f * strength), 14);
-            Blade(glowVertices, glowColors, glowTriangles, from, end, bend * size * .35f, size * .09f, With(Violet, .9f * strength), 14);
-            Blade(glowVertices, glowColors, glowTriangles, from, end, bend * size * .3f, size * .025f, With(Color.white, strength), 14);
+            Blade(matterVertices, matterColors, matterTriangles, from, end, bend * size * .35f, size * .12f, FxShapes.With(new Color(.12f, .02f, .2f), .7f * strength), 14);
+            Blade(glowVertices, glowColors, glowTriangles, from, end, bend * size * .35f, size * .09f, FxShapes.With(Violet, .9f * strength), 14);
+            Blade(glowVertices, glowColors, glowTriangles, from, end, bend * size * .3f, size * .025f, FxShapes.With(Color.white, strength), 14);
         }
     }
 
@@ -256,8 +244,8 @@ public sealed class CardFx : MonoBehaviour
         away = away.sqrMagnitude > 1e-4f ? away.normalized : right;
         Vector3 bend = Vector3.Cross(forward, away).normalized;
         Vector3 from = at - bend * size * .25f, to = at + away * size * 1.1f + bend * size * .2f;
-        Blade(glowVertices, glowColors, glowTriangles, from, Vector3.Lerp(from, to, k), bend * size * .3f, size * .08f, With(Color.white, .9f * fade), 12);
-        Blade(glowVertices, glowColors, glowTriangles, from, Vector3.Lerp(from, to, k), bend * size * .3f, size * .16f, With(KitStyle.Accent, .35f * fade), 12);
+        Blade(glowVertices, glowColors, glowTriangles, from, Vector3.Lerp(from, to, k), bend * size * .3f, size * .08f, FxShapes.With(Color.white, .9f * fade), 12);
+        Blade(glowVertices, glowColors, glowTriangles, from, Vector3.Lerp(from, to, k), bend * size * .3f, size * .16f, FxShapes.With(KitStyle.Accent, .35f * fade), 12);
     }
 
     // Hot streaks flying out of the fist in a cone, and a puff at it.
@@ -274,11 +262,11 @@ public sealed class CardFx : MonoBehaviour
             Vector3 way = (direction + side * a + lift * b).normalized;
             float far = reach * (.7f + .3f * (float)random.NextDouble());
             Vector3 head = at + way * far * k, tail = at + way * Mathf.Max(0f, far * k - .9f);
-            Blade(glowVertices, glowColors, glowTriangles, tail, head, Vector3.zero, .025f, With(Hot, fade), 2);
+            Blade(glowVertices, glowColors, glowTriangles, tail, head, Vector3.zero, .025f, FxShapes.With(Hot, fade), 2);
         }
         float puff = Mathf.Clamp01(1f - age / .12f);
         if (puff > 0f) Fan(glowVertices, glowColors, glowTriangles, at + direction * .3f, .5f + .6f * (1f - puff), right, up, 16,
-            With(Color.white, .9f * puff), With(Hot, 0f));
+            FxShapes.With(Color.white, .9f * puff), FxShapes.With(Hot, 0f));
         if (flare != null) flare.intensity = 5f * fade;
     }
 
@@ -336,8 +324,6 @@ public sealed class CardFx : MonoBehaviour
             triangles.Add(first + 1 + i);
         }
     }
-
-    private static Color With(Color color, float alpha) { color.a = Mathf.Clamp01(alpha); return color; }
 
     // ---- The sound ----
 

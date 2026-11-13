@@ -172,12 +172,12 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
     private void Magazine(VertexHelper mesh, Rect r, int count, float partial, bool live)
     {
         float pitch = (r.height - 2f * Pad) / slots, h = Mathf.Min(8f, pitch * .62f), length = r.width - 6f;
-        Quad(mesh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax), new Vector2(r.xMax, r.yMin), With(Night, .96f));
-        Frame(mesh, r, 1f, With(Ice, .28f));
+        Quad(mesh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax), new Vector2(r.xMax, r.yMin), KitStyle.With(Night, .96f));
+        Frame(mesh, r, 1f, KitStyle.With(Ice, .28f));
         for (int i = 0; i < slots; i++)
         {
             float y = r.yMin + Pad + pitch * (i + .5f), tick = (i + 1) % 5 == 0 ? 8f : 4f;
-            Line(mesh, new Vector2(r.xMin - tick - 1f, y), new Vector2(r.xMin - 1f, y), 1.4f, With(Ice, i < count ? .7f : .22f));
+            Line(mesh, new Vector2(r.xMin - tick - 1f, y), new Vector2(r.xMin - 1f, y), 1.4f, KitStyle.With(Ice, i < count ? .7f : .22f));
         }
         // The ready line between one use's rounds and the overflow.
         if (slots > roundsPerUse)
@@ -200,18 +200,18 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
             }
             else
             {
-                Round(mesh, x, y, length, h, With(Ice, .06f), With(Ice, .09f));
+                Round(mesh, x, y, length, h, KitStyle.With(Ice, .06f), KitStyle.With(Ice, .09f));
                 if (live && i == count && partial > .02f)
                 {
-                    Round(mesh, x, y, length, h, With(Pink, .3f * partial), With(Ice, .3f * partial));
-                    Outline(mesh, x, y, length, h, partial, With(Ice, .9f));
+                    Round(mesh, x, y, length, h, KitStyle.With(Pink, .3f * partial), KitStyle.With(Ice, .3f * partial));
+                    Outline(mesh, x, y, length, h, partial, KitStyle.With(Ice, .9f));
                 }
             }
         }
         if (live && ready && now >= readyTime)
         {
             float k = Mathf.Repeat((now - readyTime) / sweepSeconds, 1f), y = r.yMin + k * r.height;
-            Quad(mesh, new Vector2(r.xMin + 2f, y - 1f), new Vector2(r.xMin + 2f, y + 1f), new Vector2(r.xMax - 2f, y + 1f), new Vector2(r.xMax - 2f, y - 1f), With(Ice, .5f * (1f - .5f * k)));
+            Quad(mesh, new Vector2(r.xMin + 2f, y - 1f), new Vector2(r.xMin + 2f, y + 1f), new Vector2(r.xMax - 2f, y + 1f), new Vector2(r.xMax - 2f, y - 1f), KitStyle.With(Ice, .5f * (1f - .5f * k)));
         }
     }
 
@@ -219,9 +219,9 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
     private void Hatch(VertexHelper mesh, Rect r, float c, int spent)
     {
         float x0 = r.xMin - 3f, y0 = r.yMax + 4f, w = r.width + 6f, cx = x0 + w * .5f + HatchSkew * .5f, cy = y0 + HatchHeight * .5f;
-        Plate(mesh, x0, y0, w, With(Night, .96f));
-        PlateOutline(mesh, x0, y0, w, 0f, 1.2f, With(Ice, .35f));
-        Diamond(mesh, cx, cy, 4.5f, With(Ice, .45f), false);
+        Plate(mesh, x0, y0, w, KitStyle.With(Night, .96f));
+        PlateOutline(mesh, x0, y0, w, 0f, 1.2f, KitStyle.With(Ice, .35f));
+        Diamond(mesh, cx, cy, 4.5f, KitStyle.With(Ice, .45f), false);
         bool closed = ready && now >= readyTime;
         bool leaving = c >= 0f && c < .1f;
         if (closed || leaving)
@@ -229,19 +229,19 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
             float k = closed ? Kick(Mathf.Clamp01((now - readyTime) / slamSeconds)) : 1f - Mathf.Clamp01(c / .1f);
             float shift = -30f * (1f - k), a = closed ? 1f : k;
             Color plate = closed && now - readyTime < .05f ? Ice : Pink;
-            Plate(mesh, x0 + shift, y0, w, With(plate, a));
-            Diamond(mesh, cx + shift, cy, 4f, With(Night, a), true);
+            Plate(mesh, x0 + shift, y0, w, KitStyle.With(plate, a));
+            Diamond(mesh, cx + shift, cy, 4f, KitStyle.With(Night, a), true);
             if (closed)
             {
                 float beat = Heartbeat(now - readyTime, beatsPerSecond);
-                PlateOutline(mesh, x0, y0, w, 3f, 2f, With(Pink, .5f * beat));
+                PlateOutline(mesh, x0, y0, w, 3f, 2f, KitStyle.With(Pink, .5f * beat));
             }
         }
         // Each spent round flashes the hatch as it goes.
         for (int i = 0; i < spent; i++)
         {
             float age = c - stripSeconds * (i + 1) / Mathf.Max(1, spent);
-            if (age >= 0f && age < .07f) Plate(mesh, x0, y0, w, With(Ice, 1f - age / .07f));
+            if (age >= 0f && age < .07f) Plate(mesh, x0, y0, w, KitStyle.With(Ice, 1f - age / .07f));
         }
     }
 
@@ -255,7 +255,7 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
             if (k < 0f || k >= 1f) continue;
             Vector2 at = port + new Vector2(-k * 60f * (.8f + .4f * Hash(i)), k * 48f - k * k * 90f);
             float a = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.6f, 1f, k));
-            Spun(mesh, at, new Vector2(CaseWidth, CaseHeight) * .5f, k * 520f, With(Brass, a));
+            Spun(mesh, at, new Vector2(CaseWidth, CaseHeight) * .5f, k * 520f, KitStyle.With(Brass, a));
         }
     }
 
@@ -268,7 +268,7 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
         Quad(mesh, new Vector2(x, y - hh), new Vector2(x, y + hh), new Vector2(x + m, y + hh), new Vector2(x + m, y - hh), body);
         Fan(mesh, tip, new Vector2(x + m, y - hh + .5f), new Vector2(x + m, y + hh - .5f), new Vector2(x + length * .84f, y + hh - 1.1f),
             new Vector2(x + length, y), new Vector2(x + length * .84f, y - hh + 1.1f));
-        Quad(mesh, new Vector2(x + 1.5f, y - hh), new Vector2(x + 1.5f, y + hh), new Vector2(x + 3f, y + hh), new Vector2(x + 3f, y - hh), With(Night, .45f * body.a));
+        Quad(mesh, new Vector2(x + 1.5f, y - hh), new Vector2(x + 1.5f, y + hh), new Vector2(x + 3f, y + hh), new Vector2(x + 3f, y - hh), KitStyle.With(Night, .45f * body.a));
     }
 
     // The next round's outline, drawn round from its back end as far as the charge has come.
@@ -300,7 +300,7 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
             float reach = 4f + (1f - Mathf.Pow(1f - k, 3f)) * (14f + Hash(seed * 7 + i + 3) * 12f), size = 4f * (1f - k) + 1.2f;
             Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)), at = from + dir * reach;
             Vector2 side = new Vector2(Mathf.Cos(angle + 1.6f), Mathf.Sin(angle + 1.6f));
-            Fan(mesh, With(i % 2 == 0 ? Ice : Pink, 1f - k), at, at + dir * size * 1.8f, at + side * size * .6f);
+            Fan(mesh, KitStyle.With(i % 2 == 0 ? Ice : Pink, 1f - k), at, at + dir * size * 1.8f, at + side * size * .6f);
         }
     }
 
@@ -390,7 +390,6 @@ public sealed class UltimateMagazine : MaskableGraphic, ITableBound
         for (int k = 1; k < points.Length - 1; k++) mesh.AddTriangle(i, i + k, i + k + 1);
     }
 
-    private static Color With(Color c, float a) { c.a = a; return c; }
     // Ease out past the end and back: the snap of something seating.
     private static float Kick(float t) { t = Mathf.Clamp01(t); float u = t - 1f; return 1f + 2.9f * u * u * u + 1.9f * u * u; }
     private static float Hash(int i) { float x = Mathf.Sin(i * 127.1f + 311.7f) * 43758.5453f; return x - Mathf.Floor(x); }

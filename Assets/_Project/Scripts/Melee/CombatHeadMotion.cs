@@ -75,16 +75,13 @@ public sealed class CombatHeadMotion : MonoBehaviour
             move.time += dt;
             float back = move.attack + move.hold;
             if (move.time >= back + move.release) { moves.RemoveAt(i); continue; }
-            float weight = move.time < move.attack ? EaseOut(move.time / move.attack)
-                : move.time < back ? 1f : 1f - EaseInOut((move.time - back) / move.release);
+            float weight = move.time < move.attack ? Ease.Out(move.time / move.attack)
+                : move.time < back ? 1f : 1f - Ease.InOut((move.time - back) / move.release);
             offset += move.offset * weight; angles += move.angles * weight;
             moves[i] = move;
         }
         Offset = offset; Angles = angles;
     }
-
-    private static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
-    private static float EaseInOut(float x) { x = Mathf.Clamp01(x); return x < .5f ? 4f * x * x * x : 1f - Mathf.Pow(-2f * x + 2f, 3f) * .5f; }
 
     private void OnDisable() { moves.Clear(); Offset = Angles = Vector3.zero; pendingYaw = 0f; }
 }

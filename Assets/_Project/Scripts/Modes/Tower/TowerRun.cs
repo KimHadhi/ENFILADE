@@ -4,7 +4,6 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 /// <summary>
 /// The ENFILADE tower, run (the user, 2026-11-12: "타워형 맵 … 1~4명 … 각자 열린 방을 통과하며 층을 오르게 돼. 중간에 휴식하는
@@ -154,8 +153,6 @@ public sealed class TowerRun : MonoBehaviour
     private bool IsHost => network == null || network.IsServer;
     private ulong MyId => network != null ? network.LocalClientId + 1UL : 1UL;
 
-    /// <summary>This scene is the tower.</summary>
-    public static bool IsActive => active != null;
     /// <summary>The tower's [F] has something on offer now (a scanner, a shop): F does that, never a ping (PlayerPing).</summary>
     public static bool Offering => active != null && active.offering;
 
@@ -577,7 +574,7 @@ public sealed class TowerRun : MonoBehaviour
         palm = -1;
         var mine = PlayerRoster.Local;
         bool able = plan != null && phase == Phase.Gate && mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned
-            && TakesInput() && !FieldPickups.Targeting;
+            && InputFocus.TakesPlayInput() && !FieldPickups.Targeting;
         if (able && KeyBindings.Held("Player/Interact")) palm = NearestScanner(mine);
         if (palm >= 0 && palm != was) KitSound.Play(KitSound.Cue.TowerScan, .8f);
         if (IsHost || network == null || !network.IsListening) return;
@@ -962,7 +959,7 @@ public sealed class TowerRun : MonoBehaviour
         if (text == null && able && NearShop(mine, out Vector3 shop))
         {
             text = Texts.Get("campaign.prompt.shop");
-            if (TakesInput() && interact != null && interact.WasPressedThisFrame()) ShopMenu.Open(mine, shop);
+            if (InputFocus.TakesPlayInput() && interact != null && interact.WasPressedThisFrame()) ShopMenu.Open(mine, shop);
         }
         offering = text != null;
         screen.Prompt(ShopMenu.IsOpen ? null : text);
@@ -1052,8 +1049,4 @@ public sealed class TowerRun : MonoBehaviour
 
     // "11월 12일 훈련" from the day's seed.
     private static string DayText(int day) => Texts.Format("tower.day", day / 100 % 100, day % 100);
-
-    // As the mouse look: not while the cursor is free (chat, menus), the window is in the background or the console is open.
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard
-        && !ShopMenu.TakesKeyboard && !PerkCardScreen.TakesKeyboard;
 }

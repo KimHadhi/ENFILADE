@@ -30,9 +30,6 @@ public sealed class KeyBindingsView : MonoBehaviour
 
     private static KeyBindingsView current;
 
-    /// <summary>The key window is up: the settings menu's Esc closes it first (<see cref="TakeEscape"/>).</summary>
-    public static bool IsOpen => current != null;
-
     private readonly List<Line> lines = new List<Line>();
     private TextMeshProUGUI notice, resetAllLabel;
     private KeyBindingCell listening;
@@ -44,7 +41,7 @@ public sealed class KeyBindingsView : MonoBehaviour
     {
         if (current != null) current.Close();
         var shade = W.Rect("Key Bindings", layer);
-        W.Stretch(shade);
+        KitStyle.Stretch(shade);
         W.Fill(shade, new Color(0f, 0f, 0f, .72f)); // also keeps clicks off the settings beneath
         shade.SetAsLastSibling();
         var view = shade.gameObject.AddComponent<KeyBindingsView>();

@@ -7,8 +7,6 @@ public sealed class StepDodgeTrail
     internal static readonly List<StepDodgeTrail> Active = new List<StepDodgeTrail>();
     private readonly PlayerMovement ctx;
     private readonly List<Vector3> points = new List<Vector3>(48);
-    private readonly Collider[] overlaps = new Collider[32];
-    private readonly RaycastHit[] hits = new RaycastHit[32];
     private Vector3 tip, bottomOffset, spine;
     private float radius;
     private int activation;
@@ -44,25 +42,6 @@ public sealed class StepDodgeTrail
         if ((tip - points[points.Count - 1]).sqrMagnitude >= 0.0064f) points.Add(tip);
     }
     internal void Clear() { points.Clear(); Active.Remove(this); }
-
-    public bool OverlapsAttack(Collider attack)
-    {
-        if (!IsActive || attack == null || !attack.enabled || !attack.gameObject.activeInHierarchy) return false;
-        int mask = 1 << attack.gameObject.layer;
-        for (int i = 0; i < points.Count; i++)
-        {
-            Vector3 a = points[i], b = i + 1 < points.Count ? points[i + 1] : tip;
-            int count = Physics.OverlapCapsuleNonAlloc(a, a + spine, radius, overlaps, mask, QueryTriggerInteraction.Collide);
-            for (int j = 0; j < count; j++) if (overlaps[j] == attack) return true;
-            Vector3 delta = b - a;
-            if (delta.sqrMagnitude < 0.000001f) continue;
-            count = Physics.CapsuleCastNonAlloc(a, a + spine, radius, delta.normalized, hits, delta.magnitude, mask, QueryTriggerInteraction.Collide);
-            for (int j = 0; j < count; j++) if (hits[j].collider == attack) return true;
-        }
-        int endCount = Physics.OverlapCapsuleNonAlloc(tip, tip + spine, radius, overlaps, mask, QueryTriggerInteraction.Collide);
-        for (int i = 0; i < endCount; i++) if (overlaps[i] == attack) return true;
-        return false;
-    }
 
     // The segment must end at the first real impact. AttackTrace performs that
     // clipping; projectile integrations can pass their already-clipped sweep.

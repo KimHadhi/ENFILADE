@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -111,14 +110,14 @@ public sealed class KnifeStroke
         foreach (string id in GameTables.RowIds(table))
         {
             if (!GameTables.TryGetRow(table, id, out var row)) continue;
-            float cycle = Number(row, "cycle", -1f);
+            float cycle = row.Number("cycle", -1f);
             if (cycle < 0f) continue;
             var key = new Key
             {
                 Cycle = cycle,
                 Right = ArmOf(row, "r"),
                 Left = ArmOf(row, "l"),
-                Held = Number(row, "held", 0f) > .5f,
+                Held = row.Number("held", 0f) > .5f,
             };
             stroke.keys.Add(key);
             string mark = row.TryGetValue("mark", out string text) ? text.Trim() : "";
@@ -143,24 +142,19 @@ public sealed class KnifeStroke
     {
         var arm = new Arm
         {
-            Wrist = Vector(row, side + "wrist", new Vector3(0f, -.9f, .1f)),
-            Elbow = Vector(row, side + "elbow", new Vector3(0f, -.5f, -.1f)),
-            Along = Vector(row, side + "along", Vector3.down),
-            Palm = Vector(row, side + "palm", side == "r" ? Vector3.left : Vector3.right),
-            Curl = Number(row, side + "curl", 30f),
-            Thumb = Number(row, side + "thumb", 30f),
-            Aim = Mathf.Clamp01(Number(row, side + "aim", 0f)),
-            Weight = Mathf.Clamp01(Number(row, side + "weight", 0f)),
+            Wrist = TableCells.Vector(row, side + "wrist", new Vector3(0f, -.9f, .1f)),
+            Elbow = TableCells.Vector(row, side + "elbow", new Vector3(0f, -.5f, -.1f)),
+            Along = TableCells.Vector(row, side + "along", Vector3.down),
+            Palm = TableCells.Vector(row, side + "palm", side == "r" ? Vector3.left : Vector3.right),
+            Curl = row.Number(side + "curl", 30f),
+            Thumb = row.Number(side + "thumb", 30f),
+            Aim = Mathf.Clamp01(row.Number(side + "aim", 0f)),
+            Weight = Mathf.Clamp01(row.Number(side + "weight", 0f)),
         };
         arm.Along = arm.Along.sqrMagnitude > 1e-8f ? arm.Along.normalized : Vector3.down;
         arm.Palm = arm.Palm.sqrMagnitude > 1e-8f ? arm.Palm.normalized : Vector3.left;
         return arm;
     }
-
-    private static Vector3 Vector(IReadOnlyDictionary<string, string> row, string name, Vector3 fallback)
-        => new Vector3(Number(row, name + "X", fallback.x), Number(row, name + "Y", fallback.y), Number(row, name + "Z", fallback.z));
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 
     private static bool Is(string mark, string name) => string.Equals(mark, name, System.StringComparison.OrdinalIgnoreCase);
 }

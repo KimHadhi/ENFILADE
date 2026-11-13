@@ -162,7 +162,7 @@ internal static class BoothPieces
             if (rows.Any(row => table.Cell(row, partsColumn).Length == 0)) continue;
             var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (int row in rows)
-                foreach (string part in Split(table.Cell(row, partsColumn)))
+                foreach (string part in TableCells.Parts(table.Cell(row, partsColumn)))
                     if (!named.ContainsKey(part)) named[part] = table.Cell(row, slotColumn);
             var body = Body.Of(source.Character);
             var model = new HashSet<string>(Words(source.Id), StringComparer.OrdinalIgnoreCase);
@@ -174,7 +174,7 @@ internal static class BoothPieces
             foreach (var trim in pieces.Where(piece => !piece.Named && piece.Host != null && piece.Host.Named))
             {
                 foreach (int row in rows)
-                    if (Split(table.Cell(row, partsColumn)).Contains(trim.Host.Name, StringComparer.OrdinalIgnoreCase))
+                    if (TableCells.Parts(table.Cell(row, partsColumn)).Contains(trim.Host.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         table.Append(row, partsColumn, trim.Name);
                         written.Add(table.Cell(row, idColumn) + " +" + trim.Name);
@@ -230,7 +230,7 @@ internal static class BoothPieces
         foreach (var renderer in source.Prefab.GetComponentsInChildren<Renderer>(true))
         {
             if (!(renderer is SkinnedMeshRenderer || renderer is MeshRenderer)) continue;
-            var mesh = MeshOf(renderer);
+            var mesh = MeshTools.MeshOf(renderer);
             // Underwear is the underwear slots' (BoothUnderwear), named or not.
             if (mesh == null || BoothUnderwear.IsUnderwear(renderer.name)) continue;
             bool isNamed = named.TryGetValue(renderer.name, out string slot);
@@ -254,7 +254,7 @@ internal static class BoothPieces
                 for (int i = 0; i < vertices.Length; i++) piece.Points[i] = matrix.MultiplyPoint3x4(vertices[i]);
                 piece.Box = BoxOf(piece.Points);
             }
-            else piece.Box = BoxOf(mesh.bounds, matrix);
+            else piece.Box = MeshTools.BoxOf(mesh.bounds, matrix);
             if (!isNamed && body != null)
             {
                 piece.Regions = body.Regions(renderer, mesh);
@@ -448,7 +448,7 @@ internal static class BoothPieces
         var keys = owns.Rows
             .Where(row => owns.Cell(row, skinColumn).Equals(skin, StringComparison.OrdinalIgnoreCase)
                 && owns.Cell(row, slotColumn).Equals(slot, StringComparison.OrdinalIgnoreCase))
-            .SelectMany(row => Split(owns.Cell(row, needsColumn)))
+            .SelectMany(row => TableCells.Parts(owns.Cell(row, needsColumn)))
             .Where(key => key.IndexOf("shrink", StringComparison.OrdinalIgnoreCase) >= 0 || key.IndexOf("kuikomi", StringComparison.OrdinalIgnoreCase) >= 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (keys.Count == 0) return;
@@ -495,14 +495,7 @@ internal static class BoothPieces
         return slug.Length > 0 ? slug : "piece";
     }
 
-    private static IEnumerable<string> Split(string list) =>
-        (list ?? "").Split('|').Select(entry => entry.Trim()).Where(entry => entry.Length > 0);
-
     // ---- Meshes ----
-
-    private static Mesh MeshOf(Renderer renderer) =>
-        renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh
-        : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
 
     // Drawn as the prefab comes: enabled, and itself and every parent up to the prefab's root active.
     private static bool Shown(Renderer renderer, Transform root)
@@ -521,15 +514,6 @@ internal static class BoothPieces
         if (points.Length == 0) return new Bounds();
         var box = new Bounds(points[0], Vector3.zero);
         foreach (var point in points) box.Encapsulate(point);
-        return box;
-    }
-
-    private static Bounds BoxOf(Bounds local, Matrix4x4 matrix)
-    {
-        var box = new Bounds(matrix.MultiplyPoint3x4(local.center), Vector3.zero);
-        for (int i = 0; i < 8; i++)
-            box.Encapsulate(matrix.MultiplyPoint3x4(local.center + Vector3.Scale(local.extents,
-                new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
         return box;
     }
 
@@ -576,7 +560,7 @@ internal static class BoothPieces
             forward.y = 0f;
             body.Forward = forward.sqrMagnitude > 1e-6f ? forward.normalized : Vector3.forward;
             foreach (var renderer in character.GetComponentsInChildren<Renderer>(true))
-                if (MeshOf(renderer) is Mesh mesh && !body.own.ContainsKey(renderer.name)) body.own[renderer.name] = mesh.vertexCount;
+                if (MeshTools.MeshOf(renderer) is Mesh mesh && !body.own.ContainsKey(renderer.name)) body.own[renderer.name] = mesh.vertexCount;
             return body;
         }
 

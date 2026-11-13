@@ -128,7 +128,7 @@ public sealed class CrosshairPresetGallery
         W.Size(field, width: 0f, height: 34f, flexibleWidth: 1f).layoutPriority = 2;
         field.characterLimit = 80;
         var hint = W.Label(field.textViewport, Texts.Format("crosshair.code.hint", CrosshairCode.Prefix), 16f, W.Muted);
-        W.Stretch(hint.rectTransform);
+        KitStyle.Stretch(hint.rectTransform);
         field.placeholder = hint;
         hint.enabled = shownCode.Length == 0; // set after the text, so the field has not hidden it on its own
         field.pointSize = 16f;

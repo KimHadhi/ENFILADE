@@ -4,13 +4,6 @@ using UnityEngine;
 /// <summary>A single frontal shove hits each actor once within its range and cone, ignoring intervening cover.</summary>
 public static class ShoveSweep
 {
-    public static int Apply(PlayerMovement player, Transform aim, float damage, LayerMask layers)
-    {
-        if (player == null || aim == null || player.CombatInputLocked) return 0;
-        var attack = new Attack();
-        attack.Begin(player, aim, damage, layers, .001f);
-        return attack.HitCount;
-    }
     public sealed class Attack
     {
         internal readonly HashSet<Object> contacted = new HashSet<Object>();

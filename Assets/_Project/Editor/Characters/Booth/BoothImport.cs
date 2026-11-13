@@ -570,7 +570,7 @@ internal sealed class BoothImport : AssetPostprocessor
                 string id = row["id"];
                 for (int n = 2; !ids.Add(id); n++) id = row["id"] + "-" + n;
                 row["id"] = id;
-                kept.Append(string.Join(",", header.Select(column => Quote(row.TryGetValue(column, out var value) ? value : "")))).Append(newline);
+                kept.Append(string.Join(",", header.Select(column => BoothTable.Quote(row.TryGetValue(column, out var value) ? value : "")))).Append(newline);
             }
         string written = kept.ToString();
         if (written == text) return !TableFile.Waiting(ClothPath);
@@ -579,7 +579,4 @@ internal sealed class BoothImport : AssetPostprocessor
         // 0.8.114's handle release and six retries). A write that still meets a lock waits and lands by itself.
         return TableFile.Write(ClothPath, written, "흔들림 줄", "ENFILADE → 캐릭터 → BOOTH 다시 가져오기를 눌러 주세요.");
     }
-
-    private static string Quote(string cell) =>
-        cell.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0 ? "\"" + cell.Replace("\"", "\"\"") + "\"" : cell;
 }

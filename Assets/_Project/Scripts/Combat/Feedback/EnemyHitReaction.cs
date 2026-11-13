@@ -22,7 +22,6 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
 
     /// <summary>The speed a flinch slows from and returns to, when something other than the table sets it (ZombieMind).</summary>
     internal void SetBaseSpeed(float speed) => baseSpeed = speed;
-    public float InterruptCooldown => interruptCooldown;
 
     private void Awake()
     {

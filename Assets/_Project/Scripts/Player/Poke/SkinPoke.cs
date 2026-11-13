@@ -69,19 +69,6 @@ public sealed class SkinPoke : MonoBehaviour
         return made;
     }
 
-    /// <summary>A fingertip is pressing into <paramref name="who"/> now, and where (for a face held as long as the poke).</summary>
-    public static bool IsPoked(PlayerMovement who, out PokeZone zone)
-    {
-        foreach (var slot in slots)
-        {
-            if (!slot.InUse || !slot.Touching || slot.Target != who) continue;
-            zone = slot.Zone;
-            return true;
-        }
-        zone = PokeZone.None;
-        return false;
-    }
-
     /// <summary>
     /// The nearest friend's body along a pointing player's look, within <paramref name="range"/> (m): where it meets them,
     /// which zone, and whether they let it poke. Only bodies near the line do any work, and a body is read the first

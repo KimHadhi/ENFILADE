@@ -92,14 +92,6 @@ public sealed class SceneWarmup : MonoBehaviour
     /// <summary>The current scene has been warmed and the loading screen is lifting or gone.</summary>
     public static bool IsReady { get; private set; }
 
-    /// <summary>Runs <paramref name="then"/> now if the scene is ready, else once it is (once).</summary>
-    public static void WhenReady(Action then)
-    {
-        if (then == null) return;
-        if (IsReady) then();
-        else waiting.Add(then);
-    }
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {

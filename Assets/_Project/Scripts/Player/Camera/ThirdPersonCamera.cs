@@ -262,7 +262,7 @@ public sealed class ThirdPersonCamera : MonoBehaviour
         Quaternion eyeTurn = view.rotation, look = lookPivot.rotation;
         // The point it circles: the eye height the capsule sets, with a share of the head's own movement, eased.
         Vector3 wantedPivot = Vector3.Lerp(lookPivot.position, body.EyePosition, follow.headShare);
-        pivot = pivotKnown ? Vector3.Lerp(pivot, wantedPivot, Rate(follow.pivotRate, dt)) : wantedPivot;
+        pivot = pivotKnown ? Vector3.Lerp(pivot, wantedPivot, Ease.Share(follow.pivotRate, dt)) : wantedPivot;
         pivotKnown = true;
 
         float aside = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(w / SideSpan));
@@ -276,13 +276,13 @@ public sealed class ThirdPersonCamera : MonoBehaviour
         // The room beside the head, measured all the way out every frame so a wall that goes lets the camera out slowly.
         Vector3 fullShoulder = pivot + shoulderOffset;
         float sideAllowed = Share(anchor, clearance.Resolve(anchor, fullShoulder, follow.wallRadius, walls, transform), fullShoulder);
-        sideRoom = sideAllowed < sideRoom ? sideAllowed : Mathf.Lerp(sideRoom, sideAllowed, Rate(follow.wallRelease, dt));
+        sideRoom = sideAllowed < sideRoom ? sideAllowed : Mathf.Lerp(sideRoom, sideAllowed, Ease.Share(follow.wallRelease, dt));
         Vector3 start = Vector3.Lerp(eye, pivot, aside);
         Vector3 shoulder = clearance.Resolve(anchor, start + shoulderOffset * Mathf.Min(aside, sideRoom), radius, walls, transform);
 
         Vector3 back = look * Vector3.back;
         float room = Vector3.Distance(shoulder, clearance.Resolve(shoulder, shoulder + back * follow.distance, follow.wallRadius, walls, transform));
-        backRoom = room < backRoom ? room : Mathf.Lerp(backRoom, room, Rate(follow.wallRelease, dt));
+        backRoom = room < backRoom ? room : Mathf.Lerp(backRoom, room, Ease.Share(follow.wallRelease, dt));
         Vector3 position = clearance.Resolve(shoulder, shoulder + back * Mathf.Min(follow.distance * behind, backRoom), radius, walls,
             transform);
         // Out of the eyes the view turns with the look and the camera effects (punches, tilts), not the head's clip.
@@ -450,6 +450,4 @@ public sealed class ThirdPersonCamera : MonoBehaviour
         float full = Vector3.Distance(from, wanted);
         return full > .001f ? Mathf.Clamp01(Vector3.Distance(from, cleared) / full) : 1f;
     }
-
-    private static float Rate(float rate, float dt) => rate <= 0f ? 1f : 1f - Mathf.Exp(-rate * dt);
 }

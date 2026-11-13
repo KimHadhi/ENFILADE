@@ -130,12 +130,8 @@ public sealed class HoundDuel : MonoBehaviour
     {
         if (victim == null || victim == Hound || !told.Add(victim)) return;
         KitSound.Play(KitSound.Cue.Mark, .6f);
-        AlertHUD.Team(Texts.Format("class.schiesshund.duel.saved", NameOf(Hound)), Hound.transform, PingMarks.BountyColor);
+        AlertHUD.Team(Texts.Format("class.schiesshund.duel.saved", PlayerTally.NameOf(Hound)), Hound.transform, PingMarks.BountyColor);
     }
-
-    private static string NameOf(PlayerMovement player)
-        => player != null && player.TryGetComponent(out PlayerTally tally) && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName
-            : player != null ? player.name : "";
 
     // Still on: time left, both still standing.
     private bool Live => Time.time < until && Hound != null && Foe != null && Foe is ICombatFoe foe && foe.IsAlive

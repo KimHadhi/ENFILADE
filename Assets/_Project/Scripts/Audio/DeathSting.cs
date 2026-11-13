@@ -67,12 +67,12 @@ public static class DeathSting
             // The rumble under it.
             brown = brown * .996f + white * .04f;
             rumble += (brown - rumble) * rumbleCut;
-            s += rumble * Smooth(t / .2f) * (t < 1.1f ? 1f : Mathf.Exp(-(t - 1.1f) / .6f)) * .32f;
+            s += rumble * Ease.Smooth(t / .2f) * (t < 1.1f ? 1f : Mathf.Exp(-(t - 1.1f) / .6f)) * .32f;
             // The ringing.
             if (t > .16f)
             {
                 float since = t - .16f;
-                float level = Smooth(since / .55f) * Mathf.Exp(-Mathf.Max(0f, since - .7f) / .75f);
+                float level = Ease.Smooth(since / .55f) * Mathf.Exp(-Mathf.Max(0f, since - .7f) / .75f);
                 double pitch = 2350d * (1d + .0025d * System.Math.Sin(2d * Mathf.PI * 4.6d * since));
                 ringPhase += 2d * Mathf.PI * pitch / Rate;
                 ringPhase2 += 2d * Mathf.PI * pitch * 1.0068d / Rate;
@@ -85,7 +85,7 @@ public static class DeathSting
                 if (since < 0f || since >= .35f) continue;
                 beatPhase[b] += 2d * Mathf.PI * (38f + 30f * Mathf.Exp(-since / .03f)) / Rate;
                 float wave = (float)(System.Math.Sin(beatPhase[b]) + .35d * System.Math.Sin(2d * beatPhase[b]));
-                s += wave * Mathf.Exp(-since / .075f) * beatLevel[b] * Smooth(since / .004f);
+                s += wave * Mathf.Exp(-since / .075f) * beatLevel[b] * Ease.Smooth(since / .004f);
             }
             data[i] = s;
             peak = Mathf.Max(peak, Mathf.Abs(s));
@@ -105,10 +105,4 @@ public static class DeathSting
 
     // A one-pole low-pass's step for a cutoff (Hz).
     private static float Cut(float hertz) => 1f - Mathf.Exp(-2f * Mathf.PI * hertz / Rate);
-
-    private static float Smooth(float x)
-    {
-        x = Mathf.Clamp01(x);
-        return x * x * (3f - 2f * x);
-    }
 }

@@ -77,7 +77,7 @@ internal sealed class GunArms
         // the mannequin in the gun bake (GunClipRetarget, version 10).
         foreach (var animator in copy.GetComponentsInChildren<Animator>(true)) Object.DestroyImmediate(animator);
         var root = copy.transform;
-        var arms = new GunArms(copy, Find(root, GunBone), HandOf(root, "r"), HandOf(root, "l"));
+        var arms = new GunArms(copy, Hierarchy.Find(root, GunBone), HandOf(root, "r"), HandOf(root, "l"));
         if (arms.gun != null && arms.right.Valid && arms.left.Valid) return arms;
         Debug.LogWarning($"GunArms: {prefab.name} has no {GunBone} or no hand_r/hand_l with index, middle and pinky knuckles; "
             + "its guns' clips stay on the remade clips alone.", prefab);
@@ -191,24 +191,24 @@ internal sealed class GunArms
 
     private static Hand HandOf(Transform root, string side)
     {
-        var wrist = Find(root, "hand_" + side);
+        var wrist = Hierarchy.Find(root, "hand_" + side);
         if (wrist == null) return new Hand();
         var hand = new Hand
         {
             Wrist = wrist,
-            Index = Find(wrist, "index_01_" + side),
-            Middle = Find(wrist, "middle_01_" + side),
-            Ring = Find(wrist, "ring_01_" + side),
-            Pinky = Find(wrist, "pinky_01_" + side),
-            Shoulder = Find(root, "upperarm_" + side),
-            Elbow = Find(root, "lowerarm_" + side)
+            Index = Hierarchy.Find(wrist, "index_01_" + side),
+            Middle = Hierarchy.Find(wrist, "middle_01_" + side),
+            Ring = Hierarchy.Find(wrist, "ring_01_" + side),
+            Pinky = Hierarchy.Find(wrist, "pinky_01_" + side),
+            Shoulder = Hierarchy.Find(root, "upperarm_" + side),
+            Elbow = Hierarchy.Find(root, "lowerarm_" + side)
         };
         hand.HasDigits = true;
         for (int f = 0; f < 5 && hand.HasDigits; f++)
         {
             for (int j = 0; j < 3; j++)
             {
-                var joint = Find(wrist, $"{FingerNames[f]}_0{j + 1}_{side}");
+                var joint = Hierarchy.Find(wrist, $"{FingerNames[f]}_0{j + 1}_{side}");
                 if (joint == null) { hand.HasDigits = false; break; }
                 hand.Joints[f * 3 + j] = joint;
             }
@@ -221,16 +221,5 @@ internal sealed class GunArms
             hand.TipAxes[f] = toTip.normalized;
         }
         return hand;
-    }
-
-    private static Transform Find(Transform root, string name)
-    {
-        if (root.name == name) return root;
-        for (int i = 0; i < root.childCount; i++)
-        {
-            var found = Find(root.GetChild(i), name);
-            if (found != null) return found;
-        }
-        return null;
     }
 }

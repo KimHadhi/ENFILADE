@@ -400,7 +400,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         PortraitImage.Add(frame, skin, skin.Variants.Count > 0 ? skin.Variants[0] : null);
         var name = KitStyle.Flat(KitStyle.TopLeft("Name", inside, new Vector2(0f, picture - 2f), new Vector2(size.x - 4f, 24f)), skin.DisplayName, 15f,
             TextAlignmentOptions.Center, chosen ? KitStyle.Text : KitStyle.Soft);
-        name.overflowMode = CombatUIAssets.ClippedOverflow(name);
+        name.overflowMode = FontRoles.ClippedOverflow(name);
         Grow(card, 0f);
         if (chosen) return;
         var button = card.gameObject.AddComponent<Button>();
@@ -496,7 +496,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         var shown = KitStyle.Flat(KitStyle.TopLeft("Worn", tile, new Vector2(16f, 20f), new Vector2(room, 26f)), value, 18f,
             TextAlignmentOptions.MidlineLeft, changed ? KitStyle.Text : KitStyle.With(KitStyle.Text, .7f));
         shown.fontStyle = FontStyles.Normal;
-        shown.overflowMode = CombatUIAssets.ClippedOverflow(shown);
+        shown.overflowMode = FontRoles.ClippedOverflow(shown);
         Grow(tile, Slant);
         // The pointer on a tile marks its pieces on the body.
         WardrobeHover.On(tile.gameObject, () => { if (preview != null) preview.Highlight(slot.id); },
@@ -622,7 +622,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         float tagAt = clear - WornGap - WornTag, room = (worn ? tagAt : clear) - 22f - 10f;
         var title = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 10f), new Vector2(room, 30f)), name, 22f,
             TextAlignmentOptions.MidlineLeft, worn ? KitStyle.Text : KitStyle.With(KitStyle.Text, .85f));
-        title.overflowMode = CombatUIAssets.ClippedOverflow(title);
+        title.overflowMode = FontRoles.ClippedOverflow(title);
         if (!string.IsNullOrEmpty(note)) Note(plate, new Vector2(24f, 42f), room, note, 13f);
         if (worn)
         {
@@ -743,7 +743,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         var name = KitStyle.Flat(KitStyle.TopLeft("Name", row, new Vector2(14f, 4f), new Vector2(RowName - 18f, 28f)), option.Name, 16f,
             TextAlignmentOptions.MidlineLeft, KitStyle.Text);
         name.fontStyle = FontStyles.Normal;
-        name.overflowMode = CombatUIAssets.ClippedOverflow(name);
+        name.overflowMode = FontRoles.ClippedOverflow(name);
         float own = BodyShapes.Own(skin, option), value = BodyShapes.Value(saved, skin, option);
         float height = option.Kind == BodyShapes.Kind.Choice ? ChoiceRow(row, skin, option, own, value) : SliderRow(row, skin, option, own, value);
         row.sizeDelta = new Vector2(width, height);
@@ -801,7 +801,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
             KitSkew.On(backs[i], ChipSlant);
             backs[i].raycastTarget = true;
             labels[i] = KitStyle.Flat(KitStyle.Stretch("Text", chip), words[i], 13f, TextAlignmentOptions.Center, KitStyle.Text);
-            labels[i].overflowMode = CombatUIAssets.ClippedOverflow(labels[i]);
+            labels[i].overflowMode = FontRoles.ClippedOverflow(labels[i]);
             if (i == mine)
                 KitSkew.On(KitStyle.Fill(KitStyle.TopLeft("Own", chip, new Vector2(8f, OptionChip - 3f), new Vector2(chipWidth - 16f, 2f)),
                     KitStyle.With(KitStyle.Ice, .75f)), ChipSlant);
@@ -993,7 +993,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
     {
         var note = KitStyle.Flat(KitStyle.TopLeft("Note", parent, at, new Vector2(width, size + 6f)), text, size, TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
         note.fontStyle = FontStyles.Normal;
-        note.overflowMode = CombatUIAssets.ClippedOverflow(note);
+        note.overflowMode = FontRoles.ClippedOverflow(note);
         return note;
     }
 
@@ -1005,7 +1005,7 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         KitSkew.On(back, ChipSlant);
         back.raycastTarget = picked != null;
         var label = KitStyle.Flat(KitStyle.Stretch("Text", chip), text, 14f, TextAlignmentOptions.Center, on ? KitStyle.Ink : KitStyle.Text);
-        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
+        label.overflowMode = FontRoles.ClippedOverflow(label);
         Grow(chip, ChipSlant);
         if (picked == null) return chip;
         var button = chip.gameObject.AddComponent<Button>();

@@ -80,7 +80,7 @@ public sealed class CalloutGesture : MonoBehaviour
             return;
         }
         float u = clock / length;
-        float weight = Smooth(clock / In) * Smooth((length - clock) / Out);
+        float weight = Ease.Smooth(clock / In) * Ease.Smooth((length - clock) / Out);
         Vector3 up = Vector3.up;
         Vector3 forward = Facing();
         Vector3 right = Vector3.Cross(up, forward).normalized;
@@ -220,11 +220,5 @@ public sealed class CalloutGesture : MonoBehaviour
         Vector3 now = child.position - bone.position;
         if (now.sqrMagnitude < 1e-8f || want.sqrMagnitude < 1e-8f || weight <= 0f) return;
         bone.rotation = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(now, want), weight) * bone.rotation;
-    }
-
-    private static float Smooth(float t)
-    {
-        t = Mathf.Clamp01(t);
-        return t * t * (3f - 2f * t);
     }
 }

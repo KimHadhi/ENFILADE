@@ -183,7 +183,7 @@ public static partial class HubBuilder
         var stage = new GameObject("결과 무대", typeof(HubStage));
         stage.transform.SetParent(stations, false);
         stage.transform.SetPositionAndRotation(new Vector3(9.4f, .5f, 0f), Quaternion.Euler(0f, -90f, 0f));
-        Set(stage.GetComponent<HubStage>(), so => so.FindProperty("width").floatValue = 11f);
+        GreyboxBuilder.Set(stage.GetComponent<HubStage>(), so => so.FindProperty("width").floatValue = 11f);
         for (int i = -1; i <= 1; i++)
             Spot(new Vector3(5.5f, 5.6f, i * 4f), new Vector3(9.4f, 1f, i * 4f));
         DressHall();
@@ -231,7 +231,7 @@ public static partial class HubBuilder
         carriage.SetParent(range, false);
         carriage.position = mover.position;
         mover.SetParent(carriage, true);
-        Set(carriage.GetComponent<RangeMover>(), so => so.FindProperty("travel").vector3Value = new Vector3(3.2f, 0f, 0f));
+        GreyboxBuilder.Set(carriage.GetComponent<RangeMover>(), so => so.FindProperty("travel").vector3Value = new Vector3(3.2f, 0f, 0f));
         Box("레일", -3.6f, .2f, Floor, Floor + .05f, -44.1f, -43.9f, metal, solid: false);
         Dummy("25 m", new Vector3(1f, Floor, -39f));
         Plate("강철판 50 m", new Vector3(2.6f, Floor, -64f));
@@ -254,7 +254,7 @@ public static partial class HubBuilder
         root.transform.SetParent(range, false);
         // Facing the firing line (north).
         root.transform.SetPositionAndRotation(feet, Quaternion.identity);
-        Set(root.GetComponent<RangeTarget>(), so =>
+        GreyboxBuilder.Set(root.GetComponent<RangeTarget>(), so =>
         {
             so.FindProperty("nameId").stringValue = zombie ? "hub.range.dummy" : "hub.range.plate";
             so.FindProperty("zombie").boolValue = zombie;
@@ -318,7 +318,7 @@ public static partial class HubBuilder
         pane.transform.SetParent(terrain, false);
         pane.transform.localPosition = new Vector3((glass.x + wall) * .5f, glass.y, glass.z);
         pane.GetComponent<BoxCollider>().size = new Vector3(wall - glass.x, height, width);
-        Set(pane.AddComponent<SurfaceType>(), so => so.FindProperty("surface").stringValue = "Mirror");
+        GreyboxBuilder.Set(pane.AddComponent<SurfaceType>(), so => so.FindProperty("surface").stringValue = "Mirror");
         var station = Station("거울", HubStation.Kind.Mirror, glass, -90f, new Vector3(width, height, .1f));
         station.AddComponent<HubMirror>();
     }
@@ -333,12 +333,12 @@ public static partial class HubBuilder
             station.name = name;
             station.transform.localScale = size;
             station.GetComponent<Renderer>().sharedMaterial = metal;
-            Set(station.AddComponent<SurfaceType>(), so => so.FindProperty("surface").stringValue = "Metal");
+            GreyboxBuilder.Set(station.AddComponent<SurfaceType>(), so => so.FindProperty("surface").stringValue = "Metal");
         }
         else station = new GameObject(name);
         station.transform.SetParent(stations, false);
         station.transform.SetPositionAndRotation(at, Quaternion.Euler(0f, yaw, 0f));
-        Set(station.AddComponent<HubStation>(), so =>
+        GreyboxBuilder.Set(station.AddComponent<HubStation>(), so =>
         {
             so.FindProperty("kind").enumValueIndex = (int)kind;
             // A scaled box carries its size in its scale already: its station's area is one unit of it.
@@ -352,7 +352,7 @@ public static partial class HubBuilder
         var label = new GameObject("글자 " + words, typeof(HubLabel));
         label.transform.SetParent(stations, false);
         label.transform.SetPositionAndRotation(at, turn);
-        Set(label.GetComponent<HubLabel>(), so =>
+        GreyboxBuilder.Set(label.GetComponent<HubLabel>(), so =>
         {
             so.FindProperty("words").stringValue = words;
             so.FindProperty("height").floatValue = height;
@@ -374,7 +374,7 @@ public static partial class HubBuilder
         var line = new GameObject(name, typeof(Zipline));
         line.transform.SetParent(fixtures, false);
         line.transform.position = from;
-        Set(line.GetComponent<Zipline>(), so =>
+        GreyboxBuilder.Set(line.GetComponent<Zipline>(), so =>
         {
             so.FindProperty("end").vector3Value = to - from;
             so.FindProperty("twoWay").boolValue = false;
@@ -407,13 +407,6 @@ public static partial class HubBuilder
         light.intensity = 40f;
         light.color = new Color(1f, .93f, .95f);
         light.shadows = LightShadows.None;
-    }
-
-    private static void Set(Object target, System.Action<SerializedObject> change)
-    {
-        var so = new SerializedObject(target);
-        change(so);
-        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static Transform Root(string name)

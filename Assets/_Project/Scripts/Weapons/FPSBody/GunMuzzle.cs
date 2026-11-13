@@ -47,7 +47,7 @@ public static class GunMuzzle
         // Only the parts the gun wears now: the sights, muzzles and grips it isn't wearing wait switched off on their mounts
         // (GunSights, GunAttachments), and a suppressor put on moves the muzzle to its end. The gun itself may be off.
         foreach (var renderer in gun.GetComponentsInChildren<Renderer>(true))
-            if (Worn(renderer.transform, gun)) vertices |= Collect(renderer, Points);
+            if (GunSurface.Worn(renderer.transform, gun)) vertices |= Collect(renderer, Points);
         Vector3 muzzle = aimPoint != null ? aimPoint.position : gun.position;
         KeepNearLine(muzzle, axis);
         if (Points.Count > 0)
@@ -66,14 +66,6 @@ public static class GunMuzzle
             else muzzle += axis * (front - Vector3.Dot(muzzle, axis));
         }
         return muzzle;
-    }
-
-    // On from the part up to the gun, whether the gun itself is on or not.
-    private static bool Worn(Transform part, Transform gun)
-    {
-        for (var at = part; at != null && at != gun; at = at.parent)
-            if (!at.gameObject.activeSelf) return false;
-        return true;
     }
 
     // Drops the points further than NearSightLine from the line through origin along axis, unless that would drop all.

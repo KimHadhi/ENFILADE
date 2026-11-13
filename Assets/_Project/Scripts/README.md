@@ -32,6 +32,23 @@
 2. **글자도 표에.** 플레이어가 읽는 글자는 모두 `Texts.csv`의 id로 쓴다(`Texts.Get`). 코드에 문장을 적지 않는다.
 3. **한 폴더에 한 가지 일.** 새 기능은 그 기능의 폴더에 두고, 한 폴더의 스크립트가 스무 개를 넘으면 나눈다. 여러 기능이 같이 쓰는 것만 `Core`·`Combat`·`UI/Shared`에 둔다.
 
+## 새로 만들기 전에: 같이 쓰는 도우미
+
+같은 몇 줄이 파일마다 복사되어 있던 것을 0.9.2에서 한곳으로 모았다. 비슷한 것이 필요하면 새로 적지 말고 아래 것을 쓰고, 없으면 여기에 더한다.
+
+| 필요한 것 | 쓰는 것 |
+| --- | --- |
+| 표의 한 줄에서 칸 읽기 | [TableCells](Core/Tables/TableCells.cs): `row.Number("damage", 10f)`, `row.Text("name")`, `row.Vector("wrist", fallback)`, `TableCells.Parts("a\|b")` |
+| 이징 곡선 | [Ease](Core/Common/Ease.cs): `Ease.Out`, `Ease.InOut`, `Ease.Smooth`, 프레임 수와 무관한 따라가기 `Ease.Share(rate, dt)` |
+| 트랜스폼을 이름으로 찾기, 경로 | [Hierarchy](Core/Common/Hierarchy.cs): `Hierarchy.Find(root, name)`, `Hierarchy.PathOf(part, root)` |
+| 메시·본 가중치 읽기 | [MeshTools](Core/Common/MeshTools.cs): `MeshOf(renderer)`, `BoxOf(bounds, matrix)`, `Strongest(weight)` |
+| 지금 키 입력을 게임이 받는가 | [InputFocus](UI/Shared/InputFocus.cs): `TakesInput()`, 메뉴까지 보는 `TakesPlayInput()`, `Pressed(action)` |
+| 코드로 UI 조각 만들기 | [FeelUI](Combat/Feedback/FeelUI.cs): `Rect`, `Panel`, `Label` / [KitStyle](UI/Kit/KitStyle.cs): `Stretch`, `Fill`, `Cut`, `With(color, alpha)` |
+| 플레이어 찾기·이름 | [PlayerRoster](Player/PlayerRoster.cs): `Local`, `All`, `IdOf`, `ById` / [PlayerTally](Player/Life/PlayerTally.cs): `NameOf`, `ColoredNameOf` |
+| 왼팔을 경로대로 움직여 무언가 쥐기 | [PathArm](Player/Body/Hands/PathArm.cs)을 상속 (수류탄 팔 GrenadeArm, 수리 팔 RepairArm이 쓴다) |
+| 실행 중 오브젝트를 하이어라키에 정리 | [RuntimeSceneHierarchy](Core/Scene/RuntimeSceneHierarchy.cs): `Keep`, `Group` |
+| 에셋 폴더의 자리 (편집기 도구) | [ProjectFolders](Core/ProjectFolders.cs): `ArtByName`, `DataByName`, `PrefabsByName`, `Guns` |
+
 ## 코드를 읽는 순서
 
 이동의 진입점은 `PlayerMovement`다. 프레임마다 입력·상태·물리 서비스를 연결하고, 외부 기능에는 `CurrentState`, `Velocity`, `ResetVelocity()` 같은 API를 제공한다. 내부 상태 전환과 재컴파일 복구는 [이동 코드 구조](Player/Movement/README.md)를 참고한다.

@@ -444,11 +444,4 @@ public sealed class MovementMotor
         }
         VerticalVelocity = Mathf.Max(VerticalVelocity, -50f);
     }
-
-    public bool HasGroundAhead(Vector3 direction, float distanceAhead, float checkDepth)
-    {
-        Vector3 checkOrigin = ctx.transform.position + (direction * distanceAhead) + Vector3.up * 0.1f;
-        return Physics.Raycast(checkOrigin, Vector3.down, checkDepth + 0.1f, ctx.groundLayers, QueryTriggerInteraction.Ignore);
-    }
-
 }

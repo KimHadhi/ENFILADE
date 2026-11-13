@@ -73,7 +73,6 @@ public sealed class PlayerBodyProfile : ScriptableObject
     public SkinVariant CurrentVariant => CurrentSkin?.VariantOf(GameSettings.Current.characterVariant);
     public GameObject Model => ModelOf(CurrentSkin);
     public IReadOnlyList<Skin> Skins => skins;
-    public IReadOnlyList<AnimationClip> Clips => clips;
     public IReadOnlyList<string> FirstPersonShadowOnly => firstPersonShadowOnly;
 
     public static PlayerBodyProfile Load()

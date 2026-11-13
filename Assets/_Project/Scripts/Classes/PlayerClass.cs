@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -78,10 +77,10 @@ public static class PlayerClass
                 catalog.Add(new Info
                 {
                     // The title and role cells name Texts rows (class.<id>.title, .role), or hold plain words.
-                    Id = id, Title = Texts.Cell(Cell(row, "title", id)), Role = Texts.Cell(Cell(row, "role", "")), Primary = Cell(row, "primary", ""),
-                    Secondary = Cell(row, "secondary", ""),
-                    Weapons = Cell(row, "classWeapons", "").Split(new[] { ';', ' ' }, StringSplitOptions.RemoveEmptyEntries),
-                    GunBonus = Number(row, "gunBonus", 0f), Ready = Number(row, "ready", 0f) > .5f
+                    Id = id, Title = Texts.Cell(row.Text("title", id)), Role = Texts.Cell(row.Text("role", "")), Primary = row.Text("primary", ""),
+                    Secondary = row.Text("secondary", ""),
+                    Weapons = row.Text("classWeapons", "").Split(new[] { ';', ' ' }, StringSplitOptions.RemoveEmptyEntries),
+                    GunBonus = row.Number("gunBonus", 0f), Ready = row.Number("ready", 0f) > .5f
                 });
             }
             return catalog;
@@ -251,10 +250,6 @@ public static class PlayerClass
     /// dealt its cards, so a class's numbers grow for its own player.
     /// </summary>
     public static float Ability(string classRow, string name, float fallback)
-        => (GameTables.TryGetRow(AbilityTable, classRow, out var row) ? Number(row, name, fallback) : fallback)
+        => (GameTables.TryGetRow(AbilityTable, classRow, out var row) ? row.Number(name, fallback) : fallback)
             + PlayerPerks.AbilityBonus(classRow, name);
-
-    private static string Cell(IReadOnlyDictionary<string, string> row, string key, string fallback) => TableCells.Text(row, key, fallback);
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

@@ -12,14 +12,6 @@ using UnityEngine.AI;
 public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 
 /// <summary>
-/// How aware a zombie is of the players, on every PC (ZombieMind.Awareness), for the stealth HUD and anything else that
-/// reads it (a Ghost's detection tool): Calm, nothing on its mind; Suspicious, something caught its eye or ear (its
-/// suspicion rising, stopped to look, or gone to search); Calling, it made someone out and is drawing breath to call the
-/// others (kill it now and nobody else is told); Alerted, awake and after someone (woken, called, struck, or a horde's).
-/// </summary>
-public enum ZombieAwareness : byte { Calm, Suspicious, Calling, Alerted }
-
-/// <summary>
 /// Multiplayer plan stage 4C: what a zombie knows. A horde zombie (a wave's, or a plain /spawn) is awake from the start
 /// and always knows where the nearest player is, as before. One that starts calm (placed in a map with startCalm, or
 /// /spawn n calm) has to notice them: it stands Calm and looks round now and then, grows Alert (stops and turns to what
@@ -242,8 +234,6 @@ public sealed class ZombieMind : MonoBehaviour
     public bool Unaware => !IsAwake;
     /// <summary>The player it is after, awake; null for a horde zombie, which takes the nearest (EnemyTargeting).</summary>
     public PlayerMovement Target => IsAwake && !horde && Alive(focus) ? focus : null;
-    /// <summary>How sure it is that someone is there, 0 to 1 (the host's own).</summary>
-    public float Suspicion => suspicion;
 
     /// <summary>How sure it is that someone is there, 0 to 1, on every PC: the host's own, a copy's as the host shares it.</summary>
     public float ShownSuspicion => IsCopy ? shownStep / 20f : horde ? 0f : suspicion;
@@ -284,12 +274,6 @@ public sealed class ZombieMind : MonoBehaviour
     /// <summary>How far into its tell it is, 0 to 1, on every PC: the call goes out at 1. 0 while it isn't calling.</summary>
     public float CallShare => !Calling ? 0f : callTell <= 0f ? 1f
         : Mathf.Clamp01(IsCopy ? (Time.time - shownCallSince) / callTell : 1f - (callAt - Time.time) / callTell);
-    /// <summary>How aware it is of the players (ZombieAwareness), on every PC alike.</summary>
-    public ZombieAwareness Awareness
-        => Calling ? ZombieAwareness.Calling
-            : IsAwake ? ZombieAwareness.Alerted
-            : Mood == ZombieMood.Alert || Mood == ZombieMood.Searching || ShownSuspicion > 0f ? ZombieAwareness.Suspicious
-            : ZombieAwareness.Calm;
     /// <summary>
     /// On the host or alone: some zombie that started calm is awake and after someone now (a local alarm, its own and
     /// those its call woke; a horde's don't count). A campaign's quiet stretch survives it unless it lasts (CampaignRun).

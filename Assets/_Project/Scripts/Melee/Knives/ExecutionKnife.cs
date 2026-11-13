@@ -65,9 +65,6 @@ public sealed class ExecutionKnife : MonoBehaviour
     /// <summary>A knife stroke has this player's hands: their gun is put away until it is over (WeaponController).</summary>
     public static bool HoldsHands(PlayerMovement who) => who != null && who.TryGetComponent(out ExecutionKnife knife) && knife.playing;
 
-    /// <summary>A stroke is playing on this PC's copy of the player.</summary>
-    public bool IsOut => playing;
-
     /// <summary>
     /// Something else poses the arms through this execution (a paired execution clip on the body): the knife still rides in
     /// the right fist as the stroke holds it, but ExecutionKnifeArm leaves the arms to that clip. Set it on every PC that

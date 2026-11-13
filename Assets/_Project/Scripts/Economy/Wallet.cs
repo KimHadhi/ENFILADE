@@ -100,12 +100,6 @@ public static class Wallet
         return true;
     }
 
-    /// <summary>Puts back money that was taken out but never left (a drop the host refused).</summary>
-    public static void Refund(long amount)
-    {
-        if (amount > 0) Given = Math.Max(0L, Given - amount);
-    }
-
     public static void Receive(long amount)
     {
         Sync();

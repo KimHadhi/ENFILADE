@@ -223,7 +223,7 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
         float columns = RowWidth - 18f - ColumnWidth * 3f, textWidth = columns - 122f;
         var title = KitStyle.Flat(KitStyle.TopLeft("Name", rect, new Vector2(110f, 16f), new Vector2(textWidth, 36f)), name, 28f,
             TextAlignmentOptions.MidlineLeft, done ? KitStyle.Text : KitStyle.With(KitStyle.Text, .8f));
-        title.overflowMode = CombatUIAssets.ClippedOverflow(title);
+        title.overflowMode = FontRoles.ClippedOverflow(title);
         int games = line?.games ?? 0;
         string played = games > 0 ? Texts.Format("records.row.games", Count(games)) : Texts.Get("records.row.never");
         var under = KitStyle.Flat(KitStyle.TopLeft("Games", rect, new Vector2(111f, 54f), new Vector2(textWidth, 22f)),
@@ -309,7 +309,7 @@ public sealed class MainMenuRecords : MonoBehaviour, IPointerClickHandler
         var small = KitStyle.Flat(KitStyle.TopLeft("Note", strip, new Vector2(x + 22f, 70f), new Vector2(width - 34f, 18f)), note, 12f,
             TextAlignmentOptions.MidlineLeft, Hint);
         small.fontStyle = FontStyles.Normal;
-        small.overflowMode = CombatUIAssets.ClippedOverflow(small);
+        small.overflowMode = FontRoles.ClippedOverflow(small);
     }
 
     // The right side: the totals and the last games, or the picked chapter's page. Built anew on every change and grown

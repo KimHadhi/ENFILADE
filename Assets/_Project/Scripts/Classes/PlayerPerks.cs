@@ -108,12 +108,12 @@ public static class PlayerPerks
                 // perk.tag.<kind>), where the words are written; a modder's plain words work as well.
                 catalog.Add(new Perk
                 {
-                    Id = id, Name = Texts.Cell(Text(row, "name", id)), Class = Text(row, "class", ""), Tag = Texts.Cell(Text(row, "tag", "")),
-                    Icon = Text(row, "icon", ""), Text = Texts.Cell(Text(row, "text", "")), Why = Texts.Cell(Text(row, "why", "")),
-                    Ability = Text(row, "ability", ""),
-                    Levels = Mathf.Max(1, (int)Number(row, "levels", 1f)), After = Mathf.Max(0, (int)Number(row, "after", 0f)),
-                    Value = Number(row, "value", 0f), Value2 = Number(row, "value2", 0f), Display = Number(row, "display", 1f),
-                    Weight = Mathf.Max(0f, Number(row, "weight", 1f)), Final = Number(row, "final", 0f) > .5f
+                    Id = id, Name = Texts.Cell(row.Text("name", id)), Class = row.Text("class", ""), Tag = Texts.Cell(row.Text("tag", "")),
+                    Icon = row.Text("icon", ""), Text = Texts.Cell(row.Text("text", "")), Why = Texts.Cell(row.Text("why", "")),
+                    Ability = row.Text("ability", ""),
+                    Levels = Mathf.Max(1, (int)row.Number("levels", 1f)), After = Mathf.Max(0, (int)row.Number("after", 0f)),
+                    Value = row.Number("value", 0f), Value2 = row.Number("value2", 0f), Display = row.Number("display", 1f),
+                    Weight = Mathf.Max(0f, row.Number("weight", 1f)), Final = row.Number("final", 0f) > .5f
                 });
             }
             return catalog;
@@ -180,9 +180,6 @@ public static class PlayerPerks
             if (!perk.Final && string.Equals(perk.Class, classId, StringComparison.OrdinalIgnoreCase)) sum += Mathf.Min(Level(perk.Id), perk.Levels);
         return sum;
     }
-
-    /// <summary>The class this card belongs to, as the class table names it (empty: everyone's).</summary>
-    public static string ClassTitle(Perk perk) => perk == null || string.IsNullOrEmpty(perk.Class) ? "" : PlayerClass.Find(perk.Class)?.Title ?? perk.Class;
 
     /// <summary>
     /// Up to <paramref name="count"/> different perks dealable now, the heavier ones likelier: this player's class's own
@@ -402,8 +399,4 @@ public static class PlayerPerks
         }
         return built.ToString();
     }
-
-    private static string Text(IReadOnlyDictionary<string, string> row, string key, string fallback) => TableCells.Text(row, key, fallback);
-
-    private static float Number(IReadOnlyDictionary<string, string> row, string key, float fallback) => TableCells.Number(row, key, fallback);
 }

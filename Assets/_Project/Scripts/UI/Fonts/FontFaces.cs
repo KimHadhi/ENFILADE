@@ -62,13 +62,4 @@ public sealed class FontFaces : ScriptableObject
             if (preset != null && string.Equals(preset.key, key, StringComparison.OrdinalIgnoreCase)) return preset.material;
         return null;
     }
-
-    /// <summary>The key of a face asset, or null when it is not listed.</summary>
-    public string KeyOf(TMP_FontAsset font)
-    {
-        if (font == null || faces == null) return null;
-        foreach (var face in faces)
-            if (face != null && face.font == font) return face.key;
-        return null;
-    }
 }

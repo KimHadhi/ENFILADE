@@ -97,7 +97,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
         card.name = FeelUI.ScoreLabel("Name", card.root, 14f, TextAlignmentOptions.BottomLeft);
         Place(card.name.rectTransform, Vector2.zero, new Vector2(TextLeft, line), card.cells.Width * .66f);
         // A long name stops short of the number.
-        card.name.overflowMode = CombatUIAssets.ClippedOverflow(card.name);
+        card.name.overflowMode = FontRoles.ClippedOverflow(card.name);
         card.value = FeelUI.ScoreLabel("Value", card.root, 15f, TextAlignmentOptions.BottomRight);
         Place(card.value.rectTransform, new Vector2(1f, 0f), new Vector2(-Pad, line), card.cells.Width * .4f);
         card.root.gameObject.SetActive(false);

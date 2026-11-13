@@ -306,7 +306,7 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
         var uvs = source.uv;
         var shared = skin.sharedMaterials;
         var strongest = new int[vertices.Length];
-        for (int v = 0; v < vertices.Length; v++) strongest[v] = v < weights.Length ? Strongest(weights[v]) : -1;
+        for (int v = 0; v < vertices.Length; v++) strongest[v] = v < weights.Length ? MeshTools.Strongest(weights[v]) : -1;
         for (int s = 0; s < source.subMeshCount; s++)
         {
             var triangles = source.GetTriangles(s);
@@ -348,15 +348,5 @@ public sealed class GunMagazine : MonoBehaviour, ITableBound
 
         // A corner moves with the magazine when the bone that moves it most is the part or one under it.
         bool Moves(int v) => v < strongest.Length && strongest[v] >= 0 && strongest[v] < moving.Length && moving[strongest[v]];
-    }
-
-    private static int Strongest(in BoneWeight w)
-    {
-        int index = w.boneIndex0;
-        float best = w.weight0;
-        if (w.weight1 > best) { best = w.weight1; index = w.boneIndex1; }
-        if (w.weight2 > best) { best = w.weight2; index = w.boneIndex2; }
-        if (w.weight3 > best) index = w.boneIndex3;
-        return best > 0f ? index : -1;
     }
 }

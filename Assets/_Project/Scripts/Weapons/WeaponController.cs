@@ -754,9 +754,6 @@ public sealed class WeaponController : MonoBehaviour
         if (prop != null) prop.Push(direction.normalized * (weaponData.PropImpulse * share), trace.Hit.point);
     }
 
-    // The crosshair's ray. In the F5 view it starts level with the eyes, so nothing between the camera and the player
-    // catches it; in first person the eyes are the camera. aimed: what it is on (null for nothing in range).
-    private Vector3 AimTarget(float range) => AimTarget(aimOrigin.forward, range, out _);
     private Vector3 AimTarget(float range, out Collider aimed) => AimTarget(aimOrigin.forward, range, out aimed);
 
     // What the eyes see along `forward`: the same ray turned off the middle of the screen, for a pellet's place in the ring.

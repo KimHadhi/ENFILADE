@@ -77,9 +77,6 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     private Action<bool> closed;
     private bool dirty = true, done, standing;
 
-    /// <summary>Open (closing it gives no answer to its caller).</summary>
-    public bool IsOpen => !done;
-
     /// <summary>
     /// Opens over <paramref name="canvas"/> for an item in a colour (or, no item, the character's own piece of
     /// <paramref name="slot"/> in a colour set); <paramref name="closed"/> hears whether the piece's pictures were taken
@@ -491,7 +488,7 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         float room = Mathf.Max(60f, OutfitPictureLook.LeftOf(size, OutfitPictureLook.Of(OutfitPictureLook.Where.Plate)) - 32f);
         var title = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(22f, 10f), new Vector2(room, 30f)), name, 22f,
             TextAlignmentOptions.MidlineLeft, KitStyle.With(KitStyle.Text, .85f));
-        title.overflowMode = CombatUIAssets.ClippedOverflow(title);
+        title.overflowMode = FontRoles.ClippedOverflow(title);
         return shown;
     }
 
@@ -516,7 +513,7 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         var worn = KitStyle.Flat(KitStyle.TopLeft("Worn", tile, new Vector2(16f, 20f), new Vector2(room, 26f)), name, 18f,
             TextAlignmentOptions.MidlineLeft, changed ? KitStyle.Text : KitStyle.With(KitStyle.Text, .7f));
         worn.fontStyle = FontStyles.Normal;
-        worn.overflowMode = CombatUIAssets.ClippedOverflow(worn);
+        worn.overflowMode = FontRoles.ClippedOverflow(worn);
         return shown;
     }
 
@@ -526,7 +523,7 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
     {
         var note = KitStyle.Flat(KitStyle.TopLeft("Note", parent, at, new Vector2(width, size + 8f)), text, size, TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
         note.fontStyle = FontStyles.Normal;
-        note.overflowMode = CombatUIAssets.ClippedOverflow(note);
+        note.overflowMode = FontRoles.ClippedOverflow(note);
         return note;
     }
 
@@ -556,7 +553,7 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         KitSkew.On(back, Slant);
         back.raycastTarget = true;
         var label = KitStyle.Flat(KitStyle.Stretch("Text", plate), text, 16f, TextAlignmentOptions.Center, KitStyle.Text);
-        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
+        label.overflowMode = FontRoles.ClippedOverflow(label);
         var button = plate.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.transition = Selectable.Transition.None;
         button.targetGraphic = back;
@@ -575,7 +572,7 @@ public sealed class OutfitShootView : MonoBehaviour, IBeginDragHandler, IDragHan
         back.raycastTarget = true;
         var label = KitStyle.Flat(KitStyle.Stretch("Text", plate), text, height < 40f ? 16f : 20f, TextAlignmentOptions.Center,
             accent ? KitStyle.Ink : KitStyle.Text);
-        label.overflowMode = CombatUIAssets.ClippedOverflow(label);
+        label.overflowMode = FontRoles.ClippedOverflow(label);
         var button = plate.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.transition = Selectable.Transition.None;
         button.targetGraphic = back;

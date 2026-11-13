@@ -47,6 +47,14 @@ public static class KitStyle
         return rect;
     }
 
+    /// <summary>Makes a rect fill its parent.</summary>
+    public static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+    }
+
     /// <summary>A rect filling its parent.</summary>
     public static RectTransform Stretch(string name, Transform parent)
     {

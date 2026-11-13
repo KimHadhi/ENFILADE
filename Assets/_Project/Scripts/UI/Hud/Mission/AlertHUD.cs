@@ -200,8 +200,6 @@ public sealed class AlertHUD : MonoBehaviour
         }
     }
 
-    private static float Out(float x) { x = 1f - Mathf.Clamp01(x); return 1f - x * x * x; }
-
     // Which side of the view a place is on: 1 right, -1 left.
     private static int SideOf(Camera view, Vector3 place) => Vector3.Dot(view.transform.right, place - view.transform.position) >= 0f ? 1 : -1;
 
@@ -234,7 +232,7 @@ public sealed class AlertHUD : MonoBehaviour
 
     private void Layout(Band band, Camera view)
     {
-        float t = band.age, arrive = Out(t / InSeconds), leave = Mathf.Clamp01((t - (Life - OutSeconds)) / OutSeconds);
+        float t = band.age, arrive = Ease.Out(t / InSeconds), leave = Mathf.Clamp01((t - (Life - OutSeconds)) / OutSeconds);
         band.group.alpha = arrive * (1f - leave);
         band.root.anchoredPosition = new Vector2(band.side * (1f - arrive) * SlideFrom, band.y + (band.side == 0 ? (1f - arrive) * DropFrom : 0f));
         if (band.hazard.gameObject.activeSelf) band.hazard.Offset = t * 60f;
@@ -295,7 +293,7 @@ public sealed class AlertHUD : MonoBehaviour
         mark.distance.rectTransform.anchoredPosition = away ? -outward * (Glyph * .5f + 26f) : new Vector2(0f, -Glyph * .5f - 15f);
         mark.distance.text = Mathf.RoundToInt(distance) + "m";
         mark.hazard.Offset = mark.age * 36f;
-        float arrive = Out(mark.age / .18f), leave = Mathf.Clamp01((mark.age - (mark.life - MarkOutSeconds)) / MarkOutSeconds);
+        float arrive = Ease.Out(mark.age / .18f), leave = Mathf.Clamp01((mark.age - (mark.life - MarkOutSeconds)) / MarkOutSeconds);
         mark.root.localScale = Vector3.one * Mathf.Lerp(1.5f, 1f, arrive);
         // Up close the thing itself says where it is.
         mark.group.alpha = arrive * (1f - leave) * (away ? 1f : .7f) * Mathf.InverseLerp(HiddenWithin, ShownFrom, distance);
@@ -306,9 +304,9 @@ public sealed class AlertHUD : MonoBehaviour
         var band = new Band { root = FeelUI.Rect("Band", bandRoot) };
         band.group = band.root.gameObject.AddComponent<CanvasGroup>();
         band.group.blocksRaycasts = band.group.interactable = false;
-        band.plate = Panel("Plate", band.root, Plate);
+        band.plate = FeelUI.Panel("Plate", band.root, Plate);
         KitSkew.On(band.plate, Slant);
-        band.cap = Panel("Cap", band.root, KitStyle.Accent);
+        band.cap = FeelUI.Panel("Cap", band.root, KitStyle.Accent);
         band.cap.rectTransform.sizeDelta = new Vector2(Cap, Height);
         KitSkew.On(band.cap, Slant);
         band.hazard = HudShapes.Make<HazardGraphic>("Hazard", band.cap.transform, KitStyle.Ink);
@@ -324,9 +322,9 @@ public sealed class AlertHUD : MonoBehaviour
         band.distance.rectTransform.pivot = new Vector2(1f, .5f);
         band.distance.rectTransform.sizeDelta = new Vector2(DistanceRoom, Height);
         band.distance.color = KitStyle.Ice;
-        band.line = Panel("Time", band.root, KitStyle.Accent);
+        band.line = FeelUI.Panel("Time", band.root, KitStyle.Accent);
         band.line.rectTransform.pivot = new Vector2(0f, .5f);
-        band.flash = Panel("Glint", band.root, Color.white);
+        band.flash = FeelUI.Panel("Glint", band.root, Color.white);
         KitSkew.On(band.flash, Slant);
 
         band.arrows = FeelUI.Rect("Arrows", band.root);
@@ -345,7 +343,7 @@ public sealed class AlertHUD : MonoBehaviour
         mark.group = mark.root.gameObject.AddComponent<CanvasGroup>();
         mark.group.blocksRaycasts = mark.group.interactable = false;
         // The hazard square: the HUD's near-black, its pink stripes running.
-        Panel("Square", mark.root, KitStyle.Ink).rectTransform.sizeDelta = Vector2.one * Glyph;
+        FeelUI.Panel("Square", mark.root, KitStyle.Ink).rectTransform.sizeDelta = Vector2.one * Glyph;
         mark.hazard = HudShapes.Make<HazardGraphic>("Hazard", mark.root, KitStyle.Accent);
         mark.hazard.rectTransform.sizeDelta = Vector2.one * (Glyph - 6f);
         mark.hazard.Stripe = 6f;
@@ -370,13 +368,5 @@ public sealed class AlertHUD : MonoBehaviour
         if (text.font != null && text.font.material != null) text.fontSharedMaterial = text.font.material;
         text.fontStyle = FontStyles.Bold;
         return text;
-    }
-
-    private static Image Panel(string name, Transform parent, Color color)
-    {
-        var image = FeelUI.Rect(name, parent).gameObject.AddComponent<Image>();
-        image.raycastTarget = false;
-        image.color = color;
-        return image;
     }
 }

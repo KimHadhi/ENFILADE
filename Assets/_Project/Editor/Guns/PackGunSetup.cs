@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
-using KINEMATION.FPSAnimationFramework.Runtime.Playables;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 /// <summary>
 /// Makes FPS Animation Ultimate's other guns into guns the body holds, the way its MX16A4 and M1911 are (user, 2026-11-13:
@@ -123,13 +121,13 @@ internal static class PackGunSetup
     {
         var source = AssetDatabase.LoadAssetAtPath<GameObject>($"{CasGuns}/CAS_FPSPack_{spec.cas}.prefab");
         string clips = $"{Pack}/Animations/{spec.folder}/Character";
-        var pose = Clip($"{clips}/A_FP_{spec.pose}.anim");
-        var reloadTactical = Clip($"{clips}/A_FP_{spec.reloadTactical}.anim");
-        var reloadEmpty = Clip($"{clips}/A_FP_{spec.reloadEmpty}.anim");
+        var pose = TacticalGunSetup.Clip($"{clips}/A_FP_{spec.pose}.anim");
+        var reloadTactical = TacticalGunSetup.Clip($"{clips}/A_FP_{spec.reloadTactical}.anim");
+        var reloadEmpty = TacticalGunSetup.Clip($"{clips}/A_FP_{spec.reloadEmpty}.anim");
         // The bolt or pump worked after every shot, and a round-at-a-time reload's round and end, where the gun has them.
-        var fire = spec.fire != null ? Clip($"{clips}/A_FP_{spec.fire}.anim") : null;
-        var reloadShell = spec.reloadShell != null ? Clip($"{clips}/A_FP_{spec.reloadShell}.anim") : null;
-        var reloadEnd = spec.reloadEnd != null ? Clip($"{clips}/A_FP_{spec.reloadEnd}.anim") : null;
+        var fire = spec.fire != null ? TacticalGunSetup.Clip($"{clips}/A_FP_{spec.fire}.anim") : null;
+        var reloadShell = spec.reloadShell != null ? TacticalGunSetup.Clip($"{clips}/A_FP_{spec.reloadShell}.anim") : null;
+        var reloadEnd = spec.reloadEnd != null ? TacticalGunSetup.Clip($"{clips}/A_FP_{spec.reloadEnd}.anim") : null;
         var cas = source != null ? source.GetComponent<CasFPSWeapon>() : null;
         if (cas == null || pose == null || reloadTactical == null || reloadEmpty == null || (spec.fire != null && fire == null)
             || (spec.reloadShell != null && (reloadShell == null || reloadEnd == null)))
@@ -159,15 +157,15 @@ internal static class PackGunSetup
             sourcePose = pose,
             sourceReloadTactical = reloadTactical,
             sourceReloadEmpty = reloadEmpty,
-            pose = BodyAsset(template.pose, $"{stem}_Pose.asset", .15f, .15f),
+            pose = TacticalGunSetup.BodyAsset(template.pose, $"{stem}_Pose.asset", .15f, .15f),
             // A round-at-a-time reload's starts hand straight over to its rounds, as TacticalGunSetup's Herrington's do;
             // FPSBody eases its end into the hold.
-            reloadTactical = BodyAsset(template.reloadTactical, $"{stem}_ReloadTactical.asset", .15f, shells ? .1f : .15f),
-            reloadEmpty = BodyAsset(emptyTemplate, $"{stem}_ReloadEmpty.asset", .15f, shells ? .1f : .15f),
+            reloadTactical = TacticalGunSetup.BodyAsset(template.reloadTactical, $"{stem}_ReloadTactical.asset", .15f, shells ? .1f : .15f),
+            reloadEmpty = TacticalGunSetup.BodyAsset(emptyTemplate, $"{stem}_ReloadEmpty.asset", .15f, shells ? .1f : .15f),
             sourceReloadShell = reloadShell,
             sourceReloadEnd = reloadEnd,
-            reloadShell = shells ? BodyAsset(template.reloadTactical, $"{stem}_ReloadShell.asset", .1f, .1f) : null,
-            reloadEnd = shells ? BodyAsset(template.reloadTactical, $"{stem}_ReloadEnd.asset", .1f, .15f) : null,
+            reloadShell = shells ? TacticalGunSetup.BodyAsset(template.reloadTactical, $"{stem}_ReloadShell.asset", .1f, .1f) : null,
+            reloadEnd = shells ? TacticalGunSetup.BodyAsset(template.reloadTactical, $"{stem}_ReloadEnd.asset", .1f, .15f) : null,
             partsReloadShell = shells && manual != null ? manual.reloadLoop.weapon : null,
             partsReloadEnd = shells && manual != null ? manual.reloadEnd.weapon : null,
             partsReloadTactical = shells && manual != null ? manual.reloadStart.weapon : null,
@@ -175,7 +173,7 @@ internal static class PackGunSetup
             partsReloadEmpty = shells && manual != null && spec.reloadEmpty == spec.reloadTactical ? manual.reloadStart.weapon : null,
             // In at once with the shot; eased into the hold over its last 0.2 s, while the trigger is already free (FPSGun.Cycle).
             sourceFire = fire,
-            fire = fire != null ? BodyAsset(template.reloadTactical, $"{stem}_Fire.asset", .1f, .2f) : null,
+            fire = fire != null ? TacticalGunSetup.BodyAsset(template.reloadTactical, $"{stem}_Fire.asset", .1f, .2f) : null,
         };
         var list = new List<FPSBodyAssets.Gun>(assets.guns);
         if (index >= 0) list[index] = entry;
@@ -299,34 +297,5 @@ internal static class PackGunSetup
             array.InsertArrayElementAtIndex(i);
             array.GetArrayElementAtIndex(i).objectReferenceValue = clips[i];
         }
-    }
-
-    // FPSAF's asset for one of the gun's body clips: the template's blends without its clip and its clip-timed curves (the
-    // body plays the clip GunClipRetarget makes for its skin, FPSBody.Copy), as TacticalGunSetup makes the Tactical guns'.
-    private static FPSAnimationAsset BodyAsset(FPSAnimationAsset template, string path, float blendIn, float blendOut)
-    {
-        if (template == null) return null;
-        var made = AssetDatabase.LoadAssetAtPath<FPSAnimationAsset>(path);
-        bool fresh = made == null;
-        if (fresh) made = Object.Instantiate(template);
-        else EditorUtility.CopySerialized(template, made);
-        made.clip = null;
-        made.blendTime.blendInTime = blendIn;
-        made.blendTime.blendOutTime = blendOut;
-        made.blendTime.rateScale = 1f;
-        made.name = Path.GetFileNameWithoutExtension(path);
-        if (fresh) AssetDatabase.CreateAsset(made, path);
-        var write = new SerializedObject(made);
-        write.FindProperty("curves")?.ClearArray();
-        write.ApplyModifiedPropertiesWithoutUndo();
-        EditorUtility.SetDirty(made);
-        return made;
-    }
-
-    private static AnimationClip Clip(string path)
-    {
-        foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
-            if (asset is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal)) return clip;
-        return null;
     }
 }

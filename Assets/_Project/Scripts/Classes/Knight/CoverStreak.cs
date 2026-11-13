@@ -22,9 +22,6 @@ public sealed class CoverStreak : MonoBehaviour
     private Vector3 from, to;
     private bool own;
 
-    /// <summary>The step from <paramref name="start"/> to <paramref name="end"/>, without the Knight's body (a streak only).</summary>
-    public static void Show(Vector3 start, Vector3 end) => Show(start, end, null);
-
     /// <summary>The step from <paramref name="start"/> to <paramref name="end"/>, with <paramref name="knight"/>'s afterimages along it.</summary>
     public static void Show(Vector3 start, Vector3 end, GameObject knight)
     {

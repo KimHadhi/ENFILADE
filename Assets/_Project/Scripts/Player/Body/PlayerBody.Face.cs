@@ -8,9 +8,6 @@ public sealed partial class PlayerBody
 {
     private CharacterFace bodyFace;
 
-    /// <summary>The body's face, or null while there is no body.</summary>
-    internal CharacterFace Face => bodyFace;
-
     // From Build, right after dressing.
     private void WearFace()
     {

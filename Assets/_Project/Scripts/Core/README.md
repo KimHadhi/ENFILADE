@@ -8,6 +8,7 @@
 
 | 폴더 | 스크립트 | 무엇 |
 | --- | ---: | --- |
+| [Common](Common/) | 3 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)) |
 | [Loading](Loading/) | 6 | 로딩 화면과 첫 사용 준비 |
 | [Mods](Mods/) | 1 | Mods 폴더 읽기 (GameMods) |
 | [Scene](Scene/) | 2 | 실행 중 하이어라키 폴더, 대기 카메라 |

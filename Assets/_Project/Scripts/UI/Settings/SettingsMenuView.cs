@@ -72,7 +72,7 @@ public sealed class SettingsMenuView
     {
         this.resume = resume; this.leave = leave; this.quit = quit;
         root = W.Rect("Settings", canvas);
-        W.Stretch(root);
+        KitStyle.Stretch(root);
         W.Fill(root, new Color(0f, 0f, 0f, .62f));
         root.gameObject.SetActive(false);
         // Another monitor offers other resolutions: list them once the window is there.
