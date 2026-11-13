@@ -21,23 +21,27 @@ public sealed partial class FieldPickups
         var item = new Item { Id = nextId++, Row = (byte)row, Position = at };
         if (nextId == 0) nextId = 1;
         items.Add(item);
-        if (life > 0f) expiry[item.Id] = Time.time + life;
+        if (life > 0f) expiry[item.Id] = dropClock + life;
         changed = true;
     }
 
-    // A real enemy's death on the host sometimes leaves something where it fell.
+    // A real enemy's death on the host sometimes leaves something where it fell; in a campaign assault more often
+    // (Phases.csv drops), so the control after it has things to take up.
     private void OnDamaged(CombatDamageReport report)
     {
-        if (!IsHost || !report.IsKillingBlow || !(report.Target is EnemyHealth) || random.NextDouble() >= dropChance) return;
+        if (!IsHost || !report.IsKillingBlow || !(report.Target is EnemyHealth) || random.NextDouble() >= dropChance * CampaignRun.DropShare) return;
         int row = Pick(r => r.DropWeight > 0f, r => r.DropWeight);
         if (row >= 0) Add(row, Ground(report.Target.transform.position), dropSeconds);
     }
 
+    // The drops' clock stands still through a campaign assault: what the dead dropped in the fight starts running out
+    // only in the control after it, when there is time to take it up (user, 2026-11-14).
     private void Expire()
     {
+        if (CampaignRun.Phase != CombatPhase.Assault) dropClock += Time.deltaTime;
         for (int i = items.Count - 1; i >= 0; i--)
         {
-            if (!expiry.TryGetValue(items[i].Id, out float until) || Time.time < until) continue;
+            if (!expiry.TryGetValue(items[i].Id, out float until) || dropClock < until) continue;
             expiry.Remove(items[i].Id);
             items.RemoveAt(i);
             changed = true;

@@ -108,12 +108,12 @@ public sealed partial class CampaignRun
         return (byte)bits;
     }
 
-    /// <summary>The `director` command: how the director paces the horde now (host or alone).</summary>
+    /// <summary>The `director` command: the fight's phase, the song and the horde now (host or alone; CampaignPhases).</summary>
     public static string DirectorReport()
     {
         if (active == null) return "캠페인 맵이 아니에요.";
-        if (!active.IsHost) return "디렉터는 방장 PC에서 돌아요. 방장이 입력해 보세요.";
-        return active.pacer.Report(active.horde.Alive) + (active.Resting() ? " · 휴게소에서 쉬는 중" : "")
+        if (!active.IsHost) return "단계는 방장 PC가 정해요. 방장이 입력해 보세요.";
+        return active.phases.Report(active.horde.Alive, active.music) + (active.Resting() ? " · 휴게소에서 쉬는 중" : "")
             + (active.quiet ? " · 조용한 구간(좀비가 알아채기 전에는 떼가 오지 않음)" : "");
     }
 

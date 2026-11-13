@@ -17,7 +17,7 @@ using UnityEngine;
 /// Not Temp: Unity empties Temp when it closes, which lost every run recorded before 2026-11-06's restart.
 /// Each report also says what happened in that frame (FrameTags): what code marked (a zombie made from its look) and
 /// what this probe sees changing from outside (zombies coming and going, a brute spawning and arriving, corpses laid
-/// and gone, ragdoll dolls made, the campaign's song and its peak, the first callout feed and alert band, hits, kills,
+/// and gone, ragdoll dolls made, the campaign's song and its assaults, the first callout feed and alert band, hits, kills,
 /// limbs off). Frames under the loading screen are marked [loading] and counted apart, so a load's own long frames no
 /// longer use up the play's reports (the 22:13 run of 2026-11-12 ran out at 145 s, before its chapter's brute came).
 /// Delete this file once the stalls are understood.
@@ -246,8 +246,6 @@ public sealed class HitchProbe : MonoBehaviour
         private const BindingFlags Statics = BindingFlags.NonPublic | BindingFlags.Static;
         private static readonly FieldInfo LyingField = typeof(ZombieCorpse).GetField("lying", Statics);
         private static readonly FieldInfo MadeField = typeof(ZombieCorpse).GetField("made", Statics);
-        private static readonly FieldInfo ActiveRunField = typeof(CampaignRun).GetField("active", Statics);
-        private static readonly FieldInfo MusicField = typeof(CampaignRun).GetField("music", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo FeedField = typeof(CalloutFeedHUD).GetField("instance", Statics);
         private static readonly FieldInfo AlertField = typeof(AlertHUD).GetField("instance", Statics);
 
@@ -337,14 +335,12 @@ public sealed class HitchProbe : MonoBehaviour
 
         private void Song()
         {
-            var run = ActiveRunField?.GetValue(null);
-            var music = run != null ? MusicField?.GetValue(run) as CampaignMusic : null;
-            string playing = music != null ? music.Playing : "";
-            bool past = music != null && music.PastPeak;
+            string playing = CampaignRun.Song;
+            bool assault = CampaignRun.Phase == CombatPhase.Assault;
             if (playing != song && playing.Length > 0) FrameTags.Mark("song starts: " + playing);
-            if (past && !peak) FrameTags.Mark("song peak");
+            if (assault && !peak) FrameTags.Mark("assault starts");
             song = playing;
-            peak = past;
+            peak = assault;
         }
 
         // Things made on their first use: the callout feed (its face camera) and the alert band.

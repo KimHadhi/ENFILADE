@@ -13,7 +13,9 @@ public sealed partial class CampaignRun
         {
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
             Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
-            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount, Alarm = (byte)(alarm ? 1 : 0)
+            Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount, Alarm = (byte)(alarm ? 1 : 0),
+            Phase = (byte)phase, Song = CampaignMusic.IndexOf(music.Playing),
+            SongAt = (ushort)Mathf.Clamp(Mathf.RoundToInt(music.Clock * 10f), 0, ushort.MaxValue)
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
         sent = now;
@@ -30,7 +32,11 @@ public sealed partial class CampaignRun
         if (sender != NetworkManager.ServerClientId) return;
         bool back = status.Step < step, moved = status.Step != step;
         // Sent back from a finale's escape while the chapter still runs: the ride left with nobody on it.
-        if (back && !finished && Current != null && Current.Kind == CampaignStepKind.Escape && TotalOf(Current) > 0f) MissedRide();
+        if (back && !finished && Current != null && Current.Kind == CampaignStepKind.Escape && TotalOf(step) > 0f) MissedRide();
+        if (back) music.Stop();
+        // The host's phase, and its song from where the host is in it (CampaignPhases picks both).
+        phase = (CombatPhase)status.Phase;
+        music.Follow(CampaignMusic.IdAt(status.Song), status.SongAt * .1f);
         step = status.Step;
         checkpoint = status.Checkpoint - 1;
         held = status.Held;
@@ -53,7 +59,6 @@ public sealed partial class CampaignRun
             return;
         }
         finished = false;
-        if (back) music.Stop();
         if (back && tracker != null) tracker.ClearObjective();
         if (moved) ShowObjective(true);
         else if (Current != null) ShowHeld(Current);
@@ -64,7 +69,7 @@ public sealed partial class CampaignRun
         var now = Current;
         if (tracker == null || now == null) return;
         // A hold, and a finale's escape (the ride's wait), show their time passing.
-        float total = now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape ? TotalOf(now) : 0f;
+        float total = now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape ? TotalOf(step) : 0f;
         tracker.SetObjective(total > 0f
             ? new MissionObjective(now.Id, now.Title, now.Description, MissionProgressDisplay.Percent,
                 Mathf.FloorToInt(held), Mathf.CeilToInt(total), now.Done)
@@ -78,7 +83,7 @@ public sealed partial class CampaignRun
     private void ShowHeld(CampaignStep now)
     {
         if (tracker == null || (now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape)) return;
-        float total = TotalOf(now);
+        float total = TotalOf(step);
         if (total > 0f) tracker.SetProgress(now.Id, Mathf.FloorToInt(held), Mathf.CeilToInt(total));
     }
 
@@ -88,7 +93,8 @@ public sealed partial class CampaignRun
         // 거지": no more comes of it than that).
         leftBehind = "";
         var last = step - 1 >= 0 && step - 1 < steps.Count ? steps[step - 1] : null;
-        if (last != null && last.Kind == CampaignStepKind.Escape && TotalOf(last) > 0f)
+        bool rideLeft = last != null && last.Kind == CampaignStepKind.Escape && TotalOf(step - 1) > 0f;
+        if (rideLeft)
         {
             var names = new List<string>();
             foreach (var someone in players)
@@ -100,7 +106,7 @@ public sealed partial class CampaignRun
         climb = ClassGrowth.Settle();
         // Everyone's numbers go with this PC to the hub, where the results play over the players (memo 37, MatchResults).
         MatchResults.Capture(gameObject.scene.name, chapter != null ? chapter.Title : "", chapter != null ? chapter.Next : "", climb,
-            someone => last == null || last.Kind != CampaignStepKind.Escape || TotalOf(last) <= 0f || Within(someone, last));
+            someone => !rideLeft || Within(someone, last));
         ChapterEndBanner.Play(chapter != null ? chapter.Title : "", leftBehind.Length > 0 ? Texts.Format("campaign.escape.left", leftBehind)
             : GameSession.IsOnline ? Texts.Get("campaign.escape.all") : Texts.Get("campaign.escape.solo"), BannerSeconds);
         cardAt = Time.unscaledTime + BannerSeconds - CardOverBanner;

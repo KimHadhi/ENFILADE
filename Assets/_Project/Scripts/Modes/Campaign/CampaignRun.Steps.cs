@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// CampaignRun: walking the chapter's steps, who is where, moving on, checkpoints and the music. One part of the class; the rest is in CampaignRun.cs and the files beside it.
+// CampaignRun: walking the chapter's steps, who is where, moving on, checkpoints, the song and the fight's phase. One part of the class; the rest is in CampaignRun.cs and the files beside it.
 public sealed partial class CampaignRun
 {
     // Who counts: the players of this room (this PC's and the others'), not test dummies, and not the dead.
@@ -37,7 +38,7 @@ public sealed partial class CampaignRun
         if (scripted) quiet = calmDue = lull = false;
         Alarm();
         // The chase dies down: found once, but no zombie has had anyone in sight for lullSeconds (they shut themselves in a
-        // rest stop, or slipped away), so the director stops and the zombies go looking, then calm (ZombieMind.LoseAll).
+        // rest stop, or slipped away), so the horde stops and the zombies go looking, then calm (ZombieMind.LoseAll).
         // Found was found for good before (user, 2026-11-11 playtest).
         if (IsHost && !quiet && !scripted && lullSeconds > 0f && Time.time - noticedAt >= lullSeconds
             && Time.time - ZombieMind.LastNoticed >= lullSeconds)
@@ -46,8 +47,9 @@ public sealed partial class CampaignRun
             ZombieMind.LoseAll();
         }
         if (calmDue && players.Count > 0) { calmDue = false; PlaceCalmAhead(); }
-        pacer.Pace(dt, players, scripted, quiet || Resting(), now.Horde, now.Rate, out int most, out float rate);
-        pacer.Spawned(horde.Tick(dt, most, rate, players, minSpawnDistance, maxSpawnDistance, seenMinDistance));
+        // The phase sets how hard the horde comes (CampaignPhases); nobody while quiet or resting behind a shut door.
+        phases.Pace(quiet || Resting(), now.Horde, now.Rate, out int most, out float rate, out float special);
+        phases.Spawned(horde.Tick(dt, most, rate, players, minSpawnDistance, maxSpawnDistance, seenMinDistance, special));
         switch (now.Kind)
         {
             case CampaignStepKind.Reach:
@@ -60,7 +62,7 @@ public sealed partial class CampaignRun
                 if (EveryoneAt(now)) Advance();
                 break;
             case CampaignStepKind.Escape:
-                if (CampaignMusic.TryFinale(now.Music, out float holdBefore, out float board))
+                if (TryFinale(step, out float holdBefore, out float board))
                 {
                     // The ride waits out the song and leaves as it ends, with whoever stands on it.
                     held = SongTime(now, dt, holdBefore);
@@ -72,7 +74,7 @@ public sealed partial class CampaignRun
             case CampaignStepKind.Hold:
                 // A manned hold (chapter 4's tug) counts only while someone stands at its spot, and pauses otherwise.
                 held = now.Manned ? held + (AnyoneAt(now) ? dt : 0f) : SongTime(now, dt, 0f);
-                if (held >= TotalOf(now)) Advance();
+                if (held >= TotalOf(step)) Advance();
                 else ShowHeld(now);
                 break;
             case CampaignStepKind.Collect:
@@ -82,11 +84,28 @@ public sealed partial class CampaignRun
         if (!finished && Current == now) SkipAhead();
     }
 
-    // How long a hold lasts, or a finale's escape waits: under a finale's song, by the song (CampaignMusic.TryFinale);
-    // otherwise the hold's own seconds, and no time at all for an escape (0).
-    private float TotalOf(CampaignStep at)
+    // A finale (C-14): a hold whose song plays on into the escape after it, the escape's seconds being how long the ride
+    // waits there. The hold lasts the song less that wait (CampaignMusic.TryFinale), and the ride leaves as the song
+    // ends. False for any other step, and without the song's file.
+    private bool TryFinale(int index, out float hold, out float board)
     {
-        bool finale = CampaignMusic.TryFinale(at.Music, out float hold, out float board);
+        hold = board = 0f;
+        if (index < 0 || index >= steps.Count) return false;
+        var at = steps[index];
+        var escape = at.Kind == CampaignStepKind.Escape ? at
+            : at.Kind == CampaignStepKind.Hold && index + 1 < steps.Count ? steps[index + 1] : null;
+        if (escape == null || escape.Kind != CampaignStepKind.Escape || escape.Seconds <= 0f || !SameSong(at.Music, escape.Music)) return false;
+        board = escape.Seconds;
+        return CampaignMusic.TryFinale(escape.Music, board, out hold);
+    }
+
+    // How long a hold lasts, or a finale's escape waits: under a finale's song, by the song; otherwise the hold's own
+    // seconds, and no time at all for an escape (0).
+    private float TotalOf(int index)
+    {
+        if (index < 0 || index >= steps.Count) return 0f;
+        var at = steps[index];
+        bool finale = TryFinale(index, out float hold, out float board);
         return at.Kind == CampaignStepKind.Escape ? (finale ? board : 0f) : finale ? hold : at.Seconds;
     }
 
@@ -95,10 +114,14 @@ public sealed partial class CampaignRun
     // leave the ride waiting after its last note. Otherwise the game's clock.
     private float SongTime(CampaignStep now, float dt, float before)
     {
-        bool bySong = !string.IsNullOrEmpty(now.Music) && string.Equals(music.Playing, now.Music, System.StringComparison.OrdinalIgnoreCase)
-            && CampaignMusic.TryFinale(now.Music, out _, out _);
+        bool bySong = SameSong(music.Playing, now.Music) && TryFinale(step, out _, out _);
         return bySong ? Mathf.Max(held, music.Clock - before) : held + dt;
     }
+
+    private static bool SameSong(string a, string b) => !string.IsNullOrEmpty(a) && string.Equals(a, b, System.StringComparison.OrdinalIgnoreCase);
+
+    // The songs of the chapter's loud stretches (CampaignChapters.songs), else every song of Music.csv.
+    private IReadOnlyList<string> Songs => chapter != null && chapter.Songs.Length > 0 ? chapter.Songs : CampaignMusic.All;
 
     // The song is over and the ride goes. Whoever stands on it leaves with it and the chapter is done (ShowFinish names
     // the rest); with nobody aboard, the run goes back to the last rest stop.
@@ -162,7 +185,6 @@ public sealed partial class CampaignRun
         if (done.Kind == CampaignStepKind.Checkpoint) checkpoint = step;
         step++;
         held = 0f;
-        songlessSent = false;
         // A whole quiet stretch got through without one zombie finding anyone: into the rest stop, or up to where a hold
         // or the escape begins. Every player is paid for it, each PC on the host's word (Status.Unseen).
         var next = Current;
@@ -185,28 +207,42 @@ public sealed partial class CampaignRun
         finished = true;
         finishedAt = Time.time;
         horde.Clear();
+        phases.End();
         ShowFinish();
     }
 
-    // C1/C2: the step's song on every PC (a finished chapter's plays on under its closing card); on the host, the
-    // song's highlight sends the step's brutes. A spot for them is looked for again every half second until one does.
+    // The song and the phase: the host picks them as the run stands (CampaignPhases), and every PC plays the song (a
+    // guest the host's, from the host's place in it: ReceiveStatus). A finished chapter's song plays on under its
+    // closing card.
     private void PlayMusic()
     {
-        var now = Current;
-        string wanted = finished ? music.Playing : now != null ? now.Music : "";
-        // Joined partway: a hold's song from as far in as the hold is, a finale's escape from past the whole hold.
-        float from = now == null ? 0f : now.Kind == CampaignStepKind.Hold ? held
-            : now.Kind == CampaignStepKind.Escape && CampaignMusic.TryFinale(now.Music, out float holdBefore, out _) ? holdBefore + held : 0f;
-        if (music.Want(wanted, from)) brutesDue = IsHost && now != null ? now.PeakBosses : 0;
-        music.Tick();
-        // A hold with no song (the first chapter's shutter, whose siren is its music) sends its brutes halfway through.
-        bool songless = now != null && now.Kind == CampaignStepKind.Hold && string.IsNullOrEmpty(now.Music);
-        if (IsHost && songless && !songlessSent && now.PeakBosses > 0 && held >= now.Seconds * .5f)
+        if (IsHost)
         {
-            songlessSent = true;
-            brutesDue = now.PeakBosses;
+            var now = Current;
+            if (finished || now == null) phases.End();
+            else
+            {
+                bool songless = (now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape) && string.IsNullOrEmpty(now.Music);
+                phases.Run(!quiet, step, now.Music ?? "", songless, Songs, music);
+            }
+            phase = phases.Now;
         }
-        if (!IsHost || finished || brutesDue <= 0 || !(music.PastPeak || songless) || Time.time < nextBruteTry) return;
+        music.Tick();
+        if (IsHost) SendBrutes();
+    }
+
+    // C1/C2, the host: a step's brutes (peakBoss) come at its song's peak, or halfway through a hold without a song (the
+    // first chapter's shutter, whose siren is its music). A spot for them is looked for again every half second until
+    // one does.
+    private void SendBrutes()
+    {
+        var now = Current;
+        if (finished || now == null) return;
+        if (brutesStep != step) { brutesStep = step; brutesDue = now.PeakBosses; }
+        if (brutesDue <= 0 || Time.time < nextBruteTry) return;
+        bool due = string.IsNullOrEmpty(now.Music) ? now.Kind == CampaignStepKind.Hold && held >= now.Seconds * .5f
+            : SameSong(music.Playing, now.Music) && music.PastPeak;
+        if (!due) return;
         nextBruteTry = Time.time + .5f;
         brutesDue -= horde.SpawnBrutes(brutesDue, players, minSpawnDistance, maxSpawnDistance, seenMinDistance);
     }
@@ -217,10 +253,10 @@ public sealed partial class CampaignRun
         horde.Clear();
         music.Stop();
         brutesDue = 0;
+        brutesStep = -1;
         fuel.Reset();
         step = checkpoint + 1;
         held = 0f;
-        songlessSent = false;
         BeginQuiet();
         // Back in the rest stop with its doors shut, not standing open on the horde (user, 2026-11-11 playtest: "죽고 나서
         // 다시 시작할 때 문이 열려 있어서 매번 식겁함"). Status shares the doors with the room.

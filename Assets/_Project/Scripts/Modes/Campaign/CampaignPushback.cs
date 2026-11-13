@@ -40,7 +40,7 @@ public sealed class CampaignPushback : MonoBehaviour
     private void Update()
     {
         float target = CampaignRun.ProgressOf(step), before = shown;
-        if (CampaignRun.IsRunning(step) && target >= shown && CampaignRun.TryAssault(out _, out float length) && length > 0f)
+        if (CampaignRun.IsRunning(step) && target >= shown && CampaignRun.TryHold(out _, out float length) && length > 0f)
             shown = Mathf.MoveTowards(shown, target, CatchUp / length * Time.deltaTime);
         else shown = target;
         transform.localPosition = start + offset * shown;

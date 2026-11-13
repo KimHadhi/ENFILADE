@@ -10,7 +10,8 @@ using UnityEngine.UI;
 /// <summary>
 /// Field pickups (stage 6D): guns, ammo, medkits, shield cells and money lying in a map. What lies at each PickupSpot is
 /// rolled from Tables/Pickups when the map starts, and a dying zombie sometimes drops something too (Tables/PickupRules:
-/// dropChance; drops vanish after dropSeconds). The user's rules (2026-11-09): ammo and money are taken by walking over
+/// dropChance; drops vanish after dropSeconds). In a campaign assault the dead drop more often (Phases.csv drops) and
+/// their drops' time runs only once it is over (CampaignPhases). The user's rules (2026-11-09): ammo and money are taken by walking over
 /// them (touchReach), unless this player couldn't use the ammo; a gun, a medkit and a shield cell with [F] while looking
 /// at it. Everything goes to whoever takes it first and is gone for everyone. Ammo adds `amount` magazines to every gun
 /// held, up to its starting reserve. A gun goes into an empty gun slot, else replaces the gun in hand, which is left on
@@ -73,6 +74,8 @@ public sealed partial class FieldPickups : MonoBehaviour
     private readonly List<Row> rows = new List<Row>();
     private readonly List<Item> items = new List<Item>();
     private readonly Dictionary<ushort, float> expiry = new Dictionary<ushort, float>();
+    // The host's clock the drops run out by (Expire): it stands still through a campaign assault.
+    private float dropClock;
     private readonly Dictionary<ushort, PickupView> views = new Dictionary<ushort, PickupView>();
     private readonly Dictionary<ushort, float> asked = new Dictionary<ushort, float>();
     private readonly HashSet<ushort> seen = new HashSet<ushort>();

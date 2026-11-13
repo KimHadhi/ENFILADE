@@ -36,6 +36,7 @@
 | [데스 스크린](Features/DeathScreen.md) | 죽었을 때의 화면 |
 | [자연스러운 달리기](Features/NaturalRun.md) | 걸음과 달리기 다리 |
 | [손가락질과 찌르기](Features/Poke.md) | F 길게 눌러 가리키기 |
+| [노래와 단계](Features/CampaignPhases.md) | 원곡 그대로 트는 노래, 페이데이 2식 정비·습격 임박·습격 |
 
 ## 기록 (Records)
 

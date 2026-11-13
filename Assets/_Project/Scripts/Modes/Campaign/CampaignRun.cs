@@ -17,7 +17,7 @@ using UnityEngine.InputSystem;
 /// (CampaignGate). The builder (Editor/Maps/GreyboxBuilder) puts one in each chapter's
 /// scene with its spots and spawn points. Numbers: Tables/Campaign.
 /// Stage C-15, stealth (user, 2026-11-10: no horde until woken, calm zombies in the maps): a chapter opens quiet, and
-/// so does every stretch after a rest stop. Quiet, the director sends no one; zombies stand calm along the way ahead
+/// so does every stretch after a rest stop. Quiet, the horde sends no one; zombies stand calm along the way ahead
 /// instead (CampaignHorde.PlaceCalm, the steps' own numbers by calmShare), and can be slipped past or taken from
 /// behind. One of them noticing someone no longer ends it (user, 2026-11-12: "한번 들켰다고 바로 모든 놈들이 나한테 오지
 /// 말고 들켜도 들킨 놈들 빠르게 싹 다 처치하면 조용히 넘어갈 수 있었으면 좋겠어"): the alarm is the woken ones' own (ZombieMind:
@@ -26,15 +26,20 @@ using UnityEngine.InputSystem;
 /// from then on the horde comes as before. An alarm put out in time (the woken dead, or lost) leaves the stretch quiet,
 /// unseen bonus and all, and every PC hears "들키지 않음".
 /// Stage C-14, a finale as long as its song (the user's answer, 2026-11-10: the song plays whole, and its end is when
-/// the ride leaves; whoever misses it is left behind): under a finale's song (Music.board) the hold lasts the song
-/// less the board time, then the ride waits at the escape's spot for the board time and leaves as the song ends, with
-/// whoever stands there. Those who don't are named on the closing card; with nobody aboard the run goes back to the
-/// last rest stop. Without the song's file the steps run as they did (the hold's own seconds, everyone to the spot).
+/// the ride leaves; whoever misses it is left behind): a hold whose song plays on into the escape after it is a finale,
+/// the escape's seconds being the ride's wait. The hold lasts the song less that wait, then the ride waits at the
+/// escape's spot and leaves as the song ends, with whoever stands there. Those who don't are named on the closing card;
+/// with nobody aboard the run goes back to the last rest stop. Without the song's file the steps run as they did (the
+/// hold's own seconds, everyone to the spot).
+/// PAYDAY 2's cycle (user, 2026-11-14): once loud, the songs play whole and their highlights are assaults, with the
+/// anticipation before and control between (CampaignPhases, which picks the song, the phase and how hard the horde comes,
+/// on the host). Every PC is told the phase and where the host is in its song (Status), plays the song itself from
+/// there, and shows the phase on the objective bar (AssaultBar).
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Campaign)]
 public sealed partial class CampaignRun : MonoBehaviour
 {
-    public const string TableName = "Campaign", TableRow = "Default", DirectorRow = "Director", StartSpot = "Start";
+    public const string TableName = "Campaign", TableRow = "Default", StartSpot = "Start";
     private const string StatusMessage = "ENFILADE.Campaign", PressMessage = "ENFILADE.CampaignPress", DoorMessage = "ENFILADE.CampaignDoor",
         CanShotMessage = "ENFILADE.CanShot";
     // How near the doorway someone must be to shut or open a rest stop's door, and a counter to shop (m).
@@ -57,8 +62,14 @@ public sealed partial class CampaignRun : MonoBehaviour
         public byte Unseen;
         /// <summary>1 while a quiet stretch has a local alarm (zombies woken by stealth still after someone).</summary>
         public byte Alarm;
+        /// <summary>The fight's phase (CombatPhase) and the song playing (CampaignMusic.IndexOf; 0 none).</summary>
+        public byte Phase, Song;
+        /// <summary>Where the host is in its song, in tenths of a second. It changes every frame, so it rides along with
+        /// the rest and is left out of Equals.</summary>
+        public ushort SongAt;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
-            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Alarm == other.Alarm;
+            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Alarm == other.Alarm
+            && Phase == other.Phase && Song == other.Song;
     }
 
     [SerializeField, Tooltip("What the hordes are made of.")]
@@ -81,15 +92,13 @@ public sealed partial class CampaignRun : MonoBehaviour
     private float maxSpawnDistance = 60f;
     [SerializeField, Min(0f), Tooltip("A spawn point in someone's sight is used only this far away, and only when no hidden one will do (m).")]
     private float seenMinDistance = 30f;
-    [SerializeField, Tooltip("How the director paces the hordes (Tables/Campaign, row Director).")]
-    private CampaignDirector.Tuning director = new CampaignDirector.Tuning();
     [SerializeField, Min(0f), Tooltip("How long the opening story card stays (s).")]
     private float introSeconds = 9f;
     [SerializeField, Min(0f), Tooltip("How long the closing card stays before the next chapter loads (s).")]
     private float outroSeconds = 10f;
     [SerializeField, Tooltip("A chapter, and every stretch after a rest stop, opens quiet: no horde until a zombie notices someone or a hold begins. Off: the horde comes from the first moment, as it used to.")]
     private bool quietStart = true;
-    [SerializeField, Min(0f), Tooltip("Found, then no zombie has seen anyone this long (s): the chase dies down. The director stops "
+    [SerializeField, Min(0f), Tooltip("Found, then no zombie has seen anyone this long (s): the chase dies down. The horde stops "
         + "and every zombie goes to look where it last knew them, then calms. 0: once found, found for good.")]
     private float lullSeconds = 20f;
     [SerializeField, Min(0f), Tooltip("Quiet, zombies woken by stealth may be after someone this long (s) and the stretch stays quiet; past it, the horde "
@@ -107,7 +116,7 @@ public sealed partial class CampaignRun : MonoBehaviour
     private List<CampaignStep> steps = new List<CampaignStep>();
     private CampaignChapter chapter;
     private CampaignHorde horde;
-    private CampaignDirector pacer;
+    private CampaignPhases phases;
     private CampaignCans fuel;
     private CampaignMusic music;
     private CampaignScreen screen;
@@ -115,8 +124,12 @@ public sealed partial class CampaignRun : MonoBehaviour
     private NetworkManager network;
     private InputAction interact;
     private Status sent;
-    private int step, checkpoint = -1, shownPoured = -1, brutesDue;
+    private int step, checkpoint = -1, shownPoured = -1, brutesDue, brutesStep = -1;
     private float held, finishedAt, nextShare, nextBruteTry;
+    // The fight's phase on this PC (the host's word), and the track a hold without a song shows, one assault its whole
+    // length (TryPhase).
+    private CombatPhase phase;
+    private readonly float[] holdTrack = new float[2];
     private bool finished, movedOn, wasWiped, listening;
     // The stretch is quiet (the host's word, shared); this PC last saw it so; the host still owes the stretch its calm zombies.
     private bool quiet, wasQuiet, calmDue;
@@ -132,8 +145,7 @@ public sealed partial class CampaignRun : MonoBehaviour
     // this PC (the host's word, shared).
     private float alarmSince = -1f;
     private bool alarm, wasAlarm;
-    // A hold with no song has sent its brutes; who the ride left behind, for the closing card.
-    private bool songlessSent;
+    // Who the ride left behind, for the closing card.
     private string leftBehind = "";
     // The closing card waits for the escape's banner (ChapterEndBanner): when it comes up (real s; negative, none due),
     // and what the game did to the class, for the insignia beside it.
@@ -187,23 +199,64 @@ public sealed partial class CampaignRun : MonoBehaviour
         if (index < 0 || active.finished || active.step > index) return 1f;
         if (active.step < index) return 0f;
         var now = active.steps[index];
-        float total = now.Kind == CampaignStepKind.Hold ? active.TotalOf(now) : 0f;
+        float total = now.Kind == CampaignStepKind.Hold ? active.TotalOf(index) : 0f;
         return total > 0f ? Mathf.Clamp01(active.held / total) : 0f;
     }
 
     /// <summary>
-    /// A chapter's assault is under way, a hold or a finale's escape: how far into it and how long it is (s), for the
-    /// objective bar's assault look (AssaultBar), which plays it like a song.
+    /// A hold or a finale's escape is under way: how far into it and how long it is (s). What chapter 4's pushback moves
+    /// the airliner by (CampaignPushback).
     /// </summary>
-    public static bool TryAssault(out float elapsed, out float length)
+    public static bool TryHold(out float elapsed, out float length)
     {
         elapsed = length = 0f;
         if (active == null || active.finished) return false;
         var now = active.Current;
         if (now == null || (now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape)) return false;
-        length = active.TotalOf(now);
+        length = active.TotalOf(active.step);
         if (length <= 0f) return false;
         elapsed = Mathf.Min(active.held, length);
+        return true;
+    }
+
+    /// <summary>The fight's phase on this PC (the host's word, CampaignPhases); Quiet outside a chapter's loud stretches.</summary>
+    public static CombatPhase Phase => active != null && !active.finished ? active.phase : CombatPhase.Quiet;
+
+    /// <summary>The song playing on this PC (a Music id), or empty.</summary>
+    public static string Song => active != null ? active.music.Playing : "";
+
+    /// <summary>How much more often a dying zombie drops something now (FieldPickups): the phase's Phases.csv drops.</summary>
+    public static float DropShare => CampaignPhases.DropShare(Phase);
+
+    /// <summary>
+    /// The fight's phase and its track, for the objective bar (AssaultBar): the song playing with its assaults marked, or a
+    /// hold without a song as one assault its whole length. False while quiet, outside a chapter and once it is over.
+    /// </summary>
+    public static bool TryPhase(out PhaseTrack track)
+    {
+        track = default;
+        var now = Phase;
+        if (now == CombatPhase.Quiet) return false;
+        track.Phase = now;
+        track.Until = float.PositiveInfinity;
+        track.Assaults = System.Array.Empty<float>();
+        var song = active.music.Current;
+        if (song != null)
+        {
+            CampaignPhases.PhaseAt(song, active.music.Clock, out track.Until);
+            track.Assaults = song.Assaults;
+            // A song without its file has no length to draw.
+            if (song.Clip != null) { track.Length = song.Length; track.Elapsed = Mathf.Min(active.music.Clock, track.Length); }
+            return true;
+        }
+        if (TryHold(out float elapsed, out float length) && string.IsNullOrEmpty(active.Current.Music))
+        {
+            active.holdTrack[1] = length;
+            track.Assaults = active.holdTrack;
+            track.Elapsed = elapsed;
+            track.Length = length;
+            track.Until = length - elapsed;
+        }
         return true;
     }
 
@@ -218,8 +271,7 @@ public sealed partial class CampaignRun : MonoBehaviour
     {
         active = this;
         GameTables.Bind(TableName, TableRow, this);
-        GameTables.BindNested(TableName, DirectorRow, this, director);
-        pacer = new CampaignDirector(director);
+        phases = new CampaignPhases();
         if (doors == null) doors = new CampaignDoor[0];
         if (shops == null) shops = new Transform[0];
         if (spots != null) foreach (var spot in spots) if (spot != null) spotsByName[spot.name] = spot;

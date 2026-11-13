@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Stage 5D: a rest stop's door. It starts open; anyone presses [F] by it to shut or open it (CampaignRun: the host
 /// decides, a guest asks, everyone sees it through the run's status). A rest stop's checkpoint is reached only with
-/// everyone inside and its doors shut, and while that lasts the director sends nobody (CampaignDirector); opening it
+/// everyone inside and its doors shut, and while that lasts the horde sends nobody (CampaignPhases.Pace); opening it
 /// again is the way on. It slides into the wall beside the doorway. Shut, it blocks players with its collider and
 /// enemies with a carving NavMeshObstacle; the walk mesh was baked without it (GreyboxBuilder.Door).
 /// </summary>

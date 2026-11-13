@@ -4,8 +4,8 @@ using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// The campaign's enemies: how many may be about and how many come a second, as the director paces them
-/// (CampaignDirector). They come from the scene's spawn points no nearer than the near distance to anyone, no farther
+/// The campaign's enemies: how many may be about and how many come a second, as the fight's phase paces them
+/// (CampaignPhases). They come from the scene's spawn points no nearer than the near distance to anyone, no farther
 /// than the far one from someone, and only where they can walk to that player: a rooftop cut off from the street sends
 /// nothing at players on the ground. Points no player can see come first (a sight line from every player's eyes to the
 /// point is blocked); one in plain view is used only past the seen distance, and only when no hidden one will do. The
@@ -46,8 +46,11 @@ internal sealed class CampaignHorde
 
     public int Alive => alive.Count;
 
-    /// <summary>Makes what may come this frame; returns how many it made.</summary>
-    public int Tick(float dt, int most, float rate, List<PlayerMovement> players, float near, float far, float seenFar)
+    /// <summary>
+    /// Makes what may come this frame; returns how many it made. <paramref name="special"/>: the share of the shamblers
+    /// among them made other kinds instead (an assault, CampaignPhases).
+    /// </summary>
+    public int Tick(float dt, int most, float rate, List<PlayerMovement> players, float near, float far, float seenFar, float special = 0f)
     {
         alive.RemoveWhere(enemy => enemy == null);
         if (prefab == null || most <= 0 || rate <= 0f || players.Count == 0) { saved = 0f; return 0; }
@@ -56,13 +59,19 @@ internal sealed class CampaignHorde
         while (saved >= 1f && alive.Count < most)
         {
             saved -= 1f;
-            var enemy = SpawnOne(players, near, far, seenFar, null);
+            var enemy = SpawnOne(players, near, far, seenFar, special > 0f ? Harder(special) : null);
             if (enemy == null) { saved = 0f; break; }
             alive.Add(enemy);
             made++;
         }
         return made;
     }
+
+    // An assault's harder horde: this share of the shamblers come as another kind (ZombieType.MakeSpecial).
+    private static System.Action<EnemyHealth> Harder(float special) => enemy =>
+    {
+        if (Random.value < special && enemy.TryGetComponent(out ZombieType type) && type.Kind == ZombieKind.Shambler) type.MakeSpecial();
+    };
 
     /// <summary>
     /// Friend feedback C2: brutes (ZombieKind.Brute), a song's highlight's boss, from the same hidden spawn points but

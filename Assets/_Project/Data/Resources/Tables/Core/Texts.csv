@@ -523,6 +523,9 @@ wave.combat.title,남은 적을 처치하세요,,웨이브 공세 중의 목표 
 wave.combat.detail,구역 내의 적을 모두 처치하세요. 추가로 투입되는 적까지 정리하면 현재 공세가 종료됩니다.,,웨이브 공세 중의 목표 설명(Tab 목표 목록)
 objective.alert.new,새로운 목표,,새 목표가 들어올 때 화면 위에 뜨는 알림의 작은 머리글(GameHUD 프리팹 ObjectiveAlert > Label의 TextKey)
 hud.assault.band,습격 중,,캠페인 습격 중 목표 바 아래로 흘러가는 띠의 글자. 사이의 /// 는 코드가 넣는다(AssaultBar)
+hud.phase.control,정비,,캠페인이 시끄러울 때 습격과 습격 사이(떨군 체력·탄약·실드를 줍는 여유): 목표 바 아래 단계 줄의 작은 판 글자(AssaultBar)
+hud.phase.anticipation,습격 임박,,캠페인 노래가 하이라이트로 올라가는 동안(습격 몇 초 전): 목표 바 아래 단계 줄의 깜박이는 판 글자(AssaultBar)
+hud.phase.assault,습격,,캠페인 노래의 하이라이트(습격): 목표 바 아래 단계 줄의 판 글자. 바 위에는 hud.assault.band 띠가 흐른다(AssaultBar)
 hud.ammo.reloading,RELOADING  /  {0:1}s,,"탄약 표시 > 장전 중 상태 줄. {0:1}=남은 초(소수 한 자리, TextMeshPro 형식이라 그대로 둔다)"
 hud.ammo.reserve,RESERVE,,탄약 표시 > 예비 탄약 숫자 위 작은 글자
 moment.ult.any.title,ULTIMATE,,궁극기 알림 띠의 큰 이름: 클래스 줄이 없는 궁극기(MomentLook)

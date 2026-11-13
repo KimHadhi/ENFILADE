@@ -23,9 +23,11 @@ public enum CampaignStepKind
 /// <summary>
 /// One step of a chapter, read from Tables/CampaignSteps: the rows whose chapter is the scene's name, in their order.
 /// spot names an object under the scene's 진행 자리 (CampaignRun.spots); radius is how near counts (m); seconds is a
-/// hold's length; count is how many cans a Collect wants; horde and rate are how many enemies may be about during the
-/// step and how many come per second. music names a song in Tables/Music played while the step runs (the next step
-/// naming the same song lets it play on), and peakBoss is how many brutes come at that song's highlight (CampaignMusic).
+/// hold's length, and an escape's after a hold under the same song is how long the ride waits (a finale: the hold then
+/// lasts the song less that); count is how many cans a Collect wants; horde and rate are how many enemies may be about
+/// during the step and how many come per second, before the phase (CampaignPhases) scales them. music names a song in
+/// Tables/Music played whole from the step's start (the next step naming the same song lets it play on), and peakBoss is
+/// how many brutes come at that song's peak (CampaignMusic).
 /// manned (chapter 4's pushback) makes a hold's clock run only while someone stands within radius of its spot.
 /// </summary>
 public sealed class CampaignStep
@@ -70,7 +72,8 @@ public sealed class CampaignStep
 /// A chapter's story and what comes after it (Tables/CampaignChapters, one row per scene): the card shown when it
 /// begins (intro) and ends (outro), and the next chapter's scene (empty after the last). The title, intro and outro
 /// cells name Texts rows (chapter.&lt;scene&gt;.title …), where the words are written; each line of the story is a line
-/// there (Enter in the 글자 편집기), as many as it needs (Texts.Lines).
+/// there (Enter in the 글자 편집기), as many as it needs (Texts.Lines). songs lists the Music.csv songs its loud stretches
+/// play one after another, '|' between them (CampaignPhases); empty, every song of Music.csv in that table's order.
 /// </summary>
 public sealed class CampaignChapter
 {
@@ -78,6 +81,8 @@ public sealed class CampaignChapter
 
     public string Title, Next;
     public string[] Intro, Outro;
+    /// <summary>The songs its loud stretches play, in order; empty for every song of Music.csv.</summary>
+    public string[] Songs;
 
     public static CampaignChapter For(string scene)
     {
@@ -85,7 +90,8 @@ public sealed class CampaignChapter
         return new CampaignChapter
         {
             Title = Texts.Cell(row.Text("title")), Next = row.Text("next"),
-            Intro = Texts.Lines(Texts.Cell(row.Text("intro"))), Outro = Texts.Lines(Texts.Cell(row.Text("outro")))
+            Intro = Texts.Lines(Texts.Cell(row.Text("intro"))), Outro = Texts.Lines(Texts.Cell(row.Text("outro"))),
+            Songs = new List<string>(TableCells.Parts(row.Text("songs"))).ToArray()
         };
     }
 }
