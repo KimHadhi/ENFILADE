@@ -67,7 +67,7 @@ internal sealed class DazeMark : MonoBehaviour
     private const float Size = .2f, Above = .3f, Spin = 300f, Pop = .18f, Out = .35f;
     private LineRenderer ring;
     private Transform head;
-    private float left, total, turn, age;
+    private float left, turn, age;
 
     internal static void On(EnemyHealth enemy, float seconds)
     {
@@ -78,7 +78,7 @@ internal sealed class DazeMark : MonoBehaviour
 
     private void Begin(float seconds)
     {
-        left = total = Mathf.Max(left, seconds);
+        left = Mathf.Max(left, seconds);
         age = 0f;
         enabled = true;
         if (ring == null)

@@ -381,7 +381,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         transition = null;
         playingOut = false;
         if (body != null) Destroy(body.gameObject);
-        bodyFace = null;
         body = head = hips = leftHand = rightHand = null;
         loadedModel = null;
         loadedSkin = null;

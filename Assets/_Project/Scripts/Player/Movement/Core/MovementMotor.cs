@@ -11,7 +11,7 @@ public sealed class MovementMotor
     public float VerticalVelocity;
     internal bool isGrounded, landedThisFrame;
     internal Vector3 groundNormal = Vector3.up;
-    internal float jumpUngroundTimer, airborneTimer;
+    internal float jumpUngroundTimer;
     internal CollisionFlags lastMoveFlags;
     internal Vector3 lastMoveGroundNormal = Vector3.up;
     internal Vector3 previousPosition, actualVelocity;
@@ -58,8 +58,6 @@ public sealed class MovementMotor
     internal void TickTimers(float dt)
     {
         jumpUngroundTimer -= dt;
-        if (!isGrounded) airborneTimer += dt;
-        else airborneTimer = 0f;
     }
 
     internal void Move(float dt)
@@ -152,7 +150,7 @@ public sealed class MovementMotor
     {
         HorizontalVelocity = Vector3.zero;
         VerticalVelocity = 0f;
-        jumpUngroundTimer = airborneTimer = 0f;
+        jumpUngroundTimer = 0f;
         actualVelocity = Vector3.zero;
         Carrier = carrierCandidate = null;
         lastMoveFlags = CollisionFlags.None;

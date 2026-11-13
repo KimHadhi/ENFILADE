@@ -129,9 +129,12 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static bool ChangeMap(string map)
     {
         if (current == null || current.ending || !current.network.IsServer || !Application.CanStreamedLevelBeLoaded(map)) return false;
+        // Only a load that started changes the room: one refused (another load still running) leaves the map's name and
+        // the players' places as they are.
+        if (current.network.SceneManager.LoadScene(map, LoadSceneMode.Single) != SceneEventProgressStatus.Started) return false;
         current.roomMap = map;
         current.spawned = 0;
-        return current.network.SceneManager.LoadScene(map, LoadSceneMode.Single) == SceneEventProgressStatus.Started;
+        return true;
     }
 
     // `twoWays` is an internet room's host, who takes friends straight and through the relay at once.
@@ -224,6 +227,14 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
             End(failed, true);
             return false;
         }
+        // Anything else going wrong on the way in must still end the room: left half open it would say "making the room"
+        // for ever and refuse every new one.
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+            End(failed, true);
+            return false;
+        }
         if (ending) internetRoom.Close();
         return !ending;
     }
@@ -253,7 +264,9 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         var point = FindFirstObjectByType<PlayerSpawnPoint>();
         Vector3 position = point != null ? point.transform.position : Vector3.zero;
         Quaternion rotation = point != null ? point.transform.rotation : Quaternion.identity;
-        position += rotation * Vector3.right * (SpawnSpacing * spawned++);
+        // Side by side from the start point, and round again after a room's worth: friends who leave and come back
+        // would otherwise be placed further and further along, in the end past the floor.
+        position += rotation * Vector3.right * (SpawnSpacing * (spawned++ % Mathf.Max(1, maxPlayers)));
         network.SpawnManager.InstantiateAndSpawn(playerPrefab.GetComponent<NetworkObject>(), client,
             destroyWithScene: true, isPlayerObject: true, position: position, rotation: rotation);
     }

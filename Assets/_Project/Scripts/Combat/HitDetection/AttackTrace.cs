@@ -40,6 +40,8 @@ public static class AttackTrace
     {
         if (direction.sqrMagnitude < 0.000001f || distance <= 0f)
             return new AttackTraceResult(false, default, origin, DamageResult.Ignored);
+        // A thrown knife and an enemy's reach meet the same bone hitboxes a bullet does: they are where the picture is.
+        SyncBodies();
         direction.Normalize();
         var result = Strike(attack, origin, direction, distance, layers, headshotMultiplier, 1f, attack.Origin ?? origin, null, false);
         StepDodgeTrail.RecognizeAttackSegment(attack, origin, result.End);

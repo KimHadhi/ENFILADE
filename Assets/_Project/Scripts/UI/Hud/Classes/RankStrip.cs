@@ -32,7 +32,7 @@ public sealed class RankStrip : MonoBehaviour
 
     private static readonly Color Empty = new Color(1f, 1f, 1f, .14f), Held = new Color(1f, 1f, 1f, .72f);
     private static readonly Color Kept = new Color(1f, .62f, .74f, .85f);
-    private RectTransform root, bar, heldFill, gameFill, keptFill;
+    private RectTransform root, heldFill, gameFill, keptFill;
     private RawImage badge, upcoming;
     private TMP_Text climb, gain;
     private UITriangle arrow;
@@ -63,7 +63,7 @@ public sealed class RankStrip : MonoBehaviour
         badge = Image("Insignia", new Vector2(-half + insignia * .5f, 0f), insignia, Color.white);
         barLeft = -half + insignia + 6f;
         barWidth = Mathf.Max(20f, half * 2f - insignia - 6f - next - 8f);
-        bar = Box("Bar", barLeft, barWidth, Empty);
+        Box("Bar", barLeft, barWidth, Empty);
         heldFill = Box("Held", barLeft, 0f, Held);
         keptFill = Box("Kept", barLeft, 0f, Kept);
         gameFill = Box("This Game", barLeft, 0f, KitStyle.Accent);
