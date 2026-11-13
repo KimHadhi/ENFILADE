@@ -77,6 +77,7 @@ static class Program
             case "numbers": Numbers.Run(args.Contains("--dry")); break;
             case "cells": Numbers.Cells(args.Contains("--dry")); break;
             case "writeonly": WriteOnly.Run(args.Contains("--dry")); break;
+            case "retarget": Retarget.Run(args[1], args.Contains("--dry")); break;
             case "unparam": Fixes.DropParameters(args[1].Split(','), args.Contains("--dry")); break;
             case "split":
             {

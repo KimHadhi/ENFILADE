@@ -31,6 +31,7 @@ Unity를 켜지 않고 게임 코드 전체를 읽어서 검사하고 정리하�
 | `unparam Type.Method/3:이름,…` | 아무도 읽지 않는 매개변수를 선언과 모든 호출부에서 뺀다 |
 | `numbers [--dry]` / `cells [--dry]` | `float.TryParse(…Invariant…)`를 `TableCells.TryNumber`로 / "줄을 찾고 칸을 꺼내 읽기"를 `GameTables.Number`·`row.Number` 한 줄로 |
 | `writeonly [--dry]` | 쓰기만 하고 읽지 않는 필드·자동 프로퍼티에 쓰는 문장을 지운다 (`dead` 먼저. 그 뒤 `kill`이 선언을 지운다). 손으로 볼 것은 `writeonly-left.txt` |
+| `retarget <목록 파일> [--dry]` | 필드·메서드의 모든 사용처를 뜻으로 찾아 다른 표현으로 바꾼다 (목록의 한 줄: `PathArm.upper=arm.Upper`). 멤버를 그 클래스가 든 다른 객체로 옮길 때 쓴다. 같은 이름의 지역 변수는 건드리지 않고, 선언은 손으로 옮긴다 |
 | `kill [--skip serialized,structField] [--except @목록] [--dry]` | 죽은 선언을 주석째 지운다. 다 죽은 파일은 `.meta`와 함께 지운다 |
 | `forwarders [--dry]` | 인자를 그대로 넘기기만 하는 static 한 줄 메서드의 호출부가 진짜 대상을 바로 부르게 한다 |
 | `dedupe [--homes 파일] [--map 파일] [--dry]` | 사본들의 호출부를 "집" 하나로 돌린다. 그 뒤 `kill`이 사본을 지운다 |

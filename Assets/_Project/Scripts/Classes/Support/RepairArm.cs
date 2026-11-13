@@ -113,41 +113,6 @@ public sealed class RepairArm : PathArm
         if (holder != null) Destroy(holder.gameObject);
     }
 
-    private bool Bind()
-    {
-        if (bound) return true;
-        movement = GetComponentInParent<PlayerMovement>();
-        hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
-        animator = GetComponent<Animator>();
-        if (movement == null || animator == null || !animator.isHuman) return false;
-        upper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
-        lower = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
-        hand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
-        if (upper == null || lower == null || hand == null) return false;
-        turnedCount = 0;
-        turned[turnedCount++] = upper;
-        turned[turnedCount++] = lower;
-        turned[turnedCount++] = hand;
-        for (int finger = 0; finger < 5; finger++)
-            for (int joint = 0; joint < 3; joint++)
-            {
-                var bone = animator.GetBoneTransform(FirstJoints[finger] + joint);
-                fingers[finger * 3 + joint] = bone;
-                if (bone != null) turned[turnedCount++] = bone;
-            }
-        var middleJoint = fingers[Index * 3 + 1];
-        var lastJoint = fingers[Index * 3 + 2];
-        jointAxis = middleJoint != null && lastJoint != null
-            ? Quaternion.Inverse(middleJoint.rotation) * (lastJoint.position - middleJoint.position).normalized
-            : Vector3.forward;
-        handAxis = Quaternion.Inverse(hand.rotation) * (hand.position - lower.position).normalized;
-        armLength = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
-        var knuckle = Knuckle();
-        handLength = knuckle != null ? Vector3.Distance(hand.position, knuckle.position) : armLength * .17f;
-        bound = armLength > 1e-3f && handLength > 1e-4f;
-        return bound;
-    }
-
     // The body can work with the hand: alive, up, standing or crouched (walking too), not held, climbing or vaulting, and
     // no G throw has the off hand (it goes first, as it does over the hold-F point: the manager, 2026-11-12).
     private bool Free()
@@ -160,16 +125,15 @@ public sealed class RepairArm : PathArm
 
     private void Pose(in GrenadeArmPath.Key key)
     {
-        for (int i = 0; i < turnedCount; i++) framed[i] = turned[i].localRotation;
+        arm.Keep();
         Quaternion view = eyes.rotation;
-        Vector3 shoulder = upper.position;
+        Vector3 shoulder = arm.Upper.position;
         // The wrist where the path has it from this shoulder, in this arm's lengths; the elbow toward the path's elbow.
-        TwoBoneIK.Solve(upper, lower, hand, shoulder + view * (key.Wrist * armLength), shoulder + view * (key.Elbow * armLength));
+        TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, shoulder + view * (key.Wrist * arm.ArmLength), shoulder + view * (key.Elbow * arm.ArmLength));
         Vector3 along = view * key.Along, palm = view * key.Palm;
-        TurnHand(along, palm);
-        Fingers(along, palm, key.Curl, key.Thumb);
-        if (weight < 1f)
-            for (int i = 0; i < turnedCount; i++) turned[i].localRotation = Quaternion.Slerp(framed[i], turned[i].localRotation, weight);
+        arm.TurnHand(along, palm);
+        arm.Close(along, palm, key.Curl, key.Thumb);
+        arm.Ease(weight);
     }
 
     // The tool in the palm as the hand finally is this frame: from the wrist along the hand's own axes (x the side away
@@ -178,47 +142,16 @@ public sealed class RepairArm : PathArm
     private void Seat(Loop loop)
     {
         if (holder == null) return;
-        Vector3 along = AlongNow();
-        Vector3 palm = PalmNow(along);
+        Vector3 along = arm.AlongNow();
+        Vector3 palm = arm.PalmNow(along);
         if (along.sqrMagnitude < 1e-10f || palm.sqrMagnitude < 1e-10f) return;
         Quaternion frame = Quaternion.LookRotation(along, palm);
         Quaternion turn = frame * Quaternion.LookRotation(loop.Face, loop.Handle);
-        Vector3 at = hand.position + frame * (loop.Held * handLength);
+        Vector3 at = arm.Hand.position + frame * (loop.Held * arm.HandLength);
         // A body imported at another scale (an avatar's armature at 100) must not scale the tool with it.
         float scale = Mathf.Max(1e-4f, Mathf.Abs(transform.lossyScale.x));
         holder.localScale = Vector3.one / scale;
         holder.SetPositionAndRotation(at - turn * (Vector3.up * loop.Grip), turn);
-    }
-
-    // The four fingers closed round the handle by the path's curl, shared over their joints; the thumb across the palm and
-    // on round it as far as the path closes it (GrenadeArm.Fingers, the whole of both).
-    private void Fingers(Vector3 along, Vector3 palm, float curl, float thumb)
-    {
-        Vector3 axis = Vector3.Cross(along, palm);
-        if (axis.sqrMagnitude < 1e-10f) return;
-        axis.Normalize();
-        for (int finger = Index; finger <= Little; finger++)
-        {
-            float angle = 0f;
-            for (int joint = 0; joint < 3; joint++)
-            {
-                var bone = fingers[finger * 3 + joint];
-                if (bone == null) break;
-                angle += curl * CurlShare[joint];
-                Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
-            }
-        }
-        float close = Mathf.Clamp01(thumb / 90f);
-        if (close <= 0f || fingers[Thumb * 3] == null) return;
-        Vector3 over = (along * .5f + palm * .6f - axis * .45f).normalized;
-        for (int joint = 0; joint < 3; joint++)
-        {
-            var bone = fingers[Thumb * 3 + joint];
-            if (bone == null) break;
-            Vector3 bendAxis = Vector3.Cross(over, palm);
-            if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 15f : 20f, bendAxis.normalized) * over;
-            Turn(bone, JointWay(Thumb, joint), over, close);
-        }
     }
 
     // ---- A tool's loop: its row of Tables/RepairArms and its path table ----

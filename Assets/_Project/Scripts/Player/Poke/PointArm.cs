@@ -1,4 +1,5 @@
 using UnityEngine;
+using static ArmBones;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
@@ -37,29 +38,15 @@ using MovementState = PlayerMovement.MovementState;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 6)]
 public sealed class PointArm : MonoBehaviour
 {
-    // The fingers in order (index, middle, ring, little, thumb), three joints each from the knuckle out.
-    private const int Index = 0, Middle = 1, Ring = 2, Little = 3, Thumb = 4;
     // The hits of one line, reused (FirstSolid).
     private static readonly RaycastHit[] lineHits = new RaycastHit[24];
-    private static readonly HumanBodyBones[] FirstJoints =
-    {
-        HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftRingProximal,
-        HumanBodyBones.LeftLittleProximal, HumanBodyBones.LeftThumbProximal,
-    };
 
     private PlayerMovement movement;
     private PlayerPoint point;
     private PlayerBodyHands hands;
     private Animator animator;
-    private Transform eyes, upper, lower, hand, indexTip;
-    private readonly Transform[] fingers = new Transform[15];
-    // The bones the point turns, and how the frame had them, to ease from.
-    private readonly Transform[] turned = new Transform[18];
-    private readonly Quaternion[] framed = new Quaternion[18];
-    private int turnedCount;
-    // A joint's own length axis (the rig's convention, from the index's middle joint), for a last joint with no tip
-    // bone; and the hand's own way out from the wrist, for a hand with no fingers.
-    private Vector3 jointAxis, handAxis;
+    private Transform eyes, indexTip;
+    private readonly ArmBones arm = new ArmBones();
     // The wrist as the body was modelled, straight and untwisted (its skin's bind pose): the hand's turn from the forearm
     // then, and the forearm's way into the wrist in the hand's own frame (BindWrist).
     private Quaternion wristBind = Quaternion.identity;
@@ -119,28 +106,9 @@ public sealed class PointArm : MonoBehaviour
         hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
         animator = GetComponent<Animator>();
         if (movement == null || point == null || animator == null || !animator.isHuman) return false;
-        upper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
-        lower = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
-        hand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
-        if (upper == null || lower == null || hand == null) return false;
-        turnedCount = 0;
-        turned[turnedCount++] = upper;
-        turned[turnedCount++] = lower;
-        turned[turnedCount++] = hand;
-        for (int finger = 0; finger < 5; finger++)
-            for (int joint = 0; joint < 3; joint++)
-            {
-                var bone = animator.GetBoneTransform(FirstJoints[finger] + joint);
-                fingers[finger * 3 + joint] = bone;
-                if (bone != null) turned[turnedCount++] = bone;
-            }
-        var middleJoint = fingers[Index * 3 + 1];
-        var lastJoint = fingers[Index * 3 + 2];
+        if (!arm.Bind(animator)) return false;
+        var lastJoint = arm.Fingers[Index * 3 + 2];
         indexTip = lastJoint != null && lastJoint.childCount > 0 ? lastJoint.GetChild(0) : null;
-        jointAxis = middleJoint != null && lastJoint != null
-            ? Quaternion.Inverse(middleJoint.rotation) * (lastJoint.position - middleJoint.position).normalized
-            : Vector3.forward;
-        handAxis = Quaternion.Inverse(hand.rotation) * (hand.position - lower.position).normalized;
         BindWrist();
         bound = true;
         return true;
@@ -158,7 +126,7 @@ public sealed class PointArm : MonoBehaviour
             var mesh = skin.sharedMesh;
             if (mesh == null) continue;
             var bones = skin.bones;
-            int lowerAt = System.Array.IndexOf(bones, lower), handAt = System.Array.IndexOf(bones, hand);
+            int lowerAt = System.Array.IndexOf(bones, arm.Lower), handAt = System.Array.IndexOf(bones, arm.Hand);
             if (lowerAt < 0 || handAt < 0) continue;
             var binds = mesh.bindposes;
             if (lowerAt >= binds.Length || handAt >= binds.Length) continue;
@@ -173,9 +141,9 @@ public sealed class PointArm : MonoBehaviour
             hasWristBind = true;
             return;
         }
-        var knuckle = fingers[Middle * 3] != null ? fingers[Middle * 3] : fingers[Index * 3];
-        Vector3 way = knuckle != null ? knuckle.position - hand.position : hand.position - lower.position;
-        forearmInHand = way.sqrMagnitude > 1e-10f ? Quaternion.Inverse(hand.rotation) * way.normalized : handAxis;
+        var knuckle = arm.Fingers[Middle * 3] != null ? arm.Fingers[Middle * 3] : arm.Fingers[Index * 3];
+        Vector3 way = knuckle != null ? knuckle.position - arm.Hand.position : arm.Hand.position - arm.Lower.position;
+        forearmInHand = way.sqrMagnitude > 1e-10f ? Quaternion.Inverse(arm.Hand.rotation) * way.normalized : arm.HandAxis;
     }
 
     // The rotation part of a bone's matrix (its scale left out).
@@ -197,15 +165,15 @@ public sealed class PointArm : MonoBehaviour
     {
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return;
-        for (int i = 0; i < turnedCount; i++) framed[i] = turned[i].localRotation;
-        Vector3 shoulder = upper.position, origin = eyes.position, look = eyes.forward;
+        arm.Keep();
+        Vector3 shoulder = arm.Upper.position, origin = eyes.position, look = eyes.forward;
         // The view's own frame, never the hips': strafing turns the hips toward the step, and an arm laid out from them
         // swung its elbow forward and the hand across the chest (the user, 2026-11-12: "오른쪽으로 움직일 땐 팔이
         // 가슴쪽으로 오는데? 이 일정하지가 않아서").
         Vector3 viewRight = Vector3.Cross(Vector3.up, look);
         viewRight = viewRight.sqrMagnitude > 1e-6f ? viewRight.normalized : animator.transform.right;
         Vector3 viewAhead = Vector3.Cross(viewRight, Vector3.up);
-        float armLength = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
+        float armLength = Vector3.Distance(arm.Upper.position, arm.Lower.position) + Vector3.Distance(arm.Lower.position, arm.Hand.position);
         float reach = armLength + (tipLength > 0f ? tipLength : armLength * .35f);
 
         // Where the crosshair's line really ends, as a gun's aim does (the user, 2026-11-12: "손찌검 하는 것도 총처럼
@@ -272,23 +240,22 @@ public sealed class PointArm : MonoBehaviour
             - viewAhead * PokeTables.Number("Point.elbowBack", .1f)) * reach;
         Quaternion aimed = PoseHand(goalDistance > 1e-3f ? toGoal / goalDistance : aimWay, viewRight, viewAhead, out Vector3 palm);
         Quaternion handGoal = aimed;
-        tipLength = (Fingertip() - hand.position).magnitude;
+        tipLength = (Fingertip() - arm.Hand.position).magnitude;
         float wristLimit = Mathf.Max(0f, PokeTables.Number("Point.wristLimit", 20f));
         for (int settle = 0; settle < 3; settle++)
         {
-            Vector3 tipOffset = Fingertip() - hand.position;
-            TwoBoneIK.Solve(upper, lower, hand, goal - tipOffset, hint);
+            Vector3 tipOffset = Fingertip() - arm.Hand.position;
+            TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, goal - tipOffset, hint);
             // Each time from the hand that points straight at the aim, as near it as this forearm lets the wrist go.
             handGoal = InLine(aimed, palm, wristLimit);
-            hand.rotation = handGoal;
+            arm.Hand.rotation = handGoal;
         }
         // The forearm turns about its own length with the hand, as a forearm does: the wrist keeps the turn it was
         // modelled with and never wrings, however the gun's hold had the forearm turned.
         if (hasWristBind) TwistForearm(handGoal);
-        hand.rotation = handGoal;
+        arm.Hand.rotation = handGoal;
 
-        if (weight < 1f)
-            for (int i = 0; i < turnedCount; i++) turned[i].localRotation = Quaternion.Slerp(framed[i], turned[i].localRotation, weight);
+        arm.Ease(weight);
 
         if (presses && on && weight >= .99f && touchBlend >= .99f)
         {
@@ -333,13 +300,13 @@ public sealed class PointArm : MonoBehaviour
         {
             var drawnTurn = DrawnFrame(drawn, handWay, palm);
             handGoal = HandAlong(drawnTurn * Vector3.right, -(drawnTurn * Vector3.forward));
-            hand.rotation = handGoal;
+            arm.Hand.rotation = handGoal;
             DrawnFingers(drawn, drawnTurn);
         }
         else
         {
             handGoal = HandAlong(handWay, palm);
-            hand.rotation = handGoal;
+            arm.Hand.rotation = handGoal;
             Fingers(handWay, palm);
         }
         return handGoal;
@@ -350,7 +317,7 @@ public sealed class PointArm : MonoBehaviour
     // arm can't bring the forearm round far enough itself.
     private Quaternion InLine(Quaternion handGoal, Vector3 palm, float limit)
     {
-        Vector3 forearm = hand.position - lower.position;
+        Vector3 forearm = arm.Hand.position - arm.Lower.position;
         if (forearm.sqrMagnitude < 1e-10f) return handGoal;
         forearm.Normalize();
         Vector3 resting = Forearm(handGoal * forearmInHand, palm);
@@ -365,12 +332,12 @@ public sealed class PointArm : MonoBehaviour
     private void TwistForearm(Quaternion handGoal)
     {
         float share = Mathf.Clamp01(PokeTables.Number("Point.forearmTwist", 1f));
-        Vector3 axis = hand.position - lower.position;
+        Vector3 axis = arm.Hand.position - arm.Lower.position;
         if (share <= 0f || axis.sqrMagnitude < 1e-10f) return;
         axis.Normalize();
         Quaternion modelled = handGoal * Quaternion.Inverse(wristBind);
-        float twist = TwistAbout(modelled * Quaternion.Inverse(lower.rotation), axis);
-        lower.rotation = Quaternion.AngleAxis(twist * share, axis) * lower.rotation;
+        float twist = TwistAbout(modelled * Quaternion.Inverse(arm.Lower.rotation), axis);
+        arm.Lower.rotation = Quaternion.AngleAxis(twist * share, axis) * arm.Lower.rotation;
     }
 
     // How far (degrees, -180 to 180) a turn goes about an axis: its twist, the swing off the axis left out.
@@ -470,11 +437,11 @@ public sealed class PointArm : MonoBehaviour
         for (int finger = 0; finger < 5; finger++)
             for (int joint = 0; joint < 3; joint++)
             {
-                var bone = fingers[finger * 3 + joint];
+                var bone = arm.Fingers[finger * 3 + joint];
                 if (bone == null) break;
                 Vector3 want = DrawnWay(drawn, finger, joint);
                 if (want.sqrMagnitude < 1e-6f) continue;
-                PathArm.Turn(bone, JointWay(finger, joint), drawnTurn * want, 1f);
+                Turn(bone, JointWay(finger, joint), drawnTurn * want, 1f);
             }
     }
 
@@ -492,23 +459,23 @@ public sealed class PointArm : MonoBehaviour
     {
         Vector3 along = Along();
         Vector3 palmNow = PalmNow(along);
-        if (along.sqrMagnitude < 1e-10f || palmNow.sqrMagnitude < 1e-10f) return hand.rotation;
-        return Quaternion.LookRotation(way, -palm) * Quaternion.Inverse(Quaternion.LookRotation(along, -palmNow)) * hand.rotation;
+        if (along.sqrMagnitude < 1e-10f || palmNow.sqrMagnitude < 1e-10f) return arm.Hand.rotation;
+        return Quaternion.LookRotation(way, -palm) * Quaternion.Inverse(Quaternion.LookRotation(along, -palmNow)) * arm.Hand.rotation;
     }
 
     // Out from the wrist along the hand: to the index knuckle, else the hand's own way out.
     private Vector3 Along()
     {
-        var knuckle = fingers[Index * 3];
-        return knuckle != null ? knuckle.position - hand.position : hand.rotation * handAxis;
+        var knuckle = arm.Fingers[Index * 3];
+        return knuckle != null ? knuckle.position - arm.Hand.position : arm.Hand.rotation * arm.HandAxis;
     }
 
     // The way the palm faces now, from the knuckles: across them from the little finger to the index, the palm on the
     // side a left hand has it. A hand with no fingers is taken as palm down.
     private Vector3 PalmNow(Vector3 along)
     {
-        var index = fingers[Index * 3];
-        var side = fingers[Little * 3] != null ? fingers[Little * 3] : fingers[Ring * 3] != null ? fingers[Ring * 3] : fingers[Middle * 3];
+        var index = arm.Fingers[Index * 3];
+        var side = arm.Fingers[Little * 3] != null ? arm.Fingers[Little * 3] : arm.Fingers[Ring * 3] != null ? arm.Fingers[Ring * 3] : arm.Fingers[Middle * 3];
         Vector3 palm = index != null && side != null ? -Vector3.Cross(along, index.position - side.position) : Vector3.zero;
         if (palm.sqrMagnitude < 1e-12f) palm = Vector3.ProjectOnPlane(Vector3.down, along);
         return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
@@ -535,7 +502,7 @@ public sealed class PointArm : MonoBehaviour
         Finger(Ring, way, curl, first + spread, second, third, fist);
         Finger(Little, way, curl, first + 2f * spread, second, third, fist);
         float thumb = Mathf.Clamp01(PokeTables.Number("Point.thumb", .8f));
-        if (thumb <= 0f || fingers[Thumb * 3] == null) return;
+        if (thumb <= 0f || arm.Fingers[Thumb * 3] == null) return;
         // Across the palm toward the little finger and a little forward, over the closed fingers.
         Vector3 over = way * PokeTables.Number("Point.thumbForward", .35f) + palm * PokeTables.Number("Point.thumbPalm", .55f)
             - curl * PokeTables.Number("Point.thumbAcross", .75f);
@@ -544,11 +511,11 @@ public sealed class PointArm : MonoBehaviour
         float bend2 = PokeTables.Number("Point.thumbBend2", 20f), bend3 = PokeTables.Number("Point.thumbBend3", 25f);
         for (int joint = 0; joint < 3; joint++)
         {
-            var bone = fingers[Thumb * 3 + joint];
+            var bone = arm.Fingers[Thumb * 3 + joint];
             if (bone == null) break;
             Vector3 bendAxis = Vector3.Cross(over, palm);
             if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? bend2 : bend3, bendAxis.normalized) * over;
-            PathArm.Turn(bone, JointWay(Thumb, joint), over, thumb);
+            Turn(bone, JointWay(Thumb, joint), over, thumb);
         }
     }
 
@@ -559,19 +526,19 @@ public sealed class PointArm : MonoBehaviour
         float angle = 0f;
         for (int joint = 0; joint < 3; joint++)
         {
-            var bone = fingers[finger * 3 + joint];
+            var bone = arm.Fingers[finger * 3 + joint];
             if (bone == null) return;
             angle += joint == 0 ? first : joint == 1 ? second : third;
-            PathArm.Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle * share, curl) * way, 1f);
+            Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle * share, curl) * way, 1f);
         }
     }
 
     // Which way a finger joint runs now: to its next joint, to the index's tip bone, else along the rig's joint axis.
     private Vector3 JointWay(int finger, int joint)
     {
-        var bone = fingers[finger * 3 + joint];
-        var next = joint < 2 ? fingers[finger * 3 + joint + 1] : finger == Index ? indexTip : null;
-        return next != null ? next.position - bone.position : bone.rotation * jointAxis;
+        var bone = arm.Fingers[finger * 3 + joint];
+        var next = joint < 2 ? arm.Fingers[finger * 3 + joint + 1] : finger == Index ? indexTip : null;
+        return next != null ? next.position - bone.position : bone.rotation * arm.JointAxis;
     }
 
     // The index's tip: its tip bone, else past its last joint by most of the middle joint's length; a hand with no
@@ -579,13 +546,13 @@ public sealed class PointArm : MonoBehaviour
     private Vector3 Fingertip()
     {
         if (indexTip != null) return indexTip.position;
-        var middleJoint = fingers[Index * 3 + 1];
-        var lastJoint = fingers[Index * 3 + 2];
+        var middleJoint = arm.Fingers[Index * 3 + 1];
+        var lastJoint = arm.Fingers[Index * 3 + 2];
         if (lastJoint != null)
         {
             float length = middleJoint != null ? Vector3.Distance(middleJoint.position, lastJoint.position) : .02f;
-            return lastJoint.position + lastJoint.rotation * jointAxis * (length * .85f);
+            return lastJoint.position + lastJoint.rotation * arm.JointAxis * (length * .85f);
         }
-        return hand.position + hand.rotation * handAxis * (Vector3.Distance(lower.position, hand.position) * .7f);
+        return arm.Hand.position + arm.Hand.rotation * arm.HandAxis * (Vector3.Distance(arm.Lower.position, arm.Hand.position) * .7f);
     }
 }

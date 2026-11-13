@@ -17,10 +17,6 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 5)]
 public sealed class ExecutionKnifeArm : MonoBehaviour
 {
-    // The fingers in order (index, middle, ring, little, thumb), three joints each from the knuckle out, and a finger's
-    // curl shared out over its joints, knuckle first (RepairArm's).
-    private const int Index = 0, Middle = 1, Ring = 2, Little = 3, Thumb = 4;
-    private static readonly float[] CurlShare = { .4f, .35f, .25f };
     // Where the wrists aim (m): the right fist over the back of the neck by this plus a share of the knife's reach (so a
     // long blade goes in deep and a short one still meets it), the left hand on top of the head and a little toward the
     // player, as a hand grips a head to hold it.
@@ -30,24 +26,12 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     // and back to the stroke's should the pair end first (cut short), never a jump either way.
     private const float ArmsToClip = .12f, ArmsFromClip = .25f;
 
-    private sealed class Side
-    {
-        public bool Right;
-        public Transform Upper, Lower, Hand;
-        public readonly Transform[] Fingers = new Transform[15];
-        public readonly Transform[] Turned = new Transform[18];
-        public readonly Quaternion[] Framed = new Quaternion[18];
-        public int TurnedCount;
-        public Vector3 JointAxis, HandAxis;
-        public float ArmLength, HandLength;
-    }
-
     private PlayerMovement movement;
     private ExecutionKnife driver;
     private MeleeKnife melee;
     private Animator animator;
     private Transform eyes, holder;
-    private readonly Side right = new Side { Right = true }, left = new Side();
+    private readonly ArmBones right = new ArmBones(true), left = new ArmBones();
     private bool bound;
     private GameObject model;
     private string worn;
@@ -160,16 +144,15 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
 
     // The arm where an eye-space key has it (KnifeSwing: the wrist and the elbow from the eyes in metres, the hand's ways in
     // the view's axes), eased by weight from the pose the frame had.
-    private static void PoseFromEyes(Side side, in KnifeSwing.Key key, Transform eyes, float weight)
+    private static void PoseFromEyes(ArmBones side, in KnifeSwing.Key key, Transform eyes, float weight)
     {
-        for (int i = 0; i < side.TurnedCount; i++) side.Framed[i] = side.Turned[i].localRotation;
+        side.Keep();
         Quaternion view = eyes.rotation;
         TwoBoneIK.Solve(side.Upper, side.Lower, side.Hand, eyes.position + view * key.Wrist, eyes.position + view * key.Elbow);
         Vector3 along = view * key.Along, palm = view * key.Palm;
-        TurnHand(side, along, palm);
-        Fingers(side, along, palm, key.Curl, key.Thumb);
-        if (weight < 1f)
-            for (int i = 0; i < side.TurnedCount; i++) side.Turned[i].localRotation = Quaternion.Slerp(side.Framed[i], side.Turned[i].localRotation, weight);
+        side.TurnHand(along, palm);
+        side.Close(along, palm, key.Curl, key.Thumb);
+        side.Ease(weight);
     }
 
     private void OnDisable()
@@ -189,59 +172,26 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         movement = GetComponentInParent<PlayerMovement>();
         animator = GetComponent<Animator>();
         if (movement == null || animator == null || !animator.isHuman) return false;
-        bound = BindSide(right) && BindSide(left);
+        bound = right.Bind(animator) && right.HasLength && left.Bind(animator) && left.HasLength;
         return bound;
-    }
-
-    private bool BindSide(Side side)
-    {
-        side.Upper = animator.GetBoneTransform(side.Right ? HumanBodyBones.RightUpperArm : HumanBodyBones.LeftUpperArm);
-        side.Lower = animator.GetBoneTransform(side.Right ? HumanBodyBones.RightLowerArm : HumanBodyBones.LeftLowerArm);
-        side.Hand = animator.GetBoneTransform(side.Right ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
-        if (side.Upper == null || side.Lower == null || side.Hand == null) return false;
-        side.TurnedCount = 0;
-        side.Turned[side.TurnedCount++] = side.Upper;
-        side.Turned[side.TurnedCount++] = side.Lower;
-        side.Turned[side.TurnedCount++] = side.Hand;
-        HumanBodyBones[] first = side.Right
-            ? new[] { HumanBodyBones.RightIndexProximal, HumanBodyBones.RightMiddleProximal, HumanBodyBones.RightRingProximal, HumanBodyBones.RightLittleProximal, HumanBodyBones.RightThumbProximal }
-            : new[] { HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftRingProximal, HumanBodyBones.LeftLittleProximal, HumanBodyBones.LeftThumbProximal };
-        for (int finger = 0; finger < 5; finger++)
-            for (int joint = 0; joint < 3; joint++)
-            {
-                var bone = animator.GetBoneTransform(first[finger] + joint);
-                side.Fingers[finger * 3 + joint] = bone;
-                if (bone != null) side.Turned[side.TurnedCount++] = bone;
-            }
-        var middleJoint = side.Fingers[Index * 3 + 1];
-        var lastJoint = side.Fingers[Index * 3 + 2];
-        side.JointAxis = middleJoint != null && lastJoint != null
-            ? Quaternion.Inverse(middleJoint.rotation) * (lastJoint.position - middleJoint.position).normalized
-            : Vector3.forward;
-        side.HandAxis = Quaternion.Inverse(side.Hand.rotation) * (side.Hand.position - side.Lower.position).normalized;
-        side.ArmLength = Vector3.Distance(side.Upper.position, side.Lower.position) + Vector3.Distance(side.Lower.position, side.Hand.position);
-        var knuckle = Knuckle(side);
-        side.HandLength = knuckle != null ? Vector3.Distance(side.Hand.position, knuckle.position) : side.ArmLength * .17f;
-        return side.ArmLength > 1e-3f && side.HandLength > 1e-4f;
     }
 
     // The arm where the key has it: the wrist from this shoulder in this arm's lengths, drawn toward the aim by the key's
     // share, the elbow toward its pole; the hand turned to the key's run and facing, the fingers closed; all eased by the
     // key's weight, times the stroke's share of the arms, from the pose the frame had.
-    private static void Pose(Side side, in KnifeStroke.Arm key, Quaternion view, bool aimed, Vector3 aim, float share)
+    private static void Pose(ArmBones side, in KnifeStroke.Arm key, Quaternion view, bool aimed, Vector3 aim, float share)
     {
         float weight = key.Weight * share;
         if (weight <= 0f) return;
-        for (int i = 0; i < side.TurnedCount; i++) side.Framed[i] = side.Turned[i].localRotation;
+        side.Keep();
         Vector3 shoulder = side.Upper.position;
         Vector3 wrist = shoulder + view * (key.Wrist * side.ArmLength);
         if (aimed && key.Aim > 0f) wrist = Vector3.Lerp(wrist, aim, key.Aim);
         TwoBoneIK.Solve(side.Upper, side.Lower, side.Hand, wrist, shoulder + view * (key.Elbow * side.ArmLength));
         Vector3 along = view * key.Along, palm = view * key.Palm;
-        TurnHand(side, along, palm);
-        Fingers(side, along, palm, key.Curl, key.Thumb);
-        if (weight < 1f)
-            for (int i = 0; i < side.TurnedCount; i++) side.Turned[i].localRotation = Quaternion.Slerp(side.Framed[i], side.Turned[i].localRotation, weight);
+        side.TurnHand(along, palm);
+        side.Close(along, palm, key.Curl, key.Thumb);
+        side.Ease(weight);
     }
 
     // The knife in the right fist as the hand finally is this frame: its handle's middle at the grip's place in the fist,
@@ -250,8 +200,8 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     private void Seat(Vector3 heldAxes, Vector3 bladeAxes, Vector3 edgeAxes)
     {
         if (holder == null) return;
-        Vector3 along = AlongNow(right);
-        Vector3 palm = PalmNow(right, along);
+        Vector3 along = right.AlongNow();
+        Vector3 palm = right.PalmNow(along);
         if (along.sqrMagnitude < 1e-10f || palm.sqrMagnitude < 1e-10f) return;
         Quaternion frame = Quaternion.LookRotation(along, palm);
         Vector3 blade = frame * Mirror(bladeAxes);
@@ -269,74 +219,6 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     private void ShowKnife(bool show)
     {
         if (holder != null && holder.gameObject.activeSelf != show) holder.gameObject.SetActive(show);
-    }
-
-    // The hand's rotation that lays its run (wrist to middle knuckle) along the key's and its palm facing as the key's.
-    private static void TurnHand(Side side, Vector3 along, Vector3 palm)
-    {
-        Vector3 alongNow = AlongNow(side);
-        Vector3 palmNow = PalmNow(side, alongNow);
-        if (alongNow.sqrMagnitude < 1e-10f || palmNow.sqrMagnitude < 1e-10f || along.sqrMagnitude < 1e-10f || palm.sqrMagnitude < 1e-10f) return;
-        side.Hand.rotation = Quaternion.LookRotation(along, palm) * Quaternion.Inverse(Quaternion.LookRotation(alongNow, palmNow)) * side.Hand.rotation;
-    }
-
-    private static Transform Knuckle(Side side) => side.Fingers[Middle * 3] != null ? side.Fingers[Middle * 3] : side.Fingers[Index * 3];
-
-    private static Vector3 AlongNow(Side side)
-    {
-        var knuckle = Knuckle(side);
-        return knuckle != null ? knuckle.position - side.Hand.position : side.Hand.rotation * side.HandAxis;
-    }
-
-    // Out of the palm, square to the hand's run, from the knuckles: the index's side and the little finger's side cross
-    // the other way round on a right hand, so its cross is taken the other way (RepairArm's is the left's).
-    private static Vector3 PalmNow(Side side, Vector3 along)
-    {
-        var index = side.Fingers[Index * 3];
-        var outer = side.Fingers[Little * 3] != null ? side.Fingers[Little * 3] : side.Fingers[Ring * 3] != null ? side.Fingers[Ring * 3] : side.Fingers[Middle * 3];
-        Vector3 palm = index != null && outer != null && outer != index
-            ? (side.Right ? 1f : -1f) * Vector3.Cross(along, index.position - outer.position) : Vector3.zero;
-        if (palm.sqrMagnitude < 1e-12f) palm = Vector3.down;
-        palm = Vector3.ProjectOnPlane(palm, along);
-        return palm.sqrMagnitude > 1e-12f ? palm.normalized : Vector3.zero;
-    }
-
-    // The four fingers closed by the key's curl, shared over their joints; the thumb across the palm and on round as far as
-    // the key closes it (RepairArm.Fingers, its across mirrored for a right hand).
-    private static void Fingers(Side side, Vector3 along, Vector3 palm, float curl, float thumb)
-    {
-        Vector3 axis = Vector3.Cross(along, palm);
-        if (axis.sqrMagnitude < 1e-10f) return;
-        axis.Normalize();
-        for (int finger = Index; finger <= Little; finger++)
-        {
-            float angle = 0f;
-            for (int joint = 0; joint < 3; joint++)
-            {
-                var bone = side.Fingers[finger * 3 + joint];
-                if (bone == null) break;
-                angle += curl * CurlShare[joint];
-                PathArm.Turn(bone, JointWay(side, finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
-            }
-        }
-        float close = Mathf.Clamp01(thumb / 90f);
-        if (close <= 0f || side.Fingers[Thumb * 3] == null) return;
-        Vector3 over = (along * .5f + palm * .6f + (side.Right ? 1f : -1f) * axis * .45f).normalized;
-        for (int joint = 0; joint < 3; joint++)
-        {
-            var bone = side.Fingers[Thumb * 3 + joint];
-            if (bone == null) break;
-            Vector3 bendAxis = Vector3.Cross(over, palm);
-            if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 15f : 20f, bendAxis.normalized) * over;
-            PathArm.Turn(bone, JointWay(side, Thumb, joint), over, close);
-        }
-    }
-
-    private static Vector3 JointWay(Side side, int finger, int joint)
-    {
-        var bone = side.Fingers[finger * 3 + joint];
-        var next = joint < 2 ? side.Fingers[finger * 3 + joint + 1] : null;
-        return next != null ? next.position - bone.position : bone.rotation * side.JointAxis;
     }
 
     private static Transform Find(Transform root, string name)

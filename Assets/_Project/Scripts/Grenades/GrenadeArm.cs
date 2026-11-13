@@ -1,4 +1,5 @@
 using UnityEngine;
+using static ArmBones;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
@@ -100,7 +101,7 @@ public sealed class GrenadeArm : PathArm
         {
             posedBefore = false;
             ShowHolder(false);
-            HeldPoint = hand.position;
+            HeldPoint = arm.Hand.position;
             return;
         }
         Pose(Faded(key, motion, dt), motion);
@@ -133,40 +134,6 @@ public sealed class GrenadeArm : PathArm
         if (hands != null) hands.LendOffHand(this, 0f);
     }
 
-    private bool Bind()
-    {
-        movement = GetComponentInParent<PlayerMovement>();
-        hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
-        animator = GetComponent<Animator>();
-        if (movement == null || animator == null || !animator.isHuman) return false;
-        upper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
-        lower = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
-        hand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
-        if (upper == null || lower == null || hand == null) return false;
-        turnedCount = 0;
-        turned[turnedCount++] = upper;
-        turned[turnedCount++] = lower;
-        turned[turnedCount++] = hand;
-        for (int finger = 0; finger < 5; finger++)
-            for (int joint = 0; joint < 3; joint++)
-            {
-                var bone = animator.GetBoneTransform(FirstJoints[finger] + joint);
-                fingers[finger * 3 + joint] = bone;
-                if (bone != null) turned[turnedCount++] = bone;
-            }
-        var middleJoint = fingers[Index * 3 + 1];
-        var lastJoint = fingers[Index * 3 + 2];
-        jointAxis = middleJoint != null && lastJoint != null
-            ? Quaternion.Inverse(middleJoint.rotation) * (lastJoint.position - middleJoint.position).normalized
-            : Vector3.forward;
-        handAxis = Quaternion.Inverse(hand.rotation) * (hand.position - lower.position).normalized;
-        armLength = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
-        var knuckle = Knuckle();
-        handLength = knuckle != null ? Vector3.Distance(hand.position, knuckle.position) : armLength * .17f;
-        bound = armLength > 1e-3f && handLength > 1e-4f;
-        return bound;
-    }
-
     // The body can lift the arm: alive, up, standing or crouched (walking and in the air too) or sliding; not held,
     // climbing, hanging or vaulting.
     private bool Free()
@@ -186,7 +153,7 @@ public sealed class GrenadeArm : PathArm
         if (throwing == null || !throwing.HasRelease || !GrenadeArmPath.Sample(throwing.Table, throwing.ReleaseAt, out var key)) return;
         Quaternion view = eyes.rotation;
         Vector3 wrist = Place(motion, key.Wrist);
-        Vector3 point = wrist + Quaternion.LookRotation(view * key.Along, view * key.Palm) * (HeldAt() * handLength);
+        Vector3 point = wrist + Quaternion.LookRotation(view * key.Along, view * key.Palm) * (HeldAt() * arm.HandLength);
         releaseLocal = Quaternion.Inverse(view) * (point - eyes.position);
         hasRelease = true;
     }
@@ -197,7 +164,7 @@ public sealed class GrenadeArm : PathArm
     private Vector3 Place(GrenadeArmPath.Motion motion, Vector3 local)
     {
         Quaternion view = eyes.rotation;
-        if (!motion.EyeSpace) return upper.position + view * (local * armLength);
+        if (!motion.EyeSpace) return arm.Upper.position + view * (local * arm.ArmLength);
         float spread = Spread(motion);
         return eyes.position + view * new Vector3(local.x * spread, local.y * spread, local.z);
     }
@@ -213,17 +180,16 @@ public sealed class GrenadeArm : PathArm
 
     private void Pose(in GrenadeArmPath.Key key, GrenadeArmPath.Motion motion)
     {
-        for (int i = 0; i < turnedCount; i++) framed[i] = turned[i].localRotation;
+        arm.Keep();
         Quaternion view = eyes.rotation;
 
         // The wrist where the clip has it, the elbow toward the clip's elbow.
-        TwoBoneIK.Solve(upper, lower, hand, Place(motion, key.Wrist), Place(motion, key.Elbow));
+        TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, Place(motion, key.Wrist), Place(motion, key.Elbow));
         Vector3 along = view * key.Along, palm = view * key.Palm;
-        TurnHand(along, palm);
+        arm.TurnHand(along, palm);
         Fingers(along, palm, key);
 
-        if (weight < 1f)
-            for (int i = 0; i < turnedCount; i++) turned[i].localRotation = Quaternion.Slerp(framed[i], turned[i].localRotation, weight);
+        arm.Ease(weight);
         Hold(key.Held && holds);
     }
 
@@ -242,22 +208,22 @@ public sealed class GrenadeArm : PathArm
             float curl = key.FingerCurl(finger), angle = 0f;
             for (int joint = 0; joint < 3; joint++)
             {
-                var bone = fingers[finger * 3 + joint];
+                var bone = arm.Fingers[finger * 3 + joint];
                 if (bone == null) break;
                 angle += curl * fingersShare * CurlShare[joint];
-                Turn(bone, JointWay(finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
+                Turn(bone, arm.JointWay(finger, joint), Quaternion.AngleAxis(angle, axis) * along, 1f);
             }
         }
         float close = Mathf.Clamp01(key.Thumb / 90f) * Mathf.Clamp01(Throwables.Rule("gripThumb", 1f));
-        if (close <= 0f || fingers[Thumb * 3] == null) return;
+        if (close <= 0f || arm.Fingers[Thumb * 3] == null) return;
         Vector3 over = (along * .5f + palm * .6f - axis * .45f).normalized;
         for (int joint = 0; joint < 3; joint++)
         {
-            var bone = fingers[Thumb * 3 + joint];
+            var bone = arm.Fingers[Thumb * 3 + joint];
             if (bone == null) break;
             Vector3 bendAxis = Vector3.Cross(over, palm);
             if (joint > 0 && bendAxis.sqrMagnitude > 1e-8f) over = Quaternion.AngleAxis(joint == 1 ? 15f : 20f, bendAxis.normalized) * over;
-            Turn(bone, JointWay(Thumb, joint), over, close);
+            Turn(bone, arm.JointWay(Thumb, joint), over, close);
         }
     }
 
@@ -275,18 +241,18 @@ public sealed class GrenadeArm : PathArm
         if (!show || kind == Throwable.None)
         {
             ShowHolder(false);
-            HeldPoint = hand.position;
+            HeldPoint = arm.Hand.position;
             return;
         }
         if (held == null || heldKind != kind) Dress();
         if (held == null) return;
-        Vector3 along = AlongNow();
-        Vector3 palm = PalmNow(along);
+        Vector3 along = arm.AlongNow();
+        Vector3 palm = arm.PalmNow(along);
         if (along.sqrMagnitude < 1e-10f || palm.sqrMagnitude < 1e-10f) return;
         var info = Throwables.Of(kind);
         Quaternion frame = Quaternion.LookRotation(along, palm);
         Vector3 turn = info != null ? info.HeldTurn : new Vector3(0f, 0f, 90f);
-        holder.SetPositionAndRotation(hand.position + frame * (HeldAt() * handLength), frame * Quaternion.Euler(turn));
+        holder.SetPositionAndRotation(arm.Hand.position + frame * (HeldAt() * arm.HandLength), frame * Quaternion.Euler(turn));
         // A body imported at another scale (an avatar's armature at 100) must not scale the throwable with it.
         float scale = transform.lossyScale.x;
         holder.localScale = Vector3.one / Mathf.Max(1e-4f, Mathf.Abs(scale));
