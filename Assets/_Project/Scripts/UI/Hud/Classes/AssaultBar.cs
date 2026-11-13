@@ -50,6 +50,7 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
     private Image tagFill, headFill, wipeImage;
     private CanvasGroup rowGroup, tabGroup;
     private PhaseTrack last;
+    private MissionBarLook look;
     private CombatPhase shown = CombatPhase.Quiet;
     private float age = -1f, ending = -1f, runOffset, rowShow, punchClock = -1f, blinkClock, tagWidth;
     private bool on, previewing, blinkOn;
@@ -183,8 +184,11 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
         float length = last.Length;
         trackRow.gameObject.SetActive(length > 0f);
         if (length <= 0f) return;
+        // The row reaches as far right as the bar's own parts do (its count box and the line's tail, MissionBarLook.Reach),
+        // so the tag before it doesn't squeeze the song's line under a short objective.
         float goneLeft = tagWidth + TagGap, lineLeft = goneLeft + LineLeft;
-        float trackWidth = Mathf.Max(40f, width - lineLeft - WholeGap - StampWidth + 2f);
+        float right = look != null ? Mathf.Max(width, look.Reach) : width + 2f;
+        float trackWidth = Mathf.Max(40f, right - lineLeft - WholeGap - StampWidth);
         float headX = trackWidth * Mathf.Clamp01(last.Elapsed / length);
         track.anchoredPosition = new Vector2(lineLeft, 0f);
         track.sizeDelta = new Vector2(trackWidth, LineHeight);
@@ -211,6 +215,7 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
 
     private void Build()
     {
+        TryGetComponent(out look);
         var bar = (RectTransform)transform;
         root = FeelUI.Rect("Assault", bar);
         root.anchorMin = root.anchorMax = root.pivot = Vector2.zero;
