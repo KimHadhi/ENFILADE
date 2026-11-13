@@ -110,7 +110,7 @@ public sealed partial class ZombieBody
         FeelAudio.PlayClipAt(Roar(), transform.position + Vector3.up * 1.4f * grown, .85f, 1.35f, 60f);
         fallLandsAt = Time.time + fallLands;
         var health = enemyHealth;
-        AlertHUD.Danger(Texts.Get("hud.alert.brute.down"), Head != null ? Head : transform, fallMark,
+        AlertHUD.EnemyIntro(Texts.Get("hud.alert.brute.down"), Head != null ? Head : transform, fallMark,
             () => health == null || !health.IsAlive);
         if (ShotByMe(hit)) headShoutAt = Time.time + headShoutAfter;
     }

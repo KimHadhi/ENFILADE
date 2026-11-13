@@ -12,9 +12,9 @@ using UnityEngine.InputSystem;
 /// one; 클래스 tells the class's state (CHARGE ready, the syringe empty…); 이동 pins the spot looked at; 말 opens a page
 /// of eight short words. The lines, when each fits and which wins are rows of Tables/Callouts.csv (CalloutLines).
 ///
-/// Everyone hears the speaker's own voice from where they stand (a Voice bank clip, Windows TTS stand-ins until there
-/// are recordings), reads the words over their head (CalloutBubbles) and sees their face say it, the mouth moving to
-/// the voice (Callouts.csv face, PlayerFace). Some are shouted without the wheel
+/// Everyone hears the speaker's own voice from where they stand (a Voice bank clip; the Windows TTS stand-ins stay silent
+/// unless Player.csv Callout.ttsVoices turns them on), reads the words over their head (CalloutBubbles) and sees their
+/// face say it, the mouth moving to the voice or, voiceless, through the words (Callouts.csv face, PlayerFace). Some are shouted without the wheel
 /// (Settings → 조작 → 저절로 외치기): help a moment after something takes hold or on going down, the elite first come
 /// near, a brute's coming (the player nearest it: its legs) and its fall (whoever shot its leg out: its head; both by
 /// Spotted, from ZombieBody.Legs.cs), and the CHARGE, which friends near the Assault answer as G&amp;B's line answers its officer. Guards keep it from
@@ -324,7 +324,7 @@ public sealed class PlayerCallouts : MonoBehaviour
     {
         var bank = SoundBank.Load("Voice");
         var clip = bank != null ? bank.Pick(key) : null;
-        if (clip == null) return null;
+        if (clip == null || (IsStandIn(clip) && !GameTables.Flag(VoiceTable, StandInRow, "value", false))) return null;
         var mouth = speaker.transform.Find("Callout Voice");
         AudioSource source;
         if (mouth == null)
@@ -350,6 +350,14 @@ public sealed class PlayerCallouts : MonoBehaviour
         source.Play();
         return source;
     }
+
+    // A text-to-speech stand-in (Tools/Audio/callout_voices.py writes "<id>_tts.wav"). They stay silent unless the table
+    // turns them on (Player.csv Callout.ttsVoices; the user, 2026-11-13: "음성도 구글 TTS 쓰지 말고 일단 disable"): the line
+    // is said voiceless then, its mouth moving through its words (CharacterFace.Speak), and a real recording dropped into
+    // the same folder plays as before.
+    private const string VoiceTable = "Player", StandInRow = "Callout.ttsVoices";
+
+    private static bool IsStandIn(AudioClip clip) => clip.name.EndsWith("_tts", StringComparison.OrdinalIgnoreCase);
 
     private static bool Bountied(EnemyHealth enemy)
     {

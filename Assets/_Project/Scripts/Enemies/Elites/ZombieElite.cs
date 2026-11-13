@@ -228,14 +228,15 @@ public abstract class ZombieElite : MonoBehaviour
         return made;
     }
 
-    // The first time this PC's player comes near one of its kind this session: its name and what it does, on the band.
+    // The first time this PC's player comes near one of its kind this session: its name and what it does, on the band
+    // when the HUD tells enemies at all (AlertHUD.EnemyIntro, off by default).
     private void Tell()
     {
         if (told.Contains(Kind)) return;
         var mine = PlayerRoster.Local;
         if (mine == null || (mine.transform.position - transform.position).sqrMagnitude > TellWithin * TellWithin) return;
         told.Add(Kind);
-        AlertHUD.Danger(Texts.Get("hud.alert." + Kind.ToString().ToLowerInvariant()), transform, TellMark,
+        AlertHUD.EnemyIntro(Texts.Get("hud.alert." + Kind.ToString().ToLowerInvariant()), transform, TellMark,
             () => health == null || !health.IsAlive);
         // The player shouts its name for the team too (PlayerCallouts; Settings → 저절로 외치기).
         PlayerCallouts.Spotted(health);

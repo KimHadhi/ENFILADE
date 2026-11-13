@@ -793,3 +793,4 @@ FixtureAudio.ladderSlideVolume,0.8,사다리를 미끄러져 내려오는 긁는
 FixtureAudio.ziplineVolume,0.3,집라인 줄 소리 크기 (ziplineLoudSpeed일 때)
 FixtureAudio.ziplineLoudSpeed,12,줄 소리가 가장 커지는 속도(m/s)
 FixtureAudio.fadeTime,0.1,긁는 소리·줄 소리가 커지고 사라지는 시간(초)
+Callout.ttsVoices,0,"콜아웃의 임시 TTS 목소리(Art/Audio/Voice/<캐릭터>/Callout/<id>/<id>_tts.wav, Tools/Audio/callout_voices.py가 만든 것)를 낼지(1 켬, 0 끔). 사용자 11-13: TTS 쓰지 말고 끔. 꺼 두면 대사는 말풍선과 입 모양(글자 수만큼 움직임)으로만 나오고, 같은 폴더에 녹음을 넣으면 그 목소리는 난다"

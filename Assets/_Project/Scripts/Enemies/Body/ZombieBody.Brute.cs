@@ -60,9 +60,10 @@ public sealed partial class ZombieBody
         GameAudio.PlayAt(Roar(), transform.position + Vector3.up * 2f, AudioChannel.Combat, 1f, 6f, 120f);
         PlayFlat(Sting(), .8f);
         var health = GetComponent<EnemyHealth>();
-        // The band says how to beat it in a line (Texts hud.alert.brute: its knees, then its head), and a moment later
-        // the player nearest it shouts for its legs (ZombieBody.Legs.cs).
-        AlertHUD.Danger(Texts.Get("hud.alert.brute"), transform, MarkSeconds, () => health == null || !health.IsAlive);
+        // The band says how to beat it in a line (Texts hud.alert.brute: its knees, then its head) when the HUD tells
+        // enemies at all (AlertHUD.EnemyIntro, off by default), and a moment later the player nearest it shouts for its
+        // legs (ZombieBody.Legs.cs).
+        AlertHUD.EnemyIntro(Texts.Get("hud.alert.brute"), transform, MarkSeconds, () => health == null || !health.IsAlive);
         CallForLegs();
         var mine = PlayerRoster.Local;
         if (mine == null) return;

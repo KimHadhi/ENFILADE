@@ -79,6 +79,16 @@ public sealed class AlertHUD : MonoBehaviour
     public static void Danger(string what, Transform where = null, float markSeconds = 0f, Func<bool> gone = null)
         => Show(Kind.Danger, what, where, KitStyle.Accent, markSeconds, gone);
 
+    /// <summary>
+    /// An enemy saying who it is: an elite first coming near (its name and how to beat it), a brute arriving or falling.
+    /// Off unless Hud.csv Alert.enemyIntro turns it on (the user, 2026-11-13: "모바일 게임 같고 too much information이며
+    /// 짜침"): the players' own shouts (PlayerCallouts) and the brute's roar and shake still tell it in the world.
+    /// </summary>
+    public static void EnemyIntro(string what, Transform where, float markSeconds, Func<bool> gone)
+    {
+        if (GameTables.Flag(HudCamera.TableName, "Alert.enemyIntro", "value", false)) Danger(what, where, markSeconds, gone);
+    }
+
     /// <summary>Something happened to a teammate; tint is theirs.</summary>
     public static void Team(string what, Transform where, Color tint) => Show(Kind.Team, what, where, tint, 0f, null);
 
