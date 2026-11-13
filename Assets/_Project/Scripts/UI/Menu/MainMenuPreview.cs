@@ -317,6 +317,9 @@ public sealed class MainMenuPreview : MonoBehaviour, IWardrobeStage
         BodyShapes.Set(model.GetComponentsInChildren<SkinnedMeshRenderer>(true), option, value);
     }
 
+    /// <summary>Nudges a piece made for anyone on the standing character at once while the wardrobe's slider moves (ItemAdjust).</summary>
+    public void AdjustPiece(string item, ItemAdjust.Values values) => ItemAdjust.On(model, item).OrNull()?.Apply(values);
+
     /// <summary>The wardrobe saved the look the character already shows (its body options set live by Shape).</summary>
     public void Kept(OutfitLook look)
     {

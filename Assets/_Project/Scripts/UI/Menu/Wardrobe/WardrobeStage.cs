@@ -33,6 +33,8 @@ public interface IWardrobeStage
     /// <summary>Holds <paramref name="face"/> (CharacterFace.ShowFace) while the face page's pointer rests on it; null goes
     /// back to the face picked. Only the face changes, so either stage can try faces.</summary>
     void TryFace(string face);
+    /// <summary>Nudges a piece made for anyone at once while the wardrobe's slider moves (ItemAdjust); saving follows on letting go.</summary>
+    void AdjustPiece(string item, ItemAdjust.Values values);
     /// <summary>Moves one body option on the character at once, while a slider is dragged or a chip picked.</summary>
     void Shape(BodyShapes.Option option, float value);
     /// <summary>The wardrobe saved the look the character already shows (its body options set live by Shape).</summary>

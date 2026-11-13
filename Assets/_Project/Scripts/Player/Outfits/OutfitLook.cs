@@ -95,7 +95,8 @@ public sealed class OutfitLook
         List<(OutfitItem Piece, string Colour)> pieces = null;
         foreach (var pair in picks)
         {
-            if (pair.Value.IsOff || pair.Key.StartsWith(BodyShapes.Prefix, StringComparison.Ordinal)) continue;
+            if (pair.Value.IsOff || pair.Key.StartsWith(BodyShapes.Prefix, StringComparison.Ordinal)
+                || pair.Key.StartsWith(ItemAdjust.Prefix, StringComparison.Ordinal)) continue;
             var item = OutfitCatalog.Item(pair.Value.Item);
             if (item == null)
             {

@@ -36,7 +36,7 @@ internal static class FaceFit
     private struct Values
     {
         public float Clearance, EyeLift, NoseWidth, NoseBelow, BrowWidth, BrowHeight, Front, ChestClear, MostTilt, Hide,
-            WidthPerEye, LeastScale, MostScale, Scale;
+            WidthPerEye, LeastScale, MostScale, Scale, LiftPerEye;
     }
 
     // The body below the head that the shell's lower part may meet (metres from the eyes): under the chin, within reach
@@ -64,6 +64,8 @@ internal static class FaceFit
         public float EyeSpacing;
         /// <summary>Points of the body below the head in front of the chest (worn back: behind the shoulders), for the shell's lower edge to clear.</summary>
         public readonly List<Vector3> Chest = new List<Vector3>();
+        /// <summary>Where the piece's glass went (world), set by Put: the spot the player's nudge scales about (ItemAdjust).</summary>
+        public Vector3 Placed;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -136,7 +138,7 @@ internal static class FaceFit
     // The face's frame in the model's space from the skeleton: x across the eyes from the left one to the right one (else
     // the shoulders, else the hips; the humanoid's own left and right), y the model's up, z out of the face (x cross y).
     // A skeleton with none of those keeps the model's own axes.
-    private static Quaternion FrameOf(Animator animator, Matrix4x4 toModel)
+    internal static Quaternion FrameOf(Animator animator, Matrix4x4 toModel)
     {
         Vector3 Across(HumanBodyBones left, HumanBodyBones right)
         {
@@ -218,7 +220,9 @@ internal static class FaceFit
         // Upright first: the glass turned to face out of the face, sized to it, at eye height, its inside clear of it.
         var turn = Quaternion.Inverse(Quaternion.LookRotation(ahead, up.normalized));
         float size = SizeFor(shell, eyeOf, turn, face, settings);
-        var to = Vector3.forward * (face.Front + settings.Clearance + thickness * size * .5f);
+        // The glass a little over the eye bones (liftPerEye × their spacing): at them, the shell hung low on anime faces
+        // with their high foreheads and short chins (the user, 2026-11-14: "위치가 여전히 아래에 있어서").
+        var to = Vector3.forward * (face.Front + settings.Clearance + thickness * size * .5f) + Vector3.up * face.EyeSpacing * settings.LiftPerEye;
         float tilt = Tilt(shell, eyeOf, turn, to, size, face, settings);
         turn = Quaternion.AngleAxis(-tilt, Vector3.right) * turn;
         // Back from the face's frame to the model's: the turn there, the spot the glass goes to, and its middle as it stands.
@@ -228,6 +232,7 @@ internal static class FaceFit
         var toWorld = root.TransformPoint(face.Eyes + face.Frame * to);
         instance.SetPositionAndRotation(toWorld + worldTurn * ((instance.position - eyeWorld) * size), worldTurn * instance.rotation);
         instance.localScale *= size;
+        face.Placed = toWorld;
         if (anchor != null) instance.SetParent(anchor, true);
         return true;
     }
@@ -349,7 +354,7 @@ internal static class FaceFit
         var read = new Values
         {
             Clearance = .01f, EyeLift = .035f, NoseWidth = .02f, NoseBelow = .06f, BrowWidth = .03f, BrowHeight = .015f,
-            Front = .05f, ChestClear = .01f, MostTilt = 15f, Hide = .9f, WidthPerEye = 2.3f, LeastScale = .4f, MostScale = 1.1f, Scale = 1f,
+            Front = .05f, ChestClear = .01f, MostTilt = 15f, Hide = .9f, WidthPerEye = 2.3f, LeastScale = .4f, MostScale = 1.1f, Scale = 1f, LiftPerEye = .25f,
         };
         if (GameTables.TryGetRow(TableName, "Default", out var cells))
         {
@@ -367,6 +372,7 @@ internal static class FaceFit
             read.LeastScale = Mathf.Max(.05f, cells.Number("leastScale", read.LeastScale));
             read.MostScale = Mathf.Max(read.LeastScale, cells.Number("mostScale", read.MostScale));
             read.Scale = Mathf.Max(.05f, cells.Number("scale", read.Scale));
+            read.LiftPerEye = cells.Number("liftPerEye", read.LiftPerEye);
         }
         values = read;
         return read;

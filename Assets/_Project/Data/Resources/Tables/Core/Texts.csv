@@ -1633,6 +1633,13 @@ wardrobe.face.title,표정,Face,옷장 > 표정 쪽 큰 제목
 wardrobe.face.where,메인 메뉴와 허브 거울에서 캐릭터가 짓는 얼굴 · 올려 두면 미리 보고 누르면 고른다,"The face your character holds in the menu and the hub's mirror · rest on one to preview, press to pick",옷장 > 표정 쪽 제목 아래 줄
 wardrobe.face.game,게임 표정,Game faces,옷장 > 표정 쪽 > 게임이 정한 포즈 표정 묶음의 머리글
 wardrobe.face.creator,제작자 표정,Creator's faces,옷장 > 표정 쪽 > 캐릭터 제작자가 만든 표정 묶음의 머리글(이름은 제작자가 붙인 그대로)
+wardrobe.adjust.title,위치·크기 (이 캐릭터),Position · size (this character),"옷장 > 입은 액세서리(용접 마스크·귀걸이처럼 누구에게나 맞추는 것) 판 아래 슬라이더 묶음 제목"
+wardrobe.adjust.up,위아래,Up / down,옷장 > 액세서리 슬라이더: 위아래로 옮기기
+wardrobe.adjust.ahead,앞뒤,Forward / back,옷장 > 액세서리 슬라이더: 앞뒤로 옮기기
+wardrobe.adjust.size,크기,Size,옷장 > 액세서리 슬라이더: 크기
+wardrobe.adjust.reset,원래대로,Reset,옷장 > 액세서리 슬라이더 묶음의 칩: 옮긴 것과 크기를 처음으로
+wardrobe.adjust.cm,{0}cm,{0} cm,"옷장 > 액세서리 슬라이더의 숫자. {0}=옮긴 거리(모델 공간 cm, +는 위·앞)"
+wardrobe.adjust.times,×{0},×{0},"옷장 > 크기 슬라이더의 숫자. {0}=배율"
 face.show.cute,기본,Default,"옷장 > 표정 > 고르지 않았을 때 짓는 귀여운 얼굴(Faces.csv cute)"
 face.show.cute.note,평소의 귀여운 얼굴,The usual cute face,옷장 > 표정 > 기본 판의 작은 줄
 face.show.random,랜덤,Random,"옷장 > 표정 > 예전 방식: 평소 얼굴에 가끔 아무 포즈 표정"

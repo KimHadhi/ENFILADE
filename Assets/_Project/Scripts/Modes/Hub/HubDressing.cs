@@ -476,6 +476,12 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
 
     public void DropTry() { }
 
+    /// <summary>Nudges a piece made for anyone on the body in the glass while the wardrobe's slider moves (ItemAdjust).</summary>
+    public void AdjustPiece(string item, ItemAdjust.Values values)
+    {
+        if (body != null) ItemAdjust.On(body.gameObject, item).OrNull()?.Apply(values);
+    }
+
     // A slider moves the body's own keys at once, the clothes on it with them; letting go saves it, and the body is made
     // again with it, as every saved look is.
     public void Shape(BodyShapes.Option option, float value)

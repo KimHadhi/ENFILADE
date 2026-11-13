@@ -6,9 +6,10 @@ using Object = UnityEngine.Object;
 // OutfitDresser: putting a piece on the body and binding it to the skeleton. One part of the class; the rest is in OutfitDresser.cs and the files beside it.
 internal static partial class OutfitDresser
 {
-    // Makes the model on the character and joins it to the body.
+    // Makes the model on the character and joins it to the body. A piece made for anyone takes the player's nudge
+    // (<paramref name="nudge"/>: ItemAdjust, kept in the look).
     private static Placed Place(OutfitItem item, OutfitSlot slot, Transform root, GameObject source, OutfitSkeleton skeleton,
-        Animator animator, Renderer[] own, string skinId)
+        Animator animator, Renderer[] own, string skinId, ItemAdjust.Values nudge)
     {
         var entry = OutfitCatalog.Model(item.id, skinId);
         var instance = Object.Instantiate(entry.Model, root, false);
@@ -53,11 +54,20 @@ internal static partial class OutfitDresser
                 var face = FaceFit.Measure(root, animator, own, item.WornBack);
                 if (face == null || !FaceFit.Put(instance.transform, root, face, slot.Anchor(animator)))
                     Warn($"{item.ModelId}: {skinId}의 얼굴(머리 뼈와 읽을 수 있는 머리 메시)을 재지 못해 {slot.id} 칸에 맞추지 못했습니다.");
+                else
+                    ItemAdjust.Mark(instance.transform, item.id, face.Placed, root.TransformVector(face.Frame * Vector3.up),
+                        root.TransformVector(face.Frame * Vector3.forward)).Apply(nudge);
                 return copy;
             }
             var spot = OutfitSpot.Of(slot.id, skinId);
             if (spot == null || !spot.Hang(instance.transform, root, slot.Anchor(animator)))
                 Warn($"{item.ModelId}: {skinId}의 {slot.id} 칸 자리(OutfitSpots.csv)나 뼈 '{slot.bone}'가 없어 몸을 따라가지 않습니다.");
+            else
+            {
+                var frame = FaceFit.FrameOf(animator, root.worldToLocalMatrix);
+                ItemAdjust.Mark(instance.transform, item.id, instance.transform.position, root.TransformVector(frame * Vector3.up),
+                    root.TransformVector(frame * Vector3.forward)).Apply(nudge);
+            }
             return copy;
         }
         if (Merge(instance.transform, skeleton, item.ModelId) > 0) return copy;

@@ -64,17 +64,22 @@ public sealed partial class MainMenuWardrobe
             string colour = item.id == worn ? pick.Colour : "";
             Option(item.id, item.DisplayName, count > 1 ? Texts.Format("wardrobe.colours", count) : "", () => OutfitIcons.OfItem(skin, item, colour),
                 item, colour);
-            if (item.id != worn || count < 2) continue;
-            // The worn piece's colours, right under it.
-            float chipWidth = Mathf.Floor((RightWidth - 20f - ChipGap * (ChipColumns - 1)) / ChipColumns);
-            var current = OutfitCatalog.ShownColour(item, skin.Id, pick.Colour);
-            for (int i = 0; i < sets.Count; i++)
+            if (item.id != worn) continue;
+            if (count >= 2)
             {
-                var set = sets[i];
-                Chip(list, new Vector2(20f + i % ChipColumns * (chipWidth + ChipGap), y + i / ChipColumns * (ChipHeight + ChipGap)), chipWidth,
-                    set.DisplayName, set == current, set == current ? null : (System.Action)(() => Wear(skin, slot, item.id, set.Id)));
+                // The worn piece's colours, right under it.
+                float chipWidth = Mathf.Floor((RightWidth - 20f - ChipGap * (ChipColumns - 1)) / ChipColumns);
+                var current = OutfitCatalog.ShownColour(item, skin.Id, pick.Colour);
+                for (int i = 0; i < sets.Count; i++)
+                {
+                    var set = sets[i];
+                    Chip(list, new Vector2(20f + i % ChipColumns * (chipWidth + ChipGap), y + i / ChipColumns * (ChipHeight + ChipGap)), chipWidth,
+                        set.DisplayName, set == current, set == current ? null : (System.Action)(() => Wear(skin, slot, item.id, set.Id)));
+                }
+                y += Mathf.CeilToInt(sets.Count / (float)ChipColumns) * (ChipHeight + ChipGap) + 6f;
             }
-            y += Mathf.CeilToInt(sets.Count / (float)ChipColumns) * (ChipHeight + ChipGap) + 6f;
+            // A worn piece made for anyone (the welding mask, earrings) can be moved and sized for this character.
+            if (ItemAdjust.For(item, skin.Id)) y += AdjustRows(list, skin, item, y);
         }
         Scroll(list, y);
         // A pick rebuilds the page: the list comes back where it was scrolled to (Build).
@@ -85,6 +90,70 @@ public sealed partial class MainMenuWardrobe
         }
         slotList = list;
         slotListFor = slot.id;
+    }
+
+    // Three sliders under the worn piece made for anyone (ItemAdjust: up and down, ahead and back, size) and 원래대로 once
+    // it is nudged: a drag moves the piece on the character at once, letting go keeps it in the character's look (the
+    // user, 2026-11-14: "슬라이더까지 넣어 주고"). Returns their height.
+    private float AdjustRows(RectTransform list, PlayerBodyProfile.Skin skin, OutfitItem item, float y)
+    {
+        var saved = ItemAdjust.Of(OutfitLook.Saved(skin.Id), item.id);
+        float[] now = { saved.Up, saved.Ahead, saved.Size };
+        float move = ItemAdjust.MoveRange, top = y;
+        ItemAdjust.Values Values() => new ItemAdjust.Values(now[0], now[1], now[2]);
+        Note(list, new Vector2(20f, y + 4f), RightWidth - 200f, Texts.Get("wardrobe.adjust.title"), 14f);
+        if (!saved.IsNone)
+            Chip(list, new Vector2(RightWidth - 150f, y), 130f, Texts.Get("wardrobe.adjust.reset"), false,
+                () => SaveAdjust(skin, item, ItemAdjust.Values.None, true));
+        y += 34f;
+        string Centimetres(float metres) => Texts.Format("wardrobe.adjust.cm",
+            (metres * 100f).ToString("+0.0;-0.0;0", System.Globalization.CultureInfo.InvariantCulture));
+        string Times(float share) => Texts.Format("wardrobe.adjust.times", share.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+        void Row(int axis, string label, float least, float most, System.Func<float, string> shown)
+        {
+            float width = RightWidth - 28f;
+            var row = KitStyle.TopLeft("Adjust " + axis, list, new Vector2(20f, y), new Vector2(width, 36f));
+            var name = KitStyle.Flat(KitStyle.TopLeft("Name", row, new Vector2(0f, 4f), new Vector2(104f, 28f)), label, 15f,
+                TextAlignmentOptions.MidlineLeft, KitStyle.Text);
+            name.fontStyle = FontStyles.Normal;
+            var number = KitStyle.Flat(KitStyle.TopLeft("Value", row, new Vector2(width - 72f, 4f), new Vector2(72f, 28f)), shown(now[axis]), 14f,
+                TextAlignmentOptions.MidlineRight, KitStyle.Soft);
+            number.fontStyle = FontStyles.Normal;
+            var slider = SettingsWidgets.Slider(row, least, most, now[axis], moved =>
+            {
+                now[axis] = moved;
+                number.text = shown(moved);
+                if (preview != null) preview.AdjustPiece(item.id, Values());
+            }, wholeNumbers: false);
+            var rect = (RectTransform)slider.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(110f, -4f);
+            rect.sizeDelta = new Vector2(width - 110f - 80f, 28f);
+            PointerRelease.On(slider.gameObject, () => SaveAdjust(skin, item, Values(), false));
+            y += 40f;
+        }
+        Row(0, Texts.Get("wardrobe.adjust.up"), -move, move, Centimetres);
+        Row(1, Texts.Get("wardrobe.adjust.ahead"), -move, move, Centimetres);
+        Row(2, Texts.Get("wardrobe.adjust.size"), ItemAdjust.LeastSize, ItemAdjust.MostSize, Times);
+        return y - top + 6f;
+    }
+
+    // Keeps the nudge in the character's look. The character already shows it (moved live), so nothing is stood up
+    // again; 원래대로 builds the page again to take its own chip away.
+    private void SaveAdjust(PlayerBodyProfile.Skin skin, OutfitItem item, ItemAdjust.Values values, bool rebuild)
+    {
+        var look = OutfitLook.Saved(skin.Id);
+        ItemAdjust.Set(look, item.id, values);
+        OutfitLook.Save(skin.Id, look);
+        if (preview != null)
+        {
+            preview.AdjustPiece(item.id, values);
+            preview.Kept(look);
+        }
+        GameSettings.Apply();
+        GameSettings.Save();
+        KitSound.Play(KitSound.Cue.Buy, .25f);
+        if (rebuild) Build();
     }
 
     // One choice of a slot as a slanted plate, the piece's picture big over its right part (cut by the plate's lean); the

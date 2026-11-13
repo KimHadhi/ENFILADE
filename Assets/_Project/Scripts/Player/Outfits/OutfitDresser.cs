@@ -129,7 +129,7 @@ internal static partial class OutfitDresser
             if (!placed.TryGetValue(item.ModelId, out var copy))
             {
                 skeleton ??= SkeletonOf(animator, model.transform, own);
-                copy = Place(item, slot, model.transform, source, skeleton, animator, own, skin.Id);
+                copy = Place(item, slot, model.transform, source, skeleton, animator, own, skin.Id, ItemAdjust.Of(look, item.id));
                 if (copy == null) continue;
                 placed[item.ModelId] = copy;
                 dressing.Models.Add(item.ModelId);
