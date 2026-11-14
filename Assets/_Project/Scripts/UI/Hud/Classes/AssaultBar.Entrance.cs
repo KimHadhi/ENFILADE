@@ -2,89 +2,34 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// AssaultBar: the anticipation's build-up and the assault's entrance, all of it motion and none of it a blink. One part of the class; the rest is in AssaultBar.cs and the files beside it.
+// AssaultBar: the assault's entrance, its moments that each happen once: one soft light, a white slash, the giant word sweeping past behind the bar, a halftone burst out of the emblem. One part of the class; the rest is in AssaultBar.cs and the files beside it.
 public sealed partial class AssaultBar
 {
-    // The build-up (the user, 2026-11-14, of the calm panel: "습격 임박이랑 습격 진입이랑 너무 슴슴해졌는데"): the beacon
-    // turns faster as the assault nears, from once in TurnAnticipation to once in this (s); a ring pings out of it every
-    // PingEvery, every PingNear in the last PingNearAt (s), reaching this many tab widths over its life (s) from this
-    // strength; a charge strip fills along the strip's top as the assault nears, this tall (px), drifting (px/s).
-    private const float TurnNear = .8f, PingEvery = 1f, PingNear = .66f, PingNearAt = 3f, PingReach = 3.2f, PingSeconds = .9f,
-        PingAlpha = .55f, ChargeHeight = 4f, ChargeSpeed = 40f;
-    private const int Pings = 3;
-    // The entrance (s, px): one soft light; the white slash drawn across and fading; the giant word sweeping past behind
-    // the bar (the user's note on the second draft: "A의 거대한 ASSAULT 스치는 건 넣어 줘"), its size, start, travel, time,
-    // fill strength and outline; the halftone burst out of the beacon; a short shake; the stripes' rush slowing to their
-    // drift; the panel's title landing letter by letter.
-    private const float ImpactAlpha = .5f, ImpactSeconds = .35f, SlashDraw = .15f, SlashFade = .42f, SlashLength = 1500f,
-        SlashStart = -60f, BigSize = 150f, BigLeft = 250f, BigFrom = 420f, BigTo = -160f, BigSeconds = .95f, BigFillAlpha = .28f,
-        BigOutline = .12f, BurstAt = .05f, BurstSeconds = .7f, BurstSize = 240f, ShakeSeconds = .3f, ShakeReach = 5f,
-        RushSpeed = 90f, RushSeconds = 1.2f, TitleAt = .12f, TitleStep = .03f, TitleLand = .3f, TitleFrom = 2f;
+    // The entrance (s, px): one soft light over the band; the white slash drawn across low over the strip, fading; the
+    // giant word sweeping past behind the bar (the user's note on the second draft: "A의 거대한 ASSAULT 스치는 건 넣어
+    // 줘"), its size, start, travel, time, fill strength and outline; the halftone burst out of the emblem. The 0.9.26
+    // build-up (a charge strip, rings pinging out of a turning beacon) and the shake went with the beacon: the emblem's
+    // gauge and its seconds build the anticipation now.
+    private const float ImpactAlpha = .4f, ImpactSeconds = .35f, SlashDraw = .15f, SlashFade = .42f, SlashLength = 1500f,
+        SlashStart = -60f, SlashHeight = 7.5f, BigSize = 150f, BigLeft = 250f, BigFrom = 420f, BigTo = -160f, BigSeconds = .95f,
+        BigFillAlpha = .28f, BigOutline = .12f, BurstAt = .05f, BurstSeconds = .7f, BurstSize = 240f;
 
-    private RectTransform impact, slash, big, burst, charge;
-    private readonly RectTransform[] pings = new RectTransform[Pings];
-    private readonly Image[] pingImages = new Image[Pings];
-    private readonly float[] pingAge = { -1f, -1f, -1f };
+    private RectTransform impact, slash, big, burst;
     private Image impactImage;
-    private RawImage burstImage, chargeImage;
+    private RawImage burstImage;
     private CanvasGroup slashGroup;
     private TextMeshProUGUI bigOutline, bigFill;
-    private float pingClock = PingEvery;
-    private int pingNext;
     private static Material outlineOnly;
     private static TMP_FontAsset outlineFont;
 
-    // How far off the assault still is: 1 as the anticipation begins, 0 as it breaks in.
-    private float Nearness => Mathf.Clamp01((float.IsInfinity(last.Until) ? PulseSpan : last.Until) / PulseSpan);
-
-    // The anticipation builds: a striped charge fills along the strip's top, and rings ping out of the beacon, closer
-    // together in the last seconds.
-    private void PoseBuildUp(CombatPhase phase, float width, float dt)
-    {
-        bool building = phase == CombatPhase.Anticipation;
-        charge.gameObject.SetActive(building);
-        if (building)
-        {
-            float full = Mathf.Max(20f, width - TabWidth - PanelGap);
-            charge.anchoredPosition = new Vector2(TabWidth + PanelGap, ((RectTransform)transform).rect.height);
-            charge.sizeDelta = new Vector2(full * Ease.InOut(1f - Nearness), ChargeHeight);
-            var uv = chargeImage.uvRect;
-            uv.width = Mathf.Max(.01f, charge.sizeDelta.x / 32f);
-            uv.height = ChargeHeight / 32f;
-            uv.x = Mathf.Repeat(uv.x - dt * ChargeSpeed / 32f, 1f);
-            chargeImage.uvRect = uv;
-            pingClock += dt;
-            if (pingClock >= (last.Until <= PingNearAt ? PingNear : PingEvery))
-            {
-                pingClock = 0f;
-                pingAge[pingNext] = 0f;
-                pingNext = (pingNext + 1) % Pings;
-            }
-        }
-        // The first ping comes as the anticipation begins.
-        else pingClock = PingEvery;
-        for (int i = 0; i < Pings; i++)
-        {
-            if (pingAge[i] >= 0f) pingAge[i] += dt;
-            float t = pingAge[i] / PingSeconds;
-            bool alive = pingAge[i] >= 0f && t < 1f;
-            if (!alive) pingAge[i] = -1f;
-            pings[i].gameObject.SetActive(alive);
-            if (!alive) continue;
-            pings[i].localScale = Vector3.one * Mathf.Lerp(.6f, PingReach, Ease.Out(t));
-            pingImages[i].color = KitStyle.With(KitStyle.Accent, PingAlpha * (1f - t));
-        }
-    }
-
-    // The assault breaks in: one soft light, a white slash drawn across, the giant word sweeping past behind, a burst of
-    // halftone out of the beacon, and a short shake. Each happens once.
+    // The assault breaks in: each moment once, while its band is new.
     private void PoseEntrance(float width)
     {
-        float t = on ? age : float.PositiveInfinity;
+        float t = bandOn && mode == BandMode.Assault ? bandAge : float.PositiveInfinity;
         impact.gameObject.SetActive(t < ImpactSeconds);
         if (impact.gameObject.activeSelf)
         {
-            impact.sizeDelta = new Vector2(width, TabHeight + PanelOver);
+            impact.sizeDelta = new Vector2(Mathf.Max(80f, width - BandLeft + BandPast), TabHeight);
             impactImage.color = KitStyle.With(Color.white, ImpactAlpha * (1f - Ease.Out(t / ImpactSeconds)));
         }
         slash.gameObject.SetActive(t < SlashFade);
@@ -109,18 +54,10 @@ public sealed partial class AssaultBar
             burst.localScale = Vector3.one * Mathf.Lerp(.2f, 1.6f, Ease.Out(spread));
             burstImage.color = KitStyle.With(KitStyle.Accent, 1f - spread);
         }
-        // A short shake of the bar's own parts, dying away (smooth noise, not a jitter).
-        if (t < ShakeSeconds)
-        {
-            float reach = ShakeReach * (1f - t / ShakeSeconds) * (1f - t / ShakeSeconds) * 2f;
-            root.anchoredPosition = new Vector2(Mathf.PerlinNoise(t * 40f, 0f) - .5f, Mathf.PerlinNoise(0f, t * 40f) - .5f) * reach;
-        }
-        else root.anchoredPosition = Vector2.zero;
     }
 
     private void BuildEntrance()
     {
-        float barHeight = ((RectTransform)transform).rect.height;
         // The giant word behind everything else of the assault: a white ghost under a pink outline.
         big = Corner("Giant Word", root);
         big.SetAsFirstSibling();
@@ -131,23 +68,7 @@ public sealed partial class AssaultBar
         bigOutline.fontSharedMaterial = OutlineOnly(bigOutline);
         big.gameObject.SetActive(false);
 
-        // The rings the beacon pings out in the anticipation, over the tab.
-        for (int i = 0; i < Pings; i++)
-        {
-            var ping = Corner("Ping", root);
-            ping.pivot = new Vector2(.5f, .5f);
-            ping.anchoredPosition = new Vector2(TabWidth * .5f, TabHeight * .5f);
-            ping.sizeDelta = new Vector2(TabWidth, TabWidth);
-            pingImages[i] = Fill(ping, KitStyle.Accent);
-            pingImages[i].sprite = CombatUIAssets.Ring;
-            ping.gameObject.SetActive(false);
-            pings[i] = ping;
-        }
-        charge = Corner("Charge", root);
-        chargeImage = KitStyle.Raw(charge, KitShapes.Stripes, KitStyle.With(KitStyle.Accent, .85f));
-        charge.gameObject.SetActive(false);
-
-        // The halftone burst out of the beacon, the soft light and the white slash, over the rest.
+        // The halftone burst out of the emblem, the soft light over the band and the white slash, over the rest.
         burst = Corner("Burst", root);
         burst.pivot = new Vector2(.5f, .5f);
         burst.anchoredPosition = new Vector2(TabWidth * .5f, TabHeight * .5f);
@@ -155,24 +76,20 @@ public sealed partial class AssaultBar
         burstImage = KitStyle.Raw(burst, KitShapes.Burst, KitStyle.Accent);
         burst.gameObject.SetActive(false);
         impact = Corner("Impact", root);
-        impact.anchoredPosition = new Vector2(0f, -PanelOver);
-        impactImage = Fill(impact, Color.clear);
+        impact.anchoredPosition = new Vector2(BandLeft - 2f, -BandOver);
+        impactImage = KitStyle.Fill(impact, Color.clear);
+        KitSkew.On(impactImage, BandSlant);
         impact.gameObject.SetActive(false);
         slash = Corner("Slash", root);
         slash.pivot = new Vector2(0f, .5f);
-        slash.anchoredPosition = new Vector2(SlashStart, barHeight * .5f);
+        slash.anchoredPosition = new Vector2(SlashStart, SlashHeight);
         slash.sizeDelta = new Vector2(SlashLength, 3f);
         slashGroup = slash.gameObject.AddComponent<CanvasGroup>();
-        var glow = FeelUI.Rect("Glow", slash);
-        KitStyle.Stretch(glow);
-        glow.offsetMin = new Vector2(0f, -7f);
-        glow.offsetMax = new Vector2(0f, 7f);
-        var glowImage = Fill(glow, KitStyle.With(KitStyle.Accent, .6f));
+        var glow = Around("Glow", slash, 0f, 7f);
+        var glowImage = KitStyle.Fill(glow, KitStyle.With(KitStyle.Accent, .6f));
         glowImage.sprite = CombatUIAssets.SoftGlow;
         glowImage.type = Image.Type.Sliced;
-        var line = FeelUI.Rect("Line", slash);
-        KitStyle.Stretch(line);
-        Fill(line, Color.white);
+        KitStyle.Fill(Around("Line", slash, 0f, 0f), Color.white);
         slash.gameObject.SetActive(false);
     }
 

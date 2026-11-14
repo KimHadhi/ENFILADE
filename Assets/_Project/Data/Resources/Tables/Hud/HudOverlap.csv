@@ -5,7 +5,7 @@ Right Panel,group,GameHUD 오른쪽 면. 무기 슬롯·탄약·투척물 판
 Center,group,GameHUD 가운데(평평). 상호작용 안내
 Flat,group,HudRig가 면에서 떼어 낸 평평한 것들(새 목표 알림)
 Mission,group,목표 블록의 틀. 목표 바·Tab 키 칸·'목표·점수판' 글자가 저마다 한 조각
-Assault Time,piece,캠페인이 시끄러울 때 목표 바 아래 단계 줄(대괄호 단계와 남은 시간·지난/전체 시간·습격 구간이 분홍인 노래 막대·지금 나오는 노래). 목표 바와 따로 잰다
+Assault Time,piece,캠페인이 시끄러울 때 목표 바 아래 단계 줄(비스듬한 단계 판·지난 시간·습격 구간이 분홍인 노래 선·전체 길이). 목표 바와 따로 잰다
 Right Plane,group,런타임 HUD 캔버스의 오른쪽 면(킬 피드·돈·콜아웃 통신 화면)
 Left Plane,group,런타임 HUD 캔버스의 왼쪽 면(아군 카드)
 HPCharacterRoot,piece,체력 블록의 초상화 칸(랭크 띠 포함)

@@ -141,6 +141,16 @@ internal sealed class CampaignPhases
     /// <summary>How much more often the dead drop something in this phase (Phases.csv drops; 1 when quiet).</summary>
     public static float DropShare(CombatPhase phase) => phase == CombatPhase.Quiet ? 1f : Of(phase).Drops;
 
+    /// <summary>How long before each assault its anticipation begins (Phases.csv Anticipation.lead, s): the HUD's gauge.</summary>
+    public static float Lead
+    {
+        get
+        {
+            Load();
+            return lead;
+        }
+    }
+
     /// <summary>
     /// The phase a song is in at <paramref name="clock"/> s into it, and how long until that turns: the assault's end, or
     /// the next assault's start (infinite after the last one).

@@ -60,6 +60,9 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     /// <summary>How far right of the bar's left edge it draws (px): the strip, the count box and the line's tail.</summary>
     public float Reach { get; private set; }
 
+    /// <summary>How wide the count box hanging past the strip's end is (px); 0 while the objective has no count.</summary>
+    public float CountWidth { get; private set; }
+
     /// <summary>Takes over the bar's parts. MissionHUD calls it once, before anything is shown.</summary>
     public void Init(TMP_Text title, TMP_Text counter, GameObject counterRoot, Image oldProgress)
     {
@@ -227,6 +230,7 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         lineRect.offsetMin = new Vector2(0f, -lineGap - lineHeight);
         lineRect.offsetMax = new Vector2(counterWidth + Tail, -lineGap);
         Reach = width + counterWidth + Tail;
+        CountWidth = counterWidth;
         DrawLine();
     }
 
