@@ -157,7 +157,7 @@ internal sealed class FlashLook : MonoBehaviour
         look.radius = radius;
         // The burst itself in the Realistic Gunslinger pack's flashbang (Tables/PackFx.csv flashBurst); the drawn white
         // star where the pack's is off or missing. The hard light, the ring to its reach and the screen's pop stay ours.
-        look.Build(!GrenadePackFx.Play("flashBurst", host.transform.position, Quaternion.identity));
+        look.Build(!GrenadePackFx.Play("flashBurst", host.transform.position, Quaternion.identity, radius));
         Pop(at);
     }
 

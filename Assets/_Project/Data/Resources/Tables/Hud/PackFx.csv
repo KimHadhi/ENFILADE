@@ -191,6 +191,7 @@ fragBurst.center,1/Guns_granade_round_alpha/Burst,터지는 것이 나오는 부
 fragBurst.fire,1/Guns_granade_round_alpha/Burst:1,자리를 잡은 뒤 바로 한 번 터뜨릴 부분(경로:개수). Burst의 알갱이가 태어나며 불덩이·연기·불티·불 고리가 모두 그 자리에서 나온다
 fragBurst.drop,1/Guns_granade_round_alpha/Flecks_Shiny_Additive|1/Guns_granade_round_alpha/FullRainbowFlare _nomipmap|1/Guns_granade_round_alpha/Flare|FuzzAdd|FuzzAlpha|Impact_Halo_add_soft|Radialsuper_Flare_add_soft|Flare_simple_add_soft|DiagonalFlare_ConalSpliff|Fire_Nova_Decal_dark_Alpha,"뺄 부분: 날아가는 알갱이의 불티·무지개 섬광, 25~40m 밝은·검은 퍼짐과 후광·방사 섬광(화면을 덮음), 대각 렌즈 섬광, 5초 남는 30m 그을음"
 fragBurst.scale,0.4,크기 배율. 불덩이 10~15m → 4~6m(세열 반경 6.5m 안)
+fragBurst.radius,6.5,"이 크기(scale)를 맞춘 투척물 반경(m). Grenades.csv의 반경이 커지면 터지는 모습도 그만큼 커진다(GrenadePackFx)"
 fragBurst.speed,1.1,빠르기 배율
 fragBurst.life,3,사라지는 때(초). 연기가 2.7초쯤 걷힌다
 fragBurst.near,7,카메라가 이보다(m) 가까우면 작게 그린다
@@ -201,6 +202,7 @@ flashBurst.center,1/Guns_granade_round_alpha/Burst,
 flashBurst.fire,1/Guns_granade_round_alpha/Burst:1,섬광·일그러지는 충격파·불티·작은 연기·바닥 바람 고리가 그 자리에서
 flashBurst.drop,1/Guns_granade_round_alpha/Flecks_Shiny_Additive|1/Guns_granade_round_alpha/FullRainbowFlare _nomipmap|1/Guns_granade_round_alpha/Flare|DiagonalFlare_ConalSpliff|LightFlash|Fire_Nova_Decal_dark_Alpha|Simple_StarDust_Noise_Desaturated_Add|FuzzAlpha_Soft|FuzzAdd_Soft,"뺄 부분: 날아가는 알갱이의 것, 대각 렌즈 섬광, 35m 빛 번쩍임(우리 빛과 화면 번쩍임이 대신), 6초 남는 그을음(섬광탄에 맞지 않음), 3초 남는 별가루, 25m 퍼짐"
 flashBurst.scale,0.35,"섬광 18m → 6.3m 0.3초, 충격파 11m → 3.9m"
+flashBurst.radius,8,"이 크기(scale)를 맞춘 투척물 반경(m). Grenades.csv의 반경이 커지면 터지는 모습도 그만큼 커진다(GrenadePackFx)"
 flashBurst.speed,1.15,
 flashBurst.life,2,
 flashBurst.near,8,
@@ -209,6 +211,7 @@ smokeBurst.prefab,Smoke Granade,"고스트 연막탄 통이 터지는 순간(Smo
 smokeBurst.drop,anticipation|loop/M_Rocks|loop/FuzzAlpha,"뺄 부분: 기다리는 동안의 돌 덩이, 5초 남는 돌, 25m 검은 퍼짐"
 smokeBurst.now,loop/Smoke_screen_cloud_sharp_fb_1_add_soft|loop/Flecks_Shiny_Alpha|loop/verticalwind_Vertical_aura_Add_Soft|loop/Desat_wind_Shockwave3_wide_add_Soft|loop/Wind_Frosty_add_soft,1.5초 기다리지 않고 바로 시작할 부분(만든 그대로 낸다)
 smokeBurst.scale,0.75,연기 뭉치 5.4m → 4m(연막 반경 5.5m 안)
+smokeBurst.radius,5.5,"이 크기(scale)를 맞춘 투척물 반경(m). Grenades.csv의 반경이 커지면 터지는 모습도 그만큼 커진다(GrenadePackFx)"
 smokeBurst.life,5.5,
 smokeBurst.near,6,
 smokeBurst.nearShare,0.5,
@@ -217,6 +220,7 @@ claymoreBurst.hide,Burst/FuzzAdd,스스로는 안 그릴 부분: 1.5m 길게 늘
 claymoreBurst.drop,Burst/FuzzAdd/M_Rocks|Burst/FuzzAdd/Water_healing_Ring_TG_add_soft|Burst/FuzzAdd/Simple_Circle_faded_alpha|Burst/FuzzAdd/Lightning_Sword_thingy_dark_fres_alpha|Burst/FuzzAdd/FuzzAlpha|Burst/FuzzAdd/FuzzAdd|Burst/FuzzAdd/muzzle/FuzzAdd_Soft|Burst/FuzzAdd/muzzle/FuzzAdd,"뺄 부분: 기다리는 동안의 돌, 회복 같은 물 고리, 9m 바닥 원, 칼 모양 그림, 17~20m 밝은·검은 퍼짐, 12m 번쩍임 둘"
 claymoreBurst.fire,Burst/FuzzAdd/Bullets_tips_fb_1_alpha:20|Burst/FuzzAdd/Circle_ChuinkyAdd:8|Burst/FuzzAdd/Smoke_Explotion_Mom_sat_add_Soft:3|Burst/FuzzAdd/muzzle/Flecks_Clipped_Alpha 1:15|Burst/FuzzAdd/muzzle/Smoke_loop_flipbook_thingy_Clean_alpha_soft:6|Burst/FuzzAdd/muzzle/guns_light_muzzle_fb_add_soft:4,"바로 한 번 터뜨릴 부분(경로:개수): 탄두 줄기, 맞은 자리 덩이(그 밑의 탄·연기도), 연기, 불티, 작은 총구 불꽃"
 claymoreBurst.scale,0.6,
+claymoreBurst.radius,6,"이 크기(scale)를 맞춘 투척물 반경(m). Grenades.csv의 반경이 커지면 터지는 모습도 그만큼 커진다(GrenadePackFx)"
 claymoreBurst.speed,1.2,
 claymoreBurst.life,1.6,
 claymoreBurst.near,6,

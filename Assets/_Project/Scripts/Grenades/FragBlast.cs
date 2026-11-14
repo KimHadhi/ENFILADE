@@ -41,7 +41,7 @@ public static class FragBlast
         way = way.sqrMagnitude > 1e-4f ? way.normalized : Vector3.forward;
         // Its look: the Realistic Gunslinger pack's frag, or for the claymore its shrapnel burst, toned in
         // Tables/PackFx.csv (fragBurst, claymoreBurst); the game's own drawn blast where the pack's is off or missing.
-        if (!GrenadePackFx.Play(spread > -1f ? "claymoreBurst" : "fragBurst", at, Quaternion.LookRotation(way)))
+        if (!GrenadePackFx.Play(spread > -1f ? "claymoreBurst" : "fragBurst", at, Quaternion.LookRotation(way), radius))
             CanBlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
         FragChunk.Throw(at, Mathf.RoundToInt(Throwables.Rule("fragChunks", 12f)), way, spread);
         Throwables.Play("Frag", at + Vector3.up * .3f, 1f, 8f, 150f);

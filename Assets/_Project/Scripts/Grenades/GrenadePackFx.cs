@@ -15,18 +15,26 @@ using UnityEngine;
 /// - center: the part the burst comes out of: the copy moves so that part sits on the point;
 /// - now: parts that start at once instead of after the pack's own wait, emitting as they were made;
 /// - fire: parts emitted once, now (path:count), once the copy is in place (the blast's own burst, whose birth sets off
-///   every piece of it where it is).
+///   every piece of it where it is);
+/// - radius: the reach (m) the row's scale was set for. A throwable whose reach is raised in Tables/Grenades bursts that
+///   much bigger, so what is seen is what it reaches (the manager, passing on the user's "각자 클래스별 투척물 좀 상향해 주고":
+///   "표 숫자만 커지고 보이는 건 그대로면 안 돼요").
 /// Every PC plays its own, as every PC has the burst (GrenadeBursts, ClaymoreMine). False when the pack's look is off or
 /// missing: the game's own look draws instead.
 /// </summary>
 public static class GrenadePackFx
 {
-    /// <summary>Plays <paramref name="use"/> (a row of Tables/PackFx.csv) bursting at <paramref name="at"/>, its forward along <paramref name="facing"/>.</summary>
-    public static bool Play(string use, Vector3 at, Quaternion facing)
+    /// <summary>
+    /// Plays <paramref name="use"/> (a row of Tables/PackFx.csv) bursting at <paramref name="at"/>, its forward along
+    /// <paramref name="facing"/>, grown to <paramref name="reach"/> (m) against the row's radius (0: as the row has it).
+    /// </summary>
+    public static bool Play(string use, Vector3 at, Quaternion facing, float reach = 0f)
     {
         var copy = PackFx.Play(use, at, facing);
         if (copy == null) return false;
         var root = copy.transform;
+        float madeFor = PackFx.Number(use, "radius", 0f);
+        if (reach > 0f && madeFor > 0f) root.localScale *= Mathf.Clamp(reach / madeFor, .25f, 4f);
         foreach (var part in Named(root, PackFx.Text(use, "hide"))) Hide(part);
         var middle = First(root, PackFx.Text(use, "center"));
         // Nothing has come out yet (a particle system emits on its next step): moved now, the whole burst is on the point.

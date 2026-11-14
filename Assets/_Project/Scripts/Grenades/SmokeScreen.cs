@@ -56,7 +56,7 @@ public sealed class SmokeScreen : MonoBehaviour
         live.Add(cloud);
         // The canister's burst in the Realistic Gunslinger pack's smoke (Tables/PackFx.csv smokeBurst: its wind ring,
         // the first billow, the grit) over our own cloud, which is the one that hangs and hides (its seconds, its reach).
-        GrenadePackFx.Play("smokeBurst", at, Quaternion.identity);
+        GrenadePackFx.Play("smokeBurst", at, Quaternion.identity, cloud.full);
         Throwables.Play("Smoke", at + Vector3.up * .2f, .9f, 3f, 55f);
         Throwables.Play("SmokeHiss", at + Vector3.up * .2f, .6f, 2f, 30f, 1f, host.transform);
         return cloud;
