@@ -103,6 +103,37 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
     public event Action<DamageHit> Struck;
 
     /// <summary>
+    /// The body part one of its shapes stands for (the human bone its part turns, as BodyParts reads bones), or None: a shot
+    /// on a corpse is told what it met, as one on a living zombie is by its hitbox (ZombieGore.PartOf).
+    /// </summary>
+    public BodyPart PartOf(Collider shape)
+    {
+        int index = shape != null ? shapes.IndexOf(shape) : -1;
+        return index >= 0 ? PartOfShape(index) : BodyPart.None;
+    }
+
+    /// <summary>The middle of its head where the doll has it now (the skull's shape), for what befalls a corpse's head.</summary>
+    public bool TryHeadCenter(out Vector3 center)
+    {
+        for (int i = 0; i < shapes.Count; i++)
+        {
+            if (shapes[i] == null || PartOfShape(i) != BodyPart.Head) continue;
+            center = shapes[i].bounds.center;
+            return true;
+        }
+        center = default;
+        return false;
+    }
+
+    // Parts, the bones they turn and those bones' ids share their places in the lists; a hand or a foot rides its forearm
+    // or its shin.
+    private BodyPart PartOfShape(int index)
+    {
+        int part = parts.IndexOf(shapeParts[index]);
+        return part >= 0 && part < boneIds.Count ? BodyParts.OfBone(boneIds[part]) : BodyPart.None;
+    }
+
+    /// <summary>
     /// Makes a doll of this live model and stows it. It touches what's in solid and the parts of corpses, its own among
     /// them; its shapes sit on this layer. Safe to call from anywhere, a physics callback included: a body with no doll
     /// stowed for its rig gets one made on the spot, and a slide into a zombie knocks it down from inside

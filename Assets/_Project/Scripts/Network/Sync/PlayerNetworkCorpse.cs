@@ -55,4 +55,23 @@ public sealed class PlayerNetworkCorpse : NetworkBehaviour
 
     [Rpc(SendTo.Owner)]
     private void ZombiePushRpc(ulong id, Vector3 point, Vector3 impulse) => ZombieCorpse.TakePush(id, point, impulse);
+
+    /// <summary>
+    /// The shooter's PC burst a dead body's head (ZombieGore): a zombie's corpse, or a meal a calm zombie was eating
+    /// (ZombieMealBody), each known on every PC by the zombie's network id. The others burst it too, along the same shot;
+    /// nothing happens alone or for a body with no id.
+    /// </summary>
+    internal static void TellDeadHead(GameObject shooter, bool meal, ulong id, Vector3 direction)
+    {
+        if (id == 0UL || shooter == null) return;
+        var sender = shooter.GetComponentInParent<PlayerNetworkCorpse>();
+        if (sender != null && sender.IsSpawned) sender.DeadHeadRpc(meal, id, direction);
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void DeadHeadRpc(bool meal, ulong id, Vector3 direction)
+    {
+        if (meal) ZombieMealBody.TakeBurst(id, direction);
+        else ZombieCorpse.TakeHeadShot(id, direction);
+    }
 }

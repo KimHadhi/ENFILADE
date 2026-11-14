@@ -412,6 +412,20 @@ public sealed class ZombieCorpse : MonoBehaviour
             doll.Push(hit.Point, impulse, mostPushSpeed);
         }
         else if (runner != null) runner.PushZombie(id, hit.Point, impulse);
+        // A bullet in a corpse's head bursts it, as one bursts a living zombie's on the kill (ZombieGore): this is the
+        // shooter's PC (only the shooter's own trace reaches a doll), which decides.
+        if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head && BurstHead(hit.Direction))
+            PlayerNetworkCorpse.TellDeadHead(hit.Source, false, id, hit.Direction);
+    }
+
+    // Its head bursts where the doll has it now, if gore still has one on this body.
+    private bool BurstHead(Vector3 direction)
+        => doll != null && doll.TryHeadCenter(out var center) && ZombieGore.BurstCorpseHead(gameObject, center, direction, this);
+
+    /// <summary>Another PC shot the head off this corpse: it bursts here too, along the same shot.</summary>
+    internal static void TakeHeadShot(ulong id, Vector3 direction)
+    {
+        if (byId.TryGetValue(id, out var corpse) && corpse != null) corpse.BurstHead(direction);
     }
 
     private void OnDestroy()

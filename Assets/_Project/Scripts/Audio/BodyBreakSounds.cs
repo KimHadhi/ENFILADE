@@ -8,12 +8,13 @@ using UnityEngine;
 ///   the neck snaps (a stealth takedown always comes from behind an unaware zombie); from the front the skull cracks; one
 ///   that lives through it (a brute loses only a share of its health) has its arm broken instead, so the blow still lands
 ///   as something even when it can't kill.
-/// - Gore/HeadBurst: a killing blow to the head, which bursts it (the rule ZombieGore.Judge uses).
+/// - Gore/HeadBurst: a head bursting where gore bursts one (ZombieGore.HeadBurst): a killing blow to a zombie's head, or a
+///   dead body's head shot afterwards (a corpse, a calm zombie's meal).
 /// - Gore/LimbOff: an arm or leg torn off a living zombie (ZombieGore.Crippled).
 /// - ZombieHit/Fist: meat under a player's punch landing on a zombie, beneath the punch's own hit (PlayerFistAudio).
-/// CombatDamageEvents and ZombieGore.Crippled are raised once on every PC for every hit, so everyone near hears these, in
-/// 3D, without network code of their own. None of them makes Noise: an execution should end quietly, not wake the zombie
-/// beside it. The clips are Zombie bank keys (Art/Audio/Enemies/Zombie/Bone, Gore, Hit): Meaty Melee SFX and Fleshy CI Hit
+/// CombatDamageEvents, ZombieGore.Crippled and ZombieGore.HeadBurst are raised once on every PC for every hit, so everyone
+/// near hears these, in 3D, without network code of their own. None of them makes Noise: an execution should end quietly,
+/// not wake the zombie beside it. The clips are Zombie bank keys (Art/Audio/Enemies/Zombie/Bone, Gore, Hit): Meaty Melee SFX and Fleshy CI Hit
 /// Sounds (L4D2 workshop 3660295000, 3725589072); their volumes are Tables/Sounds rows. SoundPreview (/sound) plays any
 /// cue through Play.
 /// </summary>
@@ -54,6 +55,8 @@ public sealed class BodyBreakSounds : MonoBehaviour
         CombatDamageEvents.Damaged += OnDamaged;
         ZombieGore.Crippled -= OnCrippled;
         ZombieGore.Crippled += OnCrippled;
+        ZombieGore.HeadBurst -= OnHeadBurst;
+        ZombieGore.HeadBurst += OnHeadBurst;
     }
 
     /// <summary>
@@ -89,13 +92,10 @@ public sealed class BodyBreakSounds : MonoBehaviour
             Play(cue, enemy.transform.position + Vector3.up * NeckHeight);
             return;
         }
-        if (report.IsKillingBlow && (hit.Part == BodyPart.Head || (hit.IsCritical && hit.Method == DamageMethod.Bullet)) && Dressed(enemy))
-        {
-            Play(HeadBurst, hit.Point);
-            return;
-        }
         if (hit.Kind == DamageKind.Attack && hit.Method == DamageMethod.Other && ByPlayerUpClose(hit)) Play(FistOnZombie, hit.Point, FistReach);
     }
+
+    private static void OnHeadBurst(Vector3 at) => Play(HeadBurst, at);
 
     private static void OnCrippled(EnemyHealth enemy, BodyPart part)
     {
@@ -111,9 +111,6 @@ public sealed class BodyBreakSounds : MonoBehaviour
         Vector3 facing = Vector3.ProjectOnPlane(enemy.transform.forward, Vector3.up), along = Vector3.ProjectOnPlane(hit.Direction, Vector3.up);
         return facing.sqrMagnitude > 1e-4f && along.sqrMagnitude > 1e-4f && Vector3.Dot(facing.normalized, along.normalized) > .2f;
     }
-
-    // Only a zombie wearing its body has a head to burst (a bare capsule shows no gore either).
-    private static bool Dressed(EnemyHealth enemy) => enemy.TryGetComponent(out ZombieBody body) && body.Model != null;
 
     private static bool ByPlayerUpClose(in DamageHit hit)
     {

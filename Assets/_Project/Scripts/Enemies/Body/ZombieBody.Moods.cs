@@ -269,7 +269,8 @@ public sealed partial class ZombieBody
 
     // An eater lies over a body: one of the pack's characters baked lying still in front of it, the same on every PC
     // (picked from its network id, laid by its feet and the way it faces as it first takes the pose). It stays when the
-    // eater gets up: it is a body (ZombieMeal keeps the newest few).
+    // eater gets up: it is a body (ZombieMeal keeps the newest few), known on every PC by the eater's network id, so a
+    // head shot off it on one PC bursts on all (ZombieMealBody).
     private void LayMeal()
     {
         if (poseKind != CalmPoseKind.Eat || mealLaid) return;
@@ -277,7 +278,8 @@ public sealed partial class ZombieBody
         Vector3 feet = transform.position + Vector3.up * feetHeight;
         Vector3 ahead = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
         float yaw = Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg + 90f + (ZombieLooks.Fraction(clipSeed, PoseSlot + 3u) - .5f) * 40f;
-        ZombieMeal.Lay(ZombieLooks.Instance, clipSeed, feet + ahead * Mathf.Max(.2f, mealAhead), yaw);
+        ulong id = network != null && network.IsSpawned ? network.NetworkObjectId : 0UL;
+        ZombieMeal.Lay(ZombieLooks.Instance, clipSeed, feet + ahead * Mathf.Max(.2f, mealAhead), yaw, id);
     }
 
     private void Cue(CueKind kind, bool hurried)

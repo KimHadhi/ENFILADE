@@ -40,6 +40,12 @@ public sealed class ZombieGore : MonoBehaviour
     /// its own (ZombieBody.Legs.cs).
     /// </summary>
     public static event Action<EnemyHealth, DamageHit, float> LegWorn;
+    /// <summary>
+    /// A head burst here, on every PC alike: a living zombie's on the killing blow, or a dead body's shot afterwards (a
+    /// corpse, or a body a calm zombie was eating). What plays the burst's sound listens to this, so it never keeps a copy
+    /// of the rule.
+    /// </summary>
+    public static event Action<Vector3> HeadBurst;
 
     [SerializeField, Range(0f, 2f), Tooltip("Share of the zombie's health one blow must put into a limb to take it off a living zombie.")]
     private float blowCut = .45f;
@@ -97,6 +103,7 @@ public sealed class ZombieGore : MonoBehaviour
         LegsCanCrawl = false;
         Crippled = null;
         LegWorn = null;
+        HeadBurst = null;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -117,12 +124,18 @@ public sealed class ZombieGore : MonoBehaviour
         FeelAssets.CreateRuntimeRoot("Zombie Gore").AddComponent<ZombieGore>();
     }
 
-    /// <summary>The part of a zombie a collider sits on (its bone hitboxes), or None.</summary>
+    /// <summary>
+    /// The part of a body a collider sits on, or None: a living zombie's bone hitboxes, the shapes of the doll a corpse
+    /// lies on (RagdollCorpse), or a meal's head (ZombieMealBody), so a shot on the dead is told what it met too.
+    /// </summary>
     public static BodyPart PartOf(Collider collider)
     {
-        if (collider == null || boneParts.Count == 0) return BodyPart.None;
+        if (collider == null) return BodyPart.None;
         var bone = collider.transform.parent;
-        return bone != null && boneParts.TryGetValue(bone, out var part) ? part : BodyPart.None;
+        if (bone != null && boneParts.TryGetValue(bone, out var part)) return part;
+        if (ZombieMealBody.IsHead(collider)) return BodyPart.Head;
+        var doll = collider.attachedRigidbody != null ? collider.attachedRigidbody.GetComponentInParent<RagdollCorpse>() : null;
+        return doll != null ? doll.PartOf(collider) : BodyPart.None;
     }
 
     /// <summary>What a zombie has lost: legs and arms (0 to 2 each). False if it isn't followed.</summary>
@@ -203,7 +216,10 @@ public sealed class ZombieGore : MonoBehaviour
         var part = hit.Part;
         if (kill && (part == BodyPart.Head || (hit.IsCritical && hit.Method == DamageMethod.Bullet)))
         {
-            if (body.Has(BodyPart.Head)) Burst(body, hit);
+            var head = body.Bone(HumanBodyBones.Head);
+            // The head's middle: its hitbox sits this far up from the head bone, at the top of the neck (ZombieBody).
+            if (head != null && body.Has(BodyPart.Head))
+                Burst(body, head.position + body.Model.transform.up * .09f, Along(hit, body), body.Enemy);
             return;
         }
         if (!BodyParts.IsLimb(part) || !body.Has(part)) return;
@@ -237,19 +253,45 @@ public sealed class ZombieGore : MonoBehaviour
         return -body.Model.transform.forward;
     }
 
+    /// <summary>
+    /// A corpse's head shot after death (the user, 2026-11-15: "머리 터뜨려서 확인 사살"): the head of the body this model
+    /// wears bursts as a headshot kill's does, from its middle where the corpse lies (center) along the shot. False when gore
+    /// doesn't follow that body or its head is gone already. Every PC calls it for the same shot (the shooter's, the
+    /// others as the shooter tells them).
+    /// </summary>
+    internal static bool BurstCorpseHead(GameObject model, Vector3 center, Vector3 direction, Component target)
+    {
+        if (instance == null || model == null) return false;
+        foreach (var body in instance.bodies)
+        {
+            if (body.Model != model) continue;
+            if (!body.Has(BodyPart.Head)) return false;
+            instance.Burst(body, center, direction.sqrMagnitude > 1e-4f ? direction.normalized : -model.transform.forward, target);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// A head that has already left a body that isn't a skin gore follows (a calm zombie's meal, baked still: ZombieMeal)
+    /// bursts here: the same blood, guts and stump as any burst head. Stump: its neck's end, under its neck.
+    /// </summary>
+    internal static void BurstHeadAt(Vector3 center, Vector3 direction, Transform body, Component target, Transform stump)
+    {
+        if (instance != null) instance.BurstHead(center, direction, body, target, stump);
+    }
+
     // The head bursts and is gone: blood and guts fly along the shot, the neck is left a stump that pumps. Its skin is not
     // thrown as chunks: an open shell of skin showed its missing inside (the user, 2026-11-09: "걍 터뜨리고 없애도").
-    private void Burst(GoreBody body, in DamageHit hit)
+    private void Burst(GoreBody body, Vector3 center, Vector3 direction, Component target)
+        => BurstHead(center, direction, body.Model.transform, target, body.Hide(BodyPart.Head));
+
+    private void BurstHead(Vector3 center, Vector3 direction, Transform body, Component target, Transform stump)
     {
-        var head = body.Bone(HumanBodyBones.Head);
-        if (head == null) return;
-        Vector3 direction = Along(hit, body);
-        // The head's middle: its hitbox sits this far up from the head bone, at the top of the neck (ZombieBody).
-        Vector3 center = head.position + body.Model.transform.up * .09f;
-        var root = body.Hide(BodyPart.Head);
-        Fx.Wound(center, direction, body.Enemy, true);
-        Fx.Burst(center, direction, body.Model.transform, burstSpeed, gutChunks);
-        if (root != null) Fx.Stump(root, BodyPart.Head);
+        Fx.Wound(center, direction, target, true);
+        Fx.Burst(center, direction, body, burstSpeed, gutChunks);
+        if (stump != null) Fx.Stump(stump, BodyPart.Head);
+        HeadBurst?.Invoke(center);
     }
 
     // An arm or leg comes off whole at its joint and flies along the shot.
