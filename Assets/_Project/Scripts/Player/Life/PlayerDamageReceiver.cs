@@ -82,9 +82,10 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         // it (the enemy staggers: ParryFeedback), and the Knight's PC is told so it steps in beside them.
         if (KnightCover.Covers(movement, hit, out PlayerMovement coverer))
         {
+            // The Knight's PC hears of the cover's first blow only; the ones that came with it are turned here all the same.
             Vector3 attacker = hit.Source.transform.position;
-            if (coverer.IsLocal) KnightCover.Local.OrNull()?.Covered(movement, attacker);
-            else if (coverer.TryGetComponent(out PlayerNetworkCombat knightNet)) knightNet.SendCovered(movement, attacker);
+            if (coverer != null && coverer.IsLocal) KnightCover.Local.OrNull()?.Covered(movement, attacker);
+            else if (coverer != null && coverer.TryGetComponent(out PlayerNetworkCombat knightNet)) knightNet.SendCovered(movement, attacker);
             HitResolved?.Invoke(hit, DamageResult.Parried);
             return DamageResult.Parried;
         }

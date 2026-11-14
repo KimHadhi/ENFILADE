@@ -28,6 +28,7 @@ Fists.guardInputBuffer,0.12,가드 선입력 허용 시간(초)
 Fists.guardAngle,150,정면 방어 각도(도)
 Fists.guardMoveShare,0.5,가드를 들고 있는 동안 걷는 속도의 이 배율까지만 움직인다(0~1). 가드를 계속 들고 다니지 못하게
 Fists.parryRootSeconds,0.15,패링 히트스톱이 끝난 뒤에도 발이 묶이는 시간(실제 초). 주먹·가드·회피는 바로 된다
+Fists.parryMost,0,패링 창 하나가 튕기는 공격 수의 상한. 0이면 창 안에 들어온 공격을 전부 튕긴다(사용자: 동시에 여러 명이 때리면 패링했을 때 다 되는 게 아니야? → 응 다 튕기게). 넘으면 가드를 쥔 동안 막기. 창은 첫 패링에서 닫히지 않고 시간이 다 되면 닫힌다
 Fists.holdThreshold,0.14,V를 이 시간 이상 누르면 가드 브레이크(초)
 Fists.guardBreakReach,2.2,가드 브레이크 사거리(m)
 Fists.guardBreakApproachSpeed,12,가드 브레이크 돌진 속도(m/s)
@@ -124,6 +125,7 @@ Parry.breakEffectScale,0.3,체간 붕괴 베기와 먹(Feedback의 Parry Break �
 Parry.sparkCount,14,불꽃 수
 Parry.emberCount,6,남아서 떠다니는 잔불 수
 Parry.breakBoost,1.6,체간을 무너뜨린 패링에서 크기와 개수에 곱하는 값
+Parry.burstSeconds,0.4,이 시간(실제 초) 안에 튕긴 공격들은 한꺼번에 튕긴 것으로 친다: 히트스톱·화면·카메라·손은 한 번(히트스톱은 가장 센 것의 길이로 첫 패링부터)이고 공격자마다 소리·불꽃·밀려남은 따로. 쇼브 카운터도 같은 길이로 COUNTER를 한 번 띄운다
 Parry.chainWindow,3,이 시간 안에 다시 패링하면 연속으로 친다(실제 초)
 Parry.chainMax,4,연속 패링 단계 상한
 Parry.chainGrowth,0.16,연속 한 단계마다 커지는 크기

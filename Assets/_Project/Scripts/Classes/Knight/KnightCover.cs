@@ -36,6 +36,8 @@ public sealed class KnightCover : MonoBehaviour
     {
         public PlayerMovement Knight, Ally;
         public float Until, GunBonus, GunSeconds;
+        // It has turned its first blow, and the Knight's PC was told.
+        public bool Told;
     }
 
     private static readonly List<Window> windows = new List<Window>();
@@ -210,8 +212,8 @@ public sealed class KnightCover : MonoBehaviour
     }
 
     /// <summary>
-    /// The friend's PC: a zombie's blow on <paramref name="victim"/> under an open cover is turned (the cover spent), and
-    /// <paramref name="knight"/> is the one who turned it. It is the Knight's parry, so it turns what a Knight's parry turns
+    /// The friend's PC: a zombie's blow on <paramref name="victim"/> under an open cover is turned, and so are the ones
+    /// that come with it (coverAfter); <paramref name="knight"/> is the one who turned the first, null for the rest. It is the Knight's parry, so it turns what a Knight's parry turns
     /// (PlayerClass.KnightTurns): a runner's leap or a grab too, never the bites of a zombie already holding the friend.
     /// With the Knight's 원호 반격 the friend's guns hit harder at once, for the time and share the Knight's PC sent.
     /// </summary>
@@ -225,9 +227,15 @@ public sealed class KnightCover : MonoBehaviour
             var window = windows[i];
             if (window.Knight == null || window.Ally == null || Time.time >= window.Until) { windows.RemoveAt(i); continue; }
             if (window.Ally != victim || window.Knight.IsDead || window.Knight.IsDowned) continue;
-            windows.RemoveAt(i);
-            knight = window.Knight;
+            // The blows that come with the first are turned too, as a guard's window turns every blow in it (the user,
+            // 2026-11-15: "응, 다 튕기게"): the cover stays coverAfter seconds past its first blow, then closes. The
+            // Knight's PC hears of the first only (it steps in once); knight is null for the rest.
             CoveredHit = hit.Id;
+            if (window.Told) return true;
+            window.Told = true;
+            window.Until = Mathf.Min(window.Until, Time.time + Mathf.Max(0f, Number("coverAfter", .3f)));
+            windows[i] = window;
+            knight = window.Knight;
             if (window.GunBonus > 0f && window.GunSeconds > 0f) Guarded(window);
             return true;
         }

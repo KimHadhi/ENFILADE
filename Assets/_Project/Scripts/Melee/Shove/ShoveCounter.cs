@@ -64,6 +64,8 @@ public sealed class ShoveCounter : MonoBehaviour
     private CombatTimeEffects timeEffects;
     private CounterBanner banner;
     private float lastShove = float.NegativeInfinity, lastCounter = float.NegativeInfinity;
+    // When the burst under way began (real s): counters landing together are one show (ParryFeedback.BurstSeconds).
+    private float burstStart = float.NegativeInfinity;
     private Vector3 shoveForward;
     private int chain;
 
@@ -127,7 +129,8 @@ public sealed class ShoveCounter : MonoBehaviour
 
     private void Land(MeleeCombatTarget target, bool airborne, Vector3 point)
     {
-        lastShove = float.NegativeInfinity;
+        // The grace stays open to its end: every grab or leap that comes with this one is countered too, as a guard's
+        // parry window turns every blow in it (the user, 2026-11-15: "응, 다 튕기게"); this one's grab or leap ends here.
         // The shove comes straight back, whichever V it was.
         if (player != null)
         {
@@ -160,23 +163,31 @@ public sealed class ShoveCounter : MonoBehaviour
             var camera = GetComponentInChildren<Camera>();
             view = camera != null ? camera.transform : null;
         }
+        // Several met at once (a shove reaching two, or grabs coming together in its grace) are one burst: its first
+        // shows the stop, the crawl, the knock, the screen and COUNTER, once, never stacked or flickering; each of them
+        // keeps its own burst of light, bash, ring and flash.
+        var feedback = GetComponent<ParryFeedback>();
+        bool first = Time.unscaledTime - burstStart > (feedback != null ? feedback.BurstSeconds : .4f);
+        if (first) burstStart = Time.unscaledTime;
         if (timeEffects == null) timeEffects = GetComponent<CombatTimeEffects>().OrNull() ?? gameObject.AddComponent<CombatTimeEffects>();
-        if (hitStopSeconds > 0f) timeEffects.RequestSlowdown(this, hitStopScale, hitStopSeconds, target);
-        if (slowSeconds > 0f) timeEffects.RequestSlowdown(slowOwner, slowScale, hitStopSeconds + slowSeconds, target);
+        if (first && hitStopSeconds > 0f) timeEffects.RequestSlowdown(this, hitStopScale, hitStopSeconds, target);
+        if (first && slowSeconds > 0f) timeEffects.RequestSlowdown(slowOwner, slowScale, hitStopSeconds + slowSeconds, target);
 
         Vector3 toAttacker = view != null ? target.transform.position + Vector3.up * 1.2f - view.position : away;
         toAttacker = toAttacker.sqrMagnitude > 1e-4f ? toAttacker.normalized : away;
         float sign = view != null && Vector3.Dot(view.right, toAttacker) < 0f ? -1f : 1f;
         if (view != null)
         {
-            var punch = CameraViewPunch.For(view.GetComponent<Camera>());
-            punch.OrNull()?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z), cameraFov, cameraTrauma);
+            if (first) CameraViewPunch.For(view.GetComponent<Camera>()).OrNull()?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z), cameraFov, cameraTrauma);
             Vector3 contact = view.position + Vector3.Slerp(view.forward, toAttacker, .6f).normalized * contactDistance - view.up * .05f;
-            GetComponent<ParryFeedback>().OrNull()?.CounterBurst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, burstGrowth);
+            feedback.OrNull()?.CounterBurst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, burstGrowth);
             // The bash's own shock on top, the biggest of them (For Honor's bash, BashImpact).
             BashImpact.Play(contact, away, 1.8f, player);
             if (target.TryGetComponent(out EnemyNetwork network)) network.ShareParry(contact, away, true);
         }
+        CombatCueAudio.Play(gameObject, CombatCue.ParryBreak, .82f);
+        HitFlashRenderer.For(target).OrNull()?.WhiteFlash(.14f);
+        if (!first) return;
         KillConfirmEffect.Parry(new ParryScreenLook
         {
             // Drained near-white with a deep pink edge (the HUD's colours, with the banner's slash), held through the hit stop
@@ -184,8 +195,6 @@ public sealed class ShoveCounter : MonoBehaviour
             Flash = .7f, Chromatic = .9f, Lens = -.3f, Saturation = -45f, Contrast = 22f, Bloom = 1.8f, Vignette = .42f,
             Hold = hitStopSeconds + slowSeconds * .5f, Fade = .5f, Filter = new Color(1f, .93f, .96f), VignetteColor = new Color(.3f, .02f, .1f)
         });
-        CombatCueAudio.Play(gameObject, CombatCue.ParryBreak, .82f);
-        HitFlashRenderer.For(target).OrNull()?.WhiteFlash(.14f);
         ShowBanner(NextGrade());
     }
 

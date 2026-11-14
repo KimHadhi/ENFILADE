@@ -4,8 +4,10 @@ using UnityEngine;
 /// The whole show of a successful parry, timed around one moment: a hand snaps across the view and holds while time
 /// catches, the view takes a knock, the screen flashes and light breaks out at the contact point, then the attacker reels
 /// and everything lets go. Parries in a row climb in pitch and size, and a parry that breaks posture gets the biggest
-/// version of all of it. Presentation only: posture damage and stun stay in PlayerMeleeCombat, the posture-break slow
-/// motion in PlayerPerfectDefense. Numbers come from Tables/Player.csv, row Parry.
+/// version of all of it. Several blows turned at once (a window turns every blow in it) are one burst: one hand, one
+/// knock, one pulse and one hit stop as long as its strongest asks, while each attacker gets its own sound, light and reel.
+/// Presentation only: posture damage and stun stay in PlayerMeleeCombat, the posture-break slow motion in
+/// PlayerPerfectDefense. Numbers come from Tables/Player.csv, row Parry.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ParryFeedback : MonoBehaviour
@@ -65,6 +67,8 @@ public sealed class ParryFeedback : MonoBehaviour
     [SerializeField, Min(1f), Tooltip("A posture break multiplies size and counts by this.")]
     private float breakBoost = 1.6f;
     [Header("Parries in a row")]
+    [SerializeField, Min(0f), Tooltip("Parries within this long of the first are one burst: several blows turned at once (real seconds). The hit stop, the view's knock, the screen and the hand are the burst's, once; each attacker keeps its sound, burst and reel.")]
+    private float burstSeconds = .4f;
     [SerializeField, Min(0f), Tooltip("A parry within this long of the last one continues the chain (real seconds).")]
     private float chainWindow = 3f;
     [SerializeField, Min(1)] private int chainMax = 4;
@@ -104,9 +108,18 @@ public sealed class ParryFeedback : MonoBehaviour
     private CombatTimeEffects timeEffects;
     private int chain;
     private float lastParryTime = float.NegativeInfinity, duckRemaining;
+    // The burst under way: when its first parry landed (real s) and its strongest hit stop so far.
+    private float burstStart = float.NegativeInfinity, burstStop;
 
     /// <summary>How long a parry's hit stop holds time (real s); broken is a parry that broke posture.</summary>
     public float HitStopFor(bool broken) => broken ? breakHitStopSeconds : hitStopSeconds;
+
+    /// <summary>
+    /// How long after a burst's first blow turned (a parry, a shove counter) the next ones join it (real s). Several blows
+    /// turned at once share one hit stop, one knock of the view and one screen pulse: never one each, stacked or
+    /// flickering (the user felt fast flicker physically, 2026-11-14). ShoveCounter keeps its own burst by this length.
+    /// </summary>
+    internal float BurstSeconds => burstSeconds;
 
     private void OnEnable()
     {
@@ -147,25 +160,36 @@ public sealed class ParryFeedback : MonoBehaviour
         float sign = side < 0f ? -1f : 1f;
         Vector3 contact = view.position + Vector3.Slerp(view.forward, toAttacker, .5f).normalized * contactDistance - view.up * .05f;
 
+        // A window turns every blow in it (PlayerMeleeCombat), and a cover may turn several on a friend: those within
+        // burstSeconds are one burst. Its first parry shows the hand, the view's knock and the screen pulse, once; each
+        // attacker keeps its own sound (climbing the chain), burst of light and reel.
+        bool first = Time.unscaledTime - burstStart > burstSeconds;
+        if (first) { burstStart = Time.unscaledTime; burstStop = 0f; }
         float variance = CombatFeedbackSettings.InstanceOrDefaults.hitPitchVariance;
         CombatCueAudio.Play(gameObject, broken ? CombatCue.ParryBreak : CombatCue.Parry,
             Mathf.Pow(2f, (chain - 1) * chainPitchSemitones / 12f) * (1f + Random.Range(-variance, variance)));
         duckRemaining = duckSeconds;
         SetDuck(duckLevel);
-        if (fists == null) fists = GetComponentInChildren<FistsView>();
-        fists.OrNull()?.Deflect(side, handSweepSeconds, handSweepAttack, handSweepHold, handSweep);
-        var punch = CameraViewPunch.For(view.GetComponent<Camera>());
-        float knock = broken ? 1.5f : 1f;
-        punch.OrNull()?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z) * knock, cameraFov * knock, cameraTrauma * knock);
-        KillConfirmEffect.Parry(broken ? BreakLook() : ContactLook());
+        if (first)
+        {
+            if (fists == null) fists = GetComponentInChildren<FistsView>();
+            fists.OrNull()?.Deflect(side, handSweepSeconds, handSweepAttack, handSweepHold, handSweep);
+            var punch = CameraViewPunch.For(view.GetComponent<Camera>());
+            float knock = broken ? 1.5f : 1f;
+            punch.OrNull()?.ImpactPunch(new Vector3(cameraKick.x, -sign * cameraKick.y, -sign * cameraKick.z) * knock, cameraFov * knock, cameraTrauma * knock);
+            KillConfirmEffect.Parry(broken ? BreakLook() : ContactLook());
+        }
         Burst(contact, (toAttacker * .35f + view.right * (sign * .8f) + view.up * .5f).normalized, growth, broken);
         if (target != null) Reel(target, toAttacker, contact, broken);
 
+        // The burst's hit stop: as long as its strongest parry asks, counted from its first, never restarted per attacker.
         float stop = broken ? breakHitStopSeconds : hitStopSeconds;
-        if (stop > 0f)
+        if (stop > burstStop)
         {
+            float left = burstStart + stop - Time.unscaledTime;
+            burstStop = stop;
             if (timeEffects == null) timeEffects = GetComponent<CombatTimeEffects>();
-            timeEffects.OrNull()?.RequestSlowdown(this, hitStopScale, stop);
+            if (left > 0f) timeEffects.OrNull()?.RequestSlowdown(this, hitStopScale, left);
         }
         if (broken) chain = 0;
     }

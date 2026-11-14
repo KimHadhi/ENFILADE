@@ -39,6 +39,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private float guardMoveShare = .5f;
     [SerializeField, Min(0f), Tooltip("After a parry's hit stop the feet stay planted this much longer (real s). Punching, guarding and dodging still work.")]
     private float parryRootSeconds = .15f;
+    [SerializeField, Min(0), Tooltip("Most blows one parry window turns (0: every blow in it, the user's choice; past it, a held guard blocks).")]
+    private int parryMost;
     [Header("V: Shove / Guard Break")]
     [SerializeField, Min(0.05f)] private float holdThreshold = 0.14f;
     [SerializeField, Min(0.1f)] private float guardBreakReach = 2.2f;
@@ -63,7 +65,10 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     // user 2026-11-11): a skill hands the punch straight back, as the spinning backfist (MeleeCombos link).
     private float chargeTime, shoveTime, cooldown, shoveRest, shoveWait, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge, strikeHold;
     private float parryRemaining, guardBufferRemaining, guardIdleTime, rootUntil = float.NegativeInfinity;
-    private int spamCount;
+    // This window's parries so far, when its first landed (real s), its strongest hit stop, and how near (squared m) the
+    // attacker its riposte is open on stands.
+    private float windowFirstAt, windowStop, windowRiposte;
+    private int spamCount, windowParries;
     private ParryFeedback parryFeedback;
     private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
     private Vector3 lungeDirection;
@@ -255,6 +260,7 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         float duration = (last >= 0 ? parryWindowDurations[spamCount] : .2f) * PlayerClass.ParryWindowFactor(player);
         // A window of 0 is Sekiro's mashing floor: that press only guards.
         parryRemaining = float.IsNaN(duration) || float.IsInfinity(duration) ? .2f : Mathf.Max(0f, duration);
+        windowParries = 0;
         pendingWhiff = !held; defenseConnected = false; guardAttemptHeld = held;
         IsGuarding = held; guardIdleTime = guardBufferRemaining = 0f;
         CancelOffense(); cooldown = 0f;
@@ -419,32 +425,44 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public bool TryDefend(DamageHit hit, out DamageResult result)
     {
         result = DamageResult.Ignored;
+        // The window turns every blow that comes in it, not just the first (the user, 2026-11-15: "지금 패링 동시에 한 명밖에
+        // 못 해? … 동시에 여러 명이 때리면 패링했을 때 다 되는 게 아니야?" — "응, 다 튕기게"): it stays open to its end,
+        // up to parryMost blows when that is set (0: no limit; past it, a held guard blocks).
+        bool window = IsParryActive && (parryMost <= 0 || windowParries < parryMost);
         // A blow that can't be guarded is still a Knight's to parry, though never to block (PlayerClass.ParriesAll: a
         // runner's leap, a grab, an elite's blow from behind).
-        if (!IsActive || !player.InputAvailable || (!IsGuarding && !IsParryActive) || IsGuardBreaking
+        if (!IsActive || !player.InputAvailable || (!IsGuarding && !window) || IsGuardBreaking
             || MovementBlocksAttack || hit.Kind != DamageKind.Attack
-            || !(hit.CanBeGuarded || (IsParryActive && PlayerClass.ParriesAll(player, hit)))) return false;
+            || !(hit.CanBeGuarded || (window && PlayerClass.ParriesAll(player, hit)))) return false;
         Vector3 incoming = hit.Source != null ? hit.Source.transform.position - player.transform.position : -hit.Direction;
         incoming = Vector3.ProjectOnPlane(incoming, Vector3.up).normalized;
         Vector3 facing = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
         if (incoming.sqrMagnitude < 0.01f || Vector3.Dot(incoming, facing) < Mathf.Cos(guardAngle * 0.5f * Mathf.Deg2Rad)) return false;
-        bool parry = IsParryActive;
-        result = parry ? DamageResult.Parried : DamageResult.Blocked;
+        result = window ? DamageResult.Parried : DamageResult.Blocked;
         ResetParrySpam(); defenseConnected = true;
-        if (parry)
+        if (window)
         {
-            parryRemaining = 0f;
+            windowParries++;
             var attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
-            // A Knight's parry breaks a pack zombie at once and wears an elite down harder (PlayerClass.ParryPosture). Taken
-            // before the parry is told, so a break shows and slows into the execution as one (ParryFeedback, PlayerPerfectDefense).
+            // Each attacker's own: a Knight's parry breaks a pack zombie at once and wears an elite down harder
+            // (PlayerClass.ParryPosture). Taken before the parry is told, so a break shows and slows into the execution as
+            // one (ParryFeedback, PlayerPerfectDefense, which also give each attacker its sound, burst and reel).
             if (attacker != null) attacker.ApplyPostureDamage(PlayerClass.ParryPosture(player, attacker, 25f), 0.8f);
-            // The deflect plants the feet: the hit stop holds everything, then the legs stay put a moment longer.
+            // The window's, once: the deflect plants the feet, the hit stop holding everything and the legs staying put a
+            // moment longer, as long as the window's strongest stop asks, counted from its first parry and never stacked.
             if (parryFeedback == null) parryFeedback = GetComponent<ParryFeedback>();
             float stop = parryFeedback != null ? parryFeedback.HitStopFor(attacker != null && attacker.IsStaggered) : 0f;
-            rootUntil = Time.unscaledTime + stop + parryRootSeconds;
+            if (windowParries == 1) { windowFirstAt = Time.unscaledTime; windowStop = 0f; }
+            windowStop = Mathf.Max(windowStop, stop);
+            rootUntil = windowFirstAt + windowStop + parryRootSeconds;
             player.HorizontalVelocity = Vector3.zero;
-            // An attack press now goes straight back at them (MeleeCombos riposte).
-            combos.OrNull()?.OpenRiposte(attacker);
+            // An attack press now goes straight back at the nearest of the window's attackers (MeleeCombos riposte).
+            float near = attacker != null ? (attacker.transform.position - player.transform.position).sqrMagnitude : float.MaxValue;
+            if (windowParries == 1 || near < windowRiposte)
+            {
+                windowRiposte = near;
+                combos.OrNull()?.OpenRiposte(attacker);
+            }
         }
         return true;
     }

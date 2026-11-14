@@ -56,6 +56,8 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
     // Everyone whose blow the open window let pass, in order; the first one opened it.
     private readonly List<MeleeCombatTarget> evaded = new List<MeleeCombatTarget>(4);
     private float remaining, guard, strikeTime, lastGap, lastStep;
+    // Until when (real s) a parry's posture-break slow motion runs: a window that broke several at once slows once.
+    private float breakSlowUntil = float.NegativeInfinity;
     private int rewardedDodge = -1, elbowSide;
     private bool elbow;
     private readonly RaycastHit[] sightHits = new RaycastHit[16];
@@ -95,10 +97,21 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
             {
                 var feedback = GetComponent<ParryFeedback>();
                 float lead = feedback != null ? feedback.HitStopFor(true) : 0f;
-                if (postureBreakSlowSeconds > 0f) timeEffects.RequestSlowdown(this, postureBreakTimeScale, lead + postureBreakSlowSeconds, target);
+                // A window turns every blow in it (PlayerMeleeCombat): breaking several at once slows once, not restarted
+                // by each (the same owner's request would start it over, longer).
+                if (postureBreakSlowSeconds > 0f && Time.unscaledTime >= breakSlowUntil)
+                {
+                    breakSlowUntil = Time.unscaledTime + lead + postureBreakSlowSeconds;
+                    timeEffects.RequestSlowdown(this, postureBreakTimeScale, lead + postureBreakSlowSeconds, target);
+                }
             }
-            // A Knight's parry opens it as a perfect dodge does (the user's memo, 퍼펙트 패리; PlayerClass).
-            else if ((parryOpensCounter || PlayerClass.ParryCounters(player)) && hit.IsComboFinisher) OpenCounter(hit, false);
+            // A Knight's parry opens it as a perfect dodge does (the user's memo, 퍼펙트 패리; PlayerClass). Several parried
+            // at once: the window opens once and each of them can be countered.
+            else if ((parryOpensCounter || PlayerClass.ParryCounters(player)) && hit.IsComboFinisher)
+            {
+                if (CounterAvailable) Remember(AttackerOf(hit));
+                else OpenCounter(hit, false);
+            }
         }
         else if (result == DamageResult.Evaded)
         {
