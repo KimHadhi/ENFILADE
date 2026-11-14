@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -14,6 +15,13 @@ using UnityEngine;
 /// another page when one fills (multi-atlas), and the editor never saves them (DynamicFontSaveProcessor).
 /// A face's atlas is filled once, whichever roles share it. This runs in every scene's first load, menus included,
 /// and is done within a few seconds of the title screen.
+/// A face's OpenType tables (kerning pairs, ligatures, mark placement) are read once per face, for all its new glyphs
+/// together. TMP reads them again at every call that adds glyphs, and each reading parses the font's whole GPOS table
+/// (50 to 60 ms for these Korean faces whatever the number of glyphs): asked per call, the title screen's 12.4 s behind
+/// the loading screen was 10.8 s of fonts (Logs/loads.txt, 2026-11-14), nearly all of it that table read 150 times over.
+/// When the warm set is in, the faces stop reading the tables for glyphs added later (a name or a chat line with a
+/// character no table holds): such a glyph cost a 40 to 150 ms stall the frame it first showed, for kerning it hardly
+/// ever has; what was drawn ahead keeps its kerning.
 /// </summary>
 public sealed class FontWarmup : MonoBehaviour
 {
@@ -39,8 +47,44 @@ public sealed class FontWarmup : MonoBehaviour
     /// <summary>Whether every role face holds its warm set.</summary>
     public static bool Done { get; private set; }
 
+    // TMP's own step that reads a face's OpenType tables for every glyph added since it last ran. Private there, and
+    // only reachable through a call that adds glyphs and asks for it each time; called by name it runs once per face.
+    // Not found (another TMP version): the tables are asked for at every call, as before.
+    private static readonly MethodInfo ReadFeatures = typeof(TMP_FontAsset).GetMethod("UpdateFontFeaturesForNewlyAddedGlyphs",
+        BindingFlags.Instance | BindingFlags.NonPublic, null, System.Type.EmptyTypes, null);
+    private static bool tablesPerCall = ReadFeatures == null;
+    // The faces told to stop reading their tables for later glyphs, and what each had, put back when play ends (the
+    // switch is the font asset's own, and the editor keeps assets loaded between plays).
+    private static readonly List<(TMP_FontAsset face, bool read)> quieted = new List<(TMP_FontAsset, bool)>();
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => Done = false;
+    private static void ResetStatics()
+    {
+        Done = false;
+        tablesPerCall = ReadFeatures == null;
+        quieted.Clear();
+        Application.quitting -= ReadTablesAgain;
+        Application.quitting += ReadTablesAgain;
+    }
+
+    private static void ReadTablesAgain()
+    {
+        foreach (var (face, read) in quieted)
+            if (face != null) face.getFontFeatures = read;
+        quieted.Clear();
+    }
+
+    // Every dynamic face loaded now (the role faces, their fallbacks, the operating system's) adds later glyphs
+    // without reading its tables.
+    private static void QuietTables()
+    {
+        foreach (var face in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
+        {
+            if (face == null || face.atlasPopulationMode == AtlasPopulationMode.Static || !face.getFontFeatures) continue;
+            quieted.Add((face, true));
+            face.getFontFeatures = false;
+        }
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Boot()
@@ -92,14 +136,35 @@ public sealed class FontWarmup : MonoBehaviour
         {
             if (face == null) continue;
             string pending = Missing(face, wanted[face]);
+            int had = face.glyphTable != null ? face.glyphTable.Count : 0;
             for (int i = 0; i < pending.Length; i += step)
             {
                 if (face == null) break;
-                face.TryAddCharacters(pending.Substring(i, Mathf.Min(step, pending.Length - i)), out _, true);
-                if (clock.Elapsed.TotalMilliseconds >= budgetMs) { yield return null; clock.Restart(); }
+                bool last = i + step >= pending.Length;
+                // Glyphs only: the face's tables are read once, after its last glyphs, in the same frame as the call
+                // that drew them (TMP has the font file open then), and only when the face gained a glyph.
+                face.TryAddCharacters(pending.Substring(i, Mathf.Min(step, pending.Length - i)), out _, tablesPerCall);
+                if (last && !tablesPerCall && face.glyphTable != null && face.glyphTable.Count > had && !ReadTables(face)) tablesPerCall = true;
+                if (last || clock.Elapsed.TotalMilliseconds >= budgetMs) { yield return null; clock.Restart(); }
             }
         }
+        QuietTables();
         Done = true;
+    }
+
+    private static bool ReadTables(TMP_FontAsset face)
+    {
+        try
+        {
+            ReadFeatures.Invoke(face, null);
+            return true;
+        }
+        catch (System.Exception problem)
+        {
+            UnityEngine.Debug.LogWarning("[Fonts] " + face.name + ": its OpenType tables could not be read in one go ("
+                + (problem.InnerException ?? problem).Message + "); they are read at every call from here on.");
+            return false;
+        }
     }
 
     // Every character in every table's cells (CsvTable leaves out '#' columns and rows), one table per frame.

@@ -1,13 +1,34 @@
+using System.Collections.Generic;
 using KINEMATION.ProceduralRecoilAnimationSystem.Runtime;
 using UnityEngine;
 
 // FPSBody: Drawing and putting away (the demo's EquipWeapon / UnequipWeapon). One part of the class; the rest is in FPSBody.cs and the files beside it.
 public sealed partial class FPSBody
 {
+    // What this body was asked to build a gun for outside a loading screen, each once: a gun without clips for this
+    // body, or a knife, is not looked up among KINEMATION's guns again at every frame.
+    private readonly HashSet<WeaponData> askedFor = new HashSet<WeaponData>();
+
     private FPSGun Find(WeaponData data)
     {
         if (data == null) return null;
         foreach (var gun in guns) if (gun.Data == data) return gun;
+        return BuildWhenAsked(data);
+    }
+
+    // This body's copy of a gun the first time anything asks for it: the gun drawn, the guns worn on the body
+    // (HolsteredGuns asks for each one carried), a part put on one in the customize menu. Install builds every gun only
+    // behind a loading screen. Null before the body is set up, and for what is no gun of KINEMATION's.
+    private FPSGun BuildWhenAsked(WeaponData data)
+    {
+        if (rig == null || framework == null || assets == null || !askedFor.Add(data)) return null;
+        foreach (var entry in assets.guns)
+        {
+            if (entry.weapon != data) continue;
+            int before = guns.Count;
+            AddGun(entry);
+            return guns.Count > before ? guns[guns.Count - 1] : null;
+        }
         return null;
     }
 

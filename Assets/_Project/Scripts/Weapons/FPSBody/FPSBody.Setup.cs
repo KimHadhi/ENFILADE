@@ -59,13 +59,19 @@ public sealed partial class FPSBody
         // upper body to its bind pose; the gun brings it in.
         playables.SetControllerWeight(0f);
         hands = GetComponent<PlayerBodyHands>();
-        foreach (var entry in assets.guns) AddGun(entry);
+        // Behind a loading screen every gun is built now, where nobody waits on a frame. Anywhere else (a new skin picked
+        // in the hub, a body stood up again) a gun is built when it is first asked for (Find): building all twenty-eight
+        // in one frame froze the game for 3.5 to 9 s at every change of character (Logs/Hitches, 2026-11-14: each stall
+        // sat on the second the hold report wrote a character's twenty-eight fits).
+        if (LoadingScreen.Visible)
+            foreach (var entry in assets.guns) AddGun(entry);
     }
 
     // The body went (a new skin, a rebuild): what was set up on it went with it.
     private void Forget()
     {
         guns.Clear();
+        askedFor.Clear();
         held = null;
         shownData = null;
         linked = aiming = firing = highReady = hasLook = hasGunInView = false;
