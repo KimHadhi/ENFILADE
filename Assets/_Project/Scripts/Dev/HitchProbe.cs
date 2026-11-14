@@ -66,6 +66,9 @@ public sealed class HitchProbe : MonoBehaviour
         public int[] Counts = new int[0];
         public int Sampled;
         public double Allocated;
+        // Graphics memory over the frames read (bytes): the engine's Texture Memory and Gfx Used Memory counters (the whole
+        // editor's in the editor) and what the scene's textures take now (Texture.currentTextureMemory), sum and most.
+        public double TextureSum, TextureMost, GfxSum, GfxMost, SceneTextureSum, SceneTextureMost;
     }
 
     // Some recorders hand back nonsense (negative, or seconds of a 30 ms frame, which wrecked the first summaries). A
@@ -79,7 +82,7 @@ public sealed class HitchProbe : MonoBehaviour
     private readonly List<(int frame, string what)> happened = new List<(int frame, string what)>();
     private readonly Watch watch = new Watch();
     private double[] reading = new double[0];
-    private ProfilerRecorder allocated;
+    private ProfilerRecorder allocated, textureMemory, gfxMemory;
     private PlayerMovement.MovementState lastState;
     private float started, stateSince, sceneSince, loadEndedAt = -1f;
     private int nextScan, nextRescan = RescanAfterLoad.Length, reports, sceneReports, loadingReports, frameKey = NoPlayer;
@@ -102,6 +105,8 @@ public sealed class HitchProbe : MonoBehaviour
     {
         started = Time.unscaledTime;
         allocated = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
+        textureMemory = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "Texture Memory");
+        gfxMemory = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "Gfx Used Memory");
         Scan();
         watch.Listen();
         BeginScene(SceneManager.GetActiveScene().name);
@@ -174,6 +179,13 @@ public sealed class HitchProbe : MonoBehaviour
         double bytes = allocated.Valid ? allocated.LastValue : 0;
         Add(bucket, ms, bytes);
         Add(scene, ms, bytes);
+        double textures = textureMemory.Valid ? textureMemory.LastValue : 0, gfx = gfxMemory.Valid ? gfxMemory.LastValue : 0, inScene = Texture.currentTextureMemory;
+        scene.TextureSum += textures;
+        scene.TextureMost = System.Math.Max(scene.TextureMost, textures);
+        scene.GfxSum += gfx;
+        scene.GfxMost = System.Math.Max(scene.GfxMost, gfx);
+        scene.SceneTextureSum += inScene;
+        scene.SceneTextureMost = System.Math.Max(scene.SceneTextureMost, inScene);
     }
 
     // This frame's readings into a bucket's sums.
@@ -287,6 +299,14 @@ public sealed class HitchProbe : MonoBehaviour
             AppendTop(text, "  editor windows", name => name.EndsWith("Window.Paint") || name.EndsWith("View.Paint") || name == "AppStatusBar.Paint", 6);
             AppendTop(text, "  parts", name => Parts.Contains(name), 12);
             text.Append($"  GC allocated {scene.Allocated / scene.Sampled / 1024.0:0.0} kB a frame\n");
+            const double Mega = 1048576.0;
+            int n = scene.Sampled;
+            // The textures' memory against the card's (an RTX 4060 Ti with 8 GB on the user's PC, 2026-11-14): whether they
+            // could be what slows a frame, as the user suspected ("텍스쳐 문제 같은데").
+            text.Append($"  textures: the scene's {scene.SceneTextureSum / n / Mega:0} MB (most {scene.SceneTextureMost / Mega:0}, Texture.currentTextureMemory),"
+                + $" counter Texture Memory {scene.TextureSum / n / Mega:0} MB (most {scene.TextureMost / Mega:0}), Gfx Used Memory {scene.GfxSum / n / Mega:0} MB"
+                + $" (most {scene.GfxMost / Mega:0}; in the editor both count the editor's own too); all at full size {Texture.totalTextureMemory / Mega:0} MB;"
+                + $" texture quality {GameSettings.Current.textureDetail} (mipmap limit {QualitySettings.globalTextureMipmapLimit})\n");
         }
         File.AppendAllText(FilePath, text.ToString());
     }
@@ -348,6 +368,8 @@ public sealed class HitchProbe : MonoBehaviour
         watch.Stop();
         foreach (var recorder in recorders) recorder.Dispose();
         allocated.Dispose();
+        textureMemory.Dispose();
+        gfxMemory.Dispose();
     }
 
     // ---- What happened, seen from outside ----

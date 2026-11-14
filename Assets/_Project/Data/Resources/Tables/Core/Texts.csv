@@ -899,6 +899,13 @@ settings.screen.frame,프레임,,설정 창 > 화면 > 소제목
 settings.screen.vsync,수직 동기화,,설정 창 > 화면 > 행
 settings.screen.frame_limit,프레임 제한,,설정 창 > 화면 > 행(수직 동기화가 꺼졌을 때)
 settings.screen.frame_limit.none,무제한,,설정 창 > 화면 > 프레임 제한 선택지
+settings.screen.graphics,그래픽,,설정 창 > 화면 > 소제목
+settings.screen.texture_quality,텍스처 품질,,설정 창 > 화면 > 행
+settings.screen.texture_quality.full,최고,,설정 창 > 화면 > 텍스처 품질 선택지(가져온 크기 그대로)
+settings.screen.texture_quality.high,높음,,설정 창 > 화면 > 텍스처 품질 선택지(가로세로 1/2)
+settings.screen.texture_quality.medium,보통,,설정 창 > 화면 > 텍스처 품질 선택지(가로세로 1/4)
+settings.screen.texture_quality.low,낮음,,설정 창 > 화면 > 텍스처 품질 선택지(가로세로 1/8)
+settings.screen.texture_quality_note,낮출수록 그래픽 메모리와 불러오는 짐이 줄어요. 글자와 아이콘은 그대로예요.,,설정 창 > 화면 > 텍스처 품질 아래 안내
 settings.screen.view,시야,,설정 창 > 화면 > 소제목
 settings.screen.fov,시야각,,설정 창 > 화면 > 행
 settings.screen.shake,화면 흔들림,,설정 창 > 화면 > 행

@@ -66,6 +66,12 @@ public sealed class SettingsMenuView
         Texts.Get("settings.screen.window_mode.windowed"),
     };
     private static string FrameLimitName(int limit) => limit > 0 ? limit.ToString() : Texts.Get("settings.screen.frame_limit.none");
+    // In TextureDetail's order.
+    private static string[] TextureDetailNames => new[]
+    {
+        Texts.Get("settings.screen.texture_quality.full"), Texts.Get("settings.screen.texture_quality.high"),
+        Texts.Get("settings.screen.texture_quality.medium"), Texts.Get("settings.screen.texture_quality.low"),
+    };
     private static int tab; // reopening shows the last tab
     private readonly RectTransform root;
     private const float ButtonWidth = 156f;
@@ -283,6 +289,10 @@ public sealed class SettingsMenuView
         limitRow = rows.NumberChoice(Texts.Get("settings.screen.frame_limit"), GameSettings.FrameLimits, FrameLimitName, s.frameLimit,
             GameSettings.MinFrameLimit, GameSettings.MaxFrameLimit, limit => s.frameLimit = limit);
         limitRow.gameObject.SetActive(!s.vSync);
+
+        rows.Header(Texts.Get("settings.screen.graphics"));
+        rows.Choice(Texts.Get("settings.screen.texture_quality"), TextureDetailNames, (int)s.textureDetail, i => s.textureDetail = (TextureDetail)i);
+        rows.Note(Texts.Get("settings.screen.texture_quality_note"));
 
         rows.Header(Texts.Get("settings.screen.view"));
         rows.Slider(Texts.Get("settings.screen.fov"), GameSettings.MinFieldOfView, GameSettings.MaxFieldOfView, s.fieldOfView,

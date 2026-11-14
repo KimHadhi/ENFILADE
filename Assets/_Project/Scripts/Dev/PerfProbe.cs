@@ -70,6 +70,9 @@ public sealed class PerfProbe : MonoBehaviour
     {
         public string Scene, From, To;
         public float Since, Seconds;
+        // Texture memory as the scene closed (MB): in use, and all of it at full size; the mipmap limit then.
+        public double Textures, TexturesFull;
+        public int MipmapLimit;
         public readonly List<float> Frames = new List<float>();
         public int Read;
         public double Main, Loop, Editor, Repaint, Cameras;
@@ -129,6 +132,9 @@ public sealed class PerfProbe : MonoBehaviour
     {
         if (section == null) return;
         section.To = System.DateTime.Now.ToString("HH:mm:ss");
+        section.Textures = Texture.currentTextureMemory / 1048576.0;
+        section.TexturesFull = Texture.totalTextureMemory / 1048576.0;
+        section.MipmapLimit = QualitySettings.globalTextureMipmapLimit;
         section.Seconds = Time.unscaledTime - section.Since;
         if (section.Frames.Count >= LeastFrames && section.Read > 0) done.Add(section);
         section = null;
@@ -307,6 +313,7 @@ public sealed class PerfProbe : MonoBehaviour
         text.Append($"main thread {main:0.0} ms a frame = the game {game:0.0} + the editor {outside + windows:0.0}"
             + $" (outside the player loop {outside:0.0}, of it EditorLoop {editorLoop:0.0}; the editor windows' repaint inside the loop {windows:0.0});"
             + $" the game's cameras draw {cameras:0.0} of the game's (in a build they draw in PostLateUpdate.FinishFrameRendering)\n");
+        text.Append($"textures at the end: {part.Textures:0} MB in use (Texture.currentTextureMemory), {part.TexturesFull:0} MB at full size, mipmap limit {part.MipmapLimit}\n");
 
         var rows = part.Markers.Select(pair => (name: NameOf(pair.Key), stat: pair.Value)).ToList();
         text.Append("\nscripts, ms a frame with calls (own ms, calls a frame):\n");

@@ -120,6 +120,9 @@ public sealed class GameSettings
     public int frameLimit;
     [Tooltip("Wait for the monitor's refresh before showing a frame. Overrides frameLimit.")]
     public bool vSync;
+    [Tooltip("How sharp textures are drawn: Full as imported, each step down half their width and height (a quarter of " +
+        "the graphics memory). Text, icons and anything without mipmaps stay as they are (TextureDetailSettings, TextureDetail.csv).")]
+    public TextureDetail textureDetail = TextureDetail.High;
     [Tooltip("Monitor the game runs on, by the name Windows gives it (DisplaySettings). Empty keeps the one the game opens on.")]
     public string monitorName = "";
     [Tooltip("That monitor's place in Windows' list, telling two monitors of the same name apart. -1 when unset.")]
@@ -217,7 +220,7 @@ public sealed class GameSettings
             case SettingsGroup.Screen:
                 s.monitorName = d.monitorName; s.monitorIndex = d.monitorIndex;
                 s.resolutionWidth = d.resolutionWidth; s.resolutionHeight = d.resolutionHeight; s.windowMode = d.windowMode;
-                s.vSync = d.vSync; s.frameLimit = d.frameLimit;
+                s.vSync = d.vSync; s.frameLimit = d.frameLimit; s.textureDetail = d.textureDetail;
                 s.fieldOfView = d.fieldOfView; s.screenShake = d.screenShake; s.bodySway = d.bodySway; s.showOwnHead = d.showOwnHead;
                 break;
             case SettingsGroup.Camera:
@@ -306,6 +309,7 @@ public sealed class GameSettings
         monitorIndex = Mathf.Max(-1, monitorIndex);
         if (resolutionWidth <= 0 || resolutionHeight <= 0) resolutionWidth = resolutionHeight = 0;
         if (windowMode < WindowMode.Fullscreen || windowMode > WindowMode.Windowed) windowMode = WindowMode.Borderless;
+        if (textureDetail < TextureDetail.Full || textureDetail > TextureDetail.Low) textureDetail = TextureDetail.High;
         (gunCrosshair ??= CrosshairSettings.Default(CrosshairKind.Gun)).Clamp();
         (meleeCrosshair ??= CrosshairSettings.Default(CrosshairKind.Melee)).Clamp();
     }
