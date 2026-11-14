@@ -255,6 +255,12 @@ internal static class GunHoldProbe
         text.Append($"{name} ({hold.Name}): gun ({at.x:0.0}, {at.y:0.0}, {at.z:0.0}); as its clip alone has it R {body.Right.Straight(clipRight):0.00} "
             + $"L {body.Left.Straight(clipLeft):0.00} -> held R {pose.Right:0.00} L {pose.Left:0.00}, {pose.Fit * 100f:0.0} toward the body, support "
             + $"palm {pose.Slide * 100f:0.0} back; trigger wrist {(body.Right.Shoulder.y - right.y) * cm:0.0} under its shoulder joint");
+        // Where the clip's own hands are against the gun: alone as the clip has it, and as it is held (turned from the clip).
+        hold.ClipHandsOff(body, clip, out float aloneRight, out float aloneRightTurn, out float aloneLeft, out float aloneLeftTurn);
+        hold.ClipHandsOff(body, pose.Gun, out float heldRight, out float heldRightTurn, out float heldLeft, out float heldLeftTurn);
+        text.Append($"; the clip's own hands off the gun: alone R {aloneRight * cm:0.0} cm {aloneRightTurn:0}° L {aloneLeft * cm:0.0} cm {aloneLeftTurn:0}°, "
+            + $"held R {heldRight * cm:0.0} cm {heldRightTurn:0}° L {heldLeft * cm:0.0} cm {heldLeftTurn:0}°, the gun turned "
+            + $"{Quaternion.Angle(clip.rotation, pose.Gun.rotation):0}° from its clip");
         if (hold is ShoulderedHold)
         {
             // How far the clip alone leaves the butt from this body's pocket. On the body the clips were made on the bake put

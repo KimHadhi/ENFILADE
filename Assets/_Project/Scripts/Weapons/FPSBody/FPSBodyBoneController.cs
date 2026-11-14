@@ -20,7 +20,8 @@ using UnityEngine.Playables;
 /// Here a gun's layers are set up once on this body, KINEMATION's own way (Prepare: behind a loading screen for every gun
 /// built there, else at the gun's first draw), and kept as they stood right after. The body has one chain of layer
 /// playables, made once. A draw puts the drawn gun's kept layers into it, each a fresh copy, and does again what setting
-/// them up did outside them: the bones it moved and the gun's pose clip and mask on FPSAF's playables. So every layer of a
+/// them up did outside them: the bones it moved, the gun's seat in the hands (kept as numbers and put in the animation
+/// stream every frame, GunSeatJob) and the gun's pose clip and mask on FPSAF's playables. So every layer of a
 /// draw starts where KINEMATION's new one started, and the graph keeps its shape. KINEMATION's order and timing stay: the
 /// blend from the last pose, the entity update, the layer links that wait for the new layers.
 /// With no gun held the chain stays, its layers at weight 0, which leaves the body's bones as they are.
@@ -34,8 +35,10 @@ public sealed class FPSBodyBoneController : FPSBoneController
         public IAnimationLayerJob[] fresh;
         public Placed[] placed;
         public List<Action<IPlayablesController>> calls;
-        // The Pose Sampler's own bones (GunSeatJob takes them into the stream).
+        // The Pose Sampler's own bones, and where its setup left each under its parent: where the gun sits in each hand
+        // (GunSeatJob puts them in the stream there).
         public Transform weaponBone, weaponBoneRight, weaponBoneLeft;
+        public Pose weaponSeat, rightSeat, leftSeat;
 
         // What KINEMATION's new layers left in the scene and on the playables as they were made at a draw.
         public void Replay(IPlayablesController playables)
@@ -262,6 +265,7 @@ public sealed class FPSBodyBoneController : FPSBoneController
         var made = new List<IAnimationLayerJob>();
         List<Action<IPlayablesController>> calls;
         Placed[] placed;
+        var chain = new Chain();
         held.Hold();
         try
         {
@@ -271,6 +275,21 @@ public sealed class FPSBodyBoneController : FPSBoneController
                 if (job == null) continue;
                 made.Add(job);
                 job.Initialize(data, setting);
+                // The gun's seat, kept as the Pose Sampler leaves it: its hands' weapon bones stand where the gun is in the
+                // pose it has just stood the body in, and that is read now, before anything else moves a bone. The weapon
+                // bone itself is kept where the Pose Sampler puts it every frame (PoseSamplerJob.UpdatePlayableJobData: the
+                // gun's default pose from the body), which is what KINEMATION's re-bind read; its setup leaves it turned by
+                // the gun's offset besides, for the IK weapon bone, and that turn was never in the stream.
+                if (setting is PoseSamplerLayerSettings sampler && chain.weaponBoneRight == null)
+                {
+                    chain.weaponBone = _rigComponent.GetRigTransform(sampler.weaponBone);
+                    chain.weaponBoneRight = _rigComponent.GetRigTransform(sampler.weaponBoneRight);
+                    chain.weaponBoneLeft = _rigComponent.GetRigTransform(sampler.weaponBoneLeft);
+                    chain.weaponSeat = SeatAt(chain.weaponBone, data.Owner.TransformPoint(sampler.defaultWeaponPose.position),
+                        data.Owner.rotation * sampler.defaultWeaponPose.rotation);
+                    chain.rightSeat = SeatOf(chain.weaponBoneRight);
+                    chain.leftSeat = SeatOf(chain.weaponBoneLeft);
+                }
             }
         }
         catch
@@ -301,16 +320,27 @@ public sealed class FPSBodyBoneController : FPSBoneController
             return null;
         }
 
-        var chain = new Chain { fresh = fresh, placed = placed, calls = calls };
-        foreach (var setting in profile.settings)
-        {
-            if (setting is not PoseSamplerLayerSettings sampler) continue;
-            chain.weaponBone = _rigComponent.GetRigTransform(sampler.weaponBone);
-            chain.weaponBoneRight = _rigComponent.GetRigTransform(sampler.weaponBoneRight);
-            chain.weaponBoneLeft = _rigComponent.GetRigTransform(sampler.weaponBoneLeft);
-            break;
-        }
+        chain.fresh = fresh;
+        chain.placed = placed;
+        chain.calls = calls;
         return chain;
+    }
+
+    // Where a bone stands under its parent now.
+    private static Pose SeatOf(Transform bone)
+    {
+        if (bone == null) return Pose.identity;
+        bone.GetLocalPositionAndRotation(out var position, out var rotation);
+        return new Pose(position, rotation);
+    }
+
+    // A place in the world as a bone would have it under its parent.
+    private static Pose SeatAt(Transform bone, Vector3 position, Quaternion rotation)
+    {
+        if (bone == null) return Pose.identity;
+        var parent = bone.parent;
+        return parent == null ? new Pose(position, rotation)
+            : new Pose(parent.InverseTransformPoint(position), Quaternion.Inverse(parent.rotation) * rotation);
     }
 
     // The transforms setting up moved, each where it was left; each is put back where it was before.
@@ -374,8 +404,8 @@ public sealed class FPSBodyBoneController : FPSBoneController
         if (seatPlayable.IsValid()) seatPlayable.Destroy();
     }
 
-    // The seat on a gun's Pose Sampler bones (bound again only when they are other bones than the last gun's), on while it
-    // is held.
+    // The seat on a gun's Pose Sampler bones (bound again only when they are other bones than the last gun's), with this
+    // gun's places for them, on while it is held.
     private void Seat(Chain chain, bool on)
     {
         if (chain.weaponBone != seatWeapon || chain.weaponBoneRight != seatRight || chain.weaponBoneLeft != seatLeft)
@@ -385,6 +415,7 @@ public sealed class FPSBodyBoneController : FPSBoneController
             seatRight = chain.weaponBoneRight;
             seatLeft = chain.weaponBoneLeft;
         }
+        seat.Sit(chain.weaponSeat, chain.rightSeat, chain.leftSeat);
         seat.on = on;
         if (seatPlayable.IsValid()) seatPlayable.SetJobData(seat);
     }

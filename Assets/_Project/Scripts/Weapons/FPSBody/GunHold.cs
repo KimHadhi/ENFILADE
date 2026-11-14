@@ -98,6 +98,21 @@ internal abstract class GunHold
     internal void WristsAt(HoldBody body, KTransform bone, out Vector3 right, out Vector3 left)
         => Wrists(body, bone.position, bone.rotation * gun.Frame, out right, out left);
 
+    /// <summary>
+    /// How far the pose clip's own hands are from their places on the gun at <paramref name="bone"/>: each wrist's distance
+    /// (model units) and how far its fingers' way is turned from the place's (degrees). FPSAF starts the gun glued to the
+    /// clip's right hand, and the hands are then brought to the gun: what they are brought across is this.
+    /// </summary>
+    internal void ClipHandsOff(HoldBody body, KTransform bone, out float right, out float rightTurn, out float left, out float leftTurn)
+    {
+        Quaternion axes = bone.rotation * gun.Frame;
+        Wrists(body, bone.position, axes, out Vector3 rightWrist, out Vector3 leftWrist);
+        right = Vector3.Distance(body.Right.PosedWrist, rightWrist);
+        left = Vector3.Distance(body.Left.PosedWrist, leftWrist);
+        rightTurn = Vector3.Angle(body.Right.PosedFingers, axes * gun.RightFingers);
+        leftTurn = Vector3.Angle(body.Left.PosedFingers, axes * gun.LeftFingers);
+    }
+
     // The body's wrists for its palms on the gun at a place: each palm's middle where KINEMATION's is on the gun, the wrist
     // that hand's own run back from it.
     protected void Wrists(HoldBody body, Vector3 at, Quaternion axes, out Vector3 right, out Vector3 left)

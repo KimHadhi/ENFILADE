@@ -7,8 +7,8 @@ using UnityEngine;
 
 /// <summary>
 /// The body holds its guns with KINEMATION FPS Animation Framework, set up on it as FPSAF's demo humanoid player is
-/// (FPSHumanoidPlayer): FPSAnimator, its bone controller, input controller and playables controller (FPSAF's own, on the
-/// Animator's graph, where PlayerBody plays the body's clips as the Animator output), the recoil animation, the rig with
+/// (FPSHumanoidPlayer): FPSAnimator, its bone controller, input controller and playables controller (ours over FPSAF's,
+/// FPSBodyPlayables: on the Animator's graph, with the body's clips held as its base layer), the recoil animation, the rig with
 /// its IK weapon bone, and per gun the demo's humanoid animator profile. FPSAF then poses the upper body every frame: the
 /// gun's pose clip on the arms, the spine and head following the view (Look), the lean, the aim down the sight (Ads), sway,
 /// recoil, the gun held back from walls (GunCover) and both arms on the gun (IK).

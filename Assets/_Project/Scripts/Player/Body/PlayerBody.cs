@@ -245,7 +245,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             return;
         }
         mixer = AnimationMixerPlayable.Create(graph, 0);
-        BodyOutput.SetSourcePlayable(BuildLayers());
+        bodyOutput = (AnimationPlayableOutput)graph.GetOutputByType<AnimationPlayableOutput>(0);
+        bodyOutput.SetSourcePlayable(BuildLayers());
         foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
                      diveStart, dive, supineDiveStart, supineDive, bellySlideStart, bellySlide, bellySlideEnd,
                      supineSlideStart, supineSlide, supineSlideEnd,
@@ -294,38 +295,71 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         return made;
     }
 
-    // The Animator's first output, which plays the body's clips under everything KINEMATION adds.
-    private AnimationPlayableOutput BodyOutput => (AnimationPlayableOutput)graph.GetOutputByType<AnimationPlayableOutput>(0);
+    // The Animator's own output, which plays the body's clips under everything KINEMATION adds: the first in its graph as
+    // the body is made, and held as that output from then on. FPSAF adds its outputs to the same graph, so "the graph's
+    // first", looked up each time, would be one of FPSAF's if the Animator ever made its own anew; this one then reads as
+    // gone instead, and nothing is done to it.
+    private AnimationPlayableOutput bodyOutput;
+
+    /// <summary>The body's clips (its layers), which FPS Animation Framework plays as its base layer (FPSBodyPlayables).</summary>
+    internal Playable Clips => layers;
 
     /// <summary>
-    /// FPS Animation Framework has taken the body's clips into its own output (its master mixer's base layer, FPSBody). The
-    /// Animator's first output then steps back to no weight: both outputs start from the default pose, so whichever the
-    /// Animator played last would otherwise wipe out the other, FPSAF's gun pose with it.
+    /// FPS Animation Framework has set up on the body and taken its clips as its base layer (FPSBodyPlayables): the
+    /// Animator's own output steps back at once (PlayClipsInOnePlace). Says so if FPSAF has not got them, with what stands
+    /// in the graph, for a build's log.
     /// </summary>
     internal void HandClipsToFramework()
     {
         if (!graph.IsValid() || !layers.IsValid()) return;
-        var output = BodyOutput;
-        if (!output.IsOutputValid()) return;
-        bool taken = KeepClipsInFramework();
-        output.SetWeight(taken ? 0f : 1f);
-        if (!taken) Report("FPS Animation Framework did not take the body's clips; its gun pose may not show.");
+        if (PlayClipsInOnePlace()) return;
+        var output = bodyOutput;
+        var source = output.IsOutputValid() ? output.GetSourcePlayable() : Playable.Null;
+        string plays = !output.IsOutputValid() ? "is gone" : !source.IsValid() ? "plays nothing"
+            : source.Equals(layers) ? "plays the clips" : "plays " + source.GetPlayableType().Name;
+        Report("FPS Animation Framework did not take the body's clips; its gun pose may not show. The Animator's own output "
+            + $"{plays}; its graph is {(animator.playableGraph.Equals(graph) ? "the clips' own" : "another than the clips'")}.");
     }
 
     /// <summary>
-    /// Once FPS Animation Framework plays the body's clips (its master mixer has them), the Animator's first output lets go
+    /// The body's clips play in one place at a time: FPS Animation Framework's base layer while it has them (the Animator's
+    /// own output then lets go of them and steps back to no weight: both outputs start from the default pose, so whichever
+    /// the Animator played last would otherwise wipe out the other, FPSAF's gun pose with it), and the Animator's own
+    /// output at full weight while nothing else has them. Kept every frame, because both sides change under the body: FPSAF
+    /// takes the clips when it sets up and again when the Animator comes back on, and the Animator puts its own controller
+    /// back on its output when it sets itself up again. That second case had no answer: the output's weight was set once,
+    /// when FPSAF set up, and a body whose clips nothing played stood in the pose of no clip at all, its hips at its feet.
+    /// The user's build of 2026-11-15 showed it ("빌드 버전 보니까 나는 땅 속에 박혀서 머리만 바닥 위에 나와 있어"); its
+    /// Player.log had one line, FPSAF not having taken the body's clips, which the editor never wrote. Read from that line
+    /// and the code, not watched in a build: there the clips were off the Animator's output before FPSAF set up, and FPSAF
+    /// took what was on it in their place. Returns whether FPSAF has them.
+    /// </summary>
+    private bool PlayClipsInOnePlace()
+    {
+        if (!graph.IsValid() || !layers.IsValid()) return false;
+        bool taken = KeepClipsInFramework();
+        var output = bodyOutput;
+        if (!output.IsOutputValid()) return taken;
+        if (!taken && !output.GetSourcePlayable().Equals(layers)) output.SetSourcePlayable(layers);
+        float weight = taken ? 0f : 1f;
+        if (output.GetWeight() != weight) output.SetWeight(weight);
+        return taken;
+    }
+
+    /// <summary>
+    /// Once FPS Animation Framework plays the body's clips (its master mixer has them), the Animator's own output lets go
     /// of them, so they play through one place only. Left in both, the same clips hung under two parents in the graph: the
     /// user found the body high over a vault, its hands waving in the air instead of on the obstacle, and sliding broken,
-    /// none of which happened when the clips had one graph of their own (0.7.34). FPSAF takes the clips from that output
-    /// again when the Animator comes back on (ReattachGraph puts them there first), so this runs every frame.
+    /// none of which happened when the clips had one graph of their own (0.7.34). FPSAF takes the clips again when the
+    /// Animator comes back on (ReattachGraph puts them on that output first), so this runs every frame (PlayClipsInOnePlace).
     /// Returns whether FPSAF has them.
     /// </summary>
     private bool KeepClipsInFramework()
     {
         if (!graph.IsValid() || !layers.IsValid()) return false;
-        var output = BodyOutput;
-        if (!output.IsOutputValid()) return false;
-        var source = output.GetSourcePlayable();
+        var output = bodyOutput;
+        // With the Animator's own output gone there is nothing to let go of; FPSAF has the clips if anything plays them.
+        var source = output.IsOutputValid() ? output.GetSourcePlayable() : Playable.Null;
         bool framework = false;
         for (int i = 0; i < layers.GetOutputCount(); i++)
         {
@@ -354,13 +388,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             rebuild = true;
             return;
         }
-        var output = BodyOutput;
+        var output = bodyOutput;
         if (output.IsOutputValid() && !output.GetSourcePlayable().Equals(layers)) output.SetSourcePlayable(layers);
         // FPSAF takes them from there in its next update (FPSAnimator rebuilds once the Animator is back on).
         reattachedFrame = Time.frameCount;
     }
 
-    // The frame the clips were put back on the Animator's first output; FPSAF needs them there for a few frames.
+    // The frame the clips were put back on the Animator's own output; FPSAF needs them there for a few frames.
     private int reattachedFrame = -1000;
     private const int ReattachFrames = 3;
 
@@ -370,6 +404,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         UnbindHops();
         // The graph is the Animator's; it goes with the body.
         graph = default;
+        bodyOutput = default;
         spineLook.Clear();
         TeardownLayers();
         channels.Clear();
@@ -538,7 +573,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         if (GamePause.IsPaused) { HoldFrozenPose(); return; }
         if (Time.deltaTime <= 0f) return;
-        if (body != null && !limp) KeepClipsInFramework();
+        if (body != null && !limp) PlayClipsInOnePlace();
         if (body != null && !limp)
         {
             // First, as the last step of the animation pass: the spine, neck and head bend with the view.

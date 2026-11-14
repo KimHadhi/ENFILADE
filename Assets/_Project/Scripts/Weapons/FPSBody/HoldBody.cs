@@ -44,12 +44,17 @@ public sealed class HoldBody
     {
         internal readonly Vector3 Shoulder;
         internal readonly float Length, HandRun;
+        /// <summary>Where the pose clip itself has this arm's wrist, and the way its fingers point there (unit; wrist to
+        /// the middle knuckle).</summary>
+        internal readonly Vector3 PosedWrist, PosedFingers;
 
-        internal Arm(Vector3 shoulder, float length, float handRun)
+        internal Arm(Vector3 shoulder, float length, float handRun, Vector3 posedWrist, Vector3 posedFingers)
         {
             Shoulder = shoulder;
             Length = length;
             HandRun = handRun;
+            PosedWrist = posedWrist;
+            PosedFingers = posedFingers;
         }
 
         internal bool Valid => Length > 1e-4f;
@@ -266,7 +271,7 @@ public sealed class HoldBody
         Vector3 a = root.InverseTransformPoint(upper.position), b = root.InverseTransformPoint(lower.position);
         Vector3 c = root.InverseTransformPoint(hand.position);
         float length = Vector3.Distance(a, b) + Vector3.Distance(b, c);
-        float run = middle != null ? Vector3.Distance(c, root.InverseTransformPoint(middle.position)) : length * .17f;
-        return new Arm(a, length, run);
+        Vector3 knuckle = middle != null ? root.InverseTransformPoint(middle.position) : c + (c - b).normalized * (length * .17f);
+        return new Arm(a, length, Vector3.Distance(c, knuckle), c, (knuckle - c).normalized);
     }
 }

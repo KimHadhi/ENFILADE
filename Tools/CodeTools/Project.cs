@@ -25,7 +25,10 @@ static class Project
 {
     /// The Unity project: the first folder above this tool that has Assets and ProjectSettings in it.
     public static readonly string Root = FindRoot();
-    /// Where Unity last wrote what it hands the compiler (defines, references, sources): the newest *.dag folder.
+    /// Where the editor last wrote what it hands the compiler (defines, references, sources): the newest *.dag folder that
+    /// has the editor's scripts in it. A player build writes a *.dag of its own with the game's scripts alone (no
+    /// Assembly-CSharp-Editor.rsp), and it is the newer one until the editor next writes its own: taken for "the newest",
+    /// every check after a build stopped on that missing file (2026-11-15, after the 02:24 build).
     static readonly string Dag = FindDag();
     /// Reports go to Logs/CodeTools (git ignores Logs), or where ENF_OUT says.
     public static readonly string Out = Environment.GetEnvironmentVariable("ENF_OUT") ?? Path.Combine(Root, "Logs", "CodeTools");
@@ -41,10 +44,11 @@ static class Project
     {
         string artifacts = Path.Combine(Root, "Library", "Bee", "artifacts");
         var found = Directory.Exists(artifacts)
-            ? Directory.GetDirectories(artifacts, "*.dag").Where(d => File.Exists(Path.Combine(d, "Assembly-CSharp.rsp")))
+            ? Directory.GetDirectories(artifacts, "*.dag")
+                .Where(d => File.Exists(Path.Combine(d, "Assembly-CSharp.rsp")) && File.Exists(Path.Combine(d, "Assembly-CSharp-Editor.rsp")))
                 .OrderByDescending(d => File.GetLastWriteTimeUtc(Path.Combine(d, "Assembly-CSharp.rsp"))).FirstOrDefault()
             : null;
-        return found ?? throw new Exception("Unity has not compiled this project yet (no Library/Bee/artifacts/*.dag/Assembly-CSharp.rsp): open it in Unity once.");
+        return found ?? throw new Exception("The editor has not compiled this project yet (no Library/Bee/artifacts/*.dag with Assembly-CSharp.rsp and Assembly-CSharp-Editor.rsp): open it in Unity once.");
     }
     /// Comments are plain text to the tools; the unused-using check needs them read (the compiler only reports those then).
     public static DocumentationMode Documentation = DocumentationMode.None;

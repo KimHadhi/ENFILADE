@@ -38,7 +38,11 @@ public sealed partial class FPSBody
         var host = animator.gameObject;
         input = host.AddComponent<UserInputController>();
         input.inputConfig = assets.inputConfig;
-        playables = host.AddComponent<FPSPlayablesController>();
+        // FPSAF's playables, holding the body's clips as their base layer by name whatever the Animator's first output
+        // plays when they set up (FPSBodyPlayables).
+        var ours = host.AddComponent<FPSBodyPlayables>();
+        ours.Bind(body);
+        playables = ours;
         playables.upperBodyMask = assets.upperBody;
         // FPSAF's bone controller, keeping each gun's layers on this body instead of making them anew at every draw.
         host.AddComponent<FPSBodyBoneController>();
@@ -54,7 +58,8 @@ public sealed partial class FPSBody
         framework = host.AddComponent<FPSBodyAnimator>();
         // Set up now rather than on its first frame, so FPSAF's outputs follow the body's clips in the Animator's graph.
         framework.Begin(assets.idleProfile, bodyCamera, AfterHands);
-        // FPSAF's master mixer now plays the body's clips under its upper-body layer; the body's own output steps back.
+        // FPSAF's master mixer now plays the body's clips under its upper-body layer (FPSBodyPlayables put them there); the
+        // body's own output steps back.
         body.HandClipsToFramework();
         // Nothing plays in FPSAF's upper-body layer until a gun is drawn, and an empty layer at full weight would pull the
         // upper body to its bind pose; the gun brings it in.
