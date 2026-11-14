@@ -10,10 +10,15 @@ using UnityEngine.UI;
 /// panel: dark, edged in pink with a soft glow, hazard stripes drifting along its right end, ASSAULT IN PROGRESS over the
 /// song's name, a line along its foot shrinking as the assault runs out, and white brackets at its corners; the ! tab
 /// turns into a beacon whose light slowly goes round.
-/// The second draft round's pick (2026-11-14: "경보 패널은 B인데 뭔가 아까에 비해 Too much"): the draft's scanlines,
-/// glitch entrance and fast stripes are gone; the panel slides open, its words settle and one soft light passes. And
-/// nothing blinks hard: the anticipation breathes, a smooth swell no faster than 1.6 times a second that only dims to
-/// half (the draft's on/off blink nearly gave the user a panic attack).
+/// The second draft round's pick (2026-11-14: "경보 패널은 B인데 뭔가 아까에 비해 Too much"): the draft's scanlines and
+/// glitch entrance are gone. Then, built that calm, it read too plain ("습격 임박이랑 습격 진입이랑 너무 슴슴해졌는데"),
+/// so the moments carry it in motion (AssaultBar.Entrance.cs): in the anticipation a striped charge fills along the
+/// strip's top, the beacon turns faster and pings out rings, and the countdown pops every second; as the assault breaks
+/// in, one soft light, a white slash drawn across, the giant ASSAULT sweeping past behind the bar (the user's note on the
+/// draft), a halftone burst out of the beacon, a short shake, the panel slamming open past its width, the stripes
+/// rushing and slowing, the title landing letter by letter. And nothing blinks: the anticipation breathes, a smooth
+/// swell no faster than 1.6 times a second that only dims to half (the draft's on/off blink nearly gave the user a
+/// panic attack).
 /// It sits on the bar itself (MissionBarLook adds it), so it leans and follows with the HUD. Real time.
 /// </summary>
 [DisallowMultipleComponent]
@@ -33,8 +38,8 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
     // The anticipation's breath: as slow as this as it begins and as fast as this at the end (times a second), over its
     // last this many seconds, dimming only to this.
     private const float PulseSlow = .8f, PulseFast = 1.6f, PulseSpan = 12f, PulseDim = .55f;
-    // The panel's words: the title's size and its spacing as it settles, the song line's size.
-    private const float TitleSize = 15f, SpacingFrom = 40f, SpacingTo = 22f, SongSize = 10.5f;
+    // The panel's words: the title's size and spacing, the song line's size.
+    private const float TitleSize = 15f, TitleSpacing = 22f, SongSize = 10.5f;
     private static readonly Color PanelColor = new Color(.075f, .05f, .07f, .95f), SongColor = new Color(1f, .53f, .64f);
     // What ENFILADE → HUD → 겹침 검사 shows while it holds the bar in its assault: a 4:00 song at 1:50, assaults 1:39-2:25.
     private const float PreviewElapsed = 110f, PreviewLength = 240f;
@@ -83,6 +88,8 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
         float width = Mathf.Max(TabWidth + 60f, ((RectTransform)transform).rect.width);
         PosePanel(width, closing, dt);
         PoseBeacon(phase, dt);
+        PoseBuildUp(phase, width, dt);
+        PoseEntrance(width);
         PoseRow(width, dt);
     }
 
@@ -115,7 +122,8 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
         panel.gameObject.SetActive(on || closing);
         if (!panel.gameObject.activeSelf) return;
         float full = Mathf.Max(20f, width - TabWidth - PanelGap);
-        float open = on ? Ease.Out(age / GrowSeconds) : 1f - Ease.Out(ending / CloseSeconds);
+        // It slams open a little past its width and settles back.
+        float open = on ? KitMotion.BackOut(age / GrowSeconds) : 1f - Ease.Out(ending / CloseSeconds);
         float shownWidth = full * open;
         float height = ((RectTransform)transform).rect.height + PanelOver * 2f;
         panel.anchoredPosition = new Vector2(TabWidth + PanelGap, -PanelOver);
@@ -130,17 +138,18 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
         var uv = stripeImage.uvRect;
         uv.width = stripeWidth / 32f;
         uv.height = height / 32f;
-        uv.x = Mathf.Repeat(uv.x + dt * StripeSpeed / 32f, 1f);
+        // The stripes rush in and slow to their drift.
+        float speed = on ? Mathf.Lerp(RushSpeed, StripeSpeed, Ease.Out(age / RushSeconds)) : StripeSpeed;
+        uv.x = Mathf.Repeat(uv.x + dt * speed / 32f, 1f);
         stripeImage.uvRect = uv;
         // One soft light passes as it opens.
         float sweepT = (age - SweepAt) / SweepSeconds;
         sweep.gameObject.SetActive(on && sweepT > 0f && sweepT < 1f);
         sweep.anchoredPosition = new Vector2(Mathf.Lerp(-SweepWidth, full + SweepWidth, Ease.InOut(sweepT)), 0f);
-        // The words settle in, closing up as they come.
-        float settle = on ? Ease.Out(Mathf.Clamp01((age - .08f) / SettleSeconds)) : 1f;
-        title.characterSpacing = Mathf.Lerp(SpacingFrom, SpacingTo, settle);
-        title.alpha = settle;
-        song.alpha = on ? Ease.Out(Mathf.Clamp01((age - .2f) / SettleSeconds)) : 1f;
+        // The title lands letter by letter, then the song under it fades in.
+        if (on && age < TitleAt + KitMotion.LettersSeconds(title.text.Length, TitleStep, TitleLand) + .05f)
+            KitMotion.LandLetters(title, age - TitleAt, TitleStep, TitleLand, TitleFrom);
+        song.alpha = on ? Ease.Out(Mathf.Clamp01((age - .45f) / SettleSeconds)) : 1f;
         song.text = PanelSong();
         // The line along the foot is the assault's time left.
         float left = last.Phase == CombatPhase.Assault && !float.IsInfinity(last.Until) ? Mathf.Clamp01(last.Until / AssaultSpan()) : 0f;
@@ -181,7 +190,8 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
         beacon.gameObject.SetActive(beaconShow > 0f);
         if (!beacon.gameObject.activeSelf) return;
         beaconGroup.alpha = beaconShow * (phase == CombatPhase.Anticipation ? pulse : 1f);
-        float turn = phase == CombatPhase.Assault ? TurnAssault : TurnAnticipation;
+        // In the anticipation it turns faster as the assault nears.
+        float turn = phase == CombatPhase.Assault ? TurnAssault : Mathf.Lerp(TurnNear, TurnAnticipation, Nearness);
         beam.localRotation = Quaternion.Euler(0f, 0f, beam.localEulerAngles.z - 360f * dt / turn);
     }
 
@@ -253,6 +263,7 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
         Fill(remain, KitStyle.Accent);
         title = Words("Title", plate, TitleSize, Color.white, 6f);
         title.fontStyle |= FontStyles.Bold;
+        title.characterSpacing = TitleSpacing;
         song = Words("Song", plate, SongSize, SongColor, -10f);
         song.fontStyle |= FontStyles.UpperCase;
         song.characterSpacing = 6f;
@@ -288,6 +299,7 @@ public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
         markText.fontStyle |= FontStyles.Bold;
 
         BuildRow();
+        BuildEntrance();
         panel.gameObject.SetActive(false);
         beacon.gameObject.SetActive(false);
         root.gameObject.SetActive(false);

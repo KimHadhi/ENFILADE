@@ -75,44 +75,6 @@ public sealed partial class ObjectiveAlert : MonoBehaviour
         else PoseCard(clock);
     }
 
-    // Each visible letter grows in from LetterFrom times its size and fades in, one after another (the text's own
-    // vertices; a letter that has landed is left as TMP drew it).
-    private static void LandLetters(TMP_Text text, float age)
-    {
-        text.ForceMeshUpdate();
-        var info = text.textInfo;
-        bool moved = false;
-        for (int i = 0; i < info.characterCount; i++)
-        {
-            var letter = info.characterInfo[i];
-            if (!letter.isVisible) continue;
-            float t = Mathf.Clamp01((age - i * LetterStep) / LetterSeconds);
-            if (t >= 1f) continue;
-            moved = true;
-            float grow = Mathf.LerpUnclamped(LetterFrom, 1f, BackOut(t));
-            float alpha = Mathf.Clamp01(t * 2f);
-            var mesh = info.meshInfo[letter.materialReferenceIndex];
-            int v = letter.vertexIndex;
-            Vector3 middle = (mesh.vertices[v] + mesh.vertices[v + 2]) * .5f;
-            for (int k = 0; k < 4; k++)
-            {
-                mesh.vertices[v + k] = middle + (mesh.vertices[v + k] - middle) * grow;
-                var colour = mesh.colors32[v + k];
-                colour.a = (byte)(colour.a * alpha);
-                mesh.colors32[v + k] = colour;
-            }
-        }
-        if (moved) text.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices | TMP_VertexDataUpdateFlags.Colors32);
-    }
-
-    // Overshoots a little past 1 and settles back: the landing's bounce.
-    private static float BackOut(float t)
-    {
-        const float c1 = 1.70158f, c3 = c1 + 1f;
-        float x = Mathf.Clamp01(t) - 1f;
-        return 1f + c3 * x * x * x + c1 * x * x;
-    }
-
     private static RectTransform Stretched(string label, RectTransform parent)
     {
         var rect = FeelUI.Rect(label, parent);

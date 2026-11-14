@@ -51,7 +51,7 @@ public sealed partial class ObjectiveAlert
 
     private void PoseRibbon(float t)
     {
-        float open = BackOut(t / RibbonOpen), close = Mathf.Clamp01((t - CloseAt) / CloseSeconds);
+        float open = KitMotion.BackOut(t / RibbonOpen), close = Mathf.Clamp01((t - CloseAt) / CloseSeconds);
         band.localScale = new Vector3(Mathf.Max(.001f, open * (1f - Ease.Out(close))), 1f, 1f);
         ribbonGroup.alpha = 1f - close;
         int count = Mathf.Clamp(Mathf.FloorToInt((t - TypeAt) / TypeStep) + 1, 0, letterEnds.Length);

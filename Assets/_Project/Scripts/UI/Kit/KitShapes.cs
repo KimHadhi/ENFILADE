@@ -14,7 +14,7 @@ public static class KitShapes
     public const float ChamferCut = 10f;
 
     private static Sprite chamfer;
-    private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade, stripes, halftone;
+    private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade, stripes, halftone, burst;
 
     /// <summary>White, with its top-right and bottom-left corners cut on the diagonal; sliced so the cut stays 10 px.</summary>
     public static Sprite Chamfer
@@ -129,6 +129,18 @@ public static class KitShapes
         float near = Mathf.Min(Mathf.Sqrt((px - 4f) * (px - 4f) + (py - 4f) * (py - 4f)), Mathf.Sqrt((px - 12f) * (px - 12f) + (py - 12f) * (py - 12f)));
         return Mathf.Clamp01(2.6f - near);
     }));
+
+    /// <summary>
+    /// A ring of halftone dots, biggest along the ring's middle and shrinking toward its edges: a burst that spreads out
+    /// (scale it up as it fades).
+    /// </summary>
+    public static Texture2D Burst => burst != null ? burst : burst = Draw("Kit Burst", 128, 128, (x, y) =>
+    {
+        Polar(x, y, 128, out float r, out _, out _);
+        float band = Mathf.Clamp01(1f - Mathf.Abs(r - .45f) / .14f);
+        float gx = Mathf.Repeat(x + .5f, 8f) - 4f, gy = Mathf.Repeat(y + .5f, 8f) - 4f;
+        return Mathf.Clamp01(2.6f * band - Mathf.Sqrt(gx * gx + gy * gy) + .5f);
+    });
 
     private static Texture2D Tiled(Texture2D texture)
     {

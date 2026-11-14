@@ -532,6 +532,7 @@ hud.phase.assault.en,ASSAULT,,캠페인 단계 줄: 습격 옆 작은 영어(Ass
 hud.phase.next,NEXT {0},,캠페인 단계 줄: 정비 동안 다음 습격까지 남은 시간. {0}은 분:초(AssaultBar)
 hud.phase.incoming,▲ {0},,캠페인 단계 줄: 습격 임박 동안 습격까지 남은 시간. {0}은 분:초(AssaultBar)
 hud.assault.title,ASSAULT IN PROGRESS,,캠페인 습격(노래의 하이라이트) 동안 목표 바가 바뀌는 경보 패널의 큰 글자(AssaultBar)
+hud.assault.big,ASSAULT,,캠페인 습격이 시작되는 순간 목표 바 뒤로 크게 스치고 지나가는 글자(분홍 외곽선. AssaultBar)
 hud.assault.song,{0}  ·  ♪ {1} — {2},,"경보 패널 둘째 줄: {0} hud.assault.band, {1} 곡 제목, {2} 가수(AssaultBar)"
 hud.assault.siren,{0}  ·  ♪ 사이렌,,경보 패널 둘째 줄: 노래 없는 버티기(셔터 사이렌·견인차). {0} hud.assault.band(AssaultBar)
 hud.song.now,♪ {0}<color=#FFF5F78C>  ·  {1}</color>,,"캠페인 단계 줄 맨 아래 지금 나오는 노래: {0} 곡 제목, {1} 가수(대문자로 나온다. AssaultBar)"

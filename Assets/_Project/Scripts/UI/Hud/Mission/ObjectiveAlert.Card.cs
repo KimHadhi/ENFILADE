@@ -72,14 +72,14 @@ public sealed partial class ObjectiveAlert
         lineGroup.alpha = 1f - Mathf.Clamp01((t - LineDraw) / (LineFade - LineDraw));
         // Gone once faded, so the overlap check measures the card alone.
         line.gameObject.SetActive(t < LineFade);
-        body.localScale = new Vector3(1f, Mathf.Max(.001f, BackOut((t - OpenAt) / OpenSeconds)), 1f);
+        body.localScale = new Vector3(1f, Mathf.Max(.001f, KitMotion.BackOut((t - OpenAt) / OpenSeconds)), 1f);
         float chipIn = Ease.Out(Mathf.Clamp01((t - ChipAt) / ChipSeconds));
         chip.anchoredPosition = chipHome + new Vector2(-26f * (1f - chipIn), 0f);
         chipGroup.alpha = chipIn;
         if (t - WordsAt < (title.text.Length + 1) * LetterStep + LetterSeconds)
         {
-            LandLetters(title, t - WordsAt);
-            LandLetters(shade, t - WordsAt);
+            KitMotion.LandLetters(title, t - WordsAt, LetterStep, LetterSeconds, LetterFrom);
+            KitMotion.LandLetters(shade, t - WordsAt, LetterStep, LetterSeconds, LetterFrom);
         }
         under.localScale = new Vector3(Ease.Out(Mathf.Clamp01((t - UnderAt) / UnderSeconds)), 1f, 1f);
         float pass = (t - SheenAt) / SheenSeconds;

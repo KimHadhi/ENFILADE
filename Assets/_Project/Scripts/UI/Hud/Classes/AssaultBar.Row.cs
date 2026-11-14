@@ -13,8 +13,9 @@ public sealed partial class AssaultBar
     private const float SegmentGap = 1.5f, EqWidth = 2.5f, EqGap = 2f, EqLow = 2f, EqTall = 11f, TimesWidth = 120f;
     // Each bar's own pace (radians a second): together they read as music, none of them a blink.
     private static readonly float[] EqPaces = { 9.1f, 6.3f, 7.7f, 5.2f };
-    // The row fades in this fast (s); a new phase's state grows this much for this long, smoothly.
-    private const float RowFade = .3f, StatePunch = .12f, PunchSeconds = .25f;
+    // The row fades in this fast (s); a new phase's state grows this much, and in the anticipation every second's count
+    // this much, settling over this long (s), smoothly.
+    private const float RowFade = .3f, TurnPunch = .3f, SecondPunch = .14f, PunchSeconds = .25f;
     private static readonly Color Track = new Color(1f, .96f, .97f, .16f), Played = new Color(1f, .96f, .97f, .62f),
         Window = new Color(1f, .31f, .47f, .38f);
 
@@ -23,15 +24,17 @@ public sealed partial class AssaultBar
     private readonly RectTransform[] eqBars = new RectTransform[EqBars];
     private TextMeshProUGUI state, times, now;
     private CanvasGroup rowGroup, stateGroup;
-    private float rowShow, punchClock = -1f, eqClock, meterWidth = -1f;
-    private int headCell = -2;
+    private float rowShow, punchClock = -1f, punchSize, eqClock, meterWidth = -1f;
+    private int headCell = -2, shownSecond = -1;
     private float[] meterSpans;
 
-    // A new phase: its state grows a little and settles (never a flash).
+    // A new phase: its state grows and settles (never a flash).
     private void Turn(CombatPhase phase)
     {
         shown = phase;
-        if (phase != CombatPhase.Quiet) punchClock = 0f;
+        if (phase == CombatPhase.Quiet) return;
+        punchClock = 0f;
+        punchSize = TurnPunch;
     }
 
     private void PoseRow(float width, float dt)
@@ -44,6 +47,13 @@ public sealed partial class AssaultBar
         if (phase == CombatPhase.Quiet) phase = CombatPhase.Control;
         state.text = StateText(phase);
         stateGroup.alpha = phase == CombatPhase.Anticipation ? pulse : 1f;
+        // In the anticipation the count pops on every second it ticks down.
+        int second = phase == CombatPhase.Anticipation && !float.IsInfinity(last.Until) ? Mathf.CeilToInt(last.Until) : -1;
+        if (second != shownSecond)
+        {
+            if (second >= 0 && shownSecond >= 0 && punchClock < 0f) { punchClock = 0f; punchSize = SecondPunch; }
+            shownSecond = second;
+        }
         float punch = 0f;
         if (punchClock >= 0f)
         {
@@ -52,7 +62,7 @@ public sealed partial class AssaultBar
             punch = (1f - t) * (1f - t);
             if (t >= 1f) punchClock = -1f;
         }
-        stateRect.localScale = Vector3.one * (1f + StatePunch * punch);
+        stateRect.localScale = Vector3.one * (1f + punchSize * punch);
         stateRect.sizeDelta = new Vector2(Mathf.Max(80f, right - TimesWidth), LineHeight);
         timesRect.anchoredPosition = new Vector2(right, -RowDrop);
 
