@@ -239,6 +239,15 @@ public sealed class BodyShell
         }
     }
 
+    /// <summary>
+    /// The shells stay drawn behind walls, for a glow meant to be seen through them (a friend's CHARGE outline): the
+    /// occlusion culling baked into the maps would otherwise drop them with a body a wall hides.
+    /// </summary>
+    public void SeenThroughWalls()
+    {
+        foreach (var pair in pairs) if (pair.copy != null) pair.copy.allowOcclusionWhenDynamic = false;
+    }
+
     /// <summary>The shells go.</summary>
     public void Release()
     {
