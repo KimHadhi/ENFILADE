@@ -15,6 +15,9 @@ then this, and the file is ready to work in: the user only poses and times (the 
   the zombie lies at the start, the hands' holds). Unity takes the clips with the right avatars (ModelImportRules).
 - Her right fist holds the knife of the class picked in the tab (칼), seated as the game seats it (ClassKnives.csv);
   moved or turned there (칼 옮기기), saving writes its new numbers into that class's row (execution_knife.py).
+- With the player's clip goes its fingers' track (Tables/Clips/enf_exe_<pair>_p_fingers.csv): every finger joint of
+  both hands, frame by frame, which the game puts on over the clip while the pair plays, since a humanoid clip can't
+  carry fingers whole (send_fingers).
 Nothing here changes Blender's preferences.
 """
 import csv
@@ -39,6 +42,11 @@ bl_info = {'name': 'ENFILADE Paired Executions', 'author': 'ENFILADE', 'version'
 HERE_NAME = 'Tools/Blender/Executions'
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
 ZOMBIES = Path('Tools/Blender/Zombies/zombie_tools.py')
+FINGER_WAYS = Path('Tools/Blender/HandPaths/finger_ways.py')
+ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+# The game's own map of Kazusa's bones (the avatar her clips play on): which are the hands and the finger joints.
+KAZUSA_META = Path('Assets/_Project/Art/Models/Characters/KazusaBand/KazusaBand.fbx.meta')
+TRACKS_DIR = Path('Assets/_Project/Data/Resources/Tables/Clips')
 OUT_DIR = Path('Assets/_Project/Art/Animations/Executions')
 TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 TABLE_NAME = 'Executions'
@@ -98,6 +106,15 @@ def truefps():
 
 def zombies():
     return _module('zombie_tools', ZOMBIES)
+
+
+def finger_ways():
+    # Under the name every workspace loads it by, so one copy serves them all.
+    return _module('enf_finger_ways', FINGER_WAYS)
+
+
+def one_click():
+    return _module('enf_one_click', ONE_CLICK)
 
 
 def drafts():
@@ -654,8 +671,63 @@ def measure(context, key):
     return out
 
 
+def finger_track_path(root, key):
+    return Path(root) / TRACKS_DIR / (clip_names(key)[0] + finger_ways().TRACK_SUFFIX + '.csv')
+
+
+def send_fingers(context, key):
+    """The pair's player clip's fingers, both hands, every finger joint at every frame the clip is baked on, beside it:
+    Tables/Clips/enf_exe_<pair>_p_fingers.csv (FingerTrack), which the game puts on over the clip while the pair plays
+    (ExecutionPairPlayer.WearFingers). Unity's humanoid clip keeps a finger's bend and spread but not a segment's twist,
+    the outer joints' side swing or the thumb's roll, and the body's own hand passes (HandGrip.RelaxThumb, KeepHuman)
+    replace or clamp what it does carry, so the fingers shaped here never reached the game whole (the user, 2026-11-14:
+    "네, 다 고쳐"). Measured on the pair shown, as it plays now; returns the path."""
+    scene = context.scene
+    root = project_root()
+    fw, oc = finger_ways(), one_click()
+    player = player_rig(scene)
+    human = fw.human_map(str(root / KAZUSA_META))
+    fps = scene.render.fps / scene.render.fps_base
+    rows = fw.track_rows(context, player, fw.hand_of(human, 'Left'), fw.hand_of(human, 'Right'), scene.frame_start,
+                         scene.frame_end, fps)
+    path = finger_track_path(root, key)
+    oc.write_meta(path, oc.TEXT_META)
+    oc.write_text(path, fw.track_text(rows, f'(블렌더 처형 작업실 ArtSource/Executions의 「{label_of(key)}」 짝 플레이어 클립 '
+                                            f'{clip_names(key)[0]}. 두 손 손가락 마디마다 손 자기 틀에서 가리키는 쪽과 비틀림. '
+                                            '짝이 도는 동안 게임이 클립 위에 얹는다(FingerTrack · ExecutionPairPlayer.WearFingers). '
+                                            '손으로 고치지 말고 블렌더에서 고쳐 저장한다)'))
+    action = pair_action(key)
+    if action is not None:
+        # What the track was made from, so a save remakes one that is missing or older than the pair (fingers_stale).
+        action['enf_fingers'] = fingerprint(key)
+    return path
+
+
+def fingers_stale(root, key):
+    """Whether the pair's finger track is missing or was made from another state of the pair (a file sent before 0.9.71
+    had none; a save from a Blender still running an older tool sends clips without one)."""
+    action = pair_action(key)
+    return action is not None and (action.get('enf_fingers') != fingerprint(key) or not finger_track_path(root, key).exists())
+
+
+def refresh_fingers(context, key):
+    """Only the pair's finger track (its clips are the game's already): the pair shown for the measuring, then put back."""
+    scene = context.scene
+    current = current_pair(scene)
+    if key == current:
+        remember(scene, key)
+    else:
+        select_pair(context, key)
+    try:
+        return send_fingers(context, key)
+    finally:
+        if key != current:
+            select_pair(context, current, keep=False)
+
+
 def export_pair(context, key):
-    """Both clips of the pair to the game and its row of Executions.csv; returns the paths written."""
+    """Both clips of the pair to the game, the player clip's finger track and its row of Executions.csv; returns the
+    paths written."""
     scene = context.scene
     root = project_root()
     if root is None:
@@ -716,6 +788,7 @@ def export_pair(context, key):
             'right': _number(right), 'forward': _number(ahead), 'yaw': _number(yaw),
         })
         write_row(root, key, values)
+        written.append(send_fingers(context, key))
         return written
     finally:
         if key != current:
@@ -784,12 +857,20 @@ def send_changed(context):
     key = current_pair(scene)
     remember(scene, key)
     sent, failed = [], []
+    root = project_root()
     for k in pairs().ORDER:
         action = pair_action(k)
         if action is None or pair_action(k, 'z') is None:
             continue
         mark = fingerprint(k)
         if action.get('enf_sent') == mark and (is_sent(k) or action.get('enf_withheld')):
+            # The clips are the game's already; their fingers too, unless the track is missing or older than the pair.
+            if not action.get('enf_withheld') and fingers_stale(root, k):
+                try:
+                    refresh_fingers(context, k)
+                    sent.append(f'{label_of(k)} 손가락')
+                except Exception as error:
+                    failed.append(f'{label_of(k)} 손가락: {error}')
             continue
         try:
             export_pair(context, k)
@@ -812,6 +893,10 @@ def withhold(key):
                 if path.exists():
                     path.unlink()
                     removed.append(path.name)
+        track = finger_track_path(root, key)
+        if track.exists():
+            track.unlink()
+            removed.append(track.name)
     action = pair_action(key)
     if action is not None:
         action['enf_sent'] = fingerprint(key)

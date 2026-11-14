@@ -5,6 +5,8 @@ using UnityEngine;
 /// Framework, and before the class knife's arms (ExecutionKnifeArm, GunFramework + 5), which leave the arms to the pair by
 /// the first hold and seat the knife in the fist where the hold has put it, so on a bigger brute or another character the
 /// blade stays in the hand that reached the neck; before the cloth, so a sleeve follows the hand on the zombie's head.
+/// Then the fingers as the pair's player clip has them in Blender (ExecutionPairPlayer.WearFingers): after the hands'
+/// own passes, which would otherwise relax the thumb and clamp the fingers, and before the knife's draw.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 4)]
 public sealed class ExecutionPairHands : MonoBehaviour
@@ -15,5 +17,6 @@ public sealed class ExecutionPairHands : MonoBehaviour
     {
         if (pairs == null && !TryGetComponent(out pairs)) return;
         pairs.KeepHands();
+        pairs.WearFingers();
     }
 }

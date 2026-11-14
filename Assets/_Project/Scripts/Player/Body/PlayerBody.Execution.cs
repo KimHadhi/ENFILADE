@@ -24,6 +24,12 @@ public sealed partial class PlayerBody
     /// <summary>A pair's clip has (or still eases out of) this body.</summary>
     internal bool PlaysPaired => paired || pairedWeight > 0f;
 
+    /// <summary>How much of the body the pair's clip has now: 0 to 1, eased in and out with the clip.</summary>
+    internal float PairedWeight => pairedWeight;
+
+    /// <summary>Where in its clip the pair is now (s at the clip's own speed), held at its end while it eases out.</summary>
+    internal float PairedClipTime => Mathf.Clamp(pairedTime, 0f, pairedLength);
+
     // From BuildLayers, once the layer mixer exists: the input waits empty until a pair plays.
     private void BuildExecution() => layers.SetInputWeight(ExecutionLayer, 0f);
 

@@ -41,8 +41,15 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     faces the file's +Z and whose axes Unity bakes, 0 for the zombie's; 0 until 0.9.50 made the player play the pair
     facing away from the zombie), a bare `.meta` (GUID only) before a new file, and the pair's row of
     `Assets/_Project/Data/Resources/Tables/Melee/Executions.csv` written in place (every other column kept), its numbers
-    as the scene has them to six decimals (before 0.9.59 places and times went at three decimals and turns at one). 게임에서 빼기 deletes a
-    pair's clips and keeps it out until the pair changes.
+    as the scene has them to six decimals (before 0.9.59 places and times went at three decimals and turns at one), and
+    the player clip's finger track `Assets/_Project/Data/Resources/Tables/Clips/enf_exe_<pair>_p_fingers.csv`
+    (`send_fingers`: `finger_ways.track_rows` over the frames the clip is baked on, both hands by the game's own
+    humanoid map of Kazusa, KazusaBand.fbx.meta; the game puts it on over the clip while the pair plays, since a
+    humanoid clip drops a finger segment's twist, the outer joints' side swing and the thumb's roll and the body's hand
+    passes relax the thumb and clamp the fingers: 0.9.71, the user: "네, 다 고쳐"). A pair whose clips are the game's
+    already but whose track is missing or was made from another state of it (`enf_fingers` on the action against its
+    fingerprint) gets only its track remade on saving. 게임에서 빼기 deletes a pair's clips and its track and keeps it
+    out until the pair changes.
 - `execution_knife.py` is the class knife in her right fist (the user, 2026-11-14: "칼 위치를 숫자로 하는 이유가
   있는지, 왜냐하면 블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길 수 있으니까 편해서"). The tab's 칼 picker lists
   every row of `Tables/Melee/ClassKnives.csv`; the picked row's model (its `Resources` prefab's source FBX, found by the
@@ -93,6 +100,12 @@ Facts found while building (Blender 4.5.16, 2026-11-13):
   outside, wrote nothing; a move kept across picking another class was written to its own row only. At six decimals
   (0.9.59) a 0.05 mm, 0.01 degree move is written and comes back within 0.06 micrometres, and a file saved and reopened
   differs from its row by 1e-6 at most (single precision), so opening and saving it again write nothing.
+- The finger tracks of the seven pairs in the game were made headless from a scratch copy of the user's file, each pair
+  first checked to be the state its clips were sent from (its fingerprint equal to the one marked when sent). Checked as
+  the throw clips' tracks were (the shared finger-ways-verify's game working, both hands): the table against the rig,
+  1050 segments, 0.00004 degrees at most; put on the game's Kazusa and on the KINEMATION mannequin by the game's
+  WearWays done in Unity's axes, 0.00005 and 0.00022 degrees at most, twists within 0.00006 degrees, Kazusa's fingertips
+  within 0.001 mm; a 25 degree twist made on the knife hand's index came through with its sign on both.
 - A zombie rig appended from the zombie workspace brings that file's action: cleared, as each pair keys its own.
 - Blender 4.5's layered actions: `fcurve_ensure_for_datablock` takes no group, so channels are grouped afterwards
   (`channelbag.groups.new`, `fcurve.group = ...`; assigning a curve to the group it is in prints an error, so it is

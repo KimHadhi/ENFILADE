@@ -71,6 +71,11 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
     // blood and the knife's last frames in the neck find them whatever ran first that frame. A hand's, one per grab.
     private Transform hitBone;
     private Transform[] leftBones, rightBones;
+    // The player clip's fingers as Blender has them (Tables/Clips/<clip>_fingers), kept past the pair's end while the
+    // clip eases out; null for a clip that has none.
+    private FingerTrack fingers;
+    private readonly FingerWays ways = new FingerWays();
+    private PlayerBodyHands hands;
 
     // A hand's grabs: whether each has begun, the bone's turn when it did and where the wrist goes from that bone.
     private struct Hand
@@ -279,6 +284,7 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         hitBone = target != null ? target.HumanBone(chosen.HitBone) : null;
         leftBones = Bones(target, chosen.LeftHolds);
         rightBones = Bones(target, chosen.RightHolds);
+        fingers = FingerTrack.Of(playerClip.name);
         grown = target != null ? Mathf.Max(.1f, target.Grown) : 1f;
         anchor = at;
         anchorTurn = Quaternion.Euler(0f, yaw, 0f);
@@ -353,6 +359,27 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (animator == null || !animator.isHuman) return;
         Keep(ref left, pair.LeftHolds, leftBones, animator, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
         Keep(ref right, pair.RightHolds, rightBones, animator, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand);
+    }
+
+    /// <summary>
+    /// From ExecutionPairHands, after the holds: both hands' fingers as the pair's player clip has them in Blender, every
+    /// joint (FingerTrack), as much as the clip has the body, its ease out included. A humanoid clip keeps a finger's bend
+    /// and spread but not a segment's twist, the outer joints' side swing or the thumb's roll, and the hands' own passes
+    /// (HandGrip.RelaxThumb, KeepHuman, before this) replace or clamp what it does carry; this puts every joint back, on
+    /// any character's hand (the user, 2026-11-14: "네, 다 고쳐"). The knife's own draw (ExecutionKnifeArm, after this)
+    /// still has the right hand while it plays. A clip with no track keeps its fingers as before.
+    /// </summary>
+    internal void WearFingers()
+    {
+        if (fingers == null || body == null) return;
+        float weight = body.PairedWeight;
+        if (weight <= 0f) return;
+        var animator = body.BodyAnimator;
+        if (animator == null || !animator.isHuman) return;
+        if (hands == null && !TryGetComponent(out hands)) return;
+        float time = body.PairedClipTime;
+        if (fingers.Sample(true, time, ways)) hands.WearFingerWays(animator, true, ways, weight);
+        if (fingers.Sample(false, time, ways)) hands.WearFingerWays(animator, false, ways, weight);
     }
 
     // A hand on its holds: at each grab's start the bone's turn is noted, and from then the wrist goes where the pair had
