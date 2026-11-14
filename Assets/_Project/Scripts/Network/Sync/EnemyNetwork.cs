@@ -56,6 +56,32 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     /// <summary>This PC only shows the enemy; the host runs it.</summary>
     public bool IsCopy => IsSpawned && !IsServer;
+
+    // PredictionHold as last worked out, and the frame it was (one answer serves every copy that frame).
+    private static float hold = .3f;
+    private static int holdFrame = -1;
+
+    /// <summary>
+    /// How long a copy trusts what this PC's own player just did to it over what the host reports (s): a report the host
+    /// sent before it heard of that is still on its way for about a round trip, and taking it would undo what the player
+    /// just saw (health coming back between two shots, a broken posture mended). It is the time this PC's word takes to
+    /// reach the host and the host's to come back, which Netcode keeps as the gap between its two clocks, plus how
+    /// seldom a report goes out (predictMargin). It was a fixed 0.3 s for posture and nothing for health: fine on a LAN,
+    /// short on a slow link. Network.csv predictLeast, predictMargin, predictMost.
+    /// </summary>
+    internal float PredictionHold
+    {
+        get
+        {
+            if (holdFrame == Time.frameCount) return hold;
+            holdFrame = Time.frameCount;
+            float least = NetSmoothing.Number("predictLeast", .3f), most = NetSmoothing.Number("predictMost", 1f);
+            var manager = NetworkManager;
+            float loop = manager != null && manager.IsListening ? (float)(manager.LocalTime.Time - manager.ServerTime.Time) : 0f;
+            hold = Mathf.Clamp(loop + NetSmoothing.Number("predictMargin", .15f), least, Mathf.Max(least, most));
+            return hold;
+        }
+    }
     /// <summary>How fast this enemy's time runs. Slow motion in a room covers it and the player it fights, on every PC.</summary>
     public float Pace => paceLeft > 0f ? pace : 1f;
 
@@ -189,8 +215,11 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (grip != null) grip.ShowHolding(now.Holding, now.Feeding);
     }
 
-    /// <summary>This PC's player hit its copy: the host applies it for real.</summary>
-    internal void SendHit(in DamageHit hit) => HitRpc(new EnemyHitMessage(hit));
+    /// <summary>
+    /// This PC's player hit its copy, and this is what the hit did here: the health it took and whether it killed. The
+    /// host applies exactly that (EnemyHealth.ReceiveSent).
+    /// </summary>
+    internal void SendHit(in DamageHit hit, float taken, bool killed) => HitRpc(new EnemyHitMessage(hit, taken, killed));
 
     /// <summary>The host took a hit: everyone but the one who landed it sees it now. They saw it when they fired.</summary>
     internal void AnnounceHit(in DamageHit hit, float before, float after)
@@ -247,7 +276,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
     }
 
     /// <summary>A parry, a punch or a shove on this PC's copy reaches the enemy that really moves and fights.</summary>
-    internal void SendPosture(float amount, float stun, bool interrupt) => PostureRpc(amount, stun, interrupt);
+    internal void SendPosture(float amount, float stun, bool interrupt, bool broke = false) => PostureRpc(amount, stun, interrupt, broke);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
     internal void SendShove(Vector3 impulse, Vector3 point) => ShoveRpc(impulse, point);
     internal void SendKnockDown(Vector3 direction, float duration) => KnockDownRpc(direction, duration);
@@ -286,8 +315,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (mine != null && mine.TryGetComponent(out ParryFeedback feedback)) feedback.ShowOtherParry(target, contact, away, broken);
     }
 
+    // Results, each as the PC of the player who did it judged it on its own copy: the host applies them as they come
+    // and judges none of them again. Only an execution can be turned down, and only for a true tie (ExecutionRpc).
     [Rpc(SendTo.Server)]
-    private void PostureRpc(float amount, float stun, bool interrupt) => target.ApplyPostureDamage(amount, stun, interrupt);
+    private void PostureRpc(float amount, float stun, bool interrupt, bool broke) => target.ApplySentPosture(amount, stun, interrupt, broke);
 
     [Rpc(SendTo.Server)]
     private void InterruptRpc(float duration) => target.Interrupt(duration);
@@ -307,7 +338,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
         ulong client = rpc.Receive.SenderClientId;
         var player = PlayerOf(client);
         var execution = player != null ? player.GetComponent<PlayerExecution>() : null;
-        if (execution != null && target.TryReserveExecution(execution)) execution.ShowExecuting(target);
+        // Held as asked: their PC judged that it could be executed or taken down, and the host does not judge it again
+        // with its own posture, mood and positions. Turned down only for a true tie (someone else holds it already).
+        if (execution != null && target.HoldForExecution(execution)) execution.ShowExecuting(target);
         else ExecutionDeniedRpc(client);
     }
 
@@ -325,12 +358,19 @@ public sealed class EnemyNetwork : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void HitRpc(EnemyHitMessage message, RpcParams rpc = default) => enemy.ReceiveHit(message.ToHit(PlayerOf(rpc.Receive.SenderClientId)));
+    private void HitRpc(EnemyHitMessage message, RpcParams rpc = default)
+        => enemy.ReceiveSent(message.ToHit(PlayerOf(rpc.Receive.SenderClientId)), message.Taken, message.Killed);
 
     [Rpc(SendTo.NotServer)]
     private void ShowHitRpc(EnemyHitMessage message, ulong attacker, float before, float after)
     {
-        if (attacker == NetworkManager.LocalClientId) return;
+        if (attacker == NetworkManager.LocalClientId)
+        {
+            // Their own PC showed the hit as they landed it. Only a kill it did not see coming is news: the host's count,
+            // with a friend's hit this PC had not heard of yet, reached zero on this hit.
+            if (after <= 0f) enemy.ConfirmKill(message.ToHit(PlayerOf(attacker)));
+            return;
+        }
         enemy.ShowHit(message.ToHit(PlayerOf(attacker)), before, after);
     }
 

@@ -8,6 +8,11 @@ using UnityEngine.AI;
 /// sustained fire cannot stun-lock. Bullets also wear down posture (WeaponData → Posture Damage) without
 /// cancelling attacks on their own; a posture break staggers as usual (execution).
 /// Called by EnemyHealth after damage is applied. Tuning: GunFeel → Enemy hit reaction, per weapon Flinch Multiplier.
+/// In a room it is split in two, as the user's rule of 2026-11-14 has it (the acting player's PC decides and sends only
+/// the result). What the hit does to the enemy's posture and whether it cuts its attack short is judged on the
+/// shooter's own PC, on its copy, which shows it at once and sends the posture and the stun as results
+/// (MeleeCombatTarget on a copy); the host does not judge a guest's hit again. The nudge back and the slow are the
+/// enemy's movement, so they happen where it really walks, on the host, for every hit.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
@@ -37,8 +42,12 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
         if (agent != null && !enabled) baseSpeed = agent.speed;
     }
 
-    /// <summary>applied = health actually removed by this hit.</summary>
-    public void OnHit(DamageHit hit, float applied, float maximumHealth)
+    /// <summary>
+    /// applied = health actually removed by this hit. judged: this PC is the one that judges the hit (alone, the host
+    /// for its own player's, a copy for its own player's): posture and the interrupt. moved: this PC moves the enemy
+    /// (alone or the host): the nudge and the slow.
+    /// </summary>
+    public void OnHit(DamageHit hit, float applied, float maximumHealth, bool judged = true, bool moved = true)
     {
         var settings = GunFeelSettings.Instance;
         // A Knight's thrown knife jolts as a shot does (the user: "시원하고 빠르고 찰진(타격감 있는) 느낌").
@@ -48,19 +57,20 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
         float flinch = hit.Method == DamageMethod.Thrown ? ThrownKnife.Flinch : FlinchOf(hit);
         bool head = hit.IsCritical;
 
-        if (target != null && hit.PostureDamage > 0f)
+        if (judged && target != null && hit.PostureDamage > 0f)
             target.ApplyPostureDamage(hit.PostureDamage * (head ? settings.headshotPostureMultiplier : 1f), 0f, interrupt: false);
 
         Vector3 direction = Vector3.ProjectOnPlane(hit.Direction, Vector3.up);
-        if (direction.sqrMagnitude > .0001f && flinch > 0f)
+        if (moved && direction.sqrMagnitude > .0001f && flinch > 0f)
         {
             pushDistance = direction.normalized * ((head ? settings.flinchPushHead : settings.flinchPushBody) * flinch);
             pushDuration = pushRemaining = settings.flinchPushSeconds;
         }
-        if (flinch > 0f) { slowDuration = slowRemaining = settings.flinchSlowSeconds; }
+        if (moved && flinch > 0f) { slowDuration = slowRemaining = settings.flinchSlowSeconds; }
 
-        recentDamage += applied;
-        if (interruptCooldown <= 0f && target != null)
+        // The damage that adds up to an interrupt is counted where the hit is judged: each shooter's PC counts its own.
+        if (judged) recentDamage += applied;
+        if (judged && interruptCooldown <= 0f && target != null)
         {
             float threshold = maximumHealth * settings.bodyInterruptFraction / Mathf.Max(.1f, flinch);
             float stun = head && settings.headshotInterruptStun > 0f ? settings.headshotInterruptStun

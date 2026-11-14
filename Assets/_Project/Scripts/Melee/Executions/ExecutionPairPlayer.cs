@@ -11,8 +11,9 @@ using UnityEngine;
 /// (PlayerExecution.Retime), so the blow lands on the pair's kill frame, on the bone the blade meets, and the dead body goes
 /// limp into its ragdoll from the clip's pose. Every PC plays the same pair at the same place: the owner's PC sends it
 /// (Began, PlayerNetworkCombat), every other PC's copy of the player and of the zombie plays it from there (Show), caught up
-/// by the time the word took. The host decides as ever: it holds the zombie for the executor or says no (EnemyNetwork), and
-/// a refused execution ends the pair everywhere (Stopped).
+/// by the time the word took. The executor's own PC decides that it may be done; the host holds the zombie for them and says
+/// no only when someone else got to it first (EnemyNetwork), and an execution turned down that way ends the pair everywhere
+/// (Stopped).
 /// While a hand holds the zombie (the table's l*/r* windows) it is kept on that bone whatever bodies play the pair (a bigger
 /// brute, another character): a two-bone reach after everything else has posed the arms. A state with no pair, or whose
 /// clips are missing, keeps the old execution. The knife in hand, the gun put away and the knife's sounds are the class

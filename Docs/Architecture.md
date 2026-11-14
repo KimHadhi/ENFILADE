@@ -112,7 +112,7 @@ Data/Resources/Tables/<분야>/<이름>.csv          게임의 표
 
 편집기 도구가 서랍의 자리를 쓸 때는 [ProjectFolders](../Assets/_Project/Scripts/Core/ProjectFolders.cs)의 이름(`ArtByName`, `DataByName`, `PrefabsByName`, `Guns`)을 쓰고 폴더를 직접 적지 않는다. 규칙 2는 구조 검사가 본다(다른 곳의 `Resources` 폴더, 서랍에 안 맞는 종류, 한 이름에 두 파일). 규칙 4는 `python Tools/Find-UnusedAssets.py`가 아무도 쓰지 않는 에셋을 찾아 `Logs/unused-assets.txt`에 적어 준다.
 
-방은 `GameSession`이 연다(Netcode for GameObjects, 방장이 진행을 정한다). 플레이어의 자세·전투·시체는 `Network/Sync`의 부품이 다른 PC로 보낸다. 지키는 규칙은 하나다: **내가 보는 화면이 진실이다.** 내 화면에 보이는 월드의 효과는 친구 화면에도 같아야 하고, 남에게만 보이는 효과는 만들지 않는다.
+방은 `GameSession`이 연다(Netcode for GameObjects, 방장이 진행을 정한다). 플레이어의 자세·전투·시체는 `Network/Sync`의 부품이 다른 PC로 보낸다. 지키는 규칙은 둘이다. 첫째, **내가 보는 화면이 진실이다.** 내 화면에 보이는 월드의 효과는 친구 화면에도 같아야 하고, 남에게만 보이는 효과는 만들지 않는다. 둘째, **한 사람의 PC가 정하고 결과만 보낸다**(사용자 2026-11-14: "본인이 계산하고 결과만 넘기는 방식"). 플레이어가 한 일(쏘기·때리기·밀치기·처형·암살)은 그 사람 PC가 자기 화면에서 판정해 바로 보여 주고, 방장은 받은 결과를 그대로 적용할 뿐 자기 기준으로 다시 따지지 않는다. 방장이 정하는 것은 두 사람이 같은 것을 동시에 잡은 진짜 동률뿐이고 먼저 온 쪽이 갖는다. 핵 방지는 하지 않는다(친구끼리 하는 방이고 전용 서버도 없다). 좀비는 어디서 생각하는지와 판정이 어느 PC 몫인지 [Network README](../Assets/_Project/Scripts/Network/README.md)의 '좀비와 플레이어 사이' 표에 있다.
 
 ## 새로 더할 때
 

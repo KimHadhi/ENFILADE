@@ -78,6 +78,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private ZombieMind mind;
     private MeleeCombatTarget melee;
     private float appliedMaximum;
+    // On a copy: until when this PC's own count of its health stands over an older report from the host (ShowHealth).
+    private float trustUntil;
     private bool restorePosition, restoreRotation, restoreStopped;
 
     public void SetWavePaused(bool paused)
@@ -168,9 +170,14 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         Health = Mathf.Max(Health, HoundDuel.Floor(this, hit, before));
         // The gauge fills by the health this hit took (an execution's share of a brute too), not by the hit.
         UltimateCharge.AwardEnemyHit(hit, before - Health);
-        // A copy shows the hit now and leaves the rest to the host, whose enemy is the true one.
+        // A copy shows the hit now and tells the host what it did here: the health it took and whether it killed. The
+        // host takes that as sent (ReceiveSent), so for this hit the count on the shooter's own screen is the one that stands.
         bool copy = network != null && network.IsCopy;
-        if (copy) network.SendHit(hit);
+        if (copy)
+        {
+            network.SendHit(hit, before - Health, !IsAlive);
+            trustUntil = Time.time + network.PredictionHold;
+        }
         else if (network != null) network.AnnounceHit(hit, before, Health);
         // Report before Die(): popups bind to this transform and keep its last position after Destroy. The number shown is
         // what it took, the lying share included: it read as if lying made no difference while only the health knew
@@ -191,8 +198,55 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
             // A blow wakes a calm zombie at once.
             if (mind != null) mind.Struck(hit);
         }
+        // On a copy the hit is still this PC's to judge: what it does to its posture and whether it cuts its swing short
+        // show here at once and go to the host as results (MeleeCombatTarget on a copy). They used to be worked out on
+        // the host alone, so a headshot's flinch reached the shooter a round trip late. The nudge and the slow are the
+        // enemy's movement, which is the host's.
+        else if (reaction != null) reaction.OnHit(hit, before - Health, MaximumHealth, judged: true, moved: false);
 
         return DamageResult.Damaged;
+    }
+
+    /// <summary>
+    /// The host: a hit another PC's player landed on their copy, as their own PC judged it (the user's rule of
+    /// 2026-11-14: the acting player's PC decides and sends only the result; the host applies it and never judges it
+    /// again). It takes what it took there and kills if it killed there. Nothing is worked out again here: not the lying
+    /// share, not an execution's part, not whether it could be touched at all. Each of those could differ on the host by
+    /// the moment the hit took to arrive (it had begun to get up, noticed someone, a ninja had stepped into its smoke),
+    /// and the difference used to leave the shooter with a kill their screen showed and the host had not made: a zombie
+    /// hidden on their PC and alive on everyone else's. Only a zombie already dead here takes nothing.
+    /// </summary>
+    internal void ReceiveSent(DamageHit hit, float taken, bool killed)
+    {
+        if (!isActiveAndEnabled || !IsAlive || hit.Id <= 0 || hit.Amount <= 0f || float.IsNaN(taken) || float.IsInfinity(taken)) return;
+        float before = Health;
+        Health = killed ? 0f : Mathf.Max(0f, Health - Mathf.Max(0f, taken));
+        if (network != null) network.AnnounceHit(hit, before, Health);
+        // The number is theirs to show; here the report carries the world's side of it (blood, sound, gore, drops).
+        CombatDamageEvents.Report(this, hit, before, Health, MaximumHealth, (before - Health) / hit.Amount);
+        if (!IsAlive) { Die(hit); return; }
+        // It lived through an execution: back on its guard, so the next one has to be earned again.
+        if (hit.Kind == DamageKind.Execution && melee != null) melee.ResetPosture();
+        // Their PC judged what the hit did to its posture and its swing, and sends those apart; where it is nudged and
+        // slowed is its movement, which is here.
+        if (reaction != null) reaction.OnHit(hit, before - Health, MaximumHealth, judged: false, moved: true);
+        if (body != null) body.Hit(hit);
+        if (mind != null) mind.Struck(hit);
+    }
+
+    /// <summary>
+    /// On the attacker's own PC: the host says this hit of theirs killed it, though it had health left on this PC (a
+    /// friend's hit this PC had not heard of yet). The kill is theirs, so their PC shows it as its own after all: the
+    /// kill's sound and marks, its count, and the body falling here, where its fall is run (ZombieCorpse). It used to
+    /// arrive as a bare health of 0: no kill on their screen, and a body that stood stiff for a second with no PC running it.
+    /// </summary>
+    internal void ConfirmKill(DamageHit hit)
+    {
+        if (!isActiveAndEnabled || !IsAlive) return;
+        float before = Health;
+        Health = 0f;
+        CombatDamageEvents.Report(this, hit, before, 0f, MaximumHealth, hit.Amount > 0f ? before / hit.Amount : 1f);
+        Die(hit);
     }
 
     /// <summary>On a copy: the health the host says. A kill this PC already judged stays a kill.</summary>
@@ -232,7 +286,11 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private void ShowHealth(float health, in DamageHit hit, bool known)
     {
         if (!IsAlive) return;
-        Health = Mathf.Min(health, MaximumHealth);
+        // While this PC's own hits may still be on their way to the host (trustUntil), a report can only lower the
+        // health: one the host sent before it heard of them would give back what they took, and the shot that should
+        // have killed then left it standing on the shooter's screen until the host's count came round. The host's count
+        // only ever goes down by hits, this PC's among them, so the lower of the two is never below the truth.
+        Health = Mathf.Min(Time.time < trustUntil ? Mathf.Min(Health, health) : health, MaximumHealth);
         if (IsAlive) return;
         if (body != null) body.Fall(hit, false, known ? ZombieCorpse.RunnerOf(hit, true, out _) : null);
         if (network != null && network.IsCopy) network.HideUntilRemoved();

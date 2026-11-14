@@ -64,9 +64,9 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private float stunRemaining, recoveryRemaining, shoveRemaining, shoveDuration = ShoveDuration, bargeKnockdown;
     private Vector3 shoveVelocity;
     private const float ShoveDuration = .32f, KnockdownSoundDelay = .22f;
-    // How long a guard break holds the host's enemy while it closes in, and how long a copy trusts what this PC just did
-    // to it over the host's reports, which were sent before the host heard (s).
-    private const float GrabHold = .4f, PredictionHold = .3f;
+    // How long a guard break holds the host's enemy while it closes in (s). How long a copy trusts what this PC just did
+    // to it over the host's reports, which were sent before the host heard, is EnemyNetwork.PredictionHold.
+    private const float GrabHold = .4f;
     [Header("Shove Chain")]
     [SerializeField, Range(0f, 1f)] private float chainTransfer = .8f;
     [SerializeField, Min(.1f)] private float minimumChainSpeed = 1.2f;
@@ -155,8 +155,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         // Further hits cannot restart the recovery clock or repeatedly trigger the stagger cue.
         if (!IsAvailable || IsStaggered) return;
-        if (IsCopy) { network.SendPosture(amount, stun, interrupt); predictedUntil = Time.time + PredictionHold; }
-        // One that stands firm takes a share of it (the host was told the whole, and shares it out itself).
+        // One that stands firm takes a share of it (the host is told the whole, and shares it out itself).
+        float whole = amount;
         if (Steadfast) amount *= SteadfastPosture;
         Posture = Mathf.Max(0f, Posture - Mathf.Max(0f, amount));
         recoveryRemaining = recoveryDelay;
@@ -165,7 +165,21 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             IsStaggered = true; StaggerAge = 0f; recoveryRemaining = staggerRecoveryDelay;
             PlayStaggerSound(); Staggered?.Invoke(); AnyStaggered?.Invoke(this);
         }
+        // On a copy this blow is this PC's to judge: the host is told the blow and whether it broke the posture here,
+        // and breaks it there too if so (ApplySentPosture). What this PC saw stands until the host's word of it is back.
+        if (IsCopy) { network.SendPosture(whole, stun, interrupt, IsStaggered); predictedUntil = Time.time + network.PredictionHold; }
         if (interrupt || IsStaggered) InterruptHere(stun);
+    }
+    /// <summary>
+    /// The host: posture damage another PC's player dealt its copy, as their PC judged it. Broke: on their screen this
+    /// blow broke its posture, so it breaks here whatever the host's own count has left. The host's count hears of each
+    /// blow late and recovers on its own clock, so it could be a few points short of breaking; their break then showed
+    /// for a moment and was taken back.
+    /// </summary>
+    internal void ApplySentPosture(float amount, float stun, bool interrupt, bool broke)
+    {
+        if (broke && IsAvailable && !IsStaggered) Posture = 0f;
+        ApplyPostureDamage(amount, stun, interrupt);
     }
     public void Interrupt(float duration)
     {
@@ -235,12 +249,32 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public bool TryReserveExecution(PlayerExecution owner)
     {
         if (owner == null || !CanBeExecutedBy(owner)) return false;
+        HoldFor(owner);
+        // The execution starts at once; the host says no only if someone else got there first.
+        if (IsCopy) network.AskExecution();
+        return true;
+    }
+    /// <summary>
+    /// The host: another PC's player began an execution or a takedown on their own copy of this enemy, where their PC
+    /// judged it could be done. It is held for them as asked and no rule is run again here: the host's own posture, mood
+    /// and positions are a moment off theirs, and it used to cancel executions their screen had already started (the
+    /// user's rule of 2026-11-14: the acting player's PC decides, the host applies and never judges again). Refused only
+    /// when it is gone here already, or when someone else holds it: a true tie, and the first to ask has it.
+    /// </summary>
+    internal bool HoldForExecution(PlayerExecution owner)
+    {
+        if (owner == null || !IsAvailable) return false;
+        if (executor == owner) return true;
+        if (executor != null || grabber != null) return false;
+        HoldFor(owner);
+        return true;
+    }
+    // Held for this executor from now: whatever it was doing stops, and it stands if it lay.
+    private void HoldFor(PlayerExecution owner)
+    {
         knockdownPresentation?.Reset(); knockdownRemaining = 0f;
         executor = owner; shoveRemaining = bargeKnockdown = 0f; StopAgent();
         GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack(); Interrupted?.Invoke();
-        // The execution starts at once; the host says no if someone else got there first.
-        if (IsCopy) network.AskExecution();
-        return true;
     }
     public void ReleaseExecution(PlayerExecution owner)
     {

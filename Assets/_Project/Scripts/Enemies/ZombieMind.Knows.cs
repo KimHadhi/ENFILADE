@@ -55,8 +55,9 @@ public sealed partial class ZombieMind
 
     /// <summary>
     /// Stage 4C-2: not awake (calm, searching or alert) and this spot behind its back, so a player standing there may take
-    /// it down, an execution without breaking it first (MeleeCombatTarget.CanBeExecutedBy). Every PC judges it the same
-    /// way from the mood the host shares; the host checks again when it holds the zombie for them.
+    /// it down, an execution without breaking it first (MeleeCombatTarget.CanBeExecutedBy). The PC of the player who takes it
+    /// down judges it, from the mood the host shares and where its own player stands; the host holds the zombie for them
+    /// without judging it again (MeleeCombatTarget.HoldForExecution).
     /// </summary>
     public bool CanBeTakenDownFrom(Vector3 at)
     {

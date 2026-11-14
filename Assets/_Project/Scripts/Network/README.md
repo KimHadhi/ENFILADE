@@ -11,6 +11,23 @@
 | [Rooms](Rooms/) | 12 | 방 만들기·찾기·연결 방식 |
 | [Sync](Sync/) | 12 | 자세·전투·시체·적 동기화 |
 
+## 좀비와 플레이어 사이: 누가 정하나
+
+좀비의 두뇌(감각·추적·공격 고르기·무리·바리케이드·엘리트)는 좀비마다 하나, 방장 PC에서 돈다. 다른 PC의 좀비는 그 위치와 상태를 보여 주는 사본이다. 두뇌를 쫓기는 사람 PC로 옮기지 않는 까닭: 좀비가 노리는 사람이 바뀔 때마다 주인이 바뀌어 순간이동·두 번 휘두르기가 생기고, 한 플레이어를 둘러싼 무리(자리 나누기·깔림 수·부르기)는 한곳에서 봐야 맞기 때문이다. 대신 판정은 모두 그 일을 한 사람(또는 당한 사람) PC의 몫이다(사용자 2026-11-14, "본인이 계산하고 결과만 넘기는 방식").
+
+| 일 | 정하는 PC | 방장이 하는 일 | 코드 |
+| --- | --- | --- | --- |
+| 좀비가 맞음 (총·주먹·칼·투척) | 쏜 사람: 자기 사본에서 깎인 체력과 처치 여부를 정해 바로 보여 주고 그 결과(`taken`, `killed`)를 보냄 | 받은 만큼 깎고, 처치라면 죽인다. 누운 좀비 2배·처형 몫·닌자 무적 같은 것을 다시 계산하지 않는다 | `EnemyHealth.ReceiveHit`(사본) → `EnemyNetwork.SendHit` → `EnemyHealth.ReceiveSent` |
+| 내 타격이 방장 쪽에서 처치가 됨 (친구의 타격이 먼저 닿아 있었음) | 방장이 알려 주면 쏜 사람 PC가 자기 처치로 보여 줌(처치음·기록·시체 물리) | 타격 소식에 남은 체력 0을 실어 보냄 | `EnemyNetwork.ShowHitRpc` → `EnemyHealth.ConfirmKill` |
+| 총알의 움찔(헤드샷 기절·누적 피해 끊기)·자세 깎기 | 쏜 사람 | 밀림·둔화(좀비의 움직임)만 한다 | `EnemyHitReaction.OnHit(judged, moved)` |
+| 자세 무너뜨리기 | 때린 사람: 자기 화면에서 무너졌으면 `broke`로 알림 | 자기 수치가 남아 있어도 무너뜨린다 | `MeleeCombatTarget.ApplyPostureDamage` → `ApplySentPosture` |
+| 처형·암살 | 하는 사람: 무너졌는지, 등 뒤인지, 좀비가 모르는지를 자기 화면에서 판정하고 바로 시작 | 그 사람 몫으로 붙잡아 둔다. 다른 사람이 이미 잡고 있을 때만 거절(먼저 온 쪽) | `MeleeCombatTarget.TryReserveExecution` → `EnemyNetwork.ExecutionRpc` → `HoldForExecution` |
+| 기절·밀치기·넘어뜨리기·돌진 밀치기 | 한 사람 | 결과를 그대로 적용 | `EnemyNetwork.InterruptRpc`·`ShoveRpc`·`KnockDownRpc`·`BargeRpc` |
+| 좀비의 공격이 플레이어에게 맞음, 패링·회피·잡힘·깔림 | 맞는 사람: 휘두름의 시간도 그 PC에서 잰다 | 휘두름을 시작한다는 것만 알림 | `EnemyNetwork.WindupRpc` → `EnemyCombatAI.ShowWindup`, `PlayerHold` → `PlayerNetworkCombat.HoldRpc` |
+| 좀비가 누구를 보고 듣고 쫓는지 | 방장(좀비 자신의 일) | 기분·의심·보는 사람을 0.1초 간격으로 알림 | `ZombieMind`, `EnemyNetwork.Condition` |
+
+내가 방금 한 일은 방장의 뒤늦은 보고에 덮이지 않는다: 사본은 내 타격 뒤 `EnemyNetwork.PredictionHold`(실제 왕복 시간 + 여유, Network.csv `predict*`) 동안 체력은 더 낮은 쪽만, 자세는 내 화면 것을 믿는다.
+
 ## 무엇을 고치려면 어디를
 
 | 변경할 내용 | 시작할 파일·설정 |
