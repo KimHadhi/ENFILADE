@@ -1,8 +1,10 @@
 """The Support's mending moves for the shove workspace (Blender 4.5): the hammer and the welding torch in the free left
 hand while the gun stays in the right (the user, 2026-11-12: "남는 손으로 망치 손으로 두들기는 거라고. 애니메이션은 네가 만들어서
-넣고 내가 블렌더로 세부 수정하면 되지"). Each is a loop on Kazusa's left arm: a locked draft under an empty touch-up layer, as
-the shove's moves are, and "게임에 보내기" writes its path table (Data/Resources/Tables/Clips/RepairHammer.csv, RepairTorch.csv), which
-RepairArm plays on any character's left arm.
+넣고 내가 블렌더로 세부 수정하면 되지"). Each is a loop on Kazusa's left arm and fingers: a locked draft under an empty
+touch-up layer, as the shove's moves are, and "게임에 보내기" writes its path table (Data/Resources/Tables/Clips/RepairHammer.csv,
+RepairTorch.csv), every finger joint round the tool included (Tools/Blender/HandPaths/finger_ways.py), which RepairArm
+plays on any character's left arm. A draft grips its tool as the game closed the fingers before they came from here
+(shove_tools.key_grip: the move's curl and thumb).
 
 Run on the workspace (it adds what is missing and keeps what is there, a polish included):
 
@@ -309,7 +311,10 @@ def upgrade(context, export=False, redraft=False):
             draft = None
         if draft is None:
             shove.select_move(context, 'kick')
-            key_arm(rig, context, key)
+            draft = key_arm(rig, context, key)
+            # The fingers round the tool as the game closed them before they came from here; the user shapes them on
+            # from there, and they go to the game as posed (finger_ways).
+            shove.key_grip(context, rig, draft, move)
         shove.touch_up(move['action'])
         if 'enf_impact_' + key not in scene:
             scene['enf_impact_' + key] = move['impact']

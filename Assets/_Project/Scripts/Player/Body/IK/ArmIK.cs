@@ -28,6 +28,8 @@ internal sealed class ArmIK
     /// <summary>The fingers as KINEMATION's clip has them on the gun (HandGrip.WearDigits).</summary>
     public void WearDigits(Vector3[] digits, float weight, GunSurface surface, float clearance, float mostOpen)
         => grip.WearDigits(digits, weight, surface, clearance, mostOpen);
+    /// <summary>The fingers as a clip made in Blender has them (HandGrip.WearWays).</summary>
+    public void WearWays(FingerWays ways, float weight) => grip.WearWays(ways, weight);
     /// <summary>The fingers' ways now, and as a shape has them, in the hand's own frame (HandGrip.Ways, ShapeWays).</summary>
     public bool FingerWays(Vector3[] into) => grip.Ways(into);
     public bool ShapeWays(HandGrip.Shape shape, GunGrips.Grip custom, Vector3[] into) => grip.ShapeWays(shape, custom, into);

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// HandGrip: KINEMATION's own fingers on the gun (GunArms.Digits). One part of the class; the rest is in HandGrip.cs and the files beside it.
+// HandGrip: a clip's own fingers on the hand: KINEMATION's on the gun (GunArms.Digits) and a Blender workspace's (FingerWays). One part of the class; the rest is in HandGrip.cs and the files beside it.
 internal sealed partial class HandGrip
 {
     // The finger pose last worked out from a gun clip's fingers (fingers' order, three joints each), what it was worked out
@@ -17,6 +17,11 @@ internal sealed partial class HandGrip
     private Quaternion digitTurn;
 
     private bool digitSteady;
+
+    // The finger pose last worked out from a Blender clip's fingers (WearWays) and the joints' turns before it, kept apart
+    // from the gun's (digitPose), so a throw blending in over a gun hold never makes the gun's settled pose work itself
+    // out again.
+    private Quaternion[] wayPose, waySaved;
 
     // A hand still within this of where it sat on the gun keeps the pose worked out there (m, degrees).
     private const float DigitMove = .003f, DigitTurn = 1.5f;
@@ -65,7 +70,7 @@ internal sealed partial class HandGrip
             digitPose = new Quaternion[fingers.Length * 3];
             digitSaved = new Quaternion[fingers.Length * 3];
         }
-        Vector3 x = FingersForward.normalized, y = Vector3.ProjectOnPlane(PalmFacing, x).normalized, z = Vector3.Cross(x, y);
+        Frame(out Vector3 x, out Vector3 y, out Vector3 z);
         for (int f = 0; f < fingers.Length; f++)
         {
             var finger = fingers[f];
@@ -74,15 +79,7 @@ internal sealed partial class HandGrip
                 digitSaved[f * 3 + i] = finger.Bones[i].localRotation;
                 finger.Bones[i].localRotation = finger.Rest[i];
             }
-            int digit = Mathf.Clamp(finger.Digit, 0, 4);
-            for (int i = 0; i < 3; i++)
-            {
-                Vector3 way = digits[digit * 3 + i];
-                Vector3 wanted = x * way.x + y * way.y + z * way.z;
-                if (wanted.sqrMagnitude < 1e-8f) continue;
-                var bone = finger.Bones[i];
-                bone.rotation = Quaternion.FromToRotation(bone.TransformDirection(finger.Axes[i]), wanted) * bone.rotation;
-            }
+            PointAlong(finger, digits, null, x, y, z);
             if (surface != null && !finger.Thumb) OpenOffGun(finger, surface, clearance, mostOpen, y);
             for (int i = 0; i < 3; i++)
             {
@@ -98,6 +95,66 @@ internal sealed partial class HandGrip
         Quaternion toGun = Quaternion.Inverse(gun.rotation);
         digitAt = toGun * (hand.position - gun.position);
         digitTurn = toGun * hand.rotation;
+    }
+
+    /// <summary>
+    /// The fingers as a clip made in Blender has them (FingerWays: each segment's way in the hand's own frame and its turn
+    /// about itself), <paramref name="weight"/> of the way from what they have now. The working WearDigits gives a gun
+    /// clip's fingers: each segment turns, from this hand's open rest, the least way to point where the clip's does in this
+    /// hand's frame, then about its own length by the clip's twist. So every joint posed in Blender, its bend, its spread
+    /// and its turn, holds on any humanoid hand, whatever its bones' axes (the user, 2026-11-14: the throw and repair clips
+    /// had sent one closing number per finger, and a finger shaped in Blender never reached the game).
+    /// </summary>
+    public void WearWays(FingerWays ways, float weight)
+    {
+        if (weight <= 0f || ways == null || !ways.Has) return;
+        if (wayPose == null)
+        {
+            wayPose = new Quaternion[fingers.Length * 3];
+            waySaved = new Quaternion[fingers.Length * 3];
+        }
+        Frame(out Vector3 x, out Vector3 y, out Vector3 z);
+        for (int f = 0; f < fingers.Length; f++)
+        {
+            var finger = fingers[f];
+            for (int i = 0; i < 3; i++)
+            {
+                waySaved[f * 3 + i] = finger.Bones[i].localRotation;
+                finger.Bones[i].localRotation = finger.Rest[i];
+            }
+            PointAlong(finger, ways.Ways, ways.Twists, x, y, z);
+            for (int i = 0; i < 3; i++)
+            {
+                wayPose[f * 3 + i] = finger.Bones[i].localRotation;
+                finger.Bones[i].localRotation = Quaternion.Slerp(waySaved[f * 3 + i], wayPose[f * 3 + i], weight);
+            }
+        }
+    }
+
+    // Each segment of a finger, base first, turned the least way to point along its way in the hand's frame (x, y, z),
+    // then, given twists, about that way by its twist (FingerWays' terms). A segment with no way stays as it is.
+    private static void PointAlong(Finger finger, Vector3[] digits, float[] twists, Vector3 x, Vector3 y, Vector3 z)
+    {
+        int digit = Mathf.Clamp(finger.Digit, 0, 4);
+        for (int i = 0; i < 3; i++)
+        {
+            Vector3 way = digits[digit * 3 + i];
+            Vector3 wanted = x * way.x + y * way.y + z * way.z;
+            if (wanted.sqrMagnitude < 1e-8f) continue;
+            var bone = finger.Bones[i];
+            bone.rotation = Quaternion.FromToRotation(bone.TransformDirection(finger.Axes[i]), wanted) * bone.rotation;
+            float twist = twists != null ? twists[digit * 3 + i] : 0f;
+            if (twist > 1e-3f || twist < -1e-3f) bone.rotation = Quaternion.AngleAxis(twist, wanted.normalized) * bone.rotation;
+        }
+    }
+
+    // The hand's own frame as GunArms.Digits and FingerWays take it: x the way the fingers run, y the way the palm faces
+    // (square to x), z across (x × y).
+    private void Frame(out Vector3 x, out Vector3 y, out Vector3 z)
+    {
+        x = FingersForward.normalized;
+        y = Vector3.ProjectOnPlane(PalmFacing, x).normalized;
+        z = Vector3.Cross(x, y);
     }
 
     // Each segment of a finger, base first, that would be in the gun opens about the finger's hinge (across its open line
@@ -140,7 +197,7 @@ internal sealed partial class HandGrip
     public bool Ways(Vector3[] into)
     {
         if (into == null || into.Length < GunArms.DigitCount) return false;
-        Vector3 x = FingersForward.normalized, y = Vector3.ProjectOnPlane(PalmFacing, x).normalized, z = Vector3.Cross(x, y);
+        Frame(out Vector3 x, out Vector3 y, out Vector3 z);
         int filled = 0;
         foreach (var finger in fingers)
         {

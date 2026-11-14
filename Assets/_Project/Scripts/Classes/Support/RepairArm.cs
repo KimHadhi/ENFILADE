@@ -9,7 +9,9 @@ using MovementState = PlayerMovement.MovementState;
 /// left hand leaves the gun (PlayerBodyHands.LendOffHand) and plays that tool's loop on this body's own left arm, the
 /// hammer's stroke or the torch's steady hold, while the gun stays in the right hand. The loops are path tables the Blender
 /// shove workspace sends ("수리 · 망치", "수리 · 토치": Tables/RepairHammer, Tables/RepairTorch, in GrenadeArmPath's terms: the
-/// wrist and the elbow from the shoulder in arm lengths, the hand's run and facing, all in the view's axes), fitted to
+/// wrist and the elbow from the shoulder in arm lengths, the hand's run and facing, all in the view's axes, and every
+/// finger joint round the tool as Blender has it: FingerWays, onto the body's own hand through
+/// PlayerBodyHands.WearFingerWays; a table from before 0.9.61 closes the fingers by its curl and thumb), fitted to
 /// whatever arm the body has from its own shoulder in its own lengths, as GrenadeArm fits a throw. The tool rides in the
 /// palm at its row of Tables/RepairArms; the hammer's strike (its path's strike key) raises Struck, where RepairLooks
 /// knocks. The same on every PC: RepairLooks runs on each copy from the tool PlayerNetworkCombat tells them, so friends see
@@ -28,6 +30,8 @@ public sealed class RepairArm : PathArm
 
     private float clock;
     private RepairLooks.Tool tool, playing;
+    // The loop's fingers this frame (every joint from Blender: FingerWays).
+    private readonly FingerWays fingers = new FingerWays();
 
     /// <summary>Where the tool rides in the palm: RepairLooks puts its model under it (Wear).</summary>
     public Transform Holder => holder;
@@ -89,6 +93,7 @@ public sealed class RepairArm : PathArm
             ShowHolder(false);
             return;
         }
+        GrenadeArmPath.SampleFingers(loop.Table, clock, fingers);
         Pose(key);
         Seat(loop);
         ShowHolder(true);
@@ -132,7 +137,9 @@ public sealed class RepairArm : PathArm
         TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, shoulder + view * (key.Wrist * arm.ArmLength), shoulder + view * (key.Elbow * arm.ArmLength));
         Vector3 along = view * key.Along, palm = view * key.Palm;
         arm.TurnHand(along, palm);
-        arm.Close(along, palm, key.Curl, key.Thumb);
+        // Every finger joint round the tool as the loop has it from Blender, onto this body's own hand (FingerWays); a table
+        // from before them closes the fingers by its curl and thumb.
+        if (hands == null || !hands.WearFingerWays(animator, true, fingers, 1f)) arm.Close(along, palm, key.Curl, key.Thumb);
         arm.Ease(weight);
     }
 

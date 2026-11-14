@@ -19,9 +19,12 @@ It opens ready to work in, and saving sends the work to the game (the user, 2026
 - 나이프 · 꺼내기 / 대기 (되풀이) / 던지기: the Knight's throwing knife, the MW2019 viewmodel of GMod's "[MW] Quick Throwing
   Knife" mirrored onto the left hand bone for bone (build_grenade_workspace.py), its hold MW's still idle with a breath.
 Sending writes Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes
-in game metres, the hand's run and facing, each finger's curl and the thumb's, in the head camera's axes as Unity's (x
-right, y up, z forward), whether the throwable is in the hand (from 쥐기 to 놓기), and the 핀 and 놓기 moments. GrenadeArm
-plays them on any character's left arm (Tables/ThrowArms names which clip is which). Every button keys at the current
+in game metres, the hand's run and facing, in the head camera's axes as Unity's (x right, y up, z forward), every finger
+joint as posed here (each segment's way in the hand's own frame and its twist: Tools/Blender/HandPaths/finger_ways.py,
+which the game puts on any character's hand as the joints stand here; 0.9.61, the user: "다신 이런 일이 재발하지 않도록
+뼈에 새겨라"), each finger's curl and the thumb's as a summary beside them, whether the throwable is in the hand (from
+쥐기 to 놓기), and the 핀 and 놓기 moments. GrenadeArm plays them on any character's left arm (Tables/ThrowArms names
+which clip is which). Every button keys at the current
 frame with auto-key on, holding the pose some frames either side, so a click is one local change. Nothing here changes
 Blender's preferences.
 """
@@ -40,6 +43,8 @@ bl_info = {'name': 'ENFILADE Throwables', 'author': 'ENFILADE', 'version': (2, 0
            'location': '3D View > Sidebar > 투척', 'category': 'Animation'}
 
 ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+# What every hand workspace measures the fingers with (each joint's way and twist, the game's FingerWays).
+FINGER_WAYS = Path('Tools/Blender/HandPaths/finger_ways.py')
 TAB = '투척'
 
 # Kazusa in the game is this many times her size in this file (eyes 1.37 here, 1.6 m in game: PlayerBody's fit).
@@ -118,17 +123,16 @@ def project_root():
     return None
 
 
-def one_click():
-    """The shared one-click workspace module (items, fingerprints, sending on save, the screen on open), loaded once and
-    without a __pycache__ beside it."""
-    if 'enf_one_click' in sys.modules:
-        return sys.modules['enf_one_click']
+def _module(name, rel):
+    """A project tool module, loaded once and without a __pycache__ beside it."""
+    if name in sys.modules:
+        return sys.modules[name]
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트 안의 ArtSource/Grenades에서 파일을 열어 주세요.')
-    spec = importlib.util.spec_from_file_location('enf_one_click', root / ONE_CLICK)
+    spec = importlib.util.spec_from_file_location(name, root / rel)
     module = importlib.util.module_from_spec(spec)
-    sys.modules['enf_one_click'] = module
+    sys.modules[name] = module
     writes = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
     try:
@@ -136,6 +140,16 @@ def one_click():
     finally:
         sys.dont_write_bytecode = writes
     return module
+
+
+def one_click():
+    """The shared one-click workspace module (items, fingerprints, sending on save, the screen on open)."""
+    return _module('enf_one_click', ONE_CLICK)
+
+
+def finger_ways():
+    """The shared finger measure: every finger joint's way and twist as the game's tables carry them."""
+    return _module('enf_finger_ways', FINGER_WAYS)
 
 
 def find_rig(scene):
@@ -545,8 +559,10 @@ HEADER = ['id', 'cycle', 'wristX', 'wristY', 'wristZ', 'elbowX', 'elbowY', 'elbo
 
 def clip_rows(context, key):
     """The left arm over the clip's frames as the game's clips have it: per half frame, the wrist and the elbow from
-    the eyes in game metres, the hand's run and its palm's facing, in the head camera's axes as Unity's; each finger's
-    curl and the thumb's; whether the throwable is in the hand; whether this sample is the pin or the release."""
+    the eyes in game metres, the hand's run and its palm's facing, in the head camera's axes as Unity's; every finger
+    joint's way and twist (finger_ways) and each finger's curl and the thumb's; whether the throwable is in the hand;
+    whether this sample is the pin or the release."""
+    ways = finger_ways()
     scene = context.scene
     rig = find_rig(scene)
     fps = scene.render.fps / scene.render.fps_base
@@ -566,6 +582,7 @@ def clip_rows(context, key):
         rows.append(dict(
             cycle=(at - start) / fps, wrist=to_view(wrist, basis, True), elbow=to_view(elbow, basis, True),
             along=to_view(along, basis), palm=to_view(palm, basis), curls=c,
+            fingers=ways.measure(rig, ARM_BONES['wrist'], FINGERS),
             held=first <= at < last,
             pin=PIN in marks and abs(at - marks[PIN]) < 1e-6,
             release=RELEASE in marks and abs(at - marks[RELEASE]) < 1e-6))
@@ -629,8 +646,11 @@ def export_clip(context, key):
 def clip_text(context, key):
     """The clip's table as the game reads it."""
     move = MOVES[key]
+    ways = finger_ways()
     loop ='되풀이 클립: 끝 줄이 첫 줄과 같아야 이어진다. ' if move.get('loop') else ''
     note = ('"#설명 (블렌더 투척 작업실 ArtSource/Grenades의 ' + move['label'] + ' 클립을 게임에 보내기로 쓴 왼팔. ' + loop +
+            '손가락은 마디마다 손 자기 틀에서 가리키는 쪽과 비틀림(index1X~thumb3Twist)으로 가서 블렌더에서 잡은 모양 그대로 나온다. '
+            'curl·thumb은 그 요약(옛 표는 이것만 있었다). '
             '손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. 어느 클립을 언제 쓰는지는 ThrowArms.csv. GrenadeArm이 어느 캐릭터 팔에든 맞춘다)"')
     cells = ['클립의 초(원본 빠르기. ThrowArms의 빠르기 배수가 곱해진다)',
              '눈에서 손목까지 오른쪽(m)', '눈에서 손목까지 위(m)', '눈에서 손목까지 앞(m)',
@@ -640,15 +660,18 @@ def clip_text(context, key):
              '네 손가락이 굽은 정도의 평균(°)', '검지가 굽은 정도(° · 마디마다 더함)', '중지(°)', '약지(°)', '새끼(°)',
              '엄지가 접힌 정도(90이면 투척물 위로 다 덮음)', '1이면 투척물이 손에 있다(쥐기~놓기 전)',
              '1이면 이 순간에 핀을 뽑는다(소리 · 쿠킹 시작)', '1이면 이 순간에 손을 떠난다(던짐)']
+    cells += ways.descriptions()
     # A cell never holds a comma (the tables are plain comma lists).
     cells = [c.replace(',', ' ·') for c in cells]
-    lines = ['﻿' + ','.join(HEADER), note + ',' + ','.join(cells)]
+    lines = ['﻿' + ','.join(HEADER + ways.columns()), note + ',' + ','.join(cells)]
     for n, row in enumerate(clip_rows(context, key)):
         c = row['curls']
         mean = sum(c[f] for f in FOUR) / 4.0
-        values = [f'k{n:03d}', f'{row["cycle"]:.4f}'] + [f'{v:.4f}' for v in (*row['wrist'], *row['elbow'], *row['along'], *row['palm'])]
+        # To the sixth decimal: what Blender has goes to the game as measured, not rounded (the user's rule, 2026-11-14).
+        values = [f'k{n:03d}', f'{row["cycle"]:.6f}'] + [f'{v:.6f}' for v in (*row['wrist'], *row['elbow'], *row['along'], *row['palm'])]
         values += [f'{mean:.1f}'] + [f'{c[f]:.1f}' for f in FOUR] + [f'{c["thumb"]:.1f}']
         values += ['1' if row['held'] else '0', '1' if row['pin'] else '0', '1' if row['release'] else '0']
+        values += ways.cells(row['fingers'])
         lines.append(','.join(values))
     return '\n'.join(lines) + '\n'
 

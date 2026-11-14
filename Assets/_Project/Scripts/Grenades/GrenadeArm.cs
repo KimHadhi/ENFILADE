@@ -11,8 +11,10 @@ using MovementState = PlayerMovement.MovementState;
 /// and where in it (Drive); one clip blends into the next over its motion's fade, from wherever the arm was. This fits
 /// the clip to the body that wears it: the wrist goes where the clip puts it from the eyes (or from this body's own
 /// shoulder in this arm's lengths, for a motion measured so), the elbow toward where the clip has it (TwoBoneIK); the hand
-/// turns to the clip's run and facing (measured from its knuckles, as PointArm does), each finger and the thumb close as
-/// far as the clip closes them, and the throwable's model rides in the palm at its kind's place (Tables/Grenades held*,
+/// turns to the clip's run and facing (measured from its knuckles, as PointArm does), every finger joint takes the clip's
+/// own pose from Blender (FingerWays, onto the body's own hand through PlayerBodyHands.WearFingerWays; a table from before
+/// 0.9.61 closes each finger and the thumb by its curls), and the throwable's model rides in the palm at its kind's place
+/// (Tables/Grenades held*,
 /// its own grip point in the fist: grip*). Rig-agnostic: any humanoid a modder brings, with no clip or bake of its own.
 /// The same on every PC: the owner's first-person body and the copies everyone else sees run the same clips from the
 /// phases PlayerGrenades sends, so friends see the hold and the throw, in third person too.
@@ -37,6 +39,9 @@ public sealed class GrenadeArm : PathArm
     private string clip = "", shownClip = "";
     // The arm as last posed (the clip's moment after any blend), and the moment a new clip blends from.
     private GrenadeArmPath.Key shown, from;
+    // The clip's fingers (every joint from Blender: FingerWays) as sampled this frame, as last posed (after any blend) and
+    // as a new clip blends from; each holds its own copy, so a later sample never changes one already shown.
+    private readonly FingerWays sampled = new FingerWays(), shownFingers = new FingerWays(), fromFingers = new FingerWays();
     private GameObject held;
 
     /// <summary>Where the throwable in the hand is now (world); the hand while there is none.</summary>
@@ -104,6 +109,7 @@ public sealed class GrenadeArm : PathArm
             HeldPoint = arm.Hand.position;
             return;
         }
+        GrenadeArmPath.SampleFingers(clip, time, sampled);
         Pose(Faded(key, motion, dt), motion);
     }
 
@@ -120,11 +126,22 @@ public sealed class GrenadeArm : PathArm
         else if (!string.Equals(clip, shownClip, System.StringComparison.Ordinal))
         {
             from = shown;
+            fromFingers.CopyFrom(shownFingers);
             shownClip = clip;
             fade = 0f;
         }
         fade = Mathf.Min(1f, fade + (motion.Fade > 1e-4f ? dt / motion.Fade : 1f));
-        shown = fade < 1f ? GrenadeArmPath.Blend(from, key, Mathf.SmoothStep(0f, 1f, fade)) : key;
+        if (fade < 1f)
+        {
+            float share = Mathf.SmoothStep(0f, 1f, fade);
+            shown = GrenadeArmPath.Blend(from, key, share);
+            FingerWays.Blend(fromFingers, sampled, share, shownFingers);
+        }
+        else
+        {
+            shown = key;
+            shownFingers.CopyFrom(sampled);
+        }
         return shown;
     }
 
@@ -187,13 +204,16 @@ public sealed class GrenadeArm : PathArm
         TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, Place(motion, key.Wrist), Place(motion, key.Elbow));
         Vector3 along = view * key.Along, palm = view * key.Palm;
         arm.TurnHand(along, palm);
-        Fingers(along, palm, key);
+        // Every finger joint as the clip has it from Blender, onto this body's own hand (FingerWays); a table from before
+        // them closes the fingers by its curls.
+        if (hands == null || !hands.WearFingerWays(animator, true, shownFingers, 1f)) Fingers(along, palm, key);
 
         arm.Ease(weight);
         Hold(key.Held && holds);
     }
 
-    // Each of the four fingers closed toward the palm by its own curl in the clip (GrenadeRules gripCurl of it), shared
+    // A table from before 0.9.61 (no finger joints in it): each of the four fingers closed toward the palm by its own curl
+    // in the clip (GrenadeRules gripCurl of it), shared
     // over its joints; the thumb across the palm toward the little finger's side and on toward the fingertips, over the
     // throwable, as far as the clip closes it (GrenadeRules gripThumb of it).
     private void Fingers(Vector3 along, Vector3 palm, in GrenadeArmPath.Key key)

@@ -60,6 +60,7 @@
 | 플레이어 찾기·이름 | [PlayerRoster](Player/PlayerRoster.cs): `Local`, `All`, `IdOf`, `ById` / [PlayerTally](Player/Life/PlayerTally.cs): `NameOf`, `ColoredNameOf` |
 | 팔·손을 코드로 자세 잡기 (뼈 찾기, 손 방향·손바닥, 손가락 쥐기, 프레임 자세와 섞기) | [ArmBones](Player/Body/Hands/ArmBones.cs)를 하나 들고 쓴다: `arm.Bind(animator)`, `arm.Keep()` → 자세 → `arm.Ease(weight)`, `arm.TurnHand`, `arm.Close` (수류탄·수리·가드·가리키기·처형 칼 팔이 쓴다. 오른팔은 `new ArmBones(true)`) |
 | 왼팔을 경로대로 움직여 무언가 쥐기 | [PathArm](Player/Body/Hands/PathArm.cs)을 상속 (수류탄 팔 GrenadeArm, 수리 팔 RepairArm이 쓴다) |
+| 블렌더에서 잡은 손가락을 그대로 손에 입히기 (마디마다 방향·비틀림, 어느 휴머노이드든) | 표의 열 `index1X`…`thumb3Twist`를 [FingerWays](Player/Body/Hands/FingerWays.cs)로 읽고(`ways.Read(row, prefix)`, 클립 표는 `GrenadeArmPath.SampleFingers`) `hands.WearFingerWays(animator, isLeft, ways, weight)`([PlayerBodyHands.Ways](Player/Body/Hands/PlayerBodyHands.Ways.cs) → `HandGrip.WearWays`, 총 클립 손가락과 같은 계산). 블렌더 쪽은 [finger_ways.py](../../../Tools/Blender/HandPaths/finger_ways.py)로 잰다 ([HandPaths/README.md](../../../Tools/Blender/HandPaths/README.md)). 손가락을 굽은 정도 숫자로 줄여 보내지 않는다 |
 | 실행 중 오브젝트를 하이어라키에 정리 | [RuntimeSceneHierarchy](Core/Scene/RuntimeSceneHierarchy.cs): `Keep`, `Group` |
 | 에셋 폴더의 자리 (편집기 도구) | [ProjectFolders](Core/ProjectFolders.cs): `ArtByName`, `DataByName`, `PrefabsByName`, `Guns` |
 

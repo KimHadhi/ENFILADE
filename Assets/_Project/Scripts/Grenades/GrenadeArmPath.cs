@@ -11,8 +11,10 @@ using UnityEngine;
 /// there, the knife's the MW2019 viewmodel of GMod's "[MW] Quick Throwing Knife" mirrored onto the left hand bone for bone.
 /// A key says what the arm does, not where a rig's bones are: the wrist and the elbow from the eyes in metres (or, for a
 /// motion measured from the shoulder, in arm lengths from it), which way the hand runs (wrist to middle knuckle) and faces
-/// (out of the palm), how far each finger and the thumb are closed (degrees) and whether the thing is in the hand; all in
-/// the view's axes (x right, y up, z forward); its moments (pin, release) are rows marked so. A clip's cycle is its
+/// (out of the palm), every finger joint as Blender has it (FingerWays: each segment's way in the hand's own frame and its
+/// twist, read by SampleFingers) and whether the thing is in the hand; all in the view's axes (x right, y up, z forward);
+/// its moments (pin, release) are rows marked so. How far each finger and the thumb are closed (curl, thumb: degrees)
+/// stays beside them for a table from before 0.9.61, which has nothing else for its fingers. A clip's cycle is its
 /// seconds at its own speed. GrenadeArm fits it to whatever arm a body has. RepairArm reads its loops through Sample too.
 /// </summary>
 public static class GrenadeArmPath
@@ -50,6 +52,10 @@ public static class GrenadeArmPath
         public bool HasPin => PinAt >= 0f;
         public bool HasRelease => ReleaseAt >= 0f;
         internal readonly List<Key> Keys = new List<Key>();
+        // Each key's fingers, in the keys' order; none when a row lacks the finger columns (a table from before 0.9.61).
+        internal readonly List<FingerWays> Fingers = new List<FingerWays>();
+        /// <summary>Whether the clip carries every finger joint (FingerWays), not only how far each finger closes.</summary>
+        public bool HasFingers => Fingers.Count > 0 && Fingers.Count == Keys.Count;
     }
 
     /// <summary>
@@ -126,16 +132,42 @@ public static class GrenadeArmPath
         key = default;
         var clip = ClipOf(table);
         if (clip == null) return false;
-        var keys = clip.Keys;
-        if (cycle <= keys[0].Cycle) { key = keys[0]; return true; }
-        int last = keys.Count - 1;
-        if (cycle >= keys[last].Cycle) { key = keys[last]; return true; }
-        int next = 1;
-        while (next < last && keys[next].Cycle < cycle) next++;
-        Key a = keys[next - 1], b = keys[next];
-        key = Blend(a, b, Mathf.InverseLerp(a.Cycle, b.Cycle, cycle));
+        Span(clip, cycle, out int a, out int b, out float t);
+        if (a == b) { key = clip.Keys[a]; return true; }
+        key = Blend(clip.Keys[a], clip.Keys[b], t);
         key.Cycle = cycle;
         return true;
+    }
+
+    /// <summary>
+    /// A clip's fingers at this time (s at its own speed), between the same two keys as Sample, into
+    /// <paramref name="into"/>. False (into without ways) when the clip has none: a table from before 0.9.61, whose arm
+    /// closes the fingers by the key's curls.
+    /// </summary>
+    public static bool SampleFingers(string table, float cycle, FingerWays into)
+    {
+        if (into == null) return false;
+        into.Has = false;
+        var clip = ClipOf(table);
+        if (clip == null || !clip.HasFingers) return false;
+        Span(clip, cycle, out int a, out int b, out float t);
+        FingerWays.Blend(clip.Fingers[a], clip.Fingers[b], t, into);
+        return into.Has;
+    }
+
+    // The two keys round a time and how far between them it is (one key twice, held, at the clip's ends).
+    private static void Span(Clip clip, float cycle, out int a, out int b, out float t)
+    {
+        var keys = clip.Keys;
+        int last = keys.Count - 1;
+        t = 0f;
+        if (cycle <= keys[0].Cycle) { a = b = 0; return; }
+        if (cycle >= keys[last].Cycle) { a = b = last; return; }
+        int next = 1;
+        while (next < last && keys[next].Cycle < cycle) next++;
+        a = next - 1;
+        b = next;
+        t = Mathf.InverseLerp(keys[a].Cycle, keys[b].Cycle, cycle);
     }
 
     /// <summary>
@@ -170,6 +202,9 @@ public static class GrenadeArmPath
         clip = new Clip { Table = table };
         clips[table] = clip;
         float pin = -1f, release = -1f;
+        // Each key with its fingers, sorted together; the clip keeps the fingers only if every key has them.
+        var read = new List<(Key key, FingerWays fingers)>();
+        bool everyFinger = true;
         foreach (string id in GameTables.RowIds(table))
         {
             if (!GameTables.TryGetRow(table, id, out var row)) continue;
@@ -197,9 +232,16 @@ public static class GrenadeArmPath
             key.Palm.Normalize();
             if (pin < 0f && row.Number("pin", 0f) > .5f) pin = key.Cycle;
             if (release < 0f && row.Number("release", 0f) > .5f) release = key.Cycle;
-            clip.Keys.Add(key);
+            var fingers = new FingerWays();
+            if (!fingers.Read(row)) everyFinger = false;
+            read.Add((key, fingers));
         }
-        clip.Keys.Sort((a, b) => a.Cycle.CompareTo(b.Cycle));
+        read.Sort((a, b) => a.key.Cycle.CompareTo(b.key.Cycle));
+        foreach (var (key, fingers) in read)
+        {
+            clip.Keys.Add(key);
+            if (everyFinger) clip.Fingers.Add(fingers);
+        }
         clip.Length = clip.Keys.Count > 0 ? clip.Keys[clip.Keys.Count - 1].Cycle : 0f;
         clip.PinAt = pin;
         clip.ReleaseAt = release;

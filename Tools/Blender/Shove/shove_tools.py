@@ -19,10 +19,14 @@ the file is ready to work in: the user only poses and times (the user, 2026-11-1
     Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
     (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
   - 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
-    arm (CTRL_hand.L, CTRL_elbow.L) while the right hand keeps the gun; the left hand's hold on the gun is let go while one
-    is shown. Sent as Assets/_Project/Data/Data/Resources/Tables/Clips/RepairHammer.csv or RepairTorch.csv: the wrist, the elbow and the
-    hand's way from the eyes in the view's axes, which RepairArm plays on any character's left arm (GrenadeArmPath's
-    columns). repair_moves.py adds them to an older workspace and keys their drafts.
+    arm (CTRL_hand.L, CTRL_elbow.L) and fingers while the right hand keeps the gun; the left hand's hold on the gun is let
+    go while one is shown. Sent as Assets/_Project/Data/Resources/Tables/Clips/RepairHammer.csv or RepairTorch.csv: the
+    wrist and the elbow from the shoulder in arm lengths, the hand's way in the view's axes, and every finger joint round
+    the tool as posed here (each segment's way and twist: Tools/Blender/HandPaths/finger_ways.py), which RepairArm plays
+    on any character's left arm (GrenadeArmPath's columns; 0.9.61, the user: "다신 이런 일이 재발하지 않도록 뼈에
+    새겨라"). Before 0.9.61 the fingers stood open round the tool here while the game closed them by fixed numbers; a file
+    drafted so gets that same grip keyed into its drafts on opening (draft_grips), for the user to shape from there.
+    repair_moves.py adds the moves to an older workspace and keys their drafts.
 Every button keys at the current frame with auto-key on, holding the pose some frames either side, so a click is one
 local change. Nothing here changes Blender's preferences.
 """
@@ -41,6 +45,8 @@ bl_info = {'name': 'ENFILADE Shove Moves', 'author': 'ENFILADE', 'version': (2, 
 
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
 ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+# What every hand workspace measures the fingers with (each joint's way and twist, the game's FingerWays).
+FINGER_WAYS = Path('Tools/Blender/HandPaths/finger_ways.py')
 TAB = '밀치기'
 # Kazusa in the game is this many times her size in this file (eyes 1.37 here, 1.6 m in game: PlayerBody's fit).
 GAME_SCALE = 1.166
@@ -69,7 +75,8 @@ MOVES = {
     # The Support's mending in the free left hand while the gun stays in the right (the user, 2026-11-12: "남는 손으로
     # 망치 손으로 두들기는 거"): a loop each, played while F is held on a barricade (RepairArm), the left arm and hand only.
     # 타격 is where the hammer meets the planks: the knock sounds there, on every PC. The torch strikes nothing (0).
-    # curl/thumb: how far the fingers and the thumb close round the tool (degrees), written into every key.
+    # curl/thumb: how the draft closes the fingers and the thumb round the tool (degrees, as ArmBones.Close closed them in
+    # the game before the joints came from here: draft_grips); what goes to the game is every joint as posed.
     'repair_hammer': dict(label='수리 · 망치', kind='arm', action='enf_repair_hammer', table='RepairHammer', tool='TOOL_Hammer',
                           impact=6, end=15, curl=88.0, thumb=62.0, part='CTRL_hand.L'),
     # The torch is the heist pack's gas torch: its canister (7.4 cm across) holds the fingers further open than the hammer's
@@ -95,6 +102,15 @@ TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 # The left arm's bones on Kazusa's rig, for the path a mending move exports (RepairArm's terms).
 ARM_BONES = dict(shoulder='Left arm', elbow='Left elbow', wrist='Left wrist', index='IndexFinger1_L', middle='MiddleFinger1_L',
                  little='LittleFinger1_L')
+# The left fingers, knuckle out; the thumb from its root in the palm (finger_ways' order).
+FINGERS = {
+    'index': ('IndexFinger1_L', 'IndexFinger2_L', 'IndexFinger3_L'),
+    'middle': ('MiddleFinger1_L', 'MiddleFinger2_L', 'MiddleFinger3_L'),
+    'ring': ('RingFinger1_L', 'RingFinger2_L', 'RingFinger3_L'),
+    'little': ('LittleFinger1_L', 'LittleFinger2_L', 'LittleFinger3_L'),
+    'thumb': ('Thumb0_L', 'Thumb1_L', 'Thumb2_L'),
+}
+FINGER_BONES = frozenset(name for chain in FINGERS.values() for name in chain)
 
 
 # ---- Paths and the shared tools ------------------------------------------------------------------------------------
@@ -142,6 +158,11 @@ def truefps():
 def one_click():
     """The shared one-click workspace module: items, fingerprints, sending on save, the screen on open."""
     return _module('enf_one_click', ONE_CLICK)
+
+
+def finger_ways():
+    """The shared finger measure: every finger joint's way and twist as the game's tables carry them."""
+    return _module('enf_finger_ways', FINGER_WAYS)
 
 
 def find_rig(scene):
@@ -288,10 +309,89 @@ def focus(context, window, area, key):
 
 
 def prepare(context):
-    """Every move ready to work in (an older file's layers made into editable moves), the last one shown."""
+    """Every move ready to work in (an older file's layers made into editable moves, a mending draft without fingers
+    given its grip), the last one shown."""
+    draft_grips(context)
     for key in MOVES:
         item(context, key)
     select_move(context, current_move(context.scene))
+
+
+def keys_fingers(action):
+    """Whether an action keys any of the left fingers."""
+    oc = one_click()
+    return any(oc.bone_of(curve.data_path) in FINGER_BONES for curve in oc.curves(action))
+
+
+def grip_turns(context, rig, move):
+    """The left fingers' turns (each bone's rotation_quaternion) closed round a mending move's tool from the start pose,
+    as RepairArm closed them in the game before the joints came from here (the move's curl and thumb through
+    finger_ways.close); the rig is left at the start pose with what it played before."""
+    data = rig.animation_data
+    playing = data.action if data is not None else None
+    track = data.nla_tracks.get(BASE_TRACK) if data is not None else None
+    muted = track.mute if track is not None else False
+    if data is not None:
+        data.action = None
+        if track is not None:
+            track.mute = True
+    reset_rig(rig)
+    context.view_layer.update()
+    finger_ways().close(rig, ARM_BONES['wrist'], FINGERS, move['curl'], move['thumb'], update=context.view_layer.update)
+    turns = {name: rig.pose.bones[name].rotation_quaternion.copy() for name in sorted(FINGER_BONES)}
+    reset_rig(rig)
+    if data is not None:
+        if track is not None:
+            track.mute = muted
+        data.action = playing
+    context.view_layer.update()
+    return turns
+
+
+def key_grip(context, rig, action, move):
+    """The grip keyed into an action at every frame its left hand is keyed (the draft's key poses), the same turns at
+    each, so the Dope Sheet keeps its columns. False when the action keys no hand."""
+    oc = one_click()
+    frames = sorted({round(point.co.x) for curve in oc.curves(action) if oc.bone_of(curve.data_path) == ARM_HAND
+                     for point in curve.keyframe_points})
+    bag = oc.channelbag(action)
+    if not frames or bag is None:
+        return False
+    for name, turn in grip_turns(context, rig, move).items():
+        path = f'pose.bones["{name}"].rotation_quaternion'
+        for index in range(4):
+            curve = next((c for c in oc.curves(action) if c.data_path == path and c.array_index == index), None)
+            if curve is None:
+                curve = bag.fcurves.new(path, index=index)
+            for frame in frames:
+                curve.keyframe_points.insert(frame, turn[index], options={'FAST'})
+            curve.update()
+    oc.group_channels(action)
+    return True
+
+
+def draft_grips(context):
+    """A mending move drafted before its fingers were keyed (0.8.256 until 0.9.61: the hand stood open round the tool here
+    while RepairArm closed it in the game by fixed numbers) gets the game's grip keyed into its draft on opening. The
+    user's work is kept: a copy nobody touched follows its draft (one_click.item_action), and one the user keyed gets
+    the grip too only where it keys no finger of its own. Saving then sends the move with its fingers."""
+    rig = find_rig(context.scene)
+    if rig is None:
+        return
+    oc = one_click()
+    for move in MOVES.values():
+        if move['kind'] != 'arm':
+            continue
+        draft = bpy.data.actions.get(move['action'] + oc.DRAFT)
+        if draft is None or keys_fingers(draft):
+            continue
+        edit = bpy.data.actions.get(move['action'])
+        touched = edit is not None and edit.get(oc.LAYER) == 'edit' and oc.keys_print(edit) != edit.get(oc.FROM)
+        if not key_grip(context, rig, draft, move):
+            continue
+        if touched and not keys_fingers(edit):
+            key_grip(context, rig, edit, move)
+        print(f'ENFILADE: {move["label"]} 시안에 손가락 쥐기를 넣었습니다(게임이 고정값으로 쥐던 모양)')
 
 
 def arrange(context):
@@ -531,10 +631,11 @@ def export_gun(context, key, root):
     fps = scene.render.fps / scene.render.fps_base
     marker = scene.timeline_markers.get(STRIKE)
     impact = ((marker.frame if marker else MOVES[key]['impact']) - scene.frame_start) / fps
-    lines = ['time,x,y,z,qx,qy,qz,qw', f'#impact={impact:.4f}',
+    # To the sixth decimal: what Blender has goes to the game as measured, not rounded (the user's rule, 2026-11-14).
+    lines = ['time,x,y,z,qx,qy,qz,qw', f'#impact={impact:.6f}',
              f'#from=ArtSource/Shove/ENFILADE_Shove_Animation.blend {MOVES[key]["action"]}']
     for time, move, turn in gun_samples(context, key):
-        lines.append(f'{time:.4f},{move.x:.5f},{move.y:.5f},{move.z:.5f},{turn.x:.5f},{turn.y:.5f},{turn.z:.5f},{turn.w:.5f}')
+        lines.append(f'{time:.6f},{move.x:.6f},{move.y:.6f},{move.z:.6f},{turn.x:.6f},{turn.y:.6f},{turn.z:.6f},{turn.w:.6f}')
     path.parent.mkdir(parents=True, exist_ok=True)
     oc.write_meta(path, oc.TEXT_META)
     return oc.write_text(path, '\n'.join(lines) + '\n')
@@ -558,9 +659,11 @@ def export_kick(context, root):
 def arm_rows(context, key):
     """The left arm over the move's frames as the game's arm paths have it (GrenadeArmPath, played by RepairArm): the
     wrist and the elbow from the shoulder in arm lengths, the hand's run (wrist to middle knuckle) and its palm's facing,
-    in the head camera's axes as Unity's (x right, y up, z forward), and whether this sample is the strike (타격)."""
+    in the head camera's axes as Unity's (x right, y up, z forward), whether this sample is the strike (타격), every
+    finger joint's way and twist (finger_ways) and how far each finger and the thumb are closed."""
     scene = context.scene
     rig = find_rig(scene)
+    ways = finger_ways()
     cam = bpy.data.objects['FPS_Head_Camera']
     move = MOVES[key]
     fps = scene.render.fps / scene.render.fps_base
@@ -589,7 +692,8 @@ def arm_rows(context, key):
         palm = -along.cross(index - little)
         palm = (palm - along * palm.dot(along)).normalized()
         rows.append(((at - start) / fps, (w - s) / length, (e - s) / length, along, palm,
-                     strike is not None and abs(at - strike) < 1e-6))
+                     strike is not None and abs(at - strike) < 1e-6,
+                     ways.measure(rig, ARM_BONES['wrist'], FINGERS), ways.closing(rig, ARM_BONES['wrist'], FINGERS)))
     scene.frame_set(start)
     return rows
 
@@ -598,13 +702,20 @@ def export_arm(context, key, root):
     move = MOVES[key]
     oc = one_click()
     path = root / target(key)
+    ways = finger_ways()
     note = ('#설명 (블렌더 밀치기 작업실 ArtSource/Shove의 ' + move['label'] + ' 동작을 게임에 보내기로 쓴 왼팔의 길. '
-            'GrenadeArm.csv와 같은 칸: 어깨에서 손목과 팔꿈치까지 팔 길이의 배수와 손의 방향을 시선 축(x 오른쪽 y 위 z 앞)으로. '
+            'GrenadeArmPath의 칸: 어깨에서 손목과 팔꿈치까지 팔 길이의 배수와 손의 방향을 시선 축(x 오른쪽 y 위 z 앞)으로. '
+            '손가락은 마디마다 손 자기 틀에서 가리키는 쪽과 비틀림(index1X~thumb3Twist)으로 가서 블렌더에서 잡은 모양 그대로 나온다. '
+            'curl·thumb은 그 요약. '
             'strike 1인 줄이 망치가 판자에 닿는 순간(소리). 손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. RepairArm이 어느 캐릭터 팔에든 맞춰 되풀이한다)')
-    lines = ['﻿id,cycle,wristX,wristY,wristZ,elbowX,elbowY,elbowZ,alongX,alongY,alongZ,palmX,palmY,palmZ,curl,thumb,held,strike', note]
-    for n, (cycle, wrist, elbow, along, palm, strike) in enumerate(arm_rows(context, key)):
-        cells = [f'k{n:02d}', f'{cycle:.4f}'] + [f'{v:.4f}' for v in (*wrist, *elbow, *along, *palm)]
-        cells += [f'{move["curl"]:.1f}', f'{move["thumb"]:.1f}', '1', '1' if strike else '0']
+    header = 'id,cycle,wristX,wristY,wristZ,elbowX,elbowY,elbowZ,alongX,alongY,alongZ,palmX,palmY,palmZ,curl,thumb,held,strike'
+    lines = ['﻿' + header + ',' + ','.join(ways.columns()), note]
+    for n, (cycle, wrist, elbow, along, palm, strike, fingers, closed) in enumerate(arm_rows(context, key)):
+        # To the sixth decimal: what Blender has goes to the game as measured, not rounded (the user's rule, 2026-11-14).
+        cells = [f'k{n:02d}', f'{cycle:.6f}'] + [f'{v:.6f}' for v in (*wrist, *elbow, *along, *palm)]
+        curl = sum(closed[f] for f in ('index', 'middle', 'ring', 'little')) / 4.0
+        cells += [f'{curl:.1f}', f'{closed["thumb"]:.1f}', '1', '1' if strike else '0']
+        cells += ways.cells(fingers)
         lines.append(','.join(cells))
     path.parent.mkdir(parents=True, exist_ok=True)
     oc.write_meta(path, oc.TEXT_META)
