@@ -547,8 +547,9 @@ SEAT_COLUMNS = ('meleeHeldSide', 'meleeHeldPalm', 'meleeHeldAlong', 'meleeBladeX
 SEAT_PROP = 'enf_knife_seat'
 # ClassKnives' grips' blade ways when a row gives none (ClassKnives.ForwardBlade, ReverseBlade).
 FORWARD_BLADE, REVERSE_BLADE = (-.8, 0.0, .6), (.93, 0.0, .36)
-# The table keeps three decimals; a knife counts as moved past two of the last (rounding both ways stays under it).
-SEAT_STEP = .002
+# The seat as measured, kept to six decimals (the user's placement is never rounded away: no-lossy-shortcuts); a knife
+# counts as moved past this (Blender's own float sums stay well under it; the execution workspace's grip writer uses the same).
+SEAT_DECIMALS, SEAT_STEP = 6, 1e-5
 
 
 def knife_holder(knife):
@@ -614,7 +615,7 @@ def model_ways(holder):
 
 
 def seat_now(rig, holder):
-    """Where the knife sits in the fist now, as the table's nine numbers (three decimals)."""
+    """Where the knife sits in the fist now, as the table's nine numbers (SEAT_DECIMALS)."""
     wrist, axes, length = hand_axes(rig)
     place, turn, _size = world_of(holder).decompose()
     blade_model, edge_model = model_ways(holder)
@@ -624,7 +625,7 @@ def seat_now(rig, holder):
     edge = (edge - blade * edge.dot(blade)).normalized()
     back = axes.transposed()
     held = back @ (place - wrist) / max(length, 1e-6)
-    return [round(float(v), 3) for v in (*held, *(back @ blade), *(back @ edge))]
+    return [round(float(v), SEAT_DECIMALS) for v in (*held, *(back @ blade), *(back @ edge))]
 
 
 def seat_holder(rig, holder, seat):
@@ -682,13 +683,13 @@ def _melee_seat(row):
 
 def canonical(seat):
     """Nine seat numbers as the game takes them (ClassKnives.Way, ExecutionKnifeArm.Seat) and as a measured knife gives
-    them back: the blade a unit way, the edge a unit way square to it; three decimals. Numbers typed with an edge not square
+    them back: the blade a unit way, the edge a unit way square to it; SEAT_DECIMALS. Numbers typed with an edge not square
     to the blade then still count as where the knife is, not as a move."""
     held, blade, edge = Vector(seat[0:3]), Vector(seat[3:6]), Vector(seat[6:9])
     blade = blade.normalized() if blade.length > 1e-9 else Vector((0.0, 0.0, 1.0))
     edge = edge - blade * edge.dot(blade)
     edge = edge.normalized() if edge.length > 1e-9 else blade.orthogonal().normalized()
-    return [round(float(v), 3) for v in (*held, *blade, *edge)]
+    return [round(float(v), SEAT_DECIMALS) for v in (*held, *blade, *edge)]
 
 
 def write_cells(path, model, cells):
@@ -773,7 +774,7 @@ def send_seats(context):
         stored = list(holder[SEAT_PROP]) if SEAT_PROP in holder else None
         if not _differs(now, stored):
             continue
-        write_cells(path, knife, {c: f'{v:.3f}' for c, v in zip(SEAT_COLUMNS, now)})
+        write_cells(path, knife, {c: f'{v:.{SEAT_DECIMALS}f}' for c, v in zip(SEAT_COLUMNS, now)})
         holder[SEAT_PROP] = now
         sent.append(f'{KNIVES[knife]} 쥐는 자리')
     return sent
