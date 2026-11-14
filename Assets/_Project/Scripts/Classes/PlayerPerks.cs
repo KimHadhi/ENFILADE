@@ -83,8 +83,9 @@ public static class PlayerPerks
 
     // The perk ids the code knows; the table can add others for later. Four of the old common cards became class cards on
     // 2026-11-14 (the user: Butcher "나이트 쪽으로 빼지", Rescue "데탕트 쪽 아니냐?", Heriot "시순트 쪽 아니냐?", Momentum
-    // "어썰트 쪽 아니냐?"); their effects still ask here, and the table deals them to that class only.
-    public const string HeadshotDamage = "gun_head", GunDamage = "gun_body", ExecutionHeal = "knight_butcher",
+    // "어썰트 쪽 아니냐?"); their effects still ask here, and the table deals them to that class only. The two common gun
+    // cards (머리 사냥꾼, 철갑탄) went in the second round of that feedback (the user: "흠... 다 공용으로 쓰기 애매한데").
+    public const string ExecutionHeal = "knight_butcher",
         Toughness = "body_tough", Grit = "body_grit", Rescue = "detente_rescue", Charge = "gauge_charge",
         Heriot = "hound_heriot", Momentum = "assault_momentum";
     // The common cards of the 2026-11-14 card feedback: a bigger ammo pouch, a scavenger's share of every ammo pile, more
@@ -374,16 +375,16 @@ public static class PlayerPerks
     }
 
     /// <summary>
-    /// The bullet's damage factor for this PC's shooter: head or body. A Ghost's over-penetration card (과관통) carries the
-    /// user's own trade, once the weak-point card's (dropped 2026-11-14: "헤드 헌터가 있어서 약점 데미지 증가가 따로 있는 게
-    /// 맞아?"): the head, a crawling brute's glowing one among them, takes more (its value2), the body less (ClassAbilities
-    /// Ghost.pierceBody a level). Momentum adds while it runs.
+    /// The bullet's damage factor for this PC's shooter: head or body. No common card adds to it any more (the gun cards
+    /// went 2026-11-14). A Ghost's over-penetration card (과관통) carries the user's own trade, once the weak-point card's
+    /// (dropped 2026-11-14: "헤드 헌터가 있어서 약점 데미지 증가가 따로 있는 게 맞아?"): the head, a crawling brute's glowing
+    /// one among them, takes more (its value2), the body less (ClassAbilities Ghost.pierceBody a level). Momentum adds while
+    /// it runs.
     /// </summary>
     public static float GunFactor(bool headshot)
     {
-        float percent = Total(headshot ? HeadshotDamage : GunDamage);
-        if (Has(GhostPierce))
-            percent += headshot ? Total2(GhostPierce) : -PlayerClass.Ability(PlayerClass.GhostRow, "pierceBody", 8f) * Level(GhostPierce);
+        float percent = !Has(GhostPierce) ? 0f
+            : headshot ? Total2(GhostPierce) : -PlayerClass.Ability(PlayerClass.GhostRow, "pierceBody", 8f) * Level(GhostPierce);
         return Mathf.Max(.05f, 1f + percent / 100f) * MomentumFactor;
     }
 
@@ -421,7 +422,10 @@ public static class PlayerPerks
     /// <summary>How long getting a friend up takes (factor on the time, never below a fifth).</summary>
     public static float ReviveFactor => Mathf.Max(.2f, 1f - Total(Rescue) / 100f);
 
-    /// <summary>How fast the gauge fills (factor on each hit's charge).</summary>
+    /// <summary>
+    /// How fast the gauge fills (factor on each hit's charge): toward the next card and toward the ultimate alike (the user,
+    /// 2026-11-14: "걍 궁극기 게이지만이 아니라 걍 채우는 걸로 가자").
+    /// </summary>
     public static float ChargeFactor => 1f + Total(Charge) / 100f;
 
     /// <summary>

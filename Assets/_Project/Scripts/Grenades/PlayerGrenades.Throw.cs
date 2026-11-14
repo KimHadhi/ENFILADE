@@ -5,6 +5,8 @@ public sealed partial class PlayerGrenades
 {
     private void Throw(ThrowableInfo info)
     {
+        // An ultimate's throw (ThrowForUltimate): the hand's release is all it wanted; nothing comes off the belt.
+        if (ultimateRelease != null) { ReleaseForUltimate(info); return; }
         var eye = Camera.main;
         if (eye == null || info == null || count <= 0) { cooking = false; return; }
         Launch(eye.transform, info, out Vector3 from, out Vector3 velocity);

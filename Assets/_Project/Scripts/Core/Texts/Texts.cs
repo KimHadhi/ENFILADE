@@ -68,7 +68,7 @@ public static class Texts
 
     /// <summary>
     /// The words a data table's text cell stands for. The tables keep their words in this file too: Perks.csv's name
-    /// cell holds perk.gun_head.name, CampaignSteps.csv's title holds mission.ch1.01.title, and so on (the user, 2026-11-12:
+    /// cell holds perk.body_tough.name, CampaignSteps.csv's title holds mission.ch1.01.title, and so on (the user, 2026-11-12:
     /// "내가 수정하려고 하는데 어디서 해? 모으면 다 수정할 수 있어?": every line in one place to rewrite). A cell naming a row
     /// of this table gives that row's words, as Get does. Any other cell is words in itself and shows as written, read
     /// the way a row here is (\n a line break, a bracketed default key relabelled): a modder's table with plain words in

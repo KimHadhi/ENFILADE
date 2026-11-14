@@ -37,7 +37,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class GhostCards : MonoBehaviour
 {
-    public const string ReconCard = "ghost_recon", QuietCard = "ghost_quiet", ChainCard = "ghost_chain", ConesCard = "ghost_cones";
+    public const string ReconCard = "ghost_recon", QuietCard = "ghost_quiet", ChainCard = "ghost_chain", ConesCard = "ghost_cones",
+        QuickAimCard = "ghost_quickaim", QuickKnifeCard = "ghost_quickknife";
     private const string Row = PlayerClass.GhostRow;
     // Where a chain may land round a zombie, from straight behind its back (degrees), tried in turn.
     private static readonly float[] Sides = { 0f, 30f, -30f, 55f, -55f };
@@ -93,6 +94,25 @@ public sealed class GhostCards : MonoBehaviour
     public static float ConeReach(float reach) => ReadsCones ? Mathf.Max(reach, PlayerPerks.Total(ConesCard)) : reach;
 
     private static bool ReadsCones => PlayerClass.Is(PlayerClass.Ghost) && PlayerPerks.Has(ConesCard);
+
+    /// <summary>빠른 조준: <paramref name="who"/> is this PC's own Ghost holding the card (WeaponController.Snap: its first shot once the sights are up flies true).</summary>
+    public static bool QuickAims(PlayerMovement who)
+        => who != null && who.IsLocal && PlayerClass.Is(PlayerClass.Ghost) && PlayerPerks.Has(QuickAimCard);
+
+    /// <summary>빠른 조준: how much faster <paramref name="who"/> brings the sights up (WeaponController.AdsTime divides by it), 1 for anyone else.</summary>
+    public static float AimSpeed(PlayerMovement who) => QuickAims(who) ? 1f + Mathf.Max(0f, PlayerPerks.Total(QuickAimCard)) / 100f : 1f;
+
+    /// <summary>
+    /// 빠른 칼: how fast this PC's own Ghost's takedown of <paramref name="victim"/>, a zombie that knows nothing, plays (a
+    /// factor on the paired clips' clock: ExecutionPairPlayer, which sends it with the pair so every PC plays it as fast).
+    /// 1 for anything else: an execution of a broken zombie, another class, another player.
+    /// </summary>
+    public static float TakedownPace(PlayerMovement who, MeleeCombatTarget victim)
+    {
+        if (who == null || !who.IsLocal || !PlayerClass.Is(PlayerClass.Ghost) || !PlayerPerks.Has(QuickKnifeCard)) return 1f;
+        if (victim == null || !victim.TryGetComponent(out ZombieMind mind) || !mind.Unaware) return 1f;
+        return 1f + Mathf.Max(0f, PlayerPerks.Total(QuickKnifeCard)) / 100f;
+    }
 
     /// <summary>
     /// 암살 연쇄: this PC's own Ghost may turn its view in the takedown under way, to find the next zombie (PlayerLook asks:

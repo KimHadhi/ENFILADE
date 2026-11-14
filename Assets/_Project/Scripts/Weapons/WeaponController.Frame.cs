@@ -101,6 +101,7 @@ public sealed partial class WeaponController
         if (reloadingBeforeTick && !cannotFire && (frame.FirePressed || frame.FireHeld)) Runtime.StopAfterShell();
         if (cannotFire || reloadingBeforeTick)
             frame = new WeaponInputFrame(false, false, frame.ReloadPressed, frame.AimHeld);
+        WatchSnap();
         UpdateSpread();
 
         bool wasReloading = Runtime.IsReloading;
@@ -108,6 +109,8 @@ public sealed partial class WeaponController
         // A revolver in Fanning fans only from the hip (user, 2026-11-11: "리볼버에 Fanning 기능 넣기").
         Runtime.FanFromHip = AimBlend < .5f;
         int shots = Runtime.Tick(dt, frame);
+        // 빠른 조준's true shot is this one: the spread above stays for it, the next shot's is worked out as ever (below).
+        if (shots > 0) snapReady = false;
 
         if (!wasReloading && Runtime.IsReloading) ReloadStarted?.Invoke(Runtime.IsEmptyReload);
         else if (wasReloading && !Runtime.IsReloading) { loadsSeen = Runtime.Loads; ReloadCompleted?.Invoke(); }

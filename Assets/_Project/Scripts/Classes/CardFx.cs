@@ -22,6 +22,8 @@ using UnityEngine;
 /// <item>Barrage, an Assault's 데인저 클로즈 or 브로큰 애로우 called: its reach in red on the ground and an arc closing round
 /// it until the first shell (BarrageMark). GunRun, an Assault's ultimate: an A-10's rounds walking a lane, its BRRRT,
 /// the plane going over (GunRunFx).</item>
+/// <item>Breach, a Point's ultimate: a nine-bang flying where it aimed and bursting nine times round the spot, each a crack,
+/// a small spark and a ring, never a flash on the screen (PointBreach).</item>
 /// </list>
 /// Drawn here as ever:
 /// <list type="bullet">
@@ -34,7 +36,7 @@ using UnityEngine;
 public sealed class CardFx : MonoBehaviour
 {
     public enum Kind : byte { Claws, Echo, Deflect, Flash, Blast, Shell, Cavalry, Shadow, Ultimate, Reversal, CoverDeflect, KataDraw, KataAura,
-        Barrage, GunRun }
+        Barrage, GunRun, Breach }
 
     private const int SampleRate = 44100;
     /// <summary>Cavalry: how fast they ride (m/s), how long they fade in and out (s); ClassCards sweeps at the same pace.</summary>
@@ -114,6 +116,11 @@ public sealed class CardFx : MonoBehaviour
             case Kind.GunRun:
                 // An Assault's A-10 run: its lane ends at `at`, runs along `direction` (start to end), first round in `value` s.
                 GunRunFx.Play(at, direction, value);
+                return;
+            case Kind.Breach:
+                // A Point's nine-bang (its ultimate): from where the hand let go (`at`) to where it lands (`at` + `direction`),
+                // `value` s in the air, then its run of bangs (PointBreach).
+                PointBreach.Play(at, direction, value, mine, PlayerOf(from, mine));
                 return;
         }
         var host = FeelAssets.CreateRuntimeRoot("Card " + kind);

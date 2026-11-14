@@ -387,7 +387,7 @@ internal static class TextScan
     /// <summary>
     /// Where each Texts id is asked for: code lines that name it whole ("Scripts/UI/Hud/Classes/PerkCardScreen.cs:363"), code that
     /// builds it from a beginning ("zombie." + kind: listed as such) and table cells pointing at it ("Perks.csv
-    /// gun_head · name").
+    /// body_tough · name").
     /// </summary>
     internal static Dictionary<string, List<(string path, int line, string what)>> Usage(TextSheet sheet)
     {

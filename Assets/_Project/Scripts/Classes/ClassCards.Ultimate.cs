@@ -11,8 +11,8 @@ public sealed partial class ClassCards
     /// open question, "what a full gauge does once the cards are all taken"): the class's ultimate at once, its notice on
     /// every HUD and its look in the world (MomentFx.Ultimate). Knight: the shadow double; Assault: an A-10's gun run down the line
     /// it aims at and adrenaline full (ClassCards.GunRun); Ghost: unseen by every zombie for its seconds, every zombie near it shown through walls to the whole team
-    /// (GhostCards.Phantom); Point: both guns loaded and the Gunslinger's
-    /// moment; Détente: Second Life, the syringe full, one more Resurrection, every downed friend up and everyone's health
+    /// (GhostCards.Phantom); Point: 돌입, a nine-bang thrown where it aims, bursting nine times and stunning every zombie
+    /// its light reaches, elites too (PointBreach); Détente: Second Life, the syringe full, one more Resurrection, every downed friend up and everyone's health
     /// full wherever they are, under a disinfectant cloud each that blinds the zombies in it (DetenteKit.Ultimate);
     /// Schießhund: its showdown, the zombie under the crosshair taken with it into an arena far below for a duel, and back to a crowd's roar, stronger (HoundShowdown); Support:
     /// the bag full and every teammate's shield, ammo and throwables full, each on their own PC (SupportKit.Restock).
@@ -30,7 +30,7 @@ public sealed partial class ClassCards
             CallGunRun();
         }
         else if (PlayerClass.Is(PlayerClass.Ghost)) GhostCards.Local.OrNull()?.Phantom();
-        else if (PlayerClass.Is(PlayerClass.Point)) kit.OrNull()?.ReloadAll();
+        else if (PlayerClass.Is(PlayerClass.Point)) PointBreach.Throw(movement);
         else if (PlayerClass.Is(PlayerClass.Detente)) DetenteKit.Local.OrNull()?.Ultimate();
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) HoundShowdown.Begin(movement);
         else if (PlayerClass.Is(PlayerClass.Support)) SupportKit.Local.OrNull()?.Restock();

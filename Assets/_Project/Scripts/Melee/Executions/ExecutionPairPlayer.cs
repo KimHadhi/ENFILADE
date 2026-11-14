@@ -28,7 +28,7 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution + 2)]
 public sealed class ExecutionPairPlayer : MonoBehaviour
 {
-    /// <summary>A pair as it goes to the other PCs: which, on whom, laid where, begun when (the server's clock).</summary>
+    /// <summary>A pair as it goes to the other PCs: which, on whom, laid where, begun when (the server's clock), how fast.</summary>
     public readonly struct Shared
     {
         public readonly byte Pair;
@@ -36,10 +36,11 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         public readonly Vector3 Anchor;
         public readonly float Yaw;
         public readonly double Clock;
+        public readonly float Pace;
 
-        public Shared(byte pair, ulong victim, Vector3 anchor, float yaw, double clock)
+        public Shared(byte pair, ulong victim, Vector3 anchor, float yaw, double clock, float pace)
         {
-            Pair = pair; Victim = victim; Anchor = anchor; Yaw = yaw; Clock = clock;
+            Pair = pair; Victim = victim; Anchor = anchor; Yaw = yaw; Clock = clock; Pace = pace;
         }
     }
 
@@ -57,7 +58,9 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
     private ExecutionPair pair;
     private ZombieBody zombie;
     private bool playing, waiting, ownsPair, bled;
-    private float clock;
+    // The pair's clock, in the clips' own seconds, and how fast it runs: a Ghost's 빠른 칼 plays its takedowns faster
+    // (GhostCards.TakedownPace), and the pace goes with the pair so every PC plays it as fast.
+    private float clock, pace = 1f;
     private Vector3 anchor, spot;
     private Quaternion anchorTurn = Quaternion.identity;
     private float grown = 1f;
@@ -113,6 +116,7 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (movement != null && !movement.IsLocal) return;
         Stop();
         waiting = true;
+        pace = Mathf.Max(.1f, GhostCards.TakedownPace(movement, victim));
     }
 
     private void OnEnded()
@@ -134,7 +138,7 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
             BeginOwn(execution.Victim);
         }
         if (!playing || dt <= 0f) return;
-        clock += dt;
+        clock += dt * pace;
         if (body == null) body = GetComponent<PlayerBody>();
         if (body != null) body.SetPairedTime(clock);
         if (zombie != null && zombie.BodyRoot != null) zombie.SetExecutedTime(clock);
@@ -183,12 +187,13 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         }
         if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, 0f)) return;
         ownsPair = true;
-        execution.Retime(chosen.Kill, chosen.Length);
+        // The execution's own timers run in real seconds: the clips' kill and end come sooner at a faster pace.
+        execution.Retime(chosen.Kill / pace, chosen.Length / pace);
         IgnoreVictim(target);
         ulong id = target.TryGetComponent(out Unity.Netcode.NetworkObject network) && network.IsSpawned ? network.NetworkObjectId : 0UL;
         var manager = Unity.Netcode.NetworkManager.Singleton;
         double now = manager != null && manager.IsListening ? manager.ServerTime.Time : 0d;
-        Began?.Invoke(new Shared(chosen.Index, id, at, yaw, now));
+        Began?.Invoke(new Shared(chosen.Index, id, at, yaw, now, pace));
     }
 
     // The pair's two clips from the player body's clip library (Art/Animations/Executions; PlayerBodyProfileBuilder lists them).
@@ -282,20 +287,22 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
     }
 
     /// <summary>
-    /// On every other PC: the owner's PC began this pair on that zombie, laid there, <paramref name="late"/> seconds ago
-    /// (PlayerNetworkCombat). The host's copy of a remote executor takes the pair's timing too, so it holds the zombie for
-    /// as long as the pair lasts.
+    /// On every other PC: the owner's PC began this pair on that zombie, laid there, <paramref name="late"/> seconds ago,
+    /// playing at <paramref name="speed"/> (PlayerNetworkCombat). The host's copy of a remote executor takes the pair's
+    /// timing too, so it holds the zombie for as long as the pair lasts.
     /// </summary>
-    internal void Show(byte index, GameObject victim, Vector3 at, float yaw, float late)
+    internal void Show(byte index, GameObject victim, Vector3 at, float yaw, float late, float speed = 1f)
     {
         var chosen = ExecutionPairs.At(index);
         if (chosen == null || !Clips(chosen, out var playerClip, out var zombieClip)) return;
         ZombieBody target = victim != null && victim.TryGetComponent(out ZombieBody found) && found.Wears ? found : null;
-        if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, late)) return;
+        speed = Mathf.Max(.1f, speed);
+        if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, late * speed)) return;
+        pace = speed;
         ownsPair = false;
         // Timed from now, as the owner's knife stab that came with this word begins here now: its strike on the pair's
-        // kill and its end on the pair's end as this copy plays them (ExecutionKnife reads them).
-        if (execution != null) execution.Retime(chosen.Kill - late, chosen.Length - late);
+        // kill and its end on the pair's end as this copy plays them (ExecutionKnife reads them), in real seconds.
+        if (execution != null) execution.Retime(chosen.Kill / speed - late, chosen.Length / speed - late);
     }
 
     /// <summary>On every other PC: the owner's pair ended early (the host said no, or it was cut short).</summary>

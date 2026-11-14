@@ -160,9 +160,12 @@ public sealed partial class WeaponController : MonoBehaviour
     // The held gun's grip (GunAttachments).
     private GunAttachments.Kind Grip => presentation is FPSBody body ? body.HeldGripKind : GunAttachments.Kind.None;
 
-    /// <summary>How long the sight takes to come up (s): the gun's Ads Transition Time, sooner with an angled grip on.</summary>
-    public float AdsTime => weaponData == null ? .16f
-        : weaponData.AdsTransitionTime * (Grip == GunAttachments.Kind.AngledGrip ? weaponData.GripAimTime : 1f);
+    /// <summary>
+    /// How long the sight takes to come up (s): the gun's Ads Transition Time, sooner with an angled grip on, and sooner
+    /// still for a Ghost holding 빠른 조준 (GhostCards.AimSpeed: this PC's own player only).
+    /// </summary>
+    public float AdsTime => (weaponData == null ? .16f
+        : weaponData.AdsTransitionTime * (Grip == GunAttachments.Kind.AngledGrip ? weaponData.GripAimTime : 1f)) / GhostCards.AimSpeed(movement);
 
     // How far zombies hear this gun's shot: a suppressor cuts it to the gun's share.
     private float ShotNoise => weaponData.NoiseRadius * (Suppressed ? weaponData.SuppressedNoise : 1f);
@@ -398,11 +401,12 @@ public sealed partial class WeaponController : MonoBehaviour
         float loose = 1f - AimBlend;
         // Fanning bucks the revolver off line with every slap of the palm.
         float fan = Runtime != null && Runtime.FireMode == WeaponFireMode.Fanning ? weaponData.FanSpread : 0f;
-        // The last factor takes all of it away in a Point's Gun Kata with its final card (PlayerClass.KataSpreadFactor);
-        // a shotgun's pattern is its own pellet cone, added on top where its pellets are aimed, so it stays.
+        // The last factors take all of it away in a Point's Gun Kata with its final card (PlayerClass.KataSpreadFactor) and
+        // for a Ghost's first shot once its sights are up with 빠른 조준 (SnapSpread); a shotgun's pattern is its own pellet
+        // cone, added on top where its pellets are aimed, so it stays.
         CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
             + (bloom + moving * weaponData.MovingSpread * PlayerClass.MovingSpreadFactor(movement) + fan) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
-            * (Crouched ? weaponData.CrouchSpread : 1f) * PlayerClass.KataSpreadFactor(movement);
+            * (Crouched ? weaponData.CrouchSpread : 1f) * PlayerClass.KataSpreadFactor(movement) * SnapSpread;
     }
     private void UpdateCrosshair()
     {
