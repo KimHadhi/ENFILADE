@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -143,10 +144,61 @@ public sealed class ZombieLooks : ScriptableObject
     [Tooltip("A body lying on the ground, posed from this clip's last frame: one of the characters above, baked still.")]
     public AnimationClip mealPose;
 
+    // A one-off clip's travel moves the zombie (ZombieBody.Travel): the user, 2026-11-14, on work made in Blender that was
+    // lost on its way into the game. Measured, not authored here, so the list is made anew from the folders each time.
+    [Header("Travel (ZombieClipFolders measures it; ZombieBody moves the zombie by it)")]
+    [Tooltip("How far the root of each one-off clip in the slot folders goes as it plays (a swing's lunge, a stagger's steps " +
+             "back), measured as the clip comes in; the zombie moves by it while the clip shows. Loops and the packs' clips " +
+             "have none here: theirs stays dropped.")]
+    public ClipTravel[] travels = new ClipTravel[0];
+
+    /// <summary>How far a clip's root goes as it plays, mark by mark (ZombieClipFolders measures it).</summary>
+    [Serializable]
+    public struct ClipTravel
+    {
+        public AnimationClip clip;
+        [Tooltip("Seconds from one mark to the next.")]
+        public float step;
+        [Tooltip("Where the root has gone from where it began, at each mark: x to the body's right, y ahead, in the avatar's " +
+                 "own units (Animator.humanScale of them make a metre on the body that plays it).")]
+        public Vector2[] along;
+
+        /// <summary>Where the root has gone this far into the clip: between the marks, held at either end.</summary>
+        public Vector2 At(float time)
+        {
+            if (along == null || along.Length == 0) return Vector2.zero;
+            if (step <= 0f || time <= 0f) return along[0];
+            float at = time / step;
+            if (at >= along.Length - 1) return along[along.Length - 1];
+            int index = (int)at;
+            return Vector2.LerpUnclamped(along[index], along[index + 1], at - index);
+        }
+    }
+
     private static ZombieLooks loaded;
+    // The travels by clip, made when first asked and again once the list is another (ZombieClipFolders sets a new one).
+    [NonSerialized] private Dictionary<AnimationClip, int> travelOf;
+    [NonSerialized] private ClipTravel[] travelOfList;
 
     /// <summary>The project's looks, or null when the asset is missing (enemies then stay capsules).</summary>
     public static ZombieLooks Instance => loaded != null ? loaded : loaded = Resources.Load<ZombieLooks>(ResourcePath);
+
+    /// <summary>The travel measured for this clip, if it is a one-off clip of the slot folders that moves (travels).</summary>
+    public bool TryGetTravel(AnimationClip clip, out ClipTravel travel)
+    {
+        travel = default;
+        if (clip == null || travels == null || travels.Length == 0) return false;
+        if (travelOf == null || !ReferenceEquals(travelOfList, travels))
+        {
+            travelOf = new Dictionary<AnimationClip, int>();
+            for (int i = 0; i < travels.Length; i++)
+                if (travels[i].clip != null && travels[i].along != null && travels[i].along.Length > 1) travelOf[travels[i].clip] = i;
+            travelOfList = travels;
+        }
+        if (!travelOf.TryGetValue(clip, out int index)) return false;
+        travel = travels[index];
+        return true;
+    }
 
     /// <summary>
     /// One of <paramref name="main"/> and <paramref name="more"/>, each as likely, the same for the same seed and slot

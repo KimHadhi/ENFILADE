@@ -24,8 +24,9 @@ using UnityEngine;
 /// downloaded "T-Pose", with skin). Every other file there then copies that avatar.
 /// Under Art/Animations/Zombies, "enf_" files (exported from the Blender zombie workspace on the Synty skeleton) use the
 /// Synty zombie model's avatar directly; other files there (a Mixamo download with skin) keep their own avatar. A file in
-/// a slot folder there (ZombieClipFolders) without a list loops by its folder, and its travel becomes root motion, which
-/// a zombie's body drops (ZombieBody moves by its agent).
+/// a slot folder there (ZombieClipFolders) without a list loops by its folder, and its travel becomes root motion, as the
+/// workspace's inPlace 1 makes it: a loop's is dropped (ZombieBody walks by its agent), while a one-off clip's (a swing's
+/// lunge, a stagger's steps back) moves the zombie as it plays, measured by ZombieClipFolders (ZombieBody.Travel).
 /// Resources/Poses (the results show's victory poses) take PoseImport's rules instead: humanoid clips on Mayo's avatar.
 /// Under Art/Animations/Executions the paired executions' clips from the Blender execution workspace are humanoid clips on
 /// KazusaBand's avatar ("_p", the player's) or the Synty zombie's ("_z"), set on every import (ExecutionClip).
@@ -281,8 +282,9 @@ internal sealed class ModelImportRules : AssetPostprocessor
     private const string GenericMixamoTake = "mixamo.com";
 
     // A clip dropped into a zombie slot folder with no list (a Mixamo download): it loops if its folder's clips do
-    // (ZombieClipFolders.Loops), height and facing stay in the pose, and its travel becomes root motion, which the
-    // zombie's body drops, so a walk downloaded without "In Place" walks on the spot like the rest.
+    // (ZombieClipFolders.Loops), height and facing stay in the pose, and its travel becomes root motion. A loop's is
+    // dropped, so a walk downloaded without "In Place" walks on the spot like the rest (the agent moves it); a one-off
+    // clip's step or lunge moves the zombie as it plays (ZombieBody.Travel).
     private void ZombieSlotDefaults(ModelImporter importer)
     {
         bool loop = ZombieClipFolders.Loops(assetPath);

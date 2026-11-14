@@ -27,6 +27,7 @@
 | 넘어뜨린 좀비가 쓰러지는 모습 (인형 물리) | 넘어뜨린 사람: 자기 화면에서 맞은 순간 쓰러지고, 그 PC가 인형을 굴려 자세를 보낸다 | 그 인형을 따라가며 좀비를 누운 자리로 옮기고, 언제 어디서 일어날지 정한다. 둘이 동시에 넘어뜨리면 먼저 닿은 쪽의 인형(`Condition.Runner`), 굴리던 사람이 나가면 넘겨받음 | `MeleeCombatTarget.KnockDownHere` → `ZombieBody.FallHere`·`KnockDown(by)`·`ShowRunner`, [ZombieBody.Down](../Enemies/Body/ZombieBody.Down.cs) |
 | 좀비의 공격이 플레이어에게 맞음, 패링·회피·잡힘·깔림 | 맞는 사람: 휘두름의 시간도 그 PC에서 잰다 | 휘두름을 시작한다는 것만 알림 | `EnemyNetwork.WindupRpc` → `EnemyCombatAI.ShowWindup`, `PlayerHold` → `PlayerNetworkCombat.HoldRpc` |
 | 좀비가 누구를 보고 듣고 쫓는지 | 방장(좀비 자신의 일) | 기분·의심·보는 사람을 0.1초 간격으로 알림 | `ZombieMind`, `EnemyNetwork.Condition` |
+| 좀비 클립의 이동 (덤벼들기·물러나기) | 방장 | 클립이 움직인 만큼 좀비를 옮긴다(걷기 메시 안). 다른 PC는 위치를 따라오고, 걷는 속도에서만 그 이동을 뺀다 | `ZombieBody.Travel` |
 | 카드·궁극기가 좀비에게 하는 일 (제압·조용한 처치·안 보이는 플레이어·눈 가리는 가스·좀비 옮기기) | 쓴 사람: 자기 PC에서 `ZombieEffects`를 부르면 바로 적용 | 좀비 하나에 대한 것은 그 좀비의 RPC로(제압은 모든 PC에, 옮기기는 방장에게), 플레이어·자리에 대한 것은 이름 붙은 메시지 `ENFILADE.ZombieEffects`로 받아 적용하고 다른 참가자에게 전한다. 조용한 처치는 타격에 실려 온다 | [ZombieEffects](../Enemies/ZombieEffects.cs), `EnemyNetwork.SuppressRpc`·`MoveRpc`, `EnemyHitMessage`의 Silent |
 
 내가 방금 한 일은 방장의 뒤늦은 보고에 덮이지 않는다: 사본은 내 타격 뒤 `EnemyNetwork.PredictionHold`(실제 왕복 시간 + 여유, Network.csv `predict*`) 동안 체력은 더 낮은 쪽만, 자세는 내 화면 것을 믿는다.

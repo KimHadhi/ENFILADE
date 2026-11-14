@@ -30,7 +30,12 @@ export (`export_active_clip`), and adds the Zombie sidebar tab:
 4. **Export**: `export_active_clip` samples the evaluated stack onto an original-bones-only skeleton and
    writes `Assets/_Project/Art/Animations/Zombies/<Slot>/enf_<name>.fbx` and its `.clips.csv`
    (loop by slot, `inPlace` 1). Unity's `ZombieClipFolders` adds it to the slot's `ZombieLooks` list and
-   `ModelImportRules` gives `enf_` files the Synty avatar.
+   `ModelImportRules` gives `enf_` files the Synty avatar. `inPlace` 1 takes the travel out of the pose as root
+   motion: a loop's is dropped (the zombie's agent walks it); a one-off slot's (Attack, Flinch, Stagger, Notice,
+   Rouse, CrawlAttack, a pose's `_getup`) moves the zombie as it plays, measured into `ZombieLooks.travels` by
+   `ZombieClipFolders` and applied on the host through the agent by `ZombieBody.Travel` (2026-11-14). So loading
+   (`load_base`) takes the straight-line travel out only for a looping slot (`in_place` and `export_slot`), and the
+   export warns when a one-off slot gets a base that lost it (`travel_left_out`).
 
 Recipes (`ArtSource/Zombies/Recipes/*.json`, format in its README): a clip as text, i.e. base clip, load
 options, variation values, touch-up keys saved verbatim (`keys`) and moves written in words (`touch`: frame, part,

@@ -406,7 +406,7 @@ def _mirrored(rig, rotations, hips, rest):
 
 
 def _in_place(rig, frames):
-    """Takes the hips' straight-line travel out (the game moves zombies itself); bob and sway stay."""
+    """Takes the hips' straight-line travel out (a looping slot's: the game walks it itself); bob and sway stay."""
     up, _left, _forward = _body_axes(rig)
     first, last = frames[0][1], frames[-1][1]
     travel = (last - first) - up * (last - first).dot(up)
@@ -548,7 +548,11 @@ def _put_in_strip(track, action):
 
 def load_base(context, rig, path, settings):
     """Bake a clip into a fresh base layer, empty the variation layer and start a new touch-up action."""
-    order, frames = sample_clip(context, rig, path, settings.speed, settings.mirror, settings.in_place)
+    # The straight-line travel comes out only for a slot that loops: the game walks those itself (the zombie's agent). A
+    # one-off clip (a swing, a stagger, getting up) keeps it, and the zombie moves by it in the game (ZombieBody.Travel):
+    # taken out here, the lunge or the steps back the clip was made with never reached the game.
+    take_out = settings.in_place and SLOT_LOOPS.get(settings.export_slot, True)
+    order, frames = sample_clip(context, rig, path, settings.speed, settings.mirror, take_out)
     names = order
     per_frame = [solve_bases(rig, order, rotations, hips) for rotations, hips in frames]
     numbers = list(range(1, len(per_frame) + 1))
@@ -590,7 +594,8 @@ def load_base(context, rig, path, settings):
     scene.frame_set(1)
     rig['enf_base_source'] = str(path)
     rig['enf_base_name'] = stem
-    rig['enf_load'] = json.dumps({'in_place': settings.in_place, 'mirror': settings.mirror, 'speed': settings.speed})
+    rig['enf_load'] = json.dumps({'in_place': settings.in_place, 'mirror': settings.mirror, 'speed': settings.speed,
+                                  'travel_out': take_out})
     settings.export_name = stem.removeprefix('enf_')
     # A beginner forgets to press I and loses a pose on the next frame: turning a bone keys it (the touch-up layer).
     _sync_auto_key(context)
@@ -784,10 +789,21 @@ def export_to_game(context, rig, settings, root=None):
     data.action.name = stem
     data.action['truefps_loop'] = SLOT_LOOPS[slot]
     tools.export_active_clip(context, rig, str(path))
-    # inPlace 1: what travel is left becomes root motion, which a zombie's body drops (it is moved by its agent).
+    # inPlace 1: the clip's travel comes out of the pose as root motion. A loop's is dropped (the zombie's agent walks it);
+    # a one-off clip's (a swing's lunge, a stagger's steps back) moves the zombie as it plays (ZombieBody.Travel, measured
+    # by ZombieClipFolders), so the pose stays over its feet and nothing snaps back as the clip ends.
     path.with_suffix('.clips.csv').write_text(
         CSV_HEADER + f'{stem},{int(SLOT_LOOPS[slot])},1,0,0,0,0,,\n', encoding='utf-8')
     return path
+
+
+def travel_left_out(rig, slot):
+    """A one-off slot gets a clip whose base was loaded for a loop, its straight-line travel taken out."""
+    if SLOT_LOOPS.get(slot, True):
+        return False
+    loaded = json.loads(rig.get('enf_load', '{}'))
+    # Loaded before the slot decided it, 'in_place' alone took the travel out.
+    return bool(loaded.get('travel_out', loaded.get('in_place', False)))
 
 
 # ---- Easy touch-ups: body parts by name, moves by direction --------------------------------------------------------
@@ -1076,7 +1092,9 @@ _recipe_cache = []
 
 class ENFZombieSettings(bpy.types.PropertyGroup):
     in_place: BoolProperty(name='제자리', default=True,
-                           description='골반이 앞으로 나아가는 거리를 뺀다. 게임에서는 좀비가 스스로 움직이므로 보통 켠다')
+                           description='걷기·뛰기·서 있기처럼 반복하는 슬롯에서 골반이 앞으로 나아가는 거리를 뺀다(게임에서는 좀비가 '
+                                       '스스로 걷는다). 휘두르기·휘청 같은 한 번 동작 슬롯에서는 켜져 있어도 빼지 않고, 게임에서 좀비가 '
+                                       '그 거리만큼 움직인다. 슬롯을 먼저 고르고 불러온다')
     mirror: BoolProperty(name='좌우 반전', default=False, description='왼쪽과 오른쪽을 바꿔 불러온다')
     speed: FloatProperty(name='빠르기', default=1.0, min=.25, max=4.0, description='1보다 크면 빨라지고 짧아진다')
     hunch: FloatProperty(name='몸 숙이기', default=0.0, min=-20, max=45, description='등을 앞으로 굽히는 각도(도)')
@@ -1170,7 +1188,7 @@ class ENFZOMBIE_OT_load_file(bpy.types.Operator, ImportHelper):
 class ENFZOMBIE_OT_reload(bpy.types.Operator):
     bl_idname = 'enf_zombie.reload'
     bl_label = '같은 클립 다시 불러오기'
-    bl_description = '제자리·좌우 반전·빠르기를 바꾼 뒤 같은 클립을 다시 깐다 (변형과 손질은 지워진다)'
+    bl_description = '슬롯·제자리·좌우 반전·빠르기를 바꾼 뒤 같은 클립을 다시 깐다 (변형과 손질은 지워진다)'
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -1315,6 +1333,10 @@ class ENFZOMBIE_OT_export(bpy.types.Operator):
             return {'CANCELLED'}
         finally:
             _back_to_pose(context, rig)
+        if travel_left_out(rig, context.scene.enf_zombie.export_slot):
+            self.report({'WARNING'}, f'보냈습니다: {path.parent.name}/{path.name}. 다만 바탕 클립을 반복 슬롯으로 불러와 앞으로 '
+                                     '나아가는 거리가 빠졌습니다. 이 슬롯을 고른 채 "같은 클립 다시 불러오기"를 하면 이동이 살아납니다')
+            return {'FINISHED'}
         self.report({'INFO'}, f'보냈습니다: {path.parent.name}/{path.name}. Unity를 누르면 들어갑니다')
         return {'FINISHED'}
 
@@ -1518,11 +1540,15 @@ class ENFZOMBIE_PT_base(_ZombieSubPanel, bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.scene.enf_zombie
+        # The slot first: a one-off slot keeps the clip's travel (the game moves the zombie by it), a loop's comes out.
+        layout.prop(settings, 'export_slot', text='슬롯')
         layout.operator('enf_zombie.load', icon='VIEWZOOM')
         layout.operator('enf_zombie.load_file', icon='FILEBROWSER')
         row = layout.row(align=True)
         row.prop(settings, 'in_place', toggle=True)
         row.prop(settings, 'mirror', toggle=True)
+        if not SLOT_LOOPS.get(settings.export_slot, True):
+            layout.label(text='한 번 동작 슬롯: 앞으로 나아가는 거리를 그대로 둔다', icon='INFO')
         layout.prop(settings, 'speed')
         layout.operator('enf_zombie.reload', icon='FILE_REFRESH')
 

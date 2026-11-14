@@ -75,6 +75,8 @@ public sealed partial class ZombieBody
         playable.SetApplyFootIK(true);
         playable.SetSpeed(0d);
         graph.Connect(playable, 0, mixer, input);
+        // A one-off clip that travels moves the zombie as it plays (ZombieBody.Travel).
+        NoteTraveller(playable, clip, mixer, input);
         length = Mathf.Max(.05f, clip.length);
         return playable;
     }
@@ -132,6 +134,8 @@ public sealed partial class ZombieBody
         // A paired execution's clip at the pair's own clock (ZombieBody.Executed).
         ExecutedTick(real);
         Weigh();
+        // With this frame's times and weights set, a one-off clip's own travel moves it (ZombieBody.Travel).
+        Travel();
         GuardGraph();
         // From the frame after dressing, once the pack's spare meshes are gone, so a doll's copy of the body is light.
         // Half a second apart for each zombie (it looked through the dolls every frame for every zombie): dolls are made
@@ -185,8 +189,15 @@ public sealed partial class ZombieBody
         // In slow motion it covers less ground; the legs show the same gait, slowed (dt), not a walk.
         float measured = new Vector2(step.x, step.z).magnitude / real / Mathf.Max(.05f, pace);
         if (measured > 20f) measured = 0f; // a placement (spawn, getting up), not a stride
-        // What a corpse carries on with if it dies now.
+        // What a corpse carries on with if it dies now, a clip's lunge included.
         moving = measured > 0f ? step / real : Vector3.zero;
+        // A one-off clip's own travel (Travel, since the last Move) moved it, not its legs: the gait goes by the rest, so a
+        // lunge doesn't walk the legs under the swing, nor a getting up's step count as moving off out of its pose (yieldSpeed).
+        if (measured > 0f && travelled.sqrMagnitude > 0f)
+        {
+            Vector3 walked = step - travelled;
+            measured = new Vector2(walked.x, walked.z).magnitude / real / Mathf.Max(.05f, pace);
+        }
         speed = Mathf.Lerp(speed, measured, 1f - Mathf.Exp(-SpeedSharpness * real));
         // Searching, the slower search walk sets the pace.
         float stepSpeed = StepSpeed, walking, running;
