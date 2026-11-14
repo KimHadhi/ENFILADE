@@ -36,8 +36,9 @@ public sealed partial class GreyboxBuilder
 
     // A placed copy's levels of detail (see the class): its own groups keep their levels and get the table's last one;
     // renderers no group holds go into a new single-level group on the copy, unless the copy already has a group of its
-    // own (a GameObject holds one LODGroup), where they stay as they were.
-    private void FitLods(GameObject copy)
+    // own (a GameObject holds one LODGroup), where they stay as they were. <paramref name="heldElsewhere"/>: renderers a
+    // group elsewhere holds (a bought scene's, PackProps), which stay out of the new group.
+    private void FitLods(GameObject copy, HashSet<Renderer> heldElsewhere = null)
     {
         float cull = LodCull();
         var held = new HashSet<Renderer>();
@@ -45,27 +46,56 @@ public sealed partial class GreyboxBuilder
         {
             var lods = group.GetLODs();
             if (lods.Length == 0) continue;
-            foreach (var lod in lods)
-                if (lod.renderers != null)
-                    foreach (var renderer in lod.renderers)
-                        if (renderer != null) held.Add(renderer);
+            Hold(group, held);
+            // Unity takes a group's levels only each under the one before it, the first under the whole screen; the
+            // airport's bread rolls start at 5.48 screens, and SetLODs refused them ("Attempting to set LOD where the
+            // screen relative size is greater then or equal to a higher detail LOD level", the rebuild of 11-14).
+            bool reordered = MakeFalling(lods);
             int last = lods.Length - 1;
             float before = last > 0 ? lods[last - 1].screenRelativeTransitionHeight : 1f;
             float want = Mathf.Min(cull, before * LodUnderLast);
-            if (Mathf.Approximately(lods[last].screenRelativeTransitionHeight, want)) continue;
+            if (!reordered && Mathf.Approximately(lods[last].screenRelativeTransitionHeight, want)) continue;
             lods[last].screenRelativeTransitionHeight = want;
             group.SetLODs(lods);
             lodsTuned++;
         }
         var loose = new List<Renderer>();
         foreach (var renderer in copy.GetComponentsInChildren<Renderer>(true))
-            if (!held.Contains(renderer)) loose.Add(renderer);
+            if (!held.Contains(renderer) && (heldElsewhere == null || !heldElsewhere.Contains(renderer))) loose.Add(renderer);
         if (loose.Count == 0 || copy.TryGetComponent(out LODGroup _)) return;
         var added = copy.AddComponent<LODGroup>();
         added.fadeMode = LODFadeMode.None;
         added.SetLODs(new[] { new LOD(cull, loose.ToArray()) });
         added.RecalculateBounds();
+        if (heldElsewhere != null) heldElsewhere.UnionWith(loose);
         lodsAdded++;
+    }
+
+    // Every renderer a group holds, into the set.
+    private static void Hold(LODGroup group, HashSet<Renderer> held)
+    {
+        foreach (var lod in group.GetLODs())
+            if (lod.renderers != null)
+                foreach (var renderer in lod.renderers)
+                    if (renderer != null) held.Add(renderer);
+    }
+
+    // Puts a group's levels each under the one before it (and the first under the whole screen), halving where one is
+    // not: a maker's level kept as it was wherever it already falls. True when one was changed.
+    private static bool MakeFalling(LOD[] lods)
+    {
+        bool changed = false;
+        float before = 1f;
+        for (int i = 0; i < lods.Length; i++)
+        {
+            if (lods[i].screenRelativeTransitionHeight >= before)
+            {
+                lods[i].screenRelativeTransitionHeight = before * LodUnderLast;
+                changed = true;
+            }
+            before = lods[i].screenRelativeTransitionHeight;
+        }
+        return changed;
     }
 
     // For the build's report.

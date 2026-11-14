@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -122,7 +123,15 @@ public sealed partial class GreyboxBuilder
         foreach (var body in pack.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(body);
         foreach (var lamp in pack.GetComponentsInChildren<Light>(true))
         {
-            if (lamp.type == LightType.Directional) { Object.DestroyImmediate(lamp); continue; }
+            if (lamp.type == LightType.Directional)
+            {
+                // URP's data for a light needs the light, so it goes first. The pack's sun stayed on beside the map's
+                // until the rebuild of 11-14 ("Can't remove Light because UniversalAdditionalLightData (Script) depends
+                // on it"): chapter 4 had two suns.
+                if (lamp.TryGetComponent(out UniversalAdditionalLightData data)) Object.DestroyImmediate(data);
+                Object.DestroyImmediate(lamp);
+                continue;
+            }
             // Baked whole into the probe volume: lit rooms with no lamp drawn live (two hundred of them would be).
             lamp.lightmapBakeType = LightmapBakeType.Baked;
             packLamps++;
@@ -159,6 +168,11 @@ public sealed partial class GreyboxBuilder
         // Every prop is culled when small on screen, as the map's own models are (Tables/MapLods): a prefab copy as a
         // whole, a part of the scene's own with nothing drawn under it on its own (a group with drawn parts under it
         // would put those parts in two LOD groups).
+        // A pack's group may hold parts that stand apart from it (the airport's phone blocks hold their phones and
+        // signs): those parts are held already, so no group of their own goes on them (a renderer in two groups is
+        // refused: "Renderer 'phoneblock_big_glass' is registered with more than one LODGroup", the rebuild of 11-14).
+        var held = new HashSet<Renderer>();
+        foreach (var group in pack.GetComponentsInChildren<LODGroup>(true)) Hold(group, held);
         var props = new HashSet<GameObject>();
         foreach (var shape in pack.GetComponentsInChildren<Renderer>(true))
         {
@@ -170,7 +184,7 @@ public sealed partial class GreyboxBuilder
         }
         foreach (var prop in props)
         {
-            FitLods(prop);
+            FitLods(prop, held);
             // Small ones cast no shadow, as the map's own models (QuietShadows).
             QuietShadows(prop);
         }
