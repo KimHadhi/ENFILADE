@@ -18,14 +18,23 @@ public readonly struct NoiseEvent
     /// Only with Lure.
     /// </summary>
     public readonly bool Gather;
+    /// <summary>
+    /// Where a gathering lure's hearers go: where it was heard from (Point), or a place the sound calls them to (an
+    /// airport's announcement heard at every speaker, paging the far wing: GimmickLure's gatherAt).
+    /// </summary>
+    public readonly Vector3 GatherPoint;
 
     public NoiseEvent(Vector3 point, float radius, GameObject source, bool lure = false, bool gather = false)
+        : this(point, radius, source, lure, gather, point) { }
+
+    public NoiseEvent(Vector3 point, float radius, GameObject source, bool lure, bool gather, Vector3 gatherPoint)
     {
         Point = point;
         Radius = radius;
         Source = source;
         Lure = lure;
         Gather = lure && gather;
+        GatherPoint = gatherPoint;
     }
 }
 
@@ -41,6 +50,12 @@ public static class Noise
     public static void Make(Vector3 point, float radius, GameObject source, bool lure = false, bool gather = false)
     {
         if (radius > 0f) Made?.Invoke(new NoiseEvent(point, radius, source, lure, gather));
+    }
+
+    /// <summary>A gathering lure heard at <paramref name="point"/> that calls its hearers to <paramref name="gatherAt"/>.</summary>
+    public static void Gather(Vector3 point, float radius, GameObject source, Vector3 gatherAt)
+    {
+        if (radius > 0f) Made?.Invoke(new NoiseEvent(point, radius, source, true, true, gatherAt));
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

@@ -36,6 +36,13 @@ public sealed partial class CampaignRun
         // A hold or the escape is a crescendo whatever was noticed. Quiet, nobody is sent, and the pacing starts afresh
         // when it ends, as after a rest stop.
         if (scripted) quiet = calmDue = lull = false;
+        // An alarm the whole map hears (GimmickFireAlarm) keeps it loud: found as of now, every frame it rings.
+        ringing.RemoveWhere(alarm => alarm == null);
+        if (ringing.Count > 0 && !scripted)
+        {
+            quiet = calmDue = lull = false;
+            noticedAt = Time.time;
+        }
         Alarm();
         // The chase dies down: found once, but no zombie has had anyone in sight for lullSeconds (they shut themselves in a
         // rest stop, or slipped away), so the horde stops and the zombies go looking, then calm (ZombieMind.LoseAll).
@@ -266,6 +273,7 @@ public sealed partial class CampaignRun
     private void BackToCheckpoint()
     {
         if (finished) return;
+        wipes++;
         horde.Clear();
         music.Stop();
         brutesDue = 0;

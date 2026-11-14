@@ -24,7 +24,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private PlayerMovement player;
     private PlayerInput playerInput;
     private PlayerMeleeCombat melee;
-    private bool sidearmOnly, handsFull;
+    private bool sidearmOnly, handsFull, gunsAway;
     private int slotBeforeSidearm, slotBeforeHandsFull;
     // The slot to take out once the held gun is put away (WeaponController.BeginHolster), and how long that has left (s).
     private int holsterTo;
@@ -167,9 +167,10 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (hold == sidearmOnly) return;
         sidearmOnly = hold;
         if (!hold) { SetSelection(slotBeforeSidearm); return; }
-        // Going down drops whatever filled the hands (CampaignCans); getting up goes back to what was held before it.
-        slotBeforeSidearm = handsFull ? slotBeforeHandsFull : selectedSlot;
-        handsFull = false;
+        // Going down drops whatever filled the hands (CampaignCans) and brings the pistol out even with the guns on an
+        // x-ray belt (GimmickTray); getting up goes back to what was held before it.
+        slotBeforeSidearm = handsFull || gunsAway ? slotBeforeHandsFull : selectedSlot;
+        handsFull = gunsAway = false;
         for (int i = 0; i < SlotCount; i++)
         {
             var data = GetWeapon(i);
@@ -182,19 +183,33 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     /// <summary>Both hands hold something that isn't a weapon (HoldHandsFull).</summary>
     public bool HandsFull => handsFull;
 
+    /// <summary>The guns are elsewhere (GimmickTray: on an airport's x-ray belt), so nothing is held (HoldGunsAway).</summary>
+    public bool GunsAway => gunsAway;
+
     /// <summary>Something fills both hands (a campaign fuel can, CampaignCans): nothing is held and the number keys do
     /// nothing until it is put down, then back to what was held.</summary>
-    internal void HoldHandsFull(bool full)
+    internal void HoldHandsFull(bool full) => Empty(ref handsFull, full);
+
+    /// <summary>The guns ride an x-ray belt (GimmickTray): nothing is held and the number keys do nothing until they are
+    /// taken back, then back to what was held. A fuel can still fits the empty hands; downed, the pistol comes out.</summary>
+    internal void HoldGunsAway(bool away) => Empty(ref gunsAway, away);
+
+    // Hands emptied for one reason or more (a can, the guns away): what was held before the first goes back after the
+    // last. Each reason is set every frame by its own owner, so one never undoes another's.
+    private void Empty(ref bool reason, bool on)
     {
-        if (full == handsFull || (full && sidearmOnly)) return;
-        handsFull = full;
-        if (full) { slotBeforeHandsFull = selectedSlot; SetSelection(-1); return; }
+        if (on == reason || (on && sidearmOnly)) return;
+        bool before = handsFull || gunsAway;
+        reason = on;
+        bool after = handsFull || gunsAway;
+        if (before == after) return;
+        if (after) { slotBeforeHandsFull = selectedSlot; SetSelection(-1); return; }
         SetSelection(slotBeforeHandsFull);
     }
 
     public bool HandleSlotInput(int index)
     {
-        if (!CanReadInput || sidearmOnly || handsFull || index < 0 || index >= SlotCount) return false;
+        if (!CanReadInput || sidearmOnly || handsFull || gunsAway || index < 0 || index >= SlotCount) return false;
         return SelectSlot(selectedSlot == index ? -1 : index);
     }
     // Explicit selection is idempotent; -1 holsters everything. Number keys use ToggleSlot semantics.

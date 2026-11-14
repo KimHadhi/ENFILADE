@@ -5,7 +5,9 @@ using UnityEngine;
 /// radio or a public address that [F] switches on. For its seconds it blares from its emitters (itself, or speakers far
 /// off: an airport's announcement), and every calm zombie that hears it walks over and stays round it a while (a
 /// gathering lure, NoiseEvent.Gather), turning their backs on the way past. Bunched there they can be blown up together,
-/// or left behind. One go each: it is spent after. States: 0 ready, 1 on, 2 spent.
+/// or left behind. One go each: it is spent after. An airport's desk (the card "공항 방송 미끼") is heard at every speaker
+/// in the terminal (heardAt) and pages the far wing (gatherAt): the whole terminal walks off there. States: 0 ready,
+/// 1 on, 2 spent.
 /// </summary>
 public sealed class GimmickLure : GimmickSwitch
 {
@@ -25,6 +27,10 @@ public sealed class GimmickLure : GimmickSwitch
     private string prompt = "gimmick.lure.tv";
     [SerializeField, Tooltip("A light that glows while it blares (a TV's screen); may be empty.")]
     private Light glow;
+    [SerializeField, Tooltip("Where else it is heard (an announcement on every speaker); empty: only at its emitters.")]
+    private Transform[] heardAt = new Transform[0];
+    [SerializeField, Tooltip("Where it calls those who hear it (the wing it pages); empty: to where each heard it.")]
+    private Transform gatherAt;
 
     private AudioSource[] loops;
     private float startedAt, nextNoise, glowFull;
@@ -67,8 +73,15 @@ public sealed class GimmickLure : GimmickSwitch
         }
         if (!host || Time.time < nextNoise) return;
         nextNoise = Time.time + every;
-        if (emitters == null || emitters.Length == 0) Noise.Make(transform.position + Vector3.up * .5f, radius, gameObject, true, true);
-        else foreach (var emitter in emitters) if (emitter != null) Noise.Make(emitter.position, radius, gameObject, true, true);
+        if (emitters == null || emitters.Length == 0) Heard(transform.position + Vector3.up * .5f);
+        else foreach (var emitter in emitters) if (emitter != null) Heard(emitter.position);
+        if (heardAt != null) foreach (var also in heardAt) if (also != null) Heard(also.position);
+    }
+
+    private void Heard(Vector3 at)
+    {
+        if (gatherAt != null) Noise.Gather(at, radius, gameObject, gatherAt.position);
+        else Noise.Make(at, radius, gameObject, true, true);
     }
 
     private void Sound(bool on)

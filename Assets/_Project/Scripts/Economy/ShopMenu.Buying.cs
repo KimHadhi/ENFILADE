@@ -70,7 +70,7 @@ public sealed partial class ShopMenu
             case Kind.Gun:
                 int slot = GunSlotFor(slots);
                 if (!slots.TrySetWeapon(slot, item.Weapon)) return false;
-                if (!slots.HandsFull) slots.SelectSlot(slot);
+                if (!slots.HandsFull && !slots.GunsAway) slots.SelectSlot(slot);
                 return true;
             case Kind.Ammo:
                 return slots.RefillAmmo() > 0;

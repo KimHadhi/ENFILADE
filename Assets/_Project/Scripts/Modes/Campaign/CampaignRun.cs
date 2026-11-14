@@ -138,6 +138,9 @@ public sealed partial class CampaignRun : MonoBehaviour
     private CombatPhase phase;
     private readonly float[] holdTrack = new float[2];
     private bool finished, movedOn, wasWiped, listening;
+    // Alarms ringing now (Ring), and wipes so far (Wipes).
+    private readonly System.Collections.Generic.HashSet<Object> ringing = new System.Collections.Generic.HashSet<Object>();
+    private int wipes;
     // The stretch is quiet (the host's word, shared); this PC last saw it so; the host still owes the stretch its calm zombies.
     private bool quiet, wasQuiet, calmDue;
     // The quiet came back after they were found (a lull, not the stretch's own start), and when they were last found.
@@ -289,6 +292,22 @@ public sealed partial class CampaignRun : MonoBehaviour
 
     /// <summary>A burn hold's fire burns now (the host's word on every PC): BurnFire draws it.</summary>
     public static bool Burning => active != null && !active.finished && active.burning;
+
+    /// <summary>
+    /// The host: an alarm rings (or stops) that the whole map hears (GimmickFireAlarm). While any rings the stretch is
+    /// loud and stays so, the horde coming however long nobody is seen (no lull), and a quiet stretch's crowds stay
+    /// awake to it; stopped, the pacing goes on as ever.
+    /// </summary>
+    public static void Ring(Object alarm, bool on)
+    {
+        if (active == null || !active.IsHost || alarm == null) return;
+        if (on) active.ringing.Add(alarm);
+        else active.ringing.Remove(alarm);
+    }
+
+    /// <summary>The host: how many times the run went back to its rest stop after a wipe, for a gimmick that undoes itself
+    /// then (GimmickFireAlarm; its state then goes to the others as any switch's does).</summary>
+    public static int Wipes => active != null ? active.wipes : 0;
 
     /// <summary>The run is at this step now.</summary>
     public static bool IsRunning(string stepId)

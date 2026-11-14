@@ -8,7 +8,8 @@ using UnityEngine;
 /// </summary>
 public static class GimmickSounds
 {
-    public enum Cue { Static, Clunk, Ding, Smash, Hiss, Unlock, Jingle, Snap, Crash, Whistle, CarAlarm, Fire, Rumble, Beep, Chime }
+    // New cues go at the end: a lure's cue is saved in the map by its number.
+    public enum Cue { Static, Clunk, Ding, Smash, Hiss, Unlock, Jingle, Snap, Crash, Whistle, CarAlarm, Fire, Rumble, Beep, Chime, FireBell, Lever, Shutter }
 
     private const int Rate = 44100;
     private static readonly AudioClip[] made = new AudioClip[Enum.GetValues(typeof(Cue)).Length];
@@ -37,6 +38,9 @@ public static class GimmickSounds
             Cue.Rumble => Rumble(),
             Cue.Beep => Beep(),
             Cue.Chime => Chime(),
+            Cue.FireBell => FireBell(),
+            Cue.Lever => Lever(),
+            Cue.Shutter => Shutter(),
             _ => Whistle()
         };
         var clip = AudioClip.Create("Gimmick " + cue, samples.Length, 1, Rate, false);
@@ -323,6 +327,60 @@ public static class GimmickSounds
         {
             float t = i / (float)Rate;
             s[i] = Bell(t, 1046.5f) * .8f + Bell(t - .45f, 880f) * .8f + Bell(t - .9f, 698.5f) * .8f;
+        }
+        return s;
+    }
+
+    // A fire alarm's bell: a hammer striking a gong some eighteen times a second, the ring never dying away between
+    // strikes: loops (1 s, a whole number of strikes).
+    private static float[] FireBell()
+    {
+        const float Strikes = 18f;
+        int count = Rate;
+        var s = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate, since = t % (1f / Strikes);
+            float ring = Mathf.Sin(2f * Mathf.PI * 880f * t) + .55f * Mathf.Sin(2f * Mathf.PI * 2370f * t) + .3f * Mathf.Sin(2f * Mathf.PI * 3510f * t);
+            float strike = .55f + .45f * Mathf.Exp(-since * 70f);
+            s[i] = ring * strike * .2f;
+        }
+        return s;
+    }
+
+    // A heavy lever pulled down: a ratchet's few clicks and a latch dropping home.
+    private static float[] Lever()
+    {
+        var random = new System.Random(29);
+        int count = (int)(Rate * .7f);
+        var s = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate, sum = 0f;
+            for (int k = 0; k < 4; k++) sum += Tick(t, .06f * k, random) * .7f;
+            float home = t > .38f ? (Mathf.Sin(2f * Mathf.PI * 140f * (t - .38f)) * Mathf.Exp(-(t - .38f) * 22f)
+                + (float)(random.NextDouble() * 2.0 - 1.0) * Mathf.Exp(-(t - .38f) * 50f) * .5f) : 0f;
+            s[i] = Mathf.Clamp(sum + home * .9f, -1f, 1f) * .85f;
+        }
+        return s;
+    }
+
+    // A steel shutter rolling up: a rattling grind rising, ending in a knock.
+    private static float[] Shutter()
+    {
+        var random = new System.Random(31);
+        int count = (int)(Rate * 1.8f);
+        var s = new float[count];
+        float low = 0f;
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate;
+            float white = (float)(random.NextDouble() * 2.0 - 1.0);
+            low += (white - low) * .1f;
+            float slats = .6f + .4f * Mathf.Sin(2f * Mathf.PI * (22f + 8f * t) * t);
+            float roll = low * 2.2f * slats * Mathf.Clamp01(t / .15f) * Mathf.Clamp01((1.5f - t) / .2f);
+            float knock = t > 1.5f ? Mathf.Sin(2f * Mathf.PI * 90f * (t - 1.5f)) * Mathf.Exp(-(t - 1.5f) * 16f) : 0f;
+            s[i] = Mathf.Clamp(roll + knock * .9f, -1f, 1f) * .75f;
         }
         return s;
     }

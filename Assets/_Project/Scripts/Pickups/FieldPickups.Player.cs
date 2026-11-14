@@ -153,7 +153,8 @@ public sealed partial class FieldPickups
         int slot = GunSlotFor(slots);
         var before = slots.GetWeapon(slot);
         if (!slots.TrySetWeapon(slot, row.Weapon)) return;
-        if (!slots.HandsFull) slots.SelectSlot(slot);
+        // Not with a can in the hands, nor with the guns on an x-ray belt (GimmickTray): the new gun waits in its slot.
+        if (!slots.HandsFull && !slots.GunsAway) slots.SelectSlot(slot);
         Pop(row.Kind, row.Name, Texts.Get("pickup.gives.gun"), row.Weapon);
         if (before != null && before.Category == WeaponCategory.Ranged)
             Leave(RowOf(before), player.transform.position + player.transform.forward * LeaveAhead);

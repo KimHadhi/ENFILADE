@@ -44,11 +44,12 @@ public sealed partial class ZombieMind
         {
             if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
-            if (mind.lured && (mind.lureAt - noise.Point).sqrMagnitude < GatherRound * GatherRound * 4f) continue;
+            if (mind.lured && (mind.lureAt - noise.GatherPoint).sqrMagnitude < GatherRound * GatherRound * 4f) continue;
             if (!mind.Reaches(noise, out _, out _)) continue;
+            // Where the sound calls them: where it is heard from, or the place it pages (NoiseEvent.GatherPoint).
             Vector2 round = Random.insideUnitCircle * GatherRound;
             mind.distractedUntil = Time.time + mind.lureGlance;
-            mind.Investigate(noise.Point + new Vector3(round.x, 0f, round.y), null);
+            mind.Investigate(noise.GatherPoint + new Vector3(round.x, 0f, round.y), null);
         }
     }
 

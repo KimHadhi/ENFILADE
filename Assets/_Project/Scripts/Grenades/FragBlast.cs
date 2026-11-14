@@ -72,10 +72,12 @@ public static class FragBlast
         Hurt(at, info, radius, harder, source, way, spread);
         HurtPlayers(at, info, radius, harder, thrower, source, way, spread);
         // A locked door in reach is blown in (a map gimmick: GimmickLock), loud as any smashed door; an alarm car in reach
-        // goes off and a spilled pump catches (GimmickAlarmCar, GimmickFuelTrap).
+        // goes off, a spilled pump catches and a smoke detector sets its fire alarm ringing (GimmickAlarmCar,
+        // GimmickFuelTrap, GimmickFireAlarm).
         GimmickLock.Blast(at, radius, info.Damage * harder, source);
         GimmickAlarmCar.Blast(at, radius);
         GimmickFuelTrap.Blast(at, radius, thrower);
+        GimmickFireAlarm.Blast(at, radius);
         FragAftermath.Begin(at, radius, info.Damage * harder, source, way, spread);
     }
 

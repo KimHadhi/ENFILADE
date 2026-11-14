@@ -49,6 +49,10 @@ public abstract class GimmickSwitch : MonoBehaviour
     /// <summary>The host breaking a tie: whether a guest's word moving it from <paramref name="now"/> may stand.</summary>
     internal virtual bool Accepts(byte now, byte proposed) => true;
 
+    /// <summary>The host: the state a guest's accepted word brings it to from <paramref name="now"/>; the word itself, or
+    /// both together for a switch whose state is parts that add up (GimmickTwoHands: each lever a bit).</summary>
+    internal virtual byte Merge(byte now, byte proposed) => proposed;
+
     /// <summary>Sets its state as the acting PC.</summary>
     protected void Set(byte state) => MapGimmicks.Set(Index, state);
 

@@ -38,7 +38,8 @@ public sealed partial class PlayerGrenades
         LetGo(!holding);
     }
 
-    private bool HandsFull() => TryGetComponent(out PlayerWeaponSlots slots) && slots.HandsFull;
+    // A can in the hands, or every weapon on an x-ray belt with the guns (GimmickTray: through the scanner bare-handed).
+    private bool HandsFull() => TryGetComponent(out PlayerWeaponSlots slots) && (slots.HandsFull || slots.GunsAway);
 
     // The body can throw: alive and up, not held, not climbing, hanging or vaulting, the hands not full; standing or
     // crouched (walking and in the air too) or sliding (GrenadeArm lifts the arm in the same states).

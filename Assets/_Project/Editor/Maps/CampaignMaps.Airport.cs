@@ -24,7 +24,8 @@ public static partial class CampaignMaps
         Ceilings = new[] { "decken" },
         Shell = new[] { "boden", "dach" },
         Glass = new[] { "fenster", "dachfesnter" },
-        Fixed = new[] { "rolltreppe", "blumen", "luggage_chechin_counter_wall" },
+        // The body scanner too: its arch is walked through (its panels: CampaignMaps.SecurityLane), not a solid box.
+        Fixed = new[] { "rolltreppe", "blumen", "luggage_chechin_counter_wall", "bodyscanner" },
         Uncut = new[] { "colmesh_floor" }
     };
 
@@ -98,6 +99,8 @@ public static partial class CampaignMaps
         b.PackOutside("PackWall", "TerminalRoof");
         b.PackPodium("PackWall", 0f, Floor);
         b.PackProps();
+        // The terminal's gimmicks: the security lane, the announcement desks, the fire alarm (CampaignMaps.AirportGimmicks).
+        TerminalGimmicks(b);
         // Frames round the cut doorways (the pack's walls have no thickness to show at a cut edge).
         b.Box("입구 문틀 남", 69.5f, 70.5f, 0f, 2.8f, 42.75f, 43.05f, b.Metal, "Metal");
         b.Box("입구 문틀 북", 69.5f, 70.5f, 0f, 2.8f, 46.25f, 46.55f, b.Metal, "Metal");

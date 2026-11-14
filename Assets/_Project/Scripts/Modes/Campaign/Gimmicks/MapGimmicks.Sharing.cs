@@ -121,15 +121,16 @@ public sealed partial class MapGimmicks
         return writer;
     }
 
-    // The host hears a guest's change: taken as it is unless the switch turns it down (a tie: GimmickSwitch.Accepts), and
-    // passed on to everyone either way, so the guest who asked learns how it stands.
+    // The host hears a guest's change: taken unless the switch turns it down (a tie: GimmickSwitch.Accepts), as the switch
+    // folds it into how it stands (GimmickSwitch.Merge: two levers pulled at once both count), and passed on to everyone
+    // either way, so the guest who asked learns how it stands.
     private void ReceiveAsk(ulong sender, FastBufferReader reader)
     {
         reader.ReadValueSafe(out ushort index);
         reader.ReadValueSafe(out byte state);
         if (index >= switches.Length) return;
         var target = switches[index];
-        if (target != null && target.Accepts(states[index], state)) Apply(index, state, true);
+        if (target != null && target.Accepts(states[index], state)) Apply(index, target.Merge(states[index], state), true);
         SendState(index, states[index]);
     }
 
