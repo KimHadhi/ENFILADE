@@ -53,6 +53,7 @@ spec = importlib.util.spec_from_file_location('enf_finger_ways', root / 'Tools/B
 - 쓰는 곳: 투척 작업실 [grenade_tools.py](../Grenades/grenade_tools.py) `clip_rows`, 밀치기 작업실 수리 동작 [shove_tools.py](../Shove/shove_tools.py) `arm_rows`,
   칼 작업실 [knife_tools.py](../Knives/knife_tools.py) `clip_rows`(오른손, `right=True`: KnifeMelee*.csv, 0.9.63; 칼 작업실 클립 29개를 카즈사·마네킹 오른손에 입혀 다시 재 보니 방향 최대 0.0002°, 비틀림 최대 0.0001°).
   - 손가락 키가 없던 수리 시안은 열 때 예전 게임과 같은 쥐기를 받는다(`draft_grips`).
+  - 달리기 작업실 [run_tools.py](../Run/run_tools.py) `hand_ways`·`key_fingers`(0.9.74): 원본 클립(믹사모·Beatrun)의 두 손을 `measure`로 재서 카즈사 손에 게임처럼(가장 적게 돌리고 비틀기) 입혀 시안에 프레임마다 키로 넣는다. 옛 파일은 열 때 채운다(`draft_fingers`). 9걸음 마디 6480개에서 방향 최대 0.0001°, 비틀림 최대 0.00002°.
 
 ## 몸 클립의 손가락 트랙 (`<클립>_fingers`)
 

@@ -4,6 +4,9 @@ START_RUN_ANIMATION.cmd opens ArtSource/Run/ENFILADE_Run_Animation.blend with tr
 The game's walk and run cycles (Player.csv Body.forwardMoves, rightMoves, backMoves, leftMoves) are on Kazusa's True FPS
 rig, each a locked draft layer (retargeted by build_run_workspace.py the way a humanoid avatar retargets, keyed every
 frame) under a touch-up layer (Combine), where one key bends the cycle smoothly instead of popping one frame.
+The drafts carry the source clip's fingers too, both hands every frame: each joint's way in the hand's own frame and its
+twist, measured with Tools/Blender/HandPaths/finger_ways.py and worn on Kazusa's hand as the game wears a hand table
+(key_fingers). A file built before that gets them on opening, from the source skeleton kept beside Kazusa (draft_fingers).
 It opens ready to work in, and saving sends the work to the game (the user, 2026-11-13: "내가 해야 하는 잡일을 최대한
 줄여. 나는 딱 오직 인간만이 할 수 있는 것만 해내면 되게끔"; the shared part is Tools/Blender/OneClick/one_click.py):
 - On open: the last cycle, the rig in Pose mode, the Dope Sheet showing the touch-up keys with the summary row, the
@@ -29,13 +32,15 @@ from pathlib import Path
 
 import bpy
 from bpy.props import BoolProperty, EnumProperty, FloatProperty
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 bl_info = {'name': 'ENFILADE Run Cycles', 'author': 'ENFILADE', 'version': (2, 0, 0), 'blender': (4, 5, 0),
            'location': '3D View > Sidebar > 달리기', 'category': 'Animation'}
 
 TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
 ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
+# What every hand workspace measures the fingers with (each joint's way and twist, the game's FingerWays).
+FINGER_WAYS = Path('Tools/Blender/HandPaths/finger_ways.py')
 TAB = '달리기'
 RUN_DIR = Path('Assets/_Project/Art/Animations/Run')
 CSV_HEADER = 'clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n'
@@ -52,6 +57,42 @@ ARMS = ('Left arm', 'Left elbow', 'Right arm', 'Right elbow')
 LEGS = ('Left leg', 'Left knee', 'Right leg', 'Right knee')
 HEAD = ('Neck', 'HeadBone')
 HIPS = 'Hips'
+
+
+def _kazusa_hand(side):
+    """Kazusa's hand on the True FPS rig: its wrist, and each finger's three bones knuckle out (the thumb from its root in
+    the palm), in finger_ways' order."""
+    s = side[0]
+    return f'{side} wrist', {'index': (f'IndexFinger1_{s}', f'IndexFinger2_{s}', f'IndexFinger3_{s}'),
+                             'middle': (f'MiddleFinger1_{s}', f'MiddleFinger2_{s}', f'MiddleFinger3_{s}'),
+                             'ring': (f'RingFinger1_{s}', f'RingFinger2_{s}', f'RingFinger3_{s}'),
+                             'little': (f'LittleFinger1_{s}', f'LittleFinger2_{s}', f'LittleFinger3_{s}'),
+                             'thumb': (f'Thumb0_{s}', f'Thumb1_{s}', f'Thumb2_{s}')}
+
+
+def _mixamo_hand(side):
+    """A Mixamo skeleton's hand (the Mixamo cycles), the same way round; its fourth bones only mark the fingertips."""
+    p = f'mixamorig:{side}Hand'
+    return p, {'index': (p + 'Index1', p + 'Index2', p + 'Index3'), 'middle': (p + 'Middle1', p + 'Middle2', p + 'Middle3'),
+               'ring': (p + 'Ring1', p + 'Ring2', p + 'Ring3'), 'little': (p + 'Pinky1', p + 'Pinky2', p + 'Pinky3'),
+               'thumb': (p + 'Thumb1', p + 'Thumb2', p + 'Thumb3')}
+
+
+def _valve_hand(side):
+    """A ValveBiped skeleton's hand (Beatrun's sprint): Finger0 is the thumb, Finger1 to Finger4 index to little."""
+    p = f'ValveBiped.Bip01_{side[0]}_'
+    return p + 'Hand', {finger: (f'{p}Finger{n}', f'{p}Finger{n}1', f'{p}Finger{n}2')
+                        for finger, n in (('index', 1), ('middle', 2), ('ring', 3), ('little', 4), ('thumb', 0))}
+
+
+SIDES = ('Left', 'Right')
+SIDE_LABELS = {'Left': '왼손', 'Right': '오른손'}
+# Each skeleton's two hands as finger_ways measures them: side -> (wrist, finger -> its three bones). Kazusa's are the
+# rig's; a cycle's source (build_run_workspace.py SOURCES) is told apart by its bones (skeleton_of).
+HANDS = {kind: {side: hand(side) for side in SIDES}
+         for kind, hand in (('kazusa', _kazusa_hand), ('mixamo', _mixamo_hand), ('valve', _valve_hand))}
+# The stand-in that plays a source's take while its hands are measured (sample_hands); never saved.
+STAND_IN = '__enf_run_fingers'
 
 
 def project_root():
@@ -97,6 +138,12 @@ def truefps():
 def one_click():
     """The shared one-click workspace module: items, fingerprints, sending on save, the screen on open."""
     return _module('enf_one_click', ONE_CLICK)
+
+
+def finger_ways():
+    """The shared finger measure: each finger joint's way in the hand's own frame and its twist, as the game's hand
+    tables carry them."""
+    return _module('enf_finger_ways', FINGER_WAYS)
 
 
 def find_rig(scene):
@@ -181,7 +228,9 @@ def select_cycle(context, key):
 
 
 def prepare(context):
-    """Every cycle ready (its touch-up layer, counted as the game has it), the last one shown."""
+    """Every cycle ready (a draft from before given its source's fingers, its touch-up layer, counted as the game has it),
+    the last one shown."""
+    draft_fingers(context)
     for key, _label in CYCLES:
         if bpy.data.actions.get(PREFIX + key + '_draft'):
             item(context, key)
@@ -207,6 +256,197 @@ def arrange(context):
             oc.select(context, window, main, [rig], rig, pose=True)
     oc.tell(f'달리기 「{label_of(current_cycle(scene))}」 · Space 재생 · 고치고 Ctrl+S 하면 게임에 들어갑니다')
     return True
+
+
+# ---- Fingers: the source clip's, on Kazusa's hands ---------------------------------------------------------------------
+# The body is retargeted in the world (build_run_workspace.py), but a world turn would carry into every finger whatever
+# the two skeletons' wrists differ by at rest. The fingers go by the hand instead, as the game wears a hand table: each
+# joint points where the source's points in the hand's own frame and is twisted about its length as far, so all three
+# of its channels come through and finger_ways.measure reads the same numbers off Kazusa as off the source.
+
+def hand_bones(kind, side):
+    wrist, chains = HANDS[kind][side]
+    return [wrist] + [name for chain in chains.values() for name in chain]
+
+
+def skeleton_of(arm):
+    """Which source skeleton an armature is ('mixamo', 'valve'), by its hands' bones; None if neither."""
+    bones = arm.data.bones
+    return next((kind for kind in ('mixamo', 'valve') if all(name in bones for side in SIDES
+                                                            for name in hand_bones(kind, side))), None)
+
+
+def hand_ways(rig, kind):
+    """Both hands of a posed skeleton (an evaluated copy too) as finger_ways measures them: (left, right), each 15
+    (x, y, z, twist) in finger_ways' order."""
+    measure = finger_ways().measure
+    return tuple(measure(rig, *HANDS[kind][side], right=side == 'Right') for side in SIDES)
+
+
+def finger_turns(rig, side, ways):
+    """Kazusa's finger bones of one hand turned to these ways: each bone's rotation_quaternion under its parent. As the game
+    wears a hand table (HandGrip.WearWays), each segment goes from its rest under its parent as turned the least way that
+    points it along its way in the hand's own frame, then about that way by its twist. Worked with the wrist at rest: the
+    knuckles ride the wrist, so the hand's frame turns with it and the turns hold whatever the wrist does."""
+    fw = finger_ways()
+    wrist, chains = HANDS['kazusa'][side]
+    bones = rig.data.bones
+    # The hand's own frame at rest, as finger_ways.frame takes it.
+    w = bones[wrist].head_local
+    index, middle, little = (bones[chains[f][0]].head_local for f in ('index', 'middle', 'little'))
+    x = (middle - w).normalized()
+    palm = x.cross(index - little)
+    if side == 'Right':
+        palm = -palm
+    y = (palm - x * palm.dot(x)).normalized()
+    z = y.cross(x)
+    posed, turns = {}, {}
+    n = 0
+    for finger in fw.FINGERS:
+        chain = chains[finger]
+        for i, name in enumerate(chain):
+            bone = bones[name]
+            parent = bone.parent
+            held = posed.get(parent.name, parent.matrix_local.to_3x3().normalized())
+            rest = held @ parent.matrix_local.to_3x3().normalized().inverted() @ bone.matrix_local.to_3x3().normalized()
+            way_x, way_y, way_z, twist = ways[n]
+            n += 1
+            want = (x * way_x + y * way_y + z * way_z).normalized()
+            least = (rest @ fw.rest_axis(rig, chain, i)).normalized().rotation_difference(want).to_matrix()
+            # finger_ways counts the twist in Unity's sense: here that turn is the other way about the same line.
+            now = Matrix.Rotation(math.radians(-twist), 3, want) @ least @ rest
+            posed[name] = now
+            turns[name] = (rest.inverted() @ now).to_quaternion()
+    return turns
+
+
+def keys_fingers(action, side):
+    """Whether an action keys any finger of one of Kazusa's hands."""
+    if action is None:
+        return False
+    oc = one_click()
+    names = set(hand_bones('kazusa', side)[1:])
+    return any(len(curve.keyframe_points) and oc.bone_of(curve.data_path) in names for curve in oc.curves(action))
+
+
+def key_fingers(rig, draft, rows, sides=SIDES):
+    """The source's fingers keyed into a draft on Kazusa's hands at every frame the rows give, as the build keys the body
+    (Bezier, auto clamped): rows are (draft frame, (left ways, right ways)), sides the hands to key. Each bone's turns
+    keep to one side of the sphere from frame to frame."""
+    oc = one_click()
+    bag = oc.channelbag(draft)
+    if bag is None:
+        raise RuntimeError(f'{draft.name}: 시안에 채널이 없어 손가락 키를 넣지 못했습니다.')
+    for side in sides:
+        n = SIDES.index(side)
+        tracks = {}
+        for frame, ways in rows:
+            for name, turn in finger_turns(rig, side, ways[n]).items():
+                track = tracks.setdefault(name, [])
+                if track and turn.dot(track[-1][1]) < 0:
+                    turn.negate()
+                track.append((frame, turn))
+        for name, track in tracks.items():
+            group = bag.groups.get(name) or bag.groups.new(name)
+            path = f'pose.bones["{name}"].rotation_quaternion'
+            for index in range(4):
+                curve = bag.fcurves.find(path, index=index)
+                if curve is None:
+                    curve = bag.fcurves.new(path, index=index)
+                if curve.group != group:
+                    curve.group = group
+                points = curve.keyframe_points
+                points.add(len(track))
+                points.foreach_set('co', [v for frame, turn in track for v in (float(frame), turn[index])])
+                for point in points:
+                    point.interpolation = 'BEZIER'
+                    point.handle_left_type = point.handle_right_type = 'AUTO_CLAMPED'
+                curve.update()
+
+
+def source_clip(key):
+    """A cycle's source skeleton kept beside Kazusa (the build's own import of the clip) and the take its draft was
+    sampled from: (armature, action, its slot, the action's frame under the draft's frame 1, skeleton), or None."""
+    for arm in bpy.data.objects:
+        if arm.type != 'ARMATURE' or arm.get('enf_cycle') != key or arm.animation_data is None:
+            continue
+        kind = skeleton_of(arm)
+        if kind is None:
+            continue
+        data = arm.animation_data
+        for track in data.nla_tracks:
+            for strip in track.strips:
+                if strip.action is not None:
+                    return arm, strip.action, getattr(strip, 'action_slot', None), strip.action_frame_start, kind
+        if data.action is not None:
+            return arm, data.action, getattr(data, 'action_slot', None), data.action.frame_range[0], kind
+    return None
+
+
+def sample_hands(context, arm, action, slot, start, kind, frames):
+    """The source's hands at each of the draft's frames, one source frame a draft frame from start, as the build sampled
+    the body: [(draft frame, (left ways, right ways))]. The take plays on a stand-in sharing the source's skeleton, so the
+    source's own visibility and layers don't matter and nothing of it changes; the scene goes back to its frame."""
+    scene = context.scene
+    keep = scene.frame_current
+    stand_in = bpy.data.objects.new(STAND_IN, arm.data)
+    scene.collection.objects.link(stand_in)
+    rows = []
+    try:
+        data = stand_in.animation_data_create()
+        data.action = action
+        if hasattr(data, 'action_slot') and len(getattr(action, 'slots', [])):
+            data.action_slot = slot if slot is not None else action.slots[0]
+        first = int(round(start))
+        for i in range(frames):
+            scene.frame_set(first + i)
+            evaluated = stand_in.evaluated_get(context.evaluated_depsgraph_get())
+            rows.append((i + 1, hand_ways(evaluated, kind)))
+    finally:
+        bpy.data.objects.remove(stand_in, do_unlink=True)
+        scene.frame_set(keep)
+    return rows
+
+
+def draft_fingers(context):
+    """Drafts built before the fingers came with the cycles (until 2026-11-14 the hands kept the rig's own pose while every
+    other bone followed the clip, so a cycle sent to the game lost the clip's finger motion) get the source clip's
+    fingers on opening, measured off the source skeleton kept beside Kazusa. Nothing the user made changes: a hand the
+    draft already keys is done, a hand whose fingers the touch-up layer keys keeps them as they are (its keys were made
+    over the rig's own pose), and a cycle kept out of the game stays out, its mark following the draft, so it is not sent
+    until it is changed. A cycle sent before is sent again on the next save, with its fingers. Returns the cycles done."""
+    rig = find_rig(context.scene)
+    if rig is None:
+        return []
+    oc = one_click()
+    done = []
+    for key, label in CYCLES:
+        draft = bpy.data.actions.get(PREFIX + key + '_draft')
+        if draft is None:
+            continue
+        touch = bpy.data.actions.get(PREFIX + key)
+        sides = [side for side in SIDES if not keys_fingers(draft, side)]
+        for side in [side for side in sides if keys_fingers(touch, side)]:
+            sides.remove(side)
+            print(f'ENFILADE: {label} {SIDE_LABELS[side]} 손가락은 손질 층에 키가 있어 그대로 둡니다')
+        if not sides:
+            continue
+        clip = source_clip(key)
+        if clip is None:
+            print(f'ENFILADE: {label} 원본 뼈대가 파일에 없어 시안에 손가락을 넣지 못했습니다')
+            continue
+        try:
+            before = fingerprint(key)
+            arm, action, slot, start, kind = clip
+            key_fingers(rig, draft, sample_hands(context, arm, action, slot, start, kind, frames_of(key)), sides)
+            if touch is not None and touch.get(oc.WITHHELD) and touch.get(oc.SENT) == before:
+                oc.mark_withheld(touch, fingerprint(key))
+        except Exception as error:  # One cycle never stops the others or the opening.
+            print(f'ENFILADE: {label} 시안에 손가락을 넣지 못함', error)
+            continue
+        done.append(label)
+        print(f'ENFILADE: {label} 시안에 원본 클립의 손가락을 넣었습니다(' + ', '.join(SIDE_LABELS[s] for s in sides) + ')')
+    return done
 
 
 # ---- Whole-cycle posture: every frame of the touch-up layer, worked out from the pose as it stands now ---------------

@@ -15,7 +15,10 @@ The drafts are retargeted as a humanoid avatar retargets them, in the world:
 - the hips ride as high over the floor as the source's, scaled by the hips' heights, and sway as far, scaled the same;
 - each frame the hips are raised or lowered so Kazusa's lowest foot is as low as the source's, scaled: the feet stay on
   the floor whatever the legs' proportions;
-- the four limbs in FK (the True FPS rig's ik_* off), the fingers left in the rig's own pose.
+- the four limbs in FK (the True FPS rig's ik_* off);
+- the fingers of both hands every frame by the hand rather than the world (run_tools.key_fingers): each joint points
+  where the source's points in the hand's own frame and is twisted about its length as far, as the game wears a hand
+  table, so all three of its channels come through (measured with Tools/Blender/HandPaths/finger_ways.py).
 Every source skeleton here faces -Y with its left at +X, as the rig does (checked in the build).
 """
 import importlib.util
@@ -182,12 +185,14 @@ def retarget(context, rig, key, source, tposes):
     a0, a1 = (int(v) for v in act.frame_range)
     f0, f1 = (a0 + span[0], a0 + span[1]) if span else (a0, a1)
     scene = context.scene
-    samples = []
+    samples, hands = [], []
     for f in range(f0, f1 + 1):
         scene.frame_set(f)
         context.view_layer.update()
         ev = arm.evaluated_get(context.evaluated_depsgraph_get())
         samples.append({r: ev.matrix_world @ ev.pose.bones[names[r]].matrix for r in ROLES})
+        # Both hands in their own frames, for the fingers (a world turn would carry the wrists' rest difference into them).
+        hands.append(run.hand_ways(ev, kind))
     clip_floor = min(floor_of([s[r].translation for r in ('LeftFoot', 'RightFoot', 'LeftToes', 'RightToes')]) for s in samples)
     mean_x = sum(s['Hips'].translation.x for s in samples) / len(samples)
     mean_y = sum(s['Hips'].translation.y for s in samples) / len(samples)
@@ -244,6 +249,7 @@ def retarget(context, rig, key, source, tposes):
             if r == 'Hips':
                 pb.location = basis.translation
                 pb.keyframe_insert('location', frame=i + 1, group=pb.name)
+    run.key_fingers(rig, draft, [(i + 1, ways) for i, ways in enumerate(hands)])
     data.action = None
     for track in list(data.nla_tracks):
         data.nla_tracks.remove(track)
