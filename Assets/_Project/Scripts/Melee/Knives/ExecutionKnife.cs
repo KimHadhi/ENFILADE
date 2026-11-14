@@ -15,6 +15,11 @@ using UnityEngine;
 /// or, when a paired execution clip has the arms (ArmsPosedElsewhere as the stab begins), over what is left of the
 /// execution (PlayerExecution.Duration), so the knife is put away and the gun comes back as the pair ends, not while its
 /// clip is still getting the player up.
+/// A knife with a draw of its own (ClassKnives.OwnDraw: its addon's, the melee slot's drawClip; the user, 2026-11-14: "칼
+/// 뽑을 때 각자 애니메이션이 있을 텐데") is drawn with it: the right arm plays that clip from the eyes first, over the stroke's
+/// draw or a paired clip's arm, quicker than the melee slot plays it (a takedown is quick) and quicker still when the
+/// blade must go in sooner, and hands the arm back before the strike, so the stab is always the stroke's or the pair's.
+/// Every PC starts it on the Draw word and times its hand-over on the Stab word, as the stroke itself.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution + 5)]
 public sealed class ExecutionKnife : MonoBehaviour
@@ -40,6 +45,12 @@ public sealed class ExecutionKnife : MonoBehaviour
     private const float MostHeld = 3f;
     // The sounds play at the hand: this high on the body when there is no hand to find (m).
     private const float SoundHeight = 1.35f;
+    // A knife's own draw plays this much faster than its clip (the melee slot plays it as it is: a takedown is quicker), and
+    // up to this much faster when the blade must go in sooner; past that it is cut.
+    private const float DrawPace = 1.8f, DrawMostPace = 3f;
+    // It gives the right arm back over this long (s), done this long before the blade goes in (s), and takes it from the
+    // body's own pose over this long (s).
+    private const float DrawHandOver = .15f, DrawBeforeStrike = .18f, DrawEaseIn = .08f;
 
     private PlayerMovement movement;
     private PlayerExecution execution;
@@ -54,6 +65,10 @@ public sealed class ExecutionKnife : MonoBehaviour
     private float afterRate = 1f;
     private bool playing, cutting, stabSounded, sheathSounded, hasLast;
     private int nextArmTry;
+    // The knife's own draw (null without one): where in its clip, how fast, and since the stroke began, when it has given
+    // the arm back (s).
+    private KnifeSwing drawClip;
+    private float drawClock, drawPace = DrawPace, sinceBegin, drawEnd = -1f;
 
     /// <summary>The player's knife, made on them if it is not there yet (PlayerExecution and PlayerNetworkCombat both ask).</summary>
     public static ExecutionKnife On(GameObject player)
@@ -147,6 +162,20 @@ public sealed class ExecutionKnife : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// The knife's own draw now (its row's drawClip, the right arm from the eyes as the melee slot plays it) and how much of
+    /// the right arm it has: all of it once eased in, none by the time it has handed the arm back (ExecutionKnifeArm, each
+    /// frame, after the stroke or a paired clip posed the arms). False without a draw of its own or once it is over.
+    /// </summary>
+    internal bool DrawCurrent(out KnifeSwing.Key key, out float weight)
+    {
+        key = default;
+        weight = 0f;
+        if (!playing || drawClip == null || sinceBegin >= drawEnd || !drawClip.Sample(drawClock, out key)) return false;
+        weight = Mathf.Clamp01((drawEnd - sinceBegin) / DrawHandOver) * Mathf.Clamp01(sinceBegin / DrawEaseIn);
+        return weight > 0f;
+    }
+
     private void Update()
     {
         // Its knife put on before the first execution, so the first draw never waits on loading its model.
@@ -185,6 +214,11 @@ public sealed class ExecutionKnife : MonoBehaviour
         phase = Phase.Draw;
         clock = sincePhase = held = 0f;
         cutting = hasLast = stabSounded = sheathSounded = false;
+        // Its own draw first, when its row names one; it is timed to give the arm back once the stab's timing is known.
+        drawClip = knife.OwnDraw ? KnifeSwing.Of(knife.DrawClip) : null;
+        drawClock = sinceBegin = 0f;
+        drawPace = DrawPace;
+        drawEnd = drawClip != null ? drawClip.Length / drawPace : -1f;
         Sound(knife.DrawSound);
     }
 
@@ -205,11 +239,12 @@ public sealed class ExecutionKnife : MonoBehaviour
             // fill what is left of the execution, which ends with the pair, so nothing ends before its clip does.
             float after = ArmsPosedElsewhere && execution != null ? execution.Duration - impact : -1f;
             afterRate = after > .05f ? Mathf.Clamp((stroke.Length - stroke.Strike) / after, .25f, 4f) : 1f;
+            FitDraw();
         }
         else if (next == Phase.Away && clock < stroke.Out)
         {
             // Cut short before it was pulled out (the victim lost, the player hit): from the arms as they are to the
-            // stroke's pulled-out moment, and on from there.
+            // stroke's pulled-out moment, and on from there; a draw of its own still going lets go of the arm now.
             if (hasLast)
             {
                 cutFrom = last;
@@ -217,15 +252,31 @@ public sealed class ExecutionKnife : MonoBehaviour
                 cutLeft = CutBlend;
             }
             clock = stroke.Out;
+            if (drawEnd > sinceBegin + DrawHandOver) drawEnd = sinceBegin + DrawHandOver;
         }
         phase = next;
         sincePhase = 0f;
+    }
+
+    // The knife's own draw gives the arm back DrawBeforeStrike before the blade goes in (impact from now): the rest of its
+    // clip as much faster as that needs, up to DrawMostPace; cut where even that is not enough, still handed over eased.
+    private void FitDraw()
+    {
+        if (drawClip == null || sinceBegin >= drawEnd) return;
+        float latest = Mathf.Max(sinceBegin + impact - DrawBeforeStrike, sinceBegin + DrawHandOver * .5f);
+        float left = drawClip.Length - drawClock;
+        if (sinceBegin + left / drawPace <= latest) return;
+        float room = latest - sinceBegin;
+        drawPace = Mathf.Clamp(left / Mathf.Max(.01f, room), drawPace, DrawMostPace);
+        drawEnd = Mathf.Min(sinceBegin + left / drawPace, latest);
     }
 
     private void Advance(float dt)
     {
         held += dt;
         sincePhase += dt;
+        sinceBegin += dt;
+        if (drawClip != null) drawClock = Mathf.Min(drawClip.Length, drawClock + dt * drawPace);
         float before = clock;
         switch (phase)
         {
@@ -263,6 +314,7 @@ public sealed class ExecutionKnife : MonoBehaviour
         ArmsPosedElsewhere = false;
         phase = Phase.None;
         clock = 0f;
+        drawClip = null;
     }
 
     private void Sound(string cue)

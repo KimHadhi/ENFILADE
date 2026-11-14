@@ -14,7 +14,9 @@ using UnityEngine;
 /// The same knife is the melee slot's in place of the fists (MeleeKnife; the user, 2026-11-13: "클래스 별로 기본 근접 슬롯에
 /// 칼 들게 해 줘"): the row also names it (a Texts id) and its picture (WeaponIcons), how the fist holds it to fight (a
 /// forward or a reverse grip, and their seat), its swing clips (KnifeSwing tables, the Blender knife workspace's) and what
-/// it deals in place of the fists' numbers, with its head and back factors and its extra reach.
+/// it deals in place of the fists' numbers, with its head and back factors and its extra reach. A row whose drawClip names
+/// the knife's own draw (an addon's) draws it that way in executions too (OwnDraw, ExecutionKnife), held meanwhile in its
+/// fighting grip and turned to the execution's grip as the stroke takes over.
 /// </summary>
 public static class ClassKnives
 {
@@ -50,6 +52,12 @@ public static class ClassKnives
         /// <summary>The swing clips (KnifeSwing tables): drawn from the hip, the guard held, the light slash and its backhand, the heavy stab.</summary>
         public string DrawClip = "KnifeMeleeDraw", GuardClip = "KnifeMeleeGuard", SlashClip = "KnifeMeleeSlash", BackslashClip = "KnifeMeleeBackslash",
             StabClip = "KnifeMeleeStab";
+        /// <summary>
+        /// The row names a draw of its own (drawClip: the knife's addon draw): an execution or a stealth kill draws the knife
+        /// with it too (ExecutionKnife; the user, 2026-11-14: "칼 뽑을 때 각자 애니메이션이 있을 텐데"), where a row without one
+        /// keeps the stroke's own draw from the hip.
+        /// </summary>
+        public bool OwnDraw;
         /// <summary>
         /// What it deals in place of the fists' 10-28 (Player.csv Fists.damage): a light slash and a full-charge stab, with the
         /// posture they break; on the head and in the back these times more (generous, as the user's guns are); and how much
@@ -132,6 +140,7 @@ public static class ClassKnives
         knife.MeleeBlade = Way(row, "meleeBlade", knife.MeleeReverse ? ReverseBlade : ForwardBlade);
         knife.MeleeEdge = Way(row, "meleeEdge", Vector3.forward);
         knife.DrawClip = row.Text("drawClip", knife.DrawClip);
+        knife.OwnDraw = row.Text("drawClip").Length > 0;
         knife.GuardClip = row.Text("guardClip", knife.GuardClip);
         knife.SlashClip = row.Text("slashClip", knife.SlashClip);
         knife.BackslashClip = row.Text("backslashClip", knife.BackslashClip);

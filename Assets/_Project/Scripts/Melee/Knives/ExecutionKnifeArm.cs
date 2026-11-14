@@ -12,7 +12,9 @@ using UnityEngine;
 /// cloth, so a sleeve follows. Rig-agnostic: any humanoid a modder brings.
 /// With no execution under way the same knife may be out in the melee slot (MeleeKnife): then the right arm takes the
 /// knife's swing or guard clip from the eyes (KnifeSwing, the Blender knife workspace's) over the fists' pose, and the
-/// knife rides the fist in its fighting grip (forward or reverse, ClassKnives melee*). An execution comes first.
+/// knife rides the fist in its fighting grip (forward or reverse, ClassKnives melee*). An execution comes first; a knife
+/// with a draw of its own (ExecutionKnife.DrawCurrent) is drawn with that clip the same way before the stroke or the pair
+/// takes the right arm back, its seat turning from the fighting grip to the execution's as it does.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 5)]
 public sealed class ExecutionKnifeArm : MonoBehaviour
@@ -122,8 +124,18 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
             Pose(left, key.Left, view, aim.Has, headAim, armsShare);
             Pose(right, key.Right, view, aim.Has, neckAim, armsShare);
         }
-        bool held = key.Held && model != null && key.Right.Weight > 0f;
-        if (held) Seat(knife.Held, knife.Blade, knife.Edge);
+        // The knife's own draw (its addon's) has the right arm first, over the stroke's or a paired clip's pose, and hands
+        // it back before the blade goes in; meanwhile the knife sits in its fighting grip (the draw's own) and turns to the
+        // execution's grip as the draw lets go.
+        var drawKey = default(KnifeSwing.Key);
+        float drawn = 0f;
+        if (knife != null && driver.DrawCurrent(out drawKey, out float drawWeight)) drawn = drawWeight;
+        if (drawn > 0f) PoseFromEyes(right, drawKey, eyes, drawn);
+        bool held = model != null && (drawn > .5f ? drawKey.Held : key.Held && key.Right.Weight > 0f);
+        if (held && drawn > 0f)
+            Seat(Vector3.Lerp(knife.Held, knife.MeleeHeld, drawn), Vector3.Slerp(knife.Blade, knife.MeleeBlade, drawn),
+                Vector3.Slerp(knife.Edge, knife.MeleeEdge, drawn));
+        else if (held) Seat(knife.Held, knife.Blade, knife.Edge);
         ShowKnife(held);
     }
 

@@ -22,7 +22,15 @@ to Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist 
 hand's run (wrist to middle knuckle) and its palm's facing in the head camera's axes as Unity's (x right, y up, z
 forward), the fingers' and the thumb's closing, whether the knife is in the fist and the 벰 moment (KnifeSwing reads it,
 ExecutionKnifeArm fits it to any character's right arm). Nothing here changes Blender's preferences.
+Where a knife sits in the fist is moved here too (the user, 2026-11-14: "블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길
+수 있으니까"): 칼 옮기기 picks the knife in her fist (a knife's own clips show that knife), G and R move it, and saving writes
+its seat in the melee slot (ClassKnives.csv meleeHeld*, meleeBlade*, meleeEdge*: the handle's middle in hand lengths from
+the wrist, the blade's and the edge's ways in the hand's axes, x away from the thumb, y out of the palm, z the hand's run)
+into every row that carries that knife, only when it moved. Numbers changed in the table outside Blender move the knife
+here when the file is opened (the numbers and the knife stay one), so either way of changing it works.
 """
+import csv
+import io
 import importlib.util
 import json
 import math
@@ -461,6 +469,10 @@ def send_changed(context, force=False):
             sent.append(send_clip(context, key))
         except Exception as error:
             failed.append(f"{clip['label']}: {error}")
+    try:
+        sent.extend(send_seats(context))
+    except Exception as error:
+        failed.append(f'쥐는 자리: {error}')
     return sent, failed
 
 
@@ -478,6 +490,7 @@ def prepare(context):
         action, _draft, _fresh = oc.item_action(context, rig, clip['action'], clip['end'])
         if oc.SENT not in action and table_path(key).exists():
             oc.mark_sent(action, fingerprint(action, key))
+    match_seats(context)
 
 
 def arrange(context):
@@ -501,6 +514,227 @@ def arrange(context):
             oc.select(context, window, main, [rig], rig, pose=True, bones=(ARM_HAND,))
     oc.tell(f"칼 「{CLIPS[key]['label']}」 · 오른손을 잡아 고치고 Ctrl+S 하면 게임에 들어갑니다")
     return True
+
+
+# ---- The knife in the fist: moved here, kept as its seat numbers ------------------------------------------------------
+
+CLASS_KNIVES = 'ClassKnives'
+# A knife's seat in the melee slot as ClassKnives.csv holds it, in this order, and as the knife was last matched to it.
+SEAT_COLUMNS = ('meleeHeldSide', 'meleeHeldPalm', 'meleeHeldAlong', 'meleeBladeX', 'meleeBladeY', 'meleeBladeZ',
+                'meleeEdgeX', 'meleeEdgeY', 'meleeEdgeZ')
+SEAT_PROP = 'enf_knife_seat'
+# The table keeps three decimals; a knife counts as moved past two of the last (rounding both ways stays under it).
+SEAT_STEP = .002
+
+
+def knife_holder(knife):
+    """The preview of a knife's own clips in her fist (the build's PREVIEW_Knife_<knife> empty, parent of its model)."""
+    obj = bpy.data.objects.get(LOOKS.get(knife, ''))
+    return obj if obj is not None and obj.type == 'EMPTY' else None
+
+
+def look_knife(key):
+    """The knife a clip shows in the fist when it is one of the knives' own (a draft's preview is no knife's)."""
+    look = CLIPS[key]['look']
+    return look if look in KNIVES else None
+
+
+def hand_axes(rig):
+    """The right hand as the game seats a knife in it (world): its wrist, its axes as the columns of a matrix (x away from
+    the thumb: the palm's facing across the hand's run, y out of the palm, z the run) and its length."""
+    wrist, along, palm, length = hand_frame(rig)
+    return wrist, Matrix((palm.cross(along).normalized(), palm, along)).transposed(), length
+
+
+def parent_frame(obj):
+    """An object's parent frame as Blender builds it (a bone parent's: that bone's tail), from the pose as it is now. Worked
+    out here rather than read from matrix_world: a knife whose clip is not shown is hidden, and Blender does not evaluate a
+    hidden object, so its matrix_world is not where it is."""
+    parent = obj.parent
+    if parent is None:
+        return Matrix.Identity(4)
+    if obj.parent_type == 'BONE' and parent.type == 'ARMATURE' and obj.parent_bone in parent.pose.bones:
+        bone = parent.pose.bones[obj.parent_bone]
+        return world_of(parent) @ bone.matrix @ Matrix.Translation((0.0, bone.bone.length, 0.0))
+    return world_of(parent)
+
+
+def world_of(obj):
+    """Where an object is in the world, from its own transform and its parents' (see parent_frame)."""
+    if obj.parent is None:
+        return obj.matrix_basis.copy()
+    return parent_frame(obj) @ obj.matrix_parent_inverse @ obj.matrix_basis
+
+
+def in_holder(holder, obj):
+    """An object under a knife's holder, in the holder's frame (the knife model's own)."""
+    m = Matrix.Identity(4)
+    while obj is not None and obj != holder:
+        m = obj.matrix_parent_inverse @ obj.matrix_basis @ m
+        obj = obj.parent
+    return m
+
+
+def model_ways(holder):
+    """The knife's own ways in its holder's frame (its model's: the holder carries the model's origin and turn): the blade
+    from its Pommel marker through the origin, the edge toward its Edge marker, as the game takes them (ExecutionKnifeArm.Wear)."""
+    marks = {o.name.split('.')[0]: in_holder(holder, o).translation for o in holder.children_recursive if o.type == 'EMPTY'}
+    pommel = marks.get('Pommel')
+    blade = -pommel if pommel is not None and pommel.length > 1e-9 else Vector((0.0, -1.0, 0.0))
+    blade.normalize()
+    edge = marks.get('Edge', Vector((0.0, 0.0, -1.0)))
+    edge = edge - blade * edge.dot(blade)
+    if edge.length < 1e-9:
+        edge = blade.orthogonal()
+    return blade, edge.normalized()
+
+
+def seat_now(rig, holder):
+    """Where the knife sits in the fist now, as the table's nine numbers (three decimals)."""
+    wrist, axes, length = hand_axes(rig)
+    place, turn, _size = world_of(holder).decompose()
+    blade_model, edge_model = model_ways(holder)
+    turn = turn.to_matrix()
+    blade = (turn @ blade_model).normalized()
+    edge = turn @ edge_model
+    edge = (edge - blade * edge.dot(blade)).normalized()
+    back = axes.transposed()
+    held = back @ (place - wrist) / max(length, 1e-6)
+    return [round(float(v), 3) for v in (*held, *(back @ blade), *(back @ edge))]
+
+
+def seat_holder(rig, holder, seat):
+    """The knife put where nine seat numbers say, as the game seats it (and as the build placed it)."""
+    wrist, axes, length = hand_axes(rig)
+    held, blade_axes, edge_axes = Vector(seat[0:3]), Vector(seat[3:6]), Vector(seat[6:9])
+    blade = (axes @ blade_axes).normalized()
+    edge = axes @ edge_axes
+    edge = edge - blade * edge.dot(blade)
+    edge = edge.normalized() if edge.length > 1e-9 else blade.orthogonal().normalized()
+    blade_model, edge_model = model_ways(holder)
+    want = Matrix((blade, edge, blade.cross(edge))).transposed()
+    have = Matrix((blade_model, edge_model, blade_model.cross(edge_model))).transposed()
+    size = world_of(holder).to_scale()
+    world = (Matrix.Translation(wrist + axes @ (held * length)) @ (want @ have.transposed()).to_4x4()
+             @ Matrix.Diagonal((size.x, size.y, size.z, 1.0)))
+    holder.matrix_basis = (parent_frame(holder) @ holder.matrix_parent_inverse).inverted() @ world
+
+
+def table_seats(root):
+    """Each knife's seat in the melee slot as ClassKnives.csv holds it now (its first row naming that model), or None for
+    a knife whose row leaves a number empty (it keeps the grip's default there)."""
+    out = {}
+    with open(table_file(root, CLASS_KNIVES, 'Melee'), encoding='utf-8-sig', newline='') as f:
+        for row in csv.DictReader(f):
+            if (row.get('id') or '').startswith('#') or not row.get('model'):
+                continue
+            name = row['model'].strip().split('/')[-1]
+            if name in out:
+                continue
+            try:
+                out[name] = canonical([float(row[c]) for c in SEAT_COLUMNS])
+            except (KeyError, TypeError, ValueError):
+                out[name] = None
+    return out
+
+
+def canonical(seat):
+    """Nine seat numbers as the game takes them (ClassKnives.Way, ExecutionKnifeArm.Seat) and as a measured knife gives
+    them back: the blade a unit way, the edge a unit way square to it; three decimals. Numbers typed with an edge not square
+    to the blade then still count as where the knife is, not as a move."""
+    held, blade, edge = Vector(seat[0:3]), Vector(seat[3:6]), Vector(seat[6:9])
+    blade = blade.normalized() if blade.length > 1e-9 else Vector((0.0, 0.0, 1.0))
+    edge = edge - blade * edge.dot(blade)
+    edge = edge.normalized() if edge.length > 1e-9 else blade.orthogonal().normalized()
+    return [round(float(v), 3) for v in (*held, *blade, *edge)]
+
+
+def write_cells(path, model, cells):
+    """These cells written into every row of a table whose model is this knife (its file name), every other line kept as
+    it was, byte for byte; the number of rows changed."""
+    raw = path.read_bytes()
+    bom = '\ufeff' if raw.startswith(b'\xef\xbb\xbf') else ''
+    text = raw.decode('utf-8-sig')
+    newline = '\r\n' if '\r\n' in text else '\n'
+    lines = text.split(newline)
+    header = next(csv.reader([lines[0]]))
+    col = {name: i for i, name in enumerate(header)}
+    missing = [name for name in cells if name not in col]
+    if missing:
+        raise RuntimeError('ClassKnives.csv에 칸이 없습니다: ' + ', '.join(missing))
+    changed = 0
+    for n in range(1, len(lines)):
+        if not lines[n] or lines[n].lstrip('"').startswith('#'):
+            continue
+        row = next(csv.reader([lines[n]]))
+        if len(row) <= col['model'] or row[col['model']].strip().split('/')[-1] != model:
+            continue
+        before = list(row)
+        row += [''] * (len(header) - len(row))
+        for name, value in cells.items():
+            row[col[name]] = value
+        if row[:len(before)] == before and len(row) == len(before):
+            continue
+        out = io.StringIO()
+        csv.writer(out, lineterminator='').writerow(row)
+        lines[n] = out.getvalue()
+        changed += 1
+    if changed:
+        oc.write_text(path, bom + newline.join(lines))
+    return changed
+
+
+def _differs(a, b):
+    return a is None or b is None or len(a) != len(b) or any(abs(x - y) > SEAT_STEP for x, y in zip(a, b))
+
+
+def match_seats(context):
+    """On opening: each knife where the table's numbers put it (they win: a move saved here wrote them, so only numbers
+    changed outside Blender differ), and those numbers kept as what the knife was last matched to."""
+    root = project_root()
+    rig = find_rig(context.scene)
+    if root is None or rig is None:
+        return
+    context.view_layer.update()
+    seats = table_seats(root)
+    for knife in KNIVES:
+        holder = knife_holder(knife)
+        if holder is None:
+            continue
+        # The knife is picked and moved by its holder (the build made it a small, unpickable mark).
+        holder.hide_select = False
+        holder.empty_display_type = 'ARROWS'
+        holder.empty_display_size = .05
+        table = seats.get(knife)
+        if table is None:
+            continue
+        if _differs(seat_now(rig, holder), table):
+            seat_holder(rig, holder, table)
+            context.view_layer.update()
+        holder[SEAT_PROP] = table
+
+
+def send_seats(context):
+    """On saving: every knife moved in her fist since it was last matched, written into its rows (the labels sent)."""
+    root = project_root()
+    rig = find_rig(context.scene)
+    if root is None or rig is None:
+        return []
+    context.view_layer.update()
+    sent = []
+    path = table_file(root, CLASS_KNIVES, 'Melee')
+    for knife in KNIVES:
+        holder = knife_holder(knife)
+        if holder is None:
+            continue
+        now = seat_now(rig, holder)
+        stored = list(holder[SEAT_PROP]) if SEAT_PROP in holder else None
+        if not _differs(now, stored):
+            continue
+        write_cells(path, knife, {c: f'{v:.3f}' for c, v in zip(SEAT_COLUMNS, now)})
+        holder[SEAT_PROP] = now
+        sent.append(f'{KNIVES[knife]} 쥐는 자리')
+    return sent
 
 
 # ---- Panel ------------------------------------------------------------------------------------------------------------
@@ -536,6 +770,34 @@ class ENFKNIFE_OT_part(bpy.types.Operator):
         for bone in rig.data.bones:
             bone.select = bone.select_head = bone.select_tail = bone.name == self.bone
         rig.data.bones.active = rig.data.bones[self.bone]
+        # Posing again: every move keys its frame (the knife's move had it off).
+        oc.auto_key(context.scene, True)
+        return {'FINISHED'}
+
+
+class ENFKNIFE_OT_knife(bpy.types.Operator):
+    bl_idname = 'enf_knife.knife'
+    bl_label = '칼 옮기기'
+    bl_description = '손에 쥔 칼을 고른다. G로 옮기고 R로 돌린 뒤 Ctrl+S 하면 ClassKnives.csv의 근접 칸 쥐는 자리가 바뀐다'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        knife = look_knife(current_clip(context.scene))
+        holder = knife_holder(knife) if knife else None
+        if holder is None:
+            self.report({'WARNING'}, '이 클립의 칼은 미리보기라 표에 쓰지 않습니다. 칼별 클립을 고르세요')
+            return {'CANCELLED'}
+        if context.object is not None and context.object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        for obj in context.view_layer.objects:
+            if obj.select_get():
+                obj.select_set(False)
+        holder.hide_select = False
+        holder.select_set(True)
+        context.view_layer.objects.active = holder
+        # A knife's seat is one place in the fist, not a move over time: no keys while it is moved.
+        oc.auto_key(context.scene, False)
+        oc.tell(f'{KNIVES[knife]}: G로 옮기고 R로 돌린 뒤 Ctrl+S → 근접 칸 쥐는 자리. 오른손을 누르면 다시 포즈')
         return {'FINISHED'}
 
 
@@ -606,10 +868,16 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
         row.operator('enf_knife.part', text='오른손').bone = ARM_HAND
         row.operator('enf_knife.part', text='팔꿈치 방향').bone = ARM_ELBOW
         box.label(text='자동 키가 켜져 있어 움직이면 그 프레임에 키가 들어간다')
+        knife = look_knife(key)
+        if knife:
+            box.operator('enf_knife.knife', text=f'{KNIVES[knife]} 칼 옮기기 (쥐는 자리)', icon='ORIENTATION_GIMBAL')
+            box.label(text='칼을 G·R로 옮기면 Ctrl+S 때 근접 칸 쥐는 자리 숫자로 들어간다')
+        else:
+            box.label(text='이 칼은 1차 시안 미리보기라 쥐는 자리를 쓰지 않는다')
         box.operator('enf_knife.revert', icon='LOOP_BACK')
 
         box = layout.box()
-        box.label(text='3. Ctrl+S = 바뀐 클립만 게임에 보냄')
+        box.label(text='3. Ctrl+S = 바뀐 클립과 옮긴 칼 자리만 게임에 보냄')
         box.operator('enf_knife.send', icon='EXPORT')
         note = scene.get(oc.NOTE)
         if note:
@@ -617,7 +885,7 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
         box.label(text=table_label(key))
 
 
-CLASSES = (ENFKNIFE_OT_pick, ENFKNIFE_OT_part, ENFKNIFE_OT_send, ENFKNIFE_OT_revert, ENFKNIFE_PT_panel)
+CLASSES = (ENFKNIFE_OT_pick, ENFKNIFE_OT_part, ENFKNIFE_OT_knife, ENFKNIFE_OT_send, ENFKNIFE_OT_revert, ENFKNIFE_PT_panel)
 
 
 def register():
