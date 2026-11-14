@@ -48,6 +48,9 @@ public sealed partial class TowerRun : MonoBehaviour
         /// <summary>Who holds each scanner: their client id plus one, 0 for nobody.</summary>
         public ulong Hand0, Hand1, Hand2, Hand3;
         public byte State0, State1, State2, State3, Floor0, Floor1, Floor2, Floor3, Left0, Left1, Left2, Left3;
+        /// <summary>The day's rules (TowerRun.Rules), a bit for each lane: got through its last room unseen, seen in its
+        /// room now, walked through a wire of its room.</summary>
+        public byte QuietPass, Seen, Wired;
 
         // The count runs down every frame; it goes out on its own clock, so it stays out of what counts as a change.
         public bool Equals(Status other) => Seed == other.Seed && Phase == other.Phase && Segment == other.Segment
@@ -55,7 +58,8 @@ public sealed partial class TowerRun : MonoBehaviour
             && Hand0 == other.Hand0 && Hand1 == other.Hand1 && Hand2 == other.Hand2 && Hand3 == other.Hand3
             && State0 == other.State0 && State1 == other.State1 && State2 == other.State2 && State3 == other.State3
             && Floor0 == other.Floor0 && Floor1 == other.Floor1 && Floor2 == other.Floor2 && Floor3 == other.Floor3
-            && Left0 == other.Left0 && Left1 == other.Left1 && Left2 == other.Left2 && Left3 == other.Left3;
+            && Left0 == other.Left0 && Left1 == other.Left1 && Left2 == other.Left2 && Left3 == other.Left3
+            && QuietPass == other.QuietPass && Seen == other.Seen && Wired == other.Wired;
     }
 
     // A lane's fight as the host keeps it.
@@ -66,6 +70,10 @@ public sealed partial class TowerRun : MonoBehaviour
         public bool Champion;
         public int Players = 1, Spot;
         public float Toughness = 1f, NextSpawn, Changed;
+        // A room laid out calm (TowerRun.Rules): the stealth lane's or a sleeping floor's; nobody seen in it yet; the swarm
+        // that comes out of the pens again once it is seen; the next room's swarm doubled by a wire walked through.
+        public bool Quiet, Unseen, Stealth, DoubleNext;
+        public readonly List<ZombieKind> Again = new List<ZombieKind>();
 
         public void Reset()
         {
@@ -74,6 +82,8 @@ public sealed partial class TowerRun : MonoBehaviour
             Due.Clear();
             Champion = false;
             Spot = 0;
+            Quiet = Unseen = Stealth = false;
+            Again.Clear();
         }
     }
 
@@ -111,6 +121,8 @@ public sealed partial class TowerRun : MonoBehaviour
     private int firstTodayBonus = 1500;
     [SerializeField, Tooltip("The last floor's song (Tables/Music); empty for none.")]
     private string finaleSong = "TowerFinale";
+    [SerializeField, Min(0), Tooltip("Money for each player of a lane that got through a room unseen (the stealth lane, a sleeping floor).")]
+    private int quietBonus = 300;
 
     private static TowerRun active;
     private readonly List<PlayerMovement> players = new List<PlayerMovement>();
@@ -199,6 +211,7 @@ public sealed partial class TowerRun : MonoBehaviour
     {
         active = this;
         GameTables.Bind(TableName, TableRow, this);
+        ListenRules();
         music = new CampaignMusic(gameObject);
         for (int i = 0; i < TowerLayout.Lanes; i++) shownStates[i] = LaneState.Shut;
     }
@@ -228,6 +241,7 @@ public sealed partial class TowerRun : MonoBehaviour
     private void OnDestroy()
     {
         if (active == this) active = null;
+        StopRules();
         foreach (var lane in lanes) lane.Reset();
         if (!listening || network == null || network.CustomMessagingManager == null) return;
         network.CustomMessagingManager.UnregisterNamedMessageHandler(network.IsServer ? PalmMessage : StatusMessage);

@@ -167,21 +167,35 @@ public sealed partial class TowerRun
         var lane = lanes[k];
         int level = TowerLayout.FirstLevel(segment) + floors[k];
         if (PlayersIn(k) == 0) { Fail(k); return; }
+        // The day's rules: a wire walked through, a stealth room's far end reached unseen (through it at once).
+        bool through = TickRules(k, level);
         if (states[k] == LaneState.Climbing)
         {
             foreach (var someone in players)
                 if (TowerLayout.InRoom(someone.transform.position, level, k, enterPast)) { BeginRoom(k, level); break; }
             return;
         }
+        if (through) { lefts[k] = 0; NextFloor(k); return; }
         lane.Alive.RemoveAll(enemy => enemy == null || !enemy.IsAlive);
         Release(k, level);
         int left = Mathf.Clamp(lane.Due.Count + lane.Alive.Count, 0, 255);
         if (left != lefts[k]) lane.Changed = Time.time;
         lefts[k] = left;
-        // The last few out and none of them down for this long: one stuck out of reach can't hold the lane for ever.
-        if (lane.Due.Count == 0 && lane.Alive.Count > 0 && Time.time - lane.Changed > StuckSeconds) { lane.Reset(); lefts[k] = 0; }
+        // The last few out and none of them down for this long: one stuck out of reach can't hold the lane for ever. Not a
+        // quiet room nobody has been seen in: its calm ones aren't stuck, they are being crept past (TowerRun.Rules).
+        if (lane.Due.Count == 0 && lane.Alive.Count > 0 && Time.time - lane.Changed > StuckSeconds && !(lane.Quiet && lane.Unseen))
+        {
+            lane.Reset();
+            lefts[k] = 0;
+        }
         if (lane.Due.Count > 0 || lane.Alive.Count > 0) return;
-        // The room is through: on to the next floor, or the stretch is done for this lane.
+        ClearedQuietly(k);
+        NextFloor(k);
+    }
+
+    // The room is through: on to the next floor, or the stretch is done for this lane.
+    private void NextFloor(int k)
+    {
         if (floors[k] + 1 < TowerLayout.FloorsIn(segment)) { floors[k]++; states[k] = LaneState.Climbing; }
         else states[k] = LaneState.Done;
     }
@@ -194,6 +208,16 @@ public sealed partial class TowerRun
         lane.Reset();
         int floor = TowerLayout.FloorOf(level);
         var row = plan.Of(floor);
+        ForgetRoom(k);
+        quietPass = (byte)(quietPass & ~(1 << k));
+        // The stealth lane's and a sleeping floor's rooms: the swarm laid out calm at once (TowerRun.Rules).
+        if (BeginQuietRoom(k, level, floor, lane))
+        {
+            lane.Changed = Time.time;
+            states[k] = LaneState.Fighting;
+            lefts[k] = lane.Alive.Count;
+            return;
+        }
         lane.Champion = plan.TrialOf(floor, k) == TowerTrial.Champion;
         if (lane.Champion)
         {
@@ -204,6 +228,12 @@ public sealed partial class TowerRun
         {
             foreach (var kind in plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer)) lane.Due.Enqueue(kind);
             lane.Toughness = row.toughness;
+        }
+        // A wire walked through in the room before: this one's swarm twice over (a champion comes with a swarm of its own).
+        if (lane.DoubleNext)
+        {
+            lane.DoubleNext = false;
+            foreach (var kind in plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer)) lane.Due.Enqueue(kind);
         }
         lane.NextSpawn = Time.time + .5f;
         lane.Changed = Time.time;

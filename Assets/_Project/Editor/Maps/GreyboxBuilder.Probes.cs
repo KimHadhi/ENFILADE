@@ -189,10 +189,12 @@ public sealed partial class GreyboxBuilder
 
     // A part of a group that moves (a gate, a door, a pushback, a tower door) or comes and goes (a map gimmick's: a lift's
     // doors, a breaker's lamps, what a run's seed keeps or takes away): never static, never baked.
+    // A searchlight that sweeps (GimmickSweep) moves too: baked, its bounce would stay where it pointed at the bake.
     private static bool MovesWithGroup(GameObject part)
         => part.GetComponentInParent<CampaignGate>() != null || part.GetComponentInParent<CampaignDoor>() != null
            || part.GetComponentInParent<CampaignPushback>() != null || part.GetComponentInParent<TowerDoor>() != null
-           || part.GetComponentInParent<GimmickSwitch>() != null || part.GetComponentInParent<GimmickVariant>() != null;
+           || part.GetComponentInParent<GimmickSwitch>() != null || part.GetComponentInParent<GimmickVariant>() != null
+           || part.GetComponentInParent<GimmickSweep>() != null;
 
     // For the build's report.
     private string ProbeReport(bool baked)

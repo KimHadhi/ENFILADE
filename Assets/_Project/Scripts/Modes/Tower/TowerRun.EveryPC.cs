@@ -13,6 +13,7 @@ public sealed partial class TowerRun
         ShowDoors();
         ShowScanners();
         Announce(mine, myLane);
+        ShowRules(mine, myLane);
         ShowHud(myLane);
         ShowObjective(mine, myLane);
         Prompt(mine);
@@ -150,6 +151,7 @@ public sealed partial class TowerRun
         }
         KitSound.Play(KitSound.Cue.TowerClear, .9f);
         CombatFeedHUD.Award(Texts.Format("tower.feed.floor", floor), Mathf.Max(0, plan.Of(floor).reward));
+        PayQuiet(k);
     }
 
     private void ShowHud(int myLane)

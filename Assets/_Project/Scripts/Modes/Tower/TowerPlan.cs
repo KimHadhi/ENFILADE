@@ -6,6 +6,13 @@ using UnityEngine;
 public enum TowerTrial : byte { Swarm, Champion }
 
 /// <summary>
+/// A floor's rule for the day (the map gimmick card "오늘의 층 규칙", only from parts the game had: the user's note "발상은
+/// 좋은데 만들기 귀찮겠다"): its rooms' lights off (Blackout), its swarms asleep (Sleeping), alarm wires across its rooms
+/// (Wire). TowerRun.Rules plays them.
+/// </summary>
+public enum TowerRule : byte { None, Blackout, Sleeping, Wire }
+
+/// <summary>
 /// The day's program of the ENFILADE tower: what each room of each lane holds. The user likened the tower to a gacha
 /// game's daily quest or Dungeon Fighter's tower of trials, so the program changes with the date: the seed is the day
 /// (TowerRun.TodaySeed), the host's, shared with the room, and every PC works out the same plan from it.
@@ -63,6 +70,48 @@ public sealed class TowerPlan
     /// <summary>Floor 1-10's row.</summary>
     public Floor Of(int floor) => floors[Mathf.Clamp(floor, 1, TowerLayout.Floors) - 1];
 
+    /// <summary>
+    /// The day's stealth lane (the map gimmick card "잠입 레인", after PAYDAY 2's Shadow Raid): on floors 1-9 its rooms hold
+    /// their swarm calm, spread through the room, to be got through unseen (TowerRun.Rules). The last floor is a fight in
+    /// every lane.
+    /// </summary>
+    public int StealthLane => (int)(Mix(Seed, 0x5EA1) % TowerLayout.Lanes);
+
+    /// <summary>Floor 1-10's rule today: one floor of each stretch of three has one, the day picking which and what; the
+    /// last floor none.</summary>
+    public TowerRule RuleOf(int floor)
+    {
+        if (floor < 1 || floor >= TowerLayout.Floors) return TowerRule.None;
+        int stretch = (floor - 1) / 3;
+        uint roll = Mix(Seed, 0x7A11 + stretch);
+        if (floor != stretch * 3 + 1 + (int)(roll % 3)) return TowerRule.None;
+        return (TowerRule)(1 + (int)(roll / 3 % 3));
+    }
+
+    /// <summary>Whether lane <paramref name="lane"/>'s room on floor 1-10 holds its swarm laid out calm (the stealth lane,
+    /// a sleeping floor's swarm rooms).</summary>
+    public bool Quiet(int floor, int lane)
+        => floor >= 1 && floor < TowerLayout.Floors && (lane == StealthLane || RuleOf(floor) == TowerRule.Sleeping && TrialOf(floor, lane) == TowerTrial.Swarm);
+
+    /// <summary>A rule's name as the signs and alerts say it.</summary>
+    public static string RuleName(TowerRule rule) => rule switch
+    {
+        TowerRule.Blackout => Texts.Get("tower.rule.blackout"),
+        TowerRule.Sleeping => Texts.Get("tower.rule.sleeping"),
+        TowerRule.Wire => Texts.Get("tower.rule.wire"),
+        _ => ""
+    };
+
+    // A spread of the day and a salt: the same on every PC.
+    private static uint Mix(int seed, int salt)
+    {
+        uint x = (uint)seed * 2654435761u ^ (uint)salt * 40503u;
+        x ^= x >> 13;
+        x *= 0x5bd1e995u;
+        x ^= x >> 15;
+        return x;
+    }
+
     /// <summary>What lane <paramref name="lane"/>'s room on floor 1-10 holds.</summary>
     public TowerTrial TrialOf(int floor, int lane)
     {
@@ -111,7 +160,12 @@ public sealed class TowerPlan
 
     /// <summary>The words for a room on the door signs and the HUD: 떼 or the champion's name.</summary>
     public string Label(int floor, int lane)
-        => TrialOf(floor, lane) == TowerTrial.Swarm ? Texts.Get("tower.trial.swarm") : Texts.Get(ZombieType.NameId(ChampionOf(floor, lane)));
+    {
+        string trial = Quiet(floor, lane) && lane == StealthLane ? Texts.Get("tower.trial.stealth")
+            : TrialOf(floor, lane) == TowerTrial.Swarm ? Texts.Get("tower.trial.swarm") : Texts.Get(ZombieType.NameId(ChampionOf(floor, lane)));
+        var rule = RuleOf(floor);
+        return rule == TowerRule.None ? trial : trial + " (" + RuleName(rule) + ")";
+    }
 
     private ZombieKind[] Picks(int floor)
     {

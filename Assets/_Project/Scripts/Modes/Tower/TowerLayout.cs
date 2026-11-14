@@ -23,6 +23,10 @@ public static class TowerLayout
     public const int Lanes = 4, Levels = 14, Segments = 4, Floors = 10;
     /// <summary>A lane's inside width, wall thickness, level height and slab thickness (m).</summary>
     public const float LaneWidth = 9f, Wall = .4f, Height = 6f, Slab = .4f;
+    /// <summary>A room's alarm wires (TowerWire, the floor rule "경보 선"): where along the room each crosses, as shares of
+    /// its length, and how high over its floor.</summary>
+    public static readonly float[] WireShares = { .32f, .5f, .68f };
+    public const float WireHeight = .25f;
     /// <summary>A room's length between its end walls, and a stair zone's length beyond one (m).</summary>
     public const float RoomLength = 36f, StairLength = 10f;
     /// <summary>A door's opening (m).</summary>

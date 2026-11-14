@@ -2064,6 +2064,13 @@ tower.card.intro,"옛 육군 훈련 동, 엔필레이드 타워. 층마다 훈�
 tower.card.outro,마지막 놈이 쓰러지자 탑의 경보가 꺼졌다.\n훈련 기록판에 우리 이름이 새겨졌다.\n내일이면 우리마다 다른 놈들이 갇혀 있을 것이다.,,타워 끝 이야기 카드. 줄마다(글자 편집기에서 Enter) 한 줄씩 나오고 줄 수는 자유
 tower.day,{0}월 {1}일 훈련,Training of {0}/{1},타워 시작 카드의 오늘 줄과 ENFILADED!! 아래 줄. {0}=월 {1}=일
 tower.trial.swarm,떼,Swarm,타워 방 구성: 약한 놈 여럿
+tower.trial.stealth,잠입,Stealth,타워 방 구성: 그날의 잠입 레인(들키지 않고 끝까지 가면 통과)
+tower.rule.blackout,정전,Blackout,타워 오늘의 층 규칙 이름: 방 등이 꺼짐
+tower.rule.blackout.line,방 등이 꺼졌다 · 손전등을 켜라,The lights are out: use your flashlight,타워 오늘의 층 규칙 설명: 정전
+tower.rule.sleeping,잠든 층,Sleeping floor,타워 오늘의 층 규칙 이름: 놈들이 잠들어 있음
+tower.rule.sleeping.line,놈들이 잠들어 있다 · 아무도 안 깨우고 처치하면 보너스,They are asleep: take them all quietly for a bonus,타워 오늘의 층 규칙 설명: 잠든 층
+tower.rule.wire,경보 선,Alarm wires,타워 오늘의 층 규칙 이름: 발목 높이 빨간 선
+tower.rule.wire.line,빨간 선을 걸어서 넘으면 다음 방 떼가 두 배 · 뛰어넘어라,Walk through a red wire and the next room holds twice the swarm: jump them,타워 오늘의 층 규칙 설명: 경보 선
 tower.sign.floor,{0}층,Floor {0},타워 레인 문 위 표지의 층(한 층만일 때)
 tower.sign.floors,{0}~{1}층,Floors {0}-{1},타워 레인 문 위 표지의 층들
 tower.prompt.palm,[F] 꾹 눌러 손바닥 대기,[F] Hold to scan your palm,타워 스캐너 앞
@@ -2105,9 +2112,16 @@ tower.alert.count,{0} 님이 스캐너에 손을 댔어요 · {1}초,{0} scanned
 tower.alert.open,문이 열렸어요,Doors open,타워 알림
 tower.alert.cleared,{0} 레인 {1}층 통과,Lane {0} cleared floor {1},타워 알림: 다른 레인. {0}=레인 {1}=층
 tower.alert.failed,{0} 레인 탈락,Lane {0} is out,타워 알림
+tower.alert.rule,{0}층 · 오늘의 규칙: {1} — {2},"Floor {0}: today's rule, {1}. {2}",타워 알림: 내 방이 시작될 때 그 층의 규칙. {0}=층 {1}=규칙 {2}=설명
+tower.alert.stealth,잠입 레인 · 들키지 않고 방 끝까지 가면 통과,Stealth lane: reach the far end unseen to get through,타워 알림: 잠입 레인의 방이 시작될 때
+tower.alert.seen,들켰다! 문이 잠기고 떼가 온다,Spotted! The door stays shut and the swarm comes,타워 알림: 잠입 레인 방에서 들켰을 때(그 레인 사람에게)
+tower.alert.woke,놈이 깼다,One woke,타워 알림: 잠든 층 방에서 하나가 깼을 때(그 레인 사람에게)
+tower.alert.seenlane,{0} 레인이 들켰다,Lane {0} was spotted,타워 알림: 다른 레인이 들켰을 때. {0}=레인
+tower.alert.wire,경보 선을 밟았다! 다음 방 떼가 두 배,Alarm wire tripped! The next room holds twice the swarm,타워 알림: 내 레인에서 경보 선을 걸어서 넘었을 때
 tower.alert.gather,모든 레인이 끝났어요 · 휴게층으로,All lanes through · to the rest hall,타워 알림
 tower.alert.reset,다시 스캐너로,Back to the scanners,타워 알림: 전멸이나 모든 레인 탈락
 tower.feed.floor,{0}층 통과,Floor {0},타워 돈 줄. {0}=층
+tower.feed.quiet,들키지 않고 통과,Through unseen,타워 돈 줄: 잠입 레인·잠든 층 방을 들키지 않고 지났을 때
 tower.feed.clear,타워 정복,Tower cleared,타워 돈 줄
 tower.feed.today,오늘의 첫 정복,First clear today,타워 돈 줄: 그날 처음 정복
 tower.finale.word,ENFILADED!!,ENFILADED!!,타워 끝 연출의 큰 글자

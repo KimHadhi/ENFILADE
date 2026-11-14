@@ -15,7 +15,8 @@ public sealed partial class TowerRun
             Hand0 = hands[0], Hand1 = hands[1], Hand2 = hands[2], Hand3 = hands[3],
             State0 = (byte)states[0], State1 = (byte)states[1], State2 = (byte)states[2], State3 = (byte)states[3],
             Floor0 = (byte)floors[0], Floor1 = (byte)floors[1], Floor2 = (byte)floors[2], Floor3 = (byte)floors[3],
-            Left0 = (byte)lefts[0], Left1 = (byte)lefts[1], Left2 = (byte)lefts[2], Left3 = (byte)lefts[3]
+            Left0 = (byte)lefts[0], Left1 = (byte)lefts[1], Left2 = (byte)lefts[2], Left3 = (byte)lefts[3],
+            QuietPass = quietPass, Seen = seen, Wired = wired
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
         sent = now;
@@ -43,5 +44,6 @@ public sealed partial class TowerRun
         states[2] = (LaneState)status.State2; states[3] = (LaneState)status.State3;
         floors[0] = status.Floor0; floors[1] = status.Floor1; floors[2] = status.Floor2; floors[3] = status.Floor3;
         lefts[0] = status.Left0; lefts[1] = status.Left1; lefts[2] = status.Left2; lefts[3] = status.Left3;
+        quietPass = status.QuietPass; seen = status.Seen; wired = status.Wired;
     }
 }

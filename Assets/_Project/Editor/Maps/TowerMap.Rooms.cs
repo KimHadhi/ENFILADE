@@ -23,8 +23,26 @@ public static partial class TowerMap
             Cover(b, level, k);
             FloorMark(level, k, number);
             Fittings(b, level, k);
+            Wires(b, level, k);
             // The room's own reflections (Tables/MapReflections Tower.Room): its floor shines with its lights and neon.
             b.Reflections("Tower.Room", 0f, length, TowerLayout.FloorY(level), ceiling, TowerLayout.LaneMin(k), TowerLayout.LaneMax(k));
+        }
+    }
+
+    // The room's alarm wires (the floor rule "경보 선"), red and ankle high across the lane, hidden: the run shows them on
+    // the day's wire floor (TowerRun.Rules).
+    private static void Wires(GreyboxBuilder b, int level, int k)
+    {
+        float y = TowerLayout.FloorY(level) + TowerLayout.WireHeight;
+        foreach (float share in TowerLayout.WireShares)
+        {
+            float x = TowerLayout.RoomLength * share;
+            var wire = b.Box("경보 선 " + Floor(level) + " " + TowerHUD.Letter(k), x - .0125f, x + .0125f, y - .0125f, y + .0125f,
+                TowerLayout.LaneMin(k) + .15f, TowerLayout.LaneMax(k) - .15f, b.Marker, solid: false);
+            var mark = wire.AddComponent<TowerWire>();
+            mark.Level = level;
+            mark.Lane = k;
+            wire.SetActive(false);
         }
     }
 
