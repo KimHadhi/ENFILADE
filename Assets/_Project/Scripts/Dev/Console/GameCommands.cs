@@ -19,6 +19,7 @@ public static class GameCommands
         router.Register("net", "방의 실제 핑·전송량·프레임 측정 켜기, 다시 입력하면 끄고 결과 출력", _ => NetworkStatsHUD.Toggle());
         router.Register("zai", "좀비 AI 비용 측정 켜기(생각·시야 광선·길 요청·무리·공격·몸·네트워크 쓰기가 프레임마다 몇 ms인지, 좀비 수), 다시 입력하면 끄고 결과 출력·복사. 혼자서도 됨", ZombieCostHUD.Command);
         router.Register("wardrobe", "옷장 미리 보기 비용 측정 켜기(캐릭터를 세울 때마다 모델·입히기·겹침 맞춤·발바닥·얼굴·천이 몇 ms인지, 그 프레임이 몇 ms였는지), 다시 입력하면 끄고 결과 출력·복사", WardrobeCostHUD.Command);
+        router.Register("perf", "프레임 비용 측정 켜기(에디터 프로파일러로 스크립트마다·엔진 부분마다 한 프레임에 몇 ms인지, 게임 몫과 에디터 몫, 가장 긴 프레임이 무엇에 걸렸는지), 다시 입력하면 끄고 Logs/perf.txt에 씀. 에디터에서만", PerfProbe.Command);
         router.Register("zfx","suppress [초] · unseen [초] · gas [초] [반경] · move — 카드가 좀비에게 하는 일(제압·안 보임·눈 가리는 가스·옮기기)을 손으로 시험", ZombieEffectsCommand.Command);
         router.Register("ff", "1 아군 사격 켜기, 0 끄기, 비우면 바꾸기 (방장만, 방 전체에 적용)", FriendlyFire.Command);
         router.Register("director", "캠페인 단계(정비·습격 임박·습격)·노래와 그 위치·적 수·습격 떼 (방장)", _ => CampaignRun.DirectorReport());

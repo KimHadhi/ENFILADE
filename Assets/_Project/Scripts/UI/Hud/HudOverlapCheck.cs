@@ -36,6 +36,8 @@ public sealed partial class HudOverlapCheck : MonoBehaviour
         public bool watch = true;
         [Tooltip("Seconds between two looks while it watches.")]
         public float interval = .25f;
+        [Tooltip("Milliseconds a look may take of one frame while it watches; the rest waits for the next frame.")]
+        public float budget = .5f;
         [Tooltip("Looks in a row an overlap must last before it is logged, so a slide or a flash passing by is not.")]
         public int persist = 2;
         [Tooltip("How deep two pieces must overlap to count (px on the screen).")]
@@ -175,9 +177,15 @@ public sealed partial class HudOverlapCheck : MonoBehaviour
 
     private void OnEnable() => StartCoroutine(Watch());
 
+    // A look measured in one frame took 9-47 ms in the editor (median 14, Logs/hitches.txt of 2026-11-14 23:18, 160 of the
+    // hub's 377 long frames), twice a second, so the watch itself was a stutter the user felt as lag ("최적화가 뒤지게 안
+    // 돼서 기본적으로 렉이 엄청 걸리고"). A look is now spread over the frames it needs, at most Overlap.budget ms of each:
+    // the graphics are listed in one frame, then measured a few a frame, then the pieces compared a few a frame. The HUD
+    // moves little in those frames, and a finding still has to last Overlap.persist looks before it is logged.
     private IEnumerator Watch()
     {
         var end = new WaitForEndOfFrame();
+        var clock = new System.Diagnostics.Stopwatch();
         while (true)
         {
             // After the frame is drawn, so every text has its letters and every graphic its mesh for this frame.
@@ -185,10 +193,53 @@ public sealed partial class HudOverlapCheck : MonoBehaviour
             if (!settings.watch || Sweeping || Time.unscaledTime < nextLook) continue;
             nextLook = Time.unscaledTime + Mathf.Max(.05f, settings.interval);
             // A menu, the scoreboard or a pause screen covers the HUD on purpose.
-            if (Cursor.lockState != CursorLockMode.Locked || ScoreboardHUD.Openness > .01f) { lasting.Clear(); continue; }
-            Measure(found);
+            if (Covered) { lasting.Clear(); continue; }
+            long budget = (long)(Mathf.Max(.05f, settings.budget) * .001f * System.Diagnostics.Stopwatch.Frequency);
+            clock.Restart();
+            found.Clear();
+            ListGraphics(true);
+            int look = looks;
+            bool whole = true;
+            for (int i = 0; i < listed.Count && whole; i++)
+            {
+                if (clock.ElapsedTicks >= budget)
+                {
+                    yield return end;
+                    whole = StillLooking(look);
+                    clock.Restart();
+                    if (!whole) break;
+                }
+                MeasureListed(listed[i], settings);
+            }
+            if (whole) CloseLook();
+            for (int i = 0; i < measured.Count && whole; i++)
+            {
+                if (clock.ElapsedTicks >= budget)
+                {
+                    yield return end;
+                    whole = StillLooking(look);
+                    clock.Restart();
+                    if (!whole) break;
+                }
+                CompareFrom(i, settings, found);
+            }
+            listed.Clear();
+            if (!whole) continue;
+            found.Sort(Deepest);
             Note(found);
+            // The next look an interval after this one ended, however many frames it took.
+            nextLook = Time.unscaledTime + Mathf.Max(.05f, settings.interval);
         }
+    }
+
+    private static bool Covered => Cursor.lockState != CursorLockMode.Locked || ScoreboardHUD.Openness > .01f;
+
+    // A look spread over frames goes on only while the watch is wanted, nothing covers the HUD, and no other look (the
+    // sweep's) began meanwhile; covering also forgets how long findings have lasted, as a single look in one go did.
+    private bool StillLooking(int look)
+    {
+        if (Covered) lasting.Clear();
+        return settings.watch && !Sweeping && looks == look && !Covered;
     }
 
     // Logs each finding once per screen and setting, when it has lasted long enough.

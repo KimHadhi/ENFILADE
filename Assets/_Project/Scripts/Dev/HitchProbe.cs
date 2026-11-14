@@ -8,31 +8,53 @@ using System.Text;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Temporary, editor only. Writes two records to Logs/hitches.txt, without opening the Profiler: every frame of
-/// HitchMilliseconds or more with what took its time, and, when Play stops, each movement state's frame times with the
-/// markers that cost more in it than standing does. The second finds a steady drop (a mantle at half the frame rate) that
-/// never makes one long frame. The next Play starts the file again, so a stopped run is also kept in Logs/Hitches.
-/// Not Temp: Unity empties Temp when it closes, which lost every run recorded before 2026-11-06's restart.
+/// Temporary, editor only. Writes three records to Logs/hitches.txt, without opening the Profiler: every frame of
+/// HitchMilliseconds or more with what took its time; when a scene ends (and when Play stops), the scene's frame times
+/// and how its main thread splits between the game and the editor around it; and, when Play stops, each movement state's
+/// frame times with the markers that cost more in it than standing does. The last finds a steady drop (a mantle at half
+/// the frame rate) that never makes one long frame. The next Play starts the file again, so a stopped run is also kept
+/// in Logs/Hitches. Not Temp: Unity empties Temp when it closes, which lost every run recorded before 2026-11-06's restart.
 /// Each report also says what happened in that frame (FrameTags): what code marked (a zombie made from its look) and
 /// what this probe sees changing from outside (zombies coming and going, a brute spawning and arriving, corpses laid
 /// and gone, ragdoll dolls made, the campaign's song and its assaults, the first callout feed and alert band, hits, kills,
 /// limbs off). Frames under the loading screen are marked [loading] and counted apart, so a load's own long frames no
 /// longer use up the play's reports (the 22:13 run of 2026-11-12 ran out at 145 s, before its chapter's brute came).
-/// Delete this file once the stalls are understood.
+/// Reports are counted per scene: in the 23:18 run of 2026-11-14 a long stay in the hub used all 400 before the user
+/// went to chapter 1, the scene they called laggy, so chapter 1 had none.
+/// The time of a script (which MonoBehaviour) is not among the markers read here; /perf (PerfProbe) reads that from the
+/// profiler while it is on. Delete this file once the stalls are understood.
 /// </summary>
 public sealed class HitchProbe : MonoBehaviour
 {
     // A mantle's stutter may stay under the 50 ms the first-shot stall was hunted with: 25 ms is six frames at 240 fps.
     private const float HitchMilliseconds = 25f;
-    private const int MaxReports = 400, MaxLoadingReports = 200, TopMarkers = 26, SummaryMarkers = 12, LeastFrames = 20;
+    private const int MaxReports = 800, MaxSceneReports = 150, MaxLoadingReports = 200, TopMarkers = 26, SummaryMarkers = 12, LeastFrames = 20;
     // Reading every marker costs a fraction of a millisecond, so they are read on one frame in this many.
     private const int SampleEvery = 4;
     // Frames this soon after a state begins are counted apart, as the state's entry.
     private const float EntrySeconds = 0.3f;
     private const int NoPlayer = -1;
     private static readonly float[] ScanTimes = { 1f, 4f, 9f };
+    // A scene's scripts make their markers when they first run, after the scans at the start: the list is taken again
+    // this long after each loading screen lifts.
+    private static readonly float[] RescanAfterLoad = { 1f, 6f };
+    // Markers the frame summaries split the main thread by. A marker summed over every thread (Idle, waits, UIR.DrawChain)
+    // can't be, so none of those is among them.
+    private const string MainThread = "Main Thread", GameLoop = "PlayerLoop", EditorRepaint = "GUIView.RepaintAll.PlayerLoopController",
+        GameCameras = "RenderPlayModeViewCameras";
+    private static readonly string[] LoopPhases = { "Initialization.", "EarlyUpdate.", "FixedUpdate.", "PreUpdate.", "Update.", "PreLateUpdate.", "PostLateUpdate.", "TimeUpdate." };
+    // The game's own named spans and the engine parts a reader asks about first, listed under the phases when they cost anything.
+    private static readonly string[] Parts =
+    {
+        "PlayerEndOfFrame", "CoroutinesDelayedCalls", "Inl_UniversalRenderTotal", "GC.Collect", "Physics.Simulate", "Physics.Processing",
+        "Director.ProcessFrame", "Animators.Update", "MeshSkinning.Update", "UGUI.Rendering.UpdateBatches", "Canvas.SendWillRenderCanvases",
+        "NavMeshManager", "ParticleSystem.Update", "PlayerBody.Grip", "PlayerBody.Feet", "PlayerBody.Look", "PlayerBodyHands.Place",
+        "PlayerBodyHands.Fingers", "PlayerBodyHands.Rest", "Object.Unregister", "Instantiate", "GameObject.SampleAnimation",
+        "CheckAllowDestructionRecursive [Editor Only]"
+    };
     private static string Folder => Path.Combine(Application.dataPath, "..", "Logs");
     private static string FilePath => Path.Combine(Folder, "hitches.txt");
 
@@ -56,11 +78,15 @@ public sealed class HitchProbe : MonoBehaviour
     private readonly Dictionary<int, Bucket> buckets = new Dictionary<int, Bucket>();
     private readonly List<(int frame, string what)> happened = new List<(int frame, string what)>();
     private readonly Watch watch = new Watch();
+    private double[] reading = new double[0];
     private ProfilerRecorder allocated;
     private PlayerMovement.MovementState lastState;
-    private float started, stateSince;
-    private int nextScan, reports, loadingReports, frameKey = NoPlayer;
-    private bool scanned, written, capNoted, wasLoading;
+    private float started, stateSince, sceneSince, loadEndedAt = -1f;
+    private int nextScan, nextRescan = RescanAfterLoad.Length, reports, sceneReports, loadingReports, frameKey = NoPlayer;
+    private bool scanned, written, capNoted, sceneCapNoted, wasLoading;
+    private Bucket scene = new Bucket();
+    private string sceneName = "";
+    private string sceneClock = "";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Begin()
@@ -78,6 +104,8 @@ public sealed class HitchProbe : MonoBehaviour
         allocated = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
         Scan();
         watch.Listen();
+        BeginScene(SceneManager.GetActiveScene().name);
+        SceneManager.activeSceneChanged += OnSceneChanged;
     }
 
     // Script markers only exist once their code has run, so the list is taken again a few times.
@@ -105,6 +133,11 @@ public sealed class HitchProbe : MonoBehaviour
         int key = frameKey;
         frameKey = StateKey();
         bool loading = wasLoading || LoadingScreen.Visible;
+        if (wasLoading && !LoadingScreen.Visible)
+        {
+            loadEndedAt = Time.unscaledTime;
+            nextRescan = 0;
+        }
         wasLoading = LoadingScreen.Visible;
         // The scan itself is slow, so the frame after it says nothing.
         if (scanned) scanned = false;
@@ -114,6 +147,7 @@ public sealed class HitchProbe : MonoBehaviour
             if (ms >= HitchMilliseconds) Report(ms, age, key, loading);
         }
         if (nextScan < ScanTimes.Length && age >= ScanTimes[nextScan]) { nextScan++; Scan(); }
+        else if (nextRescan < RescanAfterLoad.Length && Time.unscaledTime - loadEndedAt >= RescanAfterLoad[nextRescan]) { nextRescan++; Scan(); }
     }
 
     // The local player's movement state, twice over: frames in its first EntrySeconds are its entry.
@@ -133,7 +167,18 @@ public sealed class HitchProbe : MonoBehaviour
     {
         if (!buckets.TryGetValue(key, out var bucket)) buckets[key] = bucket = new Bucket();
         bucket.Frames.Add(ms);
+        scene.Frames.Add(ms);
         if (Time.frameCount % SampleEvery != 0) return;
+        if (reading.Length < recorders.Count) System.Array.Resize(ref reading, recorders.Count);
+        for (int i = 0; i < recorders.Count; i++) reading[i] = recorders[i].LastValue * 1e-6;
+        double bytes = allocated.Valid ? allocated.LastValue : 0;
+        Add(bucket, ms, bytes);
+        Add(scene, ms, bytes);
+    }
+
+    // This frame's readings into a bucket's sums.
+    private void Add(Bucket bucket, float ms, double bytes)
+    {
         if (bucket.Markers.Length < recorders.Count)
         {
             System.Array.Resize(ref bucket.Markers, recorders.Count);
@@ -141,28 +186,37 @@ public sealed class HitchProbe : MonoBehaviour
         }
         for (int i = 0; i < recorders.Count; i++)
         {
-            double value = recorders[i].LastValue * 1e-6;
+            double value = reading[i];
             if (!Sane(value, ms)) continue;
             bucket.Markers[i] += value;
             bucket.Counts[i]++;
         }
-        bucket.Allocated += allocated.Valid ? allocated.LastValue : 0;
+        bucket.Allocated += bytes;
         bucket.Sampled++;
     }
 
     private void Report(float ms, float age, int key, bool loading)
     {
-        if (loading ? loadingReports >= MaxLoadingReports : reports >= MaxReports)
+        if (loading ? loadingReports >= MaxLoadingReports : reports >= MaxReports || sceneReports >= MaxSceneReports)
         {
-            if (!loading && !capNoted)
+            if (!loading && !capNoted && reports >= MaxReports)
             {
                 capNoted = true;
                 File.AppendAllText(FilePath, $"\n(no more play reports after {MaxReports}, at {age:0.00} s)\n");
             }
+            else if (!loading && !sceneCapNoted && sceneReports >= MaxSceneReports)
+            {
+                sceneCapNoted = true;
+                File.AppendAllText(FilePath, $"\n(no more play reports in {sceneName} after {MaxSceneReports}, at {age:0.00} s; its summary still counts every frame)\n");
+            }
             return;
         }
         if (loading) loadingReports++;
-        else reports++;
+        else
+        {
+            reports++;
+            sceneReports++;
+        }
         // What the player was doing, to tell a mantle's stall from a kill's, and what happened in the frame.
         var text = new StringBuilder($"\n--- {ms:0} ms at {age:0.00} s, frame {Time.frameCount}, {Describe(key)}{(loading ? " [loading]" : "")}, {recorders.Count} markers\n");
         string what = Happened();
@@ -190,12 +244,70 @@ public sealed class HitchProbe : MonoBehaviour
         return string.Join(" · ", order.Select(what => counts[what] > 1 ? $"{what} ×{counts[what]}" : what));
     }
 
+    // ---- Scenes ----
+
+    private void OnSceneChanged(Scene from, Scene to)
+    {
+        WriteScene();
+        BeginScene(to.name);
+    }
+
+    private void BeginScene(string name)
+    {
+        scene = new Bucket();
+        sceneName = string.IsNullOrEmpty(name) ? "?" : name;
+        sceneClock = System.DateTime.Now.ToString("HH:mm:ss");
+        sceneSince = Time.unscaledTime;
+        sceneReports = 0;
+        sceneCapNoted = false;
+    }
+
+    // The scene just played: every frame's time out of the loading screen, and the main thread of the frames read
+    // (one in SampleEvery) split into the game's own work and the editor's around it. In the editor the game view's
+    // repaint runs inside the player loop and draws the game's cameras there, so the editor's share is the main thread
+    // outside the player loop plus that repaint without the cameras. A build has neither: what a build pays is the game's
+    // share (less, as scripts also run faster there), and its cameras draw in PostLateUpdate.FinishFrameRendering.
+    private void WriteScene()
+    {
+        if (scene.Frames.Count < LeastFrames) return;
+        var sorted = scene.Frames.OrderBy(ms => ms).ToList();
+        float At(float share) => sorted[Mathf.Min(sorted.Count - 1, (int)(sorted.Count * share))];
+        float Share(float least) => 100f * sorted.Count(ms => ms >= least) / sorted.Count;
+        var text = new StringBuilder();
+        text.Append($"\n=== Scene {sceneName}, {sceneClock} to {System.DateTime.Now:HH:mm:ss} ({Time.unscaledTime - sceneSince:0} s, {sorted.Count} frames out of the loading screen)\n");
+        text.Append($"  frame ms: mean {sorted.Average():0.0}  p50 {At(.5f):0.0}  p95 {At(.95f):0.0}  p99 {At(.99f):0.0}  max {sorted[sorted.Count - 1]:0}"
+            + $"  | 25 ms or more {Share(25f):0.0}%  50 ms or more {Share(50f):0.00}%  100 ms or more {Share(100f):0.00}%\n");
+        if (scene.Sampled > 0)
+        {
+            double main = Mean(scene, MainThread), loop = Mean(scene, GameLoop), repaint = Mean(scene, EditorRepaint), cameras = Mean(scene, GameCameras);
+            double outside = System.Math.Max(0, main - loop), windows = System.Math.Max(0, repaint - cameras), game = System.Math.Max(0, main - outside - windows);
+            text.Append($"  main thread {main:0.0} ms a frame ({scene.Sampled} frames read) = the game {game:0.0} + the editor {outside + windows:0.0}"
+                + $" (outside the player loop {outside:0.0}, its windows' repaint {windows:0.0}); the game's cameras draw {cameras:0.0} of the game's\n");
+            AppendTop(text, "  player loop phases", name => LoopPhases.Any(phase => name.StartsWith(phase)), 9);
+            AppendTop(text, "  editor windows", name => name.EndsWith("Window.Paint") || name.EndsWith("View.Paint") || name == "AppStatusBar.Paint", 6);
+            AppendTop(text, "  parts", name => Parts.Contains(name), 12);
+            text.Append($"  GC allocated {scene.Allocated / scene.Sampled / 1024.0:0.0} kB a frame\n");
+        }
+        File.AppendAllText(FilePath, text.ToString());
+    }
+
+    private void AppendTop(StringBuilder text, string title, System.Func<string, bool> pick, int most)
+    {
+        var rows = Enumerable.Range(0, scene.Markers.Length).Where(i => pick(markerNames[i]))
+            .Select(i => (name: markerNames[i], ms: Mean(scene, i))).Where(row => row.ms >= .05).OrderByDescending(row => row.ms).Take(most).ToList();
+        if (rows.Count == 0) return;
+        text.Append(title).Append(": ").Append(string.Join(" · ", rows.Select(row => $"{row.name} {row.ms:0.00}"))).Append('\n');
+    }
+
+    private double Mean(Bucket bucket, string marker) => markerIndex.TryGetValue(marker, out int i) ? Mean(bucket, i) : 0;
+
     private void OnApplicationQuit() => WriteSummary();
 
     private void WriteSummary()
     {
         if (written) return;
         written = true;
+        WriteScene();
         var text = new StringBuilder($"\n=== States, Play stopped at {System.DateTime.Now:HH:mm:ss} after {Time.unscaledTime - started:0} s (frames under the loading screen left out) ===\n");
         text.Append($"{"state",-28}{"frames",8}{"mean",8}{"p95",8}{"max",8}{"GC kB",8}\n");
         var shown = buckets.Where(pair => pair.Value.Frames.Count >= LeastFrames).OrderBy(pair => pair.Key).ToList();
@@ -231,6 +343,7 @@ public sealed class HitchProbe : MonoBehaviour
 
     private void OnDestroy()
     {
+        SceneManager.activeSceneChanged -= OnSceneChanged;
         WriteSummary();
         watch.Stop();
         foreach (var recorder in recorders) recorder.Dispose();

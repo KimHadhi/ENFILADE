@@ -8,6 +8,31 @@ using UnityEngine.UI;
 // HudOverlapCheck: Measuring. One part of the class; the rest is in HudOverlapCheck.cs and the files beside it.
 public sealed partial class HudOverlapCheck
 {
+    // A transform's kind is kept from one look to the next while watching (the HUD keeps its names); past this many the
+    // list starts again, so the transforms of HUD pieces made and destroyed over a long play don't pile up.
+    private const int MostKinds = 4096;
+
+    // One graphic a look will measure: listed first (cheap), measured afterwards, in one go for the sweep, a few a frame
+    // for the watch.
+    private readonly struct Listed
+    {
+        public readonly Graphic Graphic;
+        public readonly Camera Camera;
+        public readonly Transform Canvas;
+
+        public Listed(Graphic graphic, Camera camera, Transform canvas)
+        {
+            Graphic = graphic;
+            Camera = camera;
+            Canvas = canvas;
+        }
+    }
+
+    private static readonly List<Listed> listed = new List<Listed>();
+    // Counts the looks begun; a look spread over frames gives up when another (the sweep's) began meanwhile, as both
+    // fill the same pieces.
+    private static int looks;
+
     /// <summary>
     /// Measures the HUD as drawn this frame and fills <paramref name="findings"/> with every overlap between two pieces
     /// and every piece past the screen's edge, deepest first. Call after the frame is drawn (end of frame) for this
@@ -17,33 +42,40 @@ public sealed partial class HudOverlapCheck
     {
         var s = Current;
         findings.Clear();
-        Gather(s);
+        ListGraphics(false);
+        for (int i = 0; i < listed.Count; i++) MeasureListed(listed[i], s);
+        CloseLook();
+        for (int i = 0; i < measured.Count; i++) CompareFrom(i, s, findings);
+        findings.Sort(Deepest);
+    }
+
+    private static int Deepest(Finding x, Finding y) => y.Depth.CompareTo(x.Depth);
+
+    // Every overlap of piece i with the pieces after it, and its run past the screen's edge.
+    private static void CompareFrom(int i, Settings s, List<Finding> findings)
+    {
         float tolerance = Mathf.Max(0f, s.tolerance);
-        for (int i = 0; i < measured.Count; i++)
+        var a = measured[i];
+        Outside(a, s, findings);
+        for (int j = i + 1; j < measured.Count; j++)
         {
-            var a = measured[i];
-            Outside(a, s, findings);
-            for (int j = i + 1; j < measured.Count; j++)
+            var b = measured[j];
+            if (!a.Bounds.Overlaps(b.Bounds)) continue;
+            float deepest = 0f;
+            Vector2[] shapeA = null, shapeB = null;
+            foreach (var one in a.Shapes)
             {
-                var b = measured[j];
-                if (!a.Bounds.Overlaps(b.Bounds)) continue;
-                float deepest = 0f;
-                Vector2[] shapeA = null, shapeB = null;
-                foreach (var one in a.Shapes)
+                Rect boxA = Box(one);
+                foreach (var other in b.Shapes)
                 {
-                    Rect boxA = Box(one);
-                    foreach (var other in b.Shapes)
-                    {
-                        if (!boxA.Overlaps(Box(other))) continue;
-                        float depth = Depth(one, other);
-                        if (depth > deepest) { deepest = depth; shapeA = one; shapeB = other; }
-                    }
+                    if (!boxA.Overlaps(Box(other))) continue;
+                    float depth = Depth(one, other);
+                    if (depth > deepest) { deepest = depth; shapeA = one; shapeB = other; }
                 }
-                if (deepest > tolerance)
-                    findings.Add(new Finding { A = a.Name, B = b.Name, Depth = deepest, At = (Middle(shapeA) + Middle(shapeB)) * .5f, ShapeA = shapeA, ShapeB = shapeB, ScreenHeight = Screen.height });
             }
+            if (deepest > tolerance)
+                findings.Add(new Finding { A = a.Name, B = b.Name, Depth = deepest, At = (Middle(shapeA) + Middle(shapeB)) * .5f, ShapeA = shapeA, ShapeB = shapeB, ScreenHeight = Screen.height });
         }
-        findings.Sort((x, y) => y.Depth.CompareTo(x.Depth));
     }
 
     /// <summary>The pieces measured last, by name, each with how many shapes it had: what the check sees as the HUD.</summary>
@@ -68,15 +100,22 @@ public sealed partial class HudOverlapCheck
         if (worst > edge) findings.Add(new Finding { A = piece.Name, Depth = worst, At = Middle(worstShape), ShapeA = worstShape, ScreenHeight = Screen.height });
     }
 
-    private static void Gather(Settings s)
+    // A look begins: every piece emptied and every graphic it will measure listed, canvas by canvas. Kinds are kept from
+    // the last look while watching (keepKinds); the sweep starts them afresh, as it may switch what is shown.
+    private static void ListGraphics(bool keepKinds)
     {
-        if (rules == null) ReadRules();
+        looks++;
+        if (rules == null)
+        {
+            ReadRules();
+            kinds.Clear();
+        }
+        else if (!keepKinds || kinds.Count > MostKinds) kinds.Clear();
         foreach (var piece in pieces.Values) { piece.Shapes.Clear(); piece.Empty = true; }
         measured.Clear();
-        kinds.Clear();
+        listed.Clear();
         canvases.Clear();
         canvases.AddRange(Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None));
-        float screenArea = Mathf.Max(1f, (float)Screen.width * Screen.height);
         foreach (var canvas in canvases)
         {
             if (!canvas.isRootCanvas || !canvas.isActiveAndEnabled) continue;
@@ -86,16 +125,27 @@ public sealed partial class HudOverlapCheck
             graphics.Clear();
             canvas.GetComponentsInChildren(false, graphics);
             foreach (var graphic in graphics)
-            {
-                if (graphic == null || !graphic.enabled || graphic.canvasRenderer.cull || graphic is TMP_SubMeshUI) continue;
-                var root = PieceOf(graphic.transform, canvas.transform);
-                if (root == null) continue;
-                if (!pieces.TryGetValue(root, out var piece))
-                    pieces[root] = piece = new Piece { Root = root, Name = PathOf(root) };
-                MeasureGraphic(graphic, camera, piece, s, screenArea);
-            }
+                if (graphic != null && graphic.enabled && !graphic.canvasRenderer.cull && !(graphic is TMP_SubMeshUI))
+                    listed.Add(new Listed(graphic, camera, canvas.transform));
         }
-        // Pieces whose transform has gone are dropped; the rest are measured if anything of them is drawn.
+    }
+
+    // One listed graphic into its piece. The watch measures a few a frame, so one may have gone or been switched off
+    // since it was listed.
+    private static void MeasureListed(in Listed item, Settings s)
+    {
+        var graphic = item.Graphic;
+        if (graphic == null || item.Canvas == null || !graphic.isActiveAndEnabled || graphic.canvasRenderer.cull) return;
+        var root = PieceOf(graphic.transform, item.Canvas);
+        if (root == null) return;
+        if (!pieces.TryGetValue(root, out var piece))
+            pieces[root] = piece = new Piece { Root = root, Name = PathOf(root) };
+        MeasureGraphic(graphic, item.Camera, piece, s, Mathf.Max(1f, (float)Screen.width * Screen.height));
+    }
+
+    // Pieces whose transform has gone are dropped; the rest are compared if anything of them is drawn.
+    private static void CloseLook()
+    {
         var dead = new List<Transform>();
         foreach (var pair in pieces)
         {
