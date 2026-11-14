@@ -71,8 +71,11 @@ public static class FragBlast
         var source = thrower != null ? thrower.gameObject : null;
         Hurt(at, info, radius, harder, source, way, spread);
         HurtPlayers(at, info, radius, harder, thrower, source, way, spread);
-        // A locked door in reach is blown in (a map gimmick: GimmickLock), loud as any smashed door.
+        // A locked door in reach is blown in (a map gimmick: GimmickLock), loud as any smashed door; an alarm car in reach
+        // goes off and a spilled pump catches (GimmickAlarmCar, GimmickFuelTrap).
         GimmickLock.Blast(at, radius, info.Damage * harder, source);
+        GimmickAlarmCar.Blast(at, radius);
+        GimmickFuelTrap.Blast(at, radius, thrower);
         FragAftermath.Begin(at, radius, info.Damage * harder, source, way, spread);
     }
 

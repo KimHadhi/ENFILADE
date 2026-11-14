@@ -212,8 +212,9 @@ public sealed partial class WeaponController
                         0.2f);
                 }
 
-                // Zombies hear it (ZombieMind), once per shot however many pellets.
-                if (shot.Pellet == 0) Noise.Make(origin, ShotNoise, owner);
+                // Zombies hear it (ZombieMind), once per shot however many pellets; not a shot an alarm car drowns out
+                // (ShotMuffle: its alarm is what they hear).
+                if (shot.Pellet == 0 && !ShotMuffle.Hides(trace)) Noise.Make(origin, ShotNoise, owner);
                 // Presentation (WeaponFeedback, MuzzleEffects, impact and blood effects) subscribes here.
                 ShotFired?.Invoke(shot);
             }

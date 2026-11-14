@@ -14,7 +14,7 @@ public sealed partial class CampaignRun
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
             Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
             Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount, Alarm = (byte)(alarm ? 1 : 0),
-            Phase = (byte)phase, Song = CampaignMusic.IndexOf(music.Playing),
+            Phase = (byte)phase, Song = CampaignMusic.IndexOf(music.Playing), Burning = (byte)(burning ? 1 : 0),
             SongAt = (ushort)Mathf.Clamp(Mathf.RoundToInt(music.Clock * 10f), 0, ushort.MaxValue)
         };
         if (now.Equals(sent) && Time.unscaledTime < nextShare) return;
@@ -43,6 +43,7 @@ public sealed partial class CampaignRun
         quiet = status.Quiet != 0;
         lull = status.Quiet == 2;
         alarm = status.Alarm != 0;
+        burning = status.Burning != 0;
         // The host's count of stretches got through unseen: each one more pays this player too. The first word only
         // sets the count, so joining late pays for nothing that came before.
         if (!unseenKnown) { unseenKnown = true; unseenCount = status.Unseen; }

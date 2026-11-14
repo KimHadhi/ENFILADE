@@ -60,7 +60,7 @@ mission.ch1.12.title,헬기에 타기,,"목표 바 제목과 Tab 목표 목록: 
 mission.ch1.12.description,모두 착륙 자리로 모이세요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 14번째 단계(Escape, Ch1.12)"
 mission.ch1.12.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 14번째 단계(Escape, Ch1.12)"
 mission.ch2.01.title,고가도로를 따라가기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
-mission.ch2.01.description,멈춘 차들 사이로 고가도로를 따라가세요. 뒤집힌 트럭을 넘어야 해요.,,"Tab 목표 목록의 설명: Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
+mission.ch2.01.description,멈춘 차들 사이로 고가도로를 따라가세요. 앞유리 안에 빨간 불이 천천히 깜빡이는 차는 경보가 걸려 있어요. 부딪히거나 쏘면 울려요. 먼 경보 차를 일부러 쏘면 놈들이 그리로 몰려가요.,,"Tab 목표 목록의 설명: Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
 mission.ch2.01.done,고가도로 진입,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 1번째 단계(Reach, Ch2.01)"
 mission.ch2.02.title,끊어진 끝에 모두 모이기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 2번째 단계(Gather, Ch2.02)"
 mission.ch2.02.description,다리가 끊겼어요. 아래 버스로 뛰어내리면 다시는 못 올라와요. 모두 모이세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 2번째 단계(Gather, Ch2.02)"
@@ -68,21 +68,21 @@ mission.ch2.02.done,모두 모임,,"끝낸 목표의 이름(Tab 목록·목표 �
 mission.ch2.03.title,아래 도로로 뛰어내리기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 3번째 단계(Reach, Ch2.03)"
 mission.ch2.03.description,버스 지붕으로 뛰어내리세요. 돌아갈 수 없어요.,,"Tab 목표 목록의 설명: Ch2_Overpass 3번째 단계(Reach, Ch2.03)"
 mission.ch2.03.done,뛰어내림,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 3번째 단계(Reach, Ch2.03)"
-mission.ch2.04.title,주유소로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
-mission.ch2.04.description,모두 주유소 가게 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
+mission.ch2.04.title,휴게소 사무실로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
+mission.ch2.04.description,휴게소 건물 안 사무실에 모두 들어와 문을 닫으면 숨을 돌려요. 식당·화장실·직원 통로로 들어갈 수 있어요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
 mission.ch2.04.done,휴게소 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 4번째 단계(Checkpoint, Ch2.04)"
-mission.ch2.05.title,톨게이트로,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
-mission.ch2.05.description,도로 끝 톨게이트로 가세요. 검문소가 그 너머에 있어요.,,"Tab 목표 목록의 설명: Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
+mission.ch2.05.title,톨게이트 고가로,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
+mission.ch2.05.description,램프로 톨게이트 고가에 올라가세요. 군 차단벽이 길을 막고 있어요.,,"Tab 목표 목록의 설명: Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
 mission.ch2.05.done,톨게이트 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 5번째 단계(Reach, Ch2.05)"
 mission.ch2.06.title,검문소 무전기 켜기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 6번째 단계(Press, Ch2.06)"
-mission.ch2.06.description,초소 안의 무전기로 군을 불러 보세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 6번째 단계(Press, Ch2.06)"
+mission.ch2.06.description,검문소 초소의 무전기로 군을 불러 보세요. 무기고는 장교가 가진 카드로 열려요.,,"Tab 목표 목록의 설명: Ch2_Overpass 6번째 단계(Press, Ch2.06)"
 mission.ch2.06.done,무전 연결,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 6번째 단계(Press, Ch2.06)"
 mission.ch2.06.prompt,[F] 무전기 켜기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch2_Overpass 6번째 단계(Press, Ch2.06)"
 mission.ch2.07.title,응답이 올 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
-mission.ch2.07.description,무전 소리에 놈들이 몰려와요. 응답이 올 때까지 버티세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
+mission.ch2.07.description,무전 소리에 놈들이 몰려와요. 응답이 올 때까지 검문소를 지키세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
 mission.ch2.07.done,검문소 사수,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 7번째 단계(Hold, Ch2.07)"
 mission.ch2.08.title,지하철 입구로,,"목표 바 제목과 Tab 목표 목록: Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
-mission.ch2.08.description,강 밑 지하철 터널로 가래요. 모두 입구 안으로 들어가세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
+mission.ch2.08.description,고가가 뒤에서부터 무너져요. 마지막 경간을 달려 건너 지하철 입구로 들어가세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
 mission.ch2.08.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
 mission.ch3.01.title,승강장으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
 mission.ch3.01.description,개찰구를 넘어 승강장으로 내려가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
@@ -2175,3 +2175,20 @@ gimmick.lift.down,"[F] 1층으로 · 문이 열릴 때 띵, 그 층이 깬다",,
 gimmick.lift.up,[F] 맨 위층으로 · 띵 소리에 그 층이 깬다,,맵 기믹 [F] 안내 > 엘리베이터 안(1층일 때)
 gimmick.lift.call,"[F] 엘리베이터 부르기 · 도착하면 띵, 이 층이 깬다",,맵 기믹 [F] 안내 > 다른 층에 있는 엘리베이터의 호출 버튼 앞
 gimmick.landing.light,[F] 여기에 연막 피우기 · 헬기가 여기 내린다,,맵 기믹 [F] 안내 > 착륙 자리를 정하는 단계에 착륙 자리 앞
+mission.ch2.09.title,차 무더기에 기름 붓기,,"목표 바 제목: Ch2_Overpass 5번째 단계(Collect, Ch2.09)"
+mission.ch2.09.description,길을 막은 차 무더기는 불로만 치워져요. 휴게소 창고의 기름통을 날라 두 통을 부으세요. 통을 든 사람은 총을 못 써요.,,Tab 목표 목록의 설명: Ch2.09
+mission.ch2.09.done,기름 부음,,끝낸 목표의 이름: Ch2.09
+mission.ch2.09.prompt,[F] 차 무더기에 기름 붓기,,"그 자리에서 기름통을 들고 있을 때 안내: Ch2.09, Ch2.10"
+mission.ch2.10.title,불이 꺼지지 않게 버티기,,"목표 바 제목: Ch2_Overpass 6번째 단계(Hold, Ch2.10)"
+mission.ch2.10.description,불이 타는 동안만 무더기가 내려앉아요. 꺼지면 창고에서 기름통을 더 날라 부으세요(부은 통은 창고로 돌아와요). 주유기 밸브를 열어 둔 기름에 놈들을 끌어 쏘면 한꺼번에 탑니다.,,Tab 목표 목록의 설명: Ch2.10
+mission.ch2.10.done,무더기를 태움,,끝낸 목표의 이름: Ch2.10
+mission.ch2.11.title,관제실에서 차단벽 올리기,,"목표 바 제목: Ch2_Overpass 8번째 단계(Press, Ch2.11)"
+mission.ch2.11.description,톨게이트 관제실 2층 제어반으로 군 차단벽을 올리세요. 옆방 CCTV로 검문소의 놈들을 미리 볼 수 있어요.,,Tab 목표 목록의 설명: Ch2.11
+mission.ch2.11.done,차단벽 올림,,끝낸 목표의 이름: Ch2.11
+mission.ch2.11.prompt,[F] 차단벽 올리기,,그 자리에서 누를 때 안내: Ch2.11
+gimmick.lure.radio,[F] 라디오 켜기 · 소리에 놈들이 몰려온다,,맵 기믹 [F] 안내 > 꺼진 라디오 앞(큰 미끼)
+gimmick.fuel.open,"[F] 주유기 밸브 열기 · 바닥에 기름이 번지고, 쏘면 불이 붙는다",,맵 기믹 [F] 안내 > 주유기 앞(기름 함정)
+gimmick.camera.watch,[F] CCTV 보기 · 검문소의 놈들이 벽 너머로 보인다,,맵 기믹 [F] 안내 > CCTV 모니터 앞
+gimmick.camera.wait,CCTV · {0}초 뒤 다시 볼 수 있다,,맵 기믹 안내 > CCTV를 본 직후. {0}=남은 초
+gimmick.camera.shown,CCTV · 놈들이 어디 있는지 보인다,,화면 위 알림 > 누가 CCTV를 봤을 때(모두에게)
+gimmick.item.armorycard,장교 카드,,맵 기믹 물건 이름 > 2장 검문소 무기고 카드(판마다 다른 자리의 잠든 장교 곁)

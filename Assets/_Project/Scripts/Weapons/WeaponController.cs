@@ -352,7 +352,7 @@ public sealed partial class WeaponController : MonoBehaviour
             out BulletLeg[] later, weaponData.BodyPierce);
         LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later, pellet);
         // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
-        if (pellet == 0) Noise.Make(origin, ShotNoise, owner);
+        if (pellet == 0 && !ShotMuffle.Hides(trace)) Noise.Make(origin, ShotNoise, owner);
         ShotFired?.Invoke(LastShot);
         // The gun's kick once per shot, however many pellets it threw.
         if (pellet == 0) presentation?.OnShot(weaponData, Vector2.zero);

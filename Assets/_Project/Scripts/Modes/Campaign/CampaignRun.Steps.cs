@@ -72,8 +72,9 @@ public sealed partial class CampaignRun
                 else if (EveryoneAt(now)) Advance();
                 break;
             case CampaignStepKind.Hold:
-                // A manned hold (chapter 4's tug) counts only while someone stands at its spot, and pauses otherwise.
-                held = now.Manned ? held + (AnyoneAt(now) ? dt : 0f) : SongTime(now, dt, 0f);
+                // A manned hold (chapter 4's tug) counts only while someone stands at its spot, and pauses otherwise; a burn
+                // hold (chapter 2's car pile) only while its fire has fuel.
+                held = now.Manned ? held + (AnyoneAt(now) ? dt : 0f) : now.Burn > 0f ? held + (Burn(now, dt) ? dt : 0f) : SongTime(now, dt, 0f);
                 if (held >= TotalOf(step)) Advance();
                 else ShowHeld(now);
                 break;
@@ -82,6 +83,20 @@ public sealed partial class CampaignRun
                 break;
         }
         if (!finished && Current == now) SkipAhead();
+    }
+
+    // A burn hold's fire (the map gimmick card "불로만 치우는 바리케이드"): as it begins, the cans already poured on its pile
+    // light it, each worth the step's burn seconds; each can poured on it after adds as much again, and it burns down
+    // meanwhile. Its poured cans go back to the station (CampaignCans.RespawnPoured), so it can always be fed. True while
+    // it burns.
+    private bool Burn(CampaignStep now, float dt)
+    {
+        if (burnStep != step) { burnStep = step; burnLeft = fuel.Poured * now.Burn; poursSeen = fuel.PourCount; }
+        if (fuel.PourCount > poursSeen) { burnLeft += (fuel.PourCount - poursSeen) * now.Burn; poursSeen = fuel.PourCount; }
+        burning = burnLeft > 0f;
+        if (!burning) return false;
+        burnLeft -= dt;
+        return true;
     }
 
     // A finale (C-14): a hold whose song plays on into the escape after it, the escape's seconds being how long the ride
@@ -196,8 +211,9 @@ public sealed partial class CampaignRun
             unseenCount++;
             ShowUnseen();
         }
-        // The way on from a rest stop starts quiet again.
+        // The way on from a rest stop starts quiet again; the way on from a hold has its map crowds set as it is reached.
         if (done.Kind == CampaignStepKind.Checkpoint && step < steps.Count) BeginQuiet();
+        else if (IsHost && done.Kind == CampaignStepKind.Hold && step < steps.Count) PlaceCrowdsAhead();
         if (done.Kind == CampaignStepKind.Escape || step >= steps.Count) Finish();
         else ShowObjective(announce);
     }
@@ -255,6 +271,9 @@ public sealed partial class CampaignRun
         brutesDue = 0;
         brutesStep = -1;
         fuel.Reset();
+        crowdsPlaced.Clear();
+        burnStep = -1;
+        burning = false;
         step = checkpoint + 1;
         held = 0f;
         BeginQuiet();

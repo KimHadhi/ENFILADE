@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>What one step of a campaign chapter asks of the players (Tables/CampaignSteps, kind).</summary>
 public enum CampaignStepKind
@@ -56,6 +57,11 @@ public sealed class CampaignStep
     /// Leaving pauses it and takes nothing back, so stepping away to fight costs time, never progress.
     /// </summary>
     public bool Manned;
+    /// <summary>
+    /// A hold that runs only while its fire burns (the map gimmick card "불로만 치우는 바리케이드"): seconds of fire each can
+    /// poured on its spot gives (the cans of the Collect step before it light it as it begins). 0 for any other hold.
+    /// </summary>
+    public float Burn;
 
     public static List<CampaignStep> For(string chapter)
     {
@@ -74,6 +80,7 @@ public sealed class CampaignStep
                 Radius = row.Number("radius", 4f), Seconds = row.Number("seconds", 0f),
                 Horde = (int)row.Number("horde", 0f), Rate = row.Number("rate", 0f), Count = (int)row.Number("count", 1f),
                 Music = row.Text("music"), PeakBosses = (int)row.Number("peakBoss", 0f), Manned = row.Number("manned", 0f) > 0f,
+                Burn = Mathf.Max(0f, row.Number("burn", 0f)),
                 LoudTitle = Texts.Cell(row.Text("loudTitle")), LoudDescription = Texts.Cell(row.Text("loudDescription"))
             });
         }

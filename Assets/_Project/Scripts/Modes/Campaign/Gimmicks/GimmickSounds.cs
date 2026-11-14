@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public static class GimmickSounds
 {
-    public enum Cue { Static, Clunk, Ding, Smash, Hiss, Unlock, Jingle, Snap, Crash, Whistle }
+    public enum Cue { Static, Clunk, Ding, Smash, Hiss, Unlock, Jingle, Snap, Crash, Whistle, CarAlarm, Fire, Rumble, Beep, Chime }
 
     private const int Rate = 44100;
     private static readonly AudioClip[] made = new AudioClip[Enum.GetValues(typeof(Cue)).Length];
@@ -32,6 +32,11 @@ public static class GimmickSounds
             Cue.Jingle => Jingle(),
             Cue.Snap => Snap(),
             Cue.Crash => Crash(),
+            Cue.CarAlarm => CarAlarm(),
+            Cue.Fire => Fire(),
+            Cue.Rumble => Rumble(),
+            Cue.Beep => Beep(),
+            Cue.Chime => Chime(),
             _ => Whistle()
         };
         var clip = AudioClip.Create("Gimmick " + cue, samples.Length, 1, Rate, false);
@@ -232,6 +237,92 @@ public static class GimmickSounds
             float ring = (Mathf.Sin(2f * Mathf.PI * 173f * t) + .6f * Mathf.Sin(2f * Mathf.PI * 311f * t) + .3f * Mathf.Sin(2f * Mathf.PI * 529f * t))
                 * Mathf.Exp(-t * 2.2f) * .25f;
             s[i] = Mathf.Clamp(boom + ring + low * Mathf.Exp(-t * 5f) * 1.6f + white * Mathf.Exp(-t * 30f) * .5f, -1f, 1f) * .9f;
+        }
+        return s;
+    }
+
+    // A car alarm: a whoop rising, then a fast warble, then two honks: loops (1.8 s).
+    private static float[] CarAlarm()
+    {
+        int count = (int)(Rate * 1.8f);
+        var s = new float[count];
+        float phase = 0f;
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate, pitch;
+            if (t < .7f) pitch = Mathf.Lerp(650f, 1350f, t / .7f);
+            else if (t < 1.3f) pitch = 1000f + 260f * Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 14f * t));
+            else pitch = 520f;
+            phase += 2f * Mathf.PI * pitch / Rate;
+            float wave = Mathf.Sin(phase) + .35f * Mathf.Sin(3f * phase) + .18f * Mathf.Sin(5f * phase);
+            float gate = t < 1.3f ? 1f : (t < 1.48f || (t > 1.56f && t < 1.74f) ? 1f : 0f);
+            float edge = Mathf.Min(1f, t / .01f, (1.8f - t) / .01f);
+            s[i] = wave * gate * edge * .26f;
+        }
+        return s;
+    }
+
+    // Fire: a low roar under crackles: loops (2 s).
+    private static float[] Fire()
+    {
+        var random = new System.Random(21);
+        int count = Rate * 2;
+        var s = new float[count];
+        float low = 0f, lower = 0f;
+        for (int i = 0; i < count; i++)
+        {
+            float white = (float)(random.NextDouble() * 2.0 - 1.0);
+            low += (white - low) * .05f;
+            lower += (low - lower) * .1f;
+            float crackle = random.NextDouble() < .004 ? (float)(random.NextDouble() * 2.0 - 1.0) * .8f : 0f;
+            s[i] = (lower * 3.2f + low * .9f + crackle) * .7f;
+        }
+        return s;
+    }
+
+    // Concrete giving way: a long deep rumble with cracks through it.
+    private static float[] Rumble()
+    {
+        var random = new System.Random(23);
+        int count = (int)(Rate * 2.4f);
+        var s = new float[count];
+        float low = 0f;
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate;
+            float white = (float)(random.NextDouble() * 2.0 - 1.0);
+            low += (white - low) * .03f;
+            float swell = Mathf.Clamp01(t / .2f) * Mathf.Clamp01((2.4f - t) / .9f);
+            float crack = random.NextDouble() < .002 ? white * 1.4f : 0f;
+            s[i] = Mathf.Clamp(low * 5f * swell + crack * swell + Mathf.Sin(2f * Mathf.PI * 32f * t) * .25f * swell, -1f, 1f) * .9f;
+        }
+        return s;
+    }
+
+    // A metal detector's alarm: a steady electronic tone, two long beeps.
+    private static float[] Beep()
+    {
+        int count = (int)(Rate * 1.4f);
+        var s = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate;
+            float on = (t < .55f || (t > .75f && t < 1.3f)) ? 1f : 0f;
+            float edge = Mathf.Min(1f, (t % .75f) / .008f);
+            s[i] = (Mathf.Sin(2f * Mathf.PI * 1760f * t) * .7f + Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 1760f * t)) * .15f) * on * edge * .3f;
+        }
+        return s;
+    }
+
+    // A public address's chime: three soft tones falling, as before an announcement.
+    private static float[] Chime()
+    {
+        int count = (int)(Rate * 2.2f);
+        var s = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate;
+            s[i] = Bell(t, 1046.5f) * .8f + Bell(t - .45f, 880f) * .8f + Bell(t - .9f, 698.5f) * .8f;
         }
         return s;
     }

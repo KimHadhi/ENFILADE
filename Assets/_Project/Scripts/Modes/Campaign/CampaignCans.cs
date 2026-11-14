@@ -35,6 +35,8 @@ internal sealed class CampaignCans
     private const float BlastRadius = 5f, BlastDamage = 180f, BlastEdgeDamage = 60f, BlastKnockdown = 2.2f;
     // The fire after it: how wide (m), damage a second to a zombie in it, how long it burns, how long the can is gone (s).
     private const float FireRadius = 3f, FireDamage = 40f, FireSeconds = 8f, FireEvery = .5f, GoneSeconds = 12f;
+    // A can poured on a burn hold's pile is back at the station this long after (s).
+    private const float PouredBack = 12f;
     // A view within this of the blast shakes, harder nearer (m).
     private const float ShakeReach = 18f;
     // Where a carried can sits in this PC's own view, from the camera (m: right, up, ahead).
@@ -96,6 +98,18 @@ internal sealed class CampaignCans
     /// <summary>What a blast sounds like (CampaignRun's, set by the builder); none is fine.</summary>
     public void Dress(AudioClip sound) => blastSound = sound;
 
+    /// <summary>
+    /// How many times a can has been poured since the start or the last wipe, whatever became of it after: a burn hold
+    /// counts its fuel by it (CampaignRun), as its poured cans go back to the station.
+    /// </summary>
+    public int PourCount { get; private set; }
+
+    /// <summary>
+    /// While a burn hold runs (CampaignRun): a can poured goes back where it first lay after PouredBack seconds, so the
+    /// fire can always be fed again.
+    /// </summary>
+    public bool RespawnPoured { get; set; }
+
     public int Poured
     {
         get
@@ -154,6 +168,8 @@ internal sealed class CampaignCans
             case Act.Pour:
                 if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who) || !mayPour) return false;
                 can.Mode = (byte)Mode.Poured;
+                PourCount++;
+                timeLeft[index] = PouredBack;
                 break;
             case Act.Throw:
                 if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who)) return false;
@@ -219,6 +235,11 @@ internal sealed class CampaignCans
                     break;
                 case Mode.Gone:
                     if ((timeLeft[i] -= dt) > 0f) break;
+                    state[i] = start[i];
+                    changed = true;
+                    break;
+                case Mode.Poured:
+                    if (!RespawnPoured || (timeLeft[i] -= dt) > 0f) break;
                     state[i] = start[i];
                     changed = true;
                     break;

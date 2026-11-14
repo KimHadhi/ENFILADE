@@ -127,7 +127,10 @@ public sealed partial class CampaignRun
         {
             bool pour = MayPour(mine);
             if (pressed) CanAct(pour ? CampaignCans.Act.Pour : CampaignCans.Act.Drop, carried, mine);
-            return Texts.Format("campaign.prompt.can.carry", pour ? Texts.Get("campaign.prompt.can.pour") : Texts.Get("campaign.prompt.can.drop"));
+            // A step with a pouring prompt of its own says it (chapter 2's car pile); otherwise the generator's.
+            string pourWords = Current != null && !string.IsNullOrEmpty(Current.Prompt) && (Current.Kind == CampaignStepKind.Collect || Current.Burn > 0f)
+                ? Current.Prompt : Texts.Get("campaign.prompt.can.pour");
+            return Texts.Format("campaign.prompt.can.carry", pour ? pourWords : Texts.Get("campaign.prompt.can.drop"));
         }
         int near = fuel.NearestLying(mine.transform.position);
         if (near < 0) return null;

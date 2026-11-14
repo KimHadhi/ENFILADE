@@ -136,6 +136,17 @@ public sealed partial class GreyboxBuilder
         });
     }
 
+    /// <summary>
+    /// An empty holder under the map's terrain for boxes that stay in the walk-mesh bake and stand still until a gimmick
+    /// switches them off (a road segment that falls in, GimmickCollapse): Box(..., group: it) puts them there.
+    /// </summary>
+    public Transform Holder(string name)
+    {
+        var holder = new GameObject(name).transform;
+        holder.SetParent(terrain, false);
+        return holder;
+    }
+
     /// <summary>An empty place under the gimmicks' root (an item's possible spot, a landing zone).</summary>
     public Transform Mark(string name, Vector3 at, float yaw = 0f, Transform under = null)
     {

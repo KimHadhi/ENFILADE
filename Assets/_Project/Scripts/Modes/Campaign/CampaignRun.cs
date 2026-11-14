@@ -64,12 +64,14 @@ public sealed partial class CampaignRun : MonoBehaviour
         public byte Alarm;
         /// <summary>The fight's phase (CombatPhase) and the song playing (CampaignMusic.IndexOf; 0 none).</summary>
         public byte Phase, Song;
+        /// <summary>1 while a burn hold's fire burns.</summary>
+        public byte Burning;
         /// <summary>Where the host is in its song, in tenths of a second. It changes every frame, so it rides along with
         /// the rest and is left out of Equals.</summary>
         public ushort SongAt;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
             && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Alarm == other.Alarm
-            && Phase == other.Phase && Song == other.Song;
+            && Phase == other.Phase && Song == other.Song && Burning == other.Burning;
     }
 
     [SerializeField, Tooltip("What the hordes are made of.")]
@@ -113,6 +115,8 @@ public sealed partial class CampaignRun : MonoBehaviour
     private readonly Dictionary<string, Transform> spotsByName = new Dictionary<string, Transform>();
     private readonly List<PlayerMovement> players = new List<PlayerMovement>();
     private readonly HashSet<string> reported = new HashSet<string>();
+    // The steps whose map crowds (SleeperNest, PatrolRoute) are set this stretch (the host's).
+    private readonly HashSet<string> crowdsPlaced = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
     private List<CampaignStep> steps = new List<CampaignStep>();
     private CampaignChapter chapter;
     private CampaignHorde horde;
@@ -124,7 +128,10 @@ public sealed partial class CampaignRun : MonoBehaviour
     private NetworkManager network;
     private InputAction interact;
     private Status sent;
-    private int step, checkpoint = -1, shownPoured = -1, brutesDue, brutesStep = -1;
+    private int step, checkpoint = -1, shownPoured = -1, brutesDue, brutesStep = -1, burnStep = -1, poursSeen;
+    // A burn hold's fire: seconds of fuel left (the host's), and whether it burns (the host's word, shared).
+    private float burnLeft;
+    private bool burning;
     private float held, finishedAt, nextShare, nextBruteTry;
     // The fight's phase on this PC (the host's word), and the track a hold without a song shows, one assault its whole
     // length (TryPhase).
@@ -274,6 +281,9 @@ public sealed partial class CampaignRun : MonoBehaviour
         active.spotsByName[name] = place;
     }
 
+    /// <summary>A burn hold's fire burns now (the host's word on every PC): BurnFire draws it.</summary>
+    public static bool Burning => active != null && !active.finished && active.burning;
+
     /// <summary>The run is at this step now.</summary>
     public static bool IsRunning(string stepId)
         => active != null && !active.finished && active.Current != null && active.IndexOf(stepId) == active.step;
@@ -342,11 +352,12 @@ public sealed partial class CampaignRun : MonoBehaviour
         }
     }
 
-    // Fuel goes in only while a Collect step wants it, and only at its spot.
+    // Fuel goes in only while a Collect step wants it, or a burn hold burns on it, and only at its spot.
     private bool MayPour(PlayerMovement who)
     {
         var now = Current;
-        return !finished && now != null && now.Kind == CampaignStepKind.Collect && Within(who, now);
+        return !finished && now != null && (now.Kind == CampaignStepKind.Collect || now.Kind == CampaignStepKind.Hold && now.Burn > 0f)
+            && Within(who, now);
     }
 
     private void Update()
@@ -355,7 +366,15 @@ public sealed partial class CampaignRun : MonoBehaviour
         if (dt <= 0f) return;
         GatherPlayers();
         WatchForWipe();
-        if (IsHost) { fuel.Tick(dt); Run(dt); }
+        if (IsHost)
+        {
+            // A burn hold's poured cans go back to the station while it runs.
+            var now = Current;
+            fuel.RespawnPoured = !finished && now != null && now.Kind == CampaignStepKind.Hold && now.Burn > 0f;
+            if (!fuel.RespawnPoured) burning = false;
+            fuel.Tick(dt);
+            Run(dt);
+        }
         WatchQuiet();
         WatchAlarm();
         ShowCardWhenDue();
