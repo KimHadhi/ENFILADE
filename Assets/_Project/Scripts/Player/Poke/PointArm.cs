@@ -34,6 +34,13 @@ using MovementState = PlayerMovement.MovementState;
 /// as the point comes in, and take the gun again as it goes; the pose eases by how far the hand is lent
 /// (OffHandLent), never ahead of it, and out over Point.out at most. A G throw has the off hand before a point
 /// (PlayerGrenades.HandBusy): while the throw holds it, nothing of the point is posed.
+/// The arm never goes further round the body than a shoulder carries it (the user, 2026-11-14: "핑할 때 손 고정되는 건
+/// 좋은데 확 돌리면 팔이 너무 꺾이는데 일정 각도 이상 화면(고개) 돌려서 꺾으면 빠르게 핑하던 손가락 끝내고 돌아오게
+/// 가능?"): Point.turnAcross across the chest, Point.turnOutward out to its own side, measured from the way the chest
+/// faces at the height the player looks (ShoulderReach). A ping's hand stays on what it pinged as the view turns until
+/// that spot leaves this reach; then the ping's point is over and the arm drops back over Point.turnOut from where it was
+/// (PlayerPoint.TurnAway). A held point follows the view, so it never leaves the reach; only its spring could swing it
+/// past on a quick flick, and the reach holds it there too.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 6)]
 public sealed class PointArm : MonoBehaviour
@@ -45,20 +52,25 @@ public sealed class PointArm : MonoBehaviour
     private PlayerPoint point;
     private PlayerBodyHands hands;
     private Animator animator;
-    private Transform eyes, indexTip;
+    // otherUpper: the right upper arm, whose shoulder with this one's gives the way the chest faces (ShoulderReach).
+    private Transform eyes, indexTip, otherUpper;
     private readonly ArmBones arm = new ArmBones();
     // The wrist as the body was modelled, straight and untwisted (its skin's bind pose): the hand's turn from the forearm
     // then, and the forearm's way into the wrist in the hand's own frame (BindWrist).
     private Quaternion wristBind = Quaternion.identity;
     private Vector3 forearmInHand = Vector3.forward;
     private bool hasWristBind;
-    // own: the point's own ease (Point.in, Point.out); weight: what is posed, never ahead of the hand lent off the gun.
+    // own: the point's own ease (Point.in, Point.out, Point.turnOut); weight: what is posed, never ahead of the hand lent
+    // off the gun.
     private float own, weight, press, lostFor;
     // The arm's way, sprung after the aim's, and how fast it turns (SpringWay); the last place a touch put the fingertip
     // and how far the arm has gone over to it (Point.touchIn); the fingertip's reach past the wrist, from the last pose.
     private Vector3 aimWay, aimSpin, touchGoal, touchLocal;
+    // A ping's point cut short by turning away goes back holding the way it had on the view: that way in the eyes' frame,
+    // taken as the drop began (wasAway: it was dropping the frame before).
+    private Vector3 awayLocal;
     private float tipLength, touchBlend;
-    private bool bound, hasAim, hasTouch, touching;
+    private bool bound, hasAim, hasTouch, touching, wasAway;
     private PokeHit touch;
 
     private void LateUpdate()
@@ -69,20 +81,23 @@ public sealed class PointArm : MonoBehaviour
         // A G throw has the off hand first: while it does, the point gives the hand up at once.
         bool thrown = PlayerGrenades.HandBusy(movement);
         bool on = point != null && point.Pointing && Free() && !thrown;
+        // A ping's point that turning away cut short (PlayerPoint.TurnAway) goes back quicker than a point let go, from
+        // where it was.
+        bool away = !on && point != null && point.TurnedAway;
         // The left hand off the gun through PlayerBodyHands, as every off-hand use takes it; the same share each frame
         // costs nothing.
         if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
-        float blend = on ? PokeTables.Number("Point.in", .14f) : PokeTables.Number("Point.out", .2f);
+        float blend = on ? PokeTables.Number("Point.in", .14f) : away ? PokeTables.Number("Point.turnOut", .1f) : PokeTables.Number("Point.out", .2f);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
         weight = thrown ? 0f : hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
         if (weight <= 0f)
         {
             Let();
-            hasAim = hasTouch = false;
+            hasAim = hasTouch = wasAway = false;
             press = touchBlend = 0f;
             return;
         }
-        Pose(dt, on);
+        Pose(dt, on, away);
     }
 
     private void OnDisable()
@@ -107,6 +122,7 @@ public sealed class PointArm : MonoBehaviour
         animator = GetComponent<Animator>();
         if (movement == null || point == null || animator == null || !animator.isHuman) return false;
         if (!arm.Bind(animator)) return false;
+        otherUpper = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
         var lastJoint = arm.Fingers[Index * 3 + 2];
         indexTip = lastJoint != null && lastJoint.childCount > 0 ? lastJoint.GetChild(0) : null;
         BindWrist();
@@ -161,7 +177,7 @@ public sealed class PointArm : MonoBehaviour
         return state == MovementState.Standing || state == MovementState.Crouching;
     }
 
-    private void Pose(float dt, bool on)
+    private void Pose(float dt, bool on, bool away)
     {
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return;
@@ -175,6 +191,7 @@ public sealed class PointArm : MonoBehaviour
         Vector3 viewAhead = Vector3.Cross(viewRight, Vector3.up);
         float armLength = Vector3.Distance(arm.Upper.position, arm.Lower.position) + Vector3.Distance(arm.Lower.position, arm.Hand.position);
         float reach = armLength + (tipLength > 0f ? tipLength : armLength * .35f);
+        ShoulderReach(look, viewRight, viewAhead, out Vector3 reachAxis, out float reachHalf);
 
         // Where the crosshair's line really ends, as a gun's aim does (the user, 2026-11-12: "손찌검 하는 것도 총처럼
         // 조준선이 닿는 곳으로 검지 손가락 끝 방향이 가게끔 … 벽 뚫는 것도 막으면서"): the first wall, crate or zombie on it
@@ -190,16 +207,37 @@ public sealed class PointArm : MonoBehaviour
         bool found = on && Touch(origin, look, PokeTables.Number("Point.range", 1.3f), dt, out hit) && hit.Distance <= wallAt + .01f;
         bool touches = found && Vector3.Distance(shoulder, hit.Point) <= reach * PokeTables.Number("Point.reach", .97f);
         // What the crosshair's line ends on: a friend, what a tap's ping pinged, else the wall or the far end of the look.
-        Vector3 aim = found ? hit.Point : point.FlashTarget(out Vector3 pinged) ? pinged : origin + look * wallAt;
+        Vector3 aim;
+        if (found) aim = hit.Point;
+        else if (point.PingSpot(out Vector3 pinged))
+        {
+            aim = pinged;
+            // The ping's hand stays on what it pinged while the view turns, as far as the shoulder carries the arm round;
+            // turned further, the point is over (PlayerPoint.TurnAway: friends' copies are told by the pose). Decided here
+            // on this PC's player only: a friend's copy goes by their pose's marks, so it drops at the same moment.
+            if (on && Vector3.Angle(reachAxis, pinged - shoulder) > reachHalf) point.TurnAway();
+        }
+        else aim = origin + look * wallAt;
 
         // The arm reaches from the shoulder toward it, nearly straight (Point.extend of its length), so it rides whatever
         // the body does, the walk's bob and the torso's turn (the user, 2026-11-12: "위치가 고정인 느낌이라 걸을 때
         // 애니메이션도 굉장히 어색해. 얼마든지 팔과 손을 고정하지 않고 자유롭게 움직여도 되는데"; 0.8.232 held the hand
         // to a spot on the screen). Its way springs after the aim's (Point.swayHz, Point.swayBounce): a quick turn leaves
         // it a little behind, it swings in past and settles, and standing still the fingertip rests on the line to the aim.
+        // Both stay within the shoulder's reach, so neither a far turn nor the spring's lag on a flick bends it across the
+        // chest or behind the back.
         Vector3 wantWay = aim - shoulder;
         wantWay = wantWay.sqrMagnitude > 1e-6f ? wantWay.normalized : look;
-        SpringWay(wantWay, dt);
+        // Going back from a ping's point cut short, the arm keeps the way it had on the view and drops from there, turning
+        // with the view as it goes, never swinging over to the crosshair first.
+        if (away)
+        {
+            if (!wasAway) awayLocal = Quaternion.Inverse(eyes.rotation) * (hasAim ? aimWay : wantWay);
+            wantWay = eyes.rotation * awayLocal;
+        }
+        wasAway = away;
+        SpringWay(Within(wantWay, reachAxis, reachHalf), dt);
+        HoldWithin(reachAxis, reachHalf);
         Vector3 pointGoal = shoulder + aimWay * (reach * PokeTables.Number("Point.extend", .96f));
         // Touching, the fingertip goes onto the skin itself, pressing along the arm's way (where the crosshair is, so the
         // dent is there too), eased between the two over Point.touchIn.
@@ -286,6 +324,49 @@ public sealed class PointArm : MonoBehaviour
             aimWay += aimSpin * step;
         }
         aimWay = aimWay.sqrMagnitude > 1e-6f ? aimWay.normalized : want;
+        aimSpin = Vector3.ProjectOnPlane(aimSpin, aimWay);
+    }
+
+    // How far round the body the shoulder carries this arm: a cone round <paramref name="axis"/>, <paramref name="half"/>
+    // degrees wide either way. Point.turnAcross across the chest (past it the left arm, nearly straight, presses into the
+    // chest; on Mayo, whose shoulder joint is 7.5 cm from her middle, the elbow is past the middle at 37° and the forearm
+    // meets the chest at 45°), Point.turnOutward out to the arm's own side (past straight out sideways it goes behind the
+    // back), their mean up and down. Measured from the way the chest faces, from its two shoulders, so on any rig: standing
+    // it faces the view (the hips never lag a turn), but strafing turns the hips toward the step and the chest stays turned
+    // by 40% of that (the spine turns 60% back), and the shoulder hangs on the chest, not on the view. Up and down it is the
+    // view's own height instead: an arm raised or lowered at the shoulder is fine far past the share of a look the spine
+    // takes (45% down, 20% up), and a held point's arm, which follows the look, stays in the middle however high it looks.
+    private void ShoulderReach(Vector3 look, Vector3 viewRight, Vector3 viewAhead, out Vector3 axis, out float half)
+    {
+        float across = Mathf.Clamp(PokeTables.Number("Point.turnAcross", 45f), 1f, 179f);
+        float outward = Mathf.Clamp(PokeTables.Number("Point.turnOutward", 100f), 1f, 179f);
+        half = (across + outward) * .5f;
+        Vector3 chestAhead = otherUpper != null ? Vector3.Cross(otherUpper.position - arm.Upper.position, Vector3.up) : viewAhead;
+        float chestTurn = chestAhead.sqrMagnitude > 1e-8f ? Vector3.SignedAngle(viewAhead, chestAhead, Vector3.up) : 0f;
+        // The middle of the reach is turned out to this left arm's own side (left, about the view's up) by half the
+        // difference, so it reaches Point.turnAcross one way and Point.turnOutward the other.
+        Vector3 viewUp = Vector3.Cross(look, viewRight);
+        axis = Quaternion.AngleAxis(chestTurn - (outward - across) * .5f, viewUp) * look;
+    }
+
+    // The way, or the nearest way to it within the cone round axis (half degrees).
+    private static Vector3 Within(Vector3 way, Vector3 axis, float half)
+        => Vector3.Angle(axis, way) <= half ? way : Vector3.RotateTowards(axis, way, half * Mathf.Deg2Rad, 0f);
+
+    // The arm's sprung way held within the shoulder's reach: a quick turn may leave the arm behind, never across the chest
+    // or behind the back. What of its swing ran into the edge is spent there, so it doesn't bounce off it.
+    private void HoldWithin(Vector3 axis, float half)
+    {
+        if (Vector3.Angle(axis, aimWay) <= half) return;
+        Vector3 held = Within(aimWay, axis, half);
+        Vector3 outward = -Vector3.ProjectOnPlane(axis, held);
+        if (outward.sqrMagnitude > 1e-8f)
+        {
+            outward.Normalize();
+            float push = Vector3.Dot(aimSpin, outward);
+            if (push > 0f) aimSpin -= outward * push;
+        }
+        aimWay = held;
         aimSpin = Vector3.ProjectOnPlane(aimSpin, aimWay);
     }
 

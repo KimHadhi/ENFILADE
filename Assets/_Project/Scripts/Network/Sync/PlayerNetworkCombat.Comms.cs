@@ -4,27 +4,38 @@ using UnityEngine;
 // PlayerNetworkCombat: pings, duels, callouts and faces. One part of the class; the rest is in PlayerNetworkCombat.cs and the files beside it.
 public sealed partial class PlayerNetworkCombat
 {
-    private void OnPinged(Component foe, bool bounty)
+    // The spot the hand points at goes in the foe's own frame, so a friend's copy points at the same place on their copy of
+    // the foe, wherever it stands on their screen (PlayerPoint.Pinged).
+    private void OnPinged(Component foe, bool bounty, Vector3 spot)
     {
-        if (foe != null && foe.TryGetComponent(out NetworkObject marked) && marked.IsSpawned) PingRpc(marked.NetworkObjectId, bounty);
+        Vector3 local = foe != null ? foe.transform.InverseTransformPoint(spot) : spot;
+        if (foe != null && foe.TryGetComponent(out NetworkObject marked) && marked.IsSpawned) PingRpc(marked.NetworkObjectId, bounty, local);
         // A target on the hub's range is no network object: every PC has its own from the scene, found by where it stood.
-        else if (foe is RangeTarget target) RangePingRpc(target.Home, bounty);
+        else if (foe is RangeTarget target) RangePingRpc(target.Home, bounty, local);
     }
 
-    // This player pinged a target on the hub's range (a Schießhund trying its mark out): every other PC marks its own copy.
+    // This player pinged a target on the hub's range (a Schießhund trying its mark out): every other PC marks its own copy,
+    // and this player's copy there points at it as they do.
     [Rpc(SendTo.NotMe)]
-    private void RangePingRpc(Vector3 home, bool bounty)
+    private void RangePingRpc(Vector3 home, bool bounty, Vector3 spot)
     {
         var target = RangeTarget.Nearest(home);
-        if (target != null) PingMarks.Ping(target, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
+        if (target == null) return;
+        var pinger = mover != null ? mover : GetComponent<PlayerMovement>();
+        PingMarks.Ping(target, pinger, bounty);
+        PlayerPoint.Pinged(pinger, target, spot);
     }
 
-    // This player pinged an enemy (a Schießhund's bounty mark if bounty): every other PC marks it too.
+    // This player pinged an enemy (a Schießhund's bounty mark if bounty): every other PC marks it too, and this player's
+    // copy there points at the spot on it as they do.
     [Rpc(SendTo.NotMe)]
-    private void PingRpc(ulong enemy, bool bounty)
+    private void PingRpc(ulong enemy, bool bounty, Vector3 spot)
     {
         if (NetworkManager == null || !NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(enemy, out var marked)) return;
-        if (marked.TryGetComponent(out EnemyHealth health)) PingMarks.Ping(health, mover != null ? mover : GetComponent<PlayerMovement>(), bounty);
+        if (!marked.TryGetComponent(out EnemyHealth health)) return;
+        var pinger = mover != null ? mover : GetComponent<PlayerMovement>();
+        PingMarks.Ping(health, pinger, bounty);
+        PlayerPoint.Pinged(pinger, health, spot);
     }
 
     // A Schießhund's duel (HoundDuel): on a zombie, every other PC keeps it too. One on a range target is practice, this

@@ -10,8 +10,11 @@ using UnityEngine.InputSystem;
 /// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit), unless the foe is a lesser
 /// quarry than the one it already hunts: that one is a plain ping (PlayerClass.Grade). The free hand points at it for a
 /// moment as it goes (PlayerPoint.Flash, the held point's drawn hand), a quick tap of the left hand alone when aimed down
-/// the sights; with the hand busy (a reload, a draw, a throw) the mark and its sound say it alone. The other PCs hear of it
-/// from PlayerNetworkCombat. This PC's own player only. Numbers: Tables/ClassAbilities, Ping.*.
+/// the sights; with the hand busy (a reload, a draw, a throw) the mark and its sound say it alone. The hand stays on the
+/// foe as the view turns, until it is further round than the shoulder carries the arm: then the point ends early and the
+/// hand drops back (PointArm, PlayerPoint.TurnAway). The other PCs hear of it from PlayerNetworkCombat, with the spot the
+/// hand points at, so their copy of this player points there too. This PC's own player only. Numbers:
+/// Tables/ClassAbilities, Ping.*.
 /// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
 /// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네").
 /// Held, F points (GTA V's way; the user, 2026-11-12: "F 꾹 누르고 있으면 GTA5에서 무슨 키 누르고 있으면 계속
@@ -28,10 +31,11 @@ public sealed class PlayerPing : MonoBehaviour
     private const float Radius = .3f;
 
     /// <summary>
-    /// This PC's player pinged this foe (a zombie or a range target); true for a Schießhund's bounty mark.
-    /// PlayerNetworkCombat tells the others.
+    /// This PC's player pinged this foe (a zombie or a range target); true for a Schießhund's bounty mark; the spot on it
+    /// (world) the hand points at. PlayerNetworkCombat tells the others, the spot too, so their copy of this player points
+    /// at it as this PC's player does.
     /// </summary>
-    public event Action<Component, bool> Pinged;
+    public event Action<Component, bool, Vector3> Pinged;
 
     private PlayerMovement movement;
     private PlayerExecution execution;
@@ -121,7 +125,7 @@ public sealed class PlayerPing : MonoBehaviour
         PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
         Gesture(foe, pinged);
-        Pinged?.Invoke(foe, bounty);
+        Pinged?.Invoke(foe, bounty, pinged);
     }
 
     /// <summary>The living foe under the crosshair now, as F would find it, or null: a Schießhund's duel is called on it (ClassKit).</summary>
@@ -136,8 +140,9 @@ public sealed class PlayerPing : MonoBehaviour
         if (foe == null || movement == null) return;
         PingMarks.Ping(foe, movement, bounty);
         KitSound.Play(bounty ? KitSound.Cue.Mark : KitSound.Cue.Ping, .7f);
-        Gesture(foe, Middle(foe));
-        Pinged?.Invoke(foe, bounty);
+        Vector3 middle = Middle(foe);
+        Gesture(foe, middle);
+        Pinged?.Invoke(foe, bounty, middle);
     }
 
     // The free hand points at what was pinged for a moment, the hand drawn for the held point (PlayerPoint.Flash; the

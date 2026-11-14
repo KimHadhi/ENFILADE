@@ -134,7 +134,7 @@ public sealed class MovementMirror
         motor.VerticalVelocity = pose.Velocity.y;
         ctx.Actions.sprintProgress = pose.RunIntent;
         ctx.Posture.airCrouching = Has(pose, Marks.AirCrouching);
-        PlayerPoint.Mirror(ctx, Has(pose, Marks.Pointing), Has(pose, Marks.NoPoke));
+        PlayerPoint.Mirror(ctx, Has(pose, Marks.Pointing), Has(pose, Marks.NoPoke), Has(pose, Marks.PingPoint), Has(pose, Marks.PointAway));
         ctx.Posture.mirroredTuck = pose.Tuck;
         if (Body != null) Body.Step = pose.Step;
         abilities.Lean.Share = Mathf.Lerp(abilities.Lean.Share, pose.Lean, follow);

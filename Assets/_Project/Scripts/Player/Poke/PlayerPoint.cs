@@ -5,23 +5,34 @@ using MovementState = PlayerMovement.MovementState;
 /// Holding F to point (the user, 2026-11-12: "F가 핑이잖아? 핑 찍을 때 남는 손으로 손가락질 하는 모션 있고 F 꾹 누르고
 /// 있으면 GTA5에서 무슨 키 누르고 있으면 계속 손가락질할 수 있잖아? 그런 것처럼"): whether a player points now, and
 /// whether they let friends poke them. On this PC's player PlayerPing holds it while F is held past Poke.csv
-/// Point.holdAfter with nothing else for F to do (a tap stays a ping); on every other PC their pose's two marks say it
+/// Point.holdAfter with nothing else for F to do (a tap stays a ping); on every other PC their pose's marks say it
 /// (PlayerPose.Marks Pointing and NoPoke, MovementMirror), and the way they point is the look the pose already carries,
-/// so a point costs the network nothing more. The arm itself is PointArm, on whatever body they wear.
+/// so a point costs the network nothing more. A tap's ping points at what it pinged instead: their PC names the foe and
+/// the spot on it with the ping (PlayerNetworkCombat, Pinged), and the marks PingPoint and PointAway say that the point is
+/// a ping's and that turning away cut it short, so a friend's copy points at the same foe and drops at the same moment.
+/// The arm itself is PointArm, on whatever body they wear.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerPoint : MonoBehaviour
 {
+    // How much longer than its drop (Point.turnOut) a ping's point that turning away cut short stays marked on the pose
+    // (s): a few of the pose's network ticks, so a friend's copy sees the mark however short the drop is, and still has it
+    // at the end of its own drop, however late the mark came.
+    private const float AwayMarked = .2f;
+
     private PlayerMovement movement;
     private PlayerBody body;
     private WeaponController weapon;
     private Animator armed;
     // pinned: the console's /point keeps this PC's player pointing without F, to look at the hand while tuning it.
-    private bool held, pinned, mirroredPointing, mirroredNoPoke;
-    // A tap's ping points for a moment (Flash): until when, and at what (the pinged foe, the spot on it).
-    private float flashUntil = float.NegativeInfinity;
+    private bool held, pinned, mirroredPointing, mirroredNoPoke, mirroredPingPoint, mirroredAway;
+    // A tap's ping points for a moment (Flash): until when, and at what (the pinged foe, the spot on it). On a friend's
+    // copy, the foe and the spot their PC named (Pinged), and when it did.
+    private float flashUntil = float.NegativeInfinity, pingedAt = float.NegativeInfinity;
     private Transform flashAt;
     private Vector3 flashLocal;
+    // A ping's point that turning away cut short is going back until then (TurnAway).
+    private float awayUntil = float.NegativeInfinity;
 
     /// <summary>
     /// This player points now: their held F (or /point, or a ping's moment) on their own PC, their pose's mark on every
@@ -69,16 +80,63 @@ public sealed class PlayerPoint : MonoBehaviour
     internal void StopFlash() => flashUntil = float.NegativeInfinity;
 
     /// <summary>
-    /// Where a ping's point aims on this PC's player while it lasts and nothing else holds the point (a held F or /point
-    /// aim where the player looks): the pinged spot, following the foe as it moves.
+    /// Where a ping's point aims while it lasts and nothing else holds the point (a held F or /point aim where the player
+    /// looks): the pinged spot, following the foe as it moves. On a friend's copy, while their pose says the point is a
+    /// ping's, the spot their PC named (Pinged).
     /// </summary>
-    internal bool FlashTarget(out Vector3 point)
+    internal bool PingSpot(out Vector3 point)
     {
         point = default;
-        if (movement == null || movement.IsNetworkDriven || held || pinned || Time.time >= flashUntil) return false;
-        if (flashAt == null) return false;
+        if (!AimsAtPing) return false;
         point = flashAt.TransformPoint(flashLocal);
         return true;
+    }
+
+    // The point aims at the ping: on this PC's player while its moment lasts and no held F or /point has the hand; on a
+    // friend's copy while their pose says so and their PC named the foe lately (a ping's moment is under a second, so an
+    // older name belongs to an earlier ping and the copy points along the look until the new one comes).
+    private bool AimsAtPing
+    {
+        get
+        {
+            if (movement == null || flashAt == null) return false;
+            if (movement.IsNetworkDriven)
+                return mirroredPointing && mirroredPingPoint && Time.time - pingedAt <= PokeTables.Number("Ping.point", .6f) + 1f;
+            return !held && !pinned && Time.time < flashUntil;
+        }
+    }
+
+    /// <summary>
+    /// The ping's point is over: the view turned so far from what it pinged that the shoulder can't carry the arm round to
+    /// it (PointArm, on this PC's player; the user, 2026-11-14: "일정 각도 이상 화면(고개) 돌려서 꺾으면 빠르게 핑하던
+    /// 손가락 끝내고 돌아오게 가능?"). The hand goes back over Poke.csv Point.turnOut from where it was, and the pose
+    /// says so (PointAway), so friends' copies drop it the same way.
+    /// </summary>
+    internal void TurnAway()
+    {
+        if (movement == null || movement.IsNetworkDriven) return;
+        flashUntil = float.NegativeInfinity;
+        awayUntil = Time.time + Mathf.Max(0f, PokeTables.Number("Point.turnOut", .1f)) + AwayMarked;
+    }
+
+    /// <summary>
+    /// A ping's point that turning away cut short is going back (PointArm drops it over Point.turnOut): on this PC's player
+    /// since TurnAway, on a friend's copy as their pose says. Over as soon as the player points again.
+    /// </summary>
+    internal bool TurnedAway => movement != null && !Pointing && (movement.IsNetworkDriven ? mirroredAway : Time.time < awayUntil);
+
+    /// <summary>
+    /// A friend pinged this foe (PlayerNetworkCombat, on every PC but theirs), <paramref name="local"/> being the spot on
+    /// it their hand points at, in the foe's own frame: their copy here points at that spot on this PC's copy of the foe
+    /// while their pose says the point is a ping's (PlayerPose.Marks.PingPoint), as their own hand does.
+    /// </summary>
+    internal static void Pinged(PlayerMovement who, Component foe, Vector3 local)
+    {
+        if (who == null || foe == null || !who.IsNetworkDriven) return;
+        if (!who.TryGetComponent(out PlayerPoint point)) point = who.gameObject.AddComponent<PlayerPoint>();
+        point.flashAt = foe.transform;
+        point.flashLocal = local;
+        point.pingedAt = Time.time;
     }
 
     /// <summary>They let friends poke them: their own setting on their PC, their pose's mark on every other.</summary>
@@ -119,22 +177,32 @@ public sealed class PlayerPoint : MonoBehaviour
     internal static PlayerPose.Marks MarksOf(PlayerMovement who)
     {
         var marks = PlayerPose.Marks.None;
-        if (who != null && who.TryGetComponent(out PlayerPoint point) && point.Pointing) marks |= PlayerPose.Marks.Pointing;
+        if (who != null && who.TryGetComponent(out PlayerPoint point))
+        {
+            if (point.Pointing) marks |= PlayerPose.Marks.Pointing;
+            if (point.Pointing && point.AimsAtPing) marks |= PlayerPose.Marks.PingPoint;
+            if (point.TurnedAway) marks |= PlayerPose.Marks.PointAway;
+        }
         if (!GameSettings.Current.letOthersPoke) marks |= PlayerPose.Marks.NoPoke;
         return marks;
     }
 
-    /// <summary>Another PC's player as their pose says (MovementMirror.Apply, every frame).</summary>
-    internal static void Mirror(PlayerMovement who, bool pointing, bool noPoke)
+    /// <summary>
+    /// Another PC's player as their pose says (MovementMirror.Apply, every frame): pointing, pokes off, the point a ping's,
+    /// a ping's point that turning away cut short going back.
+    /// </summary>
+    internal static void Mirror(PlayerMovement who, bool pointing, bool noPoke, bool pingPoint, bool away)
     {
         if (who == null) return;
         if (!who.TryGetComponent(out PlayerPoint point))
         {
-            if (!pointing && !noPoke) return;
+            if (!pointing && !noPoke && !away) return;
             point = who.gameObject.AddComponent<PlayerPoint>();
         }
         point.mirroredPointing = pointing;
         point.mirroredNoPoke = noPoke;
+        point.mirroredPingPoint = pingPoint;
+        point.mirroredAway = away;
     }
 
     // How far into aiming down the sights the gun counts as aimed (WeaponController.AimBlend).

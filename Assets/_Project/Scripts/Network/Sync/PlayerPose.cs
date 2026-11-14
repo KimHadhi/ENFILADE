@@ -16,7 +16,10 @@ public struct PlayerPose : INetworkSerializeByMemcpy
         LadderBlocked = 64, LeavesLadder = 128, BareHanded = 256,
         // Holding F to point (PlayerPoint), and having switched friends' pokes off (GameSettings.letOthersPoke): the point
         // rides the look this pose already carries, so it costs the network these two bits and nothing more.
-        Pointing = 512, NoPoke = 1024
+        Pointing = 512, NoPoke = 1024,
+        // The point is a tap's ping's, at the foe the ping named (PlayerNetworkCombat), not along the look; and a ping's
+        // point that turning away cut short is dropping back (PlayerPoint.TurnAway), so every copy drops it alike.
+        PingPoint = 2048, PointAway = 4096
     }
 
     public Vector3 Velocity;
