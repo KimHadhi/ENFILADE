@@ -8,7 +8,7 @@
 
 | 폴더 | 스크립트 | 무엇 |
 | --- | ---: | --- |
-| [Common](Common/) | 6 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)), Unity 오브젝트의 진짜 null([UnityNull](Common/UnityNull.cs)), 플레이어 파일 쓰기·읽기([SaveFile](Common/SaveFile.cs)), 숫자 표기 고정([GameCulture](Common/GameCulture.cs)) |
+| [Common](Common/) | 7 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)), 재질이 그리는 모습 읽기([MaterialLook](Common/MaterialLook.cs)), Unity 오브젝트의 진짜 null([UnityNull](Common/UnityNull.cs)), 플레이어 파일 쓰기·읽기([SaveFile](Common/SaveFile.cs)), 숫자 표기 고정([GameCulture](Common/GameCulture.cs)) |
 | [Loading](Loading/) | 6 | 로딩 화면과 첫 사용 준비 |
 | [Mods](Mods/) | 1 | Mods 폴더 읽기 (GameMods) |
 | [Scene](Scene/) | 3 | 실행 중 하이어라키 폴더, 대기 카메라, 씬에 하나뿐인 것 찾기([SceneOne](Scene/SceneOne.cs)) |

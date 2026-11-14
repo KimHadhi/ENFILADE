@@ -76,6 +76,12 @@ MonoBehaviour:
     ledgeHandSpacingScale: 1
     ledgePalmInsetScale: 1
     variants: []
+  - id: mannequin
+    displayName: character.mannequin.name
+    model: {fileID: 919132149155446097, guid: 34445f3a00e818d4d9bf20b74bdd6ca8, type: 3}
+    ledgeHandSpacingScale: 1
+    ledgePalmInsetScale: 1
+    variants: []
   clips:
   - {fileID: 1407050778745590169, guid: 52f62d2e1e04c7f43a7250543de8c224, type: 3}
   - {fileID: 6732401213594059973, guid: 52f62d2e1e04c7f43a7250543de8c224, type: 3}

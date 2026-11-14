@@ -400,6 +400,8 @@ outfit.ene-earring-1.name,에네 귀걸이 · 리본 체인,,옷장 > 옷 고르
 outfit.ene-earring-2.name,에네 귀걸이 · 링 체인,,옷장 > 옷 고르기 칸 이름(ene-earring-2)
 outfit.ene-earring-3.name,에네 귀걸이 · 십자가 링,,옷장 > 옷 고르기 칸 이름(ene-earring-3)
 outfit.ene-earring-4.name,에네 귀걸이 · 겹 마름모,,옷장 > 옷 고르기 칸 이름(ene-earring-4)
+#--- 캐릭터 이름 (PlayerBody 프로필의 displayName) ---,,,
+character.mannequin.name,테스트 마네킹,,메인 메뉴 캐릭터 화면·허브 거울 > 캐릭터 카드 이름 / 점수판(Tab) 캐릭터 칸 (PlayerBody 프로필의 mannequin: KINEMATION 마네킹)
 #--- 캐릭터 제 옷 이름 (CharacterParts.csv) ---,,,
 part.mayo.hair.name,마요 머리,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.hair)
 part.mayo.hairpin.name,머리핀,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(mayo.hairpin)

@@ -224,8 +224,9 @@ public sealed partial class MainMenuWardrobe : MonoBehaviour
         var skins = profile == null ? new List<PlayerBodyProfile.Skin>() : profile.Skins.Where(s => s != null && s.Model != null).ToList();
         var skin = profile != null ? profile.CurrentSkin : null;
         if (skin == null || !skins.Contains(skin)) skin = skins.FirstOrDefault();
-        // A character whose model has no body options shows the slots instead.
+        // A character whose model has no body options, or no face to hold, shows the slots instead.
         if (openSlot == BodyPage && (skin == null || BodyShapes.For(skin.Id).Count == 0)) openSlot = null;
+        if (openSlot == FacePage && (skin == null || !CharacterFace.HasFace(skin.Model, skin.Id))) openSlot = null;
         BuildLeft(skins, skin);
         if (skin != null)
         {

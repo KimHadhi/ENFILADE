@@ -46,10 +46,14 @@ public sealed partial class MainMenuWardrobe
             y += BodyPlateHeight + 18f;
         }
 
-        // The face it holds while it is looked at (MainMenuWardrobe.Faces), for every character: the game's faces fall
-        // back on the common VRChat and MMD key names.
-        FacePlate(chosen, new Vector2(edge, y));
-        y += BodyPlateHeight + 18f;
+        // The face it holds while it is looked at (MainMenuWardrobe.Faces), for every character with a face: the game's
+        // faces fall back on the common VRChat and MMD key names. A model with no such key (KINEMATION's test mannequin)
+        // has nothing to pick there.
+        if (CharacterFace.HasFace(chosen.Model, chosen.Id))
+        {
+            FacePlate(chosen, new Vector2(edge, y));
+            y += BodyPlateHeight + 18f;
+        }
 
         // Kept looks, every character's, worn again in a press (MainMenuWardrobe.Presets).
         PresetPlate(new Vector2(edge, y));

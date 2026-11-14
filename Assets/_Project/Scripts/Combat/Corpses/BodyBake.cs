@@ -7,7 +7,8 @@ using UnityEngine.Rendering;
 /// Combat/Shaders/DodgeGhost). It covers every skinned mesh of the body that shows, up to a vertex budget, each sub-mesh
 /// with its own texture, tiling and colour, so any outfit or modded character needs nothing of its own.
 /// Two effects use it: the Knight's shadow double (BodyDouble) and the cover step's afterimages (CoverStreak). The dodge
-/// keeps its own copy of these steps (DodgeDash); this is the same bake, made reusable for them.
+/// keeps its own copy of these steps (DodgeDash); this is the same bake, made reusable for them. Both take each
+/// material's own look from MaterialLook.
 /// </summary>
 public sealed class BodyBake
 {
@@ -16,15 +17,12 @@ public sealed class BodyBake
         ColorId = Shader.PropertyToID("_Color"), CutId = Shader.PropertyToID("_Cut"), AlphaId = Shader.PropertyToID("_Alpha"),
         WarmId = Shader.PropertyToID("_Warm");
 
-    private struct Look { public Texture texture; public Vector4 st; public Color color; public float cut; }
-    private struct Main { public int texture, color; public bool hasTexture, hasColor; }
-    private static readonly Dictionary<Shader, Main> mains = new Dictionary<Shader, Main>();
     private static Material material;
 
     private readonly List<Mesh> meshes = new List<Mesh>();
     private readonly List<Matrix4x4> places = new List<Matrix4x4>();
     private readonly List<int> firstLook = new List<int>();
-    private readonly List<Look> looks = new List<Look>();
+    private readonly List<MaterialLook> looks = new List<MaterialLook>();
     private readonly List<SkinnedMeshRenderer> skins = new List<SkinnedMeshRenderer>();
     private readonly List<Material> materials = new List<Material>();
     private MaterialPropertyBlock block;
@@ -36,7 +34,7 @@ public sealed class BodyBake
     public bool Ready => used > 0;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() { mains.Clear(); material = null; }
+    private static void ResetStatics() => material = null;
 
     /// <summary>
     /// Bakes every skinned mesh under <paramref name="root"/> that shows (and every one hidden for the first person's
@@ -73,7 +71,7 @@ public sealed class BodyBake
             materials.Clear();
             skin.GetSharedMaterials(materials);
             for (int part = 0; part < mesh.subMeshCount; part++)
-                looks.Add(LookOf(materials.Count > 0 ? materials[Mathf.Min(part, materials.Count - 1)] : null));
+                looks.Add(MaterialLook.Of(materials.Count > 0 ? materials[Mathf.Min(part, materials.Count - 1)] : null));
             used++;
         }
         return used > 0;
@@ -98,11 +96,11 @@ public sealed class BodyBake
             for (int part = 0; part < mesh.subMeshCount; part++)
             {
                 int index = Mathf.Min(first + part, looks.Count - 1);
-                var look = index >= 0 ? looks[index] : new Look { st = new Vector4(1f, 1f, 0f, 0f), color = Color.white };
-                block.SetTexture(MainTexId, look.texture != null ? look.texture : Texture2D.whiteTexture);
-                block.SetVector(MainTexStId, look.st);
-                block.SetColor(ColorId, look.color);
-                block.SetFloat(CutId, look.cut);
+                var look = index >= 0 ? looks[index] : MaterialLook.Plain;
+                block.SetTexture(MainTexId, look.Texture != null ? look.Texture : Texture2D.whiteTexture);
+                block.SetVector(MainTexStId, look.Tiling);
+                block.SetColor(ColorId, look.Color);
+                block.SetFloat(CutId, look.Cut);
                 Graphics.DrawMesh(mesh, at, shared, 0, null, part, block, ShadowCastingMode.Off, false);
             }
         }
@@ -122,51 +120,6 @@ public sealed class BodyBake
         var shader = Resources.Load<Shader>(GhostShader);
         if (shader == null) return null;
         return material = new Material(shader) { name = "Body Bake (Runtime)", hideFlags = HideFlags.HideAndDontSave };
-    }
-
-    // What a material draws as its own surface (DodgeDash.LookOf): the shader's main texture and colour, the tiling, and
-    // whether the texture's alpha cuts it (cut-out and see-through materials only).
-    private static Look LookOf(Material source)
-    {
-        var look = new Look { st = new Vector4(1f, 1f, 0f, 0f), color = Color.white };
-        var shader = source != null ? source.shader : null;
-        if (shader == null) return look;
-        var main = MainOf(shader);
-        if (main.hasTexture)
-        {
-            look.texture = source.GetTexture(main.texture);
-            Vector2 scale = source.GetTextureScale(main.texture), offset = source.GetTextureOffset(main.texture);
-            look.st = new Vector4(scale.x, scale.y, offset.x, offset.y);
-        }
-        if (main.hasColor) look.color = source.GetColor(main.color);
-        look.cut = source.renderQueue >= (int)RenderQueue.AlphaTest ? 1f : 0f;
-        return look;
-    }
-
-    // A shader's main texture and colour, as DodgeDash finds them: [MainTexture]/[MainColor] first (lilToon keeps a hidden
-    // _BaseMap/_BaseColor), then _MainTex/_Color, then URP's names.
-    private static Main MainOf(Shader shader)
-    {
-        if (mains.TryGetValue(shader, out var main)) return main;
-        int texture = -1, color = -1;
-        for (int i = 0, count = shader.GetPropertyCount(); i < count; i++)
-        {
-            var flags = shader.GetPropertyFlags(i);
-            var type = shader.GetPropertyType(i);
-            if (texture < 0 && (flags & ShaderPropertyFlags.MainTexture) != 0 && type == ShaderPropertyType.Texture) texture = i;
-            if (color < 0 && (flags & ShaderPropertyFlags.MainColor) != 0 && type == ShaderPropertyType.Color) color = i;
-        }
-        if (texture < 0) texture = shader.FindPropertyIndex("_MainTex");
-        if (texture < 0) texture = shader.FindPropertyIndex("_BaseMap");
-        if (color < 0) color = shader.FindPropertyIndex("_Color");
-        if (color < 0) color = shader.FindPropertyIndex("_BaseColor");
-        main = new Main
-        {
-            hasTexture = texture >= 0, texture = texture >= 0 ? shader.GetPropertyNameId(texture) : 0,
-            hasColor = color >= 0, color = color >= 0 ? shader.GetPropertyNameId(color) : 0,
-        };
-        mains[shader] = main;
-        return main;
     }
 }
 

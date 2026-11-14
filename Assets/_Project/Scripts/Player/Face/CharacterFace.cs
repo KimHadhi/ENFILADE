@@ -173,6 +173,36 @@ public sealed class CharacterFace : MonoBehaviour
         if (!string.IsNullOrEmpty(face)) saved.Add(prefix + face);
     }
 
+    /// <summary>
+    /// Whether <paramref name="model"/> (a character's prefab, not made) has a key any face it could be shown with would
+    /// move: a mood's, its own (FaceKeys.csv) or the common VRChat/MMD names, or one of its creator's expressions
+    /// (FacePresets.csv). The wardrobe offers its face page only then. KINEMATION's mannequin, the test character the user
+    /// asked for (2026-11-14: "키네메이션 기본 캐릭터 … 테스트용 캐릭터도 넣어줘"), has no shape keys at all, so every
+    /// face on that page changed nothing. Read from the model itself, so a modder's character is judged the same way.
+    /// </summary>
+    public static bool HasFace(GameObject model, string skinId)
+    {
+        if (model == null) return false;
+        var shapes = new List<Dictionary<string, int>>();
+        foreach (var skinned in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            if (skinned.sharedMesh != null && skinned.sharedMesh.blendShapeCount > 0) shapes.Add(NamesOf(skinned.sharedMesh));
+        if (shapes.Count == 0) return false;
+        bool Has(FaceTables.Key[] keys)
+        {
+            if (keys == null) return false;
+            foreach (var key in keys)
+                foreach (string name in key.Names)
+                    foreach (var names in shapes)
+                        if (names.ContainsKey(name)) return true;
+            return false;
+        }
+        foreach (var mood in FaceTables.Moods)
+            if (Has(FaceTables.Own(skinId, mood.Id)) || Has(FaceTables.Fallback(mood.Id))) return true;
+        foreach (string preset in FaceTables.Faces(skinId))
+            if (Has(FaceTables.Preset(skinId, preset))) return true;
+        return false;
+    }
+
     /// <summary>No moods and slower blinks: the wardrobe is working on the face or the eyes themselves.</summary>
     public bool Calm { get; set; }
 

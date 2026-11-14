@@ -110,20 +110,15 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
 
     private enum Kind { Bolt, Streak, Curl }
 
-    // One piece of a baked mesh's look: the texture, its tiling, the colour its own material draws it with, and 1 when
-    // the texture's alpha cuts it (cut-out and see-through materials).
-    private struct Look { public Texture texture; public Vector4 st; public Color color; public float cut; }
-    // A shader's main texture and colour property ids (MainOf).
-    private struct Main { public int texture, color; public bool hasTexture, hasColor; }
-    private static readonly Dictionary<Shader, Main> mains = new Dictionary<Shader, Main>();
-
     private sealed class Ghost
     {
         public readonly List<Mesh> meshes = new List<Mesh>();
         public readonly List<Matrix4x4> places = new List<Matrix4x4>();
         // Each mesh's sub-mesh looks start at its entry here in looks.
         public readonly List<int> firstLook = new List<int>();
-        public readonly List<Look> looks = new List<Look>();
+        // Each piece's own look (MaterialLook): the texture, its tiling, the colour its material draws it with, and
+        // whether the texture's alpha cuts it.
+        public readonly List<MaterialLook> looks = new List<MaterialLook>();
         public int used;
         public float age, seconds, rise;
         public bool live;
@@ -431,11 +426,11 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
                 for (int part = 0; part < mesh.subMeshCount; part++)
                 {
                     int at = Mathf.Min(first + part, ghost.looks.Count - 1);
-                    var look = at >= 0 ? ghost.looks[at] : new Look { st = new Vector4(1f, 1f, 0f, 0f), color = Color.white };
-                    block.SetTexture(MainTexId, look.texture != null ? look.texture : Texture2D.whiteTexture);
-                    block.SetVector(MainTexStId, look.st);
-                    block.SetColor(ColorId, look.color);
-                    block.SetFloat(CutId, look.cut);
+                    var look = at >= 0 ? ghost.looks[at] : MaterialLook.Plain;
+                    block.SetTexture(MainTexId, look.Texture != null ? look.Texture : Texture2D.whiteTexture);
+                    block.SetVector(MainTexStId, look.Tiling);
+                    block.SetColor(ColorId, look.Color);
+                    block.SetFloat(CutId, look.Cut);
                     Graphics.DrawMesh(mesh, ghost.places[i], material, 0, null, part, block, ShadowCastingMode.Off, false);
                 }
             }
@@ -474,59 +469,11 @@ public sealed class DodgeDash : MonoBehaviour, ITableBound
             materials.Clear();
             skin.GetSharedMaterials(materials);
             for (int part = 0; part < mesh.subMeshCount; part++)
-                ghost.looks.Add(LookOf(materials.Count > 0 ? materials[Mathf.Min(part, materials.Count - 1)] : null));
+                ghost.looks.Add(MaterialLook.Of(materials.Count > 0 ? materials[Mathf.Min(part, materials.Count - 1)] : null));
             ghost.used++;
         }
         ghost.age = 0f; ghost.seconds = seconds; ghost.rise = rise;
         ghost.live = ghost.used > 0;
-    }
-
-    // What a material draws as its own surface: its shader's main texture and colour (MainOf), the texture's tiling,
-    // and whether the texture's alpha cuts it. Only cut-out and see-through materials are cut: an opaque one ignores
-    // its texture's alpha, and many keep something else there. Anything without a main texture draws white.
-    private static Look LookOf(Material material)
-    {
-        var look = new Look { st = new Vector4(1f, 1f, 0f, 0f), color = Color.white };
-        var shader = material != null ? material.shader : null;
-        if (shader == null) return look;
-        var main = MainOf(shader);
-        if (main.hasTexture)
-        {
-            look.texture = material.GetTexture(main.texture);
-            Vector2 scale = material.GetTextureScale(main.texture), offset = material.GetTextureOffset(main.texture);
-            look.st = new Vector4(scale.x, scale.y, offset.x, offset.y);
-        }
-        if (main.hasColor) look.color = material.GetColor(main.color);
-        look.cut = material.renderQueue >= (int)RenderQueue.AlphaTest ? 1f : 0f;
-        return look;
-    }
-
-    // A shader's main texture and colour, found once per shader: the ones it marks [MainTexture] and [MainColor]
-    // (URP Lit: _BaseMap, _BaseColor; lilToon: _MainTex, _Color — lilToon also keeps a hidden, unused _BaseMap and
-    // _BaseColor for fallbacks, so going by the names alone would draw its outfits white), else the names Unity takes
-    // as main (_MainTex, _Color: MToon, Poiyomi, the built-in shaders), else URP's.
-    private static Main MainOf(Shader shader)
-    {
-        if (mains.TryGetValue(shader, out var main)) return main;
-        int texture = -1, color = -1;
-        for (int i = 0, count = shader.GetPropertyCount(); i < count; i++)
-        {
-            var flags = shader.GetPropertyFlags(i);
-            var type = shader.GetPropertyType(i);
-            if (texture < 0 && (flags & ShaderPropertyFlags.MainTexture) != 0 && type == ShaderPropertyType.Texture) texture = i;
-            if (color < 0 && (flags & ShaderPropertyFlags.MainColor) != 0 && type == ShaderPropertyType.Color) color = i;
-        }
-        if (texture < 0) texture = shader.FindPropertyIndex("_MainTex");
-        if (texture < 0) texture = shader.FindPropertyIndex("_BaseMap");
-        if (color < 0) color = shader.FindPropertyIndex("_Color");
-        if (color < 0) color = shader.FindPropertyIndex("_BaseColor");
-        main = new Main
-        {
-            hasTexture = texture >= 0, texture = texture >= 0 ? shader.GetPropertyNameId(texture) : 0,
-            hasColor = color >= 0, color = color >= 0 ? shader.GetPropertyNameId(color) : 0,
-        };
-        mains[shader] = main;
-        return main;
     }
 
     // The oldest ghost if all are still showing.

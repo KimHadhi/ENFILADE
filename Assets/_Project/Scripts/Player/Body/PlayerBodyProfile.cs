@@ -14,7 +14,7 @@ public sealed class PlayerBodyProfile : ScriptableObject
     public sealed class Skin
     {
         [SerializeField] private string id;
-        [SerializeField] private string displayName;
+        [SerializeField, Tooltip("A Texts.csv id (character.<id>.name) or the name itself.")] private string displayName;
         [SerializeField] private GameObject model;
         [SerializeField, Range(.5f, 1.5f), Tooltip("Scales the ledge hand spacing for this character; palm and finger dimensions are measured from its mesh.")]
         private float ledgeHandSpacingScale = 1f;
@@ -29,7 +29,11 @@ public sealed class PlayerBodyProfile : ScriptableObject
         public Skin(string id) => this.id = id;
 
         public string Id => id;
-        public string DisplayName => string.IsNullOrEmpty(displayName) ? id : displayName;
+        /// <summary>
+        /// Its name on the character cards: the words of a Texts id (character.mannequin.name), or the name as stored
+        /// (BoothImport writes the BOOTH characters' names in), as SkinVariant names its colour sets.
+        /// </summary>
+        public string DisplayName => Texts.Cell(string.IsNullOrEmpty(displayName) ? id : displayName);
         public GameObject Model => model;
         public float LedgeHandSpacingScale => Mathf.Clamp(ledgeHandSpacingScale, .5f, 1.5f);
         public float LedgePalmInsetScale => Mathf.Clamp(ledgePalmInsetScale, 0f, 2f);
