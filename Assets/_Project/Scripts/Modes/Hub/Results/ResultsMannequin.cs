@@ -12,6 +12,10 @@ using UnityEngine.Playables;
 /// the game's body (the gun hold, the look bend, the hands' IK, the network's pose) bends the pose: the show hides the
 /// real bodies while it plays. It stands relaxed (the clip's first frame) until its shot strikes the pose, then holds
 /// it. The pose runs on the show's clock (ResultsShow.Step), so a hitch pauses it instead of skipping the strike.
+/// Its hands are as made in Blender, every finger joint: the pose's finger track (FingerTrack, &lt;pose&gt;_fingers) goes on
+/// after the clip through this body's own hands measured at rest (ArmIK, HandGrip.WearWays). The humanoid clip alone
+/// kept a finger's bend and spread but not its twist, the outer joints' side swing or the thumb's roll (the user,
+/// 2026-11-14: "네, 다 고쳐").
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ResultsMannequin : MonoBehaviour
@@ -36,6 +40,10 @@ public sealed class ResultsMannequin : MonoBehaviour
     private string pose = "";
     private float clock = -1f, length;
     private bool loops;
+    // The pose's fingers from Blender, and the hands they go on (measured before the clip first posed them).
+    private FingerTrack fingers;
+    private ArmIK leftHand, rightHand;
+    private readonly FingerWays ways = new FingerWays();
 
     /// <summary>
     /// Where the struck pose puts its leading hand (the higher one), its chest and its eyes, in this object's space, and
@@ -150,6 +158,13 @@ public sealed class ResultsMannequin : MonoBehaviour
         animator.applyRootMotion = false;
         // Seen only by the results' own camera: never let culling stop it.
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        fingers = FingerTrack.Of(pose.name);
+        if (fingers != null && animator.isHuman)
+        {
+            // At rest, before the clip poses the hands: the hands are measured from their open rest (HandGrip).
+            leftHand = ArmIK.Create(animator, true);
+            rightHand = ArmIK.Create(animator, false);
+        }
         clip = AnimationPlayableUtilities.PlayClip(animator, pose, out graph);
         // The show's clock drives it, not the game's.
         graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
@@ -158,6 +173,15 @@ public sealed class ResultsMannequin : MonoBehaviour
         if (!loops) Measure();
         clip.SetTime(0d);
         graph.Evaluate(0f);
+        WearFingers(0f);
+    }
+
+    // The pose's fingers at this time of the clip, over what the clip just posed.
+    private void WearFingers(float time)
+    {
+        if (fingers == null) return;
+        if (leftHand != null && fingers.Sample(true, time, ways)) leftHand.WearWays(ways, 1f);
+        if (rightHand != null && fingers.Sample(false, time, ways)) rightHand.WearWays(ways, 1f);
     }
 
     // The struck pose's hand, chest and eyes, from its last frame (put back to the first by Bind).
@@ -219,8 +243,10 @@ public sealed class ResultsMannequin : MonoBehaviour
         if (!graph.IsValid()) return;
         if (loops) clock = Mathf.Max(0f, clock) + step;
         else if (clock >= 0f) clock = Mathf.Min(clock + step, length);
-        clip.SetTime(loops ? clock % length : Mathf.Max(0f, clock));
+        float time = loops ? clock % length : Mathf.Max(0f, clock);
+        clip.SetTime(time);
         graph.Evaluate(0f);
+        WearFingers(time);
     }
 
     private void OnDestroy()

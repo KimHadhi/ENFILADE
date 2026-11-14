@@ -54,6 +54,20 @@ spec = importlib.util.spec_from_file_location('enf_finger_ways', root / 'Tools/B
   칼 작업실 [knife_tools.py](../Knives/knife_tools.py) `clip_rows`(오른손, `right=True`: KnifeMelee*.csv, 0.9.63; 칼 작업실 클립 29개를 카즈사·마네킹 오른손에 입혀 다시 재 보니 방향 최대 0.0002°, 비틀림 최대 0.0001°).
   - 손가락 키가 없던 수리 시안은 열 때 예전 게임과 같은 쥐기를 받는다(`draft_grips`).
 
+## 몸 클립의 손가락 트랙 (`<클립>_fingers`)
+
+처형 짝·승리 포즈처럼 몸 전체를 움직이는 휴머노이드 클립은 손가락을 다 싣지 못한다. Unity의 근육은 손가락의 굽힘·벌림만 지니고, 마디의 비틀림·끝 두 마디의 옆 꺾임·엄지 비틀기를 버린다. 게다가 손이 총도 주먹도 쥐지 않을 때 게임의 손 안전장치(`HandGrip.RelaxThumb`, `KeepHuman`)가 클립의 엄지를 쉬는 모양으로 바꾸거나 손가락을 범위로 자른다. 그래서 블렌더에서 만든 몸 클립은 옆에 두 손 손가락 트랙 표 `Tables/Clips/<클립 이름>_fingers.csv`를 같이 보낸다. 칸은 `id`, `time`(클립 안의 초, 원본 빠르기), 왼손 `l…` 60칸, 오른손 `r…` 60칸이다. 게임은 그 클립을 재생하는 쪽이 안전장치 뒤에 트랙을 입힌다([FingerTrack](../../../Assets/_Project/Scripts/Player/Body/Hands/FingerTrack.cs): `FingerTrack.Of(clip.name)`, `Sample(isLeft, time, ways)` → `WearFingerWays` 또는 자기 `ArmIK.WearWays`). 표가 없는 클립은 예전 그대로다.
+
+| 함수 | 하는 일 |
+| --- | --- |
+| `human_map(meta_path)` | 모델 .fbx.meta의 Unity 휴머노이드 지도(사람 이름 → 뼈 이름) |
+| `hand_of(human, 'Left' or 'Right')` | 그 손의 손목 뼈와 손가락 사슬(`measure`에 그대로) |
+| `track_rows(context, rig, left, right, start, end, fps)` | start~end 프레임마다 두 손 |
+| `track_text(rows, note)` | 트랙 표 글(설명 줄 포함, 여섯째 자리) |
+
+- 쓰는 곳: 포즈 작업실 [make_victory_poses.py](../Poses/make_victory_poses.py) `finger_track`(결과 화면 [ResultsMannequin](../../../Assets/_Project/Scripts/Modes/Hub/Results/ResultsMannequin.cs)이 얹는다).
+- 확인(포즈 다섯 개, 두 손, 마디 600개): 카즈사·마네킹에서 방향 최대 0.0002°, 비틀림 최대 0.001°.
+
 ## 확인 (2026-11-14, Blender 4.5.16, 스크래치 사본)
 
 투척 7개·수리 2개 클립의 표본 45프레임을 확인했다. 마디로는 675개다.

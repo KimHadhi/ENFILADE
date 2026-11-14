@@ -50,6 +50,8 @@ def project_root():
 ROOT = project_root() or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 MAYO = os.path.join(ROOT, "Assets", "ThirdParty", "BOOTH", "Chocolate rice", "0.MAYO", "FBX", "FBX_MAYO.fbx")
 OUT = os.path.join(ROOT, "Assets", "_Project", "Art", "Resources", "Poses")
+# Each pose's finger track goes beside the game's other clip tables (FingerTrack: <pose>_fingers.csv).
+TRACKS = os.path.join(ROOT, "Assets", "_Project", "Data", "Resources", "Tables", "Clips")
 BLEND = os.path.join(ROOT, "ArtSource", "Poses", "ENFILADE_Poses_Mayo.blend")
 TOOLS = os.path.join(ROOT, "Tools", "Blender", "Poses", "pose_tools.py")
 TOOLS_TEXT = "START HERE - Pose tools.py"
@@ -400,12 +402,52 @@ def export(r, action):
     bpy.ops.export_scene.fbx(filepath=path, use_selection=True, object_types={'ARMATURE'}, add_leaf_bones=False,
                              bake_anim=True, bake_anim_use_all_actions=False, bake_anim_use_nla_strips=False,
                              bake_anim_force_startend_keying=True, apply_scale_options='FBX_SCALE_ALL',
-                             axis_forward='-Z', axis_up='Y')
+                             axis_forward='-Z', axis_up='Y',
+                             # Every frame's key as posed: the exporter's default (1.0) drops keys a curve can miss by a
+                             # little, so the game's pose was a touch off what was made here (the user, 2026-11-14).
+                             bake_anim_simplify_factor=0.0)
+    finger_track(r, action)
     r.arm.animation_data.action = was_action or action
     for o in view_layer.objects:
         o.select_set(o in was_selected)
     view_layer.objects.active = was_active
     print("EXPORTED", path)
+    return path
+
+
+def _tool(name, rel):
+    """A shared project tool module (finger_ways, one_click), loaded by its path once, without a __pycache__ beside it."""
+    import importlib.util
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, os.path.join(ROOT, rel))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    writes = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = writes
+    return module
+
+
+def finger_track(r, action):
+    """The pose's every finger joint, both hands, frame by frame, beside its FBX: Tables/Clips/<name>_fingers.csv, which
+    the results show puts on after the clip (FingerTrack, ResultsMannequin). Unity's humanoid clip keeps a finger's bend
+    and spread but not a segment's twist, the outer joints' side swing or the thumb's roll, so a V or a fist made here
+    came out otherwise on the stage (the user, 2026-11-14: "네, 다 고쳐"). Read from the action as it is on the rig now."""
+    from pathlib import Path
+    fw = _tool("enf_finger_ways", os.path.join("Tools", "Blender", "HandPaths", "finger_ways.py"))
+    oc = _tool("enf_one_click", os.path.join("Tools", "Blender", "OneClick", "one_click.py"))
+    human = fw.human_map(MAYO + ".meta")
+    start, end = (int(round(v)) for v in action.frame_range)
+    rows = fw.track_rows(bpy.context, r.arm, fw.hand_of(human, "Left"), fw.hand_of(human, "Right"), start, end, FPS)
+    path = Path(TRACKS) / (action.name + fw.TRACK_SUFFIX + ".csv")
+    oc.write_meta(path, oc.TEXT_META)
+    oc.write_text(path, fw.track_text(rows, f"(블렌더 포즈 작업실 ArtSource/Poses의 {action.name} 포즈. 두 손 손가락 마디마다 손 자기 틀에서 "
+                                            "가리키는 쪽과 비틀림. 결과 화면이 클립 위에 얹는다(FingerTrack). 손으로 고치지 말고 블렌더에서 고쳐 보낸다)"))
+    print("FINGERS", path)
     return path
 
 

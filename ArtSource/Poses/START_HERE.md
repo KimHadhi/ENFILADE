@@ -84,6 +84,7 @@ blender -b --python Tools/Blender/Poses/make_victory_poses.py -- --fresh
 
 ## 어떻게 게임에 들어가나
 
-- 블렌더가 마요 뼈대만 FBX로 내보낸다. 마요 원본 FBX와 같은 방식(Y 위, -Z 앞, 뼈 축 Y·X, 단위는 파일에 'FBX All')이라 뼈 방향과 길이가 원본과 똑같다.
+- 블렌더가 마요 뼈대만 FBX로 내보낸다. 마요 원본 FBX와 같은 방식(Y 위, -Z 앞, 뼈 축 Y·X, 단위는 파일에 'FBX All')이라 뼈 방향과 길이가 원본과 똑같다. 키는 프레임마다 그대로 둔다(내보내기의 키 줄이기 Simplify 0, 0.9.69).
+- **손가락은 마디 하나하나 그대로 간다**(0.9.69, 사용자 11-14: "네, 다 고쳐"). 보낼 때 두 손 손가락 마디마다 방향과 비틀림을 프레임마다 재서 `Assets/_Project/Data/Resources/Tables/Clips/<포즈>_fingers.csv`에 함께 쓰고, 결과 화면이 클립 위에 얹는다([FingerTrack](../../Assets/_Project/Scripts/Player/Body/Hands/FingerTrack.cs)). 휴머노이드 클립만으로는 손가락 마디의 비틀림·끝 두 마디의 옆 꺾임·엄지 비틀기가 빠져서, V나 주먹이 무대에서 조금 다르게 나왔다. 이제 어느 캐릭터 손에서도 여기서 잡은 모양 그대로다. 포즈를 게임에서 빼면 그 표도 같이 빠진다.
 - Unity는 [PoseImport](../../Assets/_Project/Editor/Characters/PoseImport.cs) 규칙(ModelImportRules가 부른다)으로 마요 아바타의 휴머노이드 클립으로 읽는다. 한 번 재생하고 마지막 프레임에서 멈추고, 제자리에 선다.
 - 결과 연출([ResultsShow](../../Assets/_Project/Scripts/Modes/Hub/Results/ResultsShow.cs))이 무대에 각 사람의 포즈 인형([ResultsMannequin](../../Assets/_Project/Scripts/Modes/Hub/Results/ResultsMannequin.cs): 그 사람 스킨·색·옷 그대로, 머리카락·치마가 흔들리고 표정이 산다)을 세우고, 그 사람의 컷이 시작될 때 포즈를 잡게 한다. 진짜 몸은 연출 동안 숨는다.

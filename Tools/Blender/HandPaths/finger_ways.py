@@ -203,3 +203,52 @@ def close(rig, wrist, chains, curl, thumb, right=False, update=lambda: None):
                 over = Matrix.Rotation(math.radians(15 if i == 1 else 20), 3, bend.normalized()) @ over
         _turn_to(rig, chain, i, over, share)
         update()
+
+
+# ---- A body clip's finger track (FingerTrack in the game) ---------------------------------------------------------------
+
+# A body clip's track is the table named after the clip with this after it (Tables/Clips/<clip>_fingers.csv).
+TRACK_SUFFIX = '_fingers'
+# Unity's humanoid names for the fingers (the .fbx.meta's humanName).
+HUMAN = {'index': 'Index', 'middle': 'Middle', 'ring': 'Ring', 'little': 'Little', 'thumb': 'Thumb'}
+
+
+def human_map(meta_path):
+    """Unity's humanoid map from a model's .fbx.meta: human name (LeftHand, Left Index Proximal, ...) -> bone name."""
+    import re
+    with open(meta_path, encoding='utf-8') as f:
+        text = f.read()
+    return {human.strip(): bone.strip() for bone, human in re.findall(r'- boneName: (.+)\n\s+humanName: (.+)\n', text)}
+
+
+def hand_of(human, side):
+    """One hand's wrist bone and finger chains from a humanoid map (side: 'Left' or 'Right'), as measure() takes them."""
+    wrist = human[f'{side}Hand']
+    chains = {f: tuple(human[f'{side} {HUMAN[f]} {part}'] for part in ('Proximal', 'Intermediate', 'Distal'))
+              for f in FINGERS}
+    return wrist, chains
+
+
+def track_rows(context, rig, left, right, start, end, fps):
+    """Both hands at every frame from start to end, the rate the body's FBX bakes the clip at: [(time, left ways,
+    right ways)], time in seconds from start. left and right: (wrist, chains). The scene is put back on start."""
+    scene = context.scene
+    rows = []
+    for frame in range(int(start), int(end) + 1):
+        scene.frame_set(frame)
+        context.view_layer.update()
+        rows.append(((frame - start) / fps, measure(rig, *left, right=False), measure(rig, *right, right=True)))
+    scene.frame_set(int(start))
+    return rows
+
+
+def track_text(rows, note):
+    """A finger track's table as the game reads it (FingerTrack): id and time, the left hand's 60 columns (prefix l), the
+    right hand's (prefix r); a description row led by the note (it starts with #, so the game skips it); a row a frame,
+    every number to the sixth decimal."""
+    header = ['id', 'time'] + columns('l') + columns('r')
+    described = [('#설명 ' + note).replace(',', ' ·'), '클립 안의 초(원본 빠르기)'] + descriptions('왼손 ') + descriptions('오른손 ')
+    lines = ['﻿' + ','.join(header), ','.join(c.replace(',', ' ·') for c in described)]
+    for n, (time, left, right) in enumerate(rows):
+        lines.append(','.join([f'k{n:04d}', f'{time:.6f}'] + cells(left) + cells(right)))
+    return '\n'.join(lines) + '\n'

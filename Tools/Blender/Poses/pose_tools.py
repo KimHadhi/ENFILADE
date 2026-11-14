@@ -247,9 +247,11 @@ def withhold(action):
     """The pose's FBX out of the game (the show stops using it), kept out until the pose changes."""
     path = fbx_of(action)
     removed = []
-    if path.exists():
-        path.unlink()
-        removed.append(path.name)
+    # Its finger track (FingerTrack) goes with it; Unity drops the .meta of either by itself.
+    for gone in (path, Path(poses.TRACKS) / (action.name + "_fingers.csv")):
+        if gone.exists():
+            gone.unlink()
+            removed.append(gone.name)
     oc.mark_withheld(action, fingerprint(action))
     return removed
 
