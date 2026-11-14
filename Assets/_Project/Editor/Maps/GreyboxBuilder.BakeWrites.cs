@@ -20,6 +20,13 @@ public sealed partial class GreyboxBuilder
     private enum ProbeWrite { Written, Undilated, NotWritten }
 
     private ProbeWrite probeWrite;
+    // Whether the probe data from before the bake had to go back (RestoreProbesIfBroken), and what was wrong.
+    private enum ProbeRestore { None, Restored, Unrestored }
+
+    private ProbeRestore probeRestore;
+    private string probeProblem = "";
+    // The probe data as it was before this build's bake: the baking set's file and its cell files, kept in memory.
+    private readonly Dictionary<string, byte[]> probesBefore = new Dictionary<string, byte[]>();
     // The write failures the bake logged, and the .meta files it could not write.
     private readonly List<string> bakeWriteErrors = new List<string>();
     private readonly HashSet<string> unwrittenMetas = new HashSet<string>();
@@ -53,6 +60,74 @@ public sealed partial class GreyboxBuilder
         else if (message.IndexOf("WriteDilatedCells", System.StringComparison.Ordinal) >= 0 && probeWrite == ProbeWrite.Written)
             probeWrite = ProbeWrite.Undilated;
     }
+
+    // Before the probes are readied for the bake (PrepareProbeBake saves the set): the set and its cell files as they are.
+    // The set is saved before its cells are written, so a bake whose cell write fails leaves a set over cells it doesn't
+    // match (11-14: chapter 2 then threw every frame and could not be played; the GM put chapters 1-4's pairs back from
+    // git by hand).
+    private void KeepProbesBefore()
+    {
+        probesBefore.Clear();
+        if (!BakesProbes) return;
+        string guid = AssetDatabase.AssetPathToGUID(ScenePath);
+        var set = string.IsNullOrEmpty(guid) ? null : FindProbeSet(guid);
+        if (set == null) return;
+        string path = AssetDatabase.GetAssetPath(set);
+        if (!File.Exists(path)) return;
+        probesBefore[path] = File.ReadAllBytes(path);
+        foreach (string file in Directory.GetFiles(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "*.bytes"))
+            probesBefore[file.Replace('\\', '/')] = File.ReadAllBytes(file);
+    }
+
+    // After the bake: when the cells were not written whole (the write failed, or the set and its files don't match,
+    // ProbeDataCheck), the pair from before goes back, so the map is never left with a set over cells it doesn't match.
+    // What could not go back is switched off in play once it throws (ProbeLightGuard), and the window says which.
+    private void RestoreProbesIfBroken()
+    {
+        if (!BakesProbes) return;
+        string guid = AssetDatabase.AssetPathToGUID(ScenePath);
+        var set = string.IsNullOrEmpty(guid) ? null : FindProbeSet(guid);
+        probeProblem = set == null ? "" : ProbeDataCheck.Problem(set, guid);
+        if (probeWrite != ProbeWrite.NotWritten && probeProblem.Length == 0) return;
+        probeRestore = ProbeRestore.Unrestored;
+        if (probesBefore.Count == 0) return;
+        AssetDatabase.ReleaseCachedFileHandles();
+        var written = new List<string>();
+        try
+        {
+            foreach (var pair in probesBefore)
+            {
+                if (File.Exists(pair.Key) && SameBytes(File.ReadAllBytes(pair.Key), pair.Value)) continue;
+                File.WriteAllBytes(pair.Key, pair.Value);
+                written.Add(pair.Key);
+            }
+            probeRestore = ProbeRestore.Restored;
+        }
+        catch (System.Exception error)
+        {
+            Debug.LogWarning("[Greybox] " + sceneName + ": could not put the probe data from before the bake back (" + error.Message + ").");
+        }
+        // Written past the asset database: imported again, so the editor reads them and not what it had.
+        foreach (string path in written) AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        if (probeRestore == ProbeRestore.Restored && ProbeDataCheck.Problem(FindProbeSet(guid), guid).Length > 0)
+            probeRestore = ProbeRestore.Unrestored;
+    }
+
+    private static bool SameBytes(byte[] a, byte[] b)
+    {
+        if (a.Length != b.Length) return false;
+        for (int i = 0; i < a.Length; i++)
+            if (a[i] != b[i]) return false;
+        return true;
+    }
+
+    // The probe line when the bake's data was not whole (see RestoreProbesIfBroken).
+    private string BrokenProbeReport()
+        => (probeWrite == ProbeWrite.NotWritten ? "굽고 나서 셀 파일을 디스크에 쓰지 못했어요(" + CellHolders() + ")"
+               : "구운 데이터의 짝이 맞지 않았어요(" + probeProblem + ")")
+           + (probeRestore == ProbeRestore.Restored
+               ? ". 굽기 전 데이터로 되돌렸어요. 간접광은 전에 구운 맵의 빛이라 조금 안 맞을 수 있어요. Unity를 껐다 켠 뒤 이 장만 다시 지어 주세요."
+               : ". 되돌리지 못해 게임에서는 이 장의 간접광이 꺼진 채로 돌아요(ProbeLightGuard). Unity를 껐다 켠 뒤 이 장만 다시 지어 주세요.");
 
     // Who still held a cell file as the probe bake wrote it (ProbeCellWriteGuard), for the window.
     private static string CellHolders()

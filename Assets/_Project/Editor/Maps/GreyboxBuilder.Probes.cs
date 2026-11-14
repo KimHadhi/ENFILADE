@@ -137,7 +137,8 @@ public sealed partial class GreyboxBuilder
         var so = new SerializedObject(set);
         var baked = so.FindProperty("bakedMinDistanceBetweenProbes");
         var data = so.FindProperty("cellSharedDataAsset.m_AssetGUID");
-        return baked != null && Mathf.Approximately(baked.floatValue, ProbeSpacing()) && data != null && !string.IsNullOrEmpty(data.stringValue);
+        return baked != null && Mathf.Approximately(baked.floatValue, ProbeSpacing()) && data != null && !string.IsNullOrEmpty(data.stringValue)
+               && ProbeDataCheck.Problem(set, guid).Length == 0;
     }
 
     // The baking set that holds this scene: the one the Lighting window made for it, else a new single-scene set beside
@@ -200,9 +201,7 @@ public sealed partial class GreyboxBuilder
     // or not baked.
     private string ProbeReport(bool baked)
         => !BakesProbes ? "" : "\n간접광(APV, Tables/MapLook probeSpacing " + ProbeSpacing().ToString("0.##") + " m): "
-                               + (probeWrite == ProbeWrite.NotWritten
-                                   ? "굽고 나서 셀 파일을 디스크에 쓰지 못했어요(" + CellHolders() + "). 굽기 세트에는 새 배치가 저장되고 셀 파일은 "
-                                     + "예전 것이라 이 장의 간접광이 틀릴 수 있어요. Unity를 껐다 켠 뒤 이 장만 다시 지어 주세요."
+                               + (probeRestore != ProbeRestore.None ? BrokenProbeReport()
                                    : !baked ? "굽지 못했어요(콘솔을 보세요). 하늘의 고른 환경광은 그대로예요."
                                    : "구웠어요. 해·하늘·등의 반사광이 프로브에 들어갔어요." + (probeWrite != ProbeWrite.Undilated ? ""
                                        : " 다만 벽 속 프로브를 이웃 빛으로 메운 결과(dilation)를 쓰지 못했어요(" + CellHolders() + "). 빛은 맞고 "

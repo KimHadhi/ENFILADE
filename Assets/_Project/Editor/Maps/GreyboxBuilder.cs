@@ -625,7 +625,8 @@ public sealed partial class GreyboxBuilder
             culled = BakeOcclusion();
             // The sky's ambient light and reflection are baked the same way, beside the saved scene (LightingData), and
             // with them the probes where the map has them (its baking set needs the saved scene's GUID, so it is readied
-            // here).
+            // here). The probe data from before is kept, to go back if the bake's is not whole.
+            KeepProbesBefore();
             probes = look != null && PrepareProbeBake();
             lit = look != null && BakeEnvironment();
         }
@@ -634,8 +635,10 @@ public sealed partial class GreyboxBuilder
             EndBakeWrites();
         }
         RestoreBakeShadows();
-        // A bake whose cell files were not written left the set's new layout over old cells: not baked.
-        bool probesBaked = probes && lit && ProbesBaked() && probeWrite != ProbeWrite.NotWritten;
+        // A bake whose cells were not written whole left the set over cells it doesn't match: the pair from before goes
+        // back, and it is not baked.
+        if (probes) RestoreProbesIfBroken();
+        bool probesBaked = probes && lit && ProbesBaked() && probeWrite != ProbeWrite.NotWritten && probeRestore == ProbeRestore.None;
         // The bake is done (its occluders cast as before): the models the sun can't reach lose their shadows.
         bool sunless = QuietSunlessShadows() > 0;
         if (culled || lit || probes || sunless)
