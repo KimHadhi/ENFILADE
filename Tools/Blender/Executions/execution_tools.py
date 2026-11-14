@@ -571,7 +571,10 @@ def write_row(root, key, values):
     raise RuntimeError('Executions.csv를 쓰지 못했습니다(Unity가 붙잡고 있음). 다시 저장하면 다시 보냅니다.')
 
 
-def _number(value, digits=3):
+def _number(value, digits=6):
+    """A number for the table as the scene has it: six decimals (a micrometre, a microsecond, a millionth of a degree),
+    never rounded to look tidy (the user, 2026-11-14: what is made in Blender reaches the game whole; before 0.9.59 places
+    and times went at three decimals and turns at one)."""
     text = f'{value:.{digits}f}'.rstrip('0').rstrip('.')
     return '0' if text in ('-0', '') else text
 
@@ -629,7 +632,7 @@ def measure(context, key):
     hr, hf, _ = _game(hips)
     lie = head - hips
     head_yaw = math.degrees(math.atan2(-lie.x, -lie.y))
-    out = {'zHipsRight': _number(hr), 'zHipsForward': _number(hf), 'zHeadYaw': _number(head_yaw, 1)}
+    out = {'zHipsRight': _number(hr), 'zHipsForward': _number(hf), 'zHeadYaw': _number(head_yaw)}
     for side, prefix in (('L', 'l'), ('R', 'r')):
         hold = _hold(action, side)
         span = held_frames(action, side, scene.frame_end) if hold else None
@@ -709,7 +712,7 @@ def export_pair(context, key):
         values.update({
             'kind': pair['kind'], 'playerClip': p_name, 'zombieClip': z_name,
             'length': _number((scene.frame_end - 1) / fps), 'kill': _number((kill - 1) / fps),
-            'right': _number(right), 'forward': _number(ahead), 'yaw': _number(yaw, 1),
+            'right': _number(right), 'forward': _number(ahead), 'yaw': _number(yaw),
         })
         write_row(root, key, values)
         return written

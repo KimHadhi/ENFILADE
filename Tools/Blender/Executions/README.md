@@ -38,7 +38,8 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     clip, not looped, root kept; `yawOffset` 180 for Kazusa's clip, as every clip on the player's body whose body
     faces the file's +Z and whose axes Unity bakes, 0 for the zombie's; 0 until 0.9.50 made the player play the pair
     facing away from the zombie), a bare `.meta` (GUID only) before a new file, and the pair's row of
-    `Assets/_Project/Data/Resources/Tables/Melee/Executions.csv` written in place (every other column kept). 게임에서 빼기 deletes a
+    `Assets/_Project/Data/Resources/Tables/Melee/Executions.csv` written in place (every other column kept), its numbers
+    as the scene has them to six decimals (before 0.9.59 places and times went at three decimals and turns at one). 게임에서 빼기 deletes a
     pair's clips and keeps it out until the pair changes.
 - `execution_knife.py` is the class knife in her right fist (the user, 2026-11-14: "칼 위치를 숫자로 하는 이유가
   있는지, 왜냐하면 블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길 수 있으니까 편해서"). The tab's 칼 picker lists
@@ -52,8 +53,10 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
   rest (the knuckles ride it, so any pose gives the same), never from a hidden object's matrix.
   - **Moved here, written on saving**: 칼 옮기기 selects the holder in Object mode with the Move tool (its scale locked).
     The `save_pre` handler (after the pairs, under the same 저장하면 게임에 보내기 switch) measures the holder back into
-    the nine numbers (three decimals, the blade and edge unit and square, as the knife workspace's `seat_now`); a number
-    counts as moved past 0.002. Of the three groups (held, blade, edge) only those that moved are written, into the
+    the nine numbers as measured (six decimals, the blade and edge unit and square); a number counts as moved past
+    1e-5 (Blender's single-precision noise is about 1e-7, a hand's least move far above). Nothing is rounded to look
+    tidy (the user, 2026-11-14: what is made in Blender reaches the game whole; 0.9.56 wrote three decimals and ignored
+    moves under 0.002). Of the three groups (held, blade, edge) only those that moved are written, into the
     picked class's row only, in place with every other byte of the file kept (other rows, cells, quoting, BOM, line
     ends). Keys auto-key put on the holder are dropped first. A moved knife picked away from waits in the scene
     (`enf_exe_knife_moved`) and is written on the next save; 칼을 표의 자리로 drops a move.
@@ -85,7 +88,9 @@ Facts found while building (Blender 4.5.16, 2026-11-13):
   knife sits where Unity's math puts it (ExecutionKnifeArm emulated in Unity's left-handed axes: 0.0001 mm, 0.0000
   degrees), also from the posed hand at frames of two pairs; moved 1 cm and turned 20 degrees, saving changed only that
   row's nine numbers and the table then puts it back where it was moved (0.000 mm); saving again, or after numbers changed
-  outside, wrote nothing; a move kept across picking another class was written to its own row only.
+  outside, wrote nothing; a move kept across picking another class was written to its own row only. At six decimals
+  (0.9.59) a 0.05 mm, 0.01 degree move is written and comes back within 0.06 micrometres, and a file saved and reopened
+  differs from its row by 1e-6 at most (single precision), so opening and saving it again write nothing.
 - A zombie rig appended from the zombie workspace brings that file's action: cleared, as each pair keys its own.
 - Blender 4.5's layered actions: `fcurve_ensure_for_datablock` takes no group, so channels are grouped afterwards
   (`channelbag.groups.new`, `fcurve.group = ...`; assigning a curve to the group it is in prints an error, so it is

@@ -8,8 +8,10 @@ the class picked in the tab is that same model seated the same way on Kazusa's r
 knife where the game will have it. Moved or turned there (칼 옮기기), saving writes the numbers that put it where it is
 into that class's row: the held, blade or edge numbers that changed and nothing else (the user, 2026-11-14: "칼 위치를
 숫자로 하는 이유가 있는지, 왜냐하면 블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길 수 있으니까 편해서", "그니까
-블렌더에서 저장한 게 수치로도 저장되게"). Numbers changed outside Blender win on opening: the knife goes where they say.
-The knife workspace (Tools/Blender/Knives) does the same for the melee slot's grip (the melee* columns), rounded alike.
+블렌더에서 저장한 게 수치로도 저장되게"). The numbers are written as measured, six decimals (a micrometre at the hand,
+a millionth of a way), never rounded to look tidy, and any move counts, however small (the user, 2026-11-14: what is
+made in Blender reaches the game whole). Numbers changed outside Blender win on opening: the knife goes where they say.
+The knife workspace (Tools/Blender/Knives) does the same for the melee slot's grip (the melee* columns).
 """
 import csv
 import io
@@ -29,8 +31,11 @@ GROUPS = (slice(0, 3), slice(3, 6), slice(6, 9))
 # ClassKnives.Knife's own numbers, for a row that leaves one empty.
 FALLBACK = (0.0, .3, .55, .93, 0.0, .36, 0.0, 0.0, 1.0)
 FALLBACK_MODEL = 'ClassProps/Knives/PrimalKnife'
-# The table keeps three decimals; a number counts as moved past two of the last (the knife workspace's SEAT_STEP).
-STEP = .002
+# A number counts as moved past this: far above the float noise of Blender's matrices (about 1e-7 here, the file
+# keeping them in single precision), far below any move made by hand (under a thousandth of a millimetre at the hand).
+STEP = 1e-5
+# Written to six decimals: what the scene says, to well under that.
+DIGITS = 6
 WRIST = 'Right wrist'
 KNUCKLES = {'index': 'IndexFinger1_R', 'middle': 'MiddleFinger1_R', 'ring': 'RingFinger1_R', 'little': 'LittleFinger1_R'}
 COLLECTION = '07 칼 (클래스 칼, 클립에는 안 들어감)'
@@ -88,7 +93,7 @@ def scale_of(row):
 
 def canonical(seat):
     """Nine seat numbers as the game takes them (ClassKnives.Way makes the blade and edge unit ways, ExecutionKnifeArm.Seat
-    squares the edge to the blade, else takes the palm) and as a measured knife gives them back: three decimals. Numbers
+    squares the edge to the blade, else takes the palm) and as a measured knife gives them back, to six decimals. Numbers
     typed with an edge not square to the blade then count as where the knife is, not as a move."""
     held, blade, edge = Vector(seat[0:3]), Vector(seat[3:6]), Vector(seat[6:9])
     blade = blade.normalized() if blade.length > 1e-4 else Vector(FALLBACK[3:6]).normalized()
@@ -98,7 +103,7 @@ def canonical(seat):
         palm = Vector((0.0, 1.0, 0.0))
         edge = palm - blade * palm.dot(blade)
     edge = edge.normalized() if edge.length > 1e-4 else blade.orthogonal().normalized()
-    return [round(float(v), 3) for v in (*held, *blade, *edge)]
+    return [round(float(v), DIGITS) for v in (*held, *blade, *edge)]
 
 
 def differs(a, b):
@@ -106,8 +111,8 @@ def differs(a, b):
 
 
 def _cell(value):
-    text = f'{value:.3f}'
-    return '0.000' if text == '-0.000' else text
+    text = f'{value:.{DIGITS}f}'.rstrip('0').rstrip('.')
+    return '0' if text in ('-0', '') else text
 
 
 def _spans(text):
@@ -524,7 +529,7 @@ def place(rig, holder, seat, scale):
 
 
 def seat_now(rig, holder):
-    """Where the knife sits in her fist now, as the table's nine numbers (three decimals, the ways unit and square)."""
+    """Where the knife sits in her fist now, as the table's nine numbers (six decimals, the ways unit and square)."""
     wrist, axes, length = hand(rig)
     at, turn, _size = rest_world(holder).decompose()
     blade_model, edge_model = model_ways(holder)
@@ -534,7 +539,7 @@ def seat_now(rig, holder):
     edge = (edge - blade * edge.dot(blade)).normalized()
     back = axes.transposed()
     held = back @ (at - wrist) / max(length, 1e-6)
-    return [round(float(v), 3) for v in (*held, *(back @ blade), *(back @ edge))]
+    return [round(float(v), DIGITS) for v in (*held, *(back @ blade), *(back @ edge))]
 
 
 def size_now(holder):
