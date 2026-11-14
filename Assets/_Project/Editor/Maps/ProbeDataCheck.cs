@@ -6,7 +6,11 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// Whether a scene's baked indirect light (Adaptive Probe Volume) is whole: every cell its baking set lists for the
-/// scene is in each data file's table of cells, and each file is long enough for them. A bake that saved the set and
+/// scene is in each data file's table of cells with as many elements as the cell's own description says (its bricks,
+/// its chunks of probes), and each file is long enough for them. The loader takes each cell's slice by the
+/// description's counts, so a table from another bake throws too: chapter 1's bricks table said 274 for a cell its
+/// description gave 280 ("ArgumentOutOfRangeException: sub array range 2572-2804 is outside the range of the native
+/// array 0-2745"). A bake that saved the set and
 /// then could not write its cell files (the rebuild of 2026-11-14, "Win32 IO returned 1224") left chapter 2 with a set
 /// naming cells its files did not have. The render pipeline then threw every frame ("KeyNotFoundException: The given
 /// key '2' was not present in the dictionary", ProbeVolumeBakingSet.LoadStreambleAssetData), and the chapter could not
@@ -27,21 +31,23 @@ public static class ProbeDataCheck
         {
             var cells = CellsOf(set, sceneGuid);
             if (cells == null || cells.Count == 0) return "";
-            var files = new List<(string name, object asset)>
+            var descs = Read(set, "cellDescs") as IDictionary;
+            // Each file with the description's count its cells are sliced by: bricks for the bricks, chunks for the rest.
+            var files = new List<(string name, object asset, string count)>
             {
-                ("shared", Read(set, "cellSharedDataAsset")),
-                ("bricks", Read(set, "cellBricksDataAsset")),
-                ("support", Read(set, "cellSupportDataAsset"))
+                ("shared", Read(set, "cellSharedDataAsset"), "shChunkCount"),
+                ("bricks", Read(set, "cellBricksDataAsset"), "bricksCount"),
+                ("support", Read(set, "cellSupportDataAsset"), "shChunkCount")
             };
             if (Read(set, "scenarios") is IDictionary scenarios)
                 foreach (DictionaryEntry scenario in scenarios)
                 {
-                    files.Add((scenario.Key + " data", Read(scenario.Value, "cellDataAsset")));
-                    files.Add((scenario.Key + " L2", Read(scenario.Value, "cellOptionalDataAsset")));
+                    files.Add((scenario.Key + " data", Read(scenario.Value, "cellDataAsset"), "shChunkCount"));
+                    files.Add((scenario.Key + " L2", Read(scenario.Value, "cellOptionalDataAsset"), "shChunkCount"));
                 }
-            foreach (var (name, asset) in files)
+            foreach (var (name, asset, count) in files)
             {
-                string why = Whole(asset, cells);
+                string why = Whole(asset, cells, descs, count);
                 if (why.Length > 0) return name + ": " + why;
             }
             return "";
@@ -65,9 +71,9 @@ public static class ProbeDataCheck
         return Read(set, "cellDescs") is IDictionary all ? all.Keys : null;
     }
 
-    // "" when one data file has every cell and is long enough for them; an asset not baked (no GUID) or with no table is
-    // not judged.
-    private static string Whole(object asset, ICollection cells)
+    // "" when one data file has every cell, each with the count its description gives (countName), and is long enough
+    // for them; an asset not baked (no GUID) or with no table is not judged.
+    private static string Whole(object asset, ICollection cells, IDictionary descs, string countName)
     {
         if (asset == null || !(Read(asset, "assetGUID") is string guid) || guid.Length == 0) return "";
         if (!(Read(asset, "streamableCellDescs") is IDictionary table) || table.Count == 0) return "";
@@ -78,7 +84,11 @@ public static class ProbeDataCheck
             if (!table.Contains(cell)) return "cell " + cell + " is not in its table";
             object desc = table[cell];
             if (Read(desc, "offset") is int offset && Read(desc, "elementCount") is int count)
+            {
+                if (descs != null && descs.Contains(cell) && Read(descs[cell], countName) is int want && want != count)
+                    return "cell " + cell + " has " + count + " in its table, its description " + want;
                 need = System.Math.Max(need, offset + (long)count * elementSize);
+            }
         }
         long have = LengthOf(asset);
         return have >= 0 && have < need ? "the file holds " + have + " bytes, its cells need " + need : "";
