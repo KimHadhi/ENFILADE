@@ -385,10 +385,9 @@ public sealed class ThirdPersonCamera : MonoBehaviour
 
     // Before the blow, on one side of the line between the two (side), as every shot of the cinematic is: crossing it
     // flips them on screen, and the player seems to turn round. A stealth kill had stood in front of the victim looking
-    // back at the player, the reverse of the eyes' view, and at every takedown the character seemed to turn round (the
-    // user, 2026-11-14: "맨날 암살할 때마다 캐릭터가 뒤를 돌길래 애니메이션 문제인 줄 알았는데"). An execution: low and
-    // square to the side of the two, circling slowly toward the player's front. A stealth kill: low behind the player
-    // and to the side, drifting toward the side but never past it, so the sneak up shows over the player's shoulder.
+    // back at the player, the reverse of the eyes' view. An execution: low and square to the side of the two, circling
+    // slowly toward the player's front. A stealth kill: low behind the player and to the side, drifting toward the side
+    // but never past it, so the sneak up shows over the player's shoulder.
     private Vector3 LeadIn(Vector3 middle, Vector3 along, Vector3 right, int side, float time)
     {
         if (stealth)

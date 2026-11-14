@@ -732,9 +732,13 @@ class TRUEFPS_OT_export(bpy.types.Operator, ExportHelper):
             action['truefps_loop'] = self.loop
             csv_path = Path(result).with_suffix('.clips.csv')
             if not csv_path.exists():
+                # Kazusa's clips turn half round (yawOffset 180), as every clip on the player's body does whose body
+                # faces the file's +Z and whose axes Unity bakes (Mixamo, MocapOnline, Beatrun); at 0 a whole-body clip
+                # plays facing backward (the paired executions until 0.9.50). The zombie's keep 0, as the pack's do.
+                turn = 0 if rig.get('truefps_kind') == 'zombie' else 180
                 csv_path.write_text(
                     'clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to\n'
-                    f'{action.name},{int(self.loop)},0,0,0,0,0,,\n', encoding='utf-8')
+                    f'{action.name},{int(self.loop)},0,0,0,{turn},0,,\n', encoding='utf-8')
             folder = 'Animations/Zombies' if rig.get('truefps_kind') == 'zombie' else 'Animations/Custom'
             self.report({'INFO'}, f'Exported FBX. Copy it and its clips.csv to Unity {folder}.')
             return {'FINISHED'}

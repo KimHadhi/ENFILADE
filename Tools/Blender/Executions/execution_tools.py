@@ -676,8 +676,13 @@ def export_pair(context, key):
             path = folder / (name + '.fbx')
             sidecar = folder / (name + '.clips.csv')
             _meta(sidecar, TEXT_META)
-            # One clip, not looped, its root kept as authored (inPlace 0): it plays where the pair puts it.
-            sidecar.write_text(CSV_HEADER + f'{name},0,0,0,0,0,0,,\n', encoding='utf-8')
+            # One clip, not looped, its root kept as authored (inPlace 0): it plays where the pair puts it. Kazusa's clip
+            # turns half round (yawOffset 180) as every clip on the player's body does whose body faces the file's +Z
+            # and whose axes Unity bakes (Mixamo, MocapOnline, Beatrun): at 0 the player played the pair facing away from
+            # the zombie and spun round as it ended (the user, 2026-11-14: "처형할 때 맨날 좀비 안 바라보고 애니메이션
+            # 플레이하다가 갑자기 뒤로 돌던데"). The zombie's clip keeps 0, as the pack's own clips on its body do.
+            turn = 180 if rig is player else 0
+            sidecar.write_text(CSV_HEADER + f'{name},0,0,0,0,{turn},0,,\n', encoding='utf-8')
             _meta(path, '')
             saved = rig.matrix_world.copy()
             zombie_at = zombie.matrix_world.copy()

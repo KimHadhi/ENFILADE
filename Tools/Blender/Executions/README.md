@@ -34,7 +34,9 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     hold points), then exports every pair whose fingerprint (keys, handles, interpolation, modifiers and those numbers)
     differs from the one it was last sent with: both rigs baked with `truefps_tools.export_active_clip` (Kazusa at her own
     root and size) to `Assets/_Project/Art/Animations/Executions/enf_exe_<pair>_p.fbx` / `_z.fbx` with `.clips.csv` (one
-    clip, not looped, root kept), a bare `.meta` (GUID only) before a new file, and the pair's row of
+    clip, not looped, root kept; `yawOffset` 180 for Kazusa's clip, as every clip on the player's body whose body
+    faces the file's +Z and whose axes Unity bakes, 0 for the zombie's; 0 until 0.9.50 made the player play the pair
+    facing away from the zombie), a bare `.meta` (GUID only) before a new file, and the pair's row of
     `Assets/_Project/Data/Resources/Tables/Melee/Executions.csv` written in place (every other column kept). 게임에서 빼기 deletes a
     pair's clips and keeps it out until the pair changes.
 - `execution_drafts.py` makes drafts as key poses: `ZombieDraft` (a start pose sampled from a pack clip with

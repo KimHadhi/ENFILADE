@@ -407,8 +407,10 @@ def export_cycle(context, key):
     finally:
         data.action_influence = influence
     # A loop whose hips keep their sway (as the Mixamo cycles do; the cycles are in place, so there is no travel to drop),
-    # facing as Kazusa's rig faces in Unity (the shove workspace's kick: yawOffset 0).
-    oc.write_text(clips, CSV_HEADER + f'{name},1,0,0,0,0,0,,\n')
+    # turned half round (yawOffset 180) as every whole-body clip on the player's body is whose body faces the file's +Z
+    # and whose axes Unity bakes (Mixamo, MocapOnline, Beatrun). The shove kick's 0 only drives the legs, so it never
+    # showed; at 0 the paired executions played facing away (0.9.50).
+    oc.write_text(clips, CSV_HEADER + f'{name},1,0,0,0,180,0,,\n')
     oc.mark_sent(bpy.data.actions.get(name), fingerprint(key))
     return path
 
