@@ -101,9 +101,8 @@ public sealed partial class PerkCardScreen
             if (arrive > 0f && !popped)
             {
                 popped = true;
-                // A grander card's badge pops wider (its rings: Tables/PerkCards).
-                int rings = cards[picked].Look != null ? cards[picked].Look.Rings : 0;
-                Ring(Local(landing, Vector2.zero), KitStyle.Accent, 60f, 420f * (1f + .35f * rings), .35f + .05f * rings);
+                // A small ring in the card's own colour where it lands, not over the screen.
+                Ring(Local(landing, Vector2.zero), cards[picked].Look != null ? cards[picked].Look.Colour : KitStyle.Accent, 60f, 300f, .35f);
                 shake = Mathf.Max(shake, 6f);
             }
             if (landingGroup != null) landingGroup.alpha = arrive > 0f ? 1f : 0f;
@@ -141,8 +140,14 @@ public sealed partial class PerkCardScreen
         card.Body.anchoredPosition = new Vector2(0f, y);
         card.Body.localScale = new Vector3(scale * Mathf.Max(.02f, face), scale, 1f);
 
-        // A shine runs across now and then, each card in turn, more often on a grander card (Looks).
+        // A shine runs across now and then, each card in turn, more often on a grander card (Looks); over the picked card
+        // once, fast and bright.
         float shine = Mathf.Repeat(time + index * .35f, card.Look != null ? card.Look.ShineEvery : ShineEvery) / ShineSeconds;
+        if (picked == index)
+        {
+            shine = Mathf.Clamp01((end - .02f) / .25f);
+            card.ShineImage.color = new Color(1f, 1f, 1f, .5f);
+        }
         card.Shine.anchoredPosition = new Vector2(shine < 1f ? Mathf.Lerp(-CardWidth, CardWidth, shine) : CardWidth * 2f, 0f);
 
         bool over = pointing && flip >= 1f && RectTransformUtility.RectangleContainsScreenPoint(card.Root, mouse.position.ReadValue(), null);
@@ -167,45 +172,51 @@ public sealed partial class PerkCardScreen
                 lift = Vector2.LerpUnclamped(lift, target, eased);
                 grow = Mathf.Lerp(grow, BadgeHeight / CardHeight, eased);
                 spin = Mathf.Lerp(0f, -Tilts[index % Tilts.Length], eased);
-                card.Glow.color = KitStyle.With(KitStyle.Accent, .5f * (1f - fly));
+                card.Glow.color = KitStyle.With(card.Look != null ? card.Look.GlowColour : KitStyle.Accent, .5f * (1f - fly));
             }
         }
-        else if (picked >= 0 || closing)
+        else if (closing)
         {
-            float fall = picked >= 0 ? Mathf.Clamp01(end / .4f) : Mathf.Clamp01(end / CloseSeconds);
+            // Put away unpicked (X or Esc): they fall away. A card left behind by a pick burns instead (AnimateBurn).
+            float fall = Mathf.Clamp01(end / CloseSeconds);
             lift += new Vector2((index - 1) * 120f * fall, -900f * fall * fall);
             spin = (index % 2 == 0 ? 1f : -1f) * 28f * fall;
         }
         card.Lift.anchoredPosition = lift;
         card.Lift.localScale = new Vector3(grow, grow, 1f);
         card.Lift.localRotation = Quaternion.Euler(0f, 0f, spin);
+        AnimatePick(card, picked == index ? end : -1f);
+        AnimateBurn(card, time, dt);
     }
 
-    // The card under the pointer (or picked) turns pink with dark type. Its frame is its tier's (Looks): a special card's
-    // pink from the start, so it reads apart before it is pointed at, as the final cards once did.
+    // The card under the pointer (or picked) turns its tier's colour with dark type: pink, pale gold or gold (Looks). Its
+    // frame is its tier's too: a special card's pink from the start, so it reads apart before it is pointed at.
     private static void Paint(Card card, float hover)
     {
         bool special = card.Tier == Tier.Special;
-        card.Frame.color = Color.Lerp(card.Look != null ? card.Look.Frame : KitStyle.Ice, KitStyle.Accent, hover);
-        card.Plate.color = Color.Lerp(KitStyle.With(KitStyle.Night, .97f), KitStyle.Accent, hover);
+        Color tier = card.Look != null ? card.Look.Colour : KitStyle.Accent;
+        card.Frame.color = Color.Lerp(card.Look != null ? card.Look.Frame : KitStyle.Ice, tier, hover);
+        card.Plate.color = Color.Lerp(KitStyle.With(KitStyle.Night, .97f), tier, hover);
         Color ink = Color.Lerp(KitStyle.Text, KitStyle.Ink, hover);
         card.Name.color = card.Tag.color = ink;
         card.Icon.color = ink;
         card.Text.color = Color.Lerp(KitStyle.Soft, KitStyle.With(KitStyle.Ink, .8f), hover);
         card.Why.color = Color.Lerp(KitStyle.With(KitStyle.Soft, .72f), KitStyle.With(KitStyle.Ink, .6f), hover);
-        card.Step.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
+        card.Step.color = Color.Lerp(tier, KitStyle.Ink, hover);
         card.TagBack.color = Color.Lerp(special ? KitStyle.With(KitStyle.Accent, .35f) : KitStyle.With(KitStyle.Ice, .15f),
             KitStyle.With(KitStyle.Ink, .15f), hover);
-        card.Owned.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
+        card.Owned.color = Color.Lerp(tier, KitStyle.Ink, hover);
+        // Its word stays readable on the dark badge a pointed card wears.
+        card.OwnedLabel.color = Color.Lerp(KitStyle.Ink, tier, hover);
         card.KeyBack.color = Color.Lerp(KitStyle.Ice, KitStyle.Ink, hover);
-        card.Key.color = Color.Lerp(KitStyle.Ink, KitStyle.Accent, hover);
+        card.Key.color = Color.Lerp(KitStyle.Ink, tier, hover);
         if (card.Perk == null) return;
         int level = PlayerPerks.Level(card.Perk.Id);
         for (int i = 0; i < card.Pips.Length; i++)
         {
             if (!card.Pips[i].gameObject.activeSelf) continue;
             card.Pips[i].color = i < level ? ink
-                : i == level ? Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover)
+                : i == level ? Color.Lerp(tier, KitStyle.Ink, hover)
                 : Color.Lerp(KitStyle.Faint, KitStyle.With(KitStyle.Ink, .25f), hover);
         }
     }

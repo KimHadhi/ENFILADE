@@ -113,7 +113,12 @@ public sealed partial class PerkCardScreen
 
         card.Lift = KitStyle.Stretch("Lift", root);
         card.Body = KitStyle.Stretch("Body", card.Lift);
-        card.Front = KitStyle.Stretch("Front", card.Body);
+        // Everything on the card hangs under one mask whose foot rises as it burns away (Looks: AnimateBurn), each part the
+        // card's own size and hung from its top, so the mask's rise only covers it and moves nothing.
+        card.Burn = KitStyle.Stretch("Burn", card.Body);
+        KitStyle.Fill(card.Burn, Color.white);
+        card.Burn.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+        card.Front = Hung("Front", card.Burn);
         card.Frame = KitStyle.Fill(KitStyle.Stretch("Frame", card.Front), KitStyle.Ice);
         var plate = card.PlateRect = KitStyle.Stretch("Plate", card.Front);
         plate.sizeDelta = new Vector2(-Border * 2f, -Border * 2f);
@@ -132,7 +137,7 @@ public sealed partial class PerkCardScreen
         var owned = KitStyle.TopLeft("Owned", card.Front, new Vector2(CardWidth - 112f, 22f), new Vector2(90f, 32f));
         owned.localRotation = Quaternion.Euler(0f, 0f, -6f);
         card.Owned = KitStyle.Fill(owned, KitStyle.Accent);
-        KitStyle.Flat(owned, Texts.Get("perk.owned"), 17f, TextAlignmentOptions.Center, KitStyle.Ink);
+        card.OwnedLabel = KitStyle.Flat(owned, Texts.Get("perk.owned"), 17f, TextAlignmentOptions.Center, KitStyle.Ink);
         var icon = FeelUI.Rect("Icon", card.Front);
         icon.anchorMin = icon.anchorMax = new Vector2(.5f, 1f);
         icon.anchoredPosition = new Vector2(0f, -150f);
@@ -160,9 +165,10 @@ public sealed partial class PerkCardScreen
         key.sizeDelta = new Vector2(60f, 60f);
         card.KeyBack = KitStyle.Fill(key, KitStyle.Ice);
         card.Key = KitStyle.Flat(key, (index + 1).ToString(), 30f, TextAlignmentOptions.Center, KitStyle.Ink);
+        BuildGlints(card);
 
         // The face-down side: pink, a big question mark, the game's name.
-        card.Back = KitStyle.Stretch("Back", card.Body);
+        card.Back = Hung("Back", card.Burn);
         KitStyle.Fill(card.Back, KitStyle.Accent);
         var inner = KitStyle.Stretch("Inner", card.Back);
         inner.sizeDelta = new Vector2(-28f, -28f);
@@ -171,11 +177,24 @@ public sealed partial class PerkCardScreen
         var name = KitStyle.TopLeft("Name", card.Back, new Vector2(0f, CardHeight - 70f), new Vector2(CardWidth, 40f));
         KitStyle.Flat(name, "ENFILADE", 20f, TextAlignmentOptions.Center, KitStyle.Ink).characterSpacing = 10f;
 
-        card.Lid = KitStyle.Fill(KitStyle.Stretch("Flash", card.Body), Color.clear);
+        card.Lid = KitStyle.Fill(Hung("Flash", card.Burn), Color.clear);
+        BuildBurn(card);
+        BuildPickFlourish(card);
 
         var button = root.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         button.onClick.AddListener(() => Pick(index));
         return card;
+    }
+
+    // A part of the card at the card's own size, hung from the top of <paramref name="parent"/> (the burn's mask, whose foot
+    // rises: what hangs from its top stays where it is).
+    private static RectTransform Hung(string name, RectTransform parent)
+    {
+        var rect = FeelUI.Rect(name, parent);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, 1f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(CardWidth, CardHeight);
+        return rect;
     }
 }

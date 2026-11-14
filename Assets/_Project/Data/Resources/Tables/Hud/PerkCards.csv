@@ -1,55 +1,91 @@
 ﻿key,value,note
-#설명,,"능력 카드 화면의 꾸밈(2026-11-14 사용자: ""1단계만 있는 카드는 특수로 넣고, 단계 진행된 카드들은 더 화려하게 꾸미면 되잖아. 그니까 이 카드를 찍을 때 1단계가 되는 때보다 3단계가 되는 때가 더 멋있게 화려하게""). 줄: Level1·Level2·Level3 = 그 카드를 고르면 몇 단계가 되는지(마지막 단계는 늘 Level3), Special = 1단계뿐인 특수 카드(꼬리표 '특수'). 색은 #RRGGBB 또는 #RRGGBBAA, -는 없음. 깜빡이지 않는다: 빛은 천천히 숨 쉬듯만, 번쩍임은 고를 때 한 번"
+#설명,,"능력 카드 화면의 꾸밈(2026-11-14 사용자: ""1단계만 있는 카드는 특수로 넣고, 단계 진행된 카드들은 더 화려하게 … 3단계가 되는 때가 더 멋있게 화려하게"", 1차 시안 뒤 ""2단계는 살짝 연한 황금빛으로"", ""3단계가 황금빛"", ""더 화려했음 좋겠어"", 고르는 순간은 ""화면은 가리는데 느낌이 없음"", ""선택받지 못한 카드들은 불타 없어지는 연출로""). 줄: Level1·Level2·Level3 = 그 카드를 고르면 몇 단계가 되는지(마지막 단계는 늘 Level3), Special = 1단계뿐인 특수 카드(꼬리표 '특수'). 색은 #RRGGBB 또는 #RRGGBBAA, -는 없음. 깜빡이지 않는다: 빛은 천천히 숨 쉬듯만, 번쩍임은 고를 때 한 번"
 Glow.breathHz,0.6,"가만히 있을 때 뒤의 빛이 숨 쉬는 빠르기(1초에 몇 번, 최대 1.6)"
-Level1.border,3,테두리 굵기(px)
+Foil.speed,90,금박 광택이 테두리를 따라 흐르는 빠르기(카드 px/초)
+Burn.seconds,0.6,고르지 않은 카드가 밑에서부터 다 타는 시간(초)
+Burn.embers,34,카드 하나가 타며 날리는 불티 수
+Burn.smoke,4,카드 하나가 타며 피우는 연기(1초에 대략 몇 번)
+Level1.border,3,테두리 굵기(px) (1단계가 되는 카드)
 Level1.frame,#FFF5F7,테두리 색
+Level1.tier,#FF4F78,"이 카드의 색: 마우스를 올린 판, 단계 글자, 다음 단계 칸, 보유, 장식, 불티, 별빛"
 Level1.trim,-,테두리 안쪽 가는 선의 색(-면 없음)
+Level1.trim2,-,그 안쪽 두 번째 선의 색(-면 없음)
 Level1.pattern,-,판에 깔리는 무늬: stripes(사선) / halftone(망점) / -
 Level1.patternColor,-,무늬 색(알파가 진하기)
-Level1.glow,0,가만히 있을 때 뒤의 분홍 빛(0~1)
+Level1.foil,0,"금박 광택이 테두리를 따라 흐르는 진하기(0~1, 0이면 없음)"
+Level1.corners,0,모서리 장식: 0 없음 · 1 작은 꺾쇠 · 2 큰 꺾쇠와 꼭대기 마름모
+Level1.spot,0,아이콘 뒤에 은은히 비치는 이 카드 색의 빛(0~1)
+Level1.glow,0,가만히 있을 때 카드 뒤의 빛(0~1)
+Level1.glowColor,#FF4F78,그 빛의 색
 Level1.breath,0,그 빛이 숨 쉬며 줄어드는 몫(0~1. 0.4면 60%까지)
 Level1.shineEvery,2.6,빛줄기가 지나가는 간격(초)
 Level1.shine,0.13,빛줄기 진하기(0~1)
 Level1.motes,0,카드 안에서 천천히 떠오르는 빛 알갱이 수(최대 16)
-Level1.shards,18,고를 때 튀는 조각 수
-Level1.rings,0,고를 때 기본 둘 위에 더 퍼지는 고리 수(0~2)
-Level1.shake,14,고를 때 화면 흔들림
-Level2.border,4,테두리 굵기(px)
-Level2.frame,#FFF5F7,테두리 색
-Level2.trim,#FF4F78CC,안쪽 가는 선(분홍)
-Level2.pattern,stripes,무늬
-Level2.patternColor,#FF4F780F,무늬 색
-Level2.glow,0.06,가만히 있을 때 뒤의 빛
-Level2.breath,0,빛이 숨 쉬는 몫
-Level2.shineEvery,2,빛줄기 간격(초)
-Level2.shine,0.16,빛줄기 진하기
-Level2.motes,0,떠오르는 빛 알갱이 수
-Level2.shards,24,고를 때 조각 수
-Level2.rings,1,고를 때 더 퍼지는 고리 수
-Level2.shake,16,고를 때 흔들림
-Level3.border,6,테두리 굵기(px). 마지막 단계가 되는 카드
-Level3.frame,#FFFFFF,테두리 색(새하얀)
-Level3.trim,#FF4F78,안쪽 가는 선(분홍)
-Level3.pattern,halftone,무늬(망점)
-Level3.patternColor,#FF4F7821,무늬 색
-Level3.glow,0.22,가만히 있을 때 뒤의 분홍 빛
-Level3.breath,0.4,빛이 숨 쉬는 몫
-Level3.shineEvery,1.3,빛줄기 간격(초)
-Level3.shine,0.22,빛줄기 진하기
-Level3.motes,14,떠오르는 빛 알갱이 수(분홍과 흰빛이 번갈아)
-Level3.shards,34,고를 때 조각 수(더 크고 절반이 흰빛)
-Level3.rings,2,고를 때 더 퍼지는 고리 수(흰 고리와 분홍 고리)
-Level3.shake,20,고를 때 흔들림
-Special.border,4,테두리 굵기(px). 1단계뿐인 특수 카드
-Special.frame,#FF4F78,"테두리 색(처음부터 분홍, 예전 궁극 카드의 모습)"
-Special.trim,#FFF5F766,안쪽 가는 선
-Special.pattern,stripes,무늬
-Special.patternColor,#FF4F7814,무늬 색
-Special.glow,0.12,가만히 있을 때 뒤의 빛
-Special.breath,0.3,빛이 숨 쉬는 몫
-Special.shineEvery,2,빛줄기 간격(초)
-Special.shine,0.16,빛줄기 진하기
-Special.motes,8,떠오르는 빛 알갱이 수
-Special.shards,28,고를 때 조각 수(분홍이 많음)
-Special.rings,1,고를 때 더 퍼지는 고리 수
-Special.shake,18,고를 때 흔들림
+Level1.glints,0,"테두리 여기저기서 천천히 피었다 지는 별빛 수(최대 4, 깜빡이지 않음)"
+Level1.sparks,10,고를 때 카드 둘레에서 튀어 떨어지는 불티 수
+Level1.outlines,1,고를 때 테두리가 튀어나가며 사라지는 선 수(0~2)
+Level1.star,0,고를 때 모서리에 별빛이 피는지(1/0)
+Level1.shake,8,고를 때 화면 흔들림
+Level2.border,5,테두리 굵기(px) (2단계가 되는 카드: 연한 금빛)
+Level2.frame,#E8D29A,테두리 색
+Level2.tier,#F4D88E,"이 카드의 색: 마우스를 올린 판, 단계 글자, 다음 단계 칸, 보유, 장식, 불티, 별빛"
+Level2.trim,#FFF0C8CC,테두리 안쪽 가는 선의 색(-면 없음)
+Level2.trim2,-,그 안쪽 두 번째 선의 색(-면 없음)
+Level2.pattern,stripes,판에 깔리는 무늬: stripes(사선) / halftone(망점) / -
+Level2.patternColor,#E8D29A16,무늬 색(알파가 진하기)
+Level2.foil,0.35,"금박 광택이 테두리를 따라 흐르는 진하기(0~1, 0이면 없음)"
+Level2.corners,1,모서리 장식: 0 없음 · 1 작은 꺾쇠 · 2 큰 꺾쇠와 꼭대기 마름모
+Level2.spot,0.1,아이콘 뒤에 은은히 비치는 이 카드 색의 빛(0~1)
+Level2.glow,0.12,가만히 있을 때 카드 뒤의 빛(0~1)
+Level2.glowColor,#F4D88E,그 빛의 색
+Level2.breath,0.3,그 빛이 숨 쉬며 줄어드는 몫(0~1. 0.4면 60%까지)
+Level2.shineEvery,2,빛줄기가 지나가는 간격(초)
+Level2.shine,0.17,빛줄기 진하기(0~1)
+Level2.motes,8,카드 안에서 천천히 떠오르는 빛 알갱이 수(최대 16)
+Level2.glints,1,"테두리 여기저기서 천천히 피었다 지는 별빛 수(최대 4, 깜빡이지 않음)"
+Level2.sparks,16,고를 때 카드 둘레에서 튀어 떨어지는 불티 수
+Level2.outlines,1,고를 때 테두리가 튀어나가며 사라지는 선 수(0~2)
+Level2.star,1,고를 때 모서리에 별빛이 피는지(1/0)
+Level2.shake,10,고를 때 화면 흔들림
+Level3.border,7,테두리 굵기(px) (마지막 단계가 되는 카드: 금빛)
+Level3.frame,#F0BC45,테두리 색
+Level3.tier,#FFD36B,"이 카드의 색: 마우스를 올린 판, 단계 글자, 다음 단계 칸, 보유, 장식, 불티, 별빛"
+Level3.trim,#FFEBAD,테두리 안쪽 가는 선의 색(-면 없음)
+Level3.trim2,#FFC83D88,그 안쪽 두 번째 선의 색(-면 없음)
+Level3.pattern,halftone,판에 깔리는 무늬: stripes(사선) / halftone(망점) / -
+Level3.patternColor,#FFC83D2E,무늬 색(알파가 진하기)
+Level3.foil,0.6,"금박 광택이 테두리를 따라 흐르는 진하기(0~1, 0이면 없음)"
+Level3.corners,2,모서리 장식: 0 없음 · 1 작은 꺾쇠 · 2 큰 꺾쇠와 꼭대기 마름모
+Level3.spot,0.18,아이콘 뒤에 은은히 비치는 이 카드 색의 빛(0~1)
+Level3.glow,0.28,가만히 있을 때 카드 뒤의 빛(0~1)
+Level3.glowColor,#FFC83D,그 빛의 색
+Level3.breath,0.4,그 빛이 숨 쉬며 줄어드는 몫(0~1. 0.4면 60%까지)
+Level3.shineEvery,1.3,빛줄기가 지나가는 간격(초)
+Level3.shine,0.24,빛줄기 진하기(0~1)
+Level3.motes,16,카드 안에서 천천히 떠오르는 빛 알갱이 수(최대 16)
+Level3.glints,3,"테두리 여기저기서 천천히 피었다 지는 별빛 수(최대 4, 깜빡이지 않음)"
+Level3.sparks,24,고를 때 카드 둘레에서 튀어 떨어지는 불티 수
+Level3.outlines,2,고를 때 테두리가 튀어나가며 사라지는 선 수(0~2)
+Level3.star,1,고를 때 모서리에 별빛이 피는지(1/0)
+Level3.shake,12,고를 때 화면 흔들림
+Special.border,5,테두리 굵기(px) (1단계뿐인 특수 카드: 분홍)
+Special.frame,#FF4F78,테두리 색
+Special.tier,#FF4F78,"이 카드의 색: 마우스를 올린 판, 단계 글자, 다음 단계 칸, 보유, 장식, 불티, 별빛"
+Special.trim,#FFF5F799,테두리 안쪽 가는 선의 색(-면 없음)
+Special.trim2,#FF4F7870,그 안쪽 두 번째 선의 색(-면 없음)
+Special.pattern,stripes,판에 깔리는 무늬: stripes(사선) / halftone(망점) / -
+Special.patternColor,#FF4F7818,무늬 색(알파가 진하기)
+Special.foil,0.45,"금박 광택이 테두리를 따라 흐르는 진하기(0~1, 0이면 없음)"
+Special.corners,2,모서리 장식: 0 없음 · 1 작은 꺾쇠 · 2 큰 꺾쇠와 꼭대기 마름모
+Special.spot,0.14,아이콘 뒤에 은은히 비치는 이 카드 색의 빛(0~1)
+Special.glow,0.18,가만히 있을 때 카드 뒤의 빛(0~1)
+Special.glowColor,#FF4F78,그 빛의 색
+Special.breath,0.35,그 빛이 숨 쉬며 줄어드는 몫(0~1. 0.4면 60%까지)
+Special.shineEvery,2,빛줄기가 지나가는 간격(초)
+Special.shine,0.18,빛줄기 진하기(0~1)
+Special.motes,12,카드 안에서 천천히 떠오르는 빛 알갱이 수(최대 16)
+Special.glints,2,"테두리 여기저기서 천천히 피었다 지는 별빛 수(최대 4, 깜빡이지 않음)"
+Special.sparks,20,고를 때 카드 둘레에서 튀어 떨어지는 불티 수
+Special.outlines,2,고를 때 테두리가 튀어나가며 사라지는 선 수(0~2)
+Special.star,1,고를 때 모서리에 별빛이 피는지(1/0)
+Special.shake,11,고를 때 화면 흔들림

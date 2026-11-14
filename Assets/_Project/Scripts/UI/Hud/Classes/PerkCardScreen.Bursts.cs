@@ -2,7 +2,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-// PerkCardScreen: Bursts and shards. One part of the class; the rest is in PerkCardScreen.cs and the files beside it.
+// PerkCardScreen: Rings, sparks, embers and smoke. One part of the class; the rest is in PerkCardScreen.cs and the files beside it.
 public sealed partial class PerkCardScreen
 {
     private void Ring(Vector2 at, Color color, float from, float to, float life)
@@ -26,35 +26,69 @@ public sealed partial class PerkCardScreen
         burst.Rect.gameObject.SetActive(true);
     }
 
-    // A pick's shards: how many by its card's tier (Tables/PerkCards), and a card at its last level throws them bigger and
-    // half of them white, a special one pink with a white one now and then.
-    private void Shards(Vector2 at, int count, Tier tier)
+    // A pick's sparks (the user, 2026-11-14, of the old shards and rings: "화면은 가리는데 느낌이 없음 … 더 화려하게"): from
+    // round the card's edge, a short way out and falling, in the card's tier colour and white, never far past the card.
+    private void Sparks(Card card, Look look)
     {
-        int white = tier == Tier.Level3 ? 2 : tier == Tier.Special ? 4 : 3;
-        float grow = tier == Tier.Level3 ? 1.25f : 1f;
+        Vector2 middle = Local(card.Root, Vector2.zero);
+        Color tint = look.Colour;
+        for (int i = 0; i < look.Sparks; i++)
+        {
+            float angle = (i / (float)Mathf.Max(1, look.Sparks)) * Mathf.PI * 2f + (float)random.NextDouble() * .4f;
+            Vector2 way = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            float speed = 260f + (float)random.NextDouble() * 360f;
+            Spawn(middle + new Vector2(way.x * 120f, way.y * 160f), way * speed + new Vector2(0f, 120f), 8f + (float)random.NextDouble() * 8f,
+                i % 3 == 0 ? Color.white : tint, .45f + (float)random.NextDouble() * .3f, -900f, 0f, false);
+        }
+    }
+
+    // A burning card's embers, off its flame line: rising, drifting, fading.
+    private void Embers(Card card, int count)
+    {
+        float width = card.Edge.rect.width;
         for (int i = 0; i < count; i++)
         {
-            var spark = sparks.FirstOrDefault(s => s.Age >= s.Life);
-            if (spark == null)
-            {
-                var rect = FeelUI.Rect("Shard", fx);
-                var image = rect.gameObject.AddComponent<Image>();
-                image.raycastTarget = false;
-                spark = new Spark { Rect = rect, Image = image };
-                sparks.Add(spark);
-            }
-            float angle = (i / (float)Mathf.Max(1, count) + (float)random.NextDouble() * .05f) * Mathf.PI * 2f;
-            float speed = 900f + (float)random.NextDouble() * 900f;
-            spark.Rect.anchoredPosition = at;
-            spark.Rect.sizeDelta = new Vector2(6f + (float)random.NextDouble() * 6f, 20f + (float)random.NextDouble() * 24f) * grow;
-            spark.Rect.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg - 90f);
-            spark.Velocity = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * speed;
-            spark.Spin = ((float)random.NextDouble() - .5f) * 720f;
-            spark.Image.color = i % white == 0 ? Color.white : KitStyle.Accent;
-            spark.Age = 0f;
-            spark.Life = .38f + (float)random.NextDouble() * .2f;
-            spark.Rect.gameObject.SetActive(true);
+            Vector2 at = Local(card.Edge, new Vector2(((float)random.NextDouble() - .5f) * width, EdgeBelow - EdgeHeight * .5f));
+            double pick = random.NextDouble();
+            Color colour = pick < .6 ? new Color(1f, .7f, .28f) : pick < .8 ? new Color(1f, .89f, .6f) : new Color(1f, .42f, .24f);
+            Spawn(at, new Vector2(((float)random.NextDouble() - .5f) * 60f, 80f + (float)random.NextDouble() * 140f), 5f + (float)random.NextDouble() * 6f,
+                colour, .6f + (float)random.NextDouble() * .6f, 40f, 0f, false);
         }
+    }
+
+    // A puff of smoke off a burning card's flame line, swelling as it rises and gone soon.
+    private void Smoke(Card card)
+    {
+        float width = card.Edge.rect.width;
+        Vector2 at = Local(card.Edge, new Vector2(((float)random.NextDouble() - .5f) * width, EdgeBelow - EdgeHeight * .5f + 10f));
+        Spawn(at, new Vector2(((float)random.NextDouble() - .5f) * 30f, 50f + (float)random.NextDouble() * 50f), 70f,
+            new Color(.16f, .14f, .16f, .9f), 1f + (float)random.NextDouble() * .4f, 20f, 90f, true);
+    }
+
+    private void Spawn(Vector2 at, Vector2 velocity, float size, Color colour, float life, float gravity, float grow, bool smoke)
+    {
+        var fleck = flecks.FirstOrDefault(f => f.Age >= f.Life);
+        if (fleck == null)
+        {
+            var rect = FeelUI.Rect("Fleck", fx);
+            var image = rect.gameObject.AddComponent<RawImage>();
+            image.raycastTarget = false;
+            fleck = new Fleck { Rect = rect, Image = image };
+            flecks.Add(fleck);
+        }
+        fleck.Image.texture = smoke ? KitShapes.Glow : KitShapes.Dot;
+        fleck.Rect.anchoredPosition = at;
+        fleck.Velocity = velocity;
+        fleck.Size = size;
+        fleck.Grow = grow;
+        fleck.Gravity = gravity;
+        fleck.Colour = colour;
+        fleck.Smoke = smoke;
+        fleck.Age = 0f;
+        fleck.Life = life;
+        fleck.Rect.sizeDelta = new Vector2(size, size);
+        fleck.Image.color = smoke ? Color.clear : colour;
+        fleck.Rect.gameObject.SetActive(true);
     }
 
     private void AnimateEffects(float dt)
@@ -69,26 +103,27 @@ public sealed partial class PerkCardScreen
             burst.Image.color = KitStyle.With(burst.Color, .9f * (1f - k));
             if (k >= 1f) burst.Rect.gameObject.SetActive(false);
         }
-        foreach (var spark in sparks)
+        foreach (var fleck in flecks)
         {
-            if (spark.Age >= spark.Life) continue;
-            spark.Age += dt;
-            float k = Mathf.Clamp01(spark.Age / spark.Life);
-            spark.Velocity *= Mathf.Exp(-4f * dt);
-            spark.Rect.anchoredPosition += spark.Velocity * dt;
-            spark.Rect.localRotation *= Quaternion.Euler(0f, 0f, spark.Spin * dt);
-            spark.Rect.localScale = Vector3.one * (1f - k * .6f);
-            var color = spark.Image.color;
-            color.a = 1f - k * k;
-            spark.Image.color = color;
-            if (k >= 1f) spark.Rect.gameObject.SetActive(false);
+            if (fleck.Age >= fleck.Life) continue;
+            fleck.Age += dt;
+            float k = Mathf.Clamp01(fleck.Age / fleck.Life);
+            fleck.Velocity.y += fleck.Gravity * dt;
+            fleck.Velocity.x *= Mathf.Exp(-1.5f * dt);
+            fleck.Rect.anchoredPosition += fleck.Velocity * dt;
+            float size = fleck.Size + fleck.Grow * fleck.Age;
+            fleck.Rect.sizeDelta = new Vector2(size, size);
+            // Smoke swells in and out; a spark or an ember fades as it goes. Never a blink.
+            float alpha = fleck.Smoke ? .3f * Mathf.Sin(k * Mathf.PI) : 1f - k * k;
+            fleck.Image.color = KitStyle.With(fleck.Colour, fleck.Colour.a * alpha);
+            if (k >= 1f) fleck.Rect.gameObject.SetActive(false);
         }
     }
 
     private void ClearEffects()
     {
         foreach (var burst in bursts) { burst.Age = burst.Life; burst.Rect.gameObject.SetActive(false); }
-        foreach (var spark in sparks) { spark.Age = spark.Life; spark.Rect.gameObject.SetActive(false); }
+        foreach (var fleck in flecks) { fleck.Age = fleck.Life; fleck.Rect.gameObject.SetActive(false); }
         stage.anchoredPosition = Vector2.zero;
         if (landing != null) landing.localScale = Vector3.one;
     }

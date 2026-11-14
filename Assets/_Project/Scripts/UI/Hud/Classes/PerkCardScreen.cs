@@ -14,8 +14,10 @@ using UnityEngine.UI;
 /// level does, with its key (1, 2, 3) under it; a shine runs across them now and then;</item>
 /// <item>the perks already held line up at the bottom as badges (PerkBadge).</item>
 /// </list>
-/// The card under the pointer lifts and glows pink. A key or a click picks one: it flashes white, shards burst out,
-/// the others fall away spinning, and the picked card shrinks into its badge in the tray, which pops with its new level;
+/// The card under the pointer lifts and glows in its tier's colour. A key or a click picks one: it flashes once, its
+/// outline springs out and sparks fall round it (no screen-wide rings: the user, 2026-11-14, "화면은 가리는데 느낌이
+/// 없음"), the others burn away from below ("선택받지 못한 카드들은 불타 없어지는 연출로"), and the picked card shrinks into
+/// its badge in the tray, which pops with its new level;
 /// the gauge is spent and the perk goes up a level (PlayerPerks). X or Esc puts the cards away and keeps the gauge.
 /// Alone the game stops while they are up; in a room it keeps running and only the combat keys wait (so 1, 2 and 3 pick
 /// instead of switching guns). Also applies the health perk to this player's body. Added to this PC's own player only.
@@ -34,36 +36,44 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed partial class PerkCardScreen : MonoBehaviour
 {
-    private const int Choices = 3, MaxPips = 5, Order = 92, ShardCount = 18;
+    private const int Choices = 3, MaxPips = 5, Order = 92;
     private const float CardWidth = 380f, CardHeight = 540f, Spread = 440f, Border = 3f, TrayY = 52f, BadgeHeight = 56f;
     private const float DealFirst = .12f, DealSeconds = .2f, DealStagger = .09f, FlipSeconds = .14f, DealFrom = -800f, HoverSeconds = .08f;
-    private const float PickPunch = .14f, PickFly = .3f, PickSeconds = .62f, CloseSeconds = .16f, ShineEvery = 2.6f, ShineSeconds = .5f;
+    private const float PickPunch = .14f, PickFly = .3f, PickSeconds = .95f, CloseSeconds = .16f, ShineEvery = 2.6f, ShineSeconds = .5f;
     private static readonly float[] Tilts = { 3f, -2f, 1.5f };
     private static readonly Key[] DigitKeys = { Key.Digit1, Key.Digit2, Key.Digit3 }, PadKeys = { Key.Numpad1, Key.Numpad2, Key.Numpad3 };
 
     private sealed class Card
     {
-        public RectTransform Root, Lift, Body, Front, Back, Shine, PlateRect;
+        public RectTransform Root, Lift, Body, Burn, Front, Back, Shine, PlateRect, Edge;
         public Image Frame, Plate, Lid, KeyBack, TagBack, Owned, ShineImage;
-        public RawImage Icon, Glow, Pattern;
-        public TMP_Text Tag, Name, Step, Why, Text, Key;
-        public Image[] Pips, Trim;
-        public RawImage[] Motes;
+        public RawImage Icon, Glow, Pattern, Foil, Spot, EdgeImage, CharImage, PickStar;
+        public TMP_Text Tag, Name, Step, Why, Text, Key, OwnedLabel;
+        public Image[] Pips, Trim, Trim2;
+        public Image[][] OutlineLines;
+        public RectTransform[] Outlines;
+        public RawImage[] Motes, Glints;
+        public Ornament Ornament;
         public PlayerPerks.Perk Perk;
         // How grand it is dressed (PerkCardScreen.Looks): by the level picking it brings, or as a special card.
         public Tier Tier;
         public Look Look;
         public float Hover;
+        // When it starts burning away (another card was picked; below 0: it isn't), and the embers it has yet to give off.
+        public float BurnFrom = -1f;
+        public int EmbersLeft;
         public bool Landed;
-        public Vector2 FlyFrom;
     }
 
-    private sealed class Spark
+    // A spark of a pick, an ember or a puff of smoke of a burning card, in the effects layer.
+    private sealed class Fleck
     {
         public RectTransform Rect;
-        public Image Image;
+        public RawImage Image;
         public Vector2 Velocity;
-        public float Spin, Age, Life;
+        public Color Colour;
+        public float Size, Grow, Gravity, Age, Life;
+        public bool Smoke;
     }
 
     private sealed class Burst
@@ -92,7 +102,7 @@ public sealed partial class PerkCardScreen : MonoBehaviour
     // What the ready prompt says now: the cards, or, every card taken, the class's ultimate.
     private bool promptCards = true;
     private readonly List<Card> cards = new List<Card>();
-    private readonly List<Spark> sparks = new List<Spark>();
+    private readonly List<Fleck> flecks = new List<Fleck>();
     private readonly List<Burst> bursts = new List<Burst>();
     private readonly System.Random random = new System.Random(6026);
     private bool open, closing, popped;

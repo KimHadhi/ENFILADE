@@ -86,20 +86,24 @@ public sealed partial class PerkCardScreen
         picked = index;
         endedAt = Time.unscaledTime;
         card.Hover = 1f;
-        card.FlyFrom = card.Lift.anchoredPosition;
         // One soft flash, never more (the user's rule against strobes: a single flash at most .6 and short).
         KitPulse.Play(card.Lid, new Color(1f, 1f, 1f, .6f), .35f);
         PlayerPerks.Raise(card.Perk.Id);
         BuildTray(card.Perk.Id);
-        Vector2 middle = Local(card.Root, Vector2.zero);
-        // The grander the card (its tier: Tables/PerkCards), the more shards, the wider the rings and the harder the jolt.
+        // Round the card only, grander for a grander card (its tier: Tables/PerkCards): sparks falling round it here, its
+        // outline springing out and a star at its corner as it goes (AnimatePick), and a jolt.
         var look = card.Look ?? LookOf(Tier.Level1);
-        Shards(middle, look.Shards, card.Tier);
-        Ring(middle, KitStyle.Accent, 240f, 1100f, .4f);
-        Ring(middle, Color.white, 160f, 700f, .3f);
-        if (look.Rings >= 1) Ring(middle, Color.white, 320f, 1600f, .5f);
-        if (look.Rings >= 2) Ring(middle, KitStyle.Accent, 420f, 2100f, .6f);
+        Sparks(card, look);
         shake = look.Shake;
+        // The others burn away from below, each a moment apart (AnimateBurn).
+        float now = Time.unscaledTime;
+        int embers = Mathf.Max(0, Mathf.RoundToInt(LookNumber("Burn", "embers", 34f)));
+        for (int i = 0; i < dealt; i++)
+        {
+            if (i == index) continue;
+            cards[i].BurnFrom = now + .04f + (float)random.NextDouble() * .06f;
+            cards[i].EmbersLeft = embers;
+        }
     }
 
     private void Close()
