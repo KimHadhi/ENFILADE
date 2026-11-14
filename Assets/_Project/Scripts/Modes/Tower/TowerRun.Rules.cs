@@ -10,8 +10,8 @@ using UnityEngine.AI;
 //   behind), paid the quiet bonus; seen (any of them woken: ZombieMind.Woke), its door stays shut and the swarm comes again
 //   out of the pens, all of the room awake.
 // - Blackout (TowerRule.Blackout): every PC turns that floor's room lights off until its lane is through it.
-// - Sleeping floor (TowerRule.Sleeping): its rooms' swarms lie asleep where they are; cleared without one waking, the
-//   quiet bonus.
+// - Lying floor (TowerRule.Sleeping, once a sleeping floor): its rooms' swarms lie face down where they are
+//   (ZombieMind.Lie); cleared without one waking, the quiet bonus.
 // - Alarm wire (TowerRule.Wire): red wires across that floor's rooms at ankle height; walked through (not jumped) it
 //   doubles the swarm of that lane's next room. The host watches every player's feet.
 public sealed partial class TowerRun
@@ -40,8 +40,8 @@ public sealed partial class TowerRun
 
     // ---- The host ----
 
-    // A room whose swarm is laid out calm now (the stealth lane, a sleeping floor): every one placed at once over the room,
-    // asleep or standing about.
+    // A room whose swarm is laid out calm now (the stealth lane, a lying floor): every one placed at once over the room,
+    // lying face down or standing about.
     private bool BeginQuietRoom(int k, int level, int floor, Lane lane)
     {
         if (plan == null || !plan.Quiet(floor, k) || enemyPrefab == null) return false;
@@ -50,7 +50,7 @@ public sealed partial class TowerRun
         lane.Stealth = k == plan.StealthLane;
         lane.Champion = false;
         lane.Toughness = plan.Of(floor).toughness;
-        bool asleep = plan.RuleOf(floor) == TowerRule.Sleeping;
+        bool lying = plan.RuleOf(floor) == TowerRule.Sleeping;
         var kinds = plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer);
         if (lane.DoubleNext) { kinds.AddRange(plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer)); lane.DoubleNext = false; }
         lane.Again.Clear();
@@ -65,14 +65,14 @@ public sealed partial class TowerRun
             if (!NavMesh.SamplePosition(new Vector3(x, TowerLayout.FloorY(level) + .3f, z), out NavMeshHit ground, 2f, NavMesh.AllAreas)) continue;
             var enemy = Make(kinds[i], ground.position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), lane, k);
             if (enemy == null) continue;
-            // Asleep on a sleeping floor; in the stealth lane most stand about, a few asleep.
-            bool sleeps = asleep || Random.value < .3f;
+            // Lying face down on the lying floor; in the stealth lane most stand about, a few lying.
+            bool lies = lying || Random.value < .3f;
             if (enemy.TryGetComponent(out ZombieMind mind))
             {
-                if (sleeps) mind.Sleep();
+                if (lies) mind.Lie();
                 else { mind.Calm(); mind.FaceWhenCalm(Random.Range(0f, 360f)); }
             }
-            if (sleeps && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = ZombieBody.SleepPose;
+            if (lies && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = ZombieBody.LiePose;
             EnemyNetwork.SpawnInRoom(enemy);
             lane.Alive.Add(enemy);
         }

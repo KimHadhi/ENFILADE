@@ -34,7 +34,7 @@ public sealed partial class ZombieMind
     // Calm on a round, it walks it; true while it does (it doesn't look round on the spot meanwhile).
     private bool Round()
     {
-        if (round == null || HoldsPose || asleep) return false;
+        if (round == null || HoldsPose) return false;
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return false;
         if (roundWalking)
         {

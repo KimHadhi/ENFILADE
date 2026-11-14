@@ -7,7 +7,7 @@ public enum TowerTrial : byte { Swarm, Champion }
 
 /// <summary>
 /// A floor's rule for the day (the map gimmick card "오늘의 층 규칙", only from parts the game had: the user's note "발상은
-/// 좋은데 만들기 귀찮겠다"): its rooms' lights off (Blackout), its swarms asleep (Sleeping), alarm wires across its rooms
+/// 좋은데 만들기 귀찮겠다"): its rooms' lights off (Blackout), its swarms lying face down (Sleeping), alarm wires across its rooms
 /// (Wire). TowerRun.Rules plays them.
 /// </summary>
 public enum TowerRule : byte { None, Blackout, Sleeping, Wire }

@@ -23,10 +23,10 @@ public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 /// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, louder the nearer, by the
 /// way that carries it best (NoiseWay): straight, cut by each wall and far more by each floor between, or round by the
 /// open way (stairs, open doors, holes); none of a crouched player's small sounds, and a faint one only turns its head.
-/// A stone a player threw (a lure) draws the nearest that hears it over to look, one asleep getting up to, and turns the
-/// others' heads, without ever telling them who threw it. A blow wakes it at once. Awake but no longer seeing nor
-/// hearing its quarry, it searches
-/// where it last knew them, and gives up in the end. The host thinks; other PCs show its mood, how sure it is and of
+/// A stone a player threw (a lure) draws the nearest that hears it over to look and turns the others' heads (one lying or
+/// sitting in its pose turns its head where it is, and one of a crowd laid lying never goes), without ever telling them
+/// who threw it. A blow wakes it at once. Awake but no longer seeing nor hearing its quarry, it searches where it last
+/// knew them, and gives up in the end. The host thinks; other PCs show its mood, how sure it is and of
 /// whom (EnemyNetwork), for the stealth HUD. Numbers: Tables/ZombieSenses. The 2026-11-11 stealth round took its
 /// shape from Advanced Stealth (F:\Addons): the smooth fall-off of sight to the side, silent crouched steps, thrown
 /// objects that draw one zombie while the rest turn to look.
@@ -171,18 +171,6 @@ public sealed partial class ZombieMind : MonoBehaviour
     private float dozeHearShare = .45f;
     [SerializeField, Range(0f, 1f), Tooltip("Dozing: how fast it notices what it does see, as a share.")]
     private float dozeNoticeShare = .5f;
-
-    [Header("Asleep (a map's sleeping crowds: SleeperNest, MapGimmicks)")]
-    [SerializeField, Range(0f, 1f), Tooltip("Asleep: how far it hears, as a share. Eyes shut, it sees nothing.")]
-    private float sleepHearShare = .5f;
-    [SerializeField, Min(0f), Tooltip("Asleep: a flashlight turned on it from within this (m) stirs it.")]
-    private float sleepLightRange = 6f;
-    [SerializeField, Min(0f), Tooltip("Asleep: suspicion a second from a flashlight on its face right beside it; less the farther off.")]
-    private float sleepLightRate = .9f;
-    [SerializeField, Min(0f), Tooltip("Asleep: someone standing upright this near (m) bumps it awake; crouched they pass.")]
-    private float sleepTouchRange = 1.1f;
-    [SerializeField, Range(0f, 1f), Tooltip("Asleep: suspicion at which it stirs and gets up to look round (awake from then on).")]
-    private float sleepStirAt = .6f;
 
     [Header("Stealth kill")]
     [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take a zombie that isn't awake down (F, or a left click with the fists).")]

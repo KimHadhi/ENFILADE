@@ -33,6 +33,19 @@ public sealed partial class ZombieMind
     /// <summary>How far it sees now (m): its calm sight while calm, less again while eating or dozing.</summary>
     internal float ViewRange => (Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange) * BusyRange;
 
+    /// <summary>
+    /// The way it looks, on every PC: its body's facing, or, lying or sitting in its pose, as far round as its head and
+    /// shoulders have turned to something it heard (ZombieBody.Gaze). Its sight (Look) and the stealth view's cone go by it.
+    /// </summary>
+    internal Vector3 LookForward
+    {
+        get
+        {
+            float turned = body != null ? body.GazeYaw : 0f;
+            return Mathf.Abs(turned) < .05f ? transform.forward : Quaternion.AngleAxis(turned, Vector3.up) * transform.forward;
+        }
+    }
+
     /// <summary>Its full view and the edge of its sight, side to side (degrees), narrower while eating or dozing.</summary>
     internal float FrontView => fieldOfView * BusyView;
 
@@ -49,8 +62,7 @@ public sealed partial class ZombieMind
 
     private float BusyView => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatViewShare : PoseKind == CalmPoseKind.Doze ? dozeViewShare : 1f;
 
-    private float BusyHear => Asleep ? sleepHearShare
-        : !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatHearShare : PoseKind == CalmPoseKind.Doze ? dozeHearShare : 1f;
+    private float BusyHear => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatHearShare : PoseKind == CalmPoseKind.Doze ? dozeHearShare : 1f;
 
     private float BusyNotice => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatNoticeShare : PoseKind == CalmPoseKind.Doze ? dozeNoticeShare : 1f;
 
@@ -63,8 +75,9 @@ public sealed partial class ZombieMind
     public bool CanBeTakenDownFrom(Vector3 at)
     {
         if (!Unaware) return false;
-        // Asleep on the floor it has no back to come at: from any side (the prone takedown kneels beside it).
-        if (Asleep) return true;
+        // Lying face down it has no back to come at: from any side (the prone takedown kneels beside it). Before its eyes it
+        // would see them first anyway (Look).
+        if (Lying) return true;
         Vector3 toward = Vector3.ProjectOnPlane(at - transform.position, Vector3.up);
         return toward.sqrMagnitude < 1e-4f || Vector3.Angle(-transform.forward, toward) <= takedownAngle;
     }

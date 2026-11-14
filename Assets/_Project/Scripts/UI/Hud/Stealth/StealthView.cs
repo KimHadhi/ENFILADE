@@ -247,7 +247,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
         var mind = cone.mind;
         if (mind == null) return;
         Vector3 eye = mind.EyePoint;
-        Vector2 forward = Flat(mind.transform.forward);
+        // The way it looks: lying or sitting, where its head has turned to (ZombieMind.LookForward, ZombieBody.Gaze).
+        Vector2 forward = Flat(mind.LookForward);
         float edge = mind.EdgeView * .5f * Mathf.Deg2Rad, range = mind.ViewRange;
         for (int i = 0; i < Reaches; i++)
         {
@@ -266,7 +267,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     {
         var mind = cone.mind;
         Vector3 feet = mind.transform.position;
-        Vector2 forward = Flat(mind.transform.forward);
+        // The way it looks: lying or sitting, where its head has turned to (ZombieMind.LookForward, ZombieBody.Gaze).
+        Vector2 forward = Flat(mind.LookForward);
         // How far it would make this player out where they stand now: shorter in the dark (StealthLight), so the cone
         // shows what hiding in the shadows buys.
         float range = mind.ViewRange * StealthLight.RangeShare(StealthLight.Level(movement));

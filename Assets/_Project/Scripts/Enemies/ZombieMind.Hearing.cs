@@ -17,10 +17,10 @@ public sealed partial class ZombieMind
     // facing the way past is turned off it, which is what the stone is for (user, 2026-11-11: "좀비가 내 쪽을 바라보고
     // 있으면 접근 조차 불가능 ... 돌로 시선을 그쪽으로 자연스럽게 옮기고 싶은데"). Advanced Stealth: "The nearest guard
     // goes to check the object; others turn to look".
-    // One of a sleeping crowd that hears it (at sleepHearShare) may be that nearest: it gets up and goes to look like any
-    // other, and stands from then on; the rest of its crowd, eyes shut, turn no heads and sleep on, so stones draw a crowd
-    // off one at a time. Asleep they used to be left out, so no stone moved them (user, 2026-11-14, in chapter 1's flats:
-    // "누워 있는 좀비들은 돌 던져도 어그로가 안 끌림. 시발 어쩌라고 뭐").
+    // One of a crowd lying face down (Lie) turns its head and shoulders to it where it lies (Glance in its pose) and is
+    // never the one that goes: it stays down, as the user asked of them (2026-11-15: "그냥 엎드린 걸로 하고 돌 던지면 그
+    // 쪽으로 시선 돌리게 해 줘"). Such crowds used to sleep and hear no stone at all (11-14, in chapter 1's flats: "누워
+    // 있는 좀비들은 돌 던져도 어그로가 안 끌림. 시발 어쩌라고 뭐").
     private static void HearLure(in NoiseEvent noise)
     {
         if (noise.Gather) { HearGather(noise); return; }
@@ -32,10 +32,9 @@ public sealed partial class ZombieMind
             if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (!mind.Reaches(noise, out float distance, out _)) continue;
-            if (distance < best) { best = distance; nearest = mind; }
-            if (mind.Asleep) continue;
             mind.distractedUntil = Time.time + mind.lureGlance;
             mind.Glance(noise.Point, null, mind.lureGlance);
+            if (!mind.Lying && distance < best) { best = distance; nearest = mind; }
         }
         if (nearest != null) nearest.Investigate(noise.Point, null);
     }
@@ -43,15 +42,22 @@ public sealed partial class ZombieMind
     // A lure that goes on (a TV, a radio, an announcement: GimmickLure, which makes it again every second or so): every one
     // not awake that hears it stares a moment and walks over, each to its own place round it so they bunch there rather
     // than stand on one spot, and looks round there a good while (lureLook) before it settles. One already on its way to
-    // it isn't sent again. The sleeping sleep on. PAYDAY 3's speakers, Guts & Blackpowder's music box.
+    // it isn't sent again. One of a crowd lying face down (Lie) only turns its head to it where it lies, as long as it goes
+    // on. PAYDAY 3's speakers, Guts & Blackpowder's music box.
     private static void HearGather(in NoiseEvent noise)
     {
         foreach (var mind in minds)
         {
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep || mind.caged) continue;
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (mind.lured && (mind.lureAt - noise.GatherPoint).sqrMagnitude < GatherRound * GatherRound * 4f) continue;
             if (!mind.Reaches(noise, out _, out _)) continue;
+            if (mind.Lying)
+            {
+                mind.distractedUntil = Time.time + mind.lureGlance;
+                mind.Glance(noise.Point, null, mind.lureGlance);
+                continue;
+            }
             // Where the sound calls them: where it is heard from, or the place it pages (NoiseEvent.GatherPoint).
             Vector2 round = Random.insideUnitCircle * GatherRound;
             mind.distractedUntil = Time.time + mind.lureGlance;
@@ -93,16 +99,16 @@ public sealed partial class ZombieMind
         focus = noticed = source;
         stimulus = noise.Point;
         if (suspicion >= 1f) Wake(source);
-        else if (suspicion >= StirAt) { glanceUntil = 0f; Alert(noise.Point); }
+        else if (suspicion >= alertAt) { glanceUntil = 0f; Alert(noise.Point); }
         // Too faint to stop for, it still turns its head that way a moment, and may see who made it.
-        else if (gained >= glanceAt && !Asleep) Glance(noise.Point, source, glanceSeconds);
+        else if (gained >= glanceAt) Glance(noise.Point, source, glanceSeconds);
     }
 
     // Whether this sound reaches its ears, how far it went to get there and how far it carries to it by that way (m):
     // straight through what stands between, or round by the open way, whichever leaves it louder (NoiseWay).
     private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
     {
-        // Eating or dozing it hears less, a stone or a knock too (BusyHear): asleep it may sleep through one.
+        // Eating or dozing it hears less, a stone or a knock too (BusyHear): dozing it may miss one.
         float open = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare) * BusyHear;
         return NoiseWay.Carries(noise, Eye(), transform.position, agent, open, HearingCuts, Hearing, ref heardWay, out distance, out reach);
     }

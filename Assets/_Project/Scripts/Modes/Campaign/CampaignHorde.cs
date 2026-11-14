@@ -191,15 +191,16 @@ internal sealed class CampaignHorde
     }
 
     /// <summary>
-    /// A map's sleeping crowd (SleeperNest, the map gimmick card "잠든 무리"): its count laid asleep on the floor round it,
-    /// each its own way, none nearer than <paramref name="near"/> to a player. They lie in the sleeping pose on every PC
-    /// (ZombieBody.SleepPose, shared by EnemyNetwork) and count with the calm ones. Returns how many were laid.
+    /// A map's crowd lying about (SleeperNest, the map gimmick card that was "잠든 무리"): its count laid face down on the
+    /// floor round it (ZombieMind.Lie), each its own way, none nearer than <paramref name="near"/> to a player. They lie in
+    /// the lying pose on every PC (ZombieBody.LiePose, shared by EnemyNetwork) and count with the calm ones. Returns how
+    /// many were laid.
     /// </summary>
     public int PlaceSleepers(SleeperNest nest, List<PlayerMovement> players, float near)
     {
         if (prefab == null || nest == null) return 0;
         var container = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Campaign");
-        int pose = ZombieBody.SleepPose, made = 0;
+        int pose = ZombieBody.LiePose, made = 0;
         Vector3 middle = nest.transform.position;
         for (int tries = 0; made < nest.Count && tries < nest.Count * 8; tries++)
         {
@@ -216,7 +217,7 @@ internal sealed class CampaignHorde
             }
             else
             {
-                if (enemy.TryGetComponent(out ZombieMind mind)) mind.Sleep();
+                if (enemy.TryGetComponent(out ZombieMind mind)) mind.Lie();
                 if (pose >= 0 && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = pose;
             }
             EnemyNetwork.SpawnInRoom(enemy);
@@ -228,7 +229,7 @@ internal sealed class CampaignHorde
         return made;
     }
 
-    // Two of a sleeping crowd lie no nearer each other than this (m): bodies side by side, not on top of each other.
+    // Two of a lying crowd lie no nearer each other than this (m): bodies side by side, not on top of each other.
     private const float SleepApart = 1.1f;
 
     /// <summary>

@@ -44,10 +44,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private readonly NetworkVariable<byte> kind = new NetworkVariable<byte>();
     // Its health on top of its kind's (ZombieType.Toughness, the tower's floors): a copy's health bar fills to the same maximum.
     private readonly NetworkVariable<float> toughness = new NetworkVariable<float>(1f);
-    // The calm pose the host gave it (ZombieBody.ForcedPose) plus one, 0 for its own seeded pick, and AsleepBit when it lies
-    // asleep (ZombieMind.Sleep): a map's sleeping crowd lies the same on every PC and may be taken from any side there.
+    // The calm pose the host gave it (ZombieBody.ForcedPose) plus one, 0 for its own seeded pick, and LyingBit when it was
+    // laid lying (ZombieMind.Lie): a map's lying crowd lies the same on every PC and may be taken from any side there.
     private readonly NetworkVariable<byte> pose = new NetworkVariable<byte>();
-    private const byte AsleepBit = 0x80, Standing = 0x7F;
+    private const byte LyingBit = 0x80, Standing = 0x7F;
     private ZombieType type;
     private ZombieGrip grip;
     private EnemyHealth enemy;
@@ -151,7 +151,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
             if (type != null) kind.Value = (byte)type.Kind;
             if (type != null) toughness.Value = type.Toughness;
             if (body != null && body.ForcedPose >= 0 && body.ForcedPose < Standing - 1)
-                pose.Value = (byte)((body.ForcedPose + 1) | (mind != null && mind.Asleep ? AsleepBit : 0));
+                pose.Value = (byte)((body.ForcedPose + 1) | (mind != null && mind.LaidLying ? LyingBit : 0));
             else if (body != null && body.ForcedPose == ZombieBody.NoPose) pose.Value = Standing;
             motion = GetComponent<NetworkTransform>();
             if (motion != null)
@@ -165,10 +165,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (type != null) type.Show((ZombieKind)kind.Value);
         if (type != null) type.ShowToughness(toughness.Value);
         // Before its body dresses (ZombieBody.Start), so it takes the host's pose from its first frame.
-        int given = pose.Value & ~AsleepBit;
+        int given = pose.Value & ~LyingBit;
         if (given == Standing && body != null) body.ForcedPose = ZombieBody.NoPose;
         else if (given > 0 && body != null) body.ForcedPose = given - 1;
-        if ((pose.Value & AsleepBit) != 0 && mind != null) mind.ShowAsleep();
+        if ((pose.Value & LyingBit) != 0 && mind != null) mind.ShowLying();
         kind.OnValueChanged += OnKindChanged;
         toughness.OnValueChanged += OnToughnessChanged;
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;
@@ -420,6 +420,15 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (IsSpawned && IsServer) CallRpc();
     }
 
+    /// <summary>
+    /// The host's zombie, lying or sitting in its pose, turned its head to look at this point a while (a stone, a knock, a
+    /// faint step): every PC's copy turns its head the same way (ZombieMind.ShowGaze, ZombieBody.Gaze), and its cone with it.
+    /// </summary>
+    internal void ShareGaze(Vector3 at, float seconds)
+    {
+        if (IsSpawned && IsServer) GazeRpc(at, seconds);
+    }
+
     internal void AnnounceCancel()
     {
         if (IsSpawned && IsServer) CancelRpc();
@@ -522,6 +531,12 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private void CallRpc()
     {
         if (mind != null) mind.ShowCall();
+    }
+
+    [Rpc(SendTo.NotServer)]
+    private void GazeRpc(Vector3 at, float seconds)
+    {
+        if (mind != null) mind.ShowGaze(at, seconds);
     }
 
     [Rpc(SendTo.NotMe)]

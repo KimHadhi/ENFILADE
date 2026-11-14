@@ -42,8 +42,8 @@ public sealed partial class ZombieBody
     private float yieldSpeed = .75f;
     [SerializeField, Min(.05f), Tooltip("Giving way, what is left of its getting up is played within this (s).")]
     private float yieldTime = .25f;
-    [SerializeField, Min(-1), Tooltip("The calm pose a zombie laid asleep takes (ZombieLooks calmPoses index; -1 none): a map's sleeping crowd.")]
-    private int sleepPose = 4;
+    [SerializeField, Min(-1), Tooltip("The calm pose a zombie laid lying takes (ZombieLooks calmPoses index; -1 none): a map's crowd lying face down.")]
+    private int liePose = 4;
 
     private enum CueKind : byte { Notice, Rouse, GetUp }
     // A calm pose: None (this zombie has none), Pending (dressed, waiting for its first calm), Held, Done (got up).
@@ -74,14 +74,14 @@ public sealed partial class ZombieBody
     internal const int NoPose = -2;
 
     /// <summary>
-    /// The calm pose a map's sleeping crowd lies in (Tables/ZombieClips sleepPose, an index into ZombieLooks.calmPoses:
-    /// the pack's face-down twitch); -1 when the table names none or the list hasn't that many, and they then stand calm.
+    /// The calm pose a map's crowd lying about takes (Tables/ZombieClips liePose, an index into ZombieLooks.calmPoses: the
+    /// pack's face-down twitch); -1 when the table names none or the list hasn't that many, and they then stand calm.
     /// </summary>
-    public static int SleepPose
+    public static int LiePose
     {
         get
         {
-            int index = Mathf.RoundToInt(GameTables.Number(ClipsTable, ClipsRow, "sleepPose", -1f));
+            int index = Mathf.RoundToInt(GameTables.Number(ClipsTable, ClipsRow, "liePose", -1f));
             var looks = ZombieLooks.Instance;
             return looks != null && index >= 0 && index < looks.calmPoses.Length && looks.calmPoses[index].loop != null ? index : -1;
         }
@@ -138,10 +138,10 @@ public sealed partial class ZombieBody
             chosen = poses[ForcedPose];
             return true;
         }
-        // Laid asleep with no pose given (the host's own, before its word on the pose could matter): the sleeping one.
-        if (mind != null && mind.Asleep && poses != null && sleepPose >= 0 && sleepPose < poses.Length && poses[sleepPose].loop != null)
+        // Laid lying with no pose given (the host's own, before its word on the pose could matter): the lying one.
+        if (mind != null && mind.LaidLying && poses != null && liePose >= 0 && liePose < poses.Length && poses[liePose].loop != null)
         {
-            chosen = poses[sleepPose];
+            chosen = poses[liePose];
             return true;
         }
         return ZombieLooks.PickPose(poses, clipSeed, PoseSlot, poseShare, out chosen);

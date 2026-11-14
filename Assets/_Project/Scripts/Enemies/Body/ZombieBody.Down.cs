@@ -261,6 +261,8 @@ public sealed partial class ZombieBody
         else if (blendLeft > 0f) EaseFromDoll(Time.deltaTime);
         // After the doll has placed the bones: a brute's limp, landing and weak head (ZombieBody.Legs.cs).
         LegsLate();
+        // Last, over the pose: lying or sitting, its head and shoulders turned to what it heard (ZombieBody.Gaze).
+        GazeLate(Time.deltaTime);
         ZombieCost.End(ZombieCost.Part.Body, began);
     }
 
