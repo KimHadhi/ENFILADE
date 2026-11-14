@@ -101,7 +101,9 @@ public sealed partial class PerkCardScreen
             if (arrive > 0f && !popped)
             {
                 popped = true;
-                Ring(Local(landing, Vector2.zero), KitStyle.Accent, 60f, 420f, .35f);
+                // A grander card's badge pops wider (its rings: Tables/PerkCards).
+                int rings = cards[picked].Look != null ? cards[picked].Look.Rings : 0;
+                Ring(Local(landing, Vector2.zero), KitStyle.Accent, 60f, 420f * (1f + .35f * rings), .35f + .05f * rings);
                 shake = Mathf.Max(shake, 6f);
             }
             if (landingGroup != null) landingGroup.alpha = arrive > 0f ? 1f : 0f;
@@ -139,14 +141,15 @@ public sealed partial class PerkCardScreen
         card.Body.anchoredPosition = new Vector2(0f, y);
         card.Body.localScale = new Vector3(scale * Mathf.Max(.02f, face), scale, 1f);
 
-        // A shine runs across now and then, each card in turn.
-        float shine = Mathf.Repeat(time + index * .35f, ShineEvery) / ShineSeconds;
+        // A shine runs across now and then, each card in turn, more often on a grander card (Looks).
+        float shine = Mathf.Repeat(time + index * .35f, card.Look != null ? card.Look.ShineEvery : ShineEvery) / ShineSeconds;
         card.Shine.anchoredPosition = new Vector2(shine < 1f ? Mathf.Lerp(-CardWidth, CardWidth, shine) : CardWidth * 2f, 0f);
 
         bool over = pointing && flip >= 1f && RectTransformUtility.RectangleContainsScreenPoint(card.Root, mouse.position.ReadValue(), null);
         card.Hover = Mathf.MoveTowards(card.Hover, over || picked == index ? 1f : 0f, dt / HoverSeconds);
         Paint(card, card.Hover);
-        card.Glow.color = KitStyle.With(KitStyle.Accent, .5f * card.Hover);
+        // The glow (pink while pointed at, a slow breath behind a grand card), its trim and its rising motes.
+        AnimateLook(card, time);
 
         Vector2 lift = new Vector2(0f, 26f * KitReveal.EaseOut(card.Hover));
         float grow = 1f + .05f * card.Hover;
@@ -178,10 +181,12 @@ public sealed partial class PerkCardScreen
         card.Lift.localRotation = Quaternion.Euler(0f, 0f, spin);
     }
 
-    // The card under the pointer (or picked) turns pink with dark type.
+    // The card under the pointer (or picked) turns pink with dark type. Its frame is its tier's (Looks): a special card's
+    // pink from the start, so it reads apart before it is pointed at, as the final cards once did.
     private static void Paint(Card card, float hover)
     {
-        card.Frame.color = Color.Lerp(KitStyle.Ice, KitStyle.Accent, hover);
+        bool special = card.Tier == Tier.Special;
+        card.Frame.color = Color.Lerp(card.Look != null ? card.Look.Frame : KitStyle.Ice, KitStyle.Accent, hover);
         card.Plate.color = Color.Lerp(KitStyle.With(KitStyle.Night, .97f), KitStyle.Accent, hover);
         Color ink = Color.Lerp(KitStyle.Text, KitStyle.Ink, hover);
         card.Name.color = card.Tag.color = ink;
@@ -189,7 +194,8 @@ public sealed partial class PerkCardScreen
         card.Text.color = Color.Lerp(KitStyle.Soft, KitStyle.With(KitStyle.Ink, .8f), hover);
         card.Why.color = Color.Lerp(KitStyle.With(KitStyle.Soft, .72f), KitStyle.With(KitStyle.Ink, .6f), hover);
         card.Step.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
-        card.TagBack.color = Color.Lerp(KitStyle.With(KitStyle.Ice, .15f), KitStyle.With(KitStyle.Ink, .15f), hover);
+        card.TagBack.color = Color.Lerp(special ? KitStyle.With(KitStyle.Accent, .35f) : KitStyle.With(KitStyle.Ice, .15f),
+            KitStyle.With(KitStyle.Ink, .15f), hover);
         card.Owned.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
         card.KeyBack.color = Color.Lerp(KitStyle.Ice, KitStyle.Ink, hover);
         card.Key.color = Color.Lerp(KitStyle.Ink, KitStyle.Accent, hover);

@@ -26,9 +26,13 @@ public sealed partial class PerkCardScreen
         burst.Rect.gameObject.SetActive(true);
     }
 
-    private void Shards(Vector2 at)
+    // A pick's shards: how many by its card's tier (Tables/PerkCards), and a card at its last level throws them bigger and
+    // half of them white, a special one pink with a white one now and then.
+    private void Shards(Vector2 at, int count, Tier tier)
     {
-        for (int i = 0; i < ShardCount; i++)
+        int white = tier == Tier.Level3 ? 2 : tier == Tier.Special ? 4 : 3;
+        float grow = tier == Tier.Level3 ? 1.25f : 1f;
+        for (int i = 0; i < count; i++)
         {
             var spark = sparks.FirstOrDefault(s => s.Age >= s.Life);
             if (spark == null)
@@ -39,14 +43,14 @@ public sealed partial class PerkCardScreen
                 spark = new Spark { Rect = rect, Image = image };
                 sparks.Add(spark);
             }
-            float angle = (i / (float)ShardCount + (float)random.NextDouble() * .05f) * Mathf.PI * 2f;
+            float angle = (i / (float)Mathf.Max(1, count) + (float)random.NextDouble() * .05f) * Mathf.PI * 2f;
             float speed = 900f + (float)random.NextDouble() * 900f;
             spark.Rect.anchoredPosition = at;
-            spark.Rect.sizeDelta = new Vector2(6f + (float)random.NextDouble() * 6f, 20f + (float)random.NextDouble() * 24f);
+            spark.Rect.sizeDelta = new Vector2(6f + (float)random.NextDouble() * 6f, 20f + (float)random.NextDouble() * 24f) * grow;
             spark.Rect.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg - 90f);
             spark.Velocity = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * speed;
             spark.Spin = ((float)random.NextDouble() - .5f) * 720f;
-            spark.Image.color = i % 3 == 0 ? Color.white : KitStyle.Accent;
+            spark.Image.color = i % white == 0 ? Color.white : KitStyle.Accent;
             spark.Age = 0f;
             spark.Life = .38f + (float)random.NextDouble() * .2f;
             spark.Rect.gameObject.SetActive(true);

@@ -193,9 +193,9 @@ Assault.suppressReach,1.5,제압 사격 카드: 내 총알이 이 거리(m) 안�
 Assault.suppressSeconds,1.5,제압 사격: 움츠러든 채 가는 시간(초). 총알이 또 스치면 다시 처음부터. 걸음이 느려지는 정도는 카드 값(Perks.csv 25/35/45%)
 Assault.suppressWindup,30,제압 사격: 그동안 공격 준비가 길어지는 정도(%)
 Assault.suppressFirm,50,제압 사격: 브루저와 네임드 좀비가 받는 몫(%). 걸음과 공격 준비 둘 다
-Assault.cavalryReach,24,러프 라이더스 카드(유령 기병대): CHARGE를 쓰면 기병이 바라보는 쪽으로 쓸고 나가는 거리(m)
+Assault.cavalryDamage,80,러프 라이더스 카드(유령 기병대): CHARGE를 쓸 때마다 달려 나가는 기병에 받힌 좀비가 입는 피해(단계와 상관없음). 기병이 쓸고 나가는 거리는 카드 값(Perks.csv assault_cavalry: 12/18/24m)
 Assault.cavalryWidth,4.5,러프 라이더스: 쓸고 나가는 폭(m)
-Assault.cavalryKnockdown,2,러프 라이더스: 기병에 받힌 좀비가 내동댕이쳐진 뒤 쓰러져 있는 시간(초). 피해는 카드 값(Perks.csv)
+Assault.cavalryKnockdown,2,러프 라이더스: 기병에 받힌 좀비가 내동댕이쳐진 뒤 쓰러져 있는 시간(초). 거구는 휘청이기만 한다
 Assault.gunRunReach,150,어썰트 궁극기 A-10 기총 소사(카드를 다 모은 뒤 X): 조준할 수 있는 거리(m). 이 안의 땅을 노려야 한다
 Assault.gunRunSky,1,A-10: 1이면 조준한 곳 위가 막혀 있을 때(지붕·천장·다리 밑) 쓰지 않고 까닭을 띄운다(게이지는 그대로). 0이면 어디서든
 Assault.gunRunDelay,2,A-10: X를 누른 뒤 첫 탄이 떨어지기까지(초). 그동안 모두의 화면에 탄이 지나갈 줄이 빨갛게 보인다

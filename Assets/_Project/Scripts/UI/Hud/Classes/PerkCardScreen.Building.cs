@@ -103,7 +103,7 @@ public sealed partial class PerkCardScreen
         KitStyle.Fill(root, Color.clear).raycastTarget = true;
         var card = new Card { Root = root };
 
-        // A pink glow behind it while it is pointed at.
+        // A pink glow behind it while it is pointed at (and a soft one at rest behind a grand card: Looks).
         var glow = FeelUI.Rect("Glow", root);
         glow.sizeDelta = new Vector2(CardWidth * 1.7f, CardHeight * 1.45f);
         card.Glow = glow.gameObject.AddComponent<RawImage>();
@@ -115,14 +115,16 @@ public sealed partial class PerkCardScreen
         card.Body = KitStyle.Stretch("Body", card.Lift);
         card.Front = KitStyle.Stretch("Front", card.Body);
         card.Frame = KitStyle.Fill(KitStyle.Stretch("Frame", card.Front), KitStyle.Ice);
-        var plate = KitStyle.Stretch("Plate", card.Front);
+        var plate = card.PlateRect = KitStyle.Stretch("Plate", card.Front);
         plate.sizeDelta = new Vector2(-Border * 2f, -Border * 2f);
         card.Plate = KitStyle.Fill(plate, KitStyle.With(KitStyle.Night, .97f));
         plate.gameObject.AddComponent<Mask>().showMaskGraphic = true;
         card.Shine = FeelUI.Rect("Shine", plate);
         card.Shine.sizeDelta = new Vector2(70f, CardHeight * 1.6f);
         card.Shine.localRotation = Quaternion.Euler(0f, 0f, -22f);
-        KitStyle.Fill(card.Shine, new Color(1f, 1f, 1f, .13f));
+        card.ShineImage = KitStyle.Fill(card.Shine, new Color(1f, 1f, 1f, .13f));
+        // Its dressing, worn as its tier asks when it is dealt (PerkCardScreen.Looks), over the plate and under the words.
+        BuildDecor(card);
 
         var tag = KitStyle.TopLeft("Tag", card.Front, new Vector2(24f, 24f), new Vector2(84f, 30f));
         card.TagBack = KitStyle.Fill(tag, KitStyle.With(KitStyle.Ice, .15f));

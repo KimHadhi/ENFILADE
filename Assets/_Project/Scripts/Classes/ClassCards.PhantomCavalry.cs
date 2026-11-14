@@ -3,9 +3,14 @@ using UnityEngine;
 // ClassCards: Assault: the phantom cavalry. One part of the class; the rest is in ClassCards.cs and the files beside it.
 public sealed partial class ClassCards
 {
+    // How far this ride's riders sweep (m): the card's own value at its level, kept as the ride starts.
+    private float rideReach = 24f;
+
     /// <summary>
     /// This PC's Assault sounded a CHARGE at <paramref name="at"/> (ClassKit): with the 러프 라이더스 card, the riders go
-    /// out along where they look.
+    /// out along where they look, at every CHARGE (the class key's, whenever the adrenaline is full; not the ultimate's
+    /// alone). Its levels send them farther (12/18/24 m: the card's value; the user, 2026-11-14, of the damage it used to
+    /// raise: "궁극기 피해량을 늘려 봤자 뭐 해?"), and every rider hits as hard (Assault.cavalryDamage).
     /// </summary>
     public void Charged(Vector3 at)
     {
@@ -24,20 +29,21 @@ public sealed partial class ClassCards
         rideSince = Time.time;
         riding = true;
         ridden.Clear();
-        CardNet.Show(CardFx.Kind.Cavalry, at, rideWay, Mathf.Max(1f, PlayerClass.Ability(AssaultRow, "cavalryReach", 24f)));
+        // The reach goes with the look, so every PC's wedge slides as far as these riders sweep (CardFx Cavalry).
+        rideReach = Mathf.Max(1f, PlayerPerks.Total(PlayerPerks.AssaultCavalry));
+        CardNet.Show(CardFx.Kind.Cavalry, at, rideWay, rideReach);
     }
 
     // The riders' front sweeps on; whatever it reaches in its lane is hit once and thrown aside.
     private void Ride()
     {
         if (!riding) return;
-        float reach = Mathf.Max(1f, PlayerClass.Ability(AssaultRow, "cavalryReach", 24f));
+        float reach = rideReach;
         float half = Mathf.Max(.5f, PlayerClass.Ability(AssaultRow, "cavalryWidth", 4.5f)) * .5f;
         float front = Mathf.Max(0f, Time.time - rideSince - CardFx.CavalryIn) * CardFx.CavalrySpeed;
         if (front >= reach + 1f) riding = false;
         Vector3 aside = Vector3.Cross(Vector3.up, rideWay);
-        float damage = Mathf.Max(0f, PlayerPerks.Total(PlayerPerks.AssaultCavalry));
-        if (damage <= 0f) damage = Mathf.Max(0f, PlayerClass.Ability(AssaultRow, "cavalryDamage", 80f));
+        float damage = Mathf.Max(0f, PlayerClass.Ability(AssaultRow, "cavalryDamage", 80f));
         float down = Mathf.Max(.1f, PlayerClass.Ability(AssaultRow, "cavalryKnockdown", 2f));
         near.Clear();
         foreach (var enemy in EnemyHealth.Living)

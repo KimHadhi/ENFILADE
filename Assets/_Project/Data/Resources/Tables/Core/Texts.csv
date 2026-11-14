@@ -211,6 +211,7 @@ perk.detente_rescue.text,동료를 일으키는 시간 -{0}%,,능력 카드 효�
 perk.detente_rescue.why,동료를 끌어올리는 요령을 몸이 기억한다,,능력 카드 아래 작은 이유 한 줄(detente_rescue)
 perk.gauge_charge.name,충전기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(gauge_charge)
 perk.tag.other,기타,,능력 카드 위 꼬리표: 기타 카드
+perk.tag.special,특수,,능력 카드 위 꼬리표: 1단계뿐인 특수 카드(처음부터 분홍 테두리. Tables/PerkCards.csv Special)
 perk.gauge_charge.text,게이지가 차는 속도 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(gauge_charge)
 perk.gauge_charge.why,싸움의 박자를 읽어 기운이 빨리 모인다,,능력 카드 아래 작은 이유 한 줄(gauge_charge)
 perk.ammo_pouch.name,탄약 주머니,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ammo_pouch)
@@ -262,7 +263,7 @@ perk.assault_rally.name,질긴 흥분,,능력 카드 이름: 카드 고르기 �
 perk.assault_rally.text,마지막 처치 뒤 아드레날린이 줄기 시작하기까지 +{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_rally)
 perk.assault_rally.why,한번 오른 흥분이 쉬이 가라앉지 않는다,,능력 카드 아래 작은 이유 한 줄(assault_rally)
 perk.assault_cavalry.name,러프 라이더스,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_cavalry · assault)
-perk.assault_cavalry.text,CHARGE를 쓰면 유령 기병 분대가 앞으로 {Assault.cavalryReach}m를 일직선으로 쓸고 나가며 닿는 적을 내동댕이친다(피해 {0}),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_cavalry)
+perk.assault_cavalry.text,CHARGE를 쓸 때마다 유령 기병 분대가 앞으로 {0}m를 일직선으로 쓸고 나가며 닿는 적을 내동댕이친다(피해 {Assault.cavalryDamage}),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_cavalry)
 perk.assault_cavalry.why,1898년 산후안 고지로 돌격한 루스벨트의 의용 기병대처럼 돌격 나팔에 옛 기병들이 응답한다,,능력 카드 아래 작은 이유 한 줄(assault_cavalry)
 perk.assault_suppress.name,제압 사격,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_suppress · assault)
 perk.assault_suppress.text,내 총알이 {Assault.suppressReach}m 안을 스치거나 맞힌 좀비는 {Assault.suppressSeconds}초 동안 움츠러든다: 걸음 -{0}% · 공격 준비 +{Assault.suppressWindup}%. 브루저와 네임드는 {Assault.suppressFirm}%만. 계속 쏘면 이어진다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_suppress)

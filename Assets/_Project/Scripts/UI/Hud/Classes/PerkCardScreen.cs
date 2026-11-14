@@ -22,7 +22,10 @@ using UnityEngine.UI;
 /// Since the class cards (2026-11-11, Docs/Features/ClassCards.md) the three are drawn from everyone's cards and this player's
 /// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
 /// that an effect comes with a believable reason). There are no final cards any more (2026-11-14, the user: the ultimate
-/// itself is the reward for holding every card). Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
+/// itself is the reward for holding every card); instead a card with one level only is a special card, its tag '특수' and
+/// its frame pink from the start, and a card with levels is dressed by the level picking it brings, its last the grandest
+/// (PerkCardScreen.Looks, Tables/PerkCards; the user: "1단계가 되는 때보다 3단계가 되는 때가 더 멋있게 화려하게").
+/// Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
 /// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards. The hub keeps the same rule with practice
 /// cards (2026-11-12, the user: "궁극기가 좀 이상한 게. 카드를 뽑아야 하는 거 아니야?"): its range's kills charge the gauge,
 /// X deals cards, the ultimate comes after all of them, and a pink line under the title says they go when the hub is left
@@ -40,12 +43,16 @@ public sealed partial class PerkCardScreen : MonoBehaviour
 
     private sealed class Card
     {
-        public RectTransform Root, Lift, Body, Front, Back, Shine;
-        public Image Frame, Plate, Lid, KeyBack, TagBack, Owned;
-        public RawImage Icon, Glow;
+        public RectTransform Root, Lift, Body, Front, Back, Shine, PlateRect;
+        public Image Frame, Plate, Lid, KeyBack, TagBack, Owned, ShineImage;
+        public RawImage Icon, Glow, Pattern;
         public TMP_Text Tag, Name, Step, Why, Text, Key;
-        public Image[] Pips;
+        public Image[] Pips, Trim;
+        public RawImage[] Motes;
         public PlayerPerks.Perk Perk;
+        // How grand it is dressed (PerkCardScreen.Looks): by the level picking it brings, or as a special card.
+        public Tier Tier;
+        public Look Look;
         public float Hover;
         public bool Landed;
         public Vector2 FlyFrom;

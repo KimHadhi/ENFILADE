@@ -22,7 +22,7 @@ assault_suppress,perk.assault_suppress.name,assault,class.assault.title,Bullet,3
 assault_lead,perk.assault_lead.name,assault,class.assault.title,Armor,3,30/55/80,,,,10,perk.assault_lead.text,perk.assault_lead.why,
 assault_bugle,perk.assault_bugle.name,assault,class.assault.title,Hourglass,3,2/4/6,,,Assault.chargeSeconds,10,perk.assault_bugle.text,perk.assault_bugle.why,
 assault_cover,perk.assault_cover.name,assault,class.assault.title,Rescue,1,0,,,,10,perk.assault_cover.text,perk.assault_cover.why,
-assault_cavalry,perk.assault_cavalry.name,assault,class.assault.title,Class_assault,3,40/60/80,,,,10,perk.assault_cavalry.text,perk.assault_cavalry.why,
+assault_cavalry,perk.assault_cavalry.name,assault,class.assault.title,Class_assault,3,12/18/24,,,,10,perk.assault_cavalry.text,perk.assault_cavalry.why,
 ghost_recon,perk.ghost_recon.name,ghost,class.ghost.title,Map,3,12/18/24,,,,10,perk.ghost_recon.text,perk.ghost_recon.why,
 ghost_pierce,perk.ghost_pierce.name,ghost,class.ghost.title,Bullet,3,50,15,,,12,perk.ghost_pierce.text,perk.ghost_pierce.why,
 ghost_patience,perk.ghost_patience.name,ghost,class.ghost.title,Class_ghost,3,1,,,Ghost.hunterMax,10,perk.ghost_patience.text,perk.ghost_patience.why,
