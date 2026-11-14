@@ -7,7 +7,7 @@ using UnityEngine;
 public sealed partial class ZombieMind
 {
     [Header("Cards: a death nearby")]
-    [SerializeField, Min(0f), Tooltip("A zombie that isn't awake notices another die this near (m): half as far through a wall, less far eating or dozing. 0: nobody notices.")]
+    [SerializeField, Min(0f), Tooltip("A zombie that isn't awake notices another die this near (m): cut by walls and floors as a sound is (NoiseWay), less far eating or dozing. 0: nobody notices.")]
     private float deathNotice = 4f;
     [SerializeField, Range(0f, 1f), Tooltip("How much surer than alertAt the death makes it: it stares at the spot until that has worn off (forget a second), then walks over to look. It never wakes it by itself.")]
     private float deathSuspicion = .25f;
@@ -73,16 +73,14 @@ public sealed partial class ZombieMind
         }
     }
 
-    // Near enough to notice a body drop there: within deathNotice of its ears, half that through a wall (as a sound).
+    // Near enough to notice a body drop there: within deathNotice of its ears in the open, and as any sound past that, cut
+    // by the walls and floors between or carried round by the open way (NoiseWay): a death on the storey above goes unseen.
     private bool NoticesDeath(Vector3 at)
     {
         float reach = deathNotice * BusyHear;
         if (reach <= 0f) return false;
-        Vector3 ear = Eye();
-        float distance = Vector3.Distance(at, ear);
-        if (distance > reach) return false;
-        return distance <= .01f || distance <= reach * wallShare
-            || !Physics.Raycast(at, (ear - at) / distance, distance, Hearing, QueryTriggerInteraction.Ignore);
+        var fall = new NoiseEvent(at, deathNotice, null);
+        return NoiseWay.Carries(fall, Eye(), transform.position, agent, reach, HearingCuts, Hearing, ref heardWay, out _, out _);
     }
 
     // Unsure of something at this spot, though of nobody: it stops and turns to it, and once that has worn off without

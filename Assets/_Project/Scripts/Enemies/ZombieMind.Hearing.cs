@@ -11,11 +11,16 @@ public sealed partial class ZombieMind
         foreach (var mind in minds) if (mind != null && mind.Thinks && !mind.horde) mind.Heard(noise, source);
     }
 
-    // A thrown stone landing (PlayerThrow): every one not awake that hears it turns to watch where it fell, its mind on it
-    // (lureGlance, lureFocus), and the nearest then goes over to look. It never says where the thrower is, nor wakes
-    // anyone, nor marks anyone on the thrower's stealth HUD: a zombie facing the way past is turned off it, which is what
-    // the stone is for (user, 2026-11-11: "좀비가 내 쪽을 바라보고 있으면 접근 조차 불가능 ... 돌로 시선을 그쪽으로
-    // 자연스럽게 옮기고 싶은데"). Advanced Stealth: "The nearest guard goes to check the object; others turn to look".
+    // A thrown stone landing (PlayerThrow), or a knock (PlayerKnock): every one not awake that hears it turns to watch
+    // where it fell, its mind on it (lureGlance, lureFocus), and the nearest (by the way the sound came) then goes over to
+    // look. It never says where the thrower is, nor wakes anyone, nor marks anyone on the thrower's stealth HUD: a zombie
+    // facing the way past is turned off it, which is what the stone is for (user, 2026-11-11: "좀비가 내 쪽을 바라보고
+    // 있으면 접근 조차 불가능 ... 돌로 시선을 그쪽으로 자연스럽게 옮기고 싶은데"). Advanced Stealth: "The nearest guard
+    // goes to check the object; others turn to look".
+    // One of a sleeping crowd that hears it (at sleepHearShare) may be that nearest: it gets up and goes to look like any
+    // other, and stands from then on; the rest of its crowd, eyes shut, turn no heads and sleep on, so stones draw a crowd
+    // off one at a time. Asleep they used to be left out, so no stone moved them (user, 2026-11-14, in chapter 1's flats:
+    // "누워 있는 좀비들은 돌 던져도 어그로가 안 끌림. 시발 어쩌라고 뭐").
     private static void HearLure(in NoiseEvent noise)
     {
         if (noise.Gather) { HearGather(noise); return; }
@@ -23,11 +28,12 @@ public sealed partial class ZombieMind
         float best = float.MaxValue;
         foreach (var mind in minds)
         {
-            // Asleep, a stone's clack doesn't stir it; behind bars it couldn't go and look.
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep || mind.caged) continue;
+            // Behind bars it couldn't go and look.
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (!mind.Reaches(noise, out float distance, out _)) continue;
             if (distance < best) { best = distance; nearest = mind; }
+            if (mind.Asleep) continue;
             mind.distractedUntil = Time.time + mind.lureGlance;
             mind.Glance(noise.Point, null, mind.lureGlance);
         }
@@ -70,12 +76,15 @@ public sealed partial class ZombieMind
         if (source.IsCrouchStance && noise.Radius <= sneakSilent) return;
         // Coughing in blinding gas it takes nothing in (ZombieEffects.Blind).
         if (gassed) return;
+        // Awake, only its quarry's sounds tell it anything: no ear (nor a way round looked for) for the rest.
+        if (IsAwake && source != focus) return;
         if (!Reaches(noise, out float distance, out float reach)) return;
         float loudness = 1f - distance / Mathf.Max(.01f, reach);
         if (IsAwake)
         {
             // Its quarry gives itself away.
-            if (source == focus) { lastSeen = Time.time; lastKnown = source.transform.position; }
+            lastSeen = Time.time;
+            lastKnown = source.transform.position;
             return;
         }
         if (melee != null && melee.IsStunned) return;
@@ -89,22 +98,20 @@ public sealed partial class ZombieMind
         else if (gained >= glanceAt && !Asleep) Glance(noise.Point, source, glanceSeconds);
     }
 
-    // Whether this sound reaches its ears, how far off it is and how far it carries to it (m): half as far through a wall.
+    // Whether this sound reaches its ears, how far it went to get there and how far it carries to it by that way (m):
+    // straight through what stands between, or round by the open way, whichever leaves it louder (NoiseWay).
     private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
     {
         // Eating or dozing it hears less, a stone or a knock too (BusyHear): asleep it may sleep through one.
-        reach = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare) * BusyHear;
-        Vector3 ear = Eye();
-        distance = Vector3.Distance(noise.Point, ear);
-        if (distance > reach) return false;
-        Vector3 path = ear - noise.Point;
-        if (distance > .01f && Physics.Raycast(noise.Point, path / distance, distance, Hearing, QueryTriggerInteraction.Ignore))
-        {
-            reach *= wallShare;
-            if (distance > reach) return false;
-        }
-        return true;
+        float open = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare) * BusyHear;
+        return NoiseWay.Carries(noise, Eye(), transform.position, agent, open, HearingCuts, Hearing, ref heardWay, out distance, out reach);
     }
+
+    // What cuts a sound on its way to it (ZombieSenses: wallShare, floorShare, loudFloorShare, loudFrom, bendShare, wayPaths).
+    private NoiseWay.Cuts HearingCuts => new NoiseWay.Cuts(wallShare, floorShare, loudFloorShare, loudFrom, bendShare, wayPaths);
+
+    // The last way round a sound took to it, kept a moment for the next one from about there.
+    private NoiseWay.Memory heardWay;
 
     /// <summary>
     /// For the stealth view (StealthView): how far a sound of the local player's carries to a calm zombie in the open (m),

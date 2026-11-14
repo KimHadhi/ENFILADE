@@ -24,7 +24,9 @@ public sealed partial class ZombieMind
         // turning in the executor's hands would pull the takedown apart.
         if (melee == null || !melee.IsStunned)
         {
-            if (Mood == ZombieMood.Alert) TurnTo(stimulus, dt);
+            // Still in its calm pose or getting up out of it, it doesn't swivel on the floor: it turns once it stands (a
+            // sleeper a stone stirs gets up the way it lay, then looks).
+            if (Mood == ZombieMood.Alert) { if (!GettingUp) TurnTo(stimulus, dt); }
             else if (Mood == ZombieMood.Calm) { if (!Round()) LookRound(dt); }
             else if (Mood == ZombieMood.Searching && arrived) Sweep(dt);
         }

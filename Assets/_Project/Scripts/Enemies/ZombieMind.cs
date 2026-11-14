@@ -20,10 +20,12 @@ public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 /// front, best straight ahead and fading toward the edge of its sight, each checked at the head, chest and hips with
 /// rays, faster the closer, the more of them shows and the faster they move, slower crouched and slower still lying
 /// down, sooner and from farther with their flashlight turned on it; anyone this close right before its eyes wakes it
-/// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, half the reach through a
-/// wall, louder the nearer, but none of a crouched player's small sounds; a faint one only turns its head. A stone a
-/// player threw (a lure) draws the nearest that hears it over to look, and turns the others' heads, without ever
-/// telling them who threw it. A blow wakes it at once. Awake but no longer seeing nor hearing its quarry, it searches
+/// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, louder the nearer, by the
+/// way that carries it best (NoiseWay): straight, cut by each wall and far more by each floor between, or round by the
+/// open way (stairs, open doors, holes); none of a crouched player's small sounds, and a faint one only turns its head.
+/// A stone a player threw (a lure) draws the nearest that hears it over to look, one asleep getting up to, and turns the
+/// others' heads, without ever telling them who threw it. A blow wakes it at once. Awake but no longer seeing nor
+/// hearing its quarry, it searches
 /// where it last knew them, and gives up in the end. The host thinks; other PCs show its mood, how sure it is and of
 /// whom (EnemyNetwork), for the stealth HUD. Numbers: Tables/ZombieSenses. The 2026-11-11 stealth round took its
 /// shape from Advanced Stealth (F:\Addons): the smooth fall-off of sight to the side, silent crouched steps, thrown
@@ -79,8 +81,18 @@ public sealed partial class ZombieMind : MonoBehaviour
     private float hearShare = 1f;
     [SerializeField, Range(0f, 2f), Tooltip("Share of a noise's reach it hears while calm.")]
     private float calmHearShare = .6f;
-    [SerializeField, Range(0f, 1f), Tooltip("Share of the reach left through a wall.")]
+    [SerializeField, Range(0f, 1f), Tooltip("Share of the reach left through each wall on a sound's straight way (NoiseWay).")]
     private float wallShare = .5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of the reach left through each floor or ceiling on a sound's straight way: the concrete between storeys.")]
+    private float floorShare = .15f;
+    [SerializeField, Range(0f, 1f), Tooltip("The same for a loud sound (loudFrom or more): gunfire and blasts carry from storey to storey.")]
+    private float loudFloorShare = .5f;
+    [SerializeField, Min(0f), Tooltip("A sound that carries this far or farther (m) is loud through floors (a shot 40, a blast 45, a door smashed in 30); a lure (a stone, a knock, a TV) never is.")]
+    private float loudFrom = 30f;
+    [SerializeField, Range(0f, 1f), Tooltip("Round by the open way (stairs, open doors, holes: the walk mesh), the share of the reach left for each right angle the way turns.")]
+    private float bendShare = .8f;
+    [SerializeField, Min(0), Tooltip("Searches of the walk mesh for a sound's way round, at most this many a frame for every zombie together; each keeps its last a moment.")]
+    private int wayPaths = 16;
     [SerializeField, Min(0f), Tooltip("Suspicion a noise gives right at its source; less the farther off.")]
     private float hearGain = 1.5f;
     [SerializeField, Min(0f), Tooltip("A crouched player's sounds that carry no farther than this (m: a sneaking step, crouching, a lean) don't reach it at all.")]
