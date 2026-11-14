@@ -61,8 +61,8 @@ public sealed class EnemyReveal : MonoBehaviour
         foreach (var source in found)
         {
             if (!source.enabled || !source.gameObject.activeInHierarchy) continue;
-            // Never a copy of HoldReveal's copies.
-            if (source.name == "Hold Reveal") continue;
+            // Never a copy of HoldReveal's copies, nor of a Ghost's sight (GhostSight).
+            if (source.name == "Hold Reveal" || source.name == GhostSight.CopyName) continue;
             Renderer copy;
             Mesh mesh;
             if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)

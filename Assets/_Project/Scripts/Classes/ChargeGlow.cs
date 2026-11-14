@@ -9,7 +9,8 @@ using UnityEngine;
 /// ticks runs out over the ground to its reach (MomentFx ChargeRing, pick A).
 /// This PC's own player glows too, as the others see them: their arms and body in their own view, never a tint over the
 /// screen (the old gold rim is gone). It beats gently and dims over its last second. The reach and time are the CHARGE's
-/// own (ClassAbilities Assault.chargeRadius, chargeSeconds), the same ClassKit.ReceiveCharge gives this PC's player.
+/// own as the Assault's PC sent them (ClassAbilities Assault.chargeRadius, chargeSeconds, with its 돌격 나팔 card), the
+/// same ClassKit.ReceiveCharge gives this PC's player.
 /// Numbers for the glow: Tables/MomentFx.csv, row Charge.
 /// </summary>
 [DisallowMultipleComponent]
@@ -33,13 +34,14 @@ public sealed class ChargeGlow : MonoBehaviour
 
     /// <summary>
     /// A CHARGE was sounded at <paramref name="at"/> (this PC's Assault's, or a friend's as their PC said it): everyone it
-    /// takes glows for its seconds, and its reach runs out over the ground.
+    /// takes glows for its <paramref name="seconds"/>, and its <paramref name="reach"/> runs out over the ground. Both are
+    /// the Assault's PC's own (its 돌격 나팔 card lengthens it), sent with it (PlayerNetworkCombat.ChargeRpc), so the glow
+    /// lasts as long on every PC.
     /// </summary>
-    public static void Sounded(Vector3 at)
+    public static void Sounded(Vector3 at, float seconds, float reach)
     {
         if (!Application.isPlaying) return;
-        float reach = PlayerClass.Ability("Assault", "chargeRadius", 15f);
-        float seconds = Mathf.Max(.1f, PlayerClass.Ability("Assault", "chargeSeconds", 7f));
+        seconds = Mathf.Max(.1f, seconds);
         foreach (var player in PlayerRoster.All)
         {
             if (player == null || !player.IsInitialized || player.IsDead) continue;

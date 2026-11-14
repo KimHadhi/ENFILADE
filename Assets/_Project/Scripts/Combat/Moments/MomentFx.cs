@@ -67,7 +67,7 @@ public sealed class MomentFx : MonoBehaviour
                 Play(Kind.Expand, feet, facing, MomentLook.Number("Ult", "detenteReach", 6f), tint, MomentLook.Sigil.Detente);
                 break;
             case PlayerClass.Assault:
-                // The band leads; the wedge rides with the cavalry (CardFx) and everyone it took glows (ChargeGlow).
+                // The band leads; its look is the A-10's run down the lane it aimed at (GunRunFx, through CardFx GunRun).
                 break;
             case PlayerClass.Schiesshund:
                 // The band leads; its look is the showdown's own rift round the hound and its quarry (ArenaFx, through ArenaNet).

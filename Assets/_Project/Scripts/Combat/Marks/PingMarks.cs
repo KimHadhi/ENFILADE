@@ -218,8 +218,8 @@ public sealed class PingMarks : MonoBehaviour
         foreach (var source in found)
         {
             if (!source.enabled || !source.gameObject.activeInHierarchy || ZombieBody.IsEye(source)) continue;
-            // Never a copy of a copy: a wave's reveal, a holder's, or this.
-            if (source.name == CopyName || source.name == "Reveal" || source.name == "Hold Reveal") continue;
+            // Never a copy of a copy: a wave's reveal, a holder's, a Ghost's sight, or this.
+            if (source.name == CopyName || source.name == "Reveal" || source.name == "Hold Reveal" || source.name == GhostSight.CopyName) continue;
             Renderer copy;
             Mesh mesh;
             if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)

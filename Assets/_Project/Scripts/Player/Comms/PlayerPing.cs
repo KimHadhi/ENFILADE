@@ -16,7 +16,8 @@ using UnityEngine.InputSystem;
 /// hand points at, so their copy of this player points there too. This PC's own player only. Numbers:
 /// Tables/ClassAbilities, Ping.*.
 /// Any foe can be pinged (ICombatFoe): a zombie, or a target on the hub's range, where a Schießhund tries its mark out
-/// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네").
+/// (the user, 2026-11-12: "시순트 표적 찍기도 못 하네"). A Ghost with its 정찰 card pings a zombie it sees through a wall
+/// too, where the look met the wall first (GhostSight.AimedThroughWall).
 /// Held, F points (GTA V's way; the user, 2026-11-12: "F 꾹 누르고 있으면 GTA5에서 무슨 키 누르고 있으면 계속
 /// 손가락질할 수 있잖아?"): a press that found F with nothing else to do, still held after Poke.csv Point.holdAfter, has the
 /// free hand point where the player looks for as long as it is held (PlayerPoint, PointArm), and a fingertip on a friend
@@ -108,6 +109,8 @@ public sealed class PlayerPing : MonoBehaviour
         Hold();
         if (!pressed || Time.time < nextPing || !pressFree) return;
         var foe = Aimed(out Vector3 pinged);
+        // A Ghost's 정찰 card pings a zombie it sees through a wall too, the wall in front having taken the look (GhostSight).
+        if (foe == null) foe = GhostSight.AimedThroughWall(movement, out pinged);
         if (foe == null) return;
         nextPing = Time.time + Mathf.Max(0f, PlayerClass.Ability(Row, "gap", .4f));
         bool bounty = PlayerClass.Is(PlayerClass.Schiesshund);

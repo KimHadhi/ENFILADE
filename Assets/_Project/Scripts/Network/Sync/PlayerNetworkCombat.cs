@@ -118,11 +118,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     {
         if (IsSpawned && patient != null && patient.TryGetComponent(out NetworkObject from)) AcceptTreatmentRpc(from.NetworkObjectId);
     }
-    /// <summary>A Détente began treating this copy's player: their own PC says so.</summary>
-    public void TreatmentBegun(PlayerMovement detente)
-    {
-        if (IsSpawned && detente != null && detente.TryGetComponent(out NetworkObject from)) TreatmentBegunRpc(from.NetworkObjectId);
-    }
     /// <summary>A treatment's end: the rest of this copy's player's health comes back over seconds, on their own PC.</summary>
     public void HealOverTime(float seconds) { if (IsSpawned) HealOverTimeRpc(seconds); }
     /// <summary>A Support's resupply for this copy's player (SupportKit): their own PC fills their guns.</summary>
@@ -390,7 +385,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (body != null) body.SetPace(1f - now.Slowed / 100f);
     }
 
-    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255));
+    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255), ShotPierce);
     private void OnPunched(float charge) => PunchRpc(charge);
     private void OnElbowed(int side) => ElbowRpc(side >= 0);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
@@ -407,7 +402,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnMinePlaced(Throwable kind, ushort id, Vector3 at, Quaternion facing, bool wall) => MineRpc(id, at, facing, wall);
     private void OnMinesChained(ulong[] owners, ushort[] ids, Vector3 middle) => MineChainRpc(owners, ids, middle);
     private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
-    private void OnCharged(Vector3 at) => ChargeRpc(at);
+    private void OnCharged(Vector3 at) => ChargeRpc(at, kit.SoundedSeconds, kit.SoundedReach);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
     private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);
     private void OnRaised(ushort id, Vector3 at, float yaw, float health) => BarricadeRaisedRpc(id, at, yaw, health);

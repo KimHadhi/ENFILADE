@@ -21,8 +21,11 @@ using UnityEngine;
 ///   breaks off its blow or its charge, longer for a headshot, each elite at most once in a while (the early game's
 ///   job, before the cards make it strong);
 /// - Knight (stage 2; the user's design, with the memo's Perfect Parry and Deflect): it takes less from every enemy's
-///   blow; its parries last longer, wear posture down harder and open the counter as a perfect dodge does; its counters
-///   and fists hit harder; pinned under a runner it fights on; and its class key covers a friend (KnightCover, 2026-11-12,
+///   blow; its parries last longer, open the counter as a perfect dodge does, turn even the blows nobody else can parry
+///   (a runner's leap, a grab: PlayerClass.KnightTurns), break a pack zombie's posture at once and wear an elite's down
+///   harder (PlayerClass.ParryPosture; 2026-11-14); its counters and fists hit harder; held by a zombie, V throws it off
+///   with its posture broken (ClassCards' grab escape); pinned under a runner it fights on and kicks it off; and its class
+///   key covers a friend (KnightCover, 2026-11-12,
 ///   in the taunt's place): held, the reach and the friend it can cover show; let go, a parry opens on the friend's behalf,
 ///   and a blow turned there brings the Knight to their side at once;
 /// - Schießhund (stage 3; the user's design, with the Jagdfieber and Return Back of their old memo): its F ping is a
@@ -42,8 +45,8 @@ using UnityEngine;
 /// stack, buff and wait back to nothing, the class's guns full, and the Détente's and Support's kits as they start, the
 /// last pick's barricades down (OnPicked; the user, 2026-11-12: "클래스 선택할 때 초기화 하는 방식 어때?").
 /// The other classes' abilities come in later stages (Classes.csv ready 0). Numbers: Tables/ClassAbilities.
-/// The class cards with code behind them (Docs/Features/ClassCards.md) are ClassCards', added here; a Point's Gunslinger card and
-/// a Ghost's White Tiger guard are read here (DamageFactor, OnHurt).
+/// The class cards with code behind them (Docs/Features/ClassCards.md) are ClassCards', added here, with a Point's PointCards
+/// and a Ghost's GhostCards (its wall sight too); a Point's Gunslinger card is read here (DamageFactor).
 /// What a kill, a headshot or a mark does here takes any foe (ICombatFoe): a zombie, or a practice target on the hub's
 /// range, so every class can be tried out there before a run (its kills never reach the run's counts: GunFeelDirector).
 /// </summary>
@@ -230,6 +233,8 @@ public sealed partial class ClassKit : MonoBehaviour
             }
             // A Point's Gunslinger card: the gun just drawn hits harder a moment.
             if (GunslingerShare > 0f) factor *= 1f + PlayerPerks.Total(PlayerPerks.PointGunslinger) / 100f;
+            // A Détente friend's adrenaline shot, any class: its PC sent how much (DetenteKit.Boosted).
+            if (detente != null) factor *= detente.GunFactor;
             return factor;
         }
     }
@@ -243,8 +248,8 @@ public sealed partial class ClassKit : MonoBehaviour
             if (PlayerClass.Is(PlayerClass.Assault)) factor *= 1f + stacks * PlayerClass.Ability(AssaultRow, "speedPerStack", 1.5f) / 100f;
             if (chargeUntil > Time.time) factor *= 1f + PlayerClass.Ability(AssaultRow, "chargeSpeed", 25f) / 100f;
             if (PlayerClass.Is(PlayerClass.Schiesshund)) factor *= 1f + ReturnStacks * PlayerClass.Ability(HoundRow, "returnSpeed", 6f) / 100f;
-            // A Détente's Golden Hour after a heal.
-            if (detente != null && PlayerClass.Is(PlayerClass.Detente)) factor *= detente.SpeedFactor;
+            // A Détente's Golden Hour after a heal, and a Détente friend's adrenaline shot in any class (DetenteKit).
+            if (detente != null) factor *= detente.SpeedFactor;
             return factor;
         }
     }
@@ -350,6 +355,8 @@ public sealed partial class ClassKit : MonoBehaviour
         if (cards == null && (cards = GetComponent<ClassCards>()) == null) cards = gameObject.AddComponent<ClassCards>();
         // A Point's cards that watch its shots and kills.
         if (pointCards == null && (pointCards = GetComponent<PointCards>()) == null) pointCards = gameObject.AddComponent<PointCards>();
+        // A Ghost's wall sight and its cards that watch its sights, headshots and takedowns.
+        if (ghostCards == null && (ghostCards = GetComponent<GhostCards>()) == null) ghostCards = gameObject.AddComponent<GhostCards>();
         if (!kitGiven) TryGiveKit();
         // A gun drawn: a Point's Gunslinger card counts from now.
         if (slots != null && slots.SelectedSlot != drawnSlot)
@@ -391,6 +398,8 @@ public sealed partial class ClassKit : MonoBehaviour
         if (receiver == null) receiver = movement.DamageReceiver;
         if (weapon == null || receiver == null) return;
         weapon.ShotFired += OnShot;
+        // An Assault's rounds pinning zombies down (제압 사격: ClassKit.Assault).
+        weapon.ShotFired += OnFire;
         weapon.ReloadCompleted += OnReloaded;
         receiver.HitResolved += OnHurt;
         wired = true;
@@ -400,7 +409,7 @@ public sealed partial class ClassKit : MonoBehaviour
     {
         if (!wired) return;
         wired = false;
-        if (weapon != null) { weapon.ShotFired -= OnShot; weapon.ReloadCompleted -= OnReloaded; }
+        if (weapon != null) { weapon.ShotFired -= OnShot; weapon.ShotFired -= OnFire; weapon.ReloadCompleted -= OnReloaded; }
         if (receiver != null) receiver.HitResolved -= OnHurt;
     }
 

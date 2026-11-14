@@ -19,6 +19,9 @@ using UnityEngine;
 /// <item>Ultimate: someone's ultimate, with its notice on every HUD and the class's look (MomentFx.Ultimate).</item>
 /// <item>Reversal, Cover deflect and Kata draw: the reversal's throw, a cover's turned blow, a Gun Kata draw.</item>
 /// <item>Kata aura: a Point's Gun Kata on, its gold rounds turning round them for its seconds (MomentFx.KataAura).</item>
+/// <item>Barrage, an Assault's 데인저 클로즈 or 브로큰 애로우 called: its reach in red on the ground and an arc closing round
+/// it until the first shell (BarrageMark). GunRun, an Assault's ultimate: an A-10's rounds walking a lane, its BRRRT,
+/// the plane going over (GunRunFx).</item>
 /// </list>
 /// Drawn here as ever:
 /// <list type="bullet">
@@ -30,7 +33,8 @@ using UnityEngine;
 /// </summary>
 public sealed class CardFx : MonoBehaviour
 {
-    public enum Kind : byte { Claws, Echo, Deflect, Flash, Blast, Shell, Cavalry, Shadow, Ultimate, Reversal, CoverDeflect, KataDraw, KataAura }
+    public enum Kind : byte { Claws, Echo, Deflect, Flash, Blast, Shell, Cavalry, Shadow, Ultimate, Reversal, CoverDeflect, KataDraw, KataAura,
+        Barrage, GunRun }
 
     private const int SampleRate = 44100;
     /// <summary>Cavalry: how fast they ride (m/s), how long they fade in and out (s); ClassCards sweeps at the same pace.</summary>
@@ -103,6 +107,14 @@ public sealed class CardFx : MonoBehaviour
                 if (point != null) MomentFx.KataAura(point, value, mine);
                 return;
             }
+            case Kind.Barrage:
+                // An Assault's barrage called: where it will fall (the direction as long as its reach) and when (value, s).
+                BarrageMark.Play(at, direction, value);
+                return;
+            case Kind.GunRun:
+                // An Assault's A-10 run: its lane ends at `at`, runs along `direction` (start to end), first round in `value` s.
+                GunRunFx.Play(at, direction, value);
+                return;
         }
         var host = FeelAssets.CreateRuntimeRoot("Card " + kind);
         var fx = host.AddComponent<CardFx>();

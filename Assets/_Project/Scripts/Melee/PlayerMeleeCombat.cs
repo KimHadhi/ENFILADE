@@ -419,8 +419,11 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public bool TryDefend(DamageHit hit, out DamageResult result)
     {
         result = DamageResult.Ignored;
+        // A blow that can't be guarded is still a Knight's to parry, though never to block (PlayerClass.ParriesAll: a
+        // runner's leap, a grab, an elite's blow from behind).
         if (!IsActive || !player.InputAvailable || (!IsGuarding && !IsParryActive) || IsGuardBreaking
-            || MovementBlocksAttack || hit.Kind != DamageKind.Attack || !hit.CanBeGuarded) return false;
+            || MovementBlocksAttack || hit.Kind != DamageKind.Attack
+            || !(hit.CanBeGuarded || (IsParryActive && PlayerClass.ParriesAll(player, hit)))) return false;
         Vector3 incoming = hit.Source != null ? hit.Source.transform.position - player.transform.position : -hit.Direction;
         incoming = Vector3.ProjectOnPlane(incoming, Vector3.up).normalized;
         Vector3 facing = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
@@ -432,8 +435,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         {
             parryRemaining = 0f;
             var attacker = hit.Source != null ? hit.Source.GetComponentInParent<MeleeCombatTarget>() : null;
-            // A Knight's parry wears the attacker down harder: a pack zombie breaks on its second (PlayerClass).
-            attacker.OrNull()?.ApplyPostureDamage(25f * PlayerClass.ParryPostureFactor(player), 0.8f);
+            // A Knight's parry breaks a pack zombie at once and wears an elite down harder (PlayerClass.ParryPosture). Taken
+            // before the parry is told, so a break shows and slows into the execution as one (ParryFeedback, PlayerPerfectDefense).
+            if (attacker != null) attacker.ApplyPostureDamage(PlayerClass.ParryPosture(player, attacker, 25f), 0.8f);
             // The deflect plants the feet: the hit stop holds everything, then the legs stay put a moment longer.
             if (parryFeedback == null) parryFeedback = GetComponent<ParryFeedback>();
             float stop = parryFeedback != null ? parryFeedback.HitStopFor(attacker != null && attacker.IsStaggered) : 0f;

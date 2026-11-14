@@ -156,13 +156,22 @@ bountyMark.fade,0.4,표식이 끝나면 이만큼(초) 동안 사라진다
 bountyMark.drop,Burst|Loop/Flecks_Shiny_Additive|Loop/Clair_Smoke_01_M|Loop/Smoky_Glow_01_M|Loop/Corrupted_Trail_01_M|Loop/FuzzAlpha_Soft,"뺄 부분: 처음 터지는 묶음 전부와, 도는 연기·반짝이·리본·검은 퍼짐. 해골 둘(또렷한 것, 흐린 것)만 남는다"
 bountyMark.tint,#1FEBD1,표식의 청록(PingMarks.BountyColor)
 bountyMark.tintParts,Loop/guns_skull_debuff_defined_add_soft|Loop/guns_skull_debuff_blur_add_soft,물들일 부분
-brokenArrow.prefab,Cluster Granades,"브로큰 애로우(어썰트 카드): 포탄이 떨어진 자리마다 집속탄처럼 터진다(MomentFx Shell, 모든 PC). 예전 캔 폭발은 팩이 없을 때만"
+brokenArrow.prefab,Cluster Granades,"브로큰 애로우와 데인저 클로즈(어썰트 카드, 같은 포격): 포탄이 떨어진 자리마다 집속탄처럼 터진다(MomentFx Shell, 모든 PC). 예전 캔 폭발은 팩이 없을 때만"
 brokenArrow.scale,0.3,"크기 배율. 팩 그대로면 바닥 그을음 13~15m, 섬광 7m. 0.3이면 그을음 4m, 불꽃 0.9m, 충격파 1.2m"
 brokenArrow.speed,1.2,
 brokenArrow.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|Flare|FuzzAlpha|FuzzAlpha_Soft,"뺄 부분: 15m 연기, 13m 빛 번짐, 6m와 4m 검은 퍼짐(화면을 덮음)"
 brokenArrow.life,3.5,
 brokenArrow.near,6,카메라가 이보다(m) 가까우면 작게(내 둘레에 떨어질 때)
 brokenArrow.nearShare,0.45,
+gunRunHit.prefab,Shotgun Hit,"어썰트 궁극기 A-10 기총 소사(GunRunFx, 모든 PC): 줄을 따라 걸어가는 30mm 탄 몇 발마다 팩의 착탄(흙·불꽃·파편). 나머지 탄과 모든 탄의 섬광·고리·흙먼지는 GunRunFx가 그린다"
+gunRunHit.every,3,"탄 몇 발마다 팩의 착탄을 터뜨릴지(1이면 모두). 36발이 1.1초 안에 떨어지므로 너무 낮추면 무겁다"
+gunRunHit.scale,0.75,"크기 배율. 샷건 산탄(0.3)의 두 배 반: 30mm 고폭탄"
+gunRunHit.speed,1.1,
+gunRunHit.drop,Smoke_loop_flipbook_thingy_Clean_alpha_soft|FuzzAdd_Soft|DS_Aoe_Crystal_Warp_01,"뺄 부분: 연기, 밝은 퍼짐, 일그러짐(산탄 착탄과 같다)"
+gunRunHit.life,1.2,
+gunRunHit.near,6,카메라가 이보다(m) 가까우면 작게(내 곁을 지나갈 때)
+gunRunHit.nearShare,0.4,
+gunRunHit.pool,14,"복사본을 이만큼 두고 다시 쓴다(한 번에 열두어 개가 떠 있다)"
 kataAura.prefab,Bullet buff,"포인트의 건 카타 동안 금빛 탄 열 발이 몸 둘레를 돌고 바람 고리와 반짝임이 인다(MomentFx.KataAura, 모든 PC). 궁극기(총이 달아오름, 엇갈린 두 총 문장)와 다르게"
 kataAura.scale,0.45,"크기 배율. 탄이 도는 원 2.5m → 1.1m, 반짝임 고리 5.3m → 2.4m"
 kataAura.fade,0.8,카타가 끝나면 이만큼(초) 동안 사라진다(길이는 Point.kataSeconds)

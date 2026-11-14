@@ -61,16 +61,15 @@ Tag.reversal.word,moment.tag.reversal.word,
 Tag.reversal.under,moment.tag.reversal.under,
 Tag.kata.word,moment.tag.kata.word,
 Tag.kata.under,moment.tag.kata.under,{0} 초(Point.kataSeconds). 이름표 옆에 카타 문장(육각 실린더)이 찍힌다
-Double.on,1,"나이트 그림자 분신(내 캐릭터 그대로, 보랏빛 검은색, 투명)을 켤지(1/0)"
+Double.on,1,"나이트 그림자 분신(내 캐릭터 그대로, 검은색, 투명. 2026-11-14 사용자: 플레이어랑 똑같이 생겼는데 검은색이고 투명함)을 켤지(1/0). 분신은 그림일 뿐이라 다치지 않고 좀비가 노리지 않는다"
 Double.side,-0.95,"분신이 서는 곳: 나이트 오른쪽으로(m, -는 왼쪽). 1인칭에서도 화면 왼쪽 끝에 보이게"
 Double.ahead,1.1,나이트 앞으로(m)
-Double.follow,0.12,분신이 나이트를 따라오는 늦음(초)
-Double.bakesPerSecond,15,분신이 나이트 자세를 1초에 몇 번 따라 잡는지(구운 메시)
+Double.bakesPerSecond,15,"분신이 나이트 자세를 1초에 몇 번 굽는지. 분신은 ClassAbilities.csv Knight.shadowDelay(0.14초) 전의 자세와 자리를 따라 하므로 그만큼의 구운 메시를 들고 있다(15면 3벌). 올리면 더 매끄럽지만 무겁다"
 Double.vertexBudget,150000,분신 한 벌에 굽는 정점 수 한도(무거운 옷은 큰 메시부터 빠진다)
 Double.rise,0.15,나타나는 시간(초)
 Double.fade,0.5,마지막에 사라지는 시간(초)
 Double.alpha,0.5,비침(0 안 보임 ~ 1 꽉 참)
-Double.tint,#2A104CEB,"색(#RRGGBBAA, 알파는 원래 색을 얼마나 덮는지. 0.92면 거의 보랏빛 검은색)"
+Double.tint,#08080DEB,"색(#RRGGBBAA, 알파는 원래 색을 얼마나 덮는지. 0.92면 거의 검은색)"
 Heat.on,1,포인트 궁극기의 달궈지는 두 총(손의 총과 등의 총)을 켤지(1/0)
 Heat.seconds,8,총이 달궈져 있는 전체 시간(초)
 Heat.hot,2.5,"가장 뜨거운 시간(초, 건슬링어 순간). 그 뒤 식는다"
@@ -88,7 +87,7 @@ Bounty.sky,22,몸에서 하늘로 솟는 가는 선 높이(m). 멀리서도 보�
 Bounty.plainWord,moment.bounty.plainword,보통 현상금의 작은 판 글자
 Flash.star,0.5,폭렬 건틀렛 섬광: 맞은 자리 별 문장 크기(m). 화면은 하얘지지 않는다
 Flash.back,1,별에서 나이트 쪽으로 이만큼(m) 물러난 바닥이 부채꼴(범위)의 시작
-Claws.size,1,흰 호랑이 발톱 상처 세 줄의 길이(m)
+Claws.size,.4,흰 호랑이 발톱 상처 세 줄의 길이(m). 화이트 타이거 카드(고스트 궁극 카드)가 헤드샷마다 둘레 적 하나하나에 긋는 것이라 작게(2026-11-14 카드 피드백)
 Charge.on,1,CHARGE 바닥 고리를 켤지(1/0). 버프 받은 사람의 빛은 늘 켜짐
 Charge.colour,#FFCC38,버프 받은 사람이 빛나는 색
 Charge.bloom,2.2,그 빛의 밝기 배율(1을 넘으면 블룸)

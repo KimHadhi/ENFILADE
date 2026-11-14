@@ -6,7 +6,8 @@ using UnityEngine.UI;
 /// <summary>
 /// The class's own resource, at the foot of the screen (stage 7, ClassKit): a dark slanted plate with the class's name,
 /// and for an Assault its adrenaline as a row of leaning pips that fill pink, "[휠] CHARGE" beating on it once they are
-/// full and a draining bar while a CHARGE lasts (a friend's too); for a Point its two guns' numbers, each with a line
+/// full and a draining bar while a CHARGE lasts (a friend's too), and with 데인저 클로즈 its barrage's wait or aim past the
+/// pips; for a Point its two guns' numbers, each with a line
 /// that runs out while the gun put away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks as
 /// the pips, the newest flashing white as it comes and all of them as they are lost, and "DEADEYE" over the plate while
 /// the gun in hand holds its first round since loading; for a Knight "[휠] 도발" while its taunt is ready, the wait in
@@ -14,10 +15,11 @@ using UnityEngine.UI;
 /// newest flashing as a bounty loads it, "DESPERADO" over the plate while it is in hand with a round in it, and Return
 /// Back's stacks on the draining bar; for a Détente its syringe as a pip a dose, red, "[휠] 주사" while a dose is in it,
 /// how many Resurrections are left beside them, and on the bar a treatment or a Resurrection under way, else Golden
-/// Hour. Classes whose abilities come later show their name only.
+/// Hour. Classes whose abilities come later show their name only. A Détente friend's adrenaline shot (its card, any
+/// class) takes the bar in the syringe's red for its few seconds, with what it gives the guns.
 /// The class cards (Docs/Features/ClassCards.md): a thin pink line over the plate runs out while Momentum (기세) lasts and fills
-/// again with each hit; a card state under way takes the bar along the foot (ClassCards: a Ghost's White Tiger in
-/// white, its Head Hunter pips white with it; a Point's Gunslinger after a gun is drawn).
+/// again with each hit; a card state under way takes the bar along the foot (ClassCards: a Ghost's ultimate, while no
+/// zombie sees it, in white; a Point's Gunslinger after a gun is drawn).
 /// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
@@ -81,6 +83,19 @@ public sealed class ClassHUD : MonoBehaviour
             if (barWord.text != cardWord) barWord.text = cardWord;
             return;
         }
+        // A Détente friend's adrenaline shot in this player (DetenteKit.Boosted, any class): its few seconds running out in
+        // the syringe's red, and what it gives the guns, ahead of the class's own states (it is short).
+        var shot = DetenteKit.Mine;
+        float boost = shot != null ? shot.BoostShare : 0f;
+        if (boost > 0f)
+        {
+            chargeBar.gameObject.SetActive(true);
+            chargeFill.rectTransform.anchorMax = new Vector2(boost, 1f);
+            chargeFill.color = KitStyle.Red;
+            string boostWord = Texts.Format("class.hud.adren", Mathf.RoundToInt(shot.BoostDamage));
+            if (barWord.text != boostWord) barWord.text = boostWord;
+            return;
+        }
         // A Schießhund's duel under way comes before the crowd's strength after its showdown (HoundShowdown, in gold), and
         // that before its Return Back.
         float taunt = kit.TauntShare, duel = kit.DuelShare, back = kit.ReturnShare, kata = kit.KataShare;
@@ -130,15 +145,37 @@ public sealed class ClassHUD : MonoBehaviour
         for (int i = 0; i < MostPips; i++) pips[i].gameObject.SetActive(i < count);
     }
 
-    // Adrenaline: a pip a stack, all beating with the key's prompt once full.
+    // Adrenaline: a pip a stack (as many as its most, which the 깊은 숨 card raises), all beating with the key's prompt once
+    // full. With 데인저 클로즈 (ClassCards) its barrage goes past the pips: that the key held aims it, or its wait; and while
+    // the key is held to aim, "[휠] 놓으면 포격" over the plate ("포격 불가" in red where it can't fall) and how to call it
+    // off past the pips.
     private void Adrenaline()
     {
-        int count = Mathf.Clamp(kit.StackMax, 1, MostPips), stacks = kit.Stacks;
+        Pips(kit.StackMax);
+        int count = shownPips, stacks = kit.Stacks;
         bool ready = kit.ChargeReady;
         float beat = ready ? .75f + .25f * Mathf.Sin(Time.unscaledTime * 9f) : 1f;
         for (int i = 0; i < count; i++)
             pips[i].color = i < stacks ? KitStyle.With(KitStyle.Accent, beat) : KitStyle.With(KitStyle.Ice, .14f);
-        KeyPrompt(ready);
+        var cards = ClassCards.Local;
+        string side = "";
+        if (cards != null && cards.DangerAiming)
+        {
+            bool fits = cards.DangerFits;
+            KeyPrompt(true);
+            Word(Texts.Get(fits ? "class.hud.danger.aim" : "class.hud.danger.no"), fits ? KitStyle.Accent : KitStyle.Red);
+            side = Texts.Get(fits ? "class.hud.danger.cancel" : "class.assault.danger.ground");
+        }
+        else
+        {
+            KeyPrompt(ready);
+            Word(Texts.Get("class.hud.charge"), KitStyle.Accent);
+            if (cards != null && cards.HasDanger)
+                side = cards.DangerReady ? Texts.Format("class.hud.danger.hold", KeyName())
+                    : Texts.Format("class.hud.danger_wait", Mathf.CeilToInt(cards.DangerWait));
+        }
+        if (note.text != side) note.text = side;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
     // A Ghost's Head Hunter: a pip a stack. The one that came flashes white, the one lost too, and all of them when a
@@ -148,11 +185,9 @@ public sealed class ClassHUD : MonoBehaviour
         Pips(kit.HunterMax);
         int count = shownPips, stacks = Mathf.Min(kit.Hunter, count), change = kit.HunterChange;
         float flash = Mathf.Clamp01(1f - kit.SinceHunterChange / .3f);
-        // The White Tiger card holding: the stacks shine white, safe from hurt.
-        bool tiger = ClassCards.Local != null && ClassCards.Local.TigerGuards;
         for (int i = 0; i < count; i++)
         {
-            Color color = i < stacks ? (tiger ? KitStyle.Ice : KitStyle.Accent) : KitStyle.With(KitStyle.Ice, .14f);
+            Color color = i < stacks ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .14f);
             bool changed = change == -2 || (change == 1 && i == stacks - 1) || (change == -1 && i == stacks);
             pips[i].color = flash > 0f && changed ? Color.Lerp(color, KitStyle.Ice, flash) : color;
         }
@@ -209,12 +244,15 @@ public sealed class ClassHUD : MonoBehaviour
         note.rectTransform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
         float hand = detente.Raising != null ? detente.RaiseProgress : detente.TreatProgress;
         bool working = hand > 0f;
-        float share = working ? hand : detente.GoldenShare;
+        // Another Détente's adrenaline shot in this one: after its own hands' work, before its Golden Hour.
+        float boost = working ? 0f : detente.BoostShare;
+        float share = working ? hand : boost > 0f ? boost : detente.GoldenShare;
         chargeBar.gameObject.SetActive(share > 0f);
         if (share <= 0f) return true;
         chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
-        chargeFill.color = working ? KitStyle.Red : new Color(1f, .82f, .35f);
-        string word = working ? Texts.Get(detente.Raising != null ? "class.hud.raise" : "class.hud.treat") : Texts.Get("class.hud.golden");
+        chargeFill.color = working || boost > 0f ? KitStyle.Red : new Color(1f, .82f, .35f);
+        string word = working ? Texts.Get(detente.Raising != null ? "class.hud.raise" : "class.hud.treat")
+            : boost > 0f ? Texts.Format("class.hud.adren", Mathf.RoundToInt(detente.BoostDamage)) : Texts.Get("class.hud.golden");
         if (barWord.text != word) barWord.text = word;
         return true;
     }

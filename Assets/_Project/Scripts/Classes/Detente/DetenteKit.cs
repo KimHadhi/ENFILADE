@@ -19,13 +19,37 @@ using UnityEngine.InputSystem;
 /// after any heal, renewed by each; and Resurrection, once a wave (in a chapter, once between rest stops): Interact held
 /// beside a dead friend brings them back where they fell. A friend's health is theirs on their own PC, so heals and
 /// resurrections go there (PlayerNetworkCombat). This PC's own player only. Numbers: Tables/ClassAbilities, row Detente.
+/// The card feedback of 2026-11-14 (Docs/Features/ClassCards.md): the treatment by hand takes 10 s and the 손에 밴 붕대
+/// card cuts it, so this Détente's PC sends its own seconds with the treatment (the patient's alert counts them); Golden
+/// Hour is shorter and quicker (it is this Détente's own pace, judged here, so nothing of it is sent); 공생 gives this
+/// Détente a share of the health it gives a friend; 아드레날린 주사 sends a friend it doses a few seconds of pace and gun
+/// damage, which their own PC gives them (Boosted, read by ClassKit); and the ultimate, Second Life, gets every downed
+/// friend up and fills everyone's health where they are, under a disinfectant cloud at each that blinds the zombies in it
+/// (SecondLife, DetenteGas). The Détente's PC decides each and sends its numbers (memory actor-decides).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class DetenteKit : MonoBehaviour
 {
     private const string Row = "Detente";
-    // How often the wave and the rest stop are looked at for a new Resurrection (s).
-    private const float SectionEvery = 1f;
+    // The cards with code behind them here (Perks.csv): 공생 (a share of the health given comes back) and 아드레날린 주사.
+    private const string SymbioCard = "detente_symbio", AdrenCard = "detente_adren";
+    // How often the wave and the rest stop are looked at for a new Resurrection (s); how near two of the team may stand
+    // and share one cloud of the ultimate's gas (m): two clouds on one spot only thicken the mist and double the hiss.
+    private const float SectionEvery = 1f, ShareCloud = 2f;
+    // The ultimate's cloud spots, gathered afresh each time it goes off.
+    private static readonly List<Vector3> spots = new List<Vector3>();
+
+    // The class's mint (ClassColours.csv detente, the disinfectant's), for the health bar's blink when its care fills it.
+    private static Color Mint
+    {
+        get
+        {
+            var colour = KillFlairs.ClassColourOf(PlayerClass.Detente);
+            if (colour.a <= 0f) return new Color(.49f, .94f, .69f);
+            colour.a = 1f;
+            return colour;
+        }
+    }
 
     /// <summary>This PC's own player's, while they play a Détente.</summary>
     public static DetenteKit Local { get; private set; }
@@ -61,6 +85,9 @@ public sealed class DetenteKit : MonoBehaviour
     private int raisesLeft = 1, lastWave = -1;
     private Vector3 lastCheckpoint;
     private bool hadCheckpoint;
+    // As anyone (any class): a Détente friend's adrenaline shot in this player, until when, how long it was, and what it
+    // gives (pace and gun damage, %), as that Détente's PC sent them.
+    private float boostUntil, boostTotal = 1f, boostSpeed, boostDamage;
 
     /// <summary>The syringe's measure now, and the most it holds.</summary>
     public float Syringe => Mathf.Max(0f, syringe);
@@ -80,7 +107,9 @@ public sealed class DetenteKit : MonoBehaviour
     /// <summary>The friend it is treating by hand now, or bringing back from the dead, and how far along (0 to 1).</summary>
     public PlayerMovement Treating { get; private set; }
     public float TreatProgress => Treating != null ? Mathf.Clamp01((Time.time - treatStart) / TreatSeconds) : 0f;
-    private float TreatSeconds => Mathf.Max(.5f, Number("treatSeconds", 4f));
+    // The 손에 밴 붕대 card takes off this PC's player's own seconds (PlayerClass.Ability adds it in); the patient's PC is
+    // told this number with the treatment rather than reading its own player's.
+    private float TreatSeconds => Mathf.Max(.5f, Number("treatSeconds", 10f));
     /// <summary>This PC's Détente has its hands in a treatment: no shot, swing or turn of the view (PlayerMovement).</summary>
     public static bool HoldsHands => Local != null && Local.Treating != null;
     /// <summary>A Détente's offer waits for this PC's player's F (F does nothing else meanwhile: PlayerPing).</summary>
@@ -91,7 +120,25 @@ public sealed class DetenteKit : MonoBehaviour
     public int RaisesLeft => raisesLeft;
     /// <summary>How much of Golden Hour is left, 0 to 1 (0: none), and the pace it gives now.</summary>
     public float GoldenShare => goldenUntil > Time.time ? Mathf.Clamp01((goldenUntil - Time.time) / goldenTotal) : 0f;
-    public float SpeedFactor => goldenUntil > Time.time ? 1f + Number("goldenSpeed", 8f) / 100f : 1f;
+    /// <summary>
+    /// The factor on this player's pace from here (ClassKit.SpeedFactor): a Détente's own Golden Hour, and a Détente
+    /// friend's adrenaline shot in any class.
+    /// </summary>
+    public float SpeedFactor
+    {
+        get
+        {
+            float factor = goldenUntil > Time.time && PlayerClass.Is(PlayerClass.Detente) ? 1f + Number("goldenSpeed", 12f) / 100f : 1f;
+            return BoostShare > 0f ? factor * (1f + boostSpeed / 100f) : factor;
+        }
+    }
+    /// <summary>How much of a friend's adrenaline shot in this player is left, 0 to 1 (0: none), and its gun damage (%).</summary>
+    public float BoostShare => boostUntil > Time.time ? Mathf.Clamp01((boostUntil - Time.time) / boostTotal) : 0f;
+    public float BoostDamage => BoostShare > 0f ? boostDamage : 0f;
+    /// <summary>The factor a friend's adrenaline shot puts on this player's guns now (ClassKit.DamageFactor): 1 without one.</summary>
+    public float GunFactor => 1f + BoostDamage / 100f;
+    /// <summary>This PC's own player's, whatever class they play (a friend's shot, a treatment's rest): the HUD reads it.</summary>
+    public static DetenteKit Mine => own;
     /// <summary>Seconds since the last dose went in (the HUD's flash).</summary>
     public float SinceInject => Time.time - lastInject;
     /// <summary>Whether Interact is taken here now (a treatment or a resurrection on offer): the ping keeps off it.</summary>
@@ -178,7 +225,8 @@ public sealed class DetenteKit : MonoBehaviour
         treatHealed = false;
         DetenteLooks.Bandage(movement, TreatSeconds);
         TreatBegan?.Invoke(TreatSeconds);
-        if (patient.TryGetComponent(out PlayerNetworkCombat network)) network.TreatmentBegun(movement);
+        // This PC's seconds (its 손에 밴 붕대 card counted) go with it: the patient's PC says them, never its own player's.
+        if (patient.TryGetComponent(out PlayerNetworkCombat network)) network.TreatmentBegun(movement, TreatSeconds);
         KitSound.Play(KitSound.Cue.PickHeal, .5f);
     }
 
@@ -198,8 +246,11 @@ public sealed class DetenteKit : MonoBehaviour
             Heal(patient, Number("treatHeal", 50f));
         }
         if (progress < 1f) return;
-        // What is left of theirs comes back over time; it fills the gauge as a heal does, by what this PC sees missing.
-        UltimateCharge.AwardHelp(UltimateCharge.Help.Healed, Mathf.Max(0f, life.MaximumHealth - life.Health));
+        // What is left of theirs comes back over time; it fills the gauge as a heal does, by what this PC sees missing,
+        // and 공생 gives this Détente its share of it now.
+        float rest = Mathf.Max(0f, life.MaximumHealth - life.Health);
+        UltimateCharge.AwardHelp(UltimateCharge.Help.Healed, rest);
+        Symbiosis(rest);
         if (patient.TryGetComponent(out PlayerNetworkCombat network)) network.HealOverTime(Number("treatRegenSeconds", 8f));
         AlertHUD.Self(Texts.Format("class.detente.treated", Name(patient)));
         calls.Remove(patient);
@@ -260,12 +311,57 @@ public sealed class DetenteKit : MonoBehaviour
         KitSound.Play(KitSound.Cue.Alert, .55f);
     }
 
-    /// <summary>A Détente began treating this PC's player (PlayerNetworkCombat): the offer is answered.</summary>
-    internal void Begun(PlayerMovement detente)
+    /// <summary>
+    /// A Détente began treating this PC's player for <paramref name="seconds"/>, as its own PC makes them (its cards
+    /// included: PlayerNetworkCombat.TreatBeganRpc): the offer is answered, and the alert says how long to stay.
+    /// </summary>
+    internal void Begun(PlayerMovement detente, float seconds)
     {
         offeredBy = null;
         DetenteLooks.Prompt(null);
-        AlertHUD.Self(Texts.Format("class.detente.treating", Name(detente)));
+        AlertHUD.Self(Texts.Format("class.detente.treating", Name(detente), Mathf.CeilToInt(Mathf.Max(.5f, seconds))));
+    }
+
+    /// <summary>
+    /// A Détente friend's adrenaline shot went into this PC's player (PlayerNetworkCombat.AdrenalineRpc, the 아드레날린 주사
+    /// card), with its PC's numbers: <paramref name="speed"/> % pace and <paramref name="damage"/> % gun damage for
+    /// <paramref name="seconds"/> (ClassKit reads them: SpeedFactor, GunFactor). A shot while one runs starts it again;
+    /// only a fresh one says so.
+    /// </summary>
+    internal void Boosted(float seconds, float speed, float damage, PlayerMovement from)
+    {
+        if (movement == null || movement.IsDead || seconds <= 0f) return;
+        bool fresh = BoostShare <= 0f;
+        boostTotal = Mathf.Max(.1f, seconds);
+        boostUntil = Time.time + boostTotal;
+        boostSpeed = Mathf.Max(0f, speed);
+        boostDamage = Mathf.Max(0f, damage);
+        if (fresh) AlertHUD.Self(Texts.Format("class.detente.adren.got", Name(from), Mathf.RoundToInt(boostTotal)));
+    }
+
+    /// <summary>
+    /// A Détente's ultimate reached this PC (PlayerNetworkCombat.SecondLifeRpc, from that Détente's PC): its clouds where
+    /// it put them, and this PC's own player up at once if down, or their health full if standing. The dead wait for a
+    /// Resurrection, of which the ultimate gave that Détente one more.
+    /// </summary>
+    internal static void SecondLifeReached(PlayerMovement detente, Vector3[] clouds, float radius, float seconds)
+    {
+        if (clouds != null) foreach (var spot in clouds) DetenteGas.Burst(spot, radius, seconds);
+        var mine = PlayerRoster.Local;
+        if (mine != null && mine != detente && mine.TryGetComponent(out DetenteKit kit)) kit.Rallied(detente);
+    }
+
+    // This player's own health, which is theirs to change here: up from the ground with all of it, or all of it back.
+    private void Rallied(PlayerMovement detente)
+    {
+        if (receiver == null) receiver = movement.DamageReceiver;
+        if (receiver == null || !receiver.IsAlive) return;
+        bool down = receiver.IsDowned;
+        if (down) receiver.GetUp(receiver.MaximumHealth);
+        else receiver.Heal(receiver.MaximumHealth);
+        AdaptiveHealthHUD.Blink(Mint, false);
+        KitSound.Play(KitSound.Cue.PickHeal, .8f);
+        AlertHUD.Self(Texts.Format(down ? "class.detente.ult.up" : "class.detente.ult.got", Name(detente)));
     }
 
     /// <summary>A treatment's end (PlayerNetworkCombat): the rest of this player's health comes back over <paramref name="seconds"/>.</summary>
@@ -328,7 +424,31 @@ public sealed class DetenteKit : MonoBehaviour
         DetenteLooks.Syringe(movement);
         Injected?.Invoke();
         Heal(patient, Number("injectHeal", 40f));
-        if (patient != movement) AlertHUD.Self(Texts.Format("class.detente.injected", Name(patient)));
+        if (patient == movement) return;
+        AlertHUD.Self(Texts.Format("class.detente.injected", Name(patient)));
+        Adrenaline(patient);
+    }
+
+    // 아드레날린 주사 (the card, 2026-11-14): a friend this Détente doses runs faster and shoots harder a few seconds. This
+    // PC picks the numbers (its card's level, the table's seconds and pace) and sends them; the friend's own PC gives them
+    // (DetenteKit.Boosted there), since their pace and their shots are judged there. A full-health friend may be dosed for it.
+    private void Adrenaline(PlayerMovement friend)
+    {
+        float damage = PlayerPerks.Total(AdrenCard);
+        if (damage <= 0f || !friend.TryGetComponent(out PlayerNetworkCombat network)) return;
+        network.SendAdrenaline(Mathf.Max(.5f, Number("adrenSeconds", 5f)), Mathf.Max(0f, Number("adrenSpeed", 15f)), damage);
+    }
+
+    // 공생 (the card, 2026-11-14): a share of the health this Détente gave a friend comes back to it at once, as far as it
+    // is hurt. Only a friend's health counts (a dose into itself would only feed itself), and the bar blinks the mint.
+    private void Symbiosis(float given)
+    {
+        float share = PlayerPerks.Total(SymbioCard) / 100f;
+        if (share <= 0f || given <= 0f) return;
+        if (receiver == null) receiver = movement.DamageReceiver;
+        if (receiver == null || !receiver.IsAlive || receiver.IsDowned || receiver.Health >= receiver.MaximumHealth - .5f) return;
+        receiver.Heal(given * share);
+        AdaptiveHealthHUD.Blink(Mint, false);
     }
 
     /// <summary>More in the syringe (a shop's refill, a Support's top-up), up to the most it holds; false when it was full.</summary>
@@ -343,22 +463,67 @@ public sealed class DetenteKit : MonoBehaviour
     /// <summary>A shop sells the refill only to a Détente whose syringe isn't full.</summary>
     public bool Full => Syringe >= SyringeMax - .01f;
 
-    /// <summary>The ultimate (every card taken, a full gauge: ClassCards.Ultimate): the syringe full and one Resurrection more.</summary>
+    /// <summary>
+    /// The ultimate, Second Life (every card taken, a full gauge: ClassCards.Ultimate): the syringe full, one Resurrection
+    /// more, and every downed friend up and everyone's health full under a disinfectant cloud each (SecondLife).
+    /// </summary>
     internal void Ultimate()
     {
         Refill(SyringeMax);
         raisesLeft++;
+        SecondLife();
+    }
+
+    // The user, 2026-11-14: "궁극기 사용 시 쓰러진 동료 즉시 일어나면서 전체 동료 위치에서 메딕 소독 가스 3초 동안 분사되게.
+    // (왜냐하면 쓰러진 동료가 일어날 때 커버를 받아야 하니까)", and "동료 체력 회복도 좋네". This PC decides it all: this
+    // Détente's own health full here; a cloud on every one of the team wherever they are (itself too, so a lone Détente is
+    // covered as well, and a dead friend's spot, where the Resurrection it just got will be wanted), two standing close
+    // sharing one; each cloud blinds the zombies in it, called once here (ZombieEffects.Blind carries it to the host); and
+    // the word to every other PC, which draws the same clouds and gets its own player up or fills their health there,
+    // their health being theirs (SecondLifeReached). The gauge it was bought with gets nothing back from it.
+    private void SecondLife()
+    {
+        if (receiver == null) receiver = movement.DamageReceiver;
+        if (receiver != null && receiver.IsAlive && !receiver.IsDowned)
+        {
+            receiver.Heal(receiver.MaximumHealth);
+            AdaptiveHealthHUD.Blink(Mint, false);
+        }
+        float radius = Mathf.Max(.5f, Number("ultGasRadius", 4f)), seconds = Mathf.Max(.5f, Number("ultGasSeconds", 3f));
+        float slow = Mathf.Clamp01(Number("ultGasSlow", .5f));
+        spots.Clear();
+        foreach (var someone in PlayerRoster.All)
+        {
+            if (someone == null || (someone != movement && !someone.IsInitialized)) continue;
+            // Their getting up counts as this Détente's, as a Resurrection does (the results' 부활 count).
+            if (someone != movement && someone.IsDowned) PlayerTally.Raised();
+            Vector3 at = someone.transform.position;
+            bool shared = false;
+            foreach (var spot in spots)
+                if ((spot - at).sqrMagnitude < ShareCloud * ShareCloud) { shared = true; break; }
+            if (!shared) spots.Add(at);
+        }
+        if (spots.Count == 0) spots.Add(transform.position);
+        foreach (var spot in spots)
+        {
+            ZombieEffects.Blind(spot, radius, seconds, slow);
+            DetenteGas.Burst(spot, radius, seconds);
+        }
+        KitSound.Play(KitSound.Cue.PickHeal, .8f);
+        if (TryGetComponent(out PlayerNetworkCombat network)) network.SendSecondLife(spots.ToArray(), radius, seconds);
     }
 
     /// <summary>
     /// A class was picked (PlayerClass.Picked, by ClassKit): a fresh start, as a chapter's. The syringe as it starts,
-    /// every Resurrection back, no Golden Hour, nobody being treated or raised.
+    /// every Resurrection back, no Golden Hour and no friend's adrenaline shot, nobody being treated or raised.
     /// </summary>
     internal void Fresh()
     {
         syringe = -1f;
         raisesLeft = Mathf.Max(0, Mathf.RoundToInt(Number("resurrections", 1f)));
         goldenUntil = 0f;
+        // A friend's adrenaline shot goes with every other buff a pick starts afresh (a friend's CHARGE does too).
+        boostUntil = 0f;
         lastInject = -99f;
         if (Treating != null) Stop(false);
         offeredTo = null;
@@ -378,6 +543,7 @@ public sealed class DetenteKit : MonoBehaviour
             float given = life != null ? Mathf.Clamp(life.MaximumHealth - life.Health, 0f, amount) : amount;
             UltimateCharge.AwardHelp(UltimateCharge.Help.Healed, given);
             network.Heal(amount);
+            Symbiosis(given);
         }
         KitSound.Play(KitSound.Cue.PickHeal, .8f);
         Golden();
@@ -395,10 +561,10 @@ public sealed class DetenteKit : MonoBehaviour
         Golden();
     }
 
-    // Any heal: Golden Hour, renewed.
+    // Any heal: Golden Hour, renewed. It is this Détente's own pace (ClassKit.SpeedFactor here), so nothing of it is sent.
     private void Golden()
     {
-        goldenTotal = Mathf.Max(.1f, Number("goldenSeconds", 8f));
+        goldenTotal = Mathf.Max(.1f, Number("goldenSeconds", 6f));
         goldenUntil = Time.time + goldenTotal;
     }
 

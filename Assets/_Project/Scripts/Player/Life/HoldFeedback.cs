@@ -123,7 +123,9 @@ public sealed class HoldFeedback : MonoBehaviour
         else
         {
             title.text = Texts.Get(eaten ? "hold.eaten" : "hold.grabbed") + (holders > 1 ? "  " + Texts.Format("hold.count", holders) : "");
-            hint.text = shove;
+            // A Knight's V throws every holder off, their posture broken (ClassCards' grab escape); down, it doesn't.
+            bool throws = ClassCards.ThrowsOffHolds && receiver != null && !receiver.IsDowned;
+            hint.text = throws ? Texts.Get("hold.knight") : shove;
         }
     }
 

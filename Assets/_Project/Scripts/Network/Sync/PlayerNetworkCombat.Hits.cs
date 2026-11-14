@@ -13,8 +13,13 @@ public sealed partial class PlayerNetworkCombat
     }
 
     // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark.
+    // With the shooter's penetration factor (ShotPierce), so the copy's round gets as far through as theirs did.
     [Rpc(SendTo.NotMe)]
-    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet) => weapon.ShowShot(origin, direction, pellet);
+    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet, ushort pierce) => weapon.ShowShot(origin, direction, pellet, pierce / 100f);
+
+    // This PC's factor on its guns' penetration (a Ghost's 과관통), in hundredths: only this PC knows how far its rounds get
+    // through, and friends' PCs trace each shot again to draw it.
+    private static ushort ShotPierce => (ushort)Mathf.Clamp(Mathf.RoundToInt(PlayerPerks.OwnPierce * 100f), 0, ushort.MaxValue);
 
     [Rpc(SendTo.NotMe)]
     private void PunchRpc(float charge) => melee.ShowPunch(charge);

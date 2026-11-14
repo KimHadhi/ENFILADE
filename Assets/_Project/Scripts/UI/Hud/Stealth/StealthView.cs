@@ -201,7 +201,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
         near.Clear();
         nearness.Clear();
         Vector3 me = movement.transform.position;
-        float most = coneNear * coneNear;
+        // A Ghost's 시선 읽기 card sees more of them, from farther off (GhostCards).
+        float reach = GhostCards.ConeReach(coneNear), most = reach * reach;
         foreach (var mind in ZombieMind.All)
         {
             if (mind == null || !mind.isActiveAndEnabled || mind.IsAwake || !mind.Living) continue;
@@ -211,7 +212,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
             nearness[mind] = far;
         }
         near.Sort((a, b) => nearness[a].CompareTo(nearness[b]));
-        if (near.Count > mostCones) near.RemoveRange(mostCones, near.Count - mostCones);
+        int count = GhostCards.ConeCount(mostCones);
+        if (near.Count > count) near.RemoveRange(count, near.Count - count);
         foreach (var cone in cones) cone.live = cone.mind != null && near.Contains(cone.mind);
         foreach (var mind in near)
         {

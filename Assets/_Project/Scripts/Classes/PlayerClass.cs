@@ -187,6 +187,9 @@ public static class PlayerClass
         if (kit == null) return 1f;
         var info = Current;
         float factor = OwnsWeapon(info, kit.HeldGun) ? 1f + info.GunBonus / 100f : 1f;
+        // A Knight's cover turned a blow on this player, the Knight holding 원호 반격: their guns hit harder a moment, any
+        // class, by the share the Knight's PC sent with the cover (KnightCover.GuardedGunFactor).
+        factor *= KnightCover.GuardedGunFactor;
         if (target != null && Is(Schiesshund) && PingMarks.IsBountyOf(target, kit.Movement))
             factor *= 1f + Ability(HoundRow, "markDamage", 25f) / 100f;
         // A Schießhund's bounty dye (DyeMarks): the zombies its own dye splashed take more from its guns, the glowing dye
@@ -196,14 +199,8 @@ public static class PlayerClass
         if (target != null && Is(Schiesshund) && HoundDuel.Of(kit.Movement) is HoundDuel duel && duel.Foe != null
             && duel.Foe.gameObject == target.gameObject)
             factor *= 1f + Ability(HoundRow, "duelDamage", 25f) / 100f;
-        // An Assault's Danger Close card (데인저 클로즈, the call for fire right up against one's own lines): near
-        // enemies take more.
-        if (target != null && Is(Assault) && PlayerPerks.Has(PlayerPerks.AssaultDanger))
-        {
-            float reach = Ability("Assault", "dangerReach", 6f);
-            if ((target.transform.position - kit.transform.position).sqrMagnitude <= reach * reach)
-                factor *= 1f + PlayerPerks.Total(PlayerPerks.AssaultDanger) / 100f;
-        }
+        // An Assault's 데인저 클로즈 used to add here on near enemies; since 2026-11-14 it is a barrage called on a mark
+        // (ClassCards.DangerClose, the user: "진짜 폭격 스킬처럼").
         return factor * kit.DamageFactor;
     }
 
@@ -297,30 +294,96 @@ public static class PlayerClass
 
     /// <summary>
     /// The share of an enemy's blow this PC's player takes from their class: a Knight less (the toughest class), and less
-    /// again while their taunt holds. PlayerDamageReceiver multiplies it in, on the player's own PC.
+    /// again while their taunt holds; an Assault with the 선두 card less while it charges (ClassKit.LeadShare).
+    /// PlayerDamageReceiver multiplies it in, on the player's own PC.
     /// </summary>
     public static float TakenFactor(PlayerMovement player)
     {
-        if (!Knights(player)) return 1f;
+        float lead = ClassKit.LeadShare(player);
+        if (!Knights(player)) return lead;
         float share = Mathf.Clamp01(Ability(KnightRow, "taken", .75f));
         if (ClassKit.Local.TauntShare > 0f) share *= Mathf.Clamp01(Ability(KnightRow, "tauntTaken", .6f));
-        return share;
+        return share * lead;
     }
 
-    /// <summary>A Knight's fists hit this much harder, damage and posture (PlayerMeleeCombat's punches).</summary>
-    public static float FistFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "fists", 50f) / 100f : 1f;
+    /// <summary>
+    /// A Knight's fists hit this much harder, damage and posture (PlayerMeleeCombat's punches), more again for a moment
+    /// after their cover turned a blow with the 원호 반격 card (ClassCards.CoverStrikeFactor).
+    /// </summary>
+    public static float FistFactor(PlayerMovement player) => Knights(player) ? (1f + Ability(KnightRow, "fists", 50f) / 100f) * CoverStrike : 1f;
 
-    /// <summary>A Knight's counter, after a dodge or a parry, hits this much harder (PlayerPerfectDefense: the memo's 흘리기).</summary>
-    public static float CounterFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "counter", 50f) / 100f : 1f;
+    /// <summary>
+    /// A Knight's counter, after a dodge or a parry, hits this much harder (PlayerPerfectDefense: the memo's 흘리기), more
+    /// again for a moment after their cover turned a blow with the 원호 반격 card.
+    /// </summary>
+    public static float CounterFactor(PlayerMovement player) => Knights(player) ? (1f + Ability(KnightRow, "counter", 50f) / 100f) * CoverStrike : 1f;
 
-    /// <summary>A Knight's parry windows are this much longer (PlayerMeleeCombat).</summary>
-    public static float ParryWindowFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "parryWindow", 50f) / 100f : 1f;
+    /// <summary>
+    /// A Knight's parry windows are this much longer (PlayerMeleeCombat), longer again for a moment after a counter of
+    /// theirs landed with the 비껴 흘리기 card (ClassCards.FlowFactor).
+    /// </summary>
+    public static float ParryWindowFactor(PlayerMovement player)
+        => Knights(player) ? (1f + Ability(KnightRow, "parryWindow", 50f) / 100f) * (ClassCards.Local != null ? ClassCards.Local.FlowFactor : 1f) : 1f;
 
-    /// <summary>A Knight's parry wears the attacker's posture down this much more (PlayerMeleeCombat).</summary>
-    public static float ParryPostureFactor(PlayerMovement player) => Knights(player) ? 1f + Ability(KnightRow, "parryPosture", 100f) / 100f : 1f;
+    // This PC's Knight's 원호 반격 moment, 1 when none runs.
+    private static float CoverStrike => ClassCards.Local != null ? ClassCards.Local.CoverStrikeFactor : 1f;
 
     /// <summary>A Knight's parry opens the counter as a perfect dodge does (the memo's 퍼펙트 패리; PlayerPerfectDefense).</summary>
     public static bool ParryCounters(PlayerMovement player) => Knights(player) && Ability(KnightRow, "parryCounter", 1f) > .5f;
+
+    /// <summary>
+    /// Whether this PC's player, a Knight, parries <paramref name="hit"/> though it can't be guarded (KnightTurns): asked by
+    /// PlayerMeleeCombat while their parry window is open, on their own PC where the parry is judged.
+    /// </summary>
+    public static bool ParriesAll(PlayerMovement player, in DamageHit hit) => Knights(player) && KnightTurns(player, hit);
+
+    /// <summary>
+    /// A blow a Knight's parry turns on <paramref name="victim"/>, whatever it is (the user, 2026-11-14: "나이트면 기본적으로
+    /// 패링으로 러너나 그런 패링 못 하는 공격들도 다 패링할 수 있게"): any blow anyone could guard, and with Knight.parryAll on,
+    /// every other blow of a living zombie too: a runner's leap, a shambler's grab, a reaper's scythe, a ninja's stab from
+    /// behind, a charger's ram. Not the bites of a zombie that holds them already: those are no blow to turn, and V throws
+    /// it off (ClassCards). Not an exploder's burst either: it comes from a body already dead. The Knight's own parry
+    /// (ParriesAll) and a Knight's cover over a friend (KnightCover.Covers) ask it, on the PC of the one it lands on, which
+    /// judges every zombie blow on its player.
+    /// </summary>
+    public static bool KnightTurns(PlayerMovement victim, in DamageHit hit)
+    {
+        if (hit.Kind != DamageKind.Attack) return false;
+        if (hit.CanBeGuarded) return true;
+        if (victim == null || victim.IsHeld || Ability(KnightRow, "parryAll", 1f) <= .5f) return false;
+        return hit.Source != null && hit.Source.GetComponentInParent<EnemyHealth>() is EnemyHealth zombie && zombie.IsAlive;
+    }
+
+    /// <summary>
+    /// A pack zombie, whose posture a Knight's parry breaks at once (Knight.parryBreaks; the user, 2026-11-14: "기본 패링으로
+    /// 좀비 처형 가능하게 해"): a shambler or a runner of no rank, or a plain enemy without a kind. A brute, an exploder, a
+    /// charger, the memo's elites (ninja, candyman, breadbag, reaper) and anything ranked elite or named take a parry's
+    /// usual posture damage instead.
+    /// </summary>
+    public static bool BreaksOnParry(MeleeCombatTarget target)
+    {
+        if (target == null || target.Steadfast || Ability(KnightRow, "parryBreaks", 1f) <= .5f) return false;
+        if (target.TryGetComponent(out EnemyHealth enemy) && enemy.IsStandout) return false;
+        return !target.TryGetComponent(out ZombieType type) || type.Kind == ZombieKind.Shambler || type.Kind == ZombieKind.Runner;
+    }
+
+    /// <summary>
+    /// The posture <paramref name="player"/>'s parry takes from <paramref name="attacker"/>, from the parry's own
+    /// (<paramref name="basic"/>). A Knight's wears an elite or a brute down harder (parryPosture), more again with the
+    /// 무너뜨리기 card, and all of it twice while the shadow double is out (its parry falls with the Knight's); a pack
+    /// zombie's it breaks outright (BreaksOnParry), so the execution is there at once. PlayerMeleeCombat applies it before
+    /// the parry is told to anyone (ParryFeedback, PlayerPerfectDefense), so a break shows and plays as one.
+    /// </summary>
+    public static float ParryPosture(PlayerMovement player, MeleeCombatTarget attacker, float basic)
+    {
+        if (!Knights(player)) return basic;
+        float posture = basic * (1f + Ability(KnightRow, "parryPosture", 100f) / 100f);
+        if (attacker == null) return posture;
+        if (BreaksOnParry(attacker)) return Mathf.Max(posture, attacker.MaximumPosture + 1f);
+        posture += Mathf.Max(0f, PlayerPerks.Total(PlayerPerks.KnightDeflect));
+        var cards = ClassCards.Local;
+        return cards != null && cards.ShadowOut ? posture * 2f : posture;
+    }
 
     // This PC's own player, playing a Knight.
     private static bool Knights(PlayerMovement player)

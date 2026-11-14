@@ -3,6 +3,9 @@ using UnityEngine;
 // ClassKit: Ghost: Head Hunter, Deadeye, the stagger. One part of the class; the rest is in ClassKit.cs and the files beside it.
 public sealed partial class ClassKit
 {
+    // A Ghost's wall sight and its cards with code behind them (GhostCards).
+    private GhostCards ghostCards;
+
     // Each pellet of this PC's own shot, once traced (a lone bullet is pellet 0 of 1). What the shot met counts once, at
     // its last pellet: a head among its pellets is a headshot, else a body is a body shot.
     private void OnShot(WeaponShot shot)
@@ -36,6 +39,15 @@ public sealed partial class ClassKit
         if (slot >= 0 && slot < loaded.Length) loaded[slot] = true;
     }
 
+    /// <summary>
+    /// Stacks a Ghost earns besides its shots' own: a quiet kill on its own mark counts as an assassination and brings
+    /// more (GhostCards, the 조용한 표적 card).
+    /// </summary>
+    internal void HuntBonus(int stacks)
+    {
+        if (stacks > 0 && PlayerClass.Is(PlayerClass.Ghost)) Hunt(stacks);
+    }
+
     private void Hunt(int change)
     {
         int before = hunter;
@@ -51,8 +63,6 @@ public sealed partial class ClassKit
     {
         if (result != DamageResult.Damaged || hunter <= 0 || receiver == null || !PlayerClass.Is(PlayerClass.Ghost)) return;
         if (receiver.LastShieldTaken + receiver.LastHealthTaken <= 0f) return;
-        // The White Tiger card holds: no hurt takes the stacks (ClassCards).
-        if (cards != null && cards.TigerGuards) return;
         hunter = 0;
         hunterChange = -2;
         hunterChangedAt = Time.time;

@@ -49,12 +49,14 @@ public sealed partial class PlayerNetworkCombat
         if (friend != null && TryGetComponent(out KnightCover cover)) cover.Covered(friend, attacker);
     }
 
-    // This Knight opened a cover on that friend: every other PC keeps it, the friend's to judge their blows.
+    // This Knight opened a cover on that friend: every other PC keeps it, the friend's to judge their blows. What the
+    // Knight's 원호 반격 gives the friend's guns comes with it (the Knight's PC's numbers), so the friend's PC can give it
+    // the moment the cover turns a blow there, with no word back and forth.
     [Rpc(SendTo.NotMe)]
-    private void CoverRpc(ulong ally, float seconds)
+    private void CoverRpc(ulong ally, float seconds, float gunBonus, float gunSeconds)
     {
         var friend = PlayerOf(ally);
-        if (friend != null) KnightCover.Open(mover != null ? mover : GetComponent<PlayerMovement>(), friend, seconds);
+        if (friend != null) KnightCover.Open(mover != null ? mover : GetComponent<PlayerMovement>(), friend, seconds, gunBonus, gunSeconds);
     }
 
     // This Knight stepped in: the streak for everyone else.
@@ -63,7 +65,8 @@ public sealed partial class PlayerNetworkCombat
 
     private void OnCoverOpened(PlayerMovement ally, float seconds)
     {
-        if (ally != null && ally.TryGetComponent(out NetworkObject friend) && friend.IsSpawned) CoverRpc(friend.NetworkObjectId, seconds);
+        if (ally != null && ally.TryGetComponent(out NetworkObject friend) && friend.IsSpawned)
+            CoverRpc(friend.NetworkObjectId, seconds, cover != null ? cover.AllyGunBonus : 0f, cover != null ? cover.AllyGunSeconds : 0f);
     }
 
     private void OnCoverStepped(Vector3 from, Vector3 to) => CoverStepRpc(from, to);
@@ -84,12 +87,7 @@ public sealed partial class PlayerNetworkCombat
         if (from != null && TryGetComponent(out DetenteKit kit)) kit.Accepted(from);
     }
 
-    [Rpc(SendTo.Owner)]
-    private void TreatmentBegunRpc(ulong detente)
-    {
-        var from = PlayerOf(detente);
-        if (from != null && TryGetComponent(out DetenteKit kit)) kit.Begun(from);
-    }
+    // The treatment's start, with the Détente's own seconds: TreatBeganRpc (PlayerNetworkCombat.Detente.cs).
 
     [Rpc(SendTo.Owner)]
     private void HealOverTimeRpc(float seconds)

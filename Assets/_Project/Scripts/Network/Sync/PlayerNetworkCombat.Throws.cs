@@ -4,14 +4,15 @@ using UnityEngine;
 // PlayerNetworkCombat: charges, taunts and everything thrown or set down. One part of the class; the rest is in PlayerNetworkCombat.cs and the files beside it.
 public sealed partial class PlayerNetworkCombat
 {
-    // An Assault sounded a CHARGE here: each other PC's player near it charges too.
+    // An Assault sounded a CHARGE here, lasting and reaching as its PC reckoned it (its 돌격 나팔 card lengthens it): each
+    // other PC's player near it charges too, for those seconds and not what this PC's own table would give.
     [Rpc(SendTo.NotMe)]
-    private void ChargeRpc(Vector3 at)
+    private void ChargeRpc(Vector3 at, float seconds, float reach)
     {
         string name = TryGetComponent(out PlayerTally tally) ? tally.DisplayName : gameObject.name;
-        ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name));
+        ClassKit.ReceiveCharge(at, Texts.Format("class.assault.charge.friend", name), seconds, reach);
         // And everyone it took glows gold here too, as on the Assault's own PC.
-        ChargeGlow.Sounded(at);
+        ChargeGlow.Sounded(at, seconds, reach);
     }
 
     // A Knight taunted here: the host's zombies already fighting near go after them, and every PC sees and hears it.

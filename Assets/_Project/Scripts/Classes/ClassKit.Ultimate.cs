@@ -3,23 +3,7 @@ using UnityEngine;
 // ClassKit: The ultimate (every card taken, a full gauge: ClassCards.Ultimate). One part of the class; the rest is in ClassKit.cs and the files beside it.
 public sealed partial class ClassKit
 {
-    /// <summary>An Assault's ultimate: adrenaline full and the CHARGE sounded at once (its riders with it, the card held).</summary>
-    internal void UltimateCharge()
-    {
-        if (!PlayerClass.Is(PlayerClass.Assault)) return;
-        stacks = StackMax;
-        Use();
-    }
-
-    /// <summary>A Ghost's ultimate: the Head Hunter full.</summary>
-    internal void FillHunter()
-    {
-        if (!PlayerClass.Is(PlayerClass.Ghost)) return;
-        hunter = HunterMax;
-        hunterChange = 1;
-        hunterChangedAt = Time.time;
-        KitSound.Play(KitSound.Cue.Hunter, .9f);
-    }
+    // An Assault's ultimate is ClassKit.Assault's (UltimateAdrenaline) beside its A-10 run (ClassCards.GunRun).
 
     /// <summary>A Point's ultimate: both guns loaded at once, and the Gunslinger's moment from now.</summary>
     internal void ReloadAll()

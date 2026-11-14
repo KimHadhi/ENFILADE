@@ -8,6 +8,7 @@ Assault.chargeSeconds,7,CHARGE가 가는 시간(초). 스택을 모두 쓰고 �
 Assault.chargeRadius,15,CHARGE가 닿는 반경(m)
 Assault.chargeDamage,25,CHARGE 동안 총 피해 +%
 Assault.chargeSpeed,25,CHARGE 동안 이동 속도 +%
+Assault.chargeUnholdable,1,"CHARGE 중인 어썰트는 셤블러에게 잡히거나 러너에게 깔리거나 캔디맨에게 끌려가지 않는다(1 켬, 0 끔). 동료 어썰트의 CHARGE를 받아도. 사용자 2026-11-14: ""CHARGE 중엔 그랩기 안 당하는 거 맞지?"""
 Point.reloadShare,1,들지 않은 총이 저절로 장전되는 데 걸리는 시간(그 총 장전 시간의 배수). 0.5면 절반
 Point.kataSeconds,8,"건 카타(포인트 클래스 기술 키) 시간(초): 총 바꾸기가 즉시이고, 바꿔 든 총은 예비탄을 쓰지 않고 꽉 찬 채로 나오며, 달리면서 쏴도 퍼지지 않는다"
 Point.kataCooldown,35,건 카타를 다시 쓸 수 있을 때까지(초). 쓴 때부터 센다
@@ -18,9 +19,14 @@ Ghost.deadeye,100,데드아이: 장전을 마친 뒤 그 총의 첫 발 피해 +
 Ghost.stumbleBody,.8,클래스 총(Mk14 EBR·R08)으로 엘리트(거구·돌진·자폭·엘리트·네임드)를 맞히면 이만큼(초) 휘청인다: 하던 공격과 돌진이 끊긴다. 거구는 0.5초까지만
 Ghost.stumbleHead,1.6,그 한 발이 헤드샷이면 휘청이는 시간(초)
 Ghost.stumbleRest,3,한 엘리트가 휘청임이 끝난 뒤 다시 휘청일 수 있을 때까지(초). 엘리트를 계속 묶어 두지는 못하게
+Ghost.wallSight,12,고스트 기본 능력 '벽 너머 시야': 이 거리(m) 안의 좀비가 벽에 가려진 곳만 옅은 흰 실루엣으로 보인다(고스트 자신의 PC에서만). 정찰 카드가 늘린다(Perks.csv ghost_recon 12/18/24m)
+Ghost.sightAlpha,.3,벽 너머 흰 실루엣의 진하기(0~1). 벽 너머 시야와 고스트 궁극기가 같이 쓴다. 같은 좀비에 핑·현상금·붙잡은 좀비·웨이브 마지막 적의 실루엣이 있으면 그쪽이 보인다
 Knight.taken,.75,나이트가 적에게 받는 피해 배수(낙하 피해는 그대로). .75면 25% 덜 받는다
 Knight.parryWindow,50,패리 판정 시간 +%(첫 패리 0.2초가 0.3초. 연타로 줄어드는 판정도 같은 비율로 는다)
-Knight.parryPosture,100,패리가 그 좀비의 자세에 주는 피해 +%(25가 50: 보통 좀비는 두 번 패리하면 무너져 처형할 수 있다)
+Knight.parryPosture,100,패리가 엘리트·거구의 자세에 주는 피해 +%(25가 50). 보통 좀비는 parryBreaks로 패리 한 번에 무너진다
+Knight.parryBreaks,1,1이면 나이트가 패리한 보통 좀비(등급 없는 셤블러·러너)는 그 한 번에 자세가 무너져 바로 처형할 수 있다(사용자 11-14: 기본 패링으로 좀비 처형 가능하게 해). 엘리트와 거구는 parryPosture대로. 0이면 끈다
+Knight.parryAll,1,"1이면 나이트의 패리는 남이 막을 수 없는 좀비 공격도 튕겨 낸다: 러너 덮치기, 셤블러 잡기, 리퍼 낫, 등 뒤의 닌자 칼, 차저 돌진(사용자 11-14: 나이트면 기본적으로 패링으로 러너나 그런 패링 못 하는 공격들도 다 패링할 수 있게). 막기만으로는 안 되고 패리 판정 안이어야 한다. 원호 방어도 같다. 잡혀 있을 때의 물기와 자폭 좀비의 폭발은 빼고. 0이면 끈다"
+Knight.grabThrow,1,"1이면 좀비에게 잡혔을 때(셤블러 잡기, 캔디맨 갈고리, 엎드려 뜯어먹힘) 밀치기 키(V)로 언제든 메쳐 떨쳐내고 잡은 좀비들의 자세를 무너뜨린다. 바로 처형할 수 있다(사용자 11-14: 잡혔을 때 빠져 나오는 기능은 카드가 아니라 기본으로. 예전 되치기 카드). 쓰러져 있을 때는 안 되고, 러너에게 깔린 것은 breakFree. 0이면 끈다"
 Knight.parryCounter,1,1이면 퍼펙트 패리: 패리하면 완벽 회피처럼 반격 창이 열린다(시간이 느려지고 좌클릭으로 반격)
 Knight.counter,50,흘리기: 회피나 패리 뒤 반격의 피해와 자세 피해 +%
 Knight.fists,50,주먹(3번 칸 맨손) 피해와 자세 피해 +%
@@ -32,8 +38,8 @@ Knight.tauntCooldown,25,도발을 쓴 때부터 다시 쓸 수 있을 때까지(
 Knight.tauntTaken,.6,도발 동안 받는 피해에 한 번 더 곱하는 배수(.75 × .6 = .45)
 Knight.coverReach,15,"원호 방어(나이트 클래스 기술 키): 꾹 누르면 바닥에 이만큼(m)의 원이 뜨고, 그 안에서 보이는 동료를 바라보면 나이트 화면에서만 그 동료가 빛난다. 놓으면 그 동료에게 원호가 열린다. 도발은 0.8.171부터 이것으로 바뀌어 Knight.taunt*는 쓰지 않는다"
 Knight.coverAngle,8,원호할 동료를 고를 때 조준선에서 이 각도(도) 안
-Knight.coverWindow,1,원호가 열려 있는 시간(초). 그동안 그 동료에게 오는 적의 공격(잡기처럼 막을 수 없는 것 빼고)을 나이트가 대신 패리해 튕겨 내고 그 곁으로 순간이동한다
-Knight.coverCooldown,24,원호로 공격을 튕겨 낸 뒤 다시 쓰기까지(초)
+Knight.coverWindow,1,원호가 열려 있는 시간(초). 그동안 그 동료에게 오는 좀비의 공격(parryAll이면 막을 수 없는 것도. 이미 잡혀 있을 때의 물기는 빼고)을 나이트가 대신 패리해 튕겨 내고 그 곁으로 순간이동한다
+Knight.coverCooldown,24,원호로 공격을 튕겨 낸 뒤 다시 쓰기까지(초). 그림자 걸음 카드면 놓아서 순간이동한 때부터 막은 공격이 없어도 이만큼
 Knight.coverWhiff,2,원호를 열었는데 공격이 오지 않았을 때 다시 쓰기까지(초)
 Knight.coverStand,1,순간이동한 나이트가 서는 자리: 동료에게서 공격 쪽으로 이만큼(m). 막혀 있으면 옆이나 조금 가까이
 Ping.seconds,8,F로 찍은 적이 팀 모두에게 테두리(벽 너머로도)와 머리 위 마름모로 보이는 시간(초). 한 사람당 하나: 새로 찍으면 옮겨 간다. 클래스와 상관없이 모두
@@ -78,19 +84,24 @@ Detente.injectHeal,40,주사 한 번이 즉시 채우는 체력
 Detente.injectReach,3.5,클래스 기술 키(휠 클릭)로 주사를 놓을 수 있는 동료까지 거리(m). 조준선 근처에 동료가 없으면 자기에게 놓는다(체력이 가득이면 안 놓음)
 Detente.injectAngle,14,조준선에서 이 각도(도) 안의 동료에게 놓는다
 Detente.injectCooldown,1,주사와 주사 사이(초)
-Detente.treatSeconds,4,주사기가 비었을 때 손 치료의 동작 길이(초). 다친 동료 곁에서 F로 치료를 권하고 동료가 F로 받으면(치료를 요청한 동료는 바로) 붕대를 감는 동안 데탕트는 쏘거나 시선을 돌릴 수 없다(G&B 군의관)
+Detente.treatSeconds,10,주사기가 비었을 때 손 치료의 동작 길이(초). 다친 동료 곁에서 F로 치료를 권하고 동료가 F로 받으면(치료를 요청한 동료는 바로) 붕대를 감는 동안 데탕트는 쏘거나 시선을 돌릴 수 없다(G&B 군의관). 손에 밴 붕대 카드가 7 / 4 / 2초로 줄인다(Perks.csv detente_hands). 데탕트 PC가 이 초를 정해 받는 동료 PC로 함께 보낸다
 Detente.treatHeal,50,손 치료 동작 도중(treatAt)에 바로 채우는 체력
 Detente.treatReach,2.8,손 치료를 권할 수 있는 거리(m). 시작한 뒤에는 1m 더 멀어지면 끊긴다
 Detente.treatAt,.6,손 치료 동작의 어디(0~1)에서 treatHeal이 들어가는지
 Detente.treatRegenSeconds,8,손 치료 동작이 끝난 뒤 동료의 나머지 체력이 다 차기까지 걸리는 시간(초). 서서히 찬다
 Detente.offerSeconds,8,데탕트의 치료 제안이 동료의 F를 기다리는 시간(초)
 Detente.callSeconds,20,동료가 콜아웃으로 치료를 요청하면(request.heal·request.medic) 데탕트에게 붉은 표시가 뜨고 제안 없이 바로 치료가 시작되는 시간(초). 체력이 다 차면 먼저 끝난다
-Detente.goldenSpeed,8,골든 아워: 치료(주사·손 치료·부활)하면 이동 +%
-Detente.goldenSeconds,8,골든 아워 시간(초). 치료할 때마다 다시 처음부터
+Detente.goldenSpeed,12,골든 아워: 치료(주사·손 치료·부활)하면 데탕트 자신의 이동 +%. 빠른 골든 아워 카드가 +6 / +12 / +18 더한다. 데탕트 PC에서만 쓰는 수치라 보내지 않는다
+Detente.goldenSeconds,6,골든 아워 시간(초). 치료할 때마다 다시 처음부터
+Detente.adrenSeconds,5,아드레날린 주사 카드: 주사를 맞은 동료가 빨라지고 총이 세지는 시간(초). 데탕트 PC가 이 수치를 동료 PC로 보내고 그 PC가 적용한다
+Detente.adrenSpeed,15,아드레날린 주사 카드: 그동안 동료의 이동 +%. 총 피해 +%는 카드 값(Perks.csv detente_adren)
 Detente.resurrections,1,리저렉션: 웨이브마다(캠페인은 쉬는 곳에 닿을 때마다) 죽은 동료를 되살릴 수 있는 횟수
 Detente.resurrectSeconds,5,죽은 동료 곁에서 F를 이만큼(초) 누르면 그 자리에서 되살아난다
 Detente.resurrectHealth,50,되살아난 동료의 체력(최대 체력의 %)
 Detente.resurrectReach,2.2,되살릴 수 있는 거리(m)
+Detente.ultGasRadius,4,궁극기(X) 소독 가스: 팀 모두(데탕트 자신과 죽은 동료의 자리도)의 자리에 퍼지는 가스의 반경(m). 그 안의 좀비는 노리던 상대를 잃고 기침하며 비틀거린다(ZombieEffects.Blind). 2m 안에 붙은 자리는 가스 하나로 친다
+Detente.ultGasSeconds,3,궁극기 소독 가스가 머무는 시간(초)
+Detente.ultGasSlow,.5,궁극기 소독 가스 안의 좀비 걸음이 느려지는 몫(.5 = 50% 느리게)
 Support.supplyMax,100,서포트 보급 가방 용량. 보급(F) 한 번과 바리케이드(휠 클릭) 하나가 여기서 나간다
 Support.supplyStart,100,장이 시작될 때 가방에 든 양
 Support.supplyRegen,1.5,가방이 저절로 차는 양(초당). 1.5면 빈 가방이 약 67초에 다 찬다
@@ -148,28 +159,58 @@ Point.doorRest,3,문전박대: 휘청인 엘리트가 다시 휘청일 수 있�
 Point.brassBodyFrom,2,탄피 회수 카드: 이 단계부터 몸샷 처치도 탄을 돌려준다(그 아래는 헤드샷 처치만). 돌려주는 발 수는 카드 값(Perks.csv 1/1/2발)이고 예비탄은 쓰지 않는다
 Point.balletMost,6,탄막 춤 카드(포인트 궁극 카드): 건 카타 한 번에 처치로 늘어날 수 있는 시간의 최대(초). 처치마다 늘어나는 초는 카드 값
 Point.balletSpread,0,탄막 춤: 건 카타 동안 탄 퍼짐 전체에 곱하는 수(0이면 서서 쏘든 달리며 쏘든 퍼짐이 없다. 샷건의 산탄 무늬는 그대로). 카드 없는 건 카타는 움직여서 벌어지는 퍼짐만 없앤다
-Ghost.tigerReach,6,화이트 타이거 카드: 헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 그 자리 둘레 이 반경(m)의 적이 휘청인다
-Ghost.tigerStagger,1.2,화이트 타이거: 휘청이는 시간(초). 거구는 0.5초까지만
-Ghost.tigerRest,1.5,화이트 타이거: 발톱(휘청임과 이펙트)이 다시 나올 때까지(초). 헤드 헌터를 지켜 주는 시간은 그런 처치마다 다시 채운다
-Assault.dangerReach,6,데인저 클로즈 카드: 이 거리(m) 안의 적에게 내 총 피해가 세진다
-Assault.brokenHealth,30,브로큰 애로우 카드: 체력이 이 비율(%) 아래로 떨어지면 포격을 부른다(좀비에게 잡혀도)
+Ghost.reconAim,.5,정찰 카드: 벽 너머로 보이는 좀비를 F로 찍을 때 조준선이 그 좀비 몸(발부터 머리까지)에서 이만큼(m) 안으로 지나가면 찍힌다. 벽 너머 시야 거리는 카드 값(Perks.csv 12/18/24m)
+Ghost.pierceBody,8,과관통 카드: 단계마다 몸(머리 말고)에 맞힌 총 피해가 이만큼(%) 준다(1단계 -8% · 3단계 -24%). 관통력 +%는 카드 value(단계마다 50)·머리와 약점(기는 거구의 빛나는 머리) 피해 +%는 value2(단계마다 15)
+Ghost.quietAim,1,조용한 표적 카드: 눈치 못 챈 좀비를 조준(조준경까지 다 든 채)으로 이만큼(초) 보고 있으면 머리 위에 작은 흰 표시가 붙는다(모든 PC에 보인다)
+Ghost.quietSeconds,30,조용한 표적: 표시가 가는 가장 긴 시간(초). 그 좀비가 깨어나거나 죽으면 먼저 사라진다
+Ghost.quietHunter,1,조용한 표적: 내가 표시한 좀비를 헤드샷으로 처치하면 둘레 좀비가 알아채지 못하고 암살로 친다. 암살 돈(Stealth.csv Score.takedown)과 함께 헤드샷 스택 위에 더 받는 헤드 헌터 스택 수
+Ghost.chainAim,15,암살 연쇄 카드: 암살하는 동안 조준선에서 이 각도(도) 안의 눈치 못 챈 좀비에게 옮겨 갈 수 있다(이을 수 있는 동안은 암살 중에도 시선을 돌릴 수 있다). 거리는 카드 값(Perks.csv 6/8/10m) · 한 번에 잇는 횟수는 value2(1/2/3번)
+Ghost.chainGap,.55,암살 연쇄: 옮겨 간 뒤 내 몸 가운데와 좀비 몸 겉 사이 거리(m). 처형의 다가서기(.65)보다 가까워서 바로 찌른다
+Ghost.phantomSeconds,10,고스트 궁극기(카드를 다 모은 뒤 X): 좀비가 고스트를 눈으로 보지 못하는 시간(초). 소리와 닿음(2m 안)은 그대로 알아챈다(ZombieEffects.Unseen)
+Ghost.phantomReach,40,고스트 궁극기: 그동안 고스트 둘레 이 거리(m) 안의 좀비가 팀 모두에게 벽 너머 흰 실루엣으로 보인다
+Ghost.phantomWave,60,고스트 궁극기: 실루엣이 고스트가 궁극기를 쓴 자리에서 이 빠르기(m/초)로 퍼지며 차례로 나타난다(40m면 약 0.7초)
+Assault.dangerHold,.2,데인저 클로즈 카드: 클래스 기술 키를 이만큼(초) 넘게 누르고 있으면 포격 표시를 겨눈다. 그보다 짧게 누르면 전처럼 CHARGE(아드레날린이 찼을 때)
+Assault.dangerAim,45,데인저 클로즈: 표시를 찍을 수 있는 거리(m). 시선이 닿는 땅(좀비면 그 발밑·벽이면 그 앞 바닥). 아무것도 없으면 이 거리 끝 아래 땅
+Assault.dangerDelay,2,데인저 클로즈: 키를 놓은 뒤 첫 포탄이 떨어지기까지(초). 그동안 모두의 화면에 떨어질 자리가 빨갛게 보인다. 포탄 수와 다시 부르기까지는 카드 값(Perks.csv value 6/9/12발 · value2 45/40/35초)
+Assault.barrageRadius,6,데인저 클로즈·브로큰 애로우의 포격: 포탄이 떨어지는 반경(m). 이 안의 적에게 가운데 가까운 순서로 한 발씩(브로큰 애로우는 나를 붙잡은 놈부터). 적이 없으면 빈 땅
+Assault.barrageBlast,3,포격: 포탄 한 발의 폭발 반경(m). 나와 동료는 다치지 않는다
+Assault.barrageDamage,150,포격: 포탄 한 발의 피해(가운데. 가장자리는 절반)
+Assault.barrageDown,1.5,포격: 포탄에 맞은 좀비가 쓰러져 있는 시간(초)
+Assault.barrageReel,.8,포격: 쓰러지지 않는 브루저가 대신 휘청이는 시간(초)
+Assault.barrageEvery,.22,포격: 포탄과 포탄 사이(초)
+Assault.brokenHealth,30,브로큰 애로우 카드: 체력이 이 비율(%) 아래로 떨어지면 내 자리에 포격을 부른다(좀비에게 잡혀도). 포탄 수는 카드 값(Perks.csv 6/9/12발)
 Assault.brokenDelay,1.5,브로큰 애로우: 부른 뒤 첫 포탄이 떨어지기까지(초)
 Assault.brokenCooldown,75,브로큰 애로우: 다시 부를 수 있을 때까지(초)
-Assault.brokenRadius,9,브로큰 애로우: 포탄이 떨어지는 반경(m). 이 안의 적에게 가까운 순서로 한 발씩. 적이 없으면 둘레 빈 땅
-Assault.brokenBlast,3,브로큰 애로우: 포탄 한 발의 폭발 반경(m). 나와 동료는 다치지 않는다
-Assault.brokenDamage,150,브로큰 애로우: 포탄 한 발의 피해(가운데. 가장자리는 절반). 맞은 좀비는 1.5초 쓰러진다(거구는 휘청)
-Assault.brokenEvery,.22,브로큰 애로우: 포탄과 포탄 사이(초)
-Assault.cavalryReach,24,유령 기병대 카드: CHARGE를 쓰면 기병이 바라보는 쪽으로 쓸고 나가는 거리(m)
-Assault.cavalryWidth,4.5,유령 기병대: 쓸고 나가는 폭(m)
-Assault.cavalryKnockdown,2,유령 기병대: 기병에 받힌 좀비가 내동댕이쳐진 뒤 쓰러져 있는 시간(초). 피해는 카드 값(Perks.csv)
-Knight.deflectStagger,1,비껴 흘리기 카드: 패리한 좀비가 휘청이는 시간(초). 자세를 더 잃는 양은 카드 값(Perks.csv)
-Knight.reversalFrom,.45,되치기 카드: 잡힌 뒤 줄어드는 고리가 흰 원에 닿기까지(초)
-Knight.reversalWindow,.4,되치기: 흰 원 둘레에서 [V]가 먹히는 시간(초). 닿기 전 절반과 뒤 절반. 일찍이나 늦게 누르면 평소처럼 밀치기만 한다(벌 없음)
-Knight.gauntletCharge,.6,폭렬 건틀렛 카드: 주먹을 이만큼(0~1) 모아 쳐야 터진다. 반격은 언제나
-Knight.gauntletReach,5,폭렬 건틀렛: 섬광과 산탄이 닿는 거리(m)
-Knight.gauntletAngle,70,폭렬 건틀렛: 앞쪽 부채꼴의 전체 각도(도). 1.2m 안은 각도와 상관없이
-Knight.gauntletStun,1.5,폭렬 건틀렛 섬광: 좀비가 기절하는 시간(초). 거구는 0.5초까지만
-Knight.gauntletPosture,30,폭렬 건틀렛 산탄: 맞은 좀비의 자세 피해. 피해는 카드 값(가장자리 절반)
-Knight.shadowDelay,.14,그림자 분신 카드: 분신이 한 박자 늦게 때리는 간격(초)
-Knight.shadowShare,1,그림자 분신: 분신 한 대가 주는 피해의 몫(1이면 같은 피해)
-Cards.ultimateSeconds,10,카드를 다 모은 뒤 게이지가 차면 X로 쓰는 클래스 궁극의 시간(초): 나이트 그림자 분신·고스트 흰 호랑이. 어썰트는 아드레날린 가득+CHARGE+유령 기병대·포인트는 두 총 장전·데탕트는 주사기 가득+부활 1회·시순트는 데스페라도 가득·서포트는 가방 가득
+Assault.suppressReach,1.5,제압 사격 카드: 내 총알이 이 거리(m) 안을 스치거나 맞힌 좀비가 움츠러든다(발에서 머리까지 어디든)
+Assault.suppressSeconds,1.5,제압 사격: 움츠러든 채 가는 시간(초). 총알이 또 스치면 다시 처음부터. 걸음이 느려지는 정도는 카드 값(Perks.csv 25/35/45%)
+Assault.suppressWindup,30,제압 사격: 그동안 공격 준비가 길어지는 정도(%)
+Assault.suppressFirm,50,제압 사격: 브루저와 네임드 좀비가 받는 몫(%). 걸음과 공격 준비 둘 다
+Assault.cavalryReach,24,러프 라이더스 카드(유령 기병대): CHARGE를 쓰면 기병이 바라보는 쪽으로 쓸고 나가는 거리(m)
+Assault.cavalryWidth,4.5,러프 라이더스: 쓸고 나가는 폭(m)
+Assault.cavalryKnockdown,2,러프 라이더스: 기병에 받힌 좀비가 내동댕이쳐진 뒤 쓰러져 있는 시간(초). 피해는 카드 값(Perks.csv)
+Assault.gunRunReach,150,어썰트 궁극기 A-10 기총 소사(카드를 다 모은 뒤 X): 조준할 수 있는 거리(m). 이 안의 땅을 노려야 한다
+Assault.gunRunSky,1,A-10: 1이면 조준한 곳 위가 막혀 있을 때(지붕·천장·다리 밑) 쓰지 않고 까닭을 띄운다(게이지는 그대로). 0이면 어디서든
+Assault.gunRunDelay,2,A-10: X를 누른 뒤 첫 탄이 떨어지기까지(초). 그동안 모두의 화면에 탄이 지나갈 줄이 빨갛게 보인다
+Assault.gunRunLength,40,A-10: 탄이 걸어가는 줄의 길이(m). 내 쪽에서 조준점 쪽으로 걸어간다
+Assault.gunRunPast,3,A-10: 줄이 조준점 너머로 이만큼(m) 더 간다. 조준한 놈이 줄 끝에 걸치지 않게
+Assault.gunRunWidth,3,A-10: 줄의 폭(m). 탄이 이 안에 흩어진다
+Assault.gunRunRounds,36,A-10: 30mm 탄 수
+Assault.gunRunTime,1.1,A-10: 탄이 줄 끝까지 걸어가는 시간(초)
+Assault.gunRunDamage,120,A-10: 탄 한 발의 피해(폭발 반경 안이면 다). 나와 동료는 다치지 않는다
+Assault.gunRunBlast,1.5,A-10: 탄 한 발의 폭발 반경(m). 지붕에 떨어진 탄은 그 아래를 다치게 하지 않는다
+Assault.gunRunDown,1.5,A-10: 탄에 맞은 좀비가 쓰러져 있는 시간(초)
+Assault.gunRunReel,.6,A-10: 쓰러지지 않는 브루저가 대신 휘청이는 시간(초)
+Assault.gunRunHigh,70,A-10: 비행기가 지나가는 높이(m). 조준한 곳 위 하늘이 열려 있는지도 이 높이까지 본다
+Assault.gunRunSpeed,160,A-10: 비행기가 지나가는 빠르기(m/초)
+Assault.gunRunClimb,14,A-10: 조준점 위를 지난 뒤 비행기가 올라가는 빠르기(m/초)
+Assault.gunRunPass,.35,A-10: 마지막 탄 뒤 비행기가 조준점 위를 지나가기까지(초)
+Assault.gunRunHeard,.12,A-10: 마지막 탄 뒤 BRRRT가 들리기까지(초). 탄이 소리보다 빠르다
+Assault.gunRunCrackEvery,2,A-10: 탄 몇 발마다 터지는 소리를 낼지(1이면 모두)
+Assault.gunRunShake,.5,A-10: 내 곁에 떨어진 탄이 시야를 흔드는 세기
+Assault.gunRunShakeReach,14,A-10: 시야가 흔들리는 거리(m)
+Knight.deflectStagger,1,무너뜨리기 카드: 패리한 엘리트·거구가 휘청이는 시간(초. 거구는 0.5초까지만). 자세를 더 잃는 양은 카드 값(Perks.csv). 보통 좀비는 parryBreaks로 이미 무너진다
+Knight.flowSeconds,3,비껴 흘리기 카드: 반격이 맞은 뒤 패리 판정이 늘어나 있는 시간(초). 늘어나는 %는 카드 값(Perks.csv)
+Knight.coverStrikeSeconds,3,원호 반격 카드: 원호가 공격을 튕겨 낸 뒤 나이트의 반격·주먹과 지켜 준 동료의 총이 세지는 시간(초). 나이트 PC가 원호를 열 때 동료 PC에 %와 함께 보낸다. %는 카드 값(Perks.csv value·value2)
+Knight.shadowDelay,.14,그림자 분신(카드·궁극기): 분신이 내 몸짓을 따라 하는 늦음(초). 분신의 한 대(주먹·칼·반격)도 이만큼 늦게 들어간다
+Knight.shadowShare,1,그림자 분신: 분신 한 대가 주는 피해의 몫(1이면 같은 피해: 맞힌 피해가 두 배). 패리의 자세 피해는 분신이 나와 있는 동안 두 배
+Cards.ultimateSeconds,10,카드를 다 모은 뒤 게이지가 차면 X로 쓰는 클래스 궁극의 시간(초): 나이트 그림자 분신. 고스트는 Ghost.phantomSeconds. 어썰트는 A-10 기총 소사+아드레날린 가득(Assault.gunRun*)·포인트는 두 총 장전·데탕트는 주사기 가득+부활 1회+쓰러진 동료 모두 일으킴+팀 체력 가득+팀 모두의 자리에 소독 가스(Detente.ultGas*)·시순트는 데스페라도 가득·서포트는 가방 가득

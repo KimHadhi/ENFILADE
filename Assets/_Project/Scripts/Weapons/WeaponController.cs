@@ -335,15 +335,18 @@ public sealed partial class WeaponController : MonoBehaviour
 
     /// <summary>
     /// On someone else's copy: they fired. The muzzle, the tracer, the sound and the bullet's mark happen here, the same
-    /// way as for this PC's own shots; their PC already judged the hit.
+    /// way as for this PC's own shots; their PC already judged the hit. <paramref name="pierce"/> is their factor on the
+    /// gun's penetration, which only their PC knows (a Ghost's 과관통: PlayerPerks.OwnPierce).
     /// </summary>
-    internal void ShowShot(Vector3 origin, Vector3 direction, int pellet = 0)
+    internal void ShowShot(Vector3 origin, Vector3 direction, int pellet = 0, float pierce = 1f)
     {
         if (Runtime == null || weaponData == null) return;
-        // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself.
+        // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself, and
+        // how far it gets through from their penetration. Traced with the gun's own, a round their card carried further
+        // stopped short here, and friends saw a short tracer.
         var look = new DamageHit(0, 0f, DamageKind.Attack, origin, direction, owner, method: DamageMethod.Bullet);
-        var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration, false, out BulletLeg[] later,
-            weaponData.BodyPierce);
+        var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration * Mathf.Max(0f, pierce), false,
+            out BulletLeg[] later, weaponData.BodyPierce);
         LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later, pellet);
         // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
         if (pellet == 0) Noise.Make(origin, ShotNoise, owner);

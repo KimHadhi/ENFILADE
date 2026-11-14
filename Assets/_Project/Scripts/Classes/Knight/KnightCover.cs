@@ -9,13 +9,16 @@ using UnityEngine;
 /// - held, a ring on the ground shows how far it reaches, and the friend under the crosshair within it and in sight
 ///   glows on this PC alone, which says they can be covered now ("능력키 꾹 누르고 있으면 자기 원호 방어 사거리만큼 범위 뜨고
 ///   누른 채로 아군 바라보고 있으면 … 그 아군이 나이트한테만 빛났으면"); the guard key calls it off;
-/// - let go on a friend, a parry opens on their behalf for a moment: an enemy's blow on them then is turned as their own
-///   parry would turn it (their PC judges it: Covers, PlayerDamageReceiver; the enemy staggers as from any parry,
-///   ParryFeedback), and the Knight is at their side at once, between them and the blow, facing it, with a white streak
-///   (Covered, CoverStreak). No blow in that moment, nothing happens, and the key is soon ready again; a blow turned
-///   sets the whole wait;
+/// - let go on a friend, a parry opens on their behalf for a moment: a zombie's blow on them then is turned as a Knight's
+///   parry turns it, the ones nobody else can parry too (their PC judges it: Covers, PlayerClass.KnightTurns,
+///   PlayerDamageReceiver; the enemy staggers as from any parry, ParryFeedback), and the Knight is at their side at once,
+///   between them and the blow, facing it, with a white streak (Covered, CoverStreak). No blow in that moment, nothing
+///   happens, and the key is soon ready again; a blow turned sets the whole wait;
 /// - with the shadow step card the Knight steps to them on letting go, blow or none ("나중에 스킬 카드 올리면 굳이 패링 안
-///   해도 아군한테 원호 방어 하듯이 순간이동"), the parry still open on them after.
+///   해도 아군한테 원호 방어 하듯이 순간이동"), the parry still open on them after; the step spends the cover, so its whole
+///   wait starts then (the user, 2026-11-14: "이거 하면 원호 방어 쿨타임 돌게 해");
+/// - with the 원호 반격 card a turned blow strengthens the Knight's counters and fists a few seconds (ClassCards.CoverStruck)
+///   and the friend's guns too, on the friend's PC at once, by the share the Knight's PC sent with the cover (Guarded).
 /// Every PC keeps the open covers (PlayerNetworkCombat.CoverRpc), since the friend's PC judges their blows; it tells the
 /// Knight's PC when one was turned (CoveredRpc). This PC's own Knight only. Numbers: Tables/ClassAbilities, Knight.cover*.
 /// </summary>
@@ -27,18 +30,27 @@ public sealed class KnightCover : MonoBehaviour
     // The friend's glow: the halo's size (m) and the light's reach.
     private const float HaloWidth = 1.3f, HaloHeight = 2.2f, GlowRange = 3f;
 
+    // A cover open on a friend: whose, on whom, until when; and what the Knight's 원호 반격 gives the friend's guns when it
+    // turns a blow (%, s; 0 without the card), sent by the Knight's PC with the cover.
     private struct Window
     {
         public PlayerMovement Knight, Ally;
-        public float Until;
+        public float Until, GunBonus, GunSeconds;
     }
 
     private static readonly List<Window> windows = new List<Window>();
+    // This PC's player's guns after a Knight's cover turned a blow on them with 원호 반격: until when, and by what factor.
+    private static float guardedUntil, guardedFactor = 1f;
 
     /// <summary>This PC's own player's, while they play a Knight.</summary>
     public static KnightCover Local { get; private set; }
     /// <summary>The id of the last blow a cover turned on this PC (ClassCards leaves its gauge to the Knight).</summary>
     public static long CoveredHit { get; private set; }
+    /// <summary>
+    /// The factor on this PC's player's gun damage while a Knight's 원호 반격 holds for them (PlayerClass.GunFactor), 1 when
+    /// none does.
+    /// </summary>
+    public static float GuardedGunFactor => Time.time < guardedUntil ? guardedFactor : 1f;
 
     /// <summary>A cover opened on this friend for so long: the other PCs are told (PlayerNetworkCombat).</summary>
     public event Action<PlayerMovement, float> Opened;
@@ -46,7 +58,8 @@ public sealed class KnightCover : MonoBehaviour
     public event Action<Vector3, Vector3> Stepped;
 
     private PlayerMovement movement;
-    private bool planning;
+    // waited: the cover's whole wait already runs from its release (a shadow step), so a blow it turns starts none again.
+    private bool planning, waited;
     private float readyAt, wait = 1f, openUntil;
     private PlayerMovement aimed, opened;
     private LineRenderer ring;
@@ -64,6 +77,8 @@ public sealed class KnightCover : MonoBehaviour
         windows.Clear();
         Local = null;
         CoveredHit = 0;
+        guardedUntil = 0f;
+        guardedFactor = 1f;
     }
 
     /// <summary>A Knight whose cover may be used now; seconds until it may (0: now), and how much of that wait is left.</summary>
@@ -74,6 +89,13 @@ public sealed class KnightCover : MonoBehaviour
     public PlayerMovement Aimed => aimed;
     /// <summary>The friend a cover is open on now, waiting for a blow (or null).</summary>
     public PlayerMovement Watched => opened != null && Time.time < openUntil ? opened : null;
+    /// <summary>
+    /// What this Knight's 원호 반격 gives a covered friend's guns when the cover turns a blow on them (%; 0 without the
+    /// card) and for how long (s): this PC's own numbers, sent with the cover (PlayerNetworkCombat.CoverRpc), since the
+    /// friend's PC judges the blow and strengthens their guns at once (the user's rule: the actor's PC sends its values).
+    /// </summary>
+    public float AllyGunBonus => PlayerClass.Is(PlayerClass.Knight) ? Mathf.Max(0f, PlayerPerks.Total2(PlayerPerks.KnightCoverstrike)) : 0f;
+    public float AllyGunSeconds => Mathf.Max(.1f, Number("coverStrikeSeconds", 3f));
 
     private void Awake() => movement = GetComponent<PlayerMovement>();
 
@@ -110,6 +132,7 @@ public sealed class KnightCover : MonoBehaviour
     {
         readyAt = 0f;
         wait = 1f;
+        waited = false;
         opened = null;
         Stop();
     }
@@ -153,37 +176,50 @@ public sealed class KnightCover : MonoBehaviour
     }
 
     // Let go on a friend: the parry opens on their behalf. The short wait now; a blow turned sets the whole one (Covered).
+    // With the shadow step the Knight goes to them at once, and that spends the cover whether a blow comes or not: its
+    // whole wait starts here (the user, 2026-11-14: "이거 하면 원호 방어 쿨타임 돌게 해").
     private void Cover(PlayerMovement ally)
     {
         float seconds = Mathf.Max(.1f, Number("coverWindow", 1f));
-        wait = Mathf.Max(seconds, Number("coverWhiff", 2f));
+        waited = PlayerPerks.Has(PlayerPerks.KnightShadowstep);
+        wait = waited ? Mathf.Max(.1f, Number("coverCooldown", 12f)) : Mathf.Max(seconds, Number("coverWhiff", 2f));
         readyAt = Time.time + wait;
         opened = ally;
         openUntil = Time.time + seconds;
-        Open(movement, ally, seconds);
+        Open(movement, ally, seconds, AllyGunBonus, AllyGunSeconds);
         Opened?.Invoke(ally, seconds);
         KitSound.Play(KitSound.Cue.Taunt, .45f);
         // The shadow step card: at their side at once, blow or none.
-        if (PlayerPerks.Has(PlayerPerks.KnightShadowstep)) Step(ally, Threat(ally));
-    }
-
-    /// <summary>A cover opens on <paramref name="ally"/> by <paramref name="knight"/> for <paramref name="seconds"/> (every PC).</summary>
-    public static void Open(PlayerMovement knight, PlayerMovement ally, float seconds)
-    {
-        if (knight == null || ally == null) return;
-        windows.RemoveAll(w => w.Knight == knight);
-        windows.Add(new Window { Knight = knight, Ally = ally, Until = Time.time + Mathf.Max(.05f, seconds) });
+        if (waited) Step(ally, Threat(ally));
     }
 
     /// <summary>
-    /// The friend's PC: an enemy's blow on <paramref name="victim"/> under an open cover is turned (the cover spent), and
-    /// <paramref name="knight"/> is the one who turned it. A grab or anything that can't be guarded comes through as ever.
+    /// A cover opens on <paramref name="ally"/> by <paramref name="knight"/> for <paramref name="seconds"/> (every PC), with
+    /// what the Knight's 원호 반격 gives the friend's guns when it turns a blow (<paramref name="gunBonus"/> %, for
+    /// <paramref name="gunSeconds"/>), as the Knight's PC sent them.
+    /// </summary>
+    public static void Open(PlayerMovement knight, PlayerMovement ally, float seconds, float gunBonus = 0f, float gunSeconds = 0f)
+    {
+        if (knight == null || ally == null) return;
+        windows.RemoveAll(w => w.Knight == knight);
+        windows.Add(new Window
+        {
+            Knight = knight, Ally = ally, Until = Time.time + Mathf.Max(.05f, seconds), GunBonus = Mathf.Max(0f, gunBonus),
+            GunSeconds = Mathf.Max(0f, gunSeconds)
+        });
+    }
+
+    /// <summary>
+    /// The friend's PC: a zombie's blow on <paramref name="victim"/> under an open cover is turned (the cover spent), and
+    /// <paramref name="knight"/> is the one who turned it. It is the Knight's parry, so it turns what a Knight's parry turns
+    /// (PlayerClass.KnightTurns): a runner's leap or a grab too, never the bites of a zombie already holding the friend.
+    /// With the Knight's 원호 반격 the friend's guns hit harder at once, for the time and share the Knight's PC sent.
     /// </summary>
     public static bool Covers(PlayerMovement victim, DamageHit hit, out PlayerMovement knight)
     {
         knight = null;
-        if (windows.Count == 0 || victim == null || hit.Kind != DamageKind.Attack || !hit.CanBeGuarded || hit.Source == null) return false;
-        if (hit.Source.GetComponentInParent<EnemyHealth>() == null) return false;
+        if (windows.Count == 0 || victim == null || hit.Source == null || hit.Source.GetComponentInParent<EnemyHealth>() == null) return false;
+        if (!PlayerClass.KnightTurns(victim, hit)) return false;
         for (int i = windows.Count - 1; i >= 0; i--)
         {
             var window = windows[i];
@@ -192,9 +228,20 @@ public sealed class KnightCover : MonoBehaviour
             windows.RemoveAt(i);
             knight = window.Knight;
             CoveredHit = hit.Id;
+            if (window.GunBonus > 0f && window.GunSeconds > 0f) Guarded(window);
             return true;
         }
         return false;
+    }
+
+    // This PC's player, covered: their guns hit harder a while (PlayerClass.GunFactor), and they are told whose cover it
+    // was and why (the user's rule: an effect comes with its reason).
+    private static void Guarded(in Window window)
+    {
+        guardedFactor = 1f + window.GunBonus / 100f;
+        guardedUntil = Time.time + window.GunSeconds;
+        AlertHUD.Self(Texts.Format("class.knight.coverstrike.ally", PlayerTally.NameOf(window.Knight),
+            Mathf.RoundToInt(window.GunSeconds), Mathf.RoundToInt(window.GunBonus)));
     }
 
     /// <summary>
@@ -205,9 +252,16 @@ public sealed class KnightCover : MonoBehaviour
     {
         if (ally == null || movement == null || movement.IsDead) return;
         opened = null;
-        wait = Mathf.Max(.1f, Number("coverCooldown", 12f));
-        readyAt = Time.time + wait;
+        // A shadow step already started the whole wait as the Knight let go; a turned blow doesn't start it over.
+        if (!waited)
+        {
+            wait = Mathf.Max(.1f, Number("coverCooldown", 12f));
+            readyAt = Time.time + wait;
+        }
+        waited = false;
         UltimateCharge.AwardHelp(UltimateCharge.Help.Parried);
+        // 원호 반격: this Knight's counters and fists hit harder a moment (the friend's guns are their PC's: Covers).
+        ClassCards.Local.OrNull()?.CoverStruck();
         // With the shadow step the Knight is already beside them; it turns to the blow where it stands.
         if (!PlayerPerks.Has(PlayerPerks.KnightShadowstep) || (ally.transform.position - transform.position).sqrMagnitude > 9f) Step(ally, attacker);
         else Face(attacker);

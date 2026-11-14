@@ -113,8 +113,8 @@ public sealed class HoldReveal : MonoBehaviour
         foreach (var source in found)
         {
             if (!source.enabled || !source.gameObject.activeInHierarchy || ZombieBody.IsEye(source)) continue;
-            // Never a copy of a copy: a wave's reveal (EnemyReveal), or this.
-            if (source.name == CopyName || source.name == "Reveal") continue;
+            // Never a copy of a copy: a wave's reveal (EnemyReveal), a Ghost's sight (GhostSight), or this.
+            if (source.name == CopyName || source.name == "Reveal" || source.name == GhostSight.CopyName) continue;
             Renderer copy;
             Mesh mesh;
             if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)

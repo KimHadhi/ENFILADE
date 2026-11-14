@@ -218,6 +218,8 @@ public sealed class PlayerHold : MonoBehaviour
         if (hit.Method != DamageMethod.Grab && hit.Method != DamageMethod.Feed && hit.Method != DamageMethod.Pounce) return;
         // Down, only eating takes hold (C8): a zombie kneels over them and eats.
         if (!receiver.IsAlive || (receiver.IsDowned && hit.Method != DamageMethod.Feed)) return;
+        // An Assault in a CHARGE barrels on: no grab, leap or hook takes hold of them while it lasts (ClassKit.Unholdable).
+        if (ClassKit.Unholdable(player)) return;
         var enemy = hit.Source.GetComponentInParent<EnemyHealth>();
         if (hit.Method == DamageMethod.Pounce) Pin(enemy);
         else if (hit.Method == DamageMethod.Grab && Hooked(enemy, out var hook)) Drag(enemy, hook);

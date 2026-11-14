@@ -40,6 +40,12 @@ public static class PlayerPerks
         /// "기본 24초 … 20초 / 14초 / 8초"), which value × level can't give.
         /// </summary>
         public float[] Steps;
+        /// <summary>
+        /// The same for the second number, when its value2 cell lists each level's own ("45/40/35"), or null. A card may
+        /// have two numbers that move apart: the Assault's 데인저 클로즈 drops more shells and comes back sooner each
+        /// level (2026-11-14: 6/9/12 shells, 45/40/35 s).
+        /// </summary>
+        public float[] Steps2;
         /// <summary>A class's final card (궁극): drawn last, shown apart.</summary>
         public bool Final;
         /// <summary>Dealt only to a player alone (the user, 2026-11-14, of 두 번째 숨: "솔로일 때만 나와서").</summary>
@@ -52,15 +58,22 @@ public static class PlayerPerks
             return Steps != null ? Steps[Mathf.Min(level, Steps.Length) - 1] : Value * level;
         }
 
+        /// <summary>The second number at <paramref name="level"/>: its listed step, or value2 × level (0 below the first).</summary>
+        public float At2(int level)
+        {
+            if (level <= 0) return 0f;
+            return Steps2 != null ? Steps2[Mathf.Min(level, Steps2.Length) - 1] : Value2 * level;
+        }
+
         /// <summary>
         /// The effect line at <paramref name="level"/>: {0} is everything up to that level (At, times its display
-        /// factor), {1} the same of value2, and {Row.name} a number of Tables/ClassAbilities as it stands.
+        /// factor), {1} the same of value2 (At2), and {Row.name} a number of Tables/ClassAbilities as it stands.
         /// </summary>
         public string Describe(int level)
         {
             int at = Mathf.Max(0, level);
             string text = string.IsNullOrEmpty(Text) ? "{0}" : Text;
-            text = text.Replace("{0}", Shown(At(at) * Display)).Replace("{1}", Shown(Value2 * at));
+            text = text.Replace("{0}", Shown(At(at) * Display)).Replace("{1}", Shown(At2(at)));
             return Abilities(text);
         }
 
@@ -78,14 +91,23 @@ public static class PlayerPerks
     // throwables on the belt, and the lone player's phoenix (dealt only to a player alone: PhoenixRise).
     public const string AmmoPouch = "ammo_pouch", Scavenger = "scavenger", NadePouch = "nade_pouch", Phoenix = "phoenix";
     // The class cards with code behind them (ClassCards, ClassKit, PlayerClass).
-    public const string KnightDeflect = "knight_deflect", KnightReversal = "knight_reversal", KnightGauntlet = "knight_gauntlet",
+    public const string KnightDeflect = "knight_deflect",
         KnightShadow = "knight_shadow", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
-        GhostPierce = "ghost_pierce", GhostWeakpoint = "ghost_weakpoint", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
+        GhostPierce = "ghost_pierce", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
         HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep",
         SupportWire = "support_wire", SupportCrate = "support_crate", SupportLight = "support_light";
     // The Support's cards of the 2026-11-14 card feedback (SupportKit): a supply pack thrown to a friend, and structures
     // that go up sturdier (its PC sends the health with the build).
     public const string SupportThrow = "support_throw", SupportFortify = "support_fortify";
+    // The Knight's cards of the 2026-11-14 card feedback (ClassCards, KnightCover, PlayerClass): 비껴 흘리기, a landed
+    // counter keeping the parry window longer a while, and 원호 반격, a blow the cover turned strengthening the Knight's
+    // counters and fists and the covered friend's guns a while (the Knight's PC sends the friend's share with the cover).
+    public const string KnightFlow = "knight_flow", KnightCoverstrike = "knight_coverstrike";
+    // The Assault's cards of the 2026-11-14 card feedback (ClassKit, PlayerClass): 제압 사격, its rounds pinning zombies
+    // down; 선두, less taken in a CHARGE; 돌격 나팔, a longer CHARGE (table-only: Assault.chargeSeconds, which its PC sends
+    // with the CHARGE); 엄호 사격, friends' kills in a CHARGE feeding its adrenaline.
+    public const string AssaultSuppress = "assault_suppress", AssaultLead = "assault_lead", AssaultBugle = "assault_bugle",
+        AssaultCover = "assault_cover";
 
     private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
     private static List<Perk> catalog;
@@ -130,7 +152,7 @@ public static class PlayerPerks
                 if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
                 // The name, tag, text and why cells name Texts rows (perk.<id>.name …, a tag the class's title or
                 // perk.tag.<kind>), where the words are written; a modder's plain words work as well.
-                float[] steps = StepsOf(row.Text("value", ""));
+                float[] steps = StepsOf(row.Text("value", "")), steps2 = StepsOf(row.Text("value2", ""));
                 catalog.Add(new Perk
                 {
                     Id = id, Name = Texts.Cell(row.Text("name", id)), Class = row.Text("class", ""), Tag = Texts.Cell(row.Text("tag", "")),
@@ -138,7 +160,7 @@ public static class PlayerPerks
                     Ability = row.Text("ability", ""),
                     Levels = Mathf.Max(1, (int)row.Number("levels", 1f)), After = Mathf.Max(0, (int)row.Number("after", 0f)),
                     Value = steps != null ? steps[0] : row.Number("value", 0f), Steps = steps,
-                    Value2 = row.Number("value2", 0f), Display = row.Number("display", 1f),
+                    Value2 = steps2 != null ? steps2[0] : row.Number("value2", 0f), Steps2 = steps2, Display = row.Number("display", 1f),
                     Weight = Mathf.Max(0f, row.Number("weight", 1f)), Final = row.Number("final", 0f) > .5f,
                     Solo = row.Number("solo", 0f) > .5f
                 });
@@ -164,11 +186,11 @@ public static class PlayerPerks
         return perk != null ? perk.At(Mathf.Min(Level(id), perk.Levels)) : 0f;
     }
 
-    /// <summary>The same of its second number (value2 × level).</summary>
+    /// <summary>The same of its second number (Perk.At2: its listed step, or value2 × level).</summary>
     public static float Total2(string id)
     {
         var perk = Find(id);
-        return perk != null ? perk.Value2 * Mathf.Min(Level(id), perk.Levels) : 0f;
+        return perk != null ? perk.At2(Mathf.Min(Level(id), perk.Levels)) : 0f;
     }
 
     /// <summary>The perks held, in the table's order, with their levels.</summary>
@@ -223,7 +245,9 @@ public static class PlayerPerks
         foreach (var perk in Catalog) if (!string.IsNullOrEmpty(perk.Class) && Dealable(perk)) pool.Add(perk);
         if (pool.Count == 0) foreach (var perk in Catalog) if (Dealable(perk)) pool.Add(perk);
         var drawn = new List<Perk>();
-        while (drawn.Count < count && pool.Count > 0)
+        var first = FirstHand(pool);
+        if (first != null) pool.Remove(first);
+        while (drawn.Count < count - (first != null ? 1 : 0) && pool.Count > 0)
         {
             float sum = 0f;
             foreach (var perk in pool) sum += perk.Weight;
@@ -237,7 +261,17 @@ public static class PlayerPerks
             drawn.Add(pool[index]);
             pool.RemoveAt(index);
         }
+        if (first != null) drawn.Insert(UnityEngine.Random.Range(0, drawn.Count + 1), first);
         return drawn;
+    }
+
+    // The card a class's first hand always holds, among the others drawn as ever: a Ghost's 정찰 while it holds none of its
+    // class's cards (the user, 2026-11-14: "이 카드는 고스트일 때 무조건 처음 카드 선택 목록 중에 뜨게. 그 이후론 맘대로 해").
+    private static Perk FirstHand(List<Perk> pool)
+    {
+        if (!PlayerClass.Is(PlayerClass.Ghost) || ClassLevels(PlayerClass.Ghost) > 0) return null;
+        foreach (var perk in pool) if (perk.Id == GhostCards.ReconCard) return perk;
+        return null;
     }
 
     /// <summary>Raises the perk a level (up to its top).</summary>
@@ -340,13 +374,16 @@ public static class PlayerPerks
     }
 
     /// <summary>
-    /// The bullet's damage factor for this PC's shooter: head or body. A Ghost's weak-point card (약점 사냥, the user's
-    /// own trade) adds to the head what it takes from the body; Momentum adds while it runs.
+    /// The bullet's damage factor for this PC's shooter: head or body. A Ghost's over-penetration card (과관통) carries the
+    /// user's own trade, once the weak-point card's (dropped 2026-11-14: "헤드 헌터가 있어서 약점 데미지 증가가 따로 있는 게
+    /// 맞아?"): the head, a crawling brute's glowing one among them, takes more (its value2), the body less (ClassAbilities
+    /// Ghost.pierceBody a level). Momentum adds while it runs.
     /// </summary>
     public static float GunFactor(bool headshot)
     {
         float percent = Total(headshot ? HeadshotDamage : GunDamage);
-        if (Has(GhostWeakpoint)) percent += headshot ? Total(GhostWeakpoint) : -Total2(GhostWeakpoint);
+        if (Has(GhostPierce))
+            percent += headshot ? Total2(GhostPierce) : -PlayerClass.Ability(PlayerClass.GhostRow, "pierceBody", 8f) * Level(GhostPierce);
         return Mathf.Max(.05f, 1f + percent / 100f) * MomentumFactor;
     }
 
@@ -358,10 +395,13 @@ public static class PlayerPerks
 
     /// <summary>
     /// How far this PC's own bullets get through bodies and walls (a factor on the gun's penetration): a Ghost's
-    /// over-penetration card (과관통). The shooter's PC alone judges the hits; AttackTrace.Bullet asks.
+    /// over-penetration card (과관통). The shooter's PC alone judges the hits (AttackTrace.Bullet asks), and sends this with
+    /// each shot so friends' PCs trace the same path and draw the same tracer (PlayerNetworkCombat.ShotRpc).
     /// </summary>
-    public static float PierceFactor(DamageHit attack)
-        => attack.Method == DamageMethod.Bullet && Has(GhostPierce) && IsMine(attack.Source) ? 1f + Total(GhostPierce) / 100f : 1f;
+    public static float PierceFactor(DamageHit attack) => attack.Method == DamageMethod.Bullet && IsMine(attack.Source) ? OwnPierce : 1f;
+
+    /// <summary>This PC's own player's factor on their guns' penetration (과관통), 1 without the card.</summary>
+    public static float OwnPierce => Has(GhostPierce) ? 1f + Mathf.Max(0f, Total(GhostPierce)) / 100f : 1f;
 
     /// <summary>
     /// Heriot (사망세): the share of a kill's money a card adds on top, from the kill's own points

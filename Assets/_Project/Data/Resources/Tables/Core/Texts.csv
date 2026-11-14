@@ -240,30 +240,30 @@ perk.hound_heriot.why,Heriot: 중세 영주가 죽은 이의 재산에서 몫을
 perk.assault_momentum.name,기세,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_momentum)
 perk.assault_momentum.text,맞힐 때마다 {Cards.momentumSeconds}초 동안 총·주먹 피해 +{0}%. 계속 맞히면 끊기지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_momentum)
 perk.assault_momentum.why,맞힌 손맛에 피가 끓는다. 식기 전에 또 맞히면 다시 끓어오른다,,능력 카드 아래 작은 이유 한 줄(assault_momentum)
-perk.knight_deflect.name,비껴 흘리기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_deflect · knight)
-perk.knight_deflect.text,패리한 좀비가 {Knight.deflectStagger}초 휘청이고 자세를 {0} 더 잃는다. 2단계면 보통 좀비는 한 번에 무너진다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_deflect)
-perk.knight_deflect.why,막지 않고 비스듬히 대어 공격을 옆으로 흘려 보낸다. 헛디딘 좀비는 옆구리를 드러낸다,,능력 카드 아래 작은 이유 한 줄(knight_deflect)
-perk.knight_reversal.name,되치기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_reversal · knight)
-perk.knight_reversal.text,좀비에게 잡혔을 때 줄어드는 고리가 흰 원에 닿는 순간 [V]: 메쳐서 그 좀비의 자세를 무너뜨린다(바로 처형할 수 있다),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_reversal)
-perk.knight_reversal.why,씨름의 되치기처럼 잡아 온 힘을 거꾸로 써서 메친다,,능력 카드 아래 작은 이유 한 줄(knight_reversal)
-perk.knight_gauntlet.name,폭렬 건틀렛,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_gauntlet · knight)
-perk.knight_gauntlet.text,힘을 모은 주먹이나 반격이 맞으면 건틀렛이 번갈아 터진다: 섬광(앞 {Knight.gauntletReach}m 좀비 {Knight.gauntletStun}초 기절)과 산탄(앞쪽 부채꼴 피해 {0}),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_gauntlet)
-perk.knight_gauntlet.why,손등에 섬광탄 한 알과 산탄 약실을 단 쇠장갑. 세게 칠 때만 공이가 때린다,,능력 카드 아래 작은 이유 한 줄(knight_gauntlet)
+perk.knight_deflect.name,무너뜨리기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_deflect · knight)
+perk.knight_deflect.text,패리한 엘리트와 거구가 {Knight.deflectStagger}초 휘청이고 자세를 {0} 더 잃는다(보통 좀비는 나이트의 패리 한 번에 무너진다),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_deflect)
+perk.knight_deflect.why,유도의 무너뜨리기처럼 받아 낸 힘으로 중심을 빼앗으면 큰 놈도 발이 꼬인다,,능력 카드 아래 작은 이유 한 줄(knight_deflect)
+perk.knight_flow.name,비껴 흘리기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_flow · knight)
+perk.knight_flow.text,반격이 맞으면 {Knight.flowSeconds}초 동안 패리 판정 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_flow)
+perk.knight_flow.why,막지 않고 비스듬히 대어 흘려보낸 손은 그 흐름을 타고 다음 칼끝에 먼저 닿는다,,능력 카드 아래 작은 이유 한 줄(knight_flow)
+perk.knight_coverstrike.name,원호 반격,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_coverstrike · knight)
+perk.knight_coverstrike.text,원호가 공격을 튕겨 내면 {Knight.coverStrikeSeconds}초 동안 내 반격·주먹 +{0}% · 지켜 준 동료의 총 피해 +{1}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_coverstrike)
+perk.knight_coverstrike.why,막아 낸 칼끝을 그대로 되돌려 주는 기사 곁에서는 동료의 손도 단단해진다,,능력 카드 아래 작은 이유 한 줄(knight_coverstrike)
 perk.knight_cover.name,원호 숙련,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_cover · knight)
 perk.knight_cover.text,원호 방어를 다시 쓰기까지 -{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_cover)
 perk.knight_cover.why,지켜 낸 횟수만큼 발이 먼저 나간다,,능력 카드 아래 작은 이유 한 줄(knight_cover)
 perk.knight_shadowstep.name,그림자 걸음,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_shadowstep · knight)
-perk.knight_shadowstep.text,원호 방어를 놓으면 막을 공격이 없어도 그 동료 곁으로 바로 순간이동한다(원호는 그 뒤에도 열려 있다),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_shadowstep)
+perk.knight_shadowstep.text,원호 방어를 놓으면 막을 공격이 없어도 그 동료 곁으로 바로 순간이동한다(원호는 그 뒤에도 열려 있다). 순간이동하면 원호 방어 대기 {Knight.coverCooldown}초가 바로 돈다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_shadowstep)
 perk.knight_shadowstep.why,그림자를 디딘 기사는 부름을 기다리지 않는다,,능력 카드 아래 작은 이유 한 줄(knight_shadowstep)
 perk.knight_shadow.name,그림자 분신,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(knight_shadow · knight)
 perk.tag.final,궁극,,능력 카드 위 꼬리표: 클래스의 궁극 카드
-perk.knight_shadow.text,퍼펙트 패리나 완벽한 회피를 하면 {0}초 동안 그림자 분신이 주먹과 반격을 한 박자 늦게 한 번 더 때린다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_shadow)
+perk.knight_shadow.text,퍼펙트 패리나 완벽한 회피를 하면 {0}초 동안 검고 비치는 그림자 분신이 나와 내 몸짓을 {Knight.shadowDelay}초 늦게 따라 한다. 주먹·칼·반격이 한 번 더 들어가고(피해 두 배) 패리의 자세 피해도 두 배. 분신은 다치지 않고 좀비가 노리지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(knight_shadow)
 perk.knight_shadow.why,베어 넘긴 자리에 그림자가 남아 같은 주먹을 한 번 더 내지른다. 너무 세서 마지막에야 손에 익는다,,능력 카드 아래 작은 이유 한 줄(knight_shadow)
 perk.assault_danger.name,데인저 클로즈,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_danger · assault)
-perk.assault_danger.text,{Assault.dangerReach}m 안의 적에게 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_danger)
-perk.assault_danger.why,아군 코앞까지 포격을 부르는 무전 '데인저 클로즈'. 가까울수록 대담하게 쏜다,,능력 카드 아래 작은 이유 한 줄(assault_danger)
+perk.assault_danger.text,클래스 기술 키를 꾹 누르면 땅에 포격 표시가 뜨고 놓으면 {Assault.dangerDelay}초 뒤 그 둘레 {Assault.barrageRadius}m에 포탄 {0}발이 떨어진다(한 발 {Assault.barrageDamage} · 맞은 좀비는 넘어진다 · 나와 동료는 안 다친다). {1}초에 한 번. 짧게 누르면 전처럼 CHARGE,,능력 카드 효과 줄. {0}=그 단계까지 더한 값(포탄 수) {1}=두 번째 값(다시 부르기까지 초) {표.이름}=ClassAbilities.csv 숫자(assault_danger)
+perk.assault_danger.why,아군 코앞까지 포격을 부르는 무전 '데인저 클로즈'. 좌표 한 줄이면 포대가 쏟아붓는다,,능력 카드 아래 작은 이유 한 줄(assault_danger)
 perk.assault_broken.name,브로큰 애로우,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_broken · assault)
-perk.assault_broken.text,체력이 {Assault.brokenHealth}% 아래로 떨어지거나 좀비에게 잡히면 {Assault.brokenDelay}초 뒤 내 둘레의 적에게 포탄 {0}발이 떨어진다(나와 동료는 안 다친다). {Assault.brokenCooldown}초에 한 번,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_broken)
+perk.assault_broken.text,체력이 {Assault.brokenHealth}% 아래로 떨어지거나 좀비에게 잡히면 {Assault.brokenDelay}초 뒤 내 자리 둘레 {Assault.barrageRadius}m에 데인저 클로즈와 같은 포격: 포탄 {0}발이 나를 붙잡은 놈부터 날려 버린다(나와 동료는 안 다친다). {Assault.brokenCooldown}초에 한 번,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_broken)
 perk.assault_broken.why,'브로큰 애로우'는 부대가 무너지기 직전 닿는 모든 화력을 부르는 무전 암호,,능력 카드 아래 작은 이유 한 줄(assault_broken)
 perk.assault_adrenaline.name,깊은 숨,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_adrenaline · assault)
 perk.assault_adrenaline.text,아드레날린 최대 +{0}스택,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_adrenaline)
@@ -274,17 +274,38 @@ perk.assault_rally.why,한번 오른 흥분이 쉬이 가라앉지 않는다,,�
 perk.assault_cavalry.name,러프 라이더스,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_cavalry · assault)
 perk.assault_cavalry.text,CHARGE를 쓰면 유령 기병 분대가 앞으로 {Assault.cavalryReach}m를 일직선으로 쓸고 나가며 닿는 적을 내동댕이친다(피해 {0}),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_cavalry)
 perk.assault_cavalry.why,1898년 산후안 고지로 돌격한 루스벨트의 의용 기병대처럼 돌격 나팔에 옛 기병들이 응답한다,,능력 카드 아래 작은 이유 한 줄(assault_cavalry)
+perk.assault_suppress.name,제압 사격,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_suppress · assault)
+perk.assault_suppress.text,내 총알이 {Assault.suppressReach}m 안을 스치거나 맞힌 좀비는 {Assault.suppressSeconds}초 동안 움츠러든다: 걸음 -{0}% · 공격 준비 +{Assault.suppressWindup}%. 브루저와 네임드는 {Assault.suppressFirm}%만. 계속 쏘면 이어진다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_suppress)
+perk.assault_suppress.why,죽은 것들도 머리 위로 쏟아지는 탄막 앞에서는 몸을 웅크린다,,능력 카드 아래 작은 이유 한 줄(assault_suppress)
+perk.assault_lead.name,선두,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_lead · assault)
+perk.assault_lead.text,CHARGE 동안 받는 피해 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_lead)
+perk.assault_lead.why,돌격 함성에 몸이 굳어 아픔이 덜 든다,,능력 카드 아래 작은 이유 한 줄(assault_lead)
+perk.assault_bugle.name,돌격 나팔,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_bugle · assault)
+perk.assault_bugle.text,CHARGE가 {0}초 더 간다(함께 돌격하는 동료도),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_bugle)
+perk.assault_bugle.why,나팔 소리가 길게 이어지는 한 돌격은 멈추지 않는다,,능력 카드 아래 작은 이유 한 줄(assault_bugle)
+perk.assault_cover.name,엄호 사격,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(assault_cover · assault)
+perk.assault_cover.text,CHARGE 동안 동료의 처치도 내 아드레날린 스택이 된다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(assault_cover)
+perk.assault_cover.why,돌격 나팔 아래서는 동료의 승리도 내 피를 끓인다,,능력 카드 아래 작은 이유 한 줄(assault_cover)
+perk.ghost_recon.name,정찰,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_recon · ghost)
+perk.ghost_recon.text,벽 너머로 보이는 좀비에게도 F로 핑을 찍어 팀 모두에게 보여 준다 · 벽 너머 시야 {0}m,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_recon)
+perk.ghost_recon.why,정찰병은 본 것을 혼자 갖지 않는다,,능력 카드 아래 작은 이유 한 줄(ghost_recon)
 perk.ghost_pierce.name,과관통,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_pierce · ghost)
-perk.ghost_pierce.text,총알 관통력 +{0}%: 몸을 뚫어도 힘이 덜 빠져 줄 선 적을 더 많이 꿰뚫는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_pierce)
-perk.ghost_pierce.why,텅스텐 탄심은 살을 지나도 무뎌지지 않는다,,능력 카드 아래 작은 이유 한 줄(ghost_pierce)
-perk.ghost_weakpoint.name,약점 사냥,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_weakpoint · ghost)
-perk.ghost_weakpoint.text,헤드샷 피해 +{0}% · 몸 피해 -{1}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_weakpoint)
-perk.ghost_weakpoint.why,급소만 노리도록 탄두를 가볍게 깎았다. 그만큼 몸에는 덜 박힌다,,능력 카드 아래 작은 이유 한 줄(ghost_weakpoint)
+perk.ghost_pierce.text,총알 관통력 +{0}% · 머리와 약점 피해 +{1}%. 대신 몸 피해가 단계마다 {Ghost.pierceBody}%씩 준다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_pierce)
+perk.ghost_pierce.why,텅스텐 탄심은 살을 지나도 무뎌지지 않는다. 급소를 꿰뚫게 깎은 탄두라 몸에는 덜 박힌다,,능력 카드 아래 작은 이유 한 줄(ghost_pierce)
 perk.ghost_patience.name,긴 호흡,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_patience · ghost)
 perk.ghost_patience.text,헤드 헌터 최대 +{0}스택,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_patience)
 perk.ghost_patience.why,숨을 길게 참을수록 조준이 깊어진다,,능력 카드 아래 작은 이유 한 줄(ghost_patience)
+perk.ghost_quiet.name,조용한 표적,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_quiet · ghost)
+perk.ghost_quiet.text,눈치 못 챈 좀비를 조준경으로 {Ghost.quietAim}초 보면 머리 위에 작은 흰 표시가 붙는다(모두에게 보임). 그 좀비를 헤드샷으로 처치하면 둘레가 알아채지 못하고 암살로 친다: 암살 돈과 헤드 헌터 +{Ghost.quietHunter},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_quiet)
+perk.ghost_quiet.why,저격수는 쏘기 전에 고른다. 고른 한 발은 아음속탄이다,,능력 카드 아래 작은 이유 한 줄(ghost_quiet)
+perk.ghost_chain.name,암살 연쇄,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_chain · ghost)
+perk.ghost_chain.text,암살하는 동안 {0}m 안의 눈치 못 챈 좀비를 보고 F: 바람처럼 그 등 뒤로 옮겨 가 바로 암살한다. 한 번에 {1}번까지 잇는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_chain)
+perk.ghost_chain.why,칼이 멈추기도 전에 몸은 이미 다음 그림자 속에 있다,,능력 카드 아래 작은 이유 한 줄(ghost_chain)
+perk.ghost_cones.name,시선 읽기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_cones · ghost)
+perk.ghost_cones.text,앉았을 때 보이는 좀비 시야 콘이 {1}개 더 많고 {0}m 안까지 보인다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_cones)
+perk.ghost_cones.why,오래 지켜본 사냥꾼은 좀비가 어디를 볼지 안다,,능력 카드 아래 작은 이유 한 줄(ghost_cones)
 perk.ghost_whitetiger.name,화이트 타이거,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_whitetiger · ghost)
-perk.ghost_whitetiger.text,헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 흰 호랑이가 할퀸다: 둘레 {Ghost.tigerReach}m 적이 {Ghost.tigerStagger}초 휘청이고 {0}초 동안 맞아도 헤드 헌터를 잃지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_whitetiger)
+perk.ghost_whitetiger.text,헤드샷마다 맞힌 적 둘레 {0}m 안의 적들도 같은 피해를 입고 작은 흰 발톱 자국이 남는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_whitetiger)
 perk.ghost_whitetiger.why,'하얀 죽음' 해위해와 '흰 깃털' 해스콕처럼 전설이 된 저격수는 흰 이름을 얻는다,,능력 카드 아래 작은 이유 한 줄(ghost_whitetiger)
 perk.point_hands.name,빠른 손,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_hands · point)
 perk.point_hands.text,넣어 둔 총이 저절로 장전되는 시간 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_hands)
@@ -313,8 +334,8 @@ perk.point_ballet.why,흐름을 타면 춤이 끝나지 않는다,,능력 카드
 perk.detente_dose.name,진한 주사액,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_dose · detente)
 perk.detente_dose.text,주사 한 번이 채우는 체력 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_dose)
 perk.detente_dose.why,약을 진하게 타서 한 번에 더 많이 낫게 한다,,능력 카드 아래 작은 이유 한 줄(detente_dose)
-perk.detente_golden.name,긴 골든 아워,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_golden · detente)
-perk.detente_golden.text,골든 아워 +{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_golden)
+perk.detente_golden.name,빠른 골든 아워,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_golden · detente)
+perk.detente_golden.text,골든 아워 동안 내 이동 +{0}% 더,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_golden)
 perk.detente_golden.why,다친 뒤 첫 한 시간이 생사를 가른다는 응급의학의 말처럼 치료한 뒤가 가장 바쁘다,,능력 카드 아래 작은 이유 한 줄(detente_golden)
 perk.detente_syringe.name,넉넉한 주사기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_syringe · detente)
 perk.detente_syringe.text,주사기 용량 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_syringe)
@@ -322,6 +343,15 @@ perk.detente_syringe.why,앰풀을 한 줄 더 꽂았다,,능력 카드 아래 �
 perk.detente_miracle.name,두 번째 기적,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_miracle · detente)
 perk.detente_miracle.text,리저렉션을 웨이브마다(캠페인은 휴게소마다) +{0}번 더 쓴다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_miracle)
 perk.detente_miracle.why,한 번 살려 본 손은 두 번째에 덜 떤다,,능력 카드 아래 작은 이유 한 줄(detente_miracle)
+perk.detente_hands.name,손에 밴 붕대,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_hands · detente)
+perk.detente_hands.text,주사기가 비었을 때 붕대로 감는 손 치료 시간 -{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_hands)
+perk.detente_hands.why,천 번 감아 본 붕대는 눈을 감고도 감긴다,,능력 카드 아래 작은 이유 한 줄(detente_hands)
+perk.detente_symbio.name,공생,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_symbio · detente)
+perk.detente_symbio.text,동료에게 채워 준 체력의 {0}%가 나에게도 돌아온다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_symbio)
+perk.detente_symbio.why,동료의 상처를 닦고 남은 약으로 제 상처도 닦는다,,능력 카드 아래 작은 이유 한 줄(detente_symbio)
+perk.detente_adren.name,아드레날린 주사,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_adren · detente)
+perk.detente_adren.text,주사를 맞은 동료가 {Detente.adrenSeconds}초 동안 이동 +{Detente.adrenSpeed}% · 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_adren)
+perk.detente_adren.why,주사액에 에피네프린을 한 방울 섞어 심장이 먼저 뛰게 한다,,능력 카드 아래 작은 이유 한 줄(detente_adren)
 perk.hound_price.name,몸값 인상,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_price · schiesshund)
 perk.hound_price.text,내 표식 대상에게 주는 총 피해 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_price)
 perk.hound_price.why,현상금이 오를수록 사냥개의 이빨이 날카로워진다,,능력 카드 아래 작은 이유 한 줄(hound_price)
@@ -558,14 +588,14 @@ callout.line.auto.grenade.claymore,지뢰 설치! 앞에 서지 마!,Claymore do
 #--- 특수 순간 글자 (MomentFx.csv) ---,,,
 moment.ult.knight.title,SHADOW DOUBLE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름. 알림 띠의 큰 글자 (MomentFx.csv Ult.knight.title)
 moment.ult.knight.what,그림자 분신,,궁극기 알림 띠의 작은 글자(누가 · 이것). 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.knight.what)
-moment.ult.assault.title,CAVALRY CHARGE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.assault.title)
-moment.ult.assault.what,유령 기병대 · CHARGE,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.assault.what)
-moment.ult.ghost.title,WHITE TIGER,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.ghost.title)
-moment.ult.ghost.what,흰 호랑이,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.ghost.what)
+moment.ult.assault.title,GUN RUN,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.assault.title)
+moment.ult.assault.what,A-10 기총 소사 · 아드레날린 가득,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.assault.what)
+moment.ult.ghost.title,PHANTOM,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.ghost.title)
+moment.ult.ghost.what,유령 · 좀비 눈에서 사라짐,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.ghost.what)
 moment.ult.point.title,GUNSLINGER,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.point.title)
 moment.ult.point.what,두 총 가득 · 건슬링어,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.point.what)
 moment.ult.detente.title,SECOND LIFE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.detente.title)
-moment.ult.detente.what,주사기 가득 · 부활 +1,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.detente.what)
+moment.ult.detente.what,모두 일으킴 · 체력 가득 · 소독 가스,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.detente.what)
 moment.ult.schiesshund.title,SHOWDOWN,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.schiesshund.title)
 moment.ult.schiesshund.what,결투장으로 납치,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.schiesshund.what)
 moment.ult.support.title,RESTOCK,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.support.title)
@@ -621,6 +651,7 @@ zombie.breadbag,브레드백,Breadbag,좀비 이름(11-11 메모의 엘리트: �
 zombie.reaper,그림 리퍼,Grim Reaper,좀비 이름(11-12 메모 24의 엘리트: 소방관 몸에 도끼. 도끼를 모으는 동안 넓어지는 원. 품에 붙어 앉으면 피한다)
 #--- 붙잡힘·깔림 ---,,,
 hold.shove,[V] 밀치기 · 주먹으로 떼어내기,,셤블러에게 잡혔을 때 화면 아래 안내
+hold.knight,[V] 메쳐서 떨쳐내기 · 자세가 무너진다,,나이트가 좀비에게 잡혔을 때(러너에게 깔린 것 말고) 화면 아래 안내. V 한 번에 잡은 좀비를 모두 메쳐 떨쳐내고 바로 처형할 수 있다(Knight.grabThrow)
 hold.pinned,깔렸다!,,러너에게 깔렸을 때 큰 글씨
 hold.pinned.burst,[V] 실드를 터뜨려 떨쳐내기,,깔렸는데 실드가 남아 있을 때 안내
 hold.pinned.kick,[V] 걷어차 떨쳐내기,,나이트가 깔렸고 걷어차기가 준비됐을 때 안내(실드를 쓰지 않는다)
@@ -986,12 +1017,20 @@ hud.parkour.zipline,눌러 뛰어내리기,,파쿠르 안내: 집라인을 타�
 hud.parkour.bar,눌러 손 놓기,,파쿠르 안내: 봉에 매달리거나 흔드는 동안 조준점 아래. 앞에 웅크리기 키 키캡
 hud.parkour.stop,눌러 멈추기,,파쿠르 안내: 넘기·턱 오르기 도중(조금 지나서) 조준점 아래. 앞에 웅크리기 키 키캡
 class.hud.charge,CHARGE,,클래스 HUD: 어썰트 아드레날린이 다 찼을 때 키 옆 글자와 CHARGE 시간 막대 글자
+class.hud.danger.aim,놓으면 포격,,클래스 HUD: 어썰트가 데인저 클로즈 카드로 클래스 기술 키를 누르고 있을 때(포격 표시가 푸른색) 키 옆 글자
+class.hud.danger.no,포격 불가,,클래스 HUD: 데인저 클로즈 표시가 빨간색일 때 키 옆 빨간 글자. 칸 옆에는 까닭(class.assault.danger.ground)
+class.hud.danger.cancel,[우클릭] 취소,,클래스 HUD: 데인저 클로즈 표시가 푸른색일 때 스택 칸 옆. 이 키를 누르면 겨누기를 그만두고 키를 놓아도 아무 일도 없다
+class.hud.danger.hold,[{0}] 꾹: 포격,,클래스 HUD: 데인저 클로즈를 부를 수 있을 때 스택 칸 옆. {0}=클래스 기술 키 이름
+class.hud.danger_wait,포격 {0}초,,클래스 HUD: 데인저 클로즈를 다시 부를 수 있을 때까지 스택 칸 옆. {0}=남은 초
 class.hud.later,준비 중,,클래스 HUD: 능력이 아직 없는 클래스 이름 옆
 class.assault.charge.self,돌격! · 피해와 이동 증가,,어썰트가 CHARGE를 썼을 때 화면 위 알림(자기)
 class.assault.charge.friend,{0}의 돌격 · 피해와 이동 증가,,동료 어썰트의 CHARGE 반경 안에 있을 때 화면 위 알림. {0}=동료 이름
 class.assault.broken.self,브로큰 애로우! 포격 요청,,어썰트 브로큰 애로우 카드: 체력이 낮아지거나 잡혀서 포격을 불렀을 때 화면 위 알림(자기)
+class.assault.danger.self,데인저 클로즈! 포격 요청,,어썰트 데인저 클로즈 카드: 클래스 기술 키를 놓아 표시한 곳에 포격을 불렀을 때 화면 위 알림(자기)
+class.assault.danger.ground,포탄이 떨어질 땅이 없다,,어썰트 데인저 클로즈 카드: 겨눈 곳에 땅이 없어 포격을 부를 수 없을 때(키를 놓으면 화면 위 알림 · 겨누는 동안 클래스 HUD 칸 옆)
+class.assault.gunrun.ground,조준한 곳에 땅이 없다 · 가까운 땅을 노려라,,어썰트 궁극기(A-10 기총 소사): 조준선이 닿는 땅이 없어 쓰지 않았을 때 화면 위 알림. 게이지는 그대로
+class.assault.gunrun.sky,하늘이 막혀 있다 · 탁 트인 곳을 노려라,,어썰트 궁극기(A-10 기총 소사): 조준한 곳 위가 지붕·천장으로 막혀 쓰지 않았을 때 화면 위 알림. 게이지는 그대로(ClassAbilities Assault.gunRunSky)
 class.knight.taunt.self,도발! 주변 좀비가 나를 노린다,,나이트가 도발을 썼을 때 화면 위 알림(자기)
-class.knight.reversal,[V] 되치기,,나이트 되치기 카드: 좀비에게 잡혔을 때 조준점 둘레 고리 아래 안내. 고리가 흰 원에 닿는 순간 누른다
 class.hud.taunt,도발,,클래스 HUD: 나이트 도발 키 옆 글자와 도발 시간 막대 글자
 class.hud.taunt_wait,도발 {0}초,,클래스 HUD: 나이트 도발을 다시 쓸 수 있을 때까지. {0}=남은 초
 class.hud.cover,원호 방어,,클래스 HUD: 나이트 원호 방어 키 옆 글자
@@ -1000,6 +1039,7 @@ class.hud.cover.look,동료를 바라보고 놓기,,클래스 HUD: 나이트가 
 class.hud.cover.aim,원호: {0} · 놓으면 지킨다,,클래스 HUD: 나이트가 원호 방어 키를 누른 채 원호할 수 있는 동료를 바라볼 때. {0}=동료 이름
 class.hud.cover.watch,{0}을(를) 지키는 중,,클래스 HUD: 원호가 열려 있는 동안. {0}=동료 이름
 class.knight.cover.done,{0}을(를) 지켰다,,나이트의 원호가 동료에게 오는 공격을 튕겨 냈을 때 화면 위 알림. {0}=동료 이름
+class.knight.coverstrike.ally,{0}의 원호 반격 · {1}초 동안 총 피해 +{2}%,,원호 반격 카드를 든 나이트의 원호가 내게 오는 공격을 튕겨 냈을 때 내 화면 위 알림. {0}=나이트 이름 {1}=초 {2}=총 피해 %(나이트 PC가 원호와 함께 보낸 값)
 class.hud.deadeye,DEADEYE,,클래스 HUD: 고스트 데드아이(장전 뒤 첫 발 강화)가 걸려 있을 때 밝아지는 글자
 class.hud.desperado,DESPERADO,,클래스 HUD: 시순트가 데스페라도(R08)를 들었고 탄이 있을 때 밝아지는 글자
 class.hud.return,리턴 백 ×{0},,클래스 HUD: 시순트 리턴 백이 걸려 있을 때 시간 막대 글자. {0}=스택
@@ -1008,6 +1048,7 @@ class.hud.duel_wait,결투 {0}초,,클래스 HUD: 시순트 결투를 다시 걸
 class.hud.kata,건 카타,,클래스 HUD: 포인트 건 카타 키 옆 글자와 건 카타 시간 막대 글자
 class.hud.kata_wait,건 카타 {0}초,,클래스 HUD: 포인트 건 카타를 다시 쓸 수 있을 때까지. {0}=남은 초
 class.point.kata.self,건 카타! 바꿔 든 총은 꽉 찬 채로 나온다,,포인트가 건 카타를 썼을 때 화면 위 알림(자기)
+class.ghost.chain.prompt,{0} 암살 연쇄 · {1},,고스트 암살 연쇄 카드: 암살하는 동안 옮겨 갈 좀비가 조준선에 있을 때 조준점 아래 안내. {0}=키 {1}=이번에 더 이을 수 있는 횟수
 class.schiesshund.duel.self,결투! 그 적은 나만 노리고 동료는 그 적을 마무리하지 못한다,,시순트가 결투를 걸었을 때 화면 위 알림(자기)
 class.schiesshund.duel.ace,결투! 에이스: 그 적 말고는 아무도 나를 다치게 못 한다,,시순트가 에이스 카드를 들고 결투를 걸었을 때 화면 위 알림(자기)
 class.schiesshund.duel.saved,{0}의 결투가 막아 줬다,,결투 상대가 하던 공격이 나에게 닿았지만 결투 때문에 들어가지 않았을 때 화면 위 알림(결투마다 한 번). {0}=시순트 이름
@@ -1018,9 +1059,11 @@ class.schiesshund.arena.back,환호 속에 돌아왔다: 총 피해 +{0}% {1}초
 class.hud.cheer,환호 · 총 +{0}%,,클래스 HUD > 시순트가 결투장에서 돌아온 뒤 강화가 남은 동안 아래 막대 글자(금빛). {0}=피해 %
 moment.tag.showdown.word,SHOWDOWN,,내 화면 클래스 칸 위 작은 이름표의 큰 글자: 시순트 궁극기 결투장
 moment.tag.showdown.under,결투장 · {0:0}s · 1 : 1,,내 화면 클래스 칸 위 작은 이름표의 아래 줄: 시순트 궁극기 결투장. {0}=초(Schiesshund.arenaSeconds)
-class.hud.tiger,화이트 타이거,,클래스 HUD > 고스트 화이트 타이거 카드가 헤드 헌터를 지켜 주는 동안 아래 막대 글자
+class.hud.phantom,유령,,클래스 HUD > 고스트 궁극기 동안(좀비가 고스트를 보지 못하는 동안) 아래 막대 글자. 막대는 남은 시간
 class.hud.gunslinger,건슬링어,,클래스 HUD > 포인트 건슬링어 카드: 총을 바꿔 든 뒤 세지는 동안 아래 막대 글자
 class.hud.shadow,그림자 분신,,클래스 HUD > 나이트 그림자 분신이 나와 있는 동안 아래 막대 글자
+class.hud.coverstrike,원호 반격 · 반격·주먹 +{0}%,,클래스 HUD > 나이트 원호 반격 카드: 원호가 공격을 튕겨 낸 뒤 세지는 동안 아래 막대 글자. {0}=%
+class.hud.flow,비껴 흘리기 · 패리 +{0}%,,클래스 HUD > 나이트 비껴 흘리기 카드: 반격이 맞은 뒤 패리 판정이 늘어나 있는 동안 아래 막대 글자. {0}=%
 key.mouse.middle,휠,,키 이름: 마우스 휠 클릭
 key.mouse.left,좌클릭,,키 이름: 마우스 왼쪽 버튼
 key.mouse.right,우클릭,,키 이름: 마우스 오른쪽 버튼
@@ -1041,9 +1084,9 @@ classes.xp,경험치 {0} / {1}  ·  다음 등급까지 {2},XP {0} / {1}  ·  {2
 classes.xp.top,최고 등급  ·  프레스티지까지 {0},Top rank  ·  {0} to prestige,"클래스 화면 > 마지막 등급일 때 막대 아래. {0}=프레스티지까지 남은 것"
 classes.variant.of,{0}의 변형,A variant of {0},"클래스 화면 > 변형 클래스 이름 아래 줄. {0}=본 클래스 이름(Classes.csv base)"
 classes.variants,변형,Variants,클래스 화면 > 오른쪽: 본 클래스와 변형을 고르는 칩 줄의 머리글
-class.knight.ability,"받는 피해 -{Knight.taken:less}%.\n퍼펙트 패리: 패리 판정 +{Knight.parryWindow}% · 패리의 자세 피해 +{Knight.parryPosture}% · 패리하면 반격할 수 있다.\n흘리기: 회피나 패리 뒤 반격 피해 +{Knight.counter}%. 주먹 피해 +{Knight.fists}%. 러너에게 깔리면 [V]로 걷어차 떨쳐낸다(실드 없이 {Knight.breakFree}초마다).\n[{key}] 원호 방어: 꾹 누르면 {Knight.coverReach}m 범위가 보이고, 그 안의 동료를 바라보면 그 동료가 빛난다. 놓으면 {Knight.coverWindow}초 동안 그 동료에게 오는 공격을 대신 패리해 튕겨 내고 곁으로 순간이동한다. 재사용 {Knight.coverCooldown}초(막을 공격이 없으면 2초).",,"클래스 화면 > 나이트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
-class.assault.ability,처치할 때마다 아드레날린 1스택(최대 {Assault.stackMax}): 스택마다 총 피해 +{Assault.damagePerStack}% · 이동 +{Assault.speedPerStack}%. 다 차면 [{key}] CHARGE: {Assault.chargeSeconds}초 동안 {Assault.chargeRadius}m 안의 동료와 함께 피해 +{Assault.chargeDamage}% · 이동 +{Assault.chargeSpeed}%.,,"클래스 화면 > 어썰트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
-class.ghost.ability,헤드 헌터: 헤드샷마다 1스택(최대 {Ghost.hunterMax}) · 스택마다 총 피해 +{Ghost.hunterDamage}%(곱연산). 바디샷은 {Ghost.hunterBodyLoss}스택을 잃고 피해를 입으면 모두 잃는다.\n데드아이: 장전을 마친 뒤 첫 발은 피해 +{Ghost.deadeye}%.\n클래스 총으로 엘리트를 맞히면 {Ghost.stumbleBody}초(헤드샷 {Ghost.stumbleHead}초) 휘청여 하던 공격과 돌진이 끊긴다.,,"클래스 화면 > 고스트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
+class.knight.ability,"받는 피해 -{Knight.taken:less}%.\n퍼펙트 패리: 패리 판정 +{Knight.parryWindow}% · 러너 덮치기와 잡기처럼 막을 수 없는 공격도 패리한다 · 보통 좀비는 패리 한 번에 자세가 무너진다(엘리트·거구는 자세 피해 +{Knight.parryPosture}%) · 패리하면 반격할 수 있다.\n흘리기: 회피나 패리 뒤 반격 피해 +{Knight.counter}%. 주먹 피해 +{Knight.fists}%. 잡히면 [V]로 메쳐 떨쳐내고 그 좀비의 자세를 무너뜨린다. 러너에게 깔리면 [V]로 걷어차 떨쳐낸다(실드 없이 {Knight.breakFree}초마다).\n[{key}] 원호 방어: 꾹 누르면 {Knight.coverReach}m 범위가 보이고, 그 안의 동료를 바라보면 그 동료가 빛난다. 놓으면 {Knight.coverWindow}초 동안 그 동료에게 오는 공격(막을 수 없는 것도)을 대신 패리해 튕겨 내고 곁으로 순간이동한다. 재사용 {Knight.coverCooldown}초(막을 공격이 없으면 2초).",,"클래스 화면 > 나이트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
+class.assault.ability,처치할 때마다 아드레날린 1스택(최대 {Assault.stackMax}): 스택마다 총 피해 +{Assault.damagePerStack}% · 이동 +{Assault.speedPerStack}%. 다 차면 [{key}] CHARGE: {Assault.chargeSeconds}초 동안 {Assault.chargeRadius}m 안의 동료와 함께 피해 +{Assault.chargeDamage}% · 이동 +{Assault.chargeSpeed}%. 돌격하는 동안에는 잡히거나 깔리지 않는다.,,"클래스 화면 > 어썰트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
+class.ghost.ability,헤드 헌터: 헤드샷마다 1스택(최대 {Ghost.hunterMax}) · 스택마다 총 피해 +{Ghost.hunterDamage}%(곱연산). 바디샷은 {Ghost.hunterBodyLoss}스택을 잃고 피해를 입으면 모두 잃는다.\n데드아이: 장전을 마친 뒤 첫 발은 피해 +{Ghost.deadeye}%.\n클래스 총으로 엘리트를 맞히면 {Ghost.stumbleBody}초(헤드샷 {Ghost.stumbleHead}초) 휘청여 하던 공격과 돌진이 끊긴다.\n벽 너머 시야: {Ghost.wallSight}m 안의 좀비가 벽 너머로 옅은 흰 실루엣으로 보인다(나에게만).,,"클래스 화면 > 고스트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 class.point.ability,"들고 있지 않은 1·2번 총이 그 총 장전 시간의 {Point.reloadShare}배가 지나면 저절로 장전된다. SMG와 샷건을 번갈아 쏘면 화력이 끊기지 않는다.\n[{key}] 건 카타: {Point.kataSeconds}초 동안 총 바꾸기가 즉시이고, 바꿔 든 총은 예비탄을 쓰지 않고 꽉 찬 채로 나오며, 달리면서 쏴도 퍼지지 않는다(대기 {Point.kataCooldown}초). 혼자서도 위험을 뚫고 다녀올 수 있다.",,"클래스 화면 > 포인트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 class.detente.ability,"주사기(용량 {Detente.syringeMax}): [{key}]로 조준한 동료에게 꽂거나 아무도 없으면 자기에게 놓아 체력 {Detente.injectHeal}을 바로 채운다(한 번에 {Detente.injectCost}). 상점에서 보충하고 서포트가 조금 채워 준다.\n주사기가 비면 자기는 치료할 수 없고, 다친 동료 곁에서 F로 치료를 권한다. 동료가 F로 받으면(치료를 요청한 동료는 바로) {Detente.treatSeconds}초 동안 붕대를 감으며 도중에 체력 {Detente.treatHeal}을 채우고, 끝나면 나머지 체력이 서서히 찬다. 감는 동안 데탕트는 쏘거나 시선을 돌릴 수 없다.\n골든 아워: 치료하면 {Detente.goldenSeconds}초 동안 이동 +{Detente.goldenSpeed}%(치료할 때마다 갱신).\n리저렉션: 웨이브마다(캠페인은 쉬는 곳마다) 한 번 죽은 동료 곁에서 F를 {Detente.resurrectSeconds}초 눌러 체력 {Detente.resurrectHealth}%로 되살린다.",,"클래스 화면 > 데탕트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 class.schiesshund.ability,"[{key}] 결투: 조준한 적과 1대1. 그 적은 나만 노리고 다른 사람을 다치게 하지 못하며(하던 공격은 끝까지 하지만 들어가지 않는다), 내 피해가 더 크고 현상금 표식도 붙는다. 동료는 도울 수 있지만 마무리는 못 한다(체력 1에서 멈춤).\n[F] 현상금 표식: 적을 찍으면 청록 테두리가 {Schiesshund.markSeconds}초 동안 팀 모두에게 보이고 내 총알이 그 적에게 +{Schiesshund.markDamage}%. 지금 쫓는 표식보다 급이 낮은 적(엘리트를 쫓는 중의 일반 좀비)을 찍으면 표식은 그대로 두고 일반 핑만 찍힌다.\n표식 대상을 처치하면 현상금 +{Schiesshund.bountyMoney}(엘리트 +{Schiesshund.bountyElite})과 리턴 백(스택마다 이동·피해 +{Schiesshund.returnDamage}% {Schiesshund.returnSeconds}초).\n현상금 {Schiesshund.roundPoints}점(엘리트 {Schiesshund.elitePoints}점)마다 4번 칸 데스페라도(R08)에 탄 한 발(재장전·탄약 줍기로는 안 찬다). 데스페라도 탄은 피해 +{Schiesshund.desperadoDamage}%이고 표식 대상의 머리에 맞으면 엘리트도 거구도 한 방.",,"클래스 화면 > 시순트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
@@ -1428,7 +1471,10 @@ class.detente.raised,{0} 되살림,,데탕트가 죽은 동료를 되살렸을 �
 class.detente.raised_self,데탕트가 되살렸다,,데탕트에게 되살려진 플레이어의 화면 위 알림
 class.detente.offered,{0}에게 치료를 권했다 · 받으면 붕대를 감는다,,데탕트가 빈 주사기로 다친 동료에게 F로 치료를 권했을 때 화면 위 알림. {0}=동료 이름
 class.detente.offer.prompt,{0}이(가) 치료를 권한다 · [F] 받기 ({1}초),,데탕트가 치료를 권했을 때 받는 사람 화면 아래 줄. F로 받는다. {0}=데탕트 이름 {1}=남은 초
-class.detente.treating,{0}이(가) 붕대를 감는다 · 끝나면 나머지 체력이 서서히 찬다,,데탕트가 손 치료를 시작했을 때 받는 사람 화면 위 알림. {0}=데탕트 이름
+class.detente.treating,{0}이(가) 붕대를 감는다 · {1}초 · 끝나면 나머지 체력이 서서히 찬다,,데탕트가 손 치료를 시작했을 때 받는 사람 화면 위 알림. {0}=데탕트 이름 {1}=감는 시간(초. 데탕트 PC가 손에 밴 붕대 카드까지 셈해 보낸 것)
+class.detente.adren.got,{0}의 아드레날린 주사 · {1}초 동안 빨라지고 총이 세진다,,데탕트의 아드레날린 주사 카드: 주사를 맞은 동료 화면 위 알림(이미 맞아 있던 중에 다시 맞으면 뜨지 않음). {0}=데탕트 이름 {1}=초
+class.detente.ult.up,{0}의 세컨드 라이프 · 다시 일어섰다,,데탕트 궁극기: 쓰러져 있던 동료가 그 자리에서 바로 일어설 때 그 동료 화면 위 알림. {0}=데탕트 이름
+class.detente.ult.got,{0}의 세컨드 라이프 · 체력 가득,,데탕트 궁극기: 서 있던 동료의 체력이 가득 찰 때 그 동료 화면 위 알림. {0}=데탕트 이름
 class.hud.treat.offer,[F] 치료 권하기 · {0},,클래스 HUD > 빈 주사기의 데탕트가 다친 동료 곁에 있을 때. {0}=동료 이름
 class.hud.treat.asked,[F] 바로 치료 · {0} (요청),,클래스 HUD > 치료를 요청한 동료 곁에 있을 때(제안 없이 바로 시작). {0}=동료 이름
 class.hud.treat.waiting,{0}의 대답을 기다린다,,클래스 HUD > 치료를 권하고 동료가 F로 받기를 기다리는 동안. {0}=동료 이름
@@ -1438,6 +1484,7 @@ class.hud.raises,부활 {0},,클래스 HUD > 데탕트가 이번 웨이브에 �
 class.hud.raise,되살리는 중,,클래스 HUD > 데탕트가 죽은 동료를 되살리는 동안 아래 막대 글자
 class.hud.treat,치료 중,,클래스 HUD > 데탕트가 손으로 동료를 치료하는 동안 아래 막대 글자
 class.hud.golden,골든 아워,,클래스 HUD > 데탕트의 골든 아워 동안 아래 막대 글자
+class.hud.adren,아드레날린 · 총 +{0}%,,클래스 HUD > 데탕트 동료의 아드레날린 주사를 맞아 빨라지고 총이 센 동안 아래 막대 글자(붉은색). {0}=총 피해 %
 class.hud.barricade,바리케이드,,클래스 HUD > 서포트 클래스 기술 키 옆 글자
 class.hud.barricades,{2} {0}/{1},,클래스 HUD > 서포트 보급 칸 옆. {0}=서 있는 수 {1}=최대 {2}=고른 건축물(바리케이드·철조망·탄약 상자·탐조등)
 class.hud.resupply,[F] 보급 · {0},,클래스 HUD > 서포트가 보급할 동료를 조준했을 때 보급 칸 옆. {0}=동료 이름

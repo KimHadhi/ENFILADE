@@ -59,8 +59,9 @@ public sealed class PlayerLook : MonoBehaviour
     {
         TakeCombatTurn();
         // 커서가 풀려있거나(채팅창/메뉴 활성화 상태), 일시정지 중이거나 창 포커스를 잃거나 죽어 있으면 카메라 회전 중단
+        // A Ghost's takedown with a chain left turns the view all the same: it looks for the next zombie (GhostCards).
         if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused
-            || (movement != null && (movement.CombatInputLocked || movement.IsDead)))
+            || (movement != null && ((movement.CombatInputLocked && !GhostCards.LooksDuringTakedown(movement)) || movement.IsDead)))
             return;
 
         Vector2 delta = Vector2.zero;
