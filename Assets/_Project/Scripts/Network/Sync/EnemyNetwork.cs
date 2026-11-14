@@ -68,32 +68,45 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private static float hold = .3f;
     private static int holdFrame = -1;
     // The switches below as last read, and the frame they were.
-    private static bool knockdownAtOnce = true;
+    private static bool knockdownAtOnce = true, slideAtOnce = true;
     private static int switchFrame = -1;
+
+    // The round trip to the host as the transport measures it (s); 0 on the host, or before there is a reading.
+    private static float RoundTrip(NetworkManager manager)
+    {
+        if (manager == null || !manager.IsListening || manager.IsServer) return 0f;
+        return manager.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId) * .001f;
+    }
+
+    private static void ReadSwitches()
+    {
+        if (switchFrame == Time.frameCount) return;
+        switchFrame = Time.frameCount;
+        knockdownAtOnce = NetSmoothing.Number("knockdownAtOnce", 1f) > .5f;
+        slideAtOnce = NetSmoothing.Number("slideAtOnce", 1f) > .5f;
+    }
+
+    /// <summary>
+    /// A zombie this PC's own player shoves or throws with a barge slides on this PC at once (SlideHere), where it used
+    /// to stand until the host's zombie's slide came back a round trip later. Network.csv slideAtOnce: 0 puts the old
+    /// way back.
+    /// </summary>
+    internal static bool SlideAtOnce { get { ReadSwitches(); return slideAtOnce; } }
 
     /// <summary>
     /// A zombie this PC's own player knocks down falls on this PC at once, on a doll it runs itself, where it used to
     /// wait for the host's doll to come back a round trip later (ZombieBody.FallHere). Network.csv knockdownAtOnce: 0
     /// puts the old way back, should the new one misbehave.
     /// </summary>
-    internal static bool KnockdownAtOnce
-    {
-        get
-        {
-            if (switchFrame == Time.frameCount) return knockdownAtOnce;
-            switchFrame = Time.frameCount;
-            knockdownAtOnce = NetSmoothing.Number("knockdownAtOnce", 1f) > .5f;
-            return knockdownAtOnce;
-        }
-    }
+    internal static bool KnockdownAtOnce { get { ReadSwitches(); return knockdownAtOnce; } }
 
     /// <summary>
     /// How long a copy trusts what this PC's own player just did to it over what the host reports (s): a report the host
     /// sent before it heard of that is still on its way for about a round trip, and taking it would undo what the player
     /// just saw (health coming back between two shots, a broken posture mended). It is the time this PC's word takes to
-    /// reach the host and the host's to come back, which Netcode keeps as the gap between its two clocks, plus how
-    /// seldom a report goes out (predictMargin). It was a fixed 0.3 s for posture and nothing for health: fine on a LAN,
-    /// short on a slow link. Network.csv predictLeast, predictMargin, predictMost.
+    /// reach the host and the host's to come back (the round trip the transport measures), plus how seldom a report
+    /// goes out (predictMargin). It was a fixed 0.3 s for posture and nothing for health: fine on a LAN, short on a slow
+    /// link. Network.csv predictLeast, predictMargin, predictMost.
     /// </summary>
     internal float PredictionHold
     {
@@ -102,9 +115,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
             if (holdFrame == Time.frameCount) return hold;
             holdFrame = Time.frameCount;
             float least = NetSmoothing.Number("predictLeast", .3f), most = NetSmoothing.Number("predictMost", 1f);
-            var manager = NetworkManager;
-            float loop = manager != null && manager.IsListening ? (float)(manager.LocalTime.Time - manager.ServerTime.Time) : 0f;
-            hold = Mathf.Clamp(loop + NetSmoothing.Number("predictMargin", .15f), least, Mathf.Max(least, most));
+            hold = Mathf.Clamp(RoundTrip(NetworkManager) + NetSmoothing.Number("predictMargin", .15f), least, Mathf.Max(least, most));
             return hold;
         }
     }
@@ -201,6 +212,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
     // gathered at its turn. Its tick runs at the start of a frame, before this decides the next one.
     private void LateUpdate()
     {
+        // A copy: the slide this PC's own player just gave it, shown ahead of the host's (Slide).
+        if (IsSpawned && !IsServer) { Slide(); return; }
         if (motion == null || !IsSpawned || !IsServer) return;
         long began = ZombieCost.Begin();
         int tick = NetworkManager.ServerTime.Tick;
@@ -223,6 +236,107 @@ public sealed class EnemyNetwork : NetworkBehaviour
             motion.ScaleThreshold = open ? scaleThreshold : Shut;
         }
         ZombieCost.End(ZombieCost.Part.Network, began);
+    }
+
+    // ---- A slide shown at once (a copy) --------------------------------------------------------------------------
+    // This PC's own player shoved its copy, or threw it with a barge. The zombie that really slides is the host's, and its
+    // place comes back here a round trip later (and then a little more: copies are drawn a few ticks behind), so the
+    // copy used to flinch at once and only then slide (the user's rule of 2026-11-14: what a player does shows on their
+    // own screen at once). So the copy slides here at once, by the same rule the host's will (MeleeCombatTarget's
+    // shove: the speed falling away evenly over its time, stopped at the walk mesh's edge), laid on top of the place the
+    // host reports. As the host's own slide then arrives in those reports, the same amount is taken back out, this PC's
+    // slide as it was slideLag ago, so the two never add up and the copy ends exactly where the host's zombie does. If
+    // the host's slid less far (something stood in its way there), the copy eases back by the difference.
+
+    // How much of the slide's past is kept, to take the host's arriving slide back out (marks, and s between them).
+    private const int TrailSize = 128;
+    private const float TrailStep = 1f / 60f;
+    private Vector3[] slideTrail;
+    private NavMeshAgent walker;
+    private Vector3 slideVelocity, slid;
+    // The slide under way: its whole time and what is left of it; since this PC began sliding it (s; below 0: it isn't);
+    // when the last slide given ends on that clock; and how long the host's own slide takes to show here (s).
+    private float slideFor, slideLeft, slideAge = -1f, slideEnds, slideLag;
+    private int trailCount;
+
+    /// <summary>
+    /// On a copy: this PC's own player sent it sliding at this velocity, slowing to a stop over this long (a shove, a
+    /// barge's throw). It slides here at once; the host is told apart (SendShove, SendBarge) and its zombie really moves.
+    /// </summary>
+    internal void SlideHere(Vector3 velocity, float seconds)
+    {
+        if (!IsCopy || seconds <= 0f || !SlideAtOnce) return;
+        Vector3 flat = Vector3.ProjectOnPlane(velocity, Vector3.up);
+        if (flat.sqrMagnitude < 1e-4f) return;
+        if (slideTrail == null) slideTrail = new Vector3[TrailSize];
+        // A slide given while the last still shows carries on from it: one unbroken run for the trail.
+        if (slideAge < 0f)
+        {
+            slideAge = 0f;
+            slid = Vector3.zero;
+            slideTrail[0] = Vector3.zero;
+            trailCount = 1;
+        }
+        slideVelocity = flat;
+        slideFor = slideLeft = seconds;
+        slideEnds = slideAge + seconds;
+        slideLag = SlideLag();
+    }
+
+    // How long after this PC tells the host of a slide the host's zombie is seen sliding here: the round trip, Netcode's
+    // own wait on the host's clock, the ticks a copy is drawn behind, and a frame or so at either end (slideLagExtra).
+    private float SlideLag()
+    {
+        var manager = NetworkManager;
+        if (manager == null || !manager.IsListening) return 0f;
+        float tick = 1f / Mathf.Max(1, (int)manager.NetworkConfig.TickRate);
+        float behind = Mathf.Max(1, manager.NetworkTimeSystem.TickLatency + NetworkTransform.InterpolationBufferTickOffset) * tick;
+        return RoundTrip(manager) + (float)manager.NetworkTimeSystem.ServerBufferSec + behind + NetSmoothing.Number("slideLagExtra", .02f);
+    }
+
+    // After Netcode has put the copy where the host reports it (before LateUpdate, every frame, so nothing adds up).
+    private void Slide()
+    {
+        if (slideAge < 0f) return;
+        float dt = Time.deltaTime * Pace;
+        if (slideLeft > 0f && dt > 0f)
+        {
+            // As the host's shove moves (MeleeCombatTarget.Tick): the speed falls away evenly to nothing.
+            float slice = Mathf.Min(dt, slideLeft);
+            float strength = (slideLeft + slideLeft - slice) / (2f * slideFor);
+            slideLeft -= slice;
+            slid += Clear(slideVelocity * (slice * strength), transform.position + slid - SlidAt(slideAge - slideLag));
+        }
+        slideAge += dt;
+        for (int upTo = Mathf.FloorToInt(slideAge / TrailStep); trailCount <= upTo; trailCount++) slideTrail[trailCount % TrailSize] = slid;
+        // The host's own slide has shown in full: the copy is where the host says, and stays there.
+        if (slideAge >= slideEnds + slideLag + TrailStep) { slideAge = -1f; return; }
+        transform.position += slid - SlidAt(slideAge - slideLag);
+    }
+
+    // How far this PC had slid it this long after it began (the trail, eased between its marks).
+    private Vector3 SlidAt(float age)
+    {
+        if (age <= 0f || trailCount == 0) return Vector3.zero;
+        float at = age / TrailStep;
+        int index = Mathf.FloorToInt(at);
+        if (index >= trailCount - 1) return slid;
+        int oldest = Mathf.Max(0, trailCount - TrailSize);
+        if (index < oldest) return slideTrail[oldest % TrailSize];
+        return Vector3.Lerp(slideTrail[index % TrailSize], slideTrail[(index + 1) % TrailSize], at - index);
+    }
+
+    // No further than the walk mesh goes that way from where the copy is shown: the host's slide stops at its edge too.
+    private Vector3 Clear(Vector3 step, Vector3 from)
+    {
+        if (walker == null) TryGetComponent(out walker);
+        // The agent is off on a copy, but its numbers stand: it floats this far above the mesh.
+        if (walker != null) from -= Vector3.up * walker.baseOffset;
+        if (!NavMesh.SamplePosition(from, out var on, .6f, NavMesh.AllAreas)) return step;
+        if (!NavMesh.Raycast(on.position, on.position + step, out var edge, NavMesh.AllAreas)) return step;
+        float length = step.magnitude;
+        if (length < 1e-6f) return step;
+        return step * (Mathf.Min(length, Mathf.Max(0f, Vector3.Distance(on.position, edge.position) - .025f)) / length);
     }
 
     // Whole points of posture, so recovering doesn't send a report every few frames.
@@ -324,7 +438,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
     /// so the host's zombie follows this PC's fall; otherwise the host runs it as before.
     /// </summary>
     internal void SendKnockDown(Vector3 direction, float duration, bool runs = false) => KnockDownRpc(direction, duration, runs);
-    internal void SendBarge(Vector3 velocity, float throwTime, float knockdownTime) => BargeRpc(velocity, throwTime, knockdownTime);
+    /// <summary>
+    /// This PC's player threw its copy with a barge. Runs: the copy slides here at once and, where the slide ends, falls
+    /// on a doll this PC runs (MeleeCombatTarget.BargeHere), so the host's zombie follows this PC's fall at the end of
+    /// its own slide.
+    /// </summary>
+    internal void SendBarge(Vector3 velocity, float throwTime, float knockdownTime, bool runs = false)
+        => BargeRpc(velocity, throwTime, knockdownTime, runs);
 
     /// <summary>This PC's player started an execution on its copy: the host holds the enemy for them, if nobody else has it.</summary>
     internal void AskExecution() => ExecutionRpc();
@@ -375,7 +495,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         => target.KnockDown(direction, duration, runs ? rpc.Receive.SenderClientId : ZombieBody.NoRunner);
 
     [Rpc(SendTo.Server)]
-    private void BargeRpc(Vector3 velocity, float throwTime, float knockdownTime) => target.Barge(velocity, throwTime, knockdownTime);
+    private void BargeRpc(Vector3 velocity, float throwTime, float knockdownTime, bool runs, RpcParams rpc = default)
+        => target.Barge(velocity, throwTime, knockdownTime, runs ? rpc.Receive.SenderClientId : ZombieBody.NoRunner);
 
     [Rpc(SendTo.Server)]
     private void ExecutionRpc(RpcParams rpc = default)

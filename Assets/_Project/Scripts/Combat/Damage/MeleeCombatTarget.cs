@@ -162,11 +162,13 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             if (shoveRemaining <= 0f)
             {
                 shoveChain = null;
-                // A barge throw ends on the ground.
-                if (bargeKnockdown > 0f) KnockDown(shoveVelocity, bargeKnockdown);
+                // A barge throw ends on the ground (on a doll its thrower's PC runs, if a guest threw it: BargeHere).
+                if (bargeKnockdown > 0f) KnockDown(shoveVelocity, bargeKnockdown, bargeRunner);
             }
         }
         stunRemaining = Mathf.Max(0f, stunRemaining - dt);
+        // A copy this PC's own player threw with a barge: its slide here is over, and it falls (BargeHere).
+        if (bargeFallLeft > 0f && (bargeFallLeft -= dt) <= 0f) FallAfterBarge();
         // A copy's posture comes from the host, recovery included.
         if (IsCopy) { if (IsStaggered) StaggerAge += dt; return; }
         float recoveryDt = Mathf.Max(0f, dt - recoveryRemaining);
@@ -268,14 +270,62 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     /// A dash push: thrown along the ground at this velocity, slowing to a stop over throwTime and shoving whoever it
     /// runs into like a shove does, then knocked down for knockdownTime. Without a navmesh agent it falls at once.
     /// </summary>
-    public void Barge(Vector3 velocity, float throwTime, float knockdownTime)
+    public void Barge(Vector3 velocity, float throwTime, float knockdownTime) => Barge(velocity, throwTime, knockdownTime, ZombieBody.NoRunner);
+    /// <summary>
+    /// Runner: on the host, the client whose player threw it on their own PC, which runs a zombie's fall at the end of
+    /// the slide (BargeHere); the host's zombie follows that fall. ZombieBody.NoRunner: this PC's own barge.
+    /// </summary>
+    internal void Barge(Vector3 velocity, float throwTime, float knockdownTime, ulong runner)
     {
         if (!IsAvailable || executor != null || Steadfast) return;
-        if (IsCopy) { network.SendBarge(velocity, throwTime, knockdownTime); return; }
+        if (IsCopy) { BargeHere(velocity, throwTime, knockdownTime); return; }
         if (!StartShove(velocity, new HashSet<MeleeCombatTarget> { this }, Mathf.Max(.05f, throwTime)))
-        { KnockDown(velocity, knockdownTime); return; }
+        { KnockDown(velocity, knockdownTime, runner); return; }
         bargeKnockdown = Mathf.Max(.1f, knockdownTime);
+        bargeRunner = runner;
         Interrupt(shoveDuration);
+    }
+    // The host: whose PC runs the fall a barge under way ends in (a client id, or ZombieBody.NoRunner for this PC).
+    private ulong bargeRunner = ZombieBody.NoRunner;
+    // On a copy this PC's own player threw: how long until its slide ends here (s), which way it then falls, for how long.
+    private float bargeFallLeft, bargeFallFor;
+    private Vector3 bargeFall;
+
+    // On a copy, this PC's own player threw it with a barge. As the host's zombie will, it stops what it was doing and
+    // slides here at once (EnemyNetwork.SlideHere), and where the slide ends it falls on a doll this PC runs
+    // (FallAfterBarge); the host is told so with the barge, and its zombie follows that fall at the end of its own slide.
+    // It used to stand until the host's slide and fall came back a round trip later. Anything that can't fall here goes
+    // to the host as before.
+    private void BargeHere(Vector3 velocity, float throwTime, float knockdownTime)
+    {
+        bool here = EnemyNetwork.SlideAtOnce && EnemyNetwork.KnockdownAtOnce && !IsKnockedDown && !shownHeld
+            && TryGetComponent(out ZombieBody zombie) && zombie.Wears;
+        if (here)
+        {
+            float slide = Mathf.Max(.05f, throwTime);
+            InterruptHere(slide);
+            network.SlideHere(velocity, slide);
+            bargeFall = velocity;
+            bargeFallLeft = slide;
+            bargeFallFor = Mathf.Max(.1f, knockdownTime);
+        }
+        network.SendBarge(velocity, throwTime, knockdownTime, here);
+    }
+
+    // The barge's slide is over on this PC: it falls here. Should it not be able to after all (it went down or was
+    // taken meanwhile), the host is told to run the fall itself, or its zombie would wait for a doll that never comes.
+    private void FallAfterBarge()
+    {
+        bool runs = false;
+        if (IsAvailable && !IsKnockedDown && !shownHeld && executor == null && TryGetComponent(out ZombieBody zombie))
+        {
+            InterruptHere(bargeFallFor);
+            runs = zombie.FallHere(bargeFall);
+        }
+        if (!runs) { network.SendKnockDown(bargeFall, bargeFallFor, false); return; }
+        FallDirection = bargeFall;
+        fellHereUntil = Time.time + network.PredictionHold;
+        Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
     }
     public bool TryReserve(PlayerMeleeCombat owner)
     {
@@ -404,7 +454,16 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     }
     public void ReceiveShove(Vector3 impulse, Vector3 point)
     {
-        if (IsCopy) { network.SendShove(impulse, point); return; }
+        if (IsCopy)
+        {
+            network.SendShove(impulse, point);
+            // This PC's own player shoved it: it slides here at once as the host's zombie will (the same speed and time),
+            // ahead of the host's word of where it went (EnemyNetwork.SlideHere). One lying, held or gone doesn't slide
+            // on the host either.
+            if (IsAvailable && !IsKnockedDown && !shownHeld && executor == null)
+                network.SlideHere(Steadfast ? impulse * SteadfastShove : impulse, ShoveDuration);
+            return;
+        }
         ReceiveShove(impulse, point, new HashSet<MeleeCombatTarget> { this });
     }
     private void ReceiveShove(Vector3 impulse, Vector3 point, HashSet<MeleeCombatTarget> chain)
