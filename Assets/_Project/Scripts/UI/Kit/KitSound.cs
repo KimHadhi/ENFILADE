@@ -24,8 +24,8 @@ public static class KitSound
     /// The ENFILADE tower (TowerRun): TowerRise, a hall's scanners coming up out of the floor; TowerTick, a second of the
     /// scanners' count; TowerScan, a palm read; TowerOpen, a lane's door unlocking; TowerClear, a floor got through;
     /// Enfiladed, the tower's last kill and its banner (EnfiladedFinale).
-    /// The ability cards (PerkCardScreen): CardPick, a card pressed and let go; CardPickGrand, the same with a ringing chord,
-    /// for a card picked to its last level or a special one; CardBurn, the cards not picked catching fire.
+    /// The ability cards (PerkCardScreen): CardPick, a card pressed and let go; CardPickGrand, the same with a low fifth
+    /// under it, for a card picked to its last level or a special one; CardBurn, the cards not picked catching fire.
     public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
         Taunt, Hunter, HunterLost, Ping, Mark, Bounty, Supply, Hammer, Splinter, Collapse,
         TowerRise, TowerTick, TowerScan, TowerOpen, TowerClear, Enfiladed, CardPick, CardPickGrand, CardBurn }
@@ -587,47 +587,113 @@ public static class KitSound
         }
     }
 
-    // Brings the loudest sample to <peak> and fades the last few ms so the end doesn't click.
-    // A card pressed: a dull click and a low knock as it goes down, then, let go a beat later (PerkCardScreen: its press
-    // and hold), two bright notes; grand, a chord rung up over a low note as well.
+    // ---- The ability cards: low and soft. Their first sounds rang bells at 1.7-3.1 kHz whose overtones reached past
+    // 10 kHz (the user, 2026-11-14: "효과음도 너무 고주파라 귀가 쨍해서 아파요"), so these use no bells, keep every note
+    // under about 700 Hz and run a gentle low-pass over the whole clip, as the card looks draft page does. ----
+
+    // A card pressed: a soft low knock as it goes down, then, let go a beat later (PerkCardScreen: its press and hold), a
+    // warm swell under a soft chord; grand, a low fifth under them as well.
     private static float[] Pressed(bool grand)
     {
-        var data = new float[(int)(Rate * (grand ? 1.1f : .7f))];
+        const float Release = .09f;
+        var data = new float[(int)(Rate * (grand ? 1.3f : 1.1f))];
         var random = new System.Random(3301);
-        Click(data, random, 0f, .006f, .7f);
-        Knock(data, 0f, 110f, .05f, .8f);
-        Bell(data, .09f, 1760f, .1f, .3f);
-        Bell(data, .14f, 2637f, .16f, .3f);
-        if (grand)
-        {
-            Note(data, .09f, 523f, .3f, .22f);
-            float[] chord = { 1568f, 2093f, 2637f, 3136f };
-            for (int i = 0; i < chord.Length; i++) Bell(data, .11f + i * .045f, chord[i], .22f, .18f);
-        }
-        return Finish(data, .75f);
+        Thud(data, 0f, 150f, 70f, .045f, .5f);
+        Rush(data, random, 0f, .03f, .2f, 800f, 400f, 0f);
+        Glide(data, Release, 110f, 220f, .3f, .3f);
+        Pad(data, Release + .02f, new[] { 220f, 277.2f, 329.6f }, .03f, .14f, .08f);
+        if (grand) Pad(data, Release + .05f, new[] { 110f, 164.8f }, .05f, .2f, .08f);
+        LowPass(data, 2200f);
+        return Finish(data, .6f);
     }
 
-    // Cards catching fire: a soft rush that swells in and dies away, with a crackle in it.
+    // Cards catching fire: a low rush that swells in and dies away, with a few dull pops in it.
     private static float[] Kindled()
     {
-        var data = new float[(int)(Rate * .85f)];
+        var data = new float[(int)(Rate * .95f)];
         var random = new System.Random(6611);
-        float held = 0f, slow = 0f;
-        for (int i = 0; i < data.Length; i++)
-        {
-            float t = i / (float)Rate, along = t / .85f;
-            float white = (float)random.NextDouble() * 2f - 1f;
-            held += (white - held) * .25f;
-            slow += (held - slow) * .08f;
-            // A band of the noise: the fast-smoothed less the slow-smoothed.
-            float rush = (held - slow) * Mathf.Min(1f, along / .22f) * Mathf.Pow(1f - along, 1.5f);
-            data[i] = rush;
-        }
-        for (int crackle = 0; crackle < 14; crackle++)
-            Click(data, random, (float)random.NextDouble() * .7f, .002f + (float)random.NextDouble() * .003f, .25f + (float)random.NextDouble() * .35f);
-        return Finish(data, .5f);
+        Rush(data, random, 0f, .9f, .32f, 450f, 900f, .25f);
+        for (int pop = 0; pop < 9; pop++)
+            Rush(data, random, .1f + (float)random.NextDouble() * .6f, .02f, .12f + (float)random.NextDouble() * .1f, 1100f, 700f, 0f);
+        LowPass(data, 2200f);
+        return Finish(data, .45f);
     }
 
+    // A thud starting at <at> (s): a sine falling from <from> to <to> (Hz) over its first 1.5 × <decay> and gone by about
+    // 5 × <decay>: a card going down, a landing.
+    private static void Thud(float[] data, float at, float from, float to, float decay, float level)
+    {
+        int start = (int)(at * Rate), count = (int)(decay * 5f * Rate);
+        float turn = 0f, fall = decay * 1.5f, tau = decay * 5f / 9.21f;
+        for (int i = 0; i < count && start + i < data.Length; i++)
+        {
+            float t = i / (float)Rate;
+            turn += 2f * Mathf.PI * from * Mathf.Pow(to / from, Mathf.Min(1f, t / fall)) / Rate;
+            data[start + i] += Mathf.Sin(turn) * Mathf.Min(1f, t / .004f) * Mathf.Exp(-t / tau) * level;
+        }
+    }
+
+    // A soft chord starting at <at> (s): triangle notes (their overtones fall away fast, so they stay warm) swelling in
+    // over <attack> and gone by about 4 × <decay> after it.
+    private static void Pad(float[] data, float at, float[] notes, float attack, float decay, float level)
+    {
+        int start = (int)(at * Rate), count = (int)((attack + decay * 4f) * Rate);
+        float tau = decay * 4f / 9.21f;
+        foreach (float pitch in notes)
+            for (int i = 0; i < count && start + i < data.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float wave = 4f * Mathf.Abs(Mathf.Repeat(pitch * t, 1f) - .5f) - 1f;
+                float envelope = t < attack ? t / attack : Mathf.Exp(-(t - attack) / tau);
+                data[start + i] += wave * envelope * level;
+            }
+    }
+
+    // A sine gliding up from <from> to <to> (Hz) over <length> (s), swelling in over its first third and dying after:
+    // something rising.
+    private static void Glide(float[] data, float at, float from, float to, float length, float level)
+    {
+        int start = (int)(at * Rate), count = (int)(length * 1.4f * Rate);
+        float turn = 0f, peak = length * .3f, tau = length * 1.1f / 9.21f;
+        for (int i = 0; i < count && start + i < data.Length; i++)
+        {
+            float t = i / (float)Rate;
+            turn += 2f * Mathf.PI * from * Mathf.Pow(to / from, Mathf.Min(1f, t / length)) / Rate;
+            float envelope = t < peak ? t / peak : Mathf.Exp(-(t - peak) / tau);
+            data[start + i] += Mathf.Sin(turn) * envelope * level;
+        }
+    }
+
+    // Noise through a low-pass whose corner glides from <from> to <to> (Hz) over <length> (s), dying away; with <swell>
+    // above 0 it swells in over that share of its length first: a rush of fire, a soft tap, a dull pop.
+    private static void Rush(float[] data, System.Random random, float at, float length, float level, float from, float to, float swell)
+    {
+        int start = (int)(at * Rate), count = Mathf.Max(1, (int)(length * Rate));
+        float low = 0f, lower = 0f;
+        for (int i = 0; i < count && start + i < data.Length; i++)
+        {
+            float k = i / (float)count, corner = from * Mathf.Pow(to / from, k);
+            float a = 1f - Mathf.Exp(-2f * Mathf.PI * corner / Rate);
+            low += ((float)random.NextDouble() * 2f - 1f - low) * a;
+            lower += (low - lower) * a;
+            float envelope = swell > 0f ? Mathf.Min(1f, k / swell) * Mathf.Pow(1f - k, 1.5f) : Mathf.Exp(-k * 7f);
+            data[start + i] += lower * envelope * level * 2f;
+        }
+    }
+
+    // A gentle low-pass over a whole clip (two one-pole stages): what lies above <corner> (Hz) fades out.
+    private static void LowPass(float[] data, float corner)
+    {
+        float a = 1f - Mathf.Exp(-2f * Mathf.PI * corner / Rate), low = 0f, lower = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            low += (data[i] - low) * a;
+            lower += (low - lower) * a;
+            data[i] = lower;
+        }
+    }
+
+    // Brings the loudest sample to <peak> and fades the last few ms so the end doesn't click.
     private static float[] Finish(float[] data, float peak)
     {
         float top = 0f;

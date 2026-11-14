@@ -91,8 +91,9 @@ public sealed partial class PerkCardScreen
         PlayerPerks.Raise(card.Perk.Id);
         BuildTray(card.Perk.Id);
         // Pressed: it goes down and holds a beat before it is let go (Release, from Animate), so the press is felt (the
-        // user, 2026-11-14: "눌렀다는 느낌이 덜해. 고른지 모르겠어"). Its sound knows that beat: the click now, the ring at
-        // the release; a chord as well for a card picked to its last level or a special one.
+        // user, 2026-11-14: "눌렀다는 느낌이 덜해. 고른지 모르겠어"). Its sound knows that beat: a low knock now, a warm
+        // swell and a soft chord at the release; a low fifth under them for a card picked to its last level or a special
+        // one (all low: KitSound.Pressed).
         bool grand = card.Tier == Tier.Level3 || card.Tier == Tier.Special;
         KitSound.Play(grand ? KitSound.Cue.CardPickGrand : KitSound.Cue.CardPick);
     }
