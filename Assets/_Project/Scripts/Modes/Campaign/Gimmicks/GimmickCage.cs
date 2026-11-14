@@ -13,7 +13,7 @@ using UnityEngine;
 /// </summary>
 public sealed class GimmickCage : GimmickSwitch
 {
-    private const float BiteEvery = 1.2f, Reach = 1.7f;
+    private const float BiteEvery = 1.2f, BiteReach = 1.7f;
     private static readonly HashSet<Collider> through = new HashSet<Collider>();
 
     [SerializeField, Tooltip("The hold that bursts the cages (CampaignSteps id).")]
@@ -88,7 +88,7 @@ public sealed class GimmickCage : GimmickSwitch
         if (!passage.Contains(at) || mine.IsCrouchStance) return;
         foreach (var enemy in EnemyHealth.Living)
         {
-            if (enemy == null || !enemy.IsAlive || (enemy.transform.position - mine.transform.position).sqrMagnitude > Reach * Reach) continue;
+            if (enemy == null || !enemy.IsAlive || (enemy.transform.position - mine.transform.position).sqrMagnitude > BiteReach * BiteReach) continue;
             if (!InCage(enemy.transform.position + Vector3.up * .5f)) continue;
             nextBite = Time.time + BiteEvery;
             mine.DamageReceiver.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), biteDamage, DamageKind.Attack, at,

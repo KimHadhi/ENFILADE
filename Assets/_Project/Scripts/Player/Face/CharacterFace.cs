@@ -11,7 +11,7 @@ using UnityEngine;
 /// The one with the highest priority takes the face and the rest ease out under it, each at its own speed. On top of
 /// the mood the eyes blink and glance now and then, and the mouth makes the vowels of a voice while one plays (Speak,
 /// FaceVoice), as much as the mood lets them (Faces.csv blink, talk) and, for the blink, as the face leaves it room:
-/// measured on the face's own mesh (FaceRoom, CharacterFace.Room.cs), a face that has shut the eyes itself or put drawn
+/// measured on the face's own mesh (FaceRoom, CharacterFace.BlinkRoom.cs), a face that has shut the eyes itself or put drawn
 /// eyes in front of them blinks no more.
 /// The keys are the character's own (FaceKeys.csv, mostly the creator's own expressions from FacePresets.csv), else the
 /// common VRChat/MMD names, so any humanoid a modder brings gets a face with nothing baked for it. It writes only its
@@ -70,7 +70,7 @@ public sealed partial class CharacterFace : MonoBehaviour
         public Quaternion[] Ears;
         public float Weight, Strength = 1f, Until = float.NegativeInfinity;
         public bool On;
-        /// <summary>The share of the blink this face has room for (CharacterFace.Room.cs); below zero until asked.</summary>
+        /// <summary>The share of the blink this face has room for (CharacterFace.BlinkRoom.cs); below zero until asked.</summary>
         public float Room = -1f;
     }
 
