@@ -53,8 +53,8 @@ public sealed partial class PlayerBodyHands
         contactShare[0] = contactShare[1] = 0f;
         placed[0] = placed[1] = false;
         if (gunBody == null) return;
-        bool measure = Application.isEditor && gunBody.HoldSteady && HandsAllOnGun
-            && weapons.EquippedData != null && !reportedHolds.Contains((SkinId ?? "?", weapons.EquippedData));
+        bool measure = Application.isEditor && gunBody.HoldSteady && HandsAllOnGun && InHand(gunBody)
+            && !reportedHolds.Contains((SkinId ?? "?", weapons.EquippedData));
         Follow(right, false);
         Follow(left, true);
         holdMeasured = measure;
@@ -127,6 +127,12 @@ public sealed partial class PlayerBodyHands
 
     // Last in the frame, after the fingers: the measured hold to Logs/gun-hold-report.txt, once per character and gun, and
     // the hand-over from a reload's end into the hold, once per character and gun.
+    // The gun the body holds is the one the player has out: a switch names the next gun a moment before the last one leaves
+    // the hands, and the hold measured then was the last gun's under the next one's name (the report gave the MX16A4 the
+    // Herrington's numbers, the TR15 the MX68's, 2026-11-14).
+    private bool InHand(FPSBody gunBody)
+        => weapons != null && weapons.EquippedData != null && gunBody.Held != null && gunBody.Held.Entry.weapon == weapons.EquippedData;
+
     private void ReportGunHold()
     {
         if (!Application.isEditor) return;

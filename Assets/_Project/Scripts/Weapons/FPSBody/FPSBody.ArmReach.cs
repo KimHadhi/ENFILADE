@@ -30,6 +30,13 @@ public sealed partial class FPSBody
     [SerializeField, Min(.01f), Tooltip("Behind the plain hold's place on the handguard that slide fades out over this far, so a reload's hand on "
         + "the magazine keeps its clip's place (m in game; at least twice the slide).")]
     private float reachSlideFade = .1f;
+    [SerializeField, Tooltip("A long gun's trigger hand rests at least this far under its shoulder joint in the plain hold (m in game, up the body): "
+        + "a gun held higher comes down by the difference first (HipDrop).")]
+    private float hipHandUnderShoulder = .02f;
+    [SerializeField, Min(0f), Tooltip("The most a long gun comes down for that (m in game).")]
+    private float hipDropMost = .15f;
+    [SerializeField, Min(0f), Tooltip("A gun whose two palms sit further apart than this on it is a long gun (m in game); a pistol's are 6 to 7 cm apart.")]
+    private float longGunHands = .15f;
 
     // HandGrip's and GunArms' palm middle: from the wrist toward the knuckles, this share of the way.
     private const float PalmMiddle = .55f;
@@ -78,9 +85,13 @@ public sealed partial class FPSBody
         Vector3 leftWrist = place.position + axes * (leftPalm / scale) - axes * leftFingers * (PalmMiddle * left.Run);
         float wantRight = reachMost, wantLeft = Mathf.Min(sourceLeft, reachMost);
 
-        Vector3 move = Toward(rightWrist, right, wantRight, leftWrist, left, wantLeft);
+        // A long gun comes down first until the trigger hand rests under the shoulder, then within reach.
+        float drop = HipDrop(rightPalm, leftPalm, rightWrist, right, scale);
+        Vector3 lower = Vector3.down * drop;
+        Vector3 toward = Toward(rightWrist + lower, right, wantRight, leftWrist + lower, left, wantLeft);
         float most = reachFitMost / scale;
-        if (move.magnitude > most) move = move.normalized * most;
+        if (toward.magnitude > most) toward = toward.normalized * most;
+        Vector3 move = lower + toward;
         // A support arm still too straight holds the handguard further back, the least way that brings it in.
         Vector3 back = -(axes * Vector3.forward);
         float slide = Mathf.Min(SlideFor(leftWrist + move, left, wantLeft, back), reachSlideMost / scale);
@@ -88,10 +99,25 @@ public sealed partial class FPSBody
         fit.Move = move;
         fit.Slide = slide * scale;
         fit.SlideAt = leftPalm.z;
-        fit.MoveFromEyes = EyeFrame(bake.pose, out _, out Quaternion frame) ? Quaternion.Inverse(frame) * move * scale : move * scale;
+        Quaternion fromEyes = EyeFrame(bake.pose, out _, out Quaternion frame) ? Quaternion.Inverse(frame) : Quaternion.identity;
+        fit.MoveFromEyes = fromEyes * move * scale;
         NoteReach(entry.weapon, Straight(rightWrist, right), Straight(leftWrist, left), sourceRight, sourceLeft,
-            Straight(rightWrist + move, right), Straight(leftWrist + move + back * slide, left), fit);
+            Straight(rightWrist + move, right), Straight(leftWrist + move + back * slide, left), fit, drop * scale, fromEyes * toward * scale);
         return fit;
+    }
+
+    // How far a long gun comes down (model units, down the model) so its trigger hand rests at least Rig.hipHandUnderShoulder
+    // under this body's shoulder joint. Every long gun of the packs holds the trigger hand there or lower (18 to 27 cm under
+    // the eyes on the reference body, its shoulder 17 under) but the Herrington: shouldered, its straight stock rides the
+    // eye line, the trigger hand by the cheek 6 cm under the eyes and the gun across the middle of the view, and on a body a
+    // little lower in the eyes it hid the view's top left (the user, 2026-11-12: "헤링턴은 여전히 높게 잡고 있어"; 2026-11-14,
+    // KINEMATION's mannequin by the hub mirror: "나 샷건을 왜 이따구로 듦?"). A pistol (its palms close together) is held up
+    // toward the eyes on purpose and keeps its place.
+    private float HipDrop(Vector3 rightPalm, Vector3 leftPalm, Vector3 rightWrist, in ArmAt right, float scale)
+    {
+        if (Vector3.Distance(rightPalm, leftPalm) <= longGunHands) return 0f;
+        float over = rightWrist.y - (right.Shoulder.y - hipHandUnderShoulder / scale);
+        return Mathf.Clamp(over, 0f, hipDropMost / scale);
     }
 
     // A hand of KINEMATION's arms in a pose clip: its palm and fingers' way in the gun's frame, and how straight its arm is
@@ -184,15 +210,15 @@ public sealed partial class FPSBody
     }
 
     private void NoteReach(WeaponData weapon, float rightBefore, float leftBefore, float sourceRight, float sourceLeft, float rightAfter,
-        float leftAfter, in ReachFit fit)
+        float leftAfter, in ReachFit fit, float dropped, Vector3 toward)
     {
         if (!Application.isEditor || weapon == null) return;
         string skin = body != null && body.Skin != null ? body.Skin.Id : "?";
         if (!notedReach.Add((skin, weapon))) return;
-        Vector3 m = fit.MoveFromEyes * 100f;
+        Vector3 m = toward * 100f;
         PlayerBodyHands.NoteGunHold($"{System.DateTime.Now:HH:mm:ss} {skin} {weapon.name} fitted to the arms: straight right {rightBefore:0.00} "
             + $"left {leftBefore:0.00} (KINEMATION's right {sourceRight:0.00} left {sourceLeft:0.00}) -> right {rightAfter:0.00} left {leftAfter:0.00}; "
-            + $"gun {m.magnitude:0.0} cm toward the shoulders ({-m.z:0.0} back, {-m.x:0.0} left, {-m.y:0.0} down from the eyes); "
-            + $"support palm {fit.Slide * 100f:0.0} cm back along a bare handguard\n");
+            + $"gun down {dropped * 100f:0.0} cm to rest the trigger hand under the shoulder, then {m.magnitude:0.0} cm toward the shoulders "
+            + $"({-m.z:0.0} back, {-m.x:0.0} left, {-m.y:0.0} down from the eyes); support palm {fit.Slide * 100f:0.0} cm back along a bare handguard\n");
     }
 }
