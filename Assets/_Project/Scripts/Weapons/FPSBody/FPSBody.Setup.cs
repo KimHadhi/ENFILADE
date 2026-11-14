@@ -105,7 +105,7 @@ public sealed partial class FPSBody
                 + "(ENFILADE → 총 → KINEMATION 총 클립 다시 굽기).");
             return;
         }
-        // Any body but the reference plays the reference's humanoid clips, with the gun fitted to its own eyes (FittedGunPose).
+        // Any body but the reference plays the reference's humanoid clips; where the gun is on it is its own hold's (HoldFor).
 
         // Woken under a root of its own: KINEMATION's gun script looks up its sound source from transform.root when it
         // wakes (even switched off), and under the player it would find our footstep or voice source and play its own
@@ -134,11 +134,10 @@ public sealed partial class FPSBody
 
         var gun = instance.AddComponent<FPSGun>();
         Quaternion gunFrame = GunFrameOf(kinemation);
-        // Where the Pose Sampler starts the gun: the bake's place (from its own eyes on any body but the reference), brought
-        // within this body's reach (FitToReach).
-        var start = exact || !bake.hasEyeFrame ? new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one) : FittedGunPose(bake);
-        var reach = FitToReach(entry, bake, gunFrame, start, exact);
-        start.position += reach.Move;
+        // Where the Pose Sampler starts the gun: where this body holds it (GunHold: a stocked gun's butt in the body's own
+        // shoulder pocket, a handgun before the eyes at its arms' own bend), made from the body and the gun themselves.
+        var fit = HoldFor(entry, bake, exact, gunFrame, instance.transform, kinemation != null ? kinemation.aimPoint : null);
+        var start = fit.Start;
         var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame, start);
         // A shell reload's starts and shells hand over to its next step, so only its end settles back into the hold.
         bool shells = entry.weapon.ShellReload;
@@ -147,11 +146,10 @@ public sealed partial class FPSBody
             shells ? Copy(entry.reloadEmpty, bake.reloadEmpty) : Settled(Copy(entry.reloadEmpty, bake.reloadEmpty)), gunFrame,
             Copy(entry.reloadShell, bake.reloadShell), Settled(Copy(entry.reloadEnd, bake.reloadEnd)));
         gun.SetGrip(bake, exact);
-        gun.SetReachSlide(reach.Slide, reach.SlideAt, reachSlideFade);
-        // Until FPSAF has held it on this body, the gun is held where the bake put it from the eyes (within this body's
-        // reach), so a draw that follows KINEMATION's own clip (FPSBody.Contacts) comes up into a hold even the first time.
-        // The IK weapon bone carries the gun's frame on KINEMATION's weapon bone.
-        if (bake.hasEyeFrame) gun.SeedHold(bake.gunFromEyes + reach.MoveFromEyes, bake.gunTurnFromEyes * gunFrame);
+        gun.SetHold(fit.Hold, fit.Body, fit.Slide, fit.SlideAt, reachSlideFade);
+        // Until FPSAF has held it on this body, the gun is held where its hold puts it from the eyes, so a draw that follows
+        // KINEMATION's own clip (FPSBody.Contacts) comes up into a hold even the first time.
+        if (fit.Seeded) gun.SeedHold(fit.FromEyes, fit.TurnFromEyes);
         // This PC's own player's guns carry their kill counters (GunKills) and the skins picked on the title screen; a
         // friend's copy wears what their PC sent (WearSkins).
         bool mine = movement == null || (movement.IsLocal && !movement.IsNetworkDriven);
@@ -213,7 +211,7 @@ public sealed partial class FPSBody
                 var mine = Instantiate(sampler);
                 Keep(mine);
                 mine.poseToSample = Copy(sampler.poseToSample, bake.pose);
-                // The bake's place, or its place from the eyes on another body, within this body's reach (AddGun, FitToReach).
+                // Where this body holds the gun (AddGun, GunHold).
                 mine.defaultWeaponPose = start;
                 mine.weaponBoneOffset = new KTransform(Vector3.zero, gunFrame, Vector3.one);
                 mine.overwriteWeaponBone = true;
@@ -340,62 +338,6 @@ public sealed partial class FPSBody
                 break;
             }
         return chain;
-    }
-
-    // Where the gun sits in this body's model space in the gun's pose, on a body the clips weren't baked for (another skin, a
-    // mod's character): as far from its own eyes, in metres in game, and as turned from where its hips face, as the bake put
-    // it on the reference body (GunBakes.Entry.gunFromEyes). The pose clip is sampled on this body for it and put back.
-    private KTransform FittedGunPose(in GunBakes.Entry bake)
-    {
-        var made = new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one);
-        if (animator == null || bake.pose == null || !EyeFrame(bake.pose, out Vector3 eyes, out Quaternion frame)) return made;
-        float scale = Mathf.Max(1e-4f, ModelScale);
-        return new KTransform(eyes + frame * (bake.gunFromEyes / scale), frame * bake.gunTurnFromEyes, Vector3.one);
-    }
-
-    // The eyes in this body's model space and the frame they look out of (ahead the way the hips face, up the model's up),
-    // as the gun's pose clip stands the body: GunClipRetarget.EyeFrame's rule on the reference body.
-    private bool EyeFrame(AnimationClip pose, out Vector3 eyes, out Quaternion frame) => EyeFrame(animator, pose, out eyes, out frame);
-
-    /// <summary>The same for any humanoid's Animator (the editor's hold check measures every character with it, GunHoldProbe).</summary>
-    internal static bool EyeFrame(Animator animator, AnimationClip pose, out Vector3 eyes, out Quaternion frame)
-    {
-        eyes = default;
-        frame = Quaternion.identity;
-        if (animator == null) return false;
-        var root = animator.transform;
-        var head = animator.GetBoneTransform(HumanBodyBones.Head);
-        var leftLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
-        var rightLeg = animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
-        if (head == null || leftLeg == null || rightLeg == null) return false;
-        var bones = root.GetComponentsInChildren<Transform>();
-        var saved = new (Vector3 position, Quaternion rotation)[bones.Length];
-        for (int i = 0; i < bones.Length; i++) saved[i] = (bones[i].localPosition, bones[i].localRotation);
-        try
-        {
-            ClipSampler.Sample(pose, animator.gameObject, 0f);
-            Vector3 ahead = Vector3.Cross(root.InverseTransformPoint(rightLeg.position) - root.InverseTransformPoint(leftLeg.position), Vector3.up);
-            if (ahead.sqrMagnitude < 1e-8f) return false;
-            ahead.Normalize();
-            frame = Quaternion.LookRotation(ahead, Vector3.up);
-            Vector3 headAt = root.InverseTransformPoint(head.position);
-            eyes = headAt + Vector3.up * .08f + ahead * .1f;
-            var leftEye = animator.GetBoneTransform(HumanBodyBones.LeftEye);
-            var rightEye = animator.GetBoneTransform(HumanBodyBones.RightEye);
-            if (leftEye != null && rightEye != null)
-            {
-                Vector3 l = root.InverseTransformPoint(leftEye.position), r = root.InverseTransformPoint(rightEye.position);
-                Vector3 middle = (l + r) * .5f, fromHead = middle - headAt;
-                float apart = Vector3.Distance(l, r), above = fromHead.y, forward = Vector3.Dot(fromHead, ahead);
-                if (apart > .015f && apart < .2f && above > -.05f && above < .25f && forward > .01f && forward < .25f) eyes = middle;
-            }
-            return true;
-        }
-        finally
-        {
-            for (int i = 0; i < bones.Length; i++)
-                if (bones[i] != null) bones[i].SetLocalPositionAndRotation(saved[i].position, saved[i].rotation);
-        }
     }
 
     // A holster clip played over the gun's own time for it (s). No time keeps the clip's own pace.

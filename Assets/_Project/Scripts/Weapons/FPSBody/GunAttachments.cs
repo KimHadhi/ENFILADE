@@ -137,6 +137,32 @@ public sealed class GunAttachments : MonoBehaviour
                 if (part.part != null) part.part.transform.position += barrel * most;
         return most;
     }
+
+    /// <summary>
+    /// Draws every grip whose support palm sits ahead of <paramref name="palm"/> (world: as far up the gun as this body's
+    /// support arm holds it, FPSGun.SeatGrips) back along <paramref name="barrel"/> until it is there: a grip is mounted
+    /// where the hand that holds it reaches. Left ahead of that, a shorter arm held it locked straight with the palm short
+    /// of it. Returns how far the farthest one came (m).
+    /// </summary>
+    public float DrawGripsBack(Transform root, Vector3 palm, Vector3 barrel)
+    {
+        if (grips == null || root == null || barrel.sqrMagnitude < 1e-8f) return 0f;
+        barrel.Normalize();
+        float most = 0f;
+        for (int i = 0; i < grips.Length; i++)
+        {
+            if (!grips[i].hasHand || grips[i].part == null) continue;
+            Vector3 hand = root.TransformPoint(grips[i].handPalm);
+            float ahead = Vector3.Dot(hand - palm, barrel);
+            // Under half a centimetre is where it is already.
+            if (ahead <= .005f) continue;
+            grips[i].part.transform.position -= barrel * ahead;
+            grips[i].handPalm = root.InverseTransformPoint(hand - barrel * ahead);
+            most = Mathf.Max(most, ahead);
+        }
+        return most;
+    }
+
     public void SelectUnderbarrel(int index)
     {
         Underbarrel = Select(underbarrel, index);

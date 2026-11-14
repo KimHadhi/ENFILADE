@@ -56,9 +56,9 @@ internal static partial class GunClipRetarget
         return true;
     }
 
-    // The right shoulder pocket as the body stands in the pose: measured from its shoulder joint and neck (across and
-    // down as the body faces), then on the front of the body or its clothes where the gun, sliding back along itself,
-    // would meet it.
+    // The right shoulder pocket as the body stands in the pose, by the measure play places every character's stock with
+    // (HoldBody): the place inside the shoulder, from its joint and neck (across and down as the body faces), then where
+    // the body ends before it along the gun's own line.
     private static bool Pocket(Transform body, Vector3 facing, Vector3 pointing, out Vector3 pocket)
     {
         pocket = default;
@@ -68,61 +68,17 @@ internal static partial class GunClipRetarget
         if (neck == null) neck = PreviewHumanoid.Bone(body, HumanBodyBones.Chest);
         if (shoulder == null || neck == null) return false;
         Vector3 up = body.up, side = Vector3.Cross(up, facing).normalized, along = pointing.normalized;
-        Vector3 joint = shoulder.position;
-        float span = Vector3.Distance(joint, neck.position);
-        Vector3 point = joint - side * (Vector3.Dot(joint - neck.position, side) * PocketInward) - up * (span * PocketDrop);
-        pocket = point + along * (FrontOf(body, point, along, span * PocketRadius, out float front) ? front : span * PocketFallbackDepth);
+        float span = Vector3.Distance(shoulder.position, neck.position);
+        Vector3 point = HoldBody.UnderPocket(shoulder.position, neck.position, side, up);
+        pocket = point + along * (FrontOf(body, point, along, span * HoldBody.PocketRadius, out float front) ? front : span * HoldBody.PocketDepth);
         return true;
     }
 
-    // How far ahead of point, along forward, the body's outermost surface (skin or clothes) is within radius of that line,
-    // from its meshes as posed. The forearms, hands and head are left out: they pass in front of the chest.
+    // How far ahead of point (a place inside the body), along forward, the body itself ends, from its meshes as posed:
+    // where a butt's pad reaching radius to each side comes to rest (BodyFront.Rest, as play measures every character).
     private static bool FrontOf(Transform body, Vector3 point, Vector3 forward, float radius, out float front)
     {
-        front = float.NegativeInfinity;
-        var skip = new List<Transform>();
-        foreach (var bone in new[] { HumanBodyBones.RightLowerArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.Head })
-            if (PreviewHumanoid.Bone(body, bone) is Transform found) skip.Add(found);
-        var vertices = new List<Vector3>();
-        bool any = false;
-        foreach (var renderer in body.GetComponentsInChildren<SkinnedMeshRenderer>())
-        {
-            var mesh = renderer.sharedMesh;
-            if (!renderer.enabled || mesh == null || !mesh.isReadable) continue;
-            var bones = renderer.bones;
-            var weights = mesh.boneWeights;
-            var baked = new Mesh();
-            try
-            {
-                renderer.BakeMesh(baked, true);
-                baked.GetVertices(vertices);
-                // Baked with the renderer's scale, in its position and rotation.
-                var toWorld = Matrix4x4.TRS(renderer.transform.position, renderer.transform.rotation, Vector3.one);
-                for (int i = 0; i < vertices.Count; i++)
-                {
-                    Vector3 offset = toWorld.MultiplyPoint3x4(vertices[i]) - point;
-                    float ahead = Vector3.Dot(offset, forward);
-                    if (ahead <= front || (offset - forward * ahead).sqrMagnitude > radius * radius) continue;
-                    if (i < weights.Length && Under(bones, weights[i].boneIndex0, skip)) continue;
-                    front = ahead;
-                    any = true;
-                }
-            }
-            finally
-            {
-                Object.DestroyImmediate(baked);
-            }
-        }
-        return any;
-    }
-
-    // The vertex's main bone (Unity keeps the heaviest first) is one of skip or under one.
-    private static bool Under(Transform[] bones, int index, List<Transform> skip)
-    {
-        if (bones == null || index < 0 || index >= bones.Length || bones[index] == null) return false;
-        foreach (var root in skip)
-            if (bones[index].IsChildOf(root)) return true;
-        return false;
+        return BodyFront.Read(body, point, float.PositiveInfinity).Rest(point, forward, body.up, radius, out front, out _);
     }
 
     // Each bake's hold, written to Logs/gun-bake-report.txt (no console): how far each hand is from the gun bone here and on

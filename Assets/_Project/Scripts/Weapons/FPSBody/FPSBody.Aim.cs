@@ -31,6 +31,8 @@ public sealed partial class FPSBody
         converge.muzzle = held.MuzzlePosition;
         converge.muzzleForward = held.MuzzleRotation * Vector3.forward;
         converge.hasMuzzle = true;
+        // The gun turns about what the body holds it by: a stock's butt in the shoulder, a handgun's grip (GunHold.Pivot).
+        converge.hasPivot = held.HoldPivot(out converge.pivot);
         bool free = !held.HandsBusy && Framework >= .999f;
         convergeWeight = Mathf.MoveTowards(convergeWeight, free ? 1f : 0f, dt / ConvergeEase);
         // The customize menu holds the gun out to show it (ArcCW's customize view).
@@ -400,7 +402,7 @@ public sealed partial class FPSBody
     internal GunAttachments.Kind HeldGripKind => held != null ? held.GripKind : GunAttachments.Kind.None;
 
     /// <summary>The held gun is a handgun (its sound profile): the support hand cups the grip hand instead of a handguard.</summary>
-    internal bool HeldPistol => held != null && IsPistol(held.Data);
+    internal bool HeldPistol => held != null && held.Data != null && held.Data.SoundProfile == GunSoundProfile.Pistol;
 
     /// <summary>
     /// The held gun's grip takes the support hand (PlayerBodyHands.HoldGunGrip): where the palm goes and the ways the

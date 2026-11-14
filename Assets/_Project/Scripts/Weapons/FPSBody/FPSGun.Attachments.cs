@@ -29,15 +29,18 @@ public sealed partial class FPSGun
 
     /// <summary>
     /// Once per gun: its grips go no further back than KINEMATION's support hand holds it (<paramref name="supportPalm"/>,
-    /// on <paramref name="weaponBone"/> as FPSBody's contacts keep a palm), GunAttachments.SeatGrips; the hands' surface is
-    /// measured again if any moved.
+    /// on <paramref name="weaponBone"/> as FPSBody's contacts keep a palm), GunAttachments.SeatGrips, and no further ahead
+    /// than this body's support arm holds the gun (the hold's slide: a grip is mounted where the hand reaches); the hands'
+    /// surface is measured again if any moved.
     /// </summary>
     internal void SeatGrips(Transform weaponBone, Vector3 supportPalm)
     {
         if (gripsSeated || Attachments == null || weaponBone == null) return;
         gripsSeated = true;
-        Vector3 palm = weaponBone.position + weaponBone.rotation * supportPalm;
-        if (Attachments.SeatGrips(transform, palm, weaponBone.rotation * Vector3.forward) > 0f) Surface = GunSurface.Of(transform);
+        Vector3 palm = weaponBone.position + weaponBone.rotation * supportPalm, barrel = weaponBone.rotation * Vector3.forward;
+        bool moved = Attachments.SeatGrips(transform, palm, barrel) > 0f;
+        if (reachSlide > 0f) moved |= Attachments.DrawGripsBack(transform, palm - barrel * reachSlide, barrel) > 0f;
+        if (moved) Surface = GunSurface.Of(transform);
     }
 
     /// <summary>
@@ -114,7 +117,7 @@ public sealed partial class FPSGun
     {
         if (Sights == null || index < 0 || index >= Sights.Count || index == Sights.Current) return false;
         Sights.Select(index);
-        if (Entity != null) Entity.defaultAimPoint = AimPoint;
+        if (Entity != null) Entity.defaultAimPoint = EyePoint;
         return true;
     }
 

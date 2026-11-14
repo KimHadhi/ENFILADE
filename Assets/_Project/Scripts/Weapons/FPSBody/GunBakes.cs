@@ -40,7 +40,7 @@ public sealed class GunBakes : ScriptableObject
         [Tooltip("The grip was measured (bakes from version 5 on).")]
         public bool hasGrip;
         [Tooltip("Where the gun sits from the body's eyes in the pose, in metres in game, in the frame of the eyes facing the way the "
-            + "hips do (z ahead, y up): any other humanoid has the gun put there from its own eyes (FPSBody.FittedGunPose).")]
+            + "hips do (z ahead, y up): on any other humanoid that is where the clip alone has the gun (HoldBody.PlaceOf), from which its hold is made (GunHold).")]
         public Vector3 gunFromEyes;
         public Quaternion gunTurnFromEyes;
         public bool hasEyeFrame;
@@ -61,7 +61,7 @@ public sealed class GunBakes : ScriptableObject
 
     /// <summary>
     /// The clips made for <paramref name="skin"/>, or else the reference body's: humanoid clips play on any humanoid, and the
-    /// gun is fitted to the body's own eyes (FPSBody.FittedGunPose). Only the default skin is baked now.
+    /// gun is held as that body holds it (GunHold, from the body's own measure: HoldBody). Only the default skin is baked now.
     /// </summary>
     public bool TryGet(GameObject skin, WeaponData weapon, out Entry entry, out bool exact)
     {

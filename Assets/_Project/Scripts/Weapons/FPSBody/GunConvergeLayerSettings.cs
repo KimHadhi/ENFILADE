@@ -4,9 +4,13 @@ using KINEMATION.Shared.KAnimationCore.Runtime.Rig;
 using UnityEngine;
 
 /// <summary>
-/// An FPS Animation Framework layer of ours, just after its Ads: the gun turns about its muzzle until the barrel points at
-/// what the crosshair is on, as the gun did before KINEMATION (WeaponPresentation, 0.5.0 to 0.7.34). The crosshair stays in
-/// the middle of the screen and the gun comes to it, not the other way round (user, 2026-11-09). Like Ads it works before
+/// An FPS Animation Framework layer of ours, just after its Ads: the gun turns until the barrel points at what the
+/// crosshair is on, as the gun did before KINEMATION (WeaponPresentation, 0.5.0 to 0.7.34). The crosshair stays in the
+/// middle of the screen and the gun comes to it, not the other way round (user, 2026-11-09). It turns about the point the
+/// body holds it by (pivot: a stock's butt in the shoulder, a handgun's grip in the hand), which stays where it is, as a
+/// shooter's gun does. It once turned about its muzzle: the butt then swung out of the shoulder with every near target
+/// (21 degrees for one a metre off), and a clip idling with its muzzle up was levelled at the height of its muzzle, across
+/// the middle of the view (the Herrington; the user, 2026-11-14: "나 샷건을 왜 이따구로 듦?"). Like Ads it works before
 /// Look, with the eyes at the camera socket looking the way the body faces; Look then turns the eyes and the gun together,
 /// so the barrel meets the view's line at the crosshair's distance. Sway, recoil and the wall's pose go on top of it, and
 /// FPSAF's IK brings the hands after it. Down the sights it lets go (Ads lines the sight up instead), and mid-reload,
@@ -28,6 +32,13 @@ public sealed class GunConvergeLayerSettings : FPSAnimatorLayerSettings
     /// </summary>
     [NonSerialized] public Vector3 muzzle, muzzleForward = Vector3.forward;
     [NonSerialized] public bool hasMuzzle;
+    /// <summary>
+    /// The point of the gun that stays where it is as the barrel turns, in the IK weapon bone's space: what this body holds
+    /// the gun by (GunHold.Pivot, through FPSGun.HoldPivot); FPSBody gives it every frame. Without one the gun turns about
+    /// its muzzle.
+    /// </summary>
+    [NonSerialized] public Vector3 pivot;
+    [NonSerialized] public bool hasPivot;
     /// <summary>
     /// How far the gun is held out for the customize menu (0-1, FPSBody, eased): before the eyes and turned to show its
     /// side, as ArcCW's customize view holds it, the hands following it there.

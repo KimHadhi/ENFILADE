@@ -53,7 +53,7 @@ internal static partial class GunClipRetarget
     // 16: the hands' reach measured as their real miss from KINEMATION's hold, and a gun the hands can't reach shouldered
     // brought back toward the body until they do (the Herrington sat at arm's length in front of the face).
     // 17: a stocked gun stays shouldered even where the hands can't reach it so: play fits the hold to each body's arms
-    // (FPSBody.FitToReach). Brought back toward KINEMATION's camera framing (16), the Herrington rode at the cheek, its gun
+    // (then FPSBody.FitToReach, now GunHold). Brought back toward KINEMATION's camera framing (16), the Herrington rode at the cheek, its gun
     // 3 cm under the eyes where the other long guns sit 7 to 15, its trigger hand by the face (the user, 2026-11-12: "헤링턴은
     // 여전히 높게 잡고 있어"): its pump is 0.6 m from its butt, out of the reference body's reach (0.49 m arm) shouldered.
     private const int Version = 17;
@@ -63,11 +63,8 @@ internal static partial class GunClipRetarget
     // over the arm's length).
     private const float StanceStep = 2.5f, StanceMaxBlade = 40f, StanceReachSlack = .01f, StanceArmStraight = .97f;
 
-    // Where a stock's butt rests: from the shoulder joint (RightUpperArm) toward the neck by this share of the way across,
-    // under the joint by this share of the shoulder-to-neck distance, then on the front of the body there (skin or
-    // clothes, within this share of that distance from the line straight ahead; without a readable mesh, this share of
-    // it ahead of the joint). A shooter's shoulder pocket is just inside the ball of the joint and a little under it.
-    private const float PocketInward = .25f, PocketDrop = .1f, PocketRadius = .2f, PocketFallbackDepth = .35f;
+    // Where a stock's butt rests is HoldBody's rule (UnderPocket, PocketRadius, PocketDepth; where the body ends by
+    // BodyFront): the one play places every character's stock by, so the reference body's bake and its hold in play agree.
     // A gun has a stock when its back end reaches this far behind the trigger hand's wrist (m in game); a pistol's doesn't.
     private const float StockReach = .1f;
     // How deep the gun's back face is taken when finding the butt's middle (m).
@@ -102,7 +99,7 @@ internal static partial class GunClipRetarget
         var bakes = AssetDatabase.LoadAssetAtPath<GunBakes>(BakesPath);
         var entries = new List<GunBakes.Entry>(bakes != null ? bakes.entries : Array.Empty<GunBakes.Entry>());
         // One reference body only: the default skin's. Every other body, a mod's character included, plays the same humanoid
-        // clips and has the gun fitted to its own eyes at load (FPSBody.FittedGunPose, from the bake's gun-from-eyes). Baking
+        // clips and holds the gun as its own body does (GunHold; the bake's gun-from-eyes says where the clip has it). Baking
         // every skin took far too long, and a character added later by a mod could never have been baked (user, 2026-11-09).
         var skins = new List<GameObject>();
         if (profile.ModelOf(null) is GameObject reference) skins.Add(reference);

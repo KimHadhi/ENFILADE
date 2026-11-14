@@ -181,7 +181,7 @@ public sealed partial class FPSBody
         var gun = rig.IkWeaponBone;
         Quaternion turn = gun.rotation;
         Vector3 onGun = Vector3.Lerp(holdPalm, clipPalm, mix);
-        // A short support arm holds a bare handguard further back (FitToReach); a reload's hand elsewhere keeps its place.
+        // A short support arm holds a bare handguard further back (ShoulderedHold); a reload's hand elsewhere keeps its place.
         if (isLeft) onGun = held.SlideSupport(onGun);
         palm = gun.position + turn * onGun;
         fingers = turn * Vector3.Slerp(holdFingers, clipFingers, mix);

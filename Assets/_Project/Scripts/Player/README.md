@@ -14,7 +14,7 @@
 | [Body/Feet](Body/Feet/) | 5 | 발 딛기, 걸음, 신발 밑창 |
 | [Body/Hands](Body/Hands/) | 14 | 손과 손가락: 총·난간·사다리 잡기 |
 | [Body/IK](Body/IK/) | 2 | 팔·다리 IK 계산 |
-| [Body/Measure](Body/Measure/) | 4 | 몸과 옷의 실제 겉면 재기 |
+| [Body/Measure](Body/Measure/) | 5 | 몸과 옷의 실제 겉면 재기 (몸에 눌러 대는 것이 멈추는 자리: [BodyFront](Body/Measure/BodyFront.cs), 총 개머리판의 어깨 자리가 쓴다) |
 | [Camera](Camera/) | 9 | 시점, 카메라 효과, 3인칭·관전 |
 | [Comms](Comms/) | 3 | 콜아웃과 핑 |
 | [Face](Face/) | 8 | 표정과 입 모양 |

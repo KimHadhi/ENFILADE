@@ -146,9 +146,9 @@ internal static partial class GunClipRetarget
                     // The hands stay where Retarget Pro puts them (V10); in play they rest on the gun's real surface
                     // (PlayerBodyHands.GunFingers). Moving them by the knuckles here put the support hand off the gun.
                     // A gun the hands can't reach shouldered, even with the chest turned, stays shouldered (17): brought
-                    // back toward KINEMATION's camera framing it rode at the cheek. Play brings it within each body's own
-                    // reach, the gun toward the shoulders and the support hand further back on a bare handguard
-                    // (FPSBody.FitToReach), so the pullBack asked for here no longer moves it.
+                    // back toward KINEMATION's camera framing it rode at the cheek. Play holds it as each body does, the butt
+                    // on that body's own shoulder and the support hand where its arm reaches (ShoulderedHold), so the
+                    // pullBack asked for here no longer moves it.
                     return Measure(body, bodyWeapon, source, sourceWeapon, fit);
                 }
 
@@ -177,7 +177,7 @@ internal static partial class GunClipRetarget
                         : $"no stock (back end {reach:0.000} m behind the wrist)";
                 shoulder += shouldered
                     ? $"; chest turned {bladed:0.#}°, hands {placed.miss:0.000} m off KINEMATION's hold, support arm {placed.extension:0.00} straight"
-                        + " (play fits the hold to each body's arms: FPSBody.FitToReach)"
+                        + " (play holds it as each body does: GunHold)"
                     : "; standing square";
                 var entry = new GunBakes.Entry
                 {
@@ -189,7 +189,7 @@ internal static partial class GunClipRetarget
                 };
                 MeasureGrip(body, bodyWeapon, ref entry);
                 // Where the gun sits from the eyes (metres in game, in the eyes' frame facing the way the hips do), so any
-                // other humanoid has it put the same way from its own eyes at load (FPSBody.FittedGunPose).
+                // other humanoid's clip has it the same way from its own eyes (HoldBody.PlaceOf), where its hold starts from.
                 if (EyeFrame(body, out Vector3 eyesAt, out Quaternion eyeFrame))
                 {
                     entry.gunFromEyes = Quaternion.Inverse(eyeFrame) * (entry.gunPosition - eyesAt) * fit;

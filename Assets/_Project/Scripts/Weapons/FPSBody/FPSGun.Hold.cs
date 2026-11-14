@@ -47,13 +47,13 @@ public sealed partial class FPSGun
         return true;
     }
 
-    // Where the gun sits fully aimed, from the eyes, by its sight alone: the aim point on the eyes, looking where they look, as
-    // FPSAF's Ads with no blend left holds it (FPSBody.ProfileFor). The gun hangs at rest under the IK weapon bone, so its
-    // own place is the bone's.
+    // Where the gun sits fully aimed, from the eyes, by its sight alone: the eye point on the eyes (the sight's own, or the
+    // hold's behind it: EyePoint), looking where they look, as FPSAF's Ads with no blend left holds it (FPSBody.ProfileFor).
+    // The gun hangs at rest under the IK weapon bone, so its own place is the bone's.
     private bool AimedFromSight(out KTransform aimed)
     {
         aimed = default;
-        var aim = AimPoint;
+        var aim = EyePoint;
         if (aim == null || aim == transform) return false;
         Quaternion toGun = Quaternion.Inverse(transform.rotation);
         Quaternion turn = Quaternion.Inverse(toGun * aim.rotation);

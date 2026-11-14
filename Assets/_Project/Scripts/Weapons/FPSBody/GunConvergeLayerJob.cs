@@ -4,16 +4,17 @@ using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 /// <summary>
-/// The job of GunConvergeLayerSettings: the IK weapon bone turned about the gun's muzzle so the barrel points at the point
-/// the given distance ahead of the camera socket, the way the body faces (the view, once Look has turned both).
+/// The job of GunConvergeLayerSettings: the IK weapon bone turned about the point the body holds the gun by (its muzzle
+/// when none is given) so the barrel points at the point the given distance ahead of the camera socket, the way the body
+/// faces (the view, once Look has turned both).
 /// </summary>
 public struct GunConvergeLayerJob : IAnimationJob, IAnimationLayerJob
 {
     private GunConvergeLayerSettings settings;
     private LayerJobData jobData;
     private TransformStreamHandle socket, weapon;
-    private Vector3 muzzleLocal, muzzleForwardLocal;
-    private bool hasMuzzle;
+    private Vector3 muzzleLocal, muzzleForwardLocal, pivotLocal;
+    private bool hasMuzzle, hasPivot;
     private float weight, distance, present;
     private Vector3 displayAt, displayTurn;
 
@@ -47,13 +48,24 @@ public struct GunConvergeLayerJob : IAnimationJob, IAnimationLayerJob
         Vector3 target = socket.GetPosition(stream) + facing * Vector3.forward * distance;
         Vector3 gunAt = weapon.GetPosition(stream);
         Quaternion gunTurn = weapon.GetRotation(stream);
-        Vector3 muzzle = gunAt + gunTurn * muzzleLocal;
-        Vector3 barrel = gunTurn * muzzleForwardLocal, toTarget = target - muzzle;
-        // A point at or behind the muzzle (a wall right in front) has no way to point at: the wall's pose takes over there.
-        if (toTarget.sqrMagnitude < 1e-4f || Vector3.Dot(toTarget, barrel) <= 0f) return;
-        Quaternion turn = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(barrel, toTarget.normalized), w);
+        Vector3 pivot = gunAt + gunTurn * (hasPivot ? pivotLocal : muzzleLocal);
+        Quaternion turn = Quaternion.identity;
+        // Twice: turning about the pivot carries the muzzle with it, and the way from the muzzle to the point changes.
+        for (int pass = 0; pass < 2; pass++)
+        {
+            Vector3 muzzle = pivot + turn * (gunAt + gunTurn * muzzleLocal - pivot);
+            Vector3 barrel = turn * (gunTurn * muzzleForwardLocal), toTarget = target - muzzle;
+            // A point at or behind the muzzle (a wall right in front) has no way to point at: the wall's pose takes over there.
+            if (toTarget.sqrMagnitude < 1e-4f || Vector3.Dot(toTarget, barrel) <= 0f)
+            {
+                if (pass == 0) return;
+                break;
+            }
+            turn = Quaternion.FromToRotation(barrel, toTarget.normalized) * turn;
+        }
+        turn = Quaternion.Slerp(Quaternion.identity, turn, w);
         weapon.SetRotation(stream, turn * gunTurn);
-        weapon.SetPosition(stream, muzzle + turn * (gunAt - muzzle));
+        weapon.SetPosition(stream, pivot + turn * (gunAt - pivot));
     }
 
     public void ProcessRootMotion(AnimationStream stream) { }
@@ -86,6 +98,8 @@ public struct GunConvergeLayerJob : IAnimationJob, IAnimationLayerJob
         hasMuzzle = settings.hasMuzzle && settings.muzzleForward.sqrMagnitude > .5f;
         muzzleLocal = settings.muzzle;
         muzzleForwardLocal = settings.muzzleForward;
+        hasPivot = settings.hasPivot;
+        pivotLocal = settings.pivot;
         present = Mathf.Clamp01(settings.present);
         displayAt = settings.displayAt;
         displayTurn = settings.displayTurn;
