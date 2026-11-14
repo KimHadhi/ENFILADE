@@ -15,6 +15,8 @@ using UnityEngine;
 ///     Tables/Weapons.csv   a table of the game's, by file name (sub-folders are free), laid over the game's own
 ///                          (CsvTable.Overlay): a row whose id the game has changes that row's filled cells,
 ///                          a new id adds a row
+///     Avatars/             characters made in Unity (a VRChat avatar) and packed by the exporter: a bundle and a file
+///                          saying what it is each (ModAvatars)
 ///   _Off/                  a folder starting with _ or . is not loaded
 /// </code>
 /// The folder stands next to the game's executable; in the editor, at the project's root (<see cref="Root"/>).
@@ -25,15 +27,19 @@ using UnityEngine;
 /// </summary>
 public static class GameMods
 {
-    public const string FolderName = "Mods", TablesFolder = "Tables", NoteFile = "mod.txt";
+    public const string FolderName = "Mods", TablesFolder = "Tables", AvatarsFolder = "Avatars", NoteFile = "mod.txt";
     /// <summary>Where /mods export writes the game's own tables. Starts with _, so it is never loaded as a mod.</summary>
     public const string ExportFolder = "_게임 원본";
 
-    /// <summary>One loaded mod: its folder's name, where it is, its note and its tables' files by table name.</summary>
+    /// <summary>
+    /// One loaded mod: its folder's name, where it is, its note, its tables' files by table name, and the avatar files
+    /// in its Avatars folder (ModAvatars reads them: characters made in Unity and packed with the exporter).
+    /// </summary>
     public sealed class Mod
     {
         public string Name, Folder, Note = "";
         public readonly Dictionary<string, string> Tables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public readonly List<string> Avatars = new List<string>();
     }
 
     private static List<Mod> mods;
@@ -48,14 +54,22 @@ public static class GameMods
     public static IReadOnlyList<Mod> Loaded => mods ??= Scan();
 
     /// <summary>Forget what was read, so the next ask reads the folders again (GameTables.Reload does this).</summary>
-    public static void Rescan() => mods = null;
+    public static void Rescan()
+    {
+        mods = null;
+        ModAvatars.Forget();
+    }
 
-    /// <summary>Each loaded mod's text of this table (the mod's name, the text), in load order.</summary>
+    /// <summary>
+    /// Each loaded mod's text of this table (the mod's name, the text), in load order. What a mod's avatars say of the
+    /// table by themselves (ModAvatars.TableTexts) comes just before the mod's own file, which so has the last word.
+    /// </summary>
     public static IEnumerable<KeyValuePair<string, string>> TableTexts(string table)
     {
         if (string.IsNullOrEmpty(table)) yield break;
         foreach (var mod in Loaded)
         {
+            foreach (var worked in ModAvatars.TableTexts(mod, table)) yield return worked;
             if (!mod.Tables.TryGetValue(table, out string path)) continue;
             string text = Read(path);
             if (text != null) yield return new KeyValuePair<string, string>(mod.Name, text);
@@ -83,8 +97,11 @@ public static class GameMods
         foreach (var mod in loaded)
         {
             text.Append("\n· ").Append(mod.Name).Append(": 표 ").Append(mod.Tables.Count).Append("개");
+            if (mod.Avatars.Count > 0) text.Append(", 아바타 파일 ").Append(mod.Avatars.Count).Append("개");
             if (mod.Note.Length > 0) text.Append(" — ").Append(mod.Note);
         }
+        string avatars = ModAvatars.Summary();
+        if (avatars.Length > 0) text.Append('\n').Append(avatars);
         return text.ToString();
     }
 
@@ -151,6 +168,13 @@ public static class GameMods
                         else mod.Tables[table] = file;
                     }
                 }
+                string avatars = Path.Combine(folder, AvatarsFolder);
+                if (Directory.Exists(avatars))
+                {
+                    string[] files = Directory.GetFiles(avatars, "*" + ModAvatarFile.Extension, SearchOption.AllDirectories);
+                    Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+                    mod.Avatars.AddRange(files);
+                }
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
             {
@@ -169,7 +193,7 @@ public static class GameMods
 
     // A file's text, or null when it isn't there or can't be read. The file is opened so that a program that has it
     // open for writing (a text editor, a spreadsheet) does not shut the game out.
-    private static string Read(string path, bool quiet = false)
+    internal static string Read(string path, bool quiet = false)
     {
         try
         {

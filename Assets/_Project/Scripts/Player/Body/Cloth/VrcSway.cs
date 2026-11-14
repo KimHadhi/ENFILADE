@@ -37,8 +37,12 @@ using UnityEngine;
 /// pull and spring become how many times a second it swings and how much of each swing it keeps, its limit cone holds
 /// it, and the bones its PhysBone ignores stay still, as in VRChat (the user, 2026-11-12: "가슴 물리가 살덩이처럼 좀
 /// 탱탱하고 질량이 느껴졌으면 좋겠어. 머리처럼 너무 흩날리는 느낌").
+/// It runs in the game as well as in the editor: an avatar a player brings as a mod carries its PhysBones as its maker
+/// set them (ModAvatars), and they become rows this same way when the avatar is first stood up, so nothing is baked
+/// into the mod and a better mapping here reaches every avatar without exporting it again (the user, 2026-11-14:
+/// "VRChat 유저들이 자기가 쓰던 캐릭터를 내 게임에서도 쓰고 싶어 할 텐데 이거 호환 그대로 잘 되게끔").
 /// </summary>
-internal static class VrcSway
+public static class VrcSway
 {
     /// <summary>
     /// Raised whenever the rows this writes change, so the rows an older one wrote are written again (BoothImport).
@@ -50,7 +54,7 @@ internal static class VrcSway
     /// 5: flesh by kind (breasts softer than a bottom), the limit at the swinging bone's depth, and a slide for a lump whose
     /// bone stands upright (2026-11-12).
     /// </summary>
-    internal const int Version = 5;
+    public const int Version = 5;
     // Depths down a chain where its curves are read: root, quarters, far end.
     private const int Samples = 5;
     // How much of a PhysBone's immobile carries over to a chain that hangs. VRChat makers set it high to calm what a
@@ -71,15 +75,15 @@ internal static class VrcSway
     // Each mesh's bones that carry any of its skin, by bone slot, read once.
     private static readonly Dictionary<Mesh, HashSet<int>> weighted = new Dictionary<Mesh, HashSet<int>>();
 
-    /// <param name="prefab">The prefab as read from its file.</param>
+    /// <param name="found">The PhysBones, as read from a prefab's file (VrcPrefab) or from a mod avatar's (ModAvatars).</param>
     /// <param name="root">The prefab's loaded root, whose meshes the rows name.</param>
     /// <param name="owner">Cloth.csv's skin column: the character's id, or the outfit model's.</param>
     /// <param name="shared">Bone names the chains may not start at: the character's humanoid bones, or for an outfit every bone of the character.</param>
     /// <param name="partOf">The body part ("legs", "head") a collider stands on, or null.</param>
-    internal static List<Dictionary<string, string>> Rows(VrcPrefab prefab, GameObject root, string owner, ISet<string> shared,
+    public static List<Dictionary<string, string>> Rows(IReadOnlyList<VrcPhysBone> found, GameObject root, string owner, ISet<string> shared,
         Func<Transform, string> partOf)
     {
-        var bones = prefab.PhysBones.Where(bone => !Gimmick(bone.Root)).ToList();
+        var bones = found.Where(bone => bone != null && bone.Root != null && !Gimmick(bone.Root)).ToList();
         var roots = new HashSet<Transform>(bones.Select(bone => bone.Root));
         var meshes = root.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(mesh => mesh.sharedMesh != null && !Gimmick(mesh.transform)).ToList();
         var rows = new List<Dictionary<string, string>>();
@@ -193,7 +197,7 @@ internal static class VrcSway
         return used;
     }
 
-    private static Dictionary<string, string> Settings(VrcPrefab.PhysBone bone, bool ring, bool spring, float length, bool tip)
+    private static Dictionary<string, string> Settings(VrcPhysBone bone, bool ring, bool spring, float length, bool tip)
     {
         float stiffness = Stiffness(bone, -1f);
         float angle = bone.LimitType == 0 ? 90f : bone.LimitType == 1 ? bone.MaxAngleX : Mathf.Max(bone.MaxAngleX, bone.MaxAngleZ);
@@ -241,7 +245,7 @@ internal static class VrcSway
     // the root takes with it is the depth inertia (Magica's grows toward the root as 1 - depth², as VRChat makers draw
     // immobile falling off toward the end: Mayo's side lock 0.7 at the root, 0.29 at its end). Gravity is held off while
     // she stands and friction is none (see the class).
-    private static void Hanging(Dictionary<string, string> row, VrcPrefab.PhysBone bone, float length)
+    private static void Hanging(Dictionary<string, string> row, VrcPhysBone bone, float length)
     {
         var stiff = new float[Samples];
         var damp = new float[Samples];
@@ -253,11 +257,11 @@ internal static class VrcSway
         {
             float depth = i / (Samples - 1f);
             stiff[i] = Stiffness(bone, depth);
-            damp[i] = Damping(Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Spring, bone.SpringCurve, depth)));
+            damp[i] = Damping(Mathf.Clamp01(VrcPhysBone.At(bone.Spring, bone.SpringCurve, depth)));
             limit[i] = Mathf.Clamp(Limit(bone, depth), 5f, 180f);
-            radius[i] = Mathf.Max(0f, VrcPrefab.PhysBone.At(bone.Radius, bone.RadiusCurve, depth));
-            still[i] = Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Immobile, bone.ImmobileCurve, depth)) * ImmobileShare;
-            gravity += VrcPrefab.PhysBone.At(bone.Gravity, bone.GravityCurve, depth) / Samples;
+            radius[i] = Mathf.Max(0f, VrcPhysBone.At(bone.Radius, bone.RadiusCurve, depth));
+            still[i] = Mathf.Clamp01(VrcPhysBone.At(bone.Immobile, bone.ImmobileCurve, depth)) * ImmobileShare;
+            gravity += VrcPhysBone.At(bone.Gravity, bone.GravityCurve, depth) / Samples;
         }
         Down(row, "stiffness", "stiffnessCurve", stiff);
         Down(row, "damping", "dampingCurve", damp);
@@ -288,15 +292,15 @@ internal static class VrcSway
     // stands upright can't show its bounce by turning (Mayo's bottom, 32° off upright): its root slides that kind's share
     // of the part's length, times how upright the bone stands. Stiffness and damping are worked out from these
     // (ClothPart.Apply), and it takes no wind: wind and Magica's damping, which is air drag, are what hair streams back in.
-    private static void Flesh(Dictionary<string, string> row, VrcPrefab.PhysBone bone, List<Transform> chains, FleshKind kind)
+    private static void Flesh(Dictionary<string, string> row, VrcPhysBone bone, List<Transform> chains, FleshKind kind)
     {
         float pull = 0f, wobble = 0f;
         for (int i = 0; i < Samples; i++)
         {
             float depth = i / (Samples - 1f);
-            float hold = bone.Integration == 1 ? VrcPrefab.PhysBone.At(bone.Stiffness, bone.StiffnessCurve, depth) * AdvancedHold : 0f;
-            pull += Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Pull, bone.PullCurve, depth) + hold) / Samples;
-            wobble += Mathf.Clamp01(VrcPrefab.PhysBone.At(bone.Spring, bone.SpringCurve, depth)) / Samples;
+            float hold = bone.Integration == 1 ? VrcPhysBone.At(bone.Stiffness, bone.StiffnessCurve, depth) * AdvancedHold : 0f;
+            pull += Mathf.Clamp01(VrcPhysBone.At(bone.Pull, bone.PullCurve, depth) + hold) / Samples;
+            wobble += Mathf.Clamp01(VrcPhysBone.At(bone.Spring, bone.SpringCurve, depth)) / Samples;
         }
         // The bone that swings on the part's first root, and how far down the chain it ends. A root with nothing under it
         // swings a tip hung straight down from it (ClothPart.AddTips).
@@ -329,7 +333,7 @@ internal static class VrcSway
     // Bones listed from outside the chains are none of the row's (Mayo's breasts list a switched-off small-breast setup
     // beside the armature, Breast_PB_small). Only springs for now: a chain that hangs is fitted and laid down bone by bone
     // (ClothBones), which would have to leave them out as well.
-    private static IEnumerable<string> Still(VrcPrefab.PhysBone bone, List<Transform> chains) =>
+    private static IEnumerable<string> Still(VrcPhysBone bone, List<Transform> chains) =>
         bone.Ignore.Where(ignored => ignored != null && chains.Any(chain => ignored != chain && ignored.IsChildOf(chain)))
             .Select(ignored => ignored.name).Distinct();
 
@@ -384,10 +388,10 @@ internal static class VrcSway
 
     // Pull (and in VRChat's advanced mode stiffness) as Magica's angle restoration, at a depth; below zero, the values
     // as set, curves left out.
-    private static float Stiffness(VrcPrefab.PhysBone bone, float depth)
+    private static float Stiffness(VrcPhysBone bone, float depth)
     {
-        float pull = depth < 0f ? bone.Pull : VrcPrefab.PhysBone.At(bone.Pull, bone.PullCurve, depth);
-        float stiff = depth < 0f ? bone.Stiffness : VrcPrefab.PhysBone.At(bone.Stiffness, bone.StiffnessCurve, depth);
+        float pull = depth < 0f ? bone.Pull : VrcPhysBone.At(bone.Pull, bone.PullCurve, depth);
+        float stiff = depth < 0f ? bone.Stiffness : VrcPhysBone.At(bone.Stiffness, bone.StiffnessCurve, depth);
         return Mathf.Clamp(.05f + .35f * Mathf.Clamp01(pull) + (bone.Integration == 1 ? .3f * Mathf.Clamp01(stiff) : 0f), .02f, .8f);
     }
 
@@ -399,11 +403,11 @@ internal static class VrcSway
         spring <= .2f ? Mathf.Lerp(.2f, .1f, spring / .2f) : Mathf.Lerp(.1f, .02f, (spring - .2f) / .8f);
 
     // The angle a bone may turn from its rest at a depth: an angle cone's, a hinge's, or the wider of a polar limit's two.
-    private static float Limit(VrcPrefab.PhysBone bone, float depth) => bone.LimitType switch
+    private static float Limit(VrcPhysBone bone, float depth) => bone.LimitType switch
     {
         0 => 90f,
-        1 or 2 => VrcPrefab.PhysBone.At(bone.MaxAngleX, bone.MaxAngleXCurve, depth),
-        _ => Mathf.Max(VrcPrefab.PhysBone.At(bone.MaxAngleX, bone.MaxAngleXCurve, depth), VrcPrefab.PhysBone.At(bone.MaxAngleZ, bone.MaxAngleZCurve, depth)),
+        1 or 2 => VrcPhysBone.At(bone.MaxAngleX, bone.MaxAngleXCurve, depth),
+        _ => Mathf.Max(VrcPhysBone.At(bone.MaxAngleX, bone.MaxAngleXCurve, depth), VrcPhysBone.At(bone.MaxAngleZ, bone.MaxAngleZCurve, depth)),
     };
 
     // A number read down the chain: its largest, and the curve of shares that gives the rest.
@@ -423,7 +427,7 @@ internal static class VrcSway
 
     // Rings meet the legs and the arms, as the game's skirts do, and any skirt chain meets the legs; other parts meet
     // the body parts their colliders stand on.
-    private static string Shapes(VrcPrefab.PhysBone bone, bool ring, bool skirt, Func<Transform, string> partOf)
+    private static string Shapes(VrcPhysBone bone, bool ring, bool skirt, Func<Transform, string> partOf)
     {
         if (ring) return "legs|arms";
         var parts = new SortedSet<string>(StringComparer.Ordinal);
@@ -474,7 +478,19 @@ internal static class VrcSway
 
     private static string Text(float value) => Math.Round(value, 3).ToString(CultureInfo.InvariantCulture);
 
-    internal static string Slug(string name)
+    /// <summary>
+    /// Cloth.csv's shapes for a humanoid bone, by Unity's name for it: legs are the hips, legs and feet; head is the head,
+    /// neck, chest and spine. Null for the rest (arms meet only rings).
+    /// </summary>
+    public static string BodyPart(string human) => human switch
+    {
+        "Hips" or "LeftUpperLeg" or "RightUpperLeg" or "LeftLowerLeg" or "RightLowerLeg" or "LeftFoot" or "RightFoot"
+            or "LeftToes" or "RightToes" => "legs",
+        "Spine" or "Chest" or "UpperChest" or "Neck" or "Head" or "Jaw" => "head",
+        _ => null,
+    };
+
+    public static string Slug(string name)
     {
         var slug = new StringBuilder();
         foreach (char c in name.ToLowerInvariant())

@@ -24,9 +24,20 @@ public sealed class PlayerBodyProfile : ScriptableObject
             "Empty: the model as imported is the only look.")]
         private SkinVariant[] variants = Array.Empty<SkinVariant>();
 
+        // A character a mod brings (ModAvatars): its model is loaded from the mod's bundle when first asked for.
+        [NonSerialized] private Func<GameObject> source;
+
         public Skin() { }
 
         public Skin(string id) => this.id = id;
+
+        /// <summary>A character from a mod: no model until one is asked for, then whatever <paramref name="source"/> loads.</summary>
+        internal Skin(string id, string name, Func<GameObject> source)
+        {
+            this.id = id;
+            displayName = name;
+            this.source = source;
+        }
 
         public string Id => id;
         /// <summary>
@@ -34,7 +45,7 @@ public sealed class PlayerBodyProfile : ScriptableObject
         /// (BoothImport writes the BOOTH characters' names in), as SkinVariant names its colour sets.
         /// </summary>
         public string DisplayName => Texts.Cell(string.IsNullOrEmpty(displayName) ? id : displayName);
-        public GameObject Model => model;
+        public GameObject Model => model != null || source == null ? model : model = source();
         public float LedgeHandSpacingScale => Mathf.Clamp(ledgeHandSpacingScale, .5f, 1.5f);
         public float LedgePalmInsetScale => Mathf.Clamp(ledgePalmInsetScale, 0f, 2f);
         public IReadOnlyList<SkinVariant> Variants => variants ?? Array.Empty<SkinVariant>();
@@ -76,8 +87,37 @@ public sealed class PlayerBodyProfile : ScriptableObject
     /// <summary>The colour set this PC wears on <see cref="CurrentSkin"/>; null when it has none.</summary>
     public SkinVariant CurrentVariant => CurrentSkin?.VariantOf(GameSettings.Current.characterVariant);
     public GameObject Model => ModelOf(CurrentSkin);
-    public IReadOnlyList<Skin> Skins => skins;
+    /// <summary>
+    /// The game's own characters, then those the loaded mods bring (ModAvatars), which this asset doesn't hold: a mod's
+    /// character is a skin like any other to everything that asks here (the character cards, a body, a friend's look
+    /// over the network), with a model that is loaded when first asked for. A mod's id the game already has is left out.
+    /// </summary>
+    public IReadOnlyList<Skin> Skins
+    {
+        get
+        {
+            var brought = ModAvatars.Characters;
+            if (all != null && allFrom == ModAvatars.Generation) return all;
+            allFrom = ModAvatars.Generation;
+            if (brought.Count == 0) return all = skins;
+            var list = new List<Skin>(skins);
+            foreach (var character in brought)
+            {
+                if (list.Exists(skin => skin != null && string.Equals(skin.Id, character.Id, StringComparison.Ordinal)))
+                {
+                    Debug.LogWarning($"[Mods] {character.Mod}: 캐릭터 id '{character.Id}'는 게임에 이미 있습니다. 다른 id로 내보내 주세요.");
+                    continue;
+                }
+                var theirs = character;
+                list.Add(new Skin(theirs.Id, theirs.Name, () => theirs.Model));
+            }
+            return all = list.ToArray();
+        }
+    }
     public IReadOnlyList<string> FirstPersonShadowOnly => firstPersonShadowOnly;
+
+    [NonSerialized] private Skin[] all;
+    [NonSerialized] private int allFrom = -1;
 
     public static PlayerBodyProfile Load()
     {
@@ -88,8 +128,9 @@ public sealed class PlayerBodyProfile : ScriptableObject
     /// <summary>The skin with this id, or the default character's when none matches.</summary>
     public Skin SkinOf(string id)
     {
-        foreach (var skin in skins)
-            if (skin != null && skin.Model != null && string.Equals(skin.Id, id, StringComparison.Ordinal)) return skin;
+        // The id first: asking a mod's character for its model loads it, and only the one wanted should be.
+        foreach (var skin in Skins)
+            if (skin != null && string.Equals(skin.Id, id, StringComparison.Ordinal) && skin.Model != null) return skin;
         foreach (var skin in skins)
             if (skin != null && skin.Model == model) return skin;
         return null;

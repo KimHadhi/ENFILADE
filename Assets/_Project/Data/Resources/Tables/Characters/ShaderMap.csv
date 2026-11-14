@@ -1,0 +1,7 @@
+﻿id,match,use,copy,set,outline,#설명
+#설명,"쉐이더 이름에 이 글자가 들어 있으면 이 줄(대소문자 무시, 위에서부터 처음 맞는 줄). *는 나머지 전부","바꿔 그릴 쉐이더. toon은 lilToon을 그 재질의 그리기 방식(불투명·컷아웃·반투명)과 외곽선에 맞춰 고른다. 쉐이더 이름을 적으면 그 쉐이더(게임에 든 것만)","원래 속성>옮길 속성 을 |로 여럿. 뒤에 *0.01처럼 숫자를 곱할 수 있다. 이름이 같은 속성과 주 텍스처·주 색·컷오프·컬링은 적지 않아도 옮긴다","옮긴 뒤 넣을 값: 속성=숫자 를 |로 여럿",이 속성이 0보다 크면 외곽선이 있는 lilToon을 쓴다,"모드 아바타의 재질 가운데 게임이 그릴 수 없는 쉐이더를 lilToon으로 바꿔 그리는 규칙(ModMaterials). 게임에 같은 이름의 쉐이더가 있으면(lilToon 전부) 이 표를 거치지 않고 그 쉐이더로 값을 모두 옮긴다. 번들에 URP용 쉐이더가 담겨 온 재질도 이 표를 거치지 않는다"
+poiyomi,poiyomi,toon,_Matcap>_MatCapTex|_MatcapColor>_MatCapColor|_RimLightColor>_RimColor|_LineColor>_OutlineColor,_UseShadow=1,_EnableOutlines,Poiyomi Toon(내장 파이프라인용. 잠근 재질도 원래 이름으로 찾는다)
+mtoon,MToon,toon,_ShadeColor>_ShadowColor|_ShadeTexture>_ShadowColorTex|_ShadeTex>_ShadowColorTex|_SphereAdd>_MatCapTex|_MatcapTex>_MatCapTex,_UseShadow=1,_OutlineWidthMode,VRM의 MToon
+uts,UnityChanToonShader,toon,_BaseColor>_Color|_1st_ShadeColor>_ShadowColor|_1st_ShadeMap>_ShadowColorTex|_NormalMap>_BumpMap|_Emissive_Tex>_EmissionMap|_Emissive_Color>_EmissionColor|_MatCap_Sampler>_MatCapTex|_Outline_Color>_OutlineColor,_UseShadow=1,_Outline_Width,유니티짱 툰 쉐이더(UTS2)
+standard,Standard,toon,,_UseShadow=1,,Unity 기본 Standard
+any,*,toon,,_UseShadow=1,,그 밖의 모든 쉐이더

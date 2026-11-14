@@ -41,6 +41,10 @@ public static class GameTables
     private static readonly HashSet<(Object Owner, string Table, string Id)> held = new HashSet<(Object, string, string)>(new Holder());
     private static readonly HashSet<string> reported = new HashSet<string>();
     private static int pruneAt = 64;
+    // Rows the game laid over a table while it ran (Lay), by table: who laid them and their text, kept so that reading
+    // the tables again puts them back.
+    private static readonly Dictionary<string, List<KeyValuePair<string, string>>> laid =
+        new Dictionary<string, List<KeyValuePair<string, string>>>(StringComparer.OrdinalIgnoreCase);
 
     // One owner's row of one table: the owner as the object it is (no question to the engine), the row whatever its case.
     private sealed class Holder : IEqualityComparer<(Object Owner, string Table, string Id)>
@@ -60,7 +64,40 @@ public static class GameTables
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
-        loaded.Clear(); bindings.Clear(); held.Clear(); reported.Clear(); pruneAt = 64; sources = null;
+        loaded.Clear(); bindings.Clear(); held.Clear(); reported.Clear(); laid.Clear(); pruneAt = 64; sources = null;
+    }
+
+    /// <summary>
+    /// Lays rows over a table while the game runs, as a mod's file of that table would be laid (a known id's filled
+    /// cells change, a new id adds a row), after every mod's: what can only be worked out once something is loaded (a
+    /// mod avatar's sway, from its PhysBones and its bones as they stand: ModAvatars). <paramref name="whose"/> names
+    /// the rows for messages; the same name again takes the place of what it laid before. They stay through a reload.
+    /// </summary>
+    public static void Lay(string table, string whose, string text)
+    {
+        if (string.IsNullOrEmpty(table) || string.IsNullOrEmpty(whose) || text == null) return;
+        if (!laid.TryGetValue(table, out var layers)) laid[table] = layers = new List<KeyValuePair<string, string>>();
+        int at = layers.FindIndex(layer => layer.Key == whose);
+        var added = new KeyValuePair<string, string>(whose, text);
+        if (at >= 0)
+        {
+            // Rows laid before can't be taken back out of a table: it is read again, with these in their place.
+            if (layers[at].Value == text) return;
+            layers[at] = added;
+            loaded.Remove(table);
+            return;
+        }
+        layers.Add(added);
+        if (!loaded.TryGetValue(table, out var parsed)) return;
+        if (parsed == null)
+        {
+            // A table nobody had: it is read again, and these rows are it.
+            loaded.Remove(table);
+            return;
+        }
+        var over = CsvTable.Parse(text);
+        Tell(over, whose);
+        parsed.Overlay(over);
     }
 
     /// <summary>
@@ -192,6 +229,15 @@ public static class GameTables
             if (parsed == null) parsed = over;
             else parsed.Overlay(over);
         }
+        // What the game itself laid over the table while it ran (Lay), last.
+        if (laid.TryGetValue(table, out var layers))
+            foreach (var layer in layers)
+            {
+                var over = CsvTable.Parse(layer.Value);
+                Tell(over, layer.Key);
+                if (parsed == null) parsed = over;
+                else parsed.Overlay(over);
+            }
         if (parsed == null) Report($"Resources/{ResourcesFolder} 아래에 {table}.csv 파일이 없습니다.", null);
         return loaded[table] = parsed;
     }

@@ -1,13 +1,13 @@
 # 모드 만들기
 
-ENFILADE는 뜯어고치기 쉽게 만들었다. 모드에는 두 가지가 있다.
+ENFILADE는 뜯어고치기 쉽게 만들었다. 모드에는 세 가지가 있다.
 
-| | 표 모드 | 프로젝트 모드 |
-| --- | --- | --- |
-| 필요한 것 | 메모장이나 엑셀 | Unity와 이 프로젝트 |
-| 바꿀 수 있는 것 | 게임의 모든 숫자와 글자: 무기·좀비·웨이브·상점·클래스·카드·HUD 배치와 색·화면 문구·번역 | 그 밖의 전부: 새 모델, 새 총 모양, 새 캐릭터와 옷, 새 맵, 새 기능 |
-| 넣는 곳 | 게임 실행 파일 옆 `Mods/<내 모드>/` | 프로젝트 안 |
-| 다시 빌드 | 필요 없음 | 필요 |
+| | 표 모드 | 아바타 모드 | 프로젝트 모드 |
+| --- | --- | --- | --- |
+| 필요한 것 | 메모장이나 엑셀 | 내 Unity 프로젝트(VRChat 아바타를 올리던 그 프로젝트)와 게임에 든 SDK 폴더 | Unity와 이 프로젝트 |
+| 바꿀 수 있는 것 | 게임의 모든 숫자와 글자: 무기·좀비·웨이브·상점·클래스·카드·HUD 배치와 색·화면 문구·번역 | 내 캐릭터: 어떤 휴머노이드 아바타든 캐릭터 목록에 더한다 | 그 밖의 전부: 새 총 모양, 새 맵, 새 기능 |
+| 넣는 곳 | 게임 실행 파일 옆 `Mods/<내 모드>/` | 같은 곳 (`Mods/<내 모드>/Avatars`) | 프로젝트 안 |
+| 다시 빌드 | 필요 없음 | 필요 없음 | 필요 |
 
 ## 1. 표 모드
 
@@ -76,7 +76,7 @@ M1911,15,                                       Move.runSpeed,7.5
 | `Economy` | Money, Shop, Pickups, PickupRules | 돈, 상점 물건과 값, 줍기 |
 | `Audio` | Sounds, SoundCues, Music, Ambience, Reverb | 소리 크기와 높낮이, 동작별 소리, 음악, 환경음 |
 | `Hud` | Hud, HudTilt, HudOverlap, HealthBar, HitMarkers, KillFeed, KillFlairs, SpecialKills, MomentFx, PackFx, SkullSlowMotion | HUD 배치와 기울기, 체력바, 히트 마커, 처치 목록, 특수 순간 효과 |
-| `Characters` | Outfits, OutfitSlots, OutfitFits, OutfitFit, CharacterParts, Cloth…, Face…, 옷장 사진 | 옷 칸과 옷, 옷 맞춤, 천 흔들림, 표정 |
+| `Characters` | Outfits, OutfitSlots, OutfitFits, OutfitFit, CharacterParts, Cloth…, Face…, ShaderMap, 옷장 사진 | 옷 칸과 옷, 옷 맞춤, 천 흔들림, 표정 |
 | `Clips` | KnifeMelee…, Grenade…, Knife…, Repair…, PointHand | 블렌더 작업실이 쓰는 손·팔 동작. 손으로 고치지 않는다 |
 
 ### 알아 둘 것
@@ -85,7 +85,61 @@ M1911,15,                                       Move.runSpeed,7.5
 - 표에 적힌 이름이 틀리면(없는 칸, 숫자 자리에 글자) 게임은 그 칸만 건너뛰고 콘솔에 `[Tables]` 경고를 남긴다.
 - 같은 이름의 표가 한 모드 안에 두 번 있으면 먼저 찾은 것만 쓰고 `[Mods]` 경고를 남긴다.
 
-## 2. 프로젝트 모드
+## 2. 아바타 모드 (0.9.49)
+
+사용자(11-14): "VRChat 유저들이 자기가 쓰던 캐릭터를 내 게임에서도 쓰고 싶어 할 텐데 이거 호환 그대로 잘 되게끔 … 최대한 자유를 줘 플레이어들에게. 자기가 원하는 쉐이더 쓰고 싶다면 쓰게 해 주고. 최대한 원하는 느낌이 그대로 뜨게. 유저를 제약하지 마." 캐릭터를 게임에 넣으려면 프로젝트를 열어 다시 빌드해야 하던 것을, 모드 폴더에 넣기만 하면 되게 했다.
+
+### 만드는 법 (모드 제작자)
+
+1. 게임 폴더의 `Mods/_SDK/ENFILADE Mod SDK` 폴더를 통째로 내 Unity 프로젝트의 `Assets` 안에 넣는다. VRChat 아바타를 올리던 프로젝트 그대로면 된다(Unity 2022·VRChat SDK·Modular Avatar가 있어도 된다). 이 프로젝트에서는 SDK 폴더 없이 바로 된다(같은 코드가 `Editor/ModSdk`에 있다). 빌드 없이 SDK 폴더만 뽑으려면 ENFILADE → 모드 → 모드 SDK 폴더 만들기.
+2. ENFILADE → 모드 → **아바타를 모드로 내보내기**. 아바타(씬의 것이나 프리팹)를 넣고 id와 이름을 정하고 '내보낼 곳'에 게임의 `Mods` 폴더를 고른 뒤 **내보내기**.
+3. 게임을 켜면(켜져 있으면 콘솔에서 `/mods reload`) 캐릭터 목록에 나온다. `/mods`가 읽힌 모드 캐릭터를 보여 준다.
+
+```
+Mods/
+  내아바타/
+    mod.txt
+    Avatars/
+      myavatar.bundle           프리팹·메시·텍스처 (Unity만 쌀 수 있는 것)
+      myavatar.avatar.json      재질·PhysBone·표정 설정을 제작자가 둔 그대로 적은 글 (사람이 읽고 고칠 수 있다)
+    Tables/…                    (선택) 내 캐릭터 id로 적은 게임 표의 줄. 게임이 알아서 정한 것 위에 덮어쓴다
+```
+
+원본 아바타는 바뀌지 않는다(내보내기는 사본에 한다). id는 영문 소문자·숫자·`-`·`_`만 쓰고, 한번 정하면 바꾸지 않는다(저장된 설정과 친구 화면이 그 이름으로 찾는다).
+
+### 무엇이 어떻게 가나
+
+| 아바타의 것 | 게임에서 |
+| --- | --- |
+| 모델·본·셰이프키·텍스처 | 그대로. 휴머노이드 Rig이어야 움직인다(게임의 모든 동작이 휴머노이드 클립이다). 키·1인칭 눈높이·손·발·머리 숨기기는 게임이 어떤 몸이든 재서 맞춘다 |
+| PhysBone (머리카락·꼬리·치마·가슴) | 설정값을 그대로 적어 오고, **게임이 불러올 때** 자기 물리(Magica Cloth)의 줄로 바꾼다([VrcSway](../Assets/_Project/Scripts/Player/Body/Cloth/VrcSway.cs): 게임의 BOOTH 캐릭터들과 같은 변환). 그래서 변환이 나아지면 예전에 내보낸 아바타도 같이 나아진다 |
+| 아바타 디스크립터의 깜박임·입 모양(비짐) | 그 셰이프키 이름으로 FaceKeys 줄이 생긴다. 나머지 표정(웃음·화남 …)은 게임이 흔한 VRChat·MMD 이름으로 찾는다(FaceKeys.csv의 `*` 줄) |
+| Modular Avatar로 입힌 옷, 그 밖의 NDMF 도구 | 업로드할 때처럼 적용한 모습으로 내보낸다(프로젝트에 있을 때. 끌 수 있다) |
+| 재질 | 아래 "쉐이더" |
+| VRChat·애드온 스크립트, 콜라이더·리지드바디, 조명, 소리, 카메라, 파티클, EditorOnly 오브젝트 | 뗀다(게임에서 돌지 않거나 게임의 물리·화면을 건드린다) |
+
+### 쉐이더
+
+쉐이더는 컴파일된 코드라, 그 게임의 Unity와 렌더 파이프라인(이 게임은 Unity 6·URP)용으로 빌드된 것만 돌릴 수 있다. VRChat 프로젝트(Unity 2022·내장 파이프라인)에서 컴파일된 쉐이더를 그대로 가져와 돌릴 방법은 없다. 그래서 재질마다 아래 셋 가운데 되는 첫 번째로 만든다([ModMaterials](../Assets/_Project/Scripts/Core/Mods/ModMaterials.cs)).
+
+1. **쉐이더째 담긴 것**: Unity 6 + URP 프로젝트에서 내보낼 때, lilToon이 아닌 재질은 쉐이더까지 번들에 담긴다(내보내기 창의 '게임에 없는 쉐이더는 쉐이더째 담기'). 직접 만든 쉐이더, Shader Graph, 잠근 Poiyomi URP 등 URP에서 그려지는 것이면 무엇이든 그대로 그려진다. **내 쉐이더를 그대로 쓰는 길은 이것이다.**
+2. **게임에 같은 이름의 쉐이더가 있는 것**: lilToon. BOOTH 아바타 대부분이 이것이라, VRChat 프로젝트에서 그대로 내보내도 값이 전부 옮겨져 똑같이 그려진다. 빌드에는 lilToon의 모든 변형(컷아웃·반투명·외곽선·퍼·젬·굴절 …)이 들어간다([ModShaderLibrary](../Assets/_Project/Scripts/Core/Mods/ModShaderLibrary.cs)). lilToonMulti는 그 설정이 가리키는 일반 변형으로 간다.
+3. **그 밖의 쉐이더**(내장 파이프라인용 Poiyomi, UTS, MToon, Standard …): 같은 그리기 방식(불투명·컷아웃·반투명, 외곽선)의 lilToon에 그림·색·노멀·발광·매트캡처럼 옮길 수 있는 것을 옮겨 비슷하게 그린다. 무엇을 어디로 옮길지는 표 [ShaderMap.csv](../Assets/_Project/Data/Resources/Tables/Characters/ShaderMap.csv)가 정하므로, 자기 쉐이더의 줄을 표 모드로 더할 수 있다. 어떤 쉐이더를 바꿔 그렸는지는 콘솔에 `[Mods]`로 한 번씩 나온다.
+
+`.avatar.json`의 재질 값(숫자·색·텍스처 경로)은 손으로 고쳐도 된다.
+
+### 손으로 더 맞추기
+
+게임은 모드 캐릭터에게도 원래 캐릭터와 같은 표를 쓴다. 같은 모드 폴더의 `Tables`에 내 캐릭터 id로 줄을 적으면 게임이 알아서 정한 것 위에 덮인다: 흔들림은 `Cloth.csv`(`skin` 칸이 내 id), 표정 키는 `FaceKeys.csv`, 캐릭터가 입고 온 옷을 옷장 칸으로 나누려면 `CharacterParts.csv`, 체형 슬라이더는 `BodyShapes.csv`, 총 쥐는 손은 `GunHands.csv`.
+
+### 알아 둘 것
+
+- 같이 하는 사람도 같은 모드 폴더를 넣어야 내 캐릭터가 보인다. 없는 PC에서는 기본 캐릭터로 보인다(오류는 없다).
+- 캐릭터는 처음 고르거나 목록에 그려질 때 번들에서 불러온다. 캐릭터 화면을 열면 모드 캐릭터들의 초상을 찍느라 모두 불러온다.
+- 번들은 Windows용으로 만든다. 다른 Unity 버전(2022)에서 만든 번들도 메시·텍스처·프리팹은 읽힌다(쉐이더는 위 규칙대로).
+- 아직 없는 것: 옷만 따로 내보내기(다른 캐릭터에게 입히는 옷 모드), 캐릭터의 색 세트, VRChat 표현 메뉴의 토글, 표정 애니메이션 자동 옮기기, 모드 파일을 친구에게 자동으로 보내기.
+
+## 3. 프로젝트 모드
 
 Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는 [구조 안내](Architecture.md), 코드 지도는 [스크립트 길잡이](../Assets/_Project/Scripts/README.md)에 있다. 자주 하는 일의 순서는 다음과 같다.
 
@@ -102,11 +156,16 @@ Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는
 
 만든 것을 표 모드로 나눠 주고 싶으면, 고친 표의 줄만 뽑아 `Mods/<이름>/Tables`에 넣으면 된다. 빌드할 때 프로젝트의 `Mods` 폴더는 실행 파일 옆에 그대로 복사된다.
 
-## 3. 모드가 읽히는 자리 (코드)
+## 4. 모드가 읽히는 자리 (코드)
 
 | 무엇 | 파일 |
 | --- | --- |
 | Mods 폴더 읽기, 콘솔 `/mods` | [GameMods](../Assets/_Project/Scripts/Core/Mods/GameMods.cs) |
 | 표를 이름으로 찾고 모드를 덧씌우기 | [GameTables](../Assets/_Project/Scripts/Core/Tables/GameTables.cs), [CsvTable](../Assets/_Project/Scripts/Core/Tables/CsvTable.cs) (`Overlay`) |
 | 줄에서 칸 읽기 | [TableCells](../Assets/_Project/Scripts/Core/Tables/TableCells.cs) |
-| 빌드 옆에 Mods 폴더 복사 | [ModsFolderOnBuild](../Assets/_Project/Editor/Build/ModsFolderOnBuild.cs) |
+| 빌드 옆에 Mods 폴더 복사, SDK 폴더 넣기 | [ModsFolderOnBuild](../Assets/_Project/Editor/Build/ModsFolderOnBuild.cs), [ModSdkPackage](../Assets/_Project/Editor/Mods/ModSdkPackage.cs) |
+| 모드 캐릭터 찾기·불러오기, 흔들림·표정 줄 만들기 | [ModAvatars](../Assets/_Project/Scripts/Core/Mods/ModAvatars.cs), 파일 형식 [ModAvatarFile](../Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs) |
+| 모드 캐릭터의 재질(쉐이더 고르기·바꿔 그리기) | [ModMaterials](../Assets/_Project/Scripts/Core/Mods/ModMaterials.cs), [ModShaderLibrary](../Assets/_Project/Scripts/Core/Mods/ModShaderLibrary.cs) ([빌더](../Assets/_Project/Editor/Mods/ModShaderLibraryBuilder.cs)), 표 ShaderMap.csv |
+| 캐릭터 목록에 모드 캐릭터 더하기 | [PlayerBodyProfile](../Assets/_Project/Scripts/Player/Body/PlayerBodyProfile.cs) `Skins` |
+| 실행 중에 표에 줄 얹기 | [GameTables](../Assets/_Project/Scripts/Core/Tables/GameTables.cs) `Lay` |
+| 내보내기 도구 (SDK) | [ModAvatarExporter](../Assets/_Project/Editor/ModSdk/ModAvatarExporter.cs), [ModVrcYaml](../Assets/_Project/Editor/ModSdk/ModVrcYaml.cs) |

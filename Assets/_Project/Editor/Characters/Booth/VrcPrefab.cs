@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 /// The VRChat parts of a BOOTH avatar's or outfit's prefab, read from the prefab's own text. VRChat's components arrive
 /// without their scripts (the VRChat SDK runs only in VRChat's own Unity 2022), so Unity can't show their values, but
 /// the file still holds every one. PhysBones (what sways and how) and their colliders are read here for VrcSway to turn
-/// into this game's sway; the references in them are resolved against the prefab's loaded objects. An object of a model
+/// into this game's sway (VrcPhysBone holds one's settings); the references in them are resolved against the prefab's loaded objects. An object of a model
 /// nested in the prefab (an FBX instance, as most BOOTH outfits are) is written in the file under its source's id XOR
 /// its instance's id, which is how it is found here too. A PhysBone its maker switched off is skipped, as VRChat runs
 /// none: Mayo's right breast carries a second, older one beside the one in use, and whichever the file listed first
@@ -22,31 +22,10 @@ internal sealed class VrcPrefab
     private const string DynamicsGuid = "2a2c05204084d904aa4945ccff20d8e5";
     private const long PhysBoneScript = 1661641543, PhysBoneColliderScript = -1631200402;
 
-    /// <summary>One VRCPhysBone's settings, as VRChat's documentation names them.</summary>
-    internal sealed class PhysBone
-    {
-        public Transform Root;
-        public readonly List<Transform> Ignore = new List<Transform>();
-        /// <summary>The bones its colliders hang from.</summary>
-        public readonly List<Transform> Colliders = new List<Transform>();
-        public Vector3 Endpoint;
-        public int Integration, LimitType;
-        public float Pull, Spring, Stiffness, Gravity, GravityFalloff, Immobile, Radius, MaxAngleX, MaxAngleZ;
-        /// <summary>
-        /// How each value runs down the chain, root (0) to far end (1), as a share of it: VRChat's curve beside each
-        /// value. Null where the maker left it the same all the way.
-        /// </summary>
-        public AnimationCurve PullCurve, SpringCurve, StiffnessCurve, GravityCurve, ImmobileCurve, RadiusCurve, MaxAngleXCurve, MaxAngleZCurve;
-        public bool Collides;
-
-        /// <summary>A value at a depth of the chain (0 root, 1 far end), its curve applied.</summary>
-        public static float At(float value, AnimationCurve curve, float depth) => curve != null ? value * curve.Evaluate(depth) : value;
-    }
-
     private static readonly Regex Header = new Regex(@"^--- !u!(-?\d+) &(-?\d+)[^\r\n]*", RegexOptions.Multiline);
     private static readonly Regex Script = new Regex(@"m_Script: \{fileID: (-?\d+), guid: ([0-9a-f]{32})");
 
-    public readonly List<PhysBone> PhysBones = new List<PhysBone>();
+    public readonly List<VrcPhysBone> PhysBones = new List<VrcPhysBone>();
     private readonly Dictionary<long, Object> objects = new Dictionary<long, Object>();
     private readonly Dictionary<long, string> documents = new Dictionary<long, string>();
 
@@ -84,7 +63,7 @@ internal sealed class VrcPrefab
     {
         if (Regex.IsMatch(document, @"^  m_Enabled: 0\b", RegexOptions.Multiline)) return;
         var owner = Find<GameObject>(Reference(document, "m_GameObject"));
-        var bone = new PhysBone
+        var bone = new VrcPhysBone
         {
             Root = Find<Transform>(Reference(document, "rootTransform")).OrNull() ?? (owner != null ? owner.transform : null),
             Endpoint = Vector(document, "endpointPosition"),

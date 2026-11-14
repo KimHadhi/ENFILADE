@@ -95,7 +95,7 @@ internal sealed class BoothImport : AssetPostprocessor
                 {
                     Humanoid.Add(human.boneName);
                     if (human.humanName == "Hips") hipsName = human.boneName;
-                    string part = BodyPart(human.humanName);
+                    string part = VrcSway.BodyPart(human.humanName);
                     if (part != null) parts[human.boneName] = part;
                 }
             var all = prefab.GetComponentsInChildren<Transform>(true);
@@ -127,15 +127,6 @@ internal sealed class BoothImport : AssetPostprocessor
                 if (parts.TryGetValue(at.name, out var part)) return part;
             return null;
         }
-
-        // Cloth.csv's shapes: legs are the hips, legs and feet; head is the head, neck, chest and spine.
-        private static string BodyPart(string human) => human switch
-        {
-            "Hips" or "LeftUpperLeg" or "RightUpperLeg" or "LeftLowerLeg" or "RightLowerLeg" or "LeftFoot" or "RightFoot"
-                or "LeftToes" or "RightToes" => "legs",
-            "Spine" or "Chest" or "UpperChest" or "Neck" or "Head" or "Jaw" => "head",
-            _ => null,
-        };
     }
 
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
@@ -314,7 +305,7 @@ internal sealed class BoothImport : AssetPostprocessor
     {
         var read = VrcPrefab.Read(path);
         if (read.PhysBones.Count == 0) return;
-        sway[owner] = VrcSway.Rows(read, prefab, owner, shared, partOf);
+        sway[owner] = VrcSway.Rows(read.PhysBones, prefab, owner, shared, partOf);
     }
 
     private static List<Source> ReadSources()

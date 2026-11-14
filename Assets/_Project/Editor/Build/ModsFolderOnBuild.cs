@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// A build gets its Mods folder: the project's Mods folder (the guide, the example mod and whatever mods are in it) is
 /// copied beside the executable, where the game looks for mods (GameMods.Root). The tables /mods export wrote out are
-/// left behind: the built game writes its own.
+/// left behind: the built game writes its own. The avatar exporter goes in too, as Mods/_SDK (ModSdkPackage).
 /// </summary>
 internal sealed class ModsFolderOnBuild : IPostprocessBuildWithReport
 {
@@ -20,8 +20,10 @@ internal sealed class ModsFolderOnBuild : IPostprocessBuildWithReport
             string source = GameMods.Root;
             string output = report.summary.outputPath;
             string folder = Directory.Exists(output) ? output : Path.GetDirectoryName(output);
-            if (string.IsNullOrEmpty(folder) || !Directory.Exists(source)) return;
-            Copy(source, Path.Combine(folder, GameMods.FolderName));
+            if (string.IsNullOrEmpty(folder)) return;
+            if (Directory.Exists(source)) Copy(source, Path.Combine(folder, GameMods.FolderName));
+            // The exporter that matches this build, for whoever wants to bring a character of their own (ModSdkPackage).
+            ModSdkPackage.Write(Path.Combine(folder, GameMods.FolderName, ModSdkPackage.FolderName));
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {

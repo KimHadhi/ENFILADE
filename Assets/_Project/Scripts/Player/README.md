@@ -10,7 +10,7 @@
 | --- | ---: | --- |
 | [Audio](Audio/) | 6 | 발소리·숨·바람·낙하 소리 |
 | [Body](Body/) | 42 | 보이는 몸(진짜 1인칭): 클립, 시선, 자세별 몸 |
-| [Body/Cloth](Body/Cloth/) | 6 | 옷감·머리카락·살 흔들림 (Magica Cloth) |
+| [Body/Cloth](Body/Cloth/) | 8 | 옷감·머리카락·살 흔들림 (Magica Cloth), VRChat PhysBone을 그 흔들림으로 바꾸기 (VrcSway: 편집기 가져오기와 모드 아바타가 같이 쓴다) |
 | [Body/Feet](Body/Feet/) | 5 | 발 딛기, 걸음, 신발 밑창 |
 | [Body/Hands](Body/Hands/) | 14 | 손과 손가락: 총·난간·사다리 잡기 |
 | [Body/IK](Body/IK/) | 2 | 팔·다리 IK 계산 |
