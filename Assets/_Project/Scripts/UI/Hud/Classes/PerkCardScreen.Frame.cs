@@ -95,6 +95,12 @@ public sealed partial class PerkCardScreen
         var mouse = Mouse.current;
         bool pointing = Cursor.visible && mouse != null && !ending;
         if (picked >= 0 && !released && end >= ReleaseAt) Release(cards[picked]);
+        // A beat after it is let go, light gathers into the picked card from round it (Gather).
+        if (picked >= 0 && released && !gathered && end >= ReleaseAt + GatherAfter)
+        {
+            gathered = true;
+            Gather(cards[picked], cards[picked].Look ?? LookOf(Tier.Level1));
+        }
         for (int i = 0; i < dealt; i++) AnimateCard(cards[i], i, since, end, dt, time, pointing, mouse);
 
         // The picked card's badge pops as the card lands in it.
@@ -104,8 +110,8 @@ public sealed partial class PerkCardScreen
             if (arrive > 0f && !popped)
             {
                 popped = true;
-                // A small ring in the card's own colour where it lands, not over the screen.
-                Ring(Local(landing, Vector2.zero), cards[picked].Look != null ? cards[picked].Look.Colour : KitStyle.Accent, 60f, 300f, .35f);
+                // A small ring in the card's own colour where it lands and a few sparks off it, not over the screen.
+                Arrive(Local(landing, Vector2.zero), cards[picked].Look ?? LookOf(Tier.Level1));
                 shake = Mathf.Max(shake, 6f);
             }
             if (landingGroup != null) landingGroup.alpha = arrive > 0f ? 1f : 0f;
@@ -164,19 +170,19 @@ public sealed partial class PerkCardScreen
         float spin = 0f;
         if (picked == index)
         {
-            // Pressed in and held a beat, then let go: popped out past its size and settled a little large, shown with its
-            // stamp a moment, then it shrinks into its badge at the bottom.
+            // Pressed in and held a beat, then let go: popped out past its size and settled a little large, shown a moment
+            // while light gathers into it, then away into its badge at the bottom, shrunk early (most of it in the first
+            // ~60% of the way) so it streaks there as a small bright card trailing light.
             float after = end - ReleaseAt;
             grow = end < PressIn ? Mathf.Lerp(1.05f, .92f, end / PressIn) : end < ReleaseAt ? .92f
                 : Mathf.LerpUnclamped(.92f, 1.08f, OutBack(Mathf.Clamp01(after / PopSeconds)));
-            AnimateStamp(card, after);
             float fly = Mathf.Clamp01((end - ShowSeconds) / PickFly);
             if (landing != null && fly > 0f)
             {
                 float eased = fly * fly;
                 Vector2 target = Local(card.Root, landing, Vector2.zero);
                 lift = Vector2.LerpUnclamped(lift, target, eased);
-                grow = Mathf.Lerp(grow, BadgeHeight / CardHeight, eased);
+                grow = Mathf.Lerp(grow, BadgeHeight / CardHeight, KitReveal.EaseOut(Mathf.Min(1f, fly * 1.6f)));
                 spin = Mathf.Lerp(0f, -Tilts[index % Tilts.Length], eased);
                 card.Glow.color = KitStyle.With(card.Look != null ? card.Look.GlowColour : KitStyle.Accent, .5f * (1f - fly));
             }
@@ -192,6 +198,9 @@ public sealed partial class PerkCardScreen
         card.Lift.localScale = new Vector3(grow, grow, 1f);
         card.Lift.localRotation = Quaternion.Euler(0f, 0f, spin);
         AnimatePick(card, picked == index ? end - ReleaseAt : -1f);
+        AnimateBloom(card, picked == index ? end - ReleaseAt : -1f);
+        // On its way to the badge it leaves light behind it, up to where it is this frame.
+        if (picked == index && landing != null && end > ShowSeconds && end < ShowSeconds + PickFly) Trail(card, card.Look ?? LookOf(Tier.Level1), dt);
         AnimateBurn(card, time, dt);
     }
 

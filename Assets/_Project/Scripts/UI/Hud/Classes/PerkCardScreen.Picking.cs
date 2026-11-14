@@ -86,7 +86,8 @@ public sealed partial class PerkCardScreen
         picked = index;
         endedAt = Time.unscaledTime;
         card.Hover = 1f;
-        released = false;
+        released = gathered = trailing = false;
+        trailOwed = 0f;
         PlayerPerks.Raise(card.Perk.Id);
         BuildTray(card.Perk.Id);
         // Pressed: it goes down and holds a beat before it is let go (Release, from Animate), so the press is felt (the
@@ -98,8 +99,8 @@ public sealed partial class PerkCardScreen
 
     // Let go, a beat after the press: one soft flash (the user's rule against strobes: a single flash at most .6 and
     // short), sparks round the card only and a jolt, grander for a grander card (its tier: Tables/PerkCards; its outline
-    // and the star at its corner follow in AnimatePick, its stamp in AnimateStamp), and the others catch fire, each a
-    // moment apart (AnimateBurn), with one rush of fire for them all.
+    // and the star at its corner follow in AnimatePick, the light bursting from its icon in AnimateBloom, the light drawn
+    // into it in Gather), and the others catch fire, each a moment apart (AnimateBurn), with one rush of fire for them all.
     private void Release(Card card)
     {
         released = true;

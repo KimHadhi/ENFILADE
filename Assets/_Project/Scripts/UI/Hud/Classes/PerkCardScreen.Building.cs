@@ -166,6 +166,7 @@ public sealed partial class PerkCardScreen
         card.KeyBack = KitStyle.Fill(key, KitStyle.Ice);
         card.Key = KitStyle.Flat(key, (index + 1).ToString(), 30f, TextAlignmentOptions.Center, KitStyle.Ink);
         BuildGlints(card);
+        BuildBloom(card);
 
         // The face-down side: pink, a big question mark, the game's name.
         card.Back = Hung("Back", card.Burn);
@@ -180,7 +181,6 @@ public sealed partial class PerkCardScreen
         card.Lid = KitStyle.Fill(Hung("Flash", card.Burn), Color.clear);
         BuildBurn(card);
         BuildPickFlourish(card);
-        BuildStamp(card);
 
         var button = root.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;

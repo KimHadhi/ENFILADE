@@ -1,8 +1,7 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// PerkCardScreen: How grand a card is dressed, and how the ones not picked burn away (Tables/PerkCards). One part of the class; the rest is in PerkCardScreen.cs and the files beside it.
+// PerkCardScreen: How grand a card is dressed, the light a pick bursts from it, and how the ones not picked burn away (Tables/PerkCards). One part of the class; the rest is in PerkCardScreen.cs and the files beside it.
 public sealed partial class PerkCardScreen
 {
     private const string LookTable = "PerkCards";
@@ -11,6 +10,8 @@ public sealed partial class PerkCardScreen
     // under the burn line it reaches, and the foil's tile on the card (px).
     private const float TrimInset = 9f, TrimThick = 2f, Trim2Inset = 15f, Trim2Thick = 1.5f, MoteMargin = 22f;
     private const float EdgeHeight = 46f, EdgeBelow = 16f, FoilTile = 480f;
+    // How much a picked card's icon jumps as its light bursts out (a share of its size), and for how long (s).
+    private const float IconPop = .32f, IconPopSeconds = .28f;
     private static Texture2D foilTexture, glintTexture, flameTexture;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -28,8 +29,8 @@ public sealed partial class PerkCardScreen
     /// <summary>One tier's dressing, read from Tables/PerkCards as the cards are dealt.</summary>
     private sealed class Look
     {
-        public float Border, Foil, Spot, Glow, Breath, ShineEvery, Shine, Shake;
-        public int Corners, Motes, Glints, Sparks, Outlines;
+        public float Border, Foil, Spot, Glow, Breath, ShineEvery, Shine, Shake, Trail;
+        public int Corners, Motes, Glints, Sparks, Outlines, Gather;
         public bool Star;
         public Color Frame, Colour, GlowColour, MoteA, MoteB;
         public Color? Trim, Trim2, PatternColour;
@@ -79,6 +80,8 @@ public sealed partial class PerkCardScreen
             Outlines = Mathf.Clamp(Mathf.RoundToInt(LookNumber(row, "outlines", 1f)), 0, MaxOutlines),
             Star = LookNumber(row, "star", 0f) > .5f,
             Shake = Mathf.Clamp(LookNumber(row, "shake", 8f), 0f, 40f),
+            Gather = Mathf.Clamp(Mathf.RoundToInt(LookNumber(row, "gather", 12f)), 0, 60),
+            Trail = Mathf.Clamp(LookNumber(row, "trail", 60f), 0f, 240f),
         };
         look.GlowColour = LookColour(row, "glowColor", look.Colour) ?? look.Colour;
         string pattern = GameTables.Text(LookTable, row, "pattern", "").Trim();
@@ -304,6 +307,21 @@ public sealed partial class PerkCardScreen
         }
     }
 
+    // The light a pick bursts from the card's icon (from BuildCard, after the glints: over everything on its face). Under
+    // the burn's mask, so it lights the card and stops at its edges, as on the draft page.
+    private static void BuildBloom(Card card)
+    {
+        var bloom = FeelUI.Rect("Bloom", card.Front);
+        var icon = card.Icon.rectTransform;
+        bloom.anchorMin = icon.anchorMin;
+        bloom.anchorMax = icon.anchorMax;
+        bloom.anchoredPosition = icon.anchoredPosition;
+        card.Bloom = bloom.gameObject.AddComponent<RawImage>();
+        card.Bloom.texture = KitShapes.Glow;
+        card.Bloom.raycastTarget = false;
+        bloom.gameObject.SetActive(false);
+    }
+
     // The burn's own pieces (from BuildCard): the char, darkening the card just above the burn line (under the burn's
     // mask, hung from its bottom so it rides the line), and the strip of flames on the line itself (outside the mask).
     private static void BuildBurn(Card card)
@@ -352,48 +370,6 @@ public sealed partial class PerkCardScreen
         star.gameObject.SetActive(false);
     }
 
-    // The stamp a pick slams onto its card (the user, 2026-11-14: "눌렀다는 느낌이 덜해. 고른지 모르겠어"): what the pick
-    // made of it, 획득 (a new card), 강화 (a level up) or 최대 강화 (its last), slanted across its middle in the card's colour,
-    // ringed dark and then in its colour again so it reads over any card. On the card's body, outside the burn's mask, so it
-    // rides the card into its badge.
-    private static void BuildStamp(Card card)
-    {
-        var stamp = card.Stamp = FeelUI.Rect("Stamp", card.Body);
-        stamp.anchoredPosition = new Vector2(0f, 17f);
-        stamp.sizeDelta = new Vector2(352f, 90f);
-        stamp.localRotation = Quaternion.Euler(0f, 0f, 8f);
-        card.StampGroup = stamp.gameObject.AddComponent<CanvasGroup>();
-        card.StampGroup.blocksRaycasts = card.StampGroup.interactable = false;
-        card.StampRing = KitStyle.Fill(stamp, Color.white);
-        var ink = FeelUI.Rect("Ink", stamp);
-        ink.sizeDelta = new Vector2(346f, 84f);
-        KitStyle.Fill(ink, KitStyle.With(KitStyle.Ink, .92f));
-        var face = FeelUI.Rect("Face", stamp);
-        face.sizeDelta = new Vector2(340f, 78f);
-        card.StampFace = KitStyle.Fill(face, Color.white);
-        card.StampLabel = KitStyle.Flat(face, "", 40f, TextAlignmentOptions.Center, KitStyle.Ink);
-        stamp.gameObject.SetActive(false);
-    }
-
-    private static string StampWord(Tier tier)
-        => Texts.Get(tier == Tier.Level3 ? "perk.picked.max" : tier == Tier.Level2 ? "perk.picked.up" : "perk.picked.new");
-
-    // The picked card's stamp, <paramref name="after"/> seconds after it is let go: slammed on from large as it pops out,
-    // with a small jolt as it lands, and kept on it.
-    private void AnimateStamp(Card card, float after)
-    {
-        bool on = after > .03f;
-        if (card.Stamp.gameObject.activeSelf != on) card.Stamp.gameObject.SetActive(on);
-        if (!on) return;
-        float k = Mathf.Clamp01((after - .03f) / .12f);
-        float scale = Mathf.Lerp(1.8f, 1f, KitReveal.EaseOut(k));
-        card.Stamp.localScale = new Vector3(scale, scale, 1f);
-        card.StampGroup.alpha = k;
-        if (k < 1f || card.StampShook) return;
-        card.StampShook = true;
-        shake = Mathf.Max(shake, 7f);
-    }
-
     // ---- Dressing, as a card is dealt (Fill) ----
 
     private static void Dress(Card card)
@@ -421,8 +397,8 @@ public sealed partial class PerkCardScreen
         card.ShineImage.color = new Color(1f, 1f, 1f, look.Shine);
         for (int i = 0; i < MaxGlints; i++) card.Glints[i].color = i % 2 == 0 ? look.Colour : Color.white;
         card.PickStar.color = look.Colour;
-        card.StampRing.color = card.StampFace.color = look.Colour;
-        card.StampLabel.text = StampWord(card.Tier);
+        float bloom = Mathf.Clamp(LookNumber("Bloom", "size", 640f), 0f, 2000f);
+        card.Bloom.rectTransform.sizeDelta = new Vector2(bloom, bloom);
         if (card.Tier == Tier.Special) card.Tag.text = Texts.Get("perk.tag.special");
         ResetFlourish(card);
     }
@@ -437,8 +413,8 @@ public sealed partial class PerkCardScreen
         card.Edge.gameObject.SetActive(false);
         foreach (var outline in card.Outlines) outline.gameObject.SetActive(false);
         card.PickStar.gameObject.SetActive(false);
-        card.Stamp.gameObject.SetActive(false);
-        card.StampShook = false;
+        card.Bloom.gameObject.SetActive(false);
+        card.Icon.rectTransform.localScale = Vector3.one;
     }
 
     // ---- Every frame (AnimateCard) ----
@@ -531,6 +507,27 @@ public sealed partial class PerkCardScreen
         float scale = .3f + 1.1f * KitReveal.EaseOut(s);
         card.PickStar.rectTransform.localScale = new Vector3(scale, scale, 1f);
         card.PickStar.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -60f * s);
+    }
+
+    // The picked card's light, <paramref name="after"/> seconds after it is let go (below 0: none): it bursts from the icon,
+    // spreading as it fades (part of the one soft flash of a pick: the user's rule, never past .6, gone in about .35 s), and
+    // the icon jumps once. What the pick did shows in this, not in words (the user, 2026-11-14: "Show but don't tell").
+    private static void AnimateBloom(Card card, float after)
+    {
+        float seconds = Mathf.Max(.05f, LookNumber("Bloom", "seconds", .35f));
+        float k = after >= 0f ? Mathf.Clamp01(after / seconds) : 1f;
+        bool on = k < 1f;
+        if (card.Bloom.gameObject.activeSelf != on) card.Bloom.gameObject.SetActive(on);
+        if (on)
+        {
+            float spread = Mathf.Lerp(.1f, 1f, KitReveal.EaseOut(k));
+            card.Bloom.rectTransform.localScale = new Vector3(spread, spread, 1f);
+            card.Bloom.color = new Color(1f, 1f, 1f, Mathf.Clamp(LookNumber("Bloom", "alpha", .6f), 0f, .6f) * (1f - k));
+        }
+        float pop = after >= 0f ? Mathf.Clamp01(after / IconPopSeconds) : 1f;
+        float size = pop < 1f ? 1f + IconPop * Mathf.Sin(pop * Mathf.PI) : 1f;
+        var icon = card.Icon.rectTransform;
+        if (icon.localScale.x != size) icon.localScale = new Vector3(size, size, 1f);
     }
 
     // A card not picked burns away from below (the user, 2026-11-14: "선택받지 못한 카드들은 불타 없어지는 연출로"): the
