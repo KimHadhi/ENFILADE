@@ -4,14 +4,16 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// Map dressing, stage 6 (the user, 2026-11-13: "데칼 진행"): wear on the layout's boxes as URP decals (the renderer's
-/// decal feature, Screen Space): leaks hanging from a wall's top edge, mud splashed at its foot, cracks on walls and
-/// floors, oil on roads, grime, mud and leaves on tops. Tables/MapDecals lists the decals, grouped: a material each
+/// Map dressing, stage 6 (the user, 2026-11-13: "데칼 진행"): wear on the layout's walls as URP decals (the renderer's
+/// decal feature, Screen Space): leaks hanging from a wall's top edge, mud splashed at its foot, cracks. Floors, roads
+/// and roofs wear none since 2026-11-15: oil, cracks, grime, mud and leaves were laid by the square metre on every top
+/// that wore a surface, with no idea of indoors, and chapter 1's flats had leaves on their floors (the user: "야 일단
+/// 바닥 데칼 다 빼. 너 데칼 넣을 줄 몰라. 아니 아파트 내부에 나뭇잎이 왜 있어 임마."). Tables/MapDecals lists the decals, grouped: a material each
 /// (Assets/ThirdParty/Quixel/Decals, made by Tools/Props/build_decals.py on URP's own decal shader, the one the bullet
 /// holes use), its size as laid, where on a wall it sits, how much it varies, how far it is drawn and how strongly it
-/// shows. A Tables/MapSurfaces row says which groups its boxes wear and how thickly (wallDecals per metre of wall,
-/// topDecals per square metre of top, "group*density;…"), so every box that wears a surface (a building's look, the
-/// map's Concrete or Road) takes its share with no line per map. Every spot comes from the box's place, the same on
+/// shows. A Tables/MapSurfaces row says which groups its boxes' walls wear and how thickly (wallDecals per metre of wall,
+/// "group*density;…"), so every box that wears a surface (a building's look, the map's Concrete) takes its share with
+/// no line per map. Every spot comes from the box's place, the same on
 /// every build and every PC. A decal is kept only where its whole rectangle lies on that face, nothing stands before it
 /// (rays to its middle and corners must meet this box first) and nothing else is inside the thin box it paints (an
 /// overlap test), so none smears over a corner, a ledge, a floor or a wall standing on the floor: URP's decal shader
@@ -31,12 +33,11 @@ public sealed partial class GreyboxBuilder
     private const float DecalDepth = .2f;
     // A decal's box ends this short of a face's side edges, and this far over the floor or under the top (m).
     private const float DecalEdge = .12f, DecalLift = .03f;
-    // Walls lower or shorter than this, and tops narrower, get none (a kerb, a rail, a parapet's top).
-    private const float DecalLeastWall = .8f, DecalLeastTop = 1.2f;
-    // At most this many of one group on one face or one top (a city block's ground would otherwise take hundreds where
-    // nobody walks), and in all, so a dense table can't slow a map.
-    private const int DecalMostPerFace = 8, DecalMostPerTop = 40, DecalMost = 1600;
-    // At most this many spots are tried for one group on one face or top (a huge ground's density would ask for more).
+    // Walls lower or shorter than this get none (a kerb, a rail).
+    private const float DecalLeastWall = .8f;
+    // At most this many of one group on one face, and in all, so a dense table can't slow a map.
+    private const int DecalMostPerFace = 8, DecalMost = 1600;
+    // At most this many spots are tried for one group on one face (a long wall's density would ask for more).
     private const int DecalMostTries = 400;
     // A decal fades over this share of its far distance.
     private const float DecalFade = .8f;
@@ -68,9 +69,8 @@ public sealed partial class GreyboxBuilder
             if (!block.Shape.TryGetComponent(out Renderer seen) || !seen.enabled || seen.sharedMaterial == null) continue;
             if (!surfaceRows.TryGetValue(seen.sharedMaterial, out string rowId) || !GameTables.TryGetRow(SurfaceTable, rowId, out var row)) continue;
             if (!block.Shape.TryGetComponent(out Collider own)) continue;
-            string walls = Text(row, "wallDecals"), tops = Text(row, "topDecals");
+            string walls = Text(row, "wallDecals");
             if (walls.Length > 0) WallDecals(block, own, walls);
-            if (tops.Length > 0 && !block.NoStand) TopDecals(block, own, tops);
         }
     }
 
@@ -143,38 +143,6 @@ public sealed partial class GreyboxBuilder
                 if (high < low) return false;
                 middle = Mathf.Lerp(low, high, pick);
                 return true;
-            }
-        }
-    }
-
-    // A box's top: decals by the square metre, turned at random where the row says so, kept off its edges by their
-    // turned corners' reach.
-    private void TopDecals(Block block, Collider own, string spec)
-    {
-        Bounds box = block.Box;
-        float sx = box.size.x, sz = box.size.z, top = box.max.y;
-        if (Mathf.Min(sx, sz) < DecalLeastTop) return;
-        foreach (var (group, density) in DecalSpec(spec))
-        {
-            var kinds = DecalGroup(group);
-            if (kinds == null) continue;
-            uint state = SpotHash(new Vector3(box.center.x, top, box.center.z)) ^ StableHash(group) ^ 0x9E3779B9u | 1u;
-            int tries = Mathf.Min(DecalMostTries, Draw(sx * sz * density, ref state)), laid = 0;
-            for (int i = 0; i < tries && laid < DecalMostPerTop && decalsLaid < DecalMost; i++)
-            {
-                var kind = kinds[(int)(Next(ref state) % (uint)kinds.Count)];
-                float grow = 1f + (Unit(Next(ref state)) * 2f - 1f) * kind.Vary;
-                float width = kind.Width * grow, height = kind.Height * grow;
-                float turn = kind.Spin ? Unit(Next(ref state)) * 360f : 0f;
-                float reach = Mathf.Sqrt(width * width + height * height) * .5f + DecalEdge;
-                float x = Unit(Next(ref state)) * 2f - 1f, z = Unit(Next(ref state)) * 2f - 1f;
-                if (reach * 2f > Mathf.Min(sx, sz)) { decalsSkipped++; continue; }
-                var point = new Vector3(box.center.x + x * (sx * .5f - reach), top, box.center.z + z * (sz * .5f - reach));
-                var spin = Quaternion.AngleAxis(turn, Vector3.up);
-                if (!FaceClear(own, point, Vector3.up, spin * Vector3.right, spin * Vector3.forward, width, height)) { decalsSkipped++; continue; }
-                if (!Seen(point, Vector3.up, kind.Far)) { decalsUnseen++; continue; }
-                Project(kind, point, Vector3.up, turn, new Vector2(width, height));
-                laid++;
             }
         }
     }
