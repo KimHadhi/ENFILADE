@@ -1,7 +1,7 @@
 ﻿key,value,note
 Assault.stackMax,8,아드레날린 스택 최대. 처치 1번에 1스택. 다 차면 클래스 기술 키(마우스 휠 클릭)로 CHARGE
-Assault.damagePerStack,3,스택 하나당 총 피해 +%
-Assault.speedPerStack,1.5,스택 하나당 이동 속도 +%
+Assault.damagePerStack,2,스택 하나당 총 피해 +%
+Assault.speedPerStack,1,스택 하나당 이동 속도 +%
 Assault.stackHold,6,마지막 처치 뒤 이만큼(초)은 스택이 줄지 않는다
 Assault.stackDecay,1.5,그 뒤 이만큼(초)마다 스택이 하나씩 준다
 Assault.chargeSeconds,7,CHARGE가 가는 시간(초). 스택을 모두 쓰고 반경 안의 동료와 함께 받는다
@@ -33,7 +33,7 @@ Knight.tauntTaken,.6,도발 동안 받는 피해에 한 번 더 곱하는 배수
 Knight.coverReach,15,"원호 방어(나이트 클래스 기술 키): 꾹 누르면 바닥에 이만큼(m)의 원이 뜨고, 그 안에서 보이는 동료를 바라보면 나이트 화면에서만 그 동료가 빛난다. 놓으면 그 동료에게 원호가 열린다. 도발은 0.8.171부터 이것으로 바뀌어 Knight.taunt*는 쓰지 않는다"
 Knight.coverAngle,8,원호할 동료를 고를 때 조준선에서 이 각도(도) 안
 Knight.coverWindow,1,원호가 열려 있는 시간(초). 그동안 그 동료에게 오는 적의 공격(잡기처럼 막을 수 없는 것 빼고)을 나이트가 대신 패리해 튕겨 내고 그 곁으로 순간이동한다
-Knight.coverCooldown,12,원호로 공격을 튕겨 낸 뒤 다시 쓰기까지(초)
+Knight.coverCooldown,24,원호로 공격을 튕겨 낸 뒤 다시 쓰기까지(초)
 Knight.coverWhiff,2,원호를 열었는데 공격이 오지 않았을 때 다시 쓰기까지(초)
 Knight.coverStand,1,순간이동한 나이트가 서는 자리: 동료에게서 공격 쪽으로 이만큼(m). 막혀 있으면 옆이나 조금 가까이
 Ping.seconds,8,F로 찍은 적이 팀 모두에게 테두리(벽 너머로도)와 머리 위 마름모로 보이는 시간(초). 한 사람당 하나: 새로 찍으면 옮겨 간다. 클래스와 상관없이 모두
@@ -45,7 +45,7 @@ Schiesshund.bountyMoney,100,표식 대상을 시순트가 처치하면 처치 �
 Schiesshund.bountyElite,300,엘리트 표식 대상의 현상금
 Schiesshund.roundPoints,2,데스페라도 탄 한 발에 드는 현상금 점수(표식 처치 1점)
 Schiesshund.elitePoints,2,엘리트 표식 처치 한 번의 현상금 점수
-Schiesshund.desperadoMax,6,데스페라도(시순트의 4번 칸 R08. 2번 칸은 보통 권총) 실린더에 드는 탄 최대. 현상금으로만 차고 재장전·탄약 줍기·상점·처형 보상으로는 안 찬다
+Schiesshund.desperadoMax,5,데스페라도(시순트의 4번 칸 R08. 2번 칸은 보통 권총) 실린더에 드는 탄 최대. 현상금으로만 차고 재장전·탄약 줍기·상점·처형 보상으로는 안 찬다
 Schiesshund.startRounds,1,장이 시작될 때 데스페라도에 든 탄
 Schiesshund.desperadoDamage,100,데스페라도 탄의 피해 +%. 4번 칸을 들고 쏠 때마다 한 발씩 쓴다
 Schiesshund.bossShare,1,데스페라도 탄이 자기 표식 대상의 머리에 맞으면 엘리트도 거구도 그대로 죽는다(사용자 11-13: "데스페라도 정도면 거구도 즉사해라 좀"). 1보다 작게 하면 거구만은 전체 체력의 이 몫을 잃고 산다
@@ -105,7 +105,7 @@ Support.wireCost,30,철조망(서포트 카드): 가방에서 나가는 양. 휠
 Support.wireMax,2,철조망이 한 번에 서 있는 최대
 Support.wireHealth,300,철조망 체력. 좀비가 지나가며 깎는다(wireWear)
 Support.wireSlow,.4,철조망 안의 좀비 속도(원래의 몇 배). 좀비만 걸리고 아군은 그냥 지나간다
-Support.wireDamage,6,철조망 안의 좀비가 받는 피해(초당). 누구의 처치도 아니다(돈·게이지 없음)
+Support.wireDamage,12,철조망 안의 좀비가 받는 피해(초당). 누구의 처치도 아니다(돈·게이지 없음)
 Support.wireWear,3,철조망 안의 좀비 한 마리가 철조망을 깎는 양(초당)
 Support.crateCost,50,탄약 상자(서포트 카드): 가방에서 나가는 양
 Support.crateMax,1,탄약 상자가 한 번에 서 있는 최대

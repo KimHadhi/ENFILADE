@@ -97,7 +97,23 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
     private void OnDestroy() { if (stats != null) stats.Changed -= Publish; }
     private void OnValidate() { dirty = true; }
     void ITableBound.OnTableApplied() => OnValidate();
-    private void Update() { if (dirty) Publish(); }
+    private void Update()
+    {
+        if (!starterAsked) TakeStarter();
+        if (dirty) Publish();
+    }
+
+    private bool starterAsked;
+
+    // A campaign's first pick (PlayerPerks.TakeStarterPick, the user 2026-11-14: "처음부터 카드 뽑기 한 번 쓸 수 있는 상태로
+    // 시작하는 거지"): the local player's gauge starts full enough for one card. Asked once, on this gauge's first frame,
+    // when the player is set up and the hub (practice) can tell itself apart.
+    private void TakeStarter()
+    {
+        starterAsked = true;
+        var player = GetComponentInParent<PlayerMovement>();
+        if (player != null && player.IsLocal && PlayerPerks.TakeStarterPick()) SetCurrentCharge(Mathf.Max(CurrentCharge, RequiredCharge));
+    }
 
     public void SetCurrentCharge(float current)
     {

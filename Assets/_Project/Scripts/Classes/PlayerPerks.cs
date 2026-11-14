@@ -34,18 +34,33 @@ public static class PlayerPerks
         public string Id, Name, Class, Tag, Icon, Text, Why, Ability;
         public int Levels, After;
         public float Value, Value2, Display = 1f, Weight;
+        /// <summary>
+        /// What the card adds in all at each level, when its value cell lists them ("-4/-10/-16"), or null when every
+        /// level adds the same value. Some steps the user asked for are not even (2026-11-14, the Knight's cover wait
+        /// "기본 24초 … 20초 / 14초 / 8초"), which value × level can't give.
+        /// </summary>
+        public float[] Steps;
         /// <summary>A class's final card (궁극): drawn last, shown apart.</summary>
         public bool Final;
+        /// <summary>Dealt only to a player alone (the user, 2026-11-14, of 두 번째 숨: "솔로일 때만 나와서").</summary>
+        public bool Solo;
+
+        /// <summary>Everything the card adds in all at <paramref name="level"/> (0 below the first).</summary>
+        public float At(int level)
+        {
+            if (level <= 0) return 0f;
+            return Steps != null ? Steps[Mathf.Min(level, Steps.Length) - 1] : Value * level;
+        }
 
         /// <summary>
-        /// The effect line at <paramref name="level"/>: {0} is everything up to that level (value × level, times its
-        /// display factor), {1} the same of value2, and {Row.name} a number of Tables/ClassAbilities as it stands.
+        /// The effect line at <paramref name="level"/>: {0} is everything up to that level (At, times its display
+        /// factor), {1} the same of value2, and {Row.name} a number of Tables/ClassAbilities as it stands.
         /// </summary>
         public string Describe(int level)
         {
             int at = Mathf.Max(0, level);
             string text = string.IsNullOrEmpty(Text) ? "{0}" : Text;
-            text = text.Replace("{0}", Shown(Value * at * Display)).Replace("{1}", Shown(Value2 * at));
+            text = text.Replace("{0}", Shown(At(at) * Display)).Replace("{1}", Shown(Value2 * at));
             return Abilities(text);
         }
 
@@ -53,10 +68,12 @@ public static class PlayerPerks
         public string Reason => string.IsNullOrEmpty(Why) ? "" : Abilities(Why);
     }
 
-    // The perk ids the code knows; the table can add others for later.
-    public const string HeadshotDamage = "gun_head", GunDamage = "gun_body", FistDamage = "melee_power", ExecutionHeal = "melee_butcher",
-        Toughness = "body_tough", Grit = "body_grit", Rescue = "team_rescue", Charge = "gauge_charge",
-        Heriot = "heriot", Momentum = "momentum";
+    // The perk ids the code knows; the table can add others for later. Four of the old common cards became class cards on
+    // 2026-11-14 (the user: Butcher "나이트 쪽으로 빼지", Rescue "데탕트 쪽 아니냐?", Heriot "시순트 쪽 아니냐?", Momentum
+    // "어썰트 쪽 아니냐?"); their effects still ask here, and the table deals them to that class only.
+    public const string HeadshotDamage = "gun_head", GunDamage = "gun_body", ExecutionHeal = "knight_butcher",
+        Toughness = "body_tough", Grit = "body_grit", Rescue = "detente_rescue", Charge = "gauge_charge",
+        Heriot = "hound_heriot", Momentum = "assault_momentum";
     // The class cards with code behind them (ClassCards, ClassKit, PlayerClass).
     public const string KnightDeflect = "knight_deflect", KnightReversal = "knight_reversal", KnightGauntlet = "knight_gauntlet",
         KnightShadow = "knight_shadow", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
@@ -83,6 +100,7 @@ public static class PlayerPerks
         bonuses = null;
         Changed = null;
         momentumUntil = -99f;
+        starterOwed = true;
         // A table saved during play is read again (GameTables.Reload), the cards included.
         GameTables.Reloaded -= Forget;
         GameTables.Reloaded += Forget;
@@ -106,14 +124,17 @@ public static class PlayerPerks
                 if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
                 // The name, tag, text and why cells name Texts rows (perk.<id>.name …, a tag the class's title or
                 // perk.tag.<kind>), where the words are written; a modder's plain words work as well.
+                float[] steps = StepsOf(row.Text("value", ""));
                 catalog.Add(new Perk
                 {
                     Id = id, Name = Texts.Cell(row.Text("name", id)), Class = row.Text("class", ""), Tag = Texts.Cell(row.Text("tag", "")),
                     Icon = row.Text("icon", ""), Text = Texts.Cell(row.Text("text", "")), Why = Texts.Cell(row.Text("why", "")),
                     Ability = row.Text("ability", ""),
                     Levels = Mathf.Max(1, (int)row.Number("levels", 1f)), After = Mathf.Max(0, (int)row.Number("after", 0f)),
-                    Value = row.Number("value", 0f), Value2 = row.Number("value2", 0f), Display = row.Number("display", 1f),
-                    Weight = Mathf.Max(0f, row.Number("weight", 1f)), Final = row.Number("final", 0f) > .5f
+                    Value = steps != null ? steps[0] : row.Number("value", 0f), Steps = steps,
+                    Value2 = row.Number("value2", 0f), Display = row.Number("display", 1f),
+                    Weight = Mathf.Max(0f, row.Number("weight", 1f)), Final = row.Number("final", 0f) > .5f,
+                    Solo = row.Number("solo", 0f) > .5f
                 });
             }
             return catalog;
@@ -130,11 +151,11 @@ public static class PlayerPerks
 
     public static bool Has(string id) => Level(id) > 0;
 
-    /// <summary>Everything the perk adds at its level now (its value × level), 0 without it.</summary>
+    /// <summary>Everything the perk adds at its level now (Perk.At), 0 without it.</summary>
     public static float Total(string id)
     {
         var perk = Find(id);
-        return perk != null ? perk.Value * Mathf.Min(Level(id), perk.Levels) : 0f;
+        return perk != null ? perk.At(Mathf.Min(Level(id), perk.Levels)) : 0f;
     }
 
     /// <summary>The same of its second number (value2 × level).</summary>
@@ -161,6 +182,7 @@ public static class PlayerPerks
     public static bool Dealable(Perk perk)
     {
         if (perk == null || perk.Weight <= 0f || Level(perk.Id) >= perk.Levels) return false;
+        if (perk.Solo && !Alone) return false;
         if (string.IsNullOrEmpty(perk.Class)) return true;
         return PlayerClass.Is(perk.Class) && ClassLevels(perk.Class) >= perk.After;
     }
@@ -226,6 +248,7 @@ public static class PlayerPerks
     public static void Clear()
     {
         momentumUntil = -99f;
+        starterOwed = true;
         // Practising, the campaign's own cards go too, so nothing comes back when practice ends, whichever comes first
         // (the hub left for the title screen: its end and this Clear run in either order).
         kept?.Clear();
@@ -306,7 +329,7 @@ public static class PlayerPerks
             if (level <= 0 || dot <= 0 || dot >= perk.Ability.Length - 1) continue;
             string row = perk.Ability.Substring(0, dot), name = perk.Ability.Substring(dot + 1);
             if (!bonuses.TryGetValue(row, out var names)) bonuses[row] = names = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
-            names[name] = (names.TryGetValue(name, out float sum) ? sum : 0f) + perk.Value * level;
+            names[name] = (names.TryGetValue(name, out float sum) ? sum : 0f) + perk.At(level);
         }
     }
 
@@ -321,8 +344,11 @@ public static class PlayerPerks
         return Mathf.Max(.05f, 1f + percent / 100f) * MomentumFactor;
     }
 
-    /// <summary>The fists' damage factor (and Momentum's while it runs).</summary>
-    public static float FistFactor => (1f + Total(FistDamage) / 100f) * MomentumFactor;
+    /// <summary>
+    /// The fists' damage factor: Momentum's while it runs. The fist card (쇠주먹) went on 2026-11-14 (the user: "클래스별로
+    /// 칼 나와서 주먹이 의미가 없음").
+    /// </summary>
+    public static float FistFactor => MomentumFactor;
 
     /// <summary>
     /// How far this PC's own bullets get through bodies and walls (a factor on the gun's penetration): a Ghost's
@@ -375,6 +401,45 @@ public static class PlayerPerks
         => source != null && source.GetComponentInParent<PlayerMovement>() is PlayerMovement player && player.IsLocal;
 
     // ---- Reading the table ----
+
+    /// <summary>
+    /// A value cell listing each level's total ("30/50/70"), as numbers, or null for a single value (or anything that
+    /// isn't a list of at least two numbers, which Number then reads as before).
+    /// </summary>
+    private static float[] StepsOf(string cell)
+    {
+        if (string.IsNullOrEmpty(cell) || cell.IndexOf('/') < 0) return null;
+        string[] parts = cell.Split('/');
+        if (parts.Length < 2) return null;
+        var steps = new float[parts.Length];
+        for (int i = 0; i < parts.Length; i++)
+            if (!float.TryParse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out steps[i]) || float.IsNaN(steps[i]) || float.IsInfinity(steps[i]))
+                return null;
+        return steps;
+    }
+
+    /// <summary>
+    /// This player plays alone: no room, or nobody else in it. A solo card (Perk.Solo) is dealt only then, because what
+    /// saves a lone player would be too much beside friends who can get them up (the user, 2026-11-14).
+    /// </summary>
+    public static bool Alone => !GameSession.IsOnline || PlayerRoster.All.Count <= 1;
+
+    // ---- The first pick (the user, 2026-11-14: "처음부터 카드 뽑기 한 번 쓸 수 있는 상태로 시작하는 거지") ----
+
+    // Owed from the start of a campaign until this player's gauge has been filled for it once.
+    private static bool starterOwed = true;
+
+    /// <summary>
+    /// Whether this player's gauge should start full for one pick now, taken once a campaign: a new campaign (Clear at
+    /// the title screen or after a finished one) owes it, nothing is held yet, and it is not the hub's practice.
+    /// UltimateCharge asks for the local player.
+    /// </summary>
+    public static bool TakeStarterPick()
+    {
+        if (!starterOwed || IsPractising || HubLobby.IsActive) return false;
+        starterOwed = false;
+        return levels.Count == 0;
+    }
 
     private static string Shown(float number) => number.ToString("0.##", CultureInfo.InvariantCulture);
 
