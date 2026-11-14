@@ -26,8 +26,9 @@ using UnityEngine;
 /// Mayo's eyes are 5.8 cm apart and her chin 6.2 cm under them, so at its maker's size it stood two to three faces tall.
 /// Measured on the FBX files (2026-11-13): eyes to nose 1.9-5.5 cm, to the brow or bangs 2.2-7.3 cm, so the glass stands
 /// 3.5 (Hiro) to 8.6 cm (Mayo, for her bangs) in front of the eyes; no face then comes through the shell, and of the hair
-/// only a few vertices stand out through it (Mayo 9, Kazusa 9, Ichigo 44, Hiro 81), which OutfitDresser presses in under
-/// it. Ichigo's chest came up to 33 mm through the shell's lower edge upright, and nothing at a 6° tilt.
+/// only a few vertices stand out through it (Mayo 9, Kazusa 9, Ichigo 44, Hiro 81), which OutfitDresser leaves out of
+/// what is drawn (OutfitFit). Ichigo's chest came up to 33 mm through the shell's lower edge upright, and nothing at a
+/// 6° tilt.
 /// </summary>
 internal static class FaceFit
 {

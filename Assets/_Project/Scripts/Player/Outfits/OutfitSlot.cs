@@ -55,12 +55,18 @@ public sealed class OutfitSlot
     /// </summary>
     public string fit = "";
     /// <summary>
-    /// Slots whose pieces this slot's pieces are worn over ('|' between them): where a piece there stands out through one
-    /// here, it is pressed in under it (UnderwearFit.Press, OutfitDresser.PressUnder). Shoes over the legs slot keep socks,
-    /// stockings and tights inside them, whichever two are worn together (the user, 2026-11-13: "양말이랑 신발 서로 호환
-    /// 안 되는 거 많던데 이거 근본적으로 해결하는 방법?").
+    /// Slots whose pieces this slot's pieces are worn over ('|' between them): a piece there is fitted under one here
+    /// from the two meshes (OutfitFit: what of it is hidden under the piece here, or came out through it, is not drawn).
+    /// Shoes over the legs slot keep socks, stockings and tights inside them, whichever two are worn together (the user,
+    /// 2026-11-13: "양말이랑 신발 서로 호환 안 되는 거 많던데 이거 근본적으로 해결하는 방법?").
     /// </summary>
     public string over = "";
+    /// <summary>
+    /// Pieces here lie snug on the skin (hosiery, underwear): where one lies on the rim of a piece worn over it, a few
+    /// millimetres out, it is tucked in under that rim, as a shoe holds a sock. A shirt under a jacket is left where it
+    /// lies: its collar may be meant to show over the jacket's.
+    /// </summary>
+    public bool snug;
 
     /// <summary>The slots this one is worn over (<see cref="over"/>).</summary>
     public IEnumerable<string> OverSlots => OutfitCatalog.Split(over);

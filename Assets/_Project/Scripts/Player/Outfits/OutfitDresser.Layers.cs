@@ -5,12 +5,120 @@ using UnityEngine;
 // OutfitDresser: what is worn under what. One part of the class; the rest is in OutfitDresser.cs and the files beside it.
 internal static partial class OutfitDresser
 {
+    // What is fitted under what on the dressed body, gathered for OutfitFit.Trim: each layer once, with every garment
+    // over it. A see-through garment is over nothing: what lies under it shows.
+    private sealed class Layering
+    {
+        public readonly List<OutfitFit.Layer> Layers = new List<OutfitFit.Layer>();
+        public readonly HashSet<Renderer> Sheer = new HashSet<Renderer>();
+        private readonly Dictionary<Renderer, OutfitFit.Layer> byInner = new Dictionary<Renderer, OutfitFit.Layer>();
+
+        /// <param name="hides">Whether the garments can hide the layer for good (a mask fitted to a face only cuts what comes through it).</param>
+        /// <param name="snug">Whether the layer lies snug on the skin, to be tucked in under a rim it lies on (OutfitSlot.snug).</param>
+        public void Under(Renderer inner, IEnumerable<Renderer> garments, bool hides, bool snug)
+        {
+            if (inner is not SkinnedMeshRenderer skinned || skinned.sharedMesh == null) return;
+            foreach (var garment in garments)
+            {
+                if (garment == null || garment == inner || Sheer.Contains(garment)) continue;
+                if (!byInner.TryGetValue(inner, out var layer))
+                {
+                    byInner[inner] = layer = new OutfitFit.Layer(skinned);
+                    Layers.Add(layer);
+                }
+                layer.Add(garment, hides);
+                layer.Snug |= snug;
+            }
+        }
+    }
+
+    // Every layer of the dressed body fitted under what is worn over it, from the meshes of whatever is worn, so no two
+    // pieces need rows of their own (OutfitFit.Trim):
+    // - the underwear left showing, under the clothes over it;
+    // - pieces in slots worn under others (OutfitSlots.csv over: socks, stockings and tights under shoes, a shirt under
+    //   a jacket), the character's own pieces counting in their slots (CharacterParts.csv) as items do;
+    // - hair, ears and head ornaments under a piece fitted to the face (UnderFace);
+    // - the skin under everything that covers it (UnderClothes).
+    // It replaces pressing the under piece in along its normals, which crushed feet in shoes (the user, 2026-11-14).
+    private static void FitLayers(GameObject model, string skinId, Animator animator, Renderer[] own, List<Worn> worn, HashSet<string> covered,
+        List<Renderer> leaving, List<Renderer> underwear, List<Renderer> over)
+    {
+        var gone = new HashSet<Renderer>(leaving);
+        var layering = new Layering();
+        // The character's own pieces by their renderers' names, each under the first row that lists it.
+        var rows = new Dictionary<string, OutfitCatalog.Part>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in OutfitCatalog.PartsOf(skinId))
+            foreach (string name in OutfitCatalog.Split(row.parts)) rows.TryAdd(name, row);
+        foreach (var piece in worn)
+            foreach (var renderer in piece.Renderers)
+                if (piece.Item.sheer || OutfitFit.Sheer(renderer)) layering.Sheer.Add(renderer);
+        foreach (var renderer in own)
+            if (renderer != null && rows.TryGetValue(renderer.name, out var row) && Drawn(renderer, gone) && (row.sheer || OutfitFit.Sheer(renderer)))
+                layering.Sheer.Add(renderer);
+
+        // The skin first, against every piece as it was made: a piece fitted under another becomes another mesh for
+        // each outfit, and the skin measured against that would be measured again for each.
+        if (OutfitFit.FitsSkin) UnderClothes(animator, own, worn, covered, gone, rows, layering);
+        foreach (var renderer in underwear)
+            if (Drawn(renderer, gone)) layering.Under(renderer, over, true, true);
+        foreach (var slot in OutfitCatalog.Slots)
+        {
+            if (string.IsNullOrEmpty(slot.over) || covered.Contains(slot.id)) continue;
+            var outer = PiecesIn(slot.id, skinId, own, worn, gone);
+            if (outer.Count == 0) continue;
+            foreach (string under in slot.OverSlots)
+            {
+                if (covered.Contains(under)) continue;
+                bool snug = OutfitCatalog.Slot(under) is { snug: true };
+                foreach (var inner in PiecesIn(under, skinId, own, worn, gone)) layering.Under(inner, outer, true, snug);
+            }
+        }
+        UnderFace(model.transform, skinId, animator, own, worn, covered, layering);
+        OutfitFit.Trim(model, animator, layering.Layers);
+    }
+
+    // The skin under whatever covers it: the character's own meshes that are no piece of its outfit and don't hang from
+    // the head, under every piece drawn solid in a slot that covers skin. A body comes with keys that draw its skin in
+    // under its own clothes (SkinCover) and each fitted outfit names the keys it needs (OutfitFits.csv), but a piece
+    // nobody wrote rows for, or a body with no such keys, had its skin clipping through: now skin that can't be seen is
+    // simply not drawn, on any body under any piece. A character with no rows at all keeps its meshes whole: there its
+    // body and its clothes can't be told apart. A face is never touched: glasses and masks are not clothes, and what a
+    // lens would hide still shows through it.
+    private static void UnderClothes(Animator animator, Renderer[] own, List<Worn> worn, HashSet<string> covered, HashSet<Renderer> gone,
+        Dictionary<string, OutfitCatalog.Part> rows, Layering layering)
+    {
+        if (rows.Count == 0) return;
+        var clothes = new List<Renderer>();
+        foreach (var renderer in own)
+            if (renderer is SkinnedMeshRenderer && rows.TryGetValue(renderer.name, out var row) && Drawn(renderer, gone)
+                && CoversSkin(OutfitCatalog.Slot(row.slot))) clothes.Add(renderer);
+        foreach (var piece in worn)
+        {
+            if (covered.Contains(piece.Slot.id) || !CoversSkin(piece.Slot)) continue;
+            foreach (var renderer in piece.Renderers)
+                if (renderer is SkinnedMeshRenderer && Drawn(renderer, gone)) clothes.Add(renderer);
+        }
+        if (clothes.Count == 0) return;
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        foreach (var renderer in own)
+            if (renderer is SkinnedMeshRenderer skinned && !rows.ContainsKey(renderer.name) && Drawn(renderer, gone)
+                && (head == null || !HeadMeshes.OnHead(skinned, head)))
+                layering.Under(renderer, clothes, true, true);
+    }
+
+    // Whether pieces in the slot cover skin for good: clothes on the body, not hair or a tail (SkinCover.IsBare), and
+    // nothing worn on the head, where a face shows through glasses and beside a mask.
+    private static bool CoversSkin(OutfitSlot slot) =>
+        slot != null && !SkinCover.IsBare(slot.id) && !string.Equals(slot.group, "head", StringComparison.OrdinalIgnoreCase);
+
     // What hangs from the head under the face pieces worn (OutfitSlot.FitsFace): the character's own head meshes (hair,
     // ears, the face) and items worn in the head's slots. A piece the face piece covers whole (FaceFit.csv hide, as
-    // SkinCover measures it: a hairpin under the mask) goes out of sight; the rest is pressed in under it where it stands
-    // out through it (UnderwearFit.Press), on copies of its meshes. Measured on the FBX files (2026-11-13), a few hair
-    // vertices stood out through the welding mask on each character, nothing of a face.
-    private static void UnderFace(Transform root, string skinId, Animator animator, Renderer[] own, List<Worn> worn, HashSet<string> covered)
+    // SkinCover measures it: a hairpin under the mask) goes out of sight; of the rest, what comes out through the face
+    // piece is left out (OutfitFit.Trim, which hides nothing behind it: a face shows beside a mask). Measured on the
+    // FBX files (2026-11-13), a few hair vertices stood out through the welding mask on each character, nothing of a
+    // face.
+    private static void UnderFace(Transform root, string skinId, Animator animator, Renderer[] own, List<Worn> worn, HashSet<string> covered,
+        Layering layering)
     {
         var onFace = new List<Renderer>();
         foreach (var piece in worn)
@@ -28,34 +136,69 @@ internal static partial class OutfitDresser
             foreach (var renderer in piece.Renderers)
                 if (renderer is SkinnedMeshRenderer && renderer.enabled) under.Add(renderer);
         }
-        var showing = new List<Renderer>();
         float hide = FaceFit.HideShare;
         foreach (var renderer in under)
         {
             if (SkinCover.Covers(root, skinId, renderer, onFace) >= hide) renderer.enabled = false;
-            else showing.Add(renderer);
+            else layering.Under(renderer, onFace, false, false);
         }
-        UnderwearFit.Press(root, showing, onFace);
     }
 
-    // Pieces worn over others by their slots (OutfitSlots.csv over: shoes over the legs slot): where a piece of the inner
-    // slot stands out through one of the outer slot, or lies less than UnderwearFit.csv margin under it, it is pressed in
-    // under it on a copy of its mesh, as underwear goes under clothes (UnderwearFit.Press), measured on the meshes of
-    // whatever two are worn, so no pair of socks and shoes needs rows of its own. Measured offline on 2026-11-12: Mayo's
-    // own stocking stood 17-20 mm out of the White Board boots, the Sera Yura shoes and the loafers, and no key of hers
-    // draws its foot in. The character's own pieces count in their slots (CharacterParts.csv) as items do.
-    private static void PressUnder(Transform root, string skinId, Renderer[] own, List<Worn> worn, HashSet<string> covered, List<Renderer> leaving)
+    // Pieces take the body's shape keys they lack (OutfitFit.Follow): every piece of clothing drawn, the character's own
+    // and the outfit's, against the character's skin (its own meshes that are no piece and don't hang from the head). A
+    // piece doesn't follow a key it holds on the body itself (a shoe its heel: CharacterParts.csv needs, OutfitFits.csv
+    // shapes); a rigid piece made for anyone (a mask, earrings) follows nothing, nor does what only lies on the body
+    // (hair, a tail: SkinCover.IsBare), which its own bones swing. A character with no rows has no pieces to tell from
+    // its body.
+    private static void FollowBody(GameObject model, string skinId, Animator animator, Renderer[] own, List<Worn> worn, HashSet<string> covered,
+        List<Renderer> leaving, Dictionary<string, float> came)
     {
+        var parts = OutfitCatalog.PartsOf(skinId);
+        if (parts.Count == 0) return;
         var gone = new HashSet<Renderer>(leaving);
-        foreach (var slot in OutfitCatalog.Slots)
+        var held = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var lying = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in parts)
+            foreach (string name in OutfitCatalog.Split(row.parts))
+            {
+                if (SkinCover.IsBare(row.slot))
+                {
+                    lying.Add(name);
+                    continue;
+                }
+                if (!held.TryGetValue(name, out var keys)) held[name] = keys = new HashSet<string>(StringComparer.Ordinal);
+                keys.UnionWith(KeyNames(row.needs));
+                keys.UnionWith(KeyNames(row.shapes));
+            }
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        var skin = new List<SkinnedMeshRenderer>();
+        var pieces = new List<OutfitFit.Follower>();
+        foreach (var renderer in own)
         {
-            if (string.IsNullOrEmpty(slot.over) || covered.Contains(slot.id)) continue;
-            var outer = PiecesIn(slot.id, skinId, own, worn, gone);
-            if (outer.Count == 0) continue;
-            var inner = new List<Renderer>();
-            foreach (string under in slot.OverSlots)
-                if (!covered.Contains(under)) inner.AddRange(PiecesIn(under, skinId, own, worn, gone));
-            if (inner.Count > 0) UnderwearFit.Press(root, inner, outer);
+            if (renderer is not SkinnedMeshRenderer skinned || skinned.sharedMesh == null || !Drawn(renderer, gone)) continue;
+            if (held.TryGetValue(renderer.name, out var keys)) pieces.Add(new OutfitFit.Follower(skinned, keys, true));
+            else if (!lying.Contains(renderer.name) && (head == null || !HeadMeshes.OnHead(skinned, head))) skin.Add(skinned);
+        }
+        foreach (var piece in worn)
+        {
+            if (covered.Contains(piece.Slot.id) || SkinCover.IsBare(piece.Slot.id)
+                || OutfitCatalog.Model(piece.Item.id, skinId) is not { ForAnyone: false }) continue;
+            var keys = new HashSet<string>(KeyNames(OutfitCatalog.FitOf(piece.Item.id, skinId)?.shapes), StringComparer.Ordinal);
+            foreach (var renderer in piece.Renderers)
+                if (renderer is SkinnedMeshRenderer skinned && skinned.sharedMesh != null && Drawn(renderer, gone))
+                    pieces.Add(new OutfitFit.Follower(skinned, keys, false));
+        }
+        OutfitFit.Follow(model, skinId, animator, skin, pieces, came);
+    }
+
+    // The key names of a "name=weight|name" cell.
+    private static IEnumerable<string> KeyNames(string shapes)
+    {
+        foreach (string pair in OutfitCatalog.Split(shapes))
+        {
+            int equals = pair.IndexOf('=');
+            string name = (equals < 0 ? pair : pair.Substring(0, equals)).Trim();
+            if (name.Length > 0) yield return name;
         }
     }
 

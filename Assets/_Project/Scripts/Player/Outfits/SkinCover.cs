@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The last word on skin drawn in under clothes (OutfitDresser calls it after everything else but pressing underwear in
-/// under the clothes, UnderwearFit, which moves no skin). A BOOTH body comes with
+/// The last word on skin drawn in under clothes (OutfitDresser calls it after everything else but fitting what lies
+/// under a piece to it, OutfitFit, which sets no shape key). A BOOTH body comes with
 /// keys that pull its skin in where its clothes sit (Shrink_Knee_L under the stockings, Panty_Kuikomi under a band), set
 /// on in its prefab because its maker never meant those clothes to come off, and CharacterParts.csv names the keys each
 /// piece holds (needs). That list is written by hand, and twice a body was left hollow where it was wrong or never

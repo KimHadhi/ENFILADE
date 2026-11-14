@@ -76,7 +76,7 @@ M1911,15,                                       Move.runSpeed,7.5
 | `Economy` | Money, Shop, Pickups, PickupRules | 돈, 상점 물건과 값, 줍기 |
 | `Audio` | Sounds, SoundCues, Music, Ambience, Reverb | 소리 크기와 높낮이, 동작별 소리, 음악, 환경음 |
 | `Hud` | Hud, HudTilt, HudOverlap, HealthBar, HitMarkers, KillFeed, KillFlairs, SpecialKills, MomentFx, PackFx, SkullSlowMotion | HUD 배치와 기울기, 체력바, 히트 마커, 처치 목록, 특수 순간 효과 |
-| `Characters` | Outfits, OutfitSlots, OutfitFits, CharacterParts, Cloth…, Face…, 옷장 사진 | 옷 칸과 옷, 옷 맞춤, 천 흔들림, 표정 |
+| `Characters` | Outfits, OutfitSlots, OutfitFits, OutfitFit, CharacterParts, Cloth…, Face…, 옷장 사진 | 옷 칸과 옷, 옷 맞춤, 천 흔들림, 표정 |
 | `Clips` | KnifeMelee…, Grenade…, Knife…, Repair…, PointHand | 블렌더 작업실이 쓰는 손·팔 동작. 손으로 고치지 않는다 |
 
 ### 알아 둘 것
@@ -93,7 +93,7 @@ Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는
 | --- | --- |
 | 새 총 | [전투 제작 안내](Guides/CombatFoundationGuide.md)의 "새 총 데이터 연결하기". 숫자는 `Weapons.csv`의 새 줄(id = 무기 에셋 이름), 상점에는 `Shop.csv` 줄. 아이콘은 `Documents\ENFILADE\WeaponIcons`에 무기 id 이름의 PNG를 넣어도 된다 |
 | 새 좀비 종류 | `ZombieKinds.csv`에 줄을 더한다(기본 좀비 위에 덮어쓰는 값과 나오는 비율). 모습은 `Resources/Enemies/ZombieLooks` |
-| 새 캐릭터, 새 옷 | [플레이어 몸](Guides/PlayerBodyGuide.md)의 "BOOTH 캐릭터·옷 가져오기". 어떤 휴머노이드든 실행 중에 몸에 맞춘다(캐릭터마다 따로 굽지 않는다) |
+| 새 캐릭터, 새 옷 | [플레이어 몸](Guides/PlayerBodyGuide.md)의 "BOOTH 캐릭터·옷 가져오기". 어떤 휴머노이드든 실행 중에 몸에 맞춘다(캐릭터마다 따로 굽지 않는다). 옷끼리 겹치는 곳(양말과 신발, 속옷과 겉옷)과 굽 키가 없는 양말은 메시를 재서 맞추므로 옷 짝마다 적을 것이 없다(숫자는 OutfitFit.csv, 겹 순서는 OutfitSlots.csv `over`, 비치는 옷이 밑을 가려 버리면 Outfits.csv `sheer`). 표정도 깜박임이 맞는지 얼굴 메시로 잰다 |
 | 새 맵 소품, 데칼 | `MapArt.csv`·`MapDecals.csv`에 줄을 더하고 ENFILADE → 맵에서 다시 짓는다. 팩에서 들이는 법은 [소품 가져오기](../Tools/Props/README.md) |
 | 새 소리 | 맞는 `Art/Audio` 폴더에 파일을 넣으면 소리 묶음에 들어간다([유지보수 안내](Guides/MaintenanceGuide.md#사운드를-추가하거나-교체하기)) |
 | 애니메이션 손보기 | `ArtSource`의 블렌더 작업실을 열고 고친 뒤 저장(Ctrl+S)하면 게임에 들어간다([원클릭 작업실](../Tools/Blender/OneClick/README.md)) |

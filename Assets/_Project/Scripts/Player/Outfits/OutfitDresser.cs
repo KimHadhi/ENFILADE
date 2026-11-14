@@ -17,6 +17,11 @@ using UnityEngine;
 /// the hair), the items' shape keys go on (OutfitFits.csv), and the clothes take the body's shape keys of the same names,
 /// as Modular Avatar's Blendshape Sync does. Underwear has slots of its own (OutfitSlot.under) and is always on, the
 /// character's own unless an item is picked: the rest of the outfit decides only how much of it shows (UnderwearFit).
+/// Last, by measuring the meshes and with no row for any pair (OutfitFit): a piece takes the body's shape keys it has
+/// none of its own for (socks made flat, on a foot standing in heels), and whatever is worn under something else, the
+/// skin under all of it, is fitted under it: what the piece over it hides or what came through it is left out of what
+/// is drawn, and nothing is pushed about (the user, 2026-11-14: socks and shoes of different makers crushed the feet,
+/// and no table of pairs could keep up with what players will bring).
 /// The model must stand as it was made, before any clip plays, because the bones are matched in that pose.
 /// </summary>
 internal static partial class OutfitDresser
@@ -104,8 +109,11 @@ internal static partial class OutfitDresser
         // The character's own, before anything is added: outfits merge only onto its bones and switch off only its pieces,
         // and its shape keys as it was made are what the clothes follow.
         var own = model.GetComponentsInChildren<Renderer>(true);
-        // As it came, before anything changes: how covered its skin was meant to be (SkinCover).
+        long dressBegan = WardrobeCost.Begin();
+        // As it came, before anything changes: how covered its skin was meant to be (SkinCover), and the shape keys it
+        // came with on, which its own pieces were made to (FollowBody).
         var made = SkinCover.Read(own);
+        var came = ShapesOf(own);
         // The player's body options (BodyShapes.csv) go on first: they are the body as its player shaped it, which the
         // clothes then follow like any key the body has, a key turned down to 0 too.
         var shaped = BodyShapes.Apply(own, skin.Id, look);
@@ -128,8 +136,10 @@ internal static partial class OutfitDresser
             if (claimed.Contains(slot.id)) continue;
             if (!placed.TryGetValue(item.ModelId, out var copy))
             {
+                long placeBegan = WardrobeCost.Begin();
                 skeleton ??= SkeletonOf(animator, model.transform, own);
                 copy = Place(item, slot, model.transform, source, skeleton, animator, own, skin.Id, ItemAdjust.Of(look, item.id));
+                WardrobeCost.End(WardrobeCost.Part.Place, placeBegan);
                 if (copy == null) continue;
                 placed[item.ModelId] = copy;
                 dressing.Models.Add(item.ModelId);
@@ -209,8 +219,12 @@ internal static partial class OutfitDresser
         freed.UnionWith(bodyShapes.Keys);
         freed.UnionWith(shaped);
         Follow(ShapesNow(own, freed), worn);
+        // A piece without one of the body's keys gets it made from the skin it lies on: socks that came with no heel key
+        // tip down into heeled shoes with the foot (FollowBody, OutfitFit.Follow).
+        FollowBody(model, skin.Id, animator, own, worn, covered, dressing.Leaving, came);
         // Underwear on the skin, under everything else: out of sight where the rest covers it, its own fit keys on where
         // they tuck it under (UnderwearFit). What of it shows covers skin too, so it goes before SkinCover.
+        long coverBegan = WardrobeCost.Begin();
         var (under, over) = Layers(own, skin.Id, worn, covered, dressing.Leaving);
         var showing = UnderwearFit.Fit(model.transform, skin.Id, own, under, over);
         // The last word on skin drawn in under clothes: wherever nothing solid covers it any more it comes back out, so no
@@ -220,13 +234,12 @@ internal static partial class OutfitDresser
             if (!covered.Contains(piece.Slot.id)) items.AddRange(piece.Renderers);
         var released = SkinCover.Release(model.transform, skin.Id, own, items, dressing.Leaving, made);
         if (released.Count > 0) Follow(ShapesNow(own, released), worn);
-        // Last, with every key where dressing leaves it: underwear still standing out through what is over it goes in under,
-        // and so do socks and stockings through shoes (slots worn over others, OutfitSlots.csv over).
-        UnderwearFit.Press(model.transform, showing, over);
-        PressUnder(model.transform, skin.Id, own, worn, covered, dressing.Leaving);
-        // Hair, ears and head ornaments under a piece fitted to the face (the welding mask) likewise go in under it where
-        // they stand out through it; one it covers whole goes out of sight.
-        UnderFace(model.transform, skin.Id, animator, own, worn, covered);
+        WardrobeCost.End(WardrobeCost.Part.Cover, coverBegan);
+        // Last, with every key where dressing leaves it: each layer is fitted under what is worn over it from the meshes
+        // (the skin under clothes, underwear under them, socks in shoes, hair under a mask): what is hidden or came out
+        // through a garment is left out of its mesh (FitLayers, OutfitFit).
+        FitLayers(model, skin.Id, animator, own, worn, covered, dressing.Leaving, showing, over);
+        WardrobeCost.End(WardrobeCost.Part.Dress, dressBegan);
         return dressing;
     }
 

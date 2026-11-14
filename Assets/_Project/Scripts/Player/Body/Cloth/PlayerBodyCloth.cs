@@ -186,11 +186,16 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         var bones = new Dictionary<string, Transform>();
         foreach (var bone in animator.GetComponentsInChildren<Transform>(true)) bones.TryAdd(bone.name, bone);
         var found = new List<(string Id, ClothPart Part, List<Transform> Roots)>();
+        HashSet<string> showing = null;
         foreach (string id in GameTables.RowIds(ClothPart.TableName))
         {
+            // Whose row it is, asked of the table before the row is bound: a body wears some thirty of the table's two
+            // hundred rows, and binding every one of them for every body made (the wardrobe makes one per look tried)
+            // was time and garbage for nothing.
+            string whose = GameTables.Text(ClothPart.TableName, id, nameof(ClothPart.skin));
+            if (!string.Equals(whose, skin, StringComparison.OrdinalIgnoreCase) && !wears(whose)) continue;
             var row = part(id);
-            if (!string.Equals(row.skin, skin, StringComparison.OrdinalIgnoreCase) && !wears(row.skin)) continue;
-            if (!Shows(row.parts, animator)) continue;
+            if (!Shows(row.parts, animator, ref showing)) continue;
             var roots = row.FindRoots(bones, animator.name);
             if (roots.Count == 0) continue;
             row.AddTips(roots, -animator.transform.up);
@@ -275,14 +280,19 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         }
     }
 
-    // Whether one of the renderers a row moves shows on the body; a row that names none always swings.
-    private static bool Shows(string parts, Animator animator)
+    // Whether one of the renderers a row moves shows on the body; a row that names none always swings. The names of
+    // those that show are read once for all the rows asked about (the first to ask reads them).
+    private static bool Shows(string parts, Animator animator, ref HashSet<string> showing)
     {
         if (string.IsNullOrEmpty(parts)) return true;
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (string name in parts.Split('|')) names.Add(name.Trim());
-        foreach (var renderer in animator.GetComponentsInChildren<Renderer>(true))
-            if (renderer.enabled && renderer.gameObject.activeInHierarchy && names.Contains(renderer.name)) return true;
+        if (showing == null)
+        {
+            showing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var renderer in animator.GetComponentsInChildren<Renderer>(true))
+                if (renderer.enabled && renderer.gameObject.activeInHierarchy) showing.Add(renderer.name);
+        }
+        foreach (string name in parts.Split('|'))
+            if (showing.Contains(name.Trim())) return true;
         return false;
     }
 

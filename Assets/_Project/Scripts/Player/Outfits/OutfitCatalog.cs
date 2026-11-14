@@ -47,6 +47,8 @@ public static class OutfitCatalog
         public string needs = "";
         /// <summary>What the piece is called on the wardrobe's tile ("스타킹 · 다리 리본"); empty reads its renderers' names.</summary>
         public string name = "";
+        /// <summary>See-through by its texture: what lies under it shows and must stay (OutfitItem.sheer, for a character's own piece).</summary>
+        public bool sheer;
     }
 
     private static List<OutfitSlot> slots;

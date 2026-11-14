@@ -90,10 +90,18 @@ internal static class DrawnSole
         for (int b = 0; b < bones.Length; b++)
             skin[b] = bones[b] != null && b < poses.Length ? toModel * bones[b].localToWorldMatrix * poses[b] : own;
         var weights = mesh.GetAllBoneWeights();
+        // What the fit left out of the mesh isn't drawn (a sock's sole that came out under a boot): the body doesn't
+        // stand on it (OutfitFit.DrawnVertices; null for a mesh with nothing left out).
+        var drawn = OutfitFit.DrawnVertices(mesh);
         float lowest = float.PositiveInfinity;
         int at = 0;
         for (int i = 0; i < count; i++)
         {
+            if (drawn != null && i < drawn.Length && !drawn[i])
+            {
+                at += perVertex[i];
+                continue;
+            }
             Vector3 v = vertices[i];
             float y = 0f, total = 0f;
             for (int n = perVertex[i]; n > 0; n--, at++)

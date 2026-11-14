@@ -35,8 +35,24 @@ public static class GameTables
     // The game's own table files by name, wherever they are filed under Data/Resources/Tables. Null until first asked.
     private static Dictionary<string, TextAsset> sources;
     private static readonly List<Binding> bindings = new List<Binding>();
+    // Who holds which row already, asked in one step: every stand-in the wardrobe makes binds its rows of Cloth.csv,
+    // and looking each up in the whole list (thousands of bindings, each owner compared through the engine) was a
+    // good part of the wait the user felt at every try (2026-11-14).
+    private static readonly HashSet<(Object Owner, string Table, string Id)> held = new HashSet<(Object, string, string)>(new Holder());
     private static readonly HashSet<string> reported = new HashSet<string>();
     private static int pruneAt = 64;
+
+    // One owner's row of one table: the owner as the object it is (no question to the engine), the row whatever its case.
+    private sealed class Holder : IEqualityComparer<(Object Owner, string Table, string Id)>
+    {
+        public bool Equals((Object Owner, string Table, string Id) a, (Object Owner, string Table, string Id) b) =>
+            ReferenceEquals(a.Owner, b.Owner) && a.Table == b.Table && string.Equals(a.Id, b.Id, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode((Object Owner, string Table, string Id) key) =>
+            (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(key.Owner) * 397
+                ^ (key.Table != null ? key.Table.GetHashCode() : 0)) * 397
+            ^ (key.Id != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(key.Id) : 0);
+    }
 
     /// <summary>Raised after Reload() re-applied the tables.</summary>
     public static event Action Reloaded;
@@ -44,7 +60,7 @@ public static class GameTables
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
-        loaded.Clear(); bindings.Clear(); reported.Clear(); pruneAt = 64; sources = null;
+        loaded.Clear(); bindings.Clear(); held.Clear(); reported.Clear(); pruneAt = 64; sources = null;
     }
 
     /// <summary>
@@ -72,11 +88,18 @@ public static class GameTables
     {
         id ??= "";
         bool applied = Apply(table, id, owner, targets);
-        if (bindings.Count >= pruneAt) { bindings.RemoveAll(b => !b.IsAlive); pruneAt = Mathf.Max(64, bindings.Count * 2); }
+        if (bindings.Count >= pruneAt) { Prune(); pruneAt = Mathf.Max(64, bindings.Count * 2); }
         // One owner may hold several rows of one table (PlayerMovement: Posture, Move, Ability).
-        if (!bindings.Exists(b => b.Owner == owner && b.Table == table && string.Equals(b.Id, id, StringComparison.OrdinalIgnoreCase)))
-            bindings.Add(new Binding { Table = table, Id = id, Owner = owner, Targets = targets });
+        if (held.Add((owner, table, id))) bindings.Add(new Binding { Table = table, Id = id, Owner = owner, Targets = targets });
         return applied;
+    }
+
+    // The bindings whose owners are gone are let go, and with them what they held.
+    private static void Prune()
+    {
+        if (bindings.RemoveAll(b => !b.IsAlive) == 0) return;
+        held.Clear();
+        foreach (var binding in bindings) held.Add((binding.Owner, binding.Table, binding.Id));
     }
 
     /// <summary>Every row id of a row table, for tables read as a list (Surfaces.csv).</summary>
@@ -125,7 +148,7 @@ public static class GameTables
     {
         loaded.Clear(); reported.Clear(); sources = null;
         GameMods.Rescan();
-        bindings.RemoveAll(b => !b.IsAlive);
+        Prune();
         foreach (var binding in bindings.ToArray()) Apply(binding.Table, binding.Id, binding.Owner, binding.Targets);
         Reloaded?.Invoke();
     }

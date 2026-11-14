@@ -13,6 +13,12 @@ public sealed class OutfitItem
     public const string TableName = "Outfits";
 
     public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "", was = "", wear = "";
+    /// <summary>
+    /// See-through by its texture (lace, a net, sheer tights), so what lies under it shows and must stay: nothing is
+    /// hidden under it or cut where it comes through it (OutfitFit). A material whose own colour is see-through is told
+    /// from the material; a texture's see-through parts can't be read at run time, so such a piece says so here.
+    /// </summary>
+    public bool sheer;
 
     /// <summary>
     /// A piece fitted to the face (OutfitSlot.fit "face") worn on the back of the head instead (Outfits.csv wear "back"):

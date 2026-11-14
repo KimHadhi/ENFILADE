@@ -10,7 +10,9 @@ using UnityEngine;
 /// character): a moment of one (Pulse: a hit, a kill, a callout) or one held on (Hold: downed, aiming, low on health).
 /// The one with the highest priority takes the face and the rest ease out under it, each at its own speed. On top of
 /// the mood the eyes blink and glance now and then, and the mouth makes the vowels of a voice while one plays (Speak,
-/// FaceVoice), as much as the mood lets them (Faces.csv blink, talk).
+/// FaceVoice), as much as the mood lets them (Faces.csv blink, talk) and, for the blink, as the face leaves it room:
+/// measured on the face's own mesh (FaceRoom, CharacterFace.Room.cs), a face that has shut the eyes itself or put drawn
+/// eyes in front of them blinks no more.
 /// The keys are the character's own (FaceKeys.csv, mostly the creator's own expressions from FacePresets.csv), else the
 /// common VRChat/MMD names, so any humanoid a modder brings gets a face with nothing baked for it. It writes only its
 /// own keys, each on top of the weight the model has under it: a key the wardrobe's body options also set
@@ -20,7 +22,7 @@ using UnityEngine;
 /// nobody can see, or too far off, keep their moods' clocks but write nothing (FaceLife.csv Watch.range).
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class CharacterFace : MonoBehaviour
+public sealed partial class CharacterFace : MonoBehaviour
 {
     /// <summary>The mood held while the character is being looked at (Showing) when nothing else was picked.</summary>
     public const string Cute = "cute";
@@ -68,6 +70,8 @@ public sealed class CharacterFace : MonoBehaviour
         public Quaternion[] Ears;
         public float Weight, Strength = 1f, Until = float.NegativeInfinity;
         public bool On;
+        /// <summary>The share of the blink this face has room for (CharacterFace.Room.cs); below zero until asked.</summary>
+        public float Room = -1f;
     }
 
     // Each mesh's shape key names (trimmed: Mayo's "Other_Eyes_Heart " ends in a space), read once per mesh asset.
@@ -217,6 +221,7 @@ public sealed class CharacterFace : MonoBehaviour
     {
         namesOf.Clear();
         wardrobeOf.Clear();
+        ForgetRooms();
         warned.Clear();
         listening = false;
     }
@@ -230,8 +235,9 @@ public sealed class CharacterFace : MonoBehaviour
         if (model == null) return null;
         if (!listening)
         {
-            // The wardrobe's keys may change with its table.
+            // The wardrobe's keys may change with its table, and a face's keys with theirs.
             GameTables.Reloaded += wardrobeOf.Clear;
+            GameTables.Reloaded += ForgetRooms;
             listening = true;
         }
         if (!model.TryGetComponent(out CharacterFace face)) face = model.AddComponent<CharacterFace>();
@@ -301,6 +307,7 @@ public sealed class CharacterFace : MonoBehaviour
             poolTotal += moods[i].Pool;
         }
         poses = pool.ToArray();
+        roomsAsked = false;
         blink = KeysFor("blink", wardrobe);
         for (int i = 0; i < Vowels.Length; i++) talk[i] = KeysFor(Vowels[i], wardrobe);
         for (int i = 0; i < Looks.Length; i++) look[i] = KeysFor(Looks[i], wardrobe);
@@ -421,6 +428,7 @@ public sealed class CharacterFace : MonoBehaviour
             Id = showFace, Priority = ShownPriority, In = ShownIn, Out = ShownOut, Hold = 0f, Blink = ShownBlink, Talk = 1f, Pool = 0f
         };
         shownPreset = new Slot { Mood = mood, Keys = keys, Ears = EarsOf(FaceTables.PresetBones(Skin, name)) };
+        roomsAsked = false;
         var grown = new Slot[slots.Length + 1];
         Array.Copy(slots, grown, slots.Length);
         grown[slots.Length] = shownPreset;
@@ -529,6 +537,7 @@ public sealed class CharacterFace : MonoBehaviour
         Compose();
         Write();
         Turn(dt);
+        AskAhead();
     }
 
     // The mood with the highest priority that wants the face and has keys on this character takes it.
@@ -702,7 +711,9 @@ public sealed class CharacterFace : MonoBehaviour
             if (slot.Weight <= 0f) continue;
             Add(slot.Keys, slot.Weight);
             total += slot.Weight;
-            blinks += slot.Weight * slot.Mood.Blink;
+            // A face blinks as much as its row lets it and its own shape leaves room for: lids already shut, or drawn
+            // eyes in front of them, leave none (the glance goes with the blink: both are the real eyes').
+            blinks += slot.Weight * slot.Mood.Blink * RoomOf(slot);
             talks += slot.Weight * slot.Mood.Talk;
         }
         // What no mood holds blinks and talks freely.
