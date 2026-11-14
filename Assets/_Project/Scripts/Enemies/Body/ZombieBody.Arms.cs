@@ -205,8 +205,25 @@ public sealed partial class ZombieBody
         if (Model == null) return;
         float turn = grabYaw * grab + holdYaw * hold + feedStartYaw * kneel + feedYaw * eat;
         // A limp's lean onto its cracked leg (ZombieBody.Legs.cs) about its own forward line.
-        Model.transform.localRotation = Quaternion.Euler(0f, -turn, 0f) * Quaternion.Euler(0f, 0f, limpTilt) * modelTurn;
+        Quaternion wanted = Quaternion.Euler(0f, -turn, 0f) * Quaternion.Euler(0f, 0f, limpTilt) * modelTurn;
+        var model = Model.transform;
+        // The same turn again on a model nothing has turned since its last one would change nothing, so it isn't written.
+        // It was written every frame on every zombie, and each write tells everything under the model (bones, hitboxes,
+        // skins) that it moved: a zombie off screen, which its Animator doesn't pose, still had its hitboxes moved for the
+        // physics every frame.
+        if (faceSet && SameTurn(wanted, faceWanted) && SameTurn(model.localRotation, faceHeld)) return;
+        model.localRotation = wanted;
+        faceWanted = wanted;
+        faceHeld = model.localRotation;
+        faceSet = true;
     }
+
+    // The turn FaceGrabs last put on the model, and what the model held right after.
+    private Quaternion faceWanted, faceHeld;
+    private bool faceSet;
+
+    // To the last bit: Quaternion's own == calls turns a sixth of a degree apart the same.
+    private static bool SameTurn(Quaternion a, Quaternion b) => a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 
     // Plays the clip through once on this body (top input 12 alone) and sees which hand reaches furthest forward of the
     // hips: that is the hand it strikes with, and that moment its strike, unless the clip marks it with an event.

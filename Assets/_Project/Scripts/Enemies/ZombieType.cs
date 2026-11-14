@@ -346,6 +346,10 @@ public sealed class ZombieType : MonoBehaviour
         Apply();
     }
 
+    private ZombieRunner runnerPart;
+    private ZombieCharger chargerPart;
+    private ZombieExploder exploderPart;
+
     private void Apply()
     {
         var numbers = Current;
@@ -380,6 +384,13 @@ public sealed class ZombieType : MonoBehaviour
         }
         if (body == null) body = GetComponent<ZombieBody>();
         if (body != null) body.Regrow();
+        // The runner's, charger's and exploder's parts are on every zombie, but each runs its frames only on its own kind.
+        if (runnerPart == null) TryGetComponent(out runnerPart);
+        if (chargerPart == null) TryGetComponent(out chargerPart);
+        if (exploderPart == null) TryGetComponent(out exploderPart);
+        if (runnerPart != null) runnerPart.Suit(Kind == ZombieKind.Runner);
+        if (chargerPart != null) chargerPart.Suit(Kind == ZombieKind.Charger);
+        if (exploderPart != null) exploderPart.Suit(Kind == ZombieKind.Exploder);
         // A memo elite's own part, put on only when it is one (most zombies never carry them).
         if (Kind == ZombieKind.Ninja && !TryGetComponent(out ZombieNinja _)) gameObject.AddComponent<ZombieNinja>();
         if (Kind == ZombieKind.Candyman && !TryGetComponent(out ZombieCandyman _)) gameObject.AddComponent<ZombieCandyman>();

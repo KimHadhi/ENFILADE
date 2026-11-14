@@ -47,8 +47,10 @@ public sealed class HeadStandShakeOff : MonoBehaviour
 
     private MeleeCombatTarget EnemyUnderFeet()
     {
+        // Whose head they stand on first: it turns away every enemy not right under them on two positions, before the
+        // lookups that were made for every enemy in the scene every frame (as EnemyHead.OnAnyHead already asks).
         foreach (var target in MeleeCombatTarget.Active)
-            if (target != null && target.IsAvailable && target.GetComponent<EnemyHealth>() != null && EnemyHead.Carries(target, player))
+            if (target != null && EnemyHead.Carries(target, player) && target.IsAvailable && target.GetComponent<EnemyHealth>() != null)
                 return target;
         return null;
     }

@@ -175,8 +175,32 @@ public sealed partial class ZombieMind
     {
         Vector3 way = Vector3.ProjectOnPlane(at - transform.position, Vector3.up);
         if (way.sqrMagnitude < .01f) return;
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(way), turnSpeed * dt);
+        Face(Quaternion.LookRotation(way), turnSpeed * dt);
     }
+
+    /// <summary>
+    /// Turns it toward this facing by at most this many degrees. Turned there already, with nothing else having turned it
+    /// since (its walk, a chase), nothing is written: a calm zombie looking round or one staring at a sound turned itself
+    /// every frame to where it already faced, and each write tells everything under it (its bones, its 16 hitboxes, its
+    /// skins, its health bar) that it moved, so the physics moved its hitboxes again every frame though it stood still.
+    /// </summary>
+    private void Face(Quaternion toward, float most)
+    {
+        Quaternion now = transform.rotation;
+        Quaternion next = Quaternion.RotateTowards(now, toward, most);
+        if (faceSet && SameTurn(next, faceWanted) && SameTurn(now, faceHeld)) return;
+        transform.rotation = next;
+        faceWanted = next;
+        faceHeld = transform.rotation;
+        faceSet = true;
+    }
+
+    // The facing Face last put on it, and what it held right after.
+    private Quaternion faceWanted, faceHeld;
+    private bool faceSet;
+
+    // To the last bit: Quaternion's own == calls turns a sixth of a degree apart the same, and a slow turn's step is less.
+    private static bool SameTurn(Quaternion a, Quaternion b) => a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 
     // Standing calm it looks round now and then: a slow turn some way off the way it stood, and back again the next time,
     // so no stretch of the way is watched for good and gaps open and close (the stealth view's cones show it). Every
@@ -197,7 +221,7 @@ public sealed partial class ZombieMind
             bool atPost = Mathf.Abs(Mathf.DeltaAngle(lookYaw, postYaw)) < 1f;
             lookYaw = atPost ? postYaw + Random.Range(-lookAroundAngle, lookAroundAngle) : postYaw;
         }
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, lookYaw, 0f), lookAroundSpeed * dt);
+        Face(Quaternion.Euler(0f, lookYaw, 0f), lookAroundSpeed * dt);
     }
 
     // Come to where it searches, it looks left, then right, then back ahead over lookSeconds, not a statue's stare.
@@ -207,7 +231,7 @@ public sealed partial class ZombieMind
         if (sweep <= 0f || look <= 0f) return;
         float phase = Mathf.Clamp01((Time.time - arrivedAt) / look);
         float yaw = arriveYaw + Mathf.Sin(phase * Mathf.PI * 2f) * sweep;
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, yaw, 0f), turnSpeed * .5f * dt);
+        Face(Quaternion.Euler(0f, yaw, 0f), turnSpeed * .5f * dt);
     }
 
     // The player it notices fastest now, how fast (suspicion a second), and whether they stand right before its eyes.

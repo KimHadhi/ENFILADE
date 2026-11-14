@@ -116,6 +116,22 @@ public sealed class ZombieExploder : MonoBehaviour
 
     private void OnDisable() => marker?.Hide();
 
+    /// <summary>
+    /// Its zombie's kind was set (ZombieType.Apply): it runs its frame only on an exploder. Every zombie carries it, and on
+    /// every other kind its frame found nothing to do, every frame. Taken off an exploder it goes dark as that frame did:
+    /// no light, no fuse, deaf to who hurts it. Its death still reaches it (EnemyHealth.Died), and says it isn't one.
+    /// </summary>
+    internal void Suit(bool exploder)
+    {
+        if (!exploder)
+        {
+            Watch(false);
+            marker?.Hide();
+            fuse = 0f;
+        }
+        enabled = exploder;
+    }
+
     // Who last hurt it: the pack its burst takes along is theirs. The blow that kills it ends it here, on every PC alike:
     // a takedown's or an execution's defuses it, anything else sets it off.
     private void OnDamaged(CombatDamageReport report)

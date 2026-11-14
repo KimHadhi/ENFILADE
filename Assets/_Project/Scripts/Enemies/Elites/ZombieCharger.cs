@@ -107,6 +107,22 @@ public sealed class ZombieCharger : MonoBehaviour
         marker?.Hide();
     }
 
+    /// <summary>
+    /// Its zombie's kind was set (ZombieType.Apply): it runs its frames only on a charger. Every zombie carries it, and on
+    /// every other kind both its frames found nothing to do, every frame. Taken off a charger it lets go as those frames
+    /// did: no charge under way, no light, and its seen speed starts afresh.
+    /// </summary>
+    internal void Suit(bool charger)
+    {
+        if (!charger)
+        {
+            phase = Phase.Chase;
+            marker?.Hide();
+            wasRousing = placed = false;
+        }
+        enabled = charger;
+    }
+
     // ---- The host: when it charges, and the charge itself ----
 
     private void Update()

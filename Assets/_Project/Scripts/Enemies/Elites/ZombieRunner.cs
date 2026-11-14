@@ -355,4 +355,15 @@ public sealed class ZombieRunner : MonoBehaviour
     private Vector3 Feet => agent != null ? transform.position - Vector3.up * agent.baseOffset : transform.position;
 
     private void OnDisable() => phase = Phase.Chase;
+
+    /// <summary>
+    /// Its zombie's kind was set (ZombieType.Apply): it runs its frame only on a runner. Every zombie carries it (the
+    /// others ask it whether it drives itself), and on every other kind its frame found nothing to do, every frame. Taken
+    /// off a runner it stops as its next frame would have.
+    /// </summary>
+    internal void Suit(bool runner)
+    {
+        if (!runner) Stop();
+        enabled = runner;
+    }
 }

@@ -70,21 +70,32 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         HealthRatio = Mathf.Clamp01(health / maximum);
         PostureRatio = posture == null ? 0f : Mathf.Clamp01(posture.Posture / posture.MaximumPosture);
         var settings = CombatFeedbackSettings.InstanceOrDefaults;
+        float dt = Time.unscaledDeltaTime;
         // Every hit restarts the white edge line's pulse.
-        if (health < lastHealth - .0001f) edgePulseAge = 0f; else edgePulseAge += Time.unscaledDeltaTime;
+        if (health < lastHealth - .0001f) edgePulseAge = 0f; else edgePulseAge += dt;
         lastHealth = health;
         // Keeps running while hidden so a bar that reappears shows the correct state.
-        trail.Tick(health, maximum, Time.unscaledDeltaTime, settings.enemyShakeMax, impact: true);
+        trail.Tick(health, maximum, dt, settings.enemyShakeMax, impact: true);
         TrailRatio = Mathf.Clamp01(trail.Trail / maximum);
-        TickHeartbeat(settings, Time.unscaledDeltaTime);
+        TickHeartbeat(settings, dt);
         if (!isActiveAndEnabled || view == null || vitals == null || posture == null || !posture.IsAvailable || HealthRatio <= 0f)
         { Hide(); return; }
         EnsurePanel();
+        // Shown or not is decided first, and a bar that can't be seen this frame is left as it is: nothing below it does
+        // anything but write what the next shown frame writes afresh. Every enemy in the scene ran all of it every frame
+        // (16 colliders' bounds, 40-odd UI values) while only the few on screen within maximumDistance show a bar.
+        if (!MayShow(view)) { Hide(); return; }
+        Bounds body = BodyBounds();
+        Measure(body);
+        Vector3 head = new Vector3(body.center.x, body.max.y + headroom, body.center.z);
+        bool barShown = Shows(view, head);
+        bool badged = posture.IsStaggered && staggerBadge.texture != null;
+        bool badgeShown = badged && Shows(view, body.center);
+        if (!barShown && !badgeShown) { Hide(); return; }
         // Keep the UI under its owner without inheriting the enemy's authored size.
         Vector3 scale = transform.lossyScale;
         uiRoot.localScale = new Vector3(InverseScale(scale.x), InverseScale(scale.y), InverseScale(scale.z));
-        Bounds body = BodyBounds();
-        PositionPanel(panel, view, new Vector3(body.center.x, body.max.y + headroom, body.center.z));
+        PositionPanel(panel, view, head, barShown);
         healthImage.color = leftCap.color = rightCap.color = settings.enemyHealthColor;
         healthLostImage.color = settings.enemyHealthLostColor;
         SetFill(healthFill, healthImage, HealthRatio);
@@ -108,10 +119,10 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         SetFill(postureFill, postureImage, PostureRatio);
         postureImage.color = wasExecutable ? settings.executableAccentColor : posture.IsBroken ? new Color(1f, .28f, .20f)
             : posture.IsStunned ? new Color(1f, .91f, .52f) : new Color(.95f, .68f, .22f);
-        if (posture.IsStaggered && staggerBadge.texture != null)
+        if (badged)
         {
             // Project onto the body centre, but draw in front of its geometry instead of inside the mesh.
-            PositionPanel(staggerPanel, view, body.center, body.extents.magnitude + .05f, distanceScaled: true);
+            PositionPanel(staggerPanel, view, body.center, badgeShown, body.extents.magnitude + .05f, distanceScaled: true);
             float imageWidth = CombatFeedbackSettings.Instance != null ? Mathf.Max(40f, CombatFeedbackSettings.Instance.staggerImageWidth) : 260f;
             staggerBadge.rectTransform.sizeDelta = new Vector2(imageWidth, imageWidth * staggerBadge.texture.height / staggerBadge.texture.width);
         }
@@ -321,13 +332,99 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         trailEdgeGlow.color = new Color(tint.r, tint.g, tint.b, tint.a * Mathf.Max(burst, .35f * lift) * presence);
     }
 
-    private void PositionPanel(RectTransform target, Camera view, Vector3 anchor, float forwardOffset = 0f, bool distanceScaled = false)
+    // On screen, within maximumDistance and in plain sight from the view: where a bar or the stagger mark shows.
+    private bool Shows(Camera view, Vector3 anchor)
     {
         Vector3 viewport = view.WorldToViewportPoint(anchor);
-        bool visible = viewport.z > 0f && viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f
+        return viewport.z > 0f && viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f
             && (anchor - view.transform.position).sqrMagnitude <= maximumDistance * maximumDistance && !IsOccluded(view, anchor);
+    }
+
+    // The farthest any of its colliders has been seen from where it stands (m; below 0: not yet measured).
+    private float farthest = -1f;
+    // Whether a panel was put on since the last Hide, so hiding again is nothing.
+    private bool showing;
+
+    // Notes how far from its root this frame's body reaches (MayShow's bound).
+    private void Measure(Bounds body)
+    {
+        Vector3 root = transform.position;
+        Vector3 low = body.min - root, high = body.max - root;
+        Vector3 corner = new Vector3(Mathf.Max(Mathf.Abs(low.x), Mathf.Abs(high.x)), Mathf.Max(Mathf.Abs(low.y), Mathf.Abs(high.y)),
+            Mathf.Max(Mathf.Abs(low.z), Mathf.Abs(high.z)));
+        farthest = Mathf.Max(farthest, corner.magnitude);
+    }
+
+    /// <summary>
+    /// Whether the bar or the stagger mark could show this frame at all, from where the enemy stands alone, before any of
+    /// its colliders is read. Both are placed on its body (the bar above its top, the mark at its middle), and a body is
+    /// the same limbs whatever it does: lying, standing, arms up or a brute, none of it reaches twice as far from where it
+    /// stands as its colliders have ever been seen to (the bar's headroom on top). So with everything inside that reach
+    /// further than maximumDistance from the view, or all of it off one side of the screen, neither can show, which is
+    /// what Shows would say after reading them all. Until its body has been measured once, the full test runs.
+    /// </summary>
+    private bool MayShow(Camera view)
+    {
+        if (farthest < 0f) return true;
+        float reach = farthest * 2f + headroom;
+        Vector3 root = transform.position;
+        float far = maximumDistance + reach;
+        if ((root - view.transform.position).sqrMagnitude > far * far) return false;
+        var planes = SidesOf(view);
+        // Left, right, bottom, top: their normals face into the view, and the region inside all four is exactly the screen
+        // (Shows' viewport test), so a body wholly behind one of them is off screen.
+        for (int i = 0; i < 4; i++)
+            if (planes[i].GetDistanceToPoint(root) < -reach) return false;
+        return true;
+    }
+
+    // The view's frustum planes, worked out once a frame for every enemy's bar.
+    private static readonly Plane[] sides = new Plane[6];
+    private static Camera sidesView;
+    private static int sidesFrame = -1;
+
+    private static Plane[] SidesOf(Camera view)
+    {
+        if (sidesFrame != Time.frameCount || sidesView != view)
+        {
+            sidesFrame = Time.frameCount;
+            sidesView = view;
+            GeometryUtility.CalculateFrustumPlanes(view, sides);
+        }
+        return sides;
+    }
+
+    // The player whose view it is (a bar isn't hidden by its own body), found once a frame and not once a bar.
+    private static PlayerMovement viewer;
+    private static Camera viewerView;
+    private static int viewerFrame = -1;
+
+    private static PlayerMovement ViewerOf(Camera view)
+    {
+        if (viewerFrame != Time.frameCount || viewerView != view)
+        {
+            viewerFrame = Time.frameCount;
+            viewerView = view;
+            viewer = view.GetComponentInParent<PlayerMovement>();
+        }
+        return viewer;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ForgetViews()
+    {
+        sidesView = viewerView = null;
+        viewer = null;
+        sidesFrame = viewerFrame = -1;
+    }
+
+    private void PositionPanel(RectTransform target, Camera view, Vector3 anchor, bool visible, float forwardOffset = 0f,
+        bool distanceScaled = false)
+    {
         target.gameObject.SetActive(visible);
         if (!visible) return;
+        showing = true;
+        Vector3 viewport = view.WorldToViewportPoint(anchor);
         Vector3 toCamera = view.orthographic ? -view.transform.forward : (view.transform.position - anchor).normalized;
         float depthPerUnit = Mathf.Max(.01f, -Vector3.Dot(toCamera, view.transform.forward));
         float offset = Mathf.Min(forwardOffset, Mathf.Max(0f, (viewport.z - view.nearClipPlane - .05f) / depthPerUnit));
@@ -364,7 +461,7 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
             ? Physics.RaycastAll(view.transform.position, direction.normalized, distance, occlusionLayers, QueryTriggerInteraction.Ignore)
             : occlusionHits;
         if (hits != occlusionHits) count = hits.Length;
-        var player = view.GetComponentInParent<PlayerMovement>();
+        var player = ViewerOf(view);
         for (int i = 0; i < count; i++)
         {
             var hit = hits[i].collider.transform;
@@ -451,6 +548,8 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
         var feedback = CombatFeedbackSettings.Instance;
         staggerBadge.texture = feedback != null ? feedback.staggerImage : null;
         staggerEcho.texture = staggerBadge.texture;
+        // Both panels are made switched on; the next Hide must switch them off.
+        showing = true;
     }
     private RawImage EllipseImage(string label, Texture texture, float w, float h)
     {
@@ -489,7 +588,13 @@ public sealed class EnemyVitalsHUD : MonoBehaviour
     { rect.anchorMax = new Vector2(ratio, 1f); graphic.enabled = ratio > 0f; }
     private static float InverseScale(float value) => Mathf.Abs(value) > .0001f ? 1f / value : 1f;
     private void Hide()
-    { if (panel != null) panel.gameObject.SetActive(false); if (staggerPanel != null) staggerPanel.gameObject.SetActive(false); }
+    {
+        // Already hidden since it last showed: nothing to switch off (this ran for every hidden bar every frame).
+        if (!showing) return;
+        showing = false;
+        if (panel != null) panel.gameObject.SetActive(false);
+        if (staggerPanel != null) staggerPanel.gameObject.SetActive(false);
+    }
     private void OnDisable()
     {
         Hide(); trail.Reset(float.NaN); wasExecutable = false; Heartbeat = 0f; executableAge = beatAge = float.PositiveInfinity;

@@ -649,7 +649,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
     private void Telegraph(bool atMine)
     {
         bool harmless = move == AttackMove.Swing && damage <= 0f;
-        CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine && !harmless));
+        cueAudio = CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine && !harmless));
         if (comboIndex > 0 || enemyHealth == null || !enemyHealth.IsAlive || harmless) return;
         if (ZombieVoice.Attacks(this, move == AttackMove.Pounce, atMine, Time.time - voicedAt)) voicedAt = Time.time;
     }
@@ -719,8 +719,9 @@ public sealed class EnemyCombatAI : MonoBehaviour
         timer = 0f;
         pounceInside = 0f;
         comboIndex = 0;
-        // Called every frame while it has nobody to fight: the cue's player found once it is there, no lookup a frame.
-        if (cueAudio == null) TryGetComponent(out cueAudio);
+        // Called every frame while it has nobody to fight. Only its own wind-up plays the cue Stop cuts (Telegraph, which
+        // keeps the cue's player), so before its first wind-up there is nothing to cut and nothing is looked up: it was a
+        // component lookup a frame for every zombie that hadn't swung yet.
         if (cueAudio != null) cueAudio.Stop();
         UpdateIndicator(false);
     }

@@ -180,8 +180,23 @@ public sealed partial class ZombieMind : MonoBehaviour
     // Each player's gun, for its flashlight. Found once.
     private static readonly Dictionary<PlayerMovement, WeaponController> guns = new Dictionary<PlayerMovement, WeaponController>();
 
-    /// <summary>Every zombie mind switched on, on this PC (the host's or copies), for the stealth HUD and view.</summary>
-    public static IReadOnlyList<ZombieMind> All => minds;
+    /// <summary>
+    /// Every zombie mind switched on, on this PC (the host's or copies), for the stealth HUD and view. A foreach over it
+    /// makes no garbage: it hands foreach the list's own struct enumerator (PlayerRoster.Players says why).
+    /// </summary>
+    public static Minds All => new Minds(minds);
+
+    /// <summary>The minds, read only, walked without boxing an enumerator; still an IReadOnlyList for anything that wants one.</summary>
+    public readonly struct Minds : IReadOnlyList<ZombieMind>
+    {
+        private readonly List<ZombieMind> list;
+        internal Minds(List<ZombieMind> list) => this.list = list;
+        public int Count => list.Count;
+        public ZombieMind this[int index] => list[index];
+        public List<ZombieMind>.Enumerator GetEnumerator() => list.GetEnumerator();
+        IEnumerator<ZombieMind> IEnumerable<ZombieMind>.GetEnumerator() => list.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => list.GetEnumerator();
+    }
 
     /// <summary>
     /// On the host or alone: a zombie that had not noticed anyone has, and who it is after. A campaign's quiet stretch

@@ -79,7 +79,23 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     internal float ExecutionShare { get; set; } = 1f;
     private const float SteadfastStun = .5f, SteadfastShove = .4f, SteadfastPosture = .25f;
     private static readonly HashSet<MeleeCombatTarget> active = new HashSet<MeleeCombatTarget>();
-    public static IEnumerable<MeleeCombatTarget> Active => active;
+    /// <summary>Every target in play. A foreach over it makes no garbage (Targets).</summary>
+    public static Targets Active => new Targets(active);
+
+    /// <summary>
+    /// The targets, read only. Each player walks them every frame (what to execute, twice; whose head they stand on), and
+    /// a foreach over an IEnumerable boxes the set's enumerator, one piece of garbage per walk. Its own GetEnumerator
+    /// hands foreach the set's struct enumerator instead; it is still an IEnumerable for anything that wants one.
+    /// </summary>
+    public readonly struct Targets : IEnumerable<MeleeCombatTarget>
+    {
+        private readonly HashSet<MeleeCombatTarget> set;
+        internal Targets(HashSet<MeleeCombatTarget> set) => this.set = set;
+        public int Count => set.Count;
+        public HashSet<MeleeCombatTarget>.Enumerator GetEnumerator() => set.GetEnumerator();
+        IEnumerator<MeleeCombatTarget> IEnumerable<MeleeCombatTarget>.GetEnumerator() => set.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => set.GetEnumerator();
+    }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearRegistry()
     {
@@ -350,7 +366,24 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     /// <summary>The stealth kill alone: an unaware zombie with this executor behind it.</summary>
     public bool CanBeTakenDownBy(Component executor)
         => executor != null && IsAvailable && !IsHeld && !shownHeld && !IsKnockedDown && receiver != null
-            && TryGetComponent(out ZombieMind mind) && mind.CanBeTakenDownFrom(executor.transform.position);
+            && Mind != null && Mind.CanBeTakenDownFrom(executor.transform.position);
+
+    // Its mind, found once it is there: every player asks every enemy this twice a frame (PlayerExecution.FindCandidate),
+    // and it was a component lookup each time. Something without one (a practice target) looks again once a frame at most.
+    private ZombieMind mind;
+    private int mindFrame = -1;
+    private ZombieMind Mind
+    {
+        get
+        {
+            if (mind == null && mindFrame != Time.frameCount)
+            {
+                mindFrame = Time.frameCount;
+                TryGetComponent(out mind);
+            }
+            return mind;
+        }
+    }
 
     public bool TryReserveExecution(PlayerExecution owner)
     {

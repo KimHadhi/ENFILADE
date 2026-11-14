@@ -9,7 +9,25 @@ using UnityEngine;
 public static class PlayerRoster
 {
     private static readonly List<PlayerMovement> players = new List<PlayerMovement>();
-    public static IReadOnlyList<PlayerMovement> All => players;
+    /// <summary>Every player in play. A foreach over it makes no garbage (Players).</summary>
+    public static Players All => new Players(players);
+
+    /// <summary>
+    /// The roster, read only. Every zombie walks it, its crowd every frame and its sight and its distance to the nearest
+    /// one at every think, and a foreach over an IReadOnlyList boxes the list's enumerator: one piece of garbage per walk,
+    /// thousands a second in a horde. Its own GetEnumerator hands foreach the list's struct enumerator instead. It is
+    /// still an IReadOnlyList, for anything that wants one.
+    /// </summary>
+    public readonly struct Players : IReadOnlyList<PlayerMovement>
+    {
+        private readonly List<PlayerMovement> list;
+        internal Players(List<PlayerMovement> list) => this.list = list;
+        public int Count => list.Count;
+        public PlayerMovement this[int index] => list[index];
+        public List<PlayerMovement>.Enumerator GetEnumerator() => list.GetEnumerator();
+        IEnumerator<PlayerMovement> IEnumerable<PlayerMovement>.GetEnumerator() => list.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => list.GetEnumerator();
+    }
 
     /// <summary>The network owner id of a player's object; 0 alone or before it is spawned.</summary>
     public static ulong IdOf(PlayerMovement player)
