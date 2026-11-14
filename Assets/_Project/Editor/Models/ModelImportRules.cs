@@ -15,6 +15,10 @@ using UnityEngine;
 /// or "&lt;folder&gt;.clips.csv" for a folder of one-clip files (columns clip, loop, inPlace, inPlaceY, inPlaceYaw,
 /// yawOffset, cycleOffset, from, to), names its clips, marks loops and keeps the authored root unless an inPlace
 /// column is 1.
+/// Every clip there keeps every key as authored (Anim. Compression Off, set on every import, KeepEveryKey): Unity's default
+/// Keyframe Reduction let each joint drift up to its 0.5 degree error, and the drift adds up along an arm (the user,
+/// 2026-11-14, on the clips the Blender workspaces send: "안 좋은 거면 근본적으로 해결해 줘"; the poses kept theirs already,
+/// PoseImport).
 /// yawOffset corrects the source clip's forward axis in degrees without discarding its authored turns.
 /// A folder may also hold "&lt;folder&gt;.tpose.fbx", the clips' character in its T-pose with its mesh (Mixamo: the character
 /// downloaded "T-Pose", with skin). Every other file there then copies that avatar.
@@ -76,6 +80,9 @@ internal sealed class ModelImportRules : AssetPostprocessor
             PoseImport.PreprocessModel((ModelImporter)assetImporter, context);
             return;
         }
+        // Every project clip keeps its keys as authored, a Blender workspace's (an execution pair's hands on the zombie,
+        // the kick) and a mocap download's alike, before any branch below returns.
+        if (IsAnimationFile(assetPath)) KeepEveryKey((ModelImporter)assetImporter);
         if ((IsProjectModel(assetPath) || IsAnimationFile(assetPath)) && assetImporter.importSettingsMissing)
             Apply((ModelImporter)assetImporter);
         if (IsExecutionClip(assetPath))
@@ -169,6 +176,14 @@ internal sealed class ModelImportRules : AssetPostprocessor
         if (model.avatarSetup == ModelImporterAvatarSetup.CopyFromOther && model.sourceAvatar == avatar) return;
         model.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
         model.sourceAvatar = avatar;
+    }
+
+    // No keys dropped by compression: a clip plays as it was made (Unity's default Keyframe Reduction drops any key a curve
+    // can miss by 0.5 degrees or 0.5 per cent, joint by joint).
+    private static void KeepEveryKey(ModelImporter model)
+    {
+        if (model.animationCompression != ModelImporterAnimationCompression.Off)
+            model.animationCompression = ModelImporterAnimationCompression.Off;
     }
 
     private static void Apply(ModelImporter model)
