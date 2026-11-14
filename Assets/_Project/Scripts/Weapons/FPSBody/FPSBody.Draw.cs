@@ -75,8 +75,22 @@ public sealed partial class FPSBody
         held.StopReload(playables, 0f, bodyCamera);
         held.Unequip(framework, recoil, assets);
         held.gameObject.SetActive(false);
-        framework.UnlinkAnimatorProfile();
+        framework.LetGo();
         linked = false;
+    }
+
+    // Every gun built behind the loading screen has its FPSAF layers set up on this body there too
+    // (FPSBodyBoneController.Prepare): a draw then only puts kept layers into play. A gun built later gets its own at its
+    // first draw, once.
+    private void HoldAhead()
+    {
+        if (framework == null) return;
+        foreach (var gun in guns)
+        {
+            // One gun whose layers can't be set up still lets the others be; its draw sets it up and shows the error again.
+            try { framework.Prepare(gun.gameObject); }
+            catch (System.Exception e) { Debug.LogException(e, gun); }
+        }
     }
 
     // A fanned revolver kicks as an automatic does, round after round.

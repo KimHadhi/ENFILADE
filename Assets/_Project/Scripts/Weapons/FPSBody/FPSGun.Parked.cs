@@ -100,7 +100,9 @@ public sealed partial class FPSGun
         EnsureRestPose();
         if (recoil != null && Kinemation != null && Kinemation.weaponSettings != null)
             recoil.Init(AimedRecoil(Kinemation.weaponSettings.recoilAnimData, aimedTurn, aimedLift), roundsPerMinute, mode);
-        animator.LinkAnimatorProfile(gameObject);
+        // On our body the gun's kept FPSAF layers go into play (FPSBodyAnimator.Hold): nothing is made anew at a draw.
+        if (animator is FPSBodyAnimator ours) ours.Hold(gameObject);
+        else animator.LinkAnimatorProfile(gameObject);
         // A gun with a draw clip of its own comes out with it (FPSBody.Draw) instead of FPSAF's equip motion.
         if (assets.equipMotion != null && !HasDraw) animator.LinkAnimatorLayer(assets.equipMotion);
         if (camera != null) camera.HoldGunMotion(entry.sourcePose);

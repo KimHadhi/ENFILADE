@@ -28,8 +28,51 @@ public sealed class FPSBodyAnimator : FPSAnimator
         }
     }
 
+    /// <summary>
+    /// A gun drawn (FPSAnimator.LinkAnimatorProfile with the gun's entity). Our bone controller keeps each gun's layers
+    /// (FPSBodyBoneController), so a draw makes nothing anew and the body's Animator never re-binds for it.
+    /// </summary>
+    internal void Hold(GameObject gun)
+    {
+        if (gun == null || _boneController == null) return;
+        if (_boneController is not FPSBodyBoneController bones)
+        {
+            LinkAnimatorProfile(gun);
+            return;
+        }
+        var entity = gun.GetComponent<FPSAnimatorEntity>();
+        if (entity == null) return;
+        bones.UpdateEntity(entity);
+        bones.Hold(entity.animatorProfile);
+    }
+
+    /// <summary>The held gun put away (FPSAnimator.UnlinkAnimatorProfile); its layers stay kept for its next draw.</summary>
+    internal void LetGo()
+    {
+        if (_boneController is FPSBodyBoneController bones) bones.LetGo();
+        else UnlinkAnimatorProfile();
+    }
+
+    /// <summary>
+    /// Sets <paramref name="gun"/>'s layers up on this body ahead of its draw, changing nothing now: behind a loading screen,
+    /// so its first draw sets nothing up either.
+    /// </summary>
+    internal void Prepare(GameObject gun)
+    {
+        if (gun == null || _boneController is not FPSBodyBoneController bones) return;
+        var entity = gun.GetComponent<FPSAnimatorEntity>();
+        if (entity != null) bones.Prepare(entity.animatorProfile);
+    }
+
     // Begin has set it up already.
     protected override void Start() { }
+
+    // The kept layers' native data is freed first; FPSAF's own Dispose then has only its own to free.
+    protected override void OnDestroy()
+    {
+        if (_boneController is FPSBodyBoneController bones) bones.Release();
+        base.OnDestroy();
+    }
 
     protected override void Update()
     {

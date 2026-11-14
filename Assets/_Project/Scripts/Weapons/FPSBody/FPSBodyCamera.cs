@@ -30,6 +30,7 @@ public sealed class FPSBodyCamera : FPSCameraController
     private AnimationMixerPlayable motionMixer;
     private AnimationClipPlayable idle, action;
     private Quaternion rest = Quaternion.identity;
+    private readonly System.Collections.Generic.Dictionary<AnimationClip, Quaternion> rests = new();
     private float gunWeight, actionLeft, actionWeight;
     private bool hasMotion;
 
@@ -58,8 +59,13 @@ public sealed class FPSBodyCamera : FPSCameraController
     internal void HoldGunMotion(AnimationClip pose)
     {
         if (pose == null || !BuildRig()) return;
-        ClipSampler.Sample(pose, rig, 0f);
-        rest = Quaternion.Inverse(rig.transform.rotation) * cameraBone.rotation;
+        // Where a pose clip holds the camera bone on this rig never changes, so each is sampled once, not at every draw.
+        if (!rests.TryGetValue(pose, out rest))
+        {
+            ClipSampler.Sample(pose, rig, 0f);
+            rest = Quaternion.Inverse(rig.transform.rotation) * cameraBone.rotation;
+            rests[pose] = rest;
+        }
         Play(ref idle, 0, pose, 1f);
         actionLeft = 0f;
         hasMotion = true;

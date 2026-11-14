@@ -211,7 +211,12 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     {
         if (controller == null || assets == null) return;
         var bodyAnimator = Body != null ? body.BodyAnimator : null;
-        if (bodyAnimator != animator) Install(bodyAnimator);
+        if (bodyAnimator != animator)
+        {
+            Install(bodyAnimator);
+            // Behind the loading screen that built them, the guns' FPSAF layers are set up too (HoldAhead).
+            if (LoadingScreen.Visible) HoldAhead();
+        }
         if (framework == null) return;
         float dt = Time.deltaTime;
         if (controller.EquippedData != shownData) Equip(controller.EquippedData);

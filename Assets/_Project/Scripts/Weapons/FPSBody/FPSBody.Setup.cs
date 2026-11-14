@@ -40,7 +40,8 @@ public sealed partial class FPSBody
         input.inputConfig = assets.inputConfig;
         playables = host.AddComponent<FPSPlayablesController>();
         playables.upperBodyMask = assets.upperBody;
-        host.AddComponent<FPSBoneController>();
+        // FPSAF's bone controller, keeping each gun's layers on this body instead of making them anew at every draw.
+        host.AddComponent<FPSBodyBoneController>();
         recoil = host.AddComponent<RecoilAnimation>();
         if (view != null)
         {
