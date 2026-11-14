@@ -91,6 +91,10 @@ for dirpath, dirs, files in os.walk(os.path.join(root, "Assets")):
         meta_path = path + ".meta"
         if not os.path.exists(meta_path):
             continue
+        # Lookup tables and shading ramps are read value by value: compressed or scaled they band (Poiyomi's SkinLUT,
+        # the Mihoyo ramp), so they keep exactly what they are.
+        if re.search(r"(?i)(^|[/_ .-])(lut|ramps?)([/_ .-]|$)", rel) or re.search(r"(?i)lut\.", name):
+            continue
         meta = open(meta_path, "rb").read().decode("utf-8")
         if "TextureImporter:" not in meta or re.search(r"\n\s*enableMipMap: 0", meta):
             continue
