@@ -52,6 +52,9 @@ public sealed partial class GreyboxBuilder
         // Nobody stands on its top: an unseen steep ridge covers it (Tables/MapArt solid "cap"), so it needs no walk
         // slab and isn't a perch to check.
         public bool NoStand;
+        // The floor it stands on, when that floor isn't one of the layout's boxes (a bought scene's prop on its
+        // building's floor, PackScene); NaN: the highest box under it (FloorUnder).
+        public float Floor = float.NaN;
     }
 
     private readonly string sceneName, title;
@@ -630,6 +633,6 @@ public sealed partial class GreyboxBuilder
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
              (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) +
-             SurfaceReport() + DressReport() + DecalReport());
+             SurfaceReport() + DressReport() + DecalReport() + PackReport());
     }
 }

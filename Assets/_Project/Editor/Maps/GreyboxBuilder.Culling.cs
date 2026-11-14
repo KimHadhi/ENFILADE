@@ -29,6 +29,8 @@ public sealed partial class GreyboxBuilder
         foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
         {
             var part = shape.gameObject;
+            // A bought scene's building and props have no collider on what is drawn: its own rule (PackStatic).
+            if (PackStatic(shape)) continue;
             if (MovesWithGroup(part))
             {
                 // It moves: its surface is mapped in its own space, or the texture would slide over it as it goes.

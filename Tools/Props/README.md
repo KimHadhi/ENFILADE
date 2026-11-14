@@ -49,4 +49,4 @@ blender -b --factory-startup --disable-autoexec --python build_decals.py -- <작
 
 임시 폴더의 `Assets/...`를 프로젝트로 옮길 때는 파일마다 `.meta`를 먼저, 바로 뒤에 그 파일을 복사한다(유니티가 `.meta` 없는 파일을 먼저 보면 GUID를 둘 만든다). 새 폴더의 `.meta`도 유니티가 만들기 전에 쓴다.
 
-유니티 패키지(Dekogon 등)는 고른 프리팹과 그것이 쓰는 것만 들이는 `import_unitypackage.py`(GUID·가져오기 설정 그대로, 텍스처 2048 제한, LODGroup의 남의 렌더러 뺌)로 들인 뒤 `tga_to_png.py`로 줄인다.
+유니티 패키지(Dekogon 등)는 고른 프리팹과 그것이 쓰는 것만 들이는 `import_unitypackage.py`(GUID·가져오기 설정 그대로, 텍스처 2048 제한, LODGroup의 남의 렌더러 뺌)로 들인 뒤 `tga_to_png.py`로 줄인다. 11-14부터: 고르는 표에 `.unity`도 넣으면 장면과 그것이 쓰는 것 전부가 들어오고(4장 터미널), `--exclude`(정규식 JSON)로 팩 씬의 라이트맵·LightingData 같은 것을 빼고, `--keep-existing`은 프로젝트에 이미 있는 GUID를 다시 쓰지 않으며(먼저 들인 것·고친 것을 덮지 않음), `--strip-scripts`는 들이지 않는 스크립트의 컴포넌트를 프리팹과 장면에서 뗀다. `--cap-rule "Textures_Props/=1024"`처럼 경로마다 텍스처 크기 제한을 따로 줄 수 있다. 쓸 때는 GUID마다 `.meta`를 먼저 쓰고, 같은 경로에 GUID가 다른 파일이 있으면 덮지 않고 유니티처럼 `이름 1.확장자`로 둔다. `--dry`는 들어올 파일 수·크기·새 텍스처의 그래픽 메모리를 미리 보여 준다(4장 터미널: 장면 하나에서 2,044개, 새것 1,429개).

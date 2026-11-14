@@ -28,6 +28,7 @@ Ch4_Airport.Concrete,PaintedPlaster017,Marble012,3,2.5,,,1,0,1,1,0.08,9,,,splash
 Ch4_Airport.Metal,Metal041B,,2.5,,,,1,0.4,1,1,0.1,8
 Ch4_Airport.Facade,PaintedPlaster017,Concrete047A,2.5,3,#e8eaed,,1,0,1,1,0.08,10,터미널 벽;정면 벽;정면 문 위;동쪽 벽;탑승구 문 위,Curtain,leak*0.03;splash*0.02,
 Ch4_Airport.TerminalRoof,PaintedPlaster017,CorrugatedSteel005,2.5,2.5,#efefec,,1,0,1,1,0.06,10,터미널 지붕,,,
+Ch4_Airport.PackWall,PaintedPlaster017,Concrete047A,2.5,3,#e8eaed,,1,0,1,1,0.08,10,,,,
 Ch4_Airport.Column,Metal041B,,2.5,,#d0d3d8,,1,0.5,1,1,0.06,6,홀 기둥;2층 기둥,,,
 Ch4_Airport.Security,PaintedPlaster017,Concrete047A,2.5,3,#cdd3da,,1,0,1,1,0.06,8,검색대 칸막이,,,
 Ch4_Airport.DutyFree,Marble012,Marble012,2.5,2.5,#efe9e0,,0.8,0,1,1,0.06,8,면세점,,,

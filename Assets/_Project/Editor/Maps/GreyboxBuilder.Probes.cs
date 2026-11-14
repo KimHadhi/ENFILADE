@@ -110,7 +110,9 @@ public sealed partial class GreyboxBuilder
         foreach (var lamp in Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (lamp.gameObject.scene != scene || MovesWithGroup(lamp.gameObject)) continue;
-            lamp.lightmapBakeType = LightmapBakeType.Mixed;
+            // A lamp a bought scene bakes whole (the airport terminal's two hundred, PackScene) stays Baked: its light
+            // is all in the probes and none of it is drawn live. Every other lamp is Mixed.
+            if (lamp.lightmapBakeType != LightmapBakeType.Baked) lamp.lightmapBakeType = LightmapBakeType.Mixed;
             if (lamp.type == LightType.Directional || lamp.shadows != LightShadows.None) continue;
             bakeShadows.Add((lamp, lamp.shadows));
             lamp.shadows = LightShadows.Soft;

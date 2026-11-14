@@ -50,12 +50,14 @@ public sealed partial class GreyboxBuilder
         int slabs = AddNarrowTops(sources);
         var bounds = new Bounds();
         bool any = false;
-        foreach (var shape in terrain.GetComponentsInChildren<Renderer>())
+        Physics.SyncTransforms();
+        foreach (var solid in terrain.GetComponentsInChildren<Collider>())
         {
             // Only what collides can carry walk mesh: the city beyond the edge (seen only) would just widen the bake.
-            if (!shape.TryGetComponent(out Collider _)) continue;
-            if (any) bounds.Encapsulate(shape.bounds);
-            else { bounds = shape.bounds; any = true; }
+            // Collision with nothing drawn counts too (a bought building's collision meshes, PackScene).
+            if (!solid.enabled || solid.isTrigger) continue;
+            if (any) bounds.Encapsulate(solid.bounds);
+            else { bounds = solid.bounds; any = true; }
         }
         bounds.Expand(4f);
         var data = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(surface.GetBuildSettings(), sources, bounds, terrain.position, terrain.rotation);
@@ -153,6 +155,7 @@ public sealed partial class GreyboxBuilder
     // The highest top of the layout under this block, at or below its bottom: what it stands on (0, the ground, if none).
     private float FloorUnder(Block prop)
     {
+        if (!float.IsNaN(prop.Floor)) return prop.Floor;
         float floor = 0f;
         foreach (var other in blocks)
             if (other != prop && !other.Moves && other.Box.max.y <= prop.Box.min.y + .02f && Overlaps(prop.Box, other.Box))
