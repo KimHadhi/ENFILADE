@@ -43,6 +43,9 @@ public sealed class MeleeKnife : MonoBehaviour
     private Swing swing;
     private KnifeSwing clip;
     private KnifeSwing.Key from, last;
+    // The clip's finger joints as sampled this frame, as last shown (after any blend) and where a blend starts from.
+    private readonly FingerWays sampledFingers = new FingerWays(), lastFingers = new FingerWays(), fromFingers = new FingerWays(),
+        cockedFingers = new FingerWays();
     private float clock, sinceSwing = 99f, blendLeft, guardClock, block;
     private bool hasLast, wasOut, backNext;
     private int nextLook;
@@ -145,7 +148,7 @@ public sealed class MeleeKnife : MonoBehaviour
     /// the arm it takes (the fists' block and parry take it back, and running forward lets the run clip swing it, as the
     /// fists do). False while the knife is not out.
     /// </summary>
-    internal bool Current(out KnifeSwing.Key key, out float weight, out ClassKnives.Knife inHand)
+    internal bool Current(out KnifeSwing.Key key, out float weight, out ClassKnives.Knife inHand, FingerWays fingers = null)
     {
         key = default;
         weight = 0f;
@@ -153,17 +156,31 @@ public sealed class MeleeKnife : MonoBehaviour
         if (!IsOut) return false;
         inHand = KnifeNow();
         bool found = false;
-        if (swing != Swing.None && clip != null) found = clip.Sample(clock, out key);
+        if (swing != Swing.None && clip != null && (found = clip.Sample(clock, out key))) clip.SampleFingers(clock, sampledFingers);
         if (!found)
         {
             var guard = KnifeSwing.Of(inHand.GuardClip);
-            if (guard == null || !guard.Sample(guard.Length > 0f ? Mathf.Repeat(guardClock, guard.Length) : 0f, out key)) return false;
+            float at = guard != null && guard.Length > 0f ? Mathf.Repeat(guardClock, guard.Length) : 0f;
+            if (guard == null || !guard.Sample(at, out key)) return false;
+            guard.SampleFingers(at, sampledFingers);
             // Charging a strike draws the knife back to where the stab starts, as the fists draw back.
             var stab = melee.IsCharging ? KnifeSwing.Of(inHand.StabClip) : null;
-            if (stab != null && stab.Sample(0f, out var cocked)) key = KnifeSwing.Blend(key, cocked, melee.ChargeRatio);
+            if (stab != null && stab.Sample(0f, out var cocked))
+            {
+                key = KnifeSwing.Blend(key, cocked, melee.ChargeRatio);
+                stab.SampleFingers(0f, cockedFingers);
+                FingerWays.Blend(sampledFingers, cockedFingers, melee.ChargeRatio, sampledFingers);
+            }
         }
-        if (blendLeft > 0f && hasLast) key = KnifeSwing.Blend(from, key, 1f - blendLeft / SwingBlend);
+        if (blendLeft > 0f && hasLast)
+        {
+            float share = 1f - blendLeft / SwingBlend;
+            key = KnifeSwing.Blend(from, key, share);
+            FingerWays.Blend(fromFingers, sampledFingers, share, sampledFingers);
+        }
         last = key;
+        lastFingers.CopyFrom(sampledFingers);
+        fingers?.CopyFrom(sampledFingers);
         hasLast = true;
         float up = hands != null ? hands.FistsWeight : 1f;
         weight = Mathf.Clamp01(up * (1f - block));
@@ -220,7 +237,7 @@ public sealed class MeleeKnife : MonoBehaviour
         if (swing != Swing.None && (clip == null || clock >= clip.Length))
         {
             // Back into the guard from where the swing left the arm.
-            if (hasLast) { from = last; blendLeft = SwingBlend; }
+            if (hasLast) { from = last; fromFingers.CopyFrom(lastFingers); blendLeft = SwingBlend; }
             swing = Swing.None;
             clip = null;
         }
@@ -248,7 +265,7 @@ public sealed class MeleeKnife : MonoBehaviour
             : next == Swing.Backslash ? held.BackslashClip : next == Swing.Stab ? held.StabClip : null;
         var made = KnifeSwing.Of(table);
         if (made == null) return;
-        if (hasLast) { from = last; blendLeft = SwingBlend; }
+        if (hasLast) { from = last; fromFingers.CopyFrom(lastFingers); blendLeft = SwingBlend; }
         else blendLeft = 0f;
         swing = next;
         clip = made;

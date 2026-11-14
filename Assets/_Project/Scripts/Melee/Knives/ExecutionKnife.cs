@@ -60,6 +60,9 @@ public sealed class ExecutionKnife : MonoBehaviour
     private Phase phase;
     private Aim aim;
     private KnifeStroke.Key cutFrom, last;
+    // Each hand's finger joints as last shown, and where a cut-short stroke blends them from.
+    private readonly FingerWays lastRightFingers = new FingerWays(), lastLeftFingers = new FingerWays(), cutRightFingers = new FingerWays(),
+        cutLeftFingers = new FingerWays();
     private float clock, sincePhase, sinceStab, stabFrom, rate = 1f, impact = .35f, held, cutLeft;
     // The stroke's pace after the strike: its own (1), or what spreads the rest of it over a paired clip's rest.
     private float afterRate = 1f;
@@ -150,15 +153,26 @@ public sealed class ExecutionKnife : MonoBehaviour
     }
 
     /// <summary>The arms now, where the stroke aims and the knife in hand (ExecutionKnifeArm, each frame); false when none plays.</summary>
-    internal bool Current(out KnifeStroke.Key key, out Aim at, out ClassKnives.Knife inHand)
+    internal bool Current(out KnifeStroke.Key key, out Aim at, out ClassKnives.Knife inHand, FingerWays right = null,
+        FingerWays left = null)
     {
         key = default;
         at = aim;
         inHand = knife;
         if (!playing || stroke == null || !stroke.Sample(clock, out key)) return false;
-        if (cutting && hasLast) key = KnifeStroke.Blend(cutFrom, key, 1f - Mathf.Clamp01(cutLeft / CutBlend));
+        // Each hand's finger joints as the stroke has them (FingerWays; none in a stroke drawn by curls).
+        stroke.SampleFingers(clock, lastRightFingers, lastLeftFingers);
+        if (cutting && hasLast)
+        {
+            float share = 1f - Mathf.Clamp01(cutLeft / CutBlend);
+            key = KnifeStroke.Blend(cutFrom, key, share);
+            FingerWays.Blend(cutRightFingers, lastRightFingers, share, lastRightFingers);
+            FingerWays.Blend(cutLeftFingers, lastLeftFingers, share, lastLeftFingers);
+        }
         last = key;
         hasLast = true;
+        right?.CopyFrom(lastRightFingers);
+        left?.CopyFrom(lastLeftFingers);
         return true;
     }
 
@@ -167,11 +181,13 @@ public sealed class ExecutionKnife : MonoBehaviour
     /// the right arm it has: all of it once eased in, none by the time it has handed the arm back (ExecutionKnifeArm, each
     /// frame, after the stroke or a paired clip posed the arms). False without a draw of its own or once it is over.
     /// </summary>
-    internal bool DrawCurrent(out KnifeSwing.Key key, out float weight)
+    internal bool DrawCurrent(out KnifeSwing.Key key, out float weight, FingerWays fingers = null)
     {
         key = default;
         weight = 0f;
+        if (fingers != null) fingers.Has = false;
         if (!playing || drawClip == null || sinceBegin >= drawEnd || !drawClip.Sample(drawClock, out key)) return false;
+        drawClip.SampleFingers(drawClock, fingers);
         weight = Mathf.Clamp01((drawEnd - sinceBegin) / DrawHandOver) * Mathf.Clamp01(sinceBegin / DrawEaseIn);
         return weight > 0f;
     }
@@ -248,6 +264,8 @@ public sealed class ExecutionKnife : MonoBehaviour
             if (hasLast)
             {
                 cutFrom = last;
+                cutRightFingers.CopyFrom(lastRightFingers);
+                cutLeftFingers.CopyFrom(lastLeftFingers);
                 cutting = true;
                 cutLeft = CutBlend;
             }

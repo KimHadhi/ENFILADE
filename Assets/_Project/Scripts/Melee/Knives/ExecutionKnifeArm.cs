@@ -29,6 +29,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     private const float ArmsToClip = .12f, ArmsFromClip = .25f;
 
     private PlayerMovement movement;
+    private PlayerBodyHands hands;
     private ExecutionKnife driver;
     private MeleeKnife melee;
     private Animator animator;
@@ -42,6 +43,9 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     // How much of the arms the stroke poses now (1) or leaves to a paired clip (0), and whether a stroke posed last frame.
     private float armsShare = 1f;
     private bool stroking;
+    // The finger joints each pose brings (FingerWays): the stroke's two hands, the knife's own draw, the melee clip.
+    private readonly FingerWays rightWays = new FingerWays(), leftWays = new FingerWays(), drawWays = new FingerWays(),
+        meleeWays = new FingerWays();
 
     /// <summary>A player's knife arms, made on their body's model the first time; null without a humanoid body.</summary>
     internal static ExecutionKnifeArm Of(PlayerMovement who)
@@ -99,7 +103,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         if (!Bind()) return;
         if (driver == null) driver = movement.GetComponent<ExecutionKnife>();
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
-        if (driver == null || eyes == null || !driver.Current(out var key, out var aim, out var knife))
+        if (driver == null || eyes == null || !driver.Current(out var key, out var aim, out var knife, rightWays, leftWays))
         {
             stroking = false;
             // No execution: the knife may be out in the melee slot instead (MeleeKnife).
@@ -121,16 +125,16 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         stroking = true;
         if (armsShare > 0f)
         {
-            Pose(left, key.Left, view, aim.Has, headAim, armsShare);
-            Pose(right, key.Right, view, aim.Has, neckAim, armsShare);
+            Pose(left, key.Left, view, aim.Has, headAim, armsShare, leftWays);
+            Pose(right, key.Right, view, aim.Has, neckAim, armsShare, rightWays);
         }
         // The knife's own draw (its addon's) has the right arm first, over the stroke's or a paired clip's pose, and hands
         // it back before the blade goes in; meanwhile the knife sits in its fighting grip (the draw's own) and turns to the
         // execution's grip as the draw lets go.
         var drawKey = default(KnifeSwing.Key);
         float drawn = 0f;
-        if (knife != null && driver.DrawCurrent(out drawKey, out float drawWeight)) drawn = drawWeight;
-        if (drawn > 0f) PoseFromEyes(right, drawKey, eyes, drawn);
+        if (knife != null && driver.DrawCurrent(out drawKey, out float drawWeight, drawWays)) drawn = drawWeight;
+        if (drawn > 0f) PoseFromEyes(right, drawKey, eyes, drawn, drawWays);
         bool held = model != null && (drawn > .5f ? drawKey.Held : key.Held && key.Right.Weight > 0f);
         if (held && drawn > 0f)
             Seat(Vector3.Lerp(knife.Held, knife.MeleeHeld, drawn), Vector3.Slerp(knife.Blade, knife.MeleeBlade, drawn),
@@ -145,9 +149,9 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     private bool HoldForMelee()
     {
         if (melee == null) melee = movement.GetComponent<MeleeKnife>();
-        if (melee == null || !melee.Current(out var key, out float weight, out var knife) || knife == null) return false;
+        if (melee == null || !melee.Current(out var key, out float weight, out var knife, meleeWays) || knife == null) return false;
         if (worn != knife.Model) Wear(knife);
-        if (weight > 0f) PoseFromEyes(right, key, eyes, weight);
+        if (weight > 0f) PoseFromEyes(right, key, eyes, weight, meleeWays);
         bool held = key.Held && model != null;
         if (held) Seat(knife.MeleeHeld, knife.MeleeBlade, knife.MeleeEdge);
         ShowKnife(held);
@@ -155,16 +159,25 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     }
 
     // The arm where an eye-space key has it (KnifeSwing: the wrist and the elbow from the eyes in metres, the hand's ways in
-    // the view's axes), eased by weight from the pose the frame had.
-    private static void PoseFromEyes(ArmBones side, in KnifeSwing.Key key, Transform eyes, float weight)
+    // the view's axes), its fingers as the clip has every joint (else closed by its curls), eased by weight from the pose
+    // the frame had.
+    private void PoseFromEyes(ArmBones side, in KnifeSwing.Key key, Transform eyes, float weight, FingerWays fingers)
     {
         side.Keep();
         Quaternion view = eyes.rotation;
         TwoBoneIK.Solve(side.Upper, side.Lower, side.Hand, eyes.position + view * key.Wrist, eyes.position + view * key.Elbow);
         Vector3 along = view * key.Along, palm = view * key.Palm;
         side.TurnHand(along, palm);
-        side.Close(along, palm, key.Curl, key.Thumb);
+        Fingers(side, false, fingers, along, palm, key.Curl, key.Thumb);
         side.Ease(weight);
+    }
+
+    // A hand's fingers: every joint as the clip has it from Blender, onto this body's own hand (FingerWays through
+    // PlayerBodyHands, the gun clips' working); a table from before them (or no hands to wear them) closes by its curls.
+    private void Fingers(ArmBones side, bool isLeft, FingerWays fingers, Vector3 along, Vector3 palm, float curl, float thumb)
+    {
+        if (hands == null && movement != null) hands = movement.GetComponent<PlayerBodyHands>();
+        if (hands == null || !hands.WearFingerWays(animator, isLeft, fingers, 1f)) side.Close(along, palm, curl, thumb);
     }
 
     private void OnDisable()
@@ -191,7 +204,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     // The arm where the key has it: the wrist from this shoulder in this arm's lengths, drawn toward the aim by the key's
     // share, the elbow toward its pole; the hand turned to the key's run and facing, the fingers closed; all eased by the
     // key's weight, times the stroke's share of the arms, from the pose the frame had.
-    private static void Pose(ArmBones side, in KnifeStroke.Arm key, Quaternion view, bool aimed, Vector3 aim, float share)
+    private void Pose(ArmBones side, in KnifeStroke.Arm key, Quaternion view, bool aimed, Vector3 aim, float share, FingerWays fingers)
     {
         float weight = key.Weight * share;
         if (weight <= 0f) return;
@@ -202,7 +215,7 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         TwoBoneIK.Solve(side.Upper, side.Lower, side.Hand, wrist, shoulder + view * (key.Elbow * side.ArmLength));
         Vector3 along = view * key.Along, palm = view * key.Palm;
         side.TurnHand(along, palm);
-        side.Close(along, palm, key.Curl, key.Thumb);
+        Fingers(side, side == left, fingers, along, palm, key.Curl, key.Thumb);
         side.Ease(weight);
     }
 

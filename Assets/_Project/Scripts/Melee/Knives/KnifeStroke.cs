@@ -6,8 +6,9 @@ using UnityEngine;
 /// class's knife (ClassKnives' motion column names it; Tables/KnifeStab is the one drawn so far, written by
 /// Tools/Blender/Knives/knife_stab.py). A key says what an arm does, not where a rig's bones are, as RepairArm's loops do:
 /// the wrist and an elbow pole from that arm's own shoulder in that arm's lengths, the hand's run (wrist to middle knuckle)
-/// and its palm's facing, all in the view's axes (x right, y up, z forward); how far the fingers and the thumb close
-/// (degrees); how much of the way the wrist is drawn to the victim (aim: the right hand over its neck, the left on its
+/// and its palm's facing, all in the view's axes (x right, y up, z forward); every finger joint when a table carries them
+/// (FingerWays' columns with the arm's prefix, rindex1X ... lthumb3Twist: a stroke made in Blender keeps its fingers),
+/// else how far the fingers and the thumb close (degrees; knife_stab.py's stroke is drawn so); how much of the way the wrist is drawn to the victim (aim: the right hand over its neck, the left on its
 /// head), and how much of the arm the stroke has at all (weight, so it eases in from the body's own pose and back out).
 /// Columns r... are the right arm (the knife's), l... the left (the grab); held says the knife is in the right fist. Its
 /// moments are the first rows marked ready (the drawn knife waits here while the player dashes in), strike (the blade
@@ -40,6 +41,8 @@ public sealed class KnifeStroke
     public float Sheath { get; private set; }
 
     private readonly List<Key> keys = new List<Key>();
+    // Every key's finger joints per hand (FingerWays), when every row has them.
+    private readonly List<FingerWays> rightFingers = new List<FingerWays>(), leftFingers = new List<FingerWays>();
     private static readonly Dictionary<string, KnifeStroke> known = new Dictionary<string, KnifeStroke>(System.StringComparer.OrdinalIgnoreCase);
     private static bool listening;
 
@@ -63,17 +66,38 @@ public sealed class KnifeStroke
     {
         key = default;
         if (keys.Count == 0) return false;
-        if (time <= keys[0].Cycle) { key = keys[0]; return true; }
+        Span(time, out int a, out int b, out float t);
+        key = a == b ? keys[a] : Blend(keys[a], keys[b], t);
+        if (a != b) key.Cycle = time;
+        return true;
+    }
+
+    /// <summary>
+    /// Each hand's finger joints at <paramref name="time"/> seconds into the stroke (FingerWays), into the buffers given
+    /// (either may be null); a hand whose rows carry none comes back without them (Has false) and closes by its curls.
+    /// </summary>
+    public void SampleFingers(float time, FingerWays right, FingerWays left)
+    {
+        if (right != null) right.Has = false;
+        if (left != null) left.Has = false;
+        if (keys.Count == 0) return;
+        Span(time, out int a, out int b, out float t);
+        if (right != null && rightFingers.Count == keys.Count) FingerWays.Blend(rightFingers[a], rightFingers[b], t, right);
+        if (left != null && leftFingers.Count == keys.Count) FingerWays.Blend(leftFingers[a], leftFingers[b], t, left);
+    }
+
+    // The two keys round a time and how far between them it is (one key twice, held, at the stroke's ends).
+    private void Span(float time, out int a, out int b, out float t)
+    {
         int last = keys.Count - 1;
-        if (time >= keys[last].Cycle) { key = keys[last]; return true; }
+        t = 0f;
+        if (time <= keys[0].Cycle) { a = b = 0; return; }
+        if (time >= keys[last].Cycle) { a = b = last; return; }
         int hi = 1;
         while (hi < last && keys[hi].Cycle < time) hi++;
-        var a = keys[hi - 1];
-        var b = keys[hi];
-        float t = Mathf.InverseLerp(a.Cycle, b.Cycle, time);
-        key = Blend(a, b, t);
-        key.Cycle = time;
-        return true;
+        a = hi - 1;
+        b = hi;
+        t = Mathf.InverseLerp(keys[a].Cycle, keys[b].Cycle, time);
     }
 
     /// <summary>Two moments of the arms mixed (t 0: a, 1: b): positions and closings in line, ways turned between.</summary>
@@ -107,6 +131,8 @@ public sealed class KnifeStroke
     {
         var stroke = new KnifeStroke();
         float ready = -1f, strike = -1f, out_ = -1f, sheath = -1f;
+        var read = new List<(Key key, FingerWays right, FingerWays left)>();
+        bool everyRight = true, everyLeft = true;
         foreach (string id in GameTables.RowIds(table))
         {
             if (!GameTables.TryGetRow(table, id, out var row)) continue;
@@ -119,7 +145,11 @@ public sealed class KnifeStroke
                 Left = ArmOf(row, "l"),
                 Held = row.Number("held", 0f) > .5f,
             };
-            stroke.keys.Add(key);
+            var right = new FingerWays();
+            var left = new FingerWays();
+            if (!right.Read(row, "r")) everyRight = false;
+            if (!left.Read(row, "l")) everyLeft = false;
+            read.Add((key, right, left));
             string mark = row.TryGetValue("mark", out string text) ? text.Trim() : "";
             if (mark.Length == 0) continue;
             if (ready < 0f && Is(mark, "ready")) ready = cycle;
@@ -127,8 +157,14 @@ public sealed class KnifeStroke
             else if (out_ < 0f && Is(mark, "out")) out_ = cycle;
             else if (sheath < 0f && Is(mark, "sheath")) sheath = cycle;
         }
-        if (stroke.keys.Count == 0) return null;
-        stroke.keys.Sort((x, y) => x.Cycle.CompareTo(y.Cycle));
+        if (read.Count == 0) return null;
+        read.Sort((x, y) => x.key.Cycle.CompareTo(y.key.Cycle));
+        foreach (var (key, right, left) in read)
+        {
+            stroke.keys.Add(key);
+            if (everyRight) stroke.rightFingers.Add(right);
+            if (everyLeft) stroke.leftFingers.Add(left);
+        }
         stroke.Length = stroke.keys[stroke.keys.Count - 1].Cycle;
         // A table without its marks still plays: the strike in the middle, ready before it, out and sheath after.
         stroke.Strike = strike >= 0f ? strike : stroke.Length * .4f;

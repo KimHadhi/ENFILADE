@@ -50,7 +50,8 @@ spec = importlib.util.spec_from_file_location('enf_finger_ways', root / 'Tools/B
 | `close(rig, wrist, chains, curl, thumb, right=False, update=...)` | 예전 게임이 굽은 정도로 쥐던 모양(`ArmBones.Close`)을 리그에 그대로 만든다. 손가락 키가 없던 시안에 처음 쥐기를 넣을 때 쓴다 |
 
 - 리그의 armature 공간에서 잰다. 오브젝트의 위치, 회전, 크기, 거울은 결과에 들어가지 않는다.
-- 쓰는 곳: 투척 작업실 [grenade_tools.py](../Grenades/grenade_tools.py) `clip_rows`, 밀치기 작업실 수리 동작 [shove_tools.py](../Shove/shove_tools.py) `arm_rows`.
+- 쓰는 곳: 투척 작업실 [grenade_tools.py](../Grenades/grenade_tools.py) `clip_rows`, 밀치기 작업실 수리 동작 [shove_tools.py](../Shove/shove_tools.py) `arm_rows`,
+  칼 작업실 [knife_tools.py](../Knives/knife_tools.py) `clip_rows`(오른손, `right=True`: KnifeMelee*.csv, 0.9.62; 칼 작업실 클립 29개를 카즈사·마네킹 오른손에 입혀 다시 재 보니 방향 최대 0.0002°, 비틀림 최대 0.0001°).
   - 손가락 키가 없던 수리 시안은 열 때 예전 게임과 같은 쥐기를 받는다(`draft_grips`).
 
 ## 확인 (2026-11-14, Blender 4.5.16, 스크래치 사본)

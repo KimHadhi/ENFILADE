@@ -20,8 +20,11 @@ It shares Tools/Blender/OneClick/one_click.py with the other workspaces: opening
 Pose mode with her right hand handle selected, auto-key on, the Dope Sheet; saving (Ctrl+S) sends every clip that changed
 to Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes in game metres, the
 hand's run (wrist to middle knuckle) and its palm's facing in the head camera's axes as Unity's (x right, y up, z
-forward), the fingers' and the thumb's closing, whether the knife is in the fist and the 벰 moment (KnifeSwing reads it,
-ExecutionKnifeArm fits it to any character's right arm). Nothing here changes Blender's preferences.
+forward), every finger joint as posed (Tools/Blender/HandPaths/finger_ways.py: each segment's way in the hand's own frame
+and its twist, the game's FingerWays; the user, 2026-11-14: "다신 이런 일이 재발하지 않도록 뼈에 새겨라") with the fingers'
+and the thumb's closing beside them (their summary, all a table had before), whether the knife is in the fist and the 벰
+moment (KnifeSwing reads it, ExecutionKnifeArm fits it to any character's right arm), every number to the sixth decimal
+(never rounded away). Nothing here changes Blender's preferences.
 Where a knife sits in the fist is moved here too (the user, 2026-11-14: "블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길
 수 있으니까"): 칼 옮기기 picks the knife in her fist (a knife's own clips show that knife), G and R move it, and saving writes
 its seat in the melee slot (ClassKnives.csv meleeHeld*, meleeBlade*, meleeEdge*: the handle's middle in hand lengths from
@@ -57,6 +60,7 @@ GAME_SCALE = 1.166
 CAMERA = 'FPS_Head_Camera'
 TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
 ONE_CLICK = os.path.join('Tools', 'Blender', 'OneClick', 'one_click.py')
+FINGER_WAYS = os.path.join('Tools', 'Blender', 'HandPaths', 'finger_ways.py')
 # Two samples a frame at 30 fps, so the game's curve follows the polish closely.
 SAMPLES_PER_FRAME = 2
 ARM_HAND, ARM_ELBOW = 'CTRL_hand.R', 'CTRL_elbow.R'
@@ -152,16 +156,17 @@ MADE_HERE = {'M9Bayonet': 'M9 총검', 'Machete': '마체테'}
 MADE_COLUMNS = {'draw': 'drawClip', 'guard': 'guardClip', 'slash': 'slashClip', 'backslash': 'backslashClip', 'stab': 'stabClip'}
 
 
-def _one_click():
-    """The shared one-click module, loaded once and without a __pycache__ beside it (one there would show up in git)."""
-    if 'enf_one_click' in sys.modules:
-        return sys.modules['enf_one_click']
+def _module(name, rel):
+    """A shared module of the Blender tools, loaded once by its path and without a __pycache__ beside it (one there would
+    show up in git)."""
+    if name in sys.modules:
+        return sys.modules[name]
     root = project_root()
     if root is None:
         raise RuntimeError('ENFILADE 프로젝트 안의 ArtSource/Knives 파일을 여세요.')
-    spec = importlib.util.spec_from_file_location('enf_one_click', str(root / ONE_CLICK))
+    spec = importlib.util.spec_from_file_location(name, str(root / rel))
     module = importlib.util.module_from_spec(spec)
-    sys.modules['enf_one_click'] = module
+    sys.modules[name] = module
     writes = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
     try:
@@ -169,6 +174,16 @@ def _one_click():
     finally:
         sys.dont_write_bytecode = writes
     return module
+
+
+def _one_click():
+    """The shared one-click module (items, fingerprints, sending on save, the screen on open)."""
+    return _module('enf_one_click', ONE_CLICK)
+
+
+def finger_ways():
+    """The shared finger measure: every finger joint's way and twist as the game's tables carry them (FingerWays)."""
+    return _module('enf_finger_ways', FINGER_WAYS)
 
 
 oc = _one_click()
@@ -399,7 +414,8 @@ def table_label(key):
 
 
 def clip_rows(context, key, marks):
-    """The right arm over the clip's frames as the game's clips have it (KnifeSwing)."""
+    """The right arm over the clip's frames as the game's clips have it (KnifeSwing), every finger joint with it."""
+    ways = finger_ways()
     scene = context.scene
     rig = find_rig(scene)
     fps = scene.render.fps / scene.render.fps_base
@@ -419,6 +435,7 @@ def clip_rows(context, key, marks):
         rows.append(dict(cycle=(at - start) / fps, wrist=to_view(wrist, basis, True), elbow=to_view(elbow, basis, True),
                          along=to_view(along, basis), palm=to_view(palm, basis),
                          curl=sum(c[f] for f in FOUR) / 4.0, thumb=c['thumb'],
+                         fingers=ways.measure(rig, ARM_BONES['wrist'], FINGERS, right=True),
                          held=at >= grab - 1e-6, hit=hit is not None and abs(at - hit) < 1e-6))
     return rows
 
@@ -428,18 +445,24 @@ def table_text(context, key, marks):
     loop = '되풀이 클립: 끝 줄이 첫 줄과 같아야 이어진다. ' if clip.get('loop') else ''
     source = f"워크숍 애드온 {clip['source']}에서 옮긴 모션. " if clip.get('source') else ''
     note = ('"#설명 (블렌더 칼 작업실 ArtSource/Knives의 ' + clip['label'] + ' 클립을 저장(Ctrl+S)하면 쓰는 오른팔. ' + source + loop +
+            '손가락은 마디마다 손 자기 틀에서 가리키는 쪽과 비틀림(index1X~thumb3Twist)으로 가서 블렌더에서 잡은 모양 그대로 나온다. '
+            'curl·thumb은 그 요약(옛 표는 이것만 있었다). '
             '손으로 고치지 말고 블렌더에서 고친다. 어느 칼이 어느 클립을 쓰는지는 ClassKnives.csv. MeleeKnife가 근접 칸의 칼로 틀고 '
             'ExecutionKnifeArm이 어느 캐릭터 오른팔에든 맞춘다)"')
+    ways = finger_ways()
     cells = ['클립의 초', '눈에서 손목까지 오른쪽(m)', '위(m)', '앞(m)', '눈에서 팔꿈치까지 오른쪽(m). 팔꿈치가 이쪽으로 굽는다', '위(m)', '앞(m)',
              '손이 뻗은 쪽(손목→가운데 손가락 뿌리) 오른쪽', '위', '앞', '손바닥이 향한 쪽 오른쪽', '위', '앞',
              '네 손가락이 굽은 정도의 평균(°)', '엄지가 접힌 정도(90이면 손잡이 위로 다 덮음)', '1이면 칼이 손에 있다(쥐기부터)',
              '1이면 이 순간에 칼날이 닿는다(벰)']
+    cells += ways.descriptions()
     cells = [c.replace(',', ' ·') for c in cells]
-    lines = ['﻿' + ','.join(HEADER), note + ',' + ','.join(cells)]
+    lines = ['﻿' + ','.join(HEADER + ways.columns()), note + ',' + ','.join(cells)]
     for n, row in enumerate(clip_rows(context, key, marks)):
-        values = [f'k{n:03d}', f'{row["cycle"]:.4f}']
-        values += [f'{v:.4f}' for v in (*row['wrist'], *row['elbow'], *row['along'], *row['palm'])]
-        values += [f'{row["curl"]:.1f}', f'{row["thumb"]:.1f}', '1' if row['held'] else '0', '1' if row['hit'] else '0']
+        # To the sixth decimal: what Blender has goes to the game as measured, not rounded (the user's rule, 2026-11-14).
+        values = [f'k{n:03d}', f'{row["cycle"]:.6f}']
+        values += [f'{v:.6f}' for v in (*row['wrist'], *row['elbow'], *row['along'], *row['palm'])]
+        values += [f'{row["curl"]:.6f}', f'{row["thumb"]:.6f}', '1' if row['held'] else '0', '1' if row['hit'] else '0']
+        values += ways.cells(row['fingers'])
         lines.append(','.join(values))
     return '\n'.join(lines) + '\n'
 
