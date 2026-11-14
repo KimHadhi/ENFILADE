@@ -158,7 +158,7 @@ public static partial class CampaignMaps
             ("gimmick.place.ch3.cage", new Vector3(178.5f, 0f, -15.5f)),
         };
         var board = b.Switch<GimmickCanSpots>("정비 게시판", new Vector3(194f, 1.6f, ShedZ1 + .5f));
-        b.Box("정비 게시판 판", 192.8f, 195.2f, 1f, 2.4f, ShedZ1, ShedZ1 + .1f, b.Wood, "WoodPanel");
+        b.NoStand(b.Box("정비 게시판 판", 192.8f, 195.2f, 1f, 2.4f, ShedZ1, ShedZ1 + .1f, b.Wood, "WoodPanel"));
         var spots = new List<Transform>();
         var ids = new List<string>();
         foreach (var (id, at) in places)

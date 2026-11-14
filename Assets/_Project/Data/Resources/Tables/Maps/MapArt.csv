@@ -76,7 +76,7 @@ corrugated,ThirdParty/Quixel/Junkyard/CorrugatedSheet_vb1kfhv/CorrugatedSheet_vb
 couch,ThirdParty/Fab/TrashProps/Couch/Couch.fbx,fit,0,1
 delineator,ThirdParty/Quixel/Roadside/Delineator_vjxscee/Delineator_vjxscee.fbx,native,0,1
 drum,ThirdParty/Quixel/Junkyard/OilDrum_teraccgda/OilDrum_teraccgda.fbx;ThirdParty/Quixel/Junkyard/OilDrum_teufceuda/OilDrum_teufceuda.fbx;ThirdParty/Quixel/Junkyard/OilDrum_tewscfuda/OilDrum_tewscfuda.fbx;ThirdParty/Quixel/Warehouse/OilDrum_vijnbjz/OilDrum_vijnbjz.fbx,native,0,1
-dumpster,ThirdParty/Fab/TrashProps/Dumpster/Dumpster.fbx;ThirdParty/Dekogon/Construction_Package/Construction_Vol01/Prefabs/SM_Dumpster_01a.prefab,fit,0,1
+dumpster,ThirdParty/Fab/TrashProps/Dumpster/Dumpster.fbx;ThirdParty/Dekogon/Construction_Package/Construction_Vol01/Prefabs/SM_Dumpster_01a.prefab,fit,0,1,cap
 electricbox,ThirdParty/Quixel/Roadside/ElectricBox_ullibjd/ElectricBox_ullibjd.fbx;ThirdParty/Quixel/Warehouse/ElectricBox_ujyqaelga/ElectricBox_ujyqaelga.fbx,native,0,1
 fence,ThirdParty/CGHERO/MOUT/SM_Fencing_01/SM_Fencing_01.fbx,tile,0,1
 gascylinder,ThirdParty/Quixel/Junkyard/GasCylinder_tl1rbitfa/GasCylinder_tl1rbitfa.fbx;ThirdParty/Quixel/Junkyard/GasCylinder_vizqehw/GasCylinder_vizqehw.fbx,native,0,1
@@ -153,7 +153,7 @@ hubcounter,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Counter_01
 hubcountershort,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Counter_01d/SM_Counter_01d.fbx,native,0,1
 hubboothwall,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Lane_Divider_Door_01b/SM_Lane_Divider_Door_01b.fbx,native,0,1
 hubslatwall,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Gun_Display_02b/SM_Gun_Display_02b.fbx,stretch,0,1
-hubgunlocker,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Gun_Display_01a/SM_Gun_Display_01a.fbx;ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Gun_Display_01c/SM_Gun_Display_01c.fbx,native,0,1
+hubgunlocker,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Gun_Display_01a/SM_Gun_Display_01a.fbx;ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Gun_Display_01c/SM_Gun_Display_01c.fbx,native,0,1,cap
 hubdesk,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Metal_Desk_01a/SM_Metal_Desk_01a.fbx,native,0,1
 hubstool,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Metal_Stool_01a/SM_Metal_Stool_01a.fbx,native,0,1
 hubammocrate,ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Ammo_Crate_01a/SM_Ammo_Crate_01a.fbx;ThirdParty/Dekogon/MilitaryTrainingFacility/FiringRange/SM_Ammo_Crate_01b/SM_Ammo_Crate_01b.fbx,native,0,1

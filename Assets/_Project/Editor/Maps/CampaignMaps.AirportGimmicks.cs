@@ -37,13 +37,14 @@ public static partial class CampaignMaps
     {
         var glass = GreyboxBuilder.MaterialAt("Tower/TowerGlass.mat");
         // The scanner's arch (the pack's model, 1.4 m wide: two 15 cm panels, 1.1 m open between them, walked along z).
-        foreach (var (a, c) in new[] { (80.49f, 80.64f), (81.74f, 81.89f) }) Unseen(b.Box("검색대 문 옆판", a, c, 0f, 2.71f, 23.66f, 24.66f));
+        // Its panels, the glass and the gate's glass are thin tops nobody stands on (NoStand): no perch, and no way over.
+        foreach (var (a, c) in new[] { (80.49f, 80.64f), (81.74f, 81.89f) }) b.NoStand(Unseen(b.Box("검색대 문 옆판", a, c, 0f, 2.71f, 23.66f, 24.66f)));
         Unseen(b.Box("검색대 문 위", 80.49f, 81.89f, 2.25f, 2.71f, 23.66f, 24.66f));
         // Glass between the belt and the arch, from the x-ray machine's exit to the belt's head, up past a jump.
-        b.SeeThrough(b.Box("검색대 유리 칸막이", 80.34f, 80.44f, 0f, 3f, 22.86f, 28.6f, glass, "ArmorGlass"));
+        b.NoStand(b.SeeThrough(b.Box("검색대 유리 칸막이", 80.34f, 80.44f, 0f, 3f, 22.86f, 28.6f, glass, "ArmorGlass")));
         // Across the operators' strip at the machine's exit: the staff gate, glass over it and over the belt's exit.
-        b.SeeThrough(b.Box("직원 문 위 유리", 78f, 79.45f, 2.3f, 3f, 22.8f, 22.92f, glass, "ArmorGlass"));
-        b.SeeThrough(b.Box("벨트 출구 위 유리", 79.45f, 80.34f, 1.66f, 3f, 22.8f, 22.92f, glass, "ArmorGlass"));
+        b.NoStand(b.SeeThrough(b.Box("직원 문 위 유리", 78f, 79.45f, 2.3f, 3f, 22.8f, 22.92f, glass, "ArmorGlass")));
+        b.NoStand(b.SeeThrough(b.Box("벨트 출구 위 유리", 79.45f, 80.34f, 1.66f, 3f, 22.8f, 22.92f, glass, "ArmorGlass")));
         var gate = b.Blocker("직원 문 (직원 카드)", 78f, 79.45f, 0f, 2.3f, 22.8f, 22.92f, null, b.Metal, "Metal");
         var staffLock = b.AddSwitch<GimmickLock>(gate);
         var hall = new Bounds(new Vector3(96f, 2f, 3.5f), new Vector3(54f, 6f, 53f));

@@ -25,6 +25,11 @@ public sealed partial class GreyboxBuilder
     // The smallest walk region kept (m²), the width of a narrow top's walk strip (m) and of its slab (m).
     private const float TopRegionArea = .25f, NarrowStrip = .5f, SlabThickness = .05f;
 
+    // What the bake's voxels (a third of the agent's radius) may take off a strip besides the radius (m): a top that leaves
+    // exactly NarrowStrip had walk mesh or not by where the voxels fell (the rebuild of 11-14: of the toll plaza's three
+    // booths, 2 × 1.5 m, two had it and '요금소 0' had none). The strip a top needs and the slab it gets both allow for it.
+    private const float VoxelMargin = .35f;
+
     // Tops larger than this are places (roofs, decks, floors) with their own ways up, not props (m²).
     private const float PropArea = 60f;
 
@@ -83,7 +88,7 @@ public sealed partial class GreyboxBuilder
             float height = prop.Box.max.y - FloorUnder(prop);
             if (height < AgentHeight || height > ClimbMost || HasRoomToWalk(prop)) continue;
             Vector3 size = prop.Size, top = prop.Box.center + Vector3.up * (size.y * .5f - SlabThickness * .5f);
-            float minimum = 2f * AgentRadius + NarrowStrip;
+            float minimum = 2f * AgentRadius + NarrowStrip + VoxelMargin;
             sources.Add(new NavMeshBuildSource
             {
                 shape = NavMeshBuildSourceShape.Box,
@@ -109,6 +114,10 @@ public sealed partial class GreyboxBuilder
             if (prop.Moves || prop.NoStand || !IsProp(prop) || Headroom(prop) < PlayerHeight) continue;
             float floor = FloorUnder(prop), top = prop.Box.max.y, height = top - floor;
             if (height <= ArmHeight || height > ClimbMost) continue;
+            // A top a blocker may cover is the run's to decide: the walk mesh is baked without the blockers and each
+            // carves it where it stands, and in the editor every variant's blockers stand at once (the rebuild of 11-14
+            // named 'B4 계단 참 3', the landing under the 5th-4th floor's fallen flight, which stands in one run of three).
+            if (UnderBlocker(prop, top)) continue;
             Vector3 centre = new Vector3(prop.Box.center.x, top, prop.Box.center.z);
             bool walk = NavMesh.SamplePosition(centre + Vector3.up * .1f, out NavMeshHit hit, .8f, NavMesh.AllAreas)
                         && Mathf.Abs(hit.position.y - top) < .3f;
@@ -131,6 +140,15 @@ public sealed partial class GreyboxBuilder
         return stranded;
     }
 
+    // Whether a blocker that may stand (a variant's choice, a door) covers the middle of this top.
+    private bool UnderBlocker(Block prop, float top)
+    {
+        Vector3 over = new Vector3(prop.Box.center.x, top + .1f, prop.Box.center.z);
+        foreach (var other in blocks)
+            if (other != prop && other.Moves && other.Box.Contains(over)) return true;
+        return false;
+    }
+
     // The wide tops CheckProps found, for the closing window.
     private readonly List<string> wideTops = new List<string>();
 
@@ -148,7 +166,7 @@ public sealed partial class GreyboxBuilder
     // trimmed the agent's radius off every edge.
     private static bool HasRoomToWalk(Block prop)
     {
-        float x = prop.Size.x - 2f * AgentRadius, z = prop.Size.z - 2f * AgentRadius;
+        float x = prop.Size.x - 2f * AgentRadius - VoxelMargin, z = prop.Size.z - 2f * AgentRadius - VoxelMargin;
         return x >= NarrowStrip && z >= NarrowStrip && x * z >= 2f * TopRegionArea;
     }
 

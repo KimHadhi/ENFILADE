@@ -198,6 +198,20 @@ public sealed partial class GreyboxBuilder
         return model;
     }
 
+    /// <summary>
+    /// Nobody stands on this box's top (a thin panel, glass over a door, a pillar under an awning, a board on a wall): the
+    /// unseen ridge Cap lays over a prop nobody should stand on goes over it, so no climb finds a top there, and the
+    /// narrow tops' walk slabs and the small-prop check leave it alone (the rebuild of 11-14 named such tops as props no
+    /// zombie could reach: '정비 게시판 판', '검색대 문 옆판', '직원 문 위 유리', '출발 입구 차양 기둥'). Returns the box.
+    /// </summary>
+    public GameObject NoStand(GameObject box)
+    {
+        var block = BlockOf(box);
+        if (block == null) return box;
+        Cap(box, box.name, new Vector3(block.Box.center.x, block.Box.max.y, block.Box.center.z), block.Size * .5f, block.Yaw);
+        return box;
+    }
+
     // The table's solid column for a kind ("" when it has none).
     private static string ArtSolid(string kind)
         => GameTables.TryGetRow(ArtTable, kind, out var row) ? Text(row, "solid").ToLowerInvariant() : "";

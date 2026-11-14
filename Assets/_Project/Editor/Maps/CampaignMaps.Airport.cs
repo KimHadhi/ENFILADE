@@ -75,7 +75,8 @@ public static partial class CampaignMaps
         Car(b, 50f, 0f, 38f); Car(b, 47f, 0f, 52f);
         Bus(b, "공항 셔틀버스", 56f, 58.6f, 0f, 22f, 34f);
         b.Box("출발 입구 차양", 62f, 70f, 3.2f, 3.45f, 40f, 46.5f, b.Metal, solid: false);
-        foreach (float z in new[] { 40.3f, 46.2f }) b.Box("출발 입구 차양 기둥", 62.2f, 62.5f, 0f, 3.2f, z - .15f, z + .15f, b.Metal, "MetalPipe");
+        // The awning is seen only, so its pillars' tops would be perches under it: nobody stands on them (NoStand).
+        foreach (float z in new[] { 40.3f, 46.2f }) b.NoStand(b.Box("출발 입구 차양 기둥", 62.2f, 62.5f, 0f, 3.2f, z - .15f, z + .15f, b.Metal, "MetalPipe"));
         b.Box("공항 담장 북", 70f, 70.3f, 0f, 6f, 46.65f, 59f);
         b.Box("공항 담장 남", 70f, 70.3f, 0f, 6f, -59f, 6.45f);
         b.Spot("Departures", new Vector3(64f, 0f, 44.65f));

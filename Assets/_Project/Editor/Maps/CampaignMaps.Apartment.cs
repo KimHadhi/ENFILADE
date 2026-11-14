@@ -189,12 +189,16 @@ public static partial class CampaignMaps
 
     private const float Landing = 1.2f;
 
-    // The holes through a storey's floor down to the one below, two places each (AptVariants keeps one open a run).
+    // The holes through a storey's floor down to the one below, two places each (AptVariants keeps one open a run). Each
+    // leaves a way round it wide enough for a zombie (0.5 m round): the 3rd floor's first hole was in flat 2's front room
+    // between its sofa and the stairs' wall, 1.0 and 1.2 m either side, and cut the flat's back room off from its door
+    // (the rebuild of 11-14: 'B4 3층 바닥 6', the floor beside it, with no walk mesh); now it is in the back room's
+    // corner by the stairs.
     private static (float, float, float, float)[] FloorHoles(int f) => f switch
     {
         4 => new[] { (96.5f, 98.1f, 12f, 13.6f), (92f, 93.6f, -6f, -4.4f) },
         3 => new[] { (92f, 93.6f, 12f, 13.6f), (97f, 98.6f, -13f, -11.4f) },
-        2 => new[] { (96.6f, 98.2f, 4.5f, 6.1f), (92f, 93.6f, -13f, -11.4f) },
+        2 => new[] { (102.1f, AptIn1, CoreZ1 + Wall, CoreZ1 + Wall + 1.6f), (92f, 93.6f, -13f, -11.4f) },
         _ => new (float, float, float, float)[0]
     };
 

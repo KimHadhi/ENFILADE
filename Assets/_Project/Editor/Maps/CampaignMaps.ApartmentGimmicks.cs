@@ -138,7 +138,8 @@ public static partial class CampaignMaps
             for (int i = 0; i < holes.Length; i++)
             {
                 var (x0, x1, z0, z1) = holes[i];
-                b.Blocker($"B4 {f + 1}층 바닥 메움 {i + 1}", x0, x1, f * Storey - Wall, f * Storey, z0, z1, b.Choice(group, "메움 " + (i + 1)), b.Concrete, "Tile");
+                b.Blocker($"B4 {f + 1}층 바닥 메움 {i + 1}", x0, x1, f * Storey - Wall, f * Storey, z0, z1, b.Choice(group, "메움 " + (i + 1)), b.Concrete, "Tile",
+                    carves: false);
             }
         }
         // Of each pair of holes through the party walls one is open a run (front room or back room), north and south.

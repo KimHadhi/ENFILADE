@@ -67,15 +67,18 @@ public sealed partial class GreyboxBuilder
 
     /// <summary>
     /// A solid box that may not be there (in a variant's choice, or a door that opens): out of the walk-mesh bake, it
-    /// carves the mesh where it stands at run time, so zombies go round it and through once it is gone.
+    /// carves the mesh where it stands at run time, so zombies go round it and through once it is gone. A plug that fills
+    /// a hole in a floor (<paramref name="carves"/> false) carves nothing: the hole is out of the walk mesh either way,
+    /// and carving cut the floor round it too, so the strips beside the hole had no walk mesh even with the hole filled.
     /// </summary>
     public GameObject Blocker(string name, float x0, float x1, float y0, float y1, float z0, float z1, Transform under,
-        Material material = null, string surface = null)
+        Material material = null, string surface = null, bool carves = true)
     {
         var box = Box(name, x0, x1, y0, y1, z0, z1, material, surface, true, under);
         // It may go: no walk slab on it, and the small-prop check and the decals leave it alone.
         Moving(box);
         box.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+        if (!carves) return box;
         var obstacle = box.AddComponent<NavMeshObstacle>();
         obstacle.shape = NavMeshObstacleShape.Box;
         obstacle.center = Vector3.zero;
