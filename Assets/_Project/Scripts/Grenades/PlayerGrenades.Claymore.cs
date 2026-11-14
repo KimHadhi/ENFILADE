@@ -49,12 +49,12 @@ public sealed partial class PlayerGrenades
         return false;
     }
 
-    // Held: the spot and the fan it would guard.
+    // Held: the spot, the fan it would guard, and lines to the claymores it would go off with.
     private void Preview()
     {
         aiming = true;
         if (preview == null) preview = new ClaymorePreview(transform);
-        if (Spot(out Vector3 at, out Quaternion facing, out bool wall)) preview.Show(at, facing, wall);
+        if (Spot(out Vector3 at, out Quaternion facing, out bool wall)) preview.Show(at, facing, wall, Leaving());
         else preview.Hide();
     }
 
@@ -82,14 +82,14 @@ public sealed partial class PlayerGrenades
         Handed?.Invoke(armKind, HandPhase.Lower);
     }
 
-    // A new claymore out; past GrenadeRules claymoreMost the oldest comes back off (every PC keeps the same order).
+    // A new claymore out; past GrenadeRules claymoreMost the oldest comes back off (every PC keeps the same order). The
+    // ones gone off (alone or in a chain, ClaymoreChain) are out of the count.
     private void Keep(ClaymoreMine claymore)
     {
-        mines.RemoveAll(m => m == null);
+        mines.RemoveAll(m => m == null || !m.Live);
         if (claymore == null) return;
         mines.Add(claymore);
-        int most = Mathf.Max(1, Mathf.RoundToInt(Throwables.Rule("claymoreMost", 2f)));
-        while (mines.Count > most)
+        while (mines.Count > MostMines)
         {
             var oldest = mines[0];
             mines.RemoveAt(0);
@@ -97,12 +97,33 @@ public sealed partial class PlayerGrenades
         }
     }
 
-    // This PC's player's claymore fired: friends' copies fire where it did.
+    private static int MostMines => Mathf.Max(1, Mathf.RoundToInt(Throwables.Rule("claymoreMost", 2f)));
+
+    // The claymore setting another down would take back: the oldest, once claymoreMost are out.
+    private ClaymoreMine Leaving()
+    {
+        mines.RemoveAll(m => m == null || !m.Live);
+        return mines.Count >= MostMines ? mines[0] : null;
+    }
+
+    // This PC's player's claymore saw a zombie: it goes off, and with it every claymore set down near it, anyone's
+    // (ClaymoreChain); friends' copies go off as this PC says.
     private void OnMineFired(ClaymoreMine claymore)
     {
         if (claymore == null) return;
         mines.Remove(claymore);
-        Burst?.Invoke(Throwable.Claymore, claymore.Id, claymore.Heart);
+        var chain = ClaymoreChain.Gather(claymore);
+        if (chain.Count <= 1)
+        {
+            Vector3 at = claymore.Heart;
+            claymore.FireAlone();
+            Burst?.Invoke(Throwable.Claymore, claymore.Id, at);
+            return;
+        }
+        Vector3 middle = ClaymoreChain.Middle(chain);
+        ClaymoreChain.Name(chain, out ulong[] owners, out ushort[] ids);
+        ClaymoreChain.GoOff(chain, chain.Count, middle);
+        Chained?.Invoke(owners, ids, middle);
     }
 
     private void Lower()

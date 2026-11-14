@@ -54,7 +54,7 @@ public sealed partial class PlayerGrenades
         Throwables.Play("Throw", from, .7f, 1.5f, 20f);
     }
 
-    /// <summary>A friend set a claymore down there: this PC sets its own copy down (their PC fires it, ShowBurst).</summary>
+    /// <summary>A friend set a claymore down there: this PC sets its own copy down (their PC fires it: ShowBurst, ShowChain).</summary>
     internal void ShowMine(ushort id, Vector3 at, Quaternion facing, bool wall)
     {
         Keep(ClaymoreMine.Place(id, at, facing, wall, movement, false, null));
@@ -90,6 +90,19 @@ public sealed partial class PlayerGrenades
             Lower();
         }
         GrenadeBursts.Play(thrownKind, at, movement, false);
+    }
+
+    /// <summary>
+    /// A friend's claymore went off with others set down near it (their PC gathered them, ClaymoreChain): this PC's
+    /// copies of those, anyone's, go off together as one big blast, and this PC's player's own among them land their hits
+    /// here.
+    /// </summary>
+    internal void ShowChain(ulong[] owners, ushort[] ids, Vector3 middle)
+    {
+        if (owners == null || ids == null) return;
+        var chain = ClaymoreChain.Find(owners, ids);
+        // None left here: this PC set the same ones off a moment ago (one of its own saw a zombie too).
+        if (chain.Count > 0) ClaymoreChain.GoOff(chain, ids.Length, middle);
     }
 
     /// <summary>A friend took a thrown knife back: this PC's copy of it goes.</summary>

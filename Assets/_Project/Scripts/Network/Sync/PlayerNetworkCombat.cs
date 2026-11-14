@@ -238,6 +238,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             grenades.KnifeTaken += OnKnifeTaken;
             grenades.Handed += OnGrenadeHanded;
             grenades.Placed += OnMinePlaced;
+            grenades.Chained += OnMinesChained;
             knocks.Knocked += OnKnocked;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
@@ -305,6 +306,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken;
             grenades.Handed -= OnGrenadeHanded;
             grenades.Placed -= OnMinePlaced;
+            grenades.Chained -= OnMinesChained;
         }
         if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
@@ -406,6 +408,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnKnifeTaken(ushort id) => KnifeTakenRpc(id);
     private void OnGrenadeHanded(Throwable kind, PlayerGrenades.HandPhase phase) => GrenadeHandRpc((byte)kind, (byte)phase);
     private void OnMinePlaced(Throwable kind, ushort id, Vector3 at, Quaternion facing, bool wall) => MineRpc(id, at, facing, wall);
+    private void OnMinesChained(ulong[] owners, ushort[] ids, Vector3 middle) => MineChainRpc(owners, ids, middle);
     private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);

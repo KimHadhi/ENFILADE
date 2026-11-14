@@ -22,7 +22,7 @@ using UnityEngine;
 /// canister and dye don't cook; holding them only aims. The Support's claymore is set down, not thrown (the user: "던지는
 /// 느낌보단 설치로 가도 되긴 하겠다"): held, G shows the spot under the crosshair and the fan it will guard
 /// (ClaymorePreview); let go (or tapped), the hand puts it there (ClaymoreMine), and the oldest comes back off past
-/// GrenadeRules claymoreMost.
+/// GrenadeRules claymoreMost. Set down near others, anyone's, it goes off with them (ClaymoreChain).
 /// A few are carried (the table's carry: a fresh kit holds them all, every chapter and every class pick); ammo piles, the
 /// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
 /// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
@@ -50,6 +50,11 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     public event Action<Throwable, HandPhase> Handed;
     /// <summary>This PC's player set a claymore down: its number, where, how it is turned, and whether on a wall.</summary>
     public event Action<Throwable, ushort, Vector3, Quaternion, bool> Placed;
+    /// <summary>
+    /// This PC's player's claymore went off with others set down near it, anyone's (ClaymoreChain): each one's owner
+    /// (PlayerRoster.IdOf) and number, and the chain's middle. For friends' PCs.
+    /// </summary>
+    public event Action<ulong[], ushort[], Vector3> Chained;
 
     private PlayerMovement movement;
     private WeaponController weapon;

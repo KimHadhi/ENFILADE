@@ -225,3 +225,19 @@ claymoreBurst.speed,1.2,
 claymoreBurst.life,1.6,
 claymoreBurst.near,6,
 claymoreBurst.nearShare,0.45,
+claymoreChain.prefab,Frag Granade,"가까이 놓인 서포트 지뢰가 같이 터질 때(ClaymoreChain, 모든 PC) 묶음 가운데의 큰 폭발 하나. 지뢰마다 따로 터지는 모습(claymoreBurst) 대신. 2026-11-14 사용자(총관리자 전달): ""가까우면 같이 터져"". 세열과 같은 팩 수류탄이라 hide·center·fire·drop도 세열과 같다"
+claymoreChain.hide,1/Guns_granade_round_alpha,던진 수류탄 알갱이(세열과 같다)
+claymoreChain.center,1/Guns_granade_round_alpha/Burst,
+claymoreChain.fire,1/Guns_granade_round_alpha/Burst:1,
+claymoreChain.drop,1/Guns_granade_round_alpha/Flecks_Shiny_Additive|1/Guns_granade_round_alpha/FullRainbowFlare _nomipmap|1/Guns_granade_round_alpha/Flare|FuzzAdd|FuzzAlpha|Impact_Halo_add_soft|Radialsuper_Flare_add_soft|Flare_simple_add_soft|DiagonalFlare_ConalSpliff|Fire_Nova_Decal_dark_Alpha,뺄 부분: 세열과 같다(25~40m 퍼짐·후광·5초 남는 그을음처럼 화면을 덮거나 오래 남는 것)
+claymoreChain.scale,0.36,"크기 배율. 묶음의 폭발 범위가 아래 radius일 때의 크기: 지뢰 둘(8 m × 1.3 = 10.4 m)이면 ×1.6으로 불덩이 6~9 m, 셋(12.8 m)이면 ×2로 7~11 m"
+claymoreChain.radius,6.5,이 크기(scale)를 맞춘 폭발 범위(m). 묶음의 범위(지뢰 반경 × GrenadeRules claymoreChainRadius 배율)가 커지면 그만큼 커진다(GrenadePackFx)
+claymoreChain.speed,1.05,빠르기 배율
+claymoreChain.life,3.2,사라지는 때(초)
+claymoreChain.near,10,카메라가 이보다(m) 가까우면 작게 그린다(nearShare까지). 곁에서 터져도 화면을 덮지 않게
+claymoreChain.nearShare,0.4,가장 가까울 때의 크기 비율
+claymoreChain.sound,Frag,터질 때 소리(Grenades 묶음 키) 하나. 묶인 지뢰마다 따로 나지 않는다
+claymoreChain.loud,1,소리 크기
+claymoreChain.hearFull,10,이 거리(m)까지는 다 크게 들린다(세열은 8)
+claymoreChain.hearFar,200,이 거리(m)까지 들린다(세열은 150)
+claymoreChain.pitch,0.8,높낮이 배율. 낮을수록 크고 무거운 소리(세열은 1)

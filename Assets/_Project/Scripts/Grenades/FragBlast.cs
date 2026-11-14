@@ -13,6 +13,8 @@ using UnityEngine;
 /// the kill feed's frag, an Assault's adrenaline) through the zombies' own copies, as bullets do.
 /// The Support's claymore bursts the same way, but one way only (ClaymoreMine): what stands within its cone of the way it
 /// faces is hit (and what is right against it), its grit flies that way, and the bodies behind it stay where they lie.
+/// Claymores set down close together go off together (ClaymoreChain): each blasts its own way so, further and harder,
+/// and the chain shows one big blast at its middle instead of a look, a sound and a shake each (PlayChained).
 /// </summary>
 public static class FragBlast
 {
@@ -32,28 +34,49 @@ public static class FragBlast
     /// <paramref name="facing"/> (flat), and what is right against it (GrenadeRules claymoreClose); 360 is all round.
     /// </summary>
     public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine, Vector3 facing, float cone)
+        => Blast(at, info, thrower, mine, facing, cone, 1f, 1f, true);
+
+    /// <summary>
+    /// One of claymores going off together (ClaymoreChain): its own way and cone, its reach grown by
+    /// <paramref name="grow"/> and its hurt by <paramref name="harder"/> (never below its own), and no look, sound, shake
+    /// or bang of its own: the chain has one of each at its middle. Its grit still flies its own way.
+    /// </summary>
+    public static void PlayChained(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine, Vector3 facing, float cone,
+        float grow, float harder)
+        => Blast(at, info, thrower, mine, facing, cone, grow, harder, false);
+
+    // alone: with its own look, sound, shake and bang (a chained one leaves them to its chain).
+    private static void Blast(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine, Vector3 facing, float cone,
+        float grow, float harder, bool alone)
     {
         if (info == null) return;
-        float radius = Mathf.Max(.5f, info.Radius);
+        float radius = Mathf.Max(.5f, info.Radius) * Mathf.Max(1f, grow);
+        harder = Mathf.Max(1f, harder);
         Vector3 way = Vector3.ProjectOnPlane(facing, Vector3.up);
         // Below -1 is all round; a directional blast keeps its half angle's cosine.
         float spread = cone >= 360f || way.sqrMagnitude < 1e-4f ? -2f : Mathf.Cos(Mathf.Clamp(cone, 1f, 359f) * .5f * Mathf.Deg2Rad);
         way = way.sqrMagnitude > 1e-4f ? way.normalized : Vector3.forward;
         // Its look: the Realistic Gunslinger pack's frag, or for the claymore its shrapnel burst, toned in
         // Tables/PackFx.csv (fragBurst, claymoreBurst); the game's own drawn blast where the pack's is off or missing.
-        if (!GrenadePackFx.Play(spread > -1f ? "claymoreBurst" : "fragBurst", at, Quaternion.LookRotation(way), radius))
+        if (alone && !GrenadePackFx.Play(spread > -1f ? "claymoreBurst" : "fragBurst", at, Quaternion.LookRotation(way), radius))
             CanBlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
         FragChunk.Throw(at, Mathf.RoundToInt(Throwables.Rule("fragChunks", 12f)), way, spread);
-        Throwables.Play("Frag", at + Vector3.up * .3f, 1f, 8f, 150f);
-        Shake(at, radius);
-        // The bang carries: calm zombies near come to look (the host's hear it).
-        Noise.Make(at + Vector3.up * .5f, info.Noise > 0f ? info.Noise : 40f, thrower != null ? thrower.gameObject : null);
+        if (alone)
+        {
+            Throwables.Play("Frag", at + Vector3.up * .3f, 1f, 8f, 150f);
+            Shake(at, radius);
+            Bang(at, info, thrower);
+        }
         if (!mine) return;
         var source = thrower != null ? thrower.gameObject : null;
-        Hurt(at, info, radius, source, way, spread);
-        HurtPlayers(at, info, radius, thrower, source, way, spread);
-        FragAftermath.Begin(at, radius, info.Damage, source, way, spread);
+        Hurt(at, info, radius, harder, source, way, spread);
+        HurtPlayers(at, info, radius, harder, thrower, source, way, spread);
+        FragAftermath.Begin(at, radius, info.Damage * harder, source, way, spread);
     }
+
+    /// <summary>The bang carries: calm zombies near come to look (the host's hear it).</summary>
+    internal static void Bang(Vector3 at, ThrowableInfo info, PlayerMovement thrower)
+        => Noise.Make(at + Vector3.up * .5f, info.Noise > 0f ? info.Noise : 40f, thrower != null ? thrower.gameObject : null);
 
     /// <summary>
     /// In a blast's reach this way: all round (spread below -1), else within the cone whose half angle's cosine is
@@ -68,7 +91,7 @@ public static class FragBlast
     }
 
     // The view kicks back and shakes, the more the nearer; out past fragShake times its reach it isn't felt.
-    private static void Shake(Vector3 at, float radius)
+    internal static void Shake(Vector3 at, float radius)
     {
         var mine = PlayerRoster.Local;
         if (mine == null) return;
@@ -82,7 +105,7 @@ public static class FragBlast
         if (eye != null) CameraViewPunch.For(eye).OrNull()?.Punch(new Vector3(-2f * share, 0f, 0f), 0f, .6f * share);
     }
 
-    private static void Hurt(Vector3 at, ThrowableInfo info, float radius, GameObject source, Vector3 way, float spread)
+    private static void Hurt(Vector3 at, ThrowableInfo info, float radius, float harder, GameObject source, Vector3 way, float spread)
     {
         near.Clear();
         float most = radius * radius;
@@ -97,7 +120,7 @@ public static class FragBlast
             if (!Reaches(at, chest, way, spread) || Throwables.Covered(heart, chest)) continue;
             float distance = Vector3.Distance(at, enemy.transform.position);
             float share = 1f - Mathf.Clamp01(distance / radius);
-            float amount = Mathf.Lerp(info.Edge, info.Damage, share);
+            float amount = Mathf.Lerp(info.Edge, info.Damage, share) * harder;
             if (amount <= 0f) continue;
             Vector3 away = Vector3.ProjectOnPlane(enemy.transform.position - at, Vector3.up);
             away = away.sqrMagnitude > 1e-4f ? away.normalized : Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward;
@@ -146,8 +169,8 @@ public static class FragBlast
 
     // Friendly fire on: the players it reaches are hurt, the thrower too (at the rule's share) and thrown a little. A
     // friend's copy here passes the blow on to their own PC (PlayerDamageReceiver, FriendlyFire.PassOn).
-    private static void HurtPlayers(Vector3 at, ThrowableInfo info, float radius, PlayerMovement thrower, GameObject source,
-        Vector3 way, float spread)
+    private static void HurtPlayers(Vector3 at, ThrowableInfo info, float radius, float harder, PlayerMovement thrower,
+        GameObject source, Vector3 way, float spread)
     {
         if (!FriendlyFire.Enabled || info.PlayerDamage <= 0f) return;
         Vector3 heart = at + Vector3.up * .35f;
@@ -158,7 +181,7 @@ public static class FragBlast
             if (distance > radius || !Reaches(at, player.transform.position + Vector3.up, way, spread)
                 || Throwables.Covered(heart, player.transform.position + Vector3.up)) continue;
             float share = 1f - Mathf.Clamp01(distance / radius);
-            float amount = Mathf.Lerp(info.PlayerEdge, info.PlayerDamage, share);
+            float amount = Mathf.Lerp(info.PlayerEdge, info.PlayerDamage, share) * harder;
             if (amount <= 0f) continue;
             Vector3 away = Vector3.ProjectOnPlane(player.transform.position - at, Vector3.up);
             away = away.sqrMagnitude > 1e-4f ? away.normalized : -player.transform.forward;

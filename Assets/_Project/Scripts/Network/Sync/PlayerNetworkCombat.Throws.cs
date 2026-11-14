@@ -56,11 +56,20 @@ public sealed partial class PlayerNetworkCombat
     }
 
     // A Support set a claymore down (G): every other PC sets its copy down there; the Support's PC fires it and says
-    // where in GrenadeBurstRpc, so its copies fire with it.
+    // where in GrenadeBurstRpc (or, with others near it, MineChainRpc), so its copies fire with it.
     [Rpc(SendTo.NotMe)]
     private void MineRpc(ushort id, Vector3 at, Quaternion facing, bool wall)
     {
         if (grenades != null) grenades.ShowMine(id, at, facing, wall);
+    }
+
+    // Their claymore went off with others set down near it, anyone's (ClaymoreChain: their PC gathered them, each named
+    // by its owner and number): every other PC sets its copies of the same ones off together, and each one's hits land
+    // on its own owner's PC.
+    [Rpc(SendTo.NotMe)]
+    private void MineChainRpc(ulong[] owners, ushort[] ids, Vector3 middle)
+    {
+        if (grenades != null) grenades.ShowChain(owners, ids, middle);
     }
 
     // A knock on a wall by this player: every other PC hears it there, and the host's zombies come to look.

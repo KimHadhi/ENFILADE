@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -10,13 +11,20 @@ using UnityEngine;
 /// trip beam shows the fan's middle); armed, it fires when a zombie comes into its fan (claymoreCone degrees wide,
 /// claymoreTrigger metres, no wall between): the frag's blast and gore, one way only (FragBlast's directional form, its
 /// row's radius, damage and edge), and a brute stays on its feet. A Support keeps claymoreMost out at once: setting
-/// another takes the oldest back (it tips over and goes, no bang).
+/// another takes the oldest back (it tips over and goes, no bang). Set down close to others, anyone's (GrenadeRules
+/// claymoreChain), it goes off with them, further and harder, as one big blast (ClaymoreChain; the user, 2026-11-14:
+/// "가까우면 같이 터져"); held to set one down, lines show to the ones it would go off with (ClaymorePreview).
 /// On every PC: the owner's PC watches for zombies (its own copies of them) and fires it, its hits going as the owner's
 /// through the copies as the frag's do; the other PCs show it and fire their copy where the owner's PC says.
 /// </summary>
 public sealed class ClaymoreMine : MonoBehaviour
 {
     private const float RetireSeconds = .45f, LampSize = .022f;
+    // Every claymore down on this PC, anyone's (this PC's player's, or the copies of friends'), in the order set down.
+    private static readonly List<ClaymoreMine> placed = new List<ClaymoreMine>();
+
+    /// <summary>Every claymore down on this PC, anyone's: what a chain looks through (ClaymoreChain).</summary>
+    public static IReadOnlyList<ClaymoreMine> Placed => placed;
 
     /// <summary>Its number among its owner's throwables (the network's).</summary>
     public ushort Id { get; private set; }
@@ -27,6 +35,8 @@ public sealed class ClaymoreMine : MonoBehaviour
     public Vector3 Heart => transform.position + transform.forward * (OnWall ? .09f : .05f) + transform.up * (OnWall ? 0f : .05f);
     /// <summary>The way it fires (flat).</summary>
     public Vector3 Facing => transform.forward;
+    /// <summary>Still down and able to go off: not fired, not being taken back.</summary>
+    public bool Live => !gone && !retiring;
 
     private ThrowableInfo info;
     private Action<ClaymoreMine> fired;
@@ -54,8 +64,14 @@ public sealed class ClaymoreMine : MonoBehaviour
         self.fired = onFire;
         self.info = Throwables.Of(Throwable.Claymore);
         self.Build();
+        placed.Add(self);
         return self;
     }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void Clear() => placed.Clear();
+
+    private void OnDestroy() => placed.Remove(this);
 
     // The charge, lying phone up on a floor or with its back to a wall, sitting on the surface whatever the model's own
     // pivot (its bounds measured here); the phone's light; the trip beam, off until it is armed.
@@ -207,22 +223,44 @@ public sealed class ClaymoreMine : MonoBehaviour
         return false;
     }
 
-    // The owner's: it fires, its hits this PC's to land; the others are told where (PlayerGrenades → the network).
+    // The owner's saw a zombie: its player's PlayerGrenades sets it off, alone or with the claymores near it
+    // (ClaymoreChain), and tells the other PCs.
     private void Fire()
     {
         if (gone) return;
-        gone = true;
-        Vector3 at = Heart;
-        Throwables.NoteThrower(Owner, Throwable.Claymore);
-        FragBlast.Play(at, info, Owner, true, Facing, Cone);
         fired?.Invoke(this);
+        // Never left watching once it has fired (with nobody to set it off, it goes alone).
+        if (!gone) FireAlone();
+    }
+
+    /// <summary>The owner's goes off alone, its hits this PC's to land (the others are told by PlayerGrenades).</summary>
+    public void FireAlone()
+    {
+        if (gone) return;
+        gone = true;
+        Throwables.NoteThrower(Owner, Throwable.Claymore);
+        FragBlast.Play(Heart, info, Owner, mine, Facing, Cone);
+        Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// Goes off as one of a chain, on this PC (ClaymoreChain): its own blast, its reach and its hurt grown, its look left
+    /// to the chain's one; its hits land here if this PC's player set it down.
+    /// </summary>
+    public void GoOff(float grow, float harder)
+    {
+        if (gone || retiring) return;
+        gone = true;
+        Throwables.NoteThrower(Owner, Throwable.Claymore);
+        FragBlast.PlayChained(Heart, info, Owner, mine, Facing, Cone, grow, harder);
         Destroy(gameObject);
     }
 }
 
 /// <summary>
 /// Where a held claymore would go (PlayerGrenades, while G is held): a ring on the spot and the fan it would guard,
-/// lying flat at the charge's height (GrenadeRules claymoreCone wide, claymoreTrigger long), in the HUD's colours.
+/// lying flat at the charge's height (GrenadeRules claymoreCone wide, claymoreTrigger long), in the HUD's colours; and a
+/// line to each claymore it would go off with (ClaymoreChain), so it is known before it goes down.
 /// </summary>
 internal sealed class ClaymorePreview
 {
@@ -230,6 +268,10 @@ internal sealed class ClaymorePreview
     private readonly Transform owner;
     private LineRenderer fan;
     private readonly ThrowArc ring;
+    // The lines to the claymores it would go off with, those claymores, and where each is reached from.
+    private readonly List<LineRenderer> links = new List<LineRenderer>();
+    private readonly List<ClaymoreMine> bound = new List<ClaymoreMine>();
+    private readonly List<Vector3> reachedFrom = new List<Vector3>();
 
     public ClaymorePreview(Transform owner)
     {
@@ -237,9 +279,13 @@ internal sealed class ClaymorePreview
         ring = new ThrowArc(owner);
     }
 
-    public void Show(Vector3 at, Quaternion facing, bool wall)
+    /// <summary>
+    /// Shows it set down at <paramref name="at"/>; <paramref name="leaving"/>: the claymore setting it down takes back
+    /// (no line goes to it).
+    /// </summary>
+    public void Show(Vector3 at, Quaternion facing, bool wall, ClaymoreMine leaving)
     {
-        if (fan == null) fan = MakeLine();
+        if (fan == null) fan = MakeLine("Claymore Fan");
         fan.enabled = true;
         Vector3 forward = facing * Vector3.forward, up = facing * Vector3.up;
         Vector3 heart = at + forward * (wall ? .09f : .05f) + up * (wall ? 0f : .05f);
@@ -261,17 +307,39 @@ internal sealed class ClaymorePreview
         // The spot itself, on a floor (a ring on a wall would lie on the ground below it).
         if (wall) ring.HideRing();
         else ring.Ring(at, up, .12f, KitStyle.With(KitStyle.Ice, .9f));
+        Link(heart, leaving);
+    }
+
+    // A line from where it would go to each claymore it would go off with, and on from those to the ones they bring in
+    // (each from the one it is near): set down here, it is bound into their chain.
+    private void Link(Vector3 heart, ClaymoreMine leaving)
+    {
+        ClaymoreChain.Reach(heart, leaving, bound, reachedFrom);
+        while (links.Count < bound.Count) links.Add(MakeLine("Claymore Link"));
+        for (int i = 0; i < links.Count; i++)
+        {
+            var line = links[i];
+            bool on = i < bound.Count;
+            if (line.enabled != on) line.enabled = on;
+            if (!on) continue;
+            line.positionCount = 2;
+            line.SetPosition(0, reachedFrom[i] + Vector3.up * .03f);
+            line.SetPosition(1, bound[i].Heart + Vector3.up * .03f);
+            line.startColor = line.endColor = KitStyle.With(KitStyle.Ice, .95f);
+        }
     }
 
     public void Hide()
     {
         if (fan != null && fan.enabled) fan.enabled = false;
+        foreach (var line in links)
+            if (line != null && line.enabled) line.enabled = false;
         ring.Hide();
     }
 
-    private LineRenderer MakeLine()
+    private LineRenderer MakeLine(string name)
     {
-        var host = new GameObject("Claymore Fan") { hideFlags = HideFlags.DontSave };
+        var host = new GameObject(name) { hideFlags = HideFlags.DontSave };
         host.transform.SetParent(owner, false);
         var line = host.AddComponent<LineRenderer>();
         line.useWorldSpace = true;
