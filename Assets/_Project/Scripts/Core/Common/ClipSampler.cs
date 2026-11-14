@@ -18,12 +18,16 @@ using UnityEngine.Playables;
 /// </summary>
 public static class ClipSampler
 {
+#if !UNITY_EDITOR
     // The bare copy sampled last in a build, the Animator added to it and its graph, kept for the next sample of it (a
-    // clip read frame by frame, a gun's contacts) and let go when another model is sampled.
+    // clip read frame by frame, a gun's contacts) and let go when another model is sampled. A build's alone: the editor
+    // samples with SampleAnimation and keeps nothing, so its compile leaves them out (there copyRoot was only ever set,
+    // never read, and the compiler warned of it).
     private static GameObject copyRoot;
     private static Animator copyAnimator;
     private static PlayableGraph copyGraph;
     private static AnimationPlayableOutput copyOutput;
+#endif
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession() => Release();
@@ -67,13 +71,15 @@ public static class ClipSampler
 #endif
     }
 
-    /// <summary>Lets go of the graph kept for the last bare copy sampled (and of the Animator added to it).</summary>
+    /// <summary>Lets go of the graph kept for the last bare copy sampled (and of the Animator added to it); the editor keeps none.</summary>
     public static void Release()
     {
+#if !UNITY_EDITOR
         if (copyGraph.IsValid()) copyGraph.Destroy();
         if (copyAnimator != null) Object.Destroy(copyAnimator);
         copyRoot = null;
         copyAnimator = null;
+#endif
     }
 
     private static void Evaluate(PlayableGraph graph, AnimationPlayableOutput output, AnimationClip clip, float time)

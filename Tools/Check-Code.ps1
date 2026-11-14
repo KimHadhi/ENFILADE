@@ -22,6 +22,8 @@ if (!$built -or $built.LastWriteTimeUtc -lt $newest) {
     if ($LASTEXITCODE -ne 0) { throw 'The code tools did not build.' }
     $built = Get-Built
 }
-$arguments = if ($args.Count -gt 0) { $args } else { @('check', '--player') }
+# @() keeps a single word an array: the if hands a one-item $args back as a bare string, and splatting a string passes
+# its letters (warn -> w a r n), which the tool answered with "unknown command".
+$arguments = @(if ($args.Count -gt 0) { $args } else { 'check', '--player' })
 & dotnet $built.FullName @arguments
 exit $LASTEXITCODE
