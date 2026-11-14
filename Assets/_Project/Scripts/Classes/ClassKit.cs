@@ -399,7 +399,7 @@ public sealed partial class ClassKit : MonoBehaviour
         if (weapon == null || receiver == null) return;
         weapon.ShotFired += OnShot;
         // An Assault's rounds pinning zombies down (제압 사격: ClassKit.Assault).
-        weapon.ShotFired += OnFire;
+        weapon.ShotFired += WhenFired;
         weapon.ReloadCompleted += OnReloaded;
         receiver.HitResolved += OnHurt;
         wired = true;
@@ -409,7 +409,7 @@ public sealed partial class ClassKit : MonoBehaviour
     {
         if (!wired) return;
         wired = false;
-        if (weapon != null) { weapon.ShotFired -= OnShot; weapon.ShotFired -= OnFire; weapon.ReloadCompleted -= OnReloaded; }
+        if (weapon != null) { weapon.ShotFired -= OnShot; weapon.ShotFired -= WhenFired; weapon.ReloadCompleted -= OnReloaded; }
         if (receiver != null) receiver.HitResolved -= OnHurt;
     }
 

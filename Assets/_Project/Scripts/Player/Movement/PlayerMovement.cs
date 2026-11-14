@@ -273,7 +273,16 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public InputAction DiveAction => Input.diveAction;
 
 
-    private void Awake() => EnsureInitialized();
+    private void Awake()
+    {
+        // Nothing here takes input by message: the keys are read off their actions (KeyBindings, PlayerWeaponInput). On
+        // Send Messages, PlayerInput still called "On" + every action's name on each part of this object, so a part's own
+        // method of that name was handed an InputValue it never took and threw MissingMethodException on every press
+        // (PlayerFace's OnShove once, ClassKit's OnFire for 제압 사격 on every click from 0.9.42 to 0.9.80). C# events
+        // with no one listening send nothing, so no part's name can collide with an action again.
+        if (TryGetComponent(out PlayerInput playerInput)) playerInput.notificationBehavior = PlayerNotifications.InvokeCSharpEvents;
+        EnsureInitialized();
+    }
     private void OnEnable()
     {
         if (!Application.isPlaying) return;

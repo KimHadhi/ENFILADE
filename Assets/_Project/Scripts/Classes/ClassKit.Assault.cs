@@ -122,7 +122,10 @@ public sealed partial class ClassKit
     // up slower a moment and cowers (ZombieEffects.Suppress, the zombie session's door: called here on the shooter's PC
     // once, it reaches the host and the other PCs by itself); a brute or a named one half as much. Rounds keep it up; a
     // round that passes far off does nothing.
-    private void OnFire(WeaponShot shot)
+    // Named When..., never On<action>: an On + input-action name on the player's object is what PlayerInput's Send
+    // Messages called with an InputValue (this one as OnFire threw MissingMethodException on every click, 0.9.42-0.9.80;
+    // PlayerMovement now turns those messages off).
+    private void WhenFired(WeaponShot shot)
     {
         if (movement == null || !movement.IsLocal || !PlayerClass.Is(PlayerClass.Assault) || !PlayerPerks.Has(PlayerPerks.AssaultSuppress)) return;
         float seconds = PlayerClass.Ability(AssaultRow, "suppressSeconds", 1.5f);
