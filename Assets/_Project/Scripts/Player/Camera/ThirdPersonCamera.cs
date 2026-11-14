@@ -12,8 +12,10 @@ using MovementState = PlayerMovement.MovementState;
 ///   at once and lets it out again slowly. A short move keeps it out a moment (leastOut) and moves one after another keep
 ///   it out (linger), so it never flickers in and out. Aiming down the sights brings it straight back.
 /// - The execution cinematic (on by default): through an execution or a stealth kill the camera leaves the body and shows
-///   the two from outside: low from the side as it begins (from in front of the victim for a stealth kill, so the sneak up
-///   behind it shows), then close in on the victim the moment the blow lands, as the kill's short hit stop holds time.
+///   the two from outside: low from the side as it begins (low behind the player and to that side for a stealth kill, so
+///   the sneak up shows over their shoulder), then close in on the victim from the same side the moment the blow lands,
+///   as the kill's short hit stop holds time. Every shot keeps to one side of the line between the two, so on screen
+///   the player never seems to turn round.
 ///   When it ends the view cuts to over the shoulder and glides back into the eyes (user: "나중에 처형할 때 시네마틱
 ///   카메라 연출 효과 넣기").
 /// Out and back in, the camera goes beside the head first and only then behind it, so it never passes through the head.
@@ -68,10 +70,10 @@ public sealed class ThirdPersonCamera : MonoBehaviour
         public float lookHeight = 1.1f;
         [Tooltip("Before the blow: how fast it circles round toward the player's front (degrees per second).")]
         public float orbitSpeed = 28f;
-        [Min(.5f), Tooltip("A stealth kill: how far in front of the victim (m).")]
-        public float frontDistance = 2.2f;
-        [Tooltip("A stealth kill: how far to the side of straight in front (m).")]
-        public float frontSide = .9f;
+        [Min(.5f), Tooltip("A stealth kill: how far from the two, behind the player and to one side (m).")]
+        public float rearDistance = 2.4f;
+        [Range(0f, 90f), Tooltip("A stealth kill: how far round from straight behind the player it starts (degrees); it drifts on toward the side at orbitSpeed, never past it.")]
+        public float rearAngle = 35f;
         [Min(.3f), Tooltip("As the blow lands: how close to the victim's upper body (m).")]
         public float closeDistance = 1.2f;
         [Tooltip("As the blow lands: how far it moves in while the blow plays out (m).")]
@@ -367,10 +369,11 @@ public sealed class ThirdPersonCamera : MonoBehaviour
         }
         else
         {
-            // Close on the victim from the other side, a little back toward the player, moving in as the blow plays out.
+            // Close on the victim from the shot's own side of the line between the two, a little back toward the player,
+            // moving in as the blow plays out. The other side would flip the two on screen at the cut (LeadIn).
             float t = Mathf.Clamp01((filmTime - landedAt) / .6f);
             focus = victimFocus;
-            position = focus - landedRight * (filmSide * (cinematic.closeDistance - cinematic.closePush * Mathf.SmoothStep(0f, 1f, t)))
+            position = focus + landedRight * (filmSide * (cinematic.closeDistance - cinematic.closePush * Mathf.SmoothStep(0f, 1f, t)))
                 - landedAlong * cinematic.closeBack + Vector3.up * cinematic.closeLift;
         }
         position = clearance.Resolve(focus, position, cinematic.wallRadius, Walls, transform);
@@ -380,12 +383,20 @@ public sealed class ThirdPersonCamera : MonoBehaviour
         return true;
     }
 
-    // Before the blow: low and to one side of the two, circling slowly toward the player's front; for a stealth kill,
-    // in front of the unaware victim and a little to one side, so the player rising behind it shows.
+    // Before the blow, on one side of the line between the two (side), as every shot of the cinematic is: crossing it
+    // flips them on screen, and the player seems to turn round. A stealth kill had stood in front of the victim looking
+    // back at the player, the reverse of the eyes' view, and at every takedown the character seemed to turn round (the
+    // user, 2026-11-14: "맨날 암살할 때마다 캐릭터가 뒤를 돌길래 애니메이션 문제인 줄 알았는데"). An execution: low and
+    // square to the side of the two, circling slowly toward the player's front. A stealth kill: low behind the player
+    // and to the side, drifting toward the side but never past it, so the sneak up shows over the player's shoulder.
     private Vector3 LeadIn(Vector3 middle, Vector3 along, Vector3 right, int side, float time)
     {
         if (stealth)
-            return VictimAt() + along * cinematic.frontDistance + right * (side * cinematic.frontSide) + Vector3.up * cinematic.lowHeight;
+        {
+            float round = Mathf.Min(90f, cinematic.rearAngle + cinematic.orbitSpeed * time);
+            Vector3 behind = Quaternion.AngleAxis(-side * round, Vector3.up) * -along;
+            return middle + behind * cinematic.rearDistance + Vector3.up * cinematic.lowHeight;
+        }
         Vector3 outward = Quaternion.AngleAxis(-side * cinematic.orbitSpeed * time, Vector3.up) * (right * side);
         return middle + outward * cinematic.sideDistance + Vector3.up * cinematic.lowHeight;
     }
