@@ -42,6 +42,8 @@ public sealed partial class ZombieBody
     private float yieldSpeed = .75f;
     [SerializeField, Min(.05f), Tooltip("Giving way, what is left of its getting up is played within this (s).")]
     private float yieldTime = .25f;
+    [SerializeField, Min(-1), Tooltip("The calm pose a zombie laid asleep takes (ZombieLooks calmPoses index; -1 none): a map's sleeping crowd.")]
+    private int sleepPose = 4;
 
     private enum CueKind : byte { Notice, Rouse, GetUp }
     // A calm pose: None (this zombie has none), Pending (dressed, waiting for its first calm), Held, Done (got up).
@@ -62,10 +64,28 @@ public sealed partial class ZombieBody
     private ZombieMood shownMood = ZombieMood.Awake;
 
     /// <summary>
-    /// Set right after it is made, before it dresses (ConsolePoseTest, /poses): it takes ZombieLooks.calmPoses[index]
-    /// rather than its seeded pick (-1). On this PC only: other PCs pick by the network id as ever.
+    /// Set right after it is made, before it dresses (ConsolePoseTest, /poses; a map's sleeping crowd, CampaignHorde): it
+    /// takes ZombieLooks.calmPoses[index] rather than its seeded pick (-1). The host's goes to the other PCs with the
+    /// zombie (EnemyNetwork), so everyone sees it lie the same.
     /// </summary>
     internal int ForcedPose { get; set; } = -1;
+
+    /// <summary>ForcedPose for one that never lies low: it stands calm (a walker on its round, ZombieMind.Patrol).</summary>
+    internal const int NoPose = -2;
+
+    /// <summary>
+    /// The calm pose a map's sleeping crowd lies in (Tables/ZombieClips sleepPose, an index into ZombieLooks.calmPoses:
+    /// the pack's face-down twitch); -1 when the table names none or the list hasn't that many, and they then stand calm.
+    /// </summary>
+    public static int SleepPose
+    {
+        get
+        {
+            int index = Mathf.RoundToInt(GameTables.Number(ClipsTable, ClipsRow, "sleepPose", -1f));
+            var looks = ZombieLooks.Instance;
+            return looks != null && index >= 0 && index < looks.calmPoses.Length && looks.calmPoses[index].loop != null ? index : -1;
+        }
+    }
 
     /// <summary>The walking pace and step length now: the awake walk's, or the search walk's while searching.</summary>
     private float StepSpeed => Mathf.Lerp(walkSpeed, searchWalkSpeed, searchShare);
@@ -111,9 +131,17 @@ public sealed partial class ZombieBody
     private bool ChoosePose(ZombieLooks looks, out ZombieLooks.CalmPose chosen)
     {
         var poses = looks.calmPoses;
+        // A walker on its round (NoPose) stands: seated, it would slide along its round.
+        if (ForcedPose == NoPose) { chosen = default; return false; }
         if (ForcedPose >= 0 && poses != null && ForcedPose < poses.Length && poses[ForcedPose].loop != null)
         {
             chosen = poses[ForcedPose];
+            return true;
+        }
+        // Laid asleep with no pose given (the host's own, before its word on the pose could matter): the sleeping one.
+        if (mind != null && mind.Asleep && poses != null && sleepPose >= 0 && sleepPose < poses.Length && poses[sleepPose].loop != null)
+        {
+            chosen = poses[sleepPose];
             return true;
         }
         return ZombieLooks.PickPose(poses, clipSeed, PoseSlot, poseShare, out chosen);

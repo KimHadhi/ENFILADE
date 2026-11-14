@@ -15,13 +15,17 @@ public sealed partial class ZombieMind
     private void Frame()
     {
         ComeTo();
+        // Out of calm it is awake for good (Sleep): no clip lays it back down. A round's walk is off while anything else
+        // has its feet (a look, a chase), and picks up at its next stop once it is calm again (Round).
+        if (asleep && Mood != ZombieMood.Calm) asleep = false;
+        if (roundWalking && Mood != ZombieMood.Calm) roundWalking = false;
         float dt = Time.deltaTime;
         // Held (a takedown, a grab), shoved or down, it turns to nothing: an alert one can be taken from behind now, and
         // turning in the executor's hands would pull the takedown apart.
         if (melee == null || !melee.IsStunned)
         {
             if (Mood == ZombieMood.Alert) TurnTo(stimulus, dt);
-            else if (Mood == ZombieMood.Calm) LookRound(dt);
+            else if (Mood == ZombieMood.Calm) { if (!Round()) LookRound(dt); }
             else if (Mood == ZombieMood.Searching && arrived) Sweep(dt);
         }
         if (Mood == ZombieMood.Rousing || Mood == ZombieMood.Rising)
@@ -118,7 +122,8 @@ public sealed partial class ZombieMind
 
         if (suspicion >= 1f) { Wake(focus); return; }
         // Sure enough to stop and stare: a glance becomes a real look, and one that made someone out forgets the stone.
-        if (suspicion >= alertAt)
+        // Asleep it takes more to stir it (sleepStirAt); stirred, it gets up and looks round, awake from then on.
+        if (suspicion >= StirAt)
         {
             glanceUntil = 0f;
             if (seen != null) lured = false;
@@ -201,6 +206,7 @@ public sealed partial class ZombieMind
     // The player it notices fastest now, how fast (suspicion a second), and whether they stand right before its eyes.
     private PlayerMovement Look(out float best, out bool touching)
     {
+        if (Asleep) return SleepLook(out best, out touching);
         long began = ZombieCost.Begin();
         best = 0f;
         touching = false;
@@ -238,6 +244,37 @@ public sealed partial class ZombieMind
         ZombieCost.End(ZombieCost.Part.Sight, began);
         return found;
     }
+
+    // Asleep, its eyes are shut: only a flashlight turned on it from near enough, with nothing between, stirs it, faster
+    // the nearer; and anyone upright right beside it bumps it awake (touching), while crouched they pass.
+    private PlayerMovement SleepLook(out float best, out bool touching)
+    {
+        best = 0f;
+        touching = false;
+        PlayerMovement found = null;
+        Vector3 eye = Eye();
+        foreach (var player in PlayerRoster.All)
+        {
+            if (!Alive(player) || CannotSee(player)) continue;
+            Vector3 toward = player.transform.position - transform.position;
+            float distance = toward.magnitude;
+            if (distance <= sleepTouchRange && !player.IsCrouchStance)
+            {
+                best = float.MaxValue;
+                touching = true;
+                return player;
+            }
+            if (distance > sleepLightRange || !Lit(player, toward) || Shown(player, eye) <= 0f) continue;
+            float rate = sleepLightRate * Mathf.Lerp(1f, .4f, distance / Mathf.Max(.01f, sleepLightRange));
+            if (rate <= best) continue;
+            best = rate;
+            found = player;
+        }
+        return found;
+    }
+
+    // The suspicion at which it stops to look: asleep it takes more (sleepStirAt), and once stirred it is up for good.
+    private float StirAt => Asleep ? Mathf.Max(alertAt, sleepStirAt) : alertAt;
 
     // How well it sees at this angle off its nose (degrees): fully straight ahead, a little less toward the edge of its
     // full view, then quickly down to sideShare, which holds across the edge of its sight and fades out at its very end.

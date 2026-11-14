@@ -99,6 +99,8 @@ public static class ResultsAwards
             case "money": return entry.Earned;
             case "downs": return entry.Downs;
             case "deaths": return entry.Deaths;
+            // The room's, the same for each: a tie gives it to everyone.
+            case "unseen": return MatchResults.RoomUnseen;
         }
         return 0d;
     }

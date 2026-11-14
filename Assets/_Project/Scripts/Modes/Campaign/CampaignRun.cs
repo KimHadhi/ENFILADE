@@ -264,6 +264,16 @@ public sealed partial class CampaignRun : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// The spot called <paramref name="name"/> is <paramref name="place"/> from now on, on this PC (a map gimmick choosing
+    /// it: the landing zone the smoke was lit at, GimmickLanding). Every step at that spot follows it.
+    /// </summary>
+    public static void Respot(string name, Transform place)
+    {
+        if (active == null || string.IsNullOrEmpty(name) || place == null) return;
+        active.spotsByName[name] = place;
+    }
+
     /// <summary>The run is at this step now.</summary>
     public static bool IsRunning(string stepId)
         => active != null && !active.finished && active.Current != null && active.IndexOf(stepId) == active.step;

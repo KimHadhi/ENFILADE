@@ -25,6 +25,8 @@ public sealed partial class CampaignRun
             if (pressed) Press(button);
         }
         else if (able && fuel.Any && fuel.CarriedBy(mine) >= 0) text = CanPrompt(mine, pressed);
+        // The map's gimmicks: a TV to switch on, a key, a breaker, a door to unlock (MapGimmicks).
+        else if (MapGimmicks.Prompt(mine, able, pressed) is string gimmick) text = gimmick;
         else if (door >= 0)
         {
             text = doors[door].Closed ? Texts.Get("campaign.prompt.door.open") : Texts.Get("campaign.prompt.door.close");
@@ -210,9 +212,30 @@ public sealed partial class CampaignRun
     }
 
     // A guest pressed a step's button: it counts if that step is still ahead with nothing but passable steps before it.
+    // A gimmick's step counts only while it is the step under way (FinishStep).
     private void ReceivePress(ulong sender, FastBufferReader reader)
     {
         reader.ReadValueSafe(out byte pressed);
-        if (!finished && PassableUpTo(pressed) && steps[pressed].Kind == CampaignStepKind.Press) AdvanceTo(pressed + 1);
+        if (finished || pressed >= steps.Count) return;
+        if (steps[pressed].Kind == CampaignStepKind.Gimmick) { if (pressed == step) AdvanceTo(pressed + 1); return; }
+        if (PassableUpTo(pressed) && steps[pressed].Kind == CampaignStepKind.Press) AdvanceTo(pressed + 1);
+    }
+
+    /// <summary>
+    /// The acting PC: a map gimmick has done what step <paramref name="stepId"/> (a Gimmick step) waits for, the smoke lit
+    /// at a landing zone. The host moves on if it is the step under way; a guest tells the host, after the gimmick's own
+    /// word (MapGimmicks), so the host has laid the gimmick out first.
+    /// </summary>
+    public static void FinishStep(string stepId)
+    {
+        if (active == null || active.finished) return;
+        int index = active.IndexOf(stepId);
+        if (index < 0 || index != active.step || active.steps[index].Kind != CampaignStepKind.Gimmick) return;
+        if (active.IsHost) { active.AdvanceTo(index + 1); return; }
+        var network = active.network;
+        if (network == null || !network.IsListening || network.CustomMessagingManager == null) return;
+        using var writer = new FastBufferWriter(sizeof(byte), Allocator.Temp);
+        writer.WriteValueSafe((byte)index);
+        network.CustomMessagingManager.SendNamedMessage(PressMessage, NetworkManager.ServerClientId, writer);
     }
 }

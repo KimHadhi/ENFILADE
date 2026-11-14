@@ -17,7 +17,12 @@ public enum CampaignStepKind
     /// <summary>The step's count of fuel cans poured at the spot (CampaignCans).</summary>
     Collect,
     /// <summary>Everyone still alive gets to the spot, and the chapter is done.</summary>
-    Escape
+    Escape,
+    /// <summary>
+    /// A map gimmick finishes it (MapGimmicks: the smoke lit at the landing zone the team chose, GimmickLanding). It has no
+    /// [F] of its own; its spot is only where the guide points.
+    /// </summary>
+    Gimmick
 }
 
 /// <summary>
@@ -35,6 +40,14 @@ public sealed class CampaignStep
     public const string TableName = "CampaignSteps";
 
     public string Id, Spot, Title, Description, Done, Prompt, Music;
+    /// <summary>
+    /// Plan B's words (the map gimmick card "들키면 바뀌는 목표"): what the objective says once the stretch is loud, if it
+    /// has its own (the master key's door to be smashed in instead). Empty: the same words loud or quiet.
+    /// </summary>
+    public string LoudTitle = "", LoudDescription = "";
+
+    /// <summary>It has words of its own for a loud stretch.</summary>
+    public bool HasLoudWords => !string.IsNullOrEmpty(LoudTitle);
     public CampaignStepKind Kind;
     public float Radius, Seconds, Rate;
     public int Horde, Order, Count, PeakBosses;
@@ -60,7 +73,8 @@ public sealed class CampaignStep
                 Prompt = Texts.Cell(row.Text("prompt")), Order = (int)row.Number("order", 0f),
                 Radius = row.Number("radius", 4f), Seconds = row.Number("seconds", 0f),
                 Horde = (int)row.Number("horde", 0f), Rate = row.Number("rate", 0f), Count = (int)row.Number("count", 1f),
-                Music = row.Text("music"), PeakBosses = (int)row.Number("peakBoss", 0f), Manned = row.Number("manned", 0f) > 0f
+                Music = row.Text("music"), PeakBosses = (int)row.Number("peakBoss", 0f), Manned = row.Number("manned", 0f) > 0f,
+                LoudTitle = Texts.Cell(row.Text("loudTitle")), LoudDescription = Texts.Cell(row.Text("loudDescription"))
             });
         }
         steps.Sort((a, b) => a.Order.CompareTo(b.Order));

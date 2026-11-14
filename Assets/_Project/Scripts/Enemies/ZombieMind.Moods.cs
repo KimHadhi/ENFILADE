@@ -61,6 +61,49 @@ public sealed partial class ZombieMind
     }
 
     /// <summary>
+    /// Calms it asleep where it lies (a map's sleeping crowd, SleeperNest; the user's pick of the map gimmicks, 2026-11-14:
+    /// "잠든 무리"): its eyes are shut, so it sees nothing but a flashlight turned on its face, it hears at sleepHearShare,
+    /// and anyone upright bumping into it wakes it, crouched passing it by. It can be taken from any side. Once it stirs
+    /// it is awake for good: no clip lays it back down.
+    /// </summary>
+    public void Sleep()
+    {
+        if (IsCopy) return;
+        Calm();
+        asleep = true;
+    }
+
+    // Laid asleep and still calm: once anything moves it out of calm it stays awake (Frame clears it; on a copy, ShowMind).
+    private bool asleep;
+
+    /// <summary>On another PC: the host's zombie lies asleep (EnemyNetwork), so a takedown here may come from any side.</summary>
+    internal void ShowAsleep()
+    {
+        if (IsCopy) asleep = true;
+    }
+
+    /// <summary>Asleep where it lies (Sleep), on the host or alone.</summary>
+    public bool Asleep => asleep && Mood == ZombieMood.Calm;
+
+    /// <summary>
+    /// The host: every zombie not yet awake standing inside <paramref name="box"/> wakes, after <paramref name="who"/> (or
+    /// the nearest player), with no call needed: what woke them woke them all (a door smashed in, a lift's chime, a metal
+    /// detector's beep: the floor or the hall it filled). Returns how many woke.
+    /// </summary>
+    public static int WakeWithin(Bounds box, PlayerMovement who)
+    {
+        int woken = 0;
+        for (int i = minds.Count - 1; i >= 0; i--)
+        {
+            var mind = minds[i];
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || !box.Contains(mind.transform.position)) continue;
+            mind.Wake(who, true, false);
+            woken++;
+        }
+        return woken;
+    }
+
+    /// <summary>
     /// Placed calm (CampaignHorde), it stands looking this way (degrees about up) and looks round from there.
     /// </summary>
     internal void FaceWhenCalm(float yaw)
@@ -258,6 +301,7 @@ public sealed partial class ZombieMind
     {
         if (!IsCopy) return;
         Mood = (ZombieMood)mood;
+        if (Mood != ZombieMood.Calm) asleep = false;
         shownStep = step;
         shownWatch = watch;
         // The host's zombie began drawing breath to call: the same tell here, timed from now.

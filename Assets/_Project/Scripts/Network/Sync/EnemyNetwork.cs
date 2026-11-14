@@ -44,6 +44,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private readonly NetworkVariable<byte> kind = new NetworkVariable<byte>();
     // Its health on top of its kind's (ZombieType.Toughness, the tower's floors): a copy's health bar fills to the same maximum.
     private readonly NetworkVariable<float> toughness = new NetworkVariable<float>(1f);
+    // The calm pose the host gave it (ZombieBody.ForcedPose) plus one, 0 for its own seeded pick, and AsleepBit when it lies
+    // asleep (ZombieMind.Sleep): a map's sleeping crowd lies the same on every PC and may be taken from any side there.
+    private readonly NetworkVariable<byte> pose = new NetworkVariable<byte>();
+    private const byte AsleepBit = 0x80, Standing = 0x7F;
     private ZombieType type;
     private ZombieGrip grip;
     private EnemyHealth enemy;
@@ -146,6 +150,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
             condition.Value = ReadCondition();
             if (type != null) kind.Value = (byte)type.Kind;
             if (type != null) toughness.Value = type.Toughness;
+            if (body != null && body.ForcedPose >= 0 && body.ForcedPose < Standing - 1)
+                pose.Value = (byte)((body.ForcedPose + 1) | (mind != null && mind.Asleep ? AsleepBit : 0));
+            else if (body != null && body.ForcedPose == ZombieBody.NoPose) pose.Value = Standing;
             motion = GetComponent<NetworkTransform>();
             if (motion != null)
             {
@@ -157,6 +164,11 @@ public sealed class EnemyNetwork : NetworkBehaviour
         }
         if (type != null) type.Show((ZombieKind)kind.Value);
         if (type != null) type.ShowToughness(toughness.Value);
+        // Before its body dresses (ZombieBody.Start), so it takes the host's pose from its first frame.
+        int given = pose.Value & ~AsleepBit;
+        if (given == Standing && body != null) body.ForcedPose = ZombieBody.NoPose;
+        else if (given > 0 && body != null) body.ForcedPose = given - 1;
+        if ((pose.Value & AsleepBit) != 0 && mind != null) mind.ShowAsleep();
         kind.OnValueChanged += OnKindChanged;
         toughness.OnValueChanged += OnToughnessChanged;
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;

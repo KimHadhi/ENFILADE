@@ -583,6 +583,7 @@ public sealed partial class GreyboxBuilder
         string ladders = LadderFit.FitAll(parkour);
         AddWaves();
         if (AddsCampaign) AddCampaign();
+        AddGimmicks();
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(Folder).Replace('\\', '/'), Path.GetFileName(Folder));
         string dataFolder = Folder + "/" + sceneName;
         if (!AssetDatabase.IsValidFolder(dataFolder)) AssetDatabase.CreateFolder(Folder, sceneName);
@@ -646,6 +647,6 @@ public sealed partial class GreyboxBuilder
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
              (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) +
-             SurfaceReport() + DressReport() + DecalReport() + SunlessReport() + PackReport());
+             SurfaceReport() + DressReport() + DecalReport() + SunlessReport() + PackReport() + GimmickReport());
     }
 }

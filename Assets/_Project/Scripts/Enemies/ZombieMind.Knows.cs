@@ -49,7 +49,8 @@ public sealed partial class ZombieMind
 
     private float BusyView => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatViewShare : PoseKind == CalmPoseKind.Doze ? dozeViewShare : 1f;
 
-    private float BusyHear => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatHearShare : PoseKind == CalmPoseKind.Doze ? dozeHearShare : 1f;
+    private float BusyHear => Asleep ? sleepHearShare
+        : !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatHearShare : PoseKind == CalmPoseKind.Doze ? dozeHearShare : 1f;
 
     private float BusyNotice => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatNoticeShare : PoseKind == CalmPoseKind.Doze ? dozeNoticeShare : 1f;
 
@@ -62,6 +63,8 @@ public sealed partial class ZombieMind
     public bool CanBeTakenDownFrom(Vector3 at)
     {
         if (!Unaware) return false;
+        // Asleep on the floor it has no back to come at: from any side (the prone takedown kneels beside it).
+        if (Asleep) return true;
         Vector3 toward = Vector3.ProjectOnPlane(at - transform.position, Vector3.up);
         return toward.sqrMagnitude < 1e-4f || Vector3.Angle(-transform.forward, toward) <= takedownAngle;
     }

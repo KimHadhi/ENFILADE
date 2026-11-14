@@ -12,13 +12,20 @@ public readonly struct NoiseEvent
     /// but it never tells them who threw it nor wakes them by itself.
     /// </summary>
     public readonly bool Lure;
+    /// <summary>
+    /// A lure that goes on and on (a map's TV, a radio, an airport's announcement: MapGimmicks' GimmickLure): every calm
+    /// zombie that hears it walks over and stays round it, not only the nearest one, so the way it drew them from is clear.
+    /// Only with Lure.
+    /// </summary>
+    public readonly bool Gather;
 
-    public NoiseEvent(Vector3 point, float radius, GameObject source, bool lure = false)
+    public NoiseEvent(Vector3 point, float radius, GameObject source, bool lure = false, bool gather = false)
     {
         Point = point;
         Radius = radius;
         Source = source;
         Lure = lure;
+        Gather = lure && gather;
     }
 }
 
@@ -31,9 +38,9 @@ public static class Noise
 {
     public static event Action<NoiseEvent> Made;
 
-    public static void Make(Vector3 point, float radius, GameObject source, bool lure = false)
+    public static void Make(Vector3 point, float radius, GameObject source, bool lure = false, bool gather = false)
     {
-        if (radius > 0f) Made?.Invoke(new NoiseEvent(point, radius, source, lure));
+        if (radius > 0f) Made?.Invoke(new NoiseEvent(point, radius, source, lure, gather));
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

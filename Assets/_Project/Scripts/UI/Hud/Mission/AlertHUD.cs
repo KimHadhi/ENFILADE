@@ -60,6 +60,10 @@ public sealed class AlertHUD : MonoBehaviour
         public RectTransform root, pointer;
         public CanvasGroup group;
         public HazardGraphic hazard;
+        // A place to find (Find) wears the HUD's diamond in ice instead of the hazard square.
+        public DiamondGraphic diamond;
+        public UITriangle arrow;
+        public bool find;
         public TextMeshProUGUI distance;
         public Transform where;
         public Func<bool> gone;
@@ -95,7 +99,15 @@ public sealed class AlertHUD : MonoBehaviour
     /// <summary>Something happened to the player themself.</summary>
     public static void Self(string what) => Show(Kind.Self, what, null, KitStyle.Ice, 0f, null);
 
-    private static void Show(Kind kind, string what, Transform where, Color tint, float markSeconds, Func<bool> gone)
+    /// <summary>
+    /// A place worth going to, not a danger (a map gimmick's clue read: where the key lies, MapGimmicks): the band comes in
+    /// from its side in ice, and a mark stays on it for <paramref name="markSeconds"/>, the HUD's diamond rather than the
+    /// hazard square, or until <paramref name="gone"/> says it was taken.
+    /// </summary>
+    public static void Find(string what, Transform where, float markSeconds, Func<bool> gone = null)
+        => Show(Kind.Team, what, where, KitStyle.Ice, markSeconds, gone, true);
+
+    private static void Show(Kind kind, string what, Transform where, Color tint, float markSeconds, Func<bool> gone, bool find = false)
     {
         if (!Application.isPlaying || string.IsNullOrEmpty(what)) return;
         if (instance == null)
@@ -104,7 +116,7 @@ public sealed class AlertHUD : MonoBehaviour
             instance = host.AddComponent<AlertHUD>();
         }
         instance.Add(kind, what, where, tint);
-        if (where != null && markSeconds > 0f) instance.AddMark(where, markSeconds, gone);
+        if (where != null && markSeconds > 0f) instance.AddMark(where, markSeconds, gone, find);
     }
 
     private void Awake()
@@ -155,7 +167,7 @@ public sealed class AlertHUD : MonoBehaviour
         spare.Push(band);
     }
 
-    private void AddMark(Transform where, float seconds, Func<bool> gone)
+    private void AddMark(Transform where, float seconds, Func<bool> gone, bool find)
     {
         Mark mark = null;
         foreach (var live in marks) if (live.where == where) { mark = live; break; }
@@ -166,6 +178,10 @@ public sealed class AlertHUD : MonoBehaviour
             marks.Add(mark);
         }
         mark.where = where; mark.gone = gone; mark.life = seconds; mark.age = 0f;
+        mark.find = find;
+        mark.hazard.gameObject.SetActive(!find);
+        mark.diamond.gameObject.SetActive(find);
+        mark.arrow.color = find ? KitStyle.Ice : KitStyle.Accent;
         // It floats over the head, however tall the thing stands.
         mark.height = (where.TryGetComponent(out CapsuleCollider capsule) ? capsule.height * where.lossyScale.y : 1.8f) + .35f;
         mark.root.gameObject.SetActive(true);
@@ -359,7 +375,10 @@ public sealed class AlertHUD : MonoBehaviour
         mark.hazard.Stripe = 6f;
         mark.pointer = FeelUI.Rect("Pointer", mark.root);
         mark.pointer.sizeDelta = new Vector2(13f, 20f);
-        var arrow = mark.pointer.gameObject.AddComponent<UITriangle>();
+        mark.diamond = HudShapes.Make<DiamondGraphic>("Diamond", mark.root, KitStyle.Ice);
+        mark.diamond.rectTransform.sizeDelta = Vector2.one * (Glyph - 8f);
+        mark.diamond.gameObject.SetActive(false);
+        var arrow = mark.arrow = mark.pointer.gameObject.AddComponent<UITriangle>();
         arrow.raycastTarget = false;
         arrow.color = KitStyle.Accent;
         // Pointing along its own right, so turning it to the way out is one angle.

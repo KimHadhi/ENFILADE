@@ -190,6 +190,69 @@ internal sealed class CampaignHorde
         return Free(ground, players, near, apart) && Roomy(ground) && !Barricade.Shelters(ground);
     }
 
+    /// <summary>
+    /// A map's sleeping crowd (SleeperNest, the map gimmick card "잠든 무리"): its count laid asleep on the floor round it,
+    /// each its own way, none nearer than <paramref name="near"/> to a player. They lie in the sleeping pose on every PC
+    /// (ZombieBody.SleepPose, shared by EnemyNetwork) and count with the calm ones. Returns how many were laid.
+    /// </summary>
+    public int PlaceSleepers(SleeperNest nest, List<PlayerMovement> players, float near)
+    {
+        if (prefab == null || nest == null) return 0;
+        var container = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Campaign");
+        int pose = ZombieBody.SleepPose, made = 0;
+        Vector3 middle = nest.transform.position;
+        for (int tries = 0; made < nest.Count && tries < nest.Count * 8; tries++)
+        {
+            Vector2 aside = Random.insideUnitCircle * nest.Radius;
+            if (!Placeable(middle + new Vector3(aside.x, 0f, aside.y), players, near, SleepApart, out Vector3 ground)) continue;
+            // Laid on the nest's own floor: the walk mesh of the storey above or below is not this one.
+            if (Mathf.Abs(ground.y - middle.y) > 1.2f) continue;
+            var enemy = Object.Instantiate(prefab, ground, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), container);
+            if (enemy.TryGetComponent(out ZombieMind mind)) mind.Sleep();
+            if (pose >= 0 && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = pose;
+            EnemyNetwork.SpawnInRoom(enemy);
+            enemy.Died += OnDied;
+            alive.Add(enemy);
+            calmTaken.Add(ground);
+            made++;
+        }
+        return made;
+    }
+
+    // Two of a sleeping crowd lie no nearer each other than this (m): bodies side by side, not on top of each other.
+    private const float SleepApart = 1.1f;
+
+    /// <summary>
+    /// A map's round (PatrolRoute): its count of walkers, each set calm at a stop of its own spread round the stops (none
+    /// nearer than <paramref name="near"/> to a player) and walking on from there (ZombieMind.Patrol). They count with the
+    /// calm ones. Returns how many were set.
+    /// </summary>
+    public int PlaceWalkers(PatrolRoute route, List<PlayerMovement> players, float near)
+    {
+        if (prefab == null || route == null) return 0;
+        var stops = route.Stops;
+        if (stops.Length < 2) return 0;
+        var container = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Campaign");
+        int made = 0;
+        for (int i = 0; i < route.Count; i++)
+        {
+            int start = (i * stops.Length / Mathf.Max(1, route.Count) + Random.Range(0, stops.Length)) % stops.Length;
+            if (!Placeable(stops[start], players, near, CalmApart, out Vector3 ground)) continue;
+            Vector3 ahead = stops[(start + 1) % stops.Length] - ground;
+            float yaw = new Vector2(ahead.x, ahead.z).sqrMagnitude > .01f ? Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg : 0f;
+            var enemy = Object.Instantiate(prefab, ground, Quaternion.Euler(0f, yaw, 0f), container);
+            if (enemy.TryGetComponent(out ZombieMind mind)) mind.Patrol(stops, start);
+            // Walking, it never sits down in a pose: the round would leave it sliding along seated.
+            if (enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = ZombieBody.NoPose;
+            EnemyNetwork.SpawnInRoom(enemy);
+            enemy.Died += OnDied;
+            alive.Add(enemy);
+            calmTaken.Add(ground);
+            made++;
+        }
+        return made;
+    }
+
     private bool CalmOne(Vector3 at, float yaw, Transform container)
     {
         var enemy = Object.Instantiate(prefab, at, Quaternion.Euler(0f, yaw, 0f), container);

@@ -52,12 +52,25 @@ public sealed partial class CampaignRun
         {
             var ahead = steps[i];
             if (ahead.Kind == CampaignStepKind.Hold || ahead.Kind == CampaignStepKind.Escape) break;
+            PlaceMapCrowds(ahead.Id);
             var spot = SpotOf(ahead.Spot);
             if (spot == null) continue;
             calmMade += horde.PlaceCalm(Mathf.RoundToInt(ahead.Horde * calmShare), from, spot.position, players, calmNear);
             from = spot.position;
             if (ahead.Kind == CampaignStepKind.Checkpoint) break;
         }
+    }
+
+    // A map's sleeping crowds (SleeperNest) and walkers on their rounds (PatrolRoute) on this step's stretch, set with the
+    // calm ones ahead; half as near to the players as the calm may stand, as they are indoors where the way passes close.
+    private void PlaceMapCrowds(string stepId)
+    {
+        foreach (var nest in SleeperNest.All)
+            if (nest != null && string.Equals(nest.Step, stepId, System.StringComparison.OrdinalIgnoreCase))
+                calmMade += horde.PlaceSleepers(nest, players, calmNear * .5f);
+        foreach (var route in PatrolRoute.All)
+            if (route != null && string.Equals(route.Step, stepId, System.StringComparison.OrdinalIgnoreCase))
+                calmMade += horde.PlaceWalkers(route, players, calmNear * .5f);
     }
 
     // Every PC: the quiet ended because they were noticed. A hold or the escape beginning says so itself.
@@ -67,6 +80,8 @@ public sealed partial class CampaignRun
         var now = Current;
         bool noticed = wasQuiet && !finished && now != null && now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape;
         wasQuiet = quiet;
+        // A step with words of its own for a loud stretch (plan B: CampaignSteps loudTitle) says them from now on.
+        if (now != null && now.HasLoudWords) ShowObjective(false);
         if (noticed) AlertHUD.Danger(Texts.Get("campaign.alert.noticed"));
         else if (quiet && lull && !finished) AlertHUD.Self(Texts.Get("campaign.alert.lull"));
     }

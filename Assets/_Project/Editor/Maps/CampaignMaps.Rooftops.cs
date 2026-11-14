@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,8 +11,11 @@ public static partial class CampaignMaps
         var b = GreyboxBuilder.Begin("Ch1_Rooftops", "1장 옥상 탈출");
         if (b == null) return;
 
-        // The ground and the edge of the map.
-        b.Box("땅", -30f, 240f, -.5f, 0f, -50f, 50f, b.Road, "Asphalt");
+        // The ground and the edge of the map, open over the block of flats' cellar (B4, CampaignMaps.Apartment).
+        b.Box("땅 서", -30f, AptIn0, -.5f, 0f, -50f, 50f, b.Road, "Asphalt");
+        b.Box("땅 동", PartyX, 240f, -.5f, 0f, -50f, 50f, b.Road, "Asphalt");
+        b.Box("땅 남", AptIn0, PartyX, -.5f, 0f, -50f, AptS0, b.Road, "Asphalt");
+        b.Box("땅 북", AptIn0, PartyX, -.5f, 0f, -1.5f, 50f, b.Road, "Asphalt");
         b.Box("맵 끝 서", -30f, -29f, 0f, 8f, -50f, 50f);
         b.Box("맵 끝 동", 239f, 240f, 0f, 8f, -50f, 50f);
         b.Box("맵 끝 남", -30f, 240f, 0f, 8f, -50f, -49f);
@@ -47,41 +51,47 @@ public static partial class CampaignMaps
         b.EnemySpawn("길1", new Vector3(55f, 0f, -1f));
         b.EnemySpawn("길1 남쪽", new Vector3(55f, 0f, -25f));
 
-        // 3. Too far to jump to the next roof: the swing bar over the gap. A ladder brings a faller back up.
+        // 3. Too far to jump to the next roof: the swing bar over the gap, in line with the hole the war blew in the block of
+        // flats' 5th and 6th floors (z 2..10), which it swings them into. A ladder brings a faller back up.
         b.Box("B3", 63f, 80f, 0f, 13f, -10f, 10f);
         Parapets(b, "B3", 63f, 80f, -10f, 10f, 13f);
         b.Box("B3 위성안테나", 66f, 68f, 13f, 14.2f, 6f, 8f, b.Metal, "Metal");
-        b.Bar("틈 위 철봉", new Vector3(83.5f, 15.9f, 0f), 90f, 3f);
-        b.Box("철봉 기둥 1", 83.4f, 83.6f, 0f, 16.1f, -1.9f, -1.7f, b.Metal, solid: false);
-        b.Box("철봉 기둥 2", 83.4f, 83.6f, 0f, 16.1f, 1.7f, 1.9f, b.Metal, solid: false);
+        b.Bar("틈 위 철봉", new Vector3(83.5f, 15.9f, 6f), 90f, 3f);
+        b.Box("철봉 기둥 1", 83.4f, 83.6f, 0f, 16.1f, 4.1f, 4.3f, b.Metal, solid: false);
+        b.Box("철봉 기둥 2", 83.4f, 83.6f, 0f, 16.1f, 7.7f, 7.9f, b.Metal, solid: false);
         b.Ladder("틈에 떨어지면 올라오는 사다리", new Vector3(80.15f, 0f, 6f), 90f);
         b.EnemySpawn("B3 옥상 1", new Vector3(70f, 13f, -6f));
         b.EnemySpawn("B3 옥상 2", new Vector3(75f, 13f, 7f));
 
-        // 4. Down through the block of flats (user, 2026-11-12: inside the flats instead of down the ladder, a fight
-        // indoors): the roof's stair hut, the top floor, a flat whose floor gave way, the east stairs to the ground floor
-        // and its back door into the alley (Apartment). The annex now stands above the roof, so the old way down outside
-        // (annex roof, lorry) is gone; jumping the 12 m into the alley hurts.
-        Apartment(b);
-        Parapets(b, "B4", 87f, 104f, -10f, 10f, 12f);
-        b.Box("B4 난간 동", 103.7f, 104f, 12f, 12f + ParapetHeight, -10f, 4f);
+        // 4. Down through the block of flats (user, 2026-11-12: inside the flats, a fight indoors; 2026-11-14, the map
+        // gimmicks: "1장 아파트 실내가 좋았던 게 암살 플레이하기 좋아서", "아파트 좀 넓게 해도 돼"): six storeys of flats to
+        // sneak through, in at the 5th floor's fallen corner, down to the ground floor's chained stair door and the cellar's
+        // switchboard, out of the back door into the alley (ApartmentBlock).
+        ApartmentBlock(b);
+        b.Spot("B4Entry", new Vector3(89.2f, 12f, 6f));
+        b.Spot("B4Lobby", new Vector3(101.5f, 0f, -.2f));
         b.Box("B4 별관", 104f, 112f, 0f, 13.5f, 4f, 50f);
         b.Dress(b.Box("골목 트럭", 108f, 114f, 0f, 3f, 0f, 3f, b.Metal, "MetalBox"), "van");
-        b.Spot("B4Roof", new Vector3(95f, 12f, 0f));
-        b.EnemySpawn("B4 옥상 1", new Vector3(95f, 12f, -6f));
-        b.EnemySpawn("B4 옥상 2", new Vector3(100f, 12f, 6f));
+        foreach (int f in new[] { 0, 2, 4 })
+        {
+            b.EnemySpawn($"B4 {f + 1}층 복도 서", new Vector3(88.4f, f * Storey, 0f));
+            b.EnemySpawn($"B4 {f + 1}층 복도 동", new Vector3(99.2f, f * Storey, 0f));
+        }
+        b.EnemySpawn("B4 3층 2호", new Vector3(97.5f, 6f, 13f));
+        b.EnemySpawn("B4 2층 4호", new Vector3(90f, 3f, -12f));
+        b.EnemySpawn("B4 옥상", new Vector3(93f, AptRoof, -4f));
 
-        // 5. The alley, closed in on every side but the shutter. Its button starts the hold (Ch1.06): the alarm wails and
-        // the shutter rises with the hold, so the way on (and the street's horde) opens when it ends.
+        // 5. The alley, closed in on every side but the shutter. The cellar's switchboard powers it and starts the hold
+        // (Ch1.05, the map gimmick card "셔터는 지하 차단기로"): the alarm wails and the shutter rises with the hold, so the
+        // way on (and the street's horde) opens when it ends.
         b.Box("B5 골목 남쪽 건물", 104f, 137f, 0f, 10f, -50f, -4f);
         b.Box("B6 골목 북쪽 건물", 112f, 137f, 0f, 9f, 4f, 50f);
         b.Box("B7 창고 남", 137f, 141f, 0f, 17f, -50f, -2.5f);
         b.Box("B7 창고 북", 137f, 141f, 0f, 17f, 2.5f, 50f);
         b.Box("B7 셔터 위 벽", 137f, 141f, 4.5f, 17f, -2.5f, 2.5f);
         b.Gate("셔터 (버티는 동안 올라감, 경보)", 136.7f, 137f, 0f, 4.6f, -2.6f, 2.6f, "Ch1.06", new Vector3(0f, 4.4f, 0f), b.Metal, "Metal");
-        b.Dress(b.Box("셔터 버튼", 134f, 134.4f, 1f, 1.6f, -4f, -3.85f, b.Marker, solid: false), "controlboxFit");
-        b.Spot("Alley", new Vector3(110f, 0f, -1f));
-        b.Spot("ShutterButton", new Vector3(134.2f, 0f, -3f));
+        // The shutter's control box: dead until the block of flats' cellar switchboard is thrown (Ch1.05).
+        b.Dress(b.Box("셔터 제어함", 134f, 134.4f, 1f, 1.6f, -4f, -3.85f, b.Marker, solid: false), "controlboxFit");
         b.Spot("AlleyHold", new Vector3(124f, 0f, 0f));
         b.Dress(b.Box("골목 쓰레기통 1", 118f, 120f, 0f, 1.4f, -3.9f, -2.6f, b.Metal, "MetalBox"), "dumpster");
         b.Dress(b.Box("골목 쓰레기통 2", 126f, 128f, 0f, 1.4f, 2.6f, 3.9f, b.Metal, "MetalBox"), "dumpster");
@@ -138,6 +148,8 @@ public static partial class CampaignMaps
         b.Box("경사로 층계참 4 (지붕)", 183f, 186f, 13.7f, 14f, -13f, -9f);
         b.Box("헬기 착륙장 표시", 186f, 196f, 14f, 14.03f, -4f, 4f, b.Marker, solid: false);
         b.Spot("Helipad", new Vector3(191f, 14f, 0f));
+        b.Spot("SiteRoof", new Vector3(190f, 14f, 2f));
+        SiteGimmicks(b);
         b.Dress(b.Box("무전기", 187.6f, 188.4f, 14f, 15.1f, 4.6f, 5.2f, b.Marker), "controlboxFit");
         foreach (var (x, z) in new[] { (175f, 9f), (176.2f, 8.6f), (184f, -10.5f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
         b.Spot("Radio", new Vector3(188f, 14f, 4f));
@@ -172,138 +184,9 @@ public static partial class CampaignMaps
         b.Pickup(new Vector3(191f, 14f, -2f));
         DressRooftops(b);
         b.Finish("1장 옥상 탈출을 지었어요 (Scenes/Campaign/Ch1_Rooftops). 메인 메뉴의 맵 목록에도 나와요.\n" +
-                 "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉 → 아파트 옥상 계단실 → 4층 → 꺼진 바닥 → 동쪽 계단 → 1층 뒷문으로 골목 → 셔터 → 편의점 → 공사장 컨테이너·비계·사다리 → 헬기 착륙장.");
-    }
-
-    // Chapter 1's block of flats B4, x 87-104, z -10..10: floors at 0, 3, 6 and 9 m under the roof (12), and on each a
-    // corridor along x (z -1.2..1.2) with flats north and south of it. The roof's stair hut (west stairs) reaches the top
-    // floor only. There the way on is the south-east flat, whose floor gave way: a 3 m drop (under
-    // Ability.safeFallDistance, so it doesn't hurt) into the same flat a floor down, then along the corridor to the east
-    // stairs, down to the ground floor and out of its back door into the alley. The second floor's door is boarded up.
-    // Rooms wear what the packs have (sofa, TV, lockers, a fridge, tables, boxes, rubbish); a few dim lamps; zombies
-    // wait on every floor, and the alley hold's horde can come out of the back door.
-    private static void Apartment(GreyboxBuilder b)
-    {
-        const float X0 = 87f, X1 = 104f, Z0 = -10f, Z1 = 10f, In0 = X0 + Wall, In1 = X1 - Wall, S0 = Z0 + Wall, N1 = Z1 - Wall;
-        // Stair cores north of the corridor: west (roof to the top floor), east (third floor to the ground floor). Each
-        // has a landing by the corridor, two flights side by side and a half landing at the far end.
-        const float CoreZ = 1.5f, Landing = 1.2f, Near = CoreZ + Landing, Far = N1 - Landing;
-        const float WestTo = 91.3f, EastFrom = 99.7f;
-        const float HoleX0 = 100f, HoleX1 = 102.4f, HoleZ0 = -7.5f, HoleZ1 = -5f;
-        const float Ceiling = 2.7f;
-
-        // Outer walls; the back door through the east wall on the ground floor.
-        b.Box("B4 서벽", X0, In0, 0f, 12f, Z0, Z1);
-        b.Box("B4 남벽", In0, In1, 0f, 12f, Z0, S0);
-        b.Box("B4 북벽", In0, In1, 0f, 12f, N1, Z1);
-        b.Box("B4 동벽 남", In1, X1, 0f, 12f, Z0, -1.1f);
-        b.Box("B4 동벽 북", In1, X1, 0f, 12f, 1.1f, Z1);
-        b.Box("B4 뒷문 위", In1, X1, 2.3f, 12f, -1.1f, 1.1f);
-
-        // Floors: the roof open over the west stairs, the top floor over the broken flat, the third and second floors over
-        // the east stairs.
-        Slab(b, "B4 지붕", 12f, In0, In1, S0, N1, In0, WestTo, Near, N1, null, null);
-        Slab(b, "B4 4층 바닥", 9f, In0, In1, S0, N1, HoleX0, HoleX1, HoleZ0, HoleZ1, b.Concrete, "Tile");
-        Slab(b, "B4 3층 바닥", 6f, In0, In1, S0, N1, EastFrom, In1, Near, N1, b.Concrete, "Tile");
-        Slab(b, "B4 2층 바닥", 3f, In0, In1, S0, N1, EastFrom, In1, Near, N1, b.Concrete, "Tile");
-
-        // West stairs under the roof's hut, roof to the top floor.
-        Room(b, "B4 옥상 계단실", X0, WestTo + Wall, CoreZ - Wall, Z1, 12f, 2.7f, Side.South, 87.6f, 89.1f);
-        b.Box("B4 서계단 동벽", WestTo, WestTo + Wall, 9f, 12f, CoreZ - Wall, N1);
-        WallAlongX(b, "B4 서계단 남벽", In0, WestTo + Wall, CoreZ - Wall, CoreZ, 9f, 9f + Ceiling, (89.5f, 91.1f));
-        Flights(b, "B4 서계단", In0, WestTo, Near, Far, N1, 12f, 9f);
-
-        // East stairs, third floor to the ground floor: doors onto the corridor on the third and ground floors.
-        b.Box("B4 동계단 서벽", EastFrom - Wall, EastFrom, 0f, 9f - Wall, CoreZ - Wall, N1);
-        WallAlongX(b, "B4 동계단 1층 남벽", EastFrom - Wall, In1, CoreZ - Wall, CoreZ, 0f, Ceiling, (101.9f, 103.5f));
-        b.Box("B4 동계단 2층 남벽 (판자로 막음)", EastFrom - Wall, In1, 3f, 3f + Ceiling, CoreZ - Wall, CoreZ);
-        WallAlongX(b, "B4 동계단 3층 남벽", EastFrom - Wall, In1, CoreZ - Wall, CoreZ, 6f, 6f + Ceiling, (99.9f, 101.5f));
-        Flights(b, "B4 동계단", EastFrom, In1, Near, Far, N1, 6f, 0f);
-
-        // Top floor (9): the corridor, two flats each side. The south-west flat's door is blocked by a sofa.
-        WallAlongX(b, "B4 4층 복도 북벽", WestTo + Wall, In1, CoreZ - Wall, CoreZ, 9f, 9f + Ceiling, (93f, 94.2f), (99f, 100.2f));
-        WallAlongX(b, "B4 4층 복도 남벽", In0, In1, -1.5f, -1.2f, 9f, 9f + Ceiling, (90f, 91.2f), (99f, 100.2f));
-        b.Box("B4 4층 남쪽 집 사이벽", 95.35f, 95.65f, 9f, 9f + Ceiling, S0, -1.5f);
-        b.Box("B4 4층 북쪽 집 사이벽", 97.45f, 97.75f, 9f, 9f + Ceiling, CoreZ, N1);
-        // Third floor (6): the north flat, the south-east flat the hole drops into.
-        WallAlongX(b, "B4 3층 복도 북벽", In0, EastFrom - Wall, CoreZ - Wall, CoreZ, 6f, 6f + Ceiling, (93f, 94.2f));
-        WallAlongX(b, "B4 3층 복도 남벽", In0, In1, -1.5f, -1.2f, 6f, 6f + Ceiling, (96.2f, 97.4f));
-        b.Box("B4 3층 남쪽 집 사이벽", 95.35f, 95.65f, 6f, 6f + Ceiling, S0, -1.5f);
-        // Ground floor (0): the corridor to the back door, the north flat, the south-east flat (the mail room).
-        WallAlongX(b, "B4 1층 복도 북벽", In0, EastFrom - Wall, CoreZ - Wall, CoreZ, 0f, Ceiling, (93f, 94.2f));
-        WallAlongX(b, "B4 1층 복도 남벽", In0, In1, -1.5f, -1.2f, 0f, Ceiling, (90f, 91.2f), (98f, 99.2f));
-        b.Box("B4 1층 남쪽 집 사이벽", 95.35f, 95.65f, 0f, Ceiling, S0, -1.5f);
-
-        b.Spot("B4Hole", new Vector3((HoleX0 + HoleX1) * .5f, 9f, (HoleZ0 + HoleZ1) * .5f));
-        b.Spot("B4Lobby", new Vector3(100.5f, 0f, 0f));
-
-        // Lamps, dim and warm (the building lost its mains; these are the survivors' work lights).
-        foreach (var at in new[]
-        {
-            new Vector3(95.5f, 11.3f, 0f), new Vector3(89.3f, 14.3f, 6f), new Vector3(94.5f, 11.3f, 5.5f), new Vector3(100.5f, 11.3f, 5.5f),
-            new Vector3(99.5f, 11.3f, -5.5f), new Vector3(92f, 8.3f, 0f), new Vector3(99.5f, 8.3f, -5.5f), new Vector3(101.7f, 8.3f, 5f),
-            new Vector3(100.2f, 3.6f, 6f), new Vector3(97f, 2.3f, 0f), new Vector3(99.5f, 2.3f, -5.5f), new Vector3(92f, 2.3f, 6f),
-        })
-            b.Lamp(at, 7f, 1.1f);
-
-        // Top floor: rubbish in the corridor, the sofa across the south-west door, a lived-in north-west flat, a kitchen
-        // and a survivor's stash north-east, debris round the hole.
-        foreach (var (x, z) in new[] { (89f, -.8f), (97.5f, .7f), (103f, -.6f) }) b.Prop("litter", new Vector3(x, 9f, z), x * 13f % 360f);
-        foreach (var (x, z) in new[] { (92.5f, -.85f), (102.8f, .65f) }) b.Prop("trashbag", new Vector3(x, 9f, z), x * 7f % 360f);
-        b.Prop("cardboard", new Vector3(101.5f, 9f, .85f), 20f);
-        b.PropSolid("couch", new Vector3(90.6f, 9f, -.65f), 0f);
-        b.Prop("couch", new Vector3(94.5f, 9f, 8.7f), 180f);
-        b.Prop("oldtv", new Vector3(94.5f, 9f, 3.3f), 0f);
-        b.PropSolid("worktable", new Vector3(95.6f, 9f, 5.6f), 90f);
-        foreach (var (x, z) in new[] { (95f, 4.4f), (96.4f, 6.6f) }) b.Prop("stool", new Vector3(x, 9f, z), x * 17f % 360f);
-        b.PropSolid("locker", new Vector3(92.1f, 9f, 8.9f), 90f);
-        b.Prop("cardboard", new Vector3(96.6f, 9f, 9.1f), 5f);
-        b.PropSolid("fridge", new Vector3(103.1f, 9f, 8.9f), 270f);
-        b.PropSolid("worktable", new Vector3(100.6f, 9f, 6.2f), 0f);
-        b.Prop("stool", new Vector3(100.4f, 9f, 4.9f), 40f);
-        b.Prop("plasticdrum", new Vector3(98.4f, 9f, 9.1f));
-        foreach (var (x, z) in new[] { (99.1f, 8.9f), (99.6f, 9.2f) }) b.Prop("jerrycan", new Vector3(x, 9f, z), x * 29f % 360f);
-        b.Prop("cardboardflat", new Vector3(101f, 9f, 3f), 15f);
-        foreach (var (x, z) in new[] { (99.4f, -6.2f), (103f, -6.6f), (101.3f, -8.3f) }) b.Prop("brickdebris", new Vector3(x, 9f, z), x * 19f % 360f);
-        b.Prop("planks", new Vector3(101.2f, 9f, -4.4f), 30f);
-        b.Prop("rubble", new Vector3(97.5f, 9f, -8.4f), 60f);
-        // Third floor: what fell through, a stripped north flat.
-        b.Prop("brickdebris", new Vector3(101.2f, 6f, -6.3f), 110f);
-        b.Prop("rubble", new Vector3(102.6f, 6f, -5f), 200f);
-        foreach (var (x, z) in new[] { (97f, -8.8f), (98.2f, -9f) }) b.Prop("plasticcrate", new Vector3(x, 6f, z), x * 11f % 360f);
-        b.Prop("trashbag", new Vector3(91f, 6f, .8f), 70f);
-        b.Prop("litter", new Vector3(98.5f, 6f, -.7f), 140f);
-        b.Prop("couch", new Vector3(91.5f, 6f, 8.7f), 180f);
-        b.Prop("oldtv", new Vector3(91.5f, 6f, 3.2f), 10f);
-        b.PropSolid("wireshelf", new Vector3(98.5f, 6f, 8.8f), 0f);
-        foreach (var (x, z) in new[] { (96.5f, 3.4f), (97.3f, 4.1f), (88.5f, 6.5f) }) b.Prop("cardboard", new Vector3(x, 6f, z), x * 23f % 360f);
-        // The boarded second-floor door, boxes on the landings.
-        b.Prop("planks", new Vector3(102.6f, 3f, 1.8f), 90f);
-        b.Prop("cardboard", new Vector3(100.4f, 3f, 1.9f), 30f);
-        // Ground floor: the mail room's boxes (electric boxes on the wall), rubbish to the back door.
-        foreach (var (x, z) in new[] { (100f, -9.35f), (102f, -9.35f) }) b.Prop("electricbox", new Vector3(x, 0f, z), 0f);
-        foreach (var (x, z) in new[] { (97f, -2.5f), (103f, -8f) }) b.Prop("cardboard", new Vector3(x, 0f, z), x * 31f % 360f);
-        b.Prop("trashcan", new Vector3(96f, 0f, -.9f), 0f);
-        b.Prop("cardboardflat", new Vector3(102.5f, 0f, .2f), 75f);
-        b.Prop("litter", new Vector3(99f, 0f, .7f), 20f);
-        b.Prop("trashbag", new Vector3(92f, 0f, 8.5f), 160f);
-
-        // Zombies on every floor, a few supplies, and the building's own sound.
-        b.EnemySpawn("B4 4층 복도", new Vector3(102.5f, 9f, 0f));
-        b.EnemySpawn("B4 4층 북서 집", new Vector3(94f, 9f, 6.5f));
-        b.EnemySpawn("B4 4층 북동 집", new Vector3(101f, 9f, 4f));
-        b.EnemySpawn("B4 4층 남동 집", new Vector3(97.5f, 9f, -4f));
-        b.EnemySpawn("B4 3층 남동 집", new Vector3(97.5f, 6f, -7.5f));
-        b.EnemySpawn("B4 3층 복도", new Vector3(90f, 6f, 0f));
-        b.EnemySpawn("B4 3층 북쪽 집", new Vector3(93f, 6f, 6f));
-        b.EnemySpawn("B4 동계단 2층", new Vector3(102.7f, 3f, 2.1f));
-        b.EnemySpawn("B4 1층 복도", new Vector3(95f, 0f, 0f));
-        b.EnemySpawn("B4 1층 우편함 방", new Vector3(101f, 0f, -6f));
-        b.EnemySpawn("B4 1층 북쪽 집", new Vector3(93f, 0f, 6f));
-        b.Pickup(new Vector3(101.5f, 9f, 7.6f));
-        b.Pickup(new Vector3(90.5f, 6f, 7.4f), PickupSpot.Roll.Gun);
-        b.Pickup(new Vector3(99f, 0f, -.5f));
-        b.Ambience("Ch1.Flats", In0, In1, 0f, 12f, S0, N1);
+                 "길: 안전가옥 → 옥상 틈 점프 → 엘리베이터실 벽 오르기 → 집라인 → 철봉으로 아파트 5층의 무너진 모서리 → 관리인 숙소(503, 관리 일지·소독 가스) → " +
+                 "계단·바닥 구멍·비상 사다리·엘리베이터로 1층 → 쇠사슬 문(마스터키 또는 부수기) → 지하 배전반(셔터 버티기 시작) → 뒷문으로 골목 → 편의점 → " +
+                 "공사장 옥상 무전 → 착륙 자리에 연막 → 버티기 → 헬기.");
     }
 
     // Chapter 1's streets, roofs, alley and building site in the packs' props (map dressing stage 3, 2026-11-12): a
@@ -315,7 +198,7 @@ public static partial class CampaignMaps
         // Roofs.
         b.PropSolid("watertank", new Vector3(30.5f, 16f, -6.5f), 0f);
         foreach (var x in new[] { 72f, 74.2f }) b.PropSolid("acunit", new Vector3(x, 13f, -8.4f), 0f);
-        b.PropSolid("watertank", new Vector3(101.5f, 12f, -7.3f), 30f);
+        // B4's roof has its own (AptRoofTop).
         // Street 1 under the zipline: barricaded ends, a police car, cones round the first car, rubbish.
         foreach (var z in new[] { -21f, 22f })
             foreach (var x in new[] { 51.5f, 55f, 58.5f }) b.Prop("jersey", new Vector3(x, 0f, z), 0f);
@@ -385,7 +268,7 @@ public static partial class CampaignMaps
         b.Clutter(new Vector3(33f, 16f, -In), new Vector3(46f, 16f, -In), 3f, roof);
         b.Clutter(new Vector3(64.2f, 13f, In), new Vector3(79f, 13f, In), 3f, roof);
         b.Clutter(new Vector3(64.2f, 13f, -In), new Vector3(70.5f, 13f, -In), 3f, roof);
-        b.Clutter(new Vector3(88.5f, 12f, -In), new Vector3(99.5f, 12f, -In), 3f, roof);
+        b.Clutter(new Vector3(88.5f, AptRoof, AptS0 + .6f), new Vector3(98.5f, AptRoof, AptS0 + .6f), 3f, roof);
         // Street 1 (between B2 and B3): both kerbs past the barricades, cars left askew beyond them.
         foreach (float x in new[] { 47.6f, 62.4f })
         {
@@ -417,5 +300,60 @@ public static partial class CampaignMaps
         // horde comes through here).
         b.Clutter(new Vector3(104.6f, 0f, -3.6f), new Vector3(116.5f, 0f, -3.6f), 2.5f, "litter", "cardboard", "trashbag");
         b.Clutter(new Vector3(109.5f, 0f, 3.6f), new Vector3(115f, 0f, 3.6f), 2.5f, "litter", "cardboard", "trashbag");
+    }
+
+    // The building site's gimmicks: a container hanging from the crane over where the horde crosses the site to the ramps
+    // (the map gimmick card "매달린 컨테이너 떨구기": shoot its cable and it falls on them), and the three places the ride may
+    // come down (the card "착륙 자리 고르기"): the roof's pad, far up the containers and the scaffold but reached by zombies
+    // only up the ramps; the yard behind the building, nearer and open; the street outside the gate, nearest and open all
+    // round. The smoke lit at one (Ch1.15) takes the hold and the escape there.
+    private static void SiteGimmicks(GreyboxBuilder b)
+    {
+        const float Hang = 20f;
+        var drop = b.Switch<GimmickDrop>("공사장 매달린 컨테이너", new Vector3(180f, 0f, 0f));
+        var load = new GameObject("떨어지는 짐").transform;
+        load.SetParent(drop.transform, false);
+        load.localPosition = new Vector3(0f, Hang, 0f);
+        // Local to the load: a 6 m container under its slings.
+        var box = b.Blocker("매달린 컨테이너", -3f, 3f, 0f, 2.6f, -1.25f, 1.25f, load, b.Metal, "MetalBox");
+        var before = b.LastPlaced;
+        b.Dress(box, "container");
+        if (b.LastPlaced != before && b.LastPlaced != null) b.LastPlaced.transform.SetParent(load, true);
+        b.Box("컨테이너 슬링 서", -2.6f, .05f, 2.6f, 2.68f, -.04f, .04f, b.Metal, solid: false, group: load);
+        b.Box("컨테이너 슬링 동", -.05f, 2.6f, 2.6f, 2.68f, -.04f, .04f, b.Metal, solid: false, group: load);
+        // The cable up to the arm (local to the gimmick), with a fat box round it for the shot to find.
+        var cable = b.Box("크레인 케이블", -.05f, .05f, Hang + 2.6f, 30f, -.05f, .05f, b.Metal, solid: false, group: drop.transform);
+        var aim = new GameObject("케이블 표적").transform;
+        aim.SetParent(cable.transform, false);
+        aim.gameObject.AddComponent<BoxCollider>().size = new Vector3(6f, 1f, 6f);
+        aim.gameObject.AddComponent<GimmickTarget>();
+        GreyboxBuilder.Configure(drop, so =>
+        {
+            so.FindProperty("load").objectReferenceValue = load;
+            so.FindProperty("drop").floatValue = Hang;
+            so.FindProperty("crush").boundsValue = new Bounds(new Vector3(180f, 1.5f, 0f), new Vector3(6.4f, 3f, 2.9f));
+            so.FindProperty("cable").objectReferenceValue = cable;
+        });
+
+        // The landing zones: the roof's pad (where the step's Helipad stands), the yard, the street; each marked on the ground.
+        var landing = b.Switch<GimmickLanding>("헬기 착륙 자리 고르기", new Vector3(180f, 0f, 8f));
+        var zones = new List<Transform>
+        {
+            b.Mark("착륙 자리 옥상", new Vector3(191f, 14f, 0f), 0f, landing.transform),
+            b.Mark("착륙 자리 마당", new Vector3(192f, 0f, 17f), 0f, landing.transform),
+            b.Mark("착륙 자리 길", new Vector3(157f, 0f, -8f), 0f, landing.transform),
+        };
+        b.Box("착륙 자리 표시 마당", 188f, 196f, 0f, .03f, 13f, 21f, b.Marker, solid: false);
+        b.Box("착륙 자리 표시 길", 153f, 161f, 0f, .03f, -12f, -4f, b.Marker, solid: false);
+        b.Spot("Smoke", new Vector3(192f, 0f, 17f));
+        GreyboxBuilder.Configure(landing, so =>
+        {
+            so.FindProperty("spot").stringValue = "Helipad";
+            so.FindProperty("step").stringValue = "Ch1.15";
+            so.FindProperty("reach").floatValue = 3.5f;
+            var list = so.FindProperty("zones");
+            list.arraySize = zones.Count;
+            for (int i = 0; i < zones.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = zones[i];
+        });
     }
 }

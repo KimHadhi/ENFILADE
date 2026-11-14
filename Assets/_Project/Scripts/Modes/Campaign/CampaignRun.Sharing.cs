@@ -70,13 +70,16 @@ public sealed partial class CampaignRun
         if (tracker == null || now == null) return;
         // A hold, and a finale's escape (the ride's wait), show their time passing.
         float total = now.Kind == CampaignStepKind.Hold || now.Kind == CampaignStepKind.Escape ? TotalOf(step) : 0f;
+        // Found, a step with plan B's words (loudTitle) says those: the key's door is to be smashed in instead.
+        bool loud = !quiet && now.HasLoudWords;
+        string title = loud ? now.LoudTitle : now.Title, description = loud ? now.LoudDescription : now.Description;
         tracker.SetObjective(total > 0f
-            ? new MissionObjective(now.Id, now.Title, now.Description, MissionProgressDisplay.Percent,
+            ? new MissionObjective(now.Id, title, description, MissionProgressDisplay.Percent,
                 Mathf.FloorToInt(held), Mathf.CeilToInt(total), now.Done)
             : now.Kind == CampaignStepKind.Collect
-            ? new MissionObjective(now.Id, now.Title, now.Description, MissionProgressDisplay.Count,
+            ? new MissionObjective(now.Id, title, description, MissionProgressDisplay.Count,
                 Mathf.Min(fuel.Poured, now.Count), Mathf.Max(1, now.Count), now.Done)
-            : new MissionObjective(now.Id, now.Title, now.Description, doneTitle: now.Done), announce);
+            : new MissionObjective(now.Id, title, description, doneTitle: now.Done), announce);
         shownPoured = -1;
     }
 
@@ -104,6 +107,7 @@ public sealed partial class CampaignRun
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
         // The escape has its moment first; the card comes up as the banner lets go (ShowCardWhenDue).
         climb = ClassGrowth.Settle();
+        MatchResults.RoomUnseen = unseenCount;
         // Everyone's numbers go with this PC to the hub, where the results play over the players (memo 37, MatchResults).
         MatchResults.Capture(gameObject.scene.name, chapter != null ? chapter.Title : "", chapter != null ? chapter.Next : "", climb,
             someone => !rideLeft || Within(someone, last));

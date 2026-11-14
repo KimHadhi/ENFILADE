@@ -18,11 +18,13 @@ public sealed partial class ZombieMind
     // 자연스럽게 옮기고 싶은데"). Advanced Stealth: "The nearest guard goes to check the object; others turn to look".
     private static void HearLure(in NoiseEvent noise)
     {
+        if (noise.Gather) { HearGather(noise); return; }
         ZombieMind nearest = null;
         float best = float.MaxValue;
         foreach (var mind in minds)
         {
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake) continue;
+            // Asleep, a stone's clack doesn't stir it.
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (!mind.Reaches(noise, out float distance, out _)) continue;
             if (distance < best) { best = distance; nearest = mind; }
@@ -31,6 +33,27 @@ public sealed partial class ZombieMind
         }
         if (nearest != null) nearest.Investigate(noise.Point, null);
     }
+
+    // A lure that goes on (a TV, a radio, an announcement: GimmickLure, which makes it again every second or so): every one
+    // not awake that hears it stares a moment and walks over, each to its own place round it so they bunch there rather
+    // than stand on one spot, and looks round there a good while (lureLook) before it settles. One already on its way to
+    // it isn't sent again. The sleeping sleep on. PAYDAY 3's speakers, Guts & Blackpowder's music box.
+    private static void HearGather(in NoiseEvent noise)
+    {
+        foreach (var mind in minds)
+        {
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep) continue;
+            if (mind.melee != null && mind.melee.IsStunned) continue;
+            if (mind.lured && (mind.lureAt - noise.Point).sqrMagnitude < GatherRound * GatherRound * 4f) continue;
+            if (!mind.Reaches(noise, out _, out _)) continue;
+            Vector2 round = Random.insideUnitCircle * GatherRound;
+            mind.distractedUntil = Time.time + mind.lureGlance;
+            mind.Investigate(noise.Point + new Vector3(round.x, 0f, round.y), null);
+        }
+    }
+
+    // How far round a gathering lure each comes to stand (m).
+    private const float GatherRound = 2.5f;
 
     /// <summary>For the throw's aim (StealthView): whether this zombie, not awake, would hear this sound now.</summary>
     internal bool Hears(in NoiseEvent noise) => !IsAwake && Living && Reaches(noise, out _, out _);
@@ -58,9 +81,9 @@ public sealed partial class ZombieMind
         focus = noticed = source;
         stimulus = noise.Point;
         if (suspicion >= 1f) Wake(source);
-        else if (suspicion >= alertAt) { glanceUntil = 0f; Alert(noise.Point); }
+        else if (suspicion >= StirAt) { glanceUntil = 0f; Alert(noise.Point); }
         // Too faint to stop for, it still turns its head that way a moment, and may see who made it.
-        else if (gained >= glanceAt) Glance(noise.Point, source, glanceSeconds);
+        else if (gained >= glanceAt && !Asleep) Glance(noise.Point, source, glanceSeconds);
     }
 
     // Whether this sound reaches its ears, how far off it is and how far it carries to it (m): half as far through a wall.

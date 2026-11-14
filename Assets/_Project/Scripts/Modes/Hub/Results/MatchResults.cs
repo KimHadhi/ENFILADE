@@ -40,6 +40,12 @@ public static class MatchResults
     public static float Seconds { get; private set; }
     /// <summary>The last chapter was done: the campaign is over.</summary>
     public static bool CampaignDone => string.IsNullOrEmpty(Next);
+    /// <summary>
+    /// How many of the chapter's quiet stretches the room got through without anyone being seen (CampaignRun's count), the
+    /// team's own number: the "그림자" title goes to everyone when it is one or more (the map gimmick card "조용히 지나가기
+    /// 보너스": a team bonus and the title).
+    /// </summary>
+    public static int RoomUnseen { get; set; }
     /// <summary>What the chapter did to this PC's class (stage 6E), shown climbing in the results; null for none.</summary>
     public static ClassGrowth.Climb Climb { get; private set; }
     /// <summary>Everyone in the chapter as it ended, in seat order.</summary>

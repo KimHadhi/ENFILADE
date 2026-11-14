@@ -71,6 +71,8 @@ public static class FragBlast
         var source = thrower != null ? thrower.gameObject : null;
         Hurt(at, info, radius, harder, source, way, spread);
         HurtPlayers(at, info, radius, harder, thrower, source, way, spread);
+        // A locked door in reach is blown in (a map gimmick: GimmickLock), loud as any smashed door.
+        GimmickLock.Blast(at, radius, info.Damage * harder, source);
         FragAftermath.Begin(at, radius, info.Damage * harder, source, way, spread);
     }
 

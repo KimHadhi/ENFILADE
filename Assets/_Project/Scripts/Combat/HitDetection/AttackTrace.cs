@@ -163,7 +163,7 @@ public static class AttackTrace
         => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider) || ZombieBody.Replaces(hit.collider)
             || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider) || DroppedMagazine.IsMagazine(hit.collider) || ThrownStone.IsStone(hit.collider)
             || Throwables.Passes(hit.collider)
-            || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !CampaignCanTarget.Is(hit.collider)
+            || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !CampaignCanTarget.Is(hit.collider) && !GimmickTarget.Is(hit.collider)
                 && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody != true));
 
