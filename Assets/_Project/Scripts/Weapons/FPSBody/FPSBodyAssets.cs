@@ -122,4 +122,18 @@ public sealed class FPSBodyAssets : ScriptableObject
     private static FPSBodyAssets cached;
 
     public static FPSBodyAssets Instance => cached != null ? cached : cached = Resources.Load<FPSBodyAssets>(ResourcePath);
+
+    /// <summary>
+    /// Reads the asset ahead, behind a loading screen (SceneWarmup: the title at the start of a run). It holds every
+    /// gun's model, clips and profiles, and whoever asks for <see cref="Instance"/> first reads all of that in its own
+    /// frame. The main menu's class and gun pages only want the guns' names and list, and opening one froze the menu:
+    /// 15.1 s in one Update, 17.6 s of Loading.ReadObject across the threads (Logs/Hitches, the editor, 2026-11-14).
+    /// </summary>
+    public static System.Collections.IEnumerator LoadAhead()
+    {
+        if (cached != null) yield break;
+        var reading = Resources.LoadAsync<FPSBodyAssets>(ResourcePath);
+        yield return reading;
+        if (cached == null) cached = reading.asset as FPSBodyAssets;
+    }
 }

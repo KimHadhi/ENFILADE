@@ -288,6 +288,10 @@ public sealed class SceneWarmup : MonoBehaviour
             for (float waited = 0f; !FontWarmup.Done && waited < bootFontWait; waited += Time.unscaledDeltaTime) yield return null;
             LowerFonts();
             steps.Mark("fonts");
+            // The guns' asset is read here, not in the frame a menu page first lists the guns (FPSBodyAssets.LoadAhead);
+            // the hub's load finds it read.
+            yield return FPSBodyAssets.LoadAhead();
+            steps.Mark("guns");
 
             LoadingScreen.Report(Standing, "loading.stage.portraits");
             // Only while the title screen takes them (a SkinPortraits is there); a run started in a level takes them later.
