@@ -56,6 +56,9 @@ public sealed partial class GreyboxBuilder
         StaticOcclusionCulling.smallestOccluder = SmallestOccluder;
         StaticOcclusionCulling.smallestHole = SmallestHole;
         StaticOcclusionCulling.backfaceThreshold = BackfaceThreshold;
+        // The editor's cached handles to files it read would block the bake's write of OcclusionCullingData's .meta (the
+        // rebuild of 11-14: "Cannot open file '.../OcclusionCullingData.asset.meta' for write"): they go first.
+        AssetDatabase.ReleaseCachedFileHandles();
         bool done = StaticOcclusionCulling.Compute();
         if (!done) Debug.LogWarning("[Greybox] occlusion culling did not bake; the scene still works, only without it.");
         return done;

@@ -112,6 +112,9 @@ public sealed partial class GreyboxBuilder
     // from the sky (Unity 6 keeps the old ones until the lighting is generated).
     private static bool BakeEnvironment()
     {
+        // The editor's cached handles to files it read would block the bake's writes beside the scene (LightingData and
+        // its .meta, the probe volume's cell files): they go first (GreyboxBuilder.BakeWrites).
+        AssetDatabase.ReleaseCachedFileHandles();
         bool done = Lightmapping.Bake();
         if (!done) Debug.LogWarning("[Greybox] the sky's ambient light and reflection did not bake; Generate Lighting in the Lighting window does it.");
         return done;

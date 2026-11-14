@@ -616,14 +616,26 @@ public sealed partial class GreyboxBuilder
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
         // The occlusion data is kept beside the saved scene (Scenes/Campaign/<scene>/OcclusionCullingData), so it bakes
-        // after the first save, and the scene is saved again to keep hold of it.
-        bool culled = BakeOcclusion();
-        // The sky's ambient light and reflection are baked the same way, beside the saved scene (LightingData), and with
-        // them the probes where the map has them (its baking set needs the saved scene's GUID, so it is readied here).
-        bool probes = look != null && PrepareProbeBake();
-        bool lit = look != null && BakeEnvironment();
+        // after the first save, and the scene is saved again to keep hold of it. What the bakes fail to write is heard
+        // (GreyboxBuilder.BakeWrites).
+        BeginBakeWrites();
+        bool culled, probes, lit;
+        try
+        {
+            culled = BakeOcclusion();
+            // The sky's ambient light and reflection are baked the same way, beside the saved scene (LightingData), and
+            // with them the probes where the map has them (its baking set needs the saved scene's GUID, so it is readied
+            // here).
+            probes = look != null && PrepareProbeBake();
+            lit = look != null && BakeEnvironment();
+        }
+        finally
+        {
+            EndBakeWrites();
+        }
         RestoreBakeShadows();
-        bool probesBaked = probes && lit && ProbesBaked();
+        // A bake whose cell files were not written left the set's new layout over old cells: not baked.
+        bool probesBaked = probes && lit && ProbesBaked() && probeWrite != ProbeWrite.NotWritten;
         // The bake is done (its occluders cast as before): the models the sun can't reach lose their shadows.
         bool sunless = QuietSunlessShadows() > 0;
         if (culled || lit || probes || sunless)
@@ -648,7 +660,7 @@ public sealed partial class GreyboxBuilder
              "\n가림 굽기(오클루전 컬링): " + (culled ? "구웠어요. 벽과 건물 뒤의 좀비는 그리지 않아요." : "실패했어요(콘솔을 보세요). 맵은 그대로 쓸 수 있어요.") +
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
-             (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) +
+             (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) + MetaReport() +
              SurfaceReport() + DressReport() + DecalReport() + SunlessReport() + PackReport() + GimmickReport());
     }
 }
