@@ -21,7 +21,7 @@ using UnityEngine;
 /// keeps only where each target stands, and an older hub's wooden dummy parts are cleared away.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class SteelTarget : MonoBehaviour, IBulletStruck
+public sealed partial class SteelTarget : MonoBehaviour, IBulletStruck
 {
     public const string TableName = "RangeTargets";
     /// <summary>What its parts are made of (Surfaces.csv): metal's sparks, no bullet holes, no round gets through.</summary>
@@ -29,6 +29,8 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
     private const string BankId = "Bullets", HeadKey = "Steel/Head", BodyKey = "Steel/Body", DownKey = "Steel/Down";
     // The hinge block's top, where the post stands and tips about (m above the ground).
     private const float Hinge = .05f, PostSize = .05f, ArmSize = .04f;
+    // How far off the paint the lead splashes lie (m), so the plate's own face never covers them.
+    private const float SplashLift = .0015f;
     private const int DiscSides = 28;
 
     /// <summary>One row of Tables/RangeTargets: a kind of target's shape and how it answers a hit.</summary>
@@ -71,20 +73,13 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
             => row != null && row.TryGetValue(key, out string text) && ColorUtility.TryParseHtmlString(text.Trim(), out Color color) ? color : fallback;
     }
 
-    private sealed class Splash
-    {
-        public Transform Transform;
-        public MeshRenderer Renderer;
-        public float Age;
-    }
-
     private sealed class Plate
     {
         public Transform Face;
         public Collider Collider;
         public bool Head;
-        public readonly List<Splash> Splashes = new List<Splash>();
-        public int Next;
+        // Its lead splashes, made on the first one.
+        public LeadSplashes Lead;
     }
 
     // A sound on its way: it leaves the plate as it is hit and reaches the ear a moment later.
@@ -99,7 +94,6 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
     private static Texture2D splashTexture;
     private static SoundBank bank;
     private static AudioListener listener;
-    private static MaterialPropertyBlock block;
 
     private readonly List<Plate> plates = new List<Plate>();
     private readonly List<Mesh> meshes = new List<Mesh>();
@@ -117,7 +111,6 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
         splashTexture = null;
         bank = null;
         listener = null;
-        block = null;
     }
 
     /// <summary>
@@ -285,113 +278,6 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
     {
         if (angle > most) { angle = most; if (speed > 0f) speed = -speed * bounce; }
         else if (angle < least) { angle = least; if (speed < 0f) speed = -speed * bounce; }
-    }
-
-    // ---- Lead splashes ----
-
-    // A splash where the round flattened on the paint, on the face it hit, riding the plate.
-    private void Stain(Plate plate, Vector3 point, Vector3 normal)
-    {
-        if (plate.Face == null || point == Vector3.zero) return;
-        Vector3 local = plate.Face.InverseTransformPoint(point);
-        bool front = plate.Face.InverseTransformDirection(normal).z >= -.01f;
-        Splash splash;
-        if (plate.Splashes.Count < shape.SplashMost)
-        {
-            var host = new GameObject("납 자국");
-            host.transform.SetParent(plate.Face, false);
-            host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
-            var renderer = host.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = FeelAssets.Particle(SplashTexture, false);
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            splash = new Splash { Transform = host.transform, Renderer = renderer };
-            plate.Splashes.Add(splash);
-        }
-        else
-        {
-            splash = plate.Splashes[plate.Next % plate.Splashes.Count];
-            plate.Next = (plate.Next + 1) % plate.Splashes.Count;
-        }
-        // A hair off the paint, a little more for each later one, so overlapping splashes don't flicker.
-        int slot = plate.Splashes.IndexOf(splash);
-        float lift = .0015f + slot * .00006f;
-        local.z = front ? lift : -shape.Thickness - lift;
-        splash.Transform.localPosition = local;
-        splash.Transform.localRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
-        splash.Transform.localScale = Vector3.one * shape.SplashSize * Random.Range(.75f, 1.3f);
-        splash.Age = 0f;
-        splash.Transform.gameObject.SetActive(true);
-        Tint(splash, 1f);
-    }
-
-    private void Fade(float dt)
-    {
-        foreach (var plate in plates)
-            foreach (var splash in plate.Splashes)
-            {
-                if (!splash.Transform.gameObject.activeSelf) continue;
-                splash.Age += dt;
-                if (splash.Age <= shape.SplashSeconds) continue;
-                float left = 1f - (splash.Age - shape.SplashSeconds) / Mathf.Max(.05f, shape.SplashFade);
-                if (left <= 0f) { splash.Transform.gameObject.SetActive(false); continue; }
-                Tint(splash, left);
-            }
-    }
-
-    private static void Tint(Splash splash, float alpha)
-    {
-        block ??= new MaterialPropertyBlock();
-        block.SetColor("_Color", new Color(1f, 1f, 1f, Mathf.Clamp01(alpha)));
-        splash.Renderer.SetPropertyBlock(block);
-    }
-
-    // Lead flattened on painted steel: a darker core with a lighter rim and thin rays thrown out along the face, a few
-    // droplets past their ends. Grey, as lead is; the paint shows between the rays.
-    private static Texture2D SplashTexture
-    {
-        get
-        {
-            if (splashTexture != null) return splashTexture;
-            const int size = 128, rays = 16;
-            var random = new System.Random(4207);
-            float[] angle = new float[rays], reach = new float[rays], width = new float[rays];
-            for (int i = 0; i < rays; i++)
-            {
-                angle[i] = (i + (float)random.NextDouble() * .7f) * Mathf.PI * 2f / rays;
-                reach[i] = .45f + (float)random.NextDouble() * .5f;
-                width[i] = .035f + (float)random.NextDouble() * .04f;
-            }
-            var pixels = new Color32[size * size];
-            for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                float u = (x + .5f) / size * 2f - 1f, v = (y + .5f) / size * 2f - 1f;
-                float r = Mathf.Sqrt(u * u + v * v), a = Mathf.Atan2(v, u);
-                float edge = .2f + .03f * Mathf.Sin(a * 5f + 1.1f) + .02f * Mathf.Sin(a * 9f + .3f);
-                float core = Mathf.Clamp01((edge - r) * 40f), cover = core, grey = Mathf.Lerp(.6f, .33f, Mathf.Clamp01((edge - r) / edge * 1.6f));
-                for (int i = 0; i < rays; i++)
-                {
-                    float off = Mathf.Abs(Mathf.DeltaAngle(a * Mathf.Rad2Deg, angle[i] * Mathf.Rad2Deg)) * Mathf.Deg2Rad * r;
-                    float along = r / reach[i];
-                    if (along < 1f && r > edge * .6f)
-                    {
-                        float ray = Mathf.Clamp01((width[i] * (1f - along * .85f) - off) * 90f) * (1f - along * along * .5f);
-                        if (ray > cover) { cover = ray; grey = .55f; }
-                    }
-                    float dx = u - Mathf.Cos(angle[i]) * (reach[i] + .06f), dy = v - Mathf.Sin(angle[i]) * (reach[i] + .06f);
-                    float drop = Mathf.Clamp01((.03f - Mathf.Sqrt(dx * dx + dy * dy)) * 70f);
-                    if (drop > cover) { cover = drop; grey = .5f; }
-                }
-                byte g = (byte)Mathf.RoundToInt(grey * 255f);
-                pixels[y * size + x] = new Color32(g, g, (byte)Mathf.Min(255, g + 6), (byte)Mathf.RoundToInt(cover * 235f));
-            }
-            splashTexture = new Texture2D(size, size, TextureFormat.RGBA32, true)
-                { name = "Steel Lead Splash", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.HideAndDontSave };
-            splashTexture.SetPixels32(pixels);
-            splashTexture.Apply(true, true);
-            return splashTexture;
-        }
     }
 
     // ---- The ring ----

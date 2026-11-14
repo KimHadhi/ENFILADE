@@ -5675,9 +5675,9 @@ MonoBehaviour:
     m_Bits: 64
   bloodParticlePrefab: {fileID: 0}
   particleCleanupTime: 3
-  bloodMarkPrefab: {fileID: 7635742758582579712, guid: e1782328923af7d4e8bc35203faa00e4, type: 3}
-  bloodMarkLifetime: 5
   surfaceOffset: 0.03
+  bloodMarkLifetime: 5
+  bloodMarkSize: 0.18
 --- !u!1 &8685766857521820553
 GameObject:
   m_ObjectHideFlags: 0

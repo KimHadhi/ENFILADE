@@ -1,7 +1,10 @@
-using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Prefab blood particles and a fading blood mark where a shot from the parent WeaponController hits an enemy.</summary>
+/// <summary>
+/// Prefab blood particles and a fading blood mark where a shot from the parent WeaponController hits an enemy. The mark
+/// is a projected decal riding the hitbox it hit (BloodDecals): it was a sprite hung 3 cm off the hitbox, which flickered
+/// against other marks and the scenery and stuck out of the body at a slant (the user, 2026-11-14).
+/// </summary>
 [DisallowMultipleComponent]
 public sealed class EnemyBloodEffect : MonoBehaviour
 {
@@ -11,24 +14,15 @@ public sealed class EnemyBloodEffect : MonoBehaviour
     [Header("Blood Particles")]
     [SerializeField] private ParticleSystem bloodParticlePrefab;
     [SerializeField, Min(0.1f)] private float particleCleanupTime = 3f;
+    [SerializeField, Min(0f), Tooltip("How far off the body the particles start, so they aren't born inside it (m).")]
+    private float surfaceOffset = 0.03f;
 
     [Header("Blood Mark")]
-    [SerializeField] private GameObject bloodMarkPrefab;
     [SerializeField, Min(0.1f)] private float bloodMarkLifetime = 5f;
-    [SerializeField, Min(0f)] private float surfaceOffset = 0.03f;
+    [SerializeField, Min(.01f), Tooltip("Across (m). The sprite it replaced measured this: a 3.6 m sprite at 0.05 scale.")]
+    private float bloodMarkSize = .18f;
 
     private WeaponController weapon;
-
-    private sealed class ActiveBloodMark
-    {
-        public GameObject instance;
-        public SpriteRenderer sprite;
-        public Color originalColor;
-        public float elapsed;
-        public float lifetime;
-    }
-
-    private readonly List<ActiveBloodMark> activeMarks = new();
 
     private void OnEnable()
     {
@@ -69,17 +63,13 @@ public sealed class EnemyBloodEffect : MonoBehaviour
             ? hit.normal.normalized
             : -direction.normalized;
 
-        Vector3 position = hit.point + normal * surfaceOffset;
-
-        // Particle System의 기본 분사 축은 로컬 Y축
+        // A particle system sprays along its local Y.
         Quaternion particleRotation =
             Quaternion.FromToRotation(Vector3.up, normal);
 
-        // SpriteRenderer의 앞면은 로컬 Z축 기준
-        Quaternion markRotation = Quaternion.LookRotation(normal);
-
-        SpawnBloodParticles(position, particleRotation);
-        SpawnBloodMark(hit.collider.transform, position, markRotation);
+        SpawnBloodParticles(hit.point + normal * surfaceOffset, particleRotation);
+        // Painted into the body at the point hit, its box reaching the skin under the hitbox.
+        BloodDecals.Mark(hit.collider.transform, hit.point, normal, bloodMarkSize, bloodMarkLifetime);
     }
 
     private bool IsEnemy(Transform target)
@@ -118,100 +108,8 @@ public sealed class EnemyBloodEffect : MonoBehaviour
             Mathf.Max(0.1f, particleCleanupTime));
     }
 
-    private void SpawnBloodMark(
-        Transform hitTransform,
-        Vector3 position,
-        Quaternion rotation)
-    {
-        if (bloodMarkPrefab == null)
-            return;
-
-        if (hitTransform == null)
-            return;
-
-        GameObject instance = Instantiate(
-            bloodMarkPrefab,
-            position,
-            rotation);
-
-        // 생성 후 부모를 설정해도 월드 위치와 회전을 유지
-        instance.transform.SetParent(hitTransform, true);
-
-        SpriteRenderer sprite =
-            instance.GetComponentInChildren<SpriteRenderer>();
-
-        if (sprite == null)
-        {
-            Debug.LogWarning($"혈흔 프리팹 '{bloodMarkPrefab.name}'에 SpriteRenderer가 없습니다.", bloodMarkPrefab);
-            Destroy(instance);
-            return;
-        }
-
-        ActiveBloodMark mark = new ActiveBloodMark
-        {
-            instance = instance,
-            sprite = sprite,
-            originalColor = sprite.color,
-            elapsed = 0f,
-            lifetime = Mathf.Max(0.1f, bloodMarkLifetime)
-        };
-
-        activeMarks.Add(mark);
-    }
-
-    private void Update()
-    {
-        UpdateBloodMarks();
-    }
-
-    private void UpdateBloodMarks()
-    {
-        for (int i = activeMarks.Count - 1; i >= 0; i--)
-        {
-            ActiveBloodMark mark = activeMarks[i];
-
-            if (mark.instance == null || mark.sprite == null)
-            {
-                activeMarks.RemoveAt(i);
-                continue;
-            }
-
-            mark.elapsed += Time.deltaTime;
-
-            float progress = Mathf.Clamp01(
-                mark.elapsed / mark.lifetime);
-
-            Color color = mark.originalColor;
-            color.a = mark.originalColor.a * (1f - progress);
-            mark.sprite.color = color;
-
-            if (progress >= 1f)
-            {
-                Destroy(mark.instance);
-                activeMarks.RemoveAt(i);
-            }
-        }
-    }
-
     private void OnDisable()
     {
         if (weapon != null) weapon.ShotFired -= Play;
-        ClearBloodMarks();
-    }
-
-    private void OnDestroy()
-    {
-        ClearBloodMarks();
-    }
-
-    private void ClearBloodMarks()
-    {
-        foreach (ActiveBloodMark mark in activeMarks)
-        {
-            if (mark.instance != null)
-                Destroy(mark.instance);
-        }
-
-        activeMarks.Clear();
     }
 }

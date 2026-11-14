@@ -55,13 +55,13 @@ PlayerWeaponInput → WeaponController
 | 분류 | 오브젝트와 역할 |
 | --- | --- |
 | `EFFECTS → Audio` | `Feel Audio`(총성·장전·확인음), `Combat Hit Audio`(피격·처치음) |
-| `EFFECTS → World` | `Weapon Feel FX`(탄피), `Impact VFX`(혈액·먼지·바닥 혈흔), `Parry VFX`(패링 불꽃·섬광), 처치 후 사라지는 시체 연출 |
+| `EFFECTS → World` | `Weapon Feel FX`(탄피), `Impact VFX`(혈액·먼지), `Blood Decals`(벽·바닥 혈흔과 적 몸 피 자국: 투영 데칼), `Parry VFX`(패링 불꽃·섬광), 처치 후 사라지는 시체 연출 |
 | `EFFECTS → Screen` | `Damage Popups`(피해 숫자), `Hit Markers`(명중 표시), `Combat Feed`(점수·처치 피드), `Kill Confirm Effect`(처치 화면: 일반 처치는 GTA V식 밝아짐·블룸·옅은 푸른 틴트·약한 색수차 0.5초 유지 후 0.25초 페이드, 처형·반격은 특수 펄스) |
 | `ENEMIES → Console` / `Waves` | 콘솔에서 소환한 적 / 웨이브가 관리하는 적 |
 
 공통 분류는 `RuntimeSceneHierarchy.GetGroup`/`Group`, 효과 생성은 `FeelAssets.CreateRuntimeRoot`/`GroupRuntimeRoot`를 사용한다. 분류가 없는 씬에는 장식형 제목으로 필요한 분류를 새로 만든다. 무기 효과와 적은 소유 무기·스포너의 씬에 생성하며 월드 좌표·크기를 유지한다. Screen 폴더에는 Canvas가 없어 UI 각각의 Overlay Canvas, 표시 순서와 기준 해상도가 유지된다. 콘솔 적과 웨이브 적이 같은 상위 분류를 써도 웨이브의 집계·일시정지·정리는 기존 추적 목록만 대상으로 한다.
 
-`Impact VFX → Blood Decals (Pool)`에는 최대 32개 혈흔을 재사용하는 풀이 있다. 수명(`GunFeel → Blood Decal Seconds`)과 1.2초 페이드가 끝나면 비활성화하고, 다음 타격에서 같은 오브젝트를 다시 사용한다. 32개를 넘으면 오래된 슬롯을 덮어쓰므로 무한히 증가하지 않는다. 반복 생성·삭제 비용을 줄이는 기존 동작을 유지하며, 비활성 혈흔도 이 폴더 안에 보관한다.
+`Blood Decals`에는 피격 피를 그리는 URP 투영 데칼이 미리 만들어져 있다(벽·바닥 혈흔 `Splat` 32개, 적 몸 자국 `Mark` 48개). 수명(혈흔은 `GunFeel → Blood Decal Seconds` 뒤 1.2초 페이드, 몸 자국은 5초 페이드)이 끝나면 비활성화하고, 개수를 넘으면 가장 오래된 것을 덮어쓰므로 무한히 늘지 않는다. 반투명 사각판으로 그리던 때는 겹친 혈흔이 시점에 따라 위아래가 바뀌어 깜박였으므로(2026-11-14) 표면에 얹는 피 자국은 투영 데칼로만 만든다.
 
 | 목적 | 위치 |
 | --- | --- |
@@ -97,4 +97,4 @@ PlayerWeaponInput → WeaponController
 | 셤블러 잡기 (G&B 레슬: 셤블러는 멀어지는 중이 아니면 할퀴는 대신 잡음, 패링은 안 되고 회피만, 잡히면 5초 동안 못 움직이고 총도 못 씀, 밀치기·주먹으로 떼어냄, 그 셤블러가 누구에게든 맞거나 기절하면 풀림, 2마리 이상이면 마리당 초당 10씩 물고 4마리면 즉사. 엎드리거나 누워 있으면 어떤 좀비든 무릎 꿇고 뜯어먹음: 같은 방식으로 붙잡고 처음부터 묾. 누운·쓰러진 플레이어는 낮게 노려서 맞힘. 잡기와 뜯어먹기는 서로 발 높이 차가 0.6m 안일 때만 하고 턱 위·아래의 플레이어는 할퀴기만 함(Enemies.csv `holdHeight`). 무엇이든 플레이어를 잡고 있는 좀비는 모든 PC에서 외곽선이 뜨고 가려진 곳에서는 벽 너머 실루엣으로 두근거림: [HoldReveal](Marks/HoldReveal.cs), [HoldReveal.csv](../../Data/Resources/Tables/Player/HoldReveal.csv)) | [PlayerHold](../Player/Life/PlayerHold.cs) (잡히거나 깔린 플레이어 자기 화면의 반응: 가장자리가 붉게 조여 오고, 무엇에 잡혔는지와 벗어나는 법 안내, 깔림 막대, 잡기 소리 [HoldFeedback](../Player/Life/HoldFeedback.cs), Player.csv `HoldFeedback.*`. 잡은 좀비의 외곽선 `HitFlashRenderer.SetHolder`(Feedback의 Holder 항목)는 이제 HoldReveal이 모든 PC에서 켠다. 엎드리거나 누운 플레이어를 뜯어먹으려 무릎 꿇은 좀비는 그사이 0.8m까지 기어간 플레이어도 잡는다: EnemyCombatAI의 feedReach), [ZombieGrip](../Enemies/ZombieGrip.cs), `EnemyCombatAI` AttackMove.Grab, `PlayerMovement.IsHeld`, `PlayerNetworkCombat.ShareHold`, Player.csv `Hold.*`, [ZombieKinds.csv](../../Data/Resources/Tables/Enemies/ZombieKinds.csv)의 `grabs` |
 | 총성·피격·히트마커·처치 피드백 / 후처리 빌려 쓰기 | [Combat/Feel](Feedback/), [PostProcessLoan](Moments/PostProcessLoan.cs), [GunFeel.asset](../../Data/Resources/Combat/GunFeel.asset), 무기 데이터의 `Feel` |
 | 총소리 고르기(총에 넣은 클립 → Guns 묶음 → 합성음) / 쏜 자리의 방에 맞춘 총 잔향 (Accurate Gun Reverb) | [FeelAudio](Feedback/FeelAudio.cs), [Art/Audio/Guns](../../Art/Audio/Guns) / [GunReverb](../Audio/GunReverb.cs) ([Reverb.csv](../../Data/Resources/Tables/Audio/Reverb.csv)) |
-| 매 피격 혈흔의 모양 고르기(코드로 만든 얼룩 + Cry of Fear 혈흔 9장, 같은 모양을 연달아 찍지 않음) / 고어 투영 데칼(GoreLibrary의 Splats 전부에서 고름) | [BloodSplatTextures](Impacts/BloodSplatTextures.cs) (`ImpactVfx.Splat`이 부름, 텍스처 Resources/Combat/BloodSplats) / [GoreFx](../Enemies/Gore/GoreFx.cs) |
+| 매 피격 피(벽·바닥 혈흔, 히트박스를 따라다니는 적 몸 자국)를 투영 데칼로: 맵을 불러올 때 만든 대기열을 오래된 것부터 다시 쓰고, GoreLibrary의 Splats에서 같은 그림을 연달아 고르지 않음 / 고어 투영 데칼(같은 Splats 전부에서 고름) | [BloodDecals](Impacts/BloodDecals.cs) (`ImpactVfx.Splat`, `EnemyBloodEffect`가 부름) / [GoreFx](../Enemies/Gore/GoreFx.cs) |

@@ -18,6 +18,7 @@ public static class CombatWarmup
     {
         ImpactPool.Prepare();
         BulletHoles.Prepare();
+        BloodDecals.Prepare();
         ImpactVfx.Prepare();
         CombatHitAudio.Prepare();
         ZombieVoice.Prepare();

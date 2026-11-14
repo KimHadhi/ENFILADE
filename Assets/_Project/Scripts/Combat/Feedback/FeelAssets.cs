@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, bloodSplat, ring, glint, hairLine, streakTaper;
+    private static Texture2D softDot, flashStar, flashSpike, ring, glint, hairLine, streakTaper;
     private static readonly Dictionary<int, Texture2D> hollowGlints = new Dictionary<int, Texture2D>(), hollowGlows = new Dictionary<int, Texture2D>();
     /// <summary>How many times taller than the line it shows a <see cref="HairLine"/> quad is drawn: its fading outer
     /// thirds add up to one more third, so the line shows two thirds of the quad's height.</summary>
@@ -75,7 +75,7 @@ public static class FeelAssets
         return new[]
         {
             Particle(SoftDot, false), Particle(SoftDot, true), Particle(FlashStar, true), Particle(FlashSpike, true),
-            Particle(BloodSplat, false), Particle(Texture2D.whiteTexture, false)
+            Particle(Texture2D.whiteTexture, false)
         };
     }
 
@@ -110,23 +110,6 @@ public static class FeelAssets
         if (width <= .001f) return 0f;
         float across = v / width;
         return Mathf.Clamp01(Mathf.Exp(-across * across * 2.2f) * (1f - x * .55f));
-    });
-
-    public static Texture2D BloodSplat => bloodSplat != null ? bloodSplat : bloodSplat = Generate("Feel Blood Splat", 128, 128, (u, v) =>
-    {
-        float r = Mathf.Sqrt(u * u + v * v), angle = Mathf.Atan2(v, u);
-        // Lumpy main pool from a few fixed harmonics.
-        float edge = .52f + .08f * Mathf.Sin(angle * 3f + 1.3f) + .06f * Mathf.Sin(angle * 7f + .4f) + .04f * Mathf.Sin(angle * 13f + 2.1f);
-        float pool = Mathf.Clamp01((edge - r) * 14f);
-        float drops = 0f;
-        for (int i = 0; i < 9; i++)
-        {
-            float a = i * 2.39996f; float d = .62f + .27f * Mathf.Repeat(i * .618f, 1f);
-            float size = .035f + .03f * Mathf.Repeat(i * .37f, 1f);
-            float dx = u - Mathf.Cos(a) * d, dy = v - Mathf.Sin(a) * d;
-            drops = Mathf.Max(drops, Mathf.Clamp01((size - Mathf.Sqrt(dx * dx + dy * dy)) * 60f));
-        }
-        return Mathf.Max(pool, drops);
     });
 
     public static Texture2D Ring => ring != null ? ring : ring = Generate("Feel Ring", 128, 128, (u, v) =>

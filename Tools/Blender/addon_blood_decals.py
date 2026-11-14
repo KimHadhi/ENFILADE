@@ -1,7 +1,8 @@
-# Blender (headless): Source "mod2x" blood decals -> textures the game's two blood systems can use.
-# usage: blender -b --factory-startup --python addon_blood_decals.py -- <splat_out_dir> <decal_out_dir> <image> [more ...]
-#   splat_out_dir: white detail + alpha, for ImpactVfx's per-hit splats (FeelParticle multiplies by the blood colour)
-#   decal_out_dir: blood colour + alpha and a normal map from its thickness, for URP decal projectors (GoreLibrary)
+# Blender (headless): Source "mod2x" blood decals -> textures for the game's blood decal projectors.
+# usage: blender -b --factory-startup --python addon_blood_decals.py -- <decal_out_dir> <image> [more ...]
+#   decal_out_dir: blood colour + alpha and a normal map from its thickness. Their materials go in GoreLibrary's Splats,
+#   which every blood mark picks from (gore's GoreFx, and per hit BloodDecals). Until 2026-11-14 a second set, white
+#   detail + alpha, went to Resources/Combat/BloodSplats for per-hit quads tinted by GunFeel; those flickered and are gone.
 #
 # Why the conversion: the Cry of Fear decals (L4D2 workshop 3612824343) are mod2x textures, drawn as dst * 2 * src, so
 # mid grey (0.5) leaves the wall alone and only darker, redder texels show. Unity's decals blend by alpha instead, so the
@@ -14,8 +15,7 @@ import bpy
 import numpy as np
 
 args = sys.argv[sys.argv.index("--") + 1:]
-splat_dir, decal_dir, sources = os.path.abspath(args[0]), os.path.abspath(args[1]), [os.path.abspath(a) for a in args[2:]]
-os.makedirs(splat_dir, exist_ok=True)
+decal_dir, sources = os.path.abspath(args[0]), [os.path.abspath(a) for a in args[1:]]
 os.makedirs(decal_dir, exist_ok=True)
 GREY, SPAN, EDGE = .47, .42, 6
 
@@ -42,16 +42,12 @@ for path in sources:
     px = np.empty(w * h * 4, np.float32)
     src.pixels.foreach_get(px)
     px = px.reshape(h, w, 4)
-    r, g, b = px[..., 0], px[..., 1], px[..., 2]
+    g, b = px[..., 1], px[..., 2]
     coverage = np.clip((GREY - np.maximum(g, b)) / SPAN, 0, 1) ** .8
     yy, xx = np.mgrid[0:h, 0:w]
     border = np.minimum(np.minimum(xx, w - 1 - xx), np.minimum(yy, h - 1 - yy))
     coverage *= np.clip(border / EDGE, 0, 1)
     name = os.path.splitext(os.path.basename(path))[0]
-
-    detail = np.clip(.55 + .9 * r, .55, 1.0)
-    splat = np.dstack([detail, detail, detail, coverage])
-    save("cof_" + name, splat_dir, splat, w, h)
 
     colour = np.clip(px[..., :3] * 2 * .85, 0, 1)
     decal = np.dstack([colour, coverage])

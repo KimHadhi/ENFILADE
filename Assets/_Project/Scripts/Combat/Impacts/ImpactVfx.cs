@@ -2,25 +2,18 @@ using UnityEngine;
 
 /// <summary>
 /// Impact matter: a pack blood splash back toward the shooter (ImpactPool, or a procedural mist puff without it), droplets
-/// mostly out of the exit side, blood splats on the nearest floor/wall behind the target, and dust puffs for bodies hitting
-/// the ground. Headshots and kills spray harder. Particle systems and up to 32 decals are pooled; created on first use during Play.
+/// mostly out of the exit side, blood splats on the nearest floor/wall behind the target (projected by BloodDecals), and
+/// dust puffs for bodies hitting the ground. Headshots and kills spray harder. Particle systems are pooled; created on
+/// first use during Play.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ImpactVfx : MonoBehaviour
 {
-    private const int DecalCount = 32;
     // Off the body toward the shooter, so a camera-facing splash isn't cut by the body it leaves.
     private const float SplashLift = .05f;
     private static ImpactVfx instance;
     private ParticleSystem droplets, mist, dust, shieldSparks, shieldFlash;
-    private readonly Transform[] decals = new Transform[DecalCount];
-    private readonly MeshRenderer[] decalRenderers = new MeshRenderer[DecalCount];
-    private readonly float[] decalAge = new float[DecalCount];
-    private readonly Color[] decalColor = new Color[DecalCount];
     private readonly RaycastHit[] hits = new RaycastHit[8];
-    private MaterialPropertyBlock block;
-    private Transform decalRoot;
-    private int nextDecal;
 
     private static ImpactVfx Get()
     {
@@ -37,9 +30,8 @@ public sealed class ImpactVfx : MonoBehaviour
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
-        block = new MaterialPropertyBlock();
 
-        droplets = FeelAssets.CreateEmitter("Blood Droplets", transform, FeelAssets.Particle(FeelAssets.SoftDot, false), 600, 1.3f,
+        droplets =FeelAssets.CreateEmitter("Blood Droplets", transform, FeelAssets.Particle(FeelAssets.SoftDot, false), 600, 1.3f,
             ParticleSystemRenderMode.Stretch);
         var stretch = droplets.GetComponent<ParticleSystemRenderer>();
         stretch.velocityScale = .045f; stretch.lengthScale = 1.1f;
@@ -205,34 +197,8 @@ public sealed class ImpactVfx : MonoBehaviour
             best = hit.distance; chosen = hit; found = true;
         }
         if (!found) return;
-        int slot = nextDecal; nextDecal = (nextDecal + 1) % DecalCount;
-        if (decals[slot] == null)
-        {
-            if (decalRoot == null)
-            {
-                decalRoot = new GameObject("Blood Decals (Pool)").transform;
-                decalRoot.SetParent(transform, false);
-            }
-            var host = new GameObject("Blood Splat");
-            host.transform.SetParent(decalRoot, false);
-            host.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
-            var renderer = host.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = FeelAssets.Particle(FeelAssets.BloodSplat, false);
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            decals[slot] = host.transform; decalRenderers[slot] = renderer;
-        }
-        // Tiny per-slot lift keeps overlapping splats from z-fighting.
-        float lift = .006f + slot * .0004f;
-        decals[slot].SetPositionAndRotation(chosen.point + chosen.normal * lift,
-            Quaternion.LookRotation(-chosen.normal) * Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
-        decals[slot].localScale = Vector3.one * size * Random.Range(.8f, 1.2f);
-        decalAge[slot] = 0f;
-        decalColor[slot] = Shade(GunFeelSettings.Instance.bloodColor, Random.Range(.6f, .85f));
-        // A different blot each time: the generated splat or a Cry of Fear decal (BloodSplatTextures).
-        decalRenderers[slot].sharedMaterial = BloodSplatTextures.Next();
-        decals[slot].gameObject.SetActive(true);
-        Tint(slot, 1f);
+        // Painted into the surface, not hung off it as a quad: see BloodDecals for why the quads flickered.
+        BloodDecals.Splat(chosen.point, chosen.normal, size * Random.Range(.8f, 1.2f));
     }
 
     private void Puff(Vector3 point, float scale)
@@ -250,26 +216,6 @@ public sealed class ImpactVfx : MonoBehaviour
             emit.rotation = Random.Range(0f, 360f);
             dust.Emit(emit, 1);
         }
-    }
-
-    private void Update()
-    {
-        float seconds = GunFeelSettings.Instance.bloodDecalSeconds;
-        for (int i = 0; i < DecalCount; i++)
-        {
-            if (decals[i] == null || !decals[i].gameObject.activeSelf) continue;
-            decalAge[i] += Time.deltaTime;
-            float fade = 1f - Mathf.Clamp01((decalAge[i] - seconds) / 1.2f);
-            if (fade <= 0f) { decals[i].gameObject.SetActive(false); continue; }
-            if (decalAge[i] > seconds) Tint(i, fade);
-        }
-    }
-
-    private void Tint(int slot, float alpha)
-    {
-        Color color = decalColor[slot]; color.a *= alpha;
-        block.SetColor("_Color", color);
-        decalRenderers[slot].SetPropertyBlock(block);
     }
 
     private static Vector3 Cone(Vector3 axis, float degrees)
