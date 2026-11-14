@@ -391,6 +391,11 @@ public sealed partial class WeaponController : MonoBehaviour
         if (shove) shoveRecovery = missedShoveRecovery;
     }
     public void ConfirmShoveHit() { shoveRecovery = 0f; }
+    /// <summary>
+    /// A gun's shove whose bash meets them later (FPSBody.BashStrikeIn): the gun stays out of use at least this long (s),
+    /// so it can't fire or aim out of a swing still on its way; a hit frees it at once as ever (ConfirmShoveHit).
+    /// </summary>
+    internal void HoldForShove(float seconds) { shoveRecovery = Mathf.Max(shoveRecovery, seconds); }
     private void UpdateSpread()
     {
         float moving = movement == null ? 0f : Mathf.Clamp01(new Vector2(movement.ActualVelocity.x, movement.ActualVelocity.z).magnitude / Mathf.Max(.1f, movement.WalkSpeed));

@@ -469,6 +469,7 @@ Ability.slidePushStun,0.45,슬라이드에 밀린 적의 경직(초)
 Ability.slideKnockdownDuration,1.2,슬라이드에 넘어진 적이 누워 있는 시간(초)
 # 능력: V 밀치기,,
 Ability.shoveActiveTime,0.2,V 밀치기 판정 시간(초)
+Ability.bashActiveTime,0.13,총을 든 V 밀치기는 총 휘두르기의 총이 닿는 순간(블렌더 밀치기 작업실의 타격 표시)부터 이만큼(초) 맞힌다. 지금 두 동작은 누른 뒤 0.067초에 닿아 예전처럼 누른 뒤 0.2초쯤 판정이 끝난다. 빗나가면 판정이 끝날 때까지 총을 쏘거나 조준할 수 없다(맞히면 바로 된다). 주먹 밀치기와 휘두르기가 없는 밀치기는 누른 순간부터 Ability.shoveActiveTime
 Ability.shoveSweepReach,2.2,V 밀치기 사거리(m)
 Ability.shoveSweepAngle,120,V 밀치기 범위 각도(도)
 Ability.shovePushSpeed,8,밀친 적이 밀려나는 속도(m/s)

@@ -14,7 +14,8 @@ the file is ready to work in: the user only poses and times (the user, 2026-11-1
   - 총 휘두르기 · 긴 총 (enf_bash_long) and 총 휘두르기 · 권총 (enf_bash_pistol): the empty GUN moves off GUN_hold, which
     sits where Kazusa's hands hold that gun under the head camera (GunBakes gunFromEyes). The hands follow it here as they
     do in the game. Sent as Assets/_Project/Data/Resources/Combat/GunMoves/<name>.csv: the gun's move and turn off its hold in
-    the gun's own frame, in game metres, which FPSBody.Bash plays on any character's gun (GunMoves).
+    the gun's own frame, in game metres, which FPSBody.Bash plays on any character's gun (GunMoves), and its 타격, where
+    the game's shove hits.
   - 발차기 (enf_kick_front): Kazusa's right leg on the True FPS rig, baked from the original skeleton to
     Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
     (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
@@ -63,13 +64,14 @@ STRIKE = '타격'
 # The moves: what moves (the gun or the body), the action that is exported, the gun shown, the frame the strike lands
 # on and the last frame, and the part selected when the move is opened. Where the hands hold each gun, from the eyes in
 # this file's units: GunBakes gunFromEyes / GAME_SCALE, the eyes' frame turned into the camera's (x right, y up, z back).
-# hit: when the game itself hits, which the strike should meet; the animation never moves it. A shove with a gun hits
-# from the press until Player.csv Ability.shoveActiveTime ('by'); the kick's foot lands at Shove.kickHitTime ('at').
+# hit: how the game's blow keeps time with the strike. A gun's bash hits at its own strike, which goes to the game with it
+# (#impact), and on for Player.csv Ability.bashActiveTime ('from'). The kick's foot lands at Shove.kickHitTime ('at'),
+# which the strike should meet: the kick's strike isn't sent.
 MOVES = {
     'bash_long': dict(label='총 휘두르기 · 긴 총', kind='gun', action='enf_bash_long', gun='GUN_AK105', impact=3, end=14,
-                      hold=(0.0620, -0.0748, -0.2599), hit=('Ability.shoveActiveTime', .2, 'by')),
+                      hold=(0.0620, -0.0748, -0.2599), hit=('Ability.bashActiveTime', .13, 'from')),
     'bash_pistol': dict(label='총 휘두르기 · 권총', kind='gun', action='enf_bash_pistol', gun='GUN_R08', impact=3, end=13,
-                        hold=(0.0668, -0.0659, -0.2415), hit=('Ability.shoveActiveTime', .2, 'by')),
+                        hold=(0.0668, -0.0659, -0.2415), hit=('Ability.bashActiveTime', .13, 'from')),
     'kick': dict(label='발차기', kind='body', action='enf_kick_front', impact=10, end=20, hit=('Shove.kickHitTime', .3, 'at'),
                  part='CTRL_foot.R'),
     # The Support's mending in the free left hand while the gun stays in the right (the user, 2026-11-12: "남는 손으로
@@ -938,8 +940,13 @@ class ENFSHOVE_PT_panel(bpy.types.Panel):
             if move.get('hit'):
                 row, fallback, how = move['hit']
                 game = game_number(row, fallback)
-                if how == 'by' and at > game + 1e-3:
-                    box.label(text=f'게임은 누른 뒤 {game:.2f}초 안에 맞힌다: 타격을 그 앞으로', icon='ERROR')
+                if how == 'from':
+                    # The game moves a strike outside the move to its nearer end (GunMove.Impact).
+                    if not scene.frame_start <= marker.frame <= scene.frame_end:
+                        when = '누르자마자' if marker.frame < scene.frame_start else '마지막 프레임에'
+                        box.label(text=f'타격이 동작 밖에 있다: 게임은 {when} 맞힌다', icon='ERROR')
+                    else:
+                        box.label(text=f'게임도 이 순간에 맞힌다 · 그 뒤 {game:.2f}초 동안 판정')
                 elif how == 'at' and abs(at - game) > .5 / fps:
                     box.label(text=f'게임의 발은 {game:.2f}초({round(game * fps) + scene.frame_start}프레임)에 닿는다', icon='ERROR')
             elif move['kind'] == 'arm':

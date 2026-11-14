@@ -14,13 +14,19 @@ internal sealed class GunMove
 
     /// <summary>How long it plays (s), its last key.</summary>
     public float Length => times[times.Length - 1];
+    /// <summary>
+    /// When the gun meets the target (s from the start): the strike its maker set in Blender (the shove workspace's 타격
+    /// marker, the file's "#impact" line). The gun's shove hits then (FPSBody.BashStrikeIn). A strike outside the move
+    /// lands at its nearer end, and a file without one strikes as it begins.
+    /// </summary>
+    public float Impact { get; }
 
     public GunMove(float[] times, Vector3[] moves, Quaternion[] turns, float impact)
     {
         this.times = times;
         this.moves = moves;
         this.turns = turns;
-        
+        Impact = Mathf.Clamp(impact, 0f, Length);
     }
 
     /// <summary>The gun's move and turn <paramref name="time"/> seconds in, between its keys.</summary>
@@ -44,9 +50,10 @@ internal sealed class GunMove
 /// <summary>
 /// The gun moves the Blender shove workspace sends to the game (Tools/Blender/Shove, "게임에 보내기"):
 /// Resources/Combat/GunMoves/&lt;name&gt;.csv, a header "time,x,y,z,qx,qy,qz,qw" and a row per sample, a line "#impact=0.067"
-/// for the strike. Read on first use and again on GameTables.Reloaded, which the editor raises when Unity takes in a new
-/// export (GunMovesWatcher) or on ENFILADE > 표 > 표 다시 읽기, so a new export plays at the next shove even in a
-/// running game. A move that can't be read is reported once and plays nothing.
+/// for the strike, when the gun meets the target and the shove hits (GunMove.Impact). Read on first use and again on
+/// GameTables.Reloaded, which the editor raises when Unity takes in a new export (GunMovesWatcher) or on ENFILADE > 표 >
+/// 표 다시 읽기, so a new export plays (and strikes) at the next shove even in a running game. A move that can't be read is
+/// reported once and plays nothing.
 /// </summary>
 internal static class GunMoves
 {

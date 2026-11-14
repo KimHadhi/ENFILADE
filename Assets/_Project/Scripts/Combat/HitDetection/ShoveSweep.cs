@@ -14,13 +14,22 @@ public static class ShoveSweep
         private readonly AimSweepWindow window;
         private PlayerMovement player;
         private Transform aim;
-        private float damage;
+        private float damage, duration, strikeIn;
         private LayerMask layers;
         private ShoveImpactKind impact;
-        private bool soundPlayed;
+        private bool soundPlayed, swinging;
         public int HitCount { get; private set; }
         public Attack() { window = new AimSweepWindow(Sample); }
+        /// <summary>A shove that hits from now for <paramref name="duration"/> seconds.</summary>
         public void Begin(PlayerMovement owner, Transform view, float damage, LayerMask layers, float duration)
+            => Begin(owner, view, damage, layers, duration, 0f);
+        /// <summary>
+        /// A shove that swings now and lands <paramref name="strikeIn"/> seconds of the shover's time from now (a gun's
+        /// bash, when its gun meets them: PlayerCombatActions), hitting from then for <paramref name="duration"/>; at
+        /// once if that is 0 or less. On its way it stands as a shove under way, as the reload kick does: a grab or a leap
+        /// reaching them meanwhile, or just after the blow lands, is countered (ShoveCounter).
+        /// </summary>
+        public void Begin(PlayerMovement owner, Transform view, float damage, LayerMask layers, float duration, float strikeIn)
         {
             Cancel(); player = owner; aim = view; this.damage = damage; this.layers = layers;
             contacted.Clear(); attackId = DamageHit.NewAttackId(); HitCount = 0;
@@ -28,10 +37,30 @@ public static class ShoveSweep
             // A grab or a leap landing just after this shove is countered (G&B-3).
             ShoveCounter.Shoved(owner, view != null ? view.forward : owner.transform.forward);
             player.GetComponent<PlayerShoveAudio>().OrNull()?.Play(ShoveImpactKind.None);
+            this.duration = duration; this.strikeIn = strikeIn;
+            swinging = strikeIn > 0f;
+            if (!swinging) Strike();
+        }
+        public void Tick(float dt)
+        {
+            if (swinging) { Swing(dt); return; }
+            window.Tick(dt, aim); PlayFeedback();
+        }
+        public void Cancel() { swinging = false; window.Cancel(); }
+        // The blow on its way: nothing is hit before it lands.
+        private void Swing(float dt)
+        {
+            if (player == null || aim == null) { Cancel(); return; }
+            strikeIn -= dt;
+            ShoveCounter.Shoved(player, aim.forward);
+            if (strikeIn <= 0f) Strike();
+        }
+        // The blow lands: the sweep opens from where the eyes are now.
+        private void Strike()
+        {
+            swinging = false;
             window.Begin(aim, duration); PlayFeedback();
         }
-        public void Tick(float dt) { window.Tick(dt, aim); PlayFeedback(); }
-        public void Cancel() { window.Cancel(); }
         private void Sample(Vector3 origin, Vector3 forward)
         {
             if (player == null || player.CombatInputLocked) { Cancel(); return; }

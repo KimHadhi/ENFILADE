@@ -6,9 +6,10 @@ using UnityEngine;
 /// 만들고 내가 그거 후보정"). The move is a GunMove (Resources/Combat/GunMoves, from the Blender shove workspace): how far the
 /// gun moves and turns off where it is held, in its own frame. It goes on top of wherever FPSAF and the clips have the gun
 /// this frame (aimed, swaying, mid-recoil), and the hands stay on it at their contacts (FPSBody.Contacts), so it fits any
-/// character and any gun of its kind. The shove hits from the press (ShoveSweep, 0.2 s), so the drafts strike within a
-/// few frames of it. A shot, a reload or the gun going away cuts it short and the gun eases back over bashBlendOut. Every PC
-/// plays it (ShoveMoves.Bashed: the shover's own PC, and copies through PlayerNetworkCombat), so friends see the swing too.
+/// character and any gun of its kind. The shove hits when the gun meets the target: at the strike its maker set there
+/// (GunMove.Impact, the 타격 marker) at the speed the bash plays (BashStrikeIn), judged on the shover's own PC alone. A shot,
+/// a reload or the gun going away cuts it short and the gun eases back over bashBlendOut. Every PC plays it
+/// (ShoveMoves.Bashed: the shover's own PC, and copies through PlayerNetworkCombat), so friends see the swing too.
 /// </summary>
 public sealed partial class FPSBody
 {
@@ -49,6 +50,19 @@ public sealed partial class FPSBody
         bashClock = 0f;
         bashWeight = 1f;
         bashCut = false;
+    }
+
+    /// <summary>
+    /// How long from now until the gun of the bash under way on <paramref name="weapons"/>' body meets the target (s): the
+    /// strike its maker set in Blender (GunMove.Impact) at the speed the bash plays. Negative when no bash is on its way to
+    /// one (no gun in the hands, its move missing, cut short or past its strike): the shove then hits from the press, as one
+    /// without a gun does (PlayerCombatActions.TryShove).
+    /// </summary>
+    internal static float BashStrikeIn(WeaponController weapons)
+    {
+        var body = Holding(weapons);
+        if (body == null || body.bash == null || body.bashCut || body.bashSpeed <= 0f || body.bashClock > body.bash.Impact) return -1f;
+        return (body.bash.Impact - body.bashClock) / body.bashSpeed;
     }
 
     /// <summary>A shot, a reload or the gun going away: the bash lets the gun go back over bashBlendOut.</summary>

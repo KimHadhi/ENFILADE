@@ -246,6 +246,10 @@ public sealed class MovementAbilitySettings
 
     [Header("Crowd Shove")]
     [Min(.02f)] public float shoveActiveTime = .2f;
+    [Tooltip("With a gun, the shove hits from the moment its bash's gun meets them, the strike set in the Blender shove "
+        + "workspace (GunMove.Impact), for this long (s). shoveActiveTime, from the press, stays the fists' shove's and a "
+        + "shove with no bash.")]
+    [Min(.02f)] public float bashActiveTime = .13f;
     [Min(.1f)] public float shoveSweepReach = 2.2f;
     [Range(1f, 179f)] public float shoveSweepAngle = 120f;
     [Min(0f)] public float shovePushSpeed = 8f;

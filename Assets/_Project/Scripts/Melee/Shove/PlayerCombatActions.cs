@@ -8,10 +8,11 @@ using State = PlayerMovement.MovementState;
 /// The body's V. Running, with a gun or fists, it is the dash push, after Dynamic Landing: the body is thrown ahead at
 /// twice the run for a moment, and the first enemy it meets is thrown along the ground (shoving whoever that one runs
 /// into) and knocked down. The dash stops there, and its own cooldown starts when it ends, hit or miss. Otherwise, with
-/// a gun out, V is the crowd shove (ShoveSweep), lunging at someone just out of reach when standing still, and while the
-/// gun reloads it is a kick that leaves the reload alone (ShoveMoves); crouched it is the leg sweep (ShoveMoves); the
-/// fists' V is PlayerMeleeCombat's. A counter (ShoveCounter) hands the shove straight back: RefreshShove. Any of them that
-/// reaches a friend a runner pins frees them (ShoveRescue).
+/// a gun out, V is the crowd shove (ShoveSweep), hitting when the gun's bash meets them (the strike set in Blender:
+/// FPSBody.BashStrikeIn) and lunging at someone just out of reach when standing still, and while the gun reloads it is a
+/// kick that leaves the reload alone (ShoveMoves); crouched it is the leg sweep (ShoveMoves); the fists' V is
+/// PlayerMeleeCombat's. A counter (ShoveCounter) hands the shove straight back: RefreshShove. Any of them that reaches a
+/// friend a runner pins frees them (ShoveRescue).
 /// </summary>
 public sealed class PlayerCombatActions
 {
@@ -42,14 +43,17 @@ public sealed class PlayerCombatActions
     internal void RefreshShove() { cooldown = 0f; Fatigue.Reset(); }
     internal void SampleShove(float dt)
     {
-        if (!ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
-            || ctx.CurrentState == State.StepDodge
-            || ctx.CurrentState == State.DashPush
-            || ctx.IsLandingRecovery)
-        { CancelShove(); return; }
+        if (ShoveHeldBack()) { CancelShove(); return; }
         shoveSweep.Tick(dt);
         if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>().OrNull()?.ConfirmShoveHit();
     }
+
+    // What stops a shove under way: the hands taken (CombatInputLocked), or the body in a move of its own (a vault, a dive,
+    // a slide, a dodge, the dash, a landing; pinned on the back it lies in a locked heavy landing).
+    private bool ShoveHeldBack() => !ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
+        || ctx.CurrentState == State.StepDodge
+        || ctx.CurrentState == State.DashPush
+        || ctx.IsLandingRecovery;
 
     internal bool TryShove()
     {
@@ -67,12 +71,24 @@ public sealed class PlayerCombatActions
         weapon.OrNull()?.InterruptForSurvival(true);
         // The gun swings through its bash on every PC (ShoveMoves.Bashed → FPSBody.Bash, PlayerNetworkCombat).
         ShoveMoves.For(ctx).Bash();
-        cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);
+        var settings = ctx.AbilitySettings;
+        cooldown = Fatigue.Spend(settings.shoveCooldown, settings);
         // From the eyes, which stay with the body in the F5 view.
         var eyes = PlayerView.EyesOf(ctx);
-        shoveSweep.Begin(ctx, eyes, ctx.AbilitySettings.shoveDamage,
-            ctx.AbilitySettings.interactionLayers, ctx.AbilitySettings.shoveActiveTime);
-        ShoveMoves.For(ctx).Lunge(eyes, ctx.AbilitySettings.shoveSweepReach, ctx.AbilitySettings.interactionLayers);
+        // The bash hits when its gun meets them, at the strike its maker set in Blender (FPSBody.BashStrikeIn), and goes on
+        // for bashActiveTime; till that is over the gun can't fire out of the swing unless it hit. The bash's clock has
+        // counted this frame already (FPSBody.FollowBash), so the wait counts it too: the hit comes on the frame the gun is
+        // shown meeting them. With no bash (no gun in the hands, or its move missing), or a body that can't carry a shove on
+        // (V pinned on the back, with the perk), it hits from the press as it always has.
+        float strike = FPSBody.BashStrikeIn(weapon);
+        if (strike >= 0f && !ShoveHeldBack())
+        {
+            weapon.HoldForShove(strike + settings.bashActiveTime);
+            shoveSweep.Begin(ctx, eyes, settings.shoveDamage, settings.interactionLayers, settings.bashActiveTime,
+                strike - ctx.DeltaTime);
+        }
+        else shoveSweep.Begin(ctx, eyes, settings.shoveDamage, settings.interactionLayers, settings.shoveActiveTime);
+        ShoveMoves.For(ctx).Lunge(eyes, settings.shoveSweepReach, settings.interactionLayers);
         if (shoveSweep.HitCount > 0) weapon.OrNull()?.ConfirmShoveHit();
         return true;
     }
