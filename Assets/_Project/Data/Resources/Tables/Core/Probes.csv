@@ -1,0 +1,4 @@
+﻿key,value,note
+PerfAuto.on,1,에디터에서 Play할 때 장면마다(타이틀 빼고) 처음 한 번 스크립트별·엔진 부분별 비용을 저절로 잴지(1/0). 결과는 Logs/perf.txt(PerfProbe). 재는 동안은 에디터 프로파일러가 켜져서 조금 더 무겁다
+PerfAuto.wait,3,로딩 화면이 걷히고 몇 초 뒤에 재기 시작하는지(초)
+PerfAuto.seconds,90,한 장면을 몇 초 동안 재는지(초). 그 전에 장면을 떠나면 거기까지

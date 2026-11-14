@@ -52,6 +52,33 @@ public sealed class PerfProbe : MonoBehaviour
     private static string FilePath => Path.Combine(Folder, "perf.txt");
 
     private static PerfProbe instance;
+    // Logs/perf.txt is started afresh by the first measurement of a Play, and every later one in it adds its scenes.
+    private static bool writtenThisPlay;
+    // A measurement this probe started on its own (StartAuto) stops after its seconds or at the next scene change.
+    private bool auto;
+    private float stopAt = float.PositiveInfinity;
+
+    /// <summary>Dev probe numbers (Tables/Core/Probes.csv).</summary>
+    public const string TableName = "Probes";
+
+    /// <summary>Seconds after a loading screen lifts before HitchProbe starts the scene's measurement.</summary>
+    public static float AutoWait => Mathf.Max(0f, GameTables.Number(TableName, "PerfAuto.wait", "value", 3f));
+
+    /// <summary>
+    /// Measures the scene just loaded by itself for PerfAuto.seconds, once per scene a Play (HitchProbe asks, not on the
+    /// title), unless a measurement already runs or Probes.csv PerfAuto.on is 0. The user only plays: on 11-14 the lag
+    /// could not be split by script because nobody had typed /perf, and they asked for the causes, not for more steps
+    /// ("그럼 뭐가 렉 원인이야? 고쳐 줘").
+    /// </summary>
+    public static void StartAuto()
+    {
+        if (instance != null || !Application.isPlaying || GameTables.Number(TableName, "PerfAuto.on", "value", 1f) < .5f) return;
+        var host = new GameObject("Perf Probe (auto)");
+        RuntimeSceneHierarchy.Keep(host, "Dev");
+        instance = host.AddComponent<PerfProbe>();
+        instance.auto = true;
+        instance.stopAt = Time.unscaledTime + Mathf.Max(10f, GameTables.Number(TableName, "PerfAuto.seconds", "value", 90f));
+    }
 
     private sealed class Stat
     {
@@ -91,7 +118,11 @@ public sealed class PerfProbe : MonoBehaviour
     private string began;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => instance = null;
+    private static void ResetStatics()
+    {
+        instance = null;
+        writtenThisPlay = false;
+    }
 
     private void Awake()
     {
@@ -119,6 +150,11 @@ public sealed class PerfProbe : MonoBehaviour
 
     private void OnSceneChanged(Scene from, Scene to)
     {
+        if (auto)
+        {
+            Finish();
+            return;
+        }
         Close();
         Open(to.name);
     }
@@ -143,6 +179,11 @@ public sealed class PerfProbe : MonoBehaviour
     private void Update()
     {
         if (finished) return;
+        if (Time.unscaledTime >= stopAt)
+        {
+            Finish();
+            return;
+        }
         // Frames under the loading screen are a load's, not the scene's play.
         if (LoadingScreen.Visible || section == null) { nextFrame = Mathf.Max(nextFrame, ProfilerDriver.lastFrameIndex + 1); return; }
         section.Frames.Add(Time.unscaledDeltaTime * 1000f);
@@ -274,8 +315,13 @@ public sealed class PerfProbe : MonoBehaviour
         try
         {
             Directory.CreateDirectory(Folder);
-            if (File.Exists(FilePath)) File.Copy(FilePath, Path.Combine(Folder, "perf.previous.txt"), true);
-            File.WriteAllText(FilePath, Write());
+            if (!writtenThisPlay)
+            {
+                if (File.Exists(FilePath)) File.Copy(FilePath, Path.Combine(Folder, "perf.previous.txt"), true);
+                File.WriteAllText(FilePath, Write());
+            }
+            else File.AppendAllText(FilePath, "\n" + Write());
+            writtenThisPlay = true;
         }
         catch (System.Exception problem)
         {
@@ -289,7 +335,7 @@ public sealed class PerfProbe : MonoBehaviour
     private string Write()
     {
         var text = new StringBuilder();
-        text.Append($"Frame cost (/perf, PerfProbe), {began} to {System.DateTime.Now:HH:mm:ss}, game {Application.version}, profiler on Play Mode"
+        text.Append($"Frame cost ({(auto ? "measured by itself on entering the scene" : "/perf")}, PerfProbe), {began} to {System.DateTime.Now:HH:mm:ss}, game {Application.version}, profiler on Play Mode"
             + $" (deep profiling {(deep ? "ON: every C# call is timed, numbers far above normal" : "off")}); one frame in {ReadEvery} read whole,"
             + $" and every frame of {LongFrameMs:0} ms or more; frames under the loading screen left out");
         if (skippedFrames > 0) text.Append($"; {skippedFrames} frames passed unread (profiler buffer)");

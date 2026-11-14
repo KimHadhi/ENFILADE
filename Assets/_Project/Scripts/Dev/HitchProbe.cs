@@ -86,7 +86,9 @@ public sealed class HitchProbe : MonoBehaviour
     private PlayerMovement.MovementState lastState;
     private float started, stateSince, sceneSince, loadEndedAt = -1f;
     private int nextScan, nextRescan = RescanAfterLoad.Length, reports, sceneReports, loadingReports, frameKey = NoPlayer;
-    private bool scanned, written, capNoted, sceneCapNoted, wasLoading;
+    private bool scanned, written, capNoted, sceneCapNoted, wasLoading, perfPending;
+    // Scenes already measured by script this Play (PerfProbe.StartAuto): each once, the title never.
+    private readonly HashSet<string> perfScenes = new HashSet<string>();
     private Bucket scene = new Bucket();
     private string sceneName = "";
     private string sceneClock = "";
@@ -142,6 +144,13 @@ public sealed class HitchProbe : MonoBehaviour
         {
             loadEndedAt = Time.unscaledTime;
             nextRescan = 0;
+            string shown = SceneManager.GetActiveScene().name;
+            perfPending = shown != "MainMenu" && perfScenes.Add(shown);
+        }
+        if (perfPending && !LoadingScreen.Visible && Time.unscaledTime - loadEndedAt >= PerfProbe.AutoWait)
+        {
+            perfPending = false;
+            PerfProbe.StartAuto();
         }
         wasLoading = LoadingScreen.Visible;
         // The scan itself is slow, so the frame after it says nothing.
