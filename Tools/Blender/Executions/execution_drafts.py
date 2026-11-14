@@ -308,13 +308,24 @@ class Hold:
 
 
 class Seat:
-    """Where the knife sits in Kazusa's right fist (Tables/Executions.csv, row Knife; the game seats it the same way on any
-    character): the fist's middle along the hand (gripAlong, times the wrist-to-knuckle length) and out of the palm
-    (gripPalm, metres), the blade toward the little finger tilted toward the fingers (tilt, degrees), the grip that far
-    behind the model's middle (knifeGrip, metres)."""
+    """Where the knife sits in Kazusa's right fist at rest, in her armature's space: its blade's and edge's ways and its
+    tip. execution_knife.tip_frame gives the 처형 tab's class knife as the game seats it (Tables/Melee/ClassKnives.csv);
+    with none in the file, Seat.fixed is the fist the first drafts were made with (the fixed preview knife of 0.8.294:
+    its grip 1.05 hand lengths along the hand and 2.2 cm out of the palm, the blade toward the little finger tilted 12
+    degrees toward the fingers, the tip 15.56 cm from the grip)."""
 
-    def __init__(self, along=1.05, palm=.022, tilt=12.0, grip=-.05, tip=.1056):
-        self.along, self.palm, self.tilt, self.grip, self.tip = along, palm, tilt, grip, tip
+    def __init__(self, blade, edge, tip):
+        self.blade = Vector(blade).normalized()
+        edge = Vector(edge)
+        self.edge = (edge - self.blade * edge.dot(self.blade)).normalized()
+        self.tip = Vector(tip)
+
+    @staticmethod
+    def fixed(hand):
+        tilt = math.radians(12.0)
+        blade = (-hand['out'] * math.cos(tilt) + hand['along'] * math.sin(tilt)).normalized()
+        grip = hand['wrist'] + hand['along'] * hand['length'] * 1.05 + hand['palm'] * .022 / GAME_SCALE
+        return Seat(blade, hand['along'], grip + blade * .1556 / GAME_SCALE)
 
 
 class PlayerDraft:
@@ -322,8 +333,8 @@ class PlayerDraft:
     head's turns, each hand (Palm, Knife or Hold), the elbows' and knees' pole offsets, the feet and the finger curls;
     eased between, then keyed on her controls and FK bones every frame."""
 
-    def __init__(self, context, rig, zombie, seat):
-        self.context, self.rig, self.zombie, self.seat = context, rig, zombie, seat
+    def __init__(self, context, rig, zombie, seat=None):
+        self.context, self.rig, self.zombie = context, rig, zombie
         self.keys = []
         bones = rig.data.bones
         self.rest = {b.name: b.matrix_local.copy() for b in bones}
@@ -342,6 +353,7 @@ class PlayerDraft:
             palm = along.cross(out) if side == 'L' else out.cross(along)
             self.side[side] = {'wrist': wrist.copy(), 'along': along, 'out': out, 'palm': palm.normalized(), 'length': length,
                                'rest': _rotation(self.rest['Left wrist' if side == 'L' else 'Right wrist'])}
+        self.seat = seat if seat is not None else Seat.fixed(self.side['R'])
 
     def key(self, frame, kind='smooth', **parts):
         self.keys.append((frame, parts, kind))
@@ -373,34 +385,20 @@ class PlayerDraft:
             point = self._to_arm(target.point)
         else:
             seat = self.seat
-            blade_rest = (-s['out'] * math.cos(math.radians(seat.tilt)) + s['along'] * math.sin(math.radians(seat.tilt))).normalized()
-            edge_rest = s['along'] - blade_rest * s['along'].dot(blade_rest)
-            edge_rest.normalize()
             blade = self._dir_to_arm(target.blade)
             edge = self._dir_to_arm(target.edge)
             edge = (edge - blade * edge.dot(blade)).normalized()
-            # The hand turned so the blade and edge go where wanted: the rotation from the rest knife frame.
-            rest_frame = Matrix((blade_rest, edge_rest, blade_rest.cross(edge_rest))).transposed()
+            # The hand turned so the blade and edge go where wanted: the rotation from the knife's frame at rest.
+            rest_frame = Matrix((seat.blade, seat.edge, seat.blade.cross(seat.edge))).transposed()
             want_frame = Matrix((blade, edge, blade.cross(edge))).transposed()
             turn = (want_frame @ rest_frame.transposed()).to_quaternion()
-            grip = s['wrist'] + s['along'] * s['length'] * seat.along + s['palm'] * seat.palm / GAME_SCALE
-            tip_rest = grip + blade_rest * (seat.tip - seat.grip) / GAME_SCALE
             point = self._to_arm(target.point)
-            wrist = point - turn @ (tip_rest - s['wrist'])
+            wrist = point - turn @ (seat.tip - s['wrist'])
             return Matrix.Translation(wrist) @ (turn @ s['rest']).to_matrix().to_4x4()
         want = Matrix((along, palm, along.cross(palm))).transposed()
         turn = (want @ self._hand_basis(side).transposed()).to_quaternion()
         wrist = point - turn @ (rest_point - s['wrist'])
         return Matrix.Translation(wrist) @ (turn @ s['rest']).to_matrix().to_4x4()
-
-    def knife_matrix(self, side='R'):
-        """The knife's grip frame in the rig's armature space at rest (for the preview model on the right wrist)."""
-        s = self.side[side]
-        seat = self.seat
-        blade = (-s['out'] * math.cos(math.radians(seat.tilt)) + s['along'] * math.sin(math.radians(seat.tilt))).normalized()
-        edge = (s['along'] - blade * s['along'].dot(blade)).normalized()
-        grip = s['wrist'] + s['along'] * s['length'] * seat.along + s['palm'] * seat.palm / GAME_SCALE
-        return grip, blade, edge
 
     def _value(self, part, frame, default):
         """A part's value at a frame, eased between the keys that set it (a key without it keeps the one before)."""

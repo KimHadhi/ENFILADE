@@ -11,8 +11,10 @@ then this, and the file is ready to work in: the user only poses and times (the 
   influence, keyed in the pair's action. Moving the hold point moves where that hand holds, for that pair.
 - Saving (Ctrl+S) sends every pair that changed since it was last sent to the game: both clips (enf_exe_<pair>_p for the
   player, _z for the zombie) to Assets/_Project/Art/Animations/Executions and the pair's row of
-  Assets/_Project/Data/Data/Resources/Tables/Melee/Executions.csv (its length, the kill moment, where the player stands and faces, where
+  Assets/_Project/Data/Resources/Tables/Melee/Executions.csv (its length, the kill moment, where the player stands and faces, where
   the zombie lies at the start, the hands' holds). Unity takes the clips with the right avatars (ModelImportRules).
+- Her right fist holds the knife of the class picked in the tab (칼), seated as the game seats it (ClassKnives.csv);
+  moved or turned there (칼 옮기기), saving writes its new numbers into that class's row (execution_knife.py).
 Nothing here changes Blender's preferences.
 """
 import csv
@@ -105,6 +107,10 @@ def drafts():
 def pairs():
     drafts()
     return _module('execution_pairs', Path(HERE_NAME) / 'execution_pairs.py')
+
+
+def knife():
+    return _module('execution_knife', Path(HERE_NAME) / 'execution_knife.py')
 
 
 def player_rig(scene):
@@ -419,18 +425,11 @@ def _keep_draft(action):
     return copy
 
 
-def _seat(root):
-    """Where the knife sits in the fist: Executions.csv row Knife, the numbers the game seats it by."""
-    d = drafts()
-    row = read_table(root).get('Knife', {}) if root else {}
-
-    def number(name, fallback):
-        try:
-            return float(row.get(name, '') or fallback)
-        except ValueError:
-            return fallback
-    return d.Seat(number('gripAlong', 1.05), number('gripPalm', .022), number('tilt', 12.0), number('knifeGrip', -.05),
-                  number('knifeTip', .1056))
+def _seat(context):
+    """The knife in her fist for drafting: the 처형 tab's class knife as it sits there (seated by ClassKnives.csv, as the
+    game seats it); None with no knife in the file (the drafts' fixed fist)."""
+    found = knife().tip_frame(context.scene, player_rig(context.scene))
+    return drafts().Seat(*found) if found else None
 
 
 def make_zombie(context, key):
@@ -467,7 +466,7 @@ def make_player(context, key):
     action['enf_frames'] = int(count)
     # Made with the rig placed where this pair has her (her rig object's place is part of every contact).
     place_player(player, key)
-    p = d.PlayerDraft(context, player, zombie, _seat(project_root()))
+    p = d.PlayerDraft(context, player, zombie, _seat(context))
     pairs().CHOREOGRAPHY[key][1](p, frames, pair)
     holds = p.write(action, count, frames)
     for side in ('L', 'R'):
@@ -871,8 +870,11 @@ def arrange_ui(context):
     if switched:
         return False
     select_pair(context, current_pair(scene), keep=False)
+    held = knife_ready(context)
     shown = [zombie, player] + [o for o in scene.objects if o.parent == zombie or o.parent == player
                                  or o.name in HOLD_POINTS.values()]
+    if held is not None:
+        shown += list(held.children_recursive)
     for window in context.window_manager.windows:
         screen = window.screen
         views = [a for a in screen.areas if a.type == 'VIEW_3D']
@@ -909,19 +911,49 @@ def arrange_ui(context):
             region = next((r for r in main.regions if r.type == 'WINDOW'), None)
             try:
                 with context.temp_override(window=window, area=main, region=region):
-                    if context.object is not None and context.object.mode != 'OBJECT':
-                        bpy.ops.object.mode_set(mode='OBJECT')
-                    for obj in context.view_layer.objects:
-                        obj.select_set(False)
-                    zombie.select_set(True)
-                    player.select_set(True)
-                    context.view_layer.objects.active = player
-                    bpy.ops.object.mode_set(mode='POSE')
+                    pose_both(context)
             except RuntimeError as error:
                 print('ENFILADE 처형: 포즈 모드로 못 들어감', error)
     frame_views(context)
     _tell(f'처형 짝 「{label_of(current_pair(scene))}」 · Space 재생 · 고치고 Ctrl+S 하면 게임에 들어갑니다')
     return True
+
+
+def pose_both(context):
+    """Both rigs selected in Pose mode, Kazusa active: posing, as the file opens."""
+    scene = context.scene
+    player, zombie = player_rig(scene), zombie_rig(scene)
+    if player is None or zombie is None:
+        return
+    if context.object is not None and context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+    for obj in context.view_layer.objects:
+        obj.select_set(False)
+    zombie.select_set(True)
+    player.select_set(True)
+    context.view_layer.objects.active = player
+    bpy.ops.object.mode_set(mode='POSE')
+
+
+def _object_mode(context):
+    if context.object is not None and context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def knife_ready(context):
+    """On opening: the picked class's knife in her fist where its row seats it (made on the first opening of a file
+    built before it, the old fixed preview knife taken out). Returns its holder, or None."""
+    scene = context.scene
+    player = player_rig(scene)
+    root = project_root()
+    if player is None or root is None:
+        return None
+    try:
+        _object_mode(context)
+        return knife().ensure(context, player, root)
+    except Exception as error:
+        _tell(f'칼을 손에 쥐지 못함: {error}')
+        return None
 
 
 def _tell(text):
@@ -976,6 +1008,11 @@ def _save_pre(*_unused):
         if scene is None or player_rig(scene) is None or zombie_rig(scene) is None or not scene.enf_exe.auto_send:
             return
         sent, failed = send_changed(context)
+        try:
+            written, missed = knife().send(context, player_rig(scene), project_root())
+            sent, failed = sent + written, failed + missed
+        except Exception as error:
+            failed.append(f'칼 자리: {error}')
         stamp = time.strftime('%H:%M:%S')
         if sent or failed:
             text = (f'{stamp} 게임에 보냄: ' + ', '.join(sent)) if sent else f'{stamp} 보내지 못함'
@@ -1105,6 +1142,104 @@ class ENFEXE_OT_withhold(bpy.types.Operator):
         return {'FINISHED'}
 
 
+_KNIFE_ROWS = []
+
+
+def _knife_rows(_self, _context):
+    """The picker's rows (kept alive here: Blender reads an enum's strings after this returns)."""
+    _KNIFE_ROWS[:] = knife().choices(project_root()) or [('default', '기본', '')]
+    return _KNIFE_ROWS
+
+
+def _knife_or_report(op, context):
+    holder = knife().holder_in(context.scene)
+    if holder is None:
+        op.report({'ERROR'}, '손에 칼이 없습니다. 파일을 START_EXECUTION_ANIMATION.cmd로 다시 열어 주세요.')
+    return holder
+
+
+class ENFEXE_OT_knife_pick(bpy.types.Operator):
+    bl_idname = 'enf_exe.knife_pick'
+    bl_label = '칼 고르기'
+    bl_description = '이 클래스의 칼을 게임과 같은 자리에 쥔다(ClassKnives.csv의 그 클래스 줄). 옮겨 둔 칼은 저장할 때 들어간다'
+    bl_options = {'REGISTER', 'UNDO'}
+    row: bpy.props.EnumProperty(items=_knife_rows, name='클래스')
+
+    def execute(self, context):
+        if not _ok(self, context):
+            return {'CANCELLED'}
+        scene = context.scene
+        before = knife().holder_in(scene)
+        moving = before is not None and context.object == before
+        try:
+            _object_mode(context)
+            holder = knife().pick(context, player_rig(scene), project_root(), self.row)
+        except Exception as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        if moving and holder is not None:
+            _hold_knife(context, holder)
+        else:
+            pose_both(context)
+        self.report({'INFO'}, f'칼: {knife().title(project_root(), self.row)}')
+        return {'FINISHED'}
+
+
+def _hold_knife(context, holder):
+    """The knife alone selected and active in Object mode, the Move tool on: G moves it, R turns it."""
+    _object_mode(context)
+    for obj in context.view_layer.objects:
+        obj.select_set(False)
+    holder.hide_select = False
+    holder.select_set(True)
+    context.view_layer.objects.active = holder
+    try:
+        bpy.ops.wm.tool_set_by_id(name='builtin.move')
+    except (RuntimeError, TypeError):
+        pass
+
+
+class ENFEXE_OT_knife_move(bpy.types.Operator):
+    bl_idname = 'enf_exe.knife_move'
+    bl_label = '칼 옮기기'
+    bl_description = '손 안의 칼을 고른다(G 옮기기, R 돌리기, 화살표 끌기). 저장(Ctrl+S)하면 그 자리가 ClassKnives.csv 숫자로 들어간다'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        holder = _knife_or_report(self, context)
+        if holder is None:
+            return {'CANCELLED'}
+        _hold_knife(context, holder)
+        self.report({'INFO'}, '칼: G로 옮기고 R로 돌린 뒤 Ctrl+S. 다 하면 「자세 잡기로」')
+        return {'FINISHED'}
+
+
+class ENFEXE_OT_knife_done(bpy.types.Operator):
+    bl_idname = 'enf_exe.knife_done'
+    bl_label = '자세 잡기로'
+    bl_description = '칼을 놓고 두 리그를 다시 포즈 모드로'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        if not _ok(self, context):
+            return {'CANCELLED'}
+        pose_both(context)
+        return {'FINISHED'}
+
+
+class ENFEXE_OT_knife_reset(bpy.types.Operator):
+    bl_idname = 'enf_exe.knife_reset'
+    bl_label = '칼을 표의 자리로'
+    bl_description = '아직 저장하지 않은 옮김을 버리고 칼을 ClassKnives.csv 숫자의 자리로 되돌린다'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        if _knife_or_report(self, context) is None:
+            return {'CANCELLED'}
+        knife().reset(context, player_rig(context.scene), project_root())
+        return {'FINISHED'}
+
+
 ZOMBIE_PARTS = (('머리', 'Head'), ('목', 'Neck'), ('가슴', 'Spine_03'), ('배', 'Spine_02'), ('허리', 'Spine_01'),
                 ('왼위팔', 'Shoulder_L'), ('왼아래팔', 'Elbow_L'), ('오른위팔', 'Shoulder_R'), ('오른아래팔', 'Elbow_R'))
 PLAYER_PARTS = (('왼손', 'CTRL_hand.L'), ('오른손(칼)', 'CTRL_hand.R'), ('왼발', 'CTRL_foot.L'), ('오른발', 'CTRL_foot.R'),
@@ -1198,6 +1333,27 @@ class ENFEXE_PT_panel(bpy.types.Panel):
                 grid.operator('enf_exe.pick', text=p.PAIRS[name]['label'], depress=name == key).key = name
 
         box = layout.box()
+        root = project_root()
+        k = knife()
+        holder = k.holder_in(scene)
+        shown = holder.get(k.CLASS_PROP) if holder is not None else scene.get(k.SCENE_PICK, k.DEFAULT_ROW)
+        box.label(text='칼 (게임과 같은 자리)')
+        box.operator_menu_enum('enf_exe.knife_pick', 'row', text=k.title(root, shown) if root else shown)
+        row = box.row(align=True)
+        row.operator('enf_exe.knife_move', icon='ORIENTATION_GIMBAL')
+        row.operator('enf_exe.knife_done', icon='POSE_HLT')
+        if holder is None:
+            box.label(text='손에 칼이 없음: 파일을 다시 열면 쥔다')
+        elif k.is_moved(player_rig(scene), holder):
+            box.label(text=f'옮김: Ctrl+S 하면 ClassKnives.csv {shown} 줄에')
+            box.operator('enf_exe.knife_reset', icon='LOOP_BACK')
+        else:
+            box.label(text=f'ClassKnives.csv {shown} 줄의 자리')
+        waiting = [k.title(root, r) for r in k.moved_away(scene) if r != shown]
+        if waiting:
+            box.label(text='저장하면 같이 들어감: ' + ', '.join(waiting))
+
+        box = layout.box()
         box.label(text='맞추기')
         box.operator('enf_exe.kill_here', icon='MARKER_HLT')
         box.operator('enf_exe.revert', icon='LOOP_BACK')
@@ -1253,6 +1409,7 @@ class ENFEXE_PT_nudge(bpy.types.Panel):
 
 
 CLASSES = (ENFExeSettings, ENFEXE_OT_pick, ENFEXE_OT_kill_here, ENFEXE_OT_revert, ENFEXE_OT_send, ENFEXE_OT_withhold,
+           ENFEXE_OT_knife_pick, ENFEXE_OT_knife_move, ENFEXE_OT_knife_done, ENFEXE_OT_knife_reset,
            ENFEXE_OT_zombie_part, ENFEXE_OT_player_part, ENFEXE_PT_panel, ENFEXE_PT_nudge)
 
 

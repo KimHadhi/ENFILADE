@@ -98,8 +98,7 @@ public static class ExecutionPairs
         foreach (string id in GameTables.RowIds(TableName))
         {
             if (!GameTables.TryGetRow(TableName, id, out var row)) continue;
-            // A row the workspace never sent (no clips, no length) is no pair yet: that state keeps the old execution. The
-            // Knife row only seats the Blender workspace's preview knife.
+            // A row the workspace never sent (no clips, no length) is no pair yet: that state keeps the old execution.
             float length = row.Number("length", 0f);
             if (length <= 0f || pairs.Count >= byte.MaxValue) continue;
             pairs.Add(new ExecutionPair

@@ -38,13 +38,13 @@
 
 ## 블렌더로 다듬기
 
-`ArtSource/Executions/START_EXECUTION_ANIMATION.cmd` → [START_HERE.md](../../ArtSource/Executions/START_HERE.md). 한 장면에 카즈사 True FPS 리그와 Synty 좀비 리그가 게임 크기로 서 있다. 열면 바로 일할 수 있게 준비된다(사용자: "내가 해야 하는 잡일을 최대한 줄여. 나는 딱 오직 인간만이 할 수 있는 것만"): 마지막에 고치던 짝, 두 리그 포즈 모드, 도프 시트에 두 몸의 키(뼈마다 한 줄, 시안의 키포즈가 세로줄), 처형 탭, 비스듬한 화면과 옆 화면. 짝마다 리그 하나에 액션 하나를 바로 고치고(처음 시안은 따로 보관), 손이 좀비를 잡는 동안은 좀비 뼈에 붙은 **잡는 자리**를 따라가서 좀비를 고쳐도 손이 붙어 있다. **저장(Ctrl+S)** 하면 바뀐 짝만 두 FBX(`Art/Animations/Executions/enf_exe_<짝>_p`·`_z`)와 표 줄을 쓴다. 도구는 `Tools/Blender/Executions`([README](../../Tools/Blender/Executions/README.md)). 임포트는 [ModelImportRules](../../Assets/_Project/Editor/Models/ModelImportRules.cs)가 `_p`는 카즈사 아바타, `_z`는 Synty 좀비 아바타로 받는다(블렌더가 GUID만 든 .meta를 먼저 쓰므로 설정은 가져올 때마다 정한다. 규칙이 컴파일되기 전에 들어온 클립은 컴파일 뒤 한 번 다시 가져온다). 클립들의 가져오기 메시지(Animation 탭의 Import Messages)는 ENFILADE → 모델 → 처형 클립 가져오기 메시지가 Console과 Editor.log에 한꺼번에 찍는다.
+`ArtSource/Executions/START_EXECUTION_ANIMATION.cmd` → [START_HERE.md](../../ArtSource/Executions/START_HERE.md). 한 장면에 카즈사 True FPS 리그와 Synty 좀비 리그가 게임 크기로 서 있다. 열면 바로 일할 수 있게 준비된다(사용자: "내가 해야 하는 잡일을 최대한 줄여. 나는 딱 오직 인간만이 할 수 있는 것만"): 마지막에 고치던 짝, 두 리그 포즈 모드, 도프 시트에 두 몸의 키(뼈마다 한 줄, 시안의 키포즈가 세로줄), 처형 탭, 비스듬한 화면과 옆 화면. 짝마다 리그 하나에 액션 하나를 바로 고치고(처음 시안은 따로 보관), 손이 좀비를 잡는 동안은 좀비 뼈에 붙은 **잡는 자리**를 따라가서 좀비를 고쳐도 손이 붙어 있다. **저장(Ctrl+S)** 하면 바뀐 짝만 두 FBX(`Art/Animations/Executions/enf_exe_<짝>_p`·`_z`)와 표 줄을 쓴다. 오른손에는 처형 탭 **칼** 칸에서 고른 클래스의 칼이 게임과 같은 자리(ClassKnives.csv의 그 클래스 줄, `ExecutionKnifeArm`과 같은 계산)에 쥐어져 있고, **칼 옮기기**로 옮기거나 돌린 뒤 저장하면 그 자리가 그 클래스 줄의 `held*`·`blade*`·`edge*` 숫자로 들어간다(옮긴 묶음만, 다른 줄·칸은 그대로. 사용자: "칼 위치를 숫자로 하는 이유가 있는지, 왜냐하면 블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길 수 있으니까 편해서", 0.9.56). 표를 밖에서 고치면 열 때 칼이 그 자리로 간다. 근접 칸의 쥐는 자리(`melee*`)는 칼 작업실(`ArtSource/Knives`)이 같은 방법으로 쓴다. 도구는 `Tools/Blender/Executions`([README](../../Tools/Blender/Executions/README.md)). 임포트는 [ModelImportRules](../../Assets/_Project/Editor/Models/ModelImportRules.cs)가 `_p`는 카즈사 아바타, `_z`는 Synty 좀비 아바타로 받는다(블렌더가 GUID만 든 .meta를 먼저 쓰므로 설정은 가져올 때마다 정한다. 규칙이 컴파일되기 전에 들어온 클립은 컴파일 뒤 한 번 다시 가져온다). 클립들의 가져오기 메시지(Animation 탭의 Import Messages)는 ENFILADE → 모델 → 처형 클립 가져오기 메시지가 Console과 Editor.log에 한꺼번에 찍는다.
 
 시안은 Claude가 블렌더에서 코드로 짰다(`execution_pairs.py`의 숫자): 좀비는 팩의 자세 클립 첫 프레임에서 시작해 몸축 기준으로 꺾었고(키포즈), 떨림은 그 뼈들의 Noise 모디파이어다. 카즈사는 IK로 손을 좀비 머리·목에 맞추고 부위마다 안무가 정한 프레임에 키를 넣었다. 카즈사 리그의 다리 IK는 무릎이 옆으로 꺾이는 극 각도라 이 작업 파일에서만 −90°로 바로잡았다(다른 작업실은 그대로).
 
 ## 표 [Executions.csv](../../Assets/_Project/Data/Resources/Tables/Melee/Executions.csv)
 
-줄 하나가 짝 하나(id = 좀비 상태). 블렌더가 다시 쓰는 열: `kind` `playerClip` `zombieClip` `length` `kill` `right` `forward` `yaw` `zHips*` `zHeadYaw` `l*` `r*`. 손으로 고치는 열: `turn`(좀비가 돌아 맞추는 몫) `align`(플레이어가 미끄러져 들어가는 시간) `blendIn` `blendOut` `hitBone`(피가 나는 뼈) `fallRight`·`fallUp`·`fallForward`(시체를 미는 쪽). `Knife` 줄은 블렌더 미리보기 칼 자리만 정한다. 열마다 설명은 표의 `#설명` 줄.
+줄 하나가 짝 하나(id = 좀비 상태). 블렌더가 다시 쓰는 열: `kind` `playerClip` `zombieClip` `length` `kill` `right` `forward` `yaw` `zHips*` `zHeadYaw` `l*` `r*`. 손으로 고치는 열: `turn`(좀비가 돌아 맞추는 몫) `align`(플레이어가 미끄러져 들어가는 시간) `blendIn` `blendOut` `hitBone`(피가 나는 뼈) `fallRight`·`fallUp`·`fallForward`(시체를 미는 쪽). 손에 쥔 칼의 자리는 이 표가 아니라 클래스마다 [ClassKnives.csv](../../Assets/_Project/Data/Resources/Tables/Melee/ClassKnives.csv)에 있다(0.9.55까지 있던 블렌더 미리보기용 `Knife` 줄과 그 다섯 열은 0.9.56에서 없앴다). 열마다 설명은 표의 `#설명` 줄.
 
 ## 시험
 
@@ -60,6 +60,7 @@
    - 짝마다 플레이어가 처음부터 끝까지 좀비 쪽을 보며 동작하고, 짝이 끝날 때 몸이 홱 돌지 않는다. 1인칭에서는 잡는 손과 칼이 화면 앞에 보인다(0.9.50).
 9. 칼과 짝이 팔을 주고받는 순간: 달려들며 칼을 든 팔이 짝 클립 자세로 튀지 않고 넘어가는지, 짝 끝 무렵 손이 내려온 뒤 칼이 들어가고 짝이 끝날 때 총이 돌아오는지(그 전에 총이 나오지 않는지). 처형 중 채팅을 열어 끊으면(처형이 끊기는 경우) 팔이 칼 쪽으로 부드럽게 돌아오는지.
 10. 블렌더: `START_EXECUTION_ANIMATION.cmd`를 두 번 눌러 열자마자 짝이 불러와져 있고(포즈 모드, 도프 시트에 두 몸의 키, 처형 탭), 아무 키나 옮긴 뒤 Ctrl+S → 상태줄에 「게임에 보냄」 → Unity를 누르고 Play하면 바뀐 동작이 나오는지. 좀비 머리를 돌려도 잡은 손이 따라붙는지.
+11. 블렌더의 손 안 칼(0.9.56): 처형 탭 **칼** 칸에서 클래스를 바꾸면 그 클래스의 칼이 오른손에 쥐어지는지(예전 MW 투척 나이프는 없어짐). **칼 옮기기** → 칼을 손 안에서 조금 옮기고 돌림 → Ctrl+S → 상태줄에 「… 칼 쥐는 자리」, ClassKnives.csv에서 그 클래스 줄의 `held*`·`blade*`·`edge*`만 바뀜 → Unity를 누르고 그 클래스로 처형하면 칼이 블렌더에서 둔 자리에 쥐어지는지. 안 옮기고 저장하면 표가 그대로인지.
 
 ## 아직 모자란 것
 

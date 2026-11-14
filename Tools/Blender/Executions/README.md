@@ -8,8 +8,9 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
 
 - `build_execution_workspace.py` builds `ArtSource/Executions/ENFILADE_Execution_Animation.blend` from the True FPS start
   file: Kazusa's True FPS rig (scaled by `GAME_SCALE` 1.166, so the file is in the game's metres) and the zombie
-  workspace's Synty rig (appended from `ArtSource/Zombies/ENFILADE_Zombie_Animation.blend`, which is only read), the game's
-  knife on her right wrist for seeing only, the two hold points, and every pair's drafts. `--export` sends every pair to
+  workspace's Synty rig (appended from `ArtSource/Zombies/ENFILADE_Zombie_Animation.blend`, which is only read), the
+  default class's knife on her right wrist where the game seats it (`execution_knife.py`), the two hold points, and every
+  pair's drafts (their knife keys put that knife's tip where they stab). `--export` sends every pair to
   the game, `--only=` limits the pairs, `--force` overwrites an existing workspace (the user's work lives in it: never after
   they edit it). Its own save does not send anything.
 
@@ -39,6 +40,26 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     facing away from the zombie), a bare `.meta` (GUID only) before a new file, and the pair's row of
     `Assets/_Project/Data/Resources/Tables/Melee/Executions.csv` written in place (every other column kept). 게임에서 빼기 deletes a
     pair's clips and keeps it out until the pair changes.
+- `execution_knife.py` is the class knife in her right fist (the user, 2026-11-14: "칼 위치를 숫자로 하는 이유가
+  있는지, 왜냐하면 블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길 수 있으니까 편해서"). The tab's 칼 picker lists
+  every row of `Tables/Melee/ClassKnives.csv`; the picked row's model (its `Resources` prefab's source FBX, found by the
+  prefab's `m_SourcePrefab` GUID, its colour and normal textures hung on from `Textures/` beside it) sits under an empty
+  (the holder: the model's origin and turn) on the `Right wrist` bone where `ExecutionKnifeArm.Wear` and `Seat` put it:
+  the origin at the wrist plus `heldSide/heldPalm/heldAlong` hand lengths (wrist to the middle knuckle) along the hand's
+  axes (x away from the thumb, y out of the palm, z the knuckles' way; the palm from the index and little knuckles, the
+  game's right-hand cross taken the other way round in Blender's right-handed axes), the model's blade (Pommel marker
+  through the origin) along `blade*`, its edge (Edge marker) along `edge*`, at `scale`. Worked out from the wrist bone's
+  rest (the knuckles ride it, so any pose gives the same), never from a hidden object's matrix.
+  - **Moved here, written on saving**: 칼 옮기기 selects the holder in Object mode with the Move tool (its scale locked).
+    The `save_pre` handler (after the pairs, under the same 저장하면 게임에 보내기 switch) measures the holder back into
+    the nine numbers (three decimals, the blade and edge unit and square, as the knife workspace's `seat_now`); a number
+    counts as moved past 0.002. Of the three groups (held, blade, edge) only those that moved are written, into the
+    picked class's row only, in place with every other byte of the file kept (other rows, cells, quoting, BOM, line
+    ends). Keys auto-key put on the holder are dropped first. A moved knife picked away from waits in the scene
+    (`enf_exe_knife_moved`) and is written on the next save; 칼을 표의 자리로 drops a move.
+  - **On open**: a file built before it has its fixed MW throwing knife (`칼 (보기용)`) replaced; the knife is remade when
+    its row names another model and put where its row says when its numbers changed outside Blender (a group moved here
+    and not yet written stays moved). Nothing changes when they agree, so opening doesn't dirty the file.
 - `execution_drafts.py` makes drafts as key poses: `ZombieDraft` (a start pose sampled from a pack clip with
   `zombie_tools.sample_clip`, key poses as body-axis turns of bone subtrees plus a hips move, every bone keyed at the
   zombie's key frames, shudders as Noise modifiers on the shaken bones' rotation channels, faded over their frames) and
@@ -55,8 +76,16 @@ Facts found while building (Blender 4.5.16, 2026-11-13):
   four quarter turns per limb on a bent pose and keeps the one that bends toward its pole (-90 for both legs; the arms keep
   theirs). Blender clamps a pole angle past ±180 rather than wrapping it. Only this file changes; the other workspaces keep
   the rig as it was.
-- Parenting an object to a bone holds it from the bone's tail; the preview knife's and the hold points' offsets are
-  worked out from that.
+- Parenting an object to a bone holds it from the bone's tail; the knife's and the hold points' offsets are worked out
+  from that.
+- The class knives' FBX files name a normal-map texture with no file: Blender's importer prints "Cannot read
+  '...\<Knife>\.'" and leaves an empty picture (pink in Material Preview) on the Normal Map node; the knife gets
+  `Textures/<material>_normal.png` there (Non-Color) and its `<material>.jpg/png` on Base Color.
+- Checked headless on a copy of the user's file (2026-11-14, ClassKnives.csv redirected to a copy): for all eight rows the
+  knife sits where Unity's math puts it (ExecutionKnifeArm emulated in Unity's left-handed axes: 0.0001 mm, 0.0000
+  degrees), also from the posed hand at frames of two pairs; moved 1 cm and turned 20 degrees, saving changed only that
+  row's nine numbers and the table then puts it back where it was moved (0.000 mm); saving again, or after numbers changed
+  outside, wrote nothing; a move kept across picking another class was written to its own row only.
 - A zombie rig appended from the zombie workspace brings that file's action: cleared, as each pair keys its own.
 - Blender 4.5's layered actions: `fcurve_ensure_for_datablock` takes no group, so channels are grouped afterwards
   (`channelbag.groups.new`, `fcurve.group = ...`; assigning a curve to the group it is in prints an error, so it is

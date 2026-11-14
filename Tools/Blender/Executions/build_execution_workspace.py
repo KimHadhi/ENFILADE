@@ -1,6 +1,7 @@
 """Builds ArtSource/Executions/ENFILADE_Execution_Animation.blend from the True FPS start file: Kazusa's True FPS rig and
-the zombie workspace's Synty rig in one scene at the game's size, the knife in her right fist, the hold points the hands
-copy while they hold the zombie, and every pair's drafts (execution_pairs.py) as the key poses the user edits, each kept
+the zombie workspace's Synty rig in one scene at the game's size, the default class's knife in her right fist where the
+game seats it (execution_knife.py, ClassKnives.csv), the hold points the hands copy while they hold the zombie, and
+every pair's drafts (execution_pairs.py) as the key poses the user edits, the knife's tip put where they stab, each kept
 beside it as <name>_draft (execution_tools.py). Run from the project root:
 
   blender --background --factory-startup ArtSource/TrueFPS/ENFILADE_TrueFPS_Start.blend
@@ -29,9 +30,7 @@ spec.loader.exec_module(exe)
 
 ZOMBIE_FILE = ROOT / 'ArtSource/Zombies/ENFILADE_Zombie_Animation.blend'
 ZOMBIE_LOOK = 'Zombie_Hoodie_Male_01'
-KNIFE_FBX = ROOT / 'Assets/_Project/Art/Models/Addons/Grenades/MWThrowingKnife/MWThrowingKnife.fbx'
 ZOMBIE_COLLECTION = '06 좀비 (Synty, 게임 크기)'
-KNIFE_COLLECTION = '07 칼 (보기용, 내보내지 않음)'
 
 
 def args():
@@ -67,50 +66,6 @@ def bring_zombie(context):
     for prop in [k for k in rig.keys() if k.startswith('ik_')]:
         rig[prop] = 0.0
     return rig
-
-
-def bring_knife(context, rig, seat_frame):
-    """The game's knife model in Kazusa's right fist, where the game seats it (Executions.csv row Knife), for seeing
-    only: it rides the wrist bone and is never exported."""
-    collection = bpy.data.collections.new(KNIFE_COLLECTION)
-    context.scene.collection.children.link(collection)
-    before = set(bpy.data.objects)
-    scene = context.scene
-    fps, base = scene.render.fps, scene.render.fps_base
-    bpy.ops.import_scene.fbx(filepath=str(KNIFE_FBX), use_image_search=False)
-    scene.render.fps, scene.render.fps_base = fps, base
-    made = [o for o in bpy.data.objects if o not in before]
-    knife = next((o for o in made if o.type == 'MESH'), None)
-    for obj in made:
-        for owner in list(obj.users_collection):
-            owner.objects.unlink(obj)
-        if obj is not knife:
-            bpy.data.objects.remove(obj, do_unlink=True)
-    if knife is None:
-        return None
-    collection.objects.link(knife)
-    knife.name = '칼 (보기용)'
-    grip, blade, edge = seat_frame
-    # The model: its tip along -Y, its width along Z, its grip (Unity z -0.05) at +Y 0.05 in Blender's axes.
-    y_axis = -blade.normalized()
-    z_axis = (edge - blade * edge.dot(blade)).normalized()
-    x_axis = y_axis.cross(z_axis).normalized()
-    turn = Matrix((x_axis, y_axis, z_axis)).transposed().to_4x4()
-    seat = exe.drafts().Seat()
-    grip_world = rig.matrix_world @ grip
-    rot_world = rig.matrix_world.to_3x3().normalized().to_4x4() @ turn
-    origin = grip_world - rot_world.to_3x3() @ Vector((0.0, -seat.grip, 0.0))
-    # A bone parent holds its child from the bone's tail, as the bone lies; worked out from the rest pose here, so the
-    # knife sits as it should whatever pose the rig evaluates to now.
-    bone = rig.data.bones['Right wrist']
-    parent_world = rig.matrix_world @ bone.matrix_local @ Matrix.Translation((0.0, bone.length, 0.0))
-    knife.parent = rig
-    knife.parent_type = 'BONE'
-    knife.parent_bone = 'Right wrist'
-    knife.matrix_parent_inverse = Matrix.Identity(4)
-    knife.matrix_basis = parent_world.inverted() @ (Matrix.Translation(origin) @ rot_world)
-    knife.hide_select = True
-    return knife
 
 
 def calibrate_ik(context, rig):
@@ -177,11 +132,11 @@ def main():
             obj.hide_viewport = obj.hide_render = True
     zombie = bring_zombie(context)
     context.view_layer.update()
-    # The knife, seated on her rest pose before any pair moves her.
+    # The default class's knife in her fist, seated as the game seats it, before any pair moves her: the drafts put its
+    # tip where they stab.
     player.matrix_world = Matrix.Scale(exe.drafts().GAME_SCALE, 4)
     context.view_layer.update()
-    probe = exe.drafts().PlayerDraft(context, player, zombie, exe._seat(ROOT))
-    bring_knife(context, player, probe.knife_matrix())
+    exe.knife().ensure(context, player, ROOT, exe.knife().DEFAULT_ROW)
     exe.ensure_holds(scene)
     p = exe.pairs()
     keys = [k for k in p.ORDER if not only or k in only]
