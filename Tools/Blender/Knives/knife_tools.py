@@ -28,6 +28,12 @@ its seat in the melee slot (ClassKnives.csv meleeHeld*, meleeBlade*, meleeEdge*:
 the wrist, the blade's and the edge's ways in the hand's axes, x away from the thumb, y out of the palm, z the hand's run)
 into every row that carries that knife, only when it moved. Numbers changed in the table outside Blender move the knife
 here when the file is opened (the numbers and the knife stay one), so either way of changing it works.
+The M9 bayonet and the machete, whose addon has no first-person clips, get clips of their own made here (the user,
+2026-11-14: "M9 대검이랑 마체테 내가 뽑는 동작 만들어 줄 테니까 … 나는 블렌더에서 애니메이션만 만들면 되게끔 해 줘"): on
+opening, each starts as a copy of the draft clip the game plays for them now, with that knife in her fist; it stays out
+of the game until it is changed, and saving a changed one writes its table (KnifeMelee<knife><clip>.csv) and names it in
+ClassKnives.csv's column for that clip in every row with that knife (the draw then draws it in executions too). A clip
+is as long as the timeline's end set for it, or longer when a key lies past that end.
 """
 import csv
 import io
@@ -138,6 +144,12 @@ def _add_ported():
 
 
 _add_ported()
+
+# Knives whose addon has no first-person clips (the BF4 pack's): their clips are made here, each starting as a copy of the
+# draft clip it stands in for (what the game plays for that knife until then), named in ClassKnives.csv's column for it
+# once it is changed and sent.
+MADE_HERE = {'M9Bayonet': 'M9 총검', 'Machete': '마체테'}
+MADE_COLUMNS = {'draw': 'drawClip', 'guard': 'guardClip', 'slash': 'slashClip', 'backslash': 'backslashClip', 'stab': 'stabClip'}
 
 
 def _one_click():
@@ -340,14 +352,16 @@ def select_clip(context, key):
     shown = current_clip(scene)
     if shown in CLIPS and shown != key:
         keep_marks(scene, shown)
+        keep_end(scene, shown)
     clip = CLIPS[key]
     action, draft, _fresh = oc.item_action(context, rig, clip['action'], clip['end'])
     oc.play(rig, action, draft)
     scene[SCENE_CLIP] = key
-    scene.frame_start, scene.frame_end = 1, clip['end']
+    end = end_of(action, key)
+    scene.frame_start, scene.frame_end = 1, end
     show_marks(scene, marks_of(action, key))
     show_look(scene, key)
-    if not (1 <= scene.frame_current <= clip['end']):
+    if not (1 <= scene.frame_current <= end):
         scene.frame_set(1)
     return action
 
@@ -355,7 +369,7 @@ def select_clip(context, key):
 # ---- Sending to the game ---------------------------------------------------------------------------------------------
 
 def fingerprint(action, key):
-    return oc.fingerprint([action], extra=[CLIPS[key]['end'], marks_of(action, key)])
+    return oc.fingerprint([action], extra=[end_of(action, key), marks_of(action, key)])
 
 
 def table_file(root, name, new_in='Clips'):
@@ -389,7 +403,7 @@ def clip_rows(context, key, marks):
     scene = context.scene
     rig = find_rig(scene)
     fps = scene.render.fps / scene.render.fps_base
-    start, end = 1, CLIPS[key]['end']
+    start, end = 1, end_of(bpy.data.actions.get(CLIPS[key]['action']), key)
     grab = marks.get(GRAB, start)
     hit = marks.get(HIT)
     rows = []
@@ -458,6 +472,7 @@ def send_changed(context, force=False):
     if rig is None:
         return None
     keep_marks(scene, current_clip(scene))
+    keep_end(scene, current_clip(scene))
     sent, failed = [], []
     for key, clip in CLIPS.items():
         action = bpy.data.actions.get(clip['action'])
@@ -467,6 +482,9 @@ def send_changed(context, force=False):
             continue
         try:
             sent.append(send_clip(context, key))
+            if clip.get('made'):
+                # The game plays it from now on: its column names its table in every row with that knife.
+                write_cells(table_file(project_root(), CLASS_KNIVES, 'Melee'), clip['knife'], {clip['column']: clip['table']})
         except Exception as error:
             failed.append(f"{clip['label']}: {error}")
     try:
@@ -484,12 +502,16 @@ def prepare(context):
     """Every clip ready to key into (an editable copy of its draft), and one never sent from here counted as what the game
     has when its table is there (the build sent the drafts)."""
     rig = find_rig(context.scene)
+    ready_made_here(context)
     for key, clip in CLIPS.items():
         if bpy.data.actions.get(clip['action'] + '_draft') is None and bpy.data.actions.get(clip['action']) is None:
             continue
         action, _draft, _fresh = oc.item_action(context, rig, clip['action'], clip['end'])
         if oc.SENT not in action and table_path(key).exists():
             oc.mark_sent(action, fingerprint(action, key))
+        elif oc.SENT not in action and clip.get('made'):
+            # Made here and never sent: the game plays the draft it stands in for until this one changes.
+            oc.mark_withheld(action, fingerprint(action, key))
     match_seats(context)
 
 
@@ -523,6 +545,8 @@ CLASS_KNIVES = 'ClassKnives'
 SEAT_COLUMNS = ('meleeHeldSide', 'meleeHeldPalm', 'meleeHeldAlong', 'meleeBladeX', 'meleeBladeY', 'meleeBladeZ',
                 'meleeEdgeX', 'meleeEdgeY', 'meleeEdgeZ')
 SEAT_PROP = 'enf_knife_seat'
+# ClassKnives' grips' blade ways when a row gives none (ClassKnives.ForwardBlade, ReverseBlade).
+FORWARD_BLADE, REVERSE_BLADE = (-.8, 0.0, .6), (.93, 0.0, .36)
 # The table keeps three decimals; a knife counts as moved past two of the last (rounding both ways stays under it).
 SEAT_STEP = .002
 
@@ -631,11 +655,29 @@ def table_seats(root):
             name = row['model'].strip().split('/')[-1]
             if name in out:
                 continue
-            try:
-                out[name] = canonical([float(row[c]) for c in SEAT_COLUMNS])
-            except (KeyError, TypeError, ValueError):
-                out[name] = None
+            out[name] = canonical(_melee_seat(row))
     return out
+
+
+def _cell(row, name, fallback):
+    try:
+        return float(row.get(name) or '')
+    except ValueError:
+        return fallback
+
+
+def _melee_seat(row):
+    """A row's melee seat as the game reads it (ClassKnives.Read): each meleeHeld cell else the execution's held one, the
+    blade's cells else the grip's way (forward or reverse), the edge's else the fingers' way; a way of no length is the
+    fallback whole."""
+    held = [_cell(row, n, d) for n, d in (('heldSide', 0.0), ('heldPalm', .3), ('heldAlong', .55))]
+    held = [_cell(row, n, h) for n, h in zip(('meleeHeldSide', 'meleeHeldPalm', 'meleeHeldAlong'), held)]
+    reverse = (row.get('meleeGrip') or '').strip().lower() == 'reverse'
+    ways = []
+    for prefix, fallback in (('meleeBlade', REVERSE_BLADE if reverse else FORWARD_BLADE), ('meleeEdge', (0.0, 0.0, 1.0))):
+        way = [_cell(row, prefix + axis, f) for axis, f in zip('XYZ', fallback)]
+        ways += way if sum(v * v for v in way) > 1e-8 else list(fallback)
+    return held + ways
 
 
 def canonical(seat):
@@ -735,6 +777,158 @@ def send_seats(context):
         holder[SEAT_PROP] = now
         sent.append(f'{KNIVES[knife]} 쥐는 자리')
     return sent
+
+
+# ---- The knives whose clips are made here --------------------------------------------------------------------------------
+
+PREVIEW_COLLECTION = '07 Knife preview - never exported'
+KNIFE_MODEL = 'Assets/_Project/Art/Models/Addons/Knives/{0}/{0}.fbx'
+# A clip's last frame when the user set the timeline's end for it (kept on its action).
+END_PROP = 'enf_knife_end'
+
+
+def _grip_of(knife):
+    """A knife's fighting grip as its first ClassKnives.csv row says (forward unless reverse)."""
+    try:
+        with open(table_file(project_root(), CLASS_KNIVES, 'Melee'), encoding='utf-8-sig', newline='') as f:
+            for row in csv.DictReader(f):
+                if (row.get('model') or '').strip().split('/')[-1] == knife:
+                    return 'reverse' if (row.get('meleeGrip') or '').strip().lower() == 'reverse' else 'forward'
+    except (OSError, TypeError):
+        pass
+    return 'forward'
+
+
+def _add_made_here():
+    for knife, name in MADE_HERE.items():
+        KNIVES[knife] = name
+        LOOKS[knife] = 'PREVIEW_Knife_' + knife
+        for clip, column in MADE_COLUMNS.items():
+            # The draft it stands in for: the reverse stab for a reverse-grip knife, as the game picks (ClassKnives.Read).
+            base = 'stab_reverse' if clip == 'stab' and _grip_of(knife) == 'reverse' else clip
+            label, table = PORTED_CLIPS[clip]
+            CLIPS[f'{knife}.{clip}'] = dict(label=f'{name} {label}', action=f'enf_knife_{knife.lower()}_{clip}',
+                                            table=f'KnifeMelee{knife}{table}', end=CLIPS[base]['end'],
+                                            marks=dict(CLIPS[base]['marks']), look=knife, loop=clip == 'guard', knife=knife,
+                                            made=True, base=base, column=column)
+
+
+def import_fbx(root, rel):
+    """A model's objects imported from its FBX (the scene's frame rate kept: the importer sets its own)."""
+    scene = bpy.context.scene
+    fps, base = scene.render.fps, scene.render.fps_base
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=str(Path(root) / rel))
+    scene.render.fps, scene.render.fps_base = fps, base
+    return [o for o in bpy.data.objects if o not in before]
+
+
+def paint(root, model_rel, obj):
+    """The preview's colour from the model's own textures (Textures/<material>.jpg or .png beside its FBX), as the game's import
+    rules hang them on; the FBX carries no texture paths."""
+    folder = (Path(root) / model_rel).parent / 'Textures'
+    for slot in obj.material_slots:
+        material = slot.material
+        if material is None or not material.use_nodes:
+            continue
+        name = material.name.split('.')[0]
+        picture = next((folder / (name + ext) for ext in ('.jpg', '.png') if (folder / (name + ext)).exists()), None)
+        shader = next((n for n in material.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+        if picture is None or shader is None:
+            continue
+        node = material.node_tree.nodes.new('ShaderNodeTexImage')
+        node.image = bpy.data.images.load(str(picture), check_existing=True)
+        material.node_tree.links.new(node.outputs['Color'], shader.inputs['Base Color'])
+
+
+def add_preview(context, rig, look, model_rel, seat):
+    """A knife model in her right fist as the game seats it: imported and painted, its parts under one holder that rides
+    the wrist bone (the holder is what 칼 옮기기 picks), at the game's size against her (1 / GAME_SCALE), seated by nine
+    seat numbers (seat_holder: the game's own sums)."""
+    root = project_root()
+    collection = bpy.data.collections.get(PREVIEW_COLLECTION)
+    if collection is None:
+        collection = bpy.data.collections.new(PREVIEW_COLLECTION)
+        context.scene.collection.children.link(collection)
+    objects = import_fbx(root, model_rel)
+    holder = bpy.data.objects.new(LOOKS[look], None)
+    holder.empty_display_type = 'ARROWS'
+    holder.empty_display_size = .05
+    collection.objects.link(holder)
+    for obj in objects:
+        for owner in list(obj.users_collection):
+            owner.objects.unlink(obj)
+        collection.objects.link(obj)
+        if obj.parent is None:
+            obj.parent = holder
+            obj.matrix_parent_inverse = Matrix.Identity(4)
+        obj.hide_select = True
+        if obj.type == 'MESH':
+            paint(root, model_rel, obj)
+    holder.parent = rig
+    holder.parent_type = 'BONE'
+    holder.parent_bone = ARM_BONES['wrist']
+    holder.matrix_parent_inverse = Matrix.Identity(4)
+    holder.matrix_basis = (parent_frame(holder) @ holder.matrix_parent_inverse).inverted() @ Matrix.Scale(1 / GAME_SCALE, 4)
+    context.view_layer.update()
+    seat_holder(rig, holder, seat)
+    holder[SEAT_PROP] = list(seat)
+    context.view_layer.update()
+    return holder
+
+
+def ready_made_here(context):
+    """On opening (nothing rebuilt): each knife made here has its preview in her fist, and each of its clips a draft: a
+    copy of the clip it stands in for as that clip is now (its keys, marks and end, what the game plays for it), made
+    once. A clip not yet sent is kept out of the game until it changes (prepare)."""
+    rig = find_rig(context.scene)
+    root = project_root()
+    if rig is None or root is None:
+        return
+    for key, clip in CLIPS.items():
+        if not clip.get('made') or bpy.data.actions.get(clip['action'] + '_draft') is not None:
+            continue
+        base = CLIPS[clip['base']]
+        source = bpy.data.actions.get(base['action']) or bpy.data.actions.get(base['action'] + '_draft')
+        if source is None:
+            continue
+        draft = source.copy()
+        draft.name = clip['action'] + '_draft'
+        draft.use_fake_user = True
+        draft[oc.LAYER] = 'draft'
+        for prop in (oc.SENT, oc.WITHHELD, oc.FROM):
+            if prop in draft:
+                del draft[prop]
+        # The clip's own marks and end start as the copied clip's were (an untouched draft's are its defaults).
+        draft[MARKS_PROP] = json.dumps(marks_of(source, clip['base']), sort_keys=True)
+        draft[END_PROP] = end_of(source, clip['base'])
+    seats = table_seats(root)
+    for knife in MADE_HERE:
+        if bpy.data.objects.get(LOOKS[knife]) is None and (Path(root) / KNIFE_MODEL.format(knife)).exists():
+            add_preview(context, rig, knife, KNIFE_MODEL.format(knife), seats[knife])
+
+
+def end_of(action, key):
+    """A clip's last frame: the timeline's end as the user set it for this clip (kept on its action), else its draft's; and
+    no earlier than its last key (a key put past the end makes the clip that long)."""
+    end = CLIPS[key]['end']
+    if action is not None:
+        stored = action.get(END_PROP)
+        if stored:
+            end = int(stored)
+        last = max((p.co.x for curve in oc.curves(action) for p in curve.keyframe_points), default=None)
+        if last is not None:
+            end = max(end, int(math.ceil(last - 1e-4)))
+    return max(end, 2)
+
+
+def keep_end(scene, key):
+    """The timeline's end as the clip's own (on its action) when the user moved it while the clip was shown."""
+    action = bpy.data.actions.get(CLIPS[key]['action'])
+    if action is None:
+        return
+    if scene.frame_end != end_of(action, key) and scene.frame_end != action.get(END_PROP):
+        action[END_PROP] = int(scene.frame_end)
 
 
 # ---- Panel ------------------------------------------------------------------------------------------------------------
@@ -853,7 +1047,8 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
                 # Each knife's own clips (ported from its addon) under its name.
                 group = v.get('knife')
                 col = box.column(align=True)
-                col.label(text=f'{KNIVES.get(group, group)} (애드온 모션)')
+                col.label(text=f'{KNIVES.get(group, group)} ' + ('(직접 만드는 클립: 고치기 전엔 1차 시안)' if group in MADE_HERE
+                                                                    else '(애드온 모션)'))
             col.operator('enf_knife.pick', text=v['label'], depress=k == key).clip = k
         box.label(text=f'끝: {scene.frame_end}프레임 ({(scene.frame_end - scene.frame_start) / fps:.3f}초)')
         for marker in sorted((m for m in scene.timeline_markers if m.name in MARKS), key=lambda m: m.frame):
@@ -861,6 +1056,7 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
         box.label(text='표시(벰·쥐기)는 타임라인에서 클릭한 뒤 G로 옮긴다')
         if CLIPS[key].get('loop'):
             box.label(text='되풀이: 끝 프레임이 처음과 같아야 이어진다')
+        box.label(text='길이: 타임라인 끝을 옮기거나 끝 뒤에 키를 넣으면 그만큼 길어진다')
 
         box = layout.box()
         box.label(text='2. 오른손·팔꿈치를 잡아 G로 옮기고 R로 돌리기')
@@ -884,6 +1080,8 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
             box.label(text=str(note))
         box.label(text=table_label(key))
 
+
+_add_made_here()
 
 CLASSES = (ENFKNIFE_OT_pick, ENFKNIFE_OT_part, ENFKNIFE_OT_knife, ENFKNIFE_OT_send, ENFKNIFE_OT_revert, ENFKNIFE_PT_panel)
 
