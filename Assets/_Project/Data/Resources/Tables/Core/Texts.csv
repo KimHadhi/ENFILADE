@@ -85,16 +85,16 @@ mission.ch2.08.title,지하철 입구로,,"목표 바 제목과 Tab 목표 목�
 mission.ch2.08.description,고가가 뒤에서부터 무너져요. 마지막 경간을 달려 건너 지하철 입구로 들어가세요.,,"Tab 목표 목록의 설명: Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
 mission.ch2.08.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch2_Overpass 8번째 단계(Escape, Ch2.08)"
 mission.ch3.01.title,승강장으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
-mission.ch3.01.description,개찰구를 넘어 승강장으로 내려가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
+mission.ch3.01.description,"승강장으로 내려가세요. 대합실 뒤 역무실(직원 통로)로도 갈 수 있어요. 역무실 CCTV로 차량기지의 놈들과 연료통 자리를, 안내 방송으로 놈들을 선로 쪽으로 끌 수 있어요.",,"Tab 목표 목록의 설명: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
 mission.ch3.01.done,승강장 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 1번째 단계(Reach, Ch3.01)"
 mission.ch3.02.title,터널을 지나 정비창으로,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
-mission.ch3.02.description,선로로 내려가 멈춘 열차 옆 어두운 터널을 따라가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
+mission.ch3.02.description,어두운 터널 선로에 놈들이 줄지어 잠들어 있어요. 손전등을 얼굴에 비추면 뒤척이고 뛰면 깨요. 탈선한 객차는 안·위·옆으로 지나가요.,,"Tab 목표 목록의 설명: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
 mission.ch3.02.done,터널 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 2번째 단계(Reach, Ch3.02)"
 mission.ch3.03.title,정비창 사무실로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
 mission.ch3.03.description,모두 사무실 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
 mission.ch3.03.done,휴게소 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
 mission.ch3.04.title,발전기에 연료 채우기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 4번째 단계(Collect, Ch3.04)"
-mission.ch3.04.description,정비창 곳곳의 연료통 4개를 찾아 발전기에 부으세요. 들고 있는 동안엔 총을 못 써요.,,"Tab 목표 목록의 설명: Ch3_Subway 4번째 단계(Collect, Ch3.04)"
+mission.ch3.04.description,"연료통 4개가 남쪽 차량기지 어딘가에 있어요(판마다 다름). 차량기지 입구 게시판이 자리를 알려 줘요. 열차 밑에 엎드려 숨고, 지붕으로 건너고, 탐조등을 피하세요. 들고 있는 동안엔 총을 못 써요.",,"Tab 목표 목록의 설명: Ch3_Subway 4번째 단계(Collect, Ch3.04)"
 mission.ch3.04.done,발전기 가동,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 4번째 단계(Collect, Ch3.04)"
 mission.ch3.05.title,강 밑 터널 지나기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 5번째 단계(Reach, Ch3.05)"
 mission.ch3.05.description,열린 방수문 너머 강 밑 터널을 따라가세요.,,"Tab 목표 목록의 설명: Ch3_Subway 5번째 단계(Reach, Ch3.05)"
@@ -2192,3 +2192,19 @@ gimmick.camera.watch,[F] CCTV 보기 · 검문소의 놈들이 벽 너머로 보
 gimmick.camera.wait,CCTV · {0}초 뒤 다시 볼 수 있다,,맵 기믹 안내 > CCTV를 본 직후. {0}=남은 초
 gimmick.camera.shown,CCTV · 놈들이 어디 있는지 보인다,,화면 위 알림 > 누가 CCTV를 봤을 때(모두에게)
 gimmick.item.armorycard,장교 카드,,맵 기믹 물건 이름 > 2장 검문소 무기고 카드(판마다 다른 자리의 잠든 장교 곁)
+mission.ch3.10.title,방수문이 열릴 때까지 버티기,,"목표 바 제목: Ch3_Subway 발전기 버티기(Hold, Ch3.10)"
+mission.ch3.10.description,"발전기 소리에 놈들이 몰려오고, 창고 철창이 터져요. 창고 문 둘을 미리 판자로 막아 두면 갇힌 놈들은 못 나와요.",,Tab 목표 목록의 설명: Ch3.10
+mission.ch3.10.done,방수문 열림,,끝낸 목표의 이름: Ch3.10
+gimmick.lure.pa.station,[F] 역 안내 방송 틀기 · 승강장 스피커로 놈들이 몰려간다,,"맵 기믹 [F] 안내 > 3장 역장실 마이크(큰 미끼, 소리는 승강장 스피커에서)"
+gimmick.board.read,[F] 정비 게시판 보기,,맵 기믹 [F] 안내 > 3장 차량기지 입구 게시판
+gimmick.board.cans,연료통 · {0},,화면 위 알림 > 게시판·CCTV로 연료통 자리를 알았을 때(모두에게). {0}=자리 이름들
+gimmick.bar.shut,[F] 판자로 문 막기,,맵 기믹 [F] 안내 > 3장 철창 창고 문 앞(열려 있을 때)
+gimmick.bar.open,[F] 판자 치우기,,맵 기믹 [F] 안내 > 3장 철창 창고 문 앞(막혀 있을 때)
+gimmick.place.ch3.under2,2번 선로 열차 밑,,3장 연료통 자리 이름(게시판)
+gimmick.place.ch3.roof4,4번 선로 열차 지붕,,3장 연료통 자리 이름
+gimmick.place.ch3.sw,차량기지 남서쪽 구석,,3장 연료통 자리 이름
+gimmick.place.ch3.se,차량기지 남동쪽 구석,,3장 연료통 자리 이름
+gimmick.place.ch3.between,3·4번 선로 사이,,3장 연료통 자리 이름
+gimmick.place.ch3.under5,5번 선로 열차 밑,,3장 연료통 자리 이름
+gimmick.place.ch3.catwalk,정비창 통로 위,,3장 연료통 자리 이름
+gimmick.place.ch3.cage,철창 창고 통로,,3장 연료통 자리 이름

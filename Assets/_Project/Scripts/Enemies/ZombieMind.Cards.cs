@@ -67,7 +67,7 @@ public sealed partial class ZombieMind
         var killer = hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null;
         foreach (var mind in minds)
         {
-            if (mind == null || mind.health == dead || !mind.Thinks || mind.horde || mind.IsAwake) continue;
+            if (mind == null || mind.health == dead || !mind.Thinks || mind.horde || mind.IsAwake || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (mind.NoticesDeath(at)) mind.Suspect(at, killer);
         }

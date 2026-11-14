@@ -20,10 +20,13 @@ public sealed class SleeperNest : MonoBehaviour
     private int count = 3;
     [SerializeField, Min(0f), Tooltip("How far round its middle they lie (m).")]
     private float radius = 2f;
+    [SerializeField, Tooltip("Shut in behind bars instead, standing (a cage's crowd: ZombieMind.Cage); off, asleep on the floor.")]
+    private bool caged;
 
     internal string Step => step;
     internal int Count => count;
     internal float Radius => radius;
+    internal bool Caged => caged;
 
     /// <summary>Every nest in the open scenes that is switched on this run.</summary>
     internal static IReadOnlyList<SleeperNest> All => all;

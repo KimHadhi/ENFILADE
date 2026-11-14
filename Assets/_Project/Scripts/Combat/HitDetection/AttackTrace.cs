@@ -162,7 +162,7 @@ public static class AttackTrace
     private static bool ShouldSkip(RaycastHit hit, GameObject owner)
         => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider) || ZombieBody.Replaces(hit.collider)
             || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider) || DroppedMagazine.IsMagazine(hit.collider) || ThrownStone.IsStone(hit.collider)
-            || Throwables.Passes(hit.collider)
+            || Throwables.Passes(hit.collider) || GimmickCage.LetsThrough(hit.collider)
             || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !CampaignCanTarget.Is(hit.collider) && !GimmickTarget.Is(hit.collider)
                 && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
                 || hit.collider.GetComponentInParent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody != true));

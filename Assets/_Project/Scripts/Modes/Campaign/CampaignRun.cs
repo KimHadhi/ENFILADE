@@ -281,6 +281,12 @@ public sealed partial class CampaignRun : MonoBehaviour
         active.spotsByName[name] = place;
     }
 
+    /// <summary>The host: fuel can <paramref name="index"/> lies at <paramref name="position"/> this run (GimmickCanSpots).</summary>
+    public static void RelocateCan(int index, Vector3 position)
+    {
+        if (active != null && active.IsHost) active.fuel.Relocate(index, position);
+    }
+
     /// <summary>A burn hold's fire burns now (the host's word on every PC): BurnFire draws it.</summary>
     public static bool Burning => active != null && !active.finished && active.burning;
 

@@ -120,6 +120,19 @@ internal sealed class CampaignCans
         }
     }
 
+    /// <summary>
+    /// On the host, before anyone has touched it: can <paramref name="index"/> first lies at <paramref name="position"/> this
+    /// run (GimmickCanSpots: where a run's seed puts the yard's cans), and a wipe brings it back there.
+    /// </summary>
+    public void Relocate(int index, Vector3 position)
+    {
+        if (index < 0 || index >= state.Length) return;
+        var at = Ground(position + Vector3.up * .3f, -1);
+        start[index].Position = at;
+        if (state[index].Mode == (byte)Mode.Lying) state[index].Position = at;
+        changed = true;
+    }
+
     /// <summary>The can this player carries, or -1.</summary>
     public int CarriedBy(PlayerMovement player)
     {

@@ -208,8 +208,17 @@ internal sealed class CampaignHorde
             // Laid on the nest's own floor: the walk mesh of the storey above or below is not this one.
             if (Mathf.Abs(ground.y - middle.y) > 1.2f) continue;
             var enemy = Object.Instantiate(prefab, ground, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), container);
-            if (enemy.TryGetComponent(out ZombieMind mind)) mind.Sleep();
-            if (pose >= 0 && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = pose;
+            // Behind bars instead (a cage's crowd): no pose, it rages at its bars on its feet and raises no alarm.
+            if (nest.Caged)
+            {
+                if (enemy.TryGetComponent(out ZombieMind standing)) standing.Cage();
+                if (enemy.TryGetComponent(out ZombieBody upright)) upright.ForcedPose = ZombieBody.NoPose;
+            }
+            else
+            {
+                if (enemy.TryGetComponent(out ZombieMind mind)) mind.Sleep();
+                if (pose >= 0 && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = pose;
+            }
             EnemyNetwork.SpawnInRoom(enemy);
             enemy.Died += OnDied;
             alive.Add(enemy);

@@ -30,11 +30,12 @@ Ch3.01,Ch3_Subway,1,Reach,Platform,8,,4,0.35,mission.ch3.01.title,mission.ch3.01
 Ch3.02,Ch3_Subway,2,Reach,DepotDoor,5,,5,0.45,mission.ch3.02.title,mission.ch3.02.description,mission.ch3.02.done,,,,
 Ch3.03,Ch3_Subway,3,Checkpoint,Office,4,,4,0.35,mission.ch3.03.title,mission.ch3.03.description,mission.ch3.03.done,,,,
 Ch3.04,Ch3_Subway,4,Collect,Generator,3,,10,0.8,mission.ch3.04.title,mission.ch3.04.description,mission.ch3.04.done,,4,,
-Ch3.05,Ch3_Subway,5,Reach,StairsBottom,5,,6,0.5,mission.ch3.05.title,mission.ch3.05.description,mission.ch3.05.done,,,,
-Ch3.06,Ch3_Subway,6,Reach,Exit,6,,6,0.5,mission.ch3.06.title,mission.ch3.06.description,mission.ch3.06.done,,,,
-Ch3.07,Ch3_Subway,7,Press,Flare,2,,5,0.4,mission.ch3.07.title,mission.ch3.07.description,mission.ch3.07.done,mission.ch3.07.prompt,,,
-Ch3.08,Ch3_Subway,8,Hold,Plaza,,90,22,1.8,mission.ch3.08.title,mission.ch3.08.description,mission.ch3.08.done,,,OperationBlackLight,1
-Ch3.09,Ch3_Subway,9,Escape,Boat,5,40,22,1.8,mission.ch3.09.title,mission.ch3.09.description,mission.ch3.09.done,,,OperationBlackLight,
+Ch3.10,Ch3_Subway,5,Hold,Generator,6,40,12,1.1,mission.ch3.10.title,mission.ch3.10.description,mission.ch3.10.done,,,,
+Ch3.05,Ch3_Subway,6,Reach,StairsBottom,5,,6,0.5,mission.ch3.05.title,mission.ch3.05.description,mission.ch3.05.done,,,,
+Ch3.06,Ch3_Subway,7,Reach,Exit,6,,6,0.5,mission.ch3.06.title,mission.ch3.06.description,mission.ch3.06.done,,,,
+Ch3.07,Ch3_Subway,8,Press,Flare,2,,5,0.4,mission.ch3.07.title,mission.ch3.07.description,mission.ch3.07.done,mission.ch3.07.prompt,,,
+Ch3.08,Ch3_Subway,9,Hold,Plaza,,90,22,1.8,mission.ch3.08.title,mission.ch3.08.description,mission.ch3.08.done,,,OperationBlackLight,1
+Ch3.09,Ch3_Subway,10,Escape,Boat,5,40,22,1.8,mission.ch3.09.title,mission.ch3.09.description,mission.ch3.09.done,,,OperationBlackLight,
 Ch4.01,Ch4_Airport,1,Reach,CargoGate,5,,4,0.35,mission.ch4.01.title,mission.ch4.01.description,mission.ch4.01.done,,,,,
 Ch4.02,Ch4_Airport,2,Reach,Departures,9,,5,0.4,mission.ch4.02.title,mission.ch4.02.description,mission.ch4.02.done,,,,,
 Ch4.03,Ch4_Airport,3,Reach,Security,5,,5,0.45,mission.ch4.03.title,mission.ch4.03.description,mission.ch4.03.done,,,,,

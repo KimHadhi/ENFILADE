@@ -21,7 +21,7 @@ public sealed class AlertHUD : MonoBehaviour
 {
     public enum Kind { Danger, Team, Self }
 
-    private const int MostBands = 3, MostMarks = 3, Chevrons = 3;
+    private const int MostBands = 3, MostMarks = 4, Chevrons = 3;
     // The band (px at 1080p): how far under the screen's top the first stands, its height and the gap to the next, its cap
     // and lean, the words' size and their room either side, the distance's room, and the least width.
     private const float Top = 168f, Height = 52f, Gap = 10f, Cap = 60f, Slant = 12f, TextSize = 27f, Pad = 18f, DistanceRoom = 96f,
@@ -106,6 +106,21 @@ public sealed class AlertHUD : MonoBehaviour
     /// </summary>
     public static void Find(string what, Transform where, float markSeconds, Func<bool> gone = null)
         => Show(Kind.Team, what, where, KitStyle.Ice, markSeconds, gone, true);
+
+    /// <summary>
+    /// A place worth going to marked without a band of its own (several at once after one band has said what they are: a
+    /// board's fuel cans, GimmickCanSpots): the HUD's diamond on it for <paramref name="markSeconds"/>.
+    /// </summary>
+    public static void Place(Transform where, float markSeconds, Func<bool> gone = null)
+    {
+        if (!Application.isPlaying || where == null || markSeconds <= 0f) return;
+        if (instance == null)
+        {
+            var host = new GameObject("Alerts", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+            instance = host.AddComponent<AlertHUD>();
+        }
+        instance.AddMark(where, markSeconds, gone, true);
+    }
 
     private static void Show(Kind kind, string what, Transform where, Color tint, float markSeconds, Func<bool> gone, bool find = false)
     {

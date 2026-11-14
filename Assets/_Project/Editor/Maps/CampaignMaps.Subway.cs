@@ -10,6 +10,7 @@ public static partial class CampaignMaps
         var b = GreyboxBuilder.Begin("Ch3_Subway", "3장 지하철");
         if (b == null) return;
         const float Bank = 8f;
+        GimmickCanSpots board;
 
         b.Box("바닥", -10f, 345f, -.5f, 0f, -25f, 25f, b.Concrete, "Concrete");
         // The floors that aren't the concourse's tiles (Tables/MapSurfaces by name), 1 cm over the map's floor: ballast
@@ -20,13 +21,15 @@ public static partial class CampaignMaps
         b.Box("강 밑 터널 바닥", 218f, 300f, -.5f, .01f, -3f, 3f, null, "Concrete");
         b.Box("맵 끝 서", -10f, -9f, 0f, 12f, -25f, 25f);
         b.Box("맵 끝 동 (강)", 344f, 345f, 0f, 10f, -25f, 25f);
-        b.Box("맵 끝 남", -10f, 345f, 0f, 12f, -25f, -24f);
+        // The south edge stops for the train shed (TrainShed), whose own walls close it.
+        b.Box("맵 끝 남 서", -10f, 170f, 0f, 12f, -25f, -24f);
+        b.Box("맵 끝 남 동", 218f, 345f, 0f, 12f, -25f, -24f);
         b.Box("맵 끝 북", -10f, 345f, 0f, 12f, 24f, 25f);
 
         // 1. The concourse, down the stairs from chapter 2's entrance: ticket barriers to vault.
         b.Box("대합실 천장", -9f, 30f, 5f, 5.5f, -12.3f, 12.3f);
         b.Box("대합실 벽 남", -9f, 30f, 0f, 5f, -12.3f, -12f);
-        b.Box("대합실 벽 북", -9f, 30f, 0f, 5f, 12f, 12.3f);
+        WallX(b, "대합실 벽 북", -9f, 30f, 12f, 12.3f, 0f, 5f, DoorIn(4f, 5.2f, 0f));
         // Up to the ceiling (memo 48): 3.2 m high against the map's end it was a ledge no zombie could get onto.
         b.Box("들어온 셔터", -9f, -8.7f, 0f, 5f, -4f, 4f, b.Metal, "Metal");
         b.Box("개찰구 남", 15f, 15.4f, 0f, 1f, -11.7f, -1f, b.Metal, "Metal");
@@ -43,6 +46,10 @@ public static partial class CampaignMaps
         b.Lamp(new Vector3(2f, 4.5f, 0f));
         b.Lamp(new Vector3(22f, 4.5f, 0f));
         b.EnemySpawn("대합실", new Vector3(24f, 0f, -9f));
+        // The station office behind the concourse's north wall (the card "역무실과 CCTV"), its doors through the concourse's
+        // and the platform hall's north walls.
+        board = TrainShed(b);
+        StationOffice(b, board);
 
         // 2. The platform hall: a platform on the north side, the tracks and a stopped train on the south. Underground
         // spaces with no sound zone of their own get their reflection probes by name (Tables/MapReflections Ch3.*).
@@ -50,7 +57,7 @@ public static partial class CampaignMaps
         b.Box("승강장 홀 천장", 30f, 90f, 6f, 6.5f, -12.3f, 12.3f);
         b.Box("홀 칸막이 위", 29.7f, 30f, 5f, 6.5f, -12.3f, 12.3f);
         b.Box("승강장 홀 벽 남", 30f, 90f, 0f, 6f, -12.3f, -12f);
-        b.Box("승강장 홀 벽 북", 30f, 90f, 0f, 6f, 12f, 12.3f);
+        WallX(b, "승강장 홀 벽 북", 30f, 90f, 12f, 12.3f, 0f, 6f, DoorIn(32f, 33.2f, 1.1f));
         b.Box("승강장", 30f, 90f, 0f, 1.1f, 0f, 12f, b.Concrete, "Tile");
         b.Ramp("승강장 오르는 길", new Vector3(26f, 0f, 6f), new Vector3(30f, 1.1f, 6f), 11.4f);
         b.Box("멈춘 열차 1", 40f, 60f, 0f, 3.4f, -9f, -2.6f, b.Metal, "Metal");
@@ -71,37 +78,35 @@ public static partial class CampaignMaps
         b.Box("홀 동벽 북", 90f, 90.3f, 0f, 6.5f, 2.3f, 12.3f);
         b.Box("터널 입구 위", 90f, 90.3f, 5.5f, 6.5f, -6.3f, 2.3f);
 
-        // 3. The dark tunnel: rubble, a pile to climb, a derailed car leaving a side gap. A fuel can lies near its end.
+        // 3. The dark tunnel: rubble, a pile to climb, the derailed car the way goes in, over or beside, crowds asleep along
+        // the track (SleepingTunnel).
         b.Reflections("Ch3.Tunnel", 90.3f, 170f, 0f, 5.5f, -6f, 2f);
         b.Box("터널 벽 남", 90.3f, 170f, 0f, 5.5f, -6.3f, -6f);
         b.Box("터널 벽 북", 90.3f, 170f, 0f, 5.5f, 2f, 2.3f);
         b.Box("터널 천장", 90.3f, 170f, 5.5f, 6f, -6.3f, 2.3f);
         b.Dress(b.Box("잔해 1", 110f, 113f, 0f, 1.4f, -5.9f, -2f, b.Concrete, "ConcreteGrit"), "rubblepile");
         b.Dress(b.Box("잔해 더미", 128f, 130f, 0f, 2.2f, -2f, 1.9f, b.Concrete, "ConcreteGrit"), "rubblepile");
-        b.Box("탈선한 객차", 140f, 152f, 0f, 3f, -5.7f, -2.2f, b.Metal, "Metal");
-        b.Can(new Vector3(160f, 0f, 1f));
-        b.Lamp(new Vector3(100f, 5f, -2f), 10f, 1.6f);
-        b.Lamp(new Vector3(125f, 5f, -2f), 10f, 1.6f);
-        b.Lamp(new Vector3(150f, 5f, -2f), 10f, 1.6f);
+        SleepingTunnel(b);
         b.EnemySpawn("터널 1", new Vector3(100f, 0f, 0f));
         b.EnemySpawn("터널 2", new Vector3(120f, 0f, -4f));
         b.EnemySpawn("터널 3", new Vector3(146f, 0f, 0f));
         b.EnemySpawn("터널 4", new Vector3(162f, 0f, -4f));
         b.Spot("DepotDoor", new Vector3(172f, 0f, -2f));
 
-        // 4. The depot: the office (rest stop), the generator that wants four cans, five cans about (the floor, atop two
-        // stacked containers, a catwalk up a ladder, the tunnel, behind the office), and the flood gate the generator opens.
+        // 4. The depot: the office (rest stop), the generator that wants four cans from the train shed south of it (where a
+        // run puts them, said by the board: TrainShed), the store of caged zombies in its south-west corner (CageStore),
+        // and the flood gate the generator opens while they hold (Ch3.10).
         b.Box("정비창 서벽 남", 170f, 170.3f, 0f, 9.5f, -20.3f, -6.3f);
         b.Box("정비창 서벽 북", 170f, 170.3f, 0f, 9.5f, 2.3f, 20.3f);
         b.Box("정비창 서벽 위", 170f, 170.3f, 5.5f, 9.5f, -6.3f, 2.3f);
         b.Box("정비창 천장", 170f, 218f, 9f, 9.5f, -20.3f, 20.3f);
         b.Reflections("Ch3.Depot", 170.3f, 217.7f, 0f, 9f, -20f, 20f);
-        b.Box("정비창 벽 남", 170.3f, 218f, 0f, 9f, -20.3f, -20f);
+        CageStore(b);
         b.Box("정비창 벽 북", 170.3f, 218f, 0f, 9f, 20f, 20.3f);
         b.Box("정비창 동벽 남", 217.7f, 218f, 0f, 9f, -20.3f, -3f);
         b.Box("정비창 동벽 북", 217.7f, 218f, 0f, 9f, 3f, 20.3f);
         b.Box("방수문 위 벽", 217.7f, 218f, 4.5f, 9f, -3f, 3f);
-        b.Gate("방수문 (발전기가 돌면 열림)", 217.3f, 217.7f, 0f, 4.6f, -3.1f, 3.1f, "Ch3.04", new Vector3(0f, 4.4f, 0f), b.Metal, "Metal", alarm: false);
+        b.Gate("방수문 (발전기가 돌면 열림)", 217.3f, 217.7f, 0f, 4.6f, -3.1f, 3.1f, "Ch3.10", new Vector3(0f, 4.4f, 0f), b.Metal, "Metal", alarm: false);
         Room(b, "정비창 사무실", 172f, 182f, 10f, 18f, 0f, 3f, Side.South, 175f, 177.5f);
         b.Door("사무실 문", 175f, 177.5f, 0f, 2.4f, 10.05f, 10.25f, "Office", new Vector3(2.5f, 0f, 0f));
         b.Spot("Office", new Vector3(177f, 0f, 14.5f));
@@ -114,22 +119,18 @@ public static partial class CampaignMaps
         b.Prop("screen", new Vector3(173.8f, .78f, 16.4f), 270f);
         b.Prop("desk", new Vector3(173.7f, .78f, 17.4f), 270f);
         b.Prop("officechair", new Vector3(174.9f, 0f, 16.6f), 270f);
-        foreach (var (x, z) in new[] { (170.5f, 8f), (170.5f, -12f), (217.5f, 10f) }) b.Prop("fusebox", new Vector3(x, 1.3f, z), x < 200f ? 90f : 270f);
-        foreach (var (x, z) in new[] { (183f, -13f), (184.2f, -12.6f), (199f, 13f), (215f, -18f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
+        foreach (var (x, z) in new[] { (170.5f, 8f), (217.5f, 10f) }) b.Prop("fusebox", new Vector3(x, 1.3f, z), x < 200f ? 90f : 270f);
+        foreach (var (x, z) in new[] { (199f, 13f), (215f, -18f) }) b.Prop("crate", new Vector3(x, 0f, z), x * 7f % 360f);
         foreach (var (x, z) in new[] { (192f, -18.8f), (193.1f, -19f) }) b.Prop("box", new Vector3(x, 0f, z), x * 5f % 360f);
         b.Box("발전기", 205f, 209f, 0f, 2.5f, -6f, -2f, b.Metal, "Metal");
         b.Box("발전기 배기관", 206.8f, 207.2f, 2.5f, 8f, -4.2f, -3.8f, b.Metal, solid: false);
         b.Spot("Generator", new Vector3(203.4f, 0f, -4f));
         b.Box("정비 차량", 178f, 196f, 0f, 3.2f, -8f, -4.4f, b.Metal, "Metal");
-        b.Dress(b.Box("컨테이너 1", 184f, 190f, 0f, 2.6f, -18f, -15.5f, b.Metal, "MetalBox"), "container");
-        b.Box("컨테이너 2", 186f, 190f, 2.6f, 5.2f, -18f, -15.5f, b.Metal, "MetalBox");
+        b.Dress(b.Box("컨테이너 1", 188f, 194f, 0f, 2.6f, -18f, -15.5f, b.Metal, "MetalBox"), "container");
+        b.Box("컨테이너 2", 190f, 194f, 2.6f, 5.2f, -18f, -15.5f, b.Metal, "MetalBox");
         b.Box("통로 발판", 195f, 215f, 4f, 4.2f, 16f, 19.7f, b.Metal, "Gantry");
         b.Box("통로 난간", 195f, 215f, 4.2f, 5.2f, 15.9f, 16f, b.Metal, solid: false);
         b.Ladder("통로 사다리", new Vector3(200f, 0f, 15.85f), 180f);
-        b.Can(new Vector3(192f, 0f, 8f));
-        b.Can(new Vector3(188f, 5.2f, -16.7f));
-        b.Can(new Vector3(210f, 4.2f, 18f));
-        b.Can(new Vector3(180f, 0f, 19f));
         b.Lamp(new Vector3(182f, 8.5f, 0f), 16f);
         b.Lamp(new Vector3(198f, 8.5f, 6f), 16f);
         b.Lamp(new Vector3(210f, 8.5f, -12f), 16f);
@@ -197,7 +198,8 @@ public static partial class CampaignMaps
         b.Pickup(new Vector3(333f, Bank, 2f));
         DressSubway(b);
         b.Finish("3장 지하철을 지었어요 (Scenes/Campaign/Ch3_Subway).\n" +
-                 "길: 대합실 → 승강장 → 어두운 터널 → 정비창 사무실(휴게소) → 연료통 4개를 발전기에 → 방수문 → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
+                 "길: 대합실(역무실 CCTV·안내 방송) → 승강장 → 잠든 터널(탈선한 객차 안·위·옆) → 정비창 사무실(휴게소) → 차량기지의 연료통 4개(게시판이 자리를 알려 줌)를 발전기에 → " +
+                 "발전기가 방수문을 여는 동안 버티기(철창이 터짐) → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
     }
 
     // Chapter 3's concourse, platform, tunnel, depot, river tunnel and far bank in the packs' props (map dressing
@@ -226,11 +228,10 @@ public static partial class CampaignMaps
         b.Prop("corrugated", new Vector3(155f, 0f, 1.4f), 0f);
         b.Prop("drum", new Vector3(165f, 0f, -5.4f), 40f);
         // Depot.
-        b.PropSolid("palletload", new Vector3(201f, 0f, -18.5f), 0f);
+        b.PropSolid("palletload", new Vector3(203f, 0f, -18.5f), 0f);
         foreach (var (x, z) in new[] { (212f, 17.5f), (212.8f, 18.2f), (211.4f, 18.4f) }) b.Prop("drum", new Vector3(x, 0f, z), x * 29f % 360f);
         foreach (var (x, z) in new[] { (216.5f, -8f), (216.8f, -9.2f) }) b.Prop("gascylinder", new Vector3(x, 0f, z), x * 7f % 360f);
-        b.Prop("plasticcrate", new Vector3(171.5f, 0f, -18.5f), 0f);
-        foreach (var x in new[] { 176f, 179f }) b.PropSolid("wireshelf", new Vector3(x, 0f, -19.4f), 0f);
+        foreach (var x in new[] { 196f, 199f }) b.PropSolid("wireshelf", new Vector3(x, 0f, -19.4f), 0f);
         foreach (var z in new[] { 4.4f, 5f }) b.PropSolid("locker", new Vector3(171f, 0f, z), 90f);
         b.PropSolid("worktable", new Vector3(198f, 0f, -12f), 0f);
         b.Prop("stool", new Vector3(198.8f, 0f, -11f), 30f);

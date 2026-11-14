@@ -86,9 +86,40 @@ public sealed partial class ZombieMind
     public bool Asleep => asleep && Mood == ZombieMood.Calm;
 
     /// <summary>
+    /// Shuts it in behind bars, standing calm (a cage's crowd, SleeperNest caged; the map gimmick card "철창에 갇힌 좀비
+    /// 창고": "조용한 통로지만 철창에 붙어 지나가면 물어요"). Penned so long it rages at all comers and none at all: it makes
+    /// nobody out, hears nothing, no call or blow wakes it and it calls no one, so walking past its cage raises no alarm;
+    /// only whoever goes by close and upright is bitten through the bars (GimmickCage). Let out (FreeWithin), it is like any
+    /// other zombie from then on.
+    /// </summary>
+    public void Cage()
+    {
+        if (IsCopy) return;
+        Calm();
+        caged = true;
+    }
+
+    // Behind bars until let out (FreeWithin): kept whatever its mood, so nothing can wake it to call from its cage.
+    private bool caged;
+
+    /// <summary>Shut in behind bars (Cage), on the host or alone.</summary>
+    public bool Caged => caged;
+
+    /// <summary>
+    /// The host: every caged one inside <paramref name="box"/> is let out (its cage burst open) and wakes after
+    /// <paramref name="who"/> (or the nearest player), as WakeWithin wakes the rest. Returns how many woke.
+    /// </summary>
+    public static int FreeWithin(Bounds box, PlayerMovement who)
+    {
+        foreach (var mind in minds)
+            if (mind != null && mind.caged && box.Contains(mind.transform.position)) mind.caged = false;
+        return WakeWithin(box, who);
+    }
+
+    /// <summary>
     /// The host: every zombie not yet awake standing inside <paramref name="box"/> wakes, after <paramref name="who"/> (or
     /// the nearest player), with no call needed: what woke them woke them all (a door smashed in, a lift's chime, a metal
-    /// detector's beep: the floor or the hall it filled). Returns how many woke.
+    /// detector's beep: the floor or the hall it filled). The caged stay as they are (FreeWithin). Returns how many woke.
     /// </summary>
     public static int WakeWithin(Bounds box, PlayerMovement who)
     {
@@ -96,7 +127,7 @@ public sealed partial class ZombieMind
         for (int i = minds.Count - 1; i >= 0; i--)
         {
             var mind = minds[i];
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || !box.Contains(mind.transform.position)) continue;
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.caged || !box.Contains(mind.transform.position)) continue;
             mind.Wake(who, true, false);
             woken++;
         }
@@ -135,7 +166,8 @@ public sealed partial class ZombieMind
     /// <summary>Wakes it after who (or the nearest player). Rouse: it rouses a moment first. Call: it wakes the calm near it.</summary>
     public void Wake(PlayerMovement who, bool rouse = true, bool call = true)
     {
-        if (IsCopy || IsAwake) return;
+        // Behind bars nothing wakes it (Cage): every way a calm one wakes comes through here.
+        if (IsCopy || IsAwake || caged) return;
         Mood = rouse && rouseSeconds > 0f ? ZombieMood.Rousing : ZombieMood.Awake;
         suspicion = 1f;
         glanceUntil = distractedUntil = 0f;

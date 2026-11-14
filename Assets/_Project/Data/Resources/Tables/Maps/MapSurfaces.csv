@@ -27,6 +27,10 @@ Ch3_Subway.Office,Plaster007,Concrete047A,3,3,#d8d2c4,,1,0,1,1,0.1,8,정비창 �
 Ch3_Subway.Stair,PaintedPlaster017,Concrete047A,2.5,3,#c3cec3,,1,0,1,1,0.1,8,계단실,,leak*0.04;wallcrack*0.03,
 Ch3_Subway.Edge,Concrete034,Concrete047A,3,3,#9d9990,,1,0,1,1,0.15,12,맵 끝;광장 서쪽 난간,,leak*0.08;splash*0.06;wallcrack*0.03,
 Ch3_Subway.Plaza,Concrete034,PavingStones150,3,2,,,1,0,1,1,0.12,10,강 건너 광장,,leak*0.05;splash*0.05,leaves*0.006;grime*0.005;mud*0.004;concretecrack*0.004
+Ch3_Subway.Shed,Concrete034,Concrete047A,3,3,#9fa39a,,1,0,1,1,0.14,10,차량기지;정비창 남벽 위;탐조등 탑,,leak*0.07;splash*0.07;wallcrack*0.02,oil*0.01;concretecrack*0.01;grime*0.006
+Ch3_Subway.Train,PaintedMetal006,Metal063,2,2,#7c8a8f,,1,0.3,1,1,0.12,6,열차;탈선한 객차,,leak*0.05;splash*0.06,
+Ch3_Subway.StationOffice,Plaster007,Tiles141,3,1.2,#ddd7c9,,1,0,1,1,0.1,8,역무실,,wallcrack*0.03;splash*0.03,grime*0.01
+Ch3_Subway.CageStore,Concrete034,Concrete047A,3,3,#8f938b,,1,0,1,1,0.14,8,철창 창고,,leak*0.06;splash*0.06;wallcrack*0.03,oil*0.006;grime*0.008
 Ch4_Airport.Concrete,PaintedPlaster017,Marble012,3,2.5,,,1,0,1,1,0.08,9,,,splash*0.02;wallcrack*0.008,grime*0.003;concretecrack*0.002
 Ch4_Airport.Metal,Metal041B,,2.5,,,,1,0.4,1,1,0.1,8
 Ch4_Airport.Facade,PaintedPlaster017,Concrete047A,2.5,3,#e8eaed,,1,0,1,1,0.08,10,터미널 벽;정면 벽;정면 문 위;동쪽 벽;탑승구 문 위,Curtain,leak*0.03;splash*0.02,

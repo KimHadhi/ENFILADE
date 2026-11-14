@@ -17,6 +17,8 @@ public sealed class GimmickCamera : GimmickSwitch
     private float seconds = 30f;
     [SerializeField, Min(0f), Tooltip("How long before it can be watched again (s).")]
     private float wait = 45f;
+    [SerializeField, Tooltip("A board whose fuel cans the cameras also show (GimmickCanSpots); may be empty.")]
+    private GimmickCanSpots board;
 
     private float shownAt = -999f;
 
@@ -33,6 +35,7 @@ public sealed class GimmickCamera : GimmickSwitch
         shownAt = Time.time;
         if (!fresh || watched == null) return;
         GhostSight.Phantom(null, watched.position, seconds, radius);
-        AlertHUD.Self(Texts.Get("gimmick.camera.shown"));
+        if (board != null) board.Tell();
+        else AlertHUD.Self(Texts.Get("gimmick.camera.shown"));
     }
 }

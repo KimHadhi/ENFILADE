@@ -101,6 +101,13 @@ public sealed partial class ZombieMind
 
     private void Think(float dt)
     {
+        // Behind bars it makes nobody out (Cage); should anything have stirred it, it settles back where it stands.
+        if (caged)
+        {
+            suspicion = 0f;
+            if (Mood != ZombieMood.Calm) Settle(false);
+            return;
+        }
         var seen = Look(out float rate, out bool touching);
         if (IsAwake)
         {

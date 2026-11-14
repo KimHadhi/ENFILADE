@@ -86,6 +86,21 @@ public sealed partial class GreyboxBuilder
     }
 
     /// <summary>
+    /// Dresses a box that comes and goes with its switch (a cage door that bursts, a blocker that falls away) with a model
+    /// of <paramref name="kind"/> (Tables/MapArt), as Dress does, but the models go under the box, so they go with it: Dress
+    /// puts them under the map's dressing, which stays.
+    /// </summary>
+    public GameObject DressPart(GameObject box, string kind)
+    {
+        if (box == null) return null;
+        int before = dressing != null ? dressing.childCount : 0;
+        Dress(box, kind);
+        if (dressing == null) return box;
+        for (int i = dressing.childCount - 1; i >= before; i--) dressing.GetChild(i).SetParent(box.transform, true);
+        return box;
+    }
+
+    /// <summary>
     /// A lamp on a breaker's circuit (GimmickBreaker): realtime only, as the map's baked light would keep its glow once it
     /// is off, and under the breaker so the bake leaves it alone.
     /// </summary>
@@ -116,6 +131,15 @@ public sealed partial class GreyboxBuilder
             so.FindProperty("count").intValue = count;
             so.FindProperty("radius").floatValue = radius;
         });
+    }
+
+    /// <summary>A crowd shut in behind bars round a place, standing (SleeperNest caged: ZombieMind.Cage), set as the stretch of <paramref name="step"/> begins.</summary>
+    public void CageCrowd(string step, Vector3 floor, int count, float radius, Transform under = null)
+    {
+        Sleepers(step, floor, count, radius, under);
+        var nest = (under != null ? under : GimmickRoot).GetChild((under != null ? under : GimmickRoot).childCount - 1);
+        nest.name = "갇힌 무리 " + count;
+        Set(nest.GetComponent<SleeperNest>(), so => so.FindProperty("caged").boolValue = true);
     }
 
     /// <summary>A round walkers keep while calm, its stops in order (PatrolRoute), set as the stretch of <paramref name="step"/> begins.</summary>

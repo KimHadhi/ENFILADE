@@ -23,8 +23,8 @@ public sealed partial class ZombieMind
         float best = float.MaxValue;
         foreach (var mind in minds)
         {
-            // Asleep, a stone's clack doesn't stir it.
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep) continue;
+            // Asleep, a stone's clack doesn't stir it; behind bars it couldn't go and look.
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (!mind.Reaches(noise, out float distance, out _)) continue;
             if (distance < best) { best = distance; nearest = mind; }
@@ -42,7 +42,7 @@ public sealed partial class ZombieMind
     {
         foreach (var mind in minds)
         {
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep) continue;
+            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.Asleep || mind.caged) continue;
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (mind.lured && (mind.lureAt - noise.Point).sqrMagnitude < GatherRound * GatherRound * 4f) continue;
             if (!mind.Reaches(noise, out _, out _)) continue;
@@ -56,10 +56,12 @@ public sealed partial class ZombieMind
     private const float GatherRound = 2.5f;
 
     /// <summary>For the throw's aim (StealthView): whether this zombie, not awake, would hear this sound now.</summary>
-    internal bool Hears(in NoiseEvent noise) => !IsAwake && Living && Reaches(noise, out _, out _);
+    internal bool Hears(in NoiseEvent noise) => !IsAwake && !caged && Living && Reaches(noise, out _, out _);
 
     private void Heard(in NoiseEvent noise, PlayerMovement source)
     {
+        // Behind bars it rages at everything already: no sound sets it looking (Cage).
+        if (caged) return;
         // A crouched player's small sounds (a sneaking step, crouching, a lean) don't carry to it: crouched steps alerted
         // a zombie a step behind it, which then turned, saw them that close and woke (user, 2026-11-11: "앉아서 가도 금방
         // 눈치챈다"). Advanced Stealth silences crouched footsteps the same way. A dodge made from a crouch is crouched too
