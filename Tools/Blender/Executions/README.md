@@ -30,7 +30,9 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
     the shown pair, at the grab's offset (kept on the pair's action as `enf_hold_L/R`: the bone and the offset from the
     bone's frame, head and turn, no scale), and on each `CTRL_hand` a Copy Location (`잡기 · 자리`) and a Copy Rotation
     (`잡기 · 방향`) constraint copying it, never its size; the
-    influence is keyed in the pair's action (1 while held). The export reads each hold's window from that influence.
+    influence is keyed in the pair's action (1 while held). The export reads every run of that influence at 1 as one
+    grab: a hand that lets go and takes hold again has a window and an offset per grab, listed with `|` in its
+    `l*`/`r*` cells (`TableCells.Parts`), and the game keeps the hand on each (0.9.67; before, only the first grab went).
   - **Saving sends**: a `save_pre` handler remembers the shown pair (Kazusa's rig object, the 처치 marker, the end frame, the
     hold points), then exports every pair whose fingerprint (keys, handles, interpolation, modifiers and those numbers)
     differs from the one it was last sent with: both rigs baked with `truefps_tools.export_active_clip` (Kazusa at her own

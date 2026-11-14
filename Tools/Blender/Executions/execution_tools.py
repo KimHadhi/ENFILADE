@@ -598,29 +598,31 @@ def _game(v):
     return -v.x, -v.y, v.z
 
 
-def held_frames(action, side, count):
-    """The frames a hand rides its hold point whole (its 잡기 influence at 1): the first run of them, or None."""
+def held_runs(action, side, count):
+    """Every run of frames a hand rides its hold point whole (its 잡기 influence at 1), in order: one per grab. A hand
+    that lets go and takes hold again has a run for each grab, and each goes to the game (before 0.9.67 only the first
+    did: a second grab was not kept on a bigger zombie or another body)."""
     path = drafts().hold_path(side)
     curve = next((c for c in drafts().curves(action) if c.data_path == path), None)
     if curve is None:
-        return None
-    first = last = None
+        return []
+    runs, first = [], None
     for frame in range(1, count + 1):
         if curve.evaluate(frame) >= .999:
             if first is None:
-                first = last = frame
-            elif frame == last + 1:
-                last = frame
-            else:
-                break
+                first = frame
         elif first is not None:
-            break
-    return (first, last) if first is not None else None
+            runs.append((first, frame - 1))
+            first = None
+    if first is not None:
+        runs.append((first, count))
+    return runs
 
 
 def measure(context, key):
-    """What the game needs besides the clips: where the zombie lies at the start, and each hand's hold of it (a bone, a
-    window, and where the wrist sits from that bone in the zombie's frame at the grab), from the pair as it plays now."""
+    """What the game needs besides the clips: where the zombie lies at the start, and each hand's holds of it (a bone,
+    and per grab a window and where the wrist sits from that bone in the zombie's frame at the grab; several grabs are
+    listed with '|' between them, as the game's tables list things), from the pair as it plays now."""
     scene = context.scene
     player, zombie = player_rig(scene), zombie_rig(scene)
     action = pair_action(key)
@@ -633,22 +635,21 @@ def measure(context, key):
     lie = head - hips
     head_yaw = math.degrees(math.atan2(-lie.x, -lie.y))
     out = {'zHipsRight': _number(hr), 'zHipsForward': _number(hf), 'zHeadYaw': _number(head_yaw)}
+    fps = scene.render.fps / scene.render.fps_base
     for side, prefix in (('L', 'l'), ('R', 'r')):
         hold = _hold(action, side)
-        span = held_frames(action, side, scene.frame_end) if hold else None
-        if not span:
-            out.update({prefix + 'Bone': '', prefix + 'From': '', prefix + 'To': '', prefix + 'Right': '',
-                        prefix + 'Forward': '', prefix + 'Up': ''})
-            continue
-        first, last = span
-        scene.frame_set(first)
-        context.view_layer.update()
-        wrist = player.matrix_world @ player.pose.bones['Left wrist' if side == 'L' else 'Right wrist'].head
-        held = zw @ zombie.pose.bones[hold['bone']].head
-        r, f, u = _game(wrist - held)
-        out.update({prefix + 'Bone': hold['bone'], prefix + 'From': _number((first - 1) / scene.render.fps),
-                    prefix + 'To': _number((last - 1) / scene.render.fps), prefix + 'Right': _number(r),
-                    prefix + 'Forward': _number(f), prefix + 'Up': _number(u)})
+        runs = held_runs(action, side, scene.frame_end) if hold else []
+        cells = {name: [] for name in ('From', 'To', 'Right', 'Forward', 'Up')}
+        for first, last in runs:
+            scene.frame_set(first)
+            context.view_layer.update()
+            wrist = player.matrix_world @ player.pose.bones['Left wrist' if side == 'L' else 'Right wrist'].head
+            held = zw @ zombie.pose.bones[hold['bone']].head
+            r, f, u = _game(wrist - held)
+            for name, value in (('From', (first - 1) / fps), ('To', (last - 1) / fps), ('Right', r), ('Forward', f), ('Up', u)):
+                cells[name].append(_number(value))
+        out[prefix + 'Bone'] = hold['bone'] if runs else ''
+        out.update({prefix + name: '|'.join(values) for name, values in cells.items()})
     scene.frame_set(1)
     return out
 

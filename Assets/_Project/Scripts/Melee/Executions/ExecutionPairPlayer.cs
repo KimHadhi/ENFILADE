@@ -68,14 +68,23 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
     private int ignoredCount;
     private Hand left, right;
     // The zombie's bones the pair uses, kept from its start: they go on into the corpse when the kill lays it down, so the
-    // blood and the knife's last frames in the neck find them whatever ran first that frame.
-    private Transform hitBone, leftBone, rightBone;
+    // blood and the knife's last frames in the neck find them whatever ran first that frame. A hand's, one per grab.
+    private Transform hitBone;
+    private Transform[] leftBones, rightBones;
 
+    // A hand's grabs: whether each has begun, the bone's turn when it did and where the wrist goes from that bone.
     private struct Hand
     {
-        public bool Held;
-        public Quaternion BoneAt;
-        public Vector3 Offset;
+        public bool[] Held;
+        public Quaternion[] BoneAt;
+        public Vector3[] Offset;
+
+        public Hand(int grabs)
+        {
+            Held = new bool[grabs];
+            BoneAt = new Quaternion[grabs];
+            Offset = new Vector3[grabs];
+        }
     }
 
     /// <summary>The player's pair player, made on them if missing (PlayerExecution and PlayerNetworkCombat both ask).</summary>
@@ -268,8 +277,8 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         pair = chosen;
         zombie = target;
         hitBone = target != null ? target.HumanBone(chosen.HitBone) : null;
-        leftBone = target != null && chosen.LeftHand.Valid ? target.HumanBone(chosen.LeftHand.Bone) : null;
-        rightBone = target != null && chosen.RightHand.Valid ? target.HumanBone(chosen.RightHand.Bone) : null;
+        leftBones = Bones(target, chosen.LeftHolds);
+        rightBones = Bones(target, chosen.RightHolds);
         grown = target != null ? Mathf.Max(.1f, target.Grown) : 1f;
         anchor = at;
         anchorTurn = Quaternion.Euler(0f, yaw, 0f);
@@ -282,8 +291,16 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         playing = true;
         clock = Mathf.Clamp(late, 0f, pair.Length);
         bled = clock > pair.Kill;
-        left = right = default;
+        left = new Hand(chosen.LeftHolds.Length);
+        right = new Hand(chosen.RightHolds.Length);
         return true;
+    }
+
+    private static Transform[] Bones(ZombieBody target, ExecutionPair.Contact[] holds)
+    {
+        var bones = new Transform[holds.Length];
+        for (int i = 0; i < holds.Length; i++) bones[i] = target != null ? target.HumanBone(holds[i].Bone) : null;
+        return bones;
     }
 
     /// <summary>
@@ -322,7 +339,8 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (execution != null) execution.ForgetPair();
         ownsPair = false;
         zombie = null;
-        hitBone = leftBone = rightBone = null;
+        hitBone = null;
+        leftBones = rightBones = null;
     }
 
     // ---- The hands' holds, after the arms are posed and before the knife is seated (every PC) -----------------------
@@ -333,30 +351,44 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (!playing || pair == null || body == null || Time.deltaTime <= 0f) return;
         var animator = body.BodyAnimator;
         if (animator == null || !animator.isHuman) return;
-        Keep(ref left, pair.LeftHand, leftBone, animator, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
-        Keep(ref right, pair.RightHand, rightBone, animator, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand);
+        Keep(ref left, pair.LeftHolds, leftBones, animator, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
+        Keep(ref right, pair.RightHolds, rightBones, animator, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand);
     }
 
-    // A hand on its hold: at the hold's start the bone's turn is noted, and from then the wrist goes where the pair had it
-    // from that bone, carried as the bone turns, eased on and off at the window's ends. On the body it was made on this
-    // asks for next to nothing; on a bigger zombie or another character it keeps the hand on the head.
-    private void Keep(ref Hand hand, ExecutionPair.Contact contact, Transform bone, Animator animator, HumanBodyBones upperBone,
+    // A hand on its holds: at each grab's start the bone's turn is noted, and from then the wrist goes where the pair had
+    // it from that bone, carried as the bone turns, eased on and off at the grab's ends. A hand that lets go and takes hold
+    // again is kept on every grab; where one grab eases off as the next eases on, the stronger leads. On the body it was
+    // made on this asks for next to nothing; on a bigger zombie or another character it keeps the hand on the head.
+    private void Keep(ref Hand hand, ExecutionPair.Contact[] holds, Transform[] bones, Animator animator, HumanBodyBones upperBone,
         HumanBodyBones lowerBone, HumanBodyBones handBone)
     {
-        if (!contact.Valid || clock < contact.From || clock > contact.To + HoldOut) { hand.Held = false; return; }
+        if (holds == null || bones == null || hand.Held == null) return;
+        int grab = -1;
+        float weight = 0f;
+        for (int i = 0; i < holds.Length && i < bones.Length && i < hand.Held.Length; i++)
+        {
+            var hold = holds[i];
+            if (!hold.Valid || bones[i] == null || clock < hold.From || clock > hold.To + HoldOut) { hand.Held[i] = false; continue; }
+            if (!hand.Held[i])
+            {
+                hand.Held[i] = true;
+                hand.BoneAt[i] = bones[i].rotation;
+                hand.Offset[i] = anchorTurn * hold.Offset * grown;
+            }
+            float on = Mathf.Min(Mathf.Clamp01((clock - hold.From) / HoldIn), Mathf.Clamp01((hold.To + HoldOut - clock) / HoldOut));
+            if (on >= weight)
+            {
+                weight = on;
+                grab = i;
+            }
+        }
+        if (grab < 0 || weight <= 0f) return;
         var upper = animator.GetBoneTransform(upperBone);
         var lower = animator.GetBoneTransform(lowerBone);
         var end = animator.GetBoneTransform(handBone);
-        if (bone == null || upper == null || lower == null || end == null) return;
-        if (!hand.Held)
-        {
-            hand.Held = true;
-            hand.BoneAt = bone.rotation;
-            hand.Offset = anchorTurn * contact.Offset * grown;
-        }
-        float weight = Mathf.Min(Mathf.Clamp01((clock - contact.From) / HoldIn), Mathf.Clamp01((contact.To + HoldOut - clock) / HoldOut));
-        if (weight <= 0f) return;
-        Vector3 target = bone.position + bone.rotation * Quaternion.Inverse(hand.BoneAt) * hand.Offset;
+        if (upper == null || lower == null || end == null) return;
+        var bone = bones[grab];
+        Vector3 target = bone.position + bone.rotation * Quaternion.Inverse(hand.BoneAt[grab]) * hand.Offset[grab];
         Quaternion turned = end.rotation;
         TwoBoneIK.Solve(upper, lower, end, Vector3.Lerp(end.position, target, weight), lower.position);
         // The hand keeps the turn the clip gave it.

@@ -50,8 +50,11 @@ public sealed class ExecutionPair
     /// (degrees right of forward), to lay the clip over a body lying knocked down.</summary>
     public Vector2 StartHips { get; internal set; }
     public float StartHeadYaw { get; internal set; }
-    public Contact LeftHand { get; internal set; }
-    public Contact RightHand { get; internal set; }
+    /// <summary>Each hand's holds in time order, one per grab keyed in the Blender workspace: a hand may let go and take
+    /// hold again, and every grab keeps it on the zombie (the user, 2026-11-14: what is made in Blender reaches the game
+    /// whole).</summary>
+    public Contact[] LeftHolds { get; internal set; } = Array.Empty<Contact>();
+    public Contact[] RightHolds { get; internal set; } = Array.Empty<Contact>();
 }
 
 /// <summary>The table of paired executions, read once and again whenever the tables reload (saving the CSV in Play).</summary>
@@ -120,19 +123,40 @@ public static class ExecutionPairs
                 Fall = new Vector3(row.Number("fallRight", 0f), row.Number("fallUp", 0f), row.Number("fallForward", 1f)),
                 StartHips = new Vector2(row.Number("zHipsRight", 0f), row.Number("zHipsForward", 0f)),
                 StartHeadYaw = row.Number("zHeadYaw", 0f),
-                LeftHand = Hold(row, "l"),
-                RightHand = Hold(row, "r"),
+                LeftHolds = Holds(row, "l"),
+                RightHolds = Holds(row, "r"),
             });
         }
     }
 
-    private static ExecutionPair.Contact Hold(IReadOnlyDictionary<string, string> row, string prefix)
+    // A hand's holds: each cell lists one value per grab with '|' between them (TableCells.Parts), in time order; a hand
+    // that takes hold once has one. A list shorter than the grabs repeats its last value (one bone for every grab: the
+    // workspace's hold point is one per hand and pair).
+    private static ExecutionPair.Contact[] Holds(IReadOnlyDictionary<string, string> row, string prefix)
     {
-        string bone = row.Text(prefix + "Bone");
-        if (string.IsNullOrEmpty(bone)) return default;
-        return new ExecutionPair.Contact(Bone(bone, HumanBodyBones.Head), row.Number(prefix + "From", 0f), row.Number(prefix + "To", 0f),
-            new Vector3(row.Number(prefix + "Right", 0f), row.Number(prefix + "Up", 0f), row.Number(prefix + "Forward", 0f)));
+        var bones = Values(row, prefix + "Bone");
+        if (bones.Count == 0) return Array.Empty<ExecutionPair.Contact>();
+        var from = Values(row, prefix + "From");
+        var to = Values(row, prefix + "To");
+        var right = Values(row, prefix + "Right");
+        var up = Values(row, prefix + "Up");
+        var forward = Values(row, prefix + "Forward");
+        int grabs = Mathf.Max(from.Count, to.Count);
+        var holds = new List<ExecutionPair.Contact>(grabs);
+        for (int i = 0; i < grabs; i++)
+        {
+            var hold = new ExecutionPair.Contact(Bone(At(bones, i), HumanBodyBones.Head), Number(from, i), Number(to, i),
+                new Vector3(Number(right, i), Number(up, i), Number(forward, i)));
+            if (hold.Valid) holds.Add(hold);
+        }
+        return holds.ToArray();
     }
+
+    private static List<string> Values(IReadOnlyDictionary<string, string> row, string key) => new List<string>(TableCells.Parts(row.Text(key)));
+
+    private static string At(List<string> values, int i) => values.Count == 0 ? "" : values[Mathf.Min(i, values.Count - 1)];
+
+    private static float Number(List<string> values, int i) => TableCells.TryNumber(At(values, i), out float value) ? value : 0f;
 
     /// <summary>
     /// A bone by its Synty name (the Blender workspace's: Head, Neck, Spine_03 ...) or its Unity humanoid one (Chest ...),
