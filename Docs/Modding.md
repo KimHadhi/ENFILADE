@@ -77,7 +77,7 @@ M1911,15,                                       Move.runSpeed,7.5
 | `Audio` | Sounds, SoundCues, Music, Ambience, Reverb | 소리 크기와 높낮이, 동작별 소리, 음악, 환경음 |
 | `Hud` | Hud, HudTilt, HudOverlap, HealthBar, HitMarkers, KillFeed, KillFlairs, SpecialKills, MomentFx, PackFx, SkullSlowMotion | HUD 배치와 기울기, 체력바, 히트 마커, 처치 목록, 특수 순간 효과 |
 | `Characters` | Outfits, OutfitSlots, OutfitFits, OutfitFit, CharacterParts, Cloth…, Face…, ShaderMap, 옷장 사진 | 옷 칸과 옷, 옷 맞춤, 천 흔들림, 표정 |
-| `Clips` | KnifeMelee…, Grenade…, Knife…, Repair…, PointHand | 블렌더 작업실이 쓰는 손·팔 동작. 손으로 고치지 않는다. Grenade…·Knife(Draw/Hold/Throw)·Repair…는 손가락 마디마다 방향·비틀림(`index1X`…`thumb3Twist`)을 지녀 어느 캐릭터 손에도 블렌더 모양 그대로 나온다. 그 열이 없는 표는 손가락마다 굽은 정도(`curl`·`thumb`)로 쥔다 |
+| `Clips` | KnifeMelee…, Grenade…, Knife…, Repair…, PointHand | 블렌더 작업실이 쓰는 손·팔 동작. 손으로 고치지 않는다. Grenade…·Knife(Draw/Hold/Throw)·Repair…·KnifeMelee…·PointHand와 몸 클립 옆의 `<클립>_fingers`는 손가락 마디마다 방향·비틀림(`index1X`…`thumb3Twist`)을 지녀 어느 캐릭터 손에도 블렌더 모양 그대로 나온다. 그 열이 없는 표는 손가락마다 굽은 정도(`curl`·`thumb`)로 쥔다 |
 
 ### 알아 둘 것
 

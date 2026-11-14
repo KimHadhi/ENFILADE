@@ -31,7 +31,11 @@ public static class PokeTables
 
     /// <summary>The pointing hand drawn in Blender (Data/Resources/Tables/Clips/PointHand.csv, Tools/Blender/point_hand.py).</summary>
     public const string HandTable = "PointHand";
-    /// <summary>PointHand.csv's rows in PointArm's finger order: index, middle, ring, little, thumb, each knuckle out.</summary>
+    /// <summary>PointHand.csv's row with every finger joint of the drawn hand whole (FingerWays' columns, index1X ...
+    /// thumb3Twist), the one point_hand.py writes.</summary>
+    public const string HandWaysRow = "Hand";
+    /// <summary>PointHand.csv's rows in PointArm's finger order: index, middle, ring, little, thumb, each knuckle out (a
+    /// table of joint ways alone, as point_hand.py wrote it before every joint went whole).</summary>
     public static readonly string[] HandRows =
     {
         "Index1", "Index2", "Index3", "Middle1", "Middle2", "Middle3", "Ring1", "Ring2", "Ring3",
@@ -41,13 +45,34 @@ public static class PokeTables
     private static readonly Dictionary<string, float> numbers = new Dictionary<string, float>();
     private static readonly Feel[] feels = new Feel[6];
     private static readonly UnityEngine.Vector3[] hand = new UnityEngine.Vector3[15];
-    private static bool listening, handRead, handDrawn;
+    private static readonly FingerWays handWays = new FingerWays();
+    private static bool listening, handRead, handDrawn, waysRead;
 
     /// <summary>
-    /// The pointing hand as drawn in Blender, if PointHand.csv has it: each finger joint's way out (to its next joint, the
-    /// last to its tip) in the hand's own frame, which any humanoid's bones give alike: x from the wrist to the index
-    /// knuckle, y across the knuckles from the little finger to the index, z the back of the hand. A row missing is zero
-    /// (that joint keeps its pose). False without the index's rows: the hand is made from Poke.csv's Point.* angles then.
+    /// The pointing hand as drawn in Blender with every finger joint whole, if PointHand.csv has it (its Hand row): each
+    /// segment's way in the hand's own frame (x the way the fingers run, wrist to the middle knuckle; y the way the palm
+    /// faces; z = x × y) and its turn about its own length, the columns every Blender hand workspace sends (FingerWays), so
+    /// PointArm puts the drawn shape, each finger's roll included, on any humanoid's hand through the hand the body already
+    /// measured (PlayerBodyHands.WearFingerWays). Before, the table carried each joint's way alone (HandPose), and a finger's
+    /// turn about its own length was whatever the frame had left. False for a table without these columns (one of joint
+    /// ways alone, a mod's): HandPose then. The ways are shared: read them, never change them.
+    /// </summary>
+    public static bool HandWays(out FingerWays ways)
+    {
+        Listen();
+        ways = handWays;
+        if (waysRead) return handWays.Has;
+        waysRead = true;
+        GameTables.TryGetRow(HandTable, HandWaysRow, out var row);
+        return handWays.Read(row);
+    }
+
+    /// <summary>
+    /// The pointing hand as drawn in Blender in a table of joint ways alone (rows Index1 ... Thumb3, before every joint went
+    /// whole: HandWays), if PointHand.csv has it: each finger joint's way out (to its next joint, the last to its tip) in
+    /// the hand's own frame, which any humanoid's bones give alike: x from the wrist to the index knuckle, y across the
+    /// knuckles from the little finger to the index, z the back of the hand. A row missing is zero (that joint keeps its
+    /// pose). False without the index's rows: the hand is made from Poke.csv's Point.* angles then.
     /// </summary>
     public static bool HandPose(out UnityEngine.Vector3[] joints)
     {
@@ -134,7 +159,7 @@ public static class PokeTables
     {
         numbers.Clear();
         for (int i = 0; i < feels.Length; i++) feels[i] = null;
-        handRead = false;
+        handRead = waysRead = false;
     }
 
     [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]

@@ -2,44 +2,55 @@
 때 가리키는 애니메이션이 있었으면 하니까").
 
 The game's pointing hand (a held F, and the moment an F tap pings an enemy) takes its shape from
-Assets/_Project/Data/Data/Resources/Tables/Clips/PointHand.csv. This script reads that table onto a character's left hand in Blender and
-writes the hand you pose back into it.
+Assets/_Project/Data/Resources/Tables/Clips/PointHand.csv. This script reads that table onto a character's left hand in
+Blender and writes the hand you pose back into it.
 
 How to use (Blender 4.x):
 1. Import a character, e.g. File > Import > FBX: Assets/ThirdParty/BOOTH/Chocolate rice/0.MAYO/FBX/FBX_MAYO.fbx. Any
    humanoid of the Unity project works: its bone names are read from its .fbx.meta (Unity's humanoid map), else guessed
    from the usual names (Hand.L, IndexProximal_L, LeftHandIndex1...).
 2. Scripting tab > Text > Open this file > Run Script. The 3D view's sidebar (N key) gets an "ENFILADE" tab.
-3. Select the armature and press "게임 손 불러오기": its LEFT hand's fingers take the shape the game has now.
+3. Select the armature and press "게임 손 불러오기": its LEFT hand's fingers take the shape the game gives that body.
 4. Pose the left hand's fingers in Pose Mode (only the 15 finger bones count: thumb, index, middle, ring, little, three
    each). The wrist and the arm don't matter: the game turns the hand so the index points at what is pointed at.
 5. Press "게임에 저장": PointHand.csv is written. A game running in Unity takes it as soon as the editor has the focus
    again (the console says "[Tables] PointHand.csv ..."); a running game's /point console command keeps the hand up
    to look at.
 
-What is saved: each finger joint's way out (to its next joint, the last to its tip) in the hand's own frame, worked out
-from where the bones are, not from their axes: x from the wrist to the index knuckle, y across the knuckles from the
-little finger toward the index, z the back of the hand. Every humanoid's bones give that frame, so the game lays the
-same shape on any character (PointArm), whatever its bone axes or finger lengths. A finger's twist about its own length
-is not carried.
+What is saved: every finger joint whole, as every Blender hand workspace sends a hand (Tools/Blender/HandPaths/
+finger_ways.py; FingerWays in the game): for each of the 15 segments the way it points in the hand's own frame (x from
+the wrist to the middle knuckle, y the way the palm faces, z = Unity's Cross(x, y)) and how far it is turned about its
+own length past the least turn from the rig's rest (index1X ... thumb3Twist, the one row "Hand"). Those come from where
+the bones are and how they are turned, never from their tails or axes, so the game lays the same shape on any humanoid
+(PointArm, through the body's own hand: PlayerBodyHands.WearFingerWays), whatever its bone axes or finger lengths.
+Before every joint went whole, only each joint's way went (rows Index1 ... Thumb3, in a frame from the index knuckle; the last joint by its
+bone's tail), and a finger's turn about its own length was whatever the game's frame had left (the user, 2026-11-14,
+on every Blender hand losing something on its way to the game: "근본적으로"). Such a table still loads the old way.
+Loading puts the table on the rig the way the game puts it on a hand (finger_ways.wear: HandGrip.WearWays), so what
+shows here is what the game shows on this body.
 The index's last joint always runs straight on from its middle one, as a pointing finger does to its tip (the user,
-2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"): the game holds it so whatever is drawn, so loading shows it
-so and saving writes it so.
-Handedness: Blender is right-handed, Unity left-handed, and the FBX between them mirrors the axes; the back of the hand
-is A x F here and Cross(F, A) in Unity, which is the same side of a real hand in both.
+2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"): the game holds it so whatever is drawn, and loading shows
+it so. Saving keeps what is drawn (a tip drawn bent stays bent in the table, and the save says the game straightens it).
 """
 import csv
 import datetime
 import glob
+import importlib.util
 import io
+import math
 import os
 import re
+import sys
 import time
 
 import bpy
 from mathutils import Matrix, Vector
 
 TABLE = "PointHand"
+# The table's row that carries every finger joint (FingerWays' columns, PokeTables.HandWaysRow in the game).
+WAYS_ROW = "Hand"
+# The shared finger measure every Blender hand workspace uses, from the project root.
+FINGER_WAYS = os.path.join("Tools", "Blender", "HandPaths", "finger_ways.py")
 
 
 def table_file(root, name, new_in="Clips"):
@@ -58,6 +69,8 @@ JOINTS = ("Proximal", "Intermediate", "Distal")
 ROWS = [(f"{finger}{j + 1}", f"Left {finger} {JOINTS[j]}") for finger in FINGERS for j in range(3)]
 # The index's tip row, laid along its middle joint's row (a pointing finger is straight to its tip).
 STRAIGHT_TIP, STRAIGHT_FROM = "Index3", "Index2"
+# The same two as segments of the 15 (finger_ways' order: index, middle, ring, little, thumb, knuckle out).
+TIP_SEGMENT, FROM_SEGMENT = 2, 1
 
 _metas = {}
 
@@ -83,6 +96,25 @@ def project_root(context):
     if typed and os.path.isdir(os.path.join(typed, "Assets", "_Project")):
         return os.path.abspath(typed)
     return None
+
+
+def finger_ways(root):
+    """The shared finger measure (finger_ways.py), loaded by its path once, as every hand workspace loads it
+    (sys.modules 'enf_finger_ways'), without a __pycache__ beside it. A copy loaded in this Blender before it could put a
+    table on a rig (no wear) is read again."""
+    module = sys.modules.get("enf_finger_ways")
+    if module is not None and hasattr(module, "wear"):
+        return module
+    spec = importlib.util.spec_from_file_location("enf_finger_ways", os.path.join(root, FINGER_WAYS))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["enf_finger_ways"] = module
+    writes = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = writes
+    return module
 
 
 def _human_of(meta):
@@ -149,9 +181,24 @@ def bone_map(context, armature):
     return (guessed, "이름으로 찾음") if guessed else (None, None)
 
 
+def chains_of(armature, bones):
+    """The left hand's fingers as finger_ways takes them (finger -> its three bones, knuckle out; the thumb from its root
+    in the palm), and the humanoid names of the bones this armature lacks: a hand is sent whole or not at all, as the
+    game reads it (FingerWays.Read)."""
+    pose = armature.pose.bones
+    chains, missing = {}, []
+    for finger in FINGERS:
+        names = tuple(bones.get(f"Left {finger} {joint}") for joint in JOINTS)
+        missing += [f"Left {finger} {joint}" for joint, name in zip(JOINTS, names) if not _has(pose, name)]
+        chains[finger.lower()] = names
+    if not _has(pose, bones.get(HAND)):
+        missing.insert(0, HAND)
+    return chains, missing
+
+
 def _frame(pose, bones):
-    """The hand's own frame from where its bones are (armature space): F wrist to index knuckle, A across toward the
-    index, B the back of the hand."""
+    """The hand's own frame from where its bones are (armature space), as the tables of joint ways alone measured it: F wrist
+    to index knuckle, A across toward the index, B the back of the hand."""
     hand = pose[bones[HAND]].head
     index = pose[bones["Left Index Proximal"]].head
     side = None
@@ -169,7 +216,8 @@ def _frame(pose, bones):
 
 
 def _joint_way(pose, bones, row_index):
-    """A finger joint's way out: to its next joint, the last to its child (an end bone) or its tail."""
+    """A finger joint's way out as the tables of joint ways alone took it: to its next joint, the last to its child (an end
+    bone) or its tail."""
     human = ROWS[row_index][1]
     name = bones.get(human)
     if not _has(pose, name):
@@ -221,6 +269,7 @@ def _write(path, text):
 
 
 def _read(path):
+    """The rows of a table of joint ways alone (from before every joint went whole): row id -> its joint's way (x, y, z)."""
     with open(path, encoding="utf-8-sig") as f:
         text = f.read()
     rows = {}
@@ -231,6 +280,73 @@ def _read(path):
             except ValueError:
                 pass
     return rows
+
+
+def _ways_row(path, fw):
+    """The table's every-joint row (WAYS_ROW) as finger_ways' 15 (x, y, z, twist), or None for a table without it: its
+    columns are found by name, whatever their case, as the game finds them (CsvTable); a hand is read whole or not at
+    all (FingerWays.Read)."""
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        records = list(csv.reader(f))
+    if not records:
+        return None
+    header = {name.strip().lower(): c for c, name in enumerate(records[0])}
+    for record in records[1:]:
+        if not record or record[0].strip().lower() != WAYS_ROW.lower():
+            continue
+        cells = []
+        for column in fw.columns():
+            at = header.get(column.lower())
+            text = record[at].strip() if at is not None and at < len(record) else ""
+            if not text:
+                return None
+            try:
+                cells.append(float(text))
+            except ValueError:
+                return None
+        ways = []
+        for i in range(0, len(cells), 4):
+            way = Vector(cells[i:i + 3])
+            if way.length < 1e-3:
+                return None
+            way.normalize()
+            ways.append((way.x, way.y, way.z, cells[i + 3]))
+        return ways
+    return None
+
+
+def straight_tip(ways):
+    """The ways with the index's last segment along its middle one, its turn about itself kept: the game's pointing finger
+    (PointArm), straight to its tip whatever is drawn."""
+    held = list(ways)
+    held[TIP_SEGMENT] = (*ways[FROM_SEGMENT][:3], ways[TIP_SEGMENT][3])
+    return held
+
+
+def tip_bend(ways):
+    """How far (degrees) the drawn index's last segment turns off its middle one."""
+    a, b = ways[FROM_SEGMENT][:3], ways[TIP_SEGMENT][:3]
+    cross = (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+    return math.degrees(math.atan2(math.sqrt(sum(c * c for c in cross)), sum(p * q for p, q in zip(a, b))))
+
+
+def table_text(fw, ways, made):
+    """PointHand.csv as the game reads it: the description row, where it was made, and the one row of every finger
+    joint's way and twist (finger_ways' columns and cells, to the sixth decimal)."""
+    note = ('"#설명 (블렌더로 그린 가리키는 왼손. Tools/Blender/point_hand.py가 쓰고 읽는다. 손가락 마디마다 손 자기 틀에서 '
+            '가리키는 쪽과 제 길이를 축으로 더 돈 각도(index1X~thumb3Twist)라서 블렌더에서 잡은 모양이 비틀림까지 그대로 '
+            '어느 휴머노이드에나 나온다(PointArm → PlayerBodyHands.WearFingerWays. 투척·수리·칼 작업실과 같은 칸). '
+            '검지 끝 마디는 게임이 가운데 마디에서 곧게 잇는다. 손으로 고치지 말고 블렌더에서 고쳐 다시 저장한다. '
+            'Hand 줄을 지우면 Poke.csv Point.* 각도로 만든다)"')
+    # A cell never holds a comma (the tables are plain comma lists).
+    cells = [c.replace(",", " ·") for c in fw.descriptions()]
+    lines = [
+        "﻿" + ",".join(["id"] + fw.columns()),
+        note + "," + ",".join(cells),
+        "#만든 곳," + made.replace(",", " "),
+        WAYS_ROW + "," + ",".join(fw.cells(ways)),
+    ]
+    return "\n".join(lines) + "\n"
 
 
 class ENFILADE_OT_point_hand_save(bpy.types.Operator):
@@ -248,36 +364,22 @@ class ENFILADE_OT_point_hand_save(bpy.types.Operator):
         if not bones:
             self.report({"ERROR"}, "왼손 뼈를 찾지 못했습니다(프로젝트의 FBX를 가져와 주세요).")
             return {"CANCELLED"}
+        chains, missing = chains_of(armature, bones)
+        if missing:
+            self.report({"ERROR"}, "왼손 손가락 15마디가 모두 있어야 저장합니다. 없는 뼈: " + ", ".join(missing))
+            return {"CANCELLED"}
         context.view_layer.update()
-        pose = armature.pose.bones
-        f, a, b = _frame(pose, bones)
-        lines = [
-            "id,x,y,z,#설명",
-            "#설명,,,,\"블렌더로 그린 가리키는 왼손 (Tools/Blender/point_hand.py가 쓰고 읽는다). 손가락 마디마다 다음 마디(끝 마디는 "
-            "손끝)로 가는 방향을 손 자신의 틀로: x 손목→검지 뿌리, y 새끼→검지 쪽 가로, z 손등. 어느 휴머노이드에나 같은 "
-            "모양으로 맞춘다(PointArm). 이 줄들을 지우면 Poke.csv Point.* 각도로 만든다\"",
-            # Only the note's own commas go, so the row keeps its five cells.
-            "#만든 곳,,,," + " / ".join([
-                armature.name, os.path.basename(bpy.data.filepath) or "저장 안 한 blend", source or "",
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M")]).replace(",", " "),
-        ]
-        saved = 0
-        ways = {}
-        for i, (row, _) in enumerate(ROWS):
-            way = _joint_way(pose, bones, i)
-            # The index's tip runs straight on from its middle joint, as the game holds it.
-            if row == STRAIGHT_TIP and ways.get(STRAIGHT_FROM) is not None:
-                way = ways[STRAIGHT_FROM]
-            ways[row] = way
-            if way is None:
-                continue
-            lines.append(f"{row},{way.dot(f):.4f},{way.dot(a):.4f},{way.dot(b):.4f},")
-            saved += 1
+        fw = finger_ways(root)
+        ways = fw.measure(armature, bones[HAND], chains)
+        made = " / ".join([armature.name, os.path.basename(bpy.data.filepath) or "저장 안 한 blend", source or "",
+                           datetime.datetime.now().strftime("%Y-%m-%d %H:%M")])
         path = table_file(root, TABLE)
-        if not _write(path, "﻿" + "\n".join(lines) + "\n"):
+        if not _write(path, table_text(fw, ways, made)):
             self.report({"ERROR"}, "PointHand.csv를 쓰지 못했습니다(다른 프로그램이 잡고 있음).")
             return {"CANCELLED"}
-        self.report({"INFO"}, f"손가락 마디 {saved}개를 PointHand.csv에 저장했습니다. Unity를 누르면 실행 중인 게임에 바로 들어갑니다.")
+        bend = tip_bend(ways)
+        tip = f" 검지 끝 마디가 {bend:.1f}° 굽어 있어 게임은 가운데 마디에서 곧게 잇습니다(표에는 그린 그대로)." if bend > .5 else ""
+        self.report({"INFO"}, f"손가락 마디 15개를 방향·비틀림까지 PointHand.csv에 저장했습니다.{tip} Unity를 누르면 실행 중인 게임에 바로 들어갑니다.")
         return {"FINISHED"}
 
 
@@ -301,6 +403,18 @@ class ENFILADE_OT_point_hand_load(bpy.types.Operator):
         if not bones:
             self.report({"ERROR"}, "왼손 뼈를 찾지 못했습니다(프로젝트의 FBX를 가져와 주세요).")
             return {"CANCELLED"}
+        fw = finger_ways(root)
+        ways = _ways_row(path, fw)
+        if ways is not None:
+            chains, missing = chains_of(armature, bones)
+            if missing:
+                self.report({"ERROR"}, "왼손 손가락 15마디가 모두 있어야 게임처럼 놓습니다. 없는 뼈: " + ", ".join(missing))
+                return {"CANCELLED"}
+            # Every joint as the game puts it on this body's hand, the index straight to its tip as PointArm holds it.
+            fw.wear(armature, bones[HAND], chains, straight_tip(ways), update=context.view_layer.update)
+            self.report({"INFO"}, "게임의 손 모양을 왼손 손가락 마디 15개에 방향·비틀림까지 놓았습니다.")
+            return {"FINISHED"}
+        # A table of joint ways alone (rows Index1 ... Thumb3, from before every joint went whole), laid as it was then.
         table = _read(path)
         context.view_layer.update()
         pose = armature.pose.bones
@@ -322,7 +436,7 @@ class ENFILADE_OT_point_hand_load(bpy.types.Operator):
             bone.matrix = Matrix.Translation(head) @ turn @ Matrix.Translation(-head) @ bone.matrix
             context.view_layer.update()
             posed += 1
-        self.report({"INFO"}, f"게임의 손 모양을 왼손 손가락 마디 {posed}개에 놓았습니다.")
+        self.report({"INFO"}, f"예전 표(마디 방향만)의 손 모양을 왼손 손가락 마디 {posed}개에 놓았습니다. 저장하면 비틀림까지 담긴 새 표가 됩니다.")
         return {"FINISHED"}
 
 
@@ -338,7 +452,7 @@ class ENFILADE_PT_point_hand(bpy.types.Panel):
             layout.prop(context.scene, "enfilade_project")
         armature = _armature(context)
         layout.label(text=f"아마추어: {armature.name if armature else '없음'}")
-        layout.label(text="왼손 손가락 15마디만 씁니다")
+        layout.label(text="왼손 손가락 15마디(방향·비틀림)만 씁니다")
         layout.operator(ENFILADE_OT_point_hand_load.bl_idname, icon="IMPORT")
         layout.operator(ENFILADE_OT_point_hand_save.bl_idname, icon="EXPORT")
 

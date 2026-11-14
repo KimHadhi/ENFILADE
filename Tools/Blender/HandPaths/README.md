@@ -47,6 +47,7 @@ spec = importlib.util.spec_from_file_location('enf_finger_ways', root / 'Tools/B
 | `measure(rig, wrist, chains, right=False)` | 지금 포즈의 마디 15개 `(x, y, z, twist)`. `chains`: 손가락 → 뼈 셋(뿌리부터, 엄지는 손바닥 안 뿌리부터) |
 | `cells(ways)` | `measure`의 값을 표 칸 글자로 |
 | `closing(rig, wrist, chains, right=False)` | 손가락마다 굽은 정도(요약 칸 `curl`·`thumb`용) |
+| `wear(rig, wrist, chains, ways, right=False, update=...)` | 표를 게임처럼(`HandGrip.WearWays`) 리그 손에 입힌다. 불러와서 더 다듬는 도구가 쓴다(가리키는 손 [point_hand.py](../point_hand.py): 저장은 `measure`, 불러오기는 `wear`) |
 | `close(rig, wrist, chains, curl, thumb, right=False, update=...)` | 예전 게임이 굽은 정도로 쥐던 모양(`ArmBones.Close`)을 리그에 그대로 만든다. 손가락 키가 없던 시안에 처음 쥐기를 넣을 때 쓴다 |
 
 - 리그의 armature 공간에서 잰다. 오브젝트의 위치, 회전, 크기, 거울은 결과에 들어가지 않는다.

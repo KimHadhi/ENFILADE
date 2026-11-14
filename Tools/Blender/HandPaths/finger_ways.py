@@ -22,6 +22,10 @@ table apart (a knife's r and l). A workspace tool loads this by its path, once (
 close() closes a hand the way the game closed it from a curl and a thumb number before the joints came from here
 (ArmBones.Close), for drafting a grip a workspace never keyed (the mending loops' tools), so the draft shows what the
 game showed and the user takes it from there.
+
+wear() is measure() the other way round: it puts a table's ways on a rig's hand as the game puts them on its own
+(HandGrip.WearWays), for a tool that loads a table back to be posed further (the pointing hand, Tools/Blender/
+point_hand.py), so what shows in Blender is what the game shows on that body.
 """
 import math
 
@@ -137,6 +141,44 @@ def measure(rig, wrist, chains, right=False):
 
 def _angle(a, b):
     return math.degrees(a.angle(b)) if a.length > 1e-9 and b.length > 1e-9 else 0.0
+
+
+# ---- Wearing a table ----------------------------------------------------------------------------------------------------
+
+def wear(rig, wrist, chains, ways, right=False, update=lambda: None):
+    """Puts ways (15 (x, y, z, twist) as measure() gives them and a table's columns carry them) on the rig's hand as the
+    game puts them on a hand (HandGrip.WearWays): each finger's three bones back to their rest turn under the joint
+    before, then base first each turned the least way to point along its way in the hand's own frame and about that way
+    by its twist. So measure() reads the same numbers back, and a tool that loads a table onto a character shows what the
+    game shows on it, every joint's turn about itself included. A segment with no way keeps its rest turn (as the game's
+    does). update refreshes the rig's pose between joints (context.view_layer.update): each bone is turned from where its
+    parent has just put it."""
+    x, y, z = frame(rig, wrist, chains, right)
+    for f, finger in enumerate(FINGERS):
+        chain = chains[finger]
+        # Only the turn goes back to rest: a bone the user moved or scaled keeps that, as the game keeps its positions.
+        for name in chain:
+            pb = rig.pose.bones[name]
+            at, _, size = pb.matrix_basis.decompose()
+            pb.matrix_basis = Matrix.LocRotScale(at, Quaternion(), size)
+        update()
+        for i in range(3):
+            wx, wy, wz, turn_by = ways[f * 3 + i]
+            wanted = x * wx + y * wy + z * wz
+            if wanted.length_squared < 1e-8:
+                continue
+            wanted.normalize()
+            pb = rig.pose.bones[chain[i]]
+            now = segment_way(rig, chain, i)
+            if now.length < 1e-9:
+                continue
+            turn = now.rotation_difference(wanted)
+            # Unity turns by the twist about the way in its left-handed axes: the same turn is the other way round here.
+            if abs(turn_by) > 1e-3:
+                turn = Quaternion(wanted, math.radians(-turn_by)) @ turn
+            at = pb.matrix.translation.copy()
+            pb.matrix = Matrix.Translation(at) @ turn.to_matrix().to_4x4() @ Matrix.Translation(-at) @ pb.matrix
+            update()
 
 
 def closing(rig, wrist, chains, right=False):

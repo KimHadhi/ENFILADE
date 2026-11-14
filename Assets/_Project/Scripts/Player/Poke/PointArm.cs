@@ -24,11 +24,16 @@ using MovementState = PlayerMovement.MovementState;
 /// rig), and the forearm turns about its own length with the hand as a forearm does (Point.forearmTwist), so the wrist
 /// never wrings. Before, the hand's own roll was laid on a forearm still turned as the gun's hold had it, and the limit
 /// was checked before the arm's last bend, which could carry the wrist past it.
-/// The hand's shape is the one drawn in Blender (Tools/Blender/point_hand.py writes PointHand.csv: each finger joint's way
-/// in the hand's own frame, which fits any humanoid), the drawn index laid along the pointing way, straight on to its
-/// tip whatever the drawing has (the user, 2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"); without that
-/// table, Poke.csv's Point.* angles make it. An F tap's ping points the same hand at what it pinged for a moment, aiming
-/// too (PlayerPoint.Flash).
+/// The hand's shape is the one drawn in Blender (Tools/Blender/point_hand.py writes PointHand.csv): every finger joint
+/// whole, its way in the hand's own frame and its turn about its own length (FingerWays, as every Blender hand workspace
+/// sends a hand), worn on this body's own hand through PlayerBodyHands.WearFingerWays, the working the throw's and the
+/// knife's fingers use, so the drawn shape, each finger's roll included, holds on any humanoid. Before, the table carried
+/// each joint's way alone and every joint was aimed the least turn from wherever the frame had it, so a finger's roll
+/// was the gun hold's, never the drawing's (the user, 2026-11-14, on everything made in Blender that was dropped on its
+/// way into the game: "근본적으로"). The drawn index is laid along the pointing way, straight on to its tip whatever the
+/// drawing has (the user, 2026-11-12: "손가락질 왜 손가락 가장 끝 마디가 굽어진 거임?"). A table of joint ways alone is
+/// laid as it was; without either, Poke.csv's Point.* angles make it. An F tap's ping points the same hand at what it
+/// pinged for a moment, aiming too (PlayerPoint.Flash).
 /// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so the left hand's gun contacts, grip and fingers let go over the hands' own blend time
 /// as the point comes in, and take the gun again as it goes; the pose eases by how far the hand is lent
@@ -72,6 +77,9 @@ public sealed class PointArm : MonoBehaviour
     private float tipLength, touchBlend;
     private bool bound, hasAim, hasTouch, touching, wasAway;
     private PokeHit touch;
+    // The drawn hand's joints as this arm wears them: the table's (PokeTables.HandWays, shared, never changed), the index's
+    // tip laid straight on from its middle joint.
+    private readonly FingerWays worn = new FingerWays();
 
     private void LateUpdate()
     {
@@ -377,7 +385,22 @@ public sealed class PointArm : MonoBehaviour
     {
         palm = WantedPalm(handWay, viewRight, viewAhead);
         Quaternion handGoal;
-        if (PokeTables.HandPose(out var drawn))
+        if (PokeTables.HandWays(out var ways))
+        {
+            // Every joint as drawn, the index's tip straight on from its middle joint; its turn about itself stays.
+            worn.CopyFrom(ways);
+            worn.Ways[Index * 3 + 2] = worn.Ways[Index * 3 + 1];
+            // The ways' frame (x the way the fingers run, y the palm, z = x × y) turned so the drawn index lies along the
+            // way and the drawn palm faces as wanted; the hand's own run and palm (ArmBones', the frame HandGrip wears the
+            // ways in) laid on it, so the worn index points where the aim is. The fingers go on after the hand is turned:
+            // they are the hand's own, so the arm's bends after this carry them along.
+            var drawnTurn = IndexAlong(worn.Ways, Vector3.down, Vector3.forward, handWay, palm);
+            arm.TurnHand(drawnTurn * Vector3.right, drawnTurn * Vector3.up);
+            handGoal = arm.Hand.rotation;
+            // A body whose hands aren't bound to it yet gets each joint's way alone, as a table of ways alone is laid.
+            if (hands == null || !hands.WearFingerWays(animator, true, worn, 1f)) DrawnFingers(worn.Ways, drawnTurn);
+        }
+        else if (PokeTables.HandPose(out var drawn))
         {
             var drawnTurn = DrawnFrame(drawn, handWay, palm);
             handGoal = HandAlong(drawnTurn * Vector3.right, -(drawnTurn * Vector3.forward));
@@ -498,21 +521,29 @@ public sealed class PointArm : MonoBehaviour
         return way.sqrMagnitude > 1e-8f ? way.normalized : straight;
     }
 
-    // The turn from the drawn hand's own frame (x: wrist to the index knuckle, y: across to the index side, z: the back of
-    // the hand; PokeTables.HandPose) to the world: the drawn index (its joints' mean way) along the pointing way, the back
-    // of the hand away from the palm wanted. So the finger itself points at the target, however the hand was drawn.
+    // The turn from the drawn hand's own frame in a table of joint ways alone (x: wrist to the index knuckle, y: across to
+    // the index side, z: the back of the hand; PokeTables.HandPose) to the world (IndexAlong).
     private static Quaternion DrawnFrame(Vector3[] drawn, Vector3 way, Vector3 palm)
+        => IndexAlong(drawn, Vector3.forward, Vector3.up, way, palm);
+
+    // The turn from a drawn hand's own frame to the world: the drawn index (its joints' mean way, DrawnWay's) along the
+    // pointing way, the drawn back of the hand (<paramref name="back"/> in that frame; <paramref name="across"/> for an
+    // index drawn along it) away from the palm wanted. So the finger itself points at the target, however the hand was
+    // drawn, in either frame a table has (DrawnFrame's, FingerWays').
+    private static Quaternion IndexAlong(Vector3[] drawn, Vector3 back, Vector3 across, Vector3 way, Vector3 palm)
     {
         Vector3 index = DrawnWay(drawn, Index, 0) + DrawnWay(drawn, Index, 1) + DrawnWay(drawn, Index, 2);
         index = index.sqrMagnitude > 1e-6f ? index.normalized : Vector3.right;
-        Vector3 back = Vector3.ProjectOnPlane(Vector3.forward, index);
-        if (back.sqrMagnitude < 1e-6f) back = Vector3.ProjectOnPlane(Vector3.up, index);
+        Vector3 drawnBack = Vector3.ProjectOnPlane(back, index);
+        if (drawnBack.sqrMagnitude < 1e-6f) drawnBack = Vector3.ProjectOnPlane(across, index);
         Vector3 worldBack = Vector3.ProjectOnPlane(-palm, way);
         if (worldBack.sqrMagnitude < 1e-6f) worldBack = Vector3.ProjectOnPlane(Vector3.up, way);
-        return Quaternion.LookRotation(way, worldBack) * Quaternion.Inverse(Quaternion.LookRotation(index, back));
+        return Quaternion.LookRotation(way, worldBack) * Quaternion.Inverse(Quaternion.LookRotation(index, drawnBack));
     }
 
-    // Each finger joint aimed the way the drawn hand has it, knuckle out; a joint the table leaves out keeps its pose.
+    // Each finger joint aimed the way the drawn hand has it, knuckle out, the least turn from where it is (a table of joint
+    // ways alone; the ways of a whole one on a body whose hands can't wear them yet); a joint the table leaves out keeps
+    // its pose.
     private void DrawnFingers(Vector3[] drawn, Quaternion drawnTurn)
     {
         for (int finger = 0; finger < 5; finger++)
