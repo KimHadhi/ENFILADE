@@ -407,15 +407,37 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void StandOnSoles(float fit)
     {
         float camera = player.runtimeBodyDefaults.w;
-        // The eyes' height over the model's floor that the fit was made from (model units).
-        float eye = fit > 0f ? camera / fit : 0f;
-        bool sized = animator.isHuman && eye - ownSole > .1f;
-        if (sized) fit = camera / (eye - ownSole);
+        bool sized = SizeOnSoles(animator, camera, ownSole, ref fit);
         body.localScale = Vector3.one * fit;
         float sole = DrawnSole.Of(body);
         soleLift = sole * fit;
         eyeRise = sized ? (ownSole - sole) * fit : 0f;
         player.EyeRise = eyeRise;
+    }
+
+    // The fit that stands a body on the soles of the look it comes in (ownSole, model units over its floor) with its eyes at
+    // the camera's height: the eyes' height the fit was made from is over the model's floor, the soles may not be. False
+    // (and the fit as it was) for a body that can't be sized so.
+    private static bool SizeOnSoles(Animator animator, float camera, float ownSole, ref float fit)
+    {
+        // The eyes' height over the model's floor that the fit was made from (model units).
+        float eye = fit > 0f ? camera / fit : 0f;
+        bool sized = animator != null && animator.isHuman && eye - ownSole > .1f;
+        if (sized) fit = camera / (eye - ownSole);
+        return sized;
+    }
+
+    /// <summary>
+    /// The size the game draws <paramref name="model"/> at (a copy of a character's model as it comes, undressed and before
+    /// any clip): its eyes at the standing camera height <paramref name="camera"/>, standing on its own soles, as a player's
+    /// body is sized (Build, StandOnSoles). For measuring a character that is in nobody's hands: the body every gun's hold is
+    /// shared from (FPSBody.ArmReach) and the editor's hold check.
+    /// </summary>
+    internal static float DrawnScaleOf(Animator animator, Transform model, float camera)
+    {
+        float fit = FitScaleOf(animator, model, camera);
+        SizeOnSoles(animator, camera, DrawnSole.Of(model), ref fit);
+        return fit;
     }
 
     /// <summary>

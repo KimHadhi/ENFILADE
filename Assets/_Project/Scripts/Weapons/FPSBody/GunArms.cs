@@ -92,6 +92,12 @@ internal sealed class GunArms
         if (copy != null) Object.Destroy(copy);
     }
 
+    /// <summary>Destroys the copy at once: outside play nothing is destroyed at a frame's end (the editor's hold check).</summary>
+    internal void ReleaseNow()
+    {
+        if (copy != null) Object.DestroyImmediate(copy);
+    }
+
     /// <summary>Poses the copy as <paramref name="clip"/> has it <paramref name="time"/> seconds in.</summary>
     internal bool Sample(AnimationClip clip, float time)
     {

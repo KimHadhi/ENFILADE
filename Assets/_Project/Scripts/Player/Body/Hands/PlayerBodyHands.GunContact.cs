@@ -11,7 +11,8 @@ using UnityEngine;
 /// The fingers follow the same clips (GunFingers).
 /// In the editor, the final hands (after every pass on them) are measured against KINEMATION's places and go to
 /// Logs/gun-hold-report.txt (no console), for the user's playtest numbers: the first time each character holds each gun
-/// still, and the first time each character's reload of each gun hands over to the hold (its last frame fully on the
+/// still at the hip and the first time fully down the sights (where the arms fold most, each line with how straight both
+/// arms are), and the first time each character's reload of each gun hands over to the hold (its last frame fully on the
 /// reload's clip against the hold's first still frame; the user, 2026-11-12: "재장전 끝나자마자 손을 이상하게 잡아").
 /// </summary>
 public sealed partial class PlayerBodyHands
@@ -30,8 +31,10 @@ public sealed partial class PlayerBodyHands
     private bool reloadEndMeasured, reloadEndSettled;
     private WeaponData reloadEndGun;
     private float reloadEndAt;
-    // Each character and gun reported once per session, for the hold and for the hand-over.
-    private static readonly HashSet<(string skin, WeaponData gun)> reportedHolds = new(), reportedHandOvers = new();
+    // Each character and gun reported once per session, for the hold (at the hip, and down the sights) and for the hand-over.
+    private static readonly HashSet<(string skin, WeaponData gun)> reportedHolds = new(), reportedAimedHolds = new(), reportedHandOvers = new();
+    // The hold measured this frame is the one fully down the sights (the sight on the eyes, where the arms fold most).
+    private bool holdMeasuredAimed;
     private static readonly Vector3[] measureWays = new Vector3[GunArms.DigitCount];
 
     // A final hand against KINEMATION's place: the palm's miss (m), its turn (degrees), and the fingers' mean and most turn
@@ -53,8 +56,11 @@ public sealed partial class PlayerBodyHands
         contactShare[0] = contactShare[1] = 0f;
         placed[0] = placed[1] = false;
         if (gunBody == null) return;
-        bool measure = Application.isEditor && gunBody.HoldSteady && HandsAllOnGun && InHand(gunBody)
-            && !reportedHolds.Contains((SkinId ?? "?", weapons.EquippedData));
+        // Once at the hip and once fully down the sights; on the way between the two nothing is measured.
+        float aim = weapons != null ? weapons.AimBlend : 0f;
+        holdMeasuredAimed = aim >= .999f;
+        bool measure = Application.isEditor && gunBody.HoldSteady && HandsAllOnGun && InHand(gunBody) && (aim <= .001f || holdMeasuredAimed)
+            && !(holdMeasuredAimed ? reportedAimedHolds : reportedHolds).Contains((SkinId ?? "?", weapons.EquippedData));
         Follow(right, false);
         Follow(left, true);
         holdMeasured = measure;
@@ -147,9 +153,10 @@ public sealed partial class PlayerBodyHands
         if (holdMeasured)
         {
             holdMeasured = false;
-            if (!reportedHolds.Contains(key) && Measure(gunBody, right, false, out var rightHold) && Measure(gunBody, left, true, out var leftHold))
+            var reported = holdMeasuredAimed ? reportedAimedHolds : reportedHolds;
+            if (!reported.Contains(key) && Measure(gunBody, right, false, out var rightHold) && Measure(gunBody, left, true, out var leftHold))
             {
-                reportedHolds.Add(key);
+                reported.Add(key);
                 Write(HoldLine(gunBody, data, rightHold, leftHold));
             }
         }
@@ -199,7 +206,7 @@ public sealed partial class PlayerBodyHands
             => $"{palmMissBefore[side] * 100f:0.0} cm {palmTurnBefore[side]:0}° off KINEMATION's place, now {now.Miss * 100f:0.0} cm {now.Turn:0}°";
         // How straight each arm holds it now: shoulder joint to wrist over the arm's length (FPSBody.FitToReach fits it).
         string Straight(ArmIK arm) => arm != null && arm.Reach > 1e-4f ? $"{Vector3.Distance(arm.Upper.position, arm.Hand.position) / arm.Reach:0.00}" : "-";
-        return $"{System.DateTime.Now:HH:mm:ss} {SkinId ?? "?"} {data.name}: right palm {Palm(1, rightHold)}; left palm {Palm(0, leftHold)}; "
+        return $"{System.DateTime.Now:HH:mm:ss} {SkinId ?? "?"} {data.name}{(holdMeasuredAimed ? " down the sights" : "")}: right palm {Palm(1, rightHold)}; left palm {Palm(0, leftHold)}; "
             + $"right fingers {Fingers(right, false, rightHold)}; left fingers {Fingers(left, true, leftHold)} (per finger joint, thumbs aside); "
             + $"arms straight right {Straight(right)} left {Straight(left)}\n";
     }

@@ -400,7 +400,7 @@ public sealed partial class FPSBody
     internal GunAttachments.Kind HeldGripKind => held != null ? held.GripKind : GunAttachments.Kind.None;
 
     /// <summary>The held gun is a handgun (its sound profile): the support hand cups the grip hand instead of a handguard.</summary>
-    internal bool HeldPistol => held != null && held.Data != null && held.Data.SoundProfile == GunSoundProfile.Pistol;
+    internal bool HeldPistol => held != null && IsPistol(held.Data);
 
     /// <summary>
     /// The held gun's grip takes the support hand (PlayerBodyHands.HoldGunGrip): where the palm goes and the ways the

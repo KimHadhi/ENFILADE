@@ -130,7 +130,7 @@ public sealed partial class FPSBody
         // Where the Pose Sampler starts the gun: the bake's place (from its own eyes on any body but the reference), brought
         // within this body's reach (FitToReach).
         var start = exact || !bake.hasEyeFrame ? new KTransform(bake.gunPosition, bake.gunRotation, Vector3.one) : FittedGunPose(bake);
-        var reach = FitToReach(entry, bake, gunFrame, start);
+        var reach = FitToReach(entry, bake, gunFrame, start, exact);
         start.position += reach.Move;
         var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame, start);
         // A shell reload's starts and shells hand over to its next step, so only its end settles back into the hold.
@@ -348,10 +348,14 @@ public sealed partial class FPSBody
 
     // The eyes in this body's model space and the frame they look out of (ahead the way the hips face, up the model's up),
     // as the gun's pose clip stands the body: GunClipRetarget.EyeFrame's rule on the reference body.
-    private bool EyeFrame(AnimationClip pose, out Vector3 eyes, out Quaternion frame)
+    private bool EyeFrame(AnimationClip pose, out Vector3 eyes, out Quaternion frame) => EyeFrame(animator, pose, out eyes, out frame);
+
+    /// <summary>The same for any humanoid's Animator (the editor's hold check measures every character with it, GunHoldProbe).</summary>
+    internal static bool EyeFrame(Animator animator, AnimationClip pose, out Vector3 eyes, out Quaternion frame)
     {
         eyes = default;
         frame = Quaternion.identity;
+        if (animator == null) return false;
         var root = animator.transform;
         var head = animator.GetBoneTransform(HumanBodyBones.Head);
         var leftLeg = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
