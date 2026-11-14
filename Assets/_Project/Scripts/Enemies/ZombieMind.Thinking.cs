@@ -46,6 +46,8 @@ public sealed partial class ZombieMind
         // Far from every player it thinks less often (ZombieLod); what it sees adds up over the longer step all the same.
         float step = ZombieLod.ThinkEvery(transform.position, ThinkEvery);
         thinkLeft += step;
+        // In blinding gas (ZombieEffects.Blind) it only coughs: it has lost its quarry and makes nobody out (GasThink).
+        if (GasThink(step)) return;
         // A horde zombie needs no senses to hunt (EnemyTargeting gives it the nearest), but whether any zombie still has
         // someone in sight decides when the campaign lets the chase die down (LastNoticed, CampaignRun's lull). Once one
         // has seen someone very lately the others needn't cast their rays too (ZombieLod): they take that sighting. While
@@ -208,7 +210,8 @@ public sealed partial class ZombieMind
         Vector3 eye = Eye();
         foreach (var player in PlayerRoster.All)
         {
-            if (!Alive(player)) continue;
+            // One no zombie can see for now (ZombieEffects.Unseen), unless they stand close enough to touch.
+            if (!Alive(player) || CannotSee(player)) continue;
             Vector3 toward = player.transform.position - transform.position;
             bool lit = Lit(player, toward);
             // Someone standing in the dark is made out from less far and more slowly (StealthLight, the memo's item 47:

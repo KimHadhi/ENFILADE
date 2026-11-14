@@ -14,7 +14,7 @@ using UnityEngine;
 public struct EnemyHitMessage : INetworkSerializeByMemcpy
 {
     [Flags]
-    private enum Marks : byte { None = 0, Guardable = 1, Finisher = 2, Critical = 4, Counter = 8, HasOrigin = 16, Pierced = 32, Killed = 64 }
+    private enum Marks : byte { None = 0, Guardable = 1, Finisher = 2, Critical = 4, Counter = 8, HasOrigin = 16, Pierced = 32, Killed = 64, Silent = 128 }
 
     private Vector3 point, direction, origin;
     private float amount, postureDamage, taken;
@@ -52,13 +52,15 @@ public struct EnemyHitMessage : INetworkSerializeByMemcpy
         if (hit.IsCounter) marks |= Marks.Counter;
         if (hit.Origin.HasValue) marks |= Marks.HasOrigin;
         if (hit.Pierced) marks |= Marks.Pierced;
+        if (hit.Silent) marks |= Marks.Silent;
         // What the hit already carried (a friend's, relayed by the host) and, for this PC's own player, their state now.
         attacker = (uint)(hit.Marks | KillConditions.Attacker(hit.Source));
     }
 
     public DamageHit ToHit(GameObject source) => new DamageHit(DamageHit.NewAttackId(), amount, (DamageKind)kind, point, direction, source,
         Has(Marks.Guardable), postureDamage, Has(Marks.Finisher), Has(Marks.Critical), Has(Marks.Counter), (DamageMethod)method,
-        Has(Marks.HasOrigin) ? origin : (Vector3?)null, pierced: Has(Marks.Pierced), part: (BodyPart)part, marks: (KillMarks)attacker);
+        Has(Marks.HasOrigin) ? origin : (Vector3?)null, pierced: Has(Marks.Pierced), part: (BodyPart)part, marks: (KillMarks)attacker,
+        silent: Has(Marks.Silent));
 
     private bool Has(Marks mark) => (marks & mark) != 0;
 }

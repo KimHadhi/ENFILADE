@@ -42,6 +42,8 @@ public sealed partial class ZombieMind
         // 눈치챈다"). Advanced Stealth silences crouched footsteps the same way. A dodge made from a crouch is crouched too
         // (IsCrouchStance), and its sound is a crouched one (SoundCues DodgeLow).
         if (source.IsCrouchStance && noise.Radius <= sneakSilent) return;
+        // Coughing in blinding gas it takes nothing in (ZombieEffects.Blind).
+        if (gassed) return;
         if (!Reaches(noise, out float distance, out float reach)) return;
         float loudness = 1f - distance / Mathf.Max(.01f, reach);
         if (IsAwake)

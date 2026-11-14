@@ -76,12 +76,15 @@ public sealed class EnemyTargeting : MonoBehaviour
         if (mind == null) mind = GetComponent<ZombieMind>();
         var noticed = mind != null ? mind.Target : null;
         if (noticed != null && (Pen == null || Pen(noticed))) return player = noticed;
-        bool lost = player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive;
+        // Someone no zombie can see for now (ZombieEffects.Unseen) is dropped at once, not at its next look.
+        bool lost = player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive || Unseen(player);
         if (lost || Time.time >= nextLook)
         {
             nextLook = Time.time + retargetInterval;
-            // A Ghost's smoke hangs somewhere (SmokeScreen): the nearest it can see goes before a nearer one in it.
-            player = SmokeScreen.Count > 0 ? NearestSeen() : Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
+            // A Ghost's smoke hangs somewhere (SmokeScreen), or someone can't be seen: the nearest it can see goes
+            // before a nearer one it can't.
+            player = SmokeScreen.Count > 0 || ZombieMind.AnyUnseen ? NearestSeen()
+                : Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
         }
         return player;
     }
@@ -109,6 +112,8 @@ public sealed class EnemyTargeting : MonoBehaviour
         foreach (var someone in PlayerRoster.All)
         {
             if (someone == null || !someone.IsInitialized || !someone.DamageReceiver.IsAlive || (Pen != null && !Pen(someone))) continue;
+            // Unseen, they are nobody's quarry by sight at all, not even the nearest of the hidden.
+            if (Unseen(someone)) continue;
             float distance = (someone.transform.position - transform.position).sqrMagnitude;
             if (distance < bestAny) { bestAny = distance; any = someone; }
             if (distance < bestSeen && !SmokeScreen.HidesFrom(this, someone)) { bestSeen = distance; seen = someone; }
@@ -151,6 +156,14 @@ public sealed class EnemyTargeting : MonoBehaviour
         targeting.taunter = hound;
         targeting.tauntUntil = Time.time + seconds;
         targeting.finishFirst = true;
+    }
+
+    // No zombie can see this player for now (ZombieEffects.Unseen), and they are not close enough for this one to touch.
+    private bool Unseen(PlayerMovement who)
+    {
+        if (!ZombieMind.AnyUnseen) return false;
+        if (mind == null) mind = GetComponent<ZombieMind>();
+        return mind != null ? mind.CannotSee(who) : ZombieMind.IsUnseen(who);
     }
 
     // Alive and not down: a Knight lying on the ground no longer holds anything's eye (they'd only be eaten).

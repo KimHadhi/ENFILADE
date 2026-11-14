@@ -22,6 +22,21 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
     private float baseSpeed = -1f;
     private float slowRemaining, slowDuration = 1f, pushRemaining, pushDuration = 1f, interruptCooldown, recentDamage;
     private Vector3 pushDistance;
+    // A slow laid on it from outside for a while (Slow): how much of its speed it takes, and how long is left (s).
+    private float heldSlow, heldSlowLeft;
+
+    /// <summary>
+    /// Where the enemy really walks (the host, or alone): for this long it walks this share slower (0.4: at 60% of its
+    /// speed), on top of a bullet's own short slow. A zombie pinned down by fire (ZombieEffects.Suppress) or coughing in
+    /// gas (ZombieEffects.Blind). Laid again while it lasts, the longer time and the stronger slow stand.
+    /// </summary>
+    internal void Slow(float seconds, float share)
+    {
+        if (seconds <= 0f || share <= 0f) return;
+        heldSlow = heldSlowLeft > 0f ? Mathf.Max(heldSlow, Mathf.Clamp01(share)) : Mathf.Clamp01(share);
+        heldSlowLeft = Mathf.Max(heldSlowLeft, seconds);
+        enabled = true;
+    }
 
     public float SpeedMultiplier { get; private set; } = 1f;
 
@@ -117,10 +132,12 @@ public sealed class EnemyHitReaction : MonoBehaviour, ITableBound
         }
 
         slowRemaining = Mathf.Max(0f, slowRemaining - dt);
-        SpeedMultiplier = slowRemaining > 0f ? Mathf.Lerp(1f, settings.flinchSlow, slowRemaining / slowDuration) : 1f;
+        heldSlowLeft = Mathf.Max(0f, heldSlowLeft - dt);
+        SpeedMultiplier = (slowRemaining > 0f ? Mathf.Lerp(1f, settings.flinchSlow, slowRemaining / slowDuration) : 1f)
+            * (heldSlowLeft > 0f ? 1f - heldSlow : 1f);
         if (agent != null && baseSpeed >= 0f) agent.speed = baseSpeed * SpeedMultiplier;
 
-        if (pushRemaining <= 0f && slowRemaining <= 0f && interruptCooldown <= 0f && recentDamage < .5f)
+        if (pushRemaining <= 0f && slowRemaining <= 0f && heldSlowLeft <= 0f && interruptCooldown <= 0f && recentDamage < .5f)
         {
             recentDamage = 0f;
             enabled = false;

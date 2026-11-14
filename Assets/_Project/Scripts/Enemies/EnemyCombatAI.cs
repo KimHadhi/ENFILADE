@@ -94,9 +94,24 @@ public sealed class EnemyCombatAI : MonoBehaviour
     public bool IsPreparingAttack => preparing;
     public float ApproachDistance => attackRange * approachShare;
     /// <summary>Seconds from the attack cue to the hit (ZombieBody lands its swing clip's strike there).</summary>
-    public float Windup => move == AttackMove.Bite ? biteWindup : move == AttackMove.Grab ? grabWindup
-        : move == AttackMove.Feed ? feedWindup : move == AttackMove.Pounce ? pounceWindup
+    public float Windup => move == AttackMove.Pounce ? pounceWindup : PlainWindup * (Time.time < windupSlowUntil ? 1f + windupSlow : 1f);
+    private float PlainWindup => move == AttackMove.Bite ? biteWindup : move == AttackMove.Grab ? grabWindup
+        : move == AttackMove.Feed ? feedWindup
         : (move == AttackMove.Backstab || move == AttackMove.Reap) && Elite != null && Elite.WindupOf(move) > 0f ? Elite.WindupOf(move) : windup;
+    // Pinned down by fire it winds up slower (SlowWindup): by this share, until this time.
+    private float windupSlow, windupSlowUntil;
+
+    /// <summary>
+    /// Every PC: for this long its windups take this share longer (0.3: 30% longer). A zombie pinned down by fire
+    /// (ZombieEffects.Suppress): the cue-to-hit gap grows on the victim's own PC, where the swing is timed, as on the
+    /// host. A leap's time in the air is not a windup to slow (it is how long the runner flies).
+    /// </summary>
+    internal void SlowWindup(float seconds, float share)
+    {
+        if (seconds <= 0f) return;
+        windupSlow = Mathf.Max(0f, share);
+        windupSlowUntil = Time.time + seconds;
+    }
     /// <summary>The move under way (or last made).</summary>
     public AttackMove Move => move;
     /// <summary>

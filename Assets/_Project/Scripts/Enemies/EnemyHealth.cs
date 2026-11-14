@@ -106,6 +106,32 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     public event Action<EnemyHealth> Died;
 
     private static readonly List<EnemyHealth> living = new List<EnemyHealth>();
+    // The rules asked of every hit on the PC that judges it: any that says yes makes it a silent one (SilentWhen).
+    private static readonly List<Func<EnemyHealth, DamageHit, bool>> silentRules = new List<Func<EnemyHealth, DamageHit, bool>>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => silentRules.Clear();
+
+    /// <summary>
+    /// A card's rule for silent kills: asked of each hit as the PC that judges it lands it (this PC's own player's hits
+    /// on a copy, or any hit alone), before the hit is applied. True marks the hit silent (DamageHit.Silent), which goes
+    /// to the host with it: if it kills, no zombie standing by notices the death (ZombieMind.DeathSeen). A Ghost's
+    /// headshot on a zombie it has marked, say. Keep the rule cheap: it runs for every hit.
+    /// </summary>
+    public static void SilentWhen(Func<EnemyHealth, DamageHit, bool> rule)
+    {
+        if (rule != null && !silentRules.Contains(rule)) silentRules.Add(rule);
+    }
+
+    /// <summary>Takes a rule given to SilentWhen back out.</summary>
+    public static void NoLongerSilentWhen(Func<EnemyHealth, DamageHit, bool> rule) => silentRules.Remove(rule);
+
+    private bool AskedSilent(in DamageHit hit)
+    {
+        for (int i = 0; i < silentRules.Count; i++)
+            if (silentRules[i](this, hit)) return true;
+        return false;
+    }
     /// <summary>Every enemy switched on in the scene, on this PC (the host's or a copy), dead ones included until they go.</summary>
     public static IReadOnlyList<EnemyHealth> Living => living;
 
@@ -148,6 +174,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         if (!seen.Add(hit.Id)) return DamageResult.Duplicate;
         recent.Enqueue(hit.Id);
         if (recent.Count > 256) seen.Remove(recent.Dequeue());
+        // A card may make this hit a silent one (SilentWhen), here where it is judged: the mark goes on with it.
+        if (!hit.Silent && silentRules.Count > 0 && AskedSilent(hit)) hit = hit.Silenced();
         float before = Health;
         // Knocked down and lying there, it takes more (ZombieKnockdown lyingDamage, friend feedback C7), and a crawling
         // brute's head far more (ZombieKinds crawlHead).
@@ -312,6 +340,8 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     {
         // 웨이브 관리자에게 처치 사실을 알린다.
         Died?.Invoke(this);
+        // Where zombies think (the host, or alone): those standing by notice the death, unless the kill was silent.
+        if (network == null || !network.IsCopy) ZombieMind.DeathSeen(this, hit);
 
         // The body falls as its own corpse, run here if this PC's player landed the blow (or the host, for no player).
         if (body != null)

@@ -50,13 +50,23 @@ public readonly struct DamageHit
     /// Presentation only.
     /// </summary>
     public readonly KillMarks Marks;
+    /// <summary>
+    /// A kill by this hit makes no stir: no zombie standing by notices the death (ZombieMind.DeathSeen). The PC that
+    /// judges the hit says so (a Ghost's marked headshot: EnemyHealth.SilentWhen), and it travels to the host with the hit
+    /// (EnemyHitMessage). Executions and takedowns are silent without it.
+    /// </summary>
+    public readonly bool Silent;
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
         DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false, bool pierced = false,
-        BodyPart part = BodyPart.None, KillMarks marks = KillMarks.None)
+        BodyPart part = BodyPart.None, KillMarks marks = KillMarks.None, bool silent = false)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; Marks = marks; }
+        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; Marks = marks; Silent = silent; }
+
+    /// <summary>The same hit, marked silent.</summary>
+    public DamageHit Silenced() => new DamageHit(Id, Amount, Kind, Point, Direction, Source, CanBeGuarded, PostureDamage, IsComboFinisher,
+        IsCritical, IsCounter, Method, Origin, IsFatal, Pierced, Part, Marks, true);
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

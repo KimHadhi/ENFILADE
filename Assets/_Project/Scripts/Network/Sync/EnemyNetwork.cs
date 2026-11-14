@@ -137,6 +137,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         body = GetComponent<ZombieBody>();
         type = GetComponent<ZombieType>();
         grip = GetComponent<ZombieGrip>();
+        // What cards do to zombies that isn't about one zombie rides a message this PC must be listening for.
+        ZombieEffects.Listen();
         condition.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = ConditionInterval });
         if (IsServer)
         {
@@ -445,6 +447,47 @@ public sealed class EnemyNetwork : NetworkBehaviour
     /// </summary>
     internal void SendBarge(Vector3 velocity, float throwTime, float knockdownTime, bool runs = false)
         => BargeRpc(velocity, throwTime, knockdownTime, runs);
+
+    // ---- What cards do to it (ZombieEffects) -----------------------------------------------------------------
+    // The last suppression this PC sent for it: when the next may go out (game time), and how strong it was.
+    private float suppressNext;
+    private float suppressWalk, suppressWindup;
+
+    /// <summary>
+    /// Any PC: its player's fire pins this zombie down (ZombieEffects.Suppress). Every PC hears it, this one at once.
+    /// Rounds call this many times a second, so the word goes out again only once a good part of the last one's time
+    /// has run, or when it is stronger than the last.
+    /// </summary>
+    internal void ShareSuppress(float seconds, float walkSlow, float windupSlow)
+    {
+        if (!IsSpawned) return;
+        if (Time.time < suppressNext && walkSlow <= suppressWalk && windupSlow <= suppressWindup) return;
+        suppressNext = Time.time + seconds * .35f;
+        suppressWalk = walkSlow;
+        suppressWindup = windupSlow;
+        SuppressRpc(seconds, walkSlow, windupSlow);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void SuppressRpc(float seconds, float walkSlow, float windupSlow) => ZombieEffects.Suppressed(enemy, seconds, walkSlow, windupSlow);
+
+    /// <summary>Any PC: this zombie is to be put there at once (ZombieEffects.Move). The host moves it.</summary>
+    internal void ShareMove(Vector3 position, Quaternion rotation)
+    {
+        if (IsSpawned) MoveRpc(position, rotation);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void MoveRpc(Vector3 position, Quaternion rotation) => ZombieEffects.Moved(enemy, position, rotation);
+
+    /// <summary>
+    /// The host put its zombie somewhere else at once (ZombieEffects.Moved): its copies jump there with it. Without
+    /// this they would glide across the map to it, as they follow every other move.
+    /// </summary>
+    internal void Jump()
+    {
+        if (IsSpawned && IsServer && motion != null) motion.Teleport(transform.position, transform.rotation, transform.localScale);
+    }
 
     /// <summary>This PC's player started an execution on its copy: the host holds the enemy for them, if nobody else has it.</summary>
     internal void AskExecution() => ExecutionRpc();

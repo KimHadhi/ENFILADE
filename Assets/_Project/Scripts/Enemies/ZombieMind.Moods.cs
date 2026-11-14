@@ -227,7 +227,11 @@ public sealed partial class ZombieMind
 
     private void SetSpeed(float share)
     {
-        if (agent != null && chaseSpeed > 0f) agent.speed = chaseSpeed * share;
+        if (agent == null || chaseSpeed <= 0f) return;
+        agent.speed = chaseSpeed * share;
+        // The speed a flinch or a slow laid on it works from and gives back (EnemyHitReaction) is the one it walks at
+        // now. It was always its chase speed, so a searching zombie that was slowed walked faster than one that wasn't.
+        if (reaction != null || TryGetComponent(out reaction)) reaction.SetBaseSpeed(chaseSpeed * share);
     }
 
     /// <summary>
@@ -237,7 +241,7 @@ public sealed partial class ZombieMind
     internal void SetChaseSpeed(float speed)
     {
         chaseSpeed = speed;
-        if (TryGetComponent(out EnemyHitReaction reaction)) reaction.SetBaseSpeed(speed);
+        if (reaction != null || TryGetComponent(out reaction)) reaction.SetBaseSpeed(speed);
         SetSpeed(Mood == ZombieMood.Searching ? lured ? lureSpeedShare : searchSpeedShare : 1f);
     }
 
@@ -245,7 +249,8 @@ public sealed partial class ZombieMind
     internal void Struck(in DamageHit hit)
     {
         if (!Thinks || IsAwake) return;
-        Wake(hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null, false);
+        // Coughing in blinding gas it draws no breath to call anyone: it loses whoever struck it at its next think (GasThink).
+        Wake(hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null, false, !gassed);
     }
 
     /// <summary>On another PC: the mood the host's zombie is in, how sure it is (twentieths) and of whom (client id + 1).</summary>

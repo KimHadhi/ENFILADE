@@ -119,6 +119,7 @@ public sealed partial class ZombieBody
         float pace = network != null ? network.Pace : 1f;
         float dt = real * pace;
         WatchDown();
+        CoughTick();
         SettleArms();
         Moods(dt);
         Move(real, pace, dt);
