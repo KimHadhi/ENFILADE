@@ -8,7 +8,9 @@ using UnityEngine;
 /// the head bursts it as a headshot kill bursts a living zombie's (ZombieGore.BurstHeadAt): the pieces change to the same
 /// body baked with its head taken off the way gore takes one off a skin (GoreBody.Hide), and the head takes no more shots.
 /// The shooter's PC decides and tells the others by the eater's network id, which every PC laid its copy under
-/// (PlayerNetworkCorpse). A hit here is nothing else: no damage, marker, number or kill (DamageResult.Ignored).
+/// (PlayerNetworkCorpse), and its shooter sees a headshot's marker (ZombieGore.ShotDeadHead). Nothing else counts it: no
+/// damage, number, kill or reward (DamageResult.Ignored). It costs nothing a frame: no bones, Animator or Update, one
+/// static trigger.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ZombieMealBody : MonoBehaviour, IDamageReceiver
@@ -60,7 +62,7 @@ public sealed class ZombieMealBody : MonoBehaviour, IDamageReceiver
     DamageResult IDamageReceiver.ReceiveHit(DamageHit hit)
     {
         if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head && Burst(hit.Direction))
-            PlayerNetworkCorpse.TellDeadHead(hit.Source, true, id, hit.Direction);
+            ZombieGore.ShotDeadHead(hit, true, id);
         return DamageResult.Ignored;
     }
 

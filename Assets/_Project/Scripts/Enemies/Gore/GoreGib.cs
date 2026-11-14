@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// A piece thrown off a zombie (GoreGibs): it trails blood while it flies, leaves a splat where it first lands hard, lies a
-/// while, then sinks into the floor and is gone, taking its own mesh with it.
+/// while, then sinks into the floor. A cut limb is then gone, taking its own mesh with it; a gut chunk (no mesh of its
+/// own) is put away to be thrown again by the next burst (GoreGibs.Release).
 /// </summary>
 [DisallowMultipleComponent]
 internal sealed class GoreGib : MonoBehaviour
@@ -18,19 +19,29 @@ internal sealed class GoreGib : MonoBehaviour
     private ZombieGore owner;
     private Mesh owned;
     private Rigidbody rigid;
+    private Collider[] shapes;
     private bool trail, splatted;
     private float age, lie, sinkLeft;
 
     public bool Sinking => sinkLeft > 0f || age >= lie;
 
+    /// <summary>Starts it flying from where it is, fresh: a chunk thrown again starts over as a new one.</summary>
     public void Begin(ZombieGore gore, Mesh mesh, bool bleeds)
     {
         owner = gore;
         owned = mesh;
         trail = bleeds;
-        rigid = GetComponent<Rigidbody>();
+        if (rigid == null) rigid = GetComponent<Rigidbody>();
+        if (shapes == null) shapes = GetComponents<Collider>();
         lie = gore != null ? gore.GibLie : 20f;
-        foreach (var collider in GetComponents<Collider>()) pieces.Add(collider);
+        age = sinkLeft = 0f;
+        splatted = false;
+        if (rigid != null) rigid.isKinematic = false;
+        foreach (var shape in shapes)
+        {
+            shape.enabled = true;
+            pieces.Add(shape);
+        }
     }
 
     /// <summary>Starts sinking now (too many pieces about).</summary>
@@ -48,11 +59,13 @@ internal sealed class GoreGib : MonoBehaviour
         {
             sinkLeft = Mathf.Max(.05f, sink);
             if (rigid != null) rigid.isKinematic = true;
-            foreach (var collider in GetComponents<Collider>()) collider.enabled = false;
+            foreach (var shape in shapes) shape.enabled = false;
         }
         transform.position += Vector3.down * (SinkDepth / Mathf.Max(.05f, sink)) * dt;
         sinkLeft -= dt;
-        if (sinkLeft <= 0f) Destroy(gameObject);
+        if (sinkLeft > 0f) return;
+        if (owned == null && owner != null) owner.Gibs.Release(this);
+        else Destroy(gameObject);
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -66,7 +79,7 @@ internal sealed class GoreGib : MonoBehaviour
 
     private void OnDestroy()
     {
-        foreach (var collider in GetComponents<Collider>()) pieces.Remove(collider);
+        if (shapes != null) foreach (var shape in shapes) pieces.Remove(shape);
         if (owned != null) Destroy(owned);
     }
 }

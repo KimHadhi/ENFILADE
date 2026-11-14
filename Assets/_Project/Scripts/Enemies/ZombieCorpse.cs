@@ -415,7 +415,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         // A bullet in a corpse's head bursts it, as one bursts a living zombie's on the kill (ZombieGore): this is the
         // shooter's PC (only the shooter's own trace reaches a doll), which decides.
         if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head && BurstHead(hit.Direction))
-            PlayerNetworkCorpse.TellDeadHead(hit.Source, false, id, hit.Direction);
+            ZombieGore.ShotDeadHead(hit, false, id);
     }
 
     // Its head bursts where the doll has it now, if gore still has one on this body.

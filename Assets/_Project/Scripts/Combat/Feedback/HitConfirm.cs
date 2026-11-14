@@ -68,6 +68,22 @@ public sealed class HitConfirm : MonoBehaviour
         Remember(report.Target);
     }
 
+    /// <summary>
+    /// A shot of the local player's that burst a dead body's head (ZombieGore: a zombie's corpse, or the body a calm zombie
+    /// was eating): it shows and sounds as a headshot on a living head does, with this frame's other hits (the user,
+    /// 2026-11-15: "히트 마커는 넣어 줘"). Nothing more follows it: no kill, number, kill screen or reward.
+    /// </summary>
+    public static void LandedOnDead(bool pierced)
+    {
+        if (!Application.isPlaying) return;
+        var self = Get();
+        self.hits++;
+        self.heads++;
+        if (pierced) self.pierces++;
+        // The whole head went, as all of a living one's health goes to a killing headshot: the marker at its full size.
+        self.share += 1f;
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this) { Destroy(this); return; }

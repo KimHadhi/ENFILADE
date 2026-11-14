@@ -28,6 +28,9 @@ internal sealed class GoreGibs
     private readonly Dictionary<(Mesh, BodyPart), Shape> shapes = new Dictionary<(Mesh, BodyPart), Shape>();
     private readonly Queue<(GoreBody body, BodyPart part)> warming = new Queue<(GoreBody, BodyPart)>();
     private readonly List<GoreGib> live = new List<GoreGib>();
+    // Gut chunks that have sunk, switched off until a burst throws them again (Gut).
+    private readonly Stack<GoreGib> idleGuts = new Stack<GoreGib>();
+    private readonly List<Collider> playerShapes = new List<Collider>();
     private readonly List<Vector3> positions = new List<Vector3>(), normals = new List<Vector3>(), piecePositions = new List<Vector3>(),
         pieceNormals = new List<Vector3>();
     private readonly List<Vector2> uvs = new List<Vector2>(), pieceUvs = new List<Vector2>();
@@ -236,28 +239,62 @@ internal sealed class GoreGibs
         }
     }
 
-    /// <summary>A gut chunk thrown from a burst: the RVFX pack's mesh and material on a small rigid body.</summary>
+    /// <summary>
+    /// A gut chunk thrown from a burst: the RVFX pack's mesh and material on a small rigid body. Chunks are the same few
+    /// meshes every time, so one that has sunk is put away and thrown again (Release): once a fight's worth exist, a burst
+    /// makes no new object (2026-11-15, the user: "최적화 잘 해서").
+    /// </summary>
     public void Gut(Vector3 at, Vector3 velocity, float size, int pick)
     {
         var library = GoreLibrary.Instance;
         if (library == null || !library.Gut(pick, out var mesh, out var material)) return;
-        var host = new GameObject("Gore Gut") { layer = Layer };
-        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
+        var gib = IdleGut();
+        if (gib == null) gib = NewGut();
+        var host = gib.gameObject;
+        host.layer = Layer;
         host.transform.SetPositionAndRotation(at, Random.rotation);
-        float scale = size / Mathf.Max(.01f, mesh.bounds.size.magnitude);
-        host.transform.localScale = Vector3.one * scale;
-        host.AddComponent<MeshFilter>().sharedMesh = mesh;
-        host.AddComponent<MeshRenderer>().sharedMaterial = material;
-        var ball = host.AddComponent<SphereCollider>();
+        host.transform.localScale = Vector3.one * (size / Mathf.Max(.01f, mesh.bounds.size.magnitude));
+        host.GetComponent<MeshFilter>().sharedMesh = mesh;
+        host.GetComponent<MeshRenderer>().sharedMaterial = material;
+        var ball = host.GetComponent<SphereCollider>();
         ball.center = mesh.bounds.center;
         ball.radius = mesh.bounds.extents.magnitude * .5f;
-        var rigid = host.AddComponent<Rigidbody>();
-        rigid.mass = .3f;
-        rigid.interpolation = RigidbodyInterpolation.Interpolate;
-        var gib = host.AddComponent<GoreGib>();
+        host.SetActive(true);
         gib.Begin(owner, null, false);
         Keep(gib);
         Throw(gib, velocity, Random.insideUnitSphere * 18f);
+    }
+
+    /// <summary>A gut chunk that has sunk (GoreGib): switched off and kept for the next burst.</summary>
+    public void Release(GoreGib gib)
+    {
+        live.Remove(gib);
+        gib.gameObject.SetActive(false);
+        idleGuts.Push(gib);
+    }
+
+    // A chunk put away, or null; one that went with its scene is passed over.
+    private GoreGib IdleGut()
+    {
+        while (idleGuts.Count > 0)
+        {
+            var gib = idleGuts.Pop();
+            if (gib != null) return gib;
+        }
+        return null;
+    }
+
+    private static GoreGib NewGut()
+    {
+        var host = new GameObject("Gore Gut");
+        RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
+        host.AddComponent<MeshFilter>();
+        host.AddComponent<MeshRenderer>();
+        host.AddComponent<SphereCollider>();
+        var rigid = host.AddComponent<Rigidbody>();
+        rigid.mass = .3f;
+        rigid.interpolation = RigidbodyInterpolation.Interpolate;
+        return host.AddComponent<GoreGib>();
     }
 
     private void Throw(GoreGib gib, Vector3 velocity, Vector3 spin)
@@ -265,12 +302,14 @@ internal sealed class GoreGibs
         var rigid = gib.GetComponent<Rigidbody>();
         rigid.linearVelocity = velocity;
         rigid.angularVelocity = spin;
-        // Players walk through pieces, as through corpses.
+        // Players walk through pieces, as through corpses (again for a chunk thrown before: a collider switched off and on
+        // forgets what it ignored).
         var mine = gib.GetComponent<Collider>();
         foreach (var player in PlayerRoster.All)
         {
             if (player == null) continue;
-            foreach (var collider in player.GetComponentsInChildren<Collider>()) Physics.IgnoreCollision(mine, collider, true);
+            player.GetComponentsInChildren(playerShapes);
+            foreach (var collider in playerShapes) Physics.IgnoreCollision(mine, collider, true);
         }
     }
 

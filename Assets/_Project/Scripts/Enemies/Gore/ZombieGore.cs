@@ -273,6 +273,17 @@ public sealed class ZombieGore : MonoBehaviour
     }
 
     /// <summary>
+    /// On the shooter's PC, once its bullet burst a dead body's head: the other PCs burst it too (PlayerNetworkCorpse, one
+    /// message), and the shooter sees and hears a headshot's marker (HitConfirm.LandedOnDead), nothing more. Meal: the body
+    /// a calm zombie was eating (ZombieMealBody), else a zombie's corpse; id: that zombie's network id.
+    /// </summary>
+    internal static void ShotDeadHead(in DamageHit hit, bool meal, ulong id)
+    {
+        PlayerNetworkCorpse.TellDeadHead(hit.Source, meal, id, hit.Direction);
+        if (PlayerPerks.IsMine(hit.Source)) HitConfirm.LandedOnDead(hit.Pierced);
+    }
+
+    /// <summary>
     /// A head that has already left a body that isn't a skin gore follows (a calm zombie's meal, baked still: ZombieMeal)
     /// bursts here: the same blood, guts and stump as any burst head. Stump: its neck's end, under its neck.
     /// </summary>

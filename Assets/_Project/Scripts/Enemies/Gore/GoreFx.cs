@@ -31,6 +31,7 @@ internal sealed class GoreFx
     private readonly ZombieGore owner;
     private readonly ParticleSystem drops;
     private readonly List<Spurt> spurts = new List<Spurt>();
+    private readonly Stack<Spurt> idleSpurts = new Stack<Spurt>();
     private readonly List<Decal> decals = new List<Decal>();
     private readonly RaycastHit[] hits = new RaycastHit[8];
     private ParticleSystem.EmitParams emit;
@@ -81,7 +82,14 @@ internal sealed class GoreFx
         float radius = BodyParts.CutRadius(part);
         Vector3 outward = (root.position - root.parent.position).normalized;
         Cap(root.parent, root.position, outward, radius);
-        spurts.Add(new Spurt { root = root, radius = radius, seconds = owner.SpurtSeconds * (part == BodyPart.Head ? 1f : .7f) });
+        // A stump that has stopped pumping is kept for the next (Tick), so a burst makes no new one.
+        var spurt = idleSpurts.Count > 0 ? idleSpurts.Pop() : new Spurt();
+        spurt.root = root;
+        spurt.radius = radius;
+        spurt.seconds = owner.SpurtSeconds * (part == BodyPart.Head ? 1f : .7f);
+        spurt.age = spurt.carry = 0f;
+        spurt.pooled = false;
+        spurts.Add(spurt);
     }
 
     /// <summary>A torn face of gut on a cut, under `parent`, facing `outward`.</summary>
@@ -120,7 +128,7 @@ internal sealed class GoreFx
         for (int i = spurts.Count - 1; i >= 0; i--)
         {
             var spurt = spurts[i];
-            if (spurt.root == null || spurt.root.parent == null) { spurts.RemoveAt(i); continue; }
+            if (spurt.root == null || spurt.root.parent == null) { Done(i); continue; }
             spurt.age += dt;
             Vector3 at = spurt.root.position, outward = (spurt.root.position - spurt.root.parent.position).normalized;
             if (spurt.age < spurt.seconds)
@@ -144,7 +152,7 @@ internal sealed class GoreFx
                 if (Cast(at + Vector3.up * .3f, Vector3.down, 3f, spurt.root.root, out var ground))
                     Pool(ground.point, ground.normal);
             }
-            if (spurt.pooled && spurt.age >= spurt.seconds) spurts.RemoveAt(i);
+            if (spurt.pooled && spurt.age >= spurt.seconds) Done(i);
         }
 
         for (int i = 0; i < decals.Count; i++)
@@ -161,6 +169,15 @@ internal sealed class GoreFx
             decal.projector.fadeFactor = Mathf.Clamp01(left / SplatFade);
             if (left <= 0f) decal.projector.enabled = false;
         }
+    }
+
+    // A stump done pumping: out of the list and kept for the next.
+    private void Done(int index)
+    {
+        var spurt = spurts[index];
+        spurts.RemoveAt(index);
+        spurt.root = null;
+        idleSpurts.Push(spurt);
     }
 
     /// <summary>
