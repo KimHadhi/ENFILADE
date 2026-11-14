@@ -13,8 +13,9 @@ using UnityEngine;
 /// torso: the Bullets bank's Steel/Head and Steel/Body, heard after the time the sound takes to come back from the plate)
 /// and pushes it, by the gun's prop push: the head plate swings on its axle, the whole target rocks back on its hinge.
 /// A shotgun's pellets on one plate ring once, louder. A knockdown (RangeTarget's kill) lays it on its back with a clank
-/// (Steel/Down), and its spring stands it up again with a wobble. The stand stops a bullet and sparks but isn't the
-/// target: a hit on it is a miss (SteelStand). The fists and a shove ring and push it too (RangeTarget passes them on).
+/// (Steel/Down), and its spring stands it up again with a wobble and a smaller clank at the hinge. The stand stops a
+/// bullet and sparks but isn't the target: a hit on it is a miss (SteelStand). The fists and a shove ring and push it too
+/// (RangeTarget passes them on). A plate rings only when something met it: a ting or a clang always means a hit.
 /// </para>
 /// Shapes, swings, splashes and the ring's reach are Tables/RangeTargets. It is all built at play from code, so the scene
 /// keeps only where each target stands, and an older hub's wooden dummy parts are cleared away.
@@ -29,15 +30,13 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
     // The hinge block's top, where the post stands and tips about (m above the ground).
     private const float Hinge = .05f, PostSize = .05f, ArmSize = .04f;
     private const int DiscSides = 28;
-    // A rise ends with the plate's own ring, quieter than a shot's.
-    private const float StoodRing = .35f;
 
     /// <summary>One row of Tables/RangeTargets: a kind of target's shape and how it answers a hit.</summary>
     public sealed class Shape
     {
         public float TorsoWidth, TorsoHeight, TorsoBottom, ShoulderCut, FootCut, Thickness, HeadRadius, HeadDrop, PostTop, PostBack;
         public Color Paint, HeadPaint, Steel;
-        public float RockHz, RockSeconds, RockKick, RockMost, RiseKick;
+        public float RockHz, RockSeconds, RockKick, RockMost, RiseKick, RiseClunk;
         public float HeadHz, HeadSeconds, HeadKick, HeadBack, HeadFront, HeadBounce;
         public float SplashSize, SplashSeconds, SplashFade;
         public int SplashMost;
@@ -58,6 +57,7 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
                 Steel = C(row, "steel", new Color(.16f, .17f, .18f)),
                 RockHz = TableCells.Number(row, "rockHz", 1.6f), RockSeconds = TableCells.Number(row, "rockSeconds", .45f), RockKick = TableCells.Number(row, "rockKick", zombie ? 9f : 4f),
                 RockMost = TableCells.Number(row, "rockMost", zombie ? 22f : 12f), RiseKick = TableCells.Number(row, "riseKick", 70f),
+                RiseClunk = Mathf.Max(0f, TableCells.Number(row, "riseClunk", zombie ? .45f : .5f)),
                 HeadHz = TableCells.Number(row, "headHz", 1.15f), HeadSeconds = TableCells.Number(row, "headSeconds", 1.3f), HeadKick = TableCells.Number(row, "headKick", zombie ? 75f : 45f),
                 HeadBack = TableCells.Number(row, "headBack", zombie ? 50f : 40f), HeadFront = TableCells.Number(row, "headFront", 35f), HeadBounce = TableCells.Number(row, "headBounce", .35f),
                 SplashSize = TableCells.Number(row, "splashSize", .1f), SplashSeconds = TableCells.Number(row, "splashSeconds", 7f), SplashFade = TableCells.Number(row, "splashFade", 1.5f),
@@ -227,14 +227,19 @@ public sealed class SteelTarget : MonoBehaviour, IBulletStruck
     /// <summary>It hit the ground on its back.</summary>
     public void Landed() => Sound(DownKey, tipper != null ? tipper.position + tipper.up * .5f : transform.position, 1f);
 
-    /// <summary>Its spring stood it up: it overshoots and wobbles to rest, and the plate rings against its stop.</summary>
+    /// <summary>
+    /// Its spring stood it up: it overshoots and wobbles to rest, and the stand clunks into place at the hinge (the
+    /// knockdown's Steel/Down, quieter: riseClunk). Never a plate's ring, which means a hit: until 0.9.28 the torso plate
+    /// rang its hit clang here, 2.3 s after the shot that knocked it down, and read as a hit nobody made (the user,
+    /// 2026-11-14: "가끔씩 사격장에서 타겟에서 지 혼자 맞췄다는 띵 띵 소리가 나서 무서움 귀신인가 봐").
+    /// </summary>
     public void Stood(float sign)
     {
         if (shape == null) return;
         down = false;
         fall = 0f;
         rockSpeed = -sign * shape.RiseKick;
-        if (plates.Count > 0) Sound(BodyKey, plates[0].Face.position, StoodRing);
+        if (shape.RiseClunk > 0f) Sound(DownKey, transform.TransformPoint(new Vector3(0f, Hinge, -shape.PostBack)), shape.RiseClunk);
     }
 
     // ---- Moving ----
