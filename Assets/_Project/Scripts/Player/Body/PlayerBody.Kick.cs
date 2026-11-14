@@ -4,9 +4,13 @@ using UnityEngine.Playables;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// The reload kick on the legs. When a kick leaves (ShoveMoves.Kicked: at the press on this player's own PC, through
-/// PlayerNetworkCombat on everyone else's copy), its clip plays once on both legs. The hips, the spine and the arms carry
-/// on as they were, so the hands stay on the reload and the eyes, which carry the camera, stay where they are. The foot
+/// The reload kick. When a kick leaves (ShoveMoves.Kicked: at the press on this player's own PC, through
+/// PlayerNetworkCombat on everyone else's copy), its clip plays once on both legs and on the body over them, the pelvis
+/// and the spine (the Body part), as it was made in the Blender shove workspace: a pelvis moved there, leaning back into
+/// the kick or dropping onto the planted leg, moves here too, and the eyes, which carry the camera, go with it (the user,
+/// 2026-11-14, asked whether to send the kick's hips at the cost of the view moving with them: "골반도 보내"). Before,
+/// only the legs played, so a pelvis posed there was dropped and its legs stood under a pelvis that hadn't moved. The arms
+/// carry on as they were, so the hands stay on the reload; the dodge and the turn on the spot keep the legs alone. The foot
 /// IK keeps the clip's own lift (PlayerBody.Feet), so the kicking foot rises while the other stays planted. Standing
 /// still, legs left facing away from the view turn to it with the kick, so the foot goes out where the eyes look, which
 /// is where ShoveMoves sends it. Names and numbers come from Player.csv, row Body.
@@ -24,7 +28,8 @@ public sealed partial class PlayerBody
     private float kickTurnSpeed = 360f;
 
     private AnimationClipPlayable kickClip;
-    private AvatarMask legMask;
+    // The legs alone (the dodge's and the turn's layers use it too), and the kick's own: the legs and the body over them.
+    private AvatarMask legMask, kickMask;
     private ShoveMoves kicks;
     private float kickLength, kickWeight;
     private bool kicking;
@@ -33,7 +38,8 @@ public sealed partial class PlayerBody
     private void BuildKick()
     {
         legMask = Mask(AvatarMaskBodyPart.LeftLeg, AvatarMaskBodyPart.RightLeg);
-        layers.SetLayerMaskFromAvatarMask(KickLayer, legMask);
+        kickMask = Mask(AvatarMaskBodyPart.Body, AvatarMaskBodyPart.LeftLeg, AvatarMaskBodyPart.RightLeg);
+        layers.SetLayerMaskFromAvatarMask(KickLayer, kickMask);
         if (string.IsNullOrEmpty(kick)) return;
         var clip = profile.Find(kick);
         if (clip == null)
@@ -58,6 +64,7 @@ public sealed partial class PlayerBody
         kickWeight = 0f;
         kicking = false;
         if (legMask != null) Destroy(legMask);
+        if (kickMask != null) Destroy(kickMask);
     }
 
     private void OnKicked()

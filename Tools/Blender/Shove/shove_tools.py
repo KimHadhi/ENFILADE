@@ -18,7 +18,9 @@ the file is ready to work in: the user only poses and times (the user, 2026-11-1
     the game's shove hits.
   - 발차기 (enf_kick_front): Kazusa's right leg on the True FPS rig, baked from the original skeleton to
     Assets/_Project/Art/Animations/Shove/enf_kick_front.fbx (+ .clips.csv); Unity takes it with her avatar
-    (ModelImportRules) into the body's clips, and the kick plays it on the legs (Player.csv Body.kick).
+    (ModelImportRules) into the body's clips, and the kick plays it on the legs and the pelvis and spine over them, so
+    a pelvis moved here (골반) moves in the game too, the view with it (Player.csv Body.kick; the user, 2026-11-14:
+    "골반도 보내").
   - 수리 · 망치 (enf_repair_hammer) and 수리 · 토치 (enf_repair_torch): the Support's mending loops on Kazusa's free left
     arm (CTRL_hand.L, CTRL_elbow.L) and fingers while the right hand keeps the gun; the left hand's hold on the gun is let
     go while one is shown. Sent as Assets/_Project/Data/Resources/Tables/Clips/RepairHammer.csv or RepairTorch.csv: the
