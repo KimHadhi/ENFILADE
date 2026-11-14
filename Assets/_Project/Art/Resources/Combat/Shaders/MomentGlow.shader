@@ -9,6 +9,9 @@
 //   wall (the user, 2026-11-14, of the CHARGE: "노란 윤곽선과 좀 덜 해진 노란 빛으로 아군을 벽 넘어서 볼 수 있게끔").
 // _Near clears it within that distance of the eye, and it comes back over _NearWidth past it: a player's own hands and gun
 // in front of their eyes stay plain to aim past ("이건 조준이 아예 안 되잖아 노래져서").
+// What counts as standing in front is SeeThrough.hlsl's rule, the same for every see-through drawing: something clearly
+// in front (more than the table's gap), and never the viewer's own first-person body, gun or scope lens (stencil bit 128,
+// OwnViewMask).
 Shader "Hidden/ENFILADE/MomentGlow"
 {
     Properties
@@ -28,6 +31,7 @@ Shader "Hidden/ENFILADE/MomentGlow"
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "SeeThrough.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
             half4 _Color;
@@ -41,7 +45,7 @@ Shader "Hidden/ENFILADE/MomentGlow"
         CBUFFER_END
 
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
-        struct Varyings { float4 positionCS : SV_POSITION; float3 normalWS : TEXCOORD0; float3 viewWS : TEXCOORD1; };
+        struct Varyings { float4 positionCS : SV_POSITION; float3 normalWS : TEXCOORD0; float3 viewWS : TEXCOORD1; float eyeDepth : TEXCOORD2; };
 
         Varyings Vert(Attributes input)
         {
@@ -52,6 +56,7 @@ Shader "Hidden/ENFILADE/MomentGlow"
             output.normalWS = normalWS;
             // From the surface to the eye, not normalised: its length is how far the eye is.
             output.viewWS = GetWorldSpaceViewDir(positionWS);
+            output.eyeDepth = -TransformWorldToView(positionWS).z;
             return output;
         }
 
@@ -83,8 +88,9 @@ Shader "Hidden/ENFILADE/MomentGlow"
             ENDHLSL
         }
 
-        // Behind something that isn't a glowing body already drawn there: _Through of the glow, then the pixel marked so
-        // overlapping parts (clothes over skin) don't stack.
+        // Behind something that isn't a glowing body already drawn there nor the viewer's own first-person things: _Through
+        // of the glow, then the pixel marked so overlapping parts (clothes over skin) don't stack. The stencil test passes
+        // only where neither bit 32 nor bit 128 is set: 32 > (stencil & 160).
         Pass
         {
             Name "GlowThrough"
@@ -93,7 +99,7 @@ Shader "Hidden/ENFILADE/MomentGlow"
             ZWrite Off
             ZTest Greater
             Cull Back
-            Stencil { Ref 32 ReadMask 32 WriteMask 32 Comp NotEqual Pass Replace }
+            Stencil { Ref 32 ReadMask 160 WriteMask 32 Comp Greater Pass Replace }
 
             HLSLPROGRAM
             #pragma vertex Vert
@@ -101,6 +107,7 @@ Shader "Hidden/ENFILADE/MomentGlow"
             half4 Frag(Varyings input) : SV_Target
             {
                 clip(_Through - 0.001h);
+                if (!BehindSomething(input.positionCS, input.eyeDepth)) discard;
                 return half4(Glow(input) * _Through, 0);
             }
             ENDHLSL

@@ -358,6 +358,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
         // sight cones and sound rings on the ground, and the stone thrown with T (friends' copies throw theirs too).
         if (Application.isPlaying && IsLocal && GetComponent<StealthMarkersHUD>() == null) gameObject.AddComponent<StealthMarkersHUD>();
         if (Application.isPlaying && IsLocal && GetComponent<StealthView>() == null) gameObject.AddComponent<StealthView>();
+        // What is drawn through walls (the Ghost's sight, pings, holders, a friend's CHARGE outline) never takes this
+        // player's own body, gun or scope lens for the wall on their own screen (OwnViewMask, 2026-11-14).
+        if (Application.isPlaying && IsLocal && GetComponent<OwnViewMask>() == null) gameObject.AddComponent<OwnViewMask>();
         if (Application.isPlaying && GetComponent<PlayerThrow>() == null) gameObject.AddComponent<PlayerThrow>();
         // The class throwable on G (2026-11-12, GMod Horde's quick grenade); friends' copies throw theirs too.
         if (Application.isPlaying && GetComponent<PlayerGrenades>() == null) gameObject.AddComponent<PlayerGrenades>();

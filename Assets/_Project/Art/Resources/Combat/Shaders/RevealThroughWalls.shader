@@ -3,6 +3,9 @@
 // A body covers parts of itself (an arm across the chest), so first its own seen surface is marked in the stencil, and
 // the silhouette never shows there; then each pixel is drawn once, so overlapping layers (arm over chest, clothes over
 // skin) don't stack into darker patches. URP draws SRPDefaultUnlit before UniversalForward for each object.
+// What counts as hidden is SeeThrough.hlsl's rule, the same for every see-through drawing: something must stand clearly in
+// front (more than the table's gap), and never the viewer's own first-person body, gun or scope lens (stencil bit 128,
+// OwnViewMask).
 Shader "Hidden/ENFILADE/RevealThroughWalls"
 {
     Properties
@@ -15,18 +18,21 @@ Shader "Hidden/ENFILADE/RevealThroughWalls"
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "SeeThrough.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
             half4 _Color;
         CBUFFER_END
 
         struct Attributes { float4 positionOS : POSITION; };
-        struct Varyings { float4 positionCS : SV_POSITION; };
+        struct Varyings { float4 positionCS : SV_POSITION; float eyeDepth : TEXCOORD0; };
 
         Varyings Vert(Attributes input)
         {
             Varyings output;
-            output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+            float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+            output.positionCS = TransformWorldToHClip(positionWS);
+            output.eyeDepth = -TransformWorldToView(positionWS).z;
             return output;
         }
         ENDHLSL
@@ -50,7 +56,9 @@ Shader "Hidden/ENFILADE/RevealThroughWalls"
             ENDHLSL
         }
 
-        // Hidden behind something that isn't the body: one flat layer, which then marks the pixel as drawn.
+        // Hidden behind something that isn't the body: one flat layer, which then marks the pixel as drawn. The stencil
+        // test passes only where neither bit 64 (seen or drawn already) nor bit 128 (the viewer's own first-person things)
+        // is set: 64 > (stencil & 192).
         Pass
         {
             Name "Reveal"
@@ -59,12 +67,16 @@ Shader "Hidden/ENFILADE/RevealThroughWalls"
             ZWrite Off
             ZTest Greater
             Cull Back
-            Stencil { Ref 64 ReadMask 64 WriteMask 64 Comp NotEqual Pass Replace }
+            Stencil { Ref 64 ReadMask 192 WriteMask 64 Comp Greater Pass Replace }
 
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
-            half4 Frag(Varyings input) : SV_Target { return _Color; }
+            half4 Frag(Varyings input) : SV_Target
+            {
+                if (!BehindSomething(input.positionCS, input.eyeDepth)) discard;
+                return _Color;
+            }
             ENDHLSL
         }
     }
