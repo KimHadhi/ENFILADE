@@ -15,8 +15,8 @@ using UnityEngine;
 ///     Tables/Weapons.csv   a table of the game's, by file name (sub-folders are free), laid over the game's own
 ///                          (CsvTable.Overlay): a row whose id the game has changes that row's filled cells,
 ///                          a new id adds a row
-///     Avatars/             characters made in Unity (a VRChat avatar) and packed by the exporter: a bundle and a file
-///                          saying what it is each (ModAvatars)
+///     Avatars/             characters made in Unity (a VRChat avatar) and outfits to wear on a character, packed by
+///                          the exporter: a bundle and a file saying what it is each (ModAvatars, ModOutfits)
 ///   _Off/                  a folder starting with _ or . is not loaded
 /// </code>
 /// The folder stands next to the game's executable; in the editor, at the project's root (<see cref="Root"/>).
@@ -33,7 +33,7 @@ public static class GameMods
 
     /// <summary>
     /// One loaded mod: its folder's name, where it is, its note, its tables' files by table name, and the avatar files
-    /// in its Avatars folder (ModAvatars reads them: characters made in Unity and packed with the exporter).
+    /// in its Avatars folder (ModAvatars reads them: characters and outfits made in Unity and packed with the exporter).
     /// </summary>
     public sealed class Mod
     {
@@ -61,8 +61,9 @@ public static class GameMods
     }
 
     /// <summary>
-    /// Each loaded mod's text of this table (the mod's name, the text), in load order. What a mod's avatars say of the
-    /// table by themselves (ModAvatars.TableTexts) comes just before the mod's own file, which so has the last word.
+    /// Each loaded mod's text of this table (the mod's name, the text), in load order. What a mod's avatars and outfits
+    /// say of the table by themselves (ModAvatars.TableTexts, ModOutfits.TableTexts) comes just before the mod's own
+    /// file, which so has the last word.
     /// </summary>
     public static IEnumerable<KeyValuePair<string, string>> TableTexts(string table)
     {
@@ -70,13 +71,17 @@ public static class GameMods
         foreach (var mod in Loaded)
         {
             foreach (var worked in ModAvatars.TableTexts(mod, table)) yield return worked;
+            foreach (var worked in ModOutfits.TableTexts(mod, table)) yield return worked;
             if (!mod.Tables.TryGetValue(table, out string path)) continue;
             string text = Read(path);
             if (text != null) yield return new KeyValuePair<string, string>(mod.Name, text);
         }
     }
 
-    /// <summary>The console's /mods: what is loaded; "reload" reads the folders again; "export" writes the game's own tables out.</summary>
+    /// <summary>
+    /// The console's /mods: what is loaded; "reload" reads the folders again; "export" writes the game's own tables out;
+    /// "ids" lists the ids a mod's maker has to write (the characters an outfit can be made for, the wardrobe's slots).
+    /// </summary>
     public static string Command(string args)
     {
         string word = (args ?? "").Trim().ToLowerInvariant();
@@ -86,7 +91,22 @@ public static class GameMods
             return "모드 폴더와 표를 다시 읽었습니다.\n" + Summary();
         }
         if (word == "export") return Export();
-        return Summary() + "\n/mods reload — 다시 읽기 · /mods export — 게임의 원래 표를 " + FolderName + "/" + ExportFolder + " 폴더에 꺼내기";
+        if (word == "ids") return Ids();
+        return Summary() + "\n/mods reload — 다시 읽기 · /mods export — 게임의 원래 표를 " + FolderName + "/" + ExportFolder
+            + " 폴더에 꺼내기 · /mods ids — 옷 모드를 만들 때 적는 캐릭터 id와 옷 칸 id";
+    }
+
+    // The ids an outfit mod names: every character's (the game's own and the mods'), and the wardrobe's slots.
+    private static string Ids()
+    {
+        var text = new StringBuilder("캐릭터 id (옷 모드의 '입을 캐릭터'):");
+        var profile = PlayerBodyProfile.Load();
+        if (profile != null)
+            foreach (var skin in profile.Skins)
+                if (skin != null && !string.IsNullOrEmpty(skin.Id)) text.Append("\n· ").Append(skin.Id).Append(" — ").Append(skin.DisplayName);
+        text.Append("\n옷 칸 id:");
+        foreach (var slot in OutfitCatalog.Slots) text.Append("\n· ").Append(slot.id).Append(" — ").Append(slot.Name);
+        return text.ToString();
     }
 
     private static string Summary()
@@ -102,6 +122,8 @@ public static class GameMods
         }
         string avatars = ModAvatars.Summary();
         if (avatars.Length > 0) text.Append('\n').Append(avatars);
+        string outfits = ModOutfits.Summary();
+        if (outfits.Length > 0) text.Append('\n').Append(outfits);
         return text.ToString();
     }
 

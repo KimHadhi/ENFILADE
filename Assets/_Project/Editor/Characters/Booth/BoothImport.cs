@@ -76,59 +76,6 @@ internal sealed class BoothImport : AssetPostprocessor
         public string Id, Kind, Skin, Path, Colours, Name;
     }
 
-    // What the outfits need to know of a character: its bones, and which body part a bone is.
-    private sealed class Character
-    {
-        public readonly HashSet<string> Humanoid = new HashSet<string>(StringComparer.Ordinal);
-        public readonly HashSet<string> Bones = new HashSet<string>(StringComparer.Ordinal);
-        private readonly Dictionary<string, string> parts = new Dictionary<string, string>(StringComparer.Ordinal);
-        // Its bones as an outfit's file is joined to them when worn (OutfitDresser.Merge reads them the same way).
-        private readonly OutfitSkeleton skeleton;
-
-        public Character(GameObject prefab)
-        {
-            var animator = prefab.GetComponentInChildren<Animator>(true);
-            var avatar = animator != null ? animator.avatar : null;
-            string hipsName = null;
-            if (avatar != null && avatar.isHuman)
-                foreach (var human in avatar.humanDescription.human)
-                {
-                    Humanoid.Add(human.boneName);
-                    if (human.humanName == "Hips") hipsName = human.boneName;
-                    string part = VrcSway.BodyPart(human.humanName);
-                    if (part != null) parts[human.boneName] = part;
-                }
-            var all = prefab.GetComponentsInChildren<Transform>(true);
-            var hips = all.FirstOrDefault(t => t.name == hipsName);
-            foreach (var bone in (hips != null ? hips : prefab.transform).GetComponentsInChildren<Transform>(true)) Bones.Add(bone.name);
-            var drawn = new HashSet<Transform>(prefab.GetComponentsInChildren<Renderer>(true).Select(renderer => renderer.transform));
-            var humanoid = new HashSet<Transform>(all.Where(bone => Humanoid.Contains(bone.name)));
-            skeleton = new OutfitSkeleton(hips != null ? hips : prefab.transform, prefab.transform, drawn, humanoid);
-        }
-
-        /// <summary>
-        /// The names of an outfit's bones that only share a name with one of the character's, as dressing sorts them
-        /// (OutfitSkeleton): not a humanoid bone, standing elsewhere, and not hanging from her bone's parent as hers does.
-        /// Worn, such a bone stays the outfit's own and is renamed after the model, so its chain sways on the outfit's own
-        /// rows, under that name.
-        /// </summary>
-        public HashSet<string> Namesakes(GameObject outfit)
-        {
-            var namesakes = new List<Transform>();
-            skeleton.Sort(outfit.transform, new Dictionary<Transform, Transform>(), namesakes);
-            return new HashSet<string>(namesakes.Select(bone => bone.name), StringComparer.Ordinal);
-        }
-
-        // The body part a collider stands on: its own bone, or the nearest humanoid bone above it (colliders often hang
-        // from bones of their own, "Collider_UpperLeg.L").
-        public string PartOf(Transform bone)
-        {
-            for (var at = bone; at != null; at = at.parent)
-                if (parts.TryGetValue(at.name, out var part)) return part;
-            return null;
-        }
-    }
-
     private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
     {
         if (running || queued) return;
@@ -196,9 +143,6 @@ internal sealed class BoothImport : AssetPostprocessor
     // An outfit row "model@*": an accessory sold for any avatar (the Ene earrings), not fitted to one character's bones.
     private static bool ForAnyone(Source source) => source.Kind == "outfit" && source.Skin == OutfitLibrary.AnySkin;
 
-    // The bones such a model shares with a character: none.
-    private static readonly HashSet<string> NoBones = new HashSet<string>(StringComparer.Ordinal);
-
     [MenuItem("ENFILADE/캐릭터/BOOTH 다시 가져오기")]
     private static void Run()
     {
@@ -212,7 +156,8 @@ internal sealed class BoothImport : AssetPostprocessor
             var library = OutfitLibraryBuilder.Library(true);
             // Each character's or outfit's sway rows, by Cloth.csv's skin column.
             var sway = new Dictionary<string, List<Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
-            var characters = new Dictionary<string, Character>(StringComparer.OrdinalIgnoreCase);
+            // What the outfits need to know of each character: its bones, and which body part a bone is (VrcWearer).
+            var characters = new Dictionary<string, VrcWearer>(StringComparer.OrdinalIgnoreCase);
             // The prefabs read, for the underwear in them (BoothUnderwear).
             var bodies = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
             var bodyUnderwear = new List<BoothUnderwear.Source>();
@@ -227,11 +172,12 @@ internal sealed class BoothImport : AssetPostprocessor
                     Debug.LogWarning($"[BOOTH] {source.Id}: {Root + source.Path}가 없습니다.");
                     continue;
                 }
-                var character = new Character(prefab);
+                var character = new VrcWearer(prefab);
                 characters[source.Id] = character;
                 bodies[source.Id] = prefab;
                 bodyUnderwear.Add(new BoothUnderwear.Source(source.Id, prefab, prefab, source.Id));
-                Sway(sway, source.Id, Root + source.Path, prefab, character.Humanoid, character.PartOf);
+                var own = VrcPrefab.Read(Root + source.Path).PhysBones;
+                if (own.Count > 0) sway[source.Id] = character.OwnRows(own, prefab, source.Id);
                 var copy = Copy(Root + source.Path, CopyOf(source));
                 if (profile != null && copy != null) profile.EditorPutSkin(source.Id, source.Name, copy, CharacterColours(source.Id, sources));
             }
@@ -241,30 +187,20 @@ internal sealed class BoothImport : AssetPostprocessor
                 string path = Root + source.Path;
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 bool anyone = ForAnyone(source);
-                Character character = null;
+                VrcWearer character = null;
                 if (prefab == null || (!anyone && !characters.TryGetValue(source.Skin, out character)))
                 {
                     Debug.LogWarning($"[BOOTH] {source.Id}: {path} 또는 캐릭터 '{source.Skin}'가 없습니다.");
                     continue;
                 }
-                // Per character: the outfit made for each has bones of its own. A model made for anyone shares none with
-                // any character, so its rows are the model's own (skin = the model id) and swing on whoever wears it.
-                if (anyone) Sway(sway, source.Id, path, prefab, NoBones, _ => null);
-                else
+                // Per character: the outfit made for each has bones of its own, and the bones it shares with her follow
+                // hers (VrcWearer.OutfitRows). A model made for anyone shares none with any character, so its rows are the
+                // model's own (skin = the model id) and swing on whoever wears it.
+                var bones = VrcPrefab.Read(path).PhysBones;
+                if (bones.Count > 0)
                 {
-                    // The bones it shares with the character follow hers, which sway already. One that only shares a
-                    // name stands elsewhere and is the outfit's own (Character.Namesakes): Chocolate rice's mirrored side
-                    // locks hang from "R_Side" or "L_Side", the names of Mayo's other locks, and every bone of theirs
-                    // carried one of her names, so they got no rows and hung still (2026-11-12). Such a bone sways on the
-                    // outfit's row, written under the name the game gives it once worn ("R_Side [mayo-side-hair-1]").
-                    var namesakes = character.Namesakes(prefab);
-                    var shared = new HashSet<string>(character.Bones, StringComparer.Ordinal);
-                    shared.ExceptWith(namesakes);
-                    Sway(sway, source.Id + OutfitLook.Separator + source.Skin, path, prefab, shared, character.PartOf);
-                    if (namesakes.Count > 0 && sway.TryGetValue(source.Id + OutfitLook.Separator + source.Skin, out var rows))
-                        foreach (var row in rows)
-                            row["roots"] = string.Join("|", row["roots"].Split('|')
-                                .Select(name => namesakes.Contains(name) ? OutfitSkeleton.Mark(name, source.Id) : name));
+                    if (anyone) sway[source.Id] = VrcWearer.AnyoneRows(bones, prefab, source.Id);
+                    else sway[source.Id + OutfitLook.Separator + source.Skin] = character.OutfitRows(bones, prefab, source.Id, source.Skin);
                 }
                 var copy = Copy(path, CopyOf(source));
                 if (copy == null) continue;
@@ -298,15 +234,6 @@ internal sealed class BoothImport : AssetPostprocessor
 
     private static bool IsOurs(string path) =>
         path.StartsWith(Root, StringComparison.OrdinalIgnoreCase) || path.StartsWith(CopiesFolder + "/", StringComparison.OrdinalIgnoreCase);
-
-    // The prefab's PhysBones as sway rows under this owner; nothing when it has none.
-    private static void Sway(Dictionary<string, List<Dictionary<string, string>>> sway, string owner, string path, GameObject prefab,
-        ISet<string> shared, Func<Transform, string> partOf)
-    {
-        var read = VrcPrefab.Read(path);
-        if (read.PhysBones.Count == 0) return;
-        sway[owner] = VrcSway.Rows(read.PhysBones, prefab, owner, shared, partOf);
-    }
 
     private static List<Source> ReadSources()
     {

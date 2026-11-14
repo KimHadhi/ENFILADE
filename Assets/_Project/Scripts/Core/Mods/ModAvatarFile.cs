@@ -11,6 +11,12 @@ using UnityEngine;
 /// become its own sway), so a better rule in a later version of the game reaches every avatar ever exported, and the
 /// exporter stays small enough to run in any Unity a maker has (the user, 2026-11-14: "VRChat 유저들이 자기가 쓰던
 /// 캐릭터를 내 게임에서도 쓰고 싶어 할 텐데 이거 호환 그대로 잘 되게끔 … 유저를 제약하지 마. 최대한 유동적이고 편하게").
+/// One thing in it is this game's own idea, and so is said in the game's words and left in the open for its maker to
+/// change: which of the model's meshes go in which of the wardrobe's slots (a character's <see cref="Part"/>s, an
+/// outfit's <see cref="Item"/>s). The exporter sorts them by their names and where they sit on the body and shows its
+/// maker the result to correct, so what is written here is what the maker saw.
+/// A file holds characters, or outfits to wear on a character (the user, 2026-11-14, on clothes as mods of their own:
+/// "좀 더 유저에게 자유를 주고 유동적이고 개방적인 방향이네. 좋아. 이런 거 좋아요").
 /// This file is shared with the exporter's package, so it uses nothing of the game's: Unity's own types only.
 /// </summary>
 [Serializable]
@@ -19,6 +25,8 @@ public sealed class ModAvatarFile
     public const string Extension = ".avatar.json";
     /// <summary>Raised when a file an older game can't read is written; a newer file than the game knows is read as far as it goes.</summary>
     public const int Latest = 1;
+    /// <summary>An outfit's <see cref="Outfit.skin"/> when it is made for no one in particular: a rigid accessory any character can wear.</summary>
+    public const string Anyone = "*";
 
     public int version = Latest;
     /// <summary>The bundle's file name, beside this file.</summary>
@@ -26,6 +34,7 @@ public sealed class ModAvatarFile
     /// <summary>Who wrote it: the exporter's version, the Unity it ran in and that project's render pipeline. For reports only.</summary>
     public string exporter = "";
     public Character[] characters = Array.Empty<Character>();
+    public Outfit[] outfits = Array.Empty<Outfit>();
     public MaterialData[] materials = Array.Empty<MaterialData>();
 
     /// <summary>A playable character: a humanoid model as its maker dressed it.</summary>
@@ -40,6 +49,88 @@ public sealed class ModAvatarFile
         public string prefab = "";
         public PhysBone[] sway = Array.Empty<PhysBone>();
         public Face face = new Face();
+        /// <summary>
+        /// The clothes it came in, slot by slot: the wardrobe can take each off or put an outfit's piece in its place.
+        /// A mesh no part lists is its body and stays on. None at all: the character is worn whole, as it came.
+        /// </summary>
+        public Part[] parts = Array.Empty<Part>();
+    }
+
+    /// <summary>What a character wears of its own in one of the wardrobe's slots (the game's CharacterParts table).</summary>
+    [Serializable]
+    public sealed class Part
+    {
+        /// <summary>The slot's id (hair, top, bottom, legs, shoes …: the game's OutfitSlots table).</summary>
+        public string slot = "";
+        /// <summary>The names of its meshes' objects. A one-piece is listed under both the slots it fills.</summary>
+        public string[] meshes = Array.Empty<string>();
+        /// <summary>What the wardrobe calls it; "" reads the meshes' names.</summary>
+        public string name = "";
+        /// <summary>See-through by its texture (lace, a net, sheer tights): what lies under it shows and is never hidden.</summary>
+        public bool sheer;
+    }
+
+    /// <summary>
+    /// Clothes to wear, made for one character's body (its bones carry that character's bones' names, as every outfit
+    /// sold for an avatar does) or, rigid and with no such bones, for anyone. The game joins it to the body when it
+    /// is put on, as Modular Avatar's Merge Armature does, and each of its <see cref="items"/> goes in its own slot of
+    /// the wardrobe, to be mixed with any other clothes.
+    /// </summary>
+    [Serializable]
+    public sealed class Outfit
+    {
+        /// <summary>The model's id: lower-case letters, digits, - and _. The same outfit made for another character keeps it.</summary>
+        public string id = "";
+        /// <summary>Its name, which its items' names start with.</summary>
+        public string name = "";
+        /// <summary>The id of the character it is made for (the game's own or a mod's), or <see cref="Anyone"/>.</summary>
+        public string skin = "";
+        /// <summary>The prefab's path in the bundle.</summary>
+        public string prefab = "";
+        public PhysBone[] sway = Array.Empty<PhysBone>();
+        /// <summary>
+        /// What can be worn from it. None: the game's own items of this model id are worn from it (the game's outfit,
+        /// brought for a character the game hasn't it for).
+        /// </summary>
+        public Item[] items = Array.Empty<Item>();
+        /// <summary>Parts of it that follow one bone of the body instead of its skeleton (Modular Avatar's Bone Proxy): a hat, glasses.</summary>
+        public Hold[] holds = Array.Empty<Hold>();
+        /// <summary>
+        /// Where its root stood against the root of the avatar it was fitted on, in that root's own measure; unset (a
+        /// scale of zero), it stood at the same spot, as an outfit dropped under its avatar does.
+        /// </summary>
+        public Vector3 position;
+        public Quaternion rotation = Quaternion.identity;
+        public Vector3 scale;
+    }
+
+    /// <summary>One thing to wear in one slot of the wardrobe (the game's Outfits table): some meshes of an outfit's model.</summary>
+    [Serializable]
+    public sealed class Item
+    {
+        /// <summary>Its id in saved looks and over the network: lower-case letters, digits, - and _. Kept once players wear it.</summary>
+        public string id = "";
+        public string slot = "";
+        /// <summary>Slots it fills besides its own, "a|b" (a bodysuit is underwear top that takes the bottom too); "" for none.</summary>
+        public string also = "";
+        /// <summary>Slots it covers, "a|b": what is worn there goes out of sight (a full mask over glasses); "" for none.</summary>
+        public string hides = "";
+        public string name = "";
+        public string[] meshes = Array.Empty<string>();
+        /// <summary>See-through by its texture: what lies under it shows and is never hidden.</summary>
+        public bool sheer;
+    }
+
+    /// <summary>
+    /// A part of an outfit that follows one bone of the body, as Modular Avatar's Bone Proxy says it should (its
+    /// settings, as they were): <see cref="path"/> from the outfit's root, the humanoid bone by Unity's name for it
+    /// (Head, Chest, LeftHand …), a path on under that bone or "", and how it is put there (Modular Avatar's own word:
+    /// AsChildAtRoot, AsChildKeepWorldPose, AsChildKeepPosition, AsChildKeepRotation).
+    /// </summary>
+    [Serializable]
+    public sealed class Hold
+    {
+        public string path = "", bone = "", under = "", mode = "";
     }
 
     /// <summary>
@@ -53,6 +144,11 @@ public sealed class ModAvatarFile
         public string[] ignore = Array.Empty<string>();
         /// <summary>The bones its colliders stand on.</summary>
         public string[] colliders = Array.Empty<string>();
+        /// <summary>
+        /// An outfit's colliders that stand on bones of the avatar it is worn on, not on its own (a skirt's against the
+        /// legs): those bones, by their path from that avatar's root.
+        /// </summary>
+        public string[] bodyColliders = Array.Empty<string>();
         public Vector3 endpoint;
         public int integration, limitType;
         public float pull, spring, stiffness, gravity, gravityFalloff, immobile, radius, maxAngleX, maxAngleZ;

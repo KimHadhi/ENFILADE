@@ -15,7 +15,7 @@ Unity 편집기에서만 도는 도구다. 메뉴는 모두 메뉴 막대의 **E
 | `Models` | ENFILADE → 좀비 | 클립 폴더 다시 읽기 |
 | `Audio` | (자동) | `Art/Audio`의 폴더를 소리 묶음으로 만든다 |
 | `Build` | (자동) | 빌드하면 프로젝트의 `Mods` 폴더를 실행 파일 옆에 복사하고, 아바타 내보내기 도구를 `Mods/_SDK`에 넣는다 |
-| `ModSdk` | ENFILADE → 모드 | 아바타를 모드로 내보내기([ModAvatarExporter](ModSdk/ModAvatarExporter.cs)): 휴머노이드 캐릭터(VRChat 아바타)를 번들과 `.avatar.json`으로 싸서 `Mods/<id>/Avatars`에 낸다. 이 폴더와 `Scripts/Core/Mods/ModAvatarFile.cs`가 제작자에게 주는 SDK의 전부라, **게임의 다른 코드를 쓰면 안 된다**(VRChat용 Unity 2022 프로젝트에서도 컴파일돼야 한다). 설명은 [모드 만들기](../../../Docs/Modding.md)의 "아바타 모드" |
+| `ModSdk` | ENFILADE → 모드 | 아바타를 모드로 내보내기·옷을 모드로 내보내기([ModAvatarExporter](ModSdk/ModAvatarExporter.cs), 창 하나의 두 탭): 휴머노이드 캐릭터(VRChat 아바타)나 그 캐릭터용 옷을 번들과 `.avatar.json`으로 싸서 `Mods/<id>/Avatars`에 낸다. 메시를 옷장 칸으로 나누는 규칙([ModPieces](ModSdk/ModPieces.cs))도 여기 있고, 게임의 BOOTH 가져오기(`Characters/Booth`)가 같은 것을 쓴다. 이 폴더와 `Scripts/Core/Mods/ModAvatarFile.cs`가 제작자에게 주는 SDK의 전부라, **게임의 다른 코드를 쓰면 안 된다**(VRChat용 Unity 2022 프로젝트에서도 컴파일돼야 한다). 옷 칸 목록(`ModPieces.Slots`)은 OutfitSlots.csv와 같게 둔다(SDK 폴더를 만들 때 다르면 알려 준다). 설명은 [모드 만들기](../../../Docs/Modding.md)의 "아바타 모드" |
 | `Mods` | ENFILADE → 모드 | 모드 SDK 폴더 만들기([ModSdkPackage](Mods/ModSdkPackage.cs)), 모드용 쉐이더 목록 다시 만들기([ModShaderLibraryBuilder](Mods/ModShaderLibraryBuilder.cs): lilToon의 모든 변형을 빌드에 넣는 목록. 스크립트를 불러올 때 스스로 맞춘다) |
 | `Dev` | (자동) | `Temp/enfilade-refresh.request` 파일이 생기면 열려 있는 Unity가 스스로 새로 고친다(창을 누르지 않아도 됨. 실행·빌드 중에는 기다린다). 밖의 도구가 고친 코드를 바로 컴파일시킬 때 쓴다 |
 

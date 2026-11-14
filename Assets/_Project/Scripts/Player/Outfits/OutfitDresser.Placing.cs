@@ -12,9 +12,19 @@ internal static partial class OutfitDresser
         Animator animator, Renderer[] own, string skinId, ItemAdjust.Values nudge)
     {
         var entry = OutfitCatalog.Model(item.id, skinId);
-        var instance = Object.Instantiate(entry.Model, root, false);
+        // A mod's model comes from its bundle when asked for, and the bundle may have gone since the look was picked.
+        var made = entry?.Model;
+        if (made == null) return null;
+        var instance = Object.Instantiate(made, root, false);
         instance.name = "Outfit (" + item.ModelId + ")";
-        Align(instance.transform, entry.Model.transform, source != null ? source.transform : null);
+        // A mod's file says where the outfit stood in its avatar's root; the game's own files share one origin.
+        if (entry.Stood is { } stood)
+        {
+            instance.transform.localPosition = stood.Position;
+            instance.transform.localRotation = stood.Rotation;
+            instance.transform.localScale = stood.Scale;
+        }
+        else Align(instance.transform, made.transform, source != null ? source.transform : null);
         // An outfit's file may come with an Animator (imported as a humanoid of its own): only the character's may play.
         foreach (var extra in instance.GetComponentsInChildren<Animator>(true)) Object.DestroyImmediate(extra);
         int layer = root.gameObject.layer;
@@ -70,13 +80,65 @@ internal static partial class OutfitDresser
             }
             return copy;
         }
-        if (Merge(instance.transform, skeleton, item.ModelId) > 0) return copy;
+        // Parts that follow one bone of the body by themselves (a hat on the head: Modular Avatar's Bone Proxy, as a mod's
+        // file hands it on), found before the bones are joined, which moves what hangs from them.
+        var held = Held(entry, instance.transform);
+        int twins = Merge(instance.transform, skeleton, item.ModelId);
+        // The whole model put under a bone (a hat that is all there is to it) follows that bone, not its slot's.
+        if (Hold(held, animator, root, instance.transform, item.ModelId) || twins > 0) return copy;
         // Nothing to follow bone by bone: a rigid piece, made standing on the character, follows its slot's bone.
         if (skinned) Warn($"{item.ModelId}: {entry.Model.name}의 뼈 이름이 캐릭터 뼈와 하나도 맞지 않아 {slot.bone}에 통째로 붙입니다.");
         var anchor = slot.Anchor(animator);
         if (anchor != null) instance.transform.SetParent(anchor, true);
         else Warn($"{item.ModelId}: {slot.id} 칸의 뼈 '{slot.bone}'를 찾지 못해 몸을 따라가지 않습니다.");
         return copy;
+    }
+
+    // The model's parts that follow one bone of the body (OutfitLibrary.Entry.Holds), each found by its path while the
+    // model still stands as its file has it (no path is the model's own root); null when it has none.
+    private static List<(Transform Part, OutfitLibrary.Hold To)> Held(OutfitLibrary.Entry entry, Transform instance)
+    {
+        if (entry.Holds.Count == 0) return null;
+        var held = new List<(Transform, OutfitLibrary.Hold)>();
+        foreach (var hold in entry.Holds)
+        {
+            var part = hold.Path.Length > 0 ? instance.Find(hold.Path) : instance;
+            if (part != null) held.Add((part, hold));
+        }
+        return held;
+    }
+
+    // Puts each held part under the bone it follows, at the bone's own spot and turn unless it keeps its own (as its
+    // maker placed it in Modular Avatar). A character without that bone leaves the part with the outfit's skeleton.
+    // Returns whether the model's own root went under a bone.
+    private static bool Hold(List<(Transform Part, OutfitLibrary.Hold To)> held, Animator animator, Transform root, Transform instance, string model)
+    {
+        if (held == null) return false;
+        bool whole = false;
+        foreach (var (part, to) in held)
+        {
+            if (part == null) continue;
+            // No humanoid bone named: the path runs from the character's root, and must be there.
+            bool fromRoot = to.Bone == HumanBodyBones.LastBone;
+            var bone = fromRoot ? root : animator != null && animator.isHuman ? animator.GetBoneTransform(to.Bone) : null;
+            if (bone != null && to.Under.Length > 0)
+            {
+                var deeper = bone.Find(to.Under);
+                bone = deeper != null || fromRoot ? deeper : bone;
+            }
+            if (bone == null)
+            {
+                Warn($"{model}: '{part.name}'이 따라갈 뼈({(fromRoot ? to.Under : to.Bone.ToString())})가 이 캐릭터에 없어 옷의 뼈대를 따라갑니다.");
+                continue;
+            }
+            part.SetParent(bone, true);
+            if (!to.KeepPosition) part.localPosition = Vector3.zero;
+            if (!to.KeepRotation) part.localRotation = Quaternion.identity;
+            // The character's cloth rows leave it to the outfit's, as what hangs from a joined bone (Merge).
+            if (!part.TryGetComponent<OutfitBone>(out _)) part.gameObject.AddComponent<OutfitBone>();
+            whole |= part == instance;
+        }
+        return whole;
     }
 
     // Both files stood their roots at one origin, so the outfit's root goes where it stood against the character's.

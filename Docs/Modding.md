@@ -5,7 +5,7 @@ ENFILADE는 뜯어고치기 쉽게 만들었다. 모드에는 세 가지가 있�
 | | 표 모드 | 아바타 모드 | 프로젝트 모드 |
 | --- | --- | --- | --- |
 | 필요한 것 | 메모장이나 엑셀 | 내 Unity 프로젝트(VRChat 아바타를 올리던 그 프로젝트)와 게임에 든 SDK 폴더 | Unity와 이 프로젝트 |
-| 바꿀 수 있는 것 | 게임의 모든 숫자와 글자: 무기·좀비·웨이브·상점·클래스·카드·HUD 배치와 색·화면 문구·번역 | 내 캐릭터: 어떤 휴머노이드 아바타든 캐릭터 목록에 더한다 | 그 밖의 전부: 새 총 모양, 새 맵, 새 기능 |
+| 바꿀 수 있는 것 | 게임의 모든 숫자와 글자: 무기·좀비·웨이브·상점·클래스·카드·HUD 배치와 색·화면 문구·번역 | 내 캐릭터: 어떤 휴머노이드 아바타든 캐릭터 목록에 더한다. 내 옷: 캐릭터의 옷장에 칸마다 골라 입는 옷을 더한다 | 그 밖의 전부: 새 총 모양, 새 맵, 새 기능 |
 | 넣는 곳 | 게임 실행 파일 옆 `Mods/<내 모드>/` | 같은 곳 (`Mods/<내 모드>/Avatars`) | 프로젝트 안 |
 | 다시 빌드 | 필요 없음 | 필요 없음 | 필요 |
 
@@ -92,7 +92,7 @@ M1911,15,                                       Move.runSpeed,7.5
 ### 만드는 법 (모드 제작자)
 
 1. 게임 폴더의 `Mods/_SDK/ENFILADE Mod SDK` 폴더를 통째로 내 Unity 프로젝트의 `Assets` 안에 넣는다. VRChat 아바타를 올리던 프로젝트 그대로면 된다(Unity 2022·VRChat SDK·Modular Avatar가 있어도 된다). 이 프로젝트에서는 SDK 폴더 없이 바로 된다(같은 코드가 `Editor/ModSdk`에 있다). 빌드 없이 SDK 폴더만 뽑으려면 ENFILADE → 모드 → 모드 SDK 폴더 만들기.
-2. ENFILADE → 모드 → **아바타를 모드로 내보내기**. 아바타(씬의 것이나 프리팹)를 넣고 id와 이름을 정하고 '내보낼 곳'에 게임의 `Mods` 폴더를 고른 뒤 **내보내기**.
+2. ENFILADE → 모드 → **아바타를 모드로 내보내기**. 아바타(씬의 것이나 프리팹)를 넣고 id와 이름을 정하고 '내보낼 곳'에 게임의 `Mods` 폴더를 고른 뒤 **캐릭터 내보내기**. 창의 '옷 칸' 목록은 아바타가 입고 온 옷이 옷장의 어느 칸에 들어갈지를 보여 준다(아래 "입고 온 옷과 옷 모드").
 3. 게임을 켜면(켜져 있으면 콘솔에서 `/mods reload`) 캐릭터 목록에 나온다. `/mods`가 읽힌 모드 캐릭터를 보여 준다.
 
 ```
@@ -128,16 +128,53 @@ Mods/
 
 `.avatar.json`의 재질 값(숫자·색·텍스처 경로)은 손으로 고쳐도 된다.
 
+### 입고 온 옷과 옷 모드 (0.9.79)
+
+사용자(11-14, 옷만 따로 내보내는 모드를 두고): "좀 더 유저에게 자유를 주고 유동적이고 개방적인 방향이네. 좋아. 이런 거 좋아요. 바로 만들어 주세요." 0.9.49의 모드 캐릭터는 입고 온 옷까지 한 덩어리라 옷장에서 벗기거나 섞을 수 없었다. 이제 두 가지가 된다.
+
+**캐릭터가 입고 온 옷**은 내보낼 때 옷장 칸으로 나뉜다. 내보내기 창이 메시 이름으로 옷을 알아보고(Jacket → 겉옷, Skirt → 하의, Stocking → 양말·스타킹, 리본처럼 장식 이름뿐인 것은 그것이 놓인 옷에 붙인다, 속옷 이름은 속옷 칸) '옷 칸' 목록에 보여 준다. 이름으로 옷이라고 알아보지 못한 메시는 몸으로 보고 늘 입힌 채 둔다(몸을 옷으로 잘못 보면 벗길 때 몸이 사라지므로, 캐릭터의 메시는 이름으로만 나눈다). 틀렸거나 빠진 것은 목록의 메뉴에서 칸을 고르면 된다. 그렇게 나뉜 옷은 게임에서 칸마다 벗기거나, 그 캐릭터용 옷 모드의 조각으로 갈아입힐 수 있다.
+
+**옷 모드**는 옷만 내보내 옷장의 물건으로 만든다. BOOTH에서 산 "마요용 메이드복"을 내보내면 마요의 옷장에 재킷은 겉옷 칸, 치마는 하의 칸, 구두는 신발 칸에 따로 나와서 게임에 든 옷이나 다른 옷 모드와 섞어 입는다. 겹치는 곳(양말과 신발, 셔츠와 재킷, 속옷과 겉옷)은 게임의 옷처럼 메시를 재서 맞춘다([OutfitFit](../Assets/_Project/Scripts/Player/Outfits/OutfitFit.cs)).
+
+1. ENFILADE → 모드 → **옷을 모드로 내보내기** (같은 창의 '옷' 탭).
+2. '옷'에 옷 오브젝트를 넣는다: 아바타 밑에 넣어 둔 옷(Modular Avatar로 입혀 둔 그대로)이나 옷 프리팹. '입힐 몸'에는 그 옷이 맞는 아바타를 넣는다(아바타 밑의 옷이면 알아서 채워진다. 없으면 비워 둔다).
+3. '입을 캐릭터 id'에 게임에서 이 옷을 입을 캐릭터의 id를 적는다. 게임에 든 캐릭터의 id와 옷 칸의 id는 콘솔의 `/mods ids`가 보여 준다. 모드 캐릭터에게 입히려면 그 캐릭터를 내보낼 때 정한 id를 적는다. 뼈 없이 통짜로 된, 누구나 쓰는 물건은 `*`.
+4. '옷 칸' 목록에서 조각마다 들어갈 칸을 확인하고 틀린 것은 메뉴에서 고친 뒤 **옷 내보내기**.
+
+```
+Mods/
+  maid-dress/
+    mod.txt
+    Avatars/
+      maid-dress.mayo.bundle          옷 프리팹·메시·텍스처
+      maid-dress.mayo.avatar.json     옷 조각이 들어갈 칸(items), 재질, PhysBone, Bone Proxy를 적은 글
+      maid-dress.ichigo.bundle        같은 옷의 이치고용. 옷 id를 같게 두고 캐릭터 id만 바꿔 한 번 더 내보낸 것
+      maid-dress.ichigo.avatar.json
+```
+
+| 옷의 것 | 게임에서 |
+| --- | --- |
+| 옷의 뼈대(아바타 뼈의 사본과 옷만의 뼈) | 입힐 때 캐릭터의 같은 이름 뼈에 붙인다(Modular Avatar의 Merge Armature와 같은 방식, [OutfitDresser](../Assets/_Project/Scripts/Player/Outfits/OutfitDresser.Placing.cs)). Merge Armature가 뼈 이름에 붙여 둔 접두·접미사는 내보낼 때 뗀다 |
+| 조각마다의 칸 | 내보내기 창이 이름, 붙어 있는 옷, 몸의 어디에 걸렸는지(뼈 가중치)로 정하고 제작자가 고친 그대로 파일에 적힌다([ModPieces](../Assets/_Project/Editor/ModSdk/ModPieces.cs): 게임의 BOOTH 가져오기가 쓰는 바로 그 규칙). 한 칸의 조각은 한 벌로 묶이고, 종류가 다르면(스타킹과 양말) 하나씩도 고를 수 있게 나온다 |
+| 꺼져 있던 조각(VRChat 토글의 다른 쪽), 옷 파일에 딸려 온 몸의 사본 | 넣지 않는다(번들에도 안 들어간다). 넣고 싶으면 목록에서 칸을 고른다. 속옷은 꺼져 있어도 속옷 칸에 들어간다(게임이 입힐 때 켠다) |
+| PhysBone | 캐릭터와 같다: 설정값을 적어 오고 게임이 불러올 때 흔들림 줄로 바꾼다. 몸의 뼈에 선 콜라이더(다리에 부딪히는 치마)는 '입힐 몸'을 넣었을 때 같이 간다 |
+| Modular Avatar Bone Proxy(머리를 따라가는 모자), 아바타의 뼈 밑에 손으로 붙여 둔 물건 | 입힐 때 그 뼈 밑에 붙인다 |
+| 재질 | 캐릭터와 같다(위 "쉐이더") |
+
+아바타용 옷은 그 아바타의 뼈 이름과 체형에 맞춰 만든 것이라 **그 캐릭터에게만** 맞는다. 다른 몸에 자동으로 맞춰 입히는 것은 하지 않는다. 같은 옷의 다른 아바타용 프리팹이 있으면 옷 id를 같게 두고 한 번 더 내보내면 된다(조각 id가 같아 옷차림도 그대로 옮겨 간다). 게임에 든 옷(예: `sailor-maiden`)을 내 모드 캐릭터용 프리팹으로 내보낼 때 옷 id를 게임의 것과 같게 하면 게임의 그 옷 조각들이 내 캐릭터에게도 나온다.
+
 ### 손으로 더 맞추기
 
-게임은 모드 캐릭터에게도 원래 캐릭터와 같은 표를 쓴다. 같은 모드 폴더의 `Tables`에 내 캐릭터 id로 줄을 적으면 게임이 알아서 정한 것 위에 덮인다: 흔들림은 `Cloth.csv`(`skin` 칸이 내 id), 표정 키는 `FaceKeys.csv`, 캐릭터가 입고 온 옷을 옷장 칸으로 나누려면 `CharacterParts.csv`, 체형 슬라이더는 `BodyShapes.csv`, 총 쥐는 손은 `GunHands.csv`.
+게임은 모드 캐릭터에게도 원래 캐릭터와 같은 표를 쓴다. 같은 모드 폴더의 `Tables`에 내 캐릭터 id로 줄을 적으면 게임이 알아서 정한 것 위에 덮인다: 흔들림은 `Cloth.csv`(`skin` 칸이 내 id), 표정 키는 `FaceKeys.csv`, 입고 온 옷의 칸은 `CharacterParts.csv`(줄 id `<캐릭터 id>.<칸>`), 옷 모드의 옷은 `Outfits.csv`(줄 id가 옷 조각의 id), 비치는 옷이 밑을 가려 버리면 그 줄의 `sheer`, 체형 슬라이더는 `BodyShapes.csv`, 총 쥐는 손은 `GunHands.csv`. 옷의 칸과 이름은 `.avatar.json`의 `parts`·`items`를 직접 고쳐도 된다(칸 id는 `/mods ids`).
 
 ### 알아 둘 것
 
 - 같이 하는 사람도 같은 모드 폴더를 넣어야 내 캐릭터가 보인다. 없는 PC에서는 기본 캐릭터로 보인다(오류는 없다).
 - 캐릭터는 처음 고르거나 목록에 그려질 때 번들에서 불러온다. 캐릭터 화면을 열면 모드 캐릭터들의 초상을 찍느라 모두 불러온다.
 - 번들은 Windows용으로 만든다. 다른 Unity 버전(2022)에서 만든 번들도 메시·텍스처·프리팹은 읽힌다(쉐이더는 위 규칙대로).
-- 아직 없는 것: 옷만 따로 내보내기(다른 캐릭터에게 입히는 옷 모드), 캐릭터의 색 세트, VRChat 표현 메뉴의 토글, 표정 애니메이션 자동 옮기기, 모드 파일을 친구에게 자동으로 보내기.
+- 옷 모드를 입은 친구도, 그 모드가 없는 PC에서는 그 칸이 캐릭터의 원래 옷으로 보인다(오류는 없다).
+- 옷 모드의 옷은 고르거나 옷장 타일의 사진을 찍을 때 번들에서 불러온다. 사진은 미리 구워 둔 것이 없어 처음 볼 때 한 장씩 찍힌다.
+- 아직 없는 것: 캐릭터와 옷의 색 세트, 다른 체형의 캐릭터에 옷을 자동으로 맞춰 입히기, VRChat 표현 메뉴의 토글, 표정 애니메이션 자동 옮기기, 모드 파일을 친구에게 자동으로 보내기.
 
 ## 3. 프로젝트 모드
 
@@ -164,8 +201,11 @@ Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는
 | 표를 이름으로 찾고 모드를 덧씌우기 | [GameTables](../Assets/_Project/Scripts/Core/Tables/GameTables.cs), [CsvTable](../Assets/_Project/Scripts/Core/Tables/CsvTable.cs) (`Overlay`) |
 | 줄에서 칸 읽기 | [TableCells](../Assets/_Project/Scripts/Core/Tables/TableCells.cs) |
 | 빌드 옆에 Mods 폴더 복사, SDK 폴더 넣기 | [ModsFolderOnBuild](../Assets/_Project/Editor/Build/ModsFolderOnBuild.cs), [ModSdkPackage](../Assets/_Project/Editor/Mods/ModSdkPackage.cs) |
-| 모드 캐릭터 찾기·불러오기, 흔들림·표정 줄 만들기 | [ModAvatars](../Assets/_Project/Scripts/Core/Mods/ModAvatars.cs), 파일 형식 [ModAvatarFile](../Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs) |
+| 모드 캐릭터 찾기·불러오기, 흔들림·표정·입고 온 옷 줄 만들기 | [ModAvatars](../Assets/_Project/Scripts/Core/Mods/ModAvatars.cs), 파일 형식 [ModAvatarFile](../Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs) |
+| 옷 모드 찾기·불러오기, 옷 줄과 흔들림 줄 만들기 | [ModOutfits](../Assets/_Project/Scripts/Core/Mods/ModOutfits.cs); 옷장이 모델을 찾는 곳 [OutfitCatalog](../Assets/_Project/Scripts/Player/Outfits/OutfitCatalog.cs) `Model`, 입히는 곳 [OutfitDresser](../Assets/_Project/Scripts/Player/Outfits/OutfitDresser.Placing.cs) `Place` |
+| 옷과 캐릭터의 흔들림 줄에 필요한 몸 정보(편집기 가져오기와 같이 씀) | [VrcWearer](../Assets/_Project/Scripts/Player/Body/Cloth/VrcWearer.cs) |
 | 모드 캐릭터의 재질(쉐이더 고르기·바꿔 그리기) | [ModMaterials](../Assets/_Project/Scripts/Core/Mods/ModMaterials.cs), [ModShaderLibrary](../Assets/_Project/Scripts/Core/Mods/ModShaderLibrary.cs) ([빌더](../Assets/_Project/Editor/Mods/ModShaderLibraryBuilder.cs)), 표 ShaderMap.csv |
 | 캐릭터 목록에 모드 캐릭터 더하기 | [PlayerBodyProfile](../Assets/_Project/Scripts/Player/Body/PlayerBodyProfile.cs) `Skins` |
 | 실행 중에 표에 줄 얹기 | [GameTables](../Assets/_Project/Scripts/Core/Tables/GameTables.cs) `Lay` |
-| 내보내기 도구 (SDK) | [ModAvatarExporter](../Assets/_Project/Editor/ModSdk/ModAvatarExporter.cs), [ModVrcYaml](../Assets/_Project/Editor/ModSdk/ModVrcYaml.cs) |
+| 내보내기 도구 (SDK) | [ModAvatarExporter](../Assets/_Project/Editor/ModSdk/ModAvatarExporter.cs)(창), `.Pack`(캐릭터·옷 싸기), `.Pieces`(옷 칸 목록), `.Vrc`(PhysBone·디스크립터·Bone Proxy 읽기), [ModVrcYaml](../Assets/_Project/Editor/ModSdk/ModVrcYaml.cs) |
+| 메시를 옷장 칸으로 나누는 규칙 (SDK와 BOOTH 가져오기가 같이 씀) | [ModPieces](../Assets/_Project/Editor/ModSdk/ModPieces.cs), `.Words`(이름 낱말과 칸 목록), `.Meshes`(메시 재기) |

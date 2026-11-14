@@ -5,8 +5,9 @@ using UnityEngine;
 /// <summary>
 /// The outfit tables, read once and kept until a table is saved again (GameTables.Reloaded): the slots
 /// (OutfitSlots.csv), the items (Outfits.csv), what an item needs on one character (OutfitFits.csv), each character's
-/// own pieces by slot (CharacterParts.csv) and the models (<see cref="OutfitLibrary"/>). The player body, the menu
-/// preview and the character screen all read it.
+/// own pieces by slot (CharacterParts.csv) and the models (<see cref="OutfitLibrary"/>, and those mods bring:
+/// ModOutfits, whose items and whose characters' own pieces arrive as rows of the same tables). The player body, the
+/// menu preview and the character screen all read it.
 /// </summary>
 public static class OutfitCatalog
 {
@@ -118,11 +119,22 @@ public static class OutfitCatalog
         return retired != null && !items.ContainsKey(retired) && splits.TryGetValue(retired, out var pieces) ? pieces : NoItems;
     }
 
-    /// <summary>The item's model made for this character, or null when it was not made for them.</summary>
+    /// <summary>
+    /// The item's model made for this character, or null when it was not made for them: the game's own
+    /// (<see cref="OutfitLibrary"/>), else one a mod brings (ModOutfits). One made for this character comes before one
+    /// made for anyone, whichever of the two has it. A mod's model is not loaded by asking for its entry, only by
+    /// asking the entry for its Model.
+    /// </summary>
     public static OutfitLibrary.Entry Model(string itemId, string skinId)
     {
         var item = Item(itemId);
-        var entry = item != null && Library != null ? Library.Find(item.ModelId, skinId) : null;
+        if (item == null) return null;
+        var entry = Library != null ? Library.Find(item.ModelId, skinId) : null;
+        if (entry == null || entry.ForAnyone)
+        {
+            var brought = ModOutfits.Find(item.ModelId, skinId);
+            if (brought != null && (entry == null || !brought.ForAnyone)) entry = brought;
+        }
         // A piece made for anyone fits only a character whose spot for its slot is measured (OutfitSpots.csv): earrings
         // need ears, and Sil has none. One fitted to the face (the welding mask) fits any face, measured as it is worn.
         return entry != null && entry.ForAnyone && Slot(item.slot)?.FitsFace != true && !OutfitSpot.Has(item.slot, skinId) ? null : entry;
@@ -162,7 +174,8 @@ public static class OutfitCatalog
         var listed = new List<SkinVariant>();
         var shown = new Dictionary<SkinVariant, SkinVariant>();
         var entry = Model(item.id, skinId);
-        if (entry != null)
+        // With no colour sets there is nothing to tell apart, and the model is left unasked for (a mod's loads when asked).
+        if (entry != null && entry.Variants.Count > 0)
         {
             var made = MaterialsOf(item, entry, skinId);
             var first = new Dictionary<string, SkinVariant>(StringComparer.Ordinal);
@@ -215,13 +228,16 @@ public static class OutfitCatalog
         return made;
     }
 
-    /// <summary>The items of a slot that have a model for this character, in the table's order.</summary>
+    /// <summary>
+    /// The items of a slot that have a model for this character, in the table's order. Listing them loads nothing: a
+    /// mod's model comes from its bundle when a piece of it is put on or photographed.
+    /// </summary>
     public static List<OutfitItem> ItemsFor(string skinId, string slotId)
     {
         Ensure();
         var found = new List<OutfitItem>();
         foreach (var item in items.Values)
-            if (string.Equals(item.slot, slotId, StringComparison.OrdinalIgnoreCase) && Model(item.id, skinId)?.Model != null)
+            if (string.Equals(item.slot, slotId, StringComparison.OrdinalIgnoreCase) && Model(item.id, skinId)?.HasModel == true)
                 found.Add(item);
         return found;
     }

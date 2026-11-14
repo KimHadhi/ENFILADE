@@ -23,7 +23,9 @@ using UnityEngine;
 /// game's own characters (VrcSway, GameTables.Lay), so its hair, tail and skirt sway as tuned. What its avatar
 /// descriptor says of the face (the blink and the mouth shapes) is laid under FaceKeys.csv as rows of its own; the
 /// rest of the game already measures any humanoid as it comes (the head for first person, hands, feet, the fit of
-/// clothes, its face's moods by the usual shape key names).
+/// clothes, its face's moods by the usual shape key names). The clothes it came in go into the wardrobe's slots as its
+/// file sorts them (ModAvatarFile.Part: rows of CharacterParts laid the same way), so each can be taken off or changed
+/// for a piece of an outfit made for it (ModOutfits, which reads the outfits these same files bring).
 /// A PC that hasn't the mod shows the default character for a friend who wears it, as for any id it doesn't know.
 /// </summary>
 public static class ModAvatars
@@ -42,13 +44,25 @@ public static class ModAvatars
         public GameObject Model => ModelOf(this);
     }
 
-    private const string SwayTable = "Cloth", FaceTable = "FaceKeys";
+    /// <summary>One file of a mod's Avatars folder, read: its characters and its outfits (ModOutfits).</summary>
+    internal sealed class Read
+    {
+        public GameMods.Mod Mod;
+        public string Path;
+        public ModAvatarFile File;
+    }
+
+    private const string SwayTable = "Cloth", FaceTable = "FaceKeys", PartsTable = "CharacterParts", SlotsTable = "OutfitSlots";
     // VRChat's visemes (ModAvatarFile.Face.visemes) that are the game's five mouth shapes: aa, ih, ou, E, oh.
     private static readonly (int viseme, string mood)[] Mouths = { (10, "talk.a"), (12, "talk.i"), (14, "talk.u"), (11, "talk.e"), (13, "talk.o") };
 
+    private static List<Read> files;
     private static List<Character> characters;
     private static readonly Dictionary<string, List<Character>> byMod = new Dictionary<string, List<Character>>(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, AssetBundle> bundles = new Dictionary<string, AssetBundle>(StringComparer.OrdinalIgnoreCase);
+    // What sway rows need to know of each model stood so far (VrcWearer), by the model: a character's own rows, and
+    // those of every outfit worn on it.
+    private static readonly Dictionary<int, VrcWearer> wearers = new Dictionary<int, VrcWearer>();
     private static readonly HashSet<string> told = new HashSet<string>();
 
     /// <summary>Goes up whenever the characters are read again: whoever keeps a list made from them makes it again.</summary>
@@ -61,6 +75,7 @@ public static class ModAvatars
         foreach (var bundle in bundles.Values)
             if (bundle != null) bundle.Unload(true);
         bundles.Clear();
+        wearers.Clear();
         told.Clear();
         Forget();
     }
@@ -68,6 +83,7 @@ public static class ModAvatars
     /// <summary>The mods' folders are read again (GameMods.Rescan): the characters are found afresh. Bundles already open stay open.</summary>
     internal static void Forget()
     {
+        files = null;
         characters = null;
         byMod.Clear();
         Generation++;
@@ -76,14 +92,13 @@ public static class ModAvatars
     /// <summary>Every character the loaded mods offer, in load order; a later mod's takes the place of an earlier one's of the same id.</summary>
     public static IReadOnlyList<Character> Characters => characters ??= Scan();
 
-    private static List<Character> Scan()
+    /// <summary>Every file of the loaded mods' Avatars folders that could be read, in load order.</summary>
+    internal static IReadOnlyList<Read> Files => files ??= ReadFiles();
+
+    private static List<Read> ReadFiles()
     {
-        var found = new List<Character>();
-        byMod.Clear();
+        var read = new List<Read>();
         foreach (var mod in GameMods.Loaded)
-        {
-            var own = new List<Character>();
-            byMod[mod.Name] = own;
             foreach (string path in mod.Avatars)
             {
                 string text = GameMods.Read(path);
@@ -98,25 +113,37 @@ public static class ModAvatars
                     Tell($"{mod.Name}: {System.IO.Path.GetFileName(path)}을 읽지 못했습니다(JSON이 깨졌습니다: {error.Message}).");
                     continue;
                 }
-                if (file == null || file.characters == null) continue;
+                if (file == null) continue;
                 if (file.version > ModAvatarFile.Latest)
                     Tell($"{mod.Name}: {System.IO.Path.GetFileName(path)}은 이 게임보다 새 내보내기 도구로 만든 파일입니다(v{file.version}). 읽을 수 있는 데까지 읽습니다.");
-                foreach (var data in file.characters)
+                read.Add(new Read { Mod = mod, Path = path, File = file });
+            }
+        return read;
+    }
+
+    private static List<Character> Scan()
+    {
+        var found = new List<Character>();
+        byMod.Clear();
+        foreach (var read in Files)
+        {
+            if (!byMod.TryGetValue(read.Mod.Name, out var own)) byMod[read.Mod.Name] = own = new List<Character>();
+            foreach (var data in read.File.characters ?? Array.Empty<ModAvatarFile.Character>())
+            {
+                if (data == null || string.IsNullOrEmpty(data.id) || string.IsNullOrEmpty(data.prefab)) continue;
+                if (!ValidId(data.id))
                 {
-                    if (data == null || string.IsNullOrEmpty(data.id) || string.IsNullOrEmpty(data.prefab)) continue;
-                    if (!ValidId(data.id))
-                    {
-                        Tell($"{mod.Name}: 캐릭터 id '{data.id}'에는 영문 소문자·숫자·-·_만 쓸 수 있습니다. 건너뜁니다.");
-                        continue;
-                    }
-                    var character = new Character
-                    {
-                        Id = data.id, Name = string.IsNullOrEmpty(data.name) ? data.id : data.name, Mod = mod.Name, Path = path, File = file, Data = data
-                    };
-                    found.RemoveAll(other => string.Equals(other.Id, data.id, StringComparison.Ordinal));
-                    found.Add(character);
-                    own.Add(character);
+                    Tell($"{read.Mod.Name}: 캐릭터 id '{data.id}'에는 영문 소문자·숫자·-·_만 쓸 수 있습니다. 건너뜁니다.");
+                    continue;
                 }
+                var character = new Character
+                {
+                    Id = data.id, Name = string.IsNullOrEmpty(data.name) ? data.id : data.name, Mod = read.Mod.Name, Path = read.Path, File = read.File,
+                    Data = data
+                };
+                found.RemoveAll(other => string.Equals(other.Id, data.id, StringComparison.Ordinal));
+                found.Add(character);
+                own.Add(character);
             }
         }
         if (found.Count > 0)
@@ -128,9 +155,13 @@ public static class ModAvatars
         return found;
     }
 
-    // An id travels in saved settings, in what other PCs are sent and in table rows, each with separators of its own.
-    private static bool ValidId(string id)
+    /// <summary>
+    /// Whether an id is made of lower-case English letters, digits, - and _ only: it travels in saved settings, in what
+    /// other PCs are sent and in table rows, each with separators of its own.
+    /// </summary>
+    internal static bool ValidId(string id)
     {
+        if (string.IsNullOrEmpty(id)) return false;
         foreach (char c in id)
             if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_')) return false;
         return true;
@@ -142,8 +173,7 @@ public static class ModAvatars
         character.Tried = true;
         try
         {
-            string folder = System.IO.Path.GetDirectoryName(character.Path) ?? "";
-            var bundle = Open(System.IO.Path.Combine(folder, character.File.bundle ?? ""), character);
+            var bundle = Open(character.Path, character.File.bundle, character.Mod);
             if (bundle == null) return null;
             var prefab = bundle.LoadAsset<GameObject>(character.Data.prefab);
             if (prefab == null)
@@ -155,7 +185,7 @@ public static class ModAvatars
             var animator = prefab.GetComponentInChildren<Animator>(true);
             if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
                 Tell($"{character.Mod}: '{character.Id}'에 휴머노이드 Avatar가 없습니다. 모델의 Rig를 Humanoid로 하고 다시 내보내야 움직입니다.");
-            else LaySway(character, prefab, animator.avatar);
+            else LaySway(character, prefab);
             character.Loaded = prefab;
         }
         catch (Exception error)
@@ -165,19 +195,23 @@ public static class ModAvatars
         return character.Loaded;
     }
 
-    private static AssetBundle Open(string path, Character character)
+    /// <summary>
+    /// The bundle beside a mod's avatar file, opened once and kept open (a bundle can't be opened twice); null, with a
+    /// word in the log, when it isn't there or can't be opened.
+    /// </summary>
+    internal static AssetBundle Open(string filePath, string bundleName, string mod)
     {
-        string full = System.IO.Path.GetFullPath(path);
+        string full = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(filePath) ?? "", bundleName ?? ""));
         if (bundles.TryGetValue(full, out var open) && open != null) return open;
         if (!File.Exists(full))
         {
-            Tell($"{character.Mod}: 번들 파일이 없습니다: {full}");
+            Tell($"{mod}: 번들 파일이 없습니다: {full}");
             return null;
         }
         var bundle = AssetBundle.LoadFromFile(full);
         if (bundle == null)
         {
-            Tell($"{character.Mod}: 번들 {System.IO.Path.GetFileName(full)}을 열지 못했습니다(파일이 깨졌거나, 같은 이름의 번들이 다른 모드에 또 있습니다).");
+            Tell($"{mod}: 번들 {System.IO.Path.GetFileName(full)}을 열지 못했습니다(파일이 깨졌거나, 같은 이름의 번들이 다른 모드에 또 있습니다).");
             return null;
         }
         bundles[full] = bundle;
@@ -186,33 +220,30 @@ public static class ModAvatars
 
     // ---- Sway: its PhysBones as rows of Cloth.csv ----
 
-    private static void LaySway(Character character, GameObject prefab, Avatar avatar)
+    // The chains may not start at a bone the body itself moves, and a collider counts as the body part it stands on
+    // (VrcWearer), as the editor's import has it for the game's own characters.
+    private static void LaySway(Character character, GameObject prefab)
     {
         var bones = Bones(prefab, character.Data.sway);
         if (bones.Count == 0) return;
-        // The chains may not start at a bone the body itself moves, and a collider counts as the body part it stands on.
-        var humanoid = new HashSet<string>(StringComparer.Ordinal);
-        var parts = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var human in avatar.humanDescription.human)
-        {
-            humanoid.Add(human.boneName);
-            if (VrcSway.BodyPart(human.humanName) is string part) parts[human.boneName] = part;
-        }
-        string PartOf(Transform bone)
-        {
-            for (var at = bone; at != null; at = at.parent)
-                if (parts.TryGetValue(at.name, out var found)) return found;
-            return null;
-        }
-        var rows = VrcSway.Rows(bones, prefab, character.Id, humanoid, PartOf);
+        var rows = WearerOf(prefab).OwnRows(bones, prefab, character.Id);
         if (rows.Count > 0) GameTables.Lay(SwayTable, "모드 캐릭터 " + character.Id + "의 흔들림", Csv(rows));
     }
 
+    /// <summary>What sway rows need to know of a character's model (its bones and body parts), read once for each model.</summary>
+    internal static VrcWearer WearerOf(GameObject model)
+    {
+        int key = model.GetInstanceID();
+        if (!wearers.TryGetValue(key, out var wearer)) wearers[key] = wearer = new VrcWearer(model);
+        return wearer;
+    }
+
     /// <summary>
-    /// Rows as a table's text, to lay over Cloth.csv (GameTables.Lay): the columns are whatever the rows fill, id first.
-    /// Two rows that came out with one id (two roots of one name) get a number after it.
+    /// Rows as a table's text, to lay over one of the game's tables (GameTables.Lay, GameMods.TableTexts): the columns
+    /// are whatever the rows fill, id first. Two rows that came out with one id (two roots of one name) get a number
+    /// after it.
     /// </summary>
-    private static string Csv(List<Dictionary<string, string>> all)
+    internal static string Csv(List<Dictionary<string, string>> all)
     {
         var columns = new List<string> { IdColumn };
         foreach (var row in all)
@@ -238,8 +269,12 @@ public static class ModAvatars
     private const string IdColumn = "id";
     private static readonly char[] Quoted = { ',', '"', '\n', '\r' };
 
-    /// <summary>A file's PhysBones on a loaded model: each bone found by its path from the model's root.</summary>
-    public static List<VrcPhysBone> Bones(GameObject root, ModAvatarFile.PhysBone[] sway)
+    /// <summary>
+    /// A file's PhysBones on a loaded model: each bone found by its path from the model's root. An outfit's colliders
+    /// that stand on its wearer's bones (ModAvatarFile.PhysBone.bodyColliders) are found on <paramref name="body"/>,
+    /// the model of the character it is worn on, when one is given.
+    /// </summary>
+    public static List<VrcPhysBone> Bones(GameObject root, ModAvatarFile.PhysBone[] sway, GameObject body = null)
     {
         var found = new List<VrcPhysBone>();
         if (root == null || sway == null) return found;
@@ -261,6 +296,9 @@ public static class ModAvatars
                 if (At(root.transform, path) is Transform ignored) bone.Ignore.Add(ignored);
             foreach (string path in data.colliders ?? Array.Empty<string>())
                 if (At(root.transform, path) is Transform collider) bone.Colliders.Add(collider);
+            if (body != null)
+                foreach (string path in data.bodyColliders ?? Array.Empty<string>())
+                    if (At(body.transform, path) is Transform collider) bone.Colliders.Add(collider);
             found.Add(bone);
         }
         return found;
@@ -272,13 +310,38 @@ public static class ModAvatars
 
     /// <summary>
     /// The rows a mod's avatars give a table by what their files say, before the mod's own file of that table (which
-    /// wins): for FaceKeys, each character's blink and mouth shapes as its avatar descriptor names them.
+    /// wins): for FaceKeys, each character's blink and mouth shapes as its avatar descriptor names them; for
+    /// CharacterParts, the clothes each character came in, slot by slot (ModAvatarFile.Part), a row "skin.slot" each.
     /// </summary>
     internal static IEnumerable<KeyValuePair<string, string>> TableTexts(GameMods.Mod mod, string table)
     {
-        if (!string.Equals(table, FaceTable, StringComparison.OrdinalIgnoreCase)) yield break;
+        bool faces = string.Equals(table, FaceTable, StringComparison.OrdinalIgnoreCase);
+        if (!faces && !string.Equals(table, PartsTable, StringComparison.OrdinalIgnoreCase)) yield break;
         _ = Characters;
         if (!byMod.TryGetValue(mod.Name, out var own) || own.Count == 0) yield break;
+        if (!faces)
+        {
+            var rows = new List<Dictionary<string, string>>();
+            foreach (var character in own)
+                foreach (var part in character.Data.parts ?? Array.Empty<ModAvatarFile.Part>())
+                {
+                    if (part == null || string.IsNullOrEmpty(part.slot)) continue;
+                    string meshes = Names(part.meshes);
+                    if (meshes.Length == 0) continue;
+                    if (!SlotKnown(part.slot))
+                    {
+                        Tell($"{mod.Name}: '{character.Id}'의 옷 칸 '{part.slot}'은 이 게임에 없는 칸입니다. 그 옷은 벗길 수 없이 입은 채로 둡니다.");
+                        continue;
+                    }
+                    rows.Add(new Dictionary<string, string>
+                    {
+                        ["id"] = character.Id + "." + part.slot, ["skin"] = character.Id, ["slot"] = part.slot, ["parts"] = meshes,
+                        ["name"] = part.name ?? "", ["sheer"] = part.sheer ? "true" : ""
+                    });
+                }
+            if (rows.Count > 0) yield return new KeyValuePair<string, string>(mod.Name + "의 캐릭터 옷", Csv(rows));
+            yield break;
+        }
         var text = new StringBuilder();
         foreach (var character in own)
         {
@@ -289,6 +352,21 @@ public static class ModAvatars
                 Row(text, character.Id, mood, face.visemes != null && viseme < face.visemes.Length ? face.visemes[viseme] : "");
         }
         if (text.Length > 0) yield return new KeyValuePair<string, string>(mod.Name + "의 캐릭터", "id,skin,mood,keys\n" + text);
+    }
+
+    /// <summary>Whether the wardrobe has a slot of this id (OutfitSlots.csv).</summary>
+    internal static bool SlotKnown(string slot) => GameTables.TryGetRow(SlotsTable, slot, out _);
+
+    /// <summary>
+    /// Mesh names as a table's list cell ("a|b"). A name the list's own mark would cut is left out: the exporter
+    /// gives every mesh a name that fits, so one that doesn't was written by hand.
+    /// </summary>
+    internal static string Names(string[] meshes)
+    {
+        var names = new List<string>();
+        foreach (string mesh in meshes ?? Array.Empty<string>())
+            if (!string.IsNullOrWhiteSpace(mesh) && mesh.IndexOf('|') < 0 && !names.Contains(mesh.Trim())) names.Add(mesh.Trim());
+        return string.Join("|", names);
     }
 
     // One FaceKeys row: the key at full. A name the cell's own marks would cut ( = | / , " ) is left to the usual names.

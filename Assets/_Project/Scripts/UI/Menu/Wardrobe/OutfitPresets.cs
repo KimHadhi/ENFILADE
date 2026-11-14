@@ -216,7 +216,8 @@ public static class OutfitPresets
             }
             var item = OutfitCatalog.Item(pick.Item);
             var entry = item != null && skin != null ? OutfitCatalog.Model(item.id, skin.Id) : null;
-            if (entry == null || entry.Model == null)
+            // Whether it can be worn at all, with nothing loaded to tell (a mod's model comes from its bundle when put on).
+            if (entry == null || !entry.HasModel)
             {
                 emptied++;
                 continue;
