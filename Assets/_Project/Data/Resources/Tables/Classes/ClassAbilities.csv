@@ -56,6 +56,21 @@ Schiesshund.returnSeconds,8,리턴 백이 가는 시간(초). 표식 처치마�
 Schiesshund.duelSeconds,12,결투(시순트 클래스 기술 키): 조준한 적과 1대1로 가는 시간(초). 그 적이나 시순트가 쓰러지면 먼저 끝난다. 그동안 그 적은 시순트만 노리고 시순트만 다치게 하며 시순트의 탄은 다른 적을 뚫고 지나간다. 동료는 그 적을 체력 1까지만 깎는다(에이스 카드면 마무리도)
 Schiesshund.duelCooldown,30,결투를 다시 걸 수 있을 때까지(초). 건 때부터 센다
 Schiesshund.duelDamage,25,결투 상대에게 시순트가 주는 총 피해 +%. 상대는 현상금 표식도 받으므로 markDamage와 곱해진다
+Schiesshund.trailReach,15,피 냄새(카드): 표식 대상을 처치하면 그 자리에서 이 거리(m) 안의 급이 같거나 높은 가장 가까운 적에게 표식이 저절로 옮겨 간다(PlayerClass.Grade)
+Schiesshund.desperadoDraw,1,데스페라도(4번 칸)를 꺼내는 시간에 곱하는 수. 빠른 뽑기 카드가 -0.5를 더해 절반
+Schiesshund.arenaSeconds,12,궁극기 결투장(X): 시순트와 조준한 좀비가 맵 아래 결투장에서 싸우는 가장 긴 시간(초). 좀비가 쓰러지거나 시간이 다 되면 시순트는 떠난 자리로 돌아온다(시간이 다 되면 좀비도 제자리로)
+Schiesshund.arenaPull,.35,결투장으로 끌려가기까지(초): 두 자리에 균열이 열리고 이만큼 뒤에 둘이 사라진다
+Schiesshund.arenaLinger,1,결투장에서 좀비를 쓰러뜨린 뒤 돌아오기까지(초): 쓰러지는 것을 보고 돌아온다
+Schiesshund.arenaApart,10,결투장에서 시순트와 좀비가 처음 떨어져 서는 거리(m). 둘 다 원래 서 있던 쪽에 선다
+Schiesshund.arenaDepth,600,결투장이 떠난 자리 바로 아래 얼마나 깊이 지어지나(m)
+Schiesshund.arenaStep,50,방의 자리(사람)마다 결투장이 더 깊이 지어지는 거리(m). 두 시순트의 결투장이 겹치지 않게
+Schiesshund.arenaRadius,8,결투장 바닥 반지름(m). 8이면 지름 16m
+Schiesshund.arenaHeight,12,결투장 벽과 천장 높이(m)
+Schiesshund.arenaKey,120,결투장 천장 한가운데서 내리꽂는 조명의 세기
+Schiesshund.arenaRim,25,결투장 벽 위에서 가운데를 비추는 청록·금빛 조명의 세기
+Schiesshund.arenaBuffSeconds,10,결투장에서 돌아온 뒤(좀비를 쓰러뜨렸거나 시간이 다 됨) 강화가 가는 시간(초). 쓰러져서 돌아오면 없음
+Schiesshund.arenaBuffDamage,50,결투장에서 돌아온 뒤 총 피해 +%. 데스페라도도 가득 찬다
+Schiesshund.arenaCheer,.8,결투장에서 돌아올 때 환호성 크기(0~1). Resources/Audio/Moments/cheer에 녹음을 두면 만든 소리 대신 그것이 나온다
 Detente.syringeMax,100,데탕트 주사기 용량. 장이 시작될 때 syringeStart만큼 차 있고 상점(주사기 보충)과 서포트가 채운다
 Detente.syringeStart,100,장이 시작될 때 주사기에 든 양
 Detente.injectCost,25,주사 한 번에 쓰는 양(100이면 네 번)
@@ -81,7 +96,7 @@ Support.supplyStart,100,장이 시작될 때 가방에 든 양
 Support.supplyRegen,1.5,가방이 저절로 차는 양(초당). 1.5면 빈 가방이 약 67초에 다 찬다
 Support.resupplyCost,25,동료 한 명 보급에 드는 양
 Support.resupplyMagazines,2,보급받은 동료의 총마다 예비탄에 더해 주는 탄창 수
-Support.resupplyOverfill,25,풀리 로디드: 보급으로는 예비탄이 처음 예비탄보다 이만큼(%) 더 찰 수 있다(줍기·상점은 처음 예비탄까지)
+Support.resupplyOverfill,25,풀리 로디드: 보급으로는 예비탄이 처음 예비탄보다 이만큼(%) 더 찰 수 있다(줍기·상점은 처음 예비탄까지. 받는 사람의 탄약 주머니 카드는 두 끝을 함께 올린다)
 Support.resupplySyringe,25,보급받은 동료가 데탕트면 주사기에 더해 주는 양
 Support.resupplyReach,3.5,F로 보급할 수 있는 동료까지 거리(m). 처형·줍기·부활·사다리·미션 버튼·문·상점이 먼저
 Support.resupplyAngle,14,조준선에서 이 각도(도) 안의 동료에게 보급한다
@@ -90,9 +105,8 @@ Support.barricadeMax,2,한 서포트의 바리케이드가 한 번에 서 있는
 Support.barricadeAhead,1.8,바리케이드를 세울 수 있는 가장 가까운 곳(m). 클래스 기술 키를 누르고 있으면 시선이 바닥에 닿는 곳에 푸른 미리 보기가 서고 발에서 바라보는 쪽으로 이 거리와 barricadeReach 사이로 맞춰진다. 놓으면 그 자리에 선다(짧게 누르면 바로)
 Support.barricadeReach,3.5,바리케이드를 세울 수 있는 가장 먼 곳(m). 수평이나 위를 보면 여기. 시선이 벽에 닿으면 그 벽 바로 앞
 Support.barricadeSlope,25,이 각도(도)보다 가파른 바닥에는 못 세운다. 바닥이 없거나 벽 너머이거나 그 자리에 무언가(벽·물건·좀비·사람·다른 바리케이드) 있어도 못 세우고 미리 보기가 빨갛다
-Support.barricadeLeeway,2.5,방에서 참가자의 바리케이드 자리를 방장 PC가 다시 볼 때 barricadeReach에 더해 주는 여유(m). 방장 화면의 그 사람은 조금 늦게 따라오므로
 Support.previewAlpha,.34,바리케이드 미리 보기(푸른·빨간 반투명 바리케이드)의 진하기(0~1). 바닥 테두리는 이보다 진하다
-Support.barricadeHealth,400,바리케이드 체력. 허리 높이라 아군은 넘어 쏘고 뛰어넘고 좀비는 못 지나간다(내비 메시를 깎는다)
+Support.barricadeHealth,400,바리케이드 체력. 허리 높이라 아군은 넘어 쏘고 뛰어넘고 좀비는 못 지나간다(내비 메시를 깎는다). 세우는 서포트의 PC가 정해서 함께 보낸다(카드 '요새화'면 그 PC가 +25/50/75% 더함. 철조망·탐조등도)
 Support.barricadeBlow,1,좀비의 공격이 바리케이드에 막혔을 때 그 피해의 몇 배를 바리케이드가 입는지. 아군의 총알과 주먹은 피해가 없다
 Support.barricadePressure,4,바리케이드에 붙어 밀어대는 좀비 한 마리가 주는 피해(초당)
 Support.repairRate,40,F를 누르고 있으면 조준한 닳은 바리케이드를 망치로 초당 이만큼 고친다(누구의 바리케이드든. 가방은 쓰지 않는다. G&B 공병처럼). 동료가 조준돼 있으면 보급이 먼저
@@ -117,8 +131,23 @@ Support.lightCost,60,탐조등(서포트 카드): 가방에서 나가는 양
 Support.lightMax,1,탐조등이 한 번에 서 있는 최대
 Support.lightHealth,300,탐조등 체력. 붙어 밀어대는 좀비와 막힌 공격에 깎인다
 Support.lightRadius,25,탐조등 둘레 이만큼(m) 안에는 좀비가 새로 나오지 않는다(웨이브·캠페인 스폰). 바닥에 옅은 원으로 보인다
+Support.throwCost,25,보급 꾸러미 던지기(서포트 카드): 한 번 던질 때 가방에서 나가는 양. 휠을 누른 채 동료를 바라보고 F
+Support.throwReach,8,보급 꾸러미를 던질 수 있는 동료까지 거리(m). 서 있고 벽에 가리지 않은 동료
+Support.throwAngle,10,조준선에서 이 각도(도) 안의 동료에게 던진다
+Support.throwSpeed,12,보급 꾸러미가 날아가는 빠르기(m/초). 8m면 약 0.7초 뒤 동료 가슴에 닿고 그때 그 동료의 PC에서 손 보급(F)과 같이 채워진다(탄창 resupplyMagazines·풀리 로디드·데탕트 주사기·투척물)
+Support.ultShield,100,서포트 궁극기(카드를 다 모은 뒤 X): 팀 모두의 실드가 이만큼 찬다(그 사람의 최대 체력이 더 크면 그만큼: 체력바 위 실드 띠가 꽉 차게). 탄약은 상점처럼 가득·투척물도 가득. 서포트 PC가 보내고 각자의 PC에서 채운다
 Cards.momentumSeconds,3,기세 카드(공용): 맞힐 때마다 강화가 이어지는 시간(초). 맞히면 다시 처음부터. 빗나가도 깎이지 않는다
+Cards.phoenixGuard,2,불사조 카드(공용·혼자일 때만): 죽을 만큼 다쳤다가 다시 일어선 뒤 아무 공격도 들어오지 않는 시간(초). 일어설 때의 체력은 카드 값(Perks.csv: 최대 체력의 %)
+Cards.phoenixRadius,4,불사조: 일어설 때 불길이 퍼져 좀비를 쓰러뜨리는 반경(m). 불길이 바닥으로 이 반경까지 번진다
+Cards.phoenixKnockdown,2,불사조: 불길에 쓰러진 좀비가 누워 있는 시간(초)
+Cards.phoenixReel,.8,불사조: 쓰러지지 않는 거구가 불길에 대신 휘청이는 시간(초)
 Point.gunslingerSeconds,2.5,건슬링어 카드: 총을 바꿔 든 뒤 그 총이 세지는 시간(초)
+Point.doorDown,1.5,문전박대 카드: 샷건 산탄에 맞아 넘어진 보통 좀비가 쓰러져 있는 시간(초). 닿는 거리는 카드 값(Perks.csv 3/5/7m. 총구에서 맞은 곳까지)
+Point.doorStagger,1,문전박대: 샷건에 맞은 엘리트가 휘청이는 시간(초). 브루저는 넘어지지도 휘청이지도 않는다
+Point.doorRest,3,문전박대: 휘청인 엘리트가 다시 휘청일 수 있을 때까지(초. 휘청임이 끝난 뒤부터). 펌프 샷건으로 엘리트를 계속 묶어 두지 못하게
+Point.brassBodyFrom,2,탄피 회수 카드: 이 단계부터 몸샷 처치도 탄을 돌려준다(그 아래는 헤드샷 처치만). 돌려주는 발 수는 카드 값(Perks.csv 1/1/2발)이고 예비탄은 쓰지 않는다
+Point.balletMost,6,탄막 춤 카드(포인트 궁극 카드): 건 카타 한 번에 처치로 늘어날 수 있는 시간의 최대(초). 처치마다 늘어나는 초는 카드 값
+Point.balletSpread,0,탄막 춤: 건 카타 동안 탄 퍼짐 전체에 곱하는 수(0이면 서서 쏘든 달리며 쏘든 퍼짐이 없다. 샷건의 산탄 무늬는 그대로). 카드 없는 건 카타는 움직여서 벌어지는 퍼짐만 없앤다
 Ghost.tigerReach,6,화이트 타이거 카드: 헤드 헌터가 가득 찬 채 헤드샷으로 처치하면 그 자리 둘레 이 반경(m)의 적이 휘청인다
 Ghost.tigerStagger,1.2,화이트 타이거: 휘청이는 시간(초). 거구는 0.5초까지만
 Ghost.tigerRest,1.5,화이트 타이거: 발톱(휘청임과 이펙트)이 다시 나올 때까지(초). 헤드 헌터를 지켜 주는 시간은 그런 처치마다 다시 채운다

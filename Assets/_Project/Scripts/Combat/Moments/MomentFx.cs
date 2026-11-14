@@ -69,6 +69,9 @@ public sealed class MomentFx : MonoBehaviour
             case PlayerClass.Assault:
                 // The band leads; the wedge rides with the cavalry (CardFx) and everyone it took glows (ChargeGlow).
                 break;
+            case PlayerClass.Schiesshund:
+                // The band leads; its look is the showdown's own rift round the hound and its quarry (ArenaFx, through ArenaNet).
+                break;
             case PlayerClass.Ghost:
                 Play(Kind.GroundSigil, feet, facing, radius, tint, MomentLook.Sigil.Ghost);
                 Play(Kind.Tiger, feet + facing * MomentLook.Number("Ult", "tigerAhead", 2.6f) + Vector3.up * MomentLook.Number("Ult", "tigerHigh", 2.2f),
@@ -106,14 +109,31 @@ public sealed class MomentFx : MonoBehaviour
     /// (<paramref name="seconds"/>), on every PC (the pack's Bullet buff, PackFx kataAura; the user approved the pack map,
     /// 2026-11-13). The ultimate's look is the guns themselves heating and the crossed guns on the ground, so the two never
     /// read as one ("아까 두 총 가득이랑 다른 게 뭐지?"). <paramref name="mine"/>: this PC's own Point, inside its aura.
+    /// A kata made longer while it runs (a kill under the Point's 탄막 춤 card, ClassKit.LengthenKata) comes here again with
+    /// the seconds now left: the aura already turning round them is held on that long, never a second one over it.
     /// </summary>
     public static void KataAura(PlayerMovement who, float seconds, bool mine)
     {
         if (!Application.isPlaying || who == null) return;
+        float fade = PackFx.Number("kataAura", "fade", .8f);
+        foreach (var held in who.GetComponentsInChildren<PackFx>())
+            if (held.name.EndsWith("(kataAura)", System.StringComparison.Ordinal) && Emitting(held))
+            {
+                held.Hold(Mathf.Max(.5f, seconds), fade);
+                return;
+            }
         var copy = PackFx.Play("kataAura", who.transform.position, Quaternion.Euler(0f, who.transform.eulerAngles.y, 0f), mine);
         if (copy == null) return;
         copy.transform.SetParent(who.transform, true);
-        if (copy.TryGetComponent(out PackFx aura)) aura.Hold(Mathf.Max(.5f, seconds), PackFx.Number("kataAura", "fade", .8f));
+        if (copy.TryGetComponent(out PackFx aura)) aura.Hold(Mathf.Max(.5f, seconds), fade);
+    }
+
+    // Still running, not fading out after its end (PackFx names a copy "<prefab> (<use>)"; a stopped one only fades).
+    private static bool Emitting(Component fx)
+    {
+        foreach (var system in fx.GetComponentsInChildren<ParticleSystem>())
+            if (system.isEmitting) return true;
+        return false;
     }
 
     // ---- Playing one ----

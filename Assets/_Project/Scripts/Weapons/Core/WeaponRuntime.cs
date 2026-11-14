@@ -317,11 +317,17 @@ public sealed class WeaponRuntime
     }
 
     /// <summary>Fill the magazine and restore at least the starting reserve, preserving bonus ammunition.</summary>
-    public void RefillAmmo()
+    public void RefillAmmo() => RefillAmmo(Data.InitialReserveAmmo);
+
+    /// <summary>
+    /// As RefillAmmo, to <paramref name="reserveCap"/> rather than the starting reserve: what this gun's holder fills it to,
+    /// which an ammo pouch card raises (PlayerWeaponSlots.ReserveCap). More already in reserve is kept.
+    /// </summary>
+    public void RefillAmmo(int reserveCap)
     {
         Interrupt();
         ForgetResume();
         Ammo = Data.MagazineSize;
-        ReserveAmmo = Mathf.Max(ReserveAmmo, Data.InitialReserveAmmo);
+        ReserveAmmo = Mathf.Max(ReserveAmmo, reserveCap);
     }
 }

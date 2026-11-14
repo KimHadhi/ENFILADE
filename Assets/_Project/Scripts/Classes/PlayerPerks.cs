@@ -74,12 +74,18 @@ public static class PlayerPerks
     public const string HeadshotDamage = "gun_head", GunDamage = "gun_body", ExecutionHeal = "knight_butcher",
         Toughness = "body_tough", Grit = "body_grit", Rescue = "detente_rescue", Charge = "gauge_charge",
         Heriot = "hound_heriot", Momentum = "assault_momentum";
+    // The common cards of the 2026-11-14 card feedback: a bigger ammo pouch, a scavenger's share of every ammo pile, more
+    // throwables on the belt, and the lone player's phoenix (dealt only to a player alone: PhoenixRise).
+    public const string AmmoPouch = "ammo_pouch", Scavenger = "scavenger", NadePouch = "nade_pouch", Phoenix = "phoenix";
     // The class cards with code behind them (ClassCards, ClassKit, PlayerClass).
     public const string KnightDeflect = "knight_deflect", KnightReversal = "knight_reversal", KnightGauntlet = "knight_gauntlet",
         KnightShadow = "knight_shadow", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
         GhostPierce = "ghost_pierce", GhostWeakpoint = "ghost_weakpoint", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
         HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep",
         SupportWire = "support_wire", SupportCrate = "support_crate", SupportLight = "support_light";
+    // The Support's cards of the 2026-11-14 card feedback (SupportKit): a supply pack thrown to a friend, and structures
+    // that go up sturdier (its PC sends the health with the build).
+    public const string SupportThrow = "support_throw", SupportFortify = "support_fortify";
 
     private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
     private static List<Perk> catalog;
@@ -377,6 +383,20 @@ public static class PlayerPerks
 
     /// <summary>How fast the gauge fills (factor on each hit's charge).</summary>
     public static float ChargeFactor => 1f + Total(Charge) / 100f;
+
+    /// <summary>
+    /// The ammo pouch (탄약 주머니): how much reserve this PC's player's guns hold, as a factor on each gun's starting
+    /// reserve. It is the one number every fill-up asks, through PlayerWeaponSlots.ReserveCap: a fresh gun, an ammo pile,
+    /// the shop, a refill and a Support's resupply, so "full" means the same everywhere. For this PC's own player's guns
+    /// only; a friend's copy keeps the gun's own.
+    /// </summary>
+    public static float ReserveFactor => 1f + Mathf.Max(0f, Total(AmmoPouch)) / 100f;
+
+    /// <summary>The scavenger (청소부): the factor on what an ammo pile on the field gives this player (FieldPickups).</summary>
+    public static float ScavengeFactor => 1f + Mathf.Max(0f, Total(Scavenger)) / 100f;
+
+    /// <summary>The grenade pouch (수류탄 주머니): throwables this player carries on top of their kind's (PlayerGrenades.Carry).</summary>
+    public static int ExtraThrowables => Mathf.Max(0, Mathf.RoundToInt(Total(NadePouch)));
 
     // ---- Momentum (기세, the user's "때릴 때마다 갱신되는 강화 효과") ----
 

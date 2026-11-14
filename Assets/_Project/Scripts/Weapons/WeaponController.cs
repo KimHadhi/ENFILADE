@@ -388,15 +388,18 @@ public sealed partial class WeaponController : MonoBehaviour
     private void UpdateSpread()
     {
         float moving = movement == null ? 0f : Mathf.Clamp01(new Vector2(movement.ActualVelocity.x, movement.ActualVelocity.z).magnitude / Mathf.Max(.1f, movement.WalkSpeed));
-        float air = movement != null && !movement.IsGrounded ? weaponData.AirborneSpread : 0f;
+        // A Point's 곡예 사격 card steadies shots in the air (PlayerClass.AirSpreadFactor), as it does in a slide (MovingSpreadFactor).
+        float air = movement != null && !movement.IsGrounded ? weaponData.AirborneSpread * PlayerClass.AirSpreadFactor(movement) : 0f;
         // Down the sights the shot goes where the sight is, as Rainbow Six Siege's does: walking and firing add nothing
         // there, the recoil climbing the view is the whole of a spray's difficulty. Only a jump still throws it off, at half.
         float loose = 1f - AimBlend;
         // Fanning bucks the revolver off line with every slap of the palm.
         float fan = Runtime != null && Runtime.FireMode == WeaponFireMode.Fanning ? weaponData.FanSpread : 0f;
+        // The last factor takes all of it away in a Point's Gun Kata with its final card (PlayerClass.KataSpreadFactor);
+        // a shotgun's pattern is its own pellet cone, added on top where its pellets are aimed, so it stays.
         CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)
             + (bloom + moving * weaponData.MovingSpread * PlayerClass.MovingSpreadFactor(movement) + fan) * loose + air * Mathf.Lerp(1f, .5f, AimBlend))
-            * (Crouched ? weaponData.CrouchSpread : 1f);
+            * (Crouched ? weaponData.CrouchSpread : 1f) * PlayerClass.KataSpreadFactor(movement);
     }
     private void UpdateCrosshair()
     {

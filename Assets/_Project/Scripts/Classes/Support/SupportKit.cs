@@ -16,8 +16,9 @@ using UnityEngine.InputSystem;
 ///   once where the preview stood, as a tap of the stone's T throws at once; the guard key (right click) while holding
 ///   calls it off. It stands where the view comes down to the ground, between the nearest and the farthest reach ahead,
 ///   across the look. At most a few stand at once; a new one past that takes the oldest down, which the preview shows
-///   blinking amber. The host's or a lone PC's goes up at once; a client's PC asks the host, which checks the spot again
-///   against its own world (Barricade.Judge) and puts it up for everyone, or says why not and the bag gets its share back.
+///   blinking amber. It goes up at once on the Support's own PC, whoever plays it, and the others put theirs up as told,
+///   the host too, with the health it went up with (the user, 2026-11-14, memory actor-decides: the acting player's PC
+///   decides and the host never judges it again; a guest used to ask the host and could be turned down).
 /// - Mending: F held on a worn barricade in reach, anyone's, puts health back into it, its planks nailed back on (the
 ///   user, 2026-11-12: "G&amp;B 공병처럼 수리하고 유지 보수할 수 있으면 재밌을 듯"); a resupply goes first. It costs the
 ///   bag nothing: a hammer does it, and the welding torch card does it faster on a fuel of its own that fills back
@@ -27,7 +28,12 @@ using UnityEngine.InputSystem;
 ///   "서포트는 용접 토치나 망치 어디 있어? 어떻게 쓰는지 모르겠네").
 /// - Other structures (the user, 2026-11-12: "서포트 다른 건축물 아이디어 지어도 괜찮을 듯"), each from its card: barbed wire,
 ///   an ammo crate and a searchlight (Barricade.Kind). While the class key is held, F goes through the ones held; each
-///   has its own cost and most at once.
+///   has its own cost and most at once. The fortify card (요새화) has them all go up sturdier (MostHealthOf).
+/// - Thrown pack (the throw card, 보급 꾸러미 던지기, 2026-11-14): while the class key is held, F on a friend in its reach
+///   (farther than a hand's) throws them a pack that resupplies them as a hand does when it lands (SupportKit.Throw,
+///   SupplyPack).
+/// - The ultimate (every card taken, X): the bag full and the whole team's shield, ammo and throwables full
+///   (SupportKit.Ultimate).
 /// A class picked starts it afresh (Fresh, from ClassKit on PlayerClass.Picked): the bag as it starts, its barricades down.
 /// This PC's own player only. Numbers: Tables/ClassAbilities, row Support.
 /// </summary>
@@ -35,9 +41,8 @@ using UnityEngine.InputSystem;
 public sealed partial class SupportKit : MonoBehaviour
 {
     private const string Row = "Support";
-    // How long a client waits for the host's word on a barricade it asked for before it may ask for another (s), and how
-    // long the preview stays red where one was turned down (s).
-    private const float AnswerWait = 3f, RefusedShow = .35f;
+    // How long the preview stays red where one could not go up (s).
+    private const float RefusedShow = .35f;
     // How often a client's hammer tells the host what it put in (s).
     private const float MendEvery = .2f;
 
@@ -45,10 +50,10 @@ public sealed partial class SupportKit : MonoBehaviour
     public static SupportKit Local { get; private set; }
 
     /// <summary>
-    /// This PC's Support put barricade id up at this spot, facing this way (on the host or alone, where it decides that
-    /// itself): the others are told (PlayerNetworkCombat).
+    /// This PC's Support put barricade id up at this spot, facing this way, with this much health (its PC's number, the
+    /// fortify card's share in it): the others are told and put theirs up as told (PlayerNetworkCombat).
     /// </summary>
-    public event Action<ushort, Vector3, float> Built;
+    public event Action<ushort, Vector3, float, float> Raised;
     /// <summary>This PC's Support took barricade id down (for another past its most, or a class picked): the others are told.</summary>
     public event Action<ushort> TookDown;
 
@@ -65,11 +70,8 @@ public sealed partial class SupportKit : MonoBehaviour
     private Barricade.Fit planFit = Barricade.Fit.Ok;
     private Vector3 planAt;
     private float planYaw;
-    // A client's barricade asked of the host and not answered yet (0: none), what it took from the bag and when; one asked
-    // for before a class pick, to come down again should it still go up; where the key was last let go (the preview stays
-    // there while the host answers, or red a moment when turned down), and when one was last turned down.
-    private ushort pendingId, dropped;
-    private float pendingAt, pendingCost, refusedAt = -99f;
+    // Where the key was last let go where nothing could go up (the preview stays red there a moment), and when.
+    private float refusedAt = -99f;
     private Vector3 heldSpot;
     private float heldYaw;
     private readonly List<ushort> taken = new List<ushort>();
@@ -128,11 +130,15 @@ public sealed partial class SupportKit : MonoBehaviour
     public bool Planning => planning;
     public Barricade.Fit PlanFit => planFit;
 
-    /// <summary>The ultimate (every card taken, a full gauge: ClassCards.Ultimate): the bag full at once.</summary>
+    /// <summary>
+    /// The ultimate (every card taken, a full gauge: ClassCards.Ultimate): the bag full at once, and every teammate's
+    /// shield, ammo and throwables full, each on its own PC (RestockTeam).
+    /// </summary>
     internal void Restock()
     {
         supply = SupplyMax;
         lastGive = Time.time;
+        RestockTeam();
     }
     public float SinceBuild => Time.time - lastBuild;
     /// <summary>The friend F would resupply now (standing, in reach, under the crosshair), or null.</summary>
@@ -178,7 +184,7 @@ public sealed partial class SupportKit : MonoBehaviour
         if (!PlayerClass.Is(PlayerClass.Support))
         {
             if (Local == this) Local = null;
-            Offered = null;
+            Offered = Tossable = null;
             AimedAt = Mendable = null;
             Mending = false;
             Show(RepairLooks.Tool.None);
@@ -217,14 +223,11 @@ public sealed partial class SupportKit : MonoBehaviour
     /// <summary>
     /// A class was picked (PlayerClass.Picked, by ClassKit): a fresh start, as a chapter's (the user, 2026-11-12: "서포트로
     /// 바리케이드 설치하고 다른 거 바꿨다가 다시 서포트로 돌아오면 다시 바리케이드를 설치할 수 있게"). The bag as it starts,
-    /// no preview, and every barricade of the last pick down, the others told; one asked of the host and not yet answered
-    /// comes down as soon as it goes up.
+    /// no preview, and every barricade of the last pick down, the others told.
     /// </summary>
     internal void Fresh()
     {
         planning = false;
-        if (pendingId != 0) dropped = pendingId;
-        pendingId = 0;
         refusedAt = -99f;
         AimedAt = Mendable = null;
         Mending = false;

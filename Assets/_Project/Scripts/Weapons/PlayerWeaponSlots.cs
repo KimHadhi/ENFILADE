@@ -86,10 +86,25 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     {
         var data = GetWeapon(index);
         if (data == null) return null;
+        // A gun new to the slot comes with its reserve full: its holder's cap, which an ammo pouch card raises.
         if (weapons[index] == null || weapons[index].Data != data)
             weapons[index] = new WeaponRuntime(data, savedData[index] == data && savedAmmo[index] >= 0 ? savedAmmo[index] : (int?)null,
-                savedData[index] == data && savedReserve[index] >= 0 ? savedReserve[index] : (int?)null);
+                savedData[index] == data && savedReserve[index] >= 0 ? savedReserve[index] : ReserveCap(index));
         return weapons[index];
+    }
+
+    /// <summary>
+    /// How much reserve a pickup, the shop or a refill fills this slot's gun to, and <paramref name="overPercent"/> per
+    /// cent past it (a Support's resupply, Fully Loaded): the gun's starting reserve, times this PC's own player's ammo
+    /// pouch (PlayerPerks.ReserveFactor). The cards are this PC's player's, so a friend's copy keeps the gun's own.
+    /// </summary>
+    public int ReserveCap(int index, float overPercent = 0f)
+    {
+        var data = GetWeapon(index);
+        if (data == null) return 0;
+        float factor = player != null && player.IsLocal ? PlayerPerks.ReserveFactor : 1f;
+        // A hair under, so float error never rounds a whole number up (120 × 1.2 comes out as 144.00001).
+        return Mathf.Max(0, Mathf.CeilToInt(data.InitialReserveAmmo * factor * (1f + Mathf.Max(0f, overPercent) / 100f) - .001f));
     }
     /// <summary>A gun's ammo changed outside a shot or a reload (a Point's gun put away reloading itself): the HUD reads again.</summary>
     internal void NotifyAmmo() => SlotActivity?.Invoke();
@@ -100,20 +115,20 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         for (int i = 0; i < SlotCount; i++)
         {
             if (GetWeapon(i).OrNull()?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
-            GetRuntime(i).RefillAmmo();
+            GetRuntime(i).RefillAmmo(ReserveCap(i));
             count++;
         }
         if (count > 0) SlotActivity?.Invoke();
         return count;
     }
-    /// <summary>Whether RefillAmmo would add anything: a held gun's magazine isn't full, or its reserve is under what it starts with.</summary>
+    /// <summary>Whether RefillAmmo would add anything: a held gun's magazine isn't full, or its reserve is under its cap (ReserveCap).</summary>
     public bool NeedsAmmo()
     {
         for (int i = 0; i < SlotCount; i++)
         {
             if (GetWeapon(i).OrNull()?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
             var gun = GetRuntime(i);
-            if (gun.Ammo < gun.Data.MagazineSize || gun.ReserveAmmo < gun.Data.InitialReserveAmmo) return true;
+            if (gun.Ammo < gun.Data.MagazineSize || gun.ReserveAmmo < ReserveCap(i)) return true;
         }
         return false;
     }

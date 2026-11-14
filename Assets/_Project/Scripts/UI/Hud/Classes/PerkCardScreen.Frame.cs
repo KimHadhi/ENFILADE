@@ -21,7 +21,8 @@ public sealed partial class PerkCardScreen
             if (ready && KeyBindings.Pressed("Player/PerkCards") && !Blocked())
             {
                 if (cards) Open();
-                else if (player.Ultimate.TryConsume())
+                // A Schießhund's showdown with no zombie to take says so and keeps the gauge (ClassCards.UltimateHeldBack).
+                else if (!ClassCards.Local.UltimateHeldBack() && player.Ultimate.TryConsume())
                 {
                     ClassCards.Local.Ultimate();
                     // Its face, for everyone (PlayerFace: only this PC knows the ultimate went off).

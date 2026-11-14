@@ -247,11 +247,29 @@ public static class PlayerClass
         return type.Kind == ZombieKind.Brute || type.Kind == ZombieKind.Exploder || type.Kind == ZombieKind.Charger;
     }
 
-    /// <summary>A factor on how long a gun takes to come out for <paramref name="who"/>: none at all in a Point's Gun Kata (ClassKit).</summary>
-    public static float DrawFactor(PlayerMovement who) => InKata(who) ? 0f : 1f;
+    /// <summary>
+    /// A factor on how long a gun takes to come out for <paramref name="who"/>: none at all in a Point's Gun Kata (ClassKit),
+    /// and a Schießhund's Desperado quicker with its 빠른 뽑기 card (ClassKit.DesperadoDraw).
+    /// </summary>
+    public static float DrawFactor(PlayerMovement who) => InKata(who) ? 0f : ClassKit.DesperadoDraw(who);
 
-    /// <summary>A factor on the spread moving adds to <paramref name="who"/>'s shots: none in a Point's Gun Kata, shooting on the run.</summary>
-    public static float MovingSpreadFactor(PlayerMovement who) => InKata(who) ? 0f : 1f;
+    /// <summary>
+    /// A factor on the spread moving adds to <paramref name="who"/>'s shots: none in a Point's Gun Kata, shooting on the run;
+    /// less in a slide, a jump or a fall with a Point's 곡예 사격 card (PointCards).
+    /// </summary>
+    public static float MovingSpreadFactor(PlayerMovement who) => InKata(who) ? 0f : PointCards.AcrobatSpread(who);
+
+    /// <summary>
+    /// A factor on the spread a jump or a fall adds to <paramref name="who"/>'s shots: less with a Point's 곡예 사격 card,
+    /// whose point is shooting in the air (PointCards). The Gun Kata alone leaves it as it is.
+    /// </summary>
+    public static float AirSpreadFactor(PlayerMovement who) => PointCards.AcrobatSpread(who);
+
+    /// <summary>
+    /// A factor on all of <paramref name="who"/>'s spread: none in a Point's Gun Kata with its final card, 탄막 춤
+    /// (PointCards), else 1.
+    /// </summary>
+    public static float KataSpreadFactor(PlayerMovement who) => InKata(who) ? PointCards.BalletSpread() : 1f;
 
     private static bool InKata(PlayerMovement who)
     {

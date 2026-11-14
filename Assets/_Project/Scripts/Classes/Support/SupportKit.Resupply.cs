@@ -24,9 +24,9 @@ public sealed partial class SupportKit
 
     /// <summary>
     /// This PC's own player was resupplied by a friend's Support (PlayerNetworkCombat): each of their guns gets that many
-    /// magazines more in reserve, up to its starting reserve and <paramref name="overfill"/> per cent past it (Fully
-    /// Loaded), and a Détente's syringe gets <paramref name="syringe"/> more. A Schießhund's Desperado is left alone: its
-    /// bounties alone load it.
+    /// magazines more in reserve, up to what it is filled to (PlayerWeaponSlots.ReserveCap, which their own ammo pouch
+    /// card raises) and <paramref name="overfill"/> per cent past it (Fully Loaded), and a Détente's syringe gets
+    /// <paramref name="syringe"/> more. A Schießhund's Desperado is left alone: its bounties alone load it.
     /// </summary>
     public static void Receive(PlayerMovement player, int magazines, float overfill, float syringe, string from)
     {
@@ -36,7 +36,7 @@ public sealed partial class SupportKit
             var data = slots.GetWeapon(i);
             if (data == null || data.Category != WeaponCategory.Ranged || slots.KeepsOwnRounds(i)) continue;
             var gun = slots.GetRuntime(i);
-            int cap = Mathf.CeilToInt(data.InitialReserveAmmo * (1f + Mathf.Max(0f, overfill) / 100f));
+            int cap = slots.ReserveCap(i, overfill);
             int room = cap - gun.ReserveAmmo;
             if (room > 0) gun.AddReserve(Mathf.Min(room, data.MagazineSize * Mathf.Max(1, magazines)));
         }

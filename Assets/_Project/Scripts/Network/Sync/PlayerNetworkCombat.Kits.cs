@@ -4,48 +4,18 @@ using UnityEngine;
 // PlayerNetworkCombat: the class kits over the network, barricades, crates, resupply and the bounty. One part of the class; the rest is in PlayerNetworkCombat.cs and the files beside it.
 public sealed partial class PlayerNetworkCombat
 {
-    // A Support's barricade went up here (on the host or alone, by its own PC; for a client, by the host as it asked):
-    // every other PC puts its copy up, and the Support's own PC, a client's, hears its hammer (SupportKit.Placed).
+    // A Support's barricade (or wire, crate, light) went up here on its own PC, with the health that PC gave it (the
+    // fortify card raises it there): every other PC puts its copy up as told, the host too, which never checks the spot
+    // again (the user's rule of 2026-11-14, memory actor-decides: the acting player's PC decides, the host applies).
     [Rpc(SendTo.NotMe)]
-    private void BarricadeRpc(ushort id, Vector3 at, float yaw)
-    {
-        Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>());
-        if (IsOwner && support != null) support.Placed(id);
-    }
+    private void BarricadeRaisedRpc(ushort id, Vector3 at, float yaw, float health)
+        => Barricade.Place(id, at, yaw, mover != null ? mover : GetComponent<PlayerMovement>(), health);
 
-    // A Support's barricade came down (taken down by its PC for a new one or a class pick, or by the host for a client's
-    // new one past their most): every other PC takes its copy down.
+    // A Support's barricade came down, taken down by its own PC (its oldest past its most for a new one, by that PC's own
+    // count, or a class pick): every other PC takes its copy down. It is sent before the new one's BarricadeRaisedRpc,
+    // so the copies never stand one past the most.
     [Rpc(SendTo.NotMe)]
     private void CollapseRpc(ushort id) => Barricade.Collapse(id);
-
-    // On the host: a client's Support asks for a barricade (SupportKit, AskBarricade). The host's world is the true one,
-    // so the spot is checked again there (Barricade.Judge); allowed, the owner's oldest past their most come down and it
-    // goes up, here and on every other PC, the asker's too. Else the asker's PC is told why and gives the bag back.
-    [Rpc(SendTo.Server)]
-    private void BuildBarricadeRpc(ushort id, Vector3 at, float yaw, byte most)
-    {
-        var owner = mover != null ? mover : GetComponent<PlayerMovement>();
-        var fit = Barricade.Judge(at, yaw, owner, Barricade.KindOf(id));
-        if (fit != Barricade.Fit.Ok)
-        {
-            BarricadeRefusedRpc(id, (byte)fit);
-            return;
-        }
-        taken.Clear();
-        Barricade.Raise(id, at, yaw, owner, most, taken);
-        foreach (ushort old in taken) CollapseRpc(old);
-        BarricadeRpc(id, at, yaw);
-    }
-
-    // The host turned this player's barricade down: their own PC (this one) gives the bag back and says why.
-    [Rpc(SendTo.Owner)]
-    private void BarricadeRefusedRpc(ushort id, byte fit)
-    {
-        if (support != null) support.Refused(id, (Barricade.Fit)fit);
-    }
-
-    // The barricades a client's new one took down on the host, for the others to be told (BuildBarricadeRpc).
-    private readonly System.Collections.Generic.List<ushort> taken = new System.Collections.Generic.List<ushort>();
 
     // The host's barricade's health, for every client's copy.
     [Rpc(SendTo.NotServer)]
@@ -66,16 +36,43 @@ public sealed partial class PlayerNetworkCombat
     // A friend's Support resupplied this player: their own PC (this one) fills the guns.
     [Rpc(SendTo.Owner)]
     private void ResupplyRpc(int magazines, float overfill, float syringe, RpcParams rpc = default)
+        => SupportKit.Receive(mover != null ? mover : GetComponent<PlayerMovement>(), magazines, overfill, syringe, NameOfClient(rpc.Receive.SenderClientId));
+
+    /// <summary>
+    /// This PC's Support threw a supply pack at <paramref name="friend"/> (SupportKit, the throw card) from
+    /// <paramref name="from"/>, landing in <paramref name="seconds"/>, with the hand resupply's numbers as its PC has them:
+    /// every other PC flies the same pack, and the friend's own fills their guns when it lands there.
+    /// </summary>
+    public void SendSupplyThrow(PlayerMovement friend, Vector3 from, float seconds, int magazines, float overfill, float syringe)
     {
-        string from = "";
-        foreach (var someone in PlayerRoster.All)
-            if (someone != null && someone.TryGetComponent(out NetworkObject network) && network.OwnerClientId == rpc.Receive.SenderClientId)
-            {
-                from = someone.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : someone.name;
-                break;
-            }
-        SupportKit.Receive(mover != null ? mover : GetComponent<PlayerMovement>(), magazines, overfill, syringe, from);
+        if (IsSpawned && friend != null && friend.TryGetComponent(out NetworkObject target) && target.IsSpawned)
+            SupplyThrowRpc(target.NetworkObjectId, from, seconds, magazines, overfill, syringe);
     }
+
+    /// <summary>
+    /// A Support's ultimate for this copy's player (SupportKit), with the Support's shield number: their own PC fills
+    /// their shield, every gun and their throwables.
+    /// </summary>
+    public void Restock(float shield) { if (IsSpawned) RestockRpc(shield); }
+
+    // A Support (this copy's player) threw a supply pack at a friend: this PC flies its own copy of it, from the hand to
+    // that friend, and if the friend is this PC's player, takes what is in it when it lands (SupportKit.Tossed).
+    [Rpc(SendTo.NotMe)]
+    private void SupplyThrowRpc(ulong friend, Vector3 from, float seconds, int magazines, float overfill, float syringe)
+    {
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(friend, out NetworkObject found) || !found.TryGetComponent(out PlayerMovement target))
+            return;
+        SupportKit.Tossed(mover != null ? mover : GetComponent<PlayerMovement>(), target, from, seconds, magazines, overfill, syringe);
+    }
+
+    // A Support's ultimate reached this player: their own PC (this one) fills their shield to the Support's number, every
+    // gun and the throwables (SupportKit.Restocked).
+    [Rpc(SendTo.Owner)]
+    private void RestockRpc(float shield, RpcParams rpc = default)
+        => SupportKit.Restocked(mover != null ? mover : GetComponent<PlayerMovement>(), shield, NameOfClient(rpc.Receive.SenderClientId));
+
+    // The name of the player a client plays (an RPC's sender), or "".
+    private static string NameOfClient(ulong client) => PlayerTally.NameOf(PlayerRoster.ById(client));
 
     // A Schießhund claimed a bounty here (the Desperado's own claim when grand): every other PC sees it burst in the world
     // (BountyBurst) and hears it, the softer the further off.

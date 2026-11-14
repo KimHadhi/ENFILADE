@@ -219,6 +219,20 @@ perk.gauge_charge.name,충전기,,능력 카드 이름: 카드 고르기 화면�
 perk.tag.other,기타,,능력 카드 위 꼬리표: 기타 카드
 perk.gauge_charge.text,게이지가 차는 속도 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(gauge_charge)
 perk.gauge_charge.why,싸움의 박자를 읽어 기운이 빨리 모인다,,능력 카드 아래 작은 이유 한 줄(gauge_charge)
+perk.ammo_pouch.name,탄약 주머니,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ammo_pouch)
+perk.ammo_pouch.text,총마다 예비 탄약을 {0}% 더 지닌다(줍기·상점·보충이 거기까지 채운다),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ammo_pouch)
+perk.ammo_pouch.why,주머니를 하나 더 꿰매 달았다,,능력 카드 아래 작은 이유 한 줄(ammo_pouch)
+perk.scavenger.name,청소부,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(scavenger)
+perk.scavenger.text,바닥의 탄약 더미를 주우면 탄약을 {0}% 더 얻는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(scavenger)
+perk.scavenger.why,쓰러진 놈들 주머니까지 뒤진다,,능력 카드 아래 작은 이유 한 줄(scavenger)
+perk.scavenger.gives,· 청소부 +{0}%,,주운 목록(화면 아래) > 청소부 카드로 탄약 더미에서 더 얻었을 때 탄창 뒤에 붙는다. {0}=더 얻은 %
+perk.nade_pouch.name,수류탄 주머니,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(nade_pouch)
+perk.nade_pouch.text,투척물을 {0}개 더 지닌다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(nade_pouch)
+perk.nade_pouch.why,허리띠에 고리를 하나 더 달았다,,능력 카드 아래 작은 이유 한 줄(nade_pouch)
+perk.phoenix.name,불사조,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(phoenix)
+perk.phoenix.text,혼자일 때 죽을 만큼 다치면 체력 {0}%로 다시 일어선다. {Cards.phoenixGuard}초 동안 아무것도 들어오지 않고 불길이 둘레 {Cards.phoenixRadius}m의 좀비를 쓰러뜨린다. 웨이브마다(캠페인은 휴게소마다) 한 번,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(phoenix)
+perk.phoenix.why,일으켜 줄 동료가 없는 자는 제 잿더미를 딛고 스스로 일어선다,,능력 카드 아래 작은 이유 한 줄(phoenix)
+perk.phoenix.risen,불사조! 잿더미에서 다시 일어섰다,,불사조 카드: 혼자일 때 죽지 않고 다시 일어섰을 때 화면 위 알림(자기)
 perk.hound_heriot.name,사망세,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_heriot)
 perk.tag.money,돈,,능력 카드 위 꼬리표: 돈 카드
 perk.hound_heriot.text,처치할 때 받는 돈 +{0}%. 점수 팝업에 '사망세' 줄,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_heriot)
@@ -284,6 +298,18 @@ perk.point_kata.why,춤이 길어질수록 손이 먼저 안다,,능력 카드 �
 perk.point_tempo.name,빠른 템포,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_tempo · point)
 perk.point_tempo.text,건 카타를 다시 쓰기까지 -{0}초,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_tempo)
 perk.point_tempo.why,쉼표가 짧아질수록 춤은 빨라진다,,능력 카드 아래 작은 이유 한 줄(point_tempo)
+perk.point_slide.name,곡예 사격,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_slide · point)
+perk.point_slide.text,미끄러지거나 뛰어오르거나 떨어지는 동안 움직여서 벌어지는 탄 퍼짐 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_slide)
+perk.point_slide.why,몸이 바닥을 미끄러지고 허공을 날아도 두 팔은 흔들리지 않는다,,능력 카드 아래 작은 이유 한 줄(point_slide)
+perk.point_door.name,문전박대,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_door · point)
+perk.point_door.text,"샷건으로 {0}m 안의 좀비를 맞히면 넘어뜨린다(엘리트는 {Point.doorStagger}초 휘청, 브루저는 그대로)",,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_door)
+perk.point_door.why,반동을 몸으로 실어 문을 걷어차듯 밀어낸다,,능력 카드 아래 작은 이유 한 줄(point_door)
+perk.point_brass.name,탄피 회수,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_brass · point)
+perk.point_brass.text,헤드샷으로 처치하면 든 총 탄창에 {0}발이 돌아온다({Point.brassBodyFrom}단계부터는 몸샷 처치도),,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_brass)
+perk.point_brass.why,쏜 만큼 손이 다시 채운다,,능력 카드 아래 작은 이유 한 줄(point_brass)
+perk.point_ballet.name,탄막 춤,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(point_ballet · point)
+perk.point_ballet.text,"건 카타 동안 처치마다 카타 +{0}초(한 번에 최대 +{Point.balletMost}초), 카타 중엔 달리며 쏴도 탄이 조금도 퍼지지 않는다",,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(point_ballet)
+perk.point_ballet.why,흐름을 타면 춤이 끝나지 않는다,,능력 카드 아래 작은 이유 한 줄(point_ballet)
 perk.detente_dose.name,진한 주사액,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(detente_dose · detente)
 perk.detente_dose.text,주사 한 번이 채우는 체력 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(detente_dose)
 perk.detente_dose.why,약을 진하게 타서 한 번에 더 많이 낫게 한다,,능력 카드 아래 작은 이유 한 줄(detente_dose)
@@ -314,6 +340,15 @@ perk.hound_return.why,사냥이 이어질수록 발이 가벼워진다,,능력 �
 perk.hound_ace.name,에이스,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_ace · schiesshund)
 perk.hound_ace.text,결투 중에는 결투 상대 말고는 아무도 나를 다치게 못 하고 동료도 결투 상대를 마무리할 수 있다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_ace)
 perk.hound_ace.why,결투를 건 사냥개의 살기에 다른 놈들은 감히 끼어들지 못한다. 동료의 총은 사냥개가 허락한 몫이다,,능력 카드 아래 작은 이유 한 줄(hound_ace)
+perk.hound_trail.name,피 냄새,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_trail · schiesshund)
+perk.hound_trail.text,표식 대상을 처치하면 {Schiesshund.trailReach}m 안에서 급이 같거나 높은 가장 가까운 적에게 표식이 저절로 옮겨 간다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_trail)
+perk.hound_trail.why,사냥개는 피 냄새를 따라 다음 사냥감으로 간다,,능력 카드 아래 작은 이유 한 줄(hound_trail)
+perk.hound_doa.name,데드 오어 얼라이브,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_doa · schiesshund)
+perk.hound_doa.text,결투 상대를 내가 처치하면 남은 결투 대기 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_doa)
+perk.hound_doa.why,현상금을 거두면 다음 수배서가 바로 붙는다,,능력 카드 아래 작은 이유 한 줄(hound_doa)
+perk.hound_draw.name,빠른 뽑기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(hound_draw · schiesshund)
+perk.hound_draw.text,데스페라도(4번 칸)를 꺼내는 시간 -{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(hound_draw)
+perk.hound_draw.why,정오의 총잡이는 총집에서 손이 먼저 나온다,,능력 카드 아래 작은 이유 한 줄(hound_draw)
 perk.support_bag.name,큰 보급 가방,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_bag · support)
 perk.support_bag.text,보급 가방 용량 +{0},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_bag)
 perk.support_bag.why,가방 끈을 덧대 더 많이 담는다,,능력 카드 아래 작은 이유 한 줄(support_bag)
@@ -332,6 +367,12 @@ perk.support_crate.why,가방이 따라오지 못하는 동료를 위해 한 짐
 perk.support_light.name,탐조등,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_light · support)
 perk.support_light.text,휠을 누른 채 F로 탐조등을 고를 수 있다: 둘레 {Support.lightRadius}m 안에는 좀비가 새로 나오지 않는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_light)
 perk.support_light.why,빛이 닿는 곳에는 놈들이 기어 나오지 못한다,,능력 카드 아래 작은 이유 한 줄(support_light)
+perk.support_throw.name,보급 꾸러미 던지기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_throw · support)
+perk.support_throw.text,휠을 누른 채 동료를 바라보고 F로 {Support.throwReach}m 안의 동료에게 보급 꾸러미를 던진다(가방 {Support.throwCost}). 닿으면 손으로 건넨 보급처럼 채워진다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_throw)
+perk.support_throw.why,끈으로 단단히 묶은 꾸러미라 던져도 쏟아지지 않는다,,능력 카드 아래 작은 이유 한 줄(support_throw)
+perk.support_fortify.name,요새화,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(support_fortify · support)
+perk.support_fortify.text,바리케이드·철조망·탐조등 체력 +{0}%,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(support_fortify)
+perk.support_fortify.why,버팀목을 덧대고 이음매마다 철띠를 둘렀다,,능력 카드 아래 작은 이유 한 줄(support_fortify)
 #--- 킬 피드 도장 (KillFlairs.csv) ---,,,
 feed.flair.bounty,계약 완료,,킬 피드 줄의 도장 글자: 시순트가 자기 현상금 표적을 처치 (bounty)
 feed.flair.duel,결투 승리,,킬 피드 줄의 도장 글자: 시순트가 결투 상대를 처치 (duel)
@@ -525,10 +566,10 @@ moment.ult.point.title,GUNSLINGER,,궁극기를 쓰면 왼쪽 아래 알림 띠�
 moment.ult.point.what,두 총 가득 · 건슬링어,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.point.what)
 moment.ult.detente.title,SECOND LIFE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.detente.title)
 moment.ult.detente.what,주사기 가득 · 부활 +1,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.detente.what)
-moment.ult.schiesshund.title,FULL HOUSE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.schiesshund.title)
-moment.ult.schiesshund.what,데스페라도 실린더 가득,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.schiesshund.what)
+moment.ult.schiesshund.title,SHOWDOWN,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.schiesshund.title)
+moment.ult.schiesshund.what,결투장으로 납치,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.schiesshund.what)
 moment.ult.support.title,RESTOCK,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름 (MomentFx.csv Ult.support.title)
-moment.ult.support.what,보급 가방 가득,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.support.what)
+moment.ult.support.what,팀 전원 실드·탄약·투척물 가득,,궁극기 알림 띠의 작은 글자(누가 · 이것) (MomentFx.csv Ult.support.what)
 moment.tag.charge.word,CHARGE,,내 화면 클래스 칸 위 작은 이름표의 큰 글자 (MomentFx.csv Tag.charge.word)
 moment.tag.charge.under,돌격 · {0:0.0}s · 둘레 {1:0}m,,"내 화면 클래스 칸 위 작은 이름표의 아래 줄. {0} 초, {1} 반지름(ClassAbilities Assault.chargeSeconds·chargeRadius) (MomentFx.csv Tag.charge.under)"
 moment.tag.duel.word,DUEL,,내 화면 클래스 칸 위 작은 이름표의 큰 글자 (MomentFx.csv Tag.duel.word)
@@ -970,6 +1011,13 @@ class.point.kata.self,건 카타! 바꿔 든 총은 꽉 찬 채로 나온다,,�
 class.schiesshund.duel.self,결투! 그 적은 나만 노리고 동료는 그 적을 마무리하지 못한다,,시순트가 결투를 걸었을 때 화면 위 알림(자기)
 class.schiesshund.duel.ace,결투! 에이스: 그 적 말고는 아무도 나를 다치게 못 한다,,시순트가 에이스 카드를 들고 결투를 걸었을 때 화면 위 알림(자기)
 class.schiesshund.duel.saved,{0}의 결투가 막아 줬다,,결투 상대가 하던 공격이 나에게 닿았지만 결투 때문에 들어가지 않았을 때 화면 위 알림(결투마다 한 번). {0}=시순트 이름
+class.schiesshund.arena.none,결투장에는 조준한 좀비만 끌고 갈 수 있다,,시순트 궁극기(X)를 눌렀는데 조준선에 좀비가 없을 때 화면 위 알림. 게이지는 그대로
+class.schiesshund.arena.busy,지금은 결투장으로 갈 수 없다,,시순트 궁극기(X): 조준한 좀비가 누군가를 붙잡고 있거나 플레이어에게 처형당하는 중일 때 또는 내가 붙잡혔거나 사다리·턱·처형 중일 때 화면 위 알림. 게이지는 그대로
+class.schiesshund.arena.self,결투장! {0}초 안에 쓰러뜨려라,,시순트가 궁극기로 결투장에 들어갔을 때 화면 위 알림(자기). {0}=초(Schiesshund.arenaSeconds)
+class.schiesshund.arena.back,환호 속에 돌아왔다: 총 피해 +{0}% {1}초 · 데스페라도 가득,,결투장에서 돌아왔을 때 화면 위 알림(자기). {0}=피해 % {1}=초(Schiesshund.arenaBuffDamage·arenaBuffSeconds)
+class.hud.cheer,환호 · 총 +{0}%,,클래스 HUD > 시순트가 결투장에서 돌아온 뒤 강화가 남은 동안 아래 막대 글자(금빛). {0}=피해 %
+moment.tag.showdown.word,SHOWDOWN,,내 화면 클래스 칸 위 작은 이름표의 큰 글자: 시순트 궁극기 결투장
+moment.tag.showdown.under,결투장 · {0:0}s · 1 : 1,,내 화면 클래스 칸 위 작은 이름표의 아래 줄: 시순트 궁극기 결투장. {0}=초(Schiesshund.arenaSeconds)
 class.hud.tiger,화이트 타이거,,클래스 HUD > 고스트 화이트 타이거 카드가 헤드 헌터를 지켜 주는 동안 아래 막대 글자
 class.hud.gunslinger,건슬링어,,클래스 HUD > 포인트 건슬링어 카드: 총을 바꿔 든 뒤 세지는 동안 아래 막대 글자
 class.hud.shadow,그림자 분신,,클래스 HUD > 나이트 그림자 분신이 나와 있는 동안 아래 막대 글자
@@ -999,7 +1047,7 @@ class.ghost.ability,헤드 헌터: 헤드샷마다 1스택(최대 {Ghost.hunterM
 class.point.ability,"들고 있지 않은 1·2번 총이 그 총 장전 시간의 {Point.reloadShare}배가 지나면 저절로 장전된다. SMG와 샷건을 번갈아 쏘면 화력이 끊기지 않는다.\n[{key}] 건 카타: {Point.kataSeconds}초 동안 총 바꾸기가 즉시이고, 바꿔 든 총은 예비탄을 쓰지 않고 꽉 찬 채로 나오며, 달리면서 쏴도 퍼지지 않는다(대기 {Point.kataCooldown}초). 혼자서도 위험을 뚫고 다녀올 수 있다.",,"클래스 화면 > 포인트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 class.detente.ability,"주사기(용량 {Detente.syringeMax}): [{key}]로 조준한 동료에게 꽂거나 아무도 없으면 자기에게 놓아 체력 {Detente.injectHeal}을 바로 채운다(한 번에 {Detente.injectCost}). 상점에서 보충하고 서포트가 조금 채워 준다.\n주사기가 비면 자기는 치료할 수 없고, 다친 동료 곁에서 F로 치료를 권한다. 동료가 F로 받으면(치료를 요청한 동료는 바로) {Detente.treatSeconds}초 동안 붕대를 감으며 도중에 체력 {Detente.treatHeal}을 채우고, 끝나면 나머지 체력이 서서히 찬다. 감는 동안 데탕트는 쏘거나 시선을 돌릴 수 없다.\n골든 아워: 치료하면 {Detente.goldenSeconds}초 동안 이동 +{Detente.goldenSpeed}%(치료할 때마다 갱신).\n리저렉션: 웨이브마다(캠페인은 쉬는 곳마다) 한 번 죽은 동료 곁에서 F를 {Detente.resurrectSeconds}초 눌러 체력 {Detente.resurrectHealth}%로 되살린다.",,"클래스 화면 > 데탕트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 class.schiesshund.ability,"[{key}] 결투: 조준한 적과 1대1. 그 적은 나만 노리고 다른 사람을 다치게 하지 못하며(하던 공격은 끝까지 하지만 들어가지 않는다), 내 피해가 더 크고 현상금 표식도 붙는다. 동료는 도울 수 있지만 마무리는 못 한다(체력 1에서 멈춤).\n[F] 현상금 표식: 적을 찍으면 청록 테두리가 {Schiesshund.markSeconds}초 동안 팀 모두에게 보이고 내 총알이 그 적에게 +{Schiesshund.markDamage}%. 지금 쫓는 표식보다 급이 낮은 적(엘리트를 쫓는 중의 일반 좀비)을 찍으면 표식은 그대로 두고 일반 핑만 찍힌다.\n표식 대상을 처치하면 현상금 +{Schiesshund.bountyMoney}(엘리트 +{Schiesshund.bountyElite})과 리턴 백(스택마다 이동·피해 +{Schiesshund.returnDamage}% {Schiesshund.returnSeconds}초).\n현상금 {Schiesshund.roundPoints}점(엘리트 {Schiesshund.elitePoints}점)마다 4번 칸 데스페라도(R08)에 탄 한 발(재장전·탄약 줍기로는 안 찬다). 데스페라도 탄은 피해 +{Schiesshund.desperadoDamage}%이고 표식 대상의 머리에 맞으면 엘리트도 거구도 한 방.",,"클래스 화면 > 시순트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
-class.support.ability,"보급 가방(용량 {Support.supplyMax} · 초당 {Support.supplyRegen}씩 찬다).\n[F] 보급: 조준한 동료({Support.resupplyReach}m 안)에게 {Support.resupplyCost}을 써서 총마다 탄창 {Support.resupplyMagazines}개 · 처음 예비탄보다 {Support.resupplyOverfill}% 더까지(풀리 로디드) · 데탕트 주사기도 채운다.\n[{key}] 바리케이드: 꾹 누르면 세울 자리에 푸른 바리케이드가 미리 보이고(못 세우는 곳은 빨강) 놓으면 {Support.barricadeCost}을 써서 그 자리에 허리 높이 판자 벽을 세운다(체력 {Support.barricadeHealth} · 최대 {Support.barricadeMax}개). 아군은 넘어 쏘고 좀비는 못 지나가며 부수려 든다.\n[F 꾹] 수리: 바리케이드를 바라보고 F를 누르고 있으면 손에 망치를 꺼내 초당 {Support.repairRate}씩 고친다(누구의 것이든 · 가방은 쓰지 않는다). 바라보기만 해도 화면 아래에 체력이 뜬다. 카드 '용접 토치'를 받으면 토치로 더 빨리 고친다.\n카드를 받으면 휠을 누른 채 F로 다른 것도 세운다: 철조망(지나가는 좀비가 느려지고 다친다), 탄약 상자(누구든 F로 꺼내 가는 보급), 탐조등(둘레에 좀비가 새로 나오지 않는 안전 구역).",,"클래스 화면 > 서포트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
+class.support.ability,"보급 가방(용량 {Support.supplyMax} · 초당 {Support.supplyRegen}씩 찬다).\n[F] 보급: 조준한 동료({Support.resupplyReach}m 안)에게 {Support.resupplyCost}을 써서 총마다 탄창 {Support.resupplyMagazines}개 · 처음 예비탄보다 {Support.resupplyOverfill}% 더까지(풀리 로디드) · 데탕트 주사기도 채운다.\n[{key}] 바리케이드: 꾹 누르면 세울 자리에 푸른 바리케이드가 미리 보이고(못 세우는 곳은 빨강) 놓으면 {Support.barricadeCost}을 써서 그 자리에 허리 높이 판자 벽을 세운다(체력 {Support.barricadeHealth} · 최대 {Support.barricadeMax}개). 아군은 넘어 쏘고 좀비는 못 지나가며 부수려 든다.\n[F 꾹] 수리: 바리케이드를 바라보고 F를 누르고 있으면 손에 망치를 꺼내 초당 {Support.repairRate}씩 고친다(누구의 것이든 · 가방은 쓰지 않는다). 바라보기만 해도 화면 아래에 체력이 뜬다. 카드 '용접 토치'를 받으면 토치로 더 빨리 고친다.\n카드를 받으면 휠을 누른 채 F로 다른 것도 세운다: 철조망(지나가는 좀비가 느려지고 다친다), 탄약 상자(누구든 F로 꺼내 가는 보급), 탐조등(둘레에 좀비가 새로 나오지 않는 안전 구역).\n카드 '보급 꾸러미 던지기'를 받으면 휠을 누른 채 동료를 바라보고 F로 {Support.throwReach}m 안의 동료에게 꾸러미를 던져 보급한다.",,"클래스 화면 > 서포트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 hud.chapter_end.word,탈출,,장 끝 연출: 분홍 띠 위 큰 글자
 hud.alert.brute,거구 — 제 무게에 무릎이 약하다. 다리를 쏴 쓰러뜨리고 머리를 쏴라,Brute: its knees buckle under its own weight. Shoot a leg to drop it and then the head,거구(보스)가 나타날 때 화면 위 경고 띠. 어떻게 이기는지(이유와 함께) 한 줄
 hud.alert.brute.down,거구가 쓰러졌다 — 몸을 끌며 피가 머리로 몰렸다. 머리를 쏴라,The brute is down: dragging itself pumps blood into its head. Shoot the head,거구의 다리가 부러져 쓰러질 때 화면 위 경고 띠(거구에 표시가 남는다). 기는 동안 머리가 약점인 이유
@@ -1410,12 +1458,15 @@ class.hud.build.light,탐조등,,클래스 HUD: 서포트가 세울 것 이름
 class.hud.build.switch,[F] 바꾸기,,클래스 HUD: 서포트가 휠을 누르고 있을 때 F로 세울 것을 바꾼다
 class.hud.place.kind,{0} 놓으면 설치 ({1}),,클래스 HUD: 휠을 누르고 있을 때 세울 수 있으면. {0}=세울 것 {1}=가방에서 나가는 양
 class.hud.place.kind.no,{0} 설치 불가 ({1}),,클래스 HUD: 휠을 누르고 있을 때 그 자리에 못 세우면. {0}=세울 것 {1}=가방에서 나가는 양
+class.hud.throw,[F] 던지기 · {0} ({1}),,클래스 HUD: 서포트가 휠을 누른 채 던질 수 있는 동료를 바라볼 때(카드 '보급 꾸러미 던지기'. 이때 F는 바꾸기 대신 던지기). {0}=동료 이름 {1}=가방에서 나가는 양
 class.crate.prompt,[F] 탄약 상자 · 남은 {0},,누구든 서포트의 탄약 상자를 바라볼 때 화면 아래 줄. {0}=남은 횟수
 class.crate.wait,탄약 상자 · {0}초 뒤,,방금 꺼낸 탄약 상자를 다시 바라볼 때 화면 아래 줄. {0}=남은 초
 class.support.low,보급 가방이 모자라다,,서포트가 보급이나 바리케이드에 쓸 양이 모자랄 때 알림
 class.support.nowhere,바리케이드를 세울 자리가 없다,,서포트가 바리케이드를 세우려는데 앞 바닥이 없거나 무언가 막고 있을 때 알림
 class.support.gave,{0}에게 보급,,서포트가 동료에게 보급했을 때 알림. {0}=동료 이름
 class.support.got,{0}의 보급 · 예비탄 보충,,서포트에게 보급받았을 때 알림. {0}=서포트 이름
+class.support.threw,{0}에게 보급 꾸러미,,서포트가 동료에게 보급 꾸러미를 던졌을 때 알림(카드 '보급 꾸러미 던지기'). {0}=동료 이름
+class.support.ult.got,{0}의 궁극기 · 실드·탄약·투척물 가득,,서포트의 궁극기가 닿았을 때 그 동료 화면의 알림. {0}=서포트 이름
 class.hud.place,놓으면 설치,,클래스 HUD > 서포트가 클래스 기술 키를 누르고 있을 때(바리케이드 미리 보기) 그 자리에 세울 수 있으면 키 옆 글자
 class.hud.place.no,설치 불가,,클래스 HUD > 서포트 바리케이드 미리 보기가 빨간색일 때 키 옆 빨간 글자. 보급 칸 옆에는 까닭(class.support.fit.*)
 class.hud.place.cancel,[우클릭] 취소,,클래스 HUD > 서포트 바리케이드 미리 보기가 푸른색일 때 보급 칸 옆. 이 키를 누르면 미리 보기를 그만두고 키를 놓아도 안 세운다
@@ -1423,7 +1474,6 @@ class.support.fit.ground,바닥이 없다,,서포트 바리케이드를 못 세�
 class.support.fit.steep,바닥이 너무 기울었다,,서포트 바리케이드를 못 세우는 까닭: 바닥이 ClassAbilities의 Support.barricadeSlope보다 가파르다
 class.support.fit.wall,벽 너머에는 못 세운다,,서포트 바리케이드를 못 세우는 까닭: 눈에서 그 자리까지 벽이 막고 있다
 class.support.fit.blocked,자리가 막혀 있다,,서포트 바리케이드를 못 세우는 까닭: 그 자리에 벽·물건·좀비·사람·다른 바리케이드가 있다
-class.support.fit.far,너무 멀다,,서포트 바리케이드를 못 세우는 까닭: 방장 PC가 볼 때 그 자리가 서포트에게서 너무 멀다 (방에서만)
 shop.detail.syringe,데탕트 주사기 +{0},,상점 > 주사기 보충 카드 설명. {0}=보충량
 shop.refuse.notdetente,데탕트만 쓸 수 있다,,상점 > 데탕트가 아닌데 주사기 보충을 살 때
 shop.refuse.syringefull,주사기가 가득 찼다,,상점 > 주사기가 가득인데 보충을 살 때

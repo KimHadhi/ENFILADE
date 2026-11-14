@@ -81,7 +81,8 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     /// <summary>What this player carries (their class's), and how many are left.</summary>
     public Throwable Kind => kind;
     public int Count => count;
-    public int Carry => Info != null ? Info.Carry : 0;
+    // The grenade pouch card adds to this PC's own player's (PlayerPerks.ExtraThrowables); the cards are theirs alone.
+    public int Carry => Info != null ? Info.Carry + (movement != null && movement.IsLocal ? PlayerPerks.ExtraThrowables : 0) : 0;
     private ThrowableInfo Info => Throwables.Of(kind);
     // The hand motion of what the off hand has now (Tables/ThrowArms: the grenade's, or the knife's).
     private GrenadeArmPath.Motion Motion => GrenadeArmPath.For(armKind);

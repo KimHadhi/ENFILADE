@@ -88,6 +88,12 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
             HitResolved?.Invoke(hit, DamageResult.Parried);
             return DamageResult.Parried;
         }
+        // Just risen as a phoenix (PhoenixRise, a lone player's card): nothing lands on them for its moment.
+        if (PhoenixRise.Guards(movement))
+        {
+            HitResolved?.Invoke(hit, DamageResult.Invulnerable);
+            return DamageResult.Invulnerable;
+        }
         if (movement != null && movement.Execution != null && movement.Execution.IsExecuting)
         {
             HitResolved?.Invoke(hit, DamageResult.Invulnerable);
@@ -133,7 +139,12 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         if (shieldBroke) { ShieldBreaks++; ShieldBroken?.Invoke(hit); }
         // Flesh only when health was reached; the shield's own sound is ShieldFeedback's.
         if ((movement == null || movement.IsLocal) && LastHealthTaken > 0f) CombatHitAudio.PlayPlayerHit(hit);
-        if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown())) Die();
+        if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown()))
+        {
+            // Alone with nobody to get them up, a held phoenix card lifts them instead, once a wave or a rest stop.
+            if (PhoenixRise.TryRise(movement, out float risen)) Health = Mathf.Clamp(risen, 1f, MaximumHealth);
+            else Die();
+        }
         return DamageResult.Damaged;
     }
 

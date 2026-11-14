@@ -5,9 +5,11 @@ using UnityEngine;
 public sealed partial class SupportKit
 {
     // The class key, the key window's Player/ClassAbility: held, the preview; let go (or tapped), the barricade there. The
-    // guard key calls it off, and so does anything that takes the hands (a menu, a hold, going down, a counter, death).
+    // guard key calls it off, and so does anything that takes the hands (a menu, a hold, going down, a counter, death),
+    // and so does a supply pack thrown meanwhile (the throw card: F on a friend while it is held).
     private void Plan()
     {
+        Tossable = null;
         var key = KeyBindings.Find("Player/ClassAbility");
         bool able = key != null && movement.InputAvailable && !movement.IsDead && !movement.IsDowned && !movement.IsHeld
             && !movement.CombatInputLocked;
@@ -19,16 +21,31 @@ public sealed partial class SupportKit
         if (KeyBindings.Pressed(key)) planning = true;
         if (!Holds(planKind)) planKind = Barricade.Kind.Planks;
         if (!planning) return;
-        // F goes on to the next kind this Support holds.
+        // F throws a supply pack to the friend under the crosshair (the throw card), else goes on to the next kind this
+        // Support holds.
+        AimToss();
         if (interact != null && interact.WasPressedThisFrame())
         {
-            var next = planKind;
-            for (int i = 0; i < 4; i++)
+            if (Tossable != null)
             {
-                next = (Barricade.Kind)(((int)next + 1) % 4);
-                if (Holds(next)) break;
+                // Thrown, the key's hold was for the throw: letting go puts nothing up.
+                if (Toss())
+                {
+                    planning = false;
+                    Tossable = null;
+                    return;
+                }
             }
-            if (next != planKind) { planKind = next; KitSound.Play(KitSound.Cue.Ping, .4f); }
+            else
+            {
+                var next = planKind;
+                for (int i = 0; i < 4; i++)
+                {
+                    next = (Barricade.Kind)(((int)next + 1) % 4);
+                    if (Holds(next)) break;
+                }
+                if (next != planKind) { planKind = next; KitSound.Play(KitSound.Cue.Ping, .4f); }
+            }
         }
         // The guard key (right click unless the key window says otherwise): off, and letting go then puts nothing up.
         if (KeyBindings.Pressed("Combat/Guard"))
@@ -43,16 +60,13 @@ public sealed partial class SupportKit
         Build(planFit, planAt, planYaw);
     }
 
-    // Let go: a barricade where the preview stood, by the very rule it was drawn by.
+    // Let go: a barricade where the preview stood, by the very rule it was drawn by, up at once on this PC whoever plays
+    // it, the host, a guest or someone alone (the user, 2026-11-14, memory actor-decides: "본인이 계산하고 결과만 넘기는
+    // 방식으로"; a guest used to ask the host, wait for its word and sometimes be turned down for a spot its own screen had
+    // shown blue). Its oldest of the kind come down past the most this Support's own count allows, and the others are
+    // told both (PlayerNetworkCombat) with the health it went up with, so the host puts it up as told and never judges it.
     private void Build(Barricade.Fit fit, Vector3 at, float yaw)
     {
-        // A client still waiting for the host's word on the last one asks for none other meanwhile.
-        if (pendingId != 0 && Time.time - pendingAt < AnswerWait)
-        {
-            KitSound.Play(KitSound.Cue.Refuse, .35f);
-            return;
-        }
-        pendingId = 0;
         if (fit != Barricade.Fit.Ok)
         {
             Refuse(fit, at, yaw);
@@ -61,65 +75,28 @@ public sealed partial class SupportKit
         supply -= BuildCost;
         lastBuild = Time.time;
         ushort id = NextId(planKind);
-        if (Barricade.Authority)
-        {
-            Raise(id, at, yaw);
-            return;
-        }
-        // A client asks the host, whose world is the true one (its zombies stand where they really are). The bag pays now
-        // and gets it back if the host says no; the preview stays where it was let go until the host's word comes.
-        if (!movement.TryGetComponent(out PlayerNetworkCombat network) || !network.IsSpawned)
-        {
-            supply += BuildCost;
-            Refuse(Barricade.Fit.Blocked, at, yaw);
-            return;
-        }
-        pendingId = id;
-        pendingAt = Time.time;
-        pendingCost = BuildCost;
-        heldSpot = at;
-        heldYaw = yaw;
-        network.AskBarricade(id, at, yaw, MostStanding);
-    }
-
-    // The host's or a lone PC's own: up at once, its oldest down past its most, and the others told.
-    private void Raise(ushort id, Vector3 at, float yaw)
-    {
+        float health = MostHealthOf(planKind);
         taken.Clear();
-        Barricade.Raise(id, at, yaw, movement, MostStanding, taken);
+        Barricade.Raise(id, at, yaw, movement, MostStanding, taken, health);
         foreach (ushort old in taken) TookDown?.Invoke(old);
         KitSound.Play(KitSound.Cue.Hammer, .9f);
-        Built?.Invoke(id, at, yaw);
+        Raised?.Invoke(id, at, yaw, health);
     }
 
     /// <summary>
-    /// The host put this PC's Support's barricade <paramref name="id"/> up (PlayerNetworkCombat, on this PC): the one it
-    /// asked for stands, with its hammer. One asked for before a class pick comes down again at once.
+    /// The health a structure of <paramref name="kind"/> goes up with, as this Support's PC reckons it and sends it with
+    /// the build: the table's (Barricade.BaseHealth), and with the fortify card (요새화) its share more. An ammo crate's
+    /// health is its stock of takes rather than how much it stands, so the card leaves it alone.
     /// </summary>
-    internal void Placed(ushort id)
+    public float MostHealthOf(Barricade.Kind kind)
     {
-        if (id != 0 && id == dropped)
-        {
-            dropped = 0;
-            Barricade.Collapse(id);
-            TookDown?.Invoke(id);
-            return;
-        }
-        if (id != pendingId) return;
-        pendingId = 0;
-        KitSound.Play(KitSound.Cue.Hammer, .9f);
+        float health = Barricade.BaseHealth(kind);
+        if (kind != Barricade.Kind.Crate) health *= 1f + Mathf.Max(0f, PlayerPerks.Total(PlayerPerks.SupportFortify)) / 100f;
+        return Mathf.Max(1f, Mathf.Round(health));
     }
 
-    /// <summary>The host turned barricade <paramref name="id"/> down (its world had no room there): the bag gets its share back, and why is said.</summary>
-    internal void Refused(ushort id, Barricade.Fit fit)
-    {
-        if (id == 0 || id != pendingId) return;
-        pendingId = 0;
-        supply = Mathf.Min(SupplyMax, Supply + pendingCost);
-        Refuse(fit, heldSpot, heldYaw);
-    }
-
-    // Not there: the refusal's sound, why on the screen, and the preview red a moment where it was let go.
+    // Not there (this PC's own rule said no): the refusal's sound, why on the screen, and the preview red a moment where it
+    // was let go.
     private void Refuse(Barricade.Fit fit, Vector3 at, float yaw)
     {
         KitSound.Play(KitSound.Cue.Refuse, .5f);
@@ -138,7 +115,6 @@ public sealed partial class SupportKit
             case Barricade.Fit.Steep: return Texts.Get("class.support.fit.steep");
             case Barricade.Fit.Walled: return Texts.Get("class.support.fit.wall");
             case Barricade.Fit.Blocked: return Texts.Get("class.support.fit.blocked");
-            case Barricade.Fit.Far: return Texts.Get("class.support.fit.far");
             case Barricade.Fit.Short: return Texts.Get("class.support.low");
             default: return Texts.Get("class.support.nowhere");
         }
@@ -154,10 +130,10 @@ public sealed partial class SupportKit
     }
 
     /// <summary>
-    /// The placement rule on the builder's PC, the preview's and the build's alike: it stands where the view comes down to
-    /// the ground between the nearest and the farthest reach ahead (looking level or up, the farthest; at a wall, just
-    /// before it; at a step, ramp or ledge, on it), across the look. There must be ground there, level enough, with
-    /// nothing in its way (Barricade.Room, which the host checks again), no wall between the eyes and it, and a
+    /// The placement rule on the builder's PC, the preview's and the build's alike, and the only one (no other PC checks it
+    /// again): it stands where the view comes down to the ground between the nearest and the farthest reach ahead (looking
+    /// level or up, the farthest; at a wall, just before it; at a step, ramp or ledge, on it), across the look. There must
+    /// be ground there, level enough, with nothing in its way (Barricade.Room), no wall between the eyes and it, and a
     /// barricade's worth in the bag.
     /// </summary>
     private Barricade.Fit Spot(out Vector3 at, out float yaw)
@@ -202,7 +178,7 @@ public sealed partial class SupportKit
     }
 
     // The preview while the key is held: blue where it may go up, red where not, and amber over the oldest it would take
-    // down. Let go, it stays where it was let go while a client waits for the host's word, and red a moment if turned down.
+    // down. Let go where it can't go up, it stays red a moment there.
     private void Preview()
     {
         float alpha = Mathf.Clamp01(Number("previewAlpha", .34f));
@@ -216,8 +192,7 @@ public sealed partial class SupportKit
             return;
         }
         if (doomed != null) doomed.Hide();
-        if (pendingId != 0 && Time.time - pendingAt < AnswerWait) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Fits, alpha * 1.4f, Barricade.KindOf(pendingId));
-        else if (Time.time - refusedAt < RefusedShow) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Refused, alpha, planKind);
+        if (Time.time - refusedAt < RefusedShow) Ghost().Show(heldSpot, heldYaw, BarricadeGhost.Look.Refused, alpha, planKind);
         else if (ghost != null) ghost.Hide();
     }
 
@@ -231,12 +206,14 @@ public sealed partial class SupportKit
         if (doomed != null) doomed.Hide();
     }
 
-    // The friend under the crosshair within reach, standing (the Détente's way of choosing).
-    private PlayerMovement Aimed()
+    // The friend under the crosshair within reach, standing (the Détente's way of choosing): within the hand resupply's
+    // reach and angle, or a thrown pack's (Toss).
+    private PlayerMovement Aimed() => Aimed(Number("resupplyReach", 3.5f), Number("resupplyAngle", 14f));
+
+    private PlayerMovement Aimed(float reach, float best)
     {
         var eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return null;
-        float reach = Number("resupplyReach", 3.5f), best = Number("resupplyAngle", 14f);
         PlayerMovement found = null;
         foreach (var other in PlayerRoster.All)
         {

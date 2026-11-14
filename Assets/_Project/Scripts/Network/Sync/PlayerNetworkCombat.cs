@@ -135,14 +135,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     public void TakeCrate(ushort id) { if (IsSpawned) TakeCrateRpc(id); }
     /// <summary>On a client: this PC's Support's hammer mended barricade id by this much; the host's is the true one (SupportKit).</summary>
     public void SendBarricadeMend(ushort id, float amount) { if (IsSpawned) BarricadeMendRpc(id, amount); }
-    /// <summary>
-    /// On a client: this PC's Support asks for barricade id here, facing this way, with the most of theirs that may stand
-    /// (SupportKit). The host checks the spot against its own world and puts it up for everyone, or says why not.
-    /// </summary>
-    public void AskBarricade(ushort id, Vector3 at, float yaw, int most)
-    {
-        if (IsSpawned) BuildBarricadeRpc(id, at, yaw, (byte)Mathf.Clamp(most, 1, 255));
-    }
     /// <summary>A Détente's Resurrection for this copy's dead player, back with this share of their health.</summary>
     public void Resurrect(float share) { if (!IsSpawned) return; PlayerTally.Raised(); ResurrectRpc(share); }
     /// <summary>Whether this player is getting that client up right now, and how far along (0-1).</summary>
@@ -257,7 +249,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             ping.Pinged += OnPinged;
             callouts.Called += OnCalled;
             face.Shared += OnFaceShared;
-            support.Built += OnBuilt;
+            support.Raised += OnRaised;
             support.TookDown += OnTookDown;
             support.ToolHeld += OnToolHeld;
             weapon.ShotFired += OnShot;
@@ -320,7 +312,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
         if (face != null) face.Shared -= OnFaceShared;
-        if (support != null) { support.Built -= OnBuilt; support.TookDown -= OnTookDown; support.ToolHeld -= OnToolHeld; }
+        if (support != null) { support.Raised -= OnRaised; support.TookDown -= OnTookDown; support.ToolHeld -= OnToolHeld; }
         if (receiver != null) receiver.HitResolved -= OnHit;
         stance.OnValueChanged -= OnStanceChanged;
         gunSkins.OnValueChanged -= OnGunSkins;
@@ -418,6 +410,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnCharged(Vector3 at) => ChargeRpc(at);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
     private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);
-    private void OnBuilt(ushort id, Vector3 at, float yaw) => BarricadeRpc(id, at, yaw);
+    private void OnRaised(ushort id, Vector3 at, float yaw, float health) => BarricadeRaisedRpc(id, at, yaw, health);
     private void OnTookDown(ushort id) => CollapseRpc(id);
 }

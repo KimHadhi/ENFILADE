@@ -3,6 +3,11 @@ using UnityEngine;
 // ClassKit: Point: the gun put away reloads itself. One part of the class; the rest is in ClassKit.cs and the files beside it.
 public sealed partial class ClassKit
 {
+    // How much longer kills have made the Gun Kata under way (its final card, 탄막 춤), which has a limit per kata.
+    private float kataAdded;
+    // The Point's cards that watch its shots and kills (PointCards).
+    private PointCards pointCards;
+
     private void ReloadAside()
     {
         if (slots == null) return;
@@ -36,6 +41,7 @@ public sealed partial class ClassKit
     private void GunKata()
     {
         if (Time.time < kataReadyAt) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
+        kataAdded = 0f;
         kataTotal = Mathf.Max(.5f, PlayerClass.Ability(PointRow, "kataSeconds", 8f));
         kataWait = Mathf.Max(kataTotal, PlayerClass.Ability(PointRow, "kataCooldown", 35f));
         kataUntil = Time.time + kataTotal;
@@ -51,5 +57,25 @@ public sealed partial class ClassKit
         MomentHUD.Kata(kataTotal);
         // Its aura for everyone: gold rounds turning round the Point while it lasts (MomentFx.KataAura).
         CardNet.Show(CardFx.Kind.KataAura, transform.position, transform.forward, kataTotal);
+    }
+
+    /// <summary>
+    /// The Gun Kata under way goes on <paramref name="seconds"/> longer (a kill under a Point's final card, 탄막 춤:
+    /// PointCards), up to <paramref name="most"/> more in all for this kata. Its bar grows with it, and the aura turning
+    /// round the Point is held on for the new end on every PC, so friends see the dance last as long as its dancer does.
+    /// The wait for the next kata still counts from the use; it is only never over while this one runs. False when no kata
+    /// is under way or this one has had all it may.
+    /// </summary>
+    internal bool LengthenKata(float seconds, float most)
+    {
+        if (KataShare <= 0f || seconds <= 0f) return false;
+        float added = Mathf.Min(seconds, most - kataAdded);
+        if (added <= 0f) return false;
+        kataAdded += added;
+        kataUntil += added;
+        kataTotal += added;
+        kataReadyAt = Mathf.Max(kataReadyAt, kataUntil);
+        CardNet.Show(CardFx.Kind.KataAura, transform.position, transform.forward, kataUntil - Time.time);
+        return true;
     }
 }

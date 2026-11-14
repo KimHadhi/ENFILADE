@@ -81,14 +81,18 @@ public sealed class ClassHUD : MonoBehaviour
             if (barWord.text != cardWord) barWord.text = cardWord;
             return;
         }
-        // A Schießhund's duel under way comes before its Return Back.
+        // A Schießhund's duel under way comes before the crowd's strength after its showdown (HoundShowdown, in gold), and
+        // that before its Return Back.
         float taunt = kit.TauntShare, duel = kit.DuelShare, back = kit.ReturnShare, kata = kit.KataShare;
-        float share = taunt > 0f ? taunt : kata > 0f ? kata : duel > 0f ? duel : back > 0f ? back : kit.ChargeShare;
+        float cheer = PlayerClass.Is(PlayerClass.Schiesshund) ? HoundShowdown.CheerShare(movement) : 0f;
+        float share = taunt > 0f ? taunt : kata > 0f ? kata : duel > 0f ? duel : cheer > 0f ? cheer : back > 0f ? back : kit.ChargeShare;
         chargeBar.gameObject.SetActive(share > 0f);
         if (share <= 0f) return;
         chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
-        chargeFill.color = taunt <= 0f && (duel > 0f || back > 0f) ? PingMarks.BountyColor : KitStyle.Accent;
+        bool cheering = taunt <= 0f && kata <= 0f && duel <= 0f && cheer > 0f;
+        chargeFill.color = cheering ? new Color(1f, .74f, .3f) : taunt <= 0f && (duel > 0f || back > 0f) ? PingMarks.BountyColor : KitStyle.Accent;
         string word = taunt > 0f ? Texts.Get("class.hud.taunt") : kata > 0f ? Texts.Get("class.hud.kata") : duel > 0f ? Texts.Get("class.hud.duel")
+            : cheering ? Texts.Format("class.hud.cheer", Mathf.RoundToInt(HoundShowdown.CheerDamage(movement)))
             : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks) : Texts.Get("class.hud.charge");
         if (barWord.text != word) barWord.text = word;
     }
@@ -221,7 +225,8 @@ public sealed class ClassHUD : MonoBehaviour
     // 2026-11-12: "배낭이 얼마나 찼는지 보이나? 나는 바리케이드 설치 가능 횟수만 보여서": the pips alone didn't read as the
     // bag). While the
     // class key is held to place one (SupportKit's preview): "[휠] 놓으면 설치" and "[우클릭] 취소" where it may go up,
-    // "[휠] 설치 불가" in red and why where it can't.
+    // "[휠] 설치 불가" in red and why where it can't; and with the throw card, "[F] 던지기 · name" while a friend is under
+    // the crosshair in reach, F throwing them a supply pack then instead of choosing the next kind.
     private void Support()
     {
         var support = SupportKit.Local;
@@ -243,7 +248,11 @@ public sealed class ClassHUD : MonoBehaviour
             // What it puts up and for how much; F goes on to the next kind held.
             string what = Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant());
             Word(Texts.Format(fits ? "class.hud.place.kind" : "class.hud.place.kind.no", what, Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
-            side = (fits ? Texts.Get("class.hud.place.cancel") : SupportKit.Why(support.PlanFit)) + " · " + Texts.Get("class.hud.build.switch");
+            // With the throw card and a friend under the crosshair, F throws them a pack instead (SupportKit.Tossable).
+            var catcher = support.Tossable;
+            side = (fits ? Texts.Get("class.hud.place.cancel") : SupportKit.Why(support.PlanFit)) + " · "
+                + (catcher != null ? Texts.Format("class.hud.throw", PlayerTally.NameOf(catcher), Mathf.RoundToInt(support.ThrowCost))
+                    : Texts.Get("class.hud.build.switch"));
         }
         else
         {

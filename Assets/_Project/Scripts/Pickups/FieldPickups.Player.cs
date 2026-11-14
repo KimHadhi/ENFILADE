@@ -117,6 +117,9 @@ public sealed partial class FieldPickups
                 // The class throwable comes with it (Grenades.csv refill), as Horde's ammo boxes give grenades.
                 int thrown = PlayerGrenades.FromAmmoPile(player);
                 string gives = Texts.Format("pickup.gives.ammo", magazines);
+                // A scavenger's share more says so on the line, as Heriot's does on a kill's points.
+                if (PlayerPerks.Has(PlayerPerks.Scavenger))
+                    gives += "  " + Texts.Format("perk.scavenger.gives", Mathf.RoundToInt(PlayerPerks.Total(PlayerPerks.Scavenger)));
                 if (thrown > 0) gives += "  " + Texts.Format("pickup.gives.grenade", thrown);
                 Pop(row.Kind, row.Name, gives);
                 break;
@@ -156,17 +159,19 @@ public sealed partial class FieldPickups
             Leave(RowOf(before), player.transform.position + player.transform.forward * LeaveAhead);
     }
 
-    // Each gun held gets this many magazines more, up to the reserve it started with.
+    // Each gun held gets this many magazines more (a scavenger's share more: PlayerPerks.ScavengeFactor), up to the reserve
+    // it is filled to (PlayerWeaponSlots.ReserveCap, which an ammo pouch raises).
     private static void AddMagazines(PlayerWeaponSlots slots, int magazines)
     {
+        float share = PlayerPerks.ScavengeFactor;
         for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
         {
             var data = slots.GetWeapon(i);
             // A Schießhund's Desperado is loaded by bounties alone.
             if (data == null || data.Category != WeaponCategory.Ranged || slots.KeepsOwnRounds(i)) continue;
             var runtime = slots.GetRuntime(i);
-            int room = data.InitialReserveAmmo - runtime.ReserveAmmo;
-            if (room > 0) runtime.AddReserve(Mathf.Min(room, data.MagazineSize * magazines));
+            int room = slots.ReserveCap(i) - runtime.ReserveAmmo;
+            if (room > 0) runtime.AddReserve(Mathf.Min(room, Mathf.RoundToInt(data.MagazineSize * magazines * share)));
         }
     }
 
@@ -176,7 +181,7 @@ public sealed partial class FieldPickups
         {
             var data = slots.GetWeapon(i);
             if (data != null && data.Category == WeaponCategory.Ranged && !slots.KeepsOwnRounds(i)
-                && slots.GetRuntime(i).ReserveAmmo < data.InitialReserveAmmo) return true;
+                && slots.GetRuntime(i).ReserveAmmo < slots.ReserveCap(i)) return true;
         }
         return false;
     }

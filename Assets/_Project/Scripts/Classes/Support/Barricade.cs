@@ -9,11 +9,12 @@ using UnityEngine.AI;
 /// pass (NavMeshObstacle, carving). A zombie's blow that meets it on its way to a player behind lands on the planks
 /// instead (it takes hits: IDamageReceiver), and zombies pressing against it wear it down too; planks come off as it
 /// weakens and it bursts apart when it breaks. Players' shots and blows stop on it and do nothing. On every PC: put up
-/// where the placement rule allows it (Room: ground, slope, nothing in the way), by its Support's own PC when that is the
-/// host or alone, else by the host when that PC asks (Judge checks the spot again against the host's world, the true
-/// one) and PlayerNetworkCombat tells the others; worn down and broken by the host's or a lone PC's, whose health every
-/// PC shows (a client's blow on its copy is sent there). Its look (Shape) is drawn see-through by BarricadeGhost while
-/// the Support's class key is held. Numbers: Tables/ClassAbilities Support.barricade*.
+/// where the placement rule allows it (Room: ground, slope, nothing in the way) by its Support's own PC at once, whoever
+/// plays it, with the health that PC gives it (the fortify card raises it there), and PlayerNetworkCombat tells the
+/// others, the host too, which put theirs up as told and never check the spot again (the user, 2026-11-14, memory
+/// actor-decides); worn down and broken by the host's or a lone PC's, whose health every PC shows (a client's blow on
+/// its copy is sent there). Its look (Shape) is drawn see-through by BarricadeGhost while the Support's class key is
+/// held. Numbers: Tables/ClassAbilities Support.barricade*.
 /// <para>
 /// It comes in kinds now (the user, 2026-11-12: "서포트 다른 건축물 아이디어 지어도 괜찮을 듯"), each from its own Support
 /// card, chosen with F while the class key is held (SupportKit), and carried in its id (two bits), so every PC builds
@@ -42,12 +43,11 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     private static readonly Collider[] overlaps = new Collider[32];
 
     /// <summary>
-    /// Whether a barricade can stand at a spot (the placement rule: SupportKit's preview and build, and the host's check),
-    /// and if not, why: no ground under it, the ground too steep, a wall between the builder's eyes and it (their own PC
-    /// only), something in its way (a wall, a prop, a zombie, a player, another barricade), too far from the builder
-    /// (the host only, for a client's spot), or a supply bag too light for one (their own PC only).
+    /// Whether a barricade can stand at a spot (the placement rule: SupportKit's preview and build, on the builder's own PC
+    /// alone), and if not, why: no ground under it, the ground too steep, a wall between the builder's eyes and it,
+    /// something in its way (a wall, a prop, a zombie, a player, another barricade), or a supply bag too light for one.
     /// </summary>
-    public enum Fit : byte { Ok, NoGround, Steep, Walled, Blocked, Far, Short }
+    public enum Fit : byte { Ok, NoGround, Steep, Walled, Blocked, Short }
 
     /// <summary>What it is: planks across posts, barbed wire, an ammo crate, a searchlight.</summary>
     public enum Kind : byte { Planks, Wire, Crate, Light }
@@ -175,8 +175,8 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => standing.Clear();
 
-    // The host or a lone PC: its zombies are the real ones, so it wears the barricades down, and says where they go up
-    // (SupportKit puts its own up straight away there; a client's PC asks it).
+    // The host or a lone PC: its zombies are the real ones, so it wears the barricades down (where they go up is their
+    // Support's own PC's call).
     internal static bool Authority => !GameSession.IsOnline || (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer);
 
     // This PC's own player's network part, through which the barricades' news goes.
@@ -292,29 +292,12 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     }
 
     /// <summary>
-    /// On the host: a client's Support asks for a barricade here (PlayerNetworkCombat). The host's world is the true one
-    /// (its zombies stand where they really are), so the spot must hold one there too (Room), and lie within the
-    /// farthest reach of that player as the host sees them, with Support.barricadeLeeway more for their copy lagging
-    /// behind. The builder's own view (no wall between) and their bag are theirs to judge, on their own PC.
+    /// On its Support's own PC: barricade <paramref name="id"/> goes up for them, after their oldest of its kind come down
+    /// past <paramref name="most"/> (their own count, which a card may raise on their own PC), with
+    /// <paramref name="health"/> as its most (their PC's number, cards and all; 0 for the table's). The ids taken down
+    /// are added to <paramref name="takenDown"/>, for the others to be told.
     /// </summary>
-    internal static Fit Judge(Vector3 at, float yaw, PlayerMovement owner, Kind kind = Kind.Planks)
-    {
-        if (owner == null) return Fit.Blocked;
-        float reach = Mathf.Max(PlayerClass.Ability(Row, "barricadeAhead", 1.8f), PlayerClass.Ability(Row, "barricadeReach", 3.5f))
-            + Mathf.Max(0f, PlayerClass.Ability(Row, "barricadeLeeway", 2.5f));
-        Vector3 off = at - owner.transform.position;
-        if (Mathf.Abs(off.y) > 3f) return Fit.Far;
-        off.y = 0f;
-        if (off.sqrMagnitude > reach * reach) return Fit.Far;
-        return Room(at, yaw, owner.transform, kind);
-    }
-
-    /// <summary>
-    /// On the host or a lone PC, once the spot is allowed: barricade <paramref name="id"/> goes up for its Support, after
-    /// their oldest come down past <paramref name="most"/> (their own count, which a card may raise on their own PC). The
-    /// ids taken down are added to <paramref name="takenDown"/>, for the others to be told.
-    /// </summary>
-    internal static Barricade Raise(ushort id, Vector3 at, float yaw, PlayerMovement owner, int most, List<ushort> takenDown)
+    internal static Barricade Raise(ushort id, Vector3 at, float yaw, PlayerMovement owner, int most, List<ushort> takenDown, float health = 0f)
     {
         var mine = StandingOf(owner, KindOf(id));
         while (mine.Count > 0 && mine.Count >= Mathf.Max(1, most))
@@ -324,14 +307,24 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
             Collapse(oldest);
             takenDown?.Add(oldest);
         }
-        return Place(id, at, yaw, owner);
+        return Place(id, at, yaw, owner, health);
     }
 
     /// <summary>
-    /// Puts barricade <paramref name="id"/> up at <paramref name="at"/> (its feet), facing along <paramref name="yaw"/>, its
-    /// Support's. A second word of the same one is ignored.
+    /// What a kind goes up with in the table (Support.barricadeHealth, wireHealth, lightHealth; an ammo crate's takes,
+    /// crateStock), as this PC reads it. Only the builder's PC reads it for a new one: a card on another PC's player must
+    /// never change someone else's barricade, so the others take the health sent with it (Place).
     /// </summary>
-    public static Barricade Place(ushort id, Vector3 at, float yaw, PlayerMovement owner)
+    internal static float BaseHealth(Kind kind) => Mathf.Max(1f, kind == Kind.Wire ? PlayerClass.Ability(Row, "wireHealth", 300f)
+        : kind == Kind.Crate ? Mathf.Round(PlayerClass.Ability(Row, "crateStock", 6f))
+        : kind == Kind.Light ? PlayerClass.Ability(Row, "lightHealth", 300f) : PlayerClass.Ability(Row, "barricadeHealth", 400f));
+
+    /// <summary>
+    /// Puts barricade <paramref name="id"/> up at <paramref name="at"/> (its feet), facing along <paramref name="yaw"/>, its
+    /// Support's, with <paramref name="health"/> as its most: the number its Support's PC sent with it (the fortify card
+    /// raises it there), or 0 for the table's (BaseHealth). A second word of the same one is ignored.
+    /// </summary>
+    public static Barricade Place(ushort id, Vector3 at, float yaw, PlayerMovement owner, float health = 0f)
     {
         if (!Application.isPlaying) return null;
         if (standing.TryGetValue(id, out var already) && already != null) return already;
@@ -342,9 +335,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
         barricade.Owner = owner;
         barricade.placedAt = Time.time;
         var kind = KindOf(id);
-        barricade.most = barricade.health = Mathf.Max(1f, kind == Kind.Wire ? PlayerClass.Ability(Row, "wireHealth", 300f)
-            : kind == Kind.Crate ? Mathf.Round(PlayerClass.Ability(Row, "crateStock", 6f))
-            : kind == Kind.Light ? PlayerClass.Ability(Row, "lightHealth", 300f) : PlayerClass.Ability(Row, "barricadeHealth", 400f));
+        barricade.most = barricade.health = health > 0f && !float.IsNaN(health) && !float.IsInfinity(health) ? health : BaseHealth(kind);
         barricade.Build();
         standing[id] = barricade;
         return barricade;

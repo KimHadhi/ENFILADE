@@ -225,6 +225,8 @@ public sealed partial class ClassKit : MonoBehaviour
                 factor *= 1f + ReturnStacks * PlayerClass.Ability(HoundRow, "returnDamage", 6f) / 100f;
                 // A Desperado round, likewise read before the shot spends it.
                 if (DesperadoLoaded) factor *= 1f + PlayerClass.Ability(HoundRow, "desperadoDamage", 100f) / 100f;
+                // Back from its showdown to the crowd's roar: its guns hit harder a while (HoundShowdown).
+                factor *= HoundShowdown.DamageFactor(movement);
             }
             // A Point's Gunslinger card: the gun just drawn hits harder a moment.
             if (GunslingerShare > 0f) factor *= 1f + PlayerPerks.Total(PlayerPerks.PointGunslinger) / 100f;
@@ -346,6 +348,8 @@ public sealed partial class ClassKit : MonoBehaviour
         if (cover == null && (cover = GetComponent<KnightCover>()) == null) cover = gameObject.AddComponent<KnightCover>();
         // The class cards with code behind them (Docs/Features/ClassCards.md).
         if (cards == null && (cards = GetComponent<ClassCards>()) == null) cards = gameObject.AddComponent<ClassCards>();
+        // A Point's cards that watch its shots and kills.
+        if (pointCards == null && (pointCards = GetComponent<PointCards>()) == null) pointCards = gameObject.AddComponent<PointCards>();
         if (!kitGiven) TryGiveKit();
         // A gun drawn: a Point's Gunslinger card counts from now.
         if (slots != null && slots.SelectedSlot != drawnSlot)
@@ -435,8 +439,8 @@ public sealed partial class ClassKit : MonoBehaviour
         if (slots.GetWeapon(slot) != gun) slots.TrySetWeapon(slot, gun);
         else if (full)
         {
-            // The same gun kept from before: full, as a new one comes.
-            slots.GetRuntime(slot)?.RefillAmmo();
+            // The same gun kept from before: full, as a new one comes (to its cap, which an ammo pouch card raises).
+            slots.GetRuntime(slot)?.RefillAmmo(slots.ReserveCap(slot));
             slots.NotifyAmmo();
         }
     }
