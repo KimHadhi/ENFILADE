@@ -81,9 +81,13 @@ public static class LadderFit
             if (hit.normal.y < LeastUp) { why = "the first top over its foot (" + hit.collider.name + ") is too steep to stand on."; return false; }
             Vector3 low = new Vector3(column.x, hit.point.y + Gap + Radius, column.z);
             Vector3 high = new Vector3(column.x, hit.point.y + StandingHeight - Radius, column.z);
-            if (Physics.CheckCapsule(low, high, Radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            var blocking = Physics.OverlapCapsule(low, high, Radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            if (blocking.Length > 0)
             {
-                why = "there is no room to stand on the first top over its foot (" + hit.collider.name + ").";
+                // What stands in the way, so the layout knows what to move.
+                var names = new System.Collections.Generic.List<string>();
+                foreach (var solid in blocking) if (names.Count < 4 && !names.Contains(solid.name)) names.Add(solid.name);
+                why = "there is no room to stand on the first top over its foot (" + hit.collider.name + "): " + string.Join(", ", names) + " in the way.";
                 return false;
             }
             floor = hit.point.y;

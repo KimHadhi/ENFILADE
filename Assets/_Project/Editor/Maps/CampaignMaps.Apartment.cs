@@ -228,7 +228,7 @@ public static partial class CampaignMaps
                 string side = northSide ? "북" : "남";
                 var hatches = new List<(float, float, float, float)>();
                 foreach (var ladder in BalconyLadders())
-                    if (ladder.north == northSide && ladder.f + 1 == f) hatches.Add((ladder.x - .4f, ladder.x + .4f, northSide ? AptZ1 : AptZ0 - .8f, northSide ? AptZ1 + .8f : AptZ0));
+                    if (ladder.north == northSide && ladder.f + 1 == f) hatches.Add(BalconyHatch(ladder));
                 SlabWith(b, $"B4 {f + 1}층 {side} 발코니 바닥", y, 87.6f, 103.4f, z0, z1, b.Concrete, "Concrete", hatches.ToArray());
                 b.Box($"B4 {f + 1}층 {side} 발코니 난간", 87.6f, 103.4f, y, y + 1f, edge0, edge1);
                 b.Box($"B4 {f + 1}층 {side} 발코니 난간 서", 87.6f, 87.8f, y, y + 1f, z0, z1);
@@ -239,19 +239,36 @@ public static partial class CampaignMaps
         foreach (var ladder in BalconyLadders())
         {
             float foot = ladder.f * Storey;
-            // Against the outer wall, the climber facing it from the balcony.
-            b.Ladder($"B4 비상 사다리 {ladder.f + 1}층→{ladder.f + 2}층", new Vector3(ladder.x, foot, ladder.north ? AptZ1 + .12f : AptZ0 - .12f),
-                ladder.north ? 0f : 180f);
+            // Across the hatch, the climber in it facing along the balcony (see BalconyLadders).
+            b.Ladder($"B4 비상 사다리 {ladder.f + 1}층→{ladder.f + 2}층",
+                new Vector3(ladder.x, foot, ladder.north ? AptZ1 + HatchDeep * .5f : AptZ0 - HatchDeep * .5f), ladder.alongEast ? 270f : 90f);
         }
     }
 
-    // The fire ladders: from floor f's balcony up to the one above, at x on the north or the south side.
-    private static (int f, float x, bool north)[] BalconyLadders() => new[]
+    // The fire ladders: from floor f's balcony up through a hatch in the one above, at the balcony's end on the north or
+    // the south side. The rungs stand across the hatch at x and the climber goes up in it, between them and the balcony's
+    // end, facing along the balcony (east when alongEast), so the climb off the top steps onto the balcony above
+    // (MovementFixtures.TryLeaveLadderTop, 0.6 m in from the rungs). They stood against the outer wall facing it, and the
+    // climb off went into the wall: the rebuild of 11-14 found no floor to stand on at their tops (LadderFit, "B4 비상
+    // 사다리 2층→3층: there is no room to stand on the first top over its foot (B4 3층 바닥 9)").
+    private static (int f, float x, bool north, bool alongEast)[] BalconyLadders() => new[]
     {
-        (3, 88.4f, true),
-        (2, 102.6f, false),
-        (1, 88.4f, true),
+        (3, 88.6f, true, true),
+        (2, 102.4f, false, false),
+        (1, 88.6f, true, true),
     };
+
+    // A fire ladder's hatch: deep enough off the wall and wide enough behind the rungs for a climber (0.3 m round, 0.27 m
+    // off the rungs) with room to spare, and only 0.1 m past the rungs, so the balcony above starts right where the climb
+    // off steps (x0, x1, z0, z1).
+    private const float HatchDeep = .8f, HatchBehind = .7f, HatchPast = .1f;
+
+    private static (float, float, float, float) BalconyHatch((int f, float x, bool north, bool alongEast) ladder)
+    {
+        float x0 = ladder.alongEast ? ladder.x - HatchBehind : ladder.x - HatchPast;
+        float x1 = ladder.alongEast ? ladder.x + HatchPast : ladder.x + HatchBehind;
+        return ladder.north ? (x0, x1, AptZ1, AptZ1 + HatchDeep) : (x0, x1, AptZ0 - HatchDeep, AptZ0);
+    }
 
     // The cellar under the south-west flat (k04): a switchboard that powers the block and the alley's shutter. Down a flight
     // from the ground-floor flat; its floor at -3.

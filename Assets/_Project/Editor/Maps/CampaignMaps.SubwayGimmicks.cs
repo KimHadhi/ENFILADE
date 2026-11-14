@@ -12,7 +12,7 @@ public static partial class CampaignMaps
     // Its trains: rows along x, each two cars on bogies with a crawl space under them (0.75 m: prone fits, crouched and
     // zombies don't).
     private static readonly float[] TrainRows = { -26.5f, -33f, -39.5f, -46f, -52.5f };
-    private const float CarLow = .75f, CarTop = 3.75f, CarHalf = 1.6f;
+    private const float CarLow = .75f, CarTop = 3.75f, CarHalf = 1.6f, BogieIn = .8f;
 
     // The station office (the card "역무실과 CCTV"): rooms behind the concourse's north wall (x 2-34, z 12.3-22), a staff
     // corridor from the concourse to the platform hall, the locker room, the camera room (its cameras look over the yard
@@ -107,8 +107,11 @@ public static partial class CampaignMaps
             foreach (var (a, c) in new[] { (176f, 193f), (195f, 212f) })
             {
                 b.Box($"열차 {row} {a}", a, c, CarLow, CarTop, row - CarHalf, row + CarHalf, b.Metal, "Metal");
-                b.Box($"열차 대차 {row} {a} 서", a, a + 3f, 0f, CarLow, row - 1.2f, row + 1.2f, b.Metal, "Metal");
-                b.Box($"열차 대차 {row} {a} 동", c - 3f, c, 0f, CarLow, row - 1.2f, row + 1.2f, b.Metal, "Metal");
+                // The bogies sit a little in from the cars' ends, as a real car's do: the ladder at the west end climbs
+                // past the car's end to its roof, and a bogie flush with the end put its top (buried under the car's
+                // floor) under the climb off, where LadderFit found no room to stand (the rebuild of 11-14).
+                b.Box($"열차 대차 {row} {a} 서", a + BogieIn, a + BogieIn + 3f, 0f, CarLow, row - 1.2f, row + 1.2f, b.Metal, "Metal");
+                b.Box($"열차 대차 {row} {a} 동", c - BogieIn - 3f, c - BogieIn, 0f, CarLow, row - 1.2f, row + 1.2f, b.Metal, "Metal");
             }
         foreach (float row in TrainRows) b.Ladder($"열차 사다리 {row}", new Vector3(175.85f, 0f, row), 270f);
         // Searchlights on towers at the shed's sides, sweeping slowly out of step.

@@ -208,7 +208,10 @@ public static partial class CampaignMaps
 
         b.Box("고가2 상판", D0, D1, Deck - 1f, Deck, -9f, 9f, b.Road, "Asphalt");
         for (float x = 230f; x < D1; x += 20f) b.Box("고가 기둥 " + x, x - 1f, x + 1f, 0f, Deck - 1f, -1f, 1f);
-        b.Box("고가 난간 남 고가2", D0, D1, Deck, Deck + 1f, -9f, -8.7f);
+        // The south railing opens where the ladder from under the deck comes up (the rebuild of 11-14: no room to stand at
+        // its top, the railing 0.15 m from where the climb off sets the feet down).
+        b.Box("고가 난간 남 고가2 1", D0, 261.4f, Deck, Deck + 1f, -9f, -8.7f);
+        b.Box("고가 난간 남 고가2 2", 262.6f, D1, Deck, Deck + 1f, -9f, -8.7f);
         b.Box("고가 난간 북 고가2 1", D0, 223.5f, Deck, Deck + 1f, 8.7f, 9f);
         b.Box("고가 난간 북 고가2 2", 225.7f, D1, Deck, Deck + 1f, 8.7f, 9f);
 

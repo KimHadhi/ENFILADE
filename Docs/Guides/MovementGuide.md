@@ -227,7 +227,7 @@ Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조
 
 | 넣을 것 | 방법 |
 | --- | --- |
-| 사다리 | 빈 오브젝트에 [Ladder](../../Assets/_Project/Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 오르는 바닥(지붕·발판)의 높이로, 난간 끝이 그 바닥과 같게 둔다(발은 꼭대기 1.875m 아래까지 오르고 넘어가기가 나머지를 올려 준다. 지붕 위로 솟은 난간은 필요 없다). 맵 빌더(CampaignMaps·HubBuilder)는 발치와 방향만 적고 높이는 지을 때 [LadderFit](../../Assets/_Project/Editor/Maps/LadderFit.cs)이 잰다: 가로대 면에서 0.6m 안쪽(넘어가기가 디딜 바닥을 찾는 자리, `ladderExitReach - ladderStandOff`)에서 발치 위의 첫 바닥, 그 위에 설 자리가 있어야 한다. 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다 |
+| 사다리 | 빈 오브젝트에 [Ladder](../../Assets/_Project/Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 오르는 바닥(지붕·발판)의 높이로, 난간 끝이 그 바닥과 같게 둔다(발은 꼭대기 1.875m 아래까지 오르고 넘어가기가 나머지를 올려 준다. 지붕 위로 솟은 난간은 필요 없다). 맵 빌더(CampaignMaps·HubBuilder)는 발치와 방향만 적고 높이는 지을 때 [LadderFit](../../Assets/_Project/Editor/Maps/LadderFit.cs)이 잰다: 가로대 면에서 0.6m 안쪽(넘어가기가 디딜 바닥을 찾는 자리, `ladderExitReach - ladderStandOff`)에서 발치 위의 첫 바닥, 그 위에 설 자리가 있어야 한다. 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다. 설 자리가 없으면 LadderFit이 무엇이 막는지 이름을 적는다(2026-11-15). 바닥 구멍(해치)으로 위층에 오르는 사다리는 가로대를 구멍을 가로질러 세우고 오르는 사람이 구멍 안에서 바닥을 따라 보게 둔다: 벽을 보고 오르면 넘어가기가 벽 속으로 간다(1장 아파트 발코니 비상 사다리 셋, 11-14까지 꼭대기에서 내릴 수 없었다). 바닥의 난간이 가로대 바로 안쪽에 서면 그 자리를 터 준다(2장 고가2 남쪽 난간) |
 | 집라인 | 빈 오브젝트에 [Zipline](../../Assets/_Project/Scripts/World/Zipline.cs)을 붙여 줄 시작점에 놓고 `end`에 끝점을 적는다. 발이 줄 1.875m 아래에 매달리므로 끝점은 땅에서 그보다 높게 둔다. 놓을 때 빠른 속도로 날아가니 끝점 앞에 공간을 둔다. 양방향은 `twoWay` |
 
 사다리와 집라인은 자식에 렌더러가 없으면 Play 때 `barMaterial`로 막대를 그립니다([FixtureBars](../../Assets/_Project/Scripts/World/FixtureBars.cs)). 모델을 자식으로 넣으면 막대는 생기지 않습니다. 씬 뷰에서는 기즈모(사다리 노랑, 줄 하늘색)로 보입니다.
