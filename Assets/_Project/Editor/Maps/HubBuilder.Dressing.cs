@@ -45,6 +45,67 @@ public static partial class HubBuilder
         HallCeiling();
         HallStripes();
         HallFittings();
+        HallOperations();
+    }
+
+    // The hall as an operations room (the user, 2026-11-14, picking A of the dressing options: "어 일단 작전 준비실로
+    // 가자"): the floor was bare round the map table and in every corner. Now chairs stand round the map table as for a
+    // briefing; the north-west corner is the command post (two desks against the north wall, screens on, keyboards,
+    // office chairs, the notice board over them); the west wall under the catwalk's south end is the armoury (two gun
+    // lockers); by the stacked ammo crates in the south-east, jerry cans, a toolbox and a case wait to be taken; a wire
+    // shelf stands against the north wall east of the ready button; posters on the east wall north of the stage. The
+    // chairs are walked through; desks, lockers and the shelf block (Solid, PropSolid). Clear of the stations (the map
+    // table's top, the class wall, the gun rack, the ready button, the stage), of the catwalk's crates, posts and ladder,
+    // and of the way to the range.
+    private static void HallOperations()
+    {
+        // Round the map table (its box x -2..2, z 0.8..3.2): three chairs a side, turned a little each, fronts to it.
+        for (int i = 0; i < 3; i++)
+        {
+            float x = -1.3f + i * 1.3f, turn = (i * 7 % 15) - 7f;
+            dresser.Prop("chair", new Vector3(x, Floor, .3f), turn);
+            dresser.Prop("chair", new Vector3(x, Floor, 3.7f), 180f + turn);
+        }
+        // The command post: two desks against the north wall west of the way out, each with a screen and a keyboard on
+        // it and an office chair before it; the notice case between them.
+        Vector3 desk = dresser.ArtSize("hubdesk");
+        if (desk != Vector3.zero)
+        {
+            float deskZ = 14f - Proud - desk.z * .5f;
+            foreach (float x in new[] { -8f, -5f })
+            {
+                Solid("hubdesk", new Vector3(x, Floor, deskZ), 180f, Vector3.one, "Metal");
+                dresser.Prop("hubscreen", new Vector3(x - .1f, Floor + desk.y, deskZ + desk.z * .15f), 180f);
+                dresser.Prop("hubkeyboard", new Vector3(x - .1f, Floor + desk.y, deskZ - desk.z * .2f), 180f);
+                dresser.Prop("officechair", new Vector3(x, Floor, deskZ - desk.z * .5f - .55f), 8f * x % 20f);
+            }
+        }
+        // The airport's notice case is 1.9 m tall with its notices in the upper part: it stands on the floor against the
+        // wall (its back on the wall, like a mounted piece), which puts the notices at eye height; hung at 2.35 m they
+        // were over the head (mock-up render, 11-14).
+        Mount("hubboard", new Vector3(-6.5f, Floor + dresser.ArtSize("hubboard").y * .5f, 14f), 180f);
+        // The armoury: two gun lockers side by side against the west wall under the catwalk's south end, fronts to the
+        // hall. Each is 2.5 m wide, so the second goes a locker's width (and a hand) north of the first: at a fixed
+        // 1.8 m they stood into each other.
+        Vector3 locker = dresser.ArtSize("hubgunlocker");
+        if (locker != Vector3.zero)
+            for (int i = 0; i < 2; i++)
+                Solid("hubgunlocker", new Vector3(-12f + Proud + locker.z * .5f, Floor, -7f + i * (locker.x + .08f)), 90f,
+                    Vector3.one, "MetalBox", i);
+        // Supplies by the stacked ammo crates: jerry cans along the south wall between its pillar and the gun locker
+        // (x 9 to 11.5, HallFittings), a toolbox on the crates, a case on the floor.
+        for (int i = 0; i < 3; i++)
+            dresser.Prop("jerrycan", new Vector3(7.9f + i * .42f, Floor, -9.55f), 175f + i * 9f, i);
+        float crate = dresser.ArtSize("hubammocrate").y;
+        if (crate > .01f) dresser.Prop("toolbox", new Vector3(11.12f, Floor + crate * 2f, -7.66f), 30f);
+        dresser.Prop("hubcase", new Vector3(10.1f, Floor, -7.3f), 70f, 1);
+        // A wire shelf against the north wall between the ready button and the quartermaster's desk.
+        Vector3 shelf = dresser.ArtSize("wireshelf");
+        if (shelf != Vector3.zero) dresser.PropSolid("wireshelf", new Vector3(6.4f, Floor, 14f - Proud - shelf.z * .5f), 180f);
+        // Posters on the east wall north of the stage, over the parked cleaner. The Heist posters print on their own +X
+        // side, so their MapArt row turns them -90 to bring the print to the kit's front (+Z), the side Mount faces out.
+        Mount("poster", new Vector3(12f, 2.25f, 8.9f), -90f, 1f, 0);
+        Mount("poster", new Vector3(12f, 2.25f, 10.2f), -90f, 1f, 2);
     }
 
     private static void HallFloor()

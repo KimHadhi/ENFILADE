@@ -17,6 +17,7 @@ Fab·언리얼·블렌더에서 받은 소품을 유니티 URP 에셋으로 바�
 | `tga_to_png.py` | 블렌더 | TGA를 같은 픽셀의 PNG로 바꾸고 `.meta`를 옮겨 GUID를 지킨다(재질 연결은 그대로, 크기는 3~4분의 1). |
 | `scene_stats.py` | 파이썬 | 지은 맵이 얼마나 무거운지 씬 파일만으로 잰다(유니티 없이): 렌더러·그리기·삼각형(LOD 첫 단계)·재질·텍스처 수와 그래픽 메모리 추정·그림자 그리는 것(1 m보다 작은 것 따로)·LOD 안의 렌더러·조명(실시간·섞음·구움)·데칼·반사 프로브·충돌체. 프리팹 복사본은 그 프리팹이나 모델(FBX 7·6.1)에서 무엇을 가져오는지 따라가 센다. 다시 짓기 전과 뒤를 같은 방법으로 비교하려고 만들었다(11-14 맵 최적화). `--json`으로 숫자를 파일에 남긴다 |
 | `fit_texture_sizes.py` | 파이썬 | 맵 소품 텍스처의 가져오기 크기를 그것을 입는 가장 큰 소품에 맞춘다: 소품의 가장 긴 변 1 m당 2048 px, 2의 거듭제곱 512~2048(UV가 겉면 전체를 감싸서 텍스처가 긴 변보다 넓게 덮인다). 줄이는 것만 `.meta`의 maxTextureSize에 쓰고 이미지는 그대로라 되돌릴 수 있다. 맵의 벽·바닥 재질(Art/Textures/Surfaces), Heist 팩(손에 드는 도구), 맵 밖(프로젝트의 프리팹·에셋)에서 쓰는 재질은 손대지 않는다. `--write` 없이 돌리면 얼마나 줄지 보여 준다(11-14: 131장, 약 392 MB) |
+| `render_layout.py`, `render_scene.py`, `contact_sheet.py` | 파이썬, 블렌더 | 지은 맵을 유니티 없이 그림으로 본다(맵 꾸미기를 그림으로 판단하려고, 11-14). `render_layout.py`가 씬 파일에서 모델 복사본(FBX·자리·회전·재질의 텍스처와 색)·회색 상자(자리·크기·벽면 재질의 옆·윗면 텍스처)·조명을 JSON으로 꺼내고, `render_scene.py`가 블렌더에서 그것을 세워 정한 시점(눈·보는 곳·렌즈, 또는 위에서 본 평면)마다 그리고, `contact_sheet.py`가 여러 장을 한 장에 모은다. `render_scene.py`의 네 번째 인자로 목업 스크립트를 주면 빌더에 넣을 배치를 짓기 전에 같은 규칙으로 얹어 그린다(허브 작전 준비실 A안이 이렇게 사용자에게 먼저 보였다). 블렌더는 FBX 6.1을 못 여니 그런 모델(공항 팩의 게시 케이스·컴퓨터 세트 등)은 빠진다 |
 | `fix_lod_renderers.py` | 파이썬 | 프리팹의 LODGroup에서 다른 에셋(원본 FBX) 안의 렌더러를 뺀다. Dekogon 프리팹은 FBX의 UCX_ 충돌 메시 렌더러를 LOD0에 넣어 두어서, 놓을 때마다 "registered with more than one LODGroup" 경고가 났다(11-12, 32개 고침). 인스턴스는 그 렌더러를 그리지 않으니 빼도 보이는 것은 같다. `import_unitypackage.py`도 들일 때 같은 일을 한다. 팩의 LOD 단계는 손대지 않는다: 맵 빌더가 놓을 때 사라지는 마지막 단계만 Tables/MapLods 값으로 맞추고, LOD가 없는 모델에는 사라지기만 하는 한 단계 LODGroup을 단다(GreyboxBuilder.Lods, 11-13). |
 
 ## 돌리는 법
@@ -47,6 +48,14 @@ blender -b --factory-startup --disable-autoexec --python build_props.py -- copy 
 ```
 python -I plan_decals.py F:/FabAssets <작업 폴더>
 blender -b --factory-startup --disable-autoexec --python build_decals.py -- <작업 폴더>/job.json <저장소 밖 임시 폴더>
+```
+
+지은 맵을 그림으로 보기(출력 폴더는 절대 경로로. 블렌더는 상대 경로를 드라이브 맨 위에 푼다):
+
+```
+python -I render_layout.py <프로젝트 폴더> Assets/_Project/Scenes/Hub/Hub.unity <작업 폴더>/hub.json
+blender -b --factory-startup --disable-autoexec --python render_scene.py -- <작업 폴더>/hub.json <시점.json> <작업 폴더>/그림 [목업.py]
+blender -b --factory-startup --disable-autoexec --python contact_sheet.py -- <모음.png> <열 수> <배율> <그림.png> ...
 ```
 
 임시 폴더의 `Assets/...`를 프로젝트로 옮길 때는 파일마다 `.meta`를 먼저, 바로 뒤에 그 파일을 복사한다(유니티가 `.meta` 없는 파일을 먼저 보면 GUID를 둘 만든다). 새 폴더의 `.meta`도 유니티가 만들기 전에 쓴다.

@@ -26,8 +26,8 @@ public sealed partial class GreyboxBuilder
     // A model's corners are tried this share of the way out from its middle; a hit this close round its box is its own
     // (m); the quality's LOD bias (PC), and the farthest a model is looked for (m).
     private const float SightCornerIn = .8f, SightOwnRoom = .3f, SightLodBias = 2f, SightModelFar = 250f;
-    // A ladder's starts go up it this far, this far apart (m): its top floor is among them.
-    private const float SightClimb = 14f, SightClimbStep = 2f;
+    // A ladder's top start is this far over the top of its rails, so it lands on the floor there (m).
+    private const float SightClimbOver = .3f;
 
     private Dictionary<Vector2Int, List<Vector3>> sightCells;
     private int sightEyes, sightPieces, sightReached, unseenModels;
@@ -89,9 +89,14 @@ public sealed partial class GreyboxBuilder
             if (start.gameObject.scene == scene) found.Add(start.transform.position);
         foreach (var spot in spots)
             if (spot != null) found.Add(spot.position);
+        // A ladder's foot and the floor at its top (LadderFit has fitted its height to that floor by now): only there, or
+        // a point past its top would land on whatever is above (the hub's roof, and from there the yard outside).
         foreach (var ladder in Object.FindObjectsByType<Ladder>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             if (ladder.gameObject.scene == scene)
-                for (float up = 0f; up <= SightClimb; up += SightClimbStep) found.Add(ladder.transform.position + Vector3.up * up);
+            {
+                found.Add(ladder.transform.position);
+                found.Add(ladder.transform.position + ladder.transform.up * ladder.Height + Vector3.up * SightClimbOver);
+            }
         foreach (var line in Object.FindObjectsByType<Zipline>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (line.gameObject.scene != scene) continue;
