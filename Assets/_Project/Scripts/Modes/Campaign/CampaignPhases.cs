@@ -25,6 +25,10 @@ public struct PhaseTrack
     public float Until;
     /// <summary>The assaults along the track, start and end pairs (s) in order.</summary>
     public float[] Assaults;
+    /// <summary>The song playing, as the screen says it (Music.csv title and artist through Texts.csv); empty without one.</summary>
+    public string Title, Artist;
+    /// <summary>A hold without a song (the shutter's siren): one assault, no music.</summary>
+    public bool Siren;
 }
 
 /// <summary>

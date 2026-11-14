@@ -28,15 +28,9 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     [SerializeField] private GameObject counterRoot;
     [SerializeField] private Image progress;
     [SerializeField] private TMP_Text boardHint;
-    [Header("New objective alert")]
+    [Header("New objective alert (ObjectiveAlert draws it)")]
     [SerializeField] private RectTransform alert;
     [SerializeField] private CanvasGroup alertGroup;
-    [SerializeField] private RectTransform alertContent;
-    [SerializeField] private TMP_Text alertTitle;
-    [SerializeField, Min(.05f)] private float openDuration = .45f;
-    [SerializeField, Min(.1f)] private float emphasisDuration = 2f;
-    [SerializeField, Min(.05f)] private float closeDuration = .30f;
-    [SerializeField, Range(0, 1)] private float blinkLowAlpha = .16f;
     [SerializeField, Min(100)] private float maxAlertWidth = 820;
     [Header("Alert sound")]
     [SerializeField] private AudioSource audioSource;
@@ -54,8 +48,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     [Tooltip("Least room between the new-objective alert and the bar's right end (px), lean included. The alert stays narrower than that leaves.")]
     [SerializeField, Min(0)] private float alertGap = 28f;
 
-    public bool IsAlertPlaying => alertClock >= 0;
-    public float AlertDuration => openDuration + emphasisDuration + closeDuration;
+    public bool IsAlertPlaying => alertView != null && alertView.Playing;
     /// <summary>
     /// How far below the screen's top edge the objective block reaches now (px at 1080p): the bar, the rows it draws under
     /// itself and the key cap and hint, stepped down or not. What stands under the block (the chat's history) keeps below it.
@@ -64,7 +57,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => Floor = 0f;
-    private float alertClock = -1, alertWidth;
+    private ObjectiveAlert alertView;
     private float lastCanvasWidth;
     private MissionBarLook look;
 
@@ -85,13 +78,13 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     {
         GameAudio.Bind(audioSource, AudioChannel.UI);
         Look();
+        if (alert != null && !alert.TryGetComponent(out alertView)) alertView = alert.gameObject.AddComponent<ObjectiveAlert>();
         GameTables.Bind(HudCamera.TableName, "MissionTab", this);
     }
 
     public void OnTableApplied()
     {
         if (parts.Count > 0) LayOutTabRow();
-        if (IsAlertPlaying) MeasureAlert();
     }
 
     /// <summary>
@@ -108,6 +101,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     {
         if (show == previewing) return;
         previewing = show;
+        if (alertView != null) alertView.Hold(show);
         if (show) ShowAlert(title != null && !string.IsNullOrEmpty(title.text) ? title.text : Texts.Get("objective.waiting"));
         else HideAlert();
     }
@@ -212,19 +206,15 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     {
         float dt = Time.unscaledDeltaTime;
         MakeWayForTabScreen(dt);
-        if (alertClock >= 0)
-        {
-            // Held open while the overlap check measures it.
-            if (previewing) alertClock = openDuration;
-            else alertClock += dt;
-            EvaluateAlert(alertClock);
-        }
+        // The Tab screen shows the objective in its list: the alert makes way with the bar. It was the one objective piece
+        // that did not, and kept blinking at full strength over the Tab screen's titles while Tab was held (user,
+        // 2026-11-13: "탭 누르고 있을 때 목표 하이라이트 돼").
+        if (IsAlertPlaying && alertGroup != null) alertGroup.alpha = 1f - makeWay;
         float width = CanvasWidth();
         if (Mathf.Abs(width - lastCanvasWidth) > 1)
         {
             lastCanvasWidth = width;
             Refresh(tracker != null ? tracker.Current : null, false);
-            if (IsAlertPlaying) MeasureAlert();
         }
     }
 
@@ -277,26 +267,27 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
         else if (announce && objective != null) ShowAlert(objective.Title);
     }
 
+    /// <summary>
+    /// Announces a new objective at the top of the screen, in the look picked in Settings → HUD → 목표 알림
+    /// (ObjectiveAlert). A new one replaces one still showing; progress changes never come here.
+    /// </summary>
     public void ShowAlert(string missionTitle)
     {
-        if (alert == null || alertTitle == null) return;
-        alertTitle.text = missionTitle;
-        MeasureAlert();
-        // New objectives replace stale announcements; progress changes never enter this path.
-        alertClock = 0;
-        alert.gameObject.SetActive(true);
-        EvaluateAlert(0);
+        if (alertView == null) return;
+        alertView.Play(missionTitle, AlertWidest(), missionBar, look);
+        if (alertGroup != null) alertGroup.alpha = 1f - makeWay;
         if (audioSource != null && alertSound != null && !previewing)
         {
             audioSource.Stop(); audioSource.PlayOneShot(alertSound, alertVolume);
         }
     }
-    private void MeasureAlert()
+
+    // How wide the alert may be. Centred at the top, it keeps right of the bar's right end, so the two never share a
+    // column, whatever rows the bar draws under itself and however far a lean turns it (a long objective's bar reached
+    // 730 px from the left edge and its widest alert started at 550). A long objective shrinks to fit instead.
+    private float AlertWidest()
     {
         float cap = Mathf.Min(maxAlertWidth, Mathf.Max(260, CanvasWidth() - 100));
-        // Centred at the top, the alert keeps right of the bar's right end, so the two never share a column, whatever
-        // rows the bar draws under itself and however far a lean turns it (a long objective's bar reached 730 px from
-        // the left edge and its widest alert started at 550). A long title wraps instead.
         if (look != null && missionBar != null)
         {
             float right = missionBar.anchoredPosition.x + look.Reach;
@@ -305,48 +296,12 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
                     if (part.Rect == missionBar) right = part.Home.x + look.Reach;
             cap = Mathf.Min(cap, Mathf.Max(280f, 2f * (CanvasWidth() * .5f - right - alertGap)));
         }
-        alertWidth = Mathf.Clamp(alertTitle.GetPreferredValues(alertTitle.text).x + 56, 280, cap);
-        alertContent.sizeDelta = new Vector2(alertWidth, 0);
-        // Keep glyphs at their final size while the centered mask reveals them.
-        float height = Mathf.Max(96, alertTitle.GetPreferredValues(alertTitle.text, alertWidth - 56, 0).y + 58);
-        alert.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+        return cap;
     }
 
-    /// <summary>Absolute time makes pulse counts and fixed-duration expansion independent of text length/frame rate.</summary>
-    public void EvaluateAlert(float elapsed)
-    {
-        if (alert == null || alertGroup == null) return;
-        if (elapsed >= AlertDuration) { HideAlert(); return; }
-        float fraction, alpha;
-        if (elapsed < openDuration)
-        {
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(.05f, openDuration));
-            fraction = 1 - Mathf.Pow(1 - t, 3);
-            alpha = Pulse(t, 3);
-        }
-        else if (elapsed < openDuration + emphasisDuration)
-        {
-            fraction = 1;
-            float t = (elapsed - openDuration) / Mathf.Max(.1f, emphasisDuration);
-            alpha = Mathf.Lerp(blinkLowAlpha, 1, .5f + .5f * Mathf.Cos(t * Mathf.PI * 4));
-        }
-        else
-        {
-            float t = (elapsed - openDuration - emphasisDuration) / Mathf.Max(.05f, closeDuration);
-            fraction = 1 - t * t;
-            alpha = Pulse(t, 2);
-        }
-        alert.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(2, alertWidth * fraction));
-        // The Tab screen shows the objective in its list: the alert makes way with the bar. It was the one objective piece
-        // that did not, and kept blinking at full strength over the Tab screen's titles while Tab was held (user,
-        // 2026-11-13: "탭 누르고 있을 때 목표 하이라이트 돼").
-        alertGroup.alpha = alpha * (1f - makeWay);
-    }
-    private float Pulse(float t, int count) => Mathf.Repeat(t * count, 1) < .5f ? 1 : blinkLowAlpha;
     private void HideAlert()
     {
-        alertClock = -1;
+        if (alertView != null) alertView.Stop();
         if (alertGroup != null) alertGroup.alpha = 0;
-        if (alert != null) alert.gameObject.SetActive(false);
     }
 }

@@ -76,11 +76,11 @@ public sealed class MainMenuBackdrop : MonoBehaviour
         {
             beams[i] = FeelUI.Rect("Beam", far);
             beams[i].sizeDelta = new Vector2(i == 1 ? 340f : 220f, 1400f);
-            beamImages[i] = Raw(beams[i], KitShapes.Beam, KitStyle.With(KitStyle.Ice, .07f));
+            beamImages[i] = KitStyle.Raw(beams[i], KitShapes.Beam, KitStyle.With(KitStyle.Ice, .07f));
         }
         glow = FeelUI.Rect("Glow", far);
         glow.sizeDelta = new Vector2(1500f, 1500f);
-        Raw(glow, KitShapes.Glow, KitStyle.With(KitStyle.Ice, .13f));
+        KitStyle.Raw(glow, KitShapes.Glow, KitStyle.With(KitStyle.Ice, .13f));
 
         // The name, twice end to end, so it can drift forever.
         words = FeelUI.Rect("Name", far);
@@ -109,9 +109,9 @@ public sealed class MainMenuBackdrop : MonoBehaviour
         }
 
         ring = FeelUI.Rect("Ring", mid);
-        ringImage = Raw(ring, KitShapes.Ring, KitStyle.With(KitStyle.Accent, .26f));
+        ringImage = KitStyle.Raw(ring, KitShapes.Ring, KitStyle.With(KitStyle.Accent, .26f));
         dashes = FeelUI.Rect("Dashes", mid);
-        Raw(dashes, KitShapes.Dashes, KitStyle.With(KitStyle.Ice, .14f));
+        KitStyle.Raw(dashes, KitShapes.Dashes, KitStyle.With(KitStyle.Ice, .14f));
         // Four short marks out from the ring at its top, bottom and sides, which stay put while it turns.
         marks = FeelUI.Rect("Marks", mid);
         for (int i = 0; i < 4; i++)
@@ -138,14 +138,6 @@ public sealed class MainMenuBackdrop : MonoBehaviour
 
     private RectTransform Layer(string name) => KitStyle.Stretch(name, root);
 
-    private static RawImage Raw(RectTransform rect, Texture texture, Color color)
-    {
-        var image = rect.gameObject.AddComponent<RawImage>();
-        image.texture = texture;
-        image.color = color;
-        image.raycastTarget = false;
-        return image;
-    }
 
     private void LateUpdate()
     {

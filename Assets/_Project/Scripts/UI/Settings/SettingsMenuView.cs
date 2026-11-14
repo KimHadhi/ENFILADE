@@ -54,6 +54,11 @@ public sealed class SettingsMenuView
     {
         Texts.Get("settings.on"), Texts.Get("settings.hud.death_screen.short"), Texts.Get("settings.off"),
     };
+    // In ObjectiveAlertLook's order.
+    private static string[] ObjectiveAlertNames => new[]
+    {
+        Texts.Get("settings.hud.objective_alert.card"), Texts.Get("settings.hud.objective_alert.ribbon"),
+    };
     // In WindowMode's order.
     private static string[] WindowModeNames => new[]
     {
@@ -345,5 +350,6 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.hud.hit_markers"), HitMarkerStyleNames, (int)s.hitMarkerStyle, i => s.hitMarkerStyle = (HitMarkerStyle)i);
         rows.Choice(Texts.Get("settings.hud.weapon_slots"), WeaponSlotLookNames, (int)s.weaponSlots, i => s.weaponSlots = (WeaponSlotLook)i);
         rows.Choice(Texts.Get("settings.hud.death_screen"), DeathScreenNames, (int)s.deathScreen, i => s.deathScreen = (DeathScreenMode)i);
+        rows.Choice(Texts.Get("settings.hud.objective_alert"), ObjectiveAlertNames, (int)s.objectiveAlert, i => s.objectiveAlert = (ObjectiveAlertLook)i);
     }
 }

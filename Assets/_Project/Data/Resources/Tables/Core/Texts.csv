@@ -521,11 +521,27 @@ moment.bounty.plainword,CLAIMED,,보통 현상금 처치 때 뜨는 작은 판 �
 #--- 코드·프리팹에서 옮긴 글자 (2026-11-12) ---,,,
 wave.combat.title,남은 적을 처치하세요,,웨이브 공세 중의 목표 제목(목표 바와 Tab). GameHUD 프리팹 Mission의 WaveMissionSource가 이 id를 담는다
 wave.combat.detail,구역 내의 적을 모두 처치하세요. 추가로 투입되는 적까지 정리하면 현재 공세가 종료됩니다.,,웨이브 공세 중의 목표 설명(Tab 목표 목록)
-objective.alert.new,새로운 목표,,새 목표가 들어올 때 화면 위에 뜨는 알림의 작은 머리글(GameHUD 프리팹 ObjectiveAlert > Label의 TextKey)
-hud.assault.band,습격 중,,캠페인 습격 중 목표 바 아래로 흘러가는 띠의 글자. 사이의 /// 는 코드가 넣는다(AssaultBar)
+objective.alert.new,새로운 목표,,새 목표 알림 기본(카드)의 NEW OBJECTIVE 칩 옆 분홍 글자(ObjectiveAlert)
+hud.assault.band,습격 중,,캠페인 습격 동안 경보 패널 둘째 줄 앞 글자(hud.assault.song·hud.assault.siren의 {0}. AssaultBar)
 hud.phase.control,정비,,캠페인이 시끄러울 때 습격과 습격 사이(떨군 체력·탄약·실드를 줍는 여유): 목표 바 아래 단계 줄의 작은 판 글자(AssaultBar)
 hud.phase.anticipation,습격 임박,,캠페인 노래가 하이라이트로 올라가는 동안(습격 몇 초 전): 목표 바 아래 단계 줄의 깜박이는 판 글자(AssaultBar)
 hud.phase.assault,습격,,캠페인 노래의 하이라이트(습격): 목표 바 아래 단계 줄의 판 글자. 바 위에는 hud.assault.band 띠가 흐른다(AssaultBar)
+hud.phase.control.en,CONTROL,,캠페인 단계 줄: 정비 옆 작은 영어(AssaultBar)
+hud.phase.anticipation.en,INCOMING,,캠페인 단계 줄: 습격 임박 옆 작은 영어(AssaultBar)
+hud.phase.assault.en,ASSAULT,,캠페인 단계 줄: 습격 옆 작은 영어(AssaultBar)
+hud.phase.next,NEXT {0},,캠페인 단계 줄: 정비 동안 다음 습격까지 남은 시간. {0}은 분:초(AssaultBar)
+hud.phase.incoming,▲ {0},,캠페인 단계 줄: 습격 임박 동안 습격까지 남은 시간. {0}은 분:초(AssaultBar)
+hud.assault.title,ASSAULT IN PROGRESS,,캠페인 습격(노래의 하이라이트) 동안 목표 바가 바뀌는 경보 패널의 큰 글자(AssaultBar)
+hud.assault.song,{0}  ·  ♪ {1} — {2},,"경보 패널 둘째 줄: {0} hud.assault.band, {1} 곡 제목, {2} 가수(AssaultBar)"
+hud.assault.siren,{0}  ·  ♪ 사이렌,,경보 패널 둘째 줄: 노래 없는 버티기(셔터 사이렌·견인차). {0} hud.assault.band(AssaultBar)
+hud.song.now,♪ {0}<color=#FFF5F78C>  ·  {1}</color>,,"캠페인 단계 줄 맨 아래 지금 나오는 노래: {0} 곡 제목, {1} 가수(대문자로 나온다. AssaultBar)"
+hud.song.siren,♪ 사이렌 · 노래 없음,,캠페인 단계 줄 맨 아래: 노래 없는 버티기 동안(AssaultBar)
+hud.song.break,♪ 다음 노래를 기다리는 중,,캠페인 단계 줄 맨 아래: 노래와 노래 사이 쉬는 동안(AssaultBar)
+objective.alert.chip,NEW OBJECTIVE,,"새 목표 알림의 머리글: 기본(카드)은 흰 칩, 심플(리본)은 분홍 머리(ObjectiveAlert)"
+music.operationblacklight.title,Operation Black Light,,Music.csv OperationBlackLight(음악2)의 곡 제목: 습격 단계 줄과 경보 패널에 나온다
+music.operationblacklight.artist,Le Castle Vania,,Music.csv OperationBlackLight(음악2)의 가수
+music.onebulletwellplaced.title,One Bullet Well Placed,,Music.csv OneBulletWellPlaced(음악1)의 곡 제목
+music.onebulletwellplaced.artist,Le Castle Vania,,Music.csv OneBulletWellPlaced(음악1)의 가수
 hud.ammo.reloading,RELOADING  /  {0:1}s,,"탄약 표시 > 장전 중 상태 줄. {0:1}=남은 초(소수 한 자리, TextMeshPro 형식이라 그대로 둔다)"
 hud.ammo.reserve,RESERVE,,탄약 표시 > 예비 탄약 숫자 위 작은 글자
 moment.ult.any.title,ULTIMATE,,궁극기 알림 띠의 큰 이름: 클래스 줄이 없는 궁극기(MomentLook)
@@ -1008,6 +1024,9 @@ death.next.wipe.waves,{0}초 뒤 1웨이브부터 다시,,데스 스크린 마�
 death.next.wipe.start,{0}초 뒤 처음 자리에서 다시,,데스 스크린 마지막 줄(전멸 뒤 그 밖의 맵). {0}=남은 초
 settings.hud.death_screen,데스 스크린,,설정 창 > HUD > 행 (죽었을 때 화면. 켬·짧게·끔)
 settings.hud.death_screen.short,짧게,,"설정 창 > HUD > 데스 스크린 선택지 (같은 연출을 짧고 옅게, 피 없이. 수치는 DeathScreen.csv Short 줄)"
+settings.hud.objective_alert,목표 알림,,설정 창 > HUD > 행 (새 목표가 들어올 때 화면 위 가운데 알림. 기본·심플)
+settings.hud.objective_alert.card,기본,,"설정 창 > HUD > 목표 알림 선택지 (흰 선에서 열리는 카드에 글자가 한 자씩 쾅, 끝나면 목표 바로 날아가 꽂힌다)"
+settings.hud.objective_alert.ribbon,심플,,설정 창 > HUD > 목표 알림 선택지 (가운데서 펼쳐지는 띠에 글자가 타자 치듯 찍힌다)
 #--- 처치 점수·킬 피드 ---,,,
 feed.score.kill,처치,,처치 점수 팝업(총 오른쪽 위)의 줄
 feed.score.headshot,헤드샷,,처치 점수 팝업의 줄

@@ -3,8 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// The menus' few shapes, drawn once in code into small white textures and tinted where they are used: the cut-corner
-/// card (a 9-sliced sprite), the rangefinder rings, soft glows, a light beam, the screen's dark edges, film grain and a
-/// soft dot. Made on first use and kept.
+/// card (a 9-sliced sprite), the rangefinder rings, soft glows, a light beam, the screen's dark edges, film grain, a
+/// soft dot, hazard stripes and halftone dots. Made on first use and kept.
 /// </summary>
 public static class KitShapes
 {
@@ -14,7 +14,7 @@ public static class KitShapes
     public const float ChamferCut = 10f;
 
     private static Sprite chamfer;
-    private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade;
+    private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade, stripes, halftone;
 
     /// <summary>White, with its top-right and bottom-left corners cut on the diagonal; sliced so the cut stays 10 px.</summary>
     public static Sprite Chamfer
@@ -114,6 +114,27 @@ public static class KitShapes
         Polar(x, y, 16, out float r, out _, out _);
         return Mathf.Clamp01((1f - r) * 2.2f);
     });
+
+    /// <summary>
+    /// Diagonal stripes, a band and a gap of 16 px each along the row, edges a pixel soft so they stay smooth sliding:
+    /// a hazard band. Tiles (repeat it with the image's uvRect).
+    /// </summary>
+    public static Texture2D Stripes => stripes != null ? stripes : stripes = Tiled(Draw("Kit Stripes", 32, 32, (x, y) =>
+        Mathf.Clamp01(8.5f - Mathf.Abs(Mathf.Repeat(x + y + 1f, 32f) - 8f))));
+
+    /// <summary>Print's halftone: two soft dots a 16 px tile, set on the diagonal. Tiles.</summary>
+    public static Texture2D Halftone => halftone != null ? halftone : halftone = Tiled(Draw("Kit Halftone", 16, 16, (x, y) =>
+    {
+        float px = x + .5f, py = y + .5f;
+        float near = Mathf.Min(Mathf.Sqrt((px - 4f) * (px - 4f) + (py - 4f) * (py - 4f)), Mathf.Sqrt((px - 12f) * (px - 12f) + (py - 12f) * (py - 12f)));
+        return Mathf.Clamp01(2.6f - near);
+    }));
+
+    private static Texture2D Tiled(Texture2D texture)
+    {
+        texture.wrapMode = TextureWrapMode.Repeat;
+        return texture;
+    }
 
     // Where a pixel is from the middle of a square texture: r from 0 (middle) to 1 (edge's midpoint), the angle in
     // degrees (0 up, clockwise), and how many pixels r = 1 is.

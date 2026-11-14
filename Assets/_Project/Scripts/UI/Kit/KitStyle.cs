@@ -73,6 +73,16 @@ public static class KitStyle
         return image;
     }
 
+    /// <summary>A texture over the rect, tinted (KitShapes' glows, beams, stripes, halftone), taking no clicks.</summary>
+    public static RawImage Raw(RectTransform rect, Texture texture, Color color)
+    {
+        var image = rect.gameObject.AddComponent<RawImage>();
+        image.texture = texture;
+        image.color = color;
+        image.raycastTarget = false;
+        return image;
+    }
+
     /// <summary>A fill with two opposite corners cut off (top right, bottom left): the menus' card and button shape.</summary>
     public static Image Cut(RectTransform rect, Color color)
     {

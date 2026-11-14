@@ -24,6 +24,8 @@ internal sealed class CampaignMusic
     public sealed class Song
     {
         public AudioClip Clip;
+        /// <summary>Its title and artist as Music.csv's cells hold them (Texts.csv ids, or plain words): Texts.Cell shows them.</summary>
+        public string Title = "", Artist = "";
         public float Volume = 1f, FadeIn = .25f, FadeOut = 4f, Peak = float.PositiveInfinity;
         /// <summary>Its assaults as start and end pairs (s into the file), in order.</summary>
         public float[] Assaults = Array.Empty<float>();
@@ -199,6 +201,8 @@ internal sealed class CampaignMusic
             string path = row.Text("clip");
             if (path.Length > 0) song.Clip = Resources.Load<AudioClip>(path);
             if (song.Clip == null) Debug.LogWarning($"[Campaign] song {id}: no clip at Resources/{path} yet; its time still runs.");
+            song.Title = row.Text("title");
+            song.Artist = row.Text("artist");
             song.Volume = Mathf.Clamp01(row.Number("volume", 1f));
             song.FadeIn = Mathf.Max(.01f, row.Number("fadeIn", .25f));
             song.FadeOut = Mathf.Max(.01f, row.Number("fadeOut", 4f));

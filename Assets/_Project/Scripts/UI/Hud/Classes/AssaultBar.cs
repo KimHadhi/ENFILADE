@@ -3,215 +3,204 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// D-3, memo 25 (third mockup round: B overall, with A's hatched rails, and the time shown the way a music player shows
-/// a song), turned into PAYDAY 2's cycle (user, 2026-11-14: "노래가 하이라이트 부분으로 됐을 때 딱 UI도 더 간지나게
-/// 바뀌면서"): the objective bar shows the fight's phase (CampaignRun.TryPhase). Under the bar runs the phase row: a small
-/// slanted tag with the phase's word (Texts.csv hud.phase.*), then the song like a track in a music player, time gone at
-/// the left, the line with the song's assaults marked in pink and a head walking along it, the whole length at the
-/// right. In control the tag and head are calm white. In the anticipation the tag blinks pink and the bar's ! tab
-/// flickers into the hatched assault tab, faster as the assault nears. As the assault breaks in, on the song's
-/// highlight, the tag punches, the tab flips over into the dark one hatched in pink, a white edge sweeps along and the
-/// strip becomes a pink tape on which 습격 중 runs without end between slashes, held at both ends by dark caps, two thin
-/// hatched rails running opposite ways along its top and foot. When it ends, a white edge cuts the tape back to the left
-/// and the objective shows again. A hold without a song is one assault its whole length. It sits on the bar itself
-/// (MissionBarLook adds it), so it leans and follows with the HUD. Real time.
-/// The row is the bar's own row under it: MissionHUD's key cap and 목표·점수판 hint stood in the same place and the
-/// time lay over them (user, 2026-11-12: "아니 TAB이랑 목표 점수판 저거랑 겹치는데?"), so the row tells how far under the
-/// bar it reaches (Below) and what stands under the bar steps down out of its way while it is there.
+/// The objective bar's look of the fight's phase (CampaignRun.TryPhase), PAYDAY 2's cycle. Under the bar runs the phase
+/// row (AssaultBar.Row.cs): the phase in brackets with its countdown, the song as a meter of segments with its assaults
+/// in pink, and the song playing, title and artist, beside a small equaliser (user, 2026-11-14: "어썰트 바에는 현재 무슨
+/// 노래가 플레이 중인지도 알려 줬으면 해"). As the assault breaks in, on the song's highlight, the strip becomes an alarm
+/// panel: dark, edged in pink with a soft glow, hazard stripes drifting along its right end, ASSAULT IN PROGRESS over the
+/// song's name, a line along its foot shrinking as the assault runs out, and white brackets at its corners; the ! tab
+/// turns into a beacon whose light slowly goes round.
+/// The second draft round's pick (2026-11-14: "경보 패널은 B인데 뭔가 아까에 비해 Too much"): the draft's scanlines,
+/// glitch entrance and fast stripes are gone; the panel slides open, its words settle and one soft light passes. And
+/// nothing blinks hard: the anticipation breathes, a smooth swell no faster than 1.6 times a second that only dims to
+/// half (the draft's on/off blink nearly gave the user a panic attack).
+/// It sits on the bar itself (MissionBarLook adds it), so it leans and follows with the HUD. Real time.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class AssaultBar : MonoBehaviour, IHudPreview
+public sealed partial class AssaultBar : MonoBehaviour, IHudPreview
 {
-    // The ! tab's width as MissionBarLook lays it (Hud.csv Mission badgeSize.x), the caps', the rails', the slant.
-    private const float TabWidth = 50f, CapWidth = 14f, RailHeight = 5f, Slant = 6f;
-    private const float GrowSeconds = .32f, FlipSeconds = .22f, WipeSeconds = .34f, CutSeconds = .5f, RunSpeed = 86f, RailSpeed = 64f;
-    // The row: its middle this far under the bar's foot, its labels this tall and wide, where the line starts after the
-    // time gone and the room before the whole length, the tag's padding, the gap after it and its slant (px).
-    private const float RowDrop = 22f, RowHeight = 18f, StampWidth = 48f, LineLeft = 54f, WholeGap = 8f, TagPad = 16f, TagGap = 6f, TagSlant = 4f;
-    // The line's and an assault mark's thickness (px); marks drawn at most.
-    private const float LineHeight = 3f, MarkHeight = 5f;
-    private const int MostMarks = 8;
-    // The row fades in this fast (s); a new phase's tag grows this much for this long; the anticipation blinks this many
-    // times a second as it begins and as the assault breaks in, over its last this many seconds.
-    private const float RowFade = .3f, TagPunch = .3f, PunchSeconds = .3f, BlinkSlow = 1.5f, BlinkFast = 7f, BlinkSpan = 10f;
-    // The band's words (Texts.csv hud.assault.band) and the slashes between repeats: a cell's spaces at its ends are
-    // trimmed on reading, so the gap stays here.
-    private static string Words => Texts.Get("hud.assault.band") + "   ///   ";
-    // What ENFILADE → HUD → 겹침 검사 shows while it holds the bar in its assault: a 1:30 song at 0:37, its assault 0:20-1:00.
-    private const float PreviewElapsed = 37f, PreviewLength = 90f;
-    private static readonly float[] PreviewAssaults = { 20f, 60f };
+    // The ! tab as MissionBarLook lays it (Hud.csv Mission badgeSize), the gap after it, how far the panel reaches over
+    // and under the strip, its slant, its edge, the glow round it (px).
+    private const float TabWidth = 50f, TabHeight = 54f, PanelGap = 4f, PanelOver = 8f, Slant = 8f, Edge = 1.5f, GlowReach = 14f;
+    // The brackets at the panel's corners: arm length, thickness, how far out (px), how far they slide in from.
+    private const float BracketArm = 10f, BracketThick = 2f, BracketOut = 5f, BracketSlide = 12f;
+    // The hazard stripes: their share of the panel's right end and drift (px/s); the light that passes once.
+    private const float StripeShare = .46f, StripeSpeed = 12f, SweepWidth = 46f;
+    // Timing (s): the panel opens, its words settle, the light passes at and for, it closes; the beacon fades and turns
+    // once in this long (assault, anticipation).
+    private const float GrowSeconds = .35f, SettleSeconds = .5f, SweepAt = .2f, SweepSeconds = .55f, CloseSeconds = .4f,
+        BeaconFade = .3f, TurnAssault = 2f, TurnAnticipation = 4f;
+    // The anticipation's breath: as slow as this as it begins and as fast as this at the end (times a second), over its
+    // last this many seconds, dimming only to this.
+    private const float PulseSlow = .8f, PulseFast = 1.6f, PulseSpan = 12f, PulseDim = .55f;
+    // The panel's words: the title's size and its spacing as it settles, the song line's size.
+    private const float TitleSize = 15f, SpacingFrom = 40f, SpacingTo = 22f, SongSize = 10.5f;
+    private static readonly Color PanelColor = new Color(.075f, .05f, .07f, .95f), SongColor = new Color(1f, .53f, .64f);
+    // What ENFILADE → HUD → 겹침 검사 shows while it holds the bar in its assault: a 4:00 song at 1:50, assaults 1:39-2:25.
+    private const float PreviewElapsed = 110f, PreviewLength = 240f;
+    private static readonly float[] PreviewAssaults = { 99f, 145f, 175f, 236f };
 
-    private static Texture2D hatch;
-    private RectTransform root, band, tape, wipe, cut, tab, row, tagPlate, trackRow, track, played, head, goneBox, wholeBox;
-    private RectTransform[] rails;
-    private RawImage[] railImages;
-    private readonly RectTransform[] marks = new RectTransform[MostMarks], marksPlayed = new RectTransform[MostMarks];
-    private TextMeshProUGUI run, gone, whole, tag;
-    private Image tagFill, headFill, wipeImage;
-    private CanvasGroup rowGroup, tabGroup;
-    private PhaseTrack last;
+    private RectTransform root, panel, plate, edge, glow, stripes, stripeFade, sweep, remain, beacon, beam;
+    private readonly RectTransform[] brackets = new RectTransform[4];
+    private RawImage stripeImage;
+    private CanvasGroup panelGroup, beaconGroup, bracketGroup;
+    private TextMeshProUGUI title, song;
     private MissionBarLook look;
+    private PhaseTrack last;
     private CombatPhase shown = CombatPhase.Quiet;
-    private float age = -1f, ending = -1f, runOffset, rowShow, punchClock = -1f, blinkClock, tagWidth;
-    private bool on, previewing, blinkOn;
+    private float age = -1f, ending = -1f, beaconShow, pulseClock, pulse = 1f;
+    private bool on, previewing;
 
     /// <summary>
     /// How far under the bar's foot the phase row reaches now (px), from the moment it starts to show until it has faded
     /// away; 0 while the bar is plain. Whatever stands under the bar keeps clear of this.
     /// </summary>
-    public float Below => root != null && root.gameObject.activeSelf && rowShow > 0f ? RowDrop + RowHeight * .5f : 0f;
+    public float Below => root != null && root.gameObject.activeSelf && rowShow > 0f ? RowBottom : 0f;
 
-    /// <summary>ENFILADE → HUD → 겹침 검사: holds the bar in an assault (a 1:30 song at 0:37) while it measures.</summary>
+    /// <summary>ENFILADE → HUD → 겹침 검사: holds the bar in an assault (a 4:00 song at 1:50) while it measures.</summary>
     public void Preview(bool show) => previewing = show;
 
     private void LateUpdate()
     {
         float dt = Time.unscaledDeltaTime;
         bool wanted = CampaignRun.TryPhase(out var now);
-        if (previewing && !wanted)
-        {
-            wanted = true;
-            now = new PhaseTrack { Phase = CombatPhase.Assault, Elapsed = PreviewElapsed, Length = PreviewLength,
-                Until = PreviewAssaults[1] - PreviewElapsed, Assaults = PreviewAssaults };
-        }
+        if (previewing && !wanted) { wanted = true; now = PreviewTrack(); }
         if (wanted && root == null) Build();
         if (root == null) return;
         var phase = wanted ? now.Phase : CombatPhase.Quiet;
         if (wanted) last = now;
         if (phase != shown) Turn(phase);
         bool assault = phase == CombatPhase.Assault;
-        if (assault && !on) Begin();
-        else if (!assault && on) End();
-        rowShow = Mathf.MoveTowards(rowShow, wanted ? 1f : 0f, dt / (wanted ? RowFade : CutSeconds));
+        if (assault && !on) Open();
+        else if (!assault && on) Close();
         if (on) age += dt;
         else if (ending >= 0f) ending += dt;
-        bool cutting = !on && ending >= 0f && ending < CutSeconds;
-        root.gameObject.SetActive(rowShow > 0f || on || cutting);
+        bool closing = !on && ending >= 0f && ending < CloseSeconds;
+        rowShow = Mathf.MoveTowards(rowShow, wanted ? 1f : 0f, dt / (wanted ? RowFade : CloseSeconds));
+        root.gameObject.SetActive(rowShow > 0f || on || closing || beaconShow > 0f);
         if (!root.gameObject.activeSelf) return;
-        // The anticipation's blink, faster as the assault nears.
-        float nearness = Mathf.Clamp01((float.IsInfinity(last.Until) ? BlinkSpan : last.Until) / BlinkSpan);
-        blinkClock = Mathf.Repeat(blinkClock + dt * Mathf.Lerp(BlinkFast, BlinkSlow, nearness), 1f);
-        blinkOn = blinkClock < .5f;
+        Breathe(phase, dt);
         float width = Mathf.Max(TabWidth + 60f, ((RectTransform)transform).rect.width);
-        PoseTape(width, cutting, dt);
+        PosePanel(width, closing, dt);
+        PoseBeacon(phase, dt);
         PoseRow(width, dt);
     }
 
-    // A new phase: its word on the tag, which punches and flashes white as it comes.
-    private void Turn(CombatPhase phase)
+    // The anticipation breathes: a smooth swell, slow at first and faster as the assault nears, never a hard blink.
+    private void Breathe(CombatPhase phase, float dt)
     {
-        shown = phase;
-        if (phase == CombatPhase.Quiet) return;
-        tag.text = Texts.Get(TagId(phase));
-        punchClock = 0f;
+        if (phase != CombatPhase.Anticipation) { pulse = 1f; pulseClock = 0f; return; }
+        float nearness = Mathf.Clamp01((float.IsInfinity(last.Until) ? PulseSpan : last.Until) / PulseSpan);
+        pulseClock = Mathf.Repeat(pulseClock + dt * Mathf.Lerp(PulseFast, PulseSlow, nearness), 1f);
+        pulse = Mathf.Lerp(PulseDim, 1f, .5f + .5f * Mathf.Cos(pulseClock * Mathf.PI * 2f));
     }
 
-    private static string TagId(CombatPhase phase) => phase == CombatPhase.Assault ? "hud.phase.assault"
-        : phase == CombatPhase.Anticipation ? "hud.phase.anticipation" : "hud.phase.control";
-
-    private void Begin()
+    private void Open()
     {
         on = true;
         age = 0f;
         ending = -1f;
         root.SetAsLastSibling();
+        title.text = Texts.Get("hud.assault.title");
     }
 
-    private void End()
+    private void Close()
     {
         on = false;
         ending = 0f;
     }
 
-    private void PoseTape(float width, bool cutting, float dt)
+    private void PosePanel(float width, bool closing, float dt)
     {
-        float strip = width - TabWidth;
-        float grow = on ? Ease.Out(age / GrowSeconds) : 1f;
-        float left = on ? 1f : cutting ? 1f - Ease.Out(ending / CutSeconds) : 0f;
-        // The tab flips over, edge on, into the hatched one, and goes with the tape; in the anticipation it flickers in.
-        float flip = on ? Mathf.Abs(Mathf.Cos(Mathf.Clamp01(age / FlipSeconds) * Mathf.PI)) : 1f;
-        tab.localScale = new Vector3(Mathf.Max(.08f, flip), 1f, 1f);
-        tabGroup.alpha = on ? 1f : cutting ? left : shown == CombatPhase.Anticipation && blinkOn ? .75f : 0f;
-        band.gameObject.SetActive(on || cutting);
-        if (!band.gameObject.activeSelf) return;
-        float shownWidth = strip * Mathf.Min(grow, left);
-        // The tape grows out from the tab and, at the end, is cut back to it.
-        tape.anchoredPosition = new Vector2(TabWidth, 0f);
-        tape.sizeDelta = new Vector2(shownWidth, tape.sizeDelta.y);
-        runOffset = Mathf.Repeat(runOffset + dt * RunSpeed, 10000f);
-        run.rectTransform.anchoredPosition = new Vector2(CapWidth + 4f - Mathf.Repeat(runOffset, Lap()), 0f);
-        for (int i = 0; i < rails.Length; i++)
-        {
-            var uv = railImages[i].uvRect;
-            uv.width = Mathf.Max(1f, shownWidth / 18f);
-            uv.x = (i == 0 ? -1f : 1f) * Time.unscaledTime * RailSpeed / 18f;
-            railImages[i].uvRect = uv;
-        }
-        // A white edge sweeps along as it comes, and stands at the cut as it goes.
-        float sweep = on ? Mathf.Clamp01(age / (WipeSeconds * .75f)) : 0f;
-        wipe.gameObject.SetActive(on && age < WipeSeconds);
-        wipe.anchoredPosition = new Vector2(TabWidth + strip * sweep - 26f, 0f);
-        wipeImage.color = new Color(1f, 1f, 1f, 1f - Mathf.Clamp01((age - WipeSeconds * .2f) / (WipeSeconds * .8f)));
-        cut.gameObject.SetActive(!on);
-        cut.anchoredPosition = new Vector2(TabWidth + shownWidth, 0f);
+        panel.gameObject.SetActive(on || closing);
+        if (!panel.gameObject.activeSelf) return;
+        float full = Mathf.Max(20f, width - TabWidth - PanelGap);
+        float open = on ? Ease.Out(age / GrowSeconds) : 1f - Ease.Out(ending / CloseSeconds);
+        float shownWidth = full * open;
+        float height = ((RectTransform)transform).rect.height + PanelOver * 2f;
+        panel.anchoredPosition = new Vector2(TabWidth + PanelGap, -PanelOver);
+        panel.sizeDelta = new Vector2(shownWidth, height);
+        panelGroup.alpha = on ? Mathf.Clamp01(age / (GrowSeconds * .6f)) : open;
+        edge.sizeDelta = new Vector2(shownWidth + Edge * 2f, height + Edge * 2f);
+        glow.sizeDelta = new Vector2(shownWidth + GlowReach * 2f, height + GlowReach * 2f);
+        // The stripes drift along the right end, faded into the panel at their left.
+        float stripeWidth = full * StripeShare;
+        stripes.sizeDelta = new Vector2(stripeWidth, 0f);
+        stripeFade.sizeDelta = new Vector2(stripeWidth * .7f, 0f);
+        var uv = stripeImage.uvRect;
+        uv.width = stripeWidth / 32f;
+        uv.height = height / 32f;
+        uv.x = Mathf.Repeat(uv.x + dt * StripeSpeed / 32f, 1f);
+        stripeImage.uvRect = uv;
+        // One soft light passes as it opens.
+        float sweepT = (age - SweepAt) / SweepSeconds;
+        sweep.gameObject.SetActive(on && sweepT > 0f && sweepT < 1f);
+        sweep.anchoredPosition = new Vector2(Mathf.Lerp(-SweepWidth, full + SweepWidth, Ease.InOut(sweepT)), 0f);
+        // The words settle in, closing up as they come.
+        float settle = on ? Ease.Out(Mathf.Clamp01((age - .08f) / SettleSeconds)) : 1f;
+        title.characterSpacing = Mathf.Lerp(SpacingFrom, SpacingTo, settle);
+        title.alpha = settle;
+        song.alpha = on ? Ease.Out(Mathf.Clamp01((age - .2f) / SettleSeconds)) : 1f;
+        song.text = PanelSong();
+        // The line along the foot is the assault's time left.
+        float left = last.Phase == CombatPhase.Assault && !float.IsInfinity(last.Until) ? Mathf.Clamp01(last.Until / AssaultSpan()) : 0f;
+        remain.sizeDelta = new Vector2(full * left, 2f);
+        // The brackets slide in to the corners as it opens, and go with it.
+        bracketGroup.alpha = on ? Ease.Out(Mathf.Clamp01((age - .1f) / .3f)) : open;
+        float slide = on ? (1f - Ease.Out(Mathf.Clamp01((age - .1f) / .3f))) * BracketSlide : 0f;
+        float x0 = TabWidth + PanelGap - BracketOut - slide, x1 = TabWidth + PanelGap + shownWidth + BracketOut + slide;
+        float y0 = -PanelOver - BracketOut, y1 = -PanelOver + height + BracketOut;
+        brackets[0].anchoredPosition = new Vector2(x0, y1);
+        brackets[1].anchoredPosition = new Vector2(x1, y1);
+        brackets[2].anchoredPosition = new Vector2(x0, y0);
+        brackets[3].anchoredPosition = new Vector2(x1, y0);
     }
 
-    private void PoseRow(float width, float dt)
+    // How long the assault under way lasts, for the line along the foot: the song's window round now, or the hold's whole.
+    private float AssaultSpan()
     {
-        rowGroup.alpha = Ease.Out(rowShow);
-        if (rowShow <= 0f) return;
-        // The tag: calm white in control, blinking pink in the anticipation, solid pink in the assault; white for a
-        // moment as a phase begins.
-        float punch = 0f;
-        if (punchClock >= 0f)
-        {
-            punchClock += dt;
-            float t = Mathf.Clamp01(punchClock / PunchSeconds);
-            punch = (1f - t) * (1f - t);
-            if (t >= 1f) punchClock = -1f;
-        }
-        tagPlate.localScale = Vector3.one * (1f + TagPunch * punch);
-        if (shown != CombatPhase.Quiet)
-        {
-            var plate = shown == CombatPhase.Control ? KitStyle.With(KitStyle.Ice, .16f)
-                : shown == CombatPhase.Anticipation ? KitStyle.With(KitStyle.Accent, blinkOn ? 1f : .4f) : KitStyle.Accent;
-            tagFill.color = Color.Lerp(plate, Color.white, punch);
-            tag.color = shown == CombatPhase.Control && punch < .5f ? KitStyle.Ice : KitStyle.Ink;
-            headFill.color = shown == CombatPhase.Control ? KitStyle.Ice : KitStyle.Accent;
-        }
-        // The song like a music player's: time gone, the line with its assaults in pink and the head walking along it,
-        // the whole length. No length (between two songs, a song without its file): the tag alone.
-        float length = last.Length;
-        trackRow.gameObject.SetActive(length > 0f);
-        if (length <= 0f) return;
-        // The row reaches as far right as the bar's own parts do (its count box and the line's tail, MissionBarLook.Reach),
-        // so the tag before it doesn't squeeze the song's line under a short objective.
-        float goneLeft = tagWidth + TagGap, lineLeft = goneLeft + LineLeft;
-        float right = look != null ? Mathf.Max(width, look.Reach) : width + 2f;
-        float trackWidth = Mathf.Max(40f, right - lineLeft - WholeGap - StampWidth);
-        float headX = trackWidth * Mathf.Clamp01(last.Elapsed / length);
-        track.anchoredPosition = new Vector2(lineLeft, 0f);
-        track.sizeDelta = new Vector2(trackWidth, LineHeight);
-        played.sizeDelta = new Vector2(headX, LineHeight);
-        var spans = last.Assaults ?? System.Array.Empty<float>();
-        for (int i = 0; i < MostMarks; i++)
-        {
-            bool used = i * 2 + 1 < spans.Length && spans[i * 2] < length;
-            marks[i].gameObject.SetActive(used);
-            if (!used) continue;
-            float from = trackWidth * spans[i * 2] / length, to = trackWidth * Mathf.Min(spans[i * 2 + 1], length) / length;
-            marks[i].anchoredPosition = new Vector2(from, 0f);
-            marks[i].sizeDelta = new Vector2(Mathf.Max(2f, to - from), MarkHeight);
-            marksPlayed[i].sizeDelta = new Vector2(Mathf.Clamp(headX - from, 0f, to - from), MarkHeight);
-        }
-        head.anchoredPosition = new Vector2(headX, 0f);
-        gone.text = DeathCard.Clock(last.Elapsed);
-        whole.text = DeathCard.Clock(length);
-        goneBox.anchoredPosition = new Vector2(goneLeft, 0f);
-        wholeBox.anchoredPosition = new Vector2(lineLeft + trackWidth + WholeGap, 0f);
+        var spans = last.Assaults;
+        if (spans != null)
+            for (int i = 0; i + 1 < spans.Length; i += 2)
+                if (last.Elapsed >= spans[i] && last.Elapsed < spans[i + 1]) return Mathf.Max(1f, spans[i + 1] - spans[i]);
+        return Mathf.Max(1f, last.Length);
     }
 
-    private float Lap() => Mathf.Max(80f, run.GetPreferredValues(Words).x);
+    private string PanelSong()
+    {
+        string band = Texts.Get("hud.assault.band");
+        if (!string.IsNullOrEmpty(last.Title)) return Texts.Format("hud.assault.song", band, last.Title, last.Artist);
+        return last.Siren ? Texts.Format("hud.assault.siren", band) : band;
+    }
+
+    // The ! tab becomes a beacon in the anticipation (breathing with it) and the assault; its light turns slowly.
+    private void PoseBeacon(CombatPhase phase, float dt)
+    {
+        bool wanted = phase == CombatPhase.Assault || phase == CombatPhase.Anticipation;
+        beaconShow = Mathf.MoveTowards(beaconShow, wanted ? 1f : 0f, dt / BeaconFade);
+        beacon.gameObject.SetActive(beaconShow > 0f);
+        if (!beacon.gameObject.activeSelf) return;
+        beaconGroup.alpha = beaconShow * (phase == CombatPhase.Anticipation ? pulse : 1f);
+        float turn = phase == CombatPhase.Assault ? TurnAssault : TurnAnticipation;
+        beam.localRotation = Quaternion.Euler(0f, 0f, beam.localEulerAngles.z - 360f * dt / turn);
+    }
+
+    private PhaseTrack PreviewTrack()
+    {
+        var track = new PhaseTrack
+        {
+            Phase = CombatPhase.Assault, Elapsed = PreviewElapsed, Length = PreviewLength, Until = PreviewAssaults[1] - PreviewElapsed,
+            Assaults = PreviewAssaults, Title = "", Artist = ""
+        };
+        var songs = CampaignMusic.All;
+        if (songs.Count > 0)
+        {
+            var first = CampaignMusic.Find(songs[0]);
+            track.Title = Texts.Cell(first.Title);
+            track.Artist = Texts.Cell(first.Artist);
+        }
+        return track;
+    }
 
     private void Build()
     {
@@ -220,161 +209,160 @@ public sealed class AssaultBar : MonoBehaviour, IHudPreview
         root = FeelUI.Rect("Assault", bar);
         root.anchorMin = root.anchorMax = root.pivot = Vector2.zero;
         root.sizeDelta = Vector2.zero;
-        float height = bar.rect.height;
-        band = FeelUI.Rect("Band", root);
-        band.anchorMin = band.anchorMax = band.pivot = Vector2.zero;
 
-        // The pink tape over the strip, clipped so the words run inside it.
-        tape = FeelUI.Rect("Tape", band);
-        tape.anchorMin = tape.anchorMax = tape.pivot = Vector2.zero;
-        tape.sizeDelta = new Vector2(0f, height);
-        KitSkew.On(KitStyle.Fill(tape, KitStyle.Accent), Slant);
-        tape.gameObject.AddComponent<RectMask2D>();
-        var words = FeelUI.Rect("Run", tape);
-        words.anchorMin = words.anchorMax = words.pivot = new Vector2(0f, .5f);
-        words.sizeDelta = new Vector2(4000f, height);
-        run = KitStyle.Flat(words, string.Concat(System.Linq.Enumerable.Repeat(Words, 12)), 21f, TextAlignmentOptions.MidlineLeft, KitStyle.Ink);
-        run.textWrappingMode = TextWrappingModes.NoWrap;
-        rails = new RectTransform[2];
-        railImages = new RawImage[2];
-        for (int i = 0; i < 2; i++)
-        {
-            var rail = FeelUI.Rect(i == 0 ? "Top rail" : "Foot rail", tape);
-            rail.anchorMin = new Vector2(0f, i == 0 ? 1f : 0f);
-            rail.anchorMax = new Vector2(1f, i == 0 ? 1f : 0f);
-            rail.pivot = new Vector2(.5f, i == 0 ? 1f : 0f);
-            rail.sizeDelta = new Vector2(0f, RailHeight);
-            var image = rail.gameObject.AddComponent<RawImage>();
-            image.texture = Hatch();
-            image.color = KitStyle.Ink;
-            image.raycastTarget = false;
-            rails[i] = rail;
-            railImages[i] = image;
-        }
-        Cap("Cap left", tape, new Vector2(0f, 0f));
-        Cap("Cap right", tape, new Vector2(1f, 0f));
+        // The alarm panel over the strip: a glow, a pink edge, the dark plate that clips what is on it.
+        panel = Corner("Panel", root);
+        panelGroup = panel.gameObject.AddComponent<CanvasGroup>();
+        glow = Centred("Glow", panel);
+        var glowImage = glow.gameObject.AddComponent<Image>();
+        glowImage.sprite = CombatUIAssets.SoftGlow;
+        glowImage.type = Image.Type.Sliced;
+        glowImage.color = KitStyle.With(KitStyle.Accent, .22f);
+        glowImage.raycastTarget = false;
+        edge = Centred("Edge", panel);
+        KitSkew.On(Fill(edge, KitStyle.With(KitStyle.Accent, .75f)), Slant);
+        plate = FeelUI.Rect("Plate", panel);
+        KitStyle.Stretch(plate);
+        var plateImage = Fill(plate, PanelColor);
+        KitSkew.On(plateImage, Slant);
+        plate.gameObject.AddComponent<Mask>().showMaskGraphic = true;
+        stripes = FeelUI.Rect("Stripes", plate);
+        stripes.anchorMin = new Vector2(1f, 0f);
+        stripes.anchorMax = Vector2.one;
+        stripes.pivot = new Vector2(1f, .5f);
+        stripeImage = KitStyle.Raw(stripes, KitShapes.Stripes, KitStyle.With(KitStyle.Accent, .7f));
+        stripeFade = FeelUI.Rect("Stripe Fade", stripes);
+        stripeFade.anchorMin = Vector2.zero;
+        stripeFade.anchorMax = Vector2.up;
+        stripeFade.pivot = new Vector2(0f, .5f);
+        KitStyle.Raw(stripeFade, KitShapes.Fade, PanelColor);
+        var lit = FeelUI.Rect("Lit Edge", plate);
+        lit.anchorMin = new Vector2(0f, 1f);
+        lit.anchorMax = Vector2.one;
+        lit.pivot = new Vector2(.5f, 1f);
+        lit.sizeDelta = new Vector2(0f, 1f);
+        Fill(lit, KitStyle.With(KitStyle.Accent, .45f));
+        sweep = FeelUI.Rect("Sweep", plate);
+        sweep.anchorMin = Vector2.zero;
+        sweep.anchorMax = Vector2.up;
+        sweep.pivot = new Vector2(.5f, .5f);
+        sweep.sizeDelta = new Vector2(SweepWidth, 0f);
+        KitSkew.On(Fill(sweep, KitStyle.With(Color.white, .18f)), 14f);
+        remain = FeelUI.Rect("Time Left", plate);
+        remain.anchorMin = remain.anchorMax = remain.pivot = Vector2.zero;
+        Fill(remain, KitStyle.Accent);
+        title = Words("Title", plate, TitleSize, Color.white, 6f);
+        title.fontStyle |= FontStyles.Bold;
+        song = Words("Song", plate, SongSize, SongColor, -10f);
+        song.fontStyle |= FontStyles.UpperCase;
+        song.characterSpacing = 6f;
 
-        // The tab, dark and hatched in pink, flipped over the ! one.
-        tab = FeelUI.Rect("Tab", root);
-        tab.anchorMin = tab.anchorMax = Vector2.zero;
-        tab.pivot = new Vector2(.5f, 0f);
-        tab.anchoredPosition = new Vector2(TabWidth * .5f, 0f);
-        tab.sizeDelta = new Vector2(TabWidth, 54f);
-        tabGroup = tab.gameObject.AddComponent<CanvasGroup>();
-        KitStyle.Fill(tab, KitStyle.Ink).raycastTarget = false;
-        var stripes = FeelUI.Rect("Hatch", tab);
-        stripes.anchorMin = new Vector2(.12f, .14f);
-        stripes.anchorMax = new Vector2(.88f, .86f);
-        stripes.sizeDelta = Vector2.zero;
-        var hatched = stripes.gameObject.AddComponent<RawImage>();
-        hatched.texture = Hatch();
-        hatched.color = KitStyle.Accent;
-        hatched.uvRect = new Rect(0f, 0f, 2f, 5f);
-        hatched.raycastTarget = false;
+        // The white brackets at its corners, outside the clip.
+        var bracketRoot = FeelUI.Rect("Brackets", root);
+        bracketRoot.anchorMin = bracketRoot.anchorMax = bracketRoot.pivot = Vector2.zero;
+        bracketGroup = bracketRoot.gameObject.AddComponent<CanvasGroup>();
+        for (int i = 0; i < 4; i++) brackets[i] = Bracket(bracketRoot, i);
 
-        // The white edge that sweeps in, and the one that stands at the cut going out.
-        wipe = FeelUI.Rect("Wipe", band);
-        wipe.anchorMin = wipe.anchorMax = wipe.pivot = Vector2.zero;
-        wipe.sizeDelta = new Vector2(52f, height);
-        wipeImage = KitStyle.Fill(wipe, Color.white);
-        wipeImage.raycastTarget = false;
-        KitSkew.On(wipeImage, Slant);
-        cut = FeelUI.Rect("Cut", band);
-        cut.anchorMin = cut.anchorMax = cut.pivot = Vector2.zero;
-        cut.sizeDelta = new Vector2(3f, height + 6f);
-        KitSkew.On(KitStyle.Fill(cut, Color.white), Slant).GetComponent<Image>().raycastTarget = false;
+        // The beacon over the ! tab.
+        beacon = Corner("Beacon", root);
+        beacon.sizeDelta = new Vector2(TabWidth, TabHeight);
+        beaconGroup = beacon.gameObject.AddComponent<CanvasGroup>();
+        beacon.gameObject.AddComponent<RectMask2D>();
+        Fill(beacon, KitStyle.Ink);
+        Frame(beacon, KitStyle.With(KitStyle.Accent, .7f), 1f);
+        beam = FeelUI.Rect("Beam", beacon);
+        beam.anchorMin = beam.anchorMax = new Vector2(.5f, .5f);
+        beam.pivot = new Vector2(.5f, 0f);
+        beam.sizeDelta = new Vector2(46f, 110f);
+        KitStyle.Raw(beam, KitShapes.Beam, KitStyle.With(KitStyle.Accent, .55f));
+        var core = Centred("Core", beacon);
+        core.sizeDelta = new Vector2(34f, 34f);
+        KitStyle.Raw(core, KitShapes.Glow, KitStyle.With(KitStyle.Accent, .6f));
+        var diamond = Centred("Diamond", beacon);
+        diamond.sizeDelta = new Vector2(18f, 18f);
+        diamond.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        Frame(diamond, Color.white, 2f);
+        var mark = Centred("Mark", beacon);
+        mark.sizeDelta = new Vector2(20f, 20f);
+        var markText = KitStyle.Flat(mark, "!", 13f, TextAlignmentOptions.Center, Color.white);
+        markText.fontStyle |= FontStyles.Bold;
 
-        // The phase row under the bar. Its own name, so the HUD overlap check (HudOverlap.csv) can tell the row from
-        // the bar it hangs on.
-        row = FeelUI.Rect("Assault Time", root);
-        row.anchorMin = row.anchorMax = row.pivot = Vector2.zero;
-        row.anchoredPosition = new Vector2(0f, -RowDrop);
-        rowGroup = row.gameObject.AddComponent<CanvasGroup>();
-        rowGroup.alpha = 0f;
-        tagPlate = FeelUI.Rect("Tag", row);
-        tagPlate.anchorMin = tagPlate.anchorMax = tagPlate.pivot = new Vector2(0f, .5f);
-        tagFill = KitStyle.Fill(tagPlate, KitStyle.With(KitStyle.Ice, .16f));
-        tagFill.raycastTarget = false;
-        KitSkew.On(tagFill, TagSlant);
-        tag = KitStyle.Flat(tagPlate, "", 13f, TextAlignmentOptions.Center, KitStyle.Ice);
-        tag.textWrappingMode = TextWrappingModes.NoWrap;
-        // One width for every phase's word, so the line does not jump as the phase turns.
-        tagWidth = 0f;
-        foreach (var phase in new[] { CombatPhase.Control, CombatPhase.Anticipation, CombatPhase.Assault })
-            tagWidth = Mathf.Max(tagWidth, tag.GetPreferredValues(Texts.Get(TagId(phase))).x);
-        tagWidth += TagPad;
-        tagPlate.sizeDelta = new Vector2(tagWidth, RowHeight);
-
-        trackRow = FeelUI.Rect("Track", row);
-        trackRow.anchorMin = trackRow.anchorMax = trackRow.pivot = Vector2.zero;
-        var font = GunFeelSettings.Instance != null ? GunFeelSettings.Instance.scoreFont : null;
-        gone = Stamp("Gone", trackRow, font, out goneBox);
-        track = FeelUI.Rect("Line", trackRow);
-        track.anchorMin = track.anchorMax = track.pivot = new Vector2(0f, .5f);
-        KitStyle.Fill(track, KitStyle.With(KitStyle.Ice, .18f)).raycastTarget = false;
-        played = Strip("Played", track, KitStyle.With(KitStyle.Ice, .55f));
-        for (int i = 0; i < MostMarks; i++)
-        {
-            marks[i] = Strip("Assault " + (i + 1), track, KitStyle.With(KitStyle.Accent, .42f));
-            marksPlayed[i] = Strip("Played", marks[i], KitStyle.Accent);
-        }
-        head = FeelUI.Rect("Head", track);
-        head.anchorMin = head.anchorMax = new Vector2(0f, .5f);
-        head.sizeDelta = new Vector2(9f, 9f);
-        head.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        headFill = KitStyle.Fill(head, KitStyle.Ice);
-        headFill.raycastTarget = false;
-        whole = Stamp("Whole", trackRow, font, out wholeBox);
-        whole.color = KitStyle.Soft;
+        BuildRow();
+        panel.gameObject.SetActive(false);
+        beacon.gameObject.SetActive(false);
         root.gameObject.SetActive(false);
     }
 
-    // A thin bar along the line from its left end, as long as it is posed.
-    private static RectTransform Strip(string label, RectTransform parent, Color color)
+    // A rect hung from its parent's bottom-left corner.
+    private static RectTransform Corner(string label, RectTransform parent)
     {
-        var strip = FeelUI.Rect(label, parent);
-        strip.anchorMin = strip.anchorMax = strip.pivot = new Vector2(0f, .5f);
-        KitStyle.Fill(strip, color).raycastTarget = false;
-        return strip;
+        var rect = FeelUI.Rect(label, parent);
+        rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.zero;
+        return rect;
     }
 
-    private static void Cap(string label, RectTransform parent, Vector2 anchor)
+    // A rect centred on its parent, sized by code.
+    private static RectTransform Centred(string label, RectTransform parent)
     {
-        var cap = FeelUI.Rect(label, parent);
-        cap.anchorMin = new Vector2(anchor.x, 0f);
-        cap.anchorMax = new Vector2(anchor.x, 1f);
-        cap.pivot = new Vector2(anchor.x, .5f);
-        cap.sizeDelta = new Vector2(CapWidth, 0f);
-        KitSkew.On(KitStyle.Fill(cap, KitStyle.Ink), Slant).GetComponent<Image>().raycastTarget = false;
+        var rect = FeelUI.Rect(label, parent);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+        return rect;
     }
 
-    // A time label in its own box: the box is what moves (the kit's label sits stretched in it).
-    private static TextMeshProUGUI Stamp(string label, RectTransform parent, TMP_FontAsset font, out RectTransform box)
+    private static Image Fill(RectTransform rect, Color color)
     {
-        box = FeelUI.Rect(label, parent);
-        box.anchorMin = box.anchorMax = box.pivot = new Vector2(0f, .5f);
-        box.sizeDelta = new Vector2(StampWidth, RowHeight);
-        var text = KitStyle.Flat(box, "0:00", 14f, TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
-        if (font != null) text.font = font;
-        text.textWrappingMode = TextWrappingModes.NoWrap;
-        return text;
+        var image = KitStyle.Fill(rect, color);
+        image.raycastTarget = false;
+        return image;
     }
 
-    // Diagonal stripes, one to a tile, repeated along the rails and over the tab.
-    private static Texture2D Hatch()
+    // Four thin lines along a rect's edges, inside it.
+    private static void Frame(RectTransform rect, Color color, float thick)
     {
-        if (hatch != null) return hatch;
-        const int width = 18, height = 6;
-        hatch = new Texture2D(width, height, TextureFormat.RGBA32, false) { name = "Assault Hatch (Runtime)", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Bilinear };
-        var pixels = new Color32[width * height];
-        for (int y = 0; y < height; y++)
-        for (int x = 0; x < width; x++)
+        for (int side = 0; side < 4; side++)
         {
-            float along = Mathf.Repeat(x + y, width);
-            pixels[y * width + x] = along < width * .5f ? new Color32(255, 255, 255, 255) : new Color32(255, 255, 255, 0);
+            var line = FeelUI.Rect("Frame", rect);
+            bool across = side < 2;
+            line.anchorMin = side == 0 ? Vector2.zero : side == 1 ? Vector2.up : side == 2 ? Vector2.zero : Vector2.right;
+            line.anchorMax = side == 0 ? Vector2.right : side == 1 ? Vector2.one : side == 2 ? Vector2.up : Vector2.one;
+            line.pivot = side == 0 ? new Vector2(.5f, 0f) : side == 1 ? new Vector2(.5f, 1f) : side == 2 ? new Vector2(0f, .5f) : new Vector2(1f, .5f);
+            line.sizeDelta = across ? new Vector2(0f, thick) : new Vector2(thick, 0f);
+            Fill(line, color);
         }
-        hatch.SetPixels32(pixels);
-        hatch.Apply(false, true);
-        return hatch;
+    }
+
+    // One corner's bracket: two arms meeting at its corner (0 top left, 1 top right, 2 bottom left, 3 bottom right).
+    private static RectTransform Bracket(RectTransform parent, int corner)
+    {
+        var at = FeelUI.Rect("Bracket", parent);
+        at.anchorMin = at.anchorMax = Vector2.zero;
+        at.pivot = Vector2.zero;
+        bool right = corner == 1 || corner == 3, top = corner < 2;
+        var across = FeelUI.Rect("Across", at);
+        across.anchorMin = across.anchorMax = Vector2.zero;
+        across.pivot = new Vector2(right ? 1f : 0f, top ? 1f : 0f);
+        across.sizeDelta = new Vector2(BracketArm, BracketThick);
+        Fill(across, KitStyle.With(Color.white, .9f));
+        var down = FeelUI.Rect("Down", at);
+        down.anchorMin = down.anchorMax = Vector2.zero;
+        down.pivot = new Vector2(right ? 1f : 0f, top ? 1f : 0f);
+        down.sizeDelta = new Vector2(BracketThick, BracketArm);
+        Fill(down, KitStyle.With(Color.white, .9f));
+        return at;
+    }
+
+    // A line of words on the plate, from its left edge, its middle this far above the plate's middle (px).
+    private static TextMeshProUGUI Words(string label, RectTransform parent, float size, Color color, float rise)
+    {
+        var rect = FeelUI.Rect(label, parent);
+        rect.anchorMin = new Vector2(0f, .5f);
+        rect.anchorMax = new Vector2(1f, .5f);
+        rect.pivot = new Vector2(0f, .5f);
+        rect.offsetMin = new Vector2(14f, rise - size * .7f);
+        rect.offsetMax = new Vector2(-12f, rise + size * .7f);
+        var text = KitStyle.Flat(rect, "", size, TextAlignmentOptions.MidlineLeft, color);
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        return text;
     }
 }

@@ -15,6 +15,8 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     private const string LineName = "Progress Line";
     private const float TitlePad = 12f, EdgeWidth = 3f, Tail = 18f, SegmentGap = 2f;
     private const float FillSpeed = 1.8f, FlashSeconds = .45f, PunchSeconds = .28f;
+    // The light as the new-objective card lands: how bright it starts and how long it takes to fade (s).
+    private const float LandAlpha = .55f, LandSeconds = .42f;
 
     [Tooltip("The ! tab, the tallest section, rising from the bar's bottom line (px at 1080p).")]
     [SerializeField] private Vector2 badgeSize = new Vector2(50f, 54f);
@@ -42,6 +44,8 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     private GameObject counterRoot;
     private MissionLineGraphic line;
     private AssaultBar assault;
+    private Image[] landLight;
+    private float landClock = -1f;
     private string shownId;
     private int shownCurrent, segments;
     private float fill, targetFill, flash, punchClock = -1f, canvasWidth = 1920f;
@@ -115,10 +119,38 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         LayOut();
     }
 
+    /// <summary>
+    /// The new-objective card has flown into the bar (ObjectiveAlert): the strip and its tab light up white once, softly,
+    /// and fade (never a blink).
+    /// </summary>
+    public void Land()
+    {
+        if (bar == null) return;
+        if (landLight == null)
+        {
+            var strip = FeelUI.Rect("Land Light", bar);
+            KitStyle.Stretch(strip);
+            var tabLight = FeelUI.Rect("Land Light Tab", bar);
+            tabLight.anchorMin = tabLight.anchorMax = tabLight.pivot = Vector2.zero;
+            tabLight.sizeDelta = badgeSize;
+            landLight = new[] { KitStyle.Fill(strip, Color.clear), KitStyle.Fill(tabLight, Color.clear) };
+            foreach (var light in landLight) light.raycastTarget = false;
+        }
+        foreach (var light in landLight) light.rectTransform.SetAsLastSibling();
+        landClock = 0f;
+    }
+
     private void Update()
     {
         if (line == null) return;
         float dt = Time.unscaledDeltaTime;
+        if (landClock >= 0f)
+        {
+            landClock += dt;
+            float light = LandAlpha * (1f - Ease.Out(landClock / LandSeconds));
+            foreach (var part in landLight) part.color = new Color(1f, 1f, 1f, Mathf.Max(0f, light));
+            if (landClock >= LandSeconds) landClock = -1f;
+        }
         fill = Mathf.MoveTowards(fill, targetFill, dt * FillSpeed);
         flash = Mathf.MoveTowards(flash, 0f, dt / FlashSeconds);
         if (punchClock >= 0f)

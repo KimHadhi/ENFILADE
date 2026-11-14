@@ -16,6 +16,10 @@ public enum WeaponSlotLook { Plates, Cards }
 /// <summary>How dying looks (DeathScreen): all of it until spectating or coming back, a shorter one, or none at all.</summary>
 public enum DeathScreenMode { Full, Short, Off }
 
+/// <summary>How a new objective is announced at the top of the screen (ObjectiveAlert): the card that flies into the
+/// objective bar (기본), or the ribbon its words are typed on (심플).</summary>
+public enum ObjectiveAlertLook { Card, Ribbon }
+
 /// <summary>How the game window covers the monitor (DisplaySettings).</summary>
 public enum WindowMode { Fullscreen, Borderless, Windowed }
 
@@ -94,6 +98,10 @@ public sealed class GameSettings
         "the player, how long they lasted and what comes next, until spectating or coming back; Short is the same over a " +
         "shorter time and lighter; Off shows only the plain lines (PlayerLifeHUD). Numbers in DeathScreen.csv.")]
     public DeathScreenMode deathScreen = DeathScreenMode.Full;
+    [Tooltip("New objective alert (ObjectiveAlert): Card (a white line, a dark card opening from it, the words landing letter " +
+        "by letter, then the card flying into the objective bar; the default) or Ribbon (a band opening from the middle with " +
+        "the words typed on it; simpler).")]
+    public ObjectiveAlertLook objectiveAlert = ObjectiveAlertLook.Card;
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
@@ -222,6 +230,7 @@ public sealed class GameSettings
                 s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
                 s.weaponSlots = d.weaponSlots;
                 s.deathScreen = d.deathScreen;
+                s.objectiveAlert = d.objectiveAlert;
                 break;
             case SettingsGroup.Crosshair:
                 s.steadyCrosshair = d.steadyCrosshair;
@@ -287,6 +296,7 @@ public sealed class GameSettings
         if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Bold) hitMarkerStyle = HitMarkerStyle.Clean;
         if (weaponSlots < WeaponSlotLook.Plates || weaponSlots > WeaponSlotLook.Cards) weaponSlots = WeaponSlotLook.Plates;
         if (deathScreen < DeathScreenMode.Full || deathScreen > DeathScreenMode.Off) deathScreen = DeathScreenMode.Full;
+        if (objectiveAlert < ObjectiveAlertLook.Card || objectiveAlert > ObjectiveAlertLook.Ribbon) objectiveAlert = ObjectiveAlertLook.Card;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";

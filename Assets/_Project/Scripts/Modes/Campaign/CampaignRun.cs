@@ -240,11 +240,14 @@ public sealed partial class CampaignRun : MonoBehaviour
         track.Phase = now;
         track.Until = float.PositiveInfinity;
         track.Assaults = System.Array.Empty<float>();
+        track.Title = track.Artist = "";
         var song = active.music.Current;
         if (song != null)
         {
             CampaignPhases.PhaseAt(song, active.music.Clock, out track.Until);
             track.Assaults = song.Assaults;
+            track.Title = Texts.Cell(song.Title);
+            track.Artist = Texts.Cell(song.Artist);
             // A song without its file has no length to draw.
             if (song.Clip != null) { track.Length = song.Length; track.Elapsed = Mathf.Min(active.music.Clock, track.Length); }
             return true;
@@ -253,6 +256,7 @@ public sealed partial class CampaignRun : MonoBehaviour
         {
             active.holdTrack[1] = length;
             track.Assaults = active.holdTrack;
+            track.Siren = true;
             track.Elapsed = elapsed;
             track.Length = length;
             track.Until = length - elapsed;
