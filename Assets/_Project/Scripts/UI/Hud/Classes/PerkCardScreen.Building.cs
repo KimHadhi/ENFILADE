@@ -180,6 +180,7 @@ public sealed partial class PerkCardScreen
         card.Lid = KitStyle.Fill(Hung("Flash", card.Burn), Color.clear);
         BuildBurn(card);
         BuildPickFlourish(card);
+        BuildStamp(card);
 
         var button = root.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;

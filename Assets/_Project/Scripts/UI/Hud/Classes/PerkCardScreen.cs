@@ -14,8 +14,9 @@ using UnityEngine.UI;
 /// level does, with its key (1, 2, 3) under it; a shine runs across them now and then;</item>
 /// <item>the perks already held line up at the bottom as badges (PerkBadge).</item>
 /// </list>
-/// The card under the pointer lifts and glows in its tier's colour. A key or a click picks one: it flashes once, its
-/// outline springs out and sparks fall round it (no screen-wide rings: the user, 2026-11-14, "화면은 가리는데 느낌이
+/// The card under the pointer lifts and glows in its tier's colour. A key or a click picks one: it is pressed in and held a beat with its
+/// sound, then let go (the user, 2026-11-14: "눌렀다는 느낌이 덜해. 고른지 모르겠어"): it flashes once, pops out under a
+/// stamp of what it became (획득, 강화, 최대 강화) and is shown a moment, its outline springs out and sparks fall round it (no screen-wide rings: the user, 2026-11-14, "화면은 가리는데 느낌이
 /// 없음"), the others burn away from below ("선택받지 못한 카드들은 불타 없어지는 연출로"), and the picked card shrinks into
 /// its badge in the tray, which pops with its new level;
 /// the gauge is spent and the perk goes up a level (PlayerPerks). X or Esc puts the cards away and keeps the gauge.
@@ -39,7 +40,9 @@ public sealed partial class PerkCardScreen : MonoBehaviour
     private const int Choices = 3, MaxPips = 5, Order = 92;
     private const float CardWidth = 380f, CardHeight = 540f, Spread = 440f, Border = 3f, TrayY = 52f, BadgeHeight = 56f;
     private const float DealFirst = .12f, DealSeconds = .2f, DealStagger = .09f, FlipSeconds = .14f, DealFrom = -800f, HoverSeconds = .08f;
-    private const float PickPunch = .14f, PickFly = .3f, PickSeconds = .95f, CloseSeconds = .16f, ShineEvery = 2.6f, ShineSeconds = .5f;
+    // A pick: pressed in, held, let go (its flourish), popped out and shown with its stamp, then away to the tray (s).
+    private const float PressIn = .05f, PressHold = .04f, ReleaseAt = PressIn + PressHold, PopSeconds = .16f, ShowSeconds = .58f, PickFly = .3f;
+    private const float PickSeconds = 1.15f, CloseSeconds = .16f, ShineEvery = 2.6f, ShineSeconds = .5f;
     private static readonly float[] Tilts = { 3f, -2f, 1.5f };
     private static readonly Key[] DigitKeys = { Key.Digit1, Key.Digit2, Key.Digit3 }, PadKeys = { Key.Numpad1, Key.Numpad2, Key.Numpad3 };
 
@@ -63,6 +66,12 @@ public sealed partial class PerkCardScreen : MonoBehaviour
         public float BurnFrom = -1f;
         public int EmbersLeft;
         public bool Landed;
+        // The stamp a pick slams onto it (획득, 강화, 최대 강화: Looks), and whether its slam has jolted the screen yet.
+        public RectTransform Stamp;
+        public CanvasGroup StampGroup;
+        public Image StampRing, StampFace;
+        public TMP_Text StampLabel;
+        public bool StampShook;
     }
 
     // A spark of a pick, an ember or a puff of smoke of a burning card, in the effects layer.
@@ -105,7 +114,7 @@ public sealed partial class PerkCardScreen : MonoBehaviour
     private readonly List<Fleck> flecks = new List<Fleck>();
     private readonly List<Burst> bursts = new List<Burst>();
     private readonly System.Random random = new System.Random(6026);
-    private bool open, closing, popped;
+    private bool open, closing, popped, released;
     private int picked = -1, dealt;
     private float openedAt, endedAt, shake, baseHealth = -1f, shownExtra;
 

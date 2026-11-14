@@ -86,24 +86,38 @@ public sealed partial class PerkCardScreen
         picked = index;
         endedAt = Time.unscaledTime;
         card.Hover = 1f;
-        // One soft flash, never more (the user's rule against strobes: a single flash at most .6 and short).
-        KitPulse.Play(card.Lid, new Color(1f, 1f, 1f, .6f), .35f);
+        released = false;
         PlayerPerks.Raise(card.Perk.Id);
         BuildTray(card.Perk.Id);
-        // Round the card only, grander for a grander card (its tier: Tables/PerkCards): sparks falling round it here, its
-        // outline springing out and a star at its corner as it goes (AnimatePick), and a jolt.
+        // Pressed: it goes down and holds a beat before it is let go (Release, from Animate), so the press is felt (the
+        // user, 2026-11-14: "눌렀다는 느낌이 덜해. 고른지 모르겠어"). Its sound knows that beat: the click now, the ring at
+        // the release; a chord as well for a card picked to its last level or a special one.
+        bool grand = card.Tier == Tier.Level3 || card.Tier == Tier.Special;
+        KitSound.Play(grand ? KitSound.Cue.CardPickGrand : KitSound.Cue.CardPick);
+    }
+
+    // Let go, a beat after the press: one soft flash (the user's rule against strobes: a single flash at most .6 and
+    // short), sparks round the card only and a jolt, grander for a grander card (its tier: Tables/PerkCards; its outline
+    // and the star at its corner follow in AnimatePick, its stamp in AnimateStamp), and the others catch fire, each a
+    // moment apart (AnimateBurn), with one rush of fire for them all.
+    private void Release(Card card)
+    {
+        released = true;
+        KitPulse.Play(card.Lid, new Color(1f, 1f, 1f, .6f), .35f);
         var look = card.Look ?? LookOf(Tier.Level1);
         Sparks(card, look);
-        shake = look.Shake;
-        // The others burn away from below, each a moment apart (AnimateBurn).
+        shake = Mathf.Max(shake, look.Shake);
         float now = Time.unscaledTime;
         int embers = Mathf.Max(0, Mathf.RoundToInt(LookNumber("Burn", "embers", 34f)));
+        bool others = false;
         for (int i = 0; i < dealt; i++)
         {
-            if (i == index) continue;
-            cards[i].BurnFrom = now + .04f + (float)random.NextDouble() * .06f;
+            if (i == picked) continue;
+            cards[i].BurnFrom = now + (float)random.NextDouble() * .06f;
             cards[i].EmbersLeft = embers;
+            others = true;
         }
+        if (others) KitSound.Play(KitSound.Cue.CardBurn, .8f);
     }
 
     private void Close()

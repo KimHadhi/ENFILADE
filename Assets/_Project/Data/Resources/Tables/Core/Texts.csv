@@ -1226,6 +1226,9 @@ perk.step.new,새 능력,,카드: 처음 고르는 능력
 perk.step,{0}단계,,카드: 다음 단계. {0}=단계
 perk.step.last,마지막 단계,,카드: 다음이 마지막 단계일 때
 perk.step.owned,보유 {0}단계  →  {1},,카드: 가진 능력. {0}=지금 단계 {1}=다음 단계(perk.step 또는 perk.step.last)
+perk.picked.new,획득,,카드를 고르는 순간 카드에 찍히는 도장: 새로 얻은 능력(1단계가 되는 카드·특수 카드)
+perk.picked.up,강화,,카드를 고르는 순간 카드에 찍히는 도장: 단계가 오른 능력
+perk.picked.max,최대 강화,,카드를 고르는 순간 카드에 찍히는 도장: 마지막 단계가 된 능력
 #--- 총 커스터마이징(C) ---,,,
 gun.custom.caption,커스터마이징,,총 이름 아래 작은 제목
 gun.custom.hint,[C] · Esc 닫기   슬롯을 눌러 부품을 고르세요,,화면 왼쪽 아래 안내

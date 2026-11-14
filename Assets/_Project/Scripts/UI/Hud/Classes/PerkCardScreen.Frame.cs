@@ -77,7 +77,9 @@ public sealed partial class PerkCardScreen
         float time = Time.unscaledTime, dt = Time.unscaledDeltaTime, since = time - openedAt;
         bool ending = picked >= 0 || closing;
         float end = ending ? time - endedAt : 0f;
-        veil.color = KitStyle.With(KitStyle.Night, (GameSession.IsOnline ? .35f : .66f) * Mathf.Clamp01(since / .12f));
+        // A little darker round the picked card while it is shown.
+        float dim = picked >= 0 ? Mathf.Clamp01((end - ReleaseAt) / .15f) * (1f - Mathf.Clamp01((end - ShowSeconds - PickFly) / .2f)) : 0f;
+        veil.color = KitStyle.With(KitStyle.Night, ((GameSession.IsOnline ? .35f : .66f) + .14f * dim) * Mathf.Clamp01(since / .12f));
 
         // The slash tears across, then settles faint behind the cards.
         float tear = Mathf.Clamp01(since / .2f);
@@ -92,12 +94,13 @@ public sealed partial class PerkCardScreen
 
         var mouse = Mouse.current;
         bool pointing = Cursor.visible && mouse != null && !ending;
+        if (picked >= 0 && !released && end >= ReleaseAt) Release(cards[picked]);
         for (int i = 0; i < dealt; i++) AnimateCard(cards[i], i, since, end, dt, time, pointing, mouse);
 
         // The picked card's badge pops as the card lands in it.
         if (picked >= 0 && landing != null)
         {
-            float arrive = Mathf.Clamp01((end - PickPunch - PickFly) / .16f);
+            float arrive = Mathf.Clamp01((end - ShowSeconds - PickFly) / .16f);
             if (arrive > 0f && !popped)
             {
                 popped = true;
@@ -143,9 +146,9 @@ public sealed partial class PerkCardScreen
         // A shine runs across now and then, each card in turn, more often on a grander card (Looks); over the picked card
         // once, fast and bright.
         float shine = Mathf.Repeat(time + index * .35f, card.Look != null ? card.Look.ShineEvery : ShineEvery) / ShineSeconds;
-        if (picked == index)
+        if (picked == index && end >= ReleaseAt)
         {
-            shine = Mathf.Clamp01((end - .02f) / .25f);
+            shine = Mathf.Clamp01((end - ReleaseAt - .02f) / .25f);
             card.ShineImage.color = new Color(1f, 1f, 1f, .5f);
         }
         card.Shine.anchoredPosition = new Vector2(shine < 1f ? Mathf.Lerp(-CardWidth, CardWidth, shine) : CardWidth * 2f, 0f);
@@ -161,10 +164,13 @@ public sealed partial class PerkCardScreen
         float spin = 0f;
         if (picked == index)
         {
-            // A punch, then it shrinks into its badge at the bottom.
-            float punch = Mathf.Clamp01(end / PickPunch);
-            float fly = Mathf.Clamp01((end - PickPunch) / PickFly);
-            grow *= 1f + .14f * Mathf.Sin(punch * Mathf.PI);
+            // Pressed in and held a beat, then let go: popped out past its size and settled a little large, shown with its
+            // stamp a moment, then it shrinks into its badge at the bottom.
+            float after = end - ReleaseAt;
+            grow = end < PressIn ? Mathf.Lerp(1.05f, .92f, end / PressIn) : end < ReleaseAt ? .92f
+                : Mathf.LerpUnclamped(.92f, 1.08f, OutBack(Mathf.Clamp01(after / PopSeconds)));
+            AnimateStamp(card, after);
+            float fly = Mathf.Clamp01((end - ShowSeconds) / PickFly);
             if (landing != null && fly > 0f)
             {
                 float eased = fly * fly;
@@ -185,7 +191,7 @@ public sealed partial class PerkCardScreen
         card.Lift.anchoredPosition = lift;
         card.Lift.localScale = new Vector3(grow, grow, 1f);
         card.Lift.localRotation = Quaternion.Euler(0f, 0f, spin);
-        AnimatePick(card, picked == index ? end : -1f);
+        AnimatePick(card, picked == index ? end - ReleaseAt : -1f);
         AnimateBurn(card, time, dt);
     }
 

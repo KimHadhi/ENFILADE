@@ -24,9 +24,11 @@ public static class KitSound
     /// The ENFILADE tower (TowerRun): TowerRise, a hall's scanners coming up out of the floor; TowerTick, a second of the
     /// scanners' count; TowerScan, a palm read; TowerOpen, a lane's door unlocking; TowerClear, a floor got through;
     /// Enfiladed, the tower's last kill and its banner (EnfiladedFinale).
+    /// The ability cards (PerkCardScreen): CardPick, a card pressed and let go; CardPickGrand, the same with a ringing chord,
+    /// for a card picked to its last level or a special one; CardBurn, the cards not picked catching fire.
     public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
         Taunt, Hunter, HunterLost, Ping, Mark, Bounty, Supply, Hammer, Splinter, Collapse,
-        TowerRise, TowerTick, TowerScan, TowerOpen, TowerClear, Enfiladed }
+        TowerRise, TowerTick, TowerScan, TowerOpen, TowerClear, Enfiladed, CardPick, CardPickGrand, CardBurn }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -104,6 +106,9 @@ public static class KitSound
             Cue.TowerOpen => Unlock(),
             Cue.TowerClear => Through(),
             Cue.Enfiladed => Raked(),
+            Cue.CardPick => Pressed(false),
+            Cue.CardPickGrand => Pressed(true),
+            Cue.CardBurn => Kindled(),
             _ => Buzz()
         };
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
@@ -583,6 +588,46 @@ public static class KitSound
     }
 
     // Brings the loudest sample to <peak> and fades the last few ms so the end doesn't click.
+    // A card pressed: a dull click and a low knock as it goes down, then, let go a beat later (PerkCardScreen: its press
+    // and hold), two bright notes; grand, a chord rung up over a low note as well.
+    private static float[] Pressed(bool grand)
+    {
+        var data = new float[(int)(Rate * (grand ? 1.1f : .7f))];
+        var random = new System.Random(3301);
+        Click(data, random, 0f, .006f, .7f);
+        Knock(data, 0f, 110f, .05f, .8f);
+        Bell(data, .09f, 1760f, .1f, .3f);
+        Bell(data, .14f, 2637f, .16f, .3f);
+        if (grand)
+        {
+            Note(data, .09f, 523f, .3f, .22f);
+            float[] chord = { 1568f, 2093f, 2637f, 3136f };
+            for (int i = 0; i < chord.Length; i++) Bell(data, .11f + i * .045f, chord[i], .22f, .18f);
+        }
+        return Finish(data, .75f);
+    }
+
+    // Cards catching fire: a soft rush that swells in and dies away, with a crackle in it.
+    private static float[] Kindled()
+    {
+        var data = new float[(int)(Rate * .85f)];
+        var random = new System.Random(6611);
+        float held = 0f, slow = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)Rate, along = t / .85f;
+            float white = (float)random.NextDouble() * 2f - 1f;
+            held += (white - held) * .25f;
+            slow += (held - slow) * .08f;
+            // A band of the noise: the fast-smoothed less the slow-smoothed.
+            float rush = (held - slow) * Mathf.Min(1f, along / .22f) * Mathf.Pow(1f - along, 1.5f);
+            data[i] = rush;
+        }
+        for (int crackle = 0; crackle < 14; crackle++)
+            Click(data, random, (float)random.NextDouble() * .7f, .002f + (float)random.NextDouble() * .003f, .25f + (float)random.NextDouble() * .35f);
+        return Finish(data, .5f);
+    }
+
     private static float[] Finish(float[] data, float peak)
     {
         float top = 0f;

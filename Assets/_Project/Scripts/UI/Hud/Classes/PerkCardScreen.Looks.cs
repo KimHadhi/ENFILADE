@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -351,6 +352,48 @@ public sealed partial class PerkCardScreen
         star.gameObject.SetActive(false);
     }
 
+    // The stamp a pick slams onto its card (the user, 2026-11-14: "눌렀다는 느낌이 덜해. 고른지 모르겠어"): what the pick
+    // made of it, 획득 (a new card), 강화 (a level up) or 최대 강화 (its last), slanted across its middle in the card's colour,
+    // ringed dark and then in its colour again so it reads over any card. On the card's body, outside the burn's mask, so it
+    // rides the card into its badge.
+    private static void BuildStamp(Card card)
+    {
+        var stamp = card.Stamp = FeelUI.Rect("Stamp", card.Body);
+        stamp.anchoredPosition = new Vector2(0f, 17f);
+        stamp.sizeDelta = new Vector2(352f, 90f);
+        stamp.localRotation = Quaternion.Euler(0f, 0f, 8f);
+        card.StampGroup = stamp.gameObject.AddComponent<CanvasGroup>();
+        card.StampGroup.blocksRaycasts = card.StampGroup.interactable = false;
+        card.StampRing = KitStyle.Fill(stamp, Color.white);
+        var ink = FeelUI.Rect("Ink", stamp);
+        ink.sizeDelta = new Vector2(346f, 84f);
+        KitStyle.Fill(ink, KitStyle.With(KitStyle.Ink, .92f));
+        var face = FeelUI.Rect("Face", stamp);
+        face.sizeDelta = new Vector2(340f, 78f);
+        card.StampFace = KitStyle.Fill(face, Color.white);
+        card.StampLabel = KitStyle.Flat(face, "", 40f, TextAlignmentOptions.Center, KitStyle.Ink);
+        stamp.gameObject.SetActive(false);
+    }
+
+    private static string StampWord(Tier tier)
+        => Texts.Get(tier == Tier.Level3 ? "perk.picked.max" : tier == Tier.Level2 ? "perk.picked.up" : "perk.picked.new");
+
+    // The picked card's stamp, <paramref name="after"/> seconds after it is let go: slammed on from large as it pops out,
+    // with a small jolt as it lands, and kept on it.
+    private void AnimateStamp(Card card, float after)
+    {
+        bool on = after > .03f;
+        if (card.Stamp.gameObject.activeSelf != on) card.Stamp.gameObject.SetActive(on);
+        if (!on) return;
+        float k = Mathf.Clamp01((after - .03f) / .12f);
+        float scale = Mathf.Lerp(1.8f, 1f, KitReveal.EaseOut(k));
+        card.Stamp.localScale = new Vector3(scale, scale, 1f);
+        card.StampGroup.alpha = k;
+        if (k < 1f || card.StampShook) return;
+        card.StampShook = true;
+        shake = Mathf.Max(shake, 7f);
+    }
+
     // ---- Dressing, as a card is dealt (Fill) ----
 
     private static void Dress(Card card)
@@ -378,6 +421,8 @@ public sealed partial class PerkCardScreen
         card.ShineImage.color = new Color(1f, 1f, 1f, look.Shine);
         for (int i = 0; i < MaxGlints; i++) card.Glints[i].color = i % 2 == 0 ? look.Colour : Color.white;
         card.PickStar.color = look.Colour;
+        card.StampRing.color = card.StampFace.color = look.Colour;
+        card.StampLabel.text = StampWord(card.Tier);
         if (card.Tier == Tier.Special) card.Tag.text = Texts.Get("perk.tag.special");
         ResetFlourish(card);
     }
@@ -392,6 +437,8 @@ public sealed partial class PerkCardScreen
         card.Edge.gameObject.SetActive(false);
         foreach (var outline in card.Outlines) outline.gameObject.SetActive(false);
         card.PickStar.gameObject.SetActive(false);
+        card.Stamp.gameObject.SetActive(false);
+        card.StampShook = false;
     }
 
     // ---- Every frame (AnimateCard) ----
