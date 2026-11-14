@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-// PlayerNetworkCombat: hurt, friendly fire, healing, cover, treatment and coming back. One part of the class; the rest is in PlayerNetworkCombat.cs and the files beside it.
+// PlayerNetworkCombat: hurt, friendly fire, healing, cover, treatment, coming back and being shoved free of a pin. One part of the class; the rest is in PlayerNetworkCombat.cs and the files beside it.
 public sealed partial class PlayerNetworkCombat
 {
     // shielded: their shield took all of it, so others see its sparks and hear its crack, not blood (Apex Legends' shields).
@@ -135,6 +135,13 @@ public sealed partial class PlayerNetworkCombat
     private void ReviveRpc()
     {
         if (TryGetComponent(out PlayerLife life)) life.Revived();
+    }
+
+    // A teammate's shove reached the runner pinning this player (whose PC this is, and holds the pin): it lets go.
+    [Rpc(SendTo.Owner)]
+    private void ShoveFreeRpc(float knockdown)
+    {
+        if (TryGetComponent(out PlayerHold hold)) hold.ShovedFree(knockdown);
     }
 
     [Rpc(SendTo.Everyone)]

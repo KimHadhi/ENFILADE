@@ -12,7 +12,8 @@ using UnityEngine;
 /// Feed): it holds them there the same way and bites from the start, alone or not.
 /// Stage G&amp;B-2, the runner's pin: a leap that lands (EnemyCombatAI's Pounce) knocks them flat on their back facing it
 /// and pins them there, its teeth at their neck. Nothing they do frees them, and no blow but a killing one takes it off
-/// (G&amp;B: a teammate must kill it; a teammate knocking it down does too), unless FightsPinned (a melee class perk to
+/// (G&amp;B: a teammate must kill it; a teammate knocking it down does too, and a teammate's shove throws everything on
+/// them off, as in Left 4 Dead: ShoveRescue, ShovedFree), unless FightsPinned (a melee class perk to
 /// come, off until then) lets them fight it themselves. The bites hurt a little (pinBiteDamage); what kills is the pin itself, at the end of pinSeconds, sooner
 /// the lower their health (pinLowHealthShare at none) and sooner for each runner that joins it (up to maxJoiners, each
 /// joinSpeedup faster). With shield left, though, the shove key bursts the whole shield and throws every runner on them
@@ -337,7 +338,7 @@ public sealed class PlayerHold : MonoBehaviour
             return;
         }
         // Time, death, a stun or a knockdown let a shambler go. A runner pinning them, only its death or a teammate
-        // knocking it down (they can't reach it themselves, but for the perk).
+        // knocking it down (they can't reach it themselves, but for the perk); a teammate's shove comes as ShovedFree.
         for (int i = holders.Count - 1; i >= 0; i--)
         {
             var holder = holders[i];
@@ -381,17 +382,31 @@ public sealed class PlayerHold : MonoBehaviour
         if (CanBreakFree && Time.time - pinnedAt >= shieldBurstFrom)
         {
             breakFreeAt = Time.time + Mathf.Max(0f, BreakFreeEvery);
-            ThrowOff(false);
+            ThrowOff(false, shieldBurstKnockdown, true);
             GetComponent<PlayerFistAudio>().OrNull()?.PlayHeavyHit();
             return true;
         }
         if (!CanBurstShield || Time.time - pinnedAt < shieldBurstFrom) return false;
-        ThrowOff(true);
+        ThrowOff(true, shieldBurstKnockdown, true);
         return true;
     }
 
-    // Everything on them thrown off at once: the shield burst (spent) or a Knight's kick (free).
-    private void ThrowOff(bool spendShield)
+    /// <summary>
+    /// A teammate's shove reached the pin (ShoveRescue on their PC, here through PlayerNetworkCombat): everything on them
+    /// is thrown off as the shield burst throws it, each knocked down for <paramref name="knockdown"/> seconds, falling
+    /// away from them, without a burst of its own (the teammate's shove hit is the show), and they get up; nothing takes
+    /// hold of them for shieldBurstGrace. False when no runner pins them any more.
+    /// </summary>
+    internal bool ShovedFree(float knockdown)
+    {
+        if (!IsPinned || receiver == null || !receiver.IsAlive) return false;
+        ThrowOff(false, knockdown, false);
+        return true;
+    }
+
+    // Everything on them thrown off at once, each down for knockdown seconds: the shield burst (spent) or a Knight's kick
+    // (free), each with its burst where a runner met them, or a teammate's shove (ShovedFree), whose shove hit is its own.
+    private void ThrowOff(bool spendShield, float knockdown, bool burst)
     {
         EnemyHealth first = null;
         foreach (var holder in holders) if (holder.Pinning && holder.Enemy != null) { first = holder.Enemy; break; }
@@ -413,10 +428,10 @@ public sealed class PlayerHold : MonoBehaviour
                 holder.Enemy.GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
                 if (holder.Melee != null && holder.Melee.IsAvailable)
                 {
-                    if (holder.Melee.Steadfast) holder.Melee.Interrupt(shieldBurstKnockdown);
-                    else holder.Melee.KnockDown(away, shieldBurstKnockdown);
+                    if (holder.Melee.Steadfast) holder.Melee.Interrupt(knockdown);
+                    else holder.Melee.KnockDown(away, knockdown);
                 }
-                if (holder.Pinning) Burst(holder.Melee, away);
+                if (holder.Pinning && burst) Burst(holder.Melee, away);
             }
             Release(i);
         }

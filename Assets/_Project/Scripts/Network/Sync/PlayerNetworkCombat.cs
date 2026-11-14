@@ -96,6 +96,11 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
 
     /// <summary>Someone on this PC finished getting this copy's player up: their own PC does it.</summary>
     public void Revive() { PlayerTally.Raised(); ReviveRpc(); }
+    /// <summary>
+    /// This PC's player shoved a runner off this copy's pinned player (ShoveRescue): their own PC, which holds the pin,
+    /// throws everything on them off, each down this many seconds (PlayerHold.ShovedFree).
+    /// </summary>
+    public void ShoveFree(float knockdown) { if (IsSpawned) ShoveFreeRpc(knockdown); }
     /// <summary>A Détente's dose or treatment for this copy's player (DetenteKit): their own PC adds the health.</summary>
     public void Heal(float amount) { if (!IsSpawned) return; PlayerTally.Healed(this, amount); HealRpc(amount); }
     /// <summary>On this Knight's copy: its cover turned a blow on that friend (their PC judged it); its own PC steps in.</summary>

@@ -31,6 +31,9 @@ public sealed class ZombieGrip : MonoBehaviour
     // A drag lasts until its victim's PC says it ended (a rescue, a struggle, going down); past this without word (s) it
     // lets go by itself.
     private const float LongestDrag = 30f;
+    // On a PC that only shows it, a zombie seen holding someone is on a player this near them (flat m, and m up or down):
+    // a pin kneels at most PinChest + PinDistance from their feet and an eater nearer; the rest is the host's word lagging.
+    private const float OnReach = PinChest + PinDistance + .5f, OnHeight = 1.2f;
 
     private static readonly List<ZombieGrip> holding = new List<ZombieGrip>();
 
@@ -123,6 +126,22 @@ public sealed class ZombieGrip : MonoBehaviour
         // Seen holding someone on this PC too: it stands out through walls while it does (HoldReveal).
         if (shown) HoldReveal.Watch(this);
     }
+
+    /// <summary>
+    /// It holds this player, any way: known where it runs and on the held player's own PC; on any other PC, seen holding
+    /// someone (the host's word) as near them as a hold keeps it (ShoveRescue: what a teammate's shove throws off).
+    /// </summary>
+    internal bool IsOn(PlayerMovement player)
+    {
+        if (player == null) return false;
+        if (held != null) return held == player;
+        if (!shown) return false;
+        Vector3 apart = Feet - player.transform.position;
+        return Mathf.Abs(apart.y) <= OnHeight && apart.x * apart.x + apart.z * apart.z <= OnReach * OnReach;
+    }
+
+    /// <summary>Where its feet are: its agent stands it above them by its base offset, on a copy too (the agent is only off there).</summary>
+    internal Vector3 Feet => agent != null ? transform.position - Vector3.up * agent.baseOffset : transform.position;
 
     /// <summary>The runners pinning this player now, on this PC (the host knows them all).</summary>
     internal static int CountPinning(PlayerMovement player)

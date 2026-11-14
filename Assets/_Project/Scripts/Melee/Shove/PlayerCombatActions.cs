@@ -10,7 +10,8 @@ using State = PlayerMovement.MovementState;
 /// into) and knocked down. The dash stops there, and its own cooldown starts when it ends, hit or miss. Otherwise, with
 /// a gun out, V is the crowd shove (ShoveSweep), lunging at someone just out of reach when standing still, and while the
 /// gun reloads it is a kick that leaves the reload alone (ShoveMoves); crouched it is the leg sweep (ShoveMoves); the
-/// fists' V is PlayerMeleeCombat's. A counter (ShoveCounter) hands the shove straight back: RefreshShove.
+/// fists' V is PlayerMeleeCombat's. A counter (ShoveCounter) hands the shove straight back: RefreshShove. Any of them that
+/// reaches a friend a runner pins frees them (ShoveRescue).
 /// </summary>
 public sealed class PlayerCombatActions
 {
@@ -146,24 +147,10 @@ public sealed class PlayerCombatActions
 
     private void Push(MeleeCombatTarget target, IDamageReceiver damage, IShoveReceiver shove, Vector3 point, Vector3 direction)
     {
-        var settings = ctx.AbilitySettings;
-        var result = damage?.ReceiveHit(new DamageHit(attackId, settings.dashPushDamage, DamageKind.Attack, point, direction,
-            ctx.gameObject, method: DamageMethod.Shove));
-        bool landed = result == null || result == DamageResult.Damaged;
-        Vector3 thrown = direction * DashSpeed;
-        if (target != null)
-        {
-            if (landed) target.ApplyPostureDamage(settings.dashPushPostureDamage, 0f, false);
-            // A big body, or one that guarded, only gives way like a crowd shove.
-            if (landed && target.BodySize != EnemyBodySize.Large)
-                target.Barge(thrown, settings.dashPushThrowTime, settings.dashPushKnockdownDuration);
-            else
-            {
-                target.ReceiveShove(direction * settings.shovePushSpeed, point);
-                target.Interrupt(settings.shoveStun);
-            }
-        }
-        else shove?.ReceiveShove(thrown, point);
+        // A zombie on a pinned friend is thrown off them with every other one there instead, its hit shown there
+        // (ShoveRescue).
+        bool rescued = target != null && ShoveRescue.Reached(ctx, target, point);
+        if (!rescued) Throw(target, damage, shove, point, direction);
 
         // The dash stops dead on the body it hit, and the run with it.
         ctx.Actions.Momentum.Stop();
@@ -173,9 +160,32 @@ public sealed class PlayerCombatActions
         var timeEffects = ctx.GetComponent<CombatTimeEffects>().OrNull() ?? ctx.gameObject.AddComponent<CombatTimeEffects>();
         timeEffects.RequestSlowdown(ctx, .1f, .08f);
         ctx.RaiseDashPushHit(point);
-        BashImpact.Play(point, direction, 1.3f, ctx);
+        if (!rescued) BashImpact.Play(point, direction, 1.3f, ctx);
         // With the fists out the punch comes straight back after it, as the spinning backfist (MeleeCombos link).
         MeleeCombos.For(ctx).OrNull()?.OpenLink();
+    }
+
+    // What the dash does to the body it met: hurts it and throws it along the ground and down; a big body, or one that
+    // guarded, only gives way like a crowd shove.
+    private void Throw(MeleeCombatTarget target, IDamageReceiver damage, IShoveReceiver shove, Vector3 point, Vector3 direction)
+    {
+        var settings = ctx.AbilitySettings;
+        var result = damage?.ReceiveHit(new DamageHit(attackId, settings.dashPushDamage, DamageKind.Attack, point, direction,
+            ctx.gameObject, method: DamageMethod.Shove));
+        bool landed = result == null || result == DamageResult.Damaged;
+        Vector3 thrown = direction * DashSpeed;
+        if (target != null)
+        {
+            if (landed) target.ApplyPostureDamage(settings.dashPushPostureDamage, 0f, false);
+            if (landed && target.BodySize != EnemyBodySize.Large)
+                target.Barge(thrown, settings.dashPushThrowTime, settings.dashPushKnockdownDuration);
+            else
+            {
+                target.ReceiveShove(direction * settings.shovePushSpeed, point);
+                target.Interrupt(settings.shoveStun);
+            }
+        }
+        else shove?.ReceiveShove(thrown, point);
     }
     internal void Reset() { CancelShove(); cooldown = dashCooldown = DashSpeed = 0f; attackId = 0; contacted.Clear(); Fatigue.Reset(); }
 }

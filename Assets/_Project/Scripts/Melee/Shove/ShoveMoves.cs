@@ -14,7 +14,8 @@ using UnityEngine;
 /// crouching sweep): one leg goes round the front at the floor, sweepArc degrees in sweepSeconds, and everyone it passes
 /// within sweepRadius is knocked off their feet (a big body only staggers); the reload, if any, goes on. While the leg is
 /// out it counters as a shove does. Every PC sees the leg go round (PlayerBody.Sweep) and the arc it leaves on the floor
-/// (SweepArcVfx), through the kick's own event. Numbers: Tables/Player.csv, row Shove.
+/// (SweepArcVfx), through the kick's own event. The kick and the sweep free a friend a runner pins as a shove does
+/// (ShoveRescue). Numbers: Tables/Player.csv, row Shove.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ShoveMoves : MonoBehaviour
@@ -227,6 +228,8 @@ public sealed class ShoveMoves : MonoBehaviour
         Vector3 point = collider.bounds.ClosestPoint(transform.position + Vector3.up * .25f);
         var audio = GetComponent<PlayerShoveAudio>().OrNull() ?? gameObject.AddComponent<PlayerShoveAudio>();
         if (ShoveCounter.TryShoveCounter(player, target, point)) { audio.Play(ShoveImpactKind.Enemy); return; }
+        // A zombie on a pinned friend is thrown off them with every other one there (ShoveRescue): its own show.
+        if (ShoveRescue.Reached(player, target, point)) { audio.Play(ShoveImpactKind.Enemy); return; }
         var receiver = target.GetComponent<IDamageReceiver>() ?? collider.GetComponentInParent<IDamageReceiver>();
         bool landed = true;
         if (receiver != null)
@@ -293,6 +296,12 @@ public sealed class ShoveMoves : MonoBehaviour
     {
         var settings = player.AbilitySettings;
         Transform aim = PlayerView.EyesOf(player);
+        // The foot frees a friend a runner pins within the shove's generous reach, as a shove does (ShoveRescue).
+        if (ShoveRescue.Sweep(player, aim.position, aim.forward))
+        {
+            (GetComponent<PlayerShoveAudio>().OrNull() ?? gameObject.AddComponent<PlayerShoveAudio>()).Play(ShoveImpactKind.Enemy);
+            return;
+        }
         var capsule = GetComponent<CharacterController>();
         Vector3 from = capsule != null ? transform.TransformPoint(capsule.center) : transform.position + Vector3.up;
         float height = capsule != null ? capsule.height * Mathf.Abs(transform.lossyScale.y) : 1.75f;
@@ -332,6 +341,12 @@ public sealed class ShoveMoves : MonoBehaviour
         var audio = GetComponent<PlayerShoveAudio>().OrNull() ?? gameObject.AddComponent<PlayerShoveAudio>();
         // A zombie late in a grab or a leap is countered instead, as by a shove (ShoveCounter): its own return and show.
         if (posture != null && posture.IsAvailable && ShoveCounter.TryShoveCounter(player, posture, point))
+        {
+            audio.Play(ShoveImpactKind.Enemy);
+            return;
+        }
+        // A zombie on a pinned friend is thrown off them with every other one there instead (ShoveRescue).
+        if (posture != null && posture.IsAvailable && ShoveRescue.Reached(player, posture, point))
         {
             audio.Play(ShoveImpactKind.Enemy);
             return;

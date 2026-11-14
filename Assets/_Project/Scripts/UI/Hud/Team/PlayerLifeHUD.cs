@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// What the screen says about staying alive: the wipe, being down, waiting to come back, and getting someone up. While
+/// What the screen says about staying alive: the wipe, being down, waiting to come back, getting someone up, and V freeing
+/// a friend a runner pins within reach (ShoveRescue). While
 /// someone is being got up, both of them see a panel with who it is, the seconds left and a filling bar. Dead in a room,
 /// the bottom of the screen says who they watch and which keys change it (PlayerSpectate, backlog 722).
 /// </summary>
@@ -18,6 +19,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
     private PlayerLife life;
     private PlayerRevive revive;
     private PlayerDamageReceiver receiver;
+    private PlayerMovement player;
     private PlayerSpectate spectate;
     private DeathScreen screen;
     private TextMeshProUGUI label, who, secondsLeft, watching, keys;
@@ -29,6 +31,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         life = GetComponent<PlayerLife>();
         revive = GetComponent<PlayerRevive>();
         receiver = GetComponent<PlayerDamageReceiver>();
+        player = GetComponent<PlayerMovement>();
     }
 
     private void LateUpdate()
@@ -59,7 +62,9 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         if (!receiver.IsAlive)
             return TowerRun.KeepsDead ? Texts.Get("life.respawn.tower")
                 : life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
-        return revive != null && revive.Candidate != null ? Texts.Get("life.revive.prompt") : null;
+        if (revive != null && revive.Candidate != null) return Texts.Get("life.revive.prompt");
+        // A friend a runner pins, within this player's shove: V throws it off them (ShoveRescue).
+        return ShoveRescue.Within(player) != null ? Texts.Get("life.pin.prompt") : null;
     }
 
     private void ShowRescue()

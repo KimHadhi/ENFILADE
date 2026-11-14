@@ -27,9 +27,11 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
     private float chargePerRevive = 15f;
     [SerializeField, Min(0), Tooltip("Charge per 100 health a Support's hammer puts back into a barricade.")]
     private float chargePerHundredRepaired = 5f;
+    [SerializeField, Min(0), Tooltip("Charge per friend shoved free of a runner's pin (ShoveRescue).")]
+    private float chargePerRescue = 6f;
 
     /// <summary>A way this player looked after the team, which charges the gauge as fighting does (AwardHelp).</summary>
-    public enum Help { Healed, Resupplied, Parried, Revived, Repaired }
+    public enum Help { Healed, Resupplied, Parried, Revived, Repaired, Rescued }
 
     /// <summary>
     /// This PC's player's hit took <paramref name="taken"/> health from an enemy (a zombie or a range target, as its own
@@ -47,7 +49,7 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
 
     /// <summary>
     /// This PC's player looked after the team: <paramref name="amount"/> is the health given back for a heal, and how many
-    /// and a barricade's mend, and how many for the rest (resupplies, parries, friends got up).
+    /// and a barricade's mend, and how many for the rest (resupplies, parries, friends got up or shoved free of a pin).
     /// </summary>
     public static void AwardHelp(Help help, float amount = 1f)
     {
@@ -60,6 +62,7 @@ public sealed class UltimateCharge : MonoBehaviour, ITableBound
             Help.Resupplied => gauge.chargePerResupply,
             Help.Parried => gauge.chargePerParry,
             Help.Repaired => gauge.chargePerHundredRepaired / 100f,
+            Help.Rescued => gauge.chargePerRescue,
             _ => gauge.chargePerRevive,
         };
         gauge.AddCharge(amount * each * PlayerPerks.ChargeFactor);

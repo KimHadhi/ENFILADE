@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>A single frontal shove hits each actor once within its range and cone, ignoring intervening cover.</summary>
+/// <summary>
+/// A single frontal shove hits each actor once within its range and cone, ignoring intervening cover; a friend a runner
+/// pins, within its more generous reach, is freed (ShoveRescue).
+/// </summary>
 public static class ShoveSweep
 {
     public sealed class Attack
@@ -53,6 +56,9 @@ public static class ShoveSweep
         var contacted = attack.contacted;
         int count = 0;
         bool hitEnemy = false, hitWorld = false;
+        // A friend a runner pins, within the shove's generous reach, is freed first: everything on them is thrown off, and
+        // this shove meets none of it again (ShoveRescue).
+        if (ShoveRescue.Sweep(player, origin, forward, contacted)) { count++; hitEnemy = true; }
         foreach (var collider in Physics.OverlapSphere(origin, reach, layers, QueryTriggerInteraction.Ignore))
         {
             if (collider.transform.IsChildOf(player.transform)) continue;
@@ -73,6 +79,13 @@ public static class ShoveSweep
             contacted.Add(identity);
             // A zombie late in a grab or a leap is countered instead (G&B-3, ShoveCounter): its own return, its own show.
             if (posture != null && ShoveCounter.TryShoveCounter(player, posture, point))
+            {
+                count++;
+                hitEnemy = true;
+                continue;
+            }
+            // A zombie on a pinned friend: it and every other one on them are thrown off instead (ShoveRescue).
+            if (posture != null && ShoveRescue.Reached(player, posture, point, contacted))
             {
                 count++;
                 hitEnemy = true;
