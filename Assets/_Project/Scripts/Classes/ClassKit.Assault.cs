@@ -81,7 +81,7 @@ public sealed partial class ClassKit
 
     /// <summary>
     /// An Assault's ultimate (ClassCards.Ultimate): adrenaline full while the A-10 makes its run, the CHARGE theirs to
-    /// sound when they like (its riders with it, the final card held). It used to sound the CHARGE at once as well; the
+    /// sound when they like (its riders with it, the 러프 라이더스 card held). It used to sound the CHARGE at once as well; the
     /// run is the moment now, and one big moment at a time reads better (the user's restraint: memory vfx-restraint).
     /// </summary>
     internal void UltimateAdrenaline()

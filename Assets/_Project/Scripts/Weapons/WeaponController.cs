@@ -401,7 +401,7 @@ public sealed partial class WeaponController : MonoBehaviour
         float loose = 1f - AimBlend;
         // Fanning bucks the revolver off line with every slap of the palm.
         float fan = Runtime != null && Runtime.FireMode == WeaponFireMode.Fanning ? weaponData.FanSpread : 0f;
-        // The last factors take all of it away in a Point's Gun Kata with its final card (PlayerClass.KataSpreadFactor) and
+        // The last factors take all of it away in a Point's Gun Kata with its 탄막 춤 card (PlayerClass.KataSpreadFactor) and
         // for a Ghost's first shot once its sights are up with 빠른 조준 (SnapSpread); a shotgun's pattern is its own pellet
         // cone, added on top where its pellets are aimed, so it stays.
         CurrentSpread = (Mathf.Lerp(weaponData.HipSpread, weaponData.AdsSpread, AimBlend)

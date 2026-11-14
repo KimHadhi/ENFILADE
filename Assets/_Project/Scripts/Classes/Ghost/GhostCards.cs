@@ -27,8 +27,8 @@ using UnityEngine.UI;
 /// holds the view still, so while a chain is left the Ghost's view turns in its takedown all the same (PlayerLook asks
 /// LooksDuringTakedown), to find the next one.</item>
 /// <item>시선 읽기 (ghost_cones): a crouched Ghost sees more zombies' sight cones, from farther off (StealthView asks).</item>
-/// <item>화이트 타이거 (ghost_whitetiger, its final card): every headshot hurts the enemies round the one it hit as much as
-/// it did, a small white claw mark on each (CardFx Claws, for everyone).</item>
+/// <item>화이트 타이거 (ghost_whitetiger, its final card until those went, 2026-11-14; 1.5/2/2.5 m): every headshot hurts
+/// the enemies round the one it hit as much as it did, a small white claw mark on each (CardFx Claws, for everyone).</item>
 /// <item>The ultimate (X once every card is taken): for some seconds no zombie sees the Ghost, its sounds and its touch still
 /// counting (ZombieEffects.Unseen), and every zombie near it shows through walls to the whole team (GhostSight).</item>
 /// </list>

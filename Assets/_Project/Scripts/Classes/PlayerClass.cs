@@ -263,8 +263,8 @@ public static class PlayerClass
     public static float AirSpreadFactor(PlayerMovement who) => PointCards.AcrobatSpread(who);
 
     /// <summary>
-    /// A factor on all of <paramref name="who"/>'s spread: none in a Point's Gun Kata with its final card, 탄막 춤
-    /// (PointCards), else 1.
+    /// A factor on all of <paramref name="who"/>'s spread: less in a Point's Gun Kata with its 탄막 춤 card (none at
+    /// its top level: PointCards), else 1.
     /// </summary>
     public static float KataSpreadFactor(PlayerMovement who) => InKata(who) ? PointCards.BalletSpread() : 1f;
 

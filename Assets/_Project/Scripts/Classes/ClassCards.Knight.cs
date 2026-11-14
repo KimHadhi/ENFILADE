@@ -41,7 +41,9 @@ public sealed partial class ClassCards
 
     private Color KnightBarColor => ShadowShare > 0f ? Violet : CoverStrikeShare > 0f ? KitStyle.Accent : KitStyle.Ice;
 
-    // A parry or a perfect dodge (a Knight's).
+    // A parry (a Knight's). The shadow double no longer comes out of one: the card that did went with the final cards on
+    // 2026-11-14 (the user: "이미 궁극기를 쓸 수 있게 된다는 특권을 얻는 거에서 궁극 카드가 의미 없잖아"), and the double
+    // is the Knight's ultimate alone (ClassCards.Ultimate).
     private void OnResolved(DamageHit hit, DamageResult result)
     {
         // A parried blow fills the gauge whoever parried it (UltimateCharge.AwardHelp): a Knight's job above all.
@@ -49,14 +51,8 @@ public sealed partial class ClassCards
         bool covered = hit.Id == KnightCover.CoveredHit;
         if (result == DamageResult.Parried && !covered) UltimateCharge.AwardHelp(UltimateCharge.Help.Parried);
         if (!PlayerClass.Is(PlayerClass.Knight)) return;
-        float shadow = PlayerPerks.Has(PlayerPerks.KnightShadow) ? PlayerPerks.Total(PlayerPerks.KnightShadow) : 0f;
         // A friend's cover that turned a blow on this Knight was that friend's parry, not this Knight's.
-        if (result == DamageResult.Parried && !covered)
-        {
-            Deflect(hit);
-            ShadowFor(shadow);
-        }
-        else if (result == DamageResult.Evaded) ShadowFor(shadow);
+        if (result == DamageResult.Parried && !covered) Deflect(hit);
     }
 
     // 무너뜨리기: a parried elite or brute reels a while, and a white arc runs off the parry. Its greater loss of posture is
@@ -146,11 +142,11 @@ public sealed partial class ClassCards
         CardNet.Show(CardFx.Kind.Reversal, contact, away, 0f);
     }
 
-    // ---- The shadow double (그림자 분신: the final card, and the ultimate) ----
+    // ---- The shadow double (그림자 분신: the Knight's ultimate) ----
 
     /// <summary>
-    /// The shadow double comes out (or stays out) for <paramref name="seconds"/> (the final card's after a perfect parry
-    /// or dodge, or the ultimate's when every card is taken): the Knight's own character beside them, black and
+    /// The shadow double comes out (or stays out) for <paramref name="seconds"/> (the ultimate's, when every card is
+    /// taken): the Knight's own character beside them, black and
     /// see-through, doing what they do a beat late, on every PC (BodyDouble), told at most once a second. While it is out
     /// the Knight's punches, slashes and counters land twice (Shadowed) and their parries take twice the posture
     /// (PlayerClass.ParryPosture). An execution it only mimes: an execution is no blow to echo.

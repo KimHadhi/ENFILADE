@@ -8,7 +8,7 @@ using UnityEngine;
 /// <list type="bullet">
 /// <item>Momentum (기세, everyone's; the user's "때릴 때마다 갱신되는 강화 효과"): every hit this player lands on an
 /// enemy keeps it going a few seconds more (PlayerPerks.Struck). A miss takes nothing; it only lets it run out.</item>
-/// <item>Ghost: its cards are GhostCards' (Classes/Ghost), White Tiger (화이트 타이거, its final card) among them. Here only
+/// <item>Ghost: its cards are GhostCards' (Classes/Ghost), White Tiger (화이트 타이거) among them. Here only
 /// the class HUD's bar shows its ultimate under way (PhantomShare).</item>
 /// <item>Point, Gunslinger (건슬링어): the gun just drawn hits harder a moment (ClassKit.DamageFactor); its time shows
 /// on the class HUD's bar.</item>
@@ -18,8 +18,8 @@ using UnityEngine;
 /// Broken Arrow (브로큰 애로우, the user's name: the radio call for every gun in reach when a unit is being overrun) drops
 /// the same barrage on the Assault's own spot when its health falls under a share or it is grabbed, whatever holds it
 /// shelled first; once in a while. Its ultimate is an A-10's gun run down the line it aims at (ClassCards.GunRun).</item>
-/// <item>Assault, the phantom cavalry (유령 기병대, its final card; the user's "돌진할 때 일직선으로 적들 쓸고 나가는"):
-/// a CHARGE sends five riders galloping out along where they look, and whatever stands in their line is hit and thrown
+/// <item>Assault, the phantom cavalry (유령 기병대, the 러프 라이더스 card; the user's "돌진할 때 일직선으로 적들 쓸고
+/// 나가는"): a CHARGE sends five riders galloping out along where they look, and whatever stands in their line is hit and thrown
 /// aside, knocked down (a brute only reels).</item>
 /// <item>Knight, 무너뜨리기 (the old 비껴 흘리기 renamed by the user, 2026-11-14): a parried elite or brute reels and loses
 /// more posture (PlayerClass.ParryPosture), a white arc running off the parry. A pack zombie breaks on a Knight's parry
@@ -31,9 +31,9 @@ using UnityEngine;
 /// <item>Knight, 되치기, no card since 2026-11-14 (Dying Light's grab counter; the user: "잡혔을 때 빠져 나오는 기능은 카드가
 /// 아니라 기본으로"): held by a grab or a kneel to eat, V throws every holder off at once, its posture broken for the
 /// execution, with its pink throw for everyone and REVERSAL on this screen. A runner's pin stays the kick's.</item>
-/// <item>Knight, 그림자 분신 (its final card and the Knight's ultimate; the user's Ryoshu of Limbus Company, then 2026-11-14:
-/// "걍 때릴 때 데미지 두 배, 패링할 때 체간 두 배"): a perfect parry or dodge brings out a black, see-through double that
-/// does what the Knight does a beat late (BodyDouble); every punch, slash and counter strikes again a beat later, a violet
+/// <item>Knight, 그림자 분신 (the Knight's ultimate, once its final card too, gone 2026-11-14 with the rest of them; the
+/// user's Ryoshu of Limbus Company, then 2026-11-14: "걍 때릴 때 데미지 두 배, 패링할 때 체간 두 배"): X brings out a
+/// black, see-through double that does what the Knight does a beat late (BodyDouble); every punch, slash and counter strikes again a beat later, a violet
 /// crescent cutting where it lands, and a parry takes twice the posture.</item>
 /// </list>
 /// The HUD's bar (ClassHUD) shows the card state under way: BarShare, BarWord, BarColor.

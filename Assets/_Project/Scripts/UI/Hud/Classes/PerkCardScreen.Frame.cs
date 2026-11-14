@@ -146,7 +146,7 @@ public sealed partial class PerkCardScreen
         bool over = pointing && flip >= 1f && RectTransformUtility.RectangleContainsScreenPoint(card.Root, mouse.position.ReadValue(), null);
         card.Hover = Mathf.MoveTowards(card.Hover, over || picked == index ? 1f : 0f, dt / HoverSeconds);
         Paint(card, card.Hover);
-        card.Glow.color = KitStyle.With(KitStyle.Accent, .5f * card.Hover + (card.Perk != null && card.Perk.Final ? .18f : 0f));
+        card.Glow.color = KitStyle.With(KitStyle.Accent, .5f * card.Hover);
 
         Vector2 lift = new Vector2(0f, 26f * KitReveal.EaseOut(card.Hover));
         float grow = 1f + .05f * card.Hover;
@@ -178,12 +178,10 @@ public sealed partial class PerkCardScreen
         card.Lift.localRotation = Quaternion.Euler(0f, 0f, spin);
     }
 
-    // The card under the pointer (or picked) turns pink with dark type. A class's final card (궁극) wears a pink frame
-    // from the start, so it reads apart before it is pointed at.
+    // The card under the pointer (or picked) turns pink with dark type.
     private static void Paint(Card card, float hover)
     {
-        bool final = card.Perk != null && card.Perk.Final;
-        card.Frame.color = Color.Lerp(final ? KitStyle.Accent : KitStyle.Ice, KitStyle.Accent, hover);
+        card.Frame.color = Color.Lerp(KitStyle.Ice, KitStyle.Accent, hover);
         card.Plate.color = Color.Lerp(KitStyle.With(KitStyle.Night, .97f), KitStyle.Accent, hover);
         Color ink = Color.Lerp(KitStyle.Text, KitStyle.Ink, hover);
         card.Name.color = card.Tag.color = ink;
@@ -191,8 +189,7 @@ public sealed partial class PerkCardScreen
         card.Text.color = Color.Lerp(KitStyle.Soft, KitStyle.With(KitStyle.Ink, .8f), hover);
         card.Why.color = Color.Lerp(KitStyle.With(KitStyle.Soft, .72f), KitStyle.With(KitStyle.Ink, .6f), hover);
         card.Step.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
-        card.TagBack.color = Color.Lerp(final ? KitStyle.With(KitStyle.Accent, .35f) : KitStyle.With(KitStyle.Ice, .15f),
-            KitStyle.With(KitStyle.Ink, .15f), hover);
+        card.TagBack.color = Color.Lerp(KitStyle.With(KitStyle.Ice, .15f), KitStyle.With(KitStyle.Ink, .15f), hover);
         card.Owned.color = Color.Lerp(KitStyle.Accent, KitStyle.Ink, hover);
         card.KeyBack.color = Color.Lerp(KitStyle.Ice, KitStyle.Ink, hover);
         card.Key.color = Color.Lerp(KitStyle.Ink, KitStyle.Accent, hover);

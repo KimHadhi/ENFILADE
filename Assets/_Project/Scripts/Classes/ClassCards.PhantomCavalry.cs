@@ -4,8 +4,8 @@ using UnityEngine;
 public sealed partial class ClassCards
 {
     /// <summary>
-    /// This PC's Assault sounded a CHARGE at <paramref name="at"/> (ClassKit): with the final card, the riders go out
-    /// along where they look.
+    /// This PC's Assault sounded a CHARGE at <paramref name="at"/> (ClassKit): with the 러프 라이더스 card, the riders go
+    /// out along where they look.
     /// </summary>
     public void Charged(Vector3 at)
     {

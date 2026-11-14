@@ -17,9 +17,10 @@ using UnityEngine;
 /// 느낌은 좋았어").</item>
 /// <item>탄피 회수 (point_brass): a kill by its gun puts rounds back into the gun in hand, and only a headshot kill at the
 /// first level (the user: "1단계는 헤드샷 처치 시 1발 회복, 2단계는 몸샷 처치로도 가능하게 바꾸고, 3단계는 2발로").</item>
-/// <item>탄막 춤 (point_ballet, its final card): every kill in a Gun Kata keeps it going longer, up to a limit, and the
-/// kata's shots fly with no spread at all, on the run too (PlayerClass.KataSpreadFactor asks BalletSpread). The kata
-/// alone only keeps running from adding spread; the hip's own spread and the bloom of a long burst stay.</item>
+/// <item>탄막 춤 (point_ballet, a three-level card since the final cards went, 2026-11-14): every kill in a Gun Kata keeps
+/// it going Point.balletPerKill longer, up to the card's value in all (2/4/6 s), and the kata's shots lose its value2 of
+/// all their spread (50/75/100%), on the run too (PlayerClass.KataSpreadFactor asks BalletSpread). The kata alone only
+/// keeps running from adding spread; the hip's own spread and the bloom of a long burst stay.</item>
 /// </list>
 /// Numbers: Tables/Perks (each card's value) and Tables/ClassAbilities, Point.door*, Point.brass*, Point.ballet*.
 /// </summary>
@@ -54,11 +55,11 @@ public sealed class PointCards : MonoBehaviour
     }
 
     /// <summary>
-    /// 탄막 춤: the factor on all the spread of this PC's own Point's shots while its Gun Kata runs (ClassAbilities
-    /// Point.balletSpread, 0: none at all), 1 without the card. PlayerClass asks only during a kata.
+    /// 탄막 춤: the factor on all the spread of this PC's own Point's shots while its Gun Kata runs (the card's value2 is
+    /// the share taken away: 50/75/100%, none left at the top), 1 without the card. PlayerClass asks only during a kata.
     /// </summary>
     public static float BalletSpread()
-        => PlayerClass.Is(PlayerClass.Point) && PlayerPerks.Has(BalletCard) ? Mathf.Clamp01(PlayerClass.Ability(Row, "balletSpread", 0f)) : 1f;
+        => PlayerClass.Is(PlayerClass.Point) && PlayerPerks.Has(BalletCard) ? Mathf.Clamp01(1f - PlayerPerks.Total2(BalletCard) / 100f) : 1f;
 
     // This PC's own player, playing a Point.
     private static bool Mine(PlayerMovement who)
@@ -154,7 +155,7 @@ public sealed class PointCards : MonoBehaviour
         if (!PlayerClass.Is(PlayerClass.Point) || !PlayerPerks.IsMine(report.Hit.Source)) return;
         if (PlayerPerks.Has(BrassCard)) RecoverBrass(report.Hit);
         if (PlayerPerks.Has(BalletCard) && kit != null)
-            kit.LengthenKata(PlayerPerks.Total(BalletCard), Mathf.Max(0f, PlayerClass.Ability(Row, "balletMost", 6f)));
+            kit.LengthenKata(Mathf.Max(0f, PlayerClass.Ability(Row, "balletPerKill", 1f)), PlayerPerks.Total(BalletCard));
     }
 
     // A kill by its gun puts the card's rounds back into the gun in hand, up to its magazine's own size, and the reserve

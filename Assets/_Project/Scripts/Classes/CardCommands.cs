@@ -2,9 +2,9 @@ using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// The console's /card, for trying the class cards out (Docs/Features/ClassCards.md): a final card waits until four levels of
-/// its class's cards are held, which takes a long campaign of full gauges to reach by hand. Registered beside the other
-/// console commands (GameCommands). It only raises this PC's own player's perks, as picking the card would.
+/// The console's /card, for trying the class cards out (Docs/Features/ClassCards.md): a card's top level, or the ultimate
+/// that waits for every card, takes a long campaign of full gauges to reach by hand. Registered beside the other console
+/// commands (GameCommands). It only raises this PC's own player's perks, as picking the card would.
 /// </summary>
 public static class CardCommands
 {
@@ -54,7 +54,6 @@ public static class CardCommands
             if (!Mine(perk)) continue;
             if (built.Length > 0) built.Append('\n');
             built.Append(perk.Id).Append("  ").Append(perk.Name).Append(' ').Append(PlayerPerks.Level(perk.Id)).Append('/').Append(perk.Levels);
-            if (perk.Final) built.Append(" 궁극");
         }
         return built.Length > 0 ? built.ToString() : "카드가 없다";
     }

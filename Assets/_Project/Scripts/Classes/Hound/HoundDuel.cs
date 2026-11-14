@@ -16,7 +16,7 @@ using UnityEngine;
 /// - the hound hits it harder (PlayerClass.GunFactor, duelDamage), and it carries the hound's bounty mark, so a
 ///   Desperado round in its head ends it as a bounty;
 /// - friends may shoot it to help, but never finish it: it can't drop below 1 health to anyone but the hound (Floor);
-/// - with the Ace card (the Schießhund's final card) nothing but the foe can hurt the hound while it lasts, and friends
+/// - with the Ace card (a Schießhund card) nothing but the foe can hurt the hound while it lasts, and friends
 ///   may finish it too.
 /// It ends when either falls or time runs out; another duel called by the same hound takes its place. Every PC keeps the
 /// same duels (PlayerNetworkCombat.DuelRpc), so each judges what it judges by one rule: the host its zombies' aim and

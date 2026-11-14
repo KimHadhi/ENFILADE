@@ -3,7 +3,7 @@ using UnityEngine;
 // ClassKit: Point: the gun put away reloads itself. One part of the class; the rest is in ClassKit.cs and the files beside it.
 public sealed partial class ClassKit
 {
-    // How much longer kills have made the Gun Kata under way (its final card, 탄막 춤), which has a limit per kata.
+    // How much longer kills have made the Gun Kata under way (the 탄막 춤 card), which has a limit per kata.
     private float kataAdded;
     // The Point's cards that watch its shots and kills (PointCards).
     private PointCards pointCards;
@@ -60,7 +60,7 @@ public sealed partial class ClassKit
     }
 
     /// <summary>
-    /// The Gun Kata under way goes on <paramref name="seconds"/> longer (a kill under a Point's final card, 탄막 춤:
+    /// The Gun Kata under way goes on <paramref name="seconds"/> longer (a kill under a Point's 탄막 춤 card:
     /// PointCards), up to <paramref name="most"/> more in all for this kata. Its bar grows with it, and the aura turning
     /// round the Point is held on for the new end on every PC, so friends see the dance last as long as its dancer does.
     /// The wait for the next kata still counts from the use; it is only never over while this one runs. False when no kata

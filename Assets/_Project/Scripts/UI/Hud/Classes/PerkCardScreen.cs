@@ -21,8 +21,8 @@ using UnityEngine.UI;
 /// instead of switching guns). Also applies the health perk to this player's body. Added to this PC's own player only.
 /// Since the class cards (2026-11-11, Docs/Features/ClassCards.md) the three are drawn from everyone's cards and this player's
 /// class's own (PlayerPerks.Dealable); each card says under its name, small and slanted, why it works (the user's rule
-/// that an effect comes with a believable reason), and a class's final card (궁극) wears a pink frame from the start.
-/// Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
+/// that an effect comes with a believable reason). There are no final cards any more (2026-11-14, the user: the ultimate
+/// itself is the reward for holding every card). Once every card this player can be dealt is taken, the prompt reads "궁극 준비" and X spends the full gauge on the
 /// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards. The hub keeps the same rule with practice
 /// cards (2026-11-12, the user: "궁극기가 좀 이상한 게. 카드를 뽑아야 하는 거 아니야?"): its range's kills charge the gauge,
 /// X deals cards, the ultimate comes after all of them, and a pink line under the title says they go when the hub is left

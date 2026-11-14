@@ -12,9 +12,10 @@ using UnityEngine;
 /// hits, this player's health, getting a friend up). The effect lookups below are what the game's systems ask.
 /// <para>
 /// Class cards (2026-11-11, the user's "클래스별 스킬(카드)"): a card with a class in its row is dealt only to a player of
-/// that class, and before the cards everyone can draw (Draw, 2026-11-12); a card with "after" waits until that many levels of its class's
-/// other cards are held, which is how a class's final card (궁극) comes late; and a card naming a ClassAbilities number
-/// ("ability") simply adds to it, so most class cards need no code (PlayerClass.Ability reads the sum). Every card says
+/// that class, and before the cards everyone can draw (Draw, 2026-11-12); and a card naming a ClassAbilities number
+/// ("ability") simply adds to it, so most class cards need no code (PlayerClass.Ability reads the sum). The final cards
+/// that once came after four levels of a class's cards are gone (2026-11-14, the user: "이미 궁극기를 쓸 수 있게 된다는
+/// 특권을 얻는 거에서 궁극 카드가 의미 없잖아. 없애 줘."): every card taken, X is the class's ultimate. Every card says
 /// why it does what it does (the why line, the user's rule that an effect comes with a reason that makes it believable).
 /// What the code-backed class cards do is ClassCards' (Player/Classes).
 /// </para>
@@ -32,7 +33,7 @@ public static class PlayerPerks
     public sealed class Perk
     {
         public string Id, Name, Class, Tag, Icon, Text, Why, Ability;
-        public int Levels, After;
+        public int Levels;
         public float Value, Value2, Display = 1f, Weight;
         /// <summary>
         /// What the card adds in all at each level, when its value cell lists them ("-4/-10/-16"), or null when every
@@ -46,8 +47,6 @@ public static class PlayerPerks
         /// level (2026-11-14: 6/9/12 shells, 45/40/35 s).
         /// </summary>
         public float[] Steps2;
-        /// <summary>A class's final card (궁극): drawn last, shown apart.</summary>
-        public bool Final;
         /// <summary>Dealt only to a player alone (the user, 2026-11-14, of 두 번째 숨: "솔로일 때만 나와서").</summary>
         public bool Solo;
 
@@ -93,7 +92,7 @@ public static class PlayerPerks
     public const string AmmoPouch = "ammo_pouch", Scavenger = "scavenger", NadePouch = "nade_pouch", Phoenix = "phoenix";
     // The class cards with code behind them (ClassCards, ClassKit, PlayerClass).
     public const string KnightDeflect = "knight_deflect",
-        KnightShadow = "knight_shadow", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
+        AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
         GhostPierce = "ghost_pierce", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
         HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep",
         SupportWire = "support_wire", SupportCrate = "support_crate", SupportLight = "support_light";
@@ -159,11 +158,10 @@ public static class PlayerPerks
                     Id = id, Name = Texts.Cell(row.Text("name", id)), Class = row.Text("class", ""), Tag = Texts.Cell(row.Text("tag", "")),
                     Icon = row.Text("icon", ""), Text = Texts.Cell(row.Text("text", "")), Why = Texts.Cell(row.Text("why", "")),
                     Ability = row.Text("ability", ""),
-                    Levels = Mathf.Max(1, (int)row.Number("levels", 1f)), After = Mathf.Max(0, (int)row.Number("after", 0f)),
+                    Levels = Mathf.Max(1, (int)row.Number("levels", 1f)),
                     Value = steps != null ? steps[0] : row.Number("value", 0f), Steps = steps,
                     Value2 = steps2 != null ? steps2[0] : row.Number("value2", 0f), Steps2 = steps2, Display = row.Number("display", 1f),
-                    Weight = Mathf.Max(0f, row.Number("weight", 1f)), Final = row.Number("final", 0f) > .5f,
-                    Solo = row.Number("solo", 0f) > .5f
+                    Weight = Mathf.Max(0f, row.Number("weight", 1f)), Solo = row.Number("solo", 0f) > .5f
                 });
             }
             return catalog;
@@ -204,16 +202,12 @@ public static class PlayerPerks
         }
     }
 
-    /// <summary>
-    /// Whether this card may be dealt now: not at its top level, everyone's or this player's class's, and its class's
-    /// other cards held to its "after" (a final card waits for them).
-    /// </summary>
+    /// <summary>Whether this card may be dealt now: not at its top level, and everyone's or this player's class's.</summary>
     public static bool Dealable(Perk perk)
     {
         if (perk == null || perk.Weight <= 0f || Level(perk.Id) >= perk.Levels) return false;
         if (perk.Solo && !Alone) return false;
-        if (string.IsNullOrEmpty(perk.Class)) return true;
-        return PlayerClass.Is(perk.Class) && ClassLevels(perk.Class) >= perk.After;
+        return string.IsNullOrEmpty(perk.Class) || PlayerClass.Is(perk.Class);
     }
 
     /// <summary>Any card left to deal this player.</summary>
@@ -223,12 +217,12 @@ public static class PlayerPerks
         return false;
     }
 
-    /// <summary>Levels held of a class's cards, its final card left out (what a final card's "after" counts).</summary>
+    /// <summary>Levels held of a class's cards (FirstHand: whether a Ghost holds any of its own yet).</summary>
     public static int ClassLevels(string classId)
     {
         int sum = 0;
         foreach (var perk in Catalog)
-            if (!perk.Final && string.Equals(perk.Class, classId, StringComparison.OrdinalIgnoreCase)) sum += Mathf.Min(Level(perk.Id), perk.Levels);
+            if (string.Equals(perk.Class, classId, StringComparison.OrdinalIgnoreCase)) sum += Mathf.Min(Level(perk.Id), perk.Levels);
         return sum;
     }
 
