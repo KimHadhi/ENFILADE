@@ -168,7 +168,12 @@ public sealed partial class GreyboxBuilder
             if (unit == shape.gameObject && shape.GetComponentsInChildren<Renderer>(true).Length > 1) continue;
             props.Add(unit);
         }
-        foreach (var prop in props) FitLods(prop);
+        foreach (var prop in props)
+        {
+            FitLods(prop);
+            // Small ones cast no shadow, as the map's own models (QuietShadows).
+            QuietShadows(prop);
+        }
         packLods = props.Count;
     }
 

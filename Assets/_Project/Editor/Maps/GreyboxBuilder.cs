@@ -111,9 +111,16 @@ public sealed partial class GreyboxBuilder
     {
         EndStaging();
         FitWindows();
+        // A scene with no walk mesh of its own (the hub): one only to find where players can see from (GreyboxBuilder.Sight).
+        var sightMesh = SightMesh();
+        BuildSight();
         Decals();
+        CullUnseenDressing();
+        DropSightMesh(sightMesh);
         MarkStatic();
-        return SurfaceReport() + DressReport() + DecalReport();
+        // No probe bake here: the models the sun can't reach lose their shadows now (GreyboxBuilder.Shadows).
+        QuietSunlessShadows();
+        return SurfaceReport() + DressReport() + DecalReport() + SunlessReport();
     }
 
     /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.
@@ -569,10 +576,10 @@ public sealed partial class GreyboxBuilder
     {
         // Every box is laid now, so each ladder can be fitted to the floor it leads to.
         EndStaging();
-        // Map dressing stage 5: the city beyond the edge, then every building's windows fitted to it; stage 6: the wear.
+        // Map dressing stage 5: the city beyond the edge, then every building's windows fitted to it (stage 6, the wear,
+        // comes once the walk mesh shows where players can see from).
         Skyline();
         FitWindows();
-        Decals();
         string ladders = LadderFit.FitAll(parkour);
         AddWaves();
         if (AddsCampaign) AddCampaign();
@@ -594,6 +601,10 @@ public sealed partial class GreyboxBuilder
         links.FindProperty("m_GenerateLinks").boolValue = true;
         links.ApplyModifiedPropertiesWithoutUndo();
         int slabs = BakeWalkMesh(surface);
+        // Map dressing stage 6, the wear: decals only where a player on the walk mesh can see them (GreyboxBuilder.Sight).
+        BuildSight();
+        Decals();
+        CullUnseenDressing();
         string meshPath = dataFolder + "/NavMesh.asset";
         if (AssetDatabase.LoadAssetAtPath<NavMeshData>(meshPath) != null) AssetDatabase.DeleteAsset(meshPath);
         if (surface.navMeshData != null) AssetDatabase.CreateAsset(surface.navMeshData, meshPath);
@@ -610,7 +621,9 @@ public sealed partial class GreyboxBuilder
         bool lit = look != null && BakeEnvironment();
         RestoreBakeShadows();
         bool probesBaked = probes && lit && ProbesBaked();
-        if (culled || lit || probes)
+        // The bake is done (its occluders cast as before): the models the sun can't reach lose their shadows.
+        bool sunless = QuietSunlessShadows() > 0;
+        if (culled || lit || probes || sunless)
         {
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -633,6 +646,6 @@ public sealed partial class GreyboxBuilder
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
              (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) +
-             SurfaceReport() + DressReport() + DecalReport() + PackReport());
+             SurfaceReport() + DressReport() + DecalReport() + SunlessReport() + PackReport());
     }
 }

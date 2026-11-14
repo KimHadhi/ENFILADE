@@ -17,6 +17,11 @@ using UnityEngine.Rendering.Universal;
 /// overlap test), so none smears over a corner, a ledge, a floor or a wall standing on the floor: URP's decal shader
 /// paints whatever is inside its box, straight along its depth. Static projectors under one root; each row's far
 /// distance lets the small ones go at range.
+/// Since 2026-11-14 (the user: "허브 쪽 데칼은 보이지도 않는 바깥에 엄청 깔아 뒀더만, 제대로 좀...") a decal is also laid
+/// only where a player can see it (GreyboxBuilder.Sight): an eye over the walk mesh a player can get to, within the
+/// decal's draw distance, sees its middle. Outer walls past the play area, roofs nobody stands on or looks down on, faces
+/// behind other walls and the ground beyond the walls get none. The caps count what is laid, not what is tried, so a
+/// face or a top seen only in part (the hub's ground under its hall and range) takes its density where it is seen.
 /// </summary>
 public sealed partial class GreyboxBuilder
 {
@@ -31,6 +36,8 @@ public sealed partial class GreyboxBuilder
     // At most this many of one group on one face or one top (a city block's ground would otherwise take hundreds where
     // nobody walks), and in all, so a dense table can't slow a map.
     private const int DecalMostPerFace = 8, DecalMostPerTop = 40, DecalMost = 1600;
+    // At most this many spots are tried for one group on one face or top (a huge ground's density would ask for more).
+    private const int DecalMostTries = 400;
     // A decal fades over this share of its far distance.
     private const float DecalFade = .8f;
 
@@ -47,7 +54,7 @@ public sealed partial class GreyboxBuilder
     private Dictionary<string, List<DecalKind>> decalGroups;
     private readonly HashSet<string> decalMissing = new HashSet<string>();
     private Transform decalRoot;
-    private int decalsLaid, decalsSkipped;
+    private int decalsLaid, decalsSkipped, decalsUnseen;
 
     // Every box of the layout that wears a surface with decals takes them (see the class), once the layout stands.
     private void Decals()
@@ -87,8 +94,8 @@ public sealed partial class GreyboxBuilder
                 var kinds = DecalGroup(group);
                 if (kinds == null) continue;
                 uint state = SpotHash(face.at) ^ StableHash(group) | 1u;
-                int count = Mathf.Min(DecalMostPerFace, Draw(face.length * density, ref state));
-                for (int i = 0; i < count && decalsLaid < DecalMost; i++)
+                int tries = Mathf.Min(DecalMostTries, Draw(face.length * density, ref state)), laid = 0;
+                for (int i = 0; i < tries && laid < DecalMostPerFace && decalsLaid < DecalMost; i++)
                 {
                     var kind = kinds[(int)(Next(ref state) % (uint)kinds.Count)];
                     float grow = 1f + (Unit(Next(ref state)) * 2f - 1f) * kind.Vary;
@@ -102,7 +109,9 @@ public sealed partial class GreyboxBuilder
                     }
                     var point = new Vector3(face.at.x, middle, face.at.z) + face.along * shift;
                     if (!FaceClear(own, point, face.normal, face.along, Vector3.up, width, height)) { decalsSkipped++; continue; }
+                    if (!Seen(point, face.normal, kind.Far)) { decalsUnseen++; continue; }
                     Project(kind, point, face.normal, 0f, new Vector2(width, height));
+                    laid++;
                 }
             }
         }
@@ -150,8 +159,8 @@ public sealed partial class GreyboxBuilder
             var kinds = DecalGroup(group);
             if (kinds == null) continue;
             uint state = SpotHash(new Vector3(box.center.x, top, box.center.z)) ^ StableHash(group) ^ 0x9E3779B9u | 1u;
-            int count = Mathf.Min(DecalMostPerTop, Draw(sx * sz * density, ref state));
-            for (int i = 0; i < count && decalsLaid < DecalMost; i++)
+            int tries = Mathf.Min(DecalMostTries, Draw(sx * sz * density, ref state)), laid = 0;
+            for (int i = 0; i < tries && laid < DecalMostPerTop && decalsLaid < DecalMost; i++)
             {
                 var kind = kinds[(int)(Next(ref state) % (uint)kinds.Count)];
                 float grow = 1f + (Unit(Next(ref state)) * 2f - 1f) * kind.Vary;
@@ -163,7 +172,9 @@ public sealed partial class GreyboxBuilder
                 var point = new Vector3(box.center.x + x * (sx * .5f - reach), top, box.center.z + z * (sz * .5f - reach));
                 var spin = Quaternion.AngleAxis(turn, Vector3.up);
                 if (!FaceClear(own, point, Vector3.up, spin * Vector3.right, spin * Vector3.forward, width, height)) { decalsSkipped++; continue; }
+                if (!Seen(point, Vector3.up, kind.Far)) { decalsUnseen++; continue; }
                 Project(kind, point, Vector3.up, turn, new Vector2(width, height));
+                laid++;
             }
         }
     }
@@ -284,7 +295,7 @@ public sealed partial class GreyboxBuilder
     private string DecalReport()
     {
         if (decalsLaid == 0 && decalMissing.Count == 0) return "";
-        return "\n데칼(Tables/MapDecals): " + decalsLaid + "개, 자리가 맞지 않아 뺀 자리 " + decalsSkipped + "곳" +
-               (decalMissing.Count > 0 ? " (못 찾은 데칼: " + string.Join(", ", decalMissing) + ")" : "");
+        return "\n데칼(Tables/MapDecals): " + decalsLaid + "개, 자리가 맞지 않아 뺀 자리 " + decalsSkipped + "곳, 아무도 못 봐서 뺀 자리 " +
+               decalsUnseen + "곳" + (decalMissing.Count > 0 ? " (못 찾은 데칼: " + string.Join(", ", decalMissing) + ")" : "") + SightReport();
     }
 }

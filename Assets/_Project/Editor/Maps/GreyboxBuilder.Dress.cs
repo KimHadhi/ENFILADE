@@ -286,6 +286,7 @@ public sealed partial class GreyboxBuilder
         copy.transform.SetPositionAndRotation(new Vector3(point.x - offset.x, y, point.z - offset.z), turn * own);
         copy.transform.localScale = scaled;
         FitLods(copy);
+        QuietShadows(copy);
         artPlaced++;
         LastPlaced = copy;
         return copy;
@@ -363,11 +364,25 @@ public sealed partial class GreyboxBuilder
         return new Vector3(size.x * c + size.z * s, size.y, size.x * s + size.z * c);
     }
 
+    // A model shorter than ShadowLeast on its longest side casts no shadow (a can, a bag, a bottle, a cone): each caster
+    // is drawn again for every shadow cascade (four on PC), and the screen's ambient occlusion (the renderer's SSAO) still
+    // darkens the floor at its foot (the user, 2026-11-14: "맵 최적화").
+    private const float ShadowLeast = 1f;
+    private int quietShadows;
+
+    private void QuietShadows(GameObject copy)
+    {
+        var box = WorldBounds(copy);
+        if (Mathf.Max(box.size.x, box.size.y, box.size.z) >= ShadowLeast) return;
+        foreach (var shape in copy.GetComponentsInChildren<Renderer>(true)) shape.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        quietShadows++;
+    }
+
     // For the build's report.
     private string DressReport()
     {
         if (artPlaced == 0 && artMissing.Count == 0) return "";
-        string text = "\n꾸밈: 모델 " + artPlaced + "개";
+        string text = "\n꾸밈: 모델 " + artPlaced + "개(그림자를 끈 작은 모델 " + quietShadows + "개)";
         if (artMissing.Count > 0) text += " (못 찾은 종류: " + string.Join(", ", artMissing) + ")";
         return text + LodReport();
     }
