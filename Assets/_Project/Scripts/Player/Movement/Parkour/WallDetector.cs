@@ -1,6 +1,9 @@
 using UnityEngine;
 
-/// <summary>Searches the player's torso volume, and ranks all visible wall candidates.</summary>
+/// <summary>
+/// Finds the walls the player climbs: one in front to start a wall climb on (TryEntry, Beatrun's eye-level traces), and
+/// the wall against the torso while on it (TryContact).
+/// </summary>
 public sealed class WallDetector
 {
     private readonly PlayerMovement ctx;
@@ -12,6 +15,8 @@ public sealed class WallDetector
         => collider != null && collider.enabled && collider.gameObject.activeInHierarchy
             && collider.GetComponentInParent<SwingBar>() == null && !DodgeEnemyPassThrough.IsEnemy(collider)
             && (collider.attachedRigidbody == null || collider.attachedRigidbody.isKinematic);
+
+    /// <summary>The wall this way against the torso, from 0.45 m up: what keeps a wall climb going on it.</summary>
     public bool TryContact(Vector3 direction, out RaycastHit hit)
     {
         Vector3 feet = ctx.transform.position;
@@ -20,25 +25,42 @@ public sealed class WallDetector
             direction.normalized, out hit, ctx.AbilitySettings.wallReach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
             && Mathf.Abs(hit.normal.y) < 0.25f && CanUseSurface(hit.collider);
     }
-    // Beatrun's vertical wall run starts only with the wall within 25 units of the eyes, about 9 beyond its hull, so the
-    // hands meet it; wallReach keeps hold of a wall once on it.
-    private const float EntryUnits = 25f, CastRadius = .14f;
 
+    // Beatrun's vertical wall run (wallrunme.lua, the purist one WallClimbPace follows) starts only at a wall that stands
+    // at the eyes, which are 64 units over the feet: a trace 15 units under them meets it within 25 units (about 9
+    // beyond its hull, so the hands meet it), one 5 under them within 30, and one from there straight at the wall within
+    // 40. The entry here looked with the torso capsule TryContact keeps the climb with, from 0.45 m up, so a waist-high
+    // top was a wall too: a jump at a Support's barricade (1.15 m) that its vault missed, the W pressed a moment after
+    // the jump, climbed it instead (the user, 2026-11-14: "바리케이드는 뛰어넘기가 아니라 벽오르기가 되는데"). Such a top is
+    // the vaults' (VaultFinder), as in Beatrun. A thin cast, so a gap between boards doesn't hide the wall behind them.
+    private const float EntryUnits = 25f, CastRadius = .14f;
+    private const float EyeUnits = 64f, LowUnder = 15f, HighUnder = 5f, HighUnits = 30f, AtWallUnits = 40f;
+
+    /// <summary>A wall in front to start a wall climb on: the nearest that stands at the eyes and that the player faces.</summary>
     public bool TryEntry(out RaycastHit best)
     {
         best = default;
-        float bestScore = float.NegativeInfinity;
-        float entry = EntryUnits * ctx.HeightUnit - CastRadius;
+        float bestScore = float.NegativeInfinity, u = ctx.HeightUnit;
+        Vector3 feet = ctx.transform.position;
+        Vector3 low = feet + Vector3.up * ((EyeUnits - LowUnder) * u), high = feet + Vector3.up * ((EyeUnits - HighUnder) * u);
         foreach (float angle in EntryAngles)
         {
             Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * ctx.transform.forward;
-            if (!TryContact(direction, out RaycastHit hit) || hit.distance > entry) continue;
+            if (!Probe(low, direction, EntryUnits * u, out RaycastHit hit)) continue;
             float facing = Vector3.Dot(ctx.transform.forward, -hit.normal);
             if (facing < ctx.AbilitySettings.wallClimbFacingDot) continue;
+            Vector3 inward = Vector3.ProjectOnPlane(-hit.normal, Vector3.up).normalized;
+            if (!Probe(high, direction, HighUnits * u, out _) || !Probe(high, inward, AtWallUnits * u, out _)) continue;
             float score = -hit.distance + facing * 0.15f;
             if (score <= bestScore) continue;
             bestScore = score; best = hit;
         }
         return best.collider != null;
     }
+
+    // A wall to climb within reach (m) of a point, the thin cast's front included.
+    private bool Probe(Vector3 from, Vector3 direction, float reach, out RaycastHit hit)
+        => Physics.SphereCast(from, CastRadius, direction.normalized, out hit, Mathf.Max(.01f, reach - CastRadius),
+                ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            && Mathf.Abs(hit.normal.y) < 0.25f && CanUseSurface(hit.collider);
 }

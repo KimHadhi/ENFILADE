@@ -3,9 +3,11 @@ using UnityEngine;
 /// <summary>
 /// Finds which vault or climb the obstacle ahead allows and where it ends. Nothing marks an obstacle as a vault or a climb:
 /// the moves look past its top, and open space beyond it means over, otherwise onto it (a ParkourObstacle can overrule
-/// that for one object). In the air it tries over, a kong vault, then onto; facing a wall, the thin-wall vault, then the
-/// high climb. Ported check for check from Beatrun (vaulting.lua and the direct moves of climb.lua): distances stay in its
-/// units, 72 to the standing height, and PlayerMovement.HeightUnit fits them to this player at any capsule size.
+/// that for one object). In the air it tries over, a kong vault, then onto (over, for a top thinner than the body); facing
+/// a wall, the thin-wall vault, then the high climb. A waist-high top is never a wall to climb: WallDetector.TryEntry
+/// wants one at the eyes, as Beatrun does. Ported check for check from Beatrun (vaulting.lua and the direct moves of
+/// climb.lua): distances stay in its units, 72 to the standing height, and PlayerMovement.HeightUnit fits them to this
+/// player at any capsule size, whatever body the player wears.
 /// </summary>
 public sealed class VaultFinder
 {
@@ -167,20 +169,23 @@ public sealed class VaultFinder
         return Target(VaultKind.Kong, surface, feet, forward, start + forward * (60f * u), out target);
     }
 
-    // Vault1: straight down in front of the eyes onto a top no higher than the waist; a low one is stepped onto.
+    // Vault1: straight down in front of the eyes onto a top no higher than the waist; a low one is stepped onto, a thin one
+    // gone over (OverThin).
     private bool Onto(Vector3 feet, Vector3 forward, out ObstacleTarget target)
     {
         target = default;
         Vector3 origin = feet + Up(Eye) + forward * (25f * u);
         if (Inside(origin)) return false;
         if (!Down(origin, Neck, out RaycastHit top)) return false;
-        if (!WallDetector.CanUseSurface(top.collider) || !ParkourObstacle.AllowsClimb(top.collider)) return false;
+        if (!WallDetector.CanUseSurface(top.collider)) return false;
         float fraction = top.distance / (Neck * u);
         if (fraction <= .3f) return false;
         // Not in Beatrun: a top shallower than the body (a rail, a thin wall) is gone over, never stepped or climbed onto.
         // Caught a moment late in a running jump, the rail was climbed and stood on instead of vaulted, which the user found
         // awkward (2026-11-06). A ParkourObstacle set to Climb Onto still can be.
-        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius) return false;
+        if (ParkourObstacle.AllowsVault(top.collider) && Depth(top, forward) < 2f * ctx.ControllerRadius)
+            return OverThin(feet, forward, origin, top, out target);
+        if (!ParkourObstacle.AllowsClimb(top.collider)) return false;
         // Beatrun steps onto a top in the lower 35% of the probe's reach (fraction > .65) and climbs onto a higher one. Here
         // that is judged from the floor in front of the obstacle, so the obstacle's own height decides, not how far a jump
         // has risen: caught on the way up, a 0.9 m rail read as a step from the feet, and the step was over in a tenth of a
@@ -199,6 +204,24 @@ public sealed class VaultFinder
         }
         if (Line(feet + Up(Eye), end + Up(Eye))) return false;
         return Target(stepUp ? VaultKind.StepUp : VaultKind.Onto, top.collider, feet, forward, end, out target, top.point.y);
+    }
+
+    // A thin top Vault1 found: gone over on the over vault, to where Beatrun's Vault1 ends past it (16 units over the top,
+    // 50 beyond where the eyes found it), never onto it. Before, nothing went over it once Vault2's chest box had risen
+    // past the top, a few frames into a jump: a hop over a Support's barricade from right behind it, the W pressed a
+    // moment after the jump, wasn't vaulted, and the wall climb took it (the user, 2026-11-14: "바리케이드는 뛰어넘기가
+    // 아니라 벽오르기가 되는데"). Only a top under the eyes of someone on the floor before it, as Vault2's own "nothing at
+    // eye height"; a higher thin wall is Vault4's (OverHigh), as is any thin top on a wall climb, where Beatrun's Vault2
+    // is Vault4. No floor under the feet, or no room past it: no move.
+    private bool OverThin(Vector3 feet, Vector3 forward, Vector3 origin, RaycastHit top, out ObstacleTarget target)
+    {
+        target = default;
+        if (ctx.CurrentState == PlayerMovement.MovementState.WallClimb) return false;
+        if (!FloorUnder(feet, out float floor) || top.point.y - floor >= Eye * u) return false;
+        if (Line(origin - forward * (50f * u), origin) || !detector.ClearStraightCapsule(top.point, top.collider)) return false;
+        Vector3 onward = top.point + Up(MantleLift) + forward * (50f * u);
+        if (!detector.ClearStraightExit(onward) || Line(feet + Up(Eye), onward + Up(Eye))) return false;
+        return Target(VaultKind.Over, top.collider, feet, forward, onward, out target, top.point.y);
     }
 
     // The floor under the feet (m), within reach of an obstacle's height; false over a drop.
