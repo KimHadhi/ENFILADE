@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Playables;
@@ -12,6 +13,16 @@ using UnityEngine.Playables;
 /// headshot still counts), a blow on the doll reaches its health, and every blow pushes the body. Getting up: it stands
 /// where the clip's lying pose lines up with the doll's (head the same way, hips over hips), and eases from the doll's
 /// pose into the clip. Dying while down, its corpse carries on with the same doll. Numbers: Tables/ZombieKnockdown.
+/// Knocked down by a guest's player (2026-11-14, the user's rule that the acting player's PC decides and shows it at
+/// once): the fall runs on that guest's PC from the moment of the blow (FallHere), as a kill's corpse runs on the
+/// killer's. It used to start a round trip later, when the host's doll's poses came back, so a kick landed and the
+/// zombie stood there a moment first. The guest's PC sends the poses; the host's zombie follows them like any copy
+/// (KnockDown with their client id), keeps the enemy under the body's hips, and still decides when and where it gets up,
+/// so its brain goes on from the right place. Which PC runs the doll goes out with the host's word of how it stands
+/// (RunnerShared, ShowRunner): should two players knock it down in the same moment the first to reach the host has it,
+/// and the other's doll follows from where it is. Should the PC running it go quiet mid-fall (it left), the host takes
+/// the doll over. A blow on the lying body pushes it at once where its doll runs; landed anywhere else it reaches that
+/// PC by way of the host.
 /// </summary>
 public sealed partial class ZombieBody
 {
@@ -46,6 +57,11 @@ public sealed partial class ZombieBody
     private float riseOut = .25f;
     [SerializeField, Min(1f), Tooltip("Lying knocked down it takes this many times the damage (friend feedback C7: knocking it down pays).")]
     private float lyingDamage = 2f;
+    [SerializeField, Min(.1f), Tooltip("The host, following a doll a guest's PC runs: with no word of the fall from that PC this long (s) and the body not at rest, the host runs the doll itself (the guest left).")]
+    private float runnerQuiet = 1f;
+
+    /// <summary>No PC in particular runs its doll: alone, or the host's own knockdown (KnockDown).</summary>
+    internal const ulong NoRunner = ulong.MaxValue;
 
     /// <summary>What a blow to it is worth while it lies knocked down (EnemyHealth).</summary>
     internal float LyingDamage => Mathf.Max(1f, lyingDamage);
@@ -68,9 +84,32 @@ public sealed partial class ZombieBody
     private float feetHeight, downAge, stillFor, nextSend, riseTime, riseWeight, blendLeft;
     private ulong downId;
     private bool down, rising, dollRuns, hasHeard, sentRest, riseFaceDown, agentWasOn;
+    // Which PC runs its doll while it lies, by client id. On the host: the guest whose player knocked it down, or the
+    // host itself. On a copy: whom the host names (ShowRunner). Following: when the runner's last pose came in and
+    // whether it said the body rests; on the host, the runner's player, to send it a push by.
+    private ulong runnerClient = NoRunner;
+    private float heardAt;
+    private bool heardRest;
+    private PlayerNetworkCorpse runnerPlayer;
 
     /// <summary>On the ground, not yet getting up.</summary>
     public bool IsLying => down && !rising;
+
+    // This PC moves the enemy itself (the host's, or alone): it goes where its body lies. A copy's place is the host's.
+    private bool MovesEnemy => network == null || !network.IsCopy;
+
+    /// <summary>
+    /// The host: which PC runs its doll while it lies, for its copies (EnemyNetwork's Condition): 0 for the host itself
+    /// or when it isn't down, else that client's id + 1.
+    /// </summary>
+    internal ulong RunnerShared => down && doll != null && !dollRuns && runnerClient != NoRunner ? runnerClient + 1UL : 0UL;
+
+    /// <summary>
+    /// A copy (EnemyNetwork calls it only there): which PC runs its doll while it lies, as the host says (0: the host;
+    /// else a client's id + 1). Kept from the first report on, before this body has even been dressed: a fall is
+    /// followed only from the PC named here.
+    /// </summary>
+    internal void ShowRunner(ulong shown) => runnerClient = shown == 0UL ? NetworkManager.ServerClientId : shown - 1UL;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearDown()
@@ -83,14 +122,52 @@ public sealed partial class ZombieBody
     internal static bool Follows(ulong id, out ZombieBody body)
         => downById.TryGetValue(id, out body) && body != null && body.doll != null && !body.dollRuns;
 
+    /// <summary>
+    /// A hit another PC landed on a knocked-down zombie whose doll this PC runs (the host passes it on, ZombieCorpse.TakePush).
+    /// </summary>
+    internal static void TakePush(ulong id, Vector3 point, Vector3 impulse)
+    {
+        if (!downById.TryGetValue(id, out var body) || body == null || !body.down || body.doll == null || !body.dollRuns) return;
+        body.doll.Push(point, impulse, body.mostPushSpeed);
+        body.stillFor = 0f;
+    }
+
     // ---- Going down ------------------------------------------------------------------------------------------
 
-    /// <summary>The host, or the PC alone: it goes down this way, and this PC runs its doll.</summary>
-    internal void KnockDown(Vector3 direction)
+    /// <summary>
+    /// The host, or the PC alone: it goes down this way, and this PC runs its doll. By: a guest's player knocked it down
+    /// on their own PC, which runs the doll (their client id); the host's body then follows that doll like any copy,
+    /// while the host still moves the enemy under it and gets it up.
+    /// </summary>
+    internal void KnockDown(Vector3 direction, ulong by = NoRunner)
     {
         if (Model == null || down) return;
+        ulong here = network != null && network.IsSpawned ? network.NetworkManager.LocalClientId : NoRunner;
+        bool theirs = by != NoRunner && here != NoRunner && by != here;
+        GoDown(!theirs);
+        runnerClient = theirs ? by : here;
+        if (doll == null || theirs) return;
+        Throw(direction);
+    }
+
+    /// <summary>
+    /// A copy: this PC's own player knocked it down. It goes down here at once, on a doll this PC runs and sends as the
+    /// host sends its own, so the blow and the fall are one moment on the screen of the player who struck (the user's rule
+    /// of 2026-11-14). False when it can't fall here (a plain capsule, down already, in a paired execution, no doll to
+    /// be had): the host's doll is followed then, as before.
+    /// </summary>
+    internal bool FallHere(Vector3 direction)
+    {
+        if (Model == null || !Wears || down || IsExecuted || network == null || !network.IsCopy) return false;
         GoDown(true);
-        if (doll == null) return;
+        if (doll == null) { dollRuns = false; return false; }
+        Throw(direction);
+        return true;
+    }
+
+    // The doll carries on as the body moved, its muscles giving out, pushed over the way of the blow.
+    private void Throw(Vector3 direction)
+    {
         doll.Launch(moving, 0f, 0f);
         doll.Brace(muscleHold, muscleSeconds, jointFriction);
         Vector3 flat = Vector3.ProjectOnPlane(direction, Vector3.up);
@@ -102,16 +179,18 @@ public sealed partial class ZombieBody
         down = true;
         rising = false;
         dollRuns = runs;
-        hasHeard = sentRest = false;
+        hasHeard = sentRest = heardRest = false;
+        heardAt = Time.time;
+        runnerPlayer = null;
         downAge = stillFor = riseWeight = blendLeft = 0f;
         // Whatever it was doing stops.
         striking = flinching = false;
         attackWeight = flinchWeight = staggerWeight = 0f;
         StopJolt();
-        // Nobody bumps where it stood; on the PC running it, the agent lets go of the body.
+        // Nobody bumps where it stood; on the PC that moves the enemy, the agent lets go of the body (whoever runs the doll).
         foreach (var collider in covered) collider.enabled = false;
         if (agent == null) agent = GetComponent<NavMeshAgent>();
-        agentWasOn = runs && agent != null && agent.enabled;
+        agentWasOn = MovesEnemy && agent != null && agent.enabled;
         if (agentWasOn) agent.enabled = false;
         doll = ZombieCorpse.TakeDoll(animator, human);
         if (doll == null) return;
@@ -137,6 +216,31 @@ public sealed partial class ZombieBody
         bool lying = target.IsLying;
         if (lying && !down) GoDown(false);
         else if (!lying && down && !rising) BeginRise(false, Vector3.zero, Quaternion.identity);
+        // This PC ran its fall (its own player knocked it down), but the host names another PC's doll as the one:
+        // someone knocked it down a moment sooner. A true tie, and the first has it: this doll follows theirs from here.
+        if (down && !rising && dollRuns && doll != null && target.ShownDown && runnerClient != network.NetworkManager.LocalClientId)
+            YieldDoll();
+    }
+
+    private void YieldDoll()
+    {
+        dollRuns = false;
+        hasHeard = heardRest = false;
+        heardAt = Time.time;
+        doll.Yield();
+        if (downId != 0UL && ZombieCorpse.TakeWaiting(downId, out var early)) Show(early);
+    }
+
+    /// <summary>
+    /// The fall as the PC that runs it sent it, for this one to follow. Only the runner's counts: in a tie two PCs each
+    /// send their own for a moment, and following both would shake the body between them. A copy takes any until the
+    /// host has said that it lies (and with that, whose doll it is).
+    /// </summary>
+    internal void Show(in ZombieCorpseFall fall, ulong from)
+    {
+        bool named = MovesEnemy || (target != null && target.ShownDown);
+        if (named && from != runnerClient) return;
+        Show(fall);
     }
 
     /// <summary>The fall the host runs, for this copy to follow.</summary>
@@ -144,6 +248,8 @@ public sealed partial class ZombieBody
     {
         heard = fall.Pose;
         hasHeard = true;
+        heardRest = fall.Rested;
+        heardAt = Time.time;
     }
 
     // ---- Lying -------------------------------------------------------------------------------------------------
@@ -163,16 +269,36 @@ public sealed partial class ZombieBody
         if (!dollRuns)
         {
             if (hasHeard) doll.Follow(heard, dt);
-            doll.PoseBody();
+            // The host's own zombie on a doll a guest's PC runs: the enemy still goes where the body lies.
+            if (MovesEnemy) FollowRunner(dt);
+            // Taken over just now, the rest is the runner's next frame.
+            if (doll != null) doll.PoseBody();
             return;
         }
         // The enemy goes where its body lies, so it gets up there and its copies follow it there. First, because
-        // moving the enemy carries the bones, and the doll then puts them where they lie.
-        FollowHips();
+        // moving the enemy carries the bones, and the doll then puts them where they lie. On a guest's PC that runs the
+        // doll (its own player's knockdown) the enemy's place stays the host's, which follows this doll.
+        if (MovesEnemy) FollowHips();
         doll.PoseBody();
         stillFor = doll.Settled(settleSpeed) ? stillFor + dt : 0f;
         bool still = stillFor >= StillTime;
         if (downId != 0UL && (!still || !sentRest) && (still || Time.time >= nextSend)) Send(still);
+    }
+
+    // The host, its zombie on a doll a guest's PC runs: the enemy under the body's hips as ever (it gets up there, and
+    // every copy's place comes from it), at rest once that PC says so, and run here from now on should that PC go
+    // quiet before the body rests (its player left mid-fall).
+    private void FollowRunner(float dt)
+    {
+        FollowHips();
+        stillFor = heardRest ? stillFor + dt : 0f;
+        if (heardRest || Time.time - heardAt < runnerQuiet) return;
+        dollRuns = true;
+        runnerClient = network != null && network.IsSpawned ? network.NetworkManager.LocalClientId : NoRunner;
+        runnerPlayer = null;
+        sentRest = false;
+        stillFor = 0f;
+        doll.Simulate();
     }
 
     private void FollowHips()
@@ -217,12 +343,36 @@ public sealed partial class ZombieBody
         sender.SendZombieFall(new ZombieCorpseFall(downId, doll.Capture(), rested));
     }
 
-    /// <summary>A blow landed on it (EnemyHealth, where its doll runs): lying, it pushes the body.</summary>
+    /// <summary>
+    /// A blow landed on it (EnemyHealth): lying, it pushes the body. Where its doll runs, at once. On the host with the
+    /// doll on a guest's PC, the push goes on to that PC, unless it was that guest's own blow: their PC pushed it as it
+    /// landed.
+    /// </summary>
     internal void Hit(in DamageHit hit)
     {
-        if (!down || doll == null || !dollRuns || hit.Direction.sqrMagnitude < 1e-4f) return;
-        doll.Push(hit.Point, hit.Direction.normalized * Mathf.Max(leastPush, hit.Amount * pushPerDamage), mostPushSpeed);
-        stillFor = 0f;
+        if (!down || doll == null || hit.Direction.sqrMagnitude < 1e-4f) return;
+        Vector3 impulse = hit.Direction.normalized * Mathf.Max(leastPush, hit.Amount * pushPerDamage);
+        if (dollRuns)
+        {
+            doll.Push(hit.Point, impulse, mostPushSpeed);
+            stillFor = 0f;
+            return;
+        }
+        if (!MovesEnemy || downId == 0UL || runnerClient == NoRunner) return;
+        var from = hit.Source != null ? hit.Source.GetComponentInParent<NetworkObject>() : null;
+        if (from != null && from.OwnerClientId == runnerClient) return;
+        var player = RunnerPlayer();
+        if (player != null) player.PushZombie(downId, hit.Point, impulse);
+    }
+
+    // The host: the player whose PC runs the doll, found once a fall.
+    private PlayerNetworkCorpse RunnerPlayer()
+    {
+        if (runnerPlayer != null) return runnerPlayer;
+        foreach (var player in PlayerRoster.All)
+            if (player != null && player.TryGetComponent(out NetworkObject owner) && owner.OwnerClientId == runnerClient
+                && player.TryGetComponent(out runnerPlayer)) break;
+        return runnerPlayer;
     }
 
     // A blow on the doll (a kick, a punch) is a blow on the zombie. Bullets go past the doll to the hitboxes.
@@ -265,7 +415,7 @@ public sealed partial class ZombieBody
             Vector3 hips = human[(int)HumanBodyBones.Hips].position;
             HoldDollPose();
             GiveDollBack();
-            if (dollRuns && NavMesh.SamplePosition(hips, out var nav, 1.5f, NavMesh.AllAreas))
+            if (MovesEnemy && NavMesh.SamplePosition(hips, out var nav, 1.5f, NavMesh.AllAreas))
                 transform.position = nav.position - Vector3.up * feetHeight;
         }
         rising = false;

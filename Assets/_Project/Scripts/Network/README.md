@@ -23,6 +23,7 @@
 | 자세 무너뜨리기 | 때린 사람: 자기 화면에서 무너졌으면 `broke`로 알림 | 자기 수치가 남아 있어도 무너뜨린다 | `MeleeCombatTarget.ApplyPostureDamage` → `ApplySentPosture` |
 | 처형·암살 | 하는 사람: 무너졌는지, 등 뒤인지, 좀비가 모르는지를 자기 화면에서 판정하고 바로 시작 | 그 사람 몫으로 붙잡아 둔다. 다른 사람이 이미 잡고 있을 때만 거절(먼저 온 쪽) | `MeleeCombatTarget.TryReserveExecution` → `EnemyNetwork.ExecutionRpc` → `HoldForExecution` |
 | 기절·밀치기·넘어뜨리기·돌진 밀치기 | 한 사람 | 결과를 그대로 적용 | `EnemyNetwork.InterruptRpc`·`ShoveRpc`·`KnockDownRpc`·`BargeRpc` |
+| 넘어뜨린 좀비가 쓰러지는 모습 (인형 물리) | 넘어뜨린 사람: 자기 화면에서 맞은 순간 쓰러지고, 그 PC가 인형을 굴려 자세를 보낸다 | 그 인형을 따라가며 좀비를 누운 자리로 옮기고, 언제 어디서 일어날지 정한다. 둘이 동시에 넘어뜨리면 먼저 닿은 쪽의 인형(`Condition.Runner`), 굴리던 사람이 나가면 넘겨받음 | `MeleeCombatTarget.KnockDownHere` → `ZombieBody.FallHere`·`KnockDown(by)`·`ShowRunner`, [ZombieBody.Down](../Enemies/Body/ZombieBody.Down.cs) |
 | 좀비의 공격이 플레이어에게 맞음, 패링·회피·잡힘·깔림 | 맞는 사람: 휘두름의 시간도 그 PC에서 잰다 | 휘두름을 시작한다는 것만 알림 | `EnemyNetwork.WindupRpc` → `EnemyCombatAI.ShowWindup`, `PlayerHold` → `PlayerNetworkCombat.HoldRpc` |
 | 좀비가 누구를 보고 듣고 쫓는지 | 방장(좀비 자신의 일) | 기분·의심·보는 사람을 0.1초 간격으로 알림 | `ZombieMind`, `EnemyNetwork.Condition` |
 

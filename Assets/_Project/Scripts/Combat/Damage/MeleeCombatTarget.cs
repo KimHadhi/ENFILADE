@@ -12,12 +12,18 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     [Header("Slide Reaction")]
     [SerializeField] private EnemyBodySize bodySize = EnemyBodySize.Small;
     public EnemyBodySize BodySize => bodySize;
-    public bool IsKnockedDown => knockdownRemaining > 0f || knockdownPresentation?.IsActive == true || shownDown;
+    public bool IsKnockedDown => knockdownRemaining > 0f || knockdownPresentation?.IsActive == true || shownDown || FellHere;
     /// <summary>
     /// On the ground, not yet getting up: what other PCs are told. A zombie getting up is still knocked down (it can't
     /// fight yet), but every PC plays its getting up at once (ZombieBody).
     /// </summary>
-    public bool IsLying => knockdownRemaining > 0f || knockdownPresentation?.IsLying == true || shownDown;
+    public bool IsLying => knockdownRemaining > 0f || knockdownPresentation?.IsLying == true || shownDown || FellHere;
+    // On a copy: this PC's own player knocked it down a moment ago and it fell here at once (KnockDownHere); the host's
+    // word that it lies is still on its way, and until it must have come this PC's own fall stands.
+    private bool FellHere => Time.time < fellHereUntil;
+    private float fellHereUntil;
+    /// <summary>On a copy: the host says it lies knocked down (apart from what this PC's own player just did to it).</summary>
+    internal bool ShownDown => shownDown;
     /// <summary>Someone is holding it: a guard break or an execution under way.</summary>
     public bool IsHeld => grabber != null || executor != null;
     /// <summary>The way it was last knocked down.</summary>
@@ -219,10 +225,15 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
         Interrupted?.Invoke();
     }
-    public void KnockDown(Vector3 direction, float duration)
+    public void KnockDown(Vector3 direction, float duration) => KnockDown(direction, duration, ZombieBody.NoRunner);
+    /// <summary>
+    /// Runner: on the host, the client whose player knocked it down on their own PC, which runs a zombie's fall from
+    /// the blow on (ZombieBody.FallHere); the host's zombie follows that. ZombieBody.NoRunner: this PC's own knockdown.
+    /// </summary>
+    internal void KnockDown(Vector3 direction, float duration, ulong runner)
     {
         if (!IsAvailable || executor != null || Steadfast) return;
-        if (IsCopy) { network.SendKnockDown(direction, duration); return; }
+        if (IsCopy) { KnockDownHere(direction, duration); return; }
         FallDirection = direction;
         // Repeated knockdowns only extend the timer; the body hits the ground once, a moment after it starts to fall.
         if (!IsKnockedDown) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
@@ -230,7 +241,28 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         shoveRemaining = bargeKnockdown = 0f; shoveChain = null;
         Interrupt(duration);
         if (knockdownPresentation == null) knockdownPresentation = new EnemyKnockdownPresentation(transform);
-        knockdownPresentation.Fall(direction);
+        knockdownPresentation.Fall(direction, runner);
+    }
+    // On a copy, this PC's own player knocked it down. A zombie falls here at once, on a doll this PC runs, and the host
+    // is told so and follows that fall (the user's rule of 2026-11-14: what a player does shows on their own screen at
+    // once and the others get the result; it used to wait a round trip for the host's doll). Whatever it was doing stops
+    // here too, as it will on the host: a swing it was winding up at this PC's player is off. Anything that can't fall
+    // here (a plain capsule, one already down or held on the host's word) goes to the host as before.
+    private void KnockDownHere(Vector3 direction, float duration)
+    {
+        bool runs = false;
+        if (EnemyNetwork.KnockdownAtOnce && !IsKnockedDown && !shownHeld && TryGetComponent(out ZombieBody zombie) && zombie.Wears)
+        {
+            InterruptHere(duration);
+            runs = zombie.FallHere(direction);
+        }
+        if (runs)
+        {
+            FallDirection = direction;
+            fellHereUntil = Time.time + network.PredictionHold;
+            Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
+        }
+        network.SendKnockDown(direction, duration, runs);
     }
     /// <summary>
     /// A dash push: thrown along the ground at this velocity, slowing to a stop over throwTime and shoving whoever it
@@ -322,7 +354,8 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (down != shownDown)
         {
             shownDown = down;
-            if (down) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
+            // Not when this PC's own player just knocked it down: its fall was heard here as it began (KnockDownHere).
+            if (down && !FellHere) Invoke(nameof(PlayKnockdownSound), KnockdownSoundDelay);
             // A zombie's body falls on a doll that follows the host's (ZombieBody); only a plain capsule is tipped over.
             if (!TryGetComponent(out ZombieBody zombie) || !zombie.Wears) EnemyParryRecoil.For(this).OrNull()?.Lie(fall, down);
         }

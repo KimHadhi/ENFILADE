@@ -202,7 +202,12 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
         // show here at once and go to the host as results (MeleeCombatTarget on a copy). They used to be worked out on
         // the host alone, so a headshot's flinch reached the shooter a round trip late. The nudge and the slow are the
         // enemy's movement, which is the host's.
-        else if (reaction != null) reaction.OnHit(hit, before - Health, MaximumHealth, judged: true, moved: false);
+        else
+        {
+            if (reaction != null) reaction.OnHit(hit, before - Health, MaximumHealth, judged: true, moved: false);
+            // Lying on a doll this PC runs (its own player knocked it down), the blow pushes the body here at once.
+            if (body != null) body.Hit(hit);
+        }
 
         return DamageResult.Damaged;
     }

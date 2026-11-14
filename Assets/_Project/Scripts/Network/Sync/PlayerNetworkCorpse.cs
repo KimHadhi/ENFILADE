@@ -51,7 +51,7 @@ public sealed class PlayerNetworkCorpse : NetworkBehaviour
     }
 
     [Rpc(SendTo.NotMe)]
-    private void ZombieFallRpc(ZombieCorpseFall fall) => ZombieCorpse.Receive(fall);
+    private void ZombieFallRpc(ZombieCorpseFall fall) => ZombieCorpse.Receive(fall, OwnerClientId);
 
     [Rpc(SendTo.Owner)]
     private void ZombiePushRpc(ulong id, Vector3 point, Vector3 impulse) => ZombieCorpse.TakePush(id, point, impulse);

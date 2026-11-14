@@ -30,6 +30,11 @@ public sealed class EnemyNetwork : NetworkBehaviour
         public ulong Watch;
         /// <summary>A zombie draws breath to call the others (ZombieMind.Calling): every PC shows and hears the same tell.</summary>
         public bool Calling;
+        /// <summary>
+        /// Lying knocked down on a doll a guest's PC runs (their player knocked it down there, ZombieBody.FallHere): that
+        /// client's id + 1, so every copy follows that PC's fall and no other. 0: the host runs it, or it isn't down.
+        /// </summary>
+        public ulong Runner;
     }
 
     private const float ConditionInterval = .1f;
@@ -45,6 +50,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private EnemyCombatAI combat;
     private MeleeCombatTarget target;
     private ZombieMind mind;
+    private ZombieBody body;
     private float pace = 1f, paceLeft;
     // The host's send gate on its position (LateUpdate): the transform's own thresholds, whether it may go out on the next
     // tick, when it may next, and the tick it last saw.
@@ -61,6 +67,25 @@ public sealed class EnemyNetwork : NetworkBehaviour
     // PredictionHold as last worked out, and the frame it was (one answer serves every copy that frame).
     private static float hold = .3f;
     private static int holdFrame = -1;
+    // The switches below as last read, and the frame they were.
+    private static bool knockdownAtOnce = true;
+    private static int switchFrame = -1;
+
+    /// <summary>
+    /// A zombie this PC's own player knocks down falls on this PC at once, on a doll it runs itself, where it used to
+    /// wait for the host's doll to come back a round trip later (ZombieBody.FallHere). Network.csv knockdownAtOnce: 0
+    /// puts the old way back, should the new one misbehave.
+    /// </summary>
+    internal static bool KnockdownAtOnce
+    {
+        get
+        {
+            if (switchFrame == Time.frameCount) return knockdownAtOnce;
+            switchFrame = Time.frameCount;
+            knockdownAtOnce = NetSmoothing.Number("knockdownAtOnce", 1f) > .5f;
+            return knockdownAtOnce;
+        }
+    }
 
     /// <summary>
     /// How long a copy trusts what this PC's own player just did to it over what the host reports (s): a report the host
@@ -98,6 +123,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
         combat = GetComponent<EnemyCombatAI>();
         target = GetComponent<MeleeCombatTarget>();
         mind = GetComponent<ZombieMind>();
+        body = GetComponent<ZombieBody>();
         type = GetComponent<ZombieType>();
         grip = GetComponent<ZombieGrip>();
         condition.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = ConditionInterval });
@@ -210,7 +236,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         Feeding = grip != null && grip.Feeding,
         Suspicion = mind != null ? mind.SuspicionStep : (byte)0,
         Watch = mind != null ? WatchOf(mind.Watching) : 0UL,
-        Calling = mind != null && mind.CallingShared
+        Calling = mind != null && mind.CallingShared,
+        Runner = body != null ? body.RunnerShared : 0UL
     };
 
     // A player as their client id + 1 (0: nobody).
@@ -222,6 +249,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private void Show(in Condition now)
     {
         target.ShowCondition(now.Posture, now.Staggered, now.Held, now.Down, now.Fall);
+        // With the word that it lies comes whose doll it lies on (the same report, so the two never disagree).
+        if (body != null) body.ShowRunner(now.Runner);
         if (mind != null) mind.ShowMind(now.Mood, now.Suspicion, now.Watch, now.Calling);
         if (grip != null) grip.ShowHolding(now.Holding, now.Feeding);
     }
@@ -290,7 +319,11 @@ public sealed class EnemyNetwork : NetworkBehaviour
     internal void SendPosture(float amount, float stun, bool interrupt, bool broke = false) => PostureRpc(amount, stun, interrupt, broke);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
     internal void SendShove(Vector3 impulse, Vector3 point) => ShoveRpc(impulse, point);
-    internal void SendKnockDown(Vector3 direction, float duration) => KnockDownRpc(direction, duration);
+    /// <summary>
+    /// This PC's player knocked its copy down. Runs: it fell here at once and this PC runs its doll (ZombieBody.FallHere),
+    /// so the host's zombie follows this PC's fall; otherwise the host runs it as before.
+    /// </summary>
+    internal void SendKnockDown(Vector3 direction, float duration, bool runs = false) => KnockDownRpc(direction, duration, runs);
     internal void SendBarge(Vector3 velocity, float throwTime, float knockdownTime) => BargeRpc(velocity, throwTime, knockdownTime);
 
     /// <summary>This PC's player started an execution on its copy: the host holds the enemy for them, if nobody else has it.</summary>
@@ -338,7 +371,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private void ShoveRpc(Vector3 impulse, Vector3 point) => target.ReceiveShove(impulse, point);
 
     [Rpc(SendTo.Server)]
-    private void KnockDownRpc(Vector3 direction, float duration) => target.KnockDown(direction, duration);
+    private void KnockDownRpc(Vector3 direction, float duration, bool runs, RpcParams rpc = default)
+        => target.KnockDown(direction, duration, runs ? rpc.Receive.SenderClientId : ZombieBody.NoRunner);
 
     [Rpc(SendTo.Server)]
     private void BargeRpc(Vector3 velocity, float throwTime, float knockdownTime) => target.Barge(velocity, throwTime, knockdownTime);

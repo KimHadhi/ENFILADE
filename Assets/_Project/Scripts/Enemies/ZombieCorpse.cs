@@ -428,9 +428,10 @@ public sealed class ZombieCorpse : MonoBehaviour
 
     /// <summary>
     /// A fall another PC runs: a corpse's, or a knocked-down zombie's (ZombieBody). One heard before its body is down
-    /// here waits a moment for it.
+    /// here waits a moment for it. From: the client whose PC sent it (a knocked-down zombie follows only the PC the host
+    /// names, should two have run its fall).
     /// </summary>
-    internal static void Receive(in ZombieCorpseFall fall)
+    internal static void Receive(in ZombieCorpseFall fall, ulong from)
     {
         if (byId.TryGetValue(fall.Id, out var corpse) && corpse != null)
         {
@@ -439,7 +440,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         }
         if (ZombieBody.Follows(fall.Id, out var down))
         {
-            down.Show(fall);
+            down.Show(fall, from);
             return;
         }
         stale.Clear();
@@ -448,14 +449,17 @@ public sealed class ZombieCorpse : MonoBehaviour
         waiting[fall.Id] = (fall, Time.time);
     }
 
-    /// <summary>A hit another PC landed on a corpse this PC runs.</summary>
+    /// <summary>A hit another PC landed on a corpse this PC runs, or on a knocked-down zombie whose doll it runs.</summary>
     internal static void TakePush(ulong id, Vector3 point, Vector3 impulse)
     {
-        if (byId.TryGetValue(id, out var corpse) && corpse != null && corpse.simulated && corpse.doll != null)
+        if (byId.TryGetValue(id, out var corpse) && corpse != null)
         {
+            if (!corpse.simulated || corpse.doll == null) return;
             corpse.Wake();
             corpse.doll.Push(point, impulse, corpse.mostPushSpeed);
+            return;
         }
+        ZombieBody.TakePush(id, point, impulse);
     }
 
     /// <summary>The newest fall heard for this id before its body went down here, if one waits.</summary>

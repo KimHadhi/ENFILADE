@@ -60,14 +60,18 @@ internal sealed class EnemyKnockdownPresentation
         }
     }
 
-    internal void Fall(Vector3 direction)
+    /// <summary>
+    /// It goes down this way. Runner: on the host, the client whose PC runs a zombie's fall (their player knocked it
+    /// down there, ZombieBody.FallHere); ZombieBody.NoRunner for the host's own or alone.
+    /// </summary>
+    internal void Fall(Vector3 direction, ulong runner = ZombieBody.NoRunner)
     {
         // Repeated knockdowns extend the timer without recapturing a fallen pose as the standing pose.
         if (IsActive) return;
         if (zombie != null && zombie.Wears && zombie.Model != null)
         {
             IsActive = zombieDown = true;
-            zombie.KnockDown(direction);
+            zombie.KnockDown(direction, runner);
             return;
         }
         IsActive = true; entryPosition = root.position;

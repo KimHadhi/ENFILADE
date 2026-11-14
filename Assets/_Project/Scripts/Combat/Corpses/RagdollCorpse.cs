@@ -371,6 +371,24 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         }
     }
 
+    /// <summary>
+    /// From now on another PC runs it, and this one follows from the pose it shows: two players knocked the same zombie
+    /// down at once, each PC ran its own fall, and the host named the other's as the one (ZombieBody.Down).
+    /// </summary>
+    public void Yield()
+    {
+        if (!laid || !simulated) return;
+        simulated = false;
+        foreach (var part in parts)
+        {
+            part.interpolation = RigidbodyInterpolation.None;
+            if (part.isKinematic) continue;
+            part.linearVelocity = Vector3.zero;
+            part.angularVelocity = Vector3.zero;
+            part.isKinematic = true;
+        }
+    }
+
     DamageResult IDamageReceiver.ReceiveHit(DamageHit hit)
     {
         Struck?.Invoke(hit);
