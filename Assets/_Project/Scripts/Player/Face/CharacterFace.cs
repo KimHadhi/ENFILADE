@@ -323,6 +323,8 @@ public sealed partial class CharacterFace : MonoBehaviour
             channel.Base = channel.Meshes[0].GetBlendShapeWeight(channel.Indices[0]);
         }
         seenBy = seen.ToArray();
+        // What the keys bring out onto the skin (blush lines, tears, a pale veil) must not cut the hair behind it.
+        FaceEffects.Wear(seenBy, GetComponentsInChildren<Renderer>(true));
         var animator = GetComponentInChildren<Animator>();
         head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head == null) head = transform;

@@ -71,9 +71,12 @@ public sealed class SkinVariant
         bool changed = false;
         for (int i = 0; i < scratch.Count; i++)
         {
-            var material = Dressed(next, Original(worn, scratch[i]));
-            if (material == scratch[i]) continue;
-            scratch[i] = material;
+            // A face's see-through material is worn as a twin of it (FaceEffects): the colour set swaps what the twin
+            // stands for, and the material that comes in its place is worn the same way.
+            var made = FaceEffects.SourceOf(scratch[i]);
+            var material = Dressed(next, Original(worn, made));
+            if (material == made) continue;
+            scratch[i] = FaceEffects.Like(scratch[i], material);
             changed = true;
         }
         if (changed) renderer.SetSharedMaterials(scratch);
