@@ -24,6 +24,8 @@ public static class MatchResults
         public long Earned;
         /// <summary>On the ride when it left (or there was no ride to miss).</summary>
         public bool Escaped = true;
+        /// <summary>Held the ride's door for the others, left outside and counted as escaped (the "남은 사람" title).</summary>
+        public bool Stayed;
         /// <summary>Their skin, colour set and outfit (OutfitLook.Join), so the results can stand a copy of them posing
         /// whether or not they are still in the room (ResultsMannequin).</summary>
         public string Look = "";
@@ -65,7 +67,8 @@ public static class MatchResults
     /// The chapter is over (CampaignRun.ShowFinish): takes everyone's numbers now. <paramref name="aboard"/> tells who made
     /// the ride (null: everyone did).
     /// </summary>
-    public static void Capture(string chapter, string title, string next, ClassGrowth.Climb climb, System.Func<PlayerMovement, bool> aboard)
+    public static void Capture(string chapter, string title, string next, ClassGrowth.Climb climb, System.Func<PlayerMovement, bool> aboard,
+        System.Func<PlayerMovement, bool> stayed = null)
     {
         Chapter = chapter ?? "";
         Title = title ?? "";
@@ -76,7 +79,10 @@ public static class MatchResults
         foreach (var someone in PlayerRoster.All)
         {
             if (someone == null || !(someone.IsLocal || someone.IsNetworkDriven) || !someone.TryGetComponent(out PlayerTally tally)) continue;
-            var entry = new Entry { Client = SeatOf(someone), IsLocal = someone.IsLocal, Escaped = aboard == null || aboard(someone) };
+            var entry = new Entry
+            {
+                Client = SeatOf(someone), IsLocal = someone.IsLocal, Escaped = aboard == null || aboard(someone), Stayed = stayed != null && stayed(someone)
+            };
             Read(entry, tally);
             entries.Add(entry);
         }

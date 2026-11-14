@@ -27,6 +27,9 @@ public sealed class CampaignBlast : MonoBehaviour
     private bool wasRunning;
     private float goAt = -1f;
 
+    /// <summary>Goes off now, whatever its step (a map gimmick that sets it off itself: GimmickFuelTruck, whose step is empty).</summary>
+    public void Fire() => Go();
+
     private void Update()
     {
         bool running = CampaignRun.IsRunning(step);

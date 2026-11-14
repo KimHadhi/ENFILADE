@@ -102,7 +102,7 @@ public sealed partial class CampaignRun
         {
             var names = new List<string>();
             foreach (var someone in players)
-                if (!Within(someone, last)) names.Add(someone.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : someone.name);
+                if (!Within(someone, last) && !Stayed(someone)) names.Add(someone.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : someone.name);
             leftBehind = string.Join(", ", names);
         }
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
@@ -110,8 +110,9 @@ public sealed partial class CampaignRun
         climb = ClassGrowth.Settle();
         MatchResults.RoomUnseen = unseenCount;
         // Everyone's numbers go with this PC to the hub, where the results play over the players (memo 37, MatchResults).
+        // The one who held the ride's door for the others counts as escaped, and is named for it (GimmickCargoDoor).
         MatchResults.Capture(gameObject.scene.name, chapter != null ? chapter.Title : "", chapter != null ? chapter.Next : "", climb,
-            someone => !rideLeft || Within(someone, last));
+            someone => !rideLeft || Within(someone, last) || Stayed(someone), someone => rideLeft && !Within(someone, last) && Stayed(someone));
         ChapterEndBanner.Play(chapter != null ? chapter.Title : "", leftBehind.Length > 0 ? Texts.Format("campaign.escape.left", leftBehind)
             : GameSession.IsOnline ? Texts.Get("campaign.escape.all") : Texts.Get("campaign.escape.solo"), BannerSeconds);
         cardAt = Time.unscaledTime + BannerSeconds - CardOverBanner;

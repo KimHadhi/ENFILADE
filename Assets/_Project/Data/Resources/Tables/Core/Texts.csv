@@ -128,18 +128,21 @@ mission.ch4.05.title,탑승구로,,"목표 바 제목과 Tab 목표 목록: Ch4_
 mission.ch4.05.description,식당가를 지나 터미널 동쪽 끝 탑승 대기실의 탑승교 입구로 가세요. 화재 경보가 울리면 놈들이 끝없이 와요. 입구 홀 옆 관제실의 경보반에서 꺼야 멈춰요.,,"Tab 목표 목록의 설명: Ch4_Airport 5번째 단계(Reach, Ch4.05)"
 mission.ch4.05.done,탑승구 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 5번째 단계(Reach, Ch4.05)"
 mission.ch4.06.title,정비 계단으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
-mission.ch4.06.description,탑승교 끝의 정비 계단으로 계류장에 내려가세요.,,"Tab 목표 목록의 설명: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
+mission.ch4.06.description,탑승교 끝의 정비 계단으로 계류장에 내려가세요(계단 밑에 놈들이 잠들어 있어요). 탑승교 조종석에 서 있으면 다리가 1번 계류장 비행기 문까지 늘어나요: 비행기 안을 지나 반대편 미끄럼틀로 내려가는 조용한 길이에요.,,"Tab 목표 목록의 설명: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
 mission.ch4.06.done,계류장 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 6번째 단계(Reach, Ch4.06)"
 mission.ch4.07.title,관제탑에서 수송기 부르기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 7번째 단계(Press, Ch4.07)"
 mission.ch4.07.description,관제탑 1층 무전실에서 수송기 조종사와 연락하세요.,,"Tab 목표 목록의 설명: Ch4_Airport 7번째 단계(Press, Ch4.07)"
 mission.ch4.07.done,수송기 연락,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 7번째 단계(Press, Ch4.07)"
 mission.ch4.07.prompt,[F] 관제탑 무전기로 수송기 부르기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch4_Airport 7번째 단계(Press, Ch4.07)"
+mission.ch4.14.title,기름 찬 비행기 찾기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 기름 찬 비행기(Gimmick, Ch4.14)"
+mission.ch4.14.description,수송기 연료가 모자라요. 세 계류장 비행기 중 하나만 급유를 마쳤어요(판마다 다름). 출발 안내판·조종사 수첩·관제 단말이 어느 것인지 분명히 알려 줘요. 그 비행기 옆 급유 밸브를 열면 연료가 급유관으로 수송기에 가요. 틀린 곳은 그냥 비어 있어요.,,Tab 목표 목록의 설명: Ch4.14
+mission.ch4.14.done,수송기 급유,,끝낸 목표의 이름: Ch4.14
 mission.ch4.08.title,견인차 시동 걸기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 8번째 단계(Press, Ch4.08)"
 mission.ch4.08.description,버려진 여객기가 활주로를 막아 수송기가 못 떠요. 여객기 앞바퀴에 물린 견인차에 시동을 거세요.,,"Tab 목표 목록의 설명: Ch4_Airport 8번째 단계(Press, Ch4.08)"
 mission.ch4.08.done,견인차 시동,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 8번째 단계(Press, Ch4.08)"
 mission.ch4.08.prompt,[F] 견인차 시동 걸기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch4_Airport 8번째 단계(Press, Ch4.08)"
 mission.ch4.09.title,여객기 밀어내기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 9번째 단계(Hold, Ch4.09)"
-mission.ch4.09.description,누가 견인차 옆에 있어야 여객기가 밀려요. 아무도 없으면 멈춰요. 엔진 소리를 듣고 놈들이 몰려와요.,,"Tab 목표 목록의 설명: Ch4_Airport 9번째 단계(Hold, Ch4.09)"
+mission.ch4.09.description,누가 견인차 옆에 있어야 여객기가 밀려요. 아무도 없으면 멈춰요. 엔진 소리를 듣고 놈들이 몰려와요. 급유차를 쏘면 터져 둘레 놈들이 휩쓸리고 번진 기름이 40초 동안 길 하나를 불길로 막아요(안 쏘면 저절로 터져요).,,"Tab 목표 목록의 설명: Ch4_Airport 9번째 단계(Hold, Ch4.09)"
 mission.ch4.09.done,활주로 비움,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 9번째 단계(Hold, Ch4.09)"
 mission.ch4.10.title,수송기로,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 10번째 단계(Reach, Ch4.10)"
 mission.ch4.10.description,활주로 끝 수송기의 뒤쪽 램프로 가세요.,,"Tab 목표 목록의 설명: Ch4_Airport 10번째 단계(Reach, Ch4.10)"
@@ -149,10 +152,10 @@ mission.ch4.11.description,램프 옆 신호등으로 조종사에게 엔진을 
 mission.ch4.11.done,출발 신호,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 11번째 단계(Press, Ch4.11)"
 mission.ch4.11.prompt,[F] 조종사에게 출발 신호 보내기,,"그 자리에서 누를 때 화면 아래 안내(대괄호 키는 고른 키로 보임): Ch4_Airport 11번째 단계(Press, Ch4.11)"
 mission.ch4.12.title,이륙할 때까지 버티기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 12번째 단계(Hold, Ch4.12)"
-mission.ch4.12.description,엔진 소리에 공항의 놈들이 다 몰려와요. 수송기 램프를 지키세요.,,"Tab 목표 목록의 설명: Ch4_Airport 12번째 단계(Hold, Ch4.12)"
+mission.ch4.12.description,엔진 소리에 공항의 놈들이 다 몰려와요. 수송기 램프를 지키세요. 램프 옆 보급 상자를 실을수록 모두의 경험치가 커지지만 떼도 커져요.,,"Tab 목표 목록의 설명: Ch4_Airport 12번째 단계(Hold, Ch4.12)"
 mission.ch4.12.done,활주로 사수,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 12번째 단계(Hold, Ch4.12)"
 mission.ch4.13.title,수송기에 타기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
-mission.ch4.13.description,모두 화물칸 안으로 들어오세요. 노래가 끝나면 떠나요.,,"Tab 목표 목록의 설명: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
+mission.ch4.13.description,"모두 화물칸 안으로 들어오세요. 노래가 끝나면 떠나요. 이륙 준비로 화물 문이 닫혀요: 밖에 있으면 램프 옆 레버에 쐐기를 박아(12초) 뛰어 타거나, 한 명이 레버 자리에 서서 끝까지 붙잡으면 문이 열려 있어요. 붙잡은 사람도 탈출로 쳐요.",,"Tab 목표 목록의 설명: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
 mission.ch4.13.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 13번째 단계(Escape, Ch4.13)"
 #--- 맵 이름 (Maps.csv) ---,,,
 map.combatfoundation.name,전투 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(CombatFoundation). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
@@ -1652,6 +1655,8 @@ results.award.downs,가장 많이 쓰러짐,,결과 칭호 > 가장 많이 쓰�
 results.award.downs.line,바닥이 편한 사람,,결과 칭호 > 가장 많이 쓰러짐의 한 줄
 results.award.unseen,그림자,,"결과 칭호 > 조용한 구간을 아무도 들키지 않고 지나갔을 때 팀 모두에게(맵 기믹, 숫자는 그렇게 지나간 구간 수)"
 results.award.unseen.line,아무도 우리를 못 봤다,,결과 칭호 > 그림자의 한 줄
+results.award.stayed,남은 사람,,"결과 칭호 > 4장 수송기 화물 문 레버를 끝까지 붙잡아 다른 사람들을 태운 사람(맵 기믹 ""자원자 피날레"")"
+results.award.stayed.line,모두를 태우고 문을 붙잡았다,,결과 칭호 > 남은 사람의 한 줄
 results.award.none,끝까지 함께,,결과 칭호 > 칭호가 하나도 없는 사람
 results.award.none.line,있어 줘서 고마워,,결과 칭호 > 끝까지 함께의 한 줄
 results.high.streak,최장 연속 처치,,결과 줄 서기 > 아래 하이라이트
@@ -2225,3 +2230,25 @@ gimmick.twohands.first,[F] 레버 당기기 · 다른 레버도 당겨야 열린
 gimmick.twohands.second,[F] 레버 당기기 · 셔터가 열린다,,맵 기믹 [F] 안내 > 둘이 같이 여는 셔터의 레버(다른 레버가 걸려 있을 때)
 gimmick.twohands.latched,걸쇠가 걸렸다 · {0}초 안에 다른 레버를,,맵 기믹 안내 > 당겨 둔 레버 앞. {0}=남은 초
 gimmick.twohands.open,셔터가 올라갔다,,화면 위 알림 > 둘이 같이 여는 셔터가 열렸을 때(가까이 있는 사람에게)
+gimmick.bridge.drive,탑승교 조종석 · 여기 서 있는 동안 비행기 쪽으로 늘어난다 ({0}%),,맵 기믹 안내 > 4장 탑승교 조종석. {0}=늘어난 정도
+gimmick.bridge.docked,탑승교가 비행기에 붙었다 · 문이 열렸다,,화면 위 알림 > 4장 탑승교가 1번 계류장 비행기에 붙었을 때(가까이 있는 사람에게)
+gimmick.fuelvalve.open,[F] 급유 밸브 열기,,맵 기믹 [F] 안내 > 4장 계류장 급유 밸브(Ch4.14 동안)
+gimmick.fuelvalve.empty,{0} 비행기 · 탱크가 비었다,,화면 위 알림 > 4장 빈 비행기의 급유 밸브를 열었을 때(누른 사람에게). {0}=계류장 이름
+gimmick.fuelvalve.flowing,연료가 급유관을 타고 수송기로 간다,,화면 위 알림 > 4장 기름 찬 비행기의 밸브를 열었을 때(모두에게)
+gimmick.fuelclue.board.prompt,[F] 출발 안내판 보기,,맵 기믹 [F] 안내 > 4장 남동 회랑의 출발 안내판
+gimmick.fuelclue.board,출발 안내판 · 급유 완료: {0},,화면 위 알림과 표시 > 4장 출발 안내판을 봤을 때(모두에게). {0}=계류장
+gimmick.fuelclue.note.prompt,[F] 조종사 수첩 읽기,,맵 기믹 [F] 안내 > 4장 탑승 대기실의 조종사 수첩
+gimmick.fuelclue.note,"조종사 수첩 · 우리 비행기는 {0}, 급유 끝냄",,화면 위 알림과 표시 > 4장 조종사 수첩을 읽었을 때(모두에게). {0}=계류장
+gimmick.fuelclue.tower.prompt,[F] 관제 단말 보기,,맵 기믹 [F] 안내 > 4장 관제탑 1층 단말
+gimmick.fuelclue.tower,관제 단말 · 연료 가득: {0},,화면 위 알림과 표시 > 4장 관제 단말을 봤을 때(모두에게). {0}=계류장
+gimmick.place.ch4.stand1,1번 계류장(탑승교),,4장 계류장 이름
+gimmick.place.ch4.stand2,2번 계류장,,4장 계류장 이름
+gimmick.place.ch4.stand3,3번 계류장,,4장 계류장 이름
+gimmick.cargodoor.open,화물 문 레버 · 이륙할 때 문이 닫힌다,,맵 기믹 안내 > 4장 수송기 화물 문 레버(마지막 탑승 전)
+gimmick.cargodoor.wedge,[F] 쐐기 박기 · 12초 동안 문이 열린다 (여기 서 있으면 계속 열림),,맵 기믹 [F] 안내 > 4장 화물 문 레버(문이 닫히는 동안)
+gimmick.cargodoor.wedged,쐐기 · {0}초 동안 문이 열려 있다,,맵 기믹 안내 > 4장 화물 문 레버(쐐기를 박은 뒤). {0}=남은 초
+gimmick.cargodoor.shut,화물 문이 닫혔다 · 밖에 있으면 램프 옆 레버를,,화면 위 알림 > 4장 화물 문이 닫혔을 때(가까이 있는 사람에게)
+gimmick.cargodoor.opened,화물 문이 열렸다,,화면 위 알림 > 4장 화물 문이 열렸을 때(가까이 있는 사람에게)
+gimmick.cargo.load,"[F] 꾹 · 보급 상자 싣기 ({0}/{1}) · 모두 경험치 +{2}, 떼가 더 몰려온다",,맵 기믹 [F] 안내 > 4장 수송기 램프 옆 보급 상자. {0}=실은 수 {1}=전부 {2}=경험치
+gimmick.cargo.full,보급 상자를 다 실었다,,맵 기믹 안내 > 4장 보급 상자를 다 실었을 때
+gimmick.cargo.loaded,보급 상자 {0}/{1} · 경험치 +{2},,화면 위 알림 > 4장 보급 상자를 하나 실었을 때(모두에게). {0}=실은 수 {1}=전부 {2}=경험치

@@ -33,6 +33,8 @@ public static class Wallet
     // What kills have paid so far (won, kept exact: a share of a point can be a fraction), and the score it counts to.
     private static double earned;
     private static long seenScore;
+    // Experience given outright, never money (a map's greed: GimmickCargoLoad).
+    private static long bonusExperience;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetRun()
@@ -40,6 +42,16 @@ public static class Wallet
         Received = Given = Spent = 0;
         earned = 0d;
         seenScore = 0;
+        bonusExperience = 0;
+    }
+
+    /// <summary>Experience for one crate loaded for greed (the map gimmick card "수송기에 더 싣기"), in points.</summary>
+    public static long GreedExperience => Math.Max(0L, (long)Number("greedExperience", 400f));
+
+    /// <summary>Experience for this PC's player outright: class growth (ClassGrowth), never money.</summary>
+    public static void AddExperience(long points)
+    {
+        if (points > 0) bonusExperience += points;
     }
 
     public static long WonPerPoint => Math.Max(1L, (long)Number("wonPerPoint", 1f));
@@ -81,7 +93,7 @@ public static class Wallet
     public static long Balance => Earned + Received - Given - Spent;
 
     /// <summary>Experience so far: every point earned, plus the share of the money held, in points.</summary>
-    public static long Experience => CombatFeedHUD.TotalScore + LeftoverExperience;
+    public static long Experience => CombatFeedHUD.TotalScore + LeftoverExperience + bonusExperience;
     public static long LeftoverExperience => (long)(Math.Max(0L, Balance) / (double)WonPerPoint * LeftoverShare);
 
     /// <summary>Money as it reads: 1,240 (with the table's sign in front, if it has one). Never shortened.</summary>

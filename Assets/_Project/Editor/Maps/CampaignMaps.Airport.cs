@@ -143,7 +143,9 @@ public static partial class CampaignMaps
         b.Box("정비 계단 위", 196.4f + x, 198.6f + x, Floor - .4f, Floor, -3.6f, -2.4f, b.Metal, "Gantry");
         b.Ramp("정비 계단", new Vector3(197.5f + x, 0f, -11f), new Vector3(197.5f + x, Floor, -3.6f), 1.6f, b.Metal);
         b.Lamp(new Vector3(188f + x, Floor + 2.3f, 0f), 8f, 1.2f);
-        b.Spot("Apron", new Vector3(197.5f + x, 0f, -12.5f));
+        // Between the service stairs' foot and the slide off stand 1's airliner (CampaignMaps.AirsideGimmicks): either way
+        // down reaches it (CampaignSteps radius 12).
+        b.Spot("Apron", new Vector3(207.4f + x, 0f, -13f));
         b.Box("계류장 담장 북", 250f, 250.3f, 0f, 6f, 46.65f, 59f);
 
         // 7. The apron: baggage carts, freight cans, a fuel truck, a catering truck, a stairs truck, and the control tower,
@@ -154,8 +156,10 @@ public static partial class CampaignMaps
             b.Box("항공 화물 컨테이너", can + x, can + x + 1.6f, 0f, 1.5f, 30f, 31.6f, b.Metal, "MetalBox");
         // The set piece (CampaignBlast, Tables/PackFx setPieceBlast): the fuel truck goes up as the tug's hold starts, 60 m
         // from the tug (50 m when the airliner is pushed all the way), and is left charred.
+        // Now a gimmick (GimmickFuelTruck, the card "번지는 연료 불"): shot at any time it goes, else 35 s into the hold, and
+        // its fuel spreads into a lane of fire; the blast is fired from there (no step of its own).
         var fuelTruck = b.Box("급유차", 226f + x, 235f + x, 0f, 3f, 10f, 12.6f, b.Metal, "Metal");
-        b.Blast("급유차 폭발", new Vector3(230.5f + x, 1f, 11.3f), "Ch4.09", 2.5f, "setPieceBlast", fuelTruck);
+        var truckBlast = b.Blast("급유차 폭발", new Vector3(230.5f + x, 1f, 11.3f), "", 2.5f, "setPieceBlast", fuelTruck);
         b.Box("기내식 트럭", 205f + x, 212f + x, 0f, 3.8f, -32f, -29.5f, b.Metal, "MetalBox");
         b.Ramp("계단차 계단", new Vector3(238f + x, 0f, -21f), new Vector3(238f + x, 3.5f, -14.5f), 1.6f, b.Metal);
         b.Box("계단차 발판", 237.2f + x, 238.8f + x, 3.2f, 3.5f, -14.5f, -13f, b.Metal, "Gantry");
@@ -232,6 +236,9 @@ public static partial class CampaignMaps
         b.EnemySpawn("수송기 북", new Vector3(340f + x, 0f, 32f));
         b.EnemySpawn("활주로 동남", new Vector3(356f + x, 0f, -20f));
         b.EnemySpawn("활주로 동북", new Vector3(356f + x, 0f, 20f));
+        // The airside's gimmicks: the jet bridge, the stands and the fueled airliner, the fuel truck's fire, the cargo
+        // door and the supplies for greed (CampaignMaps.AirsideGimmicks).
+        AirsideGimmicks(b, x, truckBlast, fuelTruck);
 
         // Background sound by area (rows in Tables/Ambience; the runway and the road keep the map's own): the pier, the
         // terminal's ground-floor halls, its upper concourse and the gate hall, the duty-free shop, the jet bridge, the

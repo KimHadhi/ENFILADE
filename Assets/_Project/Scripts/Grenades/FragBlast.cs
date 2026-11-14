@@ -78,6 +78,7 @@ public static class FragBlast
         GimmickAlarmCar.Blast(at, radius);
         GimmickFuelTrap.Blast(at, radius, thrower);
         GimmickFireAlarm.Blast(at, radius);
+        GimmickFuelTruck.Blast(at, radius, thrower);
         FragAftermath.Begin(at, radius, info.Damage * harder, source, way, spread);
     }
 

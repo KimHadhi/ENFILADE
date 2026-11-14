@@ -141,6 +141,9 @@ public sealed partial class CampaignRun : MonoBehaviour
     // Alarms ringing now (Ring), and wipes so far (Wipes).
     private readonly System.Collections.Generic.HashSet<Object> ringing = new System.Collections.Generic.HashSet<Object>();
     private int wipes;
+    // The horde's growth for greed (Greed): more at once, and how much faster.
+    private int greedMore;
+    private float greedRate = 1f;
     // The stretch is quiet (the host's word, shared); this PC last saw it so; the host still owes the stretch its calm zombies.
     private bool quiet, wasQuiet, calmDue;
     // The quiet came back after they were found (a lull, not the stretch's own start), and when they were last found.
@@ -308,6 +311,27 @@ public sealed partial class CampaignRun : MonoBehaviour
     /// <summary>The host: how many times the run went back to its rest stop after a wipe, for a gimmick that undoes itself
     /// then (GimmickFireAlarm; its state then goes to the others as any switch's does).</summary>
     public static int Wipes => active != null ? active.wipes : 0;
+
+    /// <summary>
+    /// The host: the horde grows with what was loaded for greed (GimmickCargoLoad): <paramref name="more"/> more of them at
+    /// once and coming <paramref name="rateScale"/> times as fast, from now on.
+    /// </summary>
+    public static void Greed(int more, float rateScale)
+    {
+        if (active == null || !active.IsHost) return;
+        active.greedMore = Mathf.Max(0, more);
+        active.greedRate = Mathf.Max(1f, rateScale);
+    }
+
+    /// <summary>
+    /// Every PC: who counts as escaped though not aboard as the ride leaves, the others aboard (GimmickCargoDoor: the one
+    /// holding the door open, "남은 사람"); null for nobody.
+    /// </summary>
+    public static void Stays(System.Func<PlayerMovement, bool> stays) => staying = stays;
+
+    private static System.Func<PlayerMovement, bool> staying;
+
+    private static bool Stayed(PlayerMovement someone) => staying != null && someone != null && staying(someone);
 
     /// <summary>The run is at this step now.</summary>
     public static bool IsRunning(string stepId)

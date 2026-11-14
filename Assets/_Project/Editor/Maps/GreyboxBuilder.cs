@@ -292,7 +292,7 @@ public sealed partial class GreyboxBuilder
     /// bang and a little shake, and the boxes in <paramref name="scorched"/> are left charred. It only shows. Put it where
     /// nobody stands when that step starts.
     /// </summary>
-    public void Blast(string name, Vector3 at, string step, float delay, string use, params GameObject[] scorched)
+    public CampaignBlast Blast(string name, Vector3 at, string step, float delay, string use, params GameObject[] scorched)
     {
         if (blasts == null) blasts = Root("◤━━ 연출 (CampaignBlast: 단계가 시작되면 터짐)");
         var host = new GameObject(name, typeof(CampaignBlast));
@@ -310,6 +310,8 @@ public sealed partial class GreyboxBuilder
             list.arraySize = seen.Count;
             for (int i = 0; i < seen.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = seen[i];
         });
+        // A gimmick may fire it itself (GimmickFuelTruck: an empty step never sets it off).
+        return host.GetComponent<CampaignBlast>();
     }
 
     /// <summary>A solid panel that a campaign step opens (CampaignGate), moving by <paramref name="openOffset"/>. It stays

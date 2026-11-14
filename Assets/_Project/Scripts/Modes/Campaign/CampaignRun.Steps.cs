@@ -56,6 +56,8 @@ public sealed partial class CampaignRun
         if (calmDue && players.Count > 0) { calmDue = false; PlaceCalmAhead(); }
         // The phase sets how hard the horde comes (CampaignPhases); nobody while quiet or resting behind a shut door.
         phases.Pace(quiet || Resting(), now.Horde, now.Rate, out int most, out float rate, out float special);
+        // Greed (GimmickCargoLoad): what was loaded brings more of them, faster, whenever any come.
+        if (most > 0) { most += greedMore; rate *= greedRate; }
         phases.Spawned(horde.Tick(dt, most, rate, players, minSpawnDistance, maxSpawnDistance, seenMinDistance, special));
         switch (now.Kind)
         {

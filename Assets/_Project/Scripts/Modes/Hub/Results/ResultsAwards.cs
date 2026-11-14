@@ -101,6 +101,8 @@ public static class ResultsAwards
             case "deaths": return entry.Deaths;
             // The room's, the same for each: a tie gives it to everyone.
             case "unseen": return MatchResults.RoomUnseen;
+            // The one who held the ride's door for the others (GimmickCargoDoor).
+            case "stayed": return entry.Stayed ? 1 : 0;
         }
         return 0d;
     }
