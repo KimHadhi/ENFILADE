@@ -6,6 +6,14 @@ public sealed partial class ZombieMind
     private void Update()
     {
         if (!Thinks) return;
+        long began = ZombieCost.Begin();
+        Frame();
+        ZombieCost.End(ZombieCost.Part.Mind, began);
+    }
+
+    // One frame of a mind that thinks here (the host's, or alone).
+    private void Frame()
+    {
         ComeTo();
         float dt = Time.deltaTime;
         // Held (a takedown, a grab), shoved or down, it turns to nothing: an alert one can be taken from behind now, and
@@ -40,12 +48,21 @@ public sealed partial class ZombieMind
         thinkLeft += step;
         // A horde zombie needs no senses to hunt (EnemyTargeting gives it the nearest), but whether any zombie still has
         // someone in sight decides when the campaign lets the chase die down (LastNoticed, CampaignRun's lull). Once one
-        // has seen someone very lately the others needn't cast their rays too (ZombieLod): they take that sighting.
+        // has seen someone very lately the others needn't cast their rays too (ZombieLod): they take that sighting. While
+        // nobody has, each looks only when its own turn comes, the turns of a big horde further apart (HordeLookEvery),
+        // so a hundred zombies with nobody in sight cast no more rays a second than twenty do. A turn of its own for each,
+        // not a count shared by whoever asks first: the same few would win that every frame and the rest would never look.
         if (horde)
         {
             if (Mood != ZombieMood.Awake) return;
             if (!ZombieLod.HordeLooks(LastNoticed)) lastKnown = LastSeenAt;
-            else if (Look(out _, out _) is PlayerMovement seen) { LastNoticed = Time.time; LastSeenAt = lastKnown = seen.transform.position; }
+            else if (Time.time < hordeLookAt) ZombieCost.Count(ZombieCost.Tally.LooksPutOff);
+            else
+            {
+                hordeLookAt = Time.time + ZombieLod.HordeLookEvery(minds.Count, step) * Random.Range(.8f, 1.2f);
+                ZombieCost.Count(ZombieCost.Tally.Looks);
+                if (Look(out _, out _) is PlayerMovement seen) { LastNoticed = Time.time; LastSeenAt = lastKnown = seen.transform.position; }
+            }
             return;
         }
         // Down, stunned or held it notices nothing new; a blow has woken it anyway.
@@ -73,6 +90,8 @@ public sealed partial class ZombieMind
     }
 
     private bool wasDown;
+    // A horde zombie's next own look for players (game time), while nobody has seen one lately.
+    private float hordeLookAt;
 
     private void Think(float dt)
     {
@@ -180,6 +199,7 @@ public sealed partial class ZombieMind
     // The player it notices fastest now, how fast (suspicion a second), and whether they stand right before its eyes.
     private PlayerMovement Look(out float best, out bool touching)
     {
+        long began = ZombieCost.Begin();
         best = 0f;
         touching = false;
         PlayerMovement found = null;
@@ -212,6 +232,7 @@ public sealed partial class ZombieMind
             found = player;
             touching = distance <= touchRange && angle <= FrontView * .5f;
         }
+        ZombieCost.End(ZombieCost.Part.Sight, began);
         return found;
     }
 
@@ -250,8 +271,10 @@ public sealed partial class ZombieMind
     // How much of them it can see: the share of head, chest and hips no wall hides, nor a Ghost's smoke (SmokeScreen).
     private static float Shown(PlayerMovement player, Vector3 eye)
     {
-        var capsule = player.GetComponent<CharacterController>();
+        // Each player's capsule found once (it was looked up for every player at every look of every zombie).
+        if (!capsules.TryGetValue(player, out var capsule) || capsule == null) capsules[player] = capsule = player.GetComponent<CharacterController>();
         Bounds bounds = capsule != null && capsule.enabled ? capsule.bounds : new Bounds(player.transform.position + Vector3.up * .9f, new Vector3(.6f, 1.8f, .6f));
+        ZombieCost.Count(ZombieCost.Tally.Rays, LookHeights.Length);
         int seen = 0;
         foreach (float height in LookHeights)
         {
@@ -293,6 +316,10 @@ public sealed partial class ZombieMind
 
     // Worked out once: GetMask allocates, and this was asked three times a player every think of every zombie.
     private static int sightMask;
+
+    // Each player's capsule, for where to look at them (Shown). Found once; cleared with the other statics.
+    private static readonly System.Collections.Generic.Dictionary<PlayerMovement, CharacterController> capsules =
+        new System.Collections.Generic.Dictionary<PlayerMovement, CharacterController>();
 
     // Sound goes round players, corpses and what lies on the floor (layer 31): only the world muffles it.
     private static int Hearing => Sight & ~(1 << 31);

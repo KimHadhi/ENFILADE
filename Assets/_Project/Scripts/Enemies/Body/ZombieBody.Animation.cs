@@ -108,6 +108,14 @@ public sealed partial class ZombieBody
         if (!graph.IsValid()) return;
         float real = Time.deltaTime;
         if (real <= 0f) return;
+        long began = ZombieCost.Begin();
+        Animate(real);
+        ZombieCost.End(ZombieCost.Part.Body, began);
+    }
+
+    // One frame of the body: what it shows, as numbers for its graph.
+    private void Animate(float real)
+    {
         float pace = network != null ? network.Pace : 1f;
         float dt = real * pace;
         WatchDown();

@@ -52,7 +52,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private NetworkTransform motion;
     private float positionThreshold, rotationThreshold, scaleThreshold, nextSend;
     private int lastTick;
-    private bool open = true;
+    // Open: its position may go out on the next tick. gateOpen: what the transform's thresholds were last set for.
+    private bool open = true, gateOpen = true;
 
     /// <summary>This PC only shows the enemy; the host runs it.</summary>
     public bool IsCopy => IsSpawned && !IsServer;
@@ -161,8 +162,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
     {
         paceLeft = Mathf.Max(0f, paceLeft - Time.unscaledDeltaTime);
         if (!IsSpawned || !IsServer) return;
+        long began = ZombieCost.Begin();
         health.Value = enemy.Health;
         condition.Value = ReadCondition();
+        ZombieCost.End(ZombieCost.Part.Network, began);
     }
 
     // The host sends a zombie's position only so often, by how near a player it is (NetSmoothing.ZombieRate: 60 a second
@@ -173,6 +176,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private void LateUpdate()
     {
         if (motion == null || !IsSpawned || !IsServer) return;
+        long began = ZombieCost.Begin();
         int tick = NetworkManager.ServerTime.Tick;
         bool ticked = tick != lastTick;
         lastTick = tick;
@@ -181,11 +185,18 @@ public sealed class EnemyNetwork : NetworkBehaviour
         {
             open = false;
             nextSend = now + 1f / NetSmoothing.ZombieRate(NetworkManager, transform.position);
+            ZombieCost.Count(ZombieCost.Tally.Sends);
         }
         if (!open && now >= nextSend) open = true;
-        motion.PositionThreshold = open ? positionThreshold : Shut;
-        motion.RotAngleThreshold = open ? rotationThreshold : Shut;
-        motion.ScaleThreshold = open ? scaleThreshold : Shut;
+        // Only as the gate opens or shuts (they were set every frame for every zombie).
+        if (open != gateOpen)
+        {
+            gateOpen = open;
+            motion.PositionThreshold = open ? positionThreshold : Shut;
+            motion.RotAngleThreshold = open ? rotationThreshold : Shut;
+            motion.ScaleThreshold = open ? scaleThreshold : Shut;
+        }
+        ZombieCost.End(ZombieCost.Part.Network, began);
     }
 
     // Whole points of posture, so recovering doesn't send a report every few frames.

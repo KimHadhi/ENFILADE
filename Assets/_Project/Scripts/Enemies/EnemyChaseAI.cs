@@ -17,9 +17,16 @@ public sealed class EnemyChaseAI : MonoBehaviour
     private ZombieRunner runner;
     private ZombieCharger charger;
     private ZombieCrowd crowd;
-    // Going to its place in the crowd (ZombieCrowd), it stops this close to it (m).
-    private const float SpotStop = .15f;
+    // Going to its place in the crowd (ZombieCrowd), it stops this close to it (m). Arrived: within its stopping
+    // distance and this much of where it was going (m).
+    private const float SpotStop = .15f, ArriveSlack = .2f;
     private float updateTimer, appliedPace = 1f;
+    // Where the path it last asked for leads and when it asked (game time), and the last frame it was chasing: taking
+    // the chase up again (after a stun, a swing, a search, a leap, planks) it asks afresh, since whatever path the agent
+    // holds then may be another part's.
+    private Vector3 pathGoal;
+    private float pathAt = float.NegativeInfinity;
+    private int chasedFrame = -2;
     private MeleeCombatTarget melee;
     // Its place in the crowd as last worked out, and for whom.
     private PlayerMovement spotFor;
@@ -41,12 +48,21 @@ public sealed class EnemyChaseAI : MonoBehaviour
         if (targeting == null) targeting = gameObject.AddComponent<EnemyTargeting>();
         // It goes at a Support's barricade when one closes its way or draws it (ZombieBreach, on the host).
         if (!TryGetComponent(out breach)) breach = gameObject.AddComponent<ZombieBreach>();
+        // Its turn to look at its path falls on a frame of its own: a wave made together took every turn together.
+        updateTimer = Random.Range(0f, updateInterval);
     }
     private ZombieBreach breach;
 
     private void Update()
     {
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        long began = ZombieCost.Begin();
+        Chase();
+        ZombieCost.End(ZombieCost.Part.Chase, began);
+    }
+
+    private void Chase()
+    {
         float pace = network != null ? network.Pace : 1f;
         if (!Mathf.Approximately(pace, appliedPace)) { agent.speed *= pace / appliedPace; appliedPace = pace; }
         // Until it is awake and roused, its mind moves it (standing, turning to look, walking over to search).
@@ -92,17 +108,34 @@ public sealed class EnemyChaseAI : MonoBehaviour
         // ZombieType, maybe after Awake).
         if (crowd == null) crowd = GetComponent<ZombieCrowd>();
         updateTimer -= Time.deltaTime;
+        bool resumed = chasedFrame != Time.frameCount - 1;
+        chasedFrame = Time.frameCount;
 
         // Its place round them is worked out as often as its path (it was every frame, a walk-mesh query each time, used
-        // only here; the memo's item 40), and at once for someone new.
-        if (updateTimer <= 0f || spotFor != player)
+        // only here; the memo's item 40), and at once for someone new or as it takes the chase up again.
+        if (updateTimer <= 0f || spotFor != player || resumed)
         {
-            // Far from every player a new path is looked for less often (ZombieLod).
+            bool fresh = spotFor != player || resumed;
+            // Far from every player its path is looked at less often (ZombieLod).
             updateTimer = ZombieLod.ChaseEvery(transform.position, updateInterval);
             spotFor = player;
+            long spotBegan = ZombieCost.Begin();
             spotted = crowd != null && crowd.Spot(player, close, out spot, out _);
+            ZombieCost.End(ZombieCost.Part.Spot, spotBegan);
             agent.stoppingDistance = spotted ? SpotStop : close;
-            agent.SetDestination(spotted ? spot : player.transform.position);
+            Vector3 goal = spotted ? spot : player.transform.position;
+            // A new path only when the one it has no longer serves (NeedsPath): asked for every turn, most came out the
+            // same and held up the ones that mattered.
+            if (fresh || NeedsPath(goal))
+            {
+                long pathBegan = ZombieCost.Begin();
+                agent.SetDestination(goal);
+                ZombieCost.End(ZombieCost.Part.Path, pathBegan);
+                ZombieCost.Count(ZombieCost.Tally.Paths);
+                pathGoal = goal;
+                pathAt = Time.time;
+            }
+            else ZombieCost.Count(ZombieCost.Tally.PathsKept);
         }
         // Standing at its place it faces whom it fights: the agent turns it only while it walks.
         if (spotted && !agent.pathPending && agent.remainingDistance <= SpotStop + .2f)
@@ -111,5 +144,24 @@ public sealed class EnemyChaseAI : MonoBehaviour
             if (toward.sqrMagnitude > 1e-3f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(toward), agent.angularSpeed * Time.deltaTime);
         }
+    }
+
+    // Whether the path it has no longer serves. Its goal has moved too far from where that path leads: a set share of
+    // the way there, so one far off keeps its path through a step of theirs and one beside them follows every move
+    // (ZombieLod.PathShift; 0 asks every turn, as it used to). Or the path is old (PathKeep). Or the way found stops
+    // short of the goal (they stand where it can't walk) and it is time to try again (PathRetry): that search runs
+    // through everything it can reach before it gives up, the dearest there is, and it was run every turn by every
+    // zombie under a player on a crate. Or it has no path and isn't there yet.
+    private bool NeedsPath(Vector3 goal)
+    {
+        Vector3 flat = goal - transform.position;
+        flat.y = 0f;
+        float away = flat.magnitude, shift = ZombieLod.PathShift(away);
+        if (shift <= 0f || (goal - pathGoal).sqrMagnitude > shift * shift) return true;
+        float age = Time.time - pathAt;
+        if (age >= ZombieLod.PathKeep) return true;
+        if (agent.pathPending) return false;
+        if (agent.hasPath) return agent.pathStatus != NavMeshPathStatus.PathComplete && age >= ZombieLod.PathRetry;
+        return away > agent.stoppingDistance + ArriveSlack;
     }
 }

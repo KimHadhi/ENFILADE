@@ -71,6 +71,7 @@ public sealed partial class ZombieMind
     {
         minds.Clear();
         guns.Clear();
+        capsules.Clear();
         Woke = null;
         Called = null;
         LastNoticed = float.NegativeInfinity;

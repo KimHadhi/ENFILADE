@@ -183,7 +183,12 @@ public sealed class EnemyCombatAI : MonoBehaviour
         timer = attackInterval;
     }
 
-    private void Update() => Tick(Time.deltaTime * (network != null ? network.Pace : 1f));
+    private void Update()
+    {
+        long began = ZombieCost.Begin();
+        Tick(Time.deltaTime * (network != null ? network.Pace : 1f));
+        ZombieCost.End(ZombieCost.Part.Combat, began);
+    }
     public void Tick(float dt)
     {
         if (dt <= 0f) return;

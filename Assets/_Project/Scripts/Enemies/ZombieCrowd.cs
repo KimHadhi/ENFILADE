@@ -182,6 +182,18 @@ public sealed class ZombieCrowd : MonoBehaviour
     private void LateUpdate()
     {
         if (!Runs || agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh || agent.isOnOffMeshLink) return;
+        long began = ZombieCost.Begin();
+        StepBack();
+        ZombieCost.End(ZombieCost.Part.Yield, began);
+    }
+
+    // No player's capsule is wider than this across the ground (m): one further off than its own radius and this can't
+    // be pressed into, and is passed over before anything of theirs is looked up (every zombie asks this of every player
+    // every frame, and nearly all of them are nowhere near).
+    private const float WidestPlayer = 1.5f;
+
+    private void StepBack()
+    {
         if (health != null && !health.IsAlive) return;
         if (grip == null) grip = GetComponent<ZombieGrip>();
         if ((grip != null && grip.IsHolding) || (melee != null && (melee.IsHeld || melee.IsLying))) return;
@@ -191,8 +203,10 @@ public sealed class ZombieCrowd : MonoBehaviour
         foreach (var player in PlayerRoster.All)
         {
             if (player == null || !player.IsInitialized || player.IsDead) continue;
-            if (!player.TryGetComponent(out CharacterController walker) || !walker.enabled) continue;
             Vector3 theirs = player.transform.position;
+            float flatX = transform.position.x - theirs.x, flatZ = transform.position.z - theirs.z, reach = mine + WidestPlayer;
+            if (flatX * flatX + flatZ * flatZ > reach * reach) continue;
+            if (!player.TryGetComponent(out CharacterController walker) || !walker.enabled) continue;
             // Only body against body: not a rider on its head, nor someone far above or below.
             if (theirs.y > top - .3f || theirs.y + walker.height < feet.y || EnemyHead.Carries(this, player)) continue;
             Vector3 apart = Vector3.ProjectOnPlane(transform.position - theirs, Vector3.up);

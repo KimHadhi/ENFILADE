@@ -41,40 +41,49 @@ public sealed class EnemyTargeting : MonoBehaviour
     {
         get
         {
-            if (Pen != null)
-            {
-                if (taunter != null && !Pen(taunter)) taunter = null;
-                if (player != null && !Pen(player)) player = null;
-            }
-            // Taunted: the Knight, until it wears off or they go down. Called out in a duel, it first finishes the blow it
-            // was already winding up on someone else, which then lands on nothing (HoundDuel): turning on the hound mid-swing
-            // would cheapen the save (the user, 2026-11-12: "적이 공격하려고 내려찍으려 하고 있었어 근데 결투를 하면 갑자기
-            // 캔슬하고 시순트를 바라보면 구해지는 입장에서 짜칠 것 같아").
-            if (taunter != null)
-            {
-                if (Time.time < tauntUntil && Standing(taunter))
-                {
-                    if (combat == null) combat = GetComponent<EnemyCombatAI>();
-                    if (finishFirst && player != null && player != taunter && combat != null && combat.IsPreparingAttack) return player;
-                    finishFirst = false;
-                    return player = taunter;
-                }
-                taunter = null;
-                finishFirst = false;
-            }
-            // A zombie that noticed someone goes after them, not whoever is nearest.
-            if (mind == null) mind = GetComponent<ZombieMind>();
-            var noticed = mind != null ? mind.Target : null;
-            if (noticed != null && (Pen == null || Pen(noticed))) return player = noticed;
-            bool lost = player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive;
-            if (lost || Time.time >= nextLook)
-            {
-                nextLook = Time.time + retargetInterval;
-                // A Ghost's smoke hangs somewhere (SmokeScreen): the nearest it can see goes before a nearer one in it.
-                player = SmokeScreen.Count > 0 ? NearestSeen() : Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
-            }
-            return player;
+            long began = ZombieCost.Begin();
+            var found = Find();
+            ZombieCost.End(ZombieCost.Part.Target, began);
+            return found;
         }
+    }
+
+    // Whom it is after now: a taunt first, then whoever it noticed, then the nearest, looked at again now and then.
+    private PlayerMovement Find()
+    {
+        if (Pen != null)
+        {
+            if (taunter != null && !Pen(taunter)) taunter = null;
+            if (player != null && !Pen(player)) player = null;
+        }
+        // Taunted: the Knight, until it wears off or they go down. Called out in a duel, it first finishes the blow it
+        // was already winding up on someone else, which then lands on nothing (HoundDuel): turning on the hound mid-swing
+        // would cheapen the save (the user, 2026-11-12: "적이 공격하려고 내려찍으려 하고 있었어 근데 결투를 하면 갑자기
+        // 캔슬하고 시순트를 바라보면 구해지는 입장에서 짜칠 것 같아").
+        if (taunter != null)
+        {
+            if (Time.time < tauntUntil && Standing(taunter))
+            {
+                if (combat == null) combat = GetComponent<EnemyCombatAI>();
+                if (finishFirst && player != null && player != taunter && combat != null && combat.IsPreparingAttack) return player;
+                finishFirst = false;
+                return player = taunter;
+            }
+            taunter = null;
+            finishFirst = false;
+        }
+        // A zombie that noticed someone goes after them, not whoever is nearest.
+        if (mind == null) mind = GetComponent<ZombieMind>();
+        var noticed = mind != null ? mind.Target : null;
+        if (noticed != null && (Pen == null || Pen(noticed))) return player = noticed;
+        bool lost = player == null || !player.IsInitialized || !player.DamageReceiver.IsAlive;
+        if (lost || Time.time >= nextLook)
+        {
+            nextLook = Time.time + retargetInterval;
+            // A Ghost's smoke hangs somewhere (SmokeScreen): the nearest it can see goes before a nearer one in it.
+            player = SmokeScreen.Count > 0 ? NearestSeen() : Pen == null ? PlayerRoster.Nearest(transform.position) : NearestPenned();
+        }
+        return player;
     }
 
     // The closest living player the pen allows, or null when none is.

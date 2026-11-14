@@ -34,9 +34,28 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public bool IsStaggered { get; private set; }
     public bool IsBroken => IsStaggered;
     public bool IsStunned => IsKnockedDown || IsStaggered || stunRemaining > 0f || shoveRemaining > 0f || grabber != null || executor != null;
-    public bool CanExecute => IsAvailable && IsStaggered && !IsHeld && !shownHeld && GetComponent<IDamageReceiver>() != null;
-    public bool IsAvailable => isActiveAndEnabled && (GetComponent<ICombatVitals>() == null || GetComponent<ICombatVitals>().Health > 0f) && (GetComponent<EnemyHealth>() == null ||
-        (GetComponent<EnemyHealth>().IsAlive && !GetComponent<EnemyHealth>().WavePaused));
+    public bool CanExecute => IsAvailable && IsStaggered && !IsHeld && !shownHeld && receiver != null;
+    public bool IsAvailable => isActiveAndEnabled && Parts() && (vitals == null || vitals.Health > 0f)
+        && (health == null || (health.IsAlive && !health.WavePaused));
+    // The parts beside it that say whether it is still there to be fought, found once. IsAvailable looked all three up
+    // each time it was asked (five lookups, two of them by interface), and it is asked several times a frame for every
+    // enemy on every PC: its own frame, its bar, its highlight, each player's look for something to execute. Until both
+    // its health and its receiver are there (a part may be put on after this one), they are looked for once a frame.
+    private ICombatVitals vitals;
+    private IDamageReceiver receiver;
+    private EnemyHealth health;
+    private bool partsFound;
+    private int partsFrame = -1;
+    private bool Parts()
+    {
+        if (partsFound || partsFrame == Time.frameCount) return true;
+        partsFrame = Time.frameCount;
+        vitals = GetComponent<ICombatVitals>();
+        receiver = GetComponent<IDamageReceiver>();
+        health = GetComponent<EnemyHealth>();
+        partsFound = vitals != null && receiver != null;
+        return true;
+    }
     public event Action Interrupted;
     public event Action Staggered;
     /// <summary>Any target's posture broke, for presentation that watches every enemy (the break hit marker).</summary>
@@ -100,7 +119,12 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
             gameObject.AddComponent<EnemyVitalsHUD>();
         if (Application.isPlaying && GetComponent<ExecutableHighlight>() == null) gameObject.AddComponent<ExecutableHighlight>();
     }
-    private void Update() => Tick(Time.deltaTime * (network != null ? network.Pace : 1f));
+    private void Update()
+    {
+        long began = ZombieCost.Begin();
+        Tick(Time.deltaTime * (network != null ? network.Pace : 1f));
+        ZombieCost.End(ZombieCost.Part.Stance, began);
+    }
     public void Tick(float dt)
     {
         if (dt <= 0f || !IsAvailable) return;
@@ -243,7 +267,7 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
 
     /// <summary>The stealth kill alone: an unaware zombie with this executor behind it.</summary>
     public bool CanBeTakenDownBy(Component executor)
-        => executor != null && IsAvailable && !IsHeld && !shownHeld && !IsKnockedDown && GetComponent<IDamageReceiver>() != null
+        => executor != null && IsAvailable && !IsHeld && !shownHeld && !IsKnockedDown && receiver != null
             && TryGetComponent(out ZombieMind mind) && mind.CanBeTakenDownFrom(executor.transform.position);
 
     public bool TryReserveExecution(PlayerExecution owner)

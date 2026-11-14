@@ -150,10 +150,12 @@ public sealed partial class ZombieBody
 
     private void LateUpdate()
     {
+        long began = ZombieCost.Begin();
         if (down && doll != null) Lie(Time.deltaTime);
         else if (blendLeft > 0f) EaseFromDoll(Time.deltaTime);
         // After the doll has placed the bones: a brute's limp, landing and weak head (ZombieBody.Legs.cs).
         LegsLate();
+        ZombieCost.End(ZombieCost.Part.Body, began);
     }
 
     private void Lie(float dt)
