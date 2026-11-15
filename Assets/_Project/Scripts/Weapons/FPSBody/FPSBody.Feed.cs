@@ -79,6 +79,7 @@ public sealed partial class FPSBody
         float aim = controller.AimBlend;
         held.Steady(aim, hipSway, aimedKick, gunKick);
         FeedConverge(dt, aim);
+        FeedAction(dt, aim);
         // FPSAF's Ads brings the sight up in our aim time, which an angled grip shortens (WeaponController.AdsTime).
         if (held.Ads != null) held.Ads.aimingSpeed = 1f / Mathf.Max(.01f, controller.AdsTime);
         // KINEMATION's recoil animation kicks per shot or loops by the fire mode, which B changes while the gun is out; it

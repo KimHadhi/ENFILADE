@@ -24,9 +24,11 @@ using UnityEngine;
 ///   palms there by IK (HoldGunContacts) and its fingers in the clip's grip (GunFingers, HandGrip.WearDigits), so a hand on
 ///   the grip is on the grip and a hand on the magazine is on the magazine whatever the arms' length or the hand's size
 ///   (palm-centred: ArmIK.WristAtPalm). Tables/GunHands.csv moves a character's palms a little if its hands are thicker.
-/// The hold eases in as the gun comes into the hands; a clip eases in with it (contactBlend), eases back into the hold at its
-/// end as the clip does, and lets go as fast as a cut-short reload (reloadBlendOut). Only where FPSAF holds the upper body
-/// (standing, crouched); in the other moves the hands go onto the gun kept in view by the same hold (PlayerBodyHands.GunGrip).
+/// The hold eases in as the gun comes into the hands (contactBlend). A clip of the gun's own has the gun and the hands for
+/// as long and as much as the animation plays it: its time and its weight are read from the animation's own mixer
+/// (FeedAction), so it comes in, eases back into the hold at its end and lets go when cut short exactly as the body's clip
+/// does. Only where FPSAF holds the upper body (standing, crouched); in the other moves the hands go onto the gun kept in
+/// view by the same hold (PlayerBodyHands.GunGrip).
 /// The plain hold wears the hands exactly as a reload's end does, so nothing changes as a reload hands over to it (the user,
 /// 2026-11-12: "재장전할 땐 정상이거든? 근데 재장전 끝나자마자 손을 이상하게 잡아"). KINEMATION's clips agree: every reload's last
 /// frame has the palms and fingers where the gun's pose clip has them (0.0 cm, 0 degrees, every gun, measured). What changed
@@ -67,15 +69,18 @@ public sealed partial class FPSBody
     // editor reads the guns' actions, and kept with them (GunTrackBake, GunTrackSet.holds).
     internal const float PoseReach = .8f;
 
-    // The gun's own clip followed now (a reload, a draw, a holster, a look over the gun): its moment, and the buffers its
-    // finger ways are read into.
+    // The gun's own actions the animation is playing now (a reload, a draw, a holster, a look over the gun, its action
+    // worked): their moment, mixed as the animation mixes their clips, the buffers its finger ways are read into (the mix's
+    // and one more clip's), and how much of FPSAF's upper body they have together.
     private GunContact contact;
     private readonly Vector3[] clipRightDigits = new Vector3[GunArms.DigitCount], clipLeftDigits = new Vector3[GunArms.DigitCount];
+    private readonly Vector3[] slotRightDigits = new Vector3[GunArms.DigitCount], slotLeftDigits = new Vector3[GunArms.DigitCount];
     private readonly Vector3[] mixRightDigits = new Vector3[GunArms.DigitCount], mixLeftDigits = new Vector3[GunArms.DigitCount];
     private float contactWeight;
     private bool hasContact;
-    // The followed clip is easing back into the hold at its end (its blend out), not cut short.
-    private bool clipSettling;
+    // The newest of them is a reload's, or the bolt or pump worked after a shot; it has played out and is easing back into
+    // the hold (its blend out), not cut short.
+    private bool contactIsReload, contactIsCycle, clipSettling;
     private FPSGun contactGun;
     // How far the plain hold's contacts hold the hands (0-1): in as a gun comes into the hands, out while a clip of its own
     // has them without being followed.
@@ -87,13 +92,27 @@ public sealed partial class FPSBody
     /// <summary>The still hold's own passes are on (Rig.stillHoldFixes, off unless comparing).</summary>
     internal bool StillHoldFixes => stillHoldFixes;
     /// <summary>A reload's own clip has both hands fully now, before it settles into the hold (for the hand-over report).</summary>
-    internal bool OnReloadClip => HoldsGun && hasContact && held.ContactIsReload && contactWeight >= .999f && Framework >= .999f;
+    internal bool OnReloadClip => HoldsGun && hasContact && contactIsReload && contactWeight >= .999f && Framework >= .999f;
     /// <summary>A reload that played out is easing back into the hold now (not one cut short).</summary>
-    internal bool ReloadSettling => HoldsGun && hasContact && held.ContactIsReload && clipSettling;
+    internal bool ReloadSettling => HoldsGun && hasContact && contactIsReload && clipSettling;
 
-    // After KeepGunInView, before RideGun and the hands (PlayerBodyHands, 320): the gun to where the playing clip has it, and
-    // the plain hold's contacts made ready.
-    private void FollowContacts()
+    // The editor's trace of what the gun does through an action (FPSBody.Trace): the newest clip in the mix as it is read,
+    // then the gun after everything. Nothing in a build.
+    partial void TraceClip(GunTrackKind kind, float time);
+    partial void TraceAction();
+
+    // Before the animation moves on this frame (Update, with the rest FPSAF is fed): what the animation is playing of the
+    // held gun's own actions, read from the mixer that plays them (FPSBodyPlayables.Slot: each clip, how far into it the
+    // graph will be this frame, its weight in the mix). Each clip's moment comes from its track and they are mixed as the
+    // mixer mixes the clips, a newer one over the older by its own weight; together they have `contactWeight` of FPSAF's
+    // upper body. The gun's part of that goes to the layer that moves the gun in the stream (GunActionLayer) and the body
+    // carries the gun meanwhile; the hands' part is kept for PlayerBodyHands (HandContact, ElbowWay, HandDigits).
+    // So an action has one clock and one blend, the animation's own. Until 0.9.118 the gun ran a clock beside it for the one
+    // clip it followed (FPSGun.contactStart and the rest), the body eased a weight of its own in and out (contactBlend, the
+    // clip's blend out, reloadBlendOut), and the gun was moved after the animation on a place remembered from the eyes
+    // (FPSGun.HoldFromEyes): a drawn gun stood on that place once its track's motion was over and slid home when its clip
+    // ended (the user, 2026-11-15: "샷건이랑 smg 들 때 처음에 멈췄다가 원자리로 돌아옴").
+    private void FeedAction(float dt, float aim)
     {
         if (held != contactGun)
         {
@@ -102,45 +121,108 @@ public sealed partial class FPSBody
             hasContact = false;
             holdContactWeight = 0f;
         }
-        float dt = Time.deltaTime;
-        bool playing = false, settling = false;
-        // The bolt or pump worked after a shot moves the gun out of the hold as a reload does, so the reload's switch has it.
-        if (rig != null && eyes != null && held.ContactTrack(out GunTrack track, out float clipTime, out settling)
-            && (held.ContactIsReload || held.ContactIsCycle ? reloadContacts : holdContacts)
-            && PoseHolds(held) && track.Sample(clipTime, clipRightDigits, clipLeftDigits, out GunContact now, out _))
+        var mixer = playables as FPSBodyPlayables;
+        bool any = false;
+        float share = 0f;
+        GunContact mixed = default;
+        contactIsReload = contactIsCycle = clipSettling = false;
+        int slots = mixer != null && rig != null ? mixer.Slots : 0;
+        for (int slot = 0; slot < slots; slot++)
         {
-            contact = now;
-            hasContact = true;
-            playing = true;
+            if (!mixer.Slot(slot, out AnimationClip clip, out float time, out float weight) || weight <= 0f) continue;
+            if (!held.TrackOf(clip, out GunTrack track, out GunTrackKind kind)) continue;
+            bool cycle = kind == GunTrackKind.Cycle;
+            bool reload = kind == GunTrackKind.ReloadTactical || kind == GunTrackKind.ReloadEmpty || kind == GunTrackKind.ReloadShell
+                || kind == GunTrackKind.ReloadEnd;
+            // The bolt or pump worked after a shot moves the gun out of the hold as a reload does, so the reload's switch has it.
+            if (!(reload || cycle ? reloadContacts : holdContacts) || !PoseHolds(held)) continue;
+            // The first into the mix's own finger buffers, any other into a second pair and mixed in from there.
+            var right = any ? slotRightDigits : clipRightDigits;
+            var left = any ? slotLeftDigits : clipLeftDigits;
+            if (!track.Sample(time, right, left, out GunContact now, out _)) continue;
+            // Down the sights a bolt or pump worked after a shot moves the gun only aimedCycleMove of its way off the hold, so
+            // the sight stays before the eye while the hand works it (the hands keep their places on the gun, HandContact).
+            if (cycle)
+            {
+                float keep = Mathf.Lerp(1f, aimedCycleMove, aim);
+                now.GunMove *= keep;
+                now.GunTurn = Quaternion.Slerp(Quaternion.identity, now.GunTurn, keep);
+            }
+            if (!any)
+            {
+                mixed = now;
+                share = weight;
+            }
+            else
+            {
+                // Over what plays under it, by its own weight; of the actions' share together, that is this much.
+                share = 1f - (1f - share) * (1f - weight);
+                mixed = Mixed(mixed, now, share > 0f ? weight / share : 1f);
+            }
+            any = true;
+            contactIsReload = reload;
+            contactIsCycle = cycle;
+            clipSettling = time >= track.length - 1e-3f;
+            TraceClip(kind, time);
         }
-        clipSettling = playing && settling;
-        float target = playing && !settling ? 1f : 0f;
-        float ease = target > contactWeight ? contactBlend : settling ? held.ContactSettle : reloadBlendOut;
-        contactWeight = Mathf.MoveTowards(contactWeight, target, dt / Mathf.Max(.01f, ease));
-        if (contactWeight <= 0f) hasContact = false;
+        hasContact = any;
+        contactWeight = any ? share : 0f;
+        if (any) contact = mixed;
 
-        // The plain hold: from the gun's pose clip, measured once per gun. A clip of the gun's own that isn't followed (its
-        // switch off) has the hands as the remade clip has them, so the hold lets go of them meanwhile.
-        bool holdOn = holdContacts && rig != null && HoldContactOf(held) && !(held.HandsBusy && !playing);
+        // The gun: the body carries it through an action (the hold, where the action's move goes onto it), the right hand
+        // of the pose otherwise, as FPSAF holds it at rest. The two are the same place whenever no action has the upper
+        // body, so the change from one to the other moves nothing.
+        var action = held.Action;
+        if (action != null)
+        {
+            action.move = any ? contact.GunMove : Vector3.zero;
+            action.turn = any ? contact.GunTurn : Quaternion.identity;
+            action.weight = contactWeight;
+        }
+        if (mixer != null) mixer.GunOnBody = any && action != null ? 1f : 0f;
+
+        // The plain hold: from the gun's pose clip, once per gun. A clip of the gun's own that isn't followed (its switch
+        // off) has the hands as the remade clip has them, so the hold lets go of them meanwhile.
+        bool holdOn = holdContacts && rig != null && HoldContactOf(held) && !(held.HandsBusy && !any);
         holdContactWeight = Mathf.MoveTowards(holdContactWeight, holdOn ? 1f : 0f, dt / Mathf.Max(.01f, holdOn ? contactBlend : reloadBlendOut));
+    }
 
-        // Letting go, the last moment read is held while the weight runs out.
-        float weight = hasContact ? contactWeight * Framework : 0f;
-        if (weight <= 0f || !held.HoldFromEyes(controller.AimBlend, out KTransform kept)) return;
-        var gun = rig.IkWeaponBone;
-        Quaternion hold = eyes.rotation * kept.rotation;
-        Vector3 move = contact.GunMove;
-        Quaternion turn = contact.GunTurn;
-        // Down the sights a bolt or pump worked after a shot moves the gun only aimedCycleMove of its way off the hold, so the
-        // sight stays before the eye while the hand works it (the hands keep their places on the gun, HandContact).
-        if (held.ContactIsCycle)
-        {
-            float keep = Mathf.Lerp(1f, aimedCycleMove, controller.AimBlend);
-            move *= keep;
-            turn = Quaternion.Slerp(Quaternion.identity, turn, keep);
-        }
-        Vector3 at = eyes.TransformPoint(kept.position) + hold * move;
-        gun.SetPositionAndRotation(Vector3.Lerp(gun.position, at, weight), Quaternion.Slerp(gun.rotation, hold * turn, weight));
+    // Two moments of the gun's own actions as one, `share` of the way from the first to the second, as the animation mixes
+    // their clips: the gun's move and turn, each palm with the ways its fingers point and it faces, the elbows' ways and the
+    // finger joints' (into the mix's own buffers, which the first's are).
+    private GunContact Mixed(GunContact under, in GunContact over, float share)
+    {
+        under.GunMove = Vector3.Lerp(under.GunMove, over.GunMove, share);
+        under.GunTurn = Quaternion.Slerp(under.GunTurn, over.GunTurn, share);
+        under.RightPalm = Vector3.Lerp(under.RightPalm, over.RightPalm, share);
+        under.RightFingers = Vector3.Slerp(under.RightFingers, over.RightFingers, share);
+        under.RightFacing = Vector3.Slerp(under.RightFacing, over.RightFacing, share);
+        under.LeftPalm = Vector3.Lerp(under.LeftPalm, over.LeftPalm, share);
+        under.LeftFingers = Vector3.Slerp(under.LeftFingers, over.LeftFingers, share);
+        under.LeftFacing = Vector3.Slerp(under.LeftFacing, over.LeftFacing, share);
+        under.RightElbow = MixedWay(under.RightElbow, over.RightElbow, share);
+        under.LeftElbow = MixedWay(under.LeftElbow, over.LeftElbow, share);
+        under.RightGap = Mathf.Lerp(under.RightGap, over.RightGap, share);
+        under.LeftGap = Mathf.Lerp(under.LeftGap, over.LeftGap, share);
+        under.RightDigits = MixedDigits(under.RightDigits, over.RightDigits, share, clipRightDigits);
+        under.LeftDigits = MixedDigits(under.LeftDigits, over.LeftDigits, share, clipLeftDigits);
+        return under;
+    }
+
+    // An elbow's way that couldn't be told in one of the two moments (zero) takes the other's.
+    private static Vector3 MixedWay(Vector3 under, Vector3 over, float share)
+    {
+        bool hasUnder = under.sqrMagnitude > .5f, hasOver = over.sqrMagnitude > .5f;
+        return hasUnder && hasOver ? Vector3.Slerp(under, over, share) : hasUnder ? under : hasOver ? over : Vector3.zero;
+    }
+
+    // Fingers read in only one of the two moments are that one's; the result is always in `into`.
+    private static Vector3[] MixedDigits(Vector3[] under, Vector3[] over, float share, Vector3[] into)
+    {
+        if (under == null && over == null) return null;
+        for (int i = 0; i < GunArms.DigitCount; i++)
+            into[i] = under == null ? over[i] : over == null ? under[i] : Vector3.Slerp(under[i], over[i], share);
+        return into;
     }
 
     /// <summary>

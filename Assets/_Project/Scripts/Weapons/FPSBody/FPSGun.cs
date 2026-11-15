@@ -56,6 +56,8 @@ public sealed partial class FPSGun : MonoBehaviour
     internal readonly System.Collections.Generic.List<(FPSAnimatorLayerSettings layer, float alpha, bool kick)> FeelLayers = new();
     // This gun's own layer that turns it onto the crosshair's point (GunConvergeLayerSettings); FPSBody feeds it each frame.
     internal GunConvergeLayerSettings Converge { get; set; }
+    // This gun's own layer that moves it as its action playing now does (GunActionLayerSettings); FPSBody feeds it each frame.
+    internal GunActionLayerSettings Action { get; set; }
     // This gun's own copy of FPSAF's Ads: its aiming speed follows the gun's aim time, which an angled grip shortens.
     internal KINEMATION.FPSAnimationFramework.Runtime.Layers.AdsLayer.AdsLayerSettings Ads { get; set; }
 
@@ -153,18 +155,32 @@ public sealed partial class FPSGun : MonoBehaviour
         magazine = GunMagazine.For(this);
     }
 
-    // ---- The gun's own action, which the gun and the hands follow (FPSBody.Contacts) ----
+    // ---- The gun's own actions, which the gun and the hands follow (FPSBody.Contacts) ----
 
-    // The track of the reload, draw, holster, inspect or worked action playing (KINEMATION's clip of it as numbers,
-    // GunTrackSet; its camera motion plays that clip itself still): from when, how far in (s), how fast, for how long (s),
-    // whether it eases back into the hold at its end and over how long (s), and whether it is a reload (FPSBody's
-    // reloadContacts) or one of the others (holdContacts).
-    private GunTrack contactTrack;
-    private float contactStart, contactFrom, contactRate = 1f, contactLength, contactSettle = .15f;
-    private bool contactSettles, contactIsReload, contactIsCycle;
+    /// <summary>
+    /// The track of the gun's own action that a clip of this body's is (the reload, draw, holster, look over the gun or
+    /// worked action the animation is playing that clip for): what the action does to the gun and where it has the hands
+    /// (GunTrackSet). False for a clip that is none of this gun's actions, and for an action the gun has no track of.
+    /// The animation's mixer says which clips play, how far in and how much (FPSBodyPlayables.Slot); until 0.9.118 the gun
+    /// ran a clock of its own beside it for the one clip it followed.
+    /// </summary>
+    internal bool TrackOf(AnimationClip clip, out GunTrack track, out GunTrackKind kind)
+    {
+        track = null;
+        kind = default;
+        if (clip == null || Tracks == null) return false;
+        if (Plays(reloadTactical, clip)) kind = GunTrackKind.ReloadTactical;
+        else if (Plays(reloadEmpty, clip)) kind = GunTrackKind.ReloadEmpty;
+        else if (Plays(reloadShell, clip)) kind = GunTrackKind.ReloadShell;
+        else if (Plays(reloadEnd, clip)) kind = GunTrackKind.ReloadEnd;
+        else if (Plays(drawClip, clip)) kind = GunTrackKind.Draw;
+        else if (Plays(holsterClip, clip)) kind = GunTrackKind.Holster;
+        else if (Plays(inspectClip, clip)) kind = GunTrackKind.Inspect;
+        else if (Plays(cycleClip, clip)) kind = GunTrackKind.Cycle;
+        else return false;
+        track = Tracks.Track(kind);
+        return track != null;
+    }
 
-    /// <summary>The clip followed now is a reload's (not a draw, holster or inspect).</summary>
-    internal bool ContactIsReload => contactIsReload;
-    /// <summary>The clip followed now is the bolt or pump worked after a shot (Cycle).</summary>
-    internal bool ContactIsCycle => contactIsCycle;
+    private static bool Plays(FPSAnimationAsset action, AnimationClip clip) => action != null && action.clip == clip;
 }

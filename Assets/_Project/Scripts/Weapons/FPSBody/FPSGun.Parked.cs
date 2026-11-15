@@ -155,17 +155,17 @@ public sealed partial class FPSGun
 
     /// <summary>The gun coming out: its draw clip. Returns how long it plays (s); 0 without one.</summary>
     internal float PlayDraw(IPlayablesController playables, FPSBodyCamera camera)
-        => PlayAction(drawClip, entry.sourceDraw, GunTrackKind.Draw, partsDraw, playables, camera);
+        => PlayAction(drawClip, entry.sourceDraw, partsDraw, playables, camera);
 
     /// <summary>The gun going away: its holster clip.</summary>
     internal float PlayHolster(IPlayablesController playables, FPSBodyCamera camera)
-        => PlayAction(holsterClip, entry.sourceHolster, GunTrackKind.Holster, partsHolster, playables, camera);
+        => PlayAction(holsterClip, entry.sourceHolster, partsHolster, playables, camera);
 
     /// <summary>Y: the gun looked over: its inspect clip.</summary>
     internal float PlayInspect(IPlayablesController playables, FPSBodyCamera camera)
-        => PlayAction(inspectClip, entry.sourceInspect, GunTrackKind.Inspect, partsInspect, playables, camera);
+        => PlayAction(inspectClip, entry.sourceInspect, partsInspect, playables, camera);
 
-    private float PlayAction(FPSAnimationAsset clip, AnimationClip source, GunTrackKind kind,
+    private float PlayAction(FPSAnimationAsset clip, AnimationClip source,
         KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.AnimationAsset parts, IPlayablesController playables, FPSBodyCamera camera)
     {
         if (!FPSAnimationAsset.IsValid(clip) || playables == null) return 0f;
@@ -176,9 +176,8 @@ public sealed partial class FPSGun
         if (partsPlayer != null && parts != null) partsPlayer.PlayAnimation(parts);
         float length = clip.clip.length / rate;
         actionUntil = Time.time + length;
-        // The gun and the hands follow KINEMATION's own clip, as a reload does (FPSBody.Contacts). A draw and a look over
-        // the gun settle back into the hold at their end; a holster ends with the gun put away.
-        FollowClip(kind, clip, 0f, clip != holsterClip, false);
+        // The gun and the hands follow the action's track for as long and as much as the animation plays this clip
+        // (FPSBody.FeedAction reads that from its mixer).
         return length;
     }
 
@@ -187,8 +186,7 @@ public sealed partial class FPSGun
     {
         if (!Acting) return;
         actionUntil = 0f;
-        // The hands let go of its hold with it (a reload's own clip, if one has begun, is kept).
-        if (!contactIsReload) contactTrack = null;
+        // The gun and the hands let go of it as its clip leaves the animation's mix.
         playables?.StopAnimation(blendOut);
         if (camera != null) camera.StopGunMotion();
         if (partsPlayer != null && partsPlayer.enabled)

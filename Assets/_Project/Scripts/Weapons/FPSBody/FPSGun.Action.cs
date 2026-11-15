@@ -62,8 +62,6 @@ public sealed partial class FPSGun
         if (camera != null && entry.sourceFire != null) camera.PlayGunMotion(entry.sourceFire, rate);
         float length = cycleClip.clip.length / rate;
         cycleUntil = Time.time + length;
-        // The hands settle back into the hold at its end, as after a reload.
-        FollowClip(GunTrackKind.Cycle, cycleClip, 0f, true, false, true);
         QueueCycleSounds(rate);
         return length;
     }
@@ -167,9 +165,6 @@ public sealed partial class FPSGun
         if (camera != null)
             camera.PlayGunMotion(empty ? entry.sourceReloadEmpty : entry.sourceReloadTactical, clip != null ? clip.blendTime.rateScale : 1f, from);
         float length = clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
-        // The hands follow KINEMATION's own clip on the gun (FPSBody.Contacts). A shell reload's start hands over to its
-        // shells; any other reload settles back into the hold at its end.
-        FollowClip(empty ? GunTrackKind.ReloadEmpty : GunTrackKind.ReloadTactical, clip, from, entry.weapon == null || !entry.weapon.ShellReload);
         // The old magazine will fall out as the clip takes it away (GunMagazine); going on past that, it is already out.
         if (magazine != null) magazine.Begin(empty, length, from);
         if (Kinemation == null || partsPlayer == null) return length;
@@ -210,7 +205,6 @@ public sealed partial class FPSGun
         if (FPSAnimationAsset.IsValid(clip)) playables.PlayAnimation(clip, 0f);
         if (camera != null)
             camera.PlayGunMotion(end ? entry.sourceReloadEnd : entry.sourceReloadShell, clip != null ? clip.blendTime.rateScale : 1f);
-        FollowClip(end ? GunTrackKind.ReloadEnd : GunTrackKind.ReloadShell, clip, 0f, end);
         var parts = end ? entry.partsReloadEnd : entry.partsReloadShell;
         if (partsPlayer != null && parts != null) partsPlayer.PlayAnimation(parts);
         return clip != null && clip.clip != null ? clip.clip.length / Mathf.Max(.01f, clip.blendTime.rateScale) : 0f;
@@ -227,8 +221,6 @@ public sealed partial class FPSGun
     /// <summary>The reload was cut short (a dodge, a climb, death): its clips stop.</summary>
     internal void StopReload(IPlayablesController playables, float blendOut, FPSBodyCamera camera)
     {
-        // The hands let go of the clip's hold with it, whether or not the reload itself had finished.
-        contactTrack = null;
         if (!reloading) return;
         reloading = false;
         // Cut short with the old magazine leaving, the hand lets it go and the gun stays without one until the next reload

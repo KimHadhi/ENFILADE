@@ -86,7 +86,4 @@ public sealed partial class FPSGun
 
     /// <summary>FPSBody has said once that this gun's own clips can't be followed.</summary>
     internal bool ToldNoHold;
-
-    /// <summary>How long the reload's end eases back into the hold (s), its clip's blend out.</summary>
-    internal float ContactSettle => contactSettle;
 }

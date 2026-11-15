@@ -79,47 +79,6 @@ public sealed partial class FPSGun
         }
     }
 
-    /// <summary>
-    /// The track of the gun's own clip playing (a reload, a draw, a holster, a look over the gun, its action worked) and how
-    /// far into it it is now (s, at the body clip's pace), with <paramref name="settling"/> once it is in the stretch where it
-    /// eases back into the hold. False when none is playing.
-    /// </summary>
-    internal bool ContactTrack(out GunTrack track, out float time, out bool settling)
-    {
-        track = contactTrack;
-        time = 0f;
-        settling = false;
-        if (track == null) return false;
-        float played = Time.time - contactStart;
-        if (played >= contactLength)
-        {
-            contactTrack = track = null;
-            return false;
-        }
-        time = Mathf.Min(contactFrom + played * contactRate, track.length);
-        settling = contactSettles && contactLength - played <= contactSettle;
-        return true;
-    }
-
-    /// <summary>The body's clip was cut short (the sights coming up): the hands let go of its hold.</summary>
-    internal void StopContacts() => contactTrack = null;
-
-    // A reload's, draw's, holster's, inspect's or worked action's clip begins: the gun's track of KINEMATION's own one runs
-    // alongside at the body clip's pace, from the same share of the way. A gun without that track follows nothing.
-    private void FollowClip(GunTrackKind kind, FPSAnimationAsset body, float from, bool settles, bool reload = true, bool cycle = false)
-    {
-        contactTrack = Tracks != null && FPSAnimationAsset.IsValid(body) ? Tracks.Track(kind) : null;
-        if (contactTrack == null) return;
-        contactIsReload = reload;
-        contactIsCycle = cycle;
-        contactRate = Mathf.Max(.01f, body.blendTime.rateScale);
-        contactFrom = Mathf.Clamp01(from) * contactTrack.length;
-        contactStart = Time.time;
-        contactLength = (contactTrack.length - contactFrom) / contactRate;
-        contactSettles = settles;
-        contactSettle = Mathf.Max(.01f, body.blendTime.blendOutTime);
-    }
-
     private void OnDestroy()
     {
         if (shake != null) Destroy(shake);

@@ -74,6 +74,8 @@ public sealed partial class FPSBody
         held.StopAction(playables, 0f, bodyCamera);
         held.StopReload(playables, 0f, bodyCamera);
         held.Unequip(framework, recoil, assets);
+        // No gun is on the body now (FeedAction says it again for the next one).
+        if (playables is FPSBodyPlayables mixer) mixer.GunOnBody = 0f;
         held.gameObject.SetActive(false);
         framework.LetGo();
         linked = false;

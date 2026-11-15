@@ -178,6 +178,7 @@ public sealed partial class FPSBody
             if (layer is SwayLayerSettings || layer is AdditiveLayerSettings)
                 gun.FeelLayers.Add((layer, layer.alpha, layer is AdditiveLayerSettings));
             else if (layer is GunConvergeLayerSettings converge) gun.Converge = converge;
+            else if (layer is GunActionLayerSettings action) gun.Action = action;
             else if (layer is AdsLayerSettings ads) gun.Ads = ads;
         }
         // Where this gun's reload clips move the magazine and bolt, for WeaponFeedback's reload sounds (sound session). A
@@ -243,6 +244,8 @@ public sealed partial class FPSBody
                 profile.settings.Add(mine);
                 // Then the barrel turns onto the crosshair's point, before sway and recoil go on top (GunConvergeLayer).
                 profile.settings.Add(ConvergeFor(ads));
+                // And the gun's own action playing moves it from there (GunActionLayer).
+                profile.settings.Add(ActionFor(ads));
             }
             else if (layer is SwayLayerSettings || layer is AdditiveLayerSettings)
             {
@@ -327,6 +330,17 @@ public sealed partial class FPSBody
         converge.rigAsset = ads.rigAsset;
         converge.curveBlending = new List<CurveBlend>(ads.curveBlending);
         return converge;
+    }
+
+    // Our layer that moves the gun as its own action playing does (GunActionLayerSettings), on the same rig and blended out
+    // by the same full-body moves as Ads.
+    private GunActionLayerSettings ActionFor(AdsLayerSettings ads)
+    {
+        var action = ScriptableObject.CreateInstance<GunActionLayerSettings>();
+        Keep(action);
+        action.rigAsset = ads.rigAsset;
+        action.curveBlending = new List<CurveBlend>(ads.curveBlending);
+        return action;
     }
 
     // How FPSAF's Look shares a lean down this body's spine for a gun's profile: each roll element's bone and its part of

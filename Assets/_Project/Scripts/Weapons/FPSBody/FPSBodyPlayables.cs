@@ -1,3 +1,4 @@
+using KINEMATION.FPSAnimationFramework.Runtime.Core;
 using KINEMATION.FPSAnimationFramework.Runtime.Playables;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -18,6 +19,9 @@ using UnityEngine.Playables;
 /// rebuild, and looked at every frame (one read), so nothing that changes the graph can leave the body without its clips.
 /// What was found in their place is said once, for the log. PlayerBody keeps its side of it (PlayClipsInOnePlace): its own
 /// output lets go of the clips while they are here.
+/// It also says what the mixer is playing of a gun's own actions (Slot: each clip, how far into it the graph is, its weight
+/// in the mix), which is the one clock and the one blend the gun and the hands follow an action by (FPSBody.FeedAction), and
+/// it answers FPSAF's Pose Sampler who carries the gun, the body or the right hand (GunOnBody).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FPSBodyPlayables : FPSPlayablesController, IPlayablesController
@@ -27,6 +31,42 @@ public sealed class FPSBodyPlayables : FPSPlayablesController, IPlayablesControl
 
     /// <summary>Whose clips the base layer is. Before FPSAF sets up (FPSBody.Install).</summary>
     internal void Bind(PlayerBody of) => body = of;
+
+    /// <summary>
+    /// How much the body carries the held gun (1) and not the right hand of the clip playing (0). FPSAF's Pose Sampler holds
+    /// the gun on its weapon bone, which is where this body holds the gun, by a curve of the animation playing
+    /// (WeaponBoneWeight), and in the right hand without one; none of our clips has that curve, so it is said here. FPSBody
+    /// sets it every frame: through an action whose track moves the gun, the gun is on the body (FPSBody.FeedAction).
+    /// </summary>
+    internal float GunOnBody;
+
+    public override float GetCurveValue(string curveName, bool isAnimator = false)
+        => !isAnimator && curveName == FPSANames.Curve_WeaponBoneWeight ? GunOnBody : base.GetCurveValue(curveName, isAnimator);
+
+    /// <summary>How many clips the slot mixer plays at once at most: a new action's clip comes in over the one before it.</summary>
+    internal int Slots => _slotMixer.mixer.IsValid() ? _slotMixer.mixer.GetInputCount() - 1 : 0;
+
+    /// <summary>
+    /// One of the clips the slot mixer is playing, from the oldest (0) to the newest: the clip, how far into it the graph
+    /// will be once it has moved on this frame (s into the clip, at the clip's own pace), and its weight in the mix as the
+    /// mixer set it this frame (each newer clip lies over the older ones by its own weight). False for a slot nothing plays in.
+    /// </summary>
+    internal bool Slot(int slot, out AnimationClip clip, out float time, out float weight)
+    {
+        clip = null;
+        time = weight = 0f;
+        var mixer = _slotMixer.mixer;
+        // The mixer's first input is the pose under the actions.
+        int input = slot + 1;
+        if (!mixer.IsValid() || slot < 0 || input >= mixer.GetInputCount()) return false;
+        var playing = mixer.GetInput(input);
+        if (!playing.IsValid() || !playing.IsPlayableOfType<AnimationClipPlayable>()) return false;
+        clip = ((AnimationClipPlayable)playing).GetAnimationClip();
+        if (clip == null) return false;
+        weight = mixer.GetInputWeight(input);
+        time = (float)(playing.GetTime() + Time.deltaTime * playing.GetSpeed());
+        return true;
+    }
 
     public override bool InitializeController()
     {

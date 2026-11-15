@@ -5,8 +5,8 @@ using UnityEngine;
 // FPSBody: The gun turned onto the crosshair's point (GunConvergeLayerSettings). One part of the class; the rest is in FPSBody.cs and the files beside it.
 public sealed partial class FPSBody
 {
-    // How fast the turn comes in and goes as the hands come free of a reload, a draw or a look over the gun (s, 0 to full),
-    // so the gun eases back onto the point instead of snapping to it.
+    // How fast the turn comes in and goes as FPSAF takes the upper body or gives it to a move's own clip (s, 0 to full), so
+    // the gun eases onto the point instead of snapping to it.
     private const float ConvergeEase = .2f;
 
     // How the distance to the crosshair's point is followed (half-lives, s) at the hip and down the sights: as before
@@ -33,7 +33,10 @@ public sealed partial class FPSBody
         converge.hasMuzzle = true;
         // The gun turns about what the body holds it by: a stock's butt in the shoulder, a handgun's grip (GunHold.Pivot).
         converge.hasPivot = held.HoldPivot(out converge.pivot);
-        bool free = !held.HandsBusy && Framework >= .999f;
+        // Through a reload, a draw or a look over the gun too: the action moves the gun from its hold (GunActionLayer, after
+        // this layer), and the hold stays on the point under it, so nothing is left to turn when the action is over. It
+        // once let go for as long as the hands were busy and eased back after: the turn the user saw at a draw's end.
+        bool free = Framework >= .999f;
         convergeWeight = Mathf.MoveTowards(convergeWeight, free ? 1f : 0f, dt / ConvergeEase);
         // The customize menu holds the gun out to show it (ArcCW's customize view).
         presentWeight = Mathf.MoveTowards(presentWeight, controller.Customizing ? 1f : 0f, dt / PresentEase);
@@ -160,9 +163,8 @@ public sealed partial class FPSBody
         Motion(StillMotion);
         if (!held.HandsBusy && Time.time - reloadEndedAt < reloadSettle)
         {
+            // The gun and the hands let go of the clip's hold as it leaves the mix (FeedAction).
             playables.StopAnimation(SightsCut);
-            // The hands let go of the clip's hold with it.
-            held.StopContacts();
         }
     }
 
@@ -174,8 +176,6 @@ public sealed partial class FPSBody
     {
         if (!HoldsGun) return;
         KeepGunInView();
-        // Through a reload, the gun where KINEMATION's own clip has it (FPSBody.Contacts); the weapon root rides it after.
-        FollowContacts();
         // A pistol held in close comes in to the chest, canted, still on the crosshair's point (FPSBody.CloseHold).
         FollowCloseHold();
         // A shove's bash swings the gun on top of that (FPSBody.Bash).
@@ -185,6 +185,7 @@ public sealed partial class FPSBody
         if (held.Reloading && (controller.Runtime == null || !controller.Runtime.IsReloading)) held.StopReload(playables, reloadBlendOut, bodyCamera);
         // KINEMATION's sounds of a bolt or pump worked after a shot, as their moments come (FPSGun.Cycle).
         while (held.TakeCycleSound(out AudioClip worked)) Worked(worked);
+        TraceAction();
     }
 
     // One of them, through the gun sounds' own player (WeaponFeedback), on every PC that shows the shot.
@@ -208,8 +209,9 @@ public sealed partial class FPSBody
         float aim = controller.AimBlend;
         if (Framework >= .999f)
         {
-            // Mid-reload the hands are on the magazine and the bolt, not the grips.
-            if (held.HandsBusy) return;
+            // Mid-reload the hands are on the magazine and the bolt, not the grips; and while a clip of the gun's own is
+            // still in the animation's mix (a draw cut short, easing out) the gun is not yet where it is held.
+            if (held.HandsBusy || hasContact) return;
             var inView = new KTransform(eyes.InverseTransformPoint(gun.position), Quaternion.Inverse(eyes.rotation) * gun.rotation, Vector3.one);
             // Kept per gun (FPSGun.LearnHold): a draw followed on KINEMATION's clip comes up into this gun's own hold.
             if (aim <= .001f) held.LearnHold(inView, false);
@@ -264,7 +266,7 @@ public sealed partial class FPSBody
     private void LearnHipMuzzle()
     {
         float aim = controller.AimBlend;
-        if (eyes == null || highReady || cover > 0f || closeWeight > 0f || held.HandsBusy || Framework < .999f
+        if (eyes == null || highReady || cover > 0f || closeWeight > 0f || held.HandsBusy || hasContact || Framework < .999f
             || (aim > .001f && aim < .999f) || Time.time - drawnAt < drawSettle) return;
         Vector3 fromEyes = muzzle.position - eyes.position;
         if (Vector3.Angle(eyes.forward, fromEyes) > HipMuzzleCone) return;

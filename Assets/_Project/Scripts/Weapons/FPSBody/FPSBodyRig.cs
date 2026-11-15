@@ -37,6 +37,8 @@ internal sealed class FPSBodyRig
 
     // Element indices the code needs (the demo rig's order).
     public const int ChestIndex = 13, UpperChestIndex = 14, NeckIndex = 40, HeadIndex = 41, CameraIndex = 45, CameraSocketIndex = 46, IkWeaponBoneIndex = 48, WeaponBoneRightIndex = 78;
+    // FPSAF's own targets for the hands and the elbows, which hang under the IK weapon bone (the four after it).
+    public const int IkRightHandIndex = 49, IkRightElbowIndex = 50, IkLeftHandIndex = 51, IkLeftElbowIndex = 52;
 
     private static readonly Element[] Layout = BuildLayout();
 
