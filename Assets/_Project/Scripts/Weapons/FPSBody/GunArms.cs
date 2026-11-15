@@ -13,6 +13,9 @@ internal struct GunContact
     public Quaternion GunTurn;
     public Vector3 RightPalm, RightFingers, RightFacing, LeftPalm, LeftFingers, LeftFacing;
     public Vector3 RightElbow, LeftElbow;
+    // How far each palm is from the gun's surface (m; GunSurface.Gap as the tracks keep it): at it, the hand has hold of
+    // the gun. Zero where it was not read (a moment sampled at run time, until the game reads the tracks).
+    public float RightGap, LeftGap;
     // Each finger segment's way in its own hand's frame (GunArms.Digits): null when not read. The arrays belong to
     // whoever filled them (FPSBody's buffers for a clip's moment, the gun's own for its hold).
     public Vector3[] RightDigits, LeftDigits;
@@ -153,6 +156,24 @@ internal sealed class GunArms
         if (off.sqrMagnitude < 1e-4f) return false;
         way = toFrame * off.normalized;
         return true;
+    }
+
+    /// <summary>
+    /// One arm of the copy as it is now: its shoulder joint and its wrist (world, as Gun gives the gun), and the length of
+    /// its two bones as they are now (upper arm and forearm; an arm made for a camera alone may stretch them). False when
+    /// the arm lacks the joints.
+    /// </summary>
+    internal bool Arm(bool isLeft, out Vector3 shoulder, out Vector3 wrist, out float length)
+    {
+        shoulder = wrist = Vector3.zero;
+        length = 0f;
+        var hand = isLeft ? left : right;
+        if (!hand.Valid || hand.Shoulder == null || hand.Elbow == null) return false;
+        shoulder = hand.Shoulder.position;
+        wrist = hand.Wrist.position;
+        Vector3 elbow = hand.Elbow.position;
+        length = Vector3.Distance(shoulder, elbow) + Vector3.Distance(elbow, wrist);
+        return length > 1e-4f;
     }
 
     /// <summary>

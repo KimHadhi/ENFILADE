@@ -24,12 +24,16 @@ public enum GunTrackKind
 /// <summary>
 /// One hand in one frame of a track: the middle of its palm, the way its fingers point and the way the palm faces, in the
 /// gun's frame as the gun is in that frame; and the way its elbow points off the shoulder-to-wrist line, in the frame of the
-/// gun as the pose clip holds it (zero where the arm was too straight to tell). As GunArms reads them.
+/// gun as the pose clip holds it (zero where the arm was too straight to tell). As GunArms reads them. And how far the palm
+/// is from the gun's surface (m, looked for no further than GunTrack.GapMost): a hand at the gun's surface has hold of the
+/// gun wherever on it that is (its grip, the handguard, a magazine in its well, the bolt), one at a pouch has let go, and
+/// one on its way between the two is taking hold or letting go (GunHold.Holds).
 /// </summary>
 [Serializable]
 public struct GunTrackHand
 {
     public Vector3 palm, fingers, facing, elbow;
+    public float gap;
 }
 
 /// <summary>
@@ -60,6 +64,10 @@ public sealed class GunTrack
     [Tooltip("How the clip turns KINEMATION's camera bone from where the pose clip holds it. Identity throughout where the clip has no camera bone.")]
     public Quaternion[] camera = Array.Empty<Quaternion>();
 
+    /// <summary>A palm's gap from the gun's surface is looked for no further than this (m); further off it is kept as this.
+    /// No rule asks about a hand further from the gun: one that far has let go of it (GunHold.Rules.TakesHoldWithin).</summary>
+    public const float GapMost = .3f;
+
     /// <summary>How many frames it has; 0 for a track that was never read.</summary>
     public int Frames => gunMove != null ? gunMove.Length : 0;
 
@@ -82,6 +90,8 @@ public sealed class GunTrack
         moment.GunTurn = Quaternion.Slerp(gunTurn[a], gunTurn[b], t);
         Mix(right[a], right[b], t, out moment.RightPalm, out moment.RightFingers, out moment.RightFacing, out moment.RightElbow);
         Mix(left[a], left[b], t, out moment.LeftPalm, out moment.LeftFingers, out moment.LeftFacing, out moment.LeftElbow);
+        moment.RightGap = Mathf.Lerp(right[a].gap, right[b].gap, t);
+        moment.LeftGap = Mathf.Lerp(left[a].gap, left[b].gap, t);
         moment.RightDigits = Ways(rightDigits, frames, a, b, t, rightBuffer);
         moment.LeftDigits = Ways(leftDigits, frames, a, b, t, leftBuffer);
         if (camera != null && camera.Length == frames) cameraTurn = Quaternion.Slerp(camera[a], camera[b], t);

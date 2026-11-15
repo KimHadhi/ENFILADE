@@ -33,18 +33,33 @@ internal static class GunTrackBake
     private const string ListPath = ProjectFolders.DataByName + GunTracks.ResourcePath + ".asset";
     private const string SetsFolder = "GunTracks";
     private const string Request = "Temp/enfilade-guntracks.request", ReportPath = "Logs/gun-tracks.txt";
-    // Raised when what a track holds or how it is read changes, so every gun is read again.
-    private const int Version = 1;
+    // Raised when what a track holds or how it is read changes, so every gun is read again. 2: each palm's gap from the
+    // gun's surface. 3: that gap kept as far as a hand takes hold of the gun from (GunTrack.GapMost .12 to .3).
+    private const int Version = 3;
     // KINEMATION's camera bone in its gun clips; the game plays them on the same two bones (FPSBodyCamera).
     private const string CameraRootName = "root", CameraBoneName = "camera_bone";
     // The report's own bands: how near its hold a gun is said to stay (m, degrees), and how far a palm is from its place in
     // the hold to be said away (m). They decide nothing in the game.
     private static readonly (float move, float turn)[] Bands = { (.005f, 1f), (.01f, 2f), (.02f, 5f) };
-    /// <summary>A palm further than this from its place in the hold is said to be away from the gun (m). The reports' band
-    /// (this one's and the bench's, GunBench); it decides nothing in the game.</summary>
-    internal const float HandAway = .04f;
+    // A palm further than this from the gun's surface is off the gun (m): the hold's own rule (GunHold.Rules' HoldsWithin,
+    // Tables/FPSBody.csv), read as a report is written.
+    private static float handAway = .04f;
+    // The report counts the palms' gaps from the gun's surface between these (cm).
+    private static readonly int[] GapEdges = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 20, 24, 30 };
     // A draw's and a holster's table of the gun's way home is printed every this many seconds.
     private const float TableStep = .05f;
+
+    // How KINEMATION's own arms did each track read in this run, for the report: nothing of it is kept in a track.
+    private sealed class SourceArm
+    {
+        // How straight the arm is (shoulder joint to wrist over its two bones' length then), least and most and when the
+        // most; the length of its two bones, least and most; how far its shoulder joint gets from where the pose has it (m).
+        public float StraightLeast = float.MaxValue, StraightMost, MostAt, LengthLeast = float.MaxValue, LengthMost, ShoulderMoved;
+    }
+
+    private static readonly Dictionary<GunTrack, SourceArm[]> sourceArms = new Dictionary<GunTrack, SourceArm[]>();
+    // Where KINEMATION's arms have their shoulder joints from the gun in its hold, for each gun read in this run.
+    private static readonly Dictionary<WeaponData, string> sourceShoulders = new Dictionary<WeaponData, string>();
 
     private static double next;
     // Wanted once after every script load, and whenever the request file is made: tried every half second until the editor
@@ -113,6 +128,8 @@ internal static class GunTrackBake
         var armsByModel = new Dictionary<GameObject, GunArms>();
         var camera = new CameraRig();
         var notes = new List<string>();
+        sourceArms.Clear();
+        sourceShoulders.Clear();
         var watch = System.Diagnostics.Stopwatch.StartNew();
         int read = 0;
         try
@@ -157,6 +174,8 @@ internal static class GunTrackBake
         EditorUtility.SetDirty(list);
         AssetDatabase.SaveAssets();
         WriteReport(assets, list, notes, read, due.Count, watch.Elapsed.TotalSeconds);
+        sourceArms.Clear();
+        sourceShoulders.Clear();
         Debug.Log($"GunTrackBake: read {read} of {due.Count} guns' actions from KINEMATION's clips in {watch.Elapsed.TotalSeconds:0.0} s; "
             + $"every gun's numbers are in {ReportPath}.");
     }
@@ -235,17 +254,45 @@ internal static class GunTrackBake
             return null;
         }
         arms.Gun(frame, out Vector3 poseAt, out Quaternion poseTurn);
+        var poseShoulders = new Vector3[2];
+        var shoulders = new StringBuilder();
+        for (int side = 0; side < 2; side++)
+        {
+            if (!arms.Arm(side == 1, out poseShoulders[side], out _, out float armLength)) continue;
+            Vector3 from = Quaternion.Inverse(poseTurn) * (poseShoulders[side] - poseAt) * 100f;
+            shoulders.Append($" {(side == 0 ? "right" : "left")} ({from.x:0.0}, {from.y:0.0}, {from.z:0.0}) cm, that arm {armLength * 100f:0.0} cm long;");
+        }
+        if (shoulders.Length > 0) sourceShoulders[gun.weapon] = shoulders.ToString(0, shoulders.Length - 1);
         // A hold at all: the support palm within reach of the gun (FPSBody.PoseHolds' rule).
         bool holds = arms.Palm(true, poseAt, Quaternion.Inverse(poseTurn), out Vector3 support, out _, out _) && support.magnitude < FPSBody.PoseReach;
         Quaternion cameraRest = camera.Turn(gun.sourcePose, 0f);
 
         var tracks = new List<GunTrack>();
-        foreach (var (kind, clip) in ClipsOf(gun))
+        // The gun itself at rest, as the game's gun starts (FPSGun.Set: its first sight and parts on), for how near its
+        // surface each palm is: a copy stood at the origin, so the gun's own frame is the world's.
+        var model = Object.Instantiate(gun.prefab);
+        model.hideFlags = HideFlags.HideAndDontSave;
+        try
         {
-            if (clip == null) continue;
-            var track = Read(kind, clip, arms, frame, poseAt, poseTurn, camera, cameraRest);
-            if (track != null) tracks.Add(track);
-            else notes.Add($"{gun.weapon.name}: {kind} ({clip.name}) could not be read on {prefab.name}; left out.");
+            model.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            model.transform.localScale = Vector3.one;
+            var sights = model.GetComponent<GunSights>();
+            if (sights != null && sights.Current < 0) sights.Select(sights.initial);
+            var parts = model.GetComponent<GunAttachments>();
+            if (parts != null) parts.Begin();
+            var surface = GunSurface.Of(model.transform);
+            if (surface.Empty) notes.Add($"{gun.weapon.name}: none of its meshes could be read; every palm counts as away from it.");
+            foreach (var (kind, clip) in ClipsOf(gun))
+            {
+                if (clip == null) continue;
+                var track = Read(kind, clip, arms, frame, poseAt, poseTurn, camera, cameraRest, surface, poseShoulders);
+                if (track != null) tracks.Add(track);
+                else notes.Add($"{gun.weapon.name}: {kind} ({clip.name}) could not be read on {prefab.name}; left out.");
+            }
+        }
+        finally
+        {
+            Object.DestroyImmediate(model);
         }
         if (tracks.Count == 0) return null;
 
@@ -271,8 +318,9 @@ internal static class GunTrackBake
     // hands on the gun as it then is, the finger ways and the camera bone's turn from the pose. As the game read a moment of
     // it until now (FPSBody.SampleContact), so the numbers mean the same.
     private static GunTrack Read(GunTrackKind kind, AnimationClip clip, GunArms arms, Quaternion frame, Vector3 poseAt, Quaternion poseTurn,
-        CameraRig camera, Quaternion cameraRest)
+        CameraRig camera, Quaternion cameraRest, GunSurface surface, Vector3[] poseShoulders)
     {
+        var own = new[] { new SourceArm(), new SourceArm() };
         float rate = clip.frameRate > 0f ? clip.frameRate : 30f;
         float length = Mathf.Max(0f, clip.length);
         int frames = Mathf.Max(1, Mathf.CeilToInt(length * rate - 1e-3f) + 1);
@@ -297,6 +345,24 @@ internal static class GunTrackBake
             track.gunMove[i] = fromPose * (at - poseAt);
             track.gunTurn[i] = fromPose * turn;
             if (!Hand(arms, false, at, toGun, fromPose, out track.right[i]) || !Hand(arms, true, at, toGun, fromPose, out track.left[i])) return null;
+            // The palms are in the gun's frame, which is the world's for the gun's copy at the origin.
+            track.right[i].gap = surface.Gap(track.right[i].palm, GunTrack.GapMost);
+            track.left[i].gap = surface.Gap(track.left[i].palm, GunTrack.GapMost);
+            for (int side = 0; side < 2; side++)
+            {
+                if (!arms.Arm(side == 1, out Vector3 shoulder, out Vector3 wrist, out float armLength)) continue;
+                var arm = own[side];
+                float straight = Vector3.Distance(shoulder, wrist) / armLength;
+                arm.StraightLeast = Mathf.Min(arm.StraightLeast, straight);
+                if (straight > arm.StraightMost)
+                {
+                    arm.StraightMost = straight;
+                    arm.MostAt = time;
+                }
+                arm.LengthLeast = Mathf.Min(arm.LengthLeast, armLength);
+                arm.LengthMost = Mathf.Max(arm.LengthMost, armLength);
+                arm.ShoulderMoved = Mathf.Max(arm.ShoulderMoved, Vector3.Distance(shoulder, poseShoulders[side]));
+            }
             if (hasRight && arms.Digits(false, buffer)) Array.Copy(buffer, 0, rightDigits, i * digits, digits);
             else hasRight = false;
             if (hasLeft && arms.Digits(true, buffer)) Array.Copy(buffer, 0, leftDigits, i * digits, digits);
@@ -305,6 +371,7 @@ internal static class GunTrackBake
         }
         track.rightDigits = hasRight ? rightDigits : Array.Empty<Vector3>();
         track.leftDigits = hasLeft ? leftDigits : Array.Empty<Vector3>();
+        sourceArms[track] = own;
         return track;
     }
 
@@ -356,12 +423,15 @@ internal static class GunTrackBake
 
     private static void WriteReport(FPSBodyAssets assets, GunTracks list, List<string> notes, int read, int due, double seconds)
     {
+        handAway = FPSBody.TableRules().HoldsWithin;
         var text = new StringBuilder();
         text.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} gun actions as numbers (GunTrackSet), read from KINEMATION's own clips on KINEMATION's arms. "
             + $"This run read {read} of {due} guns in {seconds:0.0} s; the others were current. Lengths in cm in the gun's own frame, times in s "
             + "into the clip. 'off the hold' = how far the clip has the gun from where the gun's pose clip holds it. The 'stays within' "
-            + $"bands and 'away' (a palm over {HandAway * 100f:0.#} cm from its place in the hold) are this report's own and decide nothing in the game.");
+            + $"bands are this report's own and decide nothing in the game; a palm is 'off the gun' over {handAway * 100f:0.#} cm from the "
+            + "gun's surface, where the hold's rule says a hand no longer has full hold of it (Rig.holdsWithin).");
         foreach (string note in notes) text.AppendLine("! " + note);
+        Gaps(assets, list, text);
         foreach (var gun in assets.guns)
         {
             if (gun.weapon == null) continue;
@@ -373,12 +443,55 @@ internal static class GunTrackBake
                 continue;
             }
             text.AppendLine($"== {gun.weapon.name}{(set.holds ? "" : " (its pose clip is no two-handed hold: the support palm is out of reach of the gun)")}");
+            if (sourceShoulders.TryGetValue(gun.weapon, out string joints))
+                text.AppendLine("KINEMATION's arms' shoulder joints in the hold, from the gun in the gun's own frame:" + joints);
             var hold = set.Track(GunTrackKind.Hold);
             foreach (var track in set.tracks)
                 if (track != null) Describe(track, hold, text);
         }
         Directory.CreateDirectory(Path.GetDirectoryName(ReportPath));
         File.WriteAllText(ReportPath, text.ToString());
+    }
+
+    // How near the gun's surface the palms are, over every frame of every track: in the hold (where a hand has hold of the
+    // gun for certain) and through the actions (where a hand is either at the gun or well away from it). What "has hold of
+    // the gun" is taken to mean (Rig.holdsWithin) is read off this.
+    private static void Gaps(FPSBodyAssets assets, GunTracks list, StringBuilder text)
+    {
+        int bins = GapEdges.Length;
+        var holds = new int[bins];
+        var acts = new int[bins];
+        float holdMost = 0f;
+        string holdMostOf = "";
+        foreach (var gun in assets.guns)
+        {
+            var set = gun.weapon != null ? list.For(gun.weapon) : null;
+            if (set == null) continue;
+            foreach (var track in set.tracks)
+            {
+                if (track == null) continue;
+                bool hold = track.kind == GunTrackKind.Hold || track.kind == GunTrackKind.HoldNoGrip;
+                int frames = hold ? Mathf.Min(1, track.Frames) : track.Frames;
+                for (int i = 0; i < frames; i++)
+                    for (int side = 0; side < 2; side++)
+                    {
+                        float gap = (side == 0 ? track.right[i] : track.left[i]).gap;
+                        int bin = bins - 1;
+                        while (bin > 0 && gap * 100f < GapEdges[bin]) bin--;
+                        (hold ? holds : acts)[bin]++;
+                        if (hold && gap > holdMost && !(side == 1 && !set.holds))
+                        {
+                            holdMost = gap;
+                            holdMostOf = $"{gun.weapon.name} {track.kind} {(side == 0 ? "right" : "left")}";
+                        }
+                    }
+            }
+        }
+        text.AppendLine();
+        text.AppendLine("== palms' gap from the gun's surface: how many frames' palms from each of these on (cm): " + string.Join(" ", GapEdges)
+            + $" (the last: that far or further; looked for no further than {GunTrack.GapMost * 100f:0.#})");
+        text.AppendLine("in the holds:   " + string.Join(" ", holds) + $"   (the widest in a two-handed hold: {holdMost * 100f:0.0} cm, {holdMostOf})");
+        text.AppendLine("through actions: " + string.Join(" ", acts));
     }
 
     private static void Describe(GunTrack track, GunTrack hold, StringBuilder text)
@@ -407,6 +520,18 @@ internal static class GunTrackBake
         text.Append(cameraMost > .01f ? $"; camera turned at most {cameraMost:0.0}°" : "; no camera motion in the clip");
         bool rightFingers = track.rightDigits.Length == frames * GunArms.DigitCount, leftFingers = track.leftDigits.Length == frames * GunArms.DigitCount;
         text.Append(rightFingers && leftFingers ? "; fingers read" : $"; fingers not read:{(rightFingers ? "" : " right")}{(leftFingers ? "" : " left")}");
+        if (sourceArms.TryGetValue(track, out var own))
+        {
+            text.Append("; KINEMATION's own arms:");
+            for (int side = 0; side < 2; side++)
+            {
+                var arm = own[side];
+                if (arm.LengthMost <= 0f) continue;
+                text.Append($" {(side == 0 ? "right" : "left")} straight {arm.StraightLeast:0.00}-{arm.StraightMost:0.00} (most at {arm.MostAt:0.00}), its bones "
+                    + $"{arm.LengthLeast * 100f:0.0}-{arm.LengthMost * 100f:0.0} cm long, its shoulder joint up to {arm.ShoulderMoved * 100f:0.0} cm from where the pose has it;");
+            }
+            text.Length--;
+        }
         text.AppendLine();
         if (track.kind == GunTrackKind.Draw || track.kind == GunTrackKind.Holster) Table(track, text);
     }
@@ -428,20 +553,21 @@ internal static class GunTrackBake
         return outside < 0 ? "throughout" : $"from {track.TimeOf(outside + 1):0.00}";
     }
 
-    // How far a palm gets from its place in the hold, and between which moments it is away from it.
+    // How far a palm gets from its place in the hold, and between which moments it is off the gun (its first leaving of the
+    // gun's surface to its last return).
     private static string Away(GunTrack track, Vector3 place, bool isLeft)
     {
         float most = 0f;
         int first = -1, last = -1;
         for (int i = 0; i < track.Frames; i++)
         {
-            float gap = Vector3.Distance((isLeft ? track.left[i] : track.right[i]).palm, place);
-            most = Mathf.Max(most, gap);
-            if (gap <= HandAway) continue;
+            var hand = isLeft ? track.left[i] : track.right[i];
+            most = Mathf.Max(most, Vector3.Distance(hand.palm, place));
+            if (hand.gap <= handAway) continue;
             if (first < 0) first = i;
             last = i;
         }
-        return $"at most {most * 100f:0.0} cm from its place" + (first >= 0 ? $" (away {track.TimeOf(first):0.00}-{track.TimeOf(last):0.00})" : "");
+        return $"at most {most * 100f:0.0} cm from its place" + (first >= 0 ? $" (off the gun {track.TimeOf(first):0.00}-{track.TimeOf(last):0.00})" : "");
     }
 
     // The gun's way home through a draw or a holster, read back through the track's own reader (GunTrack.Sample).

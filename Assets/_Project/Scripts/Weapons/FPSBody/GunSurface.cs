@@ -81,7 +81,12 @@ internal sealed class GunSurface
                 mesh.GetTriangles(triangles, sub);
                 foreach (int index in triangles) points.Add(toGun * (toWorld.MultiplyPoint3x4(vertices[index]) - gun.position));
             }
-            if (baked) Object.Destroy(mesh);
+            // Outside play (the editor's reading of the guns' actions) nothing is destroyed at a frame's end.
+            if (baked)
+            {
+                if (Application.isPlaying) Object.Destroy(mesh);
+                else Object.DestroyImmediate(mesh);
+            }
         }
         if (unreadable)
             Debug.LogWarning($"[GunSurface] {gun.name}: a mesh has Read/Write off, so the hands can't touch that part of the gun.", gun);
@@ -112,6 +117,29 @@ internal sealed class GunSurface
                     foreach (int t in list)
                         if (stamp[t] != pass) { stamp[t] = pass; found.Add(t); }
                 }
+    }
+
+    /// <summary>
+    /// How far a point (world) is from the gun's surface (m), looked for no further than <paramref name="most"/>:
+    /// <paramref name="most"/> itself where nothing of the gun is that near. A palm that has hold of the gun is at its
+    /// surface, wherever on the gun that is; one at a pouch is nowhere near it.
+    /// </summary>
+    public float Gap(Vector3 point, float most)
+    {
+        if (Empty || most <= 0f) return Mathf.Max(0f, most);
+        Vector3 at = Local(point);
+        // Looked for near first and twice as far each time nothing was that near: most palms asked about are at the gun, and
+        // the cells to read grow with the cube of how far is looked.
+        for (float within = Mathf.Min(most, Cell * 2f); ; within = Mathf.Min(most, within * 2f))
+        {
+            Vector3 pad = Vector3.one * within;
+            Gather(at - pad, at + pad);
+            float nearest = within * within;
+            foreach (int t in found)
+                nearest = Mathf.Min(nearest, (ClosestOnTriangle(at, corners[t * 3], corners[t * 3 + 1], corners[t * 3 + 2]) - at).sqrMagnitude);
+            // Anything nearer than was looked would have been among the triangles read.
+            if (nearest < within * within || within >= most) return Mathf.Sqrt(nearest);
+        }
     }
 
     /// <summary>True when the segment (world) passes no nearer the gun's surface than <paramref name="padding"/>.</summary>

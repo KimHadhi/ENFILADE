@@ -34,6 +34,12 @@ internal abstract class GunHold
         /// <summary>Holding a stocked gun ready, the trigger wrist is at least this far under its shoulder joint (m): a hand
         /// is not kept up by the face.</summary>
         public float WristUnderShoulder;
+        /// <summary>A hand has hold of the gun while its palm is within this of the gun's surface (m), wherever on the gun
+        /// that is.</summary>
+        public float HoldsWithin;
+        /// <summary>A hand coming to the gun takes hold of it from this far off its surface (m), and one leaving it has let
+        /// go by this far (it is at a pouch, in the air): between this and HoldsWithin its arm carries the gun in part.</summary>
+        public float TakesHoldWithin;
     }
 
     /// <summary>A gun as one body holds it.</summary>
@@ -88,6 +94,65 @@ internal abstract class GunHold
     /// <paramref name="sightAt"/> and <paramref name="sightTurn"/> are the sight's eye point in the gun's frame.
     /// </summary>
     internal virtual float EyeRelief(HoldBody body, Vector3 sightAt, Quaternion sightTurn) => 0f;
+
+    /// <summary>
+    /// How much a hand has hold of the gun (0-1), by how far its palm is from the gun's surface (m; GunSurface.Gap, which the
+    /// gun's tracks keep for every frame): all of it within Rules.HoldsWithin, wherever on the gun the hand is (its grip, the
+    /// handguard, a magazine in its well, the bolt), none from Rules.TakesHoldWithin, taking hold or letting go between.
+    /// Where the palm is on the gun does not matter: a hand that turns the gun over to look at it, or rides its pump, holds
+    /// it all the while (told from "at its place in the hold" at first, which let go of such a hand: the bench, 2026-11-15).
+    /// It is a thing of the moment alone (where the palm is now), so it is the same whatever played before, and it goes
+    /// with the hand: the arm takes up the gun as fast as its hand comes to it, no faster. Taking hold over the last 4 cm
+    /// only (the first rule) had the gun jump to a hand that landed on it: up to 8 cm in two frames, faster than the clip
+    /// moves the gun in 122 of the 298 actions it touched (the bench, 2026-11-15).
+    /// </summary>
+    internal float Holds(float gap)
+    {
+        // No further than the tracks keep a palm's gap: past it every hand reads as that far.
+        float from = Mathf.Min(Mathf.Max(rules.HoldsWithin + 1e-4f, rules.TakesHoldWithin), GunTrack.GapMost);
+        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(rules.HoldsWithin, from, gap));
+    }
+
+    /// <summary>
+    /// The gun as a body carries it through an action. <paramref name="bone"/> is where the action's clip has the gun
+    /// (KINEMATION's weapon bone in the body's space: the hold, moved as the clip moves it), a move KINEMATION's animators made
+    /// with KINEMATION's arms. A body's own arms carry a gun only as far as they reach: the gun is moved the least way, never
+    /// turned, that leaves no arm whose hand has hold of it straighter than Rules.ReachMost. That is the rule its hold was made
+    /// by (On) with the same measure of an arm, so an action that starts and ends in the hold starts and ends unmoved.
+    /// The palms are where the clip has them on the gun at that moment (the gun's frame, m), with the way their fingers point
+    /// and how much each has hold of the gun (Holds); the arms are the body's (HoldBody.Arm, in the body's space), with their
+    /// shoulder joints where they are at that moment; <paramref name="scale"/> is the body's (HoldBody.Scale).
+    /// Until this the hold fitted the gun's place to the body and left its motion as KINEMATION's clip has it: a hand slipped
+    /// off its grip wherever a clip took the gun past that arm's reach (the bench, 2026-11-15: 124 of 570 actions on six
+    /// bodies, by up to 5.3 cm, each time with that arm fully straight).
+    /// What it is not yet: a way for a body to do an action its arms cannot. Some of KINEMATION's clips are made for arms
+    /// whose shoulder joints are not where a body's are once a stock rests on its shoulder. The SVD's arms have the trigger
+    /// shoulder 16 cm further along the barrel, 10 cm lower and 7 cm further out than the mannequin's is from the gun it
+    /// holds (20 cm in all; Logs/gun-tracks.txt and the bench's hold lines print both), so the magazine those arms reach at
+    /// 0.94 of their length asks 1.29 of the body's. Where a clip asks that much, the least move takes the gun into the body
+    /// (that reload: 20 cm back, the stock through the chest), and it follows a hand's fast move on the gun as fast. Such an
+    /// action wants its gun's path made for a body, smooth through the whole action, with the gun kept out of the body; this
+    /// rule then holds what is left (Docs/Features/GunHandling.md, section 8, stage 4). Nothing in the game asks it before
+    /// that.
+    /// </summary>
+    internal KTransform Carried(in HoldBody.Arm right, in HoldBody.Arm left, float scale, KTransform bone, Vector3 rightPalm, Vector3 rightFingers,
+        float rightHolds, Vector3 leftPalm, Vector3 leftFingers, float leftHolds)
+    {
+        Quaternion axes = bone.rotation * gun.Frame;
+        Vector3 rightWrist = right.Wrist(bone.position + axes * (rightPalm / scale), axes * rightFingers);
+        Vector3 leftWrist = left.Wrist(bone.position + axes * (leftPalm / scale), axes * leftFingers);
+        bone.position += HoldBody.LeastMoveWithin(rightWrist, right.Shoulder, Allowed(right, rightWrist, rightHolds),
+            leftWrist, left.Shoulder, Allowed(left, leftWrist, leftHolds));
+        return bone;
+    }
+
+    // How far from its shoulder joint an arm may have a wrist: Rules.ReachMost of its length while its hand has hold of the
+    // gun, as far as it is once the hand has let go, between the two as it takes hold or lets go.
+    private float Allowed(in HoldBody.Arm arm, Vector3 wrist, float holds)
+    {
+        float now = Vector3.Distance(wrist, arm.Shoulder);
+        return now - Mathf.Clamp01(holds) * Mathf.Max(0f, now - rules.ReachMost * arm.Length);
+    }
 
     // The gun's axes with its barrel pointing where the body looks, turned the least way from where the clip has them, so
     // the clip's cant stays. The barrel is on the crosshair whenever the hands are free (GunConvergeLayer), so this is the

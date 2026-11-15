@@ -30,6 +30,14 @@ public sealed partial class FPSBody
     [SerializeField, Min(0f), Tooltip("Holding a stocked gun ready, the trigger wrist is at least this far under its shoulder joint (m in "
         + "game): a gun whose grip would hold the hand higher has its butt lower on the chest.")]
     private float wristUnderShoulder = .02f;
+    [SerializeField, Min(.001f), Tooltip("A hand has hold of the gun while its palm is within this of the gun's surface (m in game), wherever "
+        + "on the gun: while it has, an action carries the gun no further than that arm reaches (GunHold.Carried).")]
+    private float holdsWithin = .04f;
+    [SerializeField, Min(.002f), Tooltip("A hand coming to the gun takes hold of it from this far off its surface, and one leaving has let go "
+        + "of it by this far (m in game; a pouch, the air): between this and holdsWithin its arm carries the gun in part, so the gun "
+        + "comes to meet a hand over the last of its way and never jumps to it. No further than the tracks keep a palm's gap "
+        + "(GunTrack.GapMost).")]
+    private float takesHoldWithin = .18f;
     [SerializeField, Min(.01f), Tooltip("Behind the plain hold's place on the handguard the support hand's slide fades out over this far, so a "
         + "reload's hand on the magazine keeps its clip's place (m in game; at least twice the slide).")]
     private float reachSlideFade = .1f;
@@ -58,7 +66,7 @@ public sealed partial class FPSBody
     private GunHold.Rules HoldRules => new GunHold.Rules
     {
         ReachMost = reachMost, BendLeast = reachLeast, StockPress = stockPress, SupportNearest = supportNearest,
-        WristUnderShoulder = wristUnderShoulder
+        WristUnderShoulder = wristUnderShoulder, HoldsWithin = holdsWithin, TakesHoldWithin = takesHoldWithin
     };
 
     /// <summary>The same rules as the table has them (Tables/FPSBody.csv, row Rig), for the editor's hold check.</summary>
@@ -68,7 +76,9 @@ public sealed partial class FPSBody
         BendLeast = GameTables.Number(TableName, TableRow, nameof(reachLeast), .4f),
         StockPress = GameTables.Number(TableName, TableRow, nameof(stockPress), .025f),
         SupportNearest = GameTables.Number(TableName, TableRow, nameof(supportNearest), .14f),
-        WristUnderShoulder = GameTables.Number(TableName, TableRow, nameof(wristUnderShoulder), .02f)
+        WristUnderShoulder = GameTables.Number(TableName, TableRow, nameof(wristUnderShoulder), .02f),
+        HoldsWithin = GameTables.Number(TableName, TableRow, nameof(holdsWithin), .04f),
+        TakesHoldWithin = GameTables.Number(TableName, TableRow, nameof(takesHoldWithin), .18f)
     };
 
     /// <summary>How far behind the hold's place the support hand's slide fades out, as the table has it, for the editor's bench.</summary>

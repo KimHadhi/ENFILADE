@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
 using KINEMATION.Shared.KAnimationCore.Runtime.Core;
@@ -33,6 +34,11 @@ using Object = UnityEngine.Object;
 ///   times=0,0.2,0.63         moments of an action to photograph, s (five across it)
 ///   pictures=fp,side,front   from the eyes (the body's own head left out), from the right side, from the front quarter (none)
 ///   width=640                a picture's width in pixels (16:9)
+///   reach=none               the gun moves as the clip moves it, whatever the arms reach (left out: carried by the hold's
+///                            reach rule, GunHold.Carried, the shoulder joints where the action's clip has them)
+///   rule.ReachMost=0.85      what if one of the hold's rules were another number (a field of GunHold.Rules, by its name):
+///                            for this run only, the table stays as it is
+///   trace=yes                every moment measured, a line each under its action (ask for one gun's one action)
 /// Logs/GunBench/report.txt has the numbers; each stood action's pictures are one sheet beside it, a column to a moment
 /// and a row to a view. It lives beside FPSBody because it stands the body with the game's own classes.
 /// </summary>
@@ -44,7 +50,7 @@ internal static class GunBench
     // bench's own; it decides nothing in the game.
     private const float PalmMissed = .01f;
     // An action is measured at no more than this many of its frames.
-    private const int MostSamples = 80;
+    private const int MostSamples = 400;
     // The first-person lens: the game's default field of view (GameSettings.fieldOfView 90 across a 16:9 screen).
     private const float ScreenFieldAcross = 90f, ScreenAspect = 16f / 9f;
     private static readonly Color Backdrop = new Color(.32f, .34f, .38f), Ambient = new Color(.45f, .47f, .52f);
@@ -83,8 +89,14 @@ internal static class GunBench
         public HashSet<string> Skins, Guns;
         public readonly List<GunTrackKind> Actions = new List<GunTrackKind>();
         public List<float> Times;
-        public bool Eyes, Side, Front;
+        public bool Eyes, Side, Front, Trace;
         public int Width = 640;
+        // How the gun is carried through an action: by the hold's reach rule with the shoulder joints where the action's
+        // clip has them (the rule as the game will ask it), or not at all (the clip's move as it is, which is what the game
+        // does until the rule is in it).
+        public Carry Reach = Carry.Rule;
+        // The hold's rules asked about with another number, by the field's name.
+        public readonly Dictionary<string, float> WhatIf = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
 
         public bool Pictures => Eyes || Side || Front;
 
@@ -97,6 +109,12 @@ internal static class GunBench
                 if (cut <= 0) continue;
                 string key = raw.Substring(0, cut).Trim().ToLowerInvariant();
                 var values = raw.Substring(cut + 1).Split(new[] { ',', ' ', ';', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                if (key.StartsWith("rule.", StringComparison.Ordinal))
+                {
+                    if (values.Length > 0 && float.TryParse(values[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float number))
+                        ask.WhatIf[key.Substring(5)] = number;
+                    continue;
+                }
                 switch (key)
                 {
                     case "skins":
@@ -123,6 +141,12 @@ internal static class GunBench
                             else if (view == "front" || view == "tp") ask.Front = true;
                         }
                         break;
+                    case "reach":
+                        if (values.Length > 0) ask.Reach = values[0].ToLowerInvariant() == "none" ? Carry.None : Carry.Rule;
+                        break;
+                    case "trace":
+                        ask.Trace = values.Length > 0 && values[0].ToLowerInvariant() != "no";
+                        break;
                     case "width":
                         if (values.Length > 0 && int.TryParse(values[0], out int width)) ask.Width = Mathf.Clamp(width, 160, 1920);
                         break;
@@ -131,6 +155,8 @@ internal static class GunBench
             return ask;
         }
     }
+
+    private enum Carry { None, Rule }
 
     // ---- The run ----
 
@@ -174,6 +200,7 @@ internal static class GunBench
             HeadNearClip = GameTables.Number(PlayerMovement.TableName, "Body", "headNearClip", .05f)
         };
         EyeOffsets(out numbers.EyeUp, out numbers.EyeAhead);
+        string whatIf = Suppose(ask, ref numbers.Rules);
         // The arms ease in at the end of their reach as the game's do (PlayerBodyHands sets the same number every frame).
         float softWas = ArmIK.SoftReachFrom;
         ArmIK.SoftReachFrom = GameTables.Number(PlayerMovement.TableName, "Hands", "softReachFrom", .93f);
@@ -184,9 +211,19 @@ internal static class GunBench
         text.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} gun bench: each character stood in a gun's action with the game's own classes, the view level, "
             + "no FPSAF layer on top. off its grip = how far a palm that the clip has on the gun ends from its place there after the "
             + "arm's IK (cm), and how far its fingers' way or facing is turned from it (degrees); short = the same for a palm the "
-            + $"clip has taken off the gun (to a magazine, a pouch, a bolt: over {GunTrackBake.HandAway * 100f:0.#} cm from its place in the hold), "
+            + $"clip has taken off the gun (to a pouch, into the air: over {numbers.Rules.HoldsWithin * 100f:0.#} cm from the gun's surface), "
             + "which is as far as this body's arm goes toward where KINEMATION's arm went; straight = shoulder joint to wrist over the "
-            + $"arm's own length. '!' marks a palm on the gun over {PalmMissed * 100f:0.#} cm off its grip (the bench's own mark).");
+            + $"arm's own length. '!' marks a palm on the gun over {PalmMissed * 100f:0.#} cm off its grip (the bench's own mark). "
+            + (ask.Reach == Carry.None ? "The gun moves as the clip moves it, whatever the arms reach (reach=none)."
+                : "The gun is carried by the hold's reach rule (GunHold.Carried) with the shoulder joints where the action's clip has them, "
+                    + $"each arm as much as its hand has hold of the gun (all of it within {numbers.Rules.HoldsWithin * 100f:0.#} cm of the gun's "
+                    + $"surface, none from {numbers.Rules.TakesHoldWithin * 100f:0.#} cm): 'brought in' = how far that moved the gun from where the "
+                    + "clip has it; 'ahead of a hold' = how much of that was for a hand whose palm was not at the gun's own surface at that "
+                    + "moment (a hand on its way to the gun or from it, and one seating a magazine, whose palm is on the magazine). The rule "
+                    + "moves the gun the least way that lets the arms reach, toward the body if need be, and nothing keeps the gun out of "
+                    + "the body yet: an action brought in far is one a body cannot do as its clip has it (Docs/Features/GunHandling.md, "
+                    + "section 10), so read it beside its pictures.")
+            + whatIf);
         Directory.CreateDirectory(Folder);
         var armsByModel = new Dictionary<GameObject, GunArms>();
         Stage stage = null;
@@ -224,6 +261,28 @@ internal static class GunBench
         text.AppendLine($"({stood} actions stood, {sheets} picture sheets, {watch.Elapsed.TotalSeconds:0.0} s)");
         File.WriteAllText(ReportPath, text.ToString());
         Debug.Log($"GunBench: {stood} actions stood, {sheets} picture sheets; the numbers are in {ReportPath}.");
+    }
+
+    // The hold's rules with the numbers a request supposes instead of the table's, and a line for the report saying so.
+    private static string Suppose(Ask ask, ref GunHold.Rules rules)
+    {
+        if (ask.WhatIf.Count == 0) return "";
+        var text = new StringBuilder(" WHAT IF, for this run only:");
+        object boxed = rules;
+        foreach (var pair in ask.WhatIf)
+        {
+            var field = typeof(GunHold.Rules).GetField(pair.Key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (field == null || field.FieldType != typeof(float))
+            {
+                text.Append($" (no rule is named {pair.Key})");
+                continue;
+            }
+            text.Append($" {field.Name} = {pair.Value.ToString("0.###", CultureInfo.InvariantCulture)} (the table has "
+                + $"{((float)field.GetValue(boxed)).ToString("0.###", CultureInfo.InvariantCulture)});");
+            field.SetValue(boxed, pair.Value);
+        }
+        rules = (GunHold.Rules)boxed;
+        return text.ToString();
     }
 
     // The standing camera height the game sizes every body to (Player.prefab's CrouchPivot, as the hold check takes it).
@@ -320,6 +379,7 @@ internal static class GunBench
                         Id = id, Root = instance.transform, Animator = animator, Head = head, Right = right, Left = left, Gun = gun.transform,
                         Frame = frame, Start = pose.Gun, Set = set, Bake = bake, Body = body,
                         Slide = new SupportSlide(pose.Slide, hold != null ? hold.Gun.LeftPalm.z : 0f, numbers.SlideFade),
+                        Hold = hold, Reach = ask.Reach, HoldsWithin = numbers.Rules.HoldsWithin,
                         ShoulderReach = numbers.ShoulderReach, HeadNearClip = numbers.HeadNearClip,
                         EyeUp = numbers.EyeUp, EyeAhead = numbers.EyeAhead, HeadParts = headParts
                     };
@@ -371,8 +431,24 @@ internal static class GunBench
     private struct Posed
     {
         public float RightMiss, RightTurn, LeftMiss, LeftTurn, RightStraight, LeftStraight;
-        // The clip has this hand on the gun at this moment (its palm at its place in the hold), not away at a magazine or a bolt.
+        // The clip has this hand on the gun at this moment (its palm at the gun's surface, wherever on it), not away at a
+        // pouch or in the air.
         public bool RightOnGun, LeftOnGun;
+        // How far the reach rule moved the gun from where the clip has it (m in game), that move itself and where the clip
+        // has the gun from the eyes as the hold's pose stands them, both along the body's own axes (m in game: x right, y up,
+        // z ahead), for how fast each changes.
+        public float BroughtIn;
+        public Vector3 Brought, ClipAt;
+        // How much of that move was for a hand whose palm is not at the gun's own surface at this moment (m in game): the
+        // gun on its way to meet a hand that is coming to it, on its way back after one left, or held in for a hand that is
+        // seating a magazine.
+        public float Ahead;
+        // Each palm's gap from the gun's surface (m), how much its hand has hold of the gun (GunHold.Holds), and how straight
+        // the clip's place for the gun would have that arm before the rule moves it.
+        public float RightGap, LeftGap, RightHolds, LeftHolds, RightWould, LeftWould;
+        // How far the body's own clip has each shoulder joint and the eyes from where the hold's pose has them (m in game),
+        // before the arms are put on the gun.
+        public Vector3 RightShoulderMoved, LeftShoulderMoved, EyesMoved;
         public Quaternion CameraTurn;
     }
 
@@ -389,10 +465,15 @@ internal static class GunBench
         public GunBakes.Entry Bake;
         public HoldBody Body;
         public SupportSlide Slide;
+        // The gun's hold on this body (null for a gun whose pose could not be read: it moves as its clip moves it).
+        public GunHold Hold;
+        public Carry Reach;
+        public float HoldsWithin;
         public float ShoulderReach, HeadNearClip, EyeUp, EyeAhead;
         // The body's own head (hidden for the view from the eyes).
         public List<Renderer> HeadParts;
-        private Vector3 eyeInHead;
+        // The game's camera and the eyes themselves (HoldBody.Eyes), each as a point of the head.
+        private Vector3 eyeInHead, eyesOnly;
         private readonly Vector3[] rightDigits = new Vector3[GunArms.DigitCount], leftDigits = new Vector3[GunArms.DigitCount];
 
         /// <summary>
@@ -404,9 +485,13 @@ internal static class GunBench
         {
             ClipSampler.Sample(Bake.pose, Animator.gameObject, 0f);
             eyeInHead = Head.InverseTransformPoint(Root.TransformPoint(Body.Eyes) + Root.up * EyeUp + Root.forward * EyeAhead);
+            eyesOnly = Head.InverseTransformPoint(Root.TransformPoint(Body.Eyes));
         }
 
         public Vector3 Eyes => Head.TransformPoint(eyeInHead);
+
+        /// <summary>A point of the body's space from the gun as this body holds it, in the gun's own frame (m in game).</summary>
+        public Vector3 FromGun(Vector3 point) => Quaternion.Inverse(Start.rotation * Frame) * (point - Start.position) * Body.Scale;
 
         /// <summary>
         /// The body in <paramref name="bodyClip"/> at <paramref name="time"/>, the gun where this body holds it moved as the
@@ -418,16 +503,12 @@ internal static class GunBench
             posed.CameraTurn = Quaternion.identity;
             ClipSampler.Sample(bodyClip, Animator.gameObject, Mathf.Clamp(time, 0f, bodyClip.length));
             if (!track.Sample(time, rightDigits, leftDigits, out GunContact moment, out posed.CameraTurn)) return false;
-            // The gun's frame at the hold, in the world; then the action's move from it. The gun is its true size whatever
-            // the body's, so the move is in metres as it is.
-            Vector3 holdAt = Root.TransformPoint(Start.position);
-            Quaternion holdTurn = Root.rotation * Start.rotation * Frame;
-            Vector3 gunAt = holdAt + holdTurn * moment.GunMove;
-            Quaternion gunTurn = holdTurn * moment.GunTurn;
-            Gun.SetPositionAndRotation(gunAt, gunTurn);
-
+            posed.RightShoulderMoved = (Root.InverseTransformPoint(Right.Upper.position) - Body.Right.Shoulder) * Body.Scale;
+            posed.LeftShoulderMoved = (Root.InverseTransformPoint(Left.Upper.position) - Body.Left.Shoulder) * Body.Scale;
+            posed.EyesMoved = (Root.InverseTransformPoint(Head.TransformPoint(eyesOnly)) - Body.Eyes) * Body.Scale;
             // The plain hold's support hand is the bare gun's where the gun has such a pose (FPSBody.HoldSide).
             Vector3 leftPalm = moment.LeftPalm, leftFingers = moment.LeftFingers, leftFacing = moment.LeftFacing, leftElbow = moment.LeftElbow;
+            float leftGap = moment.LeftGap;
             var leftWays = moment.LeftDigits;
             var bare = kind == GunTrackKind.Hold ? Set.Track(GunTrackKind.HoldNoGrip) : null;
             if (bare != null && bare.Sample(0f, null, leftDigits, out GunContact open, out _))
@@ -436,14 +517,47 @@ internal static class GunBench
                 leftFingers = open.LeftFingers;
                 leftFacing = open.LeftFacing;
                 leftElbow = open.LeftElbow;
+                leftGap = open.LeftGap;
                 leftWays = open.LeftDigits;
             }
-            // On the gun: where the plain hold has that palm (the bare gun's for the support hand, as above).
-            var held = Set.Track(GunTrackKind.Hold);
-            var heldBare = Set.Track(GunTrackKind.HoldNoGrip);
-            posed.RightOnGun = held == null || Vector3.Distance(moment.RightPalm, held.right[0].palm) <= GunTrackBake.HandAway;
-            posed.LeftOnGun = held == null || Vector3.Distance(leftPalm, held.left[0].palm) <= GunTrackBake.HandAway
-                || (heldBare != null && Vector3.Distance(leftPalm, heldBare.left[0].palm) <= GunTrackBake.HandAway);
+            // On the gun: the palm at the gun's surface, wherever on it (the hold's rule: GunHold.Holds).
+            posed.RightOnGun = moment.RightGap <= HoldsWithin;
+            posed.LeftOnGun = leftGap <= HoldsWithin;
+            posed.RightGap = moment.RightGap;
+            posed.LeftGap = leftGap;
+
+            // Where the action's clip has the gun: the hold (KINEMATION's weapon bone in the body's own space) moved as the
+            // track moves it. The gun is its true size whatever the body's, so its move is in metres whatever the body's scale.
+            Quaternion holdAxes = Start.rotation * Frame;
+            var bone = new KTransform(Start.position + holdAxes * (moment.GunMove / Body.Scale), holdAxes * moment.GunTurn * Quaternion.Inverse(Frame),
+                Vector3.one);
+            // Then as this body's arms carry it: no further than the arms whose hands have hold of it reach (GunHold.Carried),
+            // the shoulder joints where the action's clip has them at this moment.
+            if (Hold != null && Reach != Carry.None)
+            {
+                var rightArm = Body.Right.At(Root.InverseTransformPoint(Right.Upper.position));
+                var leftArm = Body.Left.At(Root.InverseTransformPoint(Left.Upper.position));
+                Vector3 leftAt = Slide.Of(leftPalm);
+                posed.RightHolds = Hold.Holds(moment.RightGap);
+                posed.LeftHolds = Hold.Holds(leftGap);
+                Quaternion axes = bone.rotation * Frame;
+                posed.RightWould = rightArm.Straight(rightArm.Wrist(bone.position + axes * (moment.RightPalm / Body.Scale), axes * moment.RightFingers));
+                posed.LeftWould = leftArm.Straight(leftArm.Wrist(bone.position + axes * (leftAt / Body.Scale), axes * leftFingers));
+                var carried = Hold.Carried(rightArm, leftArm, Body.Scale, bone, moment.RightPalm, moment.RightFingers, posed.RightHolds,
+                    leftAt, leftFingers, posed.LeftHolds);
+                // What the hands at the gun's surface at this very moment need of it, nothing taken up for a hand on its way.
+                var needed = Hold.Carried(rightArm, leftArm, Body.Scale, bone, moment.RightPalm, moment.RightFingers, posed.RightOnGun ? 1f : 0f,
+                    leftAt, leftFingers, posed.LeftOnGun ? 1f : 0f);
+                posed.Ahead = Vector3.Distance(carried.position, needed.position) * Body.Scale;
+                posed.Brought = (carried.position - bone.position) * Body.Scale;
+                posed.BroughtIn = posed.Brought.magnitude;
+                posed.ClipAt = Body.FromEyes(bone.position);
+                bone = carried;
+            }
+            else posed.ClipAt = Body.FromEyes(bone.position);
+            Vector3 gunAt = Root.TransformPoint(bone.position);
+            Quaternion holdTurn = Root.rotation * holdAxes, gunTurn = Root.rotation * bone.rotation * Frame;
+            Gun.SetPositionAndRotation(gunAt, gunTurn);
             Hand(Right, false, gunAt, gunTurn, holdTurn, moment.RightPalm, moment.RightFingers, moment.RightFacing, moment.RightElbow, moment.RightDigits,
                 out posed.RightMiss, out posed.RightTurn);
             Hand(Left, true, gunAt, gunTurn, holdTurn, Slide.Of(leftPalm), leftFingers, leftFacing, leftElbow, leftWays, out posed.LeftMiss, out posed.LeftTurn);
@@ -477,13 +591,38 @@ internal static class GunBench
         bool still = kind == GunTrackKind.Hold || kind == GunTrackKind.HoldNoGrip;
         int frames = still ? 1 : track.Frames, step = Mathf.Max(1, Mathf.CeilToInt(frames / (float)MostSamples));
         Posed most = default;
-        float rightLeast = 1f, leftLeast = 1f, rightMissAt = 0f, leftMissAt = 0f, rightShort = 0f, leftShort = 0f;
+        float rightLeast = 1f, leftLeast = 1f, rightMissAt = 0f, leftMissAt = 0f, rightShort = 0f, leftShort = 0f, broughtIn = 0f, broughtInAt = 0f;
+        float ahead = 0f, aheadAt = 0f;
+        Vector3 rightShoulderMost = Vector3.zero, leftShoulderMost = Vector3.zero, eyesMost = Vector3.zero;
+        // How fast the reach rule moves the gun and how fast the clip itself does (m/s), each at its fastest between two
+        // moments measured: a rule that jumped would be far faster than the motion it follows.
+        float ruleFastest = 0f, ruleFastestAt = 0f, clipFastest = 0f, lastTime = 0f;
+        Vector3 lastBrought = Vector3.zero, lastClipAt = Vector3.zero;
+        var trace = ask.Trace ? new StringBuilder() : null;
         int samples = 0;
         for (int i = 0; i < frames; i += step)
         {
             float time = track.TimeOf(i);
             if (!one.Pose(kind, track, bodyClip, time, out Posed posed)) continue;
+            if (samples > 0 && time > lastTime)
+            {
+                float rule = Vector3.Distance(posed.Brought, lastBrought) / (time - lastTime);
+                if (rule > ruleFastest)
+                {
+                    ruleFastest = rule;
+                    ruleFastestAt = time;
+                }
+                clipFastest = Mathf.Max(clipFastest, Vector3.Distance(posed.ClipAt, lastClipAt) / (time - lastTime));
+            }
+            lastTime = time;
+            lastBrought = posed.Brought;
+            lastClipAt = posed.ClipAt;
             samples++;
+            trace?.AppendLine($"   {time:0.00}: shoulders moved R {Cm(posed.RightShoulderMoved)} L {Cm(posed.LeftShoulderMoved)} eyes {Cm(posed.EyesMoved)}; "
+                + $"gun {Cm(posed.ClipAt)} from the eyes, the rule moves it {Cm(posed.Brought)} = {posed.BroughtIn * 100f:0.0} cm "
+                + $"({posed.Ahead * 100f:0.0} ahead of a hold); right gap {posed.RightGap * 100f:0.0} holds {posed.RightHolds:0.00} asked {posed.RightWould:0.00} "
+                + $"is {posed.RightStraight:0.00} off {posed.RightMiss * 100f:0.0}; left gap {posed.LeftGap * 100f:0.0} holds {posed.LeftHolds:0.00} asked "
+                + $"{posed.LeftWould:0.00} is {posed.LeftStraight:0.00} off {posed.LeftMiss * 100f:0.0}");
             // A hand the clip has on the gun must be on it; one it has taken away goes as far as this arm reaches.
             if (!posed.RightOnGun) rightShort = Mathf.Max(rightShort, posed.RightMiss);
             else
@@ -497,6 +636,19 @@ internal static class GunBench
                 if (posed.LeftMiss > most.LeftMiss) { most.LeftMiss = posed.LeftMiss; leftMissAt = time; }
                 most.LeftTurn = Mathf.Max(most.LeftTurn, posed.LeftTurn);
             }
+            if (posed.BroughtIn > broughtIn)
+            {
+                broughtIn = posed.BroughtIn;
+                broughtInAt = time;
+            }
+            if (posed.Ahead > ahead)
+            {
+                ahead = posed.Ahead;
+                aheadAt = time;
+            }
+            if (posed.RightShoulderMoved.sqrMagnitude > rightShoulderMost.sqrMagnitude) rightShoulderMost = posed.RightShoulderMoved;
+            if (posed.LeftShoulderMoved.sqrMagnitude > leftShoulderMost.sqrMagnitude) leftShoulderMost = posed.LeftShoulderMoved;
+            if (posed.EyesMoved.sqrMagnitude > eyesMost.sqrMagnitude) eyesMost = posed.EyesMoved;
             most.RightStraight = Mathf.Max(most.RightStraight, posed.RightStraight);
             most.LeftStraight = Mathf.Max(most.LeftStraight, posed.LeftStraight);
             rightLeast = Mathf.Min(rightLeast, posed.RightStraight);
@@ -515,8 +667,23 @@ internal static class GunBench
         text.Append($", L {most.LeftMiss * 100f:0.0} cm {most.LeftTurn:0}°");
         if (!still) text.Append($" at {leftMissAt:0.00}");
         if (rightShort > 0f || leftShort > 0f) text.Append($"; away from the gun, short by at most R {rightShort * 100f:0.0} L {leftShort * 100f:0.0} cm");
+        if (broughtIn > .0005f)
+        {
+            text.Append($"; gun brought in at most {broughtIn * 100f:0.0} cm" + (still ? "" : $" at {broughtInAt:0.00}"));
+            if (!still)
+                text.Append($", ahead of a hold at most {ahead * 100f:0.0} cm at {aheadAt:0.00}, moved by the rule at most {ruleFastest * 100f:0} cm/s at "
+                    + $"{ruleFastestAt:0.00} (by the clip at most {clipFastest * 100f:0} cm/s)");
+        }
         text.Append(still ? $"; arms straight R {most.RightStraight:0.00} L {most.LeftStraight:0.00}"
             : $"; arms straight R {rightLeast:0.00}-{most.RightStraight:0.00} L {leftLeast:0.00}-{most.LeftStraight:0.00}");
+        if (!still)
+            text.Append($"; the body's own clip moves the shoulder joints at most R {Cm(rightShoulderMost)} L {Cm(leftShoulderMost)} and the eyes "
+                + $"{Cm(eyesMost)} cm from the hold's pose");
+        // Beside the tracks' report, which has the same of KINEMATION's arms: where a body's shoulders are from the gun it holds.
+        if (kind == GunTrackKind.Hold)
+            text.Append($"; shoulder joints from the gun in the gun's own frame: right {Cm(one.FromGun(one.Body.Right.Shoulder))} left "
+                + $"{Cm(one.FromGun(one.Body.Left.Shoulder))} cm, arms {one.Body.Right.Length * one.Body.Scale * 100f:0.0} and "
+                + $"{one.Body.Left.Length * one.Body.Scale * 100f:0.0} cm long");
 
         if (stage != null)
         {
@@ -536,7 +703,15 @@ internal static class GunBench
             }
         }
         text.AppendLine();
+        if (trace != null)
+        {
+            text.AppendLine("   (each moment: the gun where the clip has it, cm right, up, ahead; a palm's gap from the gun's surface in cm, how much "
+                + "it has hold, how straight the clip's place asks that arm and how straight it is, how far the palm ends off its place in cm)");
+            text.Append(trace);
+        }
     }
+
+    private static string Cm(Vector3 metres) => $"({metres.x * 100f:0.0}, {metres.y * 100f:0.0}, {metres.z * 100f:0.0})";
 
     // The moments asked for, each from every view asked for, laid in one sheet: a column to a moment, a row to a view.
     private static bool Photograph(Ask ask, Stage stage, Standing one, GunTrackKind kind, GunTrack track, AnimationClip bodyClip, List<float> times, string file)

@@ -59,6 +59,10 @@ public sealed class HoldBody
 
         internal bool Valid => Length > 1e-4f;
 
+        /// <summary>The same arm with its shoulder joint elsewhere: where the joint is at another moment (an action's clip
+        /// leans the body), for the same rules to be asked of it there.</summary>
+        internal Arm At(Vector3 shoulder) => new Arm(shoulder, Length, HandRun, PosedWrist, PosedFingers);
+
         /// <summary>The wrist for a palm whose middle is at <paramref name="palm"/>, the fingers pointing <paramref name="fingers"/>
         /// (unit): this hand's own run back from it.</summary>
         internal Vector3 Wrist(Vector3 palm, Vector3 fingers) => palm - fingers * (PalmMiddle * HandRun);
@@ -124,6 +128,50 @@ public sealed class HoldBody
 
     internal Arm Right { get; private set; }
     internal Arm Left { get; private set; }
+
+    /// <summary>
+    /// The least move that takes two points, moved together, each within its own distance of its own centre: both wrists of
+    /// the hands on one gun within their arms' reach of their shoulder joints (GunHold.Carried). Zero when both already
+    /// are. Where no place has both (the hands further apart on the gun than the two arms span), midway between the two
+    /// reaches, each missed by the same.
+    /// Checked against a search over random cases before it went in (2026-11-15): never longer than the best found.
+    /// </summary>
+    internal static Vector3 LeastMoveWithin(Vector3 first, Vector3 firstCentre, float firstReach, Vector3 second, Vector3 secondCentre, float secondReach)
+    {
+        // As moves: the move must end within firstReach of a and within secondReach of b.
+        Vector3 a = firstCentre - first, b = secondCentre - second;
+        Vector3 forFirst = Nearest(a, firstReach), forSecond = Nearest(b, secondReach);
+        // The least move for one arm that suits the other too is the least for both.
+        if (Within(forFirst, b, secondReach)) return forFirst;
+        if (Within(forSecond, a, firstReach)) return forSecond;
+        Vector3 axis = b - a;
+        float apart = axis.magnitude;
+        if (apart < 1e-6f) return firstReach <= secondReach ? forFirst : forSecond;
+        axis /= apart;
+        if (apart >= firstReach + secondReach) return a + axis * (firstReach + (apart - firstReach - secondReach) * .5f);
+        float along = (apart * apart + firstReach * firstReach - secondReach * secondReach) / (2f * apart);
+        float ring = firstReach * firstReach - along * along;
+        if (ring <= 0f) return firstReach <= secondReach ? forFirst : forSecond;
+        // Both arms at the end of their reach: on the ring the two reaches share, the point nearest to no move at all.
+        Vector3 middle = a + axis * along, toward = -middle;
+        toward -= axis * Vector3.Dot(toward, axis);
+        if (toward.sqrMagnitude < 1e-12f)
+        {
+            toward = Vector3.Cross(axis, Vector3.right);
+            if (toward.sqrMagnitude < 1e-6f) toward = Vector3.Cross(axis, Vector3.up);
+        }
+        return middle + toward.normalized * Mathf.Sqrt(ring);
+    }
+
+    // The least move that ends within `reach` of `centre` (none from inside it).
+    private static Vector3 Nearest(Vector3 centre, float reach)
+    {
+        float away = centre.magnitude;
+        return away <= reach ? Vector3.zero : centre * (1f - reach / away);
+    }
+
+    // Within a reach, to a hundredth of a millimetre.
+    private static bool Within(Vector3 move, Vector3 centre, float reach) => (move - centre).magnitude <= reach + 1e-5f;
     /// <summary>The eyes, where the camera rides.</summary>
     internal Vector3 Eyes { get; private set; }
     /// <summary>Model units to metres in game (the size the game draws the body).</summary>
