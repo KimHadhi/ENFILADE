@@ -164,7 +164,7 @@ public sealed partial class FPSBody
         // Drawn at the clip's own pace: squeezed into the gun's Draw Duration it ran at up to three times its speed and looked
         // fast-forwarded (user, 2026-11-09). The gun is ready at Draw Duration all the same, and using it then cuts the rest
         // of the draw short (CutDraw). Put away in its Holster Duration, looked over at the clip's pace.
-        gun.SetActions(Copy(entry.draw, bake.draw),
+        gun.SetActions(FromItsStart(Copy(entry.draw, bake.draw)),
             Fitted(Copy(entry.holster, bake.holster), entry.weapon.HolsterDuration), Settled(Copy(entry.inspect, bake.inspect)));
         // A gun worked by hand after every shot (a bolt, a pump) has that clip made for this body too (FPSGun.Cycle), and the
         // rules learn when in it the hands are back, to hold the next shot until then (FPSBody.MeasureCycle, WeaponCycle).
@@ -365,6 +365,16 @@ public sealed partial class FPSBody
     {
         if (action != null && action.clip != null && seconds > .01f) action.blendTime.rateScale = action.clip.length / seconds;
         return action;
+    }
+
+    // A draw is in the mix whole from the frame it is played. What lies under it is the gun's hold, which is where the draw
+    // ends, and before the draw the gun was nowhere, so there is nothing to ease it in from: eased in (KINEMATION's assets
+    // say 0.05 s) the gun began in its hold and dropped to the draw's start over the first frames (Logs/gun-actions.txt,
+    // 2026-11-15: the Herrington's draw was 0.92 of the mix, an MKR9's 0.41, on the first frame it was in it at all).
+    private static FPSAnimationAsset FromItsStart(FPSAnimationAsset draw)
+    {
+        if (draw != null) draw.blendTime.blendInTime = 0f;
+        return draw;
     }
 
     // A reload eases back into the hold over reloadSettle (user, 2026-11-08: the arms jumped from the reload to the hold).

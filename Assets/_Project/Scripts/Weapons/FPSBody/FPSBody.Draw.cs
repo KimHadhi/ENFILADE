@@ -56,7 +56,10 @@ public sealed partial class FPSBody
             aimedRecoilTurn, aimedRecoilLift);
         drawnAt = Time.time;
         drawSettle = LengthOf(assets.equipMotion);
-        convergeWeight = 0f;
+        // Where FPSAF has the upper body, the hold is on the crosshair's point from the gun's first frame: before it was
+        // drawn the gun was nowhere, so there is no turn to ease in. Eased in from 0 it turned the gun through the first
+        // 0.2 s of every draw (Logs/gun-actions.txt, 2026-11-15: 0.94 of the turn 0.21 s into the Herrington's draw).
+        convergeWeight = Framework >= .999f ? 1f : 0f;
         // The pack's own draw at its own pace (WeaponController holds the trigger back for the gun's Draw Duration).
         float drawing = held.PlayDraw(playables, bodyCamera);
         if (drawing > 0f) drawSettle = drawing;

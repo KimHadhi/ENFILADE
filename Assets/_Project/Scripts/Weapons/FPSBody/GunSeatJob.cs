@@ -17,7 +17,8 @@ using UnityEngine.Animations;
 /// not watched in play: the Animator writes its stream back onto these bones every frame, and FPSAF's blend at a draw
 /// (AnimationBlendingJob, last in the chain) writes every rig bone, these among them, on its way from the pose before the
 /// draw. A seat read back from the scene is then that blend's own last result, which starts at the old pose and so never
-/// leaves it: for a first draw that is the bare hand bone.
+/// leaves it: for a first draw that is the bare hand bone. (Since 0.9.119 the blend at a draw is ours and leaves the gun's
+/// bones alone, BodyCrossFadeJob; the Animator still writes them back every frame, so the seat stays numbers.)
 /// The bones are FPSAF's own (none of them is the body's, and nothing hangs under them), so moving them in the stream moves
 /// nothing else.
 /// </summary>

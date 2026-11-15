@@ -21,7 +21,8 @@ using UnityEngine.Playables;
 /// output lets go of the clips while they are here.
 /// It also says what the mixer is playing of a gun's own actions (Slot: each clip, how far into it the graph is, its weight
 /// in the mix), which is the one clock and the one blend the gun and the hands follow an action by (FPSBody.FeedAction), and
-/// it answers FPSAF's Pose Sampler who carries the gun, the body or the right hand (GunOnBody).
+/// it answers FPSAF's Pose Sampler who carries the gun, the body or the right hand (GunOnBody). A clip or a pose played
+/// takes its place in the mix on the frame it is played (PlayAnimation, PlayPose).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FPSBodyPlayables : FPSPlayablesController, IPlayablesController
@@ -66,6 +67,42 @@ public sealed class FPSBodyPlayables : FPSPlayablesController, IPlayablesControl
         weight = mixer.GetInputWeight(input);
         time = (float)(playing.GetTime() + Time.deltaTime * playing.GetSpeed());
         return true;
+    }
+
+    /// <summary>
+    /// KINEMATION's, and then the clip takes its place in the mix now, on the frame it is played. KINEMATION's mixers weigh
+    /// their clips once a frame, in Update, and FPSBody plays a gun's clips after that (its Update runs later in the
+    /// frame), so a clip stood at weight 0 for the frame it was played in, whatever its blend time: a drawn gun stood for
+    /// one frame in its hold, where its draw ends, before it dropped to where its draw begins (Logs/gun-actions.txt,
+    /// 2026-11-15: every draw's clip came into the mix a frame after the gun was shown). A clip with a blend-in still
+    /// starts at 0, as it should; a draw has none (FPSBody.FromItsStart).
+    /// </summary>
+    public override bool PlayAnimation(FPSAnimationAsset asset, float startTime = 0f)
+    {
+        if (!base.PlayAnimation(asset, startTime)) return false;
+        _slotMixer.Update();
+        if (asset.overrideMask != null) _overrideMixer.Update();
+        return true;
+    }
+
+    /// <summary>KINEMATION's, and the pose takes its place in the mix now, as a clip does (PlayAnimation).</summary>
+    public override bool PlayPose(FPSAnimationAsset asset)
+    {
+        if (!base.PlayPose(asset)) return false;
+        _overlayPoseMixer.Update();
+        return true;
+    }
+
+    /// <summary>
+    /// KINEMATION's, and a clip stopped with no blend-out leaves the mix now, for the same reason a played one comes into it
+    /// now (PlayAnimation): a gun put away mid-reload left its reload on the arms for the next gun's first frame.
+    /// </summary>
+    public override void StopAnimation(float blendOutTime)
+    {
+        base.StopAnimation(blendOutTime);
+        if (!Mathf.Approximately(blendOutTime, 0f)) return;
+        _slotMixer.Update();
+        _overrideMixer.Update();
     }
 
     public override bool InitializeController()

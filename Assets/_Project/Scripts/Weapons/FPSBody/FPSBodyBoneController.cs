@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using KINEMATION.FPSAnimationFramework.Runtime.Core;
 using KINEMATION.FPSAnimationFramework.Runtime.Layers.PoseSamplerLayer;
 using KINEMATION.FPSAnimationFramework.Runtime.Playables;
+using KINEMATION.Shared.KAnimationCore.Runtime.Core;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -22,8 +23,13 @@ using UnityEngine.Playables;
 /// playables, made once. A draw puts the drawn gun's kept layers into it, each a fresh copy, and does again what setting
 /// them up did outside them: the bones it moved, the gun's seat in the hands (kept as numbers and put in the animation
 /// stream every frame, GunSeatJob) and the gun's pose clip and mask on FPSAF's playables. So every layer of a
-/// draw starts where KINEMATION's new one started, and the graph keeps its shape. KINEMATION's order and timing stay: the
-/// blend from the last pose, the entity update, the layer links that wait for the new layers.
+/// draw starts where KINEMATION's new one started, and the graph keeps its shape.
+/// A change of gun takes effect on the frame it happens: the drawn gun's layers go in as it is drawn, and the body eases
+/// into their pose from where the animation left it on the frame before (BodyCrossFadeJob, the last of the chain). The
+/// gun's own bones are no part of that ease: a gun is where its hold and its draw have it from its first frame.
+/// KINEMATION's own blend eased every bone of the rig, the gun's among them, from the last gun's pose, and put the new
+/// layers in a frame after the draw; it still stands after ours and is never asked for (only a body that can't keep its
+/// layers falls back to it). The entity update and the layer links are KINEMATION's as they were.
 /// With no gun held the chain stays, its layers at weight 0, which leaves the body's bones as they are.
 /// </summary>
 public sealed class FPSBodyBoneController : FPSBoneController
@@ -39,6 +45,9 @@ public sealed class FPSBodyBoneController : FPSBoneController
         // (GunSeatJob puts them in the stream there).
         public Transform weaponBone, weaponBoneRight, weaponBoneLeft;
         public Pose weaponSeat, rightSeat, leftSeat;
+        // The bone the gun hangs from (the Pose Sampler's IK weapon bone): with the three above, the gun's own bones,
+        // which the body's cross-fade leaves alone (FadeWithout).
+        public Transform ikWeaponBone;
 
         // What KINEMATION's new layers left in the scene and on the playables as they were made at a draw.
         public void Replay(IPlayablesController playables)
@@ -72,12 +81,16 @@ public sealed class FPSBodyBoneController : FPSBoneController
 
     private readonly Dictionary<FPSAnimatorProfile, Chain> chains = new();
     // The chain the layers run in: FPSAF's IK targets (its virtual elements), the seat, one playable per layer in the
-    // profile's order, FPSAF's blend over the last.
+    // profile's order, the body's cross-fade over the last (chainEnd), then FPSAF's own blend, left idle, and its output.
     private readonly List<AnimationScriptPlayable> slots = new();
     private readonly List<Type> slotTypes = new();
-    private AnimationScriptPlayable seatPlayable;
+    private AnimationScriptPlayable seatPlayable, chainEnd;
     private GunSeatJob seat;
     private Transform seatWeapon, seatRight, seatLeft;
+    // The body's cross-fade at a change of gun, and the gun's own bones it was made without.
+    private AnimationScriptPlayable fadePlayable;
+    private BodyCrossFadeJob fade;
+    private Transform fadeGun, fadeWeapon, fadeRight, fadeLeft;
     private HeldCalls held;
     // A layer's data couldn't be read or written as its own type here (JobType): this body holds its guns KINEMATION's way.
     private bool fallback;
@@ -94,14 +107,17 @@ public sealed class FPSBodyBoneController : FPSBoneController
         if (chain != null && slots.Count == 0)
         {
             BuildSlots(chain.fresh);
+            FadeWithout(chain);
             Seat(chain, false);
             Quiet();
         }
     }
 
     /// <summary>
-    /// A gun drawn: KINEMATION's LinkAnimatorProfile as it is, its layers made by HoldLayers. The blend from the pose so far
-    /// is cached at once and the layers go in on the next frame, or at once with nothing held before or no blend.
+    /// A gun drawn (KINEMATION's LinkAnimatorProfile): its layers go in now (HoldLayers), on the frame the gun's model is
+    /// shown, and the body eases into their pose from where it was on the frame before, over the profile's blend time; at
+    /// once with nothing held before or no blend time, which is KINEMATION's rule. KINEMATION's waited a frame for its
+    /// blend to remember the pose, and for that frame the last gun's layers held the new gun (BodyCrossFadeJob).
     /// </summary>
     public void Hold(FPSAnimatorProfile newProfile)
     {
@@ -122,23 +138,15 @@ public sealed class FPSBodyBoneController : FPSBoneController
             return;
         }
         _newProfile = newProfile;
-        if (_activeProfile == null || Mathf.Approximately(newProfile.blendInTime, 0f))
-        {
-            HoldLayers();
-            _blendingJob.cachePose = false;
-            _blendingJob.blendTime = 0f;
-            _blendingPlayable.SetJobData(_blendingJob);
-            return;
-        }
-        var job = _blendingPlayable.GetJobData<AnimationBlendingJob>();
-        _blendingJob.cachePose = true;
-        job.cachePose = true;
-        job.blendTime = newProfile.blendInTime;
-        job.easeMode = newProfile.easeMode;
-        _blendingPlayable.SetJobData(job);
+        bool eased = _activeProfile != null && !Mathf.Approximately(newProfile.blendInTime, 0f);
+        HoldLayers();
+        Fade(eased ? newProfile.blendInTime : 0f, newProfile.easeMode);
     }
 
-    /// <summary>The gun put away: KINEMATION's UnlinkAnimatorProfile as it is, its layers let go by LetGoLayers.</summary>
+    /// <summary>
+    /// The gun put away (KINEMATION's UnlinkAnimatorProfile): its layers are let go now (LetGoLayers) and the body eases
+    /// out of their pose, over the profile's blend-in time as KINEMATION's own does; at once with no blend-out time.
+    /// </summary>
     public void LetGo()
     {
         if (fallback)
@@ -148,35 +156,24 @@ public sealed class FPSBodyBoneController : FPSBoneController
         }
         if (_activeProfile == null) return;
         _newProfile = null;
+        LetGoLayers();
         if (Mathf.Approximately(_activeProfile.blendOutTime, 0f))
         {
+            Fade(0f, _activeProfile.easeMode);
             _activeProfile = null;
-            LetGoLayers();
-            _blendingJob.cachePose = false;
-            _blendingJob.blendTime = 0f;
-            _blendingPlayable.SetJobData(_blendingJob);
             return;
         }
-        var job = _blendingPlayable.GetJobData<AnimationBlendingJob>();
-        _blendingJob.cachePose = true;
-        job.cachePose = true;
-        job.blendTime = _activeProfile.blendInTime;
-        _blendingPlayable.SetJobData(job);
+        Fade(_activeProfile.blendInTime, _activeProfile.easeMode);
     }
 
-    // KINEMATION's UpdateController, with its layers made and let go by HoldLayers and LetGoLayers.
+    // KINEMATION's UpdateController without its wait for a pose to be remembered: a gun's layers go in and out as it is
+    // drawn and put away (Hold, LetGo).
     public override void UpdateController()
     {
         if (fallback)
         {
             base.UpdateController();
             return;
-        }
-        if (_linkLayers)
-        {
-            if (_newProfile == null) LetGoLayers();
-            else HoldLayers();
-            _linkLayers = false;
         }
         int count = _animationLayers.Count;
         for (int i = 0; i < count; i++) _animationLayers[i].job.OnPreGameThreadUpdate();
@@ -198,7 +195,12 @@ public sealed class FPSBodyBoneController : FPSBoneController
         chains.Clear();
         _animationLayers?.Clear();
         DropSlots();
+        DropFade();
     }
+
+    // Should the body go without Release (it is FPSBodyAnimator's to call), the cross-fade's native data still goes, its
+    // playable first.
+    private void OnDestroy() => DropFade();
 
     // KINEMATION's LinkAnimationLayers, making nothing: what setting the drawn gun's layers up did outside them is done
     // again, then fresh copies of its kept layers, told which gun they hold (UpdateEntity, as KINEMATION's new ones were),
@@ -224,6 +226,7 @@ public sealed class FPSBodyBoneController : FPSBoneController
         if (Fits(jobs))
             for (int i = 0; i < count; i++) JobType.Of(slotTypes[i]).write(slots[i], jobs[i]);
         else BuildSlots(jobs);
+        FadeWithout(chain);
         Seat(chain, true);
         _animationLayers.Clear();
         for (int i = 0; i < count; i++) _animationLayers.Add(new AnimationLayer { job = jobs[i], playable = slots[i] });
@@ -285,6 +288,7 @@ public sealed class FPSBodyBoneController : FPSBoneController
                     chain.weaponBone = _rigComponent.GetRigTransform(sampler.weaponBone);
                     chain.weaponBoneRight = _rigComponent.GetRigTransform(sampler.weaponBoneRight);
                     chain.weaponBoneLeft = _rigComponent.GetRigTransform(sampler.weaponBoneLeft);
+                    chain.ikWeaponBone = _rigComponent.GetRigTransform(sampler.ikWeaponBone);
                     chain.weaponSeat = SeatAt(chain.weaponBone, data.Owner.TransformPoint(sampler.defaultWeaponPose.position),
                         data.Owner.rotation * sampler.defaultWeaponPose.rotation);
                     chain.rightSeat = SeatOf(chain.weaponBoneRight);
@@ -390,18 +394,83 @@ public sealed class FPSBodyBoneController : FPSBoneController
             slotTypes.Add(job.GetType());
             below = playable;
         }
-        _blendingPlayable.ConnectInput(0, below, 0, 1f);
-        _proceduralOutput.SetSourcePlayable(_blendingPlayable);
+        chainEnd = below;
+        LinkEnd();
     }
 
     private void DropSlots()
     {
         if (_blendingPlayable.IsValid() && _blendingPlayable.GetInput(0).IsValid()) _blendingPlayable.DisconnectInput(0);
+        if (fadePlayable.IsValid() && fadePlayable.GetInput(0).IsValid()) fadePlayable.DisconnectInput(0);
         foreach (var slot in slots)
             if (slot.IsValid()) slot.Destroy();
         slots.Clear();
         slotTypes.Clear();
         if (seatPlayable.IsValid()) seatPlayable.Destroy();
+        chainEnd = default;
+    }
+
+    // The end of the chain: the last layer, the body's cross-fade once it is made, FPSAF's own blend (never asked for on
+    // this body, so it passes the pose on as it is: BodyCrossFadeJob), FPSAF's output.
+    private void LinkEnd()
+    {
+        if (!chainEnd.IsValid()) return;
+        if (_blendingPlayable.GetInput(0).IsValid()) _blendingPlayable.DisconnectInput(0);
+        if (fadePlayable.IsValid())
+        {
+            if (fadePlayable.GetInput(0).IsValid()) fadePlayable.DisconnectInput(0);
+            fadePlayable.ConnectInput(0, chainEnd, 0, 1f);
+            _blendingPlayable.ConnectInput(0, fadePlayable, 0, 1f);
+        }
+        else _blendingPlayable.ConnectInput(0, chainEnd, 0, 1f);
+        _proceduralOutput.SetSourcePlayable(_blendingPlayable);
+    }
+
+    // The body's cross-fade, on every bone of the rig but the gun's own: the bone the gun hangs from with FPSAF's hand
+    // targets under it, and the three bones the Pose Sampler seats the gun by (BodyCrossFadeJob says why). The eyes it
+    // keeps the gun's place from are FPSAF's camera element, which FPSBody puts on the body's eyes. Made once per body, and
+    // again only for a gun whose bones are other ones than the last gun's, as the seat is bound.
+    private void FadeWithout(Chain chain)
+    {
+        if (fadePlayable.IsValid() && chain.ikWeaponBone == fadeGun && chain.weaponBone == fadeWeapon
+            && chain.weaponBoneRight == fadeRight && chain.weaponBoneLeft == fadeLeft) return;
+        DropFade();
+        fadeGun = chain.ikWeaponBone;
+        fadeWeapon = chain.weaponBone;
+        fadeRight = chain.weaponBoneRight;
+        fadeLeft = chain.weaponBoneLeft;
+        var body = new List<Transform>();
+        foreach (var bone in _rigComponent.GetRigTransforms())
+        {
+            if (bone == null || bone == fadeWeapon || bone == fadeRight || bone == fadeLeft) continue;
+            if (fadeGun != null && bone.IsChildOf(fadeGun)) continue;
+            body.Add(bone);
+        }
+        fade = new BodyCrossFadeJob(_layerJobData.animator, body, fadeGun, _rigComponent.GetRigTransform(FPSBodyRig.CameraIndex));
+        fadePlayable = AnimationScriptPlayable.Create(_playablesController.GetPlayableGraph(), fade, 1);
+        LinkEnd();
+    }
+
+    private void DropFade()
+    {
+        if (fadePlayable.IsValid())
+        {
+            if (_blendingPlayable.IsValid() && _blendingPlayable.GetInput(0).IsValid()) _blendingPlayable.DisconnectInput(0);
+            if (fadePlayable.GetInput(0).IsValid()) fadePlayable.DisconnectInput(0);
+            fadePlayable.Destroy();
+        }
+        fade.Dispose();
+        fade = default;
+    }
+
+    // From the next frame the animation makes, the body eases into the pose the layers have then, from where it was on
+    // the frame before, over this long (0: it takes the pose as it is, and an ease under way ends).
+    private void Fade(float seconds, EaseMode easing)
+    {
+        if (!fadePlayable.IsValid()) return;
+        var job = fadePlayable.GetJobData<BodyCrossFadeJob>();
+        job.Begin(seconds, easing);
+        fadePlayable.SetJobData(job);
     }
 
     // The seat on a gun's Pose Sampler bones (bound again only when they are other bones than the last gun's), with this
