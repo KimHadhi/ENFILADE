@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using KINEMATION.Shared.KAnimationCore.Runtime.Core;
 using UnityEngine;
 
@@ -14,10 +13,12 @@ using UnityEngine;
 /// (KINEMATION's are 9.5 cm) left the middle of the palm 2 cm short; and the fingers were our shared shapes, about 20 degrees
 /// per joint off the clips' grip (11 to 38 by gun), the trigger hand's fingertips flattened besides (HandGrip.KeepHuman).
 /// - The gun: in the hold it stays where FPSAF holds it (its eyes-fitted pose, sights, sway, recoil). Through a clip of the
-///   gun's own, KINEMATION's clip plays on a hidden copy of its arms at the same moment (GunArms); how it moves the gun from
-///   where its pose clip holds it, in the gun's own frame, goes onto the gun as this body holds it from the eyes (the gun's
-///   own learnt hold, FPSGun.HoldFromEyes), so a draw comes up into the hold and a reload moves the gun as KINEMATION's
-///   animators made it.
+///   gun's own, that clip's moment is read from the gun's tracks (GunTrackSet: KINEMATION's clip as numbers, read once in
+///   the editor on KINEMATION's own arms); how it moves the gun from where its pose clip holds it, in the gun's own frame,
+///   goes onto the gun as this body holds it from the eyes (the gun's own learnt hold, FPSGun.HoldFromEyes), so a draw
+///   comes up into the hold and a reload moves the gun as KINEMATION's animators made it. Until 0.9.117 the game played
+///   KINEMATION's clip on a hidden copy of those arms every frame to read the same (GunArms): a second player of the clip
+///   beside the animation's own, which twice went wrong in builds only (ClipSampler's notes).
 /// - The hands: where each palm is on the gun (the pose clip's for the hold, the playing clip's moment for the rest), the way
 ///   the fingers point and the palm faces, and each finger joint's way (GunArms.Digits). PlayerBodyHands puts this body's
 ///   palms there by IK (HoldGunContacts) and its fingers in the clip's grip (GunFingers, HandGrip.WearDigits), so a hand on
@@ -36,7 +37,7 @@ using UnityEngine;
 /// </summary>
 public sealed partial class FPSBody
 {
-    [SerializeField, Tooltip("Reloads hold the gun and put the palms where KINEMATION's own clip has them (GunArms). Off: the remade "
+    [SerializeField, Tooltip("Reloads hold the gun and put the palms where KINEMATION's own clip has them (the gun's tracks). Off: the remade "
         + "clip alone, with the gun kept in the right hand.")]
     private bool reloadContacts = true;
     [SerializeField, Tooltip("The plain hold (standing, aiming, walking, sprinting), the draw, the holster and the look over the gun "
@@ -62,12 +63,10 @@ public sealed partial class FPSBody
         + "was shot while the hand works the bolt, as Rainbow Six Siege's guns stay on the sight through their kick. 1: as at the hip.")]
     private float aimedCycleMove = .25f;
 
-    // A pose clip holds the gun in both hands when the support palm is this close to the weapon bone (m). The editor's reading
-    // of the guns' actions asks the same of a pose (GunTrackBake).
+    // A pose clip holds the gun in both hands when the support palm is this close to the weapon bone (m): asked once, as the
+    // editor reads the guns' actions, and kept with them (GunTrackBake, GunTrackSet.holds).
     internal const float PoseReach = .8f;
 
-    // One hidden copy per KINEMATION arms model the guns' clips are made for; null where a model lacks the bones.
-    private readonly Dictionary<GameObject, GunArms> gunArms = new();
     // The gun's own clip followed now (a reload, a draw, a holster, a look over the gun): its moment, and the buffers its
     // finger ways are read into.
     private GunContact contact;
@@ -106,9 +105,9 @@ public sealed partial class FPSBody
         float dt = Time.deltaTime;
         bool playing = false, settling = false;
         // The bolt or pump worked after a shot moves the gun out of the hold as a reload does, so the reload's switch has it.
-        if (rig != null && eyes != null && held.ContactClip(out AnimationClip clip, out float clipTime, out settling)
+        if (rig != null && eyes != null && held.ContactTrack(out GunTrack track, out float clipTime, out settling)
             && (held.ContactIsReload || held.ContactIsCycle ? reloadContacts : holdContacts)
-            && SampleContact(held, clip, clipTime, out GunContact now))
+            && PoseHolds(held) && track.Sample(clipTime, clipRightDigits, clipLeftDigits, out GunContact now, out _))
         {
             contact = now;
             hasContact = true;
@@ -276,76 +275,54 @@ public sealed partial class FPSBody
         return true;
     }
 
-    // The gun's plain hold on KINEMATION's arms, read once per gun: its pose clip's palms and fingers, and its no-grip pose's.
+    // The gun's plain hold on KINEMATION's arms, from its tracks, once per gun: its pose clip's palms, elbows and fingers,
+    // and its no-grip pose's.
     private bool HoldContactOf(FPSGun gun)
     {
         if (gun.HoldContactTried) return gun.HasHoldContact;
         gun.HoldContactTried = true;
-        var arms = ArmsFor(gun);
-        if (arms == null || !PoseHolds(gun, arms)) return false;
-        gun.HasHoldContact = ReadHold(arms, gun.Entry.sourcePose, gun, ref gun.HoldContact);
-        var noGrip = gun.Entry.sourcePoseNoGrip;
-        if (gun.HasHoldContact && noGrip != null) gun.HasHoldContactNoGrip = ReadHold(arms, noGrip, gun, ref gun.HoldContactNoGrip);
+        if (!PoseHolds(gun)) return false;
+        gun.HasHoldContact = ReadHold(gun.Tracks.Track(GunTrackKind.Hold), ref gun.HoldContact);
+        if (gun.HasHoldContact) gun.HasHoldContactNoGrip = ReadHold(gun.Tracks.Track(GunTrackKind.HoldNoGrip), ref gun.HoldContactNoGrip);
         // Its grips no further back than KINEMATION's support hand on the bare handguard (GunAttachments.SeatGrips).
         if (gun.HasHoldContact)
             gun.SeatGrips(rig.IkWeaponBone, gun.HasHoldContactNoGrip ? gun.HoldContactNoGrip.LeftPalm : gun.HoldContact.LeftPalm);
         return gun.HasHoldContact;
     }
 
-    private static bool ReadHold(GunArms arms, AnimationClip pose, FPSGun gun, ref GunContact into)
+    // A pose's track as a hold: both palms on the gun as that pose holds it, each elbow's way in that gun's frame, and the
+    // finger ways in arrays the hold keeps (both hands' or neither's, as a hold was always read).
+    private static bool ReadHold(GunTrack pose, ref GunContact into)
     {
-        if (!arms.Sample(pose, 0f)) return false;
-        arms.Gun(gun.Frame, out Vector3 at, out Quaternion turn);
-        Quaternion toGun = Quaternion.Inverse(turn);
-        into.GunMove = Vector3.zero;
-        into.GunTurn = Quaternion.identity;
-        if (!arms.Palm(false, at, toGun, out into.RightPalm, out into.RightFingers, out into.RightFacing)
-            || !arms.Palm(true, at, toGun, out into.LeftPalm, out into.LeftFingers, out into.LeftFacing)) return false;
-        into.RightDigits ??= new Vector3[GunArms.DigitCount];
-        into.LeftDigits ??= new Vector3[GunArms.DigitCount];
-        if (!arms.Digits(false, into.RightDigits) || !arms.Digits(true, into.LeftDigits)) into.RightDigits = into.LeftDigits = null;
-        arms.ElbowWay(false, toGun, out into.RightElbow);
-        arms.ElbowWay(true, toGun, out into.LeftElbow);
+        if (pose == null) return false;
+        var right = into.RightDigits ?? new Vector3[GunArms.DigitCount];
+        var left = into.LeftDigits ?? new Vector3[GunArms.DigitCount];
+        if (!pose.Sample(0f, right, left, out GunContact read, out _)) return false;
+        // A track keeps the elbows in the frame of the gun as the gun's pose clip holds it; a hold's are in the frame of the
+        // gun as this very pose holds it, which is another only for a no-grip pose that holds the gun a little otherwise.
+        Quaternion toOwn = Quaternion.Inverse(read.GunTurn);
+        read.RightElbow = toOwn * read.RightElbow;
+        read.LeftElbow = toOwn * read.LeftElbow;
+        read.GunMove = Vector3.zero;
+        read.GunTurn = Quaternion.identity;
+        if (read.RightDigits == null || read.LeftDigits == null) read.RightDigits = read.LeftDigits = null;
+        into = read;
         return true;
     }
 
-    // Where the gun's pose clip holds it on KINEMATION's arms, measured once per gun, and whether that is a hold at all: the
-    // support palm is within PoseReach of the weapon bone (a handguard is under 0.6 m from it). If the clip never took on the
-    // copy, its rest pose would hold the arms out wide, and following that would throw the hands off the gun; the gun's
-    // clips then stay on the remade ones.
-    private bool PoseHolds(FPSGun gun, GunArms arms)
+    // Whether the gun's own clips can be followed at all: it has tracks, and its pose clip holds it in both hands (the
+    // support palm within PoseReach of the weapon bone, asked as the tracks were read: a handguard is under 0.6 m from it).
+    // If a pose never took on KINEMATION's arms, their rest pose would hold the arms out wide, and following that would
+    // throw the hands off the gun; the gun's clips then stay on the remade ones. Said once for a gun that can't.
+    private bool PoseHolds(FPSGun gun)
     {
-        if (!gun.HasContactPose)
-        {
-            if (gun.Entry.sourcePose == null || !arms.Sample(gun.Entry.sourcePose, 0f)) return false;
-            arms.Gun(gun.Frame, out Vector3 posePosition, out Quaternion poseRotation);
-            bool holds = arms.Palm(true, posePosition, Quaternion.Inverse(poseRotation), out Vector3 support, out _, out _)
-                && support.magnitude < PoseReach;
-            if (!holds) Report($"KINEMATION's arms didn't take {gun.name}'s pose clip ({gun.Entry.sourcePose.name}); its hands stay on the remade clips alone.");
-            gun.SetContactPose(posePosition, poseRotation, holds);
-        }
-        return gun.ContactPoseHolds;
-    }
-
-    // The clip's moment on the gun's arms: its move and turn from the pose clip's hold, the palms on the gun and the fingers.
-    private bool SampleContact(FPSGun gun, AnimationClip clip, float time, out GunContact sample)
-    {
-        sample = default;
-        var arms = ArmsFor(gun);
-        if (arms == null || clip == null || !PoseHolds(gun, arms) || !arms.Sample(clip, time)) return false;
-        arms.Gun(gun.Frame, out Vector3 at, out Quaternion turn);
-        Quaternion fromPose = Quaternion.Inverse(gun.ContactPoseRotation), toGun = Quaternion.Inverse(turn);
-        sample.GunMove = fromPose * (at - gun.ContactPosePosition);
-        sample.GunTurn = fromPose * turn;
-        if (!arms.Palm(false, at, toGun, out sample.RightPalm, out sample.RightFingers, out sample.RightFacing)
-            || !arms.Palm(true, at, toGun, out sample.LeftPalm, out sample.LeftFingers, out sample.LeftFacing)) return false;
-        sample.RightDigits = arms.Digits(false, clipRightDigits) ? clipRightDigits : null;
-        sample.LeftDigits = arms.Digits(true, clipLeftDigits) ? clipLeftDigits : null;
-        // The elbows in the frame of the gun as the pose clip holds it, as the hold's are: KINEMATION's arms bend from their
-        // shoulders, which don't move with the gun.
-        arms.ElbowWay(false, fromPose, out sample.RightElbow);
-        arms.ElbowWay(true, fromPose, out sample.LeftElbow);
-        return true;
+        if (gun.TracksHold) return true;
+        if (gun.ToldNoHold) return false;
+        gun.ToldNoHold = true;
+        Report(gun.Tracks == null
+            ? $"{gun.name} has no tracks of its own clips (ENFILADE → 총 → 총 동작 굽기); its hands stay on the remade clips alone."
+            : $"{gun.name}'s pose clip is no two-handed hold on KINEMATION's arms; its hands stay on the remade clips alone.");
+        return false;
     }
 
     // ---- When a gun worked by hand can fire again (WeaponCycle) ----
@@ -357,10 +334,10 @@ public sealed partial class FPSBody
 
     /// <summary>
     /// Once per gun worked by hand after every shot: the moment in KINEMATION's clip of the action from which both palms stay
-    /// where the gun's pose clip holds them, read on KINEMATION's own arms (GunArms, as the contacts are), so the rules hold the
-    /// next shot until the hands are back (WeaponCycle) and the clip is never cut short. The same clip on the same arms on every
-    /// PC gives every PC the same moment. FPSBodyAssets.Gun.fireReady sets it by hand instead; without the arms, the clip's end
-    /// as it eases into the hold. Measured Kar98k and L96X 1.27 s, KXG12 0.5 s (2026-11-13, from the clips' hand targets).
+    /// where the gun's pose clip holds them, read from the gun's tracks (as the contacts are), so the rules hold the next shot
+    /// until the hands are back (WeaponCycle) and the clip is never cut short. The same asset on every PC gives every PC the
+    /// same moment. FPSBodyAssets.Gun.fireReady sets it by hand instead; without the track, the clip's end as it eases into
+    /// the hold. Measured Kar98k and L96X 1.27 s, KXG12 0.5 s (2026-11-13, from the clips' hand targets).
     /// </summary>
     private void MeasureCycle(FPSGun gun)
     {
@@ -373,58 +350,41 @@ public sealed partial class FPSBody
             return;
         }
         float ready = Mathf.Max(0f, clip.length - gun.CycleSettle);
-        var arms = ArmsFor(gun);
-        if (arms != null && PoseHolds(gun, arms) && arms.Sample(gun.Entry.sourcePose, 0f))
+        if (PoseHolds(gun))
         {
-            arms.Gun(gun.Frame, out Vector3 poseAt, out Quaternion poseTurn);
-            Quaternion toPose = Quaternion.Inverse(poseTurn);
-            if (arms.Palm(false, poseAt, toPose, out Vector3 poseRight, out _, out _) && arms.Palm(true, poseAt, toPose, out Vector3 poseLeft, out _, out _))
-            {
-                float back = 0f, farthest = 0f;
-                bool read = true;
-                for (float time = 0f; time <= clip.length + 1e-4f; time += CycleStep)
-                {
-                    if (!arms.Sample(clip, Mathf.Min(time, clip.length))) { read = false; break; }
-                    arms.Gun(gun.Frame, out Vector3 at, out Quaternion turn);
-                    Quaternion toGun = Quaternion.Inverse(turn);
-                    if (!arms.Palm(false, at, toGun, out Vector3 right, out _, out _) || !arms.Palm(true, at, toGun, out Vector3 left, out _, out _))
-                    {
-                        read = false;
-                        break;
-                    }
-                    float away = Mathf.Max(Vector3.Distance(right, poseRight), Vector3.Distance(left, poseLeft));
-                    farthest = Mathf.Max(farthest, away);
-                    // The last moment a hand was still off the gun's hold: from the next sample on, both stay on it.
-                    if (away >= CycleBack) back = Mathf.Min(time + CycleStep, clip.length);
-                }
-                if (read) ready = farthest < CycleAway ? 0f : back;
-                else Report($"KINEMATION's arms couldn't play {gun.name}'s action ({clip.name}); its next shot waits for the clip's end.");
-            }
+            if (HandsBack(gun.Tracks.Track(GunTrackKind.Cycle), gun.Tracks.Track(GunTrackKind.Hold), out float back)) ready = back;
+            else Report($"{gun.name}'s action ({clip.name}) has no track; its next shot waits for the clip's end.");
         }
         WeaponCycle.Set(gun.Data, ready / rate);
     }
 
-    private GunArms ArmsFor(FPSGun gun)
+    /// <summary>
+    /// When in a worked action both palms are back where the gun's pose holds them and stay there (s into the clip): 0 for a
+    /// clip that takes neither palm off its place (a recoil clip works no action). False without the two tracks. The
+    /// editor's report of the tracks asks the same, so what the rules wait for can be read there (Logs/gun-tracks.txt).
+    /// </summary>
+    internal static bool HandsBack(GunTrack action, GunTrack hold, out float ready)
     {
-        var prefab = assets != null ? gun.Entry.ArmsOr(assets.armsModel) : null;
-        if (prefab == null) return null;
-        // A model without the bones is kept as null, so it is tried once.
-        if (!gunArms.TryGetValue(prefab, out var arms)) gunArms[prefab] = arms = GunArms.Make(prefab);
-        return arms;
+        ready = 0f;
+        if (action == null || hold == null || !hold.Sample(0f, null, null, out GunContact pose, out _)) return false;
+        float back = 0f, farthest = 0f;
+        for (float time = 0f; time <= action.length + 1e-4f; time += CycleStep)
+        {
+            if (!action.Sample(Mathf.Min(time, action.length), null, null, out GunContact at, out _)) return false;
+            float away = Mathf.Max(Vector3.Distance(at.RightPalm, pose.RightPalm), Vector3.Distance(at.LeftPalm, pose.LeftPalm));
+            farthest = Mathf.Max(farthest, away);
+            // The last moment a hand was still off the gun's hold: from the next sample on, both stay on it.
+            if (away >= CycleBack) back = Mathf.Min(time + CycleStep, action.length);
+        }
+        ready = farthest < CycleAway ? 0f : back;
+        return true;
     }
 
-    // The body went: nothing is being followed. The copies of the arms stay for the next body.
+    // The body went: nothing is being followed.
     private void ForgetContacts()
     {
         contactGun = null;
         contactWeight = holdContactWeight = 0f;
         hasContact = false;
-    }
-
-    private void ReleaseContacts()
-    {
-        ForgetContacts();
-        foreach (var arms in gunArms.Values) arms?.Release();
-        gunArms.Clear();
     }
 }

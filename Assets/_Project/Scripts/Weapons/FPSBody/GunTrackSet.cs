@@ -42,7 +42,8 @@ public struct GunTrackHand
 /// are on the gun, how each finger joint points, and how the clip turns the camera. Everything is in the gun's own frame
 /// (the gun model's: KINEMATION's weapon bone turned by the gun's rotationOffset), in metres, so one track fits every
 /// body: where a body holds the gun is its hold's to say (GunHold), and its arms reach the palms' places by IK.
-/// The frames are the clip's own (frame i at i / frameRate seconds, the last at the clip's end), not a resampling.
+/// The frames are the clip's own (frame i at i / frameRate seconds, the last at the clip's end) and, for a clip of fewer
+/// than 60 a second, evenly spaced moments between them: every frame the animators keyed is there as it is.
 /// </summary>
 [Serializable]
 public sealed class GunTrack

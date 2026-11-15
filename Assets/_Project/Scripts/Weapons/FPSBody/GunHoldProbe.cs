@@ -90,7 +90,7 @@ internal static class GunHoldProbe
             + $"Rules: no arm straighter than {rules.ReachMost:0.00}; a handgun's trigger arm no more folded than {rules.BendLeast:0.00}; a stock's "
             + $"butt on the body's own shoulder, pressed up to {rules.StockPress * 100f:0.#} into it; the support hand no nearer the trigger hand "
             + $"than {rules.SupportNearest * 100f:0.#}; a stocked gun's trigger wrist at least {rules.WristUnderShoulder * 100f:0.#} under its shoulder joint.");
-        var armsByModel = new Dictionary<GameObject, GunArms>();
+        var tracks = GunTracks.Instance;
         var guns = new Gun[assets.guns.Length];
         var spreads = new Spread[assets.guns.Length];
         try
@@ -99,7 +99,7 @@ internal static class GunHoldProbe
             text.AppendLine("== the guns as things to hold (the gun's own frame: x right, y up, z along the barrel)");
             for (int i = 0; i < assets.guns.Length; i++)
             {
-                guns[i] = GunOf(assets, assets.guns[i], rules, armsByModel);
+                guns[i] = GunOf(assets.guns[i], rules, tracks);
                 spreads[i] = new Spread();
                 Describe(assets.guns[i], guns[i], text);
             }
@@ -120,7 +120,6 @@ internal static class GunHoldProbe
         }
         finally
         {
-            foreach (var arms in armsByModel.Values) arms?.ReleaseNow();
             GunHandles.Forget();
         }
         Directory.CreateDirectory(Path.GetDirectoryName(ReportPath));
@@ -137,7 +136,7 @@ internal static class GunHoldProbe
     }
 
     // The gun's hold, from a copy of its model as a body wears it (FPSBody.AddGun reads the handles the same way).
-    private static Gun GunOf(FPSBodyAssets assets, in FPSBodyAssets.Gun entry, in GunHold.Rules rules, Dictionary<GameObject, GunArms> armsByModel)
+    private static Gun GunOf(in FPSBodyAssets.Gun entry, in GunHold.Rules rules, GunTracks tracks)
     {
         var gun = default(Gun);
         if (entry.weapon == null || entry.prefab == null) return gun;
@@ -149,7 +148,8 @@ internal static class GunHoldProbe
             copy.transform.localScale = Vector3.one;
             var kinemation = copy.GetComponent<CasFPSWeapon>();
             Transform own = kinemation != null ? kinemation.aimPoint : null;
-            gun.Hold = GunHold.For(GunHandles.Of(entry, assets.armsModel, FPSBody.GunFrameOf(kinemation), copy.transform, own, armsByModel), rules);
+            gun.Hold = GunHold.For(GunHandles.Of(entry, tracks != null ? tracks.For(entry.weapon) : null, FPSBody.GunFrameOf(kinemation), copy.transform, own),
+                rules);
             // The sight the gun starts with, else KINEMATION's own aim point.
             var sights = copy.GetComponent<GunSights>();
             Transform sight = sights != null && sights.Count > 0 ? sights.sights[Mathf.Clamp(sights.initial, 0, sights.Count - 1)].aimPoint : null;

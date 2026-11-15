@@ -79,50 +79,43 @@ public sealed partial class FPSGun
         }
     }
 
-    internal void SetContactPose(Vector3 position, Quaternion rotation, bool holds)
-    {
-        ContactPosePosition = position;
-        ContactPoseRotation = rotation;
-        ContactPoseHolds = holds;
-        HasContactPose = true;
-    }
-
     /// <summary>
-    /// KINEMATION's clip of the reload playing and how far into it it is now (s, at the body clip's pace), with
-    /// <paramref name="settling"/> once it is in the stretch where it eases back into the hold. False when none is playing.
+    /// The track of the gun's own clip playing (a reload, a draw, a holster, a look over the gun, its action worked) and how
+    /// far into it it is now (s, at the body clip's pace), with <paramref name="settling"/> once it is in the stretch where it
+    /// eases back into the hold. False when none is playing.
     /// </summary>
-    internal bool ContactClip(out AnimationClip clip, out float time, out bool settling)
+    internal bool ContactTrack(out GunTrack track, out float time, out bool settling)
     {
-        clip = contactClip;
+        track = contactTrack;
         time = 0f;
         settling = false;
-        if (clip == null) return false;
+        if (track == null) return false;
         float played = Time.time - contactStart;
         if (played >= contactLength)
         {
-            contactClip = clip = null;
+            contactTrack = track = null;
             return false;
         }
-        time = Mathf.Min(contactFrom + played * contactRate, clip.length);
+        time = Mathf.Min(contactFrom + played * contactRate, track.length);
         settling = contactSettles && contactLength - played <= contactSettle;
         return true;
     }
 
     /// <summary>The body's clip was cut short (the sights coming up): the hands let go of its hold.</summary>
-    internal void StopContacts() => contactClip = null;
+    internal void StopContacts() => contactTrack = null;
 
-    // A reload's, draw's, holster's, inspect's or worked action's clip begins: KINEMATION's own one runs alongside at the body
-    // clip's pace, from the same share of the way.
-    private void FollowClip(AnimationClip source, FPSAnimationAsset body, float from, bool settles, bool reload = true, bool cycle = false)
+    // A reload's, draw's, holster's, inspect's or worked action's clip begins: the gun's track of KINEMATION's own one runs
+    // alongside at the body clip's pace, from the same share of the way. A gun without that track follows nothing.
+    private void FollowClip(GunTrackKind kind, FPSAnimationAsset body, float from, bool settles, bool reload = true, bool cycle = false)
     {
-        contactClip = source != null && FPSAnimationAsset.IsValid(body) ? source : null;
-        if (contactClip == null) return;
+        contactTrack = Tracks != null && FPSAnimationAsset.IsValid(body) ? Tracks.Track(kind) : null;
+        if (contactTrack == null) return;
         contactIsReload = reload;
         contactIsCycle = cycle;
         contactRate = Mathf.Max(.01f, body.blendTime.rateScale);
-        contactFrom = Mathf.Clamp01(from) * contactClip.length;
+        contactFrom = Mathf.Clamp01(from) * contactTrack.length;
         contactStart = Time.time;
-        contactLength = (contactClip.length - contactFrom) / contactRate;
+        contactLength = (contactTrack.length - contactFrom) / contactRate;
         contactSettles = settles;
         contactSettle = Mathf.Max(.01f, body.blendTime.blendOutTime);
     }

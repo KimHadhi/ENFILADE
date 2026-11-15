@@ -26,6 +26,19 @@ public sealed class GunTracks : ScriptableObject
 
     public static GunTracks Instance => cached != null ? cached : cached = Resources.Load<GunTracks>(ResourcePath);
 
+    /// <summary>
+    /// Reads the list and every gun's tracks ahead, behind a loading screen (SceneWarmup, beside FPSBodyAssets.LoadAhead):
+    /// whoever asks for <see cref="Instance"/> first reads all of it in its own frame, and that is a body building its
+    /// first gun.
+    /// </summary>
+    public static System.Collections.IEnumerator LoadAhead()
+    {
+        if (cached != null) yield break;
+        var reading = Resources.LoadAsync<GunTracks>(ResourcePath);
+        yield return reading;
+        if (cached == null) cached = reading.asset as GunTracks;
+    }
+
     /// <summary>That gun's actions; null for a gun whose clips were never read.</summary>
     public GunTrackSet For(WeaponData weapon)
     {

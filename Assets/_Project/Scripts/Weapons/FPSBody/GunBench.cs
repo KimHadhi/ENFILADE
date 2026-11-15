@@ -225,7 +225,6 @@ internal static class GunBench
                     + "section 10), so read it beside its pictures.")
             + whatIf);
         Directory.CreateDirectory(Folder);
-        var armsByModel = new Dictionary<GameObject, GunArms>();
         Stage stage = null;
         var watch = System.Diagnostics.Stopwatch.StartNew();
         int stood = 0, sheets = 0;
@@ -241,7 +240,7 @@ internal static class GunBench
                 var model = profile.ModelOf(skin);
                 if (model == null) continue;
                 EditorUtility.DisplayProgressBar("ENFILADE: 총 검사대", skin.Id, done / (float)Mathf.Max(1, profile.Skins.Count));
-                Stand(ask, numbers, stage, profile, skin.Id, model, camera, assets, bakes, tracks, armsByModel, text, ref stood, ref sheets);
+                Stand(ask, numbers, stage, profile, skin.Id, model, camera, assets, bakes, tracks, text, ref stood, ref sheets);
             }
         }
         catch (Exception error)
@@ -252,7 +251,6 @@ internal static class GunBench
         finally
         {
             EditorUtility.ClearProgressBar();
-            foreach (var arms in armsByModel.Values) arms?.ReleaseNow();
             stage?.Dispose();
             GunHandles.Forget();
             ArmIK.SoftReachFrom = softWas;
@@ -296,7 +294,7 @@ internal static class GunBench
     // One character with every gun asked for.
     private static void Stand(Ask ask, in Numbers numbers, Stage stage, PlayerBodyProfile profile, string id, GameObject model, float camera, FPSBodyAssets assets,
         GunBakes bakes,
-        GunTracks tracks, Dictionary<GameObject, GunArms> armsByModel, StringBuilder text, ref int stood, ref int sheets)
+        GunTracks tracks, StringBuilder text, ref int stood, ref int sheets)
     {
         var instance = Object.Instantiate(model);
         instance.hideFlags = HideFlags.HideAndDontSave;
@@ -363,8 +361,7 @@ internal static class GunBench
                     if (sights != null && sights.Current < 0) sights.Select(sights.initial);
                     var parts = gun.GetComponent<GunAttachments>();
                     if (parts != null) parts.Begin();
-                    var hold = GunHold.For(GunHandles.Of(entry, assets.armsModel, frame, gun.transform, kinemation != null ? kinemation.aimPoint : null, armsByModel),
-                        numbers.Rules);
+                    var hold = GunHold.For(GunHandles.Of(entry, set, frame, gun.transform, kinemation != null ? kinemation.aimPoint : null), numbers.Rules);
                     var body = HoldBody.Measure(animator, bake.pose, shoulder);
                     if (body == null)
                     {

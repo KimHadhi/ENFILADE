@@ -141,7 +141,8 @@ public sealed partial class FPSBody
         Quaternion gunFrame = GunFrameOf(kinemation);
         // Where the Pose Sampler starts the gun: where this body holds it (GunHold: a stocked gun's butt in the body's own
         // shoulder pocket, a handgun before the eyes at its arms' own bend), made from the body and the gun themselves.
-        var fit = HoldFor(entry, bake, exact, gunFrame, instance.transform, kinemation != null ? kinemation.aimPoint : null);
+        var fit = HoldFor(entry, bake, exact, gunFrame, instance.transform, kinemation != null ? kinemation.aimPoint : null,
+            GunTracks.Instance != null ? GunTracks.Instance.For(entry.weapon) : null);
         var start = fit.Start;
         var profile = ProfileFor(entry.profile, entry.weapon, bake, gunFrame, start);
         // A shell reload's starts and shells hand over to its next step, so only its end settles back into the hold.

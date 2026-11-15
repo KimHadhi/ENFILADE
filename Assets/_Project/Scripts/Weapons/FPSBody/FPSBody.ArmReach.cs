@@ -86,9 +86,10 @@ public sealed partial class FPSBody
 
     // The hold of <paramref name="entry"/>'s gun on this body. <paramref name="own"/>: the gun's clips were made on this
     // body. <paramref name="gunModel"/> is this body's copy of the gun (its own space is the gun's frame) and
-    // <paramref name="aimPoint"/> its sight's. A body that can't be measured, or a gun whose pose can't be read, keeps the
-    // gun where its clip alone has it.
-    private HoldFit HoldFor(in FPSBodyAssets.Gun entry, in GunBakes.Entry bake, bool own, Quaternion gunFrame, Transform gunModel, Transform aimPoint)
+    // <paramref name="aimPoint"/> its sight's, <paramref name="tracks"/> the gun's actions as numbers. A body that can't be
+    // measured, or a gun whose pose has no track, keeps the gun where its clip alone has it.
+    private HoldFit HoldFor(in FPSBodyAssets.Gun entry, in GunBakes.Entry bake, bool own, Quaternion gunFrame, Transform gunModel, Transform aimPoint,
+        GunTrackSet tracks)
     {
         var fit = new HoldFit
         {
@@ -101,7 +102,7 @@ public sealed partial class FPSBody
         var holder = HoldBody.Measure(animator, bake.pose, shoulder);
         if (holder == null) return fit;
         var clip = holder.PlaceOf(bake, own);
-        var hold = GunHold.For(GunHandles.Of(entry, assets != null ? assets.armsModel : null, gunFrame, gunModel, aimPoint, gunArms), HoldRules);
+        var hold = GunHold.For(GunHandles.Of(entry, tracks, gunFrame, gunModel, aimPoint), HoldRules);
         var pose = hold != null ? hold.On(holder, clip) : new GunHold.Pose { Gun = clip };
         fit.Start = pose.Gun;
         fit.Hold = hold;

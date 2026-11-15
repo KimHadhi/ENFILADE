@@ -34,8 +34,14 @@ internal static class GunTrackBake
     private const string SetsFolder = "GunTracks";
     private const string Request = "Temp/enfilade-guntracks.request", ReportPath = "Logs/gun-tracks.txt";
     // Raised when what a track holds or how it is read changes, so every gun is read again. 2: each palm's gap from the
-    // gun's surface. 3: that gap kept as far as a hand takes hold of the gun from (GunTrack.GapMost .12 to .3).
-    private const int Version = 3;
+    // gun's surface. 3: that gap kept as far as a hand takes hold of the gun from (GunTrack.GapMost .12 to .3). 4: moments
+    // between a slow clip's frames (RateLeast).
+    private const int Version = 4;
+    // A track has at least this many moments a second: a clip with fewer frames is read between them too, evenly, so its own
+    // frames are all there and the game, which reads a track straight from one moment to the next, stays near the clip's
+    // curves. Read at its 30 frames a second, a clip's palm was up to a centimetre from the track midway between two frames
+    // (median of each clip's worst 5 mm, of 58 clips; the 60-frame clips' 1.5 mm: this report, 2026-11-15).
+    private const float RateLeast = 60f;
     // KINEMATION's camera bone in its gun clips; the game plays them on the same two bones (FPSBodyCamera).
     private const string CameraRootName = "root", CameraBoneName = "camera_bone";
     // The report's own bands: how near its hold a gun is said to stay (m, degrees), and how far a palm is from its place in
@@ -58,6 +64,10 @@ internal static class GunTrackBake
     }
 
     private static readonly Dictionary<GunTrack, SourceArm[]> sourceArms = new Dictionary<GunTrack, SourceArm[]>();
+    // How far each clip read in this run is from its track midway between the track's frames, where the track reads straight
+    // from one frame to the next: the gun's move (m) and turn (degrees), a palm on the gun (m). What the game reads against
+    // what the clip itself is there.
+    private static readonly Dictionary<GunTrack, (float move, float turn, float palm)> betweenFrames = new Dictionary<GunTrack, (float, float, float)>();
     // Where KINEMATION's arms have their shoulder joints from the gun in its hold, for each gun read in this run.
     private static readonly Dictionary<WeaponData, string> sourceShoulders = new Dictionary<WeaponData, string>();
 
@@ -130,6 +140,7 @@ internal static class GunTrackBake
         var notes = new List<string>();
         sourceArms.Clear();
         sourceShoulders.Clear();
+        betweenFrames.Clear();
         var watch = System.Diagnostics.Stopwatch.StartNew();
         int read = 0;
         try
@@ -176,6 +187,7 @@ internal static class GunTrackBake
         WriteReport(assets, list, notes, read, due.Count, watch.Elapsed.TotalSeconds);
         sourceArms.Clear();
         sourceShoulders.Clear();
+        betweenFrames.Clear();
         Debug.Log($"GunTrackBake: read {read} of {due.Count} guns' actions from KINEMATION's clips in {watch.Elapsed.TotalSeconds:0.0} s; "
             + $"every gun's numbers are in {ReportPath}.");
     }
@@ -314,14 +326,15 @@ internal static class GunTrackBake
         return set;
     }
 
-    // One clip, frame by frame at its own frames (the last at its end): the gun from where the pose clip holds it, both
-    // hands on the gun as it then is, the finger ways and the camera bone's turn from the pose. As the game read a moment of
-    // it until now (FPSBody.SampleContact), so the numbers mean the same.
+    // One clip, moment by moment at its own frames and between them (RateLeast; the last at its end): the gun from where
+    // the pose clip holds it, both hands on the gun as it then is, the finger ways and the camera bone's turn from the pose.
+    // As the game read a moment of it on these arms until 0.9.117 (FPSBody.SampleContact), so the numbers mean the same.
     private static GunTrack Read(GunTrackKind kind, AnimationClip clip, GunArms arms, Quaternion frame, Vector3 poseAt, Quaternion poseTurn,
         CameraRig camera, Quaternion cameraRest, GunSurface surface, Vector3[] poseShoulders)
     {
         var own = new[] { new SourceArm(), new SourceArm() };
-        float rate = clip.frameRate > 0f ? clip.frameRate : 30f;
+        float clipRate = clip.frameRate > 0f ? clip.frameRate : 30f;
+        float rate = clipRate * Mathf.Max(1, Mathf.CeilToInt(RateLeast / clipRate - 1e-3f));
         float length = Mathf.Max(0f, clip.length);
         int frames = Mathf.Max(1, Mathf.CeilToInt(length * rate - 1e-3f) + 1);
         const int digits = GunArms.DigitCount;
@@ -372,6 +385,19 @@ internal static class GunTrackBake
         track.rightDigits = hasRight ? rightDigits : Array.Empty<Vector3>();
         track.leftDigits = hasLeft ? leftDigits : Array.Empty<Vector3>();
         sourceArms[track] = own;
+        (float move, float turn, float palm) between = default;
+        for (int i = 0; i + 1 < frames; i++)
+        {
+            float time = (track.TimeOf(i) + track.TimeOf(i + 1)) * .5f;
+            if (!arms.Sample(clip, time) || !track.Sample(time, null, null, out GunContact read, out _)) break;
+            arms.Gun(frame, out Vector3 at, out Quaternion turn);
+            Quaternion toGun = Quaternion.Inverse(turn);
+            between.move = Mathf.Max(between.move, Vector3.Distance(fromPose * (at - poseAt), read.GunMove));
+            between.turn = Mathf.Max(between.turn, Quaternion.Angle(fromPose * turn, read.GunTurn));
+            if (arms.Palm(false, at, toGun, out Vector3 rightPalm, out _, out _)) between.palm = Mathf.Max(between.palm, Vector3.Distance(rightPalm, read.RightPalm));
+            if (arms.Palm(true, at, toGun, out Vector3 leftPalm, out _, out _)) between.palm = Mathf.Max(between.palm, Vector3.Distance(leftPalm, read.LeftPalm));
+        }
+        betweenFrames[track] = between;
         return track;
     }
 
@@ -432,6 +458,7 @@ internal static class GunTrackBake
             + "gun's surface, where the hold's rule says a hand no longer has full hold of it (Rig.holdsWithin).");
         foreach (string note in notes) text.AppendLine("! " + note);
         Gaps(assets, list, text);
+        Between(text);
         foreach (var gun in assets.guns)
         {
             if (gun.weapon == null) continue;
@@ -494,6 +521,26 @@ internal static class GunTrackBake
         text.AppendLine("through actions: " + string.Join(" ", acts));
     }
 
+    // The game reads a track straight from one frame to the next; the clip itself curves between them. The worst of that
+    // over every clip read in this run.
+    private static void Between(StringBuilder text)
+    {
+        if (betweenFrames.Count == 0) return;
+        (float move, float turn, float palm) worst = default;
+        string moveOf = "", turnOf = "", palmOf = "";
+        foreach (var pair in betweenFrames)
+        {
+            string name = $"{pair.Key.clip} at {pair.Key.frameRate:0.#}/s";
+            if (pair.Value.move > worst.move) { worst.move = pair.Value.move; moveOf = name; }
+            if (pair.Value.turn > worst.turn) { worst.turn = pair.Value.turn; turnOf = name; }
+            if (pair.Value.palm > worst.palm) { worst.palm = pair.Value.palm; palmOf = name; }
+        }
+        text.AppendLine();
+        text.AppendLine("== midway between a track's frames, how far the clip itself is from the track's straight reading, at most over "
+            + $"{betweenFrames.Count} clips: the gun {worst.move * 1000f:0.0} mm ({moveOf}) and {worst.turn:0.00}° ({turnOf}), a palm on the gun "
+            + $"{worst.palm * 1000f:0.0} mm ({palmOf})");
+    }
+
     private static void Describe(GunTrack track, GunTrack hold, StringBuilder text)
     {
         int frames = track.Frames;
@@ -520,6 +567,11 @@ internal static class GunTrackBake
         text.Append(cameraMost > .01f ? $"; camera turned at most {cameraMost:0.0}°" : "; no camera motion in the clip");
         bool rightFingers = track.rightDigits.Length == frames * GunArms.DigitCount, leftFingers = track.leftDigits.Length == frames * GunArms.DigitCount;
         text.Append(rightFingers && leftFingers ? "; fingers read" : $"; fingers not read:{(rightFingers ? "" : " right")}{(leftFingers ? "" : " left")}");
+        if (betweenFrames.TryGetValue(track, out var between) && frames > 1)
+            text.Append($"; between frames the clip is at most {between.move * 1000f:0.0} mm {between.turn:0.00}° from the track, a palm {between.palm * 1000f:0.0} mm");
+        // What the rules wait for after each shot of a gun worked by hand (FPSBody.MeasureCycle asks the same).
+        if (track.kind == GunTrackKind.Cycle && FPSBody.HandsBack(track, hold, out float handsBack))
+            text.Append($"; both palms are back on the hold from {handsBack:0.00} s");
         if (sourceArms.TryGetValue(track, out var own))
         {
             text.Append("; KINEMATION's own arms:");

@@ -4,8 +4,9 @@ using UnityEngine;
 /// <summary>
 /// A gun as a thing to hold: the points of it a hold needs, in the gun's own frame in metres (the gun model's, which the
 /// body's IK weapon bone carries: KINEMATION's weapon bone turned by the gun's rotationOffset).
-/// - Where each palm goes on it and the way its fingers point: read from KINEMATION's own pose clip on KINEMATION's arms
-///   (GunArms), the support hand's from the no-grip pose where the gun has one, as a bare gun is held.
+/// - Where each palm goes on it and the way its fingers point: KINEMATION's own pose clip on KINEMATION's arms, as the
+///   gun's tracks keep it (GunTrackSet), the support hand's from the no-grip pose where the gun has one, as a bare gun is
+///   held.
 /// - Its back end (a stock's butt) and the way its barrel points: from its shape (GunMuzzle.Back).
 /// What kind of hold a gun takes follows from these alone (GunHold.For): a gun whose back end reaches well behind the trigger
 /// hand has a stock and goes to the shoulder; one whose doesn't is held out before the eyes. No list of guns, no sound
@@ -57,46 +58,33 @@ internal sealed class GunHandles
     private GunHandles() { }
 
     /// <summary>
-    /// <paramref name="entry"/>'s gun as a thing to hold. <paramref name="gun"/> is a copy of its model as the body wears it
-    /// (its own space is the gun's frame), <paramref name="aimPoint"/> its sight's, <paramref name="armsModel"/> the arms its
-    /// clips are made for when the entry names none, and <paramref name="gunArms"/> keeps the hidden copies of those arms.
-    /// Null when the gun's pose couldn't be read on them.
+    /// <paramref name="entry"/>'s gun as a thing to hold. <paramref name="tracks"/> are its actions as numbers (GunTracks),
+    /// <paramref name="gun"/> a copy of its model as the body wears it (its own space is the gun's frame) and
+    /// <paramref name="aimPoint"/> its sight's. Null when the gun has no track of its pose.
     /// </summary>
-    internal static GunHandles Of(in FPSBodyAssets.Gun entry, GameObject armsModel, Quaternion frame, Transform gun, Transform aimPoint,
-        Dictionary<GameObject, GunArms> gunArms)
+    internal static GunHandles Of(in FPSBodyAssets.Gun entry, GunTrackSet tracks, Quaternion frame, Transform gun, Transform aimPoint)
     {
         if (entry.weapon == null) return null;
-        if (!known.TryGetValue(entry.weapon, out var handles)) known[entry.weapon] = handles = Read(entry, armsModel, frame, gun, aimPoint, gunArms);
+        if (!known.TryGetValue(entry.weapon, out var handles)) known[entry.weapon] = handles = Read(tracks, frame, gun, aimPoint);
         return handles;
     }
 
-    private static GunHandles Read(in FPSBodyAssets.Gun entry, GameObject armsModel, Quaternion frame, Transform gun, Transform aimPoint,
-        Dictionary<GameObject, GunArms> gunArms)
+    // Each palm and its fingers' way in the gun's frame, as the pose's track has them. How straight KINEMATION's arms are in
+    // that pose is not read: that rig's shoulders are where first-person arms look right, and its numbers mean nothing on a
+    // body's shoulder joint (the arms were once fitted to them: 0.9.91 found it; 0.9.115 measured where they are).
+    private static GunHandles Read(GunTrackSet tracks, Quaternion frame, Transform gun, Transform aimPoint)
     {
-        var prefab = entry.ArmsOr(armsModel);
-        if (prefab == null || entry.sourcePose == null || gun == null || gunArms == null) return null;
-        if (!gunArms.TryGetValue(prefab, out var arms)) gunArms[prefab] = arms = GunArms.Make(prefab);
-        if (arms == null) return null;
-        var handles = new GunHandles { Frame = frame };
-        if (!handles.Hand(arms, entry.sourcePose, false)) return null;
-        var supportPose = entry.sourcePoseNoGrip != null ? entry.sourcePoseNoGrip : entry.sourcePose;
-        if (!handles.Hand(arms, supportPose, true) && !handles.Hand(arms, entry.sourcePose, true)) return null;
+        var pose = tracks != null ? tracks.Track(GunTrackKind.Hold) : null;
+        if (pose == null || gun == null) return null;
+        var bare = tracks.Track(GunTrackKind.HoldNoGrip) ?? pose;
+        var handles = new GunHandles
+        {
+            Frame = frame, RightPalm = pose.right[0].palm, RightFingers = pose.right[0].fingers,
+            LeftPalm = bare.left[0].palm, LeftFingers = bare.left[0].fingers
+        };
         GunMuzzle.Back(gun, aimPoint, ButtDepth, out Vector3 butt, out Vector3 barrel);
         handles.Butt = butt;
         if (barrel.sqrMagnitude > .5f) handles.Barrel = barrel.normalized;
         return handles;
-    }
-
-    // One hand of KINEMATION's arms in a pose clip: its palm and its fingers' way in the gun's frame. How straight that arm
-    // is on its own rig is not read: that rig's shoulders are where first-person arms look right, and its numbers mean
-    // nothing on a body's shoulder joint (the arms were once fitted to them: 0.9.91 found it).
-    private bool Hand(GunArms arms, AnimationClip pose, bool isLeft)
-    {
-        if (pose == null || !arms.Sample(pose, 0f)) return false;
-        arms.Gun(Frame, out Vector3 at, out Quaternion turn);
-        if (!arms.Palm(isLeft, at, Quaternion.Inverse(turn), out Vector3 palm, out Vector3 fingers, out _)) return false;
-        if (isLeft) { LeftPalm = palm; LeftFingers = fingers; }
-        else { RightPalm = palm; RightFingers = fingers; }
-        return true;
     }
 }

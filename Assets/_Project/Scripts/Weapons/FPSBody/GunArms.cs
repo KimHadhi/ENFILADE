@@ -23,23 +23,25 @@ internal struct GunContact
 
 /// <summary>
 /// A hidden copy of the KINEMATION arms skeleton a gun's own clips are made for (the FPS Animation Pack's SK_Arms_Mono, the
-/// Tactical Shooter Pack's SKM_Operator). FPSBody samples the clip the body is playing (its hold, a reload, a draw, a look
-/// over the gun) on it at the same moment and reads how the clip moves the gun, where each hand's palm is on it and how
-/// each finger bends (GunContact), then holds its own gun and puts its own palms and fingers there, whatever the body's
-/// build. The remade clips carry joint angles only: on a body with other arm lengths the hands were somewhere else at every
-/// moment, and the gun stayed in the right hand (the user, 2026-11-12, asking whether a hand offset per character would fix
-/// it; one offset fixes one moment).
-/// Nothing of it is drawn, it never moves, and its own Animator is gone, so a clip's curves write its bones as they are
-/// (ClipSampler: SampleAnimation in the editor; in a build a graph through an Animator with no avatar, added for it).
+/// Tactical Shooter Pack's SKM_Operator), in the editor only: the reading of the guns' actions (GunTrackBake) plays each
+/// clip on it frame by frame and reads how the clip moves the gun, where each hand's palm is on it and how each finger
+/// bends (GunContact), and keeps that as the gun's tracks (GunTrackSet). The game reads the tracks, holds its own gun and
+/// puts its own palms and fingers there, whatever the body's build. The remade clips carry joint angles only: on a body
+/// with other arm lengths the hands were somewhere else at every moment, and the gun stayed in the right hand (the user,
+/// 2026-11-12, asking whether a hand offset per character would fix it; one offset fixes one moment).
+/// Until 0.9.117 the game itself played the clip on this copy every frame, beside the animation; a build has none of it now.
+/// Nothing of it is drawn, it never moves, and its own Animator is gone, so a clip's curves write its bones as they are.
 /// </summary>
 internal sealed class GunArms
 {
+    /// <summary>Finger segments read per hand: index, middle, ring, little, thumb; base, middle, tip (HandGrip's order).</summary>
+    internal const int DigitCount = 15;
+
+#if UNITY_EDITOR
     // KINEMATION's names on both skeletons.
     private const string GunBone = "ik_hand_gun";
     // HandGrip's palm centre: from the wrist toward the four knuckles, this share of the way.
     private const float PalmShare = .55f;
-    /// <summary>Finger segments read per hand: index, middle, ring, little, thumb; base, middle, tip (HandGrip's order).</summary>
-    internal const int DigitCount = 15;
     // KINEMATION's finger names in HandGrip's order (index, middle, ring, little, thumb).
     private static readonly string[] FingerNames = { "index", "middle", "ring", "pinky", "thumb" };
 
@@ -85,17 +87,11 @@ internal sealed class GunArms
         if (arms.gun != null && arms.right.Valid && arms.left.Valid) return arms;
         Debug.LogWarning($"GunArms: {prefab.name} has no {GunBone} or no hand_r/hand_l with index, middle and pinky knuckles; "
             + "its guns' clips stay on the remade clips alone.", prefab);
-        arms.Release();
+        arms.ReleaseNow();
         return null;
     }
 
-    /// <summary>Destroys the copy.</summary>
-    internal void Release()
-    {
-        if (copy != null) Object.Destroy(copy);
-    }
-
-    /// <summary>Destroys the copy at once: outside play nothing is destroyed at a frame's end (the editor's hold check).</summary>
+    /// <summary>Destroys the copy at once: outside play nothing is destroyed at a frame's end.</summary>
     internal void ReleaseNow()
     {
         if (copy != null) Object.DestroyImmediate(copy);
@@ -235,4 +231,5 @@ internal sealed class GunArms
         }
         return hand;
     }
+#endif
 }

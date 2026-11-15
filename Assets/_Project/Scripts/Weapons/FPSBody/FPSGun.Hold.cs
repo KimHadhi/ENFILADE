@@ -76,15 +76,16 @@ public sealed partial class FPSGun
     /// <summary>The gun's entry in FPSBodyAssets: its own clips and the arms they are made for.</summary>
     internal FPSBodyAssets.Gun Entry => entry;
 
-    /// <summary>Where the gun's pose clip holds it on KINEMATION's arms, in the gun's frame (FPSBody measures it once), and
-    /// whether that hold looked like one (both hands at the gun), so its reloads can be followed.</summary>
-    internal bool HasContactPose { get; private set; }
+    /// <summary>The gun's actions as numbers (GunTrackSet, read in the editor from KINEMATION's own clips): what each does
+    /// to the gun and where it has the hands. Null for a gun whose clips were never read.</summary>
+    internal GunTrackSet Tracks { get; private set; }
 
-    internal bool ContactPoseHolds { get; private set; }
+    /// <summary>The gun has tracks and its pose clip holds it in both hands (GunTrackSet.holds), so its own clips can be
+    /// followed; else its hands stay on the remade clips alone.</summary>
+    internal bool TracksHold => Tracks != null && Tracks.holds;
 
-    internal Vector3 ContactPosePosition { get; private set; }
-
-    internal Quaternion ContactPoseRotation { get; private set; } = Quaternion.identity;
+    /// <summary>FPSBody has said once that this gun's own clips can't be followed.</summary>
+    internal bool ToldNoHold;
 
     /// <summary>How long the reload's end eases back into the hold (s), its clip's blend out.</summary>
     internal float ContactSettle => contactSettle;

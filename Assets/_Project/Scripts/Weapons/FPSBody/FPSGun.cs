@@ -118,6 +118,8 @@ public sealed partial class FPSGun : MonoBehaviour
         entry = gun;
         frame = gunFrame;
         Data = gun.weapon;
+        // What its own clips do to it and where they have the hands, as numbers; none for a gun whose clips were never read.
+        Tracks = GunTracks.Instance != null ? GunTracks.Instance.For(gun.weapon) : null;
         Kinemation = kinemation;
         reloadTactical = tactical;
         reloadEmpty = empty;
@@ -151,12 +153,13 @@ public sealed partial class FPSGun : MonoBehaviour
         magazine = GunMagazine.For(this);
     }
 
-    // ---- The reload's own clip, which the hands follow on the gun (FPSBody.Contacts, GunArms) ----
+    // ---- The gun's own action, which the gun and the hands follow (FPSBody.Contacts) ----
 
-    // KINEMATION's clip of the reload, draw, holster or inspect playing (the one its camera motion plays too): from when,
-    // how far in (s), how fast, for how long (s), whether it eases back into the hold at its end and over how long (s), and
-    // whether it is a reload (FPSBody's reloadContacts) or one of the others (holdContacts).
-    private AnimationClip contactClip;
+    // The track of the reload, draw, holster, inspect or worked action playing (KINEMATION's clip of it as numbers,
+    // GunTrackSet; its camera motion plays that clip itself still): from when, how far in (s), how fast, for how long (s),
+    // whether it eases back into the hold at its end and over how long (s), and whether it is a reload (FPSBody's
+    // reloadContacts) or one of the others (holdContacts).
+    private GunTrack contactTrack;
     private float contactStart, contactFrom, contactRate = 1f, contactLength, contactSettle = .15f;
     private bool contactSettles, contactIsReload, contactIsCycle;
 

@@ -194,7 +194,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         if (movement != null) movement.Jumped -= OnJumped;
         if (body != null) body.UpperBodyFromFramework = false;
         EndBash();
-        ReleaseContacts();
+        ForgetContacts();
         ForgetMade();
     }
 

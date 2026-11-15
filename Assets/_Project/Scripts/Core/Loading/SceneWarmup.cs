@@ -291,6 +291,8 @@ public sealed class SceneWarmup : MonoBehaviour
             // The guns' asset is read here, not in the frame a menu page first lists the guns (FPSBodyAssets.LoadAhead);
             // the hub's load finds it read.
             yield return FPSBodyAssets.LoadAhead();
+            // And every gun's actions as numbers (GunTracks), which a body reads as it builds its first gun.
+            yield return GunTracks.LoadAhead();
             steps.Mark("guns");
 
             LoadingScreen.Report(Standing, "loading.stage.portraits");
