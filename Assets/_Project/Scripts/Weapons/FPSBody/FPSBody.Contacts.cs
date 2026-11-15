@@ -62,8 +62,9 @@ public sealed partial class FPSBody
         + "was shot while the hand works the bolt, as Rainbow Six Siege's guns stay on the sight through their kick. 1: as at the hip.")]
     private float aimedCycleMove = .25f;
 
-    // A pose clip holds the gun in both hands when the support palm is this close to the weapon bone (m).
-    private const float PoseReach = .8f;
+    // A pose clip holds the gun in both hands when the support palm is this close to the weapon bone (m). The editor's reading
+    // of the guns' actions asks the same of a pose (GunTrackBake).
+    internal const float PoseReach = .8f;
 
     // One hidden copy per KINEMATION arms model the guns' clips are made for; null where a model lacks the bones.
     private readonly Dictionary<GameObject, GunArms> gunArms = new();

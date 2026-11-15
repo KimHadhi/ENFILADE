@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0fb6ee589aad494ba4b7b95a94054969, type: 3}
+  m_Name: GunTracks
+  m_EditorClassIdentifier: Assembly-CSharp::GunTracks
+  entries:
+  - weapon: {fileID: 11400000, guid: 23002ebab5eaea7478f88c9de57f8dbf, type: 2}
+    set: {fileID: 11400000, guid: cbc92beba44209d419f89cfd9ff11032, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|e4eef436171688145a768373dfc5903f:455d163a1c9b5f72bf3599f29c91a98f:MX16A4|b04eccb126612c64f801778e9f9b5c5c:2263d83d27659d66b39fdbed399a3cdc:MX16A4_Settings|78d5e57c5e6d5b1479f2831ae162c9af:b957b7267d52c284a8f81a1a28eb9ec7:A_FP_MX16A4_Pose|-|-|-|-|af9f8c0e8cb05d74d80d1e5c61d822f7:9444bb9ab1eecd94b972ebc623f06dbf:A_FP_MX16A4_Reload_Tac|6482cb9a3db8de94996fc3046ba6b006:20ee2f4657831aabedca6ce7b7e71dbb:A_FP_MX16A4_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 60c6069bb5f5ec044a22a44dbd9829a9, type: 2}
+    set: {fileID: 11400000, guid: 53032b3e51d2dd94586bc0219ba1938b, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|5316adfc06baa114599e8bdeec3916be:2414362fc70f08a75170baa72a5b4bd9:M1911|8459539ebdd80da4597382d1cea0ee22:065946babb3298a54a37ad9c11e0271b:M1911_Settings|240293a1bac37b34a98835cb25696d43:107eea1d6fda46efd1e77cd7f8e0153d:A_FP_M1911_Idle|-|-|-|-|da33efa37a2809b478a7eb4835c56d5e:7e4ef5e54fcff467a5f0ed8c3bd76e69:A_FP_M1911_Reload_Tac|020029c1d578b5645b963d58dc823f5d:1f4f912b1073b20f25f326c86d5f14cf:A_FP_M1911_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 660fd3a4f94a4443b81e3e79122b35dd, type: 2}
+    set: {fileID: 11400000, guid: 42cd233056531d142b69c9d816bf497b, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|f91a0c0a73240174da4394445bfa528b:c25900aa26e02c6ed71ac3f5d3fff97a:Herrington1187|2f1018186a29ee3489d2c7ef712864df:acd497b7efbf1ec37c643e36b98d714e:Herrington1187_Settings|8398072b90117ee4c98980aee4e6df68:f861d5ab61c45749f7be2bbd128cdad0:A_FP_Herrington_11-87_Idle|-|c5cb803ac8b20e94d8731eb22a270f85:29a9de3620c36b0b00f9ebed20bf481c:A_FP_Herrington_11-87_Draw|01a22119adab32341b953dca6b676bbe:3441bafd0073e7e5835b1c17da14fad8:A_FP_Herrington_11-87_Holster|f015d28d8747c2b45bcacf2f93608d01:9638d804824617129ff595cb4c96d7fb:A_FP_Herrington_11-87_Inspect|cfcb173e9d295d54b810d9fb63f8d4ea:2ddab4e9021622bb20f87b3020822786:A_FP_Herrington_11-87_Reload_Tac_Start|77f61c55a4067b642bcecbbb7a1140b6:a900fdd60acf6c0bf8d01774355a7c52:A_FP_Herrington_11-87_Reload_Empty_Start|bc4b400aee10ee24baab6ff6a70164c7:dc19677351e1fda875871ffbf0671f67:A_FP_Herrington_11-87_Reload_Loop|fce2d0f5b09763a4a885a16ef16876e9:b72f225559903ea96dc58b4d102beba5:A_FP_Herrington_11-87_Reload_End|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: b5f06ecc57ba4591b7c03bda459e7655, type: 2}
+    set: {fileID: 11400000, guid: 0193886a9a47b3042b93f08d27788d6d, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|9705eff3ad5c47042af5eef5fb4bdda0:b8f8528527d7cfc22e0f7ef773b1d1fb:SRM12|bf0130ea9772c464fa8a8d0ec4fd4faf:f82b34f17d3716210eea7e667f1e6ceb:SRM12_Settings|b06ef0d696b00a04cbd0a122d27a491a:4435778655909d85965d7345dfbe3854:A_FP_SRM-12_Idle_Pose|-|d4d16a1c321264845b952c6c7607d07c:7afcd665ad593fac7c3473ee89ea8b44:A_FP_SRM-12_Draw|72e8ce59ee69a7b42904bb0220ba2795:e38eedec2c529b075d37323aa028ba4f:A_FP_SRM-12_Holster|19b054d530cf3b749b8c93b477bfe2c1:25e471567c5e0d03562f3f772fd7d185:A_FP_SRM-12_Inspect|cdad6bcd11be592418b2ba01906b3a54:8494983bbdb00d75313c2fdce109b868:A_FP_SRM-12_Reload_Tactical|b94b4631007ba484b8b6cf6e65389d23:46e4237f7e428cffc44ae564acd916a0:A_FP_SRM-12_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 21beab39131348eb8ab8323f3c2abc09, type: 2}
+    set: {fileID: 11400000, guid: 6bd5007e668819f4584ab43a1e9caddb, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|4012b611e940ee8488fe926a8a67fed5:a19e7250aace29117a0a07c6c85dbab9:AK105|f90103fec4795c04690e4eb5d30932d7:2a1580d7e44a80f12563cd4ee02efde6:AK105_Settings|b38c9df860f23164183f55905166e374:8a63cf0f669bde4dee79576406f9713e:A_FP_AK105_Idle|-|195a5437749c38f49b76e3602af52a29:3dc09452b229e5b2aba0482c059d5434:A_FP_AK105_Draw|e3c27656e4343c4479a71519621e81ee:9cab3ee920014886bc49b66bd342836e:A_FP_AK105_Holster|e0524d9db91f8c4418dd4be4ae429b11:bb2cfea00efb3cf28623744b5c907d93:A_FP_AK105_Inspect|02ffd39b057bfbd41931a00f07f46cc3:0d6566552c5fd507dace9773ec534567:A_FP_AK105_Reload_Tac|99a2ff543c47ac84ea00be8c7cd90851:790e38750e680607ec157570bba04fe1:A_FP_AK105_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 72c4c25dc96146c6ae8c558810535ce6, type: 2}
+    set: {fileID: 11400000, guid: d536a260bfe18874b9afb54efc8e2996, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|5d8335e9aa6a54f429c1074258877ed1:d60481d3c03737dbdf166ae509f6fd68:TR15|c98b445d53ff1284999b334836336afd:768eb919716c4579fb667bb3ad0b54c0:TR15_Settings|aac0bcb6d7d92b84a86fbd7aa638f571:79aa79989ed430c5d1c7a7836a872a28:A_FP_TR15_Idle_Pose_Grip|6fb6ec001e9aa0640b1c01a95f3c08c9:69f57dfff066e71c04cde589e0d1b3a4:A_FP_TR15_Idle_Pose_Non_Grip|ba910123866488440a56d37475ca8e00:1f1b5a398a890b1c49dd7523f7a4f4ff:A_FP_TR15_Draw|39deb4776b0583246b7f80b2b9b46ca4:7c26d6f28a547e5f2ece24ad746fd0fc:A_FP_TR15_Holster|bd9219cc80ba9fa418bc2a8301746f42:386f77c847dc7ffeb90a1a30ecf84f81:A_FP_TR15_Inspect|036d981e4942cc74db3a3c022ddede68:c03cefe6282ec5e8d8460510185bc431:A_FP_TR15_Reload_Tactical|9326eb26cbf9e6a47bc2b856778a3216:34b86010949cc6833efa585a7dca85d2:A_FP_TR15_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: fdfbacb8512b40a7a578bbc806bbe957, type: 2}
+    set: {fileID: 11400000, guid: de63d8dbe04ec1846a3bfec76c0ca0a4, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|5db6d864b153cd24a8d662f91c754705:8b61b8998d68d238c769cca588c0cfb7:Mk14EBR|b41950416eca85b4ea944bbc77b908d8:3bb15fd65e097f889cf32afa2430be2d:Mk14EBR_Settings|6eaaa0fcd191d2447b2255dc0a1dc13e:cc729b80cfbd390cb3ea4c8cc268ac40:A_FP_Mk14EBR_Idle|-|0c1b6d0ab6e202a4ca959f3e12fc15f5:d1f8826bf47292123534e00b1a1b5d6f:A_FP_Mk14EBR_Draw|a9e6cfc02781ec941bbf56961d1dd302:c9379c4d9e14c5a2a984595713209155:A_FP_Mk14EBR_Holster|216a8b4da0ecbfd4ab093cd72e6c2291:9e43057844045c30bf057d9101154d29:A_FP_Mk14EBR_Inspect|671c46afc48c38e46a5cddba822118da:bacefdf2fadc7c045a92c0a832917893:A_FP_Mk14EBR_Reload_Tactical|a2b491682ec29ba428194a18adb082d9:4a1affbdfb83d2d22ea233cc08f4263a:A_FP_Mk14EBR_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: ddc74a27059547f2b4136bf2021671a0, type: 2}
+    set: {fileID: 11400000, guid: 2710f04a905d39c43bd0be4381fe7318, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|d8ceffb64ca6b0041bd1c813c24ca8e8:8d73d5e81554a23c4860ecdc2781e8c1:MX68|ee3c2280a1974eb41a48a91b1f4f0ed3:443b8088dd98f2071145c0aafd1d7eed:MX68_Settings|7b75d364d2f027e4ea8751c80029c509:4426c573e6300c0650663a493dbabcba:A_FP_MX68_Idle|-|a7fb9f1b4c8c3d8429656c22734f519d:1c66c375b14fdc7d8600808864b492ea:A_FP_MX68_Draw|8efbf81f7a3189f48a52072913dc4e6f:eea29df264b62523a86795a88de3db48:A_FP_MX68_Holster|f3c244a2beb347f40b3783bc1647b417:26b7368ef2b685cda21b5e86eea235a2:A_FP_MX68_Inspect|70c8039ecc3939145884a17ecb482c48:3c168a7c027f854a142db55ee6883e21:A_FP_MX68_Reload_01|d3108c49d32e0cb42815e0a01cd42bfa:67f7c2537a17b660709ae179de47d4f0:A_FP_MX68_Reload_03|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 00ac67f15e3a4b509ea19056ba1c0467, type: 2}
+    set: {fileID: 11400000, guid: 799d735f270bc7343909b3ef50cf3788, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|518cd6f05019a12428dda9c5ad8bc987:80bdb9b7f334d60a0032ae753566ea1c:MKR9|ae11ce9f751a196408788f014dc16df4:d156d019cb0cb9e7a316a5fb56ba8ad2:MKR9_Settings|281d49a6a52a42c4ba754801bc1e13bf:4e1aca93898b2c241b4072e707e79005:A_FP_MKR9_Idle|-|afa7813b2b01f1842a4ae306491afb20:6fda9386ea3ad6ca9b263111947a3834:A_FP_MKR9_Draw|e9d73ea5a854d94468f923a73b5baa3b:fc5604aa603a1ff961412972ed840e2f:A_FP_MKR9_Holster|585935ea0a1a0b4499f172f7c8cf6a95:1d558f296951e82d716d257527f3b5c0:A_FP_MKR9_Inspect|e0aaa2b88fc404244b5b495411dbdac4:cc73b20e0bc50997fdae81f817d5e680:A_FP_MKR9_Reload_Tac|ba4c6a8bd53ad8642a786f8dd96df6b2:2268fab926503f74d1e810360ad4b1fe:A_FP_MKR9_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: c968ca0d31eb4e0ca953c37c6de2a0c0, type: 2}
+    set: {fileID: 11400000, guid: ba26853cc425e9d4ab458d7a60ee5d4c, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|00413fca8e89ed54cbb11639863806bc:865bbdfc75f63740013fd485ef4d7c97:R08|39a7e1c3c2e0ba840aa28ef057badba9:a39c17904dffc2ca32b4fc662adbc735:R08_Settings|044ef7e57736ad741902cc2c672ce053:c60ab980bd049bf41f25b9b8ab168bca:A_FP_R08_Idle|-|5043c71a7453ed04b89af17e3a7a49f7:b61fbba88b07cd7977a7dc269b7e6c11:A_FP_R08_Draw|f6fd0947a4b9eb64b91973c0eceae530:592de754264d39982d182fc904024694:A_FP_R08_Holster|c2d90d63ac18b1d46bf591322c138318:345dc87c881990bf96e454963588a02e:A_FP_R08_Inspect|cac83bdf963c98d46bc75ca62f3b492f:80624d8b140ddbc177bec1cb1c922380:A_FP_R08_Reload_08|cac83bdf963c98d46bc75ca62f3b492f:80624d8b140ddbc177bec1cb1c922380:A_FP_R08_Reload_08|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 6024bef6d38f45a7b5d1501ae4e3d5ea, type: 2}
+    set: {fileID: 11400000, guid: f5c308a2b7325564f80635d68c3eea8f, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|7b086385c6bad84448c3bc3fb01982dd:6d3181eeb635410f3d44a44f565e0858:WK11Viper|ed29137ee1cc31b4697d3ea15ec945ce:2cce13d6e17b2e1d5c0c772cf7414b88:WK11Viper_Settings|55039a586970075479e77cc9a9ea9061:1011abe9a0c567c15226da00911b7a39:A_FP_WK-11_Viper_Idle_Pose|-|6c1f9c54695679a4fba5b00d168a614c:24be6666aed442c7b39fbfb74c138bd4:A_FP_WK-11_Viper_Draw|3dd6e428ac69cb14fb858397e027ef7f:f5fc3c6625234a64c06719f7cae75346:A_FP_WK-11_Viper_Holster|b9f7f54b7dbe36d4f834ba68979e43ad:f232b54abe5f3d5e11ef4cca9a2241e1:A_FP_WK-11_Viper_Inspect|0130785af03c5a8428c80d2c3b71b26f:5a8d5709b6255c35822f9465c7092a6a:A_FP_WK-11_Viper_Reload_Tactical|9d81fd1edc3de204b801acbebd862f1a:53a52a44a4e1a2d99f3f068b6c70e0e4:A_FP_WK-11_Viper_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 4cc2d90b3da715d47a90f7bf6c383e4c, type: 2}
+    set: {fileID: 11400000, guid: 29d6108c1c5e96c42a60edf685bd74c9, type: 2}
+    source: 1|9713510aa4164a84e90ad27b9bca8f8b:a5570eafcc0d4117ccc4e63e493307ca:SKM_Operator|0541c69a05ed0e74495cbfd11de3ee80:6873d78c9e35dfc874edeb4128f50b0c:Desperado|39a7e1c3c2e0ba840aa28ef057badba9:a39c17904dffc2ca32b4fc662adbc735:R08_Settings|044ef7e57736ad741902cc2c672ce053:c60ab980bd049bf41f25b9b8ab168bca:A_FP_R08_Idle|-|5043c71a7453ed04b89af17e3a7a49f7:b61fbba88b07cd7977a7dc269b7e6c11:A_FP_R08_Draw|f6fd0947a4b9eb64b91973c0eceae530:592de754264d39982d182fc904024694:A_FP_R08_Holster|c2d90d63ac18b1d46bf591322c138318:345dc87c881990bf96e454963588a02e:A_FP_R08_Inspect|cac83bdf963c98d46bc75ca62f3b492f:80624d8b140ddbc177bec1cb1c922380:A_FP_R08_Reload_08|cac83bdf963c98d46bc75ca62f3b492f:80624d8b140ddbc177bec1cb1c922380:A_FP_R08_Reload_08|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: acdc885b530bd084ba8cb4167593e752, type: 2}
+    set: {fileID: 11400000, guid: 2cf0920a1e2827540a14d58bfaebc865, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|678adfd8046c43a4fa1f002d5d4e54c5:b8e4281b513ffd304b6c2f0f9517fecd:AKX200|d532f7fdf156db44eb1203f75a5bc17e:f2329d3e8bbdf47784d86d5433f63134:AK_Settings|29636f444b68218409489c8e9301c935:80186e09a6cda70da73636a31f7d8ef5:A_FP_AKX_Idle|-|-|-|-|2193b6388df5e88408f9d27aee2ce70f:8d933ab72d3359907467ca95b84b169c:A_FP_AKX_Reload_Tac|c5d51316e69be744093c8aca0d945b5b:8bab1eb62ea9bb335d9f868e07780f2c:A_FP_AKX_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: d9507ffb958c46b49856e18cc4342663, type: 2}
+    set: {fileID: 11400000, guid: a843b29b858c764478f5f45643e0ddfd, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|71ef707c1d0a62e44b703c3cd8222435:4d3893d085ddf5c7f0854102c2e69115:ASVal|cda71ffb4333f9e498ec31127d072b48:19f1b7bf82dd86b00e0900f948642c92:ASVal_Settings|28ad28f680737834a9d4e3cb146db030:23463ac319b28918f215acbd581b9049:A_FP_Val_Pose|-|-|-|-|a0354b2c44d410e4c888fd6454c52ffd:f569c8c26d583902181c9af2cd26b7eb:A_FP_Val_Reload_Tac|f2cb40245110bda4ea2c0fc1c622d3c3:46ebbf760cc523c000c22439fc0b4249:A_FP_Val_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 79bd712e1a4a3a64e94ecb035ca35c32, type: 2}
+    set: {fileID: 11400000, guid: 7166471bbd8b6c24aaa078145c06be27, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|f41f35807e3c8244c82477eb9f5587c4:eeb7ea29ba429e9ff1cf675bae7e3f04:G3|918028f91e0134446b19db15328e2f6e:76ca8328197823b2ac7bb5333d6f3e71:G3_Settings|2ad723c412fe85a43a1e5d633902a823:13fe4ab99b34d2577e39f6a47c744369:A_FP_G3_Idle|-|-|-|-|962fe467515a4ca4e91af3a1f38a18b4:d4bec484a2880fca3f055b492ba39707:A_FP_G3_Reload_Tac|f884c8968fb0e9e4a9aa4732cbf88431:06a836247ebc1266b0c3ff7cb52b2da6:A_FP_G3_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 42c2cfdff3795b44da1b1039656583d9, type: 2}
+    set: {fileID: 11400000, guid: d0360ba52645458488e2742c12664d83, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|0fdb0038e78797e468b8e3e37fc499f4:adf9b8891fea32c9bdf28bf7600e08f7:SVD|ecdf07fd495ffe6458807e716e5dd556:13963878562a0b5ebd7d03e6e56a7b36:SVD_Settings|cc77a702baa03504a9a4202634950c50:516777e47bc60d3df359a22f392ea2f0:A_FP_SVD_Pose|-|-|-|-|aac3ff72605d51b4b939f0fb6da11b55:dc6d56f084d4b99302869fc1e07980ff:A_FP_SVD_Reload_Tac|1b5f16a2500d09848abb60f16cf81655:34f3965faf599882bc6f903040e18427:A_FP_SVD_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 1ffb45a7706880742b4772883fee0185, type: 2}
+    set: {fileID: 11400000, guid: 20706349e6d416b4cab240c88b3817fc, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|9a32abf481ac6b241841ac4f4673c5f0:f811662a94b7a80fe25ace2cbe2e7a58:MGX5|91714cb181e4c464e8521a8648a94123:4fc65be0dcb19424a76e04bbaa977264:MGX5_Settings|24a53b22c4c5a7b4a85bfb66263ab56c:b7ed9d53df16f51d2c8a80ac1a482a61:A_FP_MGX5_Idle|-|-|-|-|a2f617e94dd94eb49bbfe2405bebc717:1394ef6ef808e0fc754a6e41874f3fae:A_FP_MGX5_Reload_Tac|fc22e877fb858604981028ef7a0ce593:8988ed61f337f632dfa7012e691d22e5:A_FP_MGX5_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: b6b459223f08760408b6a1d8a9df013d, type: 2}
+    set: {fileID: 11400000, guid: 86d79a3e6d18d5f4d9ba0196679b5ebc, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|a24e37a2ea3b7bb49b92a6840c130366:a8df4f4ae33dff39bc22717210a22b64:MPS5|994fa12675435d143844dd7c491200fc:c1486816ecac6511018f355a81215e36:MPS5_Settings|52b4768714645d24a977c92ca4dac069:f446d29fc9464152420dda70a7dadc99:A_FP_MPS5_Pose|-|-|-|-|e474f134c8850ec41bde2b0644e74624:9a600d05f5cb60657eb5528e6d540655:A_FP_MPS5_Reload_Tac|2d390789e42f8464da59e9d6489e087f:565c16a3483fa329a6e4b0e12d4bb05d:A_FP_MPS5_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 6c13f7953bca1b241b6dd3e408efc778, type: 2}
+    set: {fileID: 11400000, guid: 5882f07a5998fab429cad79f4b6e0601, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|5bfdcae32eaf45e4187ff89098738e38:d8c65a9acd8e9160e4427d1dc7ca441b:PDW90|fb7dc12e43c289e47ab91bdbbdd67c8d:ef8ebe0d2700e1f3f9ab0d8be1b87fb9:PDW90_Settings|9bd0d16991774b740bc29e940a702da2:0deb76189dc253d93c61ba6e3c167fbf:A_FP_PDW90_Idle|-|-|-|-|a5cb4c9bccb81244dbb38f1ba77f2f94:8a010e90b0030ec527c1b48bce684506:A_FP_PDW90_Reload_Tac|494c6e965cc5d96489e06a017a90d15b:7f2ad33b8cefe3832a32be7ee16869b4:A_FP_PDW90_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: e8f3c695e0ba3884cb26bc873188fb72, type: 2}
+    set: {fileID: 11400000, guid: fe73ad77cb393c0458eadd012caf6143, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|0ffd8d56037da7845a522a48f94789cc:e1261d093b514386a711e323b8f9b5dc:StrikerV|4895668e91669224e9a76c9bf9a2bcaa:b1269cb46b265e57528f5bfcee64be9c:Striker-V_Settings|466649d148991a447ae406205e7c7a72:5f6c8d4c2d127b98cadeef9546c362ea:A_FP_Striker-V_Pose|-|-|-|-|8271251b4e2b2054f9756ee17f0b9c79:292a5051a704533f7006c4340a5f98aa:A_FP_Striker-V_Reload_Tac|175b2ce2b1cd7724c8ae4caa3c0af9b3:d8330d2eec6829106dfe6c739d208a7e:A_FP_Striker-V_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: f8af3f7a46d090041b55b5aa9b34d0bc, type: 2}
+    set: {fileID: 11400000, guid: 52a568dd763ce9446aa6ca5ace4e1554, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|78d6cc2d4fed4ac40896f6458a7411a9:6d4fd5051ab898419043661a5c9ab49e:Drake12|c30b40f589bcef34ba3253dcb9ede8c4:f407d974d860ba9a21b525fa6664432e:Drake-12_Settings|6769795516c868844809d550983a6686:204b77cdf10d88c79749f9fd1e46ab4d:A_FP_Drake-12_Pose|-|-|-|-|14819d63b79011e46b91abb04cc2b86f:80e244d2b72b16c3ab5e1b04f7143b9b:A_FP_Drake-12_Reload_Tac|fc243c17db2ccd645b6e2b1aff290e0b:a02432e432381a0c04fc6f04d556c460:A_FP_Drake-12_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 3e10015c07e7ac240974370dd5f8f1c5, type: 2}
+    set: {fileID: 11400000, guid: 38accbca16815de4c80c7c503dc4d50d, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|ea9161d4c3067d14488635afd617d2bb:d7320d824c37ac7380642d0eaa402e73:X18|ad22fb579bf27c04eb4a3ec7fbbfbbc0:bee675df3f2033cbc6c49705da8c93e1:X18_Settings|06a2228064b75b04b84fd12e36d0077f:3be768bd4acca6c0f531bcab59333a55:A_FP_X18_Pose|-|-|-|-|20b95d2765461e64b83da921c28281d5:57d40fd59d4a836b94d63c74fa2fa83f:A_FP_X18_Reload_Tac|5d3415512becc674289071904181d3bc:db43375d9e3604be21f04d82e6680cfa:A_FP_X18_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 8db6ae804d3fe7041945eb5739cf1d62, type: 2}
+    set: {fileID: 11400000, guid: b46574407c05ba244be2f458cf01819e, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|caa051b3265f9114f9c69b0d445a9d9e:a4ce8ccdce7039db89c4005212b6d3cc:DGL50|02fcbed359064394793c4f0dcd37470f:3cb9c4348a02a5df5cc6f8e20d58f7b0:DGL50_Settings|5e4a62903d4fa854ebab5286be5111e4:290575dfa4e260800a73b28a791f0939:A_FP_DGL50_Pose|-|-|-|-|6950b381d774aa343ac966edae7faabc:c77c86b19807673fa54cda548674961f:A_FP_DGL50_Reload_Tac|80464c2e0af6f3942ae39f9701007b42:5de7592c5f5851162a598db72251caee:A_FP_DGL50_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: a773ea1001f107441b9e006f1a9be720, type: 2}
+    set: {fileID: 11400000, guid: 747938cbd74d9ae4b921f2bb2516d559, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|adf82092f45cb7c44947b2c9fefc2b2e:5cb6d24062f97cda9ed48884c30c4c3d:Kolibri|aa1508b5d83ba6048bc3fc849ecab68b:551e742a84df72869390ed85ec454af4:Kolibri_Settings|6a0776dea5a278d4aa566721614aa911:06dd40155f838eed8a09be6409dfc7ba:A_FP_Kolibri_Pose|-|-|-|-|5547b4720d08b0441bc0bce38e5b445f:f968589cde6f1580c0e271687af5f0dc:A_FP_Kolibri_Reload_Tac|34bace114899e174ebde564d61931b83:d55300ab66829a3b0fd1d6ec1555274a:A_FP_Kolibri_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: d79c39080095a674490780630bafd965, type: 2}
+    set: {fileID: 11400000, guid: 5874ed32df0dbaf44aab73d1ea457fad, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|d9404ce4f5be73d4fbf346be1c4e5b41:8bc5d77a4f039faf135e45004b56b14b:Viper357|b18f7b2327233fb47af0fc083e423362:fae1f18c4f0244e9100b505e0f978ee8:Viper-357_Settings|e1615609a5701674abb5e084bca56d56:a2eff96acd025259ceb16fb9fa28db90:A_FP_Viper-357_Idle|-|-|-|-|b333031b961b09546b1a74273443b7ec:31283e34a3f39bad519478a7c1634490:A_FP_Viper-357_Reload_Empty|b333031b961b09546b1a74273443b7ec:31283e34a3f39bad519478a7c1634490:A_FP_Viper-357_Reload_Empty|-|-|-
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 064c2f5663dc0674b9ca24dbaa196e07, type: 2}
+    set: {fileID: 11400000, guid: dadd3d7447e9a7f41972668bc2771042, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|b0dd72632d9522048906c82202ae6dd6:5ab9aea9655f84b5caa2c50cb061bb51:Kar98k|78f9316e88e9d384aa622e3c0264b567:025a2a15112111bb40a4ea7205160e42:Kar98k_Settings|89c867cb2c77def4ca07cdaa0d517ac9:a80febefc490fe726198a7660aafcf66:A_FP_Kar98K_Pose|-|-|-|-|6f44fae4f548c5d4d8ea98de829ac30a:7c90dcdecc6dbe95db381761ec2ab270:A_FP_Kar98K_Reload_Start|6f44fae4f548c5d4d8ea98de829ac30a:7c90dcdecc6dbe95db381761ec2ab270:A_FP_Kar98K_Reload_Start|7b9d063bce6527645a69617ae93fafd1:72623728028b778244c4ad16c89dacd0:A_FP_Kar98K_Reload_Loop|4414584b1005a564e85f31214c5d1fd0:1e4f26b0f0fc36dc6ab8484dbc3cc024:A_FP_Kar98K_Reload_End|8e34516f2e54c3e4a80da5e2987fea18:2749d31f9f65f8ce89739e42cadb6b05:A_FP_Kar98K_Fire
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 4ce67611ca9e87040bfb71703f7a76c8, type: 2}
+    set: {fileID: 11400000, guid: 1dea38f667ba88040a7a034569915914, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|f5aad6acfc8587741b1051761ec4fc16:26b3c55c757fa6438cdcde6dfc081430:L96X|0d5d7ddd7b3afca4189ec22886a2d4fb:4e0d4c814ce148921558ee8997c52f30:L96X_Settings|5396184a95d829444ae83ab910a9e518:d25c2596e527d5c6fbbba29d2c7a8337:A_FP_L96X_Pose|-|-|-|-|a15ee33c9641a7a48852a68e9c8fb5ca:6ddfe73cbb67b3516ee4a9e141cbbccd:A_FP_L96X_Reload_Tac|5ba631a8d6e332946ad316567be4a7b4:a70836abc35d695345778417dd4f21ab:A_FP_L96X_Reload_Empty|-|-|2d1a9a61b2979dd4dbff29e35cabd603:4a60d8b25c7e9dba5e1dccdcce15a577:A_FP_L96X_Fire
+    failedSource: 
+  - weapon: {fileID: 11400000, guid: 902e17de94408e248af312d37b8e4a7b, type: 2}
+    set: {fileID: 11400000, guid: 6651b70cd049e4b48af14a5aa7aec29c, type: 2}
+    source: 1|405129f43f2032e4bbed300529635549:df25ec7ad51266af863565fe2cf54bec:SK_Arms_Mono|d4ddb1fd5dcbb1747b8ea2e7f3ad790d:f019ff9ef94ed1d0b943f70ce58c1792:KXG12|e667597056f9f0843b5dda1c18962fa8:de4c7836fdf2bf85e99e844d86b93b7a:KXG12_Settings|26c16d59c52fb654cbb1ced722145762:478a75501977218bb5057d5ee038ed12:A_FP_KXG12_Pose|-|-|-|-|a71822a2aa08ee94983f5bf1b2b36b7a:74c7b46dcc5fdf2e96b5162b7c13141d:A_FP_KXG12_Reload_Start|ce7f364865d31d94691291c710f035a3:e22d6cd83dc5204b272f95b6b1da7908:A_FP_KXG12_Pump_Empty|dd317974b8cfa4446b60fcac947f96e5:5eaf098b4bb03bb78b8da3f0b1121e4d:A_FP_KXG12_Reload_Loop|50b036d4a135a1441881d1aa13529b31:6106afe1de062670e3c552ecd8bdd98e:A_FP_KXG12_Reload_End|6c932c9f2436cad4bb01586d1307669b:113034379e0b4ff0ec1d98c76c098acc:A_FP_KXG12_Pump
+    failedSource: 

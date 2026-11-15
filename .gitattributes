@@ -169,6 +169,9 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+# Each gun's actions as rows of sampled numbers (GunTrackSet, PreferBinarySerialization): binary files, which the yaml
+# rule above would have git rewrite line ends in
+Assets/_Project/Data/Guns/GunTracks/*.asset binary
 
 # KINEMATION ships animation clips as .anim YAML of up to 68 MB each; keep them in LFS
 Assets/ThirdParty/KINEMATION/**/*.anim lfs

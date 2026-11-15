@@ -28,6 +28,7 @@
 
 | 문서 | 내용 |
 | --- | --- |
+| [총 다루기 (설계)](Features/GunHandling.md) | 손에 든 총의 자리를 누가 정하는지 다시 세우는 설계와 단계표 (0.9.113부터 진행 중) |
 | [클래스 카드](Features/ClassCards.md) | 클래스마다의 능력 카드 |
 | [엔필레이드 타워](Features/Tower.md) | 시련의 탑 |
 | [처형·암살](Features/Executions.md) | 자세별 짝 애니메이션 |
