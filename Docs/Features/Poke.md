@@ -173,7 +173,7 @@ lilToon 2.4.1의 `Packages/jp.lilxyzw.liltoon/Shader/Includes`에 있는 두 파
     EnfiladeSkinDent(input.positionOS, enfiladeNoNormal, false);
 ```
 
-lilToon 머티리얼을 쓰는 캐릭터(마요·이치고·에네 옷·카즈사·히로, 모드의 lilToon 아바타)는 눌린다. 실(Poiyomi와 전용 셰이더)은 눌림 없이 손끝·소리·표정 이벤트만 있다.
+lilToon 머티리얼을 쓰는 캐릭터(마요·이치고·에네 옷·카즈사, 모드의 lilToon 아바타)는 눌린다. 실(Poiyomi와 전용 셰이더)은 눌림 없이 손끝·소리·표정 이벤트만 있다.
 
 ## 가볍게
 

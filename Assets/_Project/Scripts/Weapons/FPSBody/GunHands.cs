@@ -7,7 +7,7 @@ using UnityEngine;
 /// little back from the gun or along the fingers.
 /// This is the user's idea of a fine offset per character (2026-11-12: "세부 조정 오프셋"), kept as the last touch now
 /// that the contact points carry the clip itself.
-/// Rows: Tables/GunHands.csv, id = the character's skin id (PlayerBodyProfile.Skin.Id: kazusa-band, hiro, sil, mayo,
+/// Rows: Tables/GunHands.csv, id = the character's skin id (PlayerBodyProfile.Skin.Id: kazusa-band, sil, mayo,
 /// ichigo), or "default" for any character without a row of its own (a mod's character adds a row with its id). Columns
 /// rightBack, rightAlong, leftBack, leftAlong in metres: back is against the way the palm faces (away from the gun),
 /// along is the way the fingers point. Edited in Play, ENFILADE > 표 > 표 다시 읽기 applies it at once.

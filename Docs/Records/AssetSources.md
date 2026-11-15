@@ -58,7 +58,7 @@
 | `Art/Models/Characters/KazusaBand` | 91개, 108MB | 블루 아카이브의 카즈사. `KazusaBand.kkbp.json`으로 보아 코이카츠 모델 변환본으로 추정. 어디서 받았는지 기록이 없다 |
 | `Tools/Blender/Source/Hiro` | 저장소 안, Assets 밖 | 클립을 구울 때 쓰는 Hiro 뼈대 MDL(워크숍 3744034369) |
 
-Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터라 교체 대상이 아니다.
+Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터였고, 0.9.116에 게임에서 뺐다(사용자 2026-11-15: "히로는 캐릭터 이제 없애도 될 듯."). 이름만 히로인 것은 그대로 쓴다: 모든 캐릭터의 목소리인 `Art/Audio/Voice/Hiro`, Hiro 뼈대에 구운 Beatrun 클립, 클립을 구울 때 쓰는 뼈대 MDL(`Tools/Blender/Source/Hiro`). 모델을 다시 들이려면 git 기록(0.9.115)에서 꺼낸다.
 
 ## 라이선스 안에서 유지
 

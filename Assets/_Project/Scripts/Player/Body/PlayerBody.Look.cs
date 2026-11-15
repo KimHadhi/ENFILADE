@@ -131,7 +131,7 @@ public sealed partial class PlayerBody
         TuneLean();
         SetUpAimSteady();
         if (head == null) return;
-        // Imported avatars need not face their prefab's +Z (Hiro faces -Z in its rest pose).
+        // Imported avatars need not face their prefab's +Z (Kazusa and Sil face -Z in their rest pose).
         leftUpperArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
         rightUpperArm = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
         restForward = leftUpperArm != null && rightUpperArm != null

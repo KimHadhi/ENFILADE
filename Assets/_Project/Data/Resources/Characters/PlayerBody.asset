@@ -20,12 +20,6 @@ MonoBehaviour:
     ledgeHandSpacingScale: 1
     ledgePalmInsetScale: 1
     variants: []
-  - id: hiro
-    displayName: "\uD788\uB85C"
-    model: {fileID: 919132149155446097, guid: be2a3fbba9a297c4483cd2d4f6626345, type: 3}
-    ledgeHandSpacingScale: 1
-    ledgePalmInsetScale: 1
-    variants: []
   - id: sil
     displayName: "\uC2E4"
     model: {fileID: 919132149155446097, guid: 9f13e8940fdb4406832dea65d72fc41b, type: 3}

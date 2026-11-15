@@ -16,7 +16,7 @@ using UnityEngine;
 /// would stand in the body below the head (a short neck, a big chest), it tips forward at the bottom just enough to
 /// clear it, as a welder's helmet does. It follows the head bone.
 /// The way the character faces is read from its skeleton, across the eyes (else the shoulders or the hips), never from the
-/// model's own +Z: Kazusa's, Hiro's and Sil's models face the other way in their files' space, and the mask went onto the
+/// model's own +Z: Kazusa's and Sil's models face the other way in their files' space, and the mask went onto the
 /// backs of their heads (the user, 2026-11-13: "왜 카즈사, 히로, 실은 뒤통수 쪽에 위치해? 근데 뒤통수에 위치하니까 멋있긴 해서
 /// 옵션으로"). That look is now an item of its own: worn back (OutfitItem.wear "back"), the same rule runs on the face turned
 /// round, the back of the head and hair standing for the face.

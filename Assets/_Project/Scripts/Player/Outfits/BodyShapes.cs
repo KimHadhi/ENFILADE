@@ -9,7 +9,7 @@ using UnityEngine;
 /// in one shape although their makers built them to be shaped, and asked for all of it, not only what a VRChat menu
 /// would show (2026-11-12: "VRChat식에 고집할 필요 없고 저 캐릭터별로 커스터마이징 할 수 있는 기능들 다 넣는 느낌").
 /// Left out on purpose: expressions (blinks, mouth shapes, tears, sweat), the keys clothes press the body in with
-/// (Shrink, Kuikomi, Fit) and heel keys, which the shoes' slot holds. Kazusa, Hiro and Sil carry expression keys only,
+/// (Shrink, Kuikomi, Fit) and heel keys, which the shoes' slot holds. Kazusa and Sil carry expression keys only,
 /// so they have no rows.
 /// A row is a slider (one key 0 to 100), a pair (one key making less, one making more: -100 to 100) or a choice (one
 /// of several keys at 100, the 0th choice none). The player's values ride in the character's outfit (OutfitLook) as

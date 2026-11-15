@@ -13,7 +13,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CheekWeldLayerSettings : FPSAnimatorLayerSettings
 {
-    // By the rig layout's index (FPSBodyRig), never by name: a body's own bones keep their own names (Hiro's and Sil's
+    // By the rig layout's index (FPSBodyRig), never by name: a body's own bones keep their own names (Sil's
     // aren't "Head" or "Chest"), and a lookup by name threw and stopped FPSAF linking every layer after this one (2026-11-08).
     public KRigElement head = new KRigElement(FPSBodyRig.HeadIndex, "Head");
     public KRigElement neck = new KRigElement(FPSBodyRig.NeckIndex, "Neck");

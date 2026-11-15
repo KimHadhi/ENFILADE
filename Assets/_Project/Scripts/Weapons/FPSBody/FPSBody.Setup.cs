@@ -256,8 +256,8 @@ public sealed partial class FPSBody
         return profile;
     }
 
-    // FPSAF's Look shares the view's pitch, turn and lean down the spine by bone; a body without one of them (Hiro and Sil
-    // have no UpperChest) has an empty stand-in there, and its share turned nothing: the gun followed a small turn only two
+    // FPSAF's Look shares the view's pitch, turn and lean down the spine by bone; a body without one of them (Sil has no
+    // UpperChest) has an empty stand-in there, and its share turned nothing: the gun followed a small turn only two
     // thirds of the way, and a lean fell a third short (probe, 2026-11-08). Here a missing bone's share goes to the one below.
     private LookLayerSettings LookFor(LookLayerSettings source)
     {
