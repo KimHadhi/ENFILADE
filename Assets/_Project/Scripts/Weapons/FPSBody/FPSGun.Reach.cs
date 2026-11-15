@@ -4,34 +4,20 @@ using UnityEngine;
 // FPSGun: This body's hold of the gun (GunHold) and the clip its hands follow. One part of the class; the rest is in FPSGun.cs and the files beside it.
 public sealed partial class FPSGun
 {
-    // How far the support palm comes back along the gun (m, along the gun frame's -z), from where along the gun the plain
-    // hold has it (its z), and over how far behind that the slide fades out (m).
-    private float reachSlide, reachSlideAt, reachSlideFade = .1f;
+    // How far back along the gun this body's support palm holds it from where KINEMATION's does (GunHold's slide, set with
+    // the hold: SetHold). None until the gun's hold is made.
+    private SupportSlide supportSlide;
 
-    // The support palm comes `slide` back along the gun from the plain hold's place (`at`, its z in the gun's frame), fading
-    // out over `fade` behind it (SetHold).
-    private void SetReachSlide(float slide, float at, float fade)
-    {
-        reachSlide = Mathf.Max(0f, slide);
-        reachSlideAt = at;
-        // At least twice the slide, so a palm further back never passes one ahead of it (the steepest smoothstep is 1.5).
-        reachSlideFade = Mathf.Max(fade, 2f * reachSlide, .01f);
-    }
+    // How far the palm at the hold's place comes back (m), for the grips drawn back with the hand (SeatGrips).
+    private float reachSlide => supportSlide.Back;
 
     /// <summary>
-    /// A support palm's place in the gun's frame, moved back along the gun (its -z) by the reach slide: all of it at the
-    /// plain hold's place on the handguard and ahead of it, less and less behind, none from the fade's length back. So a
-    /// reload's hand on the magazine or the loading port stays where its clip has it, a reload's end comes into the slid
-    /// hold smoothly, and the hold is the same in every view. None while the gun wears a foregrip: the hand holds the grip
-    /// where it was seated (GunAttachments.SeatGrips).
+    /// A support palm's place in the gun's frame, moved back along the gun (its -z) by this body's slide (SupportSlide: all of
+    /// it at the plain hold's place on the handguard and ahead of it, less and less behind, none from the fade's length
+    /// back, so a reload's hand on the magazine or the loading port stays where its clip has it). None while the gun wears a
+    /// foregrip: the hand holds the grip where it was seated (GunAttachments.SeatGrips).
     /// </summary>
-    internal Vector3 SlideSupport(Vector3 palm)
-    {
-        if (reachSlide <= 0f || GripKind != GunAttachments.Kind.None) return palm;
-        float share = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(reachSlideAt - reachSlideFade, reachSlideAt, palm.z));
-        palm.z -= reachSlide * share;
-        return palm;
-    }
+    internal Vector3 SlideSupport(Vector3 palm) => GripKind != GunAttachments.Kind.None ? palm : supportSlide.Of(palm);
 
     // ---- How this body holds the gun (GunHold) ----
 
@@ -51,7 +37,7 @@ public sealed partial class FPSGun
     {
         this.hold = hold;
         this.holder = holder;
-        SetReachSlide(slide, at, fade);
+        supportSlide = new SupportSlide(slide, at, fade);
         foreach (var point in eyePoints)
             if (point.Value != null && point.Value != point.Key) Destroy(point.Value.gameObject);
         eyePoints.Clear();

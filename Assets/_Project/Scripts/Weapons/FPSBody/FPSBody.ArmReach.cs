@@ -71,6 +71,9 @@ public sealed partial class FPSBody
         WristUnderShoulder = GameTables.Number(TableName, TableRow, nameof(wristUnderShoulder), .02f)
     };
 
+    /// <summary>How far behind the hold's place the support hand's slide fades out, as the table has it, for the editor's bench.</summary>
+    internal static float TableSlideFade() => GameTables.Number(TableName, TableRow, nameof(reachSlideFade), .1f);
+
     // The hold of <paramref name="entry"/>'s gun on this body. <paramref name="own"/>: the gun's clips were made on this
     // body. <paramref name="gunModel"/> is this body's copy of the gun (its own space is the gun's frame) and
     // <paramref name="aimPoint"/> its sight's. A body that can't be measured, or a gun whose pose can't be read, keeps the

@@ -40,7 +40,9 @@ internal static class GunTrackBake
     // The report's own bands: how near its hold a gun is said to stay (m, degrees), and how far a palm is from its place in
     // the hold to be said away (m). They decide nothing in the game.
     private static readonly (float move, float turn)[] Bands = { (.005f, 1f), (.01f, 2f), (.02f, 5f) };
-    private const float HandAway = .04f;
+    /// <summary>A palm further than this from its place in the hold is said to be away from the gun (m). The reports' band
+    /// (this one's and the bench's, GunBench); it decides nothing in the game.</summary>
+    internal const float HandAway = .04f;
     // A draw's and a holster's table of the gun's way home is printed every this many seconds.
     private const float TableStep = .05f;
 

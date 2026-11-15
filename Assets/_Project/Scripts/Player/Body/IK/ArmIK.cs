@@ -92,6 +92,20 @@ internal sealed class ArmIK
     public Vector3 WristAtPalm(Vector3 palm, Quaternion rotation)
         => palm - rotation * Vector3.Scale(grip.PalmLocal, hand.lossyScale);
 
+    /// <summary>
+    /// The middle of the palm onto a place on a gun, the fingers pointing <paramref name="fingers"/> and the palm facing
+    /// <paramref name="facing"/> (the world): how a hand takes a gun's contact, the same for the game (PlayerBodyHands'
+    /// HoldGunContacts) and the editor's bench (GunBench). The elbow turns toward <paramref name="elbowWay"/> where one is
+    /// known (the way KINEMATION's elbow points off its shoulder-to-hand line at that moment), else it stays on the side
+    /// it bends to now. Eased at the end of the arm's reach (Solve's soft).
+    /// </summary>
+    public void HoldPalm(Vector3 palm, Vector3 fingers, Vector3 facing, bool hasElbowWay, Vector3 elbowWay, float weight, float shoulderAngle)
+    {
+        Quaternion rotation = HandRotation(fingers, facing);
+        Vector3 hint = hasElbowWay ? upper.position + (palm - upper.position) * .5f + elbowWay * .3f : Elbow;
+        Solve(WristAtPalm(palm, rotation), rotation, hint, weight, 1f, shoulderAngle, soft: true);
+    }
+
     public void PrepareBarGrip(float halfThickness, float palmClearance, float clearance)
         => grip.PrepareBar(halfThickness, palmClearance, clearance);
 

@@ -1,0 +1,738 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
+using KINEMATION.Shared.KAnimationCore.Runtime.Core;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
+
+/// <summary>
+/// The editor's bench for a gun in a body's hands, without playing: a character is stood in a gun's action at a moment,
+/// the gun put where that body holds it and moved as the action's track moves it, both palms put on the gun by arm IK and
+/// the fingers bent as the track has them, with the very classes the game does each with (HoldBody, GunHold, GunTrack,
+/// SupportSlide, ArmIK.HoldPalm, HandGrip). Then it is measured (how far each palm ends up from its place, how straight
+/// each arm is) and, when asked, photographed from the eyes and from outside.
+/// So a hold or a draw that is wrong on one character is a number and a picture before anyone plays it, and the session
+/// that changed it looks first (the user, 2026-11-15: every break of the gun's hold so far was found by them, playing).
+/// What it shows is the gun's base place and the hands: the body standing as the action's clip stands it, the view level,
+/// nothing of FPS Animation Framework's layers on top (no aim, sway, recoil or wall). A grip the gun wears is not held yet
+/// (the support hand goes where the bare gun is held).
+/// ENFILADE → 총 → 검사대 runs every character with every gun's hold, numbers only. A tool outside Unity asks through
+/// Temp/enfilade-gunbench.request, whose lines say what to stand (all optional):
+///   skins=mayo,ichigo        characters by id (all)
+///   guns=Herrington1187      guns by their WeaponData name (all)
+///   actions=Hold,Draw        GunTrackKind names (Hold)
+///   times=0,0.2,0.63         moments of an action to photograph, s (five across it)
+///   pictures=fp,side,front   from the eyes (the body's own head left out), from the right side, from the front quarter (none)
+///   width=640                a picture's width in pixels (16:9)
+/// Logs/GunBench/report.txt has the numbers; each stood action's pictures are one sheet beside it, a column to a moment
+/// and a row to a view. It lives beside FPSBody because it stands the body with the game's own classes.
+/// </summary>
+[InitializeOnLoad]
+internal static class GunBench
+{
+    private const string Request = "Temp/enfilade-gunbench.request", Folder = "Logs/GunBench", ReportPath = Folder + "/report.txt";
+    // The report marks a palm that ends further than this from its place on the gun (m): the arm did not reach it. The
+    // bench's own; it decides nothing in the game.
+    private const float PalmMissed = .01f;
+    // An action is measured at no more than this many of its frames.
+    private const int MostSamples = 80;
+    // The first-person lens: the game's default field of view (GameSettings.fieldOfView 90 across a 16:9 screen).
+    private const float ScreenFieldAcross = 90f, ScreenAspect = 16f / 9f;
+    private static readonly Color Backdrop = new Color(.32f, .34f, .38f), Ambient = new Color(.45f, .47f, .52f);
+
+    private static double next;
+
+    static GunBench() => EditorApplication.update += Tick;
+
+    private static void Tick()
+    {
+        double now = EditorApplication.timeSinceStartup;
+        if (now < next) return;
+        next = now + .5;
+        if (!File.Exists(Request)) return;
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+        Ask ask;
+        try
+        {
+            ask = Ask.Read(File.ReadAllLines(Request));
+            File.Delete(Request);
+        }
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+        {
+            return;
+        }
+        Run(ask);
+    }
+
+    [MenuItem("ENFILADE/총/검사대 (모든 캐릭터, 쥐기)")]
+    private static void RunAll() => Run(new Ask());
+
+    // ---- What was asked ----
+
+    private sealed class Ask
+    {
+        public HashSet<string> Skins, Guns;
+        public readonly List<GunTrackKind> Actions = new List<GunTrackKind>();
+        public List<float> Times;
+        public bool Eyes, Side, Front;
+        public int Width = 640;
+
+        public bool Pictures => Eyes || Side || Front;
+
+        public static Ask Read(string[] lines)
+        {
+            var ask = new Ask();
+            foreach (string raw in lines)
+            {
+                int cut = raw.IndexOf('=');
+                if (cut <= 0) continue;
+                string key = raw.Substring(0, cut).Trim().ToLowerInvariant();
+                var values = raw.Substring(cut + 1).Split(new[] { ',', ' ', ';', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                switch (key)
+                {
+                    case "skins":
+                        ask.Skins = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
+                        break;
+                    case "guns":
+                        ask.Guns = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
+                        break;
+                    case "actions":
+                        foreach (string value in values)
+                            if (Enum.TryParse(value, true, out GunTrackKind kind) && !ask.Actions.Contains(kind)) ask.Actions.Add(kind);
+                        break;
+                    case "times":
+                        ask.Times = new List<float>();
+                        foreach (string value in values)
+                            if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float time)) ask.Times.Add(Mathf.Max(0f, time));
+                        break;
+                    case "pictures":
+                        foreach (string value in values)
+                        {
+                            string view = value.ToLowerInvariant();
+                            if (view == "fp" || view == "eyes") ask.Eyes = true;
+                            else if (view == "side") ask.Side = true;
+                            else if (view == "front" || view == "tp") ask.Front = true;
+                        }
+                        break;
+                    case "width":
+                        if (values.Length > 0 && int.TryParse(values[0], out int width)) ask.Width = Mathf.Clamp(width, 160, 1920);
+                        break;
+                }
+            }
+            return ask;
+        }
+    }
+
+    // ---- The run ----
+
+    // The numbers the game holds a gun by, read where the game reads them.
+    private struct Numbers
+    {
+        public GunHold.Rules Rules;
+        public float SlideFade, ShoulderReach, HeadNearClip;
+        // The game's camera sits this far above and ahead of the eye bones (PlayerBody's eyeAdjust and eyeViewAhead, m).
+        public float EyeUp, EyeAhead;
+    }
+
+    // Player.csv's Body.eyeAdjust ("up;ahead", m) and Body.eyeViewAhead, as PlayerBody places its camera from the eyes.
+    private static void EyeOffsets(out float up, out float ahead)
+    {
+        up = 0f;
+        ahead = GameTables.Number(PlayerMovement.TableName, "Body", "eyeViewAhead", .02f);
+        if (!GameTables.TryGetRow(PlayerMovement.TableName, "Body", out var row) || !row.TryGetValue("eyeAdjust", out string cell) || cell == null) return;
+        var parts = cell.Split(';');
+        if (parts.Length > 0 && float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float adjustUp)) up = adjustUp;
+        if (parts.Length > 1 && float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float adjustAhead)) ahead += adjustAhead;
+    }
+
+    private static void Run(Ask ask)
+    {
+        var profile = PlayerBodyProfile.Load();
+        var assets = FPSBodyAssets.Instance;
+        var bakes = GunBakes.Instance;
+        var tracks = GunTracks.Instance;
+        if (profile == null || assets == null || bakes == null || tracks == null)
+        {
+            Debug.LogWarning("GunBench: the body profile, the gun list, the gun bakes or the gun tracks are missing; nothing to stand.");
+            return;
+        }
+        if (ask.Actions.Count == 0) ask.Actions.Add(GunTrackKind.Hold);
+        var numbers = new Numbers
+        {
+            Rules = FPSBody.TableRules(),
+            SlideFade = FPSBody.TableSlideFade(),
+            ShoulderReach = GameTables.Number(PlayerMovement.TableName, "Hands", "shoulderReach", 15f),
+            HeadNearClip = GameTables.Number(PlayerMovement.TableName, "Body", "headNearClip", .05f)
+        };
+        EyeOffsets(out numbers.EyeUp, out numbers.EyeAhead);
+        // The arms ease in at the end of their reach as the game's do (PlayerBodyHands sets the same number every frame).
+        float softWas = ArmIK.SoftReachFrom;
+        ArmIK.SoftReachFrom = GameTables.Number(PlayerMovement.TableName, "Hands", "softReachFrom", .93f);
+        // Read afresh: outside play nothing else forgets the guns' handles.
+        GunHandles.Forget();
+
+        var text = new StringBuilder();
+        text.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} gun bench: each character stood in a gun's action with the game's own classes, the view level, "
+            + "no FPSAF layer on top. off its grip = how far a palm that the clip has on the gun ends from its place there after the "
+            + "arm's IK (cm), and how far its fingers' way or facing is turned from it (degrees); short = the same for a palm the "
+            + $"clip has taken off the gun (to a magazine, a pouch, a bolt: over {GunTrackBake.HandAway * 100f:0.#} cm from its place in the hold), "
+            + "which is as far as this body's arm goes toward where KINEMATION's arm went; straight = shoulder joint to wrist over the "
+            + $"arm's own length. '!' marks a palm on the gun over {PalmMissed * 100f:0.#} cm off its grip (the bench's own mark).");
+        Directory.CreateDirectory(Folder);
+        var armsByModel = new Dictionary<GameObject, GunArms>();
+        Stage stage = null;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        int stood = 0, sheets = 0;
+        try
+        {
+            if (ask.Pictures) stage = new Stage();
+            float camera = CameraHeight();
+            int done = 0;
+            foreach (var skin in profile.Skins)
+            {
+                done++;
+                if (skin == null || (ask.Skins != null && !ask.Skins.Contains(skin.Id))) continue;
+                var model = profile.ModelOf(skin);
+                if (model == null) continue;
+                EditorUtility.DisplayProgressBar("ENFILADE: 총 검사대", skin.Id, done / (float)Mathf.Max(1, profile.Skins.Count));
+                Stand(ask, numbers, stage, profile, skin.Id, model, camera, assets, bakes, tracks, armsByModel, text, ref stood, ref sheets);
+            }
+        }
+        catch (Exception error)
+        {
+            text.AppendLine("! the bench stopped: " + error.Message);
+            Debug.LogException(error);
+        }
+        finally
+        {
+            EditorUtility.ClearProgressBar();
+            foreach (var arms in armsByModel.Values) arms?.ReleaseNow();
+            stage?.Dispose();
+            GunHandles.Forget();
+            ArmIK.SoftReachFrom = softWas;
+        }
+        text.AppendLine();
+        text.AppendLine($"({stood} actions stood, {sheets} picture sheets, {watch.Elapsed.TotalSeconds:0.0} s)");
+        File.WriteAllText(ReportPath, text.ToString());
+        Debug.Log($"GunBench: {stood} actions stood, {sheets} picture sheets; the numbers are in {ReportPath}.");
+    }
+
+    // The standing camera height the game sizes every body to (Player.prefab's CrouchPivot, as the hold check takes it).
+    private static float CameraHeight()
+    {
+        var player = Resources.Load<GameObject>("Characters/Player");
+        var pivot = player != null ? player.transform.Find("CrouchPivot") : null;
+        return pivot != null ? pivot.localPosition.y : 1.6f;
+    }
+
+    // One character with every gun asked for.
+    private static void Stand(Ask ask, in Numbers numbers, Stage stage, PlayerBodyProfile profile, string id, GameObject model, float camera, FPSBodyAssets assets,
+        GunBakes bakes,
+        GunTracks tracks, Dictionary<GameObject, GunArms> armsByModel, StringBuilder text, ref int stood, ref int sheets)
+    {
+        var instance = Object.Instantiate(model);
+        instance.hideFlags = HideFlags.HideAndDontSave;
+        try
+        {
+            instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            instance.transform.localScale = Vector3.one;
+            var animator = instance.GetComponentInChildren<Animator>();
+            var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+            if (head == null)
+            {
+                text.AppendLine();
+                text.AppendLine($"== {id}: no humanoid avatar, not stood.");
+                return;
+            }
+            // As a player's body plays (PlayerBody.Build): HoldBody.Measure says why.
+            animator.applyRootMotion = false;
+            instance.transform.localScale = Vector3.one * PlayerBody.DrawnScaleOf(animator, instance.transform, camera);
+            // The arms and hands measured at rest, before any clip, as PlayerBodyHands binds them.
+            var right = ArmIK.Create(animator, false);
+            var left = ArmIK.Create(animator, true);
+            if (right == null || left == null)
+            {
+                text.AppendLine();
+                text.AppendLine($"== {id}: no humanoid arms, not stood.");
+                return;
+            }
+            var shoulder = HoldBody.ShoulderOf(animator);
+            // The player's own head, by the game's rule (PlayerBody.Build): the view from the eyes is taken without it, as the
+            // game shows it with the own-head option off, so the gun and the hands are seen and not the inside of a face.
+            var headParts = new List<Renderer>();
+            foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
+            {
+                bool onHead = renderer is SkinnedMeshRenderer skinned && HeadMeshes.OnHead(skinned, head);
+                foreach (string part in profile.FirstPersonShadowOnly)
+                    onHead |= string.Equals(renderer.name, part, StringComparison.OrdinalIgnoreCase);
+                if (onHead) headParts.Add(renderer);
+            }
+            stage?.Take(instance);
+            text.AppendLine();
+            text.AppendLine($"== {id} ({model.name}), drawn x{Mathf.Abs(instance.transform.lossyScale.x):0.000}");
+
+            foreach (var entry in assets.guns)
+            {
+                if (entry.weapon == null || entry.prefab == null) continue;
+                if (ask.Guns != null && !ask.Guns.Contains(entry.weapon.name)) continue;
+                if (!bakes.TryGet(model, entry.weapon, out var bake, out bool own) || bake.pose == null) continue;
+                var set = tracks.For(entry.weapon);
+                if (set == null)
+                {
+                    text.AppendLine($"{entry.weapon.name}: no tracks (ENFILADE → 총 → 총 동작 굽기).");
+                    continue;
+                }
+                var gun = Object.Instantiate(entry.prefab);
+                gun.hideFlags = HideFlags.HideAndDontSave;
+                try
+                {
+                    gun.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                    gun.transform.localScale = Vector3.one;
+                    var kinemation = gun.GetComponent<CasFPSWeapon>();
+                    Quaternion frame = FPSBody.GunFrameOf(kinemation);
+                    // The sight and parts the gun starts with, as the game's gun shows them (FPSGun.Set).
+                    var sights = gun.GetComponent<GunSights>();
+                    if (sights != null && sights.Current < 0) sights.Select(sights.initial);
+                    var parts = gun.GetComponent<GunAttachments>();
+                    if (parts != null) parts.Begin();
+                    var hold = GunHold.For(GunHandles.Of(entry, assets.armsModel, frame, gun.transform, kinemation != null ? kinemation.aimPoint : null, armsByModel),
+                        numbers.Rules);
+                    var body = HoldBody.Measure(animator, bake.pose, shoulder);
+                    if (body == null)
+                    {
+                        text.AppendLine($"{entry.weapon.name}: this body could not be measured in its pose.");
+                        continue;
+                    }
+                    var clip = body.PlaceOf(bake, own);
+                    var pose = hold != null ? hold.On(body, clip) : new GunHold.Pose { Gun = clip };
+                    stage?.Take(gun);
+                    var one = new Standing
+                    {
+                        Id = id, Root = instance.transform, Animator = animator, Head = head, Right = right, Left = left, Gun = gun.transform,
+                        Frame = frame, Start = pose.Gun, Set = set, Bake = bake, Body = body,
+                        Slide = new SupportSlide(pose.Slide, hold != null ? hold.Gun.LeftPalm.z : 0f, numbers.SlideFade),
+                        ShoulderReach = numbers.ShoulderReach, HeadNearClip = numbers.HeadNearClip,
+                        EyeUp = numbers.EyeUp, EyeAhead = numbers.EyeAhead, HeadParts = headParts
+                    };
+                    one.FindEyes();
+                    foreach (var kind in ask.Actions)
+                    {
+                        var track = set.Track(kind);
+                        var bodyClip = BodyClipOf(bake, kind);
+                        if (track == null || bodyClip == null) continue;
+                        Act(ask, stage, one, entry.weapon.name, kind, track, bodyClip, hold != null ? hold.Name : "as its clip has it", text, ref sheets);
+                        stood++;
+                    }
+                }
+                finally
+                {
+                    Object.DestroyImmediate(gun);
+                }
+            }
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    // The body's own clip of an action (remade for our bodies, GunBakes): what the game plays on the body while the track
+    // moves the gun.
+    private static AnimationClip BodyClipOf(in GunBakes.Entry bake, GunTrackKind kind)
+    {
+        switch (kind)
+        {
+            case GunTrackKind.Hold:
+            case GunTrackKind.HoldNoGrip: return bake.pose;
+            case GunTrackKind.Draw: return bake.draw;
+            case GunTrackKind.Holster: return bake.holster;
+            case GunTrackKind.Inspect: return bake.inspect;
+            case GunTrackKind.ReloadTactical: return bake.reloadTactical;
+            case GunTrackKind.ReloadEmpty: return bake.reloadEmpty;
+            case GunTrackKind.ReloadShell: return bake.reloadShell;
+            case GunTrackKind.ReloadEnd: return bake.reloadEnd;
+            case GunTrackKind.Cycle: return bake.fire;
+        }
+        return null;
+    }
+
+    // ---- One body with one gun ----
+
+    // What one moment of an action comes to.
+    private struct Posed
+    {
+        public float RightMiss, RightTurn, LeftMiss, LeftTurn, RightStraight, LeftStraight;
+        // The clip has this hand on the gun at this moment (its palm at its place in the hold), not away at a magazine or a bolt.
+        public bool RightOnGun, LeftOnGun;
+        public Quaternion CameraTurn;
+    }
+
+    private sealed class Standing
+    {
+        public string Id;
+        public Transform Root, Head, Gun;
+        public Animator Animator;
+        public ArmIK Right, Left;
+        public Quaternion Frame;
+        // Where this body holds the gun: KINEMATION's weapon bone in the body's own space (GunHold.Pose.Gun).
+        public KTransform Start;
+        public GunTrackSet Set;
+        public GunBakes.Entry Bake;
+        public HoldBody Body;
+        public SupportSlide Slide;
+        public float ShoulderReach, HeadNearClip, EyeUp, EyeAhead;
+        // The body's own head (hidden for the view from the eyes).
+        public List<Renderer> HeadParts;
+        private Vector3 eyeInHead;
+        private readonly Vector3[] rightDigits = new Vector3[GunArms.DigitCount], leftDigits = new Vector3[GunArms.DigitCount];
+
+        /// <summary>
+        /// Where the game's camera rides, as a point of the head, taken as the gun's pose stands the body, so it goes with the
+        /// head through an action: the eyes (HoldBody.Eyes) and from them the game's own step up and ahead (PlayerBody's
+        /// eyeAdjust and eyeViewAhead, metres in the world). The hold itself is measured from the eyes without that step.
+        /// </summary>
+        public void FindEyes()
+        {
+            ClipSampler.Sample(Bake.pose, Animator.gameObject, 0f);
+            eyeInHead = Head.InverseTransformPoint(Root.TransformPoint(Body.Eyes) + Root.up * EyeUp + Root.forward * EyeAhead);
+        }
+
+        public Vector3 Eyes => Head.TransformPoint(eyeInHead);
+
+        /// <summary>
+        /// The body in <paramref name="bodyClip"/> at <paramref name="time"/>, the gun where this body holds it moved as the
+        /// track moves it, both hands on it: the base place and the hands as the game's parts make them.
+        /// </summary>
+        public bool Pose(GunTrackKind kind, GunTrack track, AnimationClip bodyClip, float time, out Posed posed)
+        {
+            posed = default;
+            posed.CameraTurn = Quaternion.identity;
+            ClipSampler.Sample(bodyClip, Animator.gameObject, Mathf.Clamp(time, 0f, bodyClip.length));
+            if (!track.Sample(time, rightDigits, leftDigits, out GunContact moment, out posed.CameraTurn)) return false;
+            // The gun's frame at the hold, in the world; then the action's move from it. The gun is its true size whatever
+            // the body's, so the move is in metres as it is.
+            Vector3 holdAt = Root.TransformPoint(Start.position);
+            Quaternion holdTurn = Root.rotation * Start.rotation * Frame;
+            Vector3 gunAt = holdAt + holdTurn * moment.GunMove;
+            Quaternion gunTurn = holdTurn * moment.GunTurn;
+            Gun.SetPositionAndRotation(gunAt, gunTurn);
+
+            // The plain hold's support hand is the bare gun's where the gun has such a pose (FPSBody.HoldSide).
+            Vector3 leftPalm = moment.LeftPalm, leftFingers = moment.LeftFingers, leftFacing = moment.LeftFacing, leftElbow = moment.LeftElbow;
+            var leftWays = moment.LeftDigits;
+            var bare = kind == GunTrackKind.Hold ? Set.Track(GunTrackKind.HoldNoGrip) : null;
+            if (bare != null && bare.Sample(0f, null, leftDigits, out GunContact open, out _))
+            {
+                leftPalm = open.LeftPalm;
+                leftFingers = open.LeftFingers;
+                leftFacing = open.LeftFacing;
+                leftElbow = open.LeftElbow;
+                leftWays = open.LeftDigits;
+            }
+            // On the gun: where the plain hold has that palm (the bare gun's for the support hand, as above).
+            var held = Set.Track(GunTrackKind.Hold);
+            var heldBare = Set.Track(GunTrackKind.HoldNoGrip);
+            posed.RightOnGun = held == null || Vector3.Distance(moment.RightPalm, held.right[0].palm) <= GunTrackBake.HandAway;
+            posed.LeftOnGun = held == null || Vector3.Distance(leftPalm, held.left[0].palm) <= GunTrackBake.HandAway
+                || (heldBare != null && Vector3.Distance(leftPalm, heldBare.left[0].palm) <= GunTrackBake.HandAway);
+            Hand(Right, false, gunAt, gunTurn, holdTurn, moment.RightPalm, moment.RightFingers, moment.RightFacing, moment.RightElbow, moment.RightDigits,
+                out posed.RightMiss, out posed.RightTurn);
+            Hand(Left, true, gunAt, gunTurn, holdTurn, Slide.Of(leftPalm), leftFingers, leftFacing, leftElbow, leftWays, out posed.LeftMiss, out posed.LeftTurn);
+            posed.RightStraight = Straight(Right);
+            posed.LeftStraight = Straight(Left);
+            return true;
+        }
+
+        // One hand onto its place on the gun, as PlayerBodyHands puts it there (HoldGunContacts, then the fingers).
+        private void Hand(ArmIK arm, bool isLeft, Vector3 gunAt, Quaternion gunTurn, Quaternion holdTurn, Vector3 palm, Vector3 fingers, Vector3 facing,
+            Vector3 elbow, Vector3[] ways, out float miss, out float turn)
+        {
+            Vector3 at = gunAt + gunTurn * palm, along = gunTurn * fingers, faces = gunTurn * facing;
+            at = GunHands.Palm(Id, isLeft, at, along, faces);
+            // KINEMATION's elbow way is kept in the frame of the gun at its hold (FPSBody.ElbowWay lays it on the rest hold).
+            bool hasWay = elbow.sqrMagnitude > .5f;
+            arm.HoldPalm(at, along, faces, hasWay, hasWay ? holdTurn * elbow.normalized : Vector3.zero, 1f, ShoulderReach);
+            if (ways != null) arm.WearDigits(ways, 1f, null, 0f, 0f);
+            arm.KeepFingersHuman();
+            miss = Vector3.Distance(arm.PalmPosition, at);
+            turn = Mathf.Max(Vector3.Angle(arm.FingersForward, along), Vector3.Angle(arm.PalmFacing, faces));
+        }
+
+        private static float Straight(ArmIK arm) => arm.Reach > 1e-4f ? Vector3.Distance(arm.Upper.position, arm.Hand.position) / arm.Reach : 0f;
+    }
+
+    // One action of one gun on one body: measured across its frames, and photographed at the moments asked for.
+    private static void Act(Ask ask, Stage stage, Standing one, string gun, GunTrackKind kind, GunTrack track, AnimationClip bodyClip, string holdName,
+        StringBuilder text, ref int sheets)
+    {
+        bool still = kind == GunTrackKind.Hold || kind == GunTrackKind.HoldNoGrip;
+        int frames = still ? 1 : track.Frames, step = Mathf.Max(1, Mathf.CeilToInt(frames / (float)MostSamples));
+        Posed most = default;
+        float rightLeast = 1f, leftLeast = 1f, rightMissAt = 0f, leftMissAt = 0f, rightShort = 0f, leftShort = 0f;
+        int samples = 0;
+        for (int i = 0; i < frames; i += step)
+        {
+            float time = track.TimeOf(i);
+            if (!one.Pose(kind, track, bodyClip, time, out Posed posed)) continue;
+            samples++;
+            // A hand the clip has on the gun must be on it; one it has taken away goes as far as this arm reaches.
+            if (!posed.RightOnGun) rightShort = Mathf.Max(rightShort, posed.RightMiss);
+            else
+            {
+                if (posed.RightMiss > most.RightMiss) { most.RightMiss = posed.RightMiss; rightMissAt = time; }
+                most.RightTurn = Mathf.Max(most.RightTurn, posed.RightTurn);
+            }
+            if (!posed.LeftOnGun) leftShort = Mathf.Max(leftShort, posed.LeftMiss);
+            else
+            {
+                if (posed.LeftMiss > most.LeftMiss) { most.LeftMiss = posed.LeftMiss; leftMissAt = time; }
+                most.LeftTurn = Mathf.Max(most.LeftTurn, posed.LeftTurn);
+            }
+            most.RightStraight = Mathf.Max(most.RightStraight, posed.RightStraight);
+            most.LeftStraight = Mathf.Max(most.LeftStraight, posed.LeftStraight);
+            rightLeast = Mathf.Min(rightLeast, posed.RightStraight);
+            leftLeast = Mathf.Min(leftLeast, posed.LeftStraight);
+        }
+        if (samples == 0)
+        {
+            text.AppendLine($"{gun} {kind}: could not be stood.");
+            return;
+        }
+        bool missed = most.RightMiss > PalmMissed || most.LeftMiss > PalmMissed;
+        text.Append($"{(missed ? "! " : "")}{gun} {kind} ({holdName}");
+        if (!still) text.Append($", {track.length:0.00} s, {samples} moments");
+        text.Append($"): palms off their grip at most R {most.RightMiss * 100f:0.0} cm {most.RightTurn:0}°");
+        if (!still) text.Append($" at {rightMissAt:0.00}");
+        text.Append($", L {most.LeftMiss * 100f:0.0} cm {most.LeftTurn:0}°");
+        if (!still) text.Append($" at {leftMissAt:0.00}");
+        if (rightShort > 0f || leftShort > 0f) text.Append($"; away from the gun, short by at most R {rightShort * 100f:0.0} L {leftShort * 100f:0.0} cm");
+        text.Append(still ? $"; arms straight R {most.RightStraight:0.00} L {most.LeftStraight:0.00}"
+            : $"; arms straight R {rightLeast:0.00}-{most.RightStraight:0.00} L {leftLeast:0.00}-{most.LeftStraight:0.00}");
+
+        if (stage != null)
+        {
+            var times = new List<float>();
+            if (still) times.Add(0f);
+            else if (ask.Times != null && ask.Times.Count > 0)
+                foreach (float time in ask.Times) times.Add(Mathf.Min(time, track.length));
+            else
+                for (int i = 0; i <= 4; i++) times.Add(track.length * i / 4f);
+            string file = $"{Folder}/{one.Id}.{gun}.{kind}.png";
+            if (Photograph(ask, stage, one, kind, track, bodyClip, times, file))
+            {
+                sheets++;
+                text.Append($"; pictures {file} (columns:");
+                foreach (float time in times) text.Append($" {time:0.00}");
+                text.Append($"; rows:{(ask.Eyes ? " eyes" : "")}{(ask.Side ? " side" : "")}{(ask.Front ? " front" : "")})");
+            }
+        }
+        text.AppendLine();
+    }
+
+    // The moments asked for, each from every view asked for, laid in one sheet: a column to a moment, a row to a view.
+    private static bool Photograph(Ask ask, Stage stage, Standing one, GunTrackKind kind, GunTrack track, AnimationClip bodyClip, List<float> times, string file)
+    {
+        int width = ask.Width, height = Mathf.RoundToInt(width / ScreenAspect);
+        var rows = new List<List<Texture2D>>();
+        try
+        {
+            if (ask.Eyes) rows.Add(new List<Texture2D>());
+            if (ask.Side) rows.Add(new List<Texture2D>());
+            if (ask.Front) rows.Add(new List<Texture2D>());
+            foreach (float time in times)
+            {
+                if (!one.Pose(kind, track, bodyClip, time, out Posed posed)) return false;
+                Vector3 eyes = one.Eyes, up = one.Root.up, ahead = one.Root.forward, side = one.Root.right;
+                int row = 0;
+                if (ask.Eyes)
+                {
+                    // From the eyes, looking where the body looks, turned as the action's clip turns the camera (FPSBodyCamera).
+                    float field = Camera.HorizontalToVerticalFieldOfView(ScreenFieldAcross, ScreenAspect);
+                    foreach (var part in one.HeadParts) part.forceRenderingOff = true;
+                    try
+                    {
+                        rows[row++].Add(stage.Shoot(eyes, Quaternion.LookRotation(ahead, up) * posed.CameraTurn, field, one.HeadNearClip, width, height));
+                    }
+                    finally
+                    {
+                        foreach (var part in one.HeadParts) part.forceRenderingOff = false;
+                    }
+                }
+                if (ask.Side)
+                {
+                    // From the right side, level with the shoulders: where a stock sits on the shoulder shows.
+                    Vector3 target = eyes - up * .22f + ahead * .18f;
+                    Vector3 spot = target + side * 1.25f;
+                    rows[row++].Add(stage.Shoot(spot, Quaternion.LookRotation(target - spot, up), 38f, .05f, width, height));
+                }
+                if (ask.Front)
+                {
+                    Vector3 target = eyes - up * .25f + ahead * .1f;
+                    Vector3 spot = target + ahead * 1.2f + side * .75f + up * .1f;
+                    rows[row].Add(stage.Shoot(spot, Quaternion.LookRotation(target - spot, up), 38f, .05f, width, height));
+                }
+            }
+            if (rows.Count == 0 || rows[0].Count == 0) return false;
+            var sheet = new Texture2D(width * rows[0].Count, height * rows.Count, TextureFormat.RGB24, false);
+            try
+            {
+                for (int r = 0; r < rows.Count; r++)
+                    for (int c = 0; c < rows[r].Count; c++)
+                        // A texture's rows run from the bottom: the first view goes on top.
+                        sheet.SetPixels32(c * width, (rows.Count - 1 - r) * height, width, height, rows[r][c].GetPixels32());
+                sheet.Apply();
+                File.WriteAllBytes(file, sheet.EncodeToPNG());
+            }
+            finally
+            {
+                Object.DestroyImmediate(sheet);
+            }
+            return true;
+        }
+        finally
+        {
+            foreach (var row in rows)
+                foreach (var picture in row)
+                    if (picture != null) Object.DestroyImmediate(picture);
+        }
+    }
+
+    // ---- Where the pictures are taken ----
+
+    /// <summary>
+    /// A scene of its own where nothing else is (the editor's preview scene, as the wardrobe's picture bake stands its
+    /// pieces), with two lights and a lens. What is stood in it is lit the same whatever scene the editor has open.
+    /// </summary>
+    private sealed class Stage : IDisposable
+    {
+        private readonly Scene scene;
+        private readonly GameObject root;
+        private readonly Camera lens;
+        private readonly bool wasAsync;
+        private readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+        private RenderTexture film;
+
+        public Stage()
+        {
+            // Shaders compile as they are needed, so no picture comes out in the placeholder's flat cyan.
+            wasAsync = ShaderUtil.allowAsyncCompilation;
+            ShaderUtil.allowAsyncCompilation = false;
+            scene = EditorSceneManager.NewPreviewScene();
+            root = new GameObject("Gun Bench") { hideFlags = HideFlags.HideAndDontSave };
+            SceneManager.MoveGameObjectToScene(root, scene);
+            var lensObject = new GameObject("Lens") { hideFlags = HideFlags.HideAndDontSave };
+            lensObject.transform.SetParent(root.transform, false);
+            lens = lensObject.AddComponent<Camera>();
+            lens.enabled = false;
+            lens.clearFlags = CameraClearFlags.SolidColor;
+            lens.backgroundColor = Backdrop;
+            lens.allowHDR = false;
+            lens.allowMSAA = true;
+            lens.farClipPlane = 40f;
+            lens.useOcclusionCulling = false;
+            lens.scene = scene;
+            var data = lens.GetUniversalAdditionalCameraData();
+            data.renderPostProcessing = false;
+            data.renderShadows = false;
+            data.antialiasing = AntialiasingMode.None;
+            // One light over the shoulder for what the eyes see of the gun and the hands, one from the front for the views
+            // from outside. The body faces +Z.
+            AddLight("Over the shoulder", Quaternion.Euler(38f, 18f, 0f), 1.1f);
+            AddLight("Front", Quaternion.Euler(22f, 205f, 0f), .9f);
+        }
+
+        private void AddLight(string name, Quaternion turn, float intensity)
+        {
+            var holder = new GameObject(name) { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.SetParent(root.transform, false);
+            holder.transform.rotation = turn;
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = Color.white;
+            light.intensity = intensity;
+            light.shadows = LightShadows.None;
+        }
+
+        /// <summary>Stands a model in the scene: lit by the stage alone, drawn wherever its bones take it.</summary>
+        public void Take(GameObject thing)
+        {
+            SceneManager.MoveGameObjectToScene(thing, scene);
+            var flat = new SphericalHarmonicsL2();
+            flat.AddAmbientLight(Ambient);
+            var probes = new[] { flat };
+            foreach (var renderer in thing.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                if (renderer is SkinnedMeshRenderer skinned)
+                {
+                    skinned.updateWhenOffscreen = true;
+                    // Skinned again at every picture: outside play nothing else re-skins a mesh between two renders, and the
+                    // first sheets showed the gun moving through a draw past a body that stood in one pose (2026-11-15).
+                    skinned.forceMatrixRecalculationPerRender = true;
+                }
+                renderer.lightProbeUsage = LightProbeUsage.CustomProvided;
+                renderer.GetPropertyBlock(block);
+                block.CopySHCoefficientArraysFrom(probes);
+                renderer.SetPropertyBlock(block);
+            }
+        }
+
+        /// <summary>A picture from a place, now (Camera.Render). The caller destroys it.</summary>
+        public Texture2D Shoot(Vector3 spot, Quaternion turn, float fieldOfView, float near, int width, int height)
+        {
+            if (film == null || film.width != width || film.height != height)
+            {
+                if (film != null)
+                {
+                    film.Release();
+                    Object.DestroyImmediate(film);
+                }
+                film = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32) { name = "Gun Bench Film", antiAliasing = 4, hideFlags = HideFlags.HideAndDontSave };
+                film.Create();
+            }
+            lens.transform.SetPositionAndRotation(spot, turn);
+            lens.fieldOfView = fieldOfView;
+            lens.nearClipPlane = Mathf.Max(.01f, near);
+            lens.aspect = width / (float)height;
+            var previous = RenderTexture.active;
+            var picture = new Texture2D(width, height, TextureFormat.RGB24, false);
+            try
+            {
+                lens.targetTexture = film;
+                lens.Render();
+                RenderTexture.active = film;
+                picture.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+                picture.Apply();
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                lens.targetTexture = null;
+            }
+            return picture;
+        }
+
+        public void Dispose()
+        {
+            if (film != null)
+            {
+                film.Release();
+                Object.DestroyImmediate(film);
+            }
+            if (root != null) Object.DestroyImmediate(root);
+            EditorSceneManager.ClosePreviewScene(scene);
+            ShaderUtil.allowAsyncCompilation = wasAsync;
+        }
+    }
+}
+#endif

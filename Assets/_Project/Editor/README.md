@@ -6,7 +6,7 @@ Unity 편집기에서만 도는 도구다. 메뉴는 모두 메뉴 막대의 **E
 | --- | --- | --- |
 | `Maps` | ENFILADE → 맵 | 허브 로비 짓기, 캠페인 1~4장과 모든 장 다시 짓기, 엔필레이드 타워 짓기, 맵 사진 찍기, 문 길찾기 다시 굽기. 맵은 [GreyboxBuilder](Maps/GreyboxBuilder.cs)가 표(`Tables/Maps`)를 읽어 짓는다 |
 | `Characters` | ENFILADE → 캐릭터 | BOOTH 다시 가져오기([Booth](Characters/Booth)), 옷 목록 다시 만들기, 옷장 사진 모두 굽기, 몸 프로필 자동 생성, 승리 포즈 가져오기 |
-| `Guns` | ENFILADE → 총 | 데스페라도 만들기, FPS Animation Pack·Tactical Shooter Pack 총 만들기, KINEMATION 총 클립 다시 굽기, Grip Tuner. 같은 메뉴의 쥐기 점검과 총 동작 굽기는 게임의 클래스로 재기 때문에 스크립트 쪽에 있다(`Scripts/Weapons/FPSBody`의 GunHoldProbe, GunTrackBake) |
+| `Guns` | ENFILADE → 총 | 데스페라도 만들기, FPS Animation Pack·Tactical Shooter Pack 총 만들기, KINEMATION 총 클립 다시 굽기, Grip Tuner. 같은 메뉴의 쥐기 점검, 총 동작 굽기, 검사대는 게임의 클래스로 재기 때문에 스크립트 쪽에 있다(`Scripts/Weapons/FPSBody`의 GunHoldProbe, GunTrackBake, GunBench) |
 | `Tables` | ENFILADE → 표 | 표 폴더 열기, 표 다시 읽기. 표를 저장하면 실행 중인 게임에 바로 넣고([GameTablesWatcher](Tables/GameTablesWatcher.cs)), 도구가 표를 쓸 때는 [TableFile](Tables/TableFile.cs)로 쓰고, 표의 자리는 이름으로 찾는다([TablePaths](Tables/TablePaths.cs)) |
 | `Texts` | ENFILADE → 글자 | 글자 편집기, 하드코딩 검사, 콜아웃 목소리 상태 |
 | `Fonts` | ENFILADE → 글꼴 | 글꼴 검사, 역할 맞추기, 동적 글꼴 비우고 저장 |

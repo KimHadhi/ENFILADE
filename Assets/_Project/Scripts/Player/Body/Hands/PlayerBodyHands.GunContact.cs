@@ -79,16 +79,12 @@ public sealed partial class PlayerBodyHands
             placeFacing[side] = facing;
             placed[side] = true;
             if (measure) Miss(arm, palm, fingers, facing, out palmMissBefore[side], out palmTurnBefore[side]);
-            Quaternion rotation = arm.HandRotation(fingers, facing);
             // The elbow turns toward the way KINEMATION's points at this moment (FPSBody.ElbowWay), not the side this
-            // frame's pose happens to bend to; without their way, that side as before.
-            Vector3 hint = arm.Elbow;
-            if (gunBody.ElbowWay(isLeft, out Vector3 elbowWay))
-            {
-                hint = arm.Upper.position + (palm - arm.Upper.position) * .5f + elbowWay * .3f;
-                if (Application.isEditor) NoteElbow(arm, isLeft, palm, elbowWay);
-            }
-            arm.Solve(arm.WristAtPalm(palm, rotation), rotation, hint, weight, 1f, shoulderReach, soft: true);
+            // frame's pose happens to bend to; without their way, that side as before. The palm goes on by ArmIK.HoldPalm,
+            // which the editor's bench calls too (GunBench), so both put a hand on a gun the same way.
+            bool hasWay = gunBody.ElbowWay(isLeft, out Vector3 elbowWay);
+            if (hasWay && Application.isEditor) NoteElbow(arm, isLeft, palm, elbowWay);
+            arm.HoldPalm(palm, fingers, facing, hasWay, elbowWay, weight, shoulderReach);
         }
     }
 
