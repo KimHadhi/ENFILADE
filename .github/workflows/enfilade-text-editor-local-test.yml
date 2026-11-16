@@ -31,7 +31,7 @@ jobs:
           )
           $utf8Bom = [Text.UTF8Encoding]::new($true)
           $helper = Join-Path $env:RUNNER_TEMP 'Apply-TextEditorUpdate.ps1'
-          Invoke-WebRequest -Uri "$raw/58de99bf190df73b8972df9c2be6e0f5e9cd19c8/Tools/Apply-TextEditorUpdate.ps1" -UseBasicParsing -OutFile $helper
+          Invoke-WebRequest -Uri "$raw/6a9e0a5f27961640a5f4a6d52590c2bc6a941214/Tools/Apply-TextEditorUpdate.ps1" -UseBasicParsing -OutFile $helper
           foreach ($path in $expected) {
             $target = Join-Path $root $path
             [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
@@ -53,12 +53,19 @@ jobs:
             'local.only,local,local en,"notes, kept",local fr'
           )
           [IO.File]::WriteAllLines($catalog, $fixtureRows, $utf8Bom)
-          & $helper -ProjectPath $root -NoRefresh
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'enfilade fixture app data'
+          $log = Join-Path $env:LOCALAPPDATA 'Unity/Editor/Editor.log'
+          [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($log))
+          [IO.File]::WriteAllLines($log, @('COMMAND LINE ARGUMENTS:', '-projectPath', $root))
+          $installer = [scriptblock]::Create([IO.File]::ReadAllText($helper))
+          & $installer
           foreach ($path in $expected) {
             $remote = Join-Path $env:RUNNER_TEMP 'expected.cs'
             Invoke-WebRequest -Uri "$raw/$release/$path" -UseBasicParsing -OutFile $remote
             if ((Get-FileHash (Join-Path $root $path)).Hash -ne (Get-FileHash $remote).Hash) {
-              throw "Source application differs for $path"
+              $beforeBytes = [IO.File]::ReadAllBytes((Join-Path $root $path))
+              $afterBytes = [IO.File]::ReadAllBytes($remote)
+              throw "Source application differs for $path length $($beforeBytes.Length) versus $($afterBytes.Length)"
             }
           }
           $updated = Get-Content -LiteralPath $catalog -Encoding UTF8 -Raw
@@ -73,6 +80,6 @@ jobs:
             if (-not $updated.Contains($line)) { throw "The merged CSV did not preserve or add $line" }
           }
           $catalogHash = (Get-FileHash $catalog).Hash
-          & $helper -ProjectPath $root -NoRefresh
+          & $installer
           if ((Get-FileHash $catalog).Hash -ne $catalogHash) { throw 'Applying twice rewrote the CSV.' }
           Write-Host 'Verified Windows PowerShell application, preserved local translations, and repeatable runs.'
