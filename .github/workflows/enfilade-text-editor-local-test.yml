@@ -1,0 +1,78 @@
+name: Verify ENFILADE text editor update on Windows
+on:
+  push:
+    branches:
+      - codex/apply-text-editor-local
+    paths:
+      - '.github/workflows/enfilade-text-editor-local-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 4
+    steps:
+      - name: Apply to a disposable fixture and verify preserved translations
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'enfilade local fixture'
+          $raw = 'https://raw.githubusercontent.com/KimHadhi/ENFILADE'
+          $base = 'dcd347b57fce84c686d31f0428c701d76b146fc4'
+          $release = '27cdcfc51ecbf85d29dfd8dec02983c559c154b7'
+          $expected = @(
+            'Assets/_Project/Editor/Texts/TextEditorWindow.cs',
+            'Assets/_Project/Editor/Texts/TextSheet.cs',
+            'Assets/_Project/Scripts/Core/Texts/Texts.cs',
+            'Assets/_Project/Scripts/Core/Settings/GameSettings.cs',
+            'Assets/_Project/Scripts/UI/Settings/SettingsMenuView.cs'
+          )
+          $utf8Bom = [Text.UTF8Encoding]::new($true)
+          $helper = Join-Path $env:RUNNER_TEMP 'Apply-TextEditorUpdate.ps1'
+          Invoke-WebRequest -Uri "$raw/58de99bf190df73b8972df9c2be6e0f5e9cd19c8/Tools/Apply-TextEditorUpdate.ps1" -UseBasicParsing -OutFile $helper
+          foreach ($path in $expected) {
+            $target = Join-Path $root $path
+            [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
+            Invoke-WebRequest -Uri "$raw/$base/$path" -UseBasicParsing -OutFile $target
+          }
+          [void][IO.Directory]::CreateDirectory((Join-Path $root 'ProjectSettings'))
+          [IO.File]::WriteAllText((Join-Path $root 'ProjectSettings/ProjectVersion.txt'), 'm_EditorVersion: 6000.3.27f1')
+          $catalog = Join-Path $root 'Assets/_Project/Data/Resources/Tables/Core/Texts.csv'
+          [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($catalog))
+          $koCross = 'X' + [char]0xC790
+          $koTri = [string][char]0xC138 + ' ' + [char]0xAC08 + [char]0xB798
+          $koScreen = [string][char]0xD654 + [char]0xBA74
+          $note = '#' + [char]0xC5B4 + [char]0xB514
+          $fixtureRows = @(
+            "id,ko,en,$note,fr",
+            "crosshair.preset.x,$koCross,X-Cross,existing,existing.fr",
+            "crosshair.preset.tri,$koTri,,existing,translated.fr",
+            "settings.tab.screen,$koScreen,Video,existing,Affichage",
+            'local.only,local,local en,"notes, kept",local fr'
+          )
+          [IO.File]::WriteAllLines($catalog, $fixtureRows, $utf8Bom)
+          & $helper -ProjectPath $root -NoRefresh
+          foreach ($path in $expected) {
+            $remote = Join-Path $env:RUNNER_TEMP 'expected.cs'
+            Invoke-WebRequest -Uri "$raw/$release/$path" -UseBasicParsing -OutFile $remote
+            if ((Get-FileHash (Join-Path $root $path)).Hash -ne (Get-FileHash $remote).Hash) {
+              throw "Source application differs for $path"
+            }
+          }
+          $updated = Get-Content -LiteralPath $catalog -Encoding UTF8 -Raw
+          foreach ($line in @(
+              "id,ko,en,$note,fr,ja",
+              "crosshair.preset.x,$koCross,X-Cross,existing,existing.fr",
+              "crosshair.preset.tri,$koTri,Three-Prong,existing,translated.fr",
+              "settings.tab.screen,$koScreen,Video,existing,Affichage",
+              'local.only,local,local en,"notes, kept",local fr',
+              'settings.screen.language.names,'
+          )) {
+            if (-not $updated.Contains($line)) { throw "The merged CSV did not preserve or add $line" }
+          }
+          $catalogHash = (Get-FileHash $catalog).Hash
+          & $helper -ProjectPath $root -NoRefresh
+          if ((Get-FileHash $catalog).Hash -ne $catalogHash) { throw 'Applying twice rewrote the CSV.' }
+          Write-Host 'Verified Windows PowerShell application, preserved local translations, and repeatable runs.'
