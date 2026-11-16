@@ -14,6 +14,7 @@ internal sealed class TextSheet
 {
     internal static string AssetPath => TablePaths.Of(Texts.TableName);
     private const string NoteColumn = "#어디";
+    private static readonly Regex LanguageCode = new Regex(@"\A[a-z]{2,3}(?:-[a-z0-9]{2,8})*\z", RegexOptions.Compiled);
 
     internal sealed class Row
     {
@@ -51,9 +52,6 @@ internal sealed class TextSheet
     internal int Korean => Column(Texts.Korean);
     internal int Note => Column(NoteColumn);
 
-    /// <summary>The language columns (ko first as the file has it).</summary>
-    internal IEnumerable<string> Languages => Columns.Skip(1).Where(c => c.Trim().Length > 0 && !c.Trim().StartsWith("#"));
-
     internal static TextSheet Load()
     {
         var sheet = new TextSheet();
@@ -67,6 +65,43 @@ internal sealed class TextSheet
     /// An edited cell whose words changed on disk meanwhile is marked (Conflict) so the user decides.
     /// </summary>
     internal void Refresh() => Reread(true);
+
+    internal static bool TryLanguageCode(string input, out string code)
+    {
+        code = (input ?? "").Trim().Replace('_', '-').ToLowerInvariant();
+        if (code == "kr") code = Texts.Korean;
+        else if (code == "jp") code = "ja";
+        else if (code == "id") code = "id-id"; // The first CSV header is already "id".
+        return LanguageCode.IsMatch(code);
+    }
+
+    /// <summary>Adds a language to the current file header and keeps any edits in this window.</summary>
+    internal bool AddLanguage(string code)
+    {
+        string text = TableFile.Read(AssetPath);
+        var records = CsvSpans.Parse(text);
+        if (records.Count == 0 || !string.Equals(records[0][0].Trim(), "id", StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Texts.csv의 id 헤더를 읽을 수 없어요.");
+
+        var header = records[0];
+        bool exists = header.Cells.Skip(1).Any(cell => string.Equals(cell.Value.Trim(), code, StringComparison.OrdinalIgnoreCase));
+        if (exists)
+        {
+            Refresh();
+            return !TableFile.Waiting(AssetPath);
+        }
+
+        int column = header.Cells.Count;
+        var overflow = records.Skip(1).FirstOrDefault(record => record.Cells.Skip(column).Any(cell => !string.IsNullOrWhiteSpace(cell.Value)));
+        if (overflow != null) throw new IOException($"Texts.csv의 {overflow.Line}번째 줄에 헤더보다 칸이 많아요. 쉼표와 따옴표를 확인해 주세요.");
+
+        // Short records already read as empty cells. A translation written later extends just its own record.
+        string updated = CsvSpans.SetCells(text, header, new Dictionary<int, string> { [column] = code });
+        bool written = TableFile.Write(AssetPath, updated, "글자 편집기의 새 언어 열",
+            "ENFILADE → 글자 → 글자 편집기에서 언어를 다시 추가해 주세요.");
+        Refresh();
+        return written;
+    }
 
     // Reads the file again, keeping the unsaved edits (and their marks) on the rows still there; with flag, an edited cell
     // whose words changed on disk since is marked too.
@@ -249,7 +284,7 @@ internal sealed class TextSheet
         {
             string now = row.Words[column] ?? "", before = row.Saved[column] ?? "";
             string name = Columns[column];
-            if (now.Length == 0) continue;
+            if (string.IsNullOrWhiteSpace(now)) continue;
             var holes = Holes(now);
             if (row.Changed(column))
             {
@@ -274,6 +309,8 @@ internal sealed class TextSheet
             if (holes.Count > 0 && LoneBrace(now)) problems.Add((true, $"{name}: 짝 없는 중괄호가 있어요. 글자로 쓰려면 {{{{ }}}}로 두 번 써요."));
             if (column != ko && words.Length > 0)
             {
+                if (OptionList(row.Id) && now.Count(c => c == '|') != words.Count(c => c == '|'))
+                    problems.Add((true, $"{name}: | 로 나눈 고르기 칸 수가 한국어와 달라요."));
                 var koHoles = Holes(words);
                 if (!koHoles.SetEquals(holes))
                     problems.Add((true, $"{name}: 자리 {Join(holes)}가 한국어의 {Join(koHoles)}와 달라요."));

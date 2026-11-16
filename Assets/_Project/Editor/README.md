@@ -8,7 +8,7 @@ Unity 편집기에서만 도는 도구다. 메뉴는 모두 메뉴 막대의 **E
 | `Characters` | ENFILADE → 캐릭터 | BOOTH 다시 가져오기([Booth](Characters/Booth)), 옷 목록 다시 만들기, 옷장 사진 모두 굽기, 몸 프로필 자동 생성, 승리 포즈 가져오기 |
 | `Guns` | ENFILADE → 총 | 데스페라도 만들기, FPS Animation Pack·Tactical Shooter Pack 총 만들기, KINEMATION 총 클립 다시 굽기, Grip Tuner. 같은 메뉴의 쥐기 점검, 총 동작 굽기, 검사대는 게임의 클래스로 재기 때문에 스크립트 쪽에 있다(`Scripts/Weapons/FPSBody`의 GunHoldProbe, GunTrackBake, GunBench) |
 | `Tables` | ENFILADE → 표 | 표 폴더 열기, 표 다시 읽기. 표를 저장하면 실행 중인 게임에 바로 넣고([GameTablesWatcher](Tables/GameTablesWatcher.cs)), 도구가 표를 쓸 때는 [TableFile](Tables/TableFile.cs)로 쓰고, 표의 자리는 이름으로 찾는다([TablePaths](Tables/TablePaths.cs)) |
-| `Texts` | ENFILADE → 글자 | 글자 편집기, 하드코딩 검사, 콜아웃 목소리 상태 |
+| `Texts` | ENFILADE → 글자 | 언어별 문구 편집, 번역 참고, 하드코딩 검사, 콜아웃 목소리 상태 |
 | `Fonts` | ENFILADE → 글꼴 | 글꼴 검사, 역할 맞추기, 동적 글꼴 비우고 저장 |
 | `Hud` | ENFILADE → HUD | 현재 씬에 HUD 넣기·갱신, HUD 프리팹 열기, 겹침 검사 |
 | `Models` | ENFILADE → 모델 | 임포트 규칙 다시 적용([ModelImportRules](Models/ModelImportRules.cs): 폴더에 따라 모델·클립 임포트 설정을 자동으로), 처형 클립 가져오기 메시지, 물리 소품 프리팹 만들기 |
@@ -20,3 +20,9 @@ Unity 편집기에서만 도는 도구다. 메뉴는 모두 메뉴 막대의 **E
 | `Dev` | (자동) | `Temp/enfilade-refresh.request` 파일이 생기면 열려 있는 Unity가 스스로 새로 고친다(창을 누르지 않아도 됨. 실행·빌드 중에는 기다린다). 밖의 도구가 고친 코드를 바로 컴파일시킬 때 쓴다. 컴파일과 스크립트 다시 읽기가 끝날 때마다, 디스크에는 있는데 어느 어셈블리에도 들지 않은 우리 스크립트(`Assets/_Project`)를 찾아 한 번 다시 가져오고 콘솔에 알린다([MissedScripts](Dev/MissedScripts.cs)). 편집기가 컴파일하는 사이에 생긴 새 파일을 놓치면, 코드는 멀쩡한데 그 파일에 있는 이름마다 CS0103이 나고 편집기를 다시 켤 때까지 그대로였다 |
 
 새 도구를 더할 때: 맞는 폴더에 두고 메뉴는 `ENFILADE/<분야>/<하는 일>`로 단다. 표를 읽고 쓰는 도구는 경로를 적지 말고 `TablePaths.Of("표 이름")`을 쓴다.
+
+## 글자 편집기
+
+Unity에서 **ENFILADE → 글자 → 글자 편집기**를 열고 상단에서 편집 언어를 고른다. 선택한 언어를 목록이나 아래 여러 줄 입력란에서 편집한다. 영어는 한국어 원문과, 일본어 같은 새 번역은 한국어 원문과 영어 참고 문구를 함께 볼 수 있다. 언어를 바꿔도 선택한 줄과 저장하지 않은 수정 내용이 남는다.
+
+**미번역만**으로 선택한 언어의 빈 줄을 보고, **언어 추가**에서 `fr`, `pt-br` 같은 코드를 넣어 번역 열을 만든다. 새 번역을 게임 설정에 공개할 때는 `settings.screen.language.names` 줄의 해당 언어에 표시할 이름을 입력한다. 게임의 **설정 → 화면 → 언어**에서 한국어 또는 English를 고르고 게임을 다시 실행하면 적용된다.

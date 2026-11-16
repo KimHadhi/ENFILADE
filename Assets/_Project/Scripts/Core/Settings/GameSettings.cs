@@ -131,6 +131,7 @@ public sealed class GameSettings
     public int resolutionWidth, resolutionHeight;
     [Tooltip("Exclusive fullscreen, a borderless window over the whole monitor, or a window.")]
     public WindowMode windowMode = WindowMode.Borderless;
+    public string textLanguage = Texts.Korean;
     [Tooltip("The crosshair keeps one shape: weapon spread (moving, jumping, each gun's own) and shot kicks never open it. " +
         "Applies to the designed and the player's crosshair alike.")]
     public bool steadyCrosshair = true;
@@ -218,6 +219,7 @@ public sealed class GameSettings
                 // putting the mouse back to default doesn't throw away every key the player set.
                 break;
             case SettingsGroup.Screen:
+                s.textLanguage = d.textLanguage;
                 s.monitorName = d.monitorName; s.monitorIndex = d.monitorIndex;
                 s.resolutionWidth = d.resolutionWidth; s.resolutionHeight = d.resolutionHeight; s.windowMode = d.windowMode;
                 s.vSync = d.vSync; s.frameLimit = d.frameLimit; s.textureDetail = d.textureDetail;
@@ -304,6 +306,7 @@ public sealed class GameSettings
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";
         keyBindings ??= "";
+        textLanguage = string.IsNullOrWhiteSpace(textLanguage) ? Texts.Korean : textLanguage.Trim();
         outfits ??= new List<string>();
         showFaces ??= new List<string>();
         monitorIndex = Mathf.Max(-1, monitorIndex);
