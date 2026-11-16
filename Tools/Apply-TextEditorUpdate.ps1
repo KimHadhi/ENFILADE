@@ -120,7 +120,7 @@ function Merge-Code([string] $Relative, [string] $Current, [string] $Before, [st
 
     $crlf = [string][char]13 + [char]10
     if ($Current.Contains($crlf)) { $merged = $merged.Replace([string][char]10, $crlf) }
-    if ($Current.StartsWith([string][char]0xFEFF)) { $merged = [string][char]0xFEFF + $merged }
+    if ($Current.Length -gt 0 -and $Current[0] -eq [char]0xFEFF) { $merged = [string][char]0xFEFF + $merged }
     return $merged
 }
 
