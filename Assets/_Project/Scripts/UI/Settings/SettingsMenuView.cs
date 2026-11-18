@@ -250,6 +250,12 @@ public sealed class SettingsMenuView
             moved > 0 ? W.Accent : W.Muted), flexibleWidth: 1f);
         rows.Slider(Texts.Get("settings.controls.sensitivity"), GameSettings.MinSensitivity, GameSettings.MaxSensitivity, s.mouseSensitivity,
             v => s.mouseSensitivity = v, v => v.ToString("0.00") + "×");
+        // The mouse through each magnification the game's scopes have (ScopeLook reads them from GunParts.csv, so a mod's
+        // sight of a new power gets its row): 100% = a target crosses the screen as fast as it does unaimed.
+        foreach (float power in ScopeLook.Magnifications)
+            rows.Slider(Texts.Format("settings.controls.scope_sensitivity", power.ToString("0.#")), ScopeLook.Least, ScopeLook.Most, ScopeLook.Of(s, power),
+                v => ScopeLook.Set(s, power, v), v => Mathf.RoundToInt(v * 100f) + "%", shownScale: 100f);
+        if (ScopeLook.Magnifications.Count > 0) rows.Note(Texts.Get("settings.controls.scope_sensitivity.note"));
         rows.Choice(Texts.Get("settings.controls.invert_y"), OffOn, s.invertY ? 1 : 0, i => s.invertY = i == 1);
         rows.Choice(Texts.Get("settings.controls.crouch"), HoldToggle, s.crouchToggle ? 1 : 0, i => s.crouchToggle = i == 1);
         rows.Choice(Texts.Get("settings.controls.lean"), HoldToggle, s.leanToggle ? 1 : 0, i => s.leanToggle = i == 1);

@@ -319,11 +319,11 @@ public sealed class PlayerCameraEffects : MonoBehaviour
             float own = Mathf.Min(baseFov, weapon.EquippedData.AdsFov);
             var gun = weapon.HeldGun;
             aimedFov = gun != null ? gun.AimedFov(baseFov, own) : own;
-            // The mouse turns the view by what the view shows: a sight that magnifies it past the gun's own aimed field
-            // slows the turn by as much (Scopes.csv Look.zoomTurn of it), so a target crosses the screen at the speed it
-            // does unscoped. The gun's own aimed field never slowed the mouse, and still doesn't.
-            float zoom = Mathf.Tan(aimedFov * .5f * Mathf.Deg2Rad) / Mathf.Max(1e-4f, Mathf.Tan(own * .5f * Mathf.Deg2Rad));
-            turn = Mathf.Lerp(1f, Mathf.Clamp01(zoom), Mathf.Clamp01(GameTables.Number(GunScope.TableName, "Look", "zoomTurn", 1f)));
+            // The mouse through a sight that magnifies the whole view is the player's own setting for that magnification
+            // (ScopeLook, the settings' controls tab): at 100% the view turns by 1 / magnification of the mouse's turn, so
+            // a target crosses the screen as fast as it does unaimed. The gun's own aimed field never slowed the mouse,
+            // and still doesn't.
+            if (gun != null) turn = ScopeLook.Turn(gun.SightPart, GameSettings.Current);
         }
         LookScale = Mathf.Lerp(1f, turn, aim);
         cam.fieldOfView = Mathf.Lerp(currentFov, aimedFov, aim)

@@ -41,6 +41,8 @@ public sealed class GameSettings
     public float musicVolume = .8f, ambienceVolume = 1f;
     [Tooltip("Multiplies PlayerLook's base sensitivity.")]
     public float mouseSensitivity = 1f;
+    [Tooltip("The mouse through each magnification of a sight that magnifies the whole view (ScopeLook); a power not listed has the default.")]
+    public List<ScopeSensitivity> scopeSensitivities = new List<ScopeSensitivity>();
     public bool invertY;
     [Tooltip("Crouch and lean keys latch on one press instead of acting while held.")]
     public bool crouchToggle, leanToggle;
@@ -213,6 +215,7 @@ public sealed class GameSettings
                 break;
             case SettingsGroup.Controls:
                 s.mouseSensitivity = d.mouseSensitivity; s.invertY = d.invertY;
+                s.scopeSensitivities = new List<ScopeSensitivity>(d.scopeSensitivities ?? new List<ScopeSensitivity>());
                 s.crouchToggle = d.crouchToggle; s.leanToggle = d.leanToggle;
                 s.autoReload = d.autoReload;
                 s.calloutOnRelease = d.calloutOnRelease; s.calloutBubbles = d.calloutBubbles; s.calloutAuto = d.calloutAuto;
@@ -294,6 +297,7 @@ public sealed class GameSettings
         musicVolume = Mathf.Clamp01(musicVolume);
         ambienceVolume = Mathf.Clamp01(ambienceVolume);
         mouseSensitivity = Mathf.Clamp(mouseSensitivity, MinSensitivity, MaxSensitivity);
+        scopeSensitivities ??= new List<ScopeSensitivity>();
         screenShake = Mathf.Clamp01(screenShake);
         bodySway = Mathf.Clamp01(bodySway);
         hudSway = Mathf.Clamp01(hudSway);

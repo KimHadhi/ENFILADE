@@ -1,5 +1,7 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+settings.controls.scope_sensitivity,배율 조준경 ×{0} 감도,Scope ×{0} sensitivity,"설정 창 > 조작 > 행. {0}=배율(GunParts.csv에 있는 배율마다 한 줄, ScopeLook)"
+settings.controls.scope_sensitivity.note,100% = 조준경 속 표적이 화면을 지나는 빠르기가 조준하지 않았을 때와 같아요,100% = a target crosses the screen as fast as it does unaimed,"설정 창 > 조작 > 배율 조준경 감도 줄들 아래의 설명"
 ammo.kind.pistol,권총탄,PISTOL,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = pistol). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
 ammo.kind.magnum,매그넘탄,MAGNUM,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = magnum). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
 ammo.kind.smg,기관단총탄,SMG,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = smg). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
