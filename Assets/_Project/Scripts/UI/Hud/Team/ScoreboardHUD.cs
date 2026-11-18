@@ -14,6 +14,12 @@ using UnityEngine.UI;
 /// in a room. Under the table, this player's class and its rank (RankProgress): the insignia this game's growth adds up
 /// to, the bar to the next (white what was held, pink this game's kills, pale pink the share of the money held), what
 /// this game has brought and what a kill is worth, so growth can be read while playing (the user, 2026-11-11).
+/// A right click while it is held brings the mouse pointer out onto it, and another puts it back (the user, 2026-11-18:
+/// "Tab 키를 누른 상태에서 우클릭 입력 시 마우스 커서가 표시되도록 … 카드 툴팁 확인, 팀원 덱 열람, 무기 드랍 등 UI
+/// 상호작용 지원"). The board takes only the pointer from the player (InputHold, Held.Cursor: the view and the trigger go
+/// with the mouse, the legs stay theirs), so they walk on while they read, and letting Tab go gives the pointer back.
+/// What can be pointed at is each part's own business (the cards' badges, a row's deck); a part that takes no pointer
+/// stays no raycast target, so the board never swallows a click meant for nothing.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ScoreboardHUD : MonoBehaviour
@@ -67,6 +73,9 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private InputAction show;
     private bool ownsShow;
     private float refreshLeft;
+    // The pointer is out on the board: this holds it (InputHold) until a second right click or Tab let go.
+    private bool pointer;
+    private TextMeshProUGUI pointerHint;
 
     private void Start()
     {
@@ -76,7 +85,9 @@ public sealed class ScoreboardHUD : MonoBehaviour
         show = (input != null ? input.actions : InputSystem.actions).OrNull()?.FindAction(ShowAction, false);
         ownsShow = show != null && !show.enabled;
         if (ownsShow) show.Enable();
-        var host = new GameObject("Scoreboard", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
+        // The raycaster is for the pointer a right click brings out; until then the group takes no pointer at all.
+        var host = new GameObject("Scoreboard", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup),
+            typeof(GraphicRaycaster));
         FeelUI.SetupOverlay(host, 95);
         group = host.GetComponent<CanvasGroup>();
         group.interactable = group.blocksRaycasts = false;
@@ -98,6 +109,12 @@ public sealed class ScoreboardHUD : MonoBehaviour
         table.anchoredPosition = new Vector2(0f, HeaderY + 60f);
         Header();
         for (int i = 0; i < RowCount; i++) rows.Add(BuildRow(i));
+        // What the right mouse button does here, over the table's right end.
+        pointerHint = Text("Pointer Hint", table, GameTables.Number(HudCamera.TableName, "Board", "hintSize", 15f),
+            new Vector2(TableWidth * .5f - 230f, -HeaderY + GameTables.Number(HudCamera.TableName, "Board", "hintRise", 30f)), 460f,
+            TextAlignmentOptions.Right);
+        pointerHint.color = Soft;
+        pointerHint.text = Texts.Get("score.pointer.show");
 
         footer = FeelUI.Rect("Footer", host.transform);
         var line = FeelUI.Rect("Line", footer);
@@ -287,6 +304,8 @@ public sealed class ScoreboardHUD : MonoBehaviour
             var image = icon.gameObject.AddComponent<Image>();
             image.preserveAspect = true;
             image.raycastTarget = false;
+            // A weapon cell takes no pointer: giving or dropping a gun from the board waits for its rule (the user,
+            // 2026-11-18: 추후 논의). When that is settled the cell becomes a raycast target here and asks the rule.
             row.weapons[i] = new WeaponCell { icon = image, label = label };
         }
         row.root.gameObject.SetActive(false);
@@ -296,8 +315,12 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private void LateUpdate()
     {
         if (group == null) return;
-        // The cursor is free while chat or a menu is open, and Tab belongs to them then.
-        bool held = show != null && show.IsPressed() && Cursor.lockState == CursorLockMode.Locked && Application.isFocused;
+        // Tab belongs to whatever other screen has the pointer (the chat, a menu, the shop). The board's own hold of the
+        // pointer doesn't count: it stays up under it. Until 2026-11-18 this asked whether the pointer was locked, so the
+        // board could never show one.
+        bool held = show != null && show.IsPressed() && Application.isFocused && !InputHold.AnyBesides(this, Held.Cursor);
+        if (held && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame) SetPointer(!pointer);
+        else if (!held && pointer) SetPointer(false);
         float next = Mathf.MoveTowards(group.alpha, held ? 1f : 0f, Time.unscaledDeltaTime / FadeSeconds);
         if (next <= 0f && group.alpha <= 0f) return;
         if (!group.gameObject.activeSelf) { group.gameObject.SetActive(true); refreshLeft = 0f; }
@@ -310,6 +333,18 @@ public sealed class ScoreboardHUD : MonoBehaviour
         if (refreshLeft > 0f) return;
         refreshLeft = RefreshSeconds;
         Refresh();
+    }
+
+    // Brings the pointer out onto the board or puts it back. Only the pointer is taken (Held.Cursor: the view and the
+    // trigger go with the mouse); the player's legs stay theirs, so the board can be read on the move.
+    private void SetPointer(bool on)
+    {
+        if (pointer == on) return;
+        pointer = on;
+        if (on) InputHold.Take(this, Held.Cursor);
+        else InputHold.Release(this);
+        group.interactable = group.blocksRaycasts = on;
+        if (pointerHint != null) pointerHint.text = Texts.Get(on ? "score.pointer.hide" : "score.pointer.show");
     }
 
     private void Refresh()
@@ -391,6 +426,9 @@ public sealed class ScoreboardHUD : MonoBehaviour
     }
 
     private void MarkPerks() => perksDirty = true;
+
+    // Switched off with the pointer out (a scene's end, the player's body taken away): the pointer goes back.
+    private void OnDisable() => SetPointer(false);
 
     private void OnDestroy()
     {
