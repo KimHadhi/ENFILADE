@@ -90,6 +90,18 @@ public sealed class ProfileView
         }).characterLimit = NameLimit;
         W.Size(W.Label(column, Texts.Get("profile.nickname.hint"), 17f, W.Muted), height: 24f);
 
+        // Their colour, kept the moment it is picked as the picture is (PlayerColourRow; the settings' HUD tab has the
+        // same choice with a box for a colour of their own, which this narrower window has no room for).
+        W.Size(W.Label(column, Texts.Get("profile.colour"), 20f, W.Muted), height: 26f);
+        var colours = W.Rect("Colour", column);
+        var colourRow = colours.gameObject.AddComponent<HorizontalLayoutGroup>();
+        colourRow.spacing = 10f;
+        colourRow.childAlignment = TextAnchor.MiddleLeft;
+        colourRow.childControlWidth = colourRow.childControlHeight = true;
+        colourRow.childForceExpandWidth = colourRow.childForceExpandHeight = false;
+        W.Size(colours, height: 40f);
+        PlayerColourRow.Controls(colours, true, false);
+
         var buttons = W.Rect("Picture Buttons", column);
         var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
         row.spacing = 10f;

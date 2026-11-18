@@ -151,6 +151,10 @@ public sealed class GameSettings
     [Tooltip("The name other players see. Empty shows the game's word for a player without one (Texts.csv profile.nickname.unnamed), " +
         "never this PC's Windows user name, which is often a real name.")]
     public string nickname = "";
+    [Tooltip("The colour that stands for this player wherever they are named or marked, on every PC (PlayerColours): a row id " +
+        "of Tables/Hud/PlayerColours.csv, a colour of their own as #RRGGBB, or empty to be given a free one. Part of the " +
+        "profile, like the nickname: no tab's reset touches it.")]
+    public string playerColour = "";
     [Tooltip("Set once the saved nickname and room title were checked for the Windows user name older versions put there (ForgetUserName).")]
     public bool userNameChecked;
     [Tooltip("Scene name of the map last chosen on the main menu (Data/Resources/Tables/Maps/Maps.csv).")]
@@ -303,6 +307,7 @@ public sealed class GameSettings
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";
+        playerColour = (playerColour ?? "").Trim();
         keyBindings ??= "";
         outfits ??= new List<string>();
         showFaces ??= new List<string>();

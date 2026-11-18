@@ -213,13 +213,15 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         return window;
     }
 
-    // The caller's name in their seat colour, this PC's own in the accent pink as everywhere else.
+    // The caller's name and the window's tag in the caller's own colour (PlayerColours), this PC's own player's too: the
+    // window reads as theirs on every PC. Until 2026-11-18 this PC's own was the HUD's pink here and the tag always was.
     private static void Name(Window window)
     {
         bool named = window.speaker.TryGetComponent(out PlayerTally tally);
         string shown = named && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName : window.speaker.name;
         window.name.text = shown;
-        window.name.color = window.speaker.IsLocal ? KitStyle.Accent : named ? tally.Color : KitStyle.Text;
+        window.name.color = named ? tally.Color : KitStyle.Text;
+        window.tag.color = named ? tally.Color : KitStyle.Accent;
     }
 
     // The HUD portrait's own tile look (its material when the HUD has one, else the shader), with a larger picture.

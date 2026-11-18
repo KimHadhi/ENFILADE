@@ -177,7 +177,8 @@ public sealed class HubReadyBoard : MonoBehaviour
         if (tile.Letter.text != letter) tile.Letter.text = letter;
         string label = mine ? Texts.Get("hub.ready.me") : name;
         if (tile.Name.text != label) tile.Name.text = label;
-        Color ink = mine ? KitStyle.Accent : KitStyle.Soft;
+        // Each name in that player's own colour, this PC's own too (PlayerColours): it was pink for mine and grey for the rest.
+        Color ink = someone.TryGetComponent(out PlayerTally seat) ? seat.Color : KitStyle.Soft;
         if (tile.Name.color != ink) tile.Name.color = ink;
         if (tile.Who != someone)
         {

@@ -30,19 +30,31 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private readonly NetworkVariable<FixedString32Bytes> classId = new NetworkVariable<FixedString32Bytes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    // The colour they asked for on their own PC (PlayerColours.Code; 0 = they chose none). Only the wish travels: every
+    // PC then gives every player a colour by the same rule from the same wishes and ids (PlayerColours.Resolve), so
+    // nobody is told a colour and nobody's screen can differ. It replaced the seat colour each PC took from the id.
+    private readonly NetworkVariable<uint> colourWish = new NetworkVariable<uint>(0u,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private PlayerTally tally;
     private float nextPing;
 
     public override void OnNetworkSpawn()
     {
         tally = GetComponent<PlayerTally>();
-        tally.ShowSeat(OwnerClientId);
-        if (IsOwner) return;
+        // Their id is known from here on, and the rule goes by it.
+        PlayerColours.Changed();
+        if (IsOwner)
+        {
+            colourWish.Value = tally.Wish;
+            return;
+        }
         displayName.OnValueChanged += OnNameChanged;
         numbers.OnValueChanged += OnNumbersChanged;
         classId.OnValueChanged += OnClassChanged;
+        colourWish.OnValueChanged += OnWishChanged;
         tally.ShowName(displayName.Value.ToString());
         tally.ShowClass(classId.Value.ToString());
+        tally.ShowWish(colourWish.Value);
         Show(numbers.Value);
     }
 
@@ -51,6 +63,8 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         displayName.OnValueChanged -= OnNameChanged;
         numbers.OnValueChanged -= OnNumbersChanged;
         classId.OnValueChanged -= OnClassChanged;
+        colourWish.OnValueChanged -= OnWishChanged;
+        PlayerColours.Changed();
     }
 
     private void LateUpdate()
@@ -58,6 +72,7 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         if (!IsSpawned || !IsOwner) return;
         displayName.Value = new FixedString64Bytes(Clip(tally.DisplayName));
         classId.Value = new FixedString32Bytes(Clip(tally.ClassId));
+        colourWish.Value = tally.Wish;
         if (Time.unscaledTime >= nextPing)
         {
             nextPing = Time.unscaledTime + PingInterval;
@@ -125,6 +140,7 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
 
     private void OnNameChanged(FixedString64Bytes previous, FixedString64Bytes current) => tally.ShowName(current.ToString());
     private void OnClassChanged(FixedString32Bytes previous, FixedString32Bytes current) => tally.ShowClass(current.ToString());
+    private void OnWishChanged(uint previous, uint current) => tally.ShowWish(current);
     private void OnNumbersChanged(Numbers previous, Numbers current) => Show(current);
 
     private void Show(in Numbers now)

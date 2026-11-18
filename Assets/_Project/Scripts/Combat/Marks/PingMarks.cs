@@ -10,8 +10,10 @@ using UnityEngine.UI;
 /// outline in the ping's colour where it can be seen (HitFlashRenderer.SetPing), a flat throbbing silhouette where
 /// something stands in front of it or smoke lies on the way (Hidden/ENFILADE/RevealThroughWalls on copies of its meshes,
 /// as HoldReveal does; smoke counts as a wall there since 2026-11-18, SmokeSight), and a diamond over its head with how
-/// far it is. A plain ping is the HUD's pink; a Schießhund's is its teal bounty mark,
-/// which its class hunts (ClassKit) and lasts longer. Each player has one of each at a time: a new one moves it. A mark
+/// far it is. A plain ping is its pinger's own colour (PlayerTally.Color, the one the board and the chat show them in),
+/// so the mark says who called it; until 2026-11-18 every ping was the HUD's pink whoever made it (the user: "콜아웃
+/// 색상이 Tab 현황판의 팀원 색상(파랑, 주황 등)과 연동되지 않고 분홍색으로 고정되는 문제"). A Schießhund's is its teal
+/// bounty mark, the class's own colour whoever plays it, which its class hunts (ClassKit) and lasts longer. Each player has one of each at a time: a new one moves it. A mark
 /// ends with its time or its enemy's life. Made on first need and lives with the scene. Numbers: Tables/ClassAbilities,
 /// Ping.* and Schiesshund.markSeconds. Any foe takes a mark (ICombatFoe): a zombie, or a target on the hub's range, whose
 /// mark ends as it tips over.
@@ -25,8 +27,6 @@ public sealed class PingMarks : MonoBehaviour
     // and how long a new mark takes to land (s).
     private const float DiamondSize = 22f, OverHead = .45f, EdgeMargin = 40f, LandSeconds = .18f;
 
-    /// <summary>A plain ping's colour: the HUD's pink.</summary>
-    public static Color PingColor => KitStyle.Accent;
     /// <summary>A Schießhund's bounty mark: teal (the user's).</summary>
     public static readonly Color BountyColor = new Color(.12f, .92f, .82f, 1f);
 
@@ -38,6 +38,10 @@ public sealed class PingMarks : MonoBehaviour
         public PlayerMovement By;
         public bool Bounty;
         public float Until, Since;
+        // Its colour as last drawn, and its own reveal material: marks are different colours at once now.
+        public Color Colour;
+        public Material Reveal;
+        public HitFlashRenderer Outline;
         public readonly List<GameObject> Copies = new List<GameObject>();
         public RectTransform Marker;
         public DiamondGraphic Diamond;
@@ -47,7 +51,7 @@ public sealed class PingMarks : MonoBehaviour
     private static PingMarks instance;
     private readonly List<Mark> marks = new List<Mark>();
     private readonly List<Renderer> found = new List<Renderer>();
-    private Material pingMaterial, bountyMaterial;
+    private Shader reveal;
     private RectTransform canvas;
     private float beat;
 
@@ -103,13 +107,7 @@ public sealed class PingMarks : MonoBehaviour
 
     private void Awake()
     {
-        var shader = Resources.Load<Shader>(ShaderPath);
-        if (shader != null)
-        {
-            // Ahead of the teammates' auras (Transparent+50), as HoldReveal is, so the stencil there doesn't cut it.
-            pingMaterial = new Material(shader) { name = "Ping Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave, renderQueue = 3049 };
-            bountyMaterial = new Material(shader) { name = "Bounty Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave, renderQueue = 3049 };
-        }
+        reveal = Resources.Load<Shader>(ShaderPath);
         var host = new GameObject("Ping markers", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         host.transform.SetParent(transform, false);
         var overlay = host.GetComponent<Canvas>();
@@ -126,8 +124,6 @@ public sealed class PingMarks : MonoBehaviour
     {
         foreach (var mark in marks) Clear(mark);
         marks.Clear();
-        if (pingMaterial != null) Destroy(pingMaterial);
-        if (bountyMaterial != null) Destroy(bountyMaterial);
         if (instance == this) instance = null;
     }
 
@@ -144,12 +140,14 @@ public sealed class PingMarks : MonoBehaviour
         {
             Enemy = enemy, Foe = foe, By = by, Bounty = bounty, Until = Time.time + Mathf.Max(.5f, seconds), Since = Time.unscaledTime
         };
+        mark.Colour = ColourOf(mark);
         Reveal(mark);
-        HitFlashRenderer.For(enemy).OrNull()?.SetPing(1f, bounty ? BountyColor : PingColor);
+        mark.Outline = HitFlashRenderer.For(enemy);
+        mark.Outline.OrNull()?.SetPing(1f, mark.Colour);
         mark.Marker = KitStyle.TopLeft(bounty ? "Bounty mark" : "Ping mark", canvas, Vector2.zero, new Vector2(140f, 60f));
         mark.Marker.anchorMin = mark.Marker.anchorMax = Vector2.zero;
         mark.Marker.pivot = new Vector2(.5f, 0f);
-        mark.Diamond = HudShapes.Make<DiamondGraphic>("Diamond", mark.Marker, bounty ? BountyColor : PingColor);
+        mark.Diamond = HudShapes.Make<DiamondGraphic>("Diamond", mark.Marker, mark.Colour);
         var diamond = mark.Diamond.rectTransform;
         diamond.anchorMin = diamond.anchorMax = new Vector2(.5f, 0f);
         diamond.sizeDelta = Vector2.one * DiamondSize;
@@ -167,17 +165,28 @@ public sealed class PingMarks : MonoBehaviour
     {
         beat += Time.unscaledDeltaTime * 2f;
         float pulse = 1f - Mathf.Repeat(beat, 1f);
-        Tint(pingMaterial, PingColor, pulse);
-        Tint(bountyMaterial, BountyColor, pulse);
         var view = Camera.main;
         var local = PlayerRoster.Local;
         for (int i = marks.Count - 1; i >= 0; i--)
         {
             var mark = marks[i];
             if (mark.Enemy == null || !mark.Foe.IsAlive || Time.time >= mark.Until) { Clear(mark); marks.RemoveAt(i); continue; }
+            // Its pinger's colour as it stands now: they may choose another while the mark is up.
+            Color colour = ColourOf(mark);
+            if (colour != mark.Colour)
+            {
+                mark.Colour = colour;
+                mark.Outline.OrNull()?.SetPing(1f, colour);
+                if (mark.Diamond != null) mark.Diamond.color = colour;
+            }
+            Tint(mark.Reveal, colour, pulse);
             Place(mark, view, local);
         }
     }
+
+    // A bounty is the Schießhund's teal; a plain ping is its pinger's own colour, the HUD's pink once they have left.
+    private static Color ColourOf(Mark mark)
+        => mark.Bounty ? BountyColor : mark.By != null && mark.By.TryGetComponent(out PlayerTally tally) ? tally.Color : KitStyle.Accent;
 
     private static void Tint(Material material, Color color, float pulse)
     {
@@ -213,8 +222,13 @@ public sealed class PingMarks : MonoBehaviour
     // A copy of each of its meshes in the mark's reveal material, riding the same bones (HoldReveal's way).
     private void Reveal(Mark mark)
     {
-        var material = mark.Bounty ? bountyMaterial : pingMaterial;
-        if (material == null) return;
+        if (reveal == null) return;
+        // Ahead of the teammates' auras (Transparent+50), as HoldReveal is, so the stencil there doesn't cut it.
+        var material = mark.Reveal = new Material(reveal)
+        {
+            name = mark.Bounty ? "Bounty Reveal (Runtime)" : "Ping Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave, renderQueue = 3049
+        };
+        Tint(material, mark.Colour, 1f);
         mark.Enemy.GetComponentsInChildren(found);
         foreach (var source in found)
         {
@@ -258,6 +272,7 @@ public sealed class PingMarks : MonoBehaviour
     {
         foreach (var copy in mark.Copies) if (copy != null) Destroy(copy);
         mark.Copies.Clear();
+        if (mark.Reveal != null) { Destroy(mark.Reveal); mark.Reveal = null; }
         if (mark.Enemy != null && mark.Enemy.TryGetComponent(out HitFlashRenderer flash)) flash.SetPing(0f, Color.clear);
         if (mark.Marker != null) Destroy(mark.Marker.gameObject);
     }

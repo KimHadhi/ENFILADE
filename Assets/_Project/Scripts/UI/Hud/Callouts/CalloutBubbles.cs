@@ -4,10 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// What a callout looks like (PlayerCallouts): a teammate's words in a short black plate with a pink edge over their
-/// head for a few seconds (held at the screen's edge with their name when they are off it, so the words still say who
-/// and which way); the player's own words small under the crosshair, so they see what they shouted; and the pin
-/// 이쪽으로! leaves on the spot looked at, a pink diamond with the caller's name and how far it is, one per player.
+/// What a callout looks like (PlayerCallouts): a teammate's words in a short black plate, its edge in their own colour,
+/// over their head for a few seconds (held at the screen's edge with their name when they are off it, so the words
+/// still say who and which way); the player's own words small under the crosshair, so they see what they shouted; and
+/// the pin 이쪽으로! leaves on the spot looked at, a diamond in the caller's colour with their name and how far it is,
+/// one per player. The colour is the one the Tab board shows them in (PlayerColours), on every PC.
 /// Teammates' plates can be turned off (Settings → 조작 → 동료 콜아웃 말풍선): their voice and pins stay. One plate per
 /// speaker, a new line taking the old one's place. Built on first use; real time.
 /// </summary>
@@ -104,7 +105,9 @@ public sealed class CalloutBubbles : MonoBehaviour
         bubble.Group = bubble.Root.gameObject.AddComponent<CanvasGroup>();
         bubble.Group.interactable = bubble.Group.blocksRaycasts = false;
         KitStyle.Cut(KitStyle.Stretch("Plate", bubble.Root), own ? KitStyle.With(KitStyle.Panel, .7f) : KitStyle.Panel);
-        var edge = KitStyle.Fill(FeelUI.Rect("Edge", bubble.Root), KitStyle.Accent).rectTransform;
+        // The plate's edge in the speaker's own colour, as their name is on the board (PlayerColours): whose words these
+        // are shows before the name is read. It was the HUD's pink for everyone.
+        var edge = KitStyle.Fill(FeelUI.Rect("Edge", bubble.Root), ColourOf(speaker)).rectTransform;
         edge.anchorMin = Vector2.zero;
         edge.anchorMax = new Vector2(0f, 1f);
         edge.pivot = new Vector2(0f, .5f);
@@ -130,6 +133,10 @@ public sealed class CalloutBubbles : MonoBehaviour
         bubbles.Add(bubble);
     }
 
+    // A player's own colour (PlayerTally.Color), the HUD's pink for one without a tally.
+    private static Color ColourOf(PlayerMovement who)
+        => who != null && who.TryGetComponent(out PlayerTally tally) ? tally.Color : KitStyle.Accent;
+
     private void AddPin(PlayerMovement by, Vector3 point)
     {
         for (int i = pins.Count - 1; i >= 0; i--)
@@ -145,7 +152,7 @@ public sealed class CalloutBubbles : MonoBehaviour
         pin.Root.sizeDelta = new Vector2(160f, 64f);
         pin.Group = pin.Root.gameObject.AddComponent<CanvasGroup>();
         pin.Group.interactable = pin.Group.blocksRaycasts = false;
-        var diamond = HudShapes.Make<DiamondGraphic>("Diamond", pin.Root, KitStyle.Accent).rectTransform;
+        var diamond = HudShapes.Make<DiamondGraphic>("Diamond", pin.Root, ColourOf(by)).rectTransform;
         diamond.anchorMin = diamond.anchorMax = new Vector2(.5f, 0f);
         diamond.sizeDelta = Vector2.one * PinSize;
         diamond.anchoredPosition = new Vector2(0f, PinSize * .5f);

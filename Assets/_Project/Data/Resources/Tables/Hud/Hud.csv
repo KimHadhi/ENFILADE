@@ -42,6 +42,7 @@ Team.shieldBand,2,아군 카드에서 체력 칸 위에 뜨는 쉴드 띠의 높
 Team.shieldGap,1,체력 칸과 쉴드 띠 사이(px)
 Board.classIcon,30,Tab 현황판 줄에서 이름 앞에 서는 클래스 아이콘 한 변(px). 색은 ClassColours.csv의 그 클래스 색
 Board.classGap,8,클래스 아이콘과 이름 사이(px)
+PlayerColour.apart,0.1,두 플레이어의 색이 이보다 가까우면 같은 색으로 친다(0 = 같은 색이고 1 = 검정과 흰색). 그러면 뒤에 온 사람이 그 색에 가장 가까운 남는 팔레트 색을 받는다. PlayerColours.csv의 줄끼리는 이보다 멀어야 한다(지금 가장 가까운 두 줄이 0.127)
 Mission.badgeSize,50;54,느낌표 칸의 너비;높이(px). 가장 높은 칸. 글자 칸과 같은 아랫선에서 위로만 솟는다
 Mission.barHeight,36,목표 글자 칸의 높이(px). 가장 낮은 칸. 이 칸의 아랫선에 세 칸이 같이 선다
 Mission.counterHeight,43,남은 수 칸의 높이(px). 중간 높이. 글자 칸 끝에 이어 붙는다

@@ -49,7 +49,7 @@
 | --- | --- |
 | 적·웨이브 공유 (호스트가 진행) | [EnemyNetwork](Sync/EnemyNetwork.cs), [EnemyHitMessage](Sync/EnemyHitMessage.cs), [WaveSync](Sync/WaveSync.cs) |
 | 친구의 무기·사격·주먹 표시 | [PlayerNetworkCombat](Sync/PlayerNetworkCombat.cs) |
-| 방 채팅 (받은 줄에 말한 사람의 플레이어가 따라와 그 사람 사진·자리 색을 쓴다) / 닉네임 | [PlayerChat](PlayerChat.cs) / [ProfileView](../UI/Menu/Profile/ProfileView.cs) |
+| 방 채팅 (받은 줄에 말한 사람의 플레이어가 따라와 그 사람 사진·그 사람의 색을 쓴다) / 닉네임 | [PlayerChat](PlayerChat.cs) / [ProfileView](../UI/Menu/Profile/ProfileView.cs) |
 | 실제 핑·전송량·연결 경로(직접/Relay) 측정 (`/net`) | [NetworkStatsHUD](NetworkStatsHUD.cs), [CountingTransport](Rooms/CountingTransport.cs) |
 | 상대 캐릭터의 몸·소리·스킨 동기화 (체력·최대 체력·쉴드는 한 묶음 `Vitals`로 주인이 보낸다) | [PlayerNetworkPose](Sync/PlayerNetworkPose.cs), [PlayerPose](Sync/PlayerPose.cs), [MovementMirror](../Player/Movement/Core/MovementMirror.cs) |
 | 보간 버퍼 자동 조절과 좀비 전송 빈도 (업데이트가 실제로 늦게 오는 만큼만 과거로 그림, 방장 쪽·참가자 쪽 따로. 좀비는 가까우면 초당 60 멀면 20. `/net`의 Buffer 줄. Network.csv `smoothing`, `buffer*`, `zombie*`) | [NetSmoothing](NetSmoothing.cs), `PlayerPose.Tick`, `EnemyNetwork.LateUpdate` |

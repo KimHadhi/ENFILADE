@@ -7,9 +7,9 @@ using UnityEngine.UI;
 /// 띄게 리디자인하면 좋을 듯"). Before, a line was bare 16 px text that vanished over a bright sky and every name wore the
 /// channel's pink. Now each line sits on its own dark plate (ChatLinePlate) with a bar at its outer end, and what it is
 /// shows before it is read:
-/// - a player: their profile tile (picture, or their initial on their colour), their name in their colour (pink for
-///   this PC's own, else the seat colour the kill feed and the board use), then the words in white; team and all lines
-///   get a small tag before the name;
+/// - a player: their profile tile (picture, or their initial on their colour), their name in their colour (the one
+///   the kill feed, the board and their pings use, this PC's own player's too: PlayerColours), then the words in white;
+///   team and all lines get a small tag before the name;
 /// - story dialogue: the speaker's own colour and a 대사 tag, no tile;
 /// - a system notice (방송): a light card with dark words and the HUD's nested diamond, so it stands out from talk;
 /// - a command the player typed: a darker plate with a pink chevron; its answer: the same plate, smaller grey words.
@@ -106,13 +106,14 @@ public sealed class ChatMessageItem : MonoBehaviour
         Entry = entry;
         kind = KindOf(entry);
         var line = look.Line;
-        speaker = entry.Mine ? line.mine : entry.SpeakerColor;
+        // The speaker's own colour, this PC's player as anyone (PlayerColours): the line reads as theirs on every PC.
+        speaker = SpeakerNow();
         Color fill, bar, ink;
         float size;
         switch (kind)
         {
             case Kind.System: fill = line.system; bar = line.systemMark; ink = line.systemInk; size = line.textSize; flashTint = line.systemMark; break;
-            case Kind.Command: fill = line.console; bar = line.mine; ink = line.ink; size = line.commandSize; flashTint = line.mine; break;
+            case Kind.Command: fill = line.console; bar = line.commandMark; ink = line.ink; size = line.commandSize; flashTint = line.commandMark; break;
             case Kind.Result: fill = line.console; bar = line.consoleInk; ink = line.consoleInk; size = line.resultSize; flashTint = line.consoleInk; break;
             default: fill = line.plate; bar = speaker; ink = line.ink; size = line.textSize; flashTint = speaker; break;
         }
@@ -129,7 +130,7 @@ public sealed class ChatMessageItem : MonoBehaviour
         if (showGlyph)
         {
             glyph.SetChannel(kind == Kind.System ? ChatChannel.Broadcast : ChatChannel.Console);
-            glyph.color = kind == Kind.System ? line.systemMark : line.mine;
+            glyph.color = kind == Kind.System ? line.systemMark : line.commandMark;
         }
 
         words.fontSize = size;
@@ -221,8 +222,28 @@ public sealed class ChatMessageItem : MonoBehaviour
         if (shown && kind == Kind.Player && now >= nextPicture)
         {
             nextPicture = now + PictureEvery;
+            Recolour();
             PaintTile(false);
         }
+    }
+
+    // The speaker's colour now: a player's is theirs as it stands (PlayerTally.Color), and what the line came with for
+    // anything else, or once they have left.
+    private Color SpeakerNow() => Entry.Who != null ? ChatStyle.SpeakerColor(Entry.Who, Entry.Channel) : Entry.SpeakerColor;
+
+    // A player's colour can change while their line still shows (they chose another, or someone who holds theirs came in):
+    // the bar, the name and the letter's tile follow, so an old line never says another colour than the board does.
+    private void Recolour()
+    {
+        Color now = SpeakerNow();
+        if (now == speaker) return;
+        speaker = now;
+        var line = look.Line;
+        Color inner = line.plate;
+        inner.a *= Mathf.Clamp01(line.plateEnd);
+        plate.Paint(line.plate, inner, speaker, line.bar, line.shear);
+        words.text = Compose(Entry);
+        if (!hasPicture) tile.color = speaker;
     }
 
     // The arrival, age seconds in: out from the edge, a touch big, the plate washed in the speaker's colour, the bar wide.

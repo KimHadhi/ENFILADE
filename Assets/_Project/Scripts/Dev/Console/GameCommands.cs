@@ -36,5 +36,6 @@ public static class GameCommands
         router.Register("point", "F 없이 손가락질 고정·풀기 — 손 모양을 Poke.csv Point.* 로 고치며 보기 (F5로 몸 전체)", PlayerPoint.Command);
         router.Register("death", "[좀비 종류 / fall / bleed / friend] [wipe] [short / full] — 죽지 않고 데스 스크린만 미리 보기 (DeathScreen)", DeathScreen.Command);
         router.Register("hits", "UI 클릭 판정 모양 보기 켜기·끄기 — 하늘색 = 누를 수 있는 곳, 분홍 = 지금 커서가 고르는 것, 노랑 = 호버로 비킨 원래 자리 (KitHit)", KitHitView.Command);
+        router.Register("colours", "플레이어 색 — 팔레트와 색 사이 거리, 이 PC의 플레이어마다 고른 색과 받은 색 · cases 겹침 규칙만 따로 검사 → Logs/player-colours.txt (PlayerColours)", PlayerColours.Command);
     }
 }

@@ -63,15 +63,13 @@ public static class ChatStyle
     }
 
     /// <summary>
-    /// A player's colour in the chat: the HUD's pink for this PC's own, else their seat colour (PlayerTally), the one the
-    /// kill feed and the scoreboard use, so a friend's name reads the same everywhere. Without a player, the channel's.
+    /// A player's colour in the chat: their own (PlayerTally.Color, PlayerColours), the one the kill feed, the board and
+    /// their pings use, so a name reads the same everywhere, this PC's own player's too. Until 2026-11-18 this PC's own
+    /// name was the HUD's pink here while every other PC showed it in the player's colour (the user: "타인 화면에서의 내
+    /// 색상(파란색)과 내 화면에서의 내 색상(핑크색)이 다르게 표시"). Without a player, the channel's.
     /// </summary>
     public static Color SpeakerColor(PlayerMovement who, ChatChannel channel)
-    {
-        if (who == null) return ColorFor(channel);
-        if (who.IsLocal) return KitStyle.Accent;
-        return who.TryGetComponent(out PlayerTally tally) ? tally.Color : ColorFor(channel);
-    }
+        => who != null && who.TryGetComponent(out PlayerTally tally) ? tally.Color : ColorFor(channel);
 
     /// <summary>
     /// A player's profile picture: this PC's own as chosen in the menu, a friend's once their PC has sent it

@@ -22,7 +22,7 @@ Line.shear,10,판 안쪽 끝이 기우는 거리(px). HUD의 사선
 Line.plate,#0B0B0EAD,줄 뒤 판 색(#RRGGBBAA). 세상이 비치되 눈밭·하늘 위 흰 글자도 읽힐 만큼 어둡게
 Line.plateEnd,0.72,판 안쪽 끝에 남는 불투명도 몫. 화면 가운데 쪽으로 옅어진다
 Line.ink,#F4F5F8,말 글자 색
-Line.mine,#FF4F78,내 이름과 내 줄 막대 색(HUD의 분홍). 다른 사람은 킬 피드·점수판과 같은 자리 색
+Line.commandMark,#FF4F78,내가 친 명령 줄의 꺾쇠와 막대 색(HUD의 분홍). 플레이어의 이름과 줄 막대는 누구든 그 사람의 색이다(내 것도. PlayerColours)
 Line.system,#FFF5F7EB,시스템 알림(방송: 아군 사격 켜고 끔 등) 카드 색. 밝은 카드라 어두운 줄들 사이에서 튄다
 Line.systemInk,#17171B,시스템 알림 글자 색(밝은 카드 위 어두운 글자)
 Line.systemMark,#FF4F78,시스템 알림의 마름모와 막대 색

@@ -10,13 +10,6 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class PlayerTally : MonoBehaviour
 {
-    // A colour for each seat in the room, so a name reads the same in the feed and on the board.
-    private static readonly Color[] SeatColors =
-    {
-        new Color(.45f, .78f, 1f), new Color(1f, .5f, .45f), new Color(.55f, .95f, .5f), new Color(1f, .78f, .4f),
-        new Color(.8f, .6f, 1f), new Color(.4f, .95f, .85f), new Color(1f, .6f, .85f), new Color(.85f, .9f, .5f)
-    };
-
     private const float ConsoleHold = 15f;
     // The class pick is read again this often (s): it only changes in the hub or the title screen.
     private const float ClassEvery = 1f;
@@ -24,6 +17,10 @@ public sealed class PlayerTally : MonoBehaviour
     private PlayerMovement player;
     private bool wasDowned, wasDead;
     private float lastKillTime = float.NegativeInfinity, nextClassLook;
+    // Their colour as PlayerColours gave it, and the setting and the palette it was last asked from (this PC's own player).
+    private Color colour = Color.white;
+    private string askedSetting;
+    private int askedPalette = -1;
     // What the wallet had earned when this chapter began, so Earned is this chapter's alone.
     private long earnedAtStart;
 
@@ -34,7 +31,7 @@ public sealed class PlayerTally : MonoBehaviour
         => player != null && player.TryGetComponent(out PlayerTally tally) && !string.IsNullOrEmpty(tally.DisplayName) ? tally.DisplayName
             : player != null ? player.name : "";
 
-    /// <summary>A player's name in their seat's colour, as rich text.</summary>
+    /// <summary>A player's name in their colour, as rich text.</summary>
     public static string ColoredNameOf(PlayerMovement someone)
         => someone.TryGetComponent(out PlayerTally theirs)
             ? "<color=#" + ColorUtility.ToHtmlStringRGB(theirs.Color) + ">" + theirs.DisplayName + "</color>" : someone.name;
@@ -48,7 +45,26 @@ public sealed class PlayerTally : MonoBehaviour
     public long Score { get; private set; }
     /// <summary>The ping players see (PingDisplay). The host's is 0.</summary>
     public int Ping { get; private set; }
-    public Color Color { get; private set; } = SeatColors[0];
+    /// <summary>
+    /// Their colour: the one that says who they are wherever they are named or marked, the same on every PC and for
+    /// this PC's own player as for anyone (PlayerColours gives it: what they chose, or a free palette colour). Read it
+    /// when drawing rather than keeping it: it changes when they choose another or someone who holds theirs comes in.
+    /// </summary>
+    public Color Color { get { PlayerColours.Settle(); return colour; } }
+    /// <summary>
+    /// The colour they asked for (PlayerColours.Code; 0 = they chose none): this PC's own player's from the setting,
+    /// another's as their PC sends it (PlayerNetworkScore).
+    /// </summary>
+    internal uint Wish { get; private set; }
+    /// <summary>Their network owner id, 0 alone: the lower keeps a colour two players want (PlayerColours.Resolve).</summary>
+    internal ulong SeatId => player != null ? PlayerRoster.IdOf(player) : 0UL;
+    /// <summary>This PC's own player's.</summary>
+    internal bool IsMine => player != null && player.IsLocal;
+    /// <summary>
+    /// They play in the room: this PC's own player or another's copy. A stand-in body this PC made for itself has a tally
+    /// too and takes no colour from the palette (PlayerColours).
+    /// </summary>
+    internal bool Plays => player != null && (player.IsLocal || player.IsNetworkDriven);
 
     /// <summary>Health taken off enemies this chapter: what really came off, not the overkill past zero.</summary>
     public float Damage { get; private set; }
@@ -73,11 +89,31 @@ public sealed class PlayerTally : MonoBehaviour
     {
         player = GetComponent<PlayerMovement>();
         if (player.IsLocal) DisplayName = GameSettings.Current.DisplayName;
+        if (player.IsLocal) AskFromSetting();
         earnedAtStart = Wallet.Earned;
     }
 
-    private void OnEnable() => CombatDamageEvents.Damaged += OnDamaged;
-    private void OnDisable() => CombatDamageEvents.Damaged -= OnDamaged;
+    private void OnEnable()
+    {
+        CombatDamageEvents.Damaged += OnDamaged;
+        PlayerColours.Join(this);
+    }
+
+    private void OnDisable()
+    {
+        CombatDamageEvents.Damaged -= OnDamaged;
+        PlayerColours.Leave(this);
+    }
+
+    // This PC's own player asks for what the setting says, looked up again when the setting or the palette changed.
+    private void AskFromSetting()
+    {
+        string setting = GameSettings.Current.playerColour ?? "";
+        if (setting == askedSetting && askedPalette == PlayerColours.PaletteVersion) return;
+        askedSetting = setting;
+        askedPalette = PlayerColours.PaletteVersion;
+        ShowWish(PlayerColours.WishOf(setting));
+    }
 
     /// <summary>This PC's player finished someone.</summary>
     internal void CountKill(bool execution)
@@ -107,7 +143,16 @@ public sealed class PlayerTally : MonoBehaviour
     /// <summary>A streak this player reached (the host's count reaches every PC through PlayerNetworkScore).</summary>
     internal void NoteStreak(int streak) => BestStreak = Mathf.Max(BestStreak, streak);
 
-    internal void ShowSeat(ulong client) => Color = SeatColors[client % (ulong)SeatColors.Length];
+    /// <summary>The colour they asked for changed (their setting, or their PC's word of it): colours are settled again.</summary>
+    internal void ShowWish(uint code)
+    {
+        if (Wish == code) return;
+        Wish = code;
+        PlayerColours.Changed();
+    }
+
+    /// <summary>PlayerColours only: the colour the rule gave them.</summary>
+    internal void Give(Color32 given) => colour = given;
     internal void ShowName(string name) => DisplayName = name;
     internal void ShowPing(int ping) => Ping = ping;
     internal void ShowClass(string id) => ClassId = id ?? "";
@@ -170,6 +215,7 @@ public sealed class PlayerTally : MonoBehaviour
         if (player.IsLocal)
         {
             DisplayName = GameSettings.Current.DisplayName;
+            AskFromSetting();
             Score = Wallet.Balance;
             Earned = System.Math.Max(0L, Wallet.Earned - earnedAtStart);
             if (Time.unscaledTime >= nextClassLook)

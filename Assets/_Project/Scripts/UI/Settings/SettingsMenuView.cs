@@ -349,6 +349,9 @@ public sealed class SettingsMenuView
 
     private static void HudTab(SettingsRows rows, GameSettings s)
     {
+        // The player's own colour (PlayerColours): the palette's swatches and a box for any colour of their own.
+        PlayerColourRow.Controls(W.Row(rows.Parent, Texts.Get("profile.colour")), false, true);
+        rows.Note(Texts.Get("profile.colour.hint"));
         rows.Volume(Texts.Get("settings.hud.sway"), s.hudSway, v => s.hudSway = v);
         rows.Slider(Texts.Get("settings.hud.tilt"), 0f, GameSettings.MaxHudTilt, s.hudTilt, v => s.hudTilt = Mathf.Round(v * 20f) / 20f,
             v => SettingsRows.Percent(Mathf.Round(v * 20f) / 20f), shownScale: 100f);

@@ -77,8 +77,9 @@ public sealed class ChatLook
         public float plateEnd = .72f;
         [Tooltip("The words' colour.")]
         public Color ink = new Color32(244, 245, 248, 255);
-        [Tooltip("The player's own name and bar: the HUD's one pink.")]
-        public Color mine = new Color32(255, 79, 120, 255);
+        [Tooltip("A typed command's chevron and bar: the HUD's one pink. A player's name and bar are that player's own colour, " +
+            "this PC's player too (PlayerColours); until 2026-11-18 this was also painted over this PC's own name.")]
+        public Color commandMark = new Color32(255, 79, 120, 255);
         [Tooltip("A system notice's card (방송: friendly fire switched, a test notice): light, so it stands out from the dark lines.")]
         public Color system = new Color32(255, 245, 247, 235);
         [Tooltip("A system notice's words, dark on its light card.")]

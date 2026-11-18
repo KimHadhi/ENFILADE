@@ -18,7 +18,7 @@
 | [Camera](Camera/) | 9 | 시점, 카메라 효과, 3인칭·관전 |
 | [Comms](Comms/) | 7 | 콜아웃과 핑 |
 | [Face](Face/) | 8 | 표정과 입 모양 |
-| [Life](Life/) | 11 | 체력·피격·쓰러짐·부활·붙잡힘, 내 화면의 피해 표시 |
+| [Life](Life/) | 12 | 체력·피격·쓰러짐·부활·붙잡힘, 내 화면의 피해 표시, 점수판에 가는 그 사람의 숫자와 그 사람의 색 |
 | [Movement](Movement/) | 4 | 이동 상태 기계, 파쿠르, 회피 ([이동 코드 구조](Movement/README.md)) |
 | [Movement/Actions](Movement/Actions/) | 4 |  |
 | [Movement/Core](Movement/Core/) | 9 |  |
@@ -57,6 +57,7 @@
 | 눈 시점·시선 따라 허리·머리 굽히기·Q/E 몸 기울이기(골반 옮기기·옆으로 휘기)·공중에서 등을 대고 나는 몸·카메라 벽 판정 / F5에서도 총·주먹이 따르는 눈 시점 / 카메라가 눈에서 벗어나는 곳(주먹질·피하기·벽·몸 흔들림 설정)으로 허리·가슴·목을 굽혀 머리를 데려가기(카메라는 늘 머리 안, 총을 쥔 동안은 목만), 사다리에서는 몸 전체가 위아래로 옮겨 눈을 카메라 높이에 / 설정의 1인칭 몸 흔들림(`GameSettings.bodySway`) | [PlayerBody.Look](Body/PlayerBody.Look.cs), [PlayerBody.Clearance](Body/PlayerBody.Clearance.cs), [CameraClearance](Camera/CameraClearance.cs) / [PlayerView](Camera/PlayerView.cs) / [HeadReach](Body/HeadReach.cs), [PlayerBody.Grip](Body/PlayerBody.Grip.cs) (`Body.ladderHeadShift`) / [BodyCamera](Body/BodyCamera.cs) |
 | 플레이어 생성 / 시작 위치 / 목록·내 캐릭터 찾기 / 멀티 구조 시험용 더미 | [PlayerFactory](PlayerFactory.cs) / [PlayerSpawnPoint](PlayerSpawnPoint.cs) / [PlayerRoster](PlayerRoster.cs) / [ConsoleDummyPlayers](../Dev/ConsoleDummyPlayers.cs) |
 | 플레이어 HP·실드·피격·사망 | [PlayerDamageReceiver](Life/PlayerDamageReceiver.cs) |
+| 플레이어 색 (누가 누구인지 말하는 색의 한 주인: 설정의 '내 색'에서 고르고, 바란 색만 보내고, 모든 PC가 같은 규칙으로 정해 어느 화면에서나 같다. 읽는 곳은 모두 `PlayerTally.Color`. `/colours`) | [PlayerColours](Life/PlayerColours.cs), [PlayerTally](Life/PlayerTally.cs), [PlayerColours.csv](../../Data/Resources/Tables/Hud/PlayerColours.csv), [PlayerColourRow](../UI/Settings/PlayerColourRow.cs) |
 | 실드 (에이펙스 레전드 참고: 실드만 맞으면 피 대신 맞은 쪽 화면 가장자리에서 찢김(어두운 띠 둘과 하늘색 칼날 선, 0.12초)과 떨어져 나가는 하늘색 조각·잃은 양 -N(D 3차의 C·B), 실드색 방향 표시·전기 튀는 소리·체력바 실드 띠 흰 번쩍, 친구 몸엔 실드색 불꽃 / 다 깨질 때 화면이 두 프레임 꺼지고 큰 하늘색 사선, 모든 가장자리에서 조각, 색이 잠깐 빠짐, 실드 띠 조각·깨지는 소리. 예전 벌집 빛과 유리판은 표에서 0으로 꺼 둠) | [ShieldFeedback](Life/ShieldFeedback.cs), [ShieldHexGraphic](../UI/Hud/Health/ShieldHexGraphic.cs), [ShieldShatter](../UI/Hud/Health/ShieldShatter.cs), [Player.csv](../../Data/Resources/Tables/Player/Player.csv)의 `Shield.…` 행, 소리 [Art/Audio/HitConfirm](../../Art/Audio/HitConfirm)의 ShieldHit·ShieldBreak (비면 합성음) |
 | 쓰러짐·부활·복귀·전멸 (혼자면 체력 0이 곧 전멸이지만, 공용 카드 불사조를 들었으면 웨이브·휴게소마다 한 번 그 한 방에서 일어선다: PlayerDamageReceiver → PhoenixRise) | [PlayerLife](Life/PlayerLife.cs), [PlayerRevive](Life/PlayerRevive.cs), [PhoenixRise](../Classes/PhoenixRise.cs), [PlayerLifeHUD](../UI/Hud/Team/PlayerLifeHUD.cs), [Downed.csv](../../Data/Resources/Tables/Player/Downed.csv) |
 | 죽은 뒤 관전 (722: 동료 뒤 3인칭·자유 시점, 좌/우클릭·Space) | [PlayerSpectate](Camera/PlayerSpectate.cs), [PlayerLifeHUD](../UI/Hud/Team/PlayerLifeHUD.cs), [Spectate.csv](../../Data/Resources/Tables/Player/Spectate.csv) |
