@@ -6,8 +6,9 @@ using UnityEngine;
 /// stays one; alone, as the kill counts (GunFeelDirector). It runs on real time: it eases down to `scale`, holds, and eases
 /// back up. It is a hold on WorldTime: Esc's pause still stops the game and the slowdown carries on after it, and beside
 /// the counter's slow motion or a hit stop the world runs at the slower of the two. The screen (SlowMotionLook) and the
-/// sound (SlowMotionSound) follow Depth, and VfxTimeStep keeps the effects moving every frame. Numbers:
-/// Tables/SkullSlowMotion, one row for all three.
+/// sound (SlowMotionSound) follow Depth, and VfxTimeStep keeps the effects moving every frame. As a streak's slowdown is
+/// set off, each player's guns come up with full magazines (fillMagazines; the brief one only with briefFillMagazines).
+/// Numbers: Tables/SkullSlowMotion, one row for all three.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SkullSlowMotion : MonoBehaviour
@@ -20,6 +21,10 @@ public sealed class SkullSlowMotion : MonoBehaviour
     private float easeIn = .15f, hold = 2.5f, easeOut = .6f;
     [SerializeField, Min(0f), Tooltip("Real seconds a named or elite enemy's kill stays slowed (backlog 325): the same slowdown, held briefly.")]
     private float briefHold = .5f;
+    [SerializeField, Tooltip("As a streak's slowdown begins, every player's guns come up with full magazines, reserves untouched.")]
+    private bool fillMagazines = true;
+    [SerializeField, Tooltip("The brief slowdown of a named or elite kill fills the magazines too.")]
+    private bool briefFillMagazines;
 
     private static SkullSlowMotion instance;
     private float age = -1f, holding = 2.5f;
@@ -41,6 +46,21 @@ public sealed class SkullSlowMotion : MonoBehaviour
         if (!Application.isPlaying) return;
         Ensure();
         instance.Restart(brief ? instance.briefHold : instance.hold);
+        bool fills = brief ? instance.briefFillMagazines : instance.fillMagazines;
+        GunAmmoLog.Note("slow motion set off (" + (brief ? "a named or elite kill, brief" : "a streak's skull")
+            + (fills ? "): magazines fill" : "): magazines left as they are"));
+        if (fills) FillMagazines();
+    }
+
+    // What the slowdown gives as it is set off (the user, 2026-11-18: "발동 즉시 모든 인원의 주무기 및 보조무기 현재
+    // 장탄수만 최대치로 충전 (예비 탄약은 충전 제외)"): the magazines of the guns each player holds, full at once. Every PC
+    // sets the slowdown off from the same word (the host's KillRpc; alone, the kill itself), and a player's rounds are
+    // counted on their own PC, so each PC fills its own player's and everyone ends up filled with nothing more sent.
+    // One set off while another still runs fills again: it was set off again.
+    private static void FillMagazines()
+    {
+        var mine = PlayerRoster.Local;
+        if (mine != null && mine.TryGetComponent(out PlayerWeaponSlots slots)) slots.TopUpMagazines();
     }
 
     private void Restart(float holdFor)

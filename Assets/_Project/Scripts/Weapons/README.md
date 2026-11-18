@@ -8,7 +8,7 @@
 
 | 폴더 | 스크립트 | 무엇 |
 | --- | ---: | --- |
-| [Core](Core/) | 8 | 무기 데이터와 발사·조준·반동 규칙 |
+| [Core](Core/) | 10 | 무기 데이터와 발사·조준·반동 규칙, 탄약 기록과 탄약 규칙 점검 |
 | [Effects](Effects/) | 9 | 총구 화염, 예광탄, 탄착, 쏠 때의 손맛 |
 | [FPSBody](FPSBody/) | 60 | 손에 든 총: 자세, 장전, 조준경, 부착물, 등에 멘 총 |
 
@@ -30,6 +30,7 @@
 | 발사·명중·조준 연결 / 총 모델 표현(KINEMATION FPS Animation Framework, 흔들림·반동·정조준 포함. 총마다의 FPSAF 층은 몸에 한 번만 만들어 두고 꺼낼 때 넣기만 함: [FPSBodyBoneController](FPSBody/FPSBodyBoneController.cs). 총이 손에 앉는 자리는 층을 만들 때 잡아 둔 값 그대로 매 프레임 넣음: [GunSeatJob](FPSBody/GunSeatJob.cs). FPSAF의 바닥층은 몸의 클립으로 직접 잡음: [FPSBodyPlayables](FPSBody/FPSBodyPlayables.cs). Kar98k·L96X·KXG12는 쏠 때마다 몸이 노리쇠·펌프를 당기는 클립, FPSGun.Cycle) / PDW90 투명 탄창의 탄(팩 데모 스크립트 대신 [PackMagazineRounds](FPSBody/PackMagazineRounds.cs), 탄창이 빈 만큼 총알 띠) / 총 클립(Retarget Pro로 기준 몸에. 바뀐 총만 굽고 실패한 총은 원본이 바뀔 때까지 다시 해 보지 않음, 길이 0인 자세는 한 프레임짜리 복사본으로: `GunUpToDate`·`Lasting`) | [WeaponController](WeaponController.cs) / [FPSBody](FPSBody/FPSBody.cs) / [GunClipRetarget](../../Editor/Guns/GunClipRetarget.cs) |
 | 권총 근접 자세(존 윅 자세, 11-13 사용자: "아무리 가까워도 총 쏠 수 있는 상태가 돼서 CQB하는 데 쓰이게": 살아 있는 적이 눈에서 1.2m 안 시선 앞에 오거나 보통 자세의 총구가 막히면 권총을 가슴 쪽으로 당겨 윗면을 안쪽으로 눕혀 쥐고 조준점에 쏜다. 그 자세에서는 적이 총을 막지 않고, 적 몸에 파묻힌 총구는 그 바로 앞에서 쏜다. 그 자세마저 벽에 막히면 예전처럼 high ready. 모든 PC가 같은 규칙. CloseHold.csv) | [FPSBody.CloseHold](FPSBody/FPSBody.CloseHold.cs), [WeaponController](WeaponController.cs) `HoldClose`, [WeaponAimSolver](Core/WeaponAimSolver.cs) `IsObstructed`·`ShortOfFoe` |
 | 장비 슬롯 / 사격 입력 | [PlayerWeaponSlots](PlayerWeaponSlots.cs), [PlayerWeaponInput](PlayerWeaponInput.cs) |
+| 탄약이 왜 바뀌었는지 보기 (플레이 기록: 내 플레이어의 탄약이 쏘는 것 말고 다른 이유로 바뀔 때마다 `Logs/gun-ammo.txt`에 총·전 → 후·이유 한 줄. 플레이 없는 점검: 편집기가 스크립트를 읽을 때마다와 Play를 멈출 때마다 모든 총을 탄약 규칙에 통과시켜 `Logs/ammo-check.txt`에 규칙마다 지켜졌는지 적음, ENFILADE → 총 → 탄약 규칙 점검 또는 `Temp/enfilade-ammocheck.request`. 탄약 규칙을 바꾸면 그 규칙을 점검에도 더한다) / 탄창만 가득 채우기(예비 탄약 그대로: 건 카타, 연속 처치 슬로 모션 `SkullSlowMotion.csv` `fillMagazines`) | [GunAmmoLog](Core/GunAmmoLog.cs), [AmmoCheck](Core/AmmoCheck.cs) / `WeaponRuntime.TopUp`, `PlayerWeaponSlots.TopUpMagazines` |
 | 무기 스킨과 메인 메뉴 무기 탭 (총 목록·등급·처치, 가운데 돌아가는 총, 단색 칠·위장 무늬·팩 재질. 위장 무늬는 트라이리니어·이방성 필터로, 디지털은 1024px로 그린다(포인트 필터였을 때 UV 없는 MX16A4에서 조준하면 지글거렸다). 총마다 gun_setups.json에 저장, 방에서는 친구 화면에도. GunSkins.csv) | [GunSkins](GunSkins.cs), [MainMenuWeapons](../UI/Menu/MainMenuWeapons.cs) |
 | 총마다 킬 카운트 (스탯트랙처럼 모든 총이 이 PC에서 처치·헤드샷을 세고 문턱마다 등급 이름이 총 이름 앞에. 게임 안에서는 살펴보기(Y) 때만 총 옆 숫자판과 탄약 표시 아래 줄이 뜨고, 싸우다 오른 등급은 그 총을 다음에 살펴볼 때 알린다. 무기 탭. KillCounter.csv, gun_kills.json) | [GunKills](GunKills.cs), [GunKillPlate](FPSBody/GunKillPlate.cs) |
 | 몸에 메는 총 (들고 있지 않은 총: 긴 총은 등에 X자로, 짧은 총은 허벅지에. 그 총을 마지막으로 든 모양 그대로, 친구·3인칭·관전에서 보이고 1인칭 내 화면엔 그림자만. 몸이 만들어질 때마다 실제 몸(살·몸에 붙는 옷, 늘어진 천은 빼고)을 재서 총이 파묻히지 않게 바깥으로 민다: 체형 슬라이더·큰 캐릭터도 저절로. Holsters.csv) | [HolsteredGuns](FPSBody/HolsteredGuns.cs), [BodySurface](../Player/Body/Measure/BodySurface.cs)(등·가슴까지, 보이는 것만) |

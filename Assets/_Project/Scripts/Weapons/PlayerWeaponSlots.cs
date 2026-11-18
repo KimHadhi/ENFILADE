@@ -88,8 +88,12 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (data == null) return null;
         // A gun new to the slot comes with its reserve full: its holder's cap, which an ammo pouch card raises.
         if (weapons[index] == null || weapons[index].Data != data)
+        {
             weapons[index] = new WeaponRuntime(data, savedData[index] == data && savedAmmo[index] >= 0 ? savedAmmo[index] : (int?)null,
                 savedData[index] == data && savedReserve[index] >= 0 ? savedReserve[index] : ReserveCap(index));
+            // What moves this PC's own player's rounds is written down (Logs/gun-ammo.txt); a friend's copy counts nothing.
+            if (GunAmmoLog.On && player != null && player.IsLocal && !player.IsNetworkDriven) weapons[index].Told = GunAmmoLog.Gun;
+        }
         return weapons[index];
     }
 
@@ -121,6 +125,24 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (count > 0) SlotActivity?.Invoke();
         return count;
     }
+    /// <summary>
+    /// Every gun held comes up with its magazine full at once and its reserve untouched (WeaponRuntime.TopUp), the one in
+    /// hand and the ones put away alike: what the room's slow motion gives each player as it begins (SkullSlowMotion; the
+    /// user, 2026-11-18: "모든 인원의 주무기 및 보조무기 현재 장탄수만 최대치로 충전"). Not a gun that keeps its own rounds
+    /// (a Schießhund's Desperado is loaded by bounties alone). Returns how many guns it filled.
+    /// </summary>
+    public int TopUpMagazines()
+    {
+        int count = 0;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            if (GetWeapon(i).OrNull()?.Category != WeaponCategory.Ranged || KeepsOwnRounds(i)) continue;
+            if (GetRuntime(i).TopUp()) count++;
+        }
+        if (count > 0) SlotActivity?.Invoke();
+        return count;
+    }
+
     /// <summary>Whether RefillAmmo would add anything: a held gun's magazine isn't full, or its reserve is under its cap (ReserveCap).</summary>
     public bool NeedsAmmo()
     {

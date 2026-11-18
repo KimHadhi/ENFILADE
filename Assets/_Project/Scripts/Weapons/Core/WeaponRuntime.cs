@@ -58,6 +58,15 @@ public sealed class WeaponRuntime
     private bool wasHoldingFire, stopAfterShell;
     private int burstRemaining;
 
+    /// <summary>
+    /// Who is told what changed this gun's rounds other than a shot, with the magazine and the reserve as they were
+    /// before it: the record of this PC's own player's guns (GunAmmoLog, set by PlayerWeaponSlots) and the rules' check
+    /// (AmmoCheck). Nobody by default, and nothing here depends on being heard.
+    /// </summary>
+    internal Action<WeaponRuntime, string, int, int> Told;
+
+    private void Tell(string what, int ammoBefore, int reserveBefore) => Told?.Invoke(this, what, ammoBefore, reserveBefore);
+
     public WeaponRuntime(WeaponData data, int? ammunition = null, int? reserve = null)
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
@@ -170,6 +179,12 @@ public sealed class WeaponRuntime
     {
         // A magazine reload cut short keeps what its hands already did; nothing more is granted or lost.
         if (IsReloading && Step == ReloadStep.None && !shownReload) KeepWhatWasDone();
+        StopReload();
+    }
+
+    // The reload under way is over here and now, whatever it had got to; the trigger starts afresh.
+    private void StopReload()
+    {
         IsReloading = false; ReloadRemaining = 0f;
         Step = ReloadStep.None; stopAfterShell = shownReload = false;
         cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false;
@@ -266,7 +281,13 @@ public sealed class WeaponRuntime
     }
     public void CancelBurst() { burstRemaining = 0; wasHoldingFire = false; }
     internal void RefundUnfiredShots(int count) { Ammo = Mathf.Min(Data.MagazineSize, Ammo + Mathf.Max(0, count)); CancelBurst(); }
-    public void AddReserve(int amount) { if (amount > 0) ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + amount); }
+    public void AddReserve(int amount)
+    {
+        if (amount <= 0) return;
+        int reserveBefore = ReserveAmmo;
+        ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + amount);
+        Tell("reserve added", Ammo, reserveBefore);
+    }
 
     /// <summary>
     /// A gun put away reloads itself (a Point's passive, ClassKit): its magazine fills from its reserve at once. False
@@ -306,14 +327,21 @@ public sealed class WeaponRuntime
     /// <summary>
     /// The magazine full at once without the reserve paying for it: a Point's Gun Kata, where the gun drawn comes out full
     /// (ClassKit; the user, 2026-11-12: "장전처럼 탄약을 소모하는 게 아니라 그냥 꽉 찬 채로 나오는 게 어때? 그럼 총알 다 떨어질
-    /// 걱정 없이 시원시원하고 맛있게 쏠 수 있으니까"). Any reload under way stops.
+    /// 걱정 없이 시원시원하고 맛있게 쏠 수 있으니까"), and the room's slow motion as it begins (SkullSlowMotion; the user,
+    /// 2026-11-18: "현재 장탄수만 최대치로 충전 (예비 탄약은 충전 제외)"). Any reload under way stops, and so does what a
+    /// cut-short one had left to do: the gun is loaded. It is not a reload cut short (Interrupt), which keeps what the
+    /// hands had done and so can move rounds between the magazine and the reserve; here the reserve stays exactly as it
+    /// was. False when the gun was full and ready already.
     /// </summary>
-    public void TopUp()
+    public bool TopUp()
     {
-        if (Ammo >= Data.MagazineSize) return;
-        Interrupt();
+        if (Ammo >= Data.MagazineSize && !ResumeDue) return false;
+        int ammoBefore = Ammo, reserveBefore = ReserveAmmo;
+        StopReload();
         ForgetResume();
         Ammo = Data.MagazineSize;
+        Tell("top-up", ammoBefore, reserveBefore);
+        return true;
     }
 
     /// <summary>Fill the magazine and restore at least the starting reserve, preserving bonus ammunition.</summary>
@@ -325,9 +353,11 @@ public sealed class WeaponRuntime
     /// </summary>
     public void RefillAmmo(int reserveCap)
     {
+        int ammoBefore = Ammo, reserveBefore = ReserveAmmo;
         Interrupt();
         ForgetResume();
         Ammo = Data.MagazineSize;
         ReserveAmmo = Mathf.Max(ReserveAmmo, reserveCap);
+        Tell("refill", ammoBefore, reserveBefore);
     }
 }
