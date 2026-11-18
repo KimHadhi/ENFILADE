@@ -47,8 +47,9 @@ public sealed class LocomotionState : MovementBaseState
         if (ctx.MeleeCombat != null) baseSpeed = ctx.MeleeCombat.LimitMoveSpeed(baseSpeed);
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
 
-        // A surge toward a vault (ParkourTraversal.SurgesToVault) carries the run on at its own pace until the jump goes.
-        Vector3 surge = ctx.Abilities.Traversal.SurgeVelocity;
+        // A surge (GroundSurge: toward a vault until the jump goes, or a Détente's run to the friend it doses) carries the
+        // run on at its own pace, whatever the keys say.
+        Vector3 surge = ctx.Abilities.Surge.Velocity;
         if (ctx.IsGrounded && surge != Vector3.zero)
         {
             ctx.HorizontalVelocity = surge;

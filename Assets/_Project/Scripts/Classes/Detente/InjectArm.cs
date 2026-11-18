@@ -47,6 +47,18 @@ public sealed class InjectArm : PathArm
     /// <summary>How far home the plunger is (0 to 1): from the path's strike over the row's plunge seconds.</summary>
     public float Plunge { get; private set; }
 
+    /// <summary>
+    /// Where this body's left shoulder is now and how long its arm is from there to the wrist (m), the measure the
+    /// motions' distances are given in. False while the body has no arm to pose.
+    /// </summary>
+    internal bool TryShoulder(out Vector3 shoulder, out float armLength)
+    {
+        bool has = Bind();
+        shoulder = has ? arm.Upper.position : transform.position;
+        armLength = has ? arm.ArmLength : 0f;
+        return has;
+    }
+
     /// <summary>The row of Tables/InjectArms for a kind.</summary>
     internal static string RowId(Kind kind) => kind == Kind.Self ? "self" : kind == Kind.Friend ? "friend" : "bandage";
 
@@ -364,6 +376,12 @@ public sealed class InjectArm : PathArm
         public bool Aims, HasTip, NearerArm;
         public Vector3 Held, Handle, Face;
         public float Grip, Tip, Along, Depth, ReachIn, ReachOut, PlungeSeconds, Length, Strike = -1f;
+        /// <summary>
+        /// For a motion done to another body, how far from this shoulder the spot on them may be, in this arm's lengths:
+        /// within Reach it is done from where the body stands, and a body further off is run to first, till the spot is
+        /// Near (InjectApproach). ReachAt: how high over the ground the arm's line to them must be open (m).
+        /// </summary>
+        public float Near, Reach, ReachAt;
         public HumanBodyBones Bone = HumanBodyBones.LastBone;
 
         private static readonly Dictionary<Kind, Move> moves = new Dictionary<Kind, Move>();
@@ -404,7 +422,11 @@ public sealed class InjectArm : PathArm
                 ReachIn = Mathf.Max(0f, row.Number("reachIn", .12f)),
                 ReachOut = Mathf.Max(0f, row.Number("reachOut", .1f)),
                 PlungeSeconds = Mathf.Max(0f, row.Number("plunge", .14f)),
+                Near = Mathf.Max(.1f, row.Number("near", .9f)),
+                Reach = Mathf.Max(.1f, row.Number("reach", 1.1f)),
+                ReachAt = Mathf.Max(0f, row.Number("reachAt", 1.1f)),
             };
+            move.Reach = Mathf.Max(move.Reach, move.Near);
             if (!move.NearerArm && bone.Length > 0 && Enum.TryParse(bone, true, out HumanBodyBones named)) move.Bone = named;
             if (move.NearerArm) move.Bone = HumanBodyBones.LeftUpperArm;
             if (string.IsNullOrEmpty(move.Table) || move.Handle.sqrMagnitude < 1e-6f || move.Face.sqrMagnitude < 1e-6f) return null;

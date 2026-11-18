@@ -88,6 +88,9 @@ public sealed class DetenteKit : MonoBehaviour
     // As anyone (any class): a Détente friend's adrenaline shot in this player, until when, how long it was, and what it
     // gives (pace and gun damage, %), as that Détente's PC sent them.
     private float boostUntil, boostTotal = 1f, boostSpeed, boostDamage;
+    // The run to a friend out of the arm's reach, for a dose or a treatment (InjectApproach, the body's surge): what it
+    // was for is given when the arm reaches them (Approaching).
+    private InjectApproach approach;
 
     /// <summary>The syringe's measure now, and the most it holds.</summary>
     public float Syringe => Mathf.Max(0f, syringe);
@@ -164,6 +167,7 @@ public sealed class DetenteKit : MonoBehaviour
         {
             if (Local == this) Local = null;
             if (Treating != null) Stop(false);
+            approach?.Stop();
             Candidate = Raising = null;
             RaiseProgress = 0f;
             return;
@@ -190,6 +194,13 @@ public sealed class DetenteKit : MonoBehaviour
         bool holding = keys && interact.IsPressed();
         float dt = Time.deltaTime;
 
+        // A run to a friend under way: nothing else is offered or begun until it is in reach or over.
+        if (approach != null && approach.Running)
+        {
+            Approaching();
+            return;
+        }
+
         // A dead friend first: Resurrection.
         var dead = able && raisesLeft > 0 ? Nearest(true) : null;
         if (dead != Raising) RaiseProgress = 0f;
@@ -208,7 +219,7 @@ public sealed class DetenteKit : MonoBehaviour
         if (offeredTo != null && Time.time >= offerUntil) offeredTo = null;
         Candidate = able && Empty && Raising == null ? Nearest(false) : null;
         if (Candidate == null || !keys || !interact.WasPressedThisFrame()) return;
-        if (Asked(Candidate)) { Begin(Candidate); return; }
+        if (Asked(Candidate)) { if (InReach(Candidate, InjectArm.Kind.Bandage, Reach())) Begin(Candidate); return; }
         if (offeredTo == Candidate) return;
         offeredTo = Candidate;
         offerUntil = Time.time + Mathf.Max(1f, Number("offerSeconds", 8f));
@@ -227,7 +238,43 @@ public sealed class DetenteKit : MonoBehaviour
     {
         if (patient == null || patient != offeredTo || Time.time >= offerUntil || Treating != null) return;
         if ((patient.transform.position - transform.position).sqrMagnitude > Reach(1f) * Reach(1f)) return;
-        Begin(patient);
+        if (InReach(patient, InjectArm.Kind.Bandage, Reach(1f))) Begin(patient);
+    }
+
+    // ---- Getting within the arm's reach (the user, 2026-11-18: "닿는 거리로 빠르게 이동하죠, 그 써지 기능처럼요") ----
+
+    // Whether the friend is within the arm's reach as the two stand. If not, the body runs there when the way is clear
+    // (InjectApproach: the body's own surge, which passes no wall, door or drop) and what the run was for follows on
+    // arrival (Approaching); when there is no way, it says so and nothing is spent.
+    private bool InReach(PlayerMovement friend, InjectArm.Kind kind, float within)
+    {
+        approach ??= new InjectApproach(movement);
+        var way = approach.Begin(friend, kind, within);
+        if (way == InjectApproach.Way.There) return true;
+        if (way == InjectApproach.Way.Run) return false;
+        KitSound.Play(KitSound.Cue.Refuse, .4f);
+        AlertHUD.Self(Texts.Format(way == InjectApproach.Way.Stance ? "class.detente.way.stance" : "class.detente.way.blocked", Name(friend)));
+        return false;
+    }
+
+    // The run to a friend, looked after: in reach, the dose goes in or the treatment begins, if it can still be given; a
+    // run that did not get there (they walked off, something came between) costs nothing.
+    private void Approaching()
+    {
+        var friend = approach.Friend;
+        var kind = approach.Kind;
+        var state = approach.Tick(movement.DeltaTime);
+        if (state == InjectApproach.State.Running) return;
+        if (state != InjectApproach.State.Arrived)
+        {
+            KitSound.Play(KitSound.Cue.Refuse, .4f);
+            AlertHUD.Self(Texts.Format("class.detente.way.missed", Name(friend)));
+        }
+        else if (kind == InjectArm.Kind.Bandage)
+        {
+            if (Treating == null) Begin(friend);
+        }
+        else if (!Empty) Inject(friend);
     }
 
     private void Begin(PlayerMovement patient)
@@ -432,6 +479,14 @@ public sealed class DetenteKit : MonoBehaviour
             if (receiver == null || receiver.Health >= receiver.MaximumHealth - .5f) { KitSound.Play(KitSound.Cue.Refuse, .4f); return; }
             patient = movement;
         }
+        // A friend further off than the arm reaches is run to first; the dose goes in on arrival (Approaching).
+        if (patient != movement && !InReach(patient, InjectArm.Kind.Friend, Number("injectReach", 3.5f))) return;
+        Inject(patient);
+    }
+
+    // The dose itself, the needle in reach: its share of the measure, its look, its healing.
+    private void Inject(PlayerMovement patient)
+    {
         syringe = Mathf.Max(0f, syringe - Dose);
         lastInject = Time.time;
         // The syringe in hand as it goes in (DetenteLooks), and in the others' sight of this player.
@@ -611,6 +666,8 @@ public sealed class DetenteKit : MonoBehaviour
             if (dead ? life.IsAlive : !life.IsAlive || life.IsDowned || life.Health >= life.MaximumHealth - .5f) continue;
             float distance = (other.transform.position - transform.position).sqrMagnitude;
             if (distance > best) continue;
+            // A hurt friend the arm cannot get to (a wall, a shut door, a drop between) is offered nothing.
+            if (!dead && InjectApproach.Look(movement, other, InjectArm.Kind.Bandage, reach, out _) == InjectApproach.Way.Blocked) continue;
             best = distance;
             found = other;
         }

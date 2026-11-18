@@ -24,7 +24,9 @@ using Object = UnityEngine.Object;
 /// - a dose into a friend (the same character, stood facing it with the spot on their arm straight ahead of this
 ///   shoulder) at three distances: within the arm's reach the tip must end on the friend's arm; further off it is
 ///   written how far short the arm stops;
-/// - the bandage, mid-loop: where the roll is from the friend's arm.
+/// - the bandage, mid-loop: where the roll is from the friend's arm;
+/// - the run to a friend out of reach (InjectBench.Way.cs): whether the way is clear, on made-up worlds and on the
+///   game's physics, and whether the arm reaches from where the run ends.
 /// What it cannot: the body stands as its file has it (arms out, no clip), so the shoulder is where an upright body has
 /// it, not where the armed idle leans it; the body's surface is not read (PokeBody bakes while playing), so a spot is a
 /// sixth of its bone's length out, as the game falls back to; the fingers close by the path's curl, not joint by joint;
@@ -37,9 +39,10 @@ using Object = UnityEngine.Object;
 ///   width=320                one picture's width and height in pixels
 /// Logs/InjectBench/report.txt has the numbers; each character's pictures are one sheet beside it, a row to a motion
 /// (itself, a friend in reach, the bandage) and a column to a view (front, the body's left side, from above).
+/// Logs/InjectBench/way.txt is written by itself after every script reload (the way of a run, on made-up worlds).
 /// </summary>
 [InitializeOnLoad]
-internal static class InjectBench
+internal static partial class InjectBench
 {
     private const string Request = "Temp/enfilade-injectbench.request", Folder = "Logs/InjectBench", ReportPath = Folder + "/report.txt";
     // The bench's own marks; they decide nothing in the game.
@@ -64,6 +67,12 @@ internal static class InjectBench
         if (now < next) return;
         next = now + .5;
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+        // The way of a run on made-up worlds needs no model and takes no time: after every script reload.
+        if (!wayRan)
+        {
+            wayRan = true;
+            RunWay();
+        }
         if (!File.Exists(Request)) return;
         Ask ask;
         try
@@ -139,6 +148,12 @@ internal static class InjectBench
         {
             report.Line("== the motions (Tables/InjectArms and each one's path)");
             Tables(report);
+            report.Line("");
+            report.Line("== the way of a run to a friend out of reach (SurgeWay), on worlds made up for it");
+            WayCases(report);
+            report.Line("");
+            report.Line("== the same walk on the game's physics (SurgeWay.Walker)");
+            WayOnPhysics(report);
             var profile = PlayerBodyProfile.Load();
             if (profile == null) report.Expect(false, "the body profile", "Resources/Characters/PlayerBody is missing; nobody to stand");
             else
@@ -298,6 +313,8 @@ internal static class InjectBench
             friend = Fresh(model, skin, camera, out var theirs);
             if (theirs != null)
             {
+                // As a friend stands: arms at their sides, not out as the file has them.
+                ArmsDown(theirs);
                 if (stage != null) stage.Take(friend);
                 var dose = InjectArm.Move.Of(InjectArm.Kind.Friend);
                 for (int i = 0; dose != null && i < FriendAt.Length; i++)
@@ -333,6 +350,10 @@ internal static class InjectBench
                         }
                     }
                 }
+
+                // Where a run to a friend ends, and the furthest that needs no run: the arm must reach from both.
+                if (dose != null && GrenadeArmPath.Sample(dose.Table, Mathf.Max(0f, dose.Strike), out key))
+                    AtRunsEnd(report, skin.Id, arm, facing, shoulder, ahead, friend.transform, theirs, dose, key);
 
                 var wind = InjectArm.Move.Of(InjectArm.Kind.Bandage);
                 if (wind != null && GrenadeArmPath.Sample(wind.Table, wind.Length * .5f, out key))

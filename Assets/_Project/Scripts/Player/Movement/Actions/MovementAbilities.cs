@@ -9,6 +9,8 @@ public sealed class MovementAbilities
     public MovementLean Lean { get; }
     public StepDodgeTrail StepTrail { get; }
     public ParkourTraversal Traversal { get; }
+    /// <summary>The body's one surge, a short run along the ground to a spot: the vault's early jump and a Détente's dose ask for it (GroundSurge).</summary>
+    public GroundSurge Surge { get; }
     public MovementFixtures Fixtures { get; }
     public MovementLanding Landing { get; }
     public PlayerCombatActions Combat { get; }
@@ -26,6 +28,7 @@ public sealed class MovementAbilities
         ctx = context;
         Lean = new MovementLean(ctx);
         StepTrail = new StepDodgeTrail(ctx);
+        Surge = new GroundSurge(ctx);
         Traversal = new ParkourTraversal(ctx);
         Fixtures = new MovementFixtures(ctx);
         Landing = new MovementLanding(ctx);
@@ -38,6 +41,7 @@ public sealed class MovementAbilities
         InputConsumed = false;
         Dodge.Tick(dt);
         StepTrail.Tick();
+        Surge.Tick(dt);
         Traversal.Tick(dt);
         Fixtures.Tick(dt);
         Combat.Tick(dt);
