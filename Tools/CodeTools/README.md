@@ -49,7 +49,10 @@ PC 언어로 읽고 쓰는 숫자, 뒤집힌 `Clamp`, 잘못 쓴 Unity 메시지
 받기만 하고 놓지 않는 이벤트, 이름만 다른 같은 몸통, `WorldTime` 밖에서 쓰는 `Time.timeScale`·`fixedDeltaTime`,
 `InputHold` 밖에서 묻거나 쓰는 `Cursor.lockState`·`Cursor.visible`(포인터의 주인은 하나다), 키를 누가 가졌는지를 물어 하던 동작을 끝내는 곳
 (`InputAvailable`·`CanReadInput`·`InputFocus.Takes…()`가 거짓인 가지에서 `Cancel…`·`Stop…`·`Abort…`·`Drop…`·`Interrupt…`·`PutBack…`·`LetGo…`를 부르는 if.
-그 물음을 담은 bool 지역 변수와 else 가지도 따라간다. 한 키로 들고 있는 동작이 그 키를 뺏겨 접는 것, 곧 `InputFocus.Takes(key)`를 묻는 메서드는 건너뛴다).
+그 물음을 담은 bool 지역 변수와 else 가지도 따라간다. 한 키로 들고 있는 동작이 그 키를 뺏겨 접는 것, 곧 `InputFocus.Takes(key)`를 묻는 메서드는 건너뛴다),
+손의 주인(`HandOwner`: [두 손](../../Docs/Features/Hands.md)) 밖에서 손을 따지는 곳 셋: 주인 밖에서 부르는 `PlayerBodyHands.LendOffHand`(왼손을 총에서 떼는 것은 주인만 부른다),
+팔을 세우는 클래스(`PathArm`을 잇거나 `ArmBones`를 가진 것)가 `IsDead`·`IsDowned`·`IsHeld`·`IsParkour`·`CombatInputLocked`·`IsReloading`·`AimBlend`를 읽는 곳(손이 비었는지를 스스로 따지는 것),
+정해 둔 곳(`BodyHandFacts`, `PlayerBodyHands`, `WeaponController`) 밖에서 읽는 `TraversalHands.For`·`ExecutionKnife.HoldsHands`. 2026-11-18에 셋 다 0건이다.
 
 데이터: 없는 레이어·태그·셰이더·Resources 이름·표·줄·글자 id, 표에 없는 열을 읽는 코드, `Texts.Format`의 인자 수, 표의 두 번 나온 줄·열,
 열보다 칸이 많은 줄(따옴표 없는 쉼표가 칸을 자른 것).

@@ -203,6 +203,16 @@ static class Audit
         return binary.Left.IsKind(SyntaxKind.NullLiteralExpression) ? binary.Right : null;
     }
 
+    static bool InFile(SyntaxNode at, params string[] ends)
+    {
+        string file = Project.Rel(at.SyntaxTree.FilePath);
+        return ends.Any(file.EndsWith);
+    }
+
+    // A class that poses an arm: one of the arms led along a path (PathArm), or one that keeps the arm's bones (ArmBones).
+    static bool PosesArm(INamedTypeSymbol type)
+        => type != null && (DerivesFrom(type, "PathArm") || type.GetMembers().OfType<IFieldSymbol>().Any(field => field.Type.Name == "ArmBones"));
+
     static bool Dereferences(SyntaxNode where, ExpressionSyntax what) => where.DescendantNodesAndSelf().Any(n =>
         n is MemberAccessExpressionSyntax access && SyntaxFactory.AreEquivalent(access.Expression, what)
         || n is ElementAccessExpressionSyntax element && SyntaxFactory.AreEquivalent(element.Expression, what));
@@ -340,6 +350,15 @@ static class Audit
                          && !Project.Rel(tree.FilePath).EndsWith("/UI/Shared/InputHold.cs"):
                     Note("the pointer's lock or drawing asked or written outside InputHold", pointer,
                         Text(pointer.FirstAncestorOrSelf<StatementSyntax>() ?? (SyntaxNode)pointer));
+                    break;
+                // The hands have one owner (HandOwner). A class that poses an arm asks it whether the hand is its own
+                // (HandOwner.Arm); one that reads the body or the gun for that keeps a list of its own again, as five arms
+                // did until 2026-11-18, each a little different and none knowing the others.
+                case MemberAccessExpressionSyntax { Name.Identifier.ValueText: "IsDead" or "IsDowned" or "IsHeld" or "IsParkour" or "CombatInputLocked" or "IsReloading" or "AimBlend" } fact
+                    when PosesArm(Outer(model.GetEnclosingSymbol(fact.SpanStart)))
+                         && model.GetSymbolInfo(fact).Symbol is IPropertySymbol { ContainingType.Name: "PlayerMovement" or "WeaponRuntime" or "WeaponController" }:
+                    Note("an arm works out for itself whether its hand is free (ask HandOwner)", fact,
+                        Text(fact.FirstAncestorOrSelf<StatementSyntax>() ?? (SyntaxNode)fact));
                     break;
                 case IsPatternExpressionSyntax pattern when pattern.Pattern is ConstantPatternSyntax { Expression.RawKind: (int)SyntaxKind.NullLiteralExpression }
                                                             || pattern.Pattern is UnaryPatternSyntax { Pattern: ConstantPatternSyntax { Expression.RawKind: (int)SyntaxKind.NullLiteralExpression } }:
@@ -544,6 +563,15 @@ static class Audit
         if (owner == "Shader" && name == "Find" && arguments.Count == 1 && Constant(model, arguments[0].Expression) is string shader && !Shaders.Contains(shader)
             && !Regex.IsMatch(shader, "^(Hidden/|Sprites/|UI/|Standard|Unlit/|Legacy Shaders/|Skybox/|Particles/|Mobile/|GUI/|TextMeshPro/)"))
             Note("no such shader", call, shader);
+
+        // What takes the left hand off the gun is its owner's to call (HandOwner, when the arm of the use that has the
+        // hand is up), and which hands a move of the body takes is read where the owner is told (BodyHandFacts) and by
+        // the two that pose the hands and hide the gun for it. Another caller is a private list of who has the hand.
+        if (owner == "PlayerBodyHands" && name == "LendOffHand" && !InFile(call, "/Player/Hands/HandOwner.cs"))
+            Note("the left hand taken off the gun outside its owner (HandOwner)", call, Text(call));
+        if ((owner == "TraversalHands" && name == "For" || owner == "ExecutionKnife" && name == "HoldsHands")
+            && !InFile(call, "/Player/Hands/BodyHandFacts.cs", "/Player/Body/Hands/PlayerBodyHands.cs", "/Weapons/WeaponController.cs"))
+            Note("which hands a move takes read outside where the hands' owner is told (BodyHandFacts)", call, Text(call));
 
         var type = Outer(model.GetEnclosingSymbol(call.SpanStart));
         if (type == null) return;

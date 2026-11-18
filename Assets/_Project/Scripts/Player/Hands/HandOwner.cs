@@ -79,6 +79,8 @@ public sealed class HandOwner : MonoBehaviour
         board.Changed += OnChanged;
     }
 
+    private void OnDestroy() => board.Changed -= OnChanged;
+
     private void OnDisable()
     {
         board.Clear();
