@@ -29,13 +29,6 @@ public sealed class MovementFixtures
     public float LadderStepProgress { get; internal set; }
     public bool LadderStepBlocked { get; internal set; }
     public bool LadderSliding { get; internal set; }
-    /// <summary>
-    /// Going up or down the ladder the quiet way: the crouch is held (or latched on toggle), so hands and feet are set
-    /// down on the rungs, not swung at them. Its sounds are then the quiet cues (PlayerFixtureAudio; Tables/SoundCues
-    /// Ladder...Quiet, which carry no noise to zombies). On another PC, what the climber's own PC says (the pose's
-    /// LadderQuiet). A slide down is never quiet. Kept after the ladder is left, for the sounds of leaving it.
-    /// </summary>
-    public bool LadderQuiet { get; internal set; }
 
     public Zipline Zipline { get; private set; }
     /// <summary>The way along the cable this ride goes, and its ends in that order.</summary>
@@ -88,8 +81,8 @@ public sealed class MovementFixtures
     {
         bool ground = ctx.Abilities.CanUseGroundActions, air = ctx.Abilities.IsOrdinaryAirborne;
         if ((!ground && !air) || ctx.ControlLocked || ctx.IsGettingUp) return false;
-        // A ladder is taken crouched too, and then climbed the quiet way (LadderQuiet). Holding crouch used to refuse
-        // every ladder, so sneaking stopped at one: stand up to get on, and be heard on every rung (the user, 2026-11-18:
+        // A ladder is taken crouched too (and climbed quietly, as every ladder is: PlayerFixtureAudio). Holding crouch
+        // used to refuse every ladder, so sneaking stopped at one: stand up to get on, and be heard on every rung (the user, 2026-11-18:
         // "앉은 상태로 사다리 상호작용 시 탑승 허용"). A cable is still refused with the crouch held: dropping past one
         // tucked, the hands stay down.
         if (TryLadder()) return true;
@@ -195,7 +188,7 @@ public sealed class MovementFixtures
     //   (ladderTopWalkReach), the centre inside the rails (ladderTopWalkSideReach), and the move keys pointing out over the
     //   edge (ladderTopWalkAngle). The keys, not the view, so backing onto it works too. Walking along the edge, standing
     //   at it, crossing past the top and jumping at the edge never take it. Crouched it is taken the same way since
-    //   2026-11-18 (and gone down quietly: LadderQuiet). The reach the key had before (0.9 m back, any walk toward it) was
+    //   2026-11-18. The reach the key had before (0.9 m back, any walk toward it) was
     //   what pulled people in.
     private bool FindLadderTop(bool walking, out Ladder ladder, out Vector3 over, out Vector3 hold)
     {
@@ -346,10 +339,9 @@ public sealed class MovementFixtures
     /// <summary>Shows the ladder this character is on, on another PC. topEnterTime: how long getting on from its top takes,
     /// while it does (0 otherwise).</summary>
     internal void MirrorLadder(Ladder ladder, bool caught, bool leftHand, int steps, float stepProgress, bool blocked, bool sliding,
-        float topEnterTime = 0f, bool quiet = false)
+        float topEnterTime = 0f)
     {
         Ladder = ladder;
-        LadderQuiet = quiet;
         LadderCaught = caught;
         LadderLeftHand = leftHand;
         LadderSteps = steps;

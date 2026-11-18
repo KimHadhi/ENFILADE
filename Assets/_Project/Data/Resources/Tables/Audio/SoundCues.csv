@@ -31,15 +31,12 @@ BarGrab,Movement/Bar/Grab; Movement/HandHard/MetalPipe; Movement/Cloth/SideStep,
 BarSwing,Movement/Bar/Swing; Movement/Cloth/Swing,8,봉 아래를 지나며 흔들기
 BarRelease,Movement/Bar/Release; Movement/Cloth/VaultSwish; Voice/StrainSoft,10,봉에서 뛰어 날기
 BarLetGo,Movement/Bar/LetGo,5,봉 놓기
-LadderEnter,Movement/Cloth/MovementSneak +0.12; Movement/Ladder/Hand +0.14; Movement/Ladder/Hand +0.29; Movement/Ladder/Step +0.35; Movement/Cloth/MovementSneak +0.41; Movement/Ladder/Step +0.47,8,땅에서 사다리에 오르기 (Beatrun ladderenterbottom)
+LadderEnter,Movement/Cloth/MovementSneak +0.12; Movement/Ladder/Hand *0.35 +0.14; Movement/Ladder/Hand *0.35 +0.29; Movement/Cloth/MovementSneak +0.41,0,"땅에서 사다리에 오르기: 손을 얹는 소리와 옷 소리만. 사다리는 서서 타든 앉아서 타든 조용하다(발 딛는 소리가 없고 좀비가 듣지 못한다. 사용자 2026-11-18: ""사다리로 올라갈 때도 조용히 했으면 좋겠습니다""). 0.9.148까지는 손·발 소리에 소음 8m였다"
 LadderCatch,Movement/Cloth/MovementRun; Movement/HandHard/MetalPipe +0.03; Voice/Impact +0.08; Movement/Ladder/Land +0.1; Movement/Ladder/Land +0.2; Movement/Cloth/MovementSneak +0.3,12,공중에서 사다리 잡기 (Beatrun ladderclimbhangstart)
-LadderStep,Movement/Ladder/Release; Movement/Cloth/MovementSneak +0.04; Movement/Ladder/Step +0.05; Movement/Ladder/Hand +0.07,6,사다리 한 칸 (Beatrun ladderclimbup)
-LadderExit,Movement/Cloth/MovementWalk +0.08; Movement/Ladder/Hand +0.15; Movement/Ladder/Hand +0.23; Movement/Cloth/VaultSwish +0.38; Movement/Cloth/MovementSneak +0.54; Movement/Ladder/Release +0.69; Movement/Bar/Release +0.73; Movement/Ladder/Release +0.77; Movement/Cloth/MovementSneak +0.92,8,꼭대기로 넘어가기 (Beatrun ladderexittop)
-LadderLetGo,Movement/Ladder/Release,4,사다리 놓기
-LadderEnterQuiet,Movement/Cloth/MovementSneak +0.12; Movement/Ladder/Hand *0.35 +0.14; Movement/Ladder/Hand *0.35 +0.29; Movement/Cloth/MovementSneak +0.41,0,앉기를 누른 채(토글이면 앉은 채) 사다리에 오르기: 손을 살며시 얹는 소리와 옷 소리만. 발 딛는 소리가 없고 좀비가 듣지 못한다(noise 0). 큐 이름 끝이 Quiet인 줄은 사다리를 조용히 탈 때 쓰인다(PlayerFixtureAudio)
-LadderStepQuiet,Movement/Cloth/MovementSneak *0.6 +0.04; Movement/Ladder/Hand *0.35 +0.07,0,"앉기를 누른 채 오르는 사다리 한 칸: 손과 옷 스치는 소리만, 발소리 없음. 좀비가 듣지 못한다(사용자 2026-11-18: 사다리 승하강 시 강제 발소리 출력 제거). 서서 오르면 LadderStep 그대로"
-LadderExitQuiet,Movement/Cloth/MovementSneak +0.08; Movement/Ladder/Hand *0.35 +0.15; Movement/Ladder/Hand *0.35 +0.23; Movement/Cloth/MovementSneak +0.54; Movement/Cloth/MovementSneak +0.92,0,조용히 오른 사다리의 꼭대기로 넘어가기. 넘어선 뒤 발 딛는 소리도 조용한 착지(LandSneak)가 된다
-LadderLetGoQuiet,Movement/Cloth/MovementSneak *0.5,0,조용히 타던 사다리를 놓기(미끄러져 내려가기는 조용하지 않다: Ladder/Slide)
+LadderStep,Movement/Cloth/MovementSneak *0.6 +0.04; Movement/Ladder/Hand *0.35 +0.07,0,"사다리 한 칸: 손과 옷 스치는 소리만, 발소리 없음. 좀비가 듣지 못한다(사용자 2026-11-18: ""사다리 승하강 시 강제 발소리 출력 제거""). 전에는 칸마다 손·발 소리에 소음 6m였다"
+LadderExit,Movement/Cloth/MovementSneak +0.08; Movement/Ladder/Hand *0.35 +0.15; Movement/Ladder/Hand *0.35 +0.23; Movement/Cloth/MovementSneak +0.54; Movement/Cloth/MovementSneak +0.92,0,사다리 꼭대기로 넘어가기: 조용하다. 넘어선 뒤 발 딛는 소리도 조용한 착지(LandSneak)가 된다
+LadderLetGo,Movement/Cloth/MovementSneak *0.5,0,타고 오르내리던 사다리를 놓기: 옷 소리만. 떨어져서 나는 착지 소리는 착지 규칙을 따른다
+LadderSlideEnd,Movement/Ladder/Release,4,미끄러져 내려오던 사다리를 놓거나 바닥에 닿을 때. 미끄러져 내려오기(S)는 빠른 길이라 조용하지 않다: 긁는 소리(Ladder/Slide)가 나고 끝에서 이 소리를 좀비가 4m에서 듣는다(전에는 LadderLetGo가 이 소리였다)
 ZiplineStart,Movement/Zipline/Start *0.4; Movement/Bar/Grab *0.6; Movement/HandHard/MetalPipe *0.6,10,집라인 잡기 (줄 소리는 PlayerFixtureAudio가 반복)
 ZiplineEnd,Movement/Zipline/End *0.4; Movement/Bar/Release *0.6; Movement/Bar/LetGo *0.6,8,집라인 놓기
 SlideStart,Movement/Cloth/FallShortMedium; Movement/HandSoft/{surface}; Movement/Slide/{surface} *0.5,12,슬라이드 시작. 긁는 소리는 SlideLoop가 이어서 반복

@@ -17,8 +17,6 @@ public sealed class LadderState : MovementBaseState
     {
         var fixtures = ctx.Abilities.Fixtures;
         var settings = ctx.AbilitySettings;
-        // Known before the sound of taking hold is chosen (PlayerFixtureAudio hears the state change after this).
-        fixtures.LadderQuiet = ctx.Input.CrouchHeld;
         ctx.HorizontalVelocity = Vector3.zero; ctx.VerticalVelocity = 0f;
         ctx.Abilities.Landing.SupportedByTraversal();
         from = ctx.transform.position;
@@ -48,17 +46,12 @@ public sealed class LadderState : MovementBaseState
         // would hitch. Interact starts from standing, so that leg eases in as well.
         return Vector3.Lerp(from, via, walkedOn ? 1f - (1f - leg) * (1f - leg) : Mathf.SmoothStep(0f, 1f, leg));
     }
-    // LadderQuiet is left as it was: the sounds of leaving the ladder (letting go, the climb off its top) are chosen after
-    // this, by how it was climbed.
     public override void Exit() => ctx.Abilities.Fixtures.LadderSliding = false;
     public override void UpdateLogic(float dt)
     {
         var fixtures = ctx.Abilities.Fixtures;
         var ladder = fixtures.Ladder;
         if (ladder == null || !ladder.isActiveAndEnabled || (ctx.InputAvailable && ctx.Input.CrouchPressed)) { LetGo(); return; }
-        // The crouch held (it was held getting on, or is latched on toggle; a fresh press lets go, above) climbs the quiet
-        // way. A slide down is the fast way and never quiet.
-        fixtures.LadderQuiet = ctx.Input.CrouchHeld && !fixtures.LadderSliding;
         float climbed = ctx.transform.position.y - ladder.transform.position.y, input = ctx.CurrentInput.y;
         if (fixtures.LadderSliding)
         {

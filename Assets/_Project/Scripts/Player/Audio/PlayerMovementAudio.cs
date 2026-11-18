@@ -61,7 +61,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     private bool catchPending;
     private int leanSide;
     private bool wasGrounded;
-    // The vault or climb under way (or just ended) is the climb off a ladder that was climbed the quiet way.
+    // The vault or climb under way (or just ended) is the climb off a ladder's top: a ladder is climbed quietly (the
+    // user, 2026-11-18), and so is the step onto what it leads to.
     private bool quietTraversal;
     // The refused climbs heard so far (ParkourTraversal.LedgeRefusals).
     private int ledgeRefusals;
@@ -157,9 +158,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             recentTraversal = from == MovementState.Vault ? "VaultLand" : "MantleLand";
             traversalEndedAt = Time.time;
         }
-        // The climb off a ladder's top after a quiet climb is quiet to its end: its hands (below) and its feet (OnLanded).
+        // The climb off a ladder's top is quiet to its end, as the ladder was: its hands (below) and its feet (OnLanded).
         if (to == MovementState.Vault || to == MovementState.Mantle)
-            quietTraversal = to == MovementState.Mantle && from == MovementState.Ladder && player.Abilities.Fixtures.LadderQuiet;
+            quietTraversal = to == MovementState.Mantle && from == MovementState.Ladder;
         if (from == MovementState.LedgeHang && to != MovementState.Mantle && to != MovementState.LedgeJump)
             Cue("LedgeDrop", Surfaces.Of(traversal.Ledge.Surface), true);
         // Let go before the hands got there: no catch to hear.
@@ -186,8 +187,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             case MovementState.DashPush: Cue("DashPush", Ground()); break;
             case MovementState.Vault: Cue("Vault", Surfaces.Of(traversal.Obstacle.Surface), true); break;
             case MovementState.Mantle:
-                Cue(from == MovementState.Ladder ? (quietTraversal ? "LadderExit" + PlayerFixtureAudio.QuietSuffix : "LadderExit")
-                    : from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle",
+                Cue(from == MovementState.Ladder ? "LadderExit" : from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle",
                     Surfaces.Of(traversal.Obstacle.Surface), true);
                 break;
             case MovementState.LedgeHang:
@@ -218,7 +218,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         var tier = player.LastLandingTier;
         string after = recentTraversal != null && Time.time - traversalEndedAt <= traversalLandWindow ? recentTraversal : null;
         // Crouched as the feet come down: it walked off crouched, or the crouch was held through the air (the motor has
-        // put it in the crouch by now), or it came off a ladder climbed the quiet way.
+        // put it in the crouch by now), or it came off a ladder's top (a ladder is quiet to the step that ends it).
         bool crouched = player.IsCrouchStance || (after != null && quietTraversal);
         string cue = LandingCue(tier, impact, crouched, after, landMinSpeed, landSoftSpeed);
         Record(impact, tier, crouched, cue);
