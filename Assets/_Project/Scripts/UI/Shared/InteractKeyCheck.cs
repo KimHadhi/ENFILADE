@@ -50,6 +50,7 @@ internal static class InteractKeyCheck
             Plan(report);
             Order(report);
             Presses(report);
+            Bodies(report);
             Every(report);
         }
         catch (Exception problem)
@@ -252,6 +253,35 @@ internal static class InteractKeyCheck
         report.Expect(taker == FieldPickups.OfferId, "a tap within one frame was lost");
         InteractKey.Step(false, false, FieldPickups.OfferId, false, ref taker, ref spent);
         report.Expect(taker == null && !spent, "the key let go is still " + taker + "'s");
+    }
+
+    // The key is the body's, and a screen's closing key is that screen's (InteractKey.Read): no offerer has to remember
+    // the dead for itself (the main session, 2026-11-18, on players waiting to come into a run under way: "must be
+    // offered nothing on F, exactly like the dead"; one of the twenty-three, a ladder's top, had no such test).
+    private static void Bodies(CheckReport report)
+    {
+        report.Rule("with no body that can act (dead, waiting to join, nobody there) there is no press and no hold, whatever the key does");
+        bool[] both = { false, true };
+        foreach (bool ours in both)
+            foreach (bool was in both)
+                foreach (bool keyPressed in both)
+                    foreach (bool keyDown in both)
+                    {
+                        InteractKey.Read(false, ours, was, keyPressed, keyDown, out bool pressed, out bool down);
+                        report.Expect(!pressed && !down, "a body that cannot act got " + (pressed ? "a press" : "a hold")
+                            + " (ours " + ours + ", was " + was + ", pressed " + keyPressed + ", down " + keyDown + ")");
+                    }
+
+        report.Rule("the F that closes a screen is no press for the game and a key still held after it is read at once; with the key the game's all along a press is a press");
+        InteractKey.Read(true, true, false, true, true, out bool closing, out bool heldAfter);
+        report.Expect(!closing, "the key that closed a screen was read as the game's press");
+        report.Expect(heldAfter, "a key held as a screen closed was not read as held");
+        InteractKey.Read(true, false, true, true, true, out bool taken, out bool takenDown);
+        report.Expect(!taken && !takenDown, "a key pressed while a screen has the keys reached the game");
+        InteractKey.Read(true, true, true, true, false, out bool tap, out bool tapDown);
+        report.Expect(tap && !tapDown, "a tap shorter than a frame was not a press");
+        InteractKey.Read(true, true, true, true, true, out bool plain, out bool plainDown);
+        report.Expect(plain && plainDown, "a plain press with the key the game's was not read");
     }
 
     // Every one, two and three of the offers and one with no row, each taking or refusing, said in every order.

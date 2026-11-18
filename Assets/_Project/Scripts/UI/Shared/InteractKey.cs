@@ -39,6 +39,9 @@ using Object = UnityEngine.Object;
 /// arrival, and a hammer at work gives way to a friend who goes down beside the barricade.
 /// </para>
 /// <para>
+/// The key is the body's: while this PC's own player is not there or cannot act (dead, or waiting to come into a run
+/// under way) nothing stands and nothing is pressed, whatever was offered, so no feature has to remember the dead for
+/// itself (<see cref="Read"/>).
 /// Whether the key is the game's at all (a screen has the body's keys, the window is behind another) is asked before
 /// any of this and is not this class's question (InputHold, InputFocus, KeyBindings). A screen reading F as its own
 /// (the shop's and the dressing spot's closing key: KeyBindings.Pressed(path, screen)) never comes here.
@@ -87,6 +90,8 @@ public static class InteractKey
     // press went to; whether that press is spent on it; and who was last told a held key is theirs (for the record's
     // HOLD line).
     private static bool pressed, down, spent, wasOurs;
+    // This PC's own player is there and can act, as of this frame's first word: for anyone else nothing stands.
+    private static bool body;
     private static string taker, holder, lastPress;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -99,7 +104,7 @@ public static class InteractKey
         loaded = false;
         otherOrder = int.MaxValue;
         frame = leadAt = -1;
-        pressed = down = spent = wasOurs = false;
+        pressed = down = spent = wasOurs = body = false;
         taker = holder = lastPress = null;
         GameTables.Reloaded -= Forget;
         GameTables.Reloaded += Forget;
@@ -179,6 +184,20 @@ public static class InteractKey
     public static bool HeldBy(string id, bool down, string taker, bool spent, string leader, bool leaderHeld)
         => down && id != null && (spent ? taker == id : leader == id && leaderHeld);
 
+    /// <summary>
+    /// What a frame's read of the key comes to. <paramref name="body"/>: this PC's own player is there and can act
+    /// (alive and in the fight: not dead, not waiting to come into a run under way). <paramref name="ours"/> and
+    /// <paramref name="wasOurs"/>: the key is the game's to read now, and was in the frame before. The key is the body's:
+    /// with no body that can act there is no press and no hold, whatever stands. A press needs the key to have been
+    /// the game's in the frame before too (the F that closes a screen was that screen's); a key held needs it only
+    /// now (a hold picked up after a screen is no new press).
+    /// </summary>
+    public static void Read(bool body, bool ours, bool wasOurs, bool keyPressed, bool keyDown, out bool pressed, out bool down)
+    {
+        pressed = body && ours && wasOurs && keyPressed;
+        down = body && ours && keyDown;
+    }
+
     // ---- What a feature says and asks ----
 
     /// <summary>
@@ -192,6 +211,8 @@ public static class InteractKey
     {
         if (string.IsNullOrEmpty(id)) return;
         Turn();
+        // Said for a body that cannot act (this PC's player dead, waiting to join, not there): it is not kept.
+        if (!body) return;
         var entry = new Entry { Id = id, Order = OrderOf(id), Held = held, Refusal = refusal, Target = target, About = about };
         for (int i = 0; i < coming.Count; i++)
         {
@@ -264,12 +285,19 @@ public static class InteractKey
     {
         int now = Time.frameCount;
         if (now == frame) return;
+        // The key is the body's: this PC's own player, there and able to act (PlayerMovement.CanAct: alive and in the
+        // fight, so not the dead and not one waiting to come into a run under way). For anyone else nothing stands and
+        // nothing is pressed, whatever a feature offered, so no offerer has to remember the dead for itself. Twenty-three
+        // of them each kept that test on the day this was made and one had forgotten it: a player who fell at a
+        // ladder's top was still offered the climb down.
+        var mine = PlayerRoster.Local;
+        body = mine != null && mine.CanAct;
         standing.Clear();
-        // Said in the frame before this one: it stands. Anything older was not said again and is over.
-        if (frame == now - 1)
-            for (int i = 0; i < coming.Count; i++) Place(coming[i]);
         // Nobody asked in the frame before: whose the key was then is not known, and nothing stands to take a press.
-        else wasOurs = false;
+        if (frame != now - 1) wasOurs = false;
+        // Said in the frame before this one: it stands. Anything older was not said again and is over.
+        else if (body)
+            for (int i = 0; i < coming.Count; i++) Place(coming[i]);
         coming.Clear();
         frame = now;
         leadAt = Lead(standing);
@@ -278,11 +306,10 @@ public static class InteractKey
         // (InputFocus.TakesPlayInput). And a press counts only if the key was the game's as the frame before began too:
         // the F that closes a screen (the shop, the hub's dressing spot) was that screen's, whichever of the two ran
         // first this frame, so it opens no door and answers no offer behind the screen it closed. A key held is read
-        // again at once: a hold picked up after a screen is no new press.
+        // again at once: a hold picked up after a screen is no new press (Read).
         var action = KeyBindings.Find(ActionPath);
         bool ours = action != null && InputFocus.TakesPlayInput();
-        pressed = ours && wasOurs && KeyBindings.Pressed(action);
-        down = ours && KeyBindings.Held(action);
+        Read(body, ours, wasOurs, KeyBindings.Pressed(action), KeyBindings.Held(action), out pressed, out down);
         wasOurs = ours;
         Step(pressed, down, LeaderId, LeaderHeld, ref taker, ref spent);
         if (!down) holder = null;

@@ -1,5 +1,5 @@
 # Checks who gets the interact key (F, Player/Interact) without the game: replicas of the pure rule in
-# Assets/_Project/Scripts/UI/Shared/InteractKey.cs (Before, Lead, Shown, Step, HeldBy), run over the game's own table
+# Assets/_Project/Scripts/UI/Shared/InteractKey.cs (Before, Lead, Shown, Step, HeldBy, Read), run over the game's own table
 # Assets/_Project/Data/Resources/Tables/Player/InteractKey.csv, and a reading of the scripts themselves.
 #   python Tools/Checks/interact_key_check.py
 # It asserts
@@ -11,7 +11,8 @@
 #      not keep F from what stands behind it, and while a Support plans a structure F is the plan's alone;
 #   4. the order that was deliberate before there was an owner still holds (a takedown before a pickup and a ping, a
 #      pickup before the mission's own prompts, everything before the ping);
-#   5. one press is one act, and a key held on the way to something done while held is taken up there;
+#   5. one press is one act, and a key held on the way to something done while held is taken up there; the key is the
+#      body's (no press and no hold for the dead or for one waiting to join), and a screen's closing key is no press;
 #   6. for every pair and every three of the table's rows, each taking or refusing: one leader exactly when anything
 #      takes the press, it is the first in the table's order, and the prompts shown are the leader's and the refusals
 #      before it, never two things that would both take the key.
@@ -102,6 +103,11 @@ def step(pressed, down, leader, leader_held, taker, spent):
 def held_by(name, down, taker, spent, leader, leader_held):
     """InteractKey.HeldBy."""
     return down and name is not None and (taker == name if spent else (leader == name and leader_held))
+
+
+def read(body, ours, was_ours, key_pressed, key_down):
+    """InteractKey.Read: returns (pressed, down)."""
+    return body and ours and was_ours and key_pressed, body and ours and key_down
 
 
 def leader_of(offers):
@@ -317,6 +323,19 @@ taker, spent = step(True, True, None, False, None, False)
 assert taker is None and not spent
 print("one press is one act: a press spent on a pickup starts no hammer with the key still down; a key held on the way to a")
 print("downed friend gets them up on arrival; a hammer at work gives way to a friend who goes down and comes back after.\n")
+
+
+# The key is the body's: with no body that can act (this PC's player dead, waiting to come into a run, not there)
+# there is no press and no hold whatever the key does, so no offerer has to remember the dead for itself. And the F
+# that closes a screen was that screen's: no press for the game in that frame, while a key still held is read at once.
+for ours, was, key_pressed, key_down in itertools.product((False, True), repeat=4):
+    assert read(False, ours, was, key_pressed, key_down) == (False, False), "a body that cannot act got the key"
+assert read(True, True, False, True, True) == (False, True), "the key that closed a screen must be no press, the hold after it read"
+assert read(True, False, True, True, True) == (False, False), "a key pressed while a screen has the keys reached the game"
+assert read(True, True, True, True, False) == (True, False), "a tap shorter than a frame must still be a press"
+assert read(True, True, True, True, True) == (True, True)
+print("the key is the body's: the dead and those waiting to join get no press and no hold; the F that closes a screen is")
+print("no press for the game, and a key still held after it is read at once.\n")
 
 
 # ---- 6. Every pair and every three of the rows, each taking or refusing ----
