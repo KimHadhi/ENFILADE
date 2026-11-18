@@ -462,7 +462,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (!EnsureInitialized()) return;
         if (IsNetworkDriven || Carried) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
         float dt = DeltaTime;
-        if (dt <= 0f || !Application.isFocused) return;
+        if (dt <= 0f) return;
+        // A window behind another one changes one thing here: the keys are not the game's, so the input frame reads empty
+        // (InputAvailable asks InputFocus.TakesMove, which asks for the window's focus). The body goes on: it falls,
+        // lands, finishes its move and stands. Until 2026-11-18 this whole Update returned without focus, a guard from the
+        // movement's first days, before anything asked whose the keys were. An unfocused player then hung where it was,
+        // in the air too, its last velocity still read by the body's run cycle and sent to the room; and a host is the
+        // PC everyone else's world runs on (the user tests a room with two windows on one PC, so the host is unfocused
+        // whenever the guest's window is used: "방장(호스트) 알트탭 시 허브 및 맵 전환 진행이 멈추는 현상").
         Input.Sample(InputAvailable && !ControlLocked, !IsGettingUp);
         Abilities.BeginFrame(dt);
         Actions.TickTimers(dt);

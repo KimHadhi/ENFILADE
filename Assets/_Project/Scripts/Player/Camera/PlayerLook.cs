@@ -58,17 +58,25 @@ public sealed class PlayerLook : MonoBehaviour
     private void Update()
     {
         TakeCombatTurn();
-        // The mouse doesn't turn the view while a screen holds the view or the pointer (InputHold: the chat, a menu, the
-        // Tab board's pointer), while paused, without the window's focus, or dead. Who holds the view is asked, not
-        // whether the pointer is locked: the body's keys may still be the player's meanwhile.
-        // A Ghost's takedown with a chain left turns the view all the same: it looks for the next zombie (GhostCards).
-        if (!InputFocus.TakesLook() || Time.timeScale <= 0f
+        // The view stands as it is while paused, dead, or while a move of combat's holds the body (an execution, a
+        // counter): that move has the view then. A Ghost's takedown with a chain left turns the view all the same: it
+        // looks for the next zombie (GhostCards).
+        if (Time.timeScale <= 0f
             || (movement != null && ((movement.CombatInputLocked && !GhostCards.LooksDuringTakedown(movement)) || movement.IsDead)))
             return;
 
+        // Whose the mouse is decides one thing: what the view reads of it this frame. While a screen holds the view or
+        // the pointer (InputHold: the chat, a menu, the Tab board's pointer) or the window is behind another, that is
+        // nothing, and the rest goes on as it does under a still mouse: the gun's kick comes back down, a slide's or a
+        // bar's hold on the view stays in force, a bar's half turn carries the view round. Until 2026-11-18 all of it
+        // stopped with the mouse, as the body stopped without focus (PlayerMovement.Update). Who holds the view is asked,
+        // not whether the pointer is locked: the body's keys may still be the player's meanwhile.
         Vector2 delta = Vector2.zero;
-        if (lookAction != null) delta = lookAction.ReadValue<Vector2>();
-        else if (Mouse.current != null) delta = Mouse.current.delta.ReadValue();
+        if (InputFocus.TakesLook())
+        {
+            if (lookAction != null) delta = lookAction.ReadValue<Vector2>();
+            else if (Mouse.current != null) delta = Mouse.current.delta.ReadValue();
+        }
 
         var settings = GameSettings.Current;
         float scale = sensitivity * settings.mouseSensitivity;
