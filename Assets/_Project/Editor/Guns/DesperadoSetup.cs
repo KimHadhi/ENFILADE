@@ -237,10 +237,8 @@ internal static class DesperadoSetup
             {
                 sights.sights = new[] { new GunSights.Sight { part = null, aimPoint = aim, ironSight = true, scope = null } };
                 sights.ironSights = Array.Empty<GameObject>();
-                sights.ironsInMesh = null;
-                sights.ironTriangles = Array.Empty<int>();
-                sights.ironTriangleTotal = 0;
-                sights.initial = 0;
+                sights.StartWith(0);
+                sights.Seat(false);
                 sights.Select(0);
             }
             var cas = instance.GetComponent<CasFPSWeapon>();

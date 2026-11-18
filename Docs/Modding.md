@@ -66,7 +66,7 @@ M1911,15,                                       Move.runSpeed,7.5
 | --- | --- | --- |
 | `Core` | Texts, Fonts, SettingsDefaults, Loading, Network, Chat, MenuTicker | 화면 글자와 번역, 글꼴 역할, 설정 기본값, 로딩, 방 설정, 채팅 모양, 메뉴 소식 |
 | `Player` | Player, Downed, Spectate, ThirdPerson, LowHealth, DeathScreen, Callouts, CalloutSlots, Poke, BodyShapes, DownedAura, HoldReveal | 이동·자세·체력·주먹·몸 수치, 쓰러짐과 부활, 관전, 3인칭, 콜아웃, 가리키기 |
-| `Weapons` | Weapons, Magazines, Scopes, Tracer, MuzzleFlash(총구 화염의 모습: 줄을 더하고 Weapons의 `flash` 칸에 그 이름을 적는다), GunSkins, GunGrips, GunHands, Holsters, CloseHold, FPSBody, ImpactEffects, ShootOverCover, CrosshairPresets, WeaponIcons, WeaponIconSpans, WeaponSlots, KillCounter | 총의 피해·연사·탄창·반동, 조준경, 예광탄, 스킨, 쥐는 손, 탄착 효과, 조준점, 아이콘 |
+| `Weapons` | Weapons, Magazines, GunMounts(총마다의 소켓: 부착물이 앉는 자리), GunParts(부품마다의 종류·발 길이·조준 화면. 아래 "총의 부착물 자리와 조준 화면"), Scopes, Tracer, MuzzleFlash(총구 화염의 모습: 줄을 더하고 Weapons의 `flash` 칸에 그 이름을 적는다), GunSkins, GunGrips, GunHands, Holsters, CloseHold, FPSBody, ImpactEffects, ShootOverCover, CrosshairPresets, WeaponIcons, WeaponIconSpans, WeaponSlots, KillCounter | 총의 피해·연사·탄창·반동, 조준경, 예광탄, 스킨, 쥐는 손, 탄착 효과, 조준점, 아이콘 |
 | `Melee` | Combos, Executions, ExecutionRules, ClassKnives | 주먹 콤보, 처형·암살의 짝(동작)과 규칙(누구를 어디서 어떤 짝으로), 클래스 칼 |
 | `Grenades` | Grenades, GrenadeRules, ThrowArms | 투척물의 수치와 규칙 |
 | `Classes` | Classes, ClassAbilities, ClassColours, ClassGrowth, ClassRanks, Perks, UltMagazine, RepairArms | 클래스, 능력, 색, 성장과 등급, 능력 카드 |
@@ -94,6 +94,27 @@ M1911,15,                                       Move.runSpeed,7.5
 - 쪽을 더하기: 어느 칸의 `opens`에 새 쪽 이름을 쓰고, `page`가 그 이름인 칸들을 더한다(자리 0~7).
 - 줄의 글자는 Texts id나 글자 그대로, 목소리는 `Art/Audio/Voice/<캐릭터>/Callout/<줄 id>/`의 소리다. 소리가 없으면 입 모양만 움직인다.
 - 표를 고친 뒤 콘솔 `/callouts`를 치면 `Logs/callouts.txt`에 없는 사실 이름, 말할 줄이 없는 칸, 칸이 없는 줄, 그리고 지금 상황에서 칸마다 나올 줄이 적힌다. 모르는 사실이 든 줄은 맞지 않는 것으로 친다.
+
+### 총의 부착물 자리와 조준 화면 (2026-11-18)
+
+부착물이 총의 어디에 앉는지, 조준하면 화면이 어떻게 보이는지는 표 둘이 정한다. 총마다 따로 짠 코드가 없어서 표 모드만으로 고칠 수 있고, 총을 다시 만들 필요도 없다(총이 만들어질 때마다 표대로 앉힌다. 실행 중에 `/mods reload`로 읽었으면 다음 판에 새로 만들어지는 총부터 보인다).
+
+- `GunMounts`: 총마다의 **소켓**. 줄 이름은 `<총 id>.<소켓>`이고 소켓은 `eye`(그 총을 자기 조준기로 조준할 때 눈이 있는 자리), `sight`(조준경 레일), `muzzle`(총구), `grip`(손잡이 레일), `under`(하단 레일)다. `x y z`는 소켓의 시작점(레일이면 뒤끝), `rx ry rz`는 방향(도), `span`은 레일의 길이다. 좌표는 총 프리팹 기준 미터: x 오른쪽, y 위, z 총구 쪽.
+- `GunParts`: **부품**마다의 줄. 줄 이름은 부품 프리팹의 이름이고 `own`은 총 자체의 조준기다. 종류, 메뉴에 보이는 이름, 레일에 닿는 발의 길이(`footBack`·`footFront`), 조준기면 배율(`magnification`)과 조준 화면을 그리는 방식(`view`).
+
+부품은 규칙 하나로 앉는다(코드: [GunMounts](../Assets/_Project/Scripts/Weapons/FPSBody/GunMounts.cs)). 조준경은 자기 눈 자리가 총의 눈 자리와 나란해지는 곳까지 레일을 따라 물러나되 발이 레일을 벗어나지 않는다. 그래서 어느 조준경을 달아도 총을 쥔 자리가 같고, 레일이 눈에서 먼 총(권총의 슬라이드)에서는 조준경이 레일 뒤끝에 앉고 조준할 때 총이 그만큼 눈 쪽으로 온다. 라이트는 하단 레일의 앞끝에, 손잡이는 쥔 손이 정한 곳에(레일 안에서), 총구 부품은 총구에 앉는다.
+
+| 하고 싶은 것 | 고칠 칸 |
+| --- | --- |
+| 조준경이 떠 있거나 묻혀 있다 | `GunMounts`의 `<총>.sight` 줄 `y`(위아래), `z`와 `span`(레일의 뒤끝과 길이) |
+| 라이트·손잡이의 자리 | `<총>.under`, `<총>.grip` 줄. 핸드가드 밑면이 기울었으면 `rx` |
+| 이 총에 달 수 있는 부품, 처음 달린 부품 | 그 소켓 줄의 `fits`(부품 id를 `\|`로 나열)와 `starts`. 총 프리팹에 들어 있는 부품 가운데서만 고를 수 있다 |
+| 광학 조준경을 달아도 총의 쇠 가늠자가 앞을 가린다 | `<총>.sight` 줄의 `folds`에 가늠자·가늠쇠를 감싸는 상자(`x0 y0 z0 x1 y1 z1`, 여럿이면 `\|`)를 적는다. 상자 안에 통째로 든 메시 조각이 광학 조준경 밑에서 접힌다(그리지 않는다) |
+| 배율 | `GunParts`의 `magnification` |
+| 배율 조준경의 화면 | `GunParts`의 `view`. `zoom`(기본) = 화면 전체가 배율만큼 확대되고 렌즈 안도 같은 배율이라 한 화면으로 보인다. `pip` = 화면은 그대로 두고 렌즈 안에만 확대한 그림을 그린다. `window`는 zoom에서 렌즈 안 그림의 지름(화면 높이의 몇 배) |
+| 확대했을 때 마우스 빠르기 | `Scopes`의 `Look.zoomTurn`. 1이면 확대한 만큼 느려져 화면에서는 같은 빠르기로 움직이고, 0이면 느려지지 않는다 |
+
+프로젝트가 있으면 새 총의 줄을 손으로 재지 않아도 된다. `Tools/Guns/gun_mounts.py`가 총의 메시에서 레일과 쇠 가늠자를 재서 줄을 쓰고, Unity를 켜지 않고 그림과 보고서(`Logs/gun-mounts.txt`, `Logs/GunMounts`)로 점검한다([사용법](../Tools/Guns/README.md)). 총에 없던 부품을 다는 것은 프로젝트 모드의 일이다: Tactical Shooter Pack에 든 부품이면 `fits`에 그 프리팹 이름을 적고 ENFILADE → 총 → Tactical Shooter Pack 총 만들기를 누르면 그 부품이 총 프리팹에 들어간다(FPS Animation Pack 총). 팩에 없는 새 조준경 **모델**을 표만으로 다는 길은 아직 없다.
 
 ## 2. 아바타 모드 (0.9.49)
 

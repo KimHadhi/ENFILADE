@@ -1,5 +1,6 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+gun.pro.scope_view,조준하면 화면 전체가 ×{0} 확대,Aiming magnifies the whole view ×{0},"부품 설명(초록 +). {0}=배율. 화면 전체가 확대되는 배율 조준경(GunParts.csv view=zoom). 렌즈 안만 확대되는 조준경(view=pip)은 gun.pro.scope_zoom"
 hud.parkour.ledge.nowayup,눌러 낙하 · 여기서는 올라설 수 없음,,파쿠르 안내: 난간에 매달렸는데 그 자리에서는 위로 올라설 수 없을 때(위가 막혔거나 설 자리가 없는 턱) 조준점 아래. 앞에 웅크리기 키(CTRL) 키캡이 붙는다. 올라가려고 W나 Space를 누르면 손이 한 번 당기는 소리(SoundCues LedgeRefuse)가 난다
 wear.face.name,얼굴에,On the face,"옷장 > 입은 액세서리 판 아래 '착용 위치' 칩. WearPositions.csv face: 얼굴에 쓴다(용접 마스크)"
 wear.back.name,뒤통수에,On the back of the head,"옷장 > '착용 위치' 칩. WearPositions.csv back: 뒤통수에 쓴다(용접 마스크. 예전의 '용접 마스크 (뒤로 쓰기)' 옷)"

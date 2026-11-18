@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 119188949441518467}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.109}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -89,7 +89,7 @@ Transform:
   m_GameObject: {fileID: 415753322877994114}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.084}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1059,7 +1059,7 @@ Transform:
   m_GameObject: {fileID: 3174075386273073618}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.015844695, z: -0.0635}
+  m_LocalPosition: {x: 0, y: 0.0144, z: -0.14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1182,7 +1182,7 @@ Transform:
   m_GameObject: {fileID: 3545698289421093249}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.04622549, z: 0.19326779}
+  m_LocalPosition: {x: 0, y: -0.0424, z: 0.229}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1691,7 +1691,7 @@ Transform:
   m_GameObject: {fileID: 5496182560998074764}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.069}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1848,8 +1848,8 @@ MonoBehaviour:
     lens: {fileID: 0}
     lensGlow: 0
     hasHand: 1
-    handPalm: {x: -0.07583366, y: -0.07217266, z: 0.0701514}
-    handFingers: {x: -0.0059357374, y: 0.3412959, z: 0.9399374}
+    handPalm: {x: -0.07583366, y: -0.07214718, z: 0.0583836}
+    handFingers: {x: -0.005935737, y: 0.3412959, z: 0.9399374}
     handFacing: {x: 0.6097468, y: -0.7437615, z: 0.2739143}
   - kind: 3
     part: {fileID: 8380258454518806371}
@@ -1858,8 +1858,8 @@ MonoBehaviour:
     lens: {fileID: 0}
     lensGlow: 0
     hasHand: 1
-    handPalm: {x: -0.018070426, y: -0.09653532, z: 0.06014165}
-    handFingers: {x: 0.20511112, y: 0.3055109, z: 0.9298349}
+    handPalm: {x: -0.01807043, y: -0.09650984, z: 0.09557385}
+    handFingers: {x: 0.2051111, y: 0.3055109, z: 0.9298349}
     handFacing: {x: 0.571954, y: 0.7335202, z: -0.3671752}
   underbarrel:
   - kind: 0
@@ -2279,7 +2279,7 @@ Transform:
   m_GameObject: {fileID: 6738441697084833757}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.0175}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2374,7 +2374,7 @@ Transform:
   m_GameObject: {fileID: 7553328267274235638}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.04622548, z: 0.0932678}
+  m_LocalPosition: {x: 0, y: -0.0462, z: 0.064}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2522,7 +2522,7 @@ Transform:
   m_GameObject: {fileID: 8380258454518806371}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.0647}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

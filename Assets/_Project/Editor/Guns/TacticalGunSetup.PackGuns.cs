@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using KINEMATION.CharacterAnimationSystem.Integrations.FPSAnimationPack.Scripts;
 using UnityEditor;
@@ -7,41 +8,27 @@ using UnityEngine;
 using PartsPlayer = KINEMATION.CharacterAnimationSystem.Scripts.Runtime.Playables.SimpleAnimationPlayer;
 using Object = UnityEngine.Object;
 
-// TacticalGunSetup: The FPS Animation Pack's guns (MX16A4, M1911). One part of the class; the rest is in TacticalGunSetup.cs and the files beside it.
+// TacticalGunSetup: The FPS Animation Pack's guns (MX16A4, M1911 and Ultimate's others). One part of the class; the rest is in TacticalGunSetup.cs and the files beside it.
 internal static partial class TacticalGunSetup
 {
-    // KINEMATION's FPS Animation Pack has no parts of its own for its two guns, so they wear the Tactical Shooter Pack's
-    // (user, 2026-11-09: "담 단계"), put on mounts measured off each gun's own mesh: the muzzle's front face, the top of the
-    // rail over the receiver, the underside of the handguard where KINEMATION's support hand holds it, and ahead of that. A
-    // copy of the gun's CAS prefab carries them (Data/Guns/FPSPackGuns), and Resources/Combat/FPSBody points at it.
+    // KINEMATION's FPS Animation Pack has no parts of its own for its guns, so they wear the Tactical Shooter Pack's
+    // (user, 2026-11-09: "담 단계"). A copy of the gun's CAS prefab carries them (Data/Guns/FPSPackGuns), and
+    // Resources/Combat/FPSBody points at it.
+    // Which parts a gun carries and where they sit is not this file's to say (GunMounts): each socket's row in
+    // Tables/Weapons/GunMounts.csv lists the parts it offers (fits), and the game's own rule seats them (GunSights.Seat,
+    // GunAttachments.Seat), here as in play. This file once measured every mount off the mesh by one guess, three
+    // centimetres ahead of the gun's aim point, with the MX16A4 alone put right by hand (GunMounts says what came of it).
     private const string PackGunsFolder = ProjectFolders.Guns + "FPSPackGuns";
 
     private const string CasGuns = "Assets/ThirdParty/KINEMATION/CharacterAnimationSystem/Integrations/FPSAnimationPack/Prefabs/Weapons";
 
+    // One of the pack's guns: our weapon's name and KINEMATION's CAS prefab of it.
     private sealed class PackGun
     {
         public string weapon, source;
-        public bool pistol;
-        public string[] sights, muzzles, grips, underbarrel;
-        // Iron sights modelled into the gun's body mesh: its pieces reaching higher than this (m) under the iron sight line
-        // are them, cut out at run time so they fold away under an optic (GunSights.ironsInMesh). 0 leaves them on.
-        public float ironsBelowSightLine;
-        // The optics' mount goes as far ahead of the iron sight's aim point as the optics' own aim points sit behind
-        // their mounts, so an optic's eye point meets the iron sight's and the optic sits on the receiver.
-        public bool opticsMeetIrons;
     }
 
-    // One of FPS Animation Ultimate's guns in the Tactical Shooter Pack's parts: a long gun the MX16A4's sights, a pistol the
-    // M1911's red dot (unless given others), the MCS suppressor, the angled foregrip on a long gun, the LS3 light.
-    private static PackGun Ultimate(string weapon, string cas, bool pistol = false, string[] sights = null, bool muzzle = true,
-        bool grip = true, bool light = true) => new PackGun
-    {
-        weapon = weapon, source = CasGuns + "/CAS_FPSPack_" + cas + ".prefab", pistol = pistol,
-        sights = sights ?? (pistol ? new[] { "A_MicroRedDot_Picatinny" } : new[] { "A_Holograph", "A_DMCO" }),
-        muzzles = muzzle ? new[] { "A_MCS_Suppressor" } : Array.Empty<string>(),
-        grips = grip && !pistol ? new[] { "A_AngledForegrip" } : Array.Empty<string>(),
-        underbarrel = light ? new[] { "A_LS3_Flashlight" } : Array.Empty<string>(),
-    };
+    private static PackGun Ultimate(string weapon, string cas) => new PackGun { weapon = weapon, source = CasGuns + "/CAS_FPSPack_" + cas + ".prefab" };
 
     /// <summary>
     /// The FPS Animation Pack's guns get their parts now (PackGunSetup, once it has put new ones in FPSBody, so they don't
@@ -56,27 +43,24 @@ internal static partial class TacticalGunSetup
         AssetDatabase.SaveAssets();
     }
 
-    // How far either side of a point along the gun its surface is looked at (m), and how near the gun's middle line.
-    private const float MountWindow = .03f, MountSide = .02f;
-
     private static bool FitPackGuns(FPSBodyAssets assets, bool all)
     {
         bool changed = false;
-        var bakes = AssetDatabase.LoadAssetAtPath<GunBakes>(ProjectFolders.DataByName + GunBakes.ResourcePath + ".asset");
         foreach (var spec in PackGuns)
         {
             int index = Array.FindIndex(assets.guns, gun => gun.weapon != null && gun.weapon.name == spec.weapon);
             if (index < 0) continue;
             var current = assets.guns[index].prefab;
+            // Made already, unless a part its rows offer isn't on it yet (a row's fits gained one).
             if (!all && current != null && current.GetComponent<GunAttachments>() is GunAttachments made && !GripsWithoutHand(made)
-                && !IronsNotCut(spec, current) && !PartsNotPlayed(current)) continue;
+                && !PartsNotPlayed(current) && !PartsMissing(spec.weapon, current)) continue;
             try
             {
-                var prefab = FitPackGun(spec, assets.guns[index].weapon, bakes);
+                var prefab = FitPackGun(spec);
                 if (prefab == null) continue;
                 assets.guns[index].prefab = prefab;
                 changed = true;
-                Debug.Log($"TacticalGunSetup: {spec.weapon} now wears the Tactical Shooter Pack's parts ({PackGunsFolder}).", prefab);
+                Debug.Log($"TacticalGunSetup: {spec.weapon} now wears the parts its GunMounts rows offer ({PackGunsFolder}).", prefab);
             }
             catch (Exception error)
             {
@@ -86,7 +70,23 @@ internal static partial class TacticalGunSetup
         return changed;
     }
 
-    private static GameObject FitPackGun(PackGun spec, WeaponData weapon, GunBakes bakes)
+    // The sockets parts hang on, and the object each one's parts go under on these guns.
+    private static readonly (string socket, string mount)[] Mounts =
+    {
+        (GunMounts.Sight, "SightMount"), (GunMounts.Muzzle, "MuzzleMount"), (GunMounts.Grip, "GripMount"), (GunMounts.Under, "UnderMount"),
+    };
+
+    // A part a socket's row offers that the gun's prefab doesn't carry: the gun is made again once to take it on. A part
+    // the prefab carries beyond its rows is only left off the menu (GunSights.Offered).
+    private static bool PartsMissing(string weapon, GameObject prefab)
+    {
+        foreach (var (socket, _) in Mounts)
+            foreach (string part in GunMounts.Of(weapon, socket).Fits)
+                if (part != GunMounts.Own && Hierarchy.Find(prefab.transform, part) == null) return true;
+        return false;
+    }
+
+    private static GameObject FitPackGun(PackGun spec)
     {
         var source = AssetDatabase.LoadAssetAtPath<GameObject>(spec.source);
         if (source == null) return null;
@@ -96,102 +96,57 @@ internal static partial class TacticalGunSetup
         try
         {
             PrefabUtility.UnpackPrefabInstance(instance, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            // The gun's id in the tables is its object's name (GunMounts.IdOf).
             instance.name = spec.weapon;
             var gun = instance.transform;
             gun.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             var cas = instance.GetComponent<CasFPSWeapon>();
             var aim = cas != null && cas.aimPoint != null ? cas.aimPoint : gun;
             PlayPartsThroughCas(instance, source);
+            RowsFor(spec.weapon, gun, aim);
 
-            // The gun's shape in its own frame: along the sight line (z), up (y) and across (x), its own parts only. Iron sights
-            // modelled into the body are picked out first and left out of it, so the optics' mount finds the receiver.
-            Quaternion frame = Quaternion.Inverse(gun.rotation) * Quaternion.LookRotation(aim.forward, aim.up);
-            bool[] ironVertex = null;
-            int[] ironTriangles = Array.Empty<int>();
-            int ironTotal = 0;
-            SkinnedMeshRenderer irons = null;
-            if (spec.ironsBelowSightLine > 0f)
-                irons = IronSightsIn(gun, frame, aim, spec.ironsBelowSightLine, out ironVertex, out ironTriangles, out ironTotal);
-            var points = ShapeOf(gun, frame, aim, irons, ironVertex);
-            GunMuzzle.Measure(gun, aim, .015f, out Vector3 muzzleAt, out Quaternion muzzleTurn);
-            Vector3 muzzle = Quaternion.Inverse(frame) * (muzzleAt - gun.InverseTransformPoint(aim.position));
-            // Where KINEMATION's support hand holds it: the bake's grip, kept in KINEMATION's weapon bone frame at the bake's
-            // size (the gun model hangs in that frame turned by the gun's rotationOffset, at true size, FPSBody), else a
-            // little under half way from the sight to the muzzle. Kept on the handguard.
-            float hand = muzzle.z * .45f;
-            if (bakes != null && bakes.entries != null)
-                foreach (var entry in bakes.entries)
-                    if (entry.weapon == weapon && entry.hasGrip && entry.skin != null)
-                    {
-                        Vector3 left = Quaternion.Inverse(FPSBody.GunFrameOf(cas)) * entry.leftGripPosition * GunClipRetarget.FitScaleOf(entry.skin);
-                        hand = (Quaternion.Inverse(frame) * (left - gun.InverseTransformPoint(aim.position))).z;
-                        break;
-                    }
-            hand = Mathf.Clamp(hand, .1f, Mathf.Max(.12f, muzzle.z - .08f));
-
-            Transform Mount(string name, float z, bool top)
+            // Each socket's parts under an object of its own, all at the gun's origin: the game's rule puts the object on
+            // the socket and each part along it (below), as it does again whenever the gun wakes.
+            var mounts = new Dictionary<string, Transform>();
+            var offers = new Dictionary<string, List<Component>>();
+            foreach (var (socket, name) in Mounts)
             {
-                float y = top ? RailTop(points, z) : Underside(points, z);
+                var found = new List<Component>();
+                foreach (string part in GunMounts.Of(spec.weapon, socket).Fits)
+                    if (part != GunMounts.Own && Pick(part) is Component prefab) found.Add(prefab);
+                offers[socket] = found;
+                if (found.Count == 0) continue;
                 var mount = new GameObject(name).transform;
                 mount.SetParent(gun, false);
-                mount.localPosition = gun.InverseTransformPoint(aim.position) + frame * new Vector3(0f, y, z);
-                mount.localRotation = frame;
-                return mount;
+                mounts[socket] = mount;
             }
-
-            var sightMount = Mount("SightMount", spec.pistol ? -.02f : .03f, true);
-            var muzzleMount = new GameObject("MuzzleMount").transform;
-            muzzleMount.SetParent(gun, false);
-            muzzleMount.SetLocalPositionAndRotation(muzzleAt, muzzleTurn);
-            var gripMount = Mount("GripMount", hand, false);
-            var underMount = Mount("UnderMount", spec.pistol ? muzzle.z - .07f : hand + .1f, false);
 
             var sights = new List<GunSights.Sight>();
-            foreach (string part in spec.sights)
-                if (Pick(part) is Component prefab) sights.Add(SightChoice(prefab, Put(prefab, sightMount), aim));
-            // The optics' eye points meet the iron sight's: the mount goes as far ahead of the iron aim point as their aim
-            // points sit behind it (the MX16A4's holographic 15 cm, its DMCO 13.5), onto the receiver's top there.
-            if (spec.opticsMeetIrons)
-            {
-                float behind = 0f;
-                int counted = 0;
-                foreach (var sight in sights)
-                    if (sight.aimPoint != null && sight.aimPoint != aim)
-                    {
-                        behind += sightMount.InverseTransformPoint(sight.aimPoint.position).z;
-                        counted++;
-                    }
-                if (counted > 0)
-                {
-                    float ahead = -behind / counted;
-                    sightMount.localPosition = gun.InverseTransformPoint(aim.position) + frame * new Vector3(0f, RailTop(points, ahead), ahead);
-                }
-            }
+            foreach (var prefab in offers[GunMounts.Sight]) sights.Add(SightChoice(prefab, Put(prefab, mounts[GunMounts.Sight]), aim));
+            // The gun's own sights last, as it came: whether the menu offers them is its row's (the L96X has none).
             sights.Add(new GunSights.Sight { part = null, aimPoint = aim, ironSight = true });
             var none = new GunAttachments.Choice { kind = GunAttachments.Kind.None };
             var muzzles = new List<GunAttachments.Choice> { none };
             var grips = new List<GunAttachments.Choice> { none };
             var under = new List<GunAttachments.Choice> { none };
-            foreach (string part in spec.muzzles) if (Pick(part) is Component prefab) muzzles.Add(ChoiceOf(prefab, Put(prefab, muzzleMount), gun));
-            foreach (string part in spec.grips) if (Pick(part) is Component prefab) grips.Add(ChoiceOf(prefab, Put(prefab, gripMount), gun));
-            foreach (string part in spec.underbarrel) if (Pick(part) is Component prefab) under.Add(ChoiceOf(prefab, Put(prefab, underMount), gun));
+            foreach (var prefab in offers[GunMounts.Muzzle]) muzzles.Add(ChoiceOf(prefab, Put(prefab, mounts[GunMounts.Muzzle]), gun));
+            foreach (var prefab in offers[GunMounts.Grip]) grips.Add(ChoiceOf(prefab, Put(prefab, mounts[GunMounts.Grip]), gun));
+            foreach (var prefab in offers[GunMounts.Under]) under.Add(ChoiceOf(prefab, Put(prefab, mounts[GunMounts.Under]), gun));
 
             var parts = instance.AddComponent<GunAttachments>();
             parts.muzzle = muzzles.Count > 1 ? muzzles.ToArray() : Array.Empty<GunAttachments.Choice>();
             parts.grips = grips.Count > 1 ? grips.ToArray() : Array.Empty<GunAttachments.Choice>();
             parts.underbarrel = under.Count > 1 ? under.ToArray() : Array.Empty<GunAttachments.Choice>();
+            // Where a row names no start: a flashlight stays on its rail, off, as a Siege gun comes.
             parts.initialUnderbarrel = Mathf.Max(0, under.FindIndex(choice => choice.kind == GunAttachments.Kind.Flashlight));
+            // Seated by the game's rule, so the prefab as saved is the gun as it wakes (a pickup on the floor shows the
+            // prefab without waking it).
             parts.Begin();
-            // The gun's own iron sights first, as it came.
             var shown = instance.AddComponent<GunSights>();
             shown.sights = sights.ToArray();
-            shown.initial = sights.Count - 1;
-            if (irons != null)
-            {
-                shown.ironsInMesh = irons;
-                shown.ironTriangles = ironTriangles;
-                shown.ironTriangleTotal = ironTotal;
-            }
+            shown.StartWith(sights.Count - 1);
+            // Its own iron sights stay in its mesh here: the cut is made of the mesh as each gun wakes, not saved.
+            shown.Seat(false);
             shown.Select(shown.initial);
 
             // The parts' own pack scripts expect the pack's player; their particles are its muzzle flash.
@@ -208,6 +163,33 @@ internal static partial class TacticalGunSetup
         }
     }
 
+    /// <summary>
+    /// A gun that has no rows in GunMounts.csv yet gets the two that are no judgement: its eye place (KINEMATION's own aim
+    /// point) and its muzzle (GunMuzzle's measure of its front face). Where its rails are, which pieces of its mesh are its
+    /// iron sights and what each socket offers is measured and looked at outside the editor (Tools/Guns/README.md: the
+    /// measure proposes rows and draws the gun with every part seated), then written into the table; until then the gun
+    /// has its own sights and nothing else, and says so here.
+    /// </summary>
+    private static void RowsFor(string weapon, Transform gun, Transform aim)
+    {
+        if (GunMounts.Of(weapon, GunMounts.Eye).Found) return;
+        string path = TablePaths.Of(GunMounts.Table);
+        string text = TableFile.Read(path);
+        if (string.IsNullOrEmpty(text)) return;
+        GunMuzzle.Measure(gun, aim, .015f, out Vector3 muzzle, out Quaternion muzzleTurn);
+        Vector3 eye = gun.InverseTransformPoint(aim.position);
+        Vector3 eyeTurn = (Quaternion.Inverse(gun.rotation) * aim.rotation).eulerAngles, turn = muzzleTurn.eulerAngles;
+        string N(float value) => Mathf.Abs(value) < 5e-5f ? "0" : value.ToString("0.####", CultureInfo.InvariantCulture);
+        string A(float angle) => N(Mathf.DeltaAngle(0f, angle));
+        string line = text.Contains("\r\n") ? "\r\n" : "\n";
+        text = text.TrimEnd('\r', '\n') + line
+            + $"{weapon}.{GunMounts.Eye},{N(eye.x)},{N(eye.y)},{N(eye.z)},{A(eyeTurn.x)},{A(eyeTurn.y)},{A(eyeTurn.z)},,,,," + line
+            + $"{weapon}.{GunMounts.Muzzle},{N(muzzle.x)},{N(muzzle.y)},{N(muzzle.z)},{A(turn.x)},{A(turn.y)},{A(turn.z)},0,,,," + line;
+        TableFile.Write(path, text, $"{weapon}의 눈 자리·총구 줄", "ENFILADE → 총 → FPS Animation Pack 총 만들기를 다시 눌러 주세요.");
+        Debug.LogWarning($"TacticalGunSetup: {weapon} had no rows in GunMounts.csv. Its eye place and muzzle are written; its sight rail, the "
+            + "parts it offers and its iron sights' boxes are still to be measured and added (Tools/Guns/README.md), so it has only its own sights for now.");
+    }
+
     // One of the Tactical Shooter Pack's attachment prefabs by name, as its attachment script (what the gun setups read).
     private static Component Pick(string name)
     {
@@ -220,49 +202,6 @@ internal static partial class TacticalGunSetup
         }
         Debug.LogWarning($"TacticalGunSetup: the Tactical Shooter Pack's {name} wasn't found.");
         return null;
-    }
-
-    // The gun's mesh points in the sight line's frame from the aim point (x across, y up, z along), its parts as it stands.
-    // The vertices of skipIn marked in skip are left out (iron sights modelled into the body, IronSightsIn).
-    private static List<Vector3> ShapeOf(Transform gun, Quaternion frame, Transform aim, Renderer skipIn = null, bool[] skip = null)
-    {
-        var points = new List<Vector3>();
-        var vertices = new List<Vector3>();
-        Vector3 origin = gun.InverseTransformPoint(aim.position);
-        Quaternion toFrame = Quaternion.Inverse(frame);
-        foreach (var renderer in gun.GetComponentsInChildren<Renderer>(true))
-        {
-            Mesh mesh = null;
-            Matrix4x4 toWorld;
-            bool baked = false;
-            if (renderer is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)
-            {
-                mesh = new Mesh();
-                skinned.BakeMesh(mesh, true);
-                baked = true;
-                toWorld = Matrix4x4.TRS(skinned.transform.position, skinned.transform.rotation, Vector3.one);
-            }
-            else if (renderer is MeshRenderer && renderer.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null)
-            {
-                mesh = filter.sharedMesh;
-                toWorld = renderer.transform.localToWorldMatrix;
-            }
-            else continue;
-            mesh.GetVertices(vertices);
-            bool skipping = skip != null && skipIn != null && renderer == skipIn && skip.Length == vertices.Count;
-            for (int i = 0; i < vertices.Count; i++)
-                if (!skipping || !skip[i]) points.Add(toFrame * (gun.InverseTransformPoint(toWorld.MultiplyPoint3x4(vertices[i])) - origin));
-            if (baked) Object.DestroyImmediate(mesh);
-        }
-        return points;
-    }
-
-    // Made before the MX16A4's iron sights folded away under optics (2026-11-10): made again once.
-    private static bool IronsNotCut(PackGun spec, GameObject prefab)
-    {
-        if (spec.ironsBelowSightLine <= 0f) return false;
-        var sights = prefab.GetComponent<GunSights>();
-        return sights == null || sights.ironsInMesh == null;
     }
 
     // Made without the gun-part player its CAS prefab carries (the MX16A4 since 0.8.1): made again once.
@@ -292,125 +231,6 @@ internal static partial class TacticalGunSetup
         if (rest != null && rest.objectReferenceValue == null && theirs != null)
             rest.objectReferenceValue = new SerializedObject(theirs).FindProperty("defaultClipPose")?.objectReferenceValue;
         write.ApplyModifiedPropertiesWithoutUndo();
-    }
-
-    // The gun's body mesh (its biggest skinned one) and which of its vertices and triangles are iron sights modelled into
-    // it: the mesh's pieces (vertices at one place welded, as a hard edge or a seam splits them) whose highest point is
-    // less than `below` under the iron sight line (the aim point's height), with the gun posed as it stands. Triangles
-    // are numbered through the submeshes in order, as GunSights cuts them. Null when there are none or it can't be read.
-    private static SkinnedMeshRenderer IronSightsIn(Transform gun, Quaternion frame, Transform aim, float below,
-        out bool[] ironVertex, out int[] ironTriangles, out int total)
-    {
-        ironVertex = null;
-        ironTriangles = Array.Empty<int>();
-        total = 0;
-        SkinnedMeshRenderer body = null;
-        foreach (var skinned in gun.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            if (skinned.sharedMesh != null && (body == null || skinned.sharedMesh.vertexCount > body.sharedMesh.vertexCount))
-                body = skinned;
-        if (body == null) return null;
-        var mesh = body.sharedMesh;
-        if (!mesh.isReadable)
-        {
-            Debug.LogWarning($"TacticalGunSetup: {mesh.name} can't be read, so {gun.name}'s iron sights stay on under optics (switch Read/Write on).");
-            return null;
-        }
-
-        var raw = new List<Vector3>();
-        mesh.GetVertices(raw);
-        int count = raw.Count;
-        var posedMesh = new Mesh();
-        body.BakeMesh(posedMesh, true);
-        var posed = new List<Vector3>();
-        posedMesh.GetVertices(posed);
-        Object.DestroyImmediate(posedMesh);
-        if (posed.Count != count) return null;
-
-        var root = new int[count];
-        for (int i = 0; i < count; i++) root[i] = i;
-        int Find(int a)
-        {
-            while (root[a] != a) { root[a] = root[root[a]]; a = root[a]; }
-            return a;
-        }
-        void Join(int a, int b)
-        {
-            a = Find(a);
-            b = Find(b);
-            if (a != b) root[a] = b;
-        }
-        // One piece: vertices at one place (to a hundredth of a millimetre), and the corners of each triangle.
-        var place = new Dictionary<Vector3Int, int>();
-        for (int i = 0; i < count; i++)
-        {
-            var key = new Vector3Int(Mathf.RoundToInt(raw[i].x * 1e5f), Mathf.RoundToInt(raw[i].y * 1e5f), Mathf.RoundToInt(raw[i].z * 1e5f));
-            if (place.TryGetValue(key, out int first)) Join(i, first);
-            else place[key] = i;
-        }
-        var triangles = new List<int>();
-        for (int s = 0; s < mesh.subMeshCount; s++)
-        {
-            mesh.GetTriangles(triangles, s);
-            for (int t = 0; t + 2 < triangles.Count; t += 3)
-            {
-                Join(triangles[t], triangles[t + 1]);
-                Join(triangles[t], triangles[t + 2]);
-            }
-        }
-
-        // Each piece's highest point over the iron sight line.
-        var toWorld = Matrix4x4.TRS(body.transform.position, body.transform.rotation, Vector3.one);
-        Quaternion toFrame = Quaternion.Inverse(frame);
-        Vector3 origin = gun.InverseTransformPoint(aim.position);
-        var top = new Dictionary<int, float>();
-        for (int i = 0; i < count; i++)
-        {
-            float height = (toFrame * (gun.InverseTransformPoint(toWorld.MultiplyPoint3x4(posed[i])) - origin)).y;
-            int piece = Find(i);
-            top[piece] = top.TryGetValue(piece, out float highest) ? Mathf.Max(highest, height) : height;
-        }
-        ironVertex = new bool[count];
-        for (int i = 0; i < count; i++) ironVertex[i] = top[Find(i)] > -below;
-
-        var irons = new List<int>();
-        int number = 0;
-        for (int s = 0; s < mesh.subMeshCount; s++)
-        {
-            mesh.GetTriangles(triangles, s);
-            for (int t = 0; t + 2 < triangles.Count; t += 3, number++)
-                if (ironVertex[triangles[t]]) irons.Add(number);
-        }
-        total = number;
-        ironTriangles = irons.ToArray();
-        if (irons.Count == 0) return null;
-        Debug.Log($"TacticalGunSetup: {gun.name}'s iron sights are {irons.Count} of its {number} triangles; they fold away under optics.");
-        return body;
-    }
-
-    // The top of the rail at z along the sight line: the median of the highest points in slices about it, so a sight post
-    // or a charging handle sticking up in one slice doesn't lift the mount.
-    private static float RailTop(List<Vector3> points, float z)
-    {
-        var tops = new List<float>();
-        for (float slice = z - .06f; slice <= z + .06f; slice += .01f)
-        {
-            float top = float.NegativeInfinity;
-            foreach (var point in points)
-                if (Mathf.Abs(point.z - slice) <= .005f && Mathf.Abs(point.x) <= MountSide) top = Mathf.Max(top, point.y);
-            if (!float.IsNegativeInfinity(top)) tops.Add(top);
-        }
-        if (tops.Count == 0) return 0f;
-        tops.Sort();
-        return tops[tops.Count / 2];
-    }
-
-    // The underside of the gun at z along the sight line, under its middle line.
-    private static float Underside(List<Vector3> points, float z)
-    {
-        float bottom = float.PositiveInfinity;
-        foreach (var point in points)
-            if (Mathf.Abs(point.z - z) <= MountWindow && Mathf.Abs(point.x) <= MountSide) bottom = Mathf.Min(bottom, point.y);
-        return float.IsPositiveInfinity(bottom) ? -.05f : bottom;
     }
 
     // KINEMATION's Operator's left hand (its hand_l, which a grip's LeftHand stands for), in that bone's own turn: the way

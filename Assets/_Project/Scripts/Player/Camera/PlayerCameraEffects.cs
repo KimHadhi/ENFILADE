@@ -261,6 +261,7 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     {
         if (effectsPivot != null) effectsPivot.localRotation = Quaternion.identity;
         HeadDisplacement = Vector3.zero;
+        LookScale = 1f;
         traversalPunch = punchVelocity = Vector2.zero;
         impulseRotDisplacement = impulseRotVelocity = Vector3.zero;
         divePitch = impulseFovDisplacement = impulseFovVelocity = 0f;
@@ -307,10 +308,31 @@ public sealed class PlayerCameraEffects : MonoBehaviour
         // ADS already has its own transition timer. Compose after smoothing movement FOV
         // so a second smoothing pass cannot delay the zoom behind the weapon's sight pose.
         float aim = Aim;
-        float aimedFov = aim > 0f ? Mathf.Min(baseFov, weapon.EquippedData.AdsFov) : currentFov;
+        float aimedFov = currentFov;
+        float turn = 1f;
+        if (aim > 0f)
+        {
+            // The aimed view is the shown sight's (GunMounts.AimedFov, GunParts.csv): a sight that magnifies narrows the
+            // whole view, so the world round the scope is as large as the world in its lens; any other leaves the gun's
+            // own aimed field (Weapons.csv adsFov). It was the gun's field whatever the sight, so a 4x scope showed the
+            // plain view with a 4x circle in it (user, 2026-11-18: "일반 화면 + 확대 화면 2개로 보임").
+            float own = Mathf.Min(baseFov, weapon.EquippedData.AdsFov);
+            var gun = weapon.HeldGun;
+            aimedFov = gun != null ? gun.AimedFov(baseFov, own) : own;
+            // The mouse turns the view by what the view shows: a sight that magnifies it past the gun's own aimed field
+            // slows the turn by as much (Scopes.csv Look.zoomTurn of it), so a target crosses the screen at the speed it
+            // does unscoped. The gun's own aimed field never slowed the mouse, and still doesn't.
+            float zoom = Mathf.Tan(aimedFov * .5f * Mathf.Deg2Rad) / Mathf.Max(1e-4f, Mathf.Tan(own * .5f * Mathf.Deg2Rad));
+            turn = Mathf.Lerp(1f, Mathf.Clamp01(zoom), Mathf.Clamp01(GameTables.Number(GunScope.TableName, "Look", "zoomTurn", 1f)));
+        }
+        LookScale = Mathf.Lerp(1f, turn, aim);
         cam.fieldOfView = Mathf.Lerp(currentFov, aimedFov, aim)
             + impulseFovDisplacement * Shake * Mathf.Lerp(1f, .25f, aim);
     }
+
+    /// <summary>How much of the mouse's turn the view takes this frame (1 unless aimed through a sight that magnifies):
+    /// PlayerLook multiplies its sensitivity by it.</summary>
+    public float LookScale { get; private set; } = 1f;
 
     private void UpdateTilt(float dt)
     {

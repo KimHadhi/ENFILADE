@@ -4,10 +4,21 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// A magnified scope's lens: what is ahead of the scope, rendered through a camera of its own into a texture its lens
-/// shader shows, magnified, while the gun is aimed. The same as KINEMATION's Tactical Shooter Pack ScopeAttachment (its
-/// lens shader reads _RenderTexture, _Magnification, _ScopeVisibility and _ScopeTexelSize), driven by FPSGun instead of
-/// the pack's player; TacticalGunSetup copies the scope's numbers here. The scope's camera is made the first time the gun
-/// is aimed and is switched off (its object too) whenever it isn't, so a search for the player's camera never finds it.
+/// shader shows while the gun is aimed. The lens and its shader are KINEMATION's Tactical Shooter Pack ScopeAttachment's
+/// (the shader reads _RenderTexture, _Magnification, _ScopeVisibility, _ScopeTexelSize and _Distortion), driven by FPSGun
+/// instead of the pack's player; TacticalGunSetup copies the scope's numbers here. The scope's camera is made the first
+/// time the gun is aimed and is switched off (its object too) whenever it isn't, so a search for the player's camera never
+/// finds it.
+/// How the aimed view is drawn through it is the sight's own row (GunParts.csv view, GunMounts.Part):
+/// - zoom (ours, the default): the whole view is magnified by the sight (PlayerCameraEffects narrows the player's field,
+///   GunMounts.AimedFov) and the lens shows what lies behind it at that same magnification, so the lens and the world
+///   round it are one picture, the scope's housing and its shadow framing it. The lens camera is kept for that: looked
+///   through as plain glass, the pack's scopes show the inside of their own tube and the gun's front sight four times
+///   over, and so would any model not built to be looked through. The pack's own way drew the world twice at two
+///   magnifications, the plain view all round and a magnified circle in the middle of it (user, 2026-11-18: "배율 조준경
+///   사용 시 조준경 화면과 일반 시야가 이중으로 분리 렌더링(일반 화면 + 확대 화면 2개로 보임)되는 문제").
+/// - pip: the pack's way, kept for a sight whose row asks for it: the view stays as the gun has it and the lens alone
+///   shows a magnified picture.
 /// Three of ours on top of the pack's:
 /// - The scope's camera draws everything the player's camera does, but the player's own body, gun and its parts (the lens
 ///   too) are switched off for its render alone. They share the world's layer (Default), and leaving that layer out, as
@@ -31,12 +42,14 @@ public sealed class GunScope : MonoBehaviour, ITableBound
     private static readonly int VisibilityId = Shader.PropertyToID("_ScopeVisibility");
     private static readonly int TexelSizeId = Shader.PropertyToID("_ScopeTexelSize");
     private static readonly int ReticleZoomId = Shader.PropertyToID("_UseReticleZoom");
+    private static readonly int DistortionId = Shader.PropertyToID("_Distortion");
 
     [Tooltip("The lens; its material shows the scope's view.")]
     public Renderer lens;
     [Tooltip("Where the scope's camera looks from.")]
     public Transform capturePoint;
-    [Min(1f)] public float magnification = 1f;
+    [Min(1f), Tooltip("How far it magnifies when its part has no GunParts row (the pack's number).")]
+    public float magnification = 1f;
     [Min(64), Tooltip("The picture's side (px) when there is no view to size it from (the pack's number).")]
     public int textureResolution = 1024;
     [Range(1f, 179f), Tooltip("The scope's whole field (°, the pack's number); the lens shows its middle, magnification times nearer.")]
@@ -55,8 +68,35 @@ public sealed class GunScope : MonoBehaviour, ITableBound
     private readonly List<Renderer> own = new List<Renderer>();
     private readonly List<bool> ownWasOff = new List<bool>();
     private bool hiding, lookingThrough;
+    // What this sight is (its part's GunParts row), read again when the tables are; and the player's field fully aimed
+    // through it, which the picture's own field follows (zoom).
+    private GunMounts.Part sight;
+    private int sightFor = -1;
+    private float aimedFov = 60f, pictureFov = -1f;
 
     private void Awake() => GameTables.Bind(TableName, TableRow, this);
+
+    private GunMounts.Part Sight
+    {
+        get
+        {
+            if (sightFor == GunMounts.Version) return sight;
+            sight = GunMounts.PartOf(GunMounts.IdOf(gameObject));
+            // After the first row is read: reading it is what starts GunMounts counting the tables' reloads.
+            sightFor = GunMounts.Version;
+            return sight;
+        }
+    }
+
+    /// <summary>How many times it magnifies: its part's row's, else the pack's own number.</summary>
+    public float Magnification => Sight.Found ? Sight.Magnification : Mathf.Max(1f, magnification);
+
+    // The whole view is magnified with it and the lens shows the same magnification.
+    private bool Zooms => Sight.Zooms;
+
+    // Zoom: the lens picture's edge as the eye sees it (degrees from the sight line): its row's share (window) of half the
+    // aimed view's height.
+    private float PictureEdge => Mathf.Clamp(Sight.Window * aimedFov * .5f, 1f, 30f);
 
     // The next look through the scope sizes its picture again.
     public void OnTableApplied() => lookingThrough = false;
@@ -72,16 +112,42 @@ public sealed class GunScope : MonoBehaviour, ITableBound
         }
     }
 
-    // The field the picture is taken through: the middle of the scope's whole field that the lens shows, the same
-    // perspective, so the lens shows the same view without enlarging it.
-    private float PictureFov => Optical
-        ? 2f * Mathf.Atan(Mathf.Tan(captureFov * .5f * Mathf.Deg2Rad) / Mathf.Max(1f, magnification)) * Mathf.Rad2Deg
+    // The field the picture is taken through.
+    // Zoom: the cone the lens picture covers as the eye sees it, so a thing in the lens is as large as the same thing
+    // beside the scope (the shader lays the picture's edge at the sine of its angle, a camera at the tangent of half its
+    // field).
+    // Pip: the middle of the scope's whole field that the lens shows, the same perspective, so the lens shows the same
+    // view without enlarging it.
+    private float PictureFov => Zooms
+        ? 2f * Mathf.Atan(Mathf.Sin(PictureEdge * Mathf.Deg2Rad)) * Mathf.Rad2Deg
+        : Optical ? 2f * Mathf.Atan(Mathf.Tan(captureFov * .5f * Mathf.Deg2Rad) / Magnification) * Mathf.Rad2Deg
         : captureFov;
+
+    // The lens shader spreads its picture out to the angle whose sine is 0.5 / (2 + 10 x _Distortion) from the sight line
+    // (KShader_Scope_Base: GetDistortedScopeUv, GetScopeFovMask). Zoom: the number that puts the picture's edge at
+    // PictureEdge. Pip: the lens material's own.
+    private float LensSpread
+    {
+        get
+        {
+            var material = lens != null ? lens.sharedMaterial : null;
+            float own = material != null && material.HasProperty(DistortionId) ? material.GetFloat(DistortionId) : .1f;
+            return Zooms ? (.5f / Mathf.Sin(PictureEdge * Mathf.Deg2Rad) - 2f) / 10f : own;
+        }
+    }
 
     /// <summary>
     /// This frame's view through the scope, <paramref name="aim"/> of the way down the sights, seen from
-    /// <paramref name="view"/>'s settings and looking where it looks.
+    /// <paramref name="view"/>'s settings and looking where it looks; <paramref name="fullyAimedFov"/> is the player's
+    /// vertical field (degrees) once fully aimed through this sight (FPSGun.AimedFov).
     /// </summary>
+    public void Show(float aim, Camera view, float fullyAimedFov)
+    {
+        aimedFov = Mathf.Clamp(fullyAimedFov, 1f, 179f);
+        Show(aim, view);
+    }
+
+    /// <summary>The same, the aimed field left as it was last given.</summary>
     public void Show(float aim, Camera view)
     {
         if (lens == null || lens.sharedMaterial == null || !lens.sharedMaterial.HasProperty(RenderTextureId)) return;
@@ -97,7 +163,13 @@ public sealed class GunScope : MonoBehaviour, ITableBound
             {
                 FindOwnRenderers();
                 Size(view);
-                scopeCamera.fieldOfView = PictureFov;
+            }
+            // The picture's field follows the aimed view's (the field of view changed in the Esc menu, a row changed).
+            float field = PictureFov;
+            if (on && !Mathf.Approximately(field, pictureFov))
+            {
+                pictureFov = field;
+                scopeCamera.fieldOfView = field;
             }
             lookingThrough = on;
             if (scopeCamera.gameObject.activeSelf != on) scopeCamera.gameObject.SetActive(on);
@@ -106,7 +178,8 @@ public sealed class GunScope : MonoBehaviour, ITableBound
         if (block == null) block = new MaterialPropertyBlock();
         lens.GetPropertyBlock(block);
         block.SetFloat(VisibilityId, scopeCamera != null ? weight : 0f);
-        block.SetFloat(MagnificationId, Optical ? 1f : Mathf.Max(1f, magnification));
+        block.SetFloat(MagnificationId, Optical ? 1f : Magnification);
+        block.SetFloat(DistortionId, LensSpread);
         if (texture != null)
         {
             block.SetTexture(RenderTextureId, texture);
@@ -136,13 +209,19 @@ public sealed class GunScope : MonoBehaviour, ITableBound
         Size(view);
     }
 
-    // The picture's texture: about screenShare of the screen's height on a side, where the lens spans roughly 0.3-0.45 of
-    // it when aimed, so each pixel of the lens averages about four texels; a power of two, for its mip levels.
+    // The picture's texture.
+    // Pip: about screenShare of the screen's height on a side, where the lens spans roughly 0.3-0.45 of it when aimed, so
+    // each pixel of the lens averages about four texels; a power of two, for mip levels that halve cleanly.
+    // Zoom: the picture is as tall on screen as its row's window says and is most of what the player sees, so it is made
+    // at that very size, a texel to a pixel. The nearest power of two is up to 30% too small for it (1440p: 1024 texels
+    // spread over 1296 pixels, soft beside the sharp view round the scope) or 40% too large (drawn for nothing).
     private void Size(Camera view)
     {
         int height = view != null ? view.pixelHeight : 0;
-        int want = height > 0 ? Mathf.RoundToInt(height * screenShare) : textureResolution;
-        int size = Mathf.ClosestPowerOfTwo(Mathf.Clamp(want, 64, Mathf.Max(64, largest)));
+        int cap = Mathf.Max(64, largest);
+        int size;
+        if (Zooms && height > 0) size = Mathf.Clamp(Mathf.CeilToInt(height * Sight.Window * .5f) * 2, 64, cap);
+        else size = Mathf.ClosestPowerOfTwo(Mathf.Clamp(height > 0 ? Mathf.RoundToInt(height * screenShare) : textureResolution, 64, cap));
         if (texture != null && texture.width == size) return;
         if (scopeCamera != null) scopeCamera.targetTexture = null;
         if (texture != null) { texture.Release(); Destroy(texture); }

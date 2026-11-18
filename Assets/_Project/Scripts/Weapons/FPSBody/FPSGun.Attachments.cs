@@ -102,8 +102,21 @@ public sealed partial class FPSGun
         GunMuzzle.Measure(transform, AimPoint, muzzleDepth, out Vector3 muzzle, out Quaternion muzzleRotation);
         MuzzlePosition = muzzle;
         MuzzleRotation = muzzleRotation;
-        if (Attachments != null) Attachments.LightAhead(transform.TransformPoint(muzzle));
+        if (Attachments != null) Attachments.LightAhead(transform.TransformPoint(muzzle), transform.rotation * (muzzleRotation * Vector3.forward));
     }
+
+    // ---- The aimed view (the shown sight's: GunMounts, GunParts.csv) ----
+
+    /// <summary>What the shown sight is: how far it magnifies and how its view is drawn. A gun without a choice of sights
+    /// has its own (GunMounts.Own).</summary>
+    internal GunMounts.Part SightPart => Sights != null && Sights.Current >= 0 ? Sights.Shown : GunMounts.PartOf(GunMounts.Own);
+
+    /// <summary>
+    /// The player's vertical field of view (degrees) fully aimed with this gun as it is: the shown sight's when it
+    /// magnifies the whole view (<paramref name="hipFov"/> seen that many times nearer), else the gun's own aimed field
+    /// (<paramref name="ownFov"/>: Weapons.csv adsFov, never wider than the hip's).
+    /// </summary>
+    internal float AimedFov(float hipFov, float ownFov) => GunMounts.AimedFov(SightPart, hipFov, ownFov);
 
     /// <summary>The sight shown (GunSights.Current), -1 for a gun without a choice of sights.</summary>
     internal int SightIndex => Sights != null ? Sights.Current : -1;
@@ -115,17 +128,22 @@ public sealed partial class FPSGun
     /// </summary>
     internal bool ShowSight(int index)
     {
-        if (Sights == null || index < 0 || index >= Sights.Count || index == Sights.Current) return false;
+        // Only a sight the gun's socket offers (GunMounts.csv fits): a saved pick or a friend's of one it no longer does
+        // leaves what is up.
+        if (Sights == null || index < 0 || index >= Sights.Count || index == Sights.Current || !Sights.Offered(index)) return false;
         Sights.Select(index);
         if (Entity != null) Entity.defaultAimPoint = EyePoint;
         return true;
     }
 
-    /// <summary>A magnified sight's lens shows its view while the gun is aimed (GunScope).</summary>
+    /// <summary>A magnified sight's lens shows its view while the gun is aimed (GunScope), drawn for the field the
+    /// player's view has once fully aimed through it.</summary>
     internal void ShowScope(float aim, Camera view)
     {
         var scope = Sights != null ? Sights.Scope : null;
-        if (scope != null) scope.Show(aim, view);
+        if (scope == null) return;
+        float hip = GameSettings.Current.VerticalFieldOfView;
+        scope.Show(aim, view, AimedFov(hip, Data != null ? Mathf.Min(hip, Data.AdsFov) : hip));
     }
 
     /// <summary>Put away (Weapon.OnUnEquip).</summary>

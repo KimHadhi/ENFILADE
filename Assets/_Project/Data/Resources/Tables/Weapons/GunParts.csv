@@ -1,0 +1,17 @@
+﻿id,slot,kind,name,magnification,view,window,footBack,footFront
+#설명 (id = 부품 프리팹의 이름. own = 총 자체의 조준기. 총마다 어느 부품을 다는지는 GunMounts.csv의 fits),다는 소켓: sight · muzzle · grip · under,종류. 조준기: iron(기계식) reflex(도트) holo(홀로그램) scope(배율 조준경). 그 밖: suppressor(소음기) vertical(수직 손잡이) angled(앵글 손잡이) light(플래시라이트). 능력치 효과(소음·반동·조준 시간)는 이 종류로 정해지고 수치는 Weapons.csv에 있다,메뉴에 보이는 이름의 Texts.csv id. scope는 {0}에 배율이 들어간다,조준했을 때 화면 배율. 1이면 총 자체의 조준 시야(Weapons.csv adsFov) 그대로다. 4면 조준하지 않은 화면의 네 배,조준 화면을 그리는 방식. glass = 유리 너머를 그대로 본다. zoom = 화면 전체가 배율만큼 확대되고 렌즈 안도 같은 배율이라 한 화면으로 보인다. pip = 화면은 그대로 두고 렌즈 안에만 확대한 그림을 따로 그린다(일반 화면과 확대 화면 둘로 보인다),zoom일 때 렌즈 안 그림(원)의 지름이 화면 높이의 몇 배인가. 0.9면 화면 높이의 90%를 채우고 그 밖은 조준경 테두리의 그림자,부품이 레일에 닿는 발이 부품 원점에서 뒤로 뻗은 길이(m). 조준경은 레일 뒤끝에서 이만큼 안쪽까지만 물러난다,앞으로 뻗은 길이(m). 레일 앞끝에서 이만큼 안쪽까지만 나간다
+own,sight,iron,gun.sight.iron,1,glass,,0,0
+A_Holograph,sight,holo,gun.sight.holo,1,glass,,0.0416,0.0237
+A_MicroRedDot_Picatinny,sight,reflex,gun.sight.reddot,1,glass,,0.0228,0.0228
+A_DMCO,sight,scope,gun.sight.scope,4,zoom,0.9,0.0322,0.0523
+A_Phantom_TAC,sight,scope,gun.sight.scope,6,zoom,0.9,0.0547,0.0558
+A_MKR9_IronSights,sight,iron,gun.sight.iron,1,glass,,0.0761,0.1672
+A_MX68_IronSights,sight,iron,gun.sight.iron,1,glass,,0.0938,0.3004
+A_Oryx_SRM-12_IronSights,sight,iron,gun.sight.iron,1,glass,,0.0823,0.4047
+A_TR15_IronSights,sight,iron,gun.sight.iron,1,glass,,0.0683,0.3384
+A_MCS_Suppressor,muzzle,suppressor,gun.part.suppressor,,,,0,0.1482
+Suppressor,muzzle,suppressor,gun.part.suppressor,,,,0,0
+A_AngledForegrip,grip,angled,gun.part.angled_grip,,,,0.0647,0.0632
+A_TR15_Grip,grip,vertical,gun.part.vertical_grip.tr15,,,,0.0196,0.0196
+A_Zetco_MountedGrip,grip,vertical,gun.part.vertical_grip.zetco,,,,0.0175,0.0175
+A_LS3_Flashlight,under,light,gun.part.flashlight,,,,0.01,0.016

@@ -20,6 +20,9 @@ public sealed class PlayerLook : MonoBehaviour
     private PlayerMovement movement;
     private PlayerBody body;
     private CombatHeadMotion headMotion;
+    // The view's own effects: they say how much of the mouse's turn a magnified view takes (LookScale). Looked for once.
+    private PlayerCameraEffects view;
+    private bool viewSought;
     private float yaw;
     private float pitch;
     private readonly RecoilSpring recoil = new RecoilSpring();
@@ -79,7 +82,14 @@ public sealed class PlayerLook : MonoBehaviour
         }
 
         var settings = GameSettings.Current;
-        float scale = sensitivity * settings.mouseSensitivity;
+        // Through a sight that magnifies the whole view the mouse turns it that much less, so a target crosses the screen
+        // as fast as it does unscoped (PlayerCameraEffects.LookScale; 1 whenever no such sight is up).
+        if (!viewSought)
+        {
+            viewSought = true;
+            view = GetComponentInChildren<PlayerCameraEffects>(true);
+        }
+        float scale = sensitivity * settings.mouseSensitivity * (view != null ? view.LookScale : 1f);
         float mouseX = delta.x * scale;
         float mouseY = delta.y * scale * (settings.invertY ? 1f : -1f);
 

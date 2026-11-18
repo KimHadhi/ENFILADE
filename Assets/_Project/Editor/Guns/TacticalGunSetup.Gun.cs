@@ -183,7 +183,10 @@ internal static partial class TacticalGunSetup
         var sights = gun.AddComponent<GunSights>();
         sights.sights = list.ToArray();
         sights.ironSights = irons.ToArray();
-        sights.initial = Mathf.Clamp(initial, 0, list.Count - 1);
+        sights.StartWith(Mathf.Clamp(initial, 0, list.Count - 1));
+        // Seated where the gun's rows have its sockets (KINEMATION's own mount bones, GunMounts), without the cut of its own
+        // iron sights: that is made of the mesh as each gun wakes, and a prefab can't keep it.
+        sights.Seat(false);
         sights.Select(sights.initial);
         return sights.AimPoint;
     }

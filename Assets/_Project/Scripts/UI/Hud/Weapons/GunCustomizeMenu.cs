@@ -221,33 +221,42 @@ public sealed class GunCustomizeMenu : MonoBehaviour
 
     // ---- What each part is called and does ----
 
-    private static string SightName(in GunSights.Sight sight)
+    // A sight's name is its part's row's (GunParts.csv name, a text id; a scope's takes its magnification). A part without
+    // a row (a mod's prefab not yet in the table) is named by what it is.
+    private static string SightName(GunSights sights, int index)
     {
-        if (sight.scope != null) return Texts.Format("gun.sight.scope", sight.scope.magnification.ToString("0.#"));
-        string part = sight.part != null ? sight.part.name : "";
-        if (sight.part == null || sight.ironSight || part.Contains("Iron")) return Texts.Get("gun.sight.iron");
-        if (part.Contains("Holograph")) return Texts.Get("gun.sight.holo");
-        if (part.Contains("RedDot")) return part.Contains("Canted") ? Texts.Get("gun.sight.reddot_canted") : Texts.Get("gun.sight.reddot");
-        return Clean(part);
+        var sight = sights.sights[index];
+        var data = sights.PartOf(index);
+        if (data.Found && !string.IsNullOrEmpty(data.NameId))
+            return Texts.Format(data.NameId, (sight.scope != null ? sight.scope.Magnification : data.Magnification).ToString("0.#"));
+        if (sight.scope != null) return Texts.Format("gun.sight.scope", sight.scope.Magnification.ToString("0.#"));
+        if (sight.part == null || sight.ironSight) return Texts.Get("gun.sight.iron");
+        return Clean(sight.part.name);
     }
 
-    private static string PartName(GunAttachments.Choice choice) => choice.kind switch
+    private static string PartName(GunAttachments.Choice choice)
+    {
+        var data = GunMounts.PartOf(GunAttachments.IdOf(choice));
+        return data.Found && !string.IsNullOrEmpty(data.NameId) ? Texts.Get(data.NameId) : KindName(choice);
+    }
+
+    private static string KindName(GunAttachments.Choice choice) => choice.kind switch
     {
         GunAttachments.Kind.None => Texts.Get("gun.custom.none"),
         GunAttachments.Kind.Suppressor => Texts.Get("gun.part.suppressor"),
         GunAttachments.Kind.Flashlight => Texts.Get("gun.part.flashlight"),
-        // Two vertical grips can be on offer (the TR-15's own and the Zetco), told apart by their maker.
-        GunAttachments.Kind.VerticalGrip => choice.part != null && choice.part.name.Contains("Zetco") ? Texts.Get("gun.part.vertical_grip.zetco")
-            : choice.part != null && choice.part.name.Contains("TR15") ? Texts.Get("gun.part.vertical_grip.tr15") : Texts.Get("gun.part.vertical_grip"),
+        GunAttachments.Kind.VerticalGrip => Texts.Get("gun.part.vertical_grip"),
         GunAttachments.Kind.AngledGrip => Texts.Get("gun.part.angled_grip"),
         _ => choice.part != null ? Clean(choice.part.name) : Texts.Get("gun.part.other"),
     };
 
     // What a part gives (+) and costs (−), as ArcCW lists them.
-    private void Describe(Part part, GunAttachments.Kind kind, GunScope scope)
+    private void Describe(Part part, GunAttachments.Kind kind, GunScope scope, GunMounts.Part sight = default)
     {
         var data = gun.Data;
-        if (scope != null) part.Pros.Add(Texts.Format("gun.pro.scope_zoom", scope.magnification.ToString("0.#")));
+        // A sight that magnifies says how: the whole view (one picture), or the lens alone (the pack's way).
+        if (sight.Zooms) part.Pros.Add(Texts.Format("gun.pro.scope_view", sight.Magnification.ToString("0.#")));
+        else if (scope != null) part.Pros.Add(Texts.Format("gun.pro.scope_zoom", scope.Magnification.ToString("0.#")));
         switch (kind)
         {
             case GunAttachments.Kind.Suppressor:
@@ -374,14 +383,17 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         KitStyle.Label(caption, Texts.Get("gun.custom.caption"), 14f, TextAlignmentOptions.Left, KitStyle.Accent);
 
         // The slots, each with its parts.
+        // Only what the gun's sockets offer (GunMounts.csv fits): a part its prefab carries but its row leaves out stays off
+        // the menu. A part keeps its place in the gun's own list as its index, which saves and friends' PCs go by.
         var sights = gun.Sights;
-        if (sights != null && sights.Count > 1)
+        if (sights != null && sights.OfferedCount > 1)
         {
             var box = new SlotBox { Slot = Slot.Sight, Title = Texts.Get("gun.slot.sight") };
             for (int i = 0; i < sights.sights.Length; i++)
             {
-                var part = new Part { Index = i, Name = SightName(sights.sights[i]) };
-                Describe(part, GunAttachments.Kind.None, sights.sights[i].scope);
+                if (!sights.Offered(i)) continue;
+                var part = new Part { Index = i, Name = SightName(sights, i) };
+                Describe(part, GunAttachments.Kind.None, sights.sights[i].scope, sights.PartOf(i));
                 box.Parts.Add(part);
             }
             slots.Add(box);
@@ -389,9 +401,9 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         var parts = gun.Attachments;
         if (parts != null)
         {
-            AddSlot(Slot.Muzzle, Texts.Get("gun.slot.muzzle"), parts.muzzle);
-            AddSlot(Slot.Grip, Texts.Get("gun.slot.grip"), parts.grips);
-            AddSlot(Slot.Underbarrel, Texts.Get("gun.slot.underbarrel"), parts.underbarrel);
+            AddSlot(Slot.Muzzle, Texts.Get("gun.slot.muzzle"), parts.muzzle, GunMounts.Muzzle);
+            AddSlot(Slot.Grip, Texts.Get("gun.slot.grip"), parts.grips, GunMounts.Grip);
+            AddSlot(Slot.Underbarrel, Texts.Get("gun.slot.underbarrel"), parts.underbarrel, GunMounts.Under);
         }
         for (int i = 0; i < slots.Count; i++) BuildSlot(slots[i], Top + i * (SlotHeight + SlotGap));
 
@@ -425,17 +437,19 @@ public sealed class GunCustomizeMenu : MonoBehaviour
         closeButton.targetGraphic = closeBack;
         closeButton.onClick.AddListener(BeginClose);
 
-        void AddSlot(Slot slot, string title, GunAttachments.Choice[] choices)
+        void AddSlot(Slot slot, string title, GunAttachments.Choice[] choices, string socket)
         {
             if (choices == null || choices.Length <= 1) return;
             var box = new SlotBox { Slot = slot, Title = title };
             for (int i = 0; i < choices.Length; i++)
             {
+                if (!parts.Offered(socket, choices[i])) continue;
                 var part = new Part { Index = i, Name = PartName(choices[i]) };
                 Describe(part, choices[i].kind, null);
                 box.Parts.Add(part);
             }
-            slots.Add(box);
+            // "None" alone is no choice.
+            if (box.Parts.Count > 1) slots.Add(box);
         }
     }
 

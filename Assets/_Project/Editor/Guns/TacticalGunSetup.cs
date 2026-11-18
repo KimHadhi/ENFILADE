@@ -274,42 +274,18 @@ internal static partial class TacticalGunSetup
         return true;
     }
 
+    // The FPS Animation Pack's guns and KINEMATION's CAS prefab of each: the pack's own two, and FPS Animation Ultimate's
+    // others (2026-11-13, user: "KINEMATION에서 무기들 좀 더 임포트하면 안 됨? 다 가져오고 싶은데"), put in FPSBody by
+    // PackGunSetup. Which parts each takes was a list here, a line of switches per gun; it is each gun's own rows now
+    // (Tables/Weapons/GunMounts.csv fits: no suppressor where the gun has its own, no grip where its pump or its own grip
+    // is the hand's, no light where nothing hangs under the barrel), which the customize menu and a mod read too.
     private static readonly PackGun[] PackGuns =
     {
-        // KINEMATION's MX16A4 has its carry handle (with the rear sight) and front sight tower in its body mesh, and its
-        // iron aim point is the eye's place, 21 cm behind the gun's middle. Optics were mounted 3 cm ahead of that, over
-        // the stock behind the carry handle, looking through the rear sight and the front post (user, 2026-11-10:
-        // "조준경을 달아도 가늠쇠가 여전히 있어서 조준경이 뒤에 있는 이상한 상황"). Its receiver top is 3.4 cm under the iron sight
-        // line and the lowest of the carry handle's mounts 3.1 cm, hence 3.25 cm.
-        new PackGun
-        {
-            weapon = "MX16A4", source = CasGuns + "/CAS_FPSPack_MX16A4.prefab",
-            sights = new[] { "A_Holograph", "A_DMCO" }, muzzles = new[] { "A_MCS_Suppressor" },
-            grips = new[] { "A_Zetco_MountedGrip", "A_AngledForegrip" }, underbarrel = new[] { "A_LS3_Flashlight" },
-            ironsBelowSightLine = .0325f, opticsMeetIrons = true,
-        },
-        new PackGun
-        {
-            weapon = "M1911", source = CasGuns + "/CAS_FPSPack_M1911.prefab", pistol = true,
-            sights = new[] { "A_MicroRedDot_Picatinny" }, muzzles = new[] { "A_MCS_Suppressor" },
-            grips = Array.Empty<string>(), underbarrel = new[] { "A_LS3_Flashlight" },
-        },
-        // FPS Animation Ultimate's other guns (2026-11-13, user: "KINEMATION에서 무기들 좀 더 임포트하면 안 됨? 다 가져오고
-        // 싶은데"), put in FPSBody by PackGunSetup. Each starts as KINEMATION made it; what fits it is a choice in the
-        // customize menu. No suppressor where the gun has its own (AS Val, PDW-90) or a muzzle device that would sit under
-        // one, no grip or light where nothing hangs under the barrel.
-        Ultimate("AKX200", "AK"), Ultimate("ASVal", "ASVal", muzzle: false), Ultimate("G3", "G3"),
-        Ultimate("SVD", "SVD", sights: new[] { "A_DMCO" }, grip: false, light: false),
-        Ultimate("MGX5", "MGX5", sights: new[] { "A_Holograph" }, muzzle: false, grip: false, light: false),
-        Ultimate("MPS5", "MPS5"), Ultimate("PDW90", "PDW90", muzzle: false, grip: false, light: false),
-        Ultimate("StrikerV", "Striker-V"), Ultimate("Drake12", "Drake-12", sights: new[] { "A_Holograph" }, muzzle: false, grip: false),
-        Ultimate("X18", "X18", pistol: true), Ultimate("DGL50", "DGL50", pistol: true, muzzle: false),
-        Ultimate("Kolibri", "Kolibri", pistol: true, sights: Array.Empty<string>(), muzzle: false, light: false),
-        Ultimate("Viper357", "Viper-357", pistol: true, sights: Array.Empty<string>(), muzzle: false, light: false),
-        // Worked by hand after every shot (PackGunSetup, FPSGun.Cycle). The bolt rifles may take the DMCO and a suppressor for
-        // the ghost's quiet shot, nothing under the barrel. The KXG12's pump is the support hand's, so nothing hangs under it.
-        Ultimate("Kar98k", "Kar98k", sights: new[] { "A_DMCO" }, grip: false, light: false),
-        Ultimate("L96X", "L96X", sights: new[] { "A_DMCO" }, grip: false, light: false),
-        Ultimate("KXG12", "KXG12", sights: new[] { "A_Holograph" }, muzzle: false, grip: false, light: false),
+        Ultimate("MX16A4", "MX16A4"), Ultimate("M1911", "M1911"),
+        Ultimate("AKX200", "AK"), Ultimate("ASVal", "ASVal"), Ultimate("G3", "G3"), Ultimate("SVD", "SVD"), Ultimate("MGX5", "MGX5"),
+        Ultimate("MPS5", "MPS5"), Ultimate("PDW90", "PDW90"), Ultimate("StrikerV", "Striker-V"), Ultimate("Drake12", "Drake-12"),
+        Ultimate("X18", "X18"), Ultimate("DGL50", "DGL50"), Ultimate("Kolibri", "Kolibri"), Ultimate("Viper357", "Viper-357"),
+        // Worked by hand after every shot (PackGunSetup, FPSGun.Cycle).
+        Ultimate("Kar98k", "Kar98k"), Ultimate("L96X", "L96X"), Ultimate("KXG12", "KXG12"),
     };
 }
