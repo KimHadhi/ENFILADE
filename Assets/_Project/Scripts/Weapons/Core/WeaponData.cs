@@ -32,6 +32,9 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Min(0f)] private float noiseRadius = 40f;
     [Tooltip("With a suppressor on (GunAttachments), the share of Noise Radius a shot is heard at by zombies.")]
     [SerializeField, Range(0f, 1f)] private float suppressedNoise = .3f;
+    [Tooltip("Its suppressor is part of the gun (the AS Val; Weapons.csv builtInSuppressor): every shot of it is a suppressed " +
+        "one, for what zombies hear, its sound, its flame and its light, with nothing put on its muzzle.")]
+    [SerializeField] private bool builtInSuppressor;
     [Tooltip("With a vertical grip on (GunAttachments), the share of the climb each shot keeps (Rainbow Six Siege's vertical grip).")]
     [SerializeField, Range(0f, 1f)] private float gripRecoil = .8f;
     [Tooltip("With an angled grip on, the share of Ads Transition Time the sight takes to come up (Siege's angled grip).")]
@@ -180,8 +183,9 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(0f, 4f)] private float viewPunchFov = .6f;
     [Tooltip("Camera shake added per shot (0..1). Builds up under sustained fire.")]
     [SerializeField, Range(0f, .5f)] private float shakeTrauma = .07f;
-    [Tooltip("The row of Tables/MuzzleFlash its shot's flame reads (rifle, pistol, smg, magnum, lmg, dmr, sniper, shotgun, " +
-        "suppressed for a gun whose suppressor is part of it, none …). Empty: the row its kind stands for (MuzzleFlashLooks).")]
+    [Tooltip("The row of Tables/MuzzleFlash its shot's flame reads with nothing on its muzzle (rifle, pistol, smg, magnum, lmg, " +
+        "dmr, sniper, shotgun, none …). Empty: the row its kind stands for (MuzzleFlashLooks). Suppressed, built in or put on, " +
+        "it reads the row that one points at.")]
     [SerializeField] private string flash = "";
     // No longer read: a shot's flame is a row of Tables/MuzzleFlash (MuzzleFlashLooks), not a number of each gun's own.
     // The field stays only because the gun assets and DesperadoSetup still write it; it goes when that line does.
@@ -213,6 +217,39 @@ public sealed class WeaponData : ScriptableObject
     public float Range => Mathf.Max(0.1f, range);
     public float NoiseRadius => Mathf.Max(0f, noiseRadius);
     public float SuppressedNoise => Mathf.Clamp01(suppressedNoise);
+    /// <summary>Its suppressor is part of the gun: there is no shot of it without one (the user, 2026-11-18: "ASVal이
+    /// 소음기가 기본인 총이라면 조용한 게 맞습니다").</summary>
+    public bool BuiltInSuppressor => builtInSuppressor;
+
+    /// <summary>
+    /// This gun's shot is a suppressed one: its suppressor is part of it, or one is on its muzzle. The one rule everything
+    /// that asks "is this shot suppressed" goes by (WeaponController.Suppressed for the gun in hand, the customize menu
+    /// for a part being weighed): what zombies hear, the shot's sound, its flame and its light all follow it. Until
+    /// 2026-11-18 only the part on the muzzle was asked, so a gun built with its suppressor was quiet in nothing but the
+    /// flame row its table cell named.
+    /// </summary>
+    public bool SuppressedWith(bool muzzleSuppressor) => builtInSuppressor || muzzleSuppressor;
+
+    /// <summary>How far zombies hear its shot (m): suppressed (SuppressedWith), its Suppressed Noise share of Noise Radius.</summary>
+    public float NoiseWith(bool muzzleSuppressor) => NoiseRadius * (SuppressedWith(muzzleSuppressor) ? SuppressedNoise : 1f);
+
+    /// <summary>A gun with no suppressed clips of its own plays its open shot this loud and this high under a suppressor.</summary>
+    public const float MuffledShotVolume = .4f, MuffledShotPitch = 1.15f;
+
+    /// <summary>
+    /// The clips of its shot, and how loud and how high they play against the shot as recorded. Open: its Fire Sounds as
+    /// they are. With a suppressor put on: its Suppressed Fire Sounds, or with none of those its Fire Sounds quieter and
+    /// higher. A gun whose suppressor is part of it has only the one shot: its Fire Sounds are that suppressed shot (the
+    /// AS Val's own recordings), played as they are; clips for "a suppressor put on" are never its shot.
+    /// </summary>
+    public AudioClip[] ShotSounds(bool muzzleSuppressor, out float volume, out float pitch)
+    {
+        volume = pitch = 1f;
+        if (builtInSuppressor || !muzzleSuppressor) return fireSounds;
+        if (suppressedFireSounds != null && suppressedFireSounds.Length > 0) return suppressedFireSounds;
+        volume = MuffledShotVolume; pitch = MuffledShotPitch;
+        return fireSounds;
+    }
     public float GripRecoil => Mathf.Clamp01(gripRecoil);
     /// <summary>For the customize menu's stats: how far each shot climbs (degrees), before its random share.</summary>
     public float RecoilVertical => recoilVertical > 0f ? recoilVertical : recoilPerShot.x;

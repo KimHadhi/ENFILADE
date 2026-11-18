@@ -96,10 +96,12 @@ public sealed partial class WeaponController
     }
 
     /// <summary>
-    /// The held gun wears a suppressor: its shot is heard by zombies at the gun's Suppressed Noise share, sounds quieter and
-    /// throws no flash or light (WeaponFeedback, MuzzleFlash, MuzzleLight).
+    /// The held gun's shot is a suppressed one: its suppressor is part of the gun or one is on its muzzle
+    /// (WeaponData.SuppressedWith, the one rule). Its shot is heard by zombies at the gun's Suppressed Noise share, sounds
+    /// quieter and throws only a dim puff and no light: everything that asks reads this (ShotNoise, WeaponFeedback,
+    /// MuzzleFlash, MuzzleLight, PackShots), on every PC, since the fact is the gun's own.
     /// </summary>
-    public bool Suppressed => presentation is FPSBody body && body.HeldSuppressed;
+    public bool Suppressed => weaponData != null && weaponData.SuppressedWith(presentation is FPSBody body && body.HeldSuppressed);
 
     /// <summary>The held gun's muzzle and underbarrel parts (-1 for no choice) and its flashlight, for friends' PCs.</summary>
     public int MuzzleIndex => presentation is FPSBody body && EquippedData != null ? body.MuzzleOf(EquippedData) : -1;

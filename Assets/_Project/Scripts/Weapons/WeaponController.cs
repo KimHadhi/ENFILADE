@@ -167,8 +167,8 @@ public sealed partial class WeaponController : MonoBehaviour
     public float AdsTime => (weaponData == null ? .16f
         : weaponData.AdsTransitionTime * (Grip == GunAttachments.Kind.AngledGrip ? weaponData.GripAimTime : 1f)) / GhostCards.AimSpeed(movement);
 
-    // How far zombies hear this gun's shot: a suppressor cuts it to the gun's share.
-    private float ShotNoise => weaponData.NoiseRadius * (Suppressed ? weaponData.SuppressedNoise : 1f);
+    // How far zombies hear this gun's shot: a suppressor, part of the gun or on its muzzle, cuts it to the gun's share.
+    private float ShotNoise => weaponData.NoiseWith(Suppressed);
     public Transform MuzzlePoint => muzzlePoint;
     public Transform AimOrigin => aimOrigin;
     /// <summary>The posed gun model root; the body's hands hold it at the weapon's grip points.</summary>

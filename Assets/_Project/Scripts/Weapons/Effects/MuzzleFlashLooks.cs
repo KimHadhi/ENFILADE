@@ -128,7 +128,10 @@ public static class MuzzleFlashLooks
 /// The editor's list of the flame every gun's shot throws, without playing: Logs/muzzle-flash.txt has a line per gun
 /// with its Weapons.csv `flash` cell, the row it reads open and suppressed with that row's numbers, and whether its shots
 /// still wear a bought pack's look (PackShots: only a skill's gun should). A cell or a `suppressedAs` that names no row
-/// is a FAIL line. So "which flame does this gun get" is read, not played for, a mod's gun too. Runs after every script
+/// is a FAIL line. Below them, every gun's suppressed shot as the one rule gives it (WeaponData.SuppressedWith): how far
+/// zombies hear it open and suppressed and what the suppressed shot plays, with a FAIL line for a gun built with its
+/// suppressor that is not suppressed in all of it. So "which flame does this gun get" and "is this gun quiet" are read,
+/// not played for, a mod's gun too. Runs after every script
 /// reload and a play, from ENFILADE → 총 → 총구 화염 점검, and when Temp/enfilade-muzzleflash.request is made.
 /// </summary>
 [UnityEditor.InitializeOnLoad]
@@ -143,6 +146,7 @@ internal static class MuzzleFlashCheck
     private static void Run()
     {
         var text = new System.Text.StringBuilder();
+        var quietly = new System.Text.StringBuilder();
         int failed = 0;
         var assets = FPSBodyAssets.Instance;
         var used = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
@@ -178,8 +182,14 @@ internal static class MuzzleFlashCheck
                     if (pack != null) packed.Add(gun.name);
                     text.AppendLine($"{gun.name,-16} {(string.IsNullOrEmpty(cell) ? "(by its kind)" : cell),-16} {Numbers(MuzzleFlashLooks.Read(open))} | "
                         + $"{Numbers(MuzzleFlashLooks.Read(quiet))} | "
-                        + (pack == null ? "none" : "PackFx row " + pack + (PackShots.OwnFlame(gun) ? ", own flame too" : ", in place of its flame")));
+                        + (pack == null ? "none" : "PackFx row " + pack + (PackShots.OwnFlame(gun) ? ", own flame too" : ", in place of its flame"))
+                        + (gun.BuiltInSuppressor ? " | suppressor built in: its every shot reads the suppressed row" : ""));
+                    failed += Quiet(gun, quietly);
                 }
+            text.AppendLine();
+            text.AppendLine("== suppressed shots (WeaponData.SuppressedWith: a suppressor on the muzzle, or part of the gun = Weapons.csv builtInSuppressor): "
+                + "how far zombies hear the shot, and what the suppressed shot sounds like (heard 25 m off instead of 60, with little of the room's ring)");
+            text.Append(quietly);
             text.AppendLine();
             text.AppendLine("Guns whose shots wear the bought pack's look (it is for skills: a class's own gun): " + (packed.Count == 0 ? "none" : string.Join(", ", packed)));
             var idle = new List<string>();
@@ -211,5 +221,49 @@ internal static class MuzzleFlashCheck
         => $"{look.Row,-15} size {look.Size:0.##} {look.Length:0.##}x{look.Width:0.##} puffs {look.FewestPuffs}-{look.MostPuffs} bright {look.Bright:0.##} "
             + $"glow {look.Afterglow:0.##} sparks {look.Sparks:0.##} heat {look.Heat:0.##} alpha {look.Alpha:0.##} light {look.Light:0.##} "
             + $"smoke {look.Smoke:0.##}{(look.NearSmoke ? "+near" : "")}";
+
+    // A gun's suppressed shot as the one rule gives it (WeaponData.SuppressedWith, NoiseWith, ShotSounds): how far zombies
+    // hear it open and suppressed, and what the suppressed shot sounds like. A gun built with its suppressor must be
+    // suppressed with nothing on its muzzle, in all of it. Returns how many of those rules the gun breaks, each a FAIL line.
+    private static int Quiet(WeaponData gun, System.Text.StringBuilder text)
+    {
+        int failed = 0;
+        bool built = gun.BuiltInSuppressor;
+        float open = gun.NoiseRadius, quiet = gun.NoiseRadius * gun.SuppressedNoise;
+        var plainClips = gun.ShotSounds(false, out float plainLoud, out float plainHigh);
+        var quietClips = gun.ShotSounds(true, out float quietLoud, out float quietHigh);
+        if (!gun.SuppressedWith(true) || gun.SuppressedWith(false) != built
+            || !Mathf.Approximately(gun.NoiseWith(true), quiet) || !Mathf.Approximately(gun.NoiseWith(false), built ? quiet : open))
+        {
+            failed++;
+            text.AppendLine($"FAIL {gun.name}: heard at {gun.NoiseWith(false):0.#} m with nothing on its muzzle and {gun.NoiseWith(true):0.#} m with a suppressor on; "
+                + $"should be {(built ? quiet : open):0.#} and {quiet:0.#} (noise radius {open:0.#}, suppressed share {gun.SuppressedNoise:0.##}, built in {built}).");
+        }
+        if (built)
+        {
+            bool ownShot = plainClips == gun.FireSounds && quietClips == gun.FireSounds && plainLoud == 1f && plainHigh == 1f && quietLoud == 1f && quietHigh == 1f;
+            if (!ownShot || gun.FireSounds == null || gun.FireSounds.Length == 0)
+            {
+                failed++;
+                text.AppendLine($"FAIL {gun.name}: built with its suppressor, its every shot must be its own Fire Sounds as they are, and it has "
+                    + (gun.FireSounds == null || gun.FireSounds.Length == 0 ? "none (the shared open shot would play)." : "another sound for one of them."));
+            }
+            if (gun.SuppressedNoise >= 1f)
+            {
+                failed++;
+                text.AppendLine($"FAIL {gun.name}: built with its suppressor, but its suppressedNoise is 1: zombies hear it as far as an open gun.");
+            }
+        }
+        text.AppendLine($"{gun.name,-16} {(built ? gun.NoiseWith(false) : open),5:0.#} m {(built ? "(built in: its every shot)" : "open"),-26} {quiet,5:0.#} m suppressed | "
+            + "suppressed shot: " + Sounds(gun, quietClips, quietLoud, quietHigh));
+        return failed;
+    }
+
+    private static string Sounds(WeaponData gun, AudioClip[] clips, float loud, float high)
+    {
+        string first = clips != null && clips.Length > 0 && clips[0] != null ? clips[0].name : null;
+        string which = first == null ? "the shared shot of its kind" : (clips == gun.FireSounds ? "its Fire Sounds" : "its Suppressed Fire Sounds") + $" ({clips.Length}: {first} …)";
+        return which + (loud != 1f || high != 1f ? $", x{loud:0.##} loud x{high:0.##} high" : ", as they are");
+    }
 }
 #endif

@@ -12,9 +12,8 @@ public sealed class WeaponFeedback : MonoBehaviour
     private const int CasingCount = 24;
     // How far someone else's gun carries (m); its mechanical sounds carry FeelAudio's usual distance.
     private const float ShotReach = 60f, MechanicalReach = 14f;
-    // A suppressed shot is heard this far (m), and without suppressed clips of its own the gun's shot plays this loud and
-    // this high.
-    private const float SuppressedReach = 25f, SuppressedVolume = .4f, SuppressedPitch = 1.15f;
+    // A suppressed shot is heard this far (m).
+    private const float SuppressedReach = 25f;
     private static readonly Color Brass = new Color(.86f, .64f, .27f);
 
     private struct Casing
@@ -150,16 +149,13 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (settings.gunSounds)
         {
             float pitch = 1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter;
-            // A suppressor: the pack's suppressed shot, or the gun's own shot quieter and higher without one, heard nearer.
-            bool own = weapon.Suppressed && data.SuppressedFireSounds != null && data.SuppressedFireSounds.Length > 0;
-            if (!weapon.Suppressed)
-                Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume, pitch, ShotReach);
-            else if (own)
-                Sound(FeelAudio.ShotFor(data.SoundProfile), data.SuppressedFireSounds, settings.gunshotVolume * data.FireVolume, pitch,
-                    SuppressedReach, suppressed: true);
-            else
-                Sound(FeelAudio.ShotFor(data.SoundProfile), data.FireSounds, settings.gunshotVolume * data.FireVolume * SuppressedVolume,
-                    pitch * SuppressedPitch, SuppressedReach, suppressed: true);
+            // Which clips, how loud and how high is the gun's (WeaponData.ShotSounds): its open shot, the suppressed one of
+            // a suppressor put on, or the only shot of a gun built with its suppressor. A suppressed shot is heard nearer
+            // and rings the room far less (GunReverb), whichever of them it is.
+            bool suppressed = weapon.Suppressed;
+            var clips = data.ShotSounds(suppressed, out float loud, out float high);
+            Sound(FeelAudio.ShotFor(data.SoundProfile), clips, settings.gunshotVolume * data.FireVolume * loud, pitch * high,
+                suppressed ? SuppressedReach : ShotReach, suppressed: suppressed);
         }
         if (IsMine) AmmoCue(shot.AmmoAfterShot, data, settings);
         if (settings.shellCasings && data.EjectShells) Eject();

@@ -215,7 +215,7 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             Rpm = 60f / Mathf.Max(.001f, WeaponCycle.IntervalOf(data)),
             Recoil = data.RecoilVertical * (gripKind == GunAttachments.Kind.VerticalGrip ? data.GripRecoil : 1f),
             AimTime = data.AdsTransitionTime * (gripKind == GunAttachments.Kind.AngledGrip ? data.GripAimTime : 1f),
-            Noise = data.NoiseRadius * (muzzleKind == GunAttachments.Kind.Suppressor ? data.SuppressedNoise : 1f),
+            Noise = data.NoiseWith(muzzleKind == GunAttachments.Kind.Suppressor),
             Magazine = data.MagazineSize
         };
     }
