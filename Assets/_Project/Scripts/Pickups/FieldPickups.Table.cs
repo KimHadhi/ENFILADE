@@ -20,13 +20,28 @@ public sealed partial class FieldPickups
             // A Texts row the cell names (pickup.<id>.name), or plain words; empty takes the gun's name.
             string name = Texts.Cell(row.Text("name"));
             if (string.IsNullOrEmpty(name)) name = weapon != null ? weapon.DisplayName : id;
-            rows.Add(new Row
+            var made = new Row
             {
                 Name = name, Kind = kind, Weapon = weapon, Amount = row.Number("amount", 0f),
-                SpotWeight = Mathf.Max(0f, row.Number("spot", 0f)), DropWeight = Mathf.Max(0f, row.Number("drop", 0f))
-            });
-            if (rows.Count >= 255) break;
+                SpotWeight = Mathf.Max(0f, row.Number("spot", 0f)), DropWeight = Mathf.Max(0f, row.Number("drop", 0f)),
+                // What a gun the map lays out holds; an empty cell is a full magazine and the gun's own starting reserve.
+                Rounds = row.Whole("rounds", -1), Spare = row.Whole("reserve", -1)
+            };
+            rows.Add(made);
+            if (weapon != null && !gunRows.ContainsKey(weapon)) gunRows[weapon] = made;
+            // 255 is the row of a gun, which has none of its own (NoRow).
+            if (rows.Count >= NoRow) break;
         }
+    }
+
+    // What is shown and said of a gun on the ground: its row of the table, or for a gun the table doesn't lay out (one a
+    // player bought and put down) a row made of the gun itself. So any gun of the game's list can lie there: before, a
+    // gun with no row vanished when it was swapped for another.
+    private Row GunRow(WeaponData weapon)
+    {
+        if (weapon == null) return null;
+        if (!gunRows.TryGetValue(weapon, out var row)) gunRows[weapon] = row = new Row { Name = weapon.DisplayName, Kind = Kind.Gun, Weapon = weapon };
+        return row;
     }
 
     private int Pick(Func<Row, bool> allowed, Func<Row, float> weight)
@@ -41,12 +56,6 @@ public sealed partial class FieldPickups
             pick -= weight(rows[i]);
             if (pick <= 0f) return i;
         }
-        return -1;
-    }
-
-    private int RowOf(WeaponData weapon)
-    {
-        for (int i = 0; i < rows.Count; i++) if (rows[i].Kind == Kind.Gun && rows[i].Weapon == weapon) return i;
         return -1;
     }
 }

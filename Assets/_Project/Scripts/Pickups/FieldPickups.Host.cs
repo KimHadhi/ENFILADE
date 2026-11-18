@@ -16,9 +16,28 @@ public sealed partial class FieldPickups
         }
     }
 
+    // A thing of this row of the table comes to lie there: a supply, or a gun as the map lays one out or a zombie drops
+    // one: a new gun with its magazine full and its starting reserve lying with it for whoever takes it first, unless
+    // the row says otherwise (the user, 2026-11-18: "길가에 배치된 총기에는 초기 탄약이 들어 있어야 함(탄약 소진 시 필드
+    // 무기를 주워 쓸 수 있도록)").
     private void Add(int row, Vector3 at, float life)
     {
-        var item = new Item { Id = nextId++, Row = (byte)row, Position = at };
+        var made = rows[row];
+        if (made.Kind != Kind.Gun)
+        {
+            Add(new Item { Row = (byte)row, Position = at }, life);
+            return;
+        }
+        var gun = GunState.New(made.Weapon);
+        int rounds = made.Rounds >= 0 ? Mathf.Min(made.Rounds, made.Weapon.MagazineSize) : gun.Rounds;
+        int spare = made.Spare >= 0 ? made.Spare : made.Weapon.InitialReserveAmmo;
+        Add(ItemOf(gun.Holding(rounds, spare), at), life);
+    }
+
+    // The item lies there from now, under an id of its own.
+    private void Add(Item item, float life)
+    {
+        item.Id = nextId++;
         if (nextId == 0) nextId = 1;
         items.Add(item);
         if (life > 0f) expiry[item.Id] = dropClock + life;
@@ -50,7 +69,8 @@ public sealed partial class FieldPickups
 
     /// <summary>
     /// On the host: <paramref name="who"/> (client <paramref name="client"/>) takes item <paramref name="id"/> if it is
-    /// still there and they are near it. First come, first served.
+    /// still there and they are near it. First come, first served. The taker's PC is handed the item as it lay (a gun
+    /// with what is in it) and does the rest: its own player's guns and rounds are its own to count.
     /// </summary>
     private bool Take(ushort id, ulong client, PlayerMovement who)
     {
@@ -62,8 +82,8 @@ public sealed partial class FieldPickups
         items.RemoveAt(index);
         expiry.Remove(id);
         changed = true;
-        if (client == Mine) Give(item.Row);
-        else SendGive(client, item.Row);
+        if (client == Mine) Give(item);
+        else SendGive(client, item);
         return true;
     }
 
@@ -85,18 +105,22 @@ public sealed partial class FieldPickups
         Take(id, sender, PlayerRoster.ById(sender));
     }
 
+    // A guest's player put a gun down (swapped out, or stripped of what its reserve had room for): it lies there as their
+    // PC says it is. The host only lays it, it judges nothing of it.
     private void ReceiveLeave(ulong sender, FastBufferReader reader)
     {
-        reader.ReadValueSafe(out byte row);
-        reader.ReadValueSafe(out Vector3 at);
-        if (row < rows.Count) Add(row, Ground(at), 0f);
+        reader.ReadValueSafe(out Item item);
+        if (GunList.Of(item.Gun) == null) return;
+        item.Row = NoRow;
+        item.Position = Ground(item.Position);
+        Add(item, 0f);
     }
 
-    private void SendGive(ulong client, byte row)
+    private void SendGive(ulong client, Item item)
     {
         if (network.CustomMessagingManager == null) return;
-        using var writer = new FastBufferWriter(sizeof(byte), Allocator.Temp);
-        writer.WriteValueSafe(row);
+        using var writer = new FastBufferWriter(FastBufferWriter.GetWriteSize<Item>(), Allocator.Temp);
+        writer.WriteValueSafe(item);
         network.CustomMessagingManager.SendNamedMessage(GiveMessage, client, writer);
     }
 }

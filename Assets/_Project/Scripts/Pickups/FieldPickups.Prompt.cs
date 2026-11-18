@@ -12,14 +12,15 @@ public sealed partial class FieldPickups
         Build();
         if (promptRoot.gameObject.activeSelf != shown) promptRoot.gameObject.SetActive(shown);
         if (!shown) return;
-        var row = rows[items[targeted].Row];
+        var item = items[targeted];
+        var row = RowOf(item);
         var tint = ColorOf(row.Kind);
         bool flash = Time.unscaledTime - pressedAt < KeyFlash;
         keyBox.color = refusal != null ? KitStyle.With(KitStyle.Ice, .45f) : flash ? KitStyle.Accent : KitStyle.Ice;
         // The interact key as the player set it in the key window (F by default).
         SetText(keyLabel, KeyBindings.Name("Player/Interact"));
         SetText(nameLabel, row.Name);
-        SetText(amountLabel, refusal ?? AmountOf(row));
+        SetText(amountLabel, refusal ?? AmountOf(item, row));
         // A gun shows its own picture beside the plate (WeaponIcons), so the one under the crosshair reads at a glance.
         var picture = row.Kind == Kind.Gun ? WeaponIcons.For(row.Weapon) : null;
         if (gunPicture.sprite != picture) gunPicture.sprite = picture;
@@ -33,14 +34,31 @@ public sealed partial class FieldPickups
         if (label.text != text) label.text = text;
     }
 
-    private static string AmountOf(Row row) => row.Kind switch
+    // What taking it would give. A gun says what is in it, so one worth taking when out of ammo is told from an empty
+    // one at a look; a gun of a kind already held says how many of its rounds the reserve would take.
+    private static string AmountOf(in Item item, Row row)
     {
-        Kind.Gun => Texts.Get("pickup.gives.gun"),
-        Kind.Ammo => Texts.Format("pickup.gives.ammo", Mathf.RoundToInt(row.Amount)),
-        Kind.Heal => Texts.Format("pickup.gives.heal", Mathf.RoundToInt(row.Amount)),
-        Kind.Shield => Texts.Format("pickup.gives.shield", Mathf.RoundToInt(row.Amount)),
-        _ => "+" + Wallet.Format((long)row.Amount),
-    };
+        switch (row.Kind)
+        {
+            case Kind.Gun:
+                var gun = StateOf(item);
+                var mine = PlayerRoster.Local;
+                PlayerWeaponSlots slots = null;
+                int held = mine != null && mine.TryGetComponent(out slots) ? slots.SlotOf(gun.Weapon) : -1;
+                return held >= 0 ? Texts.Format("pickup.gives.rounds", slots.RoomFor(held, gun)) : Holds(gun);
+            case Kind.Ammo: return Texts.Format("pickup.gives.ammo", Mathf.RoundToInt(row.Amount));
+            case Kind.Heal: return Texts.Format("pickup.gives.heal", Mathf.RoundToInt(row.Amount));
+            case Kind.Shield: return Texts.Format("pickup.gives.shield", Mathf.RoundToInt(row.Amount));
+            default: return "+" + Wallet.Format((long)row.Amount);
+        }
+    }
+
+    // A gun's rounds as words: what is in it, and what lies with it for its first taker.
+    private static string Holds(in GunState gun)
+    {
+        int rounds = gun.MagazineOut ? 0 : gun.Rounds;
+        return gun.Spare > 0 ? Texts.Format("pickup.gives.gunspare", rounds, gun.Spare) : Texts.Format("pickup.gives.gunrounds", rounds);
+    }
 
     // What was taken, on the taker's own PC (the user's pick of the pickup drafts, 2026-11-10, draft C, after "줍는 소리,
     // 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족"): a row in the list at the bottom of the screen, its kind's own

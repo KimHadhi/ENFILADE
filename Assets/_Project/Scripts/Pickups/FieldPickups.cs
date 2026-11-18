@@ -57,14 +57,27 @@ public sealed partial class FieldPickups : MonoBehaviour
         public Kind Kind;
         public WeaponData Weapon;
         public float Amount, SpotWeight, DropWeight;
+        // A gun the map lays out or a zombie drops: the rounds in it and the rounds lying with it (below 0: a full
+        // magazine, the gun's own starting reserve).
+        public int Rounds = -1, Spare = -1;
     }
 
+    // What lies somewhere. A supply is a row of Tables/Pickups. A gun is a particular gun (GunState): which one (its
+    // number in the game's gun list, so any gun can lie there, with or without a row), the rounds in it, the rounds
+    // lying with it that are nobody's yet, and how a cut-short reload left it. Before, a gun on the ground was only its
+    // row, so what was in it was lost when it was put down and made anew, full, when it was taken up.
     private struct Item : INetworkSerializeByMemcpy
     {
         public ushort Id;
         public byte Row;
         public Vector3 Position;
+        public ushort Gun, Rounds, Spare;
+        public byte Flags;
     }
+
+    // Item.Row of a gun: it is told by Item.Gun. Item.Flags of a gun: its magazine is out, its bolt is still to work,
+    // and the reload that left it so was one from empty.
+    private const byte NoRow = 255, MagazineOutFlag = 1, ChamberDueFlag = 2, ResumeEmptyFlag = 4;
 
     private static FieldPickups instance;
 
@@ -72,6 +85,8 @@ public sealed partial class FieldPickups : MonoBehaviour
     public static bool Targeting => instance != null && instance.targeted >= 0;
 
     private readonly List<Row> rows = new List<Row>();
+    // What is shown and said of each kind of gun: its row of the table when it has one, else one made of the gun itself.
+    private readonly Dictionary<WeaponData, Row> gunRows = new Dictionary<WeaponData, Row>();
     private readonly List<Item> items = new List<Item>();
     private readonly Dictionary<ushort, float> expiry = new Dictionary<ushort, float>();
     // The host's clock the drops run out by (Expire): it stands still through a campaign assault.
@@ -180,6 +195,39 @@ public sealed partial class FieldPickups : MonoBehaviour
     {
         for (int i = 0; i < items.Count; i++) if (items[i].Id == id) return i;
         return -1;
+    }
+
+    // What an item is: a gun's own row (GunRow), a supply's row of the table; null for one this PC can't make sense of
+    // (a gun its list doesn't have, a row its table doesn't have).
+    private Row RowOf(in Item item)
+    {
+        if (item.Gun != 0) return GunRow(GunList.Of(item.Gun));
+        return item.Row < rows.Count ? rows[item.Row] : null;
+    }
+
+    // The gun an item is, as it lies there.
+    private static GunState StateOf(in Item item) => new GunState(GunList.Of(item.Gun), item.Rounds, item.Spare,
+        (item.Flags & MagazineOutFlag) != 0, (item.Flags & ChamberDueFlag) != 0, (item.Flags & ResumeEmptyFlag) != 0);
+
+    // A gun as an item to lie at a place (its id is the host's to give).
+    private static Item ItemOf(in GunState gun, Vector3 at) => new Item
+    {
+        Row = NoRow, Position = at, Gun = GunList.IdOf(gun.Weapon),
+        Rounds = (ushort)Mathf.Clamp(gun.Rounds, 0, ushort.MaxValue), Spare = (ushort)Mathf.Clamp(gun.Spare, 0, ushort.MaxValue),
+        Flags = (byte)((gun.MagazineOut ? MagazineOutFlag : 0) | (gun.ChamberDue ? ChamberDueFlag : 0) | (gun.ResumeEmpty ? ResumeEmptyFlag : 0)),
+    };
+
+    /// <summary>
+    /// This PC's own player puts the gun in that slot down where they stand, as it is: the rounds in it go with it, the
+    /// reserve stays theirs (PlayerWeaponSlots.Drop), and it lies there for anyone. The one call a drop is, for the Tab
+    /// menu's drop to come (the user, 2026-11-18: "추후 Tab 메뉴에서 주무기/보조무기 드랍(Drop) 기능을 추가할 예정");
+    /// the console's /drop uses it now. False when there is no such gun to put down, or no map to put it in.
+    /// </summary>
+    public static bool Drop(PlayerMovement player, int slot)
+    {
+        if (instance == null || player == null || !player.TryGetComponent(out PlayerWeaponSlots slots) || !slots.Drop(slot, out GunState gun)) return false;
+        instance.Leave(gun, player.transform.position + player.transform.forward * LeaveAhead);
+        return true;
     }
 
     // Down onto whatever is under it, players (layer 31) and enemies aside.

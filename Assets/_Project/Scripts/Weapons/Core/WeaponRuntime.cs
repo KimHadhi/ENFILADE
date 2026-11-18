@@ -1,7 +1,11 @@
 using System;
 using UnityEngine;
 
-/// <summary>Per-instance magazine and timers. No input devices, physics, coroutines or animation events.</summary>
+/// <summary>
+/// One gun in a holder's hands or slot: what is in it, its timers and the rules of firing and reloading it. No input
+/// devices, physics, coroutines or animation events. What is in the gun is the gun's own and goes with it when it is put
+/// down (State, GunState); the reserve it reloads from is its holder's (AmmoReserve) and stays with them.
+/// </summary>
 public sealed class WeaponRuntime
 {
     /// <summary>
@@ -13,7 +17,9 @@ public sealed class WeaponRuntime
     public const int MaxShotsPerUpdate = 4;
     public WeaponData Data { get; }
     public int Ammo { get; private set; }
-    public int ReserveAmmo { get; private set; }
+    /// <summary>The rounds its holder carries for this kind of gun outside it: the holder's, not the gun's (AmmoReserve).</summary>
+    public int ReserveAmmo { get => reserve.Rounds; private set => reserve.Rounds = Mathf.Max(0, value); }
+    private readonly AmmoReserve reserve;
     public bool IsEmptyReload { get; private set; }
     /// <summary>How long the reload takes; for a shell reload, how long its current step takes.</summary>
     public float ReloadDuration { get; private set; }
@@ -56,8 +62,7 @@ public sealed class WeaponRuntime
     private Stage stage;
     /// <summary>The gun is at the hip (WeaponController sets it each frame): a revolver in Fanning fans.</summary>
     internal bool FanFromHip { get; set; }
-    // Where the next reload goes on from (a share of its clip) and which clip that is (empty or tactical).
-    private float resumeShare;
+    // Which clip the reload that goes on from a cut-short one plays (from empty or not): the one that was cut.
     private bool resumeEmpty;
     // The reload under way is someone else's, shown on their copy: their PC counts their rounds and keeps their steps.
     private bool shownReload;
@@ -75,14 +80,40 @@ public sealed class WeaponRuntime
 
     private void Tell(string what, int ammoBefore, int reserveBefore) => Told?.Invoke(this, what, ammoBefore, reserveBefore);
 
+    /// <summary>A gun by itself, with a reserve of its own (a controller with no slots, a check): full unless told.</summary>
     public WeaponRuntime(WeaponData data, int? ammunition = null, int? reserve = null)
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
         data.BindTable();
         Data = data; Ammo = Mathf.Clamp(ammunition ?? data.MagazineSize, 0, data.MagazineSize);
-        ReserveAmmo = Mathf.Max(0, reserve ?? data.InitialReserveAmmo);
+        this.reserve = new AmmoReserve { Rounds = Mathf.Max(0, reserve ?? data.InitialReserveAmmo) };
         FireMode = data.FireMode;
     }
+
+    /// <summary>
+    /// This gun in a holder's slot: what is in it is as the gun was (its rounds, a magazine a cut-short reload left
+    /// out), and it reloads from <paramref name="reserve"/>, its holder's rounds for this kind of gun
+    /// (PlayerWeaponSlots.ReserveOf). Rounds lying with the gun (GunState.Spare) are not taken here: whoever puts it in
+    /// the slot hands them to the holder.
+    /// </summary>
+    public WeaponRuntime(in GunState gun, AmmoReserve reserve)
+    {
+        if (gun.Weapon == null) throw new ArgumentNullException(nameof(gun));
+        gun.Weapon.BindTable();
+        Data = gun.Weapon;
+        this.reserve = reserve ?? new AmmoReserve();
+        MagazineOut = gun.MagazineOut;
+        ChamberDue = gun.ChamberDue && !gun.MagazineOut;
+        resumeEmpty = gun.ResumeEmpty;
+        Ammo = MagazineOut ? 0 : Mathf.Clamp(gun.Rounds, 0, Data.MagazineSize);
+        FireMode = Data.FireMode;
+    }
+
+    /// <summary>
+    /// The gun as a thing to put down, as it is now: its rounds stay in it, and so does a magazine a cut-short reload
+    /// left out. Nothing of the reserve: that is its holder's. Whoever puts it down cuts a reload under way first.
+    /// </summary>
+    public GunState State => new GunState(Data, Ammo, 0, MagazineOut, ChamberDue, resumeEmpty);
 
     /// <summary>B: the gun's next fire mode. False when it has only one.</summary>
     public bool CycleFireMode()
@@ -133,7 +164,10 @@ public sealed class WeaponRuntime
             stopAfterShell = shownReload = false;
             // What the cut-short one did is done: its magazine is out already, or its new one already in.
             stage = !resuming ? Stage.Begun : MagazineOut ? Stage.MagazineOut : Stage.MagazineIn;
-            ReloadStartShare = resuming ? Mathf.Clamp01(resumeShare) : 0f;
+            // From where it got to, which what the gun is like says by itself: with its magazine out, the new one is taken
+            // from the pouch; with the new one in, the bolt is worked. (A gun taken from the ground like that goes on the same.)
+            var steps = ReloadSteps.Of(Data, IsEmptyReload);
+            ReloadStartShare = !resuming ? 0f : MagazineOut ? steps.Pouch : steps.MagIn;
             ReloadRemaining = ReloadDuration * (1f - ReloadStartShare); burstRemaining = 0;
             cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false; return 0;
         }
@@ -232,7 +266,6 @@ public sealed class WeaponRuntime
         {
             // The bolt worked (with a round still chambered, the seating was all there was): nothing is left to go on with.
             ChamberDue = false;
-            resumeShare = 0f;
             stage = Stage.Loaded;
             if (steps.Loaded > steps.MagIn) Tell("reload: bolt worked", Ammo, ReserveAmmo);
         }
@@ -249,10 +282,9 @@ public sealed class WeaponRuntime
     /// </summary>
     private void CutShort()
     {
-        var steps = ReloadSteps.Of(Data, IsEmptyReload);
         if (stage == Stage.Loaded) Loads++;
-        else if (stage == Stage.MagazineIn) Remember(steps.MagIn);
-        else if (stage == Stage.MagazineOut) Remember(steps.Pouch);
+        // The next reload plays the same clip on from the step the gun is left at (MagazineOut or ChamberDue say which).
+        else if (stage != Stage.Begun) resumeEmpty = IsEmptyReload;
         Tell(stage == Stage.Loaded ? "reload cut short: loaded already" : stage == Stage.MagazineIn ? "reload cut short: bolt left to work"
             : stage == Stage.MagazineOut ? "reload cut short: no magazine in" : "reload cut short: nothing done yet", Ammo, ReserveAmmo);
     }
@@ -266,18 +298,8 @@ public sealed class WeaponRuntime
         burstRemaining = 0;
     }
 
-    private void Remember(float share)
-    {
-        resumeShare = share;
-        resumeEmpty = IsEmptyReload;
-    }
-
     // Nothing of a cut-short reload is left to do: the gun was filled some other way.
-    private void ForgetResume()
-    {
-        MagazineOut = ChamberDue = false;
-        resumeShare = 0f;
-    }
+    private void ForgetResume() => MagazineOut = ChamberDue = false;
 
     /// <summary>
     /// On someone else's copy: their reload, for the gun's pose, from <paramref name="from"/> of its clip when theirs goes

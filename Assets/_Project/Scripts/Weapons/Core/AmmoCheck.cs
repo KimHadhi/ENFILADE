@@ -79,6 +79,7 @@ internal static class AmmoCheck
                 Reloads(guns, report);
                 TopUps(guns, report);
                 SlotTopUps(guns, report);
+                GunsAsThings(guns, report);
             }
         }
         catch (Exception problem)
@@ -279,6 +280,172 @@ internal static class AmmoCheck
         {
             UnityEngine.Object.DestroyImmediate(host);
         }
+    }
+
+    // A gun is a thing with its rounds in it, and the reserve is its holder's (PlayerWeaponSlots.Put, Drop, TakeRounds,
+    // ReserveOf): put down and taken up again nothing is made or lost, an empty gun is still empty, a swap leaves the
+    // reserve of the gun put down with the player, the rounds lying with a laid-out gun are handed over once, and a gun
+    // of a kind already held gives its rounds to that kind's reserve alone, no further than its cap.
+    private static void GunsAsThings(List<WeaponData> guns, Report report)
+    {
+        var plain = guns.FindAll(gun => gun.name != "Desperado");
+        if (plain.Count < 3) { report.Rule("a gun put down and taken up"); report.Expect(false, guns[0], "fewer than three guns in the list: not checked"); return; }
+        var made = new List<GameObject>();
+        try
+        {
+            var slots = NewPlayer(made);
+            report.Rule("a gun put down and taken up again holds what it held, and its reserve is as it was (rounds earned past the cap too)");
+            foreach (var data in plain)
+            {
+                Fresh(slots);
+                slots.TrySetWeapon(0, data);
+                var gun = slots.GetRuntime(0);
+                Fire(gun, 2);
+                gun.AddReserve(7);
+                int rounds = gun.Ammo, reserve = gun.ReserveAmmo;
+                bool dropped = slots.Drop(0, out GunState lying);
+                bool gone = slots.GetWeapon(0) == null && slots.ReserveOf(data).Rounds == reserve;
+                bool taken = slots.Put(0, lying, out GunState? before);
+                var back = slots.GetRuntime(0);
+                report.Expect(dropped && gone && taken && before == null && lying.Rounds == rounds && lying.Spare == 0 && back != null
+                    && back.Ammo == rounds && back.ReserveAmmo == reserve, data,
+                    $"held {rounds}/{data.MagazineSize} +{reserve}; lay with {lying.Rounds} in it and {lying.Spare} with it; taken up again {(back != null ? Rounds(back) : "nothing")}");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("an empty gun put down and taken up again is still empty, with no reserve made for it");
+            foreach (var data in plain)
+            {
+                Fresh(slots);
+                slots.TrySetWeapon(0, data);
+                var gun = slots.GetRuntime(0);
+                slots.ReserveOf(data).Rounds = 0;
+                for (int i = 0; i < 400 && gun.Ammo > 0; i++) Fire(gun, 1);
+                bool dropped = slots.Drop(0, out GunState lying);
+                bool taken = slots.Put(0, lying, out _);
+                var back = slots.GetRuntime(0);
+                report.Expect(dropped && taken && back != null && back.Ammo == 0 && back.ReserveAmmo == 0, data,
+                    $"emptied, put down with {lying.Rounds} in it, taken up again {(back != null ? Rounds(back) : "nothing")}");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("a swap with a gun on the ground: the gun put down keeps its rounds, its reserve stays with the player, the gun taken brings only what lay with it");
+            for (int i = 0; i + 1 < plain.Count; i++)
+            {
+                WeaponData mine = plain[i], found = plain[i + 1];
+                Fresh(slots);
+                slots.TrySetWeapon(0, mine);
+                var gun = slots.GetRuntime(0);
+                Fire(gun, 3);
+                gun.AddReserve(11);
+                int rounds = gun.Ammo, reserve = gun.ReserveAmmo;
+                // A gun the map laid out: 3 rounds short of full, 9 lying with it.
+                found.BindTable();
+                int inIt = Mathf.Max(0, found.MagazineSize - 3);
+                var laid = new GunState(found, inIt, 9);
+                bool swapped = slots.Put(0, laid, out GunState? before);
+                var now = slots.GetRuntime(0);
+                bool put = before is GunState old && old.Weapon == mine && old.Rounds == rounds && old.Spare == 0;
+                bool kept = slots.ReserveOf(mine).Rounds == reserve;
+                bool brought = now != null && now.Data == found && now.Ammo == inIt && now.ReserveAmmo == 9;
+                // And back again: the first gun as it was put down, the second leaving with nothing lying with it.
+                bool again = before is GunState mineBack && slots.Put(0, mineBack, out GunState? second) && second is GunState foundBack
+                    && foundBack.Rounds == inIt && foundBack.Spare == 0 && slots.GetRuntime(0).Ammo == rounds && slots.GetRuntime(0).ReserveAmmo == reserve
+                    && slots.ReserveOf(found).Rounds == 9;
+                report.Expect(swapped && put && kept && brought && again, mine,
+                    $"{mine.name} {rounds}/{mine.MagazineSize} +{reserve} for {found.name} with {inIt} in it and 9 with it: put down right {put}, "
+                    + $"its reserve kept {kept}, the new gun {(now != null ? Rounds(now) : "nothing")}, swapped back right {again}");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("a gun of a kind already held gives its rounds to that kind's reserve only, up to its cap, and stays with the rest; no other gun is filled");
+            for (int i = 0; i + 1 < plain.Count; i++)
+            {
+                WeaponData mine = plain[i], other = plain[i + 1];
+                Fresh(slots);
+                slots.TrySetWeapon(0, mine);
+                slots.TrySetWeapon(1, other);
+                WeaponRuntime gun = slots.GetRuntime(0), second = slots.GetRuntime(1);
+                Fire(gun, 1);
+                Fire(second, 1);
+                int cap = slots.ReserveCap(0), size = mine.MagazineSize;
+                // Room for 5 rounds; the gun on the ground has its magazine and 4 lying with it.
+                slots.ReserveOf(mine).Rounds = Mathf.Max(0, cap - 5);
+                int reserve = gun.ReserveAmmo, room = cap - reserve, rounds = gun.Ammo, otherRounds = second.Ammo, otherReserve = second.ReserveAmmo;
+                var lying = new GunState(mine, size, 4);
+                int would = slots.RoomFor(0, lying);
+                int taken = slots.TakeRounds(0, lying, out GunState left);
+                int should = Mathf.Min(room, size + 4);
+                report.Expect(would == should && taken == should && gun.ReserveAmmo == reserve + should && gun.Ammo == rounds
+                    && left.Rounds + left.Spare == size + 4 - should && left.Spare == Mathf.Max(0, 4 - should)
+                    && second.Ammo == otherRounds && second.ReserveAmmo == otherReserve
+                    // The reserve is at its cap now: a second gun of the kind gives nothing more.
+                    && slots.TakeRounds(0, new GunState(mine, size, 4), out _) == 0 && gun.ReserveAmmo == cap, mine,
+                    $"room for {room}: took {taken} (should {should}), reserve {reserve} -> {gun.ReserveAmmo} of {cap}, left {left.Rounds} in it and {left.Spare} with it; "
+                    + $"{other.name} {otherRounds} +{otherReserve} -> {second.Ammo} +{second.ReserveAmmo}");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("a new gun (the shop's, a kit's) comes full with its reserve at the cap, and a second one of its kind adds nothing to it");
+            foreach (var data in plain)
+            {
+                Fresh(slots);
+                slots.TrySetWeapon(0, data);
+                var gun = slots.GetRuntime(0);
+                int cap = slots.ReserveCap(0);
+                bool full = gun.Ammo == data.MagazineSize && gun.ReserveAmmo == cap;
+                gun.AddReserve(5);
+                slots.TrySetWeapon(0, data);
+                var again = slots.GetRuntime(0);
+                report.Expect(full && again.Ammo == data.MagazineSize && again.ReserveAmmo == cap + 5, data,
+                    $"first {data.MagazineSize}/{data.MagazineSize} +{cap} was {full}; with 5 more carried a second came {Rounds(again)} (should be +{cap + 5})");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("a gun put down with its magazine out lies so, and whoever takes it goes on with the reload from the pouch");
+            foreach (var data in plain)
+            {
+                if (data.ShellReload || data.MagazineSize < 2) continue;
+                Fresh(slots);
+                slots.TrySetWeapon(0, data);
+                var gun = slots.GetRuntime(0);
+                Fire(gun, 1);
+                gun.Tick(Step, new WeaponInputFrame(false, false, true));
+                var steps = ReloadSteps.Of(data, gun.IsEmptyReload);
+                Pass(gun, gun.ReloadDuration * (steps.MagOut + steps.MagIn) * .5f);
+                bool outNow = gun.MagazineOut || steps.MagIn - steps.MagOut < .02f;
+                int total = gun.Ammo + gun.ReserveAmmo;
+                slots.Drop(0, out GunState lying);
+                slots.Put(0, lying, out _);
+                var back = slots.GetRuntime(0);
+                bool same = back.MagazineOut == lying.MagazineOut && back.Ammo + back.ReserveAmmo == total;
+                back.Tick(Step, new WeaponInputFrame(false, false, true));
+                bool from = !lying.MagazineOut || Mathf.Abs(back.ReloadStartShare - steps.Pouch) < .0005f;
+                for (int i = 0; i < 100000 && back.IsReloading; i++) back.Tick(Step, default);
+                report.Expect(outNow && same && from && Ready(back, data.MagazineSize, total - data.MagazineSize), data,
+                    $"put down mid-reload (magazine out {lying.MagazineOut}) with {lying.Rounds} in it; taken up {(same ? "as it lay" : "CHANGED")}, "
+                    + $"reload went on from {back.ReloadStartShare:0.00} (pouch {steps.Pouch:0.00}), ended {Rounds(back)}{Doing(back)}");
+            }
+        }
+        finally
+        {
+            foreach (var host in made) UnityEngine.Object.DestroyImmediate(host);
+        }
+    }
+
+    // A player's slots that hold nothing and carry nothing, on an object that never wakes (no scene, no play).
+    private static PlayerWeaponSlots NewPlayer(List<GameObject> made)
+    {
+        var host = new GameObject("Ammo check") { hideFlags = HideFlags.HideAndDontSave };
+        host.SetActive(false);
+        made.Add(host);
+        return host.AddComponent<PlayerWeaponSlots>();
+    }
+
+    // The slots emptied of their guns; what the player carries for each kind stays, as it would.
+    private static void Fresh(PlayerWeaponSlots slots)
+    {
+        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++) slots.TrySetWeapon(i, null);
     }
 
     // ---- What the rules are put through ----

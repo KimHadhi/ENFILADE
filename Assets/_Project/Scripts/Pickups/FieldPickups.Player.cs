@@ -30,15 +30,14 @@ public sealed partial class FieldPickups
         for (int i = 0; i < items.Count; i++)
         {
             var item = items[i];
-            var row = rows[item.Row];
-            if (!Walked(row.Kind)) continue;
+            if (!Walked(RowOf(item).Kind)) continue;
             Vector3 off = item.Position - at;
             if (Mathf.Abs(off.y) > TouchHeight) continue;
             off.y = 0f;
             if (off.sqrMagnitude > touchReach * touchReach) continue;
             if (asked.TryGetValue(item.Id, out float when) && now - when < AskAgain) continue;
             // Ammo this player can't use stays for someone who can.
-            if (Refuse(mine, row) != null) continue;
+            if (Refuse(mine, item) != null) continue;
             asked[item.Id] = now;
             if (!IsHost) { SendAsk(item.Id); continue; }
             // The host takes it at once, which changes the list: the rest wait for the next frame.
@@ -60,14 +59,14 @@ public sealed partial class FieldPickups
         for (int i = 0; i < items.Count; i++)
         {
             var item = items[i];
-            if (Walked(rows[item.Row].Kind)) continue;
+            if (Walked(RowOf(item).Kind)) continue;
             if ((item.Position - mine.transform.position).sqrMagnitude > reach * reach) continue;
             float angle = Vector3.Angle(eye.forward, item.Position + Vector3.up * .25f - eye.position);
             if (angle > best) continue;
             best = angle;
             targeted = i;
         }
-        if (targeted >= 0) refusal = Refuse(mine, rows[items[targeted].Row]);
+        if (targeted >= 0) refusal = Refuse(mine, items[targeted]);
     }
 
     private static bool Free(PlayerMovement mine)
@@ -80,13 +79,21 @@ public sealed partial class FieldPickups
     }
 
     // What stops this player using it now, or null.
-    private static string Refuse(PlayerMovement player, Row row)
+    private string Refuse(PlayerMovement player, in Item item)
     {
+        var row = RowOf(item);
         var receiver = player.DamageReceiver;
         player.TryGetComponent(out PlayerWeaponSlots slots);
         switch (row.Kind)
         {
-            case Kind.Gun: return slots == null || player.CombatInputLocked ? Texts.Get("pickup.refuse.now") : null;
+            case Kind.Gun:
+                if (slots == null || player.CombatInputLocked) return Texts.Get("pickup.refuse.now");
+                // A gun of a kind already held is taken for its rounds: none in it, or no room for them, and it stays.
+                int held = slots.SlotOf(row.Weapon);
+                if (held < 0) return null;
+                var gun = StateOf(item);
+                if (gun.Spare + (gun.MagazineOut ? 0 : gun.Rounds) <= 0) return Texts.Get("pickup.refuse.emptygun");
+                return slots.RoomFor(held, gun) > 0 ? null : Texts.Get("pickup.refuse.ammofull");
             case Kind.Ammo:
                 // Room for the class throwable alone is reason enough to take it (PlayerGrenades).
                 if (PlayerGrenades.HasRoom(player)) return null;
@@ -98,18 +105,18 @@ public sealed partial class FieldPickups
         return null;
     }
 
-    // On the taker's own PC: what it got.
-    private void Give(int index)
+    // On the taker's own PC: what it got, as it lay.
+    private void Give(in Item item)
     {
         var player = PlayerRoster.Local;
-        if (player == null || index < 0 || index >= rows.Count) return;
-        var row = rows[index];
+        var row = RowOf(item);
+        if (player == null || row == null) return;
         var receiver = player.DamageReceiver;
         player.TryGetComponent(out PlayerWeaponSlots slots);
         switch (row.Kind)
         {
             case Kind.Gun:
-                GiveGun(player, slots, row);
+                GiveGun(player, slots, row, StateOf(item), item.Position);
                 break;
             case Kind.Ammo:
                 int magazines = Mathf.Max(1, Mathf.RoundToInt(row.Amount));
@@ -138,26 +145,36 @@ public sealed partial class FieldPickups
         }
     }
 
-    // Into an empty gun slot, else in place of the gun in hand (left on the floor), else the first gun slot. A gun
-    // already held fills its ammo instead.
-    private void GiveGun(PlayerMovement player, PlayerWeaponSlots slots, Row row)
+    // This particular gun, as it lay (the user, 2026-11-18, "필드 무기 교체 및 탄약 시스템 개편"). Into an empty gun slot,
+    // else in place of the gun in hand, else the first gun slot: it comes with the rounds that were in it, the rounds
+    // lying with it join this player's reserve for its kind, and the gun it took the place of goes on the ground with
+    // what is in that one, its reserve staying with the player (PlayerWeaponSlots.Put). A gun of a kind already held
+    // isn't taken: its rounds go into the reserve as far as there is room, and it stays where it lay with the rest
+    // (TakeRounds). Nothing else is filled either way: before, the gun taken was a new full one, and one of a kind
+    // already held refilled every gun the player had.
+    private void GiveGun(PlayerMovement player, PlayerWeaponSlots slots, Row row, GunState gun, Vector3 lay)
     {
-        if (slots == null || row.Weapon == null) return;
-        for (int i = 0; i < PlayerWeaponSlots.SlotCount; i++)
+        if (slots == null || gun.Weapon == null) return;
+        int held = slots.SlotOf(gun.Weapon);
+        if (held >= 0)
         {
-            if (slots.GetWeapon(i) != row.Weapon) continue;
-            slots.RefillAmmo();
-            Pop(row.Kind, row.Name, Texts.Get("pickup.gives.refill"), row.Weapon);
+            int taken = slots.TakeRounds(held, gun, out GunState left);
+            if (taken > 0) Pop(Kind.Ammo, row.Name, Texts.Format("pickup.gives.rounds", taken));
+            // It was taken off the ground to be handed here; it goes back where it lay, with what is left in it.
+            Leave(left, lay);
             return;
         }
         int slot = GunSlotFor(slots);
-        var before = slots.GetWeapon(slot);
-        if (!slots.TrySetWeapon(slot, row.Weapon)) return;
+        if (!slots.Put(slot, gun, out GunState? before))
+        {
+            // The slot wouldn't take it after all (the hands were locked meanwhile): it is not lost, it lies there again.
+            Leave(gun, lay);
+            return;
+        }
         // Not with a can in the hands, nor with the guns on an x-ray belt (GimmickTray): the new gun waits in its slot.
         if (!slots.HandsFull && !slots.GunsAway) slots.SelectSlot(slot);
-        Pop(row.Kind, row.Name, Texts.Get("pickup.gives.gun"), row.Weapon);
-        if (before != null && before.Category == WeaponCategory.Ranged)
-            Leave(RowOf(before), player.transform.position + player.transform.forward * LeaveAhead);
+        Pop(row.Kind, row.Name, Holds(gun), gun.Weapon);
+        if (before is GunState old) Leave(old, player.transform.position + player.transform.forward * LeaveAhead);
     }
 
     // Each gun held gets this many magazines more (a scavenger's share more: PlayerPerks.ScavengeFactor), up to the reserve

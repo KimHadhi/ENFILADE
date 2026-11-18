@@ -1,5 +1,9 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+pickup.gives.gunrounds,탄창 {0}발,,"아이템 [F] 안내와 주운 목록(화면 아래) > 바닥의 총: 그 총에 든 탄. {0}=탄 수"
+pickup.gives.gunspare,탄창 {0}발 · 예비 +{1},,"아이템 [F] 안내와 주운 목록(화면 아래) > 맵이 놓은 총: 든 탄과, 처음 줍는 사람이 받는 예비 탄약. {0}=든 탄 수, {1}=예비 탄약"
+pickup.gives.rounds,탄약 +{0},,"아이템 [F] 안내와 주운 목록(화면 아래) > 이미 든 것과 같은 총: 그 총에서 내 예비 탄약으로 챙기는 탄 수(총은 바닥에 남는다). {0}=탄 수"
+pickup.refuse.emptygun,빈 총이에요,,"아이템 [F] 안내 > 이미 든 것과 같은 총인데 챙길 탄이 하나도 없을 때"
 effect.gunslinger,건슬링어 · 총 +{0}%,Gunslinger · guns +{0}%,클래스 칸 아래 지속 효과 칸(TimedEffects.csv point.gunslinger): 포인트 건슬링어 카드로 총을 바꿔 든 뒤 세지는 동안. {0}=피해 +%. 건 카타와 같이 걸리면 칸이 따로 선다
 effect.momentum,기세 · 피해 +{0}%,Momentum · damage +{0}%,클래스 칸 아래 지속 효과 칸(TimedEffects.csv card.momentum): 기세 카드가 걸려 있는 동안. 맞힐 때마다 시간이 다시 찬다. {0}=피해 +%
 effect.guarded,원호 · 총 +{0}%,Covered · guns +{0}%,클래스 칸 아래 지속 효과 칸(TimedEffects.csv knight.guarded): 나이트 동료의 원호 방어가 내 대신 막아 준 뒤 내 총이 세지는 동안(원호 반격 카드). {0}=총 피해 +%

@@ -10,7 +10,7 @@ public sealed partial class FieldPickups
         for (int i = 0; i < items.Count; i++)
         {
             var item = items[i];
-            var row = rows[item.Row];
+            var row = RowOf(item);
             seen.Add(item.Id);
             if (!views.TryGetValue(item.Id, out var view) || view == null)
                 views[item.Id] = view = PickupView.Make(transform, row.Name, row.Kind, row.Weapon, ColorOf(row.Kind));

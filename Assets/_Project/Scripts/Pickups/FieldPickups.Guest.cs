@@ -12,14 +12,14 @@ public sealed partial class FieldPickups
         for (int i = 0; i < count; i++)
         {
             reader.ReadValueSafe(out Item item);
-            if (item.Row < rows.Count) items.Add(item);
+            if (RowOf(item) != null) items.Add(item);
         }
     }
 
     private void ReceiveGive(ulong sender, FastBufferReader reader)
     {
-        reader.ReadValueSafe(out byte row);
-        Give(row);
+        reader.ReadValueSafe(out Item item);
+        Give(item);
     }
 
     private void SendAsk(ushort id)
@@ -30,15 +30,23 @@ public sealed partial class FieldPickups
         network.CustomMessagingManager.SendNamedMessage(AskMessage, NetworkManager.ServerClientId, writer);
     }
 
-    // A gun swapped out goes back on the floor for anyone.
-    private void Leave(int row, Vector3 at)
+    // A gun goes on the ground as it is, for anyone: one swapped out for another, one put down (Drop), or one of a kind
+    // its taker already holds, left with what their reserve had no room for. What is in it lies there with it.
+    private void Leave(in GunState gun, Vector3 at)
     {
-        if (row < 0) return;
-        if (IsHost) { Add(row, Ground(at), 0f); return; }
+        if (gun.Weapon == null || GunList.IdOf(gun.Weapon) == 0) return;
+        GunAmmoLog.Note($"{gun.Weapon.name,-15} laid on the ground with {gun.Rounds} in it" + (gun.Spare > 0 ? $" and {gun.Spare} lying with it" : "")
+            + (gun.MagazineOut ? ", its magazine out" : ""));
+        var item = ItemOf(gun, at);
+        if (IsHost)
+        {
+            item.Position = Ground(at);
+            Add(item, 0f);
+            return;
+        }
         if (network.CustomMessagingManager == null) return;
-        using var writer = new FastBufferWriter(sizeof(byte) + FastBufferWriter.GetWriteSize<Vector3>(), Allocator.Temp);
-        writer.WriteValueSafe((byte)row);
-        writer.WriteValueSafe(at);
+        using var writer = new FastBufferWriter(FastBufferWriter.GetWriteSize<Item>(), Allocator.Temp);
+        writer.WriteValueSafe(item);
         network.CustomMessagingManager.SendNamedMessage(LeaveMessage, NetworkManager.ServerClientId, writer);
     }
 }
