@@ -1,7 +1,6 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -26,49 +25,17 @@ internal static class CardDeckCheck
 
     static CardDeckCheck() => new CheckOnRequest(Request, Run);
 
-    private sealed class Report
-    {
-        public readonly StringBuilder Text = new StringBuilder();
-        public int Failed, Rules;
-        private readonly List<string> failures = new List<string>();
-        private string rule;
-        private int kept;
-
-        public void Rule(string name)
-        {
-            Close();
-            rule = name;
-            Rules++;
-        }
-
-        public void Expect(bool holds, string what)
-        {
-            if (holds) { kept++; return; }
-            Failed++;
-            if (failures.Count < 12) failures.Add("  FAIL " + what);
-        }
-
-        public void Close()
-        {
-            if (rule == null) return;
-            Text.AppendLine((failures.Count == 0 ? "ok   " : "FAIL ") + rule + "  (" + kept + " kept" + (failures.Count > 0 ? ", some broken" : "") + ")");
-            foreach (string failure in failures) Text.AppendLine(failure);
-            failures.Clear();
-            kept = 0;
-            rule = null;
-        }
-    }
-
     [MenuItem("ENFILADE/클래스/카드 덱 규칙 점검")]
     private static void Run()
     {
-        var report = new Report();
+        var report = new CheckReport();
         var cards = PlayerPerks.Catalog;
         var classes = PlayerClass.Catalog;
         try
         {
-            if (cards.Count == 0 || classes.Count == 0) report.Text.AppendLine("FAIL no cards or no classes in the tables: nothing was checked.");
-            else
+            report.Rule("the tables hold cards and classes to check");
+            report.Expect(cards.Count > 0 && classes.Count > 0, cards.Count + " cards, " + classes.Count + " classes");
+            if (cards.Count > 0 && classes.Count > 0)
             {
                 Decks(cards, classes, report);
                 ClassChange(cards, classes, report);
@@ -79,26 +46,9 @@ internal static class CardDeckCheck
         }
         catch (Exception problem)
         {
-            report.Close();
-            report.Failed++;
-            report.Text.AppendLine("FAIL the check itself stopped: " + problem);
+            report.Stopped(problem);
         }
-        report.Close();
-        var text = new StringBuilder();
-        text.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} card deck rules check, {cards.Count} cards, {classes.Count} classes, {report.Rules} rules: "
-            + (report.Failed == 0 && cards.Count > 0 && classes.Count > 0 ? "ALL KEPT" : report.Failed + " BROKEN"));
-        text.AppendLine();
-        text.Append(report.Text);
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(ReportPath));
-            File.WriteAllText(ReportPath, text.ToString(), new UTF8Encoding(false));
-        }
-        catch (Exception problem) when (problem is IOException || problem is UnauthorizedAccessException)
-        {
-            Debug.LogWarning("[CardDeckCheck] " + ReportPath + ": " + problem.Message);
-        }
-        if (report.Failed > 0) Debug.LogWarning("[CardDeckCheck] " + report.Failed + " broken: " + ReportPath);
+        report.Write(ReportPath, "card deck rules check, " + cards.Count + " cards, " + classes.Count + " classes");
     }
 
     private static bool Common(PlayerPerks.Perk card) => string.IsNullOrEmpty(card.Class);
@@ -122,7 +72,7 @@ internal static class CardDeckCheck
     }
 
     // Which deck a card is in.
-    private static void Decks(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, Report report)
+    private static void Decks(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, CheckReport report)
     {
         report.Rule("a class's deck holds its own cards and everyone's, never another class's");
         foreach (var played in classes)
@@ -145,7 +95,7 @@ internal static class CardDeckCheck
     }
 
     // A campaign's cards through a class change and back (the user's question of 2026-11-18).
-    private static void ClassChange(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, Report report)
+    private static void ClassChange(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, CheckReport report)
     {
         int commons = 0;
         foreach (var card in cards) if (Common(card)) commons++;
@@ -187,7 +137,7 @@ internal static class CardDeckCheck
     }
 
     // The hub's practice: its picks work, a class picked there throws nothing away, and none of them reach a chapter.
-    private static void Practice(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, Report report)
+    private static void Practice(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, CheckReport report)
     {
         report.Rule("a class picked in the hub keeps everyone's practice cards in play and gives the old class its own back");
         var left = new List<(CardDecks decks, Dictionary<string, int> campaign, string id)>();
@@ -244,7 +194,7 @@ internal static class CardDeckCheck
     }
 
     // A deck as it is sent to the other PCs and read there.
-    private static void Travel(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, Report report)
+    private static void Travel(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, CheckReport report)
     {
         report.Rule("a deck sent as words reads back the same cards and levels, and fits the string it travels in");
         var read = new List<(PlayerPerks.Perk perk, int level)>();
@@ -269,7 +219,7 @@ internal static class CardDeckCheck
     }
 
     // How a class and its cards show.
-    private static void Looks(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, Report report)
+    private static void Looks(IReadOnlyList<PlayerPerks.Perk> cards, IReadOnlyList<PlayerClass.Info> classes, CheckReport report)
     {
         report.Rule("every class has its colour (ClassColours.csv), and everyone's cards have theirs (the common row)");
         foreach (var played in classes)

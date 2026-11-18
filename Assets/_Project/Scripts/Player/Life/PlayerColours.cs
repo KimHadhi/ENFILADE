@@ -12,8 +12,13 @@ using UnityEngine;
 /// "콜아웃 색상이 Tab 현황판의 팀원 색상(파랑, 주황 등)과 연동되지 않고 분홍색으로 고정되는 문제 및 팀원 색상이 랜덤
 /// 배정되는 문제").
 /// Now:
-/// - A player chooses their colour on their own PC (GameSettings.playerColour: a row of Tables/Hud/PlayerColours.csv, any
-///   colour of their own as #RRGGBB, or nothing). The palette is a table, so a mod adds rows.
+/// - A player chooses their colour on their own PC (GameSettings.playerColour): one of the colours of their own they
+///   keep in slots and make on a colour board (PlayerColourRow, ColourPanel; the user, 2026-11-18: "미리 정해둔 프리셋
+///   방식이 아닌 여러 색깔 슬롯을 좀 두고 직접 그 색상 판에서 색깔을 커스텀"), or nothing. A colour too dark to read on
+///   the HUD's dark plates is brought up to one that reads (Readable), whatever way it was asked for.
+/// - Whoever chose nothing is given the palette's colours in the table's order (Tables/Hud/PlayerColours.csv; a mod adds
+///   rows), and the first is the HUD's pink (the user: "분홍으로 합시다 기본"): alone, or first in a room, they are pink,
+///   and the next who chose nothing are the colours after it, each far from those before.
 /// - Their PC sends the colour asked for (PlayerNetworkScore) and nothing else: no PC is asked what colour anyone is.
 /// - Every PC gives every player their colour by the same rule from the same facts (Resolve: who asked for what, and
 ///   their network ids), so one player is one colour on every screen, their own included.
@@ -81,6 +86,16 @@ public static class PlayerColours
     /// </summary>
     public static float Apart => Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "PlayerColour", "apart", .1f));
 
+    /// <summary>
+    /// The least a player's colour may weigh (ColourWeight: 0 black to 1 white; Hud.csv PlayerColour.dim, 0 lets every
+    /// colour through). A player's colour is their name on the board, in the chat and over their head, on the HUD's
+    /// near-black plates, so one below this is brought up to it (Readable) and the colour board does not hold it.
+    /// </summary>
+    public static float Dim => Mathf.Clamp01(GameTables.Number(HudCamera.TableName, "PlayerColour", "dim", .07f));
+
+    /// <summary>How many colours of their own a player keeps (Hud.csv PlayerColour.slots).</summary>
+    public static int SlotCount => Mathf.Clamp(Mathf.RoundToInt(GameTables.Number(HudCamera.TableName, "PlayerColour", "slots", 5f)), 1, 12);
+
     private static void ReadPalette()
     {
         if (paletteRead) return;
@@ -119,8 +134,9 @@ public static class PlayerColours
     public static Color32 Colour(uint code) => new Color32((byte)(code >> 16), (byte)(code >> 8), (byte)code, 255);
 
     /// <summary>
-    /// What a setting asks for (GameSettings.playerColour): a palette row's id gives that row's colour, "#RRGGBB" that
-    /// colour, and nothing, or an id the table no longer has, gives 0: none asked for.
+    /// What a setting asks for (GameSettings.playerColour): "#RRGGBB" gives that colour, brought up to one that reads
+    /// (Readable); a palette row's id gives that row's colour (what a setting saved before the slots held); and nothing,
+    /// or an id the table no longer has, gives 0: none asked for.
     /// </summary>
     public static uint WishOf(string setting)
     {
@@ -128,8 +144,60 @@ public static class PlayerColours
         string text = setting.Trim();
         ReadPalette();
         for (int i = 0; i < paletteIds.Count; i++)
-            if (string.Equals(paletteIds[i], text, System.StringComparison.OrdinalIgnoreCase)) return Code(palette[i]);
-        return text.StartsWith("#") && ColorUtility.TryParseHtmlString(text, out Color colour) ? Code(colour) : 0u;
+            if (string.Equals(paletteIds[i], text, System.StringComparison.OrdinalIgnoreCase)) return Code(Readable(palette[i]));
+        return ColourCode.TryRead(text, out Color32 colour) ? Code(Readable(colour)) : 0u;
+    }
+
+    // ---- A colour that reads ----
+
+    /// <summary>
+    /// The colour itself where it reads on the HUD's dark plates, else the nearest of its hue that does (Dim,
+    /// ColourWeight.AtLeast: brighter, and for a hue too dark at its brightest, paler). Whatever way a colour is asked
+    /// for comes through here (WishOf), and the colour board is handed the same least weight, so it never offers a
+    /// colour this would change.
+    /// </summary>
+    public static Color32 Readable(Color32 colour) => ColourWeight.AtLeast(colour, Dim);
+
+    // ---- The player's own colours (the slots) ----
+
+    /// <summary>
+    /// Brings the colours a player keeps (GameSettings.playerColourSlots) and the one in use
+    /// (<paramref name="chosen"/>, GameSettings.playerColour) to what the 내 색 row shows, and says which slot is in use
+    /// (-1: none, a free colour is given). There are <paramref name="count"/> slots; one never filled, or holding
+    /// anything but a colour, starts as the palette's colour of its place, so the row opens on the colours players are
+    /// given anyway. Every slot is written "#RRGGBB" and weighs <paramref name="dim"/> or more (as Readable makes it). A colour in use that no slot holds
+    /// (a palette row or a code picked before there were slots) goes into the first slot, so nothing a player chose is
+    /// lost. A pure rule over what it is handed, the palette (<paramref name="colours"/> and their row ids
+    /// <paramref name="names"/>) too (PlayerColourCheck runs it without a play).
+    /// </summary>
+    public static int FillSlots(List<string> slots, ref string chosen, int count, IReadOnlyList<Color32> colours,
+        IReadOnlyList<string> names, float dim)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (i >= slots.Count) slots.Add("");
+            Color32 colour = ColourCode.TryRead(slots[i], out Color32 kept) ? kept
+                : colours.Count > 0 ? colours[i % colours.Count] : new Color32(255, 255, 255, 255);
+            slots[i] = ColourCode.Of(ColourWeight.AtLeast(colour, dim));
+        }
+        string wanted = (chosen ?? "").Trim();
+        bool asks = ColourCode.TryRead(wanted, out Color32 asked);
+        for (int i = 0; i < names.Count && i < colours.Count && !asks && wanted.Length > 0; i++)
+            if (string.Equals(names[i], wanted, System.StringComparison.OrdinalIgnoreCase)) { asked = colours[i]; asks = true; }
+        if (!asks) { chosen = ""; return -1; }
+        chosen = ColourCode.Of(ColourWeight.AtLeast(asked, dim));
+        for (int i = 0; i < count; i++)
+            if (string.Equals(slots[i], chosen, System.StringComparison.OrdinalIgnoreCase)) return i;
+        slots[0] = chosen;
+        return 0;
+    }
+
+    /// <summary>The same for this PC's settings, by the tables.</summary>
+    public static int FillSlots(GameSettings settings)
+    {
+        ReadPalette();
+        settings.playerColourSlots ??= new List<string>();
+        return FillSlots(settings.playerColourSlots, ref settings.playerColour, SlotCount, palette, paletteIds, Dim);
     }
 
     // ---- The rule ----
@@ -289,6 +357,9 @@ public static class PlayerColours
             text.AppendLine("  " + paletteIds[i].PadRight(10) + " #" + ColorUtility.ToHtmlStringRGB(palette[i]) + "  nearest " + which + " "
                 + nearest.ToString("0.000") + (nearest < apart ? "  TOO NEAR: two palette colours count as one" : "")); // dev-text
         }
+        var mine = GameSettings.Current;
+        text.AppendLine("this PC's own colours (the slots): " + string.Join(" ", mine.playerColourSlots ?? new List<string>()) + "  in use: "
+            + (string.IsNullOrEmpty(mine.playerColour) ? "none (a free colour is given)" : mine.playerColour) + "  least weight " + Dim.ToString("0.###")); // dev-text
         dirty = true;
         Settle();
         text.AppendLine("players on this PC: " + seated.Count); // dev-text
@@ -299,15 +370,18 @@ public static class PlayerColours
                 + (wish == 0u ? "nothing" : "#" + ColorUtility.ToHtmlStringRGB(Colour(wish))) + "  given #" + ColorUtility.ToHtmlStringRGB(given[i])
                 + (wish != 0u && Code(given[i]) != wish ? "  (moved: someone before them holds it)" : "")); // dev-text
         }
-        if ((args ?? "").Trim().ToLowerInvariant() == "cases") Cases(text, apart);
+        if ((args ?? "").Trim().ToLowerInvariant() == "cases") Cases(text, palette, apart);
         string all = text.ToString();
         try { System.IO.File.WriteAllText(System.IO.Path.Combine(Application.dataPath, "..", "Logs", "player-colours.txt"), all); }
         catch (System.Exception problem) { Debug.LogWarning("[Colours] Logs/player-colours.txt: " + problem.Message); }
         return all + "Logs/player-colours.txt"; // dev-text
     }
 
-    // The rule over rooms nobody has to gather: its promises counted where they break.
-    private static void Cases(StringBuilder text, float apart)
+    /// <summary>
+    /// The rule over rooms nobody has to gather: its promises counted where they break, written to
+    /// <paramref name="text"/>. True when none broke (the console's /colours cases, and PlayerColourCheck by itself).
+    /// </summary>
+    internal static bool Cases(StringBuilder text, IReadOnlyList<Color32> palette, float apart)
     {
         var random = new System.Random(11);
         var room = new List<Seat>();
@@ -370,5 +444,6 @@ public static class PlayerColours
         text.AppendLine("  another order of the same seats gave other colours: " + orderMatters); // dev-text
         text.AppendLine("  two players one colour while the palette had a free one: " + tooNear); // dev-text
         text.AppendLine(movedWithoutClash + orderMatters + tooNear == 0 ? "CASES OK" : "CASES FAILED"); // dev-text
+        return movedWithoutClash + orderMatters + tooNear == 0;
     }
 }

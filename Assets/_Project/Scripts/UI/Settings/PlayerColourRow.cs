@@ -1,96 +1,124 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using W = SettingsWidgets;
 
 /// <summary>
 /// The controls a player chooses their colour with (PlayerColours; the user, 2026-11-18: "플레이어가 본인의 대표 색상을
-/// 직접 커스텀할 수 있도록 하고, Tab 현황판·콜아웃·인게임 표시 전체에 일관되게 동기화"): 자동 (no choice: a free colour is
-/// given), a swatch for every row of Tables/Hud/PlayerColours.csv (a mod's rows too), and, where there is room, a box for
-/// any colour of their own as #RRGGBB. The choice in use wears a white frame. A pick goes to GameSettings.playerColour
-/// at once: the player's tally reads it the same frame and their PC tells the room, so the board, the chat and their
-/// pings change while the menu is still open.
+/// 직접 커스텀할 수 있도록 하고, Tab 현황판·콜아웃·인게임 표시 전체에 일관되게 동기화"): 자동 (no choice: a free colour
+/// is given, pink where it is free), and a row of slots, each one of the player's own colours. Pressing a slot uses its
+/// colour and opens the colour board on it (ColourPanel), where the colour is made by moving the pointer over it, or by
+/// its code or its R, G and B; pressing it again puts the board away. The slot in use wears a white frame.
+/// Until 2026-11-18 this row was a swatch for each palette row and a box for a code; the user, that day: "미리 정해둔
+/// 프리셋 방식이 아닌 여러 색깔 슬롯을 좀 두고 직접 그 색상 판에서 색깔을 커스텀할 수 있게 해 주십쇼. 색상 코드로 하는
+/// 사람이 몇이나 되겠습니까?" The palette is now only what those who chose nothing are given, and what the slots hold at
+/// first.
+/// What is kept: the slots (GameSettings.playerColourSlots) and the colour in use (GameSettings.playerColour, one of
+/// them or nothing). A colour being dragged over the board shows in its slot at once; the colour in use, and with it the
+/// board, the chat and the pings, changes when the pointer lets go, so the room is told a colour once and not every one
+/// passed over. A colour too dark to read on the HUD cannot be made: the board is handed PlayerColours.Dim and holds none.
 /// One builder for every place the choice is offered (the settings' HUD tab, the profile window).
 /// </summary>
 public static class PlayerColourRow
 {
-    // A swatch's side and the gap between two, the 자동 button's width, the controls' height and the colour box's width (px).
-    private const float Swatch = 30f, Gap = 6f, AutoWidth = 84f, Height = 34f, BoxWidth = 118f;
-    // What the colour box holds when no colour was chosen: the form a typed colour takes.
-    private const string BoxHint = "#RRGGBB";
+    // A slot's side and the gap between two, the 자동 button's width and the controls' height (px).
+    private const float Swatch = 30f, Gap = 6f, AutoWidth = 84f, Height = 34f;
 
     /// <summary>
     /// Adds the controls to <paramref name="row"/> (a horizontal row). <paramref name="save"/> writes the settings file at
-    /// each pick, for a window with no save of its own; <paramref name="ownColour"/> adds the #RRGGBB box.
+    /// each choice, for a window with no save of its own.
     /// </summary>
-    public static void Controls(Transform row, bool save, bool ownColour)
+    public static void Controls(Transform row, bool save)
     {
-        var frames = new List<(Outline frame, string value)>();
-        TMP_InputField box = null;
+        int inUse = PlayerColours.FillSlots(GameSettings.Current);
+        var frames = new List<Outline>();
+        var fills = new List<Image>();
+        Outline autoFrame = null;
 
-        // The frame goes to the choice in use, and the box shows that colour as it would be typed.
-        void Paint()
+        static void Frame(Outline frame, bool on)
         {
-            string now = GameSettings.Current.playerColour ?? "";
-            foreach (var (frame, value) in frames)
-            {
-                bool on = string.Equals(value, now, System.StringComparison.OrdinalIgnoreCase);
-                frame.effectColor = on ? W.Text : W.Track;
-                frame.effectDistance = on ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
-            }
-            if (box == null || box.isFocused) return;
-            uint wish = PlayerColours.WishOf(now);
-            box.SetTextWithoutNotify(wish == 0u ? BoxHint : "#" + ColorUtility.ToHtmlStringRGB(PlayerColours.Colour(wish)));
+            frame.effectColor = on ? W.Text : W.Track;
+            frame.effectDistance = on ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
         }
 
-        void Pick(string value)
+        // The frame goes to the choice in use, and every slot shows the colour it holds.
+        void Paint()
         {
-            GameSettings.Current.playerColour = value;
+            var slots = GameSettings.Current.playerColourSlots;
+            Frame(autoFrame, inUse < 0);
+            for (int i = 0; i < frames.Count; i++)
+            {
+                Frame(frames[i], i == inUse);
+                if (i < slots.Count && ColourCode.TryRead(slots[i], out Color32 held)) fills[i].color = held;
+            }
+        }
+
+        void Keep()
+        {
             GameSettings.Apply();
             if (save) GameSettings.Save();
+        }
+
+        // This slot's colour is the player's from now on (-1: none, a free one is given).
+        void Use(int slot)
+        {
+            var settings = GameSettings.Current;
+            inUse = slot;
+            settings.playerColour = slot < 0 ? "" : settings.playerColourSlots[slot];
+            Keep();
             Paint();
         }
 
-        var auto = W.ActionButton(row, Texts.Get("profile.colour.auto"), false, () => Pick(""));
+        var auto = W.ActionButton(row, Texts.Get("profile.colour.auto"), false, () =>
+        {
+            ColourPanel.Close();
+            Use(-1);
+        });
         W.Size(auto, width: AutoWidth, height: Height);
-        frames.Add((auto.gameObject.AddComponent<Outline>(), ""));
+        autoFrame = auto.gameObject.AddComponent<Outline>();
 
-        var strip = W.Rect("Swatches", row);
+        var strip = W.Rect("Slots", row);
         var layout = strip.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = Gap;
         layout.childAlignment = TextAnchor.MiddleLeft;
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = layout.childForceExpandHeight = false;
-        var ids = PlayerColours.PaletteIds;
-        var colours = PlayerColours.Palette;
-        W.Size(strip, width: ids.Count * Swatch + Mathf.Max(0, ids.Count - 1) * Gap, height: Height);
-        for (int i = 0; i < ids.Count; i++)
+        int count = PlayerColours.SlotCount;
+        W.Size(strip, width: count * Swatch + Mathf.Max(0, count - 1) * Gap, height: Height);
+        // The least a colour of theirs may weigh: the board holds only colours that read on the HUD's dark.
+        float dim = PlayerColours.Dim;
+        for (int i = 0; i < count; i++)
         {
-            string id = ids[i];
-            var swatch = W.Rect("Swatch " + id, strip);
+            int slot = i;
+            var swatch = W.Rect("Slot " + (i + 1), strip);
             W.Size(swatch, width: Swatch, height: Swatch);
-            var image = W.Fill(swatch, colours[i]);
-            frames.Add((swatch.gameObject.AddComponent<Outline>(), id));
+            var image = W.Fill(swatch, Color.white);
+            fills.Add(image);
+            frames.Add(swatch.gameObject.AddComponent<Outline>());
             var button = swatch.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
-            button.onClick.AddListener(() => Pick(id));
-        }
-
-        if (ownColour)
-        {
-            box = W.TextInput(row, BoxHint, _ => { });
-            W.Size(box, width: BoxWidth, height: Height, flexibleWidth: 0f);
-            box.characterLimit = 7;
-            // Plain to see while typed in, as the number boxes are; the row's name turns pink with it.
-            TypingLook.On(box, row.childCount > 0 ? row.GetChild(0).GetComponent<TMP_Text>() : null);
-            box.onEndEdit.AddListener(text =>
+            button.onClick.AddListener(() =>
             {
-                string typed = (text ?? "").Trim();
-                if (typed.Length > 0 && !typed.StartsWith("#")) typed = "#" + typed;
-                // "#" and six hex digits is a colour; anything else leaves the choice as it was.
-                if (typed.Length == 7 && ColorUtility.TryParseHtmlString(typed, out _)) Pick(typed.ToUpperInvariant());
-                else Paint();
+                // The slot whose board is open, pressed again: the board goes away and the colour stays in use.
+                if (ColourPanel.IsOpenFor(image)) { ColourPanel.Close(); return; }
+                Use(slot);
+                var settings = GameSettings.Current;
+                ColourCode.TryRead(settings.playerColourSlots[slot], out Color32 held);
+                ColourPanel.Open(strip, held,
+                    moved =>
+                    {
+                        GameSettings.Current.playerColourSlots[slot] = ColourCode.Of(moved);
+                        image.color = moved;
+                    },
+                    made =>
+                    {
+                        var now = GameSettings.Current;
+                        now.playerColourSlots[slot] = ColourCode.Of(made);
+                        if (inUse == slot) now.playerColour = now.playerColourSlots[slot];
+                        Keep();
+                        Paint();
+                    },
+                    dim, GameSettings.Current.DisplayName, image);
             });
         }
         Paint();

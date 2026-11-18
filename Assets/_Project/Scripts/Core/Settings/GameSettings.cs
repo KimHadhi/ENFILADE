@@ -157,6 +157,10 @@ public sealed class GameSettings
         "of Tables/Hud/PlayerColours.csv, a colour of their own as #RRGGBB, or empty to be given a free one. Part of the " +
         "profile, like the nickname: no tab's reset touches it.")]
     public string playerColour = "";
+    [Tooltip("The colours of their own this player keeps, one per slot of the 내 색 row (PlayerColourRow), \"#RRGGBB\" each, " +
+        "made on the colour board (ColourPanel). playerColour is the one of them in use. A slot never filled starts as a " +
+        "palette colour (PlayerColours.FillSlots). Part of the profile: no tab's reset touches them.")]
+    public List<string> playerColourSlots = new List<string>();
     [Tooltip("Set once the saved nickname and room title were checked for the Windows user name older versions put there (ForgetUserName).")]
     public bool userNameChecked;
     [Tooltip("Scene name of the map last chosen on the main menu (Data/Resources/Tables/Maps/Maps.csv).")]
@@ -312,6 +316,7 @@ public sealed class GameSettings
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
         monitorName ??= "";
         playerColour = (playerColour ?? "").Trim();
+        playerColourSlots ??= new List<string>();
         keyBindings ??= "";
         outfits ??= new List<string>();
         showFaces ??= new List<string>();

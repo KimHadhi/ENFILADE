@@ -139,6 +139,8 @@ public sealed class MainMenuScreen : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame || SettingsMenu.IsOpen || DevConsole.TakesKeyboard) return;
+        // An open colour board (the profile window's) takes the key first: it goes, the window stays.
+        if (ColourPanel.TakeEscape()) return;
         if (createRoom.IsOpen) createRoom.Close();
         else if (browser.IsOpen) browser.Close();
         else if (profile.IsOpen) profile.Close();
