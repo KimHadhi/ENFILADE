@@ -100,6 +100,7 @@ internal static class AmmoCheck
             if (guns.Count == 0) report.Text.AppendLine("FAIL no guns in Resources/Combat/FPSBody: nothing was checked.");
             else
             {
+                Reloads(guns, report);
                 TopUps(guns, report);
                 SlotTopUps(guns, report);
             }
@@ -120,6 +121,8 @@ internal static class AmmoCheck
             + "(measured in a play of this editor session); the rest go by the shares the rules fall back on.");
         text.AppendLine();
         text.Append(report.Text);
+        text.AppendLine();
+        Steps(guns, text);
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(ReportPath));
@@ -133,6 +136,85 @@ internal static class AmmoCheck
     }
 
     // ---- The rules ----
+
+    // A reload (WeaponRuntime.Advance, CutShort): its rounds move as its hands do it, the gun holds what the HUD says at
+    // every moment, a cut moves nothing and the next reload goes on from it.
+    private static void Reloads(List<WeaponData> guns, Report report)
+    {
+        report.Rule("reload: no round is made or lost at any moment of it (magazine + reserve stays the same), and it ends full");
+        foreach (var data in guns)
+            foreach (bool empty in new[] { false, true })
+            {
+                var gun = Reloading(data, empty, out int reserve);
+                if (gun == null) continue;
+                int total = gun.Ammo + gun.ReserveAmmo, least = total, most = total;
+                for (int i = 0; i < 100000 && gun.IsReloading; i++)
+                {
+                    gun.Tick(Step, default);
+                    least = Mathf.Min(least, gun.Ammo + gun.ReserveAmmo);
+                    most = Mathf.Max(most, gun.Ammo + gun.ReserveAmmo);
+                }
+                report.Expect(least == total && most == total && Ready(gun, data.MagazineSize, total - data.MagazineSize), data,
+                    $"{Kind(empty)} reload of {total} rounds held between {least} and {most}, ended {Rounds(gun)}{Doing(gun)}");
+            }
+
+        report.Rule("reload: the gun holds none while its magazine is out, and the new magazine's rounds from the moment it is seated, through the rest of the clip");
+        foreach (var data in guns)
+            foreach (bool empty in new[] { false, true })
+            {
+                if (data.ShellReload) continue;
+                var gun = Reloading(data, empty, out int reserve);
+                if (gun == null) continue;
+                int size = data.MagazineSize;
+                var steps = ReloadSteps.Of(data, empty);
+                float whole = gun.ReloadDuration;
+                // Up to just before the seating, then just past it.
+                Pass(gun, whole * steps.MagIn - 2f * Step);
+                bool outLong = whole * (steps.MagIn - steps.MagOut) > 6f * Step;
+                bool before = !outLong || (gun.Ammo == 0 && gun.MagazineOut && gun.IsReloading);
+                string was = Rounds(gun) + Doing(gun);
+                Pass(gun, 4f * Step);
+                bool tail = whole * (1f - steps.MagIn) > 6f * Step;
+                bool boltLeft = whole * (steps.Loaded - steps.MagIn) > 6f * Step;
+                bool seated = gun.Ammo == size && !gun.MagazineOut && (!tail || gun.IsReloading) && (!boltLeft || gun.ChamberDue);
+                string then = Rounds(gun) + Doing(gun);
+                bool stayed = true;
+                for (int i = 0; i < 100000 && gun.IsReloading; i++)
+                {
+                    gun.Tick(Step, default);
+                    stayed &= gun.Ammo == size;
+                }
+                report.Expect(before && seated && stayed && Ready(gun, size, reserve + (empty ? 0 : Mathf.Max(1, size / 3)) - size), data,
+                    $"{Kind(empty)} reload, seated at {steps.MagIn:0.00} of {whole:0.00} s: just before {was}, just after {then}, ended {Rounds(gun)}{Doing(gun)}"
+                    + (stayed ? "" : ", the count changed after the seating"));
+            }
+
+        report.Rule("reload cut short at any moment: the cut moves no round, and the next reload goes on from it (no step twice) to a full gun");
+        foreach (var data in guns)
+            foreach (bool empty in new[] { false, true })
+                for (int moment = 1; moment <= 9; moment++)
+                {
+                    var gun = Reloading(data, empty, out int reserve);
+                    if (gun == null) continue;
+                    int size = data.MagazineSize, total = gun.Ammo + gun.ReserveAmmo;
+                    var steps = ReloadSteps.Of(data, empty);
+                    Pass(gun, WholeReload(gun) * moment / 10f);
+                    int ammoThen = gun.Ammo, reserveThen = gun.ReserveAmmo;
+                    gun.Interrupt();
+                    bool still = gun.Ammo == ammoThen && gun.ReserveAmmo == reserveThen && !gun.IsReloading;
+                    string cut = Rounds(gun) + Doing(gun);
+                    // From where must the next one go on: with the new magazine at the pouch, from the seating, or afresh.
+                    float from = data.ShellReload ? 0f : gun.MagazineOut ? steps.Pouch : gun.ChamberDue ? steps.MagIn : 0f;
+                    bool wanted = gun.ResumeDue || gun.Ammo < size;
+                    gun.Tick(Step, new WeaponInputFrame(false, false, true));
+                    bool began = gun.IsReloading == wanted && (!wanted || Mathf.Abs(gun.ReloadStartShare - from) < .0005f);
+                    float started = gun.ReloadStartShare;
+                    for (int i = 0; i < 100000 && gun.IsReloading; i++) gun.Tick(Step, default);
+                    report.Expect(still && began && Ready(gun, size, total - size), data,
+                        $"{Kind(empty)} reload cut {moment}/10 through left {cut}{(still ? "" : " (the cut moved rounds)")}; the next "
+                        + (wanted ? $"began at {started:0.00}, should at {from:0.00}" : "was not needed") + $"; ended {Rounds(gun)}{Doing(gun)}");
+                }
+    }
 
     // A top-up (WeaponRuntime.TopUp: a Point's Gun Kata, the room's slow motion): the magazine full, the reserve exactly
     // as it was the moment before, no reload left under way or to go on with, whatever the gun was doing.
@@ -269,6 +351,27 @@ internal static class AmmoCheck
         => gun.Ammo == size && gun.ReserveAmmo == reserve && !gun.IsReloading && !gun.ResumeDue;
 
     private static string Rounds(WeaponRuntime gun) => $"{gun.Ammo}/{gun.Data.MagazineSize} +{gun.ReserveAmmo}";
+
+    private static string Kind(bool empty) => empty ? "empty" : "tactical";
+
+    // Every magazine gun's reload steps as the rules read them now, for whoever reads the report: when the rounds are in,
+    // and how long the clip goes on after the gun is loaded (the time the count used to wait).
+    private static void Steps(List<WeaponData> guns, StringBuilder text)
+    {
+        text.AppendLine("== reload steps as the rules read them (ReloadSteps.Of): seconds into the reload; 'after' is how long its clip goes on once the gun is loaded");
+        foreach (var data in guns)
+        {
+            if (data.ShellReload) { text.AppendLine($"{data.name,-16} shell reload: each shell counts as its own step ends"); continue; }
+            foreach (bool empty in new[] { false, true })
+            {
+                var steps = ReloadSteps.Of(data, empty);
+                float whole = empty ? data.EmptyReloadDuration : data.ReloadDuration;
+                text.AppendLine($"{data.name,-16} {Kind(empty),-8} {whole,5:0.00} s: magazine out {whole * steps.MagOut,5:0.00}, at the pouch {whole * steps.Pouch,5:0.00}, "
+                    + $"in {whole * steps.MagIn,5:0.00}, loaded {whole * steps.Loaded,5:0.00}, after {whole * (1f - steps.Loaded),5:0.00}"
+                    + (steps.Measured ? "" : "  (not measured: stand-in shares)"));
+            }
+        }
+    }
 
     private static string Doing(WeaponRuntime gun)
         => (gun.IsReloading ? " still reloading" : "") + (gun.MagazineOut ? " magazine out" : "") + (gun.ChamberDue ? " bolt due" : "");

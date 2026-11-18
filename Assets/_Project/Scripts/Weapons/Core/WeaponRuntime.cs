@@ -33,19 +33,27 @@ public sealed class WeaponRuntime
     /// </summary>
     public float ReloadStartShare { get; private set; }
     /// <summary>
-    /// A reload was cut short with the old magazine already out (its rounds went back to the reserve): the gun has no
-    /// magazine and fires nothing until a reload brings the new one, which starts with it at the pouch.
+    /// The old magazine is out of the gun and no new one is in: from the moment a reload's hands take it out (its rounds
+    /// are then with the reserve, so none are lost) until the new one is seated. A reload cut short in between leaves the
+    /// gun so: it fires nothing until a reload brings the new one, which starts with it at the pouch.
     /// </summary>
     public bool MagazineOut { get; private set; }
     /// <summary>
-    /// A reload was cut short with the new magazine in (its rounds counted) but the bolt or slide not yet worked: the gun
-    /// fires nothing until a reload does just that last step.
+    /// The new magazine is in (its rounds counted) but the bolt or slide not yet worked: from the seating until the bolt
+    /// of a reload from empty. A reload cut short in between leaves the gun so: it fires nothing until a reload does just
+    /// that last step.
     /// </summary>
     public bool ChamberDue { get; private set; }
-    /// <summary>A cut-short reload has its rest to do before the gun can fire (MagazineOut or ChamberDue).</summary>
+    /// <summary>The gun can't fire until a reload does the rest of what one began (MagazineOut or ChamberDue).</summary>
     public bool ResumeDue => MagazineOut || ChamberDue;
-    /// <summary>Goes up each time a reload leaves the gun loaded, done in full or cut short past its bolt (for whoever shows it).</summary>
+    /// <summary>
+    /// Goes up each time a reload is over with the gun loaded: its clip played out, or cut short past its bolt, where
+    /// only its end was left (for whoever shows it: WeaponController.ReloadCompleted).
+    /// </summary>
     public int Loads { get; private set; }
+    // How far the magazine reload under way has got in what its hands do to the gun (ReloadSteps), each done once.
+    private enum Stage { Begun, MagazineOut, MagazineIn, Loaded }
+    private Stage stage;
     /// <summary>The gun is at the hip (WeaponController sets it each frame): a revolver in Fanning fans.</summary>
     internal bool FanFromHip { get; set; }
     // Where the next reload goes on from (a share of its clip) and which clip that is (empty or tactical).
@@ -102,15 +110,20 @@ public sealed class WeaponRuntime
         if (IsReloading)
         {
             ReloadRemaining = Mathf.Max(0f, ReloadRemaining - dt);
+            // A magazine reload moves its rounds as its hands do it (the old magazine out, the new one seated, the bolt
+            // worked), not at its clip's end: what the gun holds is true at every moment of it, for the HUD and for a cut
+            // (the user, 2026-11-18: "새 매거진을 총기에 삽입하여 내부 장전 판정이 완료되는 순간 즉시 HUD 탄약 수치가
+            // 갱신되도록"). A friend's copy counts nothing: their PC does.
+            if (Step == ReloadStep.None && !shownReload) Advance();
             if (ReloadRemaining > 0f || (Step != ReloadStep.None && NextShellStep()))
             { cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false; return 0; }
-            if (Step == ReloadStep.None) Fill(true);
-            else Loads++;
+            // Its clip is over: what was left after the gun was loaded changed nothing in it, but until here the hands
+            // were on it, so only now can it fire.
+            Loads++;
             IsReloading = false; Step = ReloadStep.None; completedReload = true;
         }
-        // A magazine reload moves its rounds as it seats the new magazine, or at its end; a cut short one keeps the steps it
-        // got through (KeepWhatWasDone) and the next one goes on from there. A shell reload keeps the shells already in, as a
-        // real one does.
+        // A reload goes on from where one cut short got to (CutShort), so no step is done twice. A shell reload keeps the
+        // shells already in, as a real one does.
         if (input.ReloadPressed && (ResumeDue || (Ammo < Data.MagazineSize && ReserveAmmo > 0)))
         {
             bool resuming = ResumeDue && !Data.ShellReload;
@@ -118,6 +131,8 @@ public sealed class WeaponRuntime
             IsReloading = true; ReloadDuration = IsEmptyReload ? Data.EmptyReloadDuration : Data.ReloadDuration;
             Step = Data.ShellReload ? ReloadStep.Start : ReloadStep.None;
             stopAfterShell = shownReload = false;
+            // What the cut-short one did is done: its magazine is out already, or its new one already in.
+            stage = !resuming ? Stage.Begun : MagazineOut ? Stage.MagazineOut : Stage.MagazineIn;
             ReloadStartShare = resuming ? Mathf.Clamp01(resumeShare) : 0f;
             ReloadRemaining = ReloadDuration * (1f - ReloadStartShare); burstRemaining = 0;
             cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false; return 0;
@@ -161,7 +176,11 @@ public sealed class WeaponRuntime
     {
         if (Step == ReloadStep.End) return false;
         bool loads = Step == ReloadStep.Shell || (IsEmptyReload && Data.EmptyStartLoads);
-        if (loads && Ammo < Data.MagazineSize && ReserveAmmo > 0) { Ammo++; ReserveAmmo--; }
+        if (loads && Ammo < Data.MagazineSize && ReserveAmmo > 0)
+        {
+            Ammo++; ReserveAmmo--;
+            Tell("reload: shell in", Ammo - 1, ReserveAmmo + 1);
+        }
         bool another = Ammo < Data.MagazineSize && ReserveAmmo > 0 && !stopAfterShell;
         Step = another ? ReloadStep.Shell : ReloadStep.End;
         ReloadDuration = ReloadRemaining = another ? Data.ShellInsertDuration : Data.ShellEndDuration;
@@ -177,9 +196,65 @@ public sealed class WeaponRuntime
 
     public void Interrupt()
     {
-        // A magazine reload cut short keeps what its hands already did; nothing more is granted or lost.
-        if (IsReloading && Step == ReloadStep.None && !shownReload) KeepWhatWasDone();
+        if (IsReloading && Step == ReloadStep.None && !shownReload) CutShort();
         StopReload();
+    }
+
+    // The magazine reload under way has got as far as its timer says: each thing its hands have done to the gun by now
+    // is done to its rounds, once and in order (ReloadSteps). This is the only place a reload moves rounds; one cut
+    // short has simply got no further.
+    private void Advance()
+    {
+        float done = ReloadDuration > 0f ? Mathf.Clamp01(1f - ReloadRemaining / ReloadDuration) : 1f;
+        var steps = ReloadSteps.Of(Data, IsEmptyReload);
+        if (stage < Stage.MagazineOut && done >= steps.MagOut)
+        {
+            // The old magazine is out: the gun holds none, and its rounds are with the rest the player carries.
+            int ammoBefore = Ammo, reserveBefore = ReserveAmmo;
+            ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + Ammo);
+            Ammo = 0;
+            MagazineOut = true;
+            stage = Stage.MagazineOut;
+            Tell("reload: magazine out", ammoBefore, reserveBefore);
+        }
+        if (stage < Stage.MagazineIn && done >= steps.MagIn)
+        {
+            // The new magazine is seated: its rounds are in the gun from this moment. The bolt is still to work.
+            int ammoBefore = Ammo, reserveBefore = ReserveAmmo;
+            int transfer = Mathf.Min(Data.MagazineSize - Ammo, ReserveAmmo);
+            Ammo += transfer; ReserveAmmo -= transfer;
+            MagazineOut = false;
+            ChamberDue = true;
+            stage = Stage.MagazineIn;
+            Tell("reload: magazine in", ammoBefore, reserveBefore);
+        }
+        if (stage < Stage.Loaded && done >= steps.Loaded)
+        {
+            // The bolt worked (with a round still chambered, the seating was all there was): nothing is left to go on with.
+            ChamberDue = false;
+            resumeShare = 0f;
+            stage = Stage.Loaded;
+            if (steps.Loaded > steps.MagIn) Tell("reload: bolt worked", Ammo, ReserveAmmo);
+        }
+    }
+
+    /// <summary>
+    /// A magazine reload cut short. Its hands had done what they had done and the rounds were moved as they did it
+    /// (Advance), so the cut itself judges nothing and moves nothing: it only keeps where the next reload goes on from, so
+    /// that no step is done twice (the user, 2026-11-11: "탄창을 뺐다면 다시 탄창을 빼지 않고 새 탄창으로 갈아 끼웠다면 다시
+    /// 갈아 끼우지 않고 노리쇠 후퇴까지 했다면 … 캔슬해도 장전된 상태로"). Loaded already (past its bolt; with a round
+    /// chambered, past the new magazine seating): only its end was left and the reload counts as done. The new magazine
+    /// in: the next one starts at the seating and works the bolt. The old one out: the next starts with the new one at
+    /// the pouch. Before that nothing was done, and the next starts afresh.
+    /// </summary>
+    private void CutShort()
+    {
+        var steps = ReloadSteps.Of(Data, IsEmptyReload);
+        if (stage == Stage.Loaded) Loads++;
+        else if (stage == Stage.MagazineIn) Remember(steps.MagIn);
+        else if (stage == Stage.MagazineOut) Remember(steps.Pouch);
+        Tell(stage == Stage.Loaded ? "reload cut short: loaded already" : stage == Stage.MagazineIn ? "reload cut short: bolt left to work"
+            : stage == Stage.MagazineOut ? "reload cut short: no magazine in" : "reload cut short: nothing done yet", Ammo, ReserveAmmo);
     }
 
     // The reload under way is over here and now, whatever it had got to; the trigger starts afresh.
@@ -189,42 +264,6 @@ public sealed class WeaponRuntime
         Step = ReloadStep.None; stopAfterShell = shownReload = false;
         cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false;
         burstRemaining = 0;
-    }
-
-    /// <summary>
-    /// How far a cut-short magazine reload got, by where its clip moves the magazine and the bolt (ReloadMoments), so the
-    /// next reload doesn't do it again (user, 2026-11-11: "탄창을 뺐다면 다시 탄창을 빼지 않고 새 탄창으로 갈아 끼웠다면 다시
-    /// 갈아 끼우지 않고 노리쇠 후퇴까지 했다면 … 캔슬해도 장전된 상태로"). Past its bolt (a tactical reload: past the new
-    /// magazine seating) the gun is loaded. Past the seating the rounds are in, and only the bolt is left. Past the old
-    /// magazine leaving, it is out: its rounds go back to the reserve, so none are lost, and the next reload starts with the
-    /// new one at the pouch. Before that nothing was done.
-    /// </summary>
-    private void KeepWhatWasDone()
-    {
-        float done = ReloadDuration > 0f ? Mathf.Clamp01(1f - ReloadRemaining / ReloadDuration) : 0f;
-        Stages(IsEmptyReload, out float magOut, out float pouch, out float magIn, out float loaded);
-        if (done >= loaded) { Fill(true); return; }
-        if (done >= magIn) { Fill(false); ChamberDue = true; Remember(magIn); return; }
-        if (done < magOut) return;
-        if (!MagazineOut)
-        {
-            ReserveAmmo = (int)Math.Min(int.MaxValue, (long)ReserveAmmo + Ammo);
-            Ammo = 0;
-            MagazineOut = true;
-        }
-        Remember(pouch);
-    }
-
-    // The new magazine's rounds go in from the reserve; complete, the gun is ready and nothing is left to resume.
-    private void Fill(bool complete)
-    {
-        int transfer = Mathf.Min(Data.MagazineSize - Ammo, ReserveAmmo);
-        Ammo += transfer; ReserveAmmo -= transfer;
-        MagazineOut = false;
-        if (!complete) return;
-        ChamberDue = false;
-        resumeShare = 0f;
-        Loads++;
     }
 
     private void Remember(float share)
@@ -238,31 +277,6 @@ public sealed class WeaponRuntime
     {
         MagazineOut = ChamberDue = false;
         resumeShare = 0f;
-    }
-
-    // Shares of a reload clip: the old magazine starting to leave, the new one at the pouch, the new one seated, and the
-    // gun loaded (an empty reload's bolt or slide worked after the seating; a tactical reload is loaded once seated). From
-    // the clip's own motion when the gun's body has measured it, else the shares the reload sounds fall back on.
-    private void Stages(bool empty, out float magOut, out float pouch, out float magIn, out float loaded)
-    {
-        magOut = .2f;
-        magIn = empty ? .5f : .62f;
-        loaded = empty ? .86f : magIn;
-        if (ReloadMoments.TryGet(Data, empty, out var moments))
-        {
-            if (moments.MagOut >= 0f) magOut = moments.MagOut;
-            if (moments.MagIn >= 0f) magIn = moments.MagIn;
-            loaded = magIn;
-            if (empty)
-            {
-                if (moments.BoltBack > magIn) loaded = moments.BoltBack;
-                else if (moments.BoltForward > magIn) loaded = moments.BoltForward;
-            }
-        }
-        magIn = Mathf.Max(magIn, magOut);
-        loaded = Mathf.Max(loaded, magIn);
-        pouch = ReloadMoments.TryGetMagazine(Data, empty, out var magazine) && magazine.Far >= magOut && magazine.Far <= magIn
-            ? magazine.Far : magOut;
     }
 
     /// <summary>
@@ -301,6 +315,7 @@ public sealed class WeaponRuntime
         ReserveAmmo -= moved;
         IsEmptyReload = false;
         ForgetResume();
+        Tell("reloaded while put away", Ammo - moved, ReserveAmmo + moved);
         return true;
     }
 
@@ -328,16 +343,16 @@ public sealed class WeaponRuntime
     /// The magazine full at once without the reserve paying for it: a Point's Gun Kata, where the gun drawn comes out full
     /// (ClassKit; the user, 2026-11-12: "장전처럼 탄약을 소모하는 게 아니라 그냥 꽉 찬 채로 나오는 게 어때? 그럼 총알 다 떨어질
     /// 걱정 없이 시원시원하고 맛있게 쏠 수 있으니까"), and the room's slow motion as it begins (SkullSlowMotion; the user,
-    /// 2026-11-18: "현재 장탄수만 최대치로 충전 (예비 탄약은 충전 제외)"). Any reload under way stops, and so does what a
-    /// cut-short one had left to do: the gun is loaded. It is not a reload cut short (Interrupt), which keeps what the
-    /// hands had done and so can move rounds between the magazine and the reserve; here the reserve stays exactly as it
-    /// was. False when the gun was full and ready already.
+    /// 2026-11-18: "현재 장탄수만 최대치로 충전 (예비 탄약은 충전 제외)"). A reload under way is over at once, at any
+    /// moment of it, its end after the rounds were in too, and so is what a cut-short one had left to do: the gun is
+    /// loaded and can fire. The reserve stays exactly as it was: cutting the reload moves no round (CutShort) and the fill
+    /// is not paid for. False when the gun was full and ready already.
     /// </summary>
     public bool TopUp()
     {
-        if (Ammo >= Data.MagazineSize && !ResumeDue) return false;
+        if (Ammo >= Data.MagazineSize && !ResumeDue && !IsReloading) return false;
         int ammoBefore = Ammo, reserveBefore = ReserveAmmo;
-        StopReload();
+        Interrupt();
         ForgetResume();
         Ammo = Data.MagazineSize;
         Tell("top-up", ammoBefore, reserveBefore);

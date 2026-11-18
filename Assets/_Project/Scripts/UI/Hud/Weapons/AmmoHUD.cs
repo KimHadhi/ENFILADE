@@ -26,7 +26,7 @@ public sealed class AmmoHUD : MonoBehaviour
     private WeaponSlotSilhouette silhouette;
     private WeaponRuntime shown;
     private int lastAmmo;
-    private float shotPulse;
+    private float shotPulse, loadPulse;
     private PlayerDamageReceiver health;
 
     private static AmmoHUD current;
@@ -70,7 +70,7 @@ public sealed class AmmoHUD : MonoBehaviour
         if (current == this) current = null;
         HudRoom.Free(this);
         if (group != null) group.alpha = 0f;
-        shown = null; shotPulse = 0f;
+        shown = null; shotPulse = loadPulse = 0f;
     }
 
     public void RefreshNow()
@@ -92,12 +92,19 @@ public sealed class AmmoHUD : MonoBehaviour
         // a 21:9 screen (935 px of canvas) a second window came down onto it.
         if (visible && HudRoom.Measure(panel, out float near, out float far, out float top, out float bottom))
             HudRoom.Take(this, near, far, top, bottom, HudRoom.Way.Over);
-        if (!visible) { shown = null; shotPulse = 0f; return; }
+        if (!visible) { shown = null; shotPulse = loadPulse = 0f; return; }
 
-        if (runtime != shown) { shown = runtime; lastAmmo = runtime.Ammo; shotPulse = 0f; }
-        else if (runtime.Ammo < lastAmmo) shotPulse = 1f;
+        // The numbers are the gun's own at this frame: a reload moves its rounds as the magazine leaves and as the new one
+        // is seated (WeaponRuntime.Advance), so the count is right through the rest of its clip too (the user, 2026-11-18:
+        // "남은 후딜레이 애니메이션 동안에도 UI에는 이미 장전 완료된 탄약 수치가 반영되도록").
+        if (runtime != shown) { shown = runtime; lastAmmo = runtime.Ammo; shotPulse = loadPulse = 0f; }
+        // A shot. Not the magazine taken out in a reload, which empties the count too.
+        else if (runtime.Ammo < lastAmmo && !runtime.MagazineOut) shotPulse = 1f;
+        // Rounds in: the new magazine seated, a shell, a top-up. The number swells once, at that very moment.
+        else if (runtime.Ammo > lastAmmo) loadPulse = 1f;
         lastAmmo = runtime.Ammo;
         shotPulse = Mathf.MoveTowards(shotPulse, 0f, Time.unscaledDeltaTime * 6f);
+        loadPulse = Mathf.MoveTowards(loadPulse, 0f, Time.unscaledDeltaTime * 5f);
 
         int rounds = runtime.Ammo;
         bool empty = rounds == 0, low = rounds <= Mathf.CeilToInt(runtime.Data.MagazineSize * lowAmmoFraction);
@@ -105,8 +112,11 @@ public sealed class AmmoHUD : MonoBehaviour
         magazine.SetText("{0:00}", rounds);
         capacity.SetText("/ {0}", runtime.Data.MagazineSize);
         reserve.SetText("{0:00}", runtime.ReserveAmmo);
-        magazine.color = Color.Lerp(empty || low ? tint : Color.white, accent, shotPulse * .35f);
-        magazine.rectTransform.localScale = Vector3.one * (1f + shotPulse * .035f);
+        // With no magazine in the gun (taken out by the reload under way, or by one cut short) the count is no alarm:
+        // it is quiet until the new one is in.
+        magazine.color = runtime.MagazineOut ? Muted
+            : Color.Lerp(empty || low ? tint : Color.white, accent, Mathf.Max(shotPulse, loadPulse) * .35f);
+        magazine.rectTransform.localScale = Vector3.one * (1f + shotPulse * .035f + loadPulse * .08f);
         reserve.color = runtime.ReserveAmmo == 0 ? lowAmmo : Color.white;
         mode.text = runtime.FireMode == WeaponFireMode.Automatic ? "AUTO"
             : runtime.FireMode == WeaponFireMode.Burst ? "BURST" : runtime.FireMode == WeaponFireMode.Fanning ? "FAN" : "SEMI";

@@ -41,6 +41,8 @@ public sealed class WeaponFeedback : MonoBehaviour
     private bool timedReload;
     private ReloadMoments.Moments moments;
     private float magInLead, boltLead;
+    // A reload no body shows: the moments its sounds land on.
+    private ReloadSteps untimed;
 
     private bool IsMine => movement == null || movement.IsLocal;
 
@@ -262,8 +264,11 @@ public sealed class WeaponFeedback : MonoBehaviour
             boltPlayed = Before(moments.BoltForward, from);
             return;
         }
+        // No body shows the clip: the magazine's and the bolt's sounds land on the moments the rounds move at, which the
+        // rules read in the same place (ReloadSteps), so what is heard is what the gun then holds.
+        untimed = ReloadSteps.Of(data, empty);
         magOutPlayed = true;
-        magInPlayed = from >= (empty ? .5f : .62f);
+        magInPlayed = from >= untimed.MagIn;
         if (from <= 0f && settings.gunSounds)
             Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
     }
@@ -326,12 +331,12 @@ public sealed class WeaponFeedback : MonoBehaviour
             Due(ref boltPlayed, moments.BoltForward, boltLead, progress, duration, FeelSound.SlideForward, Own(data.BoltForwardSounds, null), settings);
             return;
         }
-        if (!magInPlayed && progress >= (emptyReload ? .5f : .62f))
+        if (!magInPlayed && progress >= untimed.MagIn)
         {
             magInPlayed = true;
             if (settings.gunSounds) Sound(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
         }
-        if (emptyReload && !boltPlayed && progress >= .86f)
+        if (emptyReload && !boltPlayed && untimed.Loaded > untimed.MagIn && progress >= untimed.Loaded)
         {
             boltPlayed = true;
             if (settings.gunSounds) Sound(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
