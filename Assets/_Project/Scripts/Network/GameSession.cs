@@ -24,8 +24,14 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private const float SpawnSpacing = 1.5f;
     // The transport tries once a second, so this is how long a failed join takes.
     private const int ConnectAttempts = 10;
-    // How long a silent connection lasts when a PC crashes or loses its network, without any goodbye.
-    private const int SilenceLimitMs = 10000;
+    // How long a silent connection lasts when a PC crashes or loses its network, without any goodbye (Network.csv
+    // silenceLimit, s). It has to outlast the longest frame a PC makes while in a room: the first frame of a scene builds
+    // every player's body, guns and cloth at once and took 9.2 to 21.5 s here (Logs/loads.txt, Logs/hitches.txt), and a PC
+    // sends nothing during it. At 10 s the other end let go of a friend whose load ran longer than that.
+    private static int SilenceLimitMs => Mathf.RoundToInt(Mathf.Clamp(NetSmoothing.Number("silenceLimit", 30f), 5f, 120f) * 1000f);
+    // A room lost while in it is gone back into by way of the title screen; if that screen takes longer than this to
+    // come up (s), the try is dropped rather than made at some later visit there.
+    private const float ComeBackWithin = 60f;
     // Packets the transport may hold waiting each frame (UnityTransport's default is 128).
     private const int ReceiveQueue = 512;
     // Every enemy lives here, so all PCs know the same network prefabs before the first one spawns.
@@ -33,14 +39,25 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     // How Netcode's own description of a disconnect begins, when the host sent none.
     private const string NetcodeOwnReason = "[Disconnect Event]";
     private static GameSession current;
-    // A room whose straight connection was found but never carried the game: joined once more, through the relay.
+    // A room to join once more: one whose straight connection was found but never carried the game (through the relay
+    // this time), or one this PC was in and lost without a word (comingBack: by the room again, or by the address it
+    // was joined at, from the title screen as any join). The join under way is such a return (returning): lost again
+    // before it gets in, it is not tried a second time.
     private static RoomInfo again;
+    private static string againAddress;
+    private static bool comingBack, returning;
+    private static UnityEngine.Events.UnityAction<Scene, LoadSceneMode> whenMenuIsUp;
     private NetworkManager network;
     // An internet room's host takes friends two ways at once (DualTransport): `transport` is then the relay's half.
     private CountingTransport transport, direct;
     private DualTransport dual;
     private InternetRoom internetRoom;
     private RoomInfo joining;
+    // The address this PC joined at (the LAN, or typed), for coming back; the room's own scene load on this PC while it
+    // runs (Netcode reads it), which an ending waits out.
+    private string joinedAddress;
+    private NetworkSceneManager watched;
+    private AsyncOperation roomLoad;
     private GameObject playerPrefab;
     private int spawned, maxPlayers;
     private bool wasConnected, ending;
@@ -56,7 +73,12 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static string Status { get; private set; } = "";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() { current = null; again = null; Status = ""; }
+    private static void ResetStatics()
+    {
+        current = null; again = null; againAddress = null; comingBack = returning = false; Status = "";
+        if (whenMenuIsUp != null) SceneManager.sceneLoaded -= whenMenuIsUp;
+        whenMenuIsUp = null;
+    }
 
     /// <summary>This PC's addresses a friend can join, on the local network or a virtual LAN.</summary>
     public static IEnumerable<string> LocalAddresses() => NetworkInterface.GetAllNetworkInterfaces()
@@ -107,6 +129,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         string address = ParseAddress(typed);
         if (address == null) { Status = Texts.Get("net.join.badaddress"); return; }
         var session = StartJoining(address);
+        session.joinedAddress = address;
         session.transport.SetConnectionData(address, Port);
         if (!session.network.StartClient()) session.End(Texts.Get("net.join.nostart"));
     }
@@ -195,9 +218,26 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         var session = Create();
         Status = Texts.Format("net.joining", target);
         session.transport.MaxConnectAttempts = ConnectAttempts;
-        session.network.OnClientConnectedCallback += _ => session.wasConnected = true;
+        // In: a return after a loss has succeeded, so a later loss may be come back from again.
+        session.network.OnClientConnectedCallback += _ => { session.wasConnected = true; returning = false; };
         session.network.OnClientDisconnectCallback += session.OnDisconnected;
         return session;
+    }
+
+    // The room's own scene loads on this PC are kept while they run (OnRoomScene): an ending waits one out.
+    private void Update()
+    {
+        var scenes = network != null && network.IsListening ? network.SceneManager : null;
+        if (scenes == watched) return;
+        if (watched != null) watched.OnSceneEvent -= OnRoomScene;
+        watched = scenes;
+        if (watched != null) watched.OnSceneEvent += OnRoomScene;
+    }
+
+    private void OnRoomScene(SceneEvent change)
+    {
+        if (change == null || network == null || change.ClientId != network.LocalClientId) return;
+        if (change.SceneEventType == SceneEventType.Load && change.AsyncOperation != null) roomLoad = change.AsyncOperation;
     }
 
     private async void HostOnInternet()
@@ -242,6 +282,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private void OpenRoom()
     {
         wasConnected = true;
+        network.OnClientDisconnectCallback += OnGuestGone;
         network.SceneManager.OnLoadEventCompleted += OnMapLoaded;
         network.SceneManager.OnSynchronizeComplete += SpawnPlayer;
         network.SceneManager.LoadScene(roomMap, LoadSceneMode.Single);
@@ -280,12 +321,23 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
 
     void INetworkPrefabInstanceHandler.Destroy(NetworkObject player) => Destroy(player.gameObject);
 
+    // The host's log of a friend going, with how long this PC's own last frame took: a frame longer than the silence
+    // limit is this PC having been the silent one (Player.log in a build).
+    private void OnGuestGone(ulong client)
+    {
+        if (network == null || !network.IsServer || client == network.LocalClientId) return;
+        Debug.Log($"[GameSession] client {client} left or was lost in '{SceneManager.GetActiveScene().name}'; this PC's last frame took {Time.unscaledDeltaTime:0.0} s");
+    }
+
     private void OnDisconnected(ulong client)
     {
-        // Only what the host itself said counts (the room is full). Without that Netcode fills in a technical line of
-        // its own, which is no use to a player; and a host that said something was reached, so the way there works.
+        // Only what the host itself said counts (the room is full, the host closed it). Without that Netcode fills in a
+        // technical line of its own, which is no use to a player; and a host that said something was reached, so the way
+        // there works.
         string reason = network.DisconnectReason;
         bool told = !string.IsNullOrEmpty(reason) && !reason.StartsWith(NetcodeOwnReason, StringComparison.Ordinal);
+        Debug.Log($"[GameSession] disconnected in '{SceneManager.GetActiveScene().name}': {(told ? "the host said '" + reason + "'" : "no word from the host")}, "
+            + $"was in {wasConnected}, a room load in flight {roomLoad != null && !roomLoad.isDone}, this PC's last frame took {Time.unscaledDeltaTime:0.0} s");
         if (!told) reason = wasConnected ? Texts.Get("net.lost") : Texts.Get("net.join.failed");
         End(reason, !told);
     }
@@ -295,6 +347,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     {
         if (current != this || ending) return;
         ending = true;
+        bool server = network.IsServer;
         // The straight way answered the probe and then didn't carry the game: the same room once more, and this time
         // InternetRoom goes through the relay. Never when the player was already in, or gave up.
         if (failed && !wasConnected && joining != null && internetRoom != null && internetRoom.GiveUpDirect())
@@ -302,7 +355,24 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
             again = joining;
             message = Texts.Get("net.join.relay");
         }
+        // In the room and lost without a word from the host (a host closing its room says so, below): back into the same
+        // room once. A long load is the usual cause (SilenceLimitMs; the relay's own limit is ten seconds whatever this
+        // game sets), and the room is still there. It used to leave the friend alone in whatever scene came up (user,
+        // 2026-11-18: "게스트가 함께 허브로 모이지 않고 개인 허브로 튕기는").
+        else if (failed && wasConnected && !server && !returning && (joining != null || !string.IsNullOrEmpty(joinedAddress)))
+        {
+            again = joining;
+            againAddress = joining == null ? joinedAddress : null;
+            comingBack = returning = true;
+            message = Texts.Get("net.rejoining");
+        }
+        else returning = false;
         Status = message;
+        // A host closing its room tells the others so: their PCs then know it was closed, not lost, and go to the title
+        // screen with that word instead of trying to come back.
+        if (server && !failed)
+            foreach (ulong client in new List<ulong>(network.ConnectedClientsIds))
+                if (client != network.LocalClientId) network.DisconnectClient(client, Texts.Get("net.closed"));
         internetRoom?.Close();
         network.Shutdown();
         StartCoroutine(FinishEnding());
@@ -312,12 +382,50 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     private IEnumerator FinishEnding()
     {
         yield return new WaitWhile(() => network.ShutdownInProgress);
+        // A scene the room was loading on this PC wakes first, with the room still counted as this PC's: let go of
+        // before that, the scene woke as a game alone (PlayerSpawnPoint made a player), and the way out started beside a
+        // load still in flight.
+        var load = roomLoad;
+        while (load != null && !load.isDone) yield return null;
         current = null;
         Destroy(gameObject);
         var retry = again;
+        string address = againAddress;
+        bool back = comingBack;
         again = null;
-        if (retry != null) JoinInternet(retry);
-        else if (SceneManager.GetActiveScene().name != MainMenuScreen.SceneName) SceneLoad.Go(MainMenuScreen.SceneName);
+        againAddress = null;
+        comingBack = false;
+        bool atMenu = SceneManager.GetActiveScene().name == MainMenuScreen.SceneName;
+        if (back && !atMenu)
+        {
+            // From the title screen, the way any join is made; the room's scene is let go of first.
+            if (!ComeBackFromMenu(retry, address)) returning = false;
+        }
+        else if (retry != null) JoinInternet(retry);
+        else if (address != null) Join(address);
+        else if (!atMenu) SceneLoad.Go(MainMenuScreen.SceneName);
+    }
+
+    // To the title screen, and into the room again as it comes up. False when the screen can't be gone to now.
+    private static bool ComeBackFromMenu(RoomInfo room, string address)
+    {
+        if (whenMenuIsUp != null) SceneManager.sceneLoaded -= whenMenuIsUp;
+        float until = Time.realtimeSinceStartup + ComeBackWithin;
+        whenMenuIsUp = (scene, mode) =>
+        {
+            if (scene.name != MainMenuScreen.SceneName) return;
+            SceneManager.sceneLoaded -= whenMenuIsUp;
+            whenMenuIsUp = null;
+            // Not if the player was quicker and is in a room already, or the screen took too long to come.
+            if (IsOnline || Time.realtimeSinceStartup > until) { returning = false; return; }
+            if (room != null) JoinInternet(room);
+            else Join(address);
+        };
+        SceneManager.sceneLoaded += whenMenuIsUp;
+        if (SceneLoad.Go(MainMenuScreen.SceneName)) return true;
+        SceneManager.sceneLoaded -= whenMenuIsUp;
+        whenMenuIsUp = null;
+        return false;
     }
 
     // Play mode stopped or the game quit without the room ending: the router's port and the sockets' threads must not
