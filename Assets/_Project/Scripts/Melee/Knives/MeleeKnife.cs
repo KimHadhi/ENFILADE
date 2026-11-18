@@ -7,7 +7,7 @@ using UnityEngine;
 /// parry, the shove, the crouched sweep: PlayerMeleeCombat, MeleeCombos). A light attack slashes, forehand then backhand
 /// while they follow quickly; a charged one, a riposte or a beat chain's finisher is the heavy clip (a stab; the light clip
 /// again for a knife with no heavy one of its own); a spin or a chase is a backhand slash. The knife deals its own row's
-/// numbers (ClassKnives.csv, read by PlayerMeleeCombat), more on the head and in the back (Hit, read by MeleeAttackSweep),
+/// numbers (ClassKnives.csv, read by PlayerMeleeCombat), more on the head and in the back (Hit, read by BladeTrace),
 /// names itself in the kill feed and the weapon slots (FeedName, FeedIcon, SlotName, SlotIcon) and sounds as a blade
 /// (Sounds, from PlayerFistAudio, whose sounds go to the other PCs as before).
 /// The arm goes by the swing's own timeline (PlayerMeleeCombat's SwingTimeline; the user, 2026-11-18: "즉시 발동 대신 무기별
@@ -16,6 +16,9 @@ using UnityEngine;
 /// frame as the charge grows, the fist trembling more the fuller it is (the row's chargeShake); the swing is then its clip
 /// at the timeline's own clip time, so what the arm shows, when the blade is live and when the next action may begin are
 /// one clock. Before, the arm ran a clock of its own beside a hit test that never asked it.
+/// What the swing cuts is this blade where the arm shows it (BladeTrace through PlayerMeleeCombat.BladePosed; the user,
+/// 2026-11-18: "히트 판정은 … 실제 무기 모델 자체를 기준으로"). The knife tells how far each of its clips reaches (Reach),
+/// and through the blade's marks the arm reaches as much further ahead as the swing was aimed to need (ReachIn).
 /// The same on every PC (the user's rule: what I see is what friends see): every PC's copy of a player has a timeline their
 /// PC's words step (the wind-up, the swing, the letting go) and plays the same clips; ExecutionKnifeArm poses the right arm
 /// with them on each body, after the hands and FPS Animation Framework. The clips are the Blender knife workspace's
@@ -71,10 +74,7 @@ public sealed class MeleeKnife : MonoBehaviour
 
     private bool IsOut => melee != null && melee.IsActive;
 
-    // ---- What the knife deals (MeleeAttackSweep) ----
-
-    /// <summary>How much further than a fist the knife in hand reaches (m; 0 with the fists).</summary>
-    public static float ExtraReach(PlayerMovement who) => Active(who)?.Reach ?? 0f;
+    // ---- What the knife deals (BladeTrace) ----
 
     /// <summary>
     /// A strike landing on <paramref name="collider"/>: on the head (the head hitbox, else a plain body's top 22%, as the
@@ -157,6 +157,50 @@ public sealed class MeleeKnife : MonoBehaviour
     // The light swing a press would be now: the backhand right after a forehand, the forehand otherwise.
     private Swing NextLight() => backNext && sinceSwing < ChainGap ? Swing.Backslash : Swing.Slash;
 
+    /// <summary>The clip of the light swing a press would throw now: a wind-up is aimed by it (PlayerMeleeCombat).</summary>
+    internal KnifeSwing Coming => KnifeSwing.Of(ClipOf(KnifeNow(), NextLight()));
+
+    // ---- Where the blade goes (KnifeSeat; PlayerMeleeCombat's step in and its cut) ----
+
+    // Each clip's reach on this body with this knife, worked out once (again when the knife or the tables change).
+    private readonly System.Collections.Generic.Dictionary<KnifeSwing, float> reaches = new System.Collections.Generic.Dictionary<KnifeSwing, float>();
+    private string reachesOf;
+
+    /// <summary>
+    /// How far ahead of the eyes this clip's blade gets while it is live, held by this body's hand (m; KnifeSeat.Reach):
+    /// what a swing can cut from where the player stands, so how near they must step.
+    /// </summary>
+    internal float Reach(KnifeSwing swung)
+    {
+        if (swung == null) return 0f;
+        var held = KnifeNow();
+        string key = held.Id + "/" + held.Model;
+        if (reachesOf != key || reaches.Count > 32) { reaches.Clear(); reachesOf = key; }
+        if (reaches.TryGetValue(swung, out float known)) return known;
+        // The arm measures the hand and the model; until it has, a hand's usual length and the knife's plain shape.
+        bool worn = arm != null && arm.Wears(held);
+        float reach = KnifeSeat.Reach(swung, held, arm != null ? arm.HandLength : KnifeSeat.NominalHand, worn ? arm.Shape : KnifeSeat.Shape.Plain);
+        if (worn) reaches[swung] = reach;
+        return reach;
+    }
+
+    /// <summary>
+    /// The blade where the swing's clip alone puts it now, from the eyes: what the swing cuts with on a body the arm
+    /// cannot pose (no humanoid to hold a knife). False when no swing's clip is playing.
+    /// </summary>
+    internal bool BladeByClip(Transform eyes, out Vector3 start, out Vector3 tip)
+    {
+        start = tip = default;
+        if (eyes == null || melee == null || clip == null || swing == Swing.None || swing == Swing.Draw
+            || !clip.Sample(melee.SwingClipTime, out var key)) return false;
+        bool worn = arm != null && arm.Wears(KnifeNow());
+        if (!KnifeSeat.Blade(key, KnifeNow(), arm != null ? arm.HandLength : KnifeSeat.NominalHand, worn ? arm.Shape : KnifeSeat.Shape.Plain,
+                out Vector3 from, out Vector3 to)) return false;
+        start = eyes.position + eyes.rotation * from;
+        tip = eyes.position + eyes.rotation * to;
+        return true;
+    }
+
     // ---- The arm (ExecutionKnifeArm, each frame) ----
 
     /// <summary>
@@ -177,6 +221,7 @@ public sealed class MeleeKnife : MonoBehaviour
         {
             float at = swing == Swing.Draw ? clock : melee.SwingClipTime;
             if (found = clip.Sample(at, out key)) clip.SampleFingers(at, sampledFingers);
+            if (found && swing != Swing.Draw) ReachIn(ref key, at);
         }
         if (!found)
         {
@@ -211,6 +256,21 @@ public sealed class MeleeKnife : MonoBehaviour
         float up = hands != null ? hands.FistsWeight : 1f;
         weight = Mathf.Clamp01(up * (1f - block));
         return true;
+    }
+
+    // The arm reaches in to the body the swing is aimed at (PlayerMeleeCombat.AimSwing): the wrist goes that much further
+    // ahead than the clip has it, eased in up to the blade's first mark, whole through the marks, and eased out by the
+    // mark that frees the next action. The elbow follows by half, so the arm straightens rather than slides.
+    private void ReachIn(ref KnifeSwing.Key key, float at)
+    {
+        float further = melee.SwingReachIn;
+        if (further <= 0f) return;
+        var marks = melee.SwingMarks;
+        float home = marks.Next > marks.To ? marks.Next : marks.Length;
+        float share = at < marks.From ? Mathf.SmoothStep(0f, 1f, marks.From > 1e-4f ? at / marks.From : 1f)
+            : at <= marks.To ? 1f : 1f - Mathf.SmoothStep(0f, 1f, home > marks.To ? Mathf.InverseLerp(marks.To, home, at) : 1f);
+        key.Wrist += Vector3.forward * (further * share);
+        key.Elbow += Vector3.forward * (further * share * .5f);
     }
 
     // The pose drawn toward a clip's first frame by this share (the fingers with it).

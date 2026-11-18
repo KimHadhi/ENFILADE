@@ -8,7 +8,8 @@ using UnityEngine.Playables;
 /// Multiplayer plan stage 4A: the enemy's capsule wears a zombie. A character from ZombieLooks is put on it, the same
 /// one on every PC (picked from the network id). The capsule still walks, blocks players, gets shoved and stood on as
 /// before, fitted to the character's height, but it is hidden and bullets pass it: trigger hitboxes on the bones take
-/// them instead, and the head box is the headshot (AttackTrace, WeaponHitRegion). Melee still sweeps the capsule.
+/// them instead, and the head box is the headshot (AttackTrace, WeaponHitRegion). A knife's blade cuts the same bone
+/// hitboxes where it passes (BladeTrace); a shove still sweeps the capsule.
 /// Our own small playable graph animates the body from what the enemy already does, with no Animator Controller:
 /// idle, walk and run by its real speed (the feet keep the clips' own pace), the swing timed so its strike frame lands
 /// on the windup's hit, a flinch when it is interrupted and a reel while its posture is broken. It only reads the AI,

@@ -202,6 +202,18 @@ public sealed class SwingTimeline
         return spanned && Marks.To > Marks.From && to > from;
     }
 
+    /// <summary>
+    /// The whole part of the swing's clip the last step ran through (s of the clip), live or not: the blade's trace
+    /// places the live part of it between the arm as the last frame showed it and as this one does. False when the step
+    /// ran through none.
+    /// </summary>
+    public bool Stepped(out float from, out float to)
+    {
+        from = spanFrom;
+        to = spanTo;
+        return spanned && spanTo > spanFrom;
+    }
+
     private Events BeginWindup()
     {
         Now = Phase.Windup;

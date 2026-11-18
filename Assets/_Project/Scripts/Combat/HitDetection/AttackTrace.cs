@@ -150,24 +150,30 @@ public static class AttackTrace
         return new AttackTraceResult(hasHit, hit, end, result, headshot);
     }
 
-    private static bool IsOwner(RaycastHit hit, GameObject owner)
-        => owner != null && hit.collider.transform.IsChildOf(owner.transform);
+    private static bool IsOwner(Collider collider, GameObject owner)
+        => owner != null && collider.transform.IsChildOf(owner.transform);
     // The dead lie in their corpse; the capsule they left behind must not stop a shot on its way to it.
-    private static bool IsDeadPlayer(RaycastHit hit)
+    private static bool IsDeadPlayer(Collider collider)
     {
-        var player = hit.collider.GetComponentInParent<PlayerMovement>();
+        var player = collider.GetComponentInParent<PlayerMovement>();
         return player != null && player.IsDead;
     }
-    // A zombie's capsule lets shots through to its bone hitboxes (triggers), which take them instead (ZombieBody); a meal's
-    // head is such a trigger too (ZombieMealBody).
-    private static bool ShouldSkip(RaycastHit hit, GameObject owner)
-        => IsOwner(hit, owner) || PlayerLeanHitboxes.Replaces(hit.collider) || ZombieBody.Replaces(hit.collider)
-            || IsDeadPlayer(hit) || GoreGib.IsPiece(hit.collider) || DroppedMagazine.IsMagazine(hit.collider) || ThrownStone.IsStone(hit.collider)
-            || Throwables.Passes(hit.collider) || GimmickCage.LetsThrough(hit.collider)
-            || (hit.collider.isTrigger && !ZombieBody.IsHitbox(hit.collider) && !ZombieMealBody.IsHead(hit.collider)
-                && !CampaignCanTarget.Is(hit.collider) && !GimmickTarget.Is(hit.collider)
-                && (hit.collider.GetComponent<PlayerCombatHitbox>() == null
-                || hit.collider.GetComponentInParent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody != true));
+    /// <summary>
+    /// What an attack goes past as if it were not there, a bullet and a blade alike (BladeTrace asks too, so a knife meets
+    /// exactly what a shot would): the attacker's own body, a zombie's capsule, which lets attacks through to its bone
+    /// hitboxes (triggers), which take them instead (ZombieBody; a meal's head is such a trigger too, ZombieMealBody), a
+    /// player's capsule while their split body stands in for it, the dead, gore, dropped magazines, thrown stones, and
+    /// every trigger that is not such a hitbox or a target.
+    /// </summary>
+    public static bool LetsThrough(Collider collider, GameObject owner)
+        => collider == null || IsOwner(collider, owner) || PlayerLeanHitboxes.Replaces(collider) || ZombieBody.Replaces(collider)
+            || IsDeadPlayer(collider) || GoreGib.IsPiece(collider) || DroppedMagazine.IsMagazine(collider) || ThrownStone.IsStone(collider)
+            || Throwables.Passes(collider) || GimmickCage.LetsThrough(collider)
+            || (collider.isTrigger && !ZombieBody.IsHitbox(collider) && !ZombieMealBody.IsHead(collider)
+                && !CampaignCanTarget.Is(collider) && !GimmickTarget.Is(collider)
+                && (collider.GetComponent<PlayerCombatHitbox>() == null
+                || collider.GetComponentInParent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody != true));
+    private static bool ShouldSkip(RaycastHit hit, GameObject owner) => LetsThrough(hit.collider, owner);
 
     public static bool FirstExternalHit(GameObject owner, Vector3 origin, Vector3 direction, float range, int layers, out RaycastHit hit)
         => FirstExternalHit(owner, origin, direction, range, layers, null, out hit);

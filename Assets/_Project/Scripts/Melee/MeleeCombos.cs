@@ -16,7 +16,8 @@ public enum ComboStrike : byte { None, Riposte, Spin, Chase, Beat, Finisher }
 /// - Link (user, 2026-11-11 #10, League's auto-attack reset: "평타 Q 평타", the attack after the Q a special spinning
 ///   move): a skill hands the punch straight back. The fists' shove, the guard break once it lands, a dash push that
 ///   meets someone and the crouched sweep each leave Link.window seconds in which an attack press is a spinning backfist
-///   at once: wider, through up to Link.targets bodies, harder than a full charge. The shove keeps its own wait.
+///   at once: stepping in Link.reach further, through up to Link.targets bodies, harder than a full charge (how wide it
+///   cuts is the blade's own path now, not a wider sweep). The shove keeps its own wait.
 /// - Chase (Sekiro's shuriken into Chasing Slice): for Chase.window seconds after a stone is thrown (T), an attack press
 ///   with someone under the crosshair within Chase.range dashes at them and lands the spinning backfist. With nobody
 ///   there the press is an ordinary punch and the chance stays open.
@@ -63,10 +64,8 @@ public sealed class MeleeCombos : MonoBehaviour
         public float damage = 1.3f;
         [Min(0f), Tooltip("Its posture damage against a full-charged punch's.")]
         public float posture = 1.5f;
-        [Min(0f), Tooltip("Reach beyond a punch's (m).")]
+        [Min(0f), Tooltip("The body may step in this much further than the knife's own lunge (m).")]
         public float reach = .3f;
-        [Min(.05f), Tooltip("How wide it sweeps (m; a punch: 0.22).")]
-        public float radius = .45f;
         [Min(1), Tooltip("Bodies it can go through.")]
         public int targets = 3;
     }
@@ -150,7 +149,9 @@ public sealed class MeleeCombos : MonoBehaviour
     // The beat: when the last punch left, when the next beat falls, when its wait began, the steps on beat so far.
     private float lastThrow, beatTarget, beatOpenedAt;
     private int beatStep;
-    private bool ticksLoaded, beatOpen, lastWasFinisher, landedNow;
+    private bool ticksLoaded, beatOpen, lastWasFinisher;
+    // Whom the finisher under way is aimed at, until its blade lands or another swing leaves.
+    private MeleeCombatTarget finishing;
     private ComboBeatHUD hud;
     private Camera view;
 
@@ -199,6 +200,7 @@ public sealed class MeleeCombos : MonoBehaviour
         if (!Mine) return;
         lastThrow = clock;
         lastWasFinisher = strike == ComboStrike.Finisher;
+        if (!lastWasFinisher) finishing = null;
         if (strike != ComboStrike.Beat && strike != ComboStrike.Finisher && (beatOpen || beatStep > 0)) LoseBeat();
         beatOpen = false;
     }
@@ -207,8 +209,7 @@ public sealed class MeleeCombos : MonoBehaviour
     internal void OnPunchLanded()
     {
         if (!Mine) return;
-        landedNow = true;
-        if (lastWasFinisher) return;
+        if (lastWasFinisher) { FinisherLanded(); return; }
         var intervals = beat.intervals;
         float interval = intervals != null && intervals.Length > 0 ? intervals[Mathf.Clamp(beatStep, 0, intervals.Length - 1)] : .3f;
         beatTarget = lastThrow + Mathf.Max(.05f, interval);
@@ -283,15 +284,23 @@ public sealed class MeleeCombos : MonoBehaviour
         return false;
     }
 
-    // The chain's last blow: a heavy straight at whoever the crosshair is on (a sweep along the aim with nobody there),
-    // throwing them back and stunning them while time catches on it.
+    // The chain's last blow: a heavy straight at whoever the crosshair is on (thrown where the player stands with nobody
+    // there), throwing them back and stunning them while time catches on it.
     private void Finish()
     {
-        var target = Aimed(beat.finisherReach);
-        landedNow = false;
-        Melee.StrikeCombo(ComboStrike.Finisher, target);
+        finishing = Aimed(beat.finisherReach);
+        Melee.StrikeCombo(ComboStrike.Finisher, finishing);
         beatStep = 0;
-        if (!landedNow || target == null || !target.IsAvailable) return;
+    }
+
+    // The finisher's blade landed. A swing lands when its clip brings the blade round (KnifeSwing's marks), a moment
+    // after it leaves, so the throw and the stun come here and not from the call that sent it: they were asked for
+    // right after that call, which since 2026-11-18 found nothing landed yet and gave them up.
+    private void FinisherLanded()
+    {
+        var target = finishing;
+        finishing = null;
+        if (target == null || !target.IsAvailable) return;
         Vector3 away = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
         away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
         BashImpact.Play(target.transform.position + Vector3.up * 1.2f, away, 1.4f, player);
@@ -392,21 +401,24 @@ public sealed class MeleeCombos : MonoBehaviour
     }
 
     /// <summary>
-    /// A combo strike's numbers (PlayerMeleeCombat): damage and posture against a full-charged punch's, its reach (beyond
-    /// a punch's for a sweep, from the eyes for an aimed strike), how wide it sweeps (0: a punch's) and how many bodies.
+    /// A combo strike's numbers (PlayerMeleeCombat): damage and posture against a full-charged swing's, its reach (for a
+    /// strike aimed at someone, how near the eyes they must be for it to land on them for sure; for a spin, how much
+    /// further than the knife's own lunge the body may step in) and how many bodies it cuts through (0: the knife's own).
+    /// How wide it cuts is the blade's own path (BladeTrace): the spin's sweep radius is gone.
     /// </summary>
-    internal void Numbers(ComboStrike strike, out float damage, out float posture, out float reach, out float radius, out int targets)
+    internal void Numbers(ComboStrike strike, out float damage, out float posture, out float reach, out int targets)
     {
-        damage = posture = 1f; reach = radius = 0f; targets = 0;
+        damage = posture = 1f; reach = 0f; targets = 0;
         switch (strike)
         {
             case ComboStrike.Riposte: damage = riposte.damage; posture = riposte.posture; reach = riposte.reach; break;
-            case ComboStrike.Spin: damage = link.damage; posture = link.posture; reach = link.reach; radius = link.radius; targets = link.targets; break;
-            case ComboStrike.Chase: damage = chase.damage; posture = chase.posture; reach = chase.reach; radius = link.radius; targets = link.targets; break;
+            case ComboStrike.Spin: damage = link.damage; posture = link.posture; reach = link.reach; targets = link.targets; break;
+            case ComboStrike.Chase: damage = chase.damage; posture = chase.posture; reach = chase.reach; targets = link.targets; break;
             case ComboStrike.Beat: damage = 1f + beat.stepDamage * beatStep; posture = 1f + beat.stepPosture * beatStep; break;
             case ComboStrike.Finisher: damage = beat.finisherDamage; posture = beat.finisherPosture; reach = beat.finisherReach; break;
         }
     }
+
 
     // Steps in to the target, then strikes; already close, it strikes at once.
     private void BeginDash(MeleeCombatTarget target, ComboStrike strike, float speed, float timeout, float stop)

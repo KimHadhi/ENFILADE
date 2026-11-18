@@ -23,10 +23,12 @@ public sealed partial class PlayerNetworkCombat
 
     // A swing as the other PCs see it (the user's rule: what one sees is what the others see): its wind-up beginning,
     // which their copy's own timeline then carries on into the charge with its tremble (SwingTimeline, MeleeKnife), the
-    // swing leaving with how charged it was and which move it is (a combo's strike showed as a plain slash before), and
-    // a wind-up or a charge let go of with no swing (the guard, V, a move). Their PC judged what it hit.
+    // swing leaving with how charged it was, which move it is (a combo's strike showed as a plain slash before) and how
+    // much further ahead the arm reaches to meet whom it is aimed at (the blade is what hits, so the arm is shown where
+    // it was on their screen), and a wind-up or a charge let go of with no swing (the guard, V, a move). Their PC judged
+    // what it hit.
     [Rpc(SendTo.NotMe)]
-    private void PunchRpc(float charge, byte strike) => melee.ShowPunch(charge, (ComboStrike)strike);
+    private void PunchRpc(float charge, byte strike, float reachIn) => melee.ShowPunch(charge, (ComboStrike)strike, reachIn);
 
     [Rpc(SendTo.NotMe)]
     private void WindRpc() => melee.ShowWind();

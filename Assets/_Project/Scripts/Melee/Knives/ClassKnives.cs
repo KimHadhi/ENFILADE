@@ -14,7 +14,8 @@ using UnityEngine;
 /// The same knife is the melee slot's in place of the fists (MeleeKnife; the user, 2026-11-13: "클래스 별로 기본 근접 슬롯에
 /// 칼 들게 해 줘"): the row also names it (a Texts id) and its picture (WeaponIcons), how the fist holds it to fight (a
 /// forward or a reverse grip, and their seat), its swing clips (KnifeSwing tables, the Blender knife workspace's) and what
-/// it deals in place of the fists' numbers, with its head and back factors and its extra reach. A row whose drawClip names
+/// it deals in place of the fists' numbers, with its head and back factors, how it swings and how far the body may step
+/// in with it. A row whose drawClip names
 /// the knife's own draw (an addon's) draws it that way in executions too (OwnDraw, ExecutionKnife), held meanwhile in its
 /// fighting grip and turned to the execution's grip as the stroke takes over.
 /// </summary>
@@ -59,11 +60,10 @@ public static class ClassKnives
         /// </summary>
         public bool OwnDraw;
         /// <summary>
-        /// What it deals in place of the fists' 10-28 (Player.csv Fists.damage): a light slash and a full-charge stab, with the
-        /// posture they break; on the head and in the back these times more (generous, as the user's guns are); and how much
-        /// further it reaches than a fist (m).
+        /// What it deals: a light slash and a full-charge stab, with the posture they break; on the head and in the back
+        /// these times more (generous, as the user's guns are).
         /// </summary>
-        public float Slash = 45f, Stab = 110f, SlashPosture = 18f, StabPosture = 40f, HeadFactor = 2f, BackFactor = 2f, Reach;
+        public float Slash = 45f, Stab = 110f, SlashPosture = 18f, StabPosture = 40f, HeadFactor = 2f, BackFactor = 2f;
         public string SwingSound = "Knife/Swing", HitSound = "Knife/Hit", HeavyHitSound = "Knife/HeavyHit", WallSound = "Knife/Wall";
         /// <summary>
         /// How it swings (the user, 2026-11-18: "즉시 발동 대신 무기별 선딜레이 부여", "근접 무기 스탯으로 공격 속도,
@@ -74,6 +74,14 @@ public static class ClassKnives
         /// </summary>
         public float Windup = .1f, AttackSpeed = 1f, ChargeTime = .6f, ChargeShake = .6f;
         public int Penetration = 2;
+        /// <summary>
+        /// What a swing reaches and cuts with is the blade itself, as the arm shows it (the user, 2026-11-18: "공격 범위 및
+        /// 히트 판정은 별도 박스 판정이 아닌 True FPS 1인칭 화면에 보이는 실제 무기 모델 자체를 기준으로 처리"; BladeTrace,
+        /// KnifeSeat), so the row no longer says how far it reaches: the model and the clip do. It says how far the body
+        /// may step in to bring the blade to whoever the swing is aimed at (m; 0: it never steps, and only cuts what the
+        /// blade reaches from where the player stands), and how thick the cut is round the blade's line (m).
+        /// </summary>
+        public float Lunge = 1.2f, BladeRadius = .04f;
     }
 
     /// <summary>A forward grip's blade: out of the thumb's side, leaning the fingers' way, so a fist held thumb up points it ahead.</summary>
@@ -164,12 +172,13 @@ public static class ClassKnives
         knife.StabPosture = Mathf.Max(0f, row.Number("stabPosture", knife.StabPosture));
         knife.HeadFactor = Mathf.Max(0f, row.Number("headFactor", knife.HeadFactor));
         knife.BackFactor = Mathf.Max(0f, row.Number("backFactor", knife.BackFactor));
-        knife.Reach = row.Number("reach", knife.Reach);
         knife.Windup = Mathf.Max(0f, row.Number("windup", knife.Windup));
         knife.AttackSpeed = Mathf.Max(.1f, row.Number("attackSpeed", knife.AttackSpeed));
         knife.Penetration = Mathf.Max(1, row.Whole("penetration", knife.Penetration));
         knife.ChargeTime = Mathf.Max(0f, row.Number("chargeTime", knife.ChargeTime));
         knife.ChargeShake = Mathf.Max(0f, row.Number("chargeShake", knife.ChargeShake));
+        knife.Lunge = Mathf.Max(0f, row.Number("lunge", knife.Lunge));
+        knife.BladeRadius = Mathf.Max(.005f, row.Number("bladeRadius", knife.BladeRadius));
         knife.SwingSound = row.Text("swingSound", knife.SwingSound);
         knife.HitSound = row.Text("hitSound", knife.HitSound);
         knife.HeavyHitSound = row.Text("heavyHitSound", knife.HeavyHitSound);

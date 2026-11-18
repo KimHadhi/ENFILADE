@@ -12,7 +12,8 @@ using UnityEngine;
 /// cloth, so a sleeve follows. Rig-agnostic: any humanoid a modder brings.
 /// With no execution under way the same knife may be out in the melee slot (MeleeKnife): then the right arm takes the
 /// knife's swing or guard clip from the eyes (KnifeSwing, the Blender knife workspace's) over the fists' pose, and the
-/// knife rides the fist in its fighting grip (forward or reverse, ClassKnives melee*). An execution comes first; a knife
+/// knife rides the fist in its fighting grip (forward or reverse, ClassKnives melee*), and where its blade then is, is
+/// what the swing cuts with (told to PlayerMeleeCombat each frame). An execution comes first; a knife
 /// with a draw of its own (ExecutionKnife.DrawCurrent) is drawn with that clip the same way before the stroke or the pair
 /// takes the right arm back, its seat turning from the fighting grip to the execution's as it does.
 /// </summary>
@@ -38,7 +39,8 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
     private bool bound;
     private GameObject model;
     private string worn;
-    private Vector3 modelBlade = Vector3.back, modelEdge = Vector3.down;
+    // The knife's own shape from its model's markers (KnifeSeat): its ways, and where its blade starts and ends.
+    private KnifeSeat.Shape shape = KnifeSeat.Shape.Plain;
     private float reach = .2f;
     // How much of the arms the stroke poses now (1) or leaves to a paired clip (0), and whether a stroke posed last frame.
     private float armsShare = 1f;
@@ -73,24 +75,15 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         if (model != null) Destroy(model);
         model = ClassKnives.Make(knife);
         worn = knife.Model;
+        shape = KnifeSeat.Measure(model != null ? model.transform : null, knife.Scale);
+        reach = shape.Tip.magnitude;
         if (model == null) return;
         var root = model.transform;
         root.SetParent(holder, false);
-        // The model's own ways from its markers: the handle leads from the pommel through the grip (its origin) to the
-        // blade, the edge marker lies off that line on the cutting side, the tip is how far the knife reaches.
-        var pommel = Find(root, "Pommel");
-        var tip = Find(root, "Tip");
-        var edge = Find(root, "Edge");
-        Vector3 blade = pommel != null ? -root.InverseTransformPoint(pommel.position)
-            : tip != null ? root.InverseTransformPoint(tip.position) : Vector3.back;
-        modelBlade = blade.sqrMagnitude > 1e-8f ? blade.normalized : Vector3.back;
-        Vector3 cutting = edge != null ? Vector3.ProjectOnPlane(root.InverseTransformPoint(edge.position), modelBlade) : Vector3.zero;
-        if (cutting.sqrMagnitude < 1e-8f) cutting = Vector3.ProjectOnPlane(Vector3.down, modelBlade);
-        if (cutting.sqrMagnitude < 1e-8f) cutting = Vector3.ProjectOnPlane(Vector3.right, modelBlade);
-        modelEdge = cutting.normalized;
-        reach = (tip != null ? root.InverseTransformPoint(tip.position).magnitude : .2f) * knife.Scale;
+        // The model's own ways come from its markers (KnifeSeat.Measure, taken above while the model still stood as its
+        // prefab does): it sits in the holder with its blade along the holder's +z and its edge along +y.
         root.localPosition = Vector3.zero;
-        root.localRotation = Quaternion.Inverse(Quaternion.LookRotation(modelBlade, modelEdge));
+        root.localRotation = Quaternion.Inverse(Quaternion.LookRotation(shape.Blade, shape.Edge));
         root.localScale = Vector3.one * knife.Scale;
         // Drawn on the body's own layer, so every view sees it as it sees the body.
         var skin = GetComponentInChildren<SkinnedMeshRenderer>();
@@ -155,6 +148,13 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         bool held = key.Held && model != null;
         if (held) Seat(knife.MeleeHeld, knife.MeleeBlade, knife.MeleeEdge);
         ShowKnife(held);
+        // Where the blade is as this frame shows it, for the swing's cut (PlayerMeleeCombat.BladePosed, BladeTrace): the
+        // knife's own from where its blade starts to its tip, or the fist's own length with no model to hold.
+        var combat = movement.MeleeCombat;
+        if (combat != null && held && holder != null)
+            combat.BladePosed(holder.position + holder.rotation * shape.Base, holder.position + holder.rotation * shape.Tip);
+        else if (combat != null && model == null)
+            combat.BladePosed(right.Hand.position, right.Hand.position + right.AlongNow() * (right.HandLength * 2f));
         return true;
     }
 
@@ -227,29 +227,23 @@ public sealed class ExecutionKnifeArm : MonoBehaviour
         if (holder == null) return;
         Vector3 along = right.AlongNow();
         Vector3 palm = right.PalmNow(along);
-        if (along.sqrMagnitude < 1e-10f || palm.sqrMagnitude < 1e-10f) return;
-        Quaternion frame = Quaternion.LookRotation(along, palm);
-        Vector3 blade = frame * Mirror(bladeAxes);
-        Vector3 edge = Vector3.ProjectOnPlane(frame * Mirror(edgeAxes), blade);
-        if (edge.sqrMagnitude < 1e-8f) edge = Vector3.ProjectOnPlane(palm, blade);
-        if (blade.sqrMagnitude < 1e-8f || edge.sqrMagnitude < 1e-8f) return;
+        // The seat's working is KnifeSeat's, the same that tells where a clip's blade goes without a body.
+        if (!KnifeSeat.Place(right.Hand.position, along, palm, right.HandLength, heldAxes, bladeAxes, edgeAxes, out Vector3 grip,
+                out Quaternion turn)) return;
         // A body imported at another scale (an avatar's armature at 100) must not scale the knife with it.
         float scale = Mathf.Max(1e-4f, Mathf.Abs(transform.lossyScale.x));
         holder.localScale = Vector3.one / scale;
-        holder.SetPositionAndRotation(right.Hand.position + frame * Mirror(heldAxes * right.HandLength), Quaternion.LookRotation(blade, edge));
+        holder.SetPositionAndRotation(grip, turn);
     }
 
-    private static Vector3 Mirror(Vector3 handAxes) => new Vector3(-handAxes.x, handAxes.y, handAxes.z);
+    /// <summary>The right hand's length on this body (wrist to middle knuckle, m), and the worn knife's shape: a clip's blade is worked out with them (MeleeKnife).</summary>
+    internal float HandLength => bound ? right.HandLength : KnifeSeat.NominalHand;
+    internal KnifeSeat.Shape Shape => shape;
+    /// <summary>The arm has this knife's model on and measured.</summary>
+    internal bool Wears(ClassKnives.Knife knife) => knife != null && model != null && worn == knife.Model;
 
     private void ShowKnife(bool show)
     {
         if (holder != null && holder.gameObject.activeSelf != show) holder.gameObject.SetActive(show);
-    }
-
-    private static Transform Find(Transform root, string name)
-    {
-        foreach (var part in root.GetComponentsInChildren<Transform>(true))
-            if (part != root && string.Equals(part.name, name, System.StringComparison.OrdinalIgnoreCase)) return part;
-        return null;
     }
 }
