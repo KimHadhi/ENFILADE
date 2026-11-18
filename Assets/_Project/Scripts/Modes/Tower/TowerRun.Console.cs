@@ -13,7 +13,9 @@ public sealed partial class TowerRun
     public static string Command(string args)
     {
         string[] words = (args ?? "").Trim().Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length == 0 || words[0] != "rooms") return "rooms [날짜 20261118] — 그날 방마다 나올 좀비와 엘리트 수"; // dev-text
+        if (words.Length > 0 && words[0] == "lanes") return active != null ? active.DescribeLanes() : "타워 안에서만 된다"; // dev-text
+        if (words.Length == 0 || words[0] != "rooms")
+            return "rooms [날짜 20261118] — 그날 방마다 나올 좀비와 엘리트 수 · lanes — 지금 레인마다 상태·층·탄 사람과 그 자리(방장)"; // dev-text
         int seed = words.Length > 1 && int.TryParse(words[1], out int day) ? day : TodaySeed();
         // The plan's rows are bound to an owner; this one lives only for the dump.
         var holder = new GameObject("TowerPlan (dump)");
@@ -42,5 +44,30 @@ public sealed partial class TowerRun
         {
             Destroy(holder);
         }
+    }
+
+    // /tower lanes: where the run stands, lane by lane: its state and floor, who boarded it (the host's list) and where
+    // each of them is now, and which of its doors stand open on this PC.
+    private string DescribeLanes()
+    {
+        var text = new System.Text.StringBuilder("phase " + phase + " · stretch " + segment + "\n");
+        for (int k = 0; k < TowerLayout.Lanes; k++)
+        {
+            text.Append((char)('A' + k)).Append(' ').Append(states[k]).Append(" floor ").Append(TowerLayout.FloorNumber(segment, floors[k]))
+                .Append(" left ").Append(lefts[k]).Append(" · members");
+            if (!IsHost) text.Append(" (the host knows)");
+            foreach (ulong id in members[k])
+            {
+                var who = PlayerById(id);
+                text.Append(' ').Append(id).Append(who == null ? " gone" : who.IsDead ? " dead"
+                    : " at " + who.transform.position.ToString("0.0") + (TowerLayout.LaneAt(who.transform.position, segment) == k ? "" : " (not in the lane)"));
+            }
+            text.Append(" · open doors");
+            foreach (var door in doors)
+                if (door != null && door.Lane == k && door.Open) text.Append(' ').Append(door.Kind).Append('@').Append(door.Level);
+            text.Append('\n');
+        }
+        Debug.Log("[Tower] lanes\n" + text);
+        return text.ToString();
     }
 }

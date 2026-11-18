@@ -127,6 +127,10 @@ public sealed partial class TowerRun : MonoBehaviour
     private static TowerRun active;
     private readonly List<PlayerMovement> players = new List<PlayerMovement>();
     private readonly Lane[] lanes = { new Lane(), new Lane(), new Lane(), new Lane() };
+    // The host's: who boarded each lane (their ids, IdOf), written down as the boarding ends. Whose lane it is, is this
+    // list and not where anyone stands at the moment: a lane is out when its own are dead, never because one of them is
+    // somewhere else for a while (a Schießhund's showdown takes its hound far under the map; a position told late).
+    private readonly List<ulong>[] members = { new List<ulong>(), new List<ulong>(), new List<ulong>(), new List<ulong>() };
     private readonly Dictionary<ulong, (int lane, float at)> palms = new Dictionary<ulong, (int, float)>();
     // Where the run stands: the host's, and a guest's copy of it.
     private TowerPlan plan;

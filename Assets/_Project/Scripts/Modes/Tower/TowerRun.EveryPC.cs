@@ -40,11 +40,18 @@ public sealed partial class TowerRun
             {
                 int index = door.Level - TowerLayout.FirstLevel(segment);
                 if (index < 0 || index >= TowerLayout.FloorsIn(segment)) return false;
-                // Open on the way up, and through the fight until everyone of the lane still alive is in the room: the
-                // first one in doesn't shut a slower lane-mate out on the stairs.
-                return (phase == Phase.Boarding && chosen && index == 0)
-                       || (phase == Phase.Lanes && floors[k] == index
-                           && (states[k] == LaneState.Climbing || (states[k] == LaneState.Fighting && SomeoneOutside(k, door.Level))));
+                if (phase == Phase.Boarding) return chosen && index == 0;
+                if (phase != Phase.Lanes && phase != Phase.Gather) return false;
+                // Open on the way up.
+                if (phase == Phase.Lanes && floors[k] == index && states[k] == LaneState.Climbing) return true;
+                // And a door the lane has reached, of the room being fought or of one got through, is never shut on
+                // someone in the lane who is still short of it: the first one in doesn't shut a slower lane-mate out on
+                // the stairs, and one pushed back down the stairs in a fight is not locked there when the room is
+                // cleared (user, 2026-11-18: "계단으로 밀려 내려온 상태에서 층 클리어 판정이 나며 문이 닫혀 영구적으로
+                // 계단에 갇히는"). Where they stand decides, not the moment the room was cleared.
+                bool reached = index < floors[k]
+                    || (index == floors[k] && (states[k] == LaneState.Fighting || states[k] == LaneState.Done));
+                return reached && SomeoneShort(k, door.Level);
             }
             case TowerDoorKind.Exit:
             {
@@ -59,12 +66,15 @@ public sealed partial class TowerRun
         return false;
     }
 
-    // Someone of the lane, alive, is not yet in its room on this level (on the stairs, or in the doorway).
-    private bool SomeoneOutside(int k, int level)
+    // Someone in the lane, alive, is short of its room on this level: lower down, on the stairs up to it, or in its
+    // doorway (TowerLayout.ShortOf). Not someone beyond it already.
+    private bool SomeoneShort(int k, int level)
     {
         foreach (var someone in players)
-            if (TowerLayout.LaneAt(someone.transform.position, segment) == k && !TowerLayout.InRoom(someone.transform.position, level, k, .6f))
-                return true;
+        {
+            Vector3 at = someone.transform.position;
+            if (TowerLayout.LaneAt(at, segment) == k && TowerLayout.ShortOf(at, level, .6f)) return true;
+        }
         return false;
     }
 

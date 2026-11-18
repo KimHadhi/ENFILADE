@@ -31,6 +31,7 @@ public sealed partial class TowerRun
             states[k] = LaneState.Shut;
             floors[k] = lefts[k] = 0;
             lanes[k].Reset();
+            members[k].Clear();
         }
     }
 
@@ -118,23 +119,26 @@ public sealed partial class TowerRun
             if (lane < 0 || (opened & (1 << lane)) == 0) { allIn = false; break; }
         }
         if (count > 0f && !allIn) return;
+        // The doors shut: whoever stands in a lane now is of it for the whole stretch (members).
         for (int k = 0; k < TowerLayout.Lanes; k++)
         {
+            members[k].Clear();
             if ((opened & (1 << k)) == 0) continue;
-            int inside = PlayersIn(k);
-            states[k] = inside > 0 ? LaneState.Climbing : LaneState.Vacant;
-            lanes[k].Players = Mathf.Max(1, inside);
+            foreach (var someone in players)
+                if (TowerLayout.LaneAt(someone.transform.position, segment) == k) members[k].Add(IdOf(someone));
+            states[k] = members[k].Count > 0 ? LaneState.Climbing : LaneState.Vacant;
+            lanes[k].Players = Mathf.Max(1, members[k].Count);
         }
         phase = Phase.Lanes;
         counting = false;
         count = 0f;
     }
 
-    private int PlayersIn(int lane)
+    // Someone who boarded the lane is still alive (down counts: a lane-mate may get them up), wherever they are now.
+    private bool AnyMemberAlive(int lane)
     {
-        int inside = 0;
-        foreach (var someone in players) if (TowerLayout.LaneAt(someone.transform.position, segment) == lane) inside++;
-        return inside;
+        foreach (var someone in players) if (members[lane].Contains(IdOf(someone))) return true;
+        return false;
     }
 
     private void RunLanes()
@@ -166,7 +170,11 @@ public sealed partial class TowerRun
     {
         var lane = lanes[k];
         int level = TowerLayout.FirstLevel(segment) + floors[k];
-        if (PlayersIn(k) == 0) { Fail(k); return; }
+        // Out when everyone who boarded it is dead (or gone from the room), not when nobody happens to stand in it: it
+        // used to ask where its players were each frame, so one taken elsewhere for a moment lost the lane, its zombies
+        // were taken away, and they came back to a room with every door shut (user, 2026-11-18: "정상 클리어 직후 강제
+        // 탈락 판정이 나며 갇히는").
+        if (!AnyMemberAlive(k)) { Fail(k); return; }
         // The day's rules: a wire walked through, a stealth room's far end reached unseen (through it at once).
         bool through = TickRules(k, level);
         if (states[k] == LaneState.Climbing)
@@ -245,9 +253,18 @@ public sealed partial class TowerRun
         lane.Alive.Add(enemy);
     }
 
-    // Nobody left alive in it: the lane is out, and what was left in its room goes.
+    // Nobody of it left alive: the lane is out, and what was left in its room goes. Said in the log with who its own
+    // were, so a lane that went out for no reason a player can see can be read back (Player.log in a build).
     private void Fail(int k)
     {
+        var text = new System.Text.StringBuilder("[Tower] lane ").Append((char)('A' + k)).Append(" out on floor ")
+            .Append(TowerLayout.FloorNumber(segment, floors[k])).Append(" (").Append(states[k]).Append("): members");
+        foreach (ulong id in members[k])
+        {
+            var who = PlayerById(id);
+            text.Append(' ').Append(id).Append(who == null ? " gone" : who.IsDead ? " dead" : " alive at " + who.transform.position.ToString("0.0"));
+        }
+        Debug.Log(text.ToString());
         lanes[k].Reset();
         states[k] = LaneState.Failed;
         lefts[k] = 0;

@@ -124,6 +124,19 @@ public static class TowerLayout
         return EntersFromEast(level) ? at.x >= -.2f && at.x <= RoomLength - past : at.x >= past && at.x <= RoomLength + .2f;
     }
 
+    /// <summary>
+    /// On a lane's way up, short of this level's room: lower down (the rooms and stairs below it), or at its height but
+    /// not yet <paramref name="past"/> m in from its entry wall (the top of the stairs that arrive there, the doorway).
+    /// The other side of InRoom's line, and nothing beyond the room's exit wall. A room's entry door is never shut on
+    /// someone of its lane who stands there (TowerRun.WantsOpen).
+    /// </summary>
+    public static bool ShortOf(Vector3 at, int level, float past)
+    {
+        if (at.y < FloorY(level) - .5f) return true;
+        if (at.y > CeilingY(level)) return false;
+        return EntersFromEast(level) ? at.x > RoomLength - past : at.x < past;
+    }
+
     /// <summary>Where the dead come back and the left-behind are brought: a stretch's hall, its middle (the lobby's entrance hall).</summary>
     public static Vector3 HallSpot(int segment)
         => new Vector3(segment == 0 ? -5f : 4.5f, FloorY(HallLevel(segment)) + .05f, 0f);
