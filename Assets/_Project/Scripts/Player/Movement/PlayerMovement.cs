@@ -54,6 +54,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsLocal { get; private set; } = true;
     /// <summary>A remote character the network moves and poses (MovementMirror). Its own movement runs nothing but its posture.</summary>
     public bool IsNetworkDriven { get; private set; }
+    /// <summary>
+    /// Something other than its own legs carries this body for now (the developer's noclip flight, Dev/Noclip). Its
+    /// movement then runs nothing but its posture, as for a copy the network moves, so no state, gravity or capsule move
+    /// competes for the body's place. Whoever sets it calls ResetVelocity as it takes the body and as it gives it back.
+    /// </summary>
+    internal bool Carried { get; set; }
     public PlayerDamageReceiver DamageReceiver { get; private set; }
     public PlayerStats Stats { get; private set; }
     public UltimateCharge Ultimate { get; private set; }
@@ -444,7 +450,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     private void Update()
     {
         if (!EnsureInitialized()) return;
-        if (IsNetworkDriven) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
+        if (IsNetworkDriven || Carried) { Posture.UpdateHeightsAndTransform(Time.deltaTime); return; }
         float dt = DeltaTime;
         if (dt <= 0f || !Application.isFocused) return;
         Input.Sample(InputAvailable && !ControlLocked, !IsGettingUp);

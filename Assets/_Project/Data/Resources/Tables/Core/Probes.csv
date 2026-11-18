@@ -2,3 +2,8 @@
 PerfAuto.on,1,에디터에서 Play할 때 장면마다(타이틀 빼고) 처음 한 번 스크립트별·엔진 부분별 비용을 저절로 잴지(1/0). 결과는 Logs/perf.txt(PerfProbe). 재는 동안은 에디터 프로파일러가 켜져서 조금 더 무겁다
 PerfAuto.wait,3,로딩 화면이 걷히고 몇 초 뒤에 재기 시작하는지(초)
 PerfAuto.seconds,90,한 장면을 몇 초 동안 재는지(초). 그 전에 장면을 떠나면 거기까지
+Noclip.speed,8,"콘솔 /noclip으로 날 때의 기본 속도(m/s). 날면서 마우스 휠로 바꾸고, /noclip 숫자로도 정한다(Noclip)"
+Noclip.fast,4,노클립에서 달리기 키를 누르고 있는 동안 속도에 곱하는 값(1 이상)
+Noclip.slow,0.25,"노클립에서 회피 키를 누르고 있는 동안 속도에 곱하는 값(0~1). 벽 가까이에서 천천히 볼 때"
+Noclip.step,1.5,노클립에서 마우스 휠 한 칸에 기본 속도를 곱하거나 나누는 값(1보다 큼)
+Noclip.unseen,1,"노클립을 켤 때 좀비 눈에 안 보이게 시작할지(1/0). 날면서 /noclip seen · unseen으로 바꾼다. 안 보여도 소리와 손 닿는 거리는 들킨다(ZombieEffects.Unseen)"

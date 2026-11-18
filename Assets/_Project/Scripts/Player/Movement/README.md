@@ -10,7 +10,7 @@
 
 | 파일·폴더 | 책임 |
 | --- | --- |
-| [PlayerMovement.cs](PlayerMovement.cs) | 초기화, 프레임 처리 순서, 외부 속성·메서드 |
+| [PlayerMovement.cs](PlayerMovement.cs) | 초기화, 프레임 처리 순서, 외부 속성·메서드. `Carried`: 다른 것이 몸을 옮기는 동안(개발자용 노클립, [Noclip](../../Dev/Noclip.cs)) 이동은 네트워크가 움직이는 사본처럼 자세 말고는 아무것도 돌리지 않는다. 켜는 쪽이 몸을 가져갈 때와 돌려줄 때 `ResetVelocity`를 부른다 |
 | [PlayerMovement.Configuration.cs](PlayerMovement.Configuration.cs) | 이동·자세·슬라이드·다이브 설정 선언. 값은 `Player.csv`의 `Move`·`Posture` 행 |
 | [MovementAbilitySettings.cs](MovementAbilitySettings.cs) | 회피·파쿠르·착지·슬라이딩 공격·밀치기·사다리·집라인 설정 선언. 값은 `Player.csv`의 `Ability` 행 |
 | [Core/MovementInput.cs](Core/MovementInput.cs) | Input System 액션 샘플링 |

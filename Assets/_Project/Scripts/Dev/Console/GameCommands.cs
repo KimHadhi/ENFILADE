@@ -13,6 +13,7 @@ public static class GameCommands
         CardCommands.Register(router); // /card: the class cards at once, for trying them (Docs/Features/ClassCards.md)
         CombatTestCommands.Register(router, findChat);
         MovementCommands.Register(router); // /input and the movement probes: who holds the keys, ledges, leans, drops
+        MapCommands.Register(router); // /noclip and the map probes: flying through a map to look at its colliders
         router.Register("help", "명령어 목록", _ => router.Help());
         router.Register("mods", "불러온 모드 목록 · reload 모드와 표 다시 읽기 · export 게임의 원래 표를 Mods 폴더에 꺼내기", GameMods.Command);
         router.Register("echo", "입력한 내용 출력", text => text);
