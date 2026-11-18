@@ -29,8 +29,8 @@ using UnityEngine.UI;
 /// hub stalled 3.4 and 4 s on shader compiles, and the show's clock ran through them). Up means: the hub's lobby runs,
 /// this PC's player is in, the posed copies stand dressed and the results' camera has drawn them a few times
 /// (showFrames, which compiles what it sees behind the curtain), no frame has taken longer than showSettleFrame for
-/// showSettle, and nothing else holds it back (HoldBack: a loading screen or a first-use warm-up). After showWait it
-/// starts whatever is missing. Once it plays, a long frame counts only showMaxStep (Step), so a hitch pauses the
+/// showSettle, and nothing else holds it back (HoldBack: a loading screen or a first-use warm-up). After showWait of
+/// the curtain being in view (never counted under a loading screen) it starts whatever is missing. Once it plays, a long frame counts only showMaxStep (Step), so a hitch pauses the
 /// lineup, the poses, the titles, the highlights, the sheet and the insignia instead of skipping them.
 /// Real time. Numbers: Tables/Hub (show*). The console's /results replays it; /results vsign has everyone strike that
 /// pose, to see one after touching it up (ArtSource/Poses/START_HERE.md).
@@ -86,8 +86,10 @@ public sealed partial class ResultsShow : MonoBehaviour
     private ResultsSheet sheet;
     private TMP_Text waitCaption;
     private float age, prevAge, groupAt, showEnd, highlightsAt;
-    // The wait behind the curtain (real s): when it began, when the stage was set, and since when no frame has run long.
-    private float createdAt, preparedAt, smoothSince;
+    // The wait behind the curtain (real s): how long this PC's player could see the curtain (waited) and how long
+    // something else stood before it (heldFor: a loading screen, a warm-up), when the stage was set, and since when no
+    // frame has run long.
+    private float waited, heldFor, preparedAt, smoothSince;
     // Frames the results' camera has drawn since the stage was set.
     private int framesSeen;
     private bool prepared, showing;
@@ -140,7 +142,7 @@ public sealed partial class ResultsShow : MonoBehaviour
         instance = this;
         won = ResultsAwards.Evaluate(MatchResults.Entries);
         stage = FindFirstObjectByType<HubStage>();
-        createdAt = smoothSince = Time.realtimeSinceStartup;
+        smoothSince = Time.realtimeSinceStartup;
         BuildCanvas();
         RenderPipelineManager.endCameraRendering += Drawn;
     }

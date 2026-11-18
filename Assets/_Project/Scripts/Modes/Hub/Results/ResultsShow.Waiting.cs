@@ -8,17 +8,28 @@ public sealed partial class ResultsShow
 {
     private void Wait()
     {
-        float now = Time.realtimeSinceStartup;
+        float now = Time.realtimeSinceStartup, frame = Time.unscaledDeltaTime, settleFrame = HubLobby.Number("showSettleFrame", .1f);
         // A long frame (a hitch while the hub loads, a shader compiling) starts the quiet stretch over.
-        if (Time.unscaledDeltaTime > HubLobby.Number("showSettleFrame", .1f)) smoothSince = now;
-        bool late = now - createdAt >= HubLobby.Number("showWait", 20f);
+        if (frame > settleFrame) smoothSince = now;
+        // The longest wait is counted only while the player could see the curtain: not under a loading screen or a
+        // warm-up (HoldBack), and of a stalled frame only as much as a frame may take. Counted from the show's making,
+        // it ran through the hub's own load (one frame of 9 to 21 s: Logs/loads.txt), so the show was started unready
+        // under the loading screen; in a room, where this PC's player comes in only once every PC has loaded, it was
+        // over before anyone saw it (user, 2026-11-18: "멀티 세션에서 하이라이트 연출이 정상 재생되지 않는").
+        if (HoldBack != null && HoldBack()) heldFor += frame;
+        else waited += Mathf.Min(frame, settleFrame);
+        bool late = waited >= HubLobby.Number("showWait", 20f);
         mine = PlayerRoster.Local;
         if (!prepared && (mine != null && mine.IsInitialized || late)) Prepare();
         if (prepared && stage != null) HideBodies();
         foreach (var seat in seats)
             if (seat.Pose != null) seat.Pose.Tick(0f);
         if (waitCaption != null) waitCaption.alpha = .4f + .25f * Mathf.Sin(now * 4f);
-        if (late || Ready(now)) StartShow();
+        if (!late && !Ready(now)) return;
+        // Said once, so a show that began unready can be read back from the log (Player.log in a build).
+        Debug.Log($"[Results] show begins: {(late ? "the wait ran out" : "ready")} after {waited:0.0} s of curtain, {heldFor:0.0} s held back, "
+            + $"player {(mine != null && mine.IsInitialized ? "in" : "not in")}, {framesSeen} frames drawn");
+        StartShow();
     }
 
     private bool Ready(float now)
