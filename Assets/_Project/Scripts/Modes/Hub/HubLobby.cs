@@ -14,7 +14,8 @@ using UnityEngine.InputSystem;
 ///   kill there stacks what the class stacks, a hit charges the ultimate and F marks one, a Schießhund's bounty too
 ///   (2026-11-12), while nothing of it reaches the run's feed, money or counts. A full gauge deals cards as in a
 ///   mission, the ultimate after all of them (PerkCardScreen), but they are practice cards (PlayerPerks.BeginPractice):
-///   they and the gauge go when the hub is left or a class is picked here, so a chapter starts with the campaign's own.
+///   they go when the hub is left, so a chapter starts with the campaign's own. A class picked here empties the gauge
+///   and leaves the cards in their decks (OnClassPicked).
 /// - [F] at the stage's mirror (HubMirror: everyone sees themself in it, head and all) opens the dressing spot in front
 ///   of it (HubDressing, 2026-11-12): the title screen's wardrobe over a camera looking into the mirror, every pick worn
 ///   at once, saved and seen by the room. The Esc menu's 캐릭터 tab went for it.
@@ -69,11 +70,14 @@ public sealed partial class HubLobby : MonoBehaviour
     /// <summary>This player is ready to set off (as this PC last heard).</summary>
     public static bool IsReady(PlayerMovement someone) => active != null && active.ready.Contains(MatchResults.SeatOf(someone));
 
-    // A class picked here (PlayerClass.Picked; its kit starts afresh in ClassKit) is tried from nothing, as a chapter
-    // starts it: the practice cards go and the gauge empties, so the old class's cards and charge can't be spent on it.
+    // A class picked here (PlayerClass.Picked; its kit starts afresh in ClassKit) starts with an empty gauge, so the old
+    // class's charge can't be spent on it. The cards are left alone: a card belongs to its class's deck or to everyone's
+    // (PlayerPerks, CardDecks), so the old class's cards are out of play by themselves, everyone's stay, and the old
+    // class finds its own again when it is picked again. Until 2026-11-18 every practice card was thrown away here,
+    // everyone's too, to keep the old class's from working for the new one (the user, that day: "현재 클래스를 바꾸면
+    // 가지고 있던 카드가 다 사라집니다").
     private static void OnClassPicked(string before, string now)
     {
-        PlayerPerks.RestartPractice();
         var mine = PlayerRoster.Local;
         if (mine != null && mine.Ultimate != null) mine.Ultimate.SetCurrentCharge(0f);
     }

@@ -48,7 +48,9 @@ public static class PlayerClass
     /// class before and the class now. A pick is a fresh start (the user, 2026-11-12: "클래스 선택할 때 초기화 하는 방식"):
     /// ClassKit hands the class's kit as a chapter would (every stack at 0, every charge and wait ready, its guns full,
     /// the bag and syringe as they start, the last pick's barricades down), and whatever else a class keeps for the run
-    /// starts again on it too (the hub's practice cards and ultimate gauge). Raised only where a pick may happen
+    /// starts again on it too (the hub's ultimate gauge). The cards are not part of that: a card stays in its class's
+    /// deck or everyone's (PlayerPerks, CardDecks), so a pick takes the old class's out of play without throwing any
+    /// away (2026-11-18; until then the hub threw its practice cards away here). Raised only where a pick may happen
     /// (MayPick), so never mid-run.
     /// </summary>
     public static event Action<string, string> Picked;

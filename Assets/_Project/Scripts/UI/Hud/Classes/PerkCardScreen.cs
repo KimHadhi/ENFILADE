@@ -34,7 +34,7 @@ using UnityEngine.UI;
 /// class's ultimate at once (ClassCards.Ultimate) instead of opening the cards. The hub keeps the same rule with practice
 /// cards (2026-11-12, the user: "궁극기가 좀 이상한 게. 카드를 뽑아야 하는 거 아니야?"): its range's kills charge the gauge,
 /// X deals cards, the ultimate comes after all of them, and a pink line under the title says they go when the hub is left
-/// or a class is picked (PlayerPerks.IsPractising).
+/// (PlayerPerks.IsPractising; a class picked there leaves them in their decks, 2026-11-18).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed partial class PerkCardScreen : MonoBehaviour

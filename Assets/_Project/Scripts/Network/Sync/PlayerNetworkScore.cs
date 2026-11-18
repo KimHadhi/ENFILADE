@@ -166,8 +166,8 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         if (deck.Value.ToString() != held) deck.Value = new FixedString4096Bytes(held);
     }
 
-    // What the deck's string holds (FixedString4096Bytes keeps 4093 bytes of text).
-    private const int DeckBytes = 4000;
+    // What the deck's string holds (FixedString4096Bytes keeps 4093 bytes of text). CardDeckCheck asks it too.
+    public const int DeckBytes = 4000;
     private void OnNumbersChanged(Numbers previous, Numbers current) => Show(current);
 
     private void Show(in Numbers now)

@@ -21,8 +21,9 @@ using UnityEngine;
 /// </para>
 /// <para>
 /// In the hub the picks are practice (BeginPractice, 2026-11-12): dealt by the same rule from the range's kills, working
-/// as cards do, and gone again when the hub is left or a class is picked there (EndPractice, RestartPractice), so the
-/// campaign's own cards are what a chapter gets.
+/// as cards do, and gone again when the hub is left (EndPractice), so the campaign's own cards are what a chapter gets.
+/// A class picked in the hub does not end them (until 2026-11-18 it threw every practice card away, everyone's too):
+/// they sit in decks as the campaign's do.
 /// </para>
 /// <para>
 /// Decks (2026-11-18). Every card belongs to one deck by its own row: its class's, or everyone's when it names none. What
@@ -121,8 +122,9 @@ public static class PlayerPerks
     public const string AssaultSuppress = "assault_suppress", AssaultLead = "assault_lead", AssaultBugle = "assault_bugle",
         AssaultCover = "assault_cover";
 
-    // Every card picked this campaign and its level, in play or not: the decks, each card in its own class's or everyone's.
-    private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
+    // Every card picked this campaign and its level, in play or not, and the hub's practice over it: kept by CardDecks,
+    // which knows nothing of tables or classes, so its rules can be checked by themselves (CardDeckCheck).
+    private static CardDecks decks = new CardDecks();
     // The deck in play: the picked cards of the class played now and everyone's, with their levels. Made again whenever
     // a pick, a clearing, the table or the class played changes (InPlay).
     private static readonly Dictionary<string, int> inPlay = new Dictionary<string, int>();
@@ -140,12 +142,11 @@ public static class PlayerPerks
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
-        levels.Clear();
+        decks = new CardDecks();
         inPlay.Clear();
         inPlayFor = null;
         inPlayStale = true;
         hearsPicks = false;
-        kept = null;
         catalog = null;
         bonuses = null;
         Changed = null;
@@ -271,9 +272,7 @@ public static class PlayerPerks
         if (!inPlayStale && string.Equals(now, inPlayFor, StringComparison.Ordinal)) return inPlay;
         inPlayStale = false;
         inPlayFor = now;
-        inPlay.Clear();
-        foreach (var pair in levels)
-            if (InDeck(Find(pair.Key))) inPlay[pair.Key] = pair.Value;
+        decks.InPlay(id => InDeck(Find(id), now), inPlay);
         bonuses = null;
         deckVersion++;
         // A class picked changes what is in play: those who keep something worked out from the cards hear of it as of a
@@ -343,7 +342,7 @@ public static class PlayerPerks
     public static int Level(string id) => id != null && InPlay().TryGetValue(id, out int level) ? level : 0;
 
     /// <summary>The card's level as picked this campaign, whether its deck is in play or not (a class left keeps its cards).</summary>
-    public static int Stored(string id) => id != null && levels.TryGetValue(id, out int level) ? level : 0;
+    public static int Stored(string id) => decks.Level(id);
 
     public static bool Has(string id) => Level(id) > 0;
 
@@ -482,8 +481,7 @@ public static class PlayerPerks
     public static void Raise(string id)
     {
         var perk = Find(id);
-        if (perk == null) return;
-        levels[id] = Mathf.Min(perk.Levels, Stored(id) + 1);
+        if (perk == null || !decks.Raise(id, perk.Levels)) return;
         Touched();
         Changed?.Invoke();
     }
@@ -495,56 +493,35 @@ public static class PlayerPerks
         starterOwed = true;
         // Practising, the campaign's own cards go too, so nothing comes back when practice ends, whichever comes first
         // (the hub left for the title screen: its end and this Clear run in either order).
-        kept?.Clear();
-        if (levels.Count == 0) return;
-        levels.Clear();
+        if (!decks.Clear()) return;
         Touched();
         Changed?.Invoke();
     }
 
     // ---- Practice (the hub, 2026-11-12) ----
 
-    // The cards held when practice began (the campaign's own so far), or null when not practising.
-    private static Dictionary<string, int> kept;
-
     /// <summary>
     /// Picks are practice now (the hub: the user, "궁극기가 좀 이상한 게. 카드를 뽑아야 하는 거 아니야?"): its range's kills
-    /// fill the gauge and deal cards by the mission's own rule, and they work as cards do, but they go again when practice
-    /// ends or starts over, so nothing picked in the hub reaches a chapter.
+    /// fill the gauge and deal cards by the mission's own rule, and they work as cards do, but they go again when the hub
+    /// is left, so nothing picked in the hub reaches a chapter. A class picked in the hub no longer throws them away
+    /// (2026-11-18): practice cards sit in decks as any others, so the old class's are out of play by themselves and
+    /// everyone's stay.
     /// </summary>
-    public static bool IsPractising => kept != null;
+    public static bool IsPractising => decks.IsPractising;
 
     /// <summary>From now on picks are practice; the cards held now (the campaign's) are what practice goes back to.</summary>
     public static void BeginPractice()
     {
-        kept = new Dictionary<string, int>(levels);
+        decks.BeginPractice();
         momentumUntil = -99f;
-    }
-
-    /// <summary>Practice starts over (a class picked in the hub): the practice cards go, the campaign's stay.</summary>
-    public static void RestartPractice()
-    {
-        if (kept != null) Restore();
     }
 
     /// <summary>Practice is over (the hub left): the practice cards go, and picks count for the campaign again.</summary>
     public static void EndPractice()
     {
-        if (kept == null) return;
-        Restore();
-        kept = null;
-    }
-
-    private static void Restore()
-    {
+        if (!decks.IsPractising) return;
         momentumUntil = -99f;
-        bool same = levels.Count == kept.Count;
-        if (same)
-            foreach (var pair in levels)
-                if (!kept.TryGetValue(pair.Key, out int level) || level != pair.Value) { same = false; break; }
-        if (same) return;
-        levels.Clear();
-        foreach (var pair in kept) levels[pair.Key] = pair.Value;
+        if (!decks.EndPractice()) return;
         Touched();
         Changed?.Invoke();
     }
@@ -559,7 +536,7 @@ public static class PlayerPerks
     public static float AbilityBonus(string row, string name)
     {
         // The deck in play first: a class picked since the last question empties the sums with the deck.
-        if (levels.Count == 0 || string.IsNullOrEmpty(row) || string.IsNullOrEmpty(name) || InPlay().Count == 0) return 0f;
+        if (decks.Count == 0 || string.IsNullOrEmpty(row) || string.IsNullOrEmpty(name) || InPlay().Count == 0) return 0f;
         if (bonuses == null) SumBonuses();
         return bonuses.TryGetValue(row, out var names) && names.TryGetValue(name, out float sum) ? sum : 0f;
     }
@@ -706,7 +683,7 @@ public static class PlayerPerks
     {
         if (!starterOwed || IsPractising || HubLobby.IsActive) return false;
         starterOwed = false;
-        return levels.Count == 0;
+        return decks.Count == 0;
     }
 
     private static string Shown(float number) => number.ToString("0.##", CultureInfo.InvariantCulture);
