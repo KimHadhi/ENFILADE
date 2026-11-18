@@ -11,6 +11,8 @@
 //   any solid part, so every foe behind it used to count as hidden and was drawn over the lens at the eye's own size,
 //   beside the scope's own magnified picture.
 // The scene's depth is URP's camera depth texture (the PC pipeline asset asks for it), copied after the opaque world.
+// Smoke hides too, though nothing of it is in that depth: a body's seen surface with smoke on the way shows the same
+// silhouette, as much as the smoke hides it (SmokeCover below; RevealThroughWalls' first pass draws it).
 #ifndef ENFILADE_SEE_THROUGH_INCLUDED
 #define ENFILADE_SEE_THROUGH_INCLUDED
 
@@ -27,6 +29,47 @@ bool BehindSomething(float4 positionCS, float eyeDepth)
     float scene = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
     float gap = _SeeThroughGap > 0.0 ? _SeeThroughGap : 0.12;
     return eyeDepth - scene > gap;
+}
+
+// ---- Smoke ----
+// Smoke hides as a wall does, so a body shows through it by the same rule (the user, 2026-11-18: "연막탄 내부에서도 핑
+// 찍힌 적이 선명하게 보이도록"). Smoke is puffs that write no depth, so the scene's depth cannot say where it is: the clouds
+// are the game's own spheres instead, the ones a zombie's eyes are judged by (SmokeScreen.Through), and the length of
+// smoke that hides is the game's too (GrenadeRules smokeHide). SmokeSight pushes them before each frame is drawn;
+// _SmokeCount is 0 while no cloud hangs.
+#define ENFILADE_SMOKE_MOST 8
+float4 _SmokeSpheres[ENFILADE_SMOKE_MOST];
+float _SmokeCount;
+float _SmokeHide;
+
+// How much of the look from the eye to this point (world) runs through smoke (m), every cloud together: the chord of
+// each sphere along the look, cut where the look begins and where it ends.
+float SmokeOnTheWay(float3 positionWS)
+{
+    float3 toward = positionWS - _WorldSpaceCameraPos;
+    float reach = length(toward);
+    float3 way = toward / max(reach, 0.0001);
+    float total = 0.0;
+    for (int i = 0; i < ENFILADE_SMOKE_MOST; i++)
+    {
+        float4 cloud = _SmokeSpheres[i];
+        float3 middle = cloud.xyz - _WorldSpaceCameraPos;
+        float along = dot(middle, way);
+        float3 aside = middle - way * along;
+        float room = cloud.w * cloud.w - dot(aside, aside);
+        float halfChord = sqrt(max(room, 0.0));
+        float inside = max(0.0, min(reach, along + halfChord) - max(0.0, along - halfChord));
+        // Only the clouds that hang (the rest of the array is stale), and only those the look crosses.
+        total += inside * step(i + 0.5, _SmokeCount) * step(0.0, room);
+    }
+    return total;
+}
+
+// How hidden in smoke this point is: 0 with none on the way, 1 from the length that blinds a zombie on.
+half SmokeCover(float3 positionWS)
+{
+    float cover = saturate(SmokeOnTheWay(positionWS) / max(_SmokeHide, 0.0001));
+    return (half)(cover * step(0.5, _SmokeCount));
 }
 
 #endif

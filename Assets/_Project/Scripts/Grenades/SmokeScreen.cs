@@ -33,6 +33,12 @@ public sealed class SmokeScreen : MonoBehaviour
     /// <summary>How many clouds hang now, on this PC.</summary>
     public static int Count => live.Count;
 
+    /// <summary>
+    /// Every cloud hanging now, on this PC, each with the Middle and Radius its sight rule measures (Through): SmokeSight
+    /// tells the see-through shaders, so what shows through a wall (a pinged enemy) shows through smoke by the same rule.
+    /// </summary>
+    public static IReadOnlyList<SmokeScreen> Clouds => live;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
@@ -62,8 +68,8 @@ public sealed class SmokeScreen : MonoBehaviour
         return cloud;
     }
 
-    // The cloud's radius now: it swells in and thins out at its end.
-    private float Radius
+    /// <summary>The cloud's radius now (m): it swells in and thins out at its end.</summary>
+    public float Radius
     {
         get
         {
@@ -73,7 +79,8 @@ public sealed class SmokeScreen : MonoBehaviour
         }
     }
 
-    private Vector3 Middle => ground + Vector3.up * (full * MiddleUp);
+    /// <summary>The cloud's middle (world): over where the canister landed, the lower part in the ground.</summary>
+    public Vector3 Middle => ground + Vector3.up * (full * MiddleUp);
 
     // ---- What it hides ----
 
@@ -113,7 +120,8 @@ public sealed class SmokeScreen : MonoBehaviour
         return best;
     }
 
-    private static float HideLength => Mathf.Max(.2f, Throwables.Rule("smokeHide", 1.6f));
+    /// <summary>How many metres of smoke on the way hide what lies past (GrenadeRules smokeHide).</summary>
+    public static float HideLength => Mathf.Max(.2f, Throwables.Rule("smokeHide", 1.6f));
 
     // Where a line (from, unit way) enters and leaves a sphere, as distances along it; both +inf when it misses.
     private static void Chord(Vector3 middle, float radius, Vector3 from, Vector3 way, out float enter, out float leave)

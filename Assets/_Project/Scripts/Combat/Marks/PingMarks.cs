@@ -8,8 +8,9 @@ using UnityEngine.UI;
 /// Pinged enemies (PlayerPing, stage 3 of the classes; the user's Back 4 Blood ping): F on an enemy marks it for the
 /// whole team for a few seconds, on every PC (the pinger's at once, the others as PlayerNetworkCombat tells them): its
 /// outline in the ping's colour where it can be seen (HitFlashRenderer.SetPing), a flat throbbing silhouette where
-/// something stands in front of it (Hidden/ENFILADE/RevealThroughWalls on copies of its meshes, as HoldReveal does), and
-/// a diamond over its head with how far it is. A plain ping is the HUD's pink; a Schießhund's is its teal bounty mark,
+/// something stands in front of it or smoke lies on the way (Hidden/ENFILADE/RevealThroughWalls on copies of its meshes,
+/// as HoldReveal does; smoke counts as a wall there since 2026-11-18, SmokeSight), and a diamond over its head with how
+/// far it is. A plain ping is the HUD's pink; a Schießhund's is its teal bounty mark,
 /// which its class hunts (ClassKit) and lasts longer. Each player has one of each at a time: a new one moves it. A mark
 /// ends with its time or its enemy's life. Made on first need and lives with the scene. Numbers: Tables/ClassAbilities,
 /// Ping.* and Schiesshund.markSeconds. Any foe takes a mark (ICombatFoe): a zombie, or a target on the hub's range, whose

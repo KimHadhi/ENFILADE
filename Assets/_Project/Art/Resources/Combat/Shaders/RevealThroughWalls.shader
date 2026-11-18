@@ -5,7 +5,8 @@
 // skin) don't stack into darker patches. URP draws SRPDefaultUnlit before UniversalForward for each object.
 // What counts as hidden is SeeThrough.hlsl's rule, the same for every see-through drawing: something must stand clearly in
 // front (more than the table's gap), and never the viewer's own first-person body, gun or scope lens (stencil bit 128,
-// OwnViewMask).
+// OwnViewMask). Smoke hides as a wall does: where the look to the body's seen surface runs through a cloud, the first
+// pass draws the silhouette there too, over the smoke.
 Shader "Hidden/ENFILADE/RevealThroughWalls"
 {
     Properties
@@ -25,7 +26,7 @@ Shader "Hidden/ENFILADE/RevealThroughWalls"
         CBUFFER_END
 
         struct Attributes { float4 positionOS : POSITION; };
-        struct Varyings { float4 positionCS : SV_POSITION; float eyeDepth : TEXCOORD0; };
+        struct Varyings { float4 positionCS : SV_POSITION; float eyeDepth : TEXCOORD0; float3 positionWS : TEXCOORD1; };
 
         Varyings Vert(Attributes input)
         {
@@ -33,26 +34,35 @@ Shader "Hidden/ENFILADE/RevealThroughWalls"
             float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
             output.positionCS = TransformWorldToHClip(positionWS);
             output.eyeDepth = -TransformWorldToView(positionWS).z;
+            output.positionWS = positionWS;
             return output;
         }
         ENDHLSL
 
-        // Where the body itself is seen: its front surface, which the real body already drew at the same depth.
+        // Where the body itself is seen: its front surface, which the real body already drew at the same depth. It is
+        // marked in the stencil so the hidden pass leaves it alone. Seen through smoke it is hidden all the same (smoke
+        // writes no depth and is drawn before this, so the body and its outline are under the puffs): there the same
+        // flat silhouette is drawn over the smoke, as much as the smoke hides (SmokeCover; nothing where no smoke is on
+        // the way). Each pixel once (64 is not yet set), so overlapping layers of the body don't stack here either.
         Pass
         {
             Name "RevealSeen"
             Tags { "LightMode" = "SRPDefaultUnlit" }
-            ColorMask 0
+            Blend SrcAlpha OneMinusSrcAlpha
+            ColorMask RGB
             ZWrite Off
             ZTest LEqual
             Offset -1, -1
             Cull Back
-            Stencil { Ref 64 ReadMask 64 WriteMask 64 Comp Always Pass Replace }
+            Stencil { Ref 64 ReadMask 64 WriteMask 64 Comp NotEqual Pass Replace }
 
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
-            half4 Frag(Varyings input) : SV_Target { return 0; }
+            half4 Frag(Varyings input) : SV_Target
+            {
+                return half4(_Color.rgb, _Color.a * SmokeCover(input.positionWS));
+            }
             ENDHLSL
         }
 

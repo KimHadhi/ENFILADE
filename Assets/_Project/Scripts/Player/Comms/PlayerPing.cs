@@ -30,6 +30,9 @@ public sealed class PlayerPing : MonoBehaviour
     private const string Row = "Ping";
     // How fat the look's cast is (m): a ping needn't be dead on, as a shot must.
     private const float Radius = .3f;
+    // The most the cast's buffer grows to: far more colliders than any look crosses, only so a broken scene cannot grow it
+    // without end.
+    private const int MostHits = 4096;
 
     /// <summary>
     /// This PC's player pinged this foe (a zombie or a range target); true for a Schießhund's bounty mark; the spot on it
@@ -48,7 +51,8 @@ public sealed class PlayerPing : MonoBehaviour
     private float nextPing, pressedAt;
     // The press held now began with F free (nothing on screen took it), and nothing has ended its point since.
     private bool pressFree, pointEnded;
-    private readonly RaycastHit[] hits = new RaycastHit[32];
+    // What the look's cast met. It grows when a cast fills it (Met).
+    private RaycastHit[] hits = new RaycastHit[32];
 
     private void Awake()
     {
@@ -208,8 +212,7 @@ public sealed class PlayerPing : MonoBehaviour
         at = default;
         var eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return null;
-        float reach = Mathf.Max(1f, PlayerClass.Ability(Row, "reach", 120f));
-        int count = Physics.SphereCastNonAlloc(eyes.position, Radius, eyes.forward, hits, reach, ~0, QueryTriggerInteraction.Ignore);
+        int count = Met(eyes.position, eyes.forward, Reach());
         float nearest = float.PositiveInfinity;
         Collider first = null;
         for (int i = 0; i < count; i++)
@@ -224,5 +227,36 @@ public sealed class PlayerPing : MonoBehaviour
         if (!CombatFoe.IsAlive(foe)) return null;
         at = nearest > 0f && !float.IsInfinity(nearest) ? eyes.position + eyes.forward * nearest : Middle(foe);
         return foe;
+    }
+
+    /// <summary>
+    /// How far a ping reaches (m): as far as the look does. A ping marks what the player sees, so it has no range of its
+    /// own: the limit is the far plane of the camera they look through (a scope's picture shares it), and a wall or the
+    /// floor in the way takes the ping as before (the user, 2026-11-18: "벽에 막히지 않는 한 최대 핑 사거리를 확장"). It
+    /// was a number of its own, 120 m: nearer than the 160 m the screen draws an enemy to (Tables/Maps/Culling Enemy),
+    /// far nearer than what a magnified scope shows. ClassAbilities Ping.reach stays as a design cap for whoever wants
+    /// one: 0 is none.
+    /// </summary>
+    public static float Reach()
+    {
+        var view = Camera.main;
+        float far = view != null ? view.farClipPlane : float.PositiveInfinity;
+        float cap = PlayerClass.Ability(Row, "reach", 0f);
+        return cap > 0f ? Mathf.Min(cap, far) : far;
+    }
+
+    // Everything the look's cast meets within reach, into `hits`; returns how many. A cast that fills its buffer has
+    // dropped the rest in no order, and the nearest thing (the wall that should take the ping, or the foe itself) may be
+    // among the dropped: a long look across a crowd meets more than a short one did. So a full buffer is doubled and the
+    // cast made again, until everything fits.
+    private int Met(Vector3 from, Vector3 way, float reach)
+    {
+        int count = Physics.SphereCastNonAlloc(from, Radius, way, hits, reach, ~0, QueryTriggerInteraction.Ignore);
+        while (count >= hits.Length && hits.Length < MostHits)
+        {
+            hits = new RaycastHit[hits.Length * 2];
+            count = Physics.SphereCastNonAlloc(from, Radius, way, hits, reach, ~0, QueryTriggerInteraction.Ignore);
+        }
+        return count;
     }
 }
