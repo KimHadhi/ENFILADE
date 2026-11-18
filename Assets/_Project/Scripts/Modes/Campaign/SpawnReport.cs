@@ -14,6 +14,9 @@ using UnityEngine;
 /// is cleared, and every point with what a pick would make of it this moment (measured for real, nothing made).
 /// /spawns cases runs the rule itself over its cases with no map (SpawnPick.Cases). In a build the same text goes to
 /// the Player.log.</para>
+/// <para>/spawns here [name] is how a spawn room is put in a map without code (user, 2026-11-18: "방법만 알려 주면 알아
+/// 하겠습니다"): it writes the row of Tables/SpawnPoints for a room where this PC's player stands, copies it, and says
+/// whether a zombie could stand there. Pasted into the table and saved, the room is in the map at once.</para>
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SpawnReport : MonoBehaviour
@@ -83,7 +86,9 @@ public sealed class SpawnReport : MonoBehaviour
     /// </summary>
     public static string Command(string args)
     {
-        bool cases = (args ?? "").Trim() == "cases";
+        string asked = (args ?? "").Trim();
+        if (asked == "here" || asked.StartsWith("here ", System.StringComparison.Ordinal)) return Here(asked.Substring(4).Trim());
+        bool cases = asked == "cases";
         string text;
         if (cases) text = SpawnPick.Cases();
         else if (!CampaignRun.TrySpawnsNow(out text)) return text;
@@ -96,5 +101,28 @@ public sealed class SpawnReport : MonoBehaviour
         int end = text.IndexOf('\n');
         string answer = cases ? text.Substring(text.LastIndexOf("wrong:", System.StringComparison.Ordinal)).Trim() : end > 0 ? text.Substring(0, end) : text;
         return answer + " · Logs/" + FileName; // dev-text
+    }
+
+    // /spawns here [open] [name]: the row of Tables/SpawnPoints for a point where this PC's player stands (a room unless
+    // "open" is said), copied for pasting, with a word on whether a zombie could stand there.
+    private static string Here(string asked)
+    {
+        var player = PlayerRoster.Local;
+        if (player == null) return "플레이어가 없어요."; // dev-text
+        var role = SpawnRole.Room;
+        if (asked == "open" || asked.StartsWith("open ", System.StringComparison.Ordinal)) { role = SpawnRole.Open; asked = asked.Substring(4).Trim(); }
+        string chapter = player.gameObject.scene.name;
+        // The name is the point's id in the table: commas would cut the row in two.
+        string name = asked.Length > 0 ? asked.Replace(',', ' ') : "방 " + System.DateTime.Now.ToString("HHmmss");
+        Vector3 at = player.transform.position;
+        bool mesh = UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas);
+        if (mesh) at = hit.position;
+        string row = SpawnRules.RowFor(chapter, name, role, at);
+        GUIUtility.systemCopyBuffer = row;
+        string fit = !mesh ? "여기는 좀비가 걷는 길(걷기 메시) 위가 아니라서 아무도 못 나와요. 바닥에 서서 다시 해 보세요"
+            : !SpawnSight.Roomy(at) ? "몸이 설 자리가 없어요(벽·소품에 걸림). 조금 옮겨서 다시 해 보세요" : "좀비가 설 수 있는 자리예요"; // dev-text
+        Debug.Log("[Spawns] row for Tables/SpawnPoints.csv (copied):\n" + row);
+        if (instance != null) { instance.Line("HERE  " + row); instance.Flush(); }
+        return "복사했어요, SpawnPoints.csv 맨 아래에 붙여 넣고 저장하면 바로 생겨요: " + row + " · " + fit; // dev-text
     }
 }

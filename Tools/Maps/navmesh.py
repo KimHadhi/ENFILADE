@@ -13,7 +13,7 @@ EXT = 0x8000
 
 
 class Poly:
-    __slots__ = ("verts", "neis", "tile", "index", "area", "links", "centre", "ymin", "ymax", "box")
+    __slots__ = ("verts", "neis", "tile", "index", "area", "links", "centre", "ymin", "ymax", "box", "tris")
 
     def __init__(self):
         self.links = []  # (other poly index, portal a, portal b)  a/b = 3D points; for a jump link a == b == its start
@@ -37,6 +37,12 @@ class NavMesh:
             verts = [struct.unpack_from("<3f", b, at + 12 * i) for i in range(nv)]
             at += 12 * nv
             base = len(self.polys)
+            # each polygon's own surface: its detail mesh (12 bytes: vertBase u32, triBase u32, vertCount u16, triCount
+            # u16), whose triangles (u16[4]: three corners and flags) name the polygon's corners first and then the
+            # tile's detail vertices from vertBase on. A polygon is not flat: one may run from a ramp out onto a floor.
+            dm_at = at + 32 * np_
+            dv_at = dm_at + 12 * ndm
+            dt_at = dv_at + 12 * ndv
             for i in range(np_):
                 raw = b[at + 32 * i: at + 32 * i + 32]
                 v = struct.unpack_from("<6H6H", raw, 0)
@@ -47,6 +53,19 @@ class NavMesh:
                 p.tile = (tx, ty)
                 p.index = base + i
                 p.area = area
+                p.tris = []
+                if i < ndm:
+                    vert_base, tri_base, extra, tri_count = struct.unpack_from("<IIHH", b, dm_at + 12 * i)
+                    for k in range(tri_count):
+                        corners = struct.unpack_from("<4H", b, dt_at + 8 * (tri_base + k))[:3]
+                        tri = []
+                        for c in corners:
+                            if c < vc:
+                                tri.append(p.verts[c])
+                            elif c - vc < extra:
+                                tri.append(struct.unpack_from("<3f", b, dv_at + 12 * (vert_base + c - vc)))
+                        if len(tri) == 3:
+                            p.tris.append(tri)
                 self.polys.append(p)
             expect = 72 + 12 * nv + 32 * np_ + 12 * ndm + 12 * ndv + 8 * ndt + 16 * nbv
             if expect != size:
@@ -189,16 +208,27 @@ class NavMesh:
         return best, math.sqrt(bd)
 
     def height_on(self, p, x, z):
-        # the polygon's plane by its first three corners that span an area (flat enough for a greybox)
+        """The polygon's height under a point: that of the triangle of its detail mesh the point is over. A polygon need
+        not be flat (one runs from a ramp out onto the floor it reaches), so the plane of its first three corners was
+        metres off under some points (a spawn point on a roof read as off the mesh, a spot on a landing read as on the
+        ramp below it)."""
         v = p.verts
-        for i in range(1, len(v) - 1):
-            ax, ay, az = v[0]
-            ux, uy, uz = v[i][0] - ax, v[i][1] - ay, v[i][2] - az
-            wx, wy, wz = v[i + 1][0] - ax, v[i + 1][1] - ay, v[i + 1][2] - az
-            nx, ny, nz = uy * wz - uz * wy, uz * wx - ux * wz, ux * wy - uy * wx
-            if abs(ny) > 1e-6:
-                return ay - (nx * (x - ax) + nz * (z - az)) / ny
-        return p.centre[1]
+        tris = p.tris or [(v[0], v[i], v[i + 1]) for i in range(1, len(v) - 1)]
+        nearest, gap = p.centre[1], 1e18
+        for (ax, ay, az), (bx, by, bz), (cx, cy, cz) in tris:
+            den = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz)
+            if abs(den) < 1e-9:
+                continue
+            wa = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / den
+            wb = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / den
+            wc = 1 - wa - wb
+            h = wa * ay + wb * by + wc * cy
+            out = max(0.0, -wa, -wb, -wc)
+            if out < 1e-6:
+                return h
+            if out < gap:  # just outside every triangle (an edge): the one it is least outside of
+                gap, nearest = out, h
+        return nearest
 
     def locate(self, pos, reach=2.0, up=1.5):
         """The polygon under or nearest pos: within `reach` m sideways and `up` m of height. Returns its index or None."""
@@ -313,6 +343,12 @@ class NavMesh:
     def _funnel(start, end, portals):
         def tri(a, b, c):
             return (c[0] - a[0]) * (b[2] - a[2]) - (b[0] - a[0]) * (c[2] - a[2])
+
+        def on_segment(p, a, b):
+            ux, uz = b[0] - a[0], b[2] - a[2]
+            l2 = ux * ux + uz * uz
+            t = 0.0 if l2 < 1e-12 else max(0.0, min(1.0, ((p[0] - a[0]) * ux + (p[2] - a[2]) * uz) / l2))
+            return (a[0] + ux * t - p[0]) ** 2 + (a[2] + uz * t - p[2]) ** 2 < 1e-4
         # a portal's corners in the walking polygon's winding: which is left and which right is found from the first
         pts = [(start, start)] + list(portals) + [(end, end)]
         out = [start]
@@ -326,6 +362,11 @@ class NavMesh:
             if guard > 100000:
                 break
             a, b = pts[i]
+            # A portal the apex stands on (a spot on a tile's border, as many are at z 0) narrows nothing: weighed, its
+            # two ends lie in one line with the apex and the funnel shuts to no width, sending the path to a far corner.
+            if i < len(pts) - 1 and on_segment(apex, a, b):
+                i += 1
+                continue
             # polygons here wind clockwise seen from above (Unity, y up, left-handed): the edge's first corner is on the right
             new_right, new_left = b, a
             # right side

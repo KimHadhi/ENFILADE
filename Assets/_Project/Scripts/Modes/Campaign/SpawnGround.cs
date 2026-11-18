@@ -61,7 +61,12 @@ internal sealed class SpawnGround
     // What placing the points on the route as laid now has cost: in all and in its dearest frame (ms).
     private double placingMs, dearestMs;
 
-    public SpawnGround(string chapter, Transform[] points)
+    /// <summary>
+    /// The ground of this chapter with these spawn points. <paramref name="before"/>: the ground it takes over from,
+    /// when the points were read again (Tables/SpawnPoints saved while playing): a point of the same name stays
+    /// cleared if it was, since what the squad has seen empty is no less so for a table being saved.
+    /// </summary>
+    public SpawnGround(string chapter, Transform[] points, SpawnGround before = null)
     {
         this.chapter = chapter ?? "";
         this.points = points ?? new Transform[0];
@@ -70,6 +75,9 @@ internal sealed class SpawnGround
         {
             string name = this.points[i] != null ? this.points[i].name : "";
             records[i] = new PointRecord { Name = name, Role = SpawnRules.RoleOf(this.chapter, name) };
+            if (before == null || records[i].Role == SpawnRole.Room) continue;
+            foreach (var old in before.records)
+                if (old.Cleared && old.Name == name) { records[i].Cleared = true; break; }
         }
     }
 

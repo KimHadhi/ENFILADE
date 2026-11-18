@@ -70,8 +70,11 @@ internal sealed class SpawnRule
 /// escape, and the hold right before it), one named chapter.Kind or chapter.Finale (Ch1_Rooftops.Hold) for one chapter,
 /// and one named after a step (Ch1.06) for that step alone. A cell left empty is the next row's, so a row changes only
 /// what it writes. The Default row also carries the model's own values (grain, lookEvery, perFrame, reach, clearWithin,
-/// relayEvery: SpawnGround, SpawnRoute). Tables/SpawnPoints names the points that are spawn rooms, by chapter and by
-/// the point's name in the scene, so a room is marked without a rebuild or a line of code, by a mod as well.
+/// relayEvery: SpawnGround, SpawnRoute). Tables/SpawnPoints says what a map's points are and adds points of its own:
+/// a row names a point of the scene (by chapter and the point's name) and gives it a role, and a row whose name no
+/// point of the scene has, with a place (x, y, z), is a new point there. So a spawn room is marked or added without a
+/// rebuild or a line of code, by the user (user, 2026-11-18: "맵별로 센스 있게. 근데 뭐 방법만 알려 주면 알아
+/// 하겠습니다") and by a mod as well.
 /// </summary>
 internal static class SpawnRules
 {
@@ -81,6 +84,19 @@ internal static class SpawnRules
     private static readonly List<IReadOnlyDictionary<string, string>> chain = new List<IReadOnlyDictionary<string, string>>();
     private static readonly HashSet<string> reported = new HashSet<string>();
     private static Dictionary<string, SpawnRole> roles;
+    private static Dictionary<string, List<TablePoint>> added;
+
+    /// <summary>A point Tables/SpawnPoints adds to a chapter: its name, what it is and where it stands (feet).</summary>
+    public struct TablePoint
+    {
+        public string Name;
+        public SpawnRole Role;
+        public Vector3 At;
+    }
+
+    /// <summary>Goes up each time the tables are read again (a new Play, a table saved while playing): whoever built
+    /// something from them builds it again when this is no longer what it was.</summary>
+    public static int Version { get; private set; }
 
     // The model's own values (the Default row), read once a Play and again when the table is saved.
     private static bool modelRead;
@@ -164,18 +180,54 @@ internal static class SpawnRules
     /// <summary>What the point of this name is in this chapter: a room if Tables/SpawnPoints says so, else open ground.</summary>
     public static SpawnRole RoleOf(string chapter, string point)
     {
-        if (roles == null)
-        {
-            roles = new Dictionary<string, SpawnRole>(StringComparer.OrdinalIgnoreCase);
-            foreach (string id in GameTables.RowIds(PointsTable))
-            {
-                if (!GameTables.TryGetRow(PointsTable, id, out var row)) continue;
-                string text = row.Text("role");
-                if (Enum.TryParse(text, true, out SpawnRole role)) roles[row.Text("chapter") + "\n" + row.Text("point")] = role;
-                else Report($"Tables/{PointsTable} [{id}] role '{text}': open 또는 room이어야 합니다.");
-            }
-        }
+        ReadPoints();
         return roles.TryGetValue((chapter ?? "") + "\n" + (point ?? ""), out var found) ? found : SpawnRole.Open;
+    }
+
+    /// <summary>The rows of Tables/SpawnPoints for this chapter that carry a place: points to add where the scene has
+    /// none of that name (CampaignHorde).</summary>
+    public static IReadOnlyList<TablePoint> PlacedIn(string chapter)
+    {
+        ReadPoints();
+        return added.TryGetValue(chapter ?? "", out var list) ? list : (IReadOnlyList<TablePoint>)Array.Empty<TablePoint>();
+    }
+
+    /// <summary>
+    /// A row of Tables/SpawnPoints for a point of this name at this place, as the table writes it (id, chapter, point,
+    /// role, x, y, z): what the console's /spawns here hands the user to paste in.
+    /// </summary>
+    public static string RowFor(string chapter, string point, SpawnRole role, Vector3 at)
+    {
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        return string.Join(",", chapter + "." + point, chapter, point, role.ToString().ToLowerInvariant(),
+            at.x.ToString("0.##", culture), at.y.ToString("0.##", culture), at.z.ToString("0.##", culture));
+    }
+
+    // Tables/SpawnPoints, once: every row's role by chapter and point, and the rows that carry a place.
+    private static void ReadPoints()
+    {
+        if (roles != null) return;
+        roles = new Dictionary<string, SpawnRole>(StringComparer.OrdinalIgnoreCase);
+        added = new Dictionary<string, List<TablePoint>>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in GameTables.RowIds(PointsTable))
+        {
+            if (!GameTables.TryGetRow(PointsTable, id, out var row)) continue;
+            string chapter = row.Text("chapter"), point = row.Text("point"), text = row.Text("role", "room");
+            if (chapter.Length == 0 || point.Length == 0) { Report($"Tables/{PointsTable} [{id}]: chapter와 point가 있어야 합니다."); continue; }
+            if (!Enum.TryParse(text, true, out SpawnRole role) || !Enum.IsDefined(typeof(SpawnRole), role))
+            {
+                Report($"Tables/{PointsTable} [{id}] role '{text}': open 또는 room이어야 합니다.");
+                continue;
+            }
+            roles[chapter + "\n" + point] = role;
+            // A place wants all three numbers; none of them is a row for a point the scene has.
+            bool x = TableCells.TryNumber(row.Text("x"), out float px), y = TableCells.TryNumber(row.Text("y"), out float py),
+                z = TableCells.TryNumber(row.Text("z"), out float pz);
+            if (!x && !y && !z) continue;
+            if (!x || !y || !z) { Report($"Tables/{PointsTable} [{id}]: 자리는 x, y, z 세 칸이 모두 숫자여야 합니다."); continue; }
+            if (!added.TryGetValue(chapter, out var list)) added[chapter] = list = new List<TablePoint>();
+            list.Add(new TablePoint { Name = point, Role = role, At = new Vector3(px, py, pz) });
+        }
     }
 
     private static void Take(string id, SpawnRule rule)
@@ -232,6 +284,8 @@ internal static class SpawnRules
         rules.Clear();
         reported.Clear();
         roles = null;
+        added = null;
         modelRead = false;
+        Version++;
     }
 }

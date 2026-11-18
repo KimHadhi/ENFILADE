@@ -31,7 +31,11 @@ internal sealed class CampaignHorde
     // A share of them stand two or three round one spot, this near one another.
     private const float HuddleShare = .45f, HuddleApart = 1.4f;
     private readonly EnemyHealth prefab;
-    private readonly Transform[] spawns;
+    // The scene's own spawn points, and with them the ones Tables/SpawnPoints adds (ReadPoints).
+    private readonly Transform[] authored;
+    private Transform[] spawns;
+    private readonly List<GameObject> added = new List<GameObject>();
+    private int pointsVersion;
     private readonly Scene scene;
     private readonly HashSet<EnemyHealth> alive = new HashSet<EnemyHealth>(), brutes = new HashSet<EnemyHealth>();
     private readonly List<Vector3> calmPlaces = new List<Vector3>(), calmTaken = new List<Vector3>();
@@ -40,22 +44,52 @@ internal sealed class CampaignHorde
     private readonly NavMeshPath path = new NavMeshPath();
     private readonly Vector3[] corners = new Vector3[256];
     // The ground as the squad's progress leaves it, and the rule the step under way sends by.
-    private readonly SpawnGround spawnGround;
+    private SpawnGround spawnGround;
     private SpawnRule rule;
     // What was measured of each spawn point for this frame's picks (Measure), where a body would stand at each, and what
     // the last pick made of each.
     private readonly List<SpawnPick.Point> facts = new List<SpawnPick.Point>();
     private readonly List<Vector3> stands = new List<Vector3>();
-    private readonly SpawnPick.Verdict[] verdicts;
+    private SpawnPick.Verdict[] verdicts;
     private float saved, nextNone;
 
     public CampaignHorde(EnemyHealth prefab, Transform[] spawns, Scene scene)
     {
         this.prefab = prefab;
-        this.spawns = spawns ?? new Transform[0];
+        authored = spawns ?? new Transform[0];
         this.scene = scene;
-        spawnGround = new SpawnGround(scene.name, this.spawns);
-        verdicts = new SpawnPick.Verdict[this.spawns.Length];
+        ReadPoints();
+    }
+
+    // The spawn points: the scene's, then those Tables/SpawnPoints adds to this chapter (a row with a place and a name
+    // no point of the scene has). Read as the horde is made and again whenever the tables are (the table saved while
+    // playing: a room the user has just written in is there at once). The ground is made anew over them and keeps
+    // what was cleared.
+    private void ReadPoints()
+    {
+        pointsVersion = SpawnRules.Version;
+        foreach (var gone in added) if (gone != null) Object.Destroy(gone);
+        added.Clear();
+        var all = new List<Transform>(authored);
+        var names = new HashSet<string>();
+        foreach (var point in authored) if (point != null) names.Add(point.name);
+        Transform group = null;
+        foreach (var point in SpawnRules.PlacedIn(scene.name))
+        {
+            if (!names.Add(point.Name)) continue;
+            if (group == null) group = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Spawn Points");
+            var made = new GameObject(point.Name);
+            made.transform.SetParent(group, false);
+            made.transform.position = point.At;
+            added.Add(made);
+            all.Add(made.transform);
+        }
+        spawns = all.ToArray();
+        spawnGround = new SpawnGround(scene.name, spawns, spawnGround);
+        verdicts = new SpawnPick.Verdict[spawns.Length];
+        facts.Clear();
+        stands.Clear();
+        if (SpawnGround.Heard) SpawnGround.Say($"POINTS read: {authored.Length} of the scene, {added.Count} of Tables/SpawnPoints");
     }
 
     public int Alive => alive.Count;
@@ -73,6 +107,7 @@ internal sealed class CampaignHorde
     public void Follow(IReadOnlyList<CampaignStep> steps, int step, CampaignStep now, IReadOnlyDictionary<string, Transform> spots,
         List<PlayerMovement> players)
     {
+        if (pointsVersion != SpawnRules.Version) ReadPoints();
         spawnGround.Follow(steps, step, spots, players);
         rule = SpawnRules.For(spawnGround.Chapter, now, SpawnRules.IsFinale(steps, step));
     }

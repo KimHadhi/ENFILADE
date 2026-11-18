@@ -43,7 +43,21 @@ def steps_of(chapter):
 
 
 def rooms_of(chapter):
-    return {r["point"] for r in table("SpawnPoints") if r["chapter"].lower() == chapter.lower() and r["role"].lower() == "room"}
+    """The names Tables/SpawnPoints calls rooms in this chapter (a row with no role is a room: SpawnRules.ReadPoints)."""
+    return {r["point"] for r in table("SpawnPoints") if r["chapter"].lower() == chapter.lower() and (r.get("role") or "room").lower() == "room"}
+
+
+def added_points(chapter):
+    """The points Tables/SpawnPoints adds to this chapter: rows that carry a place (x, y, z)."""
+    out = []
+    for r in table("SpawnPoints"):
+        if r["chapter"].lower() != chapter.lower():
+            continue
+        try:
+            out.append((r["point"], (float(r["x"]), float(r["y"]), float(r["z"]))))
+        except (KeyError, ValueError):
+            pass
+    return out
 
 
 def campaign_points(path):
@@ -71,6 +85,10 @@ class Flow:
         self.grain = model("grain", 2.0)
         self.reach = model("reach", 80.0)
         self.spots, self.points = campaign_points(SCENES + chapter + ".unity")
+        # The table's own points, where the scene has none of that name (CampaignHorde.ReadPoints).
+        names = {name for name, _ in self.points}
+        self.table_points = [(name, at) for name, at in added_points(chapter) if name not in names]
+        self.points += self.table_points
         self.rooms = rooms_of(chapter)
         self.nm = NavMesh(SCENES + chapter + "/NavMesh.asset")
         self.steps = steps_of(chapter)
