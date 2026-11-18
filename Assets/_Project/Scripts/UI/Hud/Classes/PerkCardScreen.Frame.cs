@@ -94,7 +94,7 @@ public sealed partial class PerkCardScreen
         if (slam >= 1f && since - .04f - .18f < dt) shake = Mathf.Max(shake, 8f);
 
         var mouse = Mouse.current;
-        bool pointing = Cursor.visible && mouse != null && !ending;
+        bool pointing = InputHold.PointerShown && mouse != null && !ending;
         if (picked >= 0 && !released && end >= ReleaseAt) Release(cards[picked]);
         // A beat after it is let go, light gathers into the picked card from round it (Gather).
         if (picked >= 0 && released && !gathered && end >= ReleaseAt + GatherAfter)

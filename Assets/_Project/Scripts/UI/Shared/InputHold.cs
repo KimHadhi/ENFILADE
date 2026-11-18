@@ -41,7 +41,9 @@ public enum Held
 /// it: the input actions that were on come back on, and the pointer locks to the view again, when the last one lets go. A
 /// screen destroyed while it held (a scene change) lets go by being gone.
 /// This is the one owner: whoever reads the player's input asks here what is held (InputFocus puts the questions), never
-/// whether the pointer happens to be locked. The lock is only what this does about Held.Cursor.
+/// whether the pointer happens to be locked. The lock is only what this does about Held.Cursor, and it is written here
+/// alone: a screen that wants the pointer out takes Held.Cursor, one that wants it out but undrawn adds HidePointer, and
+/// nothing else touches Cursor.lockState or Cursor.visible (the code audit lists whatever does).
 /// A key read by its action asks by the action (<see cref="Keeps"/>; KeyBindings.Pressed and Held do, and InputFocus.Takes):
 /// the reader then needs no check of its own for whose the press is, and a click on a screen is never the game's.
 /// </summary>
@@ -62,6 +64,10 @@ public static class InputHold
     private static readonly List<InputAction> combatOff = new List<InputAction>(), moveOff = new List<InputAction>(),
         lookOff = new List<InputAction>();
     private static Held applied;
+    // The screens that keep the free pointer undrawn while they are up (the loading screen over everything, the
+    // settings' "show the real screen" button while it is held), and whether it is undrawn now.
+    private static readonly List<Object> hiders = new List<Object>();
+    private static bool hidden;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
@@ -70,6 +76,8 @@ public static class InputHold
         combatOff.Clear();
         moveOff.Clear();
         lookOff.Clear();
+        hiders.Clear();
+        hidden = false;
         applied = Held.None;
         SceneManager.sceneUnloaded -= OnSceneUnloaded;
         SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -140,12 +148,47 @@ public static class InputHold
         Apply();
     }
 
-    /// <summary>The screen lets go of all it held. Nothing happens when it held nothing.</summary>
+    /// <summary>The screen lets go of all it held, the pointer kept undrawn too. Nothing happens when it held nothing.</summary>
     public static void Release(Object who)
     {
         // By reference: a screen in the middle of being destroyed is already "null" to Unity's ==.
-        if (holders.RemoveAll(h => ReferenceEquals(h.Who, who)) > 0) Apply();
+        int gone = holders.RemoveAll(h => ReferenceEquals(h.Who, who)) + hiders.RemoveAll(h => ReferenceEquals(h, who));
+        if (gone > 0) Apply();
     }
+
+    /// <summary>
+    /// While <paramref name="who"/> asks, a pointer that is out is not drawn; it still points. For a screen that has the
+    /// pointer but shows nothing to point at (the loading screen), or hides it for a moment (the settings' button that
+    /// shows the real screen while held). Ends with <see cref="ShowPointer"/>, with <see cref="Release"/>, or with the
+    /// screen itself.
+    /// </summary>
+    public static void HidePointer(Object who)
+    {
+        if (who == null || hiders.Exists(h => ReferenceEquals(h, who))) return;
+        hiders.Add(who);
+        Apply();
+    }
+
+    /// <summary>The screen no longer keeps the pointer undrawn.</summary>
+    public static void ShowPointer(Object who)
+    {
+        if (hiders.RemoveAll(h => ReferenceEquals(h, who)) > 0) Apply();
+    }
+
+    /// <summary>A pointer is out and drawn: some screen has it and none keeps it undrawn.</summary>
+    public static bool PointerShown => (Apply() & Held.Cursor) != 0 && !hidden;
+
+    /// <summary>The pointer as the window has it right now, for a log: Windows can hand a window back with it loose.</summary>
+    public static string Pointer => Cursor.lockState + (Cursor.visible ? ", drawn" : ", not drawn");
+
+    /// <summary>
+    /// Puts the pointer the way the holds have it, whether or not anything changed: locked to the view, taken afresh,
+    /// when no screen has it; out otherwise. For the two moments nothing changed here yet the pointer is not where the
+    /// holds have it: a view starting in a run begun in a level, where nobody has locked it yet (PlayerLook), and the
+    /// window coming back from Alt+Tab, which Windows can hand back with the pointer loose while Unity still says it is
+    /// locked (DisplaySettings).
+    /// </summary>
+    public static void Settle() => PutPointer((Apply() & Held.Cursor) != 0, true);
 
     /// <summary>What is held now and by whom, a screen a line (the console's /input).</summary>
     public static string Describe()
@@ -175,18 +218,27 @@ public static class InputHold
     private static Held Apply()
     {
         Held wanted = Wanted();
-        if (wanted == applied) return wanted;
+        hiders.RemoveAll(h => h == null);
+        bool hide = hiders.Count > 0;
+        if (wanted == applied && hide == hidden) return wanted;
         Switch(wanted, Held.Combat, CombatMap, null, combatOff);
         Switch(wanted, Held.Move, PlayerMap, false, moveOff);
         Switch(wanted, Held.Look, PlayerMap, true, lookOff);
         bool free = (wanted & Held.Cursor) != 0;
-        if (free != ((applied & Held.Cursor) != 0))
-        {
-            Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = free;
-        }
+        bool changed = free != ((applied & Held.Cursor) != 0) || hide != hidden;
+        hidden = hide;
         applied = wanted;
+        if (changed) PutPointer(free, false);
         return wanted;
+    }
+
+    // The pointer itself: the one place its lock and its drawing are written. afresh lets go before it locks, which
+    // takes the mouse again where the lock was only nominal.
+    private static void PutPointer(bool free, bool afresh)
+    {
+        if (!free && afresh) Cursor.lockState = CursorLockMode.None;
+        Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = free && !hidden;
     }
 
     // look: null takes every action of the map, true the look alone, false every action but the look.

@@ -50,13 +50,10 @@ public sealed class PlayerLook : MonoBehaviour
         }
     }
 
-    private void Start()
-    {
-        // The view takes the pointer as the game starts, unless a screen that needs it is up (InputHold).
-        if (InputHold.Any(Held.Cursor)) return;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
+    // The view takes the pointer as the game starts, unless a screen that needs it is up. The pointer's one owner puts
+    // it the way the holds have it (InputHold.Settle): in a run begun in a level nothing has changed for it to act on,
+    // and nobody has locked the pointer yet.
+    private void Start() => InputHold.Settle();
 
     private void Update()
     {

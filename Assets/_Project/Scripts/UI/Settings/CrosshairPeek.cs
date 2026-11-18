@@ -36,7 +36,8 @@ public sealed class CrosshairPeek : MonoBehaviour, IPointerDownHandler, IPointer
     {
         if (eventData.button != PointerEventData.InputButton.Left) return;
         held = true;
-        Cursor.visible = false;
+        // The pointer stays the menu's but is not drawn over the crosshair it would cover (InputHold owns its drawing).
+        InputHold.HidePointer(this);
         PlayerCrosshairs.SetShowcase(kind);
     }
 
@@ -62,7 +63,7 @@ public sealed class CrosshairPeek : MonoBehaviour, IPointerDownHandler, IPointer
     {
         if (!held) return;
         held = false;
-        Cursor.visible = true;
+        InputHold.ShowPointer(this);
         PlayerCrosshairs.SetShowcase(null);
     }
 }

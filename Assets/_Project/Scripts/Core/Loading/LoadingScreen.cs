@@ -13,9 +13,10 @@ using UnityEngine.UI;
 /// each step on the bar.
 /// An overlay canvas over every other one (Order), kept across scenes and drawn after the cameras: whatever the warm-up
 /// draws in front of the player's camera is drawn for real, so its shaders and pipeline states are made, and is never
-/// seen. While it is up the cursor is let go, which every gameplay input reads as "not playing" (PlayerMovement
-/// .InputAvailable, PlayerLook, the TakesInput checks), and the backdrop takes every click; as it lifts the cursor is
-/// taken again if the scene had taken it. Numbers: Tables/Loading.csv, Screen row. Words: loading.* in Texts.csv.
+/// seen. While it is up it holds everything (InputHold): the player's keys, which every gameplay input reads as "not
+/// playing" (PlayerMovement.InputAvailable, PlayerLook, the InputFocus questions), and the pointer, let go of the view
+/// and not drawn; the backdrop takes every click. As it lifts the pointer goes back the way the holds have it.
+/// Numbers: Tables/Loading.csv, Screen row. Words: loading.* in Texts.csv.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class LoadingScreen : MonoBehaviour
@@ -53,7 +54,7 @@ public sealed class LoadingScreen : MonoBehaviour
     private string stageId, sceneShown;
     private float target, shown, shownAt, liftAskedAt = -1f;
     private int coveredFrame = -1, percentShown = -1;
-    private bool wanted, holdCursor, retake, visible;
+    private bool wanted, holdCursor, visible;
 
     /// <summary>Raised once the screen has faded all the way out.</summary>
     public static event Action Lifted;
@@ -89,8 +90,10 @@ public sealed class LoadingScreen : MonoBehaviour
             screen.target = screen.shown = 0f;
             screen.percentShown = -1;
             screen.holdCursor = true;
-            // The keys by name too (InputHold): gameplay asks who holds them, no longer whether the pointer is locked.
-            InputHold.Take(screen, Held.Keys);
+            // Everything is the screen's while it is up (InputHold): the keys, and the pointer, let go of the view and
+            // not drawn, so the mouse is free to leave a window that is only loading.
+            InputHold.Take(screen);
+            InputHold.HidePointer(screen);
         }
         screen.liftAskedAt = -1f;
         if (instant && screen.group.alpha < 1f)
@@ -271,31 +274,14 @@ public sealed class LoadingScreen : MonoBehaviour
         if (!now) Lifted?.Invoke();
     }
 
-    // Late, so a scene that takes the cursor as it starts (PlayerLook) has done so by now: it is let go again until the
-    // screen lifts, and taken back then. A menu that frees and shows the cursor meanwhile (a class pick) keeps it free.
-    private void LateUpdate()
-    {
-        if (!holdCursor) return;
-        if (Cursor.lockState != CursorLockMode.None)
-        {
-            retake = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else if (Cursor.visible) retake = false;
-        Cursor.visible = false;
-    }
-
+    // The screen lets go: the pointer goes back the way the holds have it then (InputHold), to the view in a scene that
+    // plays, left out for a menu that has it (the title, a class pick). Until 2026-11-18 the screen wrote the pointer's
+    // lock itself every LateUpdate, against the scene's own taking of it (PlayerLook), and remembered whether to lock it
+    // again; the pointer has one owner now, which a starting view asks instead of locking it.
     private void LetGo()
     {
         if (!holdCursor) return;
         holdCursor = false;
         InputHold.Release(this);
-        if (retake)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-        else Cursor.visible = true;
-        retake = false;
     }
 }

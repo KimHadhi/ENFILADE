@@ -71,7 +71,10 @@ public sealed partial class FieldPickups
 
     private static bool Free(PlayerMovement mine)
     {
-        if (!mine.IsInitialized || mine.IsDead || mine.IsDowned || Cursor.lockState != CursorLockMode.Locked) return false;
+        // F is a key of the body: whether the body's keys are the player's is asked (InputFocus), not whether the pointer
+        // is locked. With a board's pointer out the player walks on, and picks up as they walk (until 2026-11-18 a free
+        // pointer stopped every pickup).
+        if (!mine.IsInitialized || mine.IsDead || mine.IsDowned || !InputFocus.TakesMove()) return false;
         if (ShopMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || DevConsole.TakesKeyboard) return false;
         if (mine.Execution != null && mine.Execution.Candidate != null) return false;
         // A Ghost's chain open on a zombie is a takedown offered too, and F is its as it is a plain takedown's (GhostCards:

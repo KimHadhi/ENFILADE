@@ -202,12 +202,9 @@ public static class DisplaySettings
     internal static void Restore(string reason)
     {
         if (!Applies || moving) return;
-        if (Cursor.lockState == CursorLockMode.Locked)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        // By the pointer's one owner (InputHold.Settle): locked to the view it is let go and taken afresh; out for a
+        // screen it is put out again.
+        InputHold.Settle();
         if (achieved == null) return;
         var was = achieved.Value;
         var now = Now();
@@ -225,7 +222,7 @@ public static class DisplaySettings
     }
 
     /// <summary>One line in Player.log with the window as it is now, for reading a stray Alt+Tab afterwards.</summary>
-    internal static void Report(string what) => Debug.Log($"[Display] {what}: {Describe(Now())}, cursor {Cursor.lockState}.");
+    internal static void Report(string what) => Debug.Log($"[Display] {what}: {Describe(Now())}, cursor {InputHold.Pointer}.");
 
     private static (int width, int height, FullScreenMode mode, DisplayInfo monitor) Now() =>
         (Screen.width, Screen.height, Screen.fullScreenMode, Screen.mainWindowDisplayInfo);

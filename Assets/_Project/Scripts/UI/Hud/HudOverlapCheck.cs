@@ -232,7 +232,9 @@ public sealed partial class HudOverlapCheck : MonoBehaviour
         }
     }
 
-    private static bool Covered => Cursor.lockState != CursorLockMode.Locked || ScoreboardHUD.Openness > .01f;
+    // A screen has the pointer out over the HUD (who holds it is asked, InputHold, not the pointer's lock), or the Tab
+    // board is up.
+    private static bool Covered => InputHold.Any(Held.Cursor) || ScoreboardHUD.Openness > .01f;
 
     // A look spread over frames goes on only while the watch is wanted, nothing covers the HUD, and no other look (the
     // sweep's) began meanwhile; covering also forgets how long findings have lasted, as a single look in one go did.

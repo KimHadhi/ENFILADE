@@ -290,8 +290,9 @@ public sealed partial class HubLobby : MonoBehaviour
         if (tracker != null) tracker.ClearObjective();
     }
 
-    // As the mouse look: not while the cursor is free (chat, menus), the window is in the background, the console is
-    // open, the results are playing, or the mirror's dressing spot is open (or was shut by this very [F]).
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard
-        && !ShopMenu.TakesKeyboard && !PerkCardScreen.TakesKeyboard && !ResultsShow.IsPlaying && !HubDressing.TakesKeyboard;
+    // F at a station is a key of the body: not while a screen has the body's keys (chat, menus), the window is in the
+    // background, the console, the shop or the perk cards have the keyboard (InputFocus.TakesPlayInput), the results are
+    // playing, or the mirror's dressing spot is open (or was shut by this very [F]). Until 2026-11-18 this asked whether
+    // the pointer was locked, so a board's pointer, which leaves the legs to the player, stopped the stations too.
+    private static bool TakesInput() => InputFocus.TakesPlayInput() && !ResultsShow.IsPlaying && !HubDressing.TakesKeyboard;
 }
