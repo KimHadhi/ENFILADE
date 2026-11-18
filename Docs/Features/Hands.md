@@ -292,7 +292,7 @@
 
 ### 3.8 다른 주인들과 만나는 곳
 
-- **F 키의 주인([`InteractKey`](InteractKey.md))**: F로 하는 손의 일(수리, 치료 제안, 일으키기)은 두 주인에게 차례로 묻는다. 누름이 내 것인가는 `InteractKey`, 손을 쓸 수 있는가는 `HandOwner`. 손이 없으면 그 기능은 `InteractKey.Offer`에 **거절 까닭**을 달아 나선다: 화면이 왜 안 되는지를 말하고 누름은 다음 차례로 넘어간다(그 주인이 이미 가진 길이다). 두 `HandsFree`에 남은 "처형 중인가"는 `melee.execution`이 두 손을 가졌다는 사실로 바뀌고, "상점이 열렸나"는 화면의 질문이라 `InputHold`가 이미 답한다. 그러면 두 함수는 없어진다.
+- **F 키의 주인([`InteractKey`](InteractKey.md))**: F로 하는 손의 일(수리, 치료 제안, 일으키기)은 두 주인에게 차례로 묻는다. 누름이 내 것인가는 `InteractKey`, 손을 쓸 수 있는가는 `HandOwner`. 손이 없으면 그 기능은 `InteractKey.Offer`에 **거절 까닭**을 달아 나선다: 화면이 왜 안 되는지를 말하고 누름은 다음 차례로 넘어간다(그 주인이 이미 가진 길이다). 두 `HandsFree`에 남은 두 줄은 주인이 서로 다르다. "처형 중인가"는 손의 질문이라 `melee.execution`이 두 손을 가졌다는 사실로 바뀐다. "상점이 열렸나"는 화면의 질문이다(상점은 `InputHold`로 키를 쥐는 화면이다): 상점을 이름으로 묻지 않고 입력의 주인에게 "화면이 몸의 키를 쥐었나"를 묻는 것으로 바꾼다. 그러면 두 함수는 없어진다. 나눔은 F 키 쪽과 맞춰 두었다: 키가 누구 것인가는 `InteractKey`, 손이 누구 것인가는 `HandOwner`이고, `InteractKey`는 손을 모른다. 둘 다 필요한 기능이 주인마다 제 질문을 한다.
 - **앞에 달리기가 있는 쓰임**(0.9.204의 주사와 붕대): 키를 누를 때 "지금 달라면 가질 수 있나"를 묻고(`Could`), 못 가지면 달리지 않는다. 달리는 동안에는 손을 쥐지 않는다. 닿았을 때 달라고 하고(`Take`), 그사이 손이 없어졌으면(달리다 잡혔다) 주사는 들어가지 않고 약도 줄지 않는다. 달리기가 닿지 못했을 때 지금 하는 것과 같은 끝이다.
 - **몸이 묶였는가(`BodyLocked`)**: 다리의 질문이라 이동이 그대로 가진다. "몸을 묶는 것은 모두 손도 잠근다"는 오늘의 약속은 그림자 대조(5장의 3번)가 지켜본다: `BodyLocked`인데 주인이 잠겼다고 하지 않는 프레임이 있으면 기록에 남는다.
 
@@ -321,7 +321,7 @@
 | "팔을 들 수 있나" 다섯 | `GrenadeArm.Free`, `PointArm.Free`, `InjectArm.Free`, `RepairArm.Free`, `GuardPoseArm.Free` | 표의 `stances`와 `Up` |
 | `PlayerPoint.CanPoint`의 손 부분, `HandFreeFor` | `PlayerPoint.cs` | `point.hold` / `point.ping`을 달라고 한다 |
 | `CalloutGesture.HandsFree` | `CalloutGesture.cs` | `callout.arm` |
-| 같은 글자의 `HandsFree` 두 벌 (F 키의 목록이던 부분과 `PlayerPing.Busy`는 2026-11-18에 [InteractKey](InteractKey.md)로 갔다) | `DetenteKit.cs:724`, `SupportKit.Mending.cs:113` | 남은 두 줄 가운데 "처형 중인가"는 주사·수리가 손을 달라고 할 때 저절로 거절되는 것으로, "상점이 열렸나"는 `InputHold`의 답으로 |
+| 같은 글자의 `HandsFree` 두 벌 (F 키의 목록이던 부분과 `PlayerPing.Busy`는 2026-11-18에 [InteractKey](InteractKey.md)로 갔다) | `DetenteKit.cs:724`, `SupportKit.Mending.cs:113` | 남은 두 줄 가운데 "처형 중인가"는 주사·수리가 손을 달라고 할 때 저절로 거절되는 것으로, "상점이 열렸나"는 입력의 주인에게 묻는 "화면이 몸의 키를 쥐었나"로(3.8) |
 | `CombatInputLocked`를 만드는 목록(= `BodyLocked`의 넷) | `PlayerMovement.cs:83` | 주인에게 묻는 한 줄(표의 `locks`). 이름과 읽는 28파일은 그대로 |
 | 총의 `bare`, `bodyAction`의 손 부분, 프레임 맨 앞의 "잠김 또는 잡힘" | `WeaponController.cs:300`, `WeaponController.Frame.cs:11, 33` | "오른손이 총의 것인가", "총을 넣었나" |
 | 총의 장전을 밖에서 직접 멈추는 두 줄 | `PlayerExecution:249`, `PlayerPerfectDefense:197` | 그 줄이 제 사실을 주인에게 말한다. 총은 두 손을 잃은 것을 스스로 안다 |
