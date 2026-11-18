@@ -48,14 +48,14 @@ class World:
     def keep_clear(self, name, x0, x1, y0, y1, z0, z1):
         self.ways.append((name, ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), (abs(x1 - x0), abs(y1 - y0), abs(z1 - z0))))
 
-    def crosses(self, floor, half, height, yaw, me=None):
+    def crosses(self, floor, half, height, yaw, me=None, as_prop=True):
         what, free, deepest = None, (0.0, 0.0), 0.0
         bottom, top = floor[1], floor[1] + height
         centre, own = (floor[0], floor[2]), (half[0], half[2])
         for other in self.blocks:
             if other is me:
                 continue
-            under = max(bottom + SUNK, (bottom + top) / 2) if other.prop else bottom + SUNK
+            under = max(bottom + SUNK, (bottom + top) / 2) if other.prop and as_prop else bottom + SUNK
             if other.max_y <= under or other.min_y >= top - TOUCH:
                 continue
             way = overlap(centre, own, yaw, (other.c[0], other.c[2]), (other.size[0] / 2, other.size[2] / 2), other.yaw)
@@ -66,6 +66,8 @@ class World:
                 continue
             deepest, free, what = m, way, other.name
         for name, c, size in self.ways:
+            if not as_prop:
+                break
             if c[1] + size[1] / 2 <= bottom + TOUCH or c[1] - size[1] / 2 >= top - TOUCH:
                 continue
             way = overlap(centre, own, yaw, (c[0], c[2]), (size[0] / 2, size[2] / 2), 0.0)

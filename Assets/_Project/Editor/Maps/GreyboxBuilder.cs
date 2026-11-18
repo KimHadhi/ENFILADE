@@ -590,6 +590,8 @@ public sealed partial class GreyboxBuilder
     {
         // Every box is laid now, so each ladder can be fitted to the floor it leads to.
         EndStaging();
+        // And every prop: a spawn point one of them was stood on moves out of it (GreyboxBuilder.Standing).
+        FreeSpawnPoints();
         // Map dressing stage 5: the city beyond the edge, then every building's windows fitted to it (stage 6, the wear,
         // comes once the walk mesh shows where players can see from).
         Skyline();

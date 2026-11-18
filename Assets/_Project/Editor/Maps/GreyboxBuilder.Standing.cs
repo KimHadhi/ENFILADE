@@ -124,8 +124,10 @@ public sealed partial class GreyboxBuilder
     }
 
     // The deepest thing a box standing at `floor` (its own half size turned by yaw, this high) would be inside of: its
-    // name, and the shortest move along the floor that frees the box of it. False when it is inside nothing.
-    private bool Crosses(Vector3 floor, Vector3 half, float height, float yaw, Block self, out string what, out Vector2 free)
+    // name, and the shortest move along the floor that frees the box of it. False when it is inside nothing. For a
+    // prop the ways kept clear count as things to be out of, and a lower prop as something it may stand on; for a body
+    // that comes up at a spawn point (asProp off) neither: it may come up in a doorway, and on no sofa.
+    private bool Crosses(Vector3 floor, Vector3 half, float height, float yaw, Block self, out string what, out Vector2 free, bool asProp = true)
     {
         what = null;
         free = Vector2.zero;
@@ -137,7 +139,7 @@ public sealed partial class GreyboxBuilder
             if (other == self || other.Shape == null) continue;
             // What it stands on and what is over it are not in its way. Another prop under it is what it stands on even
             // when that prop's box was raised past its model (the band no zombie reaches): crates are stacked.
-            float under = other.Prop ? Mathf.Max(bottom + StandSunk, (bottom + top) * .5f) : bottom + StandSunk;
+            float under = other.Prop && asProp ? Mathf.Max(bottom + StandSunk, (bottom + top) * .5f) : bottom + StandSunk;
             if (other.Box.max.y <= under || other.Box.min.y >= top - StandTouch) continue;
             if (!Overlap(centre, own, yaw, new Vector2(other.Box.center.x, other.Box.center.z), new Vector2(other.Size.x, other.Size.z) * .5f,
                     other.Yaw, out Vector2 way)) continue;
@@ -148,6 +150,7 @@ public sealed partial class GreyboxBuilder
         }
         foreach (var (name, space) in ways)
         {
+            if (!asProp) break;
             if (space.max.y <= bottom + StandTouch || space.min.y >= top - StandTouch) continue;
             if (!Overlap(centre, own, yaw, new Vector2(space.center.x, space.center.z), new Vector2(space.extents.x, space.extents.z), 0f,
                     out Vector2 way)) continue;
@@ -157,6 +160,80 @@ public sealed partial class GreyboxBuilder
             what = name;
         }
         return what != null;
+    }
+
+    // ---- Spawn points ----
+
+    // A spawn point is a place a body comes up at: a zombie's body standing there, half its width with a hand's room
+    // and its height (m). A point the layout put where a solid thing stands (a truck the dressing parked on it, a
+    // sofa at a corridor's end) had no body come up at it, and nothing said so: the game skips a point with no room
+    // (CampaignHorde.Roomy). Measured on the scenes built 11-15 and 11-16: one such point in each of chapters 1, 2
+    // and 4 (Tools/Maps/walk_joins.py). The layout's lines for the points come before the dressing's for the props,
+    // so the point is what is moved: the shortest way out of the thing along its floor, at most as far as the game
+    // looks for the walk mesh round a point (CampaignHorde.PointSearch).
+    private const float PointHalf = .35f, PointHeight = 1.8f, PointFarthest = 2f;
+    private readonly List<(string name, Vector3 asked, Vector3 at, string why)> pointsMoved = new List<(string, Vector3, Vector3, string)>(),
+        pointsBlocked = new List<(string, Vector3, Vector3, string)>();
+
+    // Finish, with every box and prop laid and before the bake: every spawn point stands free of them.
+    private void FreeSpawnPoints()
+    {
+        var half = new Vector3(PointHalf, PointHeight * .5f, PointHalf);
+        foreach (var point in enemySpawns)
+        {
+            if (point == null) continue;
+            Vector3 asked = point.position - Vector3.up * Lift, floor = asked;
+            string first = null;
+            bool free = false;
+            for (int tries = 0; tries <= SettleTries; tries++)
+            {
+                if (!Crosses(floor, half, PointHeight, 0f, null, out string what, out Vector2 way, false)) { free = true; break; }
+                first ??= what;
+                floor += new Vector3(way.x, 0f, way.y);
+                Vector3 gone = floor - asked;
+                if (gone.x * gone.x + gone.z * gone.z > PointFarthest * PointFarthest) break;
+            }
+            if (first == null) continue;
+            // Out of the thing, but onto a floor: a place past a roof's edge is no place to come up at.
+            if (!free || !FloorAt(floor))
+            {
+                pointsBlocked.Add((point.name, asked, asked, first));
+                continue;
+            }
+            point.position = floor + Vector3.up * Lift;
+            pointsMoved.Add((point.name, asked, floor, first));
+        }
+    }
+
+    // Whether one of the layout's boxes has its top at this place's feet.
+    private bool FloorAt(Vector3 floor)
+    {
+        foreach (var other in blocks)
+        {
+            if (other.Shape == null || other.Moves) continue;
+            if (Mathf.Abs(other.Box.max.y - floor.y) > StandSunk + Lift) continue;
+            if (floor.x < other.Box.min.x || floor.x > other.Box.max.x || floor.z < other.Box.min.z || floor.z > other.Box.max.z) continue;
+            return true;
+        }
+        return false;
+    }
+
+    // For the build's audit: the points that were moved, and the ones that could not be.
+    private string PointReport()
+    {
+        if (enemySpawns.Count == 0) return "";
+        audit.Append("\n## 스폰 지점이 선 자리 (단단한 것 속에 놓인 지점은 가장 가까운 빈 바닥으로 옮긴다)\n");
+        foreach (var (name, asked, at, why) in pointsMoved)
+            audit.Append("옮김 ").Append(name).Append(" (").Append(Format(asked)).Append(" → ").Append(Format(at)).Append("): ").Append(why).Append(" 속이어서\n");
+        foreach (var (name, asked, at, why) in pointsBlocked)
+            audit.Append("막힘 ").Append(name).Append(" (").Append(Format(asked)).Append("): ").Append(why).Append(" 속이고, ")
+                .Append(PointFarthest.ToString("0.#")).Append(" m 안에 빈 바닥이 없어요. 배치에서 지점을 옮겨야 해요\n");
+        audit.Append("# 합계: 스폰 지점 ").Append(enemySpawns.Count).Append("개, 옮긴 것 ").Append(pointsMoved.Count).Append(", 막힌 것 ").Append(pointsBlocked.Count).Append('\n');
+        if (pointsBlocked.Count == 0) return "";
+        auditToRead = true;
+        var names = new List<string>();
+        foreach (var blocked in pointsBlocked) names.Add(blocked.name);
+        return "\n단단한 것 속에 놓여 좀비가 나오지 못하는 스폰 지점 " + pointsBlocked.Count + "개: " + string.Join(", ", names) + " (배치에서 옮겨야 해요).";
     }
 
     // Two boxes on the floor (centre, half size, yaw about Y): whether they overlap by more than a touch, and then the

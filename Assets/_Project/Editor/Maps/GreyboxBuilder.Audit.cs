@@ -43,7 +43,7 @@ public sealed partial class GreyboxBuilder
     // Every check's line for the closing window, and the file. Called once, as the build ends.
     private string AuditReport()
     {
-        string line = StandReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport() + CrowdReport();
+        string line = StandReport() + PointReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport() + CrowdReport();
         if (audit.Length == 0) return line;
         string path = AuditFolder + "/" + sceneName + ".txt";
         try

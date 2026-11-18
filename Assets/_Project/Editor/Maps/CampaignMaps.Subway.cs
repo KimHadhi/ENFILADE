@@ -160,7 +160,9 @@ public static partial class CampaignMaps
         b.Box("계단실 입구 위", 299.7f, 300f, 4.5f, 12.5f, -3.3f, 3.3f);
         b.Ramp("비상 계단", new Vector3(300f, 0f, 0f), new Vector3(322f, Bank, 0f), 6f);
         b.Lamp(new Vector3(311f, 7f, 0f), 10f, 1.4f);
-        b.EnemySpawn("계단 아래", new Vector3(306f, 0f, 0f));
+        // On the stairs, six metres up them. At y 0 it stood under the stairs' slab, in the hollow beneath them, where
+        // the walk mesh is a pocket nothing walks out of (the mesh baked 11-15: the game took the point to that pocket).
+        b.EnemySpawn("계단 아래", new Vector3(306f, Bank * 6f / 22f, 0f));
 
         // 6. The far bank, out in the open: the flare that calls the army's boat (finale) and the pier it comes to.
         // Paving on top, by name (Tables/MapSurfaces Ch3_Subway.Plaza), not the concourse's tiles.
