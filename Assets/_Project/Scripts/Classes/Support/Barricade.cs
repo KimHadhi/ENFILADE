@@ -54,6 +54,16 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
     /// <summary>The kind an id carries (bits 6 and 7: SupportKit makes them so).</summary>
     public static Kind KindOf(ushort id) => (Kind)((id >> 6) & 3);
 
+    // A kind's row in Tables/Deployables, where its name, who holds it and how many one Support keeps are (Deployables).
+    private static readonly string[] kindNames = { "planks", "wire", "crate", "light" };
+    internal static string KindName(Kind kind) => kindNames[(int)kind & 3];
+
+    /// <summary>What the registry of everything set down asks of it (IPlaced, Deployables): its kind's row, whether it
+    /// still stands, and coming down for a newer one of its Support's.</summary>
+    public string KindId => KindName(Type);
+    public bool Stands => !broken;
+    public void Retire() => Break();
+
     /// <summary>Its size (m): along, up, through.</summary>
     internal static Vector3 SizeOf(Kind kind) => kind switch
     {
@@ -188,7 +198,11 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
         }
     }
 
-    /// <summary>How many of this owner's stand now, oldest first.</summary>
+    /// <summary>
+    /// Every one of this owner's standing now, any kind, oldest first (a class picked takes them all down: SupportKit.Fresh).
+    /// How many of a kind stand, how many may and which goes next are not counted here: Deployables counts everything a
+    /// player sets down.
+    /// </summary>
     public static List<ushort> StandingOf(PlayerMovement owner)
     {
         var ids = new List<ushort>();
@@ -198,37 +212,6 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
     }
 
     private float placedAt;
-
-    /// <summary>How many of this owner's of this kind stand now, oldest first.</summary>
-    public static List<ushort> StandingOf(PlayerMovement owner, Kind kind)
-    {
-        var ids = StandingOf(owner);
-        ids.RemoveAll(id => KindOf(id) != kind);
-        return ids;
-    }
-
-    /// <summary>How many of this owner's of this kind stand now (the HUD asks every frame).</summary>
-    public static int CountOf(PlayerMovement owner, Kind kind = Kind.Planks)
-    {
-        int count = 0;
-        foreach (var pair in standing)
-            if (pair.Value != null && pair.Value.Owner == owner && !pair.Value.broken && KindOf(pair.Key) == kind) count++;
-        return count;
-    }
-
-    /// <summary>This owner's oldest standing of this kind, the one a new one past their most takes down; or null.</summary>
-    public static Barricade OldestOf(PlayerMovement owner, Kind kind = Kind.Planks)
-    {
-        Barricade oldest = null;
-        foreach (var pair in standing)
-        {
-            var barricade = pair.Value;
-            if (barricade != null && barricade.Owner == owner && !barricade.broken && KindOf(pair.Key) == kind
-                && (oldest == null || barricade.placedAt < oldest.placedAt))
-                oldest = barricade;
-        }
-        return oldest;
-    }
 
     /// <summary>
     /// Whether a zombie may not come up at <paramref name="point"/>: a searchlight stands within its reach there
@@ -292,25 +275,6 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
     }
 
     /// <summary>
-    /// On its Support's own PC: barricade <paramref name="id"/> goes up for them, after their oldest of its kind come down
-    /// past <paramref name="most"/> (their own count, which a card may raise on their own PC), with
-    /// <paramref name="health"/> as its most (their PC's number, cards and all; 0 for the table's). The ids taken down
-    /// are added to <paramref name="takenDown"/>, for the others to be told.
-    /// </summary>
-    internal static Barricade Raise(ushort id, Vector3 at, float yaw, PlayerMovement owner, int most, List<ushort> takenDown, float health = 0f)
-    {
-        var mine = StandingOf(owner, KindOf(id));
-        while (mine.Count > 0 && mine.Count >= Mathf.Max(1, most))
-        {
-            ushort oldest = mine[0];
-            mine.RemoveAt(0);
-            Collapse(oldest);
-            takenDown?.Add(oldest);
-        }
-        return Place(id, at, yaw, owner, health);
-    }
-
-    /// <summary>
     /// What a kind goes up with in the table (Support.barricadeHealth, wireHealth, lightHealth; an ammo crate's takes,
     /// crateStock), as this PC reads it. Only the builder's PC reads it for a new one: a card on another PC's player must
     /// never change someone else's barricade, so the others take the health sent with it (Place).
@@ -338,6 +302,8 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
         barricade.most = barricade.health = health > 0f && !float.IsNaN(health) && !float.IsInfinity(health) ? health : BaseHealth(kind);
         barricade.Build();
         standing[id] = barricade;
+        // Counted with everything else a player sets down (how many stand, which goes next: Deployables).
+        Deployables.Add(barricade);
         return barricade;
     }
 

@@ -79,9 +79,12 @@ public sealed partial class SupportKit
         lastBuild = Time.time;
         ushort id = NextId(planKind);
         float health = MostHealthOf(planKind);
-        taken.Clear();
-        Barricade.Raise(id, at, yaw, movement, MostStanding, taken, health);
-        foreach (ushort old in taken) TookDown?.Invoke(old);
+        // Past this Support's most of the kind their oldest come down first. Which, and how many may stand, is the one
+        // count's to say (Deployables), with this PC's own cards; the others are told each, before the new one.
+        Deployables.MakeRoom(movement, Barricade.KindName(planKind), retired);
+        foreach (var old in retired)
+            if (old is Barricade down) TookDown?.Invoke(down.Id);
+        Barricade.Place(id, at, yaw, movement, health);
         KitSound.Play(KitSound.Cue.Hammer, .9f);
         Raised?.Invoke(id, at, yaw, health);
     }
@@ -220,7 +223,7 @@ public sealed partial class SupportKit
         {
             bool fits = planFit == Barricade.Fit.Ok;
             Ghost().Show(planAt, planYaw, fits ? BarricadeGhost.Look.Fits : BarricadeGhost.Look.Refused, alpha, planKind);
-            var oldest = fits && Standing >= MostStanding ? Barricade.OldestOf(movement, planKind) : null;
+            var oldest = fits ? NextDown : null;
             if (oldest != null) Doomed().Show(oldest.transform.position, oldest.transform.eulerAngles.y, BarricadeGhost.Look.Doomed, alpha, planKind);
             else if (doomed != null) doomed.Hide();
             return;

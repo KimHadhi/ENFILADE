@@ -8,12 +8,20 @@ using UnityEngine;
 /// <summary>
 /// Something a player set down that stays where it was put: a Support's planks, ammo crate or searchlight (Barricade),
 /// its claymore (ClaymoreMine), and whatever a later class or a mod sets down. To the placement rule every one of them
-/// is a structure: it takes room, and nothing else stands on it (it can come down under what stood there).
+/// is a structure: it takes room, and nothing else stands on it (it can come down under what stood there). And every
+/// one of them is counted in one place (Deployables): how many its owner has standing, how many they may keep, and
+/// which comes down when another goes up.
 /// </summary>
 public interface IPlaced
 {
     /// <summary>Who set it down.</summary>
     PlayerMovement Owner { get; }
+    /// <summary>Its kind: a row of Tables/Deployables (its name, who holds it, how many one player keeps).</summary>
+    string KindId { get; }
+    /// <summary>Still standing: not broken, not gone off, not already being taken back.</summary>
+    bool Stands { get; }
+    /// <summary>Taken back for a newer one of its owner's, past their most: it comes down and harms nobody.</summary>
+    void Retire();
 }
 
 /// <summary>

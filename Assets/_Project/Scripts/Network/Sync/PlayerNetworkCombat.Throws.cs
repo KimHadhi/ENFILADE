@@ -58,10 +58,12 @@ public sealed partial class PlayerNetworkCombat
 
     // A Support set a claymore down (G): every other PC sets its copy down there; the Support's PC fires it and says
     // where in GrenadeBurstRpc (or, with others near it, MineChainRpc), so its copies fire with it.
+    // With it go the numbers of the Support's own that came back off for it, past their most: their PC counted them
+    // (Deployables), with their cards, and every other PC takes those copies off as told.
     [Rpc(SendTo.NotMe)]
-    private void MineRpc(ushort id, Vector3 at, Quaternion facing, bool wall)
+    private void MineRpc(ushort id, Vector3 at, Quaternion facing, bool wall, ushort[] retired)
     {
-        if (grenades != null) grenades.ShowMine(id, at, facing, wall);
+        if (grenades != null) grenades.ShowMine(id, at, facing, wall, retired);
     }
 
     // Their claymore went off with others set down near it, anyone's (ClaymoreChain: their PC gathered them, each named

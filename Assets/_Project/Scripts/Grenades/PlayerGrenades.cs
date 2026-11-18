@@ -22,7 +22,8 @@ using UnityEngine;
 /// canister and dye don't cook; holding them only aims. The Support's claymore is set down, not thrown (the user: "던지는
 /// 느낌보단 설치로 가도 되긴 하겠다"): held, G shows the spot under the crosshair and the fan it will guard
 /// (ClaymorePreview); let go (or tapped), the hand puts it there (ClaymoreMine), and the oldest comes back off past
-/// GrenadeRules claymoreMost. Set down near others, anyone's, it goes off with them (ClaymoreChain).
+/// this player's most (Tables/Deployables; counted in the one place, Deployables). Set down near others, anyone's, it
+/// goes off with them (ClaymoreChain).
 /// A few are carried (the table's carry: a fresh kit holds them all, every chapter and every class pick); ammo piles, the
 /// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
 /// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
@@ -48,8 +49,12 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     public event Action<ushort> KnifeTaken;
     /// <summary>This PC's player's off hand went for a throwable, threw it or put it back: friends' copies move their arm so.</summary>
     public event Action<Throwable, HandPhase> Handed;
-    /// <summary>This PC's player set a claymore down: its number, where, how it is turned, and whether on a wall.</summary>
-    public event Action<Throwable, ushort, Vector3, Quaternion, bool> Placed;
+    /// <summary>
+    /// This PC's player set a claymore down: its number, where, how it is turned, whether on a wall, and the numbers of
+    /// their own that came back off for it (past their most: Deployables.MakeRoom counted on this PC, with its cards).
+    /// Friends' copies take those off as told and never count for themselves.
+    /// </summary>
+    public event Action<ushort, Vector3, Quaternion, bool, ushort[]> SetDown;
     /// <summary>
     /// This PC's player's claymore went off with others set down near it, anyone's (ClaymoreChain): each one's owner
     /// (PlayerRoster.IdOf) and number, and the chain's middle. For friends' PCs.
@@ -81,6 +86,8 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     /// <summary>What this player carries (their class's), and how many are left.</summary>
     public Throwable Kind => kind;
     public int Count => count;
+    /// <summary>One that is set down (a claymore) is held out now, its spot showing: the HUD's count line marks its kind.</summary>
+    public bool Placing => holding && (arm == Arm.Draw || arm == Arm.Hold) && Throwables.Of(armKind) is ThrowableInfo held && held.Places;
     // The grenade pouch card adds to this PC's own player's (PlayerPerks.ExtraThrowables); the cards are theirs alone.
     public int Carry => Info != null ? Info.Carry + (movement != null && movement.IsLocal ? PlayerPerks.ExtraThrowables : 0) : 0;
     private ThrowableInfo Info => Throwables.Of(kind);

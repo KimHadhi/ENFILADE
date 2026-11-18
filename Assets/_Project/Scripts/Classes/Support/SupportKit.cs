@@ -74,7 +74,8 @@ public sealed partial class SupportKit : MonoBehaviour
     private float refusedAt = -99f;
     private Vector3 heldSpot;
     private float heldYaw;
-    private readonly List<ushort> taken = new List<ushort>();
+    // The ones that came down for the one just put up (Deployables.MakeRoom), for the others to be told.
+    private readonly List<IPlaced> retired = new List<IPlaced>();
     // What stood in the way of the spot the preview is on now (Placement), for the refusal's record; null where it fits.
     private Collider planBy;
     // A client's mending not yet told the host: how much, on which barricade, and when it may tell next.
@@ -95,9 +96,14 @@ public sealed partial class SupportKit : MonoBehaviour
     public float GiveCost => Mathf.Max(1f, Number("resupplyCost", 25f));
     public float BuildCost => CostOf(planKind);
     public bool CanBuild => Supply >= BuildCost - .001f;
-    /// <summary>How many of the chosen kind stand now, and the most at once.</summary>
-    public int Standing => movement != null ? Barricade.CountOf(movement, planKind) : 0;
+    /// <summary>
+    /// How many of the chosen kind stand now, and the most at once: the one count of everything a player sets down
+    /// (Deployables), which the HUD's line and the preview's amber ghost read too.
+    /// </summary>
+    public int Standing => movement != null ? Deployables.Count(movement, Barricade.KindName(planKind)) : 0;
     public int MostStanding => MostOf(planKind);
+    /// <summary>The one of the chosen kind that putting another up would take down: this Support's oldest, once its most stand; else null.</summary>
+    public Barricade NextDown => movement != null ? Deployables.Next(movement, Barricade.KindName(planKind)) as Barricade : null;
     /// <summary>The kind the key puts up now.</summary>
     public Barricade.Kind PlanKind => planKind;
 
@@ -109,22 +115,11 @@ public sealed partial class SupportKit : MonoBehaviour
         Barricade.Kind.Light => Number("lightCost", 60f),
         _ => Number("barricadeCost", 50f),
     });
-    public int MostOf(Barricade.Kind kind) => Mathf.Max(1, Mathf.RoundToInt(kind switch
-    {
-        Barricade.Kind.Wire => Number("wireMax", 2f),
-        Barricade.Kind.Crate => Number("crateMax", 1f),
-        Barricade.Kind.Light => Number("lightMax", 1f),
-        _ => Number("barricadeMax", 2f),
-    }));
+    public int MostOf(Barricade.Kind kind) => Deployables.Most(Barricade.KindName(kind));
 
-    // Whether this Support may put up this kind: the planks always, the rest with their cards.
-    private static bool Holds(Barricade.Kind kind) => kind switch
-    {
-        Barricade.Kind.Wire => PlayerPerks.Has(PlayerPerks.SupportWire),
-        Barricade.Kind.Crate => PlayerPerks.Has(PlayerPerks.SupportCrate),
-        Barricade.Kind.Light => PlayerPerks.Has(PlayerPerks.SupportLight),
-        _ => true,
-    };
+    // Whether this Support may put up this kind: the planks always, the rest with their cards. Which card a kind needs
+    // is its row's to say (Tables/Deployables), so a kind added there needs no line here.
+    private static bool Holds(Barricade.Kind kind) => Deployables.Holds(Barricade.KindName(kind));
     /// <summary>Seconds since it last handed ammo over, and since it last put a barricade up (the HUD's flash).</summary>
     public float SinceGive => Time.time - lastGive;
     /// <summary>The class key is held to place a barricade (the preview is up), and whether one may go where it stands now.</summary>

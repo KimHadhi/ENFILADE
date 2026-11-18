@@ -12,6 +12,9 @@ public static class CardCommands
     {
         router.Register("card", "아이디 [단계] — 능력 카드를 바로 얻는다(시험용, 고른 것과 같다). list: 내가 받을 수 있는 카드와 단계 · "
             + "all: 내 클래스와 공용 카드 모두 최대 단계 · clear: 모두 버림", Run);
+        // What the class kits keep count of, as words (each registered here beside /card: the classes' own console lines).
+        router.Register("deploy", "내가 세워 둔 설치물: 종류마다 지금 수/최대, 다음에 놓으면 사라질 것의 자리, 이 PC에 서 있는 것 모두 (Deployables)",
+            Deployables.Report);
     }
 
     private static string Run(string args)

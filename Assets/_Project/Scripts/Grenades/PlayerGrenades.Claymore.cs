@@ -99,38 +99,34 @@ public sealed partial class PlayerGrenades
         count--;
         readyAt = Time.time + Cooldown;
         ushort id = NextId();
-        Keep(ClaymoreMine.Place(id, at, facing, wall, movement, true, OnMineFired));
+        // Past this player's most their oldest comes back off first. How many may be out and which goes is the one
+        // count's to say (Deployables), with this PC's own cards; the copies on the other PCs take off the ones named.
+        Deployables.MakeRoom(movement, ClaymoreMine.KindName, retiredMines);
+        var takenBack = new ushort[retiredMines.Count];
+        for (int i = 0; i < takenBack.Length; i++) takenBack[i] = retiredMines[i] is ClaymoreMine old ? old.Id : (ushort)0;
+        Hold(ClaymoreMine.Place(id, at, facing, wall, movement, true, OnMineFired));
         Throwables.Play("Bounce", at, .8f, .7f, 15f);
-        Placed?.Invoke(armKind, id, at, facing, wall);
+        SetDown?.Invoke(id, at, facing, wall, takenBack);
         PlayerCallouts.Thrown(info.Callout);
         released = true;
         Lower();
         Handed?.Invoke(armKind, HandPhase.Lower);
     }
 
-    // A new claymore out; past GrenadeRules claymoreMost the oldest comes back off (every PC keeps the same order). The
-    // ones gone off (alone or in a chain, ClaymoreChain) are out of the count.
-    private void Keep(ClaymoreMine claymore)
+    // The claymores that came back off for the one just set down (Deployables.MakeRoom), for the others to be told.
+    private readonly System.Collections.Generic.List<IPlaced> retiredMines = new System.Collections.Generic.List<IPlaced>();
+
+    // A new claymore of this player's, theirs or a friend's copy: kept by its number, so a burst or a word to take it
+    // back finds it. How many may be out is not counted here (Deployables); the ones gone off or taken back are dropped.
+    private void Hold(ClaymoreMine claymore)
     {
         mines.RemoveAll(m => m == null || !m.Live);
-        if (claymore == null) return;
-        mines.Add(claymore);
-        while (mines.Count > MostMines)
-        {
-            var oldest = mines[0];
-            mines.RemoveAt(0);
-            if (oldest != null) oldest.Retire();
-        }
+        if (claymore != null) mines.Add(claymore);
     }
 
-    private static int MostMines => Mathf.Max(1, Mathf.RoundToInt(Throwables.Rule("claymoreMost", 2f)));
-
-    // The claymore setting another down would take back: the oldest, once claymoreMost are out.
-    private ClaymoreMine Leaving()
-    {
-        mines.RemoveAll(m => m == null || !m.Live);
-        return mines.Count >= MostMines ? mines[0] : null;
-    }
+    // The claymore setting another down would take back: this player's oldest, once as many are out as they may keep
+    // (the one count's answer, which the HUD's line shows too: Deployables.Next).
+    private ClaymoreMine Leaving() => Deployables.Next(movement, ClaymoreMine.KindName) as ClaymoreMine;
 
     // This PC's player's claymore saw a zombie: it goes off, and with it every claymore set down near it, anyone's
     // (ClaymoreChain); friends' copies go off as this PC says.

@@ -42,6 +42,8 @@ public sealed class ClassHUD : MonoBehaviour
     private InputAction ability;
     private string shownClass;
     private int shownPips;
+    // What this player has standing in the world, under the plate (how many of each kind, how many may: DeployStrip).
+    private DeployStrip deploy;
 
     private void OnEnable()
     {
@@ -58,6 +60,10 @@ public sealed class ClassHUD : MonoBehaviour
         if (id != shownClass) Show(id);
         bool dead = movement.IsDead;
         plate.gameObject.SetActive(!dead);
+        // The count of what this player has standing, whatever their class and whether or not they are placing now (the
+        // user, 2026-11-18: "현재 설치 개수/최대 제한 현황 표시"); what hangs under the plate (the bar) stands under it.
+        deploy.Show(movement, Placing(), !dead);
+        chargeBar.anchoredPosition = new Vector2(0f, -(Height + 4f + deploy.Reach));
         if (dead || kit == null) return;
         // Momentum (기세, a perk card): its time over the plate.
         float momentum = PlayerPerks.MomentumShare;
@@ -110,6 +116,16 @@ public sealed class ClassHUD : MonoBehaviour
             : cheering ? Texts.Format("class.hud.cheer", Mathf.RoundToInt(HoundShowdown.CheerDamage(movement)))
             : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks) : Texts.Get("class.hud.charge");
         if (barWord.text != word) barWord.text = word;
+    }
+
+    // The kind of thing being placed now, as Tables/Deployables names it ("" for none): a Support's structure while
+    // its key is held, or a claymore held out.
+    private static string Placing()
+    {
+        var support = SupportKit.Local;
+        if (support != null && support.Planning) return Barricade.KindName(support.PlanKind);
+        var grenades = PlayerGrenades.Local;
+        return grenades != null && grenades.Placing ? ClaymoreMine.KindName : "";
     }
 
     private void Show(string id)
@@ -285,7 +301,11 @@ public sealed class ClassHUD : MonoBehaviour
             KeyPrompt(true);
             // What it puts up and for how much; F goes on to the next kind held.
             string what = Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant());
-            Word(Texts.Format(fits ? "class.hud.place.kind" : "class.hud.place.kind.no", what, Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
+            // With as many standing as may, putting it up takes the oldest down: the word says so ("놓으면 교체"), as the
+            // amber chip under the plate and the amber ghost over that one in the world do.
+            bool swaps = fits && support.NextDown != null;
+            Word(Texts.Format(!fits ? "class.hud.place.kind.no" : swaps ? "class.hud.place.kind.swap" : "class.hud.place.kind", what,
+                Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
             // With the throw card and a friend under the crosshair, F throws them a pack instead (SupportKit.Tossable).
             var catcher = support.Tossable;
             side = (fits ? Texts.Get("class.hud.place.cancel") : support.PlanWhy) + " · "
@@ -298,10 +318,10 @@ public sealed class ClassHUD : MonoBehaviour
             Word(Texts.Get("class.hud.barricade"), KitStyle.Accent);
             var friend = support.Offered;
             // A barricade under the crosshair has its own line at the foot of the screen, where the eyes are (SupportKit).
+            // How many of each structure stand is the line under the plate's (DeployStrip): every kind at once, and still
+            // there while placing, where this note showed the one kind in hand and hid it then.
             side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
-                : Texts.Format("class.hud.bag", Mathf.FloorToInt(support.Supply), Mathf.RoundToInt(support.SupplyMax)) + " · "
-                    + Texts.Format("class.hud.barricades", support.Standing, support.MostStanding,
-                        Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant()));
+                : Texts.Format("class.hud.bag", Mathf.FloorToInt(support.Supply), Mathf.RoundToInt(support.SupplyMax));
         }
         if (note.text != side) note.text = side;
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
@@ -477,10 +497,14 @@ public sealed class ClassHUD : MonoBehaviour
         barWord = KitStyle.Label(KitStyle.TopLeft("Charge text", chargeBar, new Vector2(Width - 90f, -2f), new Vector2(90f, 18f)),
             Texts.Get("class.hud.charge"), 12f, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
         chargeBar.gameObject.SetActive(false);
+
+        // What this player has standing in the world: a piece of its own on this canvas, right under the plate.
+        deploy = new DeployStrip(host.transform, Width, Above);
     }
 
     private void OnDestroy()
     {
+        deploy?.Dispose();
         if (plate == null) return;
         var host = plate.parent != null ? plate.parent.gameObject : plate.gameObject;
         if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);

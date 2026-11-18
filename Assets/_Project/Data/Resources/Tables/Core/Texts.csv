@@ -1,5 +1,11 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+class.hud.place.kind.swap,{0} 놓으면 교체 ({1}),{0}: release to replace ({1}),"클래스 HUD: 서포트가 휠을 누르고 있고 그 종류가 이미 최대로 서 있을 때. 놓으면 가장 오래된 것이 무너지고 새것이 선다(클래스 칸 아래 개수 칩이 호박색, 세상에서는 그 오래된 것 위에 호박색 미리 보기). {0}=세울 것 {1}=가방에서 나가는 양"
+deploy.planks.short,판자,Planks,클래스 칸 아래 설치 개수 줄의 칩 이름(Deployables.csv planks = 바리케이드). 칩이 좁아 두세 글자
+deploy.wire.short,철조망,Wire,클래스 칸 아래 설치 개수 줄의 칩 이름(Deployables.csv wire)
+deploy.crate.short,상자,Crate,클래스 칸 아래 설치 개수 줄의 칩 이름(Deployables.csv crate = 탄약 상자)
+deploy.light.short,탐조등,Light,클래스 칸 아래 설치 개수 줄의 칩 이름(Deployables.csv light)
+deploy.claymore.short,지뢰,Mine,클래스 칸 아래 설치 개수 줄의 칩 이름(Deployables.csv claymore = 급조 지향성 지뢰)
 net.rejoining,연결이 끊겨 같은 방에 다시 들어가는 중입니다...,Connection lost. Rejoining the lobby...,메인 메뉴 상태 줄 > 방에 있다가 방장의 말 없이 끊겼을 때 같은 방에 한 번 다시 들어가는 중(GameSession)
 net.closed,방장이 방을 닫았습니다.,The host closed the lobby.,메인 메뉴 상태 줄 > 방장이 방을 닫아서 나왔을 때(방장 PC의 표에서 읽어 보냄)
 class.support.fit.zombie,좀비가 서 있다,A zombie is in the way,서포트 건축물을 못 세우는 까닭(미리 보기 중 보급 칸 옆 글자이자 키를 놓았을 때 알림): 그 자리에 살아 있는 좀비가 있다. 시체·떨어진 살점·던진 것·탄창은 막지 않는다(Placement)

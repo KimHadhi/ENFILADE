@@ -199,6 +199,13 @@
 
 '세상의 레이어'를 광선마다 따로 적던 마스크 사본은 [WorldLayers](../../Assets/_Project/Scripts/Core/Common/WorldLayers.cs)`.Built` 하나로 모았다(서포트·투척물·어썰트 포격·돌 던지기·시야 콘).
 
+**세워 둔 수는 한 곳에서 센다**(2026-11-18, 사용자: "탄약 박스, 바리케이드 등 추가 설치 시 기존 설치물이 소멸하는 기준을 파악할 수 있도록 현재 설치 개수/최대 제한 현황 표시"). 플레이어가 세워 둔 것은 모두 [Deployables](../../Assets/_Project/Scripts/Classes/Deployables/Deployables.cs)에 적히고, 몇 개 서 있는지·몇 개까지인지·다음에 무엇이 사라지는지를 거기서만 센다. 예전에는 두 군데였다: 바리케이드류는 Barricade가 세고 최대는 ClassAbilities, 지뢰는 PlayerGrenades의 목록이 세고 최대는 GrenadeRules. '가장 오래된 것이 사라진다'는 반복문도 둘이었고, HUD는 손에 든 한 종류의 수만 보여 주다가 정작 세우는 동안에는 그마저 숨겼으며 지뢰는 수가 아예 없었다.
+
+- **종류의 표**: [Deployables.csv](../../Assets/_Project/Data/Resources/Tables/Classes/Deployables.csv). 줄 하나가 한 종류다(판자·철조망·탄약 상자·탐조등·지뢰). `name`·`short` 이름, 누가 놓는지(`class` 클래스, `card` 필요한 카드, `throwable` 그 투척물을 드는 클래스. 채운 칸은 모두 맞아야 한다), `most` 한 사람의 최대. `most`는 숫자거나 ClassAbilities의 수치 이름(`Support.barricadeMax`)이고, 이름이면 그 수치에 붙는 카드(판자 더미)가 함께 더해진다. 지뢰의 최대는 GrenadeRules `claymoreMost`에서 ClassAbilities `Support.claymoreMax`로 옮겼다(서포트의 다른 최대 수치 옆). 모드는 줄을 더하고 그 설치물에 `IPlaced`를 달면 된다.
+- **규칙은 하나**: 한 사람은 한 종류를 `most`개까지 세워 둔다. 하나 더 놓으면 그 사람의 가장 오래된 것이 먼저 사라진다(`Deployables.MakeRoom`). 세는 것은 놓는 사람의 PC다(제 카드로 센다). 다른 PC는 '이것이 사라졌다'는 말만 듣고 따라 한다: 바리케이드는 CollapseRpc, 지뢰는 MineRpc에 사라진 번호가 함께 간다(예전에는 지뢰를 PC마다 따로 세어서 카드로 최대가 달라지면 어긋날 수 있었다).
+- **HUD**: 클래스 칸 바로 아래에 개수 줄([DeployStrip](../../Assets/_Project/Scripts/UI/Hud/Classes/DeployStrip.cs)). 종류마다 칩 하나에 짧은 이름과 `1/2`, 아래에 채워진 만큼의 선. 놓을 수 있는 종류는 세우는 중이든 아니든 늘 보인다. 가득 찬 종류는 호박색: 다음에 놓으면 가장 오래된 것이 사라진다는 뜻이고, 세상에서 그 오래된 것 위에 깜빡이는 미리 보기(바리케이드의 호박색 유령, 지뢰의 호박색 고리)와 같은 색이다. 지금 세우는 종류는 위에 분홍 선이 서고, 가득 찬 채 세우는 중이면 호박색이 천천히 숨 쉰다. 휠을 누르고 있을 때 키 옆 글자도 '놓으면 설치' 대신 '놓으면 교체'가 된다. 클래스를 바꿔 더는 못 놓는 종류도 서 있는 동안에는 흐리게 남는다. 숫자는 [ClassHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/ClassHud.csv) `Deploy.*`.
+- **플레이 없이 확인**: 콘솔 `/deploy`가 종류마다 지금 수/최대와 다음에 사라질 것의 자리, 이 PC에 서 있는 것 모두를 적는다. 놓을 때마다 `Logs/deployables.txt`에 `UP 종류 수/최대`, 넘쳐서 사라질 때 `RETIRED 종류 … N stood, most M`이 남는다. 칩의 자리는 개수만으로 정해지는 순수 함수(`DeployStrip.Slot`)라 칩 1~8개의 자리를 계산으로 확인했다(다섯까지 한 줄, 여섯부터 아래 줄).
+
 ## 4. 아직 안 만든 아이디어 (다음에 고를 거리)
 
 - 포인트 궁극 **건 카타**: 몇 초 동안 총을 바꿔 들 때마다 꺼낸 총이 가득 찬다. 이유: "총을 바꾸는 손놀림 자체가 장전이 되는 경지".

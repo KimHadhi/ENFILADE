@@ -10,8 +10,10 @@ using UnityEngine;
 /// room. The phone takes GrenadeRules claymoreArm to come on (its light blinks, then holds with a click, and a faint
 /// trip beam shows the fan's middle); armed, it fires when a zombie comes into its fan (claymoreCone degrees wide,
 /// claymoreTrigger metres, no wall between): the frag's blast and gore, one way only (FragBlast's directional form, its
-/// row's radius, damage and edge), and a brute stays on its feet. A Support keeps claymoreMost out at once: setting
-/// another takes the oldest back (it tips over and goes, no bang). Set down close to others, anyone's (GrenadeRules
+/// row's radius, damage and edge), and a brute stays on its feet. A Support keeps a few out at once (its row of
+/// Tables/Deployables, counted with everything else a player sets down: Deployables): setting another takes the oldest
+/// back (it tips over and goes, no bang), which the HUD's count line and an amber ring on that one say beforehand. Set
+/// down close to others, anyone's (GrenadeRules
 /// claymoreChain), it goes off with them, further and harder, as one big blast (ClaymoreChain; the user, 2026-11-14:
 /// "가까우면 같이 터져"); held to set one down, lines show to the ones it would go off with (ClaymorePreview).
 /// On every PC: the owner's PC watches for zombies (its own copies of them) and fires it, its hits going as the owner's
@@ -37,6 +39,11 @@ public sealed class ClaymoreMine : MonoBehaviour, IPlaced
     public Vector3 Facing => transform.forward;
     /// <summary>Still down and able to go off: not fired, not being taken back.</summary>
     public bool Live => !gone && !retiring;
+
+    /// <summary>Its row in Tables/Deployables, where how many one player keeps down is (Deployables counts them).</summary>
+    public const string KindName = "claymore";
+    public string KindId => KindName;
+    public bool Stands => Live;
 
     private ThrowableInfo info;
     private Action<ClaymoreMine> fired;
@@ -65,6 +72,8 @@ public sealed class ClaymoreMine : MonoBehaviour, IPlaced
         self.info = Throwables.Of(Throwable.Claymore);
         self.Build();
         placed.Add(self);
+        // Counted with everything else a player sets down (how many are out, which goes next: Deployables).
+        Deployables.Add(self);
         return self;
     }
 
@@ -134,7 +143,7 @@ public sealed class ClaymoreMine : MonoBehaviour, IPlaced
         return line;
     }
 
-    /// <summary>Taken back off (a newer one went down past claymoreMost): it tips over and goes, with no bang.</summary>
+    /// <summary>Taken back off (a newer one went down past its owner's most: Deployables): it tips over and goes, with no bang.</summary>
     public void Retire()
     {
         if (gone || retiring) return;
@@ -267,7 +276,8 @@ internal sealed class ClaymorePreview
     private const int ArcPoints = 24;
     private readonly Transform owner;
     private LineRenderer fan;
-    private readonly ThrowArc ring;
+    // The ring on the spot, and the amber one round the claymore setting this one down would take back.
+    private readonly ThrowArc ring, goes;
     // The lines to the claymores it would go off with, those claymores, and where each is reached from.
     private readonly List<LineRenderer> links = new List<LineRenderer>();
     private readonly List<ClaymoreMine> bound = new List<ClaymoreMine>();
@@ -277,6 +287,7 @@ internal sealed class ClaymorePreview
     {
         this.owner = owner;
         ring = new ThrowArc(owner);
+        goes = new ThrowArc(owner);
     }
 
     /// <summary>
@@ -307,6 +318,12 @@ internal sealed class ClaymorePreview
         // The spot itself, on a floor (a ring on a wall would lie on the ground below it).
         if (wall) ring.HideRing();
         else ring.Ring(at, up, .12f, KitStyle.With(KitStyle.Ice, .9f));
+        // The one it would take back, ringed in the amber its chip on the HUD is in (DeployStrip): known before it goes
+        // (the user, 2026-11-18: "기존 설치물이 소멸하는 기준을 파악할 수 있도록"). It breathes, slowly, never out.
+        if (leaving != null && leaving.Live)
+            goes.Ring(leaving.transform.position, leaving.transform.up, .2f,
+                KitStyle.With(DeployStrip.Amber, .775f + .225f * Mathf.Sin(Time.unscaledTime * 2f * Mathf.PI * 1.2f)));
+        else goes.HideRing();
         Link(heart, leaving);
     }
 
@@ -335,6 +352,7 @@ internal sealed class ClaymorePreview
         foreach (var line in links)
             if (line != null && line.enabled) line.enabled = false;
         ring.Hide();
+        goes.Hide();
     }
 
     private LineRenderer MakeLine(string name)

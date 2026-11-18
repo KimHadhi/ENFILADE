@@ -54,10 +54,20 @@ public sealed partial class PlayerGrenades
         Throwables.Play("Throw", from, .7f, 1.5f, 20f);
     }
 
-    /// <summary>A friend set a claymore down there: this PC sets its own copy down (their PC fires it: ShowBurst, ShowChain).</summary>
-    internal void ShowMine(ushort id, Vector3 at, Quaternion facing, bool wall)
+    /// <summary>
+    /// A friend set a claymore down there: this PC sets its own copy down (their PC fires it: ShowBurst, ShowChain), after
+    /// taking off the copies of the ones their PC says came back off for it (<paramref name="retired"/>: their numbers).
+    /// Their PC counted, with their cards; this one never counts a friend's (memory actor-decides).
+    /// </summary>
+    internal void ShowMine(ushort id, Vector3 at, Quaternion facing, bool wall, ushort[] retired)
     {
-        Keep(ClaymoreMine.Place(id, at, facing, wall, movement, false, null));
+        if (retired != null)
+            foreach (ushort gone in retired)
+            {
+                var old = mines.Find(m => m != null && m.Id == gone);
+                if (old != null) old.Retire();
+            }
+        Hold(ClaymoreMine.Place(id, at, facing, wall, movement, false, null));
         Throwables.Play("Bounce", at, .6f, .7f, 15f);
         if (arm == Arm.Draw || arm == Arm.Hold) Lower();
     }
