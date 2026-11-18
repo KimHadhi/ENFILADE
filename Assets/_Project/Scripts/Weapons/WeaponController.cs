@@ -209,6 +209,8 @@ public sealed partial class WeaponController : MonoBehaviour
     private float closeLeft;
     // How long an empty magazine has waited with the gun ready to fire (s), for the automatic reload.
     private float emptyReady;
+    // The body's sprint (PlayerMovement.SprintProgress) as last seen, to tell one being asked for from one dying away.
+    private float sprintSeen;
     // The held gun's WeaponRuntime.Loads as last seen: a reload cut short past its bolt loads the gun outside a frame's
     // tick (a swap, a climb), and its completion is told then.
     private int loadsSeen;

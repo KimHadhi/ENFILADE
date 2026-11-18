@@ -44,6 +44,20 @@ public sealed partial class WeaponController
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
             frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
         survivalInterrupted = false;
+        // The body is speeding up into a sprint or is at one: the player is asking for it now (its progress only falls
+        // once they have let go).
+        float sprint = movement != null && movement.IsInitialized ? movement.SprintProgress : 0f;
+        bool sprinting = sprint > 0f && (sprint > sprintSeen || sprint >= 1f);
+        sprintSeen = sprint;
+        // Once a reload has loaded the gun, what is left of its clip is only the hands coming back
+        // (WeaponRuntime.OnlyEndLeft): the trigger, the sights or a sprint cut it there (ReloadRules; asked whether they
+        // should, the user, 2026-11-18: "네, 밀치기로 장전 캔슬해도 됩니다"; the shove's part is PlayerCombatActions').
+        // The gun is the player's from this frame: the sights come up and the shot goes below as with no reload under
+        // way. Not while the hands are kept off the gun anyway, and only for this PC's own player: a friend's copy
+        // follows what their PC did.
+        if (Mine && Runtime.OnlyEndLeft && !bodyAction && !stepDodging && shoveRecovery <= 0f
+            && ReloadRules.EndCutBy(frame.FirePressed || frame.FireHeld, frame.AimHeld, sprinting))
+            Runtime.Interrupt();
         bool aiming = frame.AimHeld && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
             && !stepDodging && !frame.ReloadPressed;
         float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / AdsTime);

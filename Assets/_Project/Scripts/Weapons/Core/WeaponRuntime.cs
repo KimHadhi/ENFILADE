@@ -65,6 +65,14 @@ public sealed class WeaponRuntime
     // How far the magazine reload under way has got in what its hands do to the gun (ReloadSteps), each done once.
     private enum Stage { Begun, MagazineOut, MagazineIn, Loaded }
     private Stage stage;
+    /// <summary>
+    /// The magazine reload under way has loaded the gun and only the end of its clip is left: the hands coming back.
+    /// Nothing more moves in it, so whoever wants the gun now may cut it there and loses nothing (Interrupt counts it as
+    /// a reload done): the trigger, the sights, a sprint, a shove (ReloadRules; the user, 2026-11-18: "네, 밀치기로 장전
+    /// 캔슬해도 됩니다"). Never on a friend's copy, whose PC decides, nor in a shell reload, whose own end already
+    /// follows the trigger (StopAfterShell).
+    /// </summary>
+    public bool OnlyEndLeft => IsReloading && Step == ReloadStep.None && !shownReload && stage == Stage.Loaded;
     /// <summary>The gun is at the hip (WeaponController sets it each frame): a revolver in Fanning fans.</summary>
     internal bool FanFromHip { get; set; }
     // Which clip the reload that goes on from a cut-short one plays (from empty or not): the one that was cut.
@@ -176,6 +184,13 @@ public sealed class WeaponRuntime
             var steps = ReloadSteps.Of(Data, IsEmptyReload);
             ReloadStartShare = !resuming ? 0f : MagazineOut ? steps.Pouch : steps.MagIn;
             ReloadRemaining = ReloadDuration * (1f - ReloadStartShare); burstRemaining = 0;
+            // The record gets the reload's own moments in seconds, as the gun's clip gave them in this play (the check
+            // outside a play can only show the shares an unmeasured clip falls back on).
+            if (Told != null)
+                Tell("reload begun: " + (IsEmptyReload ? "from empty" : "tactical") + (Data.ShellReload ? ", shell by shell"
+                    : $", {ReloadDuration:0.00} s from {ReloadDuration * ReloadStartShare:0.00}: magazine out {ReloadDuration * steps.MagOut:0.00}, "
+                    + $"in {ReloadDuration * steps.MagIn:0.00}, loaded {ReloadDuration * steps.Loaded:0.00}" + (steps.Measured ? "" : " (stand-in shares: clip not measured)")),
+                    Ammo, ReserveAmmo);
             cooldown = Mathf.Max(0f, cooldown); wasHoldingFire = false; return 0;
         }
         // Fanning from the hip fires while the trigger is held, at the fanning rate; down the sights one round a pull.
@@ -292,7 +307,7 @@ public sealed class WeaponRuntime
         if (stage == Stage.Loaded) Loads++;
         // The next reload plays the same clip on from the step the gun is left at (MagazineOut or ChamberDue say which).
         else if (stage != Stage.Begun) resumeEmpty = IsEmptyReload;
-        Tell(stage == Stage.Loaded ? "reload cut short: loaded already" : stage == Stage.MagazineIn ? "reload cut short: bolt left to work"
+        Tell(stage == Stage.Loaded ? $"reload cut short: loaded already, {ReloadRemaining:0.00} s of its clip left" : stage == Stage.MagazineIn ? "reload cut short: bolt left to work"
             : stage == Stage.MagazineOut ? "reload cut short: no magazine in" : "reload cut short: nothing done yet", Ammo, ReserveAmmo);
     }
 

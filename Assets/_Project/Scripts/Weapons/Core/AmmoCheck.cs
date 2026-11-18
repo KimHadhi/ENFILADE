@@ -83,6 +83,7 @@ internal static class AmmoCheck
                 SlotTopUps(guns, report);
                 GunsAsThings(guns, report);
                 SharedReserves(guns, report);
+                ReloadEnds(guns, report);
             }
         }
         catch (Exception problem)
@@ -103,6 +104,8 @@ internal static class AmmoCheck
         text.Append(report.Text);
         text.AppendLine();
         Ammunitions(guns, text);
+        text.AppendLine();
+        ReloadEndRules(text);
         text.AppendLine();
         Steps(guns, text);
         try
@@ -574,6 +577,105 @@ internal static class AmmoCheck
         {
             foreach (var host in made) UnityEngine.Object.DestroyImmediate(host);
         }
+    }
+
+    // What is left of a magazine reload once the gun is loaded may be cut (WeaponRuntime.OnlyEndLeft, ReloadRules): it is
+    // offered from the moment the gun is loaded to the clip's end and at no moment before, a cut there leaves a full gun
+    // that fires at once and counts as a reload done, and V is the gun's bash only then (as the table stands).
+    private static void ReloadEnds(List<WeaponData> guns, Report report)
+    {
+        report.Rule("reload: only its end is left (what the trigger, the sights, a sprint or a shove may cut) from the moment the gun is loaded to the clip's end, and at no moment before");
+        foreach (var data in guns)
+            foreach (bool empty in new[] { false, true })
+            {
+                if (data.ShellReload) continue;
+                var gun = Reloading(data, empty, out int reserve);
+                if (gun == null) continue;
+                var steps = ReloadSteps.Of(data, empty);
+                int full = Mathf.Min(data.MagazineSize, gun.Ammo + gun.ReserveAmmo);
+                float whole = gun.ReloadDuration, loadedAt = whole * steps.Loaded, clock = 0f, firstAt = -1f;
+                bool early = false, late = false, wrong = false;
+                for (int i = 0; i < 100000; i++)
+                {
+                    gun.Tick(Step, default);
+                    clock += Step;
+                    if (!gun.IsReloading) break;
+                    if (!gun.OnlyEndLeft) { late |= clock > loadedAt + 2f * Step; continue; }
+                    if (firstAt < 0f) firstAt = clock;
+                    early |= clock < loadedAt - 2f * Step;
+                    // Offered, the gun is already as the finished reload leaves it.
+                    wrong |= gun.MagazineOut || gun.ChamberDue || gun.Ammo != full;
+                }
+                bool hasEnd = whole - loadedAt > 6f * Step;
+                report.Expect(!early && !late && !wrong && (!hasEnd || firstAt >= 0f) && !gun.OnlyEndLeft, data,
+                    $"{Kind(empty)} reload of {whole:0.00} s, loaded at {loadedAt:0.00}: its end was first offered at {firstAt:0.00}"
+                    + (early ? ", before the gun was loaded" : "") + (late ? ", not through to the clip's end" : "") + (wrong ? ", with the gun not yet as a finished reload leaves it" : ""));
+            }
+
+        report.Rule("reload cut where only its end is left: the gun is full and ready, the reload counts as done, nothing is left to go on with, and the trigger fires on the next tick");
+        foreach (var data in guns)
+            foreach (bool empty in new[] { false, true })
+            {
+                if (data.ShellReload) continue;
+                var gun = Reloading(data, empty, out int reserve);
+                if (gun == null) continue;
+                var steps = ReloadSteps.Of(data, empty);
+                float whole = gun.ReloadDuration;
+                // A clip that is over as the gun is loaded has no end to cut.
+                if (whole * (1f - steps.Loaded) <= 6f * Step) continue;
+                int size = data.MagazineSize, total = gun.Ammo + gun.ReserveAmmo;
+                // Half-way through what is left once the gun is loaded.
+                Pass(gun, whole * (steps.Loaded + (1f - steps.Loaded) * .5f));
+                bool offered = gun.OnlyEndLeft;
+                int loads = gun.Loads;
+                float left = gun.ReloadRemaining;
+                gun.Interrupt();
+                bool counted = gun.Loads == loads + 1;
+                bool ready = Ready(gun, size, total - size) && !gun.OnlyEndLeft;
+                string cut = Rounds(gun) + Doing(gun);
+                int shots = gun.Tick(Step, new WeaponInputFrame(true, false));
+                report.Expect(offered && counted && ready && shots >= 1, data,
+                    $"{Kind(empty)} reload cut with {left:0.00} s of its {whole:0.00} s left: offered {offered}, left {cut} (should be {size}/{size} +{total - size}), "
+                    + $"counted as done {counted}, the trigger then fired {shots}");
+            }
+
+        report.Rule("V during a reload (ReloadRules.ShoveEnds): until the gun is loaded as the table's shoveCancels says (0: the kick that leaves the reload alone), once only its end is left as cutByShove says (1: the gun's bash, which ends it)");
+        bool beforeLoaded = ReloadRules.Allows(ReloadRules.ShoveCancels, false), onceLoaded = ReloadRules.Allows(ReloadRules.ByShove, true);
+        foreach (var data in guns)
+        {
+            if (data.ShellReload) continue;
+            var gun = Reloading(data, false, out int reserve);
+            if (gun == null) continue;
+            var steps = ReloadSteps.Of(data, false);
+            float whole = gun.ReloadDuration;
+            bool atStart = ReloadRules.ShoveEnds(gun) == beforeLoaded;
+            bool hasEnd = whole * (1f - steps.Loaded) > 6f * Step;
+            if (hasEnd) Pass(gun, whole * (steps.Loaded + (1f - steps.Loaded) * .5f));
+            bool atEnd = !hasEnd || ReloadRules.ShoveEnds(gun) == onceLoaded;
+            gun.Interrupt();
+            // With no reload under way there is nothing for a shove to end: it is the plain shove.
+            bool after = !ReloadRules.ShoveEnds(gun);
+            report.Expect(atStart && atEnd && after, data, $"as the reload began right {atStart}, with only its end left right {atEnd}, with none under way right {after}");
+        }
+
+        report.Rule("the table of what ends a reload early (ReloadRules.csv) has its row Default, and each of its rules reads as a yes or a no");
+        bool found = GameTables.TryGetRow(ReloadRules.TableName, ReloadRules.Row, out var cells);
+        foreach (string rule in new[] { ReloadRules.ByFire, ReloadRules.ByAim, ReloadRules.BySprint, ReloadRules.ByShove, ReloadRules.ShoveCancels })
+        {
+            string text = null;
+            bool reads = found && cells.TryGetValue(rule, out text) && TableCells.TryFlag(text, out _);
+            report.Expect(reads, null, found ? $"{rule} is '{text}', neither a yes nor a no" : "the table has no row Default");
+        }
+    }
+
+    // What ends a reload early as the table stands, for whoever reads the report.
+    private static void ReloadEndRules(StringBuilder text)
+    {
+        string Says(string rule, bool fallback) => ReloadRules.Allows(rule, fallback) ? "yes" : "no";
+        text.AppendLine("== what may cut a reload once the gun is loaded (ReloadRules.csv): the trigger " + Says(ReloadRules.ByFire, true) + ", the sights "
+            + Says(ReloadRules.ByAim, true) + ", a sprint " + Says(ReloadRules.BySprint, true) + ", a shove " + Says(ReloadRules.ByShove, true)
+            + "; V before the gun is loaded: " + (ReloadRules.Allows(ReloadRules.ShoveCancels, false) ? "the gun's bash, which cuts the reload where it stands"
+                : "the kick that leaves the reload alone"));
     }
 
     // The next gun of the list after this one (round the list) that takes other ammunition, or the same; null when none does.
