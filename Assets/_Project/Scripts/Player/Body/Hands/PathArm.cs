@@ -9,6 +9,8 @@ public abstract class PathArm : MonoBehaviour
 {
     protected PlayerMovement movement;
     protected PlayerBodyHands hands;
+    // Whose the left hand is (HandOwner): the arm asks it every frame whether to pose, and decides nothing itself.
+    protected HandOwner owner;
     protected Animator animator;
     protected Transform eyes, holder;
     protected readonly ArmBones arm = new ArmBones();
@@ -24,6 +26,7 @@ public abstract class PathArm : MonoBehaviour
         if (bound) return true;
         movement = GetComponentInParent<PlayerMovement>();
         hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
+        owner = HandOwner.Of(movement);
         animator = GetComponent<Animator>();
         if (movement == null || animator == null || !animator.isHuman) return false;
         bound = arm.Bind(animator) && arm.HasLength;

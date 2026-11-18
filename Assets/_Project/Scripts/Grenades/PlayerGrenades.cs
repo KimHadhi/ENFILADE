@@ -123,6 +123,8 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     {
         holding = aiming = cooking = letGo = false;
         arm = Arm.None;
+        if (handMine && hands != null) hands.Give(this);
+        handMine = false;
         if (arc != null) arc.Hide();
         preview?.Hide();
         if (Local == this) GrenadeHUD.Ring(-1f);
@@ -147,6 +149,7 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         {
             // A friend's copy: only its arm, from the phases their PC sends.
             Run(dt, Throwables.Of(armKind));
+            KeepHand();
             return;
         }
         Local = this;
@@ -162,7 +165,7 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         Hand(info);
         if (cooking) Cook(Throwables.Of(armKind));
         Run(dt, Throwables.Of(armKind));
-        KeepHandFree();
+        KeepHand();
         // The knife's roll comes back a moment after the throw, a short shake as the addon's (Feel).
         if (knifeShakeAt > 0f && Time.time >= knifeShakeAt)
         {

@@ -1,28 +1,28 @@
-﻿id,hands,also,rank,stances,gun,locks,#설명
-"#설명 (손을 쓰는 것(쓰임)마다 한 줄. 플레이어의 손은 둘이고 손마다 주인은 하나다: 그 손을 달라는 쓰임 가운데 rank가 가장 높은 것의 것이고, 같으면 먼저 쥔 쪽의 것이다. 코드는 이 표의 id로 손을 달라고 하고(HandOwner), 스스로 '손이 비었나'를 따지지 않는다. 모드는 줄을 더해 쓰임을 더한다. 설계와 읽는 법: Docs/Features/Hands.md. 점검: python Tools/Checks/hands_check.py)",꼭 있어야 하는 손: left / right / both. 이 손을 다 못 가지면 그 쓰임은 시작하지 않는다,"있으면 쓰는 손(left / right). 더 높은 rank가 달라면 내주고, 내줘도 쓰임은 계속된다(조준할 때 총을 받치는 왼손)","우선순위(정수, 클수록 세다). 높은 쪽이 낮은 쪽의 손을 가져가고, 같으면 먼저 쥔 쪽이 지킨다(같을 때는 꼭 있어야 하는 손이 있으면 쓰는 손을 이긴다). F 키의 표 InteractKey.csv의 order(작은 수가 먼저 서는 차례)와 뜻이 다르다: 여기는 힘이다. 100 이상은 몸과 기능의 사실(죽음, 잡힘, 처형, 오르기). 비우면 손을 쥐지 않고 묻기만 하는 줄",그 팔을 들 수 있는 이동 상태(PlayerMovement.MovementState의 이름을 |로 잇는다: Standing|Crouching|Sliding). any면 어느 상태에서나. 손이 제 것이어도 몸이 이 상태가 아니면 팔은 내려가 있고 물건은 든 채 기다린다,오른손을 가져가는 쓰임이 총을 어떻게 하나: away(넣는다) / stays(오른손이 총을 쥔 채 아무것도 못 한다) / 비움(오른손이 총을 떠난다),"1이면 이 쓰임이 손을 가진 동안 손으로 하는 다른 일(쏘기, 휘두르기, 밀치기, 줍기)을 새로 시작할 수 없다(PlayerMovement.CombatInputLocked가 묻는 것)",이 줄이 무엇인지
-life.dead,both,,190,any,stays,,죽음: 두 손이 아무것도 못 한다
-life.downed,left,,180,any,,,쓰러짐: 왼손은 아무것도 못 하고 오른손은 권총을 든다
-zombie.hold,both,,170,any,stays,,"좀비에게 잡힘·눌림: 두 손이 좀비에게 있다. 총은 든 채 못 쓰고, 밀치기와 주먹은 된다(그래서 locks가 아니다)"
-melee.execution,both,,160,any,away,1,"처형·암살: 오른손은 칼, 왼손은 상대의 머리"
-melee.sheath,right,,160,any,away,,처형이 끝난 뒤 칼을 넣는 동안: 오른손에 아직 칼이 있어 총이 나오지 않는다
-melee.guardbreak,both,,160,any,stays,1,가드 브레이크(V 유지): 두 손으로 상대를 잡는다
-melee.counter,both,,160,any,stays,1,완벽 방어의 카운터
-detente.bandage,both,,150,any,stays,1,데탕트의 붕대 치료: 왼손이 붕대를 감고 오른손은 총을 든 채 멈춘다
-move.climb,both,,140,any,away,,"두 손이 세상을 잡는다: 매달리기, 높이 오르기, 벽 동작, 봉, 사다리, 짚라인, 장전 중에 시작한 넘기 (TraversalHands의 Bare)"
-move.vault,left,,140,any,,,넘기와 허리 높이 오르기: 왼손이 장애물을 짚고 총은 오른손에 (TraversalHands의 LeftHand)
-carry.can,both,,130,any,away,,연료통을 두 손으로 든다
-grenade.throw,left,,60,Standing|Crouching|Sliding,,,"G 투척(수류탄·섬광·연막·염료·통·칼), 클레이모어 놓기, 궁극기의 투척. 사실이 아닌 것은 이 손을 가져가지 못한다: 든 수류탄이 먼저다(사용자, 2026-11-18)"
-move.roll,both,,45,any,away,,착지 구르기와 큰 착지: 두 손이 땅을 짚는다. 총은 넣지만 주먹에 쥔 수류탄은 남는다
-gun.reload,both,,40,any,,,장전. 주사와 rank가 같아 먼저 시작한 쪽이 지킨다: 장전 중에는 주사가 안 되고 주사 중에는 장전이 시작하지 않는다
-gun.bash,both,,40,any,,,"총으로 밀치기(V). 두 손이 다 총에 있을 때만 한다: 왼손이 다른 것을 쥐고 있으면 V는 발차기다(사용자, 2026-11-18: '발차기로 하죠')"
-detente.dose,left,,40,any,,,데탕트의 주사(자신·동료). 장전과 rank가 같다
-support.repair,left,,39,Standing|Crouching,,,"서포트의 수리 도구(망치·토치, F 유지). 누르고 있는 동안 하는 일이라 장전(40)에게 손을 내준다: 수리하다 바로 장전할 수 있고, 장전하는 동안에는 수리가 안 된다(사용자, 2026-11-18)"
-guard.pose,left,,38,Standing|Crouching,,,총을 든 채 막기 자세(나이트의 엄호가 튕길 때의 모습)
-gun.swap,right,left,37,any,,,총 꺼내기·넣기. 그동안 왼손은 주사·수리·막기 자세·수류탄에게 내준다
-gun.inspect,both,,36,any,,,총 살펴보기(Y). 손을 달라는 것이 생기면 끝난다
-point.ping,left,,35,Standing|Crouching,,,핑의 손짓(F 탭). 조준 중에도 된다(조준의 받침 손 30보다 높다)
-gun.aim,right,left,30,any,,,조준. 오른손이면 되고 왼손은 있으면 받친다
-point.hold,left,,10,Standing|Crouching,,,가리키기(F 길게). 조준·장전·꺼내는 중에는 안 된다
-gun.hold,right,left,5,any,,,총을 들고 있음. 왼손은 달라는 쓰임에게 빌려 준다
-gun.fire,right,,,any,,,쏘기. 손을 쥐지 않고 '오른손이 총의 것인가'만 묻는다
-callout.arm,left,,0,Standing|Crouching,,,콜아웃 몸짓의 팔. 총의 받침 손(5)보다 낮아 총에서는 손을 못 가져간다: 총이 없을 때만 팔이 움직인다
+﻿id,hands,also,rank,stances,gun,locks,only,#설명
+"#설명 (손을 쓰는 것(쓰임)마다 한 줄. 플레이어의 손은 둘이고 손마다 주인은 하나다: 그 손을 달라는 쓰임 가운데 rank가 가장 높은 것의 것이고, 같으면 먼저 쥔 쪽의 것이다. 코드는 이 표의 id로 손을 달라고 하고(HandOwner), 스스로 '손이 비었나'를 따지지 않는다. 모드는 줄을 더해 쓰임을 더한다. 설계와 읽는 법: Docs/Features/Hands.md. 점검: python Tools/Checks/hands_check.py)",꼭 있어야 하는 손: left / right / both. 이 손을 다 못 가지면 그 쓰임은 시작하지 않는다. 비우면 손을 가져가지 않는 줄이다(only로 다른 쓰임을 막기만 하는 줄),"있으면 쓰는 손(left / right). 더 높은 rank가 달라면 내주고, 내줘도 쓰임은 계속된다(조준할 때 총을 받치는 왼손)","우선순위(정수, 클수록 세다). 높은 쪽이 낮은 쪽의 손을 가져가고, 같으면 먼저 쥔 쪽이 지킨다(같을 때는 꼭 있어야 하는 손이 있으면 쓰는 손을 이긴다). F 키의 표 InteractKey.csv의 order(작은 수가 먼저 서는 차례)와 뜻이 다르다: 여기는 힘이다. 100 이상은 몸과 기능의 사실(죽음, 잡힘, 처형, 오르기). 비우면 손을 쥐지 않고 묻기만 하는 줄",그 팔을 들 수 있는 이동 상태(PlayerMovement.MovementState의 이름을 |로 잇는다: Standing|Crouching|Sliding). any면 어느 상태에서나. 손이 제 것이어도 몸이 이 상태가 아니면 팔은 내려가 있고 물건은 든 채 기다린다,오른손을 가져가는 쓰임이 총을 어떻게 하나: away(넣는다) / stays(오른손이 총을 쥔 채 아무것도 못 한다) / 비움(오른손이 총을 떠난다),"1이면 이 쓰임이 손을 가진 동안 손으로 하는 다른 일(쏘기, 휘두르기, 밀치기, 줍기)을 새로 시작할 수 없다(PlayerMovement.CombatInputLocked가 묻는 것)","이 쓰임이 서 있는 동안 달라고 할 수 있는 쓰임의 갈래(id의 점 앞 이름, 여럿이면 |로 잇는다: gun). 손을 가져가는 것이 아니다: 손은 있던 곳에 그대로 있고, 다른 갈래의 쓰임은 rank가 이 줄보다 크지 않으면 달라고 해도 거절되며 쥐고 있던 것은 끝난다(사실은 막지 않는다). 비우면 아무것도 막지 않는다",이 줄이 무엇인지
+life.dead,both,,190,any,stays,,,죽음: 두 손이 아무것도 못 한다
+life.downed,,,180,any,,,gun,"쓰러짐: 두 손은 권총에 그대로 있고 권총으로 하는 일(쏘기·조준·장전·살펴보기)은 다 된다. 그 밖의 것(수류탄, 주사, 수리, 가리키기, 막기 자세)은 달라고 할 수 없고, 쥐고 있던 것은 도로 들어간다"
+zombie.hold,both,,170,any,stays,,,"좀비에게 잡힘·눌림: 두 손이 좀비에게 있다. 총은 든 채 못 쓰고, 밀치기와 주먹은 된다(그래서 locks가 아니다)"
+melee.execution,both,,160,any,away,1,,"처형·암살: 오른손은 칼, 왼손은 상대의 머리"
+melee.sheath,right,,160,any,away,,,처형이 끝난 뒤 칼을 넣는 동안: 오른손에 아직 칼이 있어 총이 나오지 않는다
+melee.guardbreak,both,,160,any,stays,1,,가드 브레이크(V 유지): 두 손으로 상대를 잡는다
+melee.counter,both,,160,any,stays,1,,완벽 방어의 카운터
+detente.bandage,both,,150,any,stays,1,,데탕트의 붕대 치료: 왼손이 붕대를 감고 오른손은 총을 든 채 멈춘다
+move.climb,both,,140,any,away,,,"두 손이 세상을 잡는다: 매달리기, 높이 오르기, 벽 동작, 봉, 사다리, 짚라인, 장전 중에 시작한 넘기 (TraversalHands의 Bare)"
+move.vault,left,,140,any,,,,넘기와 허리 높이 오르기: 왼손이 장애물을 짚고 총은 오른손에 (TraversalHands의 LeftHand)
+carry.can,both,,130,any,away,,,연료통을 두 손으로 든다
+grenade.throw,left,,60,Standing|Crouching|Sliding,,,,"G 투척(수류탄·섬광·연막·염료·통·칼), 클레이모어 놓기, 궁극기의 투척. 사실이 아닌 것은 이 손을 가져가지 못한다: 든 수류탄이 먼저다(사용자, 2026-11-18)"
+move.roll,both,,45,any,away,,,착지 구르기와 큰 착지: 두 손이 땅을 짚는다. 총은 넣지만 주먹에 쥔 수류탄은 남는다
+gun.reload,both,,40,any,,,,장전. 주사와 rank가 같아 먼저 시작한 쪽이 지킨다: 장전 중에는 주사가 안 되고 주사 중에는 장전이 시작하지 않는다
+gun.bash,both,,40,any,,,,"총으로 밀치기(V). 두 손이 다 총에 있을 때만 한다: 왼손이 다른 것을 쥐고 있으면 V는 발차기다(사용자, 2026-11-18: '발차기로 하죠')"
+detente.dose,left,,40,any,,,,데탕트의 주사(자신·동료). 장전과 rank가 같다
+support.repair,left,,39,Standing|Crouching,,,,"서포트의 수리 도구(망치·토치, F 유지). 누르고 있는 동안 하는 일이라 장전(40)에게 손을 내준다: 수리하다 바로 장전할 수 있고, 장전하는 동안에는 수리가 안 된다(사용자, 2026-11-18)"
+guard.pose,left,,38,Standing|Crouching,,,,총을 든 채 막기 자세(나이트의 엄호가 튕길 때의 모습)
+gun.swap,right,left,37,any,,,,총 꺼내기·넣기. 그동안 왼손은 주사·수리·막기 자세·수류탄에게 내준다
+gun.inspect,both,,36,any,,,,총 살펴보기(Y). 손을 달라는 것이 생기면 끝난다
+point.ping,left,,35,Standing|Crouching,,,,핑의 손짓(F 탭). 조준 중에도 된다(조준의 받침 손 30보다 높다)
+gun.aim,right,left,30,any,,,,조준. 오른손이면 되고 왼손은 있으면 받친다
+point.hold,left,,10,Standing|Crouching,,,,가리키기(F 길게). 조준·장전·꺼내는 중에는 안 된다
+gun.hold,right,left,5,any,,,,총을 들고 있음. 왼손은 달라는 쓰임에게 빌려 준다
+gun.fire,right,,,any,,,,쏘기. 손을 쥐지 않고 '오른손이 총의 것인가'만 묻는다
+callout.arm,left,,0,Standing|Crouching,,,,콜아웃 몸짓의 팔. 총의 받침 손(5)보다 낮아 총에서는 손을 못 가져간다: 총이 없을 때만 팔이 움직인다

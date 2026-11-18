@@ -222,12 +222,4 @@ public sealed partial class PlayerGrenades
         cooking = true;
         cookLeft = info.Fuse;
     }
-
-    // While the left hand is on a throw the gun can't use it: a reload that starts stops. The right hand's sights and
-    // trigger are left alone (TakeHandFromGun).
-    private void KeepHandFree()
-    {
-        if (arm != Arm.Draw && arm != Arm.Hold && !((arm == Arm.Throw || arm == Arm.Tap) && !released)) return;
-        TakeHandFromGun();
-    }
 }

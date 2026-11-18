@@ -14,7 +14,8 @@ using UnityEngine;
 /// friend's copy poses arms too, from what their PC says, so its hands are arbitrated the same way and show the same).
 /// A use is said every frame it lasts: an ask with <see cref="Take"/>, a fact of the body with <see cref="State"/>.
 /// One not said again is over a frame later, so nothing is ever taken and forgotten (as InteractKey's offers are); a
-/// paused game says nothing and loses nothing. <see cref="Give"/> hands a hand back at once.
+/// paused game, or a player whose own time stands still (PlayerMovement.Pace), says nothing and loses nothing.
+/// <see cref="Give"/> hands a hand back at once.
 /// </para>
 /// <para>
 /// What an owner of a hand asks back: <see cref="Has"/> (is it still mine: an ask that lost a hand it needs is over,
@@ -35,7 +36,7 @@ public sealed class HandOwner : MonoBehaviour
     private const string RecordHeading = "whose hand (HandOwner): a hand changed owner: hand: from → to (rank) | refused: the use asked (rank): the hand it "
         + "could not have and whose it is (rank). The ranks are Tables/Player/HandUses.csv; the same refusal is written once until something changes";
     // How many of the last lines the console's /hands shows.
-    private const int Kept = 12;
+    private const int LinesKept = 12;
 
     private readonly HandBoard board = new HandBoard();
     private readonly List<HandBoard.Entry> stale = new List<HandBoard.Entry>();
@@ -100,15 +101,17 @@ public sealed class HandOwner : MonoBehaviour
     /// <paramref name="who"/> asks for the use <paramref name="id"/>: every hand it needs, or nothing. Said every frame
     /// the use lasts (asking again costs nothing); not said for a frame, it is over. Asking for another use is a change
     /// of row (the gun going from its hold to a reload): refused, the row it had stands. False: refused, and for this
-    /// PC's own player the record says which hand it could not have and whose that is.
+    /// PC's own player the record says which hand it could not have and whose that is. <paramref name="noted"/> false:
+    /// a refusal is not written (what is only said again every frame, the gun's own row, a throw already under way:
+    /// the player asked for nothing new).
     /// </summary>
-    public bool Take(string id, Object who)
+    public bool Take(string id, Object who, bool noted = true)
     {
         var use = HandUses.Of(id);
         if (use == null || who == null) return false;
         Turn();
         if (board.Take(use, who, tick, out var why)) return true;
-        Refused(why);
+        if (noted) Refused(why);
         return false;
     }
 
@@ -125,6 +128,20 @@ public sealed class HandOwner : MonoBehaviour
         if (board.Could(use, who, tick, out var why)) return true;
         if (noted) Refused(why);
         return false;
+    }
+
+    /// <summary>
+    /// Whether what keeps <paramref name="who"/> from <paramref name="id"/> now is something else that asked for a hand
+    /// and has it (a grenade held ready, a syringe): the hand is busy elsewhere, so whoever asks does the other thing it
+    /// can (V kicks instead of swinging the gun). False when it could have the use, and false when a fact of the body
+    /// has the hand (a zombie's grip, a ledge): what V is in such a state is that state's own rule.
+    /// </summary>
+    public bool Kept(string id, Object who)
+    {
+        var use = HandUses.Of(id);
+        if (use == null) return false;
+        Turn();
+        return board.Kept(use, who, tick);
     }
 
     /// <summary>
@@ -214,13 +231,15 @@ public sealed class HandOwner : MonoBehaviour
     // ---- The frame ----
 
     // Once a frame, at its first word or question: what was not said in the frame before is over. A paused game says
-    // nothing, so its frames are not counted and nothing ages in them.
+    // nothing, so its frames are not counted and nothing ages in them; nor do the frames in which this player's own
+    // time stands still (PlayerMovement.Pace: the gun, for one, does nothing in such a frame and says nothing, and a
+    // reload under way must find its hands still its own when time moves again).
     private void Turn()
     {
         int now = Time.frameCount;
         if (now == turned) return;
         turned = now;
-        if (Time.timeScale <= 0f || GamePause.IsPaused) return;
+        if (Time.timeScale <= 0f || GamePause.IsPaused || (movement != null && movement.DeltaTime <= 0f)) return;
         tick++;
         stale.Clear();
         for (int i = 0; i < board.Entries.Count; i++)
@@ -234,11 +253,13 @@ public sealed class HandOwner : MonoBehaviour
 
     // ---- The record ----
 
-    private void OnChanged(HandSide hand, HandUse from, HandUse to)
+    // A hand's use changed. The record is of whose the hand is: the same owner going from one of its rows to another
+    // (the gun from its hold to its aim and back, many times a minute) is no change of owner and is not written.
+    private void OnChanged(HandSide hand, HandUse from, HandUse to, bool sameOwner)
     {
         // Something changed: the same refusal after it is news again.
         lastRefusal = null;
-        Note($"{HandBoard.Name(hand)}: {Label(from)} → {Label(to)}");
+        if (!sameOwner) Note($"{HandBoard.Name(hand)}: {Label(from)} → {Label(to)}");
     }
 
     private void Refused(in HandBoard.Refusal why)
@@ -259,7 +280,7 @@ public sealed class HandOwner : MonoBehaviour
     {
         if (!Decides) return;
         recent.Add($"{Time.time:0.00}s {line}");
-        if (recent.Count > Kept) recent.RemoveAt(0);
+        if (recent.Count > LinesKept) recent.RemoveAt(0);
         PlayRecord.Line(RecordName, RecordHeading, line);
     }
 }

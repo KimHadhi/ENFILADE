@@ -137,6 +137,8 @@ public sealed partial class WeaponController : MonoBehaviour
     {
         if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee || !ShowsWeapon || inspecting || switchLeft > 0f
             || Runtime.IsReloading || AimBlend > .01f || IsHighReady || IsHeldClose) return;
+        // A look over the gun turns it in both hands: not with the left hand on something that keeps it (HandOwner).
+        if (!HandsFor(HandUses.GunInspect, true)) return;
         inspecting = true;
         inspectLeft = 10f;
         InspectStarted?.Invoke();

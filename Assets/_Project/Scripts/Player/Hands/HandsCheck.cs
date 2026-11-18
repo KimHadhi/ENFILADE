@@ -68,6 +68,11 @@ internal static class HandsCheck
 
     private static bool Could(HandBoard board, string id, object who, int frame) => board.Could(U(id), who, frame, out _);
 
+    private static bool Kept(HandBoard board, string id, object who, int frame) => board.Kept(U(id), who, frame);
+
+    // Whether `by`, standing, keeps `other` from being asked for: it lets only other families, and ranks no lower.
+    private static bool Limits(HandUse by, HandUse other) => by.Limits && !by.Lets(other) && by.Rank >= other.Rank;
+
     private static void Withdraw(HandBoard board, object who, string id)
     {
         foreach (var entry in board.Entries)
@@ -118,6 +123,20 @@ internal static class HandsCheck
         report.Expect(string.Join(",", locking) == "detente.bandage,melee.counter,melee.execution,melee.guardbreak",
             "the rows that lock the hands are " + string.Join(",", locking) + ", not the four PlayerMovement.BodyLocked is made of");
         report.Expect(U(HandUses.GunFire).Rank == HandUse.NoRank, "the trigger holds a hand (it only asks whether the right hand is the gun's)");
+
+        report.Rule("a row that lets only some families be asked for names families the table has; the game's one such row is a body gone down, which lets the gun's and takes no hand");
+        var families = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var use in HandUses.All) families.Add(use.Family);
+        var limiting = new List<string>();
+        foreach (var use in HandUses.All)
+        {
+            if (!use.Limits) continue;
+            limiting.Add(use.Id);
+            foreach (string family in use.Only.Split('|')) report.Expect(families.Contains(family), use.Id + ": only names '" + family + "', the family of no row");
+        }
+        var downed = U(HandUses.Downed);
+        report.Expect(string.Join(",", limiting) == HandUses.Downed && downed.Only == "gun" && downed.Needs == HandSide.None && downed.Also == HandSide.None,
+            "the rows that let only some families be asked for are " + string.Join(",", limiting) + ", not life.downed alone letting the gun's and taking no hand");
     }
 
     // The user's own example.
@@ -179,9 +198,22 @@ internal static class HandsCheck
         report.Expect(!Could(board, HandUses.GunBash, Gun, 2), "the gun could bash with the syringe in the left hand");
         board = GunInHand();
         Take(board, HandUses.Repair, Tool, 1);
+        report.Expect(!Kept(board, HandUses.GunBash, Gun, 2), "the tool keeps the hand from a bash (a bash outranks a repair)");
         report.Expect(Take(board, HandUses.GunBash, Gun, 2) && !board.Has(Tool), "a bash did not take the hand from a repair");
 
-        report.Rule("a grenade in the fist stays through a landing roll (the gun is put away) and goes back for a vault, a grab, an execution, a climb, a can, a treatment, going down, dying");
+        report.Rule("V is the kick only when the hand is busy with something else that was asked for; a fact of the body having the hands leaves V what it was (in a zombie's grip, the shove)");
+        board = GunInHand();
+        report.Expect(!Kept(board, HandUses.GunBash, Gun, 1), "V is the kick with both hands on the gun");
+        Take(board, HandUses.Grenade, Grenades, 1);
+        report.Expect(Kept(board, HandUses.GunBash, Gun, 2), "V is not the kick with a grenade in the left hand");
+        foreach (string fact in new[] { HandUses.ZombieHold, HandUses.Vault, HandUses.Climb, HandUses.Roll, HandUses.Downed, HandUses.Dead, HandUses.Can })
+        {
+            board = GunInHand();
+            board.State(U(fact), Body, 1);
+            report.Expect(!Kept(board, HandUses.GunBash, Gun, 2), "V became the kick because of " + fact + " (a fact of the body: V there is what it was)");
+        }
+
+        report.Rule("a grenade in the fist stays through a landing roll (the gun is put away) and goes back for a vault, a grab, an execution, a climb, a can, a treatment, dying");
         board = GunInHand();
         Take(board, HandUses.Grenade, Grenades, 1);
         board.State(U(HandUses.Roll), Body, 2);
@@ -189,7 +221,7 @@ internal static class HandsCheck
             "a landing roll did not leave the grenade in the fist and take the gun's hand");
         Withdraw(board, Body, HandUses.Roll);
         report.Expect(Take(board, HandUses.GunHold, Gun, 3) && Of(board, HandSide.Left) == HandUses.Grenade, "the gun did not come back after the roll");
-        foreach (string fact in new[] { HandUses.Vault, HandUses.ZombieHold, HandUses.Execution, HandUses.Climb, HandUses.Dead, HandUses.Downed, HandUses.Can, HandUses.Bandage })
+        foreach (string fact in new[] { HandUses.Vault, HandUses.ZombieHold, HandUses.Execution, HandUses.Climb, HandUses.Dead, HandUses.Can, HandUses.Bandage })
         {
             board = GunInHand();
             Take(board, HandUses.Grenade, Grenades, 1);
@@ -200,6 +232,40 @@ internal static class HandsCheck
         board = new HandBoard();
         board.State(U(HandUses.Sheath), Knife, 1);
         report.Expect(Take(board, HandUses.Grenade, Grenades, 2) && !Could(board, HandUses.GunHold, Gun, 2), "the knife going back did not leave the left hand free and keep the right");
+
+        // PlayerWeaponSlots.HoldSidearm; the gun's code never asked whether its player is down, so a reload on the ground
+        // always worked, and the left hand's features each refused a body gone down in a list of their own.
+        report.Rule("a body gone down keeps its pistol and all the pistol does (a reload too) and has nothing else of the hands; what it held goes back");
+        board = GunInHand();
+        Take(board, HandUses.GunReload, Gun, 1);
+        board.State(U(HandUses.Downed), Body, 2);
+        report.Expect(board.Has(Gun) && Of(board, HandSide.Left) == HandUses.GunReload && Of(board, HandSide.Right) == HandUses.GunReload, "going down ended a reload under way");
+        board = GunInHand();
+        board.State(U(HandUses.Downed), Body, 1);
+        report.Expect(board.Has(Gun) && Of(board, HandSide.Left) == HandUses.GunHold && Of(board, HandSide.Right) == HandUses.GunHold, "going down took a hand from the gun");
+        foreach (string id in new[] { HandUses.GunAim, HandUses.GunReload, HandUses.GunInspect, HandUses.GunBash, HandUses.GunSwap, HandUses.GunHold })
+            report.Expect(Take(board, id, Gun, 2) && board.Has(Gun), "a body gone down could not have " + id);
+        report.Expect(Could(board, HandUses.GunFire, Gun, 3), "a body gone down could not fire");
+        foreach (string id in new[] { HandUses.Grenade, HandUses.Dose, HandUses.Repair, HandUses.GuardPose, HandUses.PointPing, HandUses.PointHold, HandUses.CalloutArm })
+        {
+            bool could = board.Could(U(id), id, 3, out var refused);
+            report.Expect(!could && refused.Hand == HandSide.None && refused.ByFact && refused.Holder != null && refused.Holder.Id == HandUses.Downed,
+                id + " was not refused by the body being down: " + refused);
+            report.Expect(!Take(board, id, id, 3), id + " could be had by a body gone down");
+        }
+        foreach (string id in new[] { HandUses.Grenade, HandUses.Dose, HandUses.Repair, HandUses.PointHold, HandUses.GuardPose })
+        {
+            board = GunInHand();
+            report.Expect(Take(board, id, id, 1), id + " could not have the left hand of a gun at rest");
+            board.State(U(HandUses.Downed), Body, 2);
+            report.Expect(!board.Has(id) && board.Has(Gun) && Of(board, HandSide.Left) == HandUses.GunHold, "going down did not end " + id + " and give the hand back to the gun");
+            Withdraw(board, Body, HandUses.Downed);
+            report.Expect(Take(board, id, id, 3), id + " could not be had again once the body was up");
+        }
+        board = GunInHand();
+        board.State(U(HandUses.Downed), Body, 1);
+        board.State(U(HandUses.Dead), Body, 2);
+        report.Expect(!board.Has(Gun) && Of(board, HandSide.Left) == HandUses.Dead && Of(board, HandSide.Right) == HandUses.Dead, "death did not take the hands of a body gone down");
 
         report.Rule("an execution locks the hands for as long as it is so, and takes the gun's");
         board = GunInHand();
@@ -275,7 +341,7 @@ internal static class HandsCheck
     // Every two rows, the one standing and the other asking or being stated: the board answers as their ranks say.
     private static void Pairs(CheckReport report)
     {
-        report.Rule("for every two uses, one standing and the other asked or stated after it: the answer is the one their ranks give, a refusal changes nothing, and an ask that lost a hand it needs is gone");
+        report.Rule("for every two uses, one standing and the other asked or stated after it: the answer is the one their ranks give (and the one a row that lets only some families be asked for gives), a refusal changes nothing, and an ask that lost a hand it needs is gone");
         foreach (var holder in HandUses.All)
         {
             if (holder.Rank == HandUse.NoRank) continue;
@@ -299,6 +365,12 @@ internal static class HandsCheck
                 if (Stated(asker))
                 {
                     board.State(asker, "B", 2);
+                    if (!Stated(holder) && Limits(asker, holder))
+                    {
+                        // It lets nothing of the holder's family be asked for: the holder is over, whatever the hands say.
+                        report.Expect(!board.Has("A"), pair + ": what it does not let be asked for still stands");
+                        continue;
+                    }
                     foreach (var hand in Each)
                         if ((asker.Needs & hand) != 0 && (hand == HandSide.Left ? leftBefore : rightBefore) == holder.Id)
                             report.Expect((Of(board, hand) == asker.Id) == Wins(asker, holder, hand, false), pair + ": the " + HandBoard.Name(hand) + " hand went wrong");
@@ -306,7 +378,8 @@ internal static class HandsCheck
                 else
                 {
                     bool granted = board.Take(asker, "B", 2, out _);
-                    report.Expect(granted == all, pair + ": granted " + granted + ", the ranks say " + all);
+                    bool due = all && !Limits(holder, asker);
+                    report.Expect(granted == due, pair + ": granted " + granted + ", the ranks and the families say " + due);
                     if (granted)
                     {
                         foreach (var hand in Each)
@@ -327,7 +400,7 @@ internal static class HandsCheck
     // Random runs: whatever is asked, stated, given back and withdrawn, in whatever order, the board keeps its word.
     private static void Runs(CheckReport report)
     {
-        report.Rule("through 4000 random runs: no ask stands without a hand it needs, no hand lies free while something standing wants it, nothing weaker holds a hand over something stronger that wants it");
+        report.Rule("through 4000 random runs: no ask stands without a hand it needs, no hand lies free while something standing wants it, nothing weaker holds a hand over something stronger that wants it, nothing stands that a use standing does not let be asked for");
         var random = new System.Random(20261118);
         var all = HandUses.All;
         for (int run = 0; run < 4000; run++)
@@ -353,7 +426,13 @@ internal static class HandsCheck
                 }
                 foreach (var entry in board.Entries)
                 {
-                    if (!entry.Fact) report.Expect((entry.Owns & entry.Use.Needs) == entry.Use.Needs, "run " + run + ": " + entry.Use.Id + " stands without a hand it needs");
+                    if (!entry.Fact)
+                    {
+                        report.Expect((entry.Owns & entry.Use.Needs) == entry.Use.Needs, "run " + run + ": " + entry.Use.Id + " stands without a hand it needs");
+                        foreach (var other in board.Entries)
+                            report.Expect(other == entry || !Limits(other.Use, entry.Use), "run " + run + ": " + entry.Use.Id + " stands though " + other.Use.Id
+                                + " lets only " + other.Use.Only + " be asked for");
+                    }
                     foreach (var hand in Each)
                         if ((entry.Owns & hand) != 0) report.Expect(board.Holder(hand) == entry, "run " + run + ": " + entry.Use.Id + " thinks it has a hand that is another's");
                 }

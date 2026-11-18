@@ -26,14 +26,13 @@ public sealed partial class PlayerGrenades
     internal bool ThrowForUltimate(Throwable look, Action<Vector3> release)
     {
         if (movement == null || !movement.IsLocal || release == null || arm != Arm.None || Throwables.Of(look) == null
-            || HandForced() || !BodyThrows())
+            || HandGone() || !Hands.Stands(HandUses.Grenade) || !TakeHand())
             return false;
         ultimateRelease = release;
         StartArm(look);
         pressedAt = Time.time;
         holding = false;
         letGo = true;
-        TakeHandFromGun();
         Handed?.Invoke(look, HandPhase.Draw);
         Handed?.Invoke(look, HandPhase.TapThrow);
         // As a tapped G: the tap's own clip, or the draw at the tap's speed straight into the throw.

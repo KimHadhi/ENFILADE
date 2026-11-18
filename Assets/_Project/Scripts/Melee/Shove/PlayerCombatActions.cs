@@ -11,7 +11,8 @@ using State = PlayerMovement.MovementState;
 /// a gun out, V is the crowd shove (ShoveSweep), hitting when the gun's bash meets them (the strike set in Blender:
 /// FPSBody.BashStrikeIn) and lunging at someone just out of reach when standing still, and while the gun reloads it is a
 /// kick that leaves the reload alone (ShoveMoves) until the gun is loaded and only the reload's end is left, which the
-/// shove then cuts (ReloadRules); crouched it is the leg sweep (ShoveMoves); the fists' V is
+/// shove then cuts (ReloadRules); with the left hand on something else (a grenade held ready) it is that kick too, the
+/// bash being both hands' (HandOwner); crouched it is the leg sweep (ShoveMoves); the fists' V is
 /// PlayerMeleeCombat's. A counter (ShoveCounter) hands the shove straight back: RefreshShove. Any of them that reaches a
 /// friend a runner pins frees them (ShoveRescue).
 /// </summary>
@@ -68,7 +69,10 @@ public sealed class PlayerCombatActions
         // Both hands are on the reload: the foot does the shoving, and the reload goes on. Not once the gun is loaded and
         // only its clip's end is left: the hands are coming back to the gun, so V is its bash again and ends the clip
         // (ReloadRules.ShoveEnds; the user, 2026-11-18: "네, 밀치기로 장전 캔슬해도 됩니다").
-        if (Reloading(weapon) && !ReloadRules.ShoveEnds(weapon.Runtime))
+        // The same when the left hand is on something that keeps it (a grenade held ready, a syringe): the gun's bash is
+        // both hands' (WeaponController.CanBash asks the hands' owner; asked what V should be with a grenade held, the
+        // user, 2026-11-18: "발차기로 하죠"). Until then the gun was swung with the one hand left on it.
+        if ((Reloading(weapon) && !ReloadRules.ShoveEnds(weapon.Runtime)) || (weapon != null && weapon.ShowsWeapon && !weapon.CanBash))
         {
             if (!ShoveMoves.For(ctx).TryKick()) return false;
             cooldown = Fatigue.Spend(ctx.AbilitySettings.shoveCooldown, ctx.AbilitySettings);

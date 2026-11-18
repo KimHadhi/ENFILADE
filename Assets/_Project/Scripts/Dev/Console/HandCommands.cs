@@ -68,7 +68,8 @@ public static class HandCommands
         foreach (var use in HandUses.All)
             text.Append("\n").Append((use.Rank == HandUse.NoRank ? "-" : use.Rank.ToString()).PadLeft(5)).Append("  ").Append(use.Id.PadRight(18))
                 .Append("꼭: ").Append(Hands(use.Needs).PadRight(6)).Append(" 있으면: ").Append(Hands(use.Also).PadRight(6))
-                .Append(use.Gun == GunFate.Away ? " 총을 넣음" : use.Gun == GunFate.Stays ? " 총을 든 채 멈춤" : "").Append(use.Locks ? " 손을 잠금" : "");
+                .Append(use.Gun == GunFate.Away ? " 총을 넣음" : use.Gun == GunFate.Stays ? " 총을 든 채 멈춤" : "").Append(use.Locks ? " 손을 잠금" : "")
+                .Append(use.Limits ? " 이 갈래만 됨: " + use.Only : "");
         return text.ToString();
     }
 

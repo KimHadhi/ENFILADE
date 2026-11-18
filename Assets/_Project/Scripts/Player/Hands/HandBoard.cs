@@ -18,6 +18,11 @@ using System.Collections.Generic;
 /// 일단 짱"), and two that came in the very same frame go by name, so the answer never depends on whose Update ran
 /// first. A hand let go of goes to whoever still wants it most: the left hand goes back to the gun by itself.
 /// </para>
+/// <para>
+/// One thing more than the hands: a use can let only some families of uses be asked for while it stands (HandUse.Lets;
+/// a body gone down lets only its gun's). It takes no hand for that. An ask of another family, by a rank no bigger
+/// than its own, is refused, and one standing when it comes is over. Facts are never refused and never ended.
+/// </para>
 /// The ranks are the table's (Tables/Player/HandUses.csv); nothing here knows any use by name.
 /// </summary>
 public sealed class HandBoard
@@ -39,20 +44,28 @@ public sealed class HandBoard
         internal int Came;
     }
 
-    /// <summary>Why an ask got nothing: the hand it could not have, and the use that has it.</summary>
+    /// <summary>
+    /// Why an ask got nothing: the hand it could not have and the use that has it; or, with no hand named, the use
+    /// standing that lets nothing of its family be asked for.
+    /// </summary>
     public readonly struct Refusal
     {
         public readonly HandUse Asked, Holder;
         public readonly HandSide Hand;
+        /// <summary>What stood in its way is a fact of the body, not something else that was asked for.</summary>
+        public readonly bool ByFact;
 
-        public Refusal(HandUse asked, HandSide hand, HandUse holder)
+        public Refusal(HandUse asked, HandSide hand, HandUse holder, bool byFact = false)
         {
             Asked = asked;
             Hand = hand;
             Holder = holder;
+            ByFact = byFact;
         }
 
-        public override string ToString() => Asked == null ? "" : $"{Asked.Id} ({Asked.Rank}): the {Name(Hand)} hand is {Holder.Id}'s ({Holder.Rank})";
+        public override string ToString() => Asked == null ? ""
+            : Hand == HandSide.None ? $"{Asked.Id} ({Asked.Rank}): {Holder.Id} ({Holder.Rank}) lets only {Holder.Only} be asked for"
+            : $"{Asked.Id} ({Asked.Rank}): the {Name(Hand)} hand is {Holder.Id}'s ({Holder.Rank})";
     }
 
     private static readonly HandSide[] Each = { HandSide.Left, HandSide.Right };
@@ -62,10 +75,11 @@ public sealed class HandBoard
     private long arrivals;
 
     /// <summary>
-    /// A hand changed owner: which hand, the use that had it and the use that has it now (either may be null: nobody).
+    /// A hand's use changed: which hand, the use that had it and the use that has it now (either may be null: nobody),
+    /// and whether both are the same owner's (one owner going from a row of its own to another: no change of owner).
     /// Raised once per hand at the end of the call that changed it.
     /// </summary>
-    public event Action<HandSide, HandUse, HandUse> Changed;
+    public event Action<HandSide, HandUse, HandUse, bool> Changed;
 
     /// <summary>Every use standing, in the order they came.</summary>
     public IReadOnlyList<Entry> Entries => entries;
@@ -114,16 +128,30 @@ public sealed class HandBoard
         why = default;
         if (use == null) return false;
         var mine = who != null ? Asked(who) : null;
+        var limit = Limiting(use, mine);
+        if (limit != null)
+        {
+            why = new Refusal(use, HandSide.None, limit.Use, limit.Fact);
+            return false;
+        }
         foreach (var hand in Each)
         {
             if ((use.Needs & hand) == 0) continue;
             var holder = Holder(hand);
             if (holder == null || holder == mine || Beats(use, true, frame, holder, hand)) continue;
-            why = new Refusal(use, hand, holder.Use);
+            why = new Refusal(use, hand, holder.Use, holder.Fact);
             return false;
         }
         return true;
     }
+
+    /// <summary>
+    /// Whether what keeps <paramref name="who"/> from <paramref name="use"/> is something else that was asked for and
+    /// has a hand of it (a grenade held ready, a syringe): the hand is busy elsewhere. Not so when it could have the use,
+    /// nor when a fact of the body has the hand or limits what may be asked (a zombie's grip, a ledge): what can be done
+    /// in such a state is that state's own rule, as it was before the hands had an owner.
+    /// </summary>
+    public bool Kept(HandUse use, object who, int frame) => use != null && !Could(use, who, frame, out var why) && why.Hand != HandSide.None && !why.ByFact;
 
     /// <summary>
     /// <paramref name="who"/> asks for <paramref name="use"/>: every hand it needs, or nothing. Asking again for the same
@@ -157,6 +185,7 @@ public sealed class HandBoard
         mine.Use = use;
         mine.Fact = false;
         mine.Came = mine.Said = frame;
+        Limit(mine);
         Claim(mine, frame);
         End();
         return true;
@@ -180,6 +209,7 @@ public sealed class HandBoard
         }
         mine.Use = use;
         mine.Said = frame;
+        Limit(mine);
         Claim(mine, frame);
         End();
     }
@@ -227,6 +257,28 @@ public sealed class HandBoard
     }
 
     private static bool Same(HandUse use, string id) => use != null && string.Equals(use.Id, id, StringComparison.OrdinalIgnoreCase);
+
+    // What stands and lets nothing of this use's family be asked for (HandUse.Lets), its rank no smaller than the
+    // use's: a body gone down, for anything but its gun. Null: nothing does.
+    private Entry Limiting(HandUse use, Entry but)
+    {
+        for (int i = 0; i < entries.Count; i++)
+            if (entries[i] != but && entries[i].Use.Rank >= use.Rank && !entries[i].Use.Lets(use)) return entries[i];
+        return null;
+    }
+
+    // A use that lets only some families be asked for is on the board: what was asked for of the others, by a rank no
+    // bigger than its own, is over (a grenade in the fist of a body going down goes back on the belt). A fact is never
+    // ended. The hands it frees go to whoever still wants them (Settle): back to the gun.
+    private void Limit(Entry by)
+    {
+        if (!by.Use.Limits) return;
+        for (int i = entries.Count - 1; i >= 0; i--)
+        {
+            var entry = entries[i];
+            if (entry != by && !entry.Fact && entry.Use.Rank <= by.Use.Rank && !by.Use.Lets(entry.Use)) Remove(entry);
+        }
+    }
 
     // The hands an entry wants, taken where it beats who has them: the ones it needs first, then the ones it only uses.
     private void Claim(Entry entry, int frame)
@@ -308,6 +360,7 @@ public sealed class HandBoard
     // ---- Telling who listens what changed, once per call ----
 
     private HandUse leftBefore, rightBefore;
+    private object leftWas, rightWas;
     private int depth;
 
     private void Begin()
@@ -315,6 +368,8 @@ public sealed class HandBoard
         if (depth++ > 0) return;
         leftBefore = left?.Use;
         rightBefore = right?.Use;
+        leftWas = left?.Who;
+        rightWas = right?.Who;
     }
 
     private void End()
@@ -322,7 +377,7 @@ public sealed class HandBoard
         if (--depth > 0) return;
         Settle();
         if (Changed == null) return;
-        if (!ReferenceEquals(leftBefore, left?.Use)) Changed(HandSide.Left, leftBefore, left?.Use);
-        if (!ReferenceEquals(rightBefore, right?.Use)) Changed(HandSide.Right, rightBefore, right?.Use);
+        if (!ReferenceEquals(leftBefore, left?.Use)) Changed(HandSide.Left, leftBefore, left?.Use, left != null && ReferenceEquals(leftWas, left.Who));
+        if (!ReferenceEquals(rightBefore, right?.Use)) Changed(HandSide.Right, rightBefore, right?.Use, right != null && ReferenceEquals(rightWas, right.Who));
     }
 }

@@ -27,8 +27,9 @@ public enum GunFate : byte
 /// <summary>
 /// One thing a hand is used for: a row of Tables/Player/HandUses.csv. Which hands it must have (Needs), which it takes
 /// too when nobody stronger wants them (Also), how strong its claim is (Rank), in which states of the body its arm can
-/// be up, what becomes of the gun when it takes the right hand, and whether nothing else of the hands may start while
-/// it has them. A use decides nothing: HandBoard reads these and says whose each hand is.
+/// be up, what becomes of the gun when it takes the right hand, whether nothing else of the hands may start while
+/// it has them, and whether only some families of uses may be asked for while it stands (Only). A use decides
+/// nothing: HandBoard reads these and says whose each hand is.
 /// </summary>
 public sealed class HandUse
 {
@@ -38,10 +39,15 @@ public sealed class HandUse
     public const ulong AnyStance = ulong.MaxValue;
 
     private readonly ulong stances;
+    private readonly string[] only;
 
-    public HandUse(string id, HandSide needs, HandSide also, int rank, GunFate gun = GunFate.Leaves, bool locks = false, ulong stances = AnyStance)
+    public HandUse(string id, HandSide needs, HandSide also, int rank, GunFate gun = GunFate.Leaves, bool locks = false, ulong stances = AnyStance,
+        string[] only = null)
     {
         Id = id ?? "";
+        int dot = Id.IndexOf('.');
+        Family = dot > 0 ? Id.Substring(0, dot) : Id;
+        this.only = only != null && only.Length > 0 ? only : null;
         Needs = needs;
         // A hand it must have is not also one it takes only when free.
         Also = also & ~needs;
@@ -52,6 +58,8 @@ public sealed class HandUse
     }
 
     public string Id { get; }
+    /// <summary>The family it belongs to: its id up to the first dot (gun.reload is the gun's).</summary>
+    public string Family { get; }
     /// <summary>The hands it must have: without all of them it does not start, and losing one ends it.</summary>
     public HandSide Needs { get; }
     /// <summary>The hands it takes too while nobody stronger wants them: given up, it goes on (the left hand under an aimed gun).</summary>
@@ -61,6 +69,25 @@ public sealed class HandUse
     public GunFate Gun { get; }
     /// <summary>While it has its hands nothing else of the hands may start (PlayerMovement.CombatInputLocked).</summary>
     public bool Locks { get; }
+
+    /// <summary>
+    /// While it stands only uses of the families it names may be asked for (HandUses.csv only): it takes no hand for
+    /// that, the hands stay where they are and can do nothing else. A body gone down is so: its hands are on its pistol,
+    /// whatever the pistol does goes on (a reload too), and nothing else of the hands can be had. False: it names none.
+    /// </summary>
+    public bool Limits => only != null;
+
+    /// <summary>The families it lets be asked for, as the table writes them; empty when it stops nothing.</summary>
+    public string Only => only != null ? string.Join("|", only) : "";
+
+    /// <summary>Whether <paramref name="other"/> may be asked for while this stands.</summary>
+    public bool Lets(HandUse other)
+    {
+        if (only == null || other == null) return true;
+        for (int i = 0; i < only.Length; i++)
+            if (string.Equals(only[i], other.Family, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
 
     /// <summary>Its arm can be up in this state of the body. Outside it the hand is still its own: what it holds waits.</summary>
     public bool StandsIn(MovementState state) => (stances & (1UL << (int)state)) != 0;
@@ -174,7 +201,11 @@ public static class HandUses
         string gunText = row.Text("gun").ToLowerInvariant();
         GunFate gun = gunText == "away" ? GunFate.Away : gunText == "stays" ? GunFate.Stays : GunFate.Leaves;
         if (gunText.Length > 0 && gun == GunFate.Leaves) problems?.Add($"{id}: gun '{gunText}' is neither away nor stays");
-        return new HandUse(id, needs, also, rank, gun, row.Flag("locks", false), Stances(row.Text("stances"), id, problems));
+        var only = new List<string>();
+        foreach (string family in TableCells.Parts(row.Text("only"))) only.Add(family);
+        if (needs == HandSide.None && also == HandSide.None && only.Count == 0)
+            problems?.Add($"{id}: it names no hand and limits nothing (hands, also and only are all empty)");
+        return new HandUse(id, needs, also, rank, gun, row.Flag("locks", false), Stances(row.Text("stances"), id, problems), only.ToArray());
     }
 
     private static HandSide Side(string text, string id, string cell, List<string> problems)

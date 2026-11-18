@@ -11,10 +11,10 @@ using UnityEngine;
 /// (FrameOrder.Movement + 1), so whoever asks the owner later in the frame is answered by this frame's body.
 /// <para>
 /// Until the lists it replaces are gone it also checks itself against them, for this PC's own player (Shadow): where
-/// the owner's answer differs from what the old code would have said this frame (the grenade's "something must have
-/// the left hand", the gun's "put away", the movement's "hands busy"), a line goes to Logs/hands.txt. Nothing reads
-/// the owner for those yet when this is added, so a difference is seen in a play's record before anything depends on
-/// it; each comparison goes when its old list does.
+/// the owner's answer differs from what the old code says this frame (the gun's "put away", the movement's "hands
+/// busy"), a line goes to Logs/hands.txt, so a difference is seen in a play's record before anything depends on the
+/// owner for it. Each comparison goes when its old list does: the grenade's own list ("something must have the left
+/// hand") went on 2026-11-18, when the grenade began asking the owner.
 /// </para>
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Movement + 1)]
@@ -23,8 +23,8 @@ public sealed class BodyHandFacts : MonoBehaviour
     private PlayerMovement movement;
     private PlayerWeaponSlots slots;
     private HandOwner hands;
-    // What the three comparisons last said (0 agree, 1 the old lists say yes and the owner no, 2 the other way).
-    private readonly int[] differed = new int[3];
+    // What the two comparisons last said (0 agree, 1 the old lists say yes and the owner no, 2 the other way).
+    private readonly int[] differed = new int[2];
 
     private void Awake() => movement = GetComponent<PlayerMovement>();
 
@@ -69,19 +69,15 @@ public sealed class BodyHandFacts : MonoBehaviour
 
     private void Shadow()
     {
-        bool carrying = slots != null && slots.HandsFull;
-        // 1. PlayerGrenades.HandForced without its inventory line (the guns on a tray): must something have the left hand?
-        bool forcedOld = movement.IsDead || movement.IsDowned || movement.IsHeld || movement.IsParkour || movement.CombatInputLocked || carrying;
-        Compare(0, "a grenade's left hand must be given up", forcedOld, !hands.Could(HandUses.Grenade, null));
-        // 2. WeaponController's bare: is the gun put away? (With a can carried no gun is out at all: left out.)
-        if (!carrying)
+        // 1. WeaponController's bare: is the gun put away? (With a can carried no gun is out at all: left out.)
+        if (slots == null || !slots.HandsFull)
         {
             var right = hands.OwnerOf(HandSide.Right);
             bool awayOld = TraversalHands.For(movement) == TraversalHandUse.Bare || ExecutionKnife.HoldsHands(movement);
-            Compare(1, "the gun is put away", awayOld, right != null && right.Gun == GunFate.Away);
+            Compare(0, "the gun is put away", awayOld, right != null && right.Gun == GunFate.Away);
         }
-        // 3. PlayerMovement.CombatInputLocked: are the hands locked?
-        Compare(2, "the hands are locked", movement.CombatInputLocked, hands.Locked);
+        // 2. PlayerMovement.CombatInputLocked: are the hands locked?
+        Compare(1, "the hands are locked", movement.CombatInputLocked, hands.Locked);
     }
 
     private void Compare(int which, string what, bool old, bool owner)

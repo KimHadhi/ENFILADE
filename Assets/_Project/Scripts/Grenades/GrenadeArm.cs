@@ -1,6 +1,5 @@
 using UnityEngine;
 using static ArmBones;
-using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The left arm of a quick throw on G (the user, 2026-11-12: "그냥 G 꾹 누르면 들고 있는 자세로 바뀌면서 쿠킹할 수 있고
@@ -21,8 +20,9 @@ using MovementState = PlayerMovement.MovementState;
 /// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so the left hand's gun contact, grip and fingers let go over the hands' own blend time
 /// and take the gun again after; the throw's pose eases by how far the hand is lent (OffHandLent), never ahead of it,
-/// in over GrenadeRules armIn and out over armOut at most. A throw has the off hand before a held F's point (PointArm
-/// lets go while PlayerGrenades.HandBusy). It runs after FPS Animation Framework, the hands on the gun, the callout
+/// in over GrenadeRules armIn and out over armOut at most. Whether the arm is up is not this arm's to work out: it
+/// asks the hands' owner every frame (HandOwner.Arm: the throw has the left hand and the body is in a state the arm
+/// can be up in), and the owner's yes is what lends the hand. It runs after FPS Animation Framework, the hands on the gun, the callout
 /// gestures and the point (GunFramework + 7, PointArm is + 6); the cloth comes after, so a sleeve follows. The
 /// first-person camera was placed earlier, so the view never moves with the arm.
 /// </summary>
@@ -95,10 +95,9 @@ public sealed class GrenadeArm : PathArm
         bool driven = drivenFrame >= Time.frameCount - 1;
         var motion = GrenadeArmPath.For(kind);
         if (driven) NoteRelease(motion);
-        bool on = driven && wanted && Free();
-        // The left hand off the gun through PlayerBodyHands, as every off-hand use takes it; the same share each frame
-        // costs nothing.
-        if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
+        // Up while the throw has the left hand and the body is in a state the arm can be up in: the hands' owner says
+        // so, and its yes takes the hand off the gun (HandOwner.Arm).
+        bool on = driven && wanted && owner != null && owner.Arm(HandUses.Grenade);
         float blend = on ? Throwables.Rule("armIn", .08f) : Throwables.Rule("armOut", .14f);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
@@ -145,20 +144,7 @@ public sealed class GrenadeArm : PathArm
         return shown;
     }
 
-    private void OnDisable()
-    {
-        ShowHolder(false);
-        if (hands != null) hands.LendOffHand(this, 0f);
-    }
-
-    // The body can lift the arm: alive, up, standing or crouched (walking and in the air too) or sliding; not held,
-    // climbing, hanging or vaulting.
-    private bool Free()
-    {
-        if (movement.IsDead || movement.IsDowned || movement.IsHeld || movement.IsParkour) return false;
-        var state = movement.CurrentState;
-        return state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Sliding;
-    }
+    private void OnDisable() => ShowHolder(false);
 
     // Where the throwable will leave the hand: at the release of the clip playing if it has one (a tap's, a throw's),
     // else at the throw's; kept in the eyes' own space so the throw follows the look between frames.

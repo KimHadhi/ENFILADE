@@ -16,6 +16,8 @@ public sealed partial class WeaponController
             (health != null && !health.IsAlive))
             return;
 
+        // A reload or a look over the gun whose hand something else has taken since the last frame is over (HandOwner).
+        MindHands();
         var dodge = movement.OrNull()?.Abilities?.Dodge;
         int activation = dodge?.Activation ?? 0;
         if (activation != dodgeActivation)
@@ -40,8 +42,16 @@ public sealed partial class WeaponController
             else if (frame.FirePressed || frame.FireHeld || frame.AimHeld || frame.ReloadPressed || bodyAction || stepDodging) StopInspecting();
         }
         // Asked for like an R press, so whatever holds a reload back now holds this one back until it lets go.
+        bool reloadKey = frame.ReloadPressed;
         if (AutoReloadDue(dt)) frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, true, frame.AimHeld);
         if (survivalInterrupted || bodyAction || stepDodging || shoveRecovery > 0f)
+            frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
+        // A reload needs both hands, and it asks for them before it starts: with the left hand on something that keeps
+        // it (a grenade held ready) it does not begin at all. Until 2026-11-18 the gun did not know its hand was away,
+        // so the reload began, its clip and sound with it, and the grenade stopped it a frame later; with an empty
+        // magazine the automatic reload did that again every fifth of a second. A reload asked for by the gun itself
+        // (the automatic one) asks again every frame and starts the moment the hand is back. This PC's own player only.
+        if (frame.ReloadPressed && Mine && !Runtime.IsReloading && !HandsFor(HandUses.GunReload, reloadKey))
             frame = new WeaponInputFrame(frame.FirePressed, frame.FireHeld, false, frame.AimHeld);
         survivalInterrupted = false;
         // The body is speeding up into a sprint or is at one: the player is asking for it now (its progress only falls
@@ -240,6 +250,8 @@ public sealed partial class WeaponController
             presentation?.OnShot(weaponData, recoil);
             UpdateSpread();
         }
+        // What the gun does with its hands this frame, said to their owner (HandOwner).
+        SayHands(aiming);
         UpdateCrosshair();
         cameraEffects.OrNull()?.RefreshWeaponFov();
     }

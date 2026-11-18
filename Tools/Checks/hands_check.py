@@ -1,5 +1,5 @@
 # Checks whose a player's two hands are without the game: a replica of the pure rule in
-# Assets/_Project/Scripts/Player/Hands/HandBoard.cs (Beats, Could, Take, State, Give, Settle), run over the game's own
+# Assets/_Project/Scripts/Player/Hands/HandBoard.cs (Beats, Could, Kept, Take, State, Give, Settle, Limiting, Limit), run over the game's own
 # table Assets/_Project/Data/Resources/Tables/Player/HandUses.csv, and a reading of the scripts that name its rows.
 #   python Tools/Checks/hands_check.py
 # It asserts
@@ -11,11 +11,14 @@
 #      reload asked for meanwhile does not start at all;
 #   4. what the user decided that day: first come keeps the hand between a reload and a dose; a repair gives way to a
 #      reload and never the other way; V with the left hand elsewhere is no gun bash; a grenade in the fist stays
-#      through a landing roll and goes back for a vault, a grab, an execution;
+#      through a landing roll and goes back for a vault, a grab, an execution; and what the game did already and must
+#      go on doing: a body gone down keeps its pistol and all the pistol does (a reload too) and nothing else of the
+#      hands, and V in a zombie's grip is still the shove, not the kick;
 #   5. today's order between the left hand's uses, row by row of the design's table;
-#   6. for every pair of rows, asked or stated in either order, the board's answer is the one their ranks give; and
-#      through thousands of random runs no ask stands without a hand it needs, no hand lies free while something
-#      standing wants it, and nothing weaker holds a hand over something stronger that wants it.
+#   6. for every pair of rows, asked or stated in either order, the board's answer is the one their ranks give (and
+#      the one a row that lets only some families be asked for gives); and through thousands of random runs no ask
+#      stands without a hand it needs, no hand lies free while something standing wants it, nothing weaker holds a
+#      hand over something stronger that wants it, and nothing stands that a use standing does not let be asked for.
 # It also writes Logs/hands-matrix.txt: for every pair of uses, whether the one asking takes the hand from the one
 # holding it, so the order can be read (and changed in the table) without reading code.
 # Change HandBoard's rule and these replicas together.
@@ -30,7 +33,7 @@ MATRIX = os.path.join(REPO, "Logs", "hands-matrix.txt")
 LEFT, RIGHT = "left", "right"
 EACH = (LEFT, RIGHT)
 NO_RANK = -1
-HEAD = ["id", "hands", "also", "rank", "stances", "gun", "locks", "#설명"]
+HEAD = ["id", "hands", "also", "rank", "stances", "gun", "locks", "only", "#설명"]
 checks = 0
 
 
@@ -44,9 +47,15 @@ def expect(holds, what):
 # ---- The table, read as HandUses.Read reads it ----
 
 class Use:
-    def __init__(self, name, needs, also, rank, gun="", locks=False, stances=None):
+    def __init__(self, name, needs, also, rank, gun="", locks=False, stances=None, only=()):
         self.id, self.needs, self.rank, self.gun, self.locks, self.stances = name, frozenset(needs), rank, gun, locks, stances
         self.also = frozenset(also) - self.needs
+        # Its family is its id up to the first dot; `only` the families that may be asked for while it stands (None: any).
+        self.family = name.split(".")[0]
+        self.only = frozenset(part.lower() for part in only) or None
+
+    def lets(self, other):
+        return self.only is None or other.family.lower() in self.only
 
     def __repr__(self):
         return self.id
@@ -89,7 +98,8 @@ def load():
             stances = {part.strip() for part in cell["stances"].split("|") if part.strip()}
             for state in stances:
                 expect(state in states, "%s: stances names '%s', which is no state of the body" % (name, state))
-        use = Use(name, sides(cell["hands"], name + " hands"), sides(cell["also"], name + " also"), rank, cell["gun"], cell["locks"] == "1", stances)
+        only = [part.strip() for part in cell["only"].split("|") if part.strip()]
+        use = Use(name, sides(cell["hands"], name + " hands"), sides(cell["also"], name + " also"), rank, cell["gun"], cell["locks"] == "1", stances, only)
         expect(not (set(sides(cell["hands"], name)) & set(sides(cell["also"], name))), name + ": a hand both needed and only used while free")
         uses[name] = use
         order.append(use)
@@ -141,16 +151,37 @@ class Board:
             return needs
         return holder.came == frame and asker.id < holder.use.id
 
+    def limiting(self, use, but):
+        for entry in self.entries:
+            if entry is not but and entry.use.rank >= use.rank and not entry.use.lets(use):
+                return entry
+        return None
+
+    def limit(self, by):
+        if by.use.only is None:
+            return
+        for entry in reversed(list(self.entries)):
+            if entry is not by and not entry.fact and entry.use.rank <= by.use.rank and not by.use.lets(entry.use):
+                self.remove(entry)
+
     def could(self, use, who, frame):
+        """(True, None), or (False, (the hand it could not have or None, the use in its way, whether that is a fact))."""
         mine = self.asked(who) if who is not None else None
+        limit = self.limiting(use, mine)
+        if limit is not None:
+            return False, (None, limit.use, limit.fact)
         for hand in EACH:
             if hand not in use.needs:
                 continue
             holder = self.holder(hand)
             if holder is None or holder is mine or self.beats(use, True, frame, holder, hand):
                 continue
-            return False, (hand, holder.use)
+            return False, (hand, holder.use, holder.fact)
         return True, None
+
+    def kept(self, use, who, frame):
+        ok, why = self.could(use, who, frame)
+        return not ok and why[0] is not None and not why[2]
 
     def take(self, use, who, frame):
         mine = self.asked(who)
@@ -169,6 +200,7 @@ class Board:
                 if hand in mine.owns and hand not in (use.needs | use.also):
                     self.free(mine, hand)
         mine.use, mine.fact, mine.came = use, False, frame
+        self.limit(mine)
         self.claim(mine, frame)
         self.end(before)
         return True
@@ -181,6 +213,7 @@ class Board:
             mine = Entry(who, use, True, self.arrivals, frame)
             self.entries.append(mine)
         mine.use = use
+        self.limit(mine)
         self.claim(mine, frame)
         self.end(before)
 
@@ -275,8 +308,11 @@ class Board:
 FACTS = [u for u in ORDER if u.rank >= 100 or u.id == "move.roll"]
 ASKED = [u for u in ORDER if u.rank != NO_RANK and u not in FACTS]
 ONLY_ASKS = [u for u in ORDER if u.rank == NO_RANK]
+FAMILIES = {u.family.lower() for u in ORDER}
 for use in ORDER:
-    expect(use.needs or use.also, use.id + " names no hand at all")
+    expect(use.needs or use.also or use.only, use.id + " names no hand and limits nothing")
+    for family in use.only or ():
+        expect(family in FAMILIES, "%s: only names '%s', which is the family of no row (a family is an id up to its first dot)" % (use.id, family))
     if use.locks:
         expect(use.rank >= 100 and use.needs == frozenset(EACH), use.id + " locks the hands but is not a fact of both hands")
     if use.gun:
@@ -284,6 +320,9 @@ for use in ORDER:
     if use.rank >= 100 and RIGHT in use.needs:
         expect(use.gun in ("away", "stays"), use.id + " takes the right hand as a fact and does not say what becomes of the gun")
 expect([u.id for u in ONLY_ASKS] == ["gun.fire"], "the only row that asks without holding is gun.fire, not %r" % ONLY_ASKS)
+# The one row that limits what may be asked: a body gone down, which keeps its hands on its pistol and takes none.
+expect([(u.id, sorted(u.only), sorted(u.needs | u.also)) for u in ORDER if u.only] == [("life.downed", ["gun"], [])],
+       "the rows that let only some families be asked for are not life.downed alone, letting the gun's and taking no hand")
 fact_ranks = [u.rank for u in ORDER if u.rank >= 100]
 expect(all(rank > 60 for rank in fact_ranks), "a fact of the body ranks no higher than something held in the fist")
 print("table: %d rows (%d asked for, %d stated, %d only asking)" % (len(ORDER), len(ASKED), len(FACTS), len(ONLY_ASKS)))
@@ -317,7 +356,7 @@ expect(board.take(U("gun.aim"), GUN, 2), "the right hand could not aim with a gr
 expect(board.of(LEFT) == "grenade.throw" and board.of(RIGHT) == "gun.aim", "aiming moved the grenade's hand")
 expect(board.could(U("gun.fire"), GUN, 3)[0], "the trigger is not the gun's with a grenade in the left hand")
 ok, why = board.could(U("gun.reload"), GUN, 4)
-expect(not ok and why == (LEFT, U("grenade.throw")), "a reload asked with a grenade held was not refused for the left hand: %r" % (why,))
+expect(not ok and why == (LEFT, U("grenade.throw"), False), "a reload asked with a grenade held was not refused for the left hand: %r" % (why,))
 expect(not board.take(U("gun.reload"), GUN, 4) and board.of(RIGHT) == "gun.aim" and board.has(GUN), "a refused reload changed what the gun has")
 expect(board.give(NADE) and board.of(LEFT) == "gun.aim", "the left hand did not go back under the aimed gun after the throw")
 expect(board.take(U("gun.reload"), GUN, 5) and board.of(LEFT) == "gun.reload" == board.of(RIGHT), "a reload did not start once the hand was back")
@@ -359,7 +398,18 @@ board.take(U("detente.dose"), DOSE, 1)
 expect(not board.could(U("gun.bash"), GUN, 2)[0], "the gun could bash with the syringe in the left hand")
 board = gun_in_hand()
 board.take(U("support.repair"), TOOL, 1)
+expect(not board.kept(U("gun.bash"), GUN, 2), "the tool keeps the hand from a bash (a bash outranks a repair)")
 expect(board.take(U("gun.bash"), GUN, 2) and not board.has(TOOL), "a bash did not take the hand from a repair")
+# What V asks is whether the hand is busy with something else that was ASKED for (Kept): then it is the kick. A fact of
+# the body having the hands is not that: in a zombie's grip V is the shove that fights it off, as it always was.
+board = gun_in_hand()
+expect(not board.kept(U("gun.bash"), GUN, 1), "V is the kick with both hands on the gun")
+board.take(U("grenade.throw"), NADE, 1)
+expect(board.kept(U("gun.bash"), GUN, 2), "V is not the kick with a grenade in the left hand")
+for fact in ("zombie.hold", "move.vault", "move.climb", "move.roll", "life.downed", "life.dead", "carry.can"):
+    board = gun_in_hand()
+    board.state(U(fact), BODY, 1)
+    expect(not board.kept(U("gun.bash"), GUN, 2), "V became the kick because of %s (a fact of the body: V there is what it was)" % fact)
 
 # A grenade in the fist: kept through a landing roll (the gun is put away), given up for a vault, a grab, an execution.
 board = gun_in_hand()
@@ -369,12 +419,41 @@ expect(board.has(NADE) and board.of(LEFT) == "grenade.throw" and board.of(RIGHT)
        "a landing roll did not leave the grenade in the fist and take the gun's hand")
 board.withdraw(BODY, "move.roll")
 expect(board.take(U("gun.hold"), GUN, 3) and board.of(LEFT) == "grenade.throw", "the gun did not come back after the roll")
-for fact in ("move.vault", "zombie.hold", "melee.execution", "move.climb", "life.dead", "life.downed", "carry.can", "detente.bandage"):
+for fact in ("move.vault", "zombie.hold", "melee.execution", "move.climb", "life.dead", "carry.can", "detente.bandage"):
     board = gun_in_hand()
     board.take(U("grenade.throw"), NADE, 1)
     board.state(U(fact), BODY, 2)
     expect(not board.has(NADE) and board.of(LEFT) == fact, fact + " did not take the grenade's hand")
     expect(not board.take(U("grenade.throw"), NADE, 3), "a grenade could be taken out during " + fact)
+
+# A body gone down has its pistol and whatever the pistol does, and nothing else of the hands (PlayerWeaponSlots
+# .HoldSidearm; the gun's code never asked whether its player is down, so a reload on the ground always worked).
+board = gun_in_hand()
+board.take(U("gun.reload"), GUN, 1)
+board.state(U("life.downed"), BODY, 2)
+expect(board.has(GUN) and board.of(LEFT) == "gun.reload" == board.of(RIGHT), "going down ended a reload under way")
+board = gun_in_hand()
+board.state(U("life.downed"), BODY, 1)
+expect(board.has(GUN) and board.of(LEFT) == "gun.hold" == board.of(RIGHT), "going down took a hand from the gun")
+for name in ("gun.aim", "gun.reload", "gun.inspect", "gun.bash", "gun.swap", "gun.hold"):
+    expect(board.take(U(name), GUN, 2) and board.has(GUN), "a body gone down could not have " + name)
+expect(board.could(U("gun.fire"), GUN, 3)[0], "a body gone down could not fire")
+for name in ("grenade.throw", "detente.dose", "support.repair", "guard.pose", "point.ping", "point.hold", "callout.arm"):
+    ok, why = board.could(U(name), name, 3)
+    expect(not ok and why == (None, U("life.downed"), True), "%s was not refused by the body being down: %r" % (name, why))
+    expect(not board.take(U(name), name, 3), name + " could be had by a body gone down")
+for name, who in (("grenade.throw", NADE), ("detente.dose", DOSE), ("support.repair", TOOL), ("point.hold", POINT), ("guard.pose", POSE)):
+    board = gun_in_hand()
+    expect(board.take(U(name), who, 1), name + " could not have the left hand of a gun at rest")
+    board.state(U("life.downed"), BODY, 2)
+    expect(not board.has(who) and board.has(GUN) and board.of(LEFT) == "gun.hold", "going down did not end %s and give the hand back to the gun" % name)
+    board.withdraw(BODY, "life.downed")
+    expect(board.take(U(name), who, 3), name + " could not be had again once the body was up")
+# Dead on the ground: death takes both hands, the gun's too.
+board = gun_in_hand()
+board.state(U("life.downed"), BODY, 1)
+board.state(U("life.dead"), BODY, 2)
+expect(not board.has(GUN) and board.of(LEFT) == "life.dead" == board.of(RIGHT), "death did not take the hands of a body gone down")
 # The knife going back after an execution has the right hand only: a grenade may come out, the gun may not.
 board = Board()
 board.state(U("melee.sheath"), KNIFE, 1)
@@ -388,6 +467,7 @@ expect(board.locked() and not board.has(GUN), "an execution did not lock the han
 board.withdraw(BODY, "melee.execution")
 expect(not board.locked(), "the lock outlived the execution")
 print("the user's decisions: first come between reload and dose, repair gives way to a reload, no bash without both hands, a grenade stays through a roll")
+print("kept as it was: a body gone down reloads its pistol and has nothing else of the hands; V in a zombie's grip is the shove")
 
 # ---- 5. Today's order between the left hand's uses ----
 
@@ -446,6 +526,11 @@ def strength(use, hand):
     return None
 
 
+def limits(by, other):
+    """Whether `by`, standing, keeps `other` from being asked for: it lets only other families, and ranks no lower."""
+    return by.only is not None and not by.lets(other) and by.rank >= other.rank
+
+
 def expected_takes(asker, holder_use, hand, holder_came, frame):
     mine, theirs = strength(asker, hand), strength(holder_use, hand)
     if mine[0] != theirs[0]:
@@ -476,12 +561,18 @@ for holder_use in ORDER:
             wins = [expected_takes(asker, holder_use, hand, 1, 2) for hand in contested]
             if asker_fact:
                 board.state(asker, "B", 2)
+                if not holder_fact and limits(asker, holder_use):
+                    # It lets nothing of the holder's family be asked for: the holder is over, whatever the hands say.
+                    expect(not board.has("A"), "%s stated over %s: what it does not let be asked for still stands" % (asker, holder_use))
+                    pairs += 1
+                    continue
                 for hand, win in zip(contested, wins):
                     expect((board.of(hand) == asker.id) == win, "%s stated over %s: the %s hand went wrong" % (asker, holder_use, hand))
                 granted = True
             else:
                 granted = board.take(asker, "B", 2)
-                expect(granted == all(wins), "%s asked over %s: granted %s, the ranks say %s" % (asker, holder_use, granted, all(wins)))
+                due = all(wins) and not limits(holder_use, asker)
+                expect(granted == due, "%s asked over %s: granted %s, the ranks and the families say %s" % (asker, holder_use, granted, due))
                 if granted:
                     for hand in asker.needs:
                         expect(board.of(hand) == asker.id, "%s was granted over %s without its %s hand" % (asker, holder_use, hand))
@@ -517,6 +608,9 @@ for run in range(4000):
         for entry in board.entries:
             if not entry.fact:
                 expect(entry.use.needs <= entry.owns, "run %d: %s stands without a hand it needs" % (run, entry.use))
+                for other in board.entries:
+                    expect(other is entry or not limits(other.use, entry.use), "run %d: %s stands though %s lets only %s be asked for"
+                           % (run, entry.use, other.use, sorted(other.use.only or ())))
             for hand in entry.owns:
                 expect(board.owner[hand] is entry, "run %d: %s thinks it has a hand that is %s's" % (run, entry.use, board.of(hand)))
         for hand in EACH:
@@ -529,11 +623,15 @@ for run in range(4000):
             for other in wanting:
                 expect(other.use.rank <= holder.use.rank, "run %d: %s holds the %s hand over %s, which is stronger" % (run, holder.use, hand, other.use))
     runs += 1
-print("random runs: %d, no ask without its hands, no hand free while wanted, nothing weaker over something stronger" % runs)
+print("random runs: %d, no ask without its hands, no hand free while wanted, nothing weaker over something stronger, nothing a standing use does not let" % runs)
 
 # ---- The matrix: who takes the hand from whom ----
 
 def meets(asker, holder_use):
+    if limits(holder_use, asker) and asker not in FACTS:
+        return " x "
+    if limits(asker, holder_use) and holder_use not in FACTS:
+        return " # "
     shared = [hand for hand in EACH if hand in asker.needs and strength(holder_use, hand)]
     if shared:
         wins = [expected_takes(asker, holder_use, hand, 1, 2) for hand in shared]
@@ -551,6 +649,7 @@ out = ["whose hand: for the use asking (rows) against the use that has the hand 
        "  O  the one asking gets every hand it needs    x  it gets none: refused (a fact stands without that hand)",
        "  /  it would get one hand and not the other     o  it starts anyway and also takes a hand it only uses while free",
        "  .  it starts and takes nothing from the other",
+       "  #  it takes no hand, and the other is over all the same: it lets only its own families be asked for (the column only)",
        "the table: Assets/_Project/Data/Resources/Tables/Player/HandUses.csv (rank: the bigger takes; equal: who was first keeps it)", ""]
 out.append(" " * (width + 6) + " ".join("%2d " % (at + 1) for at in range(len(listed))))
 for at, asker in enumerate(listed):
