@@ -95,6 +95,10 @@ public sealed class ZombieType : MonoBehaviour
         [Tooltip("While it crawls, a hit on its head takes this many times the damage, on top of the gun's headshot " +
                  "(EnemyHealth); 0 or 1: as any head. The brute's: blood rushes into the head it drags along.")]
         public float crawlHead;
+        [Tooltip("What it makes of a survivor another zombie already has out of the fight (a runner's pin, a candyman's drag): " +
+                 "last = left to that zombie while anyone else can be gone for (Guts & Blackpowder's shambler), any = as " +
+                 "anyone (runners pin together), never = never its quarry. Empty: last.")]
+        public string taken = "";
     }
 
     // Guts & Blackpowder's shambler, its 14 studs a second against a player's walking 16 put to our walk (4.9 m/s).
@@ -107,7 +111,9 @@ public sealed class ZombieType : MonoBehaviour
     private readonly Numbers runner = new Numbers
     {
         share = .35f, speed = 7.4f, acceleration = 14f, angularSpeed = 300f, damage = 10f, windup = .45f, attackInterval = 1f,
-        pounces = true, pounceWindup = .35f, pounceRadius = 1.1f, healthShare = .4f, runs = true
+        pounces = true, pounceWindup = .35f, pounceRadius = 1.1f, healthShare = .4f, runs = true,
+        // Runners pin together (up to PlayerHold.MostPinning): a pinned player is still one's quarry.
+        taken = "any"
     };
     private readonly Numbers crawler = new Numbers
         { speed = .7f, acceleration = 3f, angularSpeed = 90f, damage = 8f, windup = .6f, attackInterval = 1.6f, aimHeight = .35f, height = .8f };
@@ -178,6 +184,22 @@ public sealed class ZombieType : MonoBehaviour
     private Numbers Of(ZombieKind kind) => kind == ZombieKind.Runner ? runner : kind == ZombieKind.Brute ? brute
         : kind == ZombieKind.Exploder ? exploder : kind == ZombieKind.Charger ? charger : kind == ZombieKind.Ninja ? ninja
         : kind == ZombieKind.Candyman ? candyman : kind == ZombieKind.Breadbag ? breadbag : kind == ZombieKind.Reaper ? reaper : shambler;
+
+    /// <summary>
+    /// What its kind makes of a survivor another zombie already has (ZombieKinds taken; the kind's own, crawling or not).
+    /// An empty or unknown cell reads as Last: a pinned survivor is left to the zombie that has them while anyone else
+    /// still stands.
+    /// </summary>
+    public TakenRule Taken
+    {
+        get
+        {
+            string cell = Of(Kind).taken;
+            if (string.Equals(cell, "any", StringComparison.OrdinalIgnoreCase)) return TakenRule.Any;
+            if (string.Equals(cell, "never", StringComparison.OrdinalIgnoreCase)) return TakenRule.Never;
+            return TakenRule.Last;
+        }
+    }
 
     /// <summary>A memo elite (ninja, candyman, breadbag, reaper): its own component plays it out.</summary>
     public bool IsMemoElite => Kind == ZombieKind.Ninja || Kind == ZombieKind.Candyman || Kind == ZombieKind.Breadbag || Kind == ZombieKind.Reaper;

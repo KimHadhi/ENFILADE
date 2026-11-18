@@ -143,6 +143,25 @@ public sealed class ZombieGrip : MonoBehaviour
     /// <summary>Where its feet are: its agent stands it above them by its base offset, on a copy too (the agent is only off there).</summary>
     internal Vector3 Feet => agent != null ? transform.position - Vector3.up * agent.baseOffset : transform.position;
 
+    /// <summary>
+    /// Another zombie has this player out of the fight: a runner pins them or a candyman drags them off, and it is not
+    /// <paramref name="asker"/> itself (the pinner keeps its own). On the PC that runs the zombies, which knows every
+    /// hold; a pin their own PC has told of before its runner's hold got here counts too. What a zombie's choice of
+    /// quarry asks (EnemyTargeting, Tables/ZombieKinds taken).
+    /// </summary>
+    internal static bool TakenByAnother(PlayerMovement player, ZombieGrip asker)
+    {
+        if (player == null) return false;
+        bool mine = false;
+        foreach (var grip in holding)
+        {
+            if (grip == null || grip.held != player || !(grip.pinning || grip.dragging)) continue;
+            if (grip != asker) return true;
+            mine = true;
+        }
+        return !mine && player.IsPinned;
+    }
+
     /// <summary>The runners pinning this player now, on this PC (the host knows them all).</summary>
     internal static int CountPinning(PlayerMovement player)
     {
