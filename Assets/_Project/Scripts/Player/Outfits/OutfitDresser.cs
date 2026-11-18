@@ -103,6 +103,9 @@ internal static partial class OutfitDresser
     {
         var dressing = new Dressing();
         var going = string.IsNullOrEmpty(leaving) ? null : OutfitCatalog.Slot(leaving);
+        // First, whatever the character's own file brought that a look may not be (WornParts): every body the game makes
+        // comes through here fresh from its file, before the game has put anything of its own on it, dressed or not.
+        if (model != null) TakeOffForeign(model, skin != null ? skin.Id : model.name);
         if (model == null || skin == null || look == null || (look.IsEmpty && going == null)) return dressing;
         // A look from before an item moved slot (the bikini from the vest to the underwear) finds it in its new one.
         look = look.Settled();
@@ -253,6 +256,23 @@ internal static partial class OutfitDresser
     private static void Warn(string message)
     {
         if (warned.Add(message)) Debug.LogWarning("[Outfits] " + message);
+    }
+
+    // Models already said to have come with parts a look may not keep, so each is said once a session.
+    private static readonly HashSet<string> stripped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Takes off a freshly made model whatever its file brought that a worn thing may not keep (WornParts: a collider, a
+    /// body, a script, a light, a sound), before it is anywhere a physics query or a frame could meet it. The one gate
+    /// for it: a character's own model on its way into Dress, and every piece on its way onto the character (Place),
+    /// whoever made the file (a BOOTH import, a prefab copied from a bought pack, a mod). Said once a model in the log,
+    /// not as a warning: it is the rule at work and nothing for the player to act on; the editor's report
+    /// (WornPartsCheck, Logs/worn-parts.txt) names every file that carries such parts.
+    /// </summary>
+    private static void TakeOffForeign(GameObject made, string name)
+    {
+        string went = WornParts.Strip(made);
+        if (went.Length > 0 && stripped.Add(name)) Debug.Log($"[Outfits] {name}: 파일에 달려 온 부품을 뗐습니다({went}). 입는 것은 그려지기만 하고 세상의 물체가 되지 않습니다.");
     }
 
     /// <summary>

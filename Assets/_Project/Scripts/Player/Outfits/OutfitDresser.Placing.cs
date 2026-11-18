@@ -17,6 +17,10 @@ internal static partial class OutfitDresser
         if (made == null) return null;
         var instance = Object.Instantiate(made, root, false);
         instance.name = "Outfit (" + item.ModelId + ")";
+        // A worn thing is drawn and follows the body; it is no part of the world. Whatever else its file brought (the
+        // welding mask's prefab came with its prop pack's solid BoxCollider, which the crouch took for a roof) goes
+        // here, before the piece is anywhere on the body.
+        TakeOffForeign(instance, item.ModelId);
         // A mod's file says where the outfit stood in its avatar's root; the game's own files share one origin.
         if (entry.Stood is { } stood)
         {
@@ -164,6 +168,7 @@ internal static partial class OutfitDresser
     {
         rebound.Clear();
         movedBy.Clear();
+        stripped.Clear();
     }
 
     // An outfit's file carries a copy of the character's skeleton (every BOOTH outfit does). Each bone of it the character

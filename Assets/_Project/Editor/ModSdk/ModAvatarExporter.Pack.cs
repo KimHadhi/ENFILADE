@@ -343,12 +343,14 @@ public sealed partial class ModAvatarExporter
 
     // ---- Taking off what the game has no use for ----
 
-    // Kept: the bones, the humanoid Animator, meshes and their renderers, and Unity's own constraints. Everything else
-    // either runs only in VRChat (its scripts and every add-on's) or would act on the game's world (colliders and
-    // bodies in its physics, lights, sounds, cameras, particles drawn with shaders the game can't run).
+    // What stays on the copy is what the game lets a worn thing keep (WornParts: the bones, the humanoid Animator,
+    // meshes and their renderers, a LOD group, Unity's own constraints): the one list the game itself strips by when it
+    // dresses a body, so what is packed here is what the game would have left on it anyway. Everything else either runs
+    // only in VRChat (its scripts and every add-on's) or would act on the game's world (colliders and bodies in its
+    // physics, lights, sounds, cameras, particles drawn with shaders the game can't run).
     private static void Strip(GameObject clone, List<string> notes)
     {
-        int objects = 0, parts = 0;
+        int objects = 0, missing = 0;
         foreach (var each in clone.GetComponentsInChildren<Transform>(true))
             if (each != null && each != clone.transform && each.CompareTag("EditorOnly"))
             {
@@ -356,40 +358,20 @@ public sealed partial class ModAvatarExporter
                 objects++;
             }
         foreach (var each in clone.GetComponentsInChildren<Transform>(true))
-            parts += GameObjectUtility.RemoveMonoBehavioursWithMissingScript(each.gameObject);
-        // Several passes: a part another part needs can only go once that one has.
-        for (int pass = 0; pass < 4; pass++)
-        {
-            bool any = false;
-            foreach (var component in clone.GetComponentsInChildren<Component>(true))
-            {
-                if (component == null || Kept(component) || !Goes(component, pass)) continue;
-                DestroyImmediate(component);
-                parts++;
-                any = true;
-            }
-            if (!any && pass > 1) break;
-        }
+            missing += GameObjectUtility.RemoveMonoBehavioursWithMissingScript(each.gameObject);
+        string went = WornParts.Strip(clone);
         foreach (var animator in clone.GetComponentsInChildren<Animator>(true))
         {
             animator.runtimeAnimatorController = null;
             animator.applyRootMotion = false;
         }
-        notes.Add($"VRChat 전용 부품 {parts}개" + (objects > 0 ? $"와 EditorOnly 오브젝트 {objects}개" : "") + "를 사본에서 뗐습니다(스크립트·콜라이더·조명·소리·카메라·파티클).");
-    }
-
-    private static bool Kept(Component component) =>
-        component is Transform || component is Animator || component is SkinnedMeshRenderer || component is MeshRenderer || component is MeshFilter
-        || component is UnityEngine.Animations.IConstraint;
-
-    // Scripts and what leans on other parts first (joints on bodies, drawn parts on their systems), then the rest.
-    private static bool Goes(Component component, int pass)
-    {
-        bool early = component is MonoBehaviour || component is Joint || component is Cloth
-            || (component is Renderer && !(component is ParticleSystemRenderer)) || component is AudioReverbFilter
-            || component is AudioLowPassFilter || component is AudioHighPassFilter || component is AudioEchoFilter || component is AudioDistortionFilter
-            || component is AudioChorusFilter;
-        return pass > 0 || early;
+        var said = new List<string>();
+        if (went.Length > 0) said.Add(went);
+        if (missing > 0) said.Add($"빠진 스크립트 {missing}");
+        if (objects > 0) said.Add($"EditorOnly 오브젝트 {objects}");
+        notes.Add(said.Count > 0
+            ? "게임에서 쓰지 않는 부품을 사본에서 뗐습니다(스크립트·콜라이더·조명·소리·카메라·파티클): " + string.Join(", ", said) + "."
+            : "뗄 부품이 없습니다(뼈·메시·컨스트레인트만 있는 깨끗한 모델).");
     }
 
     // ---- Meshes the game can read ----

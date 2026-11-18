@@ -8,15 +8,24 @@ using UnityEngine;
 
 /// <summary>
 /// The exporter as a folder a mod maker drops into their own Unity project (their VRChat project, as it is): the
-/// exporter's scripts (Editor/ModSdk: the window, and the rules that sort meshes into the wardrobe's slots), the file
-/// format they share with the game (ModAvatarFile.cs) and a read-me.
+/// exporter's scripts (Editor/ModSdk: the window, and the rules that sort meshes into the wardrobe's slots), the two
+/// files they share with the game (ModAvatarFile.cs, the file format; WornParts.cs, what a worn thing may keep) and a
+/// read-me.
 /// Written beside every build, in Mods/_SDK (a folder starting with _ is never read as a mod), so whoever has the game
 /// has the exporter that matches it; and from the menu, to hand it out without a build.
 /// </summary>
 internal static class ModSdkPackage
 {
     public const string FolderName = "_SDK", PackageName = "ENFILADE Mod SDK";
-    private const string Format = "Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs", Scripts = "Assets/_Project/Editor/ModSdk";
+    private const string Scripts = "Assets/_Project/Editor/ModSdk";
+    // What the exporter shares with the game, file for file, so the two can't come apart: the file format, and the list
+    // of what a worn thing may keep (the exporter strips by the very rule the game strips by when it dresses a body).
+    // Each uses Unity's own types only.
+    private static readonly string[] Shared =
+    {
+        "Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs",
+        "Assets/_Project/Scripts/Core/Mods/WornParts.cs",
+    };
 
     [MenuItem("ENFILADE/모드/모드 SDK 폴더 만들기 (제작자에게 줄 것)")]
     private static void WriteFromMenu()
@@ -42,7 +51,8 @@ internal static class ModSdkPackage
         if (Directory.Exists(root)) Directory.Delete(root, true);
         Directory.CreateDirectory(editor);
         string project = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-        File.Copy(Path.Combine(project, Format), Path.Combine(root, Path.GetFileName(Format)), true);
+        foreach (string shared in Shared)
+            File.Copy(Path.Combine(project, shared), Path.Combine(root, Path.GetFileName(shared)), true);
         foreach (string script in Directory.GetFiles(Path.Combine(project, Scripts), "*.cs"))
             File.Copy(script, Path.Combine(editor, Path.GetFileName(script)), true);
         File.WriteAllText(Path.Combine(root, "읽어 주세요.txt"), ReadMe, new UTF8Encoding(true));
@@ -106,7 +116,9 @@ internal static class ModSdkPackage
     '게임에 없는 쉐이더는 쉐이더째 담기'를 켠 채 내보내세요. 그러면 쉐이더까지 번들에 담겨 그대로 그려집니다.
 
 떼고 가는 것 (게임에서 쓰지 않거나 방해되는 것)
-- VRChat·애드온 스크립트, 콜라이더·리지드바디, 조명, 소리, 카메라, 파티클, EditorOnly 오브젝트.
+- VRChat·애드온 스크립트, 콜라이더·리지드바디·조인트, 조명, 소리, 카메라, 파티클, EditorOnly 오브젝트.
+- 남는 것은 뼈, 휴머노이드 Animator, 메시와 렌더러, LOD 그룹, Unity 컨스트레인트뿐입니다(WornParts.cs의 목록).
+  캐릭터와 옷은 그려지기만 하고 게임 세상의 물체가 되지 않습니다. 게임도 입힐 때 같은 목록으로 한 번 더 뗍니다.
 
 같이 하는 친구도 같은 모드 폴더를 넣어야 내 캐릭터와 옷이 보입니다. 없는 친구 화면에는 기본 캐릭터, 원래 옷으로 보입니다.
 

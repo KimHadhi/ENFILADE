@@ -116,7 +116,20 @@ Mods/
 | 아바타 디스크립터의 깜박임·입 모양(비짐) | 그 셰이프키 이름으로 FaceKeys 줄이 생긴다. 나머지 표정(웃음·화남 …)은 게임이 흔한 VRChat·MMD 이름으로 찾는다(FaceKeys.csv의 `*` 줄) |
 | Modular Avatar로 입힌 옷, 그 밖의 NDMF 도구 | 업로드할 때처럼 적용한 모습으로 내보낸다(프로젝트에 있을 때. 끌 수 있다) |
 | 재질 | 아래 "쉐이더" |
-| VRChat·애드온 스크립트, 콜라이더·리지드바디, 조명, 소리, 카메라, 파티클, EditorOnly 오브젝트 | 뗀다(게임에서 돌지 않거나 게임의 물리·화면을 건드린다) |
+| VRChat·애드온 스크립트, 콜라이더·리지드바디·조인트, 조명, 소리, 카메라, 파티클, EditorOnly 오브젝트 | 뗀다(게임에서 돌지 않거나 게임의 물리·화면을 건드린다). 아래 "입는 것이 지닐 수 있는 것" |
+
+### 입는 것이 지닐 수 있는 것 (2026-11-18)
+
+캐릭터 모델과 그 위에 입는 옷·장신구는 **그려지고 뼈를 따라 움직일 뿐, 게임 세상의 물체가 아니다.** 그래서 모델 파일이 지닐 수 있는 것은 한 목록뿐이다([WornParts](../Assets/_Project/Scripts/Core/Mods/WornParts.cs) `Kept`).
+
+| 남는 것 | 떼는 것 |
+| --- | --- |
+| 뼈(Transform), 휴머노이드 Animator, 메시와 렌더러(SkinnedMeshRenderer·MeshRenderer·MeshFilter), LOD 그룹, Unity 컨스트레인트 | 그 밖의 전부: 콜라이더·리지드바디·조인트·캐릭터 컨트롤러(게임의 물리에 끼어든다), 스크립트(게임에 없다), 조명·소리·카메라·파티클·트레일(게임의 화면과 소리에 끼어든다) |
+
+- 내보내기 도구가 이 목록으로 떼고, **게임도 입힐 때 같은 목록으로 한 번 더 뗀다**(`OutfitDresser`). 그래서 SDK로 만들지 않은 번들이나 손으로 고친 프리팹에 콜라이더가 남아 있어도 게임 안에서는 없다. 목록은 파일 하나(`WornParts.cs`)이고 SDK 폴더에 같이 들어간다.
+- 까닭: 게임의 용접 마스크가 소품 팩의 콜라이더를 단 채 얼굴에 씌워져, 앉으면 제 마스크를 천장으로 알고 엎드려 일어나지 못했다(사용자 11-18). 입은 것이 세상의 일부가 되면 이동·카메라·파쿠르가 모두 속는다.
+- 흔들림은 PhysBone 설정으로(위 표), 몸에 닿는 것은 게임이 메시를 재서 만든 천 콜라이더로 한다. 모드가 콜라이더를 가져올 일은 없다.
+- 목록을 넓히려면(예: 조명이 달린 장신구) `WornParts.Kept` 한 곳을 고친다. 내보내기와 게임이 같이 바뀐다.
 
 ### 쉐이더
 
@@ -202,8 +215,9 @@ Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는
 | Mods 폴더 읽기, 콘솔 `/mods` | [GameMods](../Assets/_Project/Scripts/Core/Mods/GameMods.cs) |
 | 표를 이름으로 찾고 모드를 덧씌우기 | [GameTables](../Assets/_Project/Scripts/Core/Tables/GameTables.cs), [CsvTable](../Assets/_Project/Scripts/Core/Tables/CsvTable.cs) (`Overlay`) |
 | 줄에서 칸 읽기 | [TableCells](../Assets/_Project/Scripts/Core/Tables/TableCells.cs) |
-| 빌드 옆에 Mods 폴더 복사, SDK 폴더 넣기 | [ModsFolderOnBuild](../Assets/_Project/Editor/Build/ModsFolderOnBuild.cs), [ModSdkPackage](../Assets/_Project/Editor/Mods/ModSdkPackage.cs) |
+| 빌드 옆에 Mods 폴더 복사, SDK 폴더 넣기(`Editor/ModSdk`의 스크립트와, 게임과 같이 쓰는 두 파일 ModAvatarFile.cs·WornParts.cs) | [ModsFolderOnBuild](../Assets/_Project/Editor/Build/ModsFolderOnBuild.cs), [ModSdkPackage](../Assets/_Project/Editor/Mods/ModSdkPackage.cs) |
 | 모드 캐릭터 찾기·불러오기, 흔들림·표정·입고 온 옷 줄 만들기 | [ModAvatars](../Assets/_Project/Scripts/Core/Mods/ModAvatars.cs), 파일 형식 [ModAvatarFile](../Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs) |
+| 캐릭터와 옷의 모델이 지닐 수 있는 부품(게임이 입힐 때와 SDK가 내보낼 때 같이 쓰는 한 목록), 플레이 없이 검사 | [WornParts](../Assets/_Project/Scripts/Core/Mods/WornParts.cs), [WardrobeBench](../Assets/_Project/Scripts/Player/Outfits/WardrobeBench.cs) (`Logs/WardrobeBench`) |
 | 옷 모드 찾기·불러오기, 옷 줄과 흔들림 줄 만들기 | [ModOutfits](../Assets/_Project/Scripts/Core/Mods/ModOutfits.cs); 옷장이 모델을 찾는 곳 [OutfitCatalog](../Assets/_Project/Scripts/Player/Outfits/OutfitCatalog.cs) `Model`, 입히는 곳 [OutfitDresser](../Assets/_Project/Scripts/Player/Outfits/OutfitDresser.Placing.cs) `Place` |
 | 옷과 캐릭터의 흔들림 줄에 필요한 몸 정보(편집기 가져오기와 같이 씀) | [VrcWearer](../Assets/_Project/Scripts/Player/Body/Cloth/VrcWearer.cs) |
 | 모드 캐릭터의 재질(쉐이더 고르기·바꿔 그리기) | [ModMaterials](../Assets/_Project/Scripts/Core/Mods/ModMaterials.cs), [ModShaderLibrary](../Assets/_Project/Scripts/Core/Mods/ModShaderLibrary.cs) ([빌더](../Assets/_Project/Editor/Mods/ModShaderLibraryBuilder.cs)), 표 ShaderMap.csv |
