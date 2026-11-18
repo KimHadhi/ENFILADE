@@ -17,10 +17,9 @@ public sealed partial class ZombieMind
     // facing the way past is turned off it, which is what the stone is for (user, 2026-11-11: "좀비가 내 쪽을 바라보고
     // 있으면 접근 조차 불가능 ... 돌로 시선을 그쪽으로 자연스럽게 옮기고 싶은데"). Advanced Stealth: "The nearest guard
     // goes to check the object; others turn to look".
-    // One of a crowd lying face down (Lie) turns its head and shoulders to it where it lies (Glance in its pose) and is
-    // never the one that goes: it stays down, as the user asked of them (2026-11-15: "그냥 엎드린 걸로 하고 돌 던지면 그
-    // 쪽으로 시선 돌리게 해 줘"). Such crowds used to sleep and hear no stone at all (11-14, in chapter 1's flats: "누워
-    // 있는 좀비들은 돌 던져도 어그로가 안 끌림. 시발 어쩌라고 뭐").
+    // One busy in a calm pose (crouched, eating) that only turns to look does it where it is, head and shoulders (Glance
+    // in its pose); the one that goes gets up first. The crowds laid face down that never went (asleep and deaf to
+    // stones until 2026-11-15, lying after) are gone from the game (2026-11-18).
     private static void HearLure(in NoiseEvent noise)
     {
         if (noise.Gather) { HearGather(noise); return; }
@@ -34,7 +33,7 @@ public sealed partial class ZombieMind
             if (!mind.Reaches(noise, out float distance, out _)) continue;
             mind.distractedUntil = Time.time + mind.lureGlance;
             mind.Glance(noise.Point, null, mind.lureGlance);
-            if (!mind.Lying && distance < best) { best = distance; nearest = mind; }
+            if (distance < best) { best = distance; nearest = mind; }
         }
         if (nearest != null) nearest.Investigate(noise.Point, null);
     }
@@ -42,8 +41,7 @@ public sealed partial class ZombieMind
     // A lure that goes on (a TV, a radio, an announcement: GimmickLure, which makes it again every second or so): every one
     // not awake that hears it stares a moment and walks over, each to its own place round it so they bunch there rather
     // than stand on one spot, and looks round there a good while (lureLook) before it settles. One already on its way to
-    // it isn't sent again. One of a crowd lying face down (Lie) only turns its head to it where it lies, as long as it goes
-    // on. PAYDAY 3's speakers, Guts & Blackpowder's music box.
+    // it isn't sent again. PAYDAY 3's speakers, Guts & Blackpowder's music box.
     private static void HearGather(in NoiseEvent noise)
     {
         foreach (var mind in minds)
@@ -52,12 +50,6 @@ public sealed partial class ZombieMind
             if (mind.melee != null && mind.melee.IsStunned) continue;
             if (mind.lured && (mind.lureAt - noise.GatherPoint).sqrMagnitude < GatherRound * GatherRound * 4f) continue;
             if (!mind.Reaches(noise, out _, out _)) continue;
-            if (mind.Lying)
-            {
-                mind.distractedUntil = Time.time + mind.lureGlance;
-                mind.Glance(noise.Point, null, mind.lureGlance);
-                continue;
-            }
             // Where the sound calls them: where it is heard from, or the place it pages (NoiseEvent.GatherPoint).
             Vector2 round = Random.insideUnitCircle * GatherRound;
             mind.distractedUntil = Time.time + mind.lureGlance;
@@ -108,7 +100,7 @@ public sealed partial class ZombieMind
     // straight through what stands between, or round by the open way, whichever leaves it louder (NoiseWay).
     private bool Reaches(in NoiseEvent noise, out float distance, out float reach)
     {
-        // Eating or dozing it hears less, a stone or a knock too (BusyHear): dozing it may miss one.
+        // Eating it hears less, a stone or a knock too (BusyHear).
         float open = noise.Radius * (noise.Lure ? lureHearShare : Mood == ZombieMood.Calm ? calmHearShare : hearShare) * BusyHear;
         return NoiseWay.Carries(noise, Eye(), transform.position, agent, open, HearingCuts, Hearing, ref heardWay, out distance, out reach);
     }

@@ -23,8 +23,8 @@ public enum ZombieMood : byte { Awake, Calm, Searching, Alert, Rousing, Rising }
 /// at once. Hearing: every Noise (footsteps, landings, vaults, voices, shots) within its reach, louder the nearer, by the
 /// way that carries it best (NoiseWay): straight, cut by each wall and far more by each floor between, or round by the
 /// open way (stairs, open doors, holes); none of a crouched player's small sounds, and a faint one only turns its head.
-/// A stone a player threw (a lure) draws the nearest that hears it over to look and turns the others' heads (one lying or
-/// sitting in its pose turns its head where it is, and one of a crowd laid lying never goes), without ever telling them
+/// A stone a player threw (a lure) draws the nearest that hears it over to look and turns the others' heads (one busy in
+/// its calm pose turns its head where it is), without ever telling them
 /// who threw it. A blow wakes it at once. Awake but no longer seeing nor hearing its quarry, it searches where it last
 /// knew them, and gives up in the end. The host thinks; other PCs show its mood, how sure it is and of
 /// whom (EnemyNetwork), for the stealth HUD. Numbers: Tables/ZombieSenses. The 2026-11-11 stealth round took its
@@ -167,14 +167,6 @@ public sealed partial class ZombieMind : MonoBehaviour
     private float eatHearShare = .7f;
     [SerializeField, Range(0f, 1f), Tooltip("Eating: how fast it notices what it does see, as a share.")]
     private float eatNoticeShare = .7f;
-    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how far it sees, as a share of its calm sight.")]
-    private float dozeRangeShare = .35f;
-    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how wide it sees, as a share.")]
-    private float dozeViewShare = .4f;
-    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how far it hears, as a share.")]
-    private float dozeHearShare = .45f;
-    [SerializeField, Range(0f, 1f), Tooltip("Dozing: how fast it notices what it does see, as a share.")]
-    private float dozeNoticeShare = .5f;
 
     private static readonly List<ZombieMind> minds = new List<ZombieMind>();
     // Each player's gun, for its flashlight. Found once.

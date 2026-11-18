@@ -47,10 +47,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
     // Its EnemyRank (a tower champion, a song's brute): a copy must know an elite for what it is, because what a class
     // does to one (a Ghost's stagger, a Schießhund's bounty, the kill's marks) is judged on each player's own PC.
     private readonly NetworkVariable<byte> rank = new NetworkVariable<byte>();
-    // The calm pose the host gave it (ZombieBody.ForcedPose) plus one, 0 for its own seeded pick, and LyingBit when it was
-    // laid lying (ZombieMind.Lie): a map's lying crowd lies the same on every PC and may be taken from any side there.
+    // The calm pose the host gave it (ZombieBody.ForcedPose) plus one, 0 for its own seeded pick, Standing for one that
+    // takes none (a walker on its round, a cage's crowd): it holds the same pose, or none, on every PC.
     private readonly NetworkVariable<byte> pose = new NetworkVariable<byte>();
-    private const byte LyingBit = 0x80, Standing = 0x7F;
+    private const byte Standing = byte.MaxValue;
     private ZombieType type;
     private ZombieGrip grip;
     private EnemyHealth enemy;
@@ -154,8 +154,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
             if (type != null) kind.Value = (byte)type.Kind;
             if (type != null) toughness.Value = type.Toughness;
             rank.Value = (byte)enemy.Rank;
-            if (body != null && body.ForcedPose >= 0 && body.ForcedPose < Standing - 1)
-                pose.Value = (byte)((body.ForcedPose + 1) | (mind != null && mind.LaidLying ? LyingBit : 0));
+            if (body != null && body.ForcedPose >= 0 && body.ForcedPose < Standing - 1) pose.Value = (byte)(body.ForcedPose + 1);
             else if (body != null && body.ForcedPose == ZombieBody.NoPose) pose.Value = Standing;
             motion = GetComponent<NetworkTransform>();
             if (motion != null)
@@ -171,10 +170,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
         enemy.ShowRank((EnemyRank)rank.Value);
         rank.OnValueChanged += OnRankChanged;
         // Before its body dresses (ZombieBody.Start), so it takes the host's pose from its first frame.
-        int given = pose.Value & ~LyingBit;
+        int given = pose.Value;
         if (given == Standing && body != null) body.ForcedPose = ZombieBody.NoPose;
         else if (given > 0 && body != null) body.ForcedPose = given - 1;
-        if ((pose.Value & LyingBit) != 0 && mind != null) mind.ShowLying();
         kind.OnValueChanged += OnKindChanged;
         toughness.OnValueChanged += OnToughnessChanged;
         if (TryGetComponent(out EnemyChaseAI chase)) chase.enabled = false;

@@ -217,7 +217,7 @@ public sealed partial class TowerRun
         int floor = TowerLayout.FloorOf(level);
         ForgetRoom(k);
         quietPass = (byte)(quietPass & ~(1 << k));
-        // The stealth lane's and a sleeping floor's rooms: the swarm laid out calm at once (TowerRun.Rules).
+        // The stealth lane's rooms: the swarm laid out calm at once (TowerRun.Rules).
         if (BeginQuietRoom(k, level, floor, lane))
         {
             lane.Changed = Time.time;

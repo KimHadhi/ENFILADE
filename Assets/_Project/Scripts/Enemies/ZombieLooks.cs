@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// What a calm zombie lying low is busy with (ZombieLooks.CalmPose): Rest (sitting or crouched, its senses as they are),
-/// Eat (tearing at a body on the ground: it sees less far and narrower, and hears less) or Doze (nodding off: less still).
-/// The 2026-11-11 stealth memo, item 47: "바닥에 엎드려 시체를 뜯어먹거나 졸고 있어서 시야가 좁은 좀비".
+/// What a calm zombie lying low is busy with (ZombieLooks.CalmPose): Rest (crouched, its senses as they are) or Eat
+/// (tearing at a body on the ground: it sees less far and narrower, and hears less). The 2026-11-11 stealth memo, item
+/// 47: "바닥에 엎드려 시체를 뜯어먹거나 졸고 있어서 시야가 좁은 좀비". A third, Doze (nodding off, its senses duller
+/// still), went on 2026-11-18 with its two poses and every crowd laid asleep or face down: the user kept meeting them as
+/// sleepers that should have been removed ("[버그] 비활성(자는) 좀비 잔존 문제: 제거 지시된 자는 좀비 오브젝트 완전 삭제").
+/// A zombie that is there is awake to the world.
 /// </summary>
-public enum CalmPoseKind : byte { Rest, Eat, Doze }
+public enum CalmPoseKind : byte { Rest, Eat }
 
 /// <summary>
 /// What a zombie can look like and the clips it moves with (multiplayer plan stage 4A): the bought Synty City Zombies
@@ -129,12 +132,12 @@ public sealed class ZombieLooks : ScriptableObject
     [Serializable]
     public struct CalmPose
     {
-        [Tooltip("Held while calm, round and round: sitting, eating, crouched. In place.")]
+        [Tooltip("Held while calm, round and round: eating, crouched. In place.")]
         public AnimationClip loop;
-        [Tooltip("Getting up from it, once, ending on its feet. Empty: the zombie's notice clip.")]
+        [Tooltip("Getting up from it, once, ending on its feet. Empty: it eases into standing (Tables/ZombieClips quickStand).")]
         public AnimationClip getUp;
-        [Tooltip("What it is busy with, which dulls its senses (Tables/ZombieSenses eat* and doze*): Rest sees as a standing " +
-                 "zombie does; Eat tears at a body on the ground in front of it (laid there, ZombieMeal); Doze nods off.")]
+        [Tooltip("What it is busy with, which dulls its senses (Tables/ZombieSenses eat*): Rest sees as a standing " +
+                 "zombie does; Eat tears at a body on the ground in front of it (laid there, ZombieMeal).")]
         public CalmPoseKind kind;
         [Tooltip("Eat: how far in front of its feet the body it eats lies, to that body's chest (m).")]
         public float mealAhead;

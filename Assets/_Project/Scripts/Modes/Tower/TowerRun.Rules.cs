@@ -10,10 +10,11 @@ using UnityEngine.AI;
 //   behind), paid the quiet bonus; seen (any of them woken: ZombieMind.Woke), its door stays shut and the swarm comes again
 //   out of the pens, all of the room awake.
 // - Blackout (TowerRule.Blackout): every PC turns that floor's room lights off until its lane is through it.
-// - Lying floor (TowerRule.Sleeping, once a sleeping floor): its rooms' swarms lie face down where they are
-//   (ZombieMind.Lie); cleared without one waking, the quiet bonus.
 // - Alarm wire (TowerRule.Wire): red wires across that floor's rooms at ankle height; walked through (not jumped) it
 //   doubles the swarm of that lane's next room. The host watches every player's feet.
+// A third rule laid a floor's swarms face down (once asleep) and the stealth lane laid a few of its own so; both went
+// with every sleeping and lying crowd of the game (user, 2026-11-18: "제거 지시된 자는 좀비 오브젝트 완전 삭제", and asked
+// how far, "엎드린 무리까지"). A room laid out calm is the stealth lane's now, and its zombies stand about.
 public sealed partial class TowerRun
 {
     // A wire is crossed with the feet this low over its floor or lower (m): a jump clears it.
@@ -40,15 +41,13 @@ public sealed partial class TowerRun
 
     // ---- The host ----
 
-    // A room whose swarm is laid out calm now (the stealth lane, a lying floor): every one placed at once over the room,
-    // lying face down or standing about.
+    // A room whose swarm is laid out calm now (the stealth lane's): every one placed at once over the room, standing
+    // about calm as a map's calm ones do (some of them busy in a calm pose of their own: ZombieBody).
     private bool BeginQuietRoom(int k, int level, int floor, Lane lane)
     {
         if (plan == null || !plan.Quiet(floor, k) || enemyPrefab == null) return false;
         lane.Quiet = true;
         lane.Unseen = true;
-        lane.Stealth = k == plan.StealthLane;
-        bool lying = plan.RuleOf(floor) == TowerRule.Sleeping;
         // A swarm whatever the floor's turn, twice over after a wire (TowerPlan.RoomOf, the one place that says).
         var kinds = plan.RoomOf(floor, k, lane.Players, crowdPerPlayer, championPerPlayer, lane.DoubleNext, true);
         lane.DoubleNext = false;
@@ -64,14 +63,11 @@ public sealed partial class TowerRun
             if (!NavMesh.SamplePosition(new Vector3(x, TowerLayout.FloorY(level) + .3f, z), out NavMeshHit ground, 2f, NavMesh.AllAreas)) continue;
             var enemy = Make(kinds[i], ground.position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), k);
             if (enemy == null) continue;
-            // Lying face down on the lying floor; in the stealth lane most stand about, a few lying.
-            bool lies = lying || Random.value < .3f;
             if (enemy.TryGetComponent(out ZombieMind mind))
             {
-                if (lies) mind.Lie();
-                else { mind.Calm(); mind.FaceWhenCalm(Random.Range(0f, 360f)); }
+                mind.Calm();
+                mind.FaceWhenCalm(Random.Range(0f, 360f));
             }
-            if (lies && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = ZombieBody.LiePose;
             EnemyNetwork.SpawnInRoom(enemy);
             lane.Alive.Add(enemy);
         }
@@ -98,8 +94,8 @@ public sealed partial class TowerRun
         return enemy;
     }
 
-    // One of a quiet room's woke: the host's word that the room was seen. In the stealth lane its door stays shut, the
-    // whole room wakes and the swarm comes again out of the pens.
+    // One of a quiet room's woke: the host's word that the room was seen. Its door stays shut, the whole room wakes and
+    // the swarm comes again out of the pens.
     private void OnWoke(ZombieMind mind, PlayerMovement who)
     {
         if (!IsHost || mind == null || !mind.TryGetComponent(out EnemyHealth health)) return;
@@ -109,7 +105,6 @@ public sealed partial class TowerRun
             if (!lane.Quiet || !lane.Unseen || !lane.Alive.Contains(health)) continue;
             lane.Unseen = false;
             seen = (byte)(seen | 1 << k);
-            if (!lane.Stealth) return;
             int level = TowerLayout.FirstLevel(segment) + floors[k];
             float y = TowerLayout.FloorY(level);
             var room = new Bounds(new Vector3(TowerLayout.RoomLength * .5f, y + 2f, TowerLayout.LaneMid(k)),
@@ -128,7 +123,7 @@ public sealed partial class TowerRun
         var lane = lanes[k];
         int floor = TowerLayout.FloorOf(level);
         if (plan != null && plan.RuleOf(floor) == TowerRule.Wire && (wired & 1 << k) == 0) WatchWires(k, level, lane);
-        if (states[k] != LaneState.Fighting || !lane.Quiet || !lane.Unseen || !lane.Stealth) return false;
+        if (states[k] != LaneState.Fighting || !lane.Quiet || !lane.Unseen) return false;
         float far = TowerLayout.FarX(level), y = TowerLayout.FloorY(level);
         foreach (var someone in players)
         {
@@ -142,7 +137,7 @@ public sealed partial class TowerRun
         return false;
     }
 
-    // A quiet room emptied with nobody seen (a sleeping floor's, every one taken down quietly): paid as quiet too.
+    // A quiet room emptied with nobody seen (every one of them taken down quietly, not crept past): paid as quiet too.
     private void ClearedQuietly(int k)
     {
         var lane = lanes[k];
@@ -193,7 +188,7 @@ public sealed partial class TowerRun
             int level = TowerLayout.FirstLevel(segment) + floors[k];
             if ((seen & bit) != 0 && (shownSeen & bit) == 0 && started)
             {
-                if (k == myLane) AlertHUD.Danger(Texts.Get(plan.StealthLane == k ? "tower.alert.seen" : "tower.alert.woke"));
+                if (k == myLane) AlertHUD.Danger(Texts.Get("tower.alert.seen"));
                 else AlertHUD.Team(Texts.Format("tower.alert.seenlane", TowerHUD.Letter(k)), null, KitStyle.Accent);
             }
             if ((wired & bit) != 0 && (shownWired & bit) == 0 && started)
@@ -220,7 +215,7 @@ public sealed partial class TowerRun
         if (myLane == plan.StealthLane && plan.Quiet(floor, myLane)) AlertHUD.Self(Texts.Get("tower.alert.stealth"));
     }
 
-    private static string RuleKey(TowerRule rule) => rule == TowerRule.Blackout ? "blackout" : rule == TowerRule.Sleeping ? "sleeping" : "wire";
+    private static string RuleKey(TowerRule rule) => rule == TowerRule.Blackout ? "blackout" : "wire";
 
     // Lane k got through a room of the stretch unseen: its own players get the quiet bonus (with the floor's pay).
     private void PayQuiet(int k)

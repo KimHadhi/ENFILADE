@@ -71,9 +71,9 @@ public sealed partial class TowerRun : MonoBehaviour
         public readonly Queue<TowerSpawn> Due = new Queue<TowerSpawn>();
         public int Players = 1, Spot;
         public float NextSpawn, Changed;
-        // A room laid out calm (TowerRun.Rules): the stealth lane's or a sleeping floor's; nobody seen in it yet; the swarm
-        // that comes out of the pens again once it is seen; the next room's swarm doubled by a wire walked through.
-        public bool Quiet, Unseen, Stealth, DoubleNext;
+        // A room laid out calm (TowerRun.Rules: the stealth lane's); nobody seen in it yet; the swarm that comes out of
+        // the pens again once it is seen; the next room's swarm doubled by a wire walked through.
+        public bool Quiet, Unseen, DoubleNext;
         public readonly List<TowerSpawn> Again = new List<TowerSpawn>();
 
         public void Reset()
@@ -82,7 +82,7 @@ public sealed partial class TowerRun : MonoBehaviour
             Alive.Clear();
             Due.Clear();
             Spot = 0;
-            Quiet = Unseen = Stealth = false;
+            Quiet = Unseen = false;
             Again.Clear();
         }
     }
@@ -121,7 +121,7 @@ public sealed partial class TowerRun : MonoBehaviour
     private int firstTodayBonus = 1500;
     [SerializeField, Tooltip("The last floor's song (Tables/Music); empty for none.")]
     private string finaleSong = "TowerFinale";
-    [SerializeField, Min(0), Tooltip("Money for each player of a lane that got through a room unseen (the stealth lane, a sleeping floor).")]
+    [SerializeField, Min(0), Tooltip("Money for each player of a lane that got through a room unseen (the stealth lane).")]
     private int quietBonus = 300;
 
     private static TowerRun active;

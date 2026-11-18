@@ -7,10 +7,10 @@ using UnityEngine.AI;
 /// <summary>
 /// /poses (PlayerConsoleCommands), for the frozen-pose bug (user, 2026-11-12: "calm한 좀비한테 들켰을 때 좀비가 여전히
 /// 원래 포즈 그대로 와. 누워서 오거나 앉은 채로 부동 자세로 나한테 와"): one calm zombie in each calm pose
-/// (ZombieLooks.calmPoses: sitting, eating, crouched, lying), in an arc before the player, woken one way once their poses
-/// have settled. Each must get up where it is and only then come (ZombieBody.Moods, ZombieMind.GettingUp).
-/// - Sight: they face the player, near enough for a dozer's dull eyes; the player stands in view and they notice.
-/// - Noise: two loud sounds at the player's feet, NoiseGap apart (the first may only alert a dozer; the second wakes it).
+/// (ZombieLooks.calmPoses: eating kneeling or face down, crouched), in an arc before the player, woken one way once their
+/// poses have settled. Each must get up where it is and only then come (ZombieBody.Moods, ZombieMind.GettingUp).
+/// - Sight: they face the player, near enough for an eater's dull eyes; the player stands in view and they notice.
+/// - Noise: two loud sounds at the player's feet, NoiseGap apart (the first may only alert an eater; the second wakes it).
 /// - Shot: a 1-damage bullet from the player. The first one shot calls the rest awake (the call path), so "shot N" shoots
 ///   only that one to see the shot path on its pose.
 /// - Stone: a stone lands beyond them; they turn to it and the nearest walks over to search (the search walk).
@@ -23,7 +23,7 @@ public sealed class ConsolePoseTest : MonoBehaviour
 
     // How long after spawning the wake comes: each takes its pose on its first calm frame and an eater's meal is laid (s).
     private const float Settle = 2.5f;
-    // The arc round the player: its radius facing them (a dozer sees 4.2 m: Tables/ZombieSenses dozeRangeShare), its
+    // The arc round the player: its radius facing them (an eater sees 6 m: Tables/ZombieSenses eatRangeShare), its
     // radius with their backs turned, the angle between two (degrees), and how much further out a taken spot tries (m).
     private const float NearRadius = 3.4f, FarRadius = 5.5f, Step = 30f, Further = 1.5f;
     // The noises: how far they carry (m) and how far apart they come (s); the stone's, and how far beyond the arc it lands.
@@ -150,7 +150,7 @@ public sealed class ConsolePoseTest : MonoBehaviour
         return false;
     }
 
-    private static string KindName(CalmPoseKind kind) => kind == CalmPoseKind.Eat ? "먹기" : kind == CalmPoseKind.Doze ? "졸기" : "쉬기"; // dev-text
+    private static string KindName(CalmPoseKind kind) => kind == CalmPoseKind.Eat ? "먹기" : "쉬기"; // dev-text
 
     private IEnumerator Waking()
     {

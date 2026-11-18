@@ -109,7 +109,7 @@ public sealed partial class ZombieBody
             if (namedPosture != null) return namedPosture;
             // A modder's pose by what it is busy with, and how low its head is.
             if (headBone != null && headBone.position.y - transform.position.y - feetHeight < .55f * grown) return ExecutionRules.Prone;
-            return poseKind == CalmPoseKind.Eat ? ExecutionRules.Feed : poseKind == CalmPoseKind.Doze ? ExecutionRules.Sit : ExecutionRules.Crouch;
+            return poseKind == CalmPoseKind.Eat ? ExecutionRules.Feed : ExecutionRules.Crouch;
         }
         return ExecutionRules.Stand;
     }

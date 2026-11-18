@@ -9,9 +9,11 @@ using UnityEngine.Playables;
 /// Clips: ZombieLooks calmIdle, alertIdle, searchWalk, notice, rouse, each with its list of alternatives (one picked per
 /// zombie, ZombieLooks.Pick). Some zombies placed calm lie low instead of standing (ZombieLooks.calmPoses: sitting,
 /// eating, crouched; Tables/ZombieClips poseShare) and play the pose's getting up as they leave calm. They hold the pose
-/// only from their first calm: a zombie calmed again after a search stands, as no clip sits it back down. A pose is busy
-/// with something (CalmPose kind, the 2026-11-11 memo's item 47): an eater kneels or lies over a body laid in front of it
-/// (ZombieMeal) and a dozer nods off, and while they hold it ZombieMind sees and hears less (PoseKind).
+/// only from their first calm: a zombie calmed again after a search stands, as no clip sits it back down. A pose may be
+/// busy with something (CalmPose kind, the 2026-11-11 memo's item 47): an eater kneels or lies over a body laid in front
+/// of it (ZombieMeal), and while it holds the pose ZombieMind sees and hears less (PoseKind). None of them sleeps: the
+/// poses that nodded off (sitting, and face down on the floor) left with the crowds laid face down on the maps (user,
+/// 2026-11-18: "제거 지시된 자는 좀비 오브젝트 완전 삭제").
 /// A hard rule over all of it (user, 2026-11-12, twice: "calm한 좀비한테 들켰을 때 좀비가 여전히 원래 포즈 그대로 와. 누워서
 /// 오거나 앉은 채로 부동 자세로 나한테 와"): the pose's share of the body is worked out here every frame from the weights
 /// themselves, not from which mood woke it, and while any of it shows the zombie goes nowhere (ZombieMind.GettingUp, which
@@ -42,8 +44,6 @@ public sealed partial class ZombieBody
     private float yieldSpeed = .75f;
     [SerializeField, Min(.05f), Tooltip("Giving way, what is left of its getting up is played within this (s).")]
     private float yieldTime = .25f;
-    [SerializeField, Min(-1), Tooltip("The calm pose a zombie laid lying takes (ZombieLooks calmPoses index; -1 none): a map's crowd lying face down.")]
-    private int liePose = 4;
 
     private enum CueKind : byte { Notice, Rouse, GetUp }
     // A calm pose: None (this zombie has none), Pending (dressed, waiting for its first calm), Held, Done (got up).
@@ -58,34 +58,20 @@ public sealed partial class ZombieBody
     private bool cueing, mealLaid;
     private CueKind cueKind;
     private PoseState pose;
-    // What its pose is busy with (eating, dozing) and how far ahead the body it eats lies (ZombieLooks.CalmPose).
+    // What its pose is busy with (eating) and how far ahead the body it eats lies (ZombieLooks.CalmPose).
     private CalmPoseKind poseKind;
     private float mealAhead;
     private ZombieMood shownMood = ZombieMood.Awake;
 
     /// <summary>
-    /// Set right after it is made, before it dresses (ConsolePoseTest, /poses; a map's sleeping crowd, CampaignHorde): it
-    /// takes ZombieLooks.calmPoses[index] rather than its seeded pick (-1). The host's goes to the other PCs with the
-    /// zombie (EnemyNetwork), so everyone sees it lie the same.
+    /// Set right after it is made, before it dresses (ConsolePoseTest, /poses): it takes ZombieLooks.calmPoses[index]
+    /// rather than its seeded pick (-1). The host's goes to the other PCs with the zombie (EnemyNetwork), so everyone sees
+    /// it hold the same.
     /// </summary>
     internal int ForcedPose { get; set; } = -1;
 
-    /// <summary>ForcedPose for one that never lies low: it stands calm (a walker on its round, ZombieMind.Patrol).</summary>
+    /// <summary>ForcedPose for one that never lies low: it stands calm (a walker on its round, ZombieMind.Patrol; a cage's crowd).</summary>
     internal const int NoPose = -2;
-
-    /// <summary>
-    /// The calm pose a map's crowd lying about takes (Tables/ZombieClips liePose, an index into ZombieLooks.calmPoses: the
-    /// pack's face-down twitch); -1 when the table names none or the list hasn't that many, and they then stand calm.
-    /// </summary>
-    public static int LiePose
-    {
-        get
-        {
-            int index = Mathf.RoundToInt(GameTables.Number(ClipsTable, ClipsRow, "liePose", -1f));
-            var looks = ZombieLooks.Instance;
-            return looks != null && index >= 0 && index < looks.calmPoses.Length && looks.calmPoses[index].loop != null ? index : -1;
-        }
-    }
 
     /// <summary>The walking pace and step length now: the awake walk's, or the search walk's while searching.</summary>
     private float StepSpeed => Mathf.Lerp(walkSpeed, searchWalkSpeed, searchShare);
@@ -136,12 +122,6 @@ public sealed partial class ZombieBody
         if (ForcedPose >= 0 && poses != null && ForcedPose < poses.Length && poses[ForcedPose].loop != null)
         {
             chosen = poses[ForcedPose];
-            return true;
-        }
-        // Laid lying with no pose given (the host's own, before its word on the pose could matter): the lying one.
-        if (mind != null && mind.LaidLying && poses != null && liePose >= 0 && liePose < poses.Length && poses[liePose].loop != null)
-        {
-            chosen = poses[liePose];
             return true;
         }
         return ZombieLooks.PickPose(poses, clipSeed, PoseSlot, poseShare, out chosen);
@@ -261,7 +241,7 @@ public sealed partial class ZombieBody
         if (mind != null)
         {
             mind.HoldsPose = pose == PoseState.Held;
-            // Busy eating or nodding off, it sees and hears less (ZombieMind), on every PC alike for the stealth view.
+            // Busy eating, it sees and hears less (ZombieMind), on every PC alike for the stealth view.
             mind.PoseKind = pose == PoseState.Held ? poseKind : CalmPoseKind.Rest;
         }
         return leaves;

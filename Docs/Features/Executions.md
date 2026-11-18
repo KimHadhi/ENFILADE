@@ -10,7 +10,7 @@
 |---|---|---|---|
 | `back` | 서 있는 좀비, 플레이어가 등 뒤 80° 안(규칙 `back`: 모르는 놈 암살·무너진 놈 처형) | 왼손으로 입을 막아 머리를 젖히고 목 옆을 찌름 | 1.23초 · 0.50초 |
 | `front` | 서 있는 좀비의 앞·옆: 무너진 좀비 처형(규칙 `front-broken`), 방심한 좀비는 코앞 1.2m에서 암살(규칙 `front`) | 멱살을 잡아 끌고 관자놀이를 내리찍은 뒤 밀어냄 | 1.77초 · 0.67초 |
-| `sit` | 앉아 조는 자세(ZombieLooks calmPoses의 sit) | 뒤에서 무릎 꿇고 뒤통수를 누른 채 목덜미를 찌름 | 1.37초 · 0.50초 |
+| `sit` | 앉은 자세. 게임의 자세 목록에는 2026-11-18부터 없다(앉아 조는 자세를 지웠다: 사용자 "제거 지시된 자는 좀비 오브젝트 완전 삭제"). 모드가 이름에 sit이 든 자세 클립을 넣으면 쓰인다 | 뒤에서 무릎 꿇고 뒤통수를 누른 채 목덜미를 찌름 | 1.37초 · 0.50초 |
 | `feed` | 무릎 꿇고 먹는 자세 | 머리채를 잡아 일으키고 목 옆을 찌름 | 1.43초 · 0.53초 |
 | `crouch` | 웅크린 자세 | 머리채를 잡아 젖히고 목 옆을 찌름 | 1.37초 · 0.50초 |
 | `prone` | 엎드린 자세(엎드려 먹기·꿈틀대기), 다리를 잃고 기는 좀비, 엎어져 넘어진 좀비 | 옆에 무릎 꿇고 뒤통수를 누른 채 목덜미를 찌름 | 1.50초 · 0.57초 |
@@ -35,7 +35,7 @@
 
 - **고르기**([ExecutionRules](../../Assets/_Project/Scripts/Melee/Executions/ExecutionRules.cs)`.Pick`, 입력만으로 답이 정해지는 순수 함수): 자세·처지가 맞고, 내가 선 방향이 부채꼴 안이고, 거리가 닿는 줄 가운데 하나. 자세를 콕 집은 줄이 `any` 줄보다 먼저, 그다음은 부채꼴 한가운데에 더 가까운 줄, 그래도 같으면 위에 적힌 줄. 맞는 줄이 없으면 그 자리에서는 할 수 없다(F 안내도 안 뜬다).
 - **묻는 길**: 처형하는 사람의 PC가 묻고 정한다. [PlayerExecution](../../Assets/_Project/Scripts/Melee/Executions/PlayerExecution.cs)`.Offer` → [MeleeCombatTarget](../../Assets/_Project/Scripts/Combat/Damage/MeleeCombatTarget.cs)`.ExecutionRuleFor`(무너졌는가 · 모르는가 · 자세 · 내가 선 방향) → `Pick`. 누를 때 찾은 규칙이 그 처형의 규칙이 되고(`PlayerExecution.Rule`) 짝도 그 규칙의 것이라, 안내된 것과 다른 동작이 나오지 않는다. 방장은 다시 판정하지 않는다.
-- **자세**는 좀비 몸이 말한다([ZombieBody.Executed](../../Assets/_Project/Scripts/Enemies/Body/ZombieBody.Executed.cs)의 `ExecutionPosture`): 넘어져 누운 몸(인형에서 막 일어선 순간 포함)이면 가슴이 바닥을 보는지로 `prone`/`supine`, 기는 좀비면 `prone`, 조용한 자세가 보이면 자세 클립 이름(sit·feed·crouch·FD/crawl)으로, 모더의 새 자세는 하는 일(Eat·Doze·Rest)과 머리 높이로, 나머지는 `stand`. 어느 쪽에서 왔는지는 몸이 아니라 규칙이 본다.
+- **자세**는 좀비 몸이 말한다([ZombieBody.Executed](../../Assets/_Project/Scripts/Enemies/Body/ZombieBody.Executed.cs)의 `ExecutionPosture`): 넘어져 누운 몸(인형에서 막 일어선 순간 포함)이면 가슴이 바닥을 보는지로 `prone`/`supine`, 기는 좀비면 `prone`, 조용한 자세가 보이면 자세 클립 이름(sit·feed·crouch·FD/crawl)으로, 모더의 새 자세는 하는 일(Eat·Rest)과 머리 높이로, 나머지는 `stand`. 어느 쪽에서 왔는지는 몸이 아니라 규칙이 본다.
 - **정면 암살과 「코앞이면 바로 깬다」**: 조용한 좀비는 정면 시야(±45°) 2m 안의 플레이어를 보는 그 순간 깼다(`touchRange`). 그러면 방심한 좀비의 코앞에 서 있는 순간 자체가 없어서 정면 암살을 줄 수가 없다. 물러난 쪽은 이 규칙의 「즉시」다: 이제 그 거리에서 본 순간부터 `touchReact`(0.7초, [ZombieSenses.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieSenses.csv))에 걸쳐 의심이 차서 깬다(이미 의심하던 놈은 더 빨리. 잠입 표시의 마름모가 빠르게 차는 것으로 보인다). 그 사이에 1.2m 안으로 들어가 F를 누르면 정면 암살이다. 좀비가 덜 보는 옆(±45° 밖)으로 붙으면 훨씬 여유롭다. `touchReact` 0이면 예전처럼 보는 순간 깬다.
 - **확인(플레이 없이)**: 편집기가 컴파일할 때와 표를 저장할 때마다 `Logs/execution-rules.txt`를 다시 쓴다([ExecutionRulesReport](../../Assets/_Project/Scripts/Melee/Executions/ExecutionRulesReport.cs): 줄마다의 뜻, 문제(없는 짝을 가리키는 줄, 어느 규칙도 안 쓰는 짝, 처형할 수 없는 무너진 좀비), 자세×처지마다 내가 선 방향·거리별로 어느 규칙이 잡히는지의 격자. 게임이 묻는 바로 그 `Pick`으로 만든다). 메뉴 ENFILADE → 근접 → 암살·처형 규칙 보고서.
 - **모드**: 같은 이름의 표에 줄을 더하면 된다(새 짝은 `Executions.csv`에 줄과 클립, 그 짝을 언제 트는지는 이 표에 줄). 코드는 필요 없다.
@@ -91,7 +91,7 @@
 ## 시험
 
 1. Unity를 누르면 `Art/Animations/Executions`의 FBX 14개를 휴머노이드로 (다시) 가져온다. Console에 Rig 오류가 없어야 한다.
-2. 콘솔 `/poses stay`: 자세마다 조용한 좀비가 하나씩 선다(앉아 졸기·먹기·웅크리기·엎드려 먹기·엎드려 꿈틀대기). 각각 등 뒤에서 F → 그 자세의 짝이 나와야 한다(엎드린 둘은 `prone`).
+2. 콘솔 `/poses stay`: 자세마다 조용한 좀비가 하나씩 선다(무릎 꿇고 먹기·웅크리기·엎드려 먹기). 각각 등 뒤에서 F → 그 자세의 짝이 나와야 한다(엎드려 먹기는 `prone`).
 3. `/spawn 3 calm`의 서 있는 좀비를 등 뒤에서 F → `back`. 옆(등 뒤 80° 밖)이나 앞으로 코앞(1.2m)까지 붙어 F → `front`(좀비가 나를 향해 돌려세워진다). 정면으로 걸어 들어가면 2m 안에서 잠입 표시가 0.7초 안에 차서 깨므로 그 전에 눌러야 하고, 앞에서 근접 칸 좌클릭으로 멀리서 달려들 수는 없다. 앉은·먹는·웅크린 좀비는 앞에서는 안 된다(등 뒤만). `Logs/execution-rules.txt`의 격자와 같아야 한다.
 4. 좀비를 패링·주먹으로 무너뜨리고 앞에서 F(또는 주먹 좌클릭) → `front`, 등 뒤에서 → `back`.
 5. 무너진 좀비를 대시 밀치기로 넘어뜨린 뒤 누운 채 F → 엎어졌으면 `prone`, 등을 댔으면 `supine`. 다리를 잃고 기는 좀비 → `prone`.

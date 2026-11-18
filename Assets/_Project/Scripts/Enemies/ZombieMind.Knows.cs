@@ -30,7 +30,7 @@ public sealed partial class ZombieMind
     /// <summary>The host's tell, for its copies (EnemyNetwork).</summary>
     internal bool CallingShared => calling && Living;
 
-    /// <summary>How far it sees now (m): its calm sight while calm, less again while eating or dozing.</summary>
+    /// <summary>How far it sees now (m): its calm sight while calm, less again while eating.</summary>
     internal float ViewRange => (Mood == ZombieMood.Calm || lured ? calmSightRange : sightRange) * BusyRange;
 
     /// <summary>
@@ -46,25 +46,25 @@ public sealed partial class ZombieMind
         }
     }
 
-    /// <summary>Its full view and the edge of its sight, side to side (degrees), narrower while eating or dozing.</summary>
+    /// <summary>Its full view and the edge of its sight, side to side (degrees), narrower while eating.</summary>
     internal float FrontView => fieldOfView * BusyView;
 
     internal float EdgeView => Mathf.Max(fieldOfView, sideView) * BusyView;
 
     /// <summary>
-    /// What its calm pose is busy with (ZombieBody sets it on every PC while it holds the pose; Rest otherwise): eating
-    /// or dozing, it sees less far and narrower, hears less and is slower to notice (eat*, doze* in ZombieSenses). The
-    /// 2026-11-11 memo, item 47.
+    /// What its calm pose is busy with (ZombieBody sets it on every PC while it holds the pose; Rest otherwise): eating,
+    /// it sees less far and narrower, hears less and is slower to notice (eat* in ZombieSenses). The 2026-11-11 memo,
+    /// item 47. (Dozing dulled them further until 2026-11-18, when the poses that nodded off left the game.)
     /// </summary>
     internal CalmPoseKind PoseKind { get; set; }
 
-    private float BusyRange => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatRangeShare : PoseKind == CalmPoseKind.Doze ? dozeRangeShare : 1f;
+    private float BusyRange => HoldsPose && PoseKind == CalmPoseKind.Eat ? eatRangeShare : 1f;
 
-    private float BusyView => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatViewShare : PoseKind == CalmPoseKind.Doze ? dozeViewShare : 1f;
+    private float BusyView => HoldsPose && PoseKind == CalmPoseKind.Eat ? eatViewShare : 1f;
 
-    private float BusyHear => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatHearShare : PoseKind == CalmPoseKind.Doze ? dozeHearShare : 1f;
+    private float BusyHear => HoldsPose && PoseKind == CalmPoseKind.Eat ? eatHearShare : 1f;
 
-    private float BusyNotice => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatNoticeShare : PoseKind == CalmPoseKind.Doze ? dozeNoticeShare : 1f;
+    private float BusyNotice => HoldsPose && PoseKind == CalmPoseKind.Eat ? eatNoticeShare : 1f;
 
     /// <summary>
     /// Stage 4C-2: not awake (calm, searching or alert), and a player standing at this spot may take it down, an execution

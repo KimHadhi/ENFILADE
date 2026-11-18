@@ -191,35 +191,28 @@ internal sealed class CampaignHorde
     }
 
     /// <summary>
-    /// A map's crowd lying about (SleeperNest, the map gimmick card that was "잠든 무리"): its count laid face down on the
-    /// floor round it (ZombieMind.Lie), each its own way, none nearer than <paramref name="near"/> to a player. They lie in
-    /// the lying pose on every PC (ZombieBody.LiePose, shared by EnemyNetwork) and count with the calm ones. Returns how
-    /// many were laid.
+    /// A cage's crowd (the map gimmick card "철창에 갇힌 좀비 창고"): <paramref name="count"/> zombies stood behind its bars
+    /// round <paramref name="middle"/>, within <paramref name="radius"/>, each its own way, none nearer than
+    /// <paramref name="near"/> to a player. Shut in (ZombieMind.Cage) they rage at their bars on their feet, in no calm
+    /// pose, and raise no alarm; they count with the calm ones. Returns how many were set.
+    /// The same places once laid a map's crowds face down on the floor as well (asleep until 2026-11-15, lying after):
+    /// those are gone from the game (user, 2026-11-18: "제거 지시된 자는 좀비 오브젝트 완전 삭제", and asked how far,
+    /// "엎드린 무리까지"), so the only crowd a map sets in one place is a cage's.
     /// </summary>
-    public int PlaceSleepers(SleeperNest nest, List<PlayerMovement> players, float near)
+    public int PlaceCaged(Vector3 middle, int count, float radius, List<PlayerMovement> players, float near)
     {
-        if (prefab == null || nest == null) return 0;
+        if (prefab == null) return 0;
         var container = RuntimeSceneHierarchy.GetGroup(scene, RuntimeSceneHierarchy.Enemies, "Campaign");
-        int pose = ZombieBody.LiePose, made = 0;
-        Vector3 middle = nest.transform.position;
-        for (int tries = 0; made < nest.Count && tries < nest.Count * 8; tries++)
+        int made = 0;
+        for (int tries = 0; made < count && tries < count * 8; tries++)
         {
-            Vector2 aside = Random.insideUnitCircle * nest.Radius;
-            if (!Placeable(middle + new Vector3(aside.x, 0f, aside.y), players, near, SleepApart, out Vector3 ground)) continue;
-            // Laid on the nest's own floor: the walk mesh of the storey above or below is not this one.
+            Vector2 aside = Random.insideUnitCircle * radius;
+            if (!Placeable(middle + new Vector3(aside.x, 0f, aside.y), players, near, CagedApart, out Vector3 ground)) continue;
+            // On the cage's own floor: the walk mesh of the storey above or below is not this one.
             if (Mathf.Abs(ground.y - middle.y) > 1.2f) continue;
             var enemy = Object.Instantiate(prefab, ground, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), container);
-            // Behind bars instead (a cage's crowd): no pose, it rages at its bars on its feet and raises no alarm.
-            if (nest.Caged)
-            {
-                if (enemy.TryGetComponent(out ZombieMind standing)) standing.Cage();
-                if (enemy.TryGetComponent(out ZombieBody upright)) upright.ForcedPose = ZombieBody.NoPose;
-            }
-            else
-            {
-                if (enemy.TryGetComponent(out ZombieMind mind)) mind.Lie();
-                if (pose >= 0 && enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = pose;
-            }
+            if (enemy.TryGetComponent(out ZombieMind mind)) mind.Cage();
+            if (enemy.TryGetComponent(out ZombieBody body)) body.ForcedPose = ZombieBody.NoPose;
             EnemyNetwork.SpawnInRoom(enemy);
             enemy.Died += OnDied;
             alive.Add(enemy);
@@ -229,8 +222,8 @@ internal sealed class CampaignHorde
         return made;
     }
 
-    // Two of a lying crowd lie no nearer each other than this (m): bodies side by side, not on top of each other.
-    private const float SleepApart = 1.1f;
+    // Two of a cage's crowd stand no nearer each other than this (m): bodies side by side, not inside each other.
+    private const float CagedApart = 1.1f;
 
     /// <summary>
     /// A map's round (PatrolRoute): its count of walkers, each set calm at a stop of its own spread round the stops (none

@@ -119,7 +119,7 @@ mission.ch3.01.title,승강장으로 내려가기,,"목표 바 제목과 Tab 목
 mission.ch3.01.description,"승강장으로 내려가세요. 대합실 뒤 역무실(직원 통로)로도 갈 수 있어요. 역무실 CCTV로 차량기지의 놈들과 연료통 자리를, 안내 방송으로 놈들을 선로 쪽으로 끌 수 있어요.",,"Tab 목표 목록의 설명: Ch3_Subway 1번째 단계(Reach, Ch3.01)"
 mission.ch3.01.done,승강장 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 1번째 단계(Reach, Ch3.01)"
 mission.ch3.02.title,터널을 지나 정비창으로,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
-mission.ch3.02.description,어두운 터널 선로에 놈들이 줄지어 잠들어 있어요. 손전등을 얼굴에 비추면 뒤척이고 뛰면 깨요. 탈선한 객차는 안·위·옆으로 지나가요.,,"Tab 목표 목록의 설명: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
+mission.ch3.02.description,어두운 터널 선로를 따라가세요. 손전등을 놈에게 비추면 더 멀리서 들켜요. 탈선한 객차는 안·위·옆으로 지나가요.,,"Tab 목표 목록의 설명: Ch3_Subway 2번째 단계(Reach, Ch3.02)"
 mission.ch3.02.done,터널 통과,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch3_Subway 2번째 단계(Reach, Ch3.02)"
 mission.ch3.03.title,정비창 사무실로 피하기,,"목표 바 제목과 Tab 목표 목록: Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
 mission.ch3.03.description,모두 사무실 안으로 들어와 문을 닫으면 숨을 돌려요. 이제부터 죽은 사람은 여기서 돌아와요.,,"Tab 목표 목록의 설명: Ch3_Subway 3번째 단계(Checkpoint, Ch3.03)"
@@ -159,7 +159,7 @@ mission.ch4.05.title,탑승구로,,"목표 바 제목과 Tab 목표 목록: Ch4_
 mission.ch4.05.description,식당가를 지나 터미널 동쪽 끝 탑승 대기실의 탑승교 입구로 가세요. 화재 경보가 울리면 놈들이 끝없이 와요. 입구 홀 옆 관제실의 경보반에서 꺼야 멈춰요.,,"Tab 목표 목록의 설명: Ch4_Airport 5번째 단계(Reach, Ch4.05)"
 mission.ch4.05.done,탑승구 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 5번째 단계(Reach, Ch4.05)"
 mission.ch4.06.title,정비 계단으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
-mission.ch4.06.description,탑승교 끝의 정비 계단으로 계류장에 내려가세요(계단 밑에 놈들이 잠들어 있어요). 탑승교 조종석에 서 있으면 다리가 1번 계류장 비행기 문까지 늘어나요: 비행기 안을 지나 반대편 미끄럼틀로 내려가는 조용한 길이에요.,,"Tab 목표 목록의 설명: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
+mission.ch4.06.description,탑승교 끝의 정비 계단으로 계류장에 내려가세요. 탑승교 조종석에 서 있으면 다리가 1번 계류장 비행기 문까지 늘어나요: 비행기 안을 지나 반대편 미끄럼틀로 내려가는 조용한 길이에요.,,"Tab 목표 목록의 설명: Ch4_Airport 6번째 단계(Reach, Ch4.06)"
 mission.ch4.06.done,계류장 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 6번째 단계(Reach, Ch4.06)"
 mission.ch4.07.title,관제탑에서 수송기 부르기,,"목표 바 제목과 Tab 목표 목록: Ch4_Airport 7번째 단계(Press, Ch4.07)"
 mission.ch4.07.description,관제탑 1층 무전실에서 수송기 조종사와 연락하세요.,,"Tab 목표 목록의 설명: Ch4_Airport 7번째 단계(Press, Ch4.07)"
@@ -2105,8 +2105,6 @@ tower.trial.swarm,떼,Swarm,타워 방 구성: 약한 놈 여럿
 tower.trial.stealth,잠입,Stealth,타워 방 구성: 그날의 잠입 레인(들키지 않고 끝까지 가면 통과)
 tower.rule.blackout,정전,Blackout,타워 오늘의 층 규칙 이름: 방 등이 꺼짐
 tower.rule.blackout.line,방 등이 꺼졌다 · 손전등을 켜라,The lights are out: use your flashlight,타워 오늘의 층 규칙 설명: 정전
-tower.rule.sleeping,엎드린 층,Prone floor,타워 오늘의 층 규칙 이름: 놈들이 엎드려 있음
-tower.rule.sleeping.line,놈들이 엎드려 있다 · 아무도 들키지 않고 처치하면 보너스,They lie face down: take them all unseen for a bonus,타워 오늘의 층 규칙 설명: 엎드린 층
 tower.rule.wire,경보 선,Alarm wires,타워 오늘의 층 규칙 이름: 발목 높이 빨간 선
 tower.rule.wire.line,빨간 선을 걸어서 넘으면 다음 방 떼가 두 배 · 뛰어넘어라,Walk through a red wire and the next room holds twice the swarm: jump them,타워 오늘의 층 규칙 설명: 경보 선
 tower.sign.floor,{0}층,Floor {0},타워 레인 문 위 표지의 층(한 층만일 때)
@@ -2153,13 +2151,12 @@ tower.alert.failed,{0} 레인 탈락,Lane {0} is out,타워 알림
 tower.alert.rule,{0}층 · 오늘의 규칙: {1} — {2},"Floor {0}: today's rule, {1}. {2}",타워 알림: 내 방이 시작될 때 그 층의 규칙. {0}=층 {1}=규칙 {2}=설명
 tower.alert.stealth,잠입 레인 · 들키지 않고 방 끝까지 가면 통과,Stealth lane: reach the far end unseen to get through,타워 알림: 잠입 레인의 방이 시작될 때
 tower.alert.seen,들켰다! 문이 잠기고 떼가 온다,Spotted! The door stays shut and the swarm comes,타워 알림: 잠입 레인 방에서 들켰을 때(그 레인 사람에게)
-tower.alert.woke,놈이 깼다,One woke,타워 알림: 엎드린 층 방에서 하나가 알아채 깼을 때(그 레인 사람에게)
 tower.alert.seenlane,{0} 레인이 들켰다,Lane {0} was spotted,타워 알림: 다른 레인이 들켰을 때. {0}=레인
 tower.alert.wire,경보 선을 밟았다! 다음 방 떼가 두 배,Alarm wire tripped! The next room holds twice the swarm,타워 알림: 내 레인에서 경보 선을 걸어서 넘었을 때
 tower.alert.gather,모든 레인이 끝났어요 · 휴게층으로,All lanes through · to the rest hall,타워 알림
 tower.alert.reset,다시 스캐너로,Back to the scanners,타워 알림: 전멸이나 모든 레인 탈락
 tower.feed.floor,{0}층 통과,Floor {0},타워 돈 줄. {0}=층
-tower.feed.quiet,들키지 않고 통과,Through unseen,타워 돈 줄: 잠입 레인·잠든 층 방을 들키지 않고 지났을 때
+tower.feed.quiet,들키지 않고 통과,Through unseen,타워 돈 줄: 잠입 레인 방을 들키지 않고 지났을 때
 tower.feed.clear,타워 정복,Tower cleared,타워 돈 줄
 tower.feed.today,오늘의 첫 정복,First clear today,타워 돈 줄: 그날 처음 정복
 tower.finale.word,ENFILADED!!,ENFILADED!!,타워 끝 연출의 큰 글자
@@ -2245,7 +2242,7 @@ gimmick.fuel.open,"[F] 주유기 밸브 열기 · 바닥에 기름이 번지고,
 gimmick.camera.watch,[F] CCTV 보기 · 검문소의 놈들이 벽 너머로 보인다,,맵 기믹 [F] 안내 > CCTV 모니터 앞
 gimmick.camera.wait,CCTV · {0}초 뒤 다시 볼 수 있다,,맵 기믹 안내 > CCTV를 본 직후. {0}=남은 초
 gimmick.camera.shown,CCTV · 놈들이 어디 있는지 보인다,,화면 위 알림 > 누가 CCTV를 봤을 때(모두에게)
-gimmick.item.armorycard,장교 카드,,맵 기믹 물건 이름 > 2장 검문소 무기고 카드(판마다 다른 자리의 엎드린 장교 곁)
+gimmick.item.armorycard,장교 카드,,맵 기믹 물건 이름 > 2장 검문소 무기고 카드(판마다 다른 자리)
 mission.ch3.10.title,방수문이 열릴 때까지 버티기,,"목표 바 제목: Ch3_Subway 발전기 버티기(Hold, Ch3.10)"
 mission.ch3.10.description,"발전기 소리에 놈들이 몰려오고, 창고 철창이 터져요. 창고 문 둘을 미리 판자로 막아 두면 갇힌 놈들은 못 나와요.",,Tab 목표 목록의 설명: Ch3.10
 mission.ch3.10.done,방수문 열림,,끝낸 목표의 이름: Ch3.10
@@ -2266,7 +2263,7 @@ gimmick.detector.beep,삐— 검색대가 울렸다! 둘레의 놈들이 깬다,
 gimmick.tray.put,[F] 총을 바구니에 담아 엑스레이로 보내기 · 맨몸으로 검색대 통과,,맵 기믹 [F] 안내 > 4장 엑스레이 벨트 머리
 gimmick.tray.take,[F] 총 되찾기,,맵 기믹 [F] 안내 > 4장 엑스레이 벨트 끝(바구니가 왔을 때)
 gimmick.tray.riding,바구니가 벨트를 타고 오는 중,,맵 기믹 안내 > 4장 엑스레이 벨트 끝(바구니가 오는 중)
-gimmick.item.staffcard,직원 카드,,맵 기믹 물건 이름 > 4장 보안 검색대 직원 문 카드(판마다 다른 자리의 엎드린 경비 곁)
+gimmick.item.staffcard,직원 카드,,맵 기믹 물건 이름 > 4장 보안 검색대 직원 문 카드(판마다 다른 자리)
 gimmick.place.ch4.policecar,경찰차 옆,,4장 직원 카드 자리 이름
 gimmick.place.ch4.bus,공항 셔틀버스 옆,,4장 직원 카드 자리 이름
 gimmick.place.ch4.forklift,화물장 지게차 옆,,4장 직원 카드 자리 이름

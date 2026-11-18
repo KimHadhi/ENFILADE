@@ -67,41 +67,18 @@ public sealed partial class ZombieMind
         lookAt = Time.time + Random.Range(1.5f, Mathf.Max(1.5f, lookAroundEvery));
     }
 
-    /// <summary>
-    /// Calms it lying face down where it was laid (a map's crowd lying about, SleeperNest; the tower's lying floor), in the
-    /// pose its body takes for it (ZombieBody.LiePose). It sees and hears as any calm one in that pose does (dozing: less
-    /// far, less wide), and a stone or a knock it hears turns its head and shoulders that way where it lies (Glance,
-    /// ZombieBody.Gaze), never getting it up. Right beside it, a player may take it down from any side (the prone takedown
-    /// kneels beside it). Such a crowd used to sleep, eyes shut and deaf to stones, which nobody could tell from a lying
-    /// pose (user, 2026-11-15: "아 자는 거였어? ... 자는 거 빼. 그냥 엎드린 걸로 하고 돌 던지면 그 쪽으로 시선 돌리게 해 줘").
-    /// </summary>
-    public void Lie()
-    {
-        if (IsCopy) return;
-        Calm();
-        lying = true;
-    }
+    // A calm zombie is on its feet (standing, on its round, behind bars) or busy in a calm pose of its own (ZombieBody:
+    // crouched, eating). There was a third way, laid face down on the floor by a map or the tower (Lie): a crowd that
+    // slept, eyes shut and deaf to stones, until 2026-11-15 ("아 자는 거였어? ... 자는 거 빼. 그냥 엎드린 걸로"), then lay
+    // awake and only turned its head. The user still met them as sleepers left behind (2026-11-18: "[버그] 비활성(자는)
+    // 좀비 잔존 문제: 제거 지시된 자는 좀비 오브젝트 완전 삭제", and asked how far, "엎드린 무리까지"), so that way is gone
+    // whole: nothing lays a zombie down, and no mind carries a word for it.
 
-    // Laid lying (Lie): it lies while its body holds the pose (Lying), and once up it stands like any other.
-    private bool lying;
-
-    /// <summary>On another PC: the host's zombie was laid lying (EnemyNetwork), so a takedown here may come from any side.</summary>
-    internal void ShowLying()
-    {
-        if (IsCopy) lying = true;
-    }
-
-    /// <summary>Laid lying, for the host's word to the other PCs as it spawns (EnemyNetwork), before its body takes the pose.</summary>
-    internal bool LaidLying => lying;
-
-    /// <summary>Laid lying and still in its pose, on every PC (its body says so: HoldsPose).</summary>
-    public bool Lying => lying && HoldsPose;
-
-    // Lying or sitting in its pose, the point it has turned its head to and until when (Gaze; on other PCs, ShowGaze).
+    // Busy in its calm pose, the point it has turned its head to and until when (Gaze; on other PCs, ShowGaze).
     private Vector3 gazeAt;
     private float gazeUntil;
 
-    // Lying or sitting in its pose, it turns its head and shoulders to look at this point a while (ZombieBody.Gaze) and
+    // Busy in its calm pose, it turns its head and shoulders to look at this point a while (ZombieBody.Gaze) and
     // stays as it is; the other PCs are told so their copies turn the same way (only when it is a new look, not each time
     // a lure that goes on is heard again).
     private void Gaze(Vector3 at, float seconds)
@@ -112,7 +89,7 @@ public sealed partial class ZombieMind
         if (fresh && network != null) network.ShareGaze(at, seconds);
     }
 
-    /// <summary>On another PC: the host's zombie, lying or sitting in its pose, turned its head to look at this point a while.</summary>
+    /// <summary>On another PC: the host's zombie, busy in its calm pose, turned its head to look at this point a while.</summary>
     internal void ShowGaze(Vector3 at, float seconds)
     {
         if (!IsCopy) return;
@@ -128,7 +105,7 @@ public sealed partial class ZombieMind
     }
 
     /// <summary>
-    /// Shuts it in behind bars, standing calm (a cage's crowd, SleeperNest caged; the map gimmick card "철창에 갇힌 좀비
+    /// Shuts it in behind bars, standing calm (a cage's crowd, CampaignHorde.PlaceCaged; the map gimmick card "철창에 갇힌 좀비
     /// 창고": "조용한 통로지만 철창에 붙어 지나가면 물어요"). Penned so long it rages at all comers and none at all: it makes
     /// nobody out, hears nothing, no call or blow wakes it and it calls no one, so walking past its cage raises no alarm;
     /// only whoever goes by close and upright is bitten through the bars (GimmickCage). Let out (FreeWithin), it is like any
@@ -283,9 +260,9 @@ public sealed partial class ZombieMind
 
     // It turns to look at something a while (a faint sound, a stone another goes to check), then settles back where it
     // stood. One already searching keeps at it, one on its way to a stone keeps to it, and a real alert stays one.
-    // Lying, sitting or eating in its calm pose it doesn't get up for it: it turns its head and shoulders that way where it
-    // is (Gaze, ZombieBody.Gaze), its eyes with them, and stays calm. It used to stand up just to look and never sat or lay
-    // down again, there being no clip for either.
+    // Busy in its calm pose (crouched, eating) it doesn't get up for it: it turns its head and shoulders that way where it
+    // is (Gaze, ZombieBody.Gaze), its eyes with them, and stays calm. It used to stand up just to look and never took its
+    // pose again, there being no clip for that.
     private void Glance(Vector3 at, PlayerMovement by, float seconds)
     {
         if (seconds <= 0f || lured) return;

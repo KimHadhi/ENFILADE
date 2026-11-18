@@ -32,10 +32,11 @@ public readonly struct TowerSpawn
 
 /// <summary>
 /// A floor's rule for the day (the map gimmick card "오늘의 층 규칙", only from parts the game had: the user's note "발상은
-/// 좋은데 만들기 귀찮겠다"): its rooms' lights off (Blackout), its swarms lying face down (Sleeping), alarm wires across its rooms
-/// (Wire). TowerRun.Rules plays them.
+/// 좋은데 만들기 귀찮겠다"): its rooms' lights off (Blackout), alarm wires across its rooms (Wire). TowerRun.Rules plays
+/// them. A third laid its swarms face down (Sleeping) until 2026-11-18, when every sleeping and lying crowd left the game
+/// (user: "제거 지시된 자는 좀비 오브젝트 완전 삭제").
 /// </summary>
-public enum TowerRule : byte { None, Blackout, Sleeping, Wire }
+public enum TowerRule : byte { None, Blackout, Wire }
 
 /// <summary>
 /// The day's program of the ENFILADE tower: what each room of each lane holds. The user likened the tower to a gacha
@@ -110,19 +111,20 @@ public sealed class TowerPlan
         int stretch = (floor - 1) / 3;
         uint roll = Mix(Seed, 0x7A11 + stretch);
         if (floor != stretch * 3 + 1 + (int)(roll % 3)) return TowerRule.None;
-        return (TowerRule)(1 + (int)(roll / 3 % 3));
+        return DayRules[(int)(roll / 3 % (uint)DayRules.Length)];
     }
 
-    /// <summary>Whether lane <paramref name="lane"/>'s room on floor 1-10 holds its swarm laid out calm (the stealth lane,
-    /// a sleeping floor's swarm rooms).</summary>
-    public bool Quiet(int floor, int lane)
-        => floor >= 1 && floor < TowerLayout.Floors && (lane == StealthLane || RuleOf(floor) == TowerRule.Sleeping && TrialOf(floor, lane) == TowerTrial.Swarm);
+    // The rules the day picks from for such a floor: every one there is.
+    private static readonly TowerRule[] DayRules = { TowerRule.Blackout, TowerRule.Wire };
+
+    /// <summary>Whether lane <paramref name="lane"/>'s room on floor 1-10 holds its swarm laid out calm (the stealth lane's
+    /// rooms, all but the last floor's).</summary>
+    public bool Quiet(int floor, int lane) => floor >= 1 && floor < TowerLayout.Floors && lane == StealthLane;
 
     /// <summary>A rule's name as the signs and alerts say it.</summary>
     public static string RuleName(TowerRule rule) => rule switch
     {
         TowerRule.Blackout => Texts.Get("tower.rule.blackout"),
-        TowerRule.Sleeping => Texts.Get("tower.rule.sleeping"),
         TowerRule.Wire => Texts.Get("tower.rule.wire"),
         _ => ""
     };
@@ -186,8 +188,8 @@ public sealed class TowerPlan
     /// <summary>
     /// Everything lane <paramref name="lane"/>'s room on floor 1-10 lets out, in the order it comes, each with what is its
     /// own (TowerSpawn): the champion or the swarm by the floor's turn, and, <paramref name="doubled"/> by a wire walked
-    /// through in the room before, a swarm more. <paramref name="swarmOnly"/>: a room laid out calm (the stealth lane, a
-    /// lying floor) holds a swarm whatever the turn. The one place that says what a room holds.
+    /// through in the room before, a swarm more. <paramref name="swarmOnly"/>: a room laid out calm (the stealth lane's)
+    /// holds a swarm whatever the turn. The one place that says what a room holds.
     /// </summary>
     public List<TowerSpawn> RoomOf(int floor, int lane, int players, float crowdPerPlayer, float championPerPlayer, bool doubled,
         bool swarmOnly = false)

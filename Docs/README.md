@@ -38,7 +38,7 @@
 | [자연스러운 달리기](Features/NaturalRun.md) | 걸음과 달리기 다리 |
 | [손가락질과 찌르기](Features/Poke.md) | F 길게 눌러 가리키기 |
 | [노래와 단계](Features/CampaignPhases.md) | 원곡 그대로 트는 노래, 페이데이 2식 정비·습격 임박·습격 |
-| [맵 기믹](Features/MapGimmicks.md) | 엎드린 무리·큰 미끼·열쇠와 단서·판마다 다른 길, 1장 아파트 개편, 소리가 퍼지는 길 |
+| [맵 기믹](Features/MapGimmicks.md) | 큰 미끼·열쇠와 단서·판마다 다른 길, 1장 아파트 개편, 소리가 퍼지는 길 |
 
 ## 기록 (Records)
 
