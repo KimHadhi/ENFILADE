@@ -1,0 +1,33 @@
+{
+ "about": [
+  "What a person decided after looking at each gun, for measuring it again (gun_mounts.py measure). The result of the",
+  "measuring is Tables/Weapons/GunMounts.csv; the game reads only that.",
+  "irons: the pieces of the gun's mesh that are its own iron sights (numbers as 'gun_mounts.py measure <gun> --pieces'",
+  "  prints and draws them). Pieces that touch one of them and stand over the rail are taken with it unless grow is false.",
+  "hides: pieces that are glass the pack draws as solid metal (a built-in sight's lens): never drawn.",
+  "rail: where the top rail really begins and ends, cm from the gun's eye place along its sight line, when the flat",
+  "  stretch the rule finds is not it.",
+  "grip, under: the stretch of the underside that takes a foregrip / a light, cm from the eye along the sight line.",
+  "Piece numbers hold while the model and the prefab's renderers stay as they are: after a change of either, look again."
+ ],
+ "guns": {
+  "MX16A4": {"irons": [17, 22, 33, 41, 46, 51, 55, 62, 75], "grip": [27.0, 42.5], "under": [43.5, 56.0]},
+  "M1911": {"irons": [16, 34], "under": [28.3, 32.8]},
+  "AKX200": {"irons": [42, 60, 26, 72, 15, 36], "grip": [35.5, 47.5], "under": [48.5, 58.0]},
+  "ASVal": {"irons": [24, 33, 4, 23, 36], "grip": [31.0, 39.5], "under": [40.5, 50.0]},
+  "G3": {"irons": [48, 28, 36, 31, 30, 38], "grip": [34.0, 66.0], "under": [34.0, 66.0]},
+  "SVD": {"irons": [16, 45, 7, 43, 23, 28, 42], "rail": [6.5, 33.5]},
+  "MGX5": {"irons": [71, 53, 60, 78, 88, 120], "grow": false, "hides": [81, 82]},
+  "MPS5": {"irons": [32, 53, 26, 27, 42, 19, 33, 39], "grip": [27.5, 46.5], "under": [27.5, 46.5]},
+  "PDW90": {"irons": [5], "hides": [7, 19]},
+  "StrikerV": {"irons": [33, 23, 26, 34], "under": [42.0, 52.0]},
+  "Drake12": {"irons": [], "under": [38.0, 49.0]},
+  "X18": {"irons": [21, 17, 16], "under": [32.0, 37.6]},
+  "DGL50": {"irons": [12, 11, 7], "under": [32.0, 42.0]},
+  "Kolibri": {"irons": []},
+  "Viper357": {"irons": []},
+  "Kar98k": {"irons": [39, 30, 14, 47, 15, 45, 12, 18, 29], "rail": [8.5, 28.2]},
+  "L96X": {"irons": []},
+  "KXG12": {"irons": [38, 53, 33, 65, 36, 48, 37, 42]}
+ }
+}
