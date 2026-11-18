@@ -27,6 +27,7 @@ public static class GameCommands
         router.Register("director", "캠페인 단계(정비·습격 임박·습격)·노래와 그 위치·적 수·습격 떼 (방장)", _ => CampaignRun.DirectorReport());
         router.Register("hub", "은신처(허브)로 가기 (혼자, 또는 방장이면 방 전체)", HubFlow.Command);
         router.Register("tower", "rooms [날짜 20261118] — 타워의 그날 방마다 나올 좀비와 엘리트 수를 Logs/tower-rooms.txt에 (타워 밖에서도 된다)", TowerRun.Command);
+        router.Register("alarm", "발각·외침 집계: 외침 수, 같은 좀비가 또 외친 수, 떼였다가 외친 수, 조용함이 바뀐 횟수 (방장) → Logs/stealth.txt", StealthLog.Command);
         router.Register("targets", "좀비마다 누구를 노리는지와 이미 붙잡혀서 건너뛴 생존자 (방장) · cases 규칙만 따로 검사 → Logs/zombie-targets.txt", EnemyTargeting.Command);
         router.Register("testroom", "비우면 테스팅 룸 목록, combat · move · 씬 이름 — 메뉴에 안 나오는 전투·이동 시험장으로 가기 (방에서는 방장만, 방 전체가 같이)", TestRooms.Command);
         router.Register("results", "마지막으로 끝낸 장의 결과 연출을 다시 보기", ResultsShow.Command);

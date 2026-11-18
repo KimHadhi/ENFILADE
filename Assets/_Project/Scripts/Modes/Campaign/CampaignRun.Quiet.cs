@@ -3,6 +3,10 @@ using UnityEngine;
 // CampaignRun: the quiet start, calm zombies ahead until someone is seen and the alarm goes. One part of the class; the rest is in CampaignRun.cs and the files beside it.
 public sealed partial class CampaignRun
 {
+    /// <summary>Where the run's quiet stands on this PC, in a word, for the record of the alarm (StealthLog): quiet, alarm (a witness is up and the count runs), lull, loud; empty outside a chapter.</summary>
+    internal static string QuietState => active == null || active.finished ? ""
+        : !active.quiet ? "loud" : active.alarm ? "alarm" : active.lull ? "lull" : "quiet";
+
     // A quiet stretch begins (the chapter, or the way on from a rest stop): no horde, and calm zombies owed to the way ahead.
     private void BeginQuiet()
     {

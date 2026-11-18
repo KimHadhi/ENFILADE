@@ -14,12 +14,19 @@ public sealed partial class ZombieMind
     /// goes to look where it last knew them, then calms (Searching). Being found once no longer means being found for good
     /// (user, 2026-11-11 playtest: "한번 들키면 끝이고 의미 없는 거 아니야?").
     /// </summary>
+    /// <summary>It came with the horde and a lull turned it into one that notices and calls like the calm (LoseAll). For StealthLog's counts only.</summary>
+    internal bool OnceHorde { get; private set; }
+    /// <summary>Its last waking was its own and it calls (not woken by another's call, nor by a door or a chime that wakes without one). For StealthLog's record only.</summary>
+    internal bool WokeByItself { get; private set; }
+
     public static void LoseAll()
     {
         foreach (var mind in minds)
         {
             if (mind == null || !mind.Thinks || !mind.IsAwake) continue;
             if (mind.TryGetComponent(out ZombieGrip grip) && grip.IsHolding) continue;
+            // Kept for the record of the alarm (StealthLog): a zombie that came with the horde and may now call.
+            if (mind.horde) mind.OnceHorde = true;
             mind.horde = false;
             mind.focus = null;
             // Lost, none of them is noticing anyone in particular: no question marks over the whole crowd.
@@ -218,6 +225,7 @@ public sealed partial class ZombieMind
         // Rousing, it stands and faces its quarry; then EnemyChaseAI takes it.
         if (Mood == ZombieMood.Rousing || GettingUp) Halt();
         else if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
+        WokeByItself = call;
         Woke?.Invoke(this, focus);
         // Woken on its own (not by another's call), it draws breath to call the others first (callTell), the same tell on
         // every PC (EnemyNetwork shares it); killed, held, stunned or knocked down meanwhile, nobody else is told (Tell).
