@@ -35,8 +35,9 @@ import tables as T
 SIGHT_COLOURS = [(240, 170, 60), (90, 200, 240), (230, 110, 200), (150, 230, 120)]
 PART_COLOURS = {"muzzle": (120, 140, 200), "grip": (120, 190, 150), "under": (200, 160, 110)}
 # What the report marks for a person to look at (its own marks; the game decides nothing by them): a sight floating
-# this far over the gun, one this deep in a measured rail, and a window the gun's own body covers this much of.
-FLOATS, SUNK, COVERED = .002, -.004, .25
+# this far over the gun, one this deep in a measured rail, a window the gun's own body covers this much of, and a line
+# of sight through the window that meets something solid this often.
+FLOATS, SUNK, COVERED, SOLID = .002, -.004, .25, .25
 # The view the report's fields are worked out for: the game's default setting on a wide screen.
 HIP_FOV_ACROSS, ASPECT = 90.0, 16.0 / 9.0
 OUT_DIR = os.path.join(G.REPO, "Logs", "GunMounts")
@@ -62,6 +63,7 @@ class Seated:
         sight = self.rows["sight"]
         self.folds = self._inside(T.boxes_of(sight.get("folds") if sight else ""))
         self.hides = self._inside(T.boxes_of(sight.get("hides") if sight else ""))
+        self.body_draws, self.body_labels = g.body_draws()
         self.seats = {}
         # A gun with rows has the sockets its rows say; one with no rows at all wears what its prefab carries (GunMounts.Known).
         known = eye is not None
@@ -74,6 +76,7 @@ class Seated:
             row = self.rows.get(kind)
             for tr in trs:
                 verts, tris, points = g.part_local(tr)
+                draws, labels = g.part_draws(tr)
                 pid = p.name(tr)
                 data = parts.get(pid, {})
                 back, front = T.number(data, "footBack"), T.number(data, "footFront")
@@ -90,7 +93,7 @@ class Seated:
                     else:
                         t = 0.0
                     origin, axes = M.place(row, t)
-                self.seats[tr] = dict(id=pid, kind=kind, origin=origin, axes=axes, t=t, verts=verts, tris=tris, points=points,
+                self.seats[tr] = dict(id=pid, kind=kind, origin=origin, axes=axes, t=t, verts=verts, tris=tris, points=points, draws=draws, labels=labels,
                                       data=data, known=bool(data), offered=T.offers(row, pid) if row is not None else not known)
 
     def _inside(self, boxes):
@@ -118,6 +121,8 @@ class Seated:
 
 def ray_hits(o, d, a, b, c, near):
     """Moller-Trumbore against many triangles at once: does the ray meet any beyond `near`?"""
+    if len(a) == 0:
+        return False
     e1, e2 = b - a, c - a
     h = np.cross(d, e2)
     det = np.einsum("ij,ij->i", e1, h)
@@ -164,6 +169,63 @@ def check_sight(s, seat):
         out["covered"] = hits / total
         out["window_from_eye"] = float(np.linalg.norm(s.at(seat, wpos) - eye_w))
     return out
+
+
+def sight_line(s, seat):
+    """Rays from the sight's eye point through its window (its Reticle plate), against everything the gun shows with
+    that sight on, each triangle with what its material draws as far as files say: the share of rays that meet
+    something solid (and the first such thing's name), and the share that meet only what a texture's alpha may cut out.
+    A file cannot say what a shader draws; what the player really sees is the editor's own check (GunSightBench)."""
+    aim, window = seat["points"].get("AimPoint"), seat["points"].get("Reticle")
+    if not aim or not window or len(seat["tris"]) == 0:
+        return None
+    eye = s.at(seat, aim[0])
+    wpos, waxes = window
+    half_w, half_h = np.linalg.norm(waxes[:, 0]) * .5, np.linalg.norm(waxes[:, 1]) * .5
+    shown = s.body_shown(True)
+    body_t = s.t[shown]
+    pv = s.at(seat, seat["verts"])
+    a = np.concatenate([s.world[body_t[:, 0]], pv[seat["tris"][:, 0]]])
+    b = np.concatenate([s.world[body_t[:, 1]], pv[seat["tris"][:, 1]]])
+    c = np.concatenate([s.world[body_t[:, 2]], pv[seat["tris"][:, 2]]])
+    draws = np.concatenate([s.body_draws[shown], seat["draws"]])
+    labels = np.concatenate([s.body_labels[shown], seat["labels"]])
+    solid, cut = draws == "solid", draws == "cut-out"
+    blocked, maybe, total, by = 0, 0, 0, {}
+    for fx in np.linspace(-.8, .8, 9):
+        for fy in np.linspace(-.8, .8, 9):
+            d = s.at(seat, wpos + np.array([fx * half_w, fy * half_h, 0.0])) - eye
+            d = d / np.linalg.norm(d)
+            total += 1
+            first = first_hit(eye, d, a[solid], b[solid], c[solid], .02)
+            if first >= 0:
+                blocked += 1
+                name = labels[solid][first]
+                by[name] = by.get(name, 0) + 1
+            elif ray_hits(eye, d, a[cut], b[cut], c[cut], .02):
+                maybe += 1
+    return dict(solid=blocked / total, cutout=maybe / total, by=max(by, key=by.get) if by else None)
+
+
+def first_hit(o, d, a, b, c, near):
+    """The nearest triangle a ray meets beyond `near` (its index), or -1."""
+    if len(a) == 0:
+        return -1
+    e1, e2 = b - a, c - a
+    h = np.cross(d, e2)
+    det = np.einsum("ij,ij->i", e1, h)
+    ok = np.abs(det) > 1e-14
+    inv = np.zeros_like(det)
+    inv[ok] = 1.0 / det[ok]
+    sv = o - a
+    u = np.einsum("ij,ij->i", sv, h) * inv
+    q = np.cross(sv, e1)
+    vv = (q @ d) * inv
+    t = np.einsum("ij,ij->i", e2, q) * inv
+    hit = ok & (u >= 0) & (vv >= 0) & (u + vv <= 1) & (t > near)
+    if not hit.any():
+        return -1
+    return int(np.argmin(np.where(hit, t, np.inf)))
 
 
 def draw_side(s, path):
@@ -261,6 +323,10 @@ def check(guns):
         "             round a rail, and of two sights on one rail the shallower-footed one sits a little in)",
         "  window     how far the sight's window is from the eye, cm, and how much of it the gun's own body covers as the eye",
         "             sees it, iron sights folded (a scope's lens is drawn by its own camera, which leaves the gun out)",
+        "  sight line rays from the eye through a dot's or a holograph's window against the gun and the sight itself, each",
+        "             triangle with what its material draws as far as its file says (solid, cut out by a texture, see-through).",
+        "             Files cannot say what a shader draws: what the player really sees is the editor's own check, drawn by the",
+        "             game's shaders (ENFILADE > 총 > 조준경 점검, Logs/gun-sights.txt).",
         "  '!' marks what a person should look at in the picture beside it (Logs/GunMounts/<gun>.png, .eye.<sight>.png).",
         "The view: hip field %.1f deg (a %g deg setting across a %g:1 screen)." % (hip_v, HIP_FOV_ACROSS, ASPECT),
         "",
@@ -310,6 +376,10 @@ def check(guns):
                 bad.append("covered")
             if not (zooms or pip) and c.get("middle") is False:
                 bad.append("middle")
+            # What stands in the line of sight through a window that is looked through as it is (a dot, a holograph).
+            line = sight_line(s, seat) if not (zooms or pip) else None
+            if line and line["solid"] > SOLID:
+                bad.append("sight line blocked")
             marks += len(bad)
             text = "%s  %-26s along %.1f cm; eye (%+.1f, %+.1f, %+.1f) cm; rests %s mm" % (
                 "!" if bad else " ", seat["id"], seat["t"] * 100, e[0] * 100, e[1] * 100, e[2] * 100,
@@ -317,6 +387,10 @@ def check(guns):
             if "covered" in c:
                 text += "; window %.1f cm from the eye, %d%% covered, middle %s" % (
                     c["window_from_eye"] * 100, round(c["covered"] * 100), "clear" if c.get("middle") else "BLOCKED")
+            if line and line["solid"] > 0:
+                text += "; sight line: %d%% of it meets something solid, first %s" % (round(line["solid"] * 100), line["by"])
+            elif line:
+                text += "; sight line: nothing solid in it" + (" (%d%% through a material a texture cuts out)" % round(line["cutout"] * 100) if line["cutout"] > 0 else "")
             if zooms:
                 # GunScope: the picture's edge as the eye sees it, the camera that takes it, and a thing at the picture's
                 # edge in the lens against the same thing beside the scope

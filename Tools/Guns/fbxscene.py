@@ -302,7 +302,22 @@ class Scene:
                                 dv = child(self.objects[sg], 'Vertices')[1][0]
                                 rot = [row[:3] + [0] for row in g[:3]] + [[0, 0, 0, 1]]
                                 shapes[self.name[chid]] = {i: apply(rot, (dv[3 * k], dv[3 * k + 1], dv[3 * k + 2])) for k, i in enumerate(idx)}
-            out[self.name[mid]] = {'points': pts, 'polys': polys, 'model': mid, 'clusters': clusters, 'shapes': shapes}
+            # Which of the node's materials draws each polygon, and those materials in the node's own order (a name and
+            # the file's numbers for it: Opacity, DiffuseColor ...). Unity makes a sub-mesh, and the renderer a slot, for
+            # each one the mesh uses, in that order.
+            poly_materials = [0] * len(polys)
+            layer = child(node, 'LayerElementMaterial')
+            if layer and child(layer, 'Materials'):
+                ids = child(layer, 'Materials')[1][0]
+                mapping = child(layer, 'MappingInformationType')
+                if mapping and text(mapping[1][0]) == 'ByPolygon' and len(ids) >= len(polys):
+                    poly_materials = list(ids[:len(polys)])
+                elif ids:
+                    poly_materials = [ids[0]] * len(polys)
+            materials = [(self.name[c], p70(self.objects[c])) for c, kind, prop in self.kids.get(mid, [])
+                         if c in self.objects and self.objects[c][0] == 'Material']
+            out[self.name[mid]] = {'points': pts, 'polys': polys, 'model': mid, 'clusters': clusters, 'shapes': shapes,
+                                   'poly_materials': poly_materials, 'materials': materials}
         return out
 
     def to_metres_yup(self, p):

@@ -210,6 +210,70 @@ class Prefab:
                     out.append((self.tr_of_go[go], "static", mesh.group(2), mesh.group(1), [], enabled))
         return out
 
+    def materials_of(self, tr_id):
+        """The material slots of the renderer on a transform's object, in order: [(fileID, guid or None)]."""
+        go = self.tr[tr_id]["go"]
+        for c in self.go_comps.get(go, []):
+            if c in self.docs and self.docs[c][0] in (23, 137):
+                body = self.docs[c][1]
+                a = body.find("m_Materials")
+                if a < 0:
+                    return []
+                b = body.find("m_StaticBatchInfo", a)
+                return [(m.group(1), m.group(2)) for m in
+                        re.finditer(r"- \{fileID: (-?\d+)(?:, guid: ([0-9a-f]+), type: \d)?\}", body[a:b if b > a else len(body)])]
+        return []
+
+
+_materials = {}
+
+
+def material_of(file_id, guid, fbx_material=None):
+    """What a renderer's material slot draws, as far as its files say: a name, what it draws ('solid', 'cut-out' by a
+    texture's alpha, 'see-through', or a sight's own 'window'), and a note. fbx_material is the model's own material of
+    that slot (its name and the file's numbers for it) where the pack maps no material to it: Unity makes one from those
+    numbers, solid unless the file says otherwise (the dot sight's glass, a solid grey until 2026-11-18)."""
+    key = (file_id, guid, fbx_material[0] if fbx_material else None)
+    if key in _materials:
+        return _materials[key]
+    out = dict(name="none", draws="solid", note="an empty slot")
+    path = asset_of(guid) if guid else None
+    if path and path.lower().endswith(".mat"):
+        text = open(os.path.join(REPO, path), encoding="utf-8", errors="replace").read()
+
+        def number(name, fallback=0.0):
+            m = re.search(r"%s: ([-\d.eE+]+)" % re.escape(name), text)
+            return float(m.group(1)) if m else fallback
+        shader = re.search(r"m_Shader: \{fileID: (-?\d+)(?:, guid: ([0-9a-f]+))?", text)
+        shader_path = asset_of(shader.group(2)) if shader and shader.group(2) else None
+        note = os.path.basename(shader_path) if shader_path else "a built-in shader"
+        if note.startswith("KShader_Scope"):
+            draws = "window"
+        elif number("- _Surface") >= .5 or re.search(r"RenderType: Transparent\s*$", text, re.M) or number("m_CustomRenderQueue") >= 2500:
+            alpha = re.search(r"- _BaseColor: \{r: [-\d.eE+]+, g: [-\d.eE+]+, b: [-\d.eE+]+, a: ([-\d.eE+]+)\}", text)
+            a = float(alpha.group(1)) if alpha else 0.0
+            draws = "see-through" if a < .6 else "solid"
+            if alpha:
+                note += ", alpha %.2f" % a
+        elif number("- _AlphaClip") >= .5 or "_ALPHATEST_ON" in text:
+            draws = "cut-out"
+        else:
+            draws = "solid"
+        out = dict(name=os.path.basename(path)[:-4], draws=draws, note=note)
+    elif path:
+        opacity = 1.0
+        if fbx_material:
+            props = fbx_material[1]
+            if props.get("Opacity"):
+                opacity = float(props["Opacity"][0])
+            elif props.get("TransparencyFactor"):
+                factor = float(props["TransparencyFactor"][0])
+                opacity = 1.0 if factor == 1.0 else 1.0 - factor
+        out = dict(name=fbx_material[0] if fbx_material else "?", draws="solid" if opacity >= 1.0 else "see-through",
+                   note="made by the importer from %s: the pack maps no material to it" % os.path.basename(path))
+    _materials[key] = out
+    return out
+
 
 def fbx(path):
     if path not in _fbx_cache:
@@ -283,11 +347,24 @@ def builtin_mesh(kind):
 class Part:
     """One renderer's triangles in the gun's space."""
 
-    def __init__(self, tr_id, name, path, kind, active, verts, tris, source, groups=None):
+    def __init__(self, tr_id, name, path, kind, active, verts, tris, source, groups=None, tri_slot=None, slots=None):
         self.tr_id, self.name, self.path, self.kind, self.active = tr_id, name, path, kind, active
         self.verts, self.tris, self.source = verts, tris, source
         # For a skinned part: the bone each vertex mostly follows (names), else None.
         self.bone = groups
+        # The renderer's material slot that draws each triangle, and what each slot draws (material_of).
+        self.tri_slot = tri_slot if tri_slot is not None else np.zeros(len(tris), int)
+        self.slots = slots or []
+
+    def draws(self):
+        """What draws each triangle: 'solid', 'cut-out', 'see-through' or 'window' (solid where nothing is known)."""
+        kinds = np.array([slot["draws"] for slot in self.slots] or ["solid"], dtype=object)
+        return kinds[np.clip(self.tri_slot, 0, len(kinds) - 1)]
+
+    def labels(self):
+        """Who draws each triangle, in words: the renderer, its material and the material's note."""
+        names = np.array(["%s / %s (%s)" % (self.name, slot["name"], slot["note"]) for slot in self.slots] or [self.name], dtype=object)
+        return names[np.clip(self.tri_slot, 0, len(names) - 1)]
 
 
 def load_parts(prefab, want=None, quiet=False):
@@ -306,7 +383,8 @@ def load_parts(prefab, want=None, quiet=False):
                 continue
             v, t = shape
             m = prefab.world(tr_id)
-            parts.append(Part(tr_id, name, prefab.path_of(tr_id), "builtin", active, (m[:3, :3] @ v.T).T + m[:3, 3], t, "builtin:" + BUILTIN.get(file_id, "?")))
+            parts.append(Part(tr_id, name, prefab.path_of(tr_id), "builtin", active, (m[:3, :3] @ v.T).T + m[:3, 3], t, "builtin:" + BUILTIN.get(file_id, "?"),
+                              slots=[material_of(f, gd) for f, gd in prefab.materials_of(tr_id)]))
             continue
         path = asset_of(guid)
         if path is None or not path.lower().endswith(".fbx"):
@@ -334,11 +412,19 @@ def load_parts(prefab, want=None, quiet=False):
         s = file_scale(path)
         model = mesh["model"]
         raw_global = np.array(mesh["points"], float)            # file global, as the node stands in the file
-        tris = []
-        for poly in mesh["polys"]:
+        tris, tri_material = [], []
+        for index, poly in enumerate(mesh["polys"]):
             for k in range(1, len(poly) - 1):
                 tris.append((poly[0], poly[k + 1], poly[k]))    # winding flips with the mirror
+                tri_material.append(mesh["poly_materials"][index])
         tris = np.array(tris, int) if tris else np.zeros((0, 3), int)
+        # Unity makes a sub-mesh, and the renderer a slot, for each of the node's materials the mesh uses, in their order.
+        used = sorted(set(tri_material))
+        tri_slot = np.array([used.index(m) for m in tri_material], int)
+        slots = []
+        for k, (slot_file, slot_guid) in enumerate(prefab.materials_of(tr_id)):
+            own = mesh["materials"][used[k]] if k < len(used) and used[k] < len(mesh["materials"]) else None
+            slots.append(material_of(slot_file, slot_guid, own))
         flip = np.array([-s, s, s])
         if kind == "static" or not mesh["clusters"]:
             g_inv = np.array(F.inv_rigid_scale(scene.global_matrix(model)))
@@ -394,7 +480,7 @@ def load_parts(prefab, want=None, quiet=False):
                 m = prefab.world(tr_id)
                 verts[~ok] = (m[:3, :3] @ local.T).T + m[:3, 3]
         parts.append(Part(tr_id, name, prefab.path_of(tr_id), kind, active, verts, tris, path,
-                          lead if (kind != "static" and mesh["clusters"]) else None))
+                          lead if (kind != "static" and mesh["clusters"]) else None, tri_slot, slots))
     return parts
 
 

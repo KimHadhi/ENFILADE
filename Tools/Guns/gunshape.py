@@ -121,6 +121,21 @@ class Gun:
             return np.zeros((0, 3)), np.zeros((0, 3), int), points
         return np.concatenate(verts), np.concatenate(tris), points
 
+    def part_draws(self, root_tr):
+        """What draws each triangle of a part, and who (the triangles in part_local's order)."""
+        p = self.prefab
+        own = [part for part in self.parts if p.is_under(part.tr_id, root_tr)]
+        if not own:
+            return np.zeros(0, object), np.zeros(0, object)
+        return np.concatenate([part.draws() for part in own]), np.concatenate([part.labels() for part in own])
+
+    def body_draws(self, only_active=True):
+        """The same for the gun's own body (the triangles in body_mesh's order)."""
+        own = [part for part in self.body if part.active or not only_active]
+        if not own:
+            return np.zeros(0, object), np.zeros(0, object)
+        return np.concatenate([part.draws() for part in own]), np.concatenate([part.labels() for part in own])
+
     def to_sight(self, pts):
         """Gun-root points into the sight frame."""
         return (np.asarray(pts, float) - self.eye) @ self.frame
