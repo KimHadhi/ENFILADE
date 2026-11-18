@@ -33,8 +33,7 @@ public sealed partial class PlayerGrenades
         pressedAt = Time.time;
         holding = false;
         letGo = true;
-        if (weapon == null) weapon = GetComponent<WeaponController>();
-        if (weapon != null) weapon.InterruptForSurvival();
+        TakeHandFromGun();
         Handed?.Invoke(look, HandPhase.Draw);
         Handed?.Invoke(look, HandPhase.TapThrow);
         // As a tapped G: the tap's own clip, or the draw at the tap's speed straight into the throw.

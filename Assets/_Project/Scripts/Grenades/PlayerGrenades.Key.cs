@@ -52,8 +52,8 @@ public sealed partial class PlayerGrenades
         }
         if (!inHand) return;
         // The guard key put the pin back until 2026-11-18. With a gun that key is the aim, and aiming is no reason to lose
-        // the grenade (the user: "조준을 하면 취소한단 뜻인가요?"): the hand keeps it, and the sights stay down while it
-        // does (KeepHandFree). GrenadeRules guardPutsBack 1 makes the key put the pin back again.
+        // the grenade (the user: "조준을 하면 취소한단 뜻인가요?"): the left hand keeps it and the right hand aims
+        // (TakeHandFromGun). GrenadeRules guardPutsBack 1 makes the key put the pin back again.
         if (Throwables.Rule("guardPutsBack", 0f) > .5f && KeyBindings.Pressed("Combat/Guard"))
         {
             PutBack();
@@ -76,7 +76,7 @@ public sealed partial class PlayerGrenades
     /// What must have the left hand: the one list. A grenade held in that hand goes back on the belt for these (the pin
     /// put back, nothing spent) and for nothing else, and none can be taken out while one of them lasts. Everything else
     /// that would like the hand waits for the grenade instead (PlayerGrenades.HandBusy: the Détente's syringe, the
-    /// Support's tool, the guard's arm, a point; KeepHandFree: the gun's sights and its reload).
+    /// Support's tool, the guard's arm, a point; KeepHandFree: the gun's reload). What the right hand does goes on.
     /// </summary>
     private bool HandForced() =>
         movement.IsDead || movement.IsDowned    // the body holds nothing
@@ -93,17 +93,28 @@ public sealed partial class PlayerGrenades
         return state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Sliding;
     }
 
-    // G pressed: the off hand goes for it. Whatever the gun was doing with that hand stops (a reload, the sights), as a
-    // shove stops them.
+    // G pressed: the off hand goes for it, and the gun gives that hand up (TakeHandFromGun).
     private void Begin()
     {
         StartArm(kind);
         pressedAt = Time.time;
         holding = letGo = keyLost = false;
         if (kind == Throwable.Knife) KnifeOut(HandPoint());
-        if (weapon == null) weapon = GetComponent<WeaponController>();
-        if (weapon != null) weapon.InterruptForSurvival();
+        TakeHandFromGun();
         Handed?.Invoke(kind, HandPhase.Draw);
+    }
+
+    /// <summary>
+    /// The left hand is on a throw: what the gun was doing with that hand stops, and that is its reload. The sights and
+    /// the trigger are the right hand's and go on: the gun stays aimed, and fires, with the grenade held ready in the
+    /// left (the user, 2026-11-18: "오른손은 조준한 채로 왼손은 수류탄 대기하고 있으면 되잖아요"). Until then the whole gun
+    /// was interrupted here as a shove interrupts it (WeaponController.InterruptForSurvival), which drops the sights, and
+    /// they were pulled down again every frame the hand was on the throw.
+    /// </summary>
+    private void TakeHandFromGun()
+    {
+        if (weapon == null) weapon = GetComponent<WeaponController>();
+        if (weapon != null && weapon.Runtime != null && weapon.Runtime.IsReloading) weapon.Runtime.Interrupt();
     }
 
     // G let go (or the reflex): thrown from the hold at once, or as soon as the draw gets there. A tap plays the tap clip;
