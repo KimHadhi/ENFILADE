@@ -35,7 +35,7 @@ public sealed class GimmickCamera : GimmickSwitch
         shownAt = Time.time;
         if (!fresh || watched == null) return;
         GhostSight.Phantom(null, watched.position, seconds, radius);
-        if (board != null) board.Tell();
-        else AlertHUD.Self(Texts.Get("gimmick.camera.shown"));
+        // The board's cans if any are left to fetch, else the cameras' own line.
+        if (board == null || !board.Tell()) AlertHUD.Self(Texts.Get("gimmick.camera.shown"));
     }
 }

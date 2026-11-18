@@ -65,8 +65,11 @@ public sealed class AlertHUD : MonoBehaviour
         public UITriangle arrow;
         public bool find;
         public TextMeshProUGUI distance;
+        // A mark is its thing's, not a point's: it stands where the thing is now and ends when the thing does. `place`
+        // is where the thing was last seen, so the mark can fade there once the thing itself is gone.
         public Transform where;
         public Func<bool> gone;
+        public Vector3 place;
         public float age, life, height;
     }
 
@@ -108,8 +111,11 @@ public sealed class AlertHUD : MonoBehaviour
         => Show(Kind.Team, what, where, KitStyle.Ice, markSeconds, gone, true);
 
     /// <summary>
-    /// A place worth going to marked without a band of its own (several at once after one band has said what they are: a
-    /// board's fuel cans, GimmickCanSpots): the HUD's diamond on it for <paramref name="markSeconds"/>.
+    /// A thing worth going to marked without a band of its own (several at once after one band has said what they are: a
+    /// board's fuel cans, GimmickCanSpots): the HUD's diamond on it for <paramref name="markSeconds"/>, or until
+    /// <paramref name="gone"/> says it is no longer there to get. Pass the thing itself, never a spot it once lay at: the
+    /// mark follows <paramref name="where"/> every frame (the user, 2026-11-18: "연료통을 옮겨도 목표 힌트 핑이 초기 위치에
+    /// 고정되는 문제 및 이미 투입 완료된 연료통의 기존 위치에 핑이 잔존하는 문제").
     /// </summary>
     public static void Place(Transform where, float markSeconds, Func<bool> gone = null)
     {
@@ -193,6 +199,7 @@ public sealed class AlertHUD : MonoBehaviour
             marks.Add(mark);
         }
         mark.where = where; mark.gone = gone; mark.life = seconds; mark.age = 0f;
+        mark.place = where.position;
         mark.find = find;
         mark.hazard.gameObject.SetActive(!find);
         mark.diamond.gameObject.SetActive(find);
@@ -233,10 +240,12 @@ public sealed class AlertHUD : MonoBehaviour
         {
             var mark = marks[i];
             mark.age += dt;
-            bool over = mark.age >= mark.life || mark.where == null || !mark.where.gameObject.activeInHierarchy;
-            // What it marks is gone: it goes with it, by its fade rather than at once.
-            if (!over && mark.gone != null && mark.gone() && mark.age < mark.life - MarkOutSeconds) mark.age = mark.life - MarkOutSeconds;
-            if (over) RetireMark(i);
+            // Where its thing is now: a carried can, a walking brute. The thing gone (its owner says so, or it was switched
+            // off or destroyed), the mark goes with it, by its fade from where the thing last was rather than at once.
+            bool there = mark.where != null && mark.where.gameObject.activeInHierarchy;
+            if (there) mark.place = mark.where.position;
+            if ((!there || mark.gone != null && mark.gone()) && mark.age < mark.life - MarkOutSeconds) mark.age = mark.life - MarkOutSeconds;
+            if (mark.age >= mark.life) RetireMark(i);
             else Layout(mark, view);
         }
     }
@@ -309,8 +318,8 @@ public sealed class AlertHUD : MonoBehaviour
     private void Layout(Mark mark, Camera view)
     {
         if (view == null) { mark.group.alpha = 0f; return; }
-        Vector3 place = mark.where.position + Vector3.up * mark.height;
-        float distance = Vector3.Distance(view.transform.position, mark.where.position);
+        Vector3 place = mark.place + Vector3.up * mark.height;
+        float distance = Vector3.Distance(view.transform.position, mark.place);
         Vector3 point = view.WorldToViewportPoint(place);
         Vector2 offset = new Vector2(point.x - .5f, point.y - .5f);
         // Behind the camera the projection mirrors, and the way to turn is the other side (as TeammateMarkerHUD has it).

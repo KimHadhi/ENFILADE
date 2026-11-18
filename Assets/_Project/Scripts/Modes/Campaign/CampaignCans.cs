@@ -133,6 +133,24 @@ internal sealed class CampaignCans
         changed = true;
     }
 
+    /// <summary>
+    /// Can <paramref name="index"/>'s own body in the scene, which Place keeps wherever the can is on this PC (lying, in
+    /// its carrier's hands, in the air). A hint hung on it goes where the can goes; null when the run has no such can.
+    /// </summary>
+    public Transform Body(int index) => index >= 0 && index < cans.Length ? cans[index] : null;
+
+    /// <summary>
+    /// Whether can <paramref name="index"/> is one to go and get now, on this PC's word of it: lying, carried or in the
+    /// air. Not once it is poured, nor while it burns or is burnt away after a shot (it waits again when it is back where
+    /// it first lay).
+    /// </summary>
+    public bool Waits(int index)
+    {
+        if (index < 0 || index >= state.Length) return false;
+        var mode = (Mode)state[index].Mode;
+        return mode == Mode.Lying || mode == Mode.Carried || mode == Mode.Flying;
+    }
+
     /// <summary>The can this player carries, or -1.</summary>
     public int CarriedBy(PlayerMovement player)
     {

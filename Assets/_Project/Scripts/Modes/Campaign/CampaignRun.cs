@@ -293,6 +293,23 @@ public sealed partial class CampaignRun : MonoBehaviour
         if (active != null && active.IsHost) active.fuel.Relocate(index, position);
     }
 
+    /// <summary>
+    /// Fuel can <paramref name="index"/> as a thing a hint can be hung on (GimmickCanSpots): its own body, which is
+    /// wherever the can is on this PC, so the hint follows a can that is carried off or thrown. False when the run has no
+    /// such can or it is not one to fetch now (CanWaits).
+    /// </summary>
+    public static bool TryCanToFetch(int index, out Transform body)
+    {
+        body = active != null ? active.fuel.Body(index) : null;
+        return body != null && active.fuel.Waits(index);
+    }
+
+    /// <summary>
+    /// Whether fuel can <paramref name="index"/> is still one to go and get on this PC (CampaignCans.Waits): a hint on it
+    /// ends when this turns false (poured, or burnt after a shot).
+    /// </summary>
+    public static bool CanWaits(int index) => active != null && active.fuel.Waits(index);
+
     /// <summary>A burn hold's fire burns now (the host's word on every PC): BurnFire draws it.</summary>
     public static bool Burning => active != null && !active.finished && active.burning;
 

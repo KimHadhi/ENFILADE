@@ -5,7 +5,8 @@ using UnityEngine;
 /// 자리는 판마다 바뀌고 입구 게시판이 알려 줘요"): the run's seed picks as many of its spots as there are cans, and the host
 /// moves the cans there before anyone sees them (CampaignRun.RelocateCan; the cans' places go to the others with their
 /// state). [F] at the board, or the station's cameras that look over the yard (GimmickCamera), tells everyone the places
-/// plainly and marks the cans a while (AlertHUD.Find, as many as it shows at once). States: how many times it was read.
+/// plainly and marks the cans themselves a while (AlertHUD.Place, as many as it shows at once): a mark stays on its can
+/// while the can is carried or thrown and goes when the can is poured. States: how many times it was read.
 /// </summary>
 public sealed class GimmickCanSpots : GimmickSwitch
 {
@@ -51,21 +52,28 @@ public sealed class GimmickCanSpots : GimmickSwitch
         if (fresh) Tell();
     }
 
-    /// <summary>Every PC: the places said, and the cans still lying marked a while (the board read, or the cameras).</summary>
-    internal void Tell()
+    /// <summary>
+    /// Every PC: the cans still to be fetched, said and marked a while (the board read, or the cameras). The mark hangs on
+    /// the can itself, so it goes where the can is carried or thrown, and it ends when the can is poured or burns
+    /// (CampaignRun.CanWaits). Until 2026-11-18 the spot was marked instead: a point taken once, which stayed 45 s
+    /// whatever became of the can (the user: "연료통을 옮겨도 목표 힌트 핑이 초기 위치에 고정되는 문제 및 이미 투입 완료된
+    /// 연료통의 기존 위치에 핑이 잔존하는 문제"). A can already poured is neither named nor marked. False when no can is
+    /// left to tell of, so the cameras can say their own line instead (GimmickCamera).
+    /// </summary>
+    internal bool Tell()
     {
-        if (chosen.Length == 0) return;
         var words = new System.Text.StringBuilder();
         for (int i = 0; i < chosen.Length; i++)
         {
-            if (i > 0) words.Append(" · ");
+            // Can i is the one the seed laid at chosen[i] (Seed).
+            if (!CampaignRun.TryCanToFetch(i, out Transform can)) continue;
+            if (words.Length > 0) words.Append(" · ");
             words.Append(chosen[i] < places.Length ? Texts.Get(places[chosen[i]]) : "?");
+            int index = i;
+            AlertHUD.Place(can, MarkSeconds, () => !CampaignRun.CanWaits(index));
         }
+        if (words.Length == 0) return false;
         AlertHUD.Self(Texts.Format("gimmick.board.cans", words.ToString()));
-        for (int i = 0; i < chosen.Length; i++)
-        {
-            var at = spots[chosen[i]];
-            if (at != null) AlertHUD.Place(at, MarkSeconds);
-        }
+        return true;
     }
 }
