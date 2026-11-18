@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// upward, with a hexagon in their seat colour, the name and number over ten health cells. Each card leans back a little
 /// further than the one below. Only up to Hud.csv's Team.limit teammates: with more, the panel goes away and only the
 /// marks over their heads remain (TeammateMarkerHUD), the way big rooms elsewhere do it. Someone down shows the time
-/// they have left in red; someone dead stays listed, greyed.
+/// they have left in red; someone dead stays listed, greyed. A friend's shield shows as a thin band over their health
+/// cells (HealthSegments.ShowShield; their PC sends it with their health, PlayerNetworkPose).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class TeamHealthPanel : MonoBehaviour
@@ -30,6 +31,10 @@ public sealed class TeamHealthPanel : MonoBehaviour
     [SerializeField] private float fan = 2.5f;
     [Tooltip("Turn within the screen (°). Positive raises the right side.")]
     [SerializeField] private float roll = 1.5f;
+    [Tooltip("Height of the shield's band over the health cells (px).")]
+    [SerializeField] private float shieldBand = 2f;
+    [Tooltip("Room between the health cells and the shield's band (px).")]
+    [SerializeField] private float shieldGap = 1f;
 
     private sealed class Card
     {
@@ -63,7 +68,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
         var card = new Card { root = FeelUI.Rect("Card", plane) };
         card.root.anchorMin = card.root.anchorMax = Vector2.zero;
         card.root.pivot = new Vector2(0f, .5f);
-        card.cells = new HealthSegments(card.root, Cell);
+        card.cells = new HealthSegments(card.root, Cell, shieldBand, shieldGap);
         card.root.sizeDelta = new Vector2(TextLeft + card.cells.Width + Pad, CardHeight);
 
         var plate = FeelUI.Rect("Plate", card.root);
@@ -93,7 +98,9 @@ public sealed class TeamHealthPanel : MonoBehaviour
         var cells = card.cells.Rect;
         cells.anchorMin = cells.anchorMax = cells.pivot = Vector2.zero;
         cells.anchoredPosition = new Vector2(TextLeft, 5f);
-        float line = 5f + Cell.y + 1f;
+        // The name and number stand over the cells and the shield band's room over them, shield or not, so nothing on
+        // the card moves when a shield comes or goes.
+        float line = 5f + Cell.y + card.cells.BandRoom + 1f;
         card.name = FeelUI.ScoreLabel("Name", card.root, 14f, TextAlignmentOptions.BottomLeft);
         Place(card.name.rectTransform, Vector2.zero, new Vector2(TextLeft, line), card.cells.Width * .66f);
         // A long name stops short of the number.
@@ -156,6 +163,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
             card.name.color = card.value.color = card.badge.color = Gone;
             card.value.text = Texts.Get("team.dead");
             card.cells.Show(0f, Gone);
+            card.cells.ShowShield(0f);
             return;
         }
         card.name.color = card.badge.color = seat;
@@ -165,6 +173,8 @@ public sealed class TeamHealthPanel : MonoBehaviour
             card.value.text = Texts.Get("team.downed");
             card.value.color = HealthSegments.Downed;
             card.cells.Show(remaining, HealthSegments.Downed);
+            // The cells are the time left to get them up now, not health: no shield over them.
+            card.cells.ShowShield(0f);
             return;
         }
         float share = Mathf.Clamp01(health.Health / health.MaximumHealth);
@@ -172,6 +182,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
         card.value.text = Mathf.CeilToInt(health.Health).ToString();
         card.value.color = color;
         card.cells.Show(share, color);
+        card.cells.ShowShield(health.Shield / health.MaximumHealth);
     }
 
     private void OnDestroy() { if (host != null) Destroy(host); }

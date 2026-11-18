@@ -21,11 +21,19 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     /// <summary>This player's look as the room knows it (empty before it is first sent): the results stand a copy of it.</summary>
     internal string Look => skin.Value.ToString();
-    // The maximum before the health, so a copy knows how much it can hold (a perk's 145, not the base 100: friend
-    // feedback C14, where a teammate's card read 100 for 145).
-    private readonly NetworkVariable<float> maximumHealth = new NetworkVariable<float>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<float> health = new NetworkVariable<float>(default,
+    /// <summary>
+    /// What a copy shows of its player's body, as one value: the health, how much it can hold (a perk's 145, not the base
+    /// 100: friend feedback C14, where a teammate's card read 100 for 145) and the shield over it. They were two values
+    /// sent apart, the maximum and the health, with a second look at the health whenever a bigger maximum came after it,
+    /// and the shield was not sent at all, so no PC could show a friend's (the user, 2026-11-18: "좌측 팀원 HUD에 아군 쉴드
+    /// 게이지 표시 추가"). One value arrives whole, so a copy never holds a health under the wrong maximum.
+    /// </summary>
+    private struct Vitals : INetworkSerializeByMemcpy
+    {
+        public float Health, Maximum, Shield;
+    }
+
+    private readonly NetworkVariable<Vitals> vitals = new NetworkVariable<Vitals>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private PlayerMovement movement;
 
@@ -41,8 +49,7 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         pose.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = SendInterval });
         if (IsOwner)
         {
-            maximumHealth.Value = movement.DamageReceiver.MaximumHealth;
-            health.Value = movement.DamageReceiver.Health;
+            vitals.Value = VitalsNow();
             GameSettings.Changed += SendSkin;
             SendSkin();
             ProfilePicture.Changed += SendPortrait;
@@ -53,11 +60,9 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         AskPortraitRpc();
         pose.OnValueChanged += OnPoseChanged;
         skin.OnValueChanged += OnSkinChanged;
-        maximumHealth.OnValueChanged += OnMaximumChanged;
-        health.OnValueChanged += OnHealthChanged;
+        vitals.OnValueChanged += OnVitalsChanged;
         ShowSkin();
-        if (maximumHealth.Value > 0f) movement.DamageReceiver.SetMaximumHealth(maximumHealth.Value);
-        if (health.Value > 0f) movement.DamageReceiver.ShowHealth(health.Value);
+        ShowVitals(vitals.Value, true);
     }
 
     public override void OnNetworkDespawn()
@@ -67,16 +72,29 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         GameSettings.Changed -= SendSkin;
         pose.OnValueChanged -= OnPoseChanged;
         skin.OnValueChanged -= OnSkinChanged;
-        maximumHealth.OnValueChanged -= OnMaximumChanged;
-        health.OnValueChanged -= OnHealthChanged;
+        vitals.OnValueChanged -= OnVitalsChanged;
     }
 
-    // A bigger maximum may come after the health it holds: the health is shown again under it.
-    private void OnMaximumChanged(float previous, float current)
+    // The owner's body as it is now.
+    private Vitals VitalsNow()
     {
-        if (current <= 0f) return;
-        movement.DamageReceiver.SetMaximumHealth(current);
-        if (health.Value > 0f) movement.DamageReceiver.ShowHealth(health.Value);
+        var body = movement.DamageReceiver;
+        return new Vitals { Health = body.Health, Maximum = body.MaximumHealth, Shield = body.Shield };
+    }
+
+    private void OnVitalsChanged(Vitals previous, Vitals current) => ShowVitals(current, false);
+
+    // On a copy: its body shows what its owner's PC says, the maximum first so the health fits under it. A maximum of 0
+    // is a value nobody has written yet (a copy made before its owner's first word): the copy keeps what it has. On a
+    // copy health 0 is death (PlayerMovement.IsDead), so the first value's health is taken only when it is above 0, as it
+    // always was here: an owner whose body is not set up at that moment must not read as dead for a frame.
+    private void ShowVitals(in Vitals now, bool first)
+    {
+        if (now.Maximum <= 0f) return;
+        var body = movement.DamageReceiver;
+        body.SetMaximumHealth(now.Maximum);
+        if (!first || now.Health > 0f) body.ShowHealth(now.Health);
+        body.SetShield(now.Shield);
     }
 
     private void Update()
@@ -97,15 +115,12 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
             now.Tick = (uint)Mathf.Max(1, NetworkManager.ServerTime.Tick);
             pose.Value = now;
         }
-        maximumHealth.Value = movement.DamageReceiver.MaximumHealth;
-        health.Value = movement.DamageReceiver.Health;
+        vitals.Value = VitalsNow();
     }
 
     // A copy's pose came in: how late, for the buffer (NetSmoothing). The host's own player comes the way zombies do.
     private void OnPoseChanged(PlayerPose previous, PlayerPose current)
         => NetSmoothing.Heard(NetworkManager, current.Tick, OwnerClientId == NetworkManager.ServerClientId);
-
-    private void OnHealthChanged(float previous, float current) => movement.DamageReceiver.ShowHealth(current);
 
     // The owner's picture, small, to everyone else: on joining, when it changes, and when a newcomer asks.
     private void SendPortrait()

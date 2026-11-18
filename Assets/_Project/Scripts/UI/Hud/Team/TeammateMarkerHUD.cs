@@ -19,6 +19,8 @@ public sealed class TeammateMarkerHUD : MonoBehaviour
     private const float HeadClearance = .12f;
     private static readonly Color BarBack = new Color(0f, 0f, 0f, .45f);
     private static readonly Vector2 Cell = new Vector2(7f, 9f);
+    // The shield's band over the standing mark's health cells: its height and the room under it (px).
+    private const float ShieldBand = 2f, ShieldGap = 1f;
 
     private sealed class Mark
     {
@@ -61,7 +63,7 @@ public sealed class TeammateMarkerHUD : MonoBehaviour
         mark.bar.anchoredPosition = new Vector2(-BarWidth * .5f, 12f);
         mark.barFill = mark.bar.gameObject.AddComponent<Image>();
         mark.barFill.raycastTarget = false;
-        mark.cells = new HealthSegments(mark.root, Cell);
+        mark.cells = new HealthSegments(mark.root, Cell, ShieldBand, ShieldGap);
         mark.cells.Rect.anchoredPosition = new Vector2(0f, Cell.y * .5f);
         mark.pointer = FeelUI.Rect("Pointer", mark.root);
         mark.pointer.sizeDelta = new Vector2(Pointer, Pointer);
@@ -109,6 +111,7 @@ public sealed class TeammateMarkerHUD : MonoBehaviour
         mark.label.text = named ? tally.DisplayName : other.name;
         mark.label.color = named ? tally.Color : Color.white;
         mark.cells.Show(share, HealthSegments.ColorFor(share));
+        mark.cells.ShowShield(other.DamageReceiver.Shield / other.DamageReceiver.MaximumHealth);
         return true;
     }
 
@@ -120,7 +123,8 @@ public sealed class TeammateMarkerHUD : MonoBehaviour
         mark.back.gameObject.SetActive(downed);
         mark.bar.gameObject.SetActive(downed);
         mark.cells.SetActive(!downed);
-        mark.label.rectTransform.anchoredPosition = new Vector2(0f, downed ? 26f : Cell.y + 11f);
+        // The standing mark's name stands over the cells and the shield band's room, shield or not.
+        mark.label.rectTransform.anchoredPosition = new Vector2(0f, downed ? 26f : Cell.y + mark.cells.BandRoom + 11f);
     }
 
     private void Place(Mark mark, PlayerMovement other, DownedAura aura, float distance)

@@ -35,6 +35,10 @@ public sealed class ScoreboardHUD : MonoBehaviour
     {
         public RectTransform root;
         public Image seat;
+        // The class they play: its icon in its colour before the name, its title before the character's under it
+        // (the user, 2026-11-18: "Tab 현황판에서 아군이 선택한 클래스 확인 가능하도록"). The id was already sent to every
+        // PC (PlayerNetworkScore → PlayerTally.ClassId); the row never drew it.
+        public RawImage classIcon;
         public TextMeshProUGUI name, character, kills, executions, downs, deaths, score, ping;
         public RawImage money;
         public readonly WeaponCell[] weapons = new WeaponCell[WeaponColumns];
@@ -246,8 +250,20 @@ public sealed class ScoreboardHUD : MonoBehaviour
         seat.sizeDelta = new Vector2(5f, 0f);
         row.seat = seat.gameObject.AddComponent<Image>();
         row.seat.raycastTarget = false;
-        row.name = Cell("Name", row.root, PlayerColumn, 9f, 370f, 21f, TextAlignmentOptions.Left);
-        row.character = Cell("Character", row.root, PlayerColumn, -13f, 370f, 13f, TextAlignmentOptions.Left);
+        // The class icon stands where the player column began; the name and the line under it start past it and end
+        // short of the kills column.
+        float classSize = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "classIcon", 30f));
+        float textLeft = PlayerColumn + classSize + Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "classGap", 8f));
+        float textWidth = KillsAt - textLeft - 10f;
+        var classRect = FeelUI.Rect("Class", row.root);
+        classRect.anchorMin = classRect.anchorMax = new Vector2(0f, .5f);
+        classRect.anchoredPosition = new Vector2(PlayerColumn + classSize * .5f, 0f);
+        classRect.sizeDelta = new Vector2(classSize, classSize);
+        row.classIcon = classRect.gameObject.AddComponent<RawImage>();
+        row.classIcon.raycastTarget = false;
+        row.classIcon.enabled = false;
+        row.name = Cell("Name", row.root, textLeft, 9f, textWidth, 21f, TextAlignmentOptions.Left);
+        row.character = Cell("Character", row.root, textLeft, -13f, textWidth, 13f, TextAlignmentOptions.Left);
         row.character.color = Soft;
         row.kills = Cell("Kills", row.root, KillsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
         row.executions = Cell("Executions", row.root, ExecutionsAt, 0f, NumberWidth, 20f, TextAlignmentOptions.Center);
@@ -332,7 +348,16 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.name.text = tally.DisplayName;
         row.name.color = tally.Color;
         var body = player.GetComponent<PlayerBody>();
-        row.character.text = body != null && body.Skin != null ? body.Skin.DisplayName : "";
+        string character = body != null && body.Skin != null ? body.Skin.DisplayName : "";
+        // Their class: how a class shows is ClassLook's (colour from ClassColours.csv, icon, title), a mod's class too.
+        string title = ClassLook.Title(tally.ClassId);
+        Color classColour = ClassLook.Colour(tally.ClassId, Soft);
+        var classPicture = ClassLook.Icon(tally.ClassId);
+        row.classIcon.texture = classPicture;
+        row.classIcon.color = classColour;
+        row.classIcon.enabled = classPicture != null;
+        row.character.text = title.Length == 0 ? character
+            : "<color=#" + ColorUtility.ToHtmlStringRGB(classColour) + ">" + title + "</color>" + (character.Length > 0 ? "  ·  " + character : "");
         row.kills.text = tally.Kills.ToString();
         row.executions.text = tally.Executions.ToString();
         row.downs.text = tally.Downs.ToString();

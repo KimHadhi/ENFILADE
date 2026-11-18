@@ -38,6 +38,10 @@ Team.bottom,292,가장 아래 아군 카드의 아래 끝(px. 화면 아래부�
 Team.yaw,8,가장 아래 카드가 면보다 더 기우는 각도(°). +면 오른쪽이 멀어진다
 Team.fan,2.5,위 카드로 갈수록 한 장마다 더 기우는 각도(°)
 Team.roll,1.5,카드가 화면 안에서 도는 각도(°). +면 오른쪽이 올라간다
+Team.shieldBand,2,아군 카드에서 체력 칸 위에 뜨는 쉴드 띠의 높이(px). 띠의 칸 하나는 그 아래 체력 칸과 같은 양(최대 체력의 10분의 1)이고 색은 Player.csv Shield.color. 키우면 이름 줄이 그만큼 올라가 카드 위로 넘칠 수 있다(새로 만드는 카드부터 적용)
+Team.shieldGap,1,체력 칸과 쉴드 띠 사이(px)
+Board.classIcon,30,Tab 현황판 줄에서 이름 앞에 서는 클래스 아이콘 한 변(px). 색은 ClassColours.csv의 그 클래스 색
+Board.classGap,8,클래스 아이콘과 이름 사이(px)
 Mission.badgeSize,50;54,느낌표 칸의 너비;높이(px). 가장 높은 칸. 글자 칸과 같은 아랫선에서 위로만 솟는다
 Mission.barHeight,36,목표 글자 칸의 높이(px). 가장 낮은 칸. 이 칸의 아랫선에 세 칸이 같이 선다
 Mission.counterHeight,43,남은 수 칸의 높이(px). 중간 높이. 글자 칸 끝에 이어 붙는다
