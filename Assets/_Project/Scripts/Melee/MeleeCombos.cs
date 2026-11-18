@@ -16,8 +16,8 @@ public enum ComboStrike : byte { None, Riposte, Spin, Chase, Beat, Finisher }
 /// - Link (user, 2026-11-11 #10, League's auto-attack reset: "평타 Q 평타", the attack after the Q a special spinning
 ///   move): a skill hands the punch straight back. The fists' shove, the guard break once it lands, a dash push that
 ///   meets someone and the crouched sweep each leave Link.window seconds in which an attack press is a spinning backfist
-///   at once: stepping in Link.reach further, through up to Link.targets bodies, harder than a full charge (how wide it
-///   cuts is the blade's own path now, not a wider sweep). The shove keeps its own wait.
+///   at once: through up to Link.targets bodies, harder than a full charge (how far and how wide it cuts is the
+///   blade's own path now, not a longer, wider sweep). The shove keeps its own wait.
 /// - Chase (Sekiro's shuriken into Chasing Slice): for Chase.window seconds after a stone is thrown (T), an attack press
 ///   with someone under the crosshair within Chase.range dashes at them and lands the spinning backfist. With nobody
 ///   there the press is an ordinary punch and the chance stays open.
@@ -64,8 +64,6 @@ public sealed class MeleeCombos : MonoBehaviour
         public float damage = 1.3f;
         [Min(0f), Tooltip("Its posture damage against a full-charged punch's.")]
         public float posture = 1.5f;
-        [Min(0f), Tooltip("The body may step in this much further than the knife's own lunge (m).")]
-        public float reach = .3f;
         [Min(1), Tooltip("Bodies it can go through.")]
         public int targets = 3;
     }
@@ -402,9 +400,9 @@ public sealed class MeleeCombos : MonoBehaviour
 
     /// <summary>
     /// A combo strike's numbers (PlayerMeleeCombat): damage and posture against a full-charged swing's, its reach (for a
-    /// strike aimed at someone, how near the eyes they must be for it to land on them for sure; for a spin, how much
-    /// further than the knife's own lunge the body may step in) and how many bodies it cuts through (0: the knife's own).
-    /// How wide it cuts is the blade's own path (BladeTrace): the spin's sweep radius is gone.
+    /// strike aimed at someone, how near the eyes they must be for it to land on them for sure; 0 for the others) and
+    /// how many bodies it cuts through (0: the knife's own). How far and how wide a spin cuts is the blade's own path
+    /// (BladeTrace): its sweep radius and its extra reach are gone.
     /// </summary>
     internal void Numbers(ComboStrike strike, out float damage, out float posture, out float reach, out int targets)
     {
@@ -412,7 +410,7 @@ public sealed class MeleeCombos : MonoBehaviour
         switch (strike)
         {
             case ComboStrike.Riposte: damage = riposte.damage; posture = riposte.posture; reach = riposte.reach; break;
-            case ComboStrike.Spin: damage = link.damage; posture = link.posture; reach = link.reach; targets = link.targets; break;
+            case ComboStrike.Spin: damage = link.damage; posture = link.posture; targets = link.targets; break;
             case ComboStrike.Chase: damage = chase.damage; posture = chase.posture; reach = chase.reach; targets = link.targets; break;
             case ComboStrike.Beat: damage = 1f + beat.stepDamage * beatStep; posture = 1f + beat.stepPosture * beatStep; break;
             case ComboStrike.Finisher: damage = beat.finisherDamage; posture = beat.finisherPosture; reach = beat.finisherReach; break;

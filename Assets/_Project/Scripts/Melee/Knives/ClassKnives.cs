@@ -77,11 +77,14 @@ public static class ClassKnives
         /// <summary>
         /// What a swing reaches and cuts with is the blade itself, as the arm shows it (the user, 2026-11-18: "공격 범위 및
         /// 히트 판정은 별도 박스 판정이 아닌 True FPS 1인칭 화면에 보이는 실제 무기 모델 자체를 기준으로 처리"; BladeTrace,
-        /// KnifeSeat), so the row no longer says how far it reaches: the model and the clip do. It says how far the body
-        /// may step in to bring the blade to whoever the swing is aimed at (m; 0: it never steps, and only cuts what the
-        /// blade reaches from where the player stands), and how thick the cut is round the blade's line (m).
+        /// KnifeSeat), so the row no longer says how far it reaches: the model and the clip do. It says how thick the cut
+        /// is round the blade's line (m), and whether the body steps in to bring the blade to whoever the swing is aimed
+        /// at, by how far at most (m). 0, which every knife has, is no step: the swing cuts what the blade reaches from
+        /// where the player stands (the user, 2026-11-18, having played: "런지 없습니다. 근데 뭐 없어도 될 것 같습니다.
+        /// 필요하면 나중에 추가하겠습니다"). A row that gives a number turns the step on for that knife; the play's record
+        /// then says how far each swing really stepped (Logs/knife-play.txt).
         /// </summary>
-        public float Lunge = 1.2f, BladeRadius = .04f;
+        public float Lunge, BladeRadius = .04f;
     }
 
     /// <summary>A forward grip's blade: out of the thumb's side, leaning the fingers' way, so a fist held thumb up points it ahead.</summary>

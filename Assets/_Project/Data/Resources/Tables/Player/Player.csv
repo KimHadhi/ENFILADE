@@ -10,8 +10,8 @@ Ultimate.chargePerRevive,15,쓰러진 동료를 일으키거나 죽은 동료를
 Ultimate.chargePerHundredRepaired,5,서포트가 바리케이드 체력을 100 고칠 때마다 충전(%)
 Ultimate.chargePerRescue,6,러너에게 깔린 동료를 밀쳐서 구할 때마다 충전(%). 보급 한 번과 같다
 Fists.aimRadius,0.25,휘두르기가 누구를 겨눈 것인지 정하는 폭(m): 조준선에서 이만큼 안에 선 가장 가까운 적. 칼날이 닿는 거리와 판정은 수치가 아니라 보이는 칼 모델 자체다(사용자 2026-11-18: 공격 범위 및 히트 판정은 별도 박스 판정이 아닌 True FPS 1인칭 화면에 보이는 실제 무기 모델 자체를 기준으로 처리). 그래서 예전 Fists.reach(눈에서 1.6m)는 없어졌다
-Fists.bite,0.25,겨눈 적에게 파고드는 깊이(m): 칼날이 그 몸통(캡슐) 겉에서 이만큼 안쪽까지 지나갈 수 있는 자리까지 몸이 다가선다(칼마다의 ClassKnives.csv lunge 안에서. 몸끼리 닿으면 멈춘다)
-Fists.reachIn,0.15,다가서고도 모자란 만큼 팔이 클립보다 더 뻗는 한도(m). 칼날이 살아 있는 구간 동안만 손목이 앞으로 더 나간다
+Fists.bite,0.25,겨눈 적을 베는 깊이(m): 칼날이 그 몸통(캡슐) 겉에서 이만큼 안쪽까지 지나가도록 팔이 뻗는다(reachIn 안에서). 스텝인이 있는 칼(ClassKnives.csv lunge가 0보다 큼. 지금은 없다)은 그 깊이가 되는 자리까지 몸도 다가선다
+Fists.reachIn,0.15,조준선의 적에게 칼날이 닿도록 팔이 클립보다 더 뻗는 한도(m). 칼날이 살아 있는 구간 동안만 손목이 앞으로 더 나간다. 몸은 다가서지 않으므로(런지 없음) 칼날이 닿는 거리(0.4~1.0m)에 이만큼을 더한 안쪽에 서 있어야 베인다
 Fists.attackBuffer,0.35,휘두르기가 아직 묶여 있을 때 누른 공격을 기억해 주는 시간(초): 다음 동작을 시작할 수 있게 되기까지 이만큼 안 남았으면 기억했다가 거기서 다음 선딜로 이어진다. 선딜·공격 속도·관통력·차징 시간·피해는 칼마다 ClassKnives.csv에 있고(windup·attackSpeed·penetration·chargeTime·slash·stab) 칼날이 살아 있는 구간과 후딜은 칼 클립의 표시에 있다. 2026-11-18 전의 fullChargeTime·damage·postureDamage·attackCooldown·attackActiveTime·attackMaxTargets는 없어졌다
 Fists.heavyPunchCharge,0.6,이만큼 차징한 공격은 강공격이다(0~1): 칼의 강공격 클립(stabClip)이 나가고 묵직한 타격음을 낸다
 Fists.punchThrowKick,-0.3;0.8;0.6,주먹을 뻗을 때 화면이 잠깐 도는 각도(도): 위;주먹 쪽으로 돌기;주먹 쪽으로 기울기. 화면만 돌고 조준은 그대로

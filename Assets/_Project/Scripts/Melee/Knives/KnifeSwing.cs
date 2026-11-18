@@ -28,6 +28,8 @@ public sealed class KnifeSwing
         public bool Held;
     }
 
+    /// <summary>The table it was read from (what the records call it).</summary>
+    public string Table { get; private set; }
     /// <summary>The clip's length (s: its last key).</summary>
     public float Length { get; private set; }
     /// <summary>
@@ -129,7 +131,7 @@ public sealed class KnifeSwing
 
     private static KnifeSwing Read(string table)
     {
-        var clip = new KnifeSwing();
+        var clip = new KnifeSwing { Table = table };
         var read = new List<(Key key, FingerWays fingers)>();
         bool everyFinger = true;
         float from = -1f, to = -1f, next = -1f;

@@ -1,4 +1,7 @@
+using System.Text;
 using UnityEngine;
+
+// dev-text: file (the record's lines are for whoever reads Logs/knife-play.txt; nothing here is shown in the game)
 
 /// <summary>
 /// The swing's blade (PlayerMeleeCombat's part for it): what a swing reaches and cuts is the knife itself, as the arm
@@ -11,26 +14,28 @@ using UnityEngine;
 ///   the two frames with them, in steps short enough that nothing slips between (a flick of the view drags the blade
 ///   through its arc, as it looks). Only the part of the frame the clip spent inside its marks is cut, so the same swing
 ///   cuts the same at any frame rate.
-/// - The step in and the reach in. A knife is short: its blade gets 0.4 to 1 m ahead of the eyes (measured from the
-///   clips: KnifeSeat.Reach), and a zombie stops 1.6 m off. So a swing is aimed: it leaves at whoever stands under the
-///   crosshair (a combo's strike at whom it names), the body steps in toward them until the blade can pass a little
-///   into their body (never further than the knife's own lunge, ClassKnives.csv, never into them), and the arm reaches
-///   the last few centimetres (the wrist goes that much further ahead through the blade's marks, MeleeKnife). The step
-///   begins with the wind-up, the arm drawn back as the body goes, so the body stands there when the swing leaves, and
-///   the swing aims again as it leaves (a charge may have been held a while). Nothing but the visible blade ever hits:
-///   the step and the reach only bring it there. With nobody under the crosshair the swing is thrown where the player
-///   stands.
+/// - The reach. A knife is short: its blade gets 0.4 to 1 m ahead of the eyes (measured from the clips: KnifeSeat.Reach),
+///   and that is how near the player has to stand. Nothing moves the body for them (the user, having played it,
+///   2026-11-18: "런지 없습니다. 근데 뭐 없어도 될 것 같습니다. 필요하면 나중에 추가하겠습니다"). What the swing does for
+///   itself is the arm's: aimed at whoever stands under the crosshair within the blade's reach and a little more, the
+///   wrist goes that little further ahead through the blade's marks (reachIn; MeleeKnife), so a body the player stands
+///   against is cut through and not grazed. Nothing but the visible blade ever hits.
+/// - The step in is there for a knife whose row asks for it (ClassKnives.csv lunge above 0; every knife has 0): then the
+///   body steps toward whom the swing is aimed at, from the wind-up on, until the blade can pass a little into them,
+///   never further than that lunge and never into them. It has not been seen in play; a row that turns it on is checked
+///   in the record below, which says how far each swing really stepped.
 /// A combo's strike aimed at someone (a riposte, a chase, a finisher) still lands on them as its blade goes live, the
 /// sure hit a press made in time earns, and its blade cuts whoever else it passes.
-/// Until then the hit was a sphere cast out of the eyes (1.6 m and the knife's extra reach, 0.22 m wide) with a fixed
-/// 12 cm nudge forward, whatever the arm showed.
+/// Every swing of this PC's own player writes what it did to Logs/knife-play.txt (PlayRecord): whom it was aimed at
+/// and by what numbers, how far the body really stepped, how far ahead the blade as posed really got, and every body
+/// it reached. Until 2026-11-18 a swing left no record, so whether a step had run in a play could not be told from one.
 /// </summary>
 public sealed partial class PlayerMeleeCombat
 {
     [Header("Blade")]
     [SerializeField, Min(.05f), Tooltip("A swing is aimed at whoever stands this near the crosshair's line (m, the radius of the look's sweep).")]
     private float aimRadius = .25f;
-    [SerializeField, Min(0f), Tooltip("The body steps in until the blade can pass this far into the other's body (m, past the surface of their capsule).")]
+    [SerializeField, Min(0f), Tooltip("The arm reaches (and a knife with a lunge steps) until the blade can pass this far into the other's body (m, past the surface of their capsule).")]
     private float bite = .25f;
     [SerializeField, Min(0f), Tooltip("The arm may reach this much further ahead than its clip to bring the blade that deep (m).")]
     private float reachIn = .15f;
@@ -40,6 +45,12 @@ public sealed partial class PlayerMeleeCombat
     // longer than BladeStep at the tip (m), no more than MostBladeSteps of them.
     private const float StepGap = .32f, StepLeast = .07f, StepMost = .2f, BladeStep = .05f;
     private const int MostBladeSteps = 24;
+    private const string RecordName = "knife-play";
+    private const string RecordHeading = "every swing of this PC's own player (PlayerMeleeCombat.Blade). AIM = whom the swing went at and by what "
+        + "numbers ('blade' = how far ahead of the eyes this clip's blade gets on this body; 'step' = how far the body is to step in, 0 unless the "
+        + "knife's lunge in ClassKnives.csv is above 0; 'arm' = how much further the arm reaches than its clip). LEAVE = the swing leaving. "
+        + "CUT = what its blade did: how long it was live, how far ahead of the eyes the blade as posed really got, how far the body really "
+        + "stepped, and every body it reached (part, damage, what came of it), or nothing.";
 
     private readonly BladeTrace blade = new BladeTrace();
     private readonly RaycastHit[] aimed = new RaycastHit[24];
@@ -55,6 +66,12 @@ public sealed partial class PlayerMeleeCombat
     // through, kept until the arm has been posed.
     private float liveFrom, liveTo, ranFrom, ranTo;
     private bool livePending;
+    // The record of the swing under way: whom it was aimed at, what was planned and what happened.
+    private readonly StringBuilder struckNote = new StringBuilder();
+    private Collider aimedBody;
+    private float planned, stepped, furthest, liveSince;
+    private int places, frames;
+    private bool noting, worldNoted;
 
     /// <summary>
     /// How much further ahead than its clip the arm reaches through the blade's marks of the swing under way (m), to
@@ -64,25 +81,28 @@ public sealed partial class PlayerMeleeCombat
     /// <summary>The marks of the swing under way (MeleeKnife eases the reach in by them).</summary>
     public SwingMarks SwingMarks => swing.Marks;
 
-    // A wind-up began (the player's own PC): the body already goes at whoever the swing will be thrown at, aimed by the
-    // light swing that is coming, to stand where its blade reaches by the time the wind-up is over.
+    // A wind-up began (the player's own PC). A knife that steps in (its lunge above 0) already goes at whoever the swing
+    // will be thrown at, aimed by the light swing that is coming, to stand where its blade reaches by the time the
+    // wind-up is over. A knife with no lunge, which is every knife as the tables stand, is aimed as it leaves only.
     private void AimWindup()
     {
         if (knifeArm == null && player != null) knifeArm = player.GetComponent<MeleeKnife>();
-        if (knifeArm == null) return;
-        AimSwing(null, knifeArm.Coming, MeleeKnife.Held(player), 0f, swing.Windup / Mathf.Max(.01f, swing.Speed));
+        var knife = MeleeKnife.Held(player);
+        if (knifeArm == null || knife.Lunge <= 0f) return;
+        AimSwing(null, knifeArm.Coming, knife, swing.Windup / Mathf.Max(.01f, swing.Speed), "wind-up");
     }
 
-    // A swing is aimed (the player's own PC), as its wind-up begins and again as it leaves: at the one a combo names,
-    // else at whoever stands under the crosshair within what the blade, the step in and the arm can reach together.
-    // The step is what is missing for the blade to pass `bite` into their body, taken within the time given (s), and
-    // the arm's reach what the step leaves over.
-    private void AimSwing(MeleeCombatTarget given, KnifeSwing clip, ClassKnives.Knife knife, float further, float within)
+    // A swing is aimed (the player's own PC), as it leaves (and as its wind-up begins for a knife that steps in): at the
+    // one a combo names, else at whoever stands under the crosshair within what the blade, the arm and the knife's step
+    // can reach together. The step, when the knife has one, is what is missing for the blade to pass `bite` into their
+    // body, taken within the time given (s); the arm's reach is what the step leaves over.
+    private void AimSwing(MeleeCombatTarget given, KnifeSwing clip, ClassKnives.Knife knife, float within, string when)
     {
         stepAt = null; stepBody = null; stepLeft = 0f; SwingReachIn = 0f;
+        aimedBody = null; planned = 0f;
         if (clip == null || !clip.Cuts || knifeArm == null || aim == null) return;
         float bladeReach = knifeArm.Reach(clip);
-        float lunge = player.IsGrounded ? knife.Lunge + further : 0f;
+        float lunge = player.IsGrounded ? knife.Lunge : 0f, range = bladeReach + lunge + reachIn;
         Collider body;
         Vector3 point;
         if (given != null)
@@ -91,22 +111,32 @@ public sealed partial class PlayerMeleeCombat
             if (body == null || !given.IsAvailable) return;
             point = body.ClosestPoint(aim.position);
         }
-        else if (!AimedBody(bladeReach + lunge + reachIn, out given, out body, out point)) return;
-        Approach(Vector3.Distance(aim.position, point), BodyGap.Across(player, body, out _), bladeReach, lunge, bite, reachIn,
-            out float step, out float arm);
+        else if (!AimedBody(range, out given, out body, out point))
+        {
+            if (PlayRecord.On)
+                Say($"AIM   {when} {clip.Table}: blade {bladeReach:0.00} m ahead, lunge {lunge:0.00}; nobody under the crosshair within {range:0.00} m");
+            return;
+        }
+        float distance = Vector3.Distance(aim.position, point), gap = BodyGap.Across(player, body, out _);
+        Approach(distance, gap, bladeReach, lunge, bite, reachIn, out float step, out float arm);
         SwingReachIn = arm;
+        aimedBody = body;
+        if (PlayRecord.On)
+            Say($"AIM   {when} {clip.Table}: blade {bladeReach:0.00} m ahead, lunge {lunge:0.00}; {NameOf(body)} {distance:0.00} m from the eyes, "
+                + $"gap {gap:0.00}: step {step:0.00}, arm {arm:0.00}");
         if (step < .01f) return;
         float time = Mathf.Clamp(within, StepLeast, StepMost);
         stepAt = given; stepBody = body; stepLeft = step; stepSpeed = step / time;
+        planned = step;
     }
 
     /// <summary>
     /// How a swing goes to meet a body (the one working of it, the game's and KnifeSwingReport's): the body is
     /// <paramref name="distance"/> from the eyes and <paramref name="gap"/> from the middle of the player's capsule
-    /// (m, to its surface), the blade gets <paramref name="bladeReach"/> ahead of the eyes. The body steps in until the
-    /// blade can pass <paramref name="bite"/> into the other, never further than the lunge and never nearer than the two
-    /// capsules about touching, and the arm reaches what is still missing, up to <paramref name="reachIn"/>. Returns how
-    /// far the blade then passes into the body (m; below 0: it falls that short).
+    /// (m, to its surface), the blade gets <paramref name="bladeReach"/> ahead of the eyes. A knife with a lunge steps in
+    /// until the blade can pass <paramref name="bite"/> into the other, never further than the lunge and never nearer than
+    /// the two capsules about touching, and the arm reaches what is still missing, up to <paramref name="reachIn"/>.
+    /// Returns how far the blade then passes into the body (m; below 0: it falls that short).
     /// </summary>
     public static float Approach(float distance, float gap, float bladeReach, float lunge, float bite, float reachIn, out float step, out float arm)
     {
@@ -147,7 +177,18 @@ public sealed partial class PlayerMeleeCombat
         float move = Mathf.Min(stepSpeed * dt, stepLeft, Mathf.Max(0f, gap - StepGap));
         if (move <= 0f) { stepLeft = 0f; return; }
         stepLeft -= move;
+        stepped += move;
         player.Motor.AddDisplacement(toward * move);
+    }
+
+    // The swing leaves (the player's own PC): said in the record, with what its wind-up stepped.
+    private void NoteLeave(ComboStrike strike, float charge, KnifeSwing clip)
+    {
+        if (PlayRecord.On)
+            Say($"LEAVE {(strike == ComboStrike.None ? (charge >= heavyPunchCharge ? "heavy" : "light") : strike.ToString())} charge {charge:0.00} "
+                + (clip != null ? $"{clip.Table}: blade live {clip.ActiveFrom:0.00}-{clip.ActiveTo:0.00} s of the clip, next {clip.Next:0.00}, speed x{swing.Speed:0.##}" : "no clip")
+                + (stepped > 0f ? $"; stepped {stepped:0.00} m in the wind-up" : ""));
+        stepped = 0f;
     }
 
     // The blade of the swing under way goes live (its clip has reached the mark), once a swing, on the player's own PC.
@@ -158,8 +199,28 @@ public sealed partial class PlayerMeleeCombat
         if (!swingJudged || bladeOpened || swing.Now != SwingTimeline.Phase.Swing || swing.ClipTime < swing.Marks.From) return;
         bladeOpened = true;
         var at = swingAt; swingAt = null;
-        blade.Begin(player, aim, swingDamage, swingPosture, swingTargets, MeleeKnife.Held(player).BladeRadius, hitLayers, OnPunchLanded, OnPunchWallHit);
-        if (at != null && StrikeTarget(at, swingDamage, swingPosture, swingReach)) blade.Spare(at.GetComponent<IDamageReceiver>());
+        noting = PlayRecord.On;
+        struckNote.Length = 0;
+        furthest = 0f; places = frames = 0; worldNoted = false; liveSince = Time.time;
+        blade.Begin(player, aim, swingDamage, swingPosture, swingTargets, MeleeKnife.Held(player).BladeRadius, hitLayers, OnPunchLanded, OnWorldMet,
+            noting ? NoteStruck : (System.Action<Collider, float, bool, DamageResult>)null);
+        if (at == null) return;
+        bool sure = StrikeTarget(at, swingDamage, swingPosture, swingReach);
+        if (sure) blade.Spare(at.GetComponent<IDamageReceiver>());
+        if (noting) struckNote.Append(NameOf(at)).Append(sure ? " the combo's sure strike" : " the combo's sure strike did not land (out of its reach or sight)");
+    }
+
+    private void OnWorldMet()
+    {
+        worldNoted = true;
+        OnPunchWallHit();
+    }
+
+    private void NoteStruck(Collider collider, float dealt, bool head, DamageResult result)
+    {
+        if (struckNote.Length > 0) struckNote.Append("; ");
+        struckNote.Append(NameOf(collider)).Append(' ').Append(ZombieGore.PartOf(collider)).Append(' ').Append(dealt.ToString("0.#"))
+            .Append(head ? " head " : " ").Append(result);
     }
 
     // What this step ran through of the blade's marks, kept for when the arm has been posed (BladePosed, late in the frame).
@@ -195,12 +256,17 @@ public sealed partial class PlayerMeleeCombat
                 float share = Mathf.Lerp(first, last, i / (float)steps);
                 Quaternion turn = Quaternion.Slerp(shownLook, look, share);
                 Vector3 from = Vector3.Lerp(shownEyes, eyes, share);
-                blade.Pass(from + turn * Vector3.Lerp(shownStart, nowStart, share), from + turn * Vector3.Lerp(shownTip, nowTip, share));
+                Vector3 startThen = Vector3.Lerp(shownStart, nowStart, share), tipThen = Vector3.Lerp(shownTip, nowTip, share);
+                blade.Pass(from + turn * startThen, from + turn * tipThen);
+                places++;
+                furthest = Mathf.Max(furthest, Mathf.Max(startThen.z, tipThen.z));
             }
+            frames++;
         }
         livePending = false;
         shownStart = nowStart; shownTip = nowTip; shownEyes = eyes; shownLook = look; shownFrame = Time.frameCount;
         if (blade.Open && (swing.Now != SwingTimeline.Phase.Swing || swing.ClipTime >= swing.Marks.To)) blade.End();
+        if (!blade.Open) NoteCut();
     }
 
     // A frame's live stretch nobody posed a blade for (a body with no arm to hold a knife): cut where the clip alone puts it.
@@ -215,8 +281,38 @@ public sealed partial class PlayerMeleeCombat
     private void EndBlade()
     {
         blade.End();
+        NoteCut();
         stepAt = null; stepBody = null;
         stepLeft = 0f;
         livePending = false;
+    }
+
+    // The blade's part of the swing is over: what it did, once, in the record.
+    private void NoteCut()
+    {
+        if (!noting) return;
+        noting = false;
+        string reached = struckNote.Length > 0 ? struckNote.ToString() : "nothing";
+        if (worldNoted) reached += "; the world";
+        string where = aimedBody != null && aim != null
+            ? $" | aimed at {NameOf(aimedBody)}, {Vector3.Distance(aim.position, aimedBody.ClosestPoint(aim.position)):0.00} m from the eyes at the end"
+            : " | aimed at nobody";
+        Say($"CUT   live {Time.time - liveSince:0.00} s in {frames} frames, {places} places; the blade as posed got {furthest:0.00} m ahead of the eyes; "
+            + $"stepped {stepped:0.00} of {planned:0.00} m; arm {SwingReachIn:0.00} | {reached}{where}");
+        stepped = 0f;
+    }
+
+    private static void Say(string line) => PlayRecord.Line(RecordName, RecordHeading, line);
+
+    // A body as the records name it: a zombie by its kind and a number (as Logs/stealth.txt names it), anything else by
+    // the name of what takes its damage.
+    private static string NameOf(Component of)
+    {
+        if (of == null) return "(gone)";
+        var mind = of.GetComponentInParent<ZombieMind>();
+        if (mind != null)
+            return (mind.TryGetComponent(out ZombieType type) ? type.Kind.ToString() : "?") + "#" + (mind.GetInstanceID() & 0xFFFF).ToString("X4");
+        var receiver = of.GetComponentInParent<IDamageReceiver>() as Component;
+        return receiver != null ? receiver.name : of.name;
     }
 }

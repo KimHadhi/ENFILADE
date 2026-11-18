@@ -44,6 +44,7 @@ public sealed class BladeTrace
     private LayerMask layers;
     private long attackId;
     private Action onCut, onWorld;
+    private Action<Collider, float, bool, DamageResult> onStruck;
     private bool worldMet, placed;
     private Vector3 lastStart, lastTip;
 
@@ -54,15 +55,17 @@ public sealed class BladeTrace
 
     /// <summary>
     /// A swing's blade goes live: what it deals, how many bodies it cuts through, how thick its cut is round the blade's
-    /// line (m), and who is told of each body cut and of the world met (once).
+    /// line (m), and who is told of each body cut and of the world met (once). <paramref name="onStruck"/> hears of every
+    /// body the blade reached, cut or not: the collider met, what was dealt, whether it was the head, and what came of it
+    /// (the play's record of the swing).
     /// </summary>
     public void Begin(PlayerMovement owner, Transform eyes, float damage, float posture, int most, float radius, LayerMask layers,
-        Action onCut = null, Action onWorld = null)
+        Action onCut = null, Action onWorld = null, Action<Collider, float, bool, DamageResult> onStruck = null)
     {
         End();
         this.owner = owner; this.eyes = eyes; this.damage = damage; this.posture = posture;
         this.most = Mathf.Max(1, most); this.radius = Mathf.Max(.005f, radius); this.layers = layers;
-        this.onCut = onCut; this.onWorld = onWorld;
+        this.onCut = onCut; this.onWorld = onWorld; this.onStruck = onStruck;
         Cut = 0; worldMet = placed = false; struck.Clear();
         attackId = DamageHit.NewAttackId();
         Open = owner != null;
@@ -162,6 +165,7 @@ public sealed class BladeTrace
         Vector3 way = contact.Way.sqrMagnitude > .5f ? contact.Way : toward;
         var result = receiver.ReceiveHit(new DamageHit(attackId, dealt, DamageKind.Attack, contact.Point, way, owner.gameObject, true,
             posture, isCritical: head, method: MeleeKnife.MethodOf(owner), part: ZombieGore.PartOf(contact.Collider)));
+        onStruck?.Invoke(contact.Collider, dealt, head, result);
         if (result == DamageResult.Blocked || result == DamageResult.Parried) { End(); return; }
         if (result != DamageResult.Damaged) return;
         contact.Collider.GetComponentInParent<MeleeCombatTarget>().OrNull()?.ApplyPostureDamage(posture);

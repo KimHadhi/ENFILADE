@@ -8,8 +8,10 @@ using System.Text;
 /// clips' phases (KnifeSwing: how long, when the blade is live, when the next action may begin) with what is wrong with
 /// them, and what a script of presses turns into on that knife's own timeline (SwingTimeline, the class the game itself
 /// steps): a tap, a hold, a mash; and where each clip puts the blade (KnifeSeat, from the knife model's own markers):
-/// how far ahead of the eyes it gets, how far it travels through its marks, and what a swing at a body standing at a
-/// few distances does (PlayerMeleeCombat.Approach: the step in, the arm's reach, how deep the blade then passes). The
+/// how far ahead of the eyes it gets, how far it travels through its marks, how near a body must stand to be cut, and
+/// what a swing at a body standing at a few distances does (PlayerMeleeCombat.Approach: the arm's reach, the step in
+/// of a knife that has a lunge, how deep the blade then passes). What a play's swings really did is in
+/// Logs/knife-play.txt (PlayerMeleeCombat.Blade). The
 /// editor writes it to Logs/knife-swings.txt after every compile and whenever a table is saved (MeleeReportFiles), so
 /// the file is always what the game would do.
 /// </summary>
@@ -17,9 +19,11 @@ public static class KnifeSwingReport
 {
     // The classes whose knives are listed: every row of the table, the default first.
     private const float Step = 1f / 240f;
-    // Bodies a swing is tried on, by how far their capsule's surface is from the eyes (m): touching, a step off, where a
-    // zombie stops to strike (1.6 m between the two middles, its capsule 0.28 m thick), and too far.
-    private static readonly float[] Stands = { .32f, .8f, 1.32f, 2f };
+    // Bodies a swing is tried on, by how far their capsule's surface is from the eyes (m): touching, half a metre and
+    // so on, and where a zombie stops to strike (1.6 m between the two middles, its capsule 0.28 m thick). A zombie's
+    // flesh (its bone hitboxes) starts about Flesh inside its capsule.
+    private static readonly float[] Stands = { .32f, .5f, .7f, 1f, 1.32f };
+    private const float Flesh = .15f;
 
     /// <summary>One press of a script: the attack button goes down at Down and up at Up (s).</summary>
     public readonly struct Press
@@ -55,8 +59,10 @@ public static class KnifeSwingReport
         text.AppendLine("== The blade: what each clip reaches, by the knife's own model (no number says how far a knife reaches) ==");
         float bite = GameTables.Number(PlayerMovement.TableName, "Fists", "bite", .25f), reachIn = GameTables.Number(PlayerMovement.TableName, "Fists", "reachIn", .15f);
         text.AppendLine("Worked out for a hand " + N(KnifeSeat.NominalHand) + " m long (the game measures the body's own). 'ahead' is how far ahead of the eyes the");
-        text.AppendLine("blade gets while it is live; a body is tried at " + string.Join(", ", System.Array.ConvertAll(Stands, N)) + " m from the eyes (its capsule's surface): the body steps in");
-        text.AppendLine("(lunge), the arm reaches (up to " + N(reachIn) + "), and the blade passes that deep into the capsule (aimed for " + N(bite) + "; a zombie's flesh starts about 0.15 inside it).");
+        text.AppendLine("blade gets while it is live. 'still' is how near a body's capsule must be to the eyes for the blade to get into its flesh (" + N(Flesh) + " m inside the");
+        text.AppendLine("capsule) with the player standing where they are: the arm reaches up to " + N(reachIn) + " m further than the clip for whoever the swing is aimed at. A body is then");
+        text.AppendLine("tried at " + string.Join(", ", System.Array.ConvertAll(Stands, N)) + " m from the eyes (its capsule's surface): how far a knife with a lunge steps in (0: none");
+        text.AppendLine("steps), how far the arm reaches, and how deep into the capsule the blade then passes (aimed for " + N(bite) + "). A zombie stops 1.32 m off: the player walks the rest.");
         foreach (var knife in knives)
         {
             var prefab = UnityEngine.Resources.Load<UnityEngine.GameObject>(knife.Model);
@@ -133,6 +139,7 @@ public static class KnifeSwingReport
             has = true;
         }
         text.Append("    ").Append(kind.PadRight(6)).Append((table ?? "").PadRight(31)).Append("ahead ").Append(N(ahead).PadRight(6))
+            .Append("still ").Append(N(ahead + reachIn - Flesh).PadRight(6))
             .Append("tip travels ").Append(N(travel)).Append(" m, at most ").Append(N(fastest)).Append(" m/s (")
             .Append(System.Math.Max(1, (int)System.Math.Ceiling(fastest / 60f / .05f))).Append(" steps a frame at 60)  |");
         foreach (float stand in Stands)
@@ -142,8 +149,9 @@ public static class KnifeSwingReport
             text.Append("  at ").Append(N(stand)).Append(": ");
             if (!seen) text.Append("too far");
             else text.Append("step ").Append(N(step)).Append(" arm ").Append(N(arm)).Append(deep >= 0f ? " in " : " SHORT ").Append(N(System.Math.Abs(deep)));
-            if (seen && deep < .15f && stand <= 1.4f)
-                problems.Add($"{knife.Id}: the {kind} clip '{table}' gets only {N(deep)} m into a body {N(stand)} m off (its blade gets {N(ahead)} m ahead): a zombie's flesh starts about 0.15 m inside its capsule.");
+            // Standing against a body (the first distance) is as near as a player gets: a clip that does not cut then never does.
+            if (stand <= Stands[0] && (!seen || deep < Flesh))
+                problems.Add($"{knife.Id}: the {kind} clip '{table}' gets only {N(deep)} m into a body the player stands against (its blade gets {N(ahead)} m ahead): a zombie's flesh starts about {N(Flesh)} m inside its capsule.");
         }
         text.AppendLine();
     }

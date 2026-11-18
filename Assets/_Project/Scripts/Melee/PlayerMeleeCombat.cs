@@ -14,8 +14,9 @@ using UnityEngine;
 /// may cut a recovery short: it is the reward for a press made in time, and it still waits for a blade that is live.
 /// Until then the swing left on the button's release with no wind-up, a hit set the wait to nothing, and every knife
 /// cut the same two bodies.
-/// What a swing reaches and cuts is the knife's own blade as the arm shows it, brought to whoever it is aimed at by a
-/// step in and the arm's reach: PlayerMeleeCombat.Blade.cs.
+/// What a swing reaches and cuts is the knife's own blade as the arm shows it, from where the player stands (the arm
+/// reaches a little for whoever it is aimed at; no knife steps in as the tables stand): PlayerMeleeCombat.Blade.cs,
+/// which also writes every swing to Logs/knife-play.txt.
 /// Who has the keys only decides what the input frame holds (the user's item 14, 2026-11-18): with the chat or a menu
 /// up the buttons read as let go, which a charge takes as its release and a guard as its end, and nothing under way is
 /// thrown away for it.
@@ -421,9 +422,10 @@ public sealed partial class PlayerMeleeCombat : MonoBehaviour
             swingReach = strikeReach;
             // A combo's own count of bodies (a spin goes through three), else what the knife cuts.
             swingTargets = targets > 0 ? targets : knife.Penetration;
-            // The body and the arm go to meet whoever the swing is aimed at: the one a combo names, else the one under
-            // the crosshair. A spin's own reach is a longer step in.
-            AimSwing(at, clip, knife, at == null ? strikeReach : 0f, clip != null ? clip.ActiveFrom / Mathf.Max(.01f, swing.Speed) : 0f);
+            // The swing is aimed at the one a combo names, else at the one under the crosshair: the arm reaches for them
+            // (and a knife with a lunge steps in).
+            NoteLeave(strike, charge, clip);
+            AimSwing(at, clip, knife, clip != null ? clip.ActiveFrom / Mathf.Max(.01f, swing.Speed) : 0f, "leave");
         }
         LastStrike = strike;
         Punched?.Invoke(charge);
