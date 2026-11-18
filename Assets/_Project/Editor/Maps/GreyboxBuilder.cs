@@ -55,6 +55,9 @@ public sealed partial class GreyboxBuilder
         // The floor it stands on, when that floor isn't one of the layout's boxes (a bought scene's prop on its
         // building's floor, PackScene); NaN: the highest box under it (FloorUnder).
         public float Floor = float.NaN;
+        // A solid prop's unseen box (PropSolid, Furnish, a bought scene's prop): another prop may be stacked on it, its
+        // box raised past its model or not (GreyboxBuilder.Standing).
+        public bool Prop;
     }
 
     private readonly string sceneName, title;
@@ -120,7 +123,7 @@ public sealed partial class GreyboxBuilder
         MarkStatic();
         // No probe bake here: the models the sun can't reach lose their shadows now (GreyboxBuilder.Shadows).
         QuietSunlessShadows();
-        return SurfaceReport() + DressReport() + DecalReport() + SunlessReport();
+        return SurfaceReport() + DressReport() + StandReport() + DecalReport() + SunlessReport();
     }
 
     /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.
@@ -664,6 +667,6 @@ public sealed partial class GreyboxBuilder
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
              (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) + MetaReport() +
-             SurfaceReport() + DressReport() + DecalReport() + SunlessReport() + PackReport() + GimmickReport());
+             SurfaceReport() + DressReport() + StandReport() + DecalReport() + SunlessReport() + PackReport() + GimmickReport());
     }
 }

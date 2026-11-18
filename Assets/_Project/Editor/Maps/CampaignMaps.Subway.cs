@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using Side = GreyboxBuilder.Side;
 
 // CampaignMaps: chapter 3, the subway, with its dressing. One part of the class; the rest is in CampaignMaps.cs and the files beside it.
 public static partial class CampaignMaps

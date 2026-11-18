@@ -9,7 +9,7 @@ using UnityEngine;
 public static class GimmickSounds
 {
     // New cues go at the end: a lure's cue is saved in the map by its number.
-    public enum Cue { Static, Clunk, Ding, Smash, Hiss, Unlock, Jingle, Snap, Crash, Whistle, CarAlarm, Fire, Rumble, Beep, Chime, FireBell, Lever, Shutter }
+    public enum Cue { Static, Clunk, Ding, Smash, Hiss, Unlock, Jingle, Snap, Crash, Whistle, CarAlarm, Fire, Rumble, Beep, Chime, FireBell, Lever, Shutter, Generator }
 
     private const int Rate = 44100;
     private static readonly AudioClip[] made = new AudioClip[Enum.GetValues(typeof(Cue)).Length];
@@ -41,6 +41,7 @@ public static class GimmickSounds
             Cue.FireBell => FireBell(),
             Cue.Lever => Lever(),
             Cue.Shutter => Shutter(),
+            Cue.Generator => Generator(),
             _ => Whistle()
         };
         var clip = AudioClip.Create("Gimmick " + cue, samples.Length, 1, Rate, false);
@@ -381,6 +382,29 @@ public static class GimmickSounds
             float roll = low * 2.2f * slats * Mathf.Clamp01(t / .15f) * Mathf.Clamp01((1.5f - t) / .2f);
             float knock = t > 1.5f ? Mathf.Sin(2f * Mathf.PI * 90f * (t - 1.5f)) * Mathf.Exp(-(t - 1.5f) * 16f) : 0f;
             s[i] = Mathf.Clamp(roll + knock * .9f, -1f, 1f) * .75f;
+        }
+        return s;
+    }
+
+    // A portable generator running: a small engine's firing, a putter 25 times a second, over its drone and a breath
+    // of exhaust. Low throughout (nothing above 150 Hz but the noise, kept dark): loops (2 s, a whole number of firings
+    // and of every tone's turns, so its ends meet).
+    private static float[] Generator()
+    {
+        var random = new System.Random(29);
+        int count = Rate * 2;
+        var s = new float[count];
+        float low = 0f;
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)Rate;
+            float white = (float)(random.NextDouble() * 2.0 - 1.0);
+            low += (white - low) * .05f;
+            float beat = t * 25f % 1f;
+            float putter = Mathf.Exp(-beat * 9f) * Mathf.Sin(2f * Mathf.PI * 75f * t);
+            float drone = Mathf.Sin(2f * Mathf.PI * 50f * t) * .35f + Mathf.Sin(2f * Mathf.PI * 100f * t) * .2f
+                + Mathf.Sin(2f * Mathf.PI * 150f * t) * .08f;
+            s[i] = Mathf.Clamp(putter * .45f + drone * .5f + low * 1.2f, -1f, 1f) * .7f;
         }
         return s;
     }

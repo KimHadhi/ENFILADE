@@ -233,7 +233,11 @@ public sealed partial class GreyboxBuilder
         box.GetComponent<Renderer>().enabled = false;
         TurnBlock(box, yaw);
         var block = BlockOf(box);
-        if (block != null) block.Floor = floor;
+        if (block != null)
+        {
+            block.Floor = floor;
+            block.Prop = true;
+        }
         packSolids++;
         if (!cap) return;
         Cap(box, unit.name, new Vector3(middle.x, floor + height, middle.z), half, yaw);

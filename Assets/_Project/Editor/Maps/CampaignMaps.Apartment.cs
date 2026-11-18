@@ -20,7 +20,7 @@ public static partial class CampaignMaps
     // 6th floor); the caretaker's flat 503 has the log that says which flat the master key is in this run (2nd to 4th
     // floor) and the one can of disinfectant gas for a flat's vent; each floor down there is a way by the stairs (one
     // flight fallen in each run), a hole through a flat's floor (one of two each run), a fire ladder between balconies, or
-    // the lift (loud: it chimes and wakes the floor it opens on; its power is on the roof); the ground floor's stair door is
+    // the lift (loud: it chimes and wakes the floor it opens on; its power is the generator on the roof); the ground floor's stair door is
     // chained (the master key, or smashed in, loud); from the ground floor's corridor the cellar's switchboard powers the
     // alley's shutter and starts its hold, and the back door at the corridor's east end lets out into the alley.
     private static void ApartmentBlock(GreyboxBuilder b)
@@ -33,8 +33,8 @@ public static partial class CampaignMaps
         AptStairs(b);
         AptBalconies(b);
         AptCellar(b);
-        var lift = AptLift(b, floorsBox);
-        AptRoofTop(b, lift);
+        AptLift(b, floorsBox);
+        AptRoofTop(b);
         AptVariants(b);
         AptGimmicks(b, floorsBox);
         AptCrowds(b);
@@ -95,20 +95,40 @@ public static partial class CampaignMaps
         for (int i = values.Count - 1; i > 0; i--) if (values[i] - values[i - 1] < .005f) values.RemoveAt(i);
     }
 
-    // A wall running along x (thickness z0..z1) from y0 to y1, openings (x from, x to, y from, y to).
+    // How far either side of a wall a doorway through it stays clear of furniture (m): a zombie's whole body is through
+    // the wall before anything may stand in front of it (twice the walk mesh's 0.5 m agent radius).
+    private const float DoorStep = 1f;
+
+    // A wall running along x (thickness z0..z1) from y0 to y1, openings (x from, x to, y from, y to). Each opening is a
+    // way through: it and the step either side of the wall are kept clear (GreyboxBuilder.KeepClear), so the build
+    // never stands furniture in a doorway, whatever size the model turns out to be.
     private static void WallX(GreyboxBuilder b, string name, float x0, float x1, float z0, float z1, float y0, float y1,
         params (float, float, float, float)[] openings)
-        => Pierced(x0, x1, y0, y1, openings, (i, a0, a1, c0, c1) => b.Box($"{name} {i + 1}", a0, a1, c0, c1, z0, z1));
+    {
+        Pierced(x0, x1, y0, y1, openings, (i, a0, a1, c0, c1) => b.Box($"{name} {i + 1}", a0, a1, c0, c1, z0, z1));
+        foreach (var (from, to, low, high) in openings) b.KeepClear(name + " 문", from, to, low, high, z0 - DoorStep, z1 + DoorStep);
+    }
 
-    // A wall running along z (thickness x0..x1), openings (z from, z to, y from, y to).
+    // A wall running along z (thickness x0..x1), openings (z from, z to, y from, y to), kept clear as WallX's.
     private static void WallZ(GreyboxBuilder b, string name, float x0, float x1, float z0, float z1, float y0, float y1,
         params (float, float, float, float)[] openings)
-        => Pierced(z0, z1, y0, y1, openings, (i, a0, a1, c0, c1) => b.Box($"{name} {i + 1}", x0, x1, c0, c1, a0, a1));
+    {
+        Pierced(z0, z1, y0, y1, openings, (i, a0, a1, c0, c1) => b.Box($"{name} {i + 1}", x0, x1, c0, c1, a0, a1));
+        foreach (var (from, to, low, high) in openings) b.KeepClear(name + " 문", x0 - DoorStep, x1 + DoorStep, low, high, from, to);
+    }
 
-    // A floor slab with its top at y, holes (x from, x to, z from, z to).
+    // A floor slab with its top at y, holes (x from, x to, z from, z to). Nothing is stood over a hole: the storey over
+    // it is kept clear, plugged in this run or not.
     private static void SlabWith(GreyboxBuilder b, string name, float y, float x0, float x1, float z0, float z1,
         Material material, string surface, params (float, float, float, float)[] holes)
-        => Pierced(x0, x1, z0, z1, holes, (i, a0, a1, c0, c1) => b.Box($"{name} {i + 1}", a0, a1, y - Wall, y, c0, c1, material, surface));
+    {
+        Pierced(x0, x1, z0, z1, holes, (i, a0, a1, c0, c1) => b.Box($"{name} {i + 1}", a0, a1, y - Wall, y, c0, c1, material, surface));
+        foreach (var (h0, h1, k0, k1) in holes) b.KeepClear(name + " 구멍", h0, h1, y - Wall, y + AptCeiling, k0, k1);
+    }
+
+    // A room's free space, floor to ceiling, from its extents on the floor (x0, x1, z0, z1): what Furnish is told.
+    private static Bounds RoomOf((float x0, float x1, float z0, float z1) room, float floor)
+        => new Rect3(room.x0, room.x1, floor, floor + AptCeiling, room.z0, room.z1).Bounds;
 
     // A door's opening in a wall: from..to along the wall, from the floor up to a door's height.
     private static (float, float, float, float) DoorIn(float from, float to, float floor, float high = DoorHigh) => (from, to, floor, floor + high);

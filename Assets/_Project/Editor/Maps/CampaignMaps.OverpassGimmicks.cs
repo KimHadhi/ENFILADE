@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using Side = GreyboxBuilder.Side;
 
 // CampaignMaps: chapter 2's gimmicks: the jam's alarm cars and sleepers, the service area, the burning car pile, the toll
 // road with its office, the army checkpoint and the span that falls in. One part of the class; the rest is in

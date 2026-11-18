@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using Side = GreyboxBuilder.Side;
 
 // CampaignMaps: chapter 1, the rooftops and the apartment it starts in, with its dressing. One part of the class; the rest is in CampaignMaps.cs and the files beside it.
 public static partial class CampaignMaps

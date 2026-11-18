@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using Side = GreyboxBuilder.Side;
 
 /// <summary>
 /// The campaign's chapters as grey blocks (multiplayer plan stage 5A), one item each under
@@ -20,7 +21,6 @@ using UnityEngine;
 public static partial class CampaignMaps
 {
     private const float Wall = .3f, ParapetHeight = .9f;
-    private enum Side { West, East, South, North }
 
     /// <summary>Every chapter in a row after one question (memo 48: the small-prop fix needs each map rebuilt).</summary>
     [MenuItem("ENFILADE/맵/캠페인/모든 장 다시 짓기", priority = 0)]

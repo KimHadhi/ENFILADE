@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Side = GreyboxBuilder.Side;
 
 // CampaignMaps: chapter 1's block of flats, its gimmicks: the lift, the roof's machine room, what changes from run to run,
 // the caretaker's log and the master key, the vents, the TVs, the cellar's switchboard, who sleeps where and who walks the
@@ -30,13 +31,22 @@ public static partial class CampaignMaps
 
     // ---- The lift ----
 
-    // Its car on every floor behind the corridor's doors (GimmickElevator), powered from the roof's machine room (the
-    // breaker made here, its lamps the cars'); it stands at the top floor as the map is built.
-    private static GimmickElevator AptLift(GreyboxBuilder b, System.Func<int, Rect3> floorsBox)
+    // Its car on every floor behind the corridor's doors (GimmickElevator), powered by the generator on the open roof
+    // (made here, its lamps the cars'); it stands at the top floor as the map is built.
+    // The generator (the user, 2026-11-18: "옥상 엘리베이터 작동용 발전기 배치"): the lift's power used to be a breaker on
+    // the far wall of the roof's machine room, and a 4 m light-tower generator stood in that 3 m room as dressing, across
+    // its whole depth and 0.2 m behind its door, so nobody could reach the breaker and the lift never ran. Now the
+    // generator is the power: it stands on the open roof beside the machine room, and [F] at its side starts it.
+    private static void AptLift(GreyboxBuilder b, System.Func<int, Rect3> floorsBox)
     {
         // At the world's origin: its doors are boxes under it, laid in its own space (GimmickElevator works out where [F] is).
         var lift = b.Switch<GimmickElevator>("B4 승강기", Vector3.zero);
-        var power = b.Switch<GimmickBreaker>("B4 옥상 기계실 차단기", new Vector3(103.45f, AptRoof + 1.3f, -2.9f), 270f);
+        // Lengthways along the machine room's west wall, a walkway's width off it; the build measures the model and
+        // says where it stood (LastStoodAt), and the handle is on its side facing the machine room's door.
+        const float GeneratorYaw = 90f;
+        Vector3 asked = new Vector3(97.6f, AptRoof, -3f);
+        Vector3 stands = b.PropSolid("generator", asked, GeneratorYaw) != null ? b.LastStoodAt : asked;
+        var power = b.Switch<GimmickBreaker>("B4 옥상 발전기", stands + new Vector3(b.ArtSize("generator").z * .5f, 1.1f, 0f), GeneratorYaw);
         var doors = new List<Transform>();
         var calls = new List<Transform>();
         var lamps = new List<Light>();
@@ -68,9 +78,11 @@ public static partial class CampaignMaps
         GreyboxBuilder.Configure(power, so =>
         {
             so.FindProperty("circuit").stringValue = "Ch1.Lift";
+            so.FindProperty("offerUp").stringValue = "gimmick.generator.start";
+            so.FindProperty("offerDown").stringValue = "gimmick.generator.stop";
+            so.FindProperty("engine").boolValue = true;
             FillObjects(so.FindProperty("lamps"), lamps);
         });
-        return lift;
     }
 
     private static void Fill(UnityEditor.SerializedProperty array, List<float> values)
@@ -97,8 +109,9 @@ public static partial class CampaignMaps
         for (int i = 0; i < values.Count; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
     }
 
-    // The roof: the machine room over the lift (the lift's breaker on its east wall), water tanks.
-    private static void AptRoofTop(GreyboxBuilder b, GimmickElevator lift)
+    // The roof: the machine room over the lift (its fuse box on the east wall is only seen; the lift's power is the
+    // generator outside its door, AptLift), water tanks.
+    private static void AptRoofTop(GreyboxBuilder b)
     {
         const float X0 = ShaftX - Wall, Z0 = ShaftZ - Wall, Z1 = -1.2f, Top = AptRoof + 2.7f;
         b.Box("B4 기계실 서벽 1", X0, ShaftX, AptRoof, Top, Z0, -3.6f);
@@ -109,7 +122,6 @@ public static partial class CampaignMaps
         b.Box("B4 기계실 동벽", AptIn1, AptX1, AptRoof, Top, ShaftZ, -1.5f);
         b.Box("B4 기계실 지붕", X0, AptX1, Top, Top + Wall, Z0, Z1);
         b.Mount("fusebox", new Vector3(AptIn1, AptRoof + 1.3f, -2.9f), 270f);
-        b.PropSolid("generator", new Vector3(101.6f, AptRoof, -3.5f), 90f);
         b.Spot("B4Roof", new Vector3(95f, AptRoof, -6f));
         b.PropSolid("watertank", new Vector3(91f, AptRoof, -11.5f), 30f);
         b.PropSolid("watertank", new Vector3(91f, AptRoof, 12f), 300f);
@@ -340,7 +352,13 @@ public static partial class CampaignMaps
     // ---- Furniture ----
 
     // Each flat: a sofa facing the TV wall and a table in the front room, a shelf, a fridge or lockers and boxes in the back
-    // room; a few lamps the survivors left lit on the corridors; litter. Kept off the doors and the holes.
+    // room; a few lamps the survivors left lit on the corridors; litter.
+    // The furniture is named with its room and wall, and the build stands it (GreyboxBuilder.Furnish): it measures the
+    // model, slides it along that wall clear of the doorways, the holes and whatever stands there already (a master
+    // key's table), and refuses what the room cannot hold. It was stood at fixed points 0.5 m off a corner, whatever
+    // the model's size: the "fridge" was the airport's four-door shop chiller, 4 m wide, and it and the 2 m wire shelves
+    // stood through the outer and the party walls (35 of the block's props in the build of 11-16; the user, 2026-11-18:
+    // "망가진 맵 오브젝트 배치 복구").
     private static void AptDressing(GreyboxBuilder b)
     {
         for (int f = 0; f < AptStoreys; f++)
@@ -353,12 +371,13 @@ public static partial class CampaignMaps
                 float face = north ? 0f : 180f;
                 var front = flat.front;
                 var back = flat.back;
-                // The sofa against the front room's west wall, facing in (the fallen corner has none: they land there).
-                if (!(f >= 4 && flat.n == 1))
-                    b.PropSolid("couch", new Vector3(front.Item1 + .6f, y, (front.Item3 + front.Item4) * .5f), 90f, flat.n + f);
+                var outer = north ? Side.North : Side.South;
+                // The sofa on the front room's west wall, facing in (the fallen corner has none: they land there).
+                if (!(f >= 4 && flat.n == 1)) b.Furnish("couch", RoomOf(front, y), Side.West, .5f, flat.n + f);
                 b.Prop("chair", new Vector3(front.Item2 - 1.2f, y, (front.Item3 + front.Item4) * .5f), face + 30f * flat.n, f);
-                b.PropSolid("wireshelf", new Vector3(back.Item2 - .5f, y, north ? back.Item4 - .45f : back.Item3 + .45f), face + 180f);
-                b.PropSolid(f % 2 == 0 ? "fridge" : "locker", new Vector3(back.Item1 + .5f, y, north ? back.Item4 - .45f : back.Item3 + .45f), face + 180f);
+                // On the back room's outer wall: a shelf at its east end, a fridge or a locker at its west end.
+                b.Furnish("wireshelf", RoomOf(back, y), outer, 1f);
+                b.Furnish(f % 2 == 0 ? "homefridge" : "locker", RoomOf(back, y), outer, 0f);
                 foreach (var (dx, dz) in new[] { (1.6f, 1.3f), (2.4f, 1.9f) })
                     b.Prop("cardboard", new Vector3(back.Item1 + dx, y, north ? back.Item4 - dz : back.Item3 + dz), dx * 37f + f * 11f);
                 b.Prop(flat.n % 2 == 0 ? "trashbag" : "litter", new Vector3(front.Item2 - .6f, y, north ? front.Item3 + .5f : front.Item4 - .5f), f * 23f);
@@ -370,11 +389,15 @@ public static partial class CampaignMaps
         // The fallen corner on the 5th floor: rubble where they land.
         foreach (var (x, z) in new[] { (88.3f, 3.6f), (89.4f, 8.6f), (88.6f, 6.4f) }) b.Prop("brickdebris", new Vector3(x, 12f, z), x * 19f);
         b.Prop("rubble", new Vector3(89.6f, 12f, 4.8f), 40f);
-        // The front entrance, boarded up from inside.
+        // The front entrance, boarded up from inside: a sofa pushed across the corridor's west end.
         b.Prop("planks", new Vector3(87.7f, 0f, -.4f), 90f);
-        b.PropSolid("couch", new Vector3(88.3f, 0f, .6f), 90f);
-        // The cellar: drums and a generator along its walls.
-        b.PropSolid("generator", new Vector3(93.6f, -3f, -13.8f), 0f);
+        b.Furnish("couch", new Rect3(AptIn0, CoreX - Wall, 0f, AptCeiling, -1.2f, 1.2f).Bounds, Side.West);
+        // The cellar: a store shelf, a water tank and drums along its walls. (A generator stood here as dressing: the
+        // light tower, 4.2 m tall in a 2.7 m cellar, came up 1.2 m through flat 104's floor. The block's one generator
+        // is the lift's, on the roof.)
+        var cellar = new Rect3(AptIn0, PartyX, -3f, -Wall, AptS0, -1.5f).Bounds;
+        b.Furnish("wireshelf", cellar, Side.South, 1f);
+        b.Furnish("watertankportable", cellar, Side.East, .25f);
         foreach (var (x, z) in new[] { (94.4f, -4.2f), (94.5f, -5.1f) }) b.PropSolid("plasticdrum", new Vector3(x, -3f, z));
         b.Lamp(new Vector3(91f, -.8f, -3.5f), 5f, .5f);
         // The building's own sound, cellar to roof.

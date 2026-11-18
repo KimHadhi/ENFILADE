@@ -174,28 +174,20 @@ public sealed partial class GreyboxBuilder
     /// higher up it goes up past it. Tables/MapArt's solid column can say otherwise for a kind: "cap" for a prop nobody
     /// should stand on (an unseen steep ridge over its top, see Cap), or a height in metres for one that only blocks
     /// that far up (a plant's pot; its leaves are walked and shot through).
+    /// It stands where it is told when that place is free. Where it would be inside a wall, a slab, another prop or a
+    /// way kept clear, it is moved the shortest way out along the floor, and refused (null, named in the build's
+    /// report) when that would take it farther than its own length (GreyboxBuilder.Standing; furniture for a room goes
+    /// through Furnish, which is told the room).
     /// </summary>
     public GameObject PropSolid(string kind, Vector3 floor, float yaw = 0f, int pick = -1, float scale = 1f)
     {
+        // The variant is picked by the place asked for, so moving a prop out of a wall never changes which model it is.
         if (!ArtRow(kind, pick, floor, out var prefab, out _, out float turn, out float own)) return null;
         float size = own * scale, angle = yaw + turn;
-        var model = Place(prefab, floor, angle, Vector3.one * size, false);
-        // The model's own box, measured unturned and turned with it: a car at 30° keeps a car-sized box, where its
-        // axis-aligned bounds stood past its corners as unseen walls with a roof in the air beside it.
-        Vector3 half = BoundsOf(prefab).extents * size;
-        float height = half.y * 2f;
-        string solid = ArtSolid(kind);
-        bool cap = solid == "cap";
-        if (!cap && TableCells.TryNumber(solid, out float upTo) && upTo > 0f)
-            height = Mathf.Min(height, upTo);
-        else if (!cap && height > SolidBandLow && height < SolidBandTop)
-            height = height < SolidBandLow + SolidBandSink ? SolidBandLow : SolidBandTop;
-        var box = Box(kind + " (충돌)", floor.x - half.x, floor.x + half.x, floor.y, floor.y + height, floor.z - half.z, floor.z + half.z);
-        box.GetComponent<Renderer>().enabled = false;
-        if (ShootOverCover.IsKind(kind)) box.AddComponent<ShootOverCover>();
-        TurnBlock(box, angle);
-        if (cap) Cap(box, kind, new Vector3(floor.x, floor.y + height, floor.z), half, angle);
-        return model;
+        Vector3 half = BoundsOf(prefab).extents * size, asked = floor;
+        if (!Settle(ref floor, half, half.y * 2f, angle, out string inTheWay))
+            return Refuse(kind, asked, half, half.y * 2f, angle, "벽·바닥·천장이나 다른 것 속이에요(" + inTheWay + "): 제 길이만큼 비켜도 빈 자리가 없어요");
+        return Stand(prefab, kind, floor, angle, size, asked, inTheWay);
     }
 
     /// <summary>
