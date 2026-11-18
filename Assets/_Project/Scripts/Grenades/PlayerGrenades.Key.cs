@@ -4,28 +4,45 @@ using MovementState = PlayerMovement.MovementState;
 // PlayerGrenades: The key. One part of the class; the rest is in PlayerGrenades.cs and the files beside it.
 public sealed partial class PlayerGrenades
 {
+    // The key was taken (a screen, another window) while it held a grenade back. Nobody saw whether it was let go
+    // meanwhile, so the grenade waits in the hand until the key is seen held again: only a release the game sees throws.
+    private bool keyLost;
+
+    /// <summary>
+    /// The key, and what becomes of a grenade in the hand. The hand that holds one keeps it and the throw stays possible,
+    /// unless something must have that hand (the user, 2026-11-18: "일단 왼손을 강제로 써야 하는 상황이 아니라면 수류탄을
+    /// 든 손이 우선 순위를 가져가게 해서 던질 수 있게 하고 싶군요"). Three cases, asked in this order:
+    /// 1. Something must have the left hand (<see cref="HandForced"/>, the one list): the pin goes back, nothing spent.
+    /// 2. The key is not the player's to read (a screen has the body's keys, the window is behind another, a board's
+    ///    pointer has the mouse a grenade key sits on): the grenade waits in the hand.
+    /// 3. The body is in a move of its own that needs no hand (a dodge, a dive, a roll, lying down): the arm is not up,
+    ///    so nothing starts and nothing leaves; the grenade waits in the hand.
+    /// Until that day the pin went back in all three, and for the guard key too, which with a gun is the aim: opening the
+    /// chat, dodging or aiming each cost the player the grenade they held.
+    /// </summary>
     private void Hand(ThrowableInfo info)
     {
         var key = KeyBindings.Find("Player/Grenade");
-        // Two questions kept apart (2026-11-18; they were one "able", so the chat opening counted as the hands being
-        // taken). able: what the body can do, reasons of the game (Able). keys: whether the key is the player's to hold
-        // now: a screen or another window may have the body's keys, and a board's pointer has the mouse, should the
-        // grenade key sit on one of its buttons (InputFocus.Takes). KeyBindings reads a taken key as not held, which
-        // below means "let go", so taken has to be told apart here first.
-        bool able = info != null && key != null && Able();
-        bool keys = movement.InputAvailable && InputFocus.TakesInput() && InputFocus.Takes(key);
-        // The key taken while it still held the grenade back is not the key let go: nobody chose to throw, so the pin
-        // goes back as it does when the hands are taken. A throw the player has already let go is theirs and goes on:
-        // it used to be called back to the belt when the chat or the Esc menu opened during its swing.
-        if (!able || (!keys && !letGo))
+        bool drawn = arm == Arm.Draw || arm == Arm.Hold, inHand = drawn && !letGo;
+        if (info == null || key == null || HandForced())
         {
-            // Hands taken going for it or holding it: the pin goes back, nothing spent; but a flashbang already burning
-            // keeps burning in the hand (a grab bursts it round its holder: Cook).
+            // Going for it or holding it: the pin goes back; but a flashbang already burning keeps burning in the hand (a
+            // grab bursts it round its holder: Cook).
             var held = Throwables.Of(armKind);
-            if ((arm == Arm.Draw || arm == Arm.Hold) && !(cooking && held != null && !held.ThrowsOut)) PutBack();
+            if (drawn && !(cooking && held != null && !held.ThrowsOut)) PutBack();
             return;
         }
-        if (!keys) return;
+        // KeyBindings reads a taken key as not held, which below means "let go": taken is told apart here first. A throw
+        // the player has already let go is theirs and goes on (Run).
+        bool keys = movement.InputAvailable && InputFocus.TakesInput() && InputFocus.Takes(key);
+        if (!keys)
+        {
+            // Held out now, whatever the press began as (a tap cut short by the chat): its arc shows it is still there.
+            if (inHand) keyLost = holding = true;
+            return;
+        }
+        // Let go meanwhile, it leaves as the body comes out of the move (the key reads as let go then).
+        if (!BodyThrows()) return;
         if (arm == Arm.None && KeyBindings.Pressed(key))
         {
             if (count <= 0) { GrenadeHUD.Refused(); return; }
@@ -33,30 +50,45 @@ public sealed partial class PlayerGrenades
             Begin();
             return;
         }
-        if ((arm != Arm.Draw && arm != Arm.Hold) || letGo) return;
-        // The guard key puts the pin back: nothing thrown, nothing spent.
-        if (KeyBindings.Pressed("Combat/Guard"))
+        if (!inHand) return;
+        // The guard key put the pin back until 2026-11-18. With a gun that key is the aim, and aiming is no reason to lose
+        // the grenade (the user: "조준을 하면 취소한단 뜻인가요?"): the hand keeps it, and the sights stay down while it
+        // does (KeepHandFree). GrenadeRules guardPutsBack 1 makes the key put the pin back again.
+        if (Throwables.Rule("guardPutsBack", 0f) > .5f && KeyBindings.Pressed("Combat/Guard"))
         {
             PutBack();
             return;
         }
         if (KeyBindings.Held(key))
         {
+            keyLost = false;
             if (Time.time - pressedAt >= Mathf.Max(0f, Throwables.Rule("tapHold", .16f))) holding = true;
             return;
         }
+        if (keyLost) return;
         LetGo(!holding);
     }
 
     // A can in the hands, or every weapon on an x-ray belt with the guns (GimmickTray: through the scanner bare-handed).
     private bool HandsFull() => TryGetComponent(out PlayerWeaponSlots slots) && (slots.HandsFull || slots.GunsAway);
 
-    // The body can throw: alive and up, not held, not climbing, hanging or vaulting, the hands not full; standing or
-    // crouched (walking and in the air too) or sliding (GrenadeArm lifts the arm in the same states).
-    private bool Able()
+    /// <summary>
+    /// What must have the left hand: the one list. A grenade held in that hand goes back on the belt for these (the pin
+    /// put back, nothing spent) and for nothing else, and none can be taken out while one of them lasts. Everything else
+    /// that would like the hand waits for the grenade instead (PlayerGrenades.HandBusy: the Détente's syringe, the
+    /// Support's tool, the guard's arm, a point; KeepHandFree: the gun's sights and its reload).
+    /// </summary>
+    private bool HandForced() =>
+        movement.IsDead || movement.IsDowned    // the body holds nothing
+        || movement.IsHeld                      // a zombie has hold of them (grabbed, pinned, hooked): both hands are on it
+        || movement.IsParkour                   // the hands are on the world: a ledge, a vault, a wall, a ladder, a cable, a bar
+        || movement.CombatInputLocked           // a move of both hands under way: an execution, a guard break, a counter, a treatment
+        || HandsFull();                         // a fuel can carried, or the guns put away with the belt
+
+    // The body can go for a throwable and throw it: standing or crouched (walking and in the air too) or sliding, the
+    // states GrenadeArm lifts the arm in.
+    private bool BodyThrows()
     {
-        if (movement.IsDead || movement.IsDowned || movement.IsHeld || movement.IsParkour || movement.CombatInputLocked || HandsFull())
-            return false;
         var state = movement.CurrentState;
         return state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.Sliding;
     }
@@ -67,7 +99,7 @@ public sealed partial class PlayerGrenades
     {
         StartArm(kind);
         pressedAt = Time.time;
-        holding = letGo = false;
+        holding = letGo = keyLost = false;
         if (kind == Throwable.Knife) KnifeOut(HandPoint());
         if (weapon == null) weapon = GetComponent<WeaponController>();
         if (weapon != null) weapon.InterruptForSurvival();
@@ -85,10 +117,11 @@ public sealed partial class PlayerGrenades
         if (arm == Arm.Hold) Release();
     }
 
-    // The guard key, or the hands taken: the pin goes back in and the hand puts it back on the belt.
+    // Something must have the hand (HandForced), or the class changed: the pin goes back in and the hand puts it back on
+    // the belt.
     private void PutBack()
     {
-        cooking = holding = letGo = false;
+        cooking = holding = letGo = keyLost = false;
         StopAim();
         Lower();
         Handed?.Invoke(armKind, HandPhase.Lower);

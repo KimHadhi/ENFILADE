@@ -25,7 +25,8 @@ public sealed partial class PlayerGrenades
     /// </summary>
     internal bool ThrowForUltimate(Throwable look, Action<Vector3> release)
     {
-        if (movement == null || !movement.IsLocal || release == null || arm != Arm.None || Throwables.Of(look) == null || !Able())
+        if (movement == null || !movement.IsLocal || release == null || arm != Arm.None || Throwables.Of(look) == null
+            || HandForced() || !BodyThrows())
             return false;
         ultimateRelease = release;
         StartArm(look);
