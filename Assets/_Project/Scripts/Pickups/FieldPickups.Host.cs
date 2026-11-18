@@ -34,9 +34,11 @@ public sealed partial class FieldPickups
         Add(ItemOf(gun.Holding(rounds, spare), at), life);
     }
 
-    // The item lies there from now, under an id of its own.
+    // The item lies there from now, under an id of its own. Put into something a player set down (a gun put down at an
+    // ammo crate), it comes to lie beside that, where it shows and can be taken (FieldPickups.Lying.cs, Placement.Lie).
     private void Add(Item item, float life)
     {
+        item.Position = LieClear(item);
         item.Id = nextId++;
         if (nextId == 0) nextId = 1;
         items.Add(item);

@@ -172,6 +172,14 @@ public static class Deployables
 
     // ---- What stands ----
 
+    /// <summary>
+    /// Something was set down and stands, on this PC (its owner's own, or the copy of a friend's): told to whoever
+    /// keeps things that lie loose with no body for physics to push out from under it. The field pickups listen: on
+    /// the PC that keeps them, those the new structure's body holds make way (FieldPickups, Placement.Lie). Listeners
+    /// subscribe once at load and outlive a play, as this class does.
+    /// </summary>
+    public static event Action<IPlaced> Stood;
+
     /// <summary>One went up, on this PC: its owner's own, or the copy of a friend's.</summary>
     public static void Add(IPlaced placed)
     {
@@ -181,6 +189,7 @@ public static class Deployables
         var owner = placed.Owner;
         if (PlayRecord.On && owner != null && owner.IsLocal)
             PlayRecord.Line(RecordName, RecordHeading, $"UP      {placed.KindId} {Count(owner, placed.KindId)}/{Most(placed.KindId)} by {owner.name}");
+        Stood?.Invoke(placed);
     }
 
     /// <summary>How many of this owner's of a kind stand now.</summary>

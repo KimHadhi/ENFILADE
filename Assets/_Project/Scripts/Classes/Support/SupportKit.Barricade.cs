@@ -74,8 +74,11 @@ public sealed partial class SupportKit
     private void Build(Barricade.Fit fit, Vector3 at, float yaw)
     {
         // What the rule met there goes on record either way (Logs/placement.txt): the collider that stood in the way of a
-        // refusal, and what lay on the spot and gave way (a corpse under a barricade that went up reads "passed corpse").
-        Placement.Record(planKind.ToString(), fit.ToString(), fit == Barricade.Fit.Ok, at, yaw, Barricade.SizeOf(planKind), planBy, movement.transform);
+        // refusal, what lay on the spot and gave way (a corpse under a barricade that went up reads "passed corpse"), and
+        // the pickups lying there, which have no body for the rule to meet and make way once it stands ("over 구급상자 ×1").
+        Vector3 size = Barricade.SizeOf(planKind);
+        Placement.Record(planKind.ToString(), fit.ToString(), fit == Barricade.Fit.Ok, at, yaw, size, planBy, movement.transform,
+            FieldPickups.Under(at, yaw, size));
         if (fit != Barricade.Fit.Ok)
         {
             Refuse(fit, at, yaw);

@@ -261,7 +261,7 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
     internal static Fit Room(Vector3 at, float yaw, Transform builder, Kind kind, out Collider by)
     {
         by = null;
-        var under = Placement.Ray(at + Vector3.up * .6f, Vector3.down, 1.2f, builder, Placement.Solid, out RaycastHit ground);
+        var under = Placement.Ray(at + Vector3.up * Placement.FloorSpan, Vector3.down, Placement.FloorSpan * 2f, builder, Placement.Solid, out RaycastHit ground);
         if (under == Placement.Thing.None) return Fit.NoGround;
         by = ground.collider;
         // A body or another structure right under it is in its way, whatever that one's top slopes like.
