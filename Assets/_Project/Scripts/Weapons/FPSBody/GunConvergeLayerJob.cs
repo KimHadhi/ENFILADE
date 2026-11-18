@@ -15,7 +15,7 @@ public struct GunConvergeLayerJob : IAnimationJob, IAnimationLayerJob
     private TransformStreamHandle socket, weapon;
     private Vector3 muzzleLocal, muzzleForwardLocal, pivotLocal;
     private bool hasMuzzle, hasPivot;
-    private float weight, distance, present;
+    private float weight, distance, nearestAhead, present;
     private Vector3 displayAt, displayTurn;
 
     public void ProcessAnimation(AnimationStream stream)
@@ -45,9 +45,18 @@ public struct GunConvergeLayerJob : IAnimationJob, IAnimationLayerJob
         float w = weight * jobData.weight;
         if (!hasMuzzle || w <= .001f) return;
         Quaternion facing = jobData.rootHandle.GetRotation(stream);
-        Vector3 target = socket.GetPosition(stream) + facing * Vector3.forward * distance;
+        Vector3 eyesAt = socket.GetPosition(stream), ahead = facing * Vector3.forward;
         Vector3 gunAt = weapon.GetPosition(stream);
         Quaternion gunTurn = weapon.GetRotation(stream);
+        // The point is never taken nearer than nearestAhead beyond the muzzle as the gun is held now. The muzzle sits beside
+        // the eyes' line, so the turn onto a point on that line grows without bound as the point comes to the muzzle's own
+        // distance, and past it there is nothing to point at (below), where the turn fell to none in one frame. A long gun's
+        // muzzle is about a metre ahead of the eyes and the point was only kept half a metre from them (FPSBody.NearestAim),
+        // so walking up to a wall swung the gun aside faster and faster, threw it across for a few frames and dropped it
+        // back before the wall's pose had taken over (Logs/gun-actions.txt, 2026-11-17, read with this code: a Herrington
+        // 20 cm to the left in 0.14 s at up to 390 cm/s, then 44 cm to the right in one frame, back three frames later).
+        float muzzleAhead = Vector3.Dot(gunAt + gunTurn * muzzleLocal - eyesAt, ahead);
+        Vector3 target = eyesAt + ahead * Mathf.Max(distance, muzzleAhead + nearestAhead);
         Vector3 pivot = gunAt + gunTurn * (hasPivot ? pivotLocal : muzzleLocal);
         Quaternion turn = Quaternion.identity;
         // Twice: turning about the pivot carries the muzzle with it, and the way from the muzzle to the point changes.
@@ -94,6 +103,7 @@ public struct GunConvergeLayerJob : IAnimationJob, IAnimationLayerJob
         jobData.weight = layerWeight;
         weight = Mathf.Clamp01(settings.weight);
         distance = Mathf.Max(.1f, settings.distance);
+        nearestAhead = Mathf.Max(0f, settings.nearestAhead);
         // The gun's muzzle as FPSGun measured it, for whatever is on it now.
         hasMuzzle = settings.hasMuzzle && settings.muzzleForward.sqrMagnitude > .5f;
         muzzleLocal = settings.muzzle;

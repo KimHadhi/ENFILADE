@@ -13,8 +13,11 @@ using UnityEngine;
 /// the middle of the view (the Herrington; the user, 2026-11-14: "나 샷건을 왜 이따구로 듦?"). Like Ads it works before
 /// Look, with the eyes at the camera socket looking the way the body faces; Look then turns the eyes and the gun together,
 /// so the barrel meets the view's line at the crosshair's distance. Sway, recoil and the wall's pose go on top of it, and
-/// FPSAF's IK brings the hands after it. Down the sights it lets go (Ads lines the sight up instead), and mid-reload,
-/// drawing or looking the gun over the clip has the gun. FPSBody sets the weight and the distance every frame.
+/// FPSAF's IK brings the hands after it. Down the sights it lets go (Ads lines the sight up instead). Through a reload, a
+/// draw or a look over the gun it stays on: the action moves the gun from its hold in the next layer (GunActionLayer).
+/// FPSBody sets the weight and the distance every frame.
+/// Its weight is the gun's own (FPSBody.FeedConverge) and nothing of FPSAF's: it once took Ads's blend with it, which
+/// fades by FPSAF's share of the upper body, and so by the hands coming onto a gun just drawn (FPSBody.BodyCarries).
 /// </summary>
 public sealed class GunConvergeLayerSettings : FPSAnimatorLayerSettings
 {
@@ -26,6 +29,8 @@ public sealed class GunConvergeLayerSettings : FPSAnimatorLayerSettings
     [NonSerialized] public float weight;
     /// <summary>How far ahead of the eyes the crosshair's point is (m, FPSBody, eased).</summary>
     [NonSerialized] public float distance = 20f;
+    /// <summary>The nearest point the barrel is turned onto lies this far ahead of its own muzzle (m, FPSBody).</summary>
+    [NonSerialized] public float nearestAhead = .5f;
     /// <summary>
     /// The held gun's muzzle and the way it points, in the IK weapon bone's space (FPSGun's, which the gun model hangs at
     /// rest under); FPSBody gives them every frame, since a suppressor put on moves the muzzle.

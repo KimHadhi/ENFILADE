@@ -52,14 +52,20 @@ public sealed partial class FPSBody
         if (held == null || linked) return;
         held.gameObject.SetActive(true);
         aiming = false;
+        // FPSAF is told too. Its Ads goes by an input of its own, which stayed up from the last gun when the swap was made
+        // down the sights: the new gun then rose to the eyes through its draw while the rules had no aim at all, and stood
+        // there until the next time the sights went up and down (Logs/gun-actions.txt, 2026-11-17: a Herrington drawn after
+        // an aimed MKR9 ended its draw at (0.0, -5.0, 30.7) cm from the eyes, where it is aimed, with the aim at 0).
+        if (input != null) held.Aim(false, input, recoil);
         held.Equip(framework, recoil, assets, 60f / Mathf.Max(.001f, held.Data.ShotInterval), FireModeOf(HeldFireMode), bodyCamera,
             aimedRecoilTurn, aimedRecoilLift);
         drawnAt = Time.time;
         drawSettle = LengthOf(assets.equipMotion);
-        // Where FPSAF has the upper body, the hold is on the crosshair's point from the gun's first frame: before it was
+        // Where the body carries the gun, the hold is on the crosshair's point from the gun's first frame: before it was
         // drawn the gun was nowhere, so there is no turn to ease in. Eased in from 0 it turned the gun through the first
-        // 0.2 s of every draw (Logs/gun-actions.txt, 2026-11-15: 0.94 of the turn 0.21 s into the Herrington's draw).
-        convergeWeight = Framework >= .999f ? 1f : 0f;
+        // 0.2 s of every draw (Logs/gun-actions.txt, 2026-11-15: 0.94 of the turn 0.21 s into the Herrington's draw). By
+        // the body's carrying, not by the hands: after bare hands they are not on the gun yet (BodyCarries).
+        convergeWeight = BodyCarries >= .999f ? 1f : 0f;
         // The pack's own draw at its own pace (WeaponController holds the trigger back for the gun's Draw Duration).
         float drawing = held.PlayDraw(playables, bodyCamera);
         if (drawing > 0f) drawSettle = drawing;

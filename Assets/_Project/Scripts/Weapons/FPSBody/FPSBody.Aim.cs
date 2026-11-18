@@ -14,6 +14,9 @@ public sealed partial class FPSBody
     // a swing from the sky onto a near wall doesn't hang far behind. The nearest it is taken (m), and without a point yet.
     private const float AimFollowHalfLife = .055f, AdsAimFollowHalfLife = .025f, NearestAim = .5f, DefaultAim = 20f;
 
+    // The nearest point a barrel is turned onto lies this far ahead of its own muzzle (m): GunConvergeLayerJob says why.
+    private const float NearestAhead = .5f;
+
     private float convergeWeight, inverseAimDistance;
 
     private bool hasAimDistance;
@@ -36,8 +39,10 @@ public sealed partial class FPSBody
         // Through a reload, a draw or a look over the gun too: the action moves the gun from its hold (GunActionLayer, after
         // this layer), and the hold stays on the point under it, so nothing is left to turn when the action is over. It
         // once let go for as long as the hands were busy and eased back after: the turn the user saw at a draw's end.
-        bool free = Framework >= .999f;
+        // Wherever the body carries the gun, whether or not the hands are on it yet (BodyCarries).
+        bool free = BodyCarries >= .999f;
         convergeWeight = Mathf.MoveTowards(convergeWeight, free ? 1f : 0f, dt / ConvergeEase);
+        converge.nearestAhead = NearestAhead;
         // The customize menu holds the gun out to show it (ArcCW's customize view).
         presentWeight = Mathf.MoveTowards(presentWeight, controller.Customizing ? 1f : 0f, dt / PresentEase);
         converge.present = Mathf.SmoothStep(0f, 1f, presentWeight);
@@ -64,6 +69,14 @@ public sealed partial class FPSBody
 
     // FPSAF's share of the upper body: both hands on the gun, standing or crouched (PlayerBodyHands.FrameworkShare).
     private float Framework => hands != null ? Mathf.Clamp01(hands.FrameworkShare) : 1f;
+
+    // How much FPSAF's body carries the gun rather than the view (PlayerBodyHands.BodyCarry): the gun's place goes by this.
+    // By Framework it went by the hands too, and those come onto a gun over 0.15 s whenever it is drawn after bare hands
+    // (a climb, an execution, the melee slot): for that long the draw's own move and the turn onto the crosshair's point
+    // were only part on, so the gun began near its hold, sank to where its draw had it by then, and rose again from there
+    // (Logs/gun-actions.txt, 2026-11-17, nine of the fifteen draws with a clip of their own: an MKR9 from 21.8 cm under
+    // the eyes down to 37.7 in 0.134 s, then up; its draw begins 41 cm under them).
+    private float BodyCarries => hands != null ? Mathf.Clamp01(hands.BodyCarry) : 1f;
 
     // How much of a hand's hold on the gun is the move's clip's rather than FPSAF's (0-1), once FPSAF's hold is known.
     private float Released(bool isLeft)
@@ -213,9 +226,16 @@ public sealed partial class FPSBody
             // still in the animation's mix (a draw cut short, easing out) the gun is not yet where it is held.
             if (held.HandsBusy || hasContact) return;
             var inView = new KTransform(eyes.InverseTransformPoint(gun.position), Quaternion.Inverse(eyes.rotation) * gun.rotation, Vector3.one);
-            // Kept per gun (FPSGun.LearnHold): a draw followed on KINEMATION's clip comes up into this gun's own hold.
-            if (aim <= .001f) held.LearnHold(inView, false);
-            else if (aim >= .999f) held.LearnHold(inView, true);
+            // Kept per gun (FPSGun.LearnHold): a draw followed on KINEMATION's clip comes up into this gun's own hold. Only
+            // once its draw is over, as the hip muzzle is learnt (LearnHipMuzzle): a gun with no draw clip comes out on
+            // FPSAF's equip motion with free hands, and its hold was learnt on the way up, 25 to 40 cm under itself
+            // (Logs/gun-actions.txt, 2026-11-17: an MX16A4 and an M1911 were 0.0 cm from their "hold" all through coming
+            // up); a slide begun then would have kept the gun down there.
+            if (Time.time - drawnAt >= drawSettle)
+            {
+                if (aim <= .001f) held.LearnHold(inView, false);
+                else if (aim >= .999f) held.LearnHold(inView, true);
+            }
             hasGunInView = held.HasLearnedHold;
             rightHandInGun = new KTransform(gun.InverseTransformPoint(right.position), Quaternion.Inverse(gun.rotation) * right.rotation, Vector3.one);
             leftHandInGun = new KTransform(gun.InverseTransformPoint(left.position), Quaternion.Inverse(gun.rotation) * left.rotation, Vector3.one);

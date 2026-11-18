@@ -321,25 +321,27 @@ public sealed partial class FPSBody
         return weld;
     }
 
-    // Our layer that turns the gun onto the crosshair's point (GunConvergeLayerSettings), on the same rig and blended out by
-    // the same full-body moves as Ads.
+    // Our layer that turns the gun onto the crosshair's point (GunConvergeLayerSettings), on the same rig as Ads. Its weight
+    // is the gun's own (FeedConverge) and nothing of FPSAF's. It once took Ads's blend with it, FPSAF's FullBodyWeight, which
+    // is one less FPSAF's share of the upper body and so follows the hands as they come onto a gun just drawn: the turn was
+    // only part on for as long as that took (BodyCarries). In a full-body move the view has the gun after the animation
+    // (KeepGunInView), so what this layer does then is not seen.
     private GunConvergeLayerSettings ConvergeFor(AdsLayerSettings ads)
     {
         var converge = ScriptableObject.CreateInstance<GunConvergeLayerSettings>();
         Keep(converge);
         converge.rigAsset = ads.rigAsset;
-        converge.curveBlending = new List<CurveBlend>(ads.curveBlending);
         return converge;
     }
 
-    // Our layer that moves the gun as its own action playing does (GunActionLayerSettings), on the same rig and blended out
-    // by the same full-body moves as Ads.
+    // Our layer that moves the gun as its own action playing does (GunActionLayerSettings), on the same rig as Ads. Its
+    // weight is the action's share of the animation's own mix (FeedAction) and nothing of FPSAF's, for the same reason as the
+    // turn's above: with Ads's blend a draw's move came in over the 0.15 s the hands took to come onto the gun.
     private GunActionLayerSettings ActionFor(AdsLayerSettings ads)
     {
         var action = ScriptableObject.CreateInstance<GunActionLayerSettings>();
         Keep(action);
         action.rigAsset = ads.rigAsset;
-        action.curveBlending = new List<CurveBlend>(ads.curveBlending);
         return action;
     }
 

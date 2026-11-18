@@ -79,6 +79,14 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     /// </summary>
     internal float FrameworkShare => BothHandsOnGun * stance;
 
+    /// <summary>
+    /// How much FPS Animation Framework's body carries the gun rather than the view (0-1): a shooting stance with the left
+    /// hand free for the gun. It is FrameworkShare without the hands' own coming onto the gun (GunWeight), which eases in
+    /// over blendTime whenever a gun comes out after bare hands and says nothing about where the gun is: FPSBody places the
+    /// gun by this, and brings the arms onto it by FrameworkShare.
+    /// </summary>
+    internal float BodyCarry => (1f - leftOffGun) * stance;
+
     // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for. A step dodge counts too:
     // with a gun its clip takes only the legs over the standing pose (PlayerBody.Dodge). Left out, FPSAF let go of the gun
     // and took it back within the dodge, and the hands came off the gun and went back on (user, 2026-11-09).
