@@ -120,8 +120,10 @@ internal sealed class InjectApproach
         // At the surge's pace, or the body's own if that is faster, as a vault's.
         float pace = Mathf.Max(movement.AbilitySettings.vaultSurgeSpeed, Vector3.ProjectOnPlane(movement.HorizontalVelocity, Vector3.up).magnitude);
         float gap = Vector3.ProjectOnPlane(spot - movement.transform.position, Vector3.up).magnitude;
-        // Time for the furthest friend in range, whatever this one's distance: what is over is for one who walks on.
-        if (!surge.Begin(this, spot, pace, Mathf.Max(0f, within - gap) / pace + Spare)) return Way.Blocked;
+        // Time for the furthest friend in range, whatever this one's distance: what is over is for one who walks on. The
+        // run takes the frame's input whole: its pace is lent for the way to the friend, and no jump, slide or dodge
+        // starts out of it (a third of a second at most).
+        if (!surge.Begin(this, spot, pace, Mathf.Max(0f, within - gap) / pace + Spare, true)) return Way.Blocked;
         Friend = to;
         Kind = what;
         range = within;

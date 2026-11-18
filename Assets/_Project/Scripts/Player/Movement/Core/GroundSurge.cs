@@ -16,17 +16,26 @@ using State = PlayerMovement.MovementState;
 /// Who asked for it looks after it every frame it runs: spends its time (Spend), sees how far it still is from its spot
 /// (ShortOf), turns it if the spot moved (Steer), and does what the run was for when it gets there (the vault begins,
 /// the needle goes in). A surge nobody looks after any more ends by itself.
+/// Its pace is lent for the way and is not the body's to keep. A vault begun at a surge's end goes at the pace the body
+/// ran at before (From); a run that ends in standing puts the body back at it (Land); and a run may take the frame's
+/// input whole while it lasts (Begin's whole: a Détente's), as a landing takes its frame, so no jump, slide, dodge or
+/// shove starts out of it at eleven metres a second. The vault's own surge leaves the keys alone, as it always did:
+/// its press is the jump's. (The movement session found the gap reading this class on the day it was made: a jump
+/// pressed during a Détente's run began a vault at the run's pace, the fast-forwarded vault of 2026-11-06.)
 /// Whether the way to a spot is clear at all is asked before, of SurgeWay.
 /// </summary>
 public sealed class GroundSurge
 {
     // A surge nobody has spent for this long (s) is over: who asked for it is gone.
     private const float Unattended = .5f;
+    // The body still runs at the pace the surge gave while its velocity is within this of the surge's ((m/s) squared).
+    private const float StillItsOwn = 1f;
 
     private readonly PlayerMovement ctx;
     private object asker;
     private Vector3 velocity, spot;
     private float left, from, idle;
+    private bool whole;
 
     internal GroundSurge(PlayerMovement context) => ctx = context;
 
@@ -44,15 +53,19 @@ public sealed class GroundSurge
     /// The run begins: from where the body stands toward <paramref name="to"/> at <paramref name="pace"/> (m/s), with
     /// <paramref name="spare"/> seconds over what the way takes, and the camera's push that sells the burst (the view
     /// dips forward a little and widens). A surge someone else asked for gives way to it. False, and nothing begun,
-    /// when the spot is where the body stands.
+    /// when the spot is where the body stands. <paramref name="whole"/>: the run takes the frame's input whole while
+    /// it lasts, and nothing else starts out of it.
     /// </summary>
-    internal bool Begin(object who, Vector3 to, float pace, float spare)
+    internal bool Begin(object who, Vector3 to, float pace, float spare, bool whole = false)
     {
         Vector3 flat = Vector3.ProjectOnPlane(to - ctx.transform.position, Vector3.up);
         float gap = flat.magnitude;
         if (who == null || gap <= 1e-6f || pace <= 0f) return false;
+        // The pace the body had before it was surged: a surge that takes another's place hands on the one the first
+        // began from, not the run's own.
+        if (left <= 0f) from = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude;
         asker = who;
-        from = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude;
+        this.whole = whole;
         velocity = flat / gap * pace;
         spot = to;
         left = gap / pace + spare;
@@ -100,12 +113,13 @@ public sealed class GroundSurge
     /// <summary>
     /// Ends the surge <paramref name="who"/> asked for where the body is, and puts the body back at the pace it ran at
     /// before (standing still, if it stood): left at the surge's pace it would slide on past its spot. For a surge that
-    /// ends in standing somewhere; a move begun at a surge's end takes the body over by itself.
+    /// ends in standing somewhere. Only the pace the surge gave is taken back: a body something else has moved since
+    /// (a blow's throw, another move) keeps what that gave it.
     /// </summary>
     internal void Land(object who)
     {
         if (!ReferenceEquals(asker, who)) return;
-        if (left > 0f || ctx.HorizontalVelocity.sqrMagnitude > from * from) ctx.HorizontalVelocity = velocity.normalized * from;
+        if ((ctx.HorizontalVelocity - velocity).sqrMagnitude < StillItsOwn) ctx.HorizontalVelocity = velocity.normalized * from;
         left = 0f;
     }
 
@@ -120,6 +134,13 @@ public sealed class GroundSurge
     {
         if (left <= 0f) return;
         idle += dt;
-        if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || idle > Unattended) left = 0f;
+        if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || idle > Unattended)
+        {
+            left = 0f;
+            return;
+        }
+        // A run that takes the frame whole: this frame's presses start nothing (MovementAbilities.ProcessInput, the
+        // state's own, and the jump all stand back from a frame already spoken for, as they do for a landing).
+        if (whole) ctx.Abilities.InputConsumed = true;
     }
 }

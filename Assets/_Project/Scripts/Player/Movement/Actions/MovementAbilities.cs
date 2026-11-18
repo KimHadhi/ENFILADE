@@ -103,7 +103,7 @@ public sealed class MovementAbilities
     }
     internal void Reset()
     {
-        Dodge.Reset(); StepTrail.Clear(); Lean.Reset(); Traversal.Reset(); Fixtures.Reset(); Landing.Reset(); Combat.Reset(); Slide.Reset();
+        Dodge.Reset(); StepTrail.Clear(); Lean.Reset(); Surge.Stop(); Traversal.Reset(); Fixtures.Reset(); Landing.Reset(); Combat.Reset(); Slide.Reset();
         InputConsumed = false;
     }
 }
