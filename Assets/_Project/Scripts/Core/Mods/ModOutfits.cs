@@ -279,7 +279,7 @@ public static class ModOutfits
                     ["id"] = item.id, ["slot"] = item.slot, ["also"] = item.also ?? "", ["hides"] = item.hides ?? "",
                     ["name"] = string.IsNullOrWhiteSpace(item.name) ? outfit.Name : item.name.Trim(), ["model"] = outfit.Id,
                     ["parts"] = ModAvatars.Names(meshesOf.TryGetValue(Key(outfit.Id, item.id), out var meshes) ? meshes.ToArray() : item.meshes),
-                    ["sheer"] = item.sheer ? "true" : ""
+                    ["sheer"] = item.sheer ? "true" : "", ["positions"] = item.positions ?? ""
                 });
             }
         if (rows.Count > 0) yield return new KeyValuePair<string, string>(mod.Name + "의 옷", ModAvatars.Csv(rows));

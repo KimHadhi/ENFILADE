@@ -199,7 +199,10 @@ public static class OutfitPresets
         foreach (string slot in look.Slots)
         {
             if (!look.TryGet(slot, out var pick)) continue;
-            if (slot.StartsWith(BodyShapes.Prefix, StringComparison.Ordinal))
+            // What the look says besides its slots' picks stays as saved: the body options, where each piece is worn and
+            // how the player moved it there (OutfitLook.IsSlot). Only the body options were kept here before 2026-11-18:
+            // a preset dropped the player's nudge of a mask or an earring and counted it as an item the game had lost.
+            if (!OutfitLook.IsSlot(slot))
             {
                 wearable.Set(slot, pick.Item, pick.Colour);
                 continue;

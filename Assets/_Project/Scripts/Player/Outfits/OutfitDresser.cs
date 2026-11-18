@@ -47,13 +47,24 @@ internal static partial class OutfitDresser
         public readonly OutfitSlot Slot;
         public readonly OutfitItem Item;
         public readonly List<Renderer> Renderers;
+        /// <summary>
+        /// How it is worn, when it hangs from the body as one thing (a piece made for anyone: WearPosition); null for
+        /// clothes bound to the body's bones, which are where the body is.
+        /// </summary>
+        public readonly WearPosition Position;
 
-        public Worn(OutfitSlot slot, OutfitItem item, List<Renderer> renderers)
+        public Worn(OutfitSlot slot, OutfitItem item, List<Renderer> renderers, WearPosition position)
         {
             Slot = slot;
             Item = item;
             Renderers = renderers;
+            Position = position;
         }
+
+        /// <summary>Whether it covers what its row says it covers (Outfits.csv hides): always, but for a hung piece worn where it covers nothing (a mask on the back of the head).</summary>
+        public bool Covers => Position == null || Position.covers;
+        /// <summary>Whether it is fitted over the head's own surface (a face fit, whichever way round the head): what hangs from the head lies under it.</summary>
+        public bool OnHead => Position != null && Position.FitsFace;
     }
 
     // One copy of an outfit model on the body, shared by the pieces cut from it.
@@ -137,11 +148,14 @@ internal static partial class OutfitDresser
         {
             // A one-piece took this slot: what was picked here waits until it comes off.
             if (claimed.Contains(slot.id)) continue;
+            // Where the look wears it and how the player moved it there: asked of every item, used by one that hangs
+            // from the body as one thing (Place).
+            var position = WearPosition.Worn(look, item);
             if (!placed.TryGetValue(item.ModelId, out var copy))
             {
                 long placeBegan = WardrobeCost.Begin();
                 skeleton ??= SkeletonOf(animator, model.transform, own);
-                copy = Place(item, slot, model.transform, source, skeleton, animator, own, skin.Id, ItemAdjust.Of(look, item.id));
+                copy = Place(item, slot, model.transform, source, skeleton, animator, own, skin.Id, position, ItemAdjust.Of(look, item, position));
                 WardrobeCost.End(WardrobeCost.Part.Place, placeBegan);
                 if (copy == null) continue;
                 placed[item.ModelId] = copy;
@@ -172,14 +186,16 @@ internal static partial class OutfitDresser
                 dressing.Leaving.AddRange(renderers);
                 continue;
             }
-            worn.Add(new Worn(slot, item, renderers));
+            worn.Add(new Worn(slot, item, renderers, copy.Entry.ForAnyone ? position : null));
             dressing.Items.Add(item.id);
             emptied.UnionWith(item.AlsoSlots);
         }
         foreach (var copy in placed.Values) copy.HideRest();
-        // Slots an item covers (a full mask covers the glasses): whatever is worn there goes out of sight too.
+        // Slots an item covers (a full mask covers the glasses): whatever is worn there goes out of sight too. A piece
+        // worn where it covers nothing (the same mask on the back of the head, WearPosition.covers) hides none.
         var covered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var piece in worn) covered.UnionWith(piece.Item.HiddenSlots);
+        foreach (var piece in worn)
+            if (piece.Covers) covered.UnionWith(piece.Item.HiddenSlots);
         emptied.UnionWith(covered);
         // A leaving item under another (glasses under a full mask) was out of sight already: nothing to draw going.
         if (going != null && covered.Contains(going.id))

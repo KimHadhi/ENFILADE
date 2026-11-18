@@ -12,21 +12,22 @@ public sealed class OutfitItem
 {
     public const string TableName = "Outfits";
 
-    public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "", was = "", wear = "";
+    public string id = "", slot = "", also = "", hides = "", name = "", model = "", parts = "", was = "";
+    /// <summary>
+    /// The ways it can be worn, ids of WearPositions.csv with '|' between them, the first the one it is worn in unsaid:
+    /// the welding mask "face|back" (worn back is how it first went onto Kazusa's, Hiro's and Sil's heads by mistake,
+    /// which the user liked as a look of its own, 2026-11-13: "뒤통수에 위치하니까 멋있긴 해서 옵션으로 넣어 주면 좋을 듯";
+    /// it was a second item until 2026-11-18). Empty leaves it to its slot (OutfitSlot.positions), which says for every piece made
+    /// for anyone that goes there. Only a piece that hangs from the body as one thing has a position to choose: clothes
+    /// bound to the body's bones are where the body is.
+    /// </summary>
+    public string positions = "";
     /// <summary>
     /// See-through by its texture (lace, a net, sheer tights), so what lies under it shows and must stay: nothing is
     /// hidden under it or cut where it comes through it (OutfitFit). A material whose own colour is see-through is told
     /// from the material; a texture's see-through parts can't be read at run time, so such a piece says so here.
     /// </summary>
     public bool sheer;
-
-    /// <summary>
-    /// A piece fitted to the face (OutfitSlot.fit "face") worn on the back of the head instead (Outfits.csv wear "back"):
-    /// the welding mask as it first went onto Kazusa's, Hiro's and Sil's heads by mistake, which the user liked as a look
-    /// of its own (2026-11-13: "뒤통수에 위치하니까 멋있긴 해서 옵션으로 넣어 주면 좋을 듯"). FaceFit measures the face
-    /// turned round.
-    /// </summary>
-    public bool WornBack => string.Equals(wear, "back", System.StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Its name on the wardrobe: the name cell's words (a Texts id, outfit.&lt;id&gt;.name, or plain words), else the id.</summary>
     public string DisplayName => string.IsNullOrEmpty(name) ? id : Texts.Cell(name);
@@ -44,5 +45,37 @@ public sealed class OutfitItem
     /// until each became an item of its own (the user, 2026-11-12: "왜 셔츠인데 아래에 스타킹이나 가터 벨트까지 있어?"),
     /// and a look saved with the shirt keeps all of them on.
     /// </summary>
-    public IEnumerable<string> WasIds => OutfitCatalog.Split(was);
+    public IEnumerable<string> WasIds
+    {
+        get
+        {
+            foreach (string entry in OutfitCatalog.Split(was))
+            {
+                int cut = entry.IndexOf(WasWorn);
+                yield return cut < 0 ? entry : entry.Substring(0, cut).Trim();
+            }
+        }
+    }
+
+    /// <summary>The ids of the positions it can be worn in (<see cref="positions"/>), in order.</summary>
+    public IEnumerable<string> PositionIds => OutfitCatalog.Split(positions);
+
+    // Between a retired id and the position it meant, in the was cell: "welding-mask-back>back".
+    private const char WasWorn = '>';
+
+    /// <summary>
+    /// The position a retired id of this item meant (was "old&gt;position"), or null when it meant none: two items that
+    /// were one thing worn two ways (the welding mask, and the same mask worn back) became one item with two positions,
+    /// and a look saved wearing the second wears this one there (OutfitLook.Settled), its own nudge with it.
+    /// </summary>
+    public string PositionWas(string retiredId)
+    {
+        foreach (string entry in OutfitCatalog.Split(was))
+        {
+            int cut = entry.IndexOf(WasWorn);
+            if (cut > 0 && string.Equals(entry.Substring(0, cut).Trim(), retiredId, System.StringComparison.OrdinalIgnoreCase))
+                return entry.Substring(cut + 1).Trim();
+        }
+        return null;
+    }
 }

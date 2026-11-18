@@ -59,6 +59,10 @@ public static class OutfitCatalog
     private static Dictionary<string, List<OutfitItem>> splits;
     private static readonly List<OutfitItem> NoItems = new List<OutfitItem>();
     private static Dictionary<string, Fit> fits;
+    private static Dictionary<string, WearPosition> positions;
+    // Each item's positions (PositionsOf), found once.
+    private static Dictionary<OutfitItem, List<WearPosition>> positionsOf;
+    private static readonly List<WearPosition> NoPositions = new List<WearPosition>();
     private static List<Part> parts;
     private static OutfitLibrary library;
     private static bool libraryLooked, listening;
@@ -119,6 +123,35 @@ public static class OutfitCatalog
         return retired != null && !items.ContainsKey(retired) && splits.TryGetValue(retired, out var pieces) ? pieces : NoItems;
     }
 
+    /// <summary>A way of wearing a piece, by its id (WearPositions.csv); null when the table has no such row.</summary>
+    public static WearPosition Position(string id)
+    {
+        Ensure();
+        return id != null && positions.TryGetValue(id, out var position) ? position : null;
+    }
+
+    /// <summary>
+    /// The ways the item can be worn, the first the one it is worn in unsaid: those its own row names (Outfits.csv
+    /// positions), else those its slot names for the pieces that go there (OutfitSlots.csv positions). Empty for an item
+    /// that has none: clothes bound to the body's bones, and a piece whose slot says nothing (worn WearPosition.Plain).
+    /// An id the table has no row for is said once and left out.
+    /// </summary>
+    public static IReadOnlyList<WearPosition> PositionsOf(OutfitItem item)
+    {
+        Ensure();
+        if (item == null) return NoPositions;
+        if (positionsOf.TryGetValue(item, out var known)) return known;
+        var named = new List<string>(item.PositionIds);
+        if (named.Count == 0 && Slot(item.slot) is OutfitSlot slot) named.AddRange(Split(slot.positions));
+        var found = named.Count > 0 ? new List<WearPosition>() : NoPositions;
+        foreach (string id in named)
+        {
+            if (positions.TryGetValue(id, out var position)) { if (!found.Contains(position)) found.Add(position); }
+            else Debug.LogWarning($"[Outfits] {item.id}: 착용 위치 '{id}'가 {WearPosition.TableName}.csv에 없습니다. 그 위치는 고를 수 없습니다.");
+        }
+        return positionsOf[item] = found;
+    }
+
     /// <summary>
     /// The item's model made for this character, or null when it was not made for them: the game's own
     /// (<see cref="OutfitLibrary"/>), else one a mod brings (ModOutfits). One made for this character comes before one
@@ -135,9 +168,10 @@ public static class OutfitCatalog
             var brought = ModOutfits.Find(item.ModelId, skinId);
             if (brought != null && (entry == null || !brought.ForAnyone)) entry = brought;
         }
-        // A piece made for anyone fits only a character whose spot for its slot is measured (OutfitSpots.csv): earrings
-        // need ears, and Sil has none. One fitted to the face (the welding mask) fits any face, measured as it is worn.
-        return entry != null && entry.ForAnyone && Slot(item.slot)?.FitsFace != true && !OutfitSpot.Has(item.slot, skinId) ? null : entry;
+        // A piece made for anyone goes on anyone: every way of wearing one is measured on the body as it is dressed
+        // (WearPosition). Before 2026-11-18 a piece outside the face slot was offered only to characters with a row of
+        // their own in OutfitSpots.csv, so no mod's character could wear earrings; such a row is now only a correction.
+        return entry;
     }
 
     /// <summary>What the item needs on this character; null when its row is missing (worn as it comes).</summary>
@@ -317,6 +351,8 @@ public static class OutfitCatalog
         items = new Dictionary<string, OutfitItem>(StringComparer.OrdinalIgnoreCase);
         splits = new Dictionary<string, List<OutfitItem>>(StringComparer.OrdinalIgnoreCase);
         fits = new Dictionary<string, Fit>(StringComparer.OrdinalIgnoreCase);
+        positions = new Dictionary<string, WearPosition>(StringComparer.OrdinalIgnoreCase);
+        positionsOf = new Dictionary<OutfitItem, List<WearPosition>>();
         parts = new List<Part>();
         foreach (string id in GameTables.RowIds(OutfitSlot.TableName))
         {
@@ -334,6 +370,7 @@ public static class OutfitCatalog
             }
         }
         foreach (string id in GameTables.RowIds(FitsTable)) fits[id] = Fill(FitsTable, id, new Fit());
+        foreach (string id in GameTables.RowIds(WearPosition.TableName)) positions[id] = Fill(WearPosition.TableName, id, new WearPosition { id = id });
         foreach (string id in GameTables.RowIds(PartsTable)) parts.Add(Fill(PartsTable, id, new Part()));
     }
 
@@ -344,6 +381,8 @@ public static class OutfitCatalog
         items = null;
         splits = null;
         fits = null;
+        positions = null;
+        positionsOf = null;
         parts = null;
         looks = null;
         // The editor's BOOTH import fills the library while the game may be stopped; look again next time.

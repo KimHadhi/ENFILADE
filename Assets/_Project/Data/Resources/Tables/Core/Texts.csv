@@ -1,6 +1,15 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
 hud.parkour.ledge.nowayup,눌러 낙하 · 여기서는 올라설 수 없음,,파쿠르 안내: 난간에 매달렸는데 그 자리에서는 위로 올라설 수 없을 때(위가 막혔거나 설 자리가 없는 턱) 조준점 아래. 앞에 웅크리기 키(CTRL) 키캡이 붙는다. 올라가려고 W나 Space를 누르면 손이 한 번 당기는 소리(SoundCues LedgeRefuse)가 난다
+wear.face.name,얼굴에,On the face,"옷장 > 입은 액세서리 판 아래 '착용 위치' 칩. WearPositions.csv face: 얼굴에 쓴다(용접 마스크)"
+wear.back.name,뒤통수에,On the back of the head,"옷장 > '착용 위치' 칩. WearPositions.csv back: 뒤통수에 쓴다(용접 마스크. 예전의 '용접 마스크 (뒤로 쓰기)' 옷)"
+wear.lobes.name,귓불에,On the earlobes,옷장 > '착용 위치' 칩. WearPositions.csv lobes: 귓불에 건다(귀걸이)
+wardrobe.wear.title,착용 위치,Worn,"옷장 > 입은 액세서리 판 아래, 걸치는 방법이 둘 이상인 물건의 칩 묶음 제목"
+wardrobe.adjust.right,좌우,Left / right,옷장 > 액세서리 슬라이더: 좌우로 옮기기(귀걸이 같은 한 쌍은 둘이 같이 바깥·안쪽으로)
+wardrobe.adjust.yaw,돌리기,Turn,옷장 > 액세서리 슬라이더: 세로축으로 돌리기
+wardrobe.adjust.pitch,숙이기,Tilt,옷장 > 액세서리 슬라이더: 앞으로 숙이거나 뒤로 젖히기
+wardrobe.adjust.roll,기울이기,Lean,옷장 > 액세서리 슬라이더: 옆으로 기울이기
+wardrobe.adjust.degrees,{0}°,{0}°,옷장 > 돌리기·숙이기·기울이기 슬라이더의 숫자. {0}=각도
 score.perks.of,{0}의 능력,{0}'s cards,Tab 점수판 아래 배지 줄 제목 > 팀원의 덱 칸을 눌러 그 사람의 카드를 볼 때. {0}=그 사람 이름(그 사람 색)
 score.perks.none,아직 카드가 없다,No cards yet,Tab 점수판 아래 배지 줄 > 보고 있는 사람이 든 카드가 없을 때
 perk.tooltip.level,{0} / {1}단계,Level {0} / {1},카드 설명 창(Tab 현황판에서 카드 배지에 커서를 올리면) > 이름 옆. {0}=지금 단계 {1}=최대 단계
@@ -497,7 +506,6 @@ outfit.sy-stockings.name,세라 유라 스타킹,,옷장 > 옷 고르기 칸 이
 outfit.sy-shoes.name,세라 유라 메리제인 구두,,옷장 > 옷 고르기 칸 이름(sy-shoes)
 outfit.sy-toast.name,세라 유라 토스트,,옷장 > 옷 고르기 칸 이름(sy-toast)
 outfit.welding-mask.name,용접 마스크,,옷장 > 옷 고르기 칸 이름(welding-mask). Heist 팩의 용접 마스크(누구에게나 얼굴에 맞춤)
-outfit.welding-mask-back.name,용접 마스크 (뒤로 쓰기),Welding mask (worn back),"옷장 > 옷 고르기 칸 이름(welding-mask-back). 같은 용접 마스크를 뒤통수에 쓴다(Outfits.csv wear back)"
 outfit.colour.painted,도장,,옷장 > 색 칩 이름(Art/Models/Outfits/<모델>/Colors/painted 색 세트: 용접 마스크의 도장)
 outfit.ene-earring-1.name,에네 귀걸이 · 리본 체인,,옷장 > 옷 고르기 칸 이름(ene-earring-1)
 outfit.ene-earring-2.name,에네 귀걸이 · 링 체인,,옷장 > 옷 고르기 칸 이름(ene-earring-2)
@@ -1817,7 +1825,7 @@ wardrobe.face.title,표정,Face,옷장 > 표정 쪽 큰 제목
 wardrobe.face.where,메인 메뉴와 허브 거울에서 캐릭터가 짓는 얼굴 · 올려 두면 미리 보고 누르면 고른다,"The face your character holds in the menu and the hub's mirror · rest on one to preview, press to pick",옷장 > 표정 쪽 제목 아래 줄
 wardrobe.face.game,게임 표정,Game faces,옷장 > 표정 쪽 > 게임이 정한 포즈 표정 묶음의 머리글
 wardrobe.face.creator,제작자 표정,Creator's faces,옷장 > 표정 쪽 > 캐릭터 제작자가 만든 표정 묶음의 머리글(이름은 제작자가 붙인 그대로)
-wardrobe.adjust.title,위치·크기 (이 캐릭터),Position · size (this character),"옷장 > 입은 액세서리(용접 마스크·귀걸이처럼 누구에게나 맞추는 것) 판 아래 슬라이더 묶음 제목"
+wardrobe.adjust.title,위치·크기·각도 (이 캐릭터),Position · size · angle (this character),"옷장 > 입은 액세서리(용접 마스크·귀걸이처럼 누구에게나 맞추는 것) 판 아래 슬라이더 묶음 제목"
 wardrobe.adjust.up,위아래,Up / down,옷장 > 액세서리 슬라이더: 위아래로 옮기기
 wardrobe.adjust.ahead,앞뒤,Forward / back,옷장 > 액세서리 슬라이더: 앞뒤로 옮기기
 wardrobe.adjust.size,크기,Size,옷장 > 액세서리 슬라이더: 크기

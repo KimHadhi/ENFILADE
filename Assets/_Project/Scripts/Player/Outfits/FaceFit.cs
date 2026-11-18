@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Puts a rigid piece made for anyone on the face of whoever wears it, in the slots that fit to the face (OutfitSlot.fit
-/// "face": the mask slot). The welding mask from the Heist pack (the user, 2026-11-13: "얼굴에 맞게 알잘딱으로") is one
+/// Puts a rigid piece made for anyone on the head of whoever wears it, for the ways of wearing that fit to the head's
+/// own surface (WearPosition fit "face": on the face, or from another way round the head). The welding mask from the Heist pack (the user, 2026-11-13: "얼굴에 맞게 알잘딱으로") is one
 /// rigid shell sized for a person, and nothing in it says where this character's eyes are; anime faces and modders'
 /// avatars all differ. So the face is measured from the character's own meshes as made, each time it is dressed:
 /// - the eyes: the middle of the eye bones (else a little above the head bone);
@@ -18,8 +18,9 @@ using UnityEngine;
 /// The way the character faces is read from its skeleton, across the eyes (else the shoulders or the hips), never from the
 /// model's own +Z: Kazusa's and Sil's models face the other way in their files' space, and the mask went onto the
 /// backs of their heads (the user, 2026-11-13: "왜 카즈사, 히로, 실은 뒤통수 쪽에 위치해? 근데 뒤통수에 위치하니까 멋있긴 해서
-/// 옵션으로"). That look is now an item of its own: worn back (OutfitItem.wear "back"), the same rule runs on the face turned
-/// round, the back of the head and hair standing for the face.
+/// 옵션으로"). That look is a way of wearing the same mask (WearPosition "back", yaw 180): the same rule runs on the head
+/// turned round, the back of the head and hair standing for the face. Any other way round the head is a row with
+/// another yaw.
 /// The piece is sized to the face (the same day: "용접 마스크가 존나게 큰 듯 … 원본 사이즈가 걍 모두한테 너무 크면
 /// 어떡해"): its width across the face is the eye bones' spacing × widthPerEye (FaceFit.csv), within leastScale..mostScale of
 /// its maker's size, times scale. Measured on the FBX files: the mask is 19.4 cm wide and reaches 17.5 cm under its glass,
@@ -37,7 +38,7 @@ internal static class FaceFit
     private struct Values
     {
         public float Clearance, EyeLift, NoseWidth, NoseBelow, BrowWidth, BrowHeight, Front, ChestClear, MostTilt, Hide,
-            WidthPerEye, LeastScale, MostScale, Scale, LiftPerEye;
+            WidthPerEye, LeastScale, MostScale, Scale, LiftPerEye, SpacingPerHeight, SpacingFallback;
     }
 
     // The body below the head that the shell's lower part may meet (metres from the eyes): under the chin, within reach
@@ -80,26 +81,59 @@ internal static class FaceFit
     internal static float HideShare => Settings().Hide;
 
     /// <summary>
-    /// The face of a fresh, unposed model, from its own meshes (<paramref name="own"/>) as they show now with their keys;
-    /// null without a head bone. <paramref name="back"/>: for a piece worn on the back of the head, the face turned round.
+    /// Where a humanoid's eyes are in its model's space and how far apart: the middle of its eye bones, or, on a skeleton
+    /// without them, a little above its head bone (FaceFit.csv eyeLift) with a spacing of 0. False without a head bone.
+    /// The measure every head position goes by (WearPosition): a spot given from here in eye spacings lands in
+    /// proportion on any head.
     /// </summary>
-    internal static Face Measure(Transform root, Animator animator, Renderer[] own, bool back = false)
+    internal static bool EyesOf(Animator animator, Matrix4x4 toModel, out Vector3 eyes, out float spacing)
+    {
+        eyes = default;
+        spacing = 0f;
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (head == null) return false;
+        var leftEye = animator.GetBoneTransform(HumanBodyBones.LeftEye);
+        var rightEye = animator.GetBoneTransform(HumanBodyBones.RightEye);
+        if (leftEye != null && rightEye != null)
+        {
+            eyes = toModel.MultiplyPoint3x4((leftEye.position + rightEye.position) * .5f);
+            spacing = Vector3.Distance(toModel.MultiplyPoint3x4(leftEye.position), toModel.MultiplyPoint3x4(rightEye.position));
+        }
+        else eyes = toModel.MultiplyPoint3x4(head.position) + Vector3.up * Settings().EyeLift;
+        return true;
+    }
+
+    /// <summary>
+    /// The eye spacing a body is measured in (model space): its eye bones' own, or, without eye bones, a share of how
+    /// high its head bone stands over the model's root (FaceFit.csv spacingPerHeight: measured on the game's four
+    /// characters with eye bones, 0.053 to 0.056 of that height, 2026-11-18), so a spot given in eye spacings still
+    /// lands in proportion on a skeleton with no eyes.
+    /// </summary>
+    internal static float Unit(Animator animator, Matrix4x4 toModel, float spacing)
+    {
+        if (spacing > 1e-5f) return spacing;
+        var settings = Settings();
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        float height = head != null ? toModel.MultiplyPoint3x4(head.position).y : 0f;
+        return height > 1e-3f ? height * settings.SpacingPerHeight : settings.SpacingFallback;
+    }
+
+    /// <summary>
+    /// The face of a fresh, unposed model, from its own meshes (<paramref name="own"/>) as they show now with their keys;
+    /// null without a head bone. <paramref name="yaw"/>: the way round the head the piece looks from, degrees
+    /// (WearPosition.yaw): 0 measures the face, 180 the head turned round, the back of the head and the hair standing
+    /// for the face (the welding mask worn back).
+    /// </summary>
+    internal static Face Measure(Transform root, Animator animator, Renderer[] own, float yaw = 0f)
     {
         var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (root == null || head == null || own == null) return null;
         var settings = Settings();
         var toModel = root.worldToLocalMatrix;
         var face = new Face();
-        var leftEye = animator.GetBoneTransform(HumanBodyBones.LeftEye);
-        var rightEye = animator.GetBoneTransform(HumanBodyBones.RightEye);
-        var headAt = toModel.MultiplyPoint3x4(head.position);
-        face.Eyes = leftEye != null && rightEye != null
-            ? toModel.MultiplyPoint3x4((leftEye.position + rightEye.position) * .5f)
-            : headAt + Vector3.up * settings.EyeLift;
-        face.EyeSpacing = leftEye != null && rightEye != null
-            ? Vector3.Distance(toModel.MultiplyPoint3x4(leftEye.position), toModel.MultiplyPoint3x4(rightEye.position)) : 0f;
+        EyesOf(animator, toModel, out face.Eyes, out face.EyeSpacing);
         face.Frame = FrameOf(animator, toModel);
-        if (back) face.Frame *= Quaternion.Euler(0f, 180f, 0f);
+        if (Mathf.Abs(yaw) > .01f) face.Frame *= Quaternion.Euler(0f, yaw, 0f);
         var intoFace = Quaternion.Inverse(face.Frame);
         float nose = float.MinValue, brow = float.MinValue;
         foreach (var renderer in own)
@@ -356,6 +390,7 @@ internal static class FaceFit
         {
             Clearance = .01f, EyeLift = .035f, NoseWidth = .02f, NoseBelow = .06f, BrowWidth = .03f, BrowHeight = .015f,
             Front = .05f, ChestClear = .01f, MostTilt = 15f, Hide = .9f, WidthPerEye = 2.3f, LeastScale = .4f, MostScale = 1.1f, Scale = 1f, LiftPerEye = .25f,
+            SpacingPerHeight = .054f, SpacingFallback = .06f,
         };
         if (GameTables.TryGetRow(TableName, "Default", out var cells))
         {
@@ -374,6 +409,8 @@ internal static class FaceFit
             read.MostScale = Mathf.Max(read.LeastScale, cells.Number("mostScale", read.MostScale));
             read.Scale = Mathf.Max(.05f, cells.Number("scale", read.Scale));
             read.LiftPerEye = cells.Number("liftPerEye", read.LiftPerEye);
+            read.SpacingPerHeight = Mathf.Max(.001f, cells.Number("spacingPerHeight", read.SpacingPerHeight));
+            read.SpacingFallback = Mathf.Max(.001f, cells.Number("spacingFallback", read.SpacingFallback));
         }
         values = read;
         return read;

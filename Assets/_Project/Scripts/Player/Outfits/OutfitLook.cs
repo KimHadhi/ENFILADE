@@ -40,6 +40,16 @@ public sealed class OutfitLook
 
     public bool TryGet(string slot, out Pick pick) => picks.TryGetValue(slot ?? "", out pick);
 
+    /// <summary>
+    /// Whether an entry is a slot's pick. The others say something about the look besides what is in a slot, each under
+    /// a word and a colon: a body option ("shape:…", BodyShapes), where an item is worn ("wear:…", WearPosition), how the
+    /// player moved it there ("adjust:…", ItemAdjust). Whoever walks a look's entries as slots asks this first: a
+    /// preset once took every entry that was no slot for an item the game had lost, and dropped the player's nudges.
+    /// </summary>
+    public static bool IsSlot(string entry) => !string.IsNullOrEmpty(entry) && entry.IndexOf(SettingMark) < 0;
+
+    private const char SettingMark = ':';
+
     /// <summary>Puts <paramref name="item"/> in the slot; null or empty empties it, back to the character's own piece.</summary>
     public void Set(string slot, string item, string colour = "")
     {
@@ -86,17 +96,36 @@ public sealed class OutfitLook
     ///   in the same colour: the Banshaku shirt's stocking, thigh belt, choker and necklaces (2026-11-12). The old item
     ///   showed them over whatever was there, so each goes where nothing is picked or the character's own piece is taken
     ///   off (-), and an item picked there stays. The old id is gone once the look is saved again, so this happens once:
-    ///   a piece taken off afterwards stays off.
+    ///   a piece taken off afterwards stays off;
+    /// - an item the table no longer has because it was another item worn another way (OutfitItem.PositionWas) becomes
+    ///   that item worn there: "welding-mask-back" is the welding mask on the back of the head (2026-11-18), in the same
+    ///   colour, and the nudge the player gave the old item ("adjust:welding-mask-back") goes with it to that position
+    ///   of the new one, whether the look was wearing it or not, so nothing a player set is lost.
     /// Itself when nothing changed.
     /// </summary>
     public OutfitLook Settled()
     {
         OutfitLook settled = null;
-        List<(OutfitItem Piece, string Colour)> pieces = null;
+        List<(OutfitItem Piece, string Colour, string Was)> pieces = null;
         foreach (var pair in picks)
         {
-            if (pair.Value.IsOff || pair.Key.StartsWith(BodyShapes.Prefix, StringComparison.Ordinal)
-                || pair.Key.StartsWith(ItemAdjust.Prefix, StringComparison.Ordinal)) continue;
+            // A nudge kept for an item that is now another item's position moves there (worn at the moment or not).
+            if (pair.Key.StartsWith(ItemAdjust.Prefix, StringComparison.Ordinal))
+            {
+                string old = pair.Key.Substring(ItemAdjust.Prefix.Length);
+                if (old.IndexOf(ItemAdjust.At) >= 0 || OutfitCatalog.Item(old) != null) continue;
+                foreach (var piece in OutfitCatalog.SplitFrom(old))
+                {
+                    if (!(piece.PositionWas(old) is string there) || OutfitCatalog.Position(there) is not WearPosition position) continue;
+                    settled ??= Parse(ToString());
+                    settled.picks.Remove(pair.Key);
+                    string key = ItemAdjust.Key(piece, position);
+                    if (!settled.picks.ContainsKey(key)) settled.picks[key] = pair.Value;
+                    break;
+                }
+                continue;
+            }
+            if (pair.Value.IsOff || !IsSlot(pair.Key)) continue;
             var item = OutfitCatalog.Item(pair.Value.Item);
             if (item == null)
             {
@@ -104,8 +133,8 @@ public sealed class OutfitLook
                 if (split.Count == 0) continue;
                 settled ??= Parse(ToString());
                 settled.picks.Remove(pair.Key);
-                pieces ??= new List<(OutfitItem, string)>();
-                foreach (var piece in split) pieces.Add((piece, pair.Value.Colour));
+                pieces ??= new List<(OutfitItem, string, string)>();
+                foreach (var piece in split) pieces.Add((piece, pair.Value.Colour, pair.Value.Item));
                 continue;
             }
             if (string.Equals(item.slot, pair.Key, StringComparison.OrdinalIgnoreCase) || OutfitCatalog.Slot(item.slot) is not OutfitSlot slot) continue;
@@ -114,11 +143,14 @@ public sealed class OutfitLook
             if (!settled.picks.ContainsKey(slot.id)) settled.picks[slot.id] = pair.Value;
         }
         if (pieces != null)
-            foreach (var (piece, colour) in pieces)
+            foreach (var (piece, colour, was) in pieces)
             {
                 if (OutfitCatalog.Slot(piece.slot) is not OutfitSlot slot) continue;
                 if (settled.picks.TryGetValue(slot.id, out var there) && !there.IsOff) continue;
                 settled.picks[slot.id] = new Pick(piece.id, colour);
+                // The old item was this one worn another way: the look wears it there.
+                if (piece.PositionWas(was) is string worn && OutfitCatalog.Position(worn) is WearPosition position)
+                    WearPosition.Wear(settled, piece, position);
             }
         return settled ?? this;
     }

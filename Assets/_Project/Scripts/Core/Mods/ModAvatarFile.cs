@@ -115,6 +115,13 @@ public sealed class ModAvatarFile
         public string also = "";
         /// <summary>Slots it covers, "a|b": what is worn there goes out of sight (a full mask over glasses); "" for none.</summary>
         public string hides = "";
+        /// <summary>
+        /// The ways it can be worn, "a|b" (ids of the game's WearPositions table, the first the one it is worn in until
+        /// the player picks another: a mask "face|back"); "" leaves it to its slot. Only a piece made for anyone
+        /// (<see cref="Anyone"/>) has ways to choose between: clothes on an avatar's bones are where the body is. A mod
+        /// adds ways of its own with a WearPositions.csv in its Tables folder.
+        /// </summary>
+        public string positions = "";
         public string name = "";
         public string[] meshes = Array.Empty<string>();
         /// <summary>See-through by its texture: what lies under it shows and is never hidden.</summary>

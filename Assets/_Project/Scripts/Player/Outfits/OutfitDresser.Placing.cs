@@ -6,10 +6,11 @@ using Object = UnityEngine.Object;
 // OutfitDresser: putting a piece on the body and binding it to the skeleton. One part of the class; the rest is in OutfitDresser.cs and the files beside it.
 internal static partial class OutfitDresser
 {
-    // Makes the model on the character and joins it to the body. A piece made for anyone takes the player's nudge
-    // (<paramref name="nudge"/>: ItemAdjust, kept in the look).
+    // Makes the model on the character and joins it to the body. A piece made for anyone hangs where the look wears it
+    // (<paramref name="position"/>: WearPosition) and takes the player's nudge there (<paramref name="nudge"/>:
+    // ItemAdjust), both kept in the look.
     private static Placed Place(OutfitItem item, OutfitSlot slot, Transform root, GameObject source, OutfitSkeleton skeleton,
-        Animator animator, Renderer[] own, string skinId, ItemAdjust.Values nudge)
+        Animator animator, Renderer[] own, string skinId, WearPosition position, ItemAdjust.Values nudge)
     {
         var entry = OutfitCatalog.Model(item.id, skinId);
         // A mod's model comes from its bundle when asked for, and the bundle may have gone since the look was picked.
@@ -58,30 +59,11 @@ internal static partial class OutfitDresser
             return null;
         }
         // A piece made for anyone (an accessory sold for any avatar) brings bones of its own, matched to none of the
-        // character's by name, and hangs on the slot's spots measured for this character: the Ene earrings on the lobes.
+        // character's by name: it hangs from the body as one thing, the way the look wears it (Hang: fitted to the face
+        // or the back of the head, on the ear lobes, at a bone), measured on this body as it is dressed.
         if (entry.ForAnyone)
         {
-            // A rigid piece for the face (the welding mask) goes onto this face as measured from its own meshes, then
-            // follows the head: no rows per character (FaceFit).
-            if (slot.FitsFace)
-            {
-                var face = FaceFit.Measure(root, animator, own, item.WornBack);
-                if (face == null || !FaceFit.Put(instance.transform, root, face, slot.Anchor(animator)))
-                    Warn($"{item.ModelId}: {skinId}의 얼굴(머리 뼈와 읽을 수 있는 머리 메시)을 재지 못해 {slot.id} 칸에 맞추지 못했습니다.");
-                else
-                    ItemAdjust.Mark(instance.transform, item.id, face.Placed, root.TransformVector(face.Frame * Vector3.up),
-                        root.TransformVector(face.Frame * Vector3.forward)).Apply(nudge);
-                return copy;
-            }
-            var spot = OutfitSpot.Of(slot.id, skinId);
-            if (spot == null || !spot.Hang(instance.transform, root, slot.Anchor(animator)))
-                Warn($"{item.ModelId}: {skinId}의 {slot.id} 칸 자리(OutfitSpots.csv)나 뼈 '{slot.bone}'가 없어 몸을 따라가지 않습니다.");
-            else
-            {
-                var frame = FaceFit.FrameOf(animator, root.worldToLocalMatrix);
-                ItemAdjust.Mark(instance.transform, item.id, instance.transform.position, root.TransformVector(frame * Vector3.up),
-                    root.TransformVector(frame * Vector3.forward)).Apply(nudge);
-            }
+            Hang(instance.transform, item, slot, position ?? WearPosition.Plain, root, animator, own, skinId, nudge);
             return copy;
         }
         // Parts that follow one bone of the body by themselves (a hat on the head: Modular Avatar's Bone Proxy, as a mod's

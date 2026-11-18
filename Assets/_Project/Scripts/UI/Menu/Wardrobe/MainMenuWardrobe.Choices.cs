@@ -78,8 +78,13 @@ public sealed partial class MainMenuWardrobe
                 }
                 y += Mathf.CeilToInt(sets.Count / (float)ChipColumns) * (ChipHeight + ChipGap) + 6f;
             }
-            // A worn piece made for anyone (the welding mask, earrings) can be moved and sized for this character.
-            if (ItemAdjust.For(item, skin.Id)) y += AdjustRows(list, skin, item, y);
+            // A worn piece that hangs from the body as one thing (the welding mask, earrings) can be worn another way
+            // (WearPosition) and moved, turned and sized there for this character (ItemAdjust).
+            if (ItemAdjust.For(item, skin.Id))
+            {
+                y += PositionChips(list, skin, item, y);
+                y += AdjustRows(list, skin, item, y);
+            }
         }
         Scroll(list, y);
         // A pick rebuilds the page: the list comes back where it was scrolled to (Build).
@@ -92,23 +97,60 @@ public sealed partial class MainMenuWardrobe
         slotListFor = slot.id;
     }
 
-    // Three sliders under the worn piece made for anyone (ItemAdjust: up and down, ahead and back, size) and 원래대로 once
-    // it is nudged: a drag moves the piece on the character at once, letting go keeps it in the character's look (the
-    // user, 2026-11-14: "슬라이더까지 넣어 주고"). Returns their height.
+    // The ways the worn piece can be worn, a chip each under it (the user, 2026-11-18: "용접 마스크의 앞/뒤 착용 상태를
+    // 별도 아이템으로 분리하지 않고, 착용 위치 변경 설정 기능으로 통합"): a pick is kept in the character's look and the
+    // character stands again wearing it there, with whatever nudge that position last had. Nothing for a piece with one
+    // way only. Returns their height.
+    private float PositionChips(RectTransform list, PlayerBodyProfile.Skin skin, OutfitItem item, float y)
+    {
+        var offered = OutfitCatalog.PositionsOf(item);
+        if (offered.Count < 2) return 0f;
+        var worn = WearPosition.Worn(OutfitLook.Saved(skin.Id), item);
+        float top = y;
+        Note(list, new Vector2(20f, y + 4f), RightWidth - 40f, Texts.Get("wardrobe.wear.title"), 14f);
+        y += 30f;
+        float chipWidth = Mathf.Floor((RightWidth - 20f - ChipGap * (ChipColumns - 1)) / ChipColumns);
+        for (int i = 0; i < offered.Count; i++)
+        {
+            var position = offered[i];
+            Chip(list, new Vector2(20f + i % ChipColumns * (chipWidth + ChipGap), y + i / ChipColumns * (ChipHeight + ChipGap)), chipWidth,
+                position.DisplayName, position == worn, position == worn ? null : (System.Action)(() => WearAt(skin, item, position)));
+        }
+        return y + Mathf.CeilToInt(offered.Count / (float)ChipColumns) * (ChipHeight + ChipGap) + 6f - top;
+    }
+
+    // Wears the piece another way: kept and shown at once, as any pick is.
+    private void WearAt(PlayerBodyProfile.Skin skin, OutfitItem item, WearPosition position)
+    {
+        wanted = null;
+        wantedText = triedText = wantedSlot = wantedLine = null;
+        wantedRemoves = false;
+        if (preview != null) preview.DropTry();
+        var look = OutfitLook.Saved(skin.Id);
+        WearPosition.Wear(look, item, position);
+        Save(skin, look);
+    }
+
+    // The handles under the worn piece that hangs as one thing (ItemAdjust): right and left, up and down, ahead and back,
+    // size, and a turn about each way, and 원래대로 once it is nudged. A drag moves the piece on the character at once,
+    // letting go keeps it in the character's look for the position it is worn in (the user, 2026-11-14: "슬라이더까지
+    // 넣어 주고"; 2026-11-18: "착용 위치·오프셋을 자유롭게 커스텀"). Returns their height.
     private float AdjustRows(RectTransform list, PlayerBodyProfile.Skin skin, OutfitItem item, float y)
     {
-        var saved = ItemAdjust.Of(OutfitLook.Saved(skin.Id), item.id);
-        float[] now = { saved.Up, saved.Ahead, saved.Size };
-        float move = ItemAdjust.MoveRange, top = y;
-        ItemAdjust.Values Values() => new ItemAdjust.Values(now[0], now[1], now[2]);
+        var look = OutfitLook.Saved(skin.Id);
+        var position = WearPosition.Worn(look, item);
+        var saved = ItemAdjust.Of(look, item, position);
+        var now = saved;
+        float move = ItemAdjust.MoveRange, turn = ItemAdjust.TurnRange, top = y;
         Note(list, new Vector2(20f, y + 4f), RightWidth - 200f, Texts.Get("wardrobe.adjust.title"), 14f);
         if (!saved.IsNone)
             Chip(list, new Vector2(RightWidth - 150f, y), 130f, Texts.Get("wardrobe.adjust.reset"), false,
-                () => SaveAdjust(skin, item, ItemAdjust.Values.None, true));
+                () => SaveAdjust(skin, item, position, ItemAdjust.Values.None, true));
         y += 34f;
-        string Centimetres(float metres) => Texts.Format("wardrobe.adjust.cm",
-            (metres * 100f).ToString("+0.0;-0.0;0", System.Globalization.CultureInfo.InvariantCulture));
-        string Times(float share) => Texts.Format("wardrobe.adjust.times", share.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+        var plain = System.Globalization.CultureInfo.InvariantCulture;
+        string Centimetres(float metres) => Texts.Format("wardrobe.adjust.cm", (metres * 100f).ToString("+0.0;-0.0;0", plain));
+        string Times(float share) => Texts.Format("wardrobe.adjust.times", share.ToString("0.00", plain));
+        string Degrees(float angle) => Texts.Format("wardrobe.adjust.degrees", angle.ToString("+0;-0;0", plain));
         void Row(int axis, string label, float least, float most, System.Func<float, string> shown)
         {
             float width = RightWidth - 28f;
@@ -121,29 +163,34 @@ public sealed partial class MainMenuWardrobe
             number.fontStyle = FontStyles.Normal;
             var slider = SettingsWidgets.Slider(row, least, most, now[axis], moved =>
             {
-                now[axis] = moved;
+                now = now.With(axis, moved);
                 number.text = shown(moved);
-                if (preview != null) preview.AdjustPiece(item.id, Values());
+                if (preview != null) preview.AdjustPiece(item.id, now);
             }, wholeNumbers: false);
             var rect = (RectTransform)slider.transform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
             rect.anchoredPosition = new Vector2(110f, -4f);
             rect.sizeDelta = new Vector2(width - 110f - 80f, 28f);
-            PointerRelease.On(slider.gameObject, () => SaveAdjust(skin, item, Values(), false));
+            PointerRelease.On(slider.gameObject, () => SaveAdjust(skin, item, position, now, false));
             y += 40f;
         }
-        Row(0, Texts.Get("wardrobe.adjust.up"), -move, move, Centimetres);
-        Row(1, Texts.Get("wardrobe.adjust.ahead"), -move, move, Centimetres);
-        Row(2, Texts.Get("wardrobe.adjust.size"), ItemAdjust.LeastSize, ItemAdjust.MostSize, Times);
+        // In ItemAdjust.Values' own order: right, up, ahead, size, then the turns about up, right and ahead.
+        Row(0, Texts.Get("wardrobe.adjust.right"), -move, move, Centimetres);
+        Row(1, Texts.Get("wardrobe.adjust.up"), -move, move, Centimetres);
+        Row(2, Texts.Get("wardrobe.adjust.ahead"), -move, move, Centimetres);
+        Row(3, Texts.Get("wardrobe.adjust.size"), ItemAdjust.LeastSize, ItemAdjust.MostSize, Times);
+        Row(4, Texts.Get("wardrobe.adjust.yaw"), -turn, turn, Degrees);
+        Row(5, Texts.Get("wardrobe.adjust.pitch"), -turn, turn, Degrees);
+        Row(6, Texts.Get("wardrobe.adjust.roll"), -turn, turn, Degrees);
         return y - top + 6f;
     }
 
-    // Keeps the nudge in the character's look. The character already shows it (moved live), so nothing is stood up
-    // again; 원래대로 builds the page again to take its own chip away.
-    private void SaveAdjust(PlayerBodyProfile.Skin skin, OutfitItem item, ItemAdjust.Values values, bool rebuild)
+    // Keeps the nudge in the character's look, for the position the piece is worn in. The character already shows it
+    // (moved live), so nothing is stood up again; 원래대로 builds the page again to take its own chip away.
+    private void SaveAdjust(PlayerBodyProfile.Skin skin, OutfitItem item, WearPosition position, ItemAdjust.Values values, bool rebuild)
     {
         var look = OutfitLook.Saved(skin.Id);
-        ItemAdjust.Set(look, item.id, values);
+        ItemAdjust.Set(look, item, position, values);
         OutfitLook.Save(skin.Id, look);
         if (preview != null)
         {

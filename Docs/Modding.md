@@ -141,6 +141,30 @@ Mods/
 - 흔들림은 PhysBone 설정으로(위 표), 몸에 닿는 것은 게임이 메시를 재서 만든 천 콜라이더로 한다. 모드가 콜라이더를 가져올 일은 없다.
 - 목록을 넓히려면(예: 조명이 달린 장신구) `WornParts.Kept` 한 곳을 고친다. 내보내기와 게임이 같이 바뀐다.
 
+### 착용 위치와 자유 조정 (2026-11-18)
+
+사용자(11-18): "추후 다른 의상 및 창작마당 모드에서도 착용 위치·오프셋을 자유롭게 커스텀할 수 있도록 확장성 있는 구조로 설계." 몸에 통째로 거는 물건(누구에게나 맞게 만든 모델, 캐릭터 id `*`)은 **걸치는 방법**을 고를 수 있고, 플레이어가 그 위에서 자유롭게 옮기고 돌리고 키운다. 방법 하나가 표 [WearPositions.csv](../Assets/_Project/Data/Resources/Tables/Characters/WearPositions.csv)의 한 줄이다(코드 [WearPosition](../Assets/_Project/Scripts/Player/Outfits/WearPosition.cs)).
+
+| 칸 | 뜻 |
+| --- | --- |
+| `id` | 방법의 id. 게임의 것: `face`(얼굴에), `back`(뒤통수에), `lobes`(귓불에) |
+| `name` | 옷장 칩의 이름(Texts id나 그냥 글자) |
+| `fit` | `face`: 머리 겉면에 맞춘다(유리나 가운데를 눈높이에, 얼굴 크기에 맞게, 아랫단이 가슴을 비키게: 마스크·고글류). `spot`: 기준점에서 `at`만큼 떨어진 자리에 건다 |
+| `yaw` | `face`에서 머리를 어느 쪽에서 보고 맞출지(도). 0 얼굴, 180 뒤통수, 90 오른쪽 옆머리 |
+| `anchor` | `spot`의 기준점. `eyes`(두 눈의 가운데), 휴머노이드 뼈 이름(`Head`·`Chest`·`Hips`·`LeftLowerArm` …), 빈칸은 그 칸의 뼈 |
+| `at` | 기준점에서 오른쪽\|위\|앞. 단위는 **그 몸의 두 눈 사이 거리**라 어떤 체형에도 비례해서 놓인다 |
+| `turn` | 그 자리에서 숙임\|돌림\|기울임(도) |
+| `scale` | 크기 배율 |
+| `pair` | true면 모델 뿌리 밑 `… R`·`… L` 두 조각을 좌우에 뒤집어 건다(귀걸이) |
+| `covers` | false면 이 방법으로 걸쳤을 때 옷의 `hides`가 듣지 않는다(뒤통수의 마스크는 안경을 가리지 않는다) |
+
+- **내 물건에 방법 주기**: 옷 줄의 `positions`에 방법 id를 `|`로 적는다(첫 번째가 기본). `.avatar.json`에서는 `items`의 `"positions": "face|back"`, 표로는 `Outfits.csv`의 `positions` 칸. 적지 않으면 그 칸의 기본(마스크 칸 `face`, 귀걸이 칸 `lobes`, 나머지 칸은 그 칸의 뼈에 원점을 대고 건다)을 쓴다.
+- **새 방법 만들기**: 모드 폴더의 `Tables/WearPositions.csv`에 줄을 더한다. 예: 옆머리에 쓴 마스크 `side,옆머리에,face,,90`, 이마 위로 올린 안경 `up,올려 쓰기,spot,eyes,,0|0.9|0.5,-30|0|0`, 머리 위 고리 `halo,머리 위,spot,eyes,,0|2.6|-0.4`. 숫자는 게임 옷장의 손잡이로 맞춰 본 뒤 옮겨 적으면 편하다: 손잡이의 숫자는 모델 공간의 cm이니 그 캐릭터의 두 눈 사이 거리(마요 5.8cm, 이치고 5.4cm, 카즈사 7.3cm)로 나눠 적는다. 옷장 검사대(ENFILADE → 캐릭터 → 옷장 검사대)의 `Logs/WardrobeBench/positions.txt`가 방법마다 물건의 자리를 이 단위로 보여 주고 사진을 남긴다.
+- **플레이어의 조정**: 옷장에서 좌우·위아래·앞뒤(±20cm), 크기(0.3~2.5배), 돌리기·숙이기·기울이기(±180°). 범위는 [ItemAdjust.csv](../Assets/_Project/Data/Resources/Tables/Characters/ItemAdjust.csv). 고른 방법과 조정은 옷차림 문자열에 실려(`wear:<옷>=<방법>`, `adjust:<옷>[~<방법>]=…`) 프리셋과 친구 화면에 같이 간다. 친구 PC에 그 방법의 줄이 없으면(모드가 없으면) 그 물건의 기본 방법으로 보인다.
+- **캐릭터마다 적는 것은 없다.** 모든 방법은 입는 순간 그 몸의 뼈와 메시를 재서 맞춘다. 손으로 잰 정밀한 자리가 있으면 [OutfitSpots.csv](../Assets/_Project/Data/Resources/Tables/Characters/OutfitSpots.csv)에 `방법 id@캐릭터 id` 줄로 덮어쓸 수 있지만(게임의 세 캐릭터 귓불), 없어도 입는다.
+- **두 옷을 한 옷의 두 방법으로 합칠 때**: 남는 옷의 `was`에 `사라지는 옷 id>방법 id`를 적으면, 사라진 옷을 입고 저장한 모습과 그 옷에 해 둔 조정이 남는 옷의 그 방법으로 옮겨 온다(게임의 `welding-mask-back>back`).
+- 캐릭터 뼈에 묶인 옷(아바타용 옷)은 방법도 조정도 없다: 몸이 있는 곳에 있다.
+
 ### 쉐이더
 
 쉐이더는 컴파일된 코드라, 그 게임의 Unity와 렌더 파이프라인(이 게임은 Unity 6·URP)용으로 빌드된 것만 돌릴 수 있다. VRChat 프로젝트(Unity 2022·내장 파이프라인)에서 컴파일된 쉐이더를 그대로 가져와 돌릴 방법은 없다. 그래서 재질마다 아래 셋 가운데 되는 첫 번째로 만든다([ModMaterials](../Assets/_Project/Scripts/Core/Mods/ModMaterials.cs)).
@@ -190,7 +214,7 @@ Mods/
 
 ### 손으로 더 맞추기
 
-게임은 모드 캐릭터에게도 원래 캐릭터와 같은 표를 쓴다. 같은 모드 폴더의 `Tables`에 내 캐릭터 id로 줄을 적으면 게임이 알아서 정한 것 위에 덮인다: 흔들림은 `Cloth.csv`(`skin` 칸이 내 id), 표정 키는 `FaceKeys.csv`, 입고 온 옷의 칸은 `CharacterParts.csv`(줄 id `<캐릭터 id>.<칸>`), 옷 모드의 옷은 `Outfits.csv`(줄 id가 옷 조각의 id), 비치는 옷이 밑을 가려 버리면 그 줄의 `sheer`, 체형 슬라이더는 `BodyShapes.csv`, 총 쥐는 손은 `GunHands.csv`. 옷의 칸과 이름은 `.avatar.json`의 `parts`·`items`를 직접 고쳐도 된다(칸 id는 `/mods ids`).
+게임은 모드 캐릭터에게도 원래 캐릭터와 같은 표를 쓴다. 같은 모드 폴더의 `Tables`에 내 캐릭터 id로 줄을 적으면 게임이 알아서 정한 것 위에 덮인다: 흔들림은 `Cloth.csv`(`skin` 칸이 내 id), 표정 키는 `FaceKeys.csv`, 입고 온 옷의 칸은 `CharacterParts.csv`(줄 id `<캐릭터 id>.<칸>`), 옷 모드의 옷은 `Outfits.csv`(줄 id가 옷 조각의 id), 걸치는 방법은 `WearPositions.csv`(위 "착용 위치와 자유 조정"), 비치는 옷이 밑을 가려 버리면 그 줄의 `sheer`, 체형 슬라이더는 `BodyShapes.csv`, 총 쥐는 손은 `GunHands.csv`. 옷의 칸과 이름은 `.avatar.json`의 `parts`·`items`를 직접 고쳐도 된다(칸 id는 `/mods ids`).
 
 ### 알아 둘 것
 
@@ -228,6 +252,7 @@ Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는
 | 줄에서 칸 읽기 | [TableCells](../Assets/_Project/Scripts/Core/Tables/TableCells.cs) |
 | 빌드 옆에 Mods 폴더 복사, SDK 폴더 넣기(`Editor/ModSdk`의 스크립트와, 게임과 같이 쓰는 두 파일 ModAvatarFile.cs·WornParts.cs) | [ModsFolderOnBuild](../Assets/_Project/Editor/Build/ModsFolderOnBuild.cs), [ModSdkPackage](../Assets/_Project/Editor/Mods/ModSdkPackage.cs) |
 | 모드 캐릭터 찾기·불러오기, 흔들림·표정·입고 온 옷 줄 만들기 | [ModAvatars](../Assets/_Project/Scripts/Core/Mods/ModAvatars.cs), 파일 형식 [ModAvatarFile](../Assets/_Project/Scripts/Core/Mods/ModAvatarFile.cs) |
+| 몸에 거는 물건의 착용 위치(표의 줄)와 플레이어의 조정, 입힐 때 그 방법대로 거는 곳 | [WearPosition](../Assets/_Project/Scripts/Player/Outfits/WearPosition.cs), [ItemAdjust](../Assets/_Project/Scripts/Player/Outfits/ItemAdjust.cs), [OutfitDresser.Wearing](../Assets/_Project/Scripts/Player/Outfits/OutfitDresser.Wearing.cs) `Hang`, 얼굴 겉면 맞춤 [FaceFit](../Assets/_Project/Scripts/Player/Outfits/FaceFit.cs), 표 WearPositions.csv·ItemAdjust.csv·OutfitSpots.csv |
 | 캐릭터와 옷의 모델이 지닐 수 있는 부품(게임이 입힐 때와 SDK가 내보낼 때 같이 쓰는 한 목록), 플레이 없이 검사 | [WornParts](../Assets/_Project/Scripts/Core/Mods/WornParts.cs), [WardrobeBench](../Assets/_Project/Scripts/Player/Outfits/WardrobeBench.cs) (`Logs/WardrobeBench`) |
 | 옷 모드 찾기·불러오기, 옷 줄과 흔들림 줄 만들기 | [ModOutfits](../Assets/_Project/Scripts/Core/Mods/ModOutfits.cs); 옷장이 모델을 찾는 곳 [OutfitCatalog](../Assets/_Project/Scripts/Player/Outfits/OutfitCatalog.cs) `Model`, 입히는 곳 [OutfitDresser](../Assets/_Project/Scripts/Player/Outfits/OutfitDresser.Placing.cs) `Place` |
 | 옷과 캐릭터의 흔들림 줄에 필요한 몸 정보(편집기 가져오기와 같이 씀) | [VrcWearer](../Assets/_Project/Scripts/Player/Body/Cloth/VrcWearer.cs) |

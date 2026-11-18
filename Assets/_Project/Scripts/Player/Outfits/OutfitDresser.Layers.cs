@@ -111,7 +111,8 @@ internal static partial class OutfitDresser
     private static bool CoversSkin(OutfitSlot slot) =>
         slot != null && !SkinCover.IsBare(slot.id) && !string.Equals(slot.group, "head", StringComparison.OrdinalIgnoreCase);
 
-    // What hangs from the head under the face pieces worn (OutfitSlot.FitsFace): the character's own head meshes (hair,
+    // What hangs from the head under the pieces fitted over it (Worn.OnHead: a face fit, on the face or round the back of
+    // the head, wherever the look wears it): the character's own head meshes (hair,
     // ears, the face) and items worn in the head's slots. A piece the face piece covers whole (FaceFit.csv hide, as
     // SkinCover measures it: a hairpin under the mask) goes out of sight; of the rest, what comes out through the face
     // piece is left out (OutfitFit.Trim, which hides nothing behind it: a face shows beside a mask). Measured on the
@@ -122,7 +123,7 @@ internal static partial class OutfitDresser
     {
         var onFace = new List<Renderer>();
         foreach (var piece in worn)
-            if (piece.Slot.FitsFace && !covered.Contains(piece.Slot.id)) onFace.AddRange(piece.Renderers);
+            if (piece.OnHead && !covered.Contains(piece.Slot.id)) onFace.AddRange(piece.Renderers);
         if (onFace.Count == 0) return;
         var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head == null) return;
@@ -132,7 +133,7 @@ internal static partial class OutfitDresser
                 under.Add(renderer);
         foreach (var piece in worn)
         {
-            if (piece.Slot.FitsFace || covered.Contains(piece.Slot.id) || !string.Equals(piece.Slot.group, "head", StringComparison.OrdinalIgnoreCase)) continue;
+            if (piece.OnHead || covered.Contains(piece.Slot.id) || !string.Equals(piece.Slot.group, "head", StringComparison.OrdinalIgnoreCase)) continue;
             foreach (var renderer in piece.Renderers)
                 if (renderer is SkinnedMeshRenderer && renderer.enabled) under.Add(renderer);
         }

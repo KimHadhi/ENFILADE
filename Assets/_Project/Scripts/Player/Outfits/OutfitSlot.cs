@@ -48,12 +48,13 @@ public sealed class OutfitSlot
     /// </summary>
     public bool under;
     /// <summary>
-    /// How a rigid piece made for anyone (OutfitLibrary.AnySkin) is put on in this slot: empty hangs it on the spots
-    /// measured for each character (OutfitSpots.csv: the Ene earrings on the lobes), "face" fits it to the face measured
-    /// from the character's own meshes as it is worn (FaceFit: the welding mask, 2026-11-13), so it sits on any humanoid
-    /// with nothing set up per character.
+    /// The ways a piece made for anyone (OutfitLibrary.AnySkin) is worn in this slot when its own row says none: ids of
+    /// WearPositions.csv with '|' between them, the first the one it is worn in unsaid. The mask slot says "face", the
+    /// ears slot "lobes". A slot that says none hangs such a piece on its own bone (WearPosition.Plain). Every rule
+    /// behind them measures the body as it is dressed, so a piece sits on any humanoid with nothing set up per
+    /// character (the welding mask on any face, 2026-11-13).
     /// </summary>
-    public string fit = "";
+    public string positions = "";
     /// <summary>
     /// Slots whose pieces this slot's pieces are worn over ('|' between them): a piece there is fitted under one here
     /// from the two meshes (OutfitFit: what of it is hidden under the piece here, or came out through it, is not drawn).
@@ -70,9 +71,6 @@ public sealed class OutfitSlot
 
     /// <summary>The slots this one is worn over (<see cref="over"/>).</summary>
     public IEnumerable<string> OverSlots => OutfitCatalog.Split(over);
-
-    /// <summary>Whether rigid pieces made for anyone are fitted to the face here (<see cref="fit"/> "face").</summary>
-    public bool FitsFace => string.Equals(fit, "face", StringComparison.OrdinalIgnoreCase);
 
     public string Name => Texts.Get("outfit.slot." + id);
 

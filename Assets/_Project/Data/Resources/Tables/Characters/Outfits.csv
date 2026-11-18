@@ -1,5 +1,5 @@
-﻿id,slot,also,hides,name,model,parts,was,wear,sheer
-#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom. 바디슈트는 slot이 undertop이고 also가 underbottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부,"이 옷이 떨어져 나온 옛 옷 Id(이제 표에 없는 Id). |로 여럿. 그 옛 옷을 입은 채 저장된 모습은 이 옷도 입는다: 같은 옛 Id를 적은 옷들이 저마다 제 칸에 같은 색으로 들어간다(그 칸에 고른 옷이 있으면 그 옷이 남는다). 다시 저장하면 옛 Id가 없어져 한 번만 일어난다. 반샤쿠 셔츠가 셔츠·초커·목걸이·스타킹·허벅지 벨트로 나뉠 때(2026-11-12)","얼굴에 맞추는 칸(OutfitSlots.csv fit face)의 물건을 어떻게 쓰나: 비우면 얼굴에, back이면 뒤통수에(얼굴 대신 뒤통수와 머리카락을 재서 맞춘다)",비치는 옷인지(레이스·망사·비치는 스타킹처럼 텍스처가 비쳐서 밑이 보이는 옷). true면 이 옷 밑의 살이나 옷을 숨기거나 자르지 않는다(OutfitFit). 재질 색 자체가 반투명이면 적지 않아도 알아서 그렇게 본다(OutfitFit.csv sheerAlpha). 텍스처의 비치는 부분은 게임이 읽을 수 없어서 여기에 적는다
+﻿id,slot,also,hides,name,model,parts,was,positions,sheer
+#설명,들어가는 칸(OutfitSlots.csv의 id),같이 차지하는 칸. |로 여럿. 원피스는 slot이 top이고 also가 bottom. 바디슈트는 slot이 undertop이고 also가 underbottom,입으면 가려서 안 보이게 할 칸. |로 여럿. 얼굴을 다 덮는 마스크는 eyes처럼 그 칸의 원래 옷과 그 칸에 입힌 옷을 모두 숨긴다,화면에 나오는 이름,이 옷이 들어 있는 모델의 Id(OutfitLibrary). 빈칸이면 옷 Id와 같다. BOOTH 옷 한 벌은 모델 하나에 베레모·재킷·치마가 다 들어 있어서 여러 옷이 한 모델을 나눠 쓴다(BoothSources.csv의 outfit 줄),모델에서 이 옷이 보여 줄 렌더러 이름. |로 여럿. 빈칸이면 다른 옷이 가져가지 않은 렌더러 전부,"이 옷이 떨어져 나온 옛 옷 Id(이제 표에 없는 Id). |로 여럿. 그 옛 옷을 입은 채 저장된 모습은 이 옷도 입는다: 같은 옛 Id를 적은 옷들이 저마다 제 칸에 같은 색으로 들어간다(그 칸에 고른 옷이 있으면 그 옷이 남는다). 다시 저장하면 옛 Id가 없어져 한 번만 일어난다. 반샤쿠 셔츠가 셔츠·초커·목걸이·스타킹·허벅지 벨트로 나뉠 때(2026-11-12). 옛 Id 뒤에 >방법 id를 붙이면(welding-mask-back>back) 그 옛 옷은 '이 옷을 그 방법으로 걸친 것'이었다는 뜻: 옛 옷을 입은 모습은 이 옷을 그 방법으로 입고, 옛 옷에 해 둔 위치·크기 조정도 그 방법으로 옮겨 온다(2026-11-18, 뒤로 쓴 용접 마스크가 마스크의 착용 위치가 될 때)","걸칠 수 있는 방법의 id(WearPositions.csv). |로 여럿, 첫 번째가 기본. 용접 마스크는 face|back(얼굴에, 뒤통수에). 비우면 그 칸의 OutfitSlots.csv positions를 쓴다. 몸에 통째로 거는 물건(누구에게나 맞게 만든 모델)에만 쓰인다. 플레이어가 옷장에서 고른 방법은 옷차림에 wear:<옷>=<방법>으로 남는다",비치는 옷인지(레이스·망사·비치는 스타킹처럼 텍스처가 비쳐서 밑이 보이는 옷). true면 이 옷 밑의 살이나 옷을 숨기거나 자르지 않는다(OutfitFit). 재질 색 자체가 반투명이면 적지 않아도 알아서 그렇게 본다(OutfitFit.csv sheerAlpha). 텍스처의 비치는 부분은 게임이 읽을 수 없어서 여기에 적는다
 sm-beret,helmet,,,outfit.sm-beret.name,sailor-maiden,SM2_Beret
 sm-jacket,top,,,outfit.sm-jacket.name,sailor-maiden,SM1_Sailor_Jacket|SM1_Sleeve_Side_Ribbon_BowTip|SM1_Sleeve_Side_Ribbon_Cross|SM2_FrontTie_A|SM2_FrontTie_B|SM2_FrontTie_C
 sm-skirt,bottom,,,outfit.sm-skirt.name,sailor-maiden,SM2_leated_Skirt
@@ -43,8 +43,7 @@ sy-gloves,gloves,,,outfit.sy-gloves.name,sera-yura,Sera_Yura_Elbow_Glove
 sy-stockings,legs,,,outfit.sy-stockings.name,sera-yura,Sera_Yura_Stockings
 sy-shoes,shoes,,,outfit.sy-shoes.name,sera-yura,Sera_Yura_Shoes
 sy-toast,mask,,,outfit.sy-toast.name,sera-yura,Sera_Yura_Toast|Sera_Yura_Toast_Jam_Mouth
-welding-mask,mask,,eyes,outfit.welding-mask.name,welding-mask,
-welding-mask-back,mask,,,outfit.welding-mask-back.name,welding-mask,,,back
+welding-mask,mask,,eyes,outfit.welding-mask.name,welding-mask,,welding-mask-back>back,face|back
 ene-earring-1,ears,,,outfit.ene-earring-1.name,ene-earring-1,
 ene-earring-2,ears,,,outfit.ene-earring-2.name,ene-earring-2,
 ene-earring-3,ears,,,outfit.ene-earring-3.name,ene-earring-3,

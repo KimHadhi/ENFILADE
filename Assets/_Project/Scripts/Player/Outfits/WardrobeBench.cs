@@ -20,16 +20,27 @@ using Object = UnityEngine.Object;
 ///   came with a prop pack's solid BoxCollider), and
 /// - the gate: each character dressed in each outfit model it can wear, then searched for anything solid (a collider,
 ///   a body, a joint, a controller) left under it. None may be: nothing the game dresses is part of the world's physics
-///   until the game itself makes it so.
-/// The last two load every model, so they run when asked: ENFILADE → 캐릭터 → 옷장 검사대, or a tool outside Unity
-/// making the file Temp/enfilade-wardrobebench.request, whose lines say what to stand (all optional):
+///   until the game itself makes it so;
+/// - what a look says of where a piece is worn (WearPosition, ItemAdjust), as words: a nudge reads back as it was
+///   written, a look saved with an item that has since become another item's position wears that item there with its
+///   nudge, a preset keeps all of it, and every position an item names is a row. Milliseconds too, so it runs with the
+///   rule after every script reload (WardrobeBench.Positions.cs);
+/// - every way of wearing every hung piece on every character: dressed, then measured from the eyes in eye spacings
+///   (where the piece's own spot went, what it follows, whether a pair mirrors, whether it covers what it should), and
+///   photographed from the front, the side and the back.
+/// Those that load every model run when asked: ENFILADE → 캐릭터 → 옷장 검사대, or a tool outside Unity making the file
+/// Temp/enfilade-wardrobebench.request, whose lines say what to stand (all optional):
 ///   skins=mayo,ichigo        characters by id (all)
 ///   models=welding-mask      outfit models by id (all)
-/// Logs/WardrobeBench/parts.txt has the answer. It lives beside OutfitDresser because it dresses with the game's own
-/// classes.
+///   check=parts,positions    which of the two (both)
+///   pictures=no              the positions' numbers only (pictures are taken unless told not to)
+///   width=256                one picture's width and height in pixels
+/// Logs/WardrobeBench/parts.txt and positions.txt have the answers; each character's pictures are one sheet,
+/// positions/&lt;character&gt;.png, a row to an item's way of wearing and a column to a view. It lives beside OutfitDresser
+/// because it dresses with the game's own classes.
 /// </summary>
 [InitializeOnLoad]
-internal static class WardrobeBench
+internal static partial class WardrobeBench
 {
     private const string Request = "Temp/enfilade-wardrobebench.request", Folder = "Logs/WardrobeBench",
         RulePath = Folder + "/rule.txt", PartsPath = Folder + "/parts.txt";
@@ -72,6 +83,8 @@ internal static class WardrobeBench
     private sealed class Ask
     {
         public HashSet<string> Skins, Models;
+        public bool Parts = true, Positions = true, Pictures = true;
+        public int Width = 256;
 
         public static Ask Read(string[] lines)
         {
@@ -89,6 +102,17 @@ internal static class WardrobeBench
                         break;
                     case "models":
                         ask.Models = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
+                        break;
+                    case "check":
+                        var which = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
+                        ask.Parts = which.Contains("parts");
+                        ask.Positions = which.Contains("positions");
+                        break;
+                    case "pictures":
+                        ask.Pictures = values.Length == 0 || values[0].ToLowerInvariant() != "no";
+                        break;
+                    case "width":
+                        if (values.Length > 0 && int.TryParse(values[0], out int width)) ask.Width = Mathf.Clamp(width, 96, 1024);
                         break;
                 }
             }
@@ -133,16 +157,20 @@ internal static class WardrobeBench
         var report = new Report();
         try
         {
+            report.Line("== the worn-parts rule (WornParts), on parts made up for it");
             Rule(report);
+            report.Line("");
+            report.Line("== what a look says of where a piece is worn (WearPosition, ItemAdjust, OutfitLook.Settled)");
+            LookRules(report);
         }
         catch (Exception problem)
         {
             report.Failed++;
             report.Line("  FAIL the check itself stopped: " + problem);
         }
-        Write(RulePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} worn-parts rule (WornParts), on parts made up for it: "
-            + (report.Failed == 0 ? "KEPT" : report.Failed + " BROKEN") + "\n" + report.Text);
-        if (report.Failed > 0) Debug.LogWarning($"WardrobeBench: the worn-parts rule is broken in {report.Failed} ways, see {RulePath}.");
+        Write(RulePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} the wardrobe's rules that need no model, {report.Looked} things checked: "
+            + (report.Failed == 0 ? "ALL KEPT" : report.Failed + " BROKEN") + "\n\n" + report.Text);
+        if (report.Failed > 0) Debug.LogWarning($"WardrobeBench: {report.Failed} of the wardrobe's rules are broken, see {RulePath}.");
     }
 
     // A made-up model carrying one of everything, each part with what leans on it and put on in the order that is worst
@@ -244,6 +272,12 @@ internal static class WardrobeBench
             Debug.LogWarning("WardrobeBench: the body profile (Resources/Characters/PlayerBody) is missing; nothing to stand.");
             return;
         }
+        if (ask.Parts) RunParts(ask, profile);
+        if (ask.Positions) RunPositions(ask, profile);
+    }
+
+    private static void RunParts(Ask ask, PlayerBodyProfile profile)
+    {
         var report = new Report();
         var watch = System.Diagnostics.Stopwatch.StartNew();
         int files = 0, dressed = 0;
