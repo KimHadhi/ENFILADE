@@ -134,12 +134,13 @@ public sealed partial class CampaignRun
     }
 
     // How far into its time a step is. Under a finale's song that this PC is playing, the song's own clock says, less
+    // where the song came in (CampaignPhases.EntryOf: a song with a far first highlight starts further along) and less
     // what of the song came before the step: the song runs in real time, and a slowed moment of the game must not
     // leave the ride waiting after its last note. Otherwise the game's clock.
     private float SongTime(CampaignStep now, float dt, float before)
     {
         bool bySong = SameSong(music.Playing, now.Music) && TryFinale(step, out _, out _);
-        return bySong ? Mathf.Max(held, music.Clock - before) : held + dt;
+        return bySong ? Mathf.Max(held, music.Clock - CampaignPhases.EntryOf(music.Current) - before) : held + dt;
     }
 
     private static bool SameSong(string a, string b) => !string.IsNullOrEmpty(a) && string.Equals(a, b, System.StringComparison.OrdinalIgnoreCase);

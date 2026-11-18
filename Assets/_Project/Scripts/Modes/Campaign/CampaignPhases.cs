@@ -43,6 +43,11 @@ public struct PhaseTrack
 /// shutter's siren, the tug) is one assault from end to end with the music stopped. Between two songs the run breathes in
 /// control: Control.gap seconds of quiet at least, more when the next song's first assault would come sooner than
 /// Control.least after the last one ended. Quiet (unseen, a lull, a rest stop, a wipe) has no phase and no song.</para>
+/// <para>A rest has a longest length too (Control.longest; user, 2026-11-18: "1분 30초 동안 음악 없이 비어 있는 휴식 시간을
+/// 줄여 게임 템포 유지"). A song whose first highlight is far in (song 2's comes at 99 s, after 35 s of near silence) made
+/// every loud stretch begin with a minute and a half of rest, so such a song comes in further along (EntryOf): late
+/// enough that the rest before its first assault is no longer than that, the rest already had since the last assault
+/// counted in. It still plays on to its end from there; a rest between two highlights inside a song is the song's own.</para>
 /// <para>What each phase sends, against the step's own numbers (CampaignSteps horde, rate): Phases.csv most and rate; an
 /// assault breaks in with mob more at mobRate; special of the shamblers made in a phase come as other kinds; the dead drop
 /// things drops times as often (FieldPickups), and what drops in an assault starts running out only once it is over. It
@@ -60,15 +65,15 @@ internal sealed class CampaignPhases
     }
 
     private static readonly Numbers[] paces = new Numbers[4];
-    private static float lead = 12f, least = 25f, gap = 3f;
+    private static float lead = 12f, least = 25f, gap = 3f, longest, enterFade = 2f;
     private static bool loaded;
 
     // The next of the chapter's songs; the step whose own song has run out; the song a step started as its own ("" when
-    // the one playing came from the chapter's list); the quiet left before the next song (s, negative none); when the
-    // last assault ended (real s).
+    // the one playing came from the chapter's list); the quiet left before the next song (s, negative none) and where in
+    // itself that song will come in (s); when the last assault ended (real s).
     private int nextSong, mobLeft, ownDone = -1;
     private string ownSong = "";
-    private float breath = -1f, assaultEnded = float.NegativeInfinity;
+    private float breath = -1f, enterAt, assaultEnded = float.NegativeInfinity;
 
     /// <summary>The phase now (the host's).</summary>
     public CombatPhase Now { get; private set; }
@@ -91,6 +96,7 @@ internal sealed class CampaignPhases
             ownDone = -1;
             ownSong = "";
             breath = -1f;
+            enterAt = 0f;
             Now = CombatPhase.Quiet;
         }
         else
@@ -152,6 +158,32 @@ internal sealed class CampaignPhases
     }
 
     /// <summary>
+    /// Where in itself a song comes in (s) so that the rest before its first assault is no longer than Phases.csv
+    /// Control.longest, <paramref name="rested"/> s of rest being behind the run already (0 going loud, or for a step's
+    /// own song). 0, its first second, for a song whose first highlight is near enough, for one without a highlight,
+    /// and when the table sets no longest rest. One place says it: the phases start the song there, and a finale's
+    /// hold is that much shorter (CampaignMusic.TryFinale).
+    /// </summary>
+    public static float EntryOf(CampaignMusic.Song song, float rested = 0f)
+    {
+        Load();
+        if (song == null || longest <= 0f || float.IsInfinity(song.FirstAssault)) return 0f;
+        // What the song itself brings before its first anticipation, against the rest the run may still have.
+        float brings = Mathf.Max(0f, song.FirstAssault - lead), room = Mathf.Max(0f, longest - Mathf.Max(0f, rested));
+        return Mathf.Max(0f, brings - room);
+    }
+
+    /// <summary>How long a song that comes in past its first second takes to fade in (Phases.csv Control.enterFade, s): its own fadeIn is for its first beat.</summary>
+    public static float EnterFade
+    {
+        get
+        {
+            Load();
+            return enterFade;
+        }
+    }
+
+    /// <summary>
     /// The phase a song is in at <paramref name="clock"/> s into it, and how long until that turns: the assault's end, or
     /// the next assault's start (infinite after the last one).
     /// </summary>
@@ -182,9 +214,9 @@ internal sealed class CampaignPhases
         return $"단계: {phase} · 적 {alive}" + (mobLeft > 0 ? $" · 떼 {mobLeft} 마리 오는 중" : "") + song;
     }
 
-    // A step's own song from its first second, even when the chapter's list was playing that same song already: a
-    // finale's hold is as long as its song (CampaignRun.TryFinale) and must hear all of it. One an earlier step started
-    // as its own plays on.
+    // A step's own song from where it comes in (EntryOf: its first second, unless its first highlight is far in), even
+    // when the chapter's list was playing that same song already: a finale's hold is as long as what is heard of its
+    // song (CampaignRun.TryFinale) and must hear all of that. One an earlier step started as its own plays on.
     private void Own(string stepSong, CampaignMusic music)
     {
         if (!string.Equals(ownSong, stepSong, StringComparison.OrdinalIgnoreCase))
@@ -192,41 +224,52 @@ internal sealed class CampaignPhases
             music.Want("", 0f);
             ownSong = stepSong;
         }
-        music.Want(stepSong, 0f);
+        music.Want(stepSong, EntryOf(CampaignMusic.Find(stepSong)));
         breath = -1f;
         Now = SongPhase(music);
     }
 
     // Loud between a step's own songs: the song playing goes on to its end, whichever started it; then, after a breath,
-    // the next of the chapter's songs from its first second. Going loud, the first comes at once; straight out of a hold
-    // without a song (an assault) it waits its breath too.
+    // the next of the chapter's songs from where it comes in (Plan). Going loud, the first comes at once; straight out of
+    // a hold without a song (an assault) it waits its breath too.
     private void Roam(float dt, IReadOnlyList<string> playlist, CampaignMusic music)
     {
         if (music.Playing.Length > 0 && !music.Ended) { Now = SongPhase(music); return; }
         if (music.Playing.Length > 0)
         {
             music.Want("", 0f);
-            breath = BreathBefore(playlist);
+            Plan(playlist, true);
         }
-        else if (breath < 0f && Now == CombatPhase.Assault) breath = BreathBefore(playlist);
+        else if (breath < 0f) Plan(playlist, Now == CombatPhase.Assault);
         Now = CombatPhase.Control;
         if (playlist == null || playlist.Count == 0) return;
-        if (breath > 0f) { breath -= dt; return; }
+        // Down to nothing and no lower: a negative breath means none is planned, and the song would be planned again
+        // as if the run had just gone loud.
+        if (breath > 0f) { breath = Mathf.Max(0f, breath - dt); return; }
         breath = -1f;
         ownSong = "";
-        music.Want(playlist[nextSong++ % playlist.Count], 0f);
+        music.Want(playlist[nextSong++ % playlist.Count], enterAt);
         Now = SongPhase(music);
     }
 
-    // The quiet before the next song: gap at least, and long enough that its first assault comes no sooner than least
-    // after the last one ended (song 2 ends four seconds after its last assault; song 1's first comes at sixteen).
-    private float BreathBefore(IReadOnlyList<string> playlist)
+    // The quiet before the next song and where in itself that song comes in. A rest runs from the last assault's end to
+    // the next anticipation: what is behind the run already, this quiet, and what the song brings before its first
+    // highlight. It is kept between Control.least and Control.longest: the quiet is gap at least and stretched to reach
+    // least (song 2 ends four seconds after its last assault; song 1's first comes at sixteen), and a song that would
+    // bring more than longest allows comes in further along (song 2's first comes at ninety-nine). Going loud
+    // (breathe false) nothing is behind the run and the song comes at once.
+    private void Plan(IReadOnlyList<string> playlist, bool breathe)
     {
         Load();
-        if (playlist == null || playlist.Count == 0) return gap;
+        breath = breathe ? gap : -1f;
+        enterAt = 0f;
+        if (playlist == null || playlist.Count == 0) return;
         var next = CampaignMusic.Find(playlist[nextSong % playlist.Count]);
-        float since = Now == CombatPhase.Assault ? 0f : Time.unscaledTime - assaultEnded, before = Mathf.Max(0f, next.FirstAssault - lead);
-        return Mathf.Max(gap, least - since - before);
+        if (!breathe) { enterAt = EntryOf(next); return; }
+        float since = Now == CombatPhase.Assault ? 0f : Mathf.Max(0f, Time.unscaledTime - assaultEnded);
+        enterAt = EntryOf(next, since + gap);
+        float before = Mathf.Max(0f, next.FirstAssault - lead - enterAt);
+        breath = Mathf.Max(gap, least - since - before);
     }
 
     private static CombatPhase SongPhase(CampaignMusic music)
@@ -262,6 +305,9 @@ internal sealed class CampaignPhases
         lead = Mathf.Max(0f, GameTables.Number(TableName, nameof(CombatPhase.Anticipation), "lead", 12f));
         least = Mathf.Max(0f, GameTables.Number(TableName, nameof(CombatPhase.Control), "least", 25f));
         gap = Mathf.Max(0f, GameTables.Number(TableName, nameof(CombatPhase.Control), "gap", 3f));
+        // No longest rest without the cell: every song from its first second, as before the table had it.
+        longest = Mathf.Max(0f, GameTables.Number(TableName, nameof(CombatPhase.Control), "longest", 0f));
+        enterFade = Mathf.Max(.01f, GameTables.Number(TableName, nameof(CombatPhase.Control), "enterFade", 2f));
     }
 
     // Live table edits and a new Play session read the phases again.

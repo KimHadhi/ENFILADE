@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The campaign's songs (Tables/Music, one row a song file). A song plays whole, from its first second to its last, and
-/// is never cut into or played round (user, 2026-11-14: "노래만 원본 그대로 싹 다 플레이할 수 없음?"). Which song plays and
+/// The campaign's songs (Tables/Music, one row a song file). A song plays on to its last second and is never cut into
+/// or played round (user, 2026-11-14: "노래만 원본 그대로 싹 다 플레이할 수 없음?"); it starts at its first second unless
+/// its first highlight is so far in that the rest before it would outlast Phases.csv Control.longest, when it comes in
+/// further along (CampaignPhases.EntryOf; user, 2026-11-18: "1분 30초 동안 음악 없이 비어 있는 휴식 시간을 줄여"). Which song plays and
 /// when is CampaignPhases' word, and the song's highlights (Music.assault, seconds into the file) are the fight's
 /// assaults; its peak (Music.peak, else its first assault) is when a hold's brutes come (friend feedback C2). A song that
 /// gives way to another goes out over its own fade on one source while the next comes in on the other.
@@ -94,7 +96,9 @@ internal sealed class CampaignMusic
         voice.Volume = song.Volume;
         voice.Level = 0f;
         voice.Target = 1f;
-        voice.Fade = song.FadeIn;
+        // Its own fade-in is for its first beat; coming in further along (CampaignPhases.EntryOf, or a guest joining
+        // the host's song) it would cut in mid-phrase, so there it rises over the phases' enter fade.
+        voice.Fade = Clock > MostDrift ? Mathf.Max(song.FadeIn, CampaignPhases.EnterFade) : song.FadeIn;
         Seek(Clock);
         return true;
     }
@@ -150,17 +154,20 @@ internal sealed class CampaignMusic
     }
 
     /// <summary>
-    /// A finale's song (CampaignRun): how long the hold under it lasts, the song's length less <paramref name="board"/>,
-    /// the time the ride waits after it. False without the song's file, since its length is not known, and for a song
-    /// too short for that wait: the step's own seconds stand then.
+    /// A finale's song (CampaignRun): how long the hold under it lasts, what is heard of the song (from where it comes
+    /// in, CampaignPhases.EntryOf, to its end) less <paramref name="board"/>, the time the ride waits after it. False
+    /// without the song's file, since its length is not known, and for a song too short for that wait: the step's own
+    /// seconds stand then.
     /// </summary>
     public static bool TryFinale(string id, float board, out float hold)
     {
         hold = 0f;
         if (string.IsNullOrEmpty(id) || board <= 0f) return false;
         var finale = Find(id);
-        if (finale.Clip == null || finale.Length < board + ShortestHold) return false;
-        hold = finale.Length - board;
+        if (finale.Clip == null) return false;
+        float heard = finale.Length - CampaignPhases.EntryOf(finale);
+        if (heard < board + ShortestHold) return false;
+        hold = heard - board;
         return true;
     }
 
