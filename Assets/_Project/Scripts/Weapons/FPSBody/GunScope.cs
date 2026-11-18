@@ -151,7 +151,10 @@ public sealed class GunScope : MonoBehaviour, ITableBound
     public void Show(float aim, Camera view)
     {
         if (lens == null || lens.sharedMaterial == null || !lens.sharedMaterial.HasProperty(RenderTextureId)) return;
-        float weight = isActiveAndEnabled ? Mathf.Clamp01(aim) : 0f;
+        // Outside play nothing has woken this component, though a check may stand a gun in the editor and look through
+        // its scope there (GunSightBench): "on" is then what its switches say.
+        bool awake = Application.isPlaying ? isActiveAndEnabled : enabled && gameObject.activeInHierarchy;
+        float weight = awake ? Mathf.Clamp01(aim) : 0f;
         bool on = weight > .001f;
         if (on) Make(view);
         viewer = view != null ? view.transform : null;
@@ -224,7 +227,7 @@ public sealed class GunScope : MonoBehaviour, ITableBound
         else size = Mathf.ClosestPowerOfTwo(Mathf.Clamp(height > 0 ? Mathf.RoundToInt(height * screenShare) : textureResolution, 64, cap));
         if (texture != null && texture.width == size) return;
         if (scopeCamera != null) scopeCamera.targetTexture = null;
-        if (texture != null) { texture.Release(); Destroy(texture); }
+        if (texture != null) { texture.Release(); Remove(texture); }
         texture = new RenderTexture(size, size, 24, RenderTextureFormat.DefaultHDR)
         {
             name = name + " scope view",
@@ -307,9 +310,58 @@ public sealed class GunScope : MonoBehaviour, ITableBound
         }
     }
 
-    private void OnDestroy()
+    private void OnDestroy() => Close();
+
+    /// <summary>
+    /// Takes the scope's picture now, as its camera takes it in play: turned to the viewer, the player's own things left
+    /// out of it, its mip levels made. In play the camera renders by itself every frame and this is never needed. Outside
+    /// play no camera renders by itself and this component's render hooks are not on, so whoever looks through a scope
+    /// there asks for each picture (GunSightBench, which checks what the aiming eye sees without Play). Call Show first.
+    /// </summary>
+    public void RenderNow()
     {
-        if (scopeCamera != null) { scopeCamera.targetTexture = null; Destroy(scopeCamera.gameObject); }
-        if (texture != null) { texture.Release(); Destroy(texture); }
+        if (scopeCamera == null || texture == null || !scopeCamera.gameObject.activeSelf) return;
+#if UNITY_EDITOR
+        // Stood in a scene of the editor's own (a bench's), it draws that scene alone, as the view that looks at it does.
+        if (UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(gameObject.scene)) scopeCamera.scene = gameObject.scene;
+#endif
+        BeforeRender(default, scopeCamera);
+        try
+        {
+            scopeCamera.Render();
+        }
+        finally
+        {
+            AfterRender(default, scopeCamera);
+        }
+    }
+
+    /// <summary>
+    /// Lets go of the scope's camera and picture. Unity does this as the scope goes (OnDestroy); whoever showed it
+    /// outside play, where Unity calls nothing, does it themselves.
+    /// </summary>
+    public void Close()
+    {
+        ShowOwnAgain();
+        lookingThrough = false;
+        if (scopeCamera != null)
+        {
+            scopeCamera.targetTexture = null;
+            Remove(scopeCamera.gameObject);
+            scopeCamera = null;
+        }
+        if (texture != null)
+        {
+            texture.Release();
+            Remove(texture);
+            texture = null;
+        }
+    }
+
+    // Outside play only DestroyImmediate may be called.
+    private static void Remove(Object thing)
+    {
+        if (Application.isPlaying) Destroy(thing);
+        else DestroyImmediate(thing);
     }
 }
