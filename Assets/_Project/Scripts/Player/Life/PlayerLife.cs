@@ -65,6 +65,43 @@ public sealed class PlayerLife : MonoBehaviour
         if (receiver != null) receiver.Died -= OnDied;
     }
 
+    /// <summary>
+    /// A run someone can come into the middle of is under way in this scene: a campaign chapter not yet finished, the
+    /// tower, waves running. The hub and the test rooms have none, and whoever joins there is simply there. The host
+    /// asks as it makes a newcomer's player (GameSession).
+    /// </summary>
+    internal static bool RunUnderWay
+    {
+        get
+        {
+            if (TowerRun.UnderWay || CampaignRun.UnderWay) return true;
+            var running = SceneOne<WaveManager>.Get();
+            return running != null && running.IsRunning;
+        }
+    }
+
+    /// <summary>
+    /// This PC's player came into a run already under way (the host said so as it made them: GameSession,
+    /// PlayerNetworkPose). They are not set down alive at the map's start in the middle of someone else's fight: they
+    /// stand out of it (PlayerDamageReceiver.StandOut), watch the others (PlayerSpectate) and come in the way the dead
+    /// come back, by the same clock and at the same place (Respawn): after the wait where no waves run, at the next
+    /// wave, in the tower's next hall, or with everyone after a wipe. One rule for everyone who is not in the fight, so a
+    /// change to how the dead return changes this with it. No death is counted: they never fell.
+    /// User, 2026-11-18: "난입은 언제든지 할 수 있게 하고 싶습니다. 관전이 있으니까요. 중간에 들어가도 세이브포인트까지
+    /// 관전하다 바로 같이 할 수 있게끔 말입니다." Until then a newcomer stood alive and alone at the map's start.
+    /// </summary>
+    internal void Arrive()
+    {
+        if (receiver == null) receiver = GetComponent<PlayerDamageReceiver>();
+        receiver.StandOut();
+        respawnLeft = respawnSeconds;
+        PlayRecord.Line(JoinRecord, JoinHeading, $"ARRIVED into a run under way: out of the fight, watching; comes in after {respawnSeconds:0} s where no waves run, at the next wave, or in the tower's next hall");
+    }
+
+    /// <summary>Logs/joins.txt (editor and development builds): what a join into a run under way did, on the host and on the joiner's PC.</summary>
+    internal const string JoinRecord = "joins",
+        JoinHeading = "joining a room: HOST the host making a newcomer's player, ARRIVED this PC's player coming in waiting, CAME IN its joining the fight";
+
     /// <summary>Health ran out: true if they go down, false if there is nobody left to get them up.</summary>
     internal bool TryGoDown()
     {
@@ -188,6 +225,8 @@ public sealed class PlayerLife : MonoBehaviour
         bool campaign = TowerRun.TryCheckpoint(out Vector3 checkpoint) || CampaignRun.TryCheckpoint(out checkpoint);
         if (campaign || point != null)
             player.MoveTo((campaign ? checkpoint : point.transform.position) + new Vector3(scatter.x, 0f, scatter.y));
+        if (receiver.IsWaiting)
+            PlayRecord.Line(JoinRecord, JoinHeading, $"CAME IN at {player.transform.position} ({(campaign ? "the run's save point" : "the map's start")})");
         receiver.RestoreHealth();
         // Back with full magazines and reserves, as at the start (user, 2026-11-11 playtest: "탄창 보충이 안 돼 있음").
         if (TryGetComponent(out PlayerWeaponSlots slots)) slots.RefillAmmo();

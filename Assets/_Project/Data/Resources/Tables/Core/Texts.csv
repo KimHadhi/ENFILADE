@@ -1,5 +1,10 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+life.join.seconds,{0}초 뒤 합류합니다,Joining in {0}s,진행 중인 판에 늦게 들어와 관전하며 합류를 기다릴 때(죽은 사람이 돌아오는 것과 같은 시계). {0}=합류까지 남은 초
+life.join.next_wave,다음 웨이브에 합류합니다,Joining at the next wave,진행 중인 판에 늦게 들어와 합류를 기다릴 때(웨이브가 도는 중)
+life.join.tower,다음 휴게층에서 합류합니다,Joining at the next rest hall,진행 중인 타워에 늦게 들어와 합류를 기다릴 때(레인을 오르는 중)
+team.joining,합류 대기,JOINING,왼쪽 아래 동료 체력 카드: 진행 중인 판에 늦게 들어와 합류를 기다리는 동료(죽은 것이 아님)
+team.alert.joined,{0} 합류,{0} joined the fight,화면 위 알림: 진행 중인 판에 늦게 들어와 관전하던 동료가 합류했을 때. {0}=이름(색 포함)
 effect.chain,암살 연쇄 ×{1},Chain ×{1},클래스 칸 아래 지속 효과 칸(TimedEffects.csv ghost.chain): 고스트 암살 연쇄 카드로 다음 좀비를 고를 수 있는 동안. 칼이 닿기 전에는 가득 찬 채로 있고 닿은 뒤 Ghost.chainWindow초 동안 줄어든다. {1}=더 이을 수 있는 횟수
 gun.pro.scope_view,조준하면 화면 전체가 ×{0} 확대,Aiming magnifies the whole view ×{0},"부품 설명(초록 +). {0}=배율. 화면 전체가 확대되는 배율 조준경(GunParts.csv view=zoom). 렌즈 안만 확대되는 조준경(view=pip)은 gun.pro.scope_zoom"
 hud.parkour.ledge.nowayup,눌러 낙하 · 여기서는 올라설 수 없음,,파쿠르 안내: 난간에 매달렸는데 그 자리에서는 위로 올라설 수 없을 때(위가 막혔거나 설 자리가 없는 턱) 조준점 아래. 앞에 웅크리기 키(CTRL) 키캡이 붙는다. 올라가려고 W나 Space를 누르면 손이 한 번 당기는 소리(SoundCues LedgeRefuse)가 난다

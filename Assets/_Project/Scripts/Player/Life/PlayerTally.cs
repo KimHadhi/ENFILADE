@@ -16,7 +16,7 @@ public sealed class PlayerTally : MonoBehaviour
     private const float ClassEvery = 1f;
 
     private PlayerMovement player;
-    private bool wasDowned, wasDead;
+    private bool wasDowned, wasDead, wasWaiting;
     private float lastKillTime = float.NegativeInfinity, nextClassLook;
     // Their colour as PlayerColours gave it, and the setting and the palette it was last asked from (this PC's own player).
     private Color colour = Color.white;
@@ -262,7 +262,13 @@ public sealed class PlayerTally : MonoBehaviour
                 ClassId = ClassGrowth.CurrentId;
             }
         }
-        bool downed = player.IsDowned, dead = player.IsDead;
+        // Someone waiting to come into a run already under way (PlayerDamageReceiver.IsWaiting) is out of the fight but
+        // never died: no death is counted or announced for it. Their coming in is said instead.
+        bool waiting = player.DamageReceiver != null && player.DamageReceiver.IsWaiting;
+        bool downed = player.IsDowned, dead = player.IsDead && !waiting;
+        if (wasWaiting && !waiting && GameSession.IsOnline && !player.IsLocal)
+            AlertHUD.Team(Texts.Format("team.alert.joined", "<color=#" + ColorUtility.ToHtmlStringRGB(Color) + ">" + DisplayName + "</color>"), transform, Color);
+        wasWaiting = waiting;
         if (downed == wasDowned && dead == wasDead) return;
         if (player.IsLocal)
         {

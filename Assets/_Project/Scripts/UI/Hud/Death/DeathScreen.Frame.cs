@@ -9,7 +9,8 @@ public sealed partial class DeathScreen
         if (tally == null) TryGetComponent(out tally);
         if (spectate == null) TryGetComponent(out spectate);
         float now = Time.unscaledTime;
-        bool dead = !receiver.IsAlive, wiped = life != null && life.IsWiped, downed = receiver.IsDowned;
+        // Someone waiting to come into a run under way never fell (PlayerDamageReceiver.IsWaiting): no death to show.
+        bool dead = !receiver.IsAlive && !receiver.IsWaiting, wiped = life != null && life.IsWiped, downed = receiver.IsDowned;
         if (!started) { started = true; NewLife(); }
         if (!dead && wasDead) NewLife();
         if (downed && !wasDowned) downedBy = RecentKiller();

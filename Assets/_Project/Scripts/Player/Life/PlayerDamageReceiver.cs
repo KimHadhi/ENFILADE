@@ -208,9 +208,35 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     /// <summary>On someone else's copy: whether they are down, as their own PC reports.</summary>
     internal void ShowDowned(bool downed) => IsDowned = downed;
 
+    /// <summary>
+    /// Not in the fight yet: this player came into a run that was already under way and waits to come in the way the dead
+    /// come back (PlayerLife.Arrive). To everything that asks who is alive they are not (Health is 0, so zombies, the
+    /// tower's lanes, revives and the wipe leave them out as they leave out the dead), but they never fell: no body lies
+    /// anywhere, nothing is counted against them, and what shows a death (the ragdoll, the death screen) shows nothing.
+    /// </summary>
+    public bool IsWaiting { get; private set; }
+
+    /// <summary>Their own PC: out of the fight from the first frame, until a return brings them in (RestoreHealth).</summary>
+    internal void StandOut()
+    {
+        // Health counts as set up, so Initialize (which may run after this) leaves it at 0.
+        Health = 0f; shield = 0f; healthInitialized = true;
+        IsWaiting = true;
+        SetDowned(false);
+    }
+
+    /// <summary>On someone else's copy: whether they still wait to come in, as the host said when it made them and their own PC says since.</summary>
+    internal void ShowWaiting(bool waiting)
+    {
+        IsWaiting = waiting;
+        // As StandOut: a copy told so before it is set up must not be given full health by Initialize.
+        if (waiting) { Health = 0f; healthInitialized = true; }
+    }
+
     public void RestoreHealth()
     {
         Health = MaximumHealth; shield = 0f; healthInitialized = true; seen.Clear(); recent.Clear();
+        IsWaiting = false;
         SetDowned(false);
         movement.OrNull()?.ResetVelocity();
         GetComponent<PlayerDamageFeedback>().OrNull()?.Clear();

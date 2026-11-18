@@ -9,6 +9,8 @@ using UnityEngine.InputSystem;
 /// click go to the next and previous teammate; Space swaps to a free camera that flies where it looks, through walls like
 /// Source's roaming spectator (WASD, Shift for speed), and back. A teammate who dies is watched a moment longer, then the
 /// next one; with nobody left on their feet the free camera carries on from where the view is.
+/// Someone who joined a run already under way watches the same way until they come in (PlayerLife.Arrive), from their
+/// first frame, with no fallen eyes to wait in.
 /// Only this PC's own player, and only in a room: alone, death is the wipe (PlayerLife). It lets go as soon as they live
 /// again, and the body puts the camera back on its eyes that same frame. Runs after the ragdoll's eye ride
 /// (FrameOrder.Spectate). Numbers: Tables/Spectate. What the screen says: PlayerLifeHUD.
@@ -113,7 +115,9 @@ public sealed class PlayerSpectate : MonoBehaviour
         bool forward = controls && InputFocus.Pressed(next), back = controls && InputFocus.Pressed(previous), swapped = controls && InputFocus.Pressed(swap);
         if (Current == Mode.None)
         {
-            if (!forward && !back && !swapped && Time.time - diedAt < deathViewSeconds) return;
+            // Someone waiting to come into a run under way has no fallen body whose eyes to stay in: they watch at once.
+            bool waiting = player.DamageReceiver != null && player.DamageReceiver.IsWaiting;
+            if (!waiting && !forward && !back && !swapped && Time.time - diedAt < deathViewSeconds) return;
             // The press that ends the wait only starts watching: Space starts free, a click with the nearest teammate.
             Begin(swapped);
         }

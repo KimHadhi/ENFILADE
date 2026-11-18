@@ -97,6 +97,11 @@ public sealed class PlayerRagdoll : MonoBehaviour
     private void LateUpdate()
     {
         if (!player.IsInitialized) return;
+        // Waiting to come into a run already under way (PlayerDamageReceiver.IsWaiting): they never fell, so there is no
+        // body to lay down. Nothing of them is drawn and nobody walks into where they stand, until they come in.
+        var health = player.DamageReceiver;
+        if (health != null && health.IsWaiting) { StandAside(); return; }
+        if (aside) ComeIn();
         if (!player.IsDead)
         {
             if (fell) Clear();
@@ -113,6 +118,43 @@ public sealed class PlayerRagdoll : MonoBehaviour
         HideAllButBody();
         if (Time.time >= nextPassThrough) PassEveryoneThrough();
         if (view != null) RideTheEyes();
+    }
+
+    // Out of the world while they wait to come in. Only what this turned off is remembered, so what something else keeps
+    // unseen (a part hidden under an outfit) stays as it was when they come in; a part that turns up meanwhile (a gun
+    // built late) is taken too, and all of it is said again each frame in case something showed a part again.
+    private readonly List<Renderer> found = new List<Renderer>();
+    private bool aside;
+
+    private void StandAside()
+    {
+        if (fell) Clear();
+        if (!aside)
+        {
+            aside = true;
+            partsSeen = 0;
+            // As for the dead: nobody should bump into the capsule; their own PC keeps it, its movement needs it.
+            capsule.detectCollisions = false;
+            capsule.enabled = player.IsLocal;
+        }
+        if (transform.hierarchyCount != partsSeen)
+        {
+            partsSeen = transform.hierarchyCount;
+            GetComponentsInChildren(true, found);
+            foreach (var part in found)
+                if (!part.forceRenderingOff) { part.forceRenderingOff = true; hidden.Add(part); }
+            found.Clear();
+        }
+        foreach (var part in hidden) if (part != null) part.forceRenderingOff = true;
+    }
+
+    private void ComeIn()
+    {
+        aside = false;
+        foreach (var part in hidden) if (part != null) part.forceRenderingOff = false;
+        hidden.Clear();
+        partsSeen = 0;
+        capsule.enabled = capsule.detectCollisions = true;
     }
 
     // Every standing capsule passes through the corpse. A capsule switched off and on forgets that (a spawn, a teleport
@@ -215,5 +257,9 @@ public sealed class PlayerRagdoll : MonoBehaviour
         corpse.Stow();
     }
 
-    private void OnDisable() => Clear();
+    private void OnDisable()
+    {
+        if (aside) ComeIn();
+        Clear();
+    }
 }

@@ -170,6 +170,9 @@ public sealed partial class CampaignRun : MonoBehaviour
     /// <summary>The chapter's [F] has something on offer now: F does that, never a ping (PlayerPing).</summary>
     public static bool Offering => active != null && active.offering;
 
+    /// <summary>A chapter is under way in this scene (not finished): someone who joins the room now comes in as the dead come back (PlayerLife.RunUnderWay).</summary>
+    public static bool UnderWay => active != null && !active.finished;
+
     /// <summary>Where the dead come back in a campaign chapter: the last rest stop reached, or the chapter's start.
     /// False outside a chapter, or when the chapter has no such spot.</summary>
     public static bool TryCheckpoint(out Vector3 position)

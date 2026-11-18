@@ -59,6 +59,10 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         if (life.IsWiped) { size = WipeSize; color = WipeRed; return Texts.Get("life.wipe"); }
         if (receiver.IsDowned)
             return life.Rescuer != null ? Texts.Get("life.downed.helped") : Texts.Format("life.downed.waiting", Mathf.CeilToInt(life.BleedLeft));
+        // Waiting to come into a run already under way (PlayerLife.Arrive): the returns of the dead, in its own words.
+        if (!receiver.IsAlive && receiver.IsWaiting)
+            return TowerRun.KeepsDead ? Texts.Get("life.join.tower")
+                : life.WaitsForWave ? Texts.Get("life.join.next_wave") : Texts.Format("life.join.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
         if (!receiver.IsAlive)
             return TowerRun.KeepsDead ? Texts.Get("life.respawn.tower")
                 : life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));

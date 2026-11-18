@@ -161,7 +161,8 @@ public sealed class TeamHealthPanel : MonoBehaviour
         if (!health.IsAlive)
         {
             card.name.color = card.value.color = card.badge.color = Gone;
-            card.value.text = Texts.Get("team.dead");
+            // A friend who joined a run under way and waits to come in never died (PlayerDamageReceiver.IsWaiting).
+            card.value.text = health.IsWaiting ? Texts.Get("team.joining") : Texts.Get("team.dead");
             card.cells.Show(0f, Gone);
             card.cells.ShowShield(0f);
             return;

@@ -181,10 +181,19 @@ public sealed partial class TowerRun : MonoBehaviour
     }
 
     /// <summary>The dead wait while the lanes are being climbed: they come back in the next hall once those are through.</summary>
-    public static bool KeepsDead => active != null && (active.phase == Phase.Boarding || active.phase == Phase.Lanes);
+    public static bool KeepsDead => active != null && (!active.Told || active.phase == Phase.Boarding || active.phase == Phase.Lanes);
+
+    // The host's first word has reached this PC (the host itself always knows). A guest's plan is made from that word,
+    // so until it has one it does not know the phase and only assumes the first (Gate). It keeps its dead meanwhile
+    // rather than call them back by an assumed phase: someone who joins a climb under way (PlayerLife.Arrive) would
+    // otherwise step into the lobby alive within their first two seconds, while the others are in their lanes.
+    private bool Told => plan != null;
+
+    /// <summary>A tower run is under way in this scene: someone who joins the room now comes in as the dead come back (PlayerLife.RunUnderWay).</summary>
+    public static bool UnderWay => active != null;
 
     /// <summary>The dead come back now, not after the usual wait: the lanes are through (or the stretch starts over).</summary>
-    public static bool CallsDeadBack => active != null && (active.phase == Phase.Gather || active.phase == Phase.Gate);
+    public static bool CallsDeadBack => active != null && active.Told && (active.phase == Phase.Gather || active.phase == Phase.Gate);
 
     /// <summary>
     /// Nobody could get this player up where they are: they are in a lane while the lanes run, with nobody else standing

@@ -31,11 +31,28 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
     private struct Vitals : INetworkSerializeByMemcpy
     {
         public float Health, Maximum, Shield;
+        /// <summary>
+        /// What the body is to the fight, said by its owner once it is set up there: NotSaid, In, Fallen or Waiting. A copy
+        /// could not tell "nobody has spoken yet" from "dead" by a health of 0 alone, so it used to take a first health
+        /// only above 0, and a PC that joined late saw a teammate who had died before it came as alive.
+        /// </summary>
+        public byte Presence;
     }
+
+    private const byte NotSaid = 0, In = 1, Fallen = 2, Waiting = 3;
 
     private readonly NetworkVariable<Vitals> vitals = new NetworkVariable<Vitals>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    // The host's word as it makes the player: they came into a run already under way and wait to come in
+    // (PlayerLife.Arrive). How someone arrived is the host's to say, once, and it travels with the spawn itself: their
+    // own PC stands them out of the fight from its first frame, and every copy is born unseen, with no frame of a body
+    // standing at the map's start.
+    private readonly NetworkVariable<bool> arrival = new NetworkVariable<bool>(false,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private PlayerMovement movement;
+
+    /// <summary>The host, between making the player and sending them out to the room (GameSession): they come into a run under way.</summary>
+    internal bool ArrivesWaiting { get; set; }
 
     /// <summary>
     /// On a copy, this player's profile picture as their PC sent it (ProfilePicture.SmallJpg); null for none, when
@@ -47,8 +64,10 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
     {
         movement = GetComponent<PlayerMovement>();
         pose.SetUpdateTraits(new NetworkVariableUpdateTraits { MinSecondsBetweenUpdates = SendInterval });
+        if (IsServer) arrival.Value = ArrivesWaiting;
         if (IsOwner)
         {
+            if (arrival.Value && TryGetComponent(out PlayerLife life)) life.Arrive();
             vitals.Value = VitalsNow();
             GameSettings.Changed += SendSkin;
             SendSkin();
@@ -62,7 +81,9 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         skin.OnValueChanged += OnSkinChanged;
         vitals.OnValueChanged += OnVitalsChanged;
         ShowSkin();
-        ShowVitals(vitals.Value, true);
+        // Born waiting, before their own PC has said anything.
+        if (arrival.Value && TryGetComponent(out PlayerDamageReceiver body)) body.ShowWaiting(true);
+        ShowVitals(vitals.Value);
     }
 
     public override void OnNetworkDespawn()
@@ -75,25 +96,27 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         vitals.OnValueChanged -= OnVitalsChanged;
     }
 
-    // The owner's body as it is now.
+    // The owner's body as it is now. Until it is set up on this PC nothing is said of what it is to the fight.
     private Vitals VitalsNow()
     {
         var body = movement.DamageReceiver;
-        return new Vitals { Health = body.Health, Maximum = body.MaximumHealth, Shield = body.Shield };
+        byte presence = !movement.IsInitialized ? NotSaid : body.IsWaiting ? Waiting : body.IsAlive ? In : Fallen;
+        return new Vitals { Health = body.Health, Maximum = body.MaximumHealth, Shield = body.Shield, Presence = presence };
     }
 
-    private void OnVitalsChanged(Vitals previous, Vitals current) => ShowVitals(current, false);
+    private void OnVitalsChanged(Vitals previous, Vitals current) => ShowVitals(current);
 
-    // On a copy: its body shows what its owner's PC says, the maximum first so the health fits under it. A maximum of 0
-    // is a value nobody has written yet (a copy made before its owner's first word): the copy keeps what it has. On a
-    // copy health 0 is death (PlayerMovement.IsDead), so the first value's health is taken only when it is above 0, as it
-    // always was here: an owner whose body is not set up at that moment must not read as dead for a frame.
-    private void ShowVitals(in Vitals now, bool first)
+    // On a copy: its body shows what its owner's PC says, the maximum first so the health fits under it. Nothing said
+    // yet (a copy made before its owner's first word, or an owner whose body is not set up at that moment): the copy
+    // keeps what it has, so it does not read as dead for a frame. Once the owner has spoken, a health of 0 is what it
+    // says it is: fallen, or waiting to come in (PlayerDamageReceiver.IsWaiting), on the first word as on any other.
+    private void ShowVitals(in Vitals now)
     {
-        if (now.Maximum <= 0f) return;
+        if (now.Maximum <= 0f || now.Presence == NotSaid) return;
         var body = movement.DamageReceiver;
         body.SetMaximumHealth(now.Maximum);
-        if (!first || now.Health > 0f) body.ShowHealth(now.Health);
+        body.ShowHealth(now.Health);
+        body.ShowWaiting(now.Presence == Waiting);
         body.SetShield(now.Shield);
     }
 

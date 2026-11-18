@@ -284,7 +284,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         wasConnected = true;
         network.OnClientDisconnectCallback += OnGuestGone;
         network.SceneManager.OnLoadEventCompleted += OnMapLoaded;
-        network.SceneManager.OnSynchronizeComplete += SpawnPlayer;
+        network.SceneManager.OnSynchronizeComplete += OnArrived;
         network.SceneManager.LoadScene(roomMap, LoadSceneMode.Single);
     }
 
@@ -296,10 +296,21 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
 
     private void OnMapLoaded(string scene, LoadSceneMode mode, List<ulong> completed, List<ulong> timedOut)
     {
-        foreach (ulong client in completed) SpawnPlayer(client);
+        foreach (ulong client in completed) SpawnPlayer(client, false);
     }
 
-    private void SpawnPlayer(ulong client)
+    // Someone finished coming into the scene the room is already in: a friend joining, at any time. In the hub they are
+    // simply there. Where a run is under way (a chapter, the tower, waves) they are not set down alive at the map's start
+    // in the middle of it: they come in waiting, watch, and join the way the dead come back (PlayerLife.Arrive). The user,
+    // 2026-11-18: "난입은 언제든지 할 수 있게 하고 싶습니다. 관전이 있으니까요. 중간에 들어가도 세이브포인트까지 관전하다
+    // 바로 같이 할 수 있게끔 말입니다."
+    private void OnArrived(ulong client) => SpawnPlayer(client, true);
+
+    // The host, while it makes one player: that player comes into a run under way (read by the prefab handler below,
+    // which is what makes them).
+    private bool arriving;
+
+    private void SpawnPlayer(ulong client, bool arrived)
     {
         if (!network.IsServer || !network.ConnectedClients.TryGetValue(client, out var info) || info.PlayerObject != null) return;
         var point = FindFirstObjectByType<PlayerSpawnPoint>();
@@ -308,14 +319,29 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         // Side by side from the start point, and round again after a room's worth: friends who leave and come back
         // would otherwise be placed further and further along, in the end past the floor.
         position += rotation * Vector3.right * (SpawnSpacing * (spawned++ % Mathf.Max(1, maxPlayers)));
-        network.SpawnManager.InstantiateAndSpawn(playerPrefab.GetComponent<NetworkObject>(), client,
-            destroyWithScene: true, isPlayerObject: true, position: position, rotation: rotation);
+        arriving = arrived && PlayerLife.RunUnderWay;
+        // One line a join, so a play can be read afterwards (Player.log in a build, the Console and Logs/joins.txt in the editor).
+        if (arrived)
+        {
+            string said = $"client {client} joined '{SceneManager.GetActiveScene().name}': "
+                + (arriving ? "a run is under way, they wait to come in" : "no run under way, they are in");
+            Debug.Log("[GameSession] " + said);
+            PlayRecord.Line(PlayerLife.JoinRecord, PlayerLife.JoinHeading, "HOST " + said);
+        }
+        try
+        {
+            network.SpawnManager.InstantiateAndSpawn(playerPrefab.GetComponent<NetworkObject>(), client,
+                destroyWithScene: true, isPlayerObject: true, position: position, rotation: rotation);
+        }
+        finally { arriving = false; }
     }
 
     NetworkObject INetworkPrefabInstanceHandler.Instantiate(ulong owner, Vector3 position, Quaternion rotation)
     {
         var player = owner == network.LocalClientId ? PlayerFactory.CreateLocal(position, rotation)
             : PlayerFactory.CreateRemote(position, rotation, null, true);
+        // Said before they go out to the room, so they are born waiting on every PC (PlayerNetworkPose's arrival).
+        if (arriving && network.IsServer && player.TryGetComponent(out PlayerNetworkPose pose)) pose.ArrivesWaiting = true;
         return player.GetComponent<NetworkObject>();
     }
 
