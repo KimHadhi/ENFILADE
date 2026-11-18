@@ -9,6 +9,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: MI_MicroRedDot
     second: {fileID: 2100000, guid: ed617028f9ed74941a5c7f35cee722a2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_ReflexSight_Glass
+    second: {fileID: 2100000, guid: 3cdc5e36294341eebccbc3415684e6ff, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
