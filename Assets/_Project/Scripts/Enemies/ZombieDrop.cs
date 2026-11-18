@@ -18,6 +18,11 @@ public sealed class ZombieDrop : MonoBehaviour
 {
     // The game's gravity (m/s²), the arc over a drop's edge and over a hop (m), and the shortest crossing (s).
     private const float Gravity = 20f, DropArc = .3f, HopArc = .5f, Shortest = .3f;
+    // A hop over a low thing laid across the way (a pipe to vault; the map lays a link over it, GreyboxBuilder.Hop): how
+    // far its arc clears that thing's top (m), from how high over the floor the way is looked down on for it (m), and
+    // at how many places along the hop.
+    private const float HopClear = .2f, OverFrom = 2f;
+    private const int OverProbes = 12;
     // Climbing: how high it can and will climb (m), how near it must be to where its quarry stands, flat (m), how fast it
     // goes to the foot of the face and up it (m/s; a runner twice that up), how long getting over the edge takes (s),
     // and how often it looks for a climb (s).
@@ -92,8 +97,33 @@ public sealed class ZombieDrop : MonoBehaviour
         arc = falls ? DropArc : HopArc;
         // Off a ledge it takes as long as falling that far; across a gap, as long as running it.
         length = Mathf.Max(Shortest, falls ? Mathf.Sqrt(2f * drop / Gravity) + .15f : across / Mathf.Max(1f, agent.speed) + .15f);
+        // A hop clears what it crosses: over a low thing its arc is as high as that thing and it takes as long as
+        // rising and falling that far does. A hop over a gap, with nothing in it, is as it was.
+        if (!falls)
+        {
+            float over = Over(from - lift, link.endPos);
+            if (over + HopClear > arc)
+            {
+                arc = over + HopClear;
+                length = Mathf.Max(length, 2f * Mathf.Sqrt(2f * arc / Gravity));
+            }
+        }
         time = 0f;
         Dropping = true;
+    }
+
+    // The top of the highest solid thing on the straight way between two places on the floor, over the lower of them
+    // (m), looked down on from OverFrom above. Nothing there, only the floor, or a hole: 0.
+    private float Over(Vector3 a, Vector3 b)
+    {
+        float floor = Mathf.Min(a.y, b.y), highest = 0f;
+        for (int i = 1; i < OverProbes; i++)
+        {
+            Vector3 at = Vector3.Lerp(a, b, i / (float)OverProbes);
+            if (Physics.Raycast(new Vector3(at.x, floor + OverFrom, at.z), Vector3.down, out RaycastHit hit, OverFrom, solidMask, QueryTriggerInteraction.Ignore))
+                highest = Mathf.Max(highest, hit.point.y - floor);
+        }
+        return highest;
     }
 
     // Down a drop the fall speeds up (slow off the edge, fast at the bottom); a hop goes evenly.

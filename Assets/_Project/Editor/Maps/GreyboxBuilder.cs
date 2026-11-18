@@ -616,6 +616,7 @@ public sealed partial class GreyboxBuilder
         links.FindProperty("m_GenerateLinks").boolValue = true;
         links.ApplyModifiedPropertiesWithoutUndo();
         int slabs = BakeWalkMesh(surface);
+        RelayHops();
         // Map dressing stage 6, the wear: decals only where a player on the walk mesh can see them (GreyboxBuilder.Sight).
         BuildSight();
         Decals();

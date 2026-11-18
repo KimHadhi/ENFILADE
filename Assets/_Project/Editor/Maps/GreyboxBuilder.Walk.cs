@@ -1,8 +1,10 @@
+using System.Collections.Generic;
+using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
-// GreyboxBuilder: the body the walk mesh is baked for. One part of the class; the rest is in GreyboxBuilder.cs and the files beside it.
+// GreyboxBuilder: the body the walk mesh is baked for, and the ways over what it cannot step over. One part of the class; the rest is in GreyboxBuilder.cs and the files beside it.
 public sealed partial class GreyboxBuilder
 {
     // The walk mesh is baked for the body that walks it: a zombie's, the radius ZombieBody gives its capsule and its
@@ -69,5 +71,62 @@ public sealed partial class GreyboxBuilder
         settings.overrideVoxelSize = true;
         settings.voxelSize = WalkVoxel;
         return settings;
+    }
+
+    // ---- Ways over low things ----
+
+    // A hop's two ends lie this far onto the walk mesh, past what the bake trims off beside the thing (m); its links
+    // are of the walk mesh's "Jump" area, as the ones the bake makes across gaps are.
+    private const float HopLand = .15f;
+    private const int HopArea = 2;
+    private readonly List<NavMeshLink> hops = new List<NavMeshLink>();
+
+    /// <summary>
+    /// A way over a low thing for the zombies. The walk mesh steps over nothing higher than its agent's step
+    /// (StepHeight), and the bake lays its own links only down ledges and across gaps, so a thing laid across a way for
+    /// the players to vault cuts the walk mesh in two: nothing follows the squad over it and nothing comes at them
+    /// from beyond it. (Measured on the mesh baked 11-15: chapter 3's river tunnel, three pipes a metre high from wall
+    /// to wall, was four islands, and the spawn points between the pipes could send to nobody.) This lays a link
+    /// across <paramref name="low"/>, a box of the layout, over its thinner side and both ways, as wide as the box is
+    /// long less what the bake trims at each end, from the floor before it to the floor past it. A zombie crosses it
+    /// in an arc that clears the thing (ZombieDrop). The build's audit says whether each stretch of the route is
+    /// joined, a hop counted.
+    /// </summary>
+    public void Hop(GameObject low)
+    {
+        var block = BlockOf(low);
+        if (block == null)
+        {
+            Debug.LogWarning("[Greybox] " + sceneName + ": Hop wants a solid box of the layout, '" + (low != null ? low.name : "null") + "' is none.", low);
+            return;
+        }
+        bool overX = block.Size.x <= block.Size.z;
+        float thin = overX ? block.Size.x : block.Size.z, length = overX ? block.Size.z : block.Size.x;
+        float reach = thin * .5f + WalkTrim + HopLand, width = length - 2f * WalkTrim;
+        if (width <= 0f)
+        {
+            Debug.LogWarning("[Greybox] " + sceneName + ": '" + low.name + "' is too short to hop (" + length.ToString("0.0") + " m): a body walks round it.", low);
+            return;
+        }
+        var over = new GameObject(low.name + " 넘는 길");
+        over.transform.SetParent(terrain, false);
+        // The link's own z runs over the thing and its own x along it, so its width lies along the thing either way
+        // the engine reads a link's width.
+        over.transform.SetPositionAndRotation(new Vector3(block.Box.center.x, block.Box.min.y, block.Box.center.z),
+            Quaternion.Euler(0f, block.Yaw + (overX ? 90f : 0f), 0f));
+        var link = over.AddComponent<NavMeshLink>();
+        link.agentTypeID = 0;
+        link.startPoint = new Vector3(0f, 0f, -reach);
+        link.endPoint = new Vector3(0f, 0f, reach);
+        link.width = width;
+        link.bidirectional = true;
+        link.area = HopArea;
+        hops.Add(link);
+    }
+
+    // After the bake: the hops are laid again, on the walk mesh that is there now (they were made before it was).
+    private void RelayHops()
+    {
+        foreach (var link in hops) if (link != null) link.UpdateLink();
     }
 }

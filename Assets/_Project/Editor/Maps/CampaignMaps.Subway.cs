@@ -145,7 +145,9 @@ public static partial class CampaignMaps
         b.Box("강 밑 터널 벽 북", 218f, 300f, 0f, 4.5f, 3f, 3.3f);
         b.Box("강 밑 터널 천장", 218f, 300f, 4.5f, 5f, -3.3f, 3.3f);
         b.Reflections("Ch3.RiverTunnel", 218f, 300f, 0f, 4.5f, -3f, 3f);
-        foreach (float x in new[] { 240f, 265f, 285f }) b.Box("낮은 배관", x, x + .4f, 0f, 1f, -3f, 3f, b.Metal, "MetalPipe");
+        // The pipes run from wall to wall, a metre high: more than the walk mesh steps over, so each gets a way over
+        // it for the zombies (Hop). Without one the tunnel was four islands and nothing came at a squad in it.
+        foreach (float x in new[] { 240f, 265f, 285f }) b.Hop(b.Box("낮은 배관", x, x + .4f, 0f, 1f, -3f, 3f, b.Metal, "MetalPipe"));
         b.Lamp(new Vector3(230f, 4f, 0f), 9f, 1.4f);
         b.Lamp(new Vector3(255f, 4f, 0f), 9f, 1.4f);
         b.Lamp(new Vector3(280f, 4f, 0f), 9f, 1.4f);
