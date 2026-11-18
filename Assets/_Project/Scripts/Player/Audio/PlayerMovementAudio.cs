@@ -63,6 +63,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     private bool wasGrounded;
     // The vault or climb under way (or just ended) is the climb off a ladder that was climbed the quiet way.
     private bool quietTraversal;
+    // The refused climbs heard so far (ParkourTraversal.LedgeRefusals).
+    private int ledgeRefusals;
 
     private void Awake() => player = GetComponent<PlayerMovement>();
 
@@ -106,6 +108,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         {
             case MovementState.LedgeHang:
                 if (catchPending && player.CurrentStateDuration >= traversal.LedgeCatchTime) CueCatch();
+                // A climb asked for where there is no way up: the hands tug and stay (ParkourTraversal.RefuseLedgeClimb).
+                if (traversal.LedgeRefusals != ledgeRefusals) Cue("LedgeRefuse", Surfaces.Of(traversal.Ledge.Surface), true);
                 // Pulling in to the hang moves the player too, through the catch's warp and on to the hanging place
                 // (LedgeHangState); only sidling along the ledge afterwards is shimmying.
                 Vector2 catchTimes = player.AbilitySettings.ledgeCatchTimes;
@@ -129,6 +133,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
                 if (player.CurrentStateDuration >= upAt && player.CurrentStateDuration - dt < upAt) Cue("GetUp", Ground());
                 break;
         }
+        ledgeRefusals = traversal.LedgeRefusals;
         if (player.IsSliding) KeepSliding(dt);
         slideLoop?.Tick(dt);
         Lean();

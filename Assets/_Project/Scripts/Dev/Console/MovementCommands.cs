@@ -12,7 +12,32 @@ public static class MovementCommands
         router.Register("input", "입력을 누가 쥐고 있는지 보기 — 화면마다 쥔 것(걷기 Move · 시야 Look · 총 Combat · 포인터 Cursor)과 지금 게임이 받는 입력 (InputHold, InputFocus)", _ => Input()); // dev-text
         router.Register("callouts", "콜아웃 표 점검 — 없는 사실·종류·단계 이름, 말할 줄이 없는 칸, 칸이 없는 줄을 찾고, 지금 내 상황에서 맞는 사실과 휠의 칸마다 나올 줄을 Logs/callouts.txt에 쓴다 (CalloutCheck, Callouts.csv·CalloutSlots.csv)", // dev-text
             _ => Application.isPlaying ? CalloutCheck.Write(PlayerCallouts.Local) : "이 명령어는 Play 중에 사용할 수 있습니다."); // dev-text
-        router.Register("drop", "[높이 m] — 그 높이에서 그냥 떨어지면 어떤 착지인지: 발이 닿는 속도, 착지 단계(가볍게·세게·크게), 서서와 앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5m부터 6m까지 표. 실제로 한 착지는 Logs/landings.txt에 적힌다 (MovementLanding, PlayerMovementAudio.LandingCue)", Drop); // dev-text
+        router.Register("ledge", "앞의 턱 점검 — 선 자리에서 발 높이를 0~1.4m로 올려 가며(점프를 흉내) 앞에 잡을 렛지가 있는지, 어느 콜라이더의 윗면인지, 올라설 수 있는지(Stand·Crouch·None), 못 잡으면 왜인지(NoHandRoom = 이음매·덮인 턱)를 보여 주고 Logs/ledge-probe.txt에 쓴다. 플레이 중 잡은 렛지와 거절한 이음매도 그 파일에 적힌다 (LedgeFinder)", _ => Ledge()); // dev-text
+        router.Register("drop","[높이 m] — 그 높이에서 그냥 떨어지면 어떤 착지인지: 발이 닿는 속도, 착지 단계(가볍게·세게·크게), 서서와 앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5m부터 6m까지 표. 실제로 한 착지는 Logs/landings.txt에 적힌다 (MovementLanding, PlayerMovementAudio.LandingCue)", Drop); // dev-text
+    }
+
+    // What the ledge finder says of the wall ahead for a body at this spot with its feet at each height a jump takes them
+    // through: nothing is jumped. The same question the game asks every airborne frame (ParkourDetector.TryLedgeAt).
+    private static string Ledge()
+    {
+        if (!Application.isPlaying) return "이 명령어는 Play 중에 사용할 수 있습니다."; // dev-text
+        var mine = PlayerRoster.Local;
+        if (mine == null || mine.Abilities == null) return "대상 플레이어를 찾지 못했습니다."; // dev-text
+        var detector = mine.Abilities.Traversal.Detector;
+        Vector3 feet = mine.transform.position, facing = mine.transform.forward;
+        var text = new System.Text.StringBuilder("Logs/" + ParkourTraversal.LedgeLog + ".txt"); // dev-text
+        string last = null;
+        for (float up = 0f; up <= 1.41f; up += .1f)
+        {
+            bool found = detector.TryLedgeAt(feet + Vector3.up * up, facing, out LedgeTarget ledge, out LedgeFinder.Probe probe);
+            string on = probe.On != null ? PlayRecord.PathOf(probe.On.transform) : "-";
+            string line = found ? $"FOUND top {probe.Point.y - feet.y:0.00} m over the floor on {on}, climb {ledge.Climb}"
+                : probe.Result == LedgeFinder.Why.NoFace ? "NoFace" : $"{probe.Result} (top {probe.Point.y - feet.y:0.00} m over the floor on {on})";
+            PlayRecord.Line(ParkourTraversal.LedgeLog, ParkourTraversal.LedgeLogHeading, $"/ledge feet +{up:0.0} m: {line}");
+            if (line != last) text.Append($"\n발 +{up:0.0}m: {line}"); // dev-text
+            last = line;
+        }
+        return text.ToString();
     }
 
     // What a plain drop of a height comes to with the tables as they are now: nothing is dropped. The tuck column shows

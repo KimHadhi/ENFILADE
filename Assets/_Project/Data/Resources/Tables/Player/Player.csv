@@ -369,7 +369,12 @@ Ability.mantleDurationPerMeter,0.3,경로를 따로 쓰는 올라서기가 높�
 Ability.slideMaxSlopeAngle,65,슬라이드 중 바닥으로 인정하는 최대 경사(도)
 # 능력: 렛지,,
 Ability.ledgeReach,1,렛지를 앞에서 찾는 거리(m)
-Ability.ledgeReachAboveHands,0.3,손 높이보다 위로 렛지를 찾는 높이(m)
+Ability.ledgeReachAboveHands,0.6,"매달릴 때 손 높이(발 위 1.60m)보다 이만큼 위의 윗면까지 잡는다(m): 팔을 뻗는 길이이고, 한 번에 오를 수 있는 가장 높은 턱을 정하는 값이다. 잡을 수 있는 윗면은 발 위 1.20~2.20m(제자리 점프 꼭대기 1.3m에서는 3.5m까지). 0.6은 Beatrun이 벽달리기 중에 쓰는 손 닿는 높이(90유닛 = 몸 높이의 1.25배, 2.19m)와 같다. 2026-11-18 전에는 0.3(발 위 1.90m)이었다. 더 올리면 잡는 순간 몸이 끌려 올라가는 거리가 늘어난다(잡는 동작은 손이 모서리에 닿는 한 자세라 그 사이는 Ability.ledgeCatchTimes 안에 캡슐이 옮겨 간다)"
+Ability.ledgeReachBelowHands,0.4,손 높이보다 이만큼 아래의 윗면까지 렛지로 잡는다(m). 더 낮은 턱은 넘기·오르기(VaultFinder)의 몫
+Ability.ledgeEdgeBelowHead,0.15,매달렸을 때 모서리가 머리 꼭대기(캡슐 위 끝)보다 이만큼 아래에 온다(m). 발은 모서리에서 '몸 높이 - 이 값'(1.60m) 아래에 매달린다
+Ability.ledgeWallBelowHands,0.45,렛지가 붙은 벽면을 손 높이보다 이만큼 아래에서 찾는다(m). 거기에 벽이 없으면(밑이 빈 발판 모서리) 손이 닿는 가장 높은 곳까지 훑는다
+Ability.ledgeProbeInset,0.08,벽면에서 이만큼 안쪽에서 윗면을 찾는다(m). 손바닥이 얹히는 깊이
+Ability.ledgeHandRoom,0.08,"손이 모서리를 넘어와 얹히려면 윗면 위에 비어 있어야 하는 높이(m). 이만큼 비어 있지 않은 윗면은 렛지가 아니다: 천장 슬래브가 얹힌 벽 윗면(이음매), 바로 위에 돌출부가 덮인 턱. 이동과 손이 같은 규칙을 쓴다(LedgeFinder.HandRoom)"
 Ability.ledgeCatchDuration,0.14,렛지를 잡은 뒤 점프·올라가기가 가능해지기까지(초)
 Ability.ledgeRegrabDelay,0.4,렛지를 놓은 뒤 다시 잡을 수 있기까지(초)
 Ability.ledgeShimmySpeed,1,렛지 좌우 이동 속도(m/s)

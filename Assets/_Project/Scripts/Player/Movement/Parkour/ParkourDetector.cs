@@ -31,12 +31,24 @@ public struct ObstacleTarget
     public float Duration;
     public bool HasApproach;
     public Vector3 Approach;
+    /// <summary>The climb ends where only a crouched body fits (a top under a low ceiling): it comes off it crouched.</summary>
+    public bool EndsCrouched;
 }
 
+/// <summary>
+/// A ledge the body holds or could hold (LedgeFinder finds it), in the space of the collider its top is on, so a ledge
+/// that moves carries it: where the fingers go over (LocalEdge), the way the face looks (LocalNormal, outward), the way
+/// the top faces under the palms (LocalUp), where the feet are when the body hangs (LocalHang), and how the body gets
+/// from the hang onto the top: where it then stands (LocalStand) and in what posture (Climb; None for a ledge to hang
+/// from only). The climb is planned again when it is asked for, so Climb and LocalStand say what was so when the ledge
+/// was last looked at (caught, or shimmied along).
+/// </summary>
 public struct LedgeTarget
 {
     public Collider Surface;
     public Vector3 LocalHang, LocalEdge, LocalNormal;
+    public Vector3 LocalUp, LocalStand;
+    public LedgeClimb Climb;
 }
 
 /// <summary>Geometry queries only; no state changes or player movement.</summary>
@@ -48,19 +60,34 @@ public sealed class ParkourDetector
     private readonly RaycastHit[] traversalHits = new RaycastHit[32];
     internal VaultFinder Vaults { get; }
     internal ParkourDetector(PlayerMovement context) { ctx = context; walls = new WallDetector(ctx); Vaults = new VaultFinder(ctx, this); }
-    private float Radius(float height) => Mathf.Max(0.05f, Mathf.Min(ctx.ControllerRadius, height * 0.5f) - 0.025f);
+
+    /// <summary>This player as the ledge finder asks of a body: its capsule, what is world to it, and itself.</summary>
+    public LedgeFinder.Body Body => new LedgeFinder.Body
+    {
+        Radius = ctx.ControllerRadius, Height = ctx.StandingColliderHeight, CrouchHeight = ctx.CrouchColliderHeight,
+        SlopeLimit = ctx.SlopeLimit, Layers = ctx.groundLayers, Self = ctx.transform
+    };
+
+    /// <summary>The ledge's design numbers as the table has them now (Player.csv Ability.ledge*).</summary>
+    public LedgeFinder.Rules LedgeRules
+    {
+        get
+        {
+            var settings = ctx.AbilitySettings;
+            return new LedgeFinder.Rules
+            {
+                Reach = settings.ledgeReach, EdgeBelowHead = settings.ledgeEdgeBelowHead, WallBelowHands = settings.ledgeWallBelowHands,
+                BelowHands = settings.ledgeReachBelowHands, AboveHands = settings.ledgeReachAboveHands, Inset = settings.ledgeProbeInset,
+                HandRoom = settings.ledgeHandRoom
+            };
+        }
+    }
+
+    // The body's room is asked in one place (LedgeFinder), so a ledge found there and a move planned here see the same capsule.
     private void Capsule(Vector3 feet, float height, out Vector3 bottom, out Vector3 top, out float radius)
-    {
-        radius = Radius(height);
-        bottom = feet + Vector3.up * (radius + 0.04f);
-        top = feet + Vector3.up * Mathf.Max(radius + 0.04f, height - radius);
-    }
+        => LedgeFinder.Capsule(Body, feet, height, out bottom, out top, out radius);
     public bool ClearCapsule(Vector3 feet, float height) => ClearCapsule(feet, height, ctx.groundLayers);
-    private bool ClearCapsule(Vector3 feet, float height, int layers)
-    {
-        Capsule(feet, height, out Vector3 a, out Vector3 b, out float r);
-        return !Physics.CheckCapsule(a, b, r, layers, QueryTriggerInteraction.Ignore);
-    }
+    private bool ClearCapsule(Vector3 feet, float height, int layers) => LedgeFinder.ClearCapsule(Body, feet, height, layers);
     public bool ClearStraightExit(Vector3 feet)
     {
         // Recovery must fit the actual controller, including its contact margin;
@@ -141,13 +168,16 @@ public sealed class ParkourDetector
     }
     // climb.lua's heave: straight from the hang to the top, feet four units past the edge, or as far in as the capsule fits.
     // Under a ceiling too low to go straight, the crouched route of TryMantle.
+    // Where on a ledge's top the body can stand is looked for from free space, on whatever is there (LedgeFinder.Tread):
+    // it used to have to be the very collider the hands hold, and the look started 0.2 m up without asking what it
+    // started in, so under a slab it found the wall's top through the slab and then could not fit the body there.
     public bool TryHeave(Collider surface, Vector3 edge, Vector3 inward, Vector3 feet, out ObstacleTarget target)
     {
+        var body = Body;
         for (float depth = 4f * ctx.HeightUnit; depth <= ctx.ControllerRadius + 0.5f; depth += 0.1f)
         {
             Vector3 probe = edge + inward * depth + Vector3.up * 0.2f;
-            if (!Physics.Raycast(probe, Vector3.down, out RaycastHit tread, 0.35f, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-                || tread.collider != surface || tread.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) continue;
+            if (!LedgeFinder.Tread(body, probe, 0.35f, out RaycastHit tread)) continue;
             if (!StraightTarget(surface, feet, tread.point + Vector3.up * 0.02f, false, out target)) continue;
             target.Kind = VaultKind.Heave;
             return true;
@@ -159,48 +189,61 @@ public sealed class ParkourDetector
 
     // Sample inward from the edge instead of requiring a full capsule radius of
     // tread beyond an already inset ray. This also supports narrow wall tops.
+    // The way up and in is a crouched body's, and it may end where only a crouched body fits (EndsCrouched: a top under a
+    // low ceiling, a duct's mouth): the move comes off it crouched. It used to refuse any top without standing room.
     public bool TryMantle(Collider surface, Vector3 edge, Vector3 inward, Vector3 feet, out ObstacleTarget target)
     {
         target = default;
+        var body = Body;
         Vector3 raised = feet; raised.y = edge.y + 0.1f;
         if (!ClearPath(feet, raised, ctx.CrouchColliderHeight)) return false;
         for (float depth = 0.15f; depth <= ctx.ControllerRadius + 0.5f; depth += 0.1f)
         {
             Vector3 probe = edge + inward * depth + Vector3.up * 0.2f;
-            if (!Physics.Raycast(probe, Vector3.down, out RaycastHit tread, 0.35f,
-                ctx.groundLayers, QueryTriggerInteraction.Ignore) || tread.collider != surface
-                || tread.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) continue;
+            if (!LedgeFinder.Tread(body, probe, 0.35f, out RaycastHit tread)) continue;
             Vector3 end = tread.point + Vector3.up * 0.1f;
-            if (!ClearPath(raised, end, ctx.CrouchColliderHeight) || !ClearCapsule(end, ctx.StandingColliderHeight)) continue;
+            if (!ClearPath(raised, end, ctx.CrouchColliderHeight)) continue;
             target = new ObstacleTarget { Surface = surface, Start = feet, RaisedStart = raised,
-                RaisedEnd = end, End = end, IsVault = false, Height = edge.y - feet.y };
+                RaisedEnd = end, End = end, IsVault = false, Height = edge.y - feet.y,
+                EndsCrouched = !ClearCapsule(end, ctx.StandingColliderHeight) };
             return true;
         }
         return false;
     }
 
     public bool TryLedge(Vector3 facing, out LedgeTarget ledge)
-        => TryLedgeAt(ctx.transform.position, facing, out ledge);
+        => TryLedgeAt(ctx.transform.position, facing, out ledge, out _);
 
-    private bool TryLedgeAt(Vector3 feet, Vector3 facing, out LedgeTarget ledge)
+    /// <summary>As TryLedge, from any place and with what the search came to (the console's /ledge, the records).</summary>
+    public bool TryLedgeAt(Vector3 feet, Vector3 facing, out LedgeTarget ledge, out LedgeFinder.Probe probe)
     {
-        ledge = default;
-        facing = Vector3.ProjectOnPlane(facing, Vector3.up).normalized;
-        float hands = ctx.StandingColliderHeight - 0.15f;
-        if (!Physics.SphereCast(feet + Vector3.up * (hands - 0.45f), 0.1f, facing,
-            out RaycastHit wall, ctx.AbilitySettings.ledgeReach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-            || !WallDetector.CanUseSurface(wall.collider) || Mathf.Abs(wall.normal.y) > 0.25f || Vector3.Dot(facing, -wall.normal) < 0.4f) return false;
-        Vector3 origin = wall.point - wall.normal * 0.08f;
-        origin.y = feet.y + hands + ctx.AbilitySettings.ledgeReachAboveHands;
-        if (!Physics.Raycast(origin, Vector3.down, out RaycastHit top,
-            ctx.AbilitySettings.ledgeReachAboveHands + 0.4f, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-            || top.collider != wall.collider || top.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return false;
-        Vector3 edge = top.point + wall.normal * 0.08f;
-        Vector3 hang = edge + wall.normal * (ctx.ControllerRadius + 0.06f) - Vector3.up * hands;
-        if (!ClearPath(feet, hang, ctx.StandingColliderHeight)) return false;
-        Transform support = wall.collider.transform;
-        ledge = new LedgeTarget { Surface = wall.collider, LocalHang = support.InverseTransformPoint(hang),
-            LocalEdge = support.InverseTransformPoint(edge), LocalNormal = support.InverseTransformDirection(wall.normal) };
+        if (!LedgeFinder.Find(Body, LedgeRules, feet, facing, out ledge, out probe)) return false;
+        PlanClimb(ref ledge);
+        return true;
+    }
+
+    /// <summary>
+    /// Writes into the ledge how a body hanging on it gets onto its top, by the very moves the climb would use (TryHeave):
+    /// standing, crouched, or not at all. Asked when a ledge is found and again as the body moves along it, since what is
+    /// on top differs from place to place.
+    /// </summary>
+    public void PlanClimb(ref LedgeTarget ledge) => PlanClimb(ref ledge, out _);
+
+    /// <summary>As PlanClimb, and gives the move it planned (default when there is none).</summary>
+    public bool PlanClimb(ref LedgeTarget ledge, out ObstacleTarget move)
+    {
+        move = default;
+        ledge.Climb = LedgeClimb.None;
+        if (!WallDetector.CanUseSurface(ledge.Surface)) return false;
+        Transform support = ledge.Surface.transform;
+        Vector3 edge = support.TransformPoint(ledge.LocalEdge), feet = support.TransformPoint(ledge.LocalHang);
+        Vector3 inward = Vector3.ProjectOnPlane(-support.TransformDirection(ledge.LocalNormal), Vector3.up).normalized;
+        // The edge in front of where the body hangs: a shimmy may have left the stored point behind.
+        Vector3 along = Vector3.Cross(Vector3.up, inward);
+        edge += along * Vector3.Dot(feet - edge, along);
+        if (!TryHeave(ledge.Surface, edge, inward, feet, out move)) return false;
+        ledge.Climb = move.EndsCrouched ? LedgeClimb.Crouch : LedgeClimb.Stand;
+        ledge.LocalStand = support.InverseTransformPoint(move.End);
         return true;
     }
     public bool TryShimmy(LedgeTarget current, Vector3 displacement, out LedgeTarget next)
@@ -210,7 +253,7 @@ public sealed class ParkourDetector
         Transform support = current.Surface.transform;
         Vector3 normal = support.TransformDirection(current.LocalNormal);
         Vector3 feet = support.TransformPoint(current.LocalHang) + displacement;
-        if (!TryLedgeAt(feet, -normal, out LedgeTarget candidate)) return false;
+        if (!TryLedgeAt(feet, -normal, out LedgeTarget candidate, out _)) return false;
         Vector3 nextFeet = candidate.Surface.transform.TransformPoint(candidate.LocalHang);
         Vector3 nextNormal = candidate.Surface.transform.TransformDirection(candidate.LocalNormal);
         if (Vector3.Dot(normal, nextNormal) < 0.95f || Mathf.Abs(nextFeet.y - feet.y) > 0.15f

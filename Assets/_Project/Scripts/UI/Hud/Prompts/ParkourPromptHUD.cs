@@ -59,7 +59,11 @@ public sealed class ParkourPromptHUD : MonoBehaviour
         if (movement == null || !movement.IsLocal || !movement.InputAvailable || movement.IsDead) return null;
         switch (movement.CurrentState)
         {
-            case PlayerMovement.MovementState.LedgeHang: return "hud.parkour.ledge";
+            // A ledge with no way onto its top from here says so beside the key that does work (LedgeTarget.Climb): pressing
+            // W there used to do nothing and say nothing.
+            case PlayerMovement.MovementState.LedgeHang:
+                return movement.Abilities != null && movement.Abilities.Traversal.Ledge.Climb == LedgeClimb.None
+                    ? "hud.parkour.ledge.nowayup" : "hud.parkour.ledge";
             case PlayerMovement.MovementState.Ladder: return "hud.parkour.ladder";
             case PlayerMovement.MovementState.Zipline: return "hud.parkour.zipline";
             case PlayerMovement.MovementState.BarGrab:

@@ -23,6 +23,7 @@ Shimmy,Movement/HandSoft/{surface} *0.6,3,렛지에서 옆으로 갈 때 손
 LedgeClimb,Movement/HandSoft/{surface}; Voice/StrainSoft; Movement/Walk/{surface} +0.35,6,렛지에서 올라가기 (Beatrun heave up)
 LedgeJump,Movement/HandRelease/{surface}; Movement/Cloth/VaultSwish; Voice/StrainSoft,8,렛지에서 뛰어 떠나기
 LedgeDrop,Movement/HandRelease/{surface},4,렛지 놓고 떨어지기
+LedgeRefuse,Movement/HandSoft/{surface} *0.7; Voice/StrainSoft *0.7 +0.05,3,매달린 채 올라가려 했는데 올라설 자리가 없을 때: 손이 한 번 당기고 그대로 매달린다(ParkourTraversal.RefuseLedgeClimb). 안내 글자는 hud.parkour.ledge.nowayup
 WallClimb,Movement/WallStep/{surface}; Movement/Cloth/MovementRun; Voice/StrainSoft,10,벽 오르기 시작. {surface}는 벽 표면
 WallStep,Movement/WallStep/{surface}; Movement/Cloth/MovementRun *0.6,8,벽을 디디며 오르기 (MovementAudio.wallStepInterval마다)
 WallKick,Movement/WallStep/{surface}; Movement/WallRelease/{surface}; Movement/Cloth/VaultSwish; Voice/StrainSoft,10,벽 차기

@@ -109,7 +109,10 @@ public sealed class LedgeHangState : MovementBaseState
         if (requestMantle && Caught)
         {
             requestMantle = false;
-            ctx.Abilities.Traversal.MantleFromLedge();
+            // Asked to climb where there is no way up (a ledge to hang from only: something stands on it, or the top is
+            // too low under a ceiling): the hang goes on and the player is told (a sound, and the prompt says which keys
+            // do work). It used to do nothing at all, which read as the game being stuck.
+            if (!ctx.Abilities.Traversal.MantleFromLedge()) ctx.Abilities.Traversal.RefuseLedgeClimb();
         }
     }
     public override void UpdatePhysics(float dt)

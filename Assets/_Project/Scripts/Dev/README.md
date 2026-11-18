@@ -14,6 +14,7 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
+| 렛지 점검 (`/ledge`: 선 자리에서 발 높이를 올려 가며 앞의 턱이 렛지인지·어느 윗면인지·올라설 수 있는지·아니면 왜인지. 플레이 중 잡은 렛지와 거절한 이음매는 Logs/ledge-probe.txt. 플레이 없이 씬 전체는 에디터 `ENFILADE → 이동 → 렛지 훑기` → Logs/ledge-sweep.txt) | [MovementCommands](Console/MovementCommands.cs), [LedgeFinder](../Player/Movement/Parkour/LedgeFinder.cs), [LedgeSweep](../Player/Movement/Parkour/LedgeSweep.cs) |
 | 착지 점검 (`/drop [높이]`: 그 높이에서 그냥 떨어지면 발이 닿는 속도, 착지 단계, 서서·앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5~6m 표. 실제로 한 착지는 Logs/landings.txt에 한 줄씩) | [MovementCommands](Console/MovementCommands.cs), [MovementLanding](../Player/Movement/Actions/MovementLanding.cs), [PlayerMovementAudio](../Player/Audio/PlayerMovementAudio.cs)의 `LandingCue` |
 | 콜아웃 표 점검 (`/callouts`: 없는 사실·좀비 종류·단계 이름, 말할 줄이 없는 칸, 칸이 없는 줄을 찾고, 지금 내 상황에서 맞는 사실과 휠의 칸마다 나올 줄을 Logs/callouts.txt에 쓴다) | [CalloutCheck](../Player/Comms/CalloutCheck.cs), [MovementCommands](Console/MovementCommands.cs) |
 | 입력을 누가 쥐고 있는지 보기 (`/input`: 화면마다 쥔 것(걷기 Move · 시야 Look · 총 Combat · 포인터 Cursor)과 지금 게임이 받는 입력. 콘솔 자신이 전부 쥐고 있으므로 그 줄은 빼고 읽는다) | [MovementCommands](Console/MovementCommands.cs), [InputHold](../UI/Shared/InputHold.cs)의 `Describe` |

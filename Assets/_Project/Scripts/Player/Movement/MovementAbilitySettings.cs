@@ -69,8 +69,22 @@ public sealed class MovementAbilitySettings
     [Range(45f, 75f)] public float slideMaxSlopeAngle = 65f;
 
     [Header("Ledge Hang")]
+    [Tooltip("How far ahead a ledge's face is looked for (m).")]
     [Min(0.1f)] public float ledgeReach = 1f;
-    [Min(0f)] public float ledgeReachAboveHands = 0.3f;
+    [Tooltip("The highest top that can be caught, over the height the hands hold at when hanging (m): how far the arms "
+        + "stretch up. The most a body can climb in one catch is the feet's height plus the hang's hand height plus this. "
+        + "0.6 is Beatrun's own reach on a wall run (90 units of 72: 2.19 m over the feet); it was 0.3 until 2026-11-18.")]
+    [Min(0f)] public float ledgeReachAboveHands = 0.6f;
+    [Tooltip("The lowest top that can be caught, under the hands' height (m): a lower one is a step or a vault.")]
+    [Min(0f)] public float ledgeReachBelowHands = 0.4f;
+    [Tooltip("Hanging, the edge is this far under the top of the head (m): the feet hang the body's height less this below it.")]
+    [Min(0f)] public float ledgeEdgeBelowHead = 0.15f;
+    [Tooltip("The face a ledge is on is looked for this far under the hands' height (m).")]
+    [Min(0f)] public float ledgeWallBelowHands = 0.45f;
+    [Tooltip("How far in from the face the palm rests, where the top is looked for (m).")]
+    [Min(0.01f)] public float ledgeProbeInset = 0.08f;
+    [Tooltip("The free height a hand needs over a top to come over its edge (m). A top with less (the seam under a slab) is no ledge.")]
+    [Min(0.01f)] public float ledgeHandRoom = 0.08f;
     [Min(0.05f)] public float ledgeCatchDuration = 0.14f;
     [Min(0.1f)] public float ledgeRegrabDelay = 0.4f;
     [Min(0f)] public float ledgeShimmySpeed = 1.8f;

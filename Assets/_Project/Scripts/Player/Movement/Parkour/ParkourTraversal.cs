@@ -152,9 +152,13 @@ public sealed class ParkourTraversal
             ctx.ChangeState(State.BarGrab);
             return true;
         }
-        if (ctx.CurrentInput.y > 0.1f && ctx.VerticalVelocity >= -ctx.AbilitySettings.airTraversalMaxFallSpeed
+        bool forward = ctx.CurrentInput.y > 0.1f;
+        if (forward && ctx.VerticalVelocity >= -ctx.AbilitySettings.airTraversalMaxFallSpeed
             && ledgeLock <= 0f && (TryVault(false) || TryVault(true))) return true;
-        if (ctx.VerticalVelocity <= 0f && TryCatchLedge()) return true;
+        // A ledge is caught falling, and with W held on the way up too, as Beatrun's ClimbingCheck runs whenever forward
+        // is held (climb.lua: IN_FORWARD or falling). Only-when-falling left a top over the high climb's reach (a storey's
+        // slab, 3 m) catchable for the tenth of a second after the jump's top, which is what "can't climb that high" was.
+        if ((forward || ctx.VerticalVelocity <= 0f) && TryCatchLedge()) return true;
         // A wall climb starts only on the way up or at the top of a jump, never falling (WallClimbPace).
         if (wallLock > 0f || ctx.CurrentInput.y <= 0.1f || !ctx.Input.JumpHeld
             || !WallClimbPace.CanStart(ctx.VerticalVelocity / ctx.HeightUnit)) return false;
@@ -279,12 +283,44 @@ public sealed class ParkourTraversal
     }
     internal bool TryCatchLedge(Vector3? facing = null)
     {
-        if (ledgeLock > 0f || !Detector.TryLedge(facing ?? ctx.transform.forward, out Ledge)) return false;
+        if (ledgeLock > 0f) return false;
+        bool found = Detector.TryLedgeAt(ctx.transform.position, facing ?? ctx.transform.forward, out Ledge, out LedgeFinder.Probe probe);
+        Record(found, probe);
+        if (!found) return false;
         // As Beatrun's ClimbingCheck: holding W, a caught ledge is climbed straight over or onto when there's room, and
         // only hung from when there isn't.
         if (ctx.CurrentInput.y > 0.1f && ClimbCaughtLedge()) return true;
         ctx.ChangeState(State.LedgeHang);
         return true;
+    }
+
+    /// <summary>How often a climb up from a hang was asked for and there was no way up (LedgeHangState): the sound and the prompt answer it.</summary>
+    public int LedgeRefusals { get; private set; }
+    internal void RefuseLedgeClimb()
+    {
+        LedgeRefusals++;
+        if (ctx.IsLocal) PlayRecord.Line(LedgeLog, LedgeLogHeading, $"CLIMB REFUSED at {PlayRecord.At(ctx.transform.position)}: nowhere to get on top of {PlayRecord.PathOf(Ledge.Surface != null ? Ledge.Surface.transform : null)} from here (a ledge to hang from only)");
+    }
+
+    // What the ledge searches of this PC's player came to, for whoever checks a play afterwards (Logs/ledge-probe.txt): each
+    // ledge caught, with how it can be climbed, and each top that was refused for having no room for a hand (a seam under
+    // a slab), once a place.
+    internal const string LedgeLog = "ledge-probe";
+    internal const string LedgeLogHeading = "ledge searches: FOUND a ledge (its edge, the collider its top is on, how it is climbed) or a top REFUSED and why (NoHandRoom = a seam or an overhang right on it)";
+    private Vector3 recordedAt = Vector3.positiveInfinity;
+    private LedgeFinder.Why recordedWhy;
+    private void Record(bool found, in LedgeFinder.Probe probe)
+    {
+        if (!ctx.IsLocal || !PlayRecord.On) return;
+        if (!found && probe.Result != LedgeFinder.Why.NoHandRoom && probe.Result != LedgeFinder.Why.HangBlocked) return;
+        if (probe.Result == recordedWhy && (probe.Point - recordedAt).sqrMagnitude < .09f) return;
+        recordedWhy = probe.Result;
+        recordedAt = probe.Point;
+        string on = PlayRecord.PathOf(probe.On != null ? probe.On.transform : null);
+        float above = probe.Point.y - ctx.transform.position.y;
+        PlayRecord.Line(LedgeLog, LedgeLogHeading, found
+            ? $"FOUND edge {PlayRecord.At(probe.Point)} ({above:0.00} m over the feet) on {on}, climb {Ledge.Climb}"
+            : $"REFUSED {probe.Result} top {PlayRecord.At(probe.Point)} ({above:0.00} m over the feet) on {on}");
     }
 
     private bool ClimbCaughtLedge()
@@ -304,7 +340,15 @@ public sealed class ParkourTraversal
         Vector3 inward = Vector3.ProjectOnPlane(-support.TransformDirection(Ledge.LocalNormal), Vector3.up).normalized;
         Vector3 along = Vector3.Cross(Vector3.up, inward);
         edge += along * Vector3.Dot(feet - edge, along);
-        if (!Detector.TryHeave(Ledge.Surface, edge, inward, feet, out Obstacle)) return false;
+        if (!Detector.TryHeave(Ledge.Surface, edge, inward, feet, out ObstacleTarget climb))
+        {
+            // No way up from here now: the ledge says so (the prompt reads it), and the Obstacle of the last move is left alone.
+            Ledge.Climb = LedgeClimb.None;
+            return false;
+        }
+        Obstacle = climb;
+        Ledge.Climb = climb.EndsCrouched ? LedgeClimb.Crouch : LedgeClimb.Stand;
+        Ledge.LocalStand = support.InverseTransformPoint(climb.End);
         // The hands stay where they gripped; a shimmy may have left the stored edge point behind.
         Ledge.LocalEdge = support.InverseTransformPoint(edge);
         ctx.ChangeState(State.Mantle);

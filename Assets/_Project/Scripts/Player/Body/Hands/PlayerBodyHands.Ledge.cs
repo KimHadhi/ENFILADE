@@ -65,16 +65,14 @@ public sealed partial class PlayerBodyHands
     }
 
     private readonly LedgeHold[] ledgeHolds = { new LedgeHold(), new LedgeHold() };
-    private static readonly RaycastHit[] LedgeHits = new RaycastHit[8];
-    private static readonly Collider[] LedgeRoom = new Collider[8];
     private int ledgeHoldsFrame = -1;
     private bool ledgeHoldsSet;
     private float ledgeStill, ledgeSpeed, ledgeRetry, ledgeHungFor;
     private Vector3 ledgeLastCentre;
 
     // A palm rests on a top within this of the edge's height (m), probed from this far above it (m), with a hand's room over
-    // it: a ball this big this far up from the top must touch nothing (m).
-    private const float TopTolerance = .1f, TopProbe = .25f, RoomRadius = .025f, RoomLift = .045f;
+    // it (the ledge's own rule and number: LedgeFinder.HandRoom, Ability.ledgeHandRoom).
+    private const float TopTolerance = .1f, TopProbe = .25f;
     // A hand moves to a new hold only if it gets at least this far (m), looking back from where it was going in these
     // steps (m); a move that found nowhere waits this long before looking again (s).
     private const float LeastMove = .03f, MoveSearchStep = .03f, RetryTime = .15f;
@@ -106,25 +104,19 @@ public sealed partial class PlayerBodyHands
     // The top a palm can rest on where the edge passes this point (on the edge's line), the palm inset as it rests: the
     // first thing under it within TopTolerance of the edge's height, facing up enough, with a hand's room over it (not
     // inside a wall that rises there, as at an inside corner). The player's own colliders and the zombies are no top.
+    // The rule is the ledge's own (LedgeFinder.HandTop), the one the movement found the ledge by, so a hand never takes
+    // hold where the movement saw no ledge: they were two rules until 2026-11-18, and the movement's knew nothing of the
+    // room a hand needs. Only the palm's own numbers are the hands' (how far in it rests, how steep a top it lies on).
     private bool TopAt(Vector3 onEdge, Vector3 outward, float inset, float height, out RaycastHit top)
     {
-        top = default;
-        Vector3 probe = onEdge - outward * inset;
-        probe.y = height + TopProbe;
-        int layers = HangWall.Layers(player.groundLayers);
-        int count = Physics.RaycastNonAlloc(probe, Vector3.down, LedgeHits, TopProbe + TopTolerance, layers, QueryTriggerInteraction.Ignore);
-        int nearest = -1;
-        for (int i = 0; i < count; i++)
-            if ((nearest < 0 || LedgeHits[i].distance < LedgeHits[nearest].distance) && !LedgeHits[i].collider.transform.IsChildOf(transform))
-                nearest = i;
-        if (nearest < 0) return false;
-        top = LedgeHits[nearest];
-        if (top.normal.y < .3f || Mathf.Abs(top.point.y - height) > TopTolerance) return false;
-        int touching = Physics.OverlapSphereNonAlloc(top.point + top.normal * RoomLift, RoomRadius, LedgeRoom, layers, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < touching; i++)
-            if (!LedgeRoom[i].transform.IsChildOf(transform)) return false;
-        return true;
+        var detector = player.Abilities.Traversal.Detector;
+        var body = detector.Body;
+        body.Layers = HangWall.Layers(player.groundLayers);
+        return LedgeFinder.HandTop(body, detector.LedgeRules, onEdge, outward, inset, height, TopTolerance, TopProbe, PalmLeastUp, out top);
     }
+
+    // A palm lies on a top that faces up at least this much (the up part of its normal).
+    private const float PalmLeastUp = .3f;
 
     // A hand's hold at shoulder width beside this point on the edge, or the nearest toward it that has a top.
     private bool NeutralTop(ArmIK arm, bool isLeft, Vector3 centre, Vector3 outward, Vector3 along, float height, out RaycastHit top)
