@@ -104,7 +104,7 @@ public static class Placement
         if (collider.GetComponentInParent<RagdollCorpse>() != null) { why = "corpse"; return Thing.Loose; }
         if (GoreGib.IsPiece(collider)) { why = "gore"; return Thing.Loose; }
         if (DroppedMagazine.IsMagazine(collider)) { why = "magazine"; return Thing.Loose; }
-        if (ThrownStone.IsStone(collider) || Throwables.Passes(collider)) { why = "thrown"; return Thing.Loose; }
+        if (ThrownStone.IsStone(collider)) { why = "thrown"; return Thing.Loose; }
         var carried = collider.attachedRigidbody;
         if (carried != null && !carried.isKinematic) { why = "physics"; return Thing.Loose; }
         if (collider.gameObject.layer == WorldLayers.Passed) { why = "passed layer"; return Thing.Loose; }

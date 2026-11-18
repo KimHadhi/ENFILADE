@@ -13,10 +13,7 @@ public sealed partial class PlayerGrenades
         count--;
         readyAt = Time.time + Cooldown;
         ushort id = NextId();
-        // A cooked one flies with what is left of its fuse; one thrown on reflex keeps at least half the reflex's lead, so
-        // even a stalled frame can't make it burst at the hand.
-        float fuse = !info.Cooks ? info.Fuse
-            : info.ThrowsOut ? Mathf.Max(cookLeft, Throwables.Rule("reflexLead", .5f) * .5f) : Mathf.Max(0f, cookLeft);
+        float fuse = FuseOutOfHand(info, cookLeft);
         cooking = holding = letGo = false;
         StopAim();
         Throwables.NoteThrower(movement, armKind);
@@ -37,6 +34,14 @@ public sealed partial class PlayerGrenades
         Feel();
         PlayerCallouts.Thrown(info.Callout);
     }
+
+    // The fuse it leaves the hand with, given what is left of a cooking one's then: the throw's own answer, and the aiming
+    // line's (Aim flies the line for exactly this long, so it ends where this throw will burst). One that doesn't cook
+    // burns its whole fuse from the throw; a cooked one flies with what is left; one thrown on reflex keeps at least half
+    // the reflex's lead, so even a stalled frame can't make it burst at the hand.
+    private static float FuseOutOfHand(ThrowableInfo info, float cookLeft)
+        => !info.Cooks ? info.Fuse
+            : info.ThrowsOut ? Mathf.Max(cookLeft, Throwables.Rule("reflexLead", .5f) * .5f) : Mathf.Max(0f, cookLeft);
 
     private void OnOwnBurst(ThrownGrenade grenade)
     {

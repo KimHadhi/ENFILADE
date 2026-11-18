@@ -71,7 +71,6 @@ public static class Throwables
     public const string TableName = "Grenades", RulesTable = "GrenadeRules", RulesRow = "Default", Bank = "Grenades";
 
     private static readonly Dictionary<Throwable, ThrowableInfo> kinds = new Dictionary<Throwable, ThrowableInfo>();
-    private static readonly HashSet<Collider> thrown = new HashSet<Collider>();
     private static readonly Dictionary<PlayerMovement, Throwable> lastThrown = new Dictionary<PlayerMovement, Throwable>();
     private static readonly Dictionary<Throwable, Texture2D> icons = new Dictionary<Throwable, Texture2D>();
     private static readonly Dictionary<Color, Material> looks = new Dictionary<Color, Material>();
@@ -84,7 +83,6 @@ public static class Throwables
     private static void ResetStatics()
     {
         kinds.Clear();
-        thrown.Clear();
         lastThrown.Clear();
         icons.Clear();
         looks.Clear();
@@ -224,18 +222,12 @@ public static class Throwables
 
     // ---- Bodies in flight ----
 
-    /// <summary>A thrown body's collider: bullets and aim go through it (AttackTrace).</summary>
-    public static bool Passes(Collider collider) => collider != null && thrown.Contains(collider);
-
-    internal static void Mark(Collider collider)
-    {
-        if (collider != null) thrown.Add(collider);
-    }
-
-    internal static void Unmark(Collider collider)
-    {
-        if (!ReferenceEquals(collider, null)) thrown.Remove(collider);
-    }
+    /// <summary>
+    /// Whether a collider is a thrown body's, which bullets and aim go through (AttackTrace asks). None is: a thrown
+    /// grenade is moved by its flight and has no collider at all (GrenadeFlight), nor has a thrown knife. Kept for its
+    /// caller; with no body to mark, the answer is always no.
+    /// </summary>
+    public static bool Passes(Collider collider) => false;
 
     /// <summary>The world a throw stops against and a burst is shielded by: not players, corpses, pieces or zombies.</summary>
     public static int WorldMask => WorldLayers.Built;

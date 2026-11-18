@@ -3,9 +3,15 @@ using UnityEngine;
 
 /// <summary>
 /// The path a held throw would fly, drawn from the hand to where it lands: the stone's T (PlayerThrow) and the class
-/// throwable's G (PlayerGrenades) share it, so both aim the same way. Its flight is stepped under gravity (a share of it:
-/// the thrown knife barely drops) with a sphere the size of what is thrown, and drawn as a line faint at the hand and
-/// solid along the flight; a throwable's burst reach can lie as a ring on what it lands on.
+/// throwable's G (PlayerGrenades) share it, so both aim the same way. It is drawn as a line faint at the hand and solid
+/// along the flight; a throwable's burst reach can lie as a ring on what it lands on.
+/// Two things are drawn with it. What stops where it first lands (the stone, whose first clack is the lure, and the
+/// knife, which sticks) is traced to that landing (Trace): under gravity (a share of it: the thrown knife barely
+/// drops), swept as a sphere the size of what is thrown. A grenade, which bounces on until its fuse ends, is flown by
+/// the grenade's own flight (Fly: GrenadeFlight, the function the thrown one is moved by), so the line turns at every
+/// wall and floor it will bounce off, each bounce marked, and ends where it will burst (the user, 2026-11-18: "튕겨
+/// 나오는 예상 바운스 궤적 표시"). Before, a grenade's line was Trace's too: it ended at the first thing met, where the
+/// grenade only began to bounce.
 /// </summary>
 public sealed class ThrowArc
 {
@@ -14,8 +20,14 @@ public sealed class ThrowArc
     private const int RingPoints = 48;
     private const float RingWidth = .03f, RingLift = .04f;
 
+    private const int MarkPoints = 12;
+    private const float MarkRadius = .09f;
+
     private readonly Transform owner;
-    private readonly List<Vector3> path = new List<Vector3>(96);
+    private readonly List<Vector3> path = new List<Vector3>(128);
+    // Where the last flown throw bounces, and the small rings that mark them (made as they are needed).
+    private readonly List<Vector3> bounces = new List<Vector3>(8);
+    private readonly List<LineRenderer> marks = new List<LineRenderer>();
     private LineRenderer line, ring;
 
     public ThrowArc(Transform owner) => this.owner = owner;
@@ -61,12 +73,30 @@ public sealed class ThrowArc
             path.Add(at);
         }
         Landing = at;
+        // A traced flight stops where it first lands: nothing bounces.
+        bounces.Clear();
         return Landed;
     }
 
     /// <summary>
-    /// Draws the last traced flight: clear at the hand, <paramref name="body"/> along the flight at
-    /// <paramref name="alpha"/>, and <paramref name="end"/> where it lands.
+    /// Flies a grenade's throw as the grenade itself will fly it (GrenadeFlight, tick for tick), for
+    /// <paramref name="seconds"/> (the fuse it would leave the hand with): the line then runs through every bounce to
+    /// where it bursts, which is Landing; the faces it bounces off are marked when it is drawn.
+    /// </summary>
+    public void Fly(Vector3 from, Vector3 velocity, float seconds, in GrenadeFlight.Body body, in GrenadeFlight.Rules rules)
+    {
+        path.Clear();
+        bounces.Clear();
+        var flight = GrenadeFlight.Fly(from, velocity, seconds, body, rules, path, bounces);
+        Landed = true;
+        Landing = flight.Position;
+        LandingNormal = Vector3.up;
+        FlightSeconds = seconds;
+    }
+
+    /// <summary>
+    /// Draws the last traced or flown flight: clear at the hand, <paramref name="body"/> along the flight at
+    /// <paramref name="alpha"/>, and <paramref name="end"/> where it lands; a flown one's bounces each get a small ring.
     /// </summary>
     public void Draw(Color body, Color end, float alpha)
     {
@@ -78,6 +108,25 @@ public sealed class ThrowArc
         line.colorGradient = colors;
         line.positionCount = path.Count;
         for (int i = 0; i < path.Count; i++) line.SetPosition(i, path[i]);
+        while (marks.Count < bounces.Count) marks.Add(MakeLine("Throw Bounce", Width, true));
+        for (int i = 0; i < marks.Count; i++)
+        {
+            var mark = marks[i];
+            bool on = i < bounces.Count;
+            if (mark.enabled != on) mark.enabled = on;
+            if (!on) continue;
+            // Facing the eyes (the line's own alignment), so it reads as a dot on the wall or the floor from anywhere.
+            mark.startColor = mark.endColor = KitStyle.With(end, alpha);
+            mark.positionCount = MarkPoints;
+            Vector3 toEye = Camera.main != null ? (Camera.main.transform.position - bounces[i]).normalized : Vector3.up;
+            Vector3 across = Vector3.Cross(toEye, Mathf.Abs(toEye.y) > .9f ? Vector3.forward : Vector3.up).normalized;
+            Vector3 other = Vector3.Cross(toEye, across);
+            for (int point = 0; point < MarkPoints; point++)
+            {
+                float angle = point * Mathf.PI * 2f / MarkPoints;
+                mark.SetPosition(point, bounces[i] + (across * Mathf.Cos(angle) + other * Mathf.Sin(angle)) * MarkRadius);
+            }
+        }
     }
 
     /// <summary>A ring of this radius lying on the face at <paramref name="at"/> (a burst's reach where it would land).</summary>
@@ -110,6 +159,8 @@ public sealed class ThrowArc
     public void Hide()
     {
         if (line != null && line.enabled) line.enabled = false;
+        foreach (var mark in marks)
+            if (mark != null && mark.enabled) mark.enabled = false;
         HideRing();
     }
 
