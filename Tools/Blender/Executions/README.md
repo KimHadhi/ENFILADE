@@ -18,6 +18,15 @@ The workspace opens ready to work in, and saving sends the work to the game, so 
   & 'F:\SteamLibrary\steamapps\common\Blender\blender.exe' --background --factory-startup .\ArtSource\TrueFPS\ENFILADE_TrueFPS_Start.blend --python .\Tools\Blender\Executions\build_execution_workspace.py -- .\ArtSource\Executions\ENFILADE_Execution_Animation.blend --export
   ```
 
+- A pair may begin as a copy of another one played faster (`execution_pairs.py`: `like`, `pace`; `execution_tools.copy_pair`)
+  instead of a choreography of its own. A workspace built before such a pair existed gets it from the 처형 tab's
+  **＋ … 넣기** button (`enf_exe.add_pair`), in the user's own file, since that file is never built again: both of the
+  other pair's actions as they are there, their keys, handles, noise and hold windows that much closer together, the
+  kill frame and the length with them, kept as that pair's draft. `front_quick` (the front takedown's own pair, the
+  user's to make: 2026-11-18) is the first: `front` at twice the speed, which is what the game played for it. Its row of
+  Executions.csv is there already with the cells the export does not write (turn, align, the blends, hitBone, fall);
+  saving fills the rest and it becomes a pair. Checked headless in a scratch copy of the project: made, shown,
+  restored to its draft, exported, the other pairs' fingerprints unchanged.
 - `execution_tools.py` is the 처형 tab and the workspace's behaviour:
   - **On open** (a timer after the True FPS tools' own, and after every file load): the `ENFILADE - Animate` workspace, the
     last pair shown, both rigs in Pose mode, the Dope Sheet in Dope Sheet mode with both rigs (not only the selected) and

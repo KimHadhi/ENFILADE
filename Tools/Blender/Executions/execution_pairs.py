@@ -7,6 +7,10 @@ Frames, offsets and the kill frame the user changes in Blender are written to Ta
 numbers are only where the drafts start.
 
 Kinds (Executions.csv `kind`): takedown (a stealth kill: quick, quiet) or execution (a broken zombie: weightier).
+
+A pair may instead begin as another pair played faster (`like`, `pace`): it has no choreography here, and the tools copy
+that pair's actions as they are in the user's file, with their keys that much closer together (execution_tools.copy_pair).
+It is put into a workspace that already exists by a button of the 처형 tab, since such a file is never built again.
 """
 import math
 
@@ -32,8 +36,15 @@ PAIRS = {
                   root=(-.38, .30), yaw=-90.0, kill=18, frames=46, bone='Neck', fall=(0.0, 0.0, -1.0)),
     'supine': dict(label='누움 · 등', kind='execution', clip=PACK + 'zombie_getup_UP_01.fbx', at=0.0,
                    root=(-.36, -.40), yaw=-90.0, kill=20, frames=48, bone='Head', fall=(0.0, 0.0, -1.0)),
+    # The front takedown's own pair: an unaware standing zombie, from the front (the user, 2026-11-18: "제가
+    # 만들겠습니다"). Until it is made the game plays the front execution for it about twice as fast
+    # (ExecutionRules.csv front: killIn 0.33 s against the pair's 0.667), so this pair begins as exactly that and is
+    # shaped from there. Last in the order: the game tells other PCs a pair by its place in the table.
+    'front_quick': dict(label='서 있음 · 앞에서 (암살)', kind='takedown', like='front', pace=2.0,
+                        clip=PACK + 'zombie_hit_react_F_01.fbx', at=0.0, root=(0.0, .72), yaw=180.0, kill=11, frames=28,
+                        bone='Head', fall=(.2, -.9, -.2)),
 }
-ORDER = ('back', 'front', 'sit', 'feed', 'crouch', 'prone', 'supine')
+ORDER = ('back', 'front', 'sit', 'feed', 'crouch', 'prone', 'supine', 'front_quick')
 
 ARMS_L, ARMS_R = ('Shoulder_L', 'Elbow_L'), ('Shoulder_R', 'Elbow_R')
 

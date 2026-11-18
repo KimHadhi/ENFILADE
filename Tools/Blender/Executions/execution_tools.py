@@ -496,8 +496,56 @@ def make_player(context, key):
     return action
 
 
+def copy_pair(context, key):
+    """A pair that begins as another one played faster (execution_pairs: `like`, `pace`): both of that pair's actions as
+    they are in this file now, their keys, handles and noise that much closer together in time, with its kill frame and
+    its length; their first form is kept as the draft, as a made pair's is. Where Kazusa stands and what her hands hold
+    come over with the copy."""
+    pair = pairs().PAIRS[key]
+    like, pace = pair['like'], max(.1, float(pair.get('pace', 1.0)))
+    made = []
+    for side, name in zip(('p', 'z'), clip_names(key)):
+        source = pair_action(like, side)
+        if source is None:
+            raise ValueError(f'「{label_of(like)}」 짝이 이 파일에 없어서 「{label_of(key)}」을 만들 수 없습니다.')
+        old = bpy.data.actions.get(name)
+        if old is not None:
+            old.name = name + '_old'
+            old.use_fake_user = False
+        action = source.copy()
+        action.name = name
+        action.use_fake_user = True
+        for prop in ('enf_sent', 'enf_withheld', 'enf_layer'):
+            if prop in action:
+                del action[prop]
+        for curve in drafts().curves(action):
+            for point in curve.keyframe_points:
+                for attr in ('co', 'handle_left', 'handle_right'):
+                    at = getattr(point, attr)
+                    at.x = 1.0 + (at.x - 1.0) / pace
+            for modifier in curve.modifiers:
+                if modifier.type == 'NOISE':
+                    modifier.scale = modifier.scale / pace
+                if getattr(modifier, 'use_restricted_range', False):
+                    modifier.frame_start = 1.0 + (modifier.frame_start - 1.0) / pace
+                    modifier.frame_end = 1.0 + (modifier.frame_end - 1.0) / pace
+                    modifier.blend_in = modifier.blend_in / pace
+                    modifier.blend_out = modifier.blend_out / pace
+            curve.update()
+        if side == 'p':
+            action['enf_kill'] = int(round(1.0 + (int(source.get('enf_kill', pair['kill'])) - 1) / pace))
+            action['enf_frames'] = int(math.ceil(1.0 + (int(source.get('enf_frames', pair['frames'])) - 1) / pace))
+        _keep_draft(action)
+        _drop_old(name)
+        made.append(action)
+    return made
+
+
 def make_pair(context, key):
     ensure_holds(context.scene)
+    if pairs().PAIRS[key].get('like'):
+        copy_pair(context, key)
+        return
     make_zombie(context, key)
     make_player(context, key)
 
@@ -1163,6 +1211,27 @@ class ENFEXE_OT_pick(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ENFEXE_OT_add_pair(bpy.types.Operator):
+    bl_idname = 'enf_exe.add_pair'
+    bl_label = '새 짝 넣기'
+    bl_description = '아직 이 파일에 없는 짝을 넣는다. 바탕이 되는 짝을 그대로 복사해 빠르기만 맞춘 것에서 시작하고, 고친 뒤 Ctrl+S 하면 게임에 들어간다'
+    bl_options = {'REGISTER', 'UNDO'}
+    key: bpy.props.StringProperty()
+
+    def execute(self, context):
+        if not _ok(self, context):
+            return {'CANCELLED'}
+        try:
+            make_pair(context, self.key)
+            select_pair(context, self.key)
+        except ValueError as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        frame_views(context)
+        _tell(f'새 짝 「{label_of(self.key)}」을 넣었습니다. 고친 뒤 Ctrl+S 하면 게임에 들어갑니다')
+        return {'FINISHED'}
+
+
 class ENFEXE_OT_kill_here(bpy.types.Operator):
     bl_idname = 'enf_exe.kill_here'
     bl_label = '처치 순간을 지금 프레임으로'
@@ -1420,6 +1489,11 @@ class ENFEXE_PT_panel(bpy.types.Panel):
         for name in p.ORDER:
             if pair_action(name):
                 grid.operator('enf_exe.pick', text=p.PAIRS[name]['label'], depress=name == key).key = name
+        # A pair this file was built before (it begins as a copy of one that is here): one press puts it in.
+        for name in p.ORDER:
+            like = p.PAIRS[name].get('like')
+            if like and not pair_action(name) and pair_action(like):
+                box.operator('enf_exe.add_pair', text=f'＋ {p.PAIRS[name]["label"]} 넣기', icon='ADD').key = name
 
         box = layout.box()
         root = project_root()
@@ -1497,7 +1571,7 @@ class ENFEXE_PT_nudge(bpy.types.Panel):
         layout.prop(settings, 'reach')
 
 
-CLASSES = (ENFExeSettings, ENFEXE_OT_pick, ENFEXE_OT_kill_here, ENFEXE_OT_revert, ENFEXE_OT_send, ENFEXE_OT_withhold,
+CLASSES = (ENFExeSettings, ENFEXE_OT_pick, ENFEXE_OT_add_pair, ENFEXE_OT_kill_here, ENFEXE_OT_revert, ENFEXE_OT_send, ENFEXE_OT_withhold,
            ENFEXE_OT_knife_pick, ENFEXE_OT_knife_move, ENFEXE_OT_knife_done, ENFEXE_OT_knife_reset,
            ENFEXE_OT_zombie_part, ENFEXE_OT_player_part, ENFEXE_PT_panel, ENFEXE_PT_nudge)
 
