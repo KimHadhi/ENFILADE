@@ -20,7 +20,11 @@ using UnityEngine;
 /// a modder's avatar leaves out. Skin first, then garments' own keys (tights pulled in under shoes), leaving alone a
 /// garment's key that the skin has on, which it follows. It only ever lets go, and the character as it came keeps every
 /// key: the worst a wrong measure does is a little clipping, never a hollow. Measures are kept for the run, per
-/// character. The numbers were checked on Mayo's and Ichigo's meshes before they went in (2026-11-12).
+/// character and per place: most meshes stand where their file has them for good, but a piece the look hangs (a mask on
+/// the face or round the back of the head, earrings moved by the wardrobe's handles: WearPosition, ItemAdjust) stands
+/// where the look says, and what was kept of it is made again when it stands elsewhere (PlaceOf). Kept by the mesh
+/// alone, a mask moved to the back of the head went on hiding the hairpins it had covered on the face (the wardrobe
+/// bench's pictures, 2026-11-18). The numbers were checked on Mayo's and Ichigo's meshes before they went in (2026-11-12).
 /// A key that shapes the body for a piece instead of drawing skin in (a heel, a stocking's band), held by the piece
 /// (CharacterParts.csv needs) or put on by an item's fit (OutfitFits.csv), is the piece's: it holds while the piece
 /// shows and goes with it, and coverage can't judge it. A heel moves the foot centimetres into the shape its shoe was
@@ -92,7 +96,15 @@ internal static class SkinCover
     // How much of a key's skin the character's own clothes covered as it came.
     private static readonly Dictionary<Patch, float> asMade = new Dictionary<Patch, float>();
     private static readonly Dictionary<Mesh, Vector3[]> points = new Dictionary<Mesh, Vector3[]>();
+    // Where each measured mesh stood in the model when it was measured (PlaceOf).
+    private static readonly Dictionary<(string skin, string renderer, int mesh), Matrix4x4> stood =
+        new Dictionary<(string, string, int), Matrix4x4>();
     private static readonly HashSet<string> warned = new HashSet<string>();
+    // Two places are one when no number of theirs differs by more: a model made again stands a hair off where the last
+    // one stood (OutfitFit.Placement tells them apart by the same).
+    private const float SamePlace = 1e-4f;
+    // The most pairs kept in touched: past it the lot is measured again as it is asked for.
+    private const int MostTouched = 8192;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession() => Forget();
@@ -106,6 +118,60 @@ internal static class SkinCover
         wholes.Clear();
         asMade.Clear();
         points.Clear();
+        stood.Clear();
+    }
+
+    // Where the renderer puts its mesh in the model's space, as the very numbers it was first measured with there (so
+    // vertices placed twice come out the same to the last digit). When the mesh stands elsewhere than it did (a hung
+    // piece worn another way, or moved by the wardrobe's handles), everything kept of it is let go first, so it is
+    // measured where it stands now.
+    private static Matrix4x4 PlaceOf(Renderer renderer, Mesh mesh, string skinId, Matrix4x4 toModel)
+    {
+        var id = (skinId ?? "", renderer.name, mesh.GetInstanceID());
+        var matrix = toModel * renderer.transform.localToWorldMatrix;
+        if (stood.TryGetValue(id, out var before))
+        {
+            bool same = true;
+            for (int i = 0; i < 16 && same; i++) same = Mathf.Abs(before[i] - matrix[i]) < SamePlace;
+            if (same) return before;
+            Moved(id);
+        }
+        stood[id] = matrix;
+        return matrix;
+    }
+
+    // Lets go of what was kept of one mesh where it stood: its surface as a garment, itself as a piece, the skin its
+    // keys move, and every measure taken against any of them.
+    private static void Moved((string skin, string renderer, int mesh) id)
+    {
+        var gone = new HashSet<object>();
+        if (cloths.TryGetValue(id, out var cloth))
+        {
+            if (cloth != null) gone.Add(cloth);
+            cloths.Remove(id);
+        }
+        if (wholes.TryGetValue(id, out var whole))
+        {
+            if (whole != null) gone.Add(whole);
+            wholes.Remove(id);
+        }
+        List<(string, string, int, int)> keys = null;
+        foreach (var pair in patches)
+        {
+            if (pair.Key.mesh != id.mesh || pair.Key.skin != id.skin || pair.Key.renderer != id.renderer) continue;
+            if (pair.Value != null) gone.Add(pair.Value);
+            (keys ??= new List<(string, string, int, int)>()).Add(pair.Key);
+        }
+        if (keys != null)
+            foreach (var key in keys) patches.Remove(key);
+        if (gone.Count == 0) return;
+        List<(Patch, Cloth)> pairs = null;
+        foreach (var pair in touched)
+            if (gone.Contains(pair.Key.Item1) || gone.Contains(pair.Key.Item2)) (pairs ??= new List<(Patch, Cloth)>()).Add(pair.Key);
+        if (pairs != null)
+            foreach (var pair in pairs) touched.Remove(pair);
+        foreach (object each in gone)
+            if (each is Patch patch) asMade.Remove(patch);
     }
 
     /// <summary>
@@ -227,6 +293,8 @@ internal static class SkinCover
         var mesh = MeshTools.MeshOf(renderer);
         if (mesh == null) return null;
         var id = (skinId ?? "", renderer.name, mesh.GetInstanceID());
+        // Before anything kept is read: a piece that stands elsewhere than it did is measured again.
+        var matrix = PlaceOf(renderer, mesh, skinId, toModel);
         if (wholes.TryGetValue(id, out var patch)) return patch;
         patch = null;
         if (!mesh.isReadable) Warn($"{mesh.name}: 메시를 읽을 수 없어(Read/Write 꺼짐) 무엇에 가려졌는지 재지 못합니다.");
@@ -235,7 +303,6 @@ internal static class SkinCover
             var made = PointsOf(mesh);
             if (made.Length > 0)
             {
-                var matrix = toModel * renderer.transform.localToWorldMatrix;
                 patch = new Patch { At = new Vector3[made.Length] };
                 for (int i = 0; i < made.Length; i++) patch.At[i] = matrix.MultiplyPoint3x4(made[i]);
                 patch.Box = new Bounds(patch.At[0], Vector3.zero);
@@ -318,6 +385,8 @@ internal static class SkinCover
     private static BitArray Bits(Patch patch, Cloth cloth, float reach)
     {
         if (touched.TryGetValue((patch, cloth), out var bits)) return bits;
+        // Only what was measured, never what is true: letting all of it go costs measuring again, nothing else.
+        if (touched.Count >= MostTouched) touched.Clear();
         bits = new BitArray(patch.At.Length);
         if (cloth.BoxOnly)
         {
@@ -352,13 +421,15 @@ internal static class SkinCover
 
     // The model's space is the root's own, fitted scale and all taken out: the meshes as made, in the units they were
     // made in (metres for every model here, whose roots stand at scale 1 in their files), so the reach is in metres.
+    // Kept by where the garment stands (PlaceOf): a mask worn on the face and then round the back of the head covers
+    // other things there.
     private static Cloth ClothOf(Renderer renderer, Matrix4x4 toModel, string skinId, Values settings)
     {
         var mesh = MeshTools.MeshOf(renderer);
         if (mesh == null) return null;
         var id = (skinId ?? "", renderer.name, mesh.GetInstanceID());
+        var matrix = PlaceOf(renderer, mesh, skinId, toModel);
         if (cloths.TryGetValue(id, out var cloth)) return cloth;
-        var matrix = toModel * renderer.transform.localToWorldMatrix;
         cloth = new Cloth();
         if (!mesh.isReadable)
         {
@@ -391,6 +462,7 @@ internal static class SkinCover
     {
         var mesh = renderer.sharedMesh;
         var id = (skinId ?? "", renderer.name, mesh.GetInstanceID(), key);
+        var matrix = PlaceOf(renderer, mesh, skinId, toModel);
         if (patches.TryGetValue(id, out var patch)) return patch;
         patch = null;
         int frames = mesh.GetBlendShapeFrameCount(key);
@@ -400,7 +472,6 @@ internal static class SkinCover
             var deltas = new Vector3[mesh.vertexCount];
             mesh.GetBlendShapeFrameVertices(key, frames - 1, deltas, null, null);
             var made = PointsOf(mesh);
-            var matrix = toModel * renderer.transform.localToWorldMatrix;
             float from2 = settings.MovedFrom * settings.MovedFrom;
             var moved = new List<Vector3>();
             for (int i = 0; i < deltas.Length && i < made.Length; i++)

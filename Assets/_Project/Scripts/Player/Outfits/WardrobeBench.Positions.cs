@@ -223,6 +223,10 @@ internal static partial class WardrobeBench
         try
         {
             instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            // What the character shows as it comes, to tell afterwards what wearing the piece took out of sight.
+            var shown = new List<Renderer>();
+            foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
+                if (renderer.enabled && renderer.gameObject.activeInHierarchy) shown.Add(renderer);
             var dressing = OutfitDresser.Dress(instance, model, skin, look);
             var animator = instance.GetComponentInChildren<Animator>();
             var record = ItemAdjust.On(instance, item.id);
@@ -290,6 +294,8 @@ internal static partial class WardrobeBench
                                 if (string.Equals(renderer.name, name, StringComparison.OrdinalIgnoreCase))
                                     report.Expect(!renderer.enabled, what, $"it covers the {hidden} slot here, yet the character's own '{name}' still shows");
                     }
+            // And nothing it does not cover there.
+            HidesWhatItCovers(report, what, skin.Id, item, position, animator, toModel, shown, dressing.Pieces[item.id]);
             if (stage != null)
             {
                 stage.Take(instance);
@@ -305,6 +311,46 @@ internal static partial class WardrobeBench
         finally
         {
             Object.DestroyImmediate(instance);
+        }
+    }
+
+    // What wearing the piece took out of sight among what hangs from the character's head (hair, its ornaments, ears):
+    // the parts of the slots the item fills or covers there, and what lies under the piece where it stands now, as near
+    // as SkinCover's reach. Anything else it hid, it hid for where it stood some other time: a measure kept past its
+    // place. The first pictures this bench took showed it (2026-11-18): a mask worn round the back of the head went on
+    // hiding the hairpins it had covered on the face a moment before, the cover being kept by the mesh alone.
+    private static void HidesWhatItCovers(Report report, string what, string skinId, OutfitItem item, WearPosition position, Animator animator,
+        Matrix4x4 toModel, List<Renderer> shown, List<Renderer> piece)
+    {
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (head == null) return;
+        var slots = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { item.slot };
+        slots.UnionWith(item.AlsoSlots);
+        if (position.covers) slots.UnionWith(item.HiddenSlots);
+        var bySlot = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var part in OutfitCatalog.PartsOf(skinId))
+            if (slots.Contains(part.slot)) bySlot.UnionWith(OutfitCatalog.Split(part.parts));
+        float reach = GameTables.TryGetRow(SkinCover.TableName, "Default", out var cells) ? cells.Number("reach", .03f) : .03f;
+        var boxes = new List<Bounds>();
+        foreach (var renderer in piece)
+        {
+            var mesh = renderer != null ? MeshTools.MeshOf(renderer) : null;
+            if (mesh != null) boxes.Add(MeshTools.BoxOf(mesh.bounds, toModel * renderer.transform.localToWorldMatrix));
+        }
+        if (boxes.Count == 0) return;
+        foreach (var renderer in shown)
+        {
+            if (renderer == null || renderer.enabled || renderer is not SkinnedMeshRenderer skinned || bySlot.Contains(renderer.name)
+                || !HeadMeshes.OnHead(skinned, head)) continue;
+            var mesh = MeshTools.MeshOf(renderer);
+            if (mesh == null) continue;
+            var box = MeshTools.BoxOf(mesh.bounds, toModel * renderer.transform.localToWorldMatrix);
+            float gap = float.MaxValue;
+            foreach (var other in boxes) gap = Mathf.Min(gap, Vector3.Max(Vector3.zero, Vector3.Max(box.min - other.max, other.min - box.max)).magnitude);
+            // Boxes, not surfaces: twice the reach leaves room for a corner, and a hairpin on the far side of the head is
+            // five times that away.
+            report.Expect(gap <= reach * 2f, what,
+                $"it hides the character's own '{renderer.name}', {gap * 100f:0.0} cm from where the piece stands: a piece hides only what lies under it (within {reach * 100f:0.#} cm)");
         }
     }
 
