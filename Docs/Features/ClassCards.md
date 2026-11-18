@@ -204,7 +204,7 @@
 - **종류의 표**: [Deployables.csv](../../Assets/_Project/Data/Resources/Tables/Classes/Deployables.csv). 줄 하나가 한 종류다(판자·철조망·탄약 상자·탐조등·지뢰). `name`·`short` 이름, 누가 놓는지(`class` 클래스, `card` 필요한 카드, `throwable` 그 투척물을 드는 클래스. 채운 칸은 모두 맞아야 한다), `most` 한 사람의 최대. `most`는 숫자거나 ClassAbilities의 수치 이름(`Support.barricadeMax`)이고, 이름이면 그 수치에 붙는 카드(판자 더미)가 함께 더해진다. 지뢰의 최대는 GrenadeRules `claymoreMost`에서 ClassAbilities `Support.claymoreMax`로 옮겼다(서포트의 다른 최대 수치 옆). 모드는 줄을 더하고 그 설치물에 `IPlaced`를 달면 된다.
 - **규칙은 하나**: 한 사람은 한 종류를 `most`개까지 세워 둔다. 하나 더 놓으면 그 사람의 가장 오래된 것이 먼저 사라진다(`Deployables.MakeRoom`). 세는 것은 놓는 사람의 PC다(제 카드로 센다). 다른 PC는 '이것이 사라졌다'는 말만 듣고 따라 한다: 바리케이드는 CollapseRpc, 지뢰는 MineRpc에 사라진 번호가 함께 간다(예전에는 지뢰를 PC마다 따로 세어서 카드로 최대가 달라지면 어긋날 수 있었다).
 - **HUD**: 클래스 칸 바로 아래에 개수 줄([DeployStrip](../../Assets/_Project/Scripts/UI/Hud/Classes/DeployStrip.cs)). 종류마다 칩 하나에 짧은 이름과 `1/2`, 아래에 채워진 만큼의 선. 놓을 수 있는 종류는 세우는 중이든 아니든 늘 보인다. 가득 찬 종류는 호박색: 다음에 놓으면 가장 오래된 것이 사라진다는 뜻이고, 세상에서 그 오래된 것 위에 깜빡이는 미리 보기(바리케이드의 호박색 유령, 지뢰의 호박색 고리)와 같은 색이다. 지금 세우는 종류는 위에 분홍 선이 서고, 가득 찬 채 세우는 중이면 호박색이 천천히 숨 쉰다. 휠을 누르고 있을 때 키 옆 글자도 '놓으면 설치' 대신 '놓으면 교체'가 된다. 클래스를 바꿔 더는 못 놓는 종류도 서 있는 동안에는 흐리게 남는다. 숫자는 [ClassHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/ClassHud.csv) `Deploy.*`.
-- **플레이 없이 확인**: 콘솔 `/deploy`가 종류마다 지금 수/최대와 다음에 사라질 것의 자리, 이 PC에 서 있는 것 모두를 적는다. 놓을 때마다 `Logs/deployables.txt`에 `UP 종류 수/최대`, 넘쳐서 사라질 때 `RETIRED 종류 … N stood, most M`이 남는다. 칩의 자리는 개수만으로 정해지는 순수 함수(`DeployStrip.Slot`)라 칩 1~8개의 자리를 계산으로 확인했다(다섯까지 한 줄, 여섯부터 아래 줄).
+- **플레이 없이 확인**: 콘솔 `/deploy`가 종류마다 지금 수/최대와 다음에 사라질 것의 자리, 이 PC에 서 있는 것 모두를 적는다. 놓을 때마다 `Logs/deployables.txt`에 `UP 종류 수/최대`, 넘쳐서 사라질 때 `RETIRED 종류 … N stood, most M`이 남는다. 칩의 자리는 개수만으로 정해지는 순수 함수(`DeployStrip.Slot`)라 칩 1~8개의 자리를 계산으로 확인한다(다섯까지 한 줄, 여섯부터 아래 줄): `python Tools/Checks/class_hud_layout_check.py`.
 
 ### 지속 효과는 칸마다 따로 (2026-11-18)
 
@@ -231,7 +231,7 @@
 아드레날린 스택·헤드 헌터·데스페라도 탄·주사기·보급 가방처럼 '수'인 것은 예전처럼 클래스 칸 안의 칸들이고, 능력의 재사용 대기는 클래스 칸 옆 글자 그대로다.
 
 - **화면 효과의 겹침**(코드로 읽은 것, 화면으로 재지 못함): 버프의 모습은 지금 모두 몸에 붙는 세상 효과다(CHARGE의 금빛은 0.5초 뒤 얇은 윤곽선만, 건 카타의 도는 탄환, 포인트 궁극기의 달궈지는 총, 나이트의 분신). 화면 전체를 덮는 캔버스를 쓰는 것은 불사조 테두리(2초, 혼자일 때만) 하나였다. 그래서 '화면을 가리는 겹침'을 코드에서는 찾지 못했다. 정보가 덮이던 것은 위의 막대 하나와, 클래스 칸 위 이름표(MomentHUD의 Tag, 0.9초: 둘이 0.9초 안에 이어 걸리면 뒤의 것이 앞의 것을 바꿔 쓴다)였다. 이름표는 지나가는 꾸밈이고 이름과 시간은 이제 칸에 남으므로 그대로 두었다.
-- **플레이 없이 확인**: 콘솔 `/effects`가 지금 걸린 효과를 칸 순서대로 적는다(이름·남은 초·전체 초). 효과가 시작하고 끝날 때마다 `Logs/timed-effects.txt`에 `BEGIN id 초 | beside 그때 같이 걸려 있던 것`, `END id after 초`가 남는다: 건 카타 중에 총을 바꾸면 `BEGIN point.gunslinger … | beside point.kata 6.1s`가 찍힌다. 칸의 자리는 순수 함수(`EffectStack.Slot`)라 설치 줄 0~8종 × 효과 1~8개를 계산으로 확인했다(겹침 없음, 폭 밖으로 안 나감, 화면 아래 8px 위, 기운 조각끼리 끝에서 4px 넘게 떨어짐). HUD 겹침 검사는 이 두 조각(클래스 HUD 캔버스의 `Deployables`, `Effects`)을 저절로 따로 잰다.
+- **플레이 없이 확인**: 콘솔 `/effects`가 지금 걸린 효과를 칸 순서대로 적는다(이름·남은 초·전체 초). 효과가 시작하고 끝날 때마다 `Logs/timed-effects.txt`에 `BEGIN id 초 | beside 그때 같이 걸려 있던 것`, `END id after 초`가 남는다: 건 카타 중에 총을 바꾸면 `BEGIN point.gunslinger … | beside point.kata 6.1s`가 찍힌다. 칸의 자리는 순수 함수(`EffectStack.Slot`)라 설치 줄 0~8종 × 효과 1~8개를 계산으로 확인한다(겹침 없음, 폭 밖으로 안 나감, 화면 아래 8px 위, 기운 조각끼리 끝에서 4px 넘게 떨어짐): `python Tools/Checks/class_hud_layout_check.py`가 ClassHud.csv의 숫자를 읽어 다시 돌린다(표나 배치 함수를 바꾼 뒤에). HUD 겹침 검사는 이 두 조각(클래스 HUD 캔버스의 `Deployables`, `Effects`)을 저절로 따로 잰다.
 
 ## 4. 아직 안 만든 아이디어 (다음에 고를 거리)
 

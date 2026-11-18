@@ -61,7 +61,8 @@ public struct GrenadeFlight
         }
     }
 
-    // How near a face it stops (m): never touching, so the next sweep still sees the face it lies on.
+    // How far off a face it is set after meeting it (m, along the face's normal): never touching, so the next sweep
+    // still sees the face it lies on (a sweep does not see what it starts inside).
     private const float Skin = .005f;
     // Ground level enough to lie on (the face's normal's height): steeper, it slides on.
     private const float Level = .6f;
@@ -76,9 +77,12 @@ public struct GrenadeFlight
     public int Bounces;
     /// <summary>It lies still: nothing moves it any more.</summary>
     public bool Resting;
+    // When it last lay on a face without bouncing (its Age then; below 0: not since it last flew): a roll wears off for
+    // all the time it rolls, though the sweep only meets the floor every other tick or so.
+    private float rolledAt;
 
     /// <summary>A flight about to start: out of the hand there, that fast.</summary>
-    public static GrenadeFlight From(Vector3 from, Vector3 velocity) => new GrenadeFlight { Position = from, Velocity = velocity };
+    public static GrenadeFlight From(Vector3 from, Vector3 velocity) => new GrenadeFlight { Position = from, Velocity = velocity, rolledAt = -1f };
 
     /// <summary>A kind's body (Tables/Grenades size, gravity, bounce).</summary>
     public static Body BodyOf(ThrowableInfo info) => new Body(info.Size * .5f, info.Gravity, info.Bounce);
@@ -114,11 +118,17 @@ public struct GrenadeFlight
                 Position += move;
                 break;
             }
-            float travel = Mathf.Clamp(hit.distance - Skin, 0f, length);
-            Position += way * travel;
-            left *= 1f - travel / length;
+            // Up to the face, then off it by the skin along the face's own normal, whatever the angle it came in at.
+            // (Backing off along the path instead left a ball that rolls, moving almost along the floor, a fraction of
+            // a millimetre over it; one sweep that then started inside the floor would never see the floor again.)
             Vector3 normal = hit.normal;
-            Turn(ref Velocity, normal, body.Bounce, rules, rolled ? 0f : dt, out float into, out bool bounce);
+            Position += way * hit.distance + normal * Skin;
+            left *= 1f - Mathf.Min(hit.distance, length) / length;
+            // A roll wears off for the time since it last lay on a face, when that was a moment ago (set off the face
+            // by the skin, it falls back onto it only every other tick or so: the wear must not depend on that); the
+            // first touch after a flight, for this tick alone.
+            float rolling = rolled ? 0f : rolledAt >= 0f && Age - rolledAt <= dt * 3.5f ? Age - rolledAt : dt;
+            Turn(ref Velocity, normal, body.Bounce, rules, rolling, out float into, out bool bounce);
             if (bounce)
             {
                 if (into > speed)
@@ -128,9 +138,11 @@ public struct GrenadeFlight
                 }
                 bounced = true;
                 Bounces++;
+                rolledAt = -1f;
                 continue;
             }
             rolled = true;
+            rolledAt = Age;
             if (normal.y >= Level && Velocity.magnitude <= rules.Rest)
             {
                 Velocity = Vector3.zero;

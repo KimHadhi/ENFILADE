@@ -65,7 +65,7 @@ public sealed class ClassHUD : MonoBehaviour
         bool dead = movement.IsDead;
         plate.gameObject.SetActive(!dead);
         // The count of what this player has standing, whatever their class and whether or not they are placing now (the
-        // user, 2026-11-18: "현재 설치 개수/최대 제한 현황 표시"); what hangs under the plate (the bar) stands under it.
+        // user, 2026-11-18: "현재 설치 개수/최대 제한 현황 표시"); what comes next in the flow stands under it.
         deploy.Show(movement, Placing(), !dead);
         // Every timed effect on this player, a slot each, under the count line (or right under the plate when that
         // shows nothing): the features say what runs (TimedEffects) and none of it is chosen between here.
