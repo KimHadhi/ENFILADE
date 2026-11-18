@@ -50,6 +50,8 @@ public static partial class CampaignMaps
         Bus(b, "고가 버스 1", 34f, 46f, Deck, 1f, 3.6f);
         b.Box("뒤집힌 트럭", 56f, 63f, Deck, Deck + 2.6f, -6.6f, 6.6f, b.Metal, "MetalBox");
         b.Spot("Overturn", new Vector3(66f, Deck, 0f));
+        // The lorry lies across the whole deck, 2.6 m high: the players climb over it, and nothing walks round it.
+        b.NotWalked("Ch2.01", "넘어진 화물차(2.6 m)를 타고 넘는 곳. 화물차 앞뒤에 스폰 지점이 따로 있음");
         Bus(b, "고가 버스 2", 84f, 96f, Deck, -6.3f, -3.7f);
         b.EnemySpawn("고가 1", new Vector3(21f, Deck, 0f));
         b.EnemySpawn("고가 2", new Vector3(45f, Deck, -4.5f));

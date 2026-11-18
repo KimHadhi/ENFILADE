@@ -129,4 +129,18 @@ public sealed partial class GreyboxBuilder
     {
         foreach (var link in hops) if (link != null) link.UpdateLink();
     }
+
+    // ---- What is meant not to be walked ----
+
+    private readonly Dictionary<string, string> notWalked = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Says of a stretch of the route (by its step's id: the way from the spot before it to its own) or of a spawn
+    /// point (by its name) that zombies are not meant to walk it, and why: a gap the players jump, a cable they ride,
+    /// a lorry they climb over. The build's audit names every stretch the walk mesh does not join and every spawn
+    /// point that reaches no place of the route (GreyboxBuilder.Audit, '경로와 걷기 메시'); one said here is written
+    /// down as meant and kept out of the closing window, and one said here that the walk mesh does join is named as a
+    /// line to take out of the layout.
+    /// </summary>
+    public void NotWalked(string stepOrPoint, string why) => notWalked[stepOrPoint] = why;
 }

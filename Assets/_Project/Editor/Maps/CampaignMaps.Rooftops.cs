@@ -44,6 +44,10 @@ public static partial class CampaignMaps
         b.Box("집라인 기둥 2", 70.2f, 70.4f, 13f, 15.8f, -.1f, .1f, b.Metal, solid: false);
         b.Spot("LiftRoom", new Vector3(40f, 19.4f, 0f));
         b.Spot("ZiplineEnd", new Vector3(72f, 13f, 0f));
+        // The roofs are crossed as only the players cross them; each roof has its own spawn points.
+        b.NotWalked("Ch1.01", "3 m 틈을 뛰어 건너고 승강기실을 타고 오르는 곳(지붕마다 스폰 지점이 따로 있음)");
+        b.NotWalked("Ch1.02", "짚라인으로 길을 건너는 곳");
+        b.NotWalked("Ch1.03", "스윙 바로 아파트 5층에 뛰어드는 곳");
         b.EnemySpawn("B2 옥상 1", new Vector3(32f, 16f, 6f));
         b.EnemySpawn("B2 옥상 2", new Vector3(45f, 16f, -7f));
 
@@ -51,6 +55,10 @@ public static partial class CampaignMaps
         b.Dress(b.Box("길1 차 2", 56f, 60.5f, 0f, 1.5f, 3f, 4.8f, b.Metal, "Metal"), "car");
         b.EnemySpawn("길1", new Vector3(55f, 0f, -1f));
         b.EnemySpawn("길1 남쪽", new Vector3(55f, 0f, -25f));
+        // The street under the cable, 13 m and more under the roofs and walled off from the flats and the alley: its
+        // points send only to someone who fell.
+        b.NotWalked("길1", "지붕 아래 13 m가 넘는 길, 떨어진 사람에게만 보냄");
+        b.NotWalked("길1 남쪽", "지붕 아래 13 m가 넘는 길, 떨어진 사람에게만 보냄");
 
         // 3. Too far to jump to the next roof: the swing bar over the gap, in line with the hole the war blew in the block of
         // flats' 5th and 6th floors (z 2..10), which it swings them into. A ladder brings a faller back up.

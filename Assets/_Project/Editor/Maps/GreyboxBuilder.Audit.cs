@@ -15,7 +15,8 @@ using UnityEngine.AI;
 /// can get to, and whether what is seen blocks: no collider without its mesh, no part of a bought building's shell
 /// that is drawn at walking height with nothing solid behind it, no wall a walking body passes from its back, and
 /// how much of a prop's box a shot now passes because the prop's seen shape is not there (below). And whether a
-/// cage's crowd has the floor to stand on (CrowdReport).
+/// cage's crowd has the floor to stand on (CrowdReport), and whether the walk mesh joins each stretch of the mission's
+/// route and every spawn point to it (MeasureRoute).
 /// </summary>
 public sealed partial class GreyboxBuilder
 {
@@ -36,14 +37,21 @@ public sealed partial class GreyboxBuilder
     // near under it (m) and within this of the cage's floor (m, as CampaignHorde.PlaceCaged takes it); two of the
     // crowd stand no nearer than this (m, CampaignHorde.CagedApart).
     private const float CrowdGrid = .25f, CrowdUnder = .15f, CrowdFloor = 1.2f, CrowdApart = 1.1f;
+    // The route: how far the game looks for the walk mesh round a spot and round a spawn point (m: SpawnRoute.SpotSearch,
+    // CampaignHorde.PointSearch), and how far this looks for it at a hop's end.
+    private const float SpotSearch = 3f, PointSearch = 2f, HopSearch = 1f;
 
     private readonly StringBuilder audit = new StringBuilder();
     private bool auditToRead;
+    // What MeasureRoute found, kept until the file is written.
+    private readonly StringBuilder routeAudit = new StringBuilder();
+    private string routeLine = "";
+    private bool routeToRead;
 
     // Every check's line for the closing window, and the file. Called once, as the build ends.
     private string AuditReport()
     {
-        string line = StandReport() + PointReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport() + CrowdReport();
+        string line = StandReport() + PointReport() + RouteReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport() + CrowdReport();
         if (audit.Length == 0) return line;
         string path = AuditFolder + "/" + sceneName + ".txt";
         try
@@ -57,6 +65,181 @@ public sealed partial class GreyboxBuilder
             return line;
         }
         return line + (auditToRead ? " 자세한 것은 " + path + "." : "");
+    }
+
+    // The route and the walk mesh. A way the players go that the walk mesh does not join is a way no zombie follows
+    // them on and none comes at them by, and nothing in play says so: the horde just does not arrive. It was found by
+    // reading the baked meshes after the fact (the spawn session, item 20: each storey of chapter 1's flats an island,
+    // chapter 3's river tunnel four of them). So every build asks the walk mesh it has just baked, as the game asks
+    // it (SpawnRoute): for each step, whether a walker gets from the spot before it to its own, and back; for each
+    // spawn point, whether it stands on the walk mesh and whether it can get to a place of the route, or lies on
+    // ground the squad drops to. What the layout says is meant (NotWalked: a gap to jump, a cable, a climb) is written
+    // down as meant; anything else that is cut goes to the closing window. Measured right after the bake, while the
+    // mesh is as baked: a gate that is shut or a variant's blocker carves it only once the engine runs. The same
+    // from the saved scene without Unity, with what stands in each break: Tools/Maps/walk_joins.py.
+    private void MeasureRoute()
+    {
+        routeAudit.Clear();
+        routeLine = "";
+        routeToRead = false;
+        if (!AddsCampaign) return;
+        var text = routeAudit;
+        text.Append("\n## 경로와 걷기 메시 (단계마다 앞 자리에서 그 자리까지 좀비가 걸어갈 수 있는지, 스폰 지점이 경로에 닿는지)\n");
+        text.Append("# 굽는 몸: 반지름 ").Append(WalkRadius.ToString("0.00")).Append(" m, 복셀 ").Append(WalkVoxel.ToString("0.00"))
+            .Append(" m, 걸음 ").Append(StepHeight.ToString("0.00")).Append(" m. 넘는 길 ").Append(hops.Count).Append("개\n");
+        if (NavMesh.CalculateTriangulation().vertices.Length == 0)
+        {
+            text.Append("# 못 읽음: 걷기 메시가 없어 재지 못했어요\n");
+            return;
+        }
+        var path = new NavMeshPath();
+        var cut = new List<string>();
+        var lost = new List<string>();
+        var onRoute = new List<Vector3>();
+        int joined = 0, oneWay = 0, meantCut = 0;
+        Transform before = spots.Find(each => each != null && each.name == CampaignRun.StartSpot);
+        string beforeName = CampaignRun.StartSpot;
+        if (before != null && Stands(before.position, SpotSearch, out Vector3 start)) onRoute.Add(start);
+        foreach (var step in CampaignStep.For(sceneName))
+        {
+            var spot = spots.Find(each => each != null && each.name == step.Spot);
+            // A step whose spot is not in the map is named with the Reach steps (ReachReport); the route goes on past it.
+            if (spot == null) continue;
+            bool toOn = Stands(spot.position, SpotSearch, out Vector3 b);
+            if (toOn) onRoute.Add(b);
+            if (before == null)
+            {
+                before = spot;
+                beforeName = step.Spot;
+                continue;
+            }
+            string label = step.Id + " " + beforeName + " → " + step.Spot;
+            notWalked.TryGetValue(step.Id, out string meant);
+            bool fromOn = Stands(before.position, SpotSearch, out Vector3 a);
+            if (!fromOn || !toOn)
+            {
+                text.Append(meant != null ? "설계 " : "끊김 ").Append(label).Append(": 자리 '").Append(fromOn ? step.Spot : beforeName).Append("' 둘레 ")
+                    .Append(SpotSearch.ToString("0.#")).Append(" m 안에 걷기 메시가 없어요").Append(meant != null ? ". " + meant : "").Append('\n');
+                if (meant == null) cut.Add(step.Id);
+                else meantCut++;
+            }
+            else if ((a - b).sqrMagnitude < .0025f) joined++;
+            else
+            {
+                bool there = Joins(a, b, path), back = Joins(b, a, path);
+                if (there && back)
+                {
+                    joined++;
+                    text.Append("이어짐 ").Append(label).Append('\n');
+                    if (meant != null) text.Append("    # 배치에는 걷지 않는 구간이라고 적혀 있어요(").Append(meant).Append("). 이어져 있으니 그 줄(NotWalked)을 지우세요\n");
+                }
+                else if (there)
+                {
+                    oneWay++;
+                    text.Append("앞으로만 ").Append(label).Append(": 내려뛰는 링크로 이어지고 되돌아오는 길은 없어요\n");
+                }
+                else
+                {
+                    // Where the walk stops, and how far it still is.
+                    NavMesh.CalculatePath(a, b, NavMesh.AllAreas, path);
+                    var corners = path.corners;
+                    Vector3 stop = corners.Length > 0 ? corners[corners.Length - 1] : a;
+                    text.Append(meant != null ? "설계 " : "끊김 ").Append(label).Append(": 메시로는 (").Append(Format(stop)).Append(")까지 가고, 남은 직선 ")
+                        .Append(Vector3.Distance(stop, b).ToString("0.0")).Append(" m").Append(back ? " (거꾸로는 이어져요)" : "")
+                        .Append(meant != null ? ". " + meant : "").Append('\n');
+                    if (meant == null) cut.Add(step.Id + "(" + beforeName + "→" + step.Spot + ")");
+                    else meantCut++;
+                }
+            }
+            before = spot;
+            beforeName = step.Spot;
+        }
+        int served = 0, dropped = 0, meantLost = 0;
+        foreach (var point in enemySpawns)
+        {
+            if (point == null) continue;
+            notWalked.TryGetValue(point.name, out string meant);
+            if (!Stands(point.position, PointSearch, out Vector3 p))
+            {
+                text.Append(meant != null ? "설계 " : "메시 밖 ").Append("지점 ").Append(point.name).Append(" (").Append(Format(point.position)).Append("): ")
+                    .Append(PointSearch.ToString("0.#")).Append(" m 안에 걷기 메시가 없어요").Append(meant != null ? ". " + meant : "").Append('\n');
+                if (meant == null) lost.Add(point.name);
+                else meantLost++;
+                continue;
+            }
+            // The nearest places of the route first: most points walk to the nearest.
+            onRoute.Sort((one, other) => (one - p).sqrMagnitude.CompareTo((other - p).sqrMagnitude));
+            bool reaches = false, reached = false;
+            foreach (var place in onRoute) if (Joins(p, place, path)) { reaches = true; break; }
+            if (!reaches) foreach (var place in onRoute) if (Joins(place, p, path)) { reached = true; break; }
+            if (reaches) served++;
+            else if (reached)
+            {
+                dropped++;
+                text.Append("내려온 땅 지점 ").Append(point.name).Append(": 경로의 자리로 올라가는 길은 없고, 분대가 내려오면 닿는 땅이에요\n");
+            }
+            else
+            {
+                text.Append(meant != null ? "설계 " : "닿지 않음 ").Append("지점 ").Append(point.name).Append(" (").Append(Format(point.position))
+                    .Append("): 경로의 어느 자리와도 이어지지 않아요").Append(meant != null ? ". " + meant : "").Append('\n');
+                if (meant == null) lost.Add(point.name);
+                else meantLost++;
+            }
+        }
+        text.Append("# 합계: 구간 이어짐 ").Append(joined).Append(", 앞으로만 ").Append(oneWay).Append(", 설계로 끊김 ").Append(meantCut).Append(", 끊김 ").Append(cut.Count)
+            .Append(" | 스폰 지점 ").Append(enemySpawns.Count).Append("개: 경로로 감 ").Append(served).Append(", 내려온 땅 ").Append(dropped)
+            .Append(", 설계 ").Append(meantLost).Append(", 닿지 않음 ").Append(lost.Count).Append('\n');
+        if (cut.Count == 0 && lost.Count == 0) return;
+        routeToRead = true;
+        if (cut.Count > 0) routeLine += "\n좀비가 걸어갈 수 없는 구간 " + cut.Count + "곳: " + string.Join(", ", cut) + ".";
+        if (lost.Count > 0) routeLine += "\n경로에 닿지 않는 스폰 지점 " + lost.Count + "개: " + string.Join(", ", lost) + ".";
+    }
+
+    private string RouteReport()
+    {
+        if (routeAudit.Length == 0) return "";
+        audit.Append(routeAudit);
+        if (routeToRead) auditToRead = true;
+        return routeLine;
+    }
+
+    private static bool Stands(Vector3 at, float within, out Vector3 on)
+    {
+        bool found = NavMesh.SamplePosition(at, out NavMeshHit hit, within, NavMesh.AllAreas);
+        on = found ? hit.position : at;
+        return found;
+    }
+
+    private static bool Walks(Vector3 from, Vector3 to, NavMeshPath path)
+        => NavMesh.CalculatePath(from, to, NavMesh.AllAreas, path) && path.status == NavMeshPathStatus.PathComplete;
+
+    // Whether a walker gets from one place on the walk mesh to another: by the mesh and the links on it, or, failing
+    // that, by way of the hops this build laid, each tried as a step of the way (a link laid in the editor may not be
+    // on the walk mesh until the engine has run, and the measure must not wait for that).
+    private bool Joins(Vector3 from, Vector3 to, NavMeshPath path)
+    {
+        if (Walks(from, to, path)) return true;
+        if (hops.Count == 0) return false;
+        var reached = new List<Vector3> { from };
+        var taken = new HashSet<int>();
+        for (int at = 0; at < reached.Count; at++)
+            for (int i = 0; i < hops.Count; i++)
+            {
+                var hop = hops[i];
+                if (hop == null) continue;
+                for (int way = 0; way < 2; way++)
+                {
+                    if (taken.Contains(i * 2 + way)) continue;
+                    if (way == 1 && !hop.bidirectional) continue;
+                    Vector3 enter = hop.transform.TransformPoint(way == 0 ? hop.startPoint : hop.endPoint);
+                    Vector3 leave = hop.transform.TransformPoint(way == 0 ? hop.endPoint : hop.startPoint);
+                    if (!Stands(enter, HopSearch, out enter) || !Stands(leave, HopSearch, out leave) || !Walks(reached[at], enter, path)) continue;
+                    taken.Add(i * 2 + way);
+                    if (Walks(leave, to, path)) return true;
+                    reached.Add(leave);
+                }
+            }
+        return false;
     }
 
     // A cage's crowd (GimmickCage) is stood by the run on the walk mesh round the middle of its cage, when the stretch

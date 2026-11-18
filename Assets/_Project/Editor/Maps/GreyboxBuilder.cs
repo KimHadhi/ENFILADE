@@ -627,6 +627,8 @@ public sealed partial class GreyboxBuilder
         if (AssetDatabase.LoadAssetAtPath<NavMeshData>(meshPath) != null) AssetDatabase.DeleteAsset(meshPath);
         if (surface.navMeshData != null) AssetDatabase.CreateAsset(surface.navMeshData, meshPath);
         int stranded = CheckProps();
+        // And whether it joins the mission's route, while it is as baked (GreyboxBuilder.Audit).
+        MeasureRoute();
         MarkStatic();
         // The meshes the build made of a bought building (its cut walls, its turned faces) become files now, once, each
         // its own (GreyboxBuilder.PackScene): the scene is about to be saved and must find them on disk.

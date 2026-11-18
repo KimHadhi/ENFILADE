@@ -2,7 +2,7 @@
 
 지은 맵의 씬 파일(`Assets/_Project/Scenes/**.unity`)만 읽어서 맵을 검사하는 파이썬 스크립트들. Unity를 켜지 않고, 플레이하지 않고도 '다시 지은 결과'를 확인하려고 2026-11-18에 만들었다(사용자: "망가진 맵 오브젝트 배치 복구"). 씬은 읽기만 한다.
 
-빌더가 다시 지을 때 스스로 쓰는 보고서는 `Logs/MapAudit/<씬>.txt`다([GreyboxBuilder.Standing](../../Assets/_Project/Editor/Maps/GreyboxBuilder.Standing.cs)). 여기 스크립트는 그 결과를 씬 파일에서 따로 다시 재는 것이다.
+빌더가 다시 지을 때 스스로 쓰는 보고서는 `Logs/MapAudit/<씬>.txt`다([GreyboxBuilder.Standing](../../Assets/_Project/Editor/Maps/GreyboxBuilder.Standing.cs), [GreyboxBuilder.Audit](../../Assets/_Project/Editor/Maps/GreyboxBuilder.Audit.cs): 소품과 스폰 지점이 선 자리, 경로와 걷기 메시, 도착 자리, 콜라이더, 껍데기, 총알이 맞는 모양, 철창 무리). 여기 스크립트는 그 결과를 씬 파일에서 따로 다시 재는 것이다.
 
 | 스크립트 | 하는 일 |
 |---|---|
