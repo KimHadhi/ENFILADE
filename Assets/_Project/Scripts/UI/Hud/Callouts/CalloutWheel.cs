@@ -6,11 +6,11 @@ using UnityEngine.UI;
 /// <summary>
 /// The callout wheel (PlayerCallouts; memo 4, after Guts &amp; Blackpowder's): eight slices round the middle of the
 /// screen while the callout key is held, in the HUD's black, white and pink. The mouse moves a pointer out from the
-/// middle (the view holds still meanwhile, as G&amp;B's does: the wheel has the hands, PlayerMovement.CombatInputLocked)
-/// and the slice it points into lights pink and reaches out a little. Each slice reads its name and, small under it,
-/// the line it would say right now; the middle reads the lit slice's line large, so the player knows what they'll
-/// shout before they let go. 말 turns the wheel to a page of short words. Built on first use; real time, so slow motion
-/// doesn't slow it.
+/// middle (the view holds still meanwhile, as G&amp;B's does: the wheel holds the view and the trigger, see Holder; the
+/// body moves on) and the slice it points into lights pink and reaches out a little. Each slice reads its name and,
+/// small under it, the line it would say right now; the middle reads the lit slice's line large, so the player knows
+/// what they'll shout before they let go. A slice may turn the wheel to another page, as 말 does to its short words;
+/// which slices there are is CalloutSlots' table. Built on first use; real time, so slow motion doesn't slow it.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CalloutWheel : MonoBehaviour
@@ -24,8 +24,6 @@ public sealed class CalloutWheel : MonoBehaviour
     private static readonly Color Slice = new Color(.07f, .07f, .08f, .86f), Middle = new Color(.055f, .055f, .065f, .94f);
 
     private static CalloutWheel instance;
-    private static int closedFrame = -1;
-    private static bool swallowClick;
 
     private readonly WheelSliceGraphic[] slices = new WheelSliceGraphic[Count];
     private readonly TextMeshProUGUI[] names = new TextMeshProUGUI[Count], lines = new TextMeshProUGUI[Count];
@@ -42,26 +40,22 @@ public sealed class CalloutWheel : MonoBehaviour
     private static void ResetStatics()
     {
         instance = null;
-        closedFrame = -1;
-        swallowClick = false;
     }
 
     /// <summary>Whether the wheel is up.</summary>
     public static bool IsOpen => instance != null && instance.open;
 
     /// <summary>
-    /// The wheel has the player's hands: it is up, it closed this frame, or the click that picked from it is still held
-    /// down (that click mustn't fire the gun once the wheel lets go).
+    /// The wheel as the holder of what it takes while it is up (InputHold): the view, because the mouse points on the
+    /// wheel, and the gun in the hands, because the mouse's clicks pick and cancel there. Null before its first opening.
+    /// It takes nothing else: the body walks, jumps, climbs and rides a cable on under an open wheel. Until 2026-11-18 it
+    /// was part of PlayerMovement.CombatInputLocked ("the hands are busy"), which the movement read as "the body is
+    /// held": opening the wheel stopped the character dead, on a zipline too (the user's list of that day: "콜아웃 사용 시
+    /// 캐릭터가 강제로 멈추는 현상(집라인 탑승 중 포함) 제거"), and cut a reload short.
+    /// The click that picked a slice is still down as the wheel closes; the gun does not take it for a shot because its
+    /// input asks for the trigger to be let go once it has been held from it (PlayerWeaponInput).
     /// </summary>
-    public static bool HoldsHands
-    {
-        get
-        {
-            if (IsOpen || Time.frameCount == closedFrame) return true;
-            if (swallowClick && (Mouse.current == null || !Mouse.current.leftButton.isPressed)) swallowClick = false;
-            return swallowClick;
-        }
-    }
+    public static Object Holder => instance;
 
     /// <summary>The slice the pointer is in, clockwise from the top; -1 in the middle.</summary>
     public static int Hovered => IsOpen ? instance.hovered : -1;
@@ -99,14 +93,13 @@ public sealed class CalloutWheel : MonoBehaviour
         if (IsOpen) instance.Move(mouseDelta);
     }
 
-    /// <summary>Closes it; clicked when a left click picked, so that click is kept from the gun until it is let go.</summary>
-    public static void Close(bool clicked)
+    /// <summary>Closes it and gives the view and the trigger back.</summary>
+    public static void Close()
     {
         if (!IsOpen) return;
         instance.open = false;
         instance.root.gameObject.SetActive(false);
-        closedFrame = Time.frameCount;
-        if (clicked) swallowClick = true;
+        InputHold.Release(instance);
     }
 
     private void Awake()
@@ -127,6 +120,7 @@ public sealed class CalloutWheel : MonoBehaviour
 
     private void OnDestroy()
     {
+        InputHold.Release(this);
         if (instance == this) instance = null;
     }
 
@@ -198,6 +192,8 @@ public sealed class CalloutWheel : MonoBehaviour
 
     private void Begin(string heading)
     {
+        // The view and the trigger only (see Holder): taking again while a page turns adds nothing.
+        InputHold.Take(this, Held.Look | Held.Combat);
         open = true;
         openedAt = Time.unscaledTime;
         aim = Vector2.zero;

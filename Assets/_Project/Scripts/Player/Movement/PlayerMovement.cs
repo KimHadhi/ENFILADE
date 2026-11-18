@@ -67,10 +67,20 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public PlayerExecution Execution { get; private set; }
     public PlayerPerfectDefense PerfectDefense { get; private set; }
     public DodgeEnemyPassThrough DodgePassThrough { get; private set; }
-    // The callout wheel (CalloutWheel) holds the hands too while it is up: no shot, swing or turn of the view, as G&B's;
-    // and so does a Détente's treatment by hand (DetenteKit), the surgeon's long work.
-    public bool CombatInputLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting)
-        || (PerfectDefense != null && PerfectDefense.IsCountering) || (IsLocal && (CalloutWheel.HoldsHands || DetenteKit.HoldsHands));
+    /// <summary>
+    /// The body is held where it stands by what it is doing: a guard break, an execution, a counter, a Détente's
+    /// treatment by hand (DetenteKit, the surgeon's long work). No step is taken and no state of the movement runs.
+    /// </summary>
+    public bool BodyLocked => (MeleeCombat != null && MeleeCombat.IsGuardBreaking) || (Execution != null && Execution.IsExecuting)
+        || (PerfectDefense != null && PerfectDefense.IsCountering) || (IsLocal && DetenteKit.HoldsHands);
+    /// <summary>
+    /// The hands are busy: no shot, swing, shove or turn of the view. Everything that holds the body holds the hands;
+    /// what takes the hands alone belongs here and not in BodyLocked. The two were one flag until 2026-11-18 and the
+    /// movement read "hands busy" as "body held", so the callout wheel, which only needs the mouse, stopped the
+    /// character where it stood and on a zipline. The wheel is no part of either now: it is a screen and holds the
+    /// view and the trigger through InputHold (CalloutWheel.Holder).
+    /// </summary>
+    public bool CombatInputLocked => BodyLocked;
     private WeaponController weapons;
     /// <summary>A reload has both hands on the gun, so a vault begun during one puts the gun away and stops it (ParkourTraversal).</summary>
     public bool HandsOnReload
@@ -460,7 +470,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         StateMachine.Duration += dt;
         Motor.CheckGroundedAndSlope();
         // The dead still fall, unless PlayerRagdoll has switched their capsule off.
-        if (CombatInputLocked || !IsLocal || !DamageReceiver.IsAlive)
+        if (BodyLocked || !IsLocal || !DamageReceiver.IsAlive)
         {
             Input.Sample(false);
             Actions.Momentum.Tick(dt, Vector2.zero);

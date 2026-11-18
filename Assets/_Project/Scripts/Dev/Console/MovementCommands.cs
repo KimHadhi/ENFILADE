@@ -10,6 +10,8 @@ public static class MovementCommands
     public static void Register(ChatCommandRouter router)
     {
         router.Register("input", "입력을 누가 쥐고 있는지 보기 — 화면마다 쥔 것(걷기 Move · 시야 Look · 총 Combat · 포인터 Cursor)과 지금 게임이 받는 입력 (InputHold, InputFocus)", _ => Input()); // dev-text
+        router.Register("callouts", "콜아웃 표 점검 — 없는 사실·종류·단계 이름, 말할 줄이 없는 칸, 칸이 없는 줄을 찾고, 지금 내 상황에서 맞는 사실과 휠의 칸마다 나올 줄을 Logs/callouts.txt에 쓴다 (CalloutCheck, Callouts.csv·CalloutSlots.csv)", // dev-text
+            _ => Application.isPlaying ? CalloutCheck.Write(PlayerCallouts.Local) : "이 명령어는 Play 중에 사용할 수 있습니다."); // dev-text
     }
 
     // Who holds what, and what the three questions answer for this PC's player right now. The console itself holds

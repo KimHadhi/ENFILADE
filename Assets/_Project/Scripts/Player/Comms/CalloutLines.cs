@@ -55,6 +55,16 @@ public static class CalloutLines
         byId.Clear();
     }
 
+    /// <summary>Every line, in a fixed order (by id): for whoever checks the table (CalloutCheck).</summary>
+    public static IReadOnlyList<Line> All
+    {
+        get
+        {
+            Load();
+            return lines;
+        }
+    }
+
     /// <summary>The line with this id, or null.</summary>
     public static Line Find(string id)
     {

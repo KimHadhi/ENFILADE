@@ -10,7 +10,12 @@ using UnityEngine.InputSystem;
 /// way G&amp;B's lines do: 좀비 names the zombie under the crosshair, else the most dangerous one in sight, and pings it
 /// for the team; 도와줘 says what has hold of the player; 요청 calls the team's Détente or Support by name when there is
 /// one; 클래스 tells the class's state (CHARGE ready, the syringe empty…); 이동 pins the spot looked at; 말 opens a page
-/// of eight short words. The lines, when each fits and which wins are rows of Tables/Callouts.csv (CalloutLines).
+/// of eight short words. All of that is data: the wheel's slices and pages are rows of Tables/Player/CalloutSlots.csv
+/// (a class or a moment may have a slice of its own), the lines and which wins are rows of Callouts.csv (CalloutLines),
+/// and when a slice or a line fits is a condition its row writes out of facts (CalloutWhen, CalloutFacts: the class,
+/// the campaign's phase and step, a friend down, the magazine empty, the ultimate ready ...), so a mod adds lines,
+/// slices and pages without code. The numbers the facts count by are Player.csv's Callout row.
+/// The wheel takes the view and the trigger only (CalloutWheel.Holder): the player walks on while it is up.
 ///
 /// Everyone hears the speaker's own voice from where they stand (a Voice bank clip; the Windows TTS stand-ins stay silent
 /// unless Player.csv Callout.ttsVoices turns them on), reads the words over their head (CalloutBubbles) and sees their
@@ -24,25 +29,48 @@ using UnityEngine.InputSystem;
 [DisallowMultipleComponent]
 public sealed class PlayerCallouts : MonoBehaviour
 {
-    // The wheel clockwise from the top, and the page 말 opens (Tables/Callouts.csv slots).
-    private static readonly string[] Slots = { "zombie", "move", "request", "class", "talk", "retreat", "help", "thanks" };
-    private static readonly string[] Words = { "yes", "follow", "nice", "hurry", "no", "wait", "sorry", "quiet" };
-    private const string TalkSlot = "talk", ZombieSlot = "zombie", HelpSlot = "help";
-    // Guards (s): between two of this player's callouts, before the same line again; a shout by itself also waits AutoGap
-    // after the last one, and keeps quiet when anyone said the same line within HeardGap.
-    private const float Gap = .9f, SameGap = 3f, AutoGap = 6f, HeardGap = 5f;
-    // Help is shouted this long after something takes hold, so a grab shaken off at once says nothing (s).
-    private const float HeldShout = .35f;
-    // The 말 page closes by itself when left this long (real s), as G&B's wheel can't be left open.
-    private const float PageSeconds = 6f;
-    // Looking: how far a zombie can be named (m), the cone round the crosshair it must be in (°), the reach of the crowd
-    // counted for horde and surrounded, how far a spot can be pinned; the crosshair's cast is this fat (m).
-    private const float SightReach = 45f, SightCone = 35f, HordeReach = 20f, NearReach = 4f, SpotReach = 60f, Radius = .3f;
-    private const int HordeCount = 8, NearCount = 4;
-    // Health shares: low enough to cry for help, to want a heal. How long a thanks remembers its reason (s).
-    private const float HurtShare = .35f, HealShare = .6f, ThanksSeconds = 8f;
-    // The callout voice: full within this distance, gone at that (m); a shout carries farther than a grunt.
-    private const float VoiceNear = 3f, VoiceFar = 60f, MouthHeight = 1.6f;
+    // The lines the shouts by themselves pick from (Callouts.csv slot): what a zombie is, and a cry for help. Which
+    // slices the wheel has, and on which page, is CalloutSlots' table.
+    private const string ZombieSlot = "zombie", HelpSlot = "help";
+    /// <summary>Data/Resources/Tables/Player/Player.csv, row Callout: the guards and what the facts count as a horde, hurt and so on.</summary>
+    public const string TableName = "Player", TableRow = "Callout";
+    [Tooltip("Seconds between two of this player's callouts.")]
+    public float callGap = .9f;
+    [Tooltip("Seconds before the same line can be said again.")]
+    public float sameLineGap = 3f;
+    [Tooltip("A shout by itself waits this long after the last one (s).")]
+    public float autoGap = 6f;
+    [Tooltip("A shout by itself keeps quiet when anyone said the same line within this (s).")]
+    public float heardGap = 5f;
+    [Tooltip("Help is shouted this long after something takes hold, so a grab shaken off at once says nothing (s).")]
+    public float heldShout = .35f;
+    [Tooltip("A page of the wheel other than the first closes by itself when left this long (real s), as G&B's wheel can't be left open.")]
+    public float pageSeconds = 6f;
+    [Tooltip("How far a zombie can be named (m).")]
+    public float sightReach = 45f;
+    [Tooltip("The cone round the crosshair a zombie must be in to be named (degrees).")]
+    public float sightCone = 35f;
+    [Tooltip("Awake zombies within this count toward a horde (m).")]
+    public float hordeReach = 20f;
+    [Tooltip("Awake zombies within this count as right on top of the player (m).")]
+    public float nearReach = 4f;
+    [Tooltip("How far a spot can be pinned (m).")]
+    public float spotReach = 60f;
+    [Tooltip("So many awake zombies about are a horde (the fact 'horde').")]
+    public int hordeCount = 8;
+    [Tooltip("So many awake zombies on top of the player and they are surrounded (the fact 'surrounded').")]
+    public int nearCount = 4;
+    [Tooltip("Health share under which the player is hurt enough to cry for help (the fact 'hurt').")]
+    public float hurtShare = .35f;
+    [Tooltip("Health share under which the player wants a heal (the fact 'heal').")]
+    public float healShare = .6f;
+    [Tooltip("How long a thanks remembers its reason: being freed, got up or healed (s).")]
+    public float thanksSeconds = 8f;
+    [Tooltip("The text-to-speech stand-in voices play. Read from the table where a voice is heard (Voice), on any PC; here so the row has its field.")]
+    public bool ttsVoices;
+    // The crosshair's cast is this fat (m). The callout voice: full within this distance, gone at that (m); a shout
+    // carries farther than a grunt; and where the mouth is above the feet.
+    private const float Radius = .3f, VoiceNear = 3f, VoiceFar = 60f, MouthHeight = 1.6f;
 
     /// <summary>This PC's player's.</summary>
     public static PlayerCallouts Local { get; private set; }
@@ -63,18 +91,22 @@ public sealed class PlayerCallouts : MonoBehaviour
     private InputAction key;
     private readonly RaycastHit[] hits = new RaycastHit[32];
     private readonly RaycastHit[] sight = new RaycastHit[16];
-    private readonly string[] names = new string[8], lines = new string[8];
+    private readonly string[] names = new string[CalloutSlots.Places], lines = new string[CalloutSlots.Places];
+    // The page the wheel is on, and its slices as they stand now (CalloutSlots.Resolve: a place may be empty).
+    private readonly CalloutSlots.Slot[] slices = new CalloutSlots.Slot[CalloutSlots.Places], peek = new CalloutSlots.Slot[CalloutSlots.Places];
+    private string page = CalloutSlots.FirstPage;
     private string lastLine;
     private float lastCall = -99f, lastLineAt = -99f, lastAuto = -99f;
-    private float freedAt = -99f, raisedAt = -99f, healedAt = -99f, heldSince = -1f, lastHealth = -1f, joinAt = -1f, pageAt;
-    private bool wasHeld, wasDowned, wasDead, onPage;
+    private float heldSince = -1f, lastHealth = -1f, joinAt = -1f, pageAt;
+    private bool wasHeld, wasDowned, wasDead;
     private int seed;
-    // What the player looks at now (Sense): the zombie a line would be about and whether the crosshair is on it, a spot to
-    // pin, and how many awake zombies are about and right on top of them.
-    private EnemyHealth target;
-    private bool aimed, hasSpot;
-    private Vector3 spot;
-    private int crowd, close;
+    // What the player has before them now (Sense, Track): the zombie a line would be about, a spot to pin, the crowd,
+    // and when they were last freed, got up or healed. The facts read it (CalloutFacts).
+    private readonly CalloutSense sense = new CalloutSense();
+    // Kept, so asking what fits allocates nothing each frame the wheel is up.
+    private Func<string, bool> fits;
+    private CalloutWhen.Fact fact;
+    private bool OnFirstPage => page == CalloutSlots.FirstPage;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -88,6 +120,9 @@ public sealed class PlayerCallouts : MonoBehaviour
         movement = GetComponent<PlayerMovement>();
         hold = GetComponent<PlayerHold>();
         weapon = GetComponent<WeaponController>();
+        GameTables.Bind(TableName, TableRow, this);
+        fits = Fits;
+        fact = (name, word) => CalloutFacts.Holds(sense, name, word);
     }
 
     private void OnDisable()
@@ -95,7 +130,7 @@ public sealed class PlayerCallouts : MonoBehaviour
         if (Local == this)
         {
             Local = null;
-            CalloutWheel.Close(false);
+            CalloutWheel.Close();
         }
         if (kit != null) kit.Charged -= OnCharged;
         kit = null;
@@ -130,8 +165,8 @@ public sealed class PlayerCallouts : MonoBehaviour
         var mine = Local;
         if (mine == null || enemy == null || !enemy.IsAlive) return;
         mine.Sense();
-        mine.target = enemy;
-        mine.aimed = false;
+        mine.sense.Target = enemy;
+        mine.sense.Aimed = false;
         mine.Shout(mine.Pick(ZombieSlot));
     }
 
@@ -164,9 +199,9 @@ public sealed class PlayerCallouts : MonoBehaviour
         bool dead = movement.IsDead, held = movement.IsHeld && !dead, downed = movement.IsDowned && !dead;
         if (held && !wasHeld) heldSince = Time.time;
         if (!held) heldSince = -1f;
-        if (!held && wasHeld && !dead) freedAt = Time.time;
-        if (!downed && wasDowned && !dead) raisedAt = Time.time;
-        if ((heldSince >= 0f && Time.time - heldSince >= HeldShout) || (downed && !wasDowned))
+        if (!held && wasHeld && !dead) sense.FreedAt = Time.time;
+        if (!downed && wasDowned && !dead) sense.RaisedAt = Time.time;
+        if ((heldSince >= 0f && Time.time - heldSince >= heldShout) || (downed && !wasDowned))
         {
             heldSince = -1f;
             Sense();
@@ -175,7 +210,7 @@ public sealed class PlayerCallouts : MonoBehaviour
         // Health up by another's hand (not this player's own syringe, nor coming back to life): a thanks has its reason.
         float health = movement.DamageReceiver != null ? movement.DamageReceiver.Health : 0f;
         bool ownDose = DetenteKit.Local != null && DetenteKit.Local.SinceInject < .5f;
-        if (!dead && !wasDead && lastHealth > 0f && health > lastHealth + 5f && !ownDose) healedAt = Time.time;
+        if (!dead && !wasDead && lastHealth > 0f && health > lastHealth + 5f && !ownDose) sense.HealedAt = Time.time;
         lastHealth = health;
         wasHeld = held;
         wasDowned = downed;
@@ -193,9 +228,10 @@ public sealed class PlayerCallouts : MonoBehaviour
     {
         if (key == null) key = KeyBindings.Find("Player/Callout");
         bool open = CalloutWheel.IsOpen;
+        // The wheel is a screen, not an action of the body: it closes when its key or the mouse stops being the player's.
         if (movement.IsDead || !movement.InputAvailable || !TakesInput())
         {
-            if (open) CalloutWheel.Close(false);
+            if (open) CalloutWheel.Close();
             return;
         }
         // The wheel's own pointing stays on the mouse (move to aim at a slot, left click says, right click closes): it is
@@ -206,7 +242,7 @@ public sealed class PlayerCallouts : MonoBehaviour
         if (!open)
         {
             if (!pressed) return;
-            onPage = false;
+            page = CalloutSlots.FirstPage;
             // One seed for this opening: among lines that fit equally, the one shown is the one said.
             seed = UnityEngine.Random.Range(0, 1 << 20);
             Sense();
@@ -219,83 +255,104 @@ public sealed class PlayerCallouts : MonoBehaviour
         Fill();
         CalloutWheel.Show(names, lines, Hint());
         int hovered = CalloutWheel.Hovered;
-        bool cancel = (mouse != null && mouse.rightButton.wasPressedThisFrame) || (onPage && pressed)
-            || (onPage && Time.unscaledTime - pageAt > PageSeconds);
+        bool cancel = (mouse != null && mouse.rightButton.wasPressedThisFrame) || (!OnFirstPage && pressed)
+            || (!OnFirstPage && Time.unscaledTime - pageAt > pageSeconds);
         if (cancel)
         {
-            CalloutWheel.Close(false);
+            CalloutWheel.Close();
             return;
         }
         if (mouse != null && mouse.leftButton.wasPressedThisFrame)
         {
-            if (hovered >= 0) Choose(hovered, true);
+            if (hovered >= 0) Choose(hovered);
             return;
         }
-        // The 말 page stays up after the key is let go: a word is clicked there.
-        if (!released || onPage) return;
-        if (GameSettings.Current.calloutOnRelease && hovered >= 0) Choose(hovered, false);
-        else CalloutWheel.Close(false);
+        // A page opened from the wheel (말's words) stays up after the key is let go: a slice is clicked there.
+        if (!released || !OnFirstPage) return;
+        if (GameSettings.Current.calloutOnRelease && hovered >= 0) Choose(hovered);
+        else CalloutWheel.Close();
     }
 
-    private void Choose(int index, bool clicked)
+    private void Choose(int index)
     {
-        if (!onPage && Slots[index] == TalkSlot)
+        var slot = index >= 0 && index < slices.Length ? slices[index] : null;
+        // A place nothing fits is an empty slice: pointing at it says nothing and leaves the wheel as it is.
+        if (slot == null) return;
+        if (!string.IsNullOrEmpty(slot.Opens))
         {
-            onPage = true;
+            page = slot.Opens;
             pageAt = Time.unscaledTime;
             Fill();
-            CalloutWheel.Page(names, lines, Hint(), Texts.Get("callout.slot." + TalkSlot));
+            CalloutWheel.Page(names, lines, Hint(), slot.Title);
             return;
         }
-        var line = Pick(onPage ? Words[index] : Slots[index], seed);
-        // A click that picked mustn't also fire the gun once the wheel lets go of the hands.
-        CalloutWheel.Close(clicked);
+        var line = Pick(slot.Id, seed);
+        CalloutWheel.Close();
         Say(line, false);
     }
 
-    // Each slot's name and what it would say now.
+    // The page's slices as they stand now (CalloutSlots), each with its name and what it would say.
     private void Fill()
     {
-        var slots = onPage ? Words : Slots;
-        for (int i = 0; i < slots.Length; i++)
+        CalloutSlots.Resolve(page, fits, slices);
+        for (int i = 0; i < slices.Length; i++)
         {
-            names[i] = Texts.Get("callout.slot." + slots[i]);
-            if (!onPage && slots[i] == TalkSlot)
+            var slot = slices[i];
+            names[i] = slot != null ? slot.Title : "";
+            if (slot == null) lines[i] = "";
+            else if (!string.IsNullOrEmpty(slot.Opens)) lines[i] = Preview(slot.Opens);
+            else
             {
-                lines[i] = Texts.Get("callout.slot." + Words[0]) + " · " + Texts.Get("callout.slot." + Words[4]) + " · "
-                    + Texts.Get("callout.slot." + Words[6]) + " …";
-                continue;
+                var line = Pick(slot.Id, seed);
+                lines[i] = line != null ? line.Text : "";
             }
-            var line = Pick(slots[i], seed);
-            lines[i] = line != null ? line.Text : "";
         }
     }
 
-    private string Hint() => Texts.Get(onPage ? "callout.hint.page"
+    // What a slice that opens a page shows under its name: three of that page's slices (top, bottom, lower left), as
+    // "좋아 · 안 돼 · 미안 …" tells what 말 holds.
+    private static readonly int[] PreviewPlaces = { 0, 4, 6 };
+    private readonly System.Text.StringBuilder preview = new System.Text.StringBuilder();
+    private string Preview(string opens)
+    {
+        CalloutSlots.Resolve(opens, fits, peek);
+        preview.Clear();
+        foreach (int place in PreviewPlaces)
+        {
+            if (place >= peek.Length || peek[place] == null) continue;
+            if (preview.Length > 0) preview.Append(" · ");
+            preview.Append(peek[place].Title);
+        }
+        return preview.Length > 0 ? preview.Append(" …").ToString() : "";
+    }
+
+    private string Hint() => Texts.Get(!OnFirstPage ? "callout.hint.page"
         : GameSettings.Current.calloutOnRelease ? "callout.hint.release" : "callout.hint.click");
 
-    // The wheel's key is one of the body's keys, and the wheel points with the mouse: both must be the player's (a screen
-    // with the pointer out has the mouse).
-    private static bool TakesInput() => InputFocus.TakesPlayInput() && InputFocus.TakesLook() && !GunCustomizeMenu.TakesKeyboard;
+    // The wheel's key is one of the body's keys, and the wheel points with the mouse: both must be the player's. The
+    // wheel's own hold of the view doesn't count against it (InputHold.AnyBesides); another screen's does, as the Tab
+    // board's pointer.
+    private static bool TakesInput() => InputFocus.TakesPlayInput() && !InputHold.AnyBesides(CalloutWheel.Holder, Held.Look)
+        && !GunCustomizeMenu.TakesKeyboard;
 
     // ---- Saying ----
 
-    private CalloutLines.Line Pick(string slot, int pickSeed = -1) => CalloutLines.Pick(slot, Fits, pickSeed);
+    private CalloutLines.Line Pick(string slot, int pickSeed = -1) => CalloutLines.Pick(slot, fits, pickSeed);
 
     // Says it on this PC (and, through Called, on every other): the guards first.
     private bool Say(CalloutLines.Line line, bool auto)
     {
         if (line == null) return false;
         float now = Time.time;
-        if (now - lastCall < Gap || (line.Id == lastLine && now - lastLineAt < SameGap)) return false;
-        if (auto && (now - lastAuto < AutoGap || (heard.TryGetValue(line.Id, out float at) && now - at < HeardGap))) return false;
+        if (now - lastCall < callGap || (line.Id == lastLine && now - lastLineAt < sameLineGap)) return false;
+        if (auto && (now - lastAuto < autoGap || (heard.TryGetValue(line.Id, out float at) && now - at < heardGap))) return false;
         lastCall = lastLineAt = now;
         lastLine = line.Id;
         if (auto) lastAuto = now;
-        var marked = line.MarksTarget && target != null && target.IsAlive ? target : null;
-        bool pins = line.MarksPoint && hasSpot;
-        Hear(movement, line.Id, marked, spot, pins);
-        Called?.Invoke(line.Id, marked, spot, pins);
+        var marked = line.MarksTarget && sense.Target != null && sense.Target.IsAlive ? sense.Target : null;
+        bool pins = line.MarksPoint && sense.HasSpot;
+        Hear(movement, line.Id, marked, sense.Spot, pins);
+        Called?.Invoke(line.Id, marked, sense.Spot, pins);
         return true;
     }
 
@@ -370,97 +427,40 @@ public sealed class PlayerCallouts : MonoBehaviour
 
     // ---- What fits now ----
 
-    // A row's condition (Tables/Callouts.csv when): its words are listed in the table's #설명 row.
-    private bool Fits(string when)
-    {
-        if (string.IsNullOrEmpty(when) || when == "always") return true;
-        if (when.StartsWith("kind:", StringComparison.OrdinalIgnoreCase))
-            return target != null && string.Equals(KindOf(target), when.Substring(5), StringComparison.OrdinalIgnoreCase);
-        // That kind, down on its belly crawling (a brute whose leg was shot out: its head is the way now).
-        if (when.StartsWith("crawl:", StringComparison.OrdinalIgnoreCase))
-            return target != null && target.TryGetComponent(out ZombieType crawler) && crawler.Crawls
-                && string.Equals(KindOf(target), when.Substring(6), StringComparison.OrdinalIgnoreCase);
-        switch (when)
-        {
-            case "none": return target == null;
-            case "horde": return crowd >= HordeCount;
-            case "pinned": return hold != null && hold.IsPinned;
-            case "hooked": return hold != null && hold.IsDragged;
-            case "eaten": return hold != null && hold.IsEaten;
-            case "grabbed": return movement.IsHeld;
-            case "downed": return movement.IsDowned;
-            case "surrounded": return close >= NearCount;
-            case "hurt": return HealthShare() < HurtShare;
-            case "heal": return HealthShare() < HealShare;
-            case "heal.detente": return HealthShare() < HealShare && TeamHas(PlayerClass.Detente);
-            case "ammo": return LowOnAmmo();
-            case "ammo.support": return LowOnAmmo() && TeamHas(PlayerClass.Support);
-            case "reloading": return weapon != null && weapon.Runtime != null && weapon.Runtime.IsReloading;
-            case "spot": return hasSpot;
-            case "objective": return CampaignRun.TryObjective(out _, out _, out _);
-            case "freed": return Time.time - freedAt < ThanksSeconds;
-            case "revived": return Time.time - raisedAt < ThanksSeconds;
-            case "healed": return Time.time - healedAt < ThanksSeconds;
-            case "knight.taunt": return PlayerClass.Is(PlayerClass.Knight) && ClassKit.Local != null && ClassKit.Local.TauntReady;
-            case "assault.charge": return ClassKit.Local != null && ClassKit.Local.ChargeReady;
-            case "ghost.elite": return PlayerClass.Is(PlayerClass.Ghost) && aimed && target != null && PlayerClass.IsElite(target);
-            case "detente.full": return PlayerClass.Is(PlayerClass.Detente) && DetenteKit.Local != null && !DetenteKit.Local.Empty;
-            case "detente.empty": return PlayerClass.Is(PlayerClass.Detente) && DetenteKit.Local != null && DetenteKit.Local.Empty;
-            case "schiesshund.mark": return PlayerClass.Is(PlayerClass.Schiesshund) && PingMarks.BountyOf(movement) != null;
-            case "support.full":
-                return PlayerClass.Is(PlayerClass.Support) && SupportKit.Local != null && SupportKit.Local.Supply >= SupportKit.Local.GiveCost;
-            case "support.empty":
-                return PlayerClass.Is(PlayerClass.Support) && SupportKit.Local != null && SupportKit.Local.Supply < SupportKit.Local.GiveCost;
-            // Only the wheel's own calls say these; the auto ones are found by id.
-            case "charge.lead":
-            case "charge.join":
-                return false;
-            // A class's id alone: the line is that class's.
-            default: return PlayerClass.Is(when);
-        }
-    }
+    // A row's condition (Callouts.csv and CalloutSlots.csv, column when): facts joined by & | ! (CalloutWhen), each
+    // answered by CalloutFacts from what this player has before them (sense). A word no fact answers fits nothing; the
+    // console's /callouts names every such word in the tables.
+    private bool Fits(string when) => CalloutWhen.Fits(when, fact);
 
-    private float HealthShare()
+    /// <summary>What this PC's player has before them now, freshly sensed: for the console's /callouts.</summary>
+    internal CalloutSense SenseNow()
     {
-        var receiver = movement.DamageReceiver;
-        return receiver != null ? receiver.Health / Mathf.Max(1f, receiver.MaximumHealth) : 1f;
+        Sense();
+        return sense;
     }
-
-    // The gun in hand has a magazine of supply or less left besides what is in it (WeaponData.SupplyRounds: a double
-    // barrel's two shells are not "a magazine left").
-    private bool LowOnAmmo()
-    {
-        var runtime = weapon != null ? weapon.Runtime : null;
-        return runtime != null && runtime.Data != null && runtime.ReserveAmmo <= runtime.Data.SupplyRounds;
-    }
-
-    // Someone else in the room plays this class.
-    private bool TeamHas(string classId)
-    {
-        foreach (var player in PlayerRoster.All)
-            if (player != null && player != movement && !player.IsDead && player.TryGetComponent(out PlayerTally tally)
-                && string.Equals(tally.ClassId, classId, StringComparison.OrdinalIgnoreCase))
-                return true;
-        return false;
-    }
-
-    private static string KindOf(EnemyHealth enemy)
-        => enemy != null && enemy.TryGetComponent(out ZombieType type) ? type.Kind.ToString().ToLowerInvariant() : "shambler";
 
     // How dangerous a kind is to call out: the order of its own line.
-    private static int Rank(EnemyHealth enemy) => CalloutLines.OrderOf(ZombieSlot, "kind:" + KindOf(enemy));
+    private static int Rank(EnemyHealth enemy) => CalloutLines.OrderOf(ZombieSlot, "kind:" + CalloutSense.KindOf(enemy));
 
     // What the player looks at: the enemy under the crosshair, else the most dangerous zombie in sight (the nearest of
     // equals); the spot looked at when no enemy is; and how many awake zombies are about.
     private void Sense()
     {
-        target = null;
-        aimed = hasSpot = false;
-        crowd = close = 0;
+        sense.Speaker = movement;
+        sense.Hold = hold;
+        sense.Weapon = weapon;
+        sense.HordeCount = hordeCount;
+        sense.NearCount = nearCount;
+        sense.HurtShare = hurtShare;
+        sense.HealShare = healShare;
+        sense.ThanksSeconds = thanksSeconds;
+        sense.Target = null;
+        sense.Aimed = sense.HasSpot = false;
+        sense.Crowd = sense.Close = 0;
         var eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return;
         Vector3 from = eyes.position, ahead = eyes.forward;
-        int count = Physics.SphereCastNonAlloc(from, Radius, ahead, hits, SightReach + 75f, ~0, QueryTriggerInteraction.Ignore);
+        int count = Physics.SphereCastNonAlloc(from, Radius, ahead, hits, sightReach + 75f, ~0, QueryTriggerInteraction.Ignore);
         float nearest = float.PositiveInfinity;
         RaycastHit first = default;
         for (int i = 0; i < count; i++)
@@ -475,38 +475,38 @@ public sealed class PlayerCallouts : MonoBehaviour
                 first = hit;
             }
         }
+        EnemyHealth aimedAt = null;
         if (first.collider != null)
         {
             var enemy = first.collider.GetComponentInParent<EnemyHealth>();
-            if (enemy != null && enemy.IsAlive)
+            if (enemy != null && enemy.IsAlive) aimedAt = enemy;
+            else if (enemy == null && first.distance <= spotReach && first.collider.GetComponentInParent<PlayerMovement>() == null)
             {
-                target = enemy;
-                aimed = true;
-            }
-            else if (enemy == null && first.distance <= SpotReach && first.collider.GetComponentInParent<PlayerMovement>() == null)
-            {
-                spot = first.point;
-                hasSpot = true;
+                sense.Spot = first.point;
+                sense.HasSpot = true;
             }
         }
         int best = int.MinValue;
-        float bestDistance = float.PositiveInfinity, cone = Mathf.Cos(SightCone * Mathf.Deg2Rad);
+        float bestDistance = float.PositiveInfinity, cone = Mathf.Cos(sightCone * Mathf.Deg2Rad);
+        EnemyHealth seen = null;
         foreach (var enemy in EnemyHealth.Living)
         {
             if (enemy == null || !enemy.IsAlive) continue;
             float distance = Vector3.Distance(enemy.transform.position, transform.position);
             bool awake = !enemy.TryGetComponent(out ZombieMind mind) || mind.IsAwake;
-            if (awake && distance < HordeReach) crowd++;
-            if (awake && distance < NearReach) close++;
-            if (aimed || distance > SightReach) continue;
+            if (awake && distance < hordeReach) sense.Crowd++;
+            if (awake && distance < nearReach) sense.Close++;
+            if (aimedAt != null || distance > sightReach) continue;
             Vector3 body = enemy.transform.position + Vector3.up * 1.2f;
             if (Vector3.Dot((body - from).normalized, ahead) < cone) continue;
             int rank = Rank(enemy);
             if (rank < best || (rank == best && distance >= bestDistance) || !InSight(from, body, enemy)) continue;
             best = rank;
             bestDistance = distance;
-            target = enemy;
+            seen = enemy;
         }
+        sense.Target = aimedAt != null ? aimedAt : seen;
+        sense.Aimed = aimedAt != null;
     }
 
     // Nothing but this player stands between the eyes and the enemy's body.

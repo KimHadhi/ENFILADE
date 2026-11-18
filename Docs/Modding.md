@@ -65,7 +65,7 @@ M1911,15,                                       Move.runSpeed,7.5
 | 폴더 | 표 | 무엇 |
 | --- | --- | --- |
 | `Core` | Texts, Fonts, SettingsDefaults, Loading, Network, Chat, MenuTicker | 화면 글자와 번역, 글꼴 역할, 설정 기본값, 로딩, 방 설정, 채팅 모양, 메뉴 소식 |
-| `Player` | Player, Downed, Spectate, ThirdPerson, LowHealth, DeathScreen, Callouts, Poke, BodyShapes, DownedAura, HoldReveal | 이동·자세·체력·주먹·몸 수치, 쓰러짐과 부활, 관전, 3인칭, 콜아웃, 가리키기 |
+| `Player` | Player, Downed, Spectate, ThirdPerson, LowHealth, DeathScreen, Callouts, CalloutSlots, Poke, BodyShapes, DownedAura, HoldReveal | 이동·자세·체력·주먹·몸 수치, 쓰러짐과 부활, 관전, 3인칭, 콜아웃, 가리키기 |
 | `Weapons` | Weapons, Magazines, Scopes, Tracer, GunSkins, GunGrips, GunHands, Holsters, CloseHold, FPSBody, ImpactEffects, ShootOverCover, CrosshairPresets, WeaponIcons, WeaponIconSpans, WeaponSlots, KillCounter | 총의 피해·연사·탄창·반동, 조준경, 예광탄, 스킨, 쥐는 손, 탄착 효과, 조준점, 아이콘 |
 | `Melee` | Combos, Executions, ClassKnives | 주먹 콤보, 처형·암살, 클래스 칼 |
 | `Grenades` | Grenades, GrenadeRules, ThrowArms | 투척물의 수치와 규칙 |
@@ -84,6 +84,16 @@ M1911,15,                                       Move.runSpeed,7.5
 - 같이 하는 사람은 모두 같은 모드를 넣는다. 숫자 대부분은 방장이 정하지만 화면은 각자 자기 표로 그린다.
 - 표에 적힌 이름이 틀리면(없는 칸, 숫자 자리에 글자) 게임은 그 칸만 건너뛰고 콘솔에 `[Tables]` 경고를 남긴다.
 - 같은 이름의 표가 한 모드 안에 두 번 있으면 먼저 찾은 것만 쓰고 `[Mods]` 경고를 남긴다.
+
+### 콜아웃 줄·칸 더하기 (2026-11-18)
+
+콜아웃은 표 둘이다. `Callouts`는 말할 줄이다(한 줄 = 한 마디: 어느 칸의 줄인지 `slot`, 언제 맞는지 `when`, 여럿이 맞을 때 누가 이기는지 `order`). `CalloutSlots`는 휠의 칸이다(어느 쪽 `page`의 몇 번째 자리 `place`인지, 언제 그 자리에 있는지 `when`, 고르면 여는 쪽 `opens`).
+
+- `when`은 사실을 이어 쓴다: `a & b`(둘 다), `a | b`(어느 하나), `!a`(아닐 때). 비우면 늘. 예: `class:knight & taunt.ready`, `friend.down & !grabbed`, `phase:assault | horde`, `step:generator & class:support`. 쓸 수 있는 사실은 Callouts.csv 둘째 줄(#설명)에 모두 적혀 있다(코드: `CalloutFacts`).
+- 한 클래스나 한 상황만의 칸: CalloutSlots에 같은 `place`로 `when`을 쓰고 `order`가 더 큰 줄을 더한다. 조건이 맞는 동안 그 줄이 그 자리를 차지한다.
+- 쪽을 더하기: 어느 칸의 `opens`에 새 쪽 이름을 쓰고, `page`가 그 이름인 칸들을 더한다(자리 0~7).
+- 줄의 글자는 Texts id나 글자 그대로, 목소리는 `Art/Audio/Voice/<캐릭터>/Callout/<줄 id>/`의 소리다. 소리가 없으면 입 모양만 움직인다.
+- 표를 고친 뒤 콘솔 `/callouts`를 치면 `Logs/callouts.txt`에 없는 사실 이름, 말할 줄이 없는 칸, 칸이 없는 줄, 그리고 지금 상황에서 칸마다 나올 줄이 적힌다. 모르는 사실이 든 줄은 맞지 않는 것으로 친다.
 
 ## 2. 아바타 모드 (0.9.49)
 
