@@ -8,12 +8,13 @@
 
 | 폴더 | 스크립트 | 무엇 |
 | --- | ---: | --- |
-| [Console](Console/) | 6 | 개발자 콘솔과 명령 |
+| [Console](Console/) | 7 | 개발자 콘솔과 명령 |
 
 ## 무엇을 고치려면 어디를
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
+| 두 손이 누구 것인지 보기 (`/hands`: 왼손과 오른손의 주인, 서 있는 쓰임과 우선순위, 마지막으로 바뀐 것과 거절된 것. `/hands table` 표의 줄, `/hands take <줄>`·`/hands state <줄>`로 쓰임을 억지로 걸어 보고 `/hands give`로 그만둔다. 바뀜과 거절은 `Logs/hands.txt`에도 한 줄씩. 표와 규칙만 따로: `python Tools/Checks/hands_check.py`, `Logs/hands-check.txt`) | [HandCommands](Console/HandCommands.cs), [HandOwner](../Player/Hands/HandOwner.cs), [설계](../../../../Docs/Features/Hands.md) |
 | F 키가 누구 것인지 보기 (`/interact`: F로 하는 일의 순서(표, 모드가 얹은 줄 포함), 지금 나선 것과 맨 앞, 마지막 누름을 누가 가져갔고 누가 거절했는지. 누름마다 `Logs/interact.txt`에도 한 줄. 표와 규칙만 따로: `python Tools/Checks/interact_key_check.py`) | [InteractKey](../UI/Shared/InteractKey.cs)의 `Dump`·`Record`, [GameCommands](Console/GameCommands.cs) |
 | 기울이기 점검 (`/lean`: Q/E를 누르지 않아도 기울기를 오른쪽 끝·왼쪽 끝까지 저절로 줬다 풀면서 두 발목이 디딘 자리에서 밀린 거리(1cm 아래면 제자리), 골반·눈이 옆으로 간 거리, 골반이 내려간 거리를 Logs/lean-probe.txt에 한 줄로 쓴다. 맨손·주먹·총, 서서·앉아서, 캐릭터마다 한 번씩. 재는 4.5초 동안 움직이거나 시선을 돌리지 않는다) | [LeanProbe](LeanProbe.cs), [MovementCommands](Console/MovementCommands.cs), [FootPlanting](../Player/Body/Feet/FootPlanting.cs)의 `Hold` |
 | 렛지 점검 (`/ledge`: 선 자리에서 발 높이를 올려 가며 앞의 턱이 렛지인지·어느 윗면인지·올라설 수 있는지·아니면 왜인지. 플레이 중 잡은 렛지와 거절한 이음매는 Logs/ledge-probe.txt. 플레이 없이 씬 전체는 에디터 `ENFILADE → 이동 → 렛지 훑기` → Logs/ledge-sweep.txt) | [MovementCommands](Console/MovementCommands.cs), [LedgeFinder](../Player/Movement/Parkour/LedgeFinder.cs), [LedgeSweep](../Player/Movement/Parkour/LedgeSweep.cs) |

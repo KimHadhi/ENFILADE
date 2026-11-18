@@ -18,7 +18,7 @@
 | [Camera](Camera/) | 9 | 시점, 카메라 효과, 3인칭·관전 |
 | [Comms](Comms/) | 7 | 콜아웃과 핑 |
 | [Face](Face/) | 8 | 표정과 입 모양 |
-| [Hands](Hands/) | 3 | 손의 주인: 왼손과 오른손이 지금 누구 것인지를 한 곳이 정한다 ([설계](../../../../Docs/Features/Hands.md)). 쓰임의 표([HandUses](Hands/HandUses.cs), `Tables/Player/HandUses.csv`), 규칙([HandBoard](Hands/HandBoard.cs)), 플레이 없는 점검([HandsCheck](Hands/HandsCheck.cs), `Tools/Checks/hands_check.py`). 손을 직접 놓는 IK는 [Body/Hands](Body/Hands/)의 것이다 |
+| [Hands](Hands/) | 4 | 손의 주인: 왼손과 오른손이 지금 누구 것인지를 한 곳이 정한다 ([설계](../../../../Docs/Features/Hands.md)). 플레이어마다의 주인([HandOwner](Hands/HandOwner.cs): 손을 쓰는 것은 여기에 달라고 하고 여기에 묻는다. `Logs/hands.txt`, 콘솔 `/hands`), 쓰임의 표([HandUses](Hands/HandUses.cs), `Tables/Player/HandUses.csv`), 규칙([HandBoard](Hands/HandBoard.cs)), 플레이 없는 점검([HandsCheck](Hands/HandsCheck.cs), `Tools/Checks/hands_check.py`). 손을 직접 놓는 IK는 [Body/Hands](Body/Hands/)의 것이다 |
 | [Life](Life/) | 12 | 체력·피격·쓰러짐·부활·붙잡힘, 내 화면의 피해 표시, 점수판에 가는 그 사람의 숫자와 그 사람의 색 |
 | [Movement](Movement/) | 4 | 이동 상태 기계, 파쿠르, 회피 ([이동 코드 구조](Movement/README.md)) |
 | [Movement/Actions](Movement/Actions/) | 4 |  |

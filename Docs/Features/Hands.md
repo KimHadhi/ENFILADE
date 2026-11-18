@@ -14,7 +14,7 @@
 | --- | --- |
 | 오늘 손을 쓰는 것 조사 (2장) | 끝 (코드에서 읽음. 지으면서 지워지는 것은 4장에 표시) |
 | 모델 (3장) | 승인됨 (2026-11-18). 사용자의 답 다섯은 8장 |
-| 짓기 (5장) | 1번 끝: 표와 규칙과 플레이 없는 점검이 있고, 게임은 아직 아무것도 묻지 않는다 |
+| 짓기 (5장) | 2번까지 끝: 표, 규칙, 플레이 없는 점검, 플레이어마다의 주인과 기록과 콘솔이 있고, 게임은 아직 아무것도 묻지 않는다 |
 
 ## 1. 한눈에
 
@@ -337,7 +337,7 @@
 | # | 무엇 | 건드리는 곳 (원래 맡은 세션) | 게임 | 상태 |
 | ---: | --- | --- | --- | --- |
 | 1 | 표, 규칙(순수 함수), 플레이 없는 점검 | 새 파일: `Tables/Player/HandUses.csv`, `Scripts/Player/Hands/`의 `HandUses`·`HandBoard`·`HandsCheck`, `Tools/Checks/hands_check.py` | 그대로 (아무도 안 부른다) | **끝** (2026-11-18) |
-| 2 | 주인, 기록, 콘솔 `/hands` | 새 파일: `HandOwner`, `Dev/Console/HandCommands.cs` | 그대로 (아무도 안 묻는다) | |
+| 2 | 주인, 기록, 콘솔 `/hands` | 새 파일: `HandOwner`, `Dev/Console/HandCommands.cs`. `GameCommands`에 한 줄 | 그대로 (아무도 안 묻는다) | **끝** (2026-11-18) |
 | 3 | 몸과 기능의 사실을 주인에게 말하는 어댑터, 그리고 **그림자 대조**: 주인의 답이 지금의 `HandForced`·`TraversalHands`·`CombatInputLocked`와 다르면 기록에 한 줄 | 새 파일 하나 | 그대로. 사용자의 평소 플레이 한 번이면 내가 기록으로 대조한다 | |
 | 4 | **수류탄과 총** (사용자의 예): 수류탄이 주인에게 묻고, 총이 장전 전에 묻는다. V는 두 손이 총에 있을 때만 총으로 민다. `HandForced`·`BodyThrows`·`KeepHandFree`·`TakeHandFromGun`·`GrenadeArm.Free` 삭제 | `Grenades/*`(클래스 HUD), `WeaponController`의 새 부분 파일과 `Frame.cs`의 몇 줄(총기 B), `PlayerCombatActions`의 한 줄 | **바뀜**: 수류탄을 든 채의 장전이 시작하지 않는다. 수류탄을 든 채의 V는 발차기다. 한 칸 올라서기에서 수류탄이 남는다. 살펴보는 중에 수류탄을 꺼내면 살펴보기가 끝난다 | |
 | 5 | 나머지 왼손 넷과 콜아웃 팔. 손이 없으면 주사·수리가 안 된다. `HandBusy` 삭제, `Free` 넷 삭제. 이때부터 `LendOffHand`를 부르는 곳이 주인 하나 | `PointArm`·`PlayerPoint`, `InjectArm`·`DetenteKit`(의상·주사기), `RepairArm`·`SupportKit`(클래스 HUD), `GuardPoseArm`(근접·처형), `CalloutGesture` | **바뀜**: 손이 없으면 주사·수리가 안 된다(약이 줄지 않는다). 장전과 주사는 먼저 시작한 쪽이, 수리는 장전에게 내준다. 총으로 밀치는 동안 가리키기가 끝난다 | |
@@ -355,8 +355,8 @@
 
 1. **복제 검사 `python Tools/Checks/hands_check.py`** (Unity 없이 돈다. 있다): `HandBoard`의 규칙을 줄 그대로 옮겨 진짜 표 위에서 돌린다. 표의 칸마다 게임이 읽는 말인지, 코드가 이름 붙인 줄이 표에 다 있는지, 사용자의 예, 사용자의 답 넷, 오늘의 순서 26가지, 쓰임의 모든 쌍(둘 중 하나가 서 있고 다른 하나가 달라거나 말할 때), 무작위 4000판(필요한 손 없이 서 있는 것이 없고, 원하는 것이 있는데 비어 있는 손이 없고, 약한 것이 센 것 위에서 손을 쥐고 있지 않다). 끝에 `ALL CHECKS PASSED`. 그리고 `Logs/hands-matrix.txt`에 **누가 누구의 손을 가져가나** 표를 쓴다: 표만 보고 우선순위를 고칠 수 있게.
 2. **에디터 점검 `Logs/hands-check.txt`** (플레이 없음. 있다): 같은 장면을 게임의 C# 규칙 그대로 돌린다(`HandsCheck`). 스크립트를 다시 읽을 때마다 저절로 돌고, ENFILADE → 입력 → 손의 주인 규칙 점검, 또는 `Temp/enfilade-handscheck.request` 파일로도 돈다. 첫 줄이 `ALL KEPT`인지 몇 건이 깨졌는지를 말한다. 1번과 답이 다르면 둘 중 하나가 틀린 것이다.
-3. **콘솔 `/hands`** (플레이 중. 2번 커밋): 두 손의 주인, 살아 있는 쓰임과 우선순위, 마지막 거절들. `/hands take <id>`와 `/hands give`로 쓰임을 억지로 걸어 본다(매달리지 않고도 "두 손을 빼앗김"을 본다).
-4. **기록 `Logs/hands.txt`** ("손 기록 봐 줘". 2번 커밋): 손의 주인이 바뀔 때 한 줄, 거절될 때 한 줄(같은 거절은 바뀔 때까지 한 번만). 3번 커밋의 그림자 대조 줄도 여기에 간다.
+3. **콘솔 `/hands`** (플레이 중. 있다): 두 손의 주인, 서 있는 쓰임과 우선순위, 마지막으로 바뀐 것과 거절된 것. `/hands table`은 표의 줄. `/hands take <줄>`은 그 쓰임을 달라고 해 보고 `/hands state <줄>`은 사실로 말해 보며 `/hands give`로 그만둔다: `/hands state move.climb`이면 매달리지 않고도 "두 손을 빼앗김"을 본다.
+4. **기록 `Logs/hands.txt`** ("손 기록 봐 줘". 있다): 이 PC의 플레이어의 손이 주인을 바꿀 때 한 줄, 거절될 때 한 줄(같은 거절은 무언가 바뀔 때까지 한 번만). 에디터와 개발 빌드에서만 쓴다. 3번 커밋의 그림자 대조 줄도 여기에 간다.
 5. **감사 규칙** (`Tools/Check-Code.ps1 audit`. 8번 커밋), 입력의 주인에 둔 것과 같은 식으로:
    - `LendOffHand`를 주인 밖에서 부른다.
    - 팔을 세우는 클래스(`PathArm`을 잇거나 `ArmBones`·`ArmIK`를 가진 것) 안에서 `IsDead`·`IsDowned`·`IsHeld`·`IsParkour`·`CombatInputLocked`·`IsReloading`·`AimBlend`를 읽는다: 손이 비었는지를 몸의 사실에서 다시 따지는 것.
