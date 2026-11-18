@@ -208,10 +208,13 @@ public static partial class CampaignMaps
         SlabWith(b, "B4 지붕", AptRoof, AptIn0, AptIn1, AptS0, AptN1, null, null, flights, (AptIn0, 90.3f, 2f, 10f));
     }
 
+    // How deep a stair's landing is (m): a body's width and room to turn, as the doors are. The walk mesh follows
+    // it now that it is baked for a zombie's body (GreyboxBuilder.Walk); baked for Unity's metre-wide agent it kept
+    // one voxel there or none, and each storey of the block was an island no zombie left by the stairs.
     private const float Landing = 1.2f;
 
     // The holes through a storey's floor down to the one below, two places each (AptVariants keeps one open a run). Each
-    // leaves a way round it wide enough for a zombie (0.5 m round): the 3rd floor's first hole was in flat 2's front room
+    // leaves a way round it wide enough for the walk mesh (GreyboxBuilder.Walk): the 3rd floor's first hole was in flat 2's front room
     // between its sofa and the stairs' wall, 1.0 and 1.2 m either side, and cut the flat's back room off from its door
     // (the rebuild of 11-14: 'B4 3층 바닥 6', the floor beside it, with no walk mesh); now it is in the back room's
     // corner by the stairs.

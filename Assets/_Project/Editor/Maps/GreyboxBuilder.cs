@@ -584,21 +584,6 @@ public sealed partial class GreyboxBuilder
     // counts, the rooftops (12 m and more) over the street don't.
     private const float DropHeight = 9f, JumpGap = 1.6f;
 
-    // The project's walk-mesh agent (type 0, what the zombies use) gets links down ledges and across gaps.
-    private static void AllowDrops()
-    {
-        var settings = new SerializedObject(Unsupported.GetSerializedAssetInterfaceSingleton("NavMeshProjectSettings"));
-        var agents = settings.FindProperty("m_Settings");
-        for (int i = 0; agents != null && i < agents.arraySize; i++)
-        {
-            var agent = agents.GetArrayElementAtIndex(i);
-            if (agent.FindPropertyRelative("agentTypeID").intValue != 0) continue;
-            agent.FindPropertyRelative("ledgeDropHeight").floatValue = DropHeight;
-            agent.FindPropertyRelative("maxJumpAcrossDistance").floatValue = JumpGap;
-        }
-        settings.ApplyModifiedPropertiesWithoutUndo();
-    }
-
     /// <summary>Adds the waves, bakes the walk mesh, marks what never moves static, saves the scene, bakes its occlusion
     /// culling and puts it in the build.</summary>
     public void Finish(string summary)
@@ -625,8 +610,8 @@ public sealed partial class GreyboxBuilder
         // surface is baked again from its own button.
         surface.minRegionArea = TopRegionArea;
         // Friend feedback C5: zombies drop off ledges and hop small gaps to reach players (ZombieDrop walks the links),
-        // so no ledge is a safe spot.
-        AllowDrops();
+        // so no ledge is a safe spot. And the mesh is baked for a zombie's own body (GreyboxBuilder.Walk).
+        FitWalkAgent();
         var links = new SerializedObject(surface);
         links.FindProperty("m_GenerateLinks").boolValue = true;
         links.ApplyModifiedPropertiesWithoutUndo();

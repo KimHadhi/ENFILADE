@@ -8,14 +8,15 @@ using UnityEngine.SceneManagement;
 // GreyboxBuilder: Small props (the user's memo 48: "좀비가 못 올라가는 작은 소품"). One part of the class; the rest is in GreyboxBuilder.cs and the files beside it.
 public sealed partial class GreyboxBuilder
 {
-    // The zombies' walk mesh (agent type 0: radius .5 m, step .75 m) has nothing on a top narrower than about twice the
-    // radius, and Unity dropped every walk region under 2 m², so a 2×2 m box's top had none either. ZombieDrop climbs
+    // The zombies' walk mesh (agent type 0: a zombie's body round, GreyboxBuilder.Walk; step .75 m) has nothing on a
+    // top narrower than twice what the bake trims off a side (WalkTrim), and Unity dropped every walk region under
+    // 2 m², so a 2×2 m box's top had none either. ZombieDrop climbs
     // only onto walk mesh, so a player standing on such a prop was beyond every zombie. Now: small regions stay
     // (TopRegionArea); a narrow top a zombie could climb to gets a thin walk slab in the bake only (no collider, so
     // players and shots never meet it); a top low enough is within a zombie's arm from the floor anyway; and CheckProps
     // names in the console whatever is still out of reach, so the layout can be changed (lower it to ArmHeight, or
     // past AgentHeight so a slab can go on it).
-    private const float AgentRadius = .5f, AgentHeight = 2f, StepHeight = .75f, PlayerHeight = 1.8f;
+    private const float AgentHeight = 2f, StepHeight = .75f, PlayerHeight = 1.8f;
 
     // A zombie's arm reaches a player standing on a narrow top up to this high over the floor it stands on
     // (EnemyCombatAI.attackRange 2 m, feet to feet, from the edge of its walk mesh); ZombieDrop climbs at most
@@ -24,11 +25,6 @@ public sealed partial class GreyboxBuilder
 
     // The smallest walk region kept (m²), the width of a narrow top's walk strip (m) and of its slab (m).
     private const float TopRegionArea = .25f, NarrowStrip = .5f, SlabThickness = .05f;
-
-    // What the bake's voxels (a third of the agent's radius) may take off a strip besides the radius (m): a top that leaves
-    // exactly NarrowStrip had walk mesh or not by where the voxels fell (the rebuild of 11-14: of the toll plaza's three
-    // booths, 2 × 1.5 m, two had it and '요금소 0' had none). The strip a top needs and the slab it gets both allow for it.
-    private const float VoxelMargin = .35f;
 
     // Tops larger than this are places (roofs, decks, floors) with their own ways up, not props (m²).
     private const float PropArea = 60f;
@@ -65,7 +61,7 @@ public sealed partial class GreyboxBuilder
             else { bounds = solid.bounds; any = true; }
         }
         bounds.Expand(4f);
-        var data = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(surface.GetBuildSettings(), sources, bounds, terrain.position, terrain.rotation);
+        var data = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(WalkSettings(surface.GetBuildSettings()), sources, bounds, terrain.position, terrain.rotation);
         surface.RemoveData();
         surface.navMeshData = data;
         if (data == null) return slabs;
@@ -88,7 +84,7 @@ public sealed partial class GreyboxBuilder
             float height = prop.Box.max.y - FloorUnder(prop);
             if (height < AgentHeight || height > ClimbMost || HasRoomToWalk(prop)) continue;
             Vector3 size = prop.Size, top = prop.Box.center + Vector3.up * (size.y * .5f - SlabThickness * .5f);
-            float minimum = 2f * AgentRadius + NarrowStrip + VoxelMargin;
+            float minimum = 2f * WalkTrim + NarrowStrip;
             sources.Add(new NavMeshBuildSource
             {
                 shape = NavMeshBuildSourceShape.Box,
@@ -135,7 +131,7 @@ public sealed partial class GreyboxBuilder
             }
             // A top so wide that a player in its middle stands farther than ClimbNear from any zombie at its foot: not
             // wrong (zombies come up at its edge), so the closing window names it and the console stays quiet.
-            if (Mathf.Min(prop.Size.x, prop.Size.z) * .5f + AgentRadius > ClimbNear) wideTops.Add(prop.Shape.name);
+            if (Mathf.Min(prop.Size.x, prop.Size.z) * .5f + WalkRadius > ClimbNear) wideTops.Add(prop.Shape.name);
         }
         return stranded;
     }
@@ -166,7 +162,7 @@ public sealed partial class GreyboxBuilder
     // trimmed the agent's radius off every edge.
     private static bool HasRoomToWalk(Block prop)
     {
-        float x = prop.Size.x - 2f * AgentRadius - VoxelMargin, z = prop.Size.z - 2f * AgentRadius - VoxelMargin;
+        float x = prop.Size.x - 2f * WalkTrim, z = prop.Size.z - 2f * WalkTrim;
         return x >= NarrowStrip && z >= NarrowStrip && x * z >= 2f * TopRegionArea;
     }
 

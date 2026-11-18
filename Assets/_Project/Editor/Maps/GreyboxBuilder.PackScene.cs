@@ -237,7 +237,7 @@ public sealed partial class GreyboxBuilder
         if (!PackFloorUnder(new Vector3(middle.x, bottom, middle.z), out float floor) || bottom - floor > PackStandsWithin) return;
         float height = bottom - floor + size.y, top = floor + height;
         float room = PackRoomOver(new Vector3(middle.x, top, middle.z));
-        bool narrow = Mathf.Min(size.x, size.z) < 2f * AgentRadius + NarrowStrip;
+        bool narrow = Mathf.Min(size.x, size.z) < 2f * WalkRadius + NarrowStrip;
         bool cap = height > ArmHeight && (narrow || room < AgentHeight);
         if (!cap && height > SolidBandLow && height < SolidBandTop)
             height = height < SolidBandLow + SolidBandSink ? SolidBandLow : SolidBandTop;
