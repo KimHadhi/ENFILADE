@@ -28,9 +28,13 @@ public sealed partial class SupportKit
         if (!Holds(planKind)) planKind = Barricade.Kind.Planks;
         if (!planning) return;
         // F throws a supply pack to the friend under the crosshair (the throw card), else goes on to the next kind this
-        // Support holds.
+        // Support holds. While the plan is up F is the plan's alone: it is said to the key's one owner (InteractKey), where
+        // it stands before everything else F does, so the press that chooses the kind no longer also takes the pickup
+        // looked at (a gun on the ground was swapped in), starts getting a friend up or a takedown, or pings: until
+        // 2026-11-18 this read the key for itself and nothing told the others F was the plan's.
         AimToss();
-        if (interact != null && interact.WasPressedThisFrame())
+        InteractKey.Offer(PlanOffer, target: Tossable);
+        if (InteractKey.Pressed(PlanOffer))
         {
             if (Tossable != null)
             {

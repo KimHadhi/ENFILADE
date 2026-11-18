@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// The hub (memo 46, the user's answer: a walkable 3D hideout where guns can be fired, working like a room lobby: the
@@ -42,7 +41,6 @@ public sealed partial class HubLobby : MonoBehaviour
     private readonly HashSet<ulong> ready = new HashSet<ulong>();
     private readonly List<ulong> gone = new List<ulong>();
     private NetworkManager network;
-    private InputAction interact;
     private CampaignScreen screen;
     private MissionTracker tracker;
     private HubPanel panel;
@@ -57,8 +55,17 @@ public sealed partial class HubLobby : MonoBehaviour
     public static bool IsActive => active != null;
     /// <summary>The chapter the party will set off to.</summary>
     public static string Chapter => active != null ? active.chapter : "";
-    /// <summary>A station is looked at, so F works it: nothing else takes that F (PlayerPing, as CampaignRun.Offering).</summary>
-    public static bool Offering => active != null && active.aimed != null && !ResultsShow.IsPlaying;
+    /// <summary>
+    /// Working the station looked at with F, as the interact key's one owner knows it (InteractKey; its place among
+    /// everything else F does is its row in Tables/Player/InteractKey.csv).
+    /// </summary>
+    public const string StationOffer = "hub.station";
+
+    // A station is worked unless the results are playing or the mirror's dressing spot is open (or was shut by this very
+    // [F]). Whether the key is the player's at all (a screen has the body's keys, the window is in the background, the
+    // console, the shop or the perk cards have the keyboard) and whether a press is a station's is the key's owner's
+    // to say. Until 2026-11-18 this asked whether the pointer was locked, then InputFocus for itself.
+    private static bool StationsOpen => !ResultsShow.IsPlaying && !HubDressing.TakesKeyboard;
 
     private bool IsHost => network == null || network.IsServer;
     private ulong MySeat => network != null && network.IsListening ? network.LocalClientId : 0UL;
@@ -93,7 +100,6 @@ public sealed partial class HubLobby : MonoBehaviour
 
     private void Start()
     {
-        interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         screen = gameObject.AddComponent<CampaignScreen>();
         tracker = SceneOne<MissionTracker>.Get();
         panel = HubPanel.Make();
@@ -293,10 +299,4 @@ public sealed partial class HubLobby : MonoBehaviour
         shownParty = -1;
         if (tracker != null) tracker.ClearObjective();
     }
-
-    // F at a station is a key of the body: not while a screen has the body's keys (chat, menus), the window is in the
-    // background, the console, the shop or the perk cards have the keyboard (InputFocus.TakesPlayInput), the results are
-    // playing, or the mirror's dressing spot is open (or was shut by this very [F]). Until 2026-11-18 this asked whether
-    // the pointer was locked, so a board's pointer, which leaves the legs to the player, stopped the stations too.
-    private static bool TakesInput() => InputFocus.TakesPlayInput() && !ResultsShow.IsPlaying && !HubDressing.TakesKeyboard;
 }

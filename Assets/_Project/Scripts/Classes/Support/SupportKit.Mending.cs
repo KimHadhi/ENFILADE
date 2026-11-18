@@ -107,14 +107,13 @@ public sealed partial class SupportKit
         nextMendSend = Time.time + MendEvery;
     }
 
+    // The hands are the Support's own: not in a takedown, no shop counter open. What else F might do here is not asked
+    // (a takedown on offer, a pickup, a friend to get up, a ladder's top, the mission's prompts were each asked by name
+    // until 2026-11-18): that they come before a resupply and the hammer is the interact key's order (InteractKey).
     private bool HandsFree()
     {
         var execution = movement.Execution;
-        if (execution != null && (execution.IsExecuting || execution.Candidate != null)) return false;
-        if (FieldPickups.Targeting) return false;
-        if (TryGetComponent(out PlayerRevive revive) && revive.Candidate != null) return false;
-        if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return false;
-        return !CampaignRun.Offering && !TowerRun.Offering && !ShopMenu.IsOpen;
+        return (execution == null || !execution.IsExecuting) && !ShopMenu.IsOpen;
     }
 
     private static string NameOf(PlayerMovement player)

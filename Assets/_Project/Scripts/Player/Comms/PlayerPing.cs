@@ -1,11 +1,11 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// F on an enemy (stage 3 of the classes; the user's rule, 2026-11-11: "F가 상호작용이든 … 처형이나 암살로 이어질 거면
 /// 거기서 바로 넘어가는데 그런 거 아니면 걍 적 찍게"). When F has nothing else to do here (no execution or takedown, no
-/// pickup, no friend to get up, no ladder top, no button, door, can or shop counter), it pings the enemy the crosshair is
+/// pickup, no friend to get up, no ladder top, no button, door, can or shop counter: whatever offers itself to the
+/// interact key's one owner, InteractKey, where the ping is the last of all), it pings the enemy the crosshair is
 /// on, Back 4 Blood's way: the whole team sees it outlined, through walls too, with a diamond and its distance over it
 /// (PingMarks). A Schießhund's ping is its teal bounty mark, which its class hunts (ClassKit), unless the foe is a lesser
 /// quarry than the one it already hunts: that one is a plain ping (PlayerClass.Grade). The free hand points at it for a
@@ -28,6 +28,11 @@ using UnityEngine.InputSystem;
 public sealed class PlayerPing : MonoBehaviour
 {
     private const string Row = "Ping";
+    /// <summary>
+    /// The ping, and the point when held: what F does with nothing else to do, as the interact key's one owner knows it
+    /// (InteractKey). It is the last row of Tables/Player/InteractKey.csv: everything else F does comes before it.
+    /// </summary>
+    public const string OfferId = "ping";
     // How fat the look's cast is (m): a ping needn't be dead on, as a shot must.
     private const float Radius = .3f;
     // The most the cast's buffer grows to: far more colliders than any look crosses, only so a broken scene cannot grow it
@@ -42,14 +47,12 @@ public sealed class PlayerPing : MonoBehaviour
     public event Action<Component, bool, Vector3> Pinged;
 
     private PlayerMovement movement;
-    private PlayerExecution execution;
-    private PlayerRevive revive;
     private WeaponController weapon;
     private PlayerMeleeCombat melee;
     private PlayerPoint point;
-    private InputAction interact;
     private float nextPing, pressedAt;
-    // The press held now began with F free (nothing on screen took it), and nothing has ended its point since.
+    // The press held now was this class's own (F was free: the key's owner gave it here) and the key is still its own;
+    // and nothing has ended its point since.
     private bool pressFree, pointEnded;
     // What the look's cast met. It grows when a cast fills it (Met).
     private RaycastHit[] hits = new RaycastHit[32];
@@ -57,8 +60,6 @@ public sealed class PlayerPing : MonoBehaviour
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
-        execution = GetComponent<PlayerExecution>();
-        revive = GetComponent<PlayerRevive>();
         weapon = GetComponent<WeaponController>();
         point = GetComponent<PlayerPoint>();
         if (point == null) point = gameObject.AddComponent<PlayerPoint>();
@@ -96,22 +97,28 @@ public sealed class PlayerPing : MonoBehaviour
             if (point != null) point.Hold(false);
             return;
         }
-        if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        if (interact == null) return;
         if (melee == null && movement.MeleeCombat != null)
         {
             melee = movement.MeleeCombat;
             melee.Punched += OnPunched;
         }
-        bool pressed = interact.WasPressedThisFrame();
+        // F with nothing else to do: the last of everything F does (InteractKey, row ping), offered whenever the hands are
+        // this player's own (not in a takedown, a counter or a treatment: PlayerMovement.CombatInputLocked). Whatever else
+        // would do something with F stands before it in the key's order, so a press reaches here only when F was free.
+        // This class kept a list of those others until 2026-11-18 (Busy(): eleven of them by name, each asked for
+        // itself, and whoever was not on it shared the press with the ping).
+        if (!movement.CombatInputLocked) InteractKey.Offer(OfferId, held: true);
+        bool pressed = InteractKey.Pressed(OfferId);
         if (pressed)
         {
             pressedAt = Time.time;
-            pressFree = !Busy();
+            pressFree = true;
             pointEnded = false;
         }
+        // The key let go, or something F does came on screen and has the key now: the point ends until F is pressed again.
+        else if (pressFree && !InteractKey.Held(OfferId)) pressFree = false;
         Hold();
-        if (!pressed || Time.time < nextPing || !pressFree) return;
+        if (!pressed || Time.time < nextPing) return;
         var foe = Aimed(out Vector3 pinged);
         // A Ghost's 정찰 card pings a zombie it sees through a wall too, the wall in front having taken the look (GhostSight).
         if (foe == null) foe = GhostSight.AimedThroughWall(movement, out pinged);
@@ -175,36 +182,15 @@ public sealed class PlayerPing : MonoBehaviour
     private void Hold()
     {
         if (point == null) return;
-        bool wants = pressFree && !pointEnded && interact.IsPressed() && Time.time - pressedAt >= PokeTables.HoldAfter;
-        if (wants && (!PlayerPoint.CanPoint(movement, weapon) || Busy()))
+        // pressFree: the press was this class's own and the held key still is (Update lets it go when the key is let go or
+        // something else F does has taken it).
+        bool wants = pressFree && !pointEnded && Time.time - pressedAt >= PokeTables.HoldAfter;
+        if (wants && !PlayerPoint.CanPoint(movement, weapon))
         {
             if (point.Pointing) pointEnded = true;
             wants = false;
         }
         point.Hold(wants);
-    }
-
-    // F has a job here already: whatever offers it on screen goes first.
-    private bool Busy()
-    {
-        if (execution == null) execution = GetComponent<PlayerExecution>();
-        if (execution != null && (execution.IsExecuting || execution.Candidate != null)) return true;
-        // A Ghost's chain open on a zombie (암살 연쇄, for its own time after a takedown's blow: GhostCards): F takes the
-        // Ghost on to it, as F takes a takedown offered. Without this the same press would also ping that zombie.
-        if (GhostCards.Local != null && GhostCards.Local.TakesInteract) return true;
-        if (FieldPickups.Targeting) return true;
-        if (revive == null) revive = GetComponent<PlayerRevive>();
-        if (revive != null && revive.Candidate != null) return true;
-        // A Détente treating a friend by hand, or bringing one back; or a Détente's offer waiting for this player's F.
-        if (DetenteKit.Local != null && DetenteKit.Local.TakesInteract) return true;
-        if (DetenteKit.Answering) return true;
-        // A Support with a friend in reach to resupply, or a barricade under the crosshair (F held takes the tool out).
-        if (SupportKit.Local != null && (SupportKit.Local.Offered != null || SupportKit.Local.AimedAt != null || SupportKit.Local.Planning)) return true;
-        // An ammo crate under the crosshair: F takes from it (ClassKit).
-        if (Barricade.CrateFor(movement) != null) return true;
-        if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return true;
-        // The hub's stations (its map table, lockers, gun rack, ammo crate, ready button) take F when looked at.
-        return CampaignRun.Offering || TowerRun.Offering || ShopMenu.IsOpen || HubLobby.Offering;
     }
 
     // The living foe the crosshair is on (a zombie or a range target): the nearest thing along the look that isn't this

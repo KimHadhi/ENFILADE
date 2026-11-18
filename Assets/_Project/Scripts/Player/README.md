@@ -39,6 +39,7 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
+| F로 하는 부활·사다리 내려가기·핑이 다른 [F]와 겹칠 때 (2026-11-18): 저마다 F 키의 주인에게 나선다(`revive`, `ladder.top`, `ping`). 핑은 표의 맨 끝이라 달리 할 일이 없을 때만 누름을 받고, `PlayerPing.Busy()`가 들고 있던 남들의 목록은 없어졌다. 부활은 누르고 있는 동안 하는 일이라 F를 누른 채 다가가도 닿으면 시작한다 | [PlayerRevive](Life/PlayerRevive.cs), [MovementFixtures](Movement/Parkour/MovementFixtures.cs), [PlayerPing](Comms/PlayerPing.cs), [InteractKey](../UI/Shared/InteractKey.cs), [InteractKey.csv](../../Data/Resources/Tables/Player/InteractKey.csv), [F 키의 주인](../../../../Docs/Features/InteractKey.md) |
 | 걷기·달리기·점프·자세·슬라이드·다이브 수치 | [Player.csv](../../Data/Resources/Tables/Player/Player.csv)의 `Move`·`Posture` 행, 필드 선언은 [Configuration](Movement/PlayerMovement.Configuration.cs) |
 | 회피·파쿠르·착지·저스트 슬라이드·밀치기·사다리·집라인 수치 | `Player.csv`의 `Ability` 행, 필드 선언은 [MovementAbilitySettings](Movement/MovementAbilitySettings.cs) |
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Movement/PlayerMovement.cs), [이동 코드 구조](Movement/README.md) |

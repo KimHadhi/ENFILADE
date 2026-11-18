@@ -12,8 +12,15 @@ public sealed partial class FieldPickups
         }
         Touch();
         Aim();
+        // What F would do here goes to the key's one owner (InteractKey), a refusal too: a medkit looked at with health
+        // full is offered as refused, which shows its reason and leaves the press to whatever stands behind a pickup
+        // (the barricade to mend, the door to open). Until 2026-11-18 a pickup looked at kept F whether or not it could
+        // be taken, and everyone else who uses F asked FieldPickups.Targeting and stepped aside (the user's item 8: a
+        // Support at full health could not mend a barricade with a medkit lying at its foot).
+        if (targeted >= 0) InteractKey.Offer(OfferId, refusal: refusal, about: RowOf(items[targeted]).Name);
+        spoken = targeted >= 0 && InteractKey.Shows(OfferId);
         ShowPrompt();
-        if (targeted < 0 || refusal != null || interact == null || !interact.WasPressedThisFrame()) return;
+        if (targeted < 0 || refusal != null || !InteractKey.Pressed(OfferId)) return;
         var item = items[targeted];
         pressedAt = Time.unscaledTime;
         if (IsHost) Take(item.Id, Mine, PlayerRoster.Local);
@@ -45,7 +52,8 @@ public sealed partial class FieldPickups
         }
     }
 
-    // The [F] pickup within reach nearest the middle of the view, unless something else has [F] or the hands.
+    // The [F] pickup within reach nearest the middle of the view, while this player could pick anything up at all (Free).
+    // Whether F is the pickup's then is the interact key's to say (InteractKey), not a list kept here.
     private void Aim()
     {
         targeted = -1;
@@ -76,12 +84,9 @@ public sealed partial class FieldPickups
         // pointer stopped every pickup).
         if (!mine.IsInitialized || mine.IsDead || mine.IsDowned || !InputFocus.TakesMove()) return false;
         if (ShopMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || DevConsole.TakesKeyboard) return false;
-        if (mine.Execution != null && mine.Execution.Candidate != null) return false;
-        // A Ghost's chain open on a zombie is a takedown offered too, and F is its as it is a plain takedown's (GhostCards:
-        // since 2026-11-18 the chain stays open a moment after its takedown has let the Ghost go, when a pickup at its
-        // feet would otherwise take the same press).
-        if (GhostCards.Local != null && GhostCards.Local.TakesInteract) return false;
-        if (mine.TryGetComponent(out PlayerRevive revive) && revive.Candidate != null) return false;
+        // What else F might do here (a takedown, a Ghost's chain, a friend to get up) is not asked any more: that they
+        // come before a pickup is the interact key's order (InteractKey, Tables/Player/InteractKey.csv), and the pickup
+        // looked at simply waits behind them with its prompt hidden.
         return !(mine.TryGetComponent(out PlayerWeaponSlots slots) && slots.HandsFull);
     }
 

@@ -66,7 +66,8 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         if (!receiver.IsAlive)
             return TowerRun.KeepsDead ? Texts.Get("life.respawn.tower")
                 : life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
-        if (revive != null && revive.Candidate != null) return Texts.Get("life.revive.prompt");
+        // While the interact key's owner says F is the revive's (InteractKey): a takedown on offer comes first.
+        if (revive != null && revive.Candidate != null && InteractKey.Shows(PlayerRevive.OfferId)) return Texts.Get("life.revive.prompt");
         // A friend a runner pins, within this player's shove: V throws it off them (ShoveRescue).
         return ShoveRescue.Within(player) != null ? Texts.Get("life.pin.prompt") : null;
     }

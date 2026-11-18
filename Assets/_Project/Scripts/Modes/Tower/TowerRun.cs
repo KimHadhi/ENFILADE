@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// The ENFILADE tower, run (the user, 2026-11-12: "타워형 맵 … 1~4명 … 각자 열린 방을 통과하며 층을 오르게 돼. 중간에 휴식하는
@@ -144,7 +143,7 @@ public sealed partial class TowerRun : MonoBehaviour
     // What this PC last showed, for what changed: alerts, payments, sounds.
     private Phase shownPhase = Phase.Finale;
     private int shownSegment = -1, shownResets, shownSecond = -1, shownSeed = -1;
-    private bool shownCounting, started, finished, movedOn, wasWiped, listening, offering, fetched;
+    private bool shownCounting, started, finished, movedOn, wasWiped, listening, fetched;
     private readonly LaneState[] shownStates = new LaneState[TowerLayout.Lanes];
     private readonly int[] shownFloors = new int[TowerLayout.Lanes];
     // The objective on the mission HUD, and how many the fight being shown started with.
@@ -158,7 +157,6 @@ public sealed partial class TowerRun : MonoBehaviour
     private CampaignMusic music;
     private MissionTracker tracker;
     private NetworkManager network;
-    private InputAction interact;
     private Status sent;
     private int palm = -1, sentPalm = -2;
     private float nextShare, nextPalm, startedAt, finaleAt, cardAt = -1f, nextResults;
@@ -167,8 +165,12 @@ public sealed partial class TowerRun : MonoBehaviour
     private bool IsHost => network == null || network.IsServer;
     private ulong MyId => network != null ? network.LocalClientId + 1UL : 1UL;
 
-    /// <summary>The tower's [F] has something on offer now (a scanner, a shop): F does that, never a ping (PlayerPing).</summary>
-    public static bool Offering => active != null && active.offering;
+    /// <summary>
+    /// What F does in the tower, each as the interact key's one owner knows it (InteractKey; their places among
+    /// everything else F does are the rows of these names in Tables/Player/InteractKey.csv): a palm on a risen scanner
+    /// for as long as F is held, and a shop counter.
+    /// </summary>
+    public const string ScannerOffer = "tower.scanner", ShopOffer = "tower.shop";
 
     /// <summary>Where the dead come back in the tower: the hall of the stretch under way, or the next one once its lanes
     /// are through. False outside the tower.</summary>
@@ -234,7 +236,6 @@ public sealed partial class TowerRun : MonoBehaviour
         tracker = SceneOne<MissionTracker>.Get();
         screen = gameObject.AddComponent<CampaignScreen>();
         hud = TowerHUD.Make(transform);
-        interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         doors = FindObjectsByType<TowerDoor>(FindObjectsSortMode.None);
         scanners = FindObjectsByType<TowerScanner>(FindObjectsSortMode.None);
         signs = FindObjectsByType<TowerSign>(FindObjectsSortMode.None);

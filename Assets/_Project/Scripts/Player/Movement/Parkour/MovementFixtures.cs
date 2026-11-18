@@ -149,7 +149,9 @@ public sealed class MovementFixtures
         Ladder candidate;
         Vector3 over, hold;
         bool walked;
-        if (ctx.Input.InteractPressed && FindLadderTop(false, out candidate, out over, out hold)) walked = false;
+        // Interact is shared: the press counts when the key's one owner says it is the ladder top's (InteractKey), which
+        // is offered while the player stands where the key would take them down (TrackClimbDown).
+        if (InteractKey.Pressed(TopOffer) && FindLadderTop(false, out candidate, out over, out hold)) walked = false;
         else if (FindLadderTop(true, out candidate, out over, out hold)) walked = true;
         else return false;
         Ladder = candidate;
@@ -171,12 +173,18 @@ public sealed class MovementFixtures
     /// <summary>The ladder whose top the player could climb down from now, for the prompt (LadderPromptHUD); else null.</summary>
     public Ladder ClimbDownLadder { get; private set; }
 
+    /// <summary>Getting on a ladder from its top with Interact, as the interact key's one owner knows it (InteractKey).</summary>
+    public const string TopOffer = "ladder.top";
+
     /// <summary>Kept each frame for the prompt: only standing about on the ground, never mid-move.</summary>
     internal void TrackClimbDown()
     {
         bool free = ctx.IsLocal && ctx.Abilities.CanUseGroundActions && !ctx.ControlLocked && !ctx.IsGettingUp
             && ladderLock <= 0f && (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
         ClimbDownLadder = free && FindLadderTop(false, out Ladder found, out _, out _) ? found : null;
+        // What Interact would do here, said to the key's one owner each frame it holds (InteractKey): the others who use
+        // the key no longer ask this ladder whether to step aside.
+        if (ClimbDownLadder != null) InteractKey.Offer(TopOffer, target: ClimbDownLadder);
     }
 
     // Where the player could get on a ladder from its top, standing on the floor it leads up to.

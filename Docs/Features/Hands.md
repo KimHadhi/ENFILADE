@@ -53,7 +53,7 @@
 | --- | --- | --- | --- | --- |
 | G 투척(수류탄·섬광·연막·염료·통·칼), 서포트의 클레이모어 놓기 | 왼손 | 쥔다 | 꺼내기 전: 누름이 아무 일도 안 한다. 든 뒤에 빼앗기면 핀을 도로 꽂고 벨트로(소모 없음. 타고 있는 섬광탄은 손에서 계속 탄다). 몸이 팔을 못 드는 동작(회피·다이브·구르기·누움)이면 든 채 기다린다 | `PlayerGrenades.HandForced`, `BodyThrows`, `GrenadeArm.Free` |
 | 포인트 궁극기의 나인뱅 투척 | 왼손 | 쥔다 | 손이 없으면 손 없이 던진다(`BreachHand`) | `PlayerGrenades.ThrowForUltimate` |
-| F 길게 = 가리키기, `/point` | 왼손 | 양보한다 | 끝난다. F를 다시 눌러야 한다(`/point`는 손이 나면 돌아온다) | `PlayerPoint.CanPoint`, `PointArm.Free`, `PlayerPing.Busy` |
+| F 길게 = 가리키기, `/point` | 왼손 | 양보한다 | 끝난다. F를 다시 눌러야 한다(`/point`는 손이 나면 돌아온다) | `PlayerPoint.CanPoint`, `PointArm.Free`, F가 남의 것이 되면 끝나는 것은 [InteractKey](InteractKey.md) |
 | F 탭 = 핑의 손짓 | 왼손 | 양보한다 (조준 중에도 된다) | 손짓 없이 표식과 소리만 | `PlayerPoint.Flash` → `CanPoint(whileAiming)` |
 | 데탕트 주사(자신·동료) | 왼손 | 급이 없다 | **주사는 들어간다(약이 줄고 회복된다). 팔만 안 움직인다** | `DetenteKit.Inject`는 손을 묻지 않는다. `InjectArm.Free`만 거른다 |
 | 서포트 수리(망치·토치, 바리케이드에 F 유지) | 왼손 | 급이 없다 | **수리는 된다. 도구와 팔만 안 나온다** | `SupportKit.Update`는 손을 묻지 않는다. `RepairArm.Free`만 거른다 |
@@ -115,7 +115,7 @@
 6. **한 칸 올라서기는 손을 쓰지 않는데 수류탄은 도로 들어간다.** `HandForced`가 `IsParkour` 하나로 묻기 때문이다(`Mantle` 상태는 `Parkour` 묶음이다: `MovementStateMachine.Create`).
 7. **착지 구르기와 큰 착지를 총과 수류탄이 다르게 본다.** 총에게는 두 손 동작이라 넣고(`TraversalHands`의 `Bare`), 수류탄에게는 손을 안 쓰는 동작이라 든 채 기다린다(그 두 상태는 `Recovery` 묶음이라 `IsParkour`가 거짓이다). 결과는 말이 된다(주먹에 쥔 것은 구르면서도 쥐고 있다). 다만 그것이 두 목록이 우연히 달라서 나온 결과다. 3.2의 표는 이것을 순서로 말한다.
 8. **총의 장전을 총 밖에서 직접 멈추는 곳이 셋**(수류탄, 처형, 카운터). 총이 "두 손을 잃었다"를 스스로 알지 못해서다.
-9. **F 키가 누구 것인지 묻는 목록이 세 벌**: `DetenteKit.HandsFree`, `SupportKit.HandsFree`(이 둘은 같은 글자), `PlayerPing.Busy`(같은 다섯 줄 + 여섯 줄). 이름은 손이지만 손이 아니라 키의 질문이다.
+9. **F 키가 누구 것인지 묻는 목록이 세 벌이었다**: `DetenteKit.HandsFree`, `SupportKit.HandsFree`(이 둘은 같은 글자), `PlayerPing.Busy`(같은 다섯 줄 + 여섯 줄). 이름은 손이지만 손이 아니라 키의 질문이었다. 2026-11-18에 풀렸다: 키의 질문은 [F 키의 주인](InteractKey.md)이 가져갔고 `Busy`는 없어졌으며, 두 `HandsFree`에는 손의 질문 두 가지(처형 중인가, 상점이 열렸나)만 같은 글자로 남았다.
 10. **손이 총을 떠나는 상태의 목록이 두 벌**: `TraversalHands.For`와 `PlayerBodyHands.HoldsWeapons`.
 
 ## 3. 모델
@@ -273,7 +273,7 @@
 | 총의 `bare`, `bodyAction`의 손 부분, 프레임 맨 앞의 "잠김 또는 잡힘" | `WeaponController.cs:300`, `WeaponController.Frame.cs:11, 33` | "오른손이 총의 것인가", "총을 넣었나" |
 | 총의 장전을 밖에서 직접 멈추는 두 줄 | `PlayerExecution:242`, `PlayerPerfectDefense:197` | 총이 두 손을 잃은 것을 스스로 안다 |
 | `PlayerMovement.HandsOnReload` | `PlayerMovement.cs:86` | 주인에게 묻는다 |
-| 같은 글자의 `HandsFree` 두 벌과 `PlayerPing.Busy`의 같은 다섯 줄 | `DetenteKit.cs:703`, `SupportKit.Mending.cs:110`, `PlayerPing.cs:188` | 함수 하나. 이름도 손이 아니라 F 키로 바꾼다 |
+| 같은 글자의 `HandsFree` 두 벌 (F 키의 목록이던 부분과 `PlayerPing.Busy`는 2026-11-18에 [InteractKey](InteractKey.md)로 갔다) | `DetenteKit.cs`, `SupportKit.Mending.cs` | 남은 두 줄(처형 중인가, 상점이 열렸나)을 주인에게 묻는다 |
 
 남는 것: `PlayerBodyHands`(전부), `TraversalHands`, `PlayerMovement.BodyLocked`와 `CombatInputLocked`(몸이 잠겼는가는 손과 다른 질문이라 E 묶음의 키들이 계속 읽는다), `InterruptForSurvival`(회피·밀치기·대시가 장전과 조준을 끊는 것은 총 안의 규칙이다: 5단계).
 

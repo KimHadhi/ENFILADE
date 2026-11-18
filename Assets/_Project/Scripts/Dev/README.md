@@ -14,6 +14,7 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
+| F 키가 누구 것인지 보기 (`/interact`: F로 하는 일의 순서(표, 모드가 얹은 줄 포함), 지금 나선 것과 맨 앞, 마지막 누름을 누가 가져갔고 누가 거절했는지. 누름마다 `Logs/interact.txt`에도 한 줄. 표와 규칙만 따로: `python Tools/Checks/interact_key_check.py`) | [InteractKey](../UI/Shared/InteractKey.cs)의 `Dump`·`Record`, [GameCommands](Console/GameCommands.cs) |
 | 기울이기 점검 (`/lean`: Q/E를 누르지 않아도 기울기를 오른쪽 끝·왼쪽 끝까지 저절로 줬다 풀면서 두 발목이 디딘 자리에서 밀린 거리(1cm 아래면 제자리), 골반·눈이 옆으로 간 거리, 골반이 내려간 거리를 Logs/lean-probe.txt에 한 줄로 쓴다. 맨손·주먹·총, 서서·앉아서, 캐릭터마다 한 번씩. 재는 4.5초 동안 움직이거나 시선을 돌리지 않는다) | [LeanProbe](LeanProbe.cs), [MovementCommands](Console/MovementCommands.cs), [FootPlanting](../Player/Body/Feet/FootPlanting.cs)의 `Hold` |
 | 렛지 점검 (`/ledge`: 선 자리에서 발 높이를 올려 가며 앞의 턱이 렛지인지·어느 윗면인지·올라설 수 있는지·아니면 왜인지. 플레이 중 잡은 렛지와 거절한 이음매는 Logs/ledge-probe.txt. 플레이 없이 씬 전체는 에디터 `ENFILADE → 이동 → 렛지 훑기` → Logs/ledge-sweep.txt) | [MovementCommands](Console/MovementCommands.cs), [LedgeFinder](../Player/Movement/Parkour/LedgeFinder.cs), [LedgeSweep](../Player/Movement/Parkour/LedgeSweep.cs) |
 | 착지 점검 (`/drop [높이]`: 그 높이에서 그냥 떨어지면 발이 닿는 속도, 착지 단계, 서서·앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5~6m 표. 실제로 한 착지는 Logs/landings.txt에 한 줄씩) | [MovementCommands](Console/MovementCommands.cs), [MovementLanding](../Player/Movement/Actions/MovementLanding.cs), [PlayerMovementAudio](../Player/Audio/PlayerMovementAudio.cs)의 `LandingCue` |

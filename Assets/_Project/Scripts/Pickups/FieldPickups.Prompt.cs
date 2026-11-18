@@ -7,7 +7,9 @@ public sealed partial class FieldPickups
 {
     private void ShowPrompt()
     {
-        bool shown = targeted >= 0;
+        // Only while the key's owner says this is the word on F (InteractKey.Shows): a takedown or a friend to get up
+        // comes first, and then the screen names that alone.
+        bool shown = spoken;
         if (!shown && promptHost == null) return;
         Build();
         if (promptRoot.gameObject.activeSelf != shown) promptRoot.gameObject.SetActive(shown);

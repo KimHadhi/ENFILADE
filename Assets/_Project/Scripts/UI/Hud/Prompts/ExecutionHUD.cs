@@ -16,7 +16,9 @@ public sealed class ExecutionHUD : MonoBehaviour
     private void OnEnable() => execution = GetComponent<PlayerExecution>();
     private void LateUpdate()
     {
-        var near = execution != null ? execution.Candidate : null;
+        // The [F] part shows while the interact key's owner says F is the takedown's (InteractKey): while a Support plans
+        // a structure F chooses its kind, and the screen names one thing for one key.
+        var near = execution != null && InteractKey.Shows(PlayerExecution.OfferId) ? execution.Candidate : null;
         // With the fists out a left click also executes a broken enemy further off, dashing in (DeathblowCandidate).
         var far = execution != null ? execution.DeathblowCandidate : null;
         var target = near != null ? near : far;

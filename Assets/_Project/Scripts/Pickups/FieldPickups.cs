@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -24,8 +23,9 @@ using UnityEngine.UI;
 /// <para>The host, or the PC alone, keeps every item and tells the others (a named message on change and every couple
 /// of seconds, so late joiners catch up); a guest asks the host to take one, and the host hands the taker's PC the item
 /// as it lay, which applies it there (its own guns, rounds, health, shield and money are its own to count; a gun it
-/// puts down in turn is told back to the host as it is). The [F] prompt here comes before
-/// the campaign's own [F] prompts while a pickup is looked at (CampaignRun reads <see cref="Targeting"/>). Made for
+/// puts down in turn is told back to the host as it is). Its [F] is one of the things the interact key does
+/// (InteractKey, <see cref="OfferId"/>): a pickup looked at comes before the campaign's own [F] prompts by the key's
+/// order, and one this player can't use now refuses, which leaves the key to whatever stands behind it. Made for
 /// every map in Tables/Maps. How they look: PickupView.</para>
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Campaign - 1)]
@@ -86,8 +86,11 @@ public sealed partial class FieldPickups : MonoBehaviour
 
     private static FieldPickups instance;
 
-    /// <summary>This PC's player is looking at a pickup within reach ([F] is the pickup's).</summary>
-    public static bool Targeting => instance != null && instance.targeted >= 0;
+    /// <summary>
+    /// What F does at a pickup looked at, as the interact key's one owner knows it (InteractKey): its place among
+    /// everything else F does is the row of this name in Tables/Player/InteractKey.csv.
+    /// </summary>
+    public const string OfferId = "pickup";
 
     private readonly List<Row> rows = new List<Row>();
     // What is shown and said of each kind of gun: its row of the table when it has one, else one made of the gun itself.
@@ -102,7 +105,6 @@ public sealed partial class FieldPickups : MonoBehaviour
     private readonly List<ushort> gone = new List<ushort>();
     private readonly System.Random random = new System.Random(Environment.TickCount);
     private NetworkManager network;
-    private InputAction interact;
     private GameObject promptHost;
     private RectTransform promptRoot;
     private Image keyBox, underline, gunPicture;
@@ -111,6 +113,9 @@ public sealed partial class FieldPickups : MonoBehaviour
     private ushort nextId = 1;
     private int targeted = -1;
     private string refusal;
+    // The pickup looked at is the one the screen speaks for now: F would take it, or its refusal is the word on F
+    // (InteractKey.Shows). Its prompt and its pink outline go by this.
+    private bool spoken;
     private bool changed = true, listening;
     private float nextShare, pressedAt = -99f;
 
@@ -148,7 +153,6 @@ public sealed partial class FieldPickups : MonoBehaviour
     private void Start()
     {
         network = GameSession.Network;
-        interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         Listen();
         if (IsHost) RollSpots();
         CombatDamageEvents.Damaged += OnDamaged;

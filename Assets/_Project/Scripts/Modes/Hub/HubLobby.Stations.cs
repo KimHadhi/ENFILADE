@@ -386,10 +386,15 @@ public sealed partial class HubLobby
             aimed = found;
             if (aimed != null && aimed.Label != null) { aimed.LabelColor = aimed.Label.color; aimed.Label.color = KitStyle.Accent; }
         }
-        string text = aimed != null ? PromptFor(aimed) : null;
-        screen.Prompt(ResultsShow.IsPlaying ? null : text);
+        // A station looked at: F works it. F is shared, so the station says so to the key's one owner (InteractKey), shows
+        // its words while the owner says F is the station's, and is worked on the press the owner gives it (the ping
+        // used to ask HubLobby.Offering to keep off this F; nobody asks now).
+        bool offers = aimed != null && StationsOpen;
+        if (offers) InteractKey.Offer(StationOffer);
+        string text = aimed != null && !ResultsShow.IsPlaying && InteractKey.Shows(StationOffer) ? PromptFor(aimed) : null;
+        screen.Prompt(text);
         if (dressingMark != null && dressingMark.activeSelf == ResultsShow.IsPlaying) dressingMark.SetActive(!ResultsShow.IsPlaying);
-        if (aimed == null || interact == null || !interact.WasPressedThisFrame() || !TakesInput()) return;
+        if (!offers || !InteractKey.Pressed(StationOffer)) return;
         Work(aimed, mine);
     }
 

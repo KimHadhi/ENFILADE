@@ -64,14 +64,14 @@ public sealed class GhostCards : MonoBehaviour
     private EnemyHealth sighted;
     private float sightedFor;
     // 암살 연쇄: a run of chains is open (a takedown of a zombie that knew nothing began it); when the takedown in hand
-    // began and in which frame (the press that began it names nothing), and when its blow landed (below 0: not yet); how
-    // many more may follow; the zombie F asked for, waiting for that blow (or for the body to be able); the one the chain
-    // would go to now, as of which frame, and the frame F last named one (what others who share F ask: TakesInteract);
-    // and whether this PC is moving the Ghost on itself.
+    // began, and when its blow landed (below 0: not yet); how many more may follow; the zombie F asked for, waiting for
+    // that blow (or for the body to be able); and whether this PC is moving the Ghost on itself. Whose a press of F is
+    // (the chain's, the takedown's that began it, a pickup's) is not kept here: the interact key's one owner says
+    // (InteractKey, row ghost.chain).
     private bool run, chaining;
     private float startedAt, struckAt = -1f;
-    private int startedFrame = -1, chainsLeft, offeredFrame = -1, tookFrame = -1;
-    private EnemyHealth queued, offered;
+    private int chainsLeft;
+    private EnemyHealth queued;
     // The ultimate: until when, and how long it lasts.
     private float phantomUntil = -99f, phantomTotal = 1f;
     // White Tiger: the enemies round a headshot, gathered first, as a kill takes one out of the list it was found in.
@@ -171,13 +171,12 @@ public sealed class GhostCards : MonoBehaviour
         Time.time, ChainWindow);
 
     /// <summary>
-    /// 암살 연쇄: F is the chain's now. Out of a takedown, pressed now it would take this PC's Ghost on to the zombie the
-    /// chain points at; and in the frame a press named one, in a takedown too, that press was the chain's. Whatever else
-    /// F does waits for it, as it waits for a takedown offered (PlayerPing's ping, FieldPickups' pickup): one press is one
-    /// act, and a takedown comes first.
+    /// 암살 연쇄: F naming the next zombie, as the interact key's one owner knows it (InteractKey). One press is one act:
+    /// a plain takedown on offer comes before it, a pickup and a ping after it, by its row's place in
+    /// Tables/Player/InteractKey.csv (until 2026-11-18 the pickup and the ping each asked this card whether F was the
+    /// chain's, and nothing else did).
     /// </summary>
-    public bool TakesInteract => tookFrame == Time.frameCount
-        || (offered != null && offeredFrame >= Time.frameCount - 1 && (execution == null || !execution.IsExecuting));
+    public const string ChainOffer = "ghost.chain";
 
     /// <summary>How much of the ultimate under way is left, 0 to 1 (0: none).</summary>
     public float PhantomShare => phantomUntil > Time.time ? Mathf.Clamp01((phantomUntil - Time.time) / phantomTotal) : 0f;
@@ -236,7 +235,7 @@ public sealed class GhostCards : MonoBehaviour
         run = chaining = false;
         struckAt = -1f;
         chainsLeft = 0;
-        queued = offered = null;
+        queued = null;
     }
 
     private void Update()
@@ -248,7 +247,7 @@ public sealed class GhostCards : MonoBehaviour
         GhostSight.Own(ghost && !movement.IsDead ? SightReach : 0f);
         if (!ghost)
         {
-            sighted = queued = offered = null;
+            sighted = queued = null;
             Prompt(false);
             return;
         }
@@ -324,7 +323,7 @@ public sealed class GhostCards : MonoBehaviour
         if (run && (movement.IsDead || moment == ChainMoment.Closed)) Close(movement.IsDead ? "the Ghost died" : chainsLeft <= 0 ? "no chain left" : "its time ran out");
         if (moment == ChainMoment.Closed || movement.IsDead)
         {
-            queued = offered = null;
+            queued = null;
             Prompt(false);
             return;
         }
@@ -338,18 +337,20 @@ public sealed class GhostCards : MonoBehaviour
         // where F simply takes it down: that is the takedown's own offer, whose prompt stands where this one would.
         bool can = executing || (execution != null && execution.CanBegin && execution.Candidate == null);
         var next = queued != null ? queued : can ? Next(executing ? execution.Victim : null) : null;
-        offered = next;
-        offeredFrame = Time.frameCount;
+        // F is shared: the chain says each frame that F would name this zombie (InteractKey), and out of a takedown it
+        // goes on saying so while one it named waits for the body, so a second press then is still the chain's and takes
+        // no pickup at its feet. In a takedown, with one named, F has nothing left to do for the chain and is free.
+        if (next != null && (queued == null || !executing)) InteractKey.Offer(ChainOffer, target: next);
         if (next != null) GhostMarks.Pointing(next);
         Prompt(next != null);
-        // F names it: a press of its own (the one that began this takedown names nothing), made while the keys are the
-        // player's. Who has the keys is asked here and nowhere else in the chain: it stops a new asking, and never ends
-        // what is under way. This whole method used to give up while the chat or the Esc menu had them, so the prompt,
-        // the chevron and the turning view went with a word typed, and a chain already asked for was dropped with them.
-        if (queued == null && next != null && Time.frameCount != startedFrame && movement.InputAvailable && KeyBindings.Pressed("Player/Interact"))
+        // F names it: a press the key's one owner gives the chain (InteractKey.Pressed). The press that began this
+        // takedown was the takedown's and never comes here, and none is given while a screen has the keys. Whose the
+        // keys are is asked on this press and nowhere else in the chain: it stops a new asking, and never ends what is
+        // under way. This whole method used to give up while the chat or the Esc menu had them, so the prompt, the
+        // chevron and the turning view went with a word typed, and a chain already asked for was dropped with them.
+        if (queued == null && next != null && InteractKey.Pressed(ChainOffer))
         {
             queued = next;
-            tookFrame = Time.frameCount;
             Note($"NAMED  {next.name} at +{Time.time - startedAt:0.00}s ({(moment == ChainMoment.Open ? "after the blow: it goes now" : "before the blow: it waits for it")})");
         }
         if (queued != null && moment == ChainMoment.Open) Go(queued);
@@ -362,7 +363,7 @@ public sealed class GhostCards : MonoBehaviour
         run = false;
         struckAt = -1f;
         chainsLeft = 0;
-        queued = offered = null;
+        queued = null;
     }
 
     // Checked without playing: every run's moments go to Logs/ghost-chain.txt (PlayRecord), each with its time from the
@@ -527,14 +528,13 @@ public sealed class GhostCards : MonoBehaviour
     {
         struckAt = -1f;
         startedAt = Time.time;
-        startedFrame = Time.frameCount;
         if (chaining) return;
         // A takedown of the Ghost's own (F, not a chain) while a run still stood open begins the count afresh.
         if (run) Close("a takedown of the Ghost's own took its place");
         bool unaware = victim != null && victim.TryGetComponent(out ZombieMind mind) && mind.Unaware;
         chainsLeft = unaware && PlayerPerks.Has(ChainCard) ? Mathf.Max(0, Mathf.RoundToInt(PlayerPerks.Total2(ChainCard))) : 0;
         run = chainsLeft > 0;
-        queued = offered = null;
+        queued = null;
         if (run) Note($"RUN    opened by a takedown of {victim.name}: {chainsLeft} chain(s), open {ChainWindow:0.00}s after each blow");
     }
 

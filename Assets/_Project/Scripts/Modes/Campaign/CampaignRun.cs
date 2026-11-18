@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// Multiplayer plan stage 5B: a campaign chapter played as a run of objectives. The chapter's steps (Tables/
@@ -122,7 +121,6 @@ public sealed partial class CampaignRun : MonoBehaviour
     private CampaignScreen screen;
     private MissionTracker tracker;
     private NetworkManager network;
-    private InputAction interact;
     private Status sent;
     private int step, checkpoint = -1, shownPoured = -1, brutesDue, brutesStep = -1, burnStep = -1, poursSeen;
     // A burn hold's fire: seconds of fuel left (the host's), and whether it burns (the host's word, shared).
@@ -164,12 +162,6 @@ public sealed partial class CampaignRun : MonoBehaviour
 
     private bool IsHost => network == null || network.IsServer;
     private CampaignStep Current => step >= 0 && step < steps.Count ? steps[step] : null;
-    // Its [F] has something on offer this frame (a step's button, a can, a door, a shop counter).
-    private bool offering;
-
-    /// <summary>The chapter's [F] has something on offer now: F does that, never a ping (PlayerPing).</summary>
-    public static bool Offering => active != null && active.offering;
-
     /// <summary>A chapter is under way in this scene (not finished): someone who joins the room now comes in as the dead come back (PlayerLife.RunUnderWay).</summary>
     public static bool UnderWay => active != null && !active.finished;
 
@@ -378,7 +370,6 @@ public sealed partial class CampaignRun : MonoBehaviour
     {
         tracker = SceneOne<MissionTracker>.Get();
         screen = gameObject.AddComponent<CampaignScreen>();
-        interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         Listen();
         if (chapter != null) screen.ShowCard(chapter.Title, chapter.Intro, introSeconds);
         ShowObjective(true);

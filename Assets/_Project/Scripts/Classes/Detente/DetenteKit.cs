@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// Stage 7, the Détente, the healer (the user's design, 2026-11-11): a syringe with a measure in it. The class key
@@ -73,7 +72,6 @@ public sealed class DetenteKit : MonoBehaviour
 
     private PlayerMovement movement;
     private PlayerDamageReceiver receiver;
-    private InputAction interact;
     private WaveManager waves;
     private float syringe = -1f, goldenUntil, goldenTotal = 1f, lastInject = -99f, nextSection;
     // Treatment by hand, as the Détente: the friend offered it and until when, when the one under way began and whether
@@ -142,8 +140,15 @@ public sealed class DetenteKit : MonoBehaviour
     public static DetenteKit Mine => own;
     /// <summary>Seconds since the last dose went in (the HUD's flash).</summary>
     public float SinceInject => Time.time - lastInject;
-    /// <summary>Whether Interact is taken here now (a treatment or a resurrection on offer): the ping keeps off it.</summary>
-    public bool TakesInteract => Candidate != null || Treating != null || Raising != null;
+    /// <summary>
+    /// What F does around a Détente, as the interact key's one owner knows each (InteractKey; their places among
+    /// everything else F does are the rows of these names in Tables/Player/InteractKey.csv): any player's answer to a
+    /// treatment offered them, and a Détente's own two, a dead friend brought back for as long as F is held and a
+    /// treatment by hand offered to a hurt one. The ping used to ask this class whether F was taken; nobody does now.
+    /// </summary>
+    public const string AnswerOffer = "detente.answer", RaiseOffer = "detente.raise", TreatOffer = "detente.treat";
+    // The answer's line is up at the foot of the screen (Patient): taken down when the key's owner gives F to another.
+    private bool answerShown;
 
     private void Awake()
     {
@@ -185,13 +190,12 @@ public sealed class DetenteKit : MonoBehaviour
         if (receiver == null) receiver = movement.DamageReceiver;
         if (syringe < 0f) syringe = Mathf.Clamp(Number("syringeStart", 100f), 0f, SyringeMax);
         Sections();
-        if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        // able: what the body can do (reasons of the game). keys: whether Interact is the player's to press now; with a
-        // screen up it reads as let go, which starts a held resurrection over by that move's own rule and makes no new
-        // offer, but takes nothing else away (a treatment under way never asked the keys: Treatment).
-        bool able = interact != null && movement.CanAct && !movement.IsDowned && !movement.IsHeld && HandsFree();
-        bool keys = able && movement.InputAvailable;
-        bool holding = keys && interact.IsPressed();
+        // able: what the body can do (reasons of the game). Whether F is this Détente's to press or to hold is the
+        // interact key's to say (InteractKey): each thing F would do here is said to it by name, and done only on a press
+        // or a hold its owner calls this one's. With a screen up the key reads as let go, which starts a held
+        // resurrection over by that move's own rule and makes no new offer, but takes nothing else away (a treatment
+        // under way never asked the keys: Treatment).
+        bool able = movement.CanAct && !movement.IsDowned && !movement.IsHeld && HandsFree();
         float dt = Time.deltaTime;
 
         // A run to a friend under way: nothing else is offered or begun until it is in reach or over.
@@ -201,11 +205,16 @@ public sealed class DetenteKit : MonoBehaviour
             return;
         }
 
-        // A dead friend first: Resurrection.
+        // A dead friend first (the key's order has it before a treatment offered): Resurrection, for as long as F is
+        // held on it. Raising is the friend F would bring back now: the one in reach while the key's owner says F is
+        // the resurrection's (a takedown, a friend only downed, a pickup that is wanted and the mission's prompts come
+        // before it, as HandsFree's list had them until 2026-11-18).
         var dead = able && raisesLeft > 0 ? Nearest(true) : null;
+        if (dead != null) InteractKey.Offer(RaiseOffer, held: true, target: dead);
+        if (dead != null && !InteractKey.Shows(RaiseOffer)) dead = null;
         if (dead != Raising) RaiseProgress = 0f;
         Raising = dead;
-        if (Raising != null && holding)
+        if (Raising != null && InteractKey.Held(RaiseOffer))
         {
             RaiseProgress += dt / Mathf.Max(.1f, Number("resurrectSeconds", 5f));
             if (RaiseProgress >= 1f) Resurrect(Raising);
@@ -217,8 +226,10 @@ public sealed class DetenteKit : MonoBehaviour
         Calls();
         if (Treating != null) { Treatment(); return; }
         if (offeredTo != null && Time.time >= offerUntil) offeredTo = null;
-        Candidate = able && Empty && Raising == null ? Nearest(false) : null;
-        if (Candidate == null || !keys || !interact.WasPressedThisFrame()) return;
+        var hurt = able && Empty ? Nearest(false) : null;
+        if (hurt != null) InteractKey.Offer(TreatOffer, target: hurt);
+        Candidate = hurt != null && InteractKey.Shows(TreatOffer) ? hurt : null;
+        if (Candidate == null || !InteractKey.Pressed(TreatOffer)) return;
         if (Asked(Candidate)) { if (InReach(Candidate, InjectArm.Kind.Bandage, Reach())) Begin(Candidate); return; }
         if (offeredTo == Candidate) return;
         offeredTo = Candidate;
@@ -446,13 +457,21 @@ public sealed class DetenteKit : MonoBehaviour
         if (!waiting)
         {
             if (offeredBy != null) { offeredBy = null; DetenteLooks.Prompt(null); }
+            answerShown = false;
             return;
         }
-        if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        DetenteLooks.Prompt(Texts.Format("class.detente.offer.prompt", Name(offeredBy), Mathf.CeilToInt(offeredUntil - Time.time)));
-        if (interact == null || !interact.WasPressedThisFrame() || !movement.InputAvailable) return;
+        // The answer is one of the things F does (InteractKey): its line shows and its press counts while the key's
+        // owner says F is the answer's. Until 2026-11-18 it read the key for itself, so the F that took the offer also
+        // took whatever pickup was looked at, and its line stood over a takedown's prompt whose F came first anyway.
+        InteractKey.Offer(AnswerOffer, target: offeredBy);
+        bool shows = InteractKey.Shows(AnswerOffer);
+        if (shows) DetenteLooks.Prompt(Texts.Format("class.detente.offer.prompt", Name(offeredBy), Mathf.CeilToInt(offeredUntil - Time.time)));
+        else if (answerShown) DetenteLooks.Prompt(null);
+        answerShown = shows;
+        if (!InteractKey.Pressed(AnswerOffer)) return;
         var detente = offeredBy;
         offeredBy = null;
+        answerShown = false;
         DetenteLooks.Prompt(null);
         if (detente.TryGetComponent(out PlayerNetworkCombat network)) network.AcceptTreatment(movement);
     }
@@ -698,16 +717,14 @@ public sealed class DetenteKit : MonoBehaviour
         return found;
     }
 
-    // Whatever else Interact would do here goes first (an execution, a pickup, getting a downed friend up, a ladder, a
-    // mission's button, a shop).
+    // The hands are this Détente's own: not in a takedown, no shop counter open. What else F might do here is not asked
+    // (a takedown on offer, a pickup, a friend to get up, a ladder's top, the mission's prompts were each asked by name
+    // until 2026-11-18, the same list SupportKit kept): that they come first is the interact key's order (InteractKey),
+    // and a pickup that refuses, a medkit with health full, no longer keeps a friend from being brought back or treated.
     private bool HandsFree()
     {
         var execution = movement.Execution;
-        if (execution != null && (execution.IsExecuting || execution.Candidate != null)) return false;
-        if (FieldPickups.Targeting) return false;
-        if (TryGetComponent(out PlayerRevive revive) && revive.Candidate != null) return false;
-        if (movement.Abilities != null && movement.Abilities.Fixtures.ClimbDownLadder != null) return false;
-        return !CampaignRun.Offering && !TowerRun.Offering && !ShopMenu.IsOpen;
+        return (execution == null || !execution.IsExecuting) && !ShopMenu.IsOpen;
     }
 
     private static string Name(PlayerMovement someone)

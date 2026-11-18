@@ -11,9 +11,14 @@ public sealed partial class TowerRun
         int was = palm;
         palm = -1;
         var mine = PlayerRoster.Local;
-        bool able = plan != null && phase == Phase.Gate && mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned
-            && InputFocus.TakesPlayInput() && !FieldPickups.Targeting;
-        if (able && KeyBindings.Held("Player/Interact")) palm = NearestScanner(mine);
+        bool able = plan != null && phase == Phase.Gate && mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned;
+        // A risen scanner within reach: the palm is on it for as long as F is held. F is shared, so the scanner says so
+        // to the key's one owner (InteractKey) and the palm counts only while the held key is the scanner's: a friend
+        // down beside it is got up first and a pickup that is wanted comes first, by the key's order; a pickup that
+        // refuses no longer lifts the palm (this asked FieldPickups.Targeting until 2026-11-18).
+        int near = able ? NearestScanner(mine) : -1;
+        if (near >= 0) InteractKey.Offer(ScannerOffer, held: true);
+        if (near >= 0 && InteractKey.Held(ScannerOffer)) palm = near;
         if (palm >= 0 && palm != was) KitSound.Play(KitSound.Cue.TowerScan, .8f);
         if (IsHost || network == null || !network.IsListening) return;
         if (palm == sentPalm && (palm < 0 || Time.unscaledTime < nextPalm)) return;

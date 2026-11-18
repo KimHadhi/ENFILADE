@@ -15,7 +15,7 @@ public sealed partial class FieldPickups
             if (!views.TryGetValue(item.Id, out var view) || view == null)
                 views[item.Id] = view = PickupView.Make(transform, row.Name, row.Kind, row.Weapon, ColorOf(row.Kind));
             view.transform.position = item.Position;
-            view.Show(i == targeted, eye, time);
+            view.Show(spoken && i == targeted, eye, time);
         }
         if (views.Count == seen.Count && asked.Count == 0) return;
         // Gone (taken, or its time ran out): it plays its take and goes.

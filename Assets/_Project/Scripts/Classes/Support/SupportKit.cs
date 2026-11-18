@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// Stage 4 of the classes, the Support (the user's design, 2026-11-11: "아군을 위한 클래스 … Guts &amp; Blackpowder의
@@ -46,6 +45,14 @@ public sealed partial class SupportKit : MonoBehaviour
     // How often a client's hammer tells the host what it put in (s).
     private const float MendEvery = .2f;
 
+    /// <summary>
+    /// What F does for a Support, as the interact key's one owner knows each (InteractKey; their places among everything
+    /// else F does are the rows of these names in Tables/Player/InteractKey.csv): while the class key is held F is the
+    /// plan's alone (the kind to put up, or a pack thrown) and comes before everything; a resupply and the hammer come
+    /// after whatever else F would do there, as they always did.
+    /// </summary>
+    public const string PlanOffer = "support.plan", GiveOffer = "support.give", MendOffer = "support.mend";
+
     /// <summary>This PC's own player's, while they play a Support.</summary>
     public static SupportKit Local { get; private set; }
 
@@ -58,7 +65,6 @@ public sealed partial class SupportKit : MonoBehaviour
     public event Action<ushort> TookDown;
 
     private PlayerMovement movement;
-    private InputAction interact;
     private float supply = -1f, lastGive = -99f, lastBuild = -99f;
     private int made;
     // The preview while the class key is held: where and how it would stand now and whether it may; and the one to come
@@ -192,16 +198,27 @@ public sealed partial class SupportKit : MonoBehaviour
         Local = this;
         if (supply < 0f) supply = Mathf.Clamp(Number("supplyStart", 100f), 0f, SupplyMax);
         supply = Mathf.Min(SupplyMax, supply + Mathf.Max(0f, Number("supplyRegen", 1.5f)) * Time.deltaTime);
-        Offered = movement.IsDead || movement.IsDowned || !HandsFree() ? null : Aimed();
-        if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        // While the class key is held F chooses what to put up (Plan), so it neither resupplies nor mends then.
-        if (!planning && Offered != null && interact != null && interact.WasPressedThisFrame() && movement.InputAvailable) Give(Offered);
-        // No friend there: a barricade under the crosshair, worn or whole. F held takes the tool out on either, so the
-        // Support finds what it mends with before anything is worn (the user, 2026-11-12: "서포트는 용접 토치나 망치 어디
-        // 있어? 어떻게 쓰는지 모르겠네"), and mends while it is worn.
-        AimedAt = !planning && Offered == null && !movement.IsDead && !movement.IsDowned && HandsFree() ? AimedBarricade() : null;
+        // A friend in reach under the crosshair: F hands them ammo. F is shared, so the resupply is said to the key's one
+        // owner (InteractKey) and done only on a press the owner calls its own. What comes before it is the key's order
+        // and no list kept here: a takedown, a friend to get up, a pickup that is wanted, a ladder's top, the mission's
+        // own prompts, and the plan while the class key is held (Plan). A pickup that refuses comes before nothing: until
+        // 2026-11-18 a medkit looked at with health full, or a shield cell with a shield already there, took the
+        // resupply and the hammer away (the user's item 8: zombies die and drop things exactly at the barricade).
+        bool free = !movement.IsDead && !movement.IsDowned && HandsFree();
+        var friend = free ? Aimed() : null;
+        if (friend != null) InteractKey.Offer(GiveOffer, target: friend);
+        Offered = friend != null && InteractKey.Shows(GiveOffer) ? friend : null;
+        if (Offered != null && InteractKey.Pressed(GiveOffer)) Give(Offered);
+        // A barricade under the crosshair, worn or whole. F held takes the tool out on either, so the Support finds what
+        // it mends with before anything is worn (the user, 2026-11-12: "서포트는 용접 토치나 망치 어디 있어? 어떻게 쓰는지
+        // 모르겠네"), and mends while it is worn. Done for as long as the key is held, and the held key is the hammer's
+        // while the key's owner says so (a resupply goes first by the key's order, and a friend who goes down beside
+        // the barricade is got up first).
+        var aimed = free ? AimedBarricade() : null;
+        if (aimed != null) InteractKey.Offer(MendOffer, held: true, target: aimed);
+        AimedAt = aimed != null && InteractKey.Shows(MendOffer) ? aimed : null;
         Mendable = AimedAt != null && AimedAt.Worn ? AimedAt : null;
-        bool held = AimedAt != null && interact != null && interact.IsPressed() && movement.InputAvailable && !movement.IsHeld;
+        bool held = AimedAt != null && InteractKey.Held(MendOffer) && !movement.IsHeld;
         Mending = held && Mendable != null;
         bool torching = held && Torching;
         if (Mending) Mend(Mendable);
@@ -242,7 +259,4 @@ public sealed partial class SupportKit : MonoBehaviour
             TookDown?.Invoke(id);
         }
     }
-
-    // Whatever else Interact would do here goes first (an execution, a pickup, getting a downed friend up, a ladder, a
-    // mission's button, a door, a shop).
 }

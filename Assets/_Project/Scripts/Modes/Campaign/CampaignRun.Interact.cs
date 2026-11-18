@@ -5,40 +5,61 @@ using UnityEngine;
 // CampaignRun: what players do on the way, the prompt, doors, shops, cans and buttons. One part of the class; the rest is in CampaignRun.cs and the files beside it.
 public sealed partial class CampaignRun
 {
+    /// <summary>
+    /// What F does on a mission's way, each as the interact key's one owner knows it (InteractKey): a step's button
+    /// (this one's, or a later one's with nothing but getting there before it, C4), a can in hand, a door, a shop
+    /// counter, a can to pick up; the map's gimmicks say theirs themselves (MapGimmicks.OfferId). Which of them F does,
+    /// and that a field pickup looked at comes before them all, is their rows' order in Tables/Player/InteractKey.csv:
+    /// the order this method's own if-chain had until 2026-11-18, now written where a mod can change it.
+    /// </summary>
+    public const string ButtonOffer = "campaign.button", CanInHandOffer = "campaign.can.hand", DoorOffer = "campaign.door",
+        ShopOffer = "campaign.shop", CanOnFloorOffer = "campaign.can.floor";
+
     private void Prompt()
     {
         if (screen == null) return;
         var now = Current;
         var mine = PlayerRoster.Local;
         string text = null;
-        // A field pickup looked at has [F] first (FieldPickups).
-        bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.DamageReceiver.IsDowned && !FieldPickups.Targeting;
-        bool pressed = able && InputFocus.TakesPlayInput() && interact != null && interact.WasPressedThisFrame();
-        int door = able ? NearestDoor(mine) : -1;
-        // One [F] at a time: a step's button (this one's, or a later one's with nothing but getting there before it, C4),
-        // then a can in hand, then a door, then a can to pick up.
+        bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.DamageReceiver.IsDowned;
+        // One [F] at a time. Each thing F would do here is said to the key's owner; the one the owner names is the
+        // prompt's words, and acts on the press the owner gives it. Nothing here asks who else wants F: a pickup that
+        // is wanted comes first by the key's order, and one that refuses (a medkit, health full) no longer shuts the
+        // door prompt and its F off, as "not while a pickup is looked at" did.
+        // Each below: said while it is there (Offer), its words shown and its press taken only while the owner names it
+        // of everything F would do now (Shows, Pressed).
         int button = able && !finished && now != null ? ButtonWithin(mine) : -1;
-        if (button >= 0)
+        if (button >= 0) InteractKey.Offer(ButtonOffer);
+        if (button >= 0 && InteractKey.Shows(ButtonOffer))
         {
             var at = steps[button];
             text = string.IsNullOrEmpty(at.Prompt) ? Texts.Format("campaign.prompt.step", at.Title) : at.Prompt;
-            if (pressed) Press(button);
+            if (InteractKey.Pressed(ButtonOffer)) Press(button);
         }
-        else if (able && fuel.Any && fuel.CarriedBy(mine) >= 0) text = CanPrompt(mine, pressed);
-        // The map's gimmicks: a TV to switch on, a key, a breaker, a door to unlock (MapGimmicks).
-        else if (MapGimmicks.Prompt(mine, able, pressed) is string gimmick) text = gimmick;
-        else if (door >= 0)
+        bool carrying = able && fuel.Any && fuel.CarriedBy(mine) >= 0;
+        if (carrying) InteractKey.Offer(CanInHandOffer);
+        if (carrying && InteractKey.Shows(CanInHandOffer)) text = CanPrompt(mine, InteractKey.Pressed(CanInHandOffer));
+        // The map's gimmicks: a TV to switch on, a key, a breaker, a door to unlock (MapGimmicks, which says its own
+        // offer and is handed the press that is its own).
+        string gimmick = MapGimmicks.Prompt(mine, able, InteractKey.Pressed(MapGimmicks.OfferId));
+        if (gimmick != null && InteractKey.Shows(MapGimmicks.OfferId)) text = gimmick;
+        int door = able ? NearestDoor(mine) : -1;
+        if (door >= 0) InteractKey.Offer(DoorOffer);
+        if (door >= 0 && InteractKey.Shows(DoorOffer))
         {
             text = doors[door].Closed ? Texts.Get("campaign.prompt.door.open") : Texts.Get("campaign.prompt.door.close");
-            if (pressed) ToggleDoor(door);
+            if (InteractKey.Pressed(DoorOffer)) ToggleDoor(door);
         }
-        else if (able && NearestShop(mine) is Transform shop)
+        var shop = able ? NearestShop(mine) : null;
+        if (shop != null) InteractKey.Offer(ShopOffer);
+        if (shop != null && InteractKey.Shows(ShopOffer))
         {
             text = Texts.Get("campaign.prompt.shop");
-            if (pressed) ShopMenu.Open(mine, shop.position);
+            if (InteractKey.Pressed(ShopOffer)) ShopMenu.Open(mine, shop.position);
         }
-        else if (able && fuel.Any) text = CanPrompt(mine, pressed);
-        offering = text != null;
+        bool lying = able && fuel.Any && !carrying && fuel.NearestLying(mine.transform.position) >= 0;
+        if (lying) InteractKey.Offer(CanOnFloorOffer);
+        if (lying && InteractKey.Shows(CanOnFloorOffer)) text = CanPrompt(mine, InteractKey.Pressed(CanOnFloorOffer));
         screen.Prompt(ShopMenu.IsOpen ? null : text);
     }
 

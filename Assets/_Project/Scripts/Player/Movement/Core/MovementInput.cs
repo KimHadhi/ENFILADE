@@ -6,9 +6,9 @@ public sealed class MovementInput
 {
     private readonly PlayerMovement ctx;
     internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction, diveAction;
-    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, interactAction;
-    /// <summary>Interact (Player/Interact) was pressed this frame: also takes hold of a ladder from its top (backlog 141).</summary>
-    public bool InteractPressed { get; private set; }
+    // Interact is not sampled here: it is shared by everything the key does, and whose a press is belongs to its one
+    // owner (InteractKey), which a ladder's top asks like the rest (MovementFixtures).
+    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction;
     private bool crouchLatched, weaponInputSought;
     private int leanLatched;
     private PlayerWeaponInput weaponInput;
@@ -55,7 +55,6 @@ public sealed class MovementInput
         leanLeftAction = actions.FindAction("Player/LeanLeft", false);
         leanRightAction = actions.FindAction("Player/LeanRight", false);
         shoveAction = actions.FindAction("Player/Shove", false);
-        interactAction = actions.FindAction("Player/Interact", false);
     }
     /// <summary>
     /// The input frame the movement reads. available false (the keys are a screen's or another window's, control is
@@ -79,7 +78,6 @@ public sealed class MovementInput
         CrouchHeld = settings.crouchToggle ? crouchLatched : available && Held(crouchAction);
         DodgePressed = move && InputFocus.Pressed(dodgeAction);
         DivePressed = move && InputFocus.Pressed(diveAction);
-        InteractPressed = move && InputFocus.Pressed(interactAction);
         ShovePressed = available && InputFocus.Pressed(shoveAction);
         if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;

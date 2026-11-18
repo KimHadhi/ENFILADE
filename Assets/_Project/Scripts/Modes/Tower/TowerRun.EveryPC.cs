@@ -6,7 +6,7 @@ public sealed partial class TowerRun
 {
     private void Present()
     {
-        if (plan == null) { offering = false; return; }
+        if (plan == null) return;
         if (shownSeed != seed) { shownSeed = seed; WriteSigns(); }
         var mine = PlayerRoster.Local;
         int myLane = mine != null ? TowerLayout.LaneAt(mine.transform.position, segment) : -1;
@@ -282,8 +282,10 @@ public sealed partial class TowerRun
     {
         if (screen == null) return;
         string text = null;
-        bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned && !FieldPickups.Targeting && phase != Phase.Finale;
-        if (able && phase == Phase.Gate)
+        bool able = mine != null && mine.IsInitialized && !mine.IsDead && !mine.IsDowned && phase != Phase.Finale;
+        // Each shows, and the shop opens, while the interact key's one owner says F is its own (InteractKey; the
+        // scanner's offer is said where the palm is read, ReadPalm).
+        if (able && phase == Phase.Gate && InteractKey.Shows(ScannerOffer))
         {
             int near = NearestScanner(mine);
             if (near >= 0)
@@ -291,12 +293,12 @@ public sealed partial class TowerRun
                     : hands[near] != 0 && palm != near ? Texts.Format("tower.prompt.taken", NameOf(hands[near]))
                     : palm == near ? Texts.Get("tower.prompt.holding") : Texts.Get("tower.prompt.palm");
         }
-        if (text == null && able && NearShop(mine, out Vector3 shop))
+        if (able && NearShop(mine, out Vector3 shop))
         {
-            text = Texts.Get("campaign.prompt.shop");
-            if (InputFocus.TakesPlayInput() && interact != null && interact.WasPressedThisFrame()) ShopMenu.Open(mine, shop);
+            InteractKey.Offer(ShopOffer);
+            if (InteractKey.Shows(ShopOffer)) text = Texts.Get("campaign.prompt.shop");
+            if (InteractKey.Pressed(ShopOffer)) ShopMenu.Open(mine, shop);
         }
-        offering = text != null;
         screen.Prompt(ShopMenu.IsOpen ? null : text);
     }
 

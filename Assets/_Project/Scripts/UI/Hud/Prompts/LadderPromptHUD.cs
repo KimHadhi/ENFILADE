@@ -22,7 +22,9 @@ public sealed class LadderPromptHUD : MonoBehaviour
 
     private void LateUpdate()
     {
-        var ladder = movement != null && movement.Abilities != null ? movement.Abilities.Fixtures.ClimbDownLadder : null;
+        // While the interact key's owner says F is the ladder's (InteractKey): a pickup looked at up there comes first.
+        var ladder = movement != null && movement.Abilities != null && InteractKey.Shows(MovementFixtures.TopOffer)
+            ? movement.Abilities.Fixtures.ClimbDownLadder : null;
         var view = Camera.main;
         Vector3 screen = Vector3.zero;
         if (ladder != null && view != null)

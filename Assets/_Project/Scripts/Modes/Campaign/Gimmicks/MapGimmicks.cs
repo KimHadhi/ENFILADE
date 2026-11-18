@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// A campaign map's gimmicks (the user, 2026-11-14: "맵에 기믹이 없어서 아쉬워. 페이데이나 거블파 같은 PVE 게임들 맵들
@@ -32,13 +31,18 @@ public sealed partial class MapGimmicks : MonoBehaviour
     private static MapGimmicks active;
     private static readonly List<GimmickSwitch> candidates = new List<GimmickSwitch>();
     private byte[] states = new byte[0];
-    private InputAction interact;
     // The switch whose [F] is being held, and for how long (s).
     private int holding = -1;
     private float held;
 
     /// <summary>This map's gimmicks, or null on a map with none.</summary>
     internal static MapGimmicks Active => active;
+
+    /// <summary>
+    /// Working a map gimmick with F, as the interact key's one owner knows it (InteractKey; its place among the
+    /// mission's other prompts and everything else F does is its row in Tables/Player/InteractKey.csv).
+    /// </summary>
+    public const string OfferId = "gimmick";
 
     /// <summary>The host's word decides (or there is no room).</summary>
     internal static bool IsHost
@@ -65,7 +69,6 @@ public sealed partial class MapGimmicks : MonoBehaviour
 
     private void Start()
     {
-        interact = InputSystem.actions != null ? InputSystem.actions.FindAction("Player/Interact", false) : null;
         Listen();
         if (IsHost) PickSeed();
     }
@@ -194,6 +197,9 @@ public sealed partial class MapGimmicks : MonoBehaviour
             string words = each.Offer(mine);
             if (string.IsNullOrEmpty(words)) continue;
             candidates.Clear();
+            // What F would do here, said to the key's one owner (InteractKey): CampaignRun shows the words and passes
+            // the press on only while the owner says F is the gimmick's.
+            InteractKey.Offer(OfferId, target: each);
             return Work(each, words, mine, pressed);
         }
         candidates.Clear();
@@ -212,7 +218,9 @@ public sealed partial class MapGimmicks : MonoBehaviour
             return words;
         }
         if (pressed) { holding = target.Index; held = 0f; }
-        bool down = interact != null && interact.IsPressed() && InputFocus.TakesPlayInput();
+        // The key still down from the press that began this hold: the press was the gimmick's (InteractKey), so the held
+        // key is too, and a screen taking the keys reads as let go.
+        bool down = InteractKey.Held(OfferId);
         if (holding != target.Index || !down)
         {
             holding = -1;

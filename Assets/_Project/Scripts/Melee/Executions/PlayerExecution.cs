@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// One player's deathblow transaction. F executes a broken enemy; with the melee slot out the attack button does too, from
@@ -37,13 +36,17 @@ public sealed class PlayerExecution : MonoBehaviour
     private float ammoRestoredFraction = .2f;
     private PlayerMovement player;
     private Transform aim;
-    private InputAction interact;
     private PlayerWeaponInput buttons;
     private MeleeCombatTarget victim;
     private ExecutionRule rule;
     private float elapsed, approachTime;
     private bool impacted, approaching;
     private readonly RaycastHit[] sightHits = new RaycastHit[32];
+    /// <summary>
+    /// F's execution or takedown, as the interact key's one owner knows it (InteractKey): that it comes before a pickup,
+    /// a friend to get up and a ping is its row's place in Tables/Player/InteractKey.csv, not a rule each of them keeps.
+    /// </summary>
+    public const string OfferId = "takedown";
     public bool IsExecuting { get; private set; }
     /// <summary>The enemy F would execute now.</summary>
     public MeleeCombatTarget Candidate { get; private set; }
@@ -112,8 +115,6 @@ public sealed class PlayerExecution : MonoBehaviour
     }
     private void Start()
     {
-        var input = GetComponent<PlayerInput>();
-        interact = (input != null ? input.actions : InputSystem.actions).OrNull()?.FindAction("Player/Interact", false);
         buttons = GetComponent<PlayerWeaponInput>();
     }
     private bool CanOffer => isActiveAndEnabled && player != null && player.IsInitialized && player.InputAvailable
@@ -159,8 +160,14 @@ public sealed class PlayerExecution : MonoBehaviour
             if (Time.timeScale <= 0f) return;
             Tick(Time.deltaTime); return;
         }
-        Candidate = interact != null && interact.enabled ? FindCandidate(false) : null;
-        if (Candidate != null && interact.WasPressedThisFrame()) { TryBegin(Candidate); return; }
+        // Whether the body's keys are the player's is CanOffer's question (PlayerMovement.InputAvailable); the interact
+        // action itself is not held here any more.
+        Candidate = FindCandidate(false);
+        // F is shared: the takedown says it is on offer, and begins only when the key's one owner gives it the press
+        // (InteractKey). It read the key for itself until 2026-11-18, and everything else on F asked Candidate and
+        // stepped aside, each by a list of its own.
+        if (Candidate != null) InteractKey.Offer(OfferId, target: Candidate);
+        if (Candidate != null && InteractKey.Pressed(OfferId)) { TryBegin(Candidate); return; }
         // Before the fists read the same click (PlayerMeleeCombat runs after this): a broken enemy takes the deathblow
         // instead of a punch. A counter, which reads it earlier still, has already claimed the click if it was open.
         var fists = player != null ? player.MeleeCombat : null;

@@ -83,9 +83,10 @@ public static class InteractKey
     private static int otherOrder = int.MaxValue;
     // The frame `coming` is gathered in, for which `standing` was settled; who leads in it (an index of standing).
     private static int frame = -1, leadAt = -1;
-    // The key this frame as the game reads it; the offer its press went to; whether that press is spent on it; and who
-    // was last told a held key is theirs (for the record's HOLD line).
-    private static bool pressed, down, spent;
+    // The key this frame as the game reads it, and whether it was the game's to read in the frame before; the offer its
+    // press went to; whether that press is spent on it; and who was last told a held key is theirs (for the record's
+    // HOLD line).
+    private static bool pressed, down, spent, wasOurs;
     private static string taker, holder, lastPress;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -98,7 +99,7 @@ public static class InteractKey
         loaded = false;
         otherOrder = int.MaxValue;
         frame = leadAt = -1;
-        pressed = down = spent = false;
+        pressed = down = spent = wasOurs = false;
         taker = holder = lastPress = null;
         GameTables.Reloaded -= Forget;
         GameTables.Reloaded += Forget;
@@ -219,13 +220,6 @@ public static class InteractKey
         return true;
     }
 
-    /// <summary>A press made now would be this offer's.</summary>
-    public static bool Leads(string id)
-    {
-        Turn();
-        return leadAt >= 0 && standing[leadAt].Id == id;
-    }
-
     /// <summary>
     /// This offer's prompt may show now (<see cref="Shown"/>): it leads, or it refuses with nothing that takes the press
     /// before it. A feature shows its prompt only while this says so, so the screen never names two things for one key.
@@ -267,16 +261,22 @@ public static class InteractKey
         // Said in the frame before this one: it stands. Anything older was not said again and is over.
         if (frame == now - 1)
             for (int i = 0; i < coming.Count; i++) Place(coming[i]);
+        // Nobody asked in the frame before: whose the key was then is not known, and nothing stands to take a press.
+        else wasOurs = false;
         coming.Clear();
         frame = now;
         leadAt = Lead(standing);
         // The key as the game reads it: not while a screen has the body's keys or the window is behind another
         // (KeyBindings, InputHold), nor in the frame the console, the shop or the perk cards closed by a key
-        // (InputFocus.TakesPlayInput), so the F that closes the shop opens no door behind it.
+        // (InputFocus.TakesPlayInput). And a press counts only if the key was the game's as the frame before began too:
+        // the F that closes a screen (the shop, the hub's dressing spot) was that screen's, whichever of the two ran
+        // first this frame, so it opens no door and answers no offer behind the screen it closed. A key held is read
+        // again at once: a hold picked up after a screen is no new press.
         var action = KeyBindings.Find(ActionPath);
         bool ours = action != null && InputFocus.TakesPlayInput();
-        pressed = ours && KeyBindings.Pressed(action);
+        pressed = ours && wasOurs && KeyBindings.Pressed(action);
         down = ours && KeyBindings.Held(action);
+        wasOurs = ours;
         Step(pressed, down, LeaderId, LeaderHeld, ref taker, ref spent);
         if (!down) holder = null;
         if (pressed) Record();
