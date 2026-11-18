@@ -179,7 +179,12 @@ public sealed class MovementFixtures
     /// <summary>Kept each frame for the prompt: only standing about on the ground, never mid-move.</summary>
     internal void TrackClimbDown()
     {
-        bool free = ctx.IsLocal && ctx.Abilities.CanUseGroundActions && !ctx.ControlLocked && !ctx.IsGettingUp
+        // Only a body that can act (CanAct: this PC's own, alive and in the fight). This runs at the frame's start for the
+        // dead and for those waiting to come into a run too (Abilities.BeginFrame comes before PlayerMovement.Update
+        // returns for them), and what is kept here is offered to the interact key's owner and shown as the prompt: a
+        // player who fell at a ladder's top, in state Standing as the dead are, was offered the climb down. Getting on
+        // itself never had the gap: it is reached only through ProcessInput, which asks InputAvailable.
+        bool free = ctx.CanAct && ctx.Abilities.CanUseGroundActions && !ctx.ControlLocked && !ctx.IsGettingUp
             && ladderLock <= 0f && (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
         ClimbDownLadder = free && FindLadderTop(false, out Ladder found, out _, out _) ? found : null;
         // What Interact would do here, said to the key's one owner each frame it holds (InteractKey): the others who use
