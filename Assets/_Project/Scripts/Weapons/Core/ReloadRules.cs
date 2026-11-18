@@ -7,8 +7,9 @@
 /// 됩니다").</para>
 /// <para>Before the gun is loaded only a shove could be asked to end a reload, and as the table stands it does not:
 /// both hands are on the magazine, so V is the kick that leaves the reload alone (ShoveMoves.TryKick), as it has been.
-/// shoveCancels 1 makes V the gun's bash at any moment of a reload, cutting it where it stands (the next one goes on
-/// from that step, as after any cut).</para>
+/// The user chose that, asked whether V should cut a reload before the rounds are in too (2026-11-18): "장전 중에는
+/// 발차기고 탄이 들면 밀치기로 바꾸죠." shoveCancels 1 would make V the gun's bash at any moment of a reload, cutting
+/// it where it stands (the next one goes on from that step, as after any cut).</para>
 /// A shell reload is no part of this: its own end already follows the trigger (WeaponRuntime.StopAfterShell).
 /// </summary>
 public static class ReloadRules

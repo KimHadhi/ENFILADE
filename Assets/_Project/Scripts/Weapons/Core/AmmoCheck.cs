@@ -572,6 +572,26 @@ internal static class AmmoCheck
                 bool own = data.Ammunition == data.name;
                 report.Expect(own || AmmoKinds.NameOf(data) != null, data, $"takes '{data.Ammunition}', which has no text ammo.kind.{data.Ammunition}: the count would be headed RESERVE");
             }
+
+            // The ammunition is each gun's own cell, and it is written to follow the shop's classes (the user,
+            // 2026-11-18: "직관적이게 상점 분류대로 탄 종류 나누죠"): two tables that must not drift apart. A gun that
+            // names no ammunition is always in order, whatever class it is sold under: that is how a weapon that must
+            // not share stays apart ("화염 방사기나 RPG는 탄을 공유하면 안 되니까 이거 염두해 두세요").
+            report.Rule("the ammunition follows the shop's classes (Shop.csv category): guns sold under one class that share ammunition take the same one, and no ammunition is taken by guns of two classes; a gun that names none shares with no gun in any class");
+            var soldAs = ShopClasses();
+            var ammunitionOf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var classOf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var data in guns)
+            {
+                string kind = data.Ammunition;
+                // Ammunition of its own, or a gun the shop puts under no class (a class's own gun): nothing to hold it to.
+                if (kind == data.name || !soldAs.TryGetValue(data.name, out string sold)) { report.Expect(true, data, ""); continue; }
+                if (!ammunitionOf.TryGetValue(sold, out string classKind)) ammunitionOf[sold] = classKind = kind;
+                if (!classOf.TryGetValue(kind, out string kindClass)) classOf[kind] = kindClass = sold;
+                report.Expect(classKind == kind && kindClass == sold, data, $"sold as {sold} and takes '{kind}', but "
+                    + (classKind != kind ? $"the guns sold as {sold} take '{classKind}'" : $"'{kind}' is what the guns sold as {kindClass} take")
+                    + ": write the class's ammunition in its Weapons.csv ammo cell, or leave the cell empty for ammunition of its own");
+            }
         }
         finally
         {
@@ -758,12 +778,27 @@ internal static class AmmoCheck
 
     private static string Kind(bool empty) => empty ? "empty" : "tactical";
 
-    // Which guns share a reserve, for whoever reads the report: each ammunition with the guns that take it and what each
-    // carries by itself (two of them held are filled to the two numbers added up).
+    // The class each gun is sold under (Shop.csv: a Gun row's weapon and its category cell), by the gun's asset name. A
+    // gun the shop does not sell, or sells with no class written, is not in it.
+    private static Dictionary<string, string> ShopClasses()
+    {
+        var classes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in GameTables.RowIds(ShopMenu.TableName))
+        {
+            if (!GameTables.TryGetRow(ShopMenu.TableName, id, out var row) || !string.Equals(row.Text("kind"), "Gun", StringComparison.OrdinalIgnoreCase)) continue;
+            string weapon = row.Text("weapon"), sold = row.Text("category");
+            if (!string.IsNullOrEmpty(weapon) && !string.IsNullOrEmpty(sold)) classes[weapon] = sold;
+        }
+        return classes;
+    }
+
+    // Which guns share a reserve, for whoever reads the report: each ammunition with the shop's class of the guns that
+    // take it, those guns, and what each carries by itself (two of them held are filled to the two numbers added up).
     private static void Ammunitions(List<WeaponData> guns, StringBuilder text)
     {
-        text.AppendLine("== ammunition (Weapons.csv ammo): the guns of one line reload from their holder's one reserve; each carries the number after it, "
-            + "and two of them held are filled to the two added up");
+        text.AppendLine("== ammunition (Weapons.csv ammo, written to follow the shop's classes): the guns of one line reload from their holder's one reserve; "
+            + "each carries the number after it, and two of them held are filled to the two added up. A gun on a line of its own shares with none");
+        var soldAs = ShopClasses();
         var seen = new List<string>();
         foreach (var gun in guns)
         {
@@ -771,8 +806,15 @@ internal static class AmmoCheck
             if (seen.Contains(kind)) continue;
             seen.Add(kind);
             var takers = guns.FindAll(other => other.Ammunition == kind);
+            var classes = new List<string>();
+            foreach (var taker in takers)
+            {
+                string sold = soldAs.TryGetValue(taker.name, out string under) ? under : "not sold";
+                if (!classes.Contains(sold)) classes.Add(sold);
+            }
             string name = AmmoKinds.NameOf(gun);
-            text.Append((kind == gun.name ? "(its own)" : kind).PadRight(10)).Append(' ').Append((name ?? "-").PadRight(8)).Append(' ');
+            text.Append((kind == gun.name ? "(its own)" : kind).PadRight(10)).Append(' ').Append((name ?? "-").PadRight(8)).Append(' ')
+                .Append(("[" + string.Join(", ", classes) + "]").PadRight(11)).Append(' ');
             for (int i = 0; i < takers.Count; i++) text.Append(i > 0 ? ", " : "").Append(takers[i].name).Append(' ').Append(takers[i].InitialReserveAmmo);
             text.AppendLine();
         }

@@ -42,8 +42,9 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Pitch / yaw in degrees. Positive pitch kicks the view upward.")]
     [SerializeField] private Vector2 recoilPerShot = new Vector2(1.2f, 0.4f);
     [Header("Ammunition / fire mode")]
-    [Tooltip("The ammunition it takes (Weapons.csv ammo: pistol, magnum, smg, shell, rifle, dmr, sniper, mg, or a new name): guns " +
-        "that take the same share their holder's reserve. Empty: ammunition of its own, shared with no other gun.")]
+    [Tooltip("The ammunition it takes (Weapons.csv ammo; the game's follow the shop's classes: pistol, smg, shotgun, rifle, marksman, " +
+        "mg): guns that take the same share their holder's reserve. Empty: ammunition of its own, shared with no other gun, as " +
+        "a special weapon's must be whatever class it is sold under.")]
     [SerializeField] private string ammo = "";
     [SerializeField, Min(0)] private int initialReserveAmmo = 90;
     [Tooltip("Rounds one 'magazine' of supply is worth where ammo is handed out by the magazine: an ammo pile, a " +
@@ -259,9 +260,12 @@ public sealed class WeaponData : ScriptableObject
     public int InitialReserveAmmo => Mathf.Max(0, initialReserveAmmo);
     /// <summary>
     /// The ammunition it takes: what its holder's reserve is kept by, so guns that take the same reload from one reserve
-    /// (the user, 2026-11-18: "총 종류별로 두면 너무 빡셀 것 같으니, 탄 종류끼리 공유하는 편이 좋을 것 같습니다"). A gun
-    /// that names none has ammunition of its own, named after the gun. It is the table's (Weapons.csv ammo): ask it of a
-    /// gun whose table has been read (BindTable), as a gun in a slot is.
+    /// (the user, 2026-11-18: "총 종류별로 두면 너무 빡셀 것 같으니, 탄 종류끼리 공유하는 편이 좋을 것 같습니다"). The
+    /// game's guns name the ammunition of the class the shop sells them under ("직관적이게 상점 분류대로 탄 종류
+    /// 나누죠"), but it stays each gun's own cell and is never worked out from that class: a gun that names none has
+    /// ammunition of its own, named after the gun, and that is how a weapon that must not share stays apart in any class
+    /// ("특수 무기 같은 것들에서 화염 방사기나 RPG는 탄을 공유하면 안 되니까"). It is the table's (Weapons.csv ammo):
+    /// ask it of a gun whose table has been read (BindTable), as a gun in a slot is.
     /// </summary>
     public string Ammunition => string.IsNullOrWhiteSpace(ammo) ? name : ammo.Trim();
     /// <summary>
