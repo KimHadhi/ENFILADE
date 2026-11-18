@@ -48,9 +48,12 @@ public sealed class PlayerCombatActions
         if (shoveSweep.HitCount > 0) ctx.GetComponent<WeaponController>().OrNull()?.ConfirmShoveHit();
     }
 
-    // What stops a shove under way: the hands taken (CombatInputLocked), or the body in a move of its own (a vault, a dive,
-    // a slide, a dodge, the dash, a landing; pinned on the back it lies in a locked heavy landing).
-    private bool ShoveHeldBack() => !ctx.InputAvailable || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
+    // What stops a shove under way, reasons of the game alone: the body can't act (dead, gone), the hands are taken
+    // (CombatInputLocked), or the body is in a move of its own (a vault, a dive, a slide, a dodge, the dash, a landing;
+    // pinned on the back it lies in a locked heavy landing). Whose the keys are is not one of them (the user's item 14,
+    // 2026-11-18): the gun's bash is a blow already swung. ctx.InputAvailable was asked here, so the bash lost its hit
+    // when the chat or the Esc menu opened, or the window went behind another, between the press and the strike.
+    private bool ShoveHeldBack() => !ctx.CanAct || ctx.CombatInputLocked || ctx.IsParkour || ctx.IsDiving || ctx.IsSliding
         || ctx.CurrentState == State.StepDodge
         || ctx.CurrentState == State.DashPush
         || ctx.IsLandingRecovery;
