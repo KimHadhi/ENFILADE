@@ -149,11 +149,10 @@ public sealed partial class CampaignRun
     {
         var mine = PlayerRoster.Local;
         if (mine == null || !mine.IsInitialized || mine.IsDead || mine.DamageReceiver.IsDowned || !InputFocus.TakesPlayInput()) return;
-        // A click is the hands', not the legs': a screen with the pointer out takes it while the player walks on (the Tab
-        // board, 2026-11-18), and a click on that screen must not throw the can. KeyBindings reads the button itself, so
-        // the hands are asked here (InputFocus.TakesCombat).
-        if (!InputFocus.TakesCombat()) return;
-        // The fire key (Combat/Fire, the left button unless the key window says otherwise): the hands hold the can, not a gun.
+        // The fire key (Combat/Fire, the left button unless the key window says otherwise): the hands hold the can, not a
+        // gun. A click is the hands', not the legs': with a screen's pointer out the player walks on (the Tab board,
+        // 2026-11-18) and a click on that screen must not throw the can. KeyBindings.Pressed answers that itself now (not
+        // pressed while a screen has the key); 0.9.159 asked the hands here, when it still read the button straight.
         if (!KeyBindings.Pressed("Combat/Fire")) return;
         int carried = fuel.CarriedBy(mine);
         if (carried < 0) return;

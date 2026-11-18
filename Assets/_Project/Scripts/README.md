@@ -55,7 +55,7 @@
 | 메시·본 가중치 읽기 | [MeshTools](Core/Common/MeshTools.cs): `MeshOf(renderer)`, `BoxOf(bounds, matrix)`, `Strongest(weight)` |
 | 재질이 그리는 모습(주 텍스처·타일링·색·잘라내기)을 다른 재질로 옮겨 그리기 | [MaterialLook](Core/Common/MaterialLook.cs): `MaterialLook.Of(material)`, 재질 없을 때 `MaterialLook.Plain` (셰이더의 [MainTexture]·[MainColor] 먼저, 이름으로는 종류가 맞는 속성만) |
 | 클립을 한 순간에 세워 재기(손 자리·팔 길이·카메라 뼈·걸음·재장전 순간…) | [ClipSampler](Core/Common/ClipSampler.cs): `Sample(clip, root, time)`. `AnimationClip.SampleAnimation`을 직접 부르지 않는다: 빌드에서는 Mecanim 클립을 쓰지 못해 모델이 그대로 남는다(0.9.18). 에디터는 SampleAnimation, 빌드는 PlayableGraph |
-| 지금 키 입력을 게임이 받는가 | [InputFocus](UI/Shared/InputFocus.cs): 몸의 키 `TakesMove()` · 시야 `TakesLook()` · 방아쇠와 마우스 클릭 `TakesCombat()`, 콘솔까지 보는 `TakesInput()`, 메뉴까지 보는 `TakesPlayInput()`, `Pressed(action)`. `Cursor.lockState`로 묻지 않는다(포인터가 풀려 있어도 걷기는 플레이어 것일 수 있다) |
+| 지금 키 입력을 게임이 받는가 | [InputFocus](UI/Shared/InputFocus.cs): 몸의 키 `TakesMove()` · 시야 `TakesLook()` · 방아쇠와 마우스 클릭 `TakesCombat()`, 콘솔까지 보는 `TakesInput()`, 메뉴까지 보는 `TakesPlayInput()`, `Pressed(action)`, 키 하나가 지금 게임 것인지는 `Takes(action)`(그 액션이 속한 것을 화면이 쥐었는지, 포인터가 나와 있는데 마우스 버튼에 묶인 키인지까지 안다). `Cursor.lockState`로 묻지 않는다(포인터가 풀려 있어도 걷기는 플레이어 것일 수 있다) |
 | 코드로 UI 조각 만들기 | [FeelUI](Combat/Feedback/FeelUI.cs): `Rect`, `Panel`, `Label` / [KitStyle](UI/Kit/KitStyle.cs): `Stretch`, `Fill`, `Cut`, `With(color, alpha)` |
 | 플레이어 찾기·이름 | [PlayerRoster](Player/PlayerRoster.cs): `Local`, `All`, `IdOf`, `ById` / [PlayerTally](Player/Life/PlayerTally.cs): `NameOf`, `ColoredNameOf` |
 | 팔·손을 코드로 자세 잡기 (뼈 찾기, 손 방향·손바닥, 손가락 쥐기, 프레임 자세와 섞기) | [ArmBones](Player/Body/Hands/ArmBones.cs)를 하나 들고 쓴다: `arm.Bind(animator)`, `arm.Keep()` → 자세 → `arm.Ease(weight)`, `arm.TurnHand`, `arm.Close` (수류탄·수리·가드·가리키기·처형 칼 팔이 쓴다. 오른팔은 `new ArmBones(true)`) |
@@ -102,7 +102,7 @@
 
 ## 입력과 설정
 
-대부분의 키 바인딩은 [Player.inputactions](../Input/Player.inputactions)에 있다. 이동은 `MovementInput`, 사격은 `PlayerWeaponInput`, UI는 해당 UI 컴포넌트가 읽는다. 앉기는 상태 코드에서 키를 직접 읽지 않고 `MovementInput.CrouchHeld`/`CrouchPressed`를 쓴다. 그래야 Esc 메뉴의 "눌러서 전환" 설정이 모든 상태에 적용된다. 게임이 읽는 키는 모두 이 에셋의 액션이다(슬롯 1~4와 숫자패드도 `Combat/Slot1~4`, 사격 모드·총 꾸미기·살펴보기·라이트·돌 던지기·돈 떨구기·능력 카드·3인칭·콘솔도 액션). 플레이어가 바꾼 키는 [KeyBindings](Core/Settings/KeyBindings.cs)가 바인딩 덮어쓰기로 얹으니, 키를 새로 읽는 코드는 `Keyboard.current`가 아니라 `KeyBindings.Pressed("맵/액션")`을 쓰고 키 설정 창 줄(`KeyBindings.Entries`)을 더한다. 그러지 않으면 키 설정 창이 그 키를 모른다.
+대부분의 키 바인딩은 [Player.inputactions](../Input/Player.inputactions)에 있다. 이동은 `MovementInput`, 사격은 `PlayerWeaponInput`, UI는 해당 UI 컴포넌트가 읽는다. 앉기는 상태 코드에서 키를 직접 읽지 않고 `MovementInput.CrouchHeld`/`CrouchPressed`를 쓴다. 그래야 Esc 메뉴의 "눌러서 전환" 설정이 모든 상태에 적용된다. 게임이 읽는 키는 모두 이 에셋의 액션이다(슬롯 1~4와 숫자패드도 `Combat/Slot1~4`, 사격 모드·총 꾸미기·살펴보기·라이트·돌 던지기·돈 떨구기·능력 카드·3인칭·콘솔도 액션). 플레이어가 바꾼 키는 [KeyBindings](Core/Settings/KeyBindings.cs)가 바인딩 덮어쓰기로 얹으니, 키를 새로 읽는 코드는 `Keyboard.current`가 아니라 `KeyBindings.Pressed("맵/액션")`을 쓰고(화면이 그 키를 가진 동안에는 '안 눌림'이라고 답하므로 누구 키인지 따로 묻지 않는다. 화면이 자기 키를 읽을 때는 `Pressed("맵/액션", this)`, 누르다 떼면 실행되는 동작은 `InputFocus.Takes(key)`로 '뺏김'을 먼저 가린다) 키 설정 창 줄(`KeyBindings.Entries`)을 더한다. 그러지 않으면 키 설정 창이 그 키를 모른다.
 
 `PlayerMovement.Configuration.cs`는 별도 컴포넌트가 아니라 같은 `PlayerMovement` 클래스의 직렬화 필드다. `MovementAbilitySettings`는 그 안의 설정 데이터다. 수치는 `Player.csv`(`Posture`·`Move`·`Ability` 행)가 필드 이름으로 덮어쓰므로, 표에 있는 값은 인스펙터에서 바꿔도 Play 때 표 값으로 돌아간다. 필드 이름을 바꾸면 표의 키도 같이 바꾼다. 컴포넌트 안에 든 설정 객체는 `GameTables.BindNested`로 연결한다.
 

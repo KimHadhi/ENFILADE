@@ -26,7 +26,7 @@ using UnityEngine.UI;
 /// this player's own again (the user, 2026-11-18: "Tab 현황판에서 팀원 옆 덱(Deck) 아이콘 클릭 시 해당 팀원이 현재 보유한
 /// 카드 목록 열람").
 /// </summary>
-[DisallowMultipleComponent]
+[DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.ScreenKeys)]
 public sealed class ScoreboardHUD : MonoBehaviour
 {
     private const string ShowAction = "UI/OpenObjectiveBoard";
@@ -86,8 +86,10 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private InputAction show;
     private bool ownsShow;
     private float refreshLeft;
-    // The pointer is out on the board: this holds it (InputHold) until a second right click or Tab let go.
+    // The pointer is out on the board: this holds it (InputHold) until a second right click or Tab let go. And the frame
+    // it came out in, whose right click is not also the one that puts it away.
     private bool pointer;
+    private int pointerFrame = -1;
     private TextMeshProUGUI pointerHint;
 
     private void Start()
@@ -370,15 +372,30 @@ public sealed class ScoreboardHUD : MonoBehaviour
         refreshLeft = 0f;
     }
 
+    // The board is up: Tab is held and the window has the focus. Tab belongs to whatever other screen has the pointer
+    // (the chat, a menu, the shop); the board's own hold of the pointer doesn't count, it stays up under it. Until
+    // 2026-11-18 this asked whether the pointer was locked, so the board could never show one.
+    private bool Up => show != null && show.IsPressed() && Application.isFocused && !InputHold.AnyBesides(this, Held.Cursor);
+
+    // The right click that brings the pointer out is the board's, and the right button is the guard key too: the pointer
+    // is taken here, before anything reads the mouse this frame (FrameOrder.ScreenKeys), so the gun, the fists and the
+    // class keys find that click already a screen's. Taken in LateUpdate, as it was until 2026-11-18, the click had been
+    // read by all of them first: a held grenade's pin went back, a barricade's plan was called off, the sights came up
+    // for a frame. The click that puts the pointer away is the other way round: it is let go of in LateUpdate, after
+    // everything has read this frame with the pointer still out.
+    private void Update()
+    {
+        if (group == null || pointer || !Up || Mouse.current == null || !Mouse.current.rightButton.wasPressedThisFrame) return;
+        SetPointer(true);
+        pointerFrame = Time.frameCount;
+    }
+
     private void LateUpdate()
     {
         if (group == null) return;
-        // Tab belongs to whatever other screen has the pointer (the chat, a menu, the shop). The board's own hold of the
-        // pointer doesn't count: it stays up under it. Until 2026-11-18 this asked whether the pointer was locked, so the
-        // board could never show one.
-        bool held = show != null && show.IsPressed() && Application.isFocused && !InputHold.AnyBesides(this, Held.Cursor);
-        if (held && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame) SetPointer(!pointer);
-        else if (!held && pointer) SetPointer(false);
+        bool held = Up;
+        if (pointer && (!held || (pointerFrame != Time.frameCount && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)))
+            SetPointer(false);
         float next = Mathf.MoveTowards(group.alpha, held ? 1f : 0f, Time.unscaledDeltaTime / FadeSeconds);
         if (next <= 0f && group.alpha <= 0f) return;
         if (!group.gameObject.activeSelf) { group.gameObject.SetActive(true); refreshLeft = 0f; }

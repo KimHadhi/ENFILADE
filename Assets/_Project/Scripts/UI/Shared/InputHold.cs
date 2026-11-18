@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -41,6 +42,8 @@ public enum Held
 /// screen destroyed while it held (a scene change) lets go by being gone.
 /// This is the one owner: whoever reads the player's input asks here what is held (InputFocus puts the questions), never
 /// whether the pointer happens to be locked. The lock is only what this does about Held.Cursor.
+/// A key read by its action asks by the action (<see cref="Keeps"/>; KeyBindings.Pressed and Held do, and InputFocus.Takes):
+/// the reader then needs no check of its own for whose the press is, and a click on a screen is never the game's.
 /// </summary>
 public static class InputHold
 {
@@ -50,8 +53,9 @@ public static class InputHold
         public Held What;
     }
 
-    // The Player map's one action that is the view's; every other action of that map is the body's.
-    private const string LookAction = "Look";
+    // The asset's two maps a screen can take keys of: the hands' and the body's. The body's one action that is the
+    // view's; every other action of that map is the body's.
+    private const string CombatMap = "Combat", PlayerMap = "Player", LookAction = "Look";
 
     private static readonly List<Holder> holders = new List<Holder>();
     // The actions this switched off, to switch back on: only those that were on.
@@ -86,6 +90,44 @@ public static class InputHold
     {
         Apply();
         return (Wanted(who) & what) != 0;
+    }
+
+    /// <summary>
+    /// What a key of this action is: the hands' (the Combat map), the view's (the Player map's Look) or the body's (the
+    /// rest of the Player map). Nothing for an action of any other map: no screen takes those (the UI's own keys).
+    /// </summary>
+    public static Held PartOf(InputAction action)
+    {
+        var map = action != null ? action.actionMap : null;
+        if (map == null) return Held.None;
+        if (map.name == CombatMap) return Held.Combat;
+        if (map.name == PlayerMap) return action.name == LookAction ? Held.Look : Held.Move;
+        return Held.None;
+    }
+
+    /// <summary>
+    /// Some screen has this action's key, so the key is not the game's to read: a screen holds what the action belongs
+    /// to (<see cref="PartOf"/>), or a screen has the pointer out and the action sits on a mouse button. A mouse that
+    /// points clicks on the screen under it whatever its button is bound to, the class key on the middle button as much
+    /// as the trigger on the left; such an action is the pointer's as a whole then, its second key too.
+    /// <paramref name="besides"/> is a screen asking about a key of its own (the key that closes it): what it holds
+    /// itself doesn't keep the key from it, what another screen holds does.
+    /// </summary>
+    public static bool Keeps(InputAction action, Object besides = null)
+    {
+        if (action == null) return false;
+        Apply();
+        Held held = Wanted(besides);
+        if ((held & PartOf(action)) != 0) return true;
+        return (held & Held.Cursor) != 0 && OnPointer(action);
+    }
+
+    // One of the action's keys is a button of the mouse (or of a pen or a touch screen, which point as it does).
+    private static bool OnPointer(InputAction action)
+    {
+        foreach (var control in action.controls)
+            if (control is ButtonControl && control.device is Pointer) return true;
+        return false;
     }
 
     /// <summary>The screen holds these from now on. Taking again adds to what it holds.</summary>
@@ -134,9 +176,9 @@ public static class InputHold
     {
         Held wanted = Wanted();
         if (wanted == applied) return wanted;
-        Switch(wanted, Held.Combat, "Combat", null, combatOff);
-        Switch(wanted, Held.Move, "Player", false, moveOff);
-        Switch(wanted, Held.Look, "Player", true, lookOff);
+        Switch(wanted, Held.Combat, CombatMap, null, combatOff);
+        Switch(wanted, Held.Move, PlayerMap, false, moveOff);
+        Switch(wanted, Held.Look, PlayerMap, true, lookOff);
         bool free = (wanted & Held.Cursor) != 0;
         if (free != ((applied & Held.Cursor) != 0))
         {

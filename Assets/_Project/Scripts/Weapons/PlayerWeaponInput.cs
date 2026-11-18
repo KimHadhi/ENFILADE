@@ -11,6 +11,10 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     private InputAction fire, reload, guard, shove;
     private bool meleeReleaseRequired = true;
     private bool acceptInputThisFrame, releaseRequired = true;
+    // The guard button's present press went down while a screen had the hands: it is that screen's click (the right
+    // click that puts the Tab board's pointer away), not an aim or a guard, until it has been let go. A guard held from
+    // before the screen comes back with the hands, as a held walk key does.
+    private bool guardIsScreens;
 
     private void OnEnable()
     {
@@ -36,7 +40,12 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
         // InputHold doesn't switch off.
         acceptInputThisFrame = Time.timeScale > 0f && InputFocus.TakesCombat();
         if (!acceptInputThisFrame) releaseRequired = meleeReleaseRequired = true;
+        if (guard == null || !guard.IsPressed()) guardIsScreens = false;
+        else if (!acceptInputThisFrame && guard.WasPressedThisFrame()) guardIsScreens = true;
     }
+
+    // The guard button is down and the press is the player's own (see guardIsScreens).
+    private bool GuardDown => guard != null && guard.IsPressed() && !guardIsScreens;
 
     public WeaponInputFrame ReadInput()
     {
@@ -51,7 +60,7 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
             if (!fire.IsPressed()) releaseRequired = false;
             return default;
         }
-        return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame(), guard != null && guard.IsPressed());
+        return new WeaponInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), reload.WasPressedThisFrame(), GuardDown);
     }
 
     public bool TryReadMeleeInput(out MeleeInputFrame frame)
@@ -68,7 +77,7 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
             return false;
         }
         frame = new MeleeInputFrame(fire.WasPressedThisFrame(), fire.IsPressed(), fire.WasReleasedThisFrame(),
-            guard.WasPressedThisFrame(), guard.IsPressed(), shove != null && shove.WasPressedThisFrame(),
+            guard.WasPressedThisFrame(), GuardDown, shove != null && shove.WasPressedThisFrame(),
             shove != null && shove.IsPressed(), shove != null && shove.WasReleasedThisFrame());
         return true;
     }
@@ -76,7 +85,7 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     public void RequireTriggerRelease() { releaseRequired = meleeReleaseRequired = true; }
 
     /// <summary>The aim/guard button is held, for moves that read it (a slide ends lying on the back).</summary>
-    public bool GuardHeld => isActiveAndEnabled && acceptInputThisFrame && guard != null && guard.IsPressed();
+    public bool GuardHeld => isActiveAndEnabled && acceptInputThisFrame && GuardDown;
 
     // A guard-break animation stays locked, but may remember a defensive press near its end.
     public bool TryReadGuardBuffer(out MeleeInputFrame frame)
@@ -86,7 +95,7 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
         // acceptInputThisFrame already says no screen holds the hands; it used to look at the Player map being on for that.
         if (!isActiveAndEnabled || !acceptInputThisFrame || guard == null || movement == null
             || !movement.InputAvailable || movement.Execution.OrNull()?.IsExecuting == true) return false;
-        frame = new MeleeInputFrame(guardPressed: guard.WasPressedThisFrame(), guardHeld: guard.IsPressed());
+        frame = new MeleeInputFrame(guardPressed: guard.WasPressedThisFrame(), guardHeld: GuardDown);
         return true;
     }
 
@@ -94,7 +103,7 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     private void OnDisable()
     {
         Release(); fire = reload = null;
-        acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; guard = shove = null;
+        acceptInputThisFrame = false; releaseRequired = meleeReleaseRequired = true; guard = shove = null; guardIsScreens = false;
     }
 
     private void Release()

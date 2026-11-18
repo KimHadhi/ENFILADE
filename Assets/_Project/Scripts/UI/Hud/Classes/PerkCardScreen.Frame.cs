@@ -34,8 +34,9 @@ public sealed partial class PerkCardScreen
         ShowPrompt(false, true);
         if (keyboard != null && picked < 0 && !closing)
         {
-            // The same key closes the cards (read from its keys: alone, the cards hold the player's map).
-            if (KeyBindings.Pressed("Player/PerkCards") || keyboard.escapeKey.wasPressedThisFrame) Close();
+            // The same key closes the cards: the cards' own key, read as the cards (alone they hold the player's keys; in
+            // a room they hold nothing, and a key typed into the chat over them is the chat's).
+            if (KeyBindings.Pressed("Player/PerkCards", this) || keyboard.escapeKey.wasPressedThisFrame) Close();
             else
                 for (int i = 0; i < dealt; i++)
                     if (keyboard[DigitKeys[i]].wasPressedThisFrame || keyboard[PadKeys[i]].wasPressedThisFrame) { Pick(i); break; }

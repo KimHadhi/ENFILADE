@@ -10,8 +10,10 @@ using UnityEngine.InputSystem;
 /// 커스텀할 수 있게끔") lists exactly what the game listens to. A changed key is an Input System binding override, kept
 /// as JSON in GameSettings.keyBindings and put back on every start. Each line of the window (<see cref="Entries"/>) has a
 /// first and a second key: the second is an empty binding in the asset until the player fills it.
-/// Code that reads a key a menu holds (its action map is off while a shop or the perk cards are up) asks
-/// <see cref="Pressed"/>/<see cref="Held"/>, which then read the bound controls straight, as a hard-coded key read used to.
+/// Code that reads a key asks <see cref="Pressed(string)"/>/<see cref="Held(string)"/>, which answer for the game: not
+/// pressed while a screen has the key (InputHold.Keeps). A screen reading a key of its own while it holds the player's
+/// keys (the key that closes the shop) says so (<see cref="Pressed(string, UnityEngine.Object)"/>): its action is off
+/// then, and the bound controls are read straight, as a hard-coded key read used to.
 /// Maps cloned for a component's own use (<see cref="Copy"/>) follow every change. Words in Texts.csv that name a
 /// default key in brackets ("[F] 문 열기") show the key the player chose instead (<see cref="Relabel"/>).
 /// </summary>

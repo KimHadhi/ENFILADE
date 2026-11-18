@@ -41,9 +41,15 @@ public sealed partial class ClassCards
     {
         if (dangerPressed < 0f) return;
         var key = KeyBindings.Find("Player/ClassAbility");
-        bool able = key != null && HasDanger && movement.InputAvailable && !movement.IsDead && !movement.IsDowned && !movement.IsHeld
+        // Two questions (the user's item 14, 2026-11-18). able: what the body can do, reasons of the game. keys: whether
+        // the class key is the player's to hold right now; a screen may have the body's keys, the window may be behind
+        // another, a board's pointer has the mouse button the key sits on (InputFocus.Takes). The key taken is not the
+        // key let go: nobody chose to call the barrage, so the aim is put away with nothing spent, as a grenade's pin
+        // goes back (PlayerGrenades.Hand). KeyBindings reads a taken key as not held, which below means "let go".
+        bool able = key != null && HasDanger && movement.CanAct && !movement.IsDead && !movement.IsDowned && !movement.IsHeld
             && !movement.CombatInputLocked;
-        if (!able)
+        bool keys = Time.timeScale > 0f && InputFocus.Takes(key);
+        if (!able || !keys)
         {
             StopAim();
             return;

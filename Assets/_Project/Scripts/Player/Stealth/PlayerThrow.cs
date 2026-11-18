@@ -56,8 +56,11 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     {
         // Player/Throw (T unless the key window says otherwise).
         var key = KeyBindings.Find("Player/Throw");
+        // The key itself is asked last (InputFocus.Takes): taken (a screen, another window, a board's pointer over a
+        // throw key that sits on a mouse button) is not let go. KeyBindings reads a taken key as not held, which below
+        // means "thrown", so the aim is put away here first and no stone leaves the hand.
         bool able = movement != null && movement.InputAvailable && key != null && InputFocus.TakesInput() && !movement.IsDead && !movement.IsHeld
-            && !movement.CombatInputLocked;
+            && !movement.CombatInputLocked && InputFocus.Takes(key);
         var eye = Camera.main;
         if (!able || eye == null) { StopAim(); return; }
         if (KeyBindings.Pressed(key)) aiming = true;

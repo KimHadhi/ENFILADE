@@ -20,6 +20,13 @@ public static class FrameOrder
 
     // ---- Input and combat rules, before the player moves ----
 
+    /// <summary>
+    /// A screen that takes the player's keys by a key the game reads too decides before anything reads the keys this
+    /// frame, so that press is the screen's alone: the Tab board's right click brings its pointer out here, ahead of the
+    /// gun, the fists and the class keys, each of which would have read the same click as the guard (ScoreboardHUD).
+    /// </summary>
+    public const int ScreenKeys = -300;
+
     /// <summary>Weapon input is read first. A parried enemy's lean comes off before gameplay reads its rotation and goes
     /// back on later (enemies, visual only).</summary>
     public const int WeaponInput = -200;

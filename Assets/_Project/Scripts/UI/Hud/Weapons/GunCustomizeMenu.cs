@@ -149,9 +149,10 @@ public sealed class GunCustomizeMenu : MonoBehaviour
             return;
         }
         var keyboard = Keyboard.current;
-        // Esc, or the customize key that opened it (Player/Customize, read from its keys while the menu holds the map).
+        // Esc, or the customize key that opened it (Player/Customize, the menu's own key while it holds the player's keys:
+        // read as the menu, KeyBindings.Pressed).
         bool shut = Time.frameCount != openedFrame
-            && ((keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || KeyBindings.Pressed("Player/Customize"));
+            && ((keyboard != null && keyboard.escapeKey.wasPressedThisFrame) || KeyBindings.Pressed("Player/Customize", this));
         if (shut || player == null || !player.IsInitialized || player.IsDead || player.DamageReceiver.IsDowned
             || weapon == null || weapon.HeldGun != gun)
         {

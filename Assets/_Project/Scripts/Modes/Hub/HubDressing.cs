@@ -323,7 +323,8 @@ public sealed class HubDressing : MonoBehaviour, IWardrobeStage
                 if (wardrobe != null && wardrobe.ShowsSlot) wardrobe.ShowSlots();
                 else { Close(); return; }
             }
-            else if (KeyBindings.Pressed("Player/Interact")) { Close(); return; }
+            // The mirror's own key while it holds the player's keys: read as the mirror (KeyBindings.Pressed).
+            else if (KeyBindings.Pressed("Player/Interact", this)) { Close(); return; }
         }
         if (keys && keyboard != null)
         {

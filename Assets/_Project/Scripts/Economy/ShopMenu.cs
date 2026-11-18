@@ -209,10 +209,11 @@ public sealed partial class ShopMenu : MonoBehaviour
             return;
         }
         var keyboard = Keyboard.current;
-        // Esc goes back a page, and from the first page closes; the interact key that opened it (Player/Interact, read
-        // from its keys while the shop holds the map) closes from any page. An Esc that closed the console is the console's.
+        // Esc goes back a page, and from the first page closes; the interact key that opened it (Player/Interact, the
+        // shop's own key while it holds the player's keys: read as the shop, KeyBindings.Pressed) closes from any page.
+        // An Esc that closed the console is the console's.
         bool escape = Time.frameCount != openedFrame && keyboard != null && keyboard.escapeKey.wasPressedThisFrame && !DevConsole.TakesKeyboard;
-        bool closing = (escape && shownGroup == null) || (Time.frameCount != openedFrame && KeyBindings.Pressed("Player/Interact"));
+        bool closing = (escape && shownGroup == null) || (Time.frameCount != openedFrame && KeyBindings.Pressed("Player/Interact", this));
         if (closing || player == null || !player.IsInitialized || player.IsDead || player.DamageReceiver.IsDowned
             || (player.transform.position - counter).sqrMagnitude > Reach * Reach)
         {

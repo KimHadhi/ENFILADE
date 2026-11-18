@@ -9,10 +9,11 @@ public sealed partial class PlayerGrenades
         var key = KeyBindings.Find("Player/Grenade");
         // Two questions kept apart (2026-11-18; they were one "able", so the chat opening counted as the hands being
         // taken). able: what the body can do, reasons of the game (Able). keys: whether the key is the player's to hold
-        // now; a screen or another window may have it (asked here because KeyBindings reads a bound key straight while
-        // its map is off).
+        // now: a screen or another window may have the body's keys, and a board's pointer has the mouse, should the
+        // grenade key sit on one of its buttons (InputFocus.Takes). KeyBindings reads a taken key as not held, which
+        // below means "let go", so taken has to be told apart here first.
         bool able = info != null && key != null && Able();
-        bool keys = movement.InputAvailable && InputFocus.TakesInput();
+        bool keys = movement.InputAvailable && InputFocus.TakesInput() && InputFocus.Takes(key);
         // The key taken while it still held the grenade back is not the key let go: nobody chose to throw, so the pin
         // goes back as it does when the hands are taken. A throw the player has already let go is theirs and goes on:
         // it used to be called back to the belt when the chat or the Esc menu opened during its swing.
