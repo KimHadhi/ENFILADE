@@ -178,18 +178,26 @@ public sealed class ChatMessageItem : MonoBehaviour
     public void Linger(float now) => holdUntil = Mathf.Max(holdUntil, now + look.Fade.linger);
 
     /// <summary>
-    /// Moves the line one frame: its pop, and how much of it shows. rank is 0 for the newest line; open is whether the
-    /// chat is open (every line back, none dimmed). False once nothing moves until something changes, so the manager can
-    /// stop at the first such line past the ones shown while closed.
+    /// This line shows nothing and its arrival is over. Past the lines shown while the chat is closed, that stays so
+    /// until the chat opens, so the manager may leave such a line alone. Each line answers this for itself: until 2026-11-18
+    /// the manager stopped at the first resting line and took every older one for gone, but lines pushed out together
+    /// (closing a chat that showed more than Fade.lines) reach nothing in the same frame, the newest first, so the older
+    /// ones never took their last step and stayed faintly on the screen (the user: "채팅 메시지가 사라진 뒤에도 화면 상단에
+    /// 희미하게 남는").
     /// </summary>
-    public bool Tick(float now, float dt, int rank, bool open)
+    public bool Gone => settled && alpha <= 0f;
+
+    /// <summary>
+    /// Moves the line one frame: its pop, and how much of it shows. rank is 0 for the newest line; open is whether the
+    /// chat is open (every line back, none dimmed).
+    /// </summary>
+    public void Tick(float now, float dt, int rank, bool open)
     {
         float age = now - since;
-        bool popping = !settled && age < Mathf.Max(look.Pop.seconds, look.Pop.flashSeconds);
         if (!settled)
         {
             Pop(age);
-            settled = !popping;
+            settled = age >= Mathf.Max(look.Pop.seconds, look.Pop.flashSeconds);
         }
 
         var fade = look.Fade;
@@ -215,7 +223,6 @@ public sealed class ChatMessageItem : MonoBehaviour
             nextPicture = now + PictureEvery;
             PaintTile(false);
         }
-        return popping || alpha != target;
     }
 
     // The arrival, age seconds in: out from the edge, a touch big, the plate washed in the speaker's colour, the bar wide.

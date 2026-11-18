@@ -170,9 +170,10 @@ public class SinglePlayerChatManager : MonoBehaviour
         {
             var line = messageList[i];
             if (line == null) continue;
-            bool moving = line.Tick(now, dt, rank, isChatOpen);
-            // While closed, past the lines shown, the first line with nothing left to do has only gone ones above it.
-            if (!moving && !isChatOpen && rank >= shownWhileClosed) break;
+            // While closed, a line past the ones shown that is already gone has nothing to do until the chat opens. Each
+            // line is asked about itself; a newer line's rest says nothing of the older ones (ChatMessageItem.Gone).
+            if (!isChatOpen && rank >= shownWhileClosed && line.Gone) continue;
+            line.Tick(now, dt, rank, isChatOpen);
         }
     }
 
