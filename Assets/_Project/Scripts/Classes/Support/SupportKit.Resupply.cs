@@ -38,7 +38,7 @@ public sealed partial class SupportKit
             var gun = slots.GetRuntime(i);
             int cap = slots.ReserveCap(i, overfill);
             int room = cap - gun.ReserveAmmo;
-            if (room > 0) gun.AddReserve(Mathf.Min(room, data.MagazineSize * Mathf.Max(1, magazines)));
+            if (room > 0) gun.AddReserve(Mathf.Min(room, data.SupplyRounds * Mathf.Max(1, magazines)));
         }
         slots.NotifyAmmo();
         if (syringe > 0f && DetenteKit.Local != null) DetenteKit.Local.Refill(syringe);

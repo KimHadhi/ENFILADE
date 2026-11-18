@@ -40,6 +40,11 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField] private Vector2 recoilPerShot = new Vector2(1.2f, 0.4f);
     [Header("Ammunition / fire mode")]
     [SerializeField, Min(0)] private int initialReserveAmmo = 90;
+    [Tooltip("Rounds one 'magazine' of supply is worth where ammo is handed out by the magazine: an ammo pile, a " +
+        "Support's resupply, an execution's refund, the low-ammo callout. 0: the magazine itself. A gun whose magazine " +
+        "is its barrels (a double barrel's two) names what the other guns of its kind are handed, or each hand-out " +
+        "would be two shells.")]
+    [SerializeField, Min(0)] private int supplyRounds;
     [SerializeField, Min(.01f)] private float emptyReloadDuration = 2f;
     [SerializeField, Min(1)] private int burstCount = 3;
     [SerializeField, Min(0f)] private float burstPause = .22f;
@@ -207,6 +212,11 @@ public sealed class WeaponData : ScriptableObject
     public float RecoilResponse => Mathf.Clamp(recoilResponse, 8f, 50f);
     public float RecoilRetention => Mathf.Clamp01(recoilRetention);
     public int InitialReserveAmmo => Mathf.Max(0, initialReserveAmmo);
+    /// <summary>
+    /// What one magazine of supply is worth for this gun, in rounds (Supply Rounds; the magazine itself when unset).
+    /// Hand-outs count in this, never in MagazineSize: how much a gun holds at once is not how much a pile gives it.
+    /// </summary>
+    public int SupplyRounds => supplyRounds > 0 ? supplyRounds : MagazineSize;
     public float EmptyReloadDuration => Mathf.Max(.01f, emptyReloadDuration);
     public int BurstCount => Mathf.Max(1, burstCount);
     public float BurstPause => Mathf.Max(0f, burstPause);

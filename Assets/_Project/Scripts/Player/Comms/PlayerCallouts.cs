@@ -425,11 +425,12 @@ public sealed class PlayerCallouts : MonoBehaviour
         return receiver != null ? receiver.Health / Mathf.Max(1f, receiver.MaximumHealth) : 1f;
     }
 
-    // The gun in hand has a magazine or less left besides the one in it.
+    // The gun in hand has a magazine of supply or less left besides what is in it (WeaponData.SupplyRounds: a double
+    // barrel's two shells are not "a magazine left").
     private bool LowOnAmmo()
     {
         var runtime = weapon != null ? weapon.Runtime : null;
-        return runtime != null && runtime.Data != null && runtime.ReserveAmmo <= runtime.Data.MagazineSize;
+        return runtime != null && runtime.Data != null && runtime.ReserveAmmo <= runtime.Data.SupplyRounds;
     }
 
     // Someone else in the room plays this class.

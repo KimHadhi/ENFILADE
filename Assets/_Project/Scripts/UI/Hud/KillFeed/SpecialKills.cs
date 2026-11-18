@@ -142,7 +142,10 @@ public static class SpecialKills
             }
         if (killed.Count >= Mathf.Max(2, Mathf.RoundToInt(rules.Of(Kind.Collateral).need))) Award(Kind.Collateral, killed.Count);
         var gun = watched != null ? watched.EquippedData : null;
-        if (shot.AmmoAfterShot == 0 && gun != null && gun.MagazineSize > 1) Award(Kind.LastRound);
+        // The last round of a magazine worth the name: the rule's own number is the rounds it must hold more than, so a
+        // single-shot gun and a double barrel (whose every second shell is its last) earn nothing by it.
+        if (shot.AmmoAfterShot == 0 && gun != null && gun.MagazineSize > Mathf.Max(1, Mathf.RoundToInt(rules.Of(Kind.LastRound).need)))
+            Award(Kind.LastRound);
     }
 
     // What a pellet went into first: an enemy (or practice target) by its collider, or a body killed earlier this frame

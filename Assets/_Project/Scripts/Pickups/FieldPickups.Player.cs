@@ -172,7 +172,7 @@ public sealed partial class FieldPickups
             if (data == null || data.Category != WeaponCategory.Ranged || slots.KeepsOwnRounds(i)) continue;
             var runtime = slots.GetRuntime(i);
             int room = slots.ReserveCap(i) - runtime.ReserveAmmo;
-            if (room > 0) runtime.AddReserve(Mathf.Min(room, Mathf.RoundToInt(data.MagazineSize * magazines * share)));
+            if (room > 0) runtime.AddReserve(Mathf.Min(room, Mathf.RoundToInt(data.SupplyRounds * magazines * share)));
         }
     }
 

@@ -23,7 +23,8 @@ public sealed class SpecialKillStamp : MonoBehaviour
         [Tooltip("Money paid on top of the kill (a kill is 100).")]
         public int points = 50;
         [Tooltip("The rule's own number: meatshot the share of the pellets that must go in (1 every one), railgun how near " +
-            "the head the blow must land (m), collateral the kills one shot needs, hattrick the headshot kills in a row.")]
+            "the head the blow must land (m), collateral the kills one shot needs, hattrick the headshot kills in a row, " +
+            "lastround the rounds a magazine must hold more than (a double barrel's last shell is every other shot).")]
         public float need;
         [Tooltip("The colour of its flash, its edge and its sweep, and of its line in the score popup.")]
         public Color colour = KitStyle.Accent;
@@ -112,6 +113,7 @@ public sealed class SpecialKillStamp : MonoBehaviour
         SpecialKills.Kind.Railgun => .32f,
         SpecialKills.Kind.Collateral => 2f,
         SpecialKills.Kind.HatTrick => 3f,
+        SpecialKills.Kind.LastRound => 2f,
         _ => 0f,
     };
 

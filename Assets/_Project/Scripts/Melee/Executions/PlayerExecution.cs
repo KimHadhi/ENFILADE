@@ -250,7 +250,7 @@ public sealed class PlayerExecution : MonoBehaviour
             float.IsNaN(ammoRestoredFraction) || float.IsInfinity(ammoRestoredFraction)) return;
         // A Schießhund's Desperado in hand is loaded by bounties alone.
         if (TryGetComponent(out PlayerWeaponSlots slots) && slots.KeepsOwnRounds(slots.SelectedSlot)) return;
-        weapon.AddReserve(Mathf.CeilToInt(weapon.Data.MagazineSize * Mathf.Clamp01(ammoRestoredFraction)));
+        weapon.AddReserve(Mathf.CeilToInt(weapon.Data.SupplyRounds * Mathf.Clamp01(ammoRestoredFraction)));
     }
     /// <summary>
     /// A paired execution runs this one (ExecutionPairPlayer): its blow lands <paramref name="impact"/> after the
