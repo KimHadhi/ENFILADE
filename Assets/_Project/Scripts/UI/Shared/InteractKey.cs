@@ -105,11 +105,18 @@ public static class InteractKey
         GameTables.Reloaded += Forget;
     }
 
-    // The table saved while playing: read again at the next ask.
-    private static void Forget()
+    // The table saved while playing: read again at the next ask (and before the editor's check reads it: InteractKeyCheck).
+    internal static void Forget()
     {
         loaded = false;
         unlisted.Clear();
+    }
+
+    /// <summary>The table has a row of this name: the offer has a place of its own, not the one "other" lends it.</summary>
+    public static bool HasRow(string id)
+    {
+        Load();
+        return orders.ContainsKey(id ?? "");
     }
 
     // ---- The rule by itself (pure: Tools/Checks/interact_key_check.py runs these lines over the table) ----

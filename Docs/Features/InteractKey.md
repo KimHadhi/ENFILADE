@@ -68,6 +68,7 @@ private void Update()
 
 ## 플레이 없이 확인하기
 
+- `Logs/interact-key-check.txt`: 에디터가 스스로 쓰는 보고서([InteractKeyCheck](../../Assets/_Project/Scripts/UI/Shared/InteractKeyCheck.cs)). 게임의 규칙 그 자체(`InteractKey`의 함수들)를 게임이 읽은 표 위에서 돌린다. 첫 줄이 `ALL KEPT`이면 통과다. 스크립트가 다시 읽힐 때마다와 플레이가 끝날 때마다 저절로 돌고, 메뉴 ENFILADE → 입력 → F 키 규칙 점검, 또는 `Temp/enfilade-interactcheck.request` 파일을 만들면 다시 돈다. 무엇을 보는가: 게임이 나서는 23가지가 모두 표에 줄이 있고 자리가 겹치지 않는지, 거절한 줍기가 그 뒤의 17가지 각각을 막지 않는지, 서포트의 계획 중에는 다른 제안이 몇이 서 있든 F가 계획의 것인지, 전에 뜻이 있던 차례가 남아 있는지, 누름 하나가 일 하나인지, 10만 가지 상황에서 맨 앞이 하나이고 표의 순서대로인지.
 - `python Tools/Checks/interact_key_check.py`: 규칙의 순수 함수(`Before`, `Lead`, `Shown`, `Step`, `HeldBy`)를 파이썬으로 옮겨 **같은 표** 위에서 돌린다. 표의 줄마다 나서는 코드가 있는지, 코드가 나서는 id마다 줄이 있는지, 주인 말고 키를 직접 읽는 곳이 없는지도 스크립트를 읽어 확인한다. 규칙을 바꾸면 이 파일도 같이 바꾼다.
 - `Logs/interact.txt`: 플레이 중 F를 누를 때마다 한 줄. 누가 가져갔는지(`GOT IT`), 누가 거절했는지(`refuses "까닭"`), 누가 뒤에서 기다렸는지(`behind`). 눌려 있던 키를 이어받으면 `HOLD →`. 에디터와 개발 빌드에서만 쓴다.
 - 콘솔 `/interact`: 게임이 읽은 순서(모드가 얹은 줄 포함), 지금 서 있는 제안, 마지막 누름.
