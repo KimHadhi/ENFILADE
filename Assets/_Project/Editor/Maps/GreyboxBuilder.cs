@@ -123,7 +123,7 @@ public sealed partial class GreyboxBuilder
         MarkStatic();
         // No probe bake here: the models the sun can't reach lose their shadows now (GreyboxBuilder.Shadows).
         QuietSunlessShadows();
-        return SurfaceReport() + DressReport() + StandReport() + DecalReport() + SunlessReport();
+        return SurfaceReport() + DressReport() + AuditReport() + DecalReport() + SunlessReport();
     }
 
     /// <summary>Asks before rebuilding a scene that exists, saves what is open, and starts the new scene. Null if called off.
@@ -667,6 +667,6 @@ public sealed partial class GreyboxBuilder
              "\n하늘·해·안개: " + (look == null ? "Tables/MapLook에 이 장의 줄이 없어 기본 하늘이에요."
                  : look + (lit ? " (환경광·반사를 구웠어요)" : " (환경광을 굽지 못했어요. Window > Rendering > Lighting의 Generate Lighting을 눌러 주세요)")) +
              (look != null ? ProbeReport(probesBaked) : "") + ReflectionReport(lit) + MetaReport() +
-             SurfaceReport() + DressReport() + StandReport() + DecalReport() + SunlessReport() + PackReport() + GimmickReport());
+             SurfaceReport() + DressReport() + AuditReport() + DecalReport() + SunlessReport() + PackReport() + GimmickReport());
     }
 }

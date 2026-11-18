@@ -11,6 +11,7 @@
 | `standing.py` | 빌더의 '단단한 소품이 설 자리' 규칙(GreyboxBuilder.Standing.cs의 `Overlap`·`Crosses`·`Settle`·`Furnish`)을 줄대로 옮긴 모듈. 빌더의 규칙을 바꾸면 여기도 같이 바꾼다 |
 | `settle_check.py <MapArt.csv> <씬>` | 그 씬에 이미 서 있는 소품에 빌더의 규칙을 적용하면 무엇이 옮겨지고 거절되는지 미리 계산한다(다시 짓기 전에 무슨 일이 일어날지). `PropSolid`로 세운 것만 맞다: 허브의 기둥처럼 다른 길로 세운 상자도 같은 이름이면 섞여 나온다 |
 | `walk_probe.py <씬> x,y,z x,y,z …` | 플레이어 캡슐(반지름 0.3 m, 키 1.75 m)을 그 길로 걸려 보고, 바닥이 없거나 상자 속에 들어가거나 턱이 0.3 m보다 높은 곳을 `TROUBLE`로 적는다. 상자와 경사판만 읽는다(메시 콜라이더는 안 읽으므로 4장 터미널 안은 못 본다) |
+| `reach_check.py <CampaignSteps.csv> <씬> …` | 그 장의 도착(Reach) 단계 자리마다: 자리의 가슴 높이가 상자 속에 묻혔는지, 반경 안에 설 수 있는 자리 중 몇 곳에서 그 자리가 트여 보이는지(게임의 도착 규칙 [CampaignRun.Reach](../../Assets/_Project/Scripts/Modes/Campaign/CampaignRun.Reach.cs)와 같은 잣대), 가리는 것의 이름. 상자만 읽는다 |
 | `find_boxes.py <씬> 낱말 …` | 이름에 낱말이 든 상자의 자리·크기·방향 |
 | `fbx_size.py <파일.fbx> …` | 바이너리 FBX(6.x, 7.x)의 메시 크기를 임포트 배율(.meta)까지 곱해 적는다. 블렌더가 못 여는 FBX 6.1도 읽는다. 모델을 표에 넣기 전에 방에 들어가는지 볼 때 쓴다 |
 

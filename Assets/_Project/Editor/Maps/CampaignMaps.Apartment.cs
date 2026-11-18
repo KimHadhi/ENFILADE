@@ -36,6 +36,7 @@ public static partial class CampaignMaps
         AptLift(b, floorsBox);
         AptRoofTop(b);
         AptVariants(b);
+        AptSigns(b);
         AptGimmicks(b, floorsBox);
         AptCrowds(b);
         AptDressing(b);
@@ -292,6 +293,34 @@ public static partial class CampaignMaps
         float x0 = ladder.alongEast ? ladder.x - HatchBehind : ladder.x - HatchPast;
         float x1 = ladder.alongEast ? ladder.x + HatchPast : ladder.x + HatchBehind;
         return ladder.north ? (x0, x1, AptZ1, AptZ1 + HatchDeep) : (x0, x1, AptZ0 - HatchDeep, AptZ0);
+    }
+
+    // Every flat's number on a plate beside its door, and every floor's number by its stairs, in the corridor and inside
+    // the stairwell (the user, 2026-11-18: "마스터키 힌트 불일치"). The caretaker's log says which flat holds the master
+    // key ("303호"), the cellar's objective names flat 104, and no door in the block said which flat it was: once the
+    // log's 40 s mark had gone, the hint named a place nobody could find. A flat is floor and number (f+1)0n, as
+    // Tables/Texts gimmick.place.* and the vents' names have it.
+    private static void AptSigns(GreyboxBuilder b)
+    {
+        // A door's plate: at eye height, this far past the door's east edge, this big, its digits this tall (m).
+        const float PlateHigh = 1.6f, PlatePast = .35f, PlateWide = .36f, PlateTall = .2f, Digits = .12f;
+        // A floor's mark: over head height on the wall west of the stairs' door, both sides of that wall.
+        const float MarkHigh = 1.9f, MarkX = 100.8f, MarkWide = .8f, MarkTall = .5f, MarkLetters = .32f;
+        // The flats' doors on the corridor (their east edges), north wall and south wall (AptStorey).
+        var doors = new (int n, float east)[] { (1, 93.2f), (2, 98.2f), (3, 98.6f), (4, 92.2f) };
+        for (int f = 0; f < AptStoreys; f++)
+        {
+            float y = f * Storey;
+            foreach (var (n, east) in doors)
+            {
+                bool north = n <= 2;
+                // On the corridor's face of the wall, facing into the corridor.
+                b.Plate($"B4 {f + 1}0{n}호 호수판", new Vector3(east + PlatePast, y + PlateHigh, north ? 1.2f : -1.2f), north ? 180f : 0f,
+                    PlateWide, PlateTall, $"{f + 1}0{n}", Digits);
+            }
+            b.Plate($"B4 {f + 1}층 표시 (복도)", new Vector3(MarkX, y + MarkHigh, 1.2f), 180f, MarkWide, MarkTall, $"{f + 1}F", MarkLetters);
+            b.Plate($"B4 {f + 1}층 표시 (계단)", new Vector3(MarkX, y + MarkHigh, 1.5f), 0f, MarkWide, MarkTall, $"{f + 1}F", MarkLetters);
+        }
     }
 
     // The cellar under the south-west flat (k04): a switchboard that powers the block and the alley's shutter. Down a flight

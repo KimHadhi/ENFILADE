@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using UnityEngine;
 
 /// <summary>
@@ -36,7 +34,6 @@ public sealed partial class GreyboxBuilder
     private const float WallGap = .02f, WallStep = .1f;
     // How many things in a row a prop is moved out of before it is given up (a corner takes two).
     private const int SettleTries = 6;
-    private const string AuditFolder = "Logs/MapAudit";
 
     // One solid prop the layout asked for, and what became of it.
     private sealed class Stood
@@ -224,16 +221,17 @@ public sealed partial class GreyboxBuilder
     private static string Metres(Vector3 size) => size.x.ToString("0.00") + " × " + size.y.ToString("0.00") + " × " + size.z.ToString("0.00");
 
     // The end of a build: what became of the solid props, and a last look at each against the finished layout (a prop
-    // stood before the wall it crosses was free when it was stood). Writes Logs/MapAudit/<scene>.txt and returns the
-    // closing window's line: the props that need the layout changed are named, the rest are counted.
+    // stood before the wall it crosses was free when it was stood). Its lines go into the map's audit (GreyboxBuilder.
+    // Audit, Logs/MapAudit/<scene>.txt); it returns the closing window's line: the props that need the layout changed
+    // are named, the rest are counted.
     private string StandReport()
     {
         if (stood.Count == 0) return "";
-        var text = new StringBuilder();
+        var text = audit;
         var refused = new List<string>();
         var crossing = new List<string>();
         int placed = 0, moved = 0;
-        text.Append("# ").Append(sceneName).Append(": 단단한 소품이 선 자리 (GreyboxBuilder.Standing)\n");
+        text.Append("\n## 단단한 소품이 선 자리 (GreyboxBuilder.Standing)\n");
         text.Append("# 거절 = 세우지 않음. 옮김 = 겹친 것에서 가장 짧게 비켜 세움. 겹침 = 다 짓고 나서도 벽·바닥·천장·다른 소품·비워 둘 길과 겹침(고쳐야 함).\n");
         foreach (var prop in stood)
         {
@@ -259,19 +257,10 @@ public sealed partial class GreyboxBuilder
         }
         text.Append("# 합계: 세움 ").Append(placed).Append(" (그중 옮김 ").Append(moved).Append("), 거절 ").Append(refused.Count)
             .Append(", 겹침 ").Append(crossing.Count).Append('\n');
-        string path = AuditFolder + "/" + sceneName + ".txt";
-        try
-        {
-            Directory.CreateDirectory(AuditFolder);
-            File.WriteAllText(path, text.ToString(), new UTF8Encoding(false));
-        }
-        catch (IOException error)
-        {
-            Debug.LogWarning("[Greybox] " + sceneName + ": " + path + " could not be written (" + error.Message + ").");
-        }
+        if (refused.Count + crossing.Count + moved > 0) auditToRead = true;
         string line = "\n단단한 소품 " + placed + "개를 세웠어요(겹친 자리에서 비켜 세운 것 " + moved + "개).";
         if (refused.Count > 0) line += " 자리에 안 맞아 세우지 않은 것 " + refused.Count + "개: " + string.Join(", ", refused) + ".";
         if (crossing.Count > 0) line += " 벽·바닥이나 길과 아직 겹치는 것 " + crossing.Count + "개: " + string.Join(", ", crossing) + " (배치를 고쳐야 해요).";
-        return line + (refused.Count + crossing.Count + moved > 0 ? " 자세한 것은 " + path + "." : "");
+        return line;
     }
 }

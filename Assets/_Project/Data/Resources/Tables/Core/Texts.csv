@@ -59,10 +59,10 @@ mission.ch1.04.title,관리인 숙소 찾기,,"목표 바 제목과 Tab 목표 �
 mission.ch1.04.description,503호 관리인 숙소에 관리 일지와 소독 가스통이 있어요. 일지에 이번에 마스터키가 있는 집이 적혀 있어요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 4번째 단계(Reach, Ch1.04)"
 mission.ch1.04.done,관리인 숙소,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 4번째 단계(Reach, Ch1.04)"
 mission.ch1.13.title,1층으로 내려가기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
-mission.ch1.13.description,"계단은 한 곳이 무너졌고 1층 계단 문은 쇠사슬로 잠겼어요. 마스터키로 조용히 열거나, 부수거나(쾅), 엘리베이터를 타세요(띵). 바닥 구멍과 발코니 비상 사다리로도 내려가요.",,"Tab 목표 목록의 설명: Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
+mission.ch1.13.description,"계단은 한 곳이 무너졌어요. 바닥 구멍과 발코니 비상 사다리로는 2층까지만 내려가고, 2층에서 1층은 계단과 엘리베이터뿐이에요. 1층 계단 문은 쇠사슬로 잠겨 있어서 마스터키로 조용히 열거나 부숴야 해요(쾅). 엘리베이터는 옥상의 발전기를 켜면 움직여요(띵).",,"Tab 목표 목록의 설명: Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
 mission.ch1.13.done,1층 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 5번째 단계(Reach, Ch1.13)"
 mission.ch1.14.title,지하 배전반으로,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
-mission.ch1.14.description,1층 4호의 계단으로 지하에 내려가세요. 배전반을 올리면 골목 셔터에 전원이 들어가요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
+mission.ch1.14.description,104호 안의 계단으로 지하에 내려가세요(문 옆에 호수판이 있어요). 배전반을 올리면 골목 셔터에 전원이 들어가요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
 mission.ch1.14.done,지하 도착,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch1_Rooftops 6번째 단계(Reach, Ch1.14)"
 mission.ch1.05.title,배전반 올리기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 7번째 단계(Press, Ch1.05)"
 mission.ch1.05.description,전원이 들어오면 셔터 경보가 울리고 건물에 불이 켜져요. 건물을 미리 조용히 정리해 두면 버티기가 편해요.,,"Tab 목표 목록의 설명: Ch1_Rooftops 7번째 단계(Press, Ch1.05)"
@@ -2196,7 +2196,7 @@ dev.hits.off,UI 클릭 판정 모양 보기를 껐습니다.,,개발자 콘솔 >
 dev.hits.legend,판정 모양 보기 (/hits) — 하늘색: 누를 수 있는 곳 · 분홍: 지금 커서가 고르는 것 · 노랑: 호버로 비킨 원래 자리 · 회색: 클릭을 가로막는 것,,화면 왼쪽 위 > 콘솔 /hits 를 켠 동안 보이는 설명 줄(KitHitView)
 "#--- 맵 기믹 (2026-11-14, 기믹 시안 페이지에서 고른 카드: MapGimmicks) ---",,,
 mission.ch1.13.loud.title,1층으로 밀고 내려가기,,목표 바 제목: Ch1_Rooftops 1층으로 내려가기 단계(Ch1.13)를 하던 중 들켰을 때 (플랜 B)
-mission.ch1.13.loud.description,들켰어요. 계단 문을 부수거나 엘리베이터로 곧장 1층까지 내려가세요.,,Tab 목표 목록의 설명: Ch1.13을 하던 중 들켰을 때 (플랜 B)
+mission.ch1.13.loud.description,들켰어요. 1층 계단 문을 부수거나 옥상 발전기를 켜고 엘리베이터로 곧장 내려가세요.,,Tab 목표 목록의 설명: Ch1.13을 하던 중 들켰을 때 (플랜 B)
 mission.ch1.15.title,착륙 자리에 연막 피우기,,"목표 바 제목과 Tab 목표 목록: Ch1_Rooftops 13번째 단계(Gimmick, Ch1.15)"
 mission.ch1.15.description,"헬기는 연막이 피는 곳에 내려요. 옥상은 멀지만 지키기 좋고, 마당과 길은 가깝지만 사방이 트였어요. 고른 자리에 서서 [F].",,"Tab 목표 목록의 설명: Ch1_Rooftops 13번째 단계(Gimmick, Ch1.15)"
 mission.ch1.15.done,착륙 자리 정함,,"끝낸 목표의 이름: Ch1_Rooftops 13번째 단계(Gimmick, Ch1.15)"

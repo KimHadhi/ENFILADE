@@ -62,7 +62,8 @@ public sealed partial class CampaignRun
         switch (now.Kind)
         {
             case CampaignStepKind.Reach:
-                if (AnyoneAt(now)) Advance();
+                // Within its radius and with nothing of the building in between (CampaignRun.Reach).
+                if (Arrived(now)) Advance();
                 break;
             case CampaignStepKind.Checkpoint:
                 if (EveryoneAt(now) && DoorsShut(now.Spot)) Advance();
@@ -179,7 +180,7 @@ public sealed partial class CampaignRun
             if (!Passable(steps[later - 1].Kind)) return;
             var ahead = steps[later];
             if (SpotOf(ahead.Spot) == null) continue;
-            bool met = ahead.Kind == CampaignStepKind.Reach ? AnyoneAt(ahead)
+            bool met = ahead.Kind == CampaignStepKind.Reach ? Arrived(ahead)
                 : ahead.Kind == CampaignStepKind.Gather ? EveryoneAt(ahead)
                 : ahead.Kind == CampaignStepKind.Checkpoint && EveryoneAt(ahead) && DoorsShut(ahead.Spot);
             if (met) { AdvanceTo(later + 1); return; }
