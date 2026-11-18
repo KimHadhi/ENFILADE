@@ -281,6 +281,10 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         {
             part.interpolation = simulated ? RigidbodyInterpolation.Interpolate : RigidbodyInterpolation.None;
             part.isKinematic = !simulated;
+            // A part let go from kinematic stays asleep until something moves it, and counts as settled meanwhile
+            // (Settled). A body that died standing still, by a blow with no direction, would stand in its last pose
+            // until struck: dropping it is waking it.
+            if (simulated) part.WakeUp();
         }
     }
 
@@ -399,6 +403,8 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         {
             part.interpolation = RigidbodyInterpolation.Interpolate;
             part.isKinematic = false;
+            // As in Lay: let go, it must be woken or it hangs where the last pose left it.
+            part.WakeUp();
         }
     }
 

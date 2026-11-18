@@ -76,6 +76,9 @@ public sealed class ZombieCorpse : MonoBehaviour
     private int mostCorpses = 24;
     [SerializeField, Min(1), Tooltip("Most bodies moving under physics at once; past it the oldest at rest is held still as it lies, still to be pushed.")]
     private int mostDolls = 12;
+    [SerializeField, Min(0f), Tooltip("Slower than this (m/s) in every part, a body old enough to have fallen (Shortest Fall) is down: " +
+        "past Most Dolls it may be held though not yet at rest. A faster one is still falling and is never held.")]
+    private float landedSpeed = 2f;
     [SerializeField, Min(.1f), Tooltip("Following another PC's fall: with no word from it this long (s), the body stops where it is.")]
     private float orphanWait = 1f;
     [SerializeField, Min(0f), Tooltip("A body stopped that way lies this long before it sinks (s).")]
@@ -99,7 +102,7 @@ public sealed class ZombieCorpse : MonoBehaviour
     private CorpsePose pose;
     private Vector3 sinkFrom;
     private ulong id;
-    private bool simulated, hasPose, sinking, sentRest, heardRest, boundsHeld, boundsFollow, held, orphaned;
+    private bool simulated, hasPose, sinking, sentRest, heardRest, boundsHeld, boundsFollow, held, orphaned, countedDown;
     private float age, stillFor, movingFor, nextSend, nextPassThrough, lastPoseAt, lieUntil = float.PositiveInfinity, sinkAge;
 
     private static LayerMask Solid => ~((1 << DollLayer) | LayerMask.GetMask(EnemyLayer));
@@ -208,6 +211,14 @@ public sealed class ZombieCorpse : MonoBehaviour
     private void Run(float dt)
     {
         if (held) return;
+        // Old enough to have fallen: from here it may be held, so the count of moving bodies is looked at again (a burst
+        // of deaths goes over it only until they are down: TrimDolls).
+        if (!countedDown && age >= shortestFall)
+        {
+            countedDown = true;
+            TrimDolls(mostDolls);
+            if (held) return;
+        }
         doll.PoseBody();
         stillFor = doll.Settled(settleSpeed) ? stillFor + dt : 0f;
         bool still = AtRest;
@@ -386,7 +397,11 @@ public sealed class ZombieCorpse : MonoBehaviour
     }
 
     // Past the most bodies a map keeps moving, the oldest at rest are held still where they lie; if a fight keeps that
-    // many moving, the oldest moving one is. Held, they keep their dolls: still shot and pushed, which lets them go again.
+    // many moving, the oldest that are down are (Down). Held, they keep their dolls: still shot and pushed, which lets
+    // them go again. A body still falling is never held, however many are moving: held a moment after its death it
+    // stood frozen in the pose it died in until someone struck it (user, 2026-11-18: "사망한 좀비가 쓰러지지 않고 걷던 모션
+    // 상태로 굳어 한 번 밀쳐야 쓰러지는"). So a burst of deaths keeps more than the count moving until they are down, and
+    // each looks at the count again as it comes of that age (Run).
     private static void TrimDolls(int most)
     {
         int over = -most;
@@ -395,11 +410,16 @@ public sealed class ZombieCorpse : MonoBehaviour
             for (int i = 0; i < lying.Count && over > 0; i++)
             {
                 var corpse = lying[i];
-                if (corpse == null || corpse.doll == null || !corpse.simulated || corpse.held || (pass == 0 && !corpse.AtRest)) continue;
+                if (corpse == null || corpse.doll == null || !corpse.simulated || corpse.held) continue;
+                if (pass == 0 ? !corpse.AtRest : !corpse.Down) continue;
                 corpse.Hold();
                 over--;
             }
     }
+
+    // Down, though perhaps not at rest yet: it has had the time a body takes to fall, and no part of it moves as fast
+    // as a falling one (one dropping off a roof is older than that and still falling).
+    private bool Down => age >= shortestFall && doll.Settled(landedSpeed);
 
     private void OnStruck(DamageHit hit)
     {
