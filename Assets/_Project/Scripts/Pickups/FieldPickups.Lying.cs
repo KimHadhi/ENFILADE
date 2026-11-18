@@ -76,6 +76,29 @@ public sealed partial class FieldPickups
     }
 
     /// <summary>
+    /// The console's /lay (CardCommands): a pickup of this kind (gun, ammo, heal, shield, money: the first row of that
+    /// kind in Tables/Pickups) is laid on the floor in front of this PC's player, where a Support's nearest structure
+    /// would stand (Support.barricadeAhead), to try what is set down over one without waiting for a zombie to drop
+    /// it. Only on the PC that keeps the pickups (the host, or alone).
+    /// </summary>
+    public static string LayForTrial(string kind)
+    {
+        if (instance == null) return "줍기가 없는 맵이다";
+        if (!instance.IsHost) return "줍기 물건은 방장 PC가 놓는다";
+        var mine = PlayerRoster.Local;
+        if (mine == null) return "플레이어가 없다";
+        string word = (kind ?? "").Trim();
+        if (word.Equals("medkit", StringComparison.OrdinalIgnoreCase)) word = nameof(Kind.Heal);
+        if (!Enum.TryParse(word, true, out Kind wanted) || !Enum.IsDefined(typeof(Kind), wanted)) return "gun · ammo · heal · shield · money 중 하나를 적는다";
+        int row = instance.rows.FindIndex(candidate => candidate.Kind == wanted);
+        if (row < 0) return "Pickups.csv에 그 종류의 줄이 없다";
+        float ahead = PlayerClass.Ability("Support", "barricadeAhead", 1.8f);
+        Vector3 at = Ground(mine.transform.position + mine.transform.forward * ahead);
+        instance.Add(row, at, 0f);
+        return $"{instance.rows[row].Name}: 내 앞 {ahead:0.0}m 바닥 {PlayRecord.At(at)}에 놓았다. 그 위에 설치물을 세우면 옆으로 비켜난다 (기록: Logs/placement.txt)";
+    }
+
+    /// <summary>
     /// What of the pickups lies where something of <paramref name="size"/> would stand with its feet at
     /// <paramref name="at"/>, turned <paramref name="yaw"/>, as this PC has them, in the placement record's words:
     /// "구급상자 ×1, 실드 셀 ×1 (colliders on them: 0)". The count of colliders is the proof, in the play itself, that
