@@ -6,6 +6,31 @@ using UnityEngine;
 public enum TowerTrial : byte { Swarm, Champion }
 
 /// <summary>
+/// One zombie a tower room lets out: what it is, and what is its own. A champion's rank, toughness and place belong to
+/// the champion, not to its room: the same room may hold a swarm besides (a wire walked through doubles the next room),
+/// and a swarm's zombies are ordinary ones. They used to be stamped from one flag of the lane, so that swarm came out
+/// as elites, each kill burning magenta in the feed and slowing the game (user, 2026-11-18: "일반 쉠블러·러너 전체가 엘리트
+/// 몹 판정으로 전환되어 킬로그에 분홍색 화염이 뜨고 처치마다 슬로모션이 걸리는").
+/// </summary>
+public readonly struct TowerSpawn
+{
+    public readonly ZombieKind Kind;
+    /// <summary>Its health against usual (TowerFloors toughness for a swarm's, championToughness and what more players add for a champion).</summary>
+    public readonly float Toughness;
+    /// <summary>The room's one strong one: ranked elite, let out at the champion's spot.</summary>
+    public readonly bool Champion;
+
+    public TowerSpawn(ZombieKind kind, float toughness, bool champion)
+    {
+        Kind = kind;
+        Toughness = toughness;
+        Champion = champion;
+    }
+
+    public EnemyRank Rank => Champion ? EnemyRank.Elite : EnemyRank.Normal;
+}
+
+/// <summary>
 /// A floor's rule for the day (the map gimmick card "오늘의 층 규칙", only from parts the game had: the user's note "발상은
 /// 좋은데 만들기 귀찮겠다"): its rooms' lights off (Blackout), its swarms lying face down (Sleeping), alarm wires across its rooms
 /// (Wire). TowerRun.Rules plays them.
@@ -156,6 +181,55 @@ public sealed class TowerPlan
         int first = kinds.IndexOf(ZombieKind.Shambler);
         if (first > 0) (kinds[0], kinds[first]) = (kinds[first], kinds[0]);
         return kinds;
+    }
+
+    /// <summary>
+    /// Everything lane <paramref name="lane"/>'s room on floor 1-10 lets out, in the order it comes, each with what is its
+    /// own (TowerSpawn): the champion or the swarm by the floor's turn, and, <paramref name="doubled"/> by a wire walked
+    /// through in the room before, a swarm more. <paramref name="swarmOnly"/>: a room laid out calm (the stealth lane, a
+    /// lying floor) holds a swarm whatever the turn. The one place that says what a room holds.
+    /// </summary>
+    public List<TowerSpawn> RoomOf(int floor, int lane, int players, float crowdPerPlayer, float championPerPlayer, bool doubled,
+        bool swarmOnly = false)
+    {
+        var row = Of(floor);
+        var room = new List<TowerSpawn>();
+        if (!swarmOnly && TrialOf(floor, lane) == TowerTrial.Champion)
+            room.Add(new TowerSpawn(ChampionOf(floor, lane),
+                row.championToughness * (1f + Mathf.Max(0f, championPerPlayer) * Mathf.Max(0, players - 1)), true));
+        else AddSwarm(room, row, floor, lane, players, crowdPerPlayer);
+        if (doubled) AddSwarm(room, row, floor, lane, players, crowdPerPlayer);
+        return room;
+    }
+
+    private void AddSwarm(List<TowerSpawn> room, Floor row, int floor, int lane, int players, float crowdPerPlayer)
+    {
+        foreach (var kind in SwarmOf(floor, lane, players, crowdPerPlayer)) room.Add(new TowerSpawn(kind, row.toughness, false));
+    }
+
+    /// <summary>/tower rooms: every room of the day, lane by lane, as RoomOf gives it for one player, plain and doubled.</summary>
+    public string Describe(float crowdPerPlayer, float championPerPlayer)
+    {
+        var text = new System.Text.StringBuilder();
+        for (int floor = 1; floor <= TowerLayout.Floors; floor++)
+            for (int lane = 0; lane < TowerLayout.Lanes; lane++)
+                for (int doubled = 0; doubled < 2; doubled++)
+                {
+                    var room = RoomOf(floor, lane, 1, crowdPerPlayer, championPerPlayer, doubled == 1, Quiet(floor, lane));
+                    int elites = 0;
+                    var kinds = new SortedDictionary<string, int>();
+                    foreach (var spawn in room)
+                    {
+                        string name = spawn.Kind + (spawn.Champion ? "*" : "") + " x" + spawn.Toughness.ToString("0.##");
+                        kinds[name] = kinds.TryGetValue(name, out int had) ? had + 1 : 1;
+                        if (spawn.Rank != EnemyRank.Normal) elites++;
+                    }
+                    text.Append('F').Append(floor).Append(' ').Append((char)('A' + lane)).Append(doubled == 1 ? " doubled" : "")
+                        .Append(": ").Append(room.Count).Append(" out, ").Append(elites).Append(" elite |");
+                    foreach (var pair in kinds) text.Append(' ').Append(pair.Value).Append(' ').Append(pair.Key).Append(';');
+                    text.Append('\n');
+                }
+        return text.ToString();
     }
 
     /// <summary>The words for a room on the door signs and the HUD: 떼 or the champion's name.</summary>

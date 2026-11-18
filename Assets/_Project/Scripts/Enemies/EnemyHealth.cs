@@ -41,8 +41,18 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     public EnemyRank Rank => rank;
     /// <summary>Named or elite: its kill stands out in the feed.</summary>
     public bool IsStandout => rank != EnemyRank.Normal;
-    /// <summary>Console test spawns (/spawn n elite). The table sets it otherwise.</summary>
-    internal void SetRank(EnemyRank value) => rank = value;
+    /// <summary>
+    /// The host or the PC alone: its rank from now on (a tower champion, a song's brute, /spawn n elite; the table sets it
+    /// otherwise), told to the others (EnemyNetwork): what a class does to an elite is judged on each player's own PC.
+    /// </summary>
+    internal void SetRank(EnemyRank value)
+    {
+        rank = value;
+        if (TryGetComponent(out EnemyNetwork network)) network.ShareRank(value);
+    }
+
+    /// <summary>Another PC: the rank the host's enemy has.</summary>
+    internal void ShowRank(EnemyRank value) => rank = value;
     public float Health { get; private set; }
     /// <summary>
     /// Out of reach for now: every hit is turned away (a ninja gone into its smoke, ZombieNinja, set on every PC alike so

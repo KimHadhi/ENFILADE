@@ -44,6 +44,9 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private readonly NetworkVariable<byte> kind = new NetworkVariable<byte>();
     // Its health on top of its kind's (ZombieType.Toughness, the tower's floors): a copy's health bar fills to the same maximum.
     private readonly NetworkVariable<float> toughness = new NetworkVariable<float>(1f);
+    // Its EnemyRank (a tower champion, a song's brute): a copy must know an elite for what it is, because what a class
+    // does to one (a Ghost's stagger, a Schießhund's bounty, the kill's marks) is judged on each player's own PC.
+    private readonly NetworkVariable<byte> rank = new NetworkVariable<byte>();
     // The calm pose the host gave it (ZombieBody.ForcedPose) plus one, 0 for its own seeded pick, and LyingBit when it was
     // laid lying (ZombieMind.Lie): a map's lying crowd lies the same on every PC and may be taken from any side there.
     private readonly NetworkVariable<byte> pose = new NetworkVariable<byte>();
@@ -150,6 +153,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
             condition.Value = ReadCondition();
             if (type != null) kind.Value = (byte)type.Kind;
             if (type != null) toughness.Value = type.Toughness;
+            rank.Value = (byte)enemy.Rank;
             if (body != null && body.ForcedPose >= 0 && body.ForcedPose < Standing - 1)
                 pose.Value = (byte)((body.ForcedPose + 1) | (mind != null && mind.LaidLying ? LyingBit : 0));
             else if (body != null && body.ForcedPose == ZombieBody.NoPose) pose.Value = Standing;
@@ -164,6 +168,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
         }
         if (type != null) type.Show((ZombieKind)kind.Value);
         if (type != null) type.ShowToughness(toughness.Value);
+        enemy.ShowRank((EnemyRank)rank.Value);
+        rank.OnValueChanged += OnRankChanged;
         // Before its body dresses (ZombieBody.Start), so it takes the host's pose from its first frame.
         int given = pose.Value & ~LyingBit;
         if (given == Standing && body != null) body.ForcedPose = ZombieBody.NoPose;
@@ -185,11 +191,23 @@ public sealed class EnemyNetwork : NetworkBehaviour
         condition.OnValueChanged -= OnConditionChanged;
         kind.OnValueChanged -= OnKindChanged;
         toughness.OnValueChanged -= OnToughnessChanged;
+        rank.OnValueChanged -= OnRankChanged;
     }
 
     private void OnKindChanged(byte previous, byte current)
     {
         if (type != null) type.Show((ZombieKind)current);
+    }
+
+    private void OnRankChanged(byte previous, byte current)
+    {
+        if (enemy != null) enemy.ShowRank((EnemyRank)current);
+    }
+
+    /// <summary>The host ranked its enemy after it appeared (/spawn n elite): its copies follow.</summary>
+    internal void ShareRank(EnemyRank value)
+    {
+        if (IsSpawned && IsServer) rank.Value = (byte)value;
     }
 
     private void OnToughnessChanged(float previous, float current)

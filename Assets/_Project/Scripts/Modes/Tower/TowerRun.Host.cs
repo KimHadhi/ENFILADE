@@ -207,7 +207,6 @@ public sealed partial class TowerRun
         var lane = lanes[k];
         lane.Reset();
         int floor = TowerLayout.FloorOf(level);
-        var row = plan.Of(floor);
         ForgetRoom(k);
         quietPass = (byte)(quietPass & ~(1 << k));
         // The stealth lane's and a sleeping floor's rooms: the swarm laid out calm at once (TowerRun.Rules).
@@ -218,23 +217,11 @@ public sealed partial class TowerRun
             lefts[k] = lane.Alive.Count;
             return;
         }
-        lane.Champion = plan.TrialOf(floor, k) == TowerTrial.Champion;
-        if (lane.Champion)
-        {
-            lane.Due.Enqueue(plan.ChampionOf(floor, k));
-            lane.Toughness = row.championToughness * (1f + championPerPlayer * (lane.Players - 1));
-        }
-        else
-        {
-            foreach (var kind in plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer)) lane.Due.Enqueue(kind);
-            lane.Toughness = row.toughness;
-        }
-        // A wire walked through in the room before: this one's swarm twice over (a champion comes with a swarm of its own).
-        if (lane.DoubleNext)
-        {
-            lane.DoubleNext = false;
-            foreach (var kind in plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer)) lane.Due.Enqueue(kind);
-        }
+        // The champion or the swarm; a wire walked through in the room before: a swarm more (a champion comes with a swarm
+        // of its own, ordinary zombies at the swarm's toughness). The plan says what each one is (TowerPlan.RoomOf).
+        foreach (var spawn in plan.RoomOf(floor, k, lane.Players, crowdPerPlayer, championPerPlayer, lane.DoubleNext))
+            lane.Due.Enqueue(spawn);
+        lane.DoubleNext = false;
         lane.NextSpawn = Time.time + .5f;
         lane.Changed = Time.time;
         states[k] = LaneState.Fighting;
@@ -247,22 +234,13 @@ public sealed partial class TowerRun
         var lane = lanes[k];
         if (lane.Due.Count == 0 || lane.Alive.Count >= mostAlive || Time.time < lane.NextSpawn || enemyPrefab == null) return;
         lane.NextSpawn = Time.time + spawnEvery;
-        Vector3 wanted = lane.Champion ? TowerLayout.ChampionAt(level, k) : TowerLayout.PenAt(level, k, lane.Spot++ % 6);
+        // The next one's own place: the champion's spot for a champion, a pen for anyone else.
+        var next = lane.Due.Peek();
+        Vector3 wanted = next.Champion ? TowerLayout.ChampionAt(level, k) : TowerLayout.PenAt(level, k, lane.Spot++ % 6);
         if (!NavMesh.SamplePosition(wanted + Vector3.up * .3f, out NavMeshHit ground, 2.5f, NavMesh.AllAreas)) return;
-        var kind = lane.Due.Dequeue();
-        var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, RuntimeSceneHierarchy.Enemies, "Tower");
+        lane.Due.Dequeue();
         var facing = Quaternion.LookRotation(TowerLayout.EntersFromEast(level) ? Vector3.right : Vector3.left, Vector3.up);
-        var enemy = Instantiate(enemyPrefab, ground.position, facing, container);
-        // Set up before it goes out to the room, so its copies are born what it is.
-        if (enemy.TryGetComponent(out ZombieType type))
-        {
-            type.Set(kind);
-            type.Toughen(lane.Toughness);
-        }
-        if (lane.Champion) enemy.SetRank(EnemyRank.Elite);
-        int stretch = segment;
-        if (enemy.TryGetComponent(out EnemyTargeting targeting))
-            targeting.Pen = someone => someone != null && TowerLayout.LaneAt(someone.transform.position, stretch) == k;
+        var enemy = Make(next, ground.position, facing, k);
         EnemyNetwork.SpawnInRoom(enemy);
         lane.Alive.Add(enemy);
     }

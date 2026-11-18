@@ -66,21 +66,21 @@ public sealed partial class TowerRun : MonoBehaviour
     private sealed class Lane
     {
         public readonly List<EnemyHealth> Alive = new List<EnemyHealth>();
-        public readonly Queue<ZombieKind> Due = new Queue<ZombieKind>();
-        public bool Champion;
+        // What the room has yet to let out, each with what is its own (TowerSpawn): the lane itself is neither a
+        // champion's nor a swarm's, a room may hold both.
+        public readonly Queue<TowerSpawn> Due = new Queue<TowerSpawn>();
         public int Players = 1, Spot;
-        public float Toughness = 1f, NextSpawn, Changed;
+        public float NextSpawn, Changed;
         // A room laid out calm (TowerRun.Rules): the stealth lane's or a sleeping floor's; nobody seen in it yet; the swarm
         // that comes out of the pens again once it is seen; the next room's swarm doubled by a wire walked through.
         public bool Quiet, Unseen, Stealth, DoubleNext;
-        public readonly List<ZombieKind> Again = new List<ZombieKind>();
+        public readonly List<TowerSpawn> Again = new List<TowerSpawn>();
 
         public void Reset()
         {
             foreach (var enemy in Alive) Remove(enemy);
             Alive.Clear();
             Due.Clear();
-            Champion = false;
             Spot = 0;
             Quiet = Unseen = Stealth = false;
             Again.Clear();

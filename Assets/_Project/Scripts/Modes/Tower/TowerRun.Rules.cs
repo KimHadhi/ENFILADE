@@ -48,11 +48,10 @@ public sealed partial class TowerRun
         lane.Quiet = true;
         lane.Unseen = true;
         lane.Stealth = k == plan.StealthLane;
-        lane.Champion = false;
-        lane.Toughness = plan.Of(floor).toughness;
         bool lying = plan.RuleOf(floor) == TowerRule.Sleeping;
-        var kinds = plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer);
-        if (lane.DoubleNext) { kinds.AddRange(plan.SwarmOf(floor, k, lane.Players, crowdPerPlayer)); lane.DoubleNext = false; }
+        // A swarm whatever the floor's turn, twice over after a wire (TowerPlan.RoomOf, the one place that says).
+        var kinds = plan.RoomOf(floor, k, lane.Players, crowdPerPlayer, championPerPlayer, lane.DoubleNext, true);
+        lane.DoubleNext = false;
         lane.Again.Clear();
         lane.Again.AddRange(kinds);
         bool fromEast = TowerLayout.EntersFromEast(level);
@@ -63,7 +62,7 @@ public sealed partial class TowerRun
             float x = fromEast ? TowerLayout.RoomLength - along : along;
             float z = Random.Range(TowerLayout.LaneMin(k) + 1.2f, TowerLayout.LaneMax(k) - 1.2f);
             if (!NavMesh.SamplePosition(new Vector3(x, TowerLayout.FloorY(level) + .3f, z), out NavMeshHit ground, 2f, NavMesh.AllAreas)) continue;
-            var enemy = Make(kinds[i], ground.position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), lane, k);
+            var enemy = Make(kinds[i], ground.position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), k);
             if (enemy == null) continue;
             // Lying face down on the lying floor; in the stealth lane most stand about, a few lying.
             bool lies = lying || Random.value < .3f;
@@ -81,16 +80,18 @@ public sealed partial class TowerRun
         return true;
     }
 
-    // One of a room's zombies, as Release makes them (its kind, its toughness, its lane), not yet out to the room.
-    private EnemyHealth Make(ZombieKind kind, Vector3 at, Quaternion facing, Lane lane, int k)
+    // One of a room's zombies, the one way they are all made (out of a pen, or laid out calm): its kind, its own
+    // toughness, its own rank, its lane. Set up before it goes out to the room, so its copies are born what it is.
+    private EnemyHealth Make(TowerSpawn spawn, Vector3 at, Quaternion facing, int k)
     {
         var container = RuntimeSceneHierarchy.GetGroup(gameObject.scene, RuntimeSceneHierarchy.Enemies, "Tower");
         var enemy = Instantiate(enemyPrefab, at, facing, container);
         if (enemy.TryGetComponent(out ZombieType type))
         {
-            type.Set(kind);
-            type.Toughen(lane.Toughness);
+            type.Set(spawn.Kind);
+            type.Toughen(spawn.Toughness);
         }
+        if (spawn.Rank != EnemyRank.Normal) enemy.SetRank(spawn.Rank);
         int stretch = segment;
         if (enemy.TryGetComponent(out EnemyTargeting targeting))
             targeting.Pen = someone => someone != null && TowerLayout.LaneAt(someone.transform.position, stretch) == k;
@@ -114,7 +115,7 @@ public sealed partial class TowerRun
             var room = new Bounds(new Vector3(TowerLayout.RoomLength * .5f, y + 2f, TowerLayout.LaneMid(k)),
                 new Vector3(TowerLayout.RoomLength + 1f, 5f, TowerLayout.LaneWidth));
             ZombieMind.WakeWithin(room, who);
-            foreach (var kind in lane.Again) lane.Due.Enqueue(kind);
+            foreach (var spawn in lane.Again) lane.Due.Enqueue(spawn);
             lane.NextSpawn = Time.time + .5f;
             return;
         }
