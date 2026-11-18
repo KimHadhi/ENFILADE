@@ -63,12 +63,14 @@ public sealed partial class ZombieBody
     }
 
     /// <summary>
-    /// Which pair fits it now (an Executions.csv row id), for a player at <paramref name="from"/>: lying face down
-    /// (a crawler, a calm one on the floor, one knocked down) "prone", on its back "supine", in a calm pose "sit", "feed"
-    /// or "crouch", standing "back" (the player behind it) or "front". Lying, <paramref name="hips"/> and
-    /// <paramref name="head"/> are where its body lies, for laying the pair over it.
+    /// The posture its body is in now, as the rules of takedowns and executions name them (Tables/ExecutionRules.csv
+    /// `state`, ExecutionRules.Stand ...): lying face down (a crawler, a calm one on the floor, one knocked down) "prone",
+    /// on its back "supine", in a calm pose "sit", "feed" or "crouch", else "stand". Which side the player comes from is
+    /// not its business: each rule has its own cone (until 2026-11-18 this also split standing into "back" and "front" at
+    /// 90 degrees, so no rule could say from where). Null without a body. Lying, <paramref name="hips"/> and
+    /// <paramref name="head"/> are where its body lies, for laying a pair over it.
     /// </summary>
-    internal string ExecutionState(Vector3 from, out bool lying, out Vector3 hips, out Vector3 head)
+    internal string ExecutionPosture(out bool lying, out Vector3 hips, out Vector3 head)
     {
         lying = false;
         hips = head = default;
@@ -80,31 +82,44 @@ public sealed partial class ZombieBody
             lying = true;
             hips = hipsBone.position;
             head = headBone.position;
-            return LiesFaceDown() ? "prone" : "supine";
+            return LiesFaceDown() ? ExecutionRules.Prone : ExecutionRules.Supine;
         }
         if (Time.frameCount - downFrame <= 2)
         {
             lying = true;
             hips = downHips;
             head = downHead;
-            return downFaceDown ? "prone" : "supine";
+            return downFaceDown ? ExecutionRules.Prone : ExecutionRules.Supine;
         }
-        if (crawling) return "prone";
+        if (crawling) return ExecutionRules.Prone;
         if (pose == PoseState.Held && calmShare > .5f && poseLoop.IsValid())
         {
+            // What the pose's clip is called says what it is; asked once per clip, since every player's look for someone
+            // to take down asks this each frame (PlayerExecution) and reading a clip's name makes garbage.
             var clip = poseLoop.GetAnimationClip();
-            string name = clip != null ? clip.name.ToLowerInvariant() : "";
-            if (name.Contains("fd_") || name.Contains("crawl") || name.Contains("prone")) return "prone";
-            if (name.Contains("sit")) return "sit";
-            if (name.Contains("feed") || name.Contains("eat")) return "feed";
-            if (name.Contains("crouch")) return "crouch";
+            if (clip != namedClip)
+            {
+                namedClip = clip;
+                string name = clip != null ? clip.name.ToLowerInvariant() : "";
+                namedPosture = name.Contains("fd_") || name.Contains("crawl") || name.Contains("prone") ? ExecutionRules.Prone
+                    : name.Contains("sit") ? ExecutionRules.Sit
+                    : name.Contains("feed") || name.Contains("eat") ? ExecutionRules.Feed
+                    : name.Contains("crouch") ? ExecutionRules.Crouch : null;
+            }
+            if (namedPosture != null) return namedPosture;
             // A modder's pose by what it is busy with, and how low its head is.
-            if (headBone != null && headBone.position.y - transform.position.y - feetHeight < .55f * grown) return "prone";
-            return poseKind == CalmPoseKind.Eat ? "feed" : poseKind == CalmPoseKind.Doze ? "sit" : "crouch";
+            if (headBone != null && headBone.position.y - transform.position.y - feetHeight < .55f * grown) return ExecutionRules.Prone;
+            return poseKind == CalmPoseKind.Eat ? ExecutionRules.Feed : poseKind == CalmPoseKind.Doze ? ExecutionRules.Sit : ExecutionRules.Crouch;
         }
-        Vector3 toward = Vector3.ProjectOnPlane(from - transform.position, Vector3.up);
-        return toward.sqrMagnitude < 1e-4f || Vector3.Angle(-transform.forward, toward) <= 90f ? "back" : "front";
+        return ExecutionRules.Stand;
     }
+
+    // The pose clip last asked about and the posture its name gave (null: its name says nothing).
+    private AnimationClip namedClip;
+    private string namedPosture;
+
+    /// <summary>Its posture alone (ExecutionPosture).</summary>
+    internal string ExecutionPosture() => ExecutionPosture(out _, out _, out _);
 
     /// <summary>
     /// The pair's zombie clip takes the body: over blendIn, its root moving onto the anchor over settle, then held there;

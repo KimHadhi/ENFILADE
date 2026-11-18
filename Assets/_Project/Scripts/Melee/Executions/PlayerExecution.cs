@@ -5,25 +5,25 @@ using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// One player's deathblow transaction. F executes a broken enemy within reach; with the fists out the attack button
-/// does too, from further off, dashing in first, as Sekiro's deathblow sits on the attack button. A zombie that hasn't
-/// noticed anyone can be executed the same way from behind, unbroken: a stealth kill (ZombieMind, stage 4C-2). Either way
-/// the player closes in to dashStopDistance first, and their class's knife does the deed (ExecutionKnife).
+/// One player's deathblow transaction. F executes a broken enemy; with the melee slot out the attack button does too, from
+/// further off, dashing in first, as Sekiro's deathblow sits on the attack button. A zombie that hasn't noticed anyone can
+/// be executed the same way, unbroken: a stealth kill (ZombieMind, stage 4C-2). Whom, from which side of them and from how
+/// near is the rules' to say (Tables/ExecutionRules.csv through MeleeCombatTarget.ExecutionRuleFor): each rule has its own
+/// cone and reach, so a zombie's back is taken from further off than its front, and the rule this player's PC found is
+/// the one the execution then goes by (Rule: it names the pair, ExecutionPairPlayer). Either way the player closes in to
+/// dashStopDistance first, and their class's knife does the deed (ExecutionKnife).
 /// Animation can subscribe to Started/Impact/Ended.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution)]
 public sealed class PlayerExecution : MonoBehaviour
 {
-    [SerializeField, Min(.2f)] private float reach = 2.1f;
     [SerializeField, Range(5f, 75f)] private float aimAngle = 38f;
     [SerializeField, Min(.1f)] private float duration = .8f;
     [SerializeField, Min(0f)] private float impactTime = .35f;
     [SerializeField, Min(0f)] private float clearance = 2.6f;
     [SerializeField, Min(0f)] private float retreatSpeed = 2.8f;
-    [Header("Deathblow on the attack button")]
-    [SerializeField, Min(.2f), Tooltip("With the fists out, a left click executes a broken enemy this close (m), dashing in from beyond reach.")]
-    private float deathblowReach = 4f;
-    [SerializeField, Min(1f), Tooltip("Speed of that dash (m/s).")]
+    [Header("The dash in (F, and the attack button's deathblow from a rule's lungeReach)")]
+    [SerializeField, Min(1f), Tooltip("Speed of the dash in (m/s).")]
     private float dashSpeed = 14f;
     [SerializeField, Min(.05f), Tooltip("The dash stops closing in after this long (s), and the execution goes on from there.")]
     private float dashTimeout = .35f;
@@ -40,14 +40,21 @@ public sealed class PlayerExecution : MonoBehaviour
     private InputAction interact;
     private PlayerWeaponInput buttons;
     private MeleeCombatTarget victim;
+    private ExecutionRule rule;
     private float elapsed, approachTime;
     private bool impacted, approaching;
     private readonly RaycastHit[] sightHits = new RaycastHit[32];
     public bool IsExecuting { get; private set; }
     /// <summary>The enemy F would execute now.</summary>
     public MeleeCombatTarget Candidate { get; private set; }
-    /// <summary>The enemy a left click would execute now (fists out), dashing in if it is beyond reach; null otherwise.</summary>
+    /// <summary>The enemy a left click would execute now (the melee slot out), dashing in if it is beyond reach; null otherwise.</summary>
     public MeleeCombatTarget DeathblowCandidate { get; private set; }
+    /// <summary>
+    /// The rule the execution under way goes by (Tables/ExecutionRules.csv), as this player's own PC found it when it
+    /// began: it names the pair to play (ExecutionPairPlayer). Null with none under way, and on a copy of someone else's
+    /// (their PC sends what it plays).
+    /// </summary>
+    public ExecutionRule Rule => IsExecuting ? rule : null;
     /// <summary>Dashing in to the enemy before the execution proper starts.</summary>
     public bool IsDashing => IsExecuting && approaching;
     public MeleeCombatTarget Victim => victim;
@@ -109,7 +116,7 @@ public sealed class PlayerExecution : MonoBehaviour
     {
         // An end that never arrived must not leave the last enemy held, or this player listed twice.
         if (victim != null && victim != target) victim.ReleaseExecution(this);
-        victim = target; IsExecuting = true; elapsed = 0f; impacted = false;
+        victim = target; rule = null; IsExecuting = true; elapsed = 0f; impacted = false;
         executing.Remove(this); executing.Add(this);
         foreach (var enemy in MeleeCombatTarget.Active)
             if (enemy != null && Suppresses(enemy)) enemy.GetComponent<EnemyCombatAI>().OrNull()?.CancelAttack();
@@ -133,55 +140,69 @@ public sealed class PlayerExecution : MonoBehaviour
             if (Time.timeScale <= 0f) return;
             Tick(Time.deltaTime); return;
         }
-        Candidate = interact != null && interact.enabled ? FindCandidate() : null;
+        Candidate = interact != null && interact.enabled ? FindCandidate(false) : null;
         if (Candidate != null && interact.WasPressedThisFrame()) { TryBegin(Candidate); return; }
         // Before the fists read the same click (PlayerMeleeCombat runs after this): a broken enemy takes the deathblow
         // instead of a punch. A counter, which reads it earlier still, has already claimed the click if it was open.
         var fists = player != null ? player.MeleeCombat : null;
-        DeathblowCandidate = fists != null && fists.IsActive ? FindCandidate(deathblowReach) : null;
+        DeathblowCandidate = fists != null && fists.IsActive ? FindCandidate(true) : null;
         if (DeathblowCandidate != null && buttons != null && buttons.TryReadMeleeInput(out var frame) && frame.AttackPressed)
-            TryBegin(DeathblowCandidate, deathblowReach);
+            TryBegin(DeathblowCandidate, true);
     }
-    public MeleeCombatTarget FindCandidate() => FindCandidate(reach);
-    private MeleeCombatTarget FindCandidate(float within)
+    /// <summary>The enemy F would execute or take down now, or null.</summary>
+    public MeleeCombatTarget FindCandidate() => FindCandidate(false);
+    // lunge: the attack button with the melee slot out, from as far as each rule's lungeReach.
+    private MeleeCombatTarget FindCandidate(bool lunge)
     {
         if (!CanOffer || aim == null) return null;
         MeleeCombatTarget best = null; float bestScore = float.NegativeInfinity;
         foreach (var target in MeleeCombatTarget.Active)
         {
-            if (!Eligible(target, within, out Vector3 point)) continue;
+            if (Offer(target, lunge, out Vector3 point) == null) continue;
             Vector3 direction = point - aim.position;
             float score = Vector3.Dot(aim.forward, direction.normalized) * 4f - direction.magnitude * .1f;
             if (score > bestScore) { best = target; bestScore = score; }
         }
         return best;
     }
-    private bool Eligible(MeleeCombatTarget target, float within, out Vector3 point)
+    // The rule that lets this player execute that enemy or take it down from where they stand now, or null: it is broken
+    // or knows of nobody, under the crosshair (aimAngle), in plain sight, and some rule of the table offers it in its
+    // posture from this side of it within that rule's own reach (MeleeCombatTarget.ExecutionRuleFor), measured from the
+    // eyes to the nearest of its body.
+    private ExecutionRule Offer(MeleeCombatTarget target, bool lunge, out Vector3 point)
     {
         point = default;
-        // Broken, or an unaware zombie with this player behind it: a stealth kill (MeleeCombatTarget.CanBeExecutedBy).
-        if (target == null || !target.CanBeExecutedBy(this) || target.gameObject.scene != gameObject.scene || target.transform.IsChildOf(transform)) return false;
+        if (target == null || target.gameObject.scene != gameObject.scene || target.transform.IsChildOf(transform)) return null;
+        // The cheap questions first: every player asks every enemy this twice a frame.
+        if (!target.CanExecute && !target.CanBeTakenDown) return null;
         var body = target.GetComponentInChildren<Collider>();
-        if (body == null || !body.enabled || body.isTrigger) return false;
+        if (body == null || !body.enabled || body.isTrigger) return null;
         point = body.bounds.center;
-        if (Vector3.Distance(aim.position, body.ClosestPoint(aim.position)) > within) return false;
         Vector3 delta = point - aim.position;
-        if (Vector3.Dot(aim.forward, delta.normalized) < Mathf.Cos(aimAngle * Mathf.Deg2Rad)) return false;
+        if (Vector3.Dot(aim.forward, delta.normalized) < Mathf.Cos(aimAngle * Mathf.Deg2Rad)) return null;
+        var offered = target.ExecutionRuleFor(this, Vector3.Distance(aim.position, body.ClosestPoint(aim.position)), lunge);
+        if (offered == null) return null;
         int count = Physics.RaycastNonAlloc(aim.position, delta.normalized, sightHits, delta.magnitude, ~0, QueryTriggerInteraction.Ignore);
         var hits = count == sightHits.Length ? Physics.RaycastAll(aim.position, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore) : sightHits;
         if (hits != sightHits) count = hits.Length;
         for (int i = 0; i < count; i++)
         {
             Transform hit = hits[i].collider.transform;
-            if (!hit.IsChildOf(transform) && !hit.IsChildOf(target.transform)) return false;
+            if (!hit.IsChildOf(transform) && !hit.IsChildOf(target.transform)) return null;
         }
-        return true;
+        return offered;
     }
-    public bool TryBegin(MeleeCombatTarget target) => TryBegin(target, reach);
-    /// <summary>Executes target if it is within this distance; beyond reach the player dashes in to it first.</summary>
-    public bool TryBegin(MeleeCombatTarget target, float within)
+    public bool TryBegin(MeleeCombatTarget target) => TryBegin(target, false);
+    /// <summary>
+    /// Executes target, or takes it down, if a rule offers it from where the player stands (<paramref name="lunge"/>: by
+    /// the attack button with the melee slot out, from as far as the rule's lungeReach); the player dashes in to it first.
+    /// </summary>
+    public bool TryBegin(MeleeCombatTarget target, bool lunge)
     {
-        if (!CanOffer || !Eligible(target, within, out _) || !target.TryReserveExecution(this)) return false;
+        if (!CanOffer || aim == null) return false;
+        var offered = Offer(target, lunge, out _);
+        if (offered == null || !target.TryReserveExecution(this)) return false;
+        rule = offered;
         victim = target; elapsed = approachTime = 0f; impacted = false; IsExecuting = true; Candidate = DeathblowCandidate = null;
         // F closes in too (2026-11-13): the class knife is stabbed in by hand (ExecutionKnife), and from F's 2.1 m reach the
         // arm met nothing. The dash stops at dashStopDistance either way.

@@ -58,8 +58,12 @@ public sealed partial class ZombieMind : MonoBehaviour
     private float nearRate = 2.5f;
     [SerializeField, Range(0f, 1f), Tooltip("How fast it notices at the far end of its sight, as a share of nearRate.")]
     private float farShare = .15f;
-    [SerializeField, Min(0f), Tooltip("Seen this close (m) and in its full view, a player wakes it at once.")]
+    [SerializeField, Min(0f), Tooltip("Seen this close (m) and in its full view, a player wakes it within touchReact.")]
     private float touchRange = 2f;
+    [SerializeField, Min(0f), Tooltip("How long it takes to be sure of someone it sees that close, starting from no suspicion (s): the "
+        + "moment a player right before its face has to take it down from in front (Tables/ExecutionRules). 0: it wakes at once, as "
+        + "it did until 2026-11-18.")]
+    private float touchReact = .7f;
     [SerializeField, Range(0f, 1f)] private float crouchShare = .55f;
     [SerializeField, Range(0f, 1f), Tooltip("Lying down: prone, on the back, crawling.")]
     private float lyingShare = .3f;
@@ -171,10 +175,6 @@ public sealed partial class ZombieMind : MonoBehaviour
     private float dozeHearShare = .45f;
     [SerializeField, Range(0f, 1f), Tooltip("Dozing: how fast it notices what it does see, as a share.")]
     private float dozeNoticeShare = .5f;
-
-    [Header("Stealth kill")]
-    [SerializeField, Range(10f, 180f), Tooltip("Within this angle either side of its back (degrees), a player may take a zombie that isn't awake down (F, or a left click with the fists).")]
-    private float takedownAngle = 70f;
 
     private static readonly List<ZombieMind> minds = new List<ZombieMind>();
     // Each player's gun, for its flashlight. Found once.

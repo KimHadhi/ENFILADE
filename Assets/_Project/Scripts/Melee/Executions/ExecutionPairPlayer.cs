@@ -4,8 +4,9 @@ using UnityEngine;
 /// <summary>
 /// Paired executions and takedowns (the user, 2026-11-12: "처형 애니메이션 만들어서 넣어 줘 … 몇 놈은 누워 있거나 앉아 있거나
 /// 일어서 있던데 이거 각각 맞춰서"): when an execution proper begins (PlayerExecution, any dash in over), the player's own PC
-/// picks the pair for what the zombie is doing (ZombieBody.ExecutionState: standing from behind or in front, sitting,
-/// eating, crouched, lying face down or on its back; Tables/Executions.csv), lays the pair's root on the zombie (its feet;
+/// plays the pair the execution's rule names (PlayerExecution.Rule, Tables/ExecutionRules.csv: found at the press for the
+/// zombie's posture, standing, sitting, eating, crouched, lying face down or on its back, and for the side the player
+/// came from; the pairs themselves are Tables/Executions.csv), lays the pair's root on the zombie (its feet;
 /// over its body when it lies knocked down), and plays both clips on one clock: the player's on the body
 /// (PlayerBody.Execution), the zombie's on the zombie (ZombieBody.Executed). The execution takes the pair's kill and length
 /// (PlayerExecution.Retime), so the blow lands on the pair's kill frame, on the bone the blade meets, and the dead body goes
@@ -172,9 +173,13 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
     private void BeginOwn(MeleeCombatTarget victim)
     {
         if (victim == null || !victim.TryGetComponent(out ZombieBody target) || !target.Wears) return;
-        string state = target.ExecutionState(transform.position, out bool lying, out Vector3 hips, out Vector3 head);
-        var chosen = ExecutionPairs.Find(state);
+        // The pair is the one named by the rule this execution began by (PlayerExecution.Rule, Tables/ExecutionRules.csv):
+        // found for what the zombie was and where the player stood at the press, so what was offered is what plays. A rule
+        // that names no pair, or whose clips are missing, keeps the knife's own stab.
+        var chosen = ExecutionPairs.Find(execution.Rule?.Pair);
         if (chosen == null || !Clips(chosen, out var playerClip, out var zombieClip)) return;
+        // Where its body lies now, for laying the pair over it (the dash in may have taken a moment).
+        target.ExecutionPosture(out bool lying, out Vector3 hips, out Vector3 head);
         var root = target.BodyRoot;
         if (root == null) return;
         float size = Mathf.Max(.1f, target.Grown);

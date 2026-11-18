@@ -67,20 +67,26 @@ public sealed partial class ZombieMind
     private float BusyNotice => !HoldsPose ? 1f : PoseKind == CalmPoseKind.Eat ? eatNoticeShare : PoseKind == CalmPoseKind.Doze ? dozeNoticeShare : 1f;
 
     /// <summary>
-    /// Stage 4C-2: not awake (calm, searching or alert) and this spot behind its back, so a player standing there may take
-    /// it down, an execution without breaking it first (MeleeCombatTarget.CanBeExecutedBy). The PC of the player who takes it
-    /// down judges it, from the mood the host shares and where its own player stands; the host holds the zombie for them
-    /// without judging it again (MeleeCombatTarget.HoldForExecution).
+    /// Stage 4C-2: not awake (calm, searching or alert), and a player standing at this spot may take it down, an execution
+    /// without breaking it first (MeleeCombatTarget.ExecutionRuleFor): some rule of Tables/ExecutionRules.csv offers a
+    /// takedown of a zombie in its posture from that side of it. Where "behind" ends, and that one right before its face
+    /// may be taken too from very near, is each rule's own cone and reach (until 2026-11-18 it was one angle about its
+    /// back, takedownAngle, and a lying one from anywhere). The PC of the player who takes it down judges it, from the mood
+    /// the host shares and where its own player stands; the host holds the zombie for them without judging it again
+    /// (MeleeCombatTarget.HoldForExecution).
     /// </summary>
-    public bool CanBeTakenDownFrom(Vector3 at)
-    {
-        if (!Unaware) return false;
-        // Lying face down it has no back to come at: from any side (the prone takedown kneels beside it). Before its eyes it
-        // would see them first anyway (Look).
-        if (Lying) return true;
-        Vector3 toward = Vector3.ProjectOnPlane(at - transform.position, Vector3.up);
-        return toward.sqrMagnitude < 1e-4f || Vector3.Angle(-transform.forward, toward) <= takedownAngle;
-    }
+    public bool CanBeTakenDownFrom(Vector3 at) => TakedownFrom(at) != null;
+
+    /// <summary>
+    /// The rule by which a player standing at <paramref name="at"/> may take it down, or null: it must know of nobody.
+    /// <paramref name="distance"/> (their eyes to its body, m) below 0 asks about the place alone;
+    /// <paramref name="lunge"/>: with the attack button and the melee slot out (the rule's longer reach).
+    /// </summary>
+    public ExecutionRule TakedownFrom(Vector3 at, float distance = -1f, bool lunge = false)
+        => Unaware ? ExecutionRules.Pick(BodyPosture, true, false, ExecutionRules.Bearing(transform.forward, at - transform.position), distance, lunge) : null;
+
+    /// <summary>The posture its body is in, as the rules name them (ZombieBody.ExecutionPosture); standing without a body.</summary>
+    internal string BodyPosture => (body != null ? body.ExecutionPosture() : null) ?? ExecutionRules.Stand;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ClearStatics()

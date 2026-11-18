@@ -358,15 +358,31 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (!IsStunned && !PlayerExecution.Suppresses(this)) RestoreAgent();
     }
     /// <summary>
-    /// Whether this executor may execute it now: broken (CanExecute), or a zombie unaware of anyone with them behind its
-    /// back, a stealth kill (ZombieMind.CanBeTakenDownFrom).
+    /// Whether this executor may execute it or take it down from where they stand, whatever the distance
+    /// (ExecutionRuleFor): broken, or unaware of anyone, and some rule offers it from that side.
     /// </summary>
-    public bool CanBeExecutedBy(Component executor) => CanExecute || CanBeTakenDownBy(executor);
+    public bool CanBeExecutedBy(Component executor) => ExecutionRuleFor(executor) != null;
 
-    /// <summary>The stealth kill alone: an unaware zombie with this executor behind it.</summary>
-    public bool CanBeTakenDownBy(Component executor)
-        => executor != null && IsAvailable && !IsHeld && !shownHeld && !IsKnockedDown && receiver != null
-            && Mind != null && Mind.CanBeTakenDownFrom(executor.transform.position);
+    /// <summary>It knows of nobody and nothing has hold of it: a takedown's zombie, should a rule offer it from where the player stands.</summary>
+    public bool CanBeTakenDown => IsAvailable && !IsHeld && !shownHeld && !IsKnockedDown && receiver != null && Mind != null && Mind.Unaware;
+
+    /// <summary>
+    /// The rule (Tables/ExecutionRules.csv) by which this executor may execute it or take it down now, or null: what it
+    /// is (broken, unaware of anyone), the posture its body is in and where the executor stands round it pick the rule,
+    /// which names the pair to play. <paramref name="distance"/>: from the executor's eyes to its body (m), against the
+    /// rule's own reach; below 0 asks about the place alone. <paramref name="lunge"/>: with the attack button and the
+    /// melee slot out, which reaches the rule's lungeReach. Asked on the executor's own PC, which decides
+    /// (PlayerExecution); nobody judges it again.
+    /// </summary>
+    public ExecutionRule ExecutionRuleFor(Component executor, float distance = -1f, bool lunge = false)
+    {
+        if (executor == null) return null;
+        bool broken = CanExecute, unaware = CanBeTakenDown;
+        if (!broken && !unaware) return null;
+        string posture = Mind != null ? Mind.BodyPosture : ExecutionRules.Stand;
+        float bearing = ExecutionRules.Bearing(transform.forward, executor.transform.position - transform.position);
+        return ExecutionRules.Pick(posture, unaware, broken, bearing, distance, lunge);
+    }
 
     // Its mind, found once it is there: every player asks every enemy this twice a frame (PlayerExecution.FindCandidate),
     // and it was a component lookup each time. Something without one (a practice target) looks again once a frame at most.

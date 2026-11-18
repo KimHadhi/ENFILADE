@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// One paired execution (Tables/Executions.csv, a row per zombie state): a player clip and a zombie clip that share one
-/// root, the zombie's feet. The game puts that root where the zombie is (ExecutionPairPlayer), the player's root at the
-/// pair's offset from it, and plays both clips together on every PC; the kill lands at <see cref="Kill"/>. The Blender
+/// One paired execution (Tables/Executions.csv, a row per pair): a player clip and a zombie clip that share one root, the
+/// zombie's feet. The game puts that root where the zombie is (ExecutionPairPlayer), the player's root at the pair's
+/// offset from it, and plays both clips together on every PC; the kill lands at <see cref="Kill"/>. The Blender
 /// execution workspace (Tools/Blender/Executions) writes the clips and the columns it measures; turn to fall are tuned by
-/// hand. The pair's id is the zombie state it fits (ZombieBody.ExecutionState): back, front, sit, feed, crouch, prone,
-/// supine.
+/// hand. A pair is only the animation: when it plays (for which posture of the zombie, from which side and how near) is
+/// a rule's to say, which names the pair by its id (ExecutionRule, Tables/ExecutionRules.csv). The seven made so far:
+/// back, front, sit, feed, crouch, prone, supine.
 /// </summary>
 public sealed class ExecutionPair
 {
@@ -30,7 +31,6 @@ public sealed class ExecutionPair
     public string Id { get; internal set; }
     /// <summary>Its row's place in the table, which every PC reads alike: what the network sends.</summary>
     public byte Index { get; internal set; }
-    public bool Takedown { get; internal set; }
     public string PlayerClip { get; internal set; }
     public string ZombieClip { get; internal set; }
     public float Length { get; internal set; }
@@ -74,7 +74,7 @@ public static class ExecutionPairs
 
     private static void Forget() => loaded = false;
 
-    /// <summary>The pair for a zombie state (its row id), or null.</summary>
+    /// <summary>The pair of that row id (the one a rule names: ExecutionRule.Pair), or null.</summary>
     public static ExecutionPair Find(string id)
     {
         Load();
@@ -108,7 +108,6 @@ public static class ExecutionPairs
             {
                 Id = id,
                 Index = (byte)pairs.Count,
-                Takedown = string.Equals(row.Text("kind"), "takedown", StringComparison.OrdinalIgnoreCase),
                 PlayerClip = row.Text("playerClip"),
                 ZombieClip = row.Text("zombieClip"),
                 Length = length,

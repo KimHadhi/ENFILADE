@@ -67,7 +67,7 @@ M1911,15,                                       Move.runSpeed,7.5
 | `Core` | Texts, Fonts, SettingsDefaults, Loading, Network, Chat, MenuTicker | 화면 글자와 번역, 글꼴 역할, 설정 기본값, 로딩, 방 설정, 채팅 모양, 메뉴 소식 |
 | `Player` | Player, Downed, Spectate, ThirdPerson, LowHealth, DeathScreen, Callouts, CalloutSlots, Poke, BodyShapes, DownedAura, HoldReveal | 이동·자세·체력·주먹·몸 수치, 쓰러짐과 부활, 관전, 3인칭, 콜아웃, 가리키기 |
 | `Weapons` | Weapons, Magazines, Scopes, Tracer, GunSkins, GunGrips, GunHands, Holsters, CloseHold, FPSBody, ImpactEffects, ShootOverCover, CrosshairPresets, WeaponIcons, WeaponIconSpans, WeaponSlots, KillCounter | 총의 피해·연사·탄창·반동, 조준경, 예광탄, 스킨, 쥐는 손, 탄착 효과, 조준점, 아이콘 |
-| `Melee` | Combos, Executions, ClassKnives | 주먹 콤보, 처형·암살, 클래스 칼 |
+| `Melee` | Combos, Executions, ExecutionRules, ClassKnives | 주먹 콤보, 처형·암살의 짝(동작)과 규칙(누구를 어디서 어떤 짝으로), 클래스 칼 |
 | `Grenades` | Grenades, GrenadeRules, ThrowArms | 투척물의 수치와 규칙 |
 | `Classes` | Classes, ClassAbilities, ClassColours, ClassGrowth, ClassRanks, Perks, UltMagazine, RepairArms | 클래스, 능력, 색, 성장과 등급, 능력 카드 |
 | `Enemies` | Enemies, ZombieKinds, ZombieSenses, Zombie…(특수 좀비·무리·목소리·시체), Gore, Ragdoll, Stealth | 좀비의 체력·속도·피해, 종류와 비율, 감각, 특수 좀비, 고어, 잠입 |
@@ -211,6 +211,7 @@ Unity로 프로젝트를 열면 게임의 전부를 고칠 수 있다. 구조는
 | 새 좀비 종류 | `ZombieKinds.csv`에 줄을 더한다(기본 좀비 위에 덮어쓰는 값과 나오는 비율). 모습은 `Resources/Enemies/ZombieLooks` |
 | 새 캐릭터, 새 옷 | [플레이어 몸](Guides/PlayerBodyGuide.md)의 "BOOTH 캐릭터·옷 가져오기". 어떤 휴머노이드든 실행 중에 몸에 맞춘다(캐릭터마다 따로 굽지 않는다). 옷끼리 겹치는 곳(양말과 신발, 속옷과 겉옷)과 굽 키가 없는 양말은 메시를 재서 맞추므로 옷 짝마다 적을 것이 없다(숫자는 OutfitFit.csv, 겹 순서는 OutfitSlots.csv `over`, 비치는 옷이 밑을 가려 버리면 Outfits.csv `sheer`). 표정도 깜박임이 맞는지 얼굴 메시로 잰다 |
 | 새 맵 소품, 데칼 | `MapArt.csv`·`MapDecals.csv`에 줄을 더하고 ENFILADE → 맵에서 다시 짓는다. 팩에서 들이는 법은 [소품 가져오기](../Tools/Props/README.md) |
+| 새 처형·암살 | 짝(플레이어·좀비 클립 한 쌍)은 블렌더 처형 작업실에서 만들어 `Executions.csv`에 줄로, 그 짝을 언제 하는지(좀비 자세·모름/무너짐·서는 쪽과 거리)는 `ExecutionRules.csv`에 줄로 더한다. 코드는 필요 없다([처형·암살](Features/Executions.md)). 고친 뒤 `Logs/execution-rules.txt`에서 어디서 무엇이 잡히는지 본다 |
 | 새 소리 | 맞는 `Art/Audio` 폴더에 파일을 넣으면 소리 묶음에 들어간다([유지보수 안내](Guides/MaintenanceGuide.md#사운드를-추가하거나-교체하기)) |
 | 애니메이션 손보기 | `ArtSource`의 블렌더 작업실을 열고 고친 뒤 저장(Ctrl+S)하면 게임에 들어간다([원클릭 작업실](../Tools/Blender/OneClick/README.md)) |
 | 화면 글자 | ENFILADE → 글자 → 글자 편집기 |

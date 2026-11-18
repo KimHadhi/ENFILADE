@@ -119,12 +119,19 @@ public sealed partial class ZombieMind
         }
         if (seen != null)
         {
+            // Right before its eyes it is sure of them in touchReact seconds, however they stand and whatever the light: its
+            // suspicion climbs at least that fast, so the stealth mark fills as it would for any sighting, only quickly.
+            // Until 2026-11-18 it woke in that very think, which left no moment in which someone could stand before an
+            // unaware zombie: the takedown from in front the user asked for ("비경계(방심) 상태의 적 정면 암살 활성화 …
+            // 초근접 시 가능하도록") could never be offered. The rule that gave way is the instant of this wake, not that it
+            // wakes: one already suspicious is sure sooner, and with touchReact 0 it wakes at once as before.
+            if (touching && touchReact > 0f) rate = Mathf.Max(rate, 1f / touchReact);
             suspicion += rate * dt;
             focus = noticed = seen;
             // Watching a stone, a glimpse doesn't turn its head: only once it is unsure of someone (alertAt) does it look
             // their way.
             if (!Distracted || suspicion >= alertAt) stimulus = seen.transform.position;
-            if (touching) { Wake(seen); return; }
+            if (touching && touchReact <= 0f) { Wake(seen); return; }
         }
         else suspicion = Mathf.Max(0f, suspicion - forget * dt);
 

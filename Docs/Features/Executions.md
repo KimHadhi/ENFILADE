@@ -2,14 +2,14 @@
 
 사용자(2026-11-12, 총관리자 전달): "처형 애니메이션 만들어서 넣어 줘. 내가 블렌더로 수정할 수 있게도 해 놔. 좀비 calm idle 모션 보면 몇 놈은 누워 있거나 앉아 있거나 일어서 있던데 이거 각각 맞춰서 알아서 준비해 놔. 내가 후처리 봐 줄 테니까."
 
-처형(체간이 무너진 좀비)과 암살(들키지 않은 좀비를 등 뒤에서)은 좀비가 지금 무엇을 하고 있는지에 맞춘 **짝 애니메이션**으로 한다. 한 짝은 플레이어 클립 하나와 좀비 클립 하나이고, 둘은 같은 뿌리(좀비의 발 자리)를 쓴다. 모든 PC가 같은 짝을 같은 자리·같은 시간에 튼다.
+처형(체간이 무너진 좀비)과 암살(들키지 않은 좀비. 등 뒤에서, 서 있는 놈은 코앞이면 앞·옆에서도)은 좀비가 지금 무엇을 하고 있는지에 맞춘 **짝 애니메이션**으로 한다. 누구를 어디서 할 수 있고 어떤 짝이 나오는지는 규칙 표가 정한다(아래 「규칙」). 한 짝은 플레이어 클립 하나와 좀비 클립 하나이고, 둘은 같은 뿌리(좀비의 발 자리)를 쓴다. 모든 PC가 같은 짝을 같은 자리·같은 시간에 튼다.
 
 ## 짝
 
 | 짝(표 id) | 고르는 때 | 동작 | 길이 · 처치 |
 |---|---|---|---|
-| `back` | 서 있는 좀비, 플레이어가 등 뒤 90° 안 | 왼손으로 입을 막아 머리를 젖히고 목 옆을 찌름 | 1.23초 · 0.50초 |
-| `front` | 서 있는 좀비, 그 밖(체간이 무너진 좀비) | 멱살을 잡아 끌고 관자놀이를 내리찍은 뒤 밀어냄 | 1.77초 · 0.67초 |
+| `back` | 서 있는 좀비, 플레이어가 등 뒤 80° 안(규칙 `back`: 모르는 놈 암살·무너진 놈 처형) | 왼손으로 입을 막아 머리를 젖히고 목 옆을 찌름 | 1.23초 · 0.50초 |
+| `front` | 서 있는 좀비의 앞·옆: 무너진 좀비 처형(규칙 `front-broken`), 방심한 좀비는 코앞 1.2m에서 암살(규칙 `front`) | 멱살을 잡아 끌고 관자놀이를 내리찍은 뒤 밀어냄 | 1.77초 · 0.67초 |
 | `sit` | 앉아 조는 자세(ZombieLooks calmPoses의 sit) | 뒤에서 무릎 꿇고 뒤통수를 누른 채 목덜미를 찌름 | 1.37초 · 0.50초 |
 | `feed` | 무릎 꿇고 먹는 자세 | 머리채를 잡아 일으키고 목 옆을 찌름 | 1.43초 · 0.53초 |
 | `crouch` | 웅크린 자세 | 머리채를 잡아 젖히고 목 옆을 찌름 | 1.37초 · 0.50초 |
@@ -18,7 +18,29 @@
 
 암살 짝(`kind` takedown)은 짧고 조용하게, 처형 짝(`execution`)은 조금 길고 묵직하게 잡았다. 숫자는 블렌더에서 보낼 때 표에 다시 적힌다.
 
-고르는 규칙은 [ZombieBody.Executed](../../Assets/_Project/Scripts/Enemies/Body/ZombieBody.Executed.cs)의 `ExecutionState`: 넘어져 누운 몸(인형에서 막 일어선 순간 포함)이면 가슴이 바닥을 보는지로 `prone`/`supine`, 기는 좀비면 `prone`, 조용한 자세가 보이면 자세 클립 이름(sit·feed·crouch·FD/crawl)으로, 모더의 새 자세는 하는 일(Eat·Doze·Rest)과 머리 높이로, 나머지는 서 있는 좀비로 보고 플레이어가 등 뒤에 있는지로 `back`/`front`. 표에 그 줄이 없거나 클립이 없으면 예전 처형(제자리 칼질)이 그대로 나온다.
+## 규칙 [ExecutionRules.csv](../../Assets/_Project/Data/Resources/Tables/Melee/ExecutionRules.csv)
+
+사용자(2026-11-18): "비경계(방심) 상태의 적 정면 암살 활성화(후방보다 판정 범위를 좁게 설정해 초근접 시 가능하도록 설계)".
+
+**짝은 동작이고 규칙은 그 동작을 언제 하는가다.** 2026-11-18 전에는 이 답이 세 곳에 흩어져 있었다: 암살은 등 뒤 한 각도 안에서만(`ZombieSenses.csv`의 `takedownAngle`), 거리는 무엇이든 하나(`Player.csv`의 `Execution.reach`), 짝은 코드가 90°로 갈라 골랐다(`ZombieBody.ExecutionState`). 그래서 정면 암살은 있을 수 없었고 짝을 더하려면 코드를 고쳐야 했다. 지금은 규칙 한 줄이 「어떤 자세의(`state`) 어떤 처지의(`victim`: unaware 모름 · broken 무너짐 · any) 좀비를, 어느 쪽에서(`side` ± `cone`도. 0 정면, 180 등 뒤), 얼마나 가까이에서(`reach` F · `lungeReach` 근접 칸 좌클릭), 어떤 짝으로(`pair`)」를 말한다. 한 짝을 여러 규칙이 쓸 수 있다(정면 짝은 무너진 좀비 처형과 방심한 좀비 정면 암살 둘 다).
+
+| 규칙 | 좀비 | 서는 곳 | 거리(F · 좌클릭) | 짝 |
+|---|---|---|---|---|
+| `back` | 서 있음 · 모르거나 무너짐 | 등 뒤 ±80° | 2.1m · 4m | back |
+| `front` | 서 있음 · 모름 | 그 밖 전부(앞·옆 ±100°) | 1.2m · 달려들기 없음 | front |
+| `front-broken` | 서 있음 · 무너짐 | 앞·옆 ±100° | 2.1m · 4m | front |
+| `sit` `feed` `crouch` | 그 자세 · 모르거나 무너짐 | 등 뒤 ±80° | 2.1m · 4m | 같은 이름 |
+| `prone` `supine` | 그 자세 | 어느 쪽에서든 | 2.1m · 4m | 같은 이름 |
+| `broken` | 아무 자세 · 무너짐 | 어느 쪽에서든 | 2.1m · 4m | 없음(제자리 칼질) |
+
+- **고르기**([ExecutionRules](../../Assets/_Project/Scripts/Melee/Executions/ExecutionRules.cs)`.Pick`, 입력만으로 답이 정해지는 순수 함수): 자세·처지가 맞고, 내가 선 방향이 부채꼴 안이고, 거리가 닿는 줄 가운데 하나. 자세를 콕 집은 줄이 `any` 줄보다 먼저, 그다음은 부채꼴 한가운데에 더 가까운 줄, 그래도 같으면 위에 적힌 줄. 맞는 줄이 없으면 그 자리에서는 할 수 없다(F 안내도 안 뜬다).
+- **묻는 길**: 처형하는 사람의 PC가 묻고 정한다. [PlayerExecution](../../Assets/_Project/Scripts/Melee/Executions/PlayerExecution.cs)`.Offer` → [MeleeCombatTarget](../../Assets/_Project/Scripts/Combat/Damage/MeleeCombatTarget.cs)`.ExecutionRuleFor`(무너졌는가 · 모르는가 · 자세 · 내가 선 방향) → `Pick`. 누를 때 찾은 규칙이 그 처형의 규칙이 되고(`PlayerExecution.Rule`) 짝도 그 규칙의 것이라, 안내된 것과 다른 동작이 나오지 않는다. 방장은 다시 판정하지 않는다.
+- **자세**는 좀비 몸이 말한다([ZombieBody.Executed](../../Assets/_Project/Scripts/Enemies/Body/ZombieBody.Executed.cs)의 `ExecutionPosture`): 넘어져 누운 몸(인형에서 막 일어선 순간 포함)이면 가슴이 바닥을 보는지로 `prone`/`supine`, 기는 좀비면 `prone`, 조용한 자세가 보이면 자세 클립 이름(sit·feed·crouch·FD/crawl)으로, 모더의 새 자세는 하는 일(Eat·Doze·Rest)과 머리 높이로, 나머지는 `stand`. 어느 쪽에서 왔는지는 몸이 아니라 규칙이 본다.
+- **정면 암살과 「코앞이면 바로 깬다」**: 조용한 좀비는 정면 시야(±45°) 2m 안의 플레이어를 보는 그 순간 깼다(`touchRange`). 그러면 방심한 좀비의 코앞에 서 있는 순간 자체가 없어서 정면 암살을 줄 수가 없다. 물러난 쪽은 이 규칙의 「즉시」다: 이제 그 거리에서 본 순간부터 `touchReact`(0.7초, [ZombieSenses.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/ZombieSenses.csv))에 걸쳐 의심이 차서 깬다(이미 의심하던 놈은 더 빨리. 잠입 표시의 마름모가 빠르게 차는 것으로 보인다). 그 사이에 1.2m 안으로 들어가 F를 누르면 정면 암살이다. 좀비가 덜 보는 옆(±45° 밖)으로 붙으면 훨씬 여유롭다. `touchReact` 0이면 예전처럼 보는 순간 깬다.
+- **확인(플레이 없이)**: 편집기가 컴파일할 때와 표를 저장할 때마다 `Logs/execution-rules.txt`를 다시 쓴다([ExecutionRulesReport](../../Assets/_Project/Scripts/Melee/Executions/ExecutionRulesReport.cs): 줄마다의 뜻, 문제(없는 짝을 가리키는 줄, 어느 규칙도 안 쓰는 짝, 처형할 수 없는 무너진 좀비), 자세×처지마다 내가 선 방향·거리별로 어느 규칙이 잡히는지의 격자. 게임이 묻는 바로 그 `Pick`으로 만든다). 메뉴 ENFILADE → 근접 → 암살·처형 규칙 보고서.
+- **모드**: 같은 이름의 표에 줄을 더하면 된다(새 짝은 `Executions.csv`에 줄과 클립, 그 짝을 언제 트는지는 이 표에 줄). 코드는 필요 없다.
+
+규칙이 가리키는 짝이 없거나 클립이 없으면 예전 처형(제자리 칼질)이 그대로 나온다.
 
 ## 게임에서 어떻게 도는지
 
@@ -44,13 +66,13 @@
 
 ## 표 [Executions.csv](../../Assets/_Project/Data/Resources/Tables/Melee/Executions.csv)
 
-줄 하나가 짝 하나(id = 좀비 상태). 블렌더가 장면 그대로 소수 여섯째 자리까지 다시 쓰는 열(0.9.58까지는 자리·시간 셋째 자리, 각도 첫째 자리): `kind` `playerClip` `zombieClip` `length` `kill` `right` `forward` `yaw` `zHips*` `zHeadYaw` `l*` `r*`. 손으로 고치는 열: `turn`(좀비가 돌아 맞추는 몫) `align`(플레이어가 미끄러져 들어가는 시간) `blendIn` `blendOut` `hitBone`(피가 나는 뼈) `fallRight`·`fallUp`·`fallForward`(시체를 미는 쪽). 손에 쥔 칼의 자리는 이 표가 아니라 클래스마다 [ClassKnives.csv](../../Assets/_Project/Data/Resources/Tables/Melee/ClassKnives.csv)에 있다(0.9.55까지 있던 블렌더 미리보기용 `Knife` 줄과 그 다섯 열은 0.9.56에서 없앴다). 열마다 설명은 표의 `#설명` 줄.
+줄 하나가 짝 하나(id = 짝 이름. 언제 트는지는 위의 ExecutionRules.csv가 이 id로 가리킨다). 블렌더가 장면 그대로 소수 여섯째 자리까지 다시 쓰는 열(0.9.58까지는 자리·시간 셋째 자리, 각도 첫째 자리): `kind` `playerClip` `zombieClip` `length` `kill` `right` `forward` `yaw` `zHips*` `zHeadYaw` `l*` `r*`. 손으로 고치는 열: `turn`(좀비가 돌아 맞추는 몫) `align`(플레이어가 미끄러져 들어가는 시간) `blendIn` `blendOut` `hitBone`(피가 나는 뼈) `fallRight`·`fallUp`·`fallForward`(시체를 미는 쪽). 손에 쥔 칼의 자리는 이 표가 아니라 클래스마다 [ClassKnives.csv](../../Assets/_Project/Data/Resources/Tables/Melee/ClassKnives.csv)에 있다(0.9.55까지 있던 블렌더 미리보기용 `Knife` 줄과 그 다섯 열은 0.9.56에서 없앴다). 열마다 설명은 표의 `#설명` 줄.
 
 ## 시험
 
 1. Unity를 누르면 `Art/Animations/Executions`의 FBX 14개를 휴머노이드로 (다시) 가져온다. Console에 Rig 오류가 없어야 한다.
 2. 콘솔 `/poses stay`: 자세마다 조용한 좀비가 하나씩 선다(앉아 졸기·먹기·웅크리기·엎드려 먹기·엎드려 꿈틀대기). 각각 등 뒤에서 F → 그 자세의 짝이 나와야 한다(엎드린 둘은 `prone`).
-3. `/spawn 3 calm`의 서 있는 좀비를 등 뒤에서 F → `back`.
+3. `/spawn 3 calm`의 서 있는 좀비를 등 뒤에서 F → `back`. 옆(등 뒤 80° 밖)이나 앞으로 코앞(1.2m)까지 붙어 F → `front`(좀비가 나를 향해 돌려세워진다). 정면으로 걸어 들어가면 2m 안에서 잠입 표시가 0.7초 안에 차서 깨므로 그 전에 눌러야 하고, 앞에서 근접 칸 좌클릭으로 멀리서 달려들 수는 없다. 앉은·먹는·웅크린 좀비는 앞에서는 안 된다(등 뒤만). `Logs/execution-rules.txt`의 격자와 같아야 한다.
 4. 좀비를 패링·주먹으로 무너뜨리고 앞에서 F(또는 주먹 좌클릭) → `front`, 등 뒤에서 → `back`.
 5. 무너진 좀비를 대시 밀치기로 넘어뜨린 뒤 누운 채 F → 엎어졌으면 `prone`, 등을 댔으면 `supine`. 다리를 잃고 기는 좀비 → `prone`.
 6. 거구(`/spawn brute`)를 무너뜨려 처형 → 손이 머리에 붙고, 살아남으면 접었다 펴고 다시 싸운다.
