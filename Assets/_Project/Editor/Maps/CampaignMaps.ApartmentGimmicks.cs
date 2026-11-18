@@ -209,9 +209,11 @@ public static partial class CampaignMaps
         var places = new List<string>();
         foreach (var (place, at) in spots)
         {
-            // Each on a table (blocking), the key on it.
+            // Each on a table (blocking), the key on it: where the build stood the table, should it have had to move it
+            // out of something (GreyboxBuilder.Standing).
             b.PropSolid("table", at - Vector3.up * .78f, 0f);
-            marks.Add(b.Mark("마스터키 자리 " + place.Substring(place.Length - 3), at, 0f, key.transform.parent));
+            Vector3 on = new Vector3(b.LastStoodAt.x, at.y, b.LastStoodAt.z);
+            marks.Add(b.Mark("마스터키 자리 " + place.Substring(place.Length - 3), on, 0f, key.transform.parent));
             places.Add(place);
         }
         b.Box("열쇠 꾸러미", -.09f, .09f, 0f, .04f, -.05f, .05f, b.Metal, solid: false, group: key.transform);
@@ -234,6 +236,10 @@ public static partial class CampaignMaps
         });
 
         // The ground floor's stair door, chained: the master key opens it quietly; smashed in, the ground floor wakes.
+        // Opened, it slides west into the wall beside it, as the other key doors do (chapter 2's armoury, chapter 4's
+        // staff gate). Until 2026-11-18 it slid 1.1 m north instead, into the stairwell, and stood across the foot of
+        // the stairs a hand's width before the first step: a door one walked through (an opened lock has no collider),
+        // which read as the stairs shut by the very key that opened them.
         var chained = b.Blocker("B4 1층 계단 문 (쇠사슬, 마스터키)", 101.9f, 103.5f, 0f, DoorHigh, 1.25f, 1.45f, null, b.Metal, "Metal");
         var door = b.AddSwitch<GimmickLock>(chained);
         GreyboxBuilder.Configure(door, so =>
@@ -241,7 +247,7 @@ public static partial class CampaignMaps
             so.FindProperty("item").stringValue = "masterkey";
             so.FindProperty("itemTitle").stringValue = "gimmick.item.masterkey";
             so.FindProperty("wakeBox").boundsValue = floorsBox(0).Bounds;
-            so.FindProperty("openOffset").vector3Value = new Vector3(0f, 0f, 1.1f);
+            so.FindProperty("openOffset").vector3Value = new Vector3(-1.6f, 0f, 0f);
             so.FindProperty("reach").floatValue = 1.8f;
         });
 
