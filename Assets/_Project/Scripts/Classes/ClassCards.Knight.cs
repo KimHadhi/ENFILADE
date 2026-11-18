@@ -31,16 +31,6 @@ public sealed partial class ClassCards
     /// </summary>
     public static bool ThrowsOffHolds => PlayerClass.Is(PlayerClass.Knight) && PlayerClass.Ability(KnightRow, "grabThrow", 1f) > .5f;
 
-    // The Knight's cards the class HUD's bar shows (BarShare): the shadow double out first, then the cover strike's moment,
-    // then the flow's.
-    private float KnightBarShare => ShadowShare > 0f ? ShadowShare : CoverStrikeShare > 0f ? CoverStrikeShare : FlowShare;
-
-    private string KnightBarWord => ShadowShare > 0f ? Texts.Get("class.hud.shadow")
-        : CoverStrikeShare > 0f ? Texts.Format("class.hud.coverstrike", Mathf.RoundToInt(PlayerPerks.Total(PlayerPerks.KnightCoverstrike)))
-        : Texts.Format("class.hud.flow", Mathf.RoundToInt(PlayerPerks.Total(PlayerPerks.KnightFlow)));
-
-    private Color KnightBarColor => ShadowShare > 0f ? Violet : CoverStrikeShare > 0f ? KitStyle.Accent : KitStyle.Ice;
-
     // A parry (a Knight's). The shadow double no longer comes out of one: the card that did went with the final cards on
     // 2026-11-14 (the user: "이미 궁극기를 쓸 수 있게 된다는 특권을 얻는 거에서 궁극 카드가 의미 없잖아"), and the double
     // is the Knight's ultimate alone (ClassCards.Ultimate).

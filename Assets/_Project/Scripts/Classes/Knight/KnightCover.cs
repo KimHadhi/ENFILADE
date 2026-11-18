@@ -42,7 +42,7 @@ public sealed class KnightCover : MonoBehaviour
 
     private static readonly List<Window> windows = new List<Window>();
     // This PC's player's guns after a Knight's cover turned a blow on them with 원호 반격: until when, and by what factor.
-    private static float guardedUntil, guardedFactor = 1f;
+    private static float guardedUntil, guardedFactor = 1f, guardedSeconds = 1f;
 
     /// <summary>This PC's own player's, while they play a Knight.</summary>
     public static KnightCover Local { get; private set; }
@@ -53,6 +53,12 @@ public sealed class KnightCover : MonoBehaviour
     /// none does.
     /// </summary>
     public static float GuardedGunFactor => Time.time < guardedUntil ? guardedFactor : 1f;
+    /// <summary>
+    /// Seconds left of a Knight's cover on this PC's player's guns, and of how many: its slot among the timed effects
+    /// (TimedEffects). It was the one buff the HUD never showed at all: the old single bar had no branch for it.
+    /// </summary>
+    public static float GuardedLeft => guardedUntil - Time.time;
+    public static float GuardedSeconds => guardedSeconds;
 
     /// <summary>A cover opened on this friend for so long: the other PCs are told (PlayerNetworkCombat).</summary>
     public event Action<PlayerMovement, float> Opened;
@@ -248,6 +254,7 @@ public sealed class KnightCover : MonoBehaviour
     {
         guardedFactor = 1f + window.GunBonus / 100f;
         guardedUntil = Time.time + window.GunSeconds;
+        guardedSeconds = Mathf.Max(.1f, window.GunSeconds);
         AlertHUD.Self(Texts.Format("class.knight.coverstrike.ally", PlayerTally.NameOf(window.Knight),
             Mathf.RoundToInt(window.GunSeconds), Mathf.RoundToInt(window.GunBonus)));
     }

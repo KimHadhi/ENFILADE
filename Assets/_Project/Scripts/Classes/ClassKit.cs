@@ -169,9 +169,6 @@ public sealed partial class ClassKit : MonoBehaviour
     public float KataWait => Mathf.Max(0f, kataReadyAt - Time.time);
     public float KataShare => kataUntil > Time.time ? Mathf.Clamp01((kataUntil - Time.time) / kataTotal) : 0f;
 
-    /// <summary>How much of this player's duel under way is left, 0 to 1 (0: none).</summary>
-    public float DuelShare => HoundDuel.Of(movement) is HoundDuel duel ? duel.Share : 0f;
-
     // A Schießhund's Desperado as it is (the gun in slot 4, its rounds its own), or null.
     private WeaponRuntime Desperado => PlayerClass.Is(PlayerClass.Schiesshund) && slots != null && slots.KeepsOwnRounds(DesperadoSlot)
         ? slots.GetRuntime(DesperadoSlot) : null;
@@ -190,8 +187,6 @@ public sealed partial class ClassKit : MonoBehaviour
     public bool DesperadoLoaded => slots != null && slots.SelectedSlot == DesperadoSlot && Rounds > 0;
     /// <summary>Return Back's stacks now (0 when they have gone), and seconds since the last bounty.</summary>
     public int ReturnStacks => returnUntil > Time.time ? returnStacks : 0;
-    /// <summary>How much of Return Back is left, 0 to 1 (0: none).</summary>
-    public float ReturnShare => returnUntil > Time.time ? Mathf.Clamp01((returnUntil - Time.time) / returnTotal) : 0f;
     public float SinceBounty => Time.time - bountyAt;
 
     /// <summary>
@@ -374,6 +369,7 @@ public sealed partial class ClassKit : MonoBehaviour
         }
         Ebb();
         Crate();
+        ReportEffects();
         if (PlayerClass.Is(PlayerClass.Point)) ReloadAside();
         // A Knight fights on pinned under a runner with its fists and shoves, and kicks it off with the shove key every
         // few seconds without the shield (PlayerHold, PlayerMeleeCombat; the user: alone under a runner it must get out).
@@ -389,6 +385,29 @@ public sealed partial class ClassKit : MonoBehaviour
         // friend to cover, which KnightCover reads.
         if (!PlayerClass.Is(PlayerClass.Support) && !PlayerClass.Is(PlayerClass.Knight) && KeyBindings.Pressed("Player/ClassAbility")
             && movement.InputAvailable && !movement.IsDead && !movement.IsHeld) Use();
+    }
+
+    // The kit's timed effects on this PC's player, said each frame they run (TimedEffects), each by the clock its rule
+    // goes by, so its slot on the HUD shows what the game applies: a CHARGE this player is in (their own, or a friend's
+    // in any class), a Knight's taunt, a Point's Gun Kata and the Gunslinger card's moment after a draw, a Schießhund's
+    // duel and Return Back. Each has a slot of its own: a gun swapped during the kata starts Gunslinger beside it, where
+    // the one bar showed the newer and dropped the kata's time (the user, 2026-11-18).
+    private void ReportEffects()
+    {
+        float now = Time.time;
+        TimedEffects.Report("assault.charge", chargeUntil - now, chargeTotal);
+        TimedEffects.Report("knight.taunt", tauntUntil - now, tauntTotal);
+        TimedEffects.Report("point.kata", kataUntil - now, kataTotal);
+        float slinger = GunslingerShare;
+        if (slinger > 0f)
+        {
+            float seconds = Mathf.Max(.1f, PlayerClass.Ability(PointRow, "gunslingerSeconds", 2.5f));
+            TimedEffects.Report("point.gunslinger", slinger * seconds, seconds, 0, PlayerPerks.Total(PlayerPerks.PointGunslinger));
+        }
+        if (HoundDuel.Of(movement) is HoundDuel duel) TimedEffects.Report("hound.duel", duel.Left, duel.Total);
+        if (ReturnStacks > 0) TimedEffects.Report("hound.return", returnUntil - now, returnTotal, returnStacks, returnStacks);
+        if (PlayerClass.Is(PlayerClass.Schiesshund))
+            TimedEffects.Report("hound.cheer", HoundShowdown.CheerLeft(movement), HoundShowdown.CheerSeconds(movement), 0, HoundShowdown.CheerDamage(movement));
     }
 
     // This PC's own player's gun and hurt, once both are there (the gun and the health may be made after this kit).

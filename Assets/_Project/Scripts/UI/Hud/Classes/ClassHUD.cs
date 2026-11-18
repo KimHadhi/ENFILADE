@@ -6,20 +6,23 @@ using UnityEngine.UI;
 /// <summary>
 /// The class's own resource, at the foot of the screen (stage 7, ClassKit): a dark slanted plate with the class's name,
 /// and for an Assault its adrenaline as a row of leaning pips that fill pink, "[휠] CHARGE" beating on it once they are
-/// full and a draining bar while a CHARGE lasts (a friend's too), and with 데인저 클로즈 its barrage's wait or aim past the
+/// full, and with 데인저 클로즈 its barrage's wait or aim past the
 /// pips; for a Point its two guns' numbers, each with a line
 /// that runs out while the gun put away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks as
 /// the pips, the newest flashing white as it comes and all of them as they are lost, and "DEADEYE" over the plate while
-/// the gun in hand holds its first round since loading; for a Knight "[휠] 도발" while its taunt is ready, the wait in
-/// its place while not, and the draining bar while it lasts; for a Schießhund its Desperado's rounds as teal pips, the
-/// newest flashing as a bounty loads it, "DESPERADO" over the plate while it is in hand with a round in it, and Return
-/// Back's stacks on the draining bar; for a Détente its syringe as a pip a dose, red, "[휠] 주사" while a dose is in it,
-/// how many Resurrections are left beside them, and on the bar a treatment or a Resurrection under way, else Golden
-/// Hour. Classes whose abilities come later show their name only. A Détente friend's adrenaline shot (its card, any
-/// class) takes the bar in the syringe's red for its few seconds, with what it gives the guns.
-/// The class cards (Docs/Features/ClassCards.md): a thin pink line over the plate runs out while Momentum (기세) lasts and fills
-/// again with each hit; a card state under way takes the bar along the foot (ClassCards: a Ghost's ultimate, while no
-/// zombie sees it, in white; a Point's Gunslinger after a gun is drawn).
+/// the gun in hand holds its first round since loading; for a Knight "[휠] 원호" while its cover is ready and the wait in
+/// its place while not; for a Schießhund its Desperado's rounds as teal pips, the newest flashing as a bounty loads it,
+/// and "DESPERADO" over the plate while it is in hand with a round in it; for a Détente its syringe as a pip a dose,
+/// red, "[휠] 주사" while a dose is in it, and how many Resurrections are left beside them. Classes whose abilities
+/// come later show their name only.
+/// Under the plate, in a flow: what the player has standing in the world (DeployStrip), then every timed effect on
+/// them, each in a slot of its own with its own time (EffectStack over TimedEffects): a CHARGE, a Gun Kata, Gunslinger,
+/// Return Back, Golden Hour, a friend's adrenaline shot or cover, Momentum and the rest. The plate used to carry ONE
+/// draining bar there, and this class chose what it showed by a chain of "this if it runs, else that" (a card's state,
+/// then a friend's shot, then the taunt, the kata, the duel, the cheer, Return Back, the CHARGE): whatever came later in
+/// the chain was not on the screen while something earlier ran (the user, 2026-11-18: a gun swapped during the Gun
+/// Kata started Gunslinger and the kata's time was gone). Nothing chooses any more: the features say what runs and
+/// every one of them is shown.
 /// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
@@ -30,20 +33,21 @@ public sealed class ClassHUD : MonoBehaviour
 
     private PlayerMovement movement;
     private ClassKit kit;
-    private RectTransform plate, pipRow, chargeBar, slotRow, momentumLine;
-    private Image chargeFill, momentumFill;
+    private RectTransform plate, pipRow, slotRow;
     private readonly Image[] pips = new Image[MostPips];
     private readonly Image[] slotLines = new Image[2], slotBacks = new Image[2];
     private TextMeshProUGUI title, note;
     private RawImage icon;
     private RectTransform keyRect;
     private KeyCapGraphic keyCap;
-    private TextMeshProUGUI keyLabel, keyWord, barWord, deadeye;
+    private TextMeshProUGUI keyLabel, keyWord, deadeye;
     private InputAction ability;
     private string shownClass;
     private int shownPips;
-    // What this player has standing in the world, under the plate (how many of each kind, how many may: DeployStrip).
+    // What this player has standing in the world, under the plate (how many of each kind, how many may: DeployStrip),
+    // and under that every timed effect on them, a slot each (EffectStack).
     private DeployStrip deploy;
+    private EffectStack effects;
 
     private void OnEnable()
     {
@@ -63,59 +67,17 @@ public sealed class ClassHUD : MonoBehaviour
         // The count of what this player has standing, whatever their class and whether or not they are placing now (the
         // user, 2026-11-18: "현재 설치 개수/최대 제한 현황 표시"); what hangs under the plate (the bar) stands under it.
         deploy.Show(movement, Placing(), !dead);
-        chargeBar.anchoredPosition = new Vector2(0f, -(Height + 4f + deploy.Reach));
+        // Every timed effect on this player, a slot each, under the count line (or right under the plate when that
+        // shows nothing): the features say what runs (TimedEffects) and none of it is chosen between here.
+        effects.Show(Above - deploy.Reach, !dead);
         if (dead || kit == null) return;
-        // Momentum (기세, a perk card): its time over the plate.
-        float momentum = PlayerPerks.MomentumShare;
-        momentumLine.gameObject.SetActive(momentum > 0f);
-        if (momentum > 0f) momentumFill.rectTransform.anchorMax = new Vector2(momentum, 1f);
         if (PlayerClass.Is(PlayerClass.Assault)) Adrenaline();
         else if (PlayerClass.Is(PlayerClass.Point)) Guns();
         else if (PlayerClass.Is(PlayerClass.Ghost)) Hunter();
         else if (PlayerClass.Is(PlayerClass.Knight)) Taunt();
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) Hound();
-        else if (PlayerClass.Is(PlayerClass.Detente) && Detente()) return;
+        else if (PlayerClass.Is(PlayerClass.Detente)) Detente();
         else if (PlayerClass.Is(PlayerClass.Support)) Support();
-        // The bar along the foot: a class card's state under way (ClassCards) first, else a Knight's own taunt, a
-        // Schießhund's Return Back, or a friend's CHARGE, which reaches any class.
-        var cards = ClassCards.Local;
-        float card = cards != null ? cards.BarShare : 0f;
-        if (card > 0f)
-        {
-            chargeBar.gameObject.SetActive(true);
-            chargeFill.rectTransform.anchorMax = new Vector2(card, 1f);
-            chargeFill.color = cards.BarColor;
-            string cardWord = cards.BarWord;
-            if (barWord.text != cardWord) barWord.text = cardWord;
-            return;
-        }
-        // A Détente friend's adrenaline shot in this player (DetenteKit.Boosted, any class): its few seconds running out in
-        // the syringe's red, and what it gives the guns, ahead of the class's own states (it is short).
-        var shot = DetenteKit.Mine;
-        float boost = shot != null ? shot.BoostShare : 0f;
-        if (boost > 0f)
-        {
-            chargeBar.gameObject.SetActive(true);
-            chargeFill.rectTransform.anchorMax = new Vector2(boost, 1f);
-            chargeFill.color = KitStyle.Red;
-            string boostWord = Texts.Format("class.hud.adren", Mathf.RoundToInt(shot.BoostDamage));
-            if (barWord.text != boostWord) barWord.text = boostWord;
-            return;
-        }
-        // A Schießhund's duel under way comes before the crowd's strength after its showdown (HoundShowdown, in gold), and
-        // that before its Return Back.
-        float taunt = kit.TauntShare, duel = kit.DuelShare, back = kit.ReturnShare, kata = kit.KataShare;
-        float cheer = PlayerClass.Is(PlayerClass.Schiesshund) ? HoundShowdown.CheerShare(movement) : 0f;
-        float share = taunt > 0f ? taunt : kata > 0f ? kata : duel > 0f ? duel : cheer > 0f ? cheer : back > 0f ? back : kit.ChargeShare;
-        chargeBar.gameObject.SetActive(share > 0f);
-        if (share <= 0f) return;
-        chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
-        bool cheering = taunt <= 0f && kata <= 0f && duel <= 0f && cheer > 0f;
-        chargeFill.color = cheering ? new Color(1f, .74f, .3f) : taunt <= 0f && (duel > 0f || back > 0f) ? PingMarks.BountyColor : KitStyle.Accent;
-        string word = taunt > 0f ? Texts.Get("class.hud.taunt") : kata > 0f ? Texts.Get("class.hud.kata") : duel > 0f ? Texts.Get("class.hud.duel")
-            : cheering ? Texts.Format("class.hud.cheer", Mathf.RoundToInt(HoundShowdown.CheerDamage(movement)))
-            : back > 0f ? Texts.Format("class.hud.return", kit.ReturnStacks) : Texts.Get("class.hud.charge");
-        if (barWord.text != word) barWord.text = word;
     }
 
     // The kind of thing being placed now, as Tables/Deployables names it ("" for none): a Support's structure while
@@ -236,12 +198,12 @@ public sealed class ClassHUD : MonoBehaviour
     }
 
     // A Détente: a red pip a dose left in the syringe (the newest flashing white as one goes in), "[휠] 주사" while there
-    // is one, how many Resurrections are left beside the pips, and the bar: a treatment by hand or a Resurrection under
-    // way, else Golden Hour. True when it drew the bar itself.
-    private bool Detente()
+    // is one, and how many Resurrections are left beside the pips. A treatment by hand or a Resurrection under way and
+    // Golden Hour are timed effects like any other, each in its slot under the plate (DetenteKit says them).
+    private void Detente()
     {
         var detente = DetenteKit.Local;
-        if (detente == null) return false;
+        if (detente == null) return;
         Pips(detente.MostDoses);
         int count = shownPips, doses = Mathf.Min(detente.Doses, count);
         float flash = Mathf.Clamp01(1f - detente.SinceInject / .35f);
@@ -258,19 +220,6 @@ public sealed class ClassHUD : MonoBehaviour
             : detente.Empty ? Texts.Get("class.hud.empty") : detente.RaisesLeft > 0 ? Texts.Format("class.hud.raises", detente.RaisesLeft) : "";
         if (note.text != side) note.text = side;
         note.rectTransform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
-        float hand = detente.Raising != null ? detente.RaiseProgress : detente.TreatProgress;
-        bool working = hand > 0f;
-        // Another Détente's adrenaline shot in this one: after its own hands' work, before its Golden Hour.
-        float boost = working ? 0f : detente.BoostShare;
-        float share = working ? hand : boost > 0f ? boost : detente.GoldenShare;
-        chargeBar.gameObject.SetActive(share > 0f);
-        if (share <= 0f) return true;
-        chargeFill.rectTransform.anchorMax = new Vector2(share, 1f);
-        chargeFill.color = working || boost > 0f ? KitStyle.Red : new Color(1f, .82f, .35f);
-        string word = working ? Texts.Get(detente.Raising != null ? "class.hud.raise" : "class.hud.treat")
-            : boost > 0f ? Texts.Format("class.hud.adren", Mathf.RoundToInt(detente.BoostDamage)) : Texts.Get("class.hud.golden");
-        if (barWord.text != word) barWord.text = word;
-        return true;
     }
 
     // A Support's bag: a pip a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
@@ -474,37 +423,16 @@ public sealed class ClassHUD : MonoBehaviour
         deadeye.characterSpacing = 3f;
         deadeye.gameObject.SetActive(false);
 
-        // Momentum's time (a perk card), a thin line running out over the plate.
-        momentumLine = KitStyle.TopLeft("Momentum", plate, new Vector2(0f, -7f), new Vector2(Width, 3f));
-        KitSkew.On(KitStyle.Fill(momentumLine, KitStyle.With(KitStyle.Ice, .1f)), 2f);
-        var momentumBar = KitStyle.Stretch("Fill", momentumLine);
-        momentumFill = momentumBar.gameObject.AddComponent<Image>();
-        momentumFill.color = KitStyle.Accent;
-        momentumFill.raycastTarget = false;
-        momentumBar.anchorMin = Vector2.zero;
-        momentumBar.anchorMax = Vector2.one;
-        momentumLine.gameObject.SetActive(false);
-
-        // The CHARGE's time, draining along the plate's foot.
-        chargeBar = KitStyle.TopLeft("Charge", plate, new Vector2(0f, Height + 4f), new Vector2(Width, 6f));
-        KitSkew.On(KitStyle.Fill(chargeBar, KitStyle.With(KitStyle.Ice, .12f)), 3f);
-        var fill = KitStyle.Stretch("Fill", chargeBar);
-        chargeFill = fill.gameObject.AddComponent<Image>();
-        chargeFill.color = KitStyle.Accent;
-        chargeFill.raycastTarget = false;
-        fill.anchorMin = Vector2.zero;
-        fill.anchorMax = Vector2.one;
-        barWord = KitStyle.Label(KitStyle.TopLeft("Charge text", chargeBar, new Vector2(Width - 90f, -2f), new Vector2(90f, 18f)),
-            Texts.Get("class.hud.charge"), 12f, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
-        chargeBar.gameObject.SetActive(false);
-
         // What this player has standing in the world: a piece of its own on this canvas, right under the plate.
         deploy = new DeployStrip(host.transform, Width, Above);
+        // Every timed effect on them, a slot each: another piece of its own, under that (where the one bar used to hang).
+        effects = new EffectStack(host.transform, Width);
     }
 
     private void OnDestroy()
     {
         deploy?.Dispose();
+        effects?.Dispose();
         if (plate == null) return;
         var host = plate.parent != null ? plate.parent.gameObject : plate.gameObject;
         if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);

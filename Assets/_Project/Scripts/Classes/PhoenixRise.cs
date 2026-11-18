@@ -20,8 +20,12 @@ public static class PhoenixRise
 {
     private const string Row = "Cards";
 
-    // Until when this PC's player takes nothing.
-    private static float guardUntil = -99f;
+    // Until when this PC's player takes nothing, and how long that lasts.
+    private static float guardUntil = -99f, guardSeconds = 1f;
+
+    /// <summary>Seconds left of the moment nothing lands on this PC's player, and of how many (its slot among the timed effects).</summary>
+    public static float GuardLeft => guardUntil - Time.time;
+    public static float GuardSeconds => guardSeconds;
     // Spent, and where: the map, the wave, and the rest stop (or tower hall) a death would bring them back to.
     private static bool spent, spentAtCheckpoint;
     private static int spentScene = -1, spentWave = -1;
@@ -60,6 +64,7 @@ public static class PhoenixRise
         health = player.DamageReceiver.MaximumHealth * Mathf.Clamp(PlayerPerks.Total(PlayerPerks.Phoenix), 1f, 100f) / 100f;
         float guard = Mathf.Max(0f, PlayerClass.Ability(Row, "phoenixGuard", 2f)), reach = Mathf.Max(.5f, PlayerClass.Ability(Row, "phoenixRadius", 4f));
         guardUntil = Time.time + guard;
+        guardSeconds = Mathf.Max(.1f, guard);
         Scatter(player.transform.position, reach);
         PhoenixFx.Play(player, reach, guard);
         AlertHUD.Self(Texts.Get("perk.phoenix.risen"));

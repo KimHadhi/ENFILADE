@@ -8,10 +8,8 @@ using UnityEngine;
 /// <list type="bullet">
 /// <item>Momentum (기세, everyone's; the user's "때릴 때마다 갱신되는 강화 효과"): every hit this player lands on an
 /// enemy keeps it going a few seconds more (PlayerPerks.Struck). A miss takes nothing; it only lets it run out.</item>
-/// <item>Ghost: its cards are GhostCards' (Classes/Ghost), White Tiger (화이트 타이거) among them. Here only
-/// the class HUD's bar shows its ultimate under way (PhantomShare).</item>
-/// <item>Point, Gunslinger (건슬링어): the gun just drawn hits harder a moment (ClassKit.DamageFactor); its time shows
-/// on the class HUD's bar.</item>
+/// <item>Ghost: its cards are GhostCards' (Classes/Ghost), White Tiger (화이트 타이거) among them.</item>
+/// <item>Point, Gunslinger (건슬링어): the gun just drawn hits harder a moment (ClassKit.DamageFactor).</item>
 /// <item>Assault, Danger Close (데인저 클로즈; the user, 2026-11-14: "진짜 폭격 스킬처럼"): the class key held aims a mark on
 /// the ground, let go calls a barrage round it, shells landing one after another on the enemies there, each blast
 /// throwing them down, never hurting a player (ClassCards.DangerClose, ClassCards.Barrage); a tap is still the CHARGE.
@@ -36,13 +34,14 @@ using UnityEngine;
 /// black, see-through double that does what the Knight does a beat late (BodyDouble); every punch, slash and counter strikes again a beat later, a violet
 /// crescent cutting where it lands, and a parry takes twice the posture.</item>
 /// </list>
-/// The HUD's bar (ClassHUD) shows the card state under way: BarShare, BarWord, BarColor.
+/// Every timed state of these cards is said to TimedEffects each frame it runs (ReportEffects), and the HUD gives each a
+/// slot of its own under the class plate. There used to be one bar and a chain here that chose its one tenant
+/// (BarShare, BarWord, BarColor): gone, with the choosing.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed partial class ClassCards : MonoBehaviour
 {
     private const string AssaultRow = "Assault", KnightRow = PlayerClass.KnightRow;
-    private static readonly Color Violet = new Color(.62f, .32f, 1f);
 
     // A shadow double's blow waiting to land: on whom, how hard, where and which way.
     private struct Echo
@@ -74,30 +73,11 @@ public sealed partial class ClassCards : MonoBehaviour
     private float shadowUntil = -99f, shadowTotal = 1f, shadowShown = -99f;
     private readonly List<Echo> echoes = new List<Echo>();
 
-    /// <summary>A Ghost's ultimate under way, no zombie seeing it: how much of it is left, 0 to 1 (GhostCards).</summary>
-    public float PhantomShare => PlayerClass.Is(PlayerClass.Ghost) && GhostCards.Local != null ? GhostCards.Local.PhantomShare : 0f;
-
     /// <summary>
     /// A Knight's shadow double is out: its punches, slashes and counters strike twice, and its parries take twice the
     /// posture (PlayerClass.ParryPosture).
     /// </summary>
     public bool ShadowOut => shadowUntil > Time.time && PlayerClass.Is(PlayerClass.Knight);
-    public float ShadowShare => ShadowOut ? Mathf.Clamp01((shadowUntil - Time.time) / shadowTotal) : 0f;
-
-    /// <summary>The card state the class HUD's bar shows now, 0 to 1 (0: none), its word and its colour.</summary>
-    public float BarShare
-    {
-        get
-        {
-            if (KnightBarShare > 0f) return KnightBarShare;
-            if (PhantomShare > 0f) return PhantomShare;
-            return kit != null ? kit.GunslingerShare : 0f;
-        }
-    }
-
-    public string BarWord => KnightBarShare > 0f ? KnightBarWord
-        : PhantomShare > 0f ? Texts.Get("class.hud.phantom") : Texts.Get("class.hud.gunslinger");
-    public Color BarColor => KnightBarShare > 0f ? KnightBarColor : PhantomShare > 0f ? KitStyle.Ice : KitStyle.Accent;
 
     private void Awake()
     {
@@ -144,6 +124,30 @@ public sealed partial class ClassCards : MonoBehaviour
         Strafe();
         Ride();
         KnightTick();
+        ReportEffects();
+    }
+
+    // The cards' timed effects on this PC's player, said each frame they run (TimedEffects: a slot each on the HUD): a
+    // Knight's shadow double, cover strike and flow, a Ghost's ultimate, Momentum, the phoenix's moment, and a Knight
+    // friend's cover on this player's guns, whatever class they play.
+    private void ReportEffects()
+    {
+        float now = Time.time;
+        if (ShadowOut) TimedEffects.Report("knight.shadow", shadowUntil - now, shadowTotal);
+        if (CoverStrikeShare > 0f)
+            TimedEffects.Report("knight.coverstrike", strikeUntil - now, strikeTotal, 0, PlayerPerks.Total(PlayerPerks.KnightCoverstrike));
+        if (FlowShare > 0f) TimedEffects.Report("knight.flow", flowUntil - now, flowTotal, 0, PlayerPerks.Total(PlayerPerks.KnightFlow));
+        var ghost = GhostCards.Local;
+        if (ghost != null && PlayerClass.Is(PlayerClass.Ghost)) TimedEffects.Report("ghost.phantom", ghost.PhantomLeft, ghost.PhantomTotal);
+        float momentum = PlayerPerks.MomentumShare;
+        if (momentum > 0f)
+        {
+            // Its seconds as PlayerPerks reckons them (the same number of the same table).
+            float seconds = Mathf.Max(.1f, PlayerClass.Ability("Cards", "momentumSeconds", 3f));
+            TimedEffects.Report("card.momentum", momentum * seconds, seconds, 0, PlayerPerks.Total(PlayerPerks.Momentum));
+        }
+        TimedEffects.Report("card.phoenix", PhoenixRise.GuardLeft, PhoenixRise.GuardSeconds);
+        TimedEffects.Report("knight.guarded", KnightCover.GuardedLeft, KnightCover.GuardedSeconds, 0, (KnightCover.GuardedGunFactor - 1f) * 100f);
     }
 
     // Every hit of this player's on an enemy: Momentum goes on. (A Ghost's headshot cards, the White Tiger among them, are

@@ -35,6 +35,7 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
+| 클래스 칸 아래 지속 효과 칸들(2026-11-18): 내게 걸린 효과마다 칸 하나(색 띠·그림·이름·남은 초·줄어드는 선), 시작한 순서로 쌓이고 한 줄에 못 서면 옆 줄로 나뉜다. 칸 자리는 순수 함수(EffectStack.Slot). 무엇이 걸려 있는지는 TimedEffects가 알고 HUD는 고르지 않는다(예전의 막대 하나와 우선순위 사슬은 없다) | [EffectStack](Hud/Classes/EffectStack.cs), [ClassHUD](Hud/Classes/ClassHUD.cs), ClassHud.csv `Effects.*`, TimedEffects.csv, [TimedEffects](../Classes/TimedEffects.cs) |
 | 클래스 칸 아래 설치 개수 줄(2026-11-18): 내가 세워 둔 설치물이 종류마다 칩 하나에 '판자 1/2'처럼 보인다. 가득 찬 종류는 호박색(다음에 놓으면 가장 오래된 것이 사라짐), 지금 세우는 종류는 위에 분홍 선. 칩 자리는 개수로 정해지는 순수 함수(DeployStrip.Slot). 클래스 칸 아래에 매달리는 것(지속 막대)은 이 줄 아래로 내려간다(DeployStrip.Reach) | [DeployStrip](Hud/Classes/DeployStrip.cs), [ClassHUD](Hud/Classes/ClassHUD.cs), ClassHud.csv `Deploy.*`, 세는 곳은 [Deployables](../Classes/Deployables/Deployables.cs) |
 | 파쿠르 취소 안내 (난간 매달리기·사다리·집라인·봉·넘기/오르기 도중에 조준점 아래 "[CTRL] 눌러 낙하"처럼 웅크리기 키캡과 할 일. 잠깐 지나서 뜨고 넘기·오르기는 더 늦게. 키 이름은 바인딩에서. Texts.csv `hud.parkour.*`) | [ParkourPromptHUD](Hud/Prompts/ParkourPromptHUD.cs) (KeyCapGraphic) |
 | 길 안내 (캠페인 단계가 가라는 자리. 시야 밖이면 화면 끝에 핑크 마름모와 바깥으로 뛰는 화살, "휴게소 34m" 같은 종류와 거리. 시야 안이면 자리 위에 작은 마름모와 거리가 뜨고, 그쪽을 바라보면 자리에 빛 모양과 바닥 고리(도착 범위)가 벽 너머로도 보인다. 11-11부터 종류마다 모양과 마름모 속 그림이 다르다: 가기 깃발, 작동 버튼 고리, 지킬 곳 방패(바닥 고리가 더 밝다), 모일 곳 모여드는 화살, 붓는 곳 기름통, 휴게소 문틀(전과 같음), 탈출 두 기둥 사이로 올라가는 쐐기. 도착 범위 안이나 쓰러졌을 때는 숨는다. 캠페인 밖에서는 안 뜬다) | [ObjectiveGuideHUD](Hud/Mission/ObjectiveGuideHUD.cs), `CampaignRun.TryObjective`, 벽 너머 빛 셰이더 Resources/Combat/Shaders/GuideBeacon, 그림 Resources/UI/Icons/Objective_* (Tools/Icons/objective_icons.py) |

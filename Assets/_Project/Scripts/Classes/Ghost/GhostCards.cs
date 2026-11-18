@@ -125,8 +125,11 @@ public sealed class GhostCards : MonoBehaviour
             && who.Execution != null && who.Execution.IsExecuting && PlayerClass.Is(PlayerClass.Ghost) && PlayerPerks.Has(ChainCard);
     }
 
-    /// <summary>How much of the ultimate under way is left, 0 to 1 (0: none): the class HUD's bar (ClassCards.BarShare).</summary>
+    /// <summary>How much of the ultimate under way is left, 0 to 1 (0: none).</summary>
     public float PhantomShare => phantomUntil > Time.time ? Mathf.Clamp01((phantomUntil - Time.time) / phantomTotal) : 0f;
+    /// <summary>Seconds of it left, and of how many (its slot among the timed effects: TimedEffects).</summary>
+    public float PhantomLeft => phantomUntil - Time.time;
+    public float PhantomTotal => phantomTotal;
 
     // 조용한 표적: this PC's own Ghost's headshot on a zombie it marked makes no stir. Asked of every hit this PC judges as it
     // lands, so the cheap questions go first.

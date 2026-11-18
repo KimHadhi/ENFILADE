@@ -118,8 +118,6 @@ public sealed class DetenteKit : MonoBehaviour
     public float RaiseProgress { get; private set; }
     /// <summary>Resurrections left this wave (or until the next rest stop).</summary>
     public int RaisesLeft => raisesLeft;
-    /// <summary>How much of Golden Hour is left, 0 to 1 (0: none), and the pace it gives now.</summary>
-    public float GoldenShare => goldenUntil > Time.time ? Mathf.Clamp01((goldenUntil - Time.time) / goldenTotal) : 0f;
     /// <summary>
     /// The factor on this player's pace from here (ClassKit.SpeedFactor): a Détente's own Golden Hour, and a Détente
     /// friend's adrenaline shot in any class.
@@ -159,6 +157,9 @@ public sealed class DetenteKit : MonoBehaviour
         if (movement == null || !movement.IsLocal) return;
         // Any class: a Détente's offer waiting for this player's F, and a treatment's rest coming back.
         Patient();
+        // A Détente friend's adrenaline shot in this player, whatever class they play: its slot among the timed effects
+        // (TimedEffects), said each frame it runs, by the clock its factors go by.
+        TimedEffects.Report("detente.boost", boostUntil - Time.time, boostTotal, 0, boostDamage);
         if (!PlayerClass.Is(PlayerClass.Detente))
         {
             if (Local == this) Local = null;
@@ -168,6 +169,15 @@ public sealed class DetenteKit : MonoBehaviour
             return;
         }
         Local = this;
+        // A Détente's own timed states, each a slot of its own: Golden Hour, and the work its hands are in (a treatment's
+        // or a Resurrection's seconds still to go).
+        TimedEffects.Report("detente.golden", goldenUntil - Time.time, goldenTotal);
+        if (Treating != null) TimedEffects.Report("detente.treat", TreatSeconds - (Time.time - treatStart), TreatSeconds);
+        if (Raising != null)
+        {
+            float raise = Mathf.Max(.1f, Number("resurrectSeconds", 5f));
+            TimedEffects.Report("detente.raise", (1f - RaiseProgress) * raise, raise);
+        }
         if (receiver == null) receiver = movement.DamageReceiver;
         if (syringe < 0f) syringe = Mathf.Clamp(Number("syringeStart", 100f), 0f, SyringeMax);
         Sections();

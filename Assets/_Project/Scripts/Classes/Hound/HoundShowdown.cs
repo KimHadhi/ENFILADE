@@ -62,6 +62,10 @@ public sealed class HoundShowdown : MonoBehaviour
     public static float CheerShare(PlayerMovement who)
         => Of(who) is HoundShowdown showdown && showdown.cheerUntil > Time.time ? Mathf.Clamp01((showdown.cheerUntil - Time.time) / showdown.cheerTotal) : 0f;
 
+    /// <summary>Seconds of the crowd's strength left on this PC's hound, and of how many (its slot among the timed effects).</summary>
+    public static float CheerLeft(PlayerMovement who) => Of(who) is HoundShowdown showdown ? showdown.cheerUntil - Time.time : 0f;
+    public static float CheerSeconds(PlayerMovement who) => Of(who) is HoundShowdown showdown ? showdown.cheerTotal : 1f;
+
     /// <summary>How much harder this PC's hound's guns hit while the crowd's strength lasts (+%).</summary>
     public static float CheerDamage(PlayerMovement who) => Of(who) is HoundShowdown showdown ? showdown.cheerDamage : 0f;
 

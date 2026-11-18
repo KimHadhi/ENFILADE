@@ -44,6 +44,9 @@ public sealed class HoundDuel : MonoBehaviour
 
     /// <summary>How much of it is left, 0 to 1.</summary>
     public float Share => Mathf.Clamp01((until - Time.time) / total);
+    /// <summary>Seconds left, and of how many (its slot among the timed effects: TimedEffects).</summary>
+    public float Left => until - Time.time;
+    public float Total => total;
 
     /// <summary>
     /// A duel begins (this PC's hound's own, or another's as their PC said it): <paramref name="hound"/> against
