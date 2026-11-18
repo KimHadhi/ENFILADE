@@ -16,8 +16,8 @@ using UnityEngine;
 /// 이펙트"). A hairline stands up into the sky, seen across the map, and a few gold glints fall. A plain bounty: a small
 /// CLAIMED plate slammed by the head (BountyPlain).</item>
 /// <item>A reversal: a pink swoosh where the zombie is thrown over, a ring on the ground, chips. A cover's parry: the
-/// blow turned aside in white and violet, a shield's flash, a ring. A Gun Kata draw: an orange arc round the gun as it
-/// comes out.</item>
+/// blow turned aside in white and the Knight's colour, a shield's flash, a ring. A Gun Kata draw: an arc in the Point's
+/// colour round the gun as it comes out. (A class's colour is the class's one colour, ClassLook's, given as the tint.)</item>
 /// <item>A CHARGE's reach: a gold ring of ticks running out over the ground. The phantom cavalry: a wedge of gold plates
 /// sliding along the ground at the riders' pace.</item>
 /// <item>A Broken Arrow shell: its target drawn on the ground first, a bright streak falling, the target bursting.</item>
@@ -30,8 +30,10 @@ public sealed class MomentFx : MonoBehaviour
 {
     public enum Kind : byte { GroundSigil, Expand, Tiger, BountyGrand, BountyPlain, Reversal, CoverDeflect, KataDraw, ChargeRing, Wedge, Shell, Flash, Claws }
 
+    // The moments' own colours (a bounty's teal, its gold, the tiger's outline, a reversal's pink). A class's colour is
+    // never one of these: it comes in as the tint (MomentLook.ColorOf, the class's one colour).
     private static readonly Color Teal = new Color(.122f, .922f, .82f), Gold = new Color(1f, .8f, .22f), PaleBlue = new Color(.62f, .86f, 1f),
-        Pink = new Color(1f, .31f, .47f), Violet = new Color(.663f, .545f, 1f);
+        Pink = new Color(1f, .31f, .47f);
 
     private Kind kind;
     private Vector3 at, direction, extra;
@@ -379,7 +381,9 @@ public sealed class MomentFx : MonoBehaviour
             }
     }
 
-    // A Knight's cover turning the blow: a white crescent with a violet edge across it, sparks, a ring, the shield flashing.
+    // A Knight's cover turning the blow: a white crescent edged in the Knight's colour across it, sparks, a ring, the
+    // shield flashing. The colour is the tint it was played with (the class's one colour); until 2026-11-18 a violet
+    // written here, a copy of the moments' old Knight colour, drew it whatever the tint was.
     private void CoverDeflect(float t)
     {
         Vector3 side = Vector3.Cross(direction, Vector3.up).normalized;
@@ -387,7 +391,7 @@ public sealed class MomentFx : MonoBehaviour
         float cut = Ease.Out(t / .06f), a = 1f - Mathf.Clamp01((t - .06f) / .26f);
         Vector3 from = at - side * .55f + Vector3.up * .25f, to = at + side * .55f - Vector3.up * .25f;
         Vector3 bow = -direction * .22f;
-        shapes.Blade(from, Vector3.Lerp(from, to, cut), .17f, FxShapes.With(Violet, .6f * a), bow, 12, 1f);
+        shapes.Blade(from, Vector3.Lerp(from, to, cut), .17f, FxShapes.With(colour, .6f * a), bow, 12, 1f);
         shapes.Blade(from, Vector3.Lerp(from, to, cut), .055f, FxShapes.With(Color.white, a), bow, 12, 1f);
         float spark = Mathf.Clamp01(t / .25f);
         if (spark < 1f)
@@ -396,7 +400,7 @@ public sealed class MomentFx : MonoBehaviour
                 float angle = i * Mathf.PI * 2f / 10f + Hash(i, 1) * .5f;
                 Vector3 way = shapes.Right * Mathf.Cos(angle) + shapes.Up * Mathf.Sin(angle);
                 float reach = .15f + .9f * Ease.Out(spark) * (.6f + .4f * Hash(i, 2));
-                shapes.Blade(at + way * Mathf.Max(.1f, reach - .25f), at + way * reach, .025f, FxShapes.With(i % 2 == 0 ? Color.white : Violet, 1f - spark));
+                shapes.Blade(at + way * Mathf.Max(.1f, reach - .25f), at + way * reach, .025f, FxShapes.With(i % 2 == 0 ? Color.white : colour, 1f - spark));
             }
         float ring = Mathf.Clamp01(t / .3f);
         if (ring < 1f) shapes.Ring(at, shapes.Right, shapes.Up, Mathf.Lerp(.2f, 1.2f, Ease.Out(ring)), .035f, FxShapes.With(Color.white, .9f * (1f - ring)));
@@ -406,12 +410,14 @@ public sealed class MomentFx : MonoBehaviour
         {
             Vector3 r = shapes.Right * s, u = shapes.Up * s;
             var points = new[] { at - r * .62f + u * .7f, at + r * .62f + u * .7f, at + r * .62f, at - u * .86f, at - r * .62f };
-            matter.Fill(points, FxShapes.With(new Color(.16f, .08f, .3f), .7f * shield));
-            for (int i = 0; i < points.Length; i++) shapes.Glow(points[i], points[(i + 1) % points.Length], FxShapes.With(Violet, shield), .012f, .04f);
+            // The shield's face: the same colour, dark (Cover.shieldFace of it; the old one was the violet at about .3).
+            matter.Fill(points, FxShapes.With(Color.Lerp(Color.black, colour, MomentLook.Number("Cover", "shieldFace", .3f)), .7f * shield));
+            for (int i = 0; i < points.Length; i++) shapes.Glow(points[i], points[(i + 1) % points.Length], FxShapes.With(colour, shield), .012f, .04f);
         }
     }
 
-    // A gun drawn in the Gun Kata: two orange arcs whirl round it the way a cylinder spins, a glint at their meeting.
+    // A gun drawn in the Gun Kata: two arcs in the Point's colour whirl round it the way a cylinder spins, a glint at
+    // their meeting.
     private void KataDraw(float t)
     {
         float spin = Ease.Out(t / .25f) * Mathf.PI * 1.7f, a = 1f - Mathf.Clamp01((t - .1f) / .22f), radius = .2f + .06f * Ease.Out(t / .25f);

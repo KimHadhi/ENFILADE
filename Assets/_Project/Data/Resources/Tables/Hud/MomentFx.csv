@@ -1,12 +1,5 @@
 ﻿key,value,note
-#설명,,"특수 순간 VFX(2026-11-12 사용자가 고른 시안, 페이지 4asv6far7KKwg5QVjS2Yih). 규칙: 조준점 가운데는 비우고 화면 반전·하얗게 하기 없음, 한 순간에 주인공 하나, 1초 안에 끝, 클래스마다 제 색과 문장, 남이 보는 세계와 내가 보는 세계는 같다. 시간은 초, 거리는 m, HUD 자리는 1080p px. 코드: MomentLook·MomentFx·MomentHUD·BodyDouble·GunHeat·MomentSound"
-Class.knight,#A98BFF,나이트의 색(분신·원호·궁극 문장)
-Class.assault,#FFC83D,어썰트의 색(CHARGE·기병 쐐기)
-Class.ghost,#E6EFFF,고스트의 색(흰빛)
-Class.point,#FF8A3D,포인트의 색(주황)
-Class.detente,#FF3B3B,"데탕트의 색(빨강, 십자는 흰색)"
-Class.schiesshund,#1FEBD1,시순트의 색(현상금 표식의 청록)
-Class.support,#4FB3FF,서포트의 색(파랑)
+#설명,,"특수 순간 VFX(2026-11-12 사용자가 고른 시안, 페이지 4asv6far7KKwg5QVjS2Yih). 규칙: 조준점 가운데는 비우고 화면 반전·하얗게 하기 없음, 한 순간에 주인공 하나, 1초 안에 끝, 클래스마다 제 색과 문장, 남이 보는 세계와 내가 보는 세계는 같다. 시간은 초, 거리는 m, HUD 자리는 1080p px. 코드: MomentLook·MomentFx·MomentHUD·BodyDouble·GunHeat·MomentSound. 클래스의 색은 이 표에 없다: Classes/ClassColours.csv 한 곳에서 읽는다(ClassLook. 2026-11-18까지는 여기 Class.* 줄에 따로 있어서 궁극기 띠와 카드의 색이 달랐다)"
 Ult.on,1,궁극기의 세계 쪽 모양(바닥 문장 등)을 켤지(1/0). 알림 띠는 Notice.on
 Ult.radius,1.7,궁극기를 쓰면 발밑에 그려지는 클래스 문장의 반지름(m). 1인칭에서도 화면 아래로 앞쪽이 보이게
 Ult.detenteReach,6,데탕트 궁극기의 흰 십자 문장이 바닥으로 퍼지는 거리(m)
@@ -122,3 +115,4 @@ Cover.ghostSeconds,0.3,잔상 하나가 사라지는 시간(초)
 Cover.ghostAlpha,0.5,잔상 비침
 Cover.ghostsFor,0.45,잔상 전체가 끝나는 시간(초)
 Cover.vertexBudget,150000,잔상 한 벌에 굽는 정점 수 한도
+Cover.shieldFace,0.3,원호 방어로 막은 자리에 번쩍이는 방패의 면이 나이트의 색을 얼마나 띠는지(0 = 검정 · 1 = 나이트 색 그대로). 테두리와 초승달은 나이트 색 그대로다

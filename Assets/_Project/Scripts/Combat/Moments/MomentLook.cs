@@ -11,8 +11,8 @@ using UnityEngine;
 /// - each class has its own colour and sigil, so two moments never read as one template.
 /// What the others see in the world, the one who did it sees too (the user: "내가 보는 화면이 진실이라서 남이 보는 세상과
 /// … 똑같았으면").
-/// This class holds each class's colour, its sigil (a few strokes in a 100-unit box, y up), its ultimate's names, and the
-/// numbers in Tables/MomentFx.csv.
+/// This class holds each class's sigil (a few strokes in a 100-unit box, y up), its ultimate's names, and the numbers in
+/// Tables/MomentFx.csv. A class's colour is not held here: it is the class's one colour, ClassLook's (ColorOf asks it).
 /// </summary>
 public static class MomentLook
 {
@@ -38,23 +38,15 @@ public static class MomentLook
 
     // ---- The classes ----
 
-    /// <summary>A class's colour (Tables/MomentFx.csv Class.&lt;id&gt;); the HUD stays black, white and pink.</summary>
-    public static Color ColorOf(string classId)
-    {
-        string id = Id(classId);
-        if (TryText("Class", id, out string text) && ColorUtility.TryParseHtmlString(text, out Color read)) return read;
-        return id switch
-        {
-            PlayerClass.Knight => new Color(.663f, .545f, 1f),
-            PlayerClass.Assault => new Color(1f, .784f, .239f),
-            PlayerClass.Ghost => new Color(.902f, .937f, 1f),
-            PlayerClass.Point => new Color(1f, .541f, .239f),
-            PlayerClass.Detente => new Color(1f, .231f, .231f),
-            PlayerClass.Schiesshund => new Color(.122f, .922f, .82f),
-            PlayerClass.Support => new Color(.31f, .702f, 1f),
-            _ => KitStyle.Accent,
-        };
-    }
+    /// <summary>
+    /// The colour a class's moments are drawn in: the class's one colour (ClassLook, Tables/Classes ClassColours.csv), the
+    /// same one its cards, its row on the Tab board and its kill feed flairs wear, or the HUD's pink for a class without
+    /// a row. Until 2026-11-18 the moments had colours of their own here (MomentFx.csv Class.&lt;id&gt; and a copy in this
+    /// code), and four classes showed in two colours: the Knight purple on its ultimate's band and steel blue on its
+    /// cards, the Point orange and pink, the Détente red and mint, the Support blue and orange. The user, asked which is
+    /// the class's colour: "카드 쪽이 그 클래스의 색을 써야 합니다". The rest of the HUD stays black, white and pink.
+    /// </summary>
+    public static Color ColorOf(string classId) => ClassLook.Colour(Id(classId), KitStyle.Accent);
 
     /// <summary>A class's own sigil (the C drafts, with the user's notes).</summary>
     public static Sigil SigilOf(string classId) => Id(classId) switch

@@ -13,7 +13,7 @@ using UnityEngine;
 /// </summary>
 public static class KillFlairs
 {
-    public const string TableName = "KillFlairs", ClassColourTable = "ClassColours";
+    public const string TableName = "KillFlairs", ClassColourTable = ClassLook.ColourTable;
 
     /// <summary>
     /// What plays on the weapon's icon (KillFlairFx). Drawn on the icon's own shape by KillFlair.shader: Fire (the muzzle
