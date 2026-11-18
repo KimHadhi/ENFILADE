@@ -168,12 +168,17 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         before = null;
         if (gun.Weapon == null || !Fits(index, gun.Weapon) || KeepsOwnRounds(index) || (player != null && player.CombatInputLocked)) return false;
         if (Leaving(index, out GunState old)) before = old;
+        // Its numbers are the table's (the reserve its kind is filled to), read before they are asked.
+        gun.Weapon.BindTable();
         var reserve = ReserveOf(gun.Weapon);
-        int reserveBefore = reserve.Rounds;
-        reserve.Rounds = (int)Math.Min(int.MaxValue, (long)reserve.Rounds + gun.Spare);
-        Place(index, gun.Weapon, gun.Holding(gun.Rounds, 0));
+        // What lies with the gun joins the reserve as far as that is filled to (CapFor), as an ammo pile does; the rest
+        // stays the gun's and lies with it again when it is put down. So a gun put down and one of its kind taken up in
+        // its place never brings more than the reserve holds: no round is lost, and none is made past the cap.
+        int reserveBefore = reserve.Rounds, taken = Mathf.Min(gun.Spare, Mathf.Max(0, CapFor(gun.Weapon) - reserve.Rounds));
+        reserve.Rounds += taken;
+        Place(index, gun.Weapon, gun.Holding(gun.Rounds, gun.Spare - taken));
         if (Logged)
-            GunAmmoLog.Note($"{gun.Weapon.name,-15} taken into slot {index + 1}: {gun.Rounds} in it, {gun.Spare} lying with it; "
+            GunAmmoLog.Note($"{gun.Weapon.name,-15} taken into slot {index + 1}: {gun.Rounds} in it, {gun.Spare} lying with it ({taken} taken); "
                 + $"reserve {reserveBefore} -> {reserve.Rounds}" + (before is GunState left ? $"; {left.Weapon.name} put down with {left.Rounds} in it, "
                 + $"its reserve {ReserveOf(left.Weapon).Rounds} kept" : ""));
         return true;
@@ -241,9 +246,11 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     /// cent past it (a Support's resupply, Fully Loaded): the gun's starting reserve, times this PC's own player's ammo
     /// pouch (PlayerPerks.ReserveFactor). The cards are this PC's player's, so a friend's copy keeps the gun's own.
     /// </summary>
-    public int ReserveCap(int index, float overPercent = 0f)
+    public int ReserveCap(int index, float overPercent = 0f) => CapFor(GetWeapon(index), overPercent);
+
+    /// <summary>As ReserveCap, for a kind of gun whether or not one is in a slot (a gun about to be taken up).</summary>
+    public int CapFor(WeaponData data, float overPercent = 0f)
     {
-        var data = GetWeapon(index);
         if (data == null) return 0;
         float factor = player != null && player.IsLocal ? PlayerPerks.ReserveFactor : 1f;
         // A hair under, so float error never rounds a whole number up (120 × 1.2 comes out as 144.00001).

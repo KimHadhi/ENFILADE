@@ -14,12 +14,17 @@ using UnityEngine.UI;
 /// their drops' time runs only once it is over (CampaignPhases). The user's rules (2026-11-09): ammo and money are taken by walking over
 /// them (touchReach), unless this player couldn't use the ammo; a gun, a medkit and a shield cell with [F] while looking
 /// at it. Everything goes to whoever takes it first and is gone for everyone. Ammo adds `amount` magazines to every gun
-/// held, up to its starting reserve. A gun goes into an empty gun slot, else replaces the gun in hand, which is left on
-/// the floor for someone else; a gun already held refills its ammo instead. What was taken is listed at the bottom of
+/// held, up to the reserve it is filled to. A gun on the ground is a particular gun (GunState: the user, 2026-11-18,
+/// "필드 무기 교체 및 탄약 시스템 개편"): it lies there with the rounds in it, and one the map laid out or a zombie
+/// dropped also with its starting reserve beside it for its first taker. Taken, it goes into an empty gun slot, else
+/// in place of the gun in hand, which is left on the floor as it is for someone else; the reserve is the player's and
+/// stays with them (PlayerWeaponSlots.Put). A gun of a kind already held is not taken: its rounds go into that kind's
+/// reserve as far as there is room, and it stays where it lay with the rest. What was taken is listed at the bottom of
 /// the screen (PickupFeedHUD), with a sound of its kind, a blink of the HUD part it went to and a dip of the gun in hand.
 /// <para>The host, or the PC alone, keeps every item and tells the others (a named message on change and every couple
-/// of seconds, so late joiners catch up); a guest asks the host to take one, and the host tells the taker's PC what it
-/// got, which applies it there (its own guns, health, shield and money are its own). The [F] prompt here comes before
+/// of seconds, so late joiners catch up); a guest asks the host to take one, and the host hands the taker's PC the item
+/// as it lay, which applies it there (its own guns, rounds, health, shield and money are its own to count; a gun it
+/// puts down in turn is told back to the host as it is). The [F] prompt here comes before
 /// the campaign's own [F] prompts while a pickup is looked at (CampaignRun reads <see cref="Targeting"/>). Made for
 /// every map in Tables/Maps. How they look: PickupView.</para>
 /// </summary>

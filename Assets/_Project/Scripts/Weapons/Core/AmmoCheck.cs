@@ -358,6 +358,25 @@ internal static class AmmoCheck
             }
 
             slots = NewPlayer(made);
+            report.Rule("rounds lying with a gun go to its taker's reserve only up to its cap; the rest stays with the gun and lies with it again when it is put down");
+            foreach (var data in plain)
+            {
+                Fresh(slots);
+                data.BindTable();
+                int cap = slots.CapFor(data), size = data.MagazineSize;
+                // Room for 2 rounds; the gun on the ground has 6 lying with it.
+                slots.ReserveOf(data).Rounds = Mathf.Max(0, cap - 2);
+                int reserve = slots.ReserveOf(data).Rounds, should = Mathf.Min(cap - reserve, 6);
+                bool taken = slots.Put(0, new GunState(data, size, 6), out _);
+                var gun = slots.GetRuntime(0);
+                bool held = gun != null && gun.Ammo == size && gun.ReserveAmmo == reserve + should && gun.Spare == 6 - should;
+                bool dropped = slots.Drop(0, out GunState lying);
+                report.Expect(taken && held && dropped && lying.Rounds == size && lying.Spare == 6 - should && slots.ReserveOf(data).Rounds == reserve + should, data,
+                    $"reserve {reserve} of {cap}, 6 lying with the gun: took {(gun != null ? gun.ReserveAmmo - reserve : 0)} (should {should}), "
+                    + $"{(gun != null ? gun.Spare : -1)} stayed with it, put down with {lying.Spare} lying with it");
+            }
+
+            slots = NewPlayer(made);
             report.Rule("a gun of a kind already held gives its rounds to that kind's reserve only, up to its cap, and stays with the rest; no other gun is filled");
             for (int i = 0; i + 1 < plain.Count; i++)
             {

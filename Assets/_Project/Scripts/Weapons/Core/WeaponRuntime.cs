@@ -20,6 +20,11 @@ public sealed class WeaponRuntime
     /// <summary>The rounds its holder carries for this kind of gun outside it: the holder's, not the gun's (AmmoReserve).</summary>
     public int ReserveAmmo { get => reserve.Rounds; private set => reserve.Rounds = Mathf.Max(0, value); }
     private readonly AmmoReserve reserve;
+    /// <summary>
+    /// Rounds that lay with this gun and its holder had no room for when they took it (GunState.Spare): still the gun's,
+    /// not the holder's, so they lie with it again when it is put down. Nothing reloads from them.
+    /// </summary>
+    public int Spare { get; }
     public bool IsEmptyReload { get; private set; }
     /// <summary>How long the reload takes; for a shell reload, how long its current step takes.</summary>
     public float ReloadDuration { get; private set; }
@@ -94,7 +99,7 @@ public sealed class WeaponRuntime
     /// This gun in a holder's slot: what is in it is as the gun was (its rounds, a magazine a cut-short reload left
     /// out), and it reloads from <paramref name="reserve"/>, its holder's rounds for this kind of gun
     /// (PlayerWeaponSlots.ReserveOf). Rounds lying with the gun (GunState.Spare) are not taken here: whoever puts it in
-    /// the slot hands them to the holder.
+    /// the slot hands the holder what they have room for, and what is still with the gun stays with it (Spare).
     /// </summary>
     public WeaponRuntime(in GunState gun, AmmoReserve reserve)
     {
@@ -106,14 +111,16 @@ public sealed class WeaponRuntime
         ChamberDue = gun.ChamberDue && !gun.MagazineOut;
         resumeEmpty = gun.ResumeEmpty;
         Ammo = MagazineOut ? 0 : Mathf.Clamp(gun.Rounds, 0, Data.MagazineSize);
+        Spare = gun.Spare;
         FireMode = Data.FireMode;
     }
 
     /// <summary>
-    /// The gun as a thing to put down, as it is now: its rounds stay in it, and so does a magazine a cut-short reload
-    /// left out. Nothing of the reserve: that is its holder's. Whoever puts it down cuts a reload under way first.
+    /// The gun as a thing to put down, as it is now: its rounds stay in it, and so do a magazine a cut-short reload
+    /// left out and the rounds still lying with it. Nothing of the reserve: that is its holder's. Whoever puts it down
+    /// cuts a reload under way first.
     /// </summary>
-    public GunState State => new GunState(Data, Ammo, 0, MagazineOut, ChamberDue, resumeEmpty);
+    public GunState State => new GunState(Data, Ammo, Spare, MagazineOut, ChamberDue, resumeEmpty);
 
     /// <summary>B: the gun's next fire mode. False when it has only one.</summary>
     public bool CycleFireMode()

@@ -147,8 +147,9 @@ public sealed partial class FieldPickups
 
     // This particular gun, as it lay (the user, 2026-11-18, "필드 무기 교체 및 탄약 시스템 개편"). Into an empty gun slot,
     // else in place of the gun in hand, else the first gun slot: it comes with the rounds that were in it, the rounds
-    // lying with it join this player's reserve for its kind, and the gun it took the place of goes on the ground with
-    // what is in that one, its reserve staying with the player (PlayerWeaponSlots.Put). A gun of a kind already held
+    // lying with it join this player's reserve for its kind as far as that is filled to (the rest stays with the gun),
+    // and the gun it took the place of goes on the ground with what is in that one, its reserve staying with the player
+    // (PlayerWeaponSlots.Put). A gun of a kind already held
     // isn't taken: its rounds go into the reserve as far as there is room, and it stays where it lay with the rest
     // (TakeRounds). Nothing else is filled either way: before, the gun taken was a new full one, and one of a kind
     // already held refilled every gun the player had.
@@ -173,7 +174,9 @@ public sealed partial class FieldPickups
         }
         // Not with a can in the hands, nor with the guns on an x-ray belt (GimmickTray): the new gun waits in its slot.
         if (!slots.HandsFull && !slots.GunsAway) slots.SelectSlot(slot);
-        Pop(row.Kind, row.Name, Holds(gun), gun.Weapon);
+        // The line says what was got: the rounds in it, and of those lying with it what the reserve had room for.
+        var mine = slots.GetRuntime(slot);
+        Pop(row.Kind, row.Name, Holds(gun.Holding(gun.Rounds, mine != null ? gun.Spare - mine.Spare : gun.Spare)), gun.Weapon);
         if (before is GunState old) Leave(old, player.transform.position + player.transform.forward * LeaveAhead);
     }
 
