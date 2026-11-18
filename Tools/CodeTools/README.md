@@ -46,7 +46,10 @@ Unity를 켜지 않고 게임 코드 전체를 읽어서 검사하고 정리하�
 코드: 콜백이 붙잡은 반복 변수, 끝을 하나 넘는 반복, 양쪽이 같은 비교, 같은 조건 두 번, null일 때만 쓰이는 값, 분수가 필요한 정수 나눗셈,
 Unity 오브젝트의 `?.`·`??`·`is null`, 양쪽 가지가 같은 `?:`, 자기 자신에 대입, 벡터 성분 실수, 마지막을 안 뽑는 `Random.Range`,
 PC 언어로 읽고 쓰는 숫자, 뒤집힌 `Clamp`, 잘못 쓴 Unity 메시지 이름, `base` 없는 `NetworkBehaviour.OnDestroy`, 아무도 안 읽는 매개변수,
-받기만 하고 놓지 않는 이벤트, 이름만 다른 같은 몸통, `WorldTime` 밖에서 쓰는 `Time.timeScale`·`fixedDeltaTime`.
+받기만 하고 놓지 않는 이벤트, 이름만 다른 같은 몸통, `WorldTime` 밖에서 쓰는 `Time.timeScale`·`fixedDeltaTime`,
+`InputHold` 밖에서 묻거나 쓰는 `Cursor.lockState`·`Cursor.visible`(포인터의 주인은 하나다), 키를 누가 가졌는지를 물어 하던 동작을 끝내는 곳
+(`InputAvailable`·`CanReadInput`·`InputFocus.Takes…()`가 거짓인 가지에서 `Cancel…`·`Stop…`·`Abort…`·`Drop…`·`Interrupt…`·`PutBack…`·`LetGo…`를 부르는 if.
+그 물음을 담은 bool 지역 변수와 else 가지도 따라간다. 한 키로 들고 있는 동작이 그 키를 뺏겨 접는 것, 곧 `InputFocus.Takes(key)`를 묻는 메서드는 건너뛴다).
 
 데이터: 없는 레이어·태그·셰이더·Resources 이름·표·줄·글자 id, 표에 없는 열을 읽는 코드, `Texts.Format`의 인자 수, 표의 두 번 나온 줄·열,
 열보다 칸이 많은 줄(따옴표 없는 쉼표가 칸을 자른 것).

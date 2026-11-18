@@ -316,6 +316,7 @@ static class Audit
                 case IfStatementSyntax test:
                 {
                     if (test.Else != null && SyntaxFactory.AreEquivalent(test.Statement, test.Else.Statement)) Note("both branches the same", test, Text(test.Condition));
+                    EndsOnKeys(model, test);
                     if (test.Parent is not ElseClauseSyntax)
                     {
                         var conditions = new List<ExpressionSyntax>();
@@ -331,6 +332,14 @@ static class Audit
                     break;
                 case ConditionalAccessExpressionSyntax access:
                     UnityNull(model, access.Expression, access, "?.");
+                    break;
+                // The pointer has one owner (InputHold): a gate that asks whether it is locked stops with a screen that only
+                // shows a pointer, and a second writer of the lock undoes what the screens hold.
+                case MemberAccessExpressionSyntax { Name.Identifier.ValueText: "lockState" or "visible" } pointer
+                    when model.GetSymbolInfo(pointer).Symbol is IPropertySymbol { ContainingType.Name: "Cursor" }
+                         && !Project.Rel(tree.FilePath).EndsWith("/UI/Shared/InputHold.cs"):
+                    Note("the pointer's lock or drawing asked or written outside InputHold", pointer,
+                        Text(pointer.FirstAncestorOrSelf<StatementSyntax>() ?? (SyntaxNode)pointer));
                     break;
                 case IsPatternExpressionSyntax pattern when pattern.Pattern is ConstantPatternSyntax { Expression.RawKind: (int)SyntaxKind.NullLiteralExpression }
                                                             || pattern.Pattern is UnaryPatternSyntax { Pattern: ConstantPatternSyntax { Expression.RawKind: (int)SyntaxKind.NullLiteralExpression } }:
@@ -398,6 +407,87 @@ static class Audit
                     break;
             }
         }
+    }
+
+    // ---- Whose the keys are, asked on the way to ending a move ----
+
+    // What a move is ended by: the calls that put something under way down.
+    static readonly Regex Ending = new(@"^(Cancel|Stop|Abort|Drop|Interrupt|PutBack|LetGo)");
+    static readonly ConcurrentDictionary<SyntaxNode, Dictionary<ISymbol, int>> KeyLocals = new();
+
+    /// A read of "the player's keys are the game's" at large: PlayerMovement.InputAvailable, PlayerWeaponSlots.CanReadInput,
+    /// or one of InputFocus's questions about the body, the view or the hands. Not InputFocus.Takes(action), the question
+    /// about one key, which a move held by that key asks to put itself away.
+    static bool AsksKeys(SemanticModel model, SyntaxNode node)
+    {
+        var symbol = model.GetSymbolInfo(node).Symbol;
+        string owner = symbol?.ContainingType?.Name ?? "";
+        return symbol?.Name switch
+        {
+            "InputAvailable" => owner == "PlayerMovement",
+            "CanReadInput" => owner == "PlayerWeaponSlots",
+            "TakesMove" or "TakesLook" or "TakesCombat" or "TakesInput" or "TakesPlayInput" => owner == "InputFocus",
+            _ => false,
+        };
+    }
+
+    /// 1: true while the keys are the game's; -1: true while they are not; 0: says nothing of the keys.
+    static int KeysSense(SemanticModel model, ExpressionSyntax expression, Dictionary<ISymbol, int> locals)
+    {
+        while (expression is ParenthesizedExpressionSyntax wrapped) expression = wrapped.Expression;
+        switch (expression)
+        {
+            case PrefixUnaryExpressionSyntax negated when negated.IsKind(SyntaxKind.LogicalNotExpression):
+                return -KeysSense(model, negated.Operand, locals);
+            case BinaryExpressionSyntax both when both.IsKind(SyntaxKind.LogicalAndExpression) || both.IsKind(SyntaxKind.LogicalOrExpression):
+            {
+                int left = KeysSense(model, both.Left, locals);
+                return left != 0 ? left : KeysSense(model, both.Right, locals);
+            }
+            case InvocationExpressionSyntax or MemberAccessExpressionSyntax or IdentifierNameSyntax:
+                if (AsksKeys(model, expression)) return 1;
+                return expression is IdentifierNameSyntax && model.GetSymbolInfo(expression).Symbol is ILocalSymbol local
+                    && locals.TryGetValue(local, out int sense) ? sense : 0;
+            default:
+                return 0;
+        }
+    }
+
+    /// "if the keys are not the player's, end the move": the bug class of 2026-11-18 (an execution ended when the chat
+    /// opened). Who has the keys decides what an input frame holds and whether something new may start, never whether
+    /// what is under way goes on. A move held by one key (a grenade's pin, a plan's preview) may put itself away when
+    /// that key is taken, and says so by asking InputFocus.Takes(key): a method that does is left alone.
+    static void EndsOnKeys(SemanticModel model, IfStatementSyntax test)
+    {
+        var body = test.Ancestors().FirstOrDefault(a => a is BaseMethodDeclarationSyntax or LocalFunctionStatementSyntax or AccessorDeclarationSyntax
+            or AnonymousFunctionExpressionSyntax);
+        if (body == null) return;
+        var locals = KeyLocals.GetOrAdd(body, _ =>
+        {
+            var found = new Dictionary<ISymbol, int>(SymbolEqualityComparer.Default);
+            foreach (var declared in body.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+                if (declared.Initializer != null && model.GetDeclaredSymbol(declared) is ILocalSymbol { Type.SpecialType: SpecialType.System_Boolean } local)
+                {
+                    int sense = KeysSense(model, declared.Initializer.Value, found);
+                    if (sense != 0) found[local] = sense;
+                }
+            return found;
+        });
+        int keys = KeysSense(model, test.Condition, locals);
+        var branch = keys < 0 ? test.Statement : keys > 0 ? test.Else?.Statement : null;
+        if (branch == null) return;
+        var ends = branch.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().Select(call => call.Expression switch
+        {
+            MemberAccessExpressionSyntax access => access.Name.Identifier.ValueText,
+            MemberBindingExpressionSyntax bound => bound.Name.Identifier.ValueText,
+            IdentifierNameSyntax name => name.Identifier.ValueText,
+            _ => "",
+        }).FirstOrDefault(name => Ending.IsMatch(name));
+        if (ends == null) return;
+        bool oneKey = body.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Any(call => model.GetSymbolInfo(call).Symbol is IMethodSymbol { Name: "Takes", ContainingType.Name: "InputFocus" });
+        if (oneKey) return;
+        Note("whose the keys are asked on the way to ending a move", test, ends + "(…)  when  " + Text(test.Condition));
     }
 
     static void UnityNull(SemanticModel model, ExpressionSyntax tested, SyntaxNode at, string how)
