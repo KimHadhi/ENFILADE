@@ -46,7 +46,7 @@ internal sealed class BodyLean
     private SpineLook spineLook;
     private Transform root, model, head, leftUpperArm, rightUpperArm;
     private Vector3 eyeLocal;
-    private float spineBend = 20f, hipShift = .08f, hipReach = .2f, blendTime = .15f;
+    private float spineBend = 20f, hipShift = .08f, hipReach = .2f, pelvisTilt, blendTime = .15f;
     // How much of each way the lean goes now: nothing in hand, a gun; the fists are the rest.
     private float handsFree = 1f, gun;
     private float eyesSideAtRest, clipHeadSideAtRest;
@@ -91,13 +91,14 @@ internal sealed class BodyLean
         this.rightUpperArm = rightUpperArm;
     }
 
-    /// <summary>The body's lean numbers (degrees, m, m) and its blend time (s).</summary>
-    internal void Tune(float spineBend, float hipShift, float hipReach, float blendTime)
+    /// <summary>The body's lean numbers (degrees, m, m), its blend time (s) and the pelvis's tip (degrees).</summary>
+    internal void Tune(float spineBend, float hipShift, float hipReach, float blendTime, float pelvisTilt)
     {
         this.spineBend = spineBend;
         this.hipShift = hipShift;
         this.hipReach = hipReach;
         this.blendTime = blendTime;
+        this.pelvisTilt = pelvisTilt;
     }
 
     /// <summary>
@@ -193,10 +194,25 @@ internal sealed class BodyLean
     /// stood", which nothing did: the feet's height was the ground's and their place wherever the hips had gone, so the
     /// lean slid both feet sideways with the pelvis.
     /// </summary>
-    internal Vector3 MoveHips(Transform hips, float bendWeight, bool dead)
+    internal Vector3 MoveHips(Transform hips, float bendWeight, bool dead, Transform leftThigh, Transform rightThigh)
     {
         float share = RawShare * bendWeight;
         if (hips == null || head == null || root == null || dead || Mathf.Abs(share) < .001f) return Vector3.zero;
+        // The pelvis tips a little the way of the lean (the user, 2026-11-18, asked whether to: "그 편이 더 자연스럽다면
+        // 그렇게"): with the weight gone over one planted foot a pelvis does not stay level, and a spine bent from a level
+        // pelvis kinks at the waist. Not with a gun, where FPS Animation Framework leans the body and gives the hips
+        // their share itself. The thighs are turned back as they were, so the legs stay the clip's (the hip joints move a
+        // few millimetres) and only what is above the pelvis goes with it: the eyes go further, so the fists' hips, just
+        // below, have less far to go for the same peek.
+        float tilt = -share * pelvisTilt * (1f - gun);
+        if (Mathf.Abs(tilt) > .01f)
+        {
+            Quaternion left = leftThigh != null ? leftThigh.rotation : Quaternion.identity;
+            Quaternion right = rightThigh != null ? rightThigh.rotation : Quaternion.identity;
+            hips.rotation = Quaternion.AngleAxis(tilt, root.forward) * hips.rotation;
+            if (leftThigh != null) leftThigh.rotation = left;
+            if (rightThigh != null) rightThigh.rotation = right;
+        }
         float shift = share * hipShift * handsFree;
         float fists = FistsShare;
         if (fists > 0f)

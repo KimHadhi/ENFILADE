@@ -591,7 +591,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             using (FeetMarker.Auto())
             {
                 LiftTuckedFeet(Time.deltaTime);
-                hipsCarried = bodyLean.MoveHips(hips, bendWeight, dead);
+                hipsCarried = bodyLean.MoveHips(hips, bendWeight, dead, leftLeg?.Upper, rightLeg?.Upper);
                 PlantFeet(Time.deltaTime);
                 PlantLadderFeet(Time.deltaTime);
                 SweepLeg(Time.deltaTime);

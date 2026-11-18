@@ -17,6 +17,9 @@ public sealed partial class PlayerBody
     [SerializeField, Min(0f), Tooltip("Q/E with the fists: the most the hips go over toward the lean (m). They go as far as the "
         + "spine's bend leaves of the peek, so the eyes reach it and the camera, which the guard is placed from, stays on them.")]
     private float leanHipReach = .2f;
+    [SerializeField, Range(0f, 15f), Tooltip("Q/E with nothing in hand or the fists, at full lean: how far the pelvis tips the "
+        + "way of the lean (degrees); the spine's bend goes on from it. The legs stay as the clip has them. 0: a level pelvis, as before.")]
+    private float leanPelvisTilt = 3f;
 
     private readonly BodyLean bodyLean = new BodyLean();
 
@@ -26,5 +29,5 @@ public sealed partial class PlayerBody
     /// </summary>
     internal float LeanRollFor(float offset, IReadOnlyList<(Transform bone, float share)> chain) => bodyLean.RollFor(offset, chain);
 
-    private void TuneLean() => bodyLean.Tune(leanSpineBend, leanHipShift, leanHipReach, blendTime);
+    private void TuneLean() => bodyLean.Tune(leanSpineBend, leanHipShift, leanHipReach, blendTime, leanPelvisTilt);
 }
