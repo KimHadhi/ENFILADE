@@ -44,6 +44,9 @@ Board.classIcon,30,Tab 현황판 줄에서 이름 앞에 서는 클래스 아이
 Board.classGap,8,클래스 아이콘과 이름 사이(px)
 Board.hintSize,15,Tab 현황판 표 오른쪽 위의 우클릭 안내 글자 크기
 Board.hintRise,30,그 안내가 표의 열 이름 줄보다 얼마나 위에 서는지(px)
+Board.deckWidth,46,Tab 현황판 줄에서 이름 칸 오른쪽 끝에 서는 덱 칸의 너비(px). 누르면 아래 배지 줄이 그 사람의 카드로 바뀐다
+Board.deckHeight,30,덱 칸의 높이(px)
+Board.tipWidth,400,카드 설명 창의 너비(px). 글은 이 너비에서 줄을 바꾼다
 PlayerColour.apart,0.1,두 플레이어의 색이 이보다 가까우면 같은 색으로 친다(0 = 같은 색이고 1 = 검정과 흰색). 그러면 뒤에 온 사람이 그 색에 가장 가까운 남는 팔레트 색을 받는다. PlayerColours.csv의 줄끼리는 이보다 멀어야 한다(지금 가장 가까운 두 줄이 0.127)
 Mission.badgeSize,50;54,느낌표 칸의 너비;높이(px). 가장 높은 칸. 글자 칸과 같은 아랫선에서 위로만 솟는다
 Mission.barHeight,36,목표 글자 칸의 높이(px). 가장 낮은 칸. 이 칸의 아랫선에 세 칸이 같이 선다

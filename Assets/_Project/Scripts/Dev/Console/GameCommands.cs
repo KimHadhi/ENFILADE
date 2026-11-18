@@ -38,5 +38,6 @@ public static class GameCommands
         router.Register("death", "[좀비 종류 / fall / bleed / friend] [wipe] [short / full] — 죽지 않고 데스 스크린만 미리 보기 (DeathScreen)", DeathScreen.Command);
         router.Register("hits", "UI 클릭 판정 모양 보기 켜기·끄기 — 하늘색 = 누를 수 있는 곳, 분홍 = 지금 커서가 고르는 것, 노랑 = 호버로 비킨 원래 자리 (KitHit)", KitHitView.Command);
         router.Register("colours", "플레이어 색 — 팔레트와 색 사이 거리, 이 PC의 플레이어마다 고른 색과 받은 색 · cases 겹침 규칙만 따로 검사 → Logs/player-colours.txt (PlayerColours)", PlayerColours.Command);
+        router.Register("decks", "카드 덱 — 지금 클래스와 쓰이는 덱, 다른 클래스 몫으로 보관 중인 카드 · cases 클래스마다 덱에 남의 카드가 없는지 검사 → Logs/card-decks.txt (PlayerPerks)", PlayerPerks.Report);
     }
 }

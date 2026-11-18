@@ -47,6 +47,16 @@ public static class ClassLook
         return colour.a > 0f ? colour : fallback;
     }
 
+    /// <summary>The ClassColours row for a card that belongs to no class (everyone's cards).</summary>
+    public const string Common = "common";
+
+    /// <summary>
+    /// A card's colour by the deck it belongs to: its class's, and the table's "common" row for a card of no class, so
+    /// cards sort by colour wherever they are listed (the user, 2026-11-18: "클래스별 고유 색상을 부여해 카드를
+    /// 분류·정렬").
+    /// </summary>
+    public static Color CardColour(string cardClass) => Colour(string.IsNullOrWhiteSpace(cardClass) ? Common : cardClass, KitStyle.Text);
+
     /// <summary>A class's icon (white, to be tinted), or null for a class without one and for no class.</summary>
     public static Texture2D Icon(string classId)
         => string.IsNullOrWhiteSpace(classId) ? null : KitButtons.Icon(MainMenuClasses.Icon(classId.Trim()));

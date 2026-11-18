@@ -24,6 +24,18 @@ using UnityEngine;
 /// as cards do, and gone again when the hub is left or a class is picked there (EndPractice, RestartPractice), so the
 /// campaign's own cards are what a chapter gets.
 /// </para>
+/// <para>
+/// Decks (2026-11-18). Every card belongs to one deck by its own row: its class's, or everyone's when it names none. What
+/// was picked is kept by card for the whole campaign, but only one deck is in play: the class played now and everyone's
+/// cards. Every question the game asks (Level, Has, Total, Held, AbilityBonus and all the effect lookups under them)
+/// reads the deck in play and nothing else, so a card of another class can show nowhere and do nothing, whatever asks.
+/// Before, the picks were one list with no deck in it, and each lookup had to remember to ask the class for itself:
+/// four did not (the Knight's butcher, the Détente's rescue, the Schießhund's heriot, the Assault's momentum), and the
+/// Tab board listed every card held, so a class changed in the hub after a chapter kept the old class's effects and
+/// showed its cards (the user: "챕터 클리어 후 허브에서 클래스 변경 시 이전 클래스 카드 효과가 남고 Tab 메뉴에 이전 클래스
+/// 카드가 노출되는 문제"). A class left keeps its deck: picked again in the same campaign, its cards are in play again as
+/// they were, so nothing earned is thrown away by trying another class.
+/// </para>
 /// </summary>
 public static class PlayerPerks
 {
@@ -109,7 +121,13 @@ public static class PlayerPerks
     public const string AssaultSuppress = "assault_suppress", AssaultLead = "assault_lead", AssaultBugle = "assault_bugle",
         AssaultCover = "assault_cover";
 
+    // Every card picked this campaign and its level, in play or not: the decks, each card in its own class's or everyone's.
     private static readonly Dictionary<string, int> levels = new Dictionary<string, int>();
+    // The deck in play: the picked cards of the class played now and everyone's, with their levels. Made again whenever
+    // a pick, a clearing, the table or the class played changes (InPlay).
+    private static readonly Dictionary<string, int> inPlay = new Dictionary<string, int>();
+    private static string inPlayFor;
+    private static bool inPlayStale = true, hearsPicks;
     private static List<Perk> catalog;
     // What the held cards add to ClassAbilities numbers, by row then name (null: to be summed again).
     private static Dictionary<string, Dictionary<string, float>> bonuses;
@@ -123,6 +141,10 @@ public static class PlayerPerks
     private static void ResetStatics()
     {
         levels.Clear();
+        inPlay.Clear();
+        inPlayFor = null;
+        inPlayStale = true;
+        hearsPicks = false;
         kept = null;
         catalog = null;
         bonuses = null;
@@ -138,6 +160,146 @@ public static class PlayerPerks
     {
         catalog = null;
         bonuses = null;
+        inPlayStale = true;
+    }
+
+    // ---- The deck in play ----
+
+    /// <summary>
+    /// Goes up whenever the deck in play may have changed, for whoever shows or sends it (the Tab board, PlayerNetworkScore).
+    /// Asking it looks at the class played first (InPlay), so a class picked a moment ago is already counted: whoever
+    /// compares versions never holds the old class's deck for the current one.
+    /// </summary>
+    public static int DeckVersion
+    {
+        get
+        {
+            InPlay();
+            return deckVersion;
+        }
+    }
+
+    private static int deckVersion;
+
+    /// <summary>
+    /// Whether a card is of the deck in play: everyone's, or the class's that this PC's player plays now (a variant plays
+    /// its base's cards).
+    /// </summary>
+    public static bool InDeck(Perk perk) => InDeck(perk, PlayerClass.CurrentId);
+
+    /// <summary>
+    /// Whether a card is of the deck a player of <paramref name="played"/> has in play: a card of no class is everyone's,
+    /// a class's card is that class's and its variants' (PlayerClass.KitOf). The one place that says which deck a card is
+    /// in; a pure question of the two tables (Perks.csv class, Classes.csv base).
+    /// </summary>
+    public static bool InDeck(Perk perk, string played)
+        => perk != null && (string.IsNullOrEmpty(perk.Class) || string.Equals(perk.Class, played, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(perk.Class, PlayerClass.KitOf(played), StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// The console's /decks: the class played and its deck in play, the decks kept for other classes, and with "cases" the
+    /// deck rule over every class of the table (no card of one class in another's deck, and the cards whose effects are
+    /// asked by name in play for their own class alone). Also written to Logs/card-decks.txt.
+    /// </summary>
+    public static string Report(string args)
+    {
+        var text = new StringBuilder();
+        string played = PlayerClass.CurrentId;
+        text.AppendLine("class played: " + played + (PlayerClass.KitOf(played) != played ? " (plays " + PlayerClass.KitOf(played) + ")" : "")); // dev-text
+        text.Append("in play:"); // dev-text
+        int shown = 0;
+        foreach (var (perk, level) in Held()) { text.Append(' ').Append(perk.Id).Append(' ').Append(level).Append('/').Append(perk.Levels).Append(';'); shown++; }
+        text.AppendLine(shown == 0 ? " nothing" : ""); // dev-text
+        text.Append("kept for other classes:"); // dev-text
+        int keptCards = 0;
+        foreach (var perk in Catalog)
+        {
+            int stored = Stored(perk.Id);
+            if (stored <= 0 || InDeck(perk, played)) continue;
+            text.Append(' ').Append(perk.Id).Append(' ').Append(stored).Append('/').Append(perk.Levels).Append(" (").Append(perk.Class).Append(");");
+            keptCards++;
+        }
+        text.AppendLine(keptCards == 0 ? " nothing" : ""); // dev-text
+        if ((args ?? "").Trim().ToLowerInvariant() == "cases") Cases(text);
+        string all = text.ToString();
+        try { System.IO.File.WriteAllText(System.IO.Path.Combine(Application.dataPath, "..", "Logs", "card-decks.txt"), all); }
+        catch (Exception problem) { Debug.LogWarning("[Cards] Logs/card-decks.txt: " + problem.Message); }
+        return all + "Logs/card-decks.txt"; // dev-text
+    }
+
+    // The deck rule over every class: what each class has in play were every card of the table picked, and what must
+    // never be there.
+    private static void Cases(StringBuilder text)
+    {
+        int wrong = 0;
+        foreach (var info in PlayerClass.Catalog)
+        {
+            int own = 0, common = 0, others = 0;
+            foreach (var perk in Catalog)
+            {
+                if (!InDeck(perk, info.Id)) continue;
+                if (string.IsNullOrEmpty(perk.Class)) common++;
+                else if (string.Equals(perk.Class, info.Family, StringComparison.OrdinalIgnoreCase)) own++;
+                else others++;
+            }
+            wrong += others;
+            text.AppendLine("  " + info.Id.PadRight(14) + " deck: " + own + " of its class + " + common + " of everyone's, of other classes " + others); // dev-text
+        }
+        // The cards whose effects are asked by name without asking the class (the four that leaked): each in its own class's deck alone.
+        foreach (string id in new[] { ExecutionHeal, Rescue, Heriot, Momentum })
+        {
+            var perk = Find(id);
+            if (perk == null) { text.AppendLine("  " + id + ": not in the table"); continue; } // dev-text
+            var where = new StringBuilder();
+            foreach (var info in PlayerClass.Catalog)
+            {
+                if (!InDeck(perk, info.Id)) continue;
+                where.Append(' ').Append(info.Id);
+                if (!string.Equals(perk.Class, info.Family, StringComparison.OrdinalIgnoreCase)) wrong++;
+            }
+            text.AppendLine("  " + id.PadRight(18) + " (class " + (perk.Class.Length > 0 ? perk.Class : "none") + ") in play for:" + where); // dev-text
+        }
+        text.AppendLine(wrong == 0 ? "CASES OK" : "CASES FAILED: " + wrong); // dev-text
+    }
+
+    // The deck in play, made again when what it is made from changed. The class played is asked every time rather than
+    // heard of: a class is picked in the middle of a frame, and what runs after the pick in that frame (the new kit being
+    // handed out) must already read the new class's deck, whatever order the pick's listeners run in.
+    private static Dictionary<string, int> InPlay()
+    {
+        string now = PlayerClass.CurrentId;
+        if (!inPlayStale && string.Equals(now, inPlayFor, StringComparison.Ordinal)) return inPlay;
+        inPlayStale = false;
+        inPlayFor = now;
+        inPlay.Clear();
+        foreach (var pair in levels)
+            if (InDeck(Find(pair.Key))) inPlay[pair.Key] = pair.Value;
+        bonuses = null;
+        deckVersion++;
+        // A class picked changes what is in play: those who keep something worked out from the cards hear of it as of a
+        // pick. Listened for from the first deck on (PlayerClass empties its event when a session starts).
+        if (!hearsPicks)
+        {
+            hearsPicks = true;
+            PlayerClass.Picked -= OnClassPicked;
+            PlayerClass.Picked += OnClassPicked;
+        }
+        return inPlay;
+    }
+
+    private static void OnClassPicked(string before, string now)
+    {
+        inPlayStale = true;
+        bonuses = null;
+        Changed?.Invoke();
+    }
+
+    // Something about the picks changed: the deck in play is made again at the next question.
+    private static void Touched()
+    {
+        inPlayStale = true;
+        bonuses = null;
+        deckVersion++;
     }
 
     /// <summary>Every perk in the table, in its order.</summary>
@@ -174,7 +336,14 @@ public static class PlayerPerks
         return null;
     }
 
-    public static int Level(string id) => id != null && levels.TryGetValue(id, out int level) ? level : 0;
+    /// <summary>
+    /// The card's level in the deck in play: 0 for a card not picked and for a card of a class that is not played now,
+    /// however many levels of it are kept (Stored). Everything the game asks of the cards comes down to this.
+    /// </summary>
+    public static int Level(string id) => id != null && InPlay().TryGetValue(id, out int level) ? level : 0;
+
+    /// <summary>The card's level as picked this campaign, whether its deck is in play or not (a class left keeps its cards).</summary>
+    public static int Stored(string id) => id != null && levels.TryGetValue(id, out int level) ? level : 0;
 
     public static bool Has(string id) => Level(id) > 0;
 
@@ -192,22 +361,59 @@ public static class PlayerPerks
         return perk != null ? perk.At2(Mathf.Min(Level(id), perk.Levels)) : 0f;
     }
 
-    /// <summary>The perks held, in the table's order, with their levels.</summary>
+    /// <summary>
+    /// The deck in play with its levels: the class's own cards first, then everyone's, each in the table's order (the
+    /// order they are dealt in, so a deck reads class first wherever it is listed).
+    /// </summary>
     public static IEnumerable<(Perk perk, int level)> Held()
     {
-        foreach (var perk in Catalog)
+        for (int pass = 0; pass < 2; pass++)
+            foreach (var perk in Catalog)
+            {
+                if (string.IsNullOrEmpty(perk.Class) != (pass == 1)) continue;
+                int level = Level(perk.Id);
+                if (level > 0) yield return (perk, level);
+            }
+    }
+
+    /// <summary>
+    /// The deck in play as words that travel (PlayerNetworkScore): "id:level;id:level", by card id and never by place in
+    /// the table, so a PC whose table has other cards (a mod's) still reads the ones it knows.
+    /// </summary>
+    public static string HeldText()
+    {
+        var text = new StringBuilder();
+        foreach (var (perk, level) in Held())
         {
-            int level = Level(perk.Id);
-            if (level > 0) yield return (perk, level);
+            if (text.Length > 0) text.Append(';');
+            text.Append(perk.Id).Append(':').Append(level);
+        }
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// Reads a deck sent as HeldText into <paramref name="into"/> (cleared first), in the order sent: the cards this PC's
+    /// table knows, each level held to the card's own top. A card it does not know is left out.
+    /// </summary>
+    public static void Read(string text, List<(Perk perk, int level)> into)
+    {
+        into.Clear();
+        if (string.IsNullOrEmpty(text)) return;
+        foreach (string part in text.Split(';'))
+        {
+            int colon = part.LastIndexOf(':');
+            if (colon <= 0 || colon >= part.Length - 1) continue;
+            var perk = Find(part.Substring(0, colon).Trim());
+            if (perk == null || !int.TryParse(part.Substring(colon + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int level) || level <= 0) continue;
+            into.Add((perk, Mathf.Min(level, perk.Levels)));
         }
     }
 
     /// <summary>Whether this card may be dealt now: not at its top level, and everyone's or this player's class's.</summary>
     public static bool Dealable(Perk perk)
     {
-        if (perk == null || perk.Weight <= 0f || Level(perk.Id) >= perk.Levels) return false;
-        if (perk.Solo && !Alone) return false;
-        return string.IsNullOrEmpty(perk.Class) || PlayerClass.Is(perk.Class);
+        if (perk == null || perk.Weight <= 0f || !InDeck(perk) || Level(perk.Id) >= perk.Levels) return false;
+        return !perk.Solo || Alone;
     }
 
     /// <summary>Any card left to deal this player.</summary>
@@ -269,13 +475,16 @@ public static class PlayerPerks
         return null;
     }
 
-    /// <summary>Raises the perk a level (up to its top).</summary>
+    /// <summary>
+    /// Raises the perk a level (up to its top), in its own deck: a card of a class not played now is kept there and
+    /// works when that class is played.
+    /// </summary>
     public static void Raise(string id)
     {
         var perk = Find(id);
         if (perk == null) return;
-        levels[id] = Mathf.Min(perk.Levels, Level(id) + 1);
-        bonuses = null;
+        levels[id] = Mathf.Min(perk.Levels, Stored(id) + 1);
+        Touched();
         Changed?.Invoke();
     }
 
@@ -289,7 +498,7 @@ public static class PlayerPerks
         kept?.Clear();
         if (levels.Count == 0) return;
         levels.Clear();
-        bonuses = null;
+        Touched();
         Changed?.Invoke();
     }
 
@@ -336,20 +545,21 @@ public static class PlayerPerks
         if (same) return;
         levels.Clear();
         foreach (var pair in kept) levels[pair.Key] = pair.Value;
-        bonuses = null;
+        Touched();
         Changed?.Invoke();
     }
 
     // ---- What the game's systems ask ----
 
     /// <summary>
-    /// What the cards add to a class's number in Tables/ClassAbilities (row "Ghost", name "hunterMax"): every held card
-    /// naming it, value × level. PlayerClass.Ability adds it in; it is asked many times a frame, so the sums are kept
+    /// What the cards add to a class's number in Tables/ClassAbilities (row "Ghost", name "hunterMax"): every card of the
+    /// deck in play naming it, value × level. PlayerClass.Ability adds it in; it is asked many times a frame, so the sums are kept
     /// (by row, then name) and made again only when a card is picked or the cards are cleared.
     /// </summary>
     public static float AbilityBonus(string row, string name)
     {
-        if (levels.Count == 0 || string.IsNullOrEmpty(row) || string.IsNullOrEmpty(name)) return 0f;
+        // The deck in play first: a class picked since the last question empties the sums with the deck.
+        if (levels.Count == 0 || string.IsNullOrEmpty(row) || string.IsNullOrEmpty(name) || InPlay().Count == 0) return 0f;
         if (bonuses == null) SumBonuses();
         return bonuses.TryGetValue(row, out var names) && names.TryGetValue(name, out float sum) ? sum : 0f;
     }

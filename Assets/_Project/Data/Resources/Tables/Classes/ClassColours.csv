@@ -7,3 +7,4 @@ point,#FF5AA0,포인트 · 분홍
 detente,#7CF0B0,데탕트 · 소독약 민트
 schiesshund,#1FEBD1,시순트 · 현상금의 청록
 support,#FF9A3C,서포트 · 주황
+common,#F4F5F8,공용 카드 · 클래스가 없는 카드의 색(카드 배지와 덱에서 클래스 카드와 갈라 보이게). 클래스가 아니라서 Classes.csv에는 없다

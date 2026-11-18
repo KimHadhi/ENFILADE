@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -84,6 +85,43 @@ public sealed class PlayerTally : MonoBehaviour
     public long Earned { get; private set; }
     /// <summary>The class they play (Tables/Classes id).</summary>
     public string ClassId { get; private set; } = "";
+
+    // Their deck as last read: this PC's own from PlayerPerks (at the deck version it was read at), another's as sent.
+    private readonly List<(PlayerPerks.Perk perk, int level)> cards = new List<(PlayerPerks.Perk perk, int level)>();
+    private int cardsAt = -1;
+
+    /// <summary>
+    /// The cards they hold now, their class's first and then everyone's, with the levels: the deck in play, never a deck
+    /// kept for another class. This PC's own player's is PlayerPerks'; another's is what their PC sends (PlayerNetworkScore,
+    /// by card id). The Tab board lists it when their row's deck is pressed (the user, 2026-11-18: "팀원 옆 덱(Deck) 아이콘
+    /// 클릭 시 해당 팀원이 현재 보유한 카드 목록 열람").
+    /// </summary>
+    public IReadOnlyList<(PlayerPerks.Perk perk, int level)> Cards
+    {
+        get
+        {
+            // This PC's own deck is read again when its version went on (a pick, a class picked, the cards cleared).
+            int version = IsMine ? PlayerPerks.DeckVersion : cardsAt;
+            if (version != cardsAt)
+            {
+                cardsAt = version;
+                cards.Clear();
+                foreach (var held in PlayerPerks.Held()) cards.Add(held);
+                CardsVersion++;
+            }
+            return cards;
+        }
+    }
+
+    /// <summary>Goes up each time Cards changed, so a screen showing them draws them again only then.</summary>
+    public int CardsVersion { get; private set; }
+
+    /// <summary>On someone else's copy: the deck their own PC reports (PlayerPerks.HeldText).</summary>
+    internal void ShowCards(string text)
+    {
+        PlayerPerks.Read(text, cards);
+        CardsVersion++;
+    }
 
     private void Awake()
     {

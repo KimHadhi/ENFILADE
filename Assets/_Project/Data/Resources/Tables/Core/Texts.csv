@@ -1,5 +1,9 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+score.perks.of,{0}의 능력,{0}'s cards,Tab 점수판 아래 배지 줄 제목 > 팀원의 덱 칸을 눌러 그 사람의 카드를 볼 때. {0}=그 사람 이름(그 사람 색)
+score.perks.none,아직 카드가 없다,No cards yet,Tab 점수판 아래 배지 줄 > 보고 있는 사람이 든 카드가 없을 때
+perk.tooltip.level,{0} / {1}단계,Level {0} / {1},카드 설명 창(Tab 현황판에서 카드 배지에 커서를 올리면) > 이름 옆. {0}=지금 단계 {1}=최대 단계
+perk.tooltip.common,공용,Common,카드 설명 창 > 클래스가 없는 카드의 딱지
 gimmick.generator.start,[F] 발전기 켜기,,맵 기믹 [F] 안내 > 꺼진 발전기 앞(GimmickBreaker의 발전기: 1장 아파트 옥상. 켜면 엘리베이터에 전원이 들어간다)
 gimmick.generator.stop,[F] 발전기 끄기,,맵 기믹 [F] 안내 > 돌아가는 발전기 앞(GimmickBreaker의 발전기)
 pickup.gives.gunrounds,탄창 {0}발,,"아이템 [F] 안내와 주운 목록(화면 아래) > 바닥의 총: 그 총에 든 탄. {0}=탄 수"

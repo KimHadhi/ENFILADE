@@ -20,6 +20,11 @@ using UnityEngine.UI;
 /// with the mouse, the legs stay theirs), so they walk on while they read, and letting Tab go gives the pointer back.
 /// What can be pointed at is each part's own business (the cards' badges, a row's deck); a part that takes no pointer
 /// stays no raycast target, so the board never swallows a click meant for nothing.
+/// Under the table is a deck: the cards of the class played and everyone's cards, each badge in its deck's colour, and a
+/// badge pointed at says what its card does (PerkBadge, PerkTooltip). It is this player's own until a row's deck chip is
+/// pressed, and then that player's, as their PC sends it (PlayerTally.Cards); pressed again, or the player gone, it is
+/// this player's own again (the user, 2026-11-18: "Tab 현황판에서 팀원 옆 덱(Deck) 아이콘 클릭 시 해당 팀원이 현재 보유한
+/// 카드 목록 열람").
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ScoreboardHUD : MonoBehaviour
@@ -45,6 +50,10 @@ public sealed class ScoreboardHUD : MonoBehaviour
         // (the user, 2026-11-18: "Tab 현황판에서 아군이 선택한 클래스 확인 가능하도록"). The id was already sent to every
         // PC (PlayerNetworkScore → PlayerTally.ClassId); the row never drew it.
         public RawImage classIcon;
+        // Their deck: a chip at the end of the name's column, two cards (the front one in their class's colour) and how
+        // many cards they hold. Pressed, the deck under the table is theirs.
+        public Image deckPlate, deckCard;
+        public TextMeshProUGUI deckCount;
         public TextMeshProUGUI name, character, kills, executions, downs, deaths, score, ping;
         public RawImage money;
         public readonly WeaponCell[] weapons = new WeaponCell[WeaponColumns];
@@ -65,7 +74,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private RectTransform rankHeld, rankKills, rankKept;
     private RawImage rankBadge, rankNext;
     private TextMeshProUGUI rankTitle, rankLeft, rankRight, rankWorth;
-    private bool perksDirty = true;
+    // Whose deck is under the table (null: this PC's own player's), and what of it is drawn there now.
+    private PlayerMovement viewed;
+    private PlayerTally drawnDeck;
+    private int drawnCards = -1;
+    private static readonly Color DeckOff = new Color(.055f, .055f, .065f, .86f), DeckOn = new Color(1f, 1f, 1f, .2f);
     private ObjectiveLogPanel objectives;
     private Volume blur;
     private WaveManager waves;
@@ -132,7 +145,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
         perkCaption.text = Texts.Get("score.perks");
         perkRow = FeelUI.Rect("Perks", footer);
         perkRow.anchoredPosition = new Vector2(0f, -148f - RankDrop);
-        PlayerPerks.Changed += MarkPerks;
 
         blur = host.AddComponent<Volume>();
         blur.isGlobal = true;
@@ -271,7 +283,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
         // short of the kills column.
         float classSize = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "classIcon", 30f));
         float textLeft = PlayerColumn + classSize + Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "classGap", 8f));
-        float textWidth = KillsAt - textLeft - 10f;
+        // The deck chip stands at the column's right end, and the name ends short of it.
+        float deckWidth = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "deckWidth", 46f));
+        float deckLeft = KillsAt - 10f - deckWidth;
+        float textWidth = deckLeft - textLeft - 8f;
+        BuildDeck(row, index, deckLeft, deckWidth, Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "deckHeight", 30f)));
         var classRect = FeelUI.Rect("Class", row.root);
         classRect.anchorMin = classRect.anchorMax = new Vector2(0f, .5f);
         classRect.anchoredPosition = new Vector2(PlayerColumn + classSize * .5f, 0f);
@@ -312,6 +328,48 @@ public sealed class ScoreboardHUD : MonoBehaviour
         return row;
     }
 
+    // A row's deck chip: a leaning plate that takes the pointer where it is drawn (KitSkew filters its square), an edge
+    // that lights under the pointer, two small cards and the number of cards held.
+    private void BuildDeck(Row row, int index, float left, float width, float height)
+    {
+        const float Slant = 6f;
+        var chip = FeelUI.Rect("Deck", row.root);
+        chip.anchorMin = chip.anchorMax = new Vector2(0f, .5f);
+        chip.anchoredPosition = new Vector2(left + width * .5f, 0f);
+        chip.sizeDelta = new Vector2(width, height);
+        var edgeRect = KitStyle.Stretch("Edge", chip);
+        edgeRect.sizeDelta = new Vector2(2f, 2f);
+        var edge = KitStyle.Fill(edgeRect, Color.white);
+        KitSkew.On(edge, Slant);
+        row.deckPlate = KitStyle.Fill(KitStyle.Stretch("Plate", chip), DeckOff);
+        KitSkew.On(row.deckPlate, Slant);
+        row.deckPlate.raycastTarget = true;
+        KitStyle.Bar("Card Behind", chip, new Vector2(9f, height * .5f - 9f), new Vector2(11f, 15f), KitStyle.Faint);
+        row.deckCard = KitStyle.Bar("Card", chip, new Vector2(13f, height * .5f - 6f), new Vector2(11f, 15f), Soft);
+        row.deckCount = KitStyle.Flat(KitStyle.TopLeft("Count", chip, new Vector2(26f, 0f), new Vector2(Mathf.Max(0f, width - 30f), height)), "0", 15f,
+            TextAlignmentOptions.Midline);
+        var button = chip.gameObject.AddComponent<Button>();
+        // The edge is what shows the pointer on the chip: unseen until then.
+        button.targetGraphic = edge;
+        var tint = button.colors;
+        tint.normalColor = tint.selectedColor = tint.disabledColor = new Color(1f, 1f, 1f, 0f);
+        tint.highlightedColor = new Color(1f, 1f, 1f, .85f);
+        tint.pressedColor = KitStyle.Accent;
+        tint.fadeDuration = .06f;
+        button.colors = tint;
+        button.navigation = new Navigation { mode = Navigation.Mode.None };
+        button.onClick.AddListener(() => View(index));
+    }
+
+    // A row's deck chip was pressed: the deck under the table is that player's; their own row, or the same chip again,
+    // makes it this PC's own player's.
+    private void View(int index)
+    {
+        var player = index >= 0 && index < shown.Count ? shown[index] : null;
+        viewed = player == null || player.IsLocal || player == viewed ? null : player;
+        refreshLeft = 0f;
+    }
+
     private void LateUpdate()
     {
         if (group == null) return;
@@ -328,7 +386,8 @@ public sealed class ScoreboardHUD : MonoBehaviour
         blur.weight = next;
         Openness = next;
         objectives.SetReveal(next);
-        if (next <= 0f) { group.gameObject.SetActive(false); return; }
+        // Closed: the next time it opens, the deck under the table is this player's own again.
+        if (next <= 0f) { group.gameObject.SetActive(false); viewed = null; return; }
         refreshLeft -= Time.unscaledDeltaTime;
         if (refreshLeft > 0f) return;
         refreshLeft = RefreshSeconds;
@@ -345,6 +404,8 @@ public sealed class ScoreboardHUD : MonoBehaviour
         else InputHold.Release(this);
         group.interactable = group.blocksRaycasts = on;
         if (pointerHint != null) pointerHint.text = Texts.Get(on ? "score.pointer.hide" : "score.pointer.show");
+        // A pointer put away never "leaves" the badge it was on: its card's panel is taken down here.
+        if (!on) PerkTooltip.HideOn(group.transform);
     }
 
     private void Refresh()
@@ -368,15 +429,30 @@ public sealed class ScoreboardHUD : MonoBehaviour
         played.text = Texts.Format("score.played", (seconds / 60).ToString("00"), (seconds % 60).ToString("00"));
         if (tracker == null) tracker = SceneOne<MissionTracker>.Get();
         objectives.Refresh(tracker);
-        if (perksDirty)
-        {
-            perksDirty = false;
-            var badges = PerkBadge.Row(perkRow, PlayerPerks.Held(), 44f, 10f);
-            perkCaption.gameObject.SetActive(badges.Count > 0);
-        }
+        RefreshDeck();
     }
 
-    private static void Fill(Row row, PlayerMovement player)
+    // The deck under the table: this PC's own player's, or the player's whose chip was pressed while they are still on
+    // the board. Drawn again only when it is another deck or its cards changed (a pick, a class picked, their PC's word).
+    private void RefreshDeck()
+    {
+        if (viewed != null && (!shown.Contains(viewed) || !viewed.TryGetComponent(out PlayerTally _))) viewed = null;
+        TryGetComponent(out PlayerTally own);
+        var deck = viewed != null ? viewed.GetComponent<PlayerTally>() : own;
+        if (deck == null) return;
+        var cards = deck.Cards;
+        if (deck == drawnDeck && deck.CardsVersion == drawnCards) return;
+        drawnDeck = deck;
+        drawnCards = deck.CardsVersion;
+        PerkTooltip.HideOn(group.transform);
+        PerkBadge.Row(perkRow, cards, 44f, 10f, true, TableWidth);
+        // "내 능력" over this player's own cards (nothing while they hold none), "<name>의 능력" over another's.
+        string none = cards.Count == 0 ? "  ·  " + Texts.Get("score.perks.none") : "";
+        perkCaption.text = deck == own ? Texts.Get("score.perks") : Texts.Format("score.perks.of", PlayerTally.ColoredNameOf(viewed)) + none;
+        perkCaption.gameObject.SetActive(deck != own || cards.Count > 0);
+    }
+
+    private void Fill(Row row, PlayerMovement player)
     {
         if (!player.TryGetComponent(out PlayerTally tally)) return;
         row.seat.color = tally.Color;
@@ -393,6 +469,12 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.classIcon.enabled = classPicture != null;
         row.character.text = title.Length == 0 ? character
             : "<color=#" + ColorUtility.ToHtmlStringRGB(classColour) + ">" + title + "</color>" + (character.Length > 0 ? "  ·  " + character : "");
+        // Their deck's chip: the front card in their class's colour, how many cards, lit while theirs is the deck shown.
+        int held = tally.Cards.Count;
+        row.deckCard.color = classColour;
+        row.deckCount.text = held.ToString();
+        row.deckCount.color = held > 0 ? KitStyle.Text : Soft;
+        row.deckPlate.color = viewed == player ? DeckOn : DeckOff;
         row.kills.text = tally.Kills.ToString();
         row.executions.text = tally.Executions.ToString();
         row.downs.text = tally.Downs.ToString();
@@ -425,14 +507,11 @@ public sealed class ScoreboardHUD : MonoBehaviour
         }
     }
 
-    private void MarkPerks() => perksDirty = true;
-
     // Switched off with the pointer out (a scene's end, the player's body taken away): the pointer goes back.
     private void OnDisable() => SetPointer(false);
 
     private void OnDestroy()
     {
-        PlayerPerks.Changed -= MarkPerks;
         Openness = 0f;
         if (ownsShow) show?.Disable();
         if (group != null) Destroy(group.gameObject);

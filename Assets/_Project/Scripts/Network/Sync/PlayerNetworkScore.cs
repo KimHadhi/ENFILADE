@@ -35,8 +35,14 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     // nobody is told a colour and nobody's screen can differ. It replaced the seat colour each PC took from the id.
     private readonly NetworkVariable<uint> colourWish = new NetworkVariable<uint>(0u,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    // The cards they hold now and their levels, as "id:level;id:level" (PlayerPerks.HeldText): by card id, never by place
+    // in the table, so a mod's cards travel too and a PC without them reads the rest. The big string is sent only when
+    // the deck changes; a class's ten cards and everyone's seven are about 400 bytes of it.
+    private readonly NetworkVariable<FixedString4096Bytes> deck = new NetworkVariable<FixedString4096Bytes>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private PlayerTally tally;
     private float nextPing;
+    private int deckSent = -1;
 
     public override void OnNetworkSpawn()
     {
@@ -52,9 +58,11 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         numbers.OnValueChanged += OnNumbersChanged;
         classId.OnValueChanged += OnClassChanged;
         colourWish.OnValueChanged += OnWishChanged;
+        deck.OnValueChanged += OnDeckChanged;
         tally.ShowName(displayName.Value.ToString());
         tally.ShowClass(classId.Value.ToString());
         tally.ShowWish(colourWish.Value);
+        tally.ShowCards(deck.Value.ToString());
         Show(numbers.Value);
     }
 
@@ -64,6 +72,7 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         numbers.OnValueChanged -= OnNumbersChanged;
         classId.OnValueChanged -= OnClassChanged;
         colourWish.OnValueChanged -= OnWishChanged;
+        deck.OnValueChanged -= OnDeckChanged;
         PlayerColours.Changed();
     }
 
@@ -73,6 +82,7 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
         displayName.Value = new FixedString64Bytes(Clip(tally.DisplayName));
         classId.Value = new FixedString32Bytes(Clip(tally.ClassId));
         colourWish.Value = tally.Wish;
+        SendDeck();
         if (Time.unscaledTime >= nextPing)
         {
             nextPing = Time.unscaledTime + PingInterval;
@@ -141,6 +151,23 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     private void OnNameChanged(FixedString64Bytes previous, FixedString64Bytes current) => tally.ShowName(current.ToString());
     private void OnClassChanged(FixedString32Bytes previous, FixedString32Bytes current) => tally.ShowClass(current.ToString());
     private void OnWishChanged(uint previous, uint current) => tally.ShowWish(current);
+    private void OnDeckChanged(FixedString4096Bytes previous, FixedString4096Bytes current) => tally.ShowCards(current.ToString());
+
+    // The owner's deck in play, written out again only when it changed (a pick, a class picked, the cards cleared).
+    private void SendDeck()
+    {
+        int version = PlayerPerks.DeckVersion;
+        if (deckSent == version) return;
+        deckSent = version;
+        string held = PlayerPerks.HeldText();
+        // A deck too long for the string (a mod with very many cards) is cut at a whole card, so what arrives still reads.
+        while (System.Text.Encoding.UTF8.GetByteCount(held) > DeckBytes && held.LastIndexOf(';') > 0) held = held.Substring(0, held.LastIndexOf(';'));
+        if (System.Text.Encoding.UTF8.GetByteCount(held) > DeckBytes) held = "";
+        if (deck.Value.ToString() != held) deck.Value = new FixedString4096Bytes(held);
+    }
+
+    // What the deck's string holds (FixedString4096Bytes keeps 4093 bytes of text).
+    private const int DeckBytes = 4000;
     private void OnNumbersChanged(Numbers previous, Numbers current) => Show(current);
 
     private void Show(in Numbers now)
