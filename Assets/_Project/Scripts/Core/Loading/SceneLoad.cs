@@ -89,8 +89,9 @@ public static class SceneLoad
     }
 
     // How hard the loading thread works while the screen is up (Unity's own steps: Low, BelowNormal, Normal, High).
-    // High hands the most of each frame to loading, which nobody sees under the screen.
-    private static ThreadPriority Priority()
+    // High hands the most of each frame to loading, which nobody sees under the screen. A room's own loads take the
+    // same (SceneWarmup), so a room does not load slower than a game alone.
+    internal static ThreadPriority Priority()
     {
         if (GameTables.TryGetRow(TableName, TableRow, out var row) && row.TryGetValue("priority", out string named)
             && Enum.TryParse(named.Trim(), true, out ThreadPriority picked))

@@ -78,6 +78,9 @@ public sealed class SceneWarmup : MonoBehaviour
     private CombatRehearsal rehearsal;
     private NetworkSceneManager hooked;
     private AsyncOperation networkLoad;
+    // What Unity's loading priority was before a room's load raised it, put back when that load is done.
+    private ThreadPriority priorityBefore;
+    private bool priorityRaised;
     private FontWarmup raisedFonts;
     private float wokeAt, raisedBudget;
     private int raisedChunk;
@@ -171,7 +174,12 @@ public sealed class SceneWarmup : MonoBehaviour
             if (hooked != null) hooked.OnSceneEvent += OnNetworkScene;
         }
         if (networkLoad == null) return;
-        if (networkLoad.isDone) networkLoad = null;
+        if (networkLoad.isDone)
+        {
+            networkLoad = null;
+            if (priorityRaised) Application.backgroundLoadingPriority = priorityBefore;
+            priorityRaised = false;
+        }
         else LoadingScreen.Report(SceneLoad.ReadShare * Mathf.Clamp01(networkLoad.progress / .9f), "loading.stage.scene");
     }
 
@@ -185,6 +193,13 @@ public sealed class SceneWarmup : MonoBehaviour
         LoadingScreen.Show(change.SceneName);
         LoadingScreen.Report(0f, "loading.stage.scene");
         networkLoad = change.AsyncOperation;
+        // A room's load is read as hard as a load made alone (Loading.csv Load.priority). Netcode starts it at Unity's own
+        // setting, which hands loading a few milliseconds of each frame: slow at the best of times, and all but stopped
+        // on a host whose window is behind another and drawing few frames (user, 2026-11-18: "호스트가 창 전환(Alt+Tab)
+        // 시 허브 및 맵 전환 진행이 멈추는"; the frames there are an inference, FocusPulse's log line says).
+        if (!priorityRaised) priorityBefore = Application.backgroundLoadingPriority;
+        priorityRaised = true;
+        Application.backgroundLoadingPriority = SceneLoad.Priority();
     }
 
     // ---- The steps ----
