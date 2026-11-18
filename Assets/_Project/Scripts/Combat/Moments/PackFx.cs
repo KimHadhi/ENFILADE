@@ -42,10 +42,12 @@ public sealed class PackFx : MonoBehaviour
 
     /// <summary>
     /// Plays <paramref name="use"/> at <paramref name="at"/>, its forward along <paramref name="facing"/>.
-    /// <paramref name="self"/>: it goes off at this PC's own eye (their own muzzle). Returns the copy (a flying round is
-    /// moved by its caller), or null when the use is off or its prefab is missing.
+    /// <paramref name="self"/>: it goes off at this PC's own eye (their own muzzle). <paramref name="ride"/>: what it goes
+    /// off on and stays on while it lasts (a gun's muzzle: a burst left at the point in the world where the shot was fired
+    /// stood behind the gun as the gun moved on; the user, 2026-11-18: "총구 위치와 어긋나는 문제"). Returns the copy (a
+    /// flying round is moved by its caller), or null when the use is off or its prefab is missing.
     /// </summary>
-    public static GameObject Play(string use, Vector3 at, Quaternion facing, bool self = false)
+    public static GameObject Play(string use, Vector3 at, Quaternion facing, bool self = false, Transform ride = null)
     {
         if (!Application.isPlaying || string.IsNullOrEmpty(use) || !On(use)) return null;
         var library = PackFxLibrary.Instance;
@@ -88,6 +90,8 @@ public sealed class PackFx : MonoBehaviour
                 life.systems = copy.GetComponentsInChildren<ParticleSystem>();
             }
         }
+        // On what it rides, at the place and size it was just given; a kept copy played again elsewhere leaves its last ride.
+        if (copy.transform.parent != ride) copy.transform.SetParent(ride, true);
         life.play = ++lastPlay;
         life.stopped = false;
         float now = Time.time, stopAfter = Number(use, "stopAfter", -1f), lasts = Number(use, "life", 2f);
@@ -147,6 +151,8 @@ public sealed class PackFx : MonoBehaviour
         if (!pools.TryGetValue(keptAs, out var kept)) pools[keptAs] = kept = new Stack<PackFx>();
         if (kept.Count >= keepMost) return false;
         play = 0;
+        // Off what it rode: a kept copy must outlive the gun it went off on.
+        if (transform.parent != null) transform.SetParent(null, true);
         gameObject.SetActive(false);
         kept.Push(this);
         return true;

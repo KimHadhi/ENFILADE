@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Guns' shots in a bought pack's looks, on every PC (Realistic Gunslinger): the Desperado's own (the user, 2026-11-13: "총알
-/// 이펙트도 데스페라도용으로 멋진 거 쓸 만한데?"), and every other gun's by its class (the user, 2026-11-12, as the manager
-/// put it: snipers and DMRs in Piercing Shot, pistols and SMGs in Light, shotguns in Shotgun). A gun reads a row of
-/// Tables/PackFx.csv (RowOf): its own, named after the gun, else its class's. Its class is its own `class` row, else what
-/// its Weapons.csv numbers say (ClassOf): more than one pellet a Shotgun, a single-shot gun reaching marksmanRange a
-/// Marksman, one whose penetration is no more than lightPenetration a Light, anything else a Rifle, which has no row and
-/// keeps the gun's own flame and tracer. So a gun added to Weapons.csv takes its class's look by itself. At each shot:
-/// - its muzzle use at the muzzle, once a shot: the flash, rings and sparks stand in for the gun's own flame, which
-///   MuzzleFlash then leaves out (Covers), so not with a suppressor or the muzzle effects off, as the flame isn't;
-/// - its shot use at the muzzle, once a shot, along the aim: a shotgun's spray of pellets;
+/// A skill gun's shots in a bought pack's looks, on every PC (Realistic Gunslinger): a Schießhund's Desperado, a class's
+/// own gun loaded only by its bounties (the user, 2026-11-13: "총알 이펙트도 데스페라도용으로 멋진 거 쓸 만한데?"). The pack
+/// is for skills alone (the user, 2026-11-18: "유니티 에셋 스토어에서 구매한 건슬링어 이펙트 에셋은 스킬 전용으로만 사용.
+/// 일반 총기 사격 시 건슬링어 이펙트가 출력되거나 총구 위치와 어긋나는 문제 수정"): from 0.8.286 every other gun wore
+/// it too, by a class guessed from its Weapons.csv numbers, and 21 of the 28 guns fired the pack's muzzle, round and hit
+/// in place of their own flame and tracer. That guess and its rows are gone: an ordinary gun fires with its own flame
+/// (MuzzleFlash, by its row of Tables/MuzzleFlash) and tracer (MuzzleEffects). A gun wears the pack only by a row of
+/// Tables/PackFx.csv named after itself (RowOf). At each of its shots:
+/// - its muzzle use at the muzzle, once a shot, riding the muzzle while it lasts: rings and sparks on top of the gun's
+///   own flame (or in place of it when the row's `flame` is 0), so not with a suppressor or the muzzle effects off;
+/// - its shot use at the muzzle, once a shot, along the aim: a spray;
 /// - its round use, a glowing round with a wake, flown from the muzzle to where the shot struck at the row's speed, in
 ///   place of MuzzleEffects' tracer. From this PC's own muzzle it starts a step out (selfAhead), so it never glares in the eye;
 /// - its hit use where it lands on a foe, once a foe a shot however many pellets struck it, and its miss use (smaller)
@@ -23,8 +24,6 @@ using UnityEngine;
 /// </summary>
 public sealed class PackShots : MonoBehaviour
 {
-    public const string Shotgun = "Shotgun", Marksman = "Marksman", Light = "Light", Rifle = "Rifle";
-    private const string ClassRow = "class";
     private const int MostRounds = 32;
     private static PackShots instance;
     // Each gun's row (its own or its class's), worked out once a table load.
@@ -75,43 +74,34 @@ public sealed class PackShots : MonoBehaviour
         instance = host.AddComponent<PackShots>();
     }
 
-    /// <summary>Whether <paramref name="gun"/>'s shots wear a pack's look (RowOf): its own flame and tracer then step aside.</summary>
+    /// <summary>
+    /// Whether <paramref name="gun"/>'s shots wear the pack's look (RowOf): the pack's round then flies in place of the
+    /// gun's own tracer (MuzzleEffects), which steps aside.
+    /// </summary>
     public static bool Covers(WeaponData gun) => RowOf(gun) != null;
 
     /// <summary>
-    /// The Tables/PackFx.csv row <paramref name="gun"/>'s shots read: its own when it has a round or a shot there, else its
-    /// class's (ClassOf); null when neither has, or its own `on` is 0.
+    /// Whether <paramref name="gun"/>'s own flame still shows at its muzzle (MuzzleFlash): always for a gun the pack doesn't
+    /// cover, and for a covered one unless its row's `flame` cell is 0 (the pack's muzzle burst then stands in for it).
+    /// </summary>
+    public static bool OwnFlame(WeaponData gun)
+    {
+        string row = RowOf(gun);
+        return row == null || PackFx.Number(row, "flame", 1f) >= .5f;
+    }
+
+    /// <summary>
+    /// The Tables/PackFx.csv row <paramref name="gun"/>'s shots read: the one named after the gun, when it has a round or
+    /// a shot there and its `on` isn't 0; null for every other gun. Only a gun that is itself a skill has one (a
+    /// Schießhund's Desperado): ordinary guns fire with their own flame and tracer.
     /// </summary>
     public static string RowOf(WeaponData gun)
     {
         if (gun == null) return null;
         if (rows.TryGetValue(gun, out string known)) return known;
-        string row = null;
-        if (PackFx.Number(gun.name, "on", 1f) >= .5f)
-        {
-            if (Looks(gun.name)) row = gun.name;
-            else
-            {
-                string kind = ClassOf(gun);
-                if (PackFx.Number(kind, "on", 1f) >= .5f && Looks(kind)) row = kind;
-            }
-        }
+        string row = PackFx.Number(gun.name, "on", 1f) >= .5f && Looks(gun.name) ? gun.name : null;
         rows[gun] = row;
         return row;
-    }
-
-    /// <summary>
-    /// The class a gun's look goes by: its own `class` row in Tables/PackFx.csv, else from its Weapons.csv numbers
-    /// (Shotgun, Marksman, Light or Rifle; the thresholds are the `class` rows).
-    /// </summary>
-    public static string ClassOf(WeaponData gun)
-    {
-        string own = PackFx.Text(gun.name, ClassRow);
-        if (!string.IsNullOrEmpty(own)) return own;
-        if (gun.Pellets > 1) return Shotgun;
-        if (gun.FireMode == WeaponFireMode.SemiAutomatic && gun.Range >= PackFx.Number(ClassRow, "marksmanRange", 120f)) return Marksman;
-        if (gun.Penetration <= PackFx.Number(ClassRow, "lightPenetration", 14f)) return Light;
-        return Rifle;
     }
 
     private static bool Looks(string row) => !string.IsNullOrEmpty(PackFx.Text(row, "round")) || !string.IsNullOrEmpty(PackFx.Text(row, "shot"));
@@ -171,13 +161,15 @@ public sealed class PackShots : MonoBehaviour
         var facing = Quaternion.LookRotation(way);
         if (shot.Pellet == 0)
         {
-            // The flash, rings and sparks, once a shot however many pellets, in place of the gun's own flame: so not where
-            // that would be left out (MuzzleFlash), a suppressor or the muzzle effects off or a gun with no flame.
-            if (!controller.Suppressed && GunFeelSettings.Instance.muzzleEffects && gun.MuzzleFlashScale > 0f)
-                PackFx.Play(PackFx.Text(row, "muzzle"), shot.Origin, facing, self);
-            // A shotgun's spray, once a shot, along where it was aimed.
+            // What goes off at the muzzle rides the muzzle while it lasts, as the gun's own flame does: left at the point
+            // in the world the shot was fired from, a burst of a second stood behind a gun that had moved on.
+            Transform muzzle = controller.MuzzlePoint != null && controller.MuzzlePoint.gameObject.activeInHierarchy ? controller.MuzzlePoint : null;
+            // The rings and sparks, once a shot however many pellets: not with a suppressor on or the muzzle effects off.
+            if (!controller.Suppressed && GunFeelSettings.Instance.muzzleEffects)
+                PackFx.Play(PackFx.Text(row, "muzzle"), shot.Origin, facing, self, muzzle);
+            // A spray, once a shot, along where it was aimed.
             Vector3 aim = shot.Direction.sqrMagnitude > 1e-6f ? shot.Direction.normalized : way;
-            PackFx.Play(PackFx.Text(row, "shot"), shot.Origin, Quaternion.LookRotation(aim), self);
+            PackFx.Play(PackFx.Text(row, "shot"), shot.Origin, Quaternion.LookRotation(aim), self, muzzle);
         }
         string landing = struck ? LandingOf(row, controller, shot.Trace.Hit.collider) : "";
         var onward = Onward(row, controller, shot);

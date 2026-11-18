@@ -141,11 +141,12 @@ public sealed class MuzzleLight : MonoBehaviour
         var settings = GunFeelSettings.Instance;
         var data = weapon != null ? weapon.EquippedData : null;
         Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
-        // A suppressor throws no flash of light.
-        if (!settings.muzzleEffects || direct == null || data == null || data.MuzzleFlashScale <= 0f
-            || muzzle == null || !muzzle.gameObject.activeInHierarchy || weapon.Suppressed) return;
+        if (!settings.muzzleEffects || direct == null || data == null || muzzle == null || !muzzle.gameObject.activeInHierarchy) return;
+        // As bright as this shot's flame says (its row of Tables/MuzzleFlash, read where the flame reads it): a shotgun's
+        // lights the room more than a pistol's, and a suppressor's puff throws none.
+        float size = MuzzleFlashLooks.Of(data, weapon.Suppressed).Light;
+        if (size <= 0f) return;
         warmFrames = 0;
-        float size = Mathf.Min(1.5f, data.MuzzleFlashScale);
         float brightness = settings.muzzleLightIntensity * size * (IsMine ? 1f : settings.muzzleLightOthers);
         bool shadows = IsMine && settings.muzzleLightShadows;
         directIntensity = brightness;

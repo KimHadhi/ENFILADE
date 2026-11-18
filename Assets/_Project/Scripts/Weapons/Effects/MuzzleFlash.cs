@@ -55,15 +55,16 @@ public sealed class MuzzleFlash : MonoBehaviour
         // One flame per shot, however many pellets it threw.
         if (shot.Pellet > 0) return;
         var data = weapon != null ? weapon.EquippedData : null;
-        // A gun whose shots wear a bought pack's look throws the pack's muzzle burst instead of this flame, not both
-        // (PackShots: the Desperado's Realistic Gunslinger muzzle, 2026-11-13).
-        if (PackShots.Covers(data)) return;
+        // A skill's gun whose pack row says its muzzle burst stands in for the flame throws none of its own (PackShots).
+        if (data == null || !PackShots.OwnFlame(data)) return;
         Transform muzzle = weapon != null ? weapon.MuzzlePoint : null;
-        // A suppressor throws no flame.
-        if (flame == null || data == null || data.MuzzleFlashScale <= 0f || !GunFeelSettings.Instance.muzzleEffects
-            || muzzle == null || !muzzle.gameObject.activeInHierarchy || weapon.Suppressed) return;
+        if (flame == null || !GunFeelSettings.Instance.muzzleEffects || muzzle == null || !muzzle.gameObject.activeInHierarchy) return;
+        // What this gun's shot throws: its own row of Tables/MuzzleFlash, or with a suppressor on the small dim puff that
+        // row points at (a suppressed shot is not nothing). A look of no size throws none.
+        var look = MuzzleFlashLooks.Of(data, weapon.Suppressed);
+        if (look.Size <= 0f) return;
         Mount(muzzle);
-        flame.Fire(data.MuzzleFlashScale, ViewDistance(muzzle));
+        flame.Fire(look, ViewDistance(muzzle));
     }
 
     // After WeaponController (300) has posed the gun and fired this frame's shots.

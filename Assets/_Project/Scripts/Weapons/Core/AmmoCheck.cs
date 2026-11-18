@@ -23,33 +23,9 @@ internal static class AmmoCheck
     private const string Request = "Temp/enfilade-ammocheck.request", ReportPath = "Logs/ammo-check.txt";
     // The clock the rules are stepped by (s): finer than any frame, so a moment is never stepped over by more than this.
     private const float Step = 1f / 240f;
-    private static double next;
-    private static bool ran;
 
-    static AmmoCheck() => EditorApplication.update += Tick;
-
-    private static void Tick()
-    {
-        double now = EditorApplication.timeSinceStartup;
-        if (now < next) return;
-        next = now + .5;
-        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
-        bool asked = File.Exists(Request);
-        if (!asked && ran) return;
-        if (asked)
-        {
-            try
-            {
-                File.Delete(Request);
-            }
-            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
-            {
-                return;
-            }
-        }
-        ran = true;
-        Run();
-    }
+    // It keeps itself alive on the editor's update.
+    static AmmoCheck() => new CheckOnRequest(Request, Run);
 
     // What the checks found: a line per rule, the failures spelt out.
     private sealed class Report

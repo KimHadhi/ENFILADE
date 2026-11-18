@@ -10,8 +10,11 @@ using UnityEngine.Rendering;
 /// half the shots leave a faint salmon afterglow a frame longer, and zero to two sparks fly out. Seen from further than
 /// an arm's length (the F5 view, a teammate) it is drawn up to 1.6 times bigger with a thin wisp of smoke, as CS2's
 /// third-person flash outgrows its first-person one. Every shot rolls its own shape.
+/// That is the measured flame, and the prefab holds it (Prefabs/Resources/Combat/MuzzleFlame.prefab). What a given gun's
+/// shot makes of it (a pistol's ball, a sniper's long tongue, a shotgun's wide burst, a suppressor's dim puff) is the
+/// shot's look, a row of Tables/MuzzleFlash whose numbers are shares of this one (MuzzleFlashLooks): how many puffs, how
+/// likely an afterglow and sparks are, how long, wide, hot and solid it is.
 /// One mesh of quads drawn by Hidden/ENFILADE/MuzzleFlame; MuzzleFlash fires it, times it and carries it on the muzzle.
-/// Lives in Prefabs/Resources/Combat/MuzzleFlame.prefab, where its look is tuned.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MuzzleFlame : MonoBehaviour
@@ -34,12 +37,10 @@ public sealed class MuzzleFlame : MonoBehaviour
     [SerializeField, Tooltip("Hidden/ENFILADE/MuzzleFlame.")] private Material material;
 
     [Header("Shape")]
-    [SerializeField, Min(0f), Tooltip("Size at a gun's Muzzle Flash Scale 1, as the shooter sees it.")]
+    [SerializeField, Min(0f), Tooltip("Size of a look of size 1 (Tables/MuzzleFlash), as the shooter sees it.")]
     private float size = 1.35f;
     [SerializeField, Range(0f, .5f), Tooltip("Each shot is up to this share smaller or larger.")]
     private float sizeJitter = .21f;
-    [SerializeField, Range(1, MostPuffs)] private int fewestPuffs = 4;
-    [SerializeField, Range(1, MostPuffs)] private int mostPuffs = 6;
 
     [Header("Timing (seconds of the shooter's time)")]
     [SerializeField, Min(.005f), Tooltip("How long the puffs stay bright while they swell and cool. CS2: three frames at 60 fps.")]
@@ -48,11 +49,6 @@ public sealed class MuzzleFlame : MonoBehaviour
     private float plainEnd = .052f;
     [SerializeField, Min(.005f), Tooltip("When the faint salmon afterglow is gone, in the shots that leave one.")]
     private float afterglowEnd = .068f;
-    [SerializeField, Range(0f, 1f)] private float afterglowChance = .55f;
-
-    [Header("Sparks")]
-    [SerializeField, Range(0f, 1f), Tooltip("Chance a shot throws any; four in ten of those throw two.")]
-    private float sparkChance = .5f;
 
     [Header("Seen from afar (F5 view, teammates)")]
     [SerializeField, Min(0f)] private float farScale = 1.6f;
@@ -68,6 +64,8 @@ public sealed class MuzzleFlame : MonoBehaviour
         public uint seed;
         public float age, scale;
         public bool far, live;
+        // What this shot's flame is like (MuzzleFlashLooks): its gun's row, or the suppressed one.
+        public MuzzleFlashLook look;
     }
 
     private struct Element
@@ -164,8 +162,8 @@ public sealed class MuzzleFlame : MonoBehaviour
         if (mesh != null) Destroy(mesh);
     }
 
-    /// <summary>One shot. scale: the gun's Muzzle Flash Scale; viewDistance: how far the muzzle is from the camera (m).</summary>
-    public void Fire(float scale, float viewDistance)
+    /// <summary>One shot. look: the flame it throws (MuzzleFlashLooks); viewDistance: how far the muzzle is from the camera (m).</summary>
+    public void Fire(in MuzzleFlashLook look, float viewDistance)
     {
         Build();
         float far = Mathf.InverseLerp(nearDistance, Mathf.Max(nearDistance + .01f, farDistance), viewDistance);
@@ -173,8 +171,9 @@ public sealed class MuzzleFlame : MonoBehaviour
         nextShot = (nextShot + 1) % MostShots;
         unchecked { shot.seed = (++fired * 2654435761u) ^ (uint)GetInstanceID() * 2246822519u; }
         shot.age = 0f;
-        shot.scale = scale * Mathf.Lerp(1f, farScale, far);
+        shot.scale = look.Size * Mathf.Lerp(1f, farScale, far);
         shot.far = far >= .5f;
+        shot.look = look;
         shot.live = true;
     }
 
@@ -202,32 +201,39 @@ public sealed class MuzzleFlame : MonoBehaviour
     }
 
     private float Lifetime(in Shot shot)
-        => Mathf.Max(Mathf.Max(plainEnd, afterglowEnd), Mathf.Max(SparkLife, shot.far ? smokeLife : 0f));
+        => Mathf.Max(Mathf.Max(plainEnd, afterglowEnd) * shot.look.Bright, Mathf.Max(SparkLife, Smokes(shot) ? smokeLife : 0f));
+
+    // Its wisp of smoke shows: from further off, and at the shooter's own eye for a look that says so (a suppressor's puff).
+    private bool Smokes(in Shot shot) => (shot.far || shot.look.NearSmoke) && smokeAlpha * shot.look.Smoke > 0f;
 
     // Mockup A, shot by shot: everything is rolled in the same order every frame, and only then is what is over left out.
     private int Add(ref Shot shot, int count)
     {
         var dice = new Dice(shot.seed);
+        var look = shot.look;
         float scale = shot.scale, age = shot.age;
         float burst = scale * size * dice.Range(1f - sizeJitter, 1f + sizeJitter);
-        bool afterglow = dice.Next() < afterglowChance;
-        float end = afterglow ? afterglowEnd : plainEnd, swell = Mathf.Clamp01(age / brightTime);
-        int least = Mathf.Min(fewestPuffs, mostPuffs), puffs = Mathf.Min(mostPuffs, least + (int)(dice.Next() * (mostPuffs - least + 1)));
+        bool afterglow = dice.Next() < look.Afterglow;
+        // The look's own pace: a sniper's flame hangs a little, a suppressor's puff is gone sooner.
+        float bright = brightTime * look.Bright;
+        float end = (afterglow ? afterglowEnd : plainEnd) * look.Bright, swell = Mathf.Clamp01(age / bright);
+        int least = Mathf.Min(look.FewestPuffs, MostPuffs), most = Mathf.Clamp(look.MostPuffs, least, MostPuffs);
+        int puffs = Mathf.Min(most, least + (int)(dice.Next() * (most - least + 1)));
         for (int i = 0; i < MostPuffs; i++)
         {
             float along = i / (float)Mathf.Max(1, puffs - 1), clamped = Mathf.Min(along, 1f);
-            float start = (.02f + .15f * Mathf.Pow(clamped, .9f)) * burst * dice.Range(.85f, 1.15f);
-            float drift = (.7f + 1.3f * along) * scale * size;
-            float radius = (.036f + .03f * Mathf.Sin(Mathf.PI * (clamped * .8f + .2f))) * burst * dice.Range(.8f, 1.2f);
-            float x = dice.Range(-1f, 1f) * .013f * burst, y = dice.Range(-1f, 1f) * .013f * burst;
-            float heat0 = (.96f - .26f * along) * dice.Range(.9f, 1.08f), seed = dice.Next() * 97f, turn = dice.Next() * 6.283f;
+            float start = (.02f + .15f * Mathf.Pow(clamped, .9f)) * burst * look.Length * dice.Range(.85f, 1.15f);
+            float drift = (.7f + 1.3f * along) * scale * size * look.Length;
+            float radius = (.036f + .03f * Mathf.Sin(Mathf.PI * (clamped * .8f + .2f))) * burst * look.Width * dice.Range(.8f, 1.2f);
+            float x = dice.Range(-1f, 1f) * .013f * burst * look.Width, y = dice.Range(-1f, 1f) * .013f * burst * look.Width;
+            float heat0 = (.96f - .26f * along) * look.Heat * dice.Range(.9f, 1.08f), seed = dice.Next() * 97f, turn = dice.Next() * 6.283f;
             if (i >= puffs || age >= end) continue;
-            float heat = heat0 * (1f - .45f * swell), alpha = 1f;
-            if (age > brightTime)
+            float heat = heat0 * (1f - .45f * swell), alpha = look.Alpha;
+            if (age > bright)
             {
-                float fading = (age - brightTime) / Mathf.Max(.001f, end - brightTime);
+                float fading = (age - bright) / Mathf.Max(.001f, end - bright);
                 heat = heat0 * .4f;
-                alpha = .42f * (1f - fading);
+                alpha = .42f * look.Alpha * (1f - fading);
             }
             count = Push(count, new Element
             {
@@ -236,14 +242,14 @@ public sealed class MuzzleFlame : MonoBehaviour
             });
         }
         // The white-hot heart right at the muzzle, the first two frames.
-        float coreSeed = dice.Next() * 97f, coreTime = brightTime * .68f;
+        float coreSeed = dice.Next() * 97f, coreTime = bright * .68f;
         if (age < coreTime)
             count = Push(count, new Element
             {
-                center = new Vector3(0f, 0f, .012f * burst), halfWidth = .024f * burst, seed = coreSeed, heat = 1.25f,
-                alpha = 1f - age / coreTime * .5f, kind = Puff, rough = .3f, occlusion = .3f
+                center = new Vector3(0f, 0f, .012f * burst), halfWidth = .024f * burst * look.Width, seed = coreSeed, heat = 1.25f * look.Heat,
+                alpha = (1f - age / coreTime * .5f) * look.Alpha, kind = Puff, rough = .3f, occlusion = .3f
             });
-        int sparks = dice.Next() < sparkChance ? (dice.Next() < .6f ? 1 : 2) : 0;
+        int sparks = dice.Next() < look.Sparks ? (dice.Next() < .6f ? 1 : 2) : 0;
         for (int i = 0; i < MostSparks; i++)
         {
             Vector3 heading = Cone(ref dice, .35f);
@@ -257,11 +263,11 @@ public sealed class MuzzleFlame : MonoBehaviour
             });
         }
         float smokeSeed = dice.Next() * 97f;
-        if (shot.far && smokeAlpha > 0f && age < smokeLife)
+        if (Smokes(shot) && age < smokeLife)
             count = Push(count, new Element
             {
                 center = new Vector3(0f, .12f * age, .06f * scale + .28f * age), halfWidth = (.045f + .3f * age) * scale, seed = smokeSeed,
-                alpha = smokeAlpha * (1f - age / smokeLife), kind = Smoke, boil = age * 2f
+                alpha = Mathf.Clamp01(smokeAlpha * look.Smoke) * (1f - age / smokeLife), kind = Smoke, boil = age * 2f
             });
         return count;
     }
@@ -297,8 +303,9 @@ public sealed class MuzzleFlame : MonoBehaviour
         mesh.SetIndexBufferData(indices, 0, 0, indices.Length, Quiet);
         mesh.subMeshCount = 1;
         mesh.SetSubMesh(0, new SubMeshDescriptor(0, 6), Quiet);
-        // The quads open up in the shader, so the bounds hold the biggest flame: far scale, a pistol, the longest drift.
-        mesh.bounds = new Bounds(new Vector3(0f, 0f, .5f), new Vector3(2f, 2f, 2.5f));
+        // The quads open up in the shader, so the bounds hold the biggest flame a look may ask for: far scale, twice the
+        // measured flame's size and length, the longest drift.
+        mesh.bounds = new Bounds(new Vector3(0f, 0f, 1.2f), new Vector3(3f, 3f, 4.4f));
         var filter = GetComponent<MeshFilter>();
         if (filter == null) filter = gameObject.AddComponent<MeshFilter>();
         filter.sharedMesh = mesh;

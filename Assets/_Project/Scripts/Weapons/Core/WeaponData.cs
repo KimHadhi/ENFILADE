@@ -177,6 +177,11 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(0f, 4f)] private float viewPunchFov = .6f;
     [Tooltip("Camera shake added per shot (0..1). Builds up under sustained fire.")]
     [SerializeField, Range(0f, .5f)] private float shakeTrauma = .07f;
+    [Tooltip("The row of Tables/MuzzleFlash its shot's flame reads (rifle, pistol, smg, magnum, lmg, dmr, sniper, shotgun, " +
+        "suppressed for a gun whose suppressor is part of it, none …). Empty: the row its kind stands for (MuzzleFlashLooks).")]
+    [SerializeField] private string flash = "";
+    // No longer read: a shot's flame is a row of Tables/MuzzleFlash (MuzzleFlashLooks), not a number of each gun's own.
+    // The field stays only because the gun assets and DesperadoSetup still write it; it goes when that line does.
     [SerializeField, Range(0f, 3f)] private float muzzleFlashScale = 1f;
     [SerializeField] private bool ejectShells = true;
     [Tooltip("Synthesized shot used when Fire Sounds is empty.")]
@@ -283,7 +288,8 @@ public sealed class WeaponData : ScriptableObject
     public Vector3 ViewPunch => viewPunch;
     public float ViewPunchFov => Mathf.Clamp(viewPunchFov, 0f, 4f);
     public float ShakeTrauma => Mathf.Clamp(shakeTrauma, 0f, .5f);
-    public float MuzzleFlashScale => Mathf.Clamp(muzzleFlashScale, 0f, 3f);
+    /// <summary>The Tables/MuzzleFlash row its flame reads, or empty for the one its kind stands for (MuzzleFlashLooks.OpenRowOf).</summary>
+    public string Flash => flash ?? "";
     public bool EjectShells => ejectShells;
     public GunSoundProfile SoundProfile => soundProfile;
     public AudioClip[] FireSounds => fireSounds;
