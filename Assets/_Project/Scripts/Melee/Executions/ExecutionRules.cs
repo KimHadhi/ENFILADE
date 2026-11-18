@@ -29,8 +29,37 @@ public sealed class ExecutionRule
     /// which dashes in over the rest.</summary>
     public float Reach { get; internal set; }
     public float LungeReach { get; internal set; }
+    /// <summary>
+    /// How long after its pair begins the blade lands (real s): the pair is played as much faster as that takes
+    /// (ExecutionRules.Timing). 0 or less: at the pair's own timing.
+    /// </summary>
+    public float KillIn { get; internal set; }
+    /// <summary>
+    /// How long after the blade lands the player is let go (real s), the pair's clips easing out over a body that walks
+    /// on. Below 0: at the pair's end, as an execution that takes its time does.
+    /// </summary>
+    public float FreeAfter { get; internal set; } = -1f;
+    /// <summary>The execution cinematic films it, when the player has that camera on (ThirdPersonCamera): a kill over in a moment is no shot.</summary>
+    public bool Film { get; internal set; } = true;
 
     public bool AnyState => string.Equals(State, ExecutionRules.Any, StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
+/// When one execution's moments fall, in real seconds from where its pair (or the knife's own stab) begins: the blade
+/// lands at <see cref="Kill"/>, the player is let go at <see cref="Free"/>, the pair's clips are through at
+/// <see cref="Length"/>; they play <see cref="Pace"/> times their own speed. "The player is free" and "the pair is over"
+/// are two moments: until 2026-11-18 they were one, so a takedown held the player through its whole clip, a second after
+/// the kill.
+/// </summary>
+public readonly struct ExecutionTiming
+{
+    public readonly float Pace, Kill, Free, Length;
+
+    public ExecutionTiming(float pace, float kill, float free, float length)
+    {
+        Pace = pace; Kill = kill; Free = free; Length = length;
+    }
 }
 
 /// <summary>
@@ -134,6 +163,28 @@ public static class ExecutionRules
         return (float)(Math.Atan2(fz * tx - fx * tz, fx * tx + fz * tz) * (180.0 / Math.PI));
     }
 
+    /// <summary>
+    /// When an execution by this rule strikes, lets the player go and ends (a pure function, like Pick: the report lists
+    /// it for every rule). <paramref name="kill"/> and <paramref name="length"/>: its pair's own kill moment and length in
+    /// the clips' seconds, or the knife's own stab's when no pair plays. <paramref name="card"/>: a factor on top that
+    /// makes all of it faster (a Ghost's 빠른 칼, GhostCards.TakedownPace; 1 for none). The rule's killIn sets the pace:
+    /// the clips play as much faster as lands the blade then, so a pair timed again in Blender keeps the moment the
+    /// player feels (the user, 2026-11-18: "전체 암살 모션을 《카운터 스트라이크》 칼 백스탭처럼 빠르고 간결하게 단축").
+    /// Its freeAfter lets the player go that long after the blade, never later than the pair's end. A null rule (a copy
+    /// of someone else's execution before their word comes) plays the pair as it is, to its end.
+    /// </summary>
+    public static ExecutionTiming Timing(ExecutionRule rule, float kill, float length, float card = 1f)
+    {
+        length = Math.Max(.05f, length);
+        kill = Math.Min(Math.Max(0f, kill), length);
+        card = Math.Max(.1f, card);
+        float pace = rule != null && rule.KillIn > 0f && kill > 0f ? kill / rule.KillIn : 1f;
+        pace = Math.Max(.1f, pace * card);
+        float struck = kill / pace, over = length / pace;
+        float free = rule != null && rule.FreeAfter >= 0f ? Math.Min(over, struck + rule.FreeAfter / card) : over;
+        return new ExecutionTiming(pace, struck, Math.Max(struck, free), over);
+    }
+
     /// <summary>An angle brought into -180 (not included) to 180 degrees.</summary>
     public static float Wrap(float degrees)
     {
@@ -171,6 +222,9 @@ public static class ExecutionRules
             Cone = Mathf.Clamp(row.Number("cone", 180f), 0f, 180f),
             Reach = reach,
             LungeReach = Mathf.Max(reach, row.Number("lungeReach", reach)),
+            KillIn = Mathf.Max(0f, row.Number("killIn", 0f)),
+            FreeAfter = row.Number("freeAfter", -1f),
+            Film = row.Flag("film", true),
         };
     }
 }

@@ -11,10 +11,13 @@ using UnityEngine;
 /// away) with the victim's neck and head as it measured them, PlayerNetworkCombat sends that to every other PC, and each
 /// copy plays the same stroke from it (Show); the arms are posed by ExecutionKnifeArm on each body. The draw, the stab and
 /// the sheath sound at the hand on every PC (the knife row's cues). Timing: the strike lands impactTime after the stab
-/// begins, as the execution's hit does, never slower than the stroke was drawn; after it, the stroke runs at its own pace,
-/// or, when a paired execution clip has the arms (ArmsPosedElsewhere as the stab begins), over what is left of the
-/// execution (PlayerExecution.Duration), so the knife is put away and the gun comes back as the pair ends, not while its
-/// clip is still getting the player up.
+/// begins, as the execution's hit does, never slower than the stroke was drawn; after it, the stroke runs at the
+/// execution's own pace (PlayerExecution.Pace: a takedown played fast puts its knife away as fast), or, when a paired
+/// execution clip keeps the player past the stroke's own rest (ArmsPosedElsewhere as the stab begins, an execution that
+/// takes its time), over what is left of the execution (PlayerExecution.Duration), so the knife is put away and the gun
+/// comes back as the pair ends, not while its clip is still getting the player up. A takedown begun while the knife of
+/// the last one is still in hand (not yet at its sheath) starts with it drawn: quick kills one after another never go
+/// back to the hip between them.
 /// A knife with a draw of its own (ClassKnives.OwnDraw: its addon's, the melee slot's drawClip; the user, 2026-11-14: "칼
 /// 뽑을 때 각자 애니메이션이 있을 텐데") is drawn with it: the right arm plays that clip from the eyes first, over the stroke's
 /// draw or a paired clip's arm, quicker than the melee slot plays it (a takedown is quick) and quicker still when the
@@ -215,11 +218,16 @@ public sealed class ExecutionKnife : MonoBehaviour
         Advance(dt);
     }
 
-    // Puts the class's knife in hand and starts the stroke at its draw.
+    // Puts the class's knife in hand and starts the stroke at its draw; with the last stroke's knife still in hand (being
+    // put away, not yet at the sheath) it starts drawn instead, the arms eased from where they are.
     private void Begin(Aim at)
     {
+        bool inHand = playing && stroke != null && knife != null && phase == Phase.Away && clock < stroke.Sheath && hasLast;
+        var from = last;
         knife = ClassKnives.Of(ClassKnives.ClassOf(movement));
-        stroke = KnifeStroke.Of(knife.Motion);
+        var next = KnifeStroke.Of(knife.Motion);
+        inHand &= next == stroke;
+        stroke = next;
         if (stroke == null) { playing = false; return; }
         if (arm == null) arm = ExecutionKnifeArm.Of(movement);
         if (arm != null) arm.Wear(knife);
@@ -228,12 +236,26 @@ public sealed class ExecutionKnife : MonoBehaviour
         aim = at;
         playing = true;
         phase = Phase.Draw;
-        clock = sincePhase = held = 0f;
-        cutting = hasLast = stabSounded = sheathSounded = false;
-        // Its own draw first, when its row names one; it is timed to give the arm back once the stab's timing is known.
-        drawClip = knife.OwnDraw ? KnifeSwing.Of(knife.DrawClip) : null;
+        sincePhase = held = 0f;
+        stabSounded = sheathSounded = false;
         drawClock = sinceBegin = 0f;
         drawPace = DrawPace;
+        if (inHand)
+        {
+            clock = stroke.Ready;
+            cutFrom = from;
+            cutRightFingers.CopyFrom(lastRightFingers);
+            cutLeftFingers.CopyFrom(lastLeftFingers);
+            cutting = true;
+            cutLeft = CutBlend;
+            drawClip = null;
+            drawEnd = -1f;
+            return;
+        }
+        clock = 0f;
+        cutting = hasLast = false;
+        // Its own draw first, when its row names one; it is timed to give the arm back once the stab's timing is known.
+        drawClip = knife.OwnDraw ? KnifeSwing.Of(knife.DrawClip) : null;
         drawEnd = drawClip != null ? drawClip.Length / drawPace : -1f;
         Sound(knife.DrawSound);
     }
@@ -251,10 +273,15 @@ public sealed class ExecutionKnife : MonoBehaviour
             if (execution != null) impact = execution.ImpactTime;
             float lead = Mathf.Max(0f, stroke.Strike - stabFrom);
             rate = lead > impact ? lead / Mathf.Max(.01f, impact) : 1f;
-            // A paired clip has the arms (ExecutionPairPlayer): the pull out, the putting away and the gun's return
-            // fill what is left of the execution, which ends with the pair, so nothing ends before its clip does.
-            float after = ArmsPosedElsewhere && execution != null ? execution.Duration - impact : -1f;
-            afterRate = after > .05f ? Mathf.Clamp((stroke.Length - stroke.Strike) / after, .25f, 4f) : 1f;
+            // After the strike the stroke (the pull out, the putting away, and with its end the gun's return) keeps the
+            // execution's pace: a takedown played fast lets the player go right after its kill, and its knife goes
+            // away as fast behind a player who already walks on. Where a paired clip keeps the player longer than that
+            // (ExecutionPairPlayer, an execution that takes its time), it fills what is left of the execution instead,
+            // so nothing ends before its clip does and the gun comes back as the player is let go.
+            float pace = execution != null ? Mathf.Max(.1f, execution.Pace) : 1f;
+            float rest = stroke.Length - stroke.Strike;
+            float kept = ArmsPosedElsewhere && execution != null ? execution.Duration - impact : 0f;
+            afterRate = kept * pace > rest ? Mathf.Max(.25f, rest / kept) : pace;
             FitDraw();
         }
         else if (next == Phase.Away && clock < stroke.Out)

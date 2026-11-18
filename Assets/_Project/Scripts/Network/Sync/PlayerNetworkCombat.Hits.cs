@@ -70,21 +70,22 @@ public sealed partial class PlayerNetworkCombat
     private void ExecutionStartedRpc() => CombatCueAudio.Play(gameObject, CombatCue.Grab, 1f, true);
 
     private void OnPairBegan(ExecutionPairPlayer.Shared shared)
-        => PairBeganRpc(shared.Pair, shared.Victim, shared.Anchor, shared.Yaw, shared.Clock, shared.Pace);
+        => PairBeganRpc(shared.Pair, shared.Victim, shared.Anchor, shared.Yaw, shared.Clock, shared.Pace, shared.Free);
 
     private void OnPairStopped() => PairStoppedRpc();
 
     // The owner's PC began a paired execution (Tables/Executions.csv) on that zombie, laid there: every other PC plays the
     // same pair at the same place on its copies of the player and the zombie, caught up by the time the word took (the
-    // user's rule: what one sees is what the others see), and as fast as the owner's PC plays it (pace: a Ghost's 빠른 칼).
+    // user's rule: what one sees is what the others see), as fast as the owner's PC plays it (pace: its rule's killIn, a
+    // Ghost's 빠른 칼) and letting the player go at the same moment of the clips (free, s of the clips: ExecutionRules.Timing).
     [Rpc(SendTo.NotMe)]
-    private void PairBeganRpc(byte pair, ulong victim, Vector3 anchor, float yaw, double clock, float pace)
+    private void PairBeganRpc(byte pair, ulong victim, Vector3 anchor, float yaw, double clock, float pace, float free)
     {
         if (executionPairs == null) return;
         GameObject target = null;
         if (victim != 0UL && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(victim, out NetworkObject found)) target = found.gameObject;
         float late = clock > 0d ? Mathf.Max(0f, (float)(NetworkManager.ServerTime.Time - clock)) : 0f;
-        executionPairs.Show(pair, target, anchor, yaw, late, pace);
+        executionPairs.Show(pair, target, anchor, yaw, late, pace, free);
     }
 
     [Rpc(SendTo.NotMe)]

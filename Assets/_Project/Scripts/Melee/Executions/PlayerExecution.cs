@@ -59,13 +59,26 @@ public sealed class PlayerExecution : MonoBehaviour
     public bool IsDashing => IsExecuting && approaching;
     public MeleeCombatTarget Victim => victim;
     /// <summary>How long after the execution proper begins (any dash in over) its blow lands (s): the knife's strike meets it (ExecutionKnife).</summary>
-    public float ImpactTime => Mathf.Min(impactTime, duration);
-    /// <summary>How long after the execution proper begins it ends (s): a paired clip's knife stroke ends with it (ExecutionKnife).</summary>
-    public float Duration => duration;
-    // A paired execution's own timing and blow for this one (ExecutionPairPlayer, Tables/Executions.csv): its kill and
-    // length stand in for impactTime and duration until it ends, when the table's come back; its blow lands on the bone
-    // the knife meets and sends the body the pair's way.
-    private float tableImpact = -1f, tableDuration = -1f;
+    public float ImpactTime => Now.Kill;
+    /// <summary>
+    /// How long after the execution proper begins the player is let go (s): the execution ends there (Ended), whatever is
+    /// left of its pair's clips easing out behind a player who walks on (ExecutionPairPlayer). A rule that keeps the player
+    /// to the pair's end makes the two the same moment.
+    /// </summary>
+    public float Duration => Now.Free;
+    /// <summary>How fast the execution under way plays against its clips' own speed (its rule's killIn, a Ghost's 빠른 칼): the class knife's stroke keeps to it (ExecutionKnife).</summary>
+    public float Pace => Now.Pace;
+    /// <summary>The execution cinematic films the one under way, by its rule (ThirdPersonCamera): a takedown over in a moment is no shot.</summary>
+    public bool Filmed => rule == null || rule.Film;
+    // When this execution's moments fall (ExecutionTiming, real s from where the execution proper begins). Own: by its
+    // rule over the knife's own stab (Player.csv's impactTime and duration), set as it begins. Paired: by its rule over
+    // the pair that plays (ExecutionPairPlayer, Tables/Executions.csv), which stands in until the pair lets go; its blow
+    // lands on the bone the knife meets and sends the body the pair's way. With neither (a copy before its owner's word)
+    // the knife's own stab as the table has it.
+    private ExecutionTiming own, paired;
+    private bool hasOwn, hasPaired;
+    private ExecutionTiming Now => hasPaired ? paired : hasOwn ? own
+        : new ExecutionTiming(1f, Mathf.Min(impactTime, duration), duration, duration);
     private Vector3? strikePoint, strikeAlong;
     private static readonly List<PlayerExecution> executing = new List<PlayerExecution>();
     public event Action<MeleeCombatTarget> Started;
@@ -126,7 +139,7 @@ public sealed class PlayerExecution : MonoBehaviour
         if (player != null && player.IsNetworkDriven)
         {
             // Their PC says when it ends; should that word be lost, the hold lets go on its own.
-            if (IsExecuting && (elapsed += Time.deltaTime) > duration + RemoteGrace) Cancel();
+            if (IsExecuting && (elapsed += Time.deltaTime) > Duration + RemoteGrace) Cancel();
             return;
         }
         if (IsExecuting)
@@ -203,6 +216,10 @@ public sealed class PlayerExecution : MonoBehaviour
         var offered = Offer(target, lunge, out _);
         if (offered == null || !target.TryReserveExecution(this)) return false;
         rule = offered;
+        // By the rule, over the knife's own stab; a pair that plays takes over with its own (Retime) once the dash is in.
+        ForgetPair();
+        own = ExecutionRules.Timing(rule, Mathf.Min(impactTime, duration), duration);
+        hasOwn = true;
         victim = target; elapsed = approachTime = 0f; impacted = false; IsExecuting = true; Candidate = DeathblowCandidate = null;
         // F closes in too (2026-11-13): the class knife is stabbed in by hand (ExecutionKnife), and from F's 2.1 m reach the
         // arm met nothing. The dash stops at dashStopDistance either way.
@@ -242,7 +259,7 @@ public sealed class PlayerExecution : MonoBehaviour
             approaching = false;
         }
         elapsed += dt;
-        if (!impacted && elapsed >= Mathf.Min(impactTime, duration))
+        if (!impacted && elapsed >= ImpactTime)
         {
             impacted = true;
             var vitals = victim.GetComponent<ICombatVitals>();
@@ -255,7 +272,9 @@ public sealed class PlayerExecution : MonoBehaviour
             if (result == DamageResult.Damaged && vitals.Health <= 0f) GrantRewards();
             Impact?.Invoke(victim);
         }
-        if (elapsed >= duration) Cancel();
+        // The player is let go: the execution is over for them, and for everything that asks IsExecuting (their
+        // hands and view, the enemies held back, their being unhurt), though its pair may still be easing out.
+        if (elapsed >= Duration) Cancel();
     }
     private float Gap(MeleeCombatTarget target, out Vector3 toward)
         => BodyGap.Across(player, target != null ? target.GetComponentInChildren<Collider>() : null, out toward);
@@ -278,17 +297,18 @@ public sealed class PlayerExecution : MonoBehaviour
         weapon.AddReserve(Mathf.CeilToInt(weapon.Data.SupplyRounds * Mathf.Clamp01(ammoRestoredFraction)));
     }
     /// <summary>
-    /// A paired execution runs this one (ExecutionPairPlayer): its blow lands <paramref name="impact"/> after the
-    /// execution proper began and it ends at <paramref name="length"/>, instead of the table's impactTime and duration.
-    /// On every PC, until ForgetPair: where the execution runs it times the blow and the end; on a copy that runs none it
-    /// still times the class knife's stab, which reads ImpactTime and Duration (ExecutionKnife), so it strikes and puts the
-    /// knife away with the pair there too.
+    /// A paired execution runs this one (ExecutionPairPlayer): its blow lands <paramref name="kill"/> after the
+    /// execution proper began and the player is let go at <paramref name="free"/>, the pair playing <paramref name="speed"/>
+    /// times its clips' own, instead of the knife's own stab. On every PC, until ForgetPair: where the execution runs it
+    /// times the blow and the end; on a copy that runs none it still times the class knife's stab, which reads
+    /// ImpactTime, Duration and Pace (ExecutionKnife), so it strikes and puts the knife away with the pair there too.
     /// </summary>
-    internal void Retime(float impact, float length)
+    internal void Retime(float kill, float free, float speed)
     {
-        if (tableImpact < 0f) { tableImpact = impactTime; tableDuration = duration; }
-        impactTime = Mathf.Max(0f, impact);
-        duration = Mathf.Max(.1f, length);
+        kill = Mathf.Max(0f, kill);
+        free = Mathf.Max(kill, free);
+        paired = new ExecutionTiming(Mathf.Max(.1f, speed), kill, free, free);
+        hasPaired = true;
     }
     /// <summary>Where the pair's blow meets the victim this frame and which way it sends the body (ExecutionPairPlayer).</summary>
     internal void Strike(Vector3 point, Vector3 along)
@@ -296,18 +316,16 @@ public sealed class PlayerExecution : MonoBehaviour
         strikePoint = point;
         strikeAlong = along.sqrMagnitude > 1e-6f ? along.normalized : (Vector3?)null;
     }
-    /// <summary>The table's timing and blow again (the execution's end, and a pair's end on a copy that runs none).</summary>
+    /// <summary>The pair's timing and blow no longer stand in (the execution's end, and a pair's end on a copy that runs none).</summary>
     internal void ForgetPair()
     {
         strikePoint = strikeAlong = null;
-        if (tableImpact < 0f) return;
-        impactTime = tableImpact;
-        duration = tableDuration;
-        tableImpact = tableDuration = -1f;
+        hasPaired = false;
     }
     public void Cancel()
     {
         ForgetPair();
+        hasOwn = false;
         bool wasExecuting = IsExecuting; IsExecuting = approaching = false; Candidate = DeathblowCandidate = null;
         while (executing.Remove(this)) { }
         if (victim != null) victim.ReleaseExecution(this);

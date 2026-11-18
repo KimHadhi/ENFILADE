@@ -21,6 +21,12 @@ using UnityEngine;
 /// knife's (ExecutionKnife), which leaves the arms to a playing pair (ExecutionKnife.ArmsPosedElsewhere, handed over eased
 /// both ways) and spreads the rest of its stroke after the kill over what is left of the pair, so the knife is put away
 /// and the gun comes back as the pair ends.
+/// How fast it plays and when it lets the player go are its rule's (ExecutionRules.Timing; the user, 2026-11-18: "전체 암살
+/// 모션을 《카운터 스트라이크》 칼 백스탭처럼 빠르고 간결하게 단축"): the clips run at the pace that lands the blade at the
+/// rule's killIn, and at its freeAfter past the kill the player is free while the clips ease out on a clock that keeps
+/// running (Release), so what is left of the motion fades on a body that already walks on. "The player is free" and
+/// "the pair is over" were one moment until then, and a takedown held the player a second past its kill. The owner's PC
+/// sends the pace and the moment with the pair, so every PC lets go at the same frame of the clips.
 /// It runs right after the execution, so a dash's end begins the pair in the same frame and the pair's timing is in before
 /// the class knife's stab reads it (ExecutionKnife, Execution + 5), and before the movement, the body and the zombies; the
 /// hands' holds run after the hands' IK and the gun's framework, just before the class knife seats the blade in the fist
@@ -29,7 +35,8 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Execution + 2)]
 public sealed class ExecutionPairPlayer : MonoBehaviour
 {
-    /// <summary>A pair as it goes to the other PCs: which, on whom, laid where, begun when (the server's clock), how fast.</summary>
+    /// <summary>A pair as it goes to the other PCs: which, on whom, laid where, begun when (the server's clock), how fast,
+    /// and where in its clips it lets the player go (s of the clips).</summary>
     public readonly struct Shared
     {
         public readonly byte Pair;
@@ -38,10 +45,11 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         public readonly float Yaw;
         public readonly double Clock;
         public readonly float Pace;
+        public readonly float Free;
 
-        public Shared(byte pair, ulong victim, Vector3 anchor, float yaw, double clock, float pace)
+        public Shared(byte pair, ulong victim, Vector3 anchor, float yaw, double clock, float pace, float free)
         {
-            Pair = pair; Victim = victim; Anchor = anchor; Yaw = yaw; Clock = clock; Pace = pace;
+            Pair = pair; Victim = victim; Anchor = anchor; Yaw = yaw; Clock = clock; Pace = pace; Free = free;
         }
     }
 
@@ -59,9 +67,12 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
     private ExecutionPair pair;
     private ZombieBody zombie;
     private bool playing, waiting, ownsPair, bled;
-    // The pair's clock, in the clips' own seconds, and how fast it runs: a Ghost's 빠른 칼 plays its takedowns faster
-    // (GhostCards.TakedownPace), and the pace goes with the pair so every PC plays it as fast.
-    private float clock, pace = 1f;
+    // The pair has let the player go and only eases out (Release): its clock runs on until the body has left the clip.
+    private bool released;
+    // The pair's clock, in the clips' own seconds, how fast it runs (its rule's killIn, and a Ghost's 빠른 칼 on top:
+    // card, GhostCards.TakedownPace) and where on it the player is let go; pace and free go with the pair, so every PC
+    // plays it as fast and lets go at the same frame.
+    private float clock, pace = 1f, free, card = 1f;
     private Vector3 anchor, spot;
     private Quaternion anchorTurn = Quaternion.identity;
     private float grown = 1f;
@@ -131,15 +142,18 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (movement != null && !movement.IsLocal) return;
         Stop();
         waiting = true;
-        pace = Mathf.Max(.1f, GhostCards.TakedownPace(movement, victim));
+        card = Mathf.Max(.1f, GhostCards.TakedownPace(movement, victim));
     }
 
+    // The execution let the player go (PlayerExecution.Duration, the pair's own free moment), or was cut short before it
+    // (its victim gone before the blow, this player dead): the pair eases out either way, and only a cut-short one has
+    // to be told to the other PCs, which let go on their own clocks otherwise.
     private void OnEnded()
     {
         waiting = false;
-        if (!playing || !ownsPair) return;
-        bool early = clock < pair.Length - .05f;
-        Stop();
+        if (!playing || !ownsPair || released) return;
+        bool early = clock < free - .05f;
+        Release();
         if (early) Stopped?.Invoke();
     }
 
@@ -157,6 +171,12 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         if (body == null) body = GetComponent<PlayerBody>();
         if (body != null) body.SetPairedTime(clock);
         if (zombie != null && zombie.BodyRoot != null) zombie.SetExecutedTime(clock);
+        if (released)
+        {
+            // Easing out: the clips go on moving under the fade until the body has left them (or they run out).
+            if (clock >= pair.Length || body == null || !body.PlaysPaired) Finish();
+            return;
+        }
         if (!bled && clock >= pair.Kill) Bleed();
         if (ownsPair)
         {
@@ -164,8 +184,8 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
             Aim();
             return;
         }
-        // A copy ends on its own clock, caught up to the owner's, as the owner's ends; an early end comes by ShowStop.
-        if (clock >= pair.Length) Stop();
+        // A copy lets go on its own clock, caught up to the owner's, where the owner's does; an early end comes by ShowStop.
+        if (clock >= free) Release();
     }
 
     // ---- The owner's pair -------------------------------------------------------------------------------------------
@@ -204,15 +224,17 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
                 yaw += Mathf.DeltaAngle(yaw, want) * chosen.Turn;
             }
         }
-        if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, 0f)) return;
+        // How fast it plays and when it lets go: the rule's, over this pair's own kill and length (and a Ghost's card).
+        var timing = ExecutionRules.Timing(execution.Rule, chosen.Kill, chosen.Length, card);
+        if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, 0f, timing.Pace, timing.Free * timing.Pace)) return;
         ownsPair = true;
-        // The execution's own timers run in real seconds: the clips' kill and end come sooner at a faster pace.
-        execution.Retime(chosen.Kill / pace, chosen.Length / pace);
+        // The execution's own timers run in real seconds: the blow at the pair's kill, the player let go at its free moment.
+        execution.Retime(timing.Kill, timing.Free, timing.Pace);
         IgnoreVictim(target);
         ulong id = target.TryGetComponent(out Unity.Netcode.NetworkObject network) && network.IsSpawned ? network.NetworkObjectId : 0UL;
         var manager = Unity.Netcode.NetworkManager.Singleton;
         double now = manager != null && manager.IsListening ? manager.ServerTime.Time : 0d;
-        Began?.Invoke(new Shared(chosen.Index, id, at, yaw, now, pace));
+        Began?.Invoke(new Shared(chosen.Index, id, at, yaw, now, pace, free));
     }
 
     // The pair's two clips from the player body's clip library (Art/Animations/Executions; PlayerBodyProfileBuilder lists them).
@@ -278,13 +300,17 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
 
     // ---- Every PC ---------------------------------------------------------------------------------------------------
 
+    // late: how far into its clips it begins (s of the clips: a copy catching up). speed: how fast it plays. lets: where in
+    // its clips it lets the player go.
     private bool Begin(ExecutionPair chosen, ZombieBody target, AnimationClip playerClip, AnimationClip zombieClip, Vector3 at, float yaw,
-        float late)
+        float late, float speed, float lets)
     {
         if (body == null) body = GetComponent<PlayerBody>();
         if (body == null) return false;
         Stop();
         pair = chosen;
+        pace = Mathf.Max(.1f, speed);
+        free = Mathf.Clamp(lets, 0f, chosen.Length);
         zombie = target;
         hitBone = target != null ? target.HumanBone(chosen.HitBone) : null;
         leftBones = Bones(target, chosen.LeftHolds);
@@ -295,11 +321,14 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
         anchorTurn = Quaternion.Euler(0f, yaw, 0f);
         spot = anchor + anchorTurn * new Vector3(pair.Offset.x, 0f, pair.Offset.y) * grown;
         var spotTurn = anchorTurn * Quaternion.Euler(0f, pair.Yaw, 0f);
-        if (!body.BeginPaired(playerClip, spot, spotTurn, pair.Length, pair.BlendIn, pair.BlendOut, pair.Align)) return false;
-        if (zombie != null) zombie.BeginExecuted(zombieClip, anchor, anchorTurn, pair.Length, pair.BlendIn, pair.BlendOut, pair.Align);
+        // The clips' blend in and the slide onto the pair's place are part of the motion: at a faster pace they take as
+        // much less real time (they are counted in real seconds on the bodies). The ease out is the bodies' own return.
+        if (!body.BeginPaired(playerClip, spot, spotTurn, pair.Length, pair.BlendIn / pace, pair.BlendOut, pair.Align / pace)) return false;
+        if (zombie != null) zombie.BeginExecuted(zombieClip, anchor, anchorTurn, pair.Length, pair.BlendIn / pace, pair.BlendOut, pair.Align / pace);
         // The class knife (ExecutionKnife) keeps riding the fist but leaves the arms to the clip; its stroke's end clears it.
         if (TryGetComponent(out ExecutionKnife knife)) knife.ArmsPosedElsewhere = true;
         playing = true;
+        released = false;
         clock = Mathf.Clamp(late, 0f, pair.Length);
         bled = clock > pair.Kill;
         left = new Hand(chosen.LeftHolds.Length);
@@ -316,42 +345,58 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
 
     /// <summary>
     /// On every other PC: the owner's PC began this pair on that zombie, laid there, <paramref name="late"/> seconds ago,
-    /// playing at <paramref name="speed"/> (PlayerNetworkCombat). The host's copy of a remote executor takes the pair's
-    /// timing too, so it holds the zombie for as long as the pair lasts.
+    /// playing at <paramref name="speed"/> and letting the player go at <paramref name="lets"/> seconds of its clips
+    /// (PlayerNetworkCombat; 0 or less: at its end). The host's copy of a remote executor takes the pair's timing too.
     /// </summary>
-    internal void Show(byte index, GameObject victim, Vector3 at, float yaw, float late, float speed = 1f)
+    internal void Show(byte index, GameObject victim, Vector3 at, float yaw, float late, float speed = 1f, float lets = 0f)
     {
         var chosen = ExecutionPairs.At(index);
         if (chosen == null || !Clips(chosen, out var playerClip, out var zombieClip)) return;
         ZombieBody target = victim != null && victim.TryGetComponent(out ZombieBody found) && found.Wears ? found : null;
         speed = Mathf.Max(.1f, speed);
-        if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, late * speed)) return;
-        pace = speed;
+        if (lets <= 0f) lets = chosen.Length;
+        if (!Begin(chosen, target, playerClip, zombieClip, at, yaw, late * speed, speed, lets)) return;
         ownsPair = false;
         // Timed from now, as the owner's knife stab that came with this word begins here now: its strike on the pair's
-        // kill and its end on the pair's end as this copy plays them (ExecutionKnife reads them), in real seconds.
-        if (execution != null) execution.Retime(chosen.Kill / speed - late, chosen.Length / speed - late);
+        // kill and its letting go where the pair lets go as this copy plays them (ExecutionKnife reads them), in real seconds.
+        if (execution != null) execution.Retime(chosen.Kill / speed - late, free / speed - late, speed);
     }
 
-    /// <summary>On every other PC: the owner's pair ended early (the host said no, or it was cut short).</summary>
-    internal void ShowStop() => Stop();
+    /// <summary>On every other PC: the owner's pair was cut short (the host said no, its victim was gone before the blow).</summary>
+    internal void ShowStop() => Release();
 
-    private void Stop()
+    // The pair lets the player go, at its own moment or cut short: the capsule meets the victim's again, both bodies
+    // start easing out of their clips and the class knife has the arms again; the clock runs on meanwhile (Update), so
+    // the motion goes on under the fade.
+    private void Release()
     {
         GiveBackVictim();
-        if (!playing) return;
-        playing = false;
+        if (!playing || released) return;
+        released = true;
         if (body != null) body.EndPaired();
         if (zombie != null && zombie.BodyRoot != null) zombie.EndExecuted();
-        // The class knife's arms again, eased in from where the clip left them (ExecutionKnifeArm), should its stroke still
-        // be going (a pair cut short); a whole pair's end is the stroke's end too.
+        // The class knife's arms again, eased in from where the clip left them (ExecutionKnifeArm): its stroke pulls the
+        // blade out and puts it away from here.
         if (TryGetComponent(out ExecutionKnife knife)) knife.ArmsPosedElsewhere = false;
         // The execution's own timing again (a copy that runs none keeps the pair's until now).
         if (execution != null) execution.ForgetPair();
         ownsPair = false;
+    }
+
+    // The bodies have left the clips: nothing of the pair is kept.
+    private void Finish()
+    {
+        playing = released = false;
         zombie = null;
         hitBone = null;
         leftBones = rightBones = null;
+    }
+
+    // At once, with no clock to run on: another pair begins, or this component goes.
+    private void Stop()
+    {
+        Release();
+        Finish();
     }
 
     // ---- The hands' holds, after the arms are posed and before the knife is seated (every PC) -----------------------
@@ -414,6 +459,8 @@ public sealed class ExecutionPairPlayer : MonoBehaviour
                 grab = i;
             }
         }
+        // Let go, the hold fades with the clip it belongs to.
+        if (released) weight *= body.PairedWeight;
         if (grab < 0 || weight <= 0f) return;
         var upper = animator.GetBoneTransform(upperBone);
         var lower = animator.GetBoneTransform(lowerBone);

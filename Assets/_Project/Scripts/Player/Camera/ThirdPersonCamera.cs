@@ -17,7 +17,8 @@ using MovementState = PlayerMovement.MovementState;
 ///   as the kill's short hit stop holds time. Every shot keeps to one side of the line between the two, so on screen
 ///   the player never seems to turn round.
 ///   When it ends the view cuts to over the shoulder and glides back into the eyes (user: "나중에 처형할 때 시네마틱
-///   카메라 연출 효과 넣기").
+///   카메라 연출 효과 넣기"). Which executions are filmed is each rule's own say (Tables/ExecutionRules.csv `film`): the
+///   takedowns made quick on 2026-11-18 are over before a shot could show them, and are seen through the eyes.
 /// Out and back in, the camera goes beside the head first and only then behind it, so it never passes through the head.
 /// It runs after the body has put the camera on the eyes (FrameOrder.ThirdPersonCamera) and before the weapons, which aim
 /// along the camera's ray from level with the eyes as they do in the F5 view; the gun, the fists and every reach stay on
@@ -311,6 +312,9 @@ public sealed class ThirdPersonCamera : MonoBehaviour
     {
         if (target == null || !GameSettings.Current.executionCinematic || player == null || !player.IsLocal) return;
         if (body == null || body.IsThirdPerson) return;
+        // A kill its rule says is over in a moment (Tables/ExecutionRules.csv `film`: the quick takedowns) is no shot: two
+        // cuts and a glide back inside half a second would hide the stab they are there to show. It stays in the eyes.
+        if (execution != null && !execution.Filmed) return;
         victim = target;
         filming = true;
         landed = false;

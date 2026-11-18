@@ -6,8 +6,10 @@ using System.Text;
 /// The rules of takedowns and executions as text, so what the table says can be checked without playing (the user's
 /// standing demand: a result is checked by whoever built it, not found by them while playing): every rule of
 /// Tables/ExecutionRules.csv with what is wrong with it (a pair nobody made, a rule nothing can reach), the pairs no
-/// rule plays, and for every posture of a zombie that is unaware or broken, which rule a player gets standing at each
-/// place round it (ExecutionRules.Pick, the function the game itself asks). The editor writes it to
+/// rule plays, when each rule's blade lands and when it lets the player go (ExecutionRules.Timing: how fast its pair
+/// plays, flagged when faster than a clip can be read), and for every posture of a zombie that is unaware or broken,
+/// which rule a player gets standing at each place round it (ExecutionRules.Pick, the function the game itself asks).
+/// The editor writes it to
 /// Logs/execution-rules.txt after every compile and whenever a table is saved (ExecutionRulesReportFile), so the file is
 /// always what the game would do.
 /// </summary>
@@ -20,6 +22,10 @@ public static class ExecutionRulesReport
     // The player's places the grid asks about: eyes to its body (m), and round it from straight before it (degrees).
     private static readonly float[] Distances = { .5f, 1.2f, 1.3f, 2.1f, 2.2f, 4f, 4.1f };
     private const int BearingStep = 20;
+    // Past this pace a clip is played too fast to read: its pair wants making shorter in the Blender workspace instead.
+    private const float MostPace = 2.2f;
+    // The knife's own stab (a rule with no pair): Tables/Player.csv Execution.impactTime and duration.
+    private const string PlayerTable = "Player", OwnRow = "Execution";
 
     public static string Text()
     {
@@ -49,6 +55,22 @@ public static class ExecutionRulesReport
             if (!rule.Unaware && !rule.Broken) problems.Add($"rule '{rule.Id}' is for nobody (victim).");
             if (!rule.AnyState && System.Array.IndexOf(Postures, rule.State.ToLowerInvariant()) < 0)
                 problems.Add($"rule '{rule.Id}' is for the posture '{rule.State}', which no zombie body names ({string.Join(", ", Postures)}).");
+        }
+        text.AppendLine();
+        text.AppendLine("== Timing: real seconds from where the pair begins (after any dash in) ==");
+        text.AppendLine("   rule            pace   blade lands   player free   pair over   filmed");
+        float ownKill = GameTables.Number(PlayerTable, OwnRow, "impactTime", .35f), ownLength = GameTables.Number(PlayerTable, OwnRow, "duration", .8f);
+        for (int i = 0; i < rules.Count; i++)
+        {
+            var rule = rules[i];
+            var pair = rule.Pair.Length > 0 ? ExecutionPairs.Find(rule.Pair) : null;
+            var timing = pair != null ? ExecutionRules.Timing(rule, pair.Kill, pair.Length) : ExecutionRules.Timing(rule, System.Math.Min(ownKill, ownLength), ownLength);
+            text.Append(Letter(i)).Append("  ").Append(rule.Id.PadRight(14))
+                .Append("  x").Append(N(timing.Pace).PadRight(6))
+                .Append(N(timing.Kill).PadRight(14)).Append(N(timing.Free).PadRight(14)).Append(N(timing.Length).PadRight(12))
+                .AppendLine(rule.Film ? "yes" : "no");
+            if (timing.Pace > MostPace)
+                problems.Add($"rule '{rule.Id}' plays its pair at x{N(timing.Pace)} to land the blade in {N(rule.KillIn)} s: too fast to read. Make the pair shorter in the Blender workspace (its kill earlier), or give the rule a later killIn.");
         }
         text.AppendLine();
         text.AppendLine("== Problems ==");
