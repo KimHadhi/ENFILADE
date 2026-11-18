@@ -124,14 +124,18 @@ public sealed class GunAttachments : MonoBehaviour
     /// <summary>The gun's id in the tables (GunMounts.IdOf: its object's name).</summary>
     public string GunId => GunMounts.IdOf(gameObject);
 
-    /// <summary>The socket's row offers this choice (GunMounts.csv fits). "None" is always offered; a gun without a row
-    /// offers all it carries.</summary>
+    /// <summary>
+    /// The socket's row offers this choice (GunMounts.csv fits). "None" is always offered. A gun whose rows give it no
+    /// such socket takes nothing there, whatever its prefab carries; a gun with no rows at all offers all it carries
+    /// (GunMounts.Known).
+    /// </summary>
     public bool Offered(string socket, in Choice choice)
     {
         string id = IdOf(choice);
         if (id.Length == 0) return true;
-        var row = GunMounts.Of(GunId, socket);
-        return !row.Found || row.Offers(id);
+        string gun = GunId;
+        var row = GunMounts.Of(gun, socket);
+        return row.Found ? row.Offers(id) : !GunMounts.Known(gun);
     }
 
     private int seatedFor = -1;
@@ -229,10 +233,11 @@ public sealed class GunAttachments : MonoBehaviour
         if (socket.Found && !string.IsNullOrEmpty(socket.Starts))
             for (int i = 0; i < list.Length; i++)
                 if (string.Equals(IdOf(list[i]), socket.Starts, StringComparison.OrdinalIgnoreCase)) return i;
-        // A row that names no start, or a part the gun doesn't carry: nothing there, unless the prefab's own pick is still
-        // offered (a gun without rows keeps what its setup chose).
+        // A row that names no start, or a part the gun doesn't carry: nothing there. The prefab's own pick stays only while
+        // it is still offered: on a gun without rows (it keeps what its setup chose), or under a row that lists nothing.
+        if (kept < 0 || kept >= list.Length || !Offered(slot, list[kept])) return 0;
         if (!socket.Found) return kept;
-        return kept >= 0 && kept < list.Length && string.IsNullOrEmpty(socket.Starts) && socket.Fits.Length == 0 ? kept : 0;
+        return string.IsNullOrEmpty(socket.Starts) && socket.Fits.Length == 0 ? kept : 0;
     }
 
     /// <summary>The starting choices, unless some are up already.</summary>

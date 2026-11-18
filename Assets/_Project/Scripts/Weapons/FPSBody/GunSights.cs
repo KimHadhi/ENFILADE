@@ -63,9 +63,9 @@ public sealed class GunSights : MonoBehaviour
                 for (int i = 0; i < Count; i++)
                     if (string.Equals(IdOf(i), socket.Starts, StringComparison.OrdinalIgnoreCase)) return i;
             int kept = Mathf.Clamp(start, 0, Count - 1);
-            if (!socket.Found || socket.Offers(IdOf(kept))) return kept;
+            if (Offered(kept)) return kept;
             for (int i = 0; i < Count; i++)
-                if (socket.Offers(IdOf(i))) return i;
+                if (Offered(i)) return i;
             return kept;
         }
     }
@@ -77,12 +77,17 @@ public sealed class GunSights : MonoBehaviour
     public string IdOf(int index)
         => index >= 0 && index < Count && sights[index].part != null ? sights[index].part.name : GunMounts.Own;
 
-    /// <summary>The gun's sight socket offers this sight (GunMounts.csv fits; a gun without a row offers all it carries).</summary>
+    /// <summary>
+    /// The gun's sight socket offers this sight (GunMounts.csv fits). A gun whose rows give it no sight socket has its own
+    /// sights and no other; a gun with no rows at all offers all it carries (GunMounts.Known).
+    /// </summary>
     public bool Offered(int index)
     {
         if (index < 0 || index >= Count) return false;
-        var socket = GunMounts.Of(GunId, GunMounts.Sight);
-        return !socket.Found || socket.Offers(IdOf(index));
+        string gun = GunId;
+        var socket = GunMounts.Of(gun, GunMounts.Sight);
+        if (socket.Found) return socket.Offers(IdOf(index));
+        return sights[index].part == null || !GunMounts.Known(gun);
     }
 
     /// <summary>How many of its sights the gun offers.</summary>

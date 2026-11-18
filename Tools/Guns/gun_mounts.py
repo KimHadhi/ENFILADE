@@ -63,6 +63,8 @@ class Seated:
         self.folds = self._inside(T.boxes_of(sight.get("folds") if sight else ""))
         self.hides = self._inside(T.boxes_of(sight.get("hides") if sight else ""))
         self.seats = {}
+        # A gun with rows has the sockets its rows say; one with no rows at all wears what its prefab carries (GunMounts.Known).
+        known = eye is not None
         sockets = g.sockets()
         kinds = {"sight": [s["part"] for s in g.sights if s["part"]]}
         for kind in ("muzzle", "grip", "under"):
@@ -89,7 +91,7 @@ class Seated:
                         t = 0.0
                     origin, axes = M.place(row, t)
                 self.seats[tr] = dict(id=pid, kind=kind, origin=origin, axes=axes, t=t, verts=verts, tris=tris, points=points,
-                                      data=data, known=bool(data), offered=T.offers(row, pid))
+                                      data=data, known=bool(data), offered=T.offers(row, pid) if row is not None else not known)
 
     def _inside(self, boxes):
         """Triangle mask: pieces of the body lying wholly inside one of the boxes (as GunSights cuts them)."""
@@ -283,12 +285,13 @@ def check(guns):
             if not seat["known"]:
                 marks += 1
                 lines.append("!  %-26s has no row in GunParts.csv (it sits with no foot and no name)" % seat["id"])
-            if seat["kind"] != "sight":
-                if seat["offered"] and s.rows.get(seat["kind"]):
-                    lines.append("   %-26s %-6s along %.1f cm" % (seat["id"], seat["kind"], seat["t"] * 100))
-                continue
             if not seat["offered"]:
-                lines.append("   %-26s not offered (its row's fits leaves it out)" % seat["id"])
+                lines.append("   %-26s not offered (%s)" % (seat["id"], "its row's fits leaves it out" if s.rows.get(seat["kind"])
+                                                            else "the gun's rows give it no %s socket" % seat["kind"]))
+                continue
+            if seat["kind"] != "sight":
+                if s.rows.get(seat["kind"]):
+                    lines.append("   %-26s %-6s along %.1f cm" % (seat["id"], seat["kind"], seat["t"] * 100))
                 continue
             c = check_sight(s, seat)
             data = seat["data"]

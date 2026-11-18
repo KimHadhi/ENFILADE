@@ -113,6 +113,7 @@ Unity에 맞춘 차이: 벽 두께는 들어간 선을 따라 한 번 잰다. �
 - 부품은 [GunParts.csv](../../Assets/_Project/Data/Resources/Tables/Weapons/GunParts.csv)의 줄이다: 종류, 메뉴의 이름, 레일에 닿는 발의 길이(`footBack`·`footFront`), 조준기면 배율과 조준 화면(`magnification`·`view`·`window`).
 - 규칙([GunMounts](../../Assets/_Project/Scripts/Weapons/FPSBody/GunMounts.cs)): 조준경은 자기 눈 자리(부품이 가진 AimPoint)가 총의 눈 자리와 나란해지는 곳까지 레일을 따라 가되 발이 레일을 벗어나지 않는다. 라이트는 하단 레일의 앞끝, 손잡이는 쥔 손이 정한 곳(레일 안에서), 총구 부품은 소켓에 앉는다.
 - 총이 깨어날 때와 조준경을 고를 때마다 표대로 앉힌다([GunSights](../../Assets/_Project/Scripts/Weapons/FPSBody/GunSights.cs) `Seat`, [GunAttachments](../../Assets/_Project/Scripts/Weapons/FPSBody/GunAttachments.cs) `Seat`). 표를 고치면 프리팹을 다시 만들지 않아도 바뀌고, 모드의 표가 그대로 덮어쓴다([모드 만들기](../Modding.md)).
+- 줄이 하나라도 있는 총은 줄이 있는 소켓만 가진다(`GunMounts.Known`): 줄이 없는 소켓에는 프리팹에 부품이 들어 있어도 메뉴에 나오지 않고, 저장해 둔 꾸미기나 친구의 선택으로도 달리지 않는다. 줄이 하나도 없는 총(아직 재지 않은 총, 표 없이 온 모드의 총)은 프리팹에 든 부품을 프리팹의 자리 그대로 단다.
 - 조준 자세가 바뀌는 길은 예전과 같은 하나다: 고른 조준경의 눈 자리. 마운트가 조준 자세를 따로 건드리는 규칙은 없다([총 다루기](../Features/GunHandling.md)).
 
 **정한 것.**

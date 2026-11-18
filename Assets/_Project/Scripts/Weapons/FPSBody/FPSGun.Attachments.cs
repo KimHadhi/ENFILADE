@@ -61,6 +61,9 @@ public sealed partial class FPSGun
     internal bool ShowGrip(int index)
     {
         if (Attachments == null || index < 0 || index >= Attachments.grips.Length || index == Attachments.Grip) return false;
+        // Only what the gun's socket offers (GunMounts.csv fits), as ShowSight: a saved pick of a part it no longer does
+        // leaves what is on.
+        if (!Attachments.Offered(GunMounts.Grip, Attachments.grips[index])) return false;
         Attachments.SelectGrip(index);
         Surface = GunSurface.Of(transform);
         return true;
@@ -73,6 +76,7 @@ public sealed partial class FPSGun
     internal bool ShowMuzzle(int index)
     {
         if (Attachments == null || index < 0 || index >= Attachments.muzzle.Length || index == Attachments.Muzzle) return false;
+        if (!Attachments.Offered(GunMounts.Muzzle, Attachments.muzzle[index])) return false;
         Attachments.SelectMuzzle(index);
         MeasureMuzzle();
         return true;
@@ -82,6 +86,7 @@ public sealed partial class FPSGun
     internal bool ShowUnderbarrel(int index)
     {
         if (Attachments == null || index < 0 || index >= Attachments.underbarrel.Length || index == Attachments.Underbarrel) return false;
+        if (!Attachments.Offered(GunMounts.Under, Attachments.underbarrel[index])) return false;
         Attachments.SelectUnderbarrel(index);
         return true;
     }

@@ -136,6 +136,14 @@ public static class GunMounts
         return found;
     }
 
+    /// <summary>
+    /// The gun has rows of its own (its eye place is the row every such gun has). Its sockets are then the ones its rows
+    /// say: a part its prefab carries on a socket without a row is not offered (the Striker-V's foregrip, which stood where
+    /// its own folding grip is). A gun with no rows at all, one not measured yet or a mod's that brings no table, wears
+    /// whatever its prefab carries, where the prefab has it.
+    /// </summary>
+    public static bool Known(string gun) => Of(gun, Eye).Found;
+
     /// <summary>The part <paramref name="id"/> (a part prefab's name, or Own); Found is false without a row.</summary>
     public static Part PartOf(string id)
     {

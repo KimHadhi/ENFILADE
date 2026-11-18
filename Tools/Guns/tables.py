@@ -55,7 +55,8 @@ def boxes_of(cell):
 
 
 def offers(row, part):
-    """GunMounts.Socket.Offers: a row that lists nothing offers whatever the prefab carries."""
+    """GunMounts.Socket.Offers: a row that lists nothing offers whatever the prefab carries. (A socket without a row is
+    the caller's to decide: nothing on a gun that has rows, everything on a gun that has none: GunMounts.Known.)"""
     fits = [f for f in ((row or {}).get("fits") or "").split("|") if f.strip()]
     return not fits or part.lower() in (f.strip().lower() for f in fits)
 
