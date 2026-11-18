@@ -9,8 +9,13 @@ using UnityEngine;
 /// y up, z forward), every finger joint as posed in Blender (FingerWays' columns, index1X ... thumb3Twist: the hand's own
 /// frame, so any character's hand wears the same shape; the user, 2026-11-14: "다신 이런 일이 재발하지 않도록 뼈에 새겨라"),
 /// how far the four fingers and the thumb close (degrees: what a table from before the joints has instead),
-/// whether the knife is in the fist (held: a draw's first frames reach for it) and the moment the blade meets what it
-/// cuts (hit). ExecutionKnifeArm fits it to any humanoid's right arm, as GrenadeArm fits its clips to the left.
+/// whether the knife is in the fist (held: a draw's first frames reach for it), and, for an attack, its phases as the
+/// workspace's timeline marks say them: the rows through which the blade is live (hit: from 벰 to 벰 끝, the only time
+/// the knife cuts what it passes through) and from where the next action may begin (next: 다음, the recovery's end; the
+/// rest of the clip is the arm going home, which a next swing cuts short). A swing is its clip with these phases
+/// (SwingTimeline plays them, PlayerMeleeCombat acts on them): until 2026-11-18 the one hit mark was read and never
+/// used, the blow landing by a sphere from the eyes for a fixed 0.18 s whatever the arm was doing.
+/// ExecutionKnifeArm fits it to any humanoid's right arm, as GrenadeArm fits its clips to the left.
 /// </summary>
 public sealed class KnifeSwing
 {
@@ -23,9 +28,25 @@ public sealed class KnifeSwing
         public bool Held;
     }
 
-    /// <summary>The clip's length (s: its last key) and its blade's moment (s; below 0: none marked).</summary>
+    /// <summary>The clip's length (s: its last key).</summary>
     public float Length { get; private set; }
-    public float Hit { get; private set; } = -1f;
+    /// <summary>
+    /// The swing's phases in the clip (s): the blade is live from ActiveFrom to ActiveTo and the next action may begin at
+    /// Next. A clip with no hit rows is no attack (a draw, a guard): nothing is live and the next may begin at once.
+    /// </summary>
+    public float ActiveFrom { get; private set; }
+    public float ActiveTo { get; private set; }
+    public float Next { get; private set; }
+    /// <summary>Its rows mark a blade's window: an attack's clip.</summary>
+    public bool Cuts => ActiveTo > ActiveFrom;
+    /// <summary>The middle of the blade's window (s): where an aimed strike lands on whom it is aimed at.</summary>
+    public float Meet => (ActiveFrom + ActiveTo) * .5f;
+    /// <summary>The phases as a swing's timeline takes them (SwingTimeline).</summary>
+    public SwingMarks Marks => new SwingMarks(Length, ActiveFrom, ActiveTo, Next);
+
+    // A table written before the phases (one hit row: the moment the blade met; a mod's, or a clip not sent again since
+    // 2026-11-18) is read as live from its start to this long past that moment (s), the next action from its end.
+    private const float OldFormatAfter = .1f;
 
     private readonly List<Key> keys = new List<Key>();
     // Every key's finger joints (FingerWays), when every row has them.
@@ -111,6 +132,8 @@ public sealed class KnifeSwing
         var clip = new KnifeSwing();
         var read = new List<(Key key, FingerWays fingers)>();
         bool everyFinger = true;
+        float from = -1f, to = -1f, next = -1f;
+        int hits = 0;
         foreach (string id in GameTables.RowIds(table))
         {
             if (!GameTables.TryGetRow(table, id, out var row)) continue;
@@ -132,7 +155,13 @@ public sealed class KnifeSwing
             var ways = new FingerWays();
             if (!ways.Read(row)) everyFinger = false;
             read.Add((key, ways));
-            if (clip.Hit < 0f && row.Number("hit", 0f) > .5f) clip.Hit = cycle;
+            if (row.Number("hit", 0f) > .5f)
+            {
+                hits++;
+                if (from < 0f || cycle < from) from = cycle;
+                if (cycle > to) to = cycle;
+            }
+            if (row.Number("next", 0f) > .5f && (next < 0f || cycle < next)) next = cycle;
         }
         if (read.Count == 0) return null;
         read.Sort((x, y) => x.key.Cycle.CompareTo(y.key.Cycle));
@@ -142,6 +171,14 @@ public sealed class KnifeSwing
             if (everyFinger) clip.fingers.Add(ways);
         }
         clip.Length = clip.keys[clip.keys.Count - 1].Cycle;
+        if (hits == 1)
+        {
+            to = Mathf.Min(clip.Length, from + OldFormatAfter);
+            from = 0f;
+        }
+        clip.ActiveFrom = hits > 0 ? Mathf.Clamp(from, 0f, clip.Length) : 0f;
+        clip.ActiveTo = hits > 0 ? Mathf.Clamp(to, clip.ActiveFrom, clip.Length) : 0f;
+        clip.Next = !clip.Cuts ? 0f : next >= 0f ? Mathf.Clamp(next, clip.ActiveTo, clip.Length) : clip.Length;
         return clip;
     }
 }

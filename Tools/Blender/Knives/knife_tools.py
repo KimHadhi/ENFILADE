@@ -22,9 +22,18 @@ to Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist 
 hand's run (wrist to middle knuckle) and its palm's facing in the head camera's axes as Unity's (x right, y up, z
 forward), every finger joint as posed (Tools/Blender/HandPaths/finger_ways.py: each segment's way in the hand's own frame
 and its twist, the game's FingerWays; the user, 2026-11-14: "다신 이런 일이 재발하지 않도록 뼈에 새겨라") with the fingers'
-and the thumb's closing beside them (their summary, all a table had before), whether the knife is in the fist and the 벰
-moment (KnifeSwing reads it, ExecutionKnifeArm fits it to any character's right arm), every number to the sixth decimal
-(never rounded away). Nothing here changes Blender's preferences.
+and the thumb's closing beside them (their summary, all a table had before), whether the knife is in the fist and, for an
+attack, its phases (KnifeSwing reads them, ExecutionKnifeArm fits the arm to any character's right arm), every number to
+the sixth decimal (never rounded away). Nothing here changes Blender's preferences.
+An attack's phases are three timeline marks (2026-11-18; the user: "즉시 발동 대신 무기별 선딜레이 부여", "근접 적중 시
+후딜레이 캔슬 제거", "히트 판정은 … 실제 무기 모델 자체를 기준으로"): 벰 where the blade goes live, 벰 끝 where it stops
+cutting, 다음 where the next action may begin (the recovery's end; the rest of the clip is the arm going home). The game
+traces the knife's own model between 벰 and 벰 끝 and nowhere else, and lets nothing shorten the wait to 다음. Before,
+a clip had the one mark 벰 for the moment the blade met, which the game never read. A clip whose marks were never set
+(every clip made before this, a new draft) gets them from its own motion on opening (knife_marks.seed: the cut from the
+wind-up's furthest to where the hand has slowed or turned back, the next action a few frames later), shown on the
+timeline to be moved; the wind-up's length is not in the clip at all (ClassKnives.csv windup: the knife is held at the
+clip's first frame while it runs).
 Where a knife sits in the fist is moved here too (the user, 2026-11-14: "블렌더에서 하면 내가 수정할 때 바로 직관적으로 옮길
 수 있으니까"): 칼 옮기기 picks the knife in her fist (a knife's own clips show that knife), G and R move it, and saving writes
 its seat in the melee slot (ClassKnives.csv meleeHeld*, meleeBlade*, meleeEdge*: the handle's middle in hand lengths from
@@ -78,9 +87,11 @@ CURL_SHARE = (.4, .35, .25)
 # The thumb's two bends are this much of what the game calls the thumb's closing (90: right over the handle).
 THUMB_SCALE = 1.3
 
-# The timeline marks: the blade meeting what it cuts, and the knife coming into the fist (a draw).
-HIT, GRAB = '벰', '쥐기'
-MARKS = (HIT, GRAB)
+# The timeline marks: an attack's phases (the blade live from 벰 to 벰 끝, the next action from 다음), and the knife
+# coming into the fist (a draw). Marks with 벰 and no 벰 끝 are the old ones (벰: the moment the blade met).
+HIT, HIT_END, NEXT, GRAB = '벰', '벰 끝', '다음', '쥐기'
+MARKS = (HIT, HIT_END, NEXT, GRAB)
+KNIFE_MARKS = os.path.join('Tools', 'Blender', 'Knives', 'knife_marks.py')
 
 # The clips. look: which preview knife is in the fist. marks: the frames of the moments (the user moves them on the
 # timeline; each clip keeps its own). loop: played round and round. table: the game's file.
@@ -98,7 +109,7 @@ LOOKS = {'forward': 'PREVIEW_Knife_Forward', 'reverse': 'PREVIEW_Knife_Reverse'}
 MARKS_PROP = 'enf_knife_marks'
 SCENE_CLIP = 'enf_knife_clip'
 HEADER = ['id', 'cycle', 'wristX', 'wristY', 'wristZ', 'elbowX', 'elbowY', 'elbowZ', 'alongX', 'alongY', 'alongZ',
-          'palmX', 'palmY', 'palmZ', 'curl', 'thumb', 'held', 'hit']
+          'palmX', 'palmY', 'palmZ', 'curl', 'thumb', 'held', 'hit', 'next']
 
 
 def project_root():
@@ -184,6 +195,11 @@ def _one_click():
 def finger_ways():
     """The shared finger measure: every finger joint's way and twist as the game's tables carry them (FingerWays)."""
     return _module('enf_finger_ways', FINGER_WAYS)
+
+
+def knife_marks():
+    """The seed of an attack's phases from its motion (shared with the port and with the tables' one-off of 2026-11-18)."""
+    return _module('enf_knife_marks', KNIFE_MARKS)
 
 
 oc = _one_click()
@@ -413,6 +429,56 @@ def table_label(key):
     return str(table_file(root, name).relative_to(root)).replace('\\', '/')
 
 
+def phases(marks, rows, fps, start=1):
+    """An attack's phases in seconds from the clip's start (the blade live from, to, the next action from), or None for a
+    clip that is no attack (no 벰). Marks the user has set say them; marks from before the phases (벰 alone: the moment
+    the blade met) and a draft's are seeded from the motion (knife_marks.seed over the rows the table gets)."""
+    if HIT not in marks:
+        return None
+    if HIT_END in marks and NEXT in marks:
+        live = (marks[HIT] - start) / fps
+        dead = max(live, (marks[HIT_END] - start) / fps)
+        return live, dead, max(dead, (marks[NEXT] - start) / fps)
+    samples = [(row['cycle'], tuple(row['wrist']), tuple(row['along'])) for row in rows]
+    return knife_marks().seed(samples, (marks[HIT] - start) / fps)
+
+
+def complete_marks(context):
+    """On opening: every attack clip whose marks are from before the phases gets its three marks, seeded from its motion
+    and kept on its action, so they show on the timeline to be moved. A clip the game already has as it is stays sent
+    (the game's tables were given the same seeds on 2026-11-18), so opening sends nothing by itself."""
+    scene = context.scene
+    rig = find_rig(scene)
+    if rig is None:
+        return
+    shown, frame = current_clip(scene), scene.frame_current
+    fps = scene.render.fps / scene.render.fps_base
+    changed = False
+    for key, clip in CLIPS.items():
+        action = bpy.data.actions.get(clip['action'])
+        if action is None:
+            continue
+        marks = marks_of(action, key)
+        if HIT not in marks or (HIT_END in marks and NEXT in marks):
+            continue
+        as_it_was = action.get(oc.SENT) == fingerprint(action, key)
+        withheld = bool(action.get(oc.WITHHELD))
+        select_clip(context, key)
+        live, dead, after = phases(marks, clip_rows(context, key, {}), fps)
+        marks.update({HIT: 1 + int(round(live * fps)), HIT_END: 1 + int(round(dead * fps)), NEXT: 1 + int(round(after * fps))})
+        action[MARKS_PROP] = json.dumps(marks, sort_keys=True)
+        # On the timeline too: leaving this clip keeps the timeline's marks as its own (keep_marks).
+        show_marks(scene, marks)
+        if as_it_was and withheld:
+            oc.mark_withheld(action, fingerprint(action, key))
+        elif as_it_was:
+            oc.mark_sent(action, fingerprint(action, key))
+        changed = True
+    if changed:
+        select_clip(context, shown)
+        scene.frame_set(frame)
+
+
 def clip_rows(context, key, marks):
     """The right arm over the clip's frames as the game's clips have it (KnifeSwing), every finger joint with it."""
     ways = finger_ways()
@@ -421,7 +487,6 @@ def clip_rows(context, key, marks):
     fps = scene.render.fps / scene.render.fps_base
     start, end = 1, end_of(bpy.data.actions.get(CLIPS[key]['action']), key)
     grab = marks.get(GRAB, start)
-    hit = marks.get(HIT)
     rows = []
     for i in range((end - start) * SAMPLES_PER_FRAME + 1):
         at = start + i / SAMPLES_PER_FRAME
@@ -436,7 +501,13 @@ def clip_rows(context, key, marks):
                          along=to_view(along, basis), palm=to_view(palm, basis),
                          curl=sum(c[f] for f in FOUR) / 4.0, thumb=c['thumb'],
                          fingers=ways.measure(rig, ARM_BONES['wrist'], FINGERS, right=True),
-                         held=at >= grab - 1e-6, hit=hit is not None and abs(at - hit) < 1e-6))
+                         held=at >= grab - 1e-6, hit=False, next=False))
+    cut = phases(marks, rows, fps, start)
+    if cut is not None:
+        live, dead, after = cut
+        for row in rows:
+            row['hit'] = live - 1e-6 <= row['cycle'] <= dead + 1e-6
+            row['next'] = row['cycle'] >= after - 1e-6
     return rows
 
 
@@ -453,7 +524,8 @@ def table_text(context, key, marks):
     cells = ['클립의 초', '눈에서 손목까지 오른쪽(m)', '위(m)', '앞(m)', '눈에서 팔꿈치까지 오른쪽(m). 팔꿈치가 이쪽으로 굽는다', '위(m)', '앞(m)',
              '손이 뻗은 쪽(손목→가운데 손가락 뿌리) 오른쪽', '위', '앞', '손바닥이 향한 쪽 오른쪽', '위', '앞',
              '네 손가락이 굽은 정도의 평균(°)', '엄지가 접힌 정도(90이면 손잡이 위로 다 덮음)', '1이면 칼이 손에 있다(쥐기부터)',
-             '1이면 이 순간에 칼날이 닿는다(벰)']
+             '1이면 이 줄에서 칼날이 살아 있다(벰부터 벰 끝까지): 이 동안에만 칼이 지나가는 것을 벤다',
+             '1이면 이 줄부터 다음 동작을 시작할 수 있다(다음): 후딜이 끝나는 곳. 그 뒤는 팔이 가드로 돌아가는 동작이라 다음 공격이 끊고 들어간다']
     cells += ways.descriptions()
     cells = [c.replace(',', ' ·') for c in cells]
     lines = ['﻿' + ','.join(HEADER + ways.columns()), note + ',' + ','.join(cells)]
@@ -461,7 +533,8 @@ def table_text(context, key, marks):
         # To the sixth decimal: what Blender has goes to the game as measured, not rounded (the user's rule, 2026-11-14).
         values = [f'k{n:03d}', f'{row["cycle"]:.6f}']
         values += [f'{v:.6f}' for v in (*row['wrist'], *row['elbow'], *row['along'], *row['palm'])]
-        values += [f'{row["curl"]:.6f}', f'{row["thumb"]:.6f}', '1' if row['held'] else '0', '1' if row['hit'] else '0']
+        values += [f'{row["curl"]:.6f}', f'{row["thumb"]:.6f}', '1' if row['held'] else '0', '1' if row['hit'] else '0',
+                   '1' if row['next'] else '0']
         values += ways.cells(row['fingers'])
         lines.append(','.join(values))
     return '\n'.join(lines) + '\n'
@@ -535,6 +608,7 @@ def prepare(context):
         elif oc.SENT not in action and clip.get('made'):
             # Made here and never sent: the game plays the draft it stands in for until this one changes.
             oc.mark_withheld(action, fingerprint(action, key))
+    complete_marks(context)
     match_seats(context)
 
 
@@ -1077,7 +1151,10 @@ class ENFKNIFE_PT_panel(bpy.types.Panel):
         box.label(text=f'끝: {scene.frame_end}프레임 ({(scene.frame_end - scene.frame_start) / fps:.3f}초)')
         for marker in sorted((m for m in scene.timeline_markers if m.name in MARKS), key=lambda m: m.frame):
             box.label(text=f'{marker.name}: {marker.frame}프레임 ({(marker.frame - scene.frame_start) / fps:.3f}초)')
-        box.label(text='표시(벰·쥐기)는 타임라인에서 클릭한 뒤 G로 옮긴다')
+        box.label(text='표시는 타임라인에서 클릭한 뒤 G로 옮긴다')
+        if HIT in marks_of(bpy.data.actions.get(CLIPS[key]['action']), key):
+            box.label(text='벰~벰 끝: 칼날이 베는 동안 · 다음: 다음 동작을 시작할 수 있는 때')
+            box.label(text='선딜(누른 뒤 휘두르기까지)은 ClassKnives.csv의 windup')
         if CLIPS[key].get('loop'):
             box.label(text='되풀이: 끝 프레임이 처음과 같아야 이어진다')
         box.label(text='길이: 타임라인 끝을 옮기거나 끝 뒤에 키를 넣으면 그만큼 길어진다')

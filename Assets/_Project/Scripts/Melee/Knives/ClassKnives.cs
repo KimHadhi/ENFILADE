@@ -65,6 +65,15 @@ public static class ClassKnives
         /// </summary>
         public float Slash = 45f, Stab = 110f, SlashPosture = 18f, StabPosture = 40f, HeadFactor = 2f, BackFactor = 2f, Reach;
         public string SwingSound = "Knife/Swing", HitSound = "Knife/Hit", HeavyHitSound = "Knife/HeavyHit", WallSound = "Knife/Wall";
+        /// <summary>
+        /// How it swings (the user, 2026-11-18: "즉시 발동 대신 무기별 선딜레이 부여", "근접 무기 스탯으로 공격 속도,
+        /// 관통력(1회 공격당 타격 가능한 적 수) 도입"): the wind-up from the press to the swing leaving (s), how fast all of
+        /// its swings run (a factor on its wind-up, its charge, its clips and so its recovery), how many bodies one swing
+        /// cuts, how long a hold past the wind-up takes to charge fully (s), and how far the charging fist trembles at
+        /// full charge (cm). SwingTimeline plays them.
+        /// </summary>
+        public float Windup = .1f, AttackSpeed = 1f, ChargeTime = .6f, ChargeShake = .6f;
+        public int Penetration = 2;
     }
 
     /// <summary>A forward grip's blade: out of the thumb's side, leaning the fingers' way, so a fist held thumb up points it ahead.</summary>
@@ -144,7 +153,11 @@ public static class ClassKnives
         knife.GuardClip = row.Text("guardClip", knife.GuardClip);
         knife.SlashClip = row.Text("slashClip", knife.SlashClip);
         knife.BackslashClip = row.Text("backslashClip", knife.BackslashClip);
-        knife.StabClip = row.Text("stabClip", knife.MeleeReverse ? "KnifeMeleeStabReverse" : knife.StabClip);
+        // A knife with a light clip of its own and no heavy one swings that same clip, stronger, for its charged attack
+        // (the user, 2026-11-18: "차징 공격 시 전용 모션이 별도로 없다면 기존 비충전 기본 공격 모션을 그대로 재사용하여
+        // 강공격/찌르기가 나가도록 처리"); one with no clips of its own has the drafts' stab.
+        knife.StabClip = row.Text("stabClip", row.Text("slashClip").Length > 0 ? knife.SlashClip
+            : knife.MeleeReverse ? "KnifeMeleeStabReverse" : knife.StabClip);
         knife.Slash = Mathf.Max(0f, row.Number("slash", knife.Slash));
         knife.Stab = Mathf.Max(0f, row.Number("stab", knife.Stab));
         knife.SlashPosture = Mathf.Max(0f, row.Number("slashPosture", knife.SlashPosture));
@@ -152,6 +165,11 @@ public static class ClassKnives
         knife.HeadFactor = Mathf.Max(0f, row.Number("headFactor", knife.HeadFactor));
         knife.BackFactor = Mathf.Max(0f, row.Number("backFactor", knife.BackFactor));
         knife.Reach = row.Number("reach", knife.Reach);
+        knife.Windup = Mathf.Max(0f, row.Number("windup", knife.Windup));
+        knife.AttackSpeed = Mathf.Max(.1f, row.Number("attackSpeed", knife.AttackSpeed));
+        knife.Penetration = Mathf.Max(1, row.Whole("penetration", knife.Penetration));
+        knife.ChargeTime = Mathf.Max(0f, row.Number("chargeTime", knife.ChargeTime));
+        knife.ChargeShake = Mathf.Max(0f, row.Number("chargeShake", knife.ChargeShake));
         knife.SwingSound = row.Text("swingSound", knife.SwingSound);
         knife.HitSound = row.Text("hitSound", knife.HitSound);
         knife.HeavyHitSound = row.Text("heavyHitSound", knife.HeavyHitSound);

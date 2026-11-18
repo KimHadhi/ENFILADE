@@ -13,7 +13,7 @@ Unity 편집기에서만 도는 도구다. 메뉴는 모두 메뉴 막대의 **E
 | `Hud` | ENFILADE → HUD | 현재 씬에 HUD 넣기·갱신, HUD 프리팹 열기, 겹침 검사 |
 | `Models` | ENFILADE → 모델 | 임포트 규칙 다시 적용([ModelImportRules](Models/ModelImportRules.cs): 폴더에 따라 모델·클립 임포트 설정을 자동으로), 처형 클립 가져오기 메시지, 물리 소품 프리팹 만들기 |
 | `Models` | ENFILADE → 좀비 | 클립 폴더 다시 읽기 |
-| `Melee` | ENFILADE → 근접 | 암살·처형 규칙 보고서([MeleeReportFiles](Melee/MeleeReportFiles.cs): 컴파일할 때와 표를 저장할 때마다 `Logs/execution-rules.txt`를 스스로 다시 쓴다. 게임이 묻는 판정 함수 그대로 만든 것이라 플레이하지 않고 읽어서 확인한다) |
+| `Melee` | ENFILADE → 근접 | 암살·처형 규칙 보고서([MeleeReportFiles](Melee/MeleeReportFiles.cs): 컴파일할 때와 표를 저장할 때마다 `Logs/execution-rules.txt`를 스스로 다시 쓴다. 게임이 묻는 판정 함수 그대로 만든 것이라 플레이하지 않고 읽어서 확인한다), 칼 휘두르기 보고서(`Logs/knife-swings.txt`: 칼마다 스탯, 클립의 칼날 구간·다음 시작점, 탭·홀드·연타가 그 칼의 타임라인에서 무엇이 되는지) |
 | `Audio` | (자동) | `Art/Audio`의 폴더를 소리 묶음으로 만든다 |
 | `Build` | (자동) | 빌드하면 프로젝트의 `Mods` 폴더를 실행 파일 옆에 복사하고, 아바타 내보내기 도구를 `Mods/_SDK`에 넣는다 |
 | `ModSdk` | ENFILADE → 모드 | 아바타를 모드로 내보내기·옷을 모드로 내보내기([ModAvatarExporter](ModSdk/ModAvatarExporter.cs), 창 하나의 두 탭): 휴머노이드 캐릭터(VRChat 아바타)나 그 캐릭터용 옷을 번들과 `.avatar.json`으로 싸서 `Mods/<id>/Avatars`에 낸다. 메시를 옷장 칸으로 나누는 규칙([ModPieces](ModSdk/ModPieces.cs))도 여기 있고, 게임의 BOOTH 가져오기(`Characters/Booth`)가 같은 것을 쓴다. 이 폴더와 `Scripts/Core/Mods/ModAvatarFile.cs`가 제작자에게 주는 SDK의 전부라, **게임의 다른 코드를 쓰면 안 된다**(VRChat용 Unity 2022 프로젝트에서도 컴파일돼야 한다). 옷 칸 목록(`ModPieces.Slots`)은 OutfitSlots.csv와 같게 둔다(SDK 폴더를 만들 때 다르면 알려 준다). 설명은 [모드 만들기](../../../Docs/Modding.md)의 "아바타 모드" |

@@ -11,12 +11,14 @@ using UnityEngine;
 /// find out (the user's standing demand: what was built is checked by whoever built it).
 /// - Logs/execution-rules.txt: every rule of takedowns and executions and which one a player gets at each place round a
 ///   zombie (ExecutionRulesReport, the game's own ExecutionRules.Pick).
+/// - Logs/knife-swings.txt: every class knife's stats, its clips' phases and what a tap, a hold and a mash turn into on
+///   its own timeline (KnifeSwingReport, the game's own SwingTimeline).
 /// The menu ENFILADE → 근접 writes them on demand and shows the file.
 /// </summary>
 [InitializeOnLoad]
 internal sealed class MeleeReportFiles : AssetPostprocessor
 {
-    private const string Folder = "Logs", RulesFile = "execution-rules.txt";
+    private const string Folder = "Logs", RulesFile = "execution-rules.txt", SwingsFile = "knife-swings.txt";
 
     static MeleeReportFiles() => EditorApplication.delayCall += WriteAll;
 
@@ -36,9 +38,17 @@ internal sealed class MeleeReportFiles : AssetPostprocessor
         EditorUtility.RevealInFinder(Path.Combine(Folder, RulesFile));
     }
 
+    [MenuItem("ENFILADE/근접/칼 휘두르기 보고서")]
+    private static void ShowSwings()
+    {
+        WriteAll();
+        EditorUtility.RevealInFinder(Path.Combine(Folder, SwingsFile));
+    }
+
     private static void WriteAll()
     {
         Write(RulesFile, ExecutionRulesReport.Text);
+        Write(SwingsFile, KnifeSwingReport.Text);
     }
 
     // A report that can't be made or written says so once in the console and leaves the old file alone.
