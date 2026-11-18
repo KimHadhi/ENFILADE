@@ -1,0 +1,26 @@
+﻿id,order,#설명
+"#설명 (F 키(상호작용, 키 설정의 Player/Interact)로 하는 일의 순서. F는 한 번에 한 가지만 한다: 지금 할 수 있다고 나선 것들 가운데 이 표에서 가장 위에 있는 것이 그 한 번을 가져가고, 화면에도 그것 하나만 [F] 안내로 보인다. 할 수 없다고 거절한 것(체력이 가득한데 바라본 구급상자)은 회색 안내만 남기고 F를 아래 줄로 넘긴다. 줄마다 그 일을 하는 코드가 InteractKey.Offer(id)로 나서고, InteractKey.Pressed(id)·Held(id)가 참일 때만 움직인다. 모드는 제 id로 줄을 더해 자리를 정한다. 콘솔 /interact 로 지금 순서와 마지막 누름을 보고, 플레이한 뒤에는 Logs/interact.txt에 누름마다 누가 나섰고 누가 가져갔는지 적혀 있다. 검사: python Tools/Checks/interact_key_check.py)",순서. 작은 수가 먼저. 비우면 바로 윗줄 다음,이 줄이 하는 일 (게임은 읽지 않는다. 괄호는 그 일을 하는 코드)
+support.plan,10,"서포트가 클래스 키를 누르고 있는 동안(설치 미리 보기): F는 세울 구조물 종류를 바꾸고, 던지기 카드가 있으면 조준한 동료에게 보급 꾸러미를 던진다. 그동안 F는 이것만 한다 (SupportKit)"
+takedown,20,처형·암살 (PlayerExecution)
+ghost.chain,30,고스트의 암살 연쇄: 다음 좀비 지목 (GhostCards)
+revive,40,쓰러진 동료 일으키기. 누르고 있는 동안 (PlayerRevive)
+detente.answer,50,데탕트가 제안한 손 치료 받기. 제안이 떠 있는 몇 초 동안 (DetenteKit)
+pickup,60,"바라보는 줍기 물건: 총·구급상자·쉴드 셀. 지금 못 쓰면(체력이 가득함, 쉴드가 이미 있음, 탄이 가득함) 거절한다 (FieldPickups)"
+crate,70,조준한 탄약 상자에서 보급 받기. 다시 받을 때까지 기다리는 동안은 거절한다 (ClassKit)
+ladder.top,80,사다리 위에서 내려가기 (MovementFixtures)
+campaign.button,100,캠페인: 단계의 버튼 (CampaignRun)
+campaign.can.hand,110,캠페인: 들고 있는 연료통 붓기·내려놓기 (CampaignRun)
+gimmick,120,캠페인: 맵 기믹(TV·차단기·열쇠·잠긴 문). 길게 눌러야 하는 것은 누른 채로 (MapGimmicks)
+campaign.door,130,캠페인: 문 열기·닫기 (CampaignRun)
+campaign.shop,140,캠페인: 상점 열기 (CampaignRun)
+campaign.can.floor,150,캠페인: 바닥의 연료통 들기 (CampaignRun)
+tower.scanner,200,타워: 스캐너에 손 대기. 누르고 있는 동안 (TowerRun)
+tower.shop,210,타워: 상점 열기 (TowerRun)
+hub.station,300,허브: 바라보는 시설(지도·클래스 문·총 선반·탄약 상자·준비 버튼·거울) (HubLobby)
+detente.raise,400,데탕트: 죽은 동료 부활. 누르고 있는 동안 (DetenteKit)
+detente.treat,410,데탕트: 주사기가 비었을 때 다친 동료에게 손 치료 제안 (DetenteKit)
+support.give,500,서포트: 조준한 동료에게 보급 (SupportKit)
+support.mend,510,"서포트: 조준한 바리케이드. 누르고 있는 동안 도구를 들고, 닳았으면 고친다 (SupportKit)"
+test.station,800,테스팅 룸의 시험 장치 (PlayerTestInteraction)
+other,900,표에 줄이 없는 제안이 서는 자리 (모드가 더했는데 아직 줄을 쓰지 않은 것. 로그에 한 번 알린다)
+ping,1000,"달리 할 일이 없을 때: 조준한 적 핑, 누르고 있으면 손가락으로 가리키기 (PlayerPing)"
