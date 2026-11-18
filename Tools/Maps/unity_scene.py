@@ -1,6 +1,7 @@
 """Reads a built Unity scene's YAML without Unity: game objects, their transforms in world space, and their components.
 Enough for map audits: where every box of a builder-made scene stands, how big it is and what it carries.
 Only objects written in the scene itself are placed in the world (a prefab instance's inner transforms live in the prefab)."""
+import json
 import math
 import re
 
@@ -16,6 +17,28 @@ def _vec(body, key, n):
 def _ref(body, key):
     m = re.search(key + rb": \{fileID: (-?\d+)", body)
     return int(m.group(1)) if m else 0
+
+
+def _name(body):
+    """An object's m_Name. Unity writes a name with non-ASCII letters as a double-quoted YAML scalar with \\uXXXX
+    escapes, and folds a long one over several lines (a line break and the next line's indent stand for one space)."""
+    m = re.search(rb"m_Name: ", body)
+    if not m:
+        return ""
+    rest = body[m.end():]
+    if rest.startswith(b'"'):
+        end = 1
+        while end < len(rest) and not (rest[end:end + 1] == b'"' and rest[end - 1:end] != b"\\"):
+            end += 1
+        raw = re.sub(rb"\r?\n\s*", b" ", rest[1:end]).decode("utf-8", "replace")
+        try:
+            return json.loads('"' + raw + '"')
+        except ValueError:
+            return raw
+    line = rest.split(b"\n", 1)[0].strip().decode("utf-8", "replace")
+    if line.startswith("'") and line.endswith("'") and len(line) >= 2:
+        return line[1:-1].replace("''", "'")
+    return line
 
 
 def qmul(a, b):
@@ -78,18 +101,7 @@ def load(path):
             continue
         o = Obj()
         o.id = fid
-        m = re.search(rb"m_Name: (.*)\r?\n", body)
-        raw = m.group(1).strip() if m else b""
-        name = raw.decode("utf-8", "replace")
-        if name.startswith('"') and name.endswith('"'):
-            try:
-                name = bytes(name[1:-1], "utf-8").decode("unicode_escape").encode("latin-1", "replace").decode("utf-8", "replace") \
-                    if "\\x" in name else name[1:-1].encode("utf-8").decode("unicode_escape")
-            except Exception:
-                name = name[1:-1]
-        elif name.startswith("'") and name.endswith("'"):
-            name = name[1:-1]
-        o.name = name
+        o.name = _name(body)
         m = re.search(rb"m_IsActive: (\d)", body)
         o.active = m is None or m.group(1) == b"1"
         m = re.search(rb"m_Layer: (\d+)", body)

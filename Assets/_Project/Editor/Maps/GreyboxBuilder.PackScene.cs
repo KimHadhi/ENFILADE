@@ -31,6 +31,15 @@ using UnityEngine.SceneManagement;
 ///   opaque shell hides what is behind it, and everything takes part in the probe bake and the reflection probes.
 /// What it changes is kept beside the scene (Scenes/Campaign/&lt;scene&gt;/Pack: the cut and turned meshes); the pack's own
 /// files are never changed, so each build makes the map from them the same way.
+/// The meshes a build makes stay in memory while it works and are written once as it ends, each to a file of its own
+/// (WritePackMeshes). They were written as they were made, to a file named after the mesh, and writing a file again
+/// destroys what was in it: the second doorway's cut of the building's collision mesh destroyed the first cut, which
+/// the collider still held, so the built terminal's walls had no collision at all (the saved scene of 11-15: the wall
+/// collider's mesh was none; the user, 2026-11-18: "4장 벽 뚫림(백룸 이탈) ... 4장 맵 전반의 콜라이더 누락 구역 보수"),
+/// and of three parts whose meshes share a name only one kept its outer collision.
+/// What is seen blocks: the glass panes and the podium's blocks collide by their own shapes too (the building's
+/// collision mesh covers every wall at walking height, measured with Tools/Maps/shell_cover.py, but not every pane, and
+/// the podium's blocks had their colliders taken off, so one walked into the hollow under the upper floor).
 /// </summary>
 public sealed partial class GreyboxBuilder
 {
@@ -69,7 +78,11 @@ public sealed partial class GreyboxBuilder
     private readonly HashSet<GameObject> packOccluders = new HashSet<GameObject>();
     // The meshes this build cut or turned, by the object that shows or collides with them.
     private readonly Dictionary<Mesh, Mesh> packCutMeshes = new Dictionary<Mesh, Mesh>();
-    private int packLamps, packSolids, packCapped, packCuts, packOutside, packPodium, packRemoved, packLods;
+    private int packLamps, packSolids, packCapped, packCuts, packOutside, packPodium, packRemoved, packLods, packMeshFiles;
+    // The meshes this build made, by the name each asks for: in memory until the build ends (WritePackMeshes).
+    private readonly Dictionary<Mesh, string> packMade = new Dictionary<Mesh, string>();
+    // The colliders this build gave the building's own parts (glass, the podium): never taken off as a prop's are.
+    private readonly HashSet<Collider> packKept = new HashSet<Collider>();
     private string packMissing;
 
     /// <summary>A point given in the bought scene's own coordinates, where it is in the map.</summary>
@@ -159,7 +172,7 @@ public sealed partial class GreyboxBuilder
         foreach (var solid in pack.GetComponentsInChildren<Collider>(true))
         {
             var unit = Unit(solid.gameObject);
-            if (Named(solid.gameObject, packParts.Collision)) continue;
+            if (Named(solid.gameObject, packParts.Collision) || packKept.Contains(solid)) continue;
             Object.DestroyImmediate(solid);
             if (!Named(unit, packParts.Fixed)) units.Add(unit);
         }
@@ -334,6 +347,18 @@ public sealed partial class GreyboxBuilder
             look.shadowCastingMode = ShadowCastingMode.Off;
             if (!isGlass) packOccluders.Add(outside);
             packOutside++;
+            // A pane is seen, so it blocks, from both sides, by its own shape: the building's collision mesh leaves
+            // some panes out (the gallery's glass over its low wall), and one jumped through them.
+            if (isGlass)
+            {
+                foreach (var own in part.GetComponents<Collider>()) Object.DestroyImmediate(own);
+                var front = part.AddComponent<MeshCollider>();
+                front.sharedMesh = filter.sharedMesh;
+                var back = outside.AddComponent<MeshCollider>();
+                back.sharedMesh = turned;
+                packKept.Add(front);
+                packKept.Add(back);
+            }
         }
         foreach (var solid in pack.GetComponentsInChildren<MeshCollider>(true))
         {
@@ -406,7 +431,9 @@ public sealed partial class GreyboxBuilder
                     for (int k = i; k <= end; k++) under[k, j + r] = false;
                 var block = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 block.name = "받침";
-                Object.DestroyImmediate(block.GetComponent<Collider>());
+                // It is seen from outside as a solid base, so it is one: with no collider one walked into it and stood
+                // in the hollow under the upper floor, behind every wall.
+                packKept.Add(block.GetComponent<Collider>());
                 block.transform.SetParent(podium, false);
                 float x0 = extent.min.x + i * PodiumCell, x1 = extent.min.x + (end + 1) * PodiumCell;
                 float z0 = extent.min.z + j * PodiumCell, z1 = extent.min.z + (j + rows) * PodiumCell, y1 = upper - PodiumUnder;
@@ -508,14 +535,47 @@ public sealed partial class GreyboxBuilder
         return MeshCut.Readable(mesh);
     }
 
-    // A mesh this build made, as an asset beside the scene (Scenes/Campaign/<scene>/Pack/<name>.asset).
+    // A mesh this build made, under the name it asks for. It stays in memory: nothing is written until the build ends
+    // (WritePackMeshes), so a mesh made later can never destroy one that something still holds.
     private void SavePackMesh(Mesh mesh, string name)
     {
+        mesh.name = name;
+        packMade[mesh] = name;
+    }
+
+    // The end of a build: every mesh it made that something of the building still shows or collides with becomes an
+    // asset beside the scene (Scenes/Campaign/<scene>/Pack/<name>.asset), each in a file of its own: meshes asking for
+    // one name (three collision parts are all named "colmesh") get "name", "name 2", "name 3". The folder is emptied
+    // first: the scene was laid anew, so nothing uses the last build's meshes. A cut that a later cut replaced is held
+    // by nothing, and goes.
+    private void WritePackMeshes()
+    {
+        if (pack == null) return;
         string data = Folder + "/" + sceneName, folder = data + "/Pack";
-        if (!AssetDatabase.IsValidFolder(data)) AssetDatabase.CreateFolder(Folder, sceneName);
-        if (!AssetDatabase.IsValidFolder(folder)) AssetDatabase.CreateFolder(data, "Pack");
-        foreach (char bad in System.IO.Path.GetInvalidFileNameChars()) name = name.Replace(bad, '_');
-        AssetDatabase.CreateAsset(mesh, folder + "/" + name + ".asset");
+        if (AssetDatabase.IsValidFolder(folder)) AssetDatabase.DeleteAsset(folder);
+        var held = new List<Mesh>();
+        foreach (var filter in pack.GetComponentsInChildren<MeshFilter>(true))
+            if (filter.sharedMesh != null && packMade.ContainsKey(filter.sharedMesh) && !held.Contains(filter.sharedMesh)) held.Add(filter.sharedMesh);
+        foreach (var solid in pack.GetComponentsInChildren<MeshCollider>(true))
+            if (solid.sharedMesh != null && packMade.ContainsKey(solid.sharedMesh) && !held.Contains(solid.sharedMesh)) held.Add(solid.sharedMesh);
+        foreach (var made in packMade.Keys)
+            if (made != null && !held.Contains(made)) Object.DestroyImmediate(made);
+        if (held.Count > 0)
+        {
+            if (!AssetDatabase.IsValidFolder(data)) AssetDatabase.CreateFolder(Folder, sceneName);
+            AssetDatabase.CreateFolder(data, "Pack");
+        }
+        var taken = new HashSet<string>();
+        foreach (var mesh in held)
+        {
+            string name = packMade[mesh];
+            foreach (char bad in System.IO.Path.GetInvalidFileNameChars()) name = name.Replace(bad, '_');
+            string file = name;
+            for (int again = 2; !taken.Add(file.ToLowerInvariant()); again++) file = name + " " + again;
+            AssetDatabase.CreateAsset(mesh, folder + "/" + file + ".asset");
+        }
+        packMeshFiles = held.Count;
+        packMade.Clear();
     }
 
     // For the build's report.
@@ -525,6 +585,6 @@ public sealed partial class GreyboxBuilder
         if (pack == null) return "";
         return "\n팩 장면(" + pack.name + "): 등 " + packLamps + "개는 Baked로 프로브에 구웠어요. 소품 충돌 상자 " + packSolids + "개(그중 " + packCapped +
                "개는 못 올라서게 지붕을 씌움), 문 " + packCuts + "곳을 벽에서 잘라 냄, 바깥 면 " + packOutside + "개, 윗층 밑 받침 " + packPodium +
-               "개, 지운 소품 " + packRemoved + "개, LOD를 맞춘 소품 " + packLods + "개.";
+               "개, 지운 소품 " + packRemoved + "개, LOD를 맞춘 소품 " + packLods + "개, 지으면서 만든 메시 파일 " + packMeshFiles + "개.";
     }
 }
