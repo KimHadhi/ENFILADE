@@ -40,16 +40,22 @@ TABLE = 'InjectArms'
 # the fist toward the thumb's side, which is the syringe from its needle to its plunger; the palm's facing).
 # Kazusa's left shoulder is 11 cm left, 17 below and 9 behind her eyes and her arm 49 cm long.
 DRAFTS = {
-    # Into the left thigh: the wrist ends where Kazusa's own thigh needs it for the needle's tip to be on its outside a
-    # hand under the hip (measured from her bones, 2026-11-18: 22 cm left of the eyes, 62 under, 9 behind; the arm at
-    # 94% of its reach), the needle down and a little inward.
+    # Into the left thigh, as an auto-injector is jabbed: the arm hangs, the palm turns forward, and the needle, out past
+    # the little finger, points in at the thigh's outside and 45 degrees down (in the view's axes .57 right, .71 down,
+    # .42 back: the thigh's outside-front is where the game looks for its spot, InjectArm.OwnSide). The first draft had
+    # the needle straight down beside the leg: its tip touched the thigh and the syringe lay along it, 81 degrees from
+    # going in (the editor's InjectBench measured it on all five characters, 2026-11-18). Straight in is out of a
+    # hanging arm's reach: the spot is further under the shoulder than the arm is long, and the syringe's own length
+    # has to make up the rest downward. The wrist ends where Kazusa's thigh needs it for the tip to be a hand under the
+    # hip (from her bones: 20 cm left of the eyes, 58 under, level with them; the arm at 85% of its reach); the fist is
+    # drawn back along the needle before the jab and after it.
     'inject_self': {
         1: ((-.21, -.47, .12), (-.20, .80, -.56), (.80, .40, -.45)),
         4: ((-.17, -.30, .27), (-.10, .97, -.22), (.90, .15, -.40)),
-        7: ((-.27, -.42, .02), (-.35, .90, -.25), (.75, .40, -.50)),
-        10: ((-.222, -.617, -.091), (-.30, .94, -.14), (.80, .30, -.52)),
-        15: ((-.222, -.617, -.091), (-.30, .94, -.14), (.80, .30, -.52)),
-        18: ((-.25, -.53, -.03), (-.33, .91, -.24), (.78, .36, -.51)),
+        7: ((-.284, -.472, .052), (-.566, .707, .424), (.575, -.03, .819)),
+        10: ((-.199, -.578, -.012), (-.566, .707, .424), (.575, -.03, .819)),
+        15: ((-.199, -.578, -.012), (-.566, .707, .424), (.575, -.03, .819)),
+        18: ((-.256, -.507, .03), (-.566, .707, .424), (.575, -.03, .819)),
         24: ((-.21, -.47, .12), (-.20, .80, -.56), (.80, .40, -.45)),
     },
     # At a friend ahead: the fist thrust out to 92% of the arm's reach, the needle leading.

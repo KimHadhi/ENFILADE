@@ -179,26 +179,8 @@ public sealed class DetenteLooks : MonoBehaviour
         if (model != null)
             // Held on a body, it brings nothing that would make it part of the world (WornParts: a pack's prefab comes with colliders).
             WornParts.Strip(Instantiate(model, prop, false));
-        else if (kind == Kind.Syringe)
-        {
-            // A thick barrel (3.4 cm across, 12 cm long), the red dose in it, an orange band at its neck, the plunger behind,
-            // the finger grips, the needle: its tip 12.5 cm under the middle of the barrel (Tables/InjectArms tip).
-            Part("Barrel", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(.034f, .06f, .034f), Plastic, prop);
-            fluid = Part("Dose", PrimitiveType.Cylinder, new Vector3(0f, -.008f, 0f), new Vector3(.0356f, .045f, .0356f), Dose, prop);
-            Part("Band", PrimitiveType.Cylinder, new Vector3(0f, -.058f, 0f), new Vector3(.037f, .006f, .037f), Band, prop);
-            plunger = new GameObject("Plunger").transform;
-            plunger.SetParent(prop, false);
-            Part("Rod", PrimitiveType.Cylinder, new Vector3(0f, .095f, 0f), new Vector3(.012f, .035f, .012f), Plastic, plunger);
-            Part("Thumb", PrimitiveType.Cylinder, new Vector3(0f, .132f, 0f), new Vector3(.042f, .004f, .042f), Plastic, plunger);
-            Part("Grips", PrimitiveType.Cube, new Vector3(0f, .062f, 0f), new Vector3(.085f, .006f, .016f), Plastic, prop);
-            Part("Hub", PrimitiveType.Cylinder, new Vector3(0f, -.07f, 0f), new Vector3(.016f, .008f, .016f), Steel, prop);
-            Part("Needle", PrimitiveType.Cylinder, new Vector3(0f, -.1f, 0f), new Vector3(.0035f, .025f, .0035f), Steel, prop);
-        }
-        else
-        {
-            Part("Roll", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.06f, .035f, .06f), Gauze, prop);
-            Part("Tail", PrimitiveType.Cube, new Vector3(.035f, 0f, .05f), new Vector3(.004f, .05f, .1f), Gauze, prop);
-        }
+        else if (kind == Kind.Syringe) MakeSyringe(prop, out plunger, out fluid);
+        else MakeBandage(prop);
         foreach (var renderer in prop.GetComponentsInChildren<Renderer>())
         {
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -206,6 +188,33 @@ public sealed class DetenteLooks : MonoBehaviour
         }
         // In the fist on the next Place (InjectArm.Wear); a body without a humanoid arm shows none rather than one in the air.
         prop.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// The syringe of plain parts under <paramref name="prop"/>, in the tool's axes: a thick barrel (3.4 cm across, 12 cm
+    /// long), the red dose in it, an orange band at its neck, the plunger behind, the finger grips, the needle, its tip
+    /// 12.5 cm under the middle of the barrel (Tables/InjectArms tip). Its plunger and its dose are handed back for the
+    /// plunger's play. The editor's bench (InjectBench) puts the same one in the hand it stands.
+    /// </summary>
+    internal static void MakeSyringe(Transform prop, out Transform plunger, out Transform fluid)
+    {
+        Part("Barrel", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(.034f, .06f, .034f), Plastic, prop);
+        fluid = Part("Dose", PrimitiveType.Cylinder, new Vector3(0f, -.008f, 0f), new Vector3(.0356f, .045f, .0356f), Dose, prop);
+        Part("Band", PrimitiveType.Cylinder, new Vector3(0f, -.058f, 0f), new Vector3(.037f, .006f, .037f), Band, prop);
+        plunger = new GameObject("Plunger").transform;
+        plunger.SetParent(prop, false);
+        Part("Rod", PrimitiveType.Cylinder, new Vector3(0f, .095f, 0f), new Vector3(.012f, .035f, .012f), Plastic, plunger);
+        Part("Thumb", PrimitiveType.Cylinder, new Vector3(0f, .132f, 0f), new Vector3(.042f, .004f, .042f), Plastic, plunger);
+        Part("Grips", PrimitiveType.Cube, new Vector3(0f, .062f, 0f), new Vector3(.085f, .006f, .016f), Plastic, prop);
+        Part("Hub", PrimitiveType.Cylinder, new Vector3(0f, -.07f, 0f), new Vector3(.016f, .008f, .016f), Steel, prop);
+        Part("Needle", PrimitiveType.Cylinder, new Vector3(0f, -.1f, 0f), new Vector3(.0035f, .025f, .0035f), Steel, prop);
+    }
+
+    /// <summary>The roll of bandage of plain parts under <paramref name="prop"/>, its axis along y, a tail of gauze off it.</summary>
+    internal static void MakeBandage(Transform prop)
+    {
+        Part("Roll", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.06f, .035f, .06f), Gauze, prop);
+        Part("Tail", PrimitiveType.Cube, new Vector3(.035f, 0f, .05f), new Vector3(.004f, .05f, .1f), Gauze, prop);
     }
 
     // One part: a built-in shape (a cylinder stands along y, the tool's handle), its own colour. Its collider goes at once:

@@ -364,14 +364,17 @@ internal static partial class WardrobeBench
         return "nothing";
     }
 
-    // A character's sheet: a row to each way of wearing, three views across.
-    private static void SaveSheet(string path, List<Texture2D[]> tiles, int size)
+    // A character's sheet: a row to each way of wearing, its views across (as many as the first row has). The healing
+    // arm's bench (InjectBench) lays its pictures out with it too.
+    internal static void SaveSheet(string path, List<Texture2D[]> tiles, int size)
     {
-        var sheet = new Texture2D(size * 3, size * tiles.Count, TextureFormat.RGB24, false);
+        int columns = tiles.Count > 0 ? tiles[0].Length : 0;
+        if (columns == 0) return;
+        var sheet = new Texture2D(size * columns, size * tiles.Count, TextureFormat.RGB24, false);
         try
         {
             for (int row = 0; row < tiles.Count; row++)
-                for (int column = 0; column < 3; column++)
+                for (int column = 0; column < columns && column < tiles[row].Length; column++)
                 {
                     var tile = tiles[row][column];
                     if (tile == null) continue;
@@ -394,7 +397,8 @@ internal static partial class WardrobeBench
 
     // ---- Where the pictures are taken: a scene of its own, lit by itself, seen by one lens ----
 
-    private sealed class Stage : IDisposable
+    // Shared with the healing arm's bench (InjectBench), which stands bodies in it the same way.
+    internal sealed class Stage : IDisposable
     {
         private readonly Scene scene;
         private readonly GameObject root;
@@ -477,6 +481,19 @@ internal static partial class WardrobeBench
                 Shoot(middle + right * away, Quaternion.LookRotation(-right, Vector3.up), size),
                 Shoot(middle - ahead * away, Quaternion.LookRotation(ahead, Vector3.up), size),
             };
+        }
+
+        /// <summary>
+        /// One square picture of what stands in the scene, the lens at <paramref name="from"/> looking at
+        /// <paramref name="at"/>, <paramref name="half"/> metres from its middle to an edge, <paramref name="top"/> toward
+        /// the picture's top (the scene's up when left out: say which way is the top for a look straight down). The
+        /// caller destroys it.
+        /// </summary>
+        public Texture2D Look(Vector3 from, Vector3 at, float half, int size, Vector3? top = null)
+        {
+            Vector3 way = (at - from).normalized;
+            lens.orthographicSize = half;
+            return Shoot(from, Quaternion.LookRotation(way, top ?? (Mathf.Abs(way.y) > .97f ? Vector3.forward : Vector3.up)), size);
         }
 
         private Texture2D Shoot(Vector3 spot, Quaternion turn, int size)

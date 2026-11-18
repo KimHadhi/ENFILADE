@@ -150,49 +150,68 @@ public sealed class InjectArm : PathArm
     private bool Free()
         => !movement.IsDead && !movement.IsDowned && !movement.IsHeld && !movement.IsParkour && !PlayerGrenades.HandBusy(movement);
 
-    // The path's own axes on this body: the way the body faces, level (a thigh stays where it is when the view tilts), or
-    // the way from the shoulder to where the needle goes (a friend), the view's when there is nowhere to aim.
-    private Quaternion FrameOf(Move move, bool aimed, Vector3 spot)
+    // ---- The arm's geometry, as functions of what they are given. The game poses a player's arm with them every frame,
+    // and the editor's bench (InjectBench) stands each character with the very same ones, without playing: a needle
+    // that points the wrong way or a thigh an arm cannot reach is a line in its report first. ----
+
+    /// <summary>
+    /// The path's own axes on a body: the way the body faces, level (a thigh stays where it is when the view tilts), or
+    /// the way from the shoulder to where the needle goes (a friend), the view's when there is nowhere to aim.
+    /// </summary>
+    internal static Quaternion FrameFor(Move move, Quaternion view, Vector3 shoulder, bool aimed, Vector3 spot)
     {
-        if (!move.Aims) return Quaternion.Euler(0f, eyes.eulerAngles.y, 0f);
-        Vector3 way = aimed ? spot - arm.Upper.position : Vector3.zero;
-        return way.sqrMagnitude > .04f ? Quaternion.LookRotation(way.normalized, Vector3.up) : eyes.rotation;
+        if (!move.Aims) return Quaternion.Euler(0f, view.eulerAngles.y, 0f);
+        Vector3 way = aimed ? spot - shoulder : Vector3.zero;
+        return way.sqrMagnitude > .04f ? Quaternion.LookRotation(way.normalized, Vector3.up) : view;
     }
 
-    // The arm where the path has it from this shoulder in this arm's lengths, then, round the strike, the wrist moved by as
-    // much as the needle's tip is from its spot on the body: the hand keeps the turn the path gave it and the tip ends on
-    // the body it goes into.
-    private void Pose(Move move, in GrenadeArmPath.Key key, bool aimed, Vector3 spot, Vector3 inward)
+    /// <summary>
+    /// The arm where a key of the path has it from its shoulder, in the frame's axes and the arm's own lengths; then the
+    /// wrist moved by <paramref name="homing"/> of what the needle's tip is from <paramref name="want"/>, the hand keeping
+    /// the turn the path gave it, so the tip ends on the body it goes into.
+    /// </summary>
+    /// <param name="left">What is still between the tip and its spot once the arm has done all it can (m: a friend out
+    /// of reach, a thigh too far for a short arm); below 0 when the arm was not wholly homed.</param>
+    /// <param name="reach">How far the wrist then is from the shoulder, in arm lengths.</param>
+    internal static void Stand(ArmBones arm, Move move, in GrenadeArmPath.Key key, Quaternion frame, float homing, Vector3 want,
+        out float left, out float reach)
     {
-        arm.Keep();
-        Quaternion frame = FrameOf(move, aimed, spot);
+        left = -1f;
+        reach = 0f;
         Vector3 shoulder = arm.Upper.position;
         Vector3 wrist = shoulder + frame * (key.Wrist * arm.ArmLength), elbow = shoulder + frame * (key.Elbow * arm.ArmLength);
         Vector3 along = frame * key.Along, palm = frame * key.Palm;
         TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, wrist, elbow);
         arm.TurnHand(along, palm);
+        if (homing <= 0f || !SeatOf(arm, move, out Vector3 at, out Quaternion turn)) return;
+        // The row's metres are the game's own, as the thing in the hand is (Seat keeps it at its size on any body).
+        Vector3 gap = want - (at + turn * (Vector3.up * move.Tip));
+        TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, arm.Hand.position + gap * homing, elbow);
+        arm.TurnHand(along, palm);
+        if (homing < 1f || !SeatOf(arm, move, out at, out turn)) return;
+        left = (want - (at + turn * (Vector3.up * move.Tip))).magnitude;
+        reach = (arm.Hand.position - shoulder).magnitude / Mathf.Max(1e-4f, arm.ArmLength);
+    }
+
+    private Quaternion FrameOf(Move move, bool aimed, Vector3 spot) => FrameFor(move, eyes.rotation, arm.Upper.position, aimed, spot);
+
+    // The arm where the path has it from this shoulder in this arm's lengths, then, round the strike, the needle's tip
+    // homed on its spot on the body (Stand); the fingers after, and all of it eased in over the frame's own pose.
+    private void Pose(Move move, in GrenadeArmPath.Key key, bool aimed, Vector3 spot, Vector3 inward)
+    {
+        arm.Keep();
+        Quaternion frame = FrameOf(move, aimed, spot);
         float homing = aimed && move.HasTip ? Homing(move) : 0f;
-        if (homing > 0f && Seated(move, out Vector3 at, out Quaternion turn))
+        Stand(arm, move, key, frame, homing, spot + inward * move.Depth, out float left, out float reach);
+        // The nearest the tip came, for the dose's line in the record.
+        if (left >= 0f && (gapAtStrike < 0f || left < gapAtStrike))
         {
-            // The row's metres are the game's own, as the thing in the hand is (Seat keeps it at its size on any body).
-            Vector3 want = spot + inward * move.Depth;
-            Vector3 gap = want - (at + turn * (Vector3.up * move.Tip));
-            TwoBoneIK.Solve(arm.Upper, arm.Lower, arm.Hand, arm.Hand.position + gap * homing, elbow);
-            arm.TurnHand(along, palm);
-            // What is left once the arm has done what it can (a friend out of reach, a thigh too far for a short arm).
-            if (homing >= 1f && Seated(move, out at, out turn))
-            {
-                float left = (want - (at + turn * (Vector3.up * move.Tip))).magnitude;
-                if (gapAtStrike < 0f || left < gapAtStrike)
-                {
-                    gapAtStrike = left;
-                    reachAtStrike = (arm.Hand.position - shoulder).magnitude / Mathf.Max(1e-4f, arm.ArmLength);
-                }
-            }
+            gapAtStrike = left;
+            reachAtStrike = reach;
         }
         // Every finger joint round the syringe as the path has it from Blender, onto this body's own hand (FingerWays); a
         // table without them closes the fingers by its curl and thumb.
-        if (hands == null || !hands.WearFingerWays(animator, true, fingers, 1f)) arm.Close(along, palm, key.Curl, key.Thumb);
+        if (hands == null || !hands.WearFingerWays(animator, true, fingers, 1f)) arm.Close(frame * key.Along, frame * key.Palm, key.Curl, key.Thumb);
         arm.Ease(weight);
     }
 
@@ -207,10 +226,12 @@ public sealed class InjectArm : PathArm
         return move.ReachOut > 0f ? Mathf.SmoothStep(1f, 0f, Mathf.Clamp01((since - move.PlungeSeconds) / move.ReachOut)) : 0f;
     }
 
-    // Where the thing sits as the hand is now: from the wrist along the hand's own axes (x the side away from the thumb, y
-    // out of the palm, z the fingers' way) by its row's hand lengths, its handle and its other axis along the row's ways,
-    // its grip point there (Tools/Blender/Shove seats the preview the same way). False while the hand has no axes.
-    private bool Seated(Move move, out Vector3 at, out Quaternion turn)
+    /// <summary>
+    /// Where the thing sits as the hand is now: from the wrist along the hand's own axes (x the side away from the thumb, y
+    /// out of the palm, z the fingers' way) by its row's hand lengths, its handle and its other axis along the row's ways,
+    /// its grip point there (Tools/Blender/Shove seats the preview the same way). False while the hand has no axes.
+    /// </summary>
+    internal static bool SeatOf(ArmBones arm, Move move, out Vector3 at, out Quaternion turn)
     {
         at = default;
         turn = Quaternion.identity;
@@ -225,7 +246,7 @@ public sealed class InjectArm : PathArm
 
     private void Seat(Move move)
     {
-        if (holder == null || !Seated(move, out Vector3 at, out Quaternion turn)) return;
+        if (holder == null || !SeatOf(arm, move, out Vector3 at, out Quaternion turn)) return;
         // A body imported at another scale (an avatar's armature at 100) must not scale the thing with it.
         float scale = Mathf.Max(1e-4f, Mathf.Abs(transform.lossyScale.x));
         holder.localScale = Vector3.one / scale;
@@ -241,10 +262,27 @@ public sealed class InjectArm : PathArm
         spot = default;
         inward = default;
         var who = move.Kind == Kind.Self ? movement : patient;
-        if (who == null || move.Bone == HumanBodyBones.LastBone) return false;
+        if (who == null) return false;
         Animator body = who == movement ? animator : who.TryGetComponent(out PlayerBody theirs) ? theirs.BodyAnimator : null;
-        if (body == null || !body.isHuman) return false;
-        Vector3 shoulder = arm.Upper.position;
+        Vector3? ownSide = who == movement ? OwnSide(who.transform.right, who.transform.forward) : (Vector3?)null;
+        return SpotOn(move, body, arm.Upper.position, ownSide, PokeBody.Of(who), out spot, out inward);
+    }
+
+    /// <summary>The side a body's own needle comes into its thigh from: its outside (the left) and front.</summary>
+    internal static Vector3 OwnSide(Vector3 right, Vector3 forward) => -right * .8f + forward * .6f;
+
+    /// <summary>
+    /// Where the needle goes on <paramref name="body"/> and the way in, for the arm whose shoulder is at
+    /// <paramref name="shoulder"/>. <paramref name="ownSide"/> is the side the needle comes in from when the body is the
+    /// arm's own (OwnSide); null for another body, whose side is the one facing the shoulder. <paramref name="surface"/>
+    /// reads the body's real surface (PokeBody); null where nothing does (the bench, a body not yet read), and the spot
+    /// is then a sixth of the bone's length out from its axis.
+    /// </summary>
+    internal static bool SpotOn(Move move, Animator body, Vector3 shoulder, Vector3? ownSide, PokeBody surface, out Vector3 spot, out Vector3 inward)
+    {
+        spot = default;
+        inward = default;
+        if (move == null || move.Bone == HumanBodyBones.LastBone || body == null || !body.isHuman) return false;
         Transform from = null, to = null;
         if (move.NearerArm)
         {
@@ -273,13 +311,12 @@ public sealed class InjectArm : PathArm
         axis /= length;
         Vector3 core = from.position + axis * (length * move.Along);
         // The side the needle comes in from, square to the bone.
-        Vector3 side = who == movement ? -who.transform.right * .8f + who.transform.forward * .6f : shoulder - core;
+        Vector3 side = ownSide ?? shoulder - core;
         side = Vector3.ProjectOnPlane(side, axis);
         if (side.sqrMagnitude < 1e-8f) return false;
         side.Normalize();
         inward = -side;
         spot = core + side * (length * Fallback);
-        var surface = PokeBody.Of(who);
         // The limb's own surface only (its skin and what is worn on it): a skirt or a coat's tail hanging over a thigh
         // hangs from bones of its own, and a needle goes through it into the leg.
         if (surface != null && surface.Prepare() && surface.Raycast(core + side * Probe, inward, Probe, out Vector3 met, out _, out _, out _, from, to))
@@ -320,7 +357,7 @@ public sealed class InjectArm : PathArm
 
     // ---- A motion: its row of Tables/InjectArms and its path table ----
 
-    private sealed class Move
+    internal sealed class Move
     {
         public Kind Kind;
         public string Table;
