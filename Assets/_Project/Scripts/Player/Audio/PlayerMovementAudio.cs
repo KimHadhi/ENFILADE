@@ -61,6 +61,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     private bool catchPending;
     private int leanSide;
     private bool wasGrounded;
+    // The vault or climb under way (or just ended) is the climb off a ladder that was climbed the quiet way.
+    private bool quietTraversal;
 
     private void Awake() => player = GetComponent<PlayerMovement>();
 
@@ -150,6 +152,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             recentTraversal = from == MovementState.Vault ? "VaultLand" : "MantleLand";
             traversalEndedAt = Time.time;
         }
+        // The climb off a ladder's top after a quiet climb is quiet to its end: its hands (below) and its feet (OnLanded).
+        if (to == MovementState.Vault || to == MovementState.Mantle)
+            quietTraversal = to == MovementState.Mantle && from == MovementState.Ladder && player.Abilities.Fixtures.LadderQuiet;
         if (from == MovementState.LedgeHang && to != MovementState.Mantle && to != MovementState.LedgeJump)
             Cue("LedgeDrop", Surfaces.Of(traversal.Ledge.Surface), true);
         // Let go before the hands got there: no catch to hear.
@@ -176,7 +181,8 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             case MovementState.DashPush: Cue("DashPush", Ground()); break;
             case MovementState.Vault: Cue("Vault", Surfaces.Of(traversal.Obstacle.Surface), true); break;
             case MovementState.Mantle:
-                Cue(from == MovementState.Ladder ? "LadderExit" : from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle",
+                Cue(from == MovementState.Ladder ? (quietTraversal ? "LadderExit" + PlayerFixtureAudio.QuietSuffix : "LadderExit")
+                    : from == MovementState.LedgeHang ? "LedgeClimb" : "Mantle",
                     Surfaces.Of(traversal.Obstacle.Surface), true);
                 break;
             case MovementState.LedgeHang:
@@ -204,16 +210,52 @@ public sealed class PlayerMovementAudio : MonoBehaviour
     {
         // A landing roll has its own sound (Roll).
         if (player.CurrentState == MovementState.LandingRoll) return;
-        string cue;
         var tier = player.LastLandingTier;
-        if (tier == MovementLanding.Tier.Heavy) cue = "LandHeavy";
-        else if (tier == MovementLanding.Tier.Hard) cue = "LandHard";
-        else if (recentTraversal != null && Time.time - traversalEndedAt <= traversalLandWindow) cue = recentTraversal;
-        else if (impact >= landSoftSpeed) cue = "Land";
-        else if (impact >= landMinSpeed) cue = "LandSoft";
-        else return;
+        string after = recentTraversal != null && Time.time - traversalEndedAt <= traversalLandWindow ? recentTraversal : null;
+        // Crouched as the feet come down: it walked off crouched, or the crouch was held through the air (the motor has
+        // put it in the crouch by now), or it came off a ladder climbed the quiet way.
+        bool crouched = player.IsCrouchStance || (after != null && quietTraversal);
+        string cue = LandingCue(tier, impact, crouched, after, landMinSpeed, landSoftSpeed);
+        Record(impact, tier, crouched, cue);
+        if (cue == null) return;
         recentTraversal = null;
         Cue(cue, Ground());
+    }
+
+    /// <summary>
+    /// The sound of a touchdown, from how the body met the ground: how hard (the landing's tier, and the feet's speed
+    /// within the light one), in what stance, and whether it is the end of a vault or a climb. Null for one too gentle
+    /// to hear. This is the one place a landing's sound, and with its row's noise what zombies hear of it, is decided.
+    /// Crouched, a landing that is not hard is the quiet one (LandSneak, no noise): a body that comes down crouched
+    /// takes the drop in its legs. Until 2026-11-18 the stance was never asked, so a crouched drop off any step was
+    /// heard 12 m away and sneaking ended at the first ledge (the user: "앉은 상태로 낙하 시 무소음 착지(사일런트 드랍)
+    /// 적용(하드 랜딩이 발생하는 고지대 제외 ...)"). Hard and heavy landings are loud whatever the stance.
+    /// </summary>
+    public static string LandingCue(MovementLanding.Tier tier, float impact, bool crouched, string afterTraversal, float minSpeed, float softSpeed)
+    {
+        if (tier == MovementLanding.Tier.Heavy) return "LandHeavy";
+        if (tier == MovementLanding.Tier.Hard) return "LandHard";
+        if (crouched) return afterTraversal != null || impact >= minSpeed ? "LandSneak" : null;
+        if (afterTraversal != null) return afterTraversal;
+        return impact >= softSpeed ? "Land" : impact >= minSpeed ? "LandSoft" : null;
+    }
+
+    /// <summary>The sound a plain touchdown of this tier and speed would make with this player's numbers (the console's /drop).</summary>
+    public string LandingCueFor(MovementLanding.Tier tier, float impact, bool crouched)
+        => LandingCue(tier, impact, crouched, null, landMinSpeed, landSoftSpeed);
+
+    // Each touchdown of this PC's player, with what it was judged by, for whoever checks a play afterwards
+    // (Logs/landings.txt): the capsule's speed and the tuck it had, the feet's speed that the tier is judged by, the
+    // height a plain drop would need for it, the stance and the sound.
+    private void Record(float impact, MovementLanding.Tier tier, bool crouched, string cue)
+    {
+        if (!player.IsLocal || !PlayRecord.On || impact < landMinSpeed) return;
+        var landing = player.Abilities.Landing;
+        float gravity = Mathf.Abs(player.gravity);
+        float drop = gravity > 0f ? impact * impact / (2f * gravity) : 0f;
+        PlayRecord.Line("landings", "each landing: feet speed (capsule speed, tuck) = a plain drop of so many m; hard from Ability.hardLandingHeight; stance; cue (Tables/SoundCues)",
+            $"feet {impact:0.0} m/s (capsule {landing.LastCapsuleImpact:0.0}, tuck {landing.LastTuck:0.00} m) = drop {drop:0.00} m, hard from {player.AbilitySettings.hardLandingHeight:0.00} m"
+            + $" ({landing.HardSpeed:0.0} m/s) -> {tier}, {(crouched ? "crouched" : "upright")}, cue {cue ?? "(none)"}");
     }
 
     private void OnJumped() => Cue("Jump", Ground());

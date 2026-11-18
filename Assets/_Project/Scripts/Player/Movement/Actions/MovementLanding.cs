@@ -4,8 +4,9 @@ using State = PlayerMovement.MovementState;
 /// <summary>
 /// How hard each touchdown was, and what it does (numbers: Player.csv row Ability). Resolved before legacy slide
 /// transitions.
-/// - Light, slower than hardLandingSpeed (under ~3 m): nothing here; the body, the sounds and the view punch scale with it.
-/// - Hard (Beatrun's hard land), from hardLandingSpeed on the feet: the run stops, the ground speed drops and eases back
+/// - Light, a drop of less than hardLandingHeight (a storey of chapter 1's flats, 3 m, is under it): nothing here; the
+///   body, the sounds and the view punch scale with it, and crouched it is a quiet landing (PlayerMovementAudio).
+/// - Hard (Beatrun's hard land), from the speed such a drop lands at (HardSpeed) on the feet: the run stops, the ground speed drops and eases back
 ///   over hardLandingRecoverTime, and Shift or a W run cannot build speed for hardLandingNoSprintTime. A landing slide
 ///   takes it instead.
 /// - Heavy (Dynamic Landing), once the fall hurts (faster than safeFallSpeed after more than safeFallDistance): fall
@@ -170,11 +171,47 @@ public sealed class MovementLanding
 
     internal void SupportedByTraversal() { ClearFall(); IsKnockedBack = false; }
 
-    internal bool OnLanding()
+    /// <summary>
+    /// The speed a plain drop of hardLandingHeight lands at (m/s): the hard landing's threshold as the table gives it,
+    /// in metres, turned into the speed the touchdown is judged by.
+    /// </summary>
+    public float HardSpeed => SpeedOfDrop(ctx.AbilitySettings.hardLandingHeight, Mathf.Abs(ctx.gravity));
+
+    /// <summary>The speed a body dropped from rest reaches after falling this far (m/s).</summary>
+    public static float SpeedOfDrop(float height, float gravity) => Mathf.Sqrt(2f * Mathf.Max(0f, gravity) * Mathf.Max(0f, height));
+
+    /// <summary>
+    /// How fast the feet meet the ground, given how fast the capsule's bottom did and how far the legs were tucked up
+    /// (m/s). Tucked in the air the capsule's bottom rides that much above where the feet would hang, so it falls that
+    /// much further before it touches; the feet would have met the ground that much sooner and slower. Without this a
+    /// crouch pressed in the air made every drop count 0.85 m higher than it was: a storey's drop became a hard landing,
+    /// and a fall just short of hurting hurt.
+    /// </summary>
+    public static float FeetImpact(float capsuleImpact, float tuck, float gravity)
+        => Mathf.Sqrt(Mathf.Max(0f, capsuleImpact * capsuleImpact - 2f * Mathf.Max(0f, gravity) * Mathf.Max(0f, tuck)));
+
+    /// <summary>How hard a touchdown at this speed is, hurting or thrown aside: for whoever asks without landing (the console's /drop).</summary>
+    public Tier TierOf(float feetImpact, float fallDistance)
     {
         var settings = ctx.AbilitySettings;
-        LastImpactSpeed = impactSpeed;
-        LastFallDistance = trackingFall ? fallDistance : 0f;
+        bool hurts = feetImpact > settings.safeFallSpeed && fallDistance > settings.safeFallDistance;
+        return hurts ? Tier.Heavy : feetImpact >= HardSpeed ? Tier.Hard : Tier.Light;
+    }
+
+    /// <summary>How far the legs were tucked up when the last touchdown came (m), and the capsule's own speed then.</summary>
+    public float LastTuck { get; private set; }
+    public float LastCapsuleImpact { get; private set; }
+
+    /// <param name="tuck">How far an air crouch had drawn the capsule's bottom up above the feet as it touched down (m).</param>
+    internal bool OnLanding(float tuck = 0f)
+    {
+        var settings = ctx.AbilitySettings;
+        // Judged where the feet were, not where the tucked capsule's bottom was (FeetImpact).
+        float gravity = Mathf.Abs(ctx.gravity * (ctx.IsDiving ? ctx.diveGravityScale : 1f));
+        LastTuck = tuck;
+        LastCapsuleImpact = impactSpeed;
+        LastImpactSpeed = FeetImpact(impactSpeed, tuck, gravity);
+        LastFallDistance = trackingFall ? Mathf.Max(0f, fallDistance - tuck) : 0f;
         bool bigFall = panicked;
         ClearFall();
         bool knocked = IsKnockedBack;
@@ -182,7 +219,7 @@ public sealed class MovementLanding
         ctx.Abilities.Traversal.OnGrounded();
 
         bool hurts = LastImpactSpeed > settings.safeFallSpeed && LastFallDistance > settings.safeFallDistance;
-        LastTier = hurts || knocked ? Tier.Heavy : LastImpactSpeed >= settings.hardLandingSpeed ? Tier.Hard : Tier.Light;
+        LastTier = knocked ? Tier.Heavy : TierOf(LastImpactSpeed, LastFallDistance);
         bool rollPressed = rollBuffer > 0f;
         rollBuffer = 0f;
         if (LastTier == Tier.Light) return false;

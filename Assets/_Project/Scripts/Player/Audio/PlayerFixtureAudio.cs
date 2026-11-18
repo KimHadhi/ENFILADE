@@ -68,11 +68,12 @@ public sealed class PlayerFixtureAudio : MonoBehaviour
     private void OnStateChanged(MovementState from, MovementState to)
     {
         var fixtures = player.Abilities.Fixtures;
-        if (from == MovementState.Ladder && to != MovementState.Mantle) Cue("LadderLetGo", null, true);
+        if (from == MovementState.Ladder && to != MovementState.Mantle) Cue(Ladder("LadderLetGo"), null, true);
         if (from == MovementState.Zipline) Cue("ZiplineEnd", null, true);
         switch (to)
         {
-            case MovementState.Ladder: Cue(fixtures.LadderCaught ? "LadderCatch" : "LadderEnter", null, true); break;
+            // A ladder caught out of the air is a catch however it is held: the hands hit the rails.
+            case MovementState.Ladder: Cue(fixtures.LadderCaught ? "LadderCatch" : Ladder("LadderEnter"), null, true); break;
             case MovementState.Zipline:
                 Cue("ZiplineStart", null, true);
                 StartRide();
@@ -80,7 +81,16 @@ public sealed class PlayerFixtureAudio : MonoBehaviour
         }
     }
 
-    private void OnLadderStepped(bool leftHand) => Cue("LadderStep", null, true);
+    private void OnLadderStepped(bool leftHand) => Cue(Ladder("LadderStep"), null, true);
+
+    /// <summary>The cue's quiet version (SoundCues "...Quiet") when a ladder is, or was just, climbed the quiet way.</summary>
+    public const string QuietSuffix = "Quiet";
+
+    // How the ladder sounds is the climb's, decided here once: the quiet way (the crouch held, MovementFixtures
+    // .LadderQuiet) sets hands and feet down, which is a cue of its own with no foot on the rung in it and no noise for
+    // zombies. Until 2026-11-18 every rung played the same hands and feet at a fixed 6 m of noise whatever the stance, so
+    // a ladder could not be sneaked up (the user: "사다리 승하강 시 강제 발소리 출력 제거").
+    private string Ladder(string cue) => player.Abilities.Fixtures.LadderQuiet ? cue + QuietSuffix : cue;
 
     private void StartRide()
     {

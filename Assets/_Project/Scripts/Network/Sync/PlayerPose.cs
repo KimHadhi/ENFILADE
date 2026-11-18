@@ -19,7 +19,10 @@ public struct PlayerPose : INetworkSerializeByMemcpy
         Pointing = 512, NoPoke = 1024,
         // The point is a tap's ping's, at the foe the ping named (PlayerNetworkCombat), not along the look; and a ping's
         // point that turning away cut short is dropping back (PlayerPoint.TurnAway), so every copy drops it alike.
-        PingPoint = 2048, PointAway = 4096
+        PingPoint = 2048, PointAway = 4096,
+        // On a ladder with the crouch held: climbed the quiet way (MovementFixtures.LadderQuiet), so every PC's copy
+        // sounds, and is heard by its zombies, as the climber's own does.
+        LadderQuiet = 8192
     }
 
     public Vector3 Velocity;

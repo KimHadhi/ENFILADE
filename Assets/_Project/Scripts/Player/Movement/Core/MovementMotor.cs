@@ -202,9 +202,14 @@ public sealed class MovementMotor
             : Vector3.up;
         if (isGrounded) ctx.Actions.coyoteTimer = ctx.coyoteTime;
 
+        // How far the legs were tucked up as it touched down, before the feet are put back under the capsule: the landing
+        // is judged where the feet were (MovementLanding.FeetImpact). Only an air crouch's tuck: a dive or a slide in the
+        // air lies along its capsule, with no legs to reach down below it.
+        float tuck = 0f;
         if (isGrounded && (ctx.Posture.airBodyTucked || ctx.Posture.airCrouching))
         {
             bool wasAirCrouching = ctx.Posture.airCrouching;
+            if (wasAirCrouching) tuck = Mathf.Max(0f, ctx.Posture.AirTuck);
             ctx.Posture.RebaseAirCrouchFeet();
             if (wasAirCrouching && ctx.StateMachine.Current.AllowsAutomaticPosture && !ctx.IsDiving && !ctx.IsSliding)
             {
@@ -217,7 +222,7 @@ public sealed class MovementMotor
         if (!wasGroundedBefore && isGrounded)
         {
             landedThisFrame = true;
-            if (!ctx.Abilities.Landing.OnLanding()) ctx.StateMachine.Current.OnLanding();
+            if (!ctx.Abilities.Landing.OnLanding(tuck)) ctx.StateMachine.Current.OnLanding();
             ctx.RaiseLanded(ctx.Abilities.Landing.LastImpactSpeed);
         }
     }

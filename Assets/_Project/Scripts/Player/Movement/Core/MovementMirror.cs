@@ -105,6 +105,7 @@ public sealed class MovementMirror
                 if (fixtures.LadderLeftHand) marks |= Marks.LadderLeftHand;
                 if (fixtures.LadderSliding) marks |= Marks.LadderSliding;
                 if (fixtures.LadderStepBlocked) marks |= Marks.LadderBlocked;
+                if (fixtures.LadderQuiet) marks |= Marks.LadderQuiet;
                 break;
             case State.Zipline:
                 pose.Anchor = fixtures.ZiplineFrom;
@@ -198,7 +199,8 @@ public sealed class MovementMirror
             case State.Ladder:
                 if (pose.LadderSteps != 0 && pose.LadderSteps != fixtures.LadderSteps) ctx.RaiseLadderStepped(Has(pose, Marks.LadderLeftHand));
                 fixtures.MirrorLadder(LadderAt(pose.Anchor), Has(pose, Marks.LadderCaught), Has(pose, Marks.LadderLeftHand),
-                    pose.LadderSteps, pose.Detail, Has(pose, Marks.LadderBlocked), Has(pose, Marks.LadderSliding), pose.Extent);
+                    pose.LadderSteps, pose.Detail, Has(pose, Marks.LadderBlocked), Has(pose, Marks.LadderSliding), pose.Extent,
+                    Has(pose, Marks.LadderQuiet));
                 break;
             case State.Zipline: fixtures.MirrorZipline(pose.Anchor, pose.Direction, pose.Extent); break;
         }

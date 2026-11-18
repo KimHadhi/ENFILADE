@@ -435,7 +435,7 @@ Ability.ziplineAcceleration,6.25,집라인 가속(m/s²). 기울기와 상관없
 Ability.ziplineReleaseShare,0.75,놓을 때 남는 속도 비율
 Ability.ziplineRegrabDelay,0.75,놓은 뒤 줄이 다시 잡히기까지(초)
 # 능력: 착지 단계·구르기·낙하 피해 (MovementLanding. 디버그 HUD의 Last landing),,
-Ability.hardLandingSpeed,12,이보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지(m/s). 12m/s는 약 3m 낙하
+Ability.hardLandingHeight,3.5,"이 높이(m)에서 그냥 떨어진 것만큼, 또는 그보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지. 높이로 적는다: 맵을 짓는 단위가 높이라서다. 기준은 1장 아파트 한 층 3.0m(CampaignMaps.Apartment의 Storey)이고 그보다 0.5m 높게 잡았다: 한 층은 세게 착지가 아니어야 앉은 채 한 층을 조용히 내려설 수 있다(사용자 2026-11-18). 중력 24에서 3.5m는 13.0m/s. 예전 값은 속도 12m/s(= 3.0m, 한 층이 딱 걸렸다). 공중에서 Ctrl로 다리를 접어도 착지는 발이 닿았을 높이로 잰다(접은 0.85m만큼 더 떨어진 것으로 치지 않는다)"
 Ability.hardLandingRecoverTime,1,세게 착지한 뒤 원래 이동 속도로 돌아오기까지(초)
 Ability.hardLandingMoveScale,0.1,세게 착지한 직후 이동 속도 배율. hardLandingRecoverTime에 걸쳐 1로 돌아온다
 Ability.hardLandingNoSprintTime,0.5,세게 착지한 뒤 Shift나 W 달리기로 속도를 쌓지 못하는 시간(초)
@@ -513,7 +513,7 @@ Body.jump,jumpfast,점프 도약
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하
 Body.fallFlail,fallinguncontrolled,큰 낙하(Ability.bigFallHeight) 동안 허우적거리기. 이때 Ctrl은 착지 구르기만 준비하고 웅크리지 않는다
-Body.land,mx_fall_land,세게 착지(Ability.hardLandingSpeed 이상): 무릎을 깊게 굽힌다
+Body.land,mx_fall_land,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊게 굽힌다
 Body.slideStart,slidestart,슬라이딩 시작
 Body.slide,slideloop,슬라이딩
 Body.slideEnd,slideend,슬라이딩 끝
@@ -755,7 +755,7 @@ Footsteps.releaseSpeed,3,이보다 빠르게 발을 떼면 바닥을 차는 소�
 Footsteps.calibrateTime,0.5,이만큼 가만히 서 있으면 양발의 접지 높이를 각각 다시 잰다(초). 이동 중에도 직전 접지를 추적
 # 소리: 동작 (MovementAudio 행 → PlayerMovementAudio. 어떤 소리가 나는지는 Tables/SoundCues),,
 MovementAudio.landMinSpeed,1.5,이보다 살살 닿으면 착지 소리 없이 발소리만(m/s)
-MovementAudio.landSoftSpeed,4,이보다 느리면 가벼운 착지(LandSoft) 빠르면 착지(Land)(m/s). 세게·크게 착지(Ability.hardLandingSpeed·safeFallSpeed)는 LandHard·LandHeavy
+MovementAudio.landSoftSpeed,4,이보다 느리면 가벼운 착지(LandSoft) 빠르면 착지(Land)(m/s). 세게·크게 착지(Ability.hardLandingHeight·safeFallSpeed)는 LandHard·LandHeavy. 앉은 채(또는 공중에서 Ctrl을 누른 채) 내려선 가벼운 착지는 조용한 착지(LandSneak)라 좀비가 듣지 못한다
 MovementAudio.traversalLandWindow,1,볼트·올라서기가 끝나고 이 안에 닿으면 그 마무리 소리(VaultLand·MantleLand)(초)
 MovementAudio.getUpShare,0.5,크게 착지해 쓰러져 있는 시간 중 이 비율에서 일어나는 소리(GetUp)
 MovementAudio.ledgeCatchHardSpeed,4.75,이보다 빠르게 떨어지다 렛지를 잡으면 신음(LedgeCatchHard)(m/s)

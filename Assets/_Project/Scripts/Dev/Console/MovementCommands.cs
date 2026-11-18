@@ -12,6 +12,48 @@ public static class MovementCommands
         router.Register("input", "입력을 누가 쥐고 있는지 보기 — 화면마다 쥔 것(걷기 Move · 시야 Look · 총 Combat · 포인터 Cursor)과 지금 게임이 받는 입력 (InputHold, InputFocus)", _ => Input()); // dev-text
         router.Register("callouts", "콜아웃 표 점검 — 없는 사실·종류·단계 이름, 말할 줄이 없는 칸, 칸이 없는 줄을 찾고, 지금 내 상황에서 맞는 사실과 휠의 칸마다 나올 줄을 Logs/callouts.txt에 쓴다 (CalloutCheck, Callouts.csv·CalloutSlots.csv)", // dev-text
             _ => Application.isPlaying ? CalloutCheck.Write(PlayerCallouts.Local) : "이 명령어는 Play 중에 사용할 수 있습니다."); // dev-text
+        router.Register("drop", "[높이 m] — 그 높이에서 그냥 떨어지면 어떤 착지인지: 발이 닿는 속도, 착지 단계(가볍게·세게·크게), 서서와 앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5m부터 6m까지 표. 실제로 한 착지는 Logs/landings.txt에 적힌다 (MovementLanding, PlayerMovementAudio.LandingCue)", Drop); // dev-text
+    }
+
+    // What a plain drop of a height comes to with the tables as they are now: nothing is dropped. The tuck column shows
+    // the same drop with the legs drawn up in the air (the capsule falls further, the feet's speed is the same).
+    private static string Drop(string args)
+    {
+        if (!Application.isPlaying) return "이 명령어는 Play 중에 사용할 수 있습니다."; // dev-text
+        var mine = PlayerRoster.Local;
+        if (mine == null || mine.Abilities == null || !mine.TryGetComponent(out PlayerMovementAudio audio)) return "대상 플레이어를 찾지 못했습니다."; // dev-text
+        var landing = mine.Abilities.Landing;
+        float gravity = Mathf.Abs(mine.gravity), tuck = Mathf.Max(0f, mine.StandingColliderHeight - mine.CrouchColliderHeight);
+        var text = new System.Text.StringBuilder();
+        text.Append($"세게 착지는 {mine.AbilitySettings.hardLandingHeight:0.00}m({landing.HardSpeed:0.0}m/s)부터 · 다치는 낙하는 {mine.AbilitySettings.safeFallSpeed:0.0}m/s·{mine.AbilitySettings.safeFallDistance:0.0}m부터"); // dev-text
+        string trimmed = (args ?? "").Trim();
+        if (trimmed.Length > 0)
+        {
+            if (!TableCells.TryNumber(trimmed, out float height) || height < 0f) return "사용법: /drop [높이 m]"; // dev-text
+            text.Append('\n').Append(DropLine(mine, audio, height, gravity, tuck));
+            return text.ToString();
+        }
+        for (float height = .5f; height <= 6.01f; height += .5f) text.Append('\n').Append(DropLine(mine, audio, height, gravity, tuck));
+        return text.ToString();
+    }
+
+    private static string DropLine(PlayerMovement mine, PlayerMovementAudio audio, float height, float gravity, float tuck)
+    {
+        var landing = mine.Abilities.Landing;
+        float feet = MovementLanding.SpeedOfDrop(height, gravity);
+        // Tucked, the capsule's bottom falls this much further; judged at the feet it is the same landing.
+        float tucked = MovementLanding.FeetImpact(MovementLanding.SpeedOfDrop(height + tuck, gravity), tuck, gravity);
+        var tier = landing.TierOf(feet, height);
+        string upright = audio.LandingCueFor(tier, feet, false), crouched = audio.LandingCueFor(tier, feet, true);
+        return $"{height:0.0}m: 발 {feet:0.0}m/s (다리 접고 {tucked:0.0}) {tier} · 서서 {Heard(upright)} · 앉아서 {Heard(crouched)}"; // dev-text
+    }
+
+    // A cue and how far zombies hear it (Tables/SoundCues noise, m); 0 is not heard at all.
+    private static string Heard(string cue)
+    {
+        if (cue == null) return "소리 없음"; // dev-text
+        var found = SoundCues.Find(cue, null);
+        return found != null ? $"{cue}({found.Noise:0}m)" : cue + "(표에 없음)"; // dev-text
     }
 
     // Who holds what, and what the three questions answer for this PC's player right now. The console itself holds

@@ -189,9 +189,11 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float ziplineRegrabDelay = .75f;
 
     [Header("Landing Tiers, Roll & Fall Damage (MovementLanding)")]
-    [Tooltip("Landing on the feet faster than this is a hard landing (m/s, 12 is about 3 m): the run stops, the player "
-        + "slows down and cannot sprint for a moment. Ctrl just before touchdown rolls instead.")]
-    [Min(0f)] public float hardLandingSpeed = 12f;
+    [Tooltip("A plain drop from this high or higher lands hard (m): the run stops, the player slows down and cannot sprint "
+        + "for a moment. Ctrl just before touchdown rolls instead. A height, not a speed, because that is what a map is "
+        + "built in: one storey of chapter 1's flats is 3.0 m (CampaignMaps.Apartment Storey) and must stay under it, so a "
+        + "crouched drop of a storey is a quiet one (the user, 2026-11-18). MovementLanding.HardSpeed is the speed it means.")]
+    [Min(0f)] public float hardLandingHeight = 3.5f;
     [Tooltip("Seconds a hard landing takes to get back to full ground speed.")]
     [Min(0f)] public float hardLandingRecoverTime = 1f;
     [Tooltip("Share of the ground speed right after a hard landing; it eases back to 1 over hardLandingRecoverTime.")]

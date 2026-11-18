@@ -101,9 +101,13 @@ public sealed class MovementInput
     private void UpdateLatches(GameSettings settings)
     {
         bool sprintPressed = InputFocus.Pressed(sprintAction);
+        // On a ladder, and through the climb off its top, a latched crouch is kept too: it is what climbs the ladder the
+        // quiet way (MovementFixtures.LadderQuiet), and the body comes back down to the crouch at the top.
+        bool onLadder = ctx.CurrentState == PlayerMovement.MovementState.Ladder
+            || (ctx.CurrentState == PlayerMovement.MovementState.Mantle && ctx.Abilities != null && ctx.Abilities.Traversal.Obstacle.ExitLadder != null);
         bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
             || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning
-            || ctx.CurrentState == PlayerMovement.MovementState.StepDodge;
+            || ctx.CurrentState == PlayerMovement.MovementState.StepDodge || onLadder;
         if (!settings.crouchToggle || !crouchState || sprintPressed || InputFocus.Pressed(jumpAction) || InputFocus.Pressed(diveAction))
             crouchLatched = false;
         if (settings.crouchToggle && InputFocus.Pressed(crouchAction)) crouchLatched = !crouchLatched;

@@ -180,8 +180,8 @@ Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../..
 
 | 단계 | 조건 | 결과 |
 | --- | --- | --- |
-| 가볍게 | `hardLandingSpeed` 12m/s 미만 | 몸·소리·펀치만 낙하 속도에 맞춰진다 |
-| 세게 (Beatrun) | 12m/s 이상으로 발로 착지 | 쌓인 속도가 출발 속도로 깎이고, 이동 속도가 `hardLandingMoveScale`(0.1)배에서 `hardLandingRecoverTime`(1초)에 걸쳐 돌아온다. `hardLandingNoSprintTime`(0.5초) 동안 달려서 속도를 쌓지 못한다. 점프·회피는 된다. 소리는 `LandHard` |
+| 가볍게 | `hardLandingHeight` 3.5m에서 그냥 떨어진 것(13.0m/s)보다 약하게 | 몸·소리·펀치만 낙하 속도에 맞춰진다. 앉은 채 내려서면 조용한 착지(아래) |
+| 세게 (Beatrun) | 3.5m 낙하만큼, 또는 그보다 세게 발로 착지 | 쌓인 속도가 출발 속도로 깎이고, 이동 속도가 `hardLandingMoveScale`(0.1)배에서 `hardLandingRecoverTime`(1초)에 걸쳐 돌아온다. `hardLandingNoSprintTime`(0.5초) 동안 달려서 속도를 쌓지 못한다. 점프·회피는 된다. 소리는 `LandHard` |
 | 크게 (Dynamic Landing) | `safeFallSpeed` 16m/s 초과 + `safeFallDistance` 4m 초과 | 넘은 1m/s당 `fallDamagePerSpeed`의 낙하 피해 뒤 `HeavyLanding` 상태로 쓰러졌다 일어난다. 그동안 시선만 돌고 이동·점프·공격·조준은 안 된다. 미끄러지던 속도는 `heavyLandingBraking`으로 금방 멈춘다. 소리는 `LandHeavy`, 일어날 때 `GetUp`(`MovementAudio.getUpShare`) |
 
 크게 착지할 때의 자세는 움직임으로 정해집니다.
@@ -195,6 +195,9 @@ Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../..
 - **착지 슬라이드**: Ctrl을 누른 채 빠르게 착지해 슬라이드가 되면 세게 착지의 감속이 없습니다.
 - **구르기**: 세게·크게 착지하기 전 `rollInputWindow`(0.5초) 안에 Ctrl을 누르면 구릅니다. 피해·감속 없이 속도를 그대로 가져갑니다. 앞이 막혔거나 천장이 낮으면 구르지 못합니다. 수평 속도가 `rollLandSpeed`(2m/s)보다 느리거나 S를 누르고 있으면 구르지 않고 `rollLandTime`(0.6초) 동안 멈춰 제자리에 착지합니다. 피해가 없는 것은 같습니다. Beatrun의 기준(200단위/초, 약 4.9m/s)은 걷기 속도와 같아서 걷다가 떨어지면 늘 제자리 착지였고, 걸어도 구르도록 걷기 출발 속도(3.6m/s)보다 낮췄습니다(2026-11-06 사용자 요청).
 - **넉백 훅**: `PlayerMovement.KnockBack(velocity)`는 큰 적의 일격용이며 위쪽 성분을 넣어 씁니다. 날아가는 동안 조작이 안 되고, 착지하면 다치지 않았어도 맞은 쪽을 보고 등으로 쓰러졌다 일어납니다. 낙하 피해는 평소 규칙대로만 받습니다. 땅에서 위로 띄우지 않는 넉백은 그 자리에서 쓰러집니다.
+- **기준은 높이로 적는다**: 세게 착지의 기준은 속도가 아니라 높이(`Ability.hardLandingHeight`)입니다. 맵을 짓는 단위가 높이이기 때문입니다. 1장 아파트 한 층이 3.0m이고(`CampaignMaps.Apartment`의 `Storey`), 한 층을 내려서는 것은 세게 착지가 아니어야 해서 0.5m 높게 3.5m로 잡았습니다. 2026-11-18 전에는 12m/s(= 3.0m)라 한 층이 딱 세게 착지였습니다.
+- **발이 닿는 높이로 잰다**: 공중에서 Ctrl로 다리를 접으면 캡슐 바닥이 0.85m 올라가 그만큼 더 떨어진 뒤에야 땅에 닿습니다. 착지의 세기와 낙하 피해는 접지 않은 발이 닿았을 순간의 속도로 잽니다(`MovementLanding.FeetImpact`). 전에는 접은 만큼 높은 데서 떨어진 것으로 쳤습니다.
+- **조용한 착지(사일런트 드랍)**: 앉은 채로 걸어 내려서거나 공중에서 Ctrl을 누른 채 내려서면, 세게 착지가 아닌 한 조용한 착지입니다(`LandSneak`, 좀비가 듣지 못함). 서서 내려서면 전처럼 12m까지 들립니다. 어떤 착지가 어떤 소리인지는 [PlayerMovementAudio](../../Assets/_Project/Scripts/Player/Audio/PlayerMovementAudio.cs)의 `LandingCue` 한 곳이 정합니다. 콘솔 `/drop 3`은 그 높이의 착지가 무엇인지(발 속도, 단계, 서서·앉아서의 소리와 소음 반경) 알려 주고, 실제로 한 착지는 `Logs/landings.txt`에 한 줄씩 적힙니다.
 
 ### 시점 펀치
 
@@ -224,6 +227,8 @@ Esc 메뉴 **화면 흔들림**이 곱해집니다.
 Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../../Assets/_Project/Data/Resources/Tables/Audio/SoundCues.csv)의 `Ladder*`·`Zipline*` 큐입니다. 시험장은 [MovementAbilityPlayground](../../Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프)입니다.
 
 사다리·집라인은 파쿠르 상태라 그동안 총과 주먹을 쓸 수 없습니다.
+
+앉은 채로도 사다리를 탑니다(아래에서 W로, 위에서 걸어 나가거나 F로). 앉기를 누른 채(토글이면 앉은 채) 오르내리면 조용히 탑니다: 발 딛는 소리가 빠진 조용한 소리(`SoundCues`의 `Ladder…Quiet` 줄)가 나고 좀비가 듣지 못합니다(`MovementFixtures.LadderQuiet`, 다른 PC에도 같게 전해집니다). 서서 타면 전과 같은 소리이고 6~8m까지 들립니다. Ctrl을 새로 누르면 전처럼 사다리를 놓고, S로 미끄러져 내려가는 것은 조용하지 않습니다. 집라인은 앉기를 누르고 있으면 잡지 않습니다.
 
 ### 씬에 넣기
 
