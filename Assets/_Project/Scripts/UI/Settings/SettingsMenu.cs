@@ -76,7 +76,8 @@ public sealed class SettingsMenu : MonoBehaviour
     {
         IsOpen = true;
         if (!MainMenuScreen.IsOpen && !GameSession.IsOnline) GamePause.Take(this);
-        InputHold.Take(this, Held.Cursor);
+        // Everything, by name: the pointer alone no longer stops the walk (Held.Cursor), and in a room nothing pauses.
+        InputHold.Take(this);
         EnsureEventSystem();
         view.Show(true);
     }

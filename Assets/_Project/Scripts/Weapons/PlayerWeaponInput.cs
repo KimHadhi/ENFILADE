@@ -30,8 +30,11 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
 
     private void Update()
     {
-        // Run before PlayerLook can relock the cursor with the very same mouse click.
-        acceptInputThisFrame = Time.timeScale > 0f && Application.isFocused && Cursor.lockState == CursorLockMode.Locked;
+        // Read early in the frame: a screen that closes on a click later this frame still had the hands when the click came.
+        // Who holds the hands is asked (InputFocus.TakesCombat: a screen's hold of Combat, or of the pointer, whose
+        // clicks are not the trigger's), not whether the pointer is locked; this map is this component's own copy, which
+        // InputHold doesn't switch off.
+        acceptInputThisFrame = Time.timeScale > 0f && InputFocus.TakesCombat();
         if (!acceptInputThisFrame) releaseRequired = meleeReleaseRequired = true;
     }
 
@@ -39,9 +42,9 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     {
         var slots = GetComponent<PlayerWeaponSlots>();
         if (slots != null && !slots.CanReadInput) { releaseRequired = true; return default; }
-        // Check again after PlayerLook.Update so Esc also blocks firing in the same frame.
+        // Asked again here, so a screen that took the hands since Update (Esc this frame) also blocks firing in that frame.
         if (!isActiveAndEnabled || !acceptInputThisFrame || fire == null || reload == null
-            || Time.timeScale <= 0f || !Application.isFocused || Cursor.lockState != CursorLockMode.Locked)
+            || Time.timeScale <= 0f || !InputFocus.TakesCombat())
             return default;
         if (releaseRequired)
         {
@@ -55,9 +58,9 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     {
         frame = default;
         var slots = GetComponent<PlayerWeaponSlots>();
-        // The Player map is disabled while chat is open; never let the cloned map bypass it.
+        // The chat or a menu holds the hands (InputHold); this component's own copy of the map must not get round that.
         bool available = isActiveAndEnabled && acceptInputThisFrame && slots != null && slots.CanReadInput
-            && fire != null && guard != null && Cursor.lockState == CursorLockMode.Locked;
+            && fire != null && guard != null && InputFocus.TakesCombat();
         if (!available) { meleeReleaseRequired = true; return false; }
         if (meleeReleaseRequired)
         {
@@ -80,10 +83,9 @@ public sealed class PlayerWeaponInput : MonoBehaviour, IWeaponInput
     {
         frame = default;
         var movement = GetComponent<PlayerMovement>();
-        var playerInput = GetComponent<PlayerInput>();
+        // acceptInputThisFrame already says no screen holds the hands; it used to look at the Player map being on for that.
         if (!isActiveAndEnabled || !acceptInputThisFrame || guard == null || movement == null
-            || !movement.InputAvailable || movement.Execution.OrNull()?.IsExecuting == true
-            || (playerInput != null && playerInput.actions.FindActionMap("Player")?.enabled != true)) return false;
+            || !movement.InputAvailable || movement.Execution.OrNull()?.IsExecuting == true) return false;
         frame = new MeleeInputFrame(guardPressed: guard.WasPressedThisFrame(), guardHeld: guard.IsPressed());
         return true;
     }

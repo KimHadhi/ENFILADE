@@ -47,7 +47,7 @@
 | Unity 오브젝트에 `?.`·`??` 쓰기 | [UnityNull](Core/Common/UnityNull.cs): `thing.OrNull()?.Method()`, `a.OrNull() ?? b` (파괴된 오브젝트를 살아 있다고 보지 않게) |
 | 게임 멈추기 | [GamePause](Core/Time/GamePause.cs): `GamePause.Take(this)` / `GamePause.Release(this)` (여러 화면이 겹쳐도 마지막 화면이 닫힐 때 풀린다) |
 | 게임을 느리게 | [WorldTime](Core/Time/WorldTime.cs): `WorldTime.Hold(this, 0.3f)` / `WorldTime.Release(this)` (`Time.timeScale`을 직접 쓰지 않는다) |
-| 메뉴가 입력·커서를 가져가기 | [InputHold](UI/Shared/InputHold.cs): `InputHold.Take(this, Held.All)` / `InputHold.Release(this)` |
+| 메뉴가 입력·커서를 가져가기 | [InputHold](UI/Shared/InputHold.cs): `InputHold.Take(this, Held.All)` / `InputHold.Release(this)`. 쥘 것만 고른다: `Held.Move` 걷기(몸의 키) · `Held.Look` 시야 · `Held.Combat` 손의 총 · `Held.Cursor` 포인터(시야와 총이 따라 묶이고 걷기는 남는다). 자기 말고 다른 화면이 쥐었는지는 `AnyBesides(this, …)`, 지금 누가 쥐었는지는 콘솔 `/input` |
 | 씬에 하나뿐인 것 찾기 | [SceneOne](Core/Scene/SceneOne.cs): `SceneOne<WaveManager>.Get()` (프레임마다 찾지 않는다) |
 | 플레이어 파일 저장·읽기 | [SaveFile](Core/Common/SaveFile.cs): `SaveFile.Write(path, json)`, `SaveFile.Read(path, JsonUtility.FromJson<Data>)` (통째로 바꿔 쓰고, 깨진 파일은 앞 사본으로) |
 | 이징 곡선 | [Ease](Core/Common/Ease.cs): `Ease.Out`, `Ease.InOut`, `Ease.Smooth`, 프레임 수와 무관한 따라가기 `Ease.Share(rate, dt)` |
@@ -55,7 +55,7 @@
 | 메시·본 가중치 읽기 | [MeshTools](Core/Common/MeshTools.cs): `MeshOf(renderer)`, `BoxOf(bounds, matrix)`, `Strongest(weight)` |
 | 재질이 그리는 모습(주 텍스처·타일링·색·잘라내기)을 다른 재질로 옮겨 그리기 | [MaterialLook](Core/Common/MaterialLook.cs): `MaterialLook.Of(material)`, 재질 없을 때 `MaterialLook.Plain` (셰이더의 [MainTexture]·[MainColor] 먼저, 이름으로는 종류가 맞는 속성만) |
 | 클립을 한 순간에 세워 재기(손 자리·팔 길이·카메라 뼈·걸음·재장전 순간…) | [ClipSampler](Core/Common/ClipSampler.cs): `Sample(clip, root, time)`. `AnimationClip.SampleAnimation`을 직접 부르지 않는다: 빌드에서는 Mecanim 클립을 쓰지 못해 모델이 그대로 남는다(0.9.18). 에디터는 SampleAnimation, 빌드는 PlayableGraph |
-| 지금 키 입력을 게임이 받는가 | [InputFocus](UI/Shared/InputFocus.cs): `TakesInput()`, 메뉴까지 보는 `TakesPlayInput()`, `Pressed(action)` |
+| 지금 키 입력을 게임이 받는가 | [InputFocus](UI/Shared/InputFocus.cs): 몸의 키 `TakesMove()` · 시야 `TakesLook()` · 방아쇠와 마우스 클릭 `TakesCombat()`, 콘솔까지 보는 `TakesInput()`, 메뉴까지 보는 `TakesPlayInput()`, `Pressed(action)`. `Cursor.lockState`로 묻지 않는다(포인터가 풀려 있어도 걷기는 플레이어 것일 수 있다) |
 | 코드로 UI 조각 만들기 | [FeelUI](Combat/Feedback/FeelUI.cs): `Rect`, `Panel`, `Label` / [KitStyle](UI/Kit/KitStyle.cs): `Stretch`, `Fill`, `Cut`, `With(color, alpha)` |
 | 플레이어 찾기·이름 | [PlayerRoster](Player/PlayerRoster.cs): `Local`, `All`, `IdOf`, `ById` / [PlayerTally](Player/Life/PlayerTally.cs): `NameOf`, `ColoredNameOf` |
 | 팔·손을 코드로 자세 잡기 (뼈 찾기, 손 방향·손바닥, 손가락 쥐기, 프레임 자세와 섞기) | [ArmBones](Player/Body/Hands/ArmBones.cs)를 하나 들고 쓴다: `arm.Bind(animator)`, `arm.Keep()` → 자세 → `arm.Ease(weight)`, `arm.TurnHand`, `arm.Close` (수류탄·수리·가드·가리키기·처형 칼 팔이 쓴다. 오른팔은 `new ArmBones(true)`) |

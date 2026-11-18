@@ -145,13 +145,17 @@ public sealed partial class PerkCardScreen
         closedFrame = Time.frameCount;
     }
 
-    // Alone the game stops, the cursor comes out and every key waits; in a room only the combat keys wait.
+    // Alone the game stops, the cursor comes out and every key waits. In a room the game runs on and nothing is held: the
+    // player walks, looks and shoots under the cards as before, and only 1-3 are the cards' (PlayerWeaponSlots asks
+    // TakesKeyboard before it reads them). It took Held.Combat there until 2026-11-18, which stopped nothing: the gun
+    // reads its own copy of that map. Now that a hold of Combat does stop the trigger (InputFocus.TakesCombat), taking it
+    // here would leave the player unable to shoot while the cards are up.
     private void Hold(bool hold)
     {
         if (hold)
         {
             bool alone = !GameSession.IsOnline;
-            InputHold.Take(this, alone ? Held.All : Held.Combat);
+            if (alone) InputHold.Take(this);
             if (alone) GamePause.Take(this);
             return;
         }

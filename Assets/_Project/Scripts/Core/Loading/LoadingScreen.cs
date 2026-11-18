@@ -89,6 +89,8 @@ public sealed class LoadingScreen : MonoBehaviour
             screen.target = screen.shown = 0f;
             screen.percentShown = -1;
             screen.holdCursor = true;
+            // The keys by name too (InputHold): gameplay asks who holds them, no longer whether the pointer is locked.
+            InputHold.Take(screen, Held.Keys);
         }
         screen.liftAskedAt = -1f;
         if (instant && screen.group.alpha < 1f)
@@ -287,6 +289,7 @@ public sealed class LoadingScreen : MonoBehaviour
     {
         if (!holdCursor) return;
         holdCursor = false;
+        InputHold.Release(this);
         if (retake)
         {
             Cursor.lockState = CursorLockMode.Locked;

@@ -1,32 +1,46 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
-/// <summary>What a screen takes from the player while it is up.</summary>
+/// <summary>
+/// What a screen takes from the player while it is up. Four things, because the player has four: the legs (Move), the
+/// view (Look), the gun in the hands (Combat) and the mouse pointer (Cursor). Walking and looking were one flag until
+/// 2026-11-18, and every gate asked whether the pointer was locked, so a screen could not show the pointer without also
+/// stopping the walk (the user's list of that day, the Tab board: a pointer there while the character keeps moving).
+/// </summary>
 [System.Flags]
 public enum Held
 {
     None = 0,
-    /// <summary>The combat keys (the asset's Combat map).</summary>
+    /// <summary>The gun in the hands: the trigger, the sights and the reload (PlayerWeaponInput), and the asset's Combat map.</summary>
     Combat = 1,
-    /// <summary>Moving and looking (the asset's Player map).</summary>
+    /// <summary>The body's keys: walking, jumping, crouching and every other action of the asset's Player map but the look.</summary>
     Move = 2,
-    /// <summary>The mouse pointer: free and shown instead of locked to the view.</summary>
+    /// <summary>
+    /// The mouse pointer: free and shown instead of locked to the view. A mouse that points can't turn the view, and its
+    /// click on a screen is not the trigger's, so a held pointer holds Look and Combat with it (InputHold adds them). It
+    /// does not hold Move: a screen can free the pointer while the player walks on.
+    /// </summary>
     Cursor = 4,
-    Keys = Combat | Move,
-    All = Combat | Move | Cursor,
+    /// <summary>Turning the view (the Player map's Look).</summary>
+    Look = 8,
+    Keys = Combat | Move | Look,
+    All = Combat | Move | Look | Cursor,
 }
 
 /// <summary>
 /// Who has the controls. The chat, the console, the shop, the perk cards, the gun bench, the hub's mirror, the results
-/// show, the settings and the title screen each take the player's keys or the pointer while they are up. Each used to
-/// switch things off and remember for itself what to switch back on, and each knew by name which other screens to ask
-/// first, so two of them up at once undid each other: close the chat under an open shop and the player walked and shot
-/// behind the shop; close the shop under the console and the pointer locked under it.
+/// show, the settings, the loading screen and the title screen each take the player's keys or the pointer while they are
+/// up. Each used to switch things off and remember for itself what to switch back on, and each knew by name which other
+/// screens to ask first, so two of them up at once undid each other: close the chat under an open shop and the player
+/// walked and shot behind the shop; close the shop under the console and the pointer locked under it.
 /// Here a screen only says what it holds (Take) and that it is done (Release). A thing is held while any screen holds
-/// it: the input maps that were on come back on, and the pointer locks to the view again, when the last one lets go. A
+/// it: the input actions that were on come back on, and the pointer locks to the view again, when the last one lets go. A
 /// screen destroyed while it held (a scene change) lets go by being gone.
+/// This is the one owner: whoever reads the player's input asks here what is held (InputFocus puts the questions), never
+/// whether the pointer happens to be locked. The lock is only what this does about Held.Cursor.
 /// </summary>
 public static class InputHold
 {
@@ -36,9 +50,13 @@ public static class InputHold
         public Held What;
     }
 
+    // The Player map's one action that is the view's; every other action of that map is the body's.
+    private const string LookAction = "Look";
+
     private static readonly List<Holder> holders = new List<Holder>();
-    // The maps this switched off, to switch back on: only those that were on.
-    private static readonly List<InputActionMap> combatOff = new List<InputActionMap>(), moveOff = new List<InputActionMap>();
+    // The actions this switched off, to switch back on: only those that were on.
+    private static readonly List<InputAction> combatOff = new List<InputAction>(), moveOff = new List<InputAction>(),
+        lookOff = new List<InputAction>();
     private static Held applied;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -47,6 +65,7 @@ public static class InputHold
         holders.Clear();
         combatOff.Clear();
         moveOff.Clear();
+        lookOff.Clear();
         applied = Held.None;
         SceneManager.sceneUnloaded -= OnSceneUnloaded;
         SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -57,6 +76,17 @@ public static class InputHold
 
     /// <summary>Some screen that is still there holds this (any part of it).</summary>
     public static bool Any(Held what = Held.All) => (Apply() & what) != 0;
+
+    /// <summary>
+    /// Some screen other than <paramref name="who"/> holds this: for a screen that must give way to the others while
+    /// what it holds itself doesn't count (the Tab board stays up under its own pointer, the callout wheel under its own
+    /// hold of the view).
+    /// </summary>
+    public static bool AnyBesides(Object who, Held what = Held.All)
+    {
+        Apply();
+        return (Wanted(who) & what) != 0;
+    }
 
     /// <summary>The screen holds these from now on. Taking again adds to what it holds.</summary>
     public static void Take(Object who, Held what = Held.All)
@@ -75,18 +105,38 @@ public static class InputHold
         if (holders.RemoveAll(h => ReferenceEquals(h.Who, who)) > 0) Apply();
     }
 
-    // Brings the input maps and the pointer in line with what is held now; returns what is held.
-    private static Held Apply()
+    /// <summary>What is held now and by whom, a screen a line (the console's /input).</summary>
+    public static string Describe()
+    {
+        Held all = Apply();
+        var text = new StringBuilder("held: ").Append(all == Held.None ? "nothing" : all.ToString());
+        foreach (var holder in holders)
+            text.Append('\n').Append(holder.Who.name).Append(" (").Append(holder.Who.GetType().Name).Append("): ").Append(holder.What);
+        return text.ToString();
+    }
+
+    // What the screens that are still there hold together, leaving one out when asked. A free pointer has the mouse, so
+    // the view and the trigger go with it (Held.Cursor).
+    private static Held Wanted(Object without = null)
     {
         Held wanted = Held.None;
         for (int i = holders.Count - 1; i >= 0; i--)
         {
             if (holders[i].Who == null) holders.RemoveAt(i);
-            else wanted |= holders[i].What;
+            else if (!ReferenceEquals(holders[i].Who, without)) wanted |= holders[i].What;
         }
+        if ((wanted & Held.Cursor) != 0) wanted |= Held.Look | Held.Combat;
+        return wanted;
+    }
+
+    // Brings the input actions and the pointer in line with what is held now; returns what is held.
+    private static Held Apply()
+    {
+        Held wanted = Wanted();
         if (wanted == applied) return wanted;
-        Switch(wanted, Held.Combat, "Combat", combatOff);
-        Switch(wanted, Held.Move, "Player", moveOff);
+        Switch(wanted, Held.Combat, "Combat", null, combatOff);
+        Switch(wanted, Held.Move, "Player", false, moveOff);
+        Switch(wanted, Held.Look, "Player", true, lookOff);
         bool free = (wanted & Held.Cursor) != 0;
         if (free != ((applied & Held.Cursor) != 0))
         {
@@ -97,7 +147,8 @@ public static class InputHold
         return wanted;
     }
 
-    private static void Switch(Held wanted, Held one, string mapName, List<InputActionMap> off)
+    // look: null takes every action of the map, true the look alone, false every action but the look.
+    private static void Switch(Held wanted, Held one, string mapName, bool? look, List<InputAction> off)
     {
         bool hold = (wanted & one) != 0;
         if (hold == ((applied & one) != 0)) return;
@@ -105,14 +156,20 @@ public static class InputHold
         {
             off.Clear();
             foreach (var map in Maps(mapName))
-            {
-                if (!map.enabled) continue;
-                map.Disable();
-                off.Add(map);
-            }
+                foreach (var action in map.actions)
+                {
+                    if (!action.enabled || (look.HasValue && look.Value != (action.name == LookAction))) continue;
+                    action.Disable();
+                    off.Add(action);
+                }
             return;
         }
-        foreach (var map in off) map.Enable();
+        foreach (var action in off)
+        {
+            // A player's own copy of the asset goes with that player (a scene change): nothing of it is left to switch on.
+            var map = action.actionMap;
+            if (map != null && map.asset != null) action.Enable();
+        }
         off.Clear();
     }
 

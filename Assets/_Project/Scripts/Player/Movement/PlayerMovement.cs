@@ -211,9 +211,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsLandingRecovery => CurrentState == MovementState.LandingRoll || CurrentState == MovementState.HeavyLanding;
     /// <summary>How hard the last touchdown was: Light, Hard (from Ability.hardLandingSpeed) or Heavy (it hurt, or a blow).</summary>
     public MovementLanding.Tier LastLandingTier => Abilities != null ? Abilities.Landing.LastTier : MovementLanding.Tier.Light;
+    /// <summary>
+    /// The body's keys reach this character now: this PC plays it, it is alive, the game runs, and no screen or other
+    /// window has those keys (InputFocus.TakesMove, which asks InputHold who holds what). Not whether the pointer is
+    /// locked: a screen may show the pointer and leave the legs to the player.
+    /// </summary>
     public bool InputAvailable => IsLocal && isActiveAndEnabled && Time.timeScale > 0f
         && (DamageReceiver == null || DamageReceiver.IsAlive)
-        && (!Application.isPlaying || (Application.isFocused && Cursor.lockState == CursorLockMode.Locked));
+        && (!Application.isPlaying || InputFocus.TakesMove());
 
     public float WalkSpeed => walkSpeed;
     public float SprintSpeed => sprintSpeed;

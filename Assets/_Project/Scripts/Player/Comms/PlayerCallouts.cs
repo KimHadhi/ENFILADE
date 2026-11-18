@@ -274,8 +274,9 @@ public sealed class PlayerCallouts : MonoBehaviour
     private string Hint() => Texts.Get(onPage ? "callout.hint.page"
         : GameSettings.Current.calloutOnRelease ? "callout.hint.release" : "callout.hint.click");
 
-    private static bool TakesInput() => Cursor.lockState == CursorLockMode.Locked && Application.isFocused && !DevConsole.TakesKeyboard
-        && !ShopMenu.TakesKeyboard && !PerkCardScreen.TakesKeyboard && !GunCustomizeMenu.TakesKeyboard;
+    // The wheel's key is one of the body's keys, and the wheel points with the mouse: both must be the player's (a screen
+    // with the pointer out has the mouse).
+    private static bool TakesInput() => InputFocus.TakesPlayInput() && InputFocus.TakesLook() && !GunCustomizeMenu.TakesKeyboard;
 
     // ---- Saying ----
 

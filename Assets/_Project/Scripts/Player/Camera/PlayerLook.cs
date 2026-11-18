@@ -58,9 +58,11 @@ public sealed class PlayerLook : MonoBehaviour
     private void Update()
     {
         TakeCombatTurn();
-        // 커서가 풀려있거나(채팅창/메뉴 활성화 상태), 일시정지 중이거나 창 포커스를 잃거나 죽어 있으면 카메라 회전 중단
+        // The mouse doesn't turn the view while a screen holds the view or the pointer (InputHold: the chat, a menu, the
+        // Tab board's pointer), while paused, without the window's focus, or dead. Who holds the view is asked, not
+        // whether the pointer is locked: the body's keys may still be the player's meanwhile.
         // A Ghost's takedown with a chain left turns the view all the same: it looks for the next zombie (GhostCards).
-        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f || !Application.isFocused
+        if (!InputFocus.TakesLook() || Time.timeScale <= 0f
             || (movement != null && ((movement.CombatInputLocked && !GhostCards.LooksDuringTakedown(movement)) || movement.IsDead)))
             return;
 
