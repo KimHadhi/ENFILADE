@@ -27,7 +27,7 @@ using UnityEngine.AI;
 /// </para>
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class Barricade : MonoBehaviour, IDamageReceiver
+public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
 {
     private const string Row = "Support";
     /// <summary>Its size (m): along, up, through (SupportKit finds room for it by these).</summary>
@@ -39,13 +39,12 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     private static readonly Dictionary<ushort, Barricade> standing = new Dictionary<ushort, Barricade>();
     private static Material wood;
     private static readonly Collider[] pressed = new Collider[32];
-    // What stands where one would go (Room); the builder's own body may take several of these.
-    private static readonly Collider[] overlaps = new Collider[32];
 
     /// <summary>
     /// Whether a barricade can stand at a spot (the placement rule: SupportKit's preview and build, on the builder's own PC
     /// alone), and if not, why: no ground under it, the ground too steep, a wall between the builder's eyes and it,
-    /// something in its way (a wall, a prop, a zombie, a player, another barricade), or a supply bag too light for one.
+    /// something in its way (a wall, a prop, a living zombie or player, another structure: what takes room is Placement's
+    /// to say, and the dead and what lies loose never do), or a supply bag too light for one.
     /// </summary>
     public enum Fit : byte { Ok, NoGround, Steep, Walled, Blocked, Short }
 
@@ -268,27 +267,28 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver
     }
 
     /// <summary>
-    /// The placement rule's part about the spot itself, on any PC: walkable ground right under its middle (not a zombie,
-    /// a player or another barricade), no steeper than Support.barricadeSlope, and nothing where it would stand, facing
-    /// along <paramref name="yaw"/> with its feet at <paramref name="at"/>. The <paramref name="builder"/>'s own body
-    /// doesn't count (the nearest reach keeps it clear of them anyway).
+    /// The placement rule's part about the spot itself, on any PC: the built world right under its middle, no steeper
+    /// than Support.barricadeSlope, and room where it would stand, facing along <paramref name="yaw"/> with its feet at
+    /// <paramref name="at"/>. What is ground and what takes room is not this class's to say: it asks the one rule every
+    /// deployable asks (Placement), by which the dead, gore, thrown and dropped things and whatever physics carries give
+    /// way, a living body or another structure takes room and is no ground, and the <paramref name="builder"/>'s own
+    /// body never counts (the nearest reach keeps it clear of them anyway). <paramref name="by"/>: the collider that
+    /// stood in the way, for the refusal's record (null when it fits, or when there is no ground at all).
     /// </summary>
-    internal static Fit Room(Vector3 at, float yaw, Transform builder, Kind kind = Kind.Planks)
+    internal static Fit Room(Vector3 at, float yaw, Transform builder, Kind kind, out Collider by)
     {
-        if (!Physics.Raycast(at + Vector3.up * .6f, Vector3.down, out RaycastHit ground, 1.2f, ~0, QueryTriggerInteraction.Ignore))
-            return Fit.NoGround;
+        by = null;
+        var under = Placement.Ray(at + Vector3.up * .6f, Vector3.down, 1.2f, builder, Placement.Solid, out RaycastHit ground);
+        if (under == Placement.Thing.None) return Fit.NoGround;
+        by = ground.collider;
+        // A body or another structure right under it is in its way, whatever that one's top slopes like.
+        if (under != Placement.Thing.World) return Fit.Blocked;
         float slope = Mathf.Clamp(PlayerClass.Ability(Row, "barricadeSlope", 25f), 0f, 89f);
         if (ground.normal.y < Mathf.Cos(slope * Mathf.Deg2Rad)) return Fit.Steep;
-        var under = ground.collider;
-        if ((builder != null && under.transform.IsChildOf(builder)) || under.GetComponentInParent<EnemyHealth>() != null
-            || under.GetComponentInParent<PlayerMovement>() != null || under.GetComponentInParent<Barricade>() != null)
-            return Fit.Blocked;
         Vector3 size = SizeOf(kind), middle = at + Vector3.up * (size.y * .5f + .1f);
         var half = new Vector3(size.x * .5f, size.y * .5f - .05f, size.z * .5f);
-        int count = Physics.OverlapBoxNonAlloc(middle, half, overlaps, Quaternion.Euler(0f, yaw, 0f), ~0, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < count; i++)
-            if (overlaps[i] != null && (builder == null || !overlaps[i].transform.IsChildOf(builder))) return Fit.Blocked;
-        return Fit.Ok;
+        return Placement.Box(middle, half, Quaternion.Euler(0f, yaw, 0f), builder, Placement.Solid, out by) != Placement.Thing.None
+            ? Fit.Blocked : Fit.Ok;
     }
 
     /// <summary>

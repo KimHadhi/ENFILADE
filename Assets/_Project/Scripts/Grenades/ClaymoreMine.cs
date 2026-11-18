@@ -17,7 +17,7 @@ using UnityEngine;
 /// On every PC: the owner's PC watches for zombies (its own copies of them) and fires it, its hits going as the owner's
 /// through the copies as the frag's do; the other PCs show it and fire their copy where the owner's PC says.
 /// </summary>
-public sealed class ClaymoreMine : MonoBehaviour
+public sealed class ClaymoreMine : MonoBehaviour, IPlaced
 {
     private const float RetireSeconds = .45f, LampSize = .022f;
     // Every claymore down on this PC, anyone's (this PC's player's, or the copies of friends'), in the order set down.

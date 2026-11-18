@@ -52,9 +52,8 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     private static readonly int TintId = Shader.PropertyToID("_Tint"), OriginId = Shader.PropertyToID("_Origin"),
         FacingId = Shader.PropertyToID("_Facing"), ShapeId = Shader.PropertyToID("_Shape"), LookId = Shader.PropertyToID("_Look"),
         ReachesId = Shader.PropertyToID("_Reaches");
-    private static int worldMask;
     // The world: what stops a zombie's view (not players, corpses or what lies on the floor, not other zombies).
-    private static int WorldMask => worldMask != 0 ? worldMask : worldMask = Physics.DefaultRaycastLayers & ~(1 << 31) & ~LayerMask.GetMask("Enemy");
+    private static int WorldMask => WorldLayers.Built;
 
     private sealed class Cone
     {

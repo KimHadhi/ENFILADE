@@ -67,6 +67,9 @@ public sealed partial class SupportKit
     // told both (PlayerNetworkCombat) with the health it went up with, so the host puts it up as told and never judges it.
     private void Build(Barricade.Fit fit, Vector3 at, float yaw)
     {
+        // What the rule met there goes on record either way (Logs/placement.txt): the collider that stood in the way of a
+        // refusal, and what lay on the spot and gave way (a corpse under a barricade that went up reads "passed corpse").
+        Placement.Record(planKind.ToString(), fit.ToString(), fit == Barricade.Fit.Ok, at, yaw, Barricade.SizeOf(planKind), planBy, movement.transform);
         if (fit != Barricade.Fit.Ok)
         {
             Refuse(fit, at, yaw);
@@ -100,10 +103,33 @@ public sealed partial class SupportKit
     private void Refuse(Barricade.Fit fit, Vector3 at, float yaw)
     {
         KitSound.Play(KitSound.Cue.Refuse, .5f);
-        AlertHUD.Self(Why(fit));
+        AlertHUD.Self(Why(fit, planBy));
         refusedAt = Time.time;
         heldSpot = at;
         heldYaw = yaw;
+    }
+
+    /// <summary>
+    /// Why nothing can go up where the preview stands now, in words (the HUD's note while the key is held), naming what is
+    /// in the way where the placement rule knows it.
+    /// </summary>
+    public string PlanWhy => Why(planFit, planBy);
+
+    /// <summary>
+    /// Why it can't go up there, in words, with what stood in the way named: a zombie, a friend or another structure
+    /// (Placement says what <paramref name="by"/> is). Since the dead and what lies loose no longer block, a refusal on
+    /// open floor always has one of these to point at, and "자리가 막혀 있다" alone is left for the map's own walls and props.
+    /// </summary>
+    public static string Why(Barricade.Fit fit, Collider by)
+    {
+        if (fit != Barricade.Fit.Blocked || by == null) return Why(fit);
+        switch (Placement.Of(by))
+        {
+            case Placement.Thing.Structure: return Texts.Get("class.support.fit.structure");
+            case Placement.Thing.Body:
+                return Texts.Get(by.GetComponentInParent<EnemyHealth>() != null ? "class.support.fit.zombie" : "class.support.fit.friend");
+            default: return Why(fit);
+        }
     }
 
     /// <summary>Why a barricade can't go up there, in words (the alert, and the HUD's note while the key is held).</summary>
@@ -134,7 +160,9 @@ public sealed partial class SupportKit
     /// again): it stands where the view comes down to the ground between the nearest and the farthest reach ahead (looking
     /// level or up, the farthest; at a wall, just before it; at a step, ramp or ledge, on it), across the look. There must
     /// be ground there, level enough, with nothing in its way (Barricade.Room), no wall between the eyes and it, and a
-    /// barricade's worth in the bag.
+    /// barricade's worth in the bag. What counts as ground, as a wall and as being in the way is Placement's to say, the
+    /// same for everything a player sets down: a corpse, gore or anything lying loose on the spot is none of them (the
+    /// user, 2026-11-18: "시체 콜라이더로 인해 서포트 구조물 … 설치가 막히는 판정 수정").
     /// </summary>
     private Barricade.Fit Spot(out Vector3 at, out float yaw)
     {
@@ -152,28 +180,34 @@ public sealed partial class SupportKit
         float ahead = far;
         if (look.y < -.01f) ahead = Vector3.Dot(eyes.position + look * ((eyes.position.y - feet.y) / -look.y) - feet, flat);
         // ... unless the view meets something first: ground (a step, a ramp, a ledge), or a wall it would stand just before.
-        if (worldMask == 0) worldMask = Physics.DefaultRaycastLayers & ~(1 << 31) & ~LayerMask.GetMask("Enemy") & ~(1 << movement.gameObject.layer);
-        if (Physics.Raycast(eyes.position, look, out RaycastHit seen, far + 3f, worldMask, QueryTriggerInteraction.Ignore)
-            && !seen.collider.transform.IsChildOf(movement.transform))
+        // What the view meets, what is ground and what is in the way are the one placement rule's to say (Placement): the
+        // dead and what lies loose are looked past and built over.
+        var self = movement.transform;
+        planBy = null;
+        if (Placement.Ray(eyes.position, look, far + 3f, self, Placement.Built, out RaycastHit seen) != Placement.Thing.None)
         {
             float there = Vector3.Dot(seen.point - feet, flat);
             ahead = seen.normal.y >= .7f ? there : Mathf.Min(ahead, there - Barricade.SizeOf(planKind).z * .5f - .1f);
         }
         ahead = Mathf.Clamp(ahead, near, far);
         Vector3 above = feet + flat * ahead + Vector3.up * 1.2f;
-        if (!Physics.Raycast(above, Vector3.down, out RaycastHit ground, 3f, ~0, QueryTriggerInteraction.Ignore))
+        if (Placement.Ray(above, Vector3.down, 3f, self, Placement.Solid, out RaycastHit ground) == Placement.Thing.None)
         {
             at = feet + flat * ahead;
             return Barricade.Fit.NoGround;
         }
         at = ground.point;
-        var fit = Barricade.Room(at, yaw, movement.transform, planKind);
+        var fit = Barricade.Room(at, yaw, self, planKind, out planBy);
         if (fit != Barricade.Fit.Ok) return fit;
         // Through a wall it can't go up: the eyes must see its middle (a hit right at its foot is the ground it stands on;
         // a zombie or a friend between is no wall).
-        if (Physics.Linecast(eyes.position, at + Vector3.up * .5f, out RaycastHit wall, worldMask, QueryTriggerInteraction.Ignore)
-            && !wall.collider.transform.IsChildOf(movement.transform) && (wall.point - at).sqrMagnitude > .36f)
+        Vector3 middle = at + Vector3.up * .5f, toMiddle = middle - eyes.position;
+        if (Placement.Ray(eyes.position, toMiddle, toMiddle.magnitude, self, Placement.Built, out RaycastHit wall) != Placement.Thing.None
+            && (wall.point - at).sqrMagnitude > .36f)
+        {
+            planBy = wall.collider;
             return Barricade.Fit.Walled;
+        }
         return CanBuild ? Barricade.Fit.Ok : Barricade.Fit.Short;
     }
 

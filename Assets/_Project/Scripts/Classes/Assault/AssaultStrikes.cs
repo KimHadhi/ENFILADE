@@ -13,22 +13,10 @@ internal static class AssaultStrikes
     internal const string Row = "Assault";
     // Room for a long aim through a crowd (each zombie is a dozen bone hitboxes): past this many the nearest could be lost.
     private static readonly RaycastHit[] hits = new RaycastHit[96];
-    private static int enemyLayer = -2;
-
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => enemyLayer = -2;
 
     // Everything solid but zombies (their bone hitboxes stand on the ground, and a shell is aimed at what they stand on)
-    // and the effects' own layer.
-    private static int WorldMask
-    {
-        get
-        {
-            if (enemyLayer == -2) enemyLayer = LayerMask.NameToLayer("Enemy");
-            int mask = Physics.DefaultRaycastLayers & ~(1 << 31);
-            return enemyLayer >= 0 ? mask & ~(1 << enemyLayer) : mask;
-        }
-    }
+    // and the players' own layer, the dead's and the effects' too: the built world, said in one place (WorldLayers).
+    private static int WorldMask => WorldLayers.Built;
 
     /// <summary>
     /// A number every PC reads the same way: the table's own, with no card of this PC's player added. The look of a strike
@@ -53,7 +41,7 @@ internal static class AssaultStrikes
     /// through. False when nothing is within <paramref name="reach"/>.
     /// </summary>
     internal static bool Ray(Vector3 from, Vector3 way, float reach, out RaycastHit hit)
-        => Nearest(from, way, reach, Physics.DefaultRaycastLayers & ~(1 << 31), out hit);
+        => Nearest(from, way, reach, Physics.DefaultRaycastLayers & ~(1 << WorldLayers.Passed), out hit);
 
     /// <summary>
     /// Nothing over <paramref name="at"/> for <paramref name="height"/> metres (players and zombies aside): a plane's

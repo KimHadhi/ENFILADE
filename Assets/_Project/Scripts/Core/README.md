@@ -8,7 +8,7 @@
 
 | 폴더 | 스크립트 | 무엇 |
 | --- | ---: | --- |
-| [Common](Common/) | 7 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)), 재질이 그리는 모습 읽기([MaterialLook](Common/MaterialLook.cs)), Unity 오브젝트의 진짜 null([UnityNull](Common/UnityNull.cs)), 플레이어 파일 쓰기·읽기([SaveFile](Common/SaveFile.cs)), 숫자 표기 고정([GameCulture](Common/GameCulture.cs)) |
+| [Common](Common/) | 10 | 어디서나 쓰는 작은 도우미: 이징 곡선([Ease](Common/Ease.cs)), 트랜스폼 이름으로 찾기([Hierarchy](Common/Hierarchy.cs)), 메시 읽기([MeshTools](Common/MeshTools.cs)), 재질이 그리는 모습 읽기([MaterialLook](Common/MaterialLook.cs)), Unity 오브젝트의 진짜 null([UnityNull](Common/UnityNull.cs)), 플레이어 파일 쓰기·읽기([SaveFile](Common/SaveFile.cs)), 숫자 표기 고정([GameCulture](Common/GameCulture.cs)), 레이어를 한곳에서 말하기([WorldLayers](Common/WorldLayers.cs): 세상의 레이어 마스크 `Built`, 플레이어와 시체·흩어진 것이 놓이는 레이어 `Passed`), 기능이 스스로 남기는 플레이 기록([PlayRecord](Common/PlayRecord.cs): `Logs/<이름>.txt`, 에디터와 개발 빌드) |
 | [Loading](Loading/) | 6 | 로딩 화면과 첫 사용 준비 |
 | [Mods](Mods/) | 6 | Mods 폴더 읽기([GameMods](Mods/GameMods.cs)), 모드 캐릭터 불러오기([ModAvatars](Mods/ModAvatars.cs), 파일 형식 [ModAvatarFile](Mods/ModAvatarFile.cs)), 모드 옷을 옷장에 올리기([ModOutfits](Mods/ModOutfits.cs)), 그 재질([ModMaterials](Mods/ModMaterials.cs), [ModShaderLibrary](Mods/ModShaderLibrary.cs)). 설명은 [모드 만들기](../../../../Docs/Modding.md) |
 | [Scene](Scene/) | 4 | 실행 중 하이어라키 폴더, 대기 카메라, 씬에 하나뿐인 것 찾기([SceneOne](Scene/SceneOne.cs)), 구운 프로브 빛이 안 읽힐 때 매 프레임 예외 대신 끄기([ProbeLightGuard](Scene/ProbeLightGuard.cs)) |

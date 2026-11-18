@@ -288,7 +288,7 @@ public sealed class ClassHUD : MonoBehaviour
             Word(Texts.Format(fits ? "class.hud.place.kind" : "class.hud.place.kind.no", what, Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
             // With the throw card and a friend under the crosshair, F throws them a pack instead (SupportKit.Tossable).
             var catcher = support.Tossable;
-            side = (fits ? Texts.Get("class.hud.place.cancel") : SupportKit.Why(support.PlanFit)) + " · "
+            side = (fits ? Texts.Get("class.hud.place.cancel") : support.PlanWhy) + " · "
                 + (catcher != null ? Texts.Format("class.hud.throw", PlayerTally.NameOf(catcher), Mathf.RoundToInt(support.ThrowCost))
                     : Texts.Get("class.hud.build.switch"));
         }

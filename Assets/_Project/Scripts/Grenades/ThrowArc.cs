@@ -35,7 +35,7 @@ public sealed class ThrowArc
     /// </summary>
     public bool Trace(Vector3 from, Vector3 velocity, float radius, float gravityShare = 1f, int mask = 0, float longest = Longest)
     {
-        if (mask == 0) mask = ThrownStone.WorldMask;
+        if (mask == 0) mask = WorldLayers.Built;
         path.Clear();
         path.Add(from);
         Vector3 gravity = Physics.gravity * gravityShare, at = from;

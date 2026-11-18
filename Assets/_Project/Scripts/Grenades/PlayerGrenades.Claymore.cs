@@ -4,14 +4,26 @@ using UnityEngine;
 // PlayerGrenades: Setting a claymore down. One part of the class; the rest is in PlayerGrenades.cs and the files beside it.
 public sealed partial class PlayerGrenades
 {
+    // The charge's own size, for the placement record and its room (m): two bricks and a phone.
+    private static readonly Vector3 MineSize = new Vector3(.24f, .14f, .14f);
+    // What stood in the way of the last spot looked for (a structure under the crosshair or round the spot), and where
+    // that was: the refusal's record (Placement.Record).
+    private Collider spotBy;
+    private Vector3 spotTried;
+
     // Where the claymore would go now: under the crosshair within GrenadeRules claymoreReach of the chest, on a floor
     // (phone up, guarding the way the player looks) or a wall (its back to it, guarding the room); else on the floor a
     // step ahead. False when there is nowhere.
+    // What it may lie on is the one placement rule's to say, the same as for a barricade (Placement): the built world
+    // only. The dead and whatever lies loose are looked past, so it goes on the floor under a corpse; a living body is
+    // looked past too (it lies at a zombie's feet as well as anywhere); and what another player built is no ground, since
+    // it would be left hanging in the air when that came down (it used to stick to a barricade and to a rolling crate).
     private bool Spot(out Vector3 at, out Quaternion facing, out bool wall)
     {
         at = default;
         facing = Quaternion.identity;
         wall = false;
+        spotBy = null;
         var eye = Camera.main;
         if (eye == null) return false;
         var view = eye.transform;
@@ -20,34 +32,43 @@ public sealed partial class PlayerGrenades
         Vector3 look = Vector3.ProjectOnPlane(view.forward, Vector3.up);
         if (look.sqrMagnitude < 1e-4f) look = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
         look = look.sqrMagnitude > 1e-4f ? look.normalized : Vector3.forward;
-        if (Physics.Raycast(view.position, view.forward, out RaycastHit hit, reach + 6f, Throwables.WorldMask, QueryTriggerInteraction.Ignore)
-            && Vector3.Distance(hit.point, chest) <= reach + .3f)
+        spotTried = chest + look * reach;
+        var met = Placement.Ray(view.position, view.forward, reach + 6f, transform, Placement.Built, out RaycastHit hit);
+        if (met != Placement.Thing.None && Vector3.Distance(hit.point, chest) <= reach + .3f)
         {
-            if (hit.normal.y >= .6f)
+            spotTried = hit.point;
+            if (met != Placement.Thing.World) spotBy = hit.collider;
+            else if (hit.normal.y >= .6f)
             {
                 at = hit.point;
                 facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(look, hit.normal).normalized, hit.normal);
-                return true;
+                return Clear(at, hit.normal);
             }
-            if (Mathf.Abs(hit.normal.y) < .6f)
+            else if (Mathf.Abs(hit.normal.y) < .6f)
             {
                 at = hit.point;
                 facing = Quaternion.LookRotation(hit.normal, Vector3.up);
                 wall = true;
-                return true;
+                return Clear(at, hit.normal);
             }
         }
         // Nothing to set it on under the crosshair: on the floor a step ahead.
         Vector3 ahead = transform.position + Vector3.up * 1f + look * Mathf.Min(1.2f, reach);
-        if (Physics.Raycast(ahead, Vector3.down, out RaycastHit ground, 2.5f, Throwables.WorldMask, QueryTriggerInteraction.Ignore)
-            && ground.normal.y >= .6f)
-        {
-            at = ground.point;
-            facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(look, ground.normal).normalized, ground.normal);
-            return true;
-        }
-        return false;
+        var under = Placement.Ray(ahead, Vector3.down, 2.5f, transform, Placement.Built, out RaycastHit ground);
+        if (under == Placement.Thing.None) return false;
+        spotTried = ground.point;
+        if (under != Placement.Thing.World) { spotBy = ground.collider; return false; }
+        if (ground.normal.y < .6f) return false;
+        at = ground.point;
+        facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(look, ground.normal).normalized, ground.normal);
+        return Clear(at, ground.normal);
     }
+
+    // A claymore needs no room of its own, but it is never set down inside what another player built (a step ahead of a
+    // Support standing behind its own planks is under them).
+    private bool Clear(Vector3 at, Vector3 normal)
+        => Placement.Box(at + normal * .08f, Vector3.one * .07f, Quaternion.identity, transform, Placement.Thing.Structure, out spotBy)
+            == Placement.Thing.None;
 
     // Held: the spot, the fan it would guard, and lines to the claymores it would go off with.
     private void Preview()
@@ -63,7 +84,12 @@ public sealed partial class PlayerGrenades
     {
         holding = letGo = false;
         StopAim();
-        if (info == null || count <= 0 || !Spot(out Vector3 at, out Quaternion facing, out bool wall))
+        bool found = Spot(out Vector3 at, out Quaternion facing, out bool wall);
+        // What the placement rule met goes on record either way (Logs/placement.txt), as a barricade's does.
+        if (info != null && count > 0)
+            Placement.Record("Claymore", found ? (wall ? "Wall" : "Floor") : "Nowhere", found, found ? at : spotTried,
+                facing.eulerAngles.y, MineSize, spotBy, transform);
+        if (info == null || count <= 0 || !found)
         {
             GrenadeHUD.Refused();
             Lower();

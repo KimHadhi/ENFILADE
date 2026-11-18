@@ -126,10 +126,9 @@ public sealed class ThrownStone : MonoBehaviour
     private static AudioClip whoosh, clack;
     private static StealthSounds sounds;
     private static bool soundsLooked;
-    private static int worldMask;
 
     /// <summary>What a throw leaves from and stops against: the world, not players, corpses or zombies.</summary>
-    internal static int WorldMask => worldMask != 0 ? worldMask : worldMask = Physics.DefaultRaycastLayers & ~(1 << 31) & ~LayerMask.GetMask("Enemy");
+    internal static int WorldMask => WorldLayers.Built;
 
     /// <summary>A thrown stone's collider: bullets go through it.</summary>
     public static bool IsStone(Collider collider) => collider != null && stones.Contains(collider);

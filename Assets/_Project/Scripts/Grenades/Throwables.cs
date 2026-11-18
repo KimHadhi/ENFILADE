@@ -79,7 +79,6 @@ public static class Throwables
     private static GrenadeLibrary library;
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"), ColorId = Shader.PropertyToID("_Color");
     private static SoundBank sounds;
-    private static int coverMask;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -239,13 +238,12 @@ public static class Throwables
     }
 
     /// <summary>The world a throw stops against and a burst is shielded by: not players, corpses, pieces or zombies.</summary>
-    public static int WorldMask => ThrownStone.WorldMask;
+    public static int WorldMask => WorldLayers.Built;
 
     /// <summary>Something solid between two points: a wall, a floor or a car takes a burst for whoever is behind it.</summary>
     public static bool Covered(Vector3 from, Vector3 to)
     {
-        if (coverMask == 0) coverMask = ~(LayerMask.GetMask("Enemy") | 1 << 31);
-        return Physics.Linecast(from, to, coverMask, QueryTriggerInteraction.Ignore);
+        return Physics.Linecast(from, to, WorldLayers.Built, QueryTriggerInteraction.Ignore);
     }
 
     // ---- Models ----

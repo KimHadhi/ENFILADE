@@ -75,7 +75,8 @@ public sealed partial class SupportKit : MonoBehaviour
     private Vector3 heldSpot;
     private float heldYaw;
     private readonly List<ushort> taken = new List<ushort>();
-    private int worldMask;
+    // What stood in the way of the spot the preview is on now (Placement), for the refusal's record; null where it fits.
+    private Collider planBy;
     // A client's mending not yet told the host: how much, on which barricade, and when it may tell next.
     private float mendOwed, nextMendSend;
     private ushort mendId;
