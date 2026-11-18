@@ -1,13 +1,32 @@
 using UnityEngine;
 
 /// <summary>
-/// The rounds a player carries for one kind of gun, outside any gun: their own, whichever gun of that kind they hold or
-/// held (the user, 2026-11-18: "예비 탄약은 플레이어 본인 기준으로 관리"). A gun in a slot reloads from it; a gun put down
-/// leaves it with its player, and the same kind taken up again finds it as it was.
+/// The rounds a player carries of one ammunition, outside any gun: their own, whichever gun that takes it they hold or
+/// held (the user, 2026-11-18: "예비 탄약은 플레이어 본인 기준으로 관리"). Every gun in a slot that takes it reloads from
+/// it (WeaponData.Ammunition: "탄 종류끼리 공유하는 편이 좋을 것 같습니다"); a gun put down leaves it with its player,
+/// and a gun of that ammunition taken up finds it as it was.
 /// </summary>
 public sealed class AmmoReserve
 {
     public int Rounds;
+}
+
+/// <summary>
+/// What an ammunition is called on screen: the text ammo.kind.&lt;its name in Weapons.csv ammo&gt; (Texts.csv). An
+/// ammunition is made by naming it in a gun's ammo cell, so a mod's gun may name a new one; it needs no row anywhere
+/// else, and without a text of its own it simply has no name to show.
+/// </summary>
+public static class AmmoKinds
+{
+    private const string TextPrefix = "ammo.kind.";
+
+    /// <summary>The name of the ammunition this gun takes, or null when it has none (a gun with ammunition of its own).</summary>
+    public static string NameOf(WeaponData gun)
+    {
+        if (gun == null) return null;
+        string id = TextPrefix + gun.Ammunition;
+        return Texts.Has(id) ? Texts.Get(id) : null;
+    }
 }
 
 /// <summary>

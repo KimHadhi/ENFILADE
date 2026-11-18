@@ -8,9 +8,10 @@ using UnityEngine.InputSystem;
 /// Desperado, a revolver loaded only by bounties (ClassKit; the user, 2026-11-11: "데스페라도는 헷갈리니까 4번 칸에").
 /// <para>Who owns what of the ammunition (the user, 2026-11-18, "필드 무기 교체 및 탄약 시스템 개편"): the rounds in a
 /// gun are the gun's and go with it (GunState: Put takes a particular gun in, Drop lets one go); the reserve is this
-/// player's, kept by kind of gun (ReserveOf) whether or not that gun is in a slot. Before, a slot's gun was only its
-/// kind: swapping it threw its magazine and its reserve away, and taking it up again made both anew and full, so
-/// rounds earned were lost and an empty gun came back full.</para>
+/// player's, kept by the ammunition a gun takes (ReserveOf, Weapons.csv ammo) whether or not a gun that takes it is in
+/// a slot, so guns of one ammunition share it, and it is filled to what the guns held that take it carry between them
+/// (ReserveCap). Before, a slot's gun was only its kind: swapping it threw its magazine and its reserve away, and
+/// taking it up again made both anew and full, so rounds earned were lost and an empty gun came back full.</para>
 /// </summary>
 [DisallowMultipleComponent, RequireComponent(typeof(WeaponController), typeof(PlayerWeaponInput))]
 [DefaultExecutionOrder(FrameOrder.WeaponSlots)]
@@ -68,6 +69,9 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
             if (melee == null) melee = gameObject.AddComponent<PlayerMeleeCombat>();
             GameTables.Bind(PlayerMovement.TableName, "Fists", melee);
             for (int i = 0; i < SlotCount; i++) RawWeapon(i).OrNull()?.BindTable();
+            // Every gun the slots start with is made now, as one put in later is (Place): its share is in the reserve
+            // before any gun's count is shown.
+            for (int i = 0; i < SlotCount; i++) GetRuntime(i);
             if (player.OrNull()?.IsLocal != false && GetComponent<WeaponCrosshairSelector>() == null) gameObject.AddComponent<WeaponCrosshairSelector>();
         }
         SetSelection(Mathf.Clamp(selectedSlot, -1, SlotCount - 1));
@@ -98,7 +102,12 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         if (data == null) return null;
         if (weapons[index] == null || weapons[index].Data != data)
         {
-            var reserve = ReserveOf(data);
+            // The ammunition it takes is the table's (Weapons.csv ammo), read before its reserve is asked for.
+            data.BindTable();
+            // A gun loaded only from outside (a Schießhund's Desperado) reloads from nothing its holder carries: a reserve
+            // of its own, whatever ammunition it names, so emptying it (LoadOwnRounds) can never empty another gun's.
+            bool own = KeepsOwnRounds(index);
+            var reserve = own ? new AmmoReserve() : ReserveOf(data);
             GunState gun;
             if (arrived[index] is GunState put && put.Weapon == data)
             {
@@ -113,10 +122,18 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
             }
             else
             {
-                // A new gun (the shop's, a class's kit, the rack's): its magazine full, and this player's reserve for its
-                // kind filled to their cap, which an ammo pouch card raises. More than that already carried is kept.
+                // A new gun (the shop's, a class's kit, the rack's): its magazine full, and with it what it carries by
+                // itself (OwnCap), added to its holder's reserve of its ammunition as far as that is filled to with the
+                // guns now held (ReserveCap). So a second gun of an ammunition already carried adds its own share and
+                // never refills the first's; more than the cap already carried is kept.
                 gun = GunState.New(data);
-                reserve.Rounds = Mathf.Max(reserve.Rounds, ReserveCap(index));
+                if (!own)
+                {
+                    int before = reserve.Rounds, cap = ReserveCap(index);
+                    reserve.Rounds = Mathf.Max(before, Mathf.Min(cap, before + OwnCap(data)));
+                    if (Logged && data.Category == WeaponCategory.Ranged)
+                        GunAmmoLog.Note($"{data.name,-15} {ReserveKey(data),-8} new in slot {index + 1}: {gun.Rounds} in it; reserve {before} -> {reserve.Rounds} (filled to {cap})");
+                }
             }
             arrived[index] = null;
             weapons[index] = new WeaponRuntime(gun, reserve);
@@ -130,16 +147,19 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     private bool Logged => GunAmmoLog.On && player != null && player.IsLocal && !player.IsNetworkDriven;
 
     /// <summary>
-    /// What a player's reserve is kept by: the kind of gun, so the same kind taken up again finds the rounds its player
-    /// carried for it. The one place that says so: were reserves to be shared by ammunition instead (9 mm for every 9 mm
-    /// gun), this is what would change (the user, 2026-11-18, of the drop to come: "추후 논의 후 세부 구조 확정").
+    /// What a player's reserve is kept by: the ammunition a gun takes (WeaponData.Ammunition, Weapons.csv ammo), so
+    /// every gun that takes it reloads from the one reserve, and a gun swapped for another of its ammunition finds the
+    /// rounds its player carried (the user, 2026-11-18: "총 종류별로 두면 너무 빡셀 것 같으니, 탄 종류끼리 공유하는 편이
+    /// 좋을 것 같습니다"). The one place that says so: until then it was the gun's own name, a reserve for each gun.
+    /// Asked of a gun whose table has been read, as every gun in a slot is (Place, OnEnable).
     /// </summary>
-    public static string ReserveKey(WeaponData gun) => gun != null ? gun.name : "";
+    public static string ReserveKey(WeaponData gun) => gun != null ? gun.Ammunition : "";
 
     /// <summary>
-    /// The rounds this player carries for that kind of gun, outside any gun (AmmoReserve): theirs whether or not one of
-    /// its kind is in a slot now, so they are there again when one is (the user, 2026-11-18: "암살 등으로 모은 탄약이
-    /// 길가의 총기와 교체 후 원래 총을 다시 주울 때 초기화되는 문제").
+    /// The rounds this player carries of the ammunition that gun takes, outside any gun (AmmoReserve): theirs whether or
+    /// not a gun that takes it is in a slot now, so they are there again when one is (the user, 2026-11-18: "암살 등으로
+    /// 모은 탄약이 길가의 총기와 교체 후 원래 총을 다시 주울 때 초기화되는 문제"). Not what a gun loaded only from
+    /// outside reloads from: that one has a reserve of its own (GetRuntime).
     /// </summary>
     public AmmoReserve ReserveOf(WeaponData gun)
     {
@@ -148,7 +168,11 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         return reserve;
     }
 
-    /// <summary>The slot holding a gun of this kind, other than one that keeps its own rounds; -1 when none does.</summary>
+    /// <summary>
+    /// The slot holding this very gun (the same one of the game's guns, not another that takes its ammunition), other
+    /// than one that keeps its own rounds; -1 when none does. Such a gun on the ground is taken for its rounds alone
+    /// (TakeRounds); another gun of the same ammunition is a gun to swap for.
+    /// </summary>
     public int SlotOf(WeaponData gun)
     {
         if (gun == null) return -1;
@@ -159,7 +183,7 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
 
     /// <summary>
     /// Puts this particular gun in the slot as it is (one taken from the ground): the rounds in it are its own, the
-    /// rounds lying with it join this player's reserve for its kind, and nothing else is filled. <paramref name="before"/>
+    /// rounds lying with it join this player's reserve of its ammunition, and nothing else is filled. <paramref name="before"/>
     /// is the gun the slot held, as it was, for whoever lays it on the ground; null when the slot was empty or held no
     /// gun. False when the slot can't take it now.
     /// </summary>
@@ -168,19 +192,22 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         before = null;
         if (gun.Weapon == null || !Fits(index, gun.Weapon) || KeepsOwnRounds(index) || (player != null && player.CombatInputLocked)) return false;
         if (Leaving(index, out GunState old)) before = old;
-        // Its numbers are the table's (the reserve its kind is filled to), read before they are asked.
+        // Its numbers are the table's (the ammunition it takes, what it carries), read before they are asked.
         gun.Weapon.BindTable();
         var reserve = ReserveOf(gun.Weapon);
-        // What lies with the gun joins the reserve as far as that is filled to (CapFor), as an ammo pile does; the rest
-        // stays the gun's and lies with it again when it is put down. So a gun put down and one of its kind taken up in
-        // its place never brings more than the reserve holds: no round is lost, and none is made past the cap.
-        int reserveBefore = reserve.Rounds, taken = Mathf.Min(gun.Spare, Mathf.Max(0, CapFor(gun.Weapon) - reserve.Rounds));
+        // What lies with the gun joins the reserve of its ammunition as far as that is filled to with this gun in the
+        // slot (CapWith), as an ammo pile does; the rest stays the gun's and lies with it again when it is put down. So a
+        // gun put down and another taken up in its place never brings more than the reserve holds: no round is lost, and
+        // none is made past the cap. The reserve itself is untouched by the swap: a gun that takes the same ammunition as
+        // the one put down goes on with it as it stood.
+        int cap = CapWith(index, gun.Weapon);
+        int reserveBefore = reserve.Rounds, taken = Mathf.Min(gun.Spare, Mathf.Max(0, cap - reserve.Rounds));
         reserve.Rounds += taken;
         Place(index, gun.Weapon, gun.Holding(gun.Rounds, gun.Spare - taken));
         if (Logged)
-            GunAmmoLog.Note($"{gun.Weapon.name,-15} taken into slot {index + 1}: {gun.Rounds} in it, {gun.Spare} lying with it ({taken} taken); "
-                + $"reserve {reserveBefore} -> {reserve.Rounds}" + (before is GunState left ? $"; {left.Weapon.name} put down with {left.Rounds} in it, "
-                + $"its reserve {ReserveOf(left.Weapon).Rounds} kept" : ""));
+            GunAmmoLog.Note($"{gun.Weapon.name,-15} {ReserveKey(gun.Weapon),-8} taken into slot {index + 1}: {gun.Rounds} in it, {gun.Spare} lying with it "
+                + $"({taken} taken); reserve {reserveBefore} -> {reserve.Rounds} of {cap}" + (before is GunState left
+                    ? $"; {left.Weapon.name} put down with {left.Rounds} in it, its {ReserveKey(left.Weapon)} reserve {ReserveOf(left.Weapon).Rounds} kept" : ""));
         return true;
     }
 
@@ -195,7 +222,9 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         gun = default;
         if ((player != null && player.CombatInputLocked) || !Leaving(index, out gun)) return false;
         Place(index, null, null);
-        if (Logged) GunAmmoLog.Note($"{gun.Weapon.name,-15} put down from slot {index + 1} with {gun.Rounds} in it; its reserve {ReserveOf(gun.Weapon).Rounds} kept");
+        if (Logged)
+            GunAmmoLog.Note($"{gun.Weapon.name,-15} {ReserveKey(gun.Weapon),-8} put down from slot {index + 1} with {gun.Rounds} in it; "
+                + $"reserve {ReserveOf(gun.Weapon).Rounds} kept");
         return true;
     }
 
@@ -212,9 +241,9 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     }
 
     /// <summary>
-    /// How many rounds of a gun lying on the ground this player's reserve would take now, for a gun of the kind in
-    /// <paramref name="index"/>: up to what the reserve is filled to (ReserveCap), the rounds lying with the gun first,
-    /// then those in it.
+    /// How many rounds of a gun lying on the ground this player's reserve would take now, when it is the same gun as the
+    /// one in <paramref name="index"/>: up to what the reserve of its ammunition is filled to (ReserveCap), the rounds
+    /// lying with the gun first, then those in it.
     /// </summary>
     public int RoomFor(int index, in GunState lying)
     {
@@ -225,9 +254,10 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     }
 
     /// <summary>
-    /// A gun on the ground of a kind already held gives up its rounds and stays where it lies: as many as this player's
-    /// reserve has room for (RoomFor) go into it, and <paramref name="left"/> is the gun as it then is. Nothing else is
-    /// filled: before, taking a gun of a kind already held refilled every gun the player had. Returns how many were taken.
+    /// A gun on the ground that is the same gun as one already held gives up its rounds and stays where it lies: as many
+    /// as this player's reserve has room for (RoomFor) go into it, and <paramref name="left"/> is the gun as it then is
+    /// (the user, 2026-11-18: "같은 종류의 총이라면 탄만 빼오게 하신 건 잘하신 판단입니다"). Nothing else is filled:
+    /// before, taking a gun already held refilled every gun the player had. Returns how many were taken.
     /// </summary>
     public int TakeRounds(int index, in GunState lying, out GunState left)
     {
@@ -242,19 +272,53 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     }
 
     /// <summary>
-    /// How much reserve a pickup, the shop or a refill fills this slot's gun to, and <paramref name="overPercent"/> per
-    /// cent past it (a Support's resupply, Fully Loaded): the gun's starting reserve, times this PC's own player's ammo
-    /// pouch (PlayerPerks.ReserveFactor). The cards are this PC's player's, so a friend's copy keeps the gun's own.
+    /// How much the reserve this slot's gun reloads from is filled to by a pickup, the shop or a refill, and
+    /// <paramref name="overPercent"/> per cent past it (a Support's resupply, Fully Loaded): what every gun held that
+    /// takes its ammunition carries by itself (OwnCap), added up. One rifle with 90: 90. Two rifles with 90 and 120: 210
+    /// in the one reserve both reload from, as much as they held apart before reserves were shared. When one of them
+    /// leaves, the cap is the other's again; rounds already carried past it are kept and only nothing more is added.
+    /// The ammo pouch is this PC's own player's (PlayerPerks.ReserveFactor), so a friend's copy keeps the guns' own.
     /// </summary>
-    public int ReserveCap(int index, float overPercent = 0f) => CapFor(GetWeapon(index), overPercent);
+    public int ReserveCap(int index, float overPercent = 0f)
+    {
+        var data = GetWeapon(index);
+        if (data == null) return 0;
+        return KeepsOwnRounds(index) ? OwnCap(data, overPercent) : SharedCap(ReserveKey(data), -1, null, overPercent);
+    }
 
-    /// <summary>As ReserveCap, for a kind of gun whether or not one is in a slot (a gun about to be taken up).</summary>
-    public int CapFor(WeaponData data, float overPercent = 0f)
+    /// <summary>
+    /// As ReserveCap, were <paramref name="gun"/> in the slot in place of what it holds now: what a gun about to be taken
+    /// up there finds its ammunition's reserve filled to.
+    /// </summary>
+    public int CapWith(int index, WeaponData gun, float overPercent = 0f)
+        => gun == null ? 0 : KeepsOwnRounds(index) ? OwnCap(gun, overPercent) : SharedCap(ReserveKey(gun), index, gun, overPercent);
+
+    /// <summary>
+    /// What one gun carries in reserve by itself: its starting reserve (Weapons.csv initialReserveAmmo), times this PC's
+    /// own player's ammo pouch, and <paramref name="overPercent"/> per cent past it. What a new gun brings its holder.
+    /// </summary>
+    public int OwnCap(WeaponData data, float overPercent = 0f)
     {
         if (data == null) return 0;
         float factor = player != null && player.IsLocal ? PlayerPerks.ReserveFactor : 1f;
         // A hair under, so float error never rounds a whole number up (120 × 1.2 comes out as 144.00001).
         return Mathf.Max(0, Mathf.CeilToInt(data.InitialReserveAmmo * factor * (1f + Mathf.Max(0f, overPercent) / 100f) - .001f));
+    }
+
+    // What the reserve of one ammunition is filled to: what each gun held that takes it carries by itself, added up. So
+    // two guns of one ammunition hold together what they held apart, in the one reserve both reload from, and sharing
+    // never leaves a player with less than before it. A gun loaded only from outside is no part of it. The slot
+    // `replaced` is counted as holding `incoming` (-1 and null: the slots as they are).
+    private int SharedCap(string ammunition, int replaced, WeaponData incoming, float overPercent)
+    {
+        int cap = 0;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            if (KeepsOwnRounds(i)) continue;
+            var held = i == replaced ? incoming : GetWeapon(i);
+            if (held != null && ReserveKey(held) == ammunition) cap += OwnCap(held, overPercent);
+        }
+        return cap;
     }
     /// <summary>A gun's ammo changed outside a shot or a reload (a Point's gun put away reloading itself): the HUD reads again.</summary>
     internal void NotifyAmmo() => SlotActivity?.Invoke();
@@ -421,6 +485,10 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         savedReserve[index] = -1;
         arrived[index] = asItWas;
         switch (index) { case 0: slot1 = data; break; case 1: slot2 = data; break; case 2: slot3 = data; break; case 3: slot4 = data; break; }
+        // Made now, not when first asked for: what a new gun brings is in its holder's reserve from the moment the gun is
+        // theirs. Two guns of one ammunition read one reserve, so the second's share must not turn up in the first's
+        // count only when the second is first drawn.
+        GetRuntime(index);
         if (index == selectedSlot) SetSelection(index);
         SlotActivity?.Invoke();
     }

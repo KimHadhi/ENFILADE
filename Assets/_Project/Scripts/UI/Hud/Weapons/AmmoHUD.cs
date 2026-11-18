@@ -21,7 +21,7 @@ public sealed class AmmoHUD : MonoBehaviour
     private static readonly Color Muted = new Color(.59f, .67f, .71f);
     private RectTransform panel, fill, canvasRect;
     private CanvasGroup group;
-    private TMP_Text magazine, capacity, reserve, status, mode;
+    private TMP_Text magazine, capacity, reserve, reserveLabel, status, mode;
     private Image progress, edge, background, picture;
     private WeaponSlotSilhouette silhouette;
     private WeaponRuntime shown;
@@ -97,7 +97,14 @@ public sealed class AmmoHUD : MonoBehaviour
         // The numbers are the gun's own at this frame: a reload moves its rounds as the magazine leaves and as the new one
         // is seated (WeaponRuntime.Advance), so the count is right through the rest of its clip too (the user, 2026-11-18:
         // "남은 후딜레이 애니메이션 동안에도 UI에는 이미 장전 완료된 탄약 수치가 반영되도록").
-        if (runtime != shown) { shown = runtime; lastAmmo = runtime.Ammo; shotPulse = loadPulse = 0f; }
+        if (runtime != shown)
+        {
+            shown = runtime; lastAmmo = runtime.Ammo; shotPulse = loadPulse = 0f;
+            // The reserve is the player's by ammunition, shared by every gun that takes it (PlayerWeaponSlots.ReserveOf):
+            // the small word over its count names the ammunition, so which guns the number belongs to can be read. A gun
+            // with ammunition of its own has no name for it and keeps the plain word.
+            reserveLabel.text = AmmoKinds.NameOf(runtime.Data) ?? Texts.Get("hud.ammo.reserve");
+        }
         // A shot. Not the magazine taken out in a reload, which empties the count too.
         else if (runtime.Ammo < lastAmmo && !runtime.MagazineOut) shotPulse = 1f;
         // Rounds in: the new magazine seated, a shell, a top-up. The number swells once, at that very moment.
@@ -193,7 +200,10 @@ public sealed class AmmoHUD : MonoBehaviour
         magazine.enableAutoSizing = true; magazine.fontSizeMin = 32f; magazine.fontSizeMax = 64f;
         capacity = Label("Capacity", 126, 58, 65, 28, 19, Muted);
         Image("Divider", panel, 198, 58, 1, 48, new Color(.65f, .8f, .85f, .22f));
-        Label("Reserve label", 218, 95, 70, 17, 13, Muted).text = Texts.Get("hud.ammo.reserve");
+        reserveLabel = Label("Reserve label", 218, 95, 70, 17, 13, Muted);
+        reserveLabel.text = Texts.Get("hud.ammo.reserve");
+        // An ammunition's name may be longer than the word it stands in for: it shrinks to the box rather than being cut.
+        reserveLabel.enableAutoSizing = true; reserveLabel.fontSizeMin = 8f; reserveLabel.fontSizeMax = 13f;
         reserve = Label("Reserve count", 216, 57, 70, 38, 30, Color.white);
         reserve.enableAutoSizing = true; reserve.fontSizeMin = 10f; reserve.fontSizeMax = 30f;
         Image("Track", panel, 20, 40, 260, 3, new Color(1f, 1f, 1f, .12f));

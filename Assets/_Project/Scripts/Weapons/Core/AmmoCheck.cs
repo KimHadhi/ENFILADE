@@ -76,10 +76,13 @@ internal static class AmmoCheck
             if (guns.Count == 0) report.Text.AppendLine("FAIL no guns in Resources/Combat/FPSBody: nothing was checked.");
             else
             {
+                // What a gun takes and carries is the table's (Weapons.csv), read before any rule asks.
+                foreach (var gun in guns) gun.BindTable();
                 Reloads(guns, report);
                 TopUps(guns, report);
                 SlotTopUps(guns, report);
                 GunsAsThings(guns, report);
+                SharedReserves(guns, report);
             }
         }
         catch (Exception problem)
@@ -98,6 +101,8 @@ internal static class AmmoCheck
             + "(measured in a play of this editor session); the rest go by the shares the rules fall back on.");
         text.AppendLine();
         text.Append(report.Text);
+        text.AppendLine();
+        Ammunitions(guns, text);
         text.AppendLine();
         Steps(guns, text);
         try
@@ -329,29 +334,31 @@ internal static class AmmoCheck
             }
 
             slots = NewPlayer(made);
-            report.Rule("a swap with a gun on the ground: the gun put down keeps its rounds, its reserve stays with the player, the gun taken brings only what lay with it");
-            for (int i = 0; i + 1 < plain.Count; i++)
+            report.Rule("a swap with a gun on the ground that takes other ammunition: the gun put down keeps its rounds, its reserve stays with the player untouched, the gun taken brings only what lay with it");
+            foreach (var mine in plain)
             {
-                WeaponData mine = plain[i], found = plain[i + 1];
+                var found = OtherAmmunition(plain, mine);
+                if (found == null) { report.Expect(false, mine, "no gun of another ammunition in the list: not checked"); continue; }
                 Fresh(slots);
                 slots.TrySetWeapon(0, mine);
                 var gun = slots.GetRuntime(0);
                 Fire(gun, 3);
                 gun.AddReserve(11);
                 int rounds = gun.Ammo, reserve = gun.ReserveAmmo;
-                // A gun the map laid out: 3 rounds short of full, 9 lying with it.
-                found.BindTable();
-                int inIt = Mathf.Max(0, found.MagazineSize - 3);
+                // A gun the map laid out: 3 rounds short of full, 9 lying with it, and its taker carries none of its
+                // ammunition yet.
+                slots.ReserveOf(found).Rounds = 0;
+                int inIt = Mathf.Max(0, found.MagazineSize - 3), with = Mathf.Min(9, slots.CapWith(0, found));
                 var laid = new GunState(found, inIt, 9);
                 bool swapped = slots.Put(0, laid, out GunState? before);
                 var now = slots.GetRuntime(0);
                 bool put = before is GunState old && old.Weapon == mine && old.Rounds == rounds && old.Spare == 0;
                 bool kept = slots.ReserveOf(mine).Rounds == reserve;
-                bool brought = now != null && now.Data == found && now.Ammo == inIt && now.ReserveAmmo == 9;
-                // And back again: the first gun as it was put down, the second leaving with nothing lying with it.
+                bool brought = now != null && now.Data == found && now.Ammo == inIt && now.ReserveAmmo == with;
+                // And back again: the first gun as it was put down, the second leaving with what its taker had no room for.
                 bool again = before is GunState mineBack && slots.Put(0, mineBack, out GunState? second) && second is GunState foundBack
-                    && foundBack.Rounds == inIt && foundBack.Spare == 0 && slots.GetRuntime(0).Ammo == rounds && slots.GetRuntime(0).ReserveAmmo == reserve
-                    && slots.ReserveOf(found).Rounds == 9;
+                    && foundBack.Rounds == inIt && foundBack.Spare == 9 - with && slots.GetRuntime(0).Ammo == rounds && slots.GetRuntime(0).ReserveAmmo == reserve
+                    && slots.ReserveOf(found).Rounds == with;
                 report.Expect(swapped && put && kept && brought && again, mine,
                     $"{mine.name} {rounds}/{mine.MagazineSize} +{reserve} for {found.name} with {inIt} in it and 9 with it: put down right {put}, "
                     + $"its reserve kept {kept}, the new gun {(now != null ? Rounds(now) : "nothing")}, swapped back right {again}");
@@ -362,8 +369,7 @@ internal static class AmmoCheck
             foreach (var data in plain)
             {
                 Fresh(slots);
-                data.BindTable();
-                int cap = slots.CapFor(data), size = data.MagazineSize;
+                int cap = slots.CapWith(0, data), size = data.MagazineSize;
                 // Room for 2 rounds; the gun on the ground has 6 lying with it.
                 slots.ReserveOf(data).Rounds = Mathf.Max(0, cap - 2);
                 int reserve = slots.ReserveOf(data).Rounds, should = Mathf.Min(cap - reserve, 6);
@@ -377,10 +383,11 @@ internal static class AmmoCheck
             }
 
             slots = NewPlayer(made);
-            report.Rule("a gun of a kind already held gives its rounds to that kind's reserve only, up to its cap, and stays with the rest; no other gun is filled");
-            for (int i = 0; i + 1 < plain.Count; i++)
+            report.Rule("a gun already held, found on the ground, gives its rounds to the reserve of its ammunition only, up to its cap, and stays with the rest; a gun of other ammunition is not filled");
+            foreach (var mine in plain)
             {
-                WeaponData mine = plain[i], other = plain[i + 1];
+                var other = OtherAmmunition(plain, mine);
+                if (other == null) { report.Expect(false, mine, "no gun of another ammunition in the list: not checked"); continue; }
                 Fresh(slots);
                 slots.TrySetWeapon(0, mine);
                 slots.TrySetWeapon(1, other);
@@ -405,10 +412,11 @@ internal static class AmmoCheck
             }
 
             slots = NewPlayer(made);
-            report.Rule("a new gun (the shop's, a kit's) comes full with its reserve at the cap, and a second one of its kind adds nothing to it");
+            report.Rule("a new gun (the shop's, a kit's) comes full and brings what it carries to a holder who had none: the reserve at its cap; the same gun new again adds nothing past it");
             foreach (var data in plain)
             {
                 Fresh(slots);
+                slots.ReserveOf(data).Rounds = 0;
                 slots.TrySetWeapon(0, data);
                 var gun = slots.GetRuntime(0);
                 int cap = slots.ReserveCap(0);
@@ -450,6 +458,138 @@ internal static class AmmoCheck
         {
             foreach (var host in made) UnityEngine.Object.DestroyImmediate(host);
         }
+    }
+
+    // The reserve is kept by the ammunition a gun takes (WeaponData.Ammunition, PlayerWeaponSlots.ReserveOf, ReserveCap):
+    // guns of one ammunition reload from the one reserve, a gun swapped for another of its ammunition goes on with it as
+    // it stood, two of them held are filled to what both carry, and a gun loaded only from outside shares with none.
+    private static void SharedReserves(List<WeaponData> guns, Report report)
+    {
+        var plain = guns.FindAll(gun => gun.name != "Desperado");
+        var made = new List<GameObject>();
+        try
+        {
+            var slots = NewPlayer(made);
+            report.Rule("a swap with a gun that takes the same ammunition: the gun taken goes on with the reserve as it stood, and reloads from it");
+            foreach (var mine in plain)
+            {
+                // An ammunition only one gun takes has nothing to be swapped for.
+                var found = SameAmmunition(plain, mine);
+                if (found == null) continue;
+                Fresh(slots);
+                slots.ReserveOf(mine).Rounds = 0;
+                slots.TrySetWeapon(0, mine);
+                var gun = slots.GetRuntime(0);
+                Fire(gun, 3);
+                int rounds = gun.Ammo, reserve = gun.ReserveAmmo;
+                // The gun on the ground: 3 rounds short of full, nothing lying with it.
+                int inIt = Mathf.Max(0, found.MagazineSize - 3);
+                bool swapped = slots.Put(0, new GunState(found, inIt), out GunState? before);
+                var now = slots.GetRuntime(0);
+                bool one = ReferenceEquals(slots.ReserveOf(mine), slots.ReserveOf(found));
+                bool went = swapped && now != null && now.Data == found && now.Ammo == inIt && now.ReserveAmmo == reserve
+                    && before is GunState old && old.Weapon == mine && old.Rounds == rounds;
+                int total = now != null ? now.Ammo + now.ReserveAmmo : 0;
+                if (now != null)
+                {
+                    now.Tick(Step, new WeaponInputFrame(false, false, true));
+                    for (int i = 0; i < 100000 && now.IsReloading; i++) now.Tick(Step, default);
+                }
+                bool reloaded = now != null && now.Ammo == Mathf.Min(found.MagazineSize, total) && now.Ammo + now.ReserveAmmo == total
+                    && slots.ReserveOf(mine).Rounds == now.ReserveAmmo;
+                report.Expect(one && went && reloaded, mine,
+                    $"{mine.name} {rounds}/{mine.MagazineSize} +{reserve} for {found.name} ({found.Ammunition}) with {inIt} in it: one reserve {one}, "
+                    + $"went on with it {went}, after its reload {(now != null ? Rounds(now) : "nothing")} of {total} rounds, {mine.name}'s reserve now {slots.ReserveOf(mine).Rounds}");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("two guns of one ammunition held: one reserve, filled to what the two carry added up; a second gun brings its own share and no more; with one gone the cap is the other's and what is carried stays");
+            foreach (var first in plain)
+            {
+                var second = SameAmmunition(plain, first);
+                if (second == null) continue;
+                Fresh(slots);
+                slots.ReserveOf(first).Rounds = 0;
+                slots.TrySetWeapon(0, first);
+                int ownFirst = slots.OwnCap(first), ownSecond = slots.OwnCap(second), both = ownFirst + ownSecond;
+                bool alone = slots.ReserveCap(0) == ownFirst && slots.GetRuntime(0).ReserveAmmo == ownFirst;
+                // The holder has spent the first's reserve down to 5 when the second gun comes, new.
+                slots.ReserveOf(first).Rounds = 5;
+                slots.TrySetWeapon(1, second);
+                WeaponRuntime a = slots.GetRuntime(0), b = slots.GetRuntime(1);
+                int carried = Mathf.Min(both, 5 + ownSecond);
+                bool caps = slots.ReserveCap(0) == both && slots.ReserveCap(1) == both;
+                bool shared = a.ReserveAmmo == carried && b.ReserveAmmo == carried;
+                string held = $"{Rounds(a)} and {Rounds(b)} of a cap of {slots.ReserveCap(0)}";
+                // One reloads: what it takes is gone for the other too.
+                Fire(a, 2);
+                int took = first.MagazineSize - a.Ammo;
+                a.Tick(Step, new WeaponInputFrame(false, false, true));
+                for (int i = 0; i < 100000 && a.IsReloading; i++) a.Tick(Step, default);
+                bool drew = a.Ammo == first.MagazineSize && a.ReserveAmmo == carried - took && b.ReserveAmmo == carried - took;
+                // Filled to the cap of both, then the second gun is put down: the cap is the first's alone, the rounds
+                // carried past it stay, and a gun on the ground has nothing more to give.
+                slots.ReserveOf(first).Rounds = both;
+                bool gone = slots.Drop(1, out _) && slots.ReserveCap(0) == ownFirst && a.ReserveAmmo == both
+                    && slots.RoomFor(0, new GunState(first, first.MagazineSize, 4)) == 0;
+                report.Expect(alone && caps && shared && drew && gone, first,
+                    $"{first.name} carries {ownFirst}, {second.name} {ownSecond} ({first.Ammunition}): alone right {alone}; with 5 left and {second.name} new they held {held} "
+                    + $"(should be +{carried} of {both}); {first.name} reloading {took} left +{b.ReserveAmmo} for {second.name} (should {carried - took}); "
+                    + $"with {second.name} put down the cap is {slots.ReserveCap(0)} (should {ownFirst}) and +{a.ReserveAmmo} stays (should {both})");
+            }
+
+            slots = NewPlayer(made);
+            report.Rule("a gun loaded only from outside (a Schießhund's Desperado) shares its reserve with no gun, whatever ammunition it names");
+            foreach (var data in plain)
+            {
+                Fresh(slots);
+                slots.ReserveOf(data).Rounds = 0;
+                slots.SpecialHoldsGun = true;
+                // The very same gun twice: in a gun slot, and in the special slot as the gun loaded only from outside.
+                bool set = slots.TrySetWeapon(0, data) & slots.TrySetWeapon(3, data);
+                WeaponRuntime held = slots.GetRuntime(0), kept = slots.GetRuntime(3);
+                int cap = slots.ReserveCap(0), own = slots.OwnCap(data);
+                bool apart = set && held != null && kept != null && cap == own && held.ReserveAmmo == own && kept.ReserveAmmo == 0;
+                bool still = false;
+                if (apart)
+                {
+                    kept.LoadOwnRounds(1);
+                    held.AddReserve(3);
+                    still = kept.ReserveAmmo == 0 && kept.Ammo == Mathf.Min(1, data.MagazineSize) && held.ReserveAmmo == own + 3 && slots.ReserveCap(0) == own;
+                }
+                report.Expect(apart && still, data,
+                    $"in slot 1 {(held != null ? Rounds(held) : "nothing")} of a cap of {cap} (it carries {own}); in the special slot {(kept != null ? Rounds(kept) : "nothing")}");
+                slots.TrySetWeapon(3, null);
+                slots.SpecialHoldsGun = false;
+            }
+
+            report.Rule("every ammunition a gun names has a name to show over the reserve count (Texts ammo.kind.<name>); a gun that names none has ammunition of its own");
+            foreach (var data in guns)
+            {
+                bool own = data.Ammunition == data.name;
+                report.Expect(own || AmmoKinds.NameOf(data) != null, data, $"takes '{data.Ammunition}', which has no text ammo.kind.{data.Ammunition}: the count would be headed RESERVE");
+            }
+        }
+        finally
+        {
+            foreach (var host in made) UnityEngine.Object.DestroyImmediate(host);
+        }
+    }
+
+    // The next gun of the list after this one (round the list) that takes other ammunition, or the same; null when none does.
+    private static WeaponData OtherAmmunition(List<WeaponData> guns, WeaponData gun) => Next(guns, gun, false);
+
+    private static WeaponData SameAmmunition(List<WeaponData> guns, WeaponData gun) => Next(guns, gun, true);
+
+    private static WeaponData Next(List<WeaponData> guns, WeaponData gun, bool same)
+    {
+        int at = guns.IndexOf(gun);
+        for (int i = 1; i < guns.Count; i++)
+        {
+            var other = guns[(at + i) % guns.Count];
+            if (other != gun && (other.Ammunition == gun.Ammunition) == same) return other;
+        }
+        return null;
     }
 
     // A player's slots that hold nothing and carry nothing, on an object that never wakes (no scene, no play).
@@ -515,6 +655,26 @@ internal static class AmmoCheck
     private static string Rounds(WeaponRuntime gun) => $"{gun.Ammo}/{gun.Data.MagazineSize} +{gun.ReserveAmmo}";
 
     private static string Kind(bool empty) => empty ? "empty" : "tactical";
+
+    // Which guns share a reserve, for whoever reads the report: each ammunition with the guns that take it and what each
+    // carries by itself (two of them held are filled to the two numbers added up).
+    private static void Ammunitions(List<WeaponData> guns, StringBuilder text)
+    {
+        text.AppendLine("== ammunition (Weapons.csv ammo): the guns of one line reload from their holder's one reserve; each carries the number after it, "
+            + "and two of them held are filled to the two added up");
+        var seen = new List<string>();
+        foreach (var gun in guns)
+        {
+            string kind = gun.Ammunition;
+            if (seen.Contains(kind)) continue;
+            seen.Add(kind);
+            var takers = guns.FindAll(other => other.Ammunition == kind);
+            string name = AmmoKinds.NameOf(gun);
+            text.Append((kind == gun.name ? "(its own)" : kind).PadRight(10)).Append(' ').Append((name ?? "-").PadRight(8)).Append(' ');
+            for (int i = 0; i < takers.Count; i++) text.Append(i > 0 ? ", " : "").Append(takers[i].name).Append(' ').Append(takers[i].InitialReserveAmmo);
+            text.AppendLine();
+        }
+    }
 
     // Every magazine gun's reload steps as the rules read them now, for whoever reads the report: when the rounds are in,
     // and how long the clip goes on after the gun is loaded (the time the count used to wait).

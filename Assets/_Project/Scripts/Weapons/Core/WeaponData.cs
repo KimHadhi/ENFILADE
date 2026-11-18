@@ -39,6 +39,9 @@ public sealed class WeaponData : ScriptableObject
     [Tooltip("Pitch / yaw in degrees. Positive pitch kicks the view upward.")]
     [SerializeField] private Vector2 recoilPerShot = new Vector2(1.2f, 0.4f);
     [Header("Ammunition / fire mode")]
+    [Tooltip("The ammunition it takes (Weapons.csv ammo: pistol, magnum, smg, shell, rifle, dmr, sniper, mg, or a new name): guns " +
+        "that take the same share their holder's reserve. Empty: ammunition of its own, shared with no other gun.")]
+    [SerializeField] private string ammo = "";
     [SerializeField, Min(0)] private int initialReserveAmmo = 90;
     [Tooltip("Rounds one 'magazine' of supply is worth where ammo is handed out by the magazine: an ammo pile, a " +
         "Support's resupply, an execution's refund, the low-ammo callout. 0: the magazine itself. A gun whose magazine " +
@@ -217,6 +220,13 @@ public sealed class WeaponData : ScriptableObject
     public float RecoilResponse => Mathf.Clamp(recoilResponse, 8f, 50f);
     public float RecoilRetention => Mathf.Clamp01(recoilRetention);
     public int InitialReserveAmmo => Mathf.Max(0, initialReserveAmmo);
+    /// <summary>
+    /// The ammunition it takes: what its holder's reserve is kept by, so guns that take the same reload from one reserve
+    /// (the user, 2026-11-18: "총 종류별로 두면 너무 빡셀 것 같으니, 탄 종류끼리 공유하는 편이 좋을 것 같습니다"). A gun
+    /// that names none has ammunition of its own, named after the gun. It is the table's (Weapons.csv ammo): ask it of a
+    /// gun whose table has been read (BindTable), as a gun in a slot is.
+    /// </summary>
+    public string Ammunition => string.IsNullOrWhiteSpace(ammo) ? name : ammo.Trim();
     /// <summary>
     /// What one magazine of supply is worth for this gun, in rounds (Supply Rounds; the magazine itself when unset).
     /// Hand-outs count in this, never in MagazineSize: how much a gun holds at once is not how much a pile gives it.

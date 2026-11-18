@@ -53,7 +53,7 @@ public static class GunAmmoLog
         if (!On || capped || gun == null) return;
         line.Clear();
         int size = gun.Data.MagazineSize;
-        line.Append(gun.Data.name.PadRight(15)).Append(' ')
+        line.Append(gun.Data.name.PadRight(15)).Append(' ').Append(gun.Data.Ammunition.PadRight(8)).Append(' ')
             .Append(ammoBefore).Append('/').Append(size).Append(" +").Append(reserveBefore)
             .Append(" -> ").Append(gun.Ammo).Append('/').Append(size).Append(" +").Append(gun.ReserveAmmo)
             .Append("  ").Append(what);
@@ -72,8 +72,9 @@ public static class GunAmmoLog
             if (File.Exists(path)) File.Copy(path, Path.Combine(folder, "gun-ammo.previous.txt"), true);
             File.WriteAllText(path, "Gun ammunition record, " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + ", game " + Application.version
                 + ", scene " + SceneManager.GetActiveScene().name + Environment.NewLine
-                + "Lines: [game time s] gun  magazine/size +reserve before -> after  what did it. This PC's own player only; shots are "
-                + "not lines (they are the difference between one line's after and the next one's before)." + Environment.NewLine,
+                + "Lines: [game time s] gun  its ammunition  magazine/size +reserve before -> after  what did it. This PC's own player "
+                + "only; shots are not lines (they are the difference between one line's after and the next one's before). The reserve "
+                + "is the player's for that ammunition: guns that take the same one show the same reserve." + Environment.NewLine,
                 new UTF8Encoding(false));
         }
         catch (Exception problem)
