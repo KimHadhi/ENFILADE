@@ -211,7 +211,7 @@ internal sealed class CampaignPhases
             song = $" · 노래 {music.Playing} {music.Clock:0}초" + (float.IsInfinity(until) ? "" : $" · 다음 단계까지 {until:0}초");
         }
         else if (breath > 0f) song = $" · 다음 노래까지 {breath:0}초";
-        return $"단계: {phase} · 적 {alive}" + (mobLeft > 0 ? $" · 떼 {mobLeft} 마리 오는 중" : "") + song;
+        return $"단계: {phase} · 적 {alive}" + (mobLeft > 0 ? $" · 호드 {mobLeft} 마리 오는 중" : "") + song;
     }
 
     // A step's own song from where it comes in (EntryOf: its first second, unless its first highlight is far in), even

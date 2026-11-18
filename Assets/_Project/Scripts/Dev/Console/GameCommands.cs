@@ -25,7 +25,7 @@ public static class GameCommands
         router.Register("perf", "프레임 비용 측정 켜기(에디터 프로파일러로 스크립트마다·엔진 부분마다 한 프레임에 몇 ms인지, 게임 몫과 에디터 몫, 가장 긴 프레임이 무엇에 걸렸는지), 다시 입력하면 끄고 Logs/perf.txt에 씀. 에디터에서만", PerfProbe.Command);
         router.Register("zfx","suppress [초] · unseen [초] · gas [초] [반경] · move — 카드가 좀비에게 하는 일(제압·안 보임·눈 가리는 가스·옮기기)을 손으로 시험", ZombieEffectsCommand.Command);
         router.Register("ff", "1 아군 사격 켜기, 0 끄기, 비우면 바꾸기 (방장만, 방 전체에 적용)", FriendlyFire.Command);
-        router.Register("director", "캠페인 단계(정비·습격 임박·습격)·노래와 그 위치·적 수·습격 떼 (방장)", _ => CampaignRun.DirectorReport());
+        router.Register("director", "캠페인 단계(정비·습격 임박·습격)·노래와 그 위치·적 수·습격 호드 (방장)", _ => CampaignRun.DirectorReport());
         router.Register("hub", "은신처(허브)로 가기 (혼자, 또는 방장이면 방 전체)", HubFlow.Command);
         router.Register("tower", "rooms [날짜 20261118] — 타워의 그날 방마다 나올 좀비와 엘리트 수를 Logs/tower-rooms.txt에 (타워 밖에서도 된다)", TowerRun.Command);
         router.Register("alarm", "발각·외침 집계: 외침 수, 같은 좀비가 또 외친 수, 떼였다가 외친 수, 조용함이 바뀐 횟수 (방장) → Logs/stealth.txt", StealthLog.Command);
