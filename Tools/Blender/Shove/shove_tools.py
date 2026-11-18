@@ -50,6 +50,7 @@ TRUEFPS = Path('Tools/Blender/TrueFPS/truefps_tools.py')
 ONE_CLICK = Path('Tools/Blender/OneClick/one_click.py')
 # What every hand workspace measures the fingers with (each joint's way and twist, the game's FingerWays).
 FINGER_WAYS = Path('Tools/Blender/HandPaths/finger_ways.py')
+INJECT_MOVES = Path('Tools/Blender/Shove/inject_moves.py')
 TAB = '밀치기'
 # Kazusa in the game is this many times her size in this file (eyes 1.37 here, 1.6 m in game: PlayerBody's fit).
 GAME_SCALE = 1.166
@@ -87,6 +88,21 @@ MOVES = {
     # handle does.
     'repair_torch': dict(label='수리 · 토치', kind='arm', action='enf_repair_torch', table='RepairTorch', tool='TOOL_Torch',
                          impact=0, end=31, curl=70.0, thumb=45.0, part='CTRL_hand.L'),
+    # The Détente's healing in the free left hand (the user, 2026-11-18: "카메라 기준이 아닌 True FPS 캐릭터 신체/손 기준으로
+    # 주사기가 사용되도록"): the syringe held in the fist like an ice pick, its plunger under the thumb. A dose into itself
+    # goes into the left thigh, a dose into a friend is thrust ahead at them, and the treatment by hand winds a bandage
+    # round and round ahead. 타격 is the moment the needle is in: the game puts the needle's tip on the body there, on
+    # whatever body it is (InjectArm), and the plunger goes home after it. The moves are made the first time this file is
+    # opened with them missing (inject_moves.py), for the user to shape; the bandage strikes nothing (0).
+    'inject_self': dict(label='주사 · 나에게', kind='arm', action='enf_inject_self', table='InjectSelf', tool='TOOL_Syringe',
+                        impact=10, end=24, curl=80.0, thumb=35.0, part='CTRL_hand.L', strike='바늘이 몸에 들어간 순간',
+                        player='InjectArm이 어느 캐릭터 팔에든 맞추고 바늘 끝을 그 몸의 허벅지에 댄다'),
+    'inject_friend': dict(label='주사 · 동료에게', kind='arm', action='enf_inject_friend', table='InjectFriend', tool='TOOL_Syringe',
+                          impact=8, end=22, curl=80.0, thumb=35.0, part='CTRL_hand.L', strike='바늘이 동료의 몸에 들어간 순간',
+                          player='InjectArm이 어느 캐릭터 팔에든 맞추고 바늘 끝을 동료의 몸에 댄다'),
+    'bandage': dict(label='치료 · 붕대', kind='arm', action='enf_bandage', table='Bandage', tool='TOOL_Bandage',
+                    impact=0, end=31, curl=55.0, thumb=40.0, part='CTRL_hand.L', strike='(없음)',
+                    player='InjectArm이 어느 캐릭터 팔에든 맞춰 치료하는 동안 되풀이한다'),
 }
 
 # The parts a beginner moves, by their Korean names: the gun, or the kick's IK handles on the rig, or the left arm's.
@@ -167,6 +183,11 @@ def one_click():
 def finger_ways():
     """The shared finger measure: every finger joint's way and twist as the game's tables carry them."""
     return _module('enf_finger_ways', FINGER_WAYS)
+
+
+def inject_moves():
+    """The Détente's moves: their drafts and the syringe's and the bandage's previews (made on opening when missing)."""
+    return _module('enf_inject_moves', INJECT_MOVES)
 
 
 def find_rig(scene):
@@ -315,8 +336,17 @@ def focus(context, window, area, key):
 def prepare(context):
     """Every move ready to work in (an older file's layers made into editable moves, a mending draft without fingers
     given its grip), the last one shown."""
+    # Moves this file was built without get their drafts now, in memory: the file itself is only ever saved by its user.
+    try:
+        inject_moves().ensure(context, sys.modules[__name__])
+    except Exception as error:  # a move that can't be drafted must never keep the workspace from opening
+        print(f'ENFILADE: 주사·붕대 동작을 만들지 못했습니다 ({error!r})')
     draft_grips(context)
     for key in MOVES:
+        # A move with nothing drafted (the line above failed) is left out rather than shown empty.
+        made = bpy.data.actions.get(MOVES[key]['action']) or bpy.data.actions.get(MOVES[key]['action'] + one_click().DRAFT)
+        if MOVES[key]['kind'] == 'arm' and made is None:
+            continue
         item(context, key)
     select_move(context, current_move(context.scene))
 
@@ -711,7 +741,8 @@ def export_arm(context, key, root):
             'GrenadeArmPath의 칸: 어깨에서 손목과 팔꿈치까지 팔 길이의 배수와 손의 방향을 시선 축(x 오른쪽 y 위 z 앞)으로. '
             '손가락은 마디마다 손 자기 틀에서 가리키는 쪽과 비틀림(index1X~thumb3Twist)으로 가서 블렌더에서 잡은 모양 그대로 나온다. '
             'curl·thumb은 그 요약. '
-            'strike 1인 줄이 망치가 판자에 닿는 순간(소리). 손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. RepairArm이 어느 캐릭터 팔에든 맞춰 되풀이한다)')
+            'strike 1인 줄이 ' + move.get('strike', '망치가 판자에 닿는 순간(소리)') + '. 손으로 고치지 말고 블렌더에서 고쳐 다시 보낸다. '
+            + move.get('player', 'RepairArm이 어느 캐릭터 팔에든 맞춰 되풀이한다') + ')')
     header = 'id,cycle,wristX,wristY,wristZ,elbowX,elbowY,elbowZ,alongX,alongY,alongZ,palmX,palmY,palmZ,curl,thumb,held,strike'
     lines = ['﻿' + header + ',' + ','.join(ways.columns()), note]
     for n, (cycle, wrist, elbow, along, palm, strike, fingers, closed) in enumerate(arm_rows(context, key)):

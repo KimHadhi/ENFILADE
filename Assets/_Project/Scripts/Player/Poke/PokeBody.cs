@@ -328,8 +328,12 @@ public sealed class PokeBody : MonoBehaviour
     /// The nearest place on this body's surface along the line from <paramref name="origin"/> (unit
     /// <paramref name="direction"/>), within <paramref name="range"/> (m): where, how far, which bone carries it and which
     /// zone it is. False when the line misses the body or it isn't read yet.
+    /// <paramref name="limb"/>: only what that bone carries (its skin and what is worn on it), down to but not past
+    /// <paramref name="beyond"/> (the next joint): a needle going into a thigh passes the skirt hanging over it, which
+    /// hangs from bones of its own (InjectArm). None: the whole body, as a fingertip meets it.
     /// </summary>
-    internal bool Raycast(Vector3 origin, Vector3 direction, float range, out Vector3 point, out float distance, out Transform bone, out PokeZone zone)
+    internal bool Raycast(Vector3 origin, Vector3 direction, float range, out Vector3 point, out float distance, out Transform bone, out PokeZone zone,
+        Transform limb = null, Transform beyond = null)
     {
         point = default;
         bone = null;
@@ -342,6 +346,7 @@ public sealed class PokeBody : MonoBehaviour
         foreach (var patch in patches)
         {
             if (patch.Bone == null) continue;
+            if (limb != null && (!patch.Bone.IsChildOf(limb) || (beyond != null && patch.Bone.IsChildOf(beyond)))) continue;
             var matrix = patch.Bone.localToWorldMatrix;
             Vector3 centre = matrix.MultiplyPoint3x4(patch.Centre);
             float radius = patch.Radius * MaxScale(patch.Bone) + width;

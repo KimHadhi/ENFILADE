@@ -96,13 +96,15 @@ public sealed partial class PlayerNetworkCombat
     }
 
     // A Détente's syringe or bandage, for the others to see in their hand (0 a dose, 1 a treatment for so long, 2 one
-    // called off).
+    // called off), and whom it is for (their network object; any other number: the Détente itself), so a friend's dose
+    // is aimed at that friend on every PC and a dose into oneself goes into one's own thigh (InjectArm).
     [Rpc(SendTo.NotMe)]
-    private void DetenteLookRpc(byte look, float seconds)
+    private void DetenteLookRpc(byte look, float seconds, ulong patient)
     {
         var who = mover != null ? mover : GetComponent<PlayerMovement>();
-        if (look == 0) DetenteLooks.Syringe(who);
-        else if (look == 1) DetenteLooks.Bandage(who, seconds);
+        var into = PlayerOf(patient);
+        if (look == 0) DetenteLooks.Syringe(who, into != null ? into : who);
+        else if (look == 1) DetenteLooks.Bandage(who, seconds, into);
         else DetenteLooks.StopBandage(who);
     }
 
@@ -112,11 +114,17 @@ public sealed partial class PlayerNetworkCombat
     [Rpc(SendTo.NotMe)]
     private void ToolRpc(byte tool) => RepairLooks.Hold(mover != null ? mover : GetComponent<PlayerMovement>(), (RepairLooks.Tool)tool);
 
-    private void OnInjected() => DetenteLookRpc(0, 0f);
+    private void OnInjected(PlayerMovement patient) => DetenteLookRpc(0, 0f, IdOf(patient));
 
-    private void OnTreatBegan(float seconds) => DetenteLookRpc(1, seconds);
+    private void OnTreatBegan(float seconds, PlayerMovement patient) => DetenteLookRpc(1, seconds, IdOf(patient));
 
-    private void OnTreatStopped() => DetenteLookRpc(2, 0f);
+    private void OnTreatStopped() => DetenteLookRpc(2, 0f, NoPlayer);
+
+    // A player's network object, to name them to the other PCs; NoPlayer for none (and for one this room doesn't know).
+    private const ulong NoPlayer = ulong.MaxValue;
+
+    private static ulong IdOf(PlayerMovement player)
+        => player != null && player.TryGetComponent(out NetworkObject found) && found.IsSpawned ? found.NetworkObjectId : NoPlayer;
 
     // A player in the room by their network object, or null.
     private PlayerMovement PlayerOf(ulong id)

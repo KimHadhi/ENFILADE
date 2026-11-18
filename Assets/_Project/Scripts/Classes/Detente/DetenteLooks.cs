@@ -7,25 +7,31 @@ using UnityEngine;
 /// 있나?" and the Guts &amp; Blackpowder surgeon's offer they asked for). There are no models for these, so they are made
 /// here of simple parts, once:
 /// - Syringe: the class key's dose, a thick adrenaline syringe rather than a slim one (the user, 2026-11-12: "일반
-///   주사기가 아니라 좀 두꺼운 주사기였으면 좋겠는데 아드레날린 주사기처럼"), an orange band at its neck. Seen from inside,
-///   it comes up from below into view, its plunger goes home and the red dose in its barrel empties, and it drops away
-///   again; anyone else sees it in the Détente's right hand.
-/// - Bandage: the treatment by hand, as long as it lasts. Seen from inside, a roll of bandage winds round and round low in
-///   view; anyone else sees it turning in the Détente's hand.
+///   주사기가 아니라 좀 두꺼운 주사기였으면 좋겠는데 아드레날린 주사기처럼"), an orange band at its neck. It is in the Détente's
+///   free left hand on their body, the gun staying in the right (InjectArm plays the motion on the left arm and the
+///   syringe rides in the fist): a dose into itself goes into the left thigh, a dose into a friend is thrust at their
+///   arm, and the plunger goes home and the red dose empties as the needle is in. So their own first-person view, the F5
+///   view and everyone else's show the same thing. It once rode the camera on a fixed path with no arm moving, and from
+///   outside hung by the right hand beside the gun (the user, 2026-11-18: "카메라 기준이 아닌 True FPS 캐릭터 신체/손
+///   기준으로 주사기가 사용되도록").
+/// - Bandage: the treatment by hand, as long as it lasts: a roll of bandage in the same left hand, wound round and round
+///   toward the friend (InjectArm's loop).
 /// - Asked: a friend who called for healing (Callouts request.heal or request.medic), seen by a Détente: a red glow
 ///   behind them and a red cross over their head while the call holds, so the Détente finds them, and an offer to them
 ///   needs no answer (DetenteKit).
 /// - The answer: the line at the foot of the screen of whoever is offered a treatment, "[F] … 치료 받기" (Prompt).
-/// Every PC draws its own: DetenteKit on the Détente's PC, PlayerNetworkCombat for what the others see. A model put at
-/// Resources/ClassProps/Syringe or Resources/ClassProps/Bandage (a prefab, the needle or roll's axis along +z) is used
-/// in place of the made one, without the plunger's play.
+/// Every PC draws its own: DetenteKit on the Détente's PC, PlayerNetworkCombat for what the others see (it says who was
+/// dosed, so a friend's dose is aimed at that friend on every PC). A model put at Resources/ClassProps/Syringe or
+/// Resources/ClassProps/Bandage (a prefab in the tool's axes: the syringe from its needle, -y, to its plunger, +y; the
+/// roll's axis along y) is used in place of the made one, without the plunger's play.
 /// </summary>
 public sealed class DetenteLooks : MonoBehaviour
 {
     private enum Kind : byte { Syringe, Bandage, Asked }
 
-    // The syringe's whole run (s) and when its plunger starts and ends; how long the bandage takes to drop away (s).
-    private const float SyringeSeconds = .75f, PlungeFrom = .17f, PlungeTo = .45f, BandageOut = .25f;
+    // How long a dose's look may last at most (s: its motion is the arm's, which ends by itself), and how long the bandage
+    // takes to be put away once the treatment ends (s).
+    private const float SyringeMost = 2.5f, BandageOut = .25f;
     // The Asked look: the halo's size (m), the cross's arm and thickness (m), its height over the feet (m).
     private const float HaloWidth = 1.4f, HaloHeight = 2.2f, CrossArm = .2f, CrossThick = .065f, CrossHeight = 2.25f;
     private static readonly Color Dose = new Color(.95f, .16f, .2f, 1f), Plastic = new Color(.9f, .92f, .95f, 1f),
@@ -36,10 +42,12 @@ public sealed class DetenteLooks : MonoBehaviour
     private static TextMeshProUGUI promptLabel;
 
     private Kind kind;
-    private PlayerMovement who;
-    private bool inside;
+    private PlayerMovement who, patient;
     private float age, life;
     private Transform prop, plunger, fluid;
+    private InjectArm arm;
+    // The dose's motion was begun: once the arm is done with it the syringe goes.
+    private bool began;
     private Mesh mesh;
     private readonly List<Vector3> vertices = new List<Vector3>();
     private readonly List<Color32> colors = new List<Color32>();
@@ -55,11 +63,15 @@ public sealed class DetenteLooks : MonoBehaviour
         promptLabel = null;
     }
 
-    /// <summary>A dose goes in: the syringe in this Détente's hand (from inside on their own PC).</summary>
-    public static void Syringe(PlayerMovement detente) => Begin(Kind.Syringe, detente, SyringeSeconds);
+    /// <summary>
+    /// A dose goes in: the syringe in this Détente's left hand, into <paramref name="patient"/> (null or the Détente:
+    /// into its own thigh).
+    /// </summary>
+    public static void Syringe(PlayerMovement detente, PlayerMovement patient) => Begin(Kind.Syringe, detente, SyringeMost, patient);
 
-    /// <summary>A treatment by hand under way for <paramref name="seconds"/>: the bandage in this Détente's hands.</summary>
-    public static void Bandage(PlayerMovement detente, float seconds) => Begin(Kind.Bandage, detente, Mathf.Max(.3f, seconds) + BandageOut);
+    /// <summary>A treatment by hand under way for <paramref name="seconds"/>: the bandage in this Détente's left hand, wound toward <paramref name="patient"/>.</summary>
+    public static void Bandage(PlayerMovement detente, float seconds, PlayerMovement patient = null)
+        => Begin(Kind.Bandage, detente, Mathf.Max(.3f, seconds) + BandageOut, patient);
 
     /// <summary>A treatment called off early: the bandage drops away now.</summary>
     public static void StopBandage(PlayerMovement detente)
@@ -118,14 +130,18 @@ public sealed class DetenteLooks : MonoBehaviour
         promptLabel.color = KitStyle.With(KitStyle.Ice, .8f + .2f * Mathf.Sin(Time.unscaledTime * 7f));
     }
 
-    private static DetenteLooks Begin(Kind kind, PlayerMovement who, float seconds)
+    private static DetenteLooks Begin(Kind kind, PlayerMovement who, float seconds, PlayerMovement patient = null)
     {
         if (!Application.isPlaying || who == null) return null;
+        // One syringe, one roll in a hand: a dose given before the last one's arm was back at the gun takes its place.
+        if (kind != Kind.Asked)
+            foreach (var earlier in FindObjectsByType<DetenteLooks>(FindObjectsSortMode.None))
+                if (earlier.kind == kind && earlier.who == who) Destroy(earlier.gameObject);
         var host = FeelAssets.CreateRuntimeRoot("Detente " + kind);
         var look = host.AddComponent<DetenteLooks>();
         look.kind = kind;
         look.who = who;
-        look.inside = who.IsLocal && kind != Kind.Asked;
+        look.patient = patient;
         look.life = seconds;
         if (kind == Kind.Asked) look.Shapes();
         else look.Prop();
@@ -153,51 +169,54 @@ public sealed class DetenteLooks : MonoBehaviour
 
     // ---- The props ----
 
-    // The syringe or the bandage, built of plain parts: from inside, held below the view in the camera's frame; from
-    // outside, at the Détente's right hand.
+    // The syringe or the bandage, built of plain parts in the tool's own axes (y its handle: the syringe from its needle
+    // at -y to its plunger at +y, the roll's axis), to ride in the Détente's left fist (InjectArm.Wear).
     private void Prop()
     {
         prop = new GameObject(kind.ToString()).transform;
         prop.SetParent(transform, false);
         var model = Resources.Load<GameObject>("ClassProps/" + kind);
-        if (model != null) Instantiate(model, prop, false);
+        if (model != null)
+            // Held on a body, it brings nothing that would make it part of the world (WornParts: a pack's prefab comes with colliders).
+            WornParts.Strip(Instantiate(model, prop, false));
         else if (kind == Kind.Syringe)
         {
-            // Along +z, the needle forward: a thick barrel (3.4 cm across, 12 cm long), the red dose in it, an orange band
-            // at its neck, the plunger behind, the finger grips, the needle.
+            // A thick barrel (3.4 cm across, 12 cm long), the red dose in it, an orange band at its neck, the plunger behind,
+            // the finger grips, the needle: its tip 12.5 cm under the middle of the barrel (Tables/InjectArms tip).
             Part("Barrel", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(.034f, .06f, .034f), Plastic, prop);
-            fluid = Part("Dose", PrimitiveType.Cylinder, new Vector3(0f, 0f, .008f), new Vector3(.0356f, .045f, .0356f), Dose, prop);
-            Part("Band", PrimitiveType.Cylinder, new Vector3(0f, 0f, .058f), new Vector3(.037f, .006f, .037f), Band, prop);
+            fluid = Part("Dose", PrimitiveType.Cylinder, new Vector3(0f, -.008f, 0f), new Vector3(.0356f, .045f, .0356f), Dose, prop);
+            Part("Band", PrimitiveType.Cylinder, new Vector3(0f, -.058f, 0f), new Vector3(.037f, .006f, .037f), Band, prop);
             plunger = new GameObject("Plunger").transform;
             plunger.SetParent(prop, false);
-            Part("Rod", PrimitiveType.Cylinder, new Vector3(0f, 0f, -.095f), new Vector3(.012f, .035f, .012f), Plastic, plunger);
-            Part("Thumb", PrimitiveType.Cylinder, new Vector3(0f, 0f, -.132f), new Vector3(.042f, .004f, .042f), Plastic, plunger);
-            Part("Grips", PrimitiveType.Cube, new Vector3(0f, 0f, -.062f), new Vector3(.085f, .016f, .006f), Plastic, prop, false);
-            Part("Hub", PrimitiveType.Cylinder, new Vector3(0f, 0f, .07f), new Vector3(.016f, .008f, .016f), Steel, prop);
-            Part("Needle", PrimitiveType.Cylinder, new Vector3(0f, 0f, .1f), new Vector3(.0035f, .025f, .0035f), Steel, prop);
+            Part("Rod", PrimitiveType.Cylinder, new Vector3(0f, .095f, 0f), new Vector3(.012f, .035f, .012f), Plastic, plunger);
+            Part("Thumb", PrimitiveType.Cylinder, new Vector3(0f, .132f, 0f), new Vector3(.042f, .004f, .042f), Plastic, plunger);
+            Part("Grips", PrimitiveType.Cube, new Vector3(0f, .062f, 0f), new Vector3(.085f, .006f, .016f), Plastic, prop);
+            Part("Hub", PrimitiveType.Cylinder, new Vector3(0f, -.07f, 0f), new Vector3(.016f, .008f, .016f), Steel, prop);
+            Part("Needle", PrimitiveType.Cylinder, new Vector3(0f, -.1f, 0f), new Vector3(.0035f, .025f, .0035f), Steel, prop);
         }
         else
         {
-            Part("Roll", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.06f, .035f, .06f), Gauze, prop, false);
-            Part("Tail", PrimitiveType.Cube, new Vector3(.035f, -.05f, 0f), new Vector3(.004f, .1f, .05f), Gauze, prop, false);
+            Part("Roll", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.06f, .035f, .06f), Gauze, prop);
+            Part("Tail", PrimitiveType.Cube, new Vector3(.035f, 0f, .05f), new Vector3(.004f, .05f, .1f), Gauze, prop);
         }
-        if (!inside) prop.localScale = Vector3.one * 1.6f;
         foreach (var renderer in prop.GetComponentsInChildren<Renderer>())
         {
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
+        // In the fist on the next Place (InjectArm.Wear); a body without a humanoid arm shows none rather than one in the air.
+        prop.gameObject.SetActive(false);
     }
 
-    // One part: a built-in shape, its own colour, laid along z unless told not to (a cylinder stands along y).
-    private static Transform Part(string name, PrimitiveType shape, Vector3 at, Vector3 size, Color color, Transform parent, bool alongZ = true)
+    // One part: a built-in shape (a cylinder stands along y, the tool's handle), its own colour. Its collider goes at once:
+    // left for the frame's end, it stood in the hand as part of the world (WornParts).
+    private static Transform Part(string name, PrimitiveType shape, Vector3 at, Vector3 size, Color color, Transform parent)
     {
         var part = GameObject.CreatePrimitive(shape);
         part.name = name;
-        Destroy(part.GetComponent<Collider>());
+        DestroyImmediate(part.GetComponent<Collider>());
         part.transform.SetParent(parent, false);
         part.transform.localPosition = at;
-        part.transform.localRotation = alongZ && shape == PrimitiveType.Cylinder ? Quaternion.Euler(90f, 0f, 0f) : Quaternion.identity;
         part.transform.localScale = size;
         part.GetComponent<Renderer>().sharedMaterial = Paint(color);
         return part.transform;
@@ -225,69 +244,39 @@ public sealed class DetenteLooks : MonoBehaviour
         return made;
     }
 
-    // Where it is this frame.
+    // This frame: the Détente's left arm does it (InjectArm), the thing in its fist; the plunger and the dose as far as the
+    // arm's needle has been in.
     private void Place()
     {
         if (kind == Kind.Asked) { Draw(); return; }
         if (prop == null) return;
-        if (inside)
+        if (arm == null) arm = InjectArm.Of(who);
+        if (arm == null) return;
+        if (arm.Holder == null || prop.parent != arm.Holder)
         {
-            var eye = Camera.main;
-            if (eye == null) return;
-            prop.SetParent(eye.transform, false);
-            if (kind == Kind.Syringe) SyringeInside();
-            else BandageInside();
+            arm.Wear(prop);
+            prop.gameObject.SetActive(true);
+        }
+        if (kind == Kind.Bandage)
+        {
+            // While the treatment lasts; then the arm goes back to the gun by itself and the roll is put away with it.
+            if (age < life - BandageOut) arm.Wind(patient);
             return;
         }
-        // From outside: at the right hand of the Détente's body, the needle or roll toward what they face.
-        var hand = Hand(who);
-        Vector3 at = hand != null ? hand.position : who.transform.position + Vector3.up * 1.1f + who.transform.right * .25f;
-        prop.SetParent(transform, false);
-        prop.position = at + who.transform.forward * .06f;
-        prop.rotation = kind == Kind.Syringe
-            ? Quaternion.LookRotation(who.transform.forward + Vector3.down * .35f)
-            : Quaternion.LookRotation(who.transform.forward) * Quaternion.Euler(0f, 0f, age * 540f);
-    }
-
-    // Up from below the view, the plunger home and the dose gone, down again.
-    private void SyringeInside()
-    {
-        float up = Mathf.Clamp01(age / PlungeFrom), down = Mathf.Clamp01((age - PlungeTo) / (SyringeSeconds - PlungeTo));
-        float raise = KitReveal.EaseOut(up) * (1f - down * down);
-        Vector3 low = new Vector3(.22f, -.38f, .32f), aim = new Vector3(.1f, -.15f, .45f);
-        prop.localPosition = Vector3.Lerp(low, aim, raise);
-        prop.localRotation = Quaternion.Slerp(Quaternion.Euler(-25f, -30f, 10f), Quaternion.Euler(12f, -10f, -6f), raise);
-        float push = Mathf.Clamp01((age - PlungeFrom) / (PlungeTo - PlungeFrom));
-        if (plunger != null) plunger.localPosition = new Vector3(0f, 0f, .045f * push);
+        if (!began)
+        {
+            began = true;
+            arm.Dose(patient);
+        }
+        else if (arm.Playing != InjectArm.Kind.Self && arm.Playing != InjectArm.Kind.Friend) life = age;
+        float push = arm.Plunge;
+        if (plunger != null) plunger.localPosition = new Vector3(0f, -.045f * push, 0f);
         if (fluid != null)
         {
             // Its front end stays at the neck while the plunger drives the back of it forward.
             fluid.localScale = new Vector3(.0356f, Mathf.Max(.002f, .045f * (1f - push)), .0356f);
-            fluid.localPosition = new Vector3(0f, 0f, .008f + .045f * push);
+            fluid.localPosition = new Vector3(0f, -.008f - .045f * push, 0f);
         }
-    }
-
-    // The roll winding round low in view, the hands at work, dropping away at the end.
-    private void BandageInside()
-    {
-        float into = KitReveal.EaseOut(Mathf.Clamp01(age / .25f)), outOf = Mathf.Clamp01((age - (life - BandageOut)) / BandageOut);
-        float turn = age * Mathf.PI * 2f / .65f;
-        Vector3 middle = new Vector3(.02f, -.2f, .42f) + new Vector3(Mathf.Cos(turn) * .07f, Mathf.Sin(turn) * .045f, 0f);
-        Vector3 low = new Vector3(.15f, -.4f, .35f);
-        prop.localPosition = Vector3.Lerp(low, middle, into * (1f - outOf));
-        prop.localRotation = Quaternion.Euler(70f, 0f, -turn * Mathf.Rad2Deg * .5f);
-    }
-
-    // The Détente's body's right hand (a humanoid's), or null.
-    private static Transform Hand(PlayerMovement who)
-    {
-        foreach (var animator in who.GetComponentsInChildren<Animator>())
-            if (animator != null && animator.isHuman && animator.avatar != null)
-            {
-                var hand = animator.GetBoneTransform(HumanBodyBones.RightHand);
-                if (hand != null) return hand;
-            }
-        return null;
     }
 
     // ---- A friend's call for healing ----

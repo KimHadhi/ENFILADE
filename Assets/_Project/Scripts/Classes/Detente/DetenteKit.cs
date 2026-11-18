@@ -65,10 +65,10 @@ public sealed class DetenteKit : MonoBehaviour
         calls.Clear();
     }
 
-    /// <summary>A dose went in (its look for the others: PlayerNetworkCombat).</summary>
-    public event Action Injected;
+    /// <summary>A dose went in, into this player (its look for the others: PlayerNetworkCombat, which says who so a friend's dose is aimed at them there too).</summary>
+    public event Action<PlayerMovement> Injected;
     /// <summary>A treatment by hand began for so long, or was called off early (the bandage, for the others).</summary>
-    public event Action<float> TreatBegan;
+    public event Action<float, PlayerMovement> TreatBegan;
     public event Action TreatStopped;
 
     private PlayerMovement movement;
@@ -237,8 +237,8 @@ public sealed class DetenteKit : MonoBehaviour
         Treating = patient;
         treatStart = Time.time;
         treatHealed = false;
-        DetenteLooks.Bandage(movement, TreatSeconds);
-        TreatBegan?.Invoke(TreatSeconds);
+        DetenteLooks.Bandage(movement, TreatSeconds, patient);
+        TreatBegan?.Invoke(TreatSeconds, patient);
         // This PC's seconds (its 손에 밴 붕대 card counted) go with it: the patient's PC says them, never its own player's.
         if (patient.TryGetComponent(out PlayerNetworkCombat network)) network.TreatmentBegun(movement, TreatSeconds);
         KitSound.Play(KitSound.Cue.PickHeal, .5f);
@@ -435,8 +435,8 @@ public sealed class DetenteKit : MonoBehaviour
         syringe = Mathf.Max(0f, syringe - Dose);
         lastInject = Time.time;
         // The syringe in hand as it goes in (DetenteLooks), and in the others' sight of this player.
-        DetenteLooks.Syringe(movement);
-        Injected?.Invoke();
+        DetenteLooks.Syringe(movement, patient);
+        Injected?.Invoke(patient);
         Heal(patient, Number("injectHeal", 40f));
         if (patient == movement) return;
         AlertHUD.Self(Texts.Format("class.detente.injected", Name(patient)));
