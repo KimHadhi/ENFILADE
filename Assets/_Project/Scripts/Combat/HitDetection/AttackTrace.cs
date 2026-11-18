@@ -185,7 +185,9 @@ public static class AttackTrace
         System.Collections.Generic.HashSet<IDamageReceiver> passed, out RaycastHit hit)
     {
         if (!Physics.Raycast(origin, direction, out hit, range, layers, QueryTriggerInteraction.Collide)) return false;
-        if (!Passes(hit, owner, passed)) return true;
+        // A prop judged by its seen shape (ShotShape: a car's box) stops a shot only where the shot meets that shape, and
+        // what stands past the box's empty corners is met through them: such a hit goes the long way with the passed ones.
+        if (!Passes(hit, owner, passed) && !ShotShape.Has(hit.collider)) return true;
         // Most shots need one non-allocating Raycast. Only own-body obstruction, or a body the bullet already went
         // through, needs a multi-hit query.
         int count = Physics.RaycastNonAlloc(origin, direction, ownerSkipHits, range, layers, QueryTriggerInteraction.Collide);
@@ -200,7 +202,7 @@ public static class AttackTrace
         for (int i = 0; i < count; i++)
         {
             var candidate = results[i];
-            if (Passes(candidate, owner, passed) || candidate.distance >= closest) continue;
+            if (Passes(candidate, owner, passed) || !ShotShape.Meets(ref candidate, origin, direction) || candidate.distance >= closest) continue;
             closest = candidate.distance; hit = candidate; found = true;
         }
         return found;

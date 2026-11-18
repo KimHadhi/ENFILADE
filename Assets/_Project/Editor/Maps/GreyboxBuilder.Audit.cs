@@ -12,7 +12,8 @@ using UnityEngine;
 /// Unity (Tools/Maps).
 /// The checks: where the solid props stood (GreyboxBuilder.Standing), whether every Reach step's spot is a place one
 /// can get to, and whether what is seen blocks: no collider without its mesh, no part of a bought building's shell
-/// that is drawn at walking height with nothing solid behind it, no wall a walking body passes from its back (below).
+/// that is drawn at walking height with nothing solid behind it, no wall a walking body passes from its back, and
+/// how much of a prop's box a shot now passes because the prop's seen shape is not there (below).
 /// </summary>
 public sealed partial class GreyboxBuilder
 {
@@ -27,6 +28,8 @@ public sealed partial class GreyboxBuilder
     private const float ShellStep = .5f, ShellLow = .25f, ShellHigh = 1.85f, ShellNear = .25f, ShellProud = .02f;
     private const float BodyRadius = .28f, BodyLow = .65f, BodyHigh = 1.45f, BodyReach = 10f, BodySlack = .3f;
     private const int BodyWays = 16, ShellNamed = 12;
+    // Shots at a box whose prop is judged by its seen shape: rays this far apart over each of its sides and its top (m).
+    private const float ShotGrid = .25f;
 
     private readonly StringBuilder audit = new StringBuilder();
     private bool auditToRead;
@@ -34,7 +37,7 @@ public sealed partial class GreyboxBuilder
     // Every check's line for the closing window, and the file. Called once, as the build ends.
     private string AuditReport()
     {
-        string line = StandReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport();
+        string line = StandReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport();
         if (audit.Length == 0) return line;
         string path = AuditFolder + "/" + sceneName + ".txt";
         try
@@ -236,5 +239,66 @@ public sealed partial class GreyboxBuilder
         string path = part.name;
         for (var up = part.parent; up != null && up.parent != null; up = up.parent) path = up.name + "/" + path;
         return path;
+    }
+
+    // A prop judged by its seen shape (Tables/MapArt shots = mesh, ShotShape): how much of its box is air. Rays are
+    // fired straight into each of its four sides and down through its top, a grid apart: every one meets the box, and
+    // the share that meets no triangle of the model is the share of shots that used to stop in the air there (the
+    // user, 2026-11-18: "차량 판정이 실제 외형보다 커서 허공을 쏴도 총알이 막히는"). A box all of whose rays miss has
+    // a shape that is not where the box is: the build says so.
+    private string ShotReport()
+    {
+        if (shotShapes.Count == 0 && shotUnread.Count == 0) return "";
+        var byKind = new Dictionary<string, (int boxes, int rays, int missed)>();
+        var empty = new List<string>();
+        int rays = 0, missed = 0;
+        foreach (var shape in shotShapes)
+        {
+            if (shape == null) continue;
+            var box = shape.transform;
+            Vector3 size = box.lossyScale;
+            int fired = 0, miss = 0;
+            // Each face of the box but its bottom: from just outside it, straight in, to the far face.
+            for (int face = 0; face < 5; face++)
+            {
+                Vector3 inward = face == 0 ? Vector3.right : face == 1 ? Vector3.left : face == 2 ? Vector3.forward : face == 3 ? Vector3.back : Vector3.down;
+                Vector3 across = face < 2 ? Vector3.forward : Vector3.right, up = face == 4 ? Vector3.forward : Vector3.up;
+                float deep = Mathf.Abs(Vector3.Dot(size, inward)), wide = Mathf.Abs(Vector3.Dot(size, across)), tall = Mathf.Abs(Vector3.Dot(size, up));
+                int columns = Mathf.Max(1, Mathf.RoundToInt(wide / ShotGrid)), rows = Mathf.Max(1, Mathf.RoundToInt(tall / ShotGrid));
+                Vector3 way = box.TransformDirection(inward);
+                for (int c = 0; c < columns; c++)
+                    for (int r = 0; r < rows; r++)
+                    {
+                        // In the box's own space the cube runs from -0.5 to 0.5 on each side.
+                        Vector3 local = -inward * .5f + across * ((c + .5f) / columns - .5f) + up * ((r + .5f) / rows - .5f);
+                        Vector3 from = box.TransformPoint(local) - way * .01f;
+                        fired++;
+                        if (!shape.Cast(from, way, 0f, deep + .02f, out _, out _)) miss++;
+                    }
+            }
+            rays += fired;
+            missed += miss;
+            string kind = box.name;
+            byKind[kind] = byKind.TryGetValue(kind, out var had) ? (had.boxes + 1, had.rays + fired, had.missed + miss) : (1, fired, miss);
+            if (fired > 0 && miss == fired) empty.Add(kind + " (" + Format(box.position) + ")");
+        }
+        audit.Append("\n## 총알이 맞는 모양 (MapArt shots = mesh: 몸은 상자에 막히고 총알은 모델 모양에 맞는다)\n");
+        foreach (var pair in byKind)
+            audit.Append("종류 ").Append(pair.Key).Append(": 상자 ").Append(pair.Value.boxes).Append("개, 상자에 맞는 광선 ").Append(pair.Value.rays)
+                .Append("개 중 모델을 비껴가는 것 ").Append(pair.Value.missed).Append("개 (")
+                .Append((pair.Value.rays > 0 ? 100f * pair.Value.missed / pair.Value.rays : 0f).ToString("0")).Append("%)\n");
+        foreach (string name in empty) audit.Append("빗나감 ").Append(name).Append(": 모든 광선이 모델을 비껴가요(모양이 상자 자리에 없어요)\n");
+        foreach (string name in shotUnread) audit.Append("못 읽음 ").Append(name).Append(": 읽을 메시가 없어 상자로 판정해요(스킨 모델이거나 메시가 없어요)\n");
+        float share = rays > 0 ? 100f * missed / rays : 0f;
+        audit.Append("# 합계: 모양으로 판정하는 상자 ").Append(shotShapes.Count).Append("개, 광선 ").Append(rays).Append("개 중 ").Append(missed)
+            .Append("개(").Append(share.ToString("0")).Append("%)가 모델을 비껴감, 못 읽은 상자 ").Append(shotUnread.Count).Append("개\n");
+        string line = "\n총알이 모양에 맞는 소품(차량) " + shotShapes.Count + "개: 상자에 맞는 광선의 " + share.ToString("0") + "%는 모델을 비껴가요(예전에는 허공에서 막히던 몫).";
+        if (empty.Count > 0)
+        {
+            auditToRead = true;
+            line += " 모양이 상자 자리에 없는 것 " + empty.Count + "개: " + string.Join(", ", empty.GetRange(0, Mathf.Min(empty.Count, 4))) + ".";
+        }
+        if (shotUnread.Count > 0) line += " 메시를 읽을 수 없어 상자로 판정하는 것 " + shotUnread.Count + "개.";
+        return line;
     }
 }

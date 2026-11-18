@@ -52,6 +52,8 @@ public sealed partial class GreyboxBuilder
         if (ShootOverCover.IsKind(kind) && !box.TryGetComponent<ShootOverCover>(out _)) box.AddComponent<ShootOverCover>();
         var center = box.transform.position;
         if (!ArtRow(kind, pick, center, out var prefab, out var fit, out float yaw, out float scale)) return box;
+        // The models this call lays on the box, for the shape a shot meets on it (ShapeShots).
+        int laidBefore = dressing != null ? dressing.childCount : 0;
         var target = new Bounds(center, box.transform.lossyScale);
         var size = BoundsOf(prefab).size;
         bool boxAlongX = target.size.x >= target.size.z, modelAlongX = size.x >= size.z;
@@ -100,6 +102,12 @@ public sealed partial class GreyboxBuilder
                 break;
         }
         if (box.TryGetComponent(out Renderer look)) look.enabled = false;
+        if (ArtShots(kind) && dressing != null && box.TryGetComponent(out Collider _))
+        {
+            var laid = new List<GameObject>();
+            for (int i = laidBefore; i < dressing.childCount; i++) laid.Add(dressing.GetChild(i).gameObject);
+            ShapeShots(box, laid);
+        }
         return box;
     }
 
@@ -207,6 +215,59 @@ public sealed partial class GreyboxBuilder
     // The table's solid column for a kind ("" when it has none).
     private static string ArtSolid(string kind)
         => GameTables.TryGetRow(ArtTable, kind, out var row) ? Text(row, "solid").ToLowerInvariant() : "";
+
+    // The table's shots column for a kind: "mesh" when a shot meets the model's own shape, not its box (ShotShape).
+    private static bool ArtShots(string kind)
+        => GameTables.TryGetRow(ArtTable, kind, out var row) && Text(row, "shots").ToLowerInvariant() == "mesh";
+
+    private readonly List<ShotShape> shotShapes = new List<ShotShape>();
+    private readonly List<string> shotUnread = new List<string>();
+
+    /// <summary>
+    /// What stops a body and what stops a bullet, answered apart for one box (the user, 2026-11-18: "차량 오브젝트
+    /// 히트박스 과대 설정"): the box goes on stopping bodies and carrying the walk mesh, and a shot that reaches it meets
+    /// the shape of the models stood on it (ShotShape): their meshes, each with its place in the box, at their first
+    /// level of detail (the coarser levels are the same shape again). A model whose mesh can't be read has its import
+    /// switched to Read/Write, as the bought building's is; one with no mesh to read (a skinned model) leaves the box
+    /// as it was, and the build's audit names it.
+    /// </summary>
+    private void ShapeShots(GameObject box, IEnumerable<GameObject> models)
+    {
+        var meshes = new List<Mesh>();
+        var places = new List<Matrix4x4>();
+        var toBox = box.transform.worldToLocalMatrix;
+        foreach (var model in models)
+        {
+            if (model == null) continue;
+            var coarser = new HashSet<Renderer>();
+            foreach (var group in model.GetComponentsInChildren<LODGroup>(true))
+            {
+                var lods = group.GetLODs();
+                for (int level = 1; level < lods.Length; level++)
+                    foreach (var shown in lods[level].renderers)
+                        if (shown != null) coarser.Add(shown);
+                // A renderer a group shows at its first level and at later ones too is the model at every distance.
+                if (lods.Length > 0)
+                    foreach (var shown in lods[0].renderers)
+                        if (shown != null) coarser.Remove(shown);
+            }
+            foreach (var filter in model.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter.TryGetComponent(out MeshRenderer shown) || !shown.enabled || coarser.Contains(shown)) continue;
+                if (!ReadableModel(filter.sharedMesh)) continue;
+                meshes.Add(filter.sharedMesh);
+                places.Add(toBox * filter.transform.localToWorldMatrix);
+            }
+        }
+        if (meshes.Count == 0)
+        {
+            shotUnread.Add(box.name);
+            return;
+        }
+        var shape = box.AddComponent<ShotShape>();
+        shape.Set(meshes.ToArray(), places.ToArray());
+        shotShapes.Add(shape);
+    }
 
     // The layout's record of a box just made.
     private Block BlockOf(GameObject shape)

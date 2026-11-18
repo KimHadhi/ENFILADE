@@ -206,6 +206,7 @@ public sealed partial class GreyboxBuilder
         var block = BlockOf(box);
         if (block != null) block.Prop = true;
         if (cap) Cap(box, kind, new Vector3(floor.x, floor.y + height, floor.z), half, angle);
+        if (ArtShots(kind)) ShapeShots(box, new[] { model });
         stood.Add(new Stood { Kind = kind, Asked = asked, At = floor, Half = half, Yaw = angle, Height = half.y * 2f, Block = block, MovedOutOf = movedOutOf });
         LastStoodAt = floor;
         return model;
