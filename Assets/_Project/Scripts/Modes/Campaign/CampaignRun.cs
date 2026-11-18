@@ -88,12 +88,8 @@ public sealed partial class CampaignRun : MonoBehaviour
     private Transform[] shops;
     [SerializeField, Tooltip("A shot fuel can's blast sound (C17; the builder sets it). The blast and its fire are drawn by CanBlastEffect.")]
     private AudioClip canBlastSound;
-    [SerializeField, Min(0f), Tooltip("Enemies never appear nearer than this to anyone (m).")]
-    private float minSpawnDistance = 15f;
-    [SerializeField, Min(0f), Tooltip("Nor farther than this from the player they head for (m).")]
-    private float maxSpawnDistance = 60f;
-    [SerializeField, Min(0f), Tooltip("A spawn point in someone's sight is used only this far away, and only when no hidden one will do (m).")]
-    private float seenMinDistance = 30f;
+    // Where enemies may come from is no longer three distances here: it is the step's rule (Tables/SpawnRules) over the
+    // mission's flow and what the squad has cleared (CampaignHorde, SpawnGround).
     [SerializeField, Min(0f), Tooltip("How long the opening story card stays (s).")]
     private float introSeconds = 9f;
     [SerializeField, Min(0f), Tooltip("How long the closing card stays before the next chapter loads (s).")]

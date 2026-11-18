@@ -58,7 +58,9 @@ public sealed partial class CampaignRun
         phases.Pace(quiet || Resting(), now.Horde, now.Rate, out int most, out float rate, out float special);
         // Greed (GimmickCargoLoad): what was loaded brings more of them, faster, whenever any come.
         if (most > 0) { most += greedMore; rate *= greedRate; }
-        phases.Spawned(horde.Tick(dt, most, rate, players, minSpawnDistance, maxSpawnDistance, seenMinDistance, special));
+        // Where they may come from is the mission's flow and what the squad has cleared (CampaignRun.Spawns, SpawnGround).
+        FollowSpawns();
+        phases.Spawned(horde.Tick(dt, most, rate, players, special));
         switch (now.Kind)
         {
             case CampaignStepKind.Reach:
@@ -271,7 +273,7 @@ public sealed partial class CampaignRun
             : SameSong(music.Playing, now.Music) && music.PastPeak;
         if (!due) return;
         nextBruteTry = Time.time + .5f;
-        brutesDue -= horde.SpawnBrutes(brutesDue, players, minSpawnDistance, maxSpawnDistance, seenMinDistance);
+        brutesDue -= horde.SpawnBrutes(brutesDue, players);
     }
 
     private void BackToCheckpoint()
@@ -279,6 +281,8 @@ public sealed partial class CampaignRun
         if (finished) return;
         wipes++;
         horde.Clear();
+        // The world after the rest stop is put back as it was, so its stretches are no longer cleared (SpawnGround).
+        horde.Wipe(checkpoint);
         music.Stop();
         brutesDue = 0;
         brutesStep = -1;

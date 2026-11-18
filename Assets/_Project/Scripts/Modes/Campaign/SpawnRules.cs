@@ -1,0 +1,209 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>Which side of the squad the horde may come from, on the mission's flow (Tables/SpawnRules `from`).</summary>
+public enum SpawnSide : byte
+{
+    /// <summary>Only from places farther along the mission's route than the squad's front: the squad is travelling.</summary>
+    Ahead,
+    /// <summary>From every side: the squad is working one place (a hold, an escape, a search for fuel cans).</summary>
+    Around
+}
+
+/// <summary>What cleared ground is to the horde (Tables/SpawnRules `cleared`).</summary>
+public enum ClearedGround : byte
+{
+    /// <summary>Nothing comes out of it again.</summary>
+    Shut,
+    /// <summary>They come in through it from beyond: a finale draws the whole neighbourhood.</summary>
+    Through
+}
+
+/// <summary>What happens when no place within reach will do (Tables/SpawnRules `otherwise`).</summary>
+public enum SpawnOtherwise : byte
+{
+    /// <summary>Nobody comes for now.</summary>
+    Wait,
+    /// <summary>The nearest place that will do farther off.</summary>
+    Farther
+}
+
+/// <summary>What a spawn point is (Tables/SpawnPoints `role`).</summary>
+public enum SpawnRole : byte
+{
+    /// <summary>A place on open ground the squad walks over.</summary>
+    Open,
+    /// <summary>A room or passage made for them to come out of: it goes before open ground.</summary>
+    Room
+}
+
+/// <summary>
+/// Where the horde may come from during one step of a chapter: one rule, read from Tables/SpawnRules for that step
+/// (SpawnRules.For). What each value means in the world is said where SpawnPick weighs it.
+/// </summary>
+internal sealed class SpawnRule
+{
+    /// <summary>The rows it was read from, the most particular first (for the record).</summary>
+    public string Rows = "";
+    public SpawnSide From = SpawnSide.Ahead;
+    public ClearedGround Cleared = ClearedGround.Shut;
+    public SpawnOtherwise Otherwise = SpawnOtherwise.Farther;
+    /// <summary>No nearer than this to anyone, in a straight line (m).</summary>
+    public float Nearest = 15f;
+    /// <summary>No farther than this from the player they head for, by walking (m).</summary>
+    public float Farthest = 60f;
+    /// <summary>On ground behind the squad's rear, no nearer than this by walking (m); 0: as near as Nearest allows.</summary>
+    public float Behind;
+    /// <summary>A place someone has a line of sight to is used only this far away, and only when no hidden one will do (m); 0: never.</summary>
+    public float SeenFrom = 30f;
+    /// <summary>Nearer than this (m), a place inside someone's view (ViewAngle, degrees across) is never used, hidden or not.</summary>
+    public float ViewNear = 20f, ViewAngle = 110f;
+}
+
+/// <summary>
+/// The spawn rules as the tables give them (user, 2026-11-18: "적 스폰 위치 및 조건 전면 개편 … 전용 스폰 룸/통로나 아직
+/// 정리하지 않은 미개척 구역에서 몰려오도록"). Tables/SpawnRules: the row Default is the rule of every step; a row named
+/// after a kind of step (Hold, Escape, Collect …) changes it for that kind, one named chapter.Kind (Ch1_Rooftops.Hold)
+/// for that kind in one chapter, and one named after a step (Ch1.06) for that step alone. A cell left empty is the
+/// next row's, so a row changes only what it writes. The Default row also carries the model's own values (grain,
+/// leftBy, lookEvery, perFrame: SpawnGround). Tables/SpawnPoints names the points that are spawn rooms, by chapter and
+/// by the point's name in the scene, so a room is marked without a rebuild or a line of code, by a mod as well.
+/// </summary>
+internal static class SpawnRules
+{
+    public const string TableName = "SpawnRules", PointsTable = "SpawnPoints", DefaultRow = "Default";
+
+    private static readonly Dictionary<string, SpawnRule> rules = new Dictionary<string, SpawnRule>(StringComparer.OrdinalIgnoreCase);
+    private static readonly List<IReadOnlyDictionary<string, string>> chain = new List<IReadOnlyDictionary<string, string>>();
+    private static readonly HashSet<string> reported = new HashSet<string>();
+    private static Dictionary<string, SpawnRole> roles;
+
+    // The model's own values (the Default row), read once a Play and again when the table is saved.
+    private static bool modelRead;
+    private static float grain, leftBy, lookEvery;
+    private static int perFrame;
+
+    /// <summary>How far apart the places along the mission's route are that everything is measured against (m).</summary>
+    public static float Grain { get { ReadModel(); return grain; } }
+
+    /// <summary>A stretch is left behind once the squad's rear is this far past its end (m).</summary>
+    public static float LeftBy { get { ReadModel(); return leftBy; } }
+
+    /// <summary>How often each player's place on the route, and what is cleared, is looked at again (s).</summary>
+    public static float LookEvery { get { ReadModel(); return lookEvery; } }
+
+    /// <summary>How many spawn points find their place on a newly laid route in one frame.</summary>
+    public static int PerFrame { get { ReadModel(); return perFrame; } }
+
+    private static void ReadModel()
+    {
+        if (modelRead) return;
+        modelRead = true;
+        grain = Mathf.Max(.5f, GameTables.Number(TableName, DefaultRow, "grain", 2f));
+        leftBy = Mathf.Max(0f, GameTables.Number(TableName, DefaultRow, "leftBy", 10f));
+        lookEvery = Mathf.Max(.1f, GameTables.Number(TableName, DefaultRow, "lookEvery", .5f));
+        perFrame = Mathf.Max(1, Mathf.RoundToInt(GameTables.Number(TableName, DefaultRow, "perFrame", 2f)));
+    }
+
+    /// <summary>The rule of this step of this chapter (the scene's name); the Default row's for no step.</summary>
+    public static SpawnRule For(string chapter, CampaignStep step)
+    {
+        string stepId = step != null ? step.Id ?? "" : "", key = (chapter ?? "") + "\n" + stepId;
+        if (rules.TryGetValue(key, out var known)) return known;
+        chain.Clear();
+        var rule = new SpawnRule();
+        if (step != null)
+        {
+            Take(stepId, rule);
+            Take((chapter ?? "") + "." + step.Kind, rule);
+            Take(step.Kind.ToString(), rule);
+        }
+        Take(DefaultRow, rule);
+        if (chain.Count == 0) Report($"Tables/{TableName}에 '{DefaultRow}' 줄이 없어서 코드에 적힌 기본 규칙을 씁니다.");
+        rule.From = Word("from", rule.From);
+        rule.Cleared = Word("cleared", rule.Cleared);
+        rule.Otherwise = Word("otherwise", rule.Otherwise);
+        rule.Nearest = Mathf.Max(0f, Number("nearest", rule.Nearest));
+        rule.Farthest = Mathf.Max(rule.Nearest, Number("farthest", rule.Farthest));
+        rule.Behind = Mathf.Max(0f, Number("behind", rule.Behind));
+        rule.SeenFrom = Mathf.Max(0f, Number("seenFrom", rule.SeenFrom));
+        rule.ViewNear = Mathf.Max(0f, Number("viewNear", rule.ViewNear));
+        rule.ViewAngle = Mathf.Clamp(Number("viewAngle", rule.ViewAngle), 0f, 360f);
+        return rules[key] = rule;
+    }
+
+    /// <summary>What the point of this name is in this chapter: a room if Tables/SpawnPoints says so, else open ground.</summary>
+    public static SpawnRole RoleOf(string chapter, string point)
+    {
+        if (roles == null)
+        {
+            roles = new Dictionary<string, SpawnRole>(StringComparer.OrdinalIgnoreCase);
+            foreach (string id in GameTables.RowIds(PointsTable))
+            {
+                if (!GameTables.TryGetRow(PointsTable, id, out var row)) continue;
+                string text = row.Text("role");
+                if (Enum.TryParse(text, true, out SpawnRole role)) roles[row.Text("chapter") + "\n" + row.Text("point")] = role;
+                else Report($"Tables/{PointsTable} [{id}] role '{text}': open 또는 room이어야 합니다.");
+            }
+        }
+        return roles.TryGetValue((chapter ?? "") + "\n" + (point ?? ""), out var found) ? found : SpawnRole.Open;
+    }
+
+    private static void Take(string id, SpawnRule rule)
+    {
+        if (string.IsNullOrEmpty(id) || !GameTables.TryGetRow(TableName, id, out var row)) return;
+        chain.Add(row);
+        rule.Rows += (rule.Rows.Length > 0 ? " > " : "") + id;
+    }
+
+    // The first row of the chain that writes this cell says it.
+    private static bool Cell(string column, out string text)
+    {
+        foreach (var row in chain)
+        {
+            text = row.Text(column);
+            if (text.Length > 0) return true;
+        }
+        text = "";
+        return false;
+    }
+
+    private static float Number(string column, float fallback)
+    {
+        if (!Cell(column, out string text)) return fallback;
+        if (TableCells.TryNumber(text, out float value)) return value;
+        Report($"Tables/{TableName} '{column}' = '{text}': 숫자가 아닙니다.");
+        return fallback;
+    }
+
+    private static T Word<T>(string column, T fallback) where T : struct
+    {
+        if (!Cell(column, out string text)) return fallback;
+        if (Enum.TryParse(text, true, out T value) && Enum.IsDefined(typeof(T), value)) return value;
+        Report($"Tables/{TableName} '{column}' = '{text}': {string.Join(" / ", Enum.GetNames(typeof(T))).ToLowerInvariant()} 중 하나여야 합니다.");
+        return fallback;
+    }
+
+    private static void Report(string message)
+    {
+        if (reported.Add(message)) Debug.LogWarning("[Spawns] " + message);
+    }
+
+    // A new Play and a table saved while playing read the rules again.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        Forget();
+        GameTables.Reloaded -= Forget;
+        GameTables.Reloaded += Forget;
+    }
+
+    private static void Forget()
+    {
+        rules.Clear();
+        reported.Clear();
+        roles = null;
+        modelRead = false;
+    }
+}
