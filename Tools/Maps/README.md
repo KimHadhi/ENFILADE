@@ -16,6 +16,9 @@
 | `shell_cover.py <Pack 폴더> --collision … --seen …` | 산 장면(팩) 건물의 보이는 벽·유리 중 충돌 메시가 덮지 않는 곳을 걷는 높이에서 m²로 잰다(자리별로도). 빌더가 지을 때 물리로 재는 것(`Logs/MapAudit`의 '보이는데 막지 않는 껍데기')을 저장된 메시에서 따로 재는 것 |
 | `hull_vs_shape.py <모델.fbx> …` | 모델의 충돌 상자 가운데 총알에게 허공인 몫: 상자의 네 옆면과 윗면으로 0.25 m 간격의 광선을 쏴서 모델의 삼각형을 하나도 못 만나는 비율. 게임의 판정([ShotShape](../../Assets/_Project/Scripts/World/ShotShape.cs))과 같은 삼각형 검사·잎 묶음을 옮긴 것이고, 모든 삼각형을 다 보는 검사와 맞는지도 함께 확인한다 |
 | `find_boxes.py <씬> 낱말 …` | 이름에 낱말이 든 상자의 자리·크기·방향 |
+| `navmesh.py` | 구운 걷기 메시(`Scenes/Campaign/<씬>/NavMesh.asset`, 바이너리)를 읽는 모듈: 타일의 폴리곤, 타일 사이 이음, 낙하·건너뛰기 링크(한쪽 방향), 그 위의 길찾기(폴리곤 통로 + 깔때기). 엔진의 길찾기와 같은 것은 아니라서 길이가 몇 m 다를 수 있다. 혼자 돌리면 그 파일의 타일·폴리곤·링크 수를 적는다 |
+| `flow.py [씬 이름 …]` | 좀비가 나오는 자리의 모델([Spawns.md](../../Docs/Features/Spawns.md))을 맵마다 읽는다: 임무 경로(Start에서 각 단계의 자리까지)를 걷기 메시 위에 놓고, 구간마다 흐름과 걷기 메시가 잇지 못하는 곳, 스폰 지점마다 경로의 어디에 붙는지를 `Logs/spawn-flow.txt`에 적는다. 볼 것은 `FINDING` 줄. 게임의 SpawnRoute(Lay·Place)를 줄대로 옮긴 것이라 그쪽을 바꾸면 여기도 같이 바꾼다. 게임이 스스로 쓰는 기록은 `Logs/spawns.txt`(편집기에서 장을 시작하면) |
+| `sim.py [씬 이름 …]` | 단계마다 분대를 그 구간의 8 m마다 세워 보고, 표(SpawnRules.csv)의 규칙대로 쓸 수 있는 스폰 지점이 몇 개인지 `Logs/spawn-sim.txt`에 적는다(`NOTHING` = 그 자리에서는 떼가 기다린다). 시야는 읽지 않으므로 실제로는 이보다 적다. 뒤쪽 구간은 모두 소탕된 것으로 친다(가장 나쁜 경우) |
 | `fbx_size.py <파일.fbx> …` | 바이너리 FBX(6.x, 7.x)의 메시 크기를 임포트 배율(.meta)까지 곱해 적는다. 블렌더가 못 여는 FBX 6.1도 읽는다. 모델을 표에 넣기 전에 방에 들어가는지 볼 때 쓴다 |
 
 ## 돌리는 법
@@ -25,6 +28,8 @@ python Tools/Maps/prop_crossings.py Assets/_Project/Scenes/Campaign/Ch1_Rooftops
 python Tools/Maps/settle_check.py Assets/_Project/Data/Resources/Tables/Maps/MapArt.csv Assets/_Project/Scenes/Campaign/Ch1_Rooftops.unity
 python Tools/Maps/walk_probe.py Assets/_Project/Scenes/Campaign/Ch1_Rooftops.unity 98,0,0 91.6,0,0 91.6,0,-3 88.55,0,-5.6 88.55,0,-12.3 88.2,-3,-13
 python Tools/Maps/fbx_size.py Assets/ThirdParty/Airport_Terminal_Scene/3dobjects_props/kuehlschrank.fbx
+python Tools/Maps/flow.py
+python Tools/Maps/sim.py Ch1_Rooftops
 ```
 
 한글이 깨지면 `PYTHONIOENCODING=utf-8`을 앞에 붙인다.

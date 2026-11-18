@@ -109,26 +109,50 @@ internal sealed class SpawnGround
         if (Heard) Say($"WIPE back to after step {checkpointStep + 1}: the stretches after it are no longer cleared ({ClearedList()})");
     }
 
+    // A step's spot stands farther from where the route has it than that step's radius, and no spot has moved since the
+    // last look: a spot still on the move (the airliner the tug pushes, forty metres over a hold) is laid again once,
+    // where it comes to rest, not every few metres of its way.
     private bool Moved(IReadOnlyDictionary<string, Transform> spots)
     {
         if (spots == null) return false;
-        foreach (var leg in Route.Legs)
+        bool off = false, still = true;
+        for (int i = 0; i < Route.Legs.Count; i++)
         {
+            var leg = Route.Legs[i];
             if (!leg.HasSpot || string.IsNullOrEmpty(leg.Spot) || !spots.TryGetValue(leg.Spot, out var spot) || spot == null) continue;
+            Vector3 now = spot.position;
+            if (i < seenAt.Length)
+            {
+                if ((now - seenAt[i]).sqrMagnitude > .0001f) still = false;
+                seenAt[i] = now;
+            }
             float reach = Mathf.Max(.5f, leg.Radius);
-            if ((spot.position - leg.At).sqrMagnitude > reach * reach) return true;
+            if ((now - leg.At).sqrMagnitude > reach * reach) off = true;
         }
-        return false;
+        return off && still;
     }
+
+    // Where each step's spot stood at the last look (Moved).
+    private Vector3[] seenAt = new Vector3[0];
 
     private void Lay(IReadOnlyList<CampaignStep> steps, int step, IReadOnlyDictionary<string, Transform> spots, string why)
     {
         var before = Route;
-        Route = SpawnRoute.Lay(steps, spots, SpawnRules.Grain);
+        Route = SpawnRoute.Lay(steps, spots, SpawnRules.Grain, SpawnRules.Reach);
         laidAtStep = step;
         nextMoved = Time.time + SpawnRules.LookEvery;
         int count = Route.Legs.Count;
         if (cleared.Length != count) { System.Array.Resize(ref cleared, count); occupied = new bool[count]; }
+        if (seenAt.Length != count) seenAt = new Vector3[count];
+        for (int i = 0; i < count; i++) seenAt[i] = Route.Legs[i].At;
+        // Most steps open no gate and move no spot: the route comes out as it was, and every point and player stands
+        // on it where they stood. Placing the points again is what a laying costs (dozens of path searches each).
+        if (Route.SameAs(before))
+        {
+            if (reportedFor == before) reportedFor = Route;
+            if (Heard) Say($"ROUTE as it was ({why}) at step {step + 1}");
+            return;
+        }
         // The points keep the place they had until each is found again on the new laying (a few a frame).
         for (int i = 0; i < records.Length; i++)
             if (records[i].Placed)
@@ -165,7 +189,7 @@ internal sealed class SpawnGround
         {
             var point = points[nextPoint];
             if (point == null) continue;
-            records[nextPoint].Placed = Route.Place(point.position, -1f, true, out records[nextPoint].Place);
+            records[nextPoint].Placed = Route.Place(point.position, -1f, out records[nextPoint].Place);
             records[nextPoint].Stale = false;
         }
         if (nextPoint < records.Length || !Heard || reportedFor == Route) return;
@@ -198,10 +222,12 @@ internal sealed class SpawnGround
         }
     }
 
-    // Each living player's place on the route, looked at again every lookEvery; the squad's front and rear.
+    // Each living player's place on the route, looked at again every lookEvery (SpawnRoute.Trace: a straight line, no
+    // path searched); the squad's front and rear, and who the rear is.
     private void Track(List<PlayerMovement> players, int step)
     {
         Squad = default;
+        rearmost = null;
         if (Route == null || Route.Length <= 0f || players == null) return;
         gone.Clear();
         foreach (var someone in flows.Keys) if (someone == null || !players.Contains(someone)) gone.Add(someone);
@@ -215,25 +241,26 @@ internal sealed class SpawnGround
             bool known = flows.TryGetValue(player, out float flow);
             if (!known || !lookAt.TryGetValue(player, out float due) || now >= due)
             {
-                // One player a frame comes due, so their path searches do not fall together.
-                lookAt[player] = now + every + i * Time.deltaTime;
+                lookAt[player] = now + every;
                 // Someone with no place yet is looked for from where the mission stands.
-                float hint = known ? flow : Route.Legs.Count > 0 ? Route.Legs[Mathf.Clamp(step, 0, Route.Legs.Count - 1)].Start : 0f;
-                // Off the walk mesh (in the air, on a ladder or a cable) they keep the place they had.
-                if (Route.Place(player.transform.position, hint, false, out var place) && (place.OnMesh || !known))
-                {
-                    flow = place.Flow;
-                    flows[player] = flow;
-                    known = true;
-                }
+                float from = known ? flow : Route.Legs.Count > 0 ? Route.Legs[Mathf.Clamp(step, 0, Route.Legs.Count - 1)].Start : 0f;
+                flow = Route.Trace(player.transform.position, from);
+                flows[player] = flow;
             }
-            if (!known) continue;
-            if (!Squad.Known) { Squad.Known = true; Squad.Front = Squad.Rear = flow; }
-            else { Squad.Front = Mathf.Max(Squad.Front, flow); Squad.Rear = Mathf.Min(Squad.Rear, flow); }
+            if (!Squad.Known) { Squad.Known = true; Squad.Front = Squad.Rear = flow; rearmost = player; }
+            else
+            {
+                Squad.Front = Mathf.Max(Squad.Front, flow);
+                if (flow < Squad.Rear) { Squad.Rear = flow; rearmost = player; }
+            }
         }
     }
 
-    // What is cleared: a stretch whose step is done, that the rear has left by leftBy, with no living zombie on it.
+    private PlayerMovement rearmost;
+
+    // What is cleared: a stretch whose step is done, that the rear has left by leftBy, with no living zombie on it. A
+    // zombie's stretch is read off a straight line, cheaply, many times; but cleared is kept for good, so the moment a
+    // stretch would be cleared the rear is measured once more by walking (SpawnRoute.Place) and must still be past it.
     private void Clear(int step)
     {
         if (Route == null || !Squad.Known || Time.time < nextClear) return;
@@ -241,7 +268,7 @@ internal sealed class SpawnGround
         float leftBy = SpawnRules.LeftBy;
         int until = Mathf.Min(step, Route.Legs.Count);
         bool any = false;
-        for (int i = 0; i < until && !any; i++) any = !cleared[i] && Route.Legs[i].HasGround && Squad.Rear > Route.Legs[i].End + leftBy;
+        for (int i = 0; i < until && !any; i++) any = Left(i, Squad.Rear, leftBy);
         if (!any) return;
         System.Array.Clear(occupied, 0, occupied.Length);
         var living = EnemyHealth.Living;
@@ -252,14 +279,26 @@ internal sealed class SpawnGround
             int leg = Route.LegAt(enemy.transform.position);
             if (leg >= 0 && leg < occupied.Length) occupied[leg] = true;
         }
+        float rear = float.NaN;
         for (int i = 0; i < until; i++)
         {
-            var leg = Route.Legs[i];
-            if (cleared[i] || !leg.HasGround || Squad.Rear <= leg.End + leftBy || occupied[i]) continue;
+            if (!Left(i, Squad.Rear, leftBy) || occupied[i]) continue;
+            if (float.IsNaN(rear))
+            {
+                rear = Squad.Rear;
+                if (rearmost != null && Route.Place(rearmost.transform.position, Squad.Rear, out var place) && place.ByWalk)
+                    rear = Mathf.Min(rear, place.Flow);
+            }
+            if (!Left(i, rear, leftBy)) continue;
             cleared[i] = true;
-            if (Heard) Say($"CLEARED {leg.Step} (flow {leg.Start:0}-{leg.End:0}): its step is done, the rear is at {Squad.Rear:0} and nothing alive stands on it");
+            var leg = Route.Legs[i];
+            if (Heard) Say($"CLEARED {leg.Step} (flow {leg.Start:0}-{leg.End:0}): its step is done, the rear is at {rear:0} and nothing alive stands on it");
         }
     }
+
+    // A stretch not yet cleared, with ground of its own, that a rear at this flow has left by leftBy.
+    private bool Left(int index, float rear, float leftBy)
+        => !cleared[index] && Route.Legs[index].HasGround && rear > Route.Legs[index].End + leftBy;
 
     /// <summary>The cleared stretches' steps in a line, for the record.</summary>
     public string ClearedList()

@@ -67,7 +67,7 @@ internal sealed class SpawnRule
 /// after a kind of step (Hold, Escape, Collect …) changes it for that kind, one named chapter.Kind (Ch1_Rooftops.Hold)
 /// for that kind in one chapter, and one named after a step (Ch1.06) for that step alone. A cell left empty is the
 /// next row's, so a row changes only what it writes. The Default row also carries the model's own values (grain,
-/// leftBy, lookEvery, perFrame: SpawnGround). Tables/SpawnPoints names the points that are spawn rooms, by chapter and
+/// leftBy, lookEvery, perFrame, reach: SpawnGround, SpawnRoute). Tables/SpawnPoints names the points that are spawn rooms, by chapter and
 /// by the point's name in the scene, so a room is marked without a rebuild or a line of code, by a mod as well.
 /// </summary>
 internal static class SpawnRules
@@ -81,7 +81,7 @@ internal static class SpawnRules
 
     // The model's own values (the Default row), read once a Play and again when the table is saved.
     private static bool modelRead;
-    private static float grain, leftBy, lookEvery;
+    private static float grain, leftBy, lookEvery, reach;
     private static int perFrame;
 
     /// <summary>How far apart the places along the mission's route are that everything is measured against (m).</summary>
@@ -96,6 +96,9 @@ internal static class SpawnRules
     /// <summary>How many spawn points find their place on a newly laid route in one frame.</summary>
     public static int PerFrame { get { ReadModel(); return perFrame; } }
 
+    /// <summary>A spawn point looks for its walk to the route among the route's places within this far of it in a straight line (m).</summary>
+    public static float Reach { get { ReadModel(); return reach; } }
+
     private static void ReadModel()
     {
         if (modelRead) return;
@@ -103,7 +106,8 @@ internal static class SpawnRules
         grain = Mathf.Max(.5f, GameTables.Number(TableName, DefaultRow, "grain", 2f));
         leftBy = Mathf.Max(0f, GameTables.Number(TableName, DefaultRow, "leftBy", 10f));
         lookEvery = Mathf.Max(.1f, GameTables.Number(TableName, DefaultRow, "lookEvery", .5f));
-        perFrame = Mathf.Max(1, Mathf.RoundToInt(GameTables.Number(TableName, DefaultRow, "perFrame", 2f)));
+        perFrame = Mathf.Max(1, Mathf.RoundToInt(GameTables.Number(TableName, DefaultRow, "perFrame", 1f)));
+        reach = Mathf.Max(1f, GameTables.Number(TableName, DefaultRow, "reach", 80f));
     }
 
     /// <summary>The rule of this step of this chapter (the scene's name); the Default row's for no step.</summary>

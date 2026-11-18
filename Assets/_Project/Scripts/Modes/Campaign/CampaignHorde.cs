@@ -438,6 +438,62 @@ internal sealed class CampaignHorde
         return text.Length > 0 ? text.ToString() : "no points";
     }
 
+    /// <summary>
+    /// /spawns: the spawn model as it stands this moment, for the record (SpawnReport): the squad, the rule, every
+    /// stretch and what is cleared, and every point with what a pick would make of it now. The points are measured for
+    /// real, as a pick measures them, and judged; nothing is made.
+    /// </summary>
+    internal string Describe(List<PlayerMovement> players, int step, CampaignStep now)
+    {
+        var text = new System.Text.StringBuilder();
+        var route = spawnGround.Route;
+        var squad = spawnGround.Squad;
+        text.Append(spawnGround.Chapter).Append(" step ").Append(now != null ? now.Id + " " + now.Kind : "none").Append(": squad ")
+            .Append(squad.Known ? $"front {squad.Front:0} m, rear {squad.Rear:0} m" : "has no place on a route").Append(" · rule ")
+            .Append(rule != null ? $"{rule.Rows} ({rule.From}, cleared {rule.Cleared}, otherwise {rule.Otherwise})" : "none yet")
+            .Append(" · cleared: ").Append(spawnGround.ClearedList()).Append('\n');
+        if (route == null || rule == null)
+        {
+            text.Append("the horde has not followed the mission yet: a frame of the chapter must run first\n");
+            return text.ToString();
+        }
+        text.Append($"rule: nearest {rule.Nearest:0.#} m, farthest {rule.Farthest:0.#} m by walking, behind {rule.Behind:0.#} m, seenFrom {rule.SeenFrom:0.#} m, "
+            + $"view {rule.ViewAngle:0.#} deg within {rule.ViewNear:0.#} m\n");
+        text.Append($"route: {route.Length:0} m, {route.Count} places {route.Grain:0.#} m apart, {route.Searches} path searches so far; points placed: "
+            + (spawnGround.AllPlaced ? "all" : "not all yet") + "\n");
+        foreach (var player in players)
+            text.Append("  ").Append(player.name).Append(spawnGround.TryFlow(player, out float flow) ? $" at flow {flow:0.0}" : " has no place yet").Append('\n');
+        for (int i = 0; i < route.Legs.Count; i++)
+        {
+            var leg = route.Legs[i];
+            text.Append(i == step ? "> " : "  ").Append($"{leg.Step,-9} {leg.Kind,-10} {leg.Spot,-16} ");
+            if (!leg.HasSpot) { text.Append("NO SPOT of that name in the scene\n"); continue; }
+            text.Append($"flow {leg.Start,6:0.0} -> {leg.End,6:0.0}  walk {leg.Walk,6:0.0}  gap {leg.Gap,5:0.0}").Append(leg.Joined ? "" : "  NOT JOINED by the walk mesh")
+                .Append(spawnGround.IsCleared(i) ? "  cleared" : "").Append('\n');
+        }
+        if (players.Count == 0)
+        {
+            text.Append("nobody alive: the points are not measured\n");
+            return text.ToString();
+        }
+        Measure(players);
+        int picked = SpawnPick.Pick(facts, squad, rule, 0f, verdicts);
+        text.Append("a pick now would take: ").Append(picked >= 0 ? spawnGround.Record(picked).Name : "nothing").Append(" · ").Append(Tally()).Append('\n');
+        for (int i = 0; i < facts.Count; i++)
+        {
+            var fact = facts[i];
+            var record = spawnGround.Record(i);
+            // What a refusal that costs nothing left unmeasured is shown as a dash.
+            bool looked = fact.Ground && !SpawnPick.Early(fact, squad, rule, out _);
+            string stretch = record.Placed ? route.Legs[Mathf.Clamp(record.Place.Leg, 0, route.Legs.Count - 1)].Step : "?";
+            text.Append($"  {record.Name,-18} flow {(record.Placed ? fact.Flow.ToString("0.0") : "?"),6} {stretch,-9} {record.Role,-5} ")
+                .Append(fact.OnCleared ? "cleared " : "        ")
+                .Append($"near {(float.IsInfinity(fact.Near) ? "-" : fact.Near.ToString("0")),4} walk {(looked ? fact.Walk < 0f ? "none" : fact.Walk.ToString("0") : "-"),4} ")
+                .Append(looked ? fact.Seen ? "seen   " : "hidden " : "-      ").Append(fact.InView ? "in view " : "        ").Append("-> ").Append(verdicts[i]).Append('\n');
+        }
+        return text.ToString();
+    }
+
     // Inside someone's view from near: nearer to them than `near` and within `half` degrees of the way their body faces
     // (flat on the ground, as the flashlight's beam is judged: ZombieMind.Lit). Walls are not asked: near and looked
     // at, a place is not used even behind cover, so nothing steps out from behind a van someone is watching.

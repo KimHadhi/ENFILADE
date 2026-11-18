@@ -8,9 +8,12 @@ using UnityEngine.AI;
 /// Start through each step's spot, laid over the walk mesh as a zombie would walk it. Where the walk mesh does not
 /// join two spots (a zipline, a roof to jump from, a shut gate) the route goes as far as the mesh does and then
 /// straight across. A step's stretch is its way: the route from the spot before it to its own.
-/// <para>A place's flow is that of the part of the route it walks to in the least distance (Place); with no walk to the
-/// route at all, of the nearest part in a straight line, the same floor first. Where the route crosses the same
-/// ground twice a spawn point belongs to the later crossing, and a player to the one nearest where they were.</para>
+/// <para>A spawn point's flow is that of the part of the route it walks to in the least distance (Place: every place
+/// of the route within reach is weighed by the walk to it); with no walk to the route at all, of the nearest part in
+/// a straight line, the same floor first. Where the route crosses the same ground twice the point belongs to the
+/// later crossing. A player's flow is that of the route's nearest place in a straight line, followed from where they
+/// were a moment ago so that on ground crossed twice they stay on the crossing they are on (Trace): no path is
+/// searched for them, they are looked at twice a second.</para>
 /// <para>Laid when a chapter starts, and again whenever the mission moves on a step (a gate may have opened) or a spot
 /// has moved (the landing zone the team chose, the airliner the tug pushes): SpawnGround. It needs no map rebuild and
 /// nothing authored beyond the steps' spots, so a mod's map has it too.</para>
@@ -48,9 +51,12 @@ internal sealed class SpawnRoute
 
     // How far from a spot, and from any other place, the walk mesh is looked for (m).
     private const float SpotSearch = 3f, PlaceSearch = 2f;
-    // A place looks for its part of the route among this many of the route's nearest approaches to it, and a spawn
-    // point then follows the route this many places either way while the walk grows shorter.
-    private const int Approaches = 4, Follow = 8;
+    // A spawn point weighs every Stride-th place of the route within reach, then the ones between round the best: the
+    // walk to a place changes little from one place to the next, so the answer is the same as weighing every one, at a
+    // third of the path searches.
+    private const int Stride = 3;
+    // A player is looked for within this many places of the route either way of where they were half a second ago.
+    private const int Window = 8;
 
     public readonly List<Leg> Legs = new List<Leg>();
     /// <summary>The route's whole length (m), and how far apart its places are.</summary>
@@ -65,20 +71,25 @@ internal sealed class SpawnRoute
     private readonly List<bool> meshed = new List<bool>();
     private readonly NavMeshPath path = new NavMeshPath();
     private readonly Vector3[] corners = new Vector3[256];
-    private readonly int[] nearest = new int[Approaches];
-    private float[] away = new float[0];
+    private float[] away = new float[0], walks = new float[0];
     private float storey = 2f;
+    private readonly float reach;
 
-    private SpawnRoute(float grain) => Grain = Mathf.Max(.5f, grain);
+    private SpawnRoute(float grain, float reach)
+    {
+        Grain = Mathf.Max(.5f, grain);
+        this.reach = Mathf.Max(Grain, reach);
+    }
 
     /// <summary>
     /// The route of these steps through the scene's spots as they stand now. <paramref name="spots"/>: the scene's
-    /// spots by name (CampaignRun's, a re-placed one included). Call where a NavMeshPath may be made (not from a field
-    /// initialiser).
+    /// spots by name (CampaignRun's, a re-placed one included). <paramref name="grain"/>: how far apart its places are
+    /// (m); <paramref name="reach"/>: how far from itself, in a straight line, it looks for a spawn point's walk to it
+    /// (m). Call where a NavMeshPath may be made (not from a field initialiser).
     /// </summary>
-    public static SpawnRoute Lay(IReadOnlyList<CampaignStep> steps, IReadOnlyDictionary<string, Transform> spots, float grain)
+    public static SpawnRoute Lay(IReadOnlyList<CampaignStep> steps, IReadOnlyDictionary<string, Transform> spots, float grain, float reach)
     {
-        var route = new SpawnRoute(grain);
+        var route = new SpawnRoute(grain, reach);
         // Two places more than an agent's height apart in height are on different floors.
         route.storey = Mathf.Max(.5f, NavMesh.GetSettingsByID(0).agentHeight);
         var line = new List<Vector3>();
@@ -164,6 +175,7 @@ internal sealed class SpawnRoute
             Legs[i] = leg;
         }
         away = new float[flows.Count];
+        walks = new float[flows.Count];
     }
 
     private void Add(Vector3 place, float flow)
@@ -173,6 +185,21 @@ internal sealed class SpawnRoute
         bool on = NavMesh.SamplePosition(place, out NavMeshHit hit, PlaceSearch, NavMesh.AllAreas);
         meshed.Add(on);
         onMesh.Add(on ? hit.position : place);
+    }
+
+    /// <summary>
+    /// This laying came out the same as another: every place where it was and every stretch joined as it was. Then
+    /// whatever was placed on the other stands on this one as it stood, and nothing need be placed again (most steps
+    /// open no gate and move no spot).
+    /// </summary>
+    public bool SameAs(SpawnRoute other)
+    {
+        if (other == null || other.places.Count != places.Count || other.Legs.Count != Legs.Count) return false;
+        for (int i = 0; i < Legs.Count; i++)
+            if (Legs[i].HasSpot != other.Legs[i].HasSpot || Legs[i].Joined != other.Legs[i].Joined) return false;
+        for (int i = 0; i < places.Count; i++)
+            if ((places[i] - other.places[i]).sqrMagnitude > .0001f || meshed[i] != other.meshed[i]) return false;
+        return true;
     }
 
     /// <summary>The stretch a flow lies on: the first with ground of its own that reaches it (a place at a spot belongs to the stretch that ends there).</summary>
@@ -200,94 +227,128 @@ internal sealed class SpawnRoute
     }
 
     /// <summary>
-    /// Where a place is on the route. <paramref name="hint"/>: the flow it was at before (a player), so that on ground
-    /// the route crosses twice it stays on the crossing it was on; negative for none (a spawn point: the later
-    /// crossing). <paramref name="thorough"/>: follow the route from the best approach while the walk grows shorter (a
-    /// spawn point, placed once; a player is looked at again in a moment). False on a route with no length.
+    /// Where a place is on the route, by walking: of the route's places within reach of it in a straight line, the one
+    /// the walk to is shortest. Where the route comes as near a second time (a crossing whose shortest walk is within
+    /// the route's own grain of the shortest of all), the two are the same distance away: then the crossing nearest
+    /// <paramref name="hint"/>, the flow the place was at before, or for a place with no past (negative: a spawn point)
+    /// the later crossing. With no walk to any of them (or off the walk mesh), the nearest in a straight line, the same
+    /// floor first. False on a route with no places.
+    /// A few dozen path searches: for a spawn point, once a laying, and for a decision that is kept (SpawnGround.Clear).
     /// </summary>
-    public bool Place(Vector3 position, float hint, bool thorough, out Placement place)
+    public bool Place(Vector3 position, float hint, out Placement place)
     {
         place = default;
-        if (flows.Count == 0) return false;
-        int found = Approach(position);
+        int count = flows.Count;
+        if (count == 0) return false;
+        Distances(position);
         place.OnMesh = NavMesh.SamplePosition(position, out NavMeshHit feet, PlaceSearch, NavMesh.AllAreas);
         int best = -1;
-        float least = float.PositiveInfinity, chosen = 0f;
         if (place.OnMesh)
         {
-            for (int k = 0; k < found; k++)
-            {
-                int candidate = nearest[k];
-                float walk = WalkTo(feet.position, candidate);
-                if (walk < 0f) continue;
-                if (best < 0 || walk < least - Grain) { best = candidate; least = chosen = walk; continue; }
-                if (walk > least + Grain) continue;
-                // As near as the route's own grain, the two are the same distance away: the one nearest where it was,
-                // or for a place with no past the later crossing.
-                if (Prefer(candidate, best, hint)) { best = candidate; chosen = walk; }
-                least = Mathf.Min(least, walk);
-            }
-            if (best >= 0 && thorough)
-            {
-                // The route's nearest approach in a straight line is not always where the walk meets it (a room beside
-                // a passage, its door farther back): along the route while the walk grows shorter.
-                int from = best;
-                float there = chosen;
-                for (int way = -1; way <= 1; way += 2)
-                {
-                    float shortest = there;
-                    for (int step = 1, at = from + way; step <= Follow && at >= 0 && at < flows.Count; step++, at += way)
-                    {
-                        float walk = WalkTo(feet.position, at);
-                        if (walk < 0f || walk >= shortest - .01f) break;
-                        shortest = walk;
-                        if (walk < chosen) { chosen = walk; best = at; }
-                    }
-                }
-            }
+            for (int i = 0; i < count; i++) walks[i] = float.NaN;
+            for (int i = 0; i < count; i += Stride) Weigh(feet.position, i);
+            // The last place is the route's end, where a finale's points gather: weighed whatever the stride.
+            Weigh(feet.position, count - 1);
+            best = Round(feet.position, Shortest(0, count - 1));
+            if (best >= 0) best = Round(feet.position, Crossing(best, hint));
         }
         place.ByWalk = best >= 0;
-        if (best < 0)
-        {
-            best = Straight(position);
-            chosen = away[best];
-        }
+        if (best < 0) best = Straight(position);
         place.Flow = flows[best];
-        place.Off = chosen;
+        place.Off = place.ByWalk ? walks[best] : away[best];
         place.Leg = LegOf(place.Flow);
         return true;
     }
 
-    /// <summary>The stretch a place stands on, by the route's nearest part in a straight line, the same floor first (a zombie, many times a second: no path is searched).</summary>
-    public int LegAt(Vector3 position)
+    // The walk to one place of the route, into `walks` (searched once a Place): negative for a place out of reach, off
+    // the mesh or not joined to here.
+    private void Weigh(Vector3 from, int index)
     {
-        if (flows.Count == 0) return 0;
-        for (int i = 0; i < flows.Count; i++) away[i] = Vector3.Distance(position, places[i]);
-        return LegOf(flows[Straight(position)]);
+        if (!float.IsNaN(walks[index])) return;
+        walks[index] = away[index] > reach ? -1f : WalkTo(from, index);
+    }
+
+    // Of the places weighed between two of the route's places, the one the walk to is shortest; -1 for none.
+    private int Shortest(int from, int to)
+    {
+        int best = -1;
+        for (int i = from; i <= to; i++)
+            if (walks[i] >= 0f && (best < 0 || walks[i] < walks[best])) best = i;
+        return best;
+    }
+
+    // The places between the weighed ones round a place are weighed too, and the shortest of them all is it.
+    private int Round(Vector3 from, int index)
+    {
+        if (index < 0) return index;
+        int low = Mathf.Max(0, index - Stride + 1), high = Mathf.Min(flows.Count - 1, index + Stride - 1);
+        for (int i = low; i <= high; i++) Weigh(from, i);
+        return Shortest(low, high);
+    }
+
+    // The route may come as near a second time. A crossing is a run of weighed places next to one another along the
+    // route that are all as near as the nearest of all (within the grain); a weighed place that is farther, or cannot
+    // be walked to, parts two crossings. Of the crossings: the one nearest the hint, or with no hint the last; of it,
+    // the place the walk to is shortest.
+    private int Crossing(int nearest, float hint)
+    {
+        float most = walks[nearest] + Grain;
+        int count = flows.Count, chosen = -1, run = -1;
+        for (int i = 0; i <= count; i++)
+        {
+            if (i < count && float.IsNaN(walks[i])) continue;
+            if (i < count && walks[i] >= 0f && walks[i] <= most)
+            {
+                if (run < 0 || walks[i] < walks[run]) run = i;
+                continue;
+            }
+            // A farther place, one that cannot be walked to, or the route's end closes the run before it.
+            if (run >= 0 && (chosen < 0 || Prefer(run, chosen, hint))) chosen = run;
+            run = -1;
+        }
+        return chosen;
     }
 
     private bool Prefer(int candidate, int kept, float hint)
         => hint >= 0f ? Mathf.Abs(flows[candidate] - hint) < Mathf.Abs(flows[kept] - hint) : flows[candidate] > flows[kept];
 
-    // The route's nearest approaches to a place: the places of the route nearer it than their neighbours, the nearest
-    // few of them in `nearest`, the nearest first. Returns how many. `away` is left holding every place's straight
-    // distance.
-    private int Approach(Vector3 position)
+    /// <summary>
+    /// A player's flow now, <paramref name="last"/> being where they were when last looked at (or where the mission
+    /// stands, for someone looked at for the first time): the route's nearest place in a straight line among those
+    /// within a few places of there, the same floor first, since nobody moves far along the route between two looks. On
+    /// ground the route crosses twice that keeps them on the crossing they are on. When the route as a whole has a
+    /// place nearer by more than a storey than any of those, they are somewhere else altogether (a fall, a shortcut, a
+    /// way back to the rest stop) and that place is theirs. No path is searched.
+    /// </summary>
+    public float Trace(Vector3 position, float last)
     {
-        int count = flows.Count, found = 0;
-        for (int i = 0; i < count; i++) away[i] = Vector3.Distance(position, places[i]);
+        int count = flows.Count;
+        if (count == 0) return 0f;
+        Distances(position);
+        float low = last - Window * Grain, high = last + Window * Grain;
+        int level = -1, other = -1;
         for (int i = 0; i < count; i++)
         {
-            // Nearer than both its neighbours (of a run of equals, the first).
-            if (i > 0 && away[i - 1] <= away[i] || i + 1 < count && away[i + 1] < away[i]) continue;
-            int at;
-            if (found < Approaches) at = found++;
-            else if (away[i] < away[nearest[Approaches - 1]]) at = Approaches - 1;
-            else continue;
-            nearest[at] = i;
-            for (int k = at; k > 0 && away[nearest[k]] < away[nearest[k - 1]]; k--) (nearest[k], nearest[k - 1]) = (nearest[k - 1], nearest[k]);
+            if (flows[i] < low || flows[i] > high) continue;
+            if (other < 0 || away[i] < away[other]) other = i;
+            if (Mathf.Abs(places[i].y - position.y) < storey && (level < 0 || away[i] < away[level])) level = i;
         }
-        return found;
+        int near = level >= 0 ? level : other, anywhere = Straight(position);
+        return flows[near >= 0 && away[near] <= away[anywhere] + storey ? near : anywhere];
+    }
+
+    /// <summary>The stretch a place stands on, by the route's nearest part in a straight line, the same floor first (a zombie, many of them at a time: no path is searched).</summary>
+    public int LegAt(Vector3 position)
+    {
+        if (flows.Count == 0) return 0;
+        Distances(position);
+        return LegOf(flows[Straight(position)]);
+    }
+
+    // Every place's straight distance from a position, into `away`.
+    private void Distances(Vector3 position)
+    {
+        for (int i = 0; i < flows.Count; i++) away[i] = Vector3.Distance(position, places[i]);
     }
 
     // The nearest place of the route in a straight line, one on the same floor before any other. Reads `away`.
