@@ -250,6 +250,9 @@ public sealed class HandOwner : MonoBehaviour
         Note(line);
     }
 
+    /// <summary>A line of someone else's for this player's record, among the changes and refusals it belongs with.</summary>
+    internal void Remark(string line) => Note(line);
+
     private static string Label(HandUse use) => use == null ? "nobody" : use.Id + " (" + use.Rank + ")";
 
     private void Note(string line)

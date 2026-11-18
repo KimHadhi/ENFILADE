@@ -390,6 +390,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         // What is drawn through walls (the Ghost's sight, pings, holders, a friend's CHARGE outline) never takes this
         // player's own body, gun or scope lens for the wall on their own screen (OwnViewMask, 2026-11-14).
         if (Application.isPlaying && IsLocal && GetComponent<OwnViewMask>() == null) gameObject.AddComponent<OwnViewMask>();
+        // What the body is doing with its hands, said to the hands' owner every frame (HandOwner): friends' copies too.
+        if (Application.isPlaying && GetComponent<BodyHandFacts>() == null) gameObject.AddComponent<BodyHandFacts>();
         if (Application.isPlaying && GetComponent<PlayerThrow>() == null) gameObject.AddComponent<PlayerThrow>();
         // The class throwable on G (2026-11-12, GMod Horde's quick grenade); friends' copies throw theirs too.
         if (Application.isPlaying && GetComponent<PlayerGrenades>() == null) gameObject.AddComponent<PlayerGrenades>();
