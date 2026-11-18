@@ -7,6 +7,9 @@ using UnityEngine;
 /// the plane, and stops when nobody does; docked, the plane's door opens on the way through its galley to the slide on
 /// its far side, a short cut down to the apron by the control tower instead of the service stairs. Done once, it stays
 /// done (a wipe leaves it docked). States: how far out, in twentieths (20 docked).
+/// How it moves is authored by the builder (SetPieceTrack: telescoping lengths sliding out of one another, each a rigid
+/// part on a kinematic body) and only sampled here, and only while the length shown is changing: before, during and
+/// after, a bridge that stands still writes nothing.
 /// </summary>
 public sealed class GimmickJetBridge : GimmickSwitch
 {
@@ -14,9 +17,11 @@ public sealed class GimmickJetBridge : GimmickSwitch
 
     [SerializeField, Tooltip("Where standing drives it (world box): its cab.")]
     private Bounds cab;
-    [SerializeField, Tooltip("Its telescoping end: a holder at the cab's edge, its boxes along its local +x, stretched along x as it goes.")]
+    [SerializeField, Tooltip("Its telescoping lengths and how far each slides out (the builder's).")]
+    private SetPieceTrack track = new SetPieceTrack();
+    [SerializeField, Tooltip("A map built before 2026-11-18: its end as one holder stretched along x. Unused once the map is rebuilt.")]
     private Transform stretch;
-    [SerializeField, Min(.01f), Tooltip("Its end's length in when it starts (a share of the full length).")]
+    [SerializeField, Min(.01f), Tooltip("With stretch: the end's length in when it starts (a share of the full length).")]
     private float shortest = .05f;
     [SerializeField, Min(1f), Tooltip("How long it must be driven to dock (s).")]
     private float seconds = 10f;
@@ -24,6 +29,7 @@ public sealed class GimmickJetBridge : GimmickSwitch
     private GameObject door;
 
     private float driven, shown;
+    private float stretched = float.NaN;
 
     internal override Vector3 Handle => cab.center;
 
@@ -40,7 +46,13 @@ public sealed class GimmickJetBridge : GimmickSwitch
         }
         // It moves smoothly toward the state it has reached on this PC.
         shown = Mathf.MoveTowards(shown, State / (float)Docked, dt / seconds * 1.6f);
-        if (stretch != null) stretch.localScale = new Vector3(Mathf.Lerp(shortest, 1f, shown), 1f, 1f);
+        if (track.Any) track.Show(shown);
+        // A map not rebuilt yet has only the stretched holder: as it was, but written only when it changes.
+        else if (stretch != null && !Mathf.Approximately(stretched, shown))
+        {
+            stretched = shown;
+            stretch.localScale = new Vector3(Mathf.Lerp(shortest, 1f, shown), 1f, 1f);
+        }
     }
 
     private static bool AnyoneIn(Bounds box)

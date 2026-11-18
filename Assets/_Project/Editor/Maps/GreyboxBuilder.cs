@@ -246,6 +246,9 @@ public sealed partial class GreyboxBuilder
         var group = new GameObject(name);
         group.transform.SetParent(terrain, false);
         group.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+        // One kinematic body for the whole group: its boxes move as one body the physics is told about, where a box
+        // with no body is part of the still world and costs a rebuild of that world each time it is moved.
+        Kinematic(group);
         Set(group.AddComponent<CampaignPushback>(), so =>
         {
             so.FindProperty("step").stringValue = step;
@@ -258,8 +261,10 @@ public sealed partial class GreyboxBuilder
     public void PushbackTug(Transform group, GameObject tug)
         => Set(group.GetComponent<CampaignPushback>(), so => so.FindProperty("tug").objectReferenceValue = tug.transform);
 
-    /// <summary>A part of a moving group that cuts the walk mesh where it stands as it goes (the bake left it out). It
-    /// carves again each time it has moved a third of a metre, not every frame.</summary>
+    /// <summary>A part of a moving group that cuts the walk mesh where it stands (the bake left it out), once it has
+    /// come to rest there: while it moves, zombies steer round it as an obstacle and the mesh is left alone. It used to
+    /// cut the mesh again every third of a metre it rolled, four parts at a time, for the whole of chapter 4's
+    /// pushback.</summary>
     public void Carve(GameObject part)
     {
         var obstacle = part.AddComponent<NavMeshObstacle>();
@@ -267,8 +272,27 @@ public sealed partial class GreyboxBuilder
         obstacle.center = Vector3.zero;
         obstacle.size = Vector3.one;
         obstacle.carving = true;
-        obstacle.carveOnlyStationary = false;
-        obstacle.carvingMoveThreshold = .3f;
+        obstacle.carveOnlyStationary = true;
+    }
+
+    /// <summary>
+    /// A rigid part of a set piece that moves at play (a jet bridge's telescoping length, SetPieceTrack; a pushed
+    /// airliner): a kinematic body on <paramref name="root"/>, so the boxes under it move as one body, and their
+    /// surfaces mapped in their own space, so the texture rides with them (MovingSurface). Returns the root's transform.
+    /// </summary>
+    public Transform MovingPart(GameObject root)
+    {
+        Kinematic(root);
+        foreach (var shown in root.GetComponentsInChildren<Renderer>(true)) shown.sharedMaterials = MovingMaterials(shown.sharedMaterials);
+        return root.transform;
+    }
+
+    private static void Kinematic(GameObject root)
+    {
+        var body = root.TryGetComponent(out Rigidbody had) ? had : root.AddComponent<Rigidbody>();
+        body.isKinematic = true;
+        body.useGravity = false;
+        body.interpolation = RigidbodyInterpolation.None;
     }
 
     /// <summary>Where ENFILADE > 맵 > 맵 사진 찍기 (MapPictures) takes the menu's map picture from, looking at

@@ -11,8 +11,12 @@ using UnityEngine;
 /// as one steady roll. Anything else is where it should be at once: before the hold, after it (also for anyone joining
 /// late), and back at the start after a wipe. While it rolls, the tug growls and its reversing alarm beeps, a sound made
 /// here since the project has no vehicle sounds. The airliner stays out of the walk-mesh bake: its body, wings and
-/// engines hang high enough to walk under, and its gear and the tug carve the walk mesh as they go
-/// (GreyboxBuilder.Carve).
+/// engines hang high enough to walk under, and its gear and the tug cut the walk mesh where they come to rest
+/// (GreyboxBuilder.Carve: only while they stand still, so the mesh is not cut again and again as the plane rolls).
+/// Its place is written only when it changes, and the builder gives the group one kinematic body, so its dozen boxes
+/// move as one body and are not each taken for a piece of the still world that moved (the user, 2026-11-18:
+/// "실시간 연산 대신 베이크된(Baked) 애니메이션으로 교체하여 프레임 드랍(렉) 개선": the roll is one straight track
+/// from the builder's start to its offset, sampled at the run's progress).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CampaignPushback : MonoBehaviour
@@ -32,7 +36,7 @@ public sealed class CampaignPushback : MonoBehaviour
     private Transform tug;
 
     private Vector3 start;
-    private float shown, movedAt = float.NegativeInfinity;
+    private float shown, placed = float.NaN, movedAt = float.NegativeInfinity;
     private AudioSource engine;
 
     private void Awake() => start = transform.localPosition;
@@ -43,7 +47,11 @@ public sealed class CampaignPushback : MonoBehaviour
         if (CampaignRun.IsRunning(step) && target >= shown && CampaignRun.TryHold(out _, out float length) && length > 0f)
             shown = Mathf.MoveTowards(shown, target, CatchUp / length * Time.deltaTime);
         else shown = target;
-        transform.localPosition = start + offset * shown;
+        if (!Mathf.Approximately(placed, shown))
+        {
+            placed = shown;
+            transform.localPosition = start + offset * shown;
+        }
         if (shown > before) movedAt = Time.time;
         Growl(Time.time - movedAt < EngineLinger);
     }

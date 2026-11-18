@@ -23,21 +23,41 @@ public static partial class CampaignMaps
     }
 
     // The gate's jet bridge reaches the airliner on stand 1 (the card "탑승교 운전"): its cab is where the bridge already
-    // ends over the apron (x 196-199 + Airside), and an 8 m telescoping end stretches from the cab's east opening to the
+    // ends over the apron (x 196-199 + Airside), and an 8 m telescoping end reaches from the cab's east opening to the
     // airliner's front door while anyone stands in the cab (GimmickJetBridge). Docked, the door opens on the cabin: along
     // its aisle to the rear door on its far side and the slide down to the apron, by the stands and the tower. The
     // service stairs stay; a crowd sleeps at their foot (the quiet way is through the plane).
+    // The end is telescoping lengths that slide out of one another, as a real bridge's tunnels do, on a track made here
+    // (SetPieceTrack; the user, 2026-11-18: "실시간 연산 대신 베이크된(Baked) 애니메이션으로 교체"). It was one holder
+    // whose scale along x was written every frame, resizing its four colliders. Each length is rigid and sits on a
+    // kinematic body; the first stays at the cab and each one after it travels one more length less the overlap, so
+    // together they reach the door. Drawn in, they stand as one length off the cab.
     private static void JetBridge(GreyboxBuilder b, float x, List<GimmickFuelValve> valves)
     {
         const float Floor = 4f, Cab = 199f, Reach = 8f;
+        // How many lengths, how far two that are drawn out still overlap (m), and how much smaller each is than the one
+        // it slides out of: narrower on each side, its floor a little higher and its roof a little lower (m).
+        const int Lengths = 4;
+        const float Overlap = .3f, NestSide = .06f, NestRise = .03f, Skin = .12f;
+        float length = (Reach + (Lengths - 1) * Overlap) / Lengths;
         var bridge = b.Switch<GimmickJetBridge>("탑승교 (조종석에 서 있으면 늘어남)", Vector3.zero);
-        var stretch = new GameObject("탑승교 늘어나는 끝").transform;
-        stretch.SetParent(bridge.transform, false);
-        stretch.position = new Vector3(Cab + x, 0f, 0f);
-        b.Box("늘어나는 끝 바닥", 0f, Reach, Floor - .4f, Floor, -1.6f, 1.6f, b.Metal, "Gantry", group: stretch);
-        b.Box("늘어나는 끝 벽 남", 0f, Reach, Floor, Floor + 2.6f, -1.9f, -1.6f, b.Metal, "Metal", group: stretch);
-        b.Box("늘어나는 끝 벽 북", 0f, Reach, Floor, Floor + 2.6f, 1.6f, 1.9f, b.Metal, "Metal", group: stretch);
-        b.Box("늘어나는 끝 지붕", 0f, Reach, Floor + 2.6f, Floor + 2.9f, -1.9f, 1.9f, b.Metal, group: stretch);
+        var parts = new List<Transform>();
+        var travel = new List<Vector3>();
+        for (int k = 0; k < Lengths; k++)
+        {
+            var holder = new GameObject("탑승교 마디 " + (k + 1));
+            holder.transform.SetParent(bridge.transform, false);
+            holder.transform.position = new Vector3(Cab + x, 0f, 0f);
+            float half = 1.6f - k * NestSide, floor = Floor + k * NestRise, roof = Floor + 2.6f - k * NestRise;
+            b.Box("마디 바닥", 0f, length, floor - .4f, floor, -half, half, b.Metal, "Gantry", group: holder.transform);
+            b.Box("마디 벽 남", 0f, length, floor, roof, -half - Skin, -half, b.Metal, "Metal", group: holder.transform);
+            b.Box("마디 벽 북", 0f, length, floor, roof, half, half + Skin, b.Metal, "Metal", group: holder.transform);
+            b.Box("마디 지붕", 0f, length, roof, roof + Skin, -half - Skin, half + Skin, b.Metal, group: holder.transform);
+            // The first length is the cab's own end and stays; the rest are the moving parts.
+            if (k == 0) continue;
+            parts.Add(b.MovingPart(holder));
+            travel.Add(new Vector3(k * (length - Overlap), 0f, 0f));
+        }
 
         // Stand 1's airliner, nose north, its cabin floor level with the bridge's, the front door facing the bridge.
         float w0 = Cab + Reach + x, w1 = w0 + 4f, middle = (w0 + w1) * .5f;
@@ -64,8 +84,14 @@ public static partial class CampaignMaps
         GreyboxBuilder.Configure(bridge, so =>
         {
             so.FindProperty("cab").boundsValue = new Bounds(new Vector3(197.5f + x, Floor + .9f, 0f), new Vector3(2.8f, 1.8f, 4.4f));
-            so.FindProperty("stretch").objectReferenceValue = stretch;
-            so.FindProperty("shortest").floatValue = .05f;
+            var moving = so.FindProperty("track.parts");
+            var moves = so.FindProperty("track.travel");
+            moving.arraySize = moves.arraySize = parts.Count;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                moving.GetArrayElementAtIndex(i).objectReferenceValue = parts[i];
+                moves.GetArrayElementAtIndex(i).vector3Value = travel[i];
+            }
             so.FindProperty("seconds").floatValue = 10f;
             so.FindProperty("door").objectReferenceValue = door;
             so.FindProperty("reach").floatValue = 2.4f;
