@@ -10,6 +10,10 @@ using UnityEngine;
 /// How it moves is authored by the builder (SetPieceTrack: telescoping lengths sliding out of one another, each a rigid
 /// part on a kinematic body) and only sampled here, and only while the length shown is changing: before, during and
 /// after, a bridge that stands still writes nothing.
+/// How far out it shows is paced (SetPiecePace): the state comes in twentieths, one every half second of driving, and
+/// shown as it came the bridge went out in twenty jerks, a third of a second of moving and a fifth of standing each
+/// (the user, 2026-11-18: "탑승교 발판이 하나씩 생길 때마다 렉이 걸렸습니다"). It now goes on at the driving's pace
+/// while the twentieths keep coming; the host, whose own count is exact, shows that.
 /// </summary>
 public sealed class GimmickJetBridge : GimmickSwitch
 {
@@ -28,7 +32,8 @@ public sealed class GimmickJetBridge : GimmickSwitch
     [SerializeField, Tooltip("The plane's door, gone once it docks.")]
     private GameObject door;
 
-    private float driven, shown;
+    private readonly SetPiecePace pace = new SetPiecePace("jet bridge");
+    private float driven;
     private float stretched = float.NaN;
 
     internal override Vector3 Handle => cab.center;
@@ -38,14 +43,16 @@ public sealed class GimmickJetBridge : GimmickSwitch
 
     internal override void Tick(float dt, bool host)
     {
+        // The host's own count never lags the state everyone has (a PC that became the host part of the way).
+        if (host) driven = Mathf.Max(driven, State * seconds / Docked);
         if (host && State < Docked && AnyoneIn(cab))
         {
             driven += dt;
             byte reached = (byte)Mathf.Min(Docked, Mathf.FloorToInt(driven / seconds * Docked));
             if (reached > State) Set(reached);
         }
-        // It moves smoothly toward the state it has reached on this PC.
-        shown = Mathf.MoveTowards(shown, State / (float)Docked, dt / seconds * 1.6f);
+        // How far out it really is, by what this PC knows: the host its own count, anyone else the state's twentieth.
+        float shown = pace.Follow(host ? Mathf.Clamp01(driven / seconds) : State / (float)Docked, 1f / seconds, dt);
         if (track.Any) track.Show(shown);
         // A map not rebuilt yet has only the stretched holder: as it was, but written only when it changes.
         else if (stretch != null && !Mathf.Approximately(stretched, shown))
@@ -68,9 +75,11 @@ public sealed class GimmickJetBridge : GimmickSwitch
         if (!fresh)
         {
             // A late joiner sees it where it is.
-            shown = state / (float)Docked;
+            pace.Put(state / (float)Docked);
             return;
         }
+        // For a play's record of long frames (Logs/hitches.txt): whether one falls on a step of the bridge.
+        FrameTags.Mark("jet bridge " + state + "/" + Docked);
         if (state == 1) GimmickSounds.PlayAt(GimmickSounds.Cue.Lever, cab.center, .8f, 3f, 25f);
         if (state < Docked) return;
         GimmickSounds.PlayAt(GimmickSounds.Cue.Clunk, cab.center, 1f, 4f, 40f);

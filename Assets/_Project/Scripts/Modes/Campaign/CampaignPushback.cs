@@ -6,10 +6,11 @@ using UnityEngine;
 /// and the step's spot on it beside the tug. The step is a manned hold (CampaignSteps.manned): its clock runs only while
 /// someone stands at the tug, so the plane rolls back only then and stops where it is when they step away; nothing is
 /// taken back for leaving (a fight elsewhere costs time, never progress).
-/// Every PC moves its own from the run it follows (CampaignRun.ProgressOf): while the hold runs it rolls toward the
-/// hold's share of `offset`, never faster than CatchUp times the hold's own pace, so a guest's whole-second reports read
-/// as one steady roll. Anything else is where it should be at once: before the hold, after it (also for anyone joining
-/// late), and back at the start after a wipe. While it rolls, the tug growls and its reversing alarm beeps, a sound made
+/// Every PC moves its own from the run it follows (CampaignRun.ProgressOf): while the hold runs it rolls on at the
+/// hold's own pace for as long as the run's progress keeps coming (SetPiecePace), so a guest, who hears of the hold in
+/// whole seconds, sees one steady roll. (Rolled to each report at 1.25 times the pace, a guest's airliner stood still
+/// a fifth of every second: Tools/Checks/set_piece_pace_check.py.) Anything else is where it should be at once:
+/// before the hold, after it (also for anyone joining late), and back at the start after a wipe. While it rolls, the tug growls and its reversing alarm beeps, a sound made
 /// here since the project has no vehicle sounds. The airliner stays out of the walk-mesh bake: its body, wings and
 /// engines hang high enough to walk under, and its gear and the tug cut the walk mesh where they come to rest
 /// (GreyboxBuilder.Carve: only while they stand still, so the mesh is not cut again and again as the plane rolls).
@@ -22,8 +23,6 @@ using UnityEngine;
 public sealed class CampaignPushback : MonoBehaviour
 {
     private const int SampleRate = 44100;
-    // How much faster than the hold's own pace it may catch up with the run.
-    private const float CatchUp = 1.25f;
     // How long it may stand still before the engine stops (s): a guest's roll pauses briefly between reports.
     private const float EngineLinger = .4f;
     private static AudioClip engineClip;
@@ -35,6 +34,7 @@ public sealed class CampaignPushback : MonoBehaviour
     [SerializeField, Tooltip("Where the tug's engine sounds from (the builder's tug box).")]
     private Transform tug;
 
+    private readonly SetPiecePace pace = new SetPiecePace("pushback");
     private Vector3 start;
     private float shown, placed = float.NaN, movedAt = float.NegativeInfinity;
     private AudioSource engine;
@@ -44,9 +44,13 @@ public sealed class CampaignPushback : MonoBehaviour
     private void Update()
     {
         float target = CampaignRun.ProgressOf(step), before = shown;
-        if (CampaignRun.IsRunning(step) && target >= shown && CampaignRun.TryHold(out _, out float length) && length > 0f)
-            shown = Mathf.MoveTowards(shown, target, CatchUp / length * Time.deltaTime);
-        else shown = target;
+        if (CampaignRun.IsRunning(step) && CampaignRun.TryHold(out _, out float length) && length > 0f)
+            shown = pace.Follow(target, 1f / length, Time.deltaTime);
+        else
+        {
+            pace.Put(target);
+            shown = target;
+        }
         if (!Mathf.Approximately(placed, shown))
         {
             placed = shown;
