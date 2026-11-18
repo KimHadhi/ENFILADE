@@ -1,5 +1,4 @@
 using UnityEngine;
-using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// Holding F to point (the user, 2026-11-12: "F가 핑이잖아? 핑 찍을 때 남는 손으로 손가락질 하는 모션 있고 F 꾹 누르고
@@ -11,6 +10,12 @@ using MovementState = PlayerMovement.MovementState;
 /// the spot on it with the ping (PlayerNetworkCombat, Pinged), and the marks PingPoint and PointAway say that the point is
 /// a ping's and that turning away cut it short, so a friend's copy points at the same foe and drops at the same moment.
 /// The arm itself is PointArm, on whatever body they wear.
+/// <para>
+/// Whether the left hand is free to point is not worked out here: the point asks the hands' owner for it every frame
+/// it would point (HandOwner; Tables/Player/HandUses.csv point.hold for a held F, point.ping for a ping's moment, which
+/// the left hand may give while the right aims), on this PC's player and on a friend's copy alike. Until 2026-11-18 a
+/// list here (CanPoint) asked the body, the gun and the grenade one by one, and knew nothing of a syringe or a tool.
+/// </para>
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerPoint : MonoBehaviour
@@ -23,7 +28,10 @@ public sealed class PlayerPoint : MonoBehaviour
     private PlayerMovement movement;
     private PlayerBody body;
     private WeaponController weapon;
+    private HandOwner hands;
     private Animator armed;
+    // The use the left hand is this point's under now (HandUses.PointHold or PointPing); null: it does not point.
+    private string row;
     // pinned: the console's /point keeps this PC's player pointing without F, to look at the hand while tuning it.
     private bool held, pinned, mirroredPointing, mirroredNoPoke, mirroredPingPoint, mirroredAway;
     // A tap's ping points for a moment (Flash): until when, and at what (the pinged foe, the spot on it). On a friend's
@@ -38,21 +46,65 @@ public sealed class PlayerPoint : MonoBehaviour
     /// This player points now: their held F (or /point, or a ping's moment) on their own PC, their pose's mark on every
     /// other.
     /// </summary>
-    public bool Pointing => movement != null && (movement.IsNetworkDriven ? mirroredPointing : held || Pinned || Flashing);
+    public bool Pointing => movement != null && (movement.IsNetworkDriven ? mirroredPointing : row != null);
 
-    // /point holds while the hand is free (it rests through aiming, a reload, a throw and comes back after).
-    private bool Pinned => pinned && HandFree;
+    /// <summary>The use the left hand is this point's under now, for the arm that poses it (PointArm); null: none.</summary>
+    internal string Row => row;
 
-    // A ping's moment, while the hand stays free for it (aimed down the sights too: the off hand leaves the handguard
-    // for a tap while the right hand holds the gun where it is aimed).
-    private bool Flashing => Time.time < flashUntil && HandFreeFor(true);
+    /// <summary>F is held for a point on this PC's player (PlayerPing), whether or not the hand has been given yet.</summary>
+    internal bool Held => held;
 
-    private bool HandFree => HandFreeFor(false);
+    /// <summary>
+    /// A held point could have the left hand now: PlayerPing asks before it holds, and ends the hold when it no longer
+    /// can (aiming, a reload, a draw, a throw, a syringe, a tool, the gun's bash: whatever outranks point.hold).
+    /// </summary>
+    internal bool CanHold => Free(HandUses.PointHold);
 
-    private bool HandFreeFor(bool whileAiming)
+    // ---- The left hand (HandOwner) ----
+
+    private HandOwner Hands => hands != null ? hands : hands = HandOwner.Of(movement);
+
+    // The hand could be this point's under `use`: nothing stronger has it or wants it, the body is in a state the arm
+    // can be up in, and the melee slot's own hands are at rest.
+    private bool Free(string use) => movement != null && Hands != null && Hands.Could(use, this) && Hands.Stands(use) && !MeleeBusy();
+
+    // The melee slot's own hands at work (a guard, a wind-up, a guard break with the fists or the knife out). Their
+    // rows are not in the hands' table yet (they come with the melee slot's), so the point still asks the fists itself.
+    private bool MeleeBusy()
     {
-        if (weapon == null) weapon = GetComponent<WeaponController>();
-        return CanPoint(movement, weapon, whileAiming);
+        var melee = movement.MeleeCombat;
+        return melee != null && melee.IsActive && (melee.IsGuarding || melee.IsCharging || melee.IsGuardBreaking);
+    }
+
+    // What the hand would point for now. On this PC's player a held F or the console's /point (point.hold), else a
+    // ping's moment (point.ping); on a friend's copy what their pose says, their PC having decided it.
+    private string Wanted()
+    {
+        if (movement.IsNetworkDriven) return !mirroredPointing ? null : mirroredPingPoint ? HandUses.PointPing : HandUses.PointHold;
+        return held || pinned ? HandUses.PointHold : Time.time < flashUntil ? HandUses.PointPing : null;
+    }
+
+    // The left hand asked for, or given back, as what the player does now says: every frame, and at once when a press
+    // or a ping changes it. A no leaves the hand alone and is asked again the next frame, so /point rests through
+    // aiming, a reload or a throw and comes back after, and a ping's moment comes back if there is any of it left.
+    private void Ask()
+    {
+        if (movement == null || Hands == null) return;
+        string want = Wanted();
+        if (want != null && !movement.IsNetworkDriven && (!hands.Stands(want) || MeleeBusy())) want = null;
+        if (want != null && hands.Take(want, this, false))
+        {
+            row = want;
+            return;
+        }
+        if (row != null) hands.Give(this);
+        row = null;
+    }
+
+    private void OnDisable()
+    {
+        if (row != null && hands != null) hands.Give(this);
+        row = null;
     }
 
     /// <summary>
@@ -69,15 +121,20 @@ public sealed class PlayerPoint : MonoBehaviour
         if (weapon == null) weapon = GetComponent<WeaponController>();
         bool aimed = weapon != null && weapon.AimBlend > AimedAt;
         float seconds = aimed ? PokeTables.Number("Ping.pointAimed", .35f) : PokeTables.Number("Ping.point", .6f);
-        if (seconds <= 0f || !HandFreeFor(true)) return false;
+        if (seconds <= 0f || !Free(HandUses.PointPing)) return false;
         flashUntil = Time.time + seconds;
         flashAt = at;
         flashLocal = at != null ? at.InverseTransformPoint(point) : point;
+        Ask();
         return true;
     }
 
     /// <summary>A shot or a punch takes the hand back from a ping's moment at once (PlayerPing), as from a held point.</summary>
-    internal void StopFlash() => flashUntil = float.NegativeInfinity;
+    internal void StopFlash()
+    {
+        flashUntil = float.NegativeInfinity;
+        Ask();
+    }
 
     /// <summary>
     /// Where a ping's point aims while it lasts and nothing else holds the point (a held F or /point aim where the player
@@ -148,6 +205,7 @@ public sealed class PlayerPoint : MonoBehaviour
     // never has one.
     private void Update()
     {
+        Ask();
         if (!Pointing) return;
         if (body == null && !TryGetComponent(out body)) return;
         var model = body.BodyAnimator;
@@ -157,7 +215,12 @@ public sealed class PlayerPoint : MonoBehaviour
     }
 
     /// <summary>This PC's player starts or stops pointing (PlayerPing).</summary>
-    internal void Hold(bool pointing) => held = pointing;
+    internal void Hold(bool pointing)
+    {
+        if (held == pointing) return;
+        held = pointing;
+        Ask();
+    }
 
     /// <summary>
     /// The console's /point: this PC's player keeps pointing without F held (friends see it too), so the hand can be looked
@@ -205,26 +268,6 @@ public sealed class PlayerPoint : MonoBehaviour
         point.mirroredAway = away;
     }
 
-    // How far into aiming down the sights the gun counts as aimed (WeaponController.AimBlend).
+    // How far into aiming down the sights the gun counts as aimed, for how long a ping's point lasts (WeaponController.AimBlend).
     private const float AimedAt = .3f;
-
-    /// <summary>
-    /// This PC's player's hand is free to point: alive, up, standing or crouched (walking included), not held or busy
-    /// climbing, the gun not aimed (unless <paramref name="whileAiming"/>, for a ping's quick tap), reloaded, drawn or
-    /// looked over, the off hand not on a G throw, the fists not guarding or winding up. A shot or a punch ends a point
-    /// outright (PlayerPing), so the hand never has to choose.
-    /// </summary>
-    internal static bool CanPoint(PlayerMovement who, WeaponController weapon, bool whileAiming = false)
-    {
-        if (who == null || !who.IsInitialized || who.IsDead || who.IsDowned || who.IsHeld || who.IsParkour || who.CombatInputLocked)
-            return false;
-        var state = who.CurrentState;
-        if (state != MovementState.Standing && state != MovementState.Crouching) return false;
-        if (weapon != null && ((!whileAiming && weapon.AimBlend > AimedAt) || weapon.IsSwitching || weapon.IsInspecting
-            || (weapon.Runtime != null && weapon.Runtime.IsReloading))) return false;
-        // A G throw has the off hand first (the manager, 2026-11-12): it ends a point like a shot does.
-        if (PlayerGrenades.HandBusy(who)) return false;
-        var melee = who.MeleeCombat;
-        return melee == null || !melee.IsActive || !(melee.IsGuarding || melee.IsCharging || melee.IsGuardBreaking);
-    }
 }

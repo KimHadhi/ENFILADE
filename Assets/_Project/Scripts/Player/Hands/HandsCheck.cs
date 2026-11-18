@@ -51,6 +51,7 @@ internal static class HandsCheck
             Decisions(report);
             Order(report);
             Pairs(report);
+            Changes(report);
             Runs(report);
         }
         catch (Exception problem)
@@ -200,6 +201,17 @@ internal static class HandsCheck
         Take(board, HandUses.Repair, Tool, 1);
         report.Expect(!Kept(board, HandUses.GunBash, Gun, 2), "the tool keeps the hand from a bash (a bash outranks a repair)");
         report.Expect(Take(board, HandUses.GunBash, Gun, 2) && !board.Has(Tool), "a bash did not take the hand from a repair");
+
+        report.Rule("an asker going from a row of its own to a weaker one keeps its hand only against what standing still wants it: a ping's point does not go on as a held point while the gun aims");
+        board = GunInHand();
+        Take(board, HandUses.GunAim, Gun, 1);
+        report.Expect(Take(board, HandUses.PointPing, Gesture, 2) && Of(board, HandSide.Left) == HandUses.PointPing, "a ping's point could not have the left hand of an aimed gun");
+        bool onAsHeld = board.Could(U(HandUses.PointHold), Gesture, 3, out var held);
+        report.Expect(!onAsHeld && held.Hand == HandSide.Left && held.Holder != null && held.Holder.Id == HandUses.GunAim && !held.ByFact,
+            "a ping's point could go on as a held point while the gun aims: " + held);
+        report.Expect(!Take(board, HandUses.PointHold, Gesture, 3) && Of(board, HandSide.Left) == HandUses.PointPing, "a refused change of row changed what the point has");
+        Take(board, HandUses.GunHold, Gun, 4);
+        report.Expect(Take(board, HandUses.PointHold, Gesture, 5) && Of(board, HandSide.Left) == HandUses.PointHold, "the ping's point could not go on as a held point once the gun was lowered");
 
         report.Rule("V is the kick only when the hand is busy with something else that was asked for; a fact of the body having the hands leaves V what it was (in a zombie's grip, the shove)");
         board = GunInHand();
@@ -397,6 +409,67 @@ internal static class HandsCheck
         }
     }
 
+    // What must hold of a board whatever was asked, stated, given back and withdrawn.
+    private static void Sound(CheckReport report, HandBoard board, string label)
+    {
+        foreach (var entry in board.Entries)
+        {
+            if (!entry.Fact)
+            {
+                report.Expect((entry.Owns & entry.Use.Needs) == entry.Use.Needs, label + ": " + entry.Use.Id + " stands without a hand it needs");
+                foreach (var other in board.Entries)
+                    report.Expect(other == entry || !Limits(other.Use, entry.Use), label + ": " + entry.Use.Id + " stands though " + other.Use.Id
+                        + " lets only " + other.Use.Only + " be asked for");
+            }
+            foreach (var hand in Each)
+                if ((entry.Owns & hand) != 0) report.Expect(board.Holder(hand) == entry, label + ": " + entry.Use.Id + " thinks it has a hand that is another's");
+        }
+        foreach (var hand in Each)
+        {
+            var holder = board.Holder(hand);
+            foreach (var entry in board.Entries)
+            {
+                if (entry == holder || !Wants(entry.Use, hand, out bool needs) || (needs && !entry.Fact)) continue;
+                report.Expect(holder != null, label + ": the " + HandBoard.Name(hand) + " hand lies free while " + entry.Use.Id + " wants it");
+                if (holder != null) report.Expect(entry.Use.Rank <= holder.Use.Rank, label + ": " + holder.Use.Id + " holds the "
+                    + HandBoard.Name(hand) + " hand over " + entry.Use.Id + ", which is stronger");
+            }
+        }
+    }
+
+    // A change of row: every use standing, then two rows of one asker taken one after the other (the gun's rows are one
+    // asker's, and a point's two). The random runs meet such a thing too rarely to be counted on for it.
+    private static void Changes(CheckReport report)
+    {
+        report.Rule("after every change of row (each use standing, before or between two rows of one asker taken one after the other) the board is sound: nothing weaker holds a hand over something stronger that wants it");
+        foreach (var standing in HandUses.All)
+        {
+            if (standing.Rank == HandUse.NoRank) continue;
+            foreach (var first in HandUses.All)
+            {
+                if (first.Rank == HandUse.NoRank || Stated(first)) continue;
+                foreach (var second in HandUses.All)
+                {
+                    if (second == first || second.Rank == HandUse.NoRank || Stated(second) || second.Family != first.Family) continue;
+                    for (int order = 0; order < 2; order++)
+                    {
+                        var board = new HandBoard();
+                        var steps = order == 0 ? new[] { standing, first, second } : new[] { first, standing, second };
+                        for (int at = 0; at < steps.Length; at++)
+                        {
+                            var use = steps[at];
+                            // The same asker's own row when it is of the asker's family: it has only one at a time.
+                            object who = use == standing && use.Family != first.Family ? "A" : "B";
+                            if (Stated(use)) board.State(use, "A", at + 1);
+                            else board.Take(use, who, at + 1, out _);
+                            Sound(report, board, steps[0].Id + ", then " + steps[1].Id + ", then " + steps[2].Id + " (" + use.Id + ")");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Random runs: whatever is asked, stated, given back and withdrawn, in whatever order, the board keeps its word.
     private static void Runs(CheckReport report)
     {
@@ -420,33 +493,12 @@ internal static class HandsCheck
                 }
                 else
                 {
-                    object owner = use.Id.StartsWith("gun.", StringComparison.Ordinal) ? Gun : use.Id;
+                    // The gun's rows are one asker's, and so are a point's two (PlayerPoint): a change of row is tried too.
+                    object owner = use.Family == "gun" ? Gun : use.Family == "point" ? Gesture : use.Id;
                     if (put) board.Take(use, owner, frame, out _);
                     else board.Give(owner);
                 }
-                foreach (var entry in board.Entries)
-                {
-                    if (!entry.Fact)
-                    {
-                        report.Expect((entry.Owns & entry.Use.Needs) == entry.Use.Needs, "run " + run + ": " + entry.Use.Id + " stands without a hand it needs");
-                        foreach (var other in board.Entries)
-                            report.Expect(other == entry || !Limits(other.Use, entry.Use), "run " + run + ": " + entry.Use.Id + " stands though " + other.Use.Id
-                                + " lets only " + other.Use.Only + " be asked for");
-                    }
-                    foreach (var hand in Each)
-                        if ((entry.Owns & hand) != 0) report.Expect(board.Holder(hand) == entry, "run " + run + ": " + entry.Use.Id + " thinks it has a hand that is another's");
-                }
-                foreach (var hand in Each)
-                {
-                    var holder = board.Holder(hand);
-                    foreach (var entry in board.Entries)
-                    {
-                        if (entry == holder || !Wants(entry.Use, hand, out bool needs) || (needs && !entry.Fact)) continue;
-                        report.Expect(holder != null, "run " + run + ": the " + HandBoard.Name(hand) + " hand lies free while " + entry.Use.Id + " wants it");
-                        if (holder != null) report.Expect(entry.Use.Rank <= holder.Use.Rank, "run " + run + ": " + holder.Use.Id + " holds the "
-                            + HandBoard.Name(hand) + " hand over " + entry.Use.Id + ", which is stronger");
-                    }
-                }
+                Sound(report, board, "run " + run);
             }
         }
     }

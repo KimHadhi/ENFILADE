@@ -94,12 +94,6 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     // The hand motion of what the off hand has now (Tables/ThrowArms: the grenade's, or the knife's).
     private GrenadeArmPath.Motion Motion => GrenadeArmPath.For(armKind);
 
-    /// <summary>
-    /// The player's off hand is on a throw (going for it, holding it, throwing it, putting it back): anything else that
-    /// would use that hand (a held F's point) waits. On every PC, for the player and for friends' copies.
-    /// </summary>
-    public static bool HandBusy(PlayerMovement who) => who != null && who.TryGetComponent(out PlayerGrenades grenades) && grenades.arm != Arm.None;
-
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();

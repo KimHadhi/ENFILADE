@@ -21,6 +21,10 @@ using UnityEngine;
 /// The same on every PC: DetenteLooks runs it on each copy from what PlayerNetworkCombat tells them (who was dosed), so
 /// friends see the hand at work where the Détente works. Each dose leaves a line in Logs/inject.txt (how far the tip ended
 /// from its spot, how much of the arm's reach it took), in the editor and development builds.
+/// The left hand is asked of its owner (HandOwner): a dose asks for it for as long as its motion lasts
+/// (Tables/Player/HandUses.csv detente.dose), a treatment states that both hands are at it (detente.bandage), and the
+/// arm is up only while the owner says so, whose yes is what lends the hand off the gun. Until 2026-11-18 a list here
+/// (Free) asked the body and the grenade, and a dose whose hand was elsewhere went in with no arm to give it.
 /// After the hands, the point, the throw and the guard (GunFramework + 9), like the mending arm; the cloth comes after.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 9)]
@@ -37,7 +41,8 @@ public sealed class InjectArm : PathArm
     private Kind playing;
     private PlayerMovement patient;
     private float clock, gapAtStrike = -1f, reachAtStrike;
-    private bool once, told;
+    // asking: a dose asked for the left hand and has not given it back.
+    private bool once, told, asking;
     private readonly FingerWays fingers = new FingerWays();
 
     /// <summary>Where the thing rides in the fist: DetenteLooks puts its model under it (Wear).</summary>
@@ -83,6 +88,10 @@ public sealed class InjectArm : PathArm
         Plunge = 0f;
         gapAtStrike = -1f;
         told = false;
+        // The hand for it: DetenteKit took it under this arm's name before it spent anything; on a friend's copy the
+        // arm asks here. Said again every frame the motion lasts (LateUpdate).
+        asking = owner != null;
+        if (asking) owner.Take(HandUses.Dose, this, false);
     }
 
     /// <summary>The treatment by hand, this frame (called every frame while it lasts); no call eases the arm back to the gun.</summary>
@@ -97,6 +106,8 @@ public sealed class InjectArm : PathArm
         }
         patient = friend;
         drivenFrame = Time.frameCount;
+        // Both hands are at the treatment: a fact of this body, said on every PC by the arm that winds.
+        if (Bind() && owner != null) owner.State(HandUses.Bandage, this);
     }
 
     /// <summary>The thing's model under the fist's holder, drawn on the body's own layer so every view sees it as the body.</summary>
@@ -124,8 +135,19 @@ public sealed class InjectArm : PathArm
         if (eyes == null) return;
         var move = Move.Of(playing);
         bool live = move != null && (once ? clock < move.Length : drivenFrame >= Time.frameCount - 1);
-        bool on = live && Free();
-        if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
+        // A dose asks for the left hand again every frame of its motion: taken from it (a G throw outranks it), the arm
+        // is down, and comes back if there is motion left when the hand is free again. Over, the hand goes back.
+        if (asking && owner != null)
+        {
+            if (live && once) owner.Take(HandUses.Dose, this, false);
+            else
+            {
+                owner.Give(this);
+                asking = false;
+            }
+        }
+        // Up while the owner says the hand is this use's (its yes takes the hand off the gun: HandOwner.Arm).
+        bool on = live && owner != null && owner.Arm(playing == Kind.Bandage ? HandUses.Bandage : HandUses.Dose);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / (on ? TakeUp : PutAway));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
         if (move == null || weight <= 0f || !GrenadeArmPath.Sample(move.Table, clock, out var key))
@@ -149,18 +171,14 @@ public sealed class InjectArm : PathArm
     private void OnDisable()
     {
         ShowHolder(false);
-        if (hands != null) hands.LendOffHand(this, 0f);
+        if (asking && owner != null) owner.Give(this);
+        asking = false;
     }
 
     private void OnDestroy()
     {
         if (holder != null) Destroy(holder.gameObject);
     }
-
-    // The body can work with the hand: alive, up, not held, climbing or vaulting, and no G throw has the off hand (it goes
-    // first, as it does over the mending arm). Walking, crouched, in the air: a dose is given wherever the class key gave it.
-    private bool Free()
-        => !movement.IsDead && !movement.IsDowned && !movement.IsHeld && !movement.IsParkour && !PlayerGrenades.HandBusy(movement);
 
     // ---- The arm's geometry, as functions of what they are given. The game poses a player's arm with them every frame,
     // and the editor's bench (InjectBench) stands each character with the very same ones, without playing: a needle

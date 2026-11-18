@@ -498,6 +498,11 @@ public sealed class DetenteKit : MonoBehaviour
             if (receiver == null || receiver.Health >= receiver.MaximumHealth - .5f) { KitSound.Play(KitSound.Cue.Refuse, .4f); return; }
             patient = movement;
         }
+        // The left hand gives the dose. With that hand on something that keeps it (a grenade held ready, or a reload
+        // under way: between those two whichever began first keeps the hand) there is no dose, no run to a friend, and
+        // nothing is spent (asked whether a dose should be refused when the hand is not free, the user, 2026-11-18:
+        // "네"). Until then the dose went in with no arm to give it.
+        if (!HandFor()) { NoHand(); return; }
         // A friend further off than the arm reaches is run to first; the dose goes in on arrival (Approaching).
         if (patient != movement && !InReach(patient, InjectArm.Kind.Friend, Number("injectReach", 3.5f))) return;
         Inject(patient);
@@ -506,6 +511,9 @@ public sealed class DetenteKit : MonoBehaviour
     // The dose itself, the needle in reach: its share of the measure, its look, its healing.
     private void Inject(PlayerMovement patient)
     {
+        // The hand is taken here, where the needle is in reach: after a run to a friend it may have gone meanwhile (a
+        // zombie's grip on the way), and then nothing is spent, as when the run does not get there.
+        if (!TakeHand()) { NoHand(); return; }
         syringe = Mathf.Max(0f, syringe - Dose);
         lastInject = Time.time;
         // The syringe in hand as it goes in (DetenteLooks), and in the others' sight of this player.
@@ -715,6 +723,39 @@ public sealed class DetenteKit : MonoBehaviour
             found = other;
         }
         return found;
+    }
+
+    // ---- The left hand (HandOwner) ----
+
+    // Who asks for the dose's hand: the arm that gives it, which says so again every frame of its motion (InjectArm);
+    // on a body with no arm to pose, this.
+    private UnityEngine.Object DoseHand
+    {
+        get
+        {
+            var arm = InjectArm.Of(movement);
+            return arm != null ? arm : this;
+        }
+    }
+
+    // The left hand could be the dose's now (Tables/Player/HandUses.csv detente.dose). A no goes to Logs/hands.txt with
+    // what has the hand: the player pressed a key for it.
+    private bool HandFor()
+    {
+        var hands = HandOwner.Of(movement);
+        return hands == null || hands.Could(HandUses.Dose, DoseHand, true);
+    }
+
+    private bool TakeHand()
+    {
+        var hands = HandOwner.Of(movement);
+        return hands == null || hands.Take(HandUses.Dose, DoseHand);
+    }
+
+    private static void NoHand()
+    {
+        KitSound.Play(KitSound.Cue.Refuse, .4f);
+        AlertHUD.Self(Texts.Get("class.detente.hand"));
     }
 
     // The hands are this Détente's own: not in a takedown, no shop counter open. What else F might do here is not asked

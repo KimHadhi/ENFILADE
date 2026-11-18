@@ -44,8 +44,9 @@ public sealed class HandOwner : MonoBehaviour
     private PlayerMovement movement;
     private PlayerBodyHands bodyHands;
     // tick: the frames of the game that ran (a paused frame is none); turned: the frame of the engine last looked at;
-    // armAsked: the tick an arm last asked for the left hand off the gun.
+    // armAsked: the tick an arm last asked for the left hand off the gun, and armRow the use it asked for.
     private int tick, turned = -1, armAsked = -1;
+    private string armRow;
     private string lastRefusal;
 
     /// <summary>A player's hand owner, made the first time it is asked for; null without a player.</summary>
@@ -198,7 +199,22 @@ public sealed class HandOwner : MonoBehaviour
     {
         if (!Up(id)) return false;
         armAsked = tick;
+        armRow = id;
         return true;
+    }
+
+    /// <summary>
+    /// The use whose arm has the left hand off the gun now: the last to ask <see cref="Arm"/> and be told yes, within a
+    /// frame; null: none. An arm on its way back to the gun asks it, to be out of the way at once when another arm
+    /// has the hand (a point when a throw takes it), instead of two arms posing one hand while it eases out.
+    /// </summary>
+    public string ArmUp
+    {
+        get
+        {
+            Turn();
+            return armAsked >= 0 && armAsked >= tick - 1 ? armRow : null;
+        }
     }
 
     // ---- What others ask about the hands ----

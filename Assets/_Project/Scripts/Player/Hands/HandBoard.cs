@@ -121,7 +121,9 @@ public sealed class HandBoard
 
     /// <summary>
     /// Whether <paramref name="who"/> would get <paramref name="use"/> if it asked now; nothing changes. What it already
-    /// holds itself is not in its own way (the gun going from its hold to a reload).
+    /// holds itself is not in its own way (the gun going from its hold to a reload), unless the row it asks for is too
+    /// weak to keep that hand from something standing that wants it: a ping's point has the left hand over an aimed
+    /// gun's rest, a held point would not, so the one does not go on as the other while the gun aims.
     /// </summary>
     public bool Could(HandUse use, object who, int frame, out Refusal why)
     {
@@ -138,7 +140,15 @@ public sealed class HandBoard
         {
             if ((use.Needs & hand) == 0) continue;
             var holder = Holder(hand);
-            if (holder == null || holder == mine || Beats(use, true, frame, holder, hand)) continue;
+            if (holder == null) continue;
+            if (holder == mine)
+            {
+                var stronger = Stronger(use, true, hand, mine);
+                if (stronger == null) continue;
+                why = new Refusal(use, hand, stronger.Use, stronger.Fact);
+                return false;
+            }
+            if (Beats(use, true, frame, holder, hand)) continue;
             why = new Refusal(use, hand, holder.Use, holder.Fact);
             return false;
         }
@@ -178,9 +188,13 @@ public sealed class HandBoard
         }
         else
         {
-            // The new row has no use for a hand the old one had: it is let go.
+            // The new row has no use for a hand the old one had: it is let go. So is one the new row only uses while
+            // free, when something standing wants it more than the new row does.
             foreach (var hand in Each)
-                if ((mine.Owns & hand) != 0 && ((use.Needs | use.Also) & hand) == 0) Free(mine, hand);
+            {
+                if ((mine.Owns & hand) == 0) continue;
+                if (((use.Needs | use.Also) & hand) == 0 || ((use.Needs & hand) == 0 && Stronger(use, false, hand, mine) != null)) Free(mine, hand);
+            }
         }
         mine.Use = use;
         mine.Fact = false;
@@ -247,13 +261,32 @@ public sealed class HandBoard
 
     // Whether a use that wants `hand` (needing it, or only using it while free) takes it from who has it.
     private static bool Beats(HandUse asker, bool needs, int frame, Entry holder, HandSide hand)
+        => Wins(asker, needs, holder.Use, (holder.Use.Needs & hand) != 0, holder.Came == frame);
+
+    // The one question between two uses that want one hand: the bigger rank; with one rank, a hand that is needed over
+    // one only used while free; otherwise who was there first keeps it. Two that came in the very same frame go by
+    // name instead, whoever's Update happened to run first.
+    private static bool Wins(HandUse asker, bool needs, HandUse holder, bool holderNeeds, bool sameFrame)
     {
-        if (asker.Rank != holder.Use.Rank) return asker.Rank > holder.Use.Rank;
-        bool holderNeeds = (holder.Use.Needs & hand) != 0;
+        if (asker.Rank != holder.Rank) return asker.Rank > holder.Rank;
         if (needs != holderNeeds) return needs;
-        // One rank and the same kind of want: who was there first keeps it. Two that came in the very same frame go by
-        // name instead, whoever's Update happened to run first.
-        return holder.Came == frame && string.CompareOrdinal(asker.Id, holder.Use.Id) < 0;
+        return sameFrame && string.CompareOrdinal(asker.Id, holder.Id) < 0;
+    }
+
+    // Something standing, other than `but`, that wants this hand and would take it from `use` holding it (as `but`
+    // would after going over to that row; it was there first, so a full tie stays its own). Only a fact can be waiting
+    // for a hand it needs (an ask without one is gone), and anyone for a hand it uses while free. Null: nothing.
+    private Entry Stronger(HandUse use, bool needs, HandSide hand, Entry but)
+    {
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            if (entry == but) continue;
+            bool entryNeeds = (entry.Use.Needs & hand) != 0;
+            if (entryNeeds ? !entry.Fact : (entry.Use.Also & hand) == 0) continue;
+            if (Wins(entry.Use, entryNeeds, use, needs, false)) return entry;
+        }
+        return null;
     }
 
     private static bool Same(HandUse use, string id) => use != null && string.Equals(use.Id, id, StringComparison.OrdinalIgnoreCase);

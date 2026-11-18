@@ -215,10 +215,18 @@ public sealed partial class SupportKit : MonoBehaviour
         // while the key's owner says so (a resupply goes first by the key's order, and a friend who goes down beside
         // the barricade is got up first).
         var aimed = free ? AimedBarricade() : null;
-        if (aimed != null) InteractKey.Offer(MendOffer, held: true, target: aimed);
+        // The tool is the left hand's: with that hand on something that keeps it (a grenade held ready, a reload under
+        // way) no tool comes out and nothing is mended, and the line says why (asked whether a repair should be refused
+        // when the hand is not free, the user, 2026-11-18: "네"). The offer then refuses, so the press goes on to
+        // whatever F does next, and a hold that was the hammer's is the hammer's again once the hand is back: a reload
+        // begun in the middle of mending takes the hand, and the tool comes out again after it (the user, the same
+        // day: "수리 중엔 장전으로 넘어갈 수 있게 해 주세요 … 그 역은 안 되겠죠").
+        noHand = aimed != null && !HandFor();
+        if (aimed != null) InteractKey.Offer(MendOffer, held: true, refusal: noHand ? LineFor(aimed) : null, target: aimed);
         AimedAt = aimed != null && InteractKey.Shows(MendOffer) ? aimed : null;
         Mendable = AimedAt != null && AimedAt.Worn ? AimedAt : null;
-        bool held = AimedAt != null && InteractKey.Held(MendOffer) && !movement.IsHeld;
+        bool held = AimedAt != null && InteractKey.Held(MendOffer) && !movement.IsHeld && TakeHand();
+        if (!held) GiveHand();
         Mending = held && Mendable != null;
         bool torching = held && Torching;
         if (Mending) Mend(Mendable);

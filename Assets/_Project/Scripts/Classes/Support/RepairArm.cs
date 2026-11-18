@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// A Support's mending in the free left hand (the user, 2026-11-12: "야 서포트 망치를 누가 이런 식으로 만드래. 심지어 3인칭하면
@@ -17,6 +16,9 @@ using MovementState = PlayerMovement.MovementState;
 /// knocks. The same on every PC: RepairLooks runs on each copy from the tool PlayerNetworkCombat tells them, so friends see
 /// the hand at work where the Support works. After the hands, the point, the throw and the guard (GunFramework + 9); the
 /// cloth comes after, so a sleeve follows.
+/// The left hand is asked of its owner (HandOwner; Tables/Player/HandUses.csv support.repair) for as long as a tool is
+/// out, and the arm is up only while the owner says so, whose yes is what lends the hand off the gun. Until 2026-11-18
+/// a list here (Free) asked the body and the grenade, and knew nothing of a reload.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 9)]
 public sealed class RepairArm : PathArm
@@ -53,6 +55,9 @@ public sealed class RepairArm : PathArm
     {
         tool = held;
         drivenFrame = Time.frameCount;
+        // The hand for it, said again every frame a tool is out: SupportKit took it under this arm's name before it
+        // mended anything; on a friend's copy the arm asks here.
+        if (held != RepairLooks.Tool.None && Bind() && owner != null) owner.Take(HandUses.Repair, this, false);
     }
 
     /// <summary>The tool's model under the palm's holder, drawn on the body's own layer so every view sees it as the body.</summary>
@@ -78,8 +83,9 @@ public sealed class RepairArm : PathArm
         if (dt <= 0f || GamePause.IsPaused || !Bind()) return;
         if (eyes == null) eyes = PlayerView.EyesOf(movement);
         if (eyes == null) return;
-        bool on = drivenFrame >= Time.frameCount - 1 && tool != RepairLooks.Tool.None && Free();
-        if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
+        // Up while the owner says the hand is the tool's and the body is in a state the arm can be up in (its yes takes
+        // the hand off the gun: HandOwner.Arm).
+        bool on = drivenFrame >= Time.frameCount - 1 && tool != RepairLooks.Tool.None && owner != null && owner.Arm(HandUses.Repair);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / (on ? TakeUp : PutAway));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
         if (on && tool != playing)
@@ -110,22 +116,12 @@ public sealed class RepairArm : PathArm
     private void OnDisable()
     {
         ShowHolder(false);
-        if (hands != null) hands.LendOffHand(this, 0f);
+        if (owner != null) owner.Give(this);
     }
 
     private void OnDestroy()
     {
         if (holder != null) Destroy(holder.gameObject);
-    }
-
-    // The body can work with the hand: alive, up, standing or crouched (walking too), not held, climbing or vaulting, and
-    // no G throw has the off hand (it goes first, as it does over the hold-F point: the manager, 2026-11-12).
-    private bool Free()
-    {
-        if (movement.IsDead || movement.IsDowned || movement.IsHeld || movement.IsParkour) return false;
-        if (PlayerGrenades.HandBusy(movement)) return false;
-        var state = movement.CurrentState;
-        return state == MovementState.Standing || state == MovementState.Crouching;
     }
 
     private void Pose(in GrenadeArmPath.Key key)

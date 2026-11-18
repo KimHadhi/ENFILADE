@@ -88,6 +88,8 @@ public sealed partial class SupportKit
     private string LineFor(Barricade barricade)
     {
         int health = Mathf.RoundToInt(barricade.Health), most = Mathf.RoundToInt(barricade.MostHealth);
+        // The left hand is on something else: no tool comes out, and the line says why.
+        if (noHand) return Texts.Format("class.hud.repair.hand", health, most);
         bool whole = !barricade.Worn;
         if (Torching)
             return Texts.Format(whole ? "class.hud.repair.full.torch" : Mending ? "class.hud.repairing.torch" : "class.hud.repair.torch",
@@ -105,6 +107,46 @@ public sealed partial class SupportKit
         if (movement.TryGetComponent(out PlayerNetworkCombat network) && network.IsSpawned) network.SendBarricadeMend(mendId, mendOwed);
         mendOwed = 0f;
         nextMendSend = Time.time + MendEvery;
+    }
+
+    // ---- The left hand (HandOwner) ----
+
+    private RepairArm toolArm;
+    // noHand: the left hand could not be the tool's this frame; toolHand: this asked for it and has not given it back.
+    private bool noHand, toolHand;
+
+    // Who asks for the tool's hand: the arm that holds the tool, which says so again while a tool is out (RepairArm); on
+    // a body with no arm to pose, this.
+    private Object ToolHand
+    {
+        get
+        {
+            if (toolArm == null) toolArm = RepairArm.Of(movement);
+            return toolArm != null ? toolArm : this;
+        }
+    }
+
+    // The left hand could be the tool's now (Tables/Player/HandUses.csv support.repair: a reload, a grenade, a syringe
+    // outrank it).
+    private bool HandFor()
+    {
+        var hands = HandOwner.Of(movement);
+        return hands == null || hands.Could(HandUses.Repair, ToolHand);
+    }
+
+    private bool TakeHand()
+    {
+        var hands = HandOwner.Of(movement);
+        toolHand = hands == null || hands.Take(HandUses.Repair, ToolHand);
+        return toolHand;
+    }
+
+    private void GiveHand()
+    {
+        if (!toolHand) return;
+        toolHand = false;
+        var hands = HandOwner.Of(movement);
+        if (hands != null) hands.Give(ToolHand);
     }
 
     // The hands are the Support's own: not in a takedown, no shop counter open. What else F might do here is not asked

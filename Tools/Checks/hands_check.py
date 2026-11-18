@@ -1,5 +1,5 @@
 # Checks whose a player's two hands are without the game: a replica of the pure rule in
-# Assets/_Project/Scripts/Player/Hands/HandBoard.cs (Beats, Could, Kept, Take, State, Give, Settle, Limiting, Limit), run over the game's own
+# Assets/_Project/Scripts/Player/Hands/HandBoard.cs (Beats, Wins, Stronger, Could, Kept, Take, State, Give, Settle, Limiting, Limit), run over the game's own
 # table Assets/_Project/Data/Resources/Tables/Player/HandUses.csv, and a reading of the scripts that name its rows.
 #   python Tools/Checks/hands_check.py
 # It asserts
@@ -18,7 +18,8 @@
 #   6. for every pair of rows, asked or stated in either order, the board's answer is the one their ranks give (and
 #      the one a row that lets only some families be asked for gives); and through thousands of random runs no ask
 #      stands without a hand it needs, no hand lies free while something standing wants it, nothing weaker holds a
-#      hand over something stronger that wants it, and nothing stands that a use standing does not let be asked for.
+#      hand over something stronger that wants it, and nothing stands that a use standing does not let be asked for;
+#      the same holds after every change of row: each use standing, then two rows of one asker one after the other.
 # It also writes Logs/hands-matrix.txt: for every pair of uses, whether the one asking takes the hand from the one
 # holding it, so the order can be read (and changed in the table) without reading code.
 # Change HandBoard's rule and these replicas together.
@@ -143,13 +144,27 @@ class Board:
         return any(entry.use.locks for entry in self.entries)
 
     @staticmethod
-    def beats(asker, needs, frame, holder, hand):
-        if asker.rank != holder.use.rank:
-            return asker.rank > holder.use.rank
-        holder_needs = hand in holder.use.needs
+    def wins(asker, needs, holder_use, holder_needs, same_frame):
+        if asker.rank != holder_use.rank:
+            return asker.rank > holder_use.rank
         if needs != holder_needs:
             return needs
-        return holder.came == frame and asker.id < holder.use.id
+        return same_frame and asker.id < holder_use.id
+
+    @staticmethod
+    def beats(asker, needs, frame, holder, hand):
+        return Board.wins(asker, needs, holder.use, hand in holder.use.needs, holder.came == frame)
+
+    def stronger(self, use, needs, hand, but):
+        for entry in self.entries:
+            if entry is but:
+                continue
+            entry_needs = hand in entry.use.needs
+            if (not entry.fact) if entry_needs else (hand not in entry.use.also):
+                continue
+            if Board.wins(entry.use, entry_needs, use, needs, False):
+                return entry
+        return None
 
     def limiting(self, use, but):
         for entry in self.entries:
@@ -174,7 +189,14 @@ class Board:
             if hand not in use.needs:
                 continue
             holder = self.holder(hand)
-            if holder is None or holder is mine or self.beats(use, True, frame, holder, hand):
+            if holder is None:
+                continue
+            if holder is mine:
+                stronger = self.stronger(use, True, hand, mine)
+                if stronger is None:
+                    continue
+                return False, (hand, stronger.use, stronger.fact)
+            if self.beats(use, True, frame, holder, hand):
                 continue
             return False, (hand, holder.use, holder.fact)
         return True, None
@@ -197,7 +219,9 @@ class Board:
             self.entries.append(mine)
         else:
             for hand in EACH:
-                if hand in mine.owns and hand not in (use.needs | use.also):
+                if hand not in mine.owns:
+                    continue
+                if hand not in (use.needs | use.also) or (hand not in use.needs and self.stronger(use, False, hand, mine) is not None):
                     self.free(mine, hand)
         mine.use, mine.fact, mine.came = use, False, frame
         self.limit(mine)
@@ -411,6 +435,18 @@ for fact in ("zombie.hold", "move.vault", "move.climb", "move.roll", "life.downe
     board.state(U(fact), BODY, 1)
     expect(not board.kept(U("gun.bash"), GUN, 2), "V became the kick because of %s (a fact of the body: V there is what it was)" % fact)
 
+# One asker going from a row of its own to a weaker one keeps its hand only against what standing still wants it: a
+# ping's point has the left hand over an aimed gun (35 over the 30 of the aim's rest), a held point (10) would not, so
+# the one does not go on as the other while the gun aims; the ping's moment stands as it was.
+board = gun_in_hand()
+board.take(U("gun.aim"), GUN, 1)
+expect(board.take(U("point.ping"), POINT, 2) and board.of(LEFT) == "point.ping", "a ping's point could not have the left hand of an aimed gun")
+ok, why = board.could(U("point.hold"), POINT, 3)
+expect(not ok and why == (LEFT, U("gun.aim"), False), "a ping's point could go on as a held point while the gun aims: %r" % (why,))
+expect(not board.take(U("point.hold"), POINT, 3) and board.of(LEFT) == "point.ping", "a refused change of row changed what the point has")
+board.take(U("gun.hold"), GUN, 4)
+expect(board.take(U("point.hold"), POINT, 5) and board.of(LEFT) == "point.hold", "the ping's point could not go on as a held point once the gun was lowered")
+
 # A grenade in the fist: kept through a landing roll (the gun is put away), given up for a vault, a grab, an execution.
 board = gun_in_hand()
 board.take(U("grenade.throw"), NADE, 1)
@@ -584,6 +620,51 @@ for holder_use in ORDER:
             pairs += 1
 print("every pair: %d orderings of two uses give the answer their ranks give" % pairs)
 
+def sound(board, label):
+    """What must hold of a board whatever was asked, stated, given back and withdrawn."""
+    for entry in board.entries:
+        if not entry.fact:
+            expect(entry.use.needs <= entry.owns, "%s: %s stands without a hand it needs" % (label, entry.use))
+            for other in board.entries:
+                expect(other is entry or not limits(other.use, entry.use), "%s: %s stands though %s lets only %s be asked for"
+                       % (label, entry.use, other.use, sorted(other.use.only or ())))
+        for hand in entry.owns:
+            expect(board.owner[hand] is entry, "%s: %s thinks it has a hand that is %s's" % (label, entry.use, board.of(hand)))
+    for hand in EACH:
+        holder = board.owner[hand]
+        wanting = [e for e in board.entries if e is not holder and ((hand in e.use.needs and e.fact) or hand in e.use.also)]
+        if holder is None:
+            expect(not wanting, "%s: the %s hand lies free while %s wants it" % (label, hand, wanting and wanting[0].use))
+            continue
+        expect(hand in holder.owns, "%s: the %s hand's owner does not know it" % (label, hand))
+        for other in wanting:
+            expect(other.use.rank <= holder.use.rank, "%s: %s holds the %s hand over %s, which is stronger" % (label, holder.use, hand, other.use))
+
+
+# A change of row: every use standing, then two rows of one asker taken one after the other (the gun's rows are one
+# asker's, and a point's two). The random runs below meet such a thing too rarely to be counted on for it.
+changes = 0
+for standing_use in ORDER:
+    if standing_use.rank == NO_RANK:
+        continue
+    for first in ASKED:
+        for second in ASKED:
+            if first is second or first.family != second.family:
+                continue
+            for order in (0, 1):
+                board = Board()
+                steps = [standing_use, first, second] if order == 0 else [first, standing_use, second]
+                for at, use in enumerate(steps, 1):
+                    # The same asker's own row when it is of the asker's family: it has only one at a time.
+                    who = "A" if use is standing_use and use.family != first.family else "B"
+                    if use in FACTS:
+                        board.state(use, "A", at)
+                    else:
+                        board.take(use, who, at)
+                    sound(board, "%s, then %s, then %s (%s)" % (steps[0], steps[1], steps[2], use))
+                changes += 1
+print("changes of row: %d orderings of a use standing and two rows of one asker leave the board sound" % changes)
+
 random.seed(20261118)
 runs = 0
 for run in range(4000):
@@ -600,28 +681,13 @@ for run in range(4000):
             else:
                 board.withdraw("body", use.id)
         else:
-            owner = "gun" if use.id.startswith("gun.") else use.id
+            # The gun's rows are one asker's, and so are a point's two (PlayerPoint): a change of row is tried too.
+            owner = use.family if use.family in ("gun", "point") else use.id
             if roll < .75:
                 board.take(use, owner, frame)
             else:
                 board.give(owner)
-        for entry in board.entries:
-            if not entry.fact:
-                expect(entry.use.needs <= entry.owns, "run %d: %s stands without a hand it needs" % (run, entry.use))
-                for other in board.entries:
-                    expect(other is entry or not limits(other.use, entry.use), "run %d: %s stands though %s lets only %s be asked for"
-                           % (run, entry.use, other.use, sorted(other.use.only or ())))
-            for hand in entry.owns:
-                expect(board.owner[hand] is entry, "run %d: %s thinks it has a hand that is %s's" % (run, entry.use, board.of(hand)))
-        for hand in EACH:
-            holder = board.owner[hand]
-            wanting = [e for e in board.entries if e is not holder and ((hand in e.use.needs and e.fact) or hand in e.use.also)]
-            if holder is None:
-                expect(not wanting, "run %d: the %s hand lies free while %s wants it" % (run, hand, wanting and wanting[0].use))
-                continue
-            expect(hand in holder.owns, "run %d: the %s hand's owner does not know it" % (run, hand))
-            for other in wanting:
-                expect(other.use.rank <= holder.use.rank, "run %d: %s holds the %s hand over %s, which is stronger" % (run, holder.use, hand, other.use))
+        sound(board, "run %d" % run)
     runs += 1
 print("random runs: %d, no ask without its hands, no hand free while wanted, nothing weaker over something stronger, nothing a standing use does not let" % runs)
 

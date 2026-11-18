@@ -1,6 +1,5 @@
 using UnityEngine;
 using static ArmBones;
-using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The pointing arm of a held F (PlayerPoint; the user, 2026-11-12: "핑 찍을 때 남는 손으로 손가락질 하는 모션"): the
@@ -37,8 +36,10 @@ using MovementState = PlayerMovement.MovementState;
 /// The hand leaves the gun through the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so the left hand's gun contacts, grip and fingers let go over the hands' own blend time
 /// as the point comes in, and take the gun again as it goes; the pose eases by how far the hand is lent
-/// (OffHandLent), never ahead of it, and out over Point.out at most. A G throw has the off hand before a point
-/// (PlayerGrenades.HandBusy): while the throw holds it, nothing of the point is posed.
+/// (OffHandLent), never ahead of it, and out over Point.out at most. Whether the arm is up is not this arm's to work
+/// out: it asks the hands' owner every frame (HandOwner.Arm: the point has the left hand and the body is in a state the
+/// arm can be up in), and the owner's yes is what lends the hand. When another arm has the hand (a G throw takes it
+/// from a point: HandOwner.ArmUp), nothing of the point is posed.
 /// The arm never goes further round the body than a shoulder carries it (the user, 2026-11-14: "핑할 때 손 고정되는 건
 /// 좋은데 확 돌리면 팔이 너무 꺾이는데 일정 각도 이상 화면(고개) 돌려서 꺾으면 빠르게 핑하던 손가락 끝내고 돌아오게
 /// 가능?"): Point.turnAcross across the chest, Point.turnOutward out to its own side, measured from the way the chest
@@ -56,6 +57,8 @@ public sealed class PointArm : MonoBehaviour
     private PlayerMovement movement;
     private PlayerPoint point;
     private PlayerBodyHands hands;
+    // Whose the left hand is (HandOwner): the arm asks it every frame whether to pose, and decides nothing itself.
+    private HandOwner owner;
     private Animator animator;
     // otherUpper: the right upper arm, whose shoulder with this one's gives the way the chest faces (ShoulderReach).
     private Transform eyes, indexTip, otherUpper;
@@ -86,15 +89,17 @@ public sealed class PointArm : MonoBehaviour
         float dt = Time.deltaTime;
         if (dt <= 0f || GamePause.IsPaused) return;
         if (!bound && !Bind()) return;
-        // A G throw has the off hand first: while it does, the point gives the hand up at once.
-        bool thrown = PlayerGrenades.HandBusy(movement);
-        bool on = point != null && point.Pointing && Free() && !thrown;
+        // Up while the point has the left hand and the body is in a state the arm can be up in: the hands' owner says
+        // so, and its yes takes the hand off the gun (HandOwner.Arm).
+        string use = point != null && point.Pointing ? point.Row : null;
+        bool on = use != null && owner != null && owner.Arm(use);
+        // Another arm has the hand (a G throw took it, a syringe): the point is out of its way at once, not eased out
+        // under it.
+        string up = !on && owner != null ? owner.ArmUp : null;
+        bool thrown = up != null && up != HandUses.PointHold && up != HandUses.PointPing;
         // A ping's point that turning away cut short (PlayerPoint.TurnAway) goes back quicker than a point let go, from
         // where it was.
         bool away = !on && point != null && point.TurnedAway;
-        // The left hand off the gun through PlayerBodyHands, as every off-hand use takes it; the same share each frame
-        // costs nothing.
-        if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
         float blend = on ? PokeTables.Number("Point.in", .14f) : away ? PokeTables.Number("Point.turnOut", .1f) : PokeTables.Number("Point.out", .2f);
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / Mathf.Max(.01f, blend));
         weight = thrown ? 0f : hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
@@ -108,11 +113,7 @@ public sealed class PointArm : MonoBehaviour
         Pose(dt, on, away);
     }
 
-    private void OnDisable()
-    {
-        Let();
-        if (hands != null) hands.LendOffHand(this, 0f);
-    }
+    private void OnDisable() => Let();
 
     // The fingertip leaves whoever it pressed.
     private void Let()
@@ -127,6 +128,7 @@ public sealed class PointArm : MonoBehaviour
         movement = GetComponentInParent<PlayerMovement>();
         point = movement != null ? movement.GetComponent<PlayerPoint>() : null;
         hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
+        owner = HandOwner.Of(movement);
         animator = GetComponent<Animator>();
         if (movement == null || point == null || animator == null || !animator.isHuman) return false;
         if (!arm.Bind(animator)) return false;
@@ -175,14 +177,6 @@ public sealed class PointArm : MonoBehaviour
     {
         Vector3 forward = matrix.GetColumn(2), up = matrix.GetColumn(1);
         return forward.sqrMagnitude > 1e-12f && up.sqrMagnitude > 1e-12f ? Quaternion.LookRotation(forward, up) : Quaternion.identity;
-    }
-
-    // The body can lift an arm: alive, up, standing or crouched (walking too); not held, climbing, sliding or diving.
-    private bool Free()
-    {
-        if (movement.IsDead || movement.IsDowned || movement.IsHeld) return false;
-        var state = movement.CurrentState;
-        return state == MovementState.Standing || state == MovementState.Crouching;
     }
 
     private void Pose(float dt, bool on, bool away)

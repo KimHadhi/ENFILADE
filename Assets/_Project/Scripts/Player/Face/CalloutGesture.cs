@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// A callout's motion on the body (콜아웃 모션; the manager after the user's A.V.A. note, 2026-11-12): a nod for yes and
@@ -13,7 +12,9 @@ using MovementState = PlayerMovement.MovementState;
 /// child), never through a rig's local axes. It runs after FPS Animation Framework and the hands' IK and before the cloth,
 /// so the hair follows the nod; the first-person camera was placed earlier in the frame, so the player's own view never
 /// nods with it. While a gun is held (FPSAF poses the arms) or the body is busy (ladder, ledge, held, down) only the head
-/// and a little of the chest move: the gun hold is never broken.
+/// and a little of the chest move: the gun hold is never broken. Whether the arm may move is the hands' owner's to say
+/// (HandOwner; Tables/Player/HandUses.csv callout.arm, the lowest of all, under the gun's own rest): a gesture's arm asks
+/// for the left hand while it plays and never takes it from anything.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 5)]
 public sealed class CalloutGesture : MonoBehaviour
@@ -28,6 +29,7 @@ public sealed class CalloutGesture : MonoBehaviour
 
     private PlayerBody body;
     private PlayerMovement movement;
+    private HandOwner hands;
     private Animator animator;
     private Transform neck, head, chest, upperArm, lowerArm, hand;
     private Kind kind;
@@ -77,6 +79,7 @@ public sealed class CalloutGesture : MonoBehaviour
         if (clock >= length || head == null)
         {
             kind = Kind.None;
+            if (hands != null) hands.Give(this);
             return;
         }
         float u = clock / length;
@@ -84,7 +87,7 @@ public sealed class CalloutGesture : MonoBehaviour
         Vector3 up = Vector3.up;
         Vector3 forward = Facing();
         Vector3 right = Vector3.Cross(up, forward).normalized;
-        bool free = HandsFree();
+        bool free = MovesArm(kind) && ArmFree();
         var shown = free ? kind : HeadOnly(kind);
         switch (shown)
         {
@@ -153,12 +156,19 @@ public sealed class CalloutGesture : MonoBehaviour
         _ => kind,
     };
 
-    private bool HandsFree()
+    // The kinds that move the left arm; the others are the head's alone and ask for no hand.
+    private static bool MovesArm(Kind kind) => kind == Kind.Point || kind == Kind.Wave || kind == Kind.Raise || kind == Kind.Beckon || kind == Kind.Hush;
+
+    // The left arm is the gesture's to move: the hands' owner gives it the hand (nothing else has or wants it, the body
+    // not dead, down or held) and the body is in a state the arm can be up in. While FPS Animation Framework has the
+    // arms (a gun, a knife or the fists in the hands) the arm stays where that puts it: that is the pose layer's own
+    // fact, asked here until the melee slot's hands have rows of their own.
+    private bool ArmFree()
     {
         if (body == null || movement == null || upperArm == null || lowerArm == null || hand == null) return false;
-        if (body.UpperBodyFromFramework || movement.IsDead || movement.IsDowned || movement.IsHeld) return false;
-        var state = movement.CurrentState;
-        return state == MovementState.Standing || state == MovementState.Crouching;
+        if (body.UpperBodyFromFramework) return false;
+        if (hands == null) hands = HandOwner.Of(movement);
+        return hands != null && hands.Take(HandUses.CalloutArm, this, false) && hands.Up(HandUses.CalloutArm);
     }
 
     // Where the character looks, level: its view's heading, else its body's.

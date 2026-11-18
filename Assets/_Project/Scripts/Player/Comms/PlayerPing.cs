@@ -86,7 +86,7 @@ public sealed class PlayerPing : MonoBehaviour
     private void EndPoint()
     {
         if (point == null) return;
-        if (point.Pointing) pointEnded = true;
+        if (point.Held || point.Pointing) pointEnded = true;
         point.StopFlash();
     }
 
@@ -176,18 +176,18 @@ public sealed class PlayerPing : MonoBehaviour
         return body != null ? body.bounds.center : foe.transform.position + Vector3.up;
     }
 
-    // Held past Point.holdAfter, a free press points for as long as F stays down and the hand is free (PlayerPoint.CanPoint);
-    // whatever F would do coming on screen, or the hand being wanted (aiming, a reload, a shot, a punch), ends the point
-    // until F is pressed again.
+    // Held past Point.holdAfter, a free press points for as long as F stays down and the hand is free (PlayerPoint.CanHold:
+    // the hands' owner says); whatever F would do coming on screen, or the hand being wanted (aiming, a reload, a throw,
+    // a syringe, a shot, a punch), ends the point until F is pressed again.
     private void Hold()
     {
         if (point == null) return;
         // pressFree: the press was this class's own and the held key still is (Update lets it go when the key is let go or
         // something else F does has taken it).
         bool wants = pressFree && !pointEnded && Time.time - pressedAt >= PokeTables.HoldAfter;
-        if (wants && !PlayerPoint.CanPoint(movement, weapon))
+        if (wants && !point.CanHold)
         {
-            if (point.Pointing) pointEnded = true;
+            if (point.Held || point.Pointing) pointEnded = true;
             wants = false;
         }
         point.Hold(wants);

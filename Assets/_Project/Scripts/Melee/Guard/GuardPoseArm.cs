@@ -1,6 +1,5 @@
 using UnityEngine;
 using static ArmBones;
-using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The guard pose of a player holding a gun (GuardPose): the gun stays in the right hand and the left hand leaves it to
@@ -10,7 +9,9 @@ using MovementState = PlayerMovement.MovementState;
 /// The hand leaves the gun the one shared way for every off-hand use (the manager's decision, 2026-11-12):
 /// PlayerBodyHands.LendOffHand, so its gun contact, grip and fingers let go over the hands' own blend time and take the gun
 /// again after; the pose eases by how far the hand is lent (OffHandLent), never ahead of it. A throw on G or a reload has
-/// the left hand first, and then no pose is struck. It runs after the point and the throw (GunFramework + 8) and before
+/// the left hand first, and then no pose is struck: the pose asks the hands' owner for the hand for as long as it lasts
+/// (HandOwner; Tables/Player/HandUses.csv guard.pose, under a reload, a syringe, a tool and a grenade, over an aim and a
+/// draw), and the owner's yes is what lends it. It runs after the point and the throw (GunFramework + 8) and before
 /// the cloth, so a sleeve follows; the first-person camera was placed earlier, so the view never moves with the arm.
 /// The same on every PC: GuardPose strikes it on the owner's body and on the copies. Rig-agnostic: any humanoid a modder
 /// brings, from this body's own shoulder and lengths, no clip or bake of its own.
@@ -35,13 +36,15 @@ public sealed class GuardPoseArm : MonoBehaviour
 
     private PlayerMovement movement;
     private PlayerBodyHands hands;
-    private WeaponController weapon;
+    // Whose the left hand is (HandOwner): the pose asks it for the hand, and decides nothing itself.
+    private HandOwner owner;
     private Animator animator;
     private Transform eyes;
     private readonly ArmBones arm = new ArmBones();
     private Shape shape;
     private float elapsed = float.PositiveInfinity, own, weight;
-    private bool bound;
+    // asked: the pose asked for the left hand and has not given it back.
+    private bool bound, asked;
 
     /// <summary>A player's arm for the gun-in-hand guard pose, made on their body's model the first time; null without a humanoid body.</summary>
     internal static GuardPoseArm Of(PlayerMovement who)
@@ -68,11 +71,16 @@ public sealed class GuardPoseArm : MonoBehaviour
         // Real time, as a parry's sweep: the hit stop doesn't hold it.
         float dt = Mathf.Min(.05f, Time.unscaledDeltaTime);
         if (elapsed < float.PositiveInfinity) elapsed += dt;
-        bool on = elapsed < shape.Seconds && Free();
-        if (!on && own <= 0f) { if (hands != null) hands.LendOffHand(this, 0f); return; }
-        // The left hand off the gun through PlayerBodyHands, as every off-hand use takes it; the same share each frame
-        // costs nothing.
-        if (hands != null) hands.LendOffHand(this, on ? 1f : 0f);
+        // The pose asks for the left hand for as long as it lasts, and is struck only while the owner says the hand is
+        // its own and the body is in a state the arm can be up in (its yes takes the hand off the gun: HandOwner.Arm).
+        bool live = elapsed < shape.Seconds;
+        if (owner != null)
+        {
+            if (live) { owner.Take(HandUses.GuardPose, this, false); asked = true; }
+            else if (asked) { owner.Give(this); asked = false; }
+        }
+        bool on = live && owner != null && owner.Arm(HandUses.GuardPose);
+        if (!on && own <= 0f) return;
         own = Mathf.MoveTowards(own, on ? 1f : 0f, dt / (on ? PoseIn : PoseOut));
         weight = hands != null ? Mathf.Min(own, hands.OffHandLent) : own;
         if (weight <= 0f) return;
@@ -83,30 +91,20 @@ public sealed class GuardPoseArm : MonoBehaviour
     {
         own = weight = 0f;
         elapsed = float.PositiveInfinity;
-        if (hands != null) hands.LendOffHand(this, 0f);
+        if (asked && owner != null) owner.Give(this);
+        asked = false;
     }
 
     private bool Bind()
     {
         movement = GetComponentInParent<PlayerMovement>();
         hands = movement != null ? movement.GetComponent<PlayerBodyHands>() : null;
-        weapon = movement != null ? movement.GetComponent<WeaponController>() : null;
+        owner = HandOwner.Of(movement);
         animator = GetComponent<Animator>();
         if (movement == null || animator == null || !animator.isHuman) return false;
         if (!arm.Bind(animator)) return false;
         bound = true;
         return true;
-    }
-
-    // The body can lift the arm (alive, up, standing or crouched, walking too; not held, climbing or vaulting) and the
-    // left hand isn't busy with a throw or a reload.
-    private bool Free()
-    {
-        if (movement.IsDead || movement.IsDowned || movement.IsHeld || movement.IsParkour) return false;
-        if (PlayerGrenades.HandBusy(movement)) return false;
-        if (weapon != null && weapon.Runtime != null && weapon.Runtime.IsReloading) return false;
-        var state = movement.CurrentState;
-        return state == MovementState.Standing || state == MovementState.Crouching;
     }
 
     // Up from below and across into the block before the face, the fist turned out to the blow, eased by the weight.
