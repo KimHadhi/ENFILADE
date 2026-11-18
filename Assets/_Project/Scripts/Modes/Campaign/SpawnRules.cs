@@ -14,9 +14,11 @@ public enum SpawnSide : byte
 /// <summary>What cleared ground is to the horde (Tables/SpawnRules `cleared`).</summary>
 public enum ClearedGround : byte
 {
-    /// <summary>Nothing comes out of it again.</summary>
+    /// <summary>Nothing comes out of it again (user, 2026-11-18: "한 방을 클리어했다면 양자역학이 아닌 이상 거기서 다시
+    /// 좀비가 출몰해 나오는 게 이상하죠").</summary>
     Shut,
-    /// <summary>They come in through it from beyond: a finale draws the whole neighbourhood.</summary>
+    /// <summary>They come in through it from beyond: the finale draws the whole neighbourhood (user: "피날레 구간을 말하는
+    /// 것이라면 소탕한 곳에서 나와도 될 것 같습니다").</summary>
     Through
 }
 
@@ -34,7 +36,8 @@ public enum SpawnRole : byte
 {
     /// <summary>A place on open ground the squad walks over.</summary>
     Open,
-    /// <summary>A room or passage made for them to come out of: it goes before open ground.</summary>
+    /// <summary>A room or passage made for them to come out of, from beyond where the squad can go: it cannot be
+    /// cleared, and it goes before open ground.</summary>
     Room
 }
 
@@ -53,10 +56,9 @@ internal sealed class SpawnRule
     public float Nearest = 15f;
     /// <summary>No farther than this from the player they head for, by walking (m).</summary>
     public float Farthest = 60f;
-    /// <summary>On ground behind the squad's rear, no nearer than this by walking (m); 0: as near as Nearest allows.</summary>
-    public float Behind;
-    /// <summary>A place someone has a line of sight to is used only this far away, and only when no hidden one will do (m); 0: never.</summary>
-    public float SeenFrom = 30f;
+    /// <summary>Behind the back of the player they would go for, no nearer than this by walking (m): nobody gets one
+    /// that appears behind them and is on them in a moment (user: "뒤는 안 됩니다").</summary>
+    public float Behind = 30f;
     /// <summary>Nearer than this (m), a place inside someone's view (ViewAngle, degrees across) is never used, hidden or not.</summary>
     public float ViewNear = 20f, ViewAngle = 110f;
 }
@@ -64,15 +66,16 @@ internal sealed class SpawnRule
 /// <summary>
 /// The spawn rules as the tables give them (user, 2026-11-18: "적 스폰 위치 및 조건 전면 개편 … 전용 스폰 룸/통로나 아직
 /// 정리하지 않은 미개척 구역에서 몰려오도록"). Tables/SpawnRules: the row Default is the rule of every step; a row named
-/// after a kind of step (Hold, Escape, Collect …) changes it for that kind, one named chapter.Kind (Ch1_Rooftops.Hold)
-/// for that kind in one chapter, and one named after a step (Ch1.06) for that step alone. A cell left empty is the
-/// next row's, so a row changes only what it writes. The Default row also carries the model's own values (grain,
-/// leftBy, lookEvery, perFrame, reach: SpawnGround, SpawnRoute). Tables/SpawnPoints names the points that are spawn rooms, by chapter and
-/// by the point's name in the scene, so a room is marked without a rebuild or a line of code, by a mod as well.
+/// after a kind of step (Hold, Collect …) changes it for that kind, the row Finale for the chapter's finale (its
+/// escape, and the hold right before it), one named chapter.Kind or chapter.Finale (Ch1_Rooftops.Hold) for one chapter,
+/// and one named after a step (Ch1.06) for that step alone. A cell left empty is the next row's, so a row changes only
+/// what it writes. The Default row also carries the model's own values (grain, lookEvery, perFrame, reach, clearWithin,
+/// relayEvery: SpawnGround, SpawnRoute). Tables/SpawnPoints names the points that are spawn rooms, by chapter and by
+/// the point's name in the scene, so a room is marked without a rebuild or a line of code, by a mod as well.
 /// </summary>
 internal static class SpawnRules
 {
-    public const string TableName = "SpawnRules", PointsTable = "SpawnPoints", DefaultRow = "Default";
+    public const string TableName = "SpawnRules", PointsTable = "SpawnPoints", DefaultRow = "Default", FinaleRow = "Finale";
 
     private static readonly Dictionary<string, SpawnRule> rules = new Dictionary<string, SpawnRule>(StringComparer.OrdinalIgnoreCase);
     private static readonly List<IReadOnlyDictionary<string, string>> chain = new List<IReadOnlyDictionary<string, string>>();
@@ -81,14 +84,18 @@ internal static class SpawnRules
 
     // The model's own values (the Default row), read once a Play and again when the table is saved.
     private static bool modelRead;
-    private static float grain, leftBy, lookEvery, reach;
+    private static float grain, lookEvery, reach, clearWithin, relayEvery;
     private static int perFrame;
 
     /// <summary>How far apart the places along the mission's route are that everything is measured against (m).</summary>
     public static float Grain { get { ReadModel(); return grain; } }
 
-    /// <summary>A stretch is left behind once the squad's rear is this far past its end (m).</summary>
-    public static float LeftBy { get { ReadModel(); return leftBy; } }
+    /// <summary>A place is cleared when someone sees it from within this far with nothing alive within this far of it (m).</summary>
+    public static float ClearWithin { get { ReadModel(); return clearWithin; } }
+
+    /// <summary>How often the route is laid again though nothing told of a change (s): a door broken or a gate opened
+    /// joins the walk mesh, and nothing says so.</summary>
+    public static float RelayEvery { get { ReadModel(); return relayEvery; } }
 
     /// <summary>How often each player's place on the route, and what is cleared, is looked at again (s).</summary>
     public static float LookEvery { get { ReadModel(); return lookEvery; } }
@@ -104,23 +111,29 @@ internal static class SpawnRules
         if (modelRead) return;
         modelRead = true;
         grain = Mathf.Max(.5f, GameTables.Number(TableName, DefaultRow, "grain", 2f));
-        leftBy = Mathf.Max(0f, GameTables.Number(TableName, DefaultRow, "leftBy", 10f));
+        clearWithin = Mathf.Max(0f, GameTables.Number(TableName, DefaultRow, "clearWithin", 15f));
+        relayEvery = Mathf.Max(1f, GameTables.Number(TableName, DefaultRow, "relayEvery", 5f));
         lookEvery = Mathf.Max(.1f, GameTables.Number(TableName, DefaultRow, "lookEvery", .5f));
         perFrame = Mathf.Max(1, Mathf.RoundToInt(GameTables.Number(TableName, DefaultRow, "perFrame", 1f)));
         reach = Mathf.Max(1f, GameTables.Number(TableName, DefaultRow, "reach", 80f));
     }
 
-    /// <summary>The rule of this step of this chapter (the scene's name); the Default row's for no step.</summary>
-    public static SpawnRule For(string chapter, CampaignStep step)
+    /// <summary>
+    /// The rule of this step of this chapter (the scene's name); the Default row's for no step. <paramref name="finale"/>:
+    /// the step belongs to the chapter's finale (IsFinale), whose row goes before its kind's.
+    /// </summary>
+    public static SpawnRule For(string chapter, CampaignStep step, bool finale)
     {
-        string stepId = step != null ? step.Id ?? "" : "", key = (chapter ?? "") + "\n" + stepId;
+        string stepId = step != null ? step.Id ?? "" : "", key = (chapter ?? "") + "\n" + stepId + (finale ? "\nfinale" : "");
         if (rules.TryGetValue(key, out var known)) return known;
         chain.Clear();
         var rule = new SpawnRule();
         if (step != null)
         {
             Take(stepId, rule);
+            if (finale) Take((chapter ?? "") + "." + FinaleRow, rule);
             Take((chapter ?? "") + "." + step.Kind, rule);
+            if (finale) Take(FinaleRow, rule);
             Take(step.Kind.ToString(), rule);
         }
         Take(DefaultRow, rule);
@@ -131,10 +144,21 @@ internal static class SpawnRules
         rule.Nearest = Mathf.Max(0f, Number("nearest", rule.Nearest));
         rule.Farthest = Mathf.Max(rule.Nearest, Number("farthest", rule.Farthest));
         rule.Behind = Mathf.Max(0f, Number("behind", rule.Behind));
-        rule.SeenFrom = Mathf.Max(0f, Number("seenFrom", rule.SeenFrom));
         rule.ViewNear = Mathf.Max(0f, Number("viewNear", rule.ViewNear));
         rule.ViewAngle = Mathf.Clamp(Number("viewAngle", rule.ViewAngle), 0f, 360f);
         return rules[key] = rule;
+    }
+
+    /// <summary>
+    /// The step at this place of a chapter's steps belongs to its finale: the escape, and a hold right before it. The
+    /// finale is the one time the whole neighbourhood comes, through cleared ground too.
+    /// </summary>
+    public static bool IsFinale(IReadOnlyList<CampaignStep> steps, int index)
+    {
+        if (steps == null || index < 0 || index >= steps.Count) return false;
+        var kind = steps[index].Kind;
+        return kind == CampaignStepKind.Escape
+            || kind == CampaignStepKind.Hold && index + 1 < steps.Count && steps[index + 1].Kind == CampaignStepKind.Escape;
     }
 
     /// <summary>What the point of this name is in this chapter: a room if Tables/SpawnPoints says so, else open ground.</summary>

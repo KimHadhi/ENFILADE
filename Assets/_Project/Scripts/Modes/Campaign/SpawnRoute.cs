@@ -66,9 +66,13 @@ internal sealed class SpawnRoute
     public int Count => flows.Count;
     public int Searches { get; private set; }
 
-    private readonly List<Vector3> places = new List<Vector3>(), onMesh = new List<Vector3>();
+    private readonly List<Vector3> places = new List<Vector3>();
     private readonly List<float> flows = new List<float>();
-    private readonly List<bool> meshed = new List<bool>();
+    // Each place as the walk mesh has it, looked for when a walk to it is first asked for (WalkTo): most places of a
+    // laying are never walked to, and a laying that comes out as the last one was is thrown away at once.
+    private Vector3[] onMesh = new Vector3[0];
+    private byte[] meshed = new byte[0];
+    private const byte NotLooked = 0, OnMesh = 1, OffMesh = 2;
     private readonly NavMeshPath path = new NavMeshPath();
     private readonly Vector3[] corners = new Vector3[256];
     private float[] away = new float[0], walks = new float[0];
@@ -176,15 +180,14 @@ internal sealed class SpawnRoute
         }
         away = new float[flows.Count];
         walks = new float[flows.Count];
+        onMesh = new Vector3[flows.Count];
+        meshed = new byte[flows.Count];
     }
 
     private void Add(Vector3 place, float flow)
     {
         places.Add(place);
         flows.Add(flow);
-        bool on = NavMesh.SamplePosition(place, out NavMeshHit hit, PlaceSearch, NavMesh.AllAreas);
-        meshed.Add(on);
-        onMesh.Add(on ? hit.position : place);
     }
 
     /// <summary>
@@ -198,7 +201,7 @@ internal sealed class SpawnRoute
         for (int i = 0; i < Legs.Count; i++)
             if (Legs[i].HasSpot != other.Legs[i].HasSpot || Legs[i].Joined != other.Legs[i].Joined) return false;
         for (int i = 0; i < places.Count; i++)
-            if ((places[i] - other.places[i]).sqrMagnitude > .0001f || meshed[i] != other.meshed[i]) return false;
+            if ((places[i] - other.places[i]).sqrMagnitude > .0001f) return false;
         return true;
     }
 
@@ -227,15 +230,14 @@ internal sealed class SpawnRoute
     }
 
     /// <summary>
-    /// Where a place is on the route, by walking: of the route's places within reach of it in a straight line, the one
-    /// the walk to is shortest. Where the route comes as near a second time (a crossing whose shortest walk is within
-    /// the route's own grain of the shortest of all), the two are the same distance away: then the crossing nearest
-    /// <paramref name="hint"/>, the flow the place was at before, or for a place with no past (negative: a spawn point)
-    /// the later crossing. With no walk to any of them (or off the walk mesh), the nearest in a straight line, the same
-    /// floor first. False on a route with no places.
-    /// A few dozen path searches: for a spawn point, once a laying, and for a decision that is kept (SpawnGround.Clear).
+    /// Where a spawn point is on the route, by walking: of the route's places within reach of it in a straight line,
+    /// the one the walk to is shortest. Where the route comes as near a second time (a crossing whose shortest walk is
+    /// within the route's own grain of the shortest of all), the two are the same distance away, and the later crossing
+    /// is its place: the squad has not been through there for the last time until then. With no walk to any of them (or
+    /// off the walk mesh), the nearest in a straight line, the same floor first. False on a route with no places.
+    /// A few dozen path searches, once a laying.
     /// </summary>
-    public bool Place(Vector3 position, float hint, out Placement place)
+    public bool Place(Vector3 position, out Placement place)
     {
         place = default;
         int count = flows.Count;
@@ -250,7 +252,7 @@ internal sealed class SpawnRoute
             // The last place is the route's end, where a finale's points gather: weighed whatever the stride.
             Weigh(feet.position, count - 1);
             best = Round(feet.position, Shortest(0, count - 1));
-            if (best >= 0) best = Round(feet.position, Crossing(best, hint));
+            if (best >= 0) best = Round(feet.position, Crossing(best));
         }
         place.ByWalk = best >= 0;
         if (best < 0) best = Straight(position);
@@ -288,9 +290,8 @@ internal sealed class SpawnRoute
 
     // The route may come as near a second time. A crossing is a run of weighed places next to one another along the
     // route that are all as near as the nearest of all (within the grain); a weighed place that is farther, or cannot
-    // be walked to, parts two crossings. Of the crossings: the one nearest the hint, or with no hint the last; of it,
-    // the place the walk to is shortest.
-    private int Crossing(int nearest, float hint)
+    // be walked to, parts two crossings. Of the crossings the last; of it, the place the walk to is shortest.
+    private int Crossing(int nearest)
     {
         float most = walks[nearest] + Grain;
         int count = flows.Count, chosen = -1, run = -1;
@@ -303,14 +304,11 @@ internal sealed class SpawnRoute
                 continue;
             }
             // A farther place, one that cannot be walked to, or the route's end closes the run before it.
-            if (run >= 0 && (chosen < 0 || Prefer(run, chosen, hint))) chosen = run;
+            if (run >= 0) chosen = run;
             run = -1;
         }
         return chosen;
     }
-
-    private bool Prefer(int candidate, int kept, float hint)
-        => hint >= 0f ? Mathf.Abs(flows[candidate] - hint) < Mathf.Abs(flows[kept] - hint) : flows[candidate] > flows[kept];
 
     /// <summary>
     /// A player's flow now, <paramref name="last"/> being where they were when last looked at (or where the mission
@@ -366,7 +364,13 @@ internal sealed class SpawnRoute
     // The walk from a place on the mesh to one of the route's places (m); negative when the mesh does not join them.
     private float WalkTo(Vector3 from, int index)
     {
-        if (!meshed[index]) return -1f;
+        if (meshed[index] == NotLooked)
+        {
+            bool on = NavMesh.SamplePosition(places[index], out NavMeshHit hit, PlaceSearch, NavMesh.AllAreas);
+            meshed[index] = on ? OnMesh : OffMesh;
+            onMesh[index] = on ? hit.position : places[index];
+        }
+        if (meshed[index] != OnMesh) return -1f;
         Searches++;
         if (!NavMesh.CalculatePath(from, onMesh[index], NavMesh.AllAreas, path) || path.status != NavMeshPathStatus.PathComplete) return -1f;
         int count = path.GetCornersNonAlloc(corners);

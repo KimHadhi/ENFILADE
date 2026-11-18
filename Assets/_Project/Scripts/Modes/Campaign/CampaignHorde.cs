@@ -8,12 +8,13 @@ using UnityEngine.SceneManagement;
 /// (CampaignPhases), and where each comes from. The host makes them; in a room they reach the others as networked
 /// enemies, as the waves' do.
 /// Where they come from is the mission's flow and what the squad has cleared (user, 2026-11-18: "적 스폰 위치 및 조건
-/// 전면 개편"). SpawnGround keeps the route, everyone's place on it and the cleared stretches; this measures each of
-/// the scene's spawn points against the squad as it stands (Measure), and SpawnPick, a pure function, chooses by the
-/// step's rule (Tables/SpawnRules) and names why each other point was refused. To be measured as fit a point must have
-/// walk mesh, room for a body and no searchlight over it, be hidden from every player's eyes as a whole body is (its
-/// height and its width, not one ray to its head) and out of their near view, and its zombie must be able to walk to
-/// the player it heads for: a rooftop cut off from the street sends nothing at players on the ground.
+/// 전면 개편"). SpawnGround keeps the route, everyone's place on it and which spawn points' ground is cleared; this
+/// measures each of the scene's spawn points against the squad as it stands (Measure), and SpawnPick, a pure function,
+/// chooses by the step's rule (Tables/SpawnRules) and names why each other point was refused. To be measured as fit a
+/// point must have walk mesh, room for a body and no searchlight over it, be hidden from every player's eyes as a whole
+/// body is (SpawnSight: its height and its width, not one ray to its head) and out of their near view, not lie behind
+/// the back of the player its zombie would go for, and that zombie must be able to walk to them: a rooftop cut off
+/// from the street sends nothing at players on the ground.
 /// A quiet stretch (CampaignRun, stage C-15) has no horde: instead zombies stand calm along the way ahead, set by
 /// PlaceCalm, and have to notice the players. They, a cage's crowd and a round's walkers are set by their own rules,
 /// but never on cleared ground (Placeable).
@@ -21,10 +22,7 @@ using UnityEngine.SceneManagement;
 internal sealed class CampaignHorde
 {
     // Spawns saved up while none could come (nobody in reach), so a step's first moments don't burst.
-    private const float MostSaved = 3f, PointSearch = 2f, PlayerSearch = 3f, EyeHeight = 1.6f;
-    // A zombie's body as a capsule standing on a point: its lower and upper centres over the feet and its radius (m). It
-    // must fit there (Roomy) and be hidden as a whole (AnyoneSees).
-    private const float BodyLow = .35f, BodyHigh = 1.55f, BodyRadius = .28f;
+    private const float MostSaved = 3f, PointSearch = 2f, PlayerSearch = 3f;
     // A pick that found no place is put in the record no more often than this (s).
     private const float NoneEvery = 2f;
     // Calm zombies: one about this far along the walk (m), up to this far off it to one side, a ring of places this far
@@ -32,10 +30,6 @@ internal sealed class CampaignHorde
     private const float CalmEvery = 9f, CalmAside = 3f, CalmRound = 6f, CalmApart = 2.5f;
     // A share of them stand two or three round one spot, this near one another.
     private const float HuddleShare = .45f, HuddleApart = 1.4f;
-    // What blocks a player's sight: everything but players (layer 31) and enemies. Found on first use.
-    private static int sightMask;
-    private static int SightMask => sightMask != 0 ? sightMask : sightMask = Physics.DefaultRaycastLayers & ~(1 << 31) & ~LayerMask.GetMask("Enemy");
-
     private readonly EnemyHealth prefab;
     private readonly Transform[] spawns;
     private readonly Scene scene;
@@ -80,11 +74,11 @@ internal sealed class CampaignHorde
         List<PlayerMovement> players)
     {
         spawnGround.Follow(steps, step, spots, players);
-        rule = SpawnRules.For(spawnGround.Chapter, now);
+        rule = SpawnRules.For(spawnGround.Chapter, now, SpawnRules.IsFinale(steps, step));
     }
 
-    /// <summary>A wipe sent the run back to the step after this rest stop (-1: the chapter's start): the stretches after
-    /// it are no longer cleared (SpawnGround.Wipe).</summary>
+    /// <summary>A wipe sent the run back to the step after this rest stop (-1: the chapter's start): what lies past it
+    /// on the route is no longer cleared (SpawnGround.Wipe).</summary>
     public void Wipe(int checkpointStep) => spawnGround.Wipe(checkpointStep);
 
     /// <summary>
@@ -234,7 +228,7 @@ internal sealed class CampaignHorde
         // A Support's searchlight keeps its ground safe: nothing comes up within its reach (Barricade.Shelters). And
         // nothing is set on ground the squad has cleared: the calm ones, a cage's crowd and a round's walkers go by
         // their own rules, but cleared stays cleared for them too (SpawnGround).
-        return Free(ground, players, near, apart) && Roomy(ground) && !Barricade.Shelters(ground) && !spawnGround.ClearedAt(ground);
+        return Free(ground, players, near, apart) && SpawnSight.Roomy(ground) && !Barricade.Shelters(ground) && !spawnGround.ClearedAt(ground);
     }
 
     /// <summary>
@@ -341,16 +335,12 @@ internal sealed class CampaignHorde
         Object.Destroy(enemy.gameObject);
     }
 
-    // A body fits there: nothing of the world inside a zombie standing on the spot (user, 2026-11-11 playtest: a runner
-    // came out of a wall during the alley hold).
-    private static bool Roomy(Vector3 feet)
-        => !Physics.CheckCapsule(feet + Vector3.up * BodyLow, feet + Vector3.up * BodyHigh, BodyRadius, SightMask, QueryTriggerInteraction.Ignore);
-
     /// <summary>
     /// What is so of every spawn point this frame, for SpawnPick to weigh: the ground under it, its place on the route
-    /// and whether that is cleared (SpawnGround), how near the nearest player is and whether it lies in anyone's near
-    /// view. Only a point those leave standing (SpawnPick.Early) is looked at from every player's eyes and has its walk
-    /// to the player it would head for searched: the rays and the path search are what measuring costs.
+    /// and whether its own ground is cleared (SpawnGround), how near the nearest player is (the one its zombie would go
+    /// for), whether it lies behind that player's back and whether it lies in anyone's near view. Only a point those
+    /// leave standing (SpawnPick.Early) is looked at from every player's eyes and has its walk to that player searched:
+    /// the rays and the path search are what measuring costs.
     /// </summary>
     private void Measure(List<PlayerMovement> players)
     {
@@ -365,20 +355,21 @@ internal sealed class CampaignHorde
             if (point != null && NavMesh.SamplePosition(point.position, out NavMeshHit ground, PointSearch, NavMesh.AllAreas))
             {
                 feet = ground.position;
-                fact.Ground = Roomy(feet) && !Barricade.Shelters(feet);
+                fact.Ground = SpawnSight.Roomy(feet) && !Barricade.Shelters(feet);
             }
             var record = spawnGround.Record(i);
             fact.Placed = record.Placed;
             fact.Flow = record.Place.Flow;
             fact.Room = record.Role == SpawnRole.Room;
-            fact.OnCleared = record.Placed && spawnGround.IsCleared(record.Place.Leg);
+            fact.OnCleared = record.Cleared;
             if (fact.Ground)
             {
                 var target = Nearest(players, feet, out fact.Near);
                 fact.InView = InView(feet, players, rule.ViewNear, rule.ViewAngle * .5f);
+                fact.AtBack = target != null && AtBack(feet, target);
                 if (target != null && !SpawnPick.Early(fact, squad, rule, out _))
                 {
-                    fact.Seen = AnyoneSees(feet, players);
+                    fact.Seen = SpawnSight.AnyoneSees(feet, players);
                     fact.Walk = WalkTo(feet, target);
                 }
             }
@@ -410,7 +401,7 @@ internal sealed class CampaignHorde
     private void SayPick(int picked, string what)
     {
         var squad = spawnGround.Squad;
-        string where = squad.Known ? $"front {squad.Front:0} rear {squad.Rear:0}" : "no place on a route";
+        string where = squad.Known ? $"front {squad.Front:0} rear {spawnGround.Rear:0}" : "no place on a route";
         if (picked < 0)
         {
             if (Time.time < nextNone) return;
@@ -420,7 +411,7 @@ internal sealed class CampaignHorde
         }
         var fact = facts[picked];
         SpawnGround.Say($"SPAWN {what} at {spawnGround.Record(picked).Name} (flow {fact.Flow:0}, {(fact.Room ? "room" : "open")}"
-            + $"{(fact.Seen ? ", SEEN" : "")}, {fact.Near:0} m off, {fact.Walk:0} m to walk{(fact.Walk > rule.Farthest ? ", FARTHER than the rule's farthest" : "")})"
+            + $"{(fact.AtBack ? ", behind a back" : "")}, {fact.Near:0} m off, {fact.Walk:0} m to walk{(fact.Walk > rule.Farthest ? ", FARTHER than the rule's farthest" : "")})"
             + $" · squad {where} · rule {rule.Rows} · {Tally()}");
     }
 
@@ -440,8 +431,8 @@ internal sealed class CampaignHorde
 
     /// <summary>
     /// /spawns: the spawn model as it stands this moment, for the record (SpawnReport): the squad, the rule, every
-    /// stretch and what is cleared, and every point with what a pick would make of it now. The points are measured for
-    /// real, as a pick measures them, and judged; nothing is made.
+    /// stretch of the route, and every point with whether its ground is cleared and what a pick would make of it now.
+    /// The points are measured for real, as a pick measures them, and judged; nothing is made.
     /// </summary>
     internal string Describe(List<PlayerMovement> players, int step, CampaignStep now)
     {
@@ -449,7 +440,7 @@ internal sealed class CampaignHorde
         var route = spawnGround.Route;
         var squad = spawnGround.Squad;
         text.Append(spawnGround.Chapter).Append(" step ").Append(now != null ? now.Id + " " + now.Kind : "none").Append(": squad ")
-            .Append(squad.Known ? $"front {squad.Front:0} m, rear {squad.Rear:0} m" : "has no place on a route").Append(" · rule ")
+            .Append(squad.Known ? $"front {squad.Front:0} m, rear {spawnGround.Rear:0} m" : "has no place on a route").Append(" · rule ")
             .Append(rule != null ? $"{rule.Rows} ({rule.From}, cleared {rule.Cleared}, otherwise {rule.Otherwise})" : "none yet")
             .Append(" · cleared: ").Append(spawnGround.ClearedList()).Append('\n');
         if (route == null || rule == null)
@@ -457,8 +448,8 @@ internal sealed class CampaignHorde
             text.Append("the horde has not followed the mission yet: a frame of the chapter must run first\n");
             return text.ToString();
         }
-        text.Append($"rule: nearest {rule.Nearest:0.#} m, farthest {rule.Farthest:0.#} m by walking, behind {rule.Behind:0.#} m, seenFrom {rule.SeenFrom:0.#} m, "
-            + $"view {rule.ViewAngle:0.#} deg within {rule.ViewNear:0.#} m\n");
+        text.Append($"rule: nearest {rule.Nearest:0.#} m, farthest {rule.Farthest:0.#} m by walking, behind a back {rule.Behind:0.#} m by walking, "
+            + $"view {rule.ViewAngle:0.#} deg within {rule.ViewNear:0.#} m, never a seen place\n");
         text.Append($"route: {route.Length:0} m, {route.Count} places {route.Grain:0.#} m apart, {route.Searches} path searches so far; points placed: "
             + (spawnGround.AllPlaced ? "all" : "not all yet") + "\n");
         foreach (var player in players)
@@ -469,7 +460,7 @@ internal sealed class CampaignHorde
             text.Append(i == step ? "> " : "  ").Append($"{leg.Step,-9} {leg.Kind,-10} {leg.Spot,-16} ");
             if (!leg.HasSpot) { text.Append("NO SPOT of that name in the scene\n"); continue; }
             text.Append($"flow {leg.Start,6:0.0} -> {leg.End,6:0.0}  walk {leg.Walk,6:0.0}  gap {leg.Gap,5:0.0}").Append(leg.Joined ? "" : "  NOT JOINED by the walk mesh")
-                .Append(spawnGround.IsCleared(i) ? "  cleared" : "").Append('\n');
+                .Append('\n');
         }
         if (players.Count == 0)
         {
@@ -489,7 +480,8 @@ internal sealed class CampaignHorde
             text.Append($"  {record.Name,-18} flow {(record.Placed ? fact.Flow.ToString("0.0") : "?"),6} {stretch,-9} {record.Role,-5} ")
                 .Append(fact.OnCleared ? "cleared " : "        ")
                 .Append($"near {(float.IsInfinity(fact.Near) ? "-" : fact.Near.ToString("0")),4} walk {(looked ? fact.Walk < 0f ? "none" : fact.Walk.ToString("0") : "-"),4} ")
-                .Append(looked ? fact.Seen ? "seen   " : "hidden " : "-      ").Append(fact.InView ? "in view " : "        ").Append("-> ").Append(verdicts[i]).Append('\n');
+                .Append(looked ? fact.Seen ? "seen   " : "hidden " : "-      ").Append(fact.InView ? "in view " : "        ")
+                .Append(fact.AtBack ? "behind a back " : "              ").Append("-> ").Append(verdicts[i]).Append('\n');
         }
         return text.ToString();
     }
@@ -510,6 +502,14 @@ internal sealed class CampaignHorde
         return false;
     }
 
+    // Behind someone's back: more than a quarter turn off the way their body faces, flat on the ground. Someone who
+    // faces nowhere (lying flat) has no back to come up behind.
+    private static bool AtBack(Vector3 feet, PlayerMovement player)
+    {
+        Vector3 flat = Vector3.ProjectOnPlane(feet - player.transform.position, Vector3.up), facing = Vector3.ProjectOnPlane(player.transform.forward, Vector3.up);
+        return flat.sqrMagnitude >= 1e-4f && facing.sqrMagnitude >= 1e-4f && Vector3.Angle(facing, flat) > 90f;
+    }
+
     // The walk from a place to a player over the mesh (m); negative when the mesh does not join them.
     private float WalkTo(Vector3 feet, PlayerMovement target)
     {
@@ -527,26 +527,6 @@ internal sealed class CampaignHorde
         alive.Remove(enemy);
         brutes.Remove(enemy);
     }
-
-    // Someone has a clear line from their eyes to a body standing there (players' own capsules and enemies aside): to
-    // its crown, its middle, its shins or either shoulder, the body's capsule seen from where they stand. It was one ray
-    // to the head, so a body whose head a lamp post or a door frame covered counted as hidden while the rest of it
-    // stood in plain view.
-    private static bool AnyoneSees(Vector3 feet, List<PlayerMovement> players)
-    {
-        Vector3 crown = feet + Vector3.up * (BodyHigh + BodyRadius), middle = feet + Vector3.up * ((BodyLow + BodyHigh) * .5f),
-            shins = feet + Vector3.up * BodyLow, shoulders = feet + Vector3.up * BodyHigh;
-        foreach (var player in players)
-        {
-            Vector3 eye = player.transform.position + Vector3.up * EyeHeight;
-            Vector3 across = Vector3.Cross(Vector3.up, middle - eye);
-            across = across.sqrMagnitude > 1e-6f ? across.normalized * BodyRadius : Vector3.zero;
-            if (Open(eye, crown) || Open(eye, middle) || Open(eye, shins) || Open(eye, shoulders + across) || Open(eye, shoulders - across)) return true;
-        }
-        return false;
-    }
-
-    private static bool Open(Vector3 eye, Vector3 at) => !Physics.Linecast(eye, at, SightMask, QueryTriggerInteraction.Ignore);
 
     private static PlayerMovement Nearest(List<PlayerMovement> players, Vector3 from, out float distance)
     {
