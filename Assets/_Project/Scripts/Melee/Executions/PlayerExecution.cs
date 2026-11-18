@@ -124,9 +124,13 @@ public sealed class PlayerExecution : MonoBehaviour
         }
         if (IsExecuting)
         {
-            // Pause retains the transaction, but opening chat, death, or focus loss cancels it.
+            // An execution under way ends for reasons of the game alone, and Tick knows them all: it is done, its victim
+            // is gone before the blow, this player died. Who has the keys is not one of them. This asked
+            // player.InputAvailable every frame until 2026-11-18, which was false as soon as the chat or the Esc menu
+            // opened, so typing a word or opening the settings threw the execution away mid-stroke (the user: "처형
+            // 애니메이션 실행 도중 설정(ESC) 메뉴를 열거나 채팅 입력창을 활성화할 때 처형이 중단·캔슬되는 현상"). A pause only
+            // stops its clock.
             if (Time.timeScale <= 0f) return;
-            if (!player.InputAvailable || interact == null || !interact.enabled) { Cancel(); return; }
             Tick(Time.deltaTime); return;
         }
         Candidate = interact != null && interact.enabled ? FindCandidate() : null;
@@ -309,6 +313,7 @@ public sealed class PlayerExecution : MonoBehaviour
         agent.Move(away * step);
         agent.transform.rotation = Quaternion.LookRotation(-away, Vector3.up);
     }
+    // Leaving the window is not a reason to end it either (it cancelled here on focus loss until 2026-11-18): alt-tabbing
+    // away mid-stroke left the zombie alive and the knife put away.
     private void OnDisable() => Cancel();
-    private void OnApplicationFocus(bool focused) { if (!focused && (player == null || player.IsLocal)) Cancel(); }
 }

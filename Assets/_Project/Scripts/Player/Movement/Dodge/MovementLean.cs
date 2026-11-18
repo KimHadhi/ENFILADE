@@ -21,7 +21,10 @@ public sealed class MovementLean
     internal void Tick(float dt)
     {
         if (dt <= 0f || Time.timeScale <= 0f) return;
-        bool allowed = ctx.Abilities.CanUseGroundActions && ctx.InputAvailable;
+        // What the body can do (on its feet, not in a move of its own). Whose the keys are is not asked here: with them
+        // taken, a held lean already reads as let go and a toggled one stays (MovementInput), and a slip under way out
+        // of a blow's line is not thrown away because the chat opened.
+        bool allowed = ctx.Abilities.CanUseGroundActions;
         if (!allowed && ctx.Abilities.Dodge.Kind == DodgeKind.Micro) ctx.Abilities.Dodge.CancelWindow();
         int side = allowed ? ctx.Input.LeanSide : 0;
         var dodge = ctx.Abilities.Dodge;

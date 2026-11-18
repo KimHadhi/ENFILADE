@@ -7,8 +7,16 @@ public sealed partial class PlayerGrenades
     private void Hand(ThrowableInfo info)
     {
         var key = KeyBindings.Find("Player/Grenade");
-        bool able = info != null && key != null && movement.InputAvailable && InputFocus.TakesInput() && Able();
-        if (!able)
+        // Two questions kept apart (2026-11-18; they were one "able", so the chat opening counted as the hands being
+        // taken). able: what the body can do, reasons of the game (Able). keys: whether the key is the player's to hold
+        // now; a screen or another window may have it (asked here because KeyBindings reads a bound key straight while
+        // its map is off).
+        bool able = info != null && key != null && Able();
+        bool keys = movement.InputAvailable && InputFocus.TakesInput();
+        // The key taken while it still held the grenade back is not the key let go: nobody chose to throw, so the pin
+        // goes back as it does when the hands are taken. A throw the player has already let go is theirs and goes on:
+        // it used to be called back to the belt when the chat or the Esc menu opened during its swing.
+        if (!able || (!keys && !letGo))
         {
             // Hands taken going for it or holding it: the pin goes back, nothing spent; but a flashbang already burning
             // keeps burning in the hand (a grab bursts it round its holder: Cook).
@@ -16,6 +24,7 @@ public sealed partial class PlayerGrenades
             if ((arm == Arm.Draw || arm == Arm.Hold) && !(cooking && held != null && !held.ThrowsOut)) PutBack();
             return;
         }
+        if (!keys) return;
         if (arm == Arm.None && KeyBindings.Pressed(key))
         {
             if (count <= 0) { GrenadeHUD.Refused(); return; }

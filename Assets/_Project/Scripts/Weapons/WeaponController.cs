@@ -315,8 +315,9 @@ public sealed partial class WeaponController : MonoBehaviour
             return;
         }
 
-        var slots = GetComponent<PlayerWeaponSlots>();
-        if (slots != null && !slots.CanReadInput) Runtime.CancelBurst();
+        // A burst once fired goes to its last round whoever has the keys. It was cut here whenever the input could not be
+        // read (PlayerWeaponSlots.CanReadInput: the chat or a menu up), the keys' owner reaching into a shot under way;
+        // the hands taken or held, which do stop it, are ProcessFrame's (Interrupt), and a blocked gun's too (CancelBurst).
         if (input == null) return;
         ProcessFrame(movement != null ? movement.DeltaTime : Time.deltaTime, movement != null && movement.IsNetworkDriven ? new WeaponInputFrame(false, false, false, shownAiming) : input.ReadInput());
     }

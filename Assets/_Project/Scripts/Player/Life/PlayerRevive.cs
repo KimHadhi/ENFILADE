@@ -36,7 +36,10 @@ public sealed class PlayerRevive : MonoBehaviour
         var found = FindDowned();
         if (found != Candidate) Progress = 0f;
         Candidate = found;
-        if (Candidate == null || !interact.IsPressed()) { Progress = 0f; return; }
+        // Getting someone up is holding the key, and letting go starts it over: that is this move's own rule. A key a
+        // screen has taken reads as let go like every other key then (PlayerMovement.InputAvailable is asked for the key
+        // alone). The friend in reach stays the friend in reach meanwhile: who has the keys doesn't unmake the offer.
+        if (Candidate == null || !player.InputAvailable || !interact.IsPressed()) { Progress = 0f; return; }
         Progress += Time.deltaTime / Seconds;
         if (Progress < 1f) return;
         Progress = 0f;
@@ -49,7 +52,8 @@ public sealed class PlayerRevive : MonoBehaviour
 
     private PlayerMovement FindDowned()
     {
-        if (interact == null || !interact.enabled || !player.IsInitialized || !player.InputAvailable || player.IsDowned
+        // Reasons of the game only: this player can act and has their hands, and no execution is on offer for the same key.
+        if (interact == null || !player.IsInitialized || !player.CanAct || player.IsDowned
             || player.CombatInputLocked || player.IsHeld || player.Execution.Candidate != null) return null;
         PlayerMovement nearest = null;
         float best = reviveReach * reviveReach;

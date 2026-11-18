@@ -172,8 +172,12 @@ public sealed class DetenteKit : MonoBehaviour
         if (syringe < 0f) syringe = Mathf.Clamp(Number("syringeStart", 100f), 0f, SyringeMax);
         Sections();
         if (interact == null && InputSystem.actions != null) interact = InputSystem.actions.FindAction("Player/Interact", false);
-        bool able = interact != null && movement.InputAvailable && !movement.IsDead && !movement.IsDowned && !movement.IsHeld && HandsFree();
-        bool holding = able && interact.IsPressed();
+        // able: what the body can do (reasons of the game). keys: whether Interact is the player's to press now; with a
+        // screen up it reads as let go, which starts a held resurrection over by that move's own rule and makes no new
+        // offer, but takes nothing else away (a treatment under way never asked the keys: Treatment).
+        bool able = interact != null && movement.CanAct && !movement.IsDowned && !movement.IsHeld && HandsFree();
+        bool keys = able && movement.InputAvailable;
+        bool holding = keys && interact.IsPressed();
         float dt = Time.deltaTime;
 
         // A dead friend first: Resurrection.
@@ -193,7 +197,7 @@ public sealed class DetenteKit : MonoBehaviour
         if (Treating != null) { Treatment(); return; }
         if (offeredTo != null && Time.time >= offerUntil) offeredTo = null;
         Candidate = able && Empty && Raising == null ? Nearest(false) : null;
-        if (Candidate == null || !interact.WasPressedThisFrame()) return;
+        if (Candidate == null || !keys || !interact.WasPressedThisFrame()) return;
         if (Asked(Candidate)) { Begin(Candidate); return; }
         if (offeredTo == Candidate) return;
         offeredTo = Candidate;

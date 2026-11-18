@@ -58,6 +58,10 @@ public sealed class MovementInput
         interactAction = actions.FindAction("Player/Interact", false);
     }
     /// <summary>
+    /// The input frame the movement reads. available false (the keys are a screen's or another window's, control is
+    /// locked) makes every button read as let go and the stick as zero: that is all "whose the keys are" ever decides,
+    /// and the states go on from that frame by their own rules (a hang hangs on, a slide slides out, a held key's move
+    /// ends as if the key were released).
     /// moving false (getting up off the back) keeps the body's own moves (jump, crouch press, dodge, dive, sprint, lean)
     /// from starting, while the hands stay free: the shove and the aim still read, and a crouch held from before still
     /// counts, since the body rose into it.
@@ -70,7 +74,9 @@ public sealed class MovementInput
         JumpPressed = move && InputFocus.Pressed(jumpAction);
         JumpHeld = move && Held(jumpAction);
         CrouchPressed = move && InputFocus.Pressed(crouchAction);
-        CrouchHeld = available && (settings.crouchToggle ? crouchLatched : Held(crouchAction));
+        // A crouch taken on toggle is the body's posture, not a key held down: it stays while a screen has the keys (a
+        // word typed crouched behind a zombie stood the player up in its sight). A key held down reads as let go then.
+        CrouchHeld = settings.crouchToggle ? crouchLatched : available && Held(crouchAction);
         DodgePressed = move && InputFocus.Pressed(dodgeAction);
         DivePressed = move && InputFocus.Pressed(diveAction);
         InteractPressed = move && InputFocus.Pressed(interactAction);
@@ -79,7 +85,8 @@ public sealed class MovementInput
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;
         
         int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
-        LeanSide = move ? (settings.leanToggle ? leanLatched : heldSide) : 0;
+        // As the crouch: a lean on toggle stays put while a screen has the keys; a lean on a held key reads as let go.
+        LeanSide = settings.leanToggle ? leanLatched : move ? heldSide : 0;
         LeanPressed = move && LeanSide != 0 && (InputFocus.Pressed(leanLeftAction) || InputFocus.Pressed(leanRightAction));
     }
 

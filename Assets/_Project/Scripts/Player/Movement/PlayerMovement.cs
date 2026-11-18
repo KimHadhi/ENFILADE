@@ -212,13 +212,21 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// <summary>How hard the last touchdown was: Light, Hard (from Ability.hardLandingSpeed) or Heavy (it hurt, or a blow).</summary>
     public MovementLanding.Tier LastLandingTier => Abilities != null ? Abilities.Landing.LastTier : MovementLanding.Tier.Light;
     /// <summary>
-    /// The body's keys reach this character now: this PC plays it, it is alive, the game runs, and no screen or other
-    /// window has those keys (InputFocus.TakesMove, which asks InputHold who holds what). Not whether the pointer is
-    /// locked: a screen may show the pointer and leave the legs to the player.
+    /// This PC plays this character and it is alive: whatever it is doing is its own to go on with. Nothing here is
+    /// about the keys.
     /// </summary>
-    public bool InputAvailable => IsLocal && isActiveAndEnabled && Time.timeScale > 0f
-        && (DamageReceiver == null || DamageReceiver.IsAlive)
-        && (!Application.isPlaying || InputFocus.TakesMove());
+    public bool CanAct => IsLocal && isActiveAndEnabled && (DamageReceiver == null || DamageReceiver.IsAlive);
+    /// <summary>
+    /// The body's keys reach this character now: it can act, the game runs, and no screen or other window has those keys
+    /// (InputFocus.TakesMove, which asks InputHold who holds what). Not whether the pointer is locked: a screen may show
+    /// the pointer and leave the legs to the player.
+    /// Two things may ask this, and only these two: what an input frame holds (while it is false every button reads as
+    /// let go and the stick as zero: MovementInput.Sample), and whether a press may START something. It is never a
+    /// reason to end what is already under way: an execution, a hang, a pin already pulled end for reasons of the game
+    /// alone (the user, 2026-11-18: "입력 포커스 전환과 캐릭터 액션 상태 머신이 충돌하지 않도록 분리 처리"). It used to bundle
+    /// "alive" with "the keys are mine", so everything that asked it each frame stopped the moment the chat opened.
+    /// </summary>
+    public bool InputAvailable => CanAct && Time.timeScale > 0f && (!Application.isPlaying || InputFocus.TakesMove());
 
     public float WalkSpeed => walkSpeed;
     public float SprintSpeed => sprintSpeed;

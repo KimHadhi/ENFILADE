@@ -87,7 +87,10 @@ public sealed class LedgeHangState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
-        if (!ctx.InputAvailable || ctx.Input.CrouchPressed) { Drop(); return; }
+        // Only the crouch key lets go. The hands hold on whoever has the keys: with the chat or a menu up every key
+        // reads as not pressed (MovementInput), so nothing below asks for a jump, a climb or a shimmy either. It used to
+        // drop here whenever the keys were not the player's (PlayerMovement.InputAvailable).
+        if (ctx.Input.CrouchPressed) { Drop(); return; }
         bool forward = input.y > 0.1f;
         bool facing = ctx.Abilities.Traversal.FacingLedge();
         // Looking away prepares a directional jump, never a delayed mantle.

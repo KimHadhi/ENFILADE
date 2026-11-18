@@ -93,7 +93,8 @@ public sealed class MovementAbilities
         bool ceiling = ctx.HasCeilingAbove(ctx.StandingColliderHeight);
         // A dodge with the crouch still wanted (held, or latched on toggle: MovementInput) comes straight back down to
         // it, rather than standing for a frame and dropping again. Off a ledge the air's own tuck takes it (MovementPostureController).
-        bool crouch = ctx.CurrentState == State.StepDodge && ctx.IsGrounded && ctx.InputAvailable && ctx.Input.CrouchHeld;
+        // CrouchHeld already says whose the keys are (a held key reads as let go with a screen up, a latched crouch stays).
+        bool crouch = ctx.CurrentState == State.StepDodge && ctx.IsGrounded && ctx.Input.CrouchHeld;
         ctx.ChangeState(ceiling ? (lowPassage ? State.Proning : State.Crouching) : crouch ? State.Crouching : State.Standing);
     }
     internal void Reset()
