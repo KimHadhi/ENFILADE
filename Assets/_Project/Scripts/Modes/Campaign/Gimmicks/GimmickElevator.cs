@@ -160,7 +160,7 @@ public sealed class GimmickElevator : GimmickSwitch
         mine.MoveTo(mine.transform.position + Vector3.up * (floors[to] - floors[from]));
     }
 
-    // It opens at a floor: the chime, and that floor's sleepers and the rest are up (the host's part).
+    // It opens at a floor: the chime, and whoever was calm on that floor is up (the host's part).
     private void Arrive(bool host)
     {
         Vector3 at = CarAt(to).center;

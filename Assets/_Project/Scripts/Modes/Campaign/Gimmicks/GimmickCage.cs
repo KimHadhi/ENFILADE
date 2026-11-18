@@ -10,11 +10,32 @@ using UnityEngine;
 /// shuts the cages again. Shut in, they raise no alarm (ZombieMind.Cage). The bars are chain-link: they hold bodies,
 /// thrown things and blasts, and shots go through them (AttackTrace), so whoever sees one in its cage may shoot it there.
 /// It has no state of its own to share.
+/// Who is shut in is the cage's own to say: how many stand in each of its cages, and the stretch they are set in
+/// (Crowds, asked by CampaignRun.PlaceMapCrowds as that stretch begins quiet, and again after a wipe). Where they stand
+/// comes from the cage's box, so a crowd can never be set outside the bars it belongs behind. Until 2026-11-18 a
+/// separate spot said it (SleeperNest, a component made for crowds laid on the floor, with a switch for "caged"); the
+/// user had every lying crowd removed ("[버그] 비활성(자는) 좀비 잔존 문제: 제거 지시된 자는 좀비 오브젝트 완전 삭제";
+/// asked how far, "엎드린 무리까지"), which left that component with nothing to name but a cage's crowd, at a place
+/// the cage already knew.
 /// </summary>
 public sealed class GimmickCage : GimmickSwitch
 {
     private const float BiteEvery = 1.2f, BiteReach = 1.7f;
+    // A caged one stands at least this far in from its cage's sides (m): its own half width and an arm's bend, so it
+    // is set on the cage's floor and not in the bars.
+    private const float InFromBars = .9f;
     private static readonly HashSet<Collider> through = new HashSet<Collider>();
+    private static readonly List<GimmickCage> all = new List<GimmickCage>();
+
+    /// <summary>A cage's crowd: its cage's box, where its middle is on that cage's floor, how many, and how far round it they stand.</summary>
+    public readonly struct Crowd
+    {
+        public readonly Bounds Cage;
+        public readonly Vector3 Middle;
+        public readonly int Count;
+        public readonly float Radius;
+        public Crowd(Bounds cage, Vector3 middle, int count, float radius) { Cage = cage; Middle = middle; Count = count; Radius = radius; }
+    }
 
     [SerializeField, Tooltip("The hold that bursts the cages (CampaignSteps id).")]
     private string step = "";
@@ -22,6 +43,10 @@ public sealed class GimmickCage : GimmickSwitch
     private Bounds passage;
     [SerializeField, Tooltip("The cages (world boxes): woken at the burst.")]
     private Bounds[] cages = new Bounds[0];
+    [SerializeField, Tooltip("How many are shut in each cage, in the cages' order (none where it has no number).")]
+    private int[] held = new int[0];
+    [SerializeField, Tooltip("The campaign step whose stretch they are set in (CampaignSteps id): set as that stretch begins quiet.")]
+    private string crowdStep = "";
     [SerializeField, Tooltip("The cage doors, gone when they burst.")]
     private GameObject[] doors = new GameObject[0];
     [SerializeField, Tooltip("The bars that stay (chain-link): shots go through them as through the doors.")]
@@ -36,18 +61,51 @@ public sealed class GimmickCage : GimmickSwitch
     public static bool LetsThrough(Collider collider) => collider != null && through.Contains(collider);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void Clear() => through.Clear();
+    private static void Clear()
+    {
+        through.Clear();
+        all.Clear();
+    }
 
     private void OnEnable()
     {
+        all.Add(this);
         Mark(doors, true);
         Mark(bars, true);
     }
 
     private void OnDisable()
     {
+        all.Remove(this);
         Mark(doors, false);
         Mark(bars, false);
+    }
+
+    /// <summary>The stretch this store's crowds are set in (CampaignSteps id); empty: nobody is set.</summary>
+    public string CrowdStep => crowdStep;
+
+    /// <summary>
+    /// This store's crowds, added to <paramref name="into"/>: one for each cage that holds anyone, its middle on that
+    /// cage's floor and its reach kept inside the bars. The run asks through Crowds; a map's build asks each store
+    /// itself, to say whether the baked walk mesh gives them the floor to stand on (GreyboxBuilder.Audit), so an
+    /// empty cage is read from the build's file and not found by playing to it.
+    /// </summary>
+    public void AddCrowds(List<Crowd> into)
+    {
+        for (int i = 0; i < cages.Length && i < held.Length; i++)
+        {
+            if (held[i] <= 0) continue;
+            var box = cages[i];
+            float room = Mathf.Max(0f, Mathf.Min(box.extents.x, box.extents.z) - InFromBars);
+            into.Add(new Crowd(box, new Vector3(box.center.x, box.min.y, box.center.z), held[i], room));
+        }
+    }
+
+    /// <summary>The crowds every cage store in the open scenes sets on the stretch of <paramref name="stepId"/>, added to <paramref name="into"/>.</summary>
+    internal static void Crowds(string stepId, List<Crowd> into)
+    {
+        foreach (var cage in all)
+            if (cage != null && string.Equals(cage.crowdStep, stepId, System.StringComparison.OrdinalIgnoreCase)) cage.AddCrowds(into);
     }
 
     private static void Mark(GameObject[] parts, bool on)

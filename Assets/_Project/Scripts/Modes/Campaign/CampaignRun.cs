@@ -111,7 +111,7 @@ public sealed partial class CampaignRun : MonoBehaviour
     private readonly Dictionary<string, Transform> spotsByName = new Dictionary<string, Transform>();
     private readonly List<PlayerMovement> players = new List<PlayerMovement>();
     private readonly HashSet<string> reported = new HashSet<string>();
-    // The steps whose map crowds (SleeperNest, PatrolRoute) are set this stretch (the host's).
+    // The steps whose map crowds (a cage's, GimmickCage.Crowds; walkers, PatrolRoute) are set this stretch (the host's).
     private readonly HashSet<string> crowdsPlaced = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
     private List<CampaignStep> steps = new List<CampaignStep>();
     private CampaignChapter chapter;

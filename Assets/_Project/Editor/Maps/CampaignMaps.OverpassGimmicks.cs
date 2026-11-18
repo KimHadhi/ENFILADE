@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Side = GreyboxBuilder.Side;
 
-// CampaignMaps: chapter 2's gimmicks: the jam's alarm cars and sleepers, the service area, the burning car pile, the toll
+// CampaignMaps: chapter 2's gimmicks: the jam's alarm cars, the service area, the burning car pile, the toll
 // road with its office, the army checkpoint and the span that falls in. One part of the class; the rest is in
 // CampaignMaps.cs and the files beside it.
 public static partial class CampaignMaps
@@ -13,7 +13,7 @@ public static partial class CampaignMaps
     // The jam (the card "경보 차가 섞인 정체 구간", after Left 4 Dead's car alarms): the stopped cars as before, five of them
     // with their alarms still set, of which a run arms some (a small red light pulses inside the ones that are). Shot,
     // struck, hit by a thrown stone or run into, an armed one wails and draws the calm ones to it, and the shot that sets it
-    // off makes no noise of its own (ShotMuffle). A few lie asleep on the road between the cars, a run's pick of six places.
+    // off makes no noise of its own (ShotMuffle).
     private static void OverpassJam(GreyboxBuilder b)
     {
         Car(b, 18f, Deck, LaneA); Car(b, 18f, Deck, LaneC);
@@ -62,9 +62,6 @@ public static partial class CampaignMaps
                 so.FindProperty("salt").intValue = 200 + i;
             });
         }
-        var nests = b.Variant("정체 구간 잠든 놈 (여섯 중 셋)", 3, 220);
-        foreach (var (x, z) in new[] { (21f, 0f), (27f, 3.4f), (52f, 3f), (66f, -3.5f), (80f, 0f), (103f, -3.4f) })
-            b.Sleepers("Ch2.01", new Vector3(x, Deck, z), 2, 1.2f, b.Choice(nests, $"x {x}"));
         b.Walkers("Ch2.02", 1, null, new Vector3(88f, Deck, 1.5f), new Vector3(110f, Deck, 1.5f));
     }
 
@@ -72,7 +69,7 @@ public static partial class CampaignMaps
     // [F] spills a pump, a shot lights it) and a one-storey building north of it. The restaurant takes the front, its
     // store (the fuel cans for the car pile) the back; east of them the toilets, the staff corridor and the office, the
     // rest stop, behind its door. Ways in: the restaurant's glass front and side door, the toilets' door, the store's
-    // back door. Asleep in the restaurant, the toilets or the store; a walker on the staff corridor; a radio to lure with.
+    // back door. A walker on the staff corridor; a radio to lure with.
     private static void ServiceArea(GreyboxBuilder b)
     {
         // The forecourt: canopy, two pump islands.
@@ -150,10 +147,6 @@ public static partial class CampaignMaps
         b.Lamp(new Vector3(162f, 3.9f, 9f), 9f, .7f);
 
         // Who is where.
-        var crowd = b.Variant("휴게소 잠든 무리 (셋 중 둘)", 2, 230);
-        b.Sleepers("Ch2.04", new Vector3(160.5f, 0f, 9f), 3, 2f, b.Choice(crowd, "식당"));
-        b.Sleepers("Ch2.04", new Vector3(173f, 0f, 6.8f), 2, 1.2f, b.Choice(crowd, "화장실"));
-        b.Sleepers("Ch2.04", new Vector3(162f, 0f, 18f), 2, 1.5f, b.Choice(crowd, "창고"));
         b.Walkers("Ch2.04", 1, null, new Vector3(169f, 0f, 10.3f), new Vector3(177f, 0f, 10.3f));
     }
 
@@ -240,7 +233,7 @@ public static partial class CampaignMaps
 
     // The toll office, hanging off the deck's north side (x 222-234, z 9-17): lockers and the server room on the deck's
     // level, a flight up to the camera room and the control room (the barrier's switch, Ch2.11). Its cameras look over the
-    // checkpoint (GimmickCamera). Asleep in the locker room, one in the camera room; a walker among the booths.
+    // checkpoint (GimmickCamera). A walker among the booths.
     private static void TollOffice(GreyboxBuilder b)
     {
         const float X0 = 222f, X1 = 234f, Z0 = 9f, Z1 = 17f, Up = Deck + 3f, Top = Deck + 6f, Mid = 228f;
@@ -272,14 +265,12 @@ public static partial class CampaignMaps
         b.Dress(b.Box("차단벽 제어반", 231.5f, 233f, Up, Up + 1.3f, 12.4f, 13.4f, b.Marker), "controlboxFit");
         b.Spot("TollControl", new Vector3(231f, Up, 12.9f));
         b.Lamp(new Vector3(230.5f, Up + 2.5f, 13f), 6f, .7f);
-        b.Sleepers("Ch2.11", new Vector3(225f, Deck, 13f), 2, 1.2f);
-        b.Sleepers("Ch2.11", new Vector3(226f, Up, 12.5f), 1, .6f);
         b.Walkers("Ch2.05", 1, null, new Vector3(226f, Deck, -3f), new Vector3(231f, Deck, -3f), new Vector3(231f, Deck, 3f));
     }
 
-    // The army checkpoint (x 270-296): sandbags with a gap, containers, the armory (a container a card opens, the card on
-    // the officer asleep among them: a run's pick of three places, GimmickItem with the sleeper under it), the guard post
-    // with the radio that starts the finale (Ch2.06), the hold's place.
+    // The army checkpoint (x 270-296): sandbags with a gap, containers, the armory (a container a card opens, the card
+    // lying among them: a run's pick of three places, GimmickItem), the guard post with the radio that starts the finale
+    // (Ch2.06), the hold's place.
     private static void Checkpoint(GreyboxBuilder b)
     {
         b.Dress(b.Box("모래주머니 남", 272f, 273f, Deck, Deck + 1.2f, -9f, -3f, b.Wood, "Tarp"), "sandbags");
@@ -308,7 +299,7 @@ public static partial class CampaignMaps
         b.Pickup(new Vector3(281.8f, Deck, 7.6f), PickupSpot.Roll.Gun);
         b.Pickup(new Vector3(280f, Deck, 7.9f), PickupSpot.Roll.Any);
 
-        // The officer's card, where he lies asleep this run (three places).
+        // The officer's card, where it lies this run (three places).
         var card = b.Switch<GimmickItem>("장교 카드", new Vector3(275f, Deck, -4.5f));
         var spots = new List<Transform>
         {
@@ -326,7 +317,6 @@ public static partial class CampaignMaps
         shine.color = new Color(.5f, .85f, 1f);
         shine.shadows = LightShadows.None;
         shine.lightmapBakeType = LightmapBakeType.Realtime;
-        b.Sleepers("Ch2.06", new Vector3(275f, Deck, -4.5f) + new Vector3(.8f, 0f, 0f), 1, .1f, card.transform);
         GreyboxBuilder.Configure(card, so =>
         {
             so.FindProperty("id").stringValue = "armorycard";

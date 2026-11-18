@@ -5,8 +5,8 @@ using UnityEngine;
 /// What changes from run to run on a campaign map (the map gimmick card "판마다 다른 길", after PAYDAY 2's Murky Station
 /// and Hotline Miami day 2, whose designers change only what changes how it plays): of this group's children, keep picks
 /// of them and switch the rest off, by the run's seed (MapGimmicks.Seed), so every PC lays the map out alike. The builder
-/// fills a group with what may be there: boards across a flat's door, the plug in a hole through a wall, a crowd lying
-/// face down in one flat or another (SleeperNest). A child that blocks a way carves the walk mesh while it stands (the bake leaves
+/// fills a group with what may be there: boards across a flat's door, the plug in a hole through a wall, the rubble on
+/// one flight of stairs or another. A child that blocks a way carves the walk mesh while it stands (the bake leaves
 /// it out), so zombies go round it and through the gap once it is gone. Until the seed is known (a guest, a moment)
 /// everything stands as built.
 /// </summary>

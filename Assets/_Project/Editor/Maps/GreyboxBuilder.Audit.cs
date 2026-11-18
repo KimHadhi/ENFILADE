@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
+using UnityEngine.AI;
 
 /// <summary>
 /// What a build checks about its own map, so nobody has to find it by playing (the user, 2026-11-18, on a list of map
@@ -13,7 +14,8 @@ using UnityEngine;
 /// The checks: where the solid props stood (GreyboxBuilder.Standing), whether every Reach step's spot is a place one
 /// can get to, and whether what is seen blocks: no collider without its mesh, no part of a bought building's shell
 /// that is drawn at walking height with nothing solid behind it, no wall a walking body passes from its back, and
-/// how much of a prop's box a shot now passes because the prop's seen shape is not there (below).
+/// how much of a prop's box a shot now passes because the prop's seen shape is not there (below). And whether a
+/// cage's crowd has the floor to stand on (CrowdReport).
 /// </summary>
 public sealed partial class GreyboxBuilder
 {
@@ -30,6 +32,10 @@ public sealed partial class GreyboxBuilder
     private const int BodyWays = 16, ShellNamed = 12;
     // Shots at a box whose prop is judged by its seen shape: rays this far apart over each of its sides and its top (m).
     private const float ShotGrid = .25f;
+    // A cage's crowd: its circle is sampled this far apart (m); a sample is a place to stand when the walk mesh is this
+    // near under it (m) and within this of the cage's floor (m, as CampaignHorde.PlaceCaged takes it); two of the
+    // crowd stand no nearer than this (m, CampaignHorde.CagedApart).
+    private const float CrowdGrid = .25f, CrowdUnder = .15f, CrowdFloor = 1.2f, CrowdApart = 1.1f;
 
     private readonly StringBuilder audit = new StringBuilder();
     private bool auditToRead;
@@ -37,7 +43,7 @@ public sealed partial class GreyboxBuilder
     // Every check's line for the closing window, and the file. Called once, as the build ends.
     private string AuditReport()
     {
-        string line = StandReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport();
+        string line = StandReport() + ReachReport() + ColliderReport() + ShellReport() + BackReport() + ShotReport() + CrowdReport();
         if (audit.Length == 0) return line;
         string path = AuditFolder + "/" + sceneName + ".txt";
         try
@@ -51,6 +57,73 @@ public sealed partial class GreyboxBuilder
             return line;
         }
         return line + (auditToRead ? " 자세한 것은 " + path + "." : "");
+    }
+
+    // A cage's crowd (GimmickCage) is stood by the run on the walk mesh round the middle of its cage, when the stretch
+    // it belongs to begins: a cage whose floor the bake left without walk mesh, or one too small for those it holds,
+    // would stand empty or half full and say nothing, far into a chapter. So the build asks every cage store for its
+    // crowds, as the run does, and counts the places the baked walk mesh gives each: samples of its circle with walk
+    // mesh under them, on the cage's floor and inside its box, and how many of those lie far enough apart for a body
+    // each. Fewer than it holds is named in the closing window. The same from the saved scene without Unity:
+    // Tools/Maps/cage_crowd.py, which stands the crowd the game's way many times over.
+    private string CrowdReport()
+    {
+        var crowds = new List<GimmickCage.Crowd>();
+        var steps = new List<string>();
+        foreach (var each in switches)
+        {
+            if (!(each is GimmickCage store)) continue;
+            int before = crowds.Count;
+            store.AddCrowds(crowds);
+            for (int i = before; i < crowds.Count; i++) steps.Add(store.CrowdStep);
+        }
+        if (crowds.Count == 0) return "";
+        audit.Append("\n## 철창에 갇힌 무리 (걷기 메시 위에 설 자리가 있어야 선다)\n");
+        // Nothing to measure against when the walk mesh is not there to ask (its bake failed): said, not counted as empty.
+        if (NavMesh.CalculateTriangulation().vertices.Length == 0)
+        {
+            audit.Append("# 못 읽음: 걷기 메시가 없어 재지 못했어요\n");
+            return "";
+        }
+        int lacking = 0, unset = 0, wrong = 0;
+        var stood = new List<Vector3>();
+        for (int c = 0; c < crowds.Count; c++)
+        {
+            var crowd = crowds[c];
+            int places = 0, sampled = 0;
+            stood.Clear();
+            int reach = Mathf.CeilToInt(crowd.Radius / CrowdGrid);
+            for (int ix = -reach; ix <= reach; ix++)
+                for (int iz = -reach; iz <= reach; iz++)
+                {
+                    var at = crowd.Middle + new Vector3(ix * CrowdGrid, 0f, iz * CrowdGrid);
+                    if ((at - crowd.Middle).sqrMagnitude > crowd.Radius * crowd.Radius + 1e-4f) continue;
+                    sampled++;
+                    if (!NavMesh.SamplePosition(at, out NavMeshHit hit, CrowdFloor, NavMesh.AllAreas)) continue;
+                    Vector3 ground = hit.position;
+                    if (Mathf.Abs(ground.x - at.x) > CrowdUnder || Mathf.Abs(ground.z - at.z) > CrowdUnder) continue;
+                    if (Mathf.Abs(ground.y - crowd.Middle.y) > CrowdFloor) continue;
+                    if (Mathf.Abs(ground.x - crowd.Cage.center.x) > crowd.Cage.extents.x || Mathf.Abs(ground.z - crowd.Cage.center.z) > crowd.Cage.extents.z) continue;
+                    places++;
+                    bool apart = true;
+                    foreach (var other in stood)
+                        if ((other - ground).sqrMagnitude < CrowdApart * CrowdApart) { apart = false; break; }
+                    if (apart) stood.Add(ground);
+                }
+            bool stepless = string.IsNullOrEmpty(steps[c]);
+            bool few = stood.Count < crowd.Count;
+            if (stepless) unset++;
+            if (few) lacking++;
+            if (few || stepless) wrong++;
+            audit.Append(few || stepless ? "모자람 " : "섬 ").Append("칸 (").Append(Format(crowd.Middle)).Append("): ").Append(crowd.Count)
+                .Append(" 가둠, 놓이는 구간 ").Append(stepless ? "(없음: 게임이 세우지 않아요)" : steps[c])
+                .Append(", 반경 ").Append(crowd.Radius.ToString("0.00")).Append(" m, 걷기 메시 위의 자리 ").Append(places).Append('/').Append(sampled)
+                .Append(", ").Append(CrowdApart.ToString("0.0")).Append(" m씩 떨어져 설 수 있는 수 ").Append(stood.Count).Append('\n');
+        }
+        audit.Append("# 합계: 갇힌 무리 ").Append(crowds.Count).Append("칸, 설 자리가 모자란 칸 ").Append(lacking).Append(", 구간이 없는 칸 ").Append(unset).Append('\n');
+        if (wrong == 0) return "";
+        auditToRead = true;
+        return "\n철창에 갇힌 무리가 다 서지 못하는 칸 " + wrong + "곳(걷기 메시 위에 설 자리가 모자라거나 놓이는 구간이 없어요).";
     }
 
     // The campaign's Reach steps of this map: a step is done when someone is within its radius of its spot with nothing

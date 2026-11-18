@@ -26,7 +26,7 @@ public static partial class CampaignMaps
     // ends over the apron (x 196-199 + Airside), and an 8 m telescoping end reaches from the cab's east opening to the
     // airliner's front door while anyone stands in the cab (GimmickJetBridge). Docked, the door opens on the cabin: along
     // its aisle to the rear door on its far side and the slide down to the apron, by the stands and the tower. The
-    // service stairs stay; a crowd sleeps at their foot (the quiet way is through the plane).
+    // service stairs stay.
     // The end is telescoping lengths that slide out of one another, as a real bridge's tunnels do, on a track made here
     // (SetPieceTrack; the user, 2026-11-18: "실시간 연산 대신 베이크된(Baked) 애니메이션으로 교체"). It was one holder
     // whose scale along x was written every frame, resizing its four colliders. Each length is rigid and sits on a
@@ -97,8 +97,6 @@ public static partial class CampaignMaps
             so.FindProperty("reach").floatValue = 2.4f;
         });
         valves.Add(Valve(b, "1번 계류장 급유 밸브", new Vector3(w1 + 2.6f, 0f, 4f), 0));
-        // A crowd asleep at the service stairs' foot, under the bridge.
-        b.Sleepers("Ch4.06", new Vector3(197.5f + x, 0f, -16.5f), 3, 1.4f);
     }
 
     // Stands 2 and 3 on the apron north of the bridge: an airliner each, nose north (the card "기름 찬 비행기 찾기").

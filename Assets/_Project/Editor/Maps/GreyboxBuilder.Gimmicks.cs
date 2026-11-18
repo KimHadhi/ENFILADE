@@ -5,7 +5,7 @@ using UnityEngine.AI;
 using Unity.AI.Navigation;
 
 // GreyboxBuilder: a map's gimmicks (MapGimmicks; the user's picks of the map gimmick page, 2026-11-14): what players work
-// with [F] or a shot, what changes from run to run, the sleeping crowds and the walkers on their rounds. One part of the
+// with [F] or a shot, what changes from run to run, and the walkers on their rounds. One part of the
 // class; the rest is in GreyboxBuilder.cs and the files beside it.
 public sealed partial class GreyboxBuilder
 {
@@ -14,7 +14,7 @@ public sealed partial class GreyboxBuilder
     private bool anyVariant;
 
     // Everything gimmicky under one root of the hierarchy (boxes that move or come and go stay under the map's terrain).
-    private Transform GimmickRoot => gimmickRoot != null ? gimmickRoot : gimmickRoot = Root("◤━━ 기믹 (MapGimmicks: F로 쓰는 것, 판마다 바뀌는 것, 잠든 무리)");
+    private Transform GimmickRoot => gimmickRoot != null ? gimmickRoot : gimmickRoot = Root("◤━━ 기믹 (MapGimmicks: F로 쓰는 것, 판마다 바뀌는 것, 순찰)");
 
     /// <summary>
     /// A switch of the map's gimmicks (a GimmickSwitch kind), at a place and turned to a yaw, listed on the map's
@@ -122,29 +122,6 @@ public sealed partial class GreyboxBuilder
         return light;
     }
 
-    /// <summary>A crowd asleep on the floor round a place, laid as the stretch of <paramref name="step"/> begins (SleeperNest).</summary>
-    public void Sleepers(string step, Vector3 floor, int count, float radius, Transform under = null)
-    {
-        var nest = new GameObject("잠든 무리 " + count, typeof(SleeperNest));
-        nest.transform.SetParent(under != null ? under : GimmickRoot, false);
-        nest.transform.position = floor + Vector3.up * Lift;
-        Set(nest.GetComponent<SleeperNest>(), so =>
-        {
-            so.FindProperty("step").stringValue = step;
-            so.FindProperty("count").intValue = count;
-            so.FindProperty("radius").floatValue = radius;
-        });
-    }
-
-    /// <summary>A crowd shut in behind bars round a place, standing (SleeperNest caged: ZombieMind.Cage), set as the stretch of <paramref name="step"/> begins.</summary>
-    public void CageCrowd(string step, Vector3 floor, int count, float radius, Transform under = null)
-    {
-        Sleepers(step, floor, count, radius, under);
-        var nest = (under != null ? under : GimmickRoot).GetChild((under != null ? under : GimmickRoot).childCount - 1);
-        nest.name = "갇힌 무리 " + count;
-        Set(nest.GetComponent<SleeperNest>(), so => so.FindProperty("caged").boolValue = true);
-    }
-
     /// <summary>A round walkers keep while calm, its stops in order (PatrolRoute), set as the stretch of <paramref name="step"/> begins.</summary>
     public void Walkers(string step, int count, Transform under, params Vector3[] stops)
     {
@@ -186,13 +163,11 @@ public sealed partial class GreyboxBuilder
     // Finish: the map's MapGimmicks with its switches in order, when it has any (or anything that varies by the seed).
     private void AddGimmicks()
     {
-        if (switches.Count == 0 && !anyVariant && SleeperNestsMade == 0) return;
+        if (switches.Count == 0 && !anyVariant) return;
         var host = new GameObject("맵 기믹", typeof(MapGimmicks));
         host.transform.SetParent(systems, false);
         Set(host.GetComponent<MapGimmicks>(), so => Fill(so.FindProperty("switches"), switches));
     }
-
-    private int SleeperNestsMade => gimmickRoot != null ? gimmickRoot.GetComponentsInChildren<SleeperNest>(true).Length : 0;
 
     // For the build's report.
     private string GimmickReport()

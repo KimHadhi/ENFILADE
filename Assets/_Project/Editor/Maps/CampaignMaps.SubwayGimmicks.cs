@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// CampaignMaps: chapter 3's gimmicks: the station office off the concourse, the sleeping tunnel and its derailed car,
+// CampaignMaps: chapter 3's gimmicks: the station office off the concourse, the dark tunnel and its derailed car,
 // the train yard under its shed (stopped trains to crawl under and cross over, sweeping searchlights, the fuel cans a
 // run puts somewhere new and the board that says where), and the store of caged zombies. One part of the class; the rest
 // is in CampaignMaps.cs and the files beside it.
@@ -17,7 +17,7 @@ public static partial class CampaignMaps
     // The station office (the card "역무실과 CCTV"): rooms behind the concourse's north wall (x 2-34, z 12.3-22), a staff
     // corridor from the concourse to the platform hall, the locker room, the camera room (its cameras look over the yard
     // and show its fuel cans: GimmickCamera with the board), and the station master's office with the platform's public
-    // address (a lure on the tracks). Asleep in the lockers, one in the office; a walker on the corridor.
+    // address (a lure on the tracks). A walker on the corridor.
     private static void StationOffice(GreyboxBuilder b, GimmickCanSpots board)
     {
         const float X0 = 2f, X1 = 34f, Z0 = 12.3f, Z1 = 22f, H = 3.5f, Hall = 14.5f;
@@ -61,15 +61,13 @@ public static partial class CampaignMaps
         });
         b.Lamp(new Vector3(8f, 3.2f, 13.4f), 7f, .55f);
         b.Lamp(new Vector3(19f, 3.2f, 18f), 6f, .6f);
-        b.Sleepers("Ch3.01", new Vector3(7.5f, 0f, 18.5f), 2, 1.4f);
-        b.Sleepers("Ch3.01", new Vector3(29f, 0f, 17.5f), 1, .5f);
         b.Walkers("Ch3.01", 1, null, new Vector3(3.5f, 0f, 13.4f), new Vector3(25f, 0f, 13.4f));
     }
 
-    // The sleeping tunnel (the card "잠든 터널", after GTFO): crowds asleep along the track, a run's pick, and the derailed
-    // car the way goes inside, over or beside: it is hollow now with doors at its ends, a crate at its west end to climb
-    // its roof by, and the gap beside it. Darker than before: one dim lamp.
-    private static void SleepingTunnel(GreyboxBuilder b)
+    // The dark tunnel (the card "잠든 터널", after GTFO; the crowds that lay along its track went with every lying crowd
+    // on 2026-11-18) and the derailed car the way goes inside, over or beside: it is hollow with doors at its ends, a
+    // crate at its west end to climb its roof by, and the gap beside it. One dim lamp.
+    private static void DarkTunnel(GreyboxBuilder b)
     {
         const float C0 = 140f, C1 = 152f, CZ0 = -5.7f, CZ1 = -2.2f, CH = 3f;
         b.Box("탈선한 객차 바닥", C0, C1, 0f, .3f, CZ0, CZ1, b.Metal, "Metal");
@@ -80,14 +78,11 @@ public static partial class CampaignMaps
         WallZ(b, "탈선한 객차 동벽", C1 - .15f, C1, CZ0 + .15f, CZ1 - .15f, .3f, CH - .2f, (-4.5f, -3.3f, .3f, 2.6f));
         b.Dress(b.Box("객차 오르는 상자", 137.6f, 139f, 0f, 1.4f, -5.4f, -4f, b.Wood, "WoodPlank"), "crateFit");
         b.Lamp(new Vector3(125f, 5f, -2f), 8f, .7f);
-        var crowds = b.Variant("터널 잠든 무리 (여섯 중 넷)", 4, 240);
-        foreach (var (x, z, n) in new[] { (98f, -3f, 3), (106f, 0f, 2), (120f, -3.5f, 3), (135f, 0f, 2), (146f, -4f, 2), (146f, .2f, 3) })
-            b.Sleepers("Ch3.02", new Vector3(x, 0f, z), n, 1.6f, b.Choice(crowds, $"x {x} z {z}"));
     }
 
     // The train shed (the card "밤 차량기지"): the depot's south wall opens onto it (a wide way and the store's door), a
     // high roof, five rows of stopped trains (two cars a row, on bogies; ladders at the west ends to their roofs), two
-    // searchlights sweeping from towers at its sides, crowds asleep between the trains, walkers along it. The cans' spots
+    // searchlights sweeping from towers at its sides, walkers along it. The cans' spots
     // (GimmickCanSpots, the board by the way in) are under trains, on roofs, in the corners, on the catwalk and in the
     // cage store's passage.
     private static GimmickCanSpots TrainShed(GreyboxBuilder b)
@@ -139,9 +134,6 @@ public static partial class CampaignMaps
         }
         b.Lamp(new Vector3(194f, 11f, -30f), 12f, .5f);
         // Who is where.
-        var crowds = b.Variant("차량기지 잠든 무리 (여섯 중 넷)", 4, 250);
-        foreach (var (x, z) in new[] { (186f, -29.8f), (203f, -36.3f), (183f, -42.8f), (205f, -49.3f), (192f, -55.5f), (210f, -29.8f) })
-            b.Sleepers("Ch3.04", new Vector3(x, 0f, z), 3, 1.6f, b.Choice(crowds, $"{x} {z}"));
         b.Walkers("Ch3.04", 1, null, new Vector3(173f, 0f, -24f), new Vector3(173f, 0f, -58f), new Vector3(214f, 0f, -58f));
         b.Walkers("Ch3.04", 1, null, new Vector3(194f, 0f, -23f), new Vector3(194f, 0f, -59f));
 
@@ -215,8 +207,13 @@ public static partial class CampaignMaps
             Fill(so.FindProperty("cages"), cages);
             FillObjects(so.FindProperty("doors"), doors);
             FillObjects(so.FindProperty("bars"), bars);
+            // Who is shut in: four in each cage, set as the way into the depot begins. The cage says it itself and
+            // stands them inside its own box (GimmickCage.Crowds), where a separate spot at a typed place said it before.
+            so.FindProperty("crowdStep").stringValue = "Ch3.03";
+            var held = so.FindProperty("held");
+            held.arraySize = cages.Count;
+            for (int i = 0; i < cages.Count; i++) held.GetArrayElementAtIndex(i).intValue = 4;
         });
-        foreach (var (x, n) in new[] { (173.8f, 4), (182.8f, 4) }) b.CageCrowd("Ch3.03", new Vector3(x, 0f, -15.5f), n, 2.2f);
         // The two doors to bar.
         foreach (var (name, z0, z1) in new[] { ("철창 창고 북문", Z1 + .02f, Z1 + .28f), ("철창 창고 남문", ShedZ1 - .28f, ShedZ1 - .02f) })
         {

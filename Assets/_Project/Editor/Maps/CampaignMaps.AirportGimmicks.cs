@@ -93,8 +93,8 @@ public static partial class CampaignMaps
             so.FindProperty("reach").floatValue = 1.7f;
         });
 
-        // The staff card: on landside, by a sleeping guard, where the run puts it (three places); the security
-        // board in the corridor says where it was lost.
+        // The staff card: on landside, where the run puts it (three places); the security board in the corridor says
+        // where it was lost.
         var card = b.Switch<GimmickItem>("직원 카드", new Vector3(31.8f, 0f, 20.4f));
         var spots = new List<Transform>
         {
@@ -112,7 +112,6 @@ public static partial class CampaignMaps
         shine.color = new Color(.5f, .85f, 1f);
         shine.shadows = LightShadows.None;
         shine.lightmapBakeType = LightmapBakeType.Realtime;
-        b.Sleepers("Ch4.02", new Vector3(32.6f, 0f, 20.4f), 1, .1f, card.transform);
         GreyboxBuilder.Configure(card, so =>
         {
             so.FindProperty("id").stringValue = "staffcard";
@@ -253,14 +252,10 @@ public static partial class CampaignMaps
         b.Pickup(new Vector3(127.6f, 0f, 3.4f), PickupSpot.Roll.Gun);
     }
 
-    // Who is in the terminal before anyone comes in (placed as the way to the security lane begins, out of sight): asleep
-    // in the entrance hall past the scanner and along the corridor to the lounge, and one walking the hall, so a beep at
-    // the scanner (or the staff gate broken in) is felt at once.
+    // Who is in the terminal before anyone comes in (placed as the way to the security lane begins, out of sight): one
+    // walking the entrance hall, so a beep at the scanner (or the staff gate broken in) is felt at once.
     private static void TerminalCrowds(GreyboxBuilder b)
     {
-        b.Sleepers("Ch4.03", new Vector3(90f, 0f, 16f), 3, 1.4f);
-        b.Sleepers("Ch4.03", new Vector3(104f, 0f, 9.5f), 2, 1.2f);
-        b.Sleepers("Ch4.03", new Vector3(116f, 0f, -10f), 2, 1.2f);
         b.Walkers("Ch4.03", 1, null, new Vector3(76f, 0f, 12f), new Vector3(108f, 0f, 12f));
     }
 }

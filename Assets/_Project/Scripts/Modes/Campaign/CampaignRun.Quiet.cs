@@ -67,21 +67,23 @@ public sealed partial class CampaignRun
 
     // A map's caged crowds and walkers on their rounds (PatrolRoute) on this step's stretch, set with the calm ones ahead;
     // half as near to the players as the calm may stand, as they are indoors where the way passes close.
-    // SleeperNest is what a map names such a place with, and only its caged kind holds anyone: the crowds it laid face
-    // down on the floor are gone (CampaignHorde.PlaceCaged), so a map built before 2026-11-18 lays none either, rebuilt
-    // or not.
+    // A cage says who is shut in it and where (GimmickCage.Crowds). The crowds a map once laid face down on the floor
+    // are gone, and with them the spots that named them (SleeperNest): a map built before 2026-11-18 lays none, and its
+    // cages stand empty until it is rebuilt.
     private void PlaceMapCrowds(string stepId)
     {
         // Once a stretch: the way on from a hold, which begins no quiet stretch of its own, sets them as it is reached
         // (PlaceCrowdsAhead), and a wipe clears them with everything else.
         if (string.IsNullOrEmpty(stepId) || !crowdsPlaced.Add(stepId)) return;
-        foreach (var nest in SleeperNest.All)
-            if (nest != null && nest.Caged && string.Equals(nest.Step, stepId, System.StringComparison.OrdinalIgnoreCase))
-                calmMade += horde.PlaceCaged(nest.transform.position, nest.Count, nest.Radius, players, calmNear * .5f);
+        caged.Clear();
+        GimmickCage.Crowds(stepId, caged);
+        foreach (var crowd in caged) calmMade += horde.PlaceCaged(crowd.Middle, crowd.Count, crowd.Radius, players, calmNear * .5f);
         foreach (var route in PatrolRoute.All)
             if (route != null && string.Equals(route.Step, stepId, System.StringComparison.OrdinalIgnoreCase))
                 calmMade += horde.PlaceWalkers(route, players, calmNear * .5f);
     }
+
+    private readonly System.Collections.Generic.List<GimmickCage.Crowd> caged = new System.Collections.Generic.List<GimmickCage.Crowd>();
 
     // The host, on to a step after a hold (no quiet stretch begins there, so no calm ones were set ahead): the map's
     // caged crowds and walkers from this step up to the next hold, escape or rest stop, those not set yet.

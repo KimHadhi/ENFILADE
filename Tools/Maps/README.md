@@ -19,6 +19,7 @@
 | `navmesh.py` | 구운 걷기 메시(`Scenes/Campaign/<씬>/NavMesh.asset`, 바이너리)를 읽는 모듈: 타일의 폴리곤, 타일 사이 이음, 낙하·건너뛰기 링크(한쪽 방향), 그 위의 길찾기(폴리곤 통로 + 깔때기). 엔진의 길찾기와 같은 것은 아니라서 길이가 몇 m 다를 수 있다. 혼자 돌리면 그 파일의 타일·폴리곤·링크 수를 적는다 |
 | `flow.py [씬 이름 …]` | 좀비가 나오는 자리의 모델([Spawns.md](../../Docs/Features/Spawns.md))을 맵마다 읽는다: 임무 경로(Start에서 각 단계의 자리까지)를 걷기 메시 위에 놓고, 구간마다 흐름과 걷기 메시가 잇지 못하는 곳, 스폰 지점마다 경로의 어디에 붙는지를 `Logs/spawn-flow.txt`에 적는다. 볼 것은 `FINDING` 줄. 게임의 SpawnRoute(Lay·Place)를 줄대로 옮긴 것이라 그쪽을 바꾸면 여기도 같이 바꾼다. 게임이 스스로 쓰는 기록은 `Logs/spawns.txt`(편집기에서 장을 시작하면) |
 | `sim.py [씬 이름 …]` | 단계마다 분대를 그 구간의 8 m마다 세워 보고, 표(SpawnRules.csv)의 규칙대로 쓸 수 있는 스폰 지점이 몇 개인지 `Logs/spawn-sim.txt`에 적는다(`NOTHING` = 그 자리에서는 떼가 기다린다). 시야는 읽지 않으므로 실제로는 이보다 적다. 뒤쪽 구간은 모두 소탕된 것으로 친다(가장 나쁜 경우) |
+| `cage_crowd.py [씬 이름 …] [--held N]` | 철창에 갇힌 무리(GimmickCage)가 다 설 수 있는지: 씬에서 철창의 칸·갇힌 수·놓이는 구간을 읽고, 게임과 같은 규칙으로 무리의 가운데와 반경을 구해(칸 가운데, 창살에서 0.9 m 안쪽), 구운 걷기 메시 위에 게임이 세우는 방식 그대로(수 × 8번 시도, 2 m 안의 걷기 메시, 1.1 m 간격) 2,000번 세워 본다. 씬마다 지워진 엎드린 무리 자리(`SleeperNest`, '잠든 무리 N')가 몇 개 남았는지도 센다(다시 지으면 0). 모두 맞으면 마지막 줄이 `OK`. `--held N`은 철창이 갇힌 수를 적기 전에 지은 씬을 칸마다 N으로 보고 잰다. 몸이 들어갈 틈(물리)과 플레이어와의 거리는 재지 않는다 |
 | `fbx_size.py <파일.fbx> …` | 바이너리 FBX(6.x, 7.x)의 메시 크기를 임포트 배율(.meta)까지 곱해 적는다. 블렌더가 못 여는 FBX 6.1도 읽는다. 모델을 표에 넣기 전에 방에 들어가는지 볼 때 쓴다 |
 
 ## 돌리는 법
@@ -30,6 +31,7 @@ python Tools/Maps/walk_probe.py Assets/_Project/Scenes/Campaign/Ch1_Rooftops.uni
 python Tools/Maps/fbx_size.py Assets/ThirdParty/Airport_Terminal_Scene/3dobjects_props/kuehlschrank.fbx
 python Tools/Maps/flow.py
 python Tools/Maps/sim.py Ch1_Rooftops
+python Tools/Maps/cage_crowd.py
 ```
 
 한글이 깨지면 `PYTHONIOENCODING=utf-8`을 앞에 붙인다.
@@ -40,4 +42,5 @@ python Tools/Maps/sim.py Ch1_Rooftops
 - 1장 지하 계단: 복도 → 104호 문 → 계단 → 지하 배전반까지 캡슐이 막힘 없이 지나간다(`walk_probe.py`, 위 예시의 길).
 - 4장(11-15에 지은 씬): 터미널 벽 충돌 메시(colmesh)의 MeshCollider에 메시가 없었다(씬 파일의 `m_Mesh` 덮어쓰기가 fileID 0). 다시 지으면 `Logs/MapAudit/Ch4_Airport.txt`의 '메시 없는 것 0'이어야 한다. 팩의 충돌 메시는 걷는 높이의 벽 2,534 m²를 모두 덮고, 유리 한 장(fenster_05, 30 m²)만 덮지 않는다(`shell_cover.py`).
 - 차 상자의 허공: 소형 세단 34%, 경찰 세단 32%, 승합차 22%, 픽업 28%(`hull_vs_shape.py`, 빌더가 올린 상자 기준).
+- 철창 무리(3장, 11-15에 지은 씬의 걷기 메시, `cage_crowd.py Ch3_Subway --held 4`): 두 칸 모두 무리의 원 안이 전부 걷기 메시 위(0.1 m 격자 2,053점·1,513점), 2,000번 세워 2,000번 모두 넷이 다 섰고 칸 밖에 선 놈 0. 걷기 메시는 벽·창살에서 0.53 m 안쪽부터 있다. 엎드린 무리 자리는 1장 21·2장 12·3장 16(갇힌 무리 둘 포함)·4장 5개가 씬에 남아 있다: 다시 지으면 0이어야 한다.
 - 모델 크기: 냉장 진열대 kuehlregal_4er 4.00 × 2.50 × 1.23 m, 냉장고 kuehlschrank 1.20 × 2.50 × 0.86 m, 조명탑 발전기 3.97 × 4.17 × 1.58 m(씬의 상자와 FBX가 같은 값).

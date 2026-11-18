@@ -3,8 +3,8 @@ using UnityEngine;
 /// <summary>
 /// A security room's monitors (the map gimmick cards "톨게이트 관제실" and "역무실과 CCTV", after PAYDAY 2's Train Heist and
 /// Beneath the Mountain): [F] watches the cameras, and for its seconds every zombie within its reach of the place they
-/// look over shows through walls on every PC (GhostSight's veil, as a Ghost's ultimate shows them), sleeping crowds and
-/// walkers alike, coming in as a wave from where the cameras look. It can be watched again after its wait. States: how
+/// look over shows through walls on every PC (GhostSight's veil, as a Ghost's ultimate shows them), the calm ones and
+/// the walkers alike, coming in as a wave from where the cameras look. It can be watched again after its wait. States: how
 /// many times it has been watched.
 /// </summary>
 public sealed class GimmickCamera : GimmickSwitch

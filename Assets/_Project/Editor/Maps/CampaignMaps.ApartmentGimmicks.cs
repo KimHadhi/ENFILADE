@@ -3,7 +3,7 @@ using UnityEngine;
 using Side = GreyboxBuilder.Side;
 
 // CampaignMaps: chapter 1's block of flats, its gimmicks: the lift, the roof's machine room, what changes from run to run,
-// the caretaker's log and the master key, the vents, the TVs, the cellar's switchboard, who sleeps where and who walks the
+// the caretaker's log and the master key, the vents, the TVs, the cellar's switchboard, who walks the
 // corridors, and the rooms' furniture. One part of the class; the rest is in CampaignMaps.cs and the files beside it.
 public static partial class CampaignMaps
 {
@@ -321,32 +321,16 @@ public static partial class CampaignMaps
 
     // ---- Who is where ----
 
-    // Sleeping crowds, a run's pick of flats on each floor, and a walker on every corridor (two on the ground floor).
+    // A walker on every corridor (two on the ground floor). The flats and the cellar hold no crowd of their own: every
+    // crowd a map laid on the floor is gone (the user, 2026-11-18: "제거 지시된 자는 좀비 오브젝트 완전 삭제", and asked
+    // how far, "엎드린 무리까지"), and nothing was put in their place. Who else is in the block is the run's to set
+    // along the way (CampaignHorde.PlaceCalm).
     private static void AptCrowds(GreyboxBuilder b)
     {
         const string Step = "Ch1.13";
         for (int f = 1; f < AptStoreys; f++)
-        {
-            float y = f * Storey;
-            // The landing flat (501) and the caretaker's (503) are kept clear: the first steps in are quiet.
-            var group = b.Variant($"B4 {f + 1}층 잠든 무리 (판마다 두 집)", f == 5 ? 1 : 2, 150 + f);
-            foreach (var flat in Flats)
-            {
-                if (f == 4 && (flat.n == 1 || flat.n == 3)) continue;
-                if (f == 5 && flat.n == 1) continue;
-                var choice = b.Choice(group, $"{f + 1}0{flat.n}호");
-                b.Sleepers(Step, Middle(flat.back, y), flat.n == 2 ? 2 : 3, 1.8f, choice);
-            }
-            b.Walkers(Step, 1, null, new Vector3(88.6f, y, 0f), new Vector3(98.6f, y, 0f));
-        }
-        var ground = b.Variant("B4 1층 잠든 무리 (셋 중 둘)", 2, 160);
-        foreach (var n in new[] { 1, 2, 3 })
-        {
-            var flat = System.Array.Find(Flats, each => each.n == n);
-            b.Sleepers(Step, Middle(flat.back, 0f), 3, 1.8f, b.Choice(ground, $"10{n}호"));
-        }
+            b.Walkers(Step, 1, null, new Vector3(88.6f, f * Storey, 0f), new Vector3(98.6f, f * Storey, 0f));
         b.Walkers(Step, 2, null, new Vector3(88.6f, 0f, 0f), new Vector3(98.6f, 0f, 0f), new Vector3(91.6f, 0f, -4.5f));
-        b.Sleepers("Ch1.14", new Vector3(92.5f, -3f, -5f), 2, 1.2f);
     }
 
     // ---- Furniture ----

@@ -79,15 +79,14 @@ public static partial class CampaignMaps
         b.Box("홀 동벽 북", 90f, 90.3f, 0f, 6.5f, 2.3f, 12.3f);
         b.Box("터널 입구 위", 90f, 90.3f, 5.5f, 6.5f, -6.3f, 2.3f);
 
-        // 3. The dark tunnel: rubble, a pile to climb, the derailed car the way goes in, over or beside, crowds asleep along
-        // the track (SleepingTunnel).
+        // 3. The dark tunnel: rubble, a pile to climb, the derailed car the way goes in, over or beside (DarkTunnel).
         b.Reflections("Ch3.Tunnel", 90.3f, 170f, 0f, 5.5f, -6f, 2f);
         b.Box("터널 벽 남", 90.3f, 170f, 0f, 5.5f, -6.3f, -6f);
         b.Box("터널 벽 북", 90.3f, 170f, 0f, 5.5f, 2f, 2.3f);
         b.Box("터널 천장", 90.3f, 170f, 5.5f, 6f, -6.3f, 2.3f);
         b.Dress(b.Box("잔해 1", 110f, 113f, 0f, 1.4f, -5.9f, -2f, b.Concrete, "ConcreteGrit"), "rubblepile");
         b.Dress(b.Box("잔해 더미", 128f, 130f, 0f, 2.2f, -2f, 1.9f, b.Concrete, "ConcreteGrit"), "rubblepile");
-        SleepingTunnel(b);
+        DarkTunnel(b);
         b.EnemySpawn("터널 1", new Vector3(100f, 0f, 0f));
         b.EnemySpawn("터널 2", new Vector3(120f, 0f, -4f));
         b.EnemySpawn("터널 3", new Vector3(146f, 0f, 0f));
@@ -199,7 +198,7 @@ public static partial class CampaignMaps
         b.Pickup(new Vector3(333f, Bank, 2f));
         DressSubway(b);
         b.Finish("3장 지하철을 지었어요 (Scenes/Campaign/Ch3_Subway).\n" +
-                 "길: 대합실(역무실 CCTV·안내 방송) → 승강장 → 잠든 터널(탈선한 객차 안·위·옆) → 정비창 사무실(휴게소) → 차량기지의 연료통 4개(게시판이 자리를 알려 줌)를 발전기에 → " +
+                 "길: 대합실(역무실 CCTV·안내 방송) → 승강장 → 어두운 터널(탈선한 객차 안·위·옆) → 정비창 사무실(휴게소) → 차량기지의 연료통 4개(게시판이 자리를 알려 줌)를 발전기에 → " +
                  "발전기가 방수문을 여는 동안 버티기(철창이 터짐) → 강 밑 터널 → 비상 계단 → 신호탄 → 버티기 → 보트.");
     }
 

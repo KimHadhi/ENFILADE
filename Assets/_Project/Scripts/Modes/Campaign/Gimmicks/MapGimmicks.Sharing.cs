@@ -25,7 +25,7 @@ public sealed partial class MapGimmicks
 
     /// <summary>
     /// A number from 0 to 1 for this run and this <paramref name="salt"/>, the same on every PC once the seed is known
-    /// (GimmickVariant, GimmickItem, the sleeping crowds' places).
+    /// (GimmickVariant, GimmickItem).
     /// </summary>
     internal static float Roll(int salt) => Mix(Seed, (uint)salt);
 
