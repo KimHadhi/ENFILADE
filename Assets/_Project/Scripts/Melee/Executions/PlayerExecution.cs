@@ -122,6 +122,12 @@ public sealed class PlayerExecution : MonoBehaviour
         && player.CurrentState != PlayerMovement.MovementState.DashPush
         && !player.IsLandingRecovery && !IsExecuting;
     /// <summary>
+    /// Whether F could begin an execution or a takedown now, as far as this player's own state goes (on their feet, hands
+    /// and keys their own, none under way). A Ghost's chain asks before it moves the Ghost on (GhostCards.Go), so it never
+    /// takes them behind a zombie they could not then take down.
+    /// </summary>
+    public bool CanBegin => CanOffer;
+    /// <summary>
     /// On the host's copy of someone executing on their own PC: the enemy is held for them, and the others back away from
     /// this body as they would from the host's own.
     /// </summary>

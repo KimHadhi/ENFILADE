@@ -74,6 +74,10 @@ public sealed partial class FieldPickups
         if (!mine.IsInitialized || mine.IsDead || mine.IsDowned || Cursor.lockState != CursorLockMode.Locked) return false;
         if (ShopMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || DevConsole.TakesKeyboard) return false;
         if (mine.Execution != null && mine.Execution.Candidate != null) return false;
+        // A Ghost's chain open on a zombie is a takedown offered too, and F is its as it is a plain takedown's (GhostCards:
+        // since 2026-11-18 the chain stays open a moment after its takedown has let the Ghost go, when a pickup at its
+        // feet would otherwise take the same press).
+        if (GhostCards.Local != null && GhostCards.Local.TakesInteract) return false;
         if (mine.TryGetComponent(out PlayerRevive revive) && revive.Candidate != null) return false;
         return !(mine.TryGetComponent(out PlayerWeaponSlots slots) && slots.HandsFull);
     }

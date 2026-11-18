@@ -4,6 +4,7 @@ assault.charge,class.hud.charge,accent,Class_assault,10,1
 point.kata,class.hud.kata,accent,Class_point,20,1
 point.gunslinger,effect.gunslinger,ice,Class_point,21,1
 ghost.phantom,class.hud.phantom,ice,Class_ghost,30,1
+ghost.chain,effect.chain,ice,Class_ghost,31,1
 knight.shadow,class.hud.shadow,#9E52FF,Class_knight,40,1
 knight.coverstrike,class.hud.coverstrike,accent,Class_knight,41,1
 knight.flow,class.hud.flow,ice,Class_knight,42,1

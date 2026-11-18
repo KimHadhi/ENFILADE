@@ -1,5 +1,6 @@
 ﻿id,ko,en,#어디
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
+effect.chain,암살 연쇄 ×{1},Chain ×{1},클래스 칸 아래 지속 효과 칸(TimedEffects.csv ghost.chain): 고스트 암살 연쇄 카드로 다음 좀비를 고를 수 있는 동안. 칼이 닿기 전에는 가득 찬 채로 있고 닿은 뒤 Ghost.chainWindow초 동안 줄어든다. {1}=더 이을 수 있는 횟수
 gun.pro.scope_view,조준하면 화면 전체가 ×{0} 확대,Aiming magnifies the whole view ×{0},"부품 설명(초록 +). {0}=배율. 화면 전체가 확대되는 배율 조준경(GunParts.csv view=zoom). 렌즈 안만 확대되는 조준경(view=pip)은 gun.pro.scope_zoom"
 hud.parkour.ledge.nowayup,눌러 낙하 · 여기서는 올라설 수 없음,,파쿠르 안내: 난간에 매달렸는데 그 자리에서는 위로 올라설 수 없을 때(위가 막혔거나 설 자리가 없는 턱) 조준점 아래. 앞에 웅크리기 키(CTRL) 키캡이 붙는다. 올라가려고 W나 Space를 누르면 손이 한 번 당기는 소리(SoundCues LedgeRefuse)가 난다
 wear.face.name,얼굴에,On the face,"옷장 > 입은 액세서리 판 아래 '착용 위치' 칩. WearPositions.csv face: 얼굴에 쓴다(용접 마스크)"
@@ -335,7 +336,7 @@ perk.ghost_quiet.name,조용한 표적,,능력 카드 이름: 카드 고르기 �
 perk.ghost_quiet.text,눈치 못 챈 좀비를 조준경으로 {Ghost.quietAim}초 보면 머리 위에 작은 흰 표시가 붙는다(모두에게 보임). 그 좀비를 헤드샷으로 처치하면 둘레가 알아채지 못하고 암살로 친다: 암살 돈과 헤드 헌터 +{Ghost.quietHunter},,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_quiet)
 perk.ghost_quiet.why,저격수는 쏘기 전에 고른다. 고른 한 발은 아음속탄이다,,능력 카드 아래 작은 이유 한 줄(ghost_quiet)
 perk.ghost_chain.name,암살 연쇄,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_chain · ghost)
-perk.ghost_chain.text,암살하는 동안 {0}m 안의 눈치 못 챈 좀비를 보고 F: 바람처럼 그 등 뒤로 옮겨 가 바로 암살한다. 한 번에 {1}번까지 잇는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_chain)
+perk.ghost_chain.text,암살하는 동안과 그 칼이 들어간 뒤 {Ghost.chainWindow}초 안에 {0}m 안의 눈치 못 챈 좀비를 보고 F: 바람처럼 그 등 뒤로 옮겨 가 바로 암살한다. 한 번에 {1}번까지 잇는다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_chain)
 perk.ghost_chain.why,칼이 멈추기도 전에 몸은 이미 다음 그림자 속에 있다,,능력 카드 아래 작은 이유 한 줄(ghost_chain)
 perk.ghost_cones.name,시선 읽기,,능력 카드 이름: 카드 고르기 화면·Tab 점수판 카드 줄(ghost_cones · ghost)
 perk.ghost_cones.text,앉았을 때 보이는 좀비 시야 콘이 {1}개 더 많고 {0}m 안까지 보인다,,능력 카드 효과 줄. {0}=그 단계까지 더한 값 {1}=두 번째 값 {표.이름}=ClassAbilities.csv 숫자(ghost_cones)

@@ -25,7 +25,15 @@ using UnityEngine.UI;
 /// takes the Ghost behind it in a gust everyone sees (GhostFx) and straight into its takedown, a few in a row (the user:
 /// "한 명 암살 중에 다른 애 보고 암살 키 누르면 걔 쪽으로 바람 이펙트와 함께 텔레포트하면서 바로 암살하고"). An execution
 /// holds the view still, so while a chain is left the Ghost's view turns in its takedown all the same (PlayerLook asks
-/// LooksDuringTakedown), to find the next one.</item>
+/// LooksDuringTakedown), to find the next one.
+/// The chain has a time of its own (ChainMomentOf): the next may be named from the takedown's start, the Ghost goes as
+/// its blow lands, and for Ghost.chainWindow seconds after that blow the chain stays open, though the takedown has let
+/// the Ghost go long before. It used to be open "while the takedown holds the player" and no longer: nobody chose that
+/// length, and when takedowns were made quick (2026-11-18: the blow at 0.3 s, let go 0.1 s later, where the player had
+/// been held 1.2 to 1.5 s) the card lost most of its time with them. It runs from the blow, not from the takedown's
+/// start, because the blow is the first moment the Ghost can go at all: what is left to choose is how long after the
+/// kill it may still move on, and counted so neither a longer dash in, a slower kneeling takedown nor the Ghost's own
+/// quicker knife takes anything from it.</item>
 /// <item>시선 읽기 (ghost_cones): a crouched Ghost sees more zombies' sight cones, from farther off (StealthView asks).</item>
 /// <item>화이트 타이거 (ghost_whitetiger, its final card until those went, 2026-11-14; 1.5/2/2.5 m): every headshot hurts
 /// the enemies round the one it hit as much as it did, a small white claw mark on each (CardFx Claws, for everyone).</item>
@@ -55,11 +63,15 @@ public sealed class GhostCards : MonoBehaviour
     // 조용한 표적: the zombie held in the sights now, and how long it has been.
     private EnemyHealth sighted;
     private float sightedFor;
-    // 암살 연쇄: in a takedown now (one begun on a zombie that knew nothing) and whether its blow has landed; how many more
-    // may follow; the zombie F asked for, waiting for that blow; and whether this PC is moving the Ghost on itself.
-    private bool takedown, struck, chaining;
-    private int chainsLeft;
-    private EnemyHealth queued;
+    // 암살 연쇄: a run of chains is open (a takedown of a zombie that knew nothing began it); when the takedown in hand
+    // began and in which frame (the press that began it names nothing), and when its blow landed (below 0: not yet); how
+    // many more may follow; the zombie F asked for, waiting for that blow (or for the body to be able); the one the chain
+    // would go to now, as of which frame, and the frame F last named one (what others who share F ask: TakesInteract);
+    // and whether this PC is moving the Ghost on itself.
+    private bool run, chaining;
+    private float startedAt, struckAt = -1f;
+    private int startedFrame = -1, chainsLeft, offeredFrame = -1, tookFrame = -1;
+    private EnemyHealth queued, offered;
     // The ultimate: until when, and how long it lasts.
     private float phantomUntil = -99f, phantomTotal = 1f;
     // White Tiger: the enemies round a headshot, gathered first, as a kill takes one out of the list it was found in.
@@ -120,10 +132,52 @@ public sealed class GhostCards : MonoBehaviour
     /// </summary>
     public static bool LooksDuringTakedown(PlayerMovement who)
     {
+        // The chain's own time says so (Moment), not how long the takedown lasts; it only lifts the hold a takedown puts
+        // on the view (once let go, the view is the player's anyway), never another's (a broken guard).
         var mine = Local;
-        return mine != null && who != null && mine.movement == who && mine.takedown && mine.chainsLeft > 0
-            && who.Execution != null && who.Execution.IsExecuting && PlayerClass.Is(PlayerClass.Ghost) && PlayerPerks.Has(ChainCard);
+        return mine != null && who != null && mine.movement == who && mine.Moment != ChainMoment.Closed
+            && who.Execution != null && who.Execution.IsExecuting;
     }
+
+    /// <summary>Where a run of chains stands.</summary>
+    public enum ChainMoment : byte
+    {
+        /// <summary>No chain may be asked for: no run, none left in it, or the time after the last blow has run out.</summary>
+        Closed,
+        /// <summary>The takedown in hand has not struck yet: the next may be named now, and the Ghost goes as the blow lands.</summary>
+        Waiting,
+        /// <summary>The blow has landed and its time runs: a zombie named now is gone to at once.</summary>
+        Open,
+    }
+
+    /// <summary>
+    /// The chain's rule by itself, a pure function of the run and the clock (checked without the game:
+    /// Tools/Checks/ghost_chain_check.py runs the same lines over the tables' own numbers). <paramref name="run"/>: a
+    /// takedown of a zombie that knew nothing opened a run and the card is held; <paramref name="left"/>: chains still
+    /// to take in it; <paramref name="struckAt"/>: when the blow of the takedown in hand landed, below 0 while it has
+    /// not; <paramref name="window"/>: Ghost.chainWindow, the seconds after a blow the chain stays open.
+    /// </summary>
+    public static ChainMoment ChainMomentOf(bool run, int left, float struckAt, float now, float window)
+    {
+        if (!run || left <= 0) return ChainMoment.Closed;
+        if (struckAt < 0f) return ChainMoment.Waiting;
+        return now - struckAt <= Mathf.Max(0f, window) ? ChainMoment.Open : ChainMoment.Closed;
+    }
+
+    /// <summary>How long after a takedown's blow the chain stays open (s): Tables/ClassAbilities Ghost.chainWindow.</summary>
+    public static float ChainWindow => Mathf.Max(0f, PlayerClass.Ability(Row, "chainWindow", 1.1f));
+
+    private ChainMoment Moment => ChainMomentOf(run && PlayerClass.Is(PlayerClass.Ghost) && PlayerPerks.Has(ChainCard), chainsLeft, struckAt,
+        Time.time, ChainWindow);
+
+    /// <summary>
+    /// 암살 연쇄: F is the chain's now. Out of a takedown, pressed now it would take this PC's Ghost on to the zombie the
+    /// chain points at; and in the frame a press named one, in a takedown too, that press was the chain's. Whatever else
+    /// F does waits for it, as it waits for a takedown offered (PlayerPing's ping, FieldPickups' pickup): one press is one
+    /// act, and a takedown comes first.
+    /// </summary>
+    public bool TakesInteract => tookFrame == Time.frameCount
+        || (offered != null && offeredFrame >= Time.frameCount - 1 && (execution == null || !execution.IsExecuting));
 
     /// <summary>How much of the ultimate under way is left, 0 to 1 (0: none).</summary>
     public float PhantomShare => phantomUntil > Time.time ? Mathf.Clamp01((phantomUntil - Time.time) / phantomTotal) : 0f;
@@ -179,9 +233,10 @@ public sealed class GhostCards : MonoBehaviour
         phantomUntil = -99f;
         sighted = null;
         sightedFor = 0f;
-        takedown = struck = chaining = false;
+        run = chaining = false;
+        struckAt = -1f;
         chainsLeft = 0;
-        queued = null;
+        queued = offered = null;
     }
 
     private void Update()
@@ -193,7 +248,7 @@ public sealed class GhostCards : MonoBehaviour
         GhostSight.Own(ghost && !movement.IsDead ? SightReach : 0f);
         if (!ghost)
         {
-            sighted = queued = null;
+            sighted = queued = offered = null;
             Prompt(false);
             return;
         }
@@ -260,23 +315,65 @@ public sealed class GhostCards : MonoBehaviour
 
     // ---- 암살 연쇄 ----
 
-    // In a takedown with chains left: the zombie it would go to is shown (GhostMarks), F asks for it, and once the blow in
-    // hand has landed the Ghost goes.
+    // While the chain's own time is open (Moment): the zombie it would go to is shown (GhostMarks' chevron, the prompt),
+    // F names it, and the Ghost goes as soon as the blow in hand has landed, at once if it already has. All of it follows
+    // that time, in the takedown and after it has let the Ghost go; none of it follows the takedown's length.
     private void Chain()
     {
-        bool executing = execution != null && execution.IsExecuting;
-        if (!executing || !takedown || chainsLeft <= 0 || !PlayerPerks.Has(ChainCard) || movement.IsDead || !movement.InputAvailable)
+        var moment = Moment;
+        if (run && (movement.IsDead || moment == ChainMoment.Closed)) Close(movement.IsDead ? "the Ghost died" : chainsLeft <= 0 ? "no chain left" : "its time ran out");
+        if (moment == ChainMoment.Closed || movement.IsDead)
         {
-            if (!executing) queued = null;
+            queued = offered = null;
             Prompt(false);
             return;
         }
+        // Its time on the HUD, a slot among the timed effects (TimedEffects): whole until the blow, running down after it.
+        float window = ChainWindow;
+        TimedEffects.Report("ghost.chain", moment == ChainMoment.Open ? window - (Time.time - struckAt) : window, window, chainsLeft, chainsLeft);
+        bool executing = execution != null && execution.IsExecuting;
         if (queued != null && !Takeable(queued)) queued = null;
-        var next = queued != null ? queued : Next(execution.Victim);
+        // What it would go to: the one already asked for, else the one the crosshair is on. Out of a takedown it offers
+        // none while the Ghost's body could not begin one (sliding, in a vault, held), and none while a zombie stands
+        // where F simply takes it down: that is the takedown's own offer, whose prompt stands where this one would.
+        bool can = executing || (execution != null && execution.CanBegin && execution.Candidate == null);
+        var next = queued != null ? queued : can ? Next(executing ? execution.Victim : null) : null;
+        offered = next;
+        offeredFrame = Time.frameCount;
         if (next != null) GhostMarks.Pointing(next);
         Prompt(next != null);
-        if (queued == null && next != null && KeyBindings.Pressed("Player/Interact")) queued = next;
-        if (queued != null && struck) Go(queued);
+        // F names it: a press of its own (the one that began this takedown names nothing), made while the keys are the
+        // player's. Who has the keys is asked here and nowhere else in the chain: it stops a new asking, and never ends
+        // what is under way. This whole method used to give up while the chat or the Esc menu had them, so the prompt,
+        // the chevron and the turning view went with a word typed, and a chain already asked for was dropped with them.
+        if (queued == null && next != null && Time.frameCount != startedFrame && movement.InputAvailable && KeyBindings.Pressed("Player/Interact"))
+        {
+            queued = next;
+            tookFrame = Time.frameCount;
+            Note($"NAMED  {next.name} at +{Time.time - startedAt:0.00}s ({(moment == ChainMoment.Open ? "after the blow: it goes now" : "before the blow: it waits for it")})");
+        }
+        if (queued != null && moment == ChainMoment.Open) Go(queued);
+    }
+
+    // The run is over: nothing more may be asked for until a takedown opens another.
+    private void Close(string why)
+    {
+        if (run) Note($"CLOSED {why} at +{Time.time - startedAt:0.00}s, {chainsLeft} left unused");
+        run = false;
+        struckAt = -1f;
+        chainsLeft = 0;
+        queued = offered = null;
+    }
+
+    // Checked without playing: every run's moments go to Logs/ghost-chain.txt (PlayRecord), each with its time from the
+    // start of the takedown in hand, so a play shows how long the Ghost had and when it pressed.
+    private const string RecordName = "ghost-chain", RecordHeading =
+        "a Ghost's 암살 연쇄 (GhostCards): RUN a takedown opened one | BLOW its blow landed, the time open after it | NAMED F asked for a zombie "
+        + "| WENT the Ghost moved on | WAITS it could not begin there yet | CLOSED why. +s = since the takedown in hand began";
+
+    private static void Note(string line)
+    {
+        if (PlayRecord.On) PlayRecord.Line(RecordName, RecordHeading, line);
     }
 
     // The next zombie: knowing nothing, within the card's reach, nearest the crosshair within Ghost.chainAim, in plain sight,
@@ -306,28 +403,43 @@ public sealed class GhostCards : MonoBehaviour
             && enemy.TryGetComponent(out MeleeCombatTarget target) && target.IsAvailable && !target.IsHeld && !target.IsKnockedDown;
 
     // Behind it at once, facing it, in a gust everyone sees, and into its takedown; the one in hand ends there, its blow
-    // landed. Should its spot have filled meanwhile, nothing happens (no minus for it).
+    // landed. Should its spot have filled meanwhile, nothing happens (no minus for it). And the Ghost is never moved to a
+    // zombie it could not then take down: while its body can't begin a takedown (its keys taken, a slide, a vault) the
+    // one asked for is kept and tried again each frame, for as long as the chain's time lasts.
     private void Go(EnemyHealth next)
     {
-        queued = null;
         if (!next.TryGetComponent(out MeleeCombatTarget target) || !next.TryGetComponent(out ZombieMind mind) || !Spot(next, mind, out Vector3 spot))
+        {
+            queued = null;
             return;
-        Vector3 from = transform.position;
+        }
         chaining = true;
-        execution.Cancel();
+        if (execution.IsExecuting) execution.Cancel();
+        if (!execution.CanBegin)
+        {
+            chaining = false;
+            if (waitedFrame != Time.frameCount - 1) Note($"WAITS  for {next.name}: the body cannot begin a takedown now");
+            waitedFrame = Time.frameCount;
+            return;
+        }
+        queued = null;
+        Vector3 from = transform.position;
         Step(spot, GhostSight.Middle(next));
         GhostNet.Send(new GhostNet.Packet { Step = (byte)GhostNet.Step.Chain, From = from, To = spot }, movement, null);
         bool began = execution.TryBegin(target);
         chaining = false;
         if (!began)
         {
-            takedown = struck = false;
-            chainsLeft = 0;
+            Close("its takedown could not begin where it landed");
             return;
         }
         chainsLeft--;
-        takedown = true;
+        run = true;
+        Note($"WENT   to {next.name}, {chainsLeft} left");
     }
+
+    // The frame a chain last waited for the body (its record says so once, not every frame).
+    private int waitedFrame = -2;
 
     // There at once, looking at it; for the other PCs a jump, never a slide across.
     private void Step(Vector3 spot, Vector3 look)
@@ -413,22 +525,33 @@ public sealed class GhostCards : MonoBehaviour
     // A takedown begun: one on a zombie that knew nothing starts a run of chains (one this PC moved on to keeps its count).
     private void OnTakedownStarted(MeleeCombatTarget victim)
     {
-        struck = false;
+        struckAt = -1f;
+        startedAt = Time.time;
+        startedFrame = Time.frameCount;
         if (chaining) return;
-        takedown = victim != null && victim.TryGetComponent(out ZombieMind mind) && mind.Unaware;
-        chainsLeft = takedown && PlayerPerks.Has(ChainCard) ? Mathf.Max(0, Mathf.RoundToInt(PlayerPerks.Total2(ChainCard))) : 0;
-        queued = null;
+        // A takedown of the Ghost's own (F, not a chain) while a run still stood open begins the count afresh.
+        if (run) Close("a takedown of the Ghost's own took its place");
+        bool unaware = victim != null && victim.TryGetComponent(out ZombieMind mind) && mind.Unaware;
+        chainsLeft = unaware && PlayerPerks.Has(ChainCard) ? Mathf.Max(0, Mathf.RoundToInt(PlayerPerks.Total2(ChainCard))) : 0;
+        run = chainsLeft > 0;
+        queued = offered = null;
+        if (run) Note($"RUN    opened by a takedown of {victim.name}: {chainsLeft} chain(s), open {ChainWindow:0.00}s after each blow");
     }
 
-    private void OnTakedownStruck(MeleeCombatTarget victim) => struck = true;
+    // Its blow landed: from here the chain's own time runs (Ghost.chainWindow), whatever the takedown still does.
+    private void OnTakedownStruck(MeleeCombatTarget victim)
+    {
+        struckAt = Time.time;
+        if (run) Note($"BLOW   at +{struckAt - startedAt:0.00}s: open until +{struckAt - startedAt + ChainWindow:0.00}s");
+    }
 
-    // Its end with no chain taken ends the run.
+    // The takedown let the Ghost go. With its blow landed the run stays open for its own time (Chain closes it when that
+    // runs out): this is where the chain used to end, with the takedown. One that ended before its blow killed nothing,
+    // and ends the run.
     private void OnTakedownEnded()
     {
-        if (chaining) return;
-        takedown = struck = false;
-        chainsLeft = 0;
-        queued = null;
+        if (chaining || !run) return;
+        if (struckAt < 0f) Close("the takedown ended before its blow");
     }
 
     // ---- The headshot cards ----

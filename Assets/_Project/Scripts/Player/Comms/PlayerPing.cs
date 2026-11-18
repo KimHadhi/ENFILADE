@@ -189,6 +189,9 @@ public sealed class PlayerPing : MonoBehaviour
     {
         if (execution == null) execution = GetComponent<PlayerExecution>();
         if (execution != null && (execution.IsExecuting || execution.Candidate != null)) return true;
+        // A Ghost's chain open on a zombie (암살 연쇄, for its own time after a takedown's blow: GhostCards): F takes the
+        // Ghost on to it, as F takes a takedown offered. Without this the same press would also ping that zombie.
+        if (GhostCards.Local != null && GhostCards.Local.TakesInteract) return true;
         if (FieldPickups.Targeting) return true;
         if (revive == null) revive = GetComponent<PlayerRevive>();
         if (revive != null && revive.Candidate != null) return true;
