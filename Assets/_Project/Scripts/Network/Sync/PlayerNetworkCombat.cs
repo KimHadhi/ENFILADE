@@ -249,6 +249,8 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             support.ToolHeld += OnToolHeld;
             weapon.ShotFired += OnShot;
             melee.Punched += OnPunched;
+            melee.Wound += OnWound;
+            melee.Dropped += OnSwingDropped;
             melee.Elbowed += OnElbowed;
             fists.Played += OnFistSound;
             shoves.Played += OnShoveSound;
@@ -282,7 +284,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         if (weapon != null) weapon.ShotFired -= OnShot;
-        if (melee != null) { melee.Punched -= OnPunched; melee.Elbowed -= OnElbowed; }
+        if (melee != null) { melee.Punched -= OnPunched; melee.Wound -= OnWound; melee.Dropped -= OnSwingDropped; melee.Elbowed -= OnElbowed; }
         if (fists != null) fists.Played -= OnFistSound;
         if (shoves != null) shoves.Played -= OnShoveSound;
         if (kicks != null) kicks.Kicked -= OnKicked;
@@ -386,7 +388,9 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     }
 
     private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255), ShotPierce);
-    private void OnPunched(float charge) => PunchRpc(charge);
+    private void OnPunched(float charge) => PunchRpc(charge, (byte)melee.LastStrike);
+    private void OnWound() => WindRpc();
+    private void OnSwingDropped() => SwingDroppedRpc();
     private void OnElbowed(int side) => ElbowRpc(side >= 0);
     private void OnFistSound(FistSound sound) => FistSoundRpc(sound);
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);

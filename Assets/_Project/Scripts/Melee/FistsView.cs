@@ -46,7 +46,9 @@ public sealed class FistsView : MonoBehaviour
     /// at once, running or not (PlayerBodyHands): the elbow has no arm clip, so without them it would be posed here and
     /// never seen.
     /// </summary>
-    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || spinElapsed >= 0f || Countering || IsDeflecting;
+    public bool IsPunching => leftPunchTime > 0f || rightPunchTime > 0f || elbowElapsed >= 0f || spinElapsed >= 0f || Countering || IsDeflecting
+        // ... or a swing's clip is still playing: it lasts as long as its clip does (SwingTimeline), past the fist's own short jab.
+        || (melee != null && melee.IsSwinging);
     private bool Countering => player != null && player.PerfectDefense != null && player.PerfectDefense.IsCountering;
     private bool IsDeflecting => deflectElapsed < deflectSeconds;
     /// <summary>A punch left: with the right hand or not, and how charged it was (0-1).</summary>

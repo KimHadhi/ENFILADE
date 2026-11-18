@@ -1,22 +1,32 @@
 using System;
 using UnityEngine;
 
-/// <summary>Fist prototype. Owns charge/release, frontal defense and single-target guard break.</summary>
+/// <summary>
+/// The melee slot's hands: the class knife's swings, the guard with Sekiro's parry, and V's shove and guard break.
+/// A swing is not an instant (the user, 2026-11-18: "즉시 발동 대신 무기별 선딜레이 부여(… 꾹 누르면 선딜 이후 손이 떨리며
+/// 차징됨)", "근접 적중 시 후딜레이 캔슬 제거"): the attack button starts the knife's wind-up; let go by its end, a light
+/// swing leaves there; still held, the wind-up goes on into a charge, and letting go sends a stronger swing (the knife's
+/// heavy clip from heavyPunchCharge on); the swing then plays its clip, which says itself when the blade is live and when
+/// the next action may begin (KnifeSwing's marks), and nothing shortens that wait: not a hit, not the guard. All of those
+/// moments are SwingTimeline's, stepped here with the button on the player's own PC and with the owner's words on a copy
+/// (Wound, Punched, Dropped through PlayerNetworkCombat), so every PC's knife arm goes by the same clock (MeleeKnife).
+/// A combo's strike (MeleeCombos: a riposte, a link, a chase, a beat) is the one thing that leaves with no wind-up and
+/// may cut a recovery short: it is the reward for a press made in time, and it still waits for a blade that is live.
+/// Until then the swing left on the button's release with no wind-up, a hit set the wait to nothing, and every knife
+/// cut the same two bodies.
+/// Who has the keys only decides what the input frame holds (the user's item 14, 2026-11-18): with the chat or a menu
+/// up the buttons read as let go, which a charge takes as its release and a guard as its end, and nothing under way is
+/// thrown away for it.
+/// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MeleeCombat)]
 public sealed class PlayerMeleeCombat : MonoBehaviour
 {
-    [Header("Fists")]
+    [Header("Attack")]
     [SerializeField, Min(0.1f)] private float reach = 1.6f;
-    [SerializeField, Min(0.1f)] private float fullChargeTime = 0.9f;
-    [SerializeField] private Vector2 damage = new Vector2(10f, 28f);
-    [SerializeField] private Vector2 postureDamage = new Vector2(10f, 30f);
-    [SerializeField, Min(0f)] private float attackCooldown = 0.2f;
-    [Tooltip("적이나 벽에 적중하면 후딜 없이 다음 입력으로 연타. 허공에 빗나갔을 때만 Attack Cooldown 적용.")]
-    [SerializeField, Min(.02f)] private float attackActiveTime = .18f;
-    [Tooltip("한 번의 주먹 공격으로 맞힐 수 있는 서로 다른 대상 수.")]
-    [SerializeField, Min(1)] private int attackMaxTargets = 2;
+    [SerializeField, Min(0f), Tooltip("A press made while a swing is still committed is kept when the swing frees the next action within this long (s), and begins the next wind-up there.")]
+    private float attackBuffer = .35f;
     [SerializeField, Min(0f)] private float lungeDistance = 0.12f;
-    [SerializeField, Range(0f, 1f), Tooltip("Punches charged at least this far land with the heavy hit sound.")]
+    [SerializeField, Range(0f, 1f), Tooltip("A swing charged at least this far is the knife's heavy one (its stab clip), and lands with the heavy hit sound.")]
     private float heavyPunchCharge = .6f;
     [SerializeField, Tooltip("A punch going out turns the view a little and lets it straight back (degrees: up, toward the "
         + "punching fist, roll toward it). Only the view: the aim stays (CameraViewPunch).")]
@@ -57,27 +67,50 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     private PlayerWeaponInput input;
     private PlayerFistAudio fistAudio;
     private MeleeCombos combos;
+    private MeleeKnife knifeArm;
     private Transform aim;
     private MeleeCombatTarget target;
     private Collider targetCollider;
-    // strikeHold: a combo strike's active time, over which a guard still held doesn't come back up and cancel it.
     // shoveWait: V's own wait after a shove or a guard break. It no longer holds the punches (League's auto-attack reset,
     // user 2026-11-11): a skill hands the punch straight back, as the spinning backfist (MeleeCombos link).
-    private float chargeTime, shoveTime, cooldown, shoveRest, shoveWait, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge, strikeHold;
+    private float shoveTime, shoveRest, shoveWait, grabTime, grabRecoveryRemaining, lungeRemaining, punchCharge;
     private float parryRemaining, guardBufferRemaining, guardIdleTime, rootUntil = float.NegativeInfinity;
     // This window's parries so far, when its first landed (real s), its strongest hit stop, and how near (squared m) the
     // attacker its riposte is open on stands.
     private float windowFirstAt, windowStop, windowRiposte;
     private int spamCount, windowParries;
     private ParryFeedback parryFeedback;
-    private bool charging, shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
+    private bool shovePending, grabConnected, guardAttemptHeld, defenseConnected, pendingWhiff, punchLanded;
     private Vector3 lungeDirection;
     private readonly MeleeAttackSweep punchSweep = new MeleeAttackSweep();
     private readonly ShoveSweep.Attack shoveSweep = new ShoveSweep.Attack();
+
+    // ---- The swing (SwingTimeline) ----
+    private readonly SwingTimeline swing = new SwingTimeline();
+    // The swing that leaves next when it is not the button's own: a combo's strike and its numbers, or one only shown
+    // (the Knight's counter punch, a copy's word), which hits nothing here.
+    private ComboStrike nextStrike;
+    private MeleeCombatTarget nextAt;
+    private float nextDamage = 1f, nextPosture = 1f, nextReach, nextRadius;
+    private int nextTargets;
+    private bool nextShown;
+    // The swing under way: what its blade deals, on whom it is aimed, and whether its blade has opened yet.
+    private float swingDamage, swingPosture, swingReach, swingRadius;
+    private int swingTargets;
+    private MeleeCombatTarget swingAt;
+    private bool swingJudged, bladeOpened;
+
     public bool IsGuarding { get; private set; }
     public bool IsParryActive => parryRemaining > 0f;
-    public bool IsCharging => charging;
-    public float ChargeRatio => charging ? Mathf.Clamp01(chargeTime / fullChargeTime) : 0f;
+    /// <summary>The attack button is winding up or charging: the hands are up for it (PlayerBodyHands) and busy (PlayerPoint).</summary>
+    public bool IsCharging => swing.Now == SwingTimeline.Phase.Windup || swing.Now == SwingTimeline.Phase.Charging;
+    /// <summary>How far the wind-up has gone, 0 to 1 (1 while charging): the knife is drawn back by it (MeleeKnife).</summary>
+    public float WindShare => swing.WindShare;
+    /// <summary>How charged the hold is, 0 to 1 (0 until the wind-up is over): the knife trembles by it.</summary>
+    public float ChargeRatio => swing.Now == SwingTimeline.Phase.Charging ? swing.Charge : 0f;
+    /// <summary>A swing's clip is playing, and where in it (s of the clip): every PC's knife arm plays that moment (MeleeKnife).</summary>
+    public bool IsSwinging => swing.Now == SwingTimeline.Phase.Swing;
+    public float SwingClipTime => swing.ClipTime;
     public bool IsGuardBreaking => target != null;
     // Pinned by a runner the fists do nothing, unless a melee perk lets them fight it lying there (PlayerHold.FightsPinned).
     private bool MovementBlocksAttack => player.IsParkour || player.IsDiving || player.IsSliding || player.IsDowned
@@ -87,7 +120,12 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
     /// <summary>The feet are planted after a parry (real time): the legs give no speed, the hands are free.</summary>
     public bool IsRooted => IsActive && Time.unscaledTime < rootUntil;
+    /// <summary>A swing left (how charged, 0 to 1). LastStrike says which move it is while this is raised.</summary>
     public event Action<float> Punched;
+    /// <summary>On the player's own PC: a wind-up began, for the other PCs' copies (PlayerNetworkCombat).</summary>
+    public event Action Wound;
+    /// <summary>On the player's own PC: a wind-up or a charge was let go of with no swing (the guard, V, a move), for the copies.</summary>
+    public event Action Dropped;
     /// <summary>The combo move of the punch Punched is announcing, read during that event (FistsView); None otherwise.</summary>
     public ComboStrike LastStrike { get; private set; }
     /// <summary>This player's combos (the beat's step, for FistsView); null on a copy made before play.</summary>
@@ -117,44 +155,67 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         if (fistAudio == null && Application.isPlaying) fistAudio = gameObject.AddComponent<PlayerFistAudio>();
         if (fistAudio != null) fistAudio.Prepare();
         combos = MeleeCombos.For(player);
+        swing.Leaving = OnLeaving;
         CancelAction();
     }
     /// <summary>On someone else's copy: their guard went up or down.</summary>
     internal void ShowGuard(bool guarding) => IsGuarding = guarding;
-    /// <summary>On someone else's copy: their punch left. Their PC judged what it hit.</summary>
-    internal void ShowPunch(float charge) => Punched?.Invoke(charge);
+    /// <summary>On someone else's copy: their wind-up began. It goes on into its charge here as theirs does, until their swing or their letting go comes.</summary>
+    internal void ShowWind()
+    {
+        Weigh();
+        swing.Wind();
+    }
+    /// <summary>On someone else's copy: their wind-up or charge was let go of with no swing.</summary>
+    internal void ShowDrop()
+    {
+        if (IsCharging) swing.Drop();
+    }
+    /// <summary>On someone else's copy: their swing left, charged this far, as this move. Their PC judged what it hit.</summary>
+    internal void ShowPunch(float charge, ComboStrike strike = ComboStrike.None)
+    {
+        Weigh();
+        nextStrike = strike;
+        nextShown = true;
+        swing.Strike(charge);
+    }
     private void Update()
     {
-        if (player != null && player.IsNetworkDriven) return;
-        if (!IsActive || !player.InputAvailable) { CancelAction(); TickGuardInput(player.DeltaTime, default); return; }
-        if (IsGuardBreaking)
+        if (player != null && player.IsNetworkDriven)
         {
-            if (input != null && input.TryReadGuardBuffer(out var guardFrame)) ProcessFrame(player.DeltaTime, guardFrame);
-            else CancelAction();
+            // A copy's timeline only runs on: its wind-up into its charge (the button counts as held until their word
+            // comes), its swing's clip to its end.
+            if (IsActive) swing.Tick(player.DeltaTime, true, false);
+            else swing.Drop();
             return;
         }
-        if (input == null || !input.TryReadMeleeInput(out var frame)) { CancelAction(); return; }
-        ProcessFrame(player.DeltaTime, frame);
+        if (!IsActive) { CancelAction(); TickGuardInput(player != null ? player.DeltaTime : 0f, default); return; }
+        // The hands not the player's this frame (the chat, a menu, the window behind another): every button reads as let
+        // go, and the frame goes on with that. It used to throw away whatever was under way.
+        if (IsGuardBreaking)
+        {
+            ProcessFrame(player.DeltaTime, input != null && input.TryReadGuardBuffer(out var guardFrame) ? guardFrame : default);
+            return;
+        }
+        ProcessFrame(player.DeltaTime, input != null && input.TryReadMeleeInput(out var frame) ? frame : default);
     }
     private void LateUpdate()
     {
         // PlayerLook updates after input processing. Include this frame's final camera rotation.
         if (Time.timeScale <= 0f || (player != null && player.IsNetworkDriven)) return;
-        if (!IsActive || !player.InputAvailable || player.Execution.OrNull()?.IsExecuting == true) { CancelAction(); return; }
+        if (!IsActive || player.Execution.OrNull()?.IsExecuting == true) { CancelAction(); return; }
         if (IsGuardBreaking) return;
         if (MovementBlocksAttack) { SuspendActionsForMovement(); return; }
         punchSweep.Tick(0f); shoveSweep.Tick(0f);
     }
-    /// <summary>A counter hands the shove straight back (ShoveCounter): the fists can shove or punch again at once.</summary>
-    internal void RefreshShove() { cooldown = shoveRest = shoveWait = 0f; }
+    /// <summary>A counter hands the shove straight back (ShoveCounter): the fists can shove again at once.</summary>
+    internal void RefreshShove() { shoveRest = shoveWait = 0f; }
     public void ProcessFrame(float dt, MeleeInputFrame frame)
     {
         if (dt <= 0f) return;
         if (!IsActive || player.Execution.OrNull()?.IsExecuting == true) { CancelAction(); return; }
-        cooldown = Mathf.Max(0f, cooldown - dt);
         shoveRest = Mathf.Max(0f, shoveRest - dt);
         shoveWait = Mathf.Max(0f, shoveWait - dt);
-        strikeHold = Mathf.Max(0f, strikeHold - dt);
         TickGuardInput(dt, frame);
         if (IsGuardBreaking)
         {
@@ -165,21 +226,33 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         }
         if (MovementBlocksAttack)
         { SuspendActionsForMovement(); return; }
+        Weigh();
         // A combo's dash in takes no other press; a guard press calls it off and guards (MeleeCombos).
         if (combos != null && combos.IsDashing)
         {
-            if (!frame.GuardPressed) return;
+            if (!frame.GuardPressed)
+            {
+                // The arm of a swing still going home keeps moving through the dash.
+                swing.Tick(dt, false, false);
+                return;
+            }
             combos.CancelDash();
         }
-        // A combo strike goes on the press itself, ahead of the guard and of any wait (MeleeCombos): the riposte after a
-        // parry, the guard still held or not.
-        else if (frame.AttackPressed && combos != null && combos.TryTake()) return;
-        // Guard has priority over charge, punch/shove active frames and their recovery.
-        if (guardBufferRemaining > 0f) BeginGuard(frame.GuardHeld);
-        else if (frame.GuardHeld && !IsGuarding && strikeHold <= 0f)
+        // A combo strike goes on the press itself, ahead of the guard, the wind-up and a recovery (MeleeCombos): the
+        // riposte after a parry, the guard still held or not. Only a blade still live makes it wait.
+        else if (frame.AttackPressed && !BladeLive && combos != null && combos.TryTake()) return;
+        // The guard comes up at once out of a wind-up or a charge, which it lets go of (a feint costs nothing), but a
+        // swing that has left is committed until its clip frees the next action: the guard waits for that too, a press
+        // kept for guardInputBuffer and a hold coming up as a block. It used to cut any swing, and gave the next one at once.
+        bool committed = swing.Committed;
+        if (!committed)
         {
-            // A long hold through an uninterruptible action resumes block, never a fresh parry.
-            CancelOffense(); IsGuarding = true; guardAttemptHeld = true; defenseConnected = false;
+            if (guardBufferRemaining > 0f) BeginGuard(frame.GuardHeld);
+            else if (frame.GuardHeld && !IsGuarding)
+            {
+                // A long hold through an uninterruptible action resumes block, never a fresh parry.
+                CancelOffense(); IsGuarding = true; guardAttemptHeld = true; defenseConnected = false;
+            }
         }
         if (IsGuarding) return;
         punchSweep.Tick(dt); shoveSweep.Tick(dt);
@@ -190,13 +263,13 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
             player.Motor.AddDisplacement(lungeDirection * (lungeDistance * slice / 0.1f));
         }
         // Crouched, V is the leg sweep round the front at once, no hold to wait for (ShoveMoves; it keeps its own interval).
-        if (frame.ShovePressed && player.IsCrouching && cooldown <= 0f && shoveWait <= 0f)
+        if (frame.ShovePressed && player.IsCrouching && !committed && shoveWait <= 0f)
         {
-            punchSweep.Cancel(); charging = shovePending = false; IsGuarding = false; parryRemaining = 0f;
+            DropSwing(); shovePending = false; IsGuarding = false; parryRemaining = 0f;
             ShoveMoves.For(player).OrNull()?.TrySweep();
         }
-        else if (frame.ShovePressed && cooldown <= 0f && shoveWait <= 0f)
-        { punchSweep.Cancel(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; charging = false; IsGuarding = false; parryRemaining = 0f; }
+        else if (frame.ShovePressed && !committed && shoveWait <= 0f)
+        { DropSwing(); shoveSweep.Cancel(); shovePending = true; shoveTime = 0f; IsGuarding = false; parryRemaining = 0f; }
         if (shovePending)
         {
             shoveTime += dt;
@@ -219,21 +292,29 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
                 }
             }
             else if (!frame.ShoveHeld) shovePending = false;
-            return;
         }
-        // The shove still under way finishes: a punch thrown right after it mustn't rob it of its contact.
-        if (frame.AttackPressed && cooldown <= 0f)
-        { punchSweep.Cancel(); parryRemaining = 0f; charging = true; chargeTime = 0f; }
-        if (!charging) return;
-        if (frame.AttackHeld) chargeTime = Mathf.Min(fullChargeTime, chargeTime + dt);
-        if (frame.AttackReleased)
+        // The attack button, unless V has the hand this frame: the timeline takes it from here (a press kept while a
+        // swing is committed, the wind-up, the charge, the swing leaving through OnLeaving).
+        bool mine = !shovePending && !IsGuardBreaking;
+        var happened = swing.Tick(dt, mine && frame.AttackHeld, mine && frame.AttackPressed);
+        if ((happened & SwingTimeline.Events.Wound) != 0)
         {
-            float amount = Mathf.Clamp01(chargeTime / fullChargeTime);
-            charging = false; cooldown = attackCooldown;
-            Punch(amount);
+            parryRemaining = 0f;
+            Wound?.Invoke();
         }
-        else if (!frame.AttackHeld) charging = false;
+        OpenBlade();
     }
+    // The knife in hand sets the timeline's pace: its wind-up, its charge, how fast all of it runs (ClassKnives.csv).
+    private void Weigh()
+    {
+        var knife = MeleeKnife.Held(player);
+        swing.Windup = knife.Windup;
+        swing.ChargeTime = knife.ChargeTime;
+        swing.Speed = knife.AttackSpeed;
+        swing.Buffer = attackBuffer;
+    }
+    // The blade of the swing under way is live now (its clip is inside its marks), or has yet to be.
+    private bool BladeLive => swing.Now == SwingTimeline.Phase.Swing && swing.ClipTime < swing.Marks.To;
     private void TickGuardInput(float dt, MeleeInputFrame frame)
     {
         parryRemaining = Mathf.Max(0f, parryRemaining - dt);
@@ -263,12 +344,22 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         windowParries = 0;
         pendingWhiff = !held; defenseConnected = false; guardAttemptHeld = held;
         IsGuarding = held; guardIdleTime = guardBufferRemaining = 0f;
-        CancelOffense(); cooldown = 0f;
+        CancelOffense();
     }
     private void CancelOffense()
     {
-        punchSweep.Cancel(); shoveSweep.Cancel();
-        charging = shovePending = false; chargeTime = shoveTime = lungeRemaining = 0f;
+        DropSwing(); shoveSweep.Cancel();
+        shovePending = false; shoveTime = lungeRemaining = 0f;
+    }
+    // Whatever the attack button had under way is let go of; a wind-up or a charge that ends so is told to the copies.
+    private void DropSwing()
+    {
+        bool winding = IsCharging;
+        punchSweep.Cancel();
+        swing.Drop();
+        nextStrike = ComboStrike.None; nextAt = null; nextShown = false;
+        swingAt = null; swingJudged = false;
+        if (winding && player != null && !player.IsNetworkDriven) Dropped?.Invoke();
     }
     private void SuspendActionsForMovement()
     {
@@ -281,43 +372,70 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
     /// <summary>A riposte lets the feet go at once (MeleeCombos): the parry's planted feet would hold its step in.</summary>
     internal void FreeFeet() => rootUntil = float.NegativeInfinity;
     /// <summary>
-    /// A combo strike goes now (MeleeCombos): a punch at full charge times the move's own numbers, on the press, the guard
-    /// dropped for it. Aimed at someone, it lands on them when they are within the move's reach of the eyes with nothing
-    /// solid between; otherwise, or when that fails, it sweeps along the aim as any punch.
+    /// A combo strike goes now (MeleeCombos): a swing at full charge times the move's own numbers, on the press, with no
+    /// wind-up, the guard dropped for it and whatever recovery was left cut short. Aimed at someone, it lands on them as
+    /// its blade goes live, when they are within the move's reach of the eyes with nothing solid between; otherwise, or
+    /// when that fails, it sweeps along the aim as any swing.
     /// </summary>
     internal void StrikeCombo(ComboStrike strike, MeleeCombatTarget at = null)
     {
         if (!IsActive || combos == null) return;
-        punchSweep.Cancel();
-        charging = shovePending = false; chargeTime = shoveTime = 0f;
+        DropSwing();
+        shovePending = false; shoveTime = 0f;
         IsGuarding = guardAttemptHeld = false; parryRemaining = guardBufferRemaining = 0f;
-        cooldown = 0f; strikeHold = attackActiveTime + .05f;
-        combos.Numbers(strike, out float damageFactor, out float postureFactor, out float strikeReach, out float radius, out int targets);
-        Punch(1f, strike, damageFactor, postureFactor, strikeReach, at, radius, targets);
+        Weigh();
+        combos.Numbers(strike, out nextDamage, out nextPosture, out nextReach, out nextRadius, out nextTargets);
+        nextStrike = strike; nextAt = at; nextShown = false;
+        swing.Strike(1f);
+        OpenBlade();
     }
-    // strikeReach: an aimed strike's reach from the eyes, or how much further than a punch a sweep reaches. radius and
-    // targets: a combo's wider sweep (0: a punch's own).
-    private void Punch(float charge, ComboStrike strike = ComboStrike.None, float damageFactor = 1f, float postureFactor = 1f,
-        float strikeReach = 0f, MeleeCombatTarget at = null, float radius = 0f, int targets = 0)
+    // A swing leaves (SwingTimeline asks for its clip's marks): the button's own, a combo's strike, or one only shown.
+    // The knife arm picks the clip (MeleeKnife.Take: a slash, its backhand, the heavy one), and on the player's own PC the
+    // swing's numbers are set for when its blade goes live (OpenBlade).
+    private SwingMarks OnLeaving(float charge)
     {
-        lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
-        lungeRemaining = player.IsGrounded ? 0.1f : 0f;
-        // The beat counts from the punch leaving, before the sweep can land on its first sample (MeleeCombos).
-        combos.OrNull()?.OnPunchThrown(strike);
-        // Swing first: the sweep can land on its first sample inside Begin.
-        punchLanded = false; punchCharge = charge; fistAudio.OrNull()?.PlaySwing();
-        throwFelt = landFeltLater = false;
-        // A Knight's fists hit harder, flesh and posture (PlayerClass).
-        float fist = PlayerClass.FistFactor(player);
-        // The class knife in the melee slot deals its own numbers in place of the fists' and reaches its length further (MeleeKnife).
-        float dealt = MeleeKnife.Damage(player, charge, Mathf.Lerp(damage.x, damage.y, charge)) * fist * damageFactor;
-        float posture = MeleeKnife.Posture(player, charge, Mathf.Lerp(postureDamage.x, postureDamage.y, charge)) * fist * postureFactor;
-        if (at == null || !StrikeTarget(at, dealt, posture, strikeReach))
-            punchSweep.Begin(player, aim, dealt, posture, reach + MeleeKnife.ExtraReach(player) + (at == null ? strikeReach : 0f), radius > 0f ? radius : .22f,
-                attackActiveTime, targets > 0 ? targets : attackMaxTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
+        var strike = nextStrike; var at = nextAt; bool shown = nextShown;
+        float damageFactor = strike != ComboStrike.None ? nextDamage : 1f, postureFactor = strike != ComboStrike.None ? nextPosture : 1f;
+        float strikeReach = strike != ComboStrike.None ? nextReach : 0f, radius = strike != ComboStrike.None ? nextRadius : 0f;
+        int targets = strike != ComboStrike.None ? nextTargets : 0;
+        nextStrike = ComboStrike.None; nextAt = null; nextShown = false;
+        if (knifeArm == null && player != null) knifeArm = player.GetComponent<MeleeKnife>();
+        var clip = knifeArm != null ? knifeArm.Take(charge, strike, heavyPunchCharge) : null;
+        bool judged = !shown && player != null && !player.IsNetworkDriven;
+        swingJudged = judged; bladeOpened = false; swingAt = judged ? at : null;
+        if (judged)
+        {
+            var knife = MeleeKnife.Held(player);
+            lungeDirection = Vector3.ProjectOnPlane(aim.forward, Vector3.up).normalized;
+            lungeRemaining = player.IsGrounded ? 0.1f : 0f;
+            // The beat counts from the punch leaving, before its blade can land (MeleeCombos).
+            combos.OrNull()?.OnPunchThrown(strike);
+            punchLanded = false; punchCharge = charge; fistAudio.OrNull()?.PlaySwing();
+            throwFelt = landFeltLater = false;
+            // A Knight's blade hits harder, flesh and posture (PlayerClass).
+            float fist = PlayerClass.FistFactor(player);
+            swingDamage = Mathf.Lerp(knife.Slash, knife.Stab, charge) * fist * damageFactor;
+            swingPosture = Mathf.Lerp(knife.SlashPosture, knife.StabPosture, charge) * fist * postureFactor;
+            swingReach = strikeReach; swingRadius = radius;
+            // A combo's own count of bodies (a spin goes through three), else what the knife cuts.
+            swingTargets = targets > 0 ? targets : knife.Penetration;
+        }
         LastStrike = strike;
         Punched?.Invoke(charge);
         LastStrike = ComboStrike.None;
+        return clip != null ? clip.Marks : default;
+    }
+    // The blade of the swing under way goes live (its clip has reached the mark): an aimed strike lands on whom it is aimed
+    // at, else the sweep opens for as long as the blade stays live. Once a swing, on the player's own PC.
+    private void OpenBlade()
+    {
+        if (!swingJudged || bladeOpened || swing.Now != SwingTimeline.Phase.Swing || swing.ClipTime < swing.Marks.From) return;
+        bladeOpened = true;
+        var at = swingAt; swingAt = null;
+        if (at != null && StrikeTarget(at, swingDamage, swingPosture, swingReach)) return;
+        float live = Mathf.Max(.02f, (swing.Marks.To - Mathf.Max(swing.ClipTime, swing.Marks.From)) / Mathf.Max(.01f, swing.Speed));
+        punchSweep.Begin(player, aim, swingDamage, swingPosture, reach + MeleeKnife.ExtraReach(player) + (at == null ? swingReach : 0f),
+            swingRadius > 0f ? swingRadius : .22f, live, swingTargets, hitLayers, OnPunchLanded, OnPunchWallHit);
     }
     // The aimed combo strike: on that body when it is within reach of the eyes with nothing solid between, as the
     // perfect-defense counter's punch lands (PlayerPerfectDefense.Strike).
@@ -337,9 +455,10 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         OnPunchLanded();
         return true;
     }
+    // The blade met someone. Nothing about the swing's timing changes for it: until 2026-11-18 this set the wait to
+    // nothing, so a hit could be followed at once and only a miss had a recovery (the user: "근접 적중 시 후딜레이 캔슬 제거").
     private void OnPunchLanded()
     {
-        cooldown = 0f;
         // One hit cue per punch, even when it lands on several targets; and one beat waiting after it (MeleeCombos).
         if (!punchLanded)
         {
@@ -394,15 +513,21 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         punch = CameraViewPunch.For(ownView);
         return punch != null;
     }
-    private void OnPunchWallHit()
-    {
-        cooldown = 0f;
-        fistAudio.OrNull()?.PlayWallHit();
-    }
+    private void OnPunchWallHit() => fistAudio.OrNull()?.PlayWallHit();
+    /// <summary>The Knight's counter lands its own blow (PlayerPerfectDefense): the knife arm only shows the swing.</summary>
     public void ShowCounterPunch(bool landed)
     {
         if (IsActive) { fistAudio.OrNull()?.PlaySwing(); if (landed) fistAudio.OrNull()?.PlayHeavyHit(); }
-        Punched?.Invoke(1f);
+        Shown(1f);
+    }
+    // A swing that is only seen: it leaves now and hits nothing by itself.
+    private void Shown(float charge)
+    {
+        punchSweep.Cancel();
+        Weigh();
+        nextStrike = ComboStrike.None; nextAt = null;
+        nextShown = true;
+        swing.Strike(charge);
     }
     /// <summary>The counter's back elbow, driven back on the attacker's side (+1 right): the fist pulls back past the shoulder.</summary>
     public event Action<int> Elbowed;
@@ -430,8 +555,9 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         // up to parryMost blows when that is set (0: no limit; past it, a held guard blocks).
         bool window = IsParryActive && (parryMost <= 0 || windowParries < parryMost);
         // A blow that can't be guarded is still a Knight's to parry, though never to block (PlayerClass.ParriesAll: a
-        // runner's leap, a grab, an elite's blow from behind).
-        if (!IsActive || !player.InputAvailable || (!IsGuarding && !window) || IsGuardBreaking
+        // runner's leap, a grab, an elite's blow from behind). Whether the keys are the player's is not asked: a guard
+        // already up, or a window already open, turns the blow whoever has them (the input frame lets the guard go).
+        if (!IsActive || (!IsGuarding && !window) || IsGuardBreaking
             || MovementBlocksAttack || hit.Kind != DamageKind.Attack
             || !(hit.CanBeGuarded || (window && PlayerClass.ParriesAll(player, hit)))) return false;
         Vector3 incoming = hit.Source != null ? hit.Source.transform.position - player.transform.position : -hit.Direction;
@@ -472,7 +598,8 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         var candidate = hit.GetComponentInParent<MeleeCombatTarget>();
         if (candidate == null || !candidate.TryReserve(this)) return false;
         target = candidate; targetCollider = hit; grabTime = grabRecoveryRemaining = 0f; grabConnected = false;
-        IsGuarding = charging = false; lungeRemaining = parryRemaining = 0f;
+        IsGuarding = false; lungeRemaining = parryRemaining = 0f;
+        DropSwing();
         player.HorizontalVelocity = Vector3.zero;
         player.Abilities.Dodge.CancelWindow(); player.Abilities.Lean.Reset();
         CombatCueAudio.Play(gameObject, CombatCue.Grab);
@@ -539,15 +666,19 @@ public sealed class PlayerMeleeCombat : MonoBehaviour
         }
         return true;
     }
+    /// <summary>
+    /// Everything the hands had under way ends, for a reason of the game's: the melee slot put away, an execution, a
+    /// move that takes the body, death. Never because input became unavailable.
+    /// </summary>
     public void CancelAction()
     {
-        punchSweep.Cancel(); shoveSweep.Cancel();
+        DropSwing(); shoveSweep.Cancel();
         combos.OrNull()?.CancelDash();
         if (target != null) target.Release(this);
         target = null; targetCollider = null;
         if (guardAttemptHeld && !defenseConnected) pendingWhiff = true;
-        charging = shovePending = IsGuarding = guardAttemptHeld = false;
-        chargeTime = shoveTime = lungeRemaining = parryRemaining = guardBufferRemaining = 0f;
+        shovePending = IsGuarding = guardAttemptHeld = false;
+        shoveTime = lungeRemaining = parryRemaining = guardBufferRemaining = 0f;
     }
     private void OnDisable() { CancelAction(); input.OrNull()?.RequireTriggerRelease(); }
 }

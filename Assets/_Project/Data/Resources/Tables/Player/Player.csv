@@ -10,14 +10,9 @@ Ultimate.chargePerRevive,15,쓰러진 동료를 일으키거나 죽은 동료를
 Ultimate.chargePerHundredRepaired,5,서포트가 바리케이드 체력을 100 고칠 때마다 충전(%)
 Ultimate.chargePerRescue,6,러너에게 깔린 동료를 밀쳐서 구할 때마다 충전(%). 보급 한 번과 같다
 Fists.reach,1.6,주먹 사거리(m)
-Fists.fullChargeTime,0.9,최대 충전까지 걸리는 시간(초)
-Fists.damage,10;28,피해 - 최소 충전;최대 충전
-Fists.postureDamage,10;30,자세 피해 - 최소 충전;최대 충전
-Fists.attackCooldown,0.2,허공에 빗나갔을 때의 후딜(초). 적중하면 바로 다음 입력
-Fists.attackActiveTime,0.18,주먹 판정이 살아 있는 시간(초)
-Fists.attackMaxTargets,2,한 번의 주먹으로 맞힐 수 있는 대상 수
+Fists.attackBuffer,0.35,휘두르기가 아직 묶여 있을 때 누른 공격을 기억해 주는 시간(초): 다음 동작을 시작할 수 있게 되기까지 이만큼 안 남았으면 기억했다가 거기서 다음 선딜로 이어진다. 선딜·공격 속도·관통력·차징 시간·피해는 칼마다 ClassKnives.csv에 있고(windup·attackSpeed·penetration·chargeTime·slash·stab) 칼날이 살아 있는 구간과 후딜은 칼 클립의 표시에 있다. 2026-11-18 전의 fullChargeTime·damage·postureDamage·attackCooldown·attackActiveTime·attackMaxTargets는 없어졌다
 Fists.lungeDistance,0.12,주먹을 뻗을 때 앞으로 나가는 거리(m)
-Fists.heavyPunchCharge,0.6,이만큼 충전한 주먹은 묵직한 타격음을 낸다(0~1)
+Fists.heavyPunchCharge,0.6,이만큼 차징한 공격은 강공격이다(0~1): 칼의 강공격 클립(stabClip)이 나가고 묵직한 타격음을 낸다
 Fists.punchThrowKick,-0.3;0.8;0.6,주먹을 뻗을 때 화면이 잠깐 도는 각도(도): 위;주먹 쪽으로 돌기;주먹 쪽으로 기울기. 화면만 돌고 조준은 그대로
 Fists.punchLandKick,-1;0.4;0.6,주먹이 맞을 때 화면을 툭 치는 각도(도): 위;주먹 쪽으로 돌기;주먹 쪽으로 기울기. 히트스톱 중에도 보이게 실제 시간으로 움직인다
 Fists.punchLandZoom,1.2,주먹이 맞을 때 시야를 잠깐 좁히는 양(시야각 도)

@@ -153,7 +153,10 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         if (Time.timeScale <= 0f) return;
         // The dash runs through whatever locks the hands meanwhile; only death, an execution or a lost target stop it.
         if (striking != null) { TickStrike(player != null ? player.DeltaTime : Time.deltaTime); Tick(Time.unscaledDeltaTime); return; }
-        if (player == null || !player.InputAvailable || player.CombatInputLocked || player.IsParkour || player.IsDiving)
+        // The window closes for reasons of the game alone (the hands taken by an execution or a guard break, the body by
+        // a vault or a dive). Who has the keys is not one of them (the user's item 14, 2026-11-18): with the chat or a
+        // menu up no press is read, and the window runs on to its own end. It closed here before, the slow motion with it.
+        if (player == null || player.CombatInputLocked || player.IsParkour || player.IsDiving)
         { Cancel(); guard = Mathf.Max(0f, guard - Time.unscaledDeltaTime); return; }
         var input = GetComponent<PlayerWeaponInput>();
         // A press that finds nobody to counter spends the window: time comes back at once, before the fists read the same

@@ -21,8 +21,18 @@ public sealed partial class PlayerNetworkCombat
     // through, and friends' PCs trace each shot again to draw it.
     private static ushort ShotPierce => (ushort)Mathf.Clamp(Mathf.RoundToInt(PlayerPerks.OwnPierce * 100f), 0, ushort.MaxValue);
 
+    // A swing as the other PCs see it (the user's rule: what one sees is what the others see): its wind-up beginning,
+    // which their copy's own timeline then carries on into the charge with its tremble (SwingTimeline, MeleeKnife), the
+    // swing leaving with how charged it was and which move it is (a combo's strike showed as a plain slash before), and
+    // a wind-up or a charge let go of with no swing (the guard, V, a move). Their PC judged what it hit.
     [Rpc(SendTo.NotMe)]
-    private void PunchRpc(float charge) => melee.ShowPunch(charge);
+    private void PunchRpc(float charge, byte strike) => melee.ShowPunch(charge, (ComboStrike)strike);
+
+    [Rpc(SendTo.NotMe)]
+    private void WindRpc() => melee.ShowWind();
+
+    [Rpc(SendTo.NotMe)]
+    private void SwingDroppedRpc() => melee.ShowDrop();
 
     // The counter's back elbow on the attacker's side: the copy's fist pulls back and its arm drives the elbow behind, as
     // their own body does. Its swing and hit come as fist sounds.

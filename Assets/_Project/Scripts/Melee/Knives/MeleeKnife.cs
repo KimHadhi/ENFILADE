@@ -3,18 +3,24 @@ using UnityEngine;
 /// <summary>
 /// The class knife in the melee slot, in place of the bare fists (the user, 2026-11-13: "클래스 별로 기본 근접 슬롯에 칼 들게
 /// 해 줘"): the knife of the player's class (ClassKnives, the same one its executions stab with) comes out of the hip into the
-/// right fist when the melee slot is picked, and every fist move stays what it was (light and charged attacks, the combos,
-/// the guard, Sekiro's parry, the shove, the crouched sweep: PlayerMeleeCombat, MeleeCombos), only done with the blade. A
-/// light attack slashes, forehand then backhand while they follow quickly; a charged one, a riposte or a beat chain's
-/// finisher stabs; a spin or a chase is a backhand slash. The knife deals its own row's numbers in place of the fists'
-/// (Damage, Posture, ExtraReach, read by PlayerMeleeCombat), more on the head and in the back (Hit, read by
-/// MeleeAttackSweep), names itself in the kill feed and the weapon slots (FeedName, FeedIcon, SlotName, SlotIcon) and
-/// sounds as a blade (Sounds, from PlayerFistAudio, whose sounds go to the other PCs as before).
-/// The same on every PC (the user's rule: what I see is what friends see): every PC's copy of a player follows the slot,
-/// the punches and the guard their PC sends (FistsView.Thrown, PlayerMeleeCombat's shown guard) and plays the same clips;
-/// ExecutionKnifeArm poses the right arm with them on each body, after the hands and FPS Animation Framework. The clips are
-/// the Blender knife workspace's (KnifeSwing). The fists' own guard, parry and guard break pose the arm themselves: the
-/// knife's guard gives way to them and only rides the fist.
+/// right fist when the melee slot is picked, and the fists' moves are done with the blade (the combos, the guard, Sekiro's
+/// parry, the shove, the crouched sweep: PlayerMeleeCombat, MeleeCombos). A light attack slashes, forehand then backhand
+/// while they follow quickly; a charged one, a riposte or a beat chain's finisher is the heavy clip (a stab; the light clip
+/// again for a knife with no heavy one of its own); a spin or a chase is a backhand slash. The knife deals its own row's
+/// numbers (ClassKnives.csv, read by PlayerMeleeCombat), more on the head and in the back (Hit, read by MeleeAttackSweep),
+/// names itself in the kill feed and the weapon slots (FeedName, FeedIcon, SlotName, SlotIcon) and sounds as a blade
+/// (Sounds, from PlayerFistAudio, whose sounds go to the other PCs as before).
+/// The arm goes by the swing's own timeline (PlayerMeleeCombat's SwingTimeline; the user, 2026-11-18: "즉시 발동 대신 무기별
+/// 선딜레이 부여(선딜과 준비 동작이 반드시 일치할 필요는 없으며, 꾹 누르면 선딜 이후 손이 떨리며 차징됨)"): through the
+/// wind-up the knife is drawn from the guard to the coming swing's first frame; held past it, on to the heavy clip's first
+/// frame as the charge grows, the fist trembling more the fuller it is (the row's chargeShake); the swing is then its clip
+/// at the timeline's own clip time, so what the arm shows, when the blade is live and when the next action may begin are
+/// one clock. Before, the arm ran a clock of its own beside a hit test that never asked it.
+/// The same on every PC (the user's rule: what I see is what friends see): every PC's copy of a player has a timeline their
+/// PC's words step (the wind-up, the swing, the letting go) and plays the same clips; ExecutionKnifeArm poses the right arm
+/// with them on each body, after the hands and FPS Animation Framework. The clips are the Blender knife workspace's
+/// (KnifeSwing). The fists' own guard, parry and guard break pose the arm themselves: the knife's guard gives way to them
+/// and only rides the fist.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MeleeCombat + 5)]
 public sealed class MeleeKnife : MonoBehaviour
@@ -30,12 +36,12 @@ public sealed class MeleeKnife : MonoBehaviour
     private const float BlockBlend = .08f;
     // The sounds play at the hand: this high on the body.
     private const float SoundHeight = 1.4f;
-    // A punch charged this far (0-1) is a heavy one: the knife stabs (PlayerMeleeCombat's heavyPunchCharge, Player.csv).
-    private const float DefaultHeavyCharge = .6f;
+    // The charging fist's tremble: how fast it shakes (changes of way a second, about) and how far the hand turns with it
+    // at full charge (degrees). How far it moves is the knife's own (ClassKnives.csv chargeShake).
+    private const float TrembleRate = 13f, TrembleTurn = 2.5f;
 
     private PlayerMovement movement;
     private PlayerMeleeCombat melee;
-    private FistsView fists;
     private PlayerBodyHands hands;
     private ExecutionKnifeArm arm;
     private ClassKnives.Knife knife;
@@ -46,9 +52,9 @@ public sealed class MeleeKnife : MonoBehaviour
     // The clip's finger joints as sampled this frame, as last shown (after any blend) and where a blend starts from.
     private readonly FingerWays sampledFingers = new FingerWays(), lastFingers = new FingerWays(), fromFingers = new FingerWays(),
         cockedFingers = new FingerWays();
+    // clock: the draw's own (it is no swing of the timeline's). sinceSwing: since the last attack left, for the chain.
     private float clock, sinceSwing = 99f, blendLeft, guardClock, block;
     private bool hasLast, wasOut, backNext;
-    private int nextLook;
 
     /// <summary>The player's melee knife, made on them if it is not there yet (ExecutionKnife asks).</summary>
     public static MeleeKnife On(GameObject player)
@@ -60,23 +66,12 @@ public sealed class MeleeKnife : MonoBehaviour
     /// <summary>The player has their class knife out in the melee slot (the fists' slot), on this PC's copy of them.</summary>
     public static bool Out(PlayerMovement who) => Active(who) != null;
 
+    /// <summary>The knife of this player's class, out or not: what their swings deal and how they swing (PlayerMeleeCombat).</summary>
+    public static ClassKnives.Knife Held(PlayerMovement who) => ClassKnives.Of(ClassKnives.ClassOf(who));
+
     private bool IsOut => melee != null && melee.IsActive;
 
-    // ---- What the knife deals, in place of the fists (PlayerMeleeCombat, MeleeAttackSweep) ----
-
-    /// <summary>What a strike of this charge deals with the knife out: its slash to its stab; else the fists' own.</summary>
-    public static float Damage(PlayerMovement who, float charge, float fists)
-    {
-        var held = Active(who);
-        return held != null ? Mathf.Lerp(held.Slash, held.Stab, Mathf.Clamp01(charge)) : fists;
-    }
-
-    /// <summary>The posture it breaks, as Damage.</summary>
-    public static float Posture(PlayerMovement who, float charge, float fists)
-    {
-        var held = Active(who);
-        return held != null ? Mathf.Lerp(held.SlashPosture, held.StabPosture, Mathf.Clamp01(charge)) : fists;
-    }
+    // ---- What the knife deals (MeleeAttackSweep) ----
 
     /// <summary>How much further than a fist the knife in hand reaches (m; 0 with the fists).</summary>
     public static float ExtraReach(PlayerMovement who) => Active(who)?.Reach ?? 0f;
@@ -141,12 +136,34 @@ public sealed class MeleeKnife : MonoBehaviour
         return true;
     }
 
+    // ---- The swing that leaves (PlayerMeleeCombat's timeline, on every PC) ----
+
+    /// <summary>
+    /// A swing leaves now, charged this far, as this combo move (None: the button's own): which clip it is. A riposte, a
+    /// finisher or a charge from <paramref name="heavyFrom"/> is the heavy clip; a spin or a chase the backhand; else the
+    /// light ones take turns. The arm plays it from here at the timeline's clip time. Null when the knife has no such clip.
+    /// </summary>
+    internal KnifeSwing Take(float charge, ComboStrike strike, float heavyFrom)
+    {
+        Swing next;
+        if (strike == ComboStrike.Riposte || strike == ComboStrike.Finisher || charge >= heavyFrom) next = Swing.Stab;
+        else if (strike == ComboStrike.Spin || strike == ComboStrike.Chase) next = Swing.Backslash;
+        else next = NextLight();
+        var made = Begin(next);
+        if (made != null) backNext = next == Swing.Slash;
+        return made;
+    }
+
+    // The light swing a press would be now: the backhand right after a forehand, the forehand otherwise.
+    private Swing NextLight() => backNext && sinceSwing < ChainGap ? Swing.Backslash : Swing.Slash;
+
     // ---- The arm (ExecutionKnifeArm, each frame) ----
 
     /// <summary>
-    /// The right arm as the knife has it now: the swing playing (eased from the last one), else the guard; and how much of
-    /// the arm it takes (the fists' block and parry take it back, and running forward lets the run clip swing it, as the
-    /// fists do). False while the knife is not out.
+    /// The right arm as the knife has it now: the swing's clip at the timeline's clip time (eased from the last pose),
+    /// else the guard, drawn back to the coming swing's first frame through a wind-up and on to the heavy one's as a
+    /// charge grows, trembling; and how much of the arm it takes (the fists' block and parry take it back, and running
+    /// forward lets the run clip swing it, as the fists do). False while the knife is not out.
     /// </summary>
     internal bool Current(out KnifeSwing.Key key, out float weight, out ClassKnives.Knife inHand, FingerWays fingers = null)
     {
@@ -156,20 +173,29 @@ public sealed class MeleeKnife : MonoBehaviour
         if (!IsOut) return false;
         inHand = KnifeNow();
         bool found = false;
-        if (swing != Swing.None && clip != null && (found = clip.Sample(clock, out key))) clip.SampleFingers(clock, sampledFingers);
+        if (swing != Swing.None && clip != null)
+        {
+            float at = swing == Swing.Draw ? clock : melee.SwingClipTime;
+            if (found = clip.Sample(at, out key)) clip.SampleFingers(at, sampledFingers);
+        }
         if (!found)
         {
             var guard = KnifeSwing.Of(inHand.GuardClip);
             float at = guard != null && guard.Length > 0f ? Mathf.Repeat(guardClock, guard.Length) : 0f;
             if (guard == null || !guard.Sample(at, out key)) return false;
             guard.SampleFingers(at, sampledFingers);
-            // Charging a strike draws the knife back to where the stab starts, as the fists draw back.
-            var stab = melee.IsCharging ? KnifeSwing.Of(inHand.StabClip) : null;
-            if (stab != null && stab.Sample(0f, out var cocked))
+            float wind = melee.WindShare;
+            if (wind > 0f)
             {
-                key = KnifeSwing.Blend(key, cocked, melee.ChargeRatio);
-                stab.SampleFingers(0f, cockedFingers);
-                FingerWays.Blend(sampledFingers, cockedFingers, melee.ChargeRatio, sampledFingers);
+                // The wind-up draws the knife back to where the coming light swing starts.
+                Cock(ref key, KnifeSwing.Of(ClipOf(inHand, NextLight())), Ease.Out(wind));
+                // Held past it, on to where the heavy one starts, the fist trembling as the charge fills.
+                float charge = melee.ChargeRatio;
+                if (charge > 0f)
+                {
+                    Cock(ref key, KnifeSwing.Of(inHand.StabClip), charge);
+                    Tremble(ref key, inHand.ChargeShake, charge);
+                }
             }
         }
         if (blendLeft > 0f && hasLast)
@@ -187,6 +213,29 @@ public sealed class MeleeKnife : MonoBehaviour
         return true;
     }
 
+    // The pose drawn toward a clip's first frame by this share (the fingers with it).
+    private void Cock(ref KnifeSwing.Key key, KnifeSwing toward, float share)
+    {
+        if (toward == null || share <= 0f || !toward.Sample(0f, out var cocked)) return;
+        key = KnifeSwing.Blend(key, cocked, share);
+        if (toward.SampleFingers(0f, cockedFingers)) FingerWays.Blend(sampledFingers, cockedFingers, share, sampledFingers);
+    }
+
+    // The charging fist trembles: the wrist wanders a little and the hand turns with it, more the fuller the charge. Smooth
+    // noise, so it shivers and never jumps; the same on every PC only in kind, which is all a tremble has.
+    private static void Tremble(ref KnifeSwing.Key key, float centimetres, float charge)
+    {
+        if (centimetres <= 0f || charge <= 0f) return;
+        float t = Time.time * TrembleRate;
+        var noise = new Vector3(Mathf.PerlinNoise(t, .31f) - .5f, Mathf.PerlinNoise(.73f, t) - .5f, Mathf.PerlinNoise(t + 11.3f, 5.17f) - .5f) * 2f;
+        Vector3 shift = noise * (centimetres * .01f * charge);
+        key.Wrist += shift;
+        key.Elbow += shift * .4f;
+        var turn = Quaternion.Euler(noise.y * TrembleTurn * charge, noise.z * TrembleTurn * charge, noise.x * TrembleTurn * charge);
+        key.Along = turn * key.Along;
+        key.Palm = turn * key.Palm;
+    }
+
     private void OnEnable()
     {
         movement = GetComponent<PlayerMovement>();
@@ -195,8 +244,6 @@ public sealed class MeleeKnife : MonoBehaviour
 
     private void OnDisable()
     {
-        if (fists != null) fists.Thrown -= OnThrown;
-        fists = null;
         swing = Swing.None;
         wasOut = hasLast = false;
     }
@@ -205,13 +252,6 @@ public sealed class MeleeKnife : MonoBehaviour
     {
         if (movement == null) return;
         if (melee == null) melee = movement.MeleeCombat != null ? movement.MeleeCombat : GetComponentInChildren<PlayerMeleeCombat>();
-        // The fists' view comes with the melee component; the knife listens to its strikes on every PC.
-        if (fists == null && Time.frameCount >= nextLook)
-        {
-            nextLook = Time.frameCount + 30;
-            fists = GetComponentInChildren<FistsView>();
-            if (fists != null) { fists.Thrown -= OnThrown; fists.Thrown += OnThrown; }
-        }
         if (hands == null) hands = GetComponent<PlayerBodyHands>();
         if (arm == null && Time.frameCount % 30 == 0) arm = ExecutionKnifeArm.Of(movement);
         bool outNow = IsOut;
@@ -234,9 +274,11 @@ public sealed class MeleeKnife : MonoBehaviour
         sinceSwing += dt;
         guardClock += dt;
         if (blendLeft > 0f) blendLeft -= dt;
-        if (swing != Swing.None && (clip == null || clock >= clip.Length))
+        // The draw ends with its clip; an attack with the timeline's swing (its clip run out, a new wind-up begun over
+        // its way home, or the swing let go of): back into the guard, or the wind-up, from where it left the arm.
+        bool over = swing == Swing.Draw ? clip == null || clock >= clip.Length : swing != Swing.None && !melee.IsSwinging;
+        if (over)
         {
-            // Back into the guard from where the swing left the arm.
             if (hasLast) { from = last; fromFingers.CopyFrom(lastFingers); blendLeft = SwingBlend; }
             swing = Swing.None;
             clip = null;
@@ -245,33 +287,23 @@ public sealed class MeleeKnife : MonoBehaviour
         block = Mathf.MoveTowards(block, blocking ? 1f : 0f, Time.unscaledDeltaTime / BlockBlend);
     }
 
-    // A fist strike left (FistsView, on every PC; the knife's are all the right hand's): which swing it is.
-    private void OnThrown(bool right, float charge)
+    // The arm takes up this clip from where it is; null (and nothing changed) when the knife has no table for it.
+    private KnifeSwing Begin(Swing next)
     {
-        if (!IsOut || !right) return;
-        var strike = melee != null ? melee.LastStrike : ComboStrike.None;
-        Swing next;
-        if (strike == ComboStrike.Riposte || strike == ComboStrike.Finisher || charge >= HeavyCharge()) next = Swing.Stab;
-        else if (strike == ComboStrike.Spin || strike == ComboStrike.Chase) next = Swing.Backslash;
-        else next = backNext && sinceSwing < ChainGap ? Swing.Backslash : Swing.Slash;
-        backNext = next == Swing.Slash;
-        Begin(next);
-    }
-
-    private void Begin(Swing next)
-    {
-        var held = KnifeNow();
-        string table = next == Swing.Draw ? held.DrawClip : next == Swing.Slash ? held.SlashClip
-            : next == Swing.Backslash ? held.BackslashClip : next == Swing.Stab ? held.StabClip : null;
-        var made = KnifeSwing.Of(table);
-        if (made == null) return;
+        var made = KnifeSwing.Of(ClipOf(KnifeNow(), next));
+        if (made == null) return null;
         if (hasLast) { from = last; fromFingers.CopyFrom(lastFingers); blendLeft = SwingBlend; }
         else blendLeft = 0f;
         swing = next;
         clip = made;
         clock = 0f;
-        sinceSwing = 0f;
+        if (next != Swing.Draw) sinceSwing = 0f;
+        return made;
     }
+
+    private static string ClipOf(ClassKnives.Knife held, Swing which)
+        => which == Swing.Draw ? held.DrawClip : which == Swing.Slash ? held.SlashClip
+            : which == Swing.Backslash ? held.BackslashClip : which == Swing.Stab ? held.StabClip : null;
 
     private ClassKnives.Knife KnifeNow()
     {
@@ -289,18 +321,6 @@ public sealed class MeleeKnife : MonoBehaviour
     {
         if (string.IsNullOrEmpty(cue) || !Application.isPlaying) return;
         BodyBreakSounds.Play(cue, transform.position + Vector3.up * SoundHeight);
-    }
-
-    private static float heavyCharge = -1f;
-
-    private static float HeavyCharge()
-    {
-        if (heavyCharge < 0f)
-        {
-            heavyCharge = DefaultHeavyCharge;
-            heavyCharge = GameTables.Number(PlayerMovement.TableName, "Fists", "heavyPunchCharge", heavyCharge);
-        }
-        return heavyCharge;
     }
 
     private static ClassKnives.Knife Active(PlayerMovement who)
