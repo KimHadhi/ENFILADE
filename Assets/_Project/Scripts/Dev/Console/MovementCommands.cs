@@ -13,7 +13,9 @@ public static class MovementCommands
         router.Register("callouts", "콜아웃 표 점검 — 없는 사실·종류·단계 이름, 말할 줄이 없는 칸, 칸이 없는 줄을 찾고, 지금 내 상황에서 맞는 사실과 휠의 칸마다 나올 줄을 Logs/callouts.txt에 쓴다 (CalloutCheck, Callouts.csv·CalloutSlots.csv)", // dev-text
             _ => Application.isPlaying ? CalloutCheck.Write(PlayerCallouts.Local) : "이 명령어는 Play 중에 사용할 수 있습니다."); // dev-text
         router.Register("ledge", "앞의 턱 점검 — 선 자리에서 발 높이를 0~1.4m로 올려 가며(점프를 흉내) 앞에 잡을 렛지가 있는지, 어느 콜라이더의 윗면인지, 올라설 수 있는지(Stand·Crouch·None), 못 잡으면 왜인지(NoHandRoom = 이음매·덮인 턱)를 보여 주고 Logs/ledge-probe.txt에 쓴다. 플레이 중 잡은 렛지와 거절한 이음매도 그 파일에 적힌다 (LedgeFinder)", _ => Ledge()); // dev-text
-        router.Register("drop","[높이 m] — 그 높이에서 그냥 떨어지면 어떤 착지인지: 발이 닿는 속도, 착지 단계(가볍게·세게·크게), 서서와 앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5m부터 6m까지 표. 실제로 한 착지는 Logs/landings.txt에 적힌다 (MovementLanding, PlayerMovementAudio.LandingCue)", Drop); // dev-text
+        router.Register("lean", "기울이기 점검 — Q/E를 누르지 않아도 기울기를 오른쪽 끝·왼쪽 끝까지 저절로 줬다 풀면서, 두 발목이 디딘 자리에서 얼마나 밀렸는지(1cm 아래면 제자리)와 골반·눈이 옆으로 간 거리, 골반이 내려간 거리를 Logs/lean-probe.txt에 한 줄로 쓴다. 재는 4.5초 동안 움직이거나 시선을 돌리지 않는다. 맨손·주먹·총, 서서·앉아서, 캐릭터마다(마네킹 포함) 한 번씩 (LeanProbe, FootPlanting.Hold)", // dev-text
+            _ => Application.isPlaying ? LeanProbe.Run(PlayerRoster.Local) : "이 명령어는 Play 중에 사용할 수 있습니다."); // dev-text
+        router.Register("drop", "[높이 m] — 그 높이에서 그냥 떨어지면 어떤 착지인지: 발이 닿는 속도, 착지 단계(가볍게·세게·크게), 서서와 앉아서의 소리와 좀비가 듣는 거리. 비우면 0.5m부터 6m까지 표. 실제로 한 착지는 Logs/landings.txt에 적힌다 (MovementLanding, PlayerMovementAudio.LandingCue)", Drop); // dev-text
     }
 
     // What the ledge finder says of the wall ahead for a body at this spot with its feet at each height a jump takes them

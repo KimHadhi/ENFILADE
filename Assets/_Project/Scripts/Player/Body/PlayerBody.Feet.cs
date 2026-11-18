@@ -41,7 +41,42 @@ public sealed partial class PlayerBody
     [SerializeField, Range(0f, 180f), Tooltip("Most a foot rolls onto its side, either way, in any clip (degrees).")]
     private float maxAnkleRoll = 25f;
 
+    [Header("Feet keep their place")]
+    [SerializeField, Min(0f), Tooltip("The body stands (its feet keep their places) while it travels slower than this over the ground (m/s).")]
+    private float footHoldSpeed = .15f;
+    [SerializeField, Min(0f), Tooltip("... and its legs turn slower than this (degrees a second). Legs turning quicker carry the feet round with them, as before.")]
+    private float footHoldTurnRate = 40f;
+    [SerializeField, Range(1f, 90f), Tooltip("A kept foot lets go once the legs have turned this far over it (degrees), and takes its new place: a step.")]
+    private float footHoldTwist = 25f;
+    [SerializeField, Min(0f), Tooltip("The hips come down at most this far for a leg to reach a kept foot they have gone over away from (m). Further, the foot lets go.")]
+    private float footHoldDrop = .05f;
+    [SerializeField, Min(.01f), Tooltip("How long a foot that let go takes to ease to where the clip has it (s).")]
+    private float footHoldRelease = .12f;
+
     private FootPlanting feet;
+    // What moved the hips sideways this frame that is no step (the lean), for the feet to take back out; and the legs'
+    // yaw last frame, for how fast they turn.
+    private Vector3 hipsCarried;
+    private float lastFeetYaw;
+    private bool hasFeetYaw;
+
+    /// <summary>
+    /// How far each ankle is from the place it keeps, level (m), after this frame's leg IK; zero for a foot that keeps
+    /// none. And whether it keeps one. For the console's /lean, which measures that a lean does not carry the feet.
+    /// </summary>
+    internal bool TryReadKeptFeet(out bool leftKept, out bool rightKept, out float leftOff, out float rightOff)
+    {
+        leftKept = rightKept = false;
+        leftOff = rightOff = 0f;
+        if (feet == null || !feet.OnGround) return false;
+        leftKept = feet.Left.Kept;
+        rightKept = feet.Right.Kept;
+        leftOff = leftKept ? Level(feet.Left.Foot.position - feet.Left.Place) : 0f;
+        rightOff = rightKept ? Level(feet.Right.Foot.position - feet.Right.Place) : 0f;
+        return true;
+
+        static float Level(Vector3 way) => new Vector2(way.x, way.z).magnitude;
+    }
 
     // The legs as the feet measured them, for what else keeps them out of things (a tuck, a heave, a wall).
     private FootPlanting.Leg leftLeg => feet?.Left;
@@ -65,10 +100,21 @@ public sealed partial class PlayerBody
         // A paired execution's clip has the feet where it was made beside the zombie (PlayerBody.Execution).
         bool onFeet = !dead && !playingOut && !heaving && !PlaysPaired && player.IsGrounded
             && (state == MovementState.Standing || state == MovementState.Crouching);
+        // The body stands while it neither travels nor turns: then each foot that is down keeps its place on the ground,
+        // whatever moves the hips over it (FootPlanting.Hold). What the lean moved the hips by is taken out of the feet
+        // in any case. The turn is the legs' own, the model's: standing, they keep their facing while the view turns
+        // (TurnOnTheSpot) and the feet under them stay; the player's own facing is the view's and says nothing of the feet.
+        float yaw = body.eulerAngles.y;
+        float turnRate = hasFeetYaw && dt > 0f ? Mathf.Abs(Mathf.DeltaAngle(lastFeetYaw, yaw)) / dt : 0f;
+        lastFeetYaw = yaw;
+        hasFeetYaw = true;
+        Vector3 travel = player.ActualVelocity;
+        bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed && turnRate < footHoldTurnRate;
+        var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease);
         // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
             new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,
-            onFeet ? StrideNow : FootPlanting.Stride.None);
+            onFeet ? StrideNow : FootPlanting.Stride.None, hold);
     }
 
     // Select the player in the Scene view: the line is the ground each foot found, the sphere where its ankle goes.

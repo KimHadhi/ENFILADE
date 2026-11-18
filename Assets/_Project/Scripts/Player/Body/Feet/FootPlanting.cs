@@ -57,11 +57,43 @@ internal sealed class FootPlanting
         public bool Stretches => Weight > 0f && Mathf.Abs(Scale - 1f) > 1e-3f && Way.sqrMagnitude > .5f;
     }
 
+    /// <summary>
+    /// What keeps a standing foot in its place this frame (PlayerBody.PlantFeet). A foot on the ground belongs to the
+    /// ground: it stays where it stands until the body steps or turns. Two things say so here.
+    /// <see cref="Carried"/>: how far something that is no step moved the hips sideways this frame (the lean's shift of
+    /// the weight, BodyLean.MoveHips); the feet hang from the hips, so that much is taken back out of each foot, always.
+    /// <see cref="Stands"/>: the body neither travels nor turns, so each foot that is down keeps the very place it took
+    /// when the body came to rest, whatever else moves the hips over it (a gun's lean rolling them, the head followed,
+    /// an idle's sway), until the body has turned <see cref="Twist"/> degrees over it or the leg can no longer reach
+    /// with the hips down <see cref="MaxDrop"/>; then it lets go and takes its new place over <see cref="Release"/> s.
+    /// Until 2026-11-18 a foot's height was the ground's and its place was wherever the hips had carried it, so a lean
+    /// slid both feet sideways with the pelvis (the user: "제자리에서 상체만 기울어야 하나 ... 발(하체)까지 옆으로 이동").
+    /// </summary>
+    internal readonly struct Hold
+    {
+        public readonly bool Stands;
+        public readonly Vector3 Carried;
+        public readonly float Yaw, Twist, MaxDrop, Release;
+
+        public Hold(bool stands, Vector3 carried, float yaw, float twist, float maxDrop, float release)
+        {
+            Stands = stands;
+            Carried = Vector3.ProjectOnPlane(carried, Vector3.up);
+            Yaw = yaw; Twist = Mathf.Max(1f, twist); MaxDrop = Mathf.Max(0f, maxDrop); Release = Mathf.Max(.01f, release);
+        }
+    }
+
     internal sealed class Leg
     {
         public Transform Upper, Lower, Foot;
         /// <summary>Where the stride's stretch moves this foot this frame (world, level; zero without a stretch).</summary>
         public Vector3 Shift;
+        /// <summary>The foot keeps its place (Hold): where it stands (world, level) and the body's yaw when it took it.</summary>
+        public bool Kept;
+        public Vector3 Place;
+        public float KeptYaw;
+        /// <summary>How far the foot stands from where the clip has it (world, level): the kept place's, or what is left of it easing away.</summary>
+        public Vector3 Off;
         public AnkleLimit Ankle;
         /// <summary>The ankle's height above the sole, measured in the rest pose (m).</summary>
         public float Sole;
@@ -164,14 +196,17 @@ internal sealed class FootPlanting
         settled = OnGround = false;
     }
 
-    /// <summary>As <see cref="Plant(bool, float, LayerMask, in Tuning, float)"/>, the stride stretched by
-    /// <paramref name="stride"/> while the feet stand.</summary>
-    public void Plant(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride)
+    /// <summary>
+    /// The feet on the ground this frame: each at the ground's height under it, the stride stretched by
+    /// <paramref name="stride"/> while the feet stand, and each standing foot kept where it stands as
+    /// <paramref name="hold"/> says.
+    /// </summary>
+    public void Plant(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride, in Hold hold)
     {
         // In every state, whatever the clip or the IK does, an ankle stays within what a real one can do: held once so a
         // planted foot is levelled from a sane foot, and again after the legs have bent.
         HoldAnkles(tuning);
-        StandOnGround(onFeet, floor, ground, tuning, dt, stride);
+        StandOnGround(onFeet, floor, ground, tuning, dt, stride, hold);
         HoldAnkles(tuning);
     }
 
@@ -181,7 +216,7 @@ internal sealed class FootPlanting
         Right.Ankle?.Apply(tuning.MaxAnkleTurn, tuning.MaxAnkleRoll);
     }
 
-    private void StandOnGround(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride)
+    private void StandOnGround(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride, in Hold hold)
     {
         OnGround = onFeet;
         Weight = Mathf.MoveTowards(Weight, onFeet ? 1f : 0f, dt / tuning.BlendTime);
@@ -192,6 +227,8 @@ internal sealed class FootPlanting
         {
             settled = false;
             strideDrop = 0f;
+            Left.Kept = Right.Kept = false;
+            Left.Off = Right.Off = Vector3.zero;
             return;
         }
         if (onFeet)
@@ -219,18 +256,79 @@ internal sealed class FootPlanting
         // A clip made for other proportions can put a foot through the floor: a deep crouch holds the ankle lower than the
         // sole lets it stand, and pointing the toes down drives a longer foot's toe tip in. No part of the sole comes
         // below the ground; the ankle stands that much higher, and the knee bends for it.
-        float leftLift = Mathf.Max(Left.Foot.position.y - clipFloor, SoleDepth(Left));
-        float rightLift = Mathf.Max(Right.Foot.position.y - clipFloor, SoleDepth(Right));
+        float leftDepth = SoleDepth(Left), rightDepth = SoleDepth(Right);
+        float leftLift = Mathf.Max(Left.Foot.position.y - clipFloor, leftDepth);
+        float rightLift = Mathf.Max(Right.Foot.position.y - clipFloor, rightDepth);
         float lowerLift = Mathf.Min(leftLift, rightLift);
+        // How far the clip holds each sole over its floor. The sole, not the ankle: a foot on its toes with the heel up
+        // (a crouch) is as much on the ground as a flat one, and its ankle stands centimetres higher.
+        float leftOver = leftLift - leftDepth, rightOver = rightLift - rightDepth, lowerOver = Mathf.Min(leftOver, rightOver);
         body.position += Vector3.up * ((hipFloor - clipFloor) * Weight);
-        // A stretched stride can put a foot further from its hip than the leg reaches: the hips come down that much.
-        float reach = Mathf.Max(ReachDrop(Left, leftLift), ReachDrop(Right, rightLift));
-        reach = Mathf.Min(reach, stride.Stretches ? stride.MaxDrop : 0f);
+        // Where each foot stands, level: the clip's place with the stride's stretch, or the place it keeps (Hold).
+        Vector3 leftAt = Stand(Left, leftLift, leftOver - lowerOver, onFeet, hold, dt);
+        Vector3 rightAt = Stand(Right, rightLift, rightOver - lowerOver, onFeet, hold, dt);
+        // A stretched stride, or hips that went over away from where a foot stands (a kept place, the lean's shift), can
+        // put a foot further from its hip than the leg reaches: the hips come down that much, as far as each allows.
+        float reach = Mathf.Max(ReachDrop(Left, leftLift, leftAt), ReachDrop(Right, rightLift, rightAt));
+        bool held = hold.Carried.sqrMagnitude >= 1e-8f || Left.Off.sqrMagnitude >= 1e-8f || Right.Off.sqrMagnitude >= 1e-8f;
+        reach = Mathf.Min(reach, Mathf.Max(stride.Stretches ? stride.MaxDrop : 0f, held ? hold.MaxDrop : 0f));
         strideDrop = Mathf.Lerp(strideDrop, reach, 1f - Mathf.Exp(-dt / StrideDropTime));
         body.position += Vector3.down * (strideDrop * Weight);
         Vector3 hips = (Right.Upper.position - Left.Upper.position).normalized;
-        Place(Left, leftLift, leftLift - lowerLift, hips, tuning);
-        Place(Right, rightLift, rightLift - lowerLift, hips, tuning);
+        Place(Left, leftLift, leftLift - lowerLift, hips, tuning, leftAt);
+        Place(Right, rightLift, rightLift - lowerLift, hips, tuning, rightAt);
+    }
+
+    // The clip has a foot down when its sole is within this of its lower foot's (m); a foot whose place has eased to
+    // within this of the clip's has arrived and may take a place again (m).
+    private const float DownHeight = .03f, Arrived = .005f;
+
+    // Where this foot stands this frame (world; only its level place is used). The clip's place is the foot's with what
+    // carried the hips sideways taken back out and the stride's stretch added. While the body stands, a foot that is
+    // down keeps the place it took as the body came to rest; turned too far over, or out of the leg's reach, it lets go,
+    // eases to where the clip has it and takes that place.
+    private Vector3 Stand(Leg leg, float lift, float over, bool onFeet, in Hold hold, float dt)
+    {
+        Vector3 clip = leg.Foot.position - hold.Carried + leg.Shift;
+        bool keep = onFeet && hold.Stands && over < DownHeight && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
+        if (!keep) leg.Kept = false;
+        else if (leg.Kept)
+        {
+            if (Mathf.Abs(Mathf.DeltaAngle(leg.KeptYaw, hold.Yaw)) > hold.Twist || OutOfReach(leg, lift, leg.Place, hold.MaxDrop)) leg.Kept = false;
+        }
+        else if (leg.Off.sqrMagnitude < Arrived * Arrived)
+        {
+            leg.Kept = true;
+            leg.Place = clip + leg.Off;
+            leg.KeptYaw = hold.Yaw;
+        }
+        if (leg.Kept) leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
+        else leg.Off *= hold.Release > 0f ? Mathf.Exp(-dt / hold.Release) : 0f;
+        return clip + leg.Off;
+    }
+
+    // Whether the leg cannot reach a place on the ground even with the hips as far down as they may go for it.
+    private static bool OutOfReach(Leg leg, float lift, Vector3 place, float maxDrop) => Added(leg, lift, place) > maxDrop;
+
+    // How far the hips must come down from where they are for this leg to reach a place on the ground (m): negative when
+    // the leg has that much to spare, infinite when the place is further off, level, than the leg is long.
+    private static float Need(Leg leg, float lift, Vector3 place)
+    {
+        float most = ((leg.Lower.position - leg.Upper.position).magnitude + (leg.Foot.position - leg.Lower.position).magnitude) * StrideReach;
+        Vector3 from = leg.Upper.position;
+        float level = new Vector2(place.x - from.x, place.z - from.z).sqrMagnitude;
+        return level >= most * most ? float.PositiveInfinity : from.y - (leg.Ground + lift) - Mathf.Sqrt(most * most - level);
+    }
+
+    // What a place off the clip's asks of the hips beyond what the clip's own leg already asks (m). A clip that stands a
+    // leg straighter than the reach allows (most standing idles) is not made to bend it, so this grows from nothing as
+    // the place leaves the clip's, and the hips (and the eyes on them) do not dip the moment a lean begins.
+    private static float Added(Leg leg, float lift, Vector3 place)
+    {
+        float need = Need(leg, lift, place);
+        if (float.IsPositiveInfinity(need)) return need;
+        float own = Need(leg, lift, leg.Foot.position);
+        return need - (float.IsPositiveInfinity(own) ? 0f : Mathf.Max(0f, own));
     }
 
     // Where the stretched stride moves each foot: its distance ahead of or behind the hips along the way of travel, scaled.
@@ -247,17 +345,21 @@ internal sealed class FootPlanting
             => stride.Way * (Vector3.Dot(leg.Foot.position - hips, stride.Way) * (stride.Scale - 1f) * stride.Weight);
     }
 
-    // How far the hips must come down for this leg to reach its foot's place on the ground, the stride stretched (m).
-    private float ReachDrop(Leg leg, float lift)
+    // How far the hips must come down for this leg to reach where its foot stands (m). A foot standing where the hips
+    // have it needs none. A stretched stride asks for all the leg lacks, as it has since 0.8.260 (its look was tuned so);
+    // a place the hips went over away from (a kept place, the lean's shift) only for what it adds to the clip's own.
+    private float ReachDrop(Leg leg, float lift, Vector3 at)
     {
-        if (leg.Shift.sqrMagnitude < 1e-8f || leg.SupportWeight <= 0f) return 0f;
-        float length = (leg.Lower.position - leg.Upper.position).magnitude + (leg.Foot.position - leg.Lower.position).magnitude;
-        Vector3 foot = leg.Foot.position + leg.Shift;
-        Vector3 from = leg.Upper.position;
-        float level = new Vector2(foot.x - from.x, foot.z - from.z).magnitude, most = length * StrideReach;
-        if (level >= most) return 0f;
-        float drop = from.y - (leg.Ground + lift) - Mathf.Sqrt(most * most - level * level);
-        return Mathf.Max(0f, drop) * leg.SupportWeight;
+        if (leg.SupportWeight <= 0f) return 0f;
+        float need;
+        if (leg.Shift.sqrMagnitude >= 1e-8f) need = Need(leg, lift, at);
+        else
+        {
+            Vector3 off = at - leg.Foot.position;
+            if (off.x * off.x + off.z * off.z < 1e-8f) return 0f;
+            need = Added(leg, lift, at);
+        }
+        return float.IsPositiveInfinity(need) ? 0f : Mathf.Max(0f, need) * leg.SupportWeight;
     }
 
     // How high the ankle has to stand for the heel and the toe tip to stay on or above the ground, the foot turned as the
@@ -314,8 +416,8 @@ internal sealed class FootPlanting
     }
 
     // lift: how high the clip holds this ankle above its own floor. above: how far over the clip's lower foot.
-    // hips: from the left hip joint to the right one.
-    private void Place(Leg leg, float lift, float above, Vector3 hips, in Tuning tuning)
+    // hips: from the left hip joint to the right one. at: where the foot stands, level (Stand).
+    private void Place(Leg leg, float lift, float above, Vector3 hips, in Tuning tuning, Vector3 at)
     {
         Vector3 foot = leg.Foot.position;
         float weight = Weight * leg.SupportWeight;
@@ -325,9 +427,8 @@ internal sealed class FootPlanting
             return;
         }
         Quaternion rotation = leg.Foot.rotation;
-        // The stride's stretch as far as the feet stand (it was worked out at full weight in StretchStride).
-        Vector3 shift = leg.Shift * weight;
-        leg.Target = new Vector3(foot.x + shift.x, Mathf.Lerp(foot.y, leg.Ground + lift, weight), foot.z + shift.z);
+        // Its place and the ground's height as far as the feet stand (both were worked out at full weight).
+        leg.Target = new Vector3(Mathf.Lerp(foot.x, at.x, weight), Mathf.Lerp(foot.y, leg.Ground + lift, weight), Mathf.Lerp(foot.z, at.z, weight));
         // The knee bends about the clip's own knee axis. A nearly straight leg has no clear axis, so it bends
         // forward about the hips' sideways line instead (a clip knee bent slightly backward counts as straight).
         Vector3 thigh = leg.Lower.position - leg.Upper.position, shin = foot - leg.Lower.position;

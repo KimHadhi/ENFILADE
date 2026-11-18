@@ -16,11 +16,18 @@ public sealed class MovementLean
     public float Offset => lean * ctx.AbilitySettings.leanOffset;
     /// <summary>How far the lean has gone, -1 to 1. Carried to the other PCs as it is.</summary>
     internal float Share { get => lean; set => lean = held = value; }
+    /// <summary>
+    /// The console's /lean holds the lean here while it measures the feet (LeanProbe): the keys, the walls and a slip are
+    /// left out while it is set, and the lean goes back to the keys once it is cleared. Held here, where the lean is
+    /// worked out, so everything that reads the lean this frame reads the same one.
+    /// </summary>
+    internal float? Probed;
     internal MovementLean(PlayerMovement context) { ctx = context; }
 
     internal void Tick(float dt)
     {
         if (dt <= 0f || Time.timeScale <= 0f) return;
+        if (Probed.HasValue) { lean = held = Mathf.Clamp(Probed.Value, -1f, 1f); slipTime = -1f; return; }
         // What the body can do (on its feet, not in a move of its own). Whose the keys are is not asked here: with them
         // taken, a held lean already reads as let go and a toggled one stays (MovementInput), and a slip under way out
         // of a blow's line is not thrown away because the chat opened.

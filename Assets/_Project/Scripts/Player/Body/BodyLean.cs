@@ -185,14 +185,18 @@ internal sealed class BodyLean
     }
 
     /// <summary>
-    /// Before the feet are planted: the weight goes onto the leaning side, and PlantFeet keeps the feet where they stood. The
-    /// whole body above moves as one. Nothing in hand, a set hip shift (the camera makes up the rest); the fists, as far as
-    /// the spine's bend leaves of the peek, up to the hip reach, so the eyes reach it; a gun, none (FPSAF's tip reaches it).
+    /// Before the feet are planted: the weight goes onto the leaning side. The whole body above moves as one. Nothing in
+    /// hand, a set hip shift (the camera makes up the rest); the fists, as far as the spine's bend leaves of the peek, up
+    /// to the hip reach, so the eyes reach it; a gun, none (FPSAF's tip reaches it).
+    /// Returns how far it moved the hips (world): the legs hang from them, so the feet went that far too, and the feet's
+    /// owner takes it back out (FootPlanting.Hold.Carried). This comment used to say "PlantFeet keeps the feet where they
+    /// stood", which nothing did: the feet's height was the ground's and their place wherever the hips had gone, so the
+    /// lean slid both feet sideways with the pelvis.
     /// </summary>
-    internal void MoveHips(Transform hips, float bendWeight, bool dead)
+    internal Vector3 MoveHips(Transform hips, float bendWeight, bool dead)
     {
         float share = RawShare * bendWeight;
-        if (hips == null || head == null || root == null || dead || Mathf.Abs(share) < .001f) return;
+        if (hips == null || head == null || root == null || dead || Mathf.Abs(share) < .001f) return Vector3.zero;
         float shift = share * hipShift * handsFree;
         float fists = FistsShare;
         if (fists > 0f)
@@ -201,7 +205,9 @@ internal sealed class BodyLean
             float bent = hasEyesSide ? Vector3.Dot(head.TransformPoint(eyeLocal) - root.position, root.right) - eyesSideAtRest : 0f;
             shift += toward * Mathf.Clamp((peek - bent) * toward, 0f, hipReach * Mathf.Abs(share)) * fists;
         }
-        hips.position += root.right * shift;
+        Vector3 moved = root.right * shift;
+        hips.position += moved;
+        return moved;
     }
 
     /// <summary>
