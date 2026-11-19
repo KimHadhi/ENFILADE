@@ -1,0 +1,23 @@
+POINT class icon v5
+Mode: built-in ImageGen, precise-object-edit / logo-brand.
+Target: point-icon-v4.png
+References: user-supplied earlier Point draft sheet and KF2 Gunslinger icon.
+Direction: preserve silhouette-plus-eye lioness; integrate minimal crossed SMG/shotgun shapes and the liked small Breach flash accent.
+Output: point-icon-v5.png
+
+Final prompt:
+Use case: precise-object-edit / logo-brand.
+Create Point v5 by developing Image 1 (our current lioness emblem).
+Image 2 is the user's earlier Point concept sheet, for the two-weapon class idea only; do not copy any text or panel layout.
+Image 3 is the user's favorite KF2 Gunslinger icon, a VISUAL REFERENCE for the confident, economical crossed-weapon gesture. Make an original integration, not a reproduction.
+
+KEEP THE LIONESS FACE AND UPPER HEAD OF IMAGE 1:
+A smooth maneless Southern African female lion in left profile, rounded solid-white ear, smooth skull and neck, blunt feline muzzle and clean chin. Exactly ONE triangular black eye is the only feature within the face. No nose notch, nostril, mouth, teeth, lip detail, inner-ear cut, whiskers, fur or tiger stripes. Preserve her poised expression and overall bust proportions.
+
+DEVELOP THE LOWER NECK / SHOULDER WITH ONE COMPACT INTEGRATED CROSSED-WEAPON MOTIF:
+Replace the current single decorative black shoulder sweep with TWO beautifully reduced BLACK gun-shaped negative-space cuts crossing diagonally like the bold gesture in Image 3. One represents Point's short SMG and one her shotgun. Each consists only of a strong barrel, compact receiver, and one decisive grip/fore-end angle: plain iconic silhouettes, extremely few contour steps, NO machinery, vents, rails, screws, sights, complex stocks, or thin trigger loops.
+The pair must be designed AS PART OF THE LIONESS'S SHOULDER rather than pasted as a separate badge. Let the sweeping lower ends and the surrounding white forms share the existing elegant forward sweep of the bust. Keep the pair in the lower third of the icon, well below and apart from the face, with generous white margins. The head stays visually dominant. Show an unambiguous bold X gesture, two opposing diagonals, with clean white separation at the crossing so both weapons remain readable. The shapes should feel as spare and intentional as the sword cut in the approved Knight or the knife cut in Ghost, not a drawing of real guns.
+Preserve the SMALL FOUR-POINT FLASH idea from Image 1, resolving at the upper-right barrel end as one tiny restrained flash accent connected to that weapon's tip. It represents both close-range firing and her Breach flashbang identity. ONE small flash, no ring or rays, no extra stars or emblems.
+
+Result should read in order: clean lioness, crossed Gun Kata weapon gesture, tiny flash accent. Only a few well-chosen shapes, with broad uninterrupted white mass. No mane or layered fur; do not turn the weapon cuts into tiger stripes or a hairy collar.
+Keep the clean wide triangular bust base and black padding. One finished pure WHITE on pure BLACK square class emblem; flat vector-like edges, no grey, shading, gradients, textures, text, frames, panels or extra icons.

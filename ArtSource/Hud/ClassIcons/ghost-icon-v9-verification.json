@@ -1,0 +1,23 @@
+{
+  "source": "F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v8.png",
+  "redGuide": "C:/Users/User/AppData/Local/Temp/codex-clipboard-ff518f61-14c3-42f1-91a6-b0af5ce8131b.png",
+  "editAreas": [
+    {
+      "x": 463,
+      "y": 592,
+      "width": 132,
+      "height": 61
+    },
+    {
+      "x": 748,
+      "y": 607,
+      "width": 92,
+      "height": 43
+    }
+  ],
+  "rightPath": "M770 618 C791 624 813 622 833 614 C812 630 785 636 757 632 C760 627 766 622 770 618 Z",
+  "changedPixels": 6347,
+  "changesOutsideMarkedAreas": 0,
+  "redPixels": 0,
+  "pngRoundTripVerified": true
+}

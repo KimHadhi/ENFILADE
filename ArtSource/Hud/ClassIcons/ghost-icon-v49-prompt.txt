@@ -1,0 +1,33 @@
+Mode: built-in ImageGen
+Output: ghost-icon-v49.png
+User-selected reference: C:/Users/User/AppData/Local/Temp/codex-clipboard-12524c8c-0124-4618-abbf-c1b6f76212fd.png
+Anatomy reference photograph: IHM Photography, https://www.ihmphotography.co.uk/ihmphotographyblog/tyger-tyger
+
+PRIMARY EDIT
+Use case: precise-object-edit.
+Image 1 is the user's chosen GHOST class icon. Develop THIS version into a more recognizable adult SIBERIAN TIGER.
+Image 2 is a tiger anatomy/marking reference, not a style reference.
+
+Redesign the head contour and the upper tiger markings together, retaining image 1's simple bold black-and-white emblem language. The goal is tiger identity with the economy of a horse/eagle class silhouette.
+
+Make the skull and muzzle distinctly feline: low forceful brow, a slight nasal-bridge dip, a compact projecting upper muzzle, a firm short chin and broad powerful jaw. Use taut curves interrupted by a few deliberate flat bevels. The upper muzzle should project slightly beyond the chin; avoid the current stepped bear-like lower jowl. Keep the single small triangular eye. Make the rounded ear slightly lower and less protruding.
+
+REMOVE the long white hair-like point projecting from the rear skull. The back of the skull should flow compactly into the thick neck, with no ponytail, mane, feather or long fur spikes.
+
+Use the existing black stripe masses as real tiger markings:
+- Add ONE bold short tapered forehead stripe descending diagonally from the crown toward the brow, giving the head an unmistakable tiger forehead rhythm. It must be a confident shaped cut with generous white breathing room, not a cluster of thin scratches.
+- Refine the existing temple stripe behind the eye and the large cheek stripe so they wrap the skull like tiger markings. Use controlled variations of width and direction, long sharp ends and at most one strong angular bite per stripe.
+- Keep the long neck stripe flowing with the lower silhouette. The three upper markings must form a coherent animal pattern, not parallel flame ribbons or ornamental hair.
+Keep the muzzle and the area immediately around the eye mostly white and calm. Do not cover the face with many black cuts. No drawn nostrils, separate nose symbol, mouth/lip line, whiskers, teeth, realistic iris, inner-ear hole, fur texture or fine hatching.
+
+LOCK the entire LOWEST black karambit stripe with its three finger scallops, single circular scope ring with small claw-shaped top extension, classic straight duplex reticle and round center dot. Preserve its size, connections and placement. Keep the left-facing head/neck/shoulder arrangement, broad lower base, scale and margins of image 1. Pure white filled shapes and black cutouts on a pure black square. No surrounding badge or extra objects. Output one complete polished class icon.
+
+FINAL CLEANUP
+Use case: precise-object-edit.
+Keep this tiger icon design and make a very small cleanup ONLY.
+
+1. Remove the small black nose-shaped triangular notch at the very front of the muzzle. Fill that incision white, retaining the compact projecting upper muzzle and the rounded lower muzzle contour. Do NOT replace the whole muzzle with a long straight wedge or change the jaw proportions.
+2. Remove the thin horizontal black mouth/lip incision just above the chin. Fill it white so the muzzle and chin are one solid white shape, with the existing short beveled chin outer contour retained.
+3. Simplify the black facial eye back to one clean small TRIANGLE rather than the little stepped flag shape.
+
+Preserve EVERYTHING else: the newly designed skull proportions and silhouette, low ear, no rear ponytail point, ONE crown/forehead stripe, temple and cheek tiger markings, long neck marking, their bold shaped masses and angular bites, all white spacing, the lowest karambit stripe with three finger scallops, single claw-tipped scope ring, classic duplex crosshair and center dot, lower shoulder shape, composition and margins. No new features, no realistic face details, no fur, no text or shading. Pure black and white. Output the full icon.

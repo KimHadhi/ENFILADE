@@ -1,0 +1,14 @@
+POINT class icon v9
+Mode: built-in ImageGen, precise-object-edit.
+Target: point-icon-v8.png
+Direction: preserve v8's interlocking pistol construction; adjust actual occupied silhouette from approximately 0.92 width/height toward 1:1 through compact recomposition.
+Output: point-icon-v9.png
+
+Final prompt:
+Edit the attached Point v8 icon with ONE proportion correction only. The interlocking pistol arrangement is good and MUST STAY.
+
+The actual occupied white silhouette is currently about 0.92 as wide as it is tall, despite the square canvas. Recompose it to a truly COMPACT 1:1 WHITE-SILHOUETTE FOOTPRINT, approximately equal overall width and height. Keep the canvas square.
+
+Broaden the composition laterally by about 9 percent: let the nested pistol pair and the lower sweeping shoulder open out slightly to left and right, and tuck the lower receiver upward a little. Keep the face, eye and ear undistorted and unchanged. Preserve the exact two-pistol interlock, their recognizable slide/grip/trigger-guard anatomy, and the smooth integration of the guns into the lioness neck. Shorten any remaining stretched neck gap. Do not add detail or redesign the guns.
+The overall white outline including the small muzzle flash should occupy the same width and height, with even black padding. This must look like a compact square class bust beside Knight, Assault and Ghost, not a vertically stacked logo. Keep the lower silhouette as a clean broad concave shoulder sweep.
+Retain the small flash, plain white lioness face with triangular black eye only, smooth maneless head, rounded white ear, pure white and black, all existing stylistic decisions. No facial details, shading, text or extra shapes.

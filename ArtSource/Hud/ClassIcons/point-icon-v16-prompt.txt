@@ -1,0 +1,23 @@
+POINT class icon v16
+Mode: built-in ImageGen, precise-object-edit.
+Target: point-icon-v15-a-draft.png, matching user's annotated source.
+Geometry guide: user's red-marked attachment 0a394cfe-c57f-4ae7-8bfe-758d1bfd8571.
+Family reference: approved Knight/Assault/Ghost sheet.
+Direction: follow user's shallower diagonals and base return; match compact 1:1 family bust proportions; preserve head and pistol geometry; remove flash.
+Output: point-icon-v16.png
+
+Final prompt:
+Precise proportion edit of a fictional GAME CLASS ICON.
+Image 1 is the clean edit target.
+Image 2 is the user's RED GEOMETRY GUIDE on that same icon. The red strokes are construction annotations only; none should appear in the final.
+Image 3 is the approved Knight / Assault / Ghost family, showing the desired compact square bust proportions.
+
+Keep this lioness-and-interlocked-pistol concept. Follow the user's drawn geometry rather than inventing a new composition.
+
+Adjust the neck/shoulder construction to the two long diagonals in Image 2: bring the paired forms to a slightly shallower, roughly 45-degree diagonal, about 10-15 degrees clockwise from their current steep angle. Move the pair slightly upward and inward so the lower neck is shorter, and let the lower return merge into the broad compact base suggested by the user's bottom red stroke. The result should be a compact broad animal bust like Image 3, with approximately equal occupied width and height, not a tall head with a long dangling lower section.
+
+Treat the two existing pistol shapes in Image 1 as FIXED graphic forms: rigid rotation, translation and uniform scaling only. Preserve their straight slides, squared ends, recognizable grips, guard openings and small curved triggers. Do not redraw them into different shapes, bend them, stretch them, change their interlock or add details.
+Preserve the existing lioness head, small triangular eye, rounded ear, plain white face, muzzle and jaw. Reconnect only the surrounding white neck and shoulder contours where necessary for the new proportions. Keep the weapon forms naturally fused into the animal, with a clean central separating seam and a coherent broad base rather than a detached thin plinth.
+REMOVE the small flash/star completely for a cleaner outline.
+
+One pure WHITE-on-BLACK square icon, centered with balanced black margins, same visual weight as the three approved icons. No red guides, text, extra facial marks, mane, fur, stripes, grey, shading, gradients or textures.

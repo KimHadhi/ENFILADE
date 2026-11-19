@@ -1,0 +1,12 @@
+POINT pistol shape study v1
+Mode: built-in ImageGen, precise-object-edit / logo-brand.
+Reference: user's KF2 Gunslinger icon.
+Purpose: validate faithful pistol silhouette anatomy before composing lioness body around it.
+
+Final prompt:
+Precise clean silhouette redraw of the attached KF2 Gunslinger pistol pair. This is a shape study, not a new emblem composition.
+
+Copy the reference's actual TWO PISTOL OUTLINES faithfully at higher resolution. Preserve the opposed, tightly interlocking arrangement: muzzles toward upper-right and lower-left, grips branching toward upper-left and lower-right. Keep their reference proportions and near-parallel opposed slides.
+Each pistol is an anatomically credible semiautomatic handgun: one straight long slide, one straight barrel muzzle, a compact angular frame, one clearly angled grip, a small beavertail/hammer shoulder, and ONE compact trigger guard with an open black interior. The silhouette reference already contains all needed design information. Follow it instead of inventing replacement shapes.
+Do not curve the slides, inflate the receivers or guards, fork the muzzles, add second barrels, sharpen grips into blades, or create wavy/fantasy gun anatomy. No arbitrary decorative notches.
+Exactly two WHITE silhouettes with their black trigger-guard openings and a crisp black separation between the overlapping pistols, on pure BLACK square. Keep edges clean and confident and all source features recognizable. No other elements, no animal, no text, no shading, no grey, no texture.

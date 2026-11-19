@@ -1,0 +1,38 @@
+{
+  "width": 1254,
+  "height": 1254,
+  "source": "C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-1532f815-e23a-49d5-b4cc-5dfa5e51a6af.png",
+  "userReference": "C:/Users/User/AppData/Local/Temp/codex-clipboard-82eb0c76-9c88-436c-aca5-403452552119.png",
+  "reticleRects": [
+    {
+      "x": 622,
+      "y": 352,
+      "width": 12,
+      "height": 244
+    },
+    {
+      "x": 622,
+      "y": 654,
+      "width": 12,
+      "height": 291
+    },
+    {
+      "x": 325,
+      "y": 619,
+      "width": 273,
+      "height": 12
+    },
+    {
+      "x": 658,
+      "y": 619,
+      "width": 302,
+      "height": 12
+    }
+  ],
+  "invertPixels": 13320,
+  "blackBackgroundPixels": 6460,
+  "whiteBackgroundPixels": 6654,
+  "inversionErrors": 0,
+  "unchangedArtworkErrors": 0,
+  "pngRoundTripVerified": true
+}

@@ -1,0 +1,31 @@
+GHOST class icon v27
+Mode: built-in ImageGen, precise-object-edit and reticle refinement.
+Output: ghost-icon-v27.png
+Comparison: class-icons-comparison-v27.png (Knight, Assault, Ghost)
+Target reference: C:/Users/User/AppData/Local/Temp/codex-clipboard-fdf215d2-cf11-47cd-9d4f-ebaaaee3c993.png
+Family references: C:/Users/User/AppData/Local/Temp/codex-clipboard-0cf2eb6e-53e3-42f6-b0a1-8f6d4539c9b6.png (Knight), C:/Users/User/AppData/Local/Temp/codex-clipboard-6e040be8-12b1-4ce8-86a9-47207d9f31cc.png (Assault)
+Design source: Assets/_Project/Scripts/Classes/README.md line 33; Assets/_Project/Scripts/Classes/Ghost/GhostCards.cs class documentation; Assets/_Project/Scripts/Classes/ClassKit.Ghost.cs; Assets/_Project/Data/Resources/Tables/Classes/ClassAbilities.csv Ghost entries.
+Game identity confirmed: recon with wall sight, silent target/headshots, assassination chain, White Tiger claw damage, phantom ultimate. The integrated shoulder eye/reticle is a visual interpretation of recon and precision targeting.
+Selected generated PNG copied exactly without contour edits; comparison resampling only. Existing files and reference assets unchanged.
+
+Main edit prompt:
+Use case: precise-object-edit / logo-brand.
+Edit IMAGE 1 into the GHOST class emblem for ENFILADE. Images 2 (Knight horse with an integrated sword) and 3 (Assault eagle with bullet cutouts) show how an animal and its class ability become ONE graphic. Use the same visual economy.
+
+GAME IDENTITY: Ghost is a recon/stealth sniper: sees enemies through walls, marks quiet targets, performs silent assassinations; White Tiger turns headshots into claw damage. The current tiger is missing a class-specific symbol.
+
+KEEP the angular left-facing tiger head, tiny black triangular facial eye, TWO bold angular tiger stripe cutouts, upright neck and broad shoulder/base composition. Strengthen the tiger's short broad muzzle, muscular cheek and two clean cheek-ruff tips using ONLY the outer silhouette. Make its rounded ear compact and low. Preserve the existing straight bevels and angular jaw. The muzzle stays entirely WHITE, without nose, nostril, mouth, lips, whiskers or inner-ear decoration. Do not add any facial detail.
+
+PRIMARY CHANGE — REPLACE BOTH generic black shoulder slashes with ONE integrated RECON/TARGETING EYE:
+Carve a single substantial BLACK eye-shaped viewing aperture into the WHITE LOWER NECK/SHOULDER, as naturally as the eagle's bullets are cut into its wing. Give the aperture angular tapered ends and a firm straight upper edge with a shallow tensioned lower curve, relating it to the tiger stripes rather than drawing a decorative almond outline. Inside that black aperture place ONE bold round WHITE IRIS with a clean BLACK plus-shaped aiming cross cut through its center. This eye/reticle must clearly read as 'sees the hidden target / precision targeting' at icon size. Let one tapered aperture end extend into the shoulder cut so this is part of the animal's construction, not a separate sticker or a tattoo. Use a few thick shapes, generous black clearance around the iris, no small ticks or details. The facial eye remains just the original small triangle; the targeting-eye symbol is in the shoulder only.
+
+Unify the TWO angular facial stripes with this lower aperture through matching slopes, clipped corners and tapered tips. Keep broad uninterrupted WHITE masses around them. Restraint and purposeful contrast like the horse/eagle, not a detailed animal illustration. No other shoulder patterns or symbols. No circle surrounding the animal, no external scope frame, bullet tips, compass, rifle, extra badges, text, shading or gradients. Single flat white emblem on pure black square, full bust with reference-sized margins.
+
+Refinement target: C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-d9102d16-a272-4281-b9e2-a3fa47a08903.png
+Final refinement prompt:
+Use case: precise-object-edit.
+Refine only the TARGETING IRIS in the lower shoulder of this tiger class emblem. Keep the entire outer tiger silhouette, facial triangle eye, angular tiger stripes, white muzzle, neck, and black angular eye-shaped shoulder aperture unchanged.
+
+The big uninterrupted black PLUS inside the white circular iris currently reads as a medical cross. Replace that plus with a clear SNIPER RETICLE consisting of FIVE SEPARATE BLACK SHAPES: a small black circular center aiming dot, and four short bold rectangular ticks aligned at 12, 3, 6 and 9 o'clock. Each tick enters inward from the boundary of the white iris and STOPS well before the central dot. Leave a clean WHITE GAP between every tick and the center dot. Keep those gaps generous enough to read at small icon size. All four ticks have the same width and length, aligned exactly on the dot's axes. Keep the iris round and white with generous black clearance around it inside the shoulder aperture. Do not join the ticks together.
+
+This is an integrated RECON-EYE / PRECISION TARGETING motif, not a medic symbol. Preserve the strong angular black aperture integrated into the shoulder. No additional circles, external frames, text or ornament. In particular keep the face solid white except the existing triangular eye and two angular tiger stripes: no nose, nostrils, mouth, lip or inner-ear lines. Pure white and black, one square icon.

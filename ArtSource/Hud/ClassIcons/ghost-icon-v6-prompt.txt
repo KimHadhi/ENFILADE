@@ -1,0 +1,28 @@
+ENFILADE Ghost icon v6 — exact reticle correction
+
+Art provenance: built-in image_gen; selected source is exec-1532f815-e23a-49d5-b4cc-5dfa5e51a6af.png.
+Current user direction: codex-clipboard-82eb0c76-9c88-436c-aca5-403452552119.png. Preserve the pictured tiger claws, eye, and scope; correct crosshair polarity at every underlying shape boundary.
+Final composition: native SVG reticle mask with an sRGB inversion filter, and a pixel-identical PNG export composed in JavaScript. The previous generated clipped-circle experiment was not selected after the user's reference arrived.
+Line geometry: 12px wide, vertical axis x=628, horizontal axis y=625, with a clear central gap around the existing aiming dot. Each reticle pixel uses finalRGB = 255 - underlyingRGB. Thin old reticle corridors were reconstructed from the neighboring artwork; all pixels outside those corridors are identical to the selected source.
+Verification: 13,320 line pixels checked; inversion errors 0; changes outside correction corridors 0; PNG encode/decode round trip verified. See ghost-icon-v6-verification.json for geometry and counts.
+
+ORIGINAL ART GENERATION PROMPT
+
+Use case: precise-object-edit.
+Asset: GHOST sniper / Siberian tiger class icon, revised development.
+Image 1 is the promising design to develop. Images 2 and 3 are the approved horse/eagle style family.
+The user wants the ferocity, tiger identity, claw feeling AND clean composition of image 1. Recent attempts failed by either making a spiky ornamental frame or smoothing the claws into bland ribbons. Return directly to image 1 and make a considered refinement, not a simplification.
+
+Keep this composition: three powerful white diagonal tiger claw gouges, a predatory tiger eye between them, circular sniper scope and visible crosshair. White on black. Strong diagonal rising from lower left to upper right.
+
+DEVELOP THE INSIDE:
+Make the three strokes feel like actual TIGER CLAW SLASHES: substantial, taut, sharply hooked at their ends, with the characteristic sharp shoulders and small angular bites already present in image 1. Preserve those identifying features, refine their proportions and curve tension. Each slash has its own length, weight and pointed exit; avoid three identical smooth parallel ribbons. Strong black channels between the claws. Keep the original compact visual weight.
+Refine the eye into a Siberian tiger's low, heavy-browed, dangerous glare. Keep the narrow diagonal eye opening and the WHITE IRIS CRESCENT on the right of the central aim point from image 1; shape the upper and lower eyelids more deliberately so the eye reads anatomically as a tiger, integrated into the claw slashes rather than a separate pasted-on eye. Use a compact ROUND pupil/aiming point, not a long vertical reptile slit. Retain the sharply sculpted tiger markings beside the eye.
+Give the reticle a deliberate hierarchy: small round aiming core in the eye, short precise horizontal and vertical crosshair segments, heavier cardinal marks at the perimeter. Keep the aiming graphic evident, but resolve tangencies and remove the black outlined boxes around right and bottom ticks in image 1. Use clean narrow knockout gaps wherever reticle and white claw touch. No random floating marks.
+
+DEVELOP THE FRAME WITH RESTRAINT:
+A compact circular sniper-scope ring, strong clean arcs, four aligned plain straight cardinal ticks. Its upper-right and lower-left cuts should align precisely with the claw exits so ring and claws feel designed together. The ring ends are simple diagonal cuts. No spikes, crescents, facets, gear shapes or ornamental points. Avoid turning it into a decorative tribal wheel.
+
+Aim for the SAME character and richness as image 1, with better tiger anatomy, sharper claw character, controlled negative space and resolved graphic intersections. Preserve its attitude and essential details; cleanliness comes from precision, not deleting its character.
+One centered square icon, generous black margins, pure white shapes on pure black. No text, no grayscale, gradients, glow, texture, full animal head, whisker hairs, tiny fur, extra icons or comparison layout.
+

@@ -1,0 +1,48 @@
+GHOST class icon v41
+Mode: built-in ImageGen, precise-object-edit with enlarged reference and compositing.
+Output: ghost-icon-v41.png
+Family comparison: class-icons-comparison-v41.png (Knight, Assault, Ghost)
+Scope comparison: scope-detail-comparison-v41.png (left: user-supplied reference, right: v41).
+Module closeup: handle-scope-detail-v41.png.
+Base: C:/Users/User/AppData/Local/Temp/codex-clipboard-6be2f76b-8dd0-46df-a7b0-269e6b143680.png
+Intent: repair thin white seams at sight roots and unify the four scope-cross arms into slender claw-blade profiles with matching angular shoulders and long sharp taper. Keep the upper scope claw tip, approved tiger, three grip scallops and filled black grip.
+Selected generated full PNG copied exactly without contour edits. Presentation comparisons/closeup use cropping/resampling only. Read-only black-component check confirmed the four sight arms connect to the rim; only the aiming diamond is detached. Output remains 1254 x 1254 with the original bust framing.
+
+Gap-repair prompt:
+Use case: precise-object-edit.
+IMAGE 1 is the FULL tiger emblem to repair and output.
+IMAGE 2 is a MAGNIFIED CROP of that same scope, supplied so the very narrow unwanted WHITE GAPS can be clearly seen. Do not output the crop; output the full original square emblem with only the repair.
+
+REPAIR ONLY THE THREE ROOT SEAMS:
+1. At 12 o'clock, the broad flat BASE of the black downward triangular sight is separated from the black rim by a thin white slit. FILL that slit BLACK and extend the base directly into the rim.
+2. At 6 o'clock, the broad BASE of the black upward triangular sight is separated from the rim by another thin white slit. FILL that slit BLACK and fuse it with the rim.
+3. Along the LEFT ROOT of the hooked claw-shaped horizontal sight, there is a thin vertical/curved WHITE SLIVER between the sight root and the circular black rim. FILL that sliver BLACK too, matching the surrounding black mass.
+
+All FOUR aiming sights must now GROW DIRECTLY FROM THE BLACK RIM with solid black contact and NO white root seams. The center diamond alone is intentionally separate. Preserve the normal broad white lens spaces and the white center gaps between the sight TIPS and the center diamond. Do not connect the sight tips to the center.
+
+Preserve the exact existing shapes, sizes and positions of all four sights, the central diamond, single circular rim and outer claw tip. Do not erase the upper/lower triangles. Do not redesign anything. Keep the three grip scallops with no white hole, knife, tiger, all other stripes, outer silhouette and canvas unchanged. The entire requested repair is filling a few pixels at the three specified ROOT seams. Pure white/black square icon.
+
+Selected enlarged-reticle generation prompt:
+Edit this ENLARGED SCOPE DETAIL, output the same enlarged detail view only.
+
+Replace ALL FOUR inward black sight arms with FOUR MATCHING SLENDER CLAW-BLADE SHAPES. Currently top/bottom are plain fat triangles while left/right are bulky lightning claws; that mismatch is the problem.
+
+Use ONE coherent blade profile for all four: a narrow solid root directly joined to the ring, a short firm shank, ONE clear angular hooked bite/step, then a long razor-sharp tapered point. All four have equal base width, length, shoulder proportion and taper. Their centerlines lie exactly on 12/3/6/9 o'clock and all tips stop at the same radius around the small center diamond. Left/right are a mirror pair; top/bottom are another mirror pair of the same slender blade profile. Keep the pattern poised and centered, not a swirling propeller.
+
+Keep generous WHITE gaps around the center diamond. ALL ROOTS MUST TOUCH THE BLACK CIRCULAR RIM SOLIDLY with NO WHITE SEAMS. Only the center diamond is detached.
+
+Do not leave the top/bottom as ordinary triangles. Do not leave the current wider horizontal lightning shapes unchanged. Refine all four into the same sleek claw-based precision reticle.
+
+Keep the existing ONE outer circular rim, its upper-right external claw tip and its partial grip connection unchanged in this detail view. Pure black and white, flat clean shapes, no hardware or added details.
+
+Final full-emblem compositing prompt:
+Use case: precise-object-edit / compositing.
+IMAGE 1 is the FULL approved Ghost tiger emblem. IMAGE 2 is the FINAL DESIRED ENLARGED SCOPE-CROSS DESIGN.
+
+Replace ONLY the FOUR SIGHT ARMS INSIDE image 1's existing scope with the four consistent slender claw-blade sight arms from IMAGE 2. Transfer their equal scale, short narrow roots, single angled hooked shoulder and long razor-point tapers. Preserve their cardinal axes and small centered diamond. Adapt them exactly to the current scope aperture and center in image 1.
+
+All FOUR arm roots must JOIN the existing black circular rim SOLIDLY, with NO WHITE ROOT GAPS. Only the central diamond is detached. Match image 2's light, poised, sharp, coherent four-arm construction. Do not restore image 1's mismatched fat horizontal claws and plain vertical triangles.
+
+KEEP ALL OTHER PARTS OF IMAGE 1: its full 1254-square framing and margins, unchanged tiger size/position/head/ear/eye/stripes, hooked blade, three grip scallops, existing outer circular rim and upper-right external claw tip. Use only the CROSS INTERIOR from image 2, not its enlarged ring, crop or framing.
+
+Output the FULL original square emblem at the same composition as image 1. The tiger must not shift down, resize or be recropped. Pure black/white, no other additions or styling changes.

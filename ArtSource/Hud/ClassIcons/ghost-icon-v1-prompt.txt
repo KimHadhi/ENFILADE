@@ -1,0 +1,13 @@
+Generation mode: built-in image_gen
+Reference inputs: approved Knight horse icon; approved Assault eagle icon; historical Ghost UI concepts.
+
+Use case: logo-brand.
+Asset type: first concept for the GHOST sniper class icon in the game ENFILADE.
+Primary request: create the third animal class emblem in the SAME DESIGN FAMILY as the approved Knight horse and Assault eagle reference icons, replacing the animal with a SIBERIAN TIGER.
+Input images: Image 1 (white horse on black) and Image 2 (white eagle on black) are APPROVED STYLE REFERENCES, not subjects to reproduce. Image 3 is historical Ghost UI concept reference ONLY, showing precision/stealth/sniper associations; do not reproduce its UI, words, human hood, or standalone reticles.
+Canvas: one square, pure black background, one large centered pure white emblem with comfortable black margin, approximately the same scale and visual weight as the two approved emblems.
+Subject/composition: a LEFT-FACING SIDE-PROFILE Siberian tiger head and short sweeping neck. Recognizably a tiger: broad short feline muzzle, low rounded ear, heavy brow, deep full cheek ruff characteristic of a Siberian tiger. Controlled silent predatory focus, mouth closed, a single sharp narrow black eye cut. Heavy compact head, never a long wolf snout or pointed canine ears.
+Shape language: use the references' large confident white masses, smooth deliberate curves ending in sharp wedge cuts, a few very bold black negative spaces. A simple broad forehead stripe and two or three broad tapering cheek/neck tiger stripes. The neck's rear contour can taper into two long quiet flowing points like the animal disappearing into shadow, still a coherent compact icon. Let one horizontal cheek stripe subtly suggest a sniper sightline without adding a literal weapon, bullet, or crosshair. Strong silhouette and memorable visual rhythm readable at small game HUD size.
+Style/medium: ultra-clean flat monochrome vector-like emblem, polished bespoke graphic design, restrained reduction to essential shapes. Match the approved icon set's simplicity and mass-to-negative-space ratio. The tiger's cheek fur must be compact and sculptural, not a lion mane.
+Constraints: white shape on pure black, no gray, no gradients, no texture, no shadow, no glow, no typography, no letters, no border, no shield, no circle, no mockup, no UI, no multiple alternatives. No whisker hairs, tiny fur details, realistic rendering, open roaring mouth, visible tongue, exaggerated teeth, esports mascot outlines, or decorative clutter. Produce ONE finished icon filling the square composition.
+

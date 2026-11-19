@@ -1,0 +1,47 @@
+Mode: built-in ImageGen
+Output: ghost-icon-v48.png
+Anatomy reference photograph: IHM Photography, https://www.ihmphotography.co.uk/ihmphotographyblog/tyger-tyger
+Reference used only to guide skull/muzzle proportions. No photograph incorporated in the icon.
+
+INITIAL CONTOUR EDIT
+Use case: precise-object-edit.
+Asset type: existing GHOST class icon, pure white filled animal silhouette on pure black square.
+Input: the supplied icon is the edit target.
+
+Revise the HEAD'S OUTER CONTOUR so it reads as an adult SIBERIAN TIGER.
+The long white pointed projection on the back of the head currently resembles a ponytail or swept hair. REMOVE THAT ENTIRE PROJECTION. Connect the back of the low rounded ear through a compact, strong feline rear skull into the thick neck with a clean continuous contour. No long tufts, mane, feathers, flowing hair or spikes on the outer head contour.
+
+Give the tiger a powerful low brow, broad feline skull, SHORT BROAD squared muzzle and firm angular lower jaw. Use restrained straight bevels at the brow and jaw combined with taut curves, matching the icon's bold shape language. The muzzle must feel like a tiger's compact broad muzzle, not a long horse snout or a balloon-like bear muzzle. Keep the ear small, rounded and close to the skull, without inner-ear markings.
+
+CRITICAL FACE: keep the whole front face, forehead, brow, cheek and muzzle as one clean solid WHITE mass. The ORIGINAL SMALL BLACK TRIANGULAR EYE is the ONLY interior facial detail. No facial stripes, nose, nostrils, mouth line, lips, whiskers, teeth, extra eye or face texture.
+
+Keep tiger character in TWO bold tapered black NECK markings. They should read as purposeful tiger stripe cuts with one clean angular edge bite, ending in long sharp points; not hair ribbons. Keep them on the rear head/neck, away from the eye and clean facial plane. Do not add extra stripe clusters.
+
+LOCK the entire LOWEST black stripe shaped as a karambit, its three grip scallops, continuous black connection into the single circular scope ring, conventional straight duplex reticle and round center dot. Preserve the broad lower shoulder silhouette, overall left-facing bust composition, scale, margins and black square background. No extra border, background symbols, lettering, shading, grey or texture. Output one full clean icon.
+
+ANATOMY REFINEMENT
+Use case: precise-object-edit.
+Image 1: current icon edit target.
+Image 2: real Siberian tiger photograph, used ONLY to understand the skull, nasal bridge, muzzle and jaw proportions, not for detail, stripes, pose, texture or lighting.
+Image 3: original icon lower knife/scope module to preserve.
+
+Change ONLY the HEAD OUTER CONTOUR of image 1 into a recognizably mature tiger profile, using image 2's feline anatomy translated into the same very simple graphic language:
+- Low forward brow and a clear slightly concave nasal bridge.
+- The upper muzzle/nose-tip projects slightly farther forward than the lower muzzle and chin. Shape the nose-tip as a restrained clipped outer corner, continuing into a short full whisker-pad contour and then a firm BEVELED CHIN that slopes BACK. Remove the current blunt two-storey vertical bear jowl.
+- Broad strong cheek/jaw mass behind that compact muzzle, without making the entire head one round bubble.
+- Modestly flatter crown with ONE small low rounded ear, reduced in height and seated close to the skull.
+- Back of skull connects directly into thick neck. ABSOLUTELY NO rear pointed hair projection, ponytail, mane, feather, swept tuft, long fur spikes or flowing locks.
+
+Do not put anatomical DETAILS inside the white face. The only interior mark on the whole face must be the existing SMALL TRIANGULAR BLACK EYE. Keep its simple style and position under the brow. Keep forehead, brow, cheek, muzzle and chin entirely solid white. NO photographed stripes on the face, nose mark, nostrils, mouth/lip line, whiskers, teeth, inner ear, realistic eye or shading.
+
+Retain the TWO rear-neck black tapered stripe cuts, with one broad clean angular bite each, and broad white spacing. Keep them behind the clean facial plane.
+Preserve image 3's whole lowest black karambit stripe, three finger scallops, single scope ring including its small upper-right claw tip, straight classic duplex crosshair and round center dot. No new elements.
+
+Preserve the established left-facing bust arrangement, lower shoulder base, emblem size and margins, pure black square and white filled silhouette. Taut curves plus a few intentional bevels, like a premium simple class emblem. No texture, grey, gradients, outline, text, border or extra symbols. Output one complete icon.
+
+FINAL CLEANUP
+Use case: precise-object-edit.
+Edit the supplied icon with ONE correction only:
+REMOVE the tiny black triangular NOSE NOTCH at the very front of the muzzle (around 17% across, 48% down the square). Fill that notch white and connect the upper and lower muzzle with one plain clean beveled outer contour. There must be NO black triangle or cutout at the nose, and no lip/mouth mark. The ONLY black detail anywhere in the face must be the original triangular EYE higher up.
+
+Preserve all other shapes exactly: tiger head proportions, brow, plain white cheek, small ear, compact rear skull without hair or tufts, two black neck stripes, lowest karambit stripe, three grip scallops, claw-tipped scope ring, classic crosshair and center dot, shoulder base, composition, margins and black background. Do not add anything. Output the complete pure black-and-white icon.

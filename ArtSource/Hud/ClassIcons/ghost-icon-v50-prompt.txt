@@ -1,0 +1,16 @@
+Mode: built-in ImageGen
+Output: ghost-icon-v50.png
+Reference: C:/Users/User/AppData/Local/Temp/codex-clipboard-bc484c32-fb22-4d29-808c-cc37ff366640.png
+
+Use case: precise-object-edit.
+Edit this supplied icon. This is the user's preferred FRONT FACE SHAPE: preserve the forehead outline, brow, nose bridge, squared muzzle, chin and small triangular eye exactly. Keep the broad plain white forehead. Do not add a forehead stripe, nose, nostril, mouth or facial details.
+
+Refine ONLY the THREE existing upper black tiger markings and the rear head contour:
+- Replace their zigzag lightning-like notches and repeated barbs with bold NATURAL TIGER STRIPE silhouettes: broad asymmetric roots, taut gently bowed edges, decisive tapered ends. No internal teeth, Z-shapes, lightning bolts, flame hooks, branches or clusters of extra scratches.
+- The small temple stripe behind the eye should descend more steeply from the rear skull, remain short and compact, and taper down toward the cheek.
+- The main cheek stripe should curve around the jaw as one broad continuous black band with a sharp tapered forward end.
+- The long neck stripe should follow the neck toward the shoulder, maintaining its confident width and long taper.
+Use different lengths and angles so these read as a tiger pattern rather than three identical parallel swooshes. Preserve generous white spacing. Keep the graphic bold enough to match the existing simple class-icon style.
+- Remove the long pointed white hair/ponytail projection at the back of the head; connect the rear skull compactly into the neck. Preserve the low rounded ear.
+
+LOCK the entire lowest black KARAMBIT stripe, its three finger scallops, continuous connection to the single claw-tipped SCOPE RING, straight duplex crosshair and round center dot. Keep the lower shoulder outline, left-facing bust composition, scale, position and margins. Pure white filled animal silhouette and black shaped cutouts on a pure black square. No shading, texture, grey, outline, lettering or added symbols. Output one complete icon.

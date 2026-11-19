@@ -1,0 +1,20 @@
+POINT class icon v3
+Mode: built-in ImageGen, precise-object-edit / logo-brand.
+Target: point-icon-v2.png
+Family reference: user-attached approved Knight, Assault and Ghost.
+User direction: distinguish lioness from Ghost's tiger, add restrained class character, express face through white silhouette and eye only.
+Output: point-icon-v3.png
+
+Final prompt:
+Use case: precise-object-edit / logo-brand.
+Develop Image 1 (Point v2 lioness) into a refined new Point v3 class icon. Image 2 is the APPROVED Knight/Assault/Ghost FAMILY STYLE REFERENCE.
+
+ESSENTIAL CORRECTION: the face is described ONLY by the solid WHITE OUTER SILHOUETTE and ONE small triangular BLACK EYE. Nothing else is drawn on the face.
+Fill the black nose notch completely with WHITE and simplify that entire snout contour into one broad confident closed feline muzzle. There must be NO nose symbol, nose hook, nostril, lip step, mouth slit, mouth smile, separate lower lip, teeth or whiskers. Remove the interior ear triangle completely: the small rounded ear is expressed ONLY through the outer silhouette, with a continuous white interior. Remove the upward smile-like cheek cut; terminate the exterior throat opening cleanly below the jaw rather than curling it into the face. Make this as disciplined as the reference horse's unmarked face.
+
+ANIMAL DISTINCTION: a SOUTHERN AFRICAN LIONESS, no mane. Keep her identifiable through a small rounded ear, a smooth gently domed skull, a slightly longer blunt squared feline muzzle, a calm angular eye, a firm continuous chin, and a powerful clean sloping nape. Smooth short-haired lioness neck, NO hair spikes or tiger cheek ruff. Do not copy the Ghost tiger head or its stripes. Give her a slightly more forward-reaching head and taut longer neck than Ghost's compact broad head. Keep the anatomy feline, not canine.
+
+CLASS TRAIT, IN ONE RESTRAINED GESTURE: Point is the fluid SMG/shotgun weapon-switching and Gun Kata class. Sculpt the LOWER SHOULDER into two interlocking broad WHITE sweeps separated by ONE coherent flowing BLACK return curve, with two opposed tapered ends that suggest seamless exchange/continuous motion. This is an elegant integral negative-space gesture inside the existing bust, not a circular arrow pictogram or a second emblem. One smooth sweep goes forward and the other returns, with ample white between the curve and the jaw. Keep the head the clear focus. No literal guns or small object silhouettes; express the class through the rhythm of the two forms. Do not create fur or stripes.
+
+Match the approved set's large white masses, controlled concave cuts and decisive tapered tips. One clean wide wedge base, one elegant compact asymmetrical left-facing bust. Face has exactly ONE internal black feature: the triangular eye. No facial/ear detail beyond it.
+Flat pure WHITE icon on pure BLACK square, comfortable padding. No grey, shading, texture, gradients, extra symbols, text, borders, or ornamental detail. Show only the developed Point emblem.

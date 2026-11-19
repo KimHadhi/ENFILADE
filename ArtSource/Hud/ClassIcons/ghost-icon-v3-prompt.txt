@@ -1,0 +1,14 @@
+Generation mode: built-in image_gen
+Edit target: ghost-icon-v2.png
+Supporting style references: approved Knight horse icon; approved Assault eagle icon.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Ghost sniper class emblem, development of the approved direction.
+Input image 1 is the EDIT TARGET: the user likes its central tiger eye, white pupil/aim point, crosshair and three sweeping diagonal tiger claw/stripe blades. Preserve that central composition closely. Input images 2 and 3 are the approved Knight horse and Assault eagle STYLE REFERENCES: their compact masses, expressive tapered contours and sharp purposeful negative spaces are the family language.
+
+Requested change: redesign ONLY the generic circular outer sniper-scope frame and its four heavy square-ended inward ticks. The current uniform circle feels anonymous. Give the outer silhouette a distinctive Siberian-tiger/Ghost character while it still clearly reads as a sniper scope.
+Direction: turn the circular perimeter into TWO sculpted asymmetric crescent blades that wrap around the existing central eye. Broad shoulders, subtly flattened/beveled sections, smooth curves tapering to long sharp tips. Open the frame at the existing lower-left and upper-right diagonal exits and let the existing tiger stripes flow naturally into or through those sharp frame tips. Use pronounced thick-to-thin rhythm rather than a constant-width hoop. The upper-left crescent should feel like the tiger's lowered brow, the lower-right crescent like the cheek/stealth-cloak sweep, without drawing a whole tiger head. A small number of precise wedge-shaped black cuts can connect the perimeter to the central stripe rhythm. The outline should feel like one custom predatory emblem, with purposeful asymmetry and a recognizable silhouette.
+Retain four cardinal scope cues at 12, 3, 6, 9 o'clock, but integrate them as elegant tapered aiming notches/ticks carved into the crescents. Remove the clumsy rectangular boxes around the bottom and right ticks. Keep the central aim dot, visible crosshair alignment, negative-space feline eye, and the central three diagonal blade contours as in image 1. Scope must remain readable. Do not just add a second ring or surface decoration to the old circle.
+Rendering: ONE square pure-white-on-pure-black flat vector-like icon, same scale and black margins as input 1. No labels or alternative sheet.
+Constraints: preserve the successful eye/claw center, refine the outer frame; restrained geometry and large bold shapes readable at small HUD size. No extra animal head, ears, whiskers, fur texture, literal rifle, gears, screws, fine reticle scales, tiny dots, circuit decorations, shield, typography, gray, gradients, shadows or glow. Avoid ornamental tribal complexity. Strong, clean and deliberate.
+

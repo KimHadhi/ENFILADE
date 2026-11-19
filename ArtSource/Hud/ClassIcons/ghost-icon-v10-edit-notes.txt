@@ -1,0 +1,7 @@
+Ghost v10: independent horizontal scope marks
+
+Existing native SVG compositing workflow; original artwork was generated with built-in ImageGen. No new image generation for this revision.
+Base: v8, before the rejected curved claw-piece revision.
+Red-marked areas only: restore the underlying tiger shapes locally; apply two straight horizontal 12px-wide scope marks, with oblique straight end cuts following the marked directions. Use exact sRGB inversion through the underlying shapes, like the existing vertical reticle. The marks remain visually distinct from the tiger claws.
+The eye, iris, central dot, vertical reticle, large claws and outer scope are copied unchanged outside these two editing regions.
+See ghost-icon-v10-verification.json for exact polygons and checks.

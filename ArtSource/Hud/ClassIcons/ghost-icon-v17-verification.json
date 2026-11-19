@@ -1,0 +1,47 @@
+{
+  "mode": "built-in ImageGen style transfer, followed by restoration of the established connected right junction and optical-scale normalization",
+  "unchangedStyleReferences": {
+    "knight": "C:/Users/User/Downloads/KNIGHT.png",
+    "assault": "C:/Users/User/Downloads/ASSAULT.png"
+  },
+  "source": "C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-b6250c81-0f99-47fe-bac7-633117401f8b.png",
+  "restoredJunctionSource": "F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v16.png",
+  "restoredJunctionRegion": {
+    "x": 744,
+    "y": 590,
+    "width": 99,
+    "height": 67
+  },
+  "opticalScale": 0.9,
+  "finalGhost": {
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      121,
+      121,
+      1130,
+      1132
+    ],
+    "width": 1010,
+    "height": 1012,
+    "whiteArea": 353779,
+    "whiteCoverage": 0.2249764072352841,
+    "centroid": [
+      634.5436586117322,
+      639.1976403347853
+    ]
+  },
+  "comparisonOrder": [
+    "KNIGHT",
+    "ASSAULT",
+    "GHOST"
+  ],
+  "comparisonCanvas": [
+    1536,
+    512
+  ],
+  "pngRoundTripVerified": true,
+  "comparisonRoundTripVerified": true
+}

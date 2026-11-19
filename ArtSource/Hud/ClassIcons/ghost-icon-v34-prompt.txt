@@ -1,0 +1,24 @@
+GHOST class icon v34
+Mode: built-in ImageGen, precise-object-edit.
+Output: ghost-icon-v34.png
+Comparison: class-icons-comparison-v34.png (Knight, Assault, Ghost)
+Detail presentation: scope-detail-comparison-v34.png (left: supplied base, right: v34; crop/resize only).
+Edit target: C:/Users/User/AppData/Local/Temp/codex-clipboard-9336f77c-7862-486f-a32f-dd07e2af71fd.png
+Intent: retain the preferred circular optic and approved tiger/karambit. Replace the small isolated crest with two coherent low-profile stepped controls at the top and right of the optic; retain the inward pointers and diamond aiming center.
+Selected generated PNG copied exactly without contour edits. Class comparison resampling and detail comparison cropping/resampling are presentation-only. Previous versions and reference assets unchanged.
+
+Final prompt:
+Use case: precise-object-edit / logo-brand.
+Refine ONLY the small scope / finger-ring at the far right of the lowest shoulder stripe in this approved tiger icon. Use this supplied image as the edit target. The user prefers its predominantly ROUND optic to the previous fully octagonal version.
+
+LOCK everything else: tiger head, round ear, triangular facial eye, all claw stripes, white muzzle, curved karambit blade, ergonomic grip and finger scallops, outer bust silhouette, composition, scale and margins. Keep the optic at the same center and approximately the same size.
+
+DESIGN THE SCOPE AS AN INTENTIONAL SMALL OPTICAL INSTRUMENT:
+- Restore a clean CIRCULAR main outer rim and a circular white lens opening.
+- Replace the current isolated flat top crest with a clearly designed LOW-PROFILE TWO-STEP ADJUSTMENT TURRET: a short narrower black stem and a slightly wider shallow black cap, firmly joined to the circular rim at exactly 12 o'clock. Its stepped sides should be visible as two clean broad shoulders, not fine scratches or a random bump.
+- Repeat the SAME compact cap/stem geometry rotated 90 degrees at exactly 3 o'clock as a matching windage adjustment. These two consistent structures should make the object read as a scope, not a damaged ring. They remain small and subordinate to the lens: about one-fifth of the ring diameter in cap width and only about one-tenth in projection.
+- Keep generous WHITE clearance between the right adjustment and the animal's outer edge. Fit the hardware inward if needed; never touch or change the tiger's outer silhouette.
+- Keep the BLACK rim continuous and smoothly fused with the existing curved knife grip at lower left, retaining the finger-ring double meaning.
+- Inside, retain the four crisp inward-pointing sight posts aligned at 12/3/6/9 and the small central BLACK DIAMOND. Clean balanced white gaps, same optical center. A slight short straight base before each tapered point is enough. No added tiny graduations.
+
+The desired refinement is ROUND LENS + TWO coherent stepped scope controls, integrated with the karambit. The graphic must stay simple and strong like the existing icon. No octagonal nut-shaped housing, no gear teeth, compass spikes, added rings, white glare marks, screws, grip texture, microdetails, words, grey or gradients. No additional symbols elsewhere. One pure white/black square class emblem.

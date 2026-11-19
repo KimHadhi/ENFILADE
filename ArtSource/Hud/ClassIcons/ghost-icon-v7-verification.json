@@ -1,0 +1,52 @@
+{
+  "reference": "C:/Users/User/AppData/Local/Temp/codex-clipboard-8eed4659-6b6f-4293-b5de-af67bc0a7723.png",
+  "generatedLocalRefinement": "C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-fb6e7edb-d3fa-4473-8c37-f956d942b8db.png",
+  "editAreas": [
+    {
+      "name": "left",
+      "x": 458,
+      "y": 590,
+      "width": 129,
+      "height": 57
+    },
+    {
+      "name": "irisJoint",
+      "x": 672,
+      "y": 607,
+      "width": 43,
+      "height": 34
+    },
+    {
+      "name": "rightBar",
+      "x": 755,
+      "y": 607,
+      "width": 80,
+      "height": 34
+    }
+  ],
+  "irisJointPolygon": [
+    [
+      678,
+      625
+    ],
+    [
+      684,
+      619
+    ],
+    [
+      701,
+      619
+    ],
+    [
+      701,
+      631
+    ],
+    [
+      684,
+      631
+    ]
+  ],
+  "changedPixels": 7143,
+  "outsideChanges": 0,
+  "pngRoundTripVerified": true
+}

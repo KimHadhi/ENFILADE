@@ -1,0 +1,27 @@
+GHOST class icon v32
+Mode: built-in ImageGen, precise-object-edit.
+Output: ghost-icon-v32.png
+Comparison: class-icons-comparison-v32.png (Knight, Assault, Ghost)
+Edit target: C:/Users/User/AppData/Local/Temp/codex-clipboard-bfc1d803-7bb4-4d15-a247-f845b2988037.png
+Intent: preserve approved tiger and upper claw stripes. Strengthen karambit identity through a curved grip, two broad finger scallops, a small guard and deeper hooked inner blade edge. Accent the shared optic/finger-ring with one shallow faceted crest, tapered inward pointers and a central diamond aiming point.
+The selected generated PNG was copied exactly without further contour edits. Comparison resampling only. Previous versions and user references unchanged.
+
+Final prompt:
+Use case: precise-object-edit / logo-brand.
+Refine ONLY the integrated KARAMBIT + SCOPE motif in the LOWEST shoulder stripe of this approved tiger emblem. Keep the entire tiger head, ear, tiny triangle eye, all three upper claw stripes, outer neck/base silhouette, composition, size and margins visually unchanged.
+
+The current motif is approved, but its straight strap-like handle makes the knife look generic. Make it recognizably a KARAMBIT using a few essential silhouette changes:
+- Give the short handle a pronounced ergonomic inward CURVE from the claw blade toward the existing scope/finger-ring. It should bend naturally, not be a flat straight bar.
+- Shape TWO broad restrained finger scallops along the handle's inner/lower edge. Use confident bevelled notches in the same graphic language as the tiger claw marks. They must be large simple silhouette changes, not small decorative grip texture.
+- Add one small purposeful thumb/guard shoulder at the blade-handle junction so the blade and grip are clearly distinguished.
+- Give the blade a deeper concave inside edge and a more talon-like hooked tip while retaining its long sweep within the existing lowest tiger stripe. It must still read as a tiger-claw marking, not a separate weapon pasted over the emblem.
+Blade, handle and ring remain ONE continuous BLACK negative-space shape within the WHITE shoulder.
+
+Give the SHARED SCOPE / FINGER-RING a modest distinctive accent:
+- Keep its current position, approximate size and circular white opening.
+- Add just ONE shallow angular crest/faceted shoulder at the TOP of the black rim, suggesting a precision optic. Keep the rest of the ring predominantly rounded; no ornamental compass spikes or extra rings.
+- Refine the four inward reticle ticks into short crisp tapered pointers, equal in weight and length, precisely aligned at 12/3/6/9 o'clock, attached to the black rim.
+- Replace the center dot with one small sharp BLACK DIAMOND aiming point. Preserve generous white gaps between the inward pointers and center diamond. Do not join them into a solid plus.
+The optic accent should echo the tiger stripes' angular bites and feel part of the curved knife handle.
+
+Bold, spare pure black and white, clean vector-like contours. Preserve the approved tiger and all its other markings. No nose, mouth, inner-ear detail, new facial features, text, shading, grip screws, hatching, extra icons or outer frame. One polished square class icon.

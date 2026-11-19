@@ -1,0 +1,17 @@
+POINT class icon v2
+Mode: built-in ImageGen, logo-brand.
+User correction: southern African lioness, no mane; simplify heavily and remove literal weapons.
+Reference: user-attached approved Knight, Assault and Ghost family.
+Output: point-icon-v2.png
+
+Final prompt:
+Use case: logo-brand. Create a NEW revised POINT class icon for ENFILADE.
+The attached image is the APPROVED STYLE REFERENCE: Knight, Assault and Ghost. Generate only the new Point icon.
+
+Subject: a SOUTHERN AFRICAN LIONESS (female lion), LEFT-FACING SIDE-PROFILE head with a short strong neck and shoulder. She has absolutely NO MANE. Smooth short-haired skull and neck, small rounded ear, broad short feline muzzle, clear nose plane and firm chin, one simple triangular black eye. Closed mouth, poised and self-assured. Recognizably lioness, no tiger stripes, no panther exaggeration.
+
+The user's essential correction is RESTRAINT. The earlier design failed through a huge hairy male mane and ugly literal guns. Start fresh. Use the same economical elegance as the approved set: ONE sculptural white silhouette, broad uninterrupted white mass, only a few deliberate black cutouts, smooth taut curves ending in very few sharp tips. The back of the skull flows cleanly into a smooth powerful nape, with no fur spikes, ruff, flowing locks or layered hair. Keep the rounded ear compact and simply cut.
+
+For the Point class's agile close-range role, let ONE broad clean swept negative-space curve under the jaw flow into the shoulder, suggesting fluid forward movement. The form alone carries it. Do not depict guns, gun parts, bullets, magazines, flashbangs or other gameplay pictograms. No extra symbols.
+
+Composition: confident compact left-facing bust, same visual weight and general triangular shoulder footprint as the reference icons. A clean broad base, generous black padding around the icon. Flat solid WHITE on pure BLACK square. Sharp, refined vector-like edges. No grey, shading, texture, gradients, lighting, text, frame, crown, flag, decorative marks, teeth or whiskers. Just the minimum shapes needed for an elegant lioness emblem.

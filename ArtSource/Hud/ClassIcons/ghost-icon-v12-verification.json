@@ -1,0 +1,28 @@
+{
+  "source": "F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v10.png",
+  "localModelEdit": "C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-144c9c00-e02f-455f-b4fa-b9135d6cf62e.png",
+  "irisContourEdit": "C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-14f0d364-17f5-467d-9151-141f9cb6368e.png",
+  "oldIrisPixels": 5034,
+  "newIrisPixels": 4778,
+  "endPaths": [
+    "M547 620 H557 C558 620 559 620.3 560 620.7 L579 629 C581 630 580.6 632.5 578.5 632.5 H547 Z",
+    "M790 620 H825 C827.5 620 828.5 621.5 826 623.2 L813 631 C811.5 632 810 632.5 808 632.5 H790 Z"
+  ],
+  "changedPixels": 9688,
+  "changesOutsideEditingMasks": 0,
+  "pngRoundTripVerified": true,
+  "seamRepairs": [
+    {
+      "x": 450,
+      "y": 628,
+      "width": 29,
+      "height": 20
+    },
+    {
+      "x": 788,
+      "y": 633,
+      "width": 54,
+      "height": 19
+    }
+  ]
+}

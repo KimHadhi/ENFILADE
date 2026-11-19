@@ -1,0 +1,25 @@
+POINT class icon v10
+Mode: built-in ImageGen, logo-brand, restrained composition redesign.
+References: approved Knight/Assault/Ghost family; user-supplied KF2 Gunslinger; v9 for lioness head identity only.
+User correction: pistols have malformed anatomy and dominate the composition. Match the approved family's minimal integrated shoulder treatment; preserve proper reference gun geometry.
+Output: point-icon-v10.png
+
+Final prompt:
+Use case: logo-brand. Redesign the POINT class icon with the restraint and integrated negative-space craftsmanship of Image 1.
+Image 1: FINAL Knight/Assault/Ghost icons, the PRIMARY design standard.
+Image 2: KF2 Gunslinger, the EXACT pistol-shape reference. Use the correct proportions and simple silhouette anatomy seen here; do not invent fantasy pistols.
+Image 3: previous Point. Preserve ONLY its plain lioness head identity. Its oversized guns and bottom-heavy weapon construction are rejected.
+
+Create ONE compact square LEFT-FACING LIONESS emblem, pure WHITE on BLACK.
+A Southern African female lion, smooth skull and nape, small rounded ear, short strong feline muzzle, no mane or stripes. Face is one uninterrupted white mass with exactly one small black triangular eye. No nose/mouth/ear-interior drawings.
+
+DESIGN HIERARCHY:
+Lioness first. A single clever Gun Kata gesture discovered in the LOWER SHOULDER second. A tiny flash last. The weapon cue should have about the same restraint and relative weight as Knight's sword cut or Ghost's knife-and-scope cut in Image 1. Broad unbroken white animal mass must dominate.
+
+Replace the giant exposed white guns with ONE LOW FLOWING BLACK NEGATIVE-SPACE GESTURE integrated into the bottom quarter of the bust. That gesture subtly carries the interlocking pair of pistols from Image 2, at shallow opposed diagonals following the shoulder's sweep. Transfer the reference's proper gun shapes: ONE straight slim slide, ONE barrel muzzle, ONE realistic angled grip, and ONE small clean trigger-guard void per pistol. Correct consistent proportions. No forked muzzles, double barrels, swollen guards, wavy receivers, S-shaped frames, hooked pointed grips or melted/invented AI gun anatomy.
+Do not fully display two large complete gun objects. Let the short slide contour emerge briefly from the shoulder groove, and let the recognizable grip/guard contour BECOME the lower neck/shoulder turn. The second pistol is an understated counter-contour interlocking with the first. The weapon gesture opens naturally into the black background at the lower edge; it is not a floating crossed-guns badge inside a white triangle. Design those lower white curves and black gun contours together as one spare, sculptural continuous gesture, like the approved icons.
+Keep the full weapon gesture within approximately the lowest 20-25 percent of the bust height. No gun extending out above or behind the head.
+Retain ONE very small four-point flash at the right end of that shoulder cut, approximately 4 percent of emblem width, seamlessly connected to the gesture.
+
+Smooth broad white skull/nape/shoulder masses, very few precise cuts and tapered endings. Compact approximately 1:1 occupied footprint with the same visual density as Image 1. No busy layers, no generic triangle slab, no literal oversized hardware. No hair spikes, claws, extra emblems, grey, gradients, shading, texture, text, borders or layout panels.
+Show only one refined finished class emblem.

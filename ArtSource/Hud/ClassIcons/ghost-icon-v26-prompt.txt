@@ -1,0 +1,36 @@
+GHOST class icon v26
+Mode: built-in ImageGen, logo-brand generation and precise-object-edit refinement.
+References: C:/Users/User/AppData/Local/Temp/codex-clipboard-0cf2eb6e-53e3-42f6-b0a1-8f6d4539c9b6.png (Knight), C:/Users/User/AppData/Local/Temp/codex-clipboard-6e040be8-12b1-4ce8-86a9-47207d9f31cc.png (Assault).
+Output: ghost-icon-v26.png
+Comparison: class-icons-comparison-v26.png (Knight, Assault, Ghost)
+Selected generation copied unchanged; comparison resampling only. Previous versions and reference files unchanged.
+
+Initial generation prompt:
+Create the SIBERIAN TIGER counterpart to these two approved game-class emblems. Match their abstraction, proportions and deliberate graphic construction. Output ONLY one tiger emblem.
+
+COMPOSITION: a left-facing head above a substantial upright neck and broad lower-right shoulder/base, like both references. Whole bust with generous black margins.
+
+DESIGN LANGUAGE: a few large SOLID WHITE masses. Combine long decisive STRAIGHT EDGES, flat planes, clipped corners and a few tensioned arcs, as in the horse's forehead, blunt muzzle and sword-shaped base. Give the tiger an angular low brow, short boxy muzzle, flat clipped front and underside of the jaw, muscular cheek and two angular cheek-ruff tips. One small low-set flattened rounded ear, integrated into the head. A powerful austere tiger silhouette with a sharp stalking gaze.
+
+FACIAL DETAIL: one small black triangular eye. Two short, thick ANGULAR TIGER STRIPE WEDGES behind the eye, descending across temple and cheek, with straight sections, a sharp change of direction and tapered points. Large uninterrupted white space between these cuts.
+The whole muzzle is SOLID WHITE. Absolutely NO black nose triangle, nostril, mouth line, lip seam, muzzle split, chin line or inner-ear mark. Show the short broad feline muzzle entirely with its outer perimeter.
+
+LOWER BUST: create one bold asymmetric angular shoulder shape and two widely spaced short diagonal claw-like negative cuts. Use a strong straight diagonal termination like the horse's lower-right blade. Avoid parallel long swooshes, flowing ribbons, flame-shaped stripes and repetitive crescent channels.
+
+Keep the reference icons' economy: tiny eye, very few bold negative cuts, forceful outer silhouette. Read as a Siberian tiger through its stocky feline head, sharp cheek and essential angular stripes. Flat white on pure black; no shading, fine anatomy, outlines, texture, circles, scope, external ornaments or text.
+
+Refinement target: C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-f1191d08-160d-47c5-a04a-c2fca9519b47.png
+Final refinement prompt:
+Use case: precise-object-edit.
+Polish IMAGE 1, the angular white tiger emblem. Images 2 and 3 are the approved horse and eagle. Preserve the tiger's graphic idea, composition, angular muzzle, white face, tiny triangular eye, and two angular tiger stripes.
+
+The current construction is too uniformly polygonal. Match the references' BALANCE of straight edges and controlled arcs. Make these specific refinements:
+- Keep the brow, muzzle bridge, muzzle front chamfers and flat lower jaw decisively straight and angular.
+- Replace only the long faceted roof of the skull with one shallow taut arc.
+- Make the ear smaller, tucked close to the skull, with a short flat leading edge and restrained rounded cap.
+- Keep the TWO cheek/temple stripes angular, but give each one straight leading edge and a gently curved return ending at a razor point; compact them slightly to leave more white mass. They should look deliberately cut into a tiger head, not identical lightning bolts.
+- Let the two sharp cheek-ruff points grow naturally from the cheek; use one controlled arc on the back edge of the neck.
+- Connect the underside of the jaw into the front of the neck with one continuous sculpted concave curve. Preserve the broad angular base and long straight lower-right diagonal termination.
+- The two shoulder cutouts stay SHORT, broad and angular. Do not turn them into long curved ribbons.
+
+CRITICAL: the muzzle remains COMPLETELY SOLID WHITE. No nose, nostril, mouth, lip, facial seam, inner ear or extra facial detail. Only the triangular eye and the two bold tiger markings inside the head. No circular scope, symbols or ornaments. Keep the overall degree of simplicity and the silhouette's power. Pure white on pure black square. Deliver one finished icon.

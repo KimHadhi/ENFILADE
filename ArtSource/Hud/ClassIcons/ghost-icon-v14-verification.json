@@ -1,0 +1,83 @@
+{
+  "source": "F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v13.png",
+  "editAreas": [
+    {
+      "x": 457,
+      "y": 595,
+      "width": 64,
+      "height": 47
+    },
+    {
+      "x": 746,
+      "y": 600,
+      "width": 55,
+      "height": 45
+    }
+  ],
+  "profiledCubicJunctions": [
+    {
+      "points": [
+        [
+          482,
+          598
+        ],
+        [
+          462,
+          617
+        ],
+        [
+          479,
+          626
+        ],
+        [
+          502,
+          626
+        ]
+      ],
+      "fromWidth": 5,
+      "toWidth": 12,
+      "end": [
+        521,
+        626
+      ]
+    },
+    {
+      "points": [
+        [
+          784,
+          606
+        ],
+        [
+          773,
+          618
+        ],
+        [
+          757,
+          626
+        ],
+        [
+          780,
+          626
+        ]
+      ],
+      "fromWidth": 3.8,
+      "toWidth": 12,
+      "end": [
+        801,
+        626
+      ]
+    }
+  ],
+  "shaftWidth": 12,
+  "contourFinish": {
+    "supersampling": 4,
+    "concaveFilletRadius": 1.4,
+    "convexFilletRadius": 1.2
+  },
+  "connections": {
+    "left": true,
+    "right": true
+  },
+  "changesOutsideJunctionAreas": 0,
+  "pngRoundTripVerified": true
+}

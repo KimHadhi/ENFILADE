@@ -1,0 +1,25 @@
+Ghost v19 — animal silhouette with integrated class specialty
+
+Mode: built-in ImageGen. No CLI fallback and no post-generation shape editing.
+Current direction: match the approved Knight and Assault design principle: a recognizable animal silhouette with its class-specific feature integrated into that animal.
+Style references: codex-clipboard-a6181192-459d-4eb1-8e01-2ad09c5a0b83.png (Assault) and codex-clipboard-3cd07e4b-00ed-452f-8e5d-a0b115053c7f.png (Knight).
+Result: left-facing Siberian tiger head and flowing neck, with a sniper scope reticle built into its eye. The full external scope frame and compass-point structure are replaced by an animal-led silhouette. Original style-reference images are unchanged.
+Files: ghost-icon-v19.png; class-icons-comparison-v19.png. Comparison order: Knight, Assault, Ghost.
+Verification: selected generated PNG copied byte-for-byte; all three images composed at the same canvas scale for visual comparison; comparison PNG round trip checked.
+
+IMAGEGEN PROMPT
+
+Use case: logo-brand.
+Create a new GHOST sniper-class icon that belongs to the EXACT SAME FAMILY as the two supplied approved class emblems.
+Image 1: approved ASSAULT eagle, style reference. Image 2: approved KNIGHT horse, style reference. Their design principle is ANIMAL SILHOUETTE FIRST, with the class specialty cleverly cut into the animal (the eagle's bullet-shaped wing cutouts, the horse's blade-like neck). Apply that principle to GHOST.
+
+Main subject: unmistakable SIBERIAN TIGER, LEFT-FACING SIDE-PROFILE head and short sculpted neck. Broad compact feline muzzle, rounded ear, heavy lowered brow, full Siberian tiger cheek ruff, mouth closed, cold stalking focus. A few bold black forehead/cheek stripes make the tiger immediately readable. Keep the ruff compact and graphic, not a lion mane or a wolf snout.
+
+Class specialty: integrate a SNIPER SCOPE RETICLE directly into the tiger's actual EYE. A sharply shaped black feline eye cavity contains a small clean white circular iris with a decisive black crosshair and four clear aiming cues. Make that sniper-eye feature intentional and visible, occupying the eye region rather than becoming a huge eyepatch. This is the distinctive Ghost feature, just as bullets are integrated into the eagle's wings. The eye must visibly communicate aiming/precision, not just a generic slit.
+Let the lower cheek and neck resolve into two broad, quiet, sharply tapered sweeps, suggestive of a stealth cloak while remaining part of the animal silhouette. Two or three bold tiger stripe cutouts share that flow.
+
+Shape language: large confident pure-white filled masses, long fluid taut curves ending in decisive sharp points, a small number of broad elegant black negative-space cuts. Same restraint, graphic clarity, abstraction, visual mass and smooth-to-sharp transitions as the horse and eagle references. One compact coherent emblem with ample clear black gaps. Strong simple silhouette, readable at game HUD size.
+
+Composition: one centered square icon on pure black, roughly the same optical size and generous margin as the approved references. Pure flat white and black.
+No outside circular scope frame, no badge border, no compass points, no free-standing crosshair over the whole image, no detached ornaments, no full-body animal, no human hood, no skull, no roaring mouth, no whisker hairs, no tiny fur detail, no repetitive serrations, no lettering, no grayscale, no effects or texture. Output ONE finished animal-plus-class-feature mark only.
+

@@ -1,0 +1,27 @@
+POINT class icon v22
+Mode: built-in ImageGen, logo-brand / precise-object-edit.
+Primary reference: user's approved Knight/Assault/Ghost family cd30337f-9c3c-4309-8bed-4181099999da.png.
+Current source: point-icon-v21-iteration.png.
+Weapon geometry: user's chosen paired-pistol graphic.
+Latest user correction: lion head proportions do not match the other classes. Recompose head/weapon groups horizontally, compact face/jaw and actual occupied footprint, while retaining proper recognizable pistols as body structure.
+Measured current footprint: Point 883x1120 (0.79); Knight 370x400 (0.93); Assault 388x352 (1.10); Ghost 379x343 (1.10). Measurements use read-only white-pixel bounds sampled every 3px.
+Output: point-icon-v22.png
+
+Final prompt:
+Recompose a fictional game class emblem to match the approved family proportions.
+Image 1 is the PRIMARY proportion and shape-language reference: final Knight, Assault and Ghost.
+Image 2 is the current Point design, whose head/body proportions are rejected.
+Image 3 is the fixed proper pistol-pair geometry reference.
+
+The current Point's actual white silhouette is only 0.79 as wide as it is tall; the approved family is approximately square. Correct the DRAWING'S occupied footprint, not just the square canvas.
+
+HEAD:
+Use the Ghost tiger's head bounding proportions in Image 1 as the scale/layout guide: a broad compact side-profile animal head projecting left, with a relatively low firm chin and short neck. Preserve Point's MANED LION identity and angular eye, but reduce the stretched vertical face/open-mouth depth and excessive crown height. A compact, controlled roar opening rather than a long hanging jaw. Keep a few strong mane locks and a compact ear. Do not turn the lion into a tiger or add stripes or facial details.
+
+BODY BUILT FROM THE PISTOLS:
+Keep BOTH full pistol profiles clearly recognizable, correctly proportioned and interlocking as in Image 3. Do not erase them into two holes. Uniformly reduce the pair to about 75 percent of its size in Image 2, rotate it clockwise into a shallower roughly 30-degree opposed diagonal, and move it UPWARD and slightly right.
+Overlap the head/neck and weapon structure HORIZONTALLY: broad lion head upper-left, the paired gun/shoulder construction lower-right with one muzzle returning under the face. No vertical stack of head, long neck, then giant guns underneath.
+Let the white grip/backstrap regions be the actual white neck/shoulder turns; grow the adjacent mane curves from their geometry. Join white mane and white frames at broad structural junctions. Preserve the characteristic straight slides, angled grips and both black guard openings. Avoid closed black outlines encasing an entire separate pair and avoid an empty body with a gun badge inserted.
+
+Final layout: a compact broad bust with approximately 1:1 ACTUAL WHITE bounding width/height (within about 5 percent), like Image 1. Head-to-shoulder balance should match the approved Ghost/Knight scale. Clean broad base, no long dangling tips or extra lower tier. Place the whole icon with even black margins.
+Pure flat WHITE on BLACK. No flash, text, extra symbols, grey, shading, gradient or texture. One Point lion emblem only.

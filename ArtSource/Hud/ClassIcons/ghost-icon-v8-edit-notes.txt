@@ -1,0 +1,6 @@
+Ghost v8: vertical reticle correction
+
+Source artwork originally generated with built-in image_gen. This edit uses the existing native SVG inversion-mask composition; no new image generation.
+Repaired the two narrow vertical reticle corridors from the clean underlying artwork, removing the hand-painted rounded blobs. Applied a single 12px-wide rectangular reticle in each corridor. Its colors follow finalRGB = 255 - underlyingRGB at every pixel, so every sloped claw boundary continues through the reticle with no round caps or local endpoint treatment.
+The v7 horizontal joint refinement and all pixels outside the two vertical repair areas are preserved exactly.
+Verification: 6420 reticle pixels, zero polarity errors, zero changes outside the vertical repair areas.

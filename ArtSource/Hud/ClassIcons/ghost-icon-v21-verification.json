@@ -1,0 +1,29 @@
+{
+  "mode": "built-in ImageGen; final optical-size adjustment only",
+  "conceptReference": "codex-clipboard-e6db7eb5-a550-46b6-b9d2-5a1113b7bc30.png",
+  "styleReferences": [
+    "ASSAULT.png",
+    "KNIGHT.png"
+  ],
+  "generatedSource": "C:/Users/User/.codex/generated_images/01a1ec53-9846-7ed1-894e-42e2297037a9/exec-ab1a8bee-6e7a-44a7-bb61-b7724d219b57.png",
+  "opticalScale": 0.96,
+  "finalGhost": {
+    "bounds": [
+      163,
+      107,
+      1105,
+      1127
+    ],
+    "width": 943,
+    "height": 1021,
+    "whiteArea": 409319,
+    "coverage": 0.26029560271564806
+  },
+  "comparisonOrder": [
+    "Knight",
+    "Assault",
+    "Ghost"
+  ],
+  "pngRoundTripVerified": true,
+  "comparisonRoundTripVerified": true
+}

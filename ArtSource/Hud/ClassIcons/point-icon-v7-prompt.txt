@@ -1,0 +1,23 @@
+POINT class icon v7
+Mode: built-in ImageGen, logo-brand, full composition redesign.
+References: approved Knight/Assault/Ghost family and user's KF2 Gunslinger reference.
+User correction: weapon shapes must remain handsome and readable; design neck and guns together instead of inserting a motif into a pre-existing body.
+Output: point-icon-v7.png
+
+Final prompt:
+Design a NEW ENFILADE POINT class emblem from the supplied references. Start the composition over; do not use the previous lioness-on-a-solid-triangle layout.
+Image 1: approved Knight, Assault and Ghost class emblems. Study how their weapons and animal bodies SHARE contours and become one designed shape.
+Image 2: KF2 Gunslinger, the user's favorite reference for a handsome pair of pistols. Study the actual pistol proportions and opposing arrangement.
+
+The emblem is a LEFT-FACING SOUTHERN AFRICAN LIONESS combined organically with TWO ELEGANT SEMIAUTOMATIC PISTOLS and ONE SMALL FLASH ACCENT.
+Her smooth maneless head is a plain solid WHITE silhouette with a small triangular BLACK EYE as the ONLY facial feature. Rounded ear expressed by the outer contour only, short broad feline muzzle and firm chin. No nose, mouth, inner ear, fur or tiger stripes.
+
+THE MAIN DESIGN TASK IS THE NECK:
+The two guns must CONSTITUTE the neck/shoulder construction, not sit as a little icon inside an existing white neck. Design the lioness head, the two pistols and the intervening black spaces together as ONE flowing asymmetric silhouette. Let the back-of-head contour transition into one gun's long slide; let a pistol grip's concave curve shape the throat/shoulder turn; let the other gun form the lower counter-sweep. The guns may extend into and define the outside contour. Give them adequate scale and breathing room. There must not be a big generic triangular white slab around a tiny crossed-guns decal.
+
+Make the pistols immediately recognizable and HANDSOME like Image 2: taut elongated slides/barrels, crisp stepped muzzles, distinctive swept-back grips, small beavertail/hammer shoulders, and one clean bold TRIGGER-GUARD OPENING for each. These few essential functional contours are necessary; do NOT simplify them into L-shaped blocks, wedges, tofu, boomerangs, chevrons or tools. Use confident custom graphic drawing, no tiny mechanical texture. Two opposed diagonals create a fluid crossed Gunslinger / Gun Kata gesture, fitted to the overall lioness bust rather than rigidly centered. Keep a clean designed separation at their overlap.
+Use WHITE gun/body forms with BLACK negative-space articulation as appropriate, integrated into the same white figure. Do not put two black pistol stickers inside an untouched white triangle.
+
+Place just ONE small four-point flash at one muzzle, a restrained accent for Point's Breach flashbang. No other ornaments.
+Visually: lioness and crossed pistols are a coherent continuous graphic, the same thoughtful design quality as the approved horse/sword, eagle/bullets, and tiger/karambit. Smooth curves resolve into crisp tips. Large white forms, few purposeful cuts, controlled detail, no hairy edges.
+Pure flat WHITE on BLACK square, safe margin, no grey, gradient, texture, lighting, text, border, diagrams or variants. Show one beautifully resolved original emblem.

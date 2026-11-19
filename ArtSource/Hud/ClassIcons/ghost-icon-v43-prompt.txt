@@ -1,0 +1,25 @@
+GHOST class icon v43
+Mode: built-in ImageGen, precise-object-edit.
+Output: ghost-icon-v43.png
+Family comparison: class-icons-comparison-v43.png (Knight, Assault, Ghost)
+Scope comparison: scope-detail-comparison-v43.png (left: v42, right: v43).
+Module closeup: handle-scope-detail-v43.png.
+Edit target: F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v42.png
+Intent: replace decorative claw/fang reticle with a recognizable classic duplex riflescope crosshair: four solid rectangular outer posts, continuous straight inner axes and a small central round aiming dot. Preserve tiger/claw/karambit body identity and single exterior claw-rim.
+Selected generated PNG copied exactly; no post-generation contour edits. Presentation crops/resampling only. Previous versions and user references unchanged.
+
+Final prompt:
+Use case: precise-object-edit / logo-brand.
+Replace ONLY the scope's internal reticle with an immediately recognizable CLASSIC RIFLESCOPE CROSSHAIR. The user wants the interior to communicate sniper targeting clearly; the tiger/claw stripes/karambit already provide the class's distinctiveness.
+
+KEEP every other element of this approved icon: tiger head/ear/triangle eye, body stripes, hooked knife blade, three finger scallops, single scope rim and its upper-right exterior claw tip, outer bust silhouette, scale, position and margins.
+
+INSIDE THE EXISTING WHITE LENS:
+- Remove all four fang/claw/triangle sight arms and remove the central diamond.
+- Draw a conventional straight DUPLEX CROSSHAIR: exact vertical and horizontal BLACK axes crossing at the true lens center.
+- Four solid rectangular outer posts grow directly from the circular black rim at 12/3/6/9. Equal width and length, roughly 12–14 pixels wide at this 1254-square canvas.
+- Each outer post narrows through one clean square step into a medium-weight straight inner line, about 6 pixels wide. The inner vertical and horizontal lines continue ALL THE WAY to the center and CROSS cleanly there. No pointed tips, forks, curves, serrations or extra ticks.
+- Place one small BLACK ROUND aiming dot about 10–12 pixels across exactly at the intersection, integrated naturally with the two crossing lines. This is a small precision center, not a large pupil.
+- The four post roots TOUCH THE BLACK RIM with NO white gaps, and the inner cross is continuous with NO center breaks. Keep the rest of the lens as generous plain white space.
+
+Make the reticle bold, clean, symmetric and instantly scope-like, with enough weight to belong to these class icons. No hairline engraving, decorative claw geometry inside the lens, medical-sized solid plus, secondary rings, knobs, new symbols, lettering, grey or shading. Only this local interior replacement. Full original pure black/white square emblem.

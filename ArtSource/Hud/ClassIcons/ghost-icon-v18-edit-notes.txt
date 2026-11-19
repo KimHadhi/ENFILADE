@@ -1,0 +1,6 @@
+Ghost v18 — scope negative-space and reticle contrast correction
+
+Native graphic composition; no new image generation. Original artwork provenance: built-in ImageGen.
+Kept the v17 silhouette, class-family scale and connected inner aiming marks. Extracted the top scope point as the master and repeated that exact mask at 90-degree rotations. Increased the black clearance to a 14px Euclidean offset around each point. Restored the tiger under the narrow old vertical-line corridor from the flanking contours, then reapplied two 12px aiming rays using RGBfinal = 255 - RGBunderlying at every line pixel. The underlying image is included as ghost-icon-v18-reticle-base.png for inspection.
+Verification: 5316 reticle pixels checked, zero polarity errors; aiming-dot region unchanged; all changes stay within the scope-point and vertical-reticle masks.
+Comparison order: Knight, Assault, Ghost. Reference assets unchanged.

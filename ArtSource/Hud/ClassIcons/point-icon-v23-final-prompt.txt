@@ -1,0 +1,20 @@
+POINT class icon v23 final size correction
+Mode: built-in ImageGen, precise-object-edit.
+Target: point-icon-v23-draft.png.
+Read-only connected-component measurement of black guard apertures in draft: left 60x63 pixels (area 2344), right 72x74 pixels (area 3428).
+Direction: enlarge the entire smaller left pistol uniformly by approximately 20%, matching the unchanged right master; do not merely enlarge the aperture or preserve the too-small old left slot.
+Output: point-icon-v23.png
+
+Final prompt:
+Precise size-matching correction of this flat game class icon. Do not redesign it.
+
+Keep the UPPER-RIGHT-pointing pistol as the unchanged master.
+The LOWER-LEFT-pointing pistol was incorrectly drawn at a smaller scale. Enlarge that ENTIRE pistol uniformly to 120 percent of its current size, then translate it slightly as needed to keep the existing opposed interlock. Do not stretch it in one axis. Do not enlarge only its guard hole: scale its slide, frame, grip, shoulders and guard aperture TOGETHER.
+
+Measured current guard apertures:
+- lower-left pistol: 60 x 63 pixels
+- upper-right master: 72 x 74 pixels
+After correction, both apertures should be the same size and shape, about 72 x 74 pixels, and the complete pistol forms should be same-size 180-degree-rotated counterparts. Match slide length/thickness, muzzle details, grip length/angle/heel and shoulder curves to the master exactly.
+
+Do NOT shrink the copied form to fit the old left-hand space. If it overlaps the adjoining white lion/mane, adjust ONLY that local white junction to accommodate the correct full-size form. Keep its characteristic outline and black aperture readable.
+Preserve the lion head, eye, mane, master pistol, compact composition, base, pure white/black palette and framing. No new objects, flash, facial marks, shading, texture or text.

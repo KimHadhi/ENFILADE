@@ -1,0 +1,59 @@
+{
+  "source": "F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v17.png",
+  "finMasterSeed": [
+    627,
+    210
+  ],
+  "finMasterBounds": [
+    608,
+    121,
+    646,
+    377
+  ],
+  "finMasterBinaryPixels": 6254,
+  "scopeCenterPixel": {
+    "x": 627,
+    "y": 626
+  },
+  "rotations": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "clearancePx": 14,
+  "clearanceMetric": "Euclidean offset, identical rotated mask in all four directions",
+  "inpaintedReticleStrips": [
+    {
+      "x": 616,
+      "y": 375,
+      "width": 23,
+      "height": 225
+    },
+    {
+      "x": 616,
+      "y": 653,
+      "width": 23,
+      "height": 261
+    }
+  ],
+  "verticalReticleRectangles": [
+    {
+      "x": 622,
+      "y": 378,
+      "width": 12,
+      "height": 222
+    },
+    {
+      "x": 622,
+      "y": 654,
+      "width": 12,
+      "height": 221
+    }
+  ],
+  "reticlePixels": 5316,
+  "polarityErrors": 0,
+  "changesOutsideFinAndReticleMasks": 0,
+  "aimDotRegionChanges": 0,
+  "pngRoundTripVerified": true
+}

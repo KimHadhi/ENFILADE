@@ -1,0 +1,24 @@
+GHOST class icon v23
+Mode: built-in ImageGen, logo-brand generation with composition and silhouette references.
+Reference 1: C:/Users/User/AppData/Local/Temp/codex-clipboard-448876e1-8b9a-47b8-9acf-b060404fbf60.png (ASSAULT)
+Reference 2: C:/Users/User/AppData/Local/Temp/codex-clipboard-4a700104-59e1-449e-b58f-ad2cb7acddec.png (KNIGHT)
+Output: ghost-icon-v23.png
+Comparison: class-icons-comparison-v23.png (Knight, Assault, Ghost)
+The selected generated PNG was copied exactly; no contour edits. Comparison resampling only. Reference files unchanged.
+
+Final prompt:
+Use case: logo-brand.
+Create ONE finished GHOST class emblem, the Siberian tiger counterpart to the two supplied approved class icons.
+
+INPUT ROLES: Image 1 (ASSAULT eagle) and Image 2 (KNIGHT horse) are BOTH mandatory COMPOSITION AND SILHOUETTE references, not just drawing-style references. Output only the new tiger icon.
+
+PRIMARY CORRECTION — MATCH THEIR HEAD + NECK + SHOULDER BUST COMPOSITION:
+Study how both reference animals face LEFT, with the head in the UPPER LEFT HALF, a clearly extended neck descending below the jaw, and a broad flowing shoulder/base occupying the LOWER HALF and sweeping toward the RIGHT. Reproduce that distribution with a TIGER. Use the horse's spatial organization: a distinct left-facing head above a deep open black under-jaw gap, a substantial upright neck behind it, and the broad sloping shoulder at the bottom right. Use the eagle's elegant connected sweeping silhouette and broad tapered negative-space cuts. The entire head must remain a relatively compact part of the full bust. Give the neck and shoulder ample height and visual weight. The lower half must clearly read as neck/chest/shoulder, not an enlarged tiger cheek. Frame the whole bust at the same visual size and margins as the references. No large close-up face filling the square.
+
+ANIMAL: recognizable Siberian TIGER in true left side profile, one compact round ear with a simple black inner notch, strong short feline forehead, broad blunt tiger muzzle, powerful jaw, restrained pointed cheek ruff flowing into the neck. A poised silent stalker, closed mouth and focused predatory eye. Two or three bold tiger stripe cutouts on forehead and cheek. The head transitions naturally into the upright muscular neck, then into two or three long sweeping shoulder shapes at the base.
+
+GHOST DISTINCTIVENESS: integrate the sniper aiming-eye concept INTO the tiger's own eye and stripe geometry. A small round eye/iris with a precise aim dot and short aligned crosshair cuts, with the brow/eye stripe shaping that targeting structure organically. The broad tiger stripes extend backward into the neck with claw-like tapered ends. These are clean designed negative spaces, comparable in scale and confidence to the eagle's two bullet channels and horse's sword/shoulder cut. Keep it one coherent animal emblem.
+
+STYLE: exactly the references' bold pure WHITE filled masses on pure BLACK square background, clean vector-like curves, taut contours, broad flowing black channels, a few decisive sharp tapered tips. No shading, gradients, texture, outlines, fine hairs, illustrative anatomy, tiny decorative marks, text, labels or watermark. No surrounding circle or scope frame, no external compass/bullet tips, no detached symbols, no rifle. Reticle portions must be black on white areas and white on black areas, precisely clipped to real shape boundaries.
+
+Deliver a single polished square icon with the full compact-head / extended-neck / sweeping-lower-shoulder composition, like the supplied eagle and horse.

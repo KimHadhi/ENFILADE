@@ -1,0 +1,23 @@
+GHOST class icon v33
+Mode: built-in ImageGen, precise-object-edit.
+Output: ghost-icon-v33.png
+Comparison: class-icons-comparison-v33.png (Knight, Assault, Ghost)
+Edit target: F:/GameProject/ENFILADE/ArtSource/Hud/ClassIcons/ghost-icon-v32.png
+Intent: preserve the approved tiger, claw stripes, karambit grip and blade. Replace the isolated top crest with a balanced eight-facet outer bezel around a circular white lens. Refine the four inward guides into stepped sight posts with pointed tips, retaining the central diamond and clean gaps.
+Selected generated PNG copied exactly; comparison resampling only. No post-generation contour edits. Previous versions and user references unchanged.
+
+Final prompt:
+Use case: precise-object-edit / logo-brand.
+Develop ONLY the little SCOPE / FINGER-RING at the far right of the lowest black shoulder stripe in this approved tiger class icon. The user likes the tiger, claw stripes, karambit's curved grip, broad finger scallops and hooked blade. Keep ALL of those visually unchanged. Same square framing, scale and margins.
+
+PROBLEM: the one tiny flattened crest on top of the otherwise round ring looks like an accidental blemish. Replace it with a coherent, immediately intentional precision-optic design across the WHOLE bezel.
+
+NEW SCOPE DESIGN:
+1. Remove the isolated little top crest entirely.
+2. Use a regular, balanced EIGHT-FACET OUTER BEZEL: a compact octagonal outer perimeter with matching deliberate flat faces and chamfered corners all around, like a precisely machined optical housing. The inner WHITE lens opening stays perfectly CIRCULAR. The black rim is bold, clean, continuous and evenly weighted. Its lower-left segment still grows smoothly from the existing curved karambit grip. Same center and approximately the same footprint; generous white clearance from the animal's outer edge. It must still double as the knife's finger-ring.
+3. Refine the four internal BLACK aiming guides into short STEPPED SIGHT POSTS: each has a solid rectangular base attached to the rim, a narrower short stem and a crisp pointed inner tip. Exactly four, matching in weight and length at 12/3/6/9 o'clock. This should read as deliberate precision sight geometry, rather than four generic compass triangles.
+4. Retain ONE small BLACK DIAMOND aiming point exactly in the center. Preserve generous WHITE space and equal clean gaps between the four post tips and the diamond. No joined plus.
+
+The distinctive point is the complete balanced faceted housing and precise sight-post design, NOT extra decoration. Keep the graphic spare and bold enough for a class icon. No tiny graduations, numerals, hatching, added spikes, knobs, isolated notches, doubled outer rings, lens reflections, gradients, extra crosshairs or symbols.
+
+Do not modify the karambit blade or grip, tiger silhouette, round ear, facial triangle eye, approved claw marks, or solid white muzzle. Pure white and black square emblem. One polished refined icon.

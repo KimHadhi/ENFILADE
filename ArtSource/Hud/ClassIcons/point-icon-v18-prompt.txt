@@ -1,0 +1,24 @@
+POINT class icon v18
+Mode: built-in ImageGen, logo-brand, family-directed redesign.
+Primary reference: user's approved Knight/Assault/Ghost sheet 8c40b603-b1df-4f31-b162-90e632c46f5d.png.
+Geometry reference: user's chosen pistol pair cea97d1a-d38c-41f6-8aac-39877e34ab08.png.
+Direction: make pistol-derived negative space serve as animal shoulder anatomy; avoid full separate weapon objects. New user steering: smaller low-set, slightly swept-back ear with flattened/slanted top, not circular Mickey Mouse ear.
+Output: point-icon-v18.png
+
+Final prompt:
+Design ONLY the fourth class emblem in Image 1's exact visual family: POINT, a LEFT-FACING SOUTHERN AFRICAN LIONESS.
+
+Image 1 is the PRIMARY DESIGN STANDARD. Study the visual grammar: broad white sculptural masses; one small angular eye; smooth concave turns resolving into a few decisive tips; compact square bust; weapon geometry doubles as animal anatomy. The horse's sword is its neck turn, the eagle's bullet trails are its feathers, and the tiger's knife is its shoulder stripe. Apply that same method, rather than depicting a lioness standing above two gun objects.
+Image 2 is a GEOMETRY REFERENCE for Point's interlocking Gun Kata gesture.
+
+SPECIFIC CONSTRUCTION:
+Use the BLACK GAP BETWEEN the two pistols in Image 2 as the main negative-space fold of the lioness's LOWER SHOULDER. Transfer that gap's correct interlocking, straight-edged geometry, rotated into a shallow rising diagonal following the shoulder. Most of each pistol's white area is absorbed into the animal's continuous white body. Include the reference's TWO SMALL guard apertures in their proper relationship to that fold. These few negative spaces and the turning lower contour imply the paired weapons; do not draw two complete pistol silhouettes or trace black borders around them.
+Let one grip curve be the same curve that turns the lower chest into the base, and let the counter-grip return be the rear shoulder turn. The two forms are locked together as ONE flowing gesture within the body, with the central fold opening naturally into the outer outline at its ends. Accurate short straight slide-related edges remain where needed, but no complete protruding gun barrels or separate gun-shaped panels. Make the animal contour and pistol-derived contour do double duty.
+One confident integrated shoulder gesture, at the relative visual weight of the approved sword or karambit, not a large literal gun assembly. Preserve the master geometry of the interlock and openings, not arbitrary wavy strokes or swollen gun shapes.
+
+LIONESS:
+Plain white side-profile head, short broad feline muzzle, firm chin, smooth cheek/nape and ONE small triangular black eye. No mouth, nose, whiskers, inner-ear marks, mane, stripes or fur spikes.
+EAR CORRECTION FROM USER: noticeably smaller, lower-set and slightly swept backward. A restrained rounded D-shaped ear with a subtly flattened/slanted top and a compact base blending into the skull. No large circular Mickey Mouse ear, and no pointed wolf ear.
+Use a proportionate head and short broad shoulder, with a taut forward posture and smooth powerful lioness nape, distinctly different from Ghost's striped ruff.
+
+One compact approximately 1:1 occupied silhouette with a broad clean base and balanced black margins. Pure flat WHITE on BLACK, matching Image 1's visual density, economy and decisive cut shapes. No flash/star, no extra ornaments, text, panels, grey, shading, gradient or texture. One coherent custom-designed lioness glyph.

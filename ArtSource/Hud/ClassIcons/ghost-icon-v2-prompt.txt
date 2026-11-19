@@ -1,0 +1,12 @@
+Generation mode: built-in image_gen
+Reference inputs: approved Knight horse icon; approved Assault eagle icon; historical Ghost UI concepts.
+
+Use case: logo-brand.
+Asset type: GHOST sniper class icon, ENFILADE, revised concept 2.
+Primary request: an unmistakable SNIPER SCOPE fused with a SIBERIAN TIGER symbol. The previous plain tiger head failed because it did not communicate sniper at all. Make the scope/aiming motif immediately obvious, equally important to the tiger motif.
+Input images: Image 1 and Image 2 (approved Knight horse and Assault eagle) are references for pure white masses, elegant tapering curves, sharp black cutouts and restrained detail. Image 3 shows older Ghost concepts: use the rightmost scope-with-three-claws concept as the STARTING COMPOSITION, not as an image to copy exactly. Ignore its UI and text.
+Design: ONE compact centered emblem on black. A thick white sniper scope ring with four bold inward cardinal reticle ticks. A clear central aiming dot and short, clean crosshair segments must remain visible, with black breathing room around the aim point. Fuse THREE broad, blade-like diagonal tiger claw/stripe shapes into the circular scope silhouette, sweeping from lower left to upper right. These should be sculpted like the approved horse and eagle shapes, not generic parallel scratches. One of the black spaces between the central white tiger stripes should form a sharp, unmistakable predatory FELINE EYE: narrow heavy brow, small slit-shaped pupil aligned to the center reticle. The tiger eye and stripes should feel like a Siberian tiger watching from darkness through a scope. Integrate the forms as a single deliberate emblem, not a scope sticker on an animal drawing. Keep the circular scope legible and the eye visible; favor simple hierarchy and bold negative space over extra detail.
+Style: polished minimal military game class icon, flat pure white on pure black, same large shape weight and sweeping pointed curves as the approved icons. Strong enough to read at 44px, with clean thick strokes and generous gaps.
+Composition: one square canvas, emblem uses about 75% of the width, broad even black margins. No text, no labels, no comparison sheet.
+Avoid: a plain tiger head, full animal portrait, realistic fur, roaring mouth, teeth, whiskers, rifle illustration, hooded human, skull, shield badge, decorative esports outlines, many thin scope rings, tiny tick scales, gray, shading, gradients, glow, texture, watermark. The viewer must instantly read sniper reticle plus tiger's predatory eye/claws.
+

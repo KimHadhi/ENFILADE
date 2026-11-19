@@ -1,0 +1,23 @@
+Ghost v20 — ambush tiger with an integrated sniper-rifle neck cutout
+
+Mode: built-in ImageGen. No CLI fallback; no post-generation shape editing.
+Style references: approved Assault eagle and Knight horse, supplied as codex-clipboard-a6181192-459d-4eb1-8e01-2ad09c5a0b83.png and codex-clipboard-3cd07e4b-00ed-452f-8e5d-a0b115053c7f.png.
+New concept: a lowered stalking Siberian-tiger head with a single suppressed scoped-rifle silhouette cut into the neck/shoulder, following the references' animal-plus-class-feature principle.
+Files: ghost-icon-v20.png; class-icons-comparison-v20.png. Comparison order: Knight, Assault, Ghost. References unchanged.
+Verification: selected generated image copied byte-for-byte; comparison PNG decode/encode round trip checked; subject, class feature and style family visually inspected.
+
+IMAGEGEN PROMPT
+
+Use case: logo-brand.
+Create a distinctive GHOST sniper class emblem in the same graphic family as the two supplied approved icons.
+Image 1: Assault eagle with bullet-shaped negative spaces. Image 2: Knight horse with a blade-like neck. Style references only.
+
+NEW DIRECTION: a Siberian tiger in an AMBUSH posture, head lowered, looking left from beneath a heavy brow. An unusual compact stalking silhouette, with a strong sloping skull-to-muzzle line, small rounded ear laid back against the head, broad short feline muzzle, powerful cheek ruff and tucked closed jaw. Cold, patient and stealthy. The rear skull and short neck flow into one broad, sharply tapering cloak-like shoulder. This must have a purposeful recognizable silhouette rather than an upright generic esports tiger bust.
+
+ONE integrated sniper feature: carve a single long clean BLACK NEGATIVE SPACE through the lower neck/shoulder, shaped unmistakably like a restrained SUPPRESSED SNIPER RIFLE in profile, barrel pointing LEFT and a small scope above its receiver. Build that cut into the tiger's flowing neck stripe, the same way the supplied eagle's bullets belong to its wing and the horse's blade belongs to its neck. A very reduced graphic silhouette: long suppressor/barrel, compact scoped receiver, tapering stock; broad clean connected cut, no intricate weapon details. It must be visually intentional, legible and elegant, not a pasted separate rifle.
+The tiger's eye is a narrow sharply focused black slit, like the approved animals' expressive eye cuts. Add only two or three strong tapered tiger stripes on the forehead/cheek. Let one cheek stripe share the diagonal flow toward the neck's sniper-rifle cut.
+
+Same family craft: big continuous solid-white animal masses, a few bold black sculpted cuts, long fluid curves with decisive sharp ends, restrained compact ruff, smooth-to-angular rhythm. Clean broad negative spaces and clear hierarchy. Animal first, specialty integrated into its anatomy. Similar abstraction, white mass and optical size to the two references.
+
+One centered square icon on pure black with generous margins. Pure flat white and black. No outer frame, circle badge, full-image crosshair, scope replacing the eye, goggle, skull, human, literal clothing seams, open roaring mouth, whisker hairs, decorative serrations, thin outline, text, gray, texture, shading, glow or mockup. ONE finished emblem.
+

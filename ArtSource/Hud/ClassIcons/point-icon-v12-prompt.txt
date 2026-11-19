@@ -1,0 +1,14 @@
+POINT class icon v12
+Mode: built-in ImageGen, precise-object-edit.
+Target: point-icon-v11.png
+Reference: user's KF2 Gunslinger icon.
+Direction: preserve restrained v11 silhouette; give upper shoulder incision one small correct partial pistol/trigger-guard articulation rather than abstract S-bend.
+Output: point-icon-v12.png
+
+Final prompt:
+Edit Image 1 with one precise refinement. Preserve the lioness head, plain white face with sole black eye, outer silhouette, lower return stroke and tiny four-point flash.
+
+The two shoulder cuts are now appropriately restrained but the UPPER cut's S-bend is too generic. Give this upper cut a small, correct pistol-specific articulation guided by Image 2:
+Keep its taut straight slide-like edge at the same shallow angle. At its short bend, use the correct simple angled backstrap/grip contour and ONE small clear trigger-guard opening with a WHITE interior, immediately attached to that same black shoulder cut. Preserve the firearm proportions seen in the KF2 reference: straight slide, compact guard beside the grip, one grip angled naturally, no swollen ovals or melted wavy frame. Only this brief partial pistol contour should be visible. The rest is still implied by the lioness's white shoulder. Keep the entire detail modest, less than 15 percent of emblem height.
+The detail must flow naturally into the existing stroke, with no complete gun objects, no two-pistol badge, no added barrel sticking out, no changes to the external bust. Keep the lower stroke as the simple counter-motion of the second gun and preserve the small flash. Broad white mass remains dominant.
+One compact white-on-black class icon, flat two-tone, no new facial marks, grey, text, shading or ornaments.

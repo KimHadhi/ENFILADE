@@ -1,0 +1,20 @@
+Ghost icon v7 — local horizontal-reticle development
+
+Mode: built-in image_gen for local design refinement, followed by masked JavaScript composition and an editable SVG joint.
+Authoritative reference: codex-clipboard-8eed4659-6b6f-4293-b5de-af67bc0a7723.png (the user's FIRST attached image).
+The second attached image is the rejected result and was not used as a design reference.
+Only three local horizontal-joint regions were composited: left angled elbow, iris-side painted tab, and right short reticle bar. The iris-side round painted bump was resolved into a small bevelled pointed joint consistent with the left elbow. Pixels outside those three regions are identical to the first reference. The reference's vertical marks and surrounding artwork are retained.
+Files: ghost-icon-v7.png, ghost-icon-v7.svg. Verification: ghost-icon-v7-verification.json.
+
+IMAGEGEN PROMPT
+
+Use case: precise-object-edit.
+Edit ONLY the two horizontal crosshair connection areas in this supplied icon. The supplied image is the exact base to retain, including its current circular scope, jagged tiger claws, narrow eye, white iris crescent, round central dot, and vertical reticle.
+
+At eye height, polish the user's rough painted indications:
+1. On the LEFT, the little white angled elbow around x480/y615 leading into the short horizontal reticle bar should become a sharp, clean, intentional angled connection. Keep its location and short length.
+2. On the RIGHT, the rough white bump at the iris/crosshair junction around x690/y625 should become a small crisp geometric joint consistent with the left connection. Keep the eye and crescent shape.
+Refine only these local joints and the short horizontal marks: consistent 12px line weight, precise straight edges and restrained angular terminations, white on black and black on white wherever these short marks intersect the artwork. Follow the painted guide closely.
+Keep the horizontal marks SHORT and separated around the aiming dot, as pictured. Do not draw a continuous horizontal line across the whole face or through every claw.
+Do not redesign anything else. Keep the outer scope, eye anatomy, claw contours and notches, vertical reticle, central dot, positions, scale and black margin unchanged. No clipping the circle into a new frame, no big rounded iris, no smoothing away the claw serrations, no new elements. Exact same square black-and-white emblem, only local horizontal-reticle cleanup.
+

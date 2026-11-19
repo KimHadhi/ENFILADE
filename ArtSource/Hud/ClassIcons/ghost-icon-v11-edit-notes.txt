@@ -1,0 +1,5 @@
+Ghost v11 — rounded iris joint and reticle ends
+
+Native SVG geometry edit to v10; no new image generation. Original artwork provenance: built-in ImageGen.
+The user's red guide controls the two reticle-end curves and the iris-side nub. The horizontal reticle bodies retain y=619..631 alignment and the background-inverting color rule; short Bezier ends follow the marked nearby contours. The pointed iris nub was restored to its clean underlying crescent and replaced with a true circle, center (688,625), radius 10.
+All pixels outside the three marked editing regions are identical to v10. The frame, aiming dot and straight vertical reticle are retained. See verification JSON for full path geometry and checks.

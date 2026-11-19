@@ -1,0 +1,4 @@
+Ghost v13 — join exactly the two red-marked gaps
+
+Authoritative base: the user's latest supplied image, codex-clipboard-ee898e1f-9bd5-4d2b-989e-aa09194b8aa4.png.
+Native SVG edit only: fit one straight white bridge to each of the two short red guide strokes. No shape redesign. All pixels outside the two bridge footprints are identical to that supplied image. Red guide ink removed. Both claw-tip-to-horizontal-mark connections were verified locally through the white pixels.

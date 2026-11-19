@@ -1,0 +1,18 @@
+POINT class icon v14
+Mode: built-in ImageGen, precise-object-edit / logo-brand.
+Target: point-icon-v13.png
+Family reference: approved Knight/Assault/Ghost icons.
+Direction: preserve reference-derived pistol contours; lower their angle and compact shared geometry into lower third of the lioness, keeping gun anatomy intact and white animal mass dominant.
+Output: point-icon-v14.png
+
+Final prompt:
+Refine Image 1, the lioness/Gunslinger class icon, to match Image 2's compact elegant class-icon construction.
+
+Keep the accurate paired-pistol geometry now present in Image 1: straight slides, correct grip angles and small guard openings. Do not invent new gun anatomy. The pair currently stretches steeply through the entire neck and overwhelms the animal.
+
+ONE COMPOSITION CHANGE: rigidly turn the paired-pistol construction CLOCKWISE about 25 degrees and lower/compact it so it supplies only the lowest THIRD of the bust. Its opposed slide axes should be a shallow dynamic diagonal following the shoulder, not a tall vertical neck structure. Recompose the surrounding WHITE lioness body around this fixed shape rather than bending or distorting the guns. Fuse most of the grip areas seamlessly into the animal mass; only the brief correct slide/grip contours and compact openings are seen. One continuous black separation between the interlocked shapes should also be the natural shoulder turn, entering/exiting the bust outline. No complete exposed gun objects, no crossed-gun badge, no tiny isolated trigger guard attached to a random line.
+
+The result is an animal bust with one deliberate pistol-derived shoulder gesture, in the same relative scale and restraint as the sword, bullet trails or karambit shoulder of Image 2. Strong white lioness head and smooth nape FIRST; subtle interlocking Gun Kata form SECOND. Preserve the tiny flash as a small ending of that same shoulder gesture. A few broad clean cuts, not lots of detail.
+
+Keep the left-facing maneless female lion identity, small rounded ear, broad blunt muzzle and triangular black eye. Smooth the jaw-to-throat contour so there is no upward curling smile-like facial line: the face itself remains one plain white shape plus the eye ONLY. No mouth, nose, inner-ear detail, mane or stripes.
+Overall occupied outline about as wide as tall, square canvas, even padding, clean broad compact base. Pure white on black, no text, extra symbols, grey, shading or texture.

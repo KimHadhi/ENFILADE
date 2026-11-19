@@ -1,0 +1,15 @@
+Ghost v14 — continuous junction contour rebuild
+
+Final source: ghost-icon-v13.png. Rebuilt only the two junction areas, including both inner and outer edges. The connection profiles use cubic curves and a smooth width transition from the slender claw mark into a 12px horizontal shaft. The resulting merged contours were finished at subpixel resolution with restrained inner and outer fillets. This removes the pasted-strip overlap, abrupt width changes and small projecting corners.
+The frame, iris, central dot, vertical reticle and unedited claws are preserved outside the two junction areas. Both local white connections and PNG round trip were checked. Geometry and verification are in ghost-icon-v14-verification.json.
+
+A built-in ImageGen draft was inspected but not used because it moved the connection roots. The final correction uses native contour construction and composition. Its exploratory prompt was:
+
+Precise professional logo finishing edit. This icon's composition is already decided. Only TWO tiny junctions need a skilled contour redraw: the white hooked connection just left of the aiming dot, and its matching connection on the right, where the slanted tiger marking turns into the short horizontal scope bar.
+
+The current junctions are crude overlapping straight strips with sharp steps, nubs, abrupt width changes and stiff corners. REDRAW THEIR INNER AND OUTER EDGES as clean integral shapes. Flow naturally out of the existing slender diagonal tiger marking, turn gently into the horizontal reticle shaft, and keep a consistent, carefully tapered visual thickness. Use smooth tangent-continuous transitions, restrained small fillets, balanced black breathing space, and a matching treatment on both sides. Remove the awkward spikes and doubled edges at the roots. This should look hand-finished by an experienced identity designer, not like extra strokes pasted over the original.
+
+Keep the connections physically joined at the exact same endpoints. Keep the two reticle shafts straight, short, level with the central dot, and at their existing thickness. Preserve their current end positions. Do not detach the bars, add crescent shapes, make U-shaped loops, add little circular beads, or redraw the eye. Refine the actual junction contours, not the surrounding design.
+
+Absolutely preserve the scope ring, the correct straight black/white-inverting vertical reticle, central dot, iris crescent, major claw contours, composition, scale and margins. Same square, same pure black and white, no new effects or text. Only the two connected junctions get the subtle smooth contour refinement.
+

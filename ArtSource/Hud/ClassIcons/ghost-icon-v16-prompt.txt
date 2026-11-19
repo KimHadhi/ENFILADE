@@ -1,0 +1,22 @@
+Ghost v16 — overall refinement and integrated scope points
+
+Generation mode: built-in ImageGen, followed by native geometry finishing.
+Inputs: ghost-icon-v15.png; user's marked guide codex-clipboard-8dbaa19b-d319-41c4-bd37-f12f773e5488.png.
+The overall ImageGen refinement was retained for the claw/frame treatment. The two established connected center marks and correctly inverting vertical reticle were restored from v14. Four native cubic scope-point silhouettes were applied as exact 90-degree copies with a continuous taper, replacing the abrupt stepped shoulders and separate-triangle appearance. The point overlap on the tiger uses inverse contrast; obscured underlay portions were reconstructed from the adjacent contours. The editable fin profile and validation are in ghost-icon-v16-verification.json.
+Final: ghost-icon-v16.png.
+
+IMAGEGEN PROMPT
+
+Use case: precise-object-edit.
+Refine this established GHOST sniper / Siberian tiger class emblem to a professionally finished state.
+Image 1 is the CLEAN EDIT TARGET. Image 2 is the user's marked guide; red circles identify the awkward four outside points and the hard stepped shoulders beside the rings. Remove all red guide marks in the finished result.
+
+Main correction — the scope:
+Redraw the four cardinal ornaments as ONE consistent, elegant form repeated at 90-degree rotations. Each must flow continuously from a moderately weighted inward aiming bar, through the concentric rings, into a restrained sharp outside point. Eliminate the rectangular T-shaped shoulders, ledges, abrupt width changes and separate pasted-on triangle look. Use smooth controlled taper and small tangent fillets, with clean structural geometry. Make the cardinal bars about one-third lighter than the current bulky blocks. Top, bottom, left and right must have the same reach, width profile, point length and spacing from the center.
+Keep the double-ring idea, with a thin precise outer ring and a strong but less heavy inner ring. Both are concentric around the aiming dot. Refine awkward overlaps where the tiger claws cross the frame, so the ring and claws feel designed together with clear intentional negative space, not accidental tangencies.
+
+Overall refinement:
+Retain the recognizable three sweeping jagged tiger-claw shapes, the narrow predatory eye/white iris crescent, the central aiming dot, and the connected short horizontal reticle marks. Preserve this particular emblem's identity and diagonal movement. Improve curve tension, local edge quality, spacing and consistent visual weight throughout. Keep the powerful hooked tips and a few decisive tiger notches, without adding fine teeth or ornaments.
+The straight center reticle uses white on black and black on white, changing exactly at the underlying claw boundaries, with crisp sloped transitions and no rounded crossing caps.
+Polished flat white-on-black graphic mark, one centered square icon, generous even black margin. No text, no gray shading, no color, no effects, no new symbols, no labels or comparison layout. This is a careful overall finishing pass, not a new animal design.
+

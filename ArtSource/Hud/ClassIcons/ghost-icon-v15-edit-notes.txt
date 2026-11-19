@@ -1,0 +1,6 @@
+Ghost v15 — balanced decorated scope
+
+Native SVG decoration over the accepted v14 artwork; no new image generation.
+The four cardinal silhouettes are identical rotated copies about (628,625): same inward reach, same 60px main width, same 28px outer stem and same outward pointed tip. A concentric thin outer ring creates the double-ring treatment requested in the supplied reference.
+The iris, aiming dot, local connected horizontal marks and the existing vertical inversion reticle remain pixel-identical inside the protected center.
+Editable source: ghost-icon-v15.svg. Exact parameters and validation: ghost-icon-v15-verification.json.

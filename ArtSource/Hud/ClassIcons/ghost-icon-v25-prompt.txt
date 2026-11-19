@@ -1,0 +1,18 @@
+GHOST class icon v25
+Mode: built-in ImageGen, logo-brand generation with style and composition references.
+Selected image: exec-19293dc5-9334-48e7-a2cf-9a91d3fe0437.png
+Output: ghost-icon-v25.png
+Comparison: class-icons-comparison-v25.png (Knight, Assault, Ghost)
+References: C:/Users/User/AppData/Local/Temp/codex-clipboard-4a700104-59e1-449e-b58f-ad2cb7acddec.png; C:/Users/User/AppData/Local/Temp/codex-clipboard-448876e1-8b9a-47b8-9acf-b060404fbf60.png
+The final PNG is an exact copy of the selected generation. Comparison resampling only. Existing assets unchanged.
+
+Final selected prompt:
+Design a bold minimalist WHITE SIBERIAN TIGER class emblem on solid BLACK, belonging to the exact same family as the supplied horse and eagle emblems. Output the tiger only.
+
+Use their full LEFT-FACING HEAD, UPRIGHT NECK AND SWEEPING SHOULDER BUST composition, scale, margins, strong filled white masses, elegant curves and sharp tapered negative-space cuts.
+
+Make the animal immediately recognisable as an imposing tiger: flattened heavy feline brow, narrowed triangular eye, very short WIDE squared muzzle with a small black triangular nose at its tip, prominent broad cat muzzle pad, strong jowl, thick angular cheek ruff with two clean tapered ends, and a tiny rounded feline ear tucked low into the back of the skull. A powerful alert tiger with a hard predatory stare. Keep the skull compact and broad, the face assertively angular, the neck muscular. Art-direct it as a formidable Siberian tiger, not a soft rounded mascot.
+
+Use just a handful of deliberate black cutouts: the small triangular eye, a single short clean closed-mouth notch, TWO bold iconic tiger stripes descending diagonally from the brow/temple and over the cheek, and TWO broad sweeping neck/shoulder channels. Keep most of the head and bust a continuous solid white silhouette. The two tiger stripes should be tapered sculpted cuts like the reference horse's neck cuts, large enough to read at small size. No inner-ear detail, pupils, whiskers or little marks.
+
+Aim for the references' simplicity and force, with the tiger's distinctive broad muzzle and sharp cheek silhouette carrying its identity. Smooth professional vector-logo geometry. Pure white and black only, flat and crisp. No circle, crosshair, weapons, external ornaments, text or shading. One square finished icon.
