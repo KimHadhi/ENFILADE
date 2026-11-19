@@ -26,3 +26,9 @@ MonoBehaviour:
   - key: PickShield
     clips:
     - {fileID: 8300000, guid: 793ad07a737b49acabf44c95da3b473f, type: 3}
+  - key: Spotted
+    clips:
+    - {fileID: 8300000, guid: 430eec70c2664c47a401ffcd2a6c9f7b, type: 3}
+  - key: Suspect
+    clips:
+    - {fileID: 8300000, guid: ac8651f358c7440994f13fe926be7e4e, type: 3}

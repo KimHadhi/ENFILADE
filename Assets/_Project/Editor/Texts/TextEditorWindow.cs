@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 /// <summary>
 /// ENFILADE → 글자 → 글자 편집기: every word the game shows, from Data/Resources/Tables/Core/Texts.csv, to read and rewrite in one place
 /// (the user, 2026-11-12: "네가 쓴 대사나 문구나 설정 같은 것들 너무 AI 같아서 내가 수정하려고 하는데 어디서 해? 모으면 다
-/// 수정할 수 있어?"). Search by id, words or note, filter by area, Korean and a second language side by side, where each
+/// 수정할 수 있어?"). Search by id, words or note and edit one language at a time with references for the selected line, where each
 /// line is used. Saving writes only the changed cells, in place (TextSheet), warns before a line loses a hole the code
 /// fills ({0}) or a '|' a screen splits at, and during Play swaps the words on labels already up (TextLiveSwap). A
 /// callout line's stand-in voice is marked when its words changed and can be made again for just those lines.
@@ -24,7 +24,8 @@ internal sealed class TextEditorWindow : EditorWindow
         public int occurrence;
     }
 
-    private const float RowHeight = 20f, IdWidth = .24f, NoteWidth = .22f;
+    private const float RowHeight = 20f, IdWidth = .24f, NoteWidth = .22f, ReferenceWidth = .23f;
+    private const float MinListHeight = 120f, MinDetailHeight = 140f, SplitterHeight = 6f;
     private static readonly string[] Tabs = { "글자", "하드코딩 검사" };
 
     // Kept through script reloads (other work compiling while the user writes) and Play: unsaved edits survive them.
@@ -32,8 +33,8 @@ internal sealed class TextEditorWindow : EditorWindow
     [SerializeField] private int tab;
     [SerializeField] private string search = "";
     [SerializeField] private int area;
-    [SerializeField] private bool onlyChanged, onlyProblems, excelNote;
-    [SerializeField] private string second = "en";
+    [SerializeField] private bool onlyChanged, onlyProblems, onlyMissing, excelNote;
+    [SerializeField] private string editLanguage = Texts.Korean;
     [SerializeField] private string selectedId = "";
     [SerializeField] private int selectedOccurrence;
     [SerializeField] private float detailHeight = 300f;
@@ -48,7 +49,11 @@ internal sealed class TextEditorWindow : EditorWindow
     private readonly HashSet<TextScan.Kind> open = new HashSet<TextScan.Kind> { TextScan.Kind.CodeWords, TextScan.Kind.MissingId, TextScan.Kind.BrokenRow };
     private Dictionary<string, List<string>> calloutLines;
     private Dictionary<string, string> spoken;
-    private bool dragging;
+    private bool dragging, addingLanguage;
+    private string newLanguage = "";
+    private Rect wordsArea;
+
+    private int EditingColumn => sheet.Column(editLanguage);
     private GUIStyle wrap, changedId, muted;
 
     [MenuItem("ENFILADE/글자/글자 편집기", priority = 0)]
@@ -122,14 +127,14 @@ internal sealed class TextEditorWindow : EditorWindow
     public override void SaveChanges()
     {
         Save();
-        base.SaveChanges();
+        if (!hasUnsavedChanges) base.SaveChanges();
     }
 
     private void OnGUI()
     {
         wrap ??= new GUIStyle(EditorStyles.label) { wordWrap = true, richText = false };
         changedId ??= new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = new Color(1f, .45f, .65f) } };
-        muted ??= new GUIStyle(EditorStyles.miniLabel) { wordWrap = false, richText = false };
+        muted ??= new GUIStyle(EditorStyles.miniLabel) { wordWrap = false, richText = false, clipping = TextClipping.Clip };
         if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.S && (Event.current.control || Event.current.command))
         {
             Save();
@@ -150,51 +155,147 @@ internal sealed class TextEditorWindow : EditorWindow
 
     private void DrawWords()
     {
+        DrawLanguageToolbar();
         DrawFilters();
         Filter();
         if (sheet.ChangedOnDisk)
             EditorGUILayout.HelpBox("다른 곳에서 Texts.csv가 바뀌었어요. 창을 다시 누르면 새 줄을 가져와요(고친 글자는 남아요).", MessageType.Info);
-        DrawList();
-        DrawSplitter();
-        DrawDetail();
+        TextSheet.Row row = sheet.Find(selectedId, selectedOccurrence);
+        // A layout rect takes the space left by the toolbars and help boxes. The scroll view then uses that exact viewport.
+        Rect area = GUILayoutUtility.GetRect(0f, 0f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+        if (Event.current.type != EventType.Layout && Event.current.type != EventType.Used) wordsArea = area;
+        if (row == null)
+        {
+            DrawList(wordsArea);
+            EditorGUILayout.HelpBox("위 목록에서 id를 누르면 여기서 여러 줄로 고치고, 어디에 쓰이는지 볼 수 있어요. 줄은 Enter로 바꿔요(파일에는 \\n으로 들어가요). " +
+                                    "이야기 카드는 줄마다 한 줄씩 나오고 줄 수는 자유예요.\n" +
+                                    "{0} {1}은 코드가 채우는 자리. 체형의 고르기 칩·슬라이더 양 끝 글자만 | 로 칸을 나누고 그 수를 맞춰요. [F] 같은 대괄호 키는 플레이어가 고른 키로 보여요.", MessageType.None);
+        }
+        else
+        {
+            float maxHeight = Mathf.Max(0f, wordsArea.height - RowHeight - MinListHeight - SplitterHeight);
+            float minHeight = Mathf.Min(MinDetailHeight, maxHeight);
+            float height = Mathf.Clamp(detailHeight, minHeight, maxHeight);
+            Rect list = wordsArea;
+            list.height = Mathf.Max(0f, list.height - height - SplitterHeight);
+            DrawList(list);
+
+            var splitter = new Rect(list.x, list.yMax, list.width, SplitterHeight);
+            DrawSplitter(splitter, height, minHeight, maxHeight);
+            var detail = new Rect(splitter.x, splitter.yMax, splitter.width, height);
+            using (new GUILayout.AreaScope(detail))
+                DrawDetail(row, height);
+        }
         DrawFooter();
+    }
+
+
+    private void DrawLanguageToolbar()
+    {
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            GUILayout.Label("편집 언어", EditorStyles.miniBoldLabel);
+            var columns = sheet.LanguageColumns().ToArray();
+            if (columns.Length > 0)
+            {
+                int index = Array.IndexOf(columns, EditingColumn);
+                if (index < 0) index = Mathf.Max(0, Array.IndexOf(columns, sheet.Korean));
+                string[] names = columns.Select(indexInSheet => LanguageLabel(sheet.Columns[indexInSheet])).ToArray();
+                int columnIndex = columns[EditorGUILayout.Popup(index, names, EditorStyles.toolbarPopup, GUILayout.Width(145f))];
+                string picked = sheet.Columns[columnIndex];
+                if (picked != editLanguage)
+                {
+                    editLanguage = picked;
+                    GUI.FocusControl(null);
+                    detailScroll = Vector2.zero;
+                    shownKey = null;
+                }
+            }
+            if (GUILayout.Button("언어 추가", EditorStyles.toolbarButton, GUILayout.Width(72f)))
+                addingLanguage = !addingLanguage;
+            GUILayout.FlexibleSpace();
+            int column = EditingColumn;
+            if (column > 0)
+            {
+                int count = sheet.Rows.Count(row => !string.IsNullOrWhiteSpace(row.Words[column]));
+                GUILayout.Label($"작성 {count} / {sheet.Rows.Count}줄", EditorStyles.miniLabel);
+            }
+        }
+        if (!addingLanguage) return;
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            GUILayout.Label("언어 코드", EditorStyles.miniLabel);
+            newLanguage = EditorGUILayout.TextField(newLanguage, GUILayout.Width(100f));
+            GUILayout.Label("예  ja, fr, pt-br", EditorStyles.miniLabel);
+            if (GUILayout.Button("추가", EditorStyles.toolbarButton, GUILayout.Width(50f))) AddLanguage();
+            GUILayout.FlexibleSpace();
+        }
+    }
+
+    private void AddLanguage()
+    {
+        if (!TextSheet.TryLanguageCode(newLanguage, out string code))
+        {
+            ShowNotification(new GUIContent("ja, fr, pt-br 같은 언어 코드를 입력해 주세요."), 3f);
+            return;
+        }
+        try
+        {
+            bool written = sheet.AddLanguage(code);
+            editLanguage = code;
+            addingLanguage = false;
+            newLanguage = "";
+            detailScroll = Vector2.zero;
+            GUI.FocusControl(null);
+            Changed();
+            if (!written) ShowNotification(new GUIContent("파일 잠금이 풀리면 새 언어 열이 저장돼요."), 3f);
+        }
+        catch (IOException error)
+        {
+            EditorUtility.DisplayDialog("언어 추가", error.Message, "확인");
+        }
+    }
+
+    private static string LanguageLabel(string code)
+    {
+        switch (code.ToLowerInvariant())
+        {
+            case Texts.Korean: return "한국어 (KO)";
+            case Texts.English: return "English (EN)";
+            case "ja": return "日本語 (JA)";
+            default: return code.ToUpperInvariant();
+        }
     }
 
     private void DrawFilters()
     {
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
-            string typed = GUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(180f));
-            if (typed != search) { search = typed; shownKey = null; }
+            search = GUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(160f));
             var areas = new[] { "구역: 전체" }.Concat(TextSheet.Areas.Select(a => a.name)).Concat(new[] { "기타" }).ToArray();
-            int picked = EditorGUILayout.Popup(area, areas, EditorStyles.toolbarPopup, GUILayout.Width(120f));
-            if (picked != area) { area = picked; shownKey = null; }
-            bool changedOnly = GUILayout.Toggle(onlyChanged, "고친 줄만", EditorStyles.toolbarButton);
-            bool problemsOnly = GUILayout.Toggle(onlyProblems, "문제 있는 줄만", EditorStyles.toolbarButton);
-            if (changedOnly != onlyChanged || problemsOnly != onlyProblems) { onlyChanged = changedOnly; onlyProblems = problemsOnly; shownKey = null; }
-            var languages = sheet.Languages.Where(l => l != Texts.Korean).ToArray();
-            if (languages.Length > 1)
-            {
-                int index = Mathf.Max(0, Array.IndexOf(languages, second));
-                second = languages[EditorGUILayout.Popup(index, languages, EditorStyles.toolbarPopup, GUILayout.Width(60f))];
-            }
-            else if (languages.Length == 1) second = languages[0];
+            area = EditorGUILayout.Popup(area, areas, EditorStyles.toolbarPopup, GUILayout.Width(120f));
+            onlyMissing = GUILayout.Toggle(onlyMissing, "미번역만", EditorStyles.toolbarButton);
+            onlyChanged = GUILayout.Toggle(onlyChanged, "고친 줄만", EditorStyles.toolbarButton);
+            onlyProblems = GUILayout.Toggle(onlyProblems, "문제 있는 줄만", EditorStyles.toolbarButton);
             GUILayout.FlexibleSpace();
-            GUILayout.Label($"{shown.Count}줄 / {sheet.Rows.Count}", EditorStyles.miniLabel);
+            GUILayout.Label($"{shown.Count}줄", EditorStyles.miniLabel);
         }
     }
 
     private void Filter()
     {
-        string key = $"{search}\n{area}\n{onlyChanged}\n{onlyProblems}";
+        string key = $"{search}\n{area}\n{editLanguage}\n{onlyMissing}\n{onlyChanged}\n{onlyProblems}";
         if (key == shownKey) return;
         shownKey = key;
         string areaName = area <= 0 ? null : area <= TextSheet.Areas.Length ? TextSheet.Areas[area - 1].name : "기타";
+        int column = EditingColumn;
         string query = search.Trim();
         shown = sheet.Rows.Where(row =>
         {
             if (areaName != null && TextSheet.AreaOf(row.Id) != areaName) return false;
             if (onlyChanged && !row.Dirty) return false;
+            // Keep a row in the missing list while its first translation is still being typed.
+            if (onlyMissing && (column < 1 || !string.IsNullOrWhiteSpace(row.Saved[column]))) return false;
             if (onlyProblems && !sheet.Problems(row).Any(p => p.error) && row.Conflict == null) return false;
             if (query.Length == 0) return true;
             return row.Id.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0
@@ -203,36 +304,50 @@ internal sealed class TextEditorWindow : EditorWindow
         }).ToList();
     }
 
-    private void DrawList()
-    {
-        int ko = sheet.Korean, other = sheet.Column(second), note = sheet.Note;
-        float listHeight = Mathf.Max(80f, position.height - detailHeight - 92f);
-        var header = GUILayoutUtility.GetRect(0f, RowHeight, GUILayout.ExpandWidth(true));
-        Columns(header, out var idRect, out var koRect, out var otherRect, out var noteRect);
-        GUI.Label(idRect, "id", EditorStyles.miniBoldLabel);
-        GUI.Label(koRect, "한국어 (ko)", EditorStyles.miniBoldLabel);
-        GUI.Label(otherRect, other > 0 ? $"{second} (비면 한국어가 나와요)" : "", EditorStyles.miniBoldLabel);
-        GUI.Label(noteRect, "어디 (#어디)", EditorStyles.miniBoldLabel);
 
-        listScroll = GUILayout.BeginScrollView(listScroll, GUILayout.Height(listHeight));
-        var all = GUILayoutUtility.GetRect(0f, shown.Count * RowHeight, GUILayout.ExpandWidth(true));
+    private void DrawList(Rect bounds)
+    {
+        int column = EditingColumn, note = sheet.Note;
+        int english = sheet.Column(Texts.English);
+        int reference = column == english ? sheet.Korean : english;
+        bool showReference = reference > 0;
+        var viewport = new Rect(bounds.x, bounds.y + RowHeight, bounds.width, Mathf.Max(0f, bounds.height - RowHeight));
+        float contentHeight = Mathf.Max(RowHeight, shown.Count * RowHeight);
+        float contentWidth = viewport.width;
+        if (contentHeight > viewport.height)
+        {
+            GUIStyle scrollbar = GUI.skin.verticalScrollbar;
+            contentWidth = Mathf.Max(0f, contentWidth - scrollbar.fixedWidth - scrollbar.margin.left);
+        }
+        var header = new Rect(bounds.x, bounds.y, contentWidth, RowHeight);
+        Columns(header, showReference, out var idRect, out var wordsRect, out var referenceRect, out var noteRect);
+        GUI.Label(idRect, "id", EditorStyles.miniBoldLabel);
+        if (column > 0) GUI.Label(wordsRect, LanguageLabel(sheet.Columns[column]), EditorStyles.miniBoldLabel);
+        if (showReference) GUI.Label(referenceRect, column == english ? "한국어 원문" : "영어 참고", EditorStyles.miniBoldLabel);
+        if (note > 0) GUI.Label(noteRect, "어디 (#어디)", EditorStyles.miniBoldLabel);
+
+        listScroll = GUI.BeginScrollView(viewport, listScroll, new Rect(0f, 0f, contentWidth, contentHeight));
+        if (shown.Count == 0) GUI.Label(new Rect(4f, 0f, contentWidth, RowHeight), "조건에 맞는 줄이 없어요.", muted);
         int first = Mathf.Max(0, Mathf.FloorToInt(listScroll.y / RowHeight));
-        int last = Mathf.Min(shown.Count - 1, first + Mathf.CeilToInt(listHeight / RowHeight) + 1);
+        int last = Mathf.Min(shown.Count - 1, first + Mathf.CeilToInt(viewport.height / RowHeight));
         for (int i = first; i <= last; i++)
         {
             var row = shown[i];
-            var rect = new Rect(all.x, all.y + i * RowHeight, all.width, RowHeight);
+            var rect = new Rect(0f, i * RowHeight, contentWidth, RowHeight);
             bool selected = row.Id == selectedId && row.Occurrence == selectedOccurrence;
             if (selected) EditorGUI.DrawRect(rect, new Color(.24f, .48f, .9f, .25f));
             else if (row.Conflict != null) EditorGUI.DrawRect(rect, new Color(1f, .3f, .2f, .15f));
-            Columns(rect, out idRect, out koRect, out otherRect, out noteRect);
+            Columns(rect, showReference, out idRect, out wordsRect, out referenceRect, out noteRect);
             if (GUI.Button(idRect, row.Id, row.Dirty ? changedId : EditorStyles.label)) Select(row, true);
-            if (ko > 0) Field(koRect, row, ko);
-            if (other > 0) Field(otherRect, row, other);
-            if (note > 0) GUI.Label(noteRect, new GUIContent(row.Words[note], row.Words[note]), muted);
+            if (column > 0) Field(wordsRect, row, column);
+            if (showReference) ListLabel(referenceRect, row.Words[reference]);
+            if (note > 0) ListLabel(noteRect, row.Words[note]);
         }
-        GUILayout.EndScrollView();
+        GUI.EndScrollView();
     }
+
+    private void ListLabel(Rect rect, string value) =>
+        GUI.Label(rect, new GUIContent(string.IsNullOrWhiteSpace(value) ? "–" : value, value), muted);
 
     private void Field(Rect rect, TextSheet.Row row, int column)
     {
@@ -244,13 +359,17 @@ internal sealed class TextEditorWindow : EditorWindow
         Changed();
     }
 
-    private static void Columns(Rect rect, out Rect id, out Rect ko, out Rect other, out Rect note)
+
+    private static void Columns(Rect rect, bool showReference, out Rect id, out Rect words, out Rect reference, out Rect note)
     {
-        float idWidth = rect.width * IdWidth, noteWidth = rect.width * NoteWidth, words = (rect.width - idWidth - noteWidth) / 2f;
+        float idWidth = rect.width * IdWidth;
+        float noteWidth = rect.width * NoteWidth;
+        float referenceWidth = showReference ? rect.width * ReferenceWidth : 0f;
+        float wordsWidth = rect.width - idWidth - noteWidth - referenceWidth;
         id = new Rect(rect.x + 2f, rect.y + 1f, idWidth - 4f, rect.height - 2f);
-        ko = new Rect(id.xMax + 4f, rect.y + 1f, words - 4f, rect.height - 2f);
-        other = new Rect(ko.xMax + 4f, rect.y + 1f, words - 4f, rect.height - 2f);
-        note = new Rect(other.xMax + 4f, rect.y + 1f, noteWidth - 6f, rect.height - 2f);
+        words = new Rect(id.xMax + 4f, id.y, wordsWidth - 4f, id.height);
+        reference = new Rect(words.xMax + 4f, id.y, Mathf.Max(0f, referenceWidth - 4f), id.height);
+        note = new Rect(words.xMax + 4f + referenceWidth, id.y, noteWidth - 6f, id.height);
     }
 
     private void Select(TextSheet.Row row, bool takeFocus)
@@ -262,34 +381,29 @@ internal sealed class TextEditorWindow : EditorWindow
         detailScroll = Vector2.zero;
     }
 
-    private void DrawSplitter()
+    private void DrawSplitter(Rect bar, float height, float minHeight, float maxHeight)
     {
-        var bar = GUILayoutUtility.GetRect(0f, 5f, GUILayout.ExpandWidth(true));
         EditorGUI.DrawRect(new Rect(bar.x, bar.y + 2f, bar.width, 1f), new Color(0f, 0f, 0f, .4f));
         EditorGUIUtility.AddCursorRect(bar, MouseCursor.ResizeVertical);
         var e = Event.current;
-        if (e.type == EventType.MouseDown && bar.Contains(e.mousePosition)) { dragging = true; e.Use(); }
+        if (e.type == EventType.MouseDown && e.button == 0 && bar.Contains(e.mousePosition))
+        {
+            dragging = true;
+            e.Use();
+        }
         if (dragging && e.type == EventType.MouseDrag)
         {
-            detailHeight = Mathf.Clamp(detailHeight - e.delta.y, 140f, position.height - 200f);
+            detailHeight = Mathf.Clamp(height - e.delta.y, minHeight, maxHeight);
             e.Use();
             Repaint();
         }
         if (e.rawType == EventType.MouseUp) dragging = false;
     }
 
-    private void DrawDetail()
+    private void DrawDetail(TextSheet.Row row, float height)
     {
-        var row = sheet.Find(selectedId, selectedOccurrence);
-        detailScroll = EditorGUILayout.BeginScrollView(detailScroll, GUILayout.Height(detailHeight));
-        if (row == null)
-        {
-            EditorGUILayout.HelpBox("위 목록에서 id를 누르면 여기서 여러 줄로 고치고, 어디에 쓰이는지 볼 수 있어요. 줄은 Enter로 바꿔요(파일에는 \\n으로 들어가요). " +
-                                    "이야기 카드는 줄마다 한 줄씩 나오고 줄 수는 자유예요.\n" +
-                                    "{0} {1}은 코드가 채우는 자리. 체형의 고르기 칩·슬라이더 양 끝 글자만 | 로 칸을 나누고 그 수를 맞춰요. [F] 같은 대괄호 키는 플레이어가 고른 키로 보여요.", MessageType.None);
-            EditorGUILayout.EndScrollView();
-            return;
-        }
+        int column = EditingColumn, ko = sheet.Korean, en = sheet.Column(Texts.English);
+        detailScroll = EditorGUILayout.BeginScrollView(detailScroll, GUILayout.Height(height));
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.SelectableLabel(row.Id, EditorStyles.boldLabel, GUILayout.Height(18f));
@@ -297,14 +411,22 @@ internal sealed class TextEditorWindow : EditorWindow
             GUILayout.FlexibleSpace();
             if (row.Dirty && GUILayout.Button("이 줄 되돌리기", GUILayout.Width(100f)))
             {
-                for (int c = 0; c < row.Words.Length; c++) row.Words[c] = row.Saved[c];
+                Array.Copy(row.Saved, row.Words, row.Words.Length);
                 row.Conflict = null;
                 GUI.FocusControl(null);
                 Changed();
             }
+            if (GUILayout.Button("상세 닫기", GUILayout.Width(80f)))
+            {
+                selectedId = "";
+                detailScroll = Vector2.zero;
+                GUI.FocusControl(null);
+            }
         }
         if (row.Conflict != null) EditorGUILayout.HelpBox(row.Conflict, MessageType.Warning);
-        foreach (int column in sheet.LanguageColumns()) Area(row, column, sheet.Columns[column] == Texts.Korean ? "한국어" : sheet.Columns[column]);
+        if (column > 0) Area(row, column, LanguageLabel(sheet.Columns[column]));
+        if (ko > 0 && column != ko) DrawReference("한국어 원문", row.Words[ko]);
+        if (column != en) DrawReference("영어 참고 (EN)", en > 0 ? row.Words[en] : "");
         int note = sheet.Note;
         if (note > 0)
         {
@@ -313,9 +435,22 @@ internal sealed class TextEditorWindow : EditorWindow
         }
         var problems = sheet.Problems(row);
         foreach (var (error, what) in problems) EditorGUILayout.HelpBox(what, error ? MessageType.Error : MessageType.Warning);
-        DrawVoice(row);
+        if (ko > 0 && column == ko) DrawVoice(row);
         DrawUsage(row);
         EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawReference(string label, string value)
+    {
+        GUILayout.Label(label, EditorStyles.miniBoldLabel);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            GUILayout.Label("아직 문구가 없어요.", muted);
+            return;
+        }
+        string words = value.Replace("\\n", "\n");
+        float height = wrap.CalcHeight(new GUIContent(words), position.width - 36f);
+        EditorGUILayout.SelectableLabel(words, wrap, GUILayout.Height(height));
     }
 
     // Multi-line words: a line break here is \n in the file.

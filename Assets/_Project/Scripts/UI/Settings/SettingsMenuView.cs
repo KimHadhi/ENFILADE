@@ -272,6 +272,17 @@ public sealed class SettingsMenuView
     private static void ScreenTab(SettingsRows rows, GameSettings s)
     {
         rows.Header(Texts.Get("settings.screen.display"));
+        var languages = Texts.LanguageNames.ToArray();
+        int selected = Array.FindIndex(languages, l => string.Equals(l.Key, s.textLanguage, StringComparison.OrdinalIgnoreCase));
+        if (selected < 0) selected = Array.FindIndex(languages, l => l.Key == Texts.Language);
+        rows.Stepper(Texts.Get("settings.screen.language"), languages.Select(l => l.Value).ToArray(), Mathf.Max(0, selected),
+            i =>
+            {
+                s.textLanguage = languages[i].Key;
+                GameSettings.Save();
+            });
+        rows.Note(Texts.Get("settings.screen.language.restart"));
+
         if (!DisplaySettings.Applies) rows.Note(Texts.Get("settings.screen.editor_note"));
         var monitors = new List<DisplayInfo>(DisplaySettings.Monitors());
         if (monitors.Count > 0)

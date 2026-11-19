@@ -13,18 +13,6 @@ MonoBehaviour:
   m_Name: Outfits
   m_EditorClassIdentifier: Assembly-CSharp::OutfitLibrary
   entries:
-  - id: welding-mask
-    skin: '*'
-    model: {fileID: 5083613449334108645, guid: dbdee8b4a048488589686f56aeb2e52a, type: 3}
-    variants:
-    - id: base
-      displayName: "\uAE30\uBCF8"
-      swaps: []
-    - id: painted
-      displayName: outfit.colour.painted
-      swaps:
-      - from: {fileID: 2100000, guid: 0b235ee10bbae4b438437f977ce5770c, type: 2}
-        to: {fileID: 2100000, guid: f7aeaf55d1544a3f9cd1ed25957fa591, type: 2}
   - id: sailor-maiden
     skin: mayo
     model: {fileID: 8645313091021641347, guid: 51bfa90636b36484696f01509e130d9d, type: 3}
@@ -3742,3 +3730,15 @@ MonoBehaviour:
       swaps:
       - from: {fileID: 2100000, guid: 923beda3a8f72174c987185dd0bef542, type: 2}
         to: {fileID: 2100000, guid: 71de6a45dd4128c41a5e1810078f8ae0, type: 2}
+  - id: welding-mask
+    skin: '*'
+    model: {fileID: 5083613449334108645, guid: dbdee8b4a048488589686f56aeb2e52a, type: 3}
+    variants:
+    - id: base
+      displayName: "\uAE30\uBCF8"
+      swaps: []
+    - id: painted
+      displayName: outfit.colour.painted
+      swaps:
+      - from: {fileID: 2100000, guid: 0b235ee10bbae4b438437f977ce5770c, type: 2}
+        to: {fileID: 2100000, guid: f7aeaf55d1544a3f9cd1ed25957fa591, type: 2}

@@ -2,17 +2,17 @@
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구(번역판용). 비어 있으면 한국어가 나온다,어디에 나오는지(게임은 이 열을 읽지 않는다)
 settings.controls.scope_sensitivity,배율 조준경 ×{0} 감도,Scope ×{0} sensitivity,"설정 창 > 조작 > 행. {0}=배율(GunParts.csv에 있는 배율마다 한 줄, ScopeLook)"
 settings.controls.scope_sensitivity.note,100% = 조준경 속 표적이 화면을 지나는 빠르기가 조준하지 않았을 때와 같아요,100% = a target crosses the screen as fast as it does unaimed,"설정 창 > 조작 > 배율 조준경 감도 줄들 아래의 설명"
+life.join.seconds,{0}초 뒤 합류합니다,Joining in {0}s,진행 중인 판에 늦게 들어와 관전하며 합류를 기다릴 때(죽은 사람이 돌아오는 것과 같은 시계). {0}=합류까지 남은 초
+life.join.next_wave,다음 웨이브에 합류합니다,Joining at the next wave,진행 중인 판에 늦게 들어와 합류를 기다릴 때(웨이브가 도는 중)
+life.join.tower,다음 휴게층에서 합류합니다,Joining at the next rest hall,진행 중인 타워에 늦게 들어와 합류를 기다릴 때(레인을 오르는 중)
+team.joining,합류 대기,JOINING,왼쪽 아래 동료 체력 카드: 진행 중인 판에 늦게 들어와 합류를 기다리는 동료(죽은 것이 아님)
+team.alert.joined,{0} 합류,{0} joined the fight,화면 위 알림: 진행 중인 판에 늦게 들어와 관전하던 동료가 합류했을 때. {0}=이름(색 포함)
 ammo.kind.pistol,권총탄,PISTOL,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = pistol). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
 ammo.kind.smg,기관단총탄,SMG,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = smg). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
 ammo.kind.shotgun,산탄,SHELLS,"탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = shotgun, 상점의 산탄총 분류의 총). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다"
 ammo.kind.rifle,소총탄,RIFLE,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = rifle). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
 ammo.kind.marksman,저격탄,MARKSMAN,"탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = marksman, 상점의 지정사수·저격 분류의 총). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다"
 ammo.kind.mg,기관총탄,MG,탄약 표시 > 예비 탄약 숫자 위 작은 글자: 든 총이 쓰는 탄의 종류(Weapons.csv ammo = mg). 같은 탄을 쓰는 총끼리 이 예비 탄약을 함께 쓴다. 이름이 없는 탄(그 총만의 탄)은 hud.ammo.reserve가 나온다
-life.join.seconds,{0}초 뒤 합류합니다,Joining in {0}s,진행 중인 판에 늦게 들어와 관전하며 합류를 기다릴 때(죽은 사람이 돌아오는 것과 같은 시계). {0}=합류까지 남은 초
-life.join.next_wave,다음 웨이브에 합류합니다,Joining at the next wave,진행 중인 판에 늦게 들어와 합류를 기다릴 때(웨이브가 도는 중)
-life.join.tower,다음 휴게층에서 합류합니다,Joining at the next rest hall,진행 중인 타워에 늦게 들어와 합류를 기다릴 때(레인을 오르는 중)
-team.joining,합류 대기,JOINING,왼쪽 아래 동료 체력 카드: 진행 중인 판에 늦게 들어와 합류를 기다리는 동료(죽은 것이 아님)
-team.alert.joined,{0} 합류,{0} joined the fight,화면 위 알림: 진행 중인 판에 늦게 들어와 관전하던 동료가 합류했을 때. {0}=이름(색 포함)
 effect.chain,암살 연쇄 ×{1},Chain ×{1},클래스 칸 아래 지속 효과 칸(TimedEffects.csv ghost.chain): 고스트 암살 연쇄 카드로 다음 좀비를 고를 수 있는 동안. 칼이 닿기 전에는 가득 찬 채로 있고 닿은 뒤 Ghost.chainWindow초 동안 줄어든다. {1}=더 이을 수 있는 횟수
 gun.pro.scope_view,조준하면 화면 전체가 ×{0} 확대,Aiming magnifies the whole view ×{0},"부품 설명(초록 +). {0}=배율. 화면 전체가 확대되는 배율 조준경(GunParts.csv view=zoom). 렌즈 안만 확대되는 조준경(view=pip)은 gun.pro.scope_zoom"
 hud.parkour.ledge.nowayup,눌러 낙하 · 여기서는 올라설 수 없음,,파쿠르 안내: 난간에 매달렸는데 그 자리에서는 위로 올라설 수 없을 때(위가 막혔거나 설 자리가 없는 턱) 조준점 아래. 앞에 웅크리기 키(CTRL) 키캡이 붙는다. 올라가려고 W나 Space를 누르면 손이 한 번 당기는 소리(SoundCues LedgeRefuse)가 난다
@@ -35,12 +35,12 @@ pickup.gives.gunrounds,탄창 {0}발,,"아이템 [F] 안내와 주운 목록(화
 pickup.gives.gunspare,탄창 {0}발 · 예비 +{1},,"아이템 [F] 안내와 주운 목록(화면 아래) > 맵이 놓은 총: 든 탄과, 처음 줍는 사람이 받는 예비 탄약. {0}=든 탄 수, {1}=예비 탄약"
 pickup.gives.rounds,탄약 +{0},,"아이템 [F] 안내와 주운 목록(화면 아래) > 이미 든 것과 같은 총: 그 총에서 내 예비 탄약으로 챙기는 탄 수(총은 바닥에 남는다). {0}=탄 수"
 pickup.refuse.emptygun,빈 총이에요,,"아이템 [F] 안내 > 이미 든 것과 같은 총인데 챙길 탄이 하나도 없을 때"
+score.pointer.show,[우클릭] 커서 꺼내기,[Right click] Pointer,Tab 점수판 표 오른쪽 위 안내 > Tab을 누르고 있는 동안. 우클릭하면 마우스 커서가 나온다(시점과 사격은 멈추고 걷기는 그대로)
+score.pointer.hide,[우클릭] 커서 넣기,[Right click] Put the pointer away,Tab 점수판 표 오른쪽 위 안내 > 커서가 나와 있는 동안. 다시 우클릭하거나 Tab을 놓으면 들어간다
 effect.gunslinger,건슬링어 · 총 +{0}%,Gunslinger · guns +{0}%,클래스 칸 아래 지속 효과 칸(TimedEffects.csv point.gunslinger): 포인트 건슬링어 카드로 총을 바꿔 든 뒤 세지는 동안. {0}=피해 +%. 건 카타와 같이 걸리면 칸이 따로 선다
 effect.momentum,기세 · 피해 +{0}%,Momentum · damage +{0}%,클래스 칸 아래 지속 효과 칸(TimedEffects.csv card.momentum): 기세 카드가 걸려 있는 동안. 맞힐 때마다 시간이 다시 찬다. {0}=피해 +%
 effect.guarded,원호 · 총 +{0}%,Covered · guns +{0}%,클래스 칸 아래 지속 효과 칸(TimedEffects.csv knight.guarded): 나이트 동료의 원호 방어가 내 대신 막아 준 뒤 내 총이 세지는 동안(원호 반격 카드). {0}=총 피해 +%
 effect.phoenix,불사조 · 무적,Phoenix · unharmed,클래스 칸 아래 지속 효과 칸(TimedEffects.csv card.phoenix): 불사조 카드로 일어선 직후 아무것도 맞지 않는 동안
-score.pointer.show,[우클릭] 커서 꺼내기,[Right click] Pointer,Tab 점수판 표 오른쪽 위 안내 > Tab을 누르고 있는 동안. 우클릭하면 마우스 커서가 나온다(시점과 사격은 멈추고 걷기는 그대로)
-score.pointer.hide,[우클릭] 커서 넣기,[Right click] Put the pointer away,Tab 점수판 표 오른쪽 위 안내 > 커서가 나와 있는 동안. 다시 우클릭하거나 Tab을 놓으면 들어간다
 profile.colour,내 색,My colour,설정 > HUD 탭과 프로필 창 > 내 색 줄의 이름
 profile.colour.auto,자동,Auto,내 색 줄 > 색을 고르지 않는 단추. 분홍부터 남는 색을 저절로 받는다(혼자이거나 방에서 가장 먼저면 분홍)
 profile.colour.hint,현황판·채팅·콜아웃·핑에서 나를 나타내는 색. 누구의 화면에서나 같은 색으로 보인다. 칸을 누르면 그 색을 쓰고 색상 판이 열려 색을 바꿀 수 있다. 자동이면 분홍부터 남는 색을 받는다.,"The colour that stands for you on the board, in chat, callouts and pings. It looks the same on everyone's screen. Click a slot to use its colour and open the colour board to change it. Auto gives you pink, or the next free colour.",설정 > HUD 탭 > 내 색 줄 아래 안내. 칸은 플레이어가 제 색을 기억해 두는 자리(색상 판: 마우스로 고르거나 색상 코드·R G B를 적는다)
@@ -214,22 +214,22 @@ mission.ch4.13.title,수송기에 타기,,"목표 바 제목과 Tab 목표 목�
 mission.ch4.13.description,"모두 화물칸 안으로 들어오세요. 노래가 끝나면 떠나요. 이륙 준비로 화물 문이 닫혀요: 밖에 있으면 램프 옆 레버에 쐐기를 박아(12초) 뛰어 타거나, 한 명이 레버 자리에 서서 끝까지 붙잡으면 문이 열려 있어요. 붙잡은 사람도 탈출로 쳐요.",,"Tab 목표 목록의 설명: Ch4_Airport 13번째 단계(Escape, Ch4.13)"
 mission.ch4.13.done,탈출,,"끝낸 목표의 이름(Tab 목록·목표 바 완료): Ch4_Airport 13번째 단계(Escape, Ch4.13)"
 #--- 맵 이름 (Maps.csv) ---,,,
-map.combatfoundation.name,전투 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(CombatFoundation). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
-map.movementabilityplayground.name,이동 시험장,,"맵 이름: 로딩 화면·콘솔 /testroom 목록(MovementAbilityPlayground). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
-map.ch1_rooftops.name,1장 · 옥상,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch1_Rooftops). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.ch2_overpass.name,2장 · 고가도로,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch2_Overpass). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.ch3_subway.name,3장 · 지하철,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch3_Subway). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.ch4_airport.name,4장 · 공항,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch4_Airport). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
-map.enfiladetower.name,엔필레이드,,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(EnfiladeTower). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.combatfoundation.name,전투 시험장,Combat Testing Ground,"맵 이름: 로딩 화면·콘솔 /testroom 목록(CombatFoundation). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
+map.movementabilityplayground.name,이동 시험장,Movement Testing Ground,"맵 이름: 로딩 화면·콘솔 /testroom 목록(MovementAbilityPlayground). 메인 메뉴와 허브 지도 탁자에는 안 나오는 테스팅 룸이다(Maps.csv list 0)"
+map.ch1_rooftops.name,1장 · 옥상,Ch1 · Rooftop,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch1_Rooftops). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch2_overpass.name,2장 · 고가도로,Ch2 · Highway,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch2_Overpass). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch3_subway.name,3장 · 지하철,Ch3 · Subway,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch3_Subway). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.ch4_airport.name,4장 · 공항,Ch4 · Airport,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Ch4_Airport). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
+map.enfiladetower.name,엔필레이드,ENFILADE,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(EnfiladeTower). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 map.hub.name,허브,The HUB,"맵 이름: 메인 메뉴·방 만들기·로딩 화면·허브 지도 탁자(Hub). ""N장 · 이름""이면 허브가 · 앞 숫자를 큰 장 번호로 쓴다"
 #--- 메인 메뉴 소식 줄 (MenuTicker.csv) ---,,,
-menu.ticker.label.radio,무전,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
+menu.ticker.label.radio,무전,Radio:,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
 menu.ticker.radio1.text,"여기는 구조대. 공사 중인 빌딩 옥상, 해 지기 전까지만 기다린다.",,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio1). 위에서부터 차례로 흐른다
-menu.ticker.label.tip,팁,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
+menu.ticker.label.tip,팁,Tips:,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
 menu.ticker.tip1.text,총은 머리를 노리세요. 어떤 총이든 머리 한 방이면 쓰러져요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip1). 위에서부터 차례로 흐른다
 menu.ticker.radio2.text,"고가도로 톨게이트 검문소, 응답 바란다. 반복한다, 응답 바란다.",,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio2). 위에서부터 차례로 흐른다
 menu.ticker.tip2.text,휴게소는 모두 들어와 문을 닫아야 안전해요. 죽은 동료는 거기서 다시 살아나요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip2). 위에서부터 차례로 흐른다
-menu.ticker.label.alert,경보,,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
+menu.ticker.label.alert,경보,Warning:,메인 메뉴 맨 아래 흘러가는 소식 줄의 꼬리표(분홍 굵은 글자)
 menu.ticker.alert1.text,강 북쪽 전 구역 감염 확산. 민간인은 지하로 대피하지 마십시오.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Alert1). 위에서부터 차례로 흐른다
 menu.ticker.tip3.text,계산대에서 [F]를 누르면 상점이 열려요. 적을 쓰러뜨리면 100씩 벌어요.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Tip3). 위에서부터 차례로 흐른다
 menu.ticker.radio3.text,정비창 발전기만 돌리면 비상 차량은 움직인다. 연료가 문제다.,,메인 메뉴 맨 아래 흘러가는 소식 줄의 말(Radio3). 위에서부터 차례로 흐른다
@@ -556,27 +556,27 @@ part.ichigo.tail.name,꼬리,,옷장 > 칸에 캐릭터 제 옷이 있을 때 �
 part.ichigo.undertop.name,브라,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.undertop)
 part.ichigo.underbottom.name,팬티,,옷장 > 칸에 캐릭터 제 옷이 있을 때 적히는 이름(ichigo.underbottom)
 #--- 크로스헤어 프리셋 (CrosshairPresets.csv) ---,,,
-crosshair.preset.cross_dot,십자+점,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_dot)
-crosshair.preset.cross,십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross)
-crosshair.preset.cross_small,작은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_small)
-crosshair.preset.cross_tight,붙은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_tight)
-crosshair.preset.cross_wide,넓은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_wide)
-crosshair.preset.cross_thick,굵은 십자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_thick)
-crosshair.preset.dot,점,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv dot)
-crosshair.preset.dot_big,큰 점,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv dot_big)
-crosshair.preset.x,X자,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv x)
-crosshair.preset.tri,세 갈래,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv tri)
-crosshair.preset.ring,고리,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv ring)
-crosshair.preset.spin,빙글,,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv spin)
+crosshair.preset.cross_dot,십자+점,Cross + Dot,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_dot)
+crosshair.preset.cross,십자,Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross)
+crosshair.preset.cross_small,작은 십자,Small Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_small)
+crosshair.preset.cross_tight,붙은 십자,Tight Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_tight)
+crosshair.preset.cross_wide,넓은 십자,Wide Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_wide)
+crosshair.preset.cross_thick,굵은 십자,Thick Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv cross_thick)
+crosshair.preset.dot,점,Dot,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv dot)
+crosshair.preset.dot_big,큰 점,Big Dot,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv dot_big)
+crosshair.preset.x,X자,X-Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv x)
+crosshair.preset.tri,세 갈래,Tri-Cross,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv tri)
+crosshair.preset.ring,고리형,Circle,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv ring)
+crosshair.preset.spin,회전,Spin,설정 창 > 크로스헤어 > 프리셋 타일 이름(CrosshairPresets.csv spin)
 #--- 콜아웃 대사 (Callouts.csv) ---,,,
-callout.line.zombie.ninja,닌자다! 등 뒤 조심해!,Ninja! Watch your back!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:ninja. 보고 있는(없으면 가장 가까운) 좀비가 닌자 (zombie.ninja). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.candyman,캔디맨이다! 끌려가지 마!,Candyman! Don't get hooked!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:candyman (zombie.candyman). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.breadbag,전기톱이다! 브레드백!,Chainsaw! Breadbag!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:breadbag (zombie.breadbag). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.reaper,리퍼다! 품으로 붙어서 앉아!,Reaper! Hug it and get down!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:reaper. 그림 리퍼: 멀어지면 도끼에 맞고 붙어 앉으면 피한다 (zombie.reaper). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.brute,거구다! 다리를 쏴!,Brute! Shoot its legs!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:brute. 거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다 (zombie.brute). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.brute.down,거구가 쓰러졌다! 머리를 쏴!,The brute is down! Shoot the head!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · crawl:brute. 다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다 (zombie.brute.down). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.charger,차저! 돌진 온다!,Charger! It's coming through!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:charger (zombie.charger). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.zombie.exploder,자폭 좀비! 붙지 마!,Bomber! Keep away!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:exploder (zombie.exploder). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.ninja,닌자!,Ninja! Watch your back!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:ninja. 보고 있는(없으면 가장 가까운) 좀비가 닌자 (zombie.ninja). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.candyman,캔디맨이다!,Candyman! Don't get hooked!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:candyman (zombie.candyman). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.breadbag,전기톱이다!,Chainsaw! Breadbag!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:breadbag (zombie.breadbag). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.reaper,리퍼다!,Reaper! Hug it and get down!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:reaper. 그림 리퍼: 멀어지면 도끼에 맞고 붙어 앉으면 피한다 (zombie.reaper). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.brute,브루저!,Brute! Shoot its legs!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:brute. 거구는 무릎이 약해 다리를 쏘면 쓰러진다. 거구가 오면 가장 가까운 사람이 저절로 외친다 (zombie.brute). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.brute.down,머리를 노려!,The brute is down! Shoot the head!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · crawl:brute. 다리가 부러져 기는 거구(머리가 약점). 다리를 부러뜨린 사람이 저절로 외친다 (zombie.brute.down). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.charger,차저!,Charger! It's coming through!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:charger (zombie.charger). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.zombie.exploder,터질 듯한 슴가?!?!,Bomber! Keep away!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:exploder (zombie.exploder). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.zombie.runner,러너다!,Runner!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:runner (zombie.runner). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.zombie.horde,떼로 몰려온다!,Here comes the horde!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · horde. 20m 안에 깨어 있는 좀비가 8마리 넘을 때(그 무리에 보고 있는 놈이 셤블러뿐이면) (zombie.horde). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.zombie.shambler,좀비 저기!,Zombie over there!,콜아웃 대사(머리 위 말풍선·목소리): zombie 칸 · kind:shambler (zombie.shambler). 목소리는 이 한국어로 만든 임시 TTS
@@ -596,16 +596,16 @@ callout.line.request.ammo,탄약이 떨어져 간다!,I'm running low on ammo!,�
 callout.line.request.reload,장전 중! 엄호해 줘!,Reloading! Cover me!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · reloading (request.reload). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.request.cover,엄호해 줘!,Cover me!,콜아웃 대사(머리 위 말풍선·목소리): request 칸 · always (request.cover). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.class.knight.taunt,내가 끌어들인다! 다 나한테 와라!,I'll draw them! Come at me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · knight.taunt. 나이트이고 도발이 준비됐을 때 (class.knight.taunt). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.knight,내 뒤로 붙어!,Get behind me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · knight (class.knight). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.assault.charge,돌격 준비! 내 옆으로 모여!,Charge is ready! On me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · assault.charge. 어썰트이고 CHARGE 게이지가 찼을 때 (class.assault.charge). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.assault,앞을 뚫는다!,Breaking through!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · assault (class.assault). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.ghost.elite,저 놈은 내가 맡는다!,That one's mine!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · ghost.elite. 고스트가 엘리트를 보고 있을 때 (class.ghost.elite). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.ghost,여기서 엄호한다!,Covering from here!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · ghost (class.ghost). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.point,앞장선다. 따라와!,"Taking point, follow me!",콜아웃 대사(머리 위 말풍선·목소리): class 칸 · point (class.point). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.detente.full,다친 사람 이리 와!,"Wounded, over here!",콜아웃 대사(머리 위 말풍선·목소리): class 칸 · detente.full. 데탕트이고 주사기에 한 번 이상 남았을 때 (class.detente.full). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.knight,나이트입니다~,Get behind me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · knight (class.knight). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.assault.charge,갈아 마실 준비!!,Charge is ready! On me!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · assault.charge. 어썰트이고 CHARGE 게이지가 찼을 때 (class.assault.charge). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.assault,어썰트예용,Breaking through!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · assault (class.assault). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.ghost.elite,타겟 확인,That one's mine!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · ghost.elite. 고스트가 엘리트를 보고 있을 때 (class.ghost.elite). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.ghost,고스트임당.,Covering from here!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · ghost (class.ghost). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.point,개적폐 클래스 포인트입니다!!!,"Taking point, follow me!",콜아웃 대사(머리 위 말풍선·목소리): class 칸 · point (class.point). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.detente.full,오이데~,"Wounded, over here!",콜아웃 대사(머리 위 말풍선·목소리): class 칸 · detente.full. 데탕트이고 주사기에 한 번 이상 남았을 때 (class.detente.full). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.class.detente.empty,주사기가 비었어!,My syringe is empty!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · detente.empty (class.detente.empty). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.schiesshund.mark,현상금 붙었다! 내 사냥감이야!,Bounty's on! That one's mine!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · schiesshund.mark. 시순트의 현상금 표시가 살아 있을 때 (class.schiesshund.mark). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.class.schiesshund,사냥감을 찾는다!,Looking for a bounty!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · schiesshund (class.schiesshund). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.schiesshund.mark,네 상대는 나다.,Bounty's on! That one's mine!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · schiesshund.mark. 시순트의 현상금 표시가 살아 있을 때 (class.schiesshund.mark). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.class.schiesshund,왈왈으르렁캥캥,Looking for a bounty!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · schiesshund (class.schiesshund). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.class.support.full,탄약 받아 가!,Come get your ammo!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · support.full. 서포트이고 보급 가방이 한 번 줄 만큼 있을 때 (class.support.full). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.class.support.empty,보급품이 바닥났어!,I'm out of supplies!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · support.empty (class.support.empty). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.class.none,준비됐어!,Ready!,콜아웃 대사(머리 위 말풍선·목소리): class 칸 · always (class.none). 목소리는 이 한국어로 만든 임시 TTS
@@ -632,13 +632,13 @@ callout.line.wait.wait,기다려!,Wait!,콜아웃 대사(머리 위 말풍선·�
 callout.line.hurry.hurry,서둘러!,Hurry up!,콜아웃 대사(머리 위 말풍선·목소리): hurry 칸 · always (hurry.hurry). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.quiet.shh,쉿. 조용히!,"Shh, quiet!",콜아웃 대사(머리 위 말풍선·목소리): quiet 칸 · always (quiet.shh). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.follow.me,날 따라와!,Follow me!,콜아웃 대사(머리 위 말풍선·목소리): follow 칸 · always (follow.me). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.auto.charge.lead,돌격! 나를 따르라!,Charge! Follow me!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · charge.lead. 어썰트가 CHARGE를 쓸 때 저절로 (auto.charge.lead). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.auto.charge.join,우와아아! 돌격!,Hurrah! Charge!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · charge.join. CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼) (auto.charge.join). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.charge.lead,지옥으로 돌아가라!!!,Charge! Follow me!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · charge.lead. 어썰트가 CHARGE를 쓸 때 저절로 (auto.charge.lead). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.charge.join,이야아아앙,Hurrah! Charge!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · charge.join. CHARGE 반경 안의 동료가 0.2~0.6초 뒤 저절로 따라 외친다(G&B의 장교 돌격처럼) (auto.charge.join). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.auto.grenade.frag,수류탄!,Frag out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.frag. 어썰트가 G로 세열 수류탄을 던질 때 저절로(동료가 엎드리거나 비키게) (auto.grenade.frag). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.auto.grenade.flash,섬광 간다!,Flashbang out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.flash. 포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다 (auto.grenade.flash). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.auto.grenade.smoke,연막 깐다!,Smoke out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.smoke. 고스트가 G로 연막탄을 던질 때 저절로 (auto.grenade.smoke). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.auto.grenade.mist,소독 안개! 이 안으로!,Mist down! Get in here!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.mist. 데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다 (auto.grenade.mist). 목소리는 이 한국어로 만든 임시 TTS
-callout.line.auto.grenade.dye,염료 뿌린다! 사냥 시작이다!,Dye out! The hunt is on!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.dye. 시순트가 G로 현상금 염료탄을 던질 때 저절로 (auto.grenade.dye). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.flash,섬광탄!,Flashbang out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.flash. 포인트가 G로 섬광탄을 던지거나 손에서 터뜨릴 때 저절로. 눈부심은 없고 좀비만 기절한다 (auto.grenade.flash). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.smoke,연막탄.,Smoke out!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.smoke. 고스트가 G로 연막탄을 던질 때 저절로 (auto.grenade.smoke). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.mist,소독 안개 전개!,Mist down! Get in here!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.mist. 데탕트가 G로 소독 안개탄을 던질 때 저절로. 좀비는 안개 안으로 못 들어온다 (auto.grenade.mist). 목소리는 이 한국어로 만든 임시 TTS
+callout.line.auto.grenade.dye,사냥 시작.,Dye out! The hunt is on!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.dye. 시순트가 G로 현상금 염료탄을 던질 때 저절로 (auto.grenade.dye). 목소리는 이 한국어로 만든 임시 TTS
 callout.line.auto.grenade.claymore,지뢰 설치! 앞에 서지 마!,Claymore down! Stay out of its front!,콜아웃 대사(머리 위 말풍선·목소리): auto 칸 · grenade.claymore. 서포트가 G로 급조 지향성 지뢰를 놓을 때 저절로(동료가 그 앞에 서지 않게) (auto.grenade.claymore). 목소리는 이 한국어로 만든 임시 TTS
 #--- 특수 순간 글자 (MomentFx.csv) ---,,,
 moment.ult.knight.title,SHADOW DOUBLE,,궁극기를 쓰면 왼쪽 아래 알림 띠의 큰 영어 이름. 알림 띠의 큰 글자 (MomentFx.csv Ult.knight.title)
@@ -697,9 +697,9 @@ hud.counter.word,COUNTER,,"반격 성공 때 화면을 가르는 COUNTER 띠의 
 #--- 좀비 이름 ---,,,
 zombie.shambler,셤블러,,좀비 이름: 체력 바 위와 처치 목록(킬 피드)
 zombie.runner,러너,,좀비 이름
-zombie.brute,거구,,좀비 이름(노래 절정에 나오는 보스)
+zombie.brute,브루저,,좀비 이름(노래 절정에 나오는 보스)
 zombie.exploder,자폭 좀비,,좀비 이름(엘리트)
-zombie.charger,돌진 좀비,,좀비 이름(엘리트)
+zombie.charger,차저,,좀비 이름(엘리트)
 zombie.ninja,닌자,Ninja,좀비 이름(11-11 메모의 엘리트: 연기 속에 사라졌다 등 뒤에서 친다)
 zombie.candyman,캔디맨,Candyman,좀비 이름(11-11 메모의 엘리트: 갈고리로 동료를 끌고 간다)
 zombie.breadbag,브레드백,Breadbag,좀비 이름(11-11 메모의 엘리트: 전기톱)
@@ -712,180 +712,180 @@ hold.pinned.burst,[V] 실드를 터뜨려 떨쳐내기,,깔렸는데 실드가 �
 hold.pinned.kick,[V] 걷어차 떨쳐내기,,나이트가 깔렸고 걷어차기가 준비됐을 때 안내(실드를 쓰지 않는다)
 hold.pinned.alone,혼자서는 못 벗어난다 · 동료가 밀쳐 주거나 러너를 처치해야 풀린다,,깔렸는데 실드가 없을 때 안내
 hold.eaten,뜯어먹히는 중!,,엎드려 있다 뜯어먹힐 때 큰 글씨
-hold.grabbed,잡혔다!,,셤블러에게 잡혔을 때 큰 글씨
+hold.grabbed,잡혔습니다!,,셤블러에게 잡혔을 때 큰 글씨
 hold.count,×{0},,잡은 좀비 수(큰 글씨 뒤에 붙는다). {0}=수
 #--- 공통 ---,,,
-common.ok,확인,,여러 창의 확인 버튼
-common.cancel,취소,,여러 창의 취소 버튼
-common.close,닫기,,여러 창의 닫기 버튼
-common.back,뒤로,,여러 창의 뒤로 버튼
-common.on,켜기,,켜기/끄기 선택지
-common.off,끄기,,켜기/끄기 선택지
-common.yes,예,,예/아니오 선택지
-common.no,아니오,,예/아니오 선택지
+common.ok,확인,Confirm,여러 창의 확인 버튼
+common.cancel,취소,Cancel,여러 창의 취소 버튼
+common.close,닫기,Close,여러 창의 닫기 버튼
+common.back,뒤로,Back,여러 창의 뒤로 버튼
+common.on,켜기,ON,켜기/끄기 선택지
+common.off,끄기,OFF,켜기/끄기 선택지
+common.yes,예,Yes,예/아니오 선택지
+common.no,아니오,No,예/아니오 선택지
 #--- 명령어 공통 ---,,,
 chat.command.unknown,알 수 없는 명령어입니다. /help로 목록을 확인하세요.,,채팅에 / 명령어를 잘못 쳤을 때
 chat.command.failed,명령어 실행에 실패했습니다: /{0},,명령어가 실행 중 오류가 났을 때. {0}=명령어 이름
 #--- 메인 메뉴 ---,,,
-menu.tab.play,플레이,,메인 메뉴 > 위 막대 탭
-menu.tab.character,캐릭터,,메인 메뉴 > 위 막대 탭(고를 캐릭터가 있을 때)
-menu.tab.records,기록,,메인 메뉴 > 위 막대 탭
-menu.tab.classes,클래스,,메인 메뉴 > 위 탭(클래스 고르기)
-menu.hint.settings,설정,,메인 메뉴 > 아래 막대 키 안내(Esc 옆)
-menu.hint.drag.key,끌기,,메인 메뉴 > 아래 막대 키 안내의 키 칸
-menu.hint.drag,캐릭터 회전,,메인 메뉴 > 아래 막대 키 안내(끌기 옆)
+menu.tab.play,플레이,PLAY,메인 메뉴 > 위 막대 탭
+menu.tab.character,캐릭터,CLOSET,메인 메뉴 > 위 막대 탭(고를 캐릭터가 있을 때)
+menu.tab.records,기록,CAREER,메인 메뉴 > 위 막대 탭
+menu.tab.classes,클래스,CLASS,메인 메뉴 > 위 탭(클래스 고르기)
+menu.hint.settings,설정,SETTINGs,메인 메뉴 > 아래 막대 키 안내(Esc 옆)
+menu.hint.drag.key,드래그,Drag,메인 메뉴 > 아래 막대 키 안내의 키 칸
+menu.hint.drag,캐릭터 회전,Rotate,메인 메뉴 > 아래 막대 키 안내(끌기 옆)
 menu.ticker.empty,<color={0}>무전</color>   ...,,메인 메뉴 > 아래 막대 무전 줄(MenuTicker 표가 비었을 때). {0}=분홍 색 코드
-menu.mode.solo,싱글 플레이,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
-menu.mode.solo.note,인터넷 연결 없이 혼자서 플레이합니다.,,메인 메뉴 > 혼자 하기 판 아래 작은 줄
-menu.mode.host,방 만들기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
-menu.mode.host.note,멀티 플레이를 위한 서버를 생성합니다.,,메인 메뉴 > 방 만들기 판 아래 작은 줄
-menu.mode.browse,서버 찾기,,메인 메뉴 > 왼쪽 플레이 방식 판 이름
-menu.mode.browse.note,열린 방에 접속합니다.,,메인 메뉴 > 서버 찾기 판 아래 작은 줄
-menu.mode.solo.tag,오프라인,,메인 메뉴 > 혼자 하기 판 오른쪽 위 작은 칩(이 방식의 특징)
-menu.mode.host.tag,최대 10명,,메인 메뉴 > 방 만들기 판 오른쪽 위 작은 칩(이 방식의 특징)
-menu.mode.browse.tag,LAN · 인터넷,,메인 메뉴 > 서버 찾기 판 오른쪽 위 작은 칩(이 방식의 특징)
-menu.mode.again,클릭 시 시작합니다.,,메인 메뉴 > 고른 플레이 방식 판의 오른쪽
-menu.launch.title,시작,,메인 메뉴 > 오른쪽 아래 큰 분홍 버튼
-menu.launch.solo,솔로  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(혼자 하기). {0}=맵 이름
-menu.launch.host,방 만들기  ·  {0},,메인 메뉴 > 출격 버튼 아래 줄(방 만들기). {0}=맵 이름
-menu.launch.browse,서버 찾기  ·  열린 방 보기,,메인 메뉴 > 출격 버튼 아래 줄(서버 찾기)
-menu.map.empty,맵이 없어요,,메인 메뉴 > 맵 카드 제목과 출격 버튼 아래 줄(플레이할 맵이 없을 때)
-menu.map.none,맵 없음,,메인 메뉴 > 맵 카드 왼쪽 위 칩(플레이할 맵이 없을 때)
-menu.map.free,자유 맵,,메인 메뉴 > 맵 카드 왼쪽 위 칩(장 번호가 없는 맵)
-menu.character.title,캐릭터,,메인 메뉴 > 캐릭터 화면 제목
+menu.mode.solo,혼자 하기,Single-Player,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.solo.note,인터넷 연결 없이 혼자서 플레이합니다.,"Play offline, solo.",메인 메뉴 > 혼자 하기 판 아래 작은 줄
+menu.mode.host,방 만들기,Create LOBBY,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.host.note,멀티 플레이를 위한 서버를 생성합니다.,Create a multiplayer server.,메인 메뉴 > 방 만들기 판 아래 작은 줄
+menu.mode.browse,서버 찾기,Browse Servers,메인 메뉴 > 왼쪽 플레이 방식 판 이름
+menu.mode.browse.note,열린 방에 접속합니다.,Connect to an existing server,메인 메뉴 > 서버 찾기 판 아래 작은 줄
+menu.mode.solo.tag,오프라인,OFFLINE,메인 메뉴 > 혼자 하기 판 오른쪽 위 작은 칩(이 방식의 특징)
+menu.mode.host.tag,최대 10명,MAX 10 Players,메인 메뉴 > 방 만들기 판 오른쪽 위 작은 칩(이 방식의 특징)
+menu.mode.browse.tag,LAN · 인터넷,LAN · INTERNET,메인 메뉴 > 서버 찾기 판 오른쪽 위 작은 칩(이 방식의 특징)
+menu.mode.again,클릭 시 시작합니다.,Click to start.,메인 메뉴 > 고른 플레이 방식 판의 오른쪽
+menu.launch.title,시작,START,메인 메뉴 > 오른쪽 아래 큰 분홍 버튼
+menu.launch.solo,솔로  ·  {0},SOLO · {0},메인 메뉴 > 출격 버튼 아래 줄(혼자 하기). {0}=맵 이름
+menu.launch.host,방 만들기  ·  {0},Create LOBBY · {0},메인 메뉴 > 출격 버튼 아래 줄(방 만들기). {0}=맵 이름
+menu.launch.browse,서버 찾기  ·  열린 방 보기,Browse Servers · View Lobbies,메인 메뉴 > 출격 버튼 아래 줄(서버 찾기)
+menu.map.empty,맵이 없어요,No maps found,메인 메뉴 > 맵 카드 제목과 출격 버튼 아래 줄(플레이할 맵이 없을 때)
+menu.map.none,맵 없음,No Map,메인 메뉴 > 맵 카드 왼쪽 위 칩(플레이할 맵이 없을 때)
+menu.map.free,자유 맵,Free Map,메인 메뉴 > 맵 카드 왼쪽 위 칩(장 번호가 없는 맵)
+menu.character.title,캐릭터,CLOSET,메인 메뉴 > 캐릭터 화면 제목
 #--- 기록 ---,,,
-records.title,기록,,메인 메뉴 > 기록 화면 큰 제목
-records.where,이 PC에 남은 기록,,기록 화면 > 제목 아래 작은 줄
-records.campaign,캠페인,,기록 화면 > 왼쪽 소제목
-records.campaign.escaped,{0} / {1} 장 탈출,,기록 화면 > 캠페인 소제목 오른쪽. {0}=탈출한 장 수 {1}=전체 장 수
-records.chapter.waiting,아직 탈출 못 함,,기록 화면 > 장 기록 사진 오른쪽 위 칸(아직 탈출하지 못한 장)
-records.escaped,탈출,,기록 화면 > 최근 판 결과 칸(탈출했을 때)
-records.left,나감,,기록 화면 > 최근 판 결과 칸(탈출하지 못하고 나갔을 때)
-records.totals,합계,,기록 화면 > 오른쪽 소제목
-records.kills,처치,,기록 화면 > 합계 칸 이름
-records.headshots,헤드샷,,기록 화면 > 합계 칸 이름
-records.play_time,플레이 시간,,기록 화면 > 합계 칸 이름
-records.games,판,,기록 화면 > 합계 칸 이름
-records.games.escapes,탈출 {0},,기록 화면 > 판 칸 아래 분홍 글씨. {0}=탈출한 판 수
-records.revives,살려 준 동료,,기록 화면 > 합계 칸 이름
-records.downs,쓰러짐,,기록 화면 > 합계 칸 이름
-records.deaths,죽음,,기록 화면 > 합계 칸 이름
-records.wipes,전멸,,기록 화면 > 합계 칸 이름
-records.recent,최근 판,,기록 화면 > 최근 판 소제목
-records.recent.empty,아직 기록이 없어요. 한 판 하고 오세요.,,기록 화면 > 최근 판이 하나도 없을 때
-records.recent.kills,처치 {0},,기록 화면 > 최근 판 줄. {0}=처치 수
-records.recent.deaths,죽음 {0},,기록 화면 > 최근 판 줄. {0}=죽은 수
-records.time.hours,{0}시간 {1}분,,기록 화면 > 플레이 시간 칸(한 시간이 넘을 때). {0}=시간 {1}=분
-records.time.minutes,{0}분,,기록 화면 > 플레이 시간 칸(한 시간 안). {0}=분
-records.time.seconds,{0}초,,기록 화면 > 플레이 시간 칸(1분 안). {0}=초
-records.totals.hint,왼쪽 장을 누르면 그 장의 기록,,기록 화면 > 합계 소제목 오른쪽 옅은 안내
-records.row.games,{0}판,,기록 화면 > 캠페인 장 줄의 이름 아래. {0}=그 장에서 한 판 수
-records.row.never,아직 안 해 봄,,기록 화면 > 캠페인 장 줄의 이름 아래와 장 기록 사진의 날짜 줄(한 번도 안 한 장)
-records.col.escapes,탈출,,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(탈출 횟수)
-records.col.best,최고 기록,,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(가장 빠른 탈출)
-records.col.fewest,최소 죽음,,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(탈출한 판 중 가장 적게 죽은 수)
-records.summary,캠페인 합계,,기록 화면 > 캠페인 장 줄 아래 소제목
-records.summary.best,최고 기록 합,,기록 화면 > 캠페인 합계 칸 이름(장마다 가장 빠른 탈출 시간을 더한 것)
-records.summary.best.note,장마다 가장 빠른 탈출의 합,,기록 화면 > 최고 기록 합 아래 작은 줄(모든 장을 탈출했을 때)
-records.summary.best.waiting,모든 장을 탈출하면 나온다,,기록 화면 > 최고 기록 합 아래 작은 줄(아직 못 한 장이 있을 때)
-records.summary.clean,무사 탈출,,기록 화면 > 캠페인 합계 칸 이름(한 번도 안 죽고 탈출한 장 수)
-records.summary.clean.note,한 번도 안 죽고 탈출한 장,,기록 화면 > 무사 탈출 아래 작은 줄
-records.summary.time,캠페인 시간,,기록 화면 > 캠페인 합계 칸 이름(캠페인 장 안에 있던 시간)
-records.summary.time.note,장 안에 있던 시간,,기록 화면 > 캠페인 시간 아래 작은 줄
-records.chapter.caption,장 기록,,기록 화면 > 장을 눌렀을 때 오른쪽 소제목
-records.chapter.hint,다시 누르거나 빈 곳을 누르면 합계로,,기록 화면 > 장 기록 소제목 오른쪽 옅은 안내
-records.chapter.escaped,탈출 {0}번,,기록 화면 > 장 기록 사진 오른쪽 위 분홍 칸. {0}=탈출 횟수
-records.chapter.first,첫 탈출 {0},,기록 화면 > 장 기록 사진의 이름 아래 줄. {0}=처음 탈출한 날과 시각
-records.chapter.last,마지막 판 {0},,기록 화면 > 장 기록 사진의 이름 아래 줄. {0}=마지막으로 한 판의 날과 시각
-records.chapter.tries,{0}판 중 {1}%,,기록 화면 > 장 기록 탈출 칸 아래 분홍 글씨. {0}=그 장에서 한 판 수 {1}=탈출한 비율
-records.chapter.clean,무사 탈출,,기록 화면 > 장 기록 최소 죽음 칸 아래 분홍 글씨(안 죽고 탈출한 적이 있을 때)
-records.chapter.most_kills,한 판 최다 처치,,기록 화면 > 장 기록 칸 이름
-records.chapter.headshots,헤드샷 {0}%,,기록 화면 > 장 기록 처치 칸 아래 분홍 글씨. {0}=처치 중 헤드샷 비율
-records.chapter.games,이 장의 최근 판,,기록 화면 > 장 기록 아래 소제목
-records.chapter.games.empty,이 장에서 남은 판이 아직 없어요.,,기록 화면 > 장 기록에서 그 장의 판이 하나도 없을 때
-records.recent.headshots,헤드샷 {0},,기록 화면 > 장 기록의 판 줄. {0}=헤드샷 수
-records.recent.downs,쓰러짐 {0},,기록 화면 > 장 기록의 판 줄. {0}=쓰러진 수
-records.recent.best,최고,,기록 화면 > 장 기록의 판 줄에서 가장 빠른 탈출 판 시간 옆 분홍 칸
+records.title,기록,CAREER,메인 메뉴 > 기록 화면 큰 제목
+records.where,이 PC에 남은 기록,Local PC Careers,기록 화면 > 제목 아래 작은 줄
+records.campaign,캠페인,Campaign,기록 화면 > 왼쪽 소제목
+records.campaign.escaped,{0} / {1} 장 탈출,Escaped {0} / {1} Chapters,기록 화면 > 캠페인 소제목 오른쪽. {0}=탈출한 장 수 {1}=전체 장 수
+records.chapter.waiting,아직 탈출 못 함,Not escaped yet,기록 화면 > 장 기록 사진 오른쪽 위 칸(아직 탈출하지 못한 장)
+records.escaped,탈출,Escaped,기록 화면 > 최근 판 결과 칸(탈출했을 때)
+records.left,나감,Left,기록 화면 > 최근 판 결과 칸(탈출하지 못하고 나갔을 때)
+records.totals,합계,Totals,기록 화면 > 오른쪽 소제목
+records.kills,처치,Kills,기록 화면 > 합계 칸 이름
+records.headshots,헤드샷,Headshots,기록 화면 > 합계 칸 이름
+records.play_time,플레이 시간,Played Time,기록 화면 > 합계 칸 이름
+records.games,판,Matches,기록 화면 > 합계 칸 이름
+records.games.escapes,탈출 {0},Escaped {0},기록 화면 > 판 칸 아래 분홍 글씨. {0}=탈출한 판 수
+records.revives,구원,Revives,기록 화면 > 합계 칸 이름
+records.downs,쓰러짐,Downs,기록 화면 > 합계 칸 이름
+records.deaths,죽음,Deaths,기록 화면 > 합계 칸 이름
+records.wipes,전멸,Wiped Out,기록 화면 > 합계 칸 이름
+records.recent,최근 판,Recent Matches,기록 화면 > 최근 판 소제목
+records.recent.empty,아직 기록이 없어요. 한 판 하고 오세요.,No records yet. Play a match!,기록 화면 > 최근 판이 하나도 없을 때
+records.recent.kills,처치 {0},Kills: {0},기록 화면 > 최근 판 줄. {0}=처치 수
+records.recent.deaths,죽음 {0},Deaths: {0},기록 화면 > 최근 판 줄. {0}=죽은 수
+records.time.hours,{0}시간 {1}분,{0}h {1}m,기록 화면 > 플레이 시간 칸(한 시간이 넘을 때). {0}=시간 {1}=분
+records.time.minutes,{0}분,{0}m,기록 화면 > 플레이 시간 칸(한 시간 안). {0}=분
+records.time.seconds,{0}초,{0}s,기록 화면 > 플레이 시간 칸(1분 안). {0}=초
+records.totals.hint,왼쪽 패널을 누르면 세부 정보로 이동합니다.,Select a chapter on the left to view its details,기록 화면 > 합계 소제목 오른쪽 옅은 안내
+records.row.games,{0}판,{0} Matches,기록 화면 > 캠페인 장 줄의 이름 아래. {0}=그 장에서 한 판 수
+records.row.never,아직 안 해 봄,Not played yet,기록 화면 > 캠페인 장 줄의 이름 아래와 장 기록 사진의 날짜 줄(한 번도 안 한 장)
+records.col.escapes,탈출,Escapes,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(탈출 횟수)
+records.col.best,최고 기록,Best Time,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(가장 빠른 탈출)
+records.col.fewest,최소 죽음,Fewest Deaths,기록 화면 > 캠페인 장 줄의 칸 이름과 장 기록 칸 이름(탈출한 판 중 가장 적게 죽은 수)
+records.summary,캠페인 합계,Campaign Totals,기록 화면 > 캠페인 장 줄 아래 소제목
+records.summary.best,최고 기록 합,Total Best Time,기록 화면 > 캠페인 합계 칸 이름(장마다 가장 빠른 탈출 시간을 더한 것)
+records.summary.best.note,장마다 가장 빠른 탈출의 합,Sum of fastest escapes per chapter,기록 화면 > 최고 기록 합 아래 작은 줄(모든 장을 탈출했을 때)
+records.summary.best.waiting,아직 모든 장을 탈출하지 않았어요,Escape all chapters to unlock,기록 화면 > 최고 기록 합 아래 작은 줄(아직 못 한 장이 있을 때)
+records.summary.clean,무사 탈출,Clean Escapes,기록 화면 > 캠페인 합계 칸 이름(한 번도 안 죽고 탈출한 장 수)
+records.summary.clean.note,한 번도 안 죽고 탈출한 장,Chapters escaped without dying,기록 화면 > 무사 탈출 아래 작은 줄
+records.summary.time,캠페인 시간,Campaign Time,기록 화면 > 캠페인 합계 칸 이름(캠페인 장 안에 있던 시간)
+records.summary.time.note,장 안에 있던 시간,Time spent in matches,기록 화면 > 캠페인 시간 아래 작은 줄
+records.chapter.caption,장 세부 정보,Chapter Details,기록 화면 > 장을 눌렀을 때 오른쪽 소제목
+records.chapter.hint,다시 누르거나 빈 곳을 누르면 합계로,Click again or click outside for totals,기록 화면 > 장 기록 소제목 오른쪽 옅은 안내
+records.chapter.escaped,탈출 {0}번,Escaped {0} Times,기록 화면 > 장 기록 사진 오른쪽 위 분홍 칸. {0}=탈출 횟수
+records.chapter.first,첫 탈출 {0},First Escaped: {0},기록 화면 > 장 기록 사진의 이름 아래 줄. {0}=처음 탈출한 날과 시각
+records.chapter.last,마지막 판 {0},Last Match: {0},기록 화면 > 장 기록 사진의 이름 아래 줄. {0}=마지막으로 한 판의 날과 시각
+records.chapter.tries,{0}판 중 (탈출률 {1}%),{0} Matches ({1}% Escaped),기록 화면 > 장 기록 탈출 칸 아래 분홍 글씨. {0}=그 장에서 한 판 수 {1}=탈출한 비율
+records.chapter.clean,무사 탈출,Clean Escape,기록 화면 > 장 기록 최소 죽음 칸 아래 분홍 글씨(안 죽고 탈출한 적이 있을 때)
+records.chapter.most_kills,한 판 최다 처치,Most Kills (Single Match),기록 화면 > 장 기록 칸 이름
+records.chapter.headshots,헤드샷 {0}%,Headshot: {0}%,기록 화면 > 장 기록 처치 칸 아래 분홍 글씨. {0}=처치 중 헤드샷 비율
+records.chapter.games,이 장의 최근 판,Recent Matches,기록 화면 > 장 기록 아래 소제목
+records.chapter.games.empty,이 장에서 남은 판이 아직 없어요.,No recent matches for this chapter yet.,기록 화면 > 장 기록에서 그 장의 판이 하나도 없을 때
+records.recent.headshots,헤드샷 {0},Headshots: {0},기록 화면 > 장 기록의 판 줄. {0}=헤드샷 수
+records.recent.downs,쓰러짐 {0},Downs: {0},기록 화면 > 장 기록의 판 줄. {0}=쓰러진 수
+records.recent.best,최고,BEST,기록 화면 > 장 기록의 판 줄에서 가장 빠른 탈출 판 시간 옆 분홍 칸
 #--- 방 만들기·서버 찾기 ---,,,
-room.create.title,방 만들기,,방 만들기 창 제목
-room.create.name,방 제목,,방 만들기 창 > 방 제목 행
-room.create.default_title,{0}의 방,,방 만들기 창 > 방 제목이 비었을 때 넣는 이름. {0}=내 닉네임
-room.create.max_players,최대 인원,,방 만들기 창 > 최대 인원 행
-room.create.players,{0}명,,방 만들기 창 > 최대 인원 선택지. {0}=인원
-room.create.reach,공개 범위,,방 만들기 창 > 공개 범위 행
-room.create.reach.internet,인터넷,,방 만들기 창 > 공개 범위 선택지
-room.create.reach.lan,같은 네트워크(LAN),,방 만들기 창 > 공개 범위 선택지
-room.create.map,맵: {0},,방 만들기 창 > 아래 맵 줄. {0}=맵 이름
-room.create.confirm,만들기,,방 만들기 창 > 만들기 버튼
-servers.title,서버 찾기,,서버 찾기 창 제목
-servers.count,{0}개 열림,,서버 찾기 창 > 제목 옆 분홍 글씨. {0}=열린 방 수
-servers.count.looking,찾는 중,,서버 찾기 창 > 제목 옆 분홍 글씨(찾는 동안)
-servers.refresh,새로고침,,서버 찾기 창 > 오른쪽 위 버튼
-servers.column.title,방 제목,,서버 찾기 창 > 목록 머리줄
-servers.column.map,맵,,서버 찾기 창 > 목록 머리줄
-servers.column.players,인원,,서버 찾기 창 > 목록 머리줄
-servers.column.ping,핑,,서버 찾기 창 > 목록 머리줄
-servers.internet,인터넷,,서버 찾기 창 > 방 카드의 방 제목 아래(인터넷 방)
-servers.lan,LAN,,서버 찾기 창 > 방 카드의 방 제목 아래(같은 네트워크 방)
-servers.empty,찾은 방이 없습니다. 방이 열려 있는지 확인하세요.,,서버 찾기 창 > 목록이 비었을 때
-servers.looking,방을 찾는 중입니다...,,서버 찾기 창 > 목록이 비었는데 아직 찾는 중일 때
-servers.address,주소로 참가,,서버 찾기 창 > 아래 주소 칸 앞
-servers.hint,두 번 누르면 바로 참가,,서버 찾기 창 > 아래 안내
-servers.join,참가   <size=70%>Enter</size>,,서버 찾기 창 > 오른쪽 아래 분홍 버튼
-servers.join.cancel,접속 취소,,서버 찾기 창 > 오른쪽 아래 분홍 버튼(접속하는 동안)
+room.create.title,방 만들기,Create LOBBY,방 만들기 창 제목
+room.create.name,방 제목,Lobby Name,방 만들기 창 > 방 제목 행
+room.create.default_title,{0}의 방,{0}'s Lobby,방 만들기 창 > 방 제목이 비었을 때 넣는 이름. {0}=내 닉네임
+room.create.max_players,최대 인원,Max Players,방 만들기 창 > 최대 인원 행
+room.create.players,{0}명,{0} Players,방 만들기 창 > 최대 인원 선택지. {0}=인원
+room.create.reach,공개 범위,Visibility,방 만들기 창 > 공개 범위 행
+room.create.reach.internet,인터넷,Internet,방 만들기 창 > 공개 범위 선택지
+room.create.reach.lan,같은 네트워크(LAN),Local Network (LAN),방 만들기 창 > 공개 범위 선택지
+room.create.map,맵: {0},Map: {0},방 만들기 창 > 아래 맵 줄. {0}=맵 이름
+room.create.confirm,만들기,Create,방 만들기 창 > 만들기 버튼
+servers.title,서버 찾기,Browse Servers,서버 찾기 창 제목
+servers.count,{0}개 열림,{0} Available,서버 찾기 창 > 제목 옆 분홍 글씨. {0}=열린 방 수
+servers.count.looking,찾는 중,Searching...,서버 찾기 창 > 제목 옆 분홍 글씨(찾는 동안)
+servers.refresh,새로고침,Refresh,서버 찾기 창 > 오른쪽 위 버튼
+servers.column.title,방 제목,Lobby Name,서버 찾기 창 > 목록 머리줄
+servers.column.map,맵,Map,서버 찾기 창 > 목록 머리줄
+servers.column.players,인원,Players,서버 찾기 창 > 목록 머리줄
+servers.column.ping,핑,Ping,서버 찾기 창 > 목록 머리줄
+servers.internet,인터넷,Internet,서버 찾기 창 > 방 카드의 방 제목 아래(인터넷 방)
+servers.lan,LAN,LAN,서버 찾기 창 > 방 카드의 방 제목 아래(같은 네트워크 방)
+servers.empty,찾은 방이 없습니다. 방이 열려 있는지 확인하세요.,No lobbies found. Check if any lobbies are open.,서버 찾기 창 > 목록이 비었을 때
+servers.looking,방을 찾는 중입니다...,Searching for lobbies...,서버 찾기 창 > 목록이 비었는데 아직 찾는 중일 때
+servers.address,주소로 참가,Join by Address,서버 찾기 창 > 아래 주소 칸 앞
+servers.hint,두 번 누르면 바로 참가,Double-click to join,서버 찾기 창 > 아래 안내
+servers.join,참가   <size=70%>Enter</size>,Join <size=70%>Enter</size>,서버 찾기 창 > 오른쪽 아래 분홍 버튼
+servers.join.cancel,접속 취소,Cancel,서버 찾기 창 > 오른쪽 아래 분홍 버튼(접속하는 동안)
 #--- 프로필 ---,,,
-profile.title,프로필,,프로필 창 제목
-profile.nickname,닉네임,,프로필 창 > 닉네임 칸 위
-profile.nickname.hint,비워 두면 Unnamed로 표시됩니다.,,프로필 창 > 닉네임 칸 아래 안내
-profile.nickname.unnamed,Unnamed,,닉네임을 비워 둔 플레이어의 이름. 내 화면과 다른 플레이어의 화면에 이 이름으로 나온다
-profile.picture.choose,사진 고르기,,프로필 창 > 사진 버튼
-profile.picture.clear,사진 지우기,,프로필 창 > 사진 버튼
-profile.save,저장,,프로필 창 > 저장 버튼
-profile.picture.dialog,프로필 사진 고르기,,사진 고르기를 누르면 뜨는 파일 창의 제목
-profile.picture.kind,이미지,,사진 고르기를 누르면 뜨는 파일 창의 파일 종류 목록
+profile.title,프로필,Profile,프로필 창 제목
+profile.nickname,닉네임,Nickname,프로필 창 > 닉네임 칸 위
+profile.nickname.hint,비워 두면 아무개로 표시됩니다.,Leave blank to display as John.,프로필 창 > 닉네임 칸 아래 안내
+profile.nickname.unnamed,아무개,John,닉네임을 비워 둔 플레이어의 이름. 내 화면과 다른 플레이어의 화면에 이 이름으로 나온다
+profile.picture.choose,사진 고르기,Select Image,프로필 창 > 사진 버튼
+profile.picture.clear,사진 지우기,Clear Image,프로필 창 > 사진 버튼
+profile.save,저장,Save,프로필 창 > 저장 버튼
+profile.picture.dialog,프로필 사진 고르기,Choose Profile Picture,사진 고르기를 누르면 뜨는 파일 창의 제목
+profile.picture.kind,이미지,Images,사진 고르기를 누르면 뜨는 파일 창의 파일 종류 목록
 #--- 설정 ---,,,
-settings.title,설정,,설정 창(Esc 메뉴) 제목
-settings.hint.close,Esc  닫기,,설정 창 > 오른쪽 위 안내
-settings.tab.sound,소리,,설정 창 > 왼쪽 탭
-settings.tab.controls,조작,,설정 창 > 왼쪽 탭
-settings.tab.screen,화면,,설정 창 > 왼쪽 탭
-settings.tab.camera,카메라,,설정 창 > 왼쪽 탭
-settings.tab.hud,HUD,,설정 창 > 왼쪽 탭
-settings.tab.crosshair,크로스헤어,,설정 창 > 왼쪽 탭
-settings.defaults,이 탭 기본값,,설정 창 > 아래 왼쪽 버튼
-settings.main_menu,메인 메뉴,,설정 창 > 아래 버튼(게임 안에서만)
-settings.quit,게임 종료,,설정 창 > 아래 버튼
-settings.resume,돌아가기,,설정 창 > 아래 오른쪽 분홍 버튼
-settings.off,끔,,설정 창 > 끔/켬 선택지와 데미지 숫자 선택지 · 크로스헤어 점 크기와 테두리 값이 0일 때
-settings.on,켬,,설정 창 > 끔/켬 선택지
-settings.hold,누르는 동안,,설정 창 > 조작 > 앉기와 기울이기 선택지
-settings.toggle,눌러서 전환,,설정 창 > 조작 > 앉기와 기울이기 선택지
-settings.sound.master,전체,,설정 창 > 소리 > 음량 행
-settings.sound.combat,전투,,설정 창 > 소리 > 음량 행
-settings.sound.movement,이동,,설정 창 > 소리 > 음량 행
-settings.sound.voice,목소리,,설정 창 > 소리 > 음량 행
-settings.sound.ui,UI,,설정 창 > 소리 > 음량 행
-settings.sound.music,음악,,설정 창 > 소리 > 음량 행
-settings.sound.ambience,환경음,,설정 창 > 소리 > 음량 행
-settings.controls.sensitivity,마우스 감도,,설정 창 > 조작 > 행
-settings.controls.invert_y,상하 반전,,설정 창 > 조작 > 행
-settings.controls.crouch,앉기,,설정 창 > 조작 > 행
-settings.controls.lean,기울이기,,설정 창 > 조작 > 행
+settings.title,설정,Settings,설정 창(Esc 메뉴) 제목
+settings.hint.close,Esc  닫기,Esc to Close,설정 창 > 오른쪽 위 안내
+settings.tab.sound,소리,Sound,설정 창 > 왼쪽 탭
+settings.tab.controls,조작,Controls,설정 창 > 왼쪽 탭
+settings.tab.screen,화면,Video,설정 창 > 왼쪽 탭
+settings.tab.camera,카메라,Camera,설정 창 > 왼쪽 탭
+settings.tab.hud,UI,UI,설정 창 > 왼쪽 탭
+settings.tab.crosshair,크로스헤어,Crosshair,설정 창 > 왼쪽 탭
+settings.defaults,이 탭 기본값,Reset current tap to defaults,설정 창 > 아래 왼쪽 버튼
+settings.main_menu,메인 메뉴,Main Menu,설정 창 > 아래 버튼(게임 안에서만)
+settings.quit,게임 종료,Quit Game,설정 창 > 아래 버튼
+settings.resume,돌아가기,Resume,설정 창 > 아래 오른쪽 분홍 버튼
+settings.off,끔,OFF,설정 창 > 끔/켬 선택지와 데미지 숫자 선택지 · 크로스헤어 점 크기와 테두리 값이 0일 때
+settings.on,켬,ON,설정 창 > 끔/켬 선택지
+settings.hold,누르는 동안,Hold,설정 창 > 조작 > 앉기와 기울이기 선택지
+settings.toggle,눌러서 전환,Toggle,설정 창 > 조작 > 앉기와 기울이기 선택지
+settings.sound.master,전체,Master,설정 창 > 소리 > 음량 행
+settings.sound.combat,전투,Combat,설정 창 > 소리 > 음량 행
+settings.sound.movement,이동,Movement,설정 창 > 소리 > 음량 행
+settings.sound.voice,목소리,Voice,설정 창 > 소리 > 음량 행
+settings.sound.ui,UI,UI,설정 창 > 소리 > 음량 행
+settings.sound.music,음악,Music,설정 창 > 소리 > 음량 행
+settings.sound.ambience,환경음,Environment,설정 창 > 소리 > 음량 행
+settings.controls.sensitivity,마우스 감도,Sensitivity,설정 창 > 조작 > 행
+settings.controls.invert_y,상하 반전,Invert Y-Axis,설정 창 > 조작 > 행
+settings.controls.crouch,앉기,Crouch,설정 창 > 조작 > 행
+settings.controls.lean,기울이기,Lean,설정 창 > 조작 > 행
 settings.controls.auto_reload,자동 장전,Auto reload,설정 창 > 조작 > 행(탄창이 비면 다시 쏠 수 있게 된 뒤 저절로 장전하고 끊긴 장전에 노리쇠만 남았으면 마저 한다. 끄면 R로만 장전)
 settings.controls.keys,키 설정,Key bindings,설정 창 > 조작 > 맨 위 줄 이름. 오른쪽 버튼이 키 설정 창을 연다
-settings.controls.keys_open,모든 키 바꾸기,Change keys,설정 창 > 조작 > 키 설정 줄의 버튼(키 설정 창을 연다)
-settings.controls.keys_changed,바꾼 줄 {0}개,{0} changed,설정 창 > 조작 > 키 설정 줄 오른쪽(분홍). {0}=기본 키와 다른 줄 수
-settings.controls.keys_default,모두 기본 키,All default,설정 창 > 조작 > 키 설정 줄 오른쪽(바꾼 키가 없을 때)
+settings.controls.keys_open,모든 키 바꾸기,Rebind Keys,설정 창 > 조작 > 키 설정 줄의 버튼(키 설정 창을 연다)
+settings.controls.keys_changed,바꾼 줄 {0}개,{0} modified,설정 창 > 조작 > 키 설정 줄 오른쪽(분홍). {0}=기본 키와 다른 줄 수
+settings.controls.keys_default,모두 기본 키,Reset All,설정 창 > 조작 > 키 설정 줄 오른쪽(바꾼 키가 없을 때)
 settings.keys.title,키 설정,Key bindings,키 설정 창 > 맨 위 제목
-settings.keys.hint,칸을 누르고 새 키 · 우클릭은 비우기 · Esc 닫기,"Click a slot, then a key · right click empties · Esc closes",키 설정 창 > 오른쪽 위 안내
+settings.keys.hint,칸을 누르고 새 키 · 우클릭은 비우기 · Esc 닫기,"Click a slot, then press a key · Right-click to clear · Esc to close",키 설정 창 > 오른쪽 위 안내
 settings.keys.column.action,동작,Action,키 설정 창 > 열 제목
 settings.keys.column.first,주 키,Primary,키 설정 창 > 열 제목
 settings.keys.column.second,보조 키,Secondary,키 설정 창 > 열 제목(둘 중 어느 키로도 된다)
-settings.keys.section.move,이동 · 파쿠르,Movement,키 설정 창 > 구역 제목
+settings.keys.section.move,이동 · 파쿠르,Movement & Parkour,키 설정 창 > 구역 제목
 settings.keys.section.combat,전투,Combat,키 설정 창 > 구역 제목
 settings.keys.section.items,무기 칸 · 소지품,Slots and items,키 설정 창 > 구역 제목
 settings.keys.section.class,클래스 · 콜아웃,Class and callouts,키 설정 창 > 구역 제목
-settings.keys.section.screen,화면 · 채팅,Screen and chat,키 설정 창 > 구역 제목
+settings.keys.section.screen,화면 · 채팅,HUD & Chat,키 설정 창 > 구역 제목
 settings.keys.move_up,앞으로,Forward,키 설정 창 > 줄(Player/Move 위)
 settings.keys.move_down,뒤로,Back,키 설정 창 > 줄(Player/Move 아래)
 settings.keys.move_left,왼쪽으로,Left,키 설정 창 > 줄(Player/Move 왼쪽)
@@ -936,6 +936,9 @@ settings.keys.reset_all.done,모든 키를 기본으로 돌렸어요,Every key i
 settings.keys.close,닫기,Close,키 설정 창 > 아래 오른쪽 분홍 버튼
 settings.keys.status,바꾼 줄 {0}개 · 바꾸는 즉시 저장돼요,{0} changed · saved as you go,키 설정 창 > 아래 줄(평소). {0}=기본 키와 다른 줄 수
 settings.keys.fixed,"바꿀 수 없는 키: Esc(메뉴·닫기·키 받기 취소), 마우스 움직임(시점), 휠 굴리기(목록), 콜아웃 휠 안의 좌클릭(말하기)과 우클릭(닫기), 능력 카드 고르기 1·2·3, 메뉴의 Enter, 채팅·콘솔 안의 Enter와 위아래 화살표, 콘솔 자동 완성 Tab","Fixed keys: Esc (menu, close, cancel), mouse movement (look), wheel (lists), left/right click inside the callout wheel, perk card picks 1/2/3, Enter in menus, Enter and arrows in chat and console, Tab completion in the console",키 설정 창 > 목록 맨 아래 흐린 글. 코드가 직접 읽어 키 설정 창에 없는 키
+settings.screen.language,언어,Language,설정 → 화면의 게임 문구 언어
+settings.screen.language.restart,게임을 다시 실행하면 적용돼요.,Restart the game to apply the language.,설정 → 화면의 언어 안내
+settings.screen.language.names,한국어,English,게임 설정에 올릴 언어의 이름. 번역을 공개할 때 그 언어의 칸에 자체 표기 이름을 적는다
 settings.screen.display,디스플레이,,설정 창 > 화면 > 소제목
 settings.screen.editor_note,"에디터에서는 저장만 되고, 빌드한 게임에서 적용돼요.",,설정 창 > 화면 > 에디터에서만 보이는 안내
 settings.screen.monitor,모니터,,설정 창 > 화면 > 모니터 행
@@ -1154,12 +1157,12 @@ class.detente.ability,"주사기(용량 {Detente.syringeMax}): [{key}]로 조준
 class.schiesshund.ability,"[{key}] 결투: 조준한 적과 1대1. 그 적은 나만 노리고 다른 사람을 다치게 하지 못하며(하던 공격은 끝까지 하지만 들어가지 않는다), 내 피해가 더 크고 현상금 표식도 붙는다. 동료는 도울 수 있지만 마무리는 못 한다(체력 1에서 멈춤).\n[F] 현상금 표식: 적을 찍으면 청록 테두리가 {Schiesshund.markSeconds}초 동안 팀 모두에게 보이고 내 총알이 그 적에게 +{Schiesshund.markDamage}%. 지금 쫓는 표식보다 급이 낮은 적(엘리트를 쫓는 중의 일반 좀비)을 찍으면 표식은 그대로 두고 일반 핑만 찍힌다.\n표식 대상을 처치하면 현상금 +{Schiesshund.bountyMoney}(엘리트 +{Schiesshund.bountyElite})과 리턴 백(스택마다 이동·피해 +{Schiesshund.returnDamage}% {Schiesshund.returnSeconds}초).\n현상금 {Schiesshund.roundPoints}점(엘리트 {Schiesshund.elitePoints}점)마다 4번 칸 데스페라도(R08)에 탄 한 발(재장전·탄약 줍기로는 안 찬다). 데스페라도 탄은 피해 +{Schiesshund.desperadoDamage}%이고 표식 대상의 머리에 맞으면 엘리트도 거구도 한 방.",,"클래스 화면 > 시순트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 class.support.ability,"보급 가방(용량 {Support.supplyMax} · 초당 {Support.supplyRegen}씩 찬다).\n[F] 보급: 조준한 동료({Support.resupplyReach}m 안)에게 {Support.resupplyCost}을 써서 총마다 탄창 {Support.resupplyMagazines}개 · 처음 예비탄보다 {Support.resupplyOverfill}% 더까지(풀리 로디드) · 데탕트 주사기도 채운다.\n[{key}] 바리케이드: 꾹 누르면 세울 자리에 푸른 바리케이드가 미리 보이고(못 세우는 곳은 빨강) 놓으면 {Support.barricadeCost}을 써서 그 자리에 허리 높이 판자 벽을 세운다(체력 {Support.barricadeHealth} · 최대 {Support.barricadeMax}개). 아군은 넘어 쏘고 좀비는 못 지나가며 부수려 든다.\n[F 꾹] 수리: 바리케이드를 바라보고 F를 누르고 있으면 손에 망치를 꺼내 초당 {Support.repairRate}씩 고친다(누구의 것이든 · 가방은 쓰지 않는다). 바라보기만 해도 화면 아래에 체력이 뜬다. 카드 '용접 토치'를 받으면 토치로 더 빨리 고친다.\n카드를 받으면 휠을 누른 채 F로 다른 것도 세운다: 철조망(지나가는 좀비가 느려지고 다친다), 탄약 상자(누구든 F로 꺼내 가는 보급), 탐조등(둘레에 좀비가 새로 나오지 않는 안전 구역).\n카드 '보급 꾸러미 던지기'를 받으면 휠을 누른 채 동료를 바라보고 F로 {Support.throwReach}m 안의 동료에게 꾸러미를 던져 보급한다.",,"클래스 화면 > 서포트 능력 설명. 중괄호 이름은 ClassAbilities.csv의 그 숫자로 채워진다: {Row.name}은 그 숫자, {Row.name:less}는 (1 - 숫자) × 100, {key}는 클래스 기술 키. 숫자를 바꾸면 설명도 따라간다(0.9.10)"
 hud.chapter_end.word,탈출,,장 끝 연출: 분홍 띠 위 큰 글자
-hud.alert.brute,거구 — 제 무게에 무릎이 약하다. 다리를 쏴 쓰러뜨리고 머리를 쏴라,Brute: its knees buckle under its own weight. Shoot a leg to drop it and then the head,거구(보스)가 나타날 때 화면 위 경고 띠. 어떻게 이기는지(이유와 함께) 한 줄
-hud.alert.brute.down,거구가 쓰러졌다 — 몸을 끌며 피가 머리로 몰렸다. 머리를 쏴라,The brute is down: dragging itself pumps blood into its head. Shoot the head,거구의 다리가 부러져 쓰러질 때 화면 위 경고 띠(거구에 표시가 남는다). 기는 동안 머리가 약점인 이유
+hud.alert.brute,브루저 — 제 무게에 무릎이 약하다. 다리를 쏴 쓰러뜨릴 수 있다.,Brute: its knees buckle under its own weight. Shoot a leg to drop it and then the head,거구(보스)가 나타날 때 화면 위 경고 띠. 어떻게 이기는지(이유와 함께) 한 줄
+hud.alert.brute.down,브루저가 쓰러졌다 —  머리를 노려라.,The brute is down: dragging itself pumps blood into its head. Shoot the head,거구의 다리가 부러져 쓰러질 때 화면 위 경고 띠(거구에 표시가 남는다). 기는 동안 머리가 약점인 이유
 hud.danger,위험,,체력이 낮을 때 체력바 끝에 뜨는 빗금 표시 옆 글자
 #--- 쓰러짐·살리기·관전 ---,,,
 life.wipe,전멸,,모두 쓰러졌을 때 화면 가운데 큰 빨간 글씨
-life.downed.helped,쓰러졌습니다. 출혈이 멈췄습니다,,내가 쓰러졌고 동료가 살리는 중일 때
+life.downed.helped,소생 받는 중입니다. 출혈이 멈춥니다.,,내가 쓰러졌고 동료가 살리는 중일 때
 life.downed.waiting,쓰러졌습니다. 동료를 기다리세요 ({0}초),,내가 쓰러졌을 때. {0}=출혈로 죽기까지 남은 초
 life.respawn.next_wave,다음 웨이브에 돌아옵니다,,죽은 뒤 (다음 웨이브에 부활할 때)
 life.respawn.seconds,{0}초 뒤 돌아옵니다,,죽은 뒤. {0}=부활까지 남은 초
@@ -1235,10 +1238,10 @@ feed.notice.dead,사망,,킬 피드(방에서): 플레이어가 죽었을 때
 feed.notice.downed,쓰러짐,,킬 피드(방에서): 플레이어가 쓰러졌을 때
 feed.notice.up,일어남,,킬 피드(방에서): 쓰러진 플레이어가 일어났을 때
 #--- 동료 ---,,,
-team.dead,사망,,왼쪽 아래 동료 체력 카드: 죽은 동료
-team.downed,쓰러짐,,왼쪽 아래 동료 체력 카드: 쓰러진 동료
-team.alert.dead,{0} 사망,,화면 위 경고: 동료가 죽었을 때. {0}=이름(색 포함)
-team.alert.downed,{0} 쓰러짐,,화면 위 알림: 동료가 쓰러졌을 때. {0}=이름(색 포함)
+team.dead,사망,DEAD,왼쪽 아래 동료 체력 카드: 죽은 동료
+team.downed,쓰러짐!,Downed!,왼쪽 아래 동료 체력 카드: 쓰러진 동료
+team.alert.dead,{0} 사망,{0} died,화면 위 경고: 동료가 죽었을 때. {0}=이름(색 포함)
+team.alert.downed,{0} 쓰러짐,{0} is downed,화면 위 알림: 동료가 쓰러졌을 때. {0}=이름(색 포함)
 #--- 점수판(Tab) ---,,,
 score.wave,웨이브 {0},,Tab 점수판 맨 위. {0}=웨이브 번호
 score.waiting,대기 중,,Tab 점수판 맨 위: 웨이브가 없을 때
@@ -1462,18 +1465,18 @@ pickup.gives.heal,체력 +{0},,아이템 [F] 안내와 주운 목록(화면 아�
 pickup.gives.shield,실드 +{0},,아이템 [F] 안내와 주운 목록(화면 아래) > 실드 셀. {0}=실드 양
 pickup.gives.refill,탄약 가득,,주운 목록(화면 아래) > 이미 가진 총을 주워 탄약이 채워졌을 때
 #--- 방 접속 ---,,,
-net.joining,{0}에 접속하는 중입니다...,,메인 메뉴 상태 줄 > 접속 중. {0}=주소 또는 방 이름
-net.join.badaddress,주소 형식이 맞지 않습니다. 예: 192.168.0.5,,메인 메뉴 상태 줄 > 주소로 접속: 잘못 친 주소
-net.join.nostart,접속을 시작하지 못했습니다. 주소를 확인하세요.,,메인 메뉴 상태 줄 > 주소로 접속: 시작 실패
-net.join.failed,접속하지 못했습니다. 방이 열려 있는지 확인하세요.,,메인 메뉴 상태 줄 > 접속 실패
-net.join.internetfailed,방에 들어가지 못했습니다. 방이 닫혔거나 가득 찼을 수 있습니다.,,메인 메뉴 상태 줄 > 인터넷 방 들어가기 실패
-net.join.relay,직접 연결이 되지 않아 릴레이로 다시 접속합니다...,,메인 메뉴 상태 줄 > 직접 연결 실패 뒤 릴레이로 다시 접속
-net.lost,방이 닫혔거나 연결이 끊겼습니다.,,메인 메뉴 상태 줄 > 방에 있다가 끊겼을 때
-net.full,방이 가득 찼습니다.,,메인 메뉴 상태 줄 > 방이 가득 차 거절됨(방장 PC의 표에서 읽어 보냄)
-net.host.creating,인터넷 방을 만드는 중입니다...,,메인 메뉴 상태 줄 > 인터넷 방 만드는 중
-net.host.failed,방을 만들지 못했습니다. 인터넷 연결을 확인하세요.,,메인 메뉴 상태 줄 > 인터넷 방 만들기 실패
-net.host.portbusy,방을 만들지 못했습니다. 포트 {0}을 다른 프로그램이 쓰고 있는지 확인하세요.,,메인 메뉴 상태 줄 > LAN 방 만들기 실패. {0}=포트 번호
-net.rooms.failed,인터넷 방 목록을 불러오지 못했습니다. 연결을 확인하세요.,,서버 목록 상태 줄 > 인터넷 방 목록을 못 불러왔을 때
+net.joining,{0}에 접속하는 중입니다...,Joining {0}…,메인 메뉴 상태 줄 > 접속 중. {0}=주소 또는 방 이름
+net.join.badaddress,주소 형식이 맞지 않습니다. 예: 192.168.0.5,"Invalid address format. e.g., 192.168.0.5",메인 메뉴 상태 줄 > 주소로 접속: 잘못 친 주소
+net.join.nostart,접속을 시작하지 못했습니다. 주소를 확인하세요.,Failed to start connection. Check the address.,메인 메뉴 상태 줄 > 주소로 접속: 시작 실패
+net.join.failed,접속하지 못했습니다. 방이 열려 있는지 확인하세요.,Connection failed. Check if the lobby is open.,메인 메뉴 상태 줄 > 접속 실패
+net.join.internetfailed,방에 들어가지 못했습니다. 방이 닫혔거나 가득 찼을 수 있습니다.,Failed to join lobby. It may be closed or full.,메인 메뉴 상태 줄 > 인터넷 방 들어가기 실패
+net.join.relay,직접 연결이 되지 않아 릴레이로 다시 접속합니다...,Direct connection failed. Reconnecting via relay...,메인 메뉴 상태 줄 > 직접 연결 실패 뒤 릴레이로 다시 접속
+net.lost,방이 닫혔거나 연결이 끊겼습니다.,The lobby was closed or the connection was lost.,메인 메뉴 상태 줄 > 방에 있다가 끊겼을 때
+net.full,방이 가득 찼습니다.,The lobby is full.,메인 메뉴 상태 줄 > 방이 가득 차 거절됨(방장 PC의 표에서 읽어 보냄)
+net.host.creating,인터넷 방을 만드는 중입니다...,Creating internet lobby...,메인 메뉴 상태 줄 > 인터넷 방 만드는 중
+net.host.failed,방을 만들지 못했습니다. 인터넷 연결을 확인하세요.,Failed to create lobby. Check your internet connection.,메인 메뉴 상태 줄 > 인터넷 방 만들기 실패
+net.host.portbusy,방을 만들지 못했습니다. 포트 {0}을 다른 프로그램이 쓰고 있는지 확인하세요.,Failed to create lobby. Check if port {0} is in use.,메인 메뉴 상태 줄 > LAN 방 만들기 실패. {0}=포트 번호
+net.rooms.failed,인터넷 방 목록을 불러오지 못했습니다. 연결을 확인하세요.,Failed to load lobby list. Check your connection.,서버 목록 상태 줄 > 인터넷 방 목록을 못 불러왔을 때
 #--- 채팅 ---,,,
 chat.system,시스템,,채팅 기록에 남는 시스템 줄의 말한 이(명령 결과와 방송). 줄에는 이름 대신 콘솔 판이나 밝은 카드로 보인다
 chat.placeholder.chat,메시지 입력 · {0} 콘솔로,,채팅 입력 칸 > 채팅 채널일 때 빈 칸 안내. {0}=채널 바꾸는 키(키 설정 창의 채팅 채널. 기본 Tab)
@@ -1642,8 +1645,8 @@ feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: �
 feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)
 feed.score.reap_dodge,도끼 밑으로,Under the axe,점수 팝업의 줄: 그림 리퍼의 품에 붙어 앉아 도끼를 피했을 때(돈)
 feed.score.exploder_defuse,숨골 끊어 해체,Defused: brainstem cut first,점수 팝업의 줄: 자폭 좀비를 암살·처형해 터지기 전에 해체했을 때(돈. 칼끝이 가스주머니에 불이 붙기 전에 숨골을 끊는다)
-menu.launch.solo.hub,싱글 플레이  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
-menu.launch.host.hub,방 만들기  ·  은신처에서 {0} 준비,,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
+menu.launch.solo.hub,싱글 플레이  ·  허브에서 {0} 준비,Solo · Prepare for {0} at Hub,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
+menu.launch.host.hub,방 만들기  ·  허브에서 {0} 준비,Create Lobby · Prepare for {0} at Hub,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
 hub.objective.title,출발 준비  ·  {0},,허브 > 임무 칸 제목. {0}=고른 장
 hub.objective.room,준비 버튼에서 [F]  ·  모두 준비하면 출발,,허브 > 임무 칸 설명(방). 숫자는 준비한 사람 / 모두
 hub.objective.solo,준비 버튼에서 [F]를 누르면 바로 출발,,허브 > 임무 칸 설명(혼자)
@@ -2208,14 +2211,14 @@ results.wait,결과를 모으는 중,,결과 > 허브로 돌아와 결과 연출
 loading.tag,불러오는 중,LOADING,로딩 화면 > 왼쪽 아래 분홍 띠(LoadingScreen)
 loading.title.menu,ENFILADE,ENFILADE,로딩 화면 > 게임을 켤 때(타이틀 화면) 큰 제목. 맵에서는 Maps.csv의 맵 이름이 나온다
 loading.stage.scene,맵 불러오는 중,Loading the map,로딩 화면 > 막대 아래: 씬 파일을 읽는 동안
-loading.stage.wake,맵 초기화 중,Waking the map,로딩 화면 > 막대 아래: 씬의 물체들이 깨어나는 긴 한 프레임
+loading.stage.wake,맵 초기화 중,Preparing…,로딩 화면 > 막대 아래: 씬의 물체들이 깨어나는 긴 한 프레임
 loading.stage.player,캐릭터 생성 중,Getting you in,로딩 화면 > 막대 아래: 내 플레이어와 카메라를 기다리는 동안
-loading.stage.pools,이펙트 로딩 중,Preparing effects,로딩 화면 > 막대 아래: 탄흔·피·피격 표시·데미지 숫자·소리를 미리 만드는 동안(CombatWarmup)
-loading.stage.looks,로딩 중,Drawing zombies and blood ahead,로딩 화면 > 막대 아래: 전투에서 처음 그릴 것을 카메라 앞에서 한 번씩 그리는 동안(CombatRehearsal)
+loading.stage.pools,이펙트 로딩 중,Loading effects,로딩 화면 > 막대 아래: 탄흔·피·피격 표시·데미지 숫자·소리를 미리 만드는 동안(CombatWarmup)
+loading.stage.looks,로딩 중…,Loading…,로딩 화면 > 막대 아래: 전투에서 처음 그릴 것을 카메라 앞에서 한 번씩 그리는 동안(CombatRehearsal)
 loading.stage.shaders,셰이더를 로딩 중,Compiling shaders,로딩 화면 > 막대 아래: 에디터가 셰이더를 컴파일하는 동안
 loading.stage.pso,그래픽 세팅 중,Preparing graphics states,로딩 화면 > 막대 아래: 빌드에 기록해 둔 그래픽 상태(PSO)를 만드는 동안(PsoWarmup)
-loading.stage.fonts,준비하세요,Preparing text,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
-loading.stage.portraits,곧 시작합니다.,Taking character pictures,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
+loading.stage.fonts,준비하세요,READY YOUR BAYONET,로딩 화면 > 막대 아래: 글꼴에 글자를 미리 그리는 동안(FontWarmup)
+loading.stage.portraits,곧 시작합니다.,STARTING,로딩 화면 > 막대 아래: 타이틀 화면이 캐릭터 카드 사진을 찍는 동안(SkinPortraits)
 results.mvp,MVP,,결과 > 한 사람씩 비출 때 가장 잘한 사람 이름 옆 분홍 칩
 results.preview,포즈 미리 보기,,결과 > 장을 끝내기 전에 콘솔 /results를 쳤을 때 맨 위 장 이름 자리(지금 허브에 있는 사람들로 결과 연출과 포즈를 미리 본다)
 dev.hits.on,UI 클릭 판정 모양 보기를 켰습니다. 하늘색은 누를 수 있는 곳 · 분홍은 지금 커서가 고르는 것 · 노랑은 호버로 비킨 원래 자리 · 회색은 클릭을 가로막는 것. 다시 /hits 를 치면 꺼집니다.,,개발자 콘솔 > /hits 를 켰을 때의 대답(KitHitView)

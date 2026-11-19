@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
 /// <summary>
 /// Every word the game shows a player, by id, from Data/Resources/Tables/Core/Texts.csv: the user writes them there, and a
 /// translation is one more column (the user's playtest of 2026-11-11: "나중에 번역판을 위해서 좀 데이터 테이블로 정리한
-/// 다음에 내가 손 봐야겠다"). The table's columns are the id, one per language (ko first; en waits empty) and #어디, a note
+/// 다음에 내가 손 봐야겠다"). The table has one column per language and #어디, a note
 /// on where the words appear that the game never reads. Code asks for an id (Get), or for an id whose words hold {0}, {1}
 /// for what goes in them (Format), never for the words themselves, so a translation can put them in its own order.
 /// In a cell, \n is a line break, and rich text tags (&lt;color&gt;, &lt;b&gt;) work as in any TextMeshPro label.
@@ -20,11 +21,14 @@ public static class Texts
 {
     public const string TableName = "Texts";
     /// <summary>The language every row has: the one the game is written in.</summary>
-    public const string Korean = "ko";
+    public const string Korean = "ko", English = "en";
+    private const string LanguageNamesId = "settings.screen.language.names";
+    private static readonly IReadOnlyDictionary<string, string> DefaultLanguageNames =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [Korean] = "한국어", [English] = "English" }; // dev-text
 
     private static string language = Korean;
 
-    /// <summary>The column read: "ko" now; a translation's column once there is one.</summary>
+    /// <summary>The column used when reading a player's text.</summary>
     public static string Language
     {
         get => language;
@@ -36,6 +40,17 @@ public static class Texts
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => language = Korean;
+
+    /// <summary>The native names of the languages offered in the game's settings.</summary>
+    public static IReadOnlyDictionary<string, string> LanguageNames =>
+        GameTables.TryGetRow(TableName, LanguageNamesId, out var names) ? names : DefaultLanguageNames;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void RestoreLanguage()
+    {
+        string saved = GameSettings.Current.textLanguage;
+        Language = LanguageNames.ContainsKey(saved) ? saved : Korean;
+    }
 
     /// <summary>
     /// The words for this id in the chosen language. Read from the table each time (two dictionary lookups, no copy
