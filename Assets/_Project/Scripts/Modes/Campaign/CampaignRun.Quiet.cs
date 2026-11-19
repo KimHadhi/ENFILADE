@@ -98,17 +98,18 @@ public sealed partial class CampaignRun
         }
     }
 
-    // Every PC: the quiet ended because they were noticed. A hold or the escape beginning says so itself.
+    // Every PC: the quiet ended or came back. Being noticed has no band of its own: the one that said so ("들켰다 · 놈들이
+    // 몰려온다") was taken out with the zombie's call band (user, 2026-11-20, asked whether this one goes too: "Yes,
+    // delete it"); the '!' and its alarm over the zombie that woke (StealthMarkersHUD) and the loud stretch's own words
+    // tell it. A lull coming back still says so.
     private void WatchQuiet()
     {
         if (quiet == wasQuiet) return;
         var now = Current;
-        bool noticed = wasQuiet && !finished && now != null && now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape;
         wasQuiet = quiet;
         // A step with words of its own for a loud stretch (plan B: CampaignSteps loudTitle) says them from now on.
         if (now != null && now.HasLoudWords) ShowObjective(false);
-        if (noticed) AlertHUD.Danger(Texts.Get("campaign.alert.noticed"));
-        else if (quiet && lull && !finished) AlertHUD.Self(Texts.Get("campaign.alert.lull"));
+        if (quiet && lull && !finished) AlertHUD.Self(Texts.Get("campaign.alert.lull"));
     }
 
     // Every PC: a quiet stretch's alarm put out in time, the witnesses dead or lost; the stretch stays quiet.

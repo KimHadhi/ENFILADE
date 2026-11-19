@@ -1384,7 +1384,6 @@ rank.up,등급 상승,,장 끝 결과: 계급장 아래 분홍 띠
 rank.prestige,프레스티지,,장 끝 결과: 프레스티지일 때 분홍 띠
 shield.broken,실드 깨짐,,내 실드가 다 깨졌을 때 화면 위 알림
 #--- 캠페인 ---,,,
-campaign.alert.noticed,들켰다 · 놈들이 몰려온다,,캠페인 화면 위 경고 > 조용한 구간에서 좀비에게 들켰을 때
 campaign.alert.ride,아무도 타지 못했다 · 휴게소로 돌아간다,,캠페인 화면 위 경고 > 마지막 탈출 차량에 아무도 못 탔을 때
 campaign.prompt.step,[F] {0},,캠페인 [F] 안내 > 누를 것이 있는 단계(셔터 등)에 자기 안내 글이 없을 때. {0}=CampaignSteps의 단계 제목
 campaign.prompt.door.open,[F] 문 열기,,캠페인 [F] 안내 > 닫힌 휴게소 문 앞
