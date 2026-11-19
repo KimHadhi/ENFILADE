@@ -7,6 +7,13 @@ The user's brief: Knight a chess knight or something that reads melee; Assault a
 sniper scope's reticle; Point after Killing Floor 2's gunslinger; Détente a dove or a white cross (the healer); Schießhund
 the hunting hound with its bounty mark; Support a backpack or something that reads supply. Our own drawings, after the
 ideas only (KF2's and GMod Horde's icons are theirs).
+
+The user's own drawings come first (2026-11-20, "내가 클래스 아이콘들 만들어 왔는데 이걸로 교체해 줘"): a class with a
+picture in ArtSource/Hud/ClassIconArt/<id>.png (grey, white on black, as the user drew it; <id>.original.* is the file
+they gave) is made from that picture instead of the shapes here, so running this again never draws over their work. Its
+brightness is the icon's coverage (black clear, white solid, their grey parts see-through so they read the same grey on
+the game's dark plates: from_drawing), and it is written at DRAWN_SIZE, larger than the drawn ones, to keep their fine
+lines (the game sizes every icon by its own rect).
 """
 import math
 import os
@@ -15,7 +22,9 @@ import zlib
 
 SIZE = 256
 SUPER = 4  # samples per pixel along each axis
+DRAWN_SIZE = 512
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "Assets", "_Project", "Art", "Resources", "UI", "Icons")
+ART = os.path.join(os.path.dirname(__file__), "..", "..", "ArtSource", "Hud", "ClassIconArt")
 
 
 # ---- shapes as closed polygons (lists of (x, y), y down) -------------------------------------------------------
@@ -133,17 +142,19 @@ def draw(layers):
 
 
 def save(name, alpha):
+    """White at the given coverage, as large as `alpha` is (SIZE for the drawn icons, DRAWN_SIZE for the user's)."""
+    size = len(alpha)
     raw = bytearray()
-    for y in range(SIZE):
+    for y in range(size):
         raw.append(0)
-        for x in range(SIZE):
-            raw.extend((255, 255, 255, int(round(min(1.0, alpha[y][x]) * 255))))
+        for x in range(size):
+            raw.extend((255, 255, 255, int(round(min(1.0, max(0.0, alpha[y][x])) * 255))))
 
     def chunk(kind, data):
         body = kind + data
         return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xffffffff)
 
-    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", SIZE, SIZE, 8, 6, 0, 0, 0))
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
     png += chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, name + ".png"), "wb") as f:
@@ -288,7 +299,106 @@ def support():
 ICONS = {"knight": knight, "assault": assault, "ghost": ghost, "point": point, "detente": detente,
          "schiesshund": schiesshund, "support": support}
 
+
+# ---- the user's drawings ------------------------------------------------------------------------------------------
+
+def read_png(path):
+    """An 8-bit, non-interlaced PNG (grey, grey + alpha, RGB or RGBA) as rows of brightness 0-1 times its alpha."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(path + " is not a PNG")
+    at, idat = 8, bytearray()
+    width = height = kind = 0
+    while at < len(data):
+        length, tag = struct.unpack(">I4s", data[at:at + 8])
+        body = data[at + 8:at + 8 + length]
+        if tag == b"IHDR":
+            width, height, depth, kind, _, _, interlace = struct.unpack(">IIBBBBB", body)
+            if depth != 8 or interlace != 0 or kind not in (0, 2, 4, 6):
+                raise ValueError(path + ": only 8-bit, non-interlaced grey/RGB(A) PNGs are read")
+        elif tag == b"IDAT":
+            idat += body
+        elif tag == b"IEND":
+            break
+        at += 12 + length
+    channels = {0: 1, 2: 3, 4: 2, 6: 4}[kind]
+    stride = width * channels
+    raw = zlib.decompress(bytes(idat))
+    rows, prev = [], bytearray(stride)
+    for y in range(height):
+        start = y * (stride + 1)
+        kind_of_filter, line = raw[start], bytearray(raw[start + 1:start + 1 + stride])
+        if kind_of_filter == 1:
+            for i in range(channels, stride):
+                line[i] = (line[i] + line[i - channels]) & 255
+        elif kind_of_filter == 2:
+            for i in range(stride):
+                line[i] = (line[i] + prev[i]) & 255
+        elif kind_of_filter == 3:
+            for i in range(stride):
+                left = line[i - channels] if i >= channels else 0
+                line[i] = (line[i] + ((left + prev[i]) >> 1)) & 255
+        elif kind_of_filter == 4:
+            for i in range(stride):
+                a = line[i - channels] if i >= channels else 0
+                b = prev[i]
+                c = prev[i - channels] if i >= channels else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[i] = (line[i] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        prev = line
+        if channels == 1:
+            rows.append([v / 255.0 for v in line])
+        elif channels == 2:
+            rows.append([line[i] * line[i + 1] / 65025.0 for i in range(0, stride, 2)])
+        else:
+            rows.append([max(line[i:i + 3]) / 255.0 * (line[i + 3] / 255.0 if channels == 4 else 1.0)
+                         for i in range(0, stride, channels)])
+    return rows
+
+
+def shrink(rows, size):
+    """Each new pixel the mean of the area it covers (both ways), so edges stay soft and no line is lost or rings."""
+    def along(line, n):
+        scale = len(line) / n
+        out = []
+        for o in range(n):
+            a, b = o * scale, (o + 1) * scale
+            i, total = int(a), 0.0
+            while i < b and i < len(line):
+                total += line[i] * (min(b, i + 1) - max(a, i))
+                i += 1
+            out.append(total / scale)
+        return out
+
+    across = [along(row, size) for row in rows]
+    columns = [along([row[x] for row in across], size) for x in range(size)]
+    return [[columns[x][y] for x in range(size)] for y in range(size)]
+
+
+def from_drawing(path):
+    """
+    The user's picture as coverage: black (and the webp's faint noise in it) clear, white solid, grey between. A grey
+    is its LINEAR brightness, not its 0-255 value: the game blends in linear colour, so on the dark plates every class
+    icon stands on (class tab, ClassHUD, cards) a part shows the very grey it has in the picture (Détente's cross 55/255
+    reads 55, not the 128 its plain value as coverage gave in the first preview).
+    """
+    low, high = 4 / 255.0, 251 / 255.0
+
+    def linear(v):
+        v = min(1.0, max(0.0, (v - low) / (high - low)))
+        return v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4
+
+    return shrink([[linear(v) for v in row] for row in read_png(path)], DRAWN_SIZE)
+
+
 if __name__ == "__main__":
     for name, make in ICONS.items():
-        save("Class_" + name, draw(make()))
-        print("drew Class_" + name)
+        drawing = os.path.join(ART, name + ".png")
+        if os.path.exists(drawing):
+            save("Class_" + name, from_drawing(drawing))
+            print("Class_" + name + " from the user's drawing")
+        else:
+            save("Class_" + name, draw(make()))
+            print("drew Class_" + name)
