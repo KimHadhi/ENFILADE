@@ -143,7 +143,8 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터였고, 0
 | `Art/Audio/Combat/Hitfullness`, `Art/Audio/HitConfirm/Break` | 23개, 3MB | 총기 명중·처치에 겹치는 타격 소리. 커밋 0.6.0에 추가. 2026-11-04에 `bone_crack` 3개를 체간 붕괴 소리로 `HitConfirm/Break`에 옮겼다 |
 | `Art/Audio/Combat/Defense` | 16개, 1MB | 가드·패링·공격 예고 소리. 커밋 0.5.0에 추가 |
 | `Art/Audio/Combat/Player` | 28개, 2MB | BOOM으로 바꾸기 전의 주먹·피격 소리. 현재 연결하지 않은 클립이 있다 |
-| `Art/Audio/UI/MissionObjective.wav` | 1개 | 임무 알림 소리 |
+| `Art/Audio/UI/MissionObjective.wav` | 1개 | 새 목표 알림 소리. 2026-11-20부터 사용자가 준 `Objective Changed.mp3`(예전 소리는 지지직거린다고 바꿈). 앞뒤 완전 무음(-70dB 아래)만 빼고 WAV로 3.52초. 출처는 사용자가 말하지 않았다 |
+| `Art/Audio/UI/Spotted`, `Art/Audio/UI/Suspect` | 2개, 0.5MB | 잠입 경보음·의심음. 2026-11-20 사용자가 준 `Alarmed.mp3`·`Suspicious.mp3`를 앞뒤 완전 무음만 빼고 WAV로(3.43초, 2.04초). 출처는 사용자가 말하지 않았다 |
 | `Art/Sprites/Weapons` | 7개, 5MB | 피, 총구 섬광, 벽 착탄 텍스처. 커밋 0.5.0에 추가. 벽 착탄은 DAVFX로 바꾸어 지금은 연결하지 않았다 |
 | `Art/Sprites/UI/HUD` | 56개, 2MB | HUD 이미지. 직접 만든 것인지 기록이 없다 |
 | `Art/Models/Props/TetoPear` | FBX 1개 | 물리 프롭 시험용. 커밋 0.6.3에 추가 |

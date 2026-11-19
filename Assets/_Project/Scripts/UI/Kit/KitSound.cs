@@ -33,6 +33,8 @@ public static class KitSound
     private const string BankId = "UI";
     private const int Rate = 44100;
     private static readonly AudioClip[] made = new AudioClip[Enum.GetValues(typeof(Cue)).Length];
+    // When each cue's last play runs out (real time), for Sounding.
+    private static readonly float[] endsAt = new float[made.Length];
     private static AudioSource source;
     private static SoundBank bank;
     private static bool bankLooked;
@@ -44,7 +46,16 @@ public static class KitSound
         bank = null;
         bankLooked = false;
         Array.Clear(made, 0, made.Length);
+        Array.Clear(endsAt, 0, endsAt.Length);
     }
+
+    /// <summary>
+    /// The cue's last play is still sounding. A caller whose news comes in bursts (several zombies looking this way in
+    /// one second) asks this rather than keeping a gap of its own, so the gap is always the sound's own length: the
+    /// stealth stings became clips of two and three seconds (user, 2026-11-20), and a fixed gap sized for the made
+    /// half-second tones would have stacked them.
+    /// </summary>
+    public static bool Sounding(Cue cue) => Application.isPlaying && Time.unscaledTime < endsAt[(int)cue];
 
     public static void Play(Cue cue, float volume = 1f)
     {
@@ -66,10 +77,13 @@ public static class KitSound
             var settings = bank.SettingsOf(key);
             source.pitch = settings.RandomPitch();
             source.PlayOneShot(clip, Mathf.Clamp01(settings.Volume * volume));
-            return;
         }
-        source.pitch = 1f;
-        source.PlayOneShot(Made(cue), Mathf.Clamp01(volume));
+        else
+        {
+            source.pitch = 1f;
+            source.PlayOneShot(clip = Made(cue), Mathf.Clamp01(volume));
+        }
+        endsAt[(int)cue] = Time.unscaledTime + clip.length / Mathf.Max(.05f, source.pitch);
     }
 
     private static AudioClip Made(Cue cue)
@@ -294,7 +308,8 @@ public static class KitSound
     }
 
     // Found: a hard knock under a bright chord that bends up as it strikes, gone in half a second. Our own sting, made
-    // here, for the '!' over the zombie that woke.
+    // here, for the '!' over the zombie that woke; heard only while Art/Audio/UI/Spotted is empty (it holds the user's
+    // Alarmed since 2026-11-20, as Suspect holds their Suspicious in place of Wonder).
     private static float[] Found()
     {
         var data = new float[(int)(Rate * .55f)];

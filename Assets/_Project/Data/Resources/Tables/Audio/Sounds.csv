@@ -244,6 +244,8 @@ UI/PickAmmo,1,0.97,1.03,필드 줍기: 탄약(FieldPickups → KitSound PickAmmo
 UI/PickGun,1,0.97,1.03,필드 줍기: 총. [COD:MWII] Shove and Pick-up Sounds(L4D2 워크숍 2907759388)의 itempickup을 0.42초로 자름. 비우면 합성음(Rack)
 UI/PickHeal,0.9,0.97,1.03,필드 줍기: 구급상자(동료가 치료해 줄 때도 0.7배로 난다). L4D1 Weapon Audio(3785893356)의 items/itempickup 0.72초. 비우면 합성음(Mend)
 UI/PickShield,0.7,0.98,1.02,필드 줍기: 실드 셀. 2907759388의 laser_on에서 앞 0.44초 무음을 빼고 1.05초로(끝 0.3초를 줄임). 비우면 합성음(Charge). 돈 줍기(PickMoney)는 폴더가 없어 합성한 동전 소리 그대로
+UI/Spotted,1,1,1,잠입: 나를 보고 깬 좀비의 '!'(StealthMarkersHUD → KitSound Spotted). 사용자가 준 Alarmed.mp3(2026-11-20)의 앞 0.13초·끝 0.62초 완전 무음(-70dB 아래)만 빼고 WAV로 3.43초. 여럿이 한꺼번에 깨도 소리가 끝나기 전에는 다시 울리지 않는다(KitSound.Sounding). 비우면 합성음(Found)
+UI/Suspect,2,1,1,잠입: 좀비가 멈춰서 이쪽을 볼 때(KitSound Suspect). 사용자가 준 Suspicious.mp3(2026-11-20)의 앞뒤 완전 무음만 빼고 2.04초. 원본이 작게(최고 -13.5dB) 녹음되어 있어 2배: 부르는 쪽의 0.5와 곱해 원본 크기 그대로 난다. 비우면 합성음(Wonder)
 Movement/Shove/Swing,0.3,0.94,1.06,V 밀치기 헛스윙(SoundCues ShoveSwing): 밀치기가 시작될 때마다 난다. 2907759388의 swish_weaponswing_swipe5·6을 0.42초로 자름
 Zombie/Hit/Fist,0.6,0.95,1.05,주먹이 좀비에 맞을 때 BOOM 타격음 밑에 깔리는 살 소리(BodyBreakSounds · SoundCues ZombieHit/Fist). Fleshy CI Hit Sounds(L4D2 워크숍 3725589072)의 감염자 피격음 13개 그대로
 Zombie/Bone/NeckSnap,0.8,0.95,1.05,등 뒤에서 한 처형(암살 포함)의 목 꺾기(SoundCues Execution/Behind). Meaty Melee SFX(L4D2 워크숍 3660295000) neck_snap_01 그대로

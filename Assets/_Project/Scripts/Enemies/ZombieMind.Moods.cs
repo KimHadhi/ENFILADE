@@ -240,15 +240,12 @@ public sealed partial class ZombieMind
         if (network != null) network.ShareCall();
     }
 
-    /// <summary>Every PC: the call's roar from its mouth, and a word at the top of the screen for anyone near enough to hear it.</summary>
-    internal void ShowCall()
-    {
-        Vector3 mouth = Eye();
-        ZombieCall.Roar(mouth);
-        var mine = PlayerRoster.Local;
-        if (mine != null && (mine.transform.position - mouth).sqrMagnitude <= callRadius * callRadius)
-            AlertHUD.Danger(Texts.Get("stealth.call"), transform, 2f);
-    }
+    /// <summary>
+    /// Every PC: the call's roar from its mouth. No words at the top of the screen: the band that said it ("놈이 소리쳤다 ·
+    /// 들은 놈들이 온다") was taken out (user, 2026-11-20: "존나 오글거리고 짜치니까 삭제해 주세요"); the roar itself and
+    /// the '!' filling red over the caller (StealthMarkersHUD) tell it in the world.
+    /// </summary>
+    internal void ShowCall() => ZombieCall.Roar(Eye());
 
     private void Alert(Vector3 at)
     {

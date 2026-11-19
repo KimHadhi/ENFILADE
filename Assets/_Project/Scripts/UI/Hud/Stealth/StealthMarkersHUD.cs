@@ -70,7 +70,6 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
     private readonly List<ZombieMind> gone = new List<ZombieMind>();
     private PlayerMovement movement;
     private RectTransform canvas;
-    private float lastSuspect = -9f, lastSpotted = -9f;
 
     private void Awake()
     {
@@ -83,11 +82,11 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
     private void LateUpdate()
     {
         var view = Camera.main;
-        float dt = Time.unscaledDeltaTime, now = Time.unscaledTime;
+        float dt = Time.unscaledDeltaTime;
         foreach (var pair in marks) pair.Value.used = false;
         if (view != null && movement != null && movement.IsLocal)
             foreach (var mind in ZombieMind.All)
-                if (mind != null && mind.isActiveAndEnabled) Track(mind, view, dt, now);
+                if (mind != null && mind.isActiveAndEnabled) Track(mind, view, dt);
         // Marks of zombies gone or no longer about this player fade and go back to the pool.
         gone.Clear();
         foreach (var pair in marks)
@@ -161,7 +160,7 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         lightWord.overflowMode = TextOverflowModes.Overflow;
     }
 
-    private void Track(ZombieMind mind, Camera view, float dt, float now)
+    private void Track(ZombieMind mind, Camera view, float dt)
     {
         bool mine = mind.Watching == movement;
         var mood = mind.Mood;
@@ -181,7 +180,8 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         {
             if (mark == null) { mark = Take(); marks[mind] = mark; mark.fill = 1f; }
             mark.burst = 0f;
-            if (now - lastSpotted > .3f) { KitSound.Play(KitSound.Cue.Spotted, spottedVolume); lastSpotted = now; }
+            // Several waking at once are one alarm: it starts again only once the last has run out (KitSound.Sounding).
+            if (!KitSound.Sounding(KitSound.Cue.Spotted)) KitSound.Play(KitSound.Cue.Spotted, spottedVolume);
         }
         bool bursting = mark != null && mark.burst >= 0f && mark.burst < spottedSeconds;
         // It made this player out and draws breath to call the others: its '!' stays, filling red to the call (kill it
@@ -199,11 +199,8 @@ public sealed class StealthMarkersHUD : MonoBehaviour, ITableBound
         mark.used = true;
         // It stopped to look this way, unsure of them (a fresh mark counts as having been calm). One only turned to a
         // sound or off to see a stone is no news of being seen: no tick.
-        if (mine && looking && !mark.looked && suspicion >= SuspectFrom && now - lastSuspect > .25f)
-        {
+        if (mine && looking && !mark.looked && suspicion >= SuspectFrom && !KitSound.Sounding(KitSound.Cue.Suspect))
             KitSound.Play(KitSound.Cue.Suspect, suspectVolume);
-            lastSuspect = now;
-        }
         mark.looked = looking;
         if (asleep && !bursting) mark.burst = -1f;
         if (mark.burst >= 0f) mark.burst += dt;
