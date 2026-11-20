@@ -1,0 +1,330 @@
+# 소리 다시 세우기 (설계)
+
+[문서 목차](../README.md) · [소리 코드 폴더](../../Assets/_Project/Scripts/Audio/README.md) · [설정·유지보수 안내](../Guides/MaintenanceGuide.md) · [맵 기믹](MapGimmicks.md) · [좀비 엘리트](ZombieElites.md)
+
+게임의 소리를 두 갈래로 다시 세우는 설계다. 하나는 **코드가 계산해 만드는 소리를 소리 파일로 바꾸는 일**이고, 다른 하나는 **소리를 내는 일을 한 곳(Sonity)이 맡게 하는 일**이다. 2026-11-20에 썼다.
+
+사용자(2026-11-20): "아니 근데 저 소리 시스템이 더 우월한 거 아님? 애초에 소리를 코드로 만들면 안 되잖아." 이어서: "코드로 만든 소리 27곳을 무엇으로 바꿀지 목록으로 정리해 주시고요. 사운드 시스템을 Sonity로 리팩토링하는 게 나을까요? 필요하면 개조까지 해서요."
+
+| 무엇 | 상태 |
+| --- | --- |
+| 코드로 만든 소리 조사 (2장, 5장) | 끝. 코드에서 읽었고, 소리는 귀로 듣지 않았다 |
+| Sonity로 옮길지 (3장) | 권장안을 썼다. **사용자의 결정 대기**(4장) |
+| 짓기 (6장) | 시작하지 않음. 게임 코드는 그대로다 |
+
+## 1. 한눈에
+
+- **27개 파일이 120개의 소리를 코드로 계산해서 만든다**(`AudioClip.Create` + `SetData`).
+  - **92개는 지금 플레이어가 듣는 소리다.** 바꿔야 할 대상은 이것이다(5.3~5.9).
+  - 24개는 이미 녹음된 파일이 먼저 울리고, 합성 코드는 파일이 없을 때만 도는 대체 코드다. 파일은 그대로 두고 합성 코드만 지운다(5.1).
+  - 3개는 아무도 부르지 않는다. 1개는 일부러 넣은 무음이다(5.2).
+- **소리 파일로 바꾸지 못할 소리는 없다.** 모든 합성 소리는 한 번 계산해서 저장해 둔 것이다. 게임 값을 따라 실시간으로 다시 만드는 소리는 하나도 없다. 게임이 바꾸는 부분은 재생할 때의 피치와 볼륨이고, 녹음 파일에도 똑같이 걸린다. 예를 들어 전기톱 피치는 감는 정도를, 리퍼의 바람은 차지 정도를 따른다.
+- **소리를 내는 일은 Sonity 하나가 맡고, 우리 코드에는 얇은 층 하나만 남기는 것을 권한다**(3장). 표면별 소리 대체, 좀비가 듣는 소음, 설정 볼륨, 슬로모션은 그 얇은 층이 맡는다.
+- **사용자가 정할 것은 넷이다**(4장). 가장 큰 것은 소리 숫자를 어디에 두느냐다. 지금은 표에 있고, 권장안은 Sonity 에셋으로 옮기는 것이다.
+
+## 2. 지금의 소리
+
+0.9.235에서 `Assets/_Project/Scripts`를 세었다.
+
+| 무엇 | 지금 |
+| --- | --- |
+| 소리를 코드로 만드는 파일 | 27개, 소리 120개 (5장) |
+| `AudioSource`를 직접 만드는 파일 | 28개 (`AddComponent<AudioSource>` 30곳) |
+| `AudioSource`를 다루는 파일 | 46개 |
+| 채널 볼륨에 묶는 곳 | `GameAudio.Bind` 27개 파일 29곳 |
+| 한 번만 울리는 3D 소리 | `GameAudio.PlayAt`이 소리마다 새 GameObject를 만들고 끝나면 지운다. 재사용(풀)이 없다 |
+| 동시 재생 한도 | 한 곳에서 다루지 않는다. 기능마다 `VoiceRing`으로 막는다. 이 링은 Unity의 실제 음성 32개를 넘으면 새 소리가 들리지 않던 문제를 기능별로 막은 것이다 |
+| 믹서 | 없다. `GameAudio`가 소스마다 볼륨, 덕킹, 슬로모션 피치를 직접 쓴다. 주석에 "나중에 AudioMixer로 옮길 자리"라고 적혀 있다 |
+| 표 (`Tables/Audio`) | `Sounds.csv` 269줄(키마다 볼륨·피치), `SoundCues.csv` 80줄(동작마다 울릴 것, 표면별 버전, 좀비가 듣는 거리), `Ambience.csv` 29줄, `Reverb.csv` 12줄, `Music.csv` 3줄 |
+| 소리 묶음 (`SoundBank`) | 폴더가 곧 목록이다. `Art/Audio/Movement/Run/Concrete/*.wav`는 Movement 묶음의 `Run/Concrete` 키가 된다 |
+| 모드 | 소리를 싣지 않는다. 실행 중에 소리 파일을 읽는 코드가 없고, `Editor/ModSdk`에도 소리가 없다 |
+
+## 3. Sonity로 옮기나
+
+### 3.1 출시된 게임은 어떻게 하나
+
+출시된 게임은 대부분 Wwise나 FMOD 같은 소리 도구를 쓴다. 역할은 이렇게 나뉜다.
+
+- **코드**는 *언제*와 *게임의 값*만 말한다. 예: "발소리, 표면은 철판, 속도 0.7".
+- **소리 도구**는 *무엇이 어떻게* 울리는지 정한다. 어느 파일인지, 무작위로 고르는지, 볼륨과 피치, 거리에 따른 감쇠, 동시 재생 한도, 버스, 덕킹 같은 것이다.
+- 사운드 디자이너는 도구 안에서 **들으면서** 맞춘다.
+- 게임 쪽에는 도구를 감싸는 얇은 층이 하나 있다.
+
+우리 `SoundCues`도 "코드는 큐 이름만 부르고, 표가 무엇을 울릴지 정한다"는 같은 모양이다. 하지만 세 가지가 다르다.
+- 편집이 CSV 글자라서 들으면서 맞출 수 없다.
+- 소리 92개는 이 길을 타지 않고 코드에서 만들어진다.
+- 음성(재생 중인 소리)을 한 곳이 관리하지 않는다.
+
+### 3.2 Sonity가 주는 것
+
+Sonity 문서(v1.2.0.1, 2026-09-14)에서 읽은 것이다. 써 보지는 않았다.
+
+- **바탕은 Unity 소리다.** 안에서 `AudioSource`를 쓰고, 파일은 그대로 `AudioClip`이며, 출력은 `AudioMixerGroup`으로 보낸다. FMOD나 Wwise처럼 소리 엔진을 따로 두지 않는다.
+- **이벤트와 컨테이너.** 이벤트(`SoundEvent`) 안에 여러 클립을 넣는다. 무작위로 고르되 최근에 나온 것은 피하고, 볼륨과 피치도 무작위로 줄 수 있으며, 클립을 겹칠 수 있다.
+- **음성 관리.**
+  - 전체 음성 한도가 있다. 한도가 차면 가장 조용한 것(볼륨 × 우선순위)을 끊는다.
+  - 이벤트마다 동시 재생 수를 정한다. 주인(owner)마다 따로 셀 수도, 전체로 셀 수도 있다.
+  - 여러 이벤트가 한도 하나를 함께 쓰게 할 수 있다(`SoundPolyGroup`).
+  - 다시 울리기까지의 쿨다운과 울릴 확률을 정할 수 있다.
+  - 소스를 재사용한다(풀).
+- **파라미터.** 재생할 때 넘기는 값이 소리 도중에도 피치, 볼륨, 필터, 거리를 바꾼다. 값 하나(`Intensity`)로 세게·중간·약하게 층 사이를 넘나들 수도 있다.
+- **태그(`SoundTag`).** 재생할 때 넘기거나 전역으로 걸어서, 울릴 이벤트나 수정자를 고른다.
+- **3D 소리.** 감쇠 곡선, 퍼짐, 거리 배율, 리버브 존 섞임을 정할 수 있다. Steam Audio를 연결하면 벽에 막히는 소리도 된다.
+- **멈춤.** 전역 일시정지가 있고, UI 소리처럼 멈춤을 무시하게 할 수도 있다.
+- **편집기.**
+  - 인스펙터에서 바로 들어 볼 수 있다(Ctrl+Q).
+  - 플레이 중에 고친 값이 그 자리에서 반영된다.
+  - 씬 뷰와 게임 뷰에 소리 위치를 그려 주고, 음성 수 통계를 보여 준다.
+- **음악.** 끝나기 조금 전에 다음 곡을 시작하는 전환이 있다. 플레이리스트와 스템은 소개 문구에만 있고 문서에는 설명이 없다.
+- **소스 코드가 들어 있다**(FAQ: "The source code is included"). 체험판만 DLL이다.
+
+### 3.3 Sonity에 없는 것: 우리 층이 맡는다
+
+| 지금 하는 일 | Sonity | 옮긴 뒤 맡는 곳 |
+| --- | --- | --- |
+| 표면 대체 사슬 (덕트 → 철판 → 콘크리트 → 표면 없음, `Surfaces.Fallbacks`) | 태그는 있지만 대체 사슬이 없다 | 우리 층이 사슬을 따라 고른 뒤 이벤트(또는 태그)로 넘긴다 |
+| 슬로모션 때 세계 소리의 피치 (`GameAudio.FollowWorldPitch`가 매 프레임 소스마다 바꾼다) | 전역 피치가 없다. 시간 배율은 지연·페이드·쿨다운에만 걸린다 | 믹서의 세계 그룹들(전투·이동·목소리·환경음)에 노출한 Pitch 값 하나. UI와 음악은 지금처럼 빠진다 |
+| 설정의 채널 볼륨 6개와 덕킹 (`GameAudio.Volume`, `SetDuck`) | 믹서 그룹을 쓰라고 한다 | 믹서 그룹 6개(전투·이동·목소리·UI·음악·환경음)에 노출한 볼륨 값 |
+| 좀비가 듣는 소음 거리 (`SoundCues.csv`의 `noise`) | 해당 없음. 소리가 아니라 게임 규칙이다 | 표에 남는다. 우리 층이 소리와 소음을 함께 낸다 |
+| 여러 PC에 같은 소리 | 해당 없음. 로컬에서만 울린다 | 지금처럼 각 PC가 사건을 받아 자기 소리를 낸다. 바뀌지 않는다 |
+| 도플러 끄기, UI 소리가 일시정지·필터·리버브를 무시 (`GameAudio.Bind`) | 이벤트 설정에 있다 | 이벤트 설정과 믹서 |
+
+### 3.4 개조
+
+- 소스가 들어 있으니 고칠 수는 있다. 스토어 약관(Standard EULA, Extension Asset)은 게임에 넣기 위해 고치는 것을 허락한다. 하지만 Sonity의 소스나 고친 판을 따로 배포하는 것은 막는다. 1석 라이선스이고 컴퓨터 두 대까지 쓸 수 있다. 모드 SDK(`Editor/ModSdk`)는 원래 게임 코드를 담지 않으므로 문제없다.
+- **업그레이드 방법이 "Sonity 폴더를 통째로 지우고 다시 넣기"다**(1.1.0~1.2.0 변경 기록). 고친 부분은 업그레이드할 때마다 날아간다. 그래서 원칙은 이렇다.
+  - 먼저 감싼다(3.3의 얇은 층).
+  - 고치는 것은 감싸서 안 될 때만 한다.
+  - 고친 곳은 이 문서의 표에 한 줄씩 적어 업그레이드 뒤 다시 넣는다.
+- 지금 보이는 개조 후보는 하나다. 파라미터를 넘기는 재생 함수가 `params` 배열을 받아서 부를 때마다 메모리를 잡는다(문서의 함수 모양을 보고 한 추측). 측정해서 문제가 되면 배열 없는 판을 더한다.
+
+### 3.5 위험
+
+- 개발자 한 사람이 만드는 제품이다(Sonigon, Victor Engström).
+- 문서는 Unity 6.0~6.7(6.3 포함)을 지원한다고 한다. 그러나 스토어 호환 표에는 6.3이 없다. 개발자는 스토어 표가 틀린다고 한다.
+- 문서끼리 어긋나는 곳이 있다. 소리 속도 기준값이 430과 340으로 다르고, 압축 볼륨을 URP가 지원하는지도 다르게 적혀 있다.
+- 스토어 리뷰는 읽지 못했다.
+- 옮기는 일이 크다. 소리를 다루는 파일이 46개다. 6장처럼 단계마다 게임이 돌아가는 상태를 남긴다.
+
+### 3.6 권장
+
+**옮긴다.** 재생과 음성 관리는 Sonity 하나가 맡고, 게임만의 규칙은 얇은 층 하나가 맡는다. 이유는 셋이다.
+
+1. **출시된 게임의 모양이다.** 소리 도구가 소리를 정하고, 코드는 언제와 값만 말한다. 우리 표를 계속 키우면 결국 소리 도구를 직접 만들게 된다.
+2. **주인이 하나가 된다.** 지금은 28개 기능이 저마다 소스를 만들고 저마다 한도를 막는다. 손(`HandOwner`), F 키(`InteractKey`), 플레이어 색(`PlayerColours`)을 한 주인에게 모은 것과 같은 일이다.
+3. **들으면서 맞출 수 있다.** 소리 92개를 새 파일로 바꾸는 일은 귀로 하는 일이다. CSV 숫자를 고치고 게임을 다시 켜서 듣는 것보다, 인스펙터에서 듣고 플레이 중에 바로 고치는 편이 맞다.
+
+FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램과 뱅크 빌드가 따라오고, Unity 소리와 음성을 따로 관리한다. Sonity는 Unity 소리 위에서 돌아서 지금의 파일, 믹서, 리버브 존을 그대로 쓴다.
+
+## 4. 사용자가 정할 것
+
+1. **소리 숫자를 어디에 두나.** 볼륨, 피치, 무작위 폭, 감쇠 거리, 동시 재생 한도는 지금 `Sounds.csv`와 각 코드 상수에 있다. 권장안은 이것들을 Sonity 이벤트 에셋으로 옮기는 것이다. 작업 규칙 "숫자는 표에"의 예외가 된다.
+   - 권장하는 이유: 한 숫자에 집이 둘이면 어느 쪽이 참인지 흔들린다. 또 소리 숫자는 들으면서 맞추는 숫자다.
+   - 표에 남는 것: 좀비가 듣는 거리, 게임 규칙 숫자(어떤 동작이 어떤 이벤트를 부르는지 등).
+2. **Sonity 구입.** 사용자의 일이다. 2026-11-20 기준 $4.95(정가 $99의 95% 할인)이고, 할인이 언제 끝나는지는 모른다.
+3. **새 소리 파일의 출처.** 5.3~5.9의 "찾을 말"에 맞는 파일이 필요하다.
+   - 유료 효과음 팩을 사거나, 상업적으로 써도 되는 무료 묶음(예: 해마다 나오는 Sonniss GDC 번들)을 쓴다. 라이선스는 받을 때 확인한다.
+   - 이미 있는 후보 일부는 `ArtSource`의 GMod·L4D 워크숍 파일이다(전기톱 루프, `mega_mob_incoming`). 이 파일들은 지금 게임에 있는 다른 워크숍 소리와 같은 라이선스 문제를 안는다.
+   - 고르는 일은 사용자의 귀가 한다. 나는 후보를 모으고 넣는다.
+4. **사이렌.** 1장 골목 셔터의 사이렌(5.7)은 48건 항목 25 "경보"의 답을 기다린다.
+
+## 5. 바꿀 목록
+
+열의 뜻:
+- **지금**: 코드가 만드는 소리가 어떻게 들리는지.
+- **언제**: 게임에서 언제 울리는지.
+- **바꿀 것**: **굵은 글씨**는 이미 프로젝트에 있는 파일이고, 따옴표 안은 효과음 라이브러리에서 찾을 말이다.
+- **높음**: 700 Hz를 넘는 높은 소리가 들어 있다는 뜻이다. 높은 소리는 사용자의 귀를 아프게 한다. UI 소리는 700 Hz 아래, 2.2 kHz 로우패스가 규칙이다. 바꿀 파일도 이 규칙에 맞춰 낮게 고른다.
+
+경로 줄임: `S/` = `Assets/_Project/Scripts/`, `A/` = `Assets/_Project/Art/Audio/`, `AS/` = `ArtSource/Library/Audio/`(게임 밖, 아직 가져오지 않음).
+
+### 5.1 이미 파일로 울리는 것: 합성 코드만 지운다 (24개)
+
+녹음 파일이 먼저 울리고, 합성은 파일이 없을 때만 돈다.
+
+| 파일 | 소리 |
+| --- | --- |
+| `S/Combat/Feedback/FeelAudio.cs` | 소총·권총·중화기 사격, 빈 탄창 딸깍, 탄 적음 둘, 마지막 탄, 탄창 빼기, 탄창 넣기, 노리쇠, 슬라이드 뒤로·앞으로 (12), 처치, 헤드샷 처치, 몸 쓰러짐 (3) |
+| `S/Enemies/Elites/ZombieReaper.cs` | 리퍼 낫 휘두름 (`tonfa_swing_miss1/2.ogg`) |
+| `S/Player/Stealth/PlayerKnock.cs` | 노크 (`A/Stealth/knock.wav`) |
+| `S/Player/Stealth/PlayerThrow.cs` | 돌 부딪힘 (`qubodupImpactStone.ogg`) |
+| `S/UI/Kit/KitSound.cs` | 탄약·회복·보호막·총 줍기, 의심, 발각 (6) |
+
+`FeelAudio.Prepare`(`CombatWarmup.cs:25`)는 로딩할 때 쓰지 않는 소리까지 19개를 전부 계산한다. 합성 코드를 지우면 이 시간도 사라진다.
+
+### 5.2 안 쓰이는 것
+
+| 파일 | 소리 | 처리 |
+| --- | --- | --- |
+| `FeelAudio.cs` | `HitMarker`: 부르는 곳이 없다. 맞힘 소리는 `HitConfirm/Body`가 낸다 | 지운다 |
+| `S/Combat/Moments/MomentSound.cs` | `duel`: 부르는 곳이 없다 | 지운다 |
+| `S/Modes/Campaign/Gimmicks/GimmickSounds.cs` | `Whistle`: 이 소리를 쓰는 미끼가 없다 | 지운다. 맵은 큐를 번호로 저장하므로 순서(`GimmickSounds.Cue`)는 지키고 칸만 비운다 |
+| `S/Classes/CardFx.cs` | 건틀릿 `Blast` 길: 부르는 곳이 없다 | 지운다 |
+| `FeelAudio.cs` | `Draw`: 권총·중화기를 꺼낼 때의 일부러 넣은 무음 | 진짜 소리를 넣을 수 있다: **KINEMATION `TacticalShooterPack/SFX/General/S_DrawPistolWithHolster.WAV`, `S_Equip.WAV`** |
+
+### 5.3 좀비 (13개)
+
+| 소리 | 지금 | 언제 | 바꿀 것 |
+| --- | --- | --- | --- |
+| 거구 포효 (`ZombieBody.Brute.cs:112`) | 낮게 떨어지는 긴 포효, 1.8초 | 거구가 처음 일어설 때. 모든 PC, 3D 120 m | "giant monster roar, falling, raspy, 1.8 s". 부분 후보: **`A/Enemies/Zombie/Attack/rage_at_victim*.wav`** 피치를 낮춰서. 코드는 이미 `Art/Resources/Audio/Boss/BruteRoar` 파일을 먼저 찾는다 |
+| 거구 등장 울림 (`:139`) | 서브 드롭 쿵, 1.4초 | 같은 때. 모든 PC, 2D | "cinematic boss braam, sub drop, 1.5 s". 후보: `AS/L4D1WeaponAudio_3785893356/npc/mega_mob/mega_mob_incoming.ogg`. 경로 `Audio/Boss/BruteSting` |
+| 전기톱 공회전 (`ZombieBreadbag.cs:222`) | 2행정 엔진 공회전, 루프 | 브레드백이 살아 있는 동안. 모든 PC, 3D 34 m | **`AS/.../weapons/chainsaw/chainsaw_idle_lp_01.ogg`**(가져와야 함). 이미 있는 칸: `EliteLooks.chainsawIdle` |
+| 전기톱 회전 (`:222`) | 엔진을 감아올림, 루프. 피치가 감는 정도를 따라 0.85→1.15 | 감기·베기 | **`chainsaw_high_speed_lp_01.ogg`**, 감는 순간에 `chainsaw_start_01/02.ogg`. 칸: `EliteLooks.chainsawRev` |
+| 캔디맨 벌 (`ZombieCandyman.cs:238`) | 벌 여섯 마리의 웅웅거림, 루프 | 캔디맨이 살아 있는 동안. 끌 때 1.4배 | "bee swarm buzz loop, seamless". 칸: `EliteLooks.candymanBuzz` |
+| 차저 울부짖음 (`ZombieCharger.cs:341`) | 거친 낮은 목소리가 올랐다 내림, 1.1초 | 돌진 준비 | "large creature bellow, bull roar, 1 s". 부분 후보: `A/Enemies/Zombie/Leap/Male/rage_*.wav` 피치를 낮춰서 |
+| 폭발 좀비 터짐 (`ZombieExploder.cs:328`) | 젖은 무거운 폭발, 0.9초 | 죽을 때(처형 제외). 3D 80 m | **Vefects `SFX_Vefects_Explosion_02_One_Shot_01/02.wav`**에 **`A/Enemies/Zombie/Gore/HeadBurst/headless_*.wav`**를 겹쳐서 |
+| 폭발 좀비 해제 (`:358`) | 부드러운 쿵 뒤에 가스가 빠지는 쉿, 0.45초 | 처형으로 해제할 때 | "gas leak hiss, short deflate, 0.5 s" |
+| 닌자 사라짐 (`ZombieNinja.cs:331`) | 천과 바람의 휙, 0.45초 | 연기 속으로 사라질 때 | "cloth whoosh vanish, 0.5 s". `A/Movement/Dodge/Wind/Dash*`도 맞지만 회피 소리라서 둘이 같게 들린다. 칸: `EliteLooks.ninjaVanish` |
+| 닌자 나타남 (`:331`) | 칼집에서 칼 뽑는 울림, 0.9초. **높음**(2.2~6 kHz) | 누군가의 등 뒤에 나타날 때(경고) | **`A/Enemies/Elites/katana_deploy_01.ogg`**(리퍼 돌진도 씀) 또는 **`A/Grenades/KnifeDraw/pull_out_blade_1-3.wav`**. 칸: `EliteLooks.ninjaAppear` |
+| 리퍼 바람 (`ZombieReaper.cs:340`) | 낮은 바람과 70 Hz 웅, 루프. 피치와 볼륨이 차지를 따른다 | 낫 차지 | "eerie wind loop, low howl, seamless". 칸이 없으므로 `EliteLooks`에 새로 만든다 |
+| 좀비 부르기 들숨 (`ZombieCall.cs:49`) | 목으로 숨을 들이켜다 신음으로 올라감, 1.2초 | 스스로 깬 좀비가 동료를 부르기 전 | "zombie inhale into growl, rising, 1.2 s" |
+| 좀비 부르기 포효 (`:73`) | 쉰 포효가 떨어짐, 1.5초 | 부를 때. 3D 70 m | **`A/Enemies/Zombie/Attack/rage_at_victim*.wav`**(남녀 묶음, 약 1초)가 잘 맞는다 |
+
+### 5.4 전투 느낌 (4개)
+
+| 소리 | 지금 | 언제 | 바꿀 것 |
+| --- | --- | --- | --- |
+| 보호막 깨짐 (`FeelAudio.cs`) | 밝은 깨짐, 떨어지는 윙, 유리 핑 | 내 보호막이 다할 때 | **Vefects `SFX_Vefects_Electric_Discharge_01/02_One_Shot_01.wav`** 또는 **`SFX_Vefects_Radial_Burst_One_Shot_01.wav`**. 폴더 `A/HitConfirm/ShieldBreak`에 넣으면 바로 쓰인다 |
+| 보호막 맞음 (`FeelAudio.cs`) | 전기 딱, 떨어지는 지직 | 내 보호막이 맞을 때, 친구 보호막이 맞을 때 | **Vefects `SFX_Vefects_Electric_Impact_01/02_One_Shot_01.wav`**. 폴더 `A/HitConfirm/ShieldHit`. 친구 쪽 길은 고쳐야 한다(6.1의 버그 2) |
+| 죽음 스팅 (`S/Audio/DeathSting.cs:32`) | 쿵, 먹먹해지는 소리, 낮은 울림, 귀울림, 느려지는 심장 두 번, 2.9초. **높음**(귀울림 2.35 kHz) | 내가 죽을 때. 2D, UI 채널 | "death sting, muffled impact, shell shock, 3 s". 부분 층: **`A/Movement/Fall/Death/deathfall1-4.wav`**, **`A/Movement/Fall/Heartbeat/heartbeat_beat_*.wav`**. 귀울림은 빼거나 낮게 |
+| 특수 처치 팅 (`S/UI/Hud/KillFeed/SpecialKillStamp.cs:263`) | 딱 뒤에 밝은 쇳소리 둘(1975·2637 Hz). **높음** | 미트샷, 레일건, 스키트 등 특수 처치 | "low UI stinger, soft impact + muted low chord, 0.3 s". 낮게 새로 고른다 |
+
+### 5.5 클래스·카드·순간 연출 (26개)
+
+순간 연출 소리(`MomentSound.cs`)는 코드가 이미 `Resources/Audio/Moments/<키>` 파일을 먼저 찾는다. 하지만 그 폴더가 없어서 지금은 전부 합성 소리가 울린다.
+
+| 소리 | 지금 | 언제 | 바꿀 것 |
+| --- | --- | --- | --- |
+| 기사 궁극기 `knight` | 낮은 종, 칼 뽑기 | 궁극기 | "low bell toll + sword unsheathe". 칼 층: **`katana_deploy_01.ogg`**, **`pull_out_blade_1-3.wav`** |
+| 돌격 궁극기 `assault` | 나팔 세 음 + 북 | 궁극기 | **11-20의 돌격 나팔 시안**(`ArtSource/Audio/FieldBugle`, `SoftTrumpet/04_three_notes.wav`, `ShortCharge`). 이 시안이 궁극기용인지 CHARGE 키(5.9)용인지는 사용자가 정한다 |
+| 고스트 궁극기 `ghost` | 높은 쇳소리 한 번, 숨. **높음**(2.4 kHz) | 궁극기 | "metallic shimmer, short, low" |
+| 포인트 궁극기 `point` | 리볼버 실린더 돌림, 공이치기 | 궁극기 | **KINEMATION `TacticalShooterPack/SFX/R08/S_R08_OpenCylinder.WAV`, `S_R08_CloseCylinder.WAV`**, **`A/Weapons/Fatebringer/Fatebringer_CraneClose.wav`** |
+| 데탕트 궁극기 `detente` | 심장 두 번, 맑은 종 | 궁극기 | **`heartbeat_beat_*.wav`**에 "soft clear chime"(낮게)을 더해서 |
+| 슈스훈트 궁극기 `schiesshund` | 딸깍 여섯, 금전등록기. **높음**(1.76 kHz) | 궁극기 | "cash register" + **`A/Guns/LowAmmoClick/lowammo_01.wav`** |
+| 서포트 궁극기 `support` | 무전 딸깍, 상자 내려놓기 | 궁극기 | "radio squelch click + wooden crate drop" |
+| 현상금 `bounty` | 종 둘, 동전 반짝, 낮은 떨어짐 | 데스페라도가 현상금을 받을 때(`BountyBurst.cs:34`) | "reward chime, coins, low sting" |
+| 반격 던지기 `reversal` | 올라가는 바람 뒤 쿵 | 기사 반격(`CardFx.cs:96`) | "whoosh riser into impact". `A/Movement/Dodge/Perfect/Phantom Wind*`도 맞지만 완벽 회피 소리라서 둘이 같게 들린다 |
+| 엄호 막기 `cover` | 쇠 울림, 잡음, 쿵 | 기사 엄호로 막을 때(`CardFx.cs:100`) | "metal deflect clang". **`A/Combat/BOOM/Parry/Iron Fist*`**는 패리 소리라서 둘이 같게 들린다 |
+| 건카타 `kata` | 빠른 딸깍 다섯, 울림 | 포인트 건카타 꺼내기(`CardFx.cs:104`) | **KINEMATION R08 실린더 소리** |
+| 결투 승리 `duelwon` | 도탄 윙, 낮은 종 한 번 | 결투에 이겼을 때(`HoundDuel.cs:152`) | **`A/Bullets/Ricochet/ricochet01-05.wav`** + "single low bell toll" |
+| 카드 포격 (`CardFx.cs:368`) | 떨어지는 쿵, 먹먹한 잡음 | 돌격 포격 포탄이 떨어질 때. 3D 90 m | **Vefects `SFX_Vefects_Explosion_01_One_Shot_01/02.wav`** |
+| 건런 착탄 (`S/Classes/Assault/GunRunSound.cs:75`) | 30 mm 탄 터짐, 흙 튐 | 착탄 몇 발마다 | "30mm cannon impact explosion dirt, 0.5 s". 후보: **Vefects Explosion_01**. 파일 경로 `Audio/Moments/gunrun_hit` |
+| 건런 BRRRT (`:96`) | 먼 곳의 GAU-8 연사 | 마지막 탄 뒤 | "A-10 BRRRT GAU-8 distant burst, 2 s". 경로 `gunrun_brrrt` |
+| 건런 제트 (`:141`) | 제트기 저공 통과, 1.3초에 가장 큼. **높음**(1.9 kHz 윙) | 통과 | "jet fighter low flyby, 3 s". `GunRunFx.cs:26`의 `JetPeak = 1.3`이 지금 합성 소리의 정점에 묶여 있다(6.1의 버그 3) |
+| 데탕트 가스 (`S/Classes/Detente/DetenteGas.cs:241`) | 소독 스프레이를 한 번에 비우는 쉿. **높음**(1.8~7 kHz) | 데탕트 궁극기, 구름마다 | "aerosol / medical spray long hiss, 3–4 s". 길이가 `ultGasSeconds`(3초) + 0.35초를 따르므로, 3.35초 이상의 파일이거나 루프를 페이드로 끊는다 |
+| 고스트 돌진 (`S/Classes/Ghost/GhostFx.cs:111`) | 부드러운 바람 휙 | 체인 순간이동 | "teleport wind gust whoosh, 0.4 s" |
+| 쇼다운 끌기 (`S/Classes/Hound/ArenaSound.cs`) | 올라가는 바람 뒤 낮은 쿵 | 쇼다운 시작 | "reverse whoosh into impact, 0.7 s". 후보: **Vefects `SFX_Vefects_Radial_Charge_Skill_Ready_One_Shot_01`**. 경로 `Audio/Moments/showdown` |
+| 쇼다운 복귀 | 낮은 쿵, 바람 빠짐 | 돌아올 때 | 후보: **Vefects `SFX_Vefects_Radial_Burst_One_Shot_01/02`**. 경로 `showdown_back` |
+| 관중 환호 | 군중 소리, 함성, 박수, 휘파람. **높음**(휘파람) | 환호 속 복귀 | "crowd cheer stadium swell, 3 s". 경로 `cheer` |
+| 피닉스 부활 (`S/Classes/PhoenixFx.cs:276`) | 불길 휙과 쿵, 올라가는 부드러운 음 | 피닉스 카드가 혼자 남은 플레이어를 일으킬 때 | "fire ignite burst whoosh + soft rising tone, 1 s". 음은 700 Hz 아래로. 경로 `Audio/Moments/phoenix` |
+| 용접 토치 (`S/Classes/Support/RepairLooks.cs:250`) | 부드러운 쉿, 루프 | 서포트가 토치를 들고 있는 동안 | "blowtorch gas flame loop". 볼륨 버그가 있다(6.1의 버그 1) |
+| 망치 두드림 (`:270`) | 판자 쿵, 망치 머리 울림. **높음**(2350 Hz) | 망치질 한 번마다 | **`A/HitConfirm/HeadOld/hammer_03.ogg`**(CC0, 11-12부터 쓰지 않음) |
+| 보급 가방 휙 (`S/Classes/Support/SupplyPack.cs:249`) | 짧은 바람 | 던질 때 | "bag toss whoosh soft". `grenade_throw.wav`, `Cloth/VaultSwish`도 맞지만 다른 동작의 소리다 |
+| 보급 가방 툭 (`:227`) | 부드러운 쿵, 천 바스락 | 친구 가슴에 닿을 때 | "bag catch thud canvas". 후보: **`A/Movement/Push/push1-4.wav`** |
+
+### 5.6 플레이어 (3개)
+
+| 소리 | 지금 | 언제 | 바꿀 것 |
+| --- | --- | --- | --- |
+| 찌르기 누름 (`S/Player/Poke/SkinPoke.cs:367`) | 둥근 짹(780→330 Hz) + 뽁. 부위마다 피치가 달라서 정수리는 약 1.1 kHz | 손끝이 친구를 누를 때 | "soft cartoon boop, finger poke squish, 0.1 s", 낮게. 경로 `Audio/Poke/Press` |
+| 찌르기 뗌 (`:367`) | 위로 가는 가벼운 짹 | 손을 뗄 때 | "soft pop release". 경로 `Audio/Poke/Lift` |
+| 돌 던짐 휙 (`S/Player/Stealth/PlayerThrow.cs:295`) | 돌이 지나가는 바람 | T 던지기 | "small stone throw whoosh, 0.3 s" |
+
+### 5.7 캠페인 (2개)
+
+| 소리 | 지금 | 언제 | 바꿀 것 |
+| --- | --- | --- | --- |
+| 사이렌 (`S/Modes/Campaign/CampaignGate.cs:81`) | 차 경보 두 음(960·760 Hz), 루프. **높음** | 1장 골목 셔터 단계 동안 | "two-tone siren loop", 낮게. 48건 항목 25 "경보"의 답을 기다린다 |
+| 견인차 (`S/Modes/Campaign/CampaignPushback.cs:109`) | 디젤 그르렁 + 1초마다 1.1 kHz 후진 삐, 루프. **높음**(삐) | 4장 여객기가 밀려갈 때 | 소스 둘로 나눈다: "airport tug diesel idle loop" + "truck reverse beeper loop"(낮게) |
+
+### 5.8 맵 기믹 (18개)
+
+`GimmickSounds.cs`는 파일을 찾는 길이 없으므로 길을 더해야 한다. 큐 순서는 맵이 번호로 저장하므로 바꾸지 않는다.
+
+| 큐 | 지금 | 쓰는 곳 | 바꿀 것 |
+| --- | --- | --- | --- |
+| `Static` | 꺼진 채널의 TV 잡음, 루프 | 1·2장 미끼 | "TV static noise loop". `fallstatic.wav`는 큰 낙하 소리라서 쓰지 않는다 |
+| `Clunk` | 차단기 딸깍, 쿵, 전기 웅 | 문, 차단기, 화물, 연료 밸브, 탑승교, 트레이 | "circuit breaker switch clunk, power hum" |
+| `Ding` | 엘리베이터 종 두 음. **높음** | 엘리베이터 | "elevator arrival ding", 낮게 |
+| `Smash` | 깨짐, 깊은 쿵, 덜컹 | 우리, 자물쇠 | **`A/Movement/Door/Barge/me_door_generic_barge1-4.wav`** |
+| `Hiss` | 가스 쉿(벤트에선 루프) | 연료 함정, 밸브, 착지, 벤트 | "gas leak hiss loop" |
+| `Unlock` | 딸깍 둘, 빗장, 철컥. **높음**(2.4 kHz) | 탑승교, 자물쇠, 트레이 | "key turn lock unlock bolt" |
+| `Jingle` | 쇠 짤랑 넷. **높음**(3.1~4.2 kHz) | 열쇠 줍기 | "keys jingle pickup", 낮게 |
+| `Snap` | 줄 튕김, 딱 | 떨어뜨리기 | "rope snap cable break" |
+| `Crash` | 거대한 낮은 충돌, 쇠 울림 | 떨어뜨리기, 연료 함정 | "shipping container drop metal crash" |
+| `CarAlarm` | 차 경보 와우, 경적, 루프. **높음** | 경보 차 | "car alarm loop", 낮게 |
+| `Fire` | 낮은 불길, 탁탁, 루프 | 불 | "fire burning loop crackle" |
+| `Rumble` | 길고 깊은 우르릉 | 무너짐 | "concrete collapse rumble debris" |
+| `Beep` | 삐 두 번(1760 Hz). **높음** | 금속 탐지기 | "metal detector alarm", 낮게 |
+| `Chime` | 안내 방송 종 세 음, 미끼에선 루프 | 3장 지하철, 4장 공항 미끼 | **`Assets/ThirdParty/Airport_Terminal_Scene/Sounds/bingbong.wav`**, 루프 미끼엔 **`terminal_voice_01-21.wav`**(공항 안내 방송) |
+| `FireBell` | 화재 벨, 초당 18번, 루프. **높음** | 화재 경보 | "fire alarm bell ringing loop", 낮게 |
+| `Lever` | 라쳇 넷, 걸쇠 쿵 | 화물 문, 탑승교, 두 손 레버 | "heavy lever pull ratchet latch" |
+| `Shutter` | 덜컹거리며 올라감, 쿵 | 화물 문 닫기, 두 손 레버 | "roller shutter door rattle" |
+| `Generator` | 발전기 털털, 루프 | 차단기(엔진) | "portable generator running loop" |
+
+### 5.9 UI (26개)
+
+모두 내 PC에서만, 2D, UI 채널로 울린다. 코드는 이미 `A/UI/<큐>` 폴더를 먼저 찾으므로 폴더에 파일을 넣으면 쓰인다(5.1의 여섯이 그렇게 됐다). **16개가 낮은 소리 규칙을 어긴다**(5.4의 특수 처치 팅을 더한 수).
+
+| 큐 | 지금 | 쓰는 곳 | 바꿀 것 |
+| --- | --- | --- | --- |
+| `Buy` | 서랍 철컥, 종 두 음. **높음** | 상점, 로비, 옷장 확정 | "purchase confirm, low soft thunk" |
+| `Refuse` | 둔한 삐 둘(165 Hz) | 모든 거절 | "UI error low double buzz" |
+| `Alert` | 880→659 Hz 내려가는 두 음. **높음** | 동료 다운·사망, 카드 경고 | "low two-note warning, falling" |
+| `PickMoney` | 종 둘(2637·3520 Hz). **높음** | 돈 줍기 | "coins pickup, muffled pouch, low" |
+| `Escape` | 올라가는 네 음(523~1047 Hz). **높음** | 챕터 끝, 결과 | "mission complete stinger, low brass" |
+| `Unseen` | 종 세 음. **높음** | 잠입 성공 | "stealth success, soft low marimba" |
+| `Charge` | 북 + 뿔피리 두 음 | 돌격 CHARGE, 여러 클래스 키 | "short war horn + drum hit". 돌격 나팔 시안 후보(5.5) |
+| `Taunt` | 칼로 방패 두 번, 낮은 뿔피리. **높음**(울림 성분) | 기사 도발 | "sword on shield clang + low horn". 후보: `A/Combat/BOOM/Block` |
+| `Hunter` | 딸깍 + 1760 Hz. **높음** | 고스트 사냥 표시 | "low soft UI notch tick" |
+| `HunterLost` | 쿵, 내려가는 두 음 | 고스트 사냥 놓침 | "low falling two-note loss" |
+| `Ping` | 1319·1976 Hz 두 음. **높음**. 가장 많이 쓰임 | 핑, 상점, 옷장, 바리케이드 | "soft low UI ping marker" |
+| `Mark` | 쿵, 종 둘. **높음** | 현상금 표시, 결투 | "wanted mark stamp, low" |
+| `Bounty` | 공이치기, 쿵, 종. **높음** | 현상금 | "revolver hammer + low cash payout" |
+| `Supply` | 지퍼, 탄창 두 번 | 보급 | "bag zipper + mags into pouch". 후보: **`A/Guns/Rifle/MagIn`** |
+| `Hammer` | 망치 세 번 | 바리케이드 짓기 | **`hammer_03.ogg`** 세 번, 또는 "hammer nailing wood" |
+| `Splinter` | 쿵 + 쪼개짐 | 바리케이드 맞음, 좀비 돌파 | "wood crack splinter impact" |
+| `Collapse` | 쿵, 판자 다섯 개 덜컹 | 바리케이드 무너짐 | "wooden planks collapse clatter" |
+| `TowerRise` | 모터, 라쳇, 잠김 | 탑 올라감 | "mechanical servo rise, ratchet lock" |
+| `TowerTick` | 1318 Hz 삐 한 번. **높음** | 탑 초읽기(매초) | "low clock tick, wood block" |
+| `TowerScan` | 삐 세 음. **높음** | 손바닥 스캐너 | "hand scanner read, low beep" |
+| `TowerOpen` | 쿵, 철컹, 올라가는 음. **높음** | 탑 문 열림 | "security door unlock, low" |
+| `TowerClear` | 찌르는 두 음, 종. **높음** | 층 클리어 | "level clear stinger, low" |
+| `Enfiladed` | 쿵, 쇠 울림, 금관 화음, 종. **높음** | 탑 마지막 | "cinematic boom + brass swell, 2.5 s". 쿵 층: Vefects Explosion |
+| `CardPick` | 낮은 쿵, 미끄러짐, 화음 | 카드 고르기 | "card pick, low thud" (지금도 낮다) |
+| `CardPickGrand` | 같은 것 + 낮은 5도 | 큰 카드 고르기 | 위와 같은 결로 더 크게 |
+| `CardBurn` | 낮은 쉭, 둔한 펑 | 카드 태우기 | "paper catching fire, low" |
+
+## 6. 함께 찾은 것
+
+### 6.1 버그
+
+1. **용접 토치가 너무 크다.** `RepairLooks.cs:170`에서 볼륨을 0.3으로 놓지만, `:174`의 `GameAudio.Bind`가 그 값을 채널 볼륨으로 덮어쓴다. 그래서 토치가 전투 소리 최대 크기로 울린다. 0.3은 `SetGain`으로 놓아야 한다.
+2. **친구의 보호막 맞는 소리는 항상 합성 소리다.** `S/Network/Sync/PlayerNetworkCombat.Life.cs:14`는 `FeelAudio.PlayAt(FeelSound.ShieldHit, ...)`를 바로 불러서 `A/HitConfirm/ShieldHit` 폴더를 보지 않는다. 내 보호막(`ShieldFeedback`)은 폴더를 먼저 본다.
+3. **제트기 소리의 정점이 코드에 박혀 있다.** `GunRunFx.cs:26`의 `JetPeak = 1.3`은 합성 소리가 가장 큰 순간이다. 파일로 바꾸면 그 파일의 정점에 맞춰야 한다.
+4. **한 번 울리는 3D 소리마다 GameObject를 새로 만들고 지운다**(`GameAudio.PlayAt`). 재사용이 없다. Sonity의 풀로 옮기면 사라진다.
+
+### 6.2 높은 소리
+
+UI 채널에서 낮은 소리 규칙(700 Hz 아래, 2.2 kHz 로우패스)을 어기는 것이 16개다: 5.9의 15개와 특수 처치 팅. 세계 소리 가운데 밝은 것도 같은 귀가 듣는다: 데탕트 가스, 제트기, 환호 휘파람, 망치, 닌자 칼, 기믹의 `Jingle` `Beep` `FireBell` `CarAlarm` `Ding`, 사이렌, 견인차 삐. 파일을 고를 때 낮은 것을 고르고, 필요하면 Sonity 이벤트의 로우패스로 깎는다.
+
+## 7. 짓는 순서 (승인 뒤)
+
+단계마다 커밋 하나와 `bundleVersion` 하나를 쓰고, 단계가 끝날 때마다 게임은 돌아가는 상태로 남는다.
+
+1. **바닥.**
+   - Sonity를 넣는다.
+   - 믹서를 만든다: 그룹 6개(전투·이동·목소리·UI·음악·환경음), 노출 볼륨, 세계 그룹의 노출 피치.
+   - `SoundManager`를 둔다.
+   - 얇은 층을 만든다. 하는 일은 넷이다: 표면 대체, 좀비가 듣는 소음, 설정 볼륨, 슬로모션.
+   - 이 단계에서는 들리는 것이 바뀌지 않는다.
+2. **있는 소리 옮기기.**
+   - `SoundBank` 폴더와 `Sounds.csv`를 Sonity 이벤트로 바꾸는 편집기 도구를 만든다. 다시 돌릴 수 있게 해서 "폴더에 파일을 넣으면 소리가 된다"를 지킨다.
+   - 분야 하나씩 옮긴다: 이동, 전투, 목소리, 총, 환경음과 음악.
+   - 4장의 1번 답에 따라 `Sounds.csv`의 소리 숫자를 지운다.
+3. **합성 소리를 파일로.**
+   - 5.1과 5.2를 먼저 한다. 지우기만 하면 된다.
+   - 다음은 이미 있는 파일로 바꿀 수 있는 것(**굵은 글씨**)이다.
+   - 새 파일이 필요한 것은 사용자가 파일을 고르는 대로 넣는다.
+   - 합성 코드는 바꾼 만큼 지운다.
+4. **옛 길 지우기.** `GameAudio.Bind`, `VoiceRing`, `PlayAt`, `SoundBank`를 지운다. Sonity 밖에서 `AudioSource`를 만드는 스크립트가 없는지 보는 감사 검사를 더한다. 손 점검(`Tools/Checks/hands_check.py`)과 같은 방식이다.
