@@ -101,3 +101,18 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 83b0c0ae3f09415a84f55cd70bda292d, type: 3}
     - {fileID: 8300000, guid: 77a2affe923344e189f9406238d35441, type: 3}
     - {fileID: 8300000, guid: 1973e2169a2944d3bbaee53bee80ff50, type: 3}
+  - key: Reaper/Attack
+    clips:
+    - {fileID: 8300000, guid: 1ebec76b43ffda24e9710ca7683f9190, type: 3}
+  - key: Reaper/Evaded
+    clips:
+    - {fileID: 8300000, guid: b4945fce7456c3c419e49dc558b7ba1f, type: 3}
+    - {fileID: 8300000, guid: 92a86a2627c96e64fbb2720ab63c8de6, type: 3}
+  - key: Reaper/Hit
+    clips:
+    - {fileID: 8300000, guid: 1f95050729d9e9d46bc89d80254392ee, type: 3}
+    - {fileID: 8300000, guid: 1e0084e40b1adb345b5c30d9f9ed3f35, type: 3}
+    - {fileID: 8300000, guid: d28590daaa8f6a847bb6b2acddafd580, type: 3}
+    - {fileID: 8300000, guid: f976bc5c48b149845b73f15b21cca8bc, type: 3}
+    - {fileID: 8300000, guid: 16c88647b4507064691795e6a53787f0, type: 3}
+    - {fileID: 8300000, guid: bb0fff72332074844b0196e335aaeda5, type: 3}

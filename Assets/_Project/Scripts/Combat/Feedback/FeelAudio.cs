@@ -14,9 +14,9 @@ public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagO
 /// <summary>
 /// Shot, mechanical and confirm sounds. A gun sound is, in order: the clips assigned to it (GunFeel / WeaponData),
 /// a Tables/SoundCues row "Gun&lt;sound&gt;/&lt;gun&gt;" (GunBolt/Rifle: the slide pulled, then let go), the Guns sound bank's
-/// "&lt;gun&gt;/&lt;sound&gt;" then "&lt;sound&gt;" (Art/Audio/Guns/Rifle/Shot, Art/Audio/Guns/DryFire), and last a synthesized
-/// sound built once, so the game has a full audio layer before any clips exist. Every shot also gets the room's tail
-/// (GunReverb). Created on first use during Play; no scene setup.
+/// "&lt;gun&gt;/&lt;sound&gt;" then "&lt;sound&gt;" (Art/Audio/Guns/Rifle/Shot, Art/Audio/Guns/DryFire); with none of them
+/// it is silent. Only the shield's two sounds are still made here until their files are chosen. Every shot also gets
+/// the room's tail (GunReverb). Created on first use during Play; no scene setup.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FeelAudio : MonoBehaviour
@@ -99,7 +99,7 @@ public sealed class FeelAudio : MonoBehaviour
     /// <summary>
     /// Seconds from a gun sound's start to its loudest moment (a magazine's clack, a bolt hitting home), averaged over the
     /// clips it picks from, found the way Play finds them. A caller that knows when the hit happens starts it this much early.
-    /// 0 for the synthesized fallback, whose hit is at its start, and for clips whose samples can't be read.
+    /// 0 with no clips, and for clips whose samples can't be read.
     /// </summary>
     public static float PeakTime(FeelSound sound, AudioClip[] overrides, GunSoundProfile gun)
     {
@@ -159,15 +159,16 @@ public sealed class FeelAudio : MonoBehaviour
     }
 
     /// <summary>
-    /// Builds the voices, loads the gun sounds and the room tails and synthesizes every fallback, which the first shot
-    /// would otherwise stop to do.
+    /// Builds the voices, loads the gun sounds and the room tails and makes the shield's two sounds, which the first shot
+    /// or hit would otherwise stop to do.
     /// </summary>
     public static void Prepare()
     {
         if (!Application.isPlaying) return;
         Get().Bank(GunBank);
         GunReverb.Prepare();
-        foreach (FeelSound sound in Enum.GetValues(typeof(FeelSound))) Synthesized(sound);
+        Synthesized(FeelSound.ShieldBreak);
+        Synthesized(FeelSound.ShieldHit);
         // The reload hits a timed reload lines up (WeaponFeedback), read now rather than on the first reload.
         foreach (GunSoundProfile gun in Enum.GetValues(typeof(GunSoundProfile)))
         {
@@ -325,10 +326,14 @@ public sealed class FeelAudio : MonoBehaviour
 
     private void OnDestroy() { if (instance == this) instance = null; }
 
-    /// <summary>Assigned clips first, otherwise a synthesized variation; avoids repeating the last pick.</summary>
+    /// <summary>
+    /// Assigned clips first, otherwise the shield's made variations; null (silence) for anything else. Avoids repeating
+    /// the last pick.
+    /// </summary>
     private AudioClip Pick(FeelSound sound, AudioClip[] overrides)
     {
         AudioClip[] pool = HasAny(overrides) ? overrides : Synthesized(sound);
+        if (pool == null) return null;
         previous.TryGetValue(sound, out var last);
         AudioClip chosen = null; int candidates = 0;
         foreach (var clip in pool)
@@ -349,11 +354,12 @@ public sealed class FeelAudio : MonoBehaviour
         return false;
     }
 
+    // Null for a sound that isn't made here.
     private static AudioClip[] Synthesized(FeelSound sound)
     {
+        if (!IsMade(sound)) return null;
         if (synthesized.TryGetValue(sound, out var clips)) return clips;
-        int variations = sound == FeelSound.RifleShot || sound == FeelSound.PistolShot || sound == FeelSound.HeavyShot ? 4
-            : sound == FeelSound.HitMarker ? 3 : 2;
+        const int variations = 2;
         clips = new AudioClip[variations];
         for (int i = 0; i < variations; i++)
         {
@@ -369,32 +375,15 @@ public sealed class FeelAudio : MonoBehaviour
 
     // ---------------------------------------------------------------- synthesis
 
+    // Only the shield's two sounds are still made here: no file has been chosen for them yet (SoundRebuild.md 5.4). Every
+    // other sound plays its files or nothing; the synthesized shots, mechanics, confirms and fall went in 0.9.237
+    // ("소리를 코드로 만들면 안 되잖아", user 2026-11-20), as their recorded files had long played first.
+    private static bool IsMade(FeelSound sound) => sound == FeelSound.ShieldBreak || sound == FeelSound.ShieldHit;
+
     private static float[] Synthesize(FeelSound sound, System.Random random)
     {
         switch (sound)
         {
-            case FeelSound.RifleShot: return Gunshot(random, .55f, crack: .0045f, body: .042f, thumpFrom: 150f, thumpTo: 46f, thumpDecay: .075f, tail: .17f, crackGain: 1f);
-            case FeelSound.PistolShot: return Gunshot(random, .42f, crack: .0035f, body: .03f, thumpFrom: 210f, thumpTo: 70f, thumpDecay: .05f, tail: .11f, crackGain: 1.25f);
-            case FeelSound.HeavyShot: return Gunshot(random, .8f, crack: .006f, body: .065f, thumpFrom: 110f, thumpTo: 34f, thumpDecay: .12f, tail: .26f, crackGain: .9f);
-            case FeelSound.DryFire: return Finish(Mix(.09f, Click(random, 0f, .7f, 2600f), Click(random, .019f, .45f, 1900f)));
-            // Dry mechanical tick (rising pitch is applied at play time), not a bell: no ringing tail.
-            case FeelSound.LowAmmo:
-            case FeelSound.LowAmmoClick: return Finish(Mix(.06f, Click(random, 0f, .9f, 3200f), Sine(1400f * Jitter(random, .02f), .006f, .35f)), .8f);
-            case FeelSound.LastRound: return Finish(Mix(.09f, Click(random, 0f, .7f, 2600f), Click(random, .019f, .45f, 1900f)));
-            case FeelSound.MagOut: return Finish(Mix(.3f, Clack(random, 0f, .9f, 1500f), Slide(random, .015f, .07f, .3f), Clack(random, .095f, .35f, 1100f)));
-            case FeelSound.MagIn: return Finish(Mix(.3f, Slide(random, 0f, .06f, .35f), Clack(random, .065f, 1f, 1700f), Click(random, .078f, .5f, 3200f)));
-            case FeelSound.Bolt: return Finish(Mix(.38f, Clack(random, 0f, .7f, 1300f), Slide(random, .02f, .07f, .25f), Clack(random, .13f, 1f, 1900f),
-                Shift(Bell(1800f, .05f, .3f, 1.44f, 2.3f), .13f)));
-            // Bolt's two halves.
-            case FeelSound.SlideBack: return Finish(Mix(.13f, Clack(random, 0f, .7f, 1300f), Slide(random, .02f, .07f, .25f)));
-            case FeelSound.SlideForward: return Finish(Mix(.25f, Clack(random, 0f, 1f, 1900f), Bell(1800f, .05f, .3f, 1.44f, 2.3f)));
-            case FeelSound.HitMarker: return Finish(Mix(.07f, Click(random, 0f, .8f, 5200f), Sine(1900f * Jitter(random, .03f), .012f, .55f), Sine(3800f, .006f, .25f)), .85f);
-            // Kill confirms stay low and dull: no bell/ding layer, which is piercing at confirm volume.
-            case FeelSound.Kill: return Finish(Mix(.65f, Sweep(120f, 40f, .17f, 1f), Noise(random, 0f, .055f, .8f, 900f), Whoosh(random)), .95f);
-            case FeelSound.HeadshotKill: return Finish(Mix(.7f, Sweep(130f, 38f, .2f, 1f), Noise(random, 0f, .06f, .85f, 1100f), Whoosh(random),
-                Click(random, 0f, .6f, 2200f)), .95f);
-            case FeelSound.BodyFall: return Finish(Mix(.45f, Sweep(95f, 42f, .09f, 1f), Noise(random, 0f, .035f, .8f, 700f),
-                Shift(Noise(random, 0f, .05f, .3f, 1800f), .015f)), .9f);
             // A pane of energy giving way: a bright crack, the charge falling out of it (a falling whine over a low knock),
             // and glass raining down in short high pings that thin out.
             case FeelSound.ShieldBreak: return Finish(Mix(.6f, Hiss(random, 0f, .03f, .9f, 3200f), Sweep(900f, 170f, .09f, .45f),
@@ -402,7 +391,7 @@ public sealed class FeelAudio : MonoBehaviour
             // Energy taking a blow, never flesh: a sharp electric crack, a falling zap and a glassy ping over a short knock.
             case FeelSound.ShieldHit: return Finish(Mix(.24f, Hiss(random, 0f, .012f, 1f, 4500f), Sweep(2600f, 1100f, .035f, .45f),
                 Bell(3400f * Jitter(random, .05f), .03f, .3f, 1.52f, 2.31f), Sweep(220f, 90f, .03f, .5f)), .85f, 1.6f);
-            default: return new float[64];
+            default: return null;
         }
     }
 
@@ -432,114 +421,6 @@ public sealed class FeelAudio : MonoBehaviour
             var ping = Shift(Bell(frequency, .018f + (float)random.NextDouble() * .03f, gain, 1.47f, 2.09f), start);
             for (int i = 0; i < Mathf.Min(ping.Length, data.Length); i++) data[i] += ping[i];
         }
-        return data;
-    }
-
-    /// <summary>
-    /// Layered gunshot: supersonic crack (high-passed noise), muzzle blast body (low-passed noise), chest thump
-    /// (falling sine), a tiny mechanism click and a filtered tail with early reflections for space.
-    /// </summary>
-    private static float[] Gunshot(System.Random random, float seconds, float crack, float body, float thumpFrom, float thumpTo,
-        float thumpDecay, float tail, float crackGain)
-    {
-        int n = Mathf.CeilToInt(seconds * Rate);
-        var dry = new float[n];
-        float lowBody = 0f, lowTail = 0f, lowCrack = 0f, phase = 0f;
-        float bodyCut = Alpha(1700f * Jitter(random, .12f)), tailCut = Alpha(520f * Jitter(random, .15f)), crackCut = Alpha(2600f);
-        float thumpDecayJ = thumpDecay * Jitter(random, .1f);
-        for (int i = 0; i < n; i++)
-        {
-            float t = (float)i / Rate, white = (float)(random.NextDouble() * 2.0 - 1.0);
-            lowCrack += crackCut * (white - lowCrack);
-            lowBody += bodyCut * (white - lowBody);
-            lowTail += tailCut * (white - lowTail);
-            float attack = Mathf.Clamp01(t / .0006f);
-            float frequency = thumpTo + (thumpFrom - thumpTo) * Mathf.Exp(-t / .022f);
-            phase += 2f * Mathf.PI * frequency / Rate;
-            dry[i] = (white - lowCrack) * Mathf.Exp(-t / crack) * crackGain
-                + lowBody * Mathf.Exp(-t / body) * 2.6f * attack
-                + Mathf.Sin(phase) * Mathf.Exp(-t / thumpDecayJ) * .95f * attack
-                + lowTail * Mathf.Exp(-t / tail) * 3.2f * Mathf.Clamp01(t / .012f)
-                + (t < .004f ? Mathf.Sin(2f * Mathf.PI * 3300f * t) * Mathf.Exp(-t / .0012f) * .35f : 0f);
-        }
-        // Early reflections, darker and quieter than the direct blast.
-        var output = (float[])dry.Clone();
-        int[] delays = { (int)(.029f * Rate * Jitter(random, .1f)), (int)(.063f * Rate * Jitter(random, .1f)), (int)(.118f * Rate * Jitter(random, .1f)) };
-        float[] gains = { .32f, .2f, .11f };
-        for (int d = 0; d < delays.Length; d++)
-        {
-            float low = 0f, cut = Alpha(1400f - d * 350f);
-            for (int i = delays[d]; i < n; i++) { low += cut * (dry[i - delays[d]] - low); output[i] += low * gains[d]; }
-        }
-        return Finish(output, .95f, drive: 1.9f);
-    }
-
-    private static float[] Click(System.Random random, float start, float gain, float tone)
-    {
-        int n = Mathf.CeilToInt((start + .02f) * Rate); var data = new float[n]; float low = 0f, cut = Alpha(tone);
-        for (int i = (int)(start * Rate); i < n; i++)
-        {
-            float t = i / (float)Rate - start, white = (float)(random.NextDouble() * 2.0 - 1.0);
-            low += cut * (white - low);
-            data[i] = ((white - low) * Mathf.Exp(-t / .0011f) + Mathf.Sin(2f * Mathf.PI * tone * .7f * t) * Mathf.Exp(-t / .0035f) * .5f) * gain;
-        }
-        return data;
-    }
-
-    /// <summary>Metal-on-polymer impact: a short low-passed burst plus a damped knock.</summary>
-    private static float[] Clack(System.Random random, float start, float gain, float tone)
-    {
-        int n = Mathf.CeilToInt((start + .06f) * Rate); var data = new float[n]; float low = 0f, cut = Alpha(tone * 2f);
-        for (int i = (int)(start * Rate); i < n; i++)
-        {
-            float t = i / (float)Rate - start, white = (float)(random.NextDouble() * 2.0 - 1.0);
-            low += cut * (white - low);
-            data[i] = (low * Mathf.Exp(-t / .009f) * 2.2f + Mathf.Sin(2f * Mathf.PI * tone * t) * Mathf.Exp(-t / .014f) * .45f) * gain;
-        }
-        return data;
-    }
-
-    private static float[] Slide(System.Random random, float start, float duration, float gain)
-    {
-        int n = Mathf.CeilToInt((start + duration) * Rate); var data = new float[n]; float low = 0f, lower = 0f;
-        for (int i = (int)(start * Rate); i < n; i++)
-        {
-            float t = (i / (float)Rate - start) / duration, white = (float)(random.NextDouble() * 2.0 - 1.0);
-            low += Alpha(2500f + 3000f * t) * (white - low); lower += Alpha(700f) * (low - lower);
-            data[i] = (low - lower) * Mathf.Sin(Mathf.PI * Mathf.Clamp01(t)) * gain;
-        }
-        return data;
-    }
-
-    private static float[] Noise(System.Random random, float start, float decay, float gain, float cutoff)
-    {
-        int n = Mathf.CeilToInt((start + decay * 6f) * Rate); var data = new float[n]; float low = 0f, cut = Alpha(cutoff);
-        for (int i = (int)(start * Rate); i < n; i++)
-        {
-            float t = i / (float)Rate - start; low += cut * ((float)(random.NextDouble() * 2.0 - 1.0) - low);
-            data[i] = low * Mathf.Exp(-t / decay) * gain * 2.4f;
-        }
-        return data;
-    }
-
-    /// <summary>Kill "whump": band-limited noise swelling for 60 ms, then falling away, like a camera shutter through air.</summary>
-    private static float[] Whoosh(System.Random random)
-    {
-        int n = Mathf.CeilToInt(.42f * Rate); var data = new float[n]; float low = 0f, lower = 0f;
-        for (int i = 0; i < n; i++)
-        {
-            float t = i / (float)Rate, white = (float)(random.NextDouble() * 2.0 - 1.0);
-            low += Alpha(400f + 2600f * Mathf.Exp(-t / .12f)) * (white - low); lower += Alpha(180f) * (low - lower);
-            float envelope = t < .06f ? t / .06f : Mathf.Exp(-(t - .06f) / .09f);
-            data[i] = (low - lower) * envelope * .9f;
-        }
-        return data;
-    }
-
-    private static float[] Sine(float frequency, float decay, float gain)
-    {
-        int n = Mathf.CeilToInt(decay * 7f * Rate); var data = new float[n];
-        for (int i = 0; i < n; i++) { float t = i / (float)Rate; data[i] = Mathf.Sin(2f * Mathf.PI * frequency * t) * Mathf.Exp(-t / decay) * gain; }
         return data;
     }
 

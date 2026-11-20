@@ -25,6 +25,8 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         (ZombieVoice.BankId, "Assets/_Project/Art/Audio/Enemies/Zombie"),
         // Throwables (Throwables.Sound): pins, throws, bounces, bursts and the thrown knife's hits.
         ("Grenades", "Assets/_Project/Art/Audio/Grenades"),
+        // The stealth round (PlayerThrow): the stone taken in hand (StoneReady) and where it lands (StoneHit).
+        (PlayerThrow.BankId, "Assets/_Project/Art/Audio/Stealth"),
     };
     private static bool queued;
 

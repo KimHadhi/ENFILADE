@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 /// <summary>
 /// Global tuning for shot feel, hit feedback and enemy hit reactions. Per-weapon kick and sound live in WeaponData (Feel).
 /// Loaded from Resources/Combat/GunFeel; field defaults apply when the asset is missing. Every clip slot is optional:
-/// an empty slot uses the built-in synthesized sound (FeelAudio).
+/// an empty slot uses the sound banks' clips (FeelAudio), and nothing when they have none.
 /// </summary>
 public sealed class GunFeelSettings : ScriptableObject
 {
@@ -67,7 +67,7 @@ public sealed class GunFeelSettings : ScriptableObject
     [Min(0f), Tooltip("How far ahead of the muzzle the light sits (m), so the gun itself doesn't hide it.")]
     public float muzzleLightAhead = .15f;
 
-    [Header("Sounds (empty = synthesized)")]
+    [Header("Sounds (empty = the Guns sound bank's)")]
     [Range(0f, 1f)] public float gunshotVolume = .55f;
     [Range(0f, .2f)] public float gunshotPitchJitter = .045f;
     public AudioClip[] dryFireSounds, lowAmmoSounds, lowAmmoClickSounds, lastRoundSounds, magOutSounds, magInSounds, boltSounds;
@@ -78,7 +78,7 @@ public sealed class GunFeelSettings : ScriptableObject
     [Min(0), Tooltip("Magazines this size or smaller get no low-ammo sounds (TFA's autodetection: 4); their last round still " +
         "clicks empty.")]
     public int lowAmmoSmallMagazine = 4;
-    [Tooltip("Only used while the HitConfirm sound bank (Art/Audio/HitConfirm) is missing; empty = synthesized.")]
+    [Tooltip("Only used while the HitConfirm sound bank (Art/Audio/HitConfirm) has no Kill clips; empty = silent.")]
     public AudioClip[] killSounds, headshotKillSounds;
     [Range(0f, 1f)] public float killVolume = .6f;
     [Range(0f, .1f), Tooltip("Each kill inside the kill feed's streak window raises the kill confirm's pitch by this much.")]

@@ -150,8 +150,6 @@ public sealed class StealthView : MonoBehaviour, ITableBound
     private void Awake()
     {
         movement = GetComponent<PlayerMovement>();
-        // The knock key (PlayerKnock) goes with the stealth view: alone there is no PlayerNetworkCombat to add it.
-        if (GetComponent<PlayerKnock>() == null) gameObject.AddComponent<PlayerKnock>();
         for (int i = 0; i < rings.Length; i++) rings[i] = new Ring();
         aimBlock = new MaterialPropertyBlock();
         aimDot = new MaterialPropertyBlock();

@@ -11,7 +11,7 @@ public sealed partial class ZombieMind
         foreach (var mind in minds) if (mind != null && mind.Thinks && !mind.horde) mind.Heard(noise, source);
     }
 
-    // A thrown stone landing (PlayerThrow), or a knock (PlayerKnock): every one not awake that hears it turns to watch
+    // A thrown stone landing (PlayerThrow): every one not awake that hears it turns to watch
     // where it fell, its mind on it (lureGlance, lureFocus), and the nearest (by the way the sound came) then goes over to
     // look. It never says where the thrower is, nor wakes anyone, nor marks anyone on the thrower's stealth HUD: a zombie
     // facing the way past is turned off it, which is what the stone is for (user, 2026-11-11: "좀비가 내 쪽을 바라보고

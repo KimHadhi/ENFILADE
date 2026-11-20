@@ -80,7 +80,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private ExecutionKnife executionKnife;
     private PlayerThrow throws;
     private PlayerGrenades grenades;
-    private PlayerKnock knocks;
     private ClassKit kit;
     private DetenteKit detente;
     private KnightCover cover;
@@ -201,8 +200,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         // Stones (PlayerThrow): thrown by the owner, copied on every other PC.
         throws = GetComponent<PlayerThrow>();
         if (throws == null) throws = gameObject.AddComponent<PlayerThrow>();
-        // Knocks on walls (PlayerKnock), likewise: the host's is the one its zombies hear.
-        if (!TryGetComponent(out knocks)) knocks = gameObject.AddComponent<PlayerKnock>();
         // The class throwable on G (PlayerGrenades): thrown by the owner, copied on every other PC, burst where its PC says.
         if (!TryGetComponent(out grenades)) grenades = gameObject.AddComponent<PlayerGrenades>();
         // The class (ClassKit): an Assault's CHARGE reaches friends near it on their PCs.
@@ -231,7 +228,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             grenades.Handed += OnGrenadeHanded;
             grenades.SetDown += OnMinePlaced;
             grenades.Chained += OnMinesChained;
-            knocks.Knocked += OnKnocked;
             kit.Charged += OnCharged;
             kit.Taunted += OnTaunted;
             kit.Claimed += OnClaimed;
@@ -302,7 +298,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             grenades.SetDown -= OnMinePlaced;
             grenades.Chained -= OnMinesChained;
         }
-        if (knocks != null) knocks.Knocked -= OnKnocked;
         if (kit != null) { kit.Charged -= OnCharged; kit.Taunted -= OnTaunted; kit.Claimed -= OnClaimed; kit.Dueled -= OnDueled; }
         if (detente != null) { detente.Injected -= OnInjected; detente.TreatBegan -= OnTreatBegan; detente.TreatStopped -= OnTreatStopped; }
         if (cover != null) { cover.Opened -= OnCoverOpened; cover.Stepped -= OnCoverStepped; }
@@ -405,7 +400,6 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnGrenadeHanded(Throwable kind, PlayerGrenades.HandPhase phase) => GrenadeHandRpc((byte)kind, (byte)phase);
     private void OnMinePlaced(ushort id, Vector3 at, Quaternion facing, bool wall, ushort[] retired) => MineRpc(id, at, facing, wall, retired);
     private void OnMinesChained(ulong[] owners, ushort[] ids, Vector3 middle) => MineChainRpc(owners, ids, middle);
-    private void OnKnocked(Vector3 at, Vector3 normal) => KnockRpc(at, normal);
     private void OnCharged(Vector3 at) => ChargeRpc(at, kit.SoundedSeconds, kit.SoundedReach);
     private void OnTaunted(Vector3 at) => TauntRpc(at);
     private void OnClaimed(Vector3 head, Vector3 from, Vector3 ground, bool grand) => BountyRpc(head, from, ground, grand);

@@ -34,7 +34,7 @@
 | [Outfits](Outfits/) | 26 | 옷 입히기와 맞춤, 몸에 거는 물건의 착용 위치([WearPosition](Outfits/WearPosition.cs))와 플레이어의 조정([ItemAdjust](Outfits/ItemAdjust.cs)), 플레이 없이 입혀 보는 검사대([WardrobeBench](Outfits/WardrobeBench.cs)) |
 | [Outfits/Fit](Outfits/Fit/) | 5 | 겹쳐 입은 옷 맞춤의 계산(엔진 없이도 도는 순수 코드) |
 | [Poke](Poke/) | 5 | 손가락질과 찌르기 |
-| [Stealth](Stealth/) | 3 | 노크와 돌 던지기 |
+| [Stealth](Stealth/) | 1 | 돌 던지기(벽 두드리기는 2026-11-21에 지웠다) |
 
 ## 무엇을 고치려면 어디를
 

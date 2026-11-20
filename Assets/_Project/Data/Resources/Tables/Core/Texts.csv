@@ -908,7 +908,6 @@ settings.keys.flashlight,라이트,Flashlight,키 설정 창 > 줄(Player/Flashl
 settings.keys.customize,총 꾸미기,Customize gun,키 설정 창 > 줄(Player/Customize. 꾸미기 창을 닫는 키도 이것)
 settings.keys.throw,돌 던지기,Throw stone,키 설정 창 > 줄(Player/Throw. 누르고 있으면 겨누고 놓으면 던진다)
 settings.keys.grenade,클래스 투척물,Class throwable,키 설정 창 > 줄(Player/Grenade. 누르면 바로 던지고 누르고 있으면 겨눈다)
-settings.keys.knock,벽 두드리기,Knock on wall,키 설정 창 > 줄(Player/Knock)
 settings.keys.slot1,1번 칸 (주무기),Slot 1 (primary),키 설정 창 > 줄(Combat/Slot1. 보조 키 기본은 숫자패드 1)
 settings.keys.slot2,2번 칸 (보조 무기),Slot 2 (secondary),키 설정 창 > 줄(Combat/Slot2)
 settings.keys.slot3,3번 칸 (근접),Slot 3 (melee),키 설정 창 > 줄(Combat/Slot3)

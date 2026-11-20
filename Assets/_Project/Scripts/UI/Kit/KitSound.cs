@@ -3,11 +3,12 @@ using UnityEngine;
 
 /// <summary>
 /// The menus' sounds, played flat on the UI channel (GameAudio: they follow the UI volume and keep playing while the
-/// game is paused). A cue is, in order, a clip from the UI sound bank when its folder holds any
-/// (Art/Audio/UI/&lt;cue&gt;, e.g. Art/Audio/UI/Buy; volume and pitch in Tables/Sounds, row "UI/&lt;cue&gt;") and otherwise a
-/// short sound made here once, so a menu answers the player before any clips exist, as the guns do (FeelAudio).
-/// First used by the shop (user, 2026-11-10: nothing told them a buy went through); the HUD's alerts and what the
-/// player picks up use it too, each kind of pickup with a sound of its own.
+/// game is paused). A cue is a clip from the UI sound bank (Art/Audio/UI/&lt;cue&gt;, e.g. Art/Audio/UI/Buy; volume and
+/// pitch in Tables/Sounds, row "UI/&lt;cue&gt;"). The cues no file has been chosen for yet still have a short sound made
+/// here (Docs/Features/SoundRebuild.md 5.9), and those go as their files come in; a cue whose file is in its folder has
+/// none, and is silent if the folder is emptied. First used by the shop (user, 2026-11-10: nothing told them a buy went
+/// through); the HUD's alerts and what the player picks up use it too, every pickup the shared taking (Pick) under a
+/// sound of its own kind (PlayPickup).
 /// </summary>
 public static class KitSound
 {
@@ -26,9 +27,10 @@ public static class KitSound
     /// Enfiladed, the tower's last kill and its banner (EnfiladedFinale).
     /// The ability cards (PerkCardScreen): CardPick, a card pressed and let go; CardPickGrand, the same with a low fifth
     /// under it, for a card picked to its last level or a special one; CardBurn, the cards not picked catching fire.
+    /// Pick: the taking itself, under every pickup's own cue (PlayPickup). Added last so the cues before it keep their numbers.
     public enum Cue { Buy, Refuse, Alert, PickAmmo, PickHeal, PickShield, PickMoney, PickGun, Escape, Suspect, Spotted, Unseen, Charge,
         Taunt, Hunter, HunterLost, Ping, Mark, Bounty, Supply, Hammer, Splinter, Collapse,
-        TowerRise, TowerTick, TowerScan, TowerOpen, TowerClear, Enfiladed, CardPick, CardPickGrand, CardBurn }
+        TowerRise, TowerTick, TowerScan, TowerOpen, TowerClear, Enfiladed, CardPick, CardPickGrand, CardBurn, Pick }
 
     private const string BankId = "UI";
     private const int Rate = 44100;
@@ -80,10 +82,26 @@ public static class KitSound
         }
         else
         {
+            // Only the cues still waiting for a file have a sound made here (Docs/Features/SoundRebuild.md 5.9); the
+            // others are silent while their folder is empty.
+            clip = Made(cue);
+            if (clip == null) return;
             source.pitch = 1f;
-            source.PlayOneShot(clip = Made(cue), Mathf.Clamp01(volume));
+            source.PlayOneShot(clip, Mathf.Clamp01(volume));
         }
         endsAt[(int)cue] = Time.unscaledTime + clip.length / Mathf.Max(.05f, source.pitch);
+    }
+
+    /// <summary>
+    /// Something taken into the hands (off the floor, a rack, a crate, a thrown knife picked back up): the taking itself
+    /// (Pick, Art/Audio/UI/Pick) under what was taken (PickAmmo, PickHeal…), so every pickup sounds like one and each kind
+    /// adds its own (user, 2026-11-21: "Pick up SFX는 일단 줍기고 거기에 체력이나 쉴드나 그런 거에 따라 따로 추가 효과음").
+    /// Given by a friend (a Support's resupply, a heal) is not a pickup and plays the kind's cue alone.
+    /// </summary>
+    public static void PlayPickup(Cue kind, float volume = 1f)
+    {
+        Play(Cue.Pick, volume);
+        Play(kind, volume);
     }
 
     private static AudioClip Made(Cue cue)
@@ -93,15 +111,10 @@ public static class KitSound
         float[] data = cue switch
         {
             Cue.Buy => Till(),
+            Cue.Refuse => Buzz(),
             Cue.Alert => Fall(),
-            Cue.PickAmmo => Magazine(),
-            Cue.PickHeal => Mend(),
-            Cue.PickShield => Charge(),
             Cue.PickMoney => Coin(),
-            Cue.PickGun => Rack(),
             Cue.Escape => Away(),
-            Cue.Suspect => Wonder(),
-            Cue.Spotted => Found(),
             Cue.Unseen => Slip(),
             Cue.Charge => Rally(),
             Cue.Taunt => Clash(),
@@ -123,8 +136,9 @@ public static class KitSound
             Cue.CardPick => Pressed(false),
             Cue.CardPickGrand => Pressed(true),
             Cue.CardBurn => Kindled(),
-            _ => Buzz()
+            _ => null
         };
+        if (data == null) return null;
         var clip = AudioClip.Create("Kit " + cue, data.Length, 1, Rate, false);
         clip.SetData(data, 0);
         clip.hideFlags = HideFlags.HideAndDontSave;
@@ -192,41 +206,6 @@ public static class KitSound
         return Finish(data, .55f);
     }
 
-    // Ammo: a magazine dropped into a pouch, two dry clicks over a short low knock.
-    private static float[] Magazine()
-    {
-        var data = new float[(int)(Rate * .2f)];
-        var random = new System.Random(7741);
-        Click(data, random, 0f, .012f, .7f);
-        Click(data, random, .055f, .009f, .5f);
-        Knock(data, .004f, 190f, .03f, .6f);
-        return Finish(data, .6f);
-    }
-
-    // A medkit: two round notes going up a fifth, the kind of sound that says better.
-    private static float[] Mend()
-    {
-        var data = new float[(int)(Rate * .42f)];
-        Note(data, 0f, 587f, .07f, .5f);
-        Note(data, .1f, 880f, .13f, .5f);
-        return Finish(data, .5f);
-    }
-
-    // A shield cell: a tone sweeping up as it charges, with a fine flutter on it, then let go.
-    private static float[] Charge()
-    {
-        var data = new float[(int)(Rate * .34f)];
-        float turn = 0f;
-        for (int i = 0; i < data.Length; i++)
-        {
-            float t = i / (float)Rate, along = t / .34f;
-            turn += 2f * Mathf.PI * Mathf.Lerp(420f, 1500f, along * along) / Rate;
-            float level = Mathf.Min(1f, t / .01f) * Mathf.Min(1f, (.34f - t) / .09f);
-            data[i] = (Mathf.Sin(turn) + .35f * Mathf.Sin(turn * 2f)) * (.8f + .2f * Mathf.Sin(2f * Mathf.PI * 46f * t)) * level;
-        }
-        return Finish(data, .45f);
-    }
-
     // Money: a coin's two quick high rings, thinner and shorter than the shop's till.
     private static float[] Coin()
     {
@@ -234,18 +213,6 @@ public static class KitSound
         Bell(data, 0f, 2637f, .05f, .3f);
         Bell(data, .045f, 3520f, .1f, .34f);
         return Finish(data, .5f);
-    }
-
-    // A gun: taken up and its action worked, a heavy knock and two clacks after it.
-    private static float[] Rack()
-    {
-        var data = new float[(int)(Rate * .3f)];
-        var random = new System.Random(1187);
-        Knock(data, 0f, 120f, .05f, .8f);
-        Click(data, random, .002f, .014f, .6f);
-        Click(data, random, .1f, .012f, .7f);
-        Click(data, random, .16f, .016f, .55f);
-        return Finish(data, .65f);
     }
 
     // A chapter escaped: four notes climbing a chord, the last held, over a low note under them all.
@@ -295,29 +262,6 @@ public static class KitSound
             float t = (i - from) / (float)Rate, turn = 2f * Mathf.PI * pitch * t;
             data[i] += (Mathf.Sin(turn) + .3f * Mathf.Sin(turn * 2f) + .12f * Mathf.Sin(turn * 3f)) * Mathf.Exp(-t / decay) * Mathf.Min(1f, t / .004f) * level;
         }
-    }
-
-    // Something stopped to look this way: two soft notes rising a fourth, a question, quiet so it warns without startling.
-    private static float[] Wonder()
-    {
-        var data = new float[(int)(Rate * .34f)];
-        Click(data, new System.Random(77), 0f, .003f, .25f);
-        Note(data, 0f, 740f, .07f, .45f);
-        Note(data, .085f, 988f, .13f, .55f);
-        return Finish(data, .5f);
-    }
-
-    // Found: a hard knock under a bright chord that bends up as it strikes, gone in half a second. Our own sting, made
-    // here, for the '!' over the zombie that woke; heard only while Art/Audio/UI/Spotted is empty (it holds the user's
-    // Alarmed since 2026-11-20, as Suspect holds their Suspicious in place of Wonder).
-    private static float[] Found()
-    {
-        var data = new float[(int)(Rate * .55f)];
-        Click(data, new System.Random(913), 0f, .004f, .9f);
-        Knock(data, 0f, 150f, .11f, .8f);
-        Stab(data, 0f, 880f, .2f, .5f);
-        Stab(data, .012f, 1318f, .16f, .32f);
-        return Finish(data, .78f);
     }
 
     // Through unseen: three bells climbing, soft and bright.

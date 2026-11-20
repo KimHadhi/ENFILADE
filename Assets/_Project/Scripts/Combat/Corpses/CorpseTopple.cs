@@ -115,7 +115,7 @@ public sealed class CorpseTopple : MonoBehaviour
         landed = true;
         Vector3 impact = pivot + direction * (slide + height * .5f);
         ImpactVfx.Dust(impact, Mathf.Clamp(height * .6f, .5f, 1.6f));
-        // Reuses the imported body-thud clips when present, otherwise the synthesized fall.
+        // The body-thud clips (CombatFeedbackSettings); silent without them.
         FeelAudio.PlayAt(FeelSound.BodyFall, CombatFeedbackSettings.Instance.OrNull()?.bodyThudSounds, impact, .6f, Random.Range(.85f, 1f), 18f);
         var view = Camera.main;
         if (view != null && Vector3.Distance(view.transform.position, impact) < 7f)

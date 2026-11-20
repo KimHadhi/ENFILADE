@@ -53,7 +53,7 @@ public sealed class SceneWarmup : MonoBehaviour
     [Tooltip("Most seconds to wait for the fonts' glyphs (FontWarmup) in a game scene.")]
     public float fontWait = 10f;
     [Tooltip("Sound banks (Resources/Audio, ';'-separated) loaded ahead and kept, besides CombatWarmup's own.")]
-    public string soundBanks = "Grenades;UI";
+    public string soundBanks = "Grenades;UI;Stealth";
 
     [Header("Boot")]
     [Tooltip("The title screen at the start of a run waits behind the loading screen for glyphs, card pictures and shaders.")]

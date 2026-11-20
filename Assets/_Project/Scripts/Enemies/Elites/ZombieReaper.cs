@@ -13,7 +13,10 @@ using UnityEngine;
 /// dodger's own PC (the user's rule: a hit is a plus, a miss is simply a miss), and every full turn leaves it reeling for
 /// overswingStun, open to everyone. Running out of the ring at once works too. Neither a guard nor a parry stops a full
 /// turn of a scythe. Every PC draws the ring from the host's windup and judges only its own player when the windup runs
-/// out (EnemyCombatAI), as the breadbag's cut is. Numbers: Tables/ZombieReaper; its kind's row in ZombieKinds.
+/// out (EnemyCombatAI), as the breadbag's cut is. Its sounds are the user's (2026-11-21), Zombie bank keys Reaper/Attack
+/// as the charge begins and, as the blade goes round, Reaper/Hit when it cut anyone or Reaper/Evaded when it cut no one;
+/// the wind of the charge is still made here. Numbers: Tables/ZombieReaper, the sounds' in Sounds.csv; its kind's row in
+/// ZombieKinds.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ZombieReaper : ZombieElite
@@ -22,7 +25,12 @@ public sealed class ZombieReaper : ZombieElite
     private const int Rate = 44100, RingPoints = 96;
     // The ring's height over the ground (m), and how long it flashes white as the blade goes round (real s).
     private const float RingLift = .06f, FlashSeconds = .35f;
-    private static AudioClip windClip, whooshClip;
+    // Its clips in the Zombie bank (Art/Audio/Enemies/Zombie/Reaper), the user's of 2026-11-21: the attack's start, and
+    // the blade's end when it cut someone or no one.
+    private const string AttackKey = "Reaper/Attack", HitKey = "Reaper/Hit", EvadedKey = "Reaper/Evaded";
+    private static AudioClip windClip;
+    private static SoundBank sounds;
+    private static bool soundsLooked;
 
     [Header("The reap")]
     [SerializeField, Min(.3f), Tooltip("The charge: how long it draws the scythe back before the turn (s).")]
@@ -54,10 +62,6 @@ public sealed class ZombieReaper : ZombieElite
     [SerializeField, Min(.05f)] private float glowSize = .32f;
     [SerializeField, Range(0f, 1f), Tooltip("The cold wind gathering round it as it charges.")]
     private float windVolume = .55f;
-    [SerializeField, Range(0f, 1f), Tooltip("The scythe drawn back, as the charge begins.")]
-    private float chargeVolume = .8f;
-    [SerializeField, Range(0f, 1f), Tooltip("The blade going round.")]
-    private float swingVolume = 1f;
 
     private bool charging;
     private float reelAt = -1f, flashLeft;
@@ -67,7 +71,12 @@ public sealed class ZombieReaper : ZombieElite
     protected override ZombieKind Kind => ZombieKind.Reaper;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void Forget() => windClip = whooshClip = null;
+    private static void Forget()
+    {
+        windClip = null;
+        sounds = null;
+        soundsLooked = false;
+    }
 
     protected override void Awake()
     {
@@ -86,38 +95,40 @@ public sealed class ZombieReaper : ZombieElite
     internal override void Struck(AttackMove move)
     {
         if (move != AttackMove.Reap || !Mine) return;
-        // Every PC: the blade's mark round the floor, its sound, the ring's flash, and its own player judged.
+        // Every PC: the blade's mark round the floor, the ring's flash, its own player judged, and the blade's sound.
         Vector3 feet = Feet;
         SweepArcVfx.Play(transform, Flat(transform.forward), 360f, ringEnd, spinSeconds);
-        var looks = EliteLooks.Instance;
-        PlayLow(Or(looks != null ? EliteLooks.Pick(looks.reaperSwing) : null, Whoosh()), feet + Vector3.up * 1.1f, swingVolume, .62f, 4f, 55f);
         flashLeft = FlashSeconds;
-        Cut(PlayerRoster.Local, feet);
+        // The sound tells whether the blade cut anyone (user, 2026-11-21: "evaded는 차징을 다 하고 공격을 했는데 아무도 안
+        // 맞았을 때, hit는 누구라도 맞았을 때"). Each PC cuts only its own player (the actor decides) and reads every
+        // friend's copy the same way, so all PCs hear the same one without waiting for word back.
+        bool cutAnyone = false;
+        var mine = PlayerRoster.Local;
+        foreach (var player in PlayerRoster.All)
+            if (player != null && player != mine && Reach(player, feet) == Blade.Cut) cutAnyone = true;
+        if (Cut(mine, feet)) cutAnyone = true;
+        PlayKey(cutAnyone ? HitKey : EvadedKey, feet + Vector3.up * 1.1f, 4f, 55f);
         // The host: the turn spent, it reels a moment (Interrupt tells the copies).
         if (Runs) reelAt = Time.time + spinSeconds;
     }
 
-    // The blade at this PC's own player: inside the ring and standing, cut and thrown; hugging it low, under it.
-    private void Cut(PlayerMovement mine, Vector3 feet)
+    // The blade at this PC's own player: inside the ring and standing, cut and thrown; hugging it low, under it and paid.
+    // True when it cut.
+    private bool Cut(PlayerMovement mine, Vector3 feet)
     {
-        if (mine == null || !mine.IsInitialized || mine.IsDead || mine.DamageReceiver == null) return;
-        Vector3 to = mine.transform.position - feet;
-        if (Mathf.Abs(to.y) > floorReach) return;
-        Vector3 flat = Flat(to);
+        if (mine == null || mine.DamageReceiver == null) return false;
+        var blade = Reach(mine, feet);
+        if (blade == Blade.Under && dodgeReward > 0) CombatFeedHUD.Award(Texts.Get("feed.score.reap_dodge"), dodgeReward);
+        if (blade != Blade.Cut) return false;
+        Vector3 flat = Flat(mine.transform.position - feet);
         float away = flat.magnitude;
-        if (away > ringEnd) return;
         Vector3 waist = feet + Vector3.up, chest = mine.transform.position + Vector3.up;
-        // A wall between takes the blade (there is nothing to go under then either).
-        if (away > hugReach && Physics.Linecast(waist, chest, WorldMask, QueryTriggerInteraction.Ignore)) return;
-        if (away <= hugReach && Low(mine))
-        {
-            if (dodgeReward > 0) CombatFeedHUD.Award(Texts.Get("feed.score.reap_dodge"), dodgeReward);
-            return;
-        }
         Vector3 direction = away > .01f ? flat / away : Flat(transform.forward).normalized;
         var hit = new DamageHit(DamageHit.NewAttackId(), reapDamage, DamageKind.Attack, chest, direction, gameObject, false,
             origin: waist);
-        if (mine.DamageReceiver.ReceiveHit(hit) == DamageResult.Damaged) mine.KnockBack(direction * knock + Vector3.up * knockUp);
+        if (mine.DamageReceiver.ReceiveHit(hit) != DamageResult.Damaged) return false;
+        mine.KnockBack(direction * knock + Vector3.up * knockUp);
+        return true;
     }
 
     // Down low enough for a blade at waist height to pass over: crouched (a crouched dodge too), prone or on the back,
@@ -139,12 +150,8 @@ public sealed class ZombieReaper : ZombieElite
         bool shown = ShowElite(glowColor, glowSize, HumanBodyBones.Head, HumanBodyBones.Neck);
         bool winding = shown && combat != null && combat.IsPreparingAttack && combat.Move == AttackMove.Reap;
         float share = winding ? Mathf.Clamp01(combat.WindupElapsed / Mathf.Max(.05f, combat.Windup)) : 0f;
-        if (winding && !charging)
-        {
-            // The scythe drawn back: a blade's ring, low.
-            var looks = EliteLooks.Instance;
-            PlayLow(looks != null ? EliteLooks.Pick(looks.reaperCharge) : null, Feet + Vector3.up * 1.6f, chargeVolume, .7f, 3f, 45f);
-        }
+        // The attack begins (user, 2026-11-21: "Reaper Attack은 공격 시작할 때 play").
+        if (winding && !charging) PlayKey(AttackKey, Feet + Vector3.up * 1.6f, 3f, 45f);
         charging = winding;
         if (!shown) flashLeft = 0f;
         DrawRings(winding, share);
@@ -237,10 +244,32 @@ public sealed class ZombieReaper : ZombieElite
         if (hug != null) Destroy(hug.gameObject);
     }
 
-    // A one-shot pitched down where it stands (the library's light swing made a heavy scythe), through the Combat volume.
-    private static void PlayLow(AudioClip clip, Vector3 at, float volume, float pitch, float near, float far)
+    // Where the blade finds a player: past the ring, on another floor or behind a wall it misses; hugging it low it
+    // passes over; anywhere else in the ring it cuts.
+    private enum Blade { Missed, Under, Cut }
+
+    private Blade Reach(PlayerMovement player, Vector3 feet)
     {
+        if (player == null || !player.IsInitialized || player.IsDead) return Blade.Missed;
+        Vector3 to = player.transform.position - feet;
+        if (Mathf.Abs(to.y) > floorReach) return Blade.Missed;
+        float away = Flat(to).magnitude;
+        if (away > ringEnd) return Blade.Missed;
+        Vector3 waist = feet + Vector3.up, chest = player.transform.position + Vector3.up;
+        // A wall between takes the blade (there is nothing to go under then either).
+        if (away > hugReach && Physics.Linecast(waist, chest, WorldMask, QueryTriggerInteraction.Ignore)) return Blade.Missed;
+        return away <= hugReach && Low(player) ? Blade.Under : Blade.Cut;
+    }
+
+    // One of the Zombie bank's reaper clips (Art/Audio/Enemies/Zombie/Reaper/<key>; volume and pitch in Sounds.csv
+    // "Zombie/Reaper/<key>") where it stands, through the Combat volume, on a source of its own so a long one is never
+    // cut short by other sounds. Silent with no clip.
+    private static void PlayKey(string key, Vector3 at, float near, float far)
+    {
+        if (!soundsLooked) { soundsLooked = true; sounds = SoundBank.Load(ZombieVoice.BankId); }
+        var clip = sounds != null ? sounds.Pick(key) : null;
         if (clip == null) return;
+        var settings = sounds.SettingsOf(key);
         var source = new GameObject("Reaper Sound").AddComponent<AudioSource>();
         RuntimeSceneHierarchy.Group(source.gameObject, RuntimeSceneHierarchy.Effects, "Audio");
         source.transform.position = at;
@@ -250,12 +279,12 @@ public sealed class ZombieReaper : ZombieElite
         source.minDistance = near;
         source.maxDistance = far;
         // Set before Bind, which keeps it as this source's own pitch under a slowdown (GameAudio.FollowWorldPitch).
-        source.pitch = pitch;
+        source.pitch = settings.RandomPitch();
         GameAudio.Bind(source, AudioChannel.Combat);
-        GameAudio.SetGain(source, volume);
+        GameAudio.SetGain(source, settings.Volume);
         source.clip = clip;
         source.Play();
-        Destroy(source.gameObject, clip.length / Mathf.Max(.1f, pitch) + .1f);
+        Destroy(source.gameObject, clip.length / Mathf.Max(.1f, source.pitch) + .1f);
     }
 
     // ---- Its look: a hood and a long scythe, boxes standing in until EliteLooks has props ----
@@ -281,10 +310,9 @@ public sealed class ZombieReaper : ZombieElite
         Box(holder, new Vector3(0f, .02f, .145f), new Vector3(.17f, .2f, .02f), Color.black);
     }
 
-    // ---- Its sounds, made here when EliteLooks has none ----
+    // ---- The wind, still made here until a file is chosen for it (SoundRebuild.md 5.3) ----
 
     private static AudioClip Wind() => windClip != null ? windClip : windClip = MakeWind();
-    private static AudioClip Whoosh() => whooshClip != null ? whooshClip : whooshClip = MakeWhoosh();
 
     // Two seconds of low wind, looped without a seam: soft noise swelling and falling over a cold hum.
     private static AudioClip MakeWind()
@@ -308,27 +336,6 @@ public sealed class ZombieReaper : ZombieElite
             data[i] = data[i] * k + data[total + i] * (1f - k);
         }
         return Clip("Reaper Wind", data, total, .7f);
-    }
-
-    // A heavy whoosh: noise through a band that sweeps down as the blade passes, quick in and slower out.
-    private static AudioClip MakeWhoosh()
-    {
-        int total = (int)(Rate * .6f);
-        var random = new System.Random(977);
-        var data = new float[total];
-        float low = 0f, band = 0f;
-        for (int i = 0; i < total; i++)
-        {
-            float t = i / (float)total;
-            float noise = (float)random.NextDouble() * 2f - 1f;
-            // Two one-pole filters a sweeping distance apart make a moving band.
-            float upper = Mathf.Lerp(.35f, .05f, t), lower = Mathf.Lerp(.08f, .01f, t);
-            band += (noise - band) * upper;
-            low += (noise - low) * lower;
-            float envelope = t < .12f ? t / .12f : Mathf.Pow(1f - (t - .12f) / .88f, 2f);
-            data[i] = (band - low) * envelope;
-        }
-        return Clip("Reaper Whoosh", data, total, .9f);
     }
 
     private static AudioClip Clip(string name, float[] data, int length, float peak)

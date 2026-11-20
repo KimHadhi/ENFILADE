@@ -52,11 +52,8 @@ public sealed class EliteLooks : ScriptableObject
     [Tooltip("The bees about it, looped while it lives. Empty: made in code.")]
     public AudioClip candymanBuzz;
 
-    [Header("Reaper (ZombieReaper)")]
-    [Tooltip("As it draws its scythe back to charge: a blade's ring, played low. One is picked each time. Empty: none.")]
-    public AudioClip[] reaperCharge = new AudioClip[0];
-    [Tooltip("The scythe going round, played low so a light swing sounds heavy. One is picked each time. Empty: made in code.")]
-    public AudioClip[] reaperSwing = new AudioClip[0];
+    // The reaper's charge and swing clips were here until 2026-11-21: its sounds are now the user's own, Zombie bank
+    // folders Art/Audio/Enemies/Zombie/Reaper/Attack, Hit and Evaded (ZombieReaper).
 
     private static EliteLooks loaded;
     private static bool looked;

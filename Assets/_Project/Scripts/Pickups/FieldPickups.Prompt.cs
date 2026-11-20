@@ -63,14 +63,14 @@ public sealed partial class FieldPickups
     }
 
     // What was taken, on the taker's own PC (the user's pick of the pickup drafts, 2026-11-10, draft C, after "줍는 소리,
-    // 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족"): a row in the list at the bottom of the screen, its kind's own
-    // sound, a blink of the HUD part it went to, and the gun in hand dipping as the body goes for it. Money has no part
+    // 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족"): a row in the list at the bottom of the screen, the taking's
+    // sound under its kind's own (KitSound.PlayPickup), a blink of the HUD part it went to, and the gun in hand dipping as the body goes for it. Money has no part
     // to blink: its number counts up by itself.
     private static void Pop(Kind kind, string name, string amount, WeaponData gun = null)
     {
         Color tint = ColorOf(kind);
         PickupFeedHUD.Show(IconOf(kind), tint, name, amount, kind == Kind.Gun ? WeaponIcons.For(gun) : null);
-        KitSound.Play(kind switch
+        KitSound.PlayPickup(kind switch
         {
             Kind.Gun => KitSound.Cue.PickGun,
             Kind.Ammo => KitSound.Cue.PickAmmo,

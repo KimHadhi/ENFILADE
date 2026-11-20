@@ -20,7 +20,7 @@ public sealed partial class PlayerGrenades
             count++;
             knife.Take();
             KnifeTaken?.Invoke(pair.Key);
-            KitSound.Play(KitSound.Cue.PickAmmo, .6f);
+            KitSound.PlayPickup(KitSound.Cue.PickAmmo, .6f);
             GrenadeHUD.Blink(KitStyle.Ice);
         }
         foreach (ushort id in gone) knives.Remove(id);

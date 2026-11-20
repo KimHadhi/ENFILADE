@@ -460,13 +460,13 @@ public sealed partial class HubLobby
                 break;
             case Act.Gun:
                 if (!TakeGun(mine, pick.Gun)) { KitSound.Play(KitSound.Cue.Refuse, .5f); return; }
-                KitSound.Play(KitSound.Cue.PickGun, .8f);
+                KitSound.PlayPickup(KitSound.Cue.PickGun, .8f);
                 break;
             case Act.Ammo:
                 var slots = mine != null ? mine.GetComponent<PlayerWeaponSlots>() : null;
                 // The crate fills the class throwable too (PlayerGrenades.Fill; the user: "로비에서 탄약 보충시켜 주는 그거 수류탄도 보충시켜주게 해 줘").
                 if (slots == null || slots.RefillAmmo() + PlayerGrenades.Fill(mine) <= 0) { KitSound.Play(KitSound.Cue.Refuse, .4f); return; }
-                KitSound.Play(KitSound.Cue.PickAmmo, .8f);
+                KitSound.PlayPickup(KitSound.Cue.PickAmmo, .8f);
                 break;
             case Act.Ready:
                 ToggleReady();

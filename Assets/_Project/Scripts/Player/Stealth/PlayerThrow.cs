@@ -18,6 +18,9 @@ using Random = UnityEngine.Random;
 public sealed class PlayerThrow : MonoBehaviour, ITableBound
 {
     public const string TableName = "Stealth", TableRow = "Throw";
+    /// <summary>The stealth sound bank (Art/Audio/Stealth), its keys StoneReady and StoneHit; volumes in Sounds.csv "Stealth/…".</summary>
+    public const string BankId = "Stealth";
+    internal const string ReadyKey = "StoneReady", HitKey = "StoneHit";
 
     [SerializeField, Min(0f), Tooltip("Seconds between two stones.")]
     private float cooldown = 2.5f;
@@ -42,7 +45,7 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     // The aim's arc, shared with the class throwable's G (ThrowArc, PlayerGrenades).
     private ThrowArc arc;
     private float readyAt;
-    private bool aiming;
+    private bool aiming, stoneInHand;
 
     private void Awake()
     {
@@ -65,7 +68,16 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
         if (!able || eye == null) { StopAim(); return; }
         if (KeyBindings.Pressed(key)) aiming = true;
         if (!aiming) return;
-        if (KeyBindings.Held(key)) { Aim(eye.transform); return; }
+        if (KeyBindings.Held(key))
+        {
+            Aim(eye.transform);
+            // A stone comes into the hand as the aim starts with one ready, or as one gets ready while aiming (user,
+            // 2026-11-21: "Rock ready는 손에 돌 들었을 때").
+            bool inHand = Time.time >= readyAt;
+            if (inHand && !stoneInHand) ThrownStone.PlayReady();
+            stoneInHand = inHand;
+            return;
+        }
         // Let go: thrown, if a stone is ready.
         StopAim();
         if (Time.time < readyAt) return;
@@ -104,6 +116,7 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     private void StopAim()
     {
         aiming = false;
+        stoneInHand = false;
         arc?.Hide();
     }
 
@@ -126,12 +139,28 @@ public sealed class ThrownStone : MonoBehaviour
     private static readonly HashSet<Collider> stones = new HashSet<Collider>();
     private static Mesh shape;
     private static Material look;
-    private static AudioClip whoosh, clack;
-    private static StealthSounds sounds;
+    private static AudioClip whoosh;
+    private static SoundBank sounds;
     private static bool soundsLooked;
 
     /// <summary>What a throw leaves from and stops against: the world, not players, corpses or zombies.</summary>
     internal static int WorldMask => WorldLayers.Built;
+
+    /// <summary>The stone taken in hand (PlayerThrow): flat, on the thrower's PC only. Silent with no StoneReady clip.</summary>
+    internal static void PlayReady()
+    {
+        var bank = Sounds();
+        var clip = bank != null ? bank.Pick(PlayerThrow.ReadyKey) : null;
+        if (clip == null) return;
+        var settings = bank.SettingsOf(PlayerThrow.ReadyKey);
+        FeelAudio.PlayClip(clip, settings.Volume, settings.RandomPitch());
+    }
+
+    private static SoundBank Sounds()
+    {
+        if (!soundsLooked) { soundsLooked = true; sounds = SoundBank.Load(PlayerThrow.BankId); }
+        return sounds;
+    }
 
     /// <summary>A thrown stone's collider: bullets go through it.</summary>
     public static bool IsStone(Collider collider) => collider != null && stones.Contains(collider);
@@ -222,7 +251,14 @@ public sealed class ThrownStone : MonoBehaviour
         lastClack = age;
         Vector3 point = hit.contactCount > 0 ? hit.GetContact(0).point : transform.position;
         float strength = Mathf.InverseLerp(ClackSpeed, 12f, speed);
-        PlayAt(Clack(), point, volume * Mathf.Lerp(.4f, 1f, strength) * (landed ? .55f : 1f), Random.Range(.9f, 1.15f));
+        // Its clack: the stealth bank's StoneHit (the user's Stone hit, 2026-11-21), its pitch spread in Sounds.csv.
+        var bank = Sounds();
+        var clip = bank != null ? bank.Pick(PlayerThrow.HitKey) : null;
+        if (clip != null)
+        {
+            var settings = bank.SettingsOf(PlayerThrow.HitKey);
+            PlayAt(clip, point, volume * settings.Volume * Mathf.Lerp(.4f, 1f, strength) * (landed ? .55f : 1f), settings.RandomPitch());
+        }
         if (landed) return;
         // The first landing is the lure, a hand's width up so the stone itself doesn't muffle it.
         landed = true;
@@ -280,14 +316,7 @@ public sealed class ThrownStone : MonoBehaviour
         Destroy(host, clip.length / Mathf.Max(.1f, pitch) + .1f);
     }
 
-    // Its clack: the project's stone impacts (Resources/Stealth/StealthSounds), else one made here.
-    private static AudioClip Clack()
-    {
-        if (!soundsLooked) { soundsLooked = true; sounds = Resources.Load<StealthSounds>(StealthSounds.ResourcePath); }
-        var picked = sounds != null ? sounds.PickStone() : null;
-        return picked != null ? picked : clack != null ? clack : clack = Made("Stone Clack", MakeClack());
-    }
-
+    // Still made here until a file is chosen for it (SoundRebuild.md 5.6).
     private static AudioClip Whoosh() => whoosh != null ? whoosh : whoosh = Made("Stone Whoosh", MakeWhoosh());
 
     private static AudioClip Made(string name, float[] data)
@@ -296,23 +325,6 @@ public sealed class ThrownStone : MonoBehaviour
         clip.SetData(data, 0);
         clip.hideFlags = HideFlags.HideAndDontSave;
         return clip;
-    }
-
-    // A small hard thing on stone: a click and two short rings.
-    private static float[] MakeClack()
-    {
-        var data = new float[(int)(Rate * .18f)];
-        var random = new System.Random(311);
-        float held = 0f;
-        for (int i = 0; i < data.Length; i++)
-        {
-            float t = i / Rate;
-            held += ((float)random.NextDouble() * 2f - 1f - held) * .6f;
-            data[i] = held * Mathf.Exp(-t / .004f) * .8f
-                + Mathf.Sin(2f * Mathf.PI * 2150f * t) * Mathf.Exp(-t / .018f) * .45f
-                + Mathf.Sin(2f * Mathf.PI * 3420f * t) * Mathf.Exp(-t / .011f) * .3f;
-        }
-        return Normalize(data, .8f);
     }
 
     // Air past a thrown stone: noise swelling and falling as it leaves the hand.

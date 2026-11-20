@@ -115,15 +115,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Knock",
-                    "type": "Button",
-                    "id": "236a2611-15cf-4d1e-8ad1-263c746521bc",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Callout",
                     "type": "Button",
                     "id": "7c2f4b1e-9a3d-4e58-b1c6-5d0e8f2a4c91",
@@ -553,28 +544,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "ClassAbility",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "fa8aafe2-2317-4e78-8588-3f717d48aaf6",
-                    "path": "<Keyboard>/h",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Knock",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "3e558d8c-9cf0-5609-9176-ee3fec59362a",
-                    "path": "",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Knock",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

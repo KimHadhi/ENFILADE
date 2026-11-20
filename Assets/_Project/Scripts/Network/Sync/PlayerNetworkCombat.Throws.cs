@@ -74,11 +74,4 @@ public sealed partial class PlayerNetworkCombat
     {
         if (grenades != null) grenades.ShowChain(owners, ids, middle);
     }
-
-    // A knock on a wall by this player: every other PC hears it there, and the host's zombies come to look.
-    [Rpc(SendTo.NotMe)]
-    private void KnockRpc(Vector3 at, Vector3 normal)
-    {
-        if (knocks != null) knocks.ShowKnock(at, normal);
-    }
 }
