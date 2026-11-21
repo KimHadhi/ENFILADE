@@ -19,6 +19,7 @@ public sealed partial class PlayerBody
     {
         AddChannel(touchdown, 0f);
         ReadFlights();
+        ReadPostures();
         touchdownLeft = 0f;
         jumpQueued = jumpPending = false;
         player.Landed -= OnHopLanded;
@@ -34,8 +35,12 @@ public sealed partial class PlayerBody
         player.Jumped -= OnHopJumped;
     }
 
+    // How hard the last landing met the ground (m/s), as the movement told it: the same on every PC.
+    private float landedImpact;
+
     private void OnHopLanded(float impact)
     {
+        landedImpact = impact;
         if (player.LastLandingTier != MovementLanding.Tier.Light) return;
         var channel = Find(touchdown);
         if (channel == null || channel.Synced) return;

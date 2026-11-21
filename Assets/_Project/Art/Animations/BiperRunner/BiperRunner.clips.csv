@@ -66,8 +66,8 @@ Jump_2h,0,1,1,0,0,0,,,,Female Runner: Jump_2h
 Jump_3h,0,1,1,0,0,0,,,35,Female Runner: Jump_3h
 Jump_AirL,0,1,1,0,0,0,,,,Female Runner: Jump_AirL
 Jump_AirR,0,1,1,0,0,0,,,,Female Runner: Jump_AirR
-Jump_Climb_1h,0,1,0,0,0,0,,,,Female Runner: Jump_Climb_1h
-Jump_Climb_2h,0,1,0,0,0,0,,,,Female Runner: Jump_Climb_2h
+Jump_Climb_1h,0,1,1,0,0,0,,,,Female Runner: Jump_Climb_1h. 걸으며 허리 높이 턱에 오르기(Body.clamberLow). 높이는 뺐다(inPlaceY 1): 손을 턱에 맞춰 몸을 올리는 것은 WarpedTraversal(0.9.285)
+Jump_Climb_2h,0,1,1,0,0,0,,,,Female Runner: Jump_Climb_2h. 걸으며 머리 높이 턱에 오르기(Body.clamberHigh). 높이는 뺐다(inPlaceY 1)(0.9.285)
 Jump_Climb_Enter_1h,0,1,0,0,0,0,,,,Female Runner: Jump_Climb_Enter_1h
 Jump_Climb_Enter_2h,0,1,0,0,0,0,,,,Female Runner: Jump_Climb_Enter_2h
 Jump_Climb_Exit,0,1,0,0,0,0,,,,Female Runner: Jump_Climb_Exit
@@ -139,7 +139,7 @@ ShiftToSprint_L,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_L
 ShiftToSprint_L45,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_L45
 ShiftToSprint_R,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_R
 ShiftToSprint_R45,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_R45
-SlideToRun_10m,0,1,0,0,0,0,,,81,Female Runner: SlideToRun_10m
+SlideToRun_10m,1,1,0,1,0,0,21,58,81,Female Runner: SlideToRun_10m의 가운데(0.70~1.93초: 엉덩이가 바닥 가까이 머무는 동안)만 고리로. Body.slide(0.9.285). 이 동안 몸이 22° 돌아서 돌기는 뺐다(inPlaceYaw 1): 고리마다 되돌아가지 않게
 SlideToRun_5m,0,1,0,0,0,0,,,46,Female Runner: SlideToRun_5m
 SlideToRun_Enter,0,1,0,0,0,0,,,22,Female Runner: SlideToRun_Enter
 SlideToRun_Exit,0,1,0,0,0,0,,,25,Female Runner: SlideToRun_Exit

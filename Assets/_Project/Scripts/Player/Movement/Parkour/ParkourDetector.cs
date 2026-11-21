@@ -1,7 +1,8 @@
 using UnityEngine;
 
 /// <summary>Beatrun's moves, each with its own clip and pace. None is a route of our own: a bar, a ladder's top.</summary>
-public enum VaultKind : byte { None, StepUp, Onto, Over, Kong, OverHigh, OntoHigh, Heave }
+// Clamber (0.9.285): onto a top from a walk, slowly, on its clip (ParkourTraversal.TryClamber).
+public enum VaultKind : byte { None, StepUp, Onto, Over, Kong, OverHigh, OntoHigh, Heave, Clamber }
 
 public static class VaultKinds
 {
@@ -210,6 +211,46 @@ public sealed class ParkourDetector
         }
         return false;
     }
+
+    /// <summary>
+    /// A top to clamber onto from the ground, walking up to it (ParkourTraversal.TryClamber): a face straight ahead within
+    /// <paramref name="reach"/> of the body's side, its top <paramref name="lowest"/> to <paramref name="highest"/> over the
+    /// feet, walkable, and with room on it to stand or crouch (TryMantle's own checks); its near edge and which way it faces,
+    /// where the clip's hands go (WarpedTraversal).
+    /// </summary>
+    public bool TryClamber(Vector3 feet, Vector3 forward, float reach, float lowest, float highest, out ObstacleTarget target)
+    {
+        target = default;
+        forward = Vector3.ProjectOnPlane(forward, Vector3.up);
+        if (forward.sqrMagnitude < 1e-4f) return false;
+        forward.Normalize();
+        // The face: straight ahead at knee height, below the lowest top there may be.
+        Vector3 knee = feet + Vector3.up * Mathf.Clamp(lowest * .5f, .2f, .4f);
+        if (!Physics.Raycast(knee, forward, out RaycastHit face, ctx.ControllerRadius + reach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            || Mathf.Abs(face.normal.y) > .3f) return false;
+        Vector3 inward = Vector3.ProjectOnPlane(-face.normal, Vector3.up).normalized;
+        // Facing it, not passing along it.
+        if (Vector3.Dot(inward, forward) < ClamberFacing) return false;
+        // Its top: straight down a little in from the face, from over the highest top that may be climbed. A face that goes
+        // on up past that is a wall: the ray starts inside it and finds nothing.
+        Vector3 over = face.point + inward * ClamberTopIn;
+        over.y = feet.y + highest + .2f;
+        if (!Physics.Raycast(over, Vector3.down, out RaycastHit top, highest + .25f - lowest, ctx.groundLayers, QueryTriggerInteraction.Ignore))
+            return false;
+        float height = top.point.y - feet.y;
+        if (height < lowest || height > highest || top.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)
+            || !WallDetector.CanUseSurface(top.collider)) return false;
+        // The near edge, under the hands: where the face meets the top.
+        Vector3 edge = face.point + Vector3.up * (top.point.y - face.point.y);
+        if (!TryMantle(top.collider, edge, inward, feet, out target)) return false;
+        target.Kind = VaultKind.Clamber;
+        target.Edge = edge;
+        target.EdgeNormal = -inward;
+        return true;
+    }
+
+    // A face to clamber onto is faced within about 45 degrees (cosine); its top is looked for this far in from it (m).
+    private const float ClamberFacing = .7f, ClamberTopIn = .15f;
 
     public bool TryLedge(Vector3 facing, out LedgeTarget ledge)
         => TryLedgeAt(ctx.transform.position, facing, out ledge, out _);

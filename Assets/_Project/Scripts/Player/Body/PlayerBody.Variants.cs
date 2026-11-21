@@ -20,6 +20,14 @@ public sealed partial class PlayerBody
     private string rollLand = "land";
     [SerializeField, Tooltip("A long fall (Ability.bigFallHeight): arms and legs flail until touchdown, Ctrl or not.")]
     private string fallFlail = "fallinguncontrolled";
+    [SerializeField, Tooltip("Off an edge without a jump, onto a drop deeper than fallFromEdgeDrop (m): the step off and the "
+        + "fall's start, on its own clock, then the fall pose.")]
+    private string fallFromEdge = "Jump_Falldown";
+    [SerializeField, Min(0f)] private float fallFromEdgeDrop = 1f;
+    [SerializeField, Tooltip("A light landing standing, from a drop of landMidHeight (m) or more: deeper in the knees than a "
+        + "jump's touchdown.")]
+    private string landMid = "Land_2h";
+    [SerializeField, Min(0f)] private float landMidHeight = 2f;
     [SerializeField] private string supineSlideEndCrouch = "meslideendcrouch", supineSlideEndProne = "meslideendprone";
     [SerializeField, Tooltip("Lying on the back as Beatrun's jump turn does: coming down onto it from a dive, and getting up "
         + "from it standing (with a gun out, its gun version) or under a low ceiling crouched. A slide ends onto it with "
@@ -30,6 +38,10 @@ public sealed partial class PlayerBody
     [SerializeField] private string vaultHigh = "vaultoverhigh", vaultKong = "vaultkong", springboard = "springboardleftleg";
     [SerializeField] private string stepUp = "stepuprightleg", mantleLow = "vaultonto", mantleMid = "vaultontohigh";
     [SerializeField] private string ledgeClimbUp = "mx_ledge_climb_up";
+    [SerializeField, Tooltip("Clambering onto a top from a walk (VaultKind.Clamber): onto one lower than clamberHighFrom (m), "
+        + "and onto a higher one.")]
+    private string clamberLow = "Jump_Climb_1h", clamberHigh = "Jump_Climb_2h";
+    [SerializeField, Min(0f)] private float clamberHighFrom = 1.6f;
     [SerializeField] private string ledgeCatch = "mx_ledge_catch_air";
     [SerializeField] private string ledgeShimmyLeft = "mx_ledge_shimmy_left", ledgeShimmyRight = "mx_ledge_shimmy_right";
     [SerializeField] private string wallClimbStart = "wallrunverticalstart", wallKickRight = "jumpwrright";
@@ -58,14 +70,14 @@ public sealed partial class PlayerBody
     private WeaponController weapons;
     private string jumpClip, obstacleClip, wallKickClip, rollClip, downClip;
     private float obstacleYaw;
-    private bool tucked, flailing;
+    private bool tucked, flailing, fromEdge;
 
     private string[] VariantClips => new[]
     {
         jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
         fallFlail, supineSlideEndCrouch, supineSlideEndProne, supineLand, supineGetUp, supineGetUpGun, supineGetUpCrouch,
         bellySlideEndCrouch, vaultHigh, vaultKong, springboard, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
-        wallClimbStart, wallKickRight
+        wallClimbStart, wallKickRight, crouchDown, standUp, fallFromEdge, landMid, clamberLow, clamberHigh
     };
 
     // The gun-holding channels of every one-shot clip the profile has one for.
@@ -108,6 +120,7 @@ public sealed partial class PlayerBody
             case VaultKind.Onto: return mantleLow;
             case VaultKind.OntoHigh: return mantleMid;
             case VaultKind.Heave: return ledgeClimbUp;
+            case VaultKind.Clamber: return obstacle.Height < clamberHighFrom ? clamberLow : clamberHigh;
             case VaultKind.Over: return Vaulting(vault, vaultKong);
             case VaultKind.Kong: return Vaulting(vaultKong, vault);
             case VaultKind.OverHigh: return Vaulting(vaultHigh, vault);
@@ -221,7 +234,7 @@ public sealed partial class PlayerBody
     private string LandingFor(bool crouched, bool wasTucked)
     {
         if (player.LastLandingTier != MovementLanding.Tier.Light)
-            return crouched ? landCrouch : LandingOnTheMove(true) ?? land;
+            return crouched ? landCrouch : LandingOnTheMove(true) ?? SlamOnTheMove() ?? land;
         if (wasTucked && HorizontalSpeed() > walkClipSpeed) return crouched ? coilLandCrouch : coilLand;
         // A plain jump landed on the move takes the landing in its stride (Land_ToRun1); standing, the knees take it
         // (touchdown: Land_1h starts from the arms a jump comes down with, where blending on dropped them in a blink);
@@ -229,7 +242,21 @@ public sealed partial class PlayerBody
         if (crouched) return null;
         string onTheMove = LandingOnTheMove(false);
         if (onTheMove != null || wasTucked) return onTheMove;
-        return HorizontalSpeed() <= walkClipSpeed && Find(touchdown) != null ? touchdown : null;
+        if (HorizontalSpeed() > walkClipSpeed) return null;
+        // Down from higher than a jump's own drop the knees go deeper (Land_2h, between the touchdown and the hard landing).
+        if (DroppedFar && Find(landMid) != null) return landMid;
+        return Find(touchdown) != null ? touchdown : null;
+    }
+
+    // The landing just made came down from landMidHeight or higher, by its impact as the movement told it (Landed), the
+    // same on every PC.
+    private bool DroppedFar => landedImpact >= MovementLanding.SpeedOfDrop(landMidHeight, Mathf.Abs(player.gravity));
+
+    // Ground further below the feet than fallFromEdgeDrop, or none in reach: a drop, not a step down.
+    private bool DropsFar()
+    {
+        Vector3 feet = player.transform.position + Vector3.up * .1f;
+        return !Physics.Raycast(feet, Vector3.down, fallFromEdgeDrop + .1f, player.groundLayers, QueryTriggerInteraction.Ignore);
     }
 
     // Down from a tuck on the spot, the knees stay bent a moment on planted feet before the body stands up. The crouch
@@ -245,7 +272,7 @@ public sealed partial class PlayerBody
     }
 
     // As Beatrun's safety roll picks them.
-    private string RollFor() => !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
+    private string RollFor() => player.Abilities.Landing.DiveRoll ? DiveRollWay() : !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
         : player.HasCeilingAbove(player.StandingColliderHeight) ? landCrouch : rollLand;
 
     private string DownClip(MovementLanding.Pose pose) =>
@@ -306,6 +333,9 @@ public sealed partial class PlayerBody
         // A jump's clip follows the flight (PlayerBody.Flight); one with no baked flight plays on its own clock.
         else if (jumped && FollowFlight(Time.deltaTime)) { }
         else if (jumped && !flights.ContainsKey(jumpClip ?? "") && airTime < (Find(jumpClip)?.Length ?? 0f)) Want(jumpClip);
+        // Off an edge onto a drop: the step off on its own clock (BIPER Jump_Falldown, its height left to the fall itself),
+        // then the fall pose. Until 0.9.285 a walk off an edge went straight to the fall pose.
+        else if (fromEdge && airTime < (Find(fallFromEdge)?.Length ?? 0f)) Want(fallFromEdge);
         else Want(player.FallSpeed > fallClipSpeed ? fall : air);
     }
 

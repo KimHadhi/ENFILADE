@@ -11,7 +11,10 @@ using UnityEngine;
 /// <summary>
 /// Bakes from BIPER Female Runner's jumps (Jump_*, RunJump_*; 0.9.266) where the body leaves the ground, tops out and
 /// comes back down to where it left, and how high the body centre is between, read from each clip's own root curve, so
-/// the clip's moment follows the game's own flight (PlayerBody.FollowFlight). Written to Tables/Player/GaitMoves.csv by
+/// the clip's moment follows the game's own flight (PlayerBody.FollowFlight). Since 0.9.285 also the crouch's way down and
+/// up (kind posture: IdleToCrouch, CrouchToIdle; PlayerBody.Posture follows the posture's ease on them) and the dive
+/// rolls' travel (kind travel: DiveRoll*, the share of the way gone as the clip goes; MovementLanding.TryDiveRoll moves
+/// the body at that pace). Written to Tables/Player/GaitMoves.csv by
 /// ClipBench (request line bake=gaitmoves); the game only reads it. These are measurements: bake again after a clip
 /// changes, never edit by hand. (It baked the start and stop clips until 0.9.263, and the turns on the spot's curves
 /// until 0.9.279, when the feet began to step round themselves.)
@@ -26,23 +29,120 @@ internal static class GaitMoveBake
     {
         var rows = new StringBuilder();
         rows.Append("id,kind,length,profile,leave,top,land,#설명\n");
-        rows.Append("\"#설명 (ClipBench가 BIPER Female Runner의 점프(Jump_*·RunJump_*)에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다"
-            + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). profile 몸 중심이 처음보다 높은 정도(꼭대기 = 1), 처음부터 끝까지 고르게 "
-            + JumpSamples + "곳(';'), leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). 점프 클립은 이 곡선대로 게임의 비행 높이를 따른다"
-            + "(PlayerBody.FollowFlight))\",,,,,,,\n");
-        int jumps = 0;
+        rows.Append("\"#설명 (ClipBench가 BIPER Female Runner 클립의 루트 곡선에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다"
+            + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). profile은 처음부터 끝까지 고르게 " + JumpSamples + "곳(';'). "
+            + "kind jump(Jump_*·RunJump_*): profile 몸 중심이 처음보다 높은 정도(꼭대기 = 1), leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). "
+            + "점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight). kind posture(IdleToCrouch·CrouchToIdle): profile 몸 중심이 "
+            + "처음 높이에서 끝 높이까지 간 정도(0~1), leave 움직이기 시작하는 때(2%), land 다 간 때(98%). 서서 앉고 일어설 때 클립이 자세가 바뀌는 만큼을 "
+            + "따른다(PlayerBody.Posture). kind travel(DiveRoll*): profile 루트가 땅 위로 간 길의 몫(끝 = 1), top 몸 중심이 가장 낮은 때, land 몸이 "
+            + "다시 선 때(낮아진 만큼의 10% 안으로 돌아옴). 다이브 구르기는 이 빠르기로 간다(MovementLanding.TryDiveRoll))\",,,,,,,\n");
+        int jumps = 0, postures = 0, travels = 0;
         foreach (var clip in clips.Values.OrderBy(c => c.name, StringComparer.Ordinal))
         {
             bool jump = clip.name.StartsWith("RunJump_", StringComparison.Ordinal)
                 || clip.name.StartsWith("Jump_", StringComparison.Ordinal) && !clip.name.StartsWith("Jump_Climb", StringComparison.Ordinal);
-            if (!jump || !Flight(clip, out float[] rise, out float leave, out float top, out float land)) continue;
-            rows.Append(string.Join(",", clip.name, "jump", F(clip.length), string.Join(";", rise.Select(F)), F(leave), F(top), F(land), ""));
-            rows.Append('\n');
-            report.AppendLine(Invariant($"  {clip.name,-20} jump  {clip.length:0.00}s leaves {leave:0.00} tops {top:0.00} lands {land:0.00}"));
-            jumps++;
+            if (jump && Flight(clip, out float[] rise, out float leave, out float top, out float land))
+            {
+                rows.Append(string.Join(",", clip.name, "jump", F(clip.length), string.Join(";", rise.Select(F)), F(leave), F(top), F(land), ""));
+                rows.Append('\n');
+                report.AppendLine(Invariant($"  {clip.name,-20} jump  {clip.length:0.00}s leaves {leave:0.00} tops {top:0.00} lands {land:0.00}"));
+                jumps++;
+            }
+            else if (Array.IndexOf(PostureClips, clip.name) >= 0 && Posture(clip, out float[] share, out float from, out float to))
+            {
+                rows.Append(string.Join(",", clip.name, "posture", F(clip.length), string.Join(";", share.Select(F)), F(from), "", F(to), ""));
+                rows.Append('\n');
+                report.AppendLine(Invariant($"  {clip.name,-20} posture  {clip.length:0.00}s sets off {from:0.00} there {to:0.00}"));
+                postures++;
+            }
+            else if (clip.name.StartsWith("DiveRoll", StringComparison.Ordinal) && Travel(clip, out float[] gone, out float low, out float up))
+            {
+                rows.Append(string.Join(",", clip.name, "travel", F(clip.length), string.Join(";", gone.Select(F)), "", F(low), F(up), ""));
+                rows.Append('\n');
+                report.AppendLine(Invariant($"  {clip.name,-20} travel  {clip.length:0.00}s lowest {low:0.00} up {up:0.00}"));
+                travels++;
+            }
         }
         WriteTable(rows.ToString());
-        report.AppendLine($"  baked {jumps} jumps into {TablePath}");
+        report.AppendLine($"  baked {jumps} jumps, {postures} postures and {travels} travels into {TablePath}");
+    }
+
+    // The crouch's way down and up, standing still (PlayerBody.Posture).
+    private static readonly string[] PostureClips = { "IdleToCrouch", "CrouchToIdle" };
+
+    // A change of posture from its body centre's height (RootT.y): how far of its way from where it began to where it ends
+    // it has come (0-1) at JumpSamples evenly spaced moments, when it sets off (past 2%) and when it is there (98%). False
+    // for a clip whose body ends about where it began.
+    private static bool Posture(AnimationClip clip, out float[] share, out float from, out float to)
+    {
+        share = null;
+        from = to = 0f;
+        var height = Curve(clip, "RootT.y");
+        if (height == null) return false;
+        float length = clip.length, start = height.Evaluate(0f), end = height.Evaluate(length);
+        if (Mathf.Abs(end - start) < .05f) return false;
+        float Share(float time) => Mathf.Clamp01((height.Evaluate(time) - start) / (end - start));
+        share = new float[JumpSamples];
+        for (int i = 0; i < JumpSamples; i++) share[i] = Share(length * i / (JumpSamples - 1));
+        int steps = Mathf.Max(60, Mathf.CeilToInt(length * 240f));
+        from = -1f;
+        to = length;
+        for (int i = 0; i <= steps; i++)
+        {
+            float time = length * i / steps, s = Share(time);
+            if (from < 0f && s > .02f) from = time;
+            if (s >= .98f) { to = time; break; }
+        }
+        from = Mathf.Max(0f, from);
+        return true;
+    }
+
+    // A roll's travel from its root's path along the ground (RootT.x, RootT.z): the share of the whole path gone at
+    // JumpSamples evenly spaced moments; when its body centre (RootT.y) is lowest, and when it is back up, within a tenth of
+    // that dip of where it began. False for a clip that goes nowhere.
+    private static bool Travel(AnimationClip clip, out float[] gone, out float low, out float up)
+    {
+        gone = null;
+        low = up = 0f;
+        AnimationCurve x = Curve(clip, "RootT.x"), z = Curve(clip, "RootT.z"), y = Curve(clip, "RootT.y");
+        if (x == null || z == null || y == null) return false;
+        float length = clip.length;
+        int steps = Mathf.Max(60, Mathf.CeilToInt(length * 240f));
+        var along = new float[steps + 1];
+        var last = new Vector2(x.Evaluate(0f), z.Evaluate(0f));
+        float start = y.Evaluate(0f), lowest = start;
+        int lowAt = 0;
+        for (int i = 1; i <= steps; i++)
+        {
+            float time = length * i / steps;
+            var at = new Vector2(x.Evaluate(time), z.Evaluate(time));
+            along[i] = along[i - 1] + Vector2.Distance(at, last);
+            last = at;
+            float height = y.Evaluate(time);
+            if (height < lowest) { lowest = height; lowAt = i; }
+        }
+        float total = along[steps];
+        if (total < .05f) return false;
+        gone = new float[JumpSamples];
+        for (int i = 0; i < JumpSamples; i++)
+        {
+            float f = (float)i * steps / (JumpSamples - 1);
+            int a = Mathf.Min(steps, Mathf.FloorToInt(f)), b = Mathf.Min(steps, a + 1);
+            gone[i] = Mathf.Lerp(along[a], along[b], f - a) / total;
+        }
+        low = length * lowAt / steps;
+        up = length;
+        float dip = start - lowest;
+        for (int i = lowAt; i <= steps; i++)
+            if (start - y.Evaluate(length * i / steps) <= dip * .1f) { up = length * i / steps; break; }
+        return true;
+    }
+
+    private static AnimationCurve Curve(AnimationClip clip, string property)
+    {
+        foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+            if (binding.type == typeof(Animator) && binding.propertyName == property) return AnimationUtility.GetEditorCurve(clip, binding);
+        return null;
     }
 
     // A jump's flight from its body centre's height (RootT.y): its rise at JumpSamples evenly spaced moments, as a share of

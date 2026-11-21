@@ -15,9 +15,12 @@ public sealed partial class PlayerBody
 {
     [Header("One-off moves by the way they go (clip@degrees;…)")]
     [SerializeField] private string rollWays = "", rollRunWays = "", dodgeWays = "", dodgeSprintWays = "";
+    [SerializeField, Tooltip("A dive roll (Z) the way it goes: up standing out of it, and at a sprint running on.")]
+    private string diveRollWays = "", diveRollRunWays = "";
     [SerializeField] private string jumpWays = "", runJumpWays = "";
-    [SerializeField, Tooltip("Landing on the move: lightly, hard, and hard at a sprint (a stumble).")]
-    private string landRunLight = "", landRunHard = "", landRunStumble = "";
+    [SerializeField, Tooltip("Landing on the move: lightly, lightly from higher (Body.landMidHeight), hard, hard at a sprint "
+        + "(a stumble), and hard at a jog (down to a hand and on).")]
+    private string landRunLight = "", landRunMid = "", landRunHard = "", landRunStumble = "", landSlam = "";
     [SerializeField, Min(0f), Tooltip("A hard landing at least this fast stumbles on (m/s).")]
     private float landStumbleSpeed = 6f;
 
@@ -26,12 +29,14 @@ public sealed partial class PlayerBody
     // Every clip of every way set, made ready with the others (Build).
     private IEnumerable<string> WayClips()
     {
-        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays, jumpWays, runJumpWays })
+        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays, jumpWays, runJumpWays, diveRollWays, diveRollRunWays })
             foreach (var (clip, _) in WaysOf(set))
                 yield return clip;
         yield return landRunLight;
+        yield return landRunMid;
         yield return landRunHard;
         yield return landRunStumble;
+        yield return landSlam;
     }
 
     private List<(string clip, float way)> WaysOf(string set)
@@ -118,8 +123,27 @@ public sealed partial class PlayerBody
         float speed = HorizontalSpeed();
         if (speed < jumpFastSpeed) return null;
         if (Mathf.Abs(HeadingOf(player.ActualVelocity)) > 45f) return null;
-        string clip = !hard ? landRunLight : speed >= landStumbleSpeed ? landRunStumble : landRunHard;
+        string clip = !hard ? (DroppedFar && Find(landRunMid) != null ? landRunMid : landRunLight)
+            : speed >= landStumbleSpeed ? landRunStumble : landRunHard;
         return Find(clip) != null ? clip : null;
+    }
+
+    // A hard landing going ahead at a jog: down to a hand and on (Land_ToSlam; its steps go 3.3 m/s, a jog's). Faster, the
+    // sprint's landings (LandingOnTheMove); slower or any other way, the knees take it on the spot.
+    private string SlamOnTheMove()
+    {
+        float speed = HorizontalSpeed();
+        if (speed <= walkClipSpeed || speed >= jumpFastSpeed || Mathf.Abs(HeadingOf(player.ActualVelocity)) > 45f) return null;
+        return Find(landSlam) != null ? landSlam : null;
+    }
+
+    // A dive roll's clip the way it goes (the move's direction, as a dodge's): standing, it rolls and gets up; begun at a
+    // sprint, it rolls and runs on (MovementLanding.DiveRollRuns, the same on every PC).
+    private string DiveRollWay()
+    {
+        float heading = HeadingOf(player.Abilities.ActionDirection);
+        string standing = NearestWay(diveRollWays, heading, roll);
+        return player.Abilities.Landing.DiveRollRuns ? NearestWay(diveRollRunWays, heading, standing) : standing;
     }
 
     // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge that shifts into
@@ -128,9 +152,10 @@ public sealed partial class PlayerBody
     private bool RunsOut(Channel channel)
     {
         if (channel == null) return false;
-        if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunHard) || channel == Find(landRunStumble))
+        if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunMid) || channel == Find(landRunHard)
+            || channel == Find(landRunStumble) || channel == Find(landSlam))
             return true;
-        foreach (string set in new[] { rollRunWays, dodgeSprintWays })
+        foreach (string set in new[] { rollRunWays, dodgeSprintWays, diveRollRunWays })
             foreach (var (clip, _) in WaysOf(set))
                 if (channel == Find(clip)) return true;
         return false;

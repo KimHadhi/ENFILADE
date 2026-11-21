@@ -236,6 +236,11 @@ public sealed class ObstacleTraversalState : MovementBaseState
 
     private WarpedTraversal StartWarp(in ObstacleTarget target)
     {
+        // A clamber from a walk goes at its clip's own pace, its hands on the near edge (ParkourTraversal.TryClamber). With no
+        // clip hands, the route.
+        if (target.Kind == VaultKind.Clamber)
+            return ctx.ObstacleMotions != null && ctx.ObstacleMotions.TryObstacleMotion(target.Kind, out var climb)
+                ? WarpedTraversal.TryStart(ctx, target, climb, 0f, climb.Length, null) : null;
         if (!target.StraightLine || !Warps(target.Kind)) return null;
         // No body to ask, or the clip puts no hands down: the straight move.
         if (ctx.ObstacleMotions == null || !ctx.ObstacleMotions.TryObstacleMotion(target.Kind, out var motion)) return null;

@@ -744,7 +744,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             case MovementState.Standing:
             case MovementState.Crouching:
-                if (onGround) Locomotion(state == MovementState.Crouching, dt);
+                // Standing still down into a crouch or up out of it, the posture's clip (PlayerBody.Posture).
+                if (onGround) { if (!FollowPosture()) Locomotion(state == MovementState.Crouching, dt); }
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;
@@ -774,8 +775,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Supine: Want(supine); FaceLying(dt); break;
             case MovementState.StepDodge: DodgePose(); break;
             case MovementState.LandingRoll:
-                // A roll lasts as long as the move; a landing on the spot plays at its own pace and outlasts it.
-                if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
+                // A roll lasts as long as the move; a landing on the spot plays at its own pace and outlasts it. A dive roll
+                // plays on its own clock, the move going at its clip's own travel (MovementLanding.TryDiveRoll).
+                if (player.Abilities.Landing.DiveRoll) Drive(rollClip, stateTime / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
+                else if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
                 else Drive(rollClip, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration));
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
@@ -813,6 +816,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void Enter(MovementState from, MovementState to, bool onGround)
     {
         if (from == MovementState.Mantle && player.Abilities.Traversal.Obstacle.ExitLadder != null) climbedOffLadderAt = Time.time;
+        if (onGround) StartPosture(from, to);
+        else postureClip = null;
         if (onGround && (to == MovementState.Standing || to == MovementState.Crouching || to == MovementState.Proning
             || to == MovementState.Supine))
         {
@@ -909,6 +914,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 jumpClip = JumpFor(HorizontalSpeed());
                 Restart(Find(jumpClip));
             }
+            // Off an edge without a jump, onto a drop: the step off and the fall's start (Body.fallFromEdge).
+            fromEdge = !jumped && state == MovementState.Standing && DropsFar();
+            if (fromEdge) Restart(Find(fallFromEdge));
             return;
         }
         if ((state == MovementState.Standing || state == MovementState.Crouching) && Time.time - climbedOffLadderAt > ClimbOffTouchdown)
@@ -917,7 +925,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             if (landing != null)
             {
                 PlayTransition(landing);
-                transitionRuns = landing == landRunLight || landing == landRunHard || landing == landRunStumble;
+                transitionRuns = RunsOut(Find(landing));
             }
             else if (wasTucked && state == MovementState.Standing) SettleFromTuck();
         }

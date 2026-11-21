@@ -351,6 +351,14 @@ UE4용 ZIP의 `Source/FBX`(Punches는 `Content/Boxing_01/Source/FBX`)에 클립�
 
 같은 상태라도 상황에 맞는 클립을 고른다. 모두 `Body` 행에서 이름과 기준값을 바꾼다.
 
+- **BIPER Female Runner 나머지 (0.9.285)**, 클립의 루트 곡선은 ClipBench가 [GaitMoves.csv](../../Assets/_Project/Data/Resources/Tables/Player/GaitMoves.csv)에 굽는다:
+  - 서서 웅크리기·일어서기([PlayerBody.Posture](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Posture.cs), `Body.crouchDown`·`standUp`): 가만히 선 채 앉거나 일어서면 `IdleToCrouch`·`CrouchToIdle`. 클립은 제 시계(0.4초)가 아니라 눈높이가 바뀌는 만큼을 따른다(kind posture: 몸 중심이 제 길의 몇 %를 왔는지). 카메라가 머리라 제 시계로는 시야가 Ctrl보다 늦었다. 움직이면 웅크린 걸음이 맡는다.
+  - 착지 높이: 2m(`Body.landMidHeight`) 이상에서 가볍게 착지하면 서서 `Land_2h`(점프 착지보다 깊게), 전력질주로 `Land_ToRun2`. 조깅으로 앞으로 가다 세게 착지하면 `Land_ToSlam`(한 손을 짚을 만큼 깊게 받고 이어 감, 클립 걸음 3.3m/s). 높이는 착지 속도로 판단해 모든 PC에서 같다.
+  - 턱에서 걸어 떨어지기(`Body.fallFromEdge`): 뛰지 않고 1m(`fallFromEdgeDrop`)보다 깊은 데로 내디디면 `Jump_Falldown`을 제 시계로(높이는 클립에서 뺌), 그다음 낙하 자세.
+  - 슬라이딩 중(`Body.slide`): `SlideToRun_10m`의 가운데 1.23초(0.70~1.93초, 엉덩이가 바닥 가까이)를 고리로(BiperRunner.clips.csv `from`·`to`). 예전 `SlideToRun_Loop`는 멈춘 한 자세였다.
+  - 다이브 구르기(`Body.diveRollWays`·`diveRollRunWays`): 가는 쪽마다 `DiveRoll_*`, 전력질주면 `DiveRollToRun_*`. 클립은 제 시계로, 몸은 클립이 땅 위로 가는 빠르기로 간다(MovementGuide 다이브).
+  - 걸으며 기어오르기(`Body.clamberLow`·`clamberHigh`, `VaultKind.Clamber`): `Jump_Climb_1h`·`2h`를 손이 턱 모서리에 닿게 맞춰(WarpedTraversal) 제 빠르기로. 높이는 클립에서 뺐다(inPlaceY 1).
+  - 쓰지 않는 것: 공중제비 `Flip_*`(사용자 11-21: "안 씀"), `Jump_Climb_Enter_*`·`Jump_Climb_Exit`(`Jump_Climb_1h`·`2h`를 둘로 나눈 판), `SlideToRun_5m`(10m와 같은 동작), `DiveRoll_B`·`DiveRollToRun_B`(바로 뒤 Z는 누운 다이브).
 - 점프: 도움닫기 속도에 따라 제자리(`jumpStill`), 걷기·조깅(`jumpSlow`), 전력질주(`jump`, `Body.jumpFastSpeed` 4.4m/s 이상). 점프 클립은 비행을 따른다(0.9.266, [PlayerBody.Flight](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Flight.cs)): 클립에서 몸이 땅을 떠나는 순간부터 시작하고, 올라갈 때는 이번 비행이 닿을 꼭대기의 몇 %인지, 내려올 때는 닿았던 꼭대기의 몇 %인지에 맞는 순간을 보여 준다. 뛴 높이보다 더 내려가면 클립 자신의 낙하를 제 빠르기로 잇고, 그것도 끝나면 낙하 자세. 클립마다 땅을 떠나는 때·꼭대기·처음 높이로 돌아오는 때와 그 사이 높이는 ClipBench가 클립의 몸 중심 곡선에서 굽는다(`GaitMoves.csv` kind jump, bake=gaitmoves). BIPER 점프는 처음 0.1초가 땅을 차는 동작(팔을 0.06초 만에 휘두름)이라, 게임처럼 곧바로 뜨는 점프에 제 시계로 틀면 그 동작이 공중에서 나오고 착지 때 클립은 아직 공중이었다(사용자 11-21: "점프하면 팔이 너무 갑작스럽게 움직이고"). 서서 가볍게 착지하면 `touchdown`(Land_1h, 점프가 내려오는 팔을 든 자세에서 시작)이 무릎으로 받는다. 예전에는 바로 서 있기로 섞여 팔이 순식간에 내려왔다.
 - 공중에서 Ctrl: 무릎을 접는 `airTuck`(Beatrun 코일). 충돌 캡슐의 바닥이 올라가므로 몸도 그 자세의 발바닥이 캡슐 바닥에 닿는 만큼만 올라간다([PlayerBody.Tuck](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Tuck.cs), `Body.tuckFollowSpeed`). 그래서 발이 바닥을 뚫지 않고, 착지할 때 몸과 눈 시점이 튀지 않는다.
 - 큰 낙하(`Ability.bigFallHeight`): 팔다리를 허우적거리는 `fallFlail`(Beatrun `fallinguncontrolled`). 큰 낙하 중 Ctrl은 착지 구르기만 준비하고 무릎을 접지 않는다. 이미 접고 있었으면 다리를 편다.

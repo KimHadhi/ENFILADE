@@ -140,6 +140,12 @@ public sealed class MovementActions
         // and the surge ran on into the obstacle with nothing looking for its vault (2026-11-09).
         bool surging = ctx.Abilities.Traversal.SurgeVelocity != Vector3.zero;
         if ((jumpBufferTimer <= 0f && !surging) || coyoteTimer <= 0f) return;
+        // Walking up to a top, the press clambers onto it slowly (ParkourTraversal.TryClamber).
+        if (!surging && ctx.Abilities.Traversal.TryClamber())
+        {
+            jumpBufferTimer = 0f;
+            return;
+        }
         if (ctx.Abilities.Traversal.SurgesToVault(ctx.DeltaTime)) return;
         if (ctx.StateMachine.Current.TryJump()) jumpBufferTimer = 0f;
     }

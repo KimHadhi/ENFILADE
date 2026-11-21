@@ -48,6 +48,8 @@
 8. **사격·장전 몸 동작** (`*_Shoot`, `*_Reload`, `R_AutoShoot`): 1인칭 총과 손은 FPSAF와 총 트랙이 주인이라, 쓴다면 다리와 몸통의 흔들림만이다.
 9. L135·R135 스트레이프(옆으로 갈 때 다리가 뒤로 엇갈리는 판): 검사대로 방향을 잰 뒤, 뒤쪽으로 갈 때 고르는 판으로.
 
+**Female Runner 나머지 (0.9.285, 사용자 11-21 "Female Runner first")**: 서서 웅크리기·일어서기(`IdleToCrouch`·`CrouchToIdle`, 자세를 따라), 높은 데서 가벼운 착지(`Land_2h`·`Land_ToRun2`), 조깅으로 세게 착지(`Land_ToSlam`), 턱에서 걸어 떨어지기(`Jump_Falldown`), 슬라이딩 중의 살아 있는 가운데(`SlideToRun_10m` 0.70~1.93초), Z 다이브 구르기(`DiveRoll_*`·`DiveRollToRun_*`), 걸으며 기어오르기(`Jump_Climb_1h`·`2h`)를 연결했다. 자세한 것은 [PlayerBodyGuide](../Guides/PlayerBodyGuide.md)와 [MovementGuide](../Guides/MovementGuide.md). 쓰지 않는 것: 공중제비 `Flip_*`(사용자 판단), `Jump_Climb_Enter_*`·`Exit`(1h·2h를 나눈 판), `SlideToRun_5m`, `DiveRoll_B`·`DiveRollToRun_B`, 그리고 앞서 뺀 출발·멈춤·제자리 돌기·반대로 꺾기·달리기·오른발 시작 판·앞쪽·엇갈림 스트레이프.
+
 ## 남은 비용
 
 `Art/Animations` 아래 클립은 모두 몸의 클립 목록(`Resources/Characters/PlayerBody`)에 들어가 빌드에 실리고, 이 폴더의 클립은 압축 없이 들어온다(KeepEveryKey). 358개가 늘었다. 쓰는 클립만 목록에 두는 것은 따로 할 일이다.

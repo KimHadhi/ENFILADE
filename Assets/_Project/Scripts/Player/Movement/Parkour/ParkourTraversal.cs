@@ -108,6 +108,26 @@ public sealed class ParkourTraversal
             && Mathf.Abs(normal.y - climbedWall.y) <= .25f && Mathf.Abs(normal.z - climbedWall.z) <= .25f;
     internal bool CanGrab(SwingBar candidate) => barLock <= 0f || candidate != lastBar;
 
+    /// <summary>
+    /// Walking up to a box or a wall's top (W held, no faster than Ability.clamberMaxSpeed), the jump clambers onto it
+    /// slowly, turned side-on with a knee up, on BIPER Female Runner's Jump_Climb (0.9.285; the user chose it for a walk
+    /// only: "걸을 때만 천천히 오르기"): the clip's hands on the near edge and the clip at its own pace (WarpedTraversal),
+    /// 2.6 s onto a top at the hips, 3.1 s onto one at the head. Jogging or sprinting, the press is the quick climb or vault
+    /// it always was (SurgesToVault, the jump's own). True when it began.
+    /// </summary>
+    internal bool TryClamber()
+    {
+        var settings = ctx.AbilitySettings;
+        if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= 0.1f || ledgeLock > 0f
+            || ctx.Abilities.SwingHoldsBody || settings.clamberHighest <= 0f) return false;
+        if (Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude > settings.clamberMaxSpeed) return false;
+        if (!Detector.TryClamber(ctx.transform.position, ctx.transform.forward, settings.clamberReach, settings.clamberLowest,
+                settings.clamberHighest, out ObstacleTarget target) || traversedObstacles.Contains(target.Surface)) return false;
+        StopSurge();
+        Begin(target);
+        return true;
+    }
+
     // Airborne, or at a wall with high = true. The move looks where the player looks, as Beatrun's do.
     internal bool TryVault(bool high)
     {

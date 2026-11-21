@@ -45,6 +45,9 @@ public sealed class MovementAbilitySettings
     [Min(1f)] public float vaultSurgeSpeed = 7f;
     [Tooltip("달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전(도/초), 시야각을 넓히는 양(도/초). 화면 흔들림 설정을 따른다.")]
     public Vector2 vaultSurgeKick = new Vector2(25f, 120f);
+    [Tooltip("Walking up to a top (no faster than clamberMaxSpeed, m/s), the jump clambers onto it slowly: a top clamberLowest "
+        + "to clamberHighest over the feet (m), its face within clamberReach (m) of the body's side.")]
+    [Min(0f)] public float clamberMaxSpeed = 2f, clamberLowest = .7f, clamberHighest = 2.3f, clamberReach = .6f;
     [Tooltip("긴 넘기(kong)를 클립의 손이 장애물을 짚는 대로 옮긴다(WarpedTraversal). 끄면 Beatrun 직선 경로.")]
     public bool warpKong = true;
     [Tooltip("보통 넘기(over)를 클립의 손이 장애물을 짚는 대로 옮긴다.")]
@@ -231,6 +234,12 @@ public sealed class MovementAbilitySettings
     [Min(0.05f)] public float rollDuration = 1f;
     [Tooltip("Slowest a landing roll moves (m/s); a faster landing keeps its speed.")]
     [Min(0f)] public float rollSpeed = 4f;
+    [Tooltip("A dive roll (Z on the ground): the Tables/Player/GaitMoves.csv rows its travel is read from, standing and at a sprint.")]
+    public string diveRollTravel = "DiveRoll_F", diveRollRunTravel = "DiveRollToRun_F";
+    [Tooltip("How far a dive roll goes (m), standing and at a sprint: its clips' own on the reference body (ClipBench).")]
+    [Min(0f)] public float diveRollDistance = 5.7f, diveRollRunDistance = 9.1f;
+    [Tooltip("At least this fast (m/s), a dive roll runs on out of itself.")]
+    [Min(0f)] public float diveRollRunSpeed = 4.4f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;

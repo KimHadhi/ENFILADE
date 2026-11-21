@@ -21,6 +21,8 @@ public sealed class MovementDive
     }
     public float BurstWeight => ctx.IsDiving ? Mathf.Clamp01(1f - flightTime / Mathf.Max(0.01f, ctx.diveBurstDuration)) : 0f;
     internal MovementDive(PlayerMovement context) { ctx = context; }
+    // Within 22.5 degrees of straight back (its cosine): S alone, not S with A or D.
+    private const float StraightBack = .924f;
 
     internal void Tick(float dt)
     {
@@ -36,6 +38,10 @@ public sealed class MovementDive
         if (!fromGround && (ctx.IsBigFall || -ctx.VerticalVelocity > ctx.airDiveMaxFallSpeed)) return false;
         Vector3 direction = ctx.transform.right * input.x + ctx.transform.forward * input.y;
         direction = Vector3.ProjectOnPlane(direction.sqrMagnitude > 0.01f ? direction : ctx.transform.forward, Vector3.up).normalized;
+        // On the ground any way but straight back it is a dive roll (MovementLanding.TryDiveRoll, 0.9.285): the user's pick
+        // for Z, "Z 다이브를 구르기로 교체". Straight back stays the dive onto the back; in the air, the dive.
+        if (fromGround && Vector3.Dot(direction, -ctx.transform.forward) < StraightBack && ctx.Abilities.Landing.TryDiveRoll(direction))
+            return true;
         bool backward = Vector3.Dot(direction, ctx.transform.forward) < -0.2f;
         float side = Vector3.Dot(direction, ctx.transform.right);
         Side = !backward && Mathf.Abs(side) >= ctx.AbilitySettings.sideDiveMinSideways ? (side > 0f ? 1 : -1) : 0;

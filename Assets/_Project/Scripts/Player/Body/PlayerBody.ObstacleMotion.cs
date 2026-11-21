@@ -79,6 +79,10 @@ public sealed partial class PlayerBody : IObstacleMotionSource
             foreach (string variant in new[] { name, name + rifleSuffix, name + pistolSuffix })
                 if (!string.IsNullOrEmpty(variant) && byName.TryGetValue(variant, out var channel) && channel.Playable.IsValid())
                     ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);
+        // The clambers from a walk, warped onto the top's near edge the same way (VaultKind.Clamber).
+        foreach (string name in new[] { clamberLow, clamberHigh })
+            if (!string.IsNullOrEmpty(name) && byName.TryGetValue(name, out var channel) && channel.Playable.IsValid())
+                ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);
         // The ledge catch's hands on their first frame, warped onto the edge the same way (PlayerBody.LedgeCatch).
         MeasureCatchWrists();
     }
