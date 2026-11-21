@@ -39,9 +39,9 @@ public sealed partial class PlayerBody
         // the lag (user, 2026-11-08).
         float reach = Mathf.Max(0f, now.y) * aimSteadyReach;
         steadyHips = now + Vector3.ClampMagnitude(steadyHips - now, reach);
-        // Only while FPS Animation Framework holds a gun up: the moves' own clips (a vault, a slide) keep their motion. At
-        // the hip as steady as gunHipSteady keeps it, aiming fully.
-        float aim = !dead && UpperBodyFromFramework ? Mathf.Max(AimBlend(), gunHipSteady) : 0f;
+        // Only while a gun is held up: by FPS Animation Framework (at the hip as steady as gunHipSteady keeps it, aiming
+        // fully) or on the gun's aim clips (AimsOnClip). The moves' own clips (a vault, a slide) keep their motion.
+        float aim = dead ? 0f : UpperBodyFromFramework ? Mathf.Max(AimBlend(), gunHipSteady) : AimsOnClip;
         if (aim > 0f) hips.position = transform.TransformPoint(Vector3.Lerp(now, steadyHips, aim));
     }
 }

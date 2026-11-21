@@ -309,6 +309,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// <summary>0–1: how far the player is into a sprint (Shift). Sent to the other PCs as the sprint itself: until 0.9.245 a
     /// run W built up counted too, so a friend's copy took the sprint pose that this PC's own body never did.</summary>
     public float RunIntent => Actions == null ? 0f : SprintProgress;
+
+    private PlayerBody sprintBody;
+    // Whether the body has a sprint toward these keys (PlayerBody.SprintsToward): with a gun out, only where the gun runs.
+    internal bool SprintsToward(Vector2 keys)
+    {
+        if (sprintBody == null) sprintBody = GetComponent<PlayerBody>();
+        return sprintBody == null || sprintBody.SprintsToward(keys);
+    }
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
     public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     /// <summary>Fall speed from actual descent, excluding time held against an edge (m/s).</summary>

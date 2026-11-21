@@ -179,9 +179,11 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         leftOffGun = Mathf.MoveTowards(leftOffGun, oneHanded ? 1f : 0f, dt / blendTime);
         // A point or an off-hand throw may have the left hand lent away from the gun (OffHand).
         EaseOffHand(dt);
-        // Sprinting with a gun the gun's run has the upper body (PlayerBody.GunRuns), as a vault's clip has it: the hands are
-        // put on the gun here, which rides the clip's right hand (FPSBody).
-        stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) && !body.GunRuns ? 1f : 0f, dt / blendTime);
+        // Sprinting with a gun the gun's run has the upper body (PlayerBody.GunRuns), and aiming the gun's aim clips
+        // (PlayerBody.AimsOnClip), as a vault's clip has it: the hands are put on the gun here, which goes by the clip's
+        // right hand (FPSBody).
+        stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) && !body.GunRuns && body.AimsOnClip <= 0f ? 1f : 0f,
+            dt / blendTime);
         Ease(Hold.Gun, gun && (armed || oneHanded || (alive && use == TraversalHandUse.Gun)), dt);
         Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt) && !EmoteHasHands, dt);
         TrackEdgeHands(state);

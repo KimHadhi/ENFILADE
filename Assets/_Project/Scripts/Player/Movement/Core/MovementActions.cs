@@ -104,8 +104,9 @@ public sealed class MovementActions
             (ctx.CurrentState == MovementState.StepDodge && ctx.Abilities.ActionPosture == MovementPosture.Standing);
         // Any way the keys point (the user, 2026-11-21: the sprint's strafe clips go every way), and not in walk mode, where
         // Shift jogs (MovementGait). Until 0.9.245 only a run with W in it sprinted.
+        // With a gun out only where the gun has a run of its own (PlayerBody.SprintsToward: Combat Girls' go ahead only).
         bool wantsToSprint = ctx.InputAvailable && ctx.Motor.isGrounded && sprintHeld && input.sqrMagnitude > .01f && canSprintState
-            && !ctx.Abilities.Landing.SprintBlocked && !ctx.Input.WalkMode;
+            && !ctx.Abilities.Landing.SprintBlocked && !ctx.Input.WalkMode && ctx.SprintsToward(input);
 
         if (wantsToSprint) sprintProgress = Mathf.MoveTowards(sprintProgress, 1f, dt / Mathf.Max(0.01f, ctx.sprintRampUpDuration));
         else if (!ctx.IsSliding)

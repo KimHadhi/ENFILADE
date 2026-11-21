@@ -243,12 +243,16 @@ public sealed partial class FPSBody
             return;
         }
         float released = Released(false);
-        if (released <= 0f || !held.HoldFromEyes(aim, out KTransform kept)) return;
+        // Aiming on the gun's aim clips the gun goes from the hip's hold to the clip's (AimOnClip), never through FPSAF's
+        // aimed hold, which had the sight on the eyes.
+        float onClip = Body != null ? Body.AimsOnClip : 0f;
+        if (released <= 0f || !held.HoldFromEyes(onClip > 0f ? 0f : aim, out KTransform kept)) return;
         gun.SetPositionAndRotation(Vector3.Lerp(gun.position, eyes.TransformPoint(kept.position), released),
             Quaternion.Slerp(gun.rotation, eyes.rotation * kept.rotation, released));
         // Sprinting the gun's run (Combat Girls *_Run) has the arms, and the gun goes where its right hand takes it, held
         // in that hand as FPSAF holds it (PlayerBody.GunRuns; the user, 2026-11-22: "combat girls animation을 처쓰라고").
         held.FollowHand(rig.WeaponBoneRight, gun, released * gunRunWeight);
+        AimOnClip(gun, released * onClip);
         float leftReleased = Released(true);
         for (int i = 0; i < fingers.Count; i++)
             fingers[i].bone.localRotation = Quaternion.Slerp(fingers[i].bone.localRotation, fingerGrip[i], fingers[i].left ? leftReleased : released);

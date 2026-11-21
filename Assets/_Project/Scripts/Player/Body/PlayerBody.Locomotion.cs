@@ -296,8 +296,7 @@ public sealed partial class PlayerBody
         else
         {
             stance = plainSet;
-            // The gun's run goes ahead only: sprinting with a gun the body turns to the way it runs and runs it (GunRuns).
-            turn = gunRuns ? heading : HipTurn(heading, speed);
+            turn = HipTurn(heading, speed);
             legs = Mathf.DeltaAngle(0f, heading - turn);
             if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
         }
@@ -351,11 +350,35 @@ public sealed partial class PlayerBody
     }
 
     /// <summary>Sprinting with a gun out now: the gun's run (BIPER Combat Girls R_Run, P_Run, S_Run) has the whole body, arms
-    /// and gun with it: the body turns to the way it runs (the run goes ahead only), the hands give the upper body to the
-    /// clip (PlayerBodyHands), the gun rides the clip's right hand (FPSBody) and the sights and the trigger wait
+    /// and gun with it (ahead only: SprintsToward): the hands give the upper body to the clip (PlayerBodyHands), the gun rides the clip's right hand (FPSBody) and the sights and the trigger wait
     /// (WeaponController). The user, 2026-11-22: "전력질주할 때 줌이나 총 못 쏘게 하고 combat girls animation을 처쓰라고".
     /// False out of a walk or run on the ground (Locomotion not played this frame).</summary>
     public bool GunRuns => gunRuns && Time.frameCount - gunRunsFrame <= 2;
+
+    /// <summary>How far the sights are up on the gun's own aim clips (0-1): standing or crouched with a gun out, the aim
+    /// clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog, BodyMoves .aim sets) have the upper body and arms, the
+    /// hands give it to them (PlayerBodyHands) and the gun goes where the clip's right hand has it, its sight on the view's
+    /// line (FPSBody.AimOnClip). Before 0.9.318 FPSAF's Ads brought the sight onto the eyes, and the gun went through the
+    /// head between the brows as others saw it (the user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가
+    /// 보기에 내 미간 사이를 뚫어서 총을 위치하게 해서 조준하잖아, 카메라 때문이지만").</summary>
+    public float AimsOnClip => !dead && (state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching) && !GunRuns
+        && GunInHand() != null ? AimBlend() : 0f;
+
+    /// <summary>Whether the body has a sprint toward these keys (x right, y ahead, against the view): with a gun out only
+    /// where the gun's own run carries all of it (Combat Girls' runs go ahead only, so W alone); with none every way (the
+    /// 8-way sprints). The user, 2026-11-22: "총 들었을 때 모션 없으면 앞만 달릴 수 있게 해" (0.9.316 turned the body
+    /// to run the gun's run backwards: "뒤로 달리니까 개 어색하니까").</summary>
+    public bool SprintsToward(Vector2 keys)
+    {
+        var gun = GunInHand();
+        if (gun == null || gun.Hip == null || keys.sqrMagnitude < 1e-4f) return true;
+        float heading = Mathf.Atan2(keys.x, keys.y) * Mathf.Rad2Deg;
+        foreach (var way in gun.Hip.Ways)
+            if (way.Cycles.Count > 0 && way.Cycles[way.Cycles.Count - 1].Rank >= 2f
+                && Mathf.Abs(Mathf.DeltaAngle(way.Angle, heading)) <= LoneWayReach)
+                return true;
+        return false;
+    }
 
     // The player is sprinting now: gunRunFrom of the way into the sprint and not letting go. The sprint's progress only
     // falls once Shift is let go, so the gun comes back at once; a friend's copy gets it in network steps, so an unchanged
@@ -386,8 +409,8 @@ public sealed partial class PlayerBody
 
     // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
     // round to the heading (Reach) and its cycles reach the gait (a gun held at the hip walks, jogs and runs ahead only:
-    // the plain set steps the other ways under the gun's upper body, and a sprint with a gun turns the body to its way,
-    // GunRuns). Past that the next set down runs on under the same upper body.
+    // the plain set steps the other ways under the gun's upper body, and a gun's sprint goes ahead only, SprintsToward).
+    // Past that the next set down runs on under the same upper body.
     private float Carries(MoveSet set, float heading, float speed, float scale)
     {
         if (speed < StillTravel) return 1f;
