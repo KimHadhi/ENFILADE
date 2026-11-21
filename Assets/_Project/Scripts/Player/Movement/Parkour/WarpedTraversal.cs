@@ -21,8 +21,8 @@ public sealed class WarpedTraversal
     private readonly ObstacleTarget target;
     private readonly ParkourDetector detector;
     private readonly IObstacleMotion motion;
-    private readonly Vector3 start, contact;
-    private readonly float rate, exitSpeed, estimatedTime, lift, floor;
+    private readonly Vector3 start, contact, plantHands;
+    private readonly float rate, exitSpeed, estimatedTime, lift, floor, climbScale;
     private Vector3 releaseFeet, lastClear;
     private float clipTime, elapsed, exitClock, exitTime;
     private bool exiting;
@@ -35,7 +35,7 @@ public sealed class WarpedTraversal
     public float Progress => Complete ? 1f : Mathf.Clamp01(elapsed / Mathf.Max(.01f, estimatedTime));
 
     private WarpedTraversal(PlayerMovement ctx, in ObstacleTarget target, IObstacleMotion motion, Vector3 contact, float rate,
-        float exitSpeed, float estimatedTime, float lift, float floor)
+        float exitSpeed, float estimatedTime, float lift, float floor, float climbScale)
     {
         this.ctx = ctx;
         this.target = target;
@@ -46,6 +46,8 @@ public sealed class WarpedTraversal
         this.estimatedTime = estimatedTime;
         this.lift = lift;
         this.floor = floor;
+        this.climbScale = climbScale;
+        plantHands = motion.HandsFromFeet(motion.PlantTime);
         detector = ctx.Abilities.Traversal.Detector;
         start = lastClear = ctx.transform.position;
     }
@@ -97,6 +99,7 @@ public sealed class WarpedTraversal
         // hand IK (PlayerBodyHands), which is then within reach. Below the floor the move hit it and stopped at once.
         float floor = FloorUnder(ctx, feet);
         float lift = Mathf.Max(0f, floor - (spot.y - hands.y));
+        float climbScale = ClimbScale(target, motion, hands, floor, lift);
         Vector3 plantFeet = spot - hands + Vector3.up * lift;
         Vector3 approach = plantFeet - feet;
         if (approach.magnitude > settings.vaultWarpReach) return null;
@@ -107,6 +110,7 @@ public sealed class WarpedTraversal
         float unit = ctx.HeightUnit, exit = VaultMotion.ExitSpeed(target.Kind, entrySpeed / unit) * unit;
         if (exit <= .1f) exit = speed;
         Vector3 releaseGuess = spot - motion.HandsFromFeet(release) + Vector3.up * lift;
+        if (climbScale < 1f) releaseGuess.y = floor + (hands.y - motion.HandsFromFeet(release).y) * climbScale;
         if (clipDuration > 0f)
         {
             // At the clip's own pace: all of it over clipDuration, and the feet reach the end as the clip ends.
@@ -115,7 +119,22 @@ public sealed class WarpedTraversal
             exit = Mathf.Max(.1f, Vector3.Distance(releaseGuess, target.End) / afterRelease);
         }
         float estimated = release / rate + Vector3.Distance(releaseGuess, target.End) / exit;
-        return new WarpedTraversal(ctx, target, motion, spot, rate, exit, estimated, lift, floor);
+        return new WarpedTraversal(ctx, target, motion, spot, rate, exit, estimated, lift, floor, climbScale);
+    }
+
+    // A climb onto a top (not a vault over it) lower than the one its clip was made for: the clip's hands, planted, are higher
+    // over its feet than this top is over the floor, so with the hands on the edge the feet would start under the floor.
+    // Until 0.9.303 the whole way was lifted by that much (lift) and the feet then rose as far as the clip rises, to the
+    // clip's own top: onto a 1.7 m box the 2.15 m clamber went half a metre up into the air over the box and came back down
+    // (user, 2026-11-22: "상자대로 안 오르고 갑자기 저 위 허공을 mantling"). Motion Warping scales a phase's root motion to
+    // its target instead: the clip's rise over its hands, from the plant on, is scaled by this top's height over the clip's,
+    // so the feet come up to this top as the clip comes up to its own. 1 where nothing is lifted, and for vaults, whose
+    // extra height is what carries the legs over.
+    private static float ClimbScale(in ObstacleTarget target, IObstacleMotion motion, Vector3 plantHands, float floor, float lift)
+    {
+        if (target.IsVault || lift <= 0f || float.IsInfinity(floor)) return 1f;
+        float clipTop = plantHands.y - motion.WristAboveTop, top = target.Edge.y - floor;
+        return clipTop > .01f && top > 0f ? Mathf.Clamp01(top / clipTop) : 1f;
     }
 
     // The feet's least way to the plant (m), and how far below the edge a found top may be (m).
@@ -129,7 +148,10 @@ public sealed class WarpedTraversal
     // Where the feet are when the hands are on the spot at this clip time, never below the floor they left.
     private Vector3 FeetFor(float time)
     {
-        Vector3 feet = contact - motion.HandsFromFeet(time) + Vector3.up * lift;
+        Vector3 hands = motion.HandsFromFeet(time);
+        Vector3 feet = contact - hands + Vector3.up * lift;
+        // Scaled to a lower top (ClimbScale): from the floor, the clip's rise over its hands so far times the scale.
+        if (climbScale < 1f) feet.y = floor + (plantHands.y - hands.y) * climbScale;
         feet.y = Mathf.Max(feet.y, floor);
         return feet;
     }
