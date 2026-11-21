@@ -1,14 +1,11 @@
-// Marks the pixels where this PC's own player stands in front of the world on their own screen (stencil bit 128). It is
-// drawn on OwnViewMask's copies of the player's solid meshes, after the world and before anything see-through, so no
-// see-through pass (SeeThrough.hlsl) takes the player's own body, gun or scope lens for the wall a foe stands behind.
-// Nothing is drawn, neither colour nor depth. _Skip leaves out a part one looks through (a sight's glass), so a foe
-// behind it still shows.
+// Marks the pixels where this PC's own player stands in front of the world on their own screen (stencil bit 128). OwnViewMask
+// draws it with the player's own renderers, on their solid submeshes only, after the opaque world and before anything
+// transparent or see-through, so no see-through pass (SeeThrough.hlsl) takes the player's own body, gun or scope lens for
+// the wall a foe stands behind. Nothing is drawn, neither colour nor depth. A part one looks through (a sight's glass) is
+// never drawn with it, so a foe behind it still shows. The material sits on no renderer: its one pass is drawn from a
+// command buffer (DrawRenderer), so the queue and light mode tags below do not decide when it draws.
 Shader "Hidden/ENFILADE/OwnViewMask"
 {
-    Properties
-    {
-        _Skip ("Leave this part out (1: a part one looks through)", Float) = 0
-    }
     SubShader
     {
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent+1" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "True" }
@@ -29,10 +26,6 @@ Shader "Hidden/ENFILADE/OwnViewMask"
             #pragma fragment Frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            CBUFFER_START(UnityPerMaterial)
-                half _Skip;
-            CBUFFER_END
-
             struct Attributes { float4 positionOS : POSITION; };
             struct Varyings { float4 positionCS : SV_POSITION; };
 
@@ -45,7 +38,6 @@ Shader "Hidden/ENFILADE/OwnViewMask"
 
             half4 Frag(Varyings input) : SV_Target
             {
-                clip(0.5h - _Skip);
                 return 0;
             }
             ENDHLSL
