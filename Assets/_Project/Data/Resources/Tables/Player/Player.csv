@@ -474,7 +474,7 @@ Ability.shoveFatigueMost,7,"연속 이 번째에 대기가 가장 길어지고, 
 Ability.shoveFatigueInterval,1.2,가장 긴 밀치기 대기(초)
 Ability.shoveFatigueRecovery,1,밀치지 않고 이만큼(초) 지날 때마다 연속 횟수가 하나 준다
 # 능력: 돌진 밀치기 (총·주먹 모두 달리며 V. Dynamic Landing Push),,
-Ability.dashPushMinSpeed,4.5,이 속도(m/s) 이상으로 시선 쪽으로 달릴 때 V가 돌진 밀치기가 된다. 조깅(가장 빠른 쪽 3.95)보다 빠르고 달리기(가장 느린 쪽 5.03)보다 느리게: 달리기부터. 0.9.245 전에는 4.7 · 0.9.245에 3.5
+Ability.dashPushMinSpeed,4,이 속도(m/s) 이상으로 시선 쪽으로 달릴 때 V가 돌진 밀치기가 된다. 조깅(가장 빠른 쪽 3.95)보다 빠르고 달리기(가장 느린 쪽 4.35)보다 느리게: 달리기부터. 0.9.245 전에는 4.7 · 0.9.245에 3.5 · 0.9.253에 4.5
 Ability.dashPushDuration,0.25,돌진 시간(초). 누군가에 부딪히면 그 자리에서 멈춘다
 Ability.dashPushSpeedScale,2,돌진 속도 = 시작 속도 × 이 값
 Ability.dashPushCooldown,1,돌진이 끝난 뒤 다음 돌진까지(초). 그동안 V는 평소대로(총: 군중 밀치기. 빈손: 밀치기·가드 브레이크)
@@ -577,7 +577,7 @@ Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
 Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다
 Body.kickTurnSpeed,360,가만히 서서 찰 때 시선에서 비켜 있던 다리가 시선 쪽으로 도는 빠르기(도/초). 서 있는 다리는 시선에서 Body.turnStartAngle(60도)까지 어긋날 수 있다
 Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
-Body.jumpFastSpeed,4.5,이보다 빠르게 뛰면 달리며 점프(m/s). 조깅(가장 빠른 쪽 3.95)과 달리기(가장 느린 쪽 5.03) 사이: 달리기부터 달리는 점프. 0.9.245 전에는 4 · 0.9.245에 3
+Body.jumpFastSpeed,4,이보다 빠르게 뛰면 달리며 점프(m/s). 조깅(가장 빠른 쪽 3.95)과 달리기(가장 느린 쪽 4.35) 사이: 달리기부터 달리는 점프. 0.9.245 전에는 4 · 0.9.245에 3 · 0.9.253에 4.5
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
 Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
 Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)

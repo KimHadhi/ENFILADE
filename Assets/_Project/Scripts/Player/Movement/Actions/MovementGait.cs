@@ -27,10 +27,10 @@ public sealed class MovementGait
     private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back" };
     private const int Walk = 0, Jog = 1, Run = 2, Sprint = 3, Crouch = 4;
     private static readonly string[] Rows = { "walk", "jog", "run", "sprint", "crouch" };
-    // Read before the table is: the clips' root travel measured on the reference body (0.9.253).
+    // Read before the table is: the clips' root travel measured on the reference body (0.9.253), the run 0.865 of it (0.9.258).
     private static readonly float[,] Fallback =
     {
-        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f }, { 3.21f, 3.95f, 3.28f, 3.55f, 2.98f }, { 5.20f, 5.43f, 5.03f, 5.43f, 5.43f },
+        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f }, { 3.21f, 3.95f, 3.28f, 3.55f, 2.98f }, { 4.50f, 4.70f, 4.35f, 4.70f, 4.70f },
         { 7.16f, 6.99f, 6.89f, 6.39f, 5.42f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f }
     };
 
