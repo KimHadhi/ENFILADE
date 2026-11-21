@@ -49,6 +49,10 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private float weightTime = .15f;
     [SerializeField, Min(.01f), Tooltip("How long FPSAF takes the upper body over when a gun is drawn, and gives it back when it is put away (s).")]
     private float holdBlendTime = .2f;
+    [SerializeField, Range(0f, 1f), Tooltip("Share of the body's walk and run fed to FPSAF's Sway as its move input: how far the gun "
+        + "swings with the steps. 0 since 0.9.296 (user, 2026-11-21: \"그 총 procedural animation 좀 지워 주세요. 걸을 때나 달릴 때나 튀는 "
+        + "거요\"): the gun no longer swings with the walk; its sway with the look stays.")]
+    private float moveSway = 0f;
     [SerializeField, Range(0f, 1f), Tooltip("Share of FPSAF's Sway (the gun trailing the look and the steps) kept at the hip. Down the "
         + "sights there is none, as in Rainbow Six Siege: the sight stays where the view is (user, 2026-11-09: \"흔들거려서\").")]
     private float hipSway = .5f;

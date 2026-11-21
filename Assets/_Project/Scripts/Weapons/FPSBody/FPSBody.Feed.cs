@@ -11,7 +11,8 @@ public sealed partial class FPSBody
         float speed = velocity.magnitude;
         float walk = Mathf.Max(.1f, movement != null ? movement.WalkSpeed : 1f);
         Vector3 local = transform.InverseTransformDirection(velocity) / walk;
-        input.SetValue(FPSANames.MoveInput, (Vector4)Vector2.ClampMagnitude(new Vector2(local.x, local.z), 1f));
+        // The gun swinging with the walk (FPSAF Sway's move input) as far as Rig.moveSway keeps it: none since 0.9.296.
+        input.SetValue(FPSANames.MoveInput, (Vector4)(Vector2.ClampMagnitude(new Vector2(local.x, local.z), 1f) * moveSway));
 
         // The view: FPSAF's pitch is down-positive; its yaw is how far the view turns from where the body faces. FPSAF's
         // Look spreads that yaw over the spine without a limit (90 degrees of input, 90 of twist), so where the legs can't

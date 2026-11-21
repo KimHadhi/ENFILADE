@@ -1,5 +1,6 @@
 ﻿key,value,note
 Rig.sprintLookWeight,0.3,달리는 동안 상체가 시선을 따라가는 정도(0~1). FPSAF 데모가 질주 때 LookLayerWeight에 주는 값
+Rig.moveSway,0,"걷고 달릴 때 몸의 움직임을 FPSAF Sway에 넣는 비율: 총이 걸음에 따라 흔들리는 양. 0.9.296에 0(사용자 11-21: ""그 총 procedural animation 좀 지워 주세요. 걸을 때나 달릴 때나 튀는 거요""). 시선을 돌릴 때의 흔들림은 그대로"
 Rig.sprintFrom,0.5,걷기와 질주 사이 이만큼 넘어가면 질주로 본다(PlayerMovement의 SprintProgress)
 Rig.reloadBlendOut,0.15,끊긴 장전 동작이 풀리는 시간(초)
 Rig.reloadContacts,true,장전 동안 총과 두 손을 KINEMATION 원본 클립이 둔 자리에 둔다(GunArms·FPSBody.Contacts). 원본을 숨은 팔에 같이 틀어 총이 움직이는 만큼과 손바닥이 총의 어디에 있는지를 읽고 손은 IK로 맞춘다. false면 예전처럼 다시 만든 클립만 따르고 총은 오른손에 붙어 다닌다
