@@ -403,11 +403,14 @@ public sealed partial class PlayerBody
         return turn * share;
     }
 
-    // How much of the body moves rather than stands: up to the slowest cycle the way it goes, the stance shares it.
+    // How much of the body moves rather than stands: below the slowest the way's slowest cycle can go (at its slowest pace
+    // and shortest stride, gaitRate.x x gaitStretch.x), the stance shares it. Measured against the cycle's own speed, a
+    // creep under a crouched walk's 2.3 m/s stood a third of the way on the crouch idle, feet planted in mid-stride.
     private float MovingShare(MoveSet set, float heading, float speed, float scale)
     {
         if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
-        float slow = Mathf.Lerp(a.Cycles[0].Gait.Speed, b.Cycles[0].Gait.Speed, toward) * scale;
+        float slow = Mathf.Lerp(a.Cycles[0].Gait.Speed, b.Cycles[0].Gait.Speed, toward) * scale
+            * Mathf.Min(gaitRate.x, gaitRate.y) * Mathf.Min(gaitStretch.x, gaitStretch.y);
         return Mathf.Clamp01(speed / Mathf.Max(.1f, slow));
     }
 

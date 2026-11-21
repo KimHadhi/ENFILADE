@@ -7,7 +7,8 @@ using UnityEngine;
 /// afterwards, as ObstacleClipContacts does) in the Animator's space, x right, y up, z ahead, and read like this:
 /// - a foot is down while its ankle or its toes are within a few hundredths of a leg of their lowest;
 /// - while down it moves back under the hips as fast as the clip carries the body (the cycles are in place), so the
-///   clip's speed is the median of that, along the way the down feet move back from (its travel);
+///   clip's speed is the median of that, along the way the down feet move back from (its travel), at the toes while they
+///   are down; a cycle that carries its travel in its root goes at its root's speed instead;
 /// - the left foot's touchdowns count the strides and set where a stride starts, so cycles that blend put the same foot
 ///   down at the same moment, whatever their length or where their file starts.
 /// The table's playback speeds before this were guesses and set to the movement's speeds (Body.runClipSpeed 4.9 for a
@@ -23,6 +24,9 @@ internal static class GaitClips
     private const float AnkleDown = .04f, ToesDown = .025f;
     // One foot comes down at most every this many seconds even sprinting: closer touchdowns are one landing (heel, then toes).
     private const float SameFootGap = .25f;
+    // A root that travels at least this many legs a second carries the cycle's travel (a clip made in place moves its root
+    // by a few millimetres at most).
+    private const float RootTravels = .1f;
 
     /// <summary>How one cycle moves on one model.</summary>
     internal sealed class Gait
@@ -117,8 +121,14 @@ internal static class GaitClips
 
         var gait = new Gait { Length = length, Leg = leg };
         var down = new[] { Down(feet[0], toes[0], leg), Down(feet[1], toes[1], leg) };
+        var toesDown = new[] { ToesOnGround(toes[0], leg), ToesOnGround(toes[1], leg) };
 
-        // How each down foot moves against the hips, from the samples either side (the loop wraps).
+        // How each down foot moves against the hips, from the samples either side (the loop wraps), at the point of it that
+        // is on the ground: the toes while they are down, else the ankle. The ankle alone rose and swung forward round the
+        // planted toes as the heel came up, so a foot pushing off read slower than the ground under it went by: BIPER's
+        // Female Runner cycles measured 20-50% under the travel their own root carries (walk 1.07 against 1.57 m/s on
+        // Ichigo, 2026-11-21, ClipBench), and the game moved the body that much slower than the stride, which the user saw
+        // as "모션은 큰데 속도가 느려서 어색".
         var moving = new List<Vector2>();
         Vector2 sum = Vector2.zero;
         for (int f = 0; f < 2; f++)
@@ -126,7 +136,8 @@ internal static class GaitClips
             {
                 if (!down[f][i]) continue;
                 int before = (i + count - 1) % count, after = (i + 1) % count;
-                Vector3 from = feet[f][before] - hip[before], to = feet[f][after] - hip[after];
+                var point = toesDown[f] != null && toesDown[f][before] && toesDown[f][after] ? toes[f] : feet[f];
+                Vector3 from = point[before] - hip[before], to = point[after] - hip[after];
                 var v = new Vector2(to.x - from.x, to.z - from.z) / (2f * step);
                 moving.Add(v);
                 sum += v;
@@ -138,6 +149,15 @@ internal static class GaitClips
             foreach (var v in moving) back.Add(-Vector2.Dot(v, gait.Way));
             back.Sort();
             gait.Speed = Mathf.Max(0f, back[back.Count / 2]);
+            // A cycle that carries its travel in its root (mocap exported with root motion, as BIPER's are) goes as fast as
+            // its root goes: that is the speed the performer moved at, scaled to this body as Unity scales root motion (its
+            // human scale), and the speed a blend tree's thresholds are computed from. The feet can't tell it as well: a
+            // heel coming down and rolling is no point of the foot the bones have, and walks, jogs and runs read 15-25%
+            // slow even on BIPER's own body (walk 1.32 against 1.54 m/s; a back step, landing on the toes, 1.66 against
+            // 1.67; 2026-11-21, ClipBench). A cycle made in place has no root travel and keeps its feet's reading.
+            Vector3 average = clip.averageSpeed;
+            float rooted = new Vector2(average.x, average.z).magnitude * animator.humanScale;
+            if (clip.isHumanMotion && rooted > RootTravels * leg) gait.Speed = rooted;
         }
 
         // Where each stride starts: the left foot at its furthest along the travel, ahead of the hips, which is the moment
@@ -183,6 +203,17 @@ internal static class GaitClips
         gait.Cycles = Mathf.Max(1, touchdowns.Count);
         gait.LeftDown = touchdowns.Count > 0 ? touchdowns[0] / (float)count : 0f;
         return gait;
+    }
+
+    // The toes on the ground: within ToesDown of their lowest. Null for a body without toe bones (then the ankle is the foot).
+    private static bool[] ToesOnGround(Vector3[] toes, float leg)
+    {
+        if (toes == null) return null;
+        float lowest = float.PositiveInfinity;
+        foreach (var p in toes) lowest = Mathf.Min(lowest, p.y);
+        var down = new bool[toes.Length];
+        for (int i = 0; i < toes.Length; i++) down[i] = (toes[i].y - lowest) / leg < ToesDown;
+        return down;
     }
 
     // Down while the ankle or the toes are near their lowest; up again only past twice that, so a millimetre's wobble at the

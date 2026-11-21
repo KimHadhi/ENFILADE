@@ -58,8 +58,12 @@ public sealed class LocomotionState : MovementBaseState
 
         if (ctx.IsGrounded)
         {
-            // 지상: 지면 마찰 및 목표 속도로 가속 보간
-            float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
+            // On the feet, standing or crouched, the body comes to the gait's speed and way as the gait's start clip does
+            // (MovementGait.Sharpness); lying down it keeps the table's ground sharpness.
+            var state = ctx.CurrentState;
+            bool onFeet = state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching;
+            float sharpness = onFeet ? ctx.Actions.Gait.Sharpness(state == PlayerMovement.MovementState.Crouching) : ctx.GroundSharpness;
+            float t = 1f - Mathf.Exp(-sharpness * dt);
             ctx.HorizontalVelocity = Vector3.Lerp(ctx.HorizontalVelocity, targetVelocity, t);
 
             if (ctx.HorizontalVelocity.sqrMagnitude < 0.0001f)

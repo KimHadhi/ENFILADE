@@ -23,6 +23,7 @@ using Object = UnityEngine.Object;
 ///   folders=BiperRunner,BiperCombat   folders under Art/Animations (these two)
 ///   clips=Run_Lfoot,R_Run             only these clips
 ///   skins=ichigo,mayo                 characters by id (ichigo)
+///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
 /// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
 /// </summary>
 [InitializeOnLoad]
@@ -65,7 +66,7 @@ internal static class ClipBench
 
     private static void Run(string[] lines)
     {
-        string[] folders = DefaultFolders, skins = { "ichigo" };
+        string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null;
         foreach (string raw in lines)
         {
@@ -76,6 +77,7 @@ internal static class ClipBench
             {
                 case "folders": folders = values; break;
                 case "skins": skins = values; break;
+                case "models": models = values; break;
                 case "clips": only = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
             }
         }
@@ -97,10 +99,11 @@ internal static class ClipBench
         int measured = 0;
         try
         {
-            foreach (string id in skins)
+            // A character by id, or any humanoid model by its asset path (a pack's own body: what its clips were made on).
+            foreach (string id in skins.Concat(models))
             {
-                var skin = profile.SkinOf(id);
-                var model = skin != null ? profile.ModelOf(skin) : null;
+                var skin = id.StartsWith("Assets/", StringComparison.Ordinal) ? null : profile.SkinOf(id);
+                var model = skin != null ? profile.ModelOf(skin) : AssetDatabase.LoadAssetAtPath<GameObject>(id);
                 if (model == null)
                 {
                     text.AppendLine($"! no character '{id}'");
@@ -183,10 +186,14 @@ internal static class ClipBench
         if (gait != null && gait.Moves)
             line.Append(Invariant($"  gait {gait.Speed * scale,5:0.00} m/s way ({gait.Way.x,5:0.00},{gait.Way.y,5:0.00}) x{gait.Cycles} left@{gait.LeftDown:0.00}"));
         else line.Append("  gait -");
-        if (Root(clip, out Vector3 travel, out float turn, out float low, out float high))
+        if (Root(clip, out Vector3 travel, out float turn, out float low, out float high, out float reached))
         {
             float human = animator.humanScale * scale;
-            line.Append(Invariant($"  root ({travel.x * human,5:0.00},{travel.z * human,5:0.00}) m turn {turn,6:0.0} rise {low * human:0.00}..{high * human:0.00}"));
+            line.Append(Invariant($"  root ({travel.x * human,5:0.00},{travel.z * human,5:0.00}) m = {travel.magnitude * human / Mathf.Max(.01f, clip.length):0.00} m/s turn {turn,6:0.0} rise {low * human:0.00}..{high * human:0.00}"));
+            if (!clip.isLooping && reached >= 0f) line.Append(Invariant($" 90%@{reached:0.00}s"));
+            // Unity's own average of the root's travel, as a build can read it (GaitClips takes a cycle's speed from it).
+            var average = clip.averageSpeed;
+            line.Append(Invariant($" avg {new Vector2(average.x, average.z).magnitude * human:0.00}"));
         }
         Hips(clip, animator, scale, out float start, out float lowest, out float end);
         line.Append(Invariant($"  hips {start:0.00}/{lowest:0.00}/{end:0.00}"));
@@ -194,11 +201,13 @@ internal static class ClipBench
     }
 
     // The clip's body centre (RootT, RootQ), as Unity keeps it in every humanoid clip whatever its import bakes: its travel
-    // and turn from the first moment to the last, and how far it rises and falls from the first.
-    private static bool Root(AnimationClip clip, out Vector3 travel, out float turn, out float low, out float high)
+    // and turn from the first moment to the last, how far it rises and falls from the first, and when its ground speed first
+    // reaches nine tenths of what it goes at over its last fifth (a start's run-up; -1 when it never moves).
+    private static bool Root(AnimationClip clip, out Vector3 travel, out float turn, out float low, out float high, out float reached)
     {
         travel = Vector3.zero;
         turn = low = high = 0f;
+        reached = -1f;
         var bindings = AnimationUtility.GetCurveBindings(clip);
         AnimationCurve Curve(string property)
         {
@@ -223,6 +232,22 @@ internal static class ClipBench
             turn = Vector3.SignedAngle(Vector3.ProjectOnPlane(from, Vector3.up), Vector3.ProjectOnPlane(to, Vector3.up), Vector3.up);
             // The travel told in the clip's own first facing.
             travel = Quaternion.Inverse(Quaternion.LookRotation(Vector3.ProjectOnPlane(from, Vector3.up).normalized + Vector3.forward * 1e-6f)) * travel;
+        }
+        {
+            int steps = Mathf.Max(8, Mathf.CeilToInt(end * 60f));
+            var speed = new float[steps];
+            for (int i = 0; i < steps; i++)
+            {
+                float a = end * i / steps, b = end * (i + 1) / steps;
+                speed[i] = new Vector2(tx.Evaluate(b) - tx.Evaluate(a), tz.Evaluate(b) - tz.Evaluate(a)).magnitude / (b - a);
+            }
+            float last = 0f;
+            int from = steps - Mathf.Max(1, steps / 5);
+            for (int i = from; i < steps; i++) last += speed[i];
+            last /= steps - from;
+            if (last > 1e-3f)
+                for (int i = 0; i < steps; i++)
+                    if (speed[i] >= last * .9f) { reached = end * (i + 1) / steps; break; }
         }
         if (ty != null)
         {

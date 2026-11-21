@@ -5,30 +5,39 @@ using UnityEngine;
 /// gait's own clips carry it that way, so at every gait and in every way the feet stay where they come down (the user,
 /// 2026-11-21: "이 애니메이션에 최대한 맞출 수 있는 스트레이프 시스템으로", and asked, "네 단계 모두 클립 속도", sprinting
 /// any way). The speeds are rows of Tables/Player/Gaits.csv: each gait's clips (BIPER Female Runner) measured on the
-/// reference body with ClipBench, one speed for every character, so a race between two players is never won by a body.
+/// reference body with ClipBench by their root's travel, the speed the performer moved at, which Unity scales to every
+/// body alike, so a race between two players is never won by a body.
 /// The keys (the user's): walk mode (Caps Lock, Player/WalkMode) walks and jogs with Shift; otherwise the player runs,
 /// and sprints with Shift (PlayerMovement.SprintProgress, eased over Move.sprintRampUpDuration, as the walk to the jog is
-/// here). Crouched, walk mode creeps (crouchWalk) and otherwise the crouch jogs (crouchJog).
+/// here). Crouched, walk mode creeps (the crouched walk slowed to the walk's speed) and otherwise the crouched walk goes
+/// at its own: crouching never goes faster than standing does in the same mode.
+/// The body comes up to the gait's speed, and round to a new way, the way the gait's start clip does: nine tenths of it
+/// in the row's runUp (0.7-0.94 s). Until 0.9.253 it came within 0.3 s at any gait (Move.groundSharpness 10), which the
+/// user felt as "속도가 너무 휙휙 바뀌는 느낌".
 /// Until 0.9.245 a run built up the way Beatrun's move limit does (W alone 3.6 → 4.9 → 7.9 → 8.9 m/s, sideways and back
 /// held at 4.9 x 1.15, cut by sharp turns and walls) and every cycle was stretched to whatever that speed was.
 /// </summary>
 public sealed class MovementGait
 {
     private const string Table = "Gaits";
-    // The ways a row gives a speed for, degrees from ahead (left and right alike).
+    // The ways a row gives a speed for, degrees from ahead (left and right alike), and its run-up after them.
     private static readonly float[] Angles = { 0f, 45f, 90f, 135f, 180f };
-    private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back" };
-    private const int Walk = 0, Jog = 1, Run = 2, Sprint = 3, CrouchWalk = 4, CrouchJog = 5;
-    private static readonly string[] Rows = { "walk", "jog", "run", "sprint", "crouchWalk", "crouchJog" };
-    // Read before the table is: the reference body's measured speeds (0.9.245).
+    private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back", "runUp" };
+    private const int RunUpColumn = 5;
+    private const int Walk = 0, Jog = 1, Run = 2, Sprint = 3, Creep = 4, Crouch = 5;
+    private static readonly string[] Rows = { "walk", "jog", "run", "sprint", "creep", "crouch" };
+    // Read before the table is: the reference body's measured speeds and run-ups (0.9.253).
     private static readonly float[,] Fallback =
     {
-        { 1.07f, 1.08f, 1.05f, 1.02f, 1.34f }, { 2.06f, 3.22f, 2.47f, 2.48f, 1.85f }, { 3.93f, 3.74f, 3.06f, 3.99f, 4.21f },
-        { 5.61f, 5.68f, 5.55f, 4.10f, 4.37f }, { 1.99f, 1.96f, 1.71f, .58f, .99f }, { 2.49f, 3.04f, 2.64f, 2.60f, 2.51f }
+        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f, .81f }, { 3.21f, 3.95f, 3.28f, 3.55f, 2.98f, .86f },
+        { 5.20f, 5.43f, 5.03f, 5.43f, 5.43f, .94f }, { 7.16f, 6.99f, 6.89f, 6.39f, 5.42f, .70f },
+        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f, .81f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f, .81f }
     };
+    // ln 10: an approach that closes this much of the gap a second closes nine tenths of it in a second.
+    private const float NineTenths = 2.302585f;
 
     private readonly PlayerMovement ctx;
-    private readonly float[,] speeds = new float[6, 5];
+    private readonly float[,] rows = new float[6, 6];
     private float jogShare;
 
     internal MovementGait(PlayerMovement context)
@@ -39,15 +48,15 @@ public sealed class MovementGait
 
     /// <summary>The gait's speed straight ahead now (m/s), between the run and the sprint (or the walk and the jog) as far
     /// as Shift has brought it.</summary>
-    public float Speed => ctx.Input.WalkMode ? Mathf.Lerp(speeds[Walk, 0], speeds[Jog, 0], jogShare)
-        : Mathf.Lerp(speeds[Run, 0], speeds[Sprint, 0], ctx.SprintProgress);
+    public float Speed => ctx.Input.WalkMode ? Mathf.Lerp(rows[Walk, 0], rows[Jog, 0], jogShare)
+        : Mathf.Lerp(rows[Run, 0], rows[Sprint, 0], ctx.SprintProgress);
 
     /// <summary>The run's speed straight ahead (m/s): the pace a direction key alone gives.</summary>
-    internal float RunAhead => speeds[Run, 0];
+    internal float RunAhead => rows[Run, 0];
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go.</summary>
-    internal float SprintAhead => speeds[Sprint, 0];
-    /// <summary>The crouch's jog straight ahead (m/s).</summary>
-    internal float CrouchAhead => speeds[CrouchJog, 0];
+    internal float SprintAhead => rows[Sprint, 0];
+    /// <summary>The crouched walk's speed straight ahead (m/s), out of walk mode.</summary>
+    internal float CrouchAhead => rows[Crouch, 0];
 
     /// <summary>The speed for this input standing (m/s): the gait now, the way the input points.</summary>
     internal float SpeedFor(Vector2 input)
@@ -57,8 +66,18 @@ public sealed class MovementGait
             : Mathf.Lerp(At(Run, angle), At(Sprint, angle), ctx.SprintProgress);
     }
 
-    /// <summary>The speed for this input crouched (m/s): creeping in walk mode, else the crouch's jog.</summary>
-    internal float CrouchSpeedFor(Vector2 input) => At(ctx.Input.WalkMode ? CrouchWalk : CrouchJog, AngleOf(input));
+    /// <summary>The speed for this input crouched (m/s): creeping in walk mode, else the crouched walk.</summary>
+    internal float CrouchSpeedFor(Vector2 input) => At(ctx.Input.WalkMode ? Creep : Crouch, AngleOf(input));
+
+    /// <summary>How fast the body's speed follows the gait's (per second, for an exponential approach), crouched or not: the
+    /// gait's start clip's run-up.</summary>
+    internal float Sharpness(bool crouched)
+    {
+        float runUp = crouched ? rows[ctx.Input.WalkMode ? Creep : Crouch, RunUpColumn]
+            : ctx.Input.WalkMode ? Mathf.Lerp(rows[Walk, RunUpColumn], rows[Jog, RunUpColumn], jogShare)
+            : Mathf.Lerp(rows[Run, RunUpColumn], rows[Sprint, RunUpColumn], ctx.SprintProgress);
+        return NineTenths / Mathf.Max(.05f, runUp);
+    }
 
     internal void Reset() => jogShare = 0f;
 
@@ -83,9 +102,9 @@ public sealed class MovementGait
         {
             if (angle > Angles[i + 1]) continue;
             float t = (angle - Angles[i]) / (Angles[i + 1] - Angles[i]);
-            return Mathf.Lerp(speeds[row, i], speeds[row, i + 1], t);
+            return Mathf.Lerp(rows[row, i], rows[row, i + 1], t);
         }
-        return speeds[row, Angles.Length - 1];
+        return rows[row, Angles.Length - 1];
     }
 
     private void Read()
@@ -94,7 +113,7 @@ public sealed class MovementGait
         {
             GameTables.TryGetRow(Table, Rows[r], out var row);
             for (int c = 0; c < Columns.Length; c++)
-                speeds[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], Fallback[r, c]) : Fallback[r, c]);
+                rows[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], Fallback[r, c]) : Fallback[r, c]);
         }
     }
 }
