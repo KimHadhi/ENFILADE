@@ -62,8 +62,6 @@ public static class CalloutCheck
                 problems.Add($"{where} when '{when}': no fact is called '{term.Name}' (the row fits nothing)");
             else if ((term.Name == "kind" || term.Name == "crawl") && !Enum.TryParse(term.Word, true, out ZombieKind _))
                 problems.Add($"{where} when '{when}': no zombie kind is called '{term.Word}'");
-            else if (term.Name == "phase" && !Enum.TryParse(term.Word, true, out CombatPhase _))
-                problems.Add($"{where} when '{when}': no phase is called '{term.Word}' (quiet, control, anticipation, assault)");
         }
     }
 
@@ -81,7 +79,7 @@ public static class CalloutCheck
         var holds = new StringBuilder();
         foreach (string name in CalloutFacts.Names)
             if (!Takes(name) && CalloutFacts.Holds(sense, name, "") == true) holds.Append(holds.Length > 0 ? ", " : "").Append(name);
-        PlayRecord.Line(Log, Heading, $"NOW class {PlayerClass.CurrentId}, phase {CampaignRun.Phase}, target {(sense.Target != null ? sense.TargetKind : "none")}"
+        PlayRecord.Line(Log, Heading, $"NOW class {PlayerClass.CurrentId}, target {(sense.Target != null ? sense.TargetKind : "none")}"
             + $"{(sense.Aimed ? " (aimed)" : "")}, awake near {sense.Crowd}/{sense.Close}, health {sense.HealthShare:0.00}; facts that hold: {holds}");
         var slots = new CalloutSlots.Slot[CalloutSlots.Places];
         CalloutWhen.Fact fact = (name, word) => CalloutFacts.Holds(sense, name, word);

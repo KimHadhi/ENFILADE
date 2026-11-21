@@ -15,8 +15,7 @@ public static class KitShapes
     public const float ChamferCut = 10f;
 
     private static Sprite chamfer;
-    private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade, stripes, halftone, burst, streaks, drop, moon,
-        warning, warningMark;
+    private static Texture2D ring, dashes, glow, beam, vignette, grain, dot, fade, stripes, halftone, drop;
 
     /// <summary>White, with its top-right and bottom-left corners cut on the diagonal; sliced so the cut stays 10 px.</summary>
     public static Sprite Chamfer
@@ -132,79 +131,8 @@ public static class KitShapes
         return Mathf.Clamp01(2.6f - near);
     }));
 
-    /// <summary>
-    /// A ring of halftone dots, biggest along the ring's middle and shrinking toward its edges: a burst that spreads out
-    /// (scale it up as it fades).
-    /// </summary>
-    public static Texture2D Burst => burst != null ? burst : burst = Draw("Kit Burst", 128, 128, (x, y) =>
-    {
-        Polar(x, y, 128, out float r, out _, out _);
-        float band = Mathf.Clamp01(1f - Mathf.Abs(r - .45f) / .14f);
-        float gx = Mathf.Repeat(x + .5f, 8f) - 4f, gy = Mathf.Repeat(y + .5f, 8f) - 4f;
-        return Mathf.Clamp01(2.6f * band - Mathf.Sqrt(gx * gx + gy * gy) + .5f);
-    });
-
-    /// <summary>
-    /// Thin streaks leaning like the HUD's slant (a quarter of their height), a strong one and a faint one every 128 px:
-    /// speed lines on a sticker band. Tiles (repeat it with the image's uvRect).
-    /// </summary>
-    public static Texture2D Streaks => streaks != null ? streaks : streaks = Tiled(Draw("Kit Streaks", 128, 512, (x, y) =>
-    {
-        float along = Mathf.Repeat(x + .5f - (y + .5f) * .25f, 128f);
-        return Mathf.Max(Mathf.Clamp01(1.5f - Mathf.Abs(along - 35f)), .55f * Mathf.Clamp01(1f - Mathf.Abs(along - 90.5f)));
-    }));
-
     /// <summary>Solid along its top edge, fading smoothly to nothing at its foot (flip it with the image's uvRect).</summary>
     public static Texture2D Drop => drop != null ? drop : drop = Draw("Kit Drop", 4, 64, (x, y) => Mathf.SmoothStep(0f, 1f, (y + .5f) / 64f));
-
-    /// <summary>A crescent moon, open up and to the right: the rest's mark (AssaultBar's emblem).</summary>
-    public static Texture2D Moon => moon != null ? moon : moon = Draw("Kit Moon", 64, 64, (x, y) =>
-    {
-        var p = Unit(x, y, 64);
-        return Cover(Mathf.Max(p.magnitude - .78f, .62f - (p - new Vector2(.4f, .32f)).magnitude), 32f);
-    });
-
-    /// <summary>
-    /// A warning triangle with rounded corners (WarningMark is its !, drawn over it in another colour): the assault's mark
-    /// (AssaultBar's emblem; the user, 2026-11-14: "삼각형 안에 느낌표 모양으로 해 줘").
-    /// </summary>
-    public static Texture2D Warning => warning != null ? warning : warning = Draw("Kit Warning", 64, 64, (x, y) =>
-        Cover(WarningTriangle(Unit(x, y, 64)), 32f));
-
-    /// <summary>The ! inside Warning's triangle.</summary>
-    public static Texture2D WarningMark => warningMark != null ? warningMark
-        : warningMark = Draw("Kit Warning Mark", 64, 64, (x, y) => Cover(WarningExclaim(Unit(x, y, 64)), 32f));
-
-    private static float WarningTriangle(Vector2 p) => Triangle(p, new Vector2(0f, .8f), new Vector2(.9f, -.74f), new Vector2(-.9f, -.74f)) - .1f;
-
-    private static float WarningExclaim(Vector2 p)
-        => Mathf.Min(Segment(p, new Vector2(0f, .275f), new Vector2(0f, -.215f)) - .085f, (p - new Vector2(0f, -.52f)).magnitude - .1f);
-
-    // A pixel's place across a square texture of this size, -1 to 1 with y up.
-    private static Vector2 Unit(int x, int y, int size) => new Vector2((x + .5f) / size * 2f - 1f, (y + .5f) / size * 2f - 1f);
-
-    // How much of a pixel a shape covers, from its signed distance (negative inside, in Unit's measure) and how many
-    // pixels one unit spans: a pixel-wide soft edge.
-    private static float Cover(float distance, float pixels) => Mathf.Clamp01(.5f - distance * pixels);
-
-    private static float Segment(Vector2 p, Vector2 a, Vector2 b)
-    {
-        Vector2 ab = b - a;
-        return (p - a - ab * Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude)).magnitude;
-    }
-
-    // Signed distance to a triangle, negative inside (after Inigo Quilez's sdTriangle).
-    private static float Triangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
-    {
-        Vector2 e0 = b - a, e1 = c - b, e2 = a - c, v0 = p - a, v1 = p - b, v2 = p - c;
-        Vector2 q0 = v0 - e0 * Mathf.Clamp01(Vector2.Dot(v0, e0) / e0.sqrMagnitude);
-        Vector2 q1 = v1 - e1 * Mathf.Clamp01(Vector2.Dot(v1, e1) / e1.sqrMagnitude);
-        Vector2 q2 = v2 - e2 * Mathf.Clamp01(Vector2.Dot(v2, e2) / e2.sqrMagnitude);
-        float turn = Mathf.Sign(e0.x * e2.y - e0.y * e2.x);
-        float near = Mathf.Min(q0.sqrMagnitude, Mathf.Min(q1.sqrMagnitude, q2.sqrMagnitude));
-        float side = Mathf.Min(turn * (v0.x * e0.y - v0.y * e0.x), Mathf.Min(turn * (v1.x * e1.y - v1.y * e1.x), turn * (v2.x * e2.y - v2.y * e2.x)));
-        return -Mathf.Sqrt(near) * Mathf.Sign(side);
-    }
 
     private static Texture2D Tiled(Texture2D texture)
     {

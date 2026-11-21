@@ -57,9 +57,6 @@ public static class SurgeWay
             Spot = spot;
             Run = run;
         }
-
-        /// <summary>The spot can be had: from here, or after the run.</summary>
-        public bool Reaches => Answer == Answer.Clear || Answer == Answer.There;
     }
 
     /// <summary>
@@ -136,14 +133,6 @@ public static class SurgeWay
         public float Radius = .3f, Height = 1.8f, Step = .3f, Slope = 45f;
         public LayerMask Layers = ~0;
         public PhysicsScene Scene;
-
-        /// <summary>A player's body: its CharacterController and the layers its own moves look at.</summary>
-        public static Walker Of(PlayerMovement body)
-        {
-            var walker = new Walker();
-            walker.Read(body);
-            return walker;
-        }
 
         /// <summary>Takes a body's numbers as they are now (one walker serves a body asked every frame).</summary>
         public void Read(PlayerMovement body)

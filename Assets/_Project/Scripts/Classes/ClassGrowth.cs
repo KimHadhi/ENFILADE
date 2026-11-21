@@ -124,17 +124,6 @@ public static class ClassGrowth
 
     private static long Earned() => Math.Max(0L, Wallet.Experience - baseline);
 
-    /// <summary>
-    /// The chapter's ending (CampaignRun): this game's growth goes to the class now, once; null if it was settled
-    /// already or no game is under way.
-    /// </summary>
-    public static Climb Settle()
-    {
-        if (!playing || settled) return null;
-        settled = true;
-        return Award(Earned());
-    }
-
     private static Climb Award(long amount)
     {
         string id = CurrentId;

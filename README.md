@@ -14,9 +14,9 @@
 | --- | --- |
 | [MainMenu](Assets/_Project/Scenes/MainMenu.unity) | 메인 메뉴: 플레이 방식, 클래스, 무기, 캐릭터와 옷장, 기록 |
 | [Hub](Assets/_Project/Scenes/Hub/Hub.unity) | 걸어 다니는 은신처: 장 고르기, 클래스 벽, 총 진열대, 사격장, 거울, 장 결과 연출 |
-| [Campaign](Assets/_Project/Scenes/Campaign) Ch1~Ch4 | 캠페인: 옥상 탈출, 막힌 고가도로, 지하철, 공항 |
-| [EnfiladeTower](Assets/_Project/Scenes/Campaign/EnfiladeTower.unity) | 엔필레이드 타워: 1~4명 시련의 탑 |
-| [Development](Assets/_Project/Scenes/Development) | 테스팅 룸(전투·이동 시험장). 메뉴에는 없고 콘솔 `/testroom`으로 간다 |
+| Campaign Ch1~Ch4 | 캠페인: 옥상 탈출, 막힌 고가도로, 지하철, 공항 |
+| EnfiladeTower | 엔필레이드 타워: 1~4명 시련의 탑 |
+| [Development](Assets/_Project/Scenes/Development) | 작업 중인 맵(빌드 밖) |
 
 허브와 캠페인·타워 씬은 코드로 짓는다. 맵을 고쳤으면 Unity의 **ENFILADE → 맵** 메뉴에서 다시 짓는다.
 
@@ -48,7 +48,6 @@
 | 이동·파쿠르 조작과 수치 | [이동 안내](Docs/Guides/MovementGuide.md) |
 | 무기·적·전투 UI 만들기 | [전투 제작 안내](Docs/Guides/CombatFoundationGuide.md), [전투 규칙](Docs/Guides/WeaponSystemDesign.md) |
 | 플레이어 몸, 캐릭터와 옷, 애니메이션 | [플레이어 몸](Docs/Guides/PlayerBodyGuide.md) |
-| 맵의 하늘·조명·반사·간접광 | [조명 안내](Docs/Guides/LightingGuide.md) |
 | 소리·모델 추가, 설정, 글꼴, HUD 겹침 검사 | [설정·유지보수 안내](Docs/Guides/MaintenanceGuide.md) |
 | 기능별 설명 (클래스 카드, 타워, 처형, 투척물, 좀비 엘리트 등) | [Docs/Features](Docs/Features) |
 | 외부 에셋의 출처, 워크숍 애드온에서 옮긴 것 | [외부 에셋 출처](Docs/Records/AssetSources.md), [애드온 이식 기록](Docs/Records/AddonPortNotes.md) |

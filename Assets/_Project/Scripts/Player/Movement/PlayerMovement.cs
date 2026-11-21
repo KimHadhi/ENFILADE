@@ -107,7 +107,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     [SerializeField] private MovementAbilitySettings abilitySettings = new MovementAbilitySettings();
     public MovementAbilitySettings AbilitySettings => abilitySettings;
     public bool IsParkour => StateMachine != null && StateMachine.Current.ControlsTraversal;
-    public bool IsDodging => Abilities != null && Abilities.Dodge.IsInvulnerable;
     public float LeanRoll => Abilities != null ? Abilities.Lean.Roll : 0f;
     public float LeanOffset => Abilities != null ? Abilities.Lean.Offset : 0f;
 
@@ -119,7 +118,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float CurrentSlideSpeed { get => Actions.CurrentSlideSpeed; set => Actions.CurrentSlideSpeed = value; }
     public bool SlideBrakeArmed { get => Actions.SlideBrakeArmed; set => Actions.SlideBrakeArmed = value; }
     public Vector3 DiveBodyForward { get => Actions.DiveBodyForward; set => Actions.DiveBodyForward = value; }
-    public string CurrentStatePath => StateMachine != null ? StateMachine.Current.Path : "Uninitialized";
     public bool IsSlideGroundSnap => Motor.IsSlideGroundSnap;
 
     /// <summary>The movement state changed (from, to); raised once the new state has entered.</summary>
@@ -262,8 +260,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float WalkSpeed => Actions != null ? Actions.Gait.JogAhead : 3f;
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (Gaits.csv sprint).</summary>
     public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 5.97f;
-    /// <summary>The crouch's jog straight ahead (m/s, Gaits.csv crouchJog).</summary>
-    public float CrouchSpeed => Actions != null ? Actions.Gait.CrouchAhead : 2.49f;
     public float ProneSpeed => proneSpeed;
     public float SupineSpeed => supineSpeed;
     public float GroundSharpness => groundSharpness;
@@ -458,7 +454,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
             gameObject.AddComponent<PlayerLifeHUD>();
             gameObject.AddComponent<DeathScreen>(); // dying: the world drained, blurred and muffled, the sting, the card (Settings → HUD)
             gameObject.AddComponent<TeammateMarkerHUD>();
-            gameObject.AddComponent<ObjectiveGuideHUD>(); // where the campaign's step wants them: a mark at the screen's edge
             if (!MkHud.On) gameObject.AddComponent<TeamHealthPanel>(); // HUD Mk II draws teammates itself (MkTeam)
             gameObject.AddComponent<ScoreboardHUD>();
             gameObject.AddComponent<ShoveFatigueHUD>();

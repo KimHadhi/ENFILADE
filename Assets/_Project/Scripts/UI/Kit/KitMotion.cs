@@ -47,7 +47,4 @@ public static class KitMotion
         }
         if (moved) text.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices | TMP_VertexDataUpdateFlags.Colors32);
     }
-
-    /// <summary>How long LandLetters takes for this many letters (s).</summary>
-    public static float LettersSeconds(int letters, float step, float seconds) => Mathf.Max(0, letters) * step + seconds;
 }

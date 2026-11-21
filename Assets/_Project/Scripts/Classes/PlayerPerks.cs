@@ -104,11 +104,7 @@ public static class PlayerPerks
     // throwables on the belt, and the lone player's phoenix (dealt only to a player alone: PhoenixRise).
     public const string AmmoPouch = "ammo_pouch", Scavenger = "scavenger", NadePouch = "nade_pouch", Phoenix = "phoenix";
     // The class cards with code behind them (ClassCards, ClassKit, PlayerClass).
-    public const string KnightDeflect = "knight_deflect",
-        AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry",
-        GhostPierce = "ghost_pierce", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger",
-        HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep",
-        SupportWire = "support_wire", SupportCrate = "support_crate", SupportLight = "support_light";
+    public const string KnightDeflect = "knight_deflect", AssaultDanger = "assault_danger", AssaultBroken = "assault_broken", AssaultCavalry = "assault_cavalry", GhostPierce = "ghost_pierce", GhostTiger = "ghost_whitetiger", PointGunslinger = "point_gunslinger", HoundAce = "hound_ace", SupportTorch = "support_torch", KnightShadowstep = "knight_shadowstep";
     // The Support's cards of the 2026-11-14 card feedback (SupportKit): a supply pack thrown to a friend, and structures
     // that go up sturdier (its PC sends the health with the build).
     public const string SupportThrow = "support_throw", SupportFortify = "support_fortify";
@@ -119,8 +115,7 @@ public static class PlayerPerks
     // The Assault's cards of the 2026-11-14 card feedback (ClassKit, PlayerClass): 제압 사격, its rounds pinning zombies
     // down; 선두, less taken in a CHARGE; 돌격 나팔, a longer CHARGE (table-only: Assault.chargeSeconds, which its PC sends
     // with the CHARGE); 엄호 사격, friends' kills in a CHARGE feeding its adrenaline.
-    public const string AssaultSuppress = "assault_suppress", AssaultLead = "assault_lead", AssaultBugle = "assault_bugle",
-        AssaultCover = "assault_cover";
+    public const string AssaultSuppress = "assault_suppress", AssaultLead = "assault_lead", AssaultCover = "assault_cover";
 
     // Every card picked this campaign and its level, in play or not, and the hub's practice over it: kept by CardDecks,
     // which knows nothing of tables or classes, so its rules can be checked by themselves (CardDeckCheck).

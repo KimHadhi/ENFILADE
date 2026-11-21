@@ -52,12 +52,6 @@ public static class Noise
         if (radius > 0f) Made?.Invoke(new NoiseEvent(point, radius, source, lure, gather));
     }
 
-    /// <summary>A gathering lure heard at <paramref name="point"/> that calls its hearers to <paramref name="gatherAt"/>.</summary>
-    public static void Gather(Vector3 point, float radius, GameObject source, Vector3 gatherAt)
-    {
-        if (radius > 0f) Made?.Invoke(new NoiseEvent(point, radius, source, true, true, gatherAt));
-    }
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => Made = null;
 }

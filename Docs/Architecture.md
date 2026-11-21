@@ -62,7 +62,7 @@ ENFILADE/
 3. **플레이어**는 씬의 `PlayerSpawnPoint`가 `PlayerFactory`로 만든다(`Resources/Characters/Player` 프리팹). 프리팹에는 이동·시점·입력·무기만 있고, 나머지 부품은 Play가 시작될 때 `PlayerMovement.EnsureInitialized`가 붙이면서 `Player.csv`의 같은 이름 줄과 묶는다.
 4. **혼자서 켜지는 시스템.** 소리, HUD 카메라, 콘솔, 로딩처럼 씬과 상관없는 것은 `[RuntimeInitializeOnLoadMethod]`로 스스로 켜진다. 씬에 미리 놓을 필요가 없다.
 5. **한 프레임의 순서**는 [FrameOrder](../Assets/_Project/Scripts/Core/FrameOrder.cs) 한 파일에 있다. 누가 누구보다 먼저 도는지 바꾸려면 그 파일만 고친다.
-6. **한 판의 흐름**은 `HubFlow`가 잇는다: 허브 → 장(`CampaignRun`) 또는 타워(`TowerRun`) → 결과(`MatchResults`, 허브의 `ResultsShow`) → 허브.
+6. **한 판의 흐름**은 `HubFlow`가 잇는다: 허브 → 맵 → 결과(`MatchResults`, 허브의 `ResultsShow`) → 허브. 모드(판의 규칙)는 제 폴더의 객체이고 게임은 모드의 이름을 부르지 않는다: 죽음·부활·난입의 규칙은 모드가 `RunRules.Begin`으로 등록하고(`Player/Life/RunRules.cs`), 기록은 `PlayerRecords.Escaped`, 허브로 돌아가기는 `HubFlow.Return`, 이야기 카드는 `ModeScreen`을 쓴다.
 
 ## 숫자와 글자가 흐르는 길
 
@@ -80,9 +80,9 @@ Data/Resources/Tables/<분야>/<이름>.csv          게임의 표
 - 플레이어가 읽는 글자는 모두 `Texts.csv`의 id다. Unity의 ENFILADE → 글자 → 글자 편집기에서 고치고, 코드에 문장이 남았는지는 같은 메뉴의 하드코딩 검사가 찾는다.
 - 저장되는 것(설정, 키, 기록, 옷장 프리셋)은 표가 아니라 사용자 폴더의 JSON 파일이다([유지보수 안내](Guides/MaintenanceGuide.md)).
 
-## 맵은 코드로 짓는다
+## 맵은 손으로 짓는다
 
-허브, 캠페인 네 장, 타워는 씬을 손으로 만들지 않고 `Editor/Maps`의 빌더가 짓는다(ENFILADE → 맵). 씬에서 손으로 고친 것은 다시 지으면 사라지므로 배치는 빌더 코드와 표(`Tables/Maps`의 `MapArt`, `MapDecals`, `MapLook`, `MapSurfaces` 등)에서 고친다. 빌더는 씬을 `◤━━ 지형`, `◤━━ 시스템`, `◤━━ 적 나오는 곳`처럼 이름 붙은 묶음으로 나눠 놓는다.
+허브(`Scenes/Hub/Hub.unity`)는 손으로 짓는 씬이고 일하는 조각은 `Prefabs/Hub`의 키트다. 맵을 짓는 코드는 없다.
 
 ## 실행 중의 하이어라키
 
@@ -156,7 +156,7 @@ Unity 없이 몇 초 만에 도는 구조 검사가 있다. 문서 링크가 끊
 - **쓰지 않는 코드는 두지 않는다.** "나중에 쓸지도 모르는" 메서드·프로퍼티·필드는 지운다(git에 남아 있다). `Check-Code.ps1 dead`가 0에 가깝게.
 - **같은 몇 줄을 복사하지 않는다.** 비슷한 것이 필요하면 [같이 쓰는 도우미](../Assets/_Project/Scripts/README.md#새로-만들기-전에-같이-쓰는-도우미) 표에서 찾고, 없으면 거기에 더한다. 전달만 하는 한 줄짜리 메서드도 만들지 않는다.
 - **표의 숫자는 코드가 읽는 것만.** 표에 있는데 아무 코드도 읽지 않는 칸은 연결하거나 지운다. 바꿔도 아무 일도 없는 숫자는 모드를 만드는 사람을 속인다.
-- **큰 클래스는 주제별 파일로.** 한 파일이 600줄을 넘어가면 `// ---- 주제 ----` 줄로 구획을 긋고 `클래스.주제.cs`(partial)로 나눈다(`Check-Code.ps1 split`). 본 파일 `클래스.cs`에는 필드와 수명 주기(Awake·Update)와 밖에서 부르는 것만 남는다. 지금 나뉘어 있는 것: FPSBody, FPSGun, WeaponController, HandGrip, ZombieMind, ShopMenu, TowerRun, CampaignRun, PlayerNetworkCombat, PlayerGrenades, ClassKit, OutfitDresser, OutfitStudio, MainMenuWardrobe, PerkCardScreen, ResultsShow, DeathScreen, KillFlairFx, FieldPickups와 편집기의 CampaignMaps(장별), GreyboxBuilder, TowerMap, TacticalGunSetup, GunClipRetarget.
+- **큰 클래스는 주제별 파일로.** 한 파일이 600줄을 넘어가면 `// ---- 주제 ----` 줄로 구획을 긋고 `클래스.주제.cs`(partial)로 나눈다(`Check-Code.ps1 split`). 본 파일 `클래스.cs`에는 필드와 수명 주기(Awake·Update)와 밖에서 부르는 것만 남는다. 지금 나뉘어 있는 것: FPSBody, FPSGun, WeaponController, HandGrip, ZombieMind, ShopMenu, PlayerNetworkCombat, PlayerGrenades, ClassKit, OutfitDresser, OutfitStudio, MainMenuWardrobe, PerkCardScreen, ResultsShow, DeathScreen, KillFlairFx, FieldPickups와 편집기의 TacticalGunSetup, GunClipRetarget.
 - **프리팹에 옛 조각을 남기지 않는다.** 코드가 새로 그리게 된 화면 조각은 프리팹에서도 지운다. 숨기기만 하면 그 조각이 붙잡은 그림과 스크립트가 계속 남는다.
 
 0.9.4에서는 논리 오류를 찾으면서, 같은 실수가 여러 곳에서 나던 자리를 "한 곳이 맡는다"로 바꿨다.
@@ -178,7 +178,6 @@ Unity 없이 몇 초 만에 도는 구조 검사가 있다. 문서 링크가 끊
 | --- | --- |
 | `Scripts/Data` | `Scripts/Core/Tables`, `Scripts/Core/Texts` |
 | `Scripts/Settings`, `Scripts/Loading` | `Scripts/Core/Settings`, `Scripts/Core/Loading` |
-| `Scripts/Campaign`, `Scripts/Tower`, `Scripts/Hub`, `Scripts/Combat/Waves` | `Scripts/Modes/Campaign`, `Modes/Tower`, `Modes/Hub`(+`Range`·`Results`), `Modes/Waves` |
 | `Scripts/Combat/Feel` | `Combat/Feedback`, `Combat/Corpses`, `Combat/Impacts`, `Combat/Moments`, `Combat/Marks` (HUD 조각은 `UI/Hud`, 클래스 효과는 `Classes`) |
 | `Scripts/Combat/Weapons`, `Scripts/Player/Combat/Weapons`, `Scripts/Player/FPSBody` | `Scripts/Weapons`(+`Core`·`Effects`·`FPSBody`) |
 | `Scripts/Player/Combat` | `Scripts/Melee`(+`Shove`·`Guard`·`Executions`·`Knives`), `Player/Life`, `Player/Comms`, `Player/Stealth` |

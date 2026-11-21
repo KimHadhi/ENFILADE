@@ -6,7 +6,7 @@
 
 ## 실제 플레이로 확인
 
-전투는 [CombatFoundation](../../Assets/_Project/Scenes/Development/CombatFoundation.unity), 이동·소리·사다리류는 [MovementAbilityPlayground](../../Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity)를 Play하고 바꾼 영역을 직접 조작한다.
+[허브](../../Assets/_Project/Scenes/Hub/Hub.unity)를 Play하고 바꾼 영역을 직접 조작한다(좀비는 콘솔 `/spawn`).
 
 - **무기**: 슬롯 선택·사격·장전·ADS, 총기 벽 차단, 총구 화염·궤적·탄착·혈흔, 근접 전환 시 총 모델 숨김
 - **근접**: 주먹 충전·연타, 벽 적중 소리, 허공 0.2초 후딜, 가드·패링·가드 브레이크, 처형

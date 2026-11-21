@@ -68,7 +68,6 @@ internal static class TextScan
         ("Core/Settings/KeyBindings.cs", null, null, "Texts의 [좌클릭] 같은 키 표시를 알아보는 짝"),
         ("Core/Tables/", null, null, "표 경고"),
         ("Core/Texts/", null, null, "표 경고"),
-        ("Modes/Waves/WaveManager.cs", null, null, "콘솔 /wave 대답(LastError)"),
         ("Enemies/Body/ZombieBody.Hitboxes.cs", "ToggleHitboxes", null, "콘솔 /hitbox"),
         ("UI/Chat/SinglePlayerChatManager.cs", "LoadMap", null, "콘솔 /map"),
         ("UI/Chat/ChatMessageItem.cs", null, "가", "줄 높이를 재는 글자"),

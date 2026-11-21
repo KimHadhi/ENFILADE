@@ -8,7 +8,6 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Object = UnityEngine.Object;
 
 // ModAvatarExporter: packing a character or an outfit as a mod folder. One part of the class; the rest is in
 // ModAvatarExporter.cs and the files beside it.

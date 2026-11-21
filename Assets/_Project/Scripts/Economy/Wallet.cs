@@ -45,15 +45,6 @@ public static class Wallet
         bonusExperience = 0;
     }
 
-    /// <summary>Experience for one crate loaded for greed (the map gimmick card "수송기에 더 싣기"), in points.</summary>
-    public static long GreedExperience => Math.Max(0L, (long)Number("greedExperience", 400f));
-
-    /// <summary>Experience for this PC's player outright: class growth (ClassGrowth), never money.</summary>
-    public static void AddExperience(long points)
-    {
-        if (points > 0) bonusExperience += points;
-    }
-
     public static long WonPerPoint => Math.Max(1L, (long)Number("wonPerPoint", 1f));
     /// <summary>A sign before money numbers; empty by the user's pick, the money icon (MoneyIcon) stands beside them instead.</summary>
     public static string Symbol => Text("symbol", "");
@@ -102,11 +93,6 @@ public static class Wallet
 
     /// <summary>Money as it reads: 1,240 (with the table's sign in front, if it has one). Never shortened.</summary>
     public static string Format(long won) => (won < 0 ? "-" : "") + Symbol + Math.Abs(won).ToString("N0", CultureInfo.InvariantCulture);
-
-    /// <summary>What <paramref name="points"/> come to in money now (the kill popup's +60).</summary>
-    public static long FromPoints(long points) => (long)Math.Round(points * (double)WonPerPoint * EarnShare);
-
-    public static string FormatPoints(long points) => Format(FromPoints(points));
 
     /// <summary>Takes <paramref name="amount"/> out to drop for friends, if there is that much.</summary>
     public static bool TryGive(long amount)

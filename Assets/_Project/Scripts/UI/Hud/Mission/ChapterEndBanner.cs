@@ -27,18 +27,6 @@ public sealed class ChapterEndBanner : MonoBehaviour
     private HazardGraphic capLeft, capRight;
     private float age = -1f, length = 2.6f;
 
-    /// <summary>The chapter is escaped: its name, a line under it (who made it), and how long the banner stays (real s).</summary>
-    public static void Play(string chapter, string under, float seconds)
-    {
-        if (!Application.isPlaying) return;
-        if (instance == null)
-        {
-            var host = new GameObject("Chapter End", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-            instance = host.AddComponent<ChapterEndBanner>();
-        }
-        instance.Begin(chapter, under, seconds);
-    }
-
     private void Awake()
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
@@ -85,17 +73,6 @@ public sealed class ChapterEndBanner : MonoBehaviour
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
-
-    private void Begin(string chapter, string under, float seconds)
-    {
-        title.text = chapter ?? "";
-        line.text = under ?? "";
-        length = Mathf.Max(InSeconds + OutSeconds + .4f, seconds);
-        age = 0f;
-        gameObject.SetActive(true);
-        Pose(0f);
-        KitSound.Play(KitSound.Cue.Escape);
-    }
 
     private void LateUpdate()
     {

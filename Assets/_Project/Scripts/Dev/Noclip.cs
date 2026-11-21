@@ -75,9 +75,6 @@ public sealed class Noclip : MonoBehaviour
         return flying.Describe();
     }
 
-    /// <summary>This PC's player is flying.</summary>
-    public static bool Flying => PlayerRoster.Local != null && PlayerRoster.Local.Carried;
-
     private static string Begin(PlayerMovement mine, float wanted, bool? eyes)
     {
         if (!mine.IsLocal || mine.IsNetworkDriven) return "이 PC가 움직이는 캐릭터가 아닙니다.";

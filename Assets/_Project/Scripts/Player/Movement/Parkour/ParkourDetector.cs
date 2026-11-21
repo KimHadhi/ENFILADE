@@ -252,9 +252,6 @@ public sealed class ParkourDetector
     // A face to clamber onto is faced within about 45 degrees (cosine); its top is looked for this far in from it (m).
     private const float ClamberFacing = .7f, ClamberTopIn = .15f;
 
-    public bool TryLedge(Vector3 facing, out LedgeTarget ledge)
-        => TryLedgeAt(ctx.transform.position, facing, out ledge, out _);
-
     /// <summary>As TryLedge, from any place and with what the search came to (the console's /ledge, the records).</summary>
     public bool TryLedgeAt(Vector3 feet, Vector3 facing, out LedgeTarget ledge, out LedgeFinder.Probe probe)
     {

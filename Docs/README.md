@@ -20,7 +20,6 @@
 | [전투 제작 안내](Guides/CombatFoundationGuide.md) | 무기·적·전투 UI를 만들고 고치는 순서, 새 총 연결하기 |
 | [전투 규칙과 확장 계획](Guides/WeaponSystemDesign.md) | 지금의 전투 규칙과 그 이유 |
 | [플레이어 피해 표시](Guides/PlayerDamageFeedbackGuide.md) | 맞았을 때 내 화면에 나오는 것 |
-| [조명 안내](Guides/LightingGuide.md) | 맵의 하늘, 해와 달, 조명 기구, 안개, 반사, 간접광 굽기 |
 | [설정·유지보수 안내](Guides/MaintenanceGuide.md) | 표 쓰는 법, 화면 글자, 설정, 글꼴, 무기 아이콘, HUD 겹침 검사, 소리와 모델 추가 |
 | [검증 안내](Guides/ValidationGuide.md) | 바꾼 뒤 무엇을 확인하는지 |
 
@@ -32,16 +31,12 @@
 | [F 키의 주인](Features/InteractKey.md) | 상호작용 키(F)를 누가 받는지 한 곳이 정한다: 기능이 나서고 표의 순서로 하나가 받는 규칙, 순서 표, 기능을 더하는 법, 플레이 없이 확인하는 법, 바뀐 동작 |
 | [두 손 (설계)](Features/Hands.md) | 왼손과 오른손이 지금 누구 것인지를 한 곳이 정하게 하는 설계: 오늘 손을 쓰는 것의 표, 쓰임의 표와 순서, 커밋 순서 (2026-11-18, 승인 대기. 게임 코드는 아직 그대로) |
 | [클래스 카드](Features/ClassCards.md) | 클래스마다의 능력 카드 |
-| [엔필레이드 타워](Features/Tower.md) | 시련의 탑 |
 | [처형·암살](Features/Executions.md) | 자세별 짝 애니메이션 |
 | [투척물](Features/Grenades.md) | G 투척과 클래스 투척물 |
 | [좀비 엘리트](Features/ZombieElites.md) | 특수 좀비 |
 | [데스 스크린](Features/DeathScreen.md) | 죽었을 때의 화면 |
 | [자연스러운 달리기](Features/NaturalRun.md) | 걸음과 달리기 다리 |
 | [손가락질과 찌르기](Features/Poke.md) | F 길게 눌러 가리키기 |
-| [노래와 단계](Features/CampaignPhases.md) | 원곡 그대로 트는 노래, 페이데이 2식 정비·습격 임박·습격 |
-| [좀비가 나오는 자리](Features/Spawns.md) | 임무의 흐름, 소탕한 자리, 스폰 룸(코드 없이 두는 법): 호드가 어디에서 오고 어디에서는 안 오는지 |
-| [맵 기믹](Features/MapGimmicks.md) | 큰 미끼·열쇠와 단서·판마다 다른 길, 1장 아파트 개편, 소리가 퍼지는 길 |
 | [적 외곽선](Features/EnemyOutlines.md) | 핑·현상금·붙잡은 좀비·처형·염료·고스트 시야·웨이브 끝 적의 띠와 벽 너머 채움을 한 곳(EnemyOutlines)이 정하고, 표시된 몸을 마스크에 그려 화면에서 둘레에 고른 띠를 깐다. 0.9.242의 흰 알약(고스트 시야가 복사한 캡슐에 핑 외곽선이 붙음)의 원인과 플레이 없이 확인하는 법 |
 | [적 체력바 (BO6 좀비 체력바)](Features/EnemyBars.md) | 게리 모드 애드온 Black Ops 6 Zombies Healthbars를 그대로 옮긴 바 하나(조준한 적이나 방금 때린 적): 애드온의 수치와 표의 자리, 원본과 다른 점 |
 | [소리 다시 세우기 (설계)](Features/SoundRebuild.md) | 코드로 계산해 만드는 소리 120개(지금 들리는 것 92개)를 무엇으로 바꿀지의 목록, 소리 내는 일을 Sonity 하나에 맡기는 설계와 순서, 함께 찾은 버그. 사용자의 결정(2026-11-21: 숫자는 표에 남고 표와 폴더가 Sonity를 움직인다), 0.9.237에 지운 합성 대체 코드와 사용자가 준 소리 12개(리퍼·돌·줍기), 0.9.249에 지은 1단계(Sonity 바닥: 믹서, 얇은 층 GameSounds, 플레이 없는 점검) |
@@ -60,5 +55,4 @@
 | --- | --- |
 | [블렌더 원클릭 작업실](../Tools/Blender/OneClick/README.md) | 작업실을 열면 바로 일하고 저장하면 게임에 들어가는 방식 |
 | [처형 작업실](../Tools/Blender/Executions/README.md), [좀비 작업실](../Tools/Blender/Zombies/README.md), [True FPS 작업실](../Tools/Blender/TrueFPS/README.md) | 블렌더 작업실별 안내 |
-| [소품 가져오기](../Tools/Props/README.md) | 맵 소품과 데칼을 팩에서 들이는 도구 |
 | `ArtSource/*/START_HERE.md` | 각 블렌더 작업실을 여는 법 |

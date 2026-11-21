@@ -108,8 +108,6 @@ internal sealed class CombatRehearsal : MonoBehaviour
                 int index = i;
                 steps.Add(() => { if (gore.Gut(index, out var mesh, out var material)) Piece(mesh, material); });
             }
-            if (gore.splats != null)
-                foreach (var splat in gore.splats) steps.Add(() => Decal(splat));
         }
 
         var zombies = ZombieLooks.Instance;
@@ -189,24 +187,6 @@ internal sealed class CombatRehearsal : MonoBehaviour
         item.AddComponent<MeshFilter>().sharedMesh = mesh;
         item.AddComponent<MeshRenderer>().sharedMaterial = material;
         Fit(item.transform);
-    }
-
-    // A projected blood decal lands on a small grey wall just behind it, as it would on the map.
-    private void Decal(Material material)
-    {
-        if (material == null) return;
-        var item = Item(material.name);
-        var wall = new GameObject("Wall") { layer = layer };
-        wall.transform.SetParent(item.transform, false);
-        wall.transform.localPosition = new Vector3(0f, 0f, cell * .2f);
-        wall.transform.localScale = Vector3.one * cell * .9f;
-        wall.AddComponent<MeshFilter>().sharedMesh = FeelAssets.Quad;
-        wall.AddComponent<MeshRenderer>().sharedMaterial = Throwables.Look(Color.gray);
-        // Its box reaches from just in front of the wall to just behind it, projecting away from the camera.
-        var projector = item.AddComponent<DecalProjector>();
-        projector.material = material;
-        projector.size = new Vector3(cell * .9f, cell * .9f, cell * .6f);
-        projector.pivot = new Vector3(0f, 0f, cell * .3f);
     }
 
     private void Look(GameObject prefab, bool zombie)

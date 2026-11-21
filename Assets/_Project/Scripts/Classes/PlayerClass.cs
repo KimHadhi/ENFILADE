@@ -128,9 +128,6 @@ public static class PlayerClass
         return info != null ? info.Family : id ?? "";
     }
 
-    /// <summary>The class this PC's player plays as (KitOf CurrentId): what kits, HUDs, cards and per-class tables go by.</summary>
-    public static string KitId => KitOf(CurrentId);
-
     /// <summary>A class and its variants, in the table's order, the class first; empty for an id the table hasn't.</summary>
     public static List<Info> FamilyOf(string id)
     {

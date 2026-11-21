@@ -50,7 +50,7 @@ public sealed partial class FieldPickups
     // (Phases.csv drops), so the control after it has things to take up.
     private void OnDamaged(CombatDamageReport report)
     {
-        if (!IsHost || !report.IsKillingBlow || !(report.Target is EnemyHealth) || random.NextDouble() >= dropChance * CampaignRun.DropShare) return;
+        if (!IsHost || !report.IsKillingBlow || !(report.Target is EnemyHealth) || random.NextDouble() >= dropChance) return;
         int row = Pick(r => r.DropWeight > 0f, r => r.DropWeight);
         if (row >= 0) Add(row, Ground(report.Target.transform.position), dropSeconds);
     }
@@ -59,7 +59,7 @@ public sealed partial class FieldPickups
     // only in the control after it, when there is time to take it up (user, 2026-11-14).
     private void Expire()
     {
-        if (CampaignRun.Phase != CombatPhase.Assault) dropClock += Time.deltaTime;
+        dropClock += Time.deltaTime;
         for (int i = items.Count - 1; i >= 0; i--)
         {
             if (!expiry.TryGetValue(items[i].Id, out float until) || dropClock < until) continue;

@@ -85,11 +85,6 @@ public static class SharedRandom
         return seed == 0u ? 1u : seed;
     }
 
-    /// <summary>A seed from a place every PC was sent the same, to the millimetre, and a salt.</summary>
-    public static uint Seed(Vector3 at, ulong salt = 0UL)
-        => Seed((ulong)(uint)Mathf.RoundToInt(at.x * 1000f) | (ulong)(uint)Mathf.RoundToInt(at.y * 1000f) << 32,
-            (ulong)(uint)Mathf.RoundToInt(at.z * 1000f), salt);
-
     private static ulong Step(ulong z)
     {
         z += 0x9E3779B97F4A7C15UL;

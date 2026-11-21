@@ -38,7 +38,6 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     public float Posture { get; private set; }
     public float MaximumPosture => Mathf.Max(1f, maximumPosture);
     public bool IsStaggered { get; private set; }
-    public bool IsBroken => IsStaggered;
     public bool IsStunned => IsKnockedDown || IsStaggered || stunRemaining > 0f || shoveRemaining > 0f || grabber != null || executor != null;
     public bool CanExecute => IsAvailable && IsStaggered && !IsHeld && !shownHeld && receiver != null;
     public bool IsAvailable => isActiveAndEnabled && Parts() && (vitals == null || vitals.Health > 0f)
@@ -91,7 +90,6 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     {
         private readonly HashSet<MeleeCombatTarget> set;
         internal Targets(HashSet<MeleeCombatTarget> set) => this.set = set;
-        public int Count => set.Count;
         public HashSet<MeleeCombatTarget>.Enumerator GetEnumerator() => set.GetEnumerator();
         IEnumerator<MeleeCombatTarget> IEnumerable<MeleeCombatTarget>.GetEnumerator() => set.GetEnumerator();
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => set.GetEnumerator();

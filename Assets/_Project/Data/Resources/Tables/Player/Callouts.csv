@@ -41,7 +41,6 @@ class.support.full,class,class:support & supply.ready,20,,callout.line.class.sup
 class.support.empty,class,class:support & !supply.ready,20,,callout.line.class.support.empty,,worry,shake,
 class.none,class,always,0,,callout.line.class.none,,call.yes,nod,
 move.here,move,spot,20,point,callout.line.move.here,,call.lead,point,60m 안의 바닥이나 벽을 보고 있을 때. 그 자리에 핀이 꽂힌다
-move.objective,move,objective,10,,callout.line.move.objective,,call.lead,point,캠페인 목표가 있을 때
 move.go,move,always,0,,callout.line.move.go,,call.lead,beckon,
 move.forward,move,always,0,,callout.line.move.forward,,call.lead,point,
 retreat.scatter,retreat,horde,10,,callout.line.retreat.scatter,,scared,wave,

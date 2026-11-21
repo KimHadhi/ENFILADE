@@ -91,16 +91,6 @@ public static class Deployables
 
     // ---- The kinds ----
 
-    /// <summary>Every kind in the table, in its order.</summary>
-    public static IReadOnlyList<Kind> Kinds
-    {
-        get
-        {
-            Load();
-            return kinds;
-        }
-    }
-
     /// <summary>A kind by its id, or null when the table has no such row.</summary>
     public static Kind Find(string id)
     {
@@ -199,14 +189,6 @@ public static class Deployables
         for (int i = 0; i < standing.Count; i++)
             if (Is(standing[i], owner, kind)) count++;
         return count;
-    }
-
-    /// <summary>This owner's of a kind (every kind when it is empty), oldest first.</summary>
-    public static void Of(PlayerMovement owner, string kind, List<IPlaced> into)
-    {
-        into.Clear();
-        for (int i = 0; i < standing.Count; i++)
-            if (Is(standing[i], owner, kind)) into.Add(standing[i]);
     }
 
     private static bool Is(IPlaced placed, PlayerMovement owner, string kind)

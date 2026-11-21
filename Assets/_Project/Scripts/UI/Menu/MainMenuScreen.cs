@@ -144,7 +144,6 @@ public sealed class MainMenuScreen : MonoBehaviour
         if (createRoom.IsOpen) createRoom.Close();
         else if (browser.IsOpen) browser.Close();
         else if (profile.IsOpen) profile.Close();
-        else if (records.ShowsChapter) records.ShowTotals();
         else if (wardrobe.ShowsSlot) wardrobe.ShowSlots();
         else if (records.IsOpen || wardrobe.IsOpen || (weapons != null && weapons.IsOpen)) ShowPlay();
         else return;

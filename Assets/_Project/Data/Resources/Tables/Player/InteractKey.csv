@@ -8,16 +8,8 @@ detente.answer,50,데탕트가 제안한 손 치료 받기. 제안이 떠 있는
 pickup,60,"바라보는 줍기 물건: 총·구급상자·쉴드 셀. 지금 못 쓰면(체력이 가득함, 쉴드가 이미 있음, 탄이 가득함) 거절한다 (FieldPickups)"
 crate,70,조준한 탄약 상자에서 보급 받기. 다시 받을 때까지 기다리는 동안은 거절한다 (ClassKit)
 ladder.top,80,사다리 위에서 내려가기 (MovementFixtures)
-campaign.button,100,캠페인: 단계의 버튼 (CampaignRun)
-campaign.can.hand,110,캠페인: 들고 있는 연료통 붓기·내려놓기 (CampaignRun)
 prop.hand,115,"두 손에 든 물리 물건 내려놓기. 든 동안 좌클릭은 던지기 (PropCarry)"
-gimmick,120,캠페인: 맵 기믹(TV·차단기·열쇠·잠긴 문). 길게 눌러야 하는 것은 누른 채로 (MapGimmicks)
-campaign.door,130,캠페인: 문 열기·닫기 (CampaignRun)
-campaign.shop,140,캠페인: 상점 열기 (CampaignRun)
-campaign.can.floor,150,캠페인: 바닥의 연료통 들기 (CampaignRun)
 prop.pick,160,"바라보는 물리 물건을 두 손으로 들기: 너무 무겁거나 크지 않은 것(병·캔·축구공·제리캔 ... PropCarry.csv의 Carry 줄). 캠페인 연료통은 campaign.can.floor (PropCarry)"
-tower.scanner,200,타워: 스캐너에 손 대기. 누르고 있는 동안 (TowerRun)
-tower.shop,210,타워: 상점 열기 (TowerRun)
 hub.station,300,허브: 바라보는 시설(지도·클래스 문·총 선반·탄약 상자·준비 버튼·거울) (HubLobby)
 detente.raise,400,데탕트: 죽은 동료 부활. 누르고 있는 동안 (DetenteKit)
 detente.treat,410,데탕트: 주사기가 비었을 때 다친 동료에게 손 치료 제안 (DetenteKit)

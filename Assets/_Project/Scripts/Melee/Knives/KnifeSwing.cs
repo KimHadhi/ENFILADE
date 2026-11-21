@@ -41,8 +41,6 @@ public sealed class KnifeSwing
     public float Next { get; private set; }
     /// <summary>Its rows mark a blade's window: an attack's clip.</summary>
     public bool Cuts => ActiveTo > ActiveFrom;
-    /// <summary>The middle of the blade's window (s): where an aimed strike lands on whom it is aimed at.</summary>
-    public float Meet => (ActiveFrom + ActiveTo) * .5f;
     /// <summary>The phases as a swing's timeline takes them (SwingTimeline).</summary>
     public SwingMarks Marks => new SwingMarks(Length, ActiveFrom, ActiveTo, Next);
 

@@ -168,9 +168,8 @@ public static class AttackTrace
     public static bool LetsThrough(Collider collider, GameObject owner)
         => collider == null || IsOwner(collider, owner) || PlayerLeanHitboxes.Replaces(collider) || ZombieBody.Replaces(collider)
             || IsDeadPlayer(collider) || GoreGib.IsPiece(collider) || DroppedMagazine.IsMagazine(collider) || ThrownStone.IsStone(collider)
-            || Throwables.Passes(collider) || GimmickCage.LetsThrough(collider)
+            || Throwables.Passes(collider)
             || (collider.isTrigger && !ZombieBody.IsHitbox(collider) && !ZombieMealBody.IsHead(collider)
-                && !CampaignCanTarget.Is(collider) && !GimmickTarget.Is(collider)
                 && (collider.GetComponent<PlayerCombatHitbox>() == null
                 || collider.GetComponentInParent<PlayerLeanHitboxes>().OrNull()?.UsesSplitBody != true));
     private static bool ShouldSkip(RaycastHit hit, GameObject owner) => LetsThrough(hit.collider, owner);

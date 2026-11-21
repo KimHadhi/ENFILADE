@@ -48,7 +48,7 @@
 | 게임 멈추기 | [GamePause](Core/Time/GamePause.cs): `GamePause.Take(this)` / `GamePause.Release(this)` (여러 화면이 겹쳐도 마지막 화면이 닫힐 때 풀린다) |
 | 게임을 느리게 | [WorldTime](Core/Time/WorldTime.cs): `WorldTime.Hold(this, 0.3f)` / `WorldTime.Release(this)` (`Time.timeScale`을 직접 쓰지 않는다) |
 | 메뉴가 입력·커서를 가져가기 | [InputHold](UI/Shared/InputHold.cs): `InputHold.Take(this, Held.All)` / `InputHold.Release(this)`. 쥘 것만 고른다: `Held.Move` 걷기(몸의 키) · `Held.Look` 시야 · `Held.Combat` 손의 총 · `Held.Cursor` 포인터(시야와 총이 따라 묶이고 걷기는 남는다). 자기 말고 다른 화면이 쥐었는지는 `AnyBesides(this, …)`, 지금 누가 쥐었는지는 콘솔 `/input`. 포인터의 잠금과 그리기는 InputHold만 쓴다: 꺼내 두되 그리지 않으려면 `HidePointer(this)`/`ShowPointer(this)`, 그려지는지는 `PointerShown`, 시작하는 시야와 Alt+Tab 복귀처럼 다시 맞출 때는 `Settle()`. `Cursor.lockState`·`Cursor.visible`은 직접 건드리지 않는다(코드 감사 `Check-Code.ps1 audit`가 찾는다) |
-| 씬에 하나뿐인 것 찾기 | [SceneOne](Core/Scene/SceneOne.cs): `SceneOne<WaveManager>.Get()` (프레임마다 찾지 않는다) |
+| 씬에 하나뿐인 것 찾기 | [SceneOne](Core/Scene/SceneOne.cs): `SceneOne<HubLobby>.Get()` (프레임마다 찾지 않는다) |
 | 플레이어 파일 저장·읽기 | [SaveFile](Core/Common/SaveFile.cs): `SaveFile.Write(path, json)`, `SaveFile.Read(path, JsonUtility.FromJson<Data>)` (통째로 바꿔 쓰고, 깨진 파일은 앞 사본으로) |
 | 이징 곡선 | [Ease](Core/Common/Ease.cs): `Ease.Out`, `Ease.InOut`, `Ease.Smooth`, 프레임 수와 무관한 따라가기 `Ease.Share(rate, dt)` |
 | 트랜스폼을 이름으로 찾기, 경로 | [Hierarchy](Core/Common/Hierarchy.cs): `Hierarchy.Find(root, name)`, `Hierarchy.PathOf(part, root)` |

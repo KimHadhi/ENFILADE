@@ -81,7 +81,6 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     public bool WavePaused { get; private set; }
     private readonly HashSet<long> seen = new HashSet<long>();
     private readonly Queue<long> recent = new Queue<long>();
-    private NavMeshAgent pausedAgent;
     private EnemyHitReaction reaction;
     private EnemyNetwork network;
     private ZombieBody body;
@@ -90,28 +89,6 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     private float appliedMaximum;
     // On a copy: until when this PC's own count of its health stands over an older report from the host (ShowHealth).
     private float trustUntil;
-    private bool restorePosition, restoreRotation, restoreStopped;
-
-    public void SetWavePaused(bool paused)
-    {
-        if (WavePaused == paused) return;
-        WavePaused = paused;
-        if (paused)
-        {
-            pausedAgent = GetComponent<NavMeshAgent>();
-            if (pausedAgent == null || !pausedAgent.isActiveAndEnabled || !pausedAgent.isOnNavMesh) { pausedAgent = null; return; }
-            restorePosition = pausedAgent.updatePosition; restoreRotation = pausedAgent.updateRotation; restoreStopped = pausedAgent.isStopped;
-            pausedAgent.isStopped = true; pausedAgent.velocity = Vector3.zero;
-            pausedAgent.updatePosition = false; pausedAgent.updateRotation = false;
-        }
-        else if (pausedAgent != null)
-        {
-            if (pausedAgent.isActiveAndEnabled && pausedAgent.isOnNavMesh)
-            { pausedAgent.nextPosition = transform.position; pausedAgent.isStopped = restoreStopped; }
-            pausedAgent.updatePosition = restorePosition; pausedAgent.updateRotation = restoreRotation;
-            pausedAgent = null;
-        }
-    }
 
     public event Action<EnemyHealth> Died;
 
@@ -132,9 +109,6 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     {
         if (rule != null && !silentRules.Contains(rule)) silentRules.Add(rule);
     }
-
-    /// <summary>Takes a rule given to SilentWhen back out.</summary>
-    public static void NoLongerSilentWhen(Func<EnemyHealth, DamageHit, bool> rule) => silentRules.Remove(rule);
 
     private bool AskedSilent(in DamageHit hit)
     {

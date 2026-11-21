@@ -5236,7 +5236,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6849593716960681325}
   - component: {fileID: 5731131134664179417}
-  - component: {fileID: 6402969266968141788}
   - component: {fileID: 4531795192092637828}
   - component: {fileID: 8937860176579905499}
   m_Layer: 5
@@ -5281,22 +5280,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 610c6221d937a454fbf74097c5b2f021, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionTracker
---- !u!114 &6402969266968141788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7545928132784833754}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5e604e466b112748804d8c02cf0d87e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaveMissionSource
-  waves: {fileID: 0}
-  tracker: {fileID: 5731131134664179417}
-  combatTitle: wave.combat.title
-  combatDescription: wave.combat.detail
 --- !u!114 &4531795192092637828
 MonoBehaviour:
   m_ObjectHideFlags: 0

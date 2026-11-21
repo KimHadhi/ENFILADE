@@ -22,8 +22,6 @@ public struct BodyPoint : INetworkSerializable
 
     /// <summary>Somewhere on a body (rather than in the world).</summary>
     public bool IsOnBody => kind == OnBody;
-    /// <summary>The body's network id (a corpse keeps its zombie's), for a point on one.</summary>
-    public ulong Target => target;
 
     /// <summary>A point in the world, on nothing that moves.</summary>
     public static BodyPoint InWorld(Vector3 point, Vector3 normal) => new BodyPoint { kind = World, point = point, normal = normal };

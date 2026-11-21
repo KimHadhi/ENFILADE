@@ -1,9 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Prefab blood particles and a fading blood mark where a shot from the parent WeaponController hits an enemy. The mark
-/// is a projected decal riding the hitbox it hit (BloodDecals): it was a sprite hung 3 cm off the hitbox, which flickered
-/// against other marks and the scenery and stuck out of the body at a slant (the user, 2026-11-14).
+/// Prefab blood particles where a shot from the parent WeaponController hits an enemy.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class EnemyBloodEffect : MonoBehaviour
@@ -16,11 +14,6 @@ public sealed class EnemyBloodEffect : MonoBehaviour
     [SerializeField, Min(0.1f)] private float particleCleanupTime = 3f;
     [SerializeField, Min(0f), Tooltip("How far off the body the particles start, so they aren't born inside it (m).")]
     private float surfaceOffset = 0.03f;
-
-    [Header("Blood Mark")]
-    [SerializeField, Min(0.1f)] private float bloodMarkLifetime = 5f;
-    [SerializeField, Min(.01f), Tooltip("Across (m). The sprite it replaced measured this: a 3.6 m sprite at 0.05 scale.")]
-    private float bloodMarkSize = .18f;
 
     private WeaponController weapon;
 
@@ -68,8 +61,6 @@ public sealed class EnemyBloodEffect : MonoBehaviour
             Quaternion.FromToRotation(Vector3.up, normal);
 
         SpawnBloodParticles(hit.point + normal * surfaceOffset, particleRotation);
-        // Painted into the body at the point hit, its box reaching the skin under the hitbox.
-        BloodDecals.Mark(hit.collider.transform, hit.point, normal, bloodMarkSize, bloodMarkLifetime);
     }
 
     private bool IsEnemy(Transform target)

@@ -316,39 +316,11 @@ public sealed class ZombieType : MonoBehaviour
         if (network != null) network.ShareKind(kind);
     }
 
-    /// <summary>
-    /// The host or the PC alone, before it goes out to the room: makes it one of the kinds other than a shambler by their
-    /// shares, those already about as often as they may be left out (an assault's harder horde, CampaignPhases). False when
-    /// no such kind may come now.
-    /// </summary>
-    public bool MakeSpecial()
-    {
-        float total = 0f;
-        foreach (var kind in Rolled) total += Available(kind);
-        float roll = UnityEngine.Random.value * total;
-        foreach (var kind in Rolled)
-        {
-            float share = Available(kind);
-            if (share <= 0f) continue;
-            if (roll < share) { Set(kind); return true; }
-            roll -= share;
-        }
-        return false;
-    }
-
     /// <summary>Another PC: the kind the host's zombie is.</summary>
     internal void Show(ZombieKind kind)
     {
         Kind = kind;
         Apply();
-    }
-
-    /// <summary>The host or the PC alone: its health times <paramref name="toughness"/> from now on (the tower's floors), told to the others.</summary>
-    public void Toughen(float toughness)
-    {
-        Toughness = Mathf.Clamp(toughness, .1f, 20f);
-        Apply();
-        if (network != null) network.ShareToughness(Toughness);
     }
 
     /// <summary>Another PC: how tough the host made its zombie.</summary>

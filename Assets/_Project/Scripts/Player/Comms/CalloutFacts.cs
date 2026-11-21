@@ -100,10 +100,6 @@ public static class CalloutFacts
         Add("friend.held", (s, w) => Friend(s, friend => friend.InZombieGrip && !friend.IsDead));
         Add("friend.dead", (s, w) => Friend(s, friend => friend.IsDead));
         Add("alone", (s, w) => !Friend(s, friend => true));
-        // The campaign.
-        Add("objective", (s, w) => CampaignRun.TryObjective(out _, out _, out _));
-        Add("phase", (s, w) => string.Equals(CampaignRun.Phase.ToString(), w, StringComparison.OrdinalIgnoreCase));
-        Add("step", (s, w) => CampaignRun.IsRunning(w));
     }
 
     /// <summary>

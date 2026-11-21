@@ -43,8 +43,6 @@ public static partial class KeyBindings
 
     public static bool Pressed(string path) => Pressed(Find(path));
 
-    public static bool Held(string path) => Held(Find(path));
-
     public static bool Pressed(string path, UnityEngine.Object screen) => Pressed(Find(path), screen);
 
     private static bool Read(InputAction action, UnityEngine.Object screen, bool down)

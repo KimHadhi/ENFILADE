@@ -180,8 +180,6 @@ public sealed partial class WeaponController : MonoBehaviour
     private float ShotNoise => weaponData.NoiseWith(Suppressed);
     public Transform MuzzlePoint => muzzlePoint;
     public Transform AimOrigin => aimOrigin;
-    /// <summary>The posed gun model root; the body's hands hold it at the weapon's grip points.</summary>
-    public Transform WeaponRoot => weaponRoot;
     /// <summary>A ranged weapon is out and its model is shown.</summary>
     public bool ShowsWeapon => weaponRoot != null && weaponRoot.gameObject.activeInHierarchy
         && Runtime != null && Runtime.Data.Category != WeaponCategory.Melee;
@@ -374,7 +372,7 @@ public sealed partial class WeaponController : MonoBehaviour
         LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : path.Origin, path.Direction, trace,
             Vector2.zero, Runtime.Ammo, later, path.Pellet, path.Seed);
         // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
-        if (path.Pellet == 0 && !ShotMuffle.Hides(trace)) Noise.Make(path.Origin, ShotNoise, owner);
+        if (path.Pellet == 0) Noise.Make(path.Origin, ShotNoise, owner);
         // Drawn and heard from the shooter's seed, as on their PC (SharedRandom).
         using (SharedRandom.Scope(LastShot.Seed)) ShotFired?.Invoke(LastShot);
         // A corpse it struck bleeds here as on their PC, where their bullet struck the doll (ZombieCorpse.OnStruck), each

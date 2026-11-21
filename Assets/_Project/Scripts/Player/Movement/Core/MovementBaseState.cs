@@ -5,7 +5,6 @@ public abstract class MovementBaseState : IMovementState
     protected readonly PlayerMovement ctx;
     public MovementBaseState Parent { get; }
     public virtual string Name => GetType().Name.Replace("State", "");
-    public string Path => Parent == null ? Name : Parent.Path + "/" + Name;
 
     protected MovementBaseState(PlayerMovement context, MovementBaseState parent = null)
     {

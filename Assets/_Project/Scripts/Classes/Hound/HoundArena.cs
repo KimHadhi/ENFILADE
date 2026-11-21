@@ -62,9 +62,6 @@ public sealed class HoundArena : MonoBehaviour
         return new Vector3(from.x, from.y - Mathf.Max(100f, Number("arenaDepth", 600f)) - Mathf.Clamp(seat, 0, 31) * step, from.z);
     }
 
-    /// <summary>Whether <paramref name="player"/> is in a showdown's arena now (every PC knows): out of everyone's reach.</summary>
-    public static bool IsAway(PlayerMovement player) => player != null && away.Contains(player);
-
     /// <summary>ArenaNet: <paramref name="player"/> went into an arena, or came back.</summary>
     internal static void SetAway(PlayerMovement player, bool gone)
     {

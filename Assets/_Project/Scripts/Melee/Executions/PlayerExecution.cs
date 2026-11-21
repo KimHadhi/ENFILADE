@@ -175,8 +175,6 @@ public sealed class PlayerExecution : MonoBehaviour
         if (DeathblowCandidate != null && buttons != null && buttons.TryReadMeleeInput(out var frame) && frame.AttackPressed)
             TryBegin(DeathblowCandidate, true);
     }
-    /// <summary>The enemy F would execute or take down now, or null.</summary>
-    public MeleeCombatTarget FindCandidate() => FindCandidate(false);
     // lunge: the attack button with the melee slot out, from as far as each rule's lungeReach.
     private MeleeCombatTarget FindCandidate(bool lunge)
     {

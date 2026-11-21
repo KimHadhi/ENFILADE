@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using KINEMATION.Shared.KAnimationCore.Runtime.Core;
 using UnityEngine;
 

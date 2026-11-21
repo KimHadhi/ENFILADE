@@ -40,22 +40,13 @@ public sealed partial class DeathScreen
             fill = wipeFrom > 0f ? Mathf.Clamp01(left / wipeFrom) : -1f;
             return Texts.Format(WipeKey(), Mathf.Max(1, Mathf.CeilToInt(left)));
         }
-        if (TowerRun.KeepsDead) return Texts.Get("life.respawn.tower");
-        if (life.WaitsForWave) return Texts.Get("life.respawn.next_wave");
+        if (RunRules.KeepsDead) return Texts.Get(RunRules.Words(RunWords.Respawn, "life.respawn.wait"));
         fill = respawnFrom > 0f ? Mathf.Clamp01(life.RespawnLeft / respawnFrom) : -1f;
         return Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
     }
 
-    // Where everyone comes back after a wipe (PlayerLife.Respawn's order: the tower's hall, the campaign's last rest stop,
-    // the waves from the first, the spawn point).
-    private string WipeKey()
-    {
-        if (TowerRun.TryCheckpoint(out _)) return "death.next.wipe.tower";
-        if (CampaignRun.TryCheckpoint(out _)) return "death.next.wipe.campaign";
-        if (waves == null) waves = SceneOne<WaveManager>.Get();
-        if (waves != null && waves.IsRunning) return "death.next.wipe.waves";
-        return "death.next.wipe.start";
-    }
+    // Where everyone comes back after a wipe: the run's own words (RunRules), else the spawn point.
+    private static string WipeKey() => RunRules.Words(RunWords.Wipe, "death.next.wipe.start");
 
     // The killer's name in their colour, of the last blow if it is recent: who put them down.
     private string RecentKiller()

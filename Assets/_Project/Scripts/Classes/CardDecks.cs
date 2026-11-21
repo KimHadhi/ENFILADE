@@ -22,17 +22,11 @@ public sealed class CardDecks
     // The campaign's own picks as they were when practice began, or null when not practising.
     private Dictionary<string, int> kept;
 
-    /// <summary>Goes up whenever a pick was made or taken away.</summary>
-    public int Version { get; private set; }
-
     /// <summary>How many different cards are kept, whatever deck they are in.</summary>
     public int Count => picked.Count;
 
     /// <summary>Picks are practice now: they go when it ends.</summary>
     public bool IsPractising => kept != null;
-
-    /// <summary>Every card kept, with its level (the decks of every class together).</summary>
-    public IReadOnlyDictionary<string, int> Picked => picked;
 
     /// <summary>The card's level as kept, 0 for a card never picked. Whether it is in play is not asked here.</summary>
     public int Level(string id) => id != null && picked.TryGetValue(id, out int level) ? level : 0;
@@ -44,7 +38,6 @@ public sealed class CardDecks
         int now = Level(id), next = Math.Min(Math.Max(1, top), now + 1);
         if (next == now) return false;
         picked[id] = next;
-        Version++;
         return true;
     }
 
@@ -57,7 +50,6 @@ public sealed class CardDecks
         kept?.Clear();
         if (picked.Count == 0) return false;
         picked.Clear();
-        Version++;
         return true;
     }
 
@@ -77,7 +69,6 @@ public sealed class CardDecks
         if (same) return false;
         picked.Clear();
         foreach (var pair in back) picked[pair.Key] = pair.Value;
-        Version++;
         return true;
     }
 

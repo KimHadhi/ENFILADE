@@ -72,7 +72,6 @@ public sealed class DetenteKit : MonoBehaviour
 
     private PlayerMovement movement;
     private PlayerDamageReceiver receiver;
-    private WaveManager waves;
     private float syringe = -1f, goldenUntil, goldenTotal = 1f, lastInject = -99f, nextSection;
     // Treatment by hand, as the Détente: the friend offered it and until when, when the one under way began and whether
     // its share went in. As the patient: the Détente whose offer waits for F and until when, and the rest of a treatment
@@ -80,9 +79,7 @@ public sealed class DetenteKit : MonoBehaviour
     private PlayerMovement offeredTo, offeredBy;
     private float offerUntil, offeredUntil, treatStart, regenRate, regenUntil;
     private bool treatHealed;
-    private int raisesLeft = 1, lastWave = -1;
-    private Vector3 lastCheckpoint;
-    private bool hadCheckpoint;
+    private int raisesLeft = 1, lastSection = -1;
     // As anyone (any class): a Détente friend's adrenaline shot in this player, until when, how long it was, and what it
     // gives (pace and gun damage, %), as that Détente's PC sent them.
     private float boostUntil, boostTotal = 1f, boostSpeed, boostDamage;
@@ -136,8 +133,6 @@ public sealed class DetenteKit : MonoBehaviour
     public float BoostDamage => BoostShare > 0f ? boostDamage : 0f;
     /// <summary>The factor a friend's adrenaline shot puts on this player's guns now (ClassKit.DamageFactor): 1 without one.</summary>
     public float GunFactor => 1f + BoostDamage / 100f;
-    /// <summary>This PC's own player's, whatever class they play (a friend's shot, a treatment's rest): the HUD reads it.</summary>
-    public static DetenteKit Mine => own;
     /// <summary>Seconds since the last dose went in (the HUD's flash).</summary>
     public float SinceInject => Time.time - lastInject;
     /// <summary>
@@ -664,21 +659,14 @@ public sealed class DetenteKit : MonoBehaviour
         goldenUntil = Time.time + goldenTotal;
     }
 
-    // A new wave, or a rest stop reached: Resurrection is there again.
+    // A new stretch of the run (RunRules.Section): Resurrection is there again.
     private void Sections()
     {
         if (Time.time < nextSection) return;
         nextSection = Time.time + SectionEvery;
         int most = Mathf.Max(0, Mathf.RoundToInt(Number("resurrections", 1f)));
-        if (waves == null) waves = SceneOne<WaveManager>.Get();
-        int wave = waves != null && waves.IsRunning ? waves.CurrentStatus.Wave : -1;
-        if (wave != lastWave) { if (lastWave >= 0 || wave >= 0) raisesLeft = most; lastWave = wave; }
-        if (CampaignRun.TryCheckpoint(out Vector3 checkpoint))
-        {
-            if (!hadCheckpoint || (checkpoint - lastCheckpoint).sqrMagnitude > .25f) raisesLeft = most;
-            hadCheckpoint = true;
-            lastCheckpoint = checkpoint;
-        }
+        int section = RunRules.Section;
+        if (section != lastSection) { if (lastSection >= 0 || section >= 0) raisesLeft = most; lastSection = section; }
     }
 
     // The nearest friend within reach who is dead (dead) or alive, up and hurt (not dead).

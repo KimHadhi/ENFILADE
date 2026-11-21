@@ -38,8 +38,6 @@ public sealed class ThrowArc
     public Vector3 Landing { get; private set; }
     /// <summary>The face it lands on (up when it lands nowhere).</summary>
     public Vector3 LandingNormal { get; private set; } = Vector3.up;
-    /// <summary>How long the last traced flight takes to land (s).</summary>
-    public float FlightSeconds { get; private set; }
 
     /// <summary>
     /// Steps a flight from <paramref name="from"/> at <paramref name="velocity"/> under that share of gravity, as a sphere
@@ -53,7 +51,6 @@ public sealed class ThrowArc
         Vector3 gravity = Physics.gravity * gravityShare, at = from;
         Landed = false;
         LandingNormal = Vector3.up;
-        FlightSeconds = longest;
         for (float t = 0f; t < longest; t += Step)
         {
             Vector3 next = at + velocity * Step + .5f * Step * Step * gravity;
@@ -65,7 +62,6 @@ public sealed class ThrowArc
                 path.Add(at);
                 Landed = true;
                 LandingNormal = hit.normal;
-                FlightSeconds = t + Step * hit.distance / length;
                 break;
             }
             at = next;
@@ -91,7 +87,6 @@ public sealed class ThrowArc
         Landed = true;
         Landing = flight.Position;
         LandingNormal = Vector3.up;
-        FlightSeconds = seconds;
     }
 
     /// <summary>

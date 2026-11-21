@@ -11,15 +11,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ShootOverCover : MonoBehaviour
 {
-    /// <summary>The table of map dressing kinds (Tables/MapArt ids) that are cover meant to be shot over.</summary>
-    public const string Table = "ShootOverCover";
     // The eyes this far over its top count as looking over it (m): a hand's width, so cover at eye height still blocks.
     private const float LookOver = .05f;
-
-    /// <summary>Map dressing of <paramref name="kind"/> (a Tables/MapArt id) is cover meant to be shot over (its row's cover).</summary>
-    public static bool IsKind(string kind)
-        => !string.IsNullOrEmpty(kind) && GameTables.TryGetRow(Table, kind, out var row)
-            && row.TryGetValue("cover", out string cover) && string.Equals(cover, "true", System.StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// <paramref name="collider"/> is shoot-over cover whose top is under eyes at <paramref name="eyeHeight"/> (world y),

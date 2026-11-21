@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Held on Tab, in the manner of PAYDAY 2's: the world blurs and darkens behind the objectives at the top left, the map
-/// and wave at the top, a line for each player with their numbers, weapons and ping, and what this run has earned below.
+/// at the top, a line for each player with their numbers, weapons and ping, and what this run has earned below.
 /// Built up front so opening it never hitches. Everyone's numbers come from PlayerTally, so it reads the same alone and
 /// in a room. Under the table, this player's class and its rank (RankProgress): the insignia this game's growth adds up
 /// to, the bar to the next (white what was held, pink this game's kills, pale pink the share of the money held), what
@@ -68,7 +68,7 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private readonly List<PlayerMovement> shown = new List<PlayerMovement>();
     private CanvasGroup group;
     private RectTransform table, footer, perkRow;
-    private TextMeshProUGUI wave, title, subtitle, earned, played, perkCaption;
+    private TextMeshProUGUI title, subtitle, earned, played, perkCaption;
     // The class's rank block (RankProgress): its insignia, the bar's parts, the next insignia and the lines about it.
     private const float RankY = -74f, RankBar = 520f, RankBarLeft = -276f, RankBadge = 64f, RankNext = 40f, RankDrop = 124f;
     private RectTransform rankHeld, rankKills, rankKept;
@@ -81,7 +81,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
     private static readonly Color DeckOff = new Color(.055f, .055f, .065f, .86f), DeckOn = new Color(1f, 1f, 1f, .2f);
     private ObjectiveLogPanel objectives;
     private Volume blur;
-    private WaveManager waves;
     private MissionTracker tracker;
     private InputAction show;
     private bool ownsShow;
@@ -94,7 +93,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
 
     private void Start()
     {
-        waves = SceneOne<WaveManager>.Get();
         tracker = SceneOne<MissionTracker>.Get();
         var input = GetComponent<PlayerInput>();
         show = (input != null ? input.actions : InputSystem.actions).OrNull()?.FindAction(ShowAction, false);
@@ -114,7 +112,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
         dimFill.raycastTarget = false;
 
         objectives = new ObjectiveLogPanel(host.transform);
-        wave = Text("Wave", host.transform, 20f, new Vector2(0f, 300f), 600f, TextAlignmentOptions.Center);
         title = Text("Map", host.transform, 46f, new Vector2(0f, 258f), 900f, TextAlignmentOptions.Center);
         subtitle = Text("Players", host.transform, 22f, new Vector2(0f, 214f), 900f, TextAlignmentOptions.Center);
         subtitle.color = Gold;
@@ -429,7 +426,6 @@ public sealed class ScoreboardHUD : MonoBehaviour
 
     private void Refresh()
     {
-        wave.text = waves != null && waves.IsRunning ? Texts.Format("score.wave", waves.CurrentWave) : Texts.Get("score.waiting");
         title.text = MapTable.DisplayName(SceneManager.GetActiveScene().name);
         shown.Clear();
         foreach (var player in PlayerRoster.All)

@@ -3,22 +3,20 @@ using UnityEngine;
 
 /// <summary>
 /// The objective at the top left in HUD Mk II's words (the draft the user picked, 2026-11-22; the addon itself has no
-/// objective): a small spaced label (OBJECTIVE, or the fight's phase while a chapter is loud: rest in blue, the assault
-/// on its way breathing in the accent, the assault in the accent), the scoreboard key and "목표·점수판" at the right of
-/// that row, the objective's title under it decoding as it changes (the pickup rows' scramble), its count at the right
-/// with a dim leading zero ("02 / 04"), and under them a thin bar in the addon's dark box: a cell a target while they
-/// fit (filled white as they are done), one bar for a share; while loud with no count, the time to the phase's turn
-/// counts down where the count stands and the one bar drains with it. The song playing stands under the bar. It all
-/// makes way for the Tab screen, as the old bar did. MissionTracker says what the objective is (GameHUD's Mission, whose
-/// MissionHUD still sounds a new one while HUD Mk II draws it); CampaignRun.TryPhase the phase.
+/// objective): a small spaced label (OBJECTIVE), the scoreboard key and "목표·점수판" at the right of that row, the
+/// objective's title under it decoding as it changes (the pickup rows' scramble), its count at the right with a dim
+/// leading zero ("02 / 04"), and under them a thin bar in the addon's dark box: a cell a target while they fit (filled
+/// white as they are done), one bar for a share. It all makes way for the Tab screen, as the old bar did.
+/// MissionTracker says what the objective is (GameHUD's Mission, whose MissionHUD still sounds a new one while HUD Mk II
+/// draws it).
 /// </summary>
 public sealed class MkMission : MkPiece
 {
     private readonly MkShapes shapes;
-    private readonly TextMeshProUGUI label, tab, title, count, song;
+    private readonly TextMeshProUGUI label, tab, title, count;
     private readonly MkNotice notice;
     private MissionTracker tracker;
-    private float lookForTracker, changed = -99f, breath;
+    private float lookForTracker, changed = -99f;
     private string shownTitle = "";
 
     public MkMission(MkHud hud, RectTransform canvas, MkNotice notice) : base(hud, canvas, "Mk Mission", new Vector2(0f, 1f))
@@ -30,7 +28,6 @@ public sealed class MkMission : MkPiece
         title = MkText.Make("Title", Frame, Look, 0f, 0f);
         count = MkText.Make("Count", Frame, Look, 1f, 0f);
         count.richText = true;
-        song = MkText.Make("Song", Frame, Look, 0f, 0f);
     }
 
     public override void Dispose() => Track(null);
@@ -63,18 +60,11 @@ public sealed class MkMission : MkPiece
         }
         Group.alpha = 1f - Look.Hud.tabFade * Mathf.SmoothStep(0f, 1f, ScoreboardHUD.Openness);
         var objective = tracker != null ? tracker.Current : null;
-        bool loud = CampaignRun.TryPhase(out var track);
-        var phase = loud ? track.Phase : CombatPhase.Quiet;
-        breath = Mathf.Repeat(breath + dt * m.breathRate, 1f);
-        Color phaseColour = phase == CombatPhase.Assault ? c.accent : phase == CombatPhase.Control ? c.rest
-            : phase == CombatPhase.Anticipation ? MkText.Fade(c.accent, Mathf.Lerp(m.breathFloor, 1f, .5f + .5f * Mathf.Cos(breath * Mathf.PI * 2f))) : c.tag;
 
         // The label row: what this is, and the scoreboard's key at its right.
-        string what = loud ? Texts.Get(phase == CombatPhase.Assault ? "hud.phase.assault" : phase == CombatPhase.Anticipation
-            ? "hud.phase.anticipation" : "hud.phase.control") : Texts.Get("hud.mk.objective");
-        MkText.Label(label, Look, MkText.Spaced(what.ToUpperInvariant()));
+        MkText.Label(label, Look, MkText.Spaced(Texts.Get("hud.mk.objective").ToUpperInvariant()));
         MkText.At(label, m.x, m.y);
-        label.color = phaseColour;
+        label.color = c.tag;
         MkText.Label(tab, Look, KeyBindings.Name("UI/OpenObjectiveBoard") + "  " + Texts.Get("objective.tab_hint"));
         MkText.At(tab, m.x + m.width, m.y);
         tab.color = c.tag;
@@ -92,7 +82,7 @@ public sealed class MkMission : MkPiece
         MkText.At(title, m.x, m.y + m.titleRise);
         title.color = c.text;
 
-        // The count (or, loud with none, the time to the phase's turn) and the bar under it all.
+        // The count and the bar under it all.
         bool numeric = objective != null && objective.Display != MissionProgressDisplay.None;
         string zero = "<alpha=#" + Hex(m.zero) + ">0</alpha>";
         int cells = 1;
@@ -108,13 +98,6 @@ public sealed class MkMission : MkPiece
         {
             MkText.Say(count, objective.ProgressText);
             share = objective.Progress;
-        }
-        else if (loud && !float.IsInfinity(track.Until))
-        {
-            int left = Mathf.Max(0, Mathf.CeilToInt(track.Until));
-            MkText.Say(count, zero + (left / 60) + ":" + (left % 60).ToString("00"));
-            share = PhaseLeft(track);
-            fill = phaseColour;
         }
         else MkText.Say(count, "");
         MkText.Size(count, Look, Look.Text.history);
@@ -133,37 +116,7 @@ public sealed class MkMission : MkPiece
             shapes.Box(x, m.barY, wide * part, m.barHeight, fill);
         }
         shapes.Show();
-
-        // The song under the bar while one plays (the old phase row's "now playing").
-        string playing = !loud ? "" : track.Siren ? Texts.Get("hud.mk.siren")
-            : string.IsNullOrEmpty(track.Title) ? "" : Texts.Format("hud.mk.song", track.Title, track.Artist);
-        MkText.Label(song, Look, playing);
-        MkText.At(song, m.x, m.barY + m.barHeight + pad + m.songRise - Look.Text.label * .5f);
-        song.color = c.tag;
     }
 
     private static string Hex(float alpha) => Mathf.RoundToInt(Mathf.Clamp01(alpha) * 255f).ToString("X2");
-
-    // How much of the phase now is left: an assault's window, or the stretch from the last assault's end to the next's start.
-    private static float PhaseLeft(in PhaseTrack track)
-    {
-        if (float.IsInfinity(track.Until)) return 0f;
-        var spans = track.Assaults ?? System.Array.Empty<float>();
-        float start = 0f, end = track.Length > 0f ? track.Length : track.Elapsed + track.Until;
-        if (track.Phase == CombatPhase.Assault)
-        {
-            for (int i = 0; i + 1 < spans.Length; i += 2)
-                if (track.Elapsed >= spans[i] && track.Elapsed < spans[i + 1]) { start = spans[i]; end = spans[i + 1]; break; }
-        }
-        else
-        {
-            for (int i = 0; i + 1 < spans.Length; i += 2)
-            {
-                if (spans[i + 1] <= track.Elapsed) start = spans[i + 1];
-                else if (spans[i] > track.Elapsed) { end = spans[i]; break; }
-            }
-        }
-        float span = end - start;
-        return span > 0f ? Mathf.Clamp01(track.Until / span) : 0f;
-    }
 }

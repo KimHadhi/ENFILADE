@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Impact matter: a pack blood splash back toward the shooter (ImpactPool, or a procedural mist puff without it), droplets
-/// mostly out of the exit side, blood splats on the nearest floor/wall behind the target (projected by BloodDecals), and
+/// mostly out of the exit side, and
 /// dust puffs for bodies hitting the ground. Headshots and kills spray harder. Particle systems are pooled; created on
 /// first use during Play.
 /// </summary>
@@ -13,7 +13,6 @@ public sealed class ImpactVfx : MonoBehaviour
     private const float SplashLift = .05f;
     private static ImpactVfx instance;
     private ParticleSystem droplets, mist, dust, shieldSparks, shieldFlash;
-    private readonly RaycastHit[] hits = new RaycastHit[8];
 
     private static ImpactVfx Get()
     {
@@ -73,7 +72,7 @@ public sealed class ImpactVfx : MonoBehaviour
     public static void Blood(Vector3 point, Vector3 direction, bool critical, bool kill, bool bullet, Component target)
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.proceduralBlood || point == Vector3.zero) return;
-        Get().Spray(point, direction, critical, kill, bullet, target);
+        Get().Spray(point, direction, critical, kill, bullet);
     }
 
     /// <summary>A shield taking a hit on a body this PC doesn't own: sparks of its colour thrown back toward the hitter and a
@@ -97,7 +96,7 @@ public sealed class ImpactVfx : MonoBehaviour
     public static void ExitWound(Vector3 point, Vector3 direction, Component target)
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.proceduralBlood || point == Vector3.zero) return;
-        Get().Burst(point, direction, target);
+        Get().Burst(point, direction);
     }
 
     private void Crackle(Vector3 point, Vector3 direction, Color color)
@@ -122,7 +121,7 @@ public sealed class ImpactVfx : MonoBehaviour
         shieldFlash.Emit(emit, 1);
     }
 
-    private void Burst(Vector3 point, Vector3 direction, Component target)
+    private void Burst(Vector3 point, Vector3 direction)
     {
         var settings = GunFeelSettings.Instance;
         if (direction.sqrMagnitude < .0001f) return;
@@ -138,10 +137,9 @@ public sealed class ImpactVfx : MonoBehaviour
             emit.startColor = Shade(settings.bloodColor, SharedRandom.Range(.75f, 1.15f));
             droplets.Emit(emit, 1);
         }
-        Splat(point + direction * .05f, direction, 3.5f, target != null ? target.transform : null, .45f);
     }
 
-    private void Spray(Vector3 point, Vector3 direction, bool critical, bool kill, bool bullet, Component target)
+    private void Spray(Vector3 point, Vector3 direction, bool critical, bool kill, bool bullet)
     {
         var settings = GunFeelSettings.Instance;
         if (direction.sqrMagnitude < .0001f) direction = Camera.main != null ? Camera.main.transform.forward : Vector3.forward;
@@ -177,28 +175,6 @@ public sealed class ImpactVfx : MonoBehaviour
             emit.rotation = SharedRandom.Range(0f, 360f);
             mist.Emit(emit, 1);
         }
-        // Splats: behind the target along the shot, and on the floor below the wound.
-        Transform ignore = target != null ? target.transform : null;
-        if (bullet) Splat(point + direction * .05f, direction, 3.5f, ignore, critical || kill ? .55f : .38f);
-        Splat(point, Vector3.down, 2.6f, ignore, kill ? .7f : critical ? .5f : .34f);
-    }
-
-    private void Splat(Vector3 origin, Vector3 direction, float distance, Transform ignore, float size)
-    {
-        int count = Physics.RaycastNonAlloc(origin, direction, hits, distance, ~0, QueryTriggerInteraction.Ignore);
-        float best = float.PositiveInfinity; RaycastHit chosen = default; bool found = false;
-        for (int i = 0; i < count; i++)
-        {
-            var hit = hits[i];
-            if (hit.distance >= best || (ignore != null && hit.collider.transform.IsChildOf(ignore))) continue;
-            // Only static scenery takes blood: not other enemies, targets or the player.
-            var body = hit.collider.attachedRigidbody;
-            if (hit.collider.GetComponentInParent<IDamageReceiver>() != null || (body != null && !body.isKinematic)) continue;
-            best = hit.distance; chosen = hit; found = true;
-        }
-        if (!found) return;
-        // Painted into the surface, not hung off it as a quad: see BloodDecals for why the quads flickered.
-        BloodDecals.Splat(chosen.point, chosen.normal, size * SharedRandom.Range(.8f, 1.2f));
     }
 
     private void Puff(Vector3 point, float scale)

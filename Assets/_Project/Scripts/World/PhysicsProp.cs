@@ -39,8 +39,6 @@ public sealed class PhysicsProp : MonoBehaviour
     // Something this PC's word should be told of now, not at the next tick: a push, a hit.
     internal bool Jolted;
     internal float SentAt = -99f, QuietFor;
-    internal Vector3 FollowPosition;
-    internal Quaternion FollowRotation = Quaternion.identity;
 
     internal Rigidbody Body => body != null ? body : body = GetComponent<Rigidbody>();
 

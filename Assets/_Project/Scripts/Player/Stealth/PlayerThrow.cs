@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 /// <summary>
 /// T: a stone thrown where the player looks, the 2026-11-11 stealth round's lure (after Advanced Stealth's thrown
@@ -119,9 +118,6 @@ public sealed class ThrownStone : MonoBehaviour
     private static SoundBank sounds;
     private static bool soundsLooked;
 
-    /// <summary>What a throw leaves from and stops against: the world, not players, corpses or zombies.</summary>
-    internal static int WorldMask => WorldLayers.Built;
-
     /// <summary>The stone taken in hand (PlayerThrow): flat, on the thrower's PC only. Silent with no StoneReady clip.</summary>
     internal static void PlayReady()
     {
@@ -162,13 +158,12 @@ public sealed class ThrownStone : MonoBehaviour
     /// <summary>On the thrower's PC: where it first landed, the lure's place (a hand's width up).</summary>
     internal Action<Vector3> Landed;
 
-    private GameObject thrower;
     private Collider box;
     private Rigidbody body;
     // The thrower's PC's stone (theirs runs its flight and lures), or another PC's copy of it.
     private bool mine;
     private PhysicsProp prop;
-    private float reach, lifeSeconds, volume, age, lastClack = -1f, sinking = -1f;
+    private float lifeSeconds, volume, age, lastClack = -1f, sinking = -1f;
     private int clacks;
     private bool landed;
     private Vector3 sinkFrom;
@@ -235,8 +230,6 @@ public sealed class ThrownStone : MonoBehaviour
             if (player == null) continue;
             foreach (var part in player.GetComponentsInChildren<Collider>()) Physics.IgnoreCollision(collider, part, true);
         }
-        stone.thrower = thrower;
-        stone.reach = noise;
         stone.lifeSeconds = life;
         stone.volume = volume;
         PlayAt(Whoosh(), from, volume * .45f, SharedRandom.Range(.92f, 1.08f));

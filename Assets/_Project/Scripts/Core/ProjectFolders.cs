@@ -12,8 +12,6 @@ public static class ProjectFolders
     public const string ArtByName = Root + "Art/Resources/";
     /// <summary>Tables and lists (ScriptableObject libraries, sound banks, JSON) found by name.</summary>
     public const string DataByName = Root + "Data/Resources/";
-    /// <summary>Prefabs found by name.</summary>
-    public const string PrefabsByName = Root + "Prefabs/Resources/";
     /// <summary>Guns' own data, wired by reference: weapons, fitted prefabs, baked clips.</summary>
     public const string Guns = Root + "Data/Guns/";
 

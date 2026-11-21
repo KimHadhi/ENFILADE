@@ -64,9 +64,6 @@ public sealed partial class FPSGun
 
     internal bool HasHoldContact, HasHoldContactNoGrip, HoldContactTried;
 
-    /// <summary>The gun's frame from KINEMATION's weapon bone (its rotationOffset), as the IK weapon bone carries it.</summary>
-    internal Quaternion Frame => frame;
-
     /// <summary>The gun's entry in FPSBodyAssets: its own clips and the arms they are made for.</summary>
     internal FPSBodyAssets.Gun Entry => entry;
 

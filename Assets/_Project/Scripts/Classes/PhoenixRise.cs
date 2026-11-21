@@ -26,18 +26,16 @@ public static class PhoenixRise
     /// <summary>Seconds left of the moment nothing lands on this PC's player, and of how many (its slot among the timed effects).</summary>
     public static float GuardLeft => guardUntil - Time.time;
     public static float GuardSeconds => guardSeconds;
-    // Spent, and where: the map, the wave, and the rest stop (or tower hall) a death would bring them back to.
-    private static bool spent, spentAtCheckpoint;
-    private static int spentScene = -1, spentWave = -1;
-    private static Vector3 spentCheckpoint;
+    // Spent, and where: the map and the run's stretch (RunRules.Section).
+    private static bool spent;
+    private static int spentScene = -1, spentSection = -1;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
         guardUntil = -99f;
-        spent = spentAtCheckpoint = false;
-        spentScene = spentWave = -1;
-        spentCheckpoint = Vector3.zero;
+        spent = false;
+        spentScene = spentSection = -1;
     }
 
     /// <summary>Whether <paramref name="who"/> is this PC's player, just risen: nothing lands on them for the moment.</summary>
@@ -87,14 +85,11 @@ public static class PhoenixRise
         }
     }
 
-    // Spent this wave, this stretch between rest stops and on this map; a new one of any of them gives it back.
+    // Spent in this stretch of the run and on this map; a new one of either gives it back.
     private static bool Spent()
     {
         if (!spent) return false;
-        bool atCheckpoint = Checkpoint(out Vector3 checkpoint);
-        if (SceneManager.GetActiveScene().handle != spentScene || Wave() != spentWave
-            || (atCheckpoint && (!spentAtCheckpoint || (checkpoint - spentCheckpoint).sqrMagnitude > .25f)))
-            spent = false;
+        if (SceneManager.GetActiveScene().handle != spentScene || RunRules.Section != spentSection) spent = false;
         return spent;
     }
 
@@ -102,17 +97,6 @@ public static class PhoenixRise
     {
         spent = true;
         spentScene = SceneManager.GetActiveScene().handle;
-        spentWave = Wave();
-        spentAtCheckpoint = Checkpoint(out spentCheckpoint);
+        spentSection = RunRules.Section;
     }
-
-    // The wave under way, or -1 where none runs.
-    private static int Wave()
-    {
-        var waves = SceneOne<WaveManager>.Get();
-        return waves != null && waves.IsRunning ? waves.CurrentStatus.Wave : -1;
-    }
-
-    // Where a death would bring them back, as PlayerLife's respawn finds it: the tower's hall, else the last rest stop.
-    private static bool Checkpoint(out Vector3 at) => TowerRun.TryCheckpoint(out at) || CampaignRun.TryCheckpoint(out at);
 }

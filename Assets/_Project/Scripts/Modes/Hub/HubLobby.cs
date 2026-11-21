@@ -42,7 +42,7 @@ public sealed partial class HubLobby : MonoBehaviour
     private readonly HashSet<ulong> ready = new HashSet<ulong>();
     private readonly List<ulong> gone = new List<ulong>();
     private NetworkManager network;
-    private CampaignScreen screen;
+    private ModeScreen screen;
     private MissionTracker tracker;
     private HubPanel panel;
     private HubReadyBoard readyBoard;
@@ -94,14 +94,14 @@ public sealed partial class HubLobby : MonoBehaviour
     {
         active = this;
         string wanted = HubFlow.Chosen;
-        // A testing room picked before they left the menus (MapTable.IsTestingRoom) is no chapter to set off to.
+        // A map that isn't offered (MapTable.IsListed) is no chapter to set off to.
         chapter = !string.IsNullOrEmpty(wanted) && wanted != HubFlow.SceneName && Application.CanStreamedLevelBeLoaded(wanted)
-            && !MapTable.IsTestingRoom(wanted) ? wanted : HubFlow.FirstChapter();
+            && MapTable.IsListed(wanted) ? wanted : HubFlow.FirstChapter();
     }
 
     private void Start()
     {
-        screen = gameObject.AddComponent<CampaignScreen>();
+        screen = gameObject.AddComponent<ModeScreen>();
         tracker = SceneOne<MissionTracker>.Get();
         panel = HubPanel.Make();
         readyBoard = HubReadyBoard.Make();

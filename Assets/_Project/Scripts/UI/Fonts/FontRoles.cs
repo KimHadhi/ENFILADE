@@ -26,16 +26,10 @@ public static class FontRoles
     public const string Damage = "Damage";
     /// <summary>The ammo display (AmmoHUD).</summary>
     public const string Ammo = "Ammo";
-    /// <summary>HUD prefab text: weapon names, slot numbers, the interaction prompt, the chat channel.</summary>
-    public const string HudText = "HudText";
     /// <summary>HUD prefab bold text: health numbers, objective titles, the TAB hint.</summary>
     public const string HudBold = "HudBold";
-    /// <summary>The shield number, outlined.</summary>
-    public const string Shield = "Shield";
     /// <summary>The objective banner.</summary>
     public const string Alarm = "Alarm";
-    /// <summary>Chat lines.</summary>
-    public const string Chat = "Chat";
     /// <summary>Text that asks for no font: TMP's default font, which TMP Settings must name too.</summary>
     public const string Body = "Body";
     /// <summary>The score popup's yellow total and +points (Hitmarker Text Bold, shipped as its TTF).</summary>

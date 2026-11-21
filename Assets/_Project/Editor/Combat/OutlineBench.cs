@@ -73,7 +73,7 @@ internal static class OutlineBench
         Run();
     }
 
-    private enum Mark { Ping, PingPink, Executable, Holder, Ghost, Wave }
+    private enum Mark { Ping, PingPink, Executable, Holder, Ghost }
 
     [MenuItem("ENFILADE/전투/외곽선 점검 (눈으로 본 화면)")]
     private static void Run()
@@ -283,7 +283,6 @@ internal static class OutlineBench
             case Mark.PingPink: EnemyOutlines.Set(foe, OutlineSource.Ping, PingMarks.LookOf(Pink, 1f)); break;
             case Mark.Holder: EnemyOutlines.Set(foe, OutlineSource.Holder, HoldReveal.LookOf(HolderFill(), .55f, 1f)); break;
             case Mark.Ghost: EnemyOutlines.Set(foe, OutlineSource.Ghost, GhostLook()); break;
-            case Mark.Wave: EnemyOutlines.Set(foe, OutlineSource.Wave, EnemyReveal.LookOf(WaveColour())); break;
             case Mark.Executable:
                 var flash = HitFlashRenderer.For(foe);
                 flash.SetMark(1f);
@@ -309,9 +308,6 @@ internal static class OutlineBench
     private static Color HolderFill()
         => ColorUtility.TryParseHtmlString(GameTables.Text(HoldReveal.TableName, HoldReveal.TableRow, "holderColor", "#FF294DB3"), out var colour)
             ? colour : new Color(1f, .16f, .3f, .7f);
-
-    private static Color WaveColour()
-        => ColorUtility.TryParseHtmlString(GameTables.Text("Waves", "Default", "revealColor", "#FF3326A1"), out var colour) ? colour : new Color(1f, .2f, .15f, .63f);
 
     // Whether the outline shaders compiled here (a failed one draws nothing, or magenta).
     private static string Shaders()

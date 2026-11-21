@@ -178,8 +178,6 @@ public sealed class GhostCards : MonoBehaviour
     /// </summary>
     public const string ChainOffer = "ghost.chain";
 
-    /// <summary>How much of the ultimate under way is left, 0 to 1 (0: none).</summary>
-    public float PhantomShare => phantomUntil > Time.time ? Mathf.Clamp01((phantomUntil - Time.time) / phantomTotal) : 0f;
     /// <summary>Seconds of it left, and of how many (its slot among the timed effects: TimedEffects).</summary>
     public float PhantomLeft => phantomUntil - Time.time;
     public float PhantomTotal => phantomTotal;

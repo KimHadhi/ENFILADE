@@ -19,23 +19,6 @@ public sealed partial class ZombieMind
     /// <summary>Its last waking was its own and it calls (not woken by another's call, nor by a door or a chime that wakes without one). For StealthLog's record only.</summary>
     internal bool WokeByItself { get; private set; }
 
-    public static void LoseAll()
-    {
-        foreach (var mind in minds)
-        {
-            if (mind == null || !mind.Thinks || !mind.IsAwake) continue;
-            if (mind.TryGetComponent(out ZombieGrip grip) && grip.IsHolding) continue;
-            // Kept for the record of the alarm (StealthLog): a zombie that came with the horde and may now call.
-            if (mind.horde) mind.OnceHorde = true;
-            mind.horde = false;
-            mind.focus = null;
-            // Lost, none of them is noticing anyone in particular: no question marks over the whole crowd.
-            mind.noticed = null;
-            mind.suspicion = mind.alertAt;
-            mind.Search(mind.lastKnown != Vector3.zero ? mind.lastKnown : mind.transform.position);
-        }
-    }
-
     /// <summary>
     /// It lost its quarry in smoke (SmokeScreen, on the host): as the chase dying down does to all of them (LoseAll), this
     /// one goes to look where it last knew them and must make them out again by sight or sound, horde zombie or not. A
@@ -104,54 +87,8 @@ public sealed partial class ZombieMind
         return Mood == ZombieMood.Calm && Time.time < gazeUntil;
     }
 
-    /// <summary>
-    /// Shuts it in behind bars, standing calm (a cage's crowd, CampaignHorde.PlaceCaged; the map gimmick card "철창에 갇힌 좀비
-    /// 창고": "조용한 통로지만 철창에 붙어 지나가면 물어요"). Penned so long it rages at all comers and none at all: it makes
-    /// nobody out, hears nothing, no call or blow wakes it and it calls no one, so walking past its cage raises no alarm;
-    /// only whoever goes by close and upright is bitten through the bars (GimmickCage). Let out (FreeWithin), it is like any
-    /// other zombie from then on.
-    /// </summary>
-    public void Cage()
-    {
-        if (IsCopy) return;
-        Calm();
-        caged = true;
-    }
-
     // Behind bars until let out (FreeWithin): kept whatever its mood, so nothing can wake it to call from its cage.
     private bool caged;
-
-    /// <summary>Shut in behind bars (Cage), on the host or alone.</summary>
-    public bool Caged => caged;
-
-    /// <summary>
-    /// The host: every caged one inside <paramref name="box"/> is let out (its cage burst open) and wakes after
-    /// <paramref name="who"/> (or the nearest player), as WakeWithin wakes the rest. Returns how many woke.
-    /// </summary>
-    public static int FreeWithin(Bounds box, PlayerMovement who)
-    {
-        foreach (var mind in minds)
-            if (mind != null && mind.caged && box.Contains(mind.transform.position)) mind.caged = false;
-        return WakeWithin(box, who);
-    }
-
-    /// <summary>
-    /// The host: every zombie not yet awake standing inside <paramref name="box"/> wakes, after <paramref name="who"/> (or
-    /// the nearest player), with no call needed: what woke them woke them all (a door smashed in, a lift's chime, a metal
-    /// detector's beep: the floor or the hall it filled). The caged stay as they are (FreeWithin). Returns how many woke.
-    /// </summary>
-    public static int WakeWithin(Bounds box, PlayerMovement who)
-    {
-        int woken = 0;
-        for (int i = minds.Count - 1; i >= 0; i--)
-        {
-            var mind = minds[i];
-            if (mind == null || !mind.Thinks || mind.horde || mind.IsAwake || mind.caged || !box.Contains(mind.transform.position)) continue;
-            mind.Wake(who, true, false);
-            woken++;
-        }
-        return woken;
-    }
 
     /// <summary>
     /// Placed calm (CampaignHorde), it stands looking this way (degrees about up) and looks round from there.

@@ -102,12 +102,6 @@ public sealed partial class SupportKit : MonoBehaviour
     public float GiveCost => Mathf.Max(1f, Number("resupplyCost", 25f));
     public float BuildCost => CostOf(planKind);
     public bool CanBuild => Supply >= BuildCost - .001f;
-    /// <summary>
-    /// How many of the chosen kind stand now, and the most at once: the one count of everything a player sets down
-    /// (Deployables), which the HUD's line and the preview's amber ghost read too.
-    /// </summary>
-    public int Standing => movement != null ? Deployables.Count(movement, Barricade.KindName(planKind)) : 0;
-    public int MostStanding => MostOf(planKind);
     /// <summary>The one of the chosen kind that putting another up would take down: this Support's oldest, once its most stand; else null.</summary>
     public Barricade NextDown => movement != null ? Deployables.Next(movement, Barricade.KindName(planKind)) as Barricade : null;
     /// <summary>The kind the key puts up now.</summary>
@@ -121,7 +115,6 @@ public sealed partial class SupportKit : MonoBehaviour
         Barricade.Kind.Light => Number("lightCost", 60f),
         _ => Number("barricadeCost", 50f),
     });
-    public int MostOf(Barricade.Kind kind) => Deployables.Most(Barricade.KindName(kind));
 
     // Whether this Support may put up this kind: the planks always, the rest with their cards. Which card a kind needs
     // is its row's to say (Tables/Deployables), so a kind added there needs no line here.

@@ -159,7 +159,7 @@ public static class ClaymoreChain
     private static void Show(Vector3 middle, ThrowableInfo info, float grow, PlayerMovement owner)
     {
         float reach = Mathf.Max(.5f, info.Radius) * grow;
-        if (!GrenadePackFx.Play(Use, middle, Quaternion.identity, reach)) CanBlastEffect.Play(middle, reach * .7f, 0f);
+        if (!GrenadePackFx.Play(Use, middle, Quaternion.identity, reach)) BlastEffect.Play(middle, reach * .7f, 0f);
         string sound = PackFx.Text(Use, "sound");
         Throwables.Play(sound.Length > 0 ? sound : "Frag", middle + Vector3.up * .3f, PackFx.Number(Use, "loud", 1f),
             PackFx.Number(Use, "hearFull", 10f), PackFx.Number(Use, "hearFar", 200f), PackFx.Number(Use, "pitch", .8f));

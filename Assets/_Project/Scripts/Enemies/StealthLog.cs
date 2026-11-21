@@ -6,7 +6,7 @@ using UnityEngine;
 /// A record of how the zombies' alarm really goes off, for the talk about redesigning it (user, 2026-11-18: "과도하게
 /// 잦고 불합리하게 발동하는 "놈들이 소리쳤다" 알람 … 추후 논의를 통해 … 재설계 예정"). It changes nothing: it only listens
 /// where the zombies' minds run (the host, or alone) to every zombie waking (ZombieMind.Woke) and every call
-/// (ZombieMind.Called), and watches the campaign's quiet turn (quiet, alarm, lull, loud: CampaignRun.QuietState).
+/// (ZombieMind.Called).
 /// What the code says should make it fire often is counted here so it can be seen: each zombie that wakes by itself
 /// calls on its own, the same zombie may call again after losing its quarry, and a lull turns the whole horde into
 /// zombies that call. In the editor every line goes to Logs/stealth.txt; the console's /alarm prints the counts.
@@ -18,8 +18,7 @@ public sealed class StealthLog : MonoBehaviour
     private readonly Queue<float> callTimes = new Queue<float>();
     private readonly Dictionary<int, int> callsBy = new Dictionary<int, int>();
     private readonly StringBuilder pending = new StringBuilder();
-    private int wokeAlone, wokeByCall, calls, callsAgain, callsOnceHorde, turns;
-    private string state = "";
+    private int wokeAlone, wokeByCall, calls, callsAgain, callsOnceHorde;
     private float began, nextWrite;
     private bool fresh = true;
 
@@ -69,12 +68,6 @@ public sealed class StealthLog : MonoBehaviour
 
     private void Update()
     {
-        string now = CampaignRun.QuietState;
-        if (now != state)
-        {
-            if (state.Length > 0 || now.Length > 0) { turns++; Line($"TURN {(state.Length > 0 ? state : "none")} -> {(now.Length > 0 ? now : "none")}"); }
-            state = now;
-        }
         if (pending.Length > 0 && Time.realtimeSinceStartup >= nextWrite) Flush();
     }
 
@@ -86,7 +79,7 @@ public sealed class StealthLog : MonoBehaviour
 
     private void Line(string text)
     {
-        pending.Append((Time.realtimeSinceStartup - began).ToString("0.0").PadLeft(7)).Append(" s  [").Append(state.Length > 0 ? state : "-").Append("]  ")
+        pending.Append((Time.realtimeSinceStartup - began).ToString("0.0").PadLeft(7)).Append(" s  ")
             .Append(text).Append('\n');
     }
 
@@ -121,7 +114,7 @@ public sealed class StealthLog : MonoBehaviour
         while (callTimes.Count > 0 && now - callTimes.Peek() > 60f) callTimes.Dequeue();
         int callers = callsBy.Count;
         string text = $"외침 {calls}번(지난 1분 {callTimes.Count}번) · 외친 좀비 {callers}마리 · 같은 좀비가 또 외친 것 {callsAgain}번 · 떼였다가 외친 것 {callsOnceHorde}번 · "
-            + $"스스로 깬 좀비 {wokeAlone} · 외침에 깬 좀비 {wokeByCall} · 조용함이 바뀐 횟수 {turns} · 지금 {(state.Length > 0 ? state : "장 밖")} · Logs/stealth.txt"; // dev-text
+            + $"스스로 깬 좀비 {wokeAlone} · 외침에 깬 좀비 {wokeByCall} · Logs/stealth.txt"; // dev-text
         Line("COUNTS " + text);
         Flush();
         Debug.Log("[StealthLog] " + text);

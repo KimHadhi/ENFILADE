@@ -110,7 +110,6 @@ public sealed partial class DeathScreen : MonoBehaviour, IHudPreview
     private PlayerLife life;
     private PlayerSpectate spectate;
     private PlayerTally tally;
-    private WaveManager waves;
     private Volume volume;
     private VolumeProfile profile;
     private ColorAdjustments grade;

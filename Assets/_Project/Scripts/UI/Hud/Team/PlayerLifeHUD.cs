@@ -61,11 +61,11 @@ public sealed class PlayerLifeHUD : MonoBehaviour
             return life.Rescuer != null ? Texts.Get("life.downed.helped") : Texts.Format("life.downed.waiting", Mathf.CeilToInt(life.BleedLeft));
         // Waiting to come into a run already under way (PlayerLife.Arrive): the returns of the dead, in its own words.
         if (!receiver.IsAlive && receiver.IsWaiting)
-            return TowerRun.KeepsDead ? Texts.Get("life.join.tower")
-                : life.WaitsForWave ? Texts.Get("life.join.next_wave") : Texts.Format("life.join.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
+            return RunRules.KeepsDead ? Texts.Get(RunRules.Words(RunWords.Join, "life.join.wait"))
+                : Texts.Format("life.join.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
         if (!receiver.IsAlive)
-            return TowerRun.KeepsDead ? Texts.Get("life.respawn.tower")
-                : life.WaitsForWave ? Texts.Get("life.respawn.next_wave") : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
+            return RunRules.KeepsDead ? Texts.Get(RunRules.Words(RunWords.Respawn, "life.respawn.wait"))
+                : Texts.Format("life.respawn.seconds", Mathf.Max(1, Mathf.CeilToInt(life.RespawnLeft)));
         // While the interact key's owner says F is the revive's (InteractKey): a takedown on offer comes first.
         if (revive != null && revive.Candidate != null && InteractKey.Shows(PlayerRevive.OfferId)) return Texts.Get("life.revive.prompt");
         // A friend a runner pins, within this player's shove: V throws it off them (ShoveRescue).

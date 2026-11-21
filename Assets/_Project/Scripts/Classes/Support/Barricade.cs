@@ -213,23 +213,6 @@ public sealed class Barricade : MonoBehaviour, IDamageReceiver, IPlaced
 
     private float placedAt;
 
-    /// <summary>
-    /// Whether a zombie may not come up at <paramref name="point"/>: a searchlight stands within its reach there
-    /// (Support.lightRadius). The wave and the campaign's spawners ask, on the host.
-    /// </summary>
-    public static bool Shelters(Vector3 point)
-    {
-        if (standing.Count == 0) return false;
-        float reach = Mathf.Max(0f, PlayerClass.Ability(Row, "lightRadius", 25f));
-        foreach (var pair in standing)
-        {
-            var light = pair.Value;
-            if (light != null && !light.broken && KindOf(pair.Key) == Kind.Light && (light.transform.position - point).sqrMagnitude <= reach * reach)
-                return true;
-        }
-        return false;
-    }
-
     /// <summary>The ammo crate under <paramref name="who"/>'s crosshair within reach (anyone's), or null.</summary>
     public static Barricade CrateFor(PlayerMovement who)
     {

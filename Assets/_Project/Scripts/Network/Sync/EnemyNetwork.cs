@@ -219,12 +219,6 @@ public sealed class EnemyNetwork : NetworkBehaviour
         if (IsSpawned && IsServer) kind.Value = (byte)value;
     }
 
-    /// <summary>The host made its zombie tougher after it appeared (ZombieType.Toughen): its copies follow.</summary>
-    internal void ShareToughness(float value)
-    {
-        if (IsSpawned && IsServer) toughness.Value = value;
-    }
-
     private void Update()
     {
         paceLeft = Mathf.Max(0f, paceLeft - Time.unscaledDeltaTime);

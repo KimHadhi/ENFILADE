@@ -1,4 +1,3 @@
-using KINEMATION.FPSAnimationFramework.Runtime.Playables;
 using UnityEngine;
 
 // FPSGun: This body's hold of the gun (GunHold) and the clip its hands follow. One part of the class; the rest is in FPSGun.cs and the files beside it.

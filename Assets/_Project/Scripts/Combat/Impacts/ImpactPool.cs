@@ -14,7 +14,7 @@ using UnityEngine.VFX;
 public sealed class ImpactPool : MonoBehaviour
 {
     public const string TableName = "ImpactEffects";
-    private const string LibraryPath = "Combat/ImpactLibrary", NoHole = "none";
+    private const string LibraryPath = "Combat/ImpactLibrary";
     private static readonly Vector3 OutOfSight = Vector3.down * 5000f;
     private static readonly int LightnessId = Shader.PropertyToID("Liquid Lightness"), UseDecalsId = Shader.PropertyToID("Use Decals");
     private static ImpactPool instance;
@@ -23,22 +23,8 @@ public sealed class ImpactPool : MonoBehaviour
     private sealed class Row
     {
         public List<Preset> Presets, ExitPresets;
-        public float Scale, Lightness, HoleSize, HoleVary, HoleStretch = 1f, ExitScale = 1f;
-        // How long its holes stay before fading (s); 0 is GunFeel's bulletHoleSeconds.
-        public float HoleSeconds;
-        // Hivemind's bullet holes: three to six per surface, one picked a hit, never the last one twice running.
-        public Material[] Holes = new Material[0];
-        // The table says `none`: nothing is left on this surface, and its parents aren't asked (water).
-        public bool NoHoles;
-        public int Last = -1, LastExit = -1, LastHole = -1;
-        public Material PickHole()
-        {
-            if (Holes.Length == 0) return null;
-            int pick = SharedRandom.Range(0, Holes.Length);
-            if (pick == LastHole && Holes.Length > 1) pick = (pick + 1) % Holes.Length;
-            LastHole = pick;
-            return Holes[pick];
-        }
+        public float Scale, Lightness, ExitScale = 1f;
+        public int Last = -1, LastExit = -1;
     }
 
     private readonly Dictionary<string, Preset> presets = new Dictionary<string, Preset>(StringComparer.OrdinalIgnoreCase);
@@ -62,40 +48,21 @@ public sealed class ImpactPool : MonoBehaviour
     }
 
     /// <summary>
-    /// A bullet's impact: the effect of the surface hit, or of its nearest parent surface that has one, and the hole of the
-    /// nearest that has holes. The two are looked up apart, so a surface can have its own holes (a row with only `hole`)
-    /// and still borrow its parent's burst, or leave none at all (`none`: water, which would otherwise get concrete's).
-    /// `incoming` is the way the bullet was going: a hit at a slant leaves a long hole along it (BulletHoles), as far as
-    /// the row's holeStretch lets it.
+    /// A bullet's impact: the effect of the surface hit, or of its nearest parent surface that has one.
     /// </summary>
-    public static void PlaySurface(Collider surface, Vector3 point, Vector3 normal, Vector3 incoming = default)
+    public static void PlaySurface(Collider surface, Vector3 point, Vector3 normal)
     {
         if (!Application.isPlaying) return;
         Prepare();
         var chain = Surfaces.Fallbacks(Surfaces.Of(surface));
         foreach (string id in chain)
             if (instance.Spawn(id, point, normal)) break;
-        var holes = instance.HoleRow(chain);
-        if (holes != null)
-            BulletHoles.Place(holes.PickHole(), holes.HoleSize, point, normal, incoming, holes.HoleVary, holes.HoleStretch, holes.HoleSeconds);
-    }
-
-    private Row HoleRow(IReadOnlyList<string> chain)
-    {
-        foreach (string id in chain)
-        {
-            if (!rows.TryGetValue(id, out var row)) continue;
-            if (row.NoHoles) return null;
-            if (row.Holes.Length > 0) return row;
-        }
-        return null;
     }
 
     /// <summary>
     /// The far side of something a bullet went through: the surface's row again, its exitScale bigger and thrown out
-    /// halfway between the face and the bullet's way on, with the row's exitPresets (debris) on top and a hole as much
-    /// bigger, the way a wall spalls where a round leaves it; the hole is drawn out along the way it left, as one going
-    /// in is.
+    /// halfway between the face and the bullet's way on, with the row's exitPresets (debris) on top, the way a wall spalls
+    /// where a round leaves it.
     /// </summary>
     public static void PlayExit(Collider surface, Vector3 point, Vector3 normal, Vector3 direction)
     {
@@ -103,19 +70,13 @@ public sealed class ImpactPool : MonoBehaviour
         Prepare();
         Vector3 up = Vector3.Slerp(normal.normalized, direction.normalized, .5f);
         var chain = Surfaces.Fallbacks(Surfaces.Of(surface));
-        float exitScale = 1f;
         foreach (string id in chain)
         {
             if (!instance.rows.TryGetValue(id, out var row) || row.Presets.Count == 0) continue;
             instance.Spawn(row, row.Presets, ref row.Last, point, up, row.ExitScale);
             if (row.ExitPresets.Count > 0) instance.Spawn(row, row.ExitPresets, ref row.LastExit, point, up, row.ExitScale);
-            exitScale = row.ExitScale;
             break;
         }
-        var holes = instance.HoleRow(chain);
-        if (holes != null)
-            BulletHoles.Place(holes.PickHole(), holes.HoleSize * exitScale, point, normal, direction, holes.HoleVary, holes.HoleStretch,
-                holes.HoleSeconds);
     }
 
     /// <summary>Plays the row's effect at point leaving along `up`, `scale` times its usual size. False when the row has none.</summary>
@@ -155,10 +116,6 @@ public sealed class ImpactPool : MonoBehaviour
                 effect.transform.position = spot;
                 effect.Play();
             }
-        // A decal builds its shader on its first draw too; this close, this small, it can't be seen.
-        foreach (var row in rows.Values)
-            foreach (var hole in row.Holes)
-                BulletHoles.Place(hole, .001f, view.transform.position + view.transform.forward * 2f, -view.transform.forward);
         // The same for the materials of the muzzle flash, smoke, sparks, brass and blood.
         var stand = new GameObject("First Draws");
         stand.transform.SetParent(transform, false);
@@ -194,23 +151,9 @@ public sealed class ImpactPool : MonoBehaviour
             if (!GameTables.TryGetRow(TableName, id, out var cells)) continue;
             int copies = cells.Whole("copies", 1);
             float scale = cells.Number("scale", 1f), lightness = cells.Number("lightness", 0f);
-            float holeSize = cells.Number("holeSize", 0f), holeVary = cells.Number("holeVary", 0f);
-            float holeStretch = cells.Number("holeStretch", 1f), exitScale = cells.Number("exitScale", 1f);
-            float holeSeconds = cells.Number("holeSeconds", 0f);
+            float exitScale = cells.Number("exitScale", 1f);
             var row = new Row { Presets = new List<Preset>(), ExitPresets = new List<Preset>(), Scale = scale, Lightness = lightness,
-                HoleSize = holeSize, HoleVary = Mathf.Max(0f, holeVary), HoleStretch = Mathf.Max(1f, holeStretch),
-                ExitScale = Mathf.Max(.1f, exitScale), HoleSeconds = Mathf.Max(0f, holeSeconds) };
-            var holes = new List<Material>();
-            row.NoHoles = string.Equals(Cell(cells, "hole").Trim(), NoHole, StringComparison.OrdinalIgnoreCase);
-            foreach (string name in Cell(cells, "hole").Split(';'))
-            {
-                string hole = name.Trim();
-                if (hole.Length == 0 || row.NoHoles) continue;
-                var material = library.FindHole(hole);
-                if (material != null) holes.Add(material);
-                else Debug.LogWarning($"[ImpactPool] {TableName}.csv의 구멍 '{hole}'이(가) ImpactLibrary에 없습니다.");
-            }
-            row.Holes = holes.ToArray();
+                ExitScale = Mathf.Max(.1f, exitScale) };
             foreach (string name in Cell(cells, "presets").Split(';'))
             {
                 var preset = name.Trim().Length > 0 ? Ensure(name.Trim(), Mathf.Max(1, copies)) : null;

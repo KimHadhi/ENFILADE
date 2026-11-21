@@ -19,7 +19,7 @@ using UnityEngine.SceneManagement;
 /// in Logs/Hitches. Not Temp: Unity empties Temp when it closes, which lost every run recorded before 2026-11-06's restart.
 /// Each report also says what happened in that frame (FrameTags): what code marked (a zombie made from its look) and
 /// what this probe sees changing from outside (zombies coming and going, a brute spawning and arriving, corpses laid
-/// and gone, ragdoll dolls made, the campaign's song and its assaults, the first callout feed and alert band, hits, kills,
+/// and gone, ragdoll dolls made, the first callout feed and alert band, hits, kills,
 /// limbs off). Frames under the loading screen are marked [loading] and counted apart, so a load's own long frames no
 /// longer use up the play's reports (the 22:13 run of 2026-11-12 ran out at 145 s, before its chapter's brute came).
 /// Reports are counted per scene: in the 23:18 run of 2026-11-14 a long stay in the hub used all 400 before the user
@@ -397,8 +397,7 @@ public sealed class HitchProbe : MonoBehaviour
         private readonly List<ZombieBody> brutes = new List<ZombieBody>();
         private readonly HashSet<ZombieBody> arrived = new HashSet<ZombieBody>();
         private int lying = -1, dolls = -1;
-        private string song = "";
-        private bool peak, feed, alert;
+        private bool feed, alert;
 
         public void Listen()
         {
@@ -425,7 +424,6 @@ public sealed class HitchProbe : MonoBehaviour
         {
             Zombies();
             Corpses();
-            Song();
             Firsts();
         }
 
@@ -475,16 +473,6 @@ public sealed class HitchProbe : MonoBehaviour
                 if (dolls >= 0 && count > dolls) FrameTags.Mark($"ragdoll doll made +{count - dolls}");
                 dolls = count;
             }
-        }
-
-        private void Song()
-        {
-            string playing = CampaignRun.Song;
-            bool assault = CampaignRun.Phase == CombatPhase.Assault;
-            if (playing != song && playing.Length > 0) FrameTags.Mark("song starts: " + playing);
-            if (assault && !peak) FrameTags.Mark("assault starts");
-            song = playing;
-            peak = assault;
         }
 
         // Things made on their first use: the callout feed (its face camera) and the alert band.

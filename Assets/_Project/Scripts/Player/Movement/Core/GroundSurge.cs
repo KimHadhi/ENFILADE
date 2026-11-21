@@ -41,7 +41,6 @@ public sealed class GroundSurge
 
     /// <summary>The ground velocity of the surge under way; zero when there is none.</summary>
     public Vector3 Velocity => left > 0f ? velocity : Vector3.zero;
-    public bool Running => left > 0f;
     /// <summary>Whether a surge is under way that <paramref name="who"/> asked for.</summary>
     public bool RunsFor(object who) => left > 0f && ReferenceEquals(asker, who);
     /// <summary>How fast the body ran when the surge began (m/s): a move begun at its end goes on at that, not at the surge's pace.</summary>

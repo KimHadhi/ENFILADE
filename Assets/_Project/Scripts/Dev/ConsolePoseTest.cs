@@ -45,8 +45,8 @@ public sealed class ConsolePoseTest : MonoBehaviour
         var poses = new List<int>();
         for (int i = 0; i < looks.calmPoses.Length; i++) if (looks.calmPoses[i].loop != null) poses.Add(i);
         if (poses.Count == 0) return "ZombieLooks에 조용한 자세(calmPoses)가 없습니다."; // dev-text
-        var prefab = Prefab(player, out string error);
-        if (prefab == null) return error;
+        var prefab = ConsoleEnemySpawner.Prefab;
+        if (prefab == null) return "소환할 적이 없습니다: Prefabs/Resources/" + ConsoleEnemySpawner.PrefabPath + ".prefab"; // dev-text
         var agent = prefab.GetComponent<NavMeshAgent>();
         if (agent == null) return "적 프리팹에 NavMeshAgent가 필요합니다."; // dev-text
         var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
@@ -109,24 +109,6 @@ public sealed class ConsolePoseTest : MonoBehaviour
         };
         return $"자세 좀비 {run.made.Count}마리: {said}. {how}. 모두 제자리에서 일어선 다음에 움직여야 합니다." // dev-text
             + (skipped > 0 ? $" (자리가 없어 {skipped}마리는 못 둠)" : "") + " (자세는 호스트 화면만 정해짐)"; // dev-text
-    }
-
-    // The scene's horde zombie, as /spawn takes it (every WaveManager here must agree).
-    private static EnemyHealth Prefab(PlayerMovement player, out string error)
-    {
-        error = "소환할 적이 없습니다. 이 씬의 WaveManager에 Enemy Prefab을 연결하세요."; // dev-text
-        EnemyHealth prefab = null;
-        foreach (var wave in FindObjectsByType<WaveManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-        {
-            if (wave.gameObject.scene != player.gameObject.scene || wave.EnemyPrefab == null) continue;
-            if (prefab != null && prefab != wave.EnemyPrefab)
-            {
-                error = "적 종류가 여러 개입니다. 이 씬의 WaveManager에 같은 Enemy Prefab을 지정하세요."; // dev-text
-                return null;
-            }
-            prefab = wave.EnemyPrefab;
-        }
-        return prefab;
     }
 
     // A free spot on the walk mesh that way from the player, at the radius or a little further, in a straight walk.

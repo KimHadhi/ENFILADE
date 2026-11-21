@@ -80,11 +80,9 @@ public static class HubFlow
         return "허브로 가요.";
     }
 
-    /// <summary>The campaign's first chapter that is built (Tables/CampaignChapters order), or the first map there is.</summary>
+    /// <summary>The first map there is to set off to (Tables/Maps order), or none.</summary>
     public static string FirstChapter()
     {
-        foreach (string id in GameTables.RowIds("CampaignChapters"))
-            if (Application.CanStreamedLevelBeLoaded(id)) return id;
         var maps = MapTable.Playable();
         return maps.Length > 0 ? maps[0] : "";
     }

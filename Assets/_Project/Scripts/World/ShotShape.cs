@@ -51,14 +51,6 @@ public sealed class ShotShape : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => soups.Clear();
 
-    /// <summary>The builder's: the model's meshes and where each lies in this box (mesh space to box space).</summary>
-    public void Set(Mesh[] seen, Matrix4x4[] inBox)
-    {
-        meshes = seen;
-        places = inBox;
-        ready = false;
-    }
-
     /// <summary>This collider's shots are judged by a seen shape.</summary>
     public static bool Has(Collider collider)
         => collider != null && collider.TryGetComponent(out ShotShape shape) && shape.Usable;

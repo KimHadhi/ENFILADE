@@ -43,7 +43,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     private TMP_Text title, counter, symbol;
     private GameObject counterRoot;
     private MissionLineGraphic line;
-    private AssaultBar assault;
     private Image[] landLight;
     private float landClock = -1f;
     private string shownId;
@@ -52,16 +51,13 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     private bool numeric;
 
     /// <summary>
-    /// How far under the bar's foot its own rows reach now (px): the progress line, or an assault's time row while one
-    /// runs. MissionHUD keeps the key cap and hint under the bar clear of it.
+    /// How far under the bar's foot its own rows reach now (px): the progress line. MissionHUD keeps the key cap and hint
+    /// under the bar clear of it.
     /// </summary>
-    public float Below => Mathf.Max(lineGap + lineHeight, assault != null ? assault.Below : 0f);
+    public float Below => lineGap + lineHeight;
 
     /// <summary>How far right of the bar's left edge it draws (px): the strip, the count box and the line's tail.</summary>
     public float Reach { get; private set; }
-
-    /// <summary>How wide the count box hanging past the strip's end is (px); 0 while the objective has no count.</summary>
-    public float CountWidth { get; private set; }
 
     /// <summary>Takes over the bar's parts. MissionHUD calls it once, before anything is shown.</summary>
     public void Init(TMP_Text title, TMP_Text counter, GameObject counterRoot, Image oldProgress)
@@ -86,8 +82,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         // The count's big number and small total are tags; the prefab's text had them switched off.
         counter.richText = true;
         Anchor();
-        // A chapter's assault turns the bar into its own tape (D-3, memo 25).
-        if (!TryGetComponent(out assault)) assault = gameObject.AddComponent<AssaultBar>();
         GameTables.Bind(HudCamera.TableName, "Mission", this);
     }
 
@@ -230,7 +224,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         lineRect.offsetMin = new Vector2(0f, -lineGap - lineHeight);
         lineRect.offsetMax = new Vector2(counterWidth + Tail, -lineGap);
         Reach = width + counterWidth + Tail;
-        CountWidth = counterWidth;
         DrawLine();
     }
 

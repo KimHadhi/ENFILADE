@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Friend feedback C2: the brute, the boss a song's highlight sends (CampaignMusic). One of the pack's bodies worn half
+/// Friend feedback C2: the brute, the boss a song's highlight sends (ModeMusic). One of the pack's bodies worn half
 /// again as big (ZombieType.Scale): its capsule, agent and stride grow with it, its hitboxes ride its bones and grow
 /// too, and its corpse gets a doll made for its size (ZombieCorpse.MarkGrown). Its coming is heard on every PC: a roar
 /// where it stands, a deep boom for everyone, a shake of the view by how near it is, and an alert that comes in from the

@@ -328,9 +328,6 @@ public sealed class WeaponData : ScriptableObject
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
     public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);
-    public Vector3 LeftGrip => leftGrip;
-    /// <summary>The handguard's right-side rail mount (weapon-root space), or zero when the gun should be measured.</summary>
-    public Vector3 SideRail => sideRail;
     public float HighReadyRaiseHalfLife => Mathf.Clamp(highReadyRaiseHalfLife, .01f, .2f);
     public float HighReadyLowerHalfLife => Mathf.Clamp(highReadyLowerHalfLife, .01f, .2f);
     public Vector3 ViewPunch => viewPunch;
@@ -341,7 +338,6 @@ public sealed class WeaponData : ScriptableObject
     public bool EjectShells => ejectShells;
     public GunSoundProfile SoundProfile => soundProfile;
     public AudioClip[] FireSounds => fireSounds;
-    public AudioClip[] SuppressedFireSounds => suppressedFireSounds;
     public float FireVolume => Mathf.Clamp(fireVolume, 0f, 2f);
     public float PostureDamage => Mathf.Max(0f, postureDamage);
     public float FlinchMultiplier => Mathf.Clamp(flinchMultiplier, 0f, 3f);

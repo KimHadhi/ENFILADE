@@ -3,8 +3,8 @@ using UnityEngine;
 /// <summary>
 /// What becomes of this PC's player at zero health. While someone else is on their feet they go down instead: they crawl
 /// with a pistol and bleed out unless someone gets them up (PlayerRevive). Otherwise, or once they bleed out, they die
-/// and come back at the spawn point: at the next wave, or after a while where no waves run. When nobody is left standing
-/// the team is wiped: a moment on the screen, then everyone back at the start and the waves from the first. Alone there
+/// and come back at the spawn point after a while, or where and when the run says (RunRules). When nobody is left
+/// standing the team is wiped: a moment on the screen, then everyone back at the start. Alone there
 /// is nobody to come, so zero health is a wipe at once. A fatal hit (DamageHit.IsFatal) skips the ground altogether.
 /// Bleeding stops while someone is getting them up, so help that arrives in time and isn't broken off always saves them.
 /// Numbers: Tables/Downed.
@@ -22,21 +22,18 @@ public sealed class PlayerLife : MonoBehaviour
     private float downedHealth = 100f;
     [SerializeField, Range(.01f, 1f), Tooltip("Share of full health someone gets up with.")]
     private float reviveHealthShare = .3f;
-    [SerializeField, Min(0f), Tooltip("Where no waves run: how long the dead wait before coming back (s).")]
+    [SerializeField, Min(0f), Tooltip("How long the dead wait before coming back where the run doesn't keep them (s).")]
     private float respawnSeconds = 20f;
     [SerializeField, Min(0f), Tooltip("How long the wipe stays on the screen before everyone is back (s).")]
     private float wipeSeconds = 4f;
 
     private PlayerMovement player;
     private PlayerDamageReceiver receiver;
-    private WaveManager waves;
     private float wipeLeft, respawnLeft, nextWipeCheck;
 
     public bool IsWiped => wipeLeft > 0f;
     /// <summary>Seconds until the wipe ends and everyone is back (0 when there is none): the death screen counts it down.</summary>
     public float WipeLeft => Mathf.Max(0f, wipeLeft);
-    /// <summary>Waves bring the dead back when they start; otherwise a timer does.</summary>
-    public bool WaitsForWave => waves != null && waves.IsRunning;
     public float RespawnLeft => respawnLeft;
     public float BleedLeft => receiver != null ? receiver.Health / (downedHealth / BleedSeconds) : 0f;
     // The bleed-out time, longer with the grit perk (PlayerPerks).
@@ -54,38 +51,26 @@ public sealed class PlayerLife : MonoBehaviour
 
     private void Start()
     {
-        waves = SceneOne<WaveManager>.Get();
-        if (waves != null) waves.WaveStarted += OnWaveStarted;
         receiver.Died += OnDied;
     }
 
     private void OnDestroy()
     {
-        if (waves != null) waves.WaveStarted -= OnWaveStarted;
         if (receiver != null) receiver.Died -= OnDied;
     }
 
     /// <summary>
-    /// A run someone can come into the middle of is under way in this scene: a campaign chapter not yet finished, the
-    /// tower, waves running. The hub and the test rooms have none, and whoever joins there is simply there. The host
-    /// asks as it makes a newcomer's player (GameSession).
+    /// A run someone can come into the middle of is under way in this scene (RunRules). The hub has none, and whoever
+    /// joins there is simply there. The host asks as it makes a newcomer's player (GameSession).
     /// </summary>
-    internal static bool RunUnderWay
-    {
-        get
-        {
-            if (TowerRun.UnderWay || CampaignRun.UnderWay) return true;
-            var running = SceneOne<WaveManager>.Get();
-            return running != null && running.IsRunning;
-        }
-    }
+    internal static bool RunUnderWay => RunRules.UnderWay;
 
     /// <summary>
     /// This PC's player came into a run already under way (the host said so as it made them: GameSession,
     /// PlayerNetworkPose). They are not set down alive at the map's start in the middle of someone else's fight: they
     /// stand out of it (PlayerDamageReceiver.StandOut), watch the others (PlayerSpectate) and come in the way the dead
-    /// come back, by the same clock and at the same place (Respawn): after the wait where no waves run, at the next
-    /// wave, in the tower's next hall, or with everyone after a wipe. One rule for everyone who is not in the fight, so a
+    /// come back, by the same clock and at the same place (Respawn): after the wait, when the run calls them back, or
+    /// with everyone after a wipe. One rule for everyone who is not in the fight, so a
     /// change to how the dead return changes this with it. No death is counted: they never fell.
     /// User, 2026-11-18: "난입은 언제든지 할 수 있게 하고 싶습니다. 관전이 있으니까요. 중간에 들어가도 세이브포인트까지
     /// 관전하다 바로 같이 할 수 있게끔 말입니다." Until then a newcomer stood alive and alone at the map's start.
@@ -95,7 +80,7 @@ public sealed class PlayerLife : MonoBehaviour
         if (receiver == null) receiver = GetComponent<PlayerDamageReceiver>();
         receiver.StandOut();
         respawnLeft = respawnSeconds;
-        PlayRecord.Line(JoinRecord, JoinHeading, $"ARRIVED into a run under way: out of the fight, watching; comes in after {respawnSeconds:0} s where no waves run, at the next wave, or in the tower's next hall");
+        PlayRecord.Line(JoinRecord, JoinHeading, $"ARRIVED into a run under way: out of the fight, watching; comes in after {respawnSeconds:0} s, or when the run calls the dead back");
     }
 
     /// <summary>Logs/joins.txt (editor and development builds): what a join into a run under way did, on the host and on the joiner's PC.</summary>
@@ -105,8 +90,8 @@ public sealed class PlayerLife : MonoBehaviour
     /// <summary>Health ran out: true if they go down, false if there is nobody left to get them up.</summary>
     internal bool TryGoDown()
     {
-        // Alone in an ENFILADE tower lane nobody can reach them through the glass: no ground, as when playing alone.
-        if (!GameSession.IsOnline || receiver.IsDowned || TowerRun.NoOneToHelp(player)) return false;
+        // Where the run says nobody can reach them: no ground, as when playing alone (RunRules).
+        if (!GameSession.IsOnline || receiver.IsDowned || RunRules.NoOneToHelp(player)) return false;
         foreach (var other in PlayerRoster.All)
             if (other != player && other.IsInitialized && Standing(other))
             {
@@ -156,12 +141,11 @@ public sealed class PlayerLife : MonoBehaviour
         }
         FindRescuer();
         if (receiver.IsDowned && Rescuer == null) receiver.Bleed(downedHealth / BleedSeconds * dt);
-        // In the ENFILADE tower the dead wait while the lanes are climbed, and come back in the next hall as soon as
-        // they are through (TowerRun).
-        if (!receiver.IsAlive && !WaitsForWave && !TowerRun.KeepsDead)
+        // A run may keep the dead until it calls them back (RunRules).
+        if (!receiver.IsAlive && !RunRules.KeepsDead)
         {
             respawnLeft -= dt;
-            if (GameSession.IsOnline && (respawnLeft <= 0f || TowerRun.CallsDeadBack)) Respawn();
+            if (GameSession.IsOnline && (respawnLeft <= 0f || RunRules.CallsDeadBack)) Respawn();
         }
         WatchForWipe();
     }
@@ -202,7 +186,6 @@ public sealed class PlayerLife : MonoBehaviour
     {
         nextWipeCheck = Time.time + WipeGrace;
         Respawn();
-        if (!GameSession.IsGuest && waves != null && waves.IsRunning) waves.RestartFromFirst();
     }
 
     private void OnDied()
@@ -211,22 +194,16 @@ public sealed class PlayerLife : MonoBehaviour
         PlayerRecords.Died();
     }
 
-    private void OnWaveStarted()
-    {
-        if (!receiver.IsAlive && !IsWiped) Respawn();
-    }
-
     private void Respawn()
     {
         var point = FindFirstObjectByType<PlayerSpawnPoint>();
         Vector2 scatter = GameSession.IsOnline ? Random.insideUnitCircle * SpawnScatter : Vector2.zero;
-        // A campaign chapter brings them back at the last rest stop reached, not the chapter's start (CampaignRun), and the
-        // ENFILADE tower in its hall (TowerRun).
-        bool campaign = TowerRun.TryCheckpoint(out Vector3 checkpoint) || CampaignRun.TryCheckpoint(out checkpoint);
-        if (campaign || point != null)
-            player.MoveTo((campaign ? checkpoint : point.transform.position) + new Vector3(scatter.x, 0f, scatter.y));
+        // A run brings them back at its own place (RunRules), else the map's spawn point.
+        bool hall = RunRules.TryCheckpoint(out Vector3 checkpoint);
+        if (hall || point != null)
+            player.MoveTo((hall ? checkpoint : point.transform.position) + new Vector3(scatter.x, 0f, scatter.y));
         if (receiver.IsWaiting)
-            PlayRecord.Line(JoinRecord, JoinHeading, $"CAME IN at {player.transform.position} ({(campaign ? "the run's save point" : "the map's start")})");
+            PlayRecord.Line(JoinRecord, JoinHeading, $"CAME IN at {player.transform.position} ({(hall ? "the run's save point" : "the map's start")})");
         receiver.RestoreHealth();
         // Back with full magazines and reserves, as at the start (user, 2026-11-11 playtest: "탄창 보충이 안 돼 있음").
         if (TryGetComponent(out PlayerWeaponSlots slots)) slots.RefillAmmo();

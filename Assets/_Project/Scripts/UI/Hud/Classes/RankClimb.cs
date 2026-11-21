@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Stage 6E, the user's pick A (chevrons) with their LAYERLAB Space Rank insignia: at a chapter's ending, beside its
-/// results (CampaignScreen), the class's insignia shows, tilted, its name above it. If the game took it up a rank, the
+/// results (ModeScreen), the class's insignia shows, tilted, its name above it. If the game took it up a rank, the
 /// old one shrinks away and the new one slams down oversized and settles with a shake, the screen flashes pink, and a
 /// slanted pink 등급 상승 plate sweeps in under it; a prestige says 프레스티지 instead and adds a pink diamond. No numbers
 /// (the user's rule: growth reads as the insignia only). Short and loud, then it fades with the card. Real time.

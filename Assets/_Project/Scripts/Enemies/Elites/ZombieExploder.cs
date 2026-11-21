@@ -9,7 +9,7 @@ using UnityEngine;
 /// when it dies too, however it dies. Shot from afar it takes the pack round it along (zombies in reach are hurt by how
 /// near they stand and knocked flat, the kills credited to whoever shot it), which is why it is worth picking out;
 /// next to a player it hurts and throws them. The host runs the fuse and ends it; every PC sees the death, plays the
-/// burst there (CanBlastEffect, with no fire left behind) and hurts and throws its own player, a player's health being
+/// burst there (BlastEffect, with no fire left behind) and hurts and throws its own player, a player's health being
 /// their own PC's. A takedown or an execution defuses it instead (user, 2026-11-12: "자폭 좀비 암살할 땐 안 터지면 안
 /// 됨? 내가 암살하고 터져서 뒤로 자빠지네"): the blade finds the brainstem before the gas sac can light, so it only
 /// hisses and sags, harms nobody, and the one who did it is paid defuseReward. Every PC reads how it died from the
@@ -231,7 +231,7 @@ public sealed class ZombieExploder : MonoBehaviour
     {
         Vector3 at = transform.position;
         marker?.Hide();
-        CanBlastEffect.Play(at, blastRadius, 0f);
+        BlastEffect.Play(at, blastRadius, 0f);
         GameAudio.PlayAt(Boom(), at + Vector3.up, AudioChannel.Combat, 1f, 4f, 80f);
         var mine = PlayerRoster.Local;
         if (mine != null && mine.IsInitialized && !mine.IsDead)

@@ -6,7 +6,7 @@
 
 ## 바로 실행하기
 
-1. [CombatFoundation 씬](../../Assets/_Project/Scenes/Development/CombatFoundation.unity)을 열고 Play한다.
+1. [허브 씬](../../Assets/_Project/Scenes/Hub/Hub.unity)을 열고 Play한다.
 2. Game 창을 클릭해 마우스를 잠근다. 잠금을 잡는 첫 클릭은 공격하지 않으므로 버튼을 놓고 다시 누른다.
 3. **1**로 소총, **2**로 피스톨을 선택한다. 현재 씬은 슬롯을 해제한 상태로 시작한다.
 4. **좌클릭**으로 발사하고 **우클릭 유지**로 정조준(ADS), **R**로 재장전한다.
@@ -45,7 +45,7 @@
 - **원호 방어의 패링 자세**(11-12 사용자: "아군을 방어해 주는 건 특유의 패링 자세와 함께 공격을 튕겨내는 화려한 이펙트가 있었으면 좋겠음"): 나이트의 원호가 동료에게 오는 공격을 튕겨 내면, 튕겨 내는 이펙트(CoverDeflect)와 함께 나이트가 0.3초 동안 패링 자세를 잡는다. 주먹을 들고 있으면 패링에 성공했을 때처럼 먼 손이 공격 쪽으로 휙 쳐냈다 돌아오고(가드도 같이 올라간다), 총을 들고 있으면 오른손은 총을 그대로 쥔 채 왼손만 총에서 떨어져 팔뚝과 주먹으로 얼굴 앞을 막았다가 다시 총을 잡는다(던지기·장전 중이면 왼손이 바빠서 안 한다). 보이기만 하는 자세라 가드·패링 판정은 열리지 않고 입력도 그대로다. 친구 화면에도 똑같이 나오고, 1인칭에서도 내 팔이 그렇게 움직인다. 수치는 `Combos.csv`의 `GuardPose`.
 - **완벽 방어**: 완벽 회피 후 `[LMB] 반격`이 뜬다. 이때 새 좌클릭은 일반 공격보다 반격을 먼저 실행한다. 패링의 반격은 `Defense.parryOpensCounter`를 켜야 열린다.
 - **처치 점수**: 처치하면 크로스헤어 오른쪽 아래에 XP와 처치 사유가 뜬다. 처형으로 처치하면 `처형` 줄에 전술 단검과 베기 자국 아이콘(빨간색), 반격으로 처치하면 `반격` 줄에 되돌아오는 화살표 아이콘(반격 색)이 붙는다. 일반 처치·헤드샷 줄은 기존 해골·폭발 아이콘 그대로다.
-- **시험용 적**: 채팅에 `/spawn`, 콘솔 채널에 `spawn`을 입력한다. 소환한 적은 웨이브 진행에 포함되지 않는다. 명령 목록은 `/help`로 확인한다.
+- **시험용 적**: 채팅에 `/spawn`, 콘솔 채널에 `spawn`을 입력한다. 소환하는 적은 `Prefabs/Resources/Enemies/Enemy_Test`다. 명령 목록은 `/help`로 확인한다.
 
 ### 채팅·목표판과 테스트 명령
 
@@ -55,13 +55,10 @@
 | --- | --- |
 | `/help` | 현재 등록된 명령과 인자 확인 |
 | `/map 씬이름` | 빌드에 등록된 씬으로 이동. 예: `/map MovementAbilityPlayground` |
-| `/spawn`, `/spawn 5` | 생략하면 1마리, 수량을 붙이면 해당 수만큼 테스트 적 소환. 빈 공간이 부족하면 실제 소환 수를 알림. 웨이브 집계 제외 |
+| `/spawn`, `/spawn 5` | 생략하면 1마리, 수량을 붙이면 해당 수만큼 테스트 적 소환. 빈 공간이 부족하면 실제 소환 수를 알림 |
 | `/poses sight`, `/poses noise`, `/poses shot 2`, `/poses stone`, `/poses` | 조용한 자세(앉기·먹기·웅크리기·엎드리기)마다 좀비를 하나씩 앞에 반원으로 소환하고 2.5초 뒤 깨운다: 눈(플레이어를 보고 있음)·큰 소리 두 번·1 피해 총알(번호를 주면 그 하나만, 아니면 첫 하나가 나머지를 부름)·뒤에 떨어진 돌(가장 가까운 하나가 수색)·깨우지 않음. 모두 제자리에서 일어선 다음에 움직여야 한다. 자세는 호스트 화면만 정해진다. `runner` 같은 종류를 붙일 수 있다 |
 | `/dummy`, `/dummy 3`, `/dummy clear` | 네트워크 없이 멀티 구조를 시험할 더미 플레이어 소환·제거 |
 | `/ammo` | 보유한 모든 총기의 탄창을 채우고 기본 예비탄까지 보충. 기본보다 많은 예비탄은 유지 |
-| `/wave start` | 대기 중인 웨이브 시작 |
-| `/wave stop`, `/wave resume` | 웨이브 일시정지 / 재개 |
-| `/wave abort`, `/wave status` | 웨이브 종료 / 상태 확인 |
 | `/stats`, `/heal`, `/revive` | 플레이어 상태 확인 / HP 회복 / 사망 복구·실드 초기화 |
 | `/death`, `/death wipe`, `/death exploder short` | 죽지 않고 데스 스크린만 미리 보기(DeathScreen.csv `previewSeconds`). 좀비 종류·`fall`·`bleed`·`friend`로 이유를, `wipe`로 전멸을, `short`·`full`로 길이를 고른다. 설정이 끔이어도 보인다 ([DeathScreen.md](../Features/DeathScreen.md)) |
 | `/hurt 20`, `/shield 50`, `/maxhp 200` | 피격·실드·최대 HP와 HUD 확인 |
@@ -91,7 +88,7 @@
 | 주먹 콤보(리포스트·평캔 돌려 치기·던지고 돌진·박자 연타) | [Combos.csv](../../Assets/_Project/Data/Resources/Tables/Melee/Combos.csv) |
 | 밀치기·돌진 밀치기·슬라이딩 수치 | `Player.csv`의 `Ability` 행 |
 | 권총 근접 자세(존 윅 자세): 적이 가까이 오거나 총구가 막히면 권총을 가슴 쪽으로 당겨 눕혀 쥐고 그대로 쏘는 거리·각도·빠르기, 켜고 끄기, 뺄 권총 | [CloseHold.csv](../../Assets/_Project/Data/Resources/Tables/Weapons/CloseHold.csv) |
-| 쏘아 넘기는 낮은 엄폐물(벽 규칙이 high ready로 들지 않음)인 맵 꾸미기 종류 | [ShootOverCover.csv](../../Assets/_Project/Data/Resources/Tables/Weapons/ShootOverCover.csv)(바꾸면 장을 다시 짓기. 서포트 바리케이드는 코드가 직접 표시) |
+| 쏘아 넘기는 낮은 엄폐물(벽 규칙이 high ready로 들지 않음)인 맵 꾸미기 종류 | ShootOverCover.csv(바꾸면 장을 다시 짓기. 서포트 바리케이드는 코드가 직접 표시) |
 | 총 휘두르기·발차기 동작 | 블렌더 작업실 [ArtSource/Shove](../../ArtSource/Shove/START_HERE.md)(`START_SHOVE_ANIMATION.cmd`, 열면 바로 손볼 수 있게 준비됨)에서 손보고 `Ctrl+S`(바뀐 동작만 보낸다) |
 | 적 체력·공격·체간·이동 속도 | [Enemies.csv](../../Assets/_Project/Data/Resources/Tables/Enemies/Enemies.csv) |
 | 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../../Assets/_Project/Data/Resources/Enemies)의 `MeleeCombatTarget` |
@@ -106,7 +103,7 @@
 1. [무기 데이터 폴더](../../Assets/_Project/Data/Guns/Weapons)에서 기존 asset을 복제하거나 **Create → ENFILADE → Combat → Weapon Data**를 선택한다. `Category`는 **Ranged**로 둔다.
 2. [Weapons.csv](../../Assets/_Project/Data/Resources/Tables/Weapons/Weapons.csv)에 asset과 같은 이름의 행을 추가하고 `displayName`, `fireMode`, `damage`, `roundsPerMinute`, `magazineSize`를 적는다.
 3. `initialReserveAmmo`, `reloadDuration`, `emptyReloadDuration`을 조절한다. RPM 600은 초당 10발이며 시간 단위는 초다. 몸의 손이 잡을 위치(`rightGrip*`, `leftGrip*`, `holdOffset`)도 모델에 맞춘다.
-4. 현재 CombatFoundation에서는 **PlayerWeaponSlots의 Slot 1 또는 Slot 2**에 할당한다. Starting Slot은 0이면 해제, 1~4이면 해당 슬롯으로 시작한다.
+4. **PlayerWeaponSlots의 Slot 1 또는 Slot 2**에 할당한다. Starting Slot은 0이면 해제, 1~4이면 해당 슬롯으로 시작한다.
 5. 모델을 바꾸면 `WeaponController`의 Weapon Root / Muzzle Point를 확인한다. 실제 총구의 로컬 **+Z**가 발사 방향이며 Sight Height는 모델별로 조절한다.
 6. 단발·점사·연사, 장전 취소, 슬롯 전환 후 탄약 보존, 벽 앞 사격 차단을 확인한다.
 

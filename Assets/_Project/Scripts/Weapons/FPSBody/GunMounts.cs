@@ -67,9 +67,6 @@ public static class GunMounts
                 if (string.Equals(fit, part, StringComparison.OrdinalIgnoreCase)) return true;
             return false;
         }
-
-        /// <summary>A point of the socket's own frame (z along it) in the gun's space.</summary>
-        public Vector3 At(float along) => Position + Rotation * new Vector3(0f, 0f, along);
     }
 
     /// <summary>One part, whatever gun wears it.</summary>

@@ -59,7 +59,7 @@
 
 | 변경할 내용 | 시작할 파일·설정 |
 | --- | --- |
-| 적·웨이브 공유 (호스트가 진행) | [EnemyNetwork](Sync/EnemyNetwork.cs), [EnemyHitMessage](Sync/EnemyHitMessage.cs), [WaveSync](Sync/WaveSync.cs) |
+| 적 공유 (호스트가 진행) | [EnemyNetwork](Sync/EnemyNetwork.cs), [EnemyHitMessage](Sync/EnemyHitMessage.cs) |
 | 친구의 무기·사격·주먹 표시 | [PlayerNetworkCombat](Sync/PlayerNetworkCombat.cs) |
 | 남의 총알이 쏜 사람의 길대로 (맞은 점은 몸의 뼈 기준, 관통·도탄 구간, 들고 있는 칸·총) | [ShotPath](Sync/ShotPath.cs), `WeaponController.ShowShot` |
 | 플레이어·좀비 NetworkTransform (위치 half float + 비신뢰 델타, 좀비는 Y각만 half float, 플레이어 회전은 PlayerPose로; 0.9.270) | `Prefabs/Resources/Characters/Player.prefab`, `Prefabs/Resources/Enemies/Enemy_Test.prefab` |

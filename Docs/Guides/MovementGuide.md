@@ -2,7 +2,7 @@
 
 [프로젝트 안내](../../README.md) · [전투 안내](CombatFoundationGuide.md) · [플레이어 몸](PlayerBodyGuide.md) · [이동 코드 구조](../../Assets/_Project/Scripts/Player/Movement/README.md)
 
-현재 조작은 [Player.inputactions](../../Assets/_Project/Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 [Player.csv](../../Assets/_Project/Data/Resources/Tables/Player/Player.csv)의 기본값이며, 표를 고치면 바로 바뀝니다. 기능을 시험할 때는 [CombatFoundation](../../Assets/_Project/Scenes/Development/CombatFoundation.unity) 또는 [MovementAbilityPlayground](../../Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity)를 사용합니다.
+현재 조작은 [Player.inputactions](../../Assets/_Project/Input/Player.inputactions)를 기준으로 합니다. 아래 수치는 [Player.csv](../../Assets/_Project/Data/Resources/Tables/Player/Player.csv)의 기본값이며, 표를 고치면 바로 바뀝니다. 기능을 시험할 때는 CombatFoundation 또는 MovementAbilityPlayground를 사용합니다.
 
 ## 기본 조작
 
@@ -219,7 +219,7 @@ Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../..
 - **착지 슬라이드**: Ctrl을 누른 채 빠르게 착지해 슬라이드가 되면 세게 착지의 감속이 없습니다.
 - **구르기**: 세게·크게 착지하기 전 `rollInputWindow`(0.5초) 안에 Ctrl을 누르면 구릅니다. 피해는 없습니다. 0.9.288부터 구르기 클립은 제 빠르기로 틀고 몸은 그 클립이 땅 위로 가는 그대로 갑니다(`Ability.rollTravel`·`rollRunTravel`, 다이브 구르기와 같은 방식): 전력질주(`Ability.rollRunSpeed` 4.4m/s 이상)면 구르고 달려 나가고(약 5m), 그보다 느리면 구르고 일어섭니다(약 3.4m). 그 전에는 착지 속도(최소 4m/s)로 1초 동안 가며 클립을 그 1초에 맞춰 틀어, 일어서는 구르기가 1.5배 빨랐습니다(사용자 11-21: "착지할 때 dive roll 모션이 존나 빨라"). 앞이 막혔거나 천장이 낮으면 구르지 못합니다. 수평 속도가 `rollLandSpeed`(2m/s)보다 느리거나 S를 누르고 있으면 구르지 않고 `rollLandTime`(0.6초) 동안 멈춰 제자리에 착지합니다. 피해가 없는 것은 같습니다. Beatrun의 기준(200단위/초, 약 4.9m/s)은 걷기 속도와 같아서 걷다가 떨어지면 늘 제자리 착지였고, 걸어도 구르도록 걷기 출발 속도(3.6m/s)보다 낮췄습니다(2026-11-06 사용자 요청).
 - **넉백 훅**: `PlayerMovement.KnockBack(velocity)`는 큰 적의 일격용이며 위쪽 성분을 넣어 씁니다. 날아가는 동안 조작이 안 되고, 착지하면 다치지 않았어도 맞은 쪽을 보고 등으로 쓰러졌다 일어납니다. 낙하 피해는 평소 규칙대로만 받습니다. 땅에서 위로 띄우지 않는 넉백은 그 자리에서 쓰러집니다.
-- **기준은 높이로 적는다**: 세게 착지의 기준은 속도가 아니라 높이(`Ability.hardLandingHeight`)입니다. 맵을 짓는 단위가 높이이기 때문입니다. 1장 아파트 한 층이 3.0m이고(`CampaignMaps.Apartment`의 `Storey`), 한 층을 내려서는 것은 세게 착지가 아니어야 해서 0.5m 높게 3.5m로 잡았습니다. 2026-11-18 전에는 12m/s(= 3.0m)라 한 층이 딱 세게 착지였습니다.
+- **기준은 높이로 적는다**: 세게 착지의 기준은 속도가 아니라 높이(`Ability.hardLandingHeight`)입니다. 맵을 짓는 단위가 높이이기 때문입니다. 건물 한 층이 3.0m이고, 한 층을 내려서는 것은 세게 착지가 아니어야 해서 0.5m 높게 3.5m로 잡았습니다. 2026-11-18 전에는 12m/s(= 3.0m)라 한 층이 딱 세게 착지였습니다.
 - **발이 닿는 높이로 잰다**: 공중에서 Ctrl로 다리를 접으면 캡슐 바닥이 0.85m 올라가 그만큼 더 떨어진 뒤에야 땅에 닿습니다. 착지의 세기와 낙하 피해는 접지 않은 발이 닿았을 순간의 속도로 잽니다(`MovementLanding.FeetImpact`). 전에는 접은 만큼 높은 데서 떨어진 것으로 쳤습니다.
 - **조용한 착지(사일런트 드랍)**: 앉은 채로 걸어 내려서거나 공중에서 Ctrl을 누른 채 내려서면, 세게 착지가 아닌 한 조용한 착지입니다(`LandSneak`, 좀비가 듣지 못함). 서서 내려서면 전처럼 12m까지 들립니다. 어떤 착지가 어떤 소리인지는 [PlayerMovementAudio](../../Assets/_Project/Scripts/Player/Audio/PlayerMovementAudio.cs)의 `LandingCue` 한 곳이 정합니다. 콘솔 `/drop 3`은 그 높이의 착지가 무엇인지(발 속도, 단계, 서서·앉아서의 소리와 소음 반경) 알려 주고, 실제로 한 착지는 `Logs/landings.txt`에 한 줄씩 적힙니다.
 
@@ -248,7 +248,7 @@ Esc 메뉴 **화면 흔들림**이 곱해집니다.
 
 ## 사다리·집라인
 
-Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../../Assets/_Project/Data/Resources/Tables/Audio/SoundCues.csv)의 `Ladder*`·`Zipline*` 큐입니다. 시험장은 [MovementAbilityPlayground](../../Assets/_Project/Scenes/Development/MovementAbilityPlayground.unity)의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프)입니다.
+Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조작은 위 [파쿠르와 낙하](#파쿠르와-낙하) 표에 있습니다. 수치는 `Player.csv`의 `Ability.ladder*`·`Ability.zipline*` 행, 클립은 `Body` 행, 소리는 `FixtureAudio` 행과 [SoundCues.csv](../../Assets/_Project/Data/Resources/Tables/Audio/SoundCues.csv)의 `Ladder*`·`Zipline*` 큐입니다. 시험장은 MovementAbilityPlayground의 `Ladder`(`Roll drop platform` 앞면), `Zipline`(그 플랫폼 위에서 점프)입니다.
 
 사다리·집라인은 파쿠르 상태라 그동안 총과 주먹을 쓸 수 없습니다.
 
@@ -258,7 +258,7 @@ Beatrun의 `br_ladder`·`br_zipline`을 옮긴 월드 오브젝트입니다. 조
 
 | 넣을 것 | 방법 |
 | --- | --- |
-| 사다리 | 빈 오브젝트에 [Ladder](../../Assets/_Project/Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 오르는 바닥(지붕·발판)의 높이로, 난간 끝이 그 바닥과 같게 둔다(발은 꼭대기 1.875m 아래까지 오르고 넘어가기가 나머지를 올려 준다. 지붕 위로 솟은 난간은 필요 없다). 맵 빌더(CampaignMaps·HubBuilder)는 발치와 방향만 적고 높이는 지을 때 [LadderFit](../../Assets/_Project/Editor/Maps/LadderFit.cs)이 잰다: 가로대 면에서 0.6m 안쪽(넘어가기가 디딜 바닥을 찾는 자리, `ladderExitReach - ladderStandOff`)에서 발치 위의 첫 바닥, 그 위에 설 자리가 있어야 한다. 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다. 설 자리가 없으면 LadderFit이 무엇이 막는지 이름을 적는다(2026-11-15). 바닥 구멍(해치)으로 위층에 오르는 사다리는 가로대를 구멍을 가로질러 세우고 오르는 사람이 구멍 안에서 바닥을 따라 보게 둔다: 벽을 보고 오르면 넘어가기가 벽 속으로 간다(1장 아파트 발코니 비상 사다리 셋, 11-14까지 꼭대기에서 내릴 수 없었다). 바닥의 난간이 가로대 바로 안쪽에 서면 그 자리를 터 준다(2장 고가2 남쪽 난간) |
+| 사다리 | 빈 오브젝트에 [Ladder](../../Assets/_Project/Scripts/World/Ladder.cs)를 붙여 사다리 발치, 가로대 면에 놓는다. 로컬 Z는 오르는 사람 쪽(벽 바깥)이다. `height`는 오르는 바닥(지붕·발판)의 높이로, 난간 끝이 그 바닥과 같게 둔다(발은 꼭대기 1.875m 아래까지 오르고 넘어가기가 나머지를 올려 준다. 지붕 위로 솟은 난간은 필요 없다). 맵 빌더(CampaignMaps·HubBuilder)는 발치와 방향만 적고 높이는 지을 때 LadderFit이 잰다: 가로대 면에서 0.6m 안쪽(넘어가기가 디딜 바닥을 찾는 자리, `ladderExitReach - ladderStandOff`)에서 발치 위의 첫 바닥, 그 위에 설 자리가 있어야 한다. 가로대 면을 벽에서 0.15m쯤 띄운다. 콜라이더는 없어도 된다. 설 자리가 없으면 LadderFit이 무엇이 막는지 이름을 적는다(2026-11-15). 바닥 구멍(해치)으로 위층에 오르는 사다리는 가로대를 구멍을 가로질러 세우고 오르는 사람이 구멍 안에서 바닥을 따라 보게 둔다: 벽을 보고 오르면 넘어가기가 벽 속으로 간다(1장 아파트 발코니 비상 사다리 셋, 11-14까지 꼭대기에서 내릴 수 없었다). 바닥의 난간이 가로대 바로 안쪽에 서면 그 자리를 터 준다(2장 고가2 남쪽 난간) |
 | 집라인 | 빈 오브젝트에 [Zipline](../../Assets/_Project/Scripts/World/Zipline.cs)을 붙여 줄 시작점에 놓고 `end`에 끝점을 적는다. 발이 줄 1.875m 아래에 매달리므로 끝점은 땅에서 그보다 높게 둔다. 놓을 때 빠른 속도로 날아가니 끝점 앞에 공간을 둔다. 양방향은 `twoWay` |
 
 사다리와 집라인은 자식에 렌더러가 없으면 Play 때 `barMaterial`로 막대를 그립니다([FixtureBars](../../Assets/_Project/Scripts/World/FixtureBars.cs)). 모델을 자식으로 넣으면 막대는 생기지 않습니다. 씬 뷰에서는 기즈모(사다리 노랑, 줄 하늘색)로 보입니다.

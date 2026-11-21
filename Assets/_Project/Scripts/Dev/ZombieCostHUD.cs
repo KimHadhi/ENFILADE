@@ -42,7 +42,6 @@ public sealed class ZombieCostHUD : MonoBehaviour
     private readonly StringBuilder text = new StringBuilder(256);
     private float sampleLeft = SampleTime, elapsed, worstInSample, worstFrame, worstScripts;
     private int framesInSample, frames, zombiesMost;
-    private double scriptsAll;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => running = null;
@@ -114,7 +113,6 @@ public sealed class ZombieCostHUD : MonoBehaviour
         double scripts = mind + sight + chase + target + path + spot + yield + combat + stance + body + network;
         for (int i = 0; i < ZombieCost.Parts; i++) total[i] += milliseconds[i];
         for (int i = 0; i < ZombieCost.Tallies; i++) countedAll[i] += counted[i];
-        scriptsAll += scripts;
         worstScripts = Mathf.Max(worstScripts, (float)(scripts / count));
         worstFrame = Mathf.Max(worstFrame, worstInSample);
 

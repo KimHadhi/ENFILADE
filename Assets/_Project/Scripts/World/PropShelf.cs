@@ -32,7 +32,6 @@ public sealed class PropShelf : ScriptableObject
         return loaded;
     }
 
-    public GameObject FuelCan => fuelCan;
     public IReadOnlyList<GameObject> Items => items;
 
     /// <summary>An item by its name (any case, a part of it is enough when only one matches) or its number in the list (from 1).</summary>

@@ -105,15 +105,8 @@ public sealed partial class HubLobby
 
     // ---- The map table: a card per chapter lying on its top ----
 
-    // The maps there are to set off to, the campaign's chapters first in their order, then any other map.
-    private static List<string> Chapters()
-    {
-        var list = new List<string>();
-        foreach (string id in GameTables.RowIds("CampaignChapters"))
-            if (id != HubFlow.SceneName && Application.CanStreamedLevelBeLoaded(id) && !list.Contains(id)) list.Add(id);
-        foreach (string id in MapTable.Playable()) if (!list.Contains(id)) list.Add(id);
-        return list;
-    }
+    // The maps there are to set off to (Tables/Maps order).
+    private static List<string> Chapters() => new List<string>(MapTable.Playable());
 
     private void BuildTable(HubStation table)
     {

@@ -13,9 +13,6 @@ public static class StealthScore
     /// <summary>Points on top of an execution's for a takedown of one that never knew they were there.</summary>
     public static int Takedown => Number("takedown", 50);
 
-    /// <summary>Points to every player for a quiet stretch got through unseen.</summary>
-    public static int Unseen => Number("unseen", 300);
-
     /// <summary>
     /// Points for killing one that made someone out before it could call the others (ZombieMind's tell: kill the witness
     /// and nobody else is told).</summary>

@@ -16,21 +16,6 @@ public sealed partial class ZombieMind
     private float roundWait;
     private bool roundWalking;
 
-    /// <summary>
-    /// Calms it on a round (the map gimmick card "아파트를 암살 놀이터로": "복도엔 돌아다니는 놈"): it walks from stop to
-    /// stop at a slow walk, stands at each and looks round, and round again, its eyes where it walks. Anything that stirs
-    /// it takes over as for any calm zombie; calm again, it walks on to the next stop. Its back is to whoever follows.
-    /// </summary>
-    public void Patrol(Vector3[] stops, int start)
-    {
-        if (IsCopy || stops == null || stops.Length < 2) return;
-        Calm();
-        round = stops;
-        roundAt = ((start % stops.Length) + stops.Length) % stops.Length;
-        roundWait = Time.time + Random.Range(.5f, roundPause);
-        roundWalking = false;
-    }
-
     // Calm on a round, it walks it; true while it does (it doesn't look round on the spot meanwhile).
     private bool Round()
     {

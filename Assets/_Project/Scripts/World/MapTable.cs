@@ -7,10 +7,8 @@ using UnityEngine;
 /// there by hand); a "picture" column can name another image in that folder.
 /// The hub (HubFlow) has its row for its name and picture, but it is no map to choose and no game to count: Playable and
 /// All leave it out, so the title screen's picker, the records, class growth and field pickups never see it.
-/// A row whose "list" cell is 0 is a testing room (the user, 2026-11-13: "전투 시험장이랑 이동 시험장은 이제 필요 없으니
-/// 콘솔로만 접근 가능한 테스팅 룸으로. 메인 메뉴에서 안 떴으면 좋겠어."): still a map in the build, with its name and
-/// picture for the loading screen, but never offered where a map is picked; the console's /testroom goes there
-/// (TestRooms). An empty cell offers it, so a map a mod adds with no such column shows as before.
+/// A row whose "list" cell is 0 is a map in the build, with its name and picture for the loading screen, never offered
+/// where a map is picked. An empty cell offers it, so a map a mod adds with no such column shows as before.
 /// </summary>
 public static class MapTable
 {
@@ -25,15 +23,6 @@ public static class MapTable
     /// table is not offered.</summary>
     public static bool IsListed(string id)
         => !string.IsNullOrEmpty(id) && GameTables.TryGetRow(Table, id, out var row) && !Hidden(row);
-
-    /// <summary>A testing room: a map of the table with list 0 (not the hub), reached only by the console's /testroom.
-    /// A scene the table doesn't name is none.</summary>
-    public static bool IsTestingRoom(string id)
-        => !string.IsNullOrEmpty(id) && id != HubFlow.SceneName && GameTables.TryGetRow(Table, id, out var row) && Hidden(row);
-
-    /// <summary>The testing rooms in the build, in the table's order (TestRooms).</summary>
-    public static string[] TestingRooms() => GameTables.RowIds(Table)
-        .Where(id => IsTestingRoom(id) && Application.CanStreamedLevelBeLoaded(id)).ToArray();
 
     private static bool Hidden(System.Collections.Generic.IReadOnlyDictionary<string, string> row)
         => row.TryGetValue("list", out string cell) && cell != null && cell.Trim() == "0";

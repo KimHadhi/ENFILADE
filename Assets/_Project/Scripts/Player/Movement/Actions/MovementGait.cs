@@ -94,8 +94,6 @@ public sealed class MovementGait
     internal float JogAhead => rows[Jog, 0];
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go.</summary>
     internal float SprintAhead => rows[Sprint, 0];
-    /// <summary>The crouched walk's speed straight ahead (m/s).</summary>
-    internal float CrouchAhead => rows[Crouch, 0];
 
     /// <summary>The speed for this input standing (m/s): the gait now, the way the input points.</summary>
     internal float SpeedFor(Vector2 input)

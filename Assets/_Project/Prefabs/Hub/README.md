@@ -38,4 +38,3 @@
 
 ## 예전 허브
 
-코드로 짓고 Military Training 키트로 꾸민 예전 허브는 `Scenes/Hub/HubOld.unity`다. 빌드에는 없고 보기만 한다. `ENFILADE → 맵 → 옛 허브 다시 짓기 (참고용)`([HubBuilder](../../Editor/Maps/HubBuilder.cs))가 그 씬만 다시 짓는다.

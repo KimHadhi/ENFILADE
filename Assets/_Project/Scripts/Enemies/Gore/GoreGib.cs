@@ -20,7 +20,7 @@ internal sealed class GoreGib : MonoBehaviour
     private Mesh owned;
     private Rigidbody rigid;
     private Collider[] shapes;
-    private bool trail, splatted;
+    private bool trail;
     private float age, lie, sinkLeft;
 
     public bool Sinking => sinkLeft > 0f || age >= lie;
@@ -35,7 +35,6 @@ internal sealed class GoreGib : MonoBehaviour
         if (shapes == null) shapes = GetComponents<Collider>();
         lie = gore != null ? gore.GibLie : 20f;
         age = sinkLeft = 0f;
-        splatted = false;
         if (rigid != null) rigid.isKinematic = false;
         foreach (var shape in shapes)
         {
@@ -68,15 +67,6 @@ internal sealed class GoreGib : MonoBehaviour
         if (sinkLeft > 0f) return;
         if (owned == null && owner != null) owner.Gibs.Release(this);
         else Destroy(gameObject);
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (splatted || owner == null || collision.relativeVelocity.sqrMagnitude < 2f || collision.contactCount == 0) return;
-        if (collision.collider.GetComponentInParent<IDamageReceiver>() != null) return;
-        splatted = true;
-        var contact = collision.GetContact(0);
-        owner.Fx.Splat(contact.point, contact.normal, owned != null ? .45f : .3f);
     }
 
     private void OnDestroy()

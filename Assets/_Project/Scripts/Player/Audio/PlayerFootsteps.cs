@@ -53,9 +53,6 @@ public sealed class PlayerFootsteps : MonoBehaviour
     /// <summary>A foot came down (for camera step punches and the like).</summary>
     public event Action<Step> Stepped;
 
-    /// <summary>The surface of the last step, for the debug HUD.</summary>
-    public string LastSurface { get; private set; } = Surfaces.Default;
-
     private struct Foot
     {
         public bool Lifted, Descending, Supported;
@@ -167,7 +164,6 @@ public sealed class PlayerFootsteps : MonoBehaviour
         // A dodge made from a crouch is a crouched step too (IsCrouchStance): its burst of speed is no run.
         string cue = player.IsCrouchStance ? "StepSneak" : speed < runSpeed ? "StepWalk" : "StepRun";
         Vector3 point = reading.GroundPoint;
-        LastSurface = surface;
         Sounds().OrNull()?.Play(cue, point, surface);
         Stepped?.Invoke(new Step(isLeft, point, surface, speed));
     }

@@ -73,8 +73,6 @@ public sealed class SwingTimeline
     public bool Queued { get; private set; }
     /// <summary>A swing is under way and nothing else may begin yet: its clip has not reached Next.</summary>
     public bool Committed => Now == Phase.Swing && ClipTime < Marks.Next;
-    /// <summary>The button is doing something: winding up, charging or committed to a swing.</summary>
-    public bool Busy => Now == Phase.Windup || Now == Phase.Charging || Committed;
 
     private float phaseTime, spanFrom, spanTo;
     private bool spanned;

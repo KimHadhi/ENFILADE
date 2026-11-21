@@ -11,19 +11,6 @@ public sealed partial class ZombieMind
     public float CallShare => !Calling ? 0f : callTell <= 0f ? 1f
         : Mathf.Clamp01(IsCopy ? (Time.time - shownCallSince) / callTell : 1f - (callAt - Time.time) / callTell);
 
-    /// <summary>
-    /// On the host or alone: some zombie that started calm is awake and after someone now (a local alarm, its own and
-    /// those its call woke; a horde's don't count). A campaign's quiet stretch survives it unless it lasts (CampaignRun).
-    /// </summary>
-    public static bool AlarmUp
-    {
-        get
-        {
-            foreach (var mind in minds) if (mind != null && !mind.horde && mind.Thinks && mind.IsAwake) return true;
-            return false;
-        }
-    }
-
     // Drawing breath, alive or not: the blow that kills it during its tell still counts (Witnessed), as its copies are told.
     private bool DrawsBreath => IsCopy ? shownCalling : calling;
 

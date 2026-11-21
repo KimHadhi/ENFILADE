@@ -123,9 +123,6 @@ public static class ZombieEffects
         if (player.TryGetComponent(out NetworkObject known) && known.IsSpawned) Send(KindUnseen, known.NetworkObjectId, default, seconds, 0f, 0f);
     }
 
-    /// <summary>No zombie's eyes make this player out now.</summary>
-    public static bool IsUnseen(PlayerMovement player) => ZombieMind.IsUnseen(player);
-
     /// <summary>
     /// Blinding gas at <paramref name="at"/>, <paramref name="radius"/> metres round, for <paramref name="seconds"/>:
     /// zombies in it lose whoever they were after and make nobody out while they stay in it, cough and stagger (each
@@ -138,9 +135,6 @@ public static class ZombieEffects
         ZombieMind.AddGas(at, radius, seconds, walkSlow);
         Send(KindBlind, 0UL, at, radius, seconds, walkSlow);
     }
-
-    /// <summary>This spot is in blinding gas now.</summary>
-    public static bool InGas(Vector3 point) => ZombieMind.AnyGas && ZombieMind.InGas(point, out _);
 
     // ---- The word between PCs --------------------------------------------------------------------------------
     // Neither is about one zombie, so they ride a named message, not a zombie's own RPC. A guest tells the host; the

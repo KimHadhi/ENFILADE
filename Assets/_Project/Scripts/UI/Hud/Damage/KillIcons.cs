@@ -67,14 +67,6 @@ public static class KillIcons
         return null;
     }
 
-    /// <summary>The row a broken posture shows, or null.</summary>
-    public static Row ForBreak()
-    {
-        foreach (var row in All())
-            if (row.On && row.For == Event.Break) return row;
-        return null;
-    }
-
     /// <summary>Of two rows (either may be null), the one that matters more; the first on a tie.</summary>
     public static Row Better(Row first, Row second)
         => first == null ? second : second == null ? first : second.Priority > first.Priority ? second : first;

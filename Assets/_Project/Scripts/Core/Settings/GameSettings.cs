@@ -41,7 +41,7 @@ public enum SettingsGroup { Sound, Controls, Screen, Camera, Hud, Crosshair, Cha
 public sealed class GameSettings
 {
     public float masterVolume = 1f, combatVolume = 1f, movementVolume = 1f, voiceVolume = 1f, uiVolume = 1f;
-    [Tooltip("The campaign's songs (CampaignMusic) and each map's background sound (MapAmbience).")]
+    [Tooltip("The campaign's songs (ModeMusic) and each map's background sound (MapAmbience).")]
     public float musicVolume = .8f, ambienceVolume = 1f;
     [Tooltip("Multiplies PlayerLook's base sensitivity.")]
     public float mouseSensitivity = 1f;

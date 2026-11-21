@@ -29,7 +29,7 @@ public sealed partial class KillFlairFx
 
     private readonly RectTransform row;
     private readonly KillRowPlate plate;
-    private readonly Image weapon, accent;
+    private readonly Image weapon;
     private readonly TMP_Text victim;
     private readonly RawImage mark;
     private readonly float seed = Random.value * 50f;
@@ -76,7 +76,6 @@ public sealed partial class KillFlairFx
         this.weapon = weapon;
         this.victim = victim;
         this.mark = mark;
-        this.accent = accent;
     }
 
     /// <summary>A new kill on this row: what it plays from now (nothing for none). The row's layout is already set.</summary>

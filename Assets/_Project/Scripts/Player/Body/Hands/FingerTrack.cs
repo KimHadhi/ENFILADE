@@ -36,9 +36,6 @@ public sealed class FingerTrack
     // A table saved while playing (a clip sent from Blender): read again at the next ask.
     private static void Forget() => tracks.Clear();
 
-    /// <summary>The track's last key (s at the clip's own speed).</summary>
-    public float Length => times.Count > 0 ? times[times.Count - 1] : 0f;
-
     /// <summary>Whether every key has the left hand (else that hand plays as the clip has it).</summary>
     public bool HasLeft => times.Count > 0 && left.Count == times.Count;
 

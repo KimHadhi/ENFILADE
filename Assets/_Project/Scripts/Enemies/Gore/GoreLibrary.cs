@@ -2,15 +2,13 @@ using UnityEngine;
 
 /// <summary>
 /// The art zombie gore uses (ZombieGore), at Resources/Combat/GoreLibrary: the RVFX Blood Effects Pack's gut chunks (only
-/// their mesh and material are taken; the prefabs' own scripts never run) and its projected blood decal materials.
+/// their mesh and material are taken; the prefabs' own scripts never run).
 /// </summary>
 [CreateAssetMenu(fileName = "GoreLibrary", menuName = "ENFILADE/Combat/Gore Library")]
 public sealed class GoreLibrary : ScriptableObject
 {
     [Tooltip("Gut chunks: thrown from a burst head, and laid on a stump as its torn face.")]
     public GameObject[] guts = new GameObject[0];
-    [Tooltip("Projected blood decal materials (URP Decal): splats on walls and floors, and pools under a stump.")]
-    public Material[] splats = new Material[0];
 
     private static GoreLibrary instance;
     private static bool looked;
@@ -40,11 +38,5 @@ public sealed class GoreLibrary : ScriptableObject
         mesh = filter != null ? filter.sharedMesh : null;
         material = renderer != null ? renderer.sharedMaterial : null;
         return mesh != null && material != null;
-    }
-
-    public Material Splat(int index)
-    {
-        if (splats == null || splats.Length == 0) return null;
-        return splats[Mathf.Abs(index) % splats.Length];
     }
 }

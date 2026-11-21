@@ -12,7 +12,7 @@
 /// </summary>
 internal sealed class FitBones
 {
-    private readonly int[] parent, bodyAbove;
+    private readonly int[] bodyAbove;
     private readonly bool[] body;
     private readonly bool[][] rows;
 
@@ -20,8 +20,7 @@ internal sealed class FitBones
     /// <param name="body">Whether each is one of the body's own (humanoid) bones.</param>
     public FitBones(int[] parent, bool[] body)
     {
-        this.parent = parent;
-        this.body = body;
+                this.body = body;
         rows = new bool[parent.Length][];
         bodyAbove = new int[parent.Length];
         for (int bone = 0; bone < parent.Length; bone++)

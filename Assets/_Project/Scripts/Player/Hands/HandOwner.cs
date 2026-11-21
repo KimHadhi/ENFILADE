@@ -228,14 +228,6 @@ public sealed class HandOwner : MonoBehaviour
         return board.Holder(one)?.Use;
     }
 
-    /// <summary>This one hand is <paramref name="who"/>'s (the gun asks: is the right hand still mine?).</summary>
-    public bool Mine(HandSide one, Object who)
-    {
-        Turn();
-        var holder = board.Holder(one);
-        return holder != null && ReferenceEquals(holder.Who, who);
-    }
-
     /// <summary>Something that locks the hands stands (HandUses.csv locks): nothing else of the hands may start.</summary>
     public bool Locked
     {

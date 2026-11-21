@@ -64,8 +64,6 @@ public sealed partial class PlayerBody
     // How high the heels the body stands in are, as dressing left it (m at its size; 0 for flat shoes and bare feet).
     private float heelHeight;
 
-    /// <summary>How high the heels this body stands in are (m), measured as it was dressed; 0 for flat shoes and bare feet.</summary>
-    internal float HeelHeight => heelHeight;
     /// <summary>What the feet stand in, as the sounds name it (DrawnHeels.Footwear), or null for ordinary shoes.</summary>
     internal string Footwear => DrawnHeels.FootwearOf(heelHeight, heelsFrom);
 

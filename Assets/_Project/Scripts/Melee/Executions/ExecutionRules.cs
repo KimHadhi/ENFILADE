@@ -104,15 +104,6 @@ public static class ExecutionRules
         }
     }
 
-    /// <summary>The rule of that id, or null.</summary>
-    public static ExecutionRule Find(string id)
-    {
-        if (string.IsNullOrEmpty(id)) return null;
-        foreach (var rule in All)
-            if (string.Equals(rule.Id, id, StringComparison.OrdinalIgnoreCase)) return rule;
-        return null;
-    }
-
     /// <summary>The table's rule for this zombie and this place (Pick over All).</summary>
     public static ExecutionRule Pick(string state, bool unaware, bool broken, float bearing, float distance, bool lunge)
         => Pick(All, state, unaware, broken, bearing, distance, lunge);

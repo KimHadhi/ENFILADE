@@ -434,10 +434,6 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
         Empty(ref handsFull, fillers.Count > 0);
     }
 
-    /// <summary>The guns ride an x-ray belt (GimmickTray): nothing is held and the number keys do nothing until they are
-    /// taken back, then back to what was held. A fuel can still fits the empty hands; downed, the pistol comes out.</summary>
-    internal void HoldGunsAway(bool away) => Empty(ref gunsAway, away);
-
     // Hands emptied for one reason or more (a can, the guns away): what was held before the first goes back after the
     // last. Each reason is set every frame by its own owner, so one never undoes another's.
     private void Empty(ref bool reason, bool on)

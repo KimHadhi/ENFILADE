@@ -1,6 +1,6 @@
 # 소리 다시 세우기 (설계)
 
-[문서 목차](../README.md) · [소리 코드 폴더](../../Assets/_Project/Scripts/Audio/README.md) · [설정·유지보수 안내](../Guides/MaintenanceGuide.md) · [맵 기믹](MapGimmicks.md) · [좀비 엘리트](ZombieElites.md)
+[문서 목차](../README.md) · [소리 코드 폴더](../../Assets/_Project/Scripts/Audio/README.md) · [설정·유지보수 안내](../Guides/MaintenanceGuide.md) · 맵 기믹 · [좀비 엘리트](ZombieElites.md)
 
 게임의 소리를 두 갈래로 다시 세우는 설계다. 하나는 **코드가 계산해 만드는 소리를 소리 파일로 바꾸는 일**이고, 다른 하나는 **소리를 내는 일을 한 곳(Sonity)이 맡게 하는 일**이다. 2026-11-20에 썼다.
 
@@ -165,7 +165,6 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 | --- | --- | --- |
 | `FeelAudio.cs` | `HitMarker`: 부르는 곳이 없다. 맞힘 소리는 `HitConfirm/Body`가 낸다 | 합성은 0.9.237에 5.1과 함께 지웠다. 열거형 값은 저장된 데이터의 번호를 지키려고 남겼다 |
 | `S/Combat/Moments/MomentSound.cs` | `duel`: 부르는 곳이 없다 | 지운다 |
-| `S/Modes/Campaign/Gimmicks/GimmickSounds.cs` | `Whistle`: 이 소리를 쓰는 미끼가 없다 | 지운다. 맵은 큐를 번호로 저장하므로 순서(`GimmickSounds.Cue`)는 지키고 칸만 비운다 |
 | `S/Classes/CardFx.cs` | 건틀릿 `Blast` 길: 부르는 곳이 없다 | 지운다 |
 | `FeelAudio.cs` | `Draw`: 권총·중화기를 꺼낼 때의 일부러 넣은 무음 | 진짜 소리를 넣을 수 있다: **KINEMATION `TacticalShooterPack/SFX/General/S_DrawPistolWithHolster.WAV`, `S_Equip.WAV`** |
 
@@ -241,8 +240,6 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 
 | 소리 | 지금 | 언제 | 바꿀 것 |
 | --- | --- | --- | --- |
-| 사이렌 (`S/Modes/Campaign/CampaignGate.cs:81`) | 차 경보 두 음(960·760 Hz), 루프. **높음** | 1장 골목 셔터 단계 동안 | "two-tone siren loop", 낮게. 사용자가 넘어가자고 했다(4장 4번): 지금의 합성 소리 그대로 |
-| 견인차 (`S/Modes/Campaign/CampaignPushback.cs:109`) | 디젤 그르렁 + 1초마다 1.1 kHz 후진 삐, 루프. **높음**(삐) | 4장 여객기가 밀려갈 때 | 소스 둘로 나눈다: "airport tug diesel idle loop" + "truck reverse beeper loop"(낮게) |
 
 ### 5.8 맵 기믹 (18개)
 

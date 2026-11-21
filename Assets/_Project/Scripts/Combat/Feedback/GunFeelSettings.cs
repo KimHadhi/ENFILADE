@@ -239,9 +239,6 @@ public sealed class GunFeelSettings : ScriptableObject
     [Header("Blood")]
     public Color bloodColor = new Color(.72f, .03f, .03f, 1f);
     [Min(0)] public int bodyDroplets = 10, headDroplets = 18, killDroplets = 26;
-    [Min(1f)] public float bloodDecalSeconds = 9f;
-    [Min(1f), Tooltip("How long a bullet hole stays before it fades.")]
-    public float bulletHoleSeconds = 20f;
 
     [Header("Enemy hit reaction (gameplay)")]
     [Min(0f)] public float flinchPushBody = .12f;

@@ -4,6 +4,12 @@ using UnityEngine.AI;
 /// <summary>One-off combat testing enemies, independent from wave progress and cleanup.</summary>
 public static class ConsoleEnemySpawner
 {
+    /// <summary>The zombie the console makes, in the prefabs drawer (Prefabs/Resources).</summary>
+    public const string PrefabPath = "Enemies/Enemy_Test";
+
+    /// <summary>The zombie prefab /spawn and the pose test make, or null when the drawer has none.</summary>
+    public static EnemyHealth Prefab => Resources.Load<EnemyHealth>(PrefabPath);
+
     /// <summary>rank: given, every enemy spawned takes it (elite and named kills stand out in the kill feed, backlog 325);
     /// otherwise the table's. Calm: they stand facing away and must notice the player (ZombieMind), for stealth tests.</summary>
     public static string Spawn(PlayerMovement player, int count = 1, EnemyRank? rank = null, bool calm = false, ZombieKind? kind = null)
@@ -11,21 +17,15 @@ public static class ConsoleEnemySpawner
         if (player == null) return "대상 플레이어를 찾지 못했습니다.";
         if (count < 1) return "사용법: /spawn [수량] — 1 이상의 정수를 입력하세요.";
         if (GameSession.IsGuest) return "적은 호스트만 소환할 수 있습니다.";
-        EnemyHealth prefab = null;
-        foreach (var wave in Object.FindObjectsByType<WaveManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-        {
-            if (wave.gameObject.scene != player.gameObject.scene || wave.EnemyPrefab == null) continue;
-            if (prefab != null && prefab != wave.EnemyPrefab) return "적 종류가 여러 개입니다. 이 씬의 WaveManager에 같은 Enemy Prefab을 지정하세요.";
-            prefab = wave.EnemyPrefab;
-        }
-        if (prefab == null) return "소환할 적이 없습니다. 이 씬의 WaveManager에 Enemy Prefab을 연결하세요.";
+        var prefab = Prefab;
+        if (prefab == null) return "소환할 적이 없습니다: Prefabs/Resources/" + PrefabPath + ".prefab"; // dev-text
         int spawned = 0;
         while (spawned < count)
         {
             // Newly created colliders must occupy their positions before choosing the next spawn.
             Physics.SyncTransforms();
             if (!TrySpawn(player, prefab, out EnemyHealth enemy, out string error))
-                return spawned == 0 ? error : $"적 {spawned}/{count}마리를 소환했습니다. (웨이브 집계 제외) " + error;
+                return spawned == 0 ? error : $"적 {spawned}/{count}마리를 소환했습니다. " + error;
             if (rank.HasValue) enemy.SetRank(rank.Value);
             if (kind.HasValue && enemy.TryGetComponent(out ZombieType type)) type.Set(kind.Value);
             if (calm && enemy.TryGetComponent(out ZombieMind mind))

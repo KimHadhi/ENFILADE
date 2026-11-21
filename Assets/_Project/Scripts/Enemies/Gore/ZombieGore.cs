@@ -65,32 +65,20 @@ public sealed class ZombieGore : MonoBehaviour
     private float spurtSeconds = 1.1f;
     [SerializeField, Min(0f), Tooltip("Drops a stump pumps per second at the first beat.")]
     private float spurtRate = 220f;
-    [SerializeField, Min(0f), Tooltip("Size of the splat on the wall behind a burst head (m).")]
-    private float wallSplat = 1.3f;
-    [SerializeField, Min(0f), Tooltip("Size a pool under a stump spreads to (m).")]
-    private float poolSize = .9f;
     [SerializeField, Min(0f), Tooltip("How long a piece lies before it sinks (s).")]
     private float gibLie = 20f;
     [SerializeField, Min(.05f), Tooltip("How long a piece takes to sink (s).")]
     private float gibSink = 2f;
     [SerializeField, Min(1), Tooltip("Pieces allowed about at once; past it the oldest sinks.")]
     private int mostGibs = 40;
-    [SerializeField, Min(1), Tooltip("Blood decals allowed at once; past it the oldest is reused.")]
-    private int mostSplats = 32;
-    [SerializeField, Min(1f), Tooltip("How long a blood decal stays before it fades (s).")]
-    private float splatSeconds = 25f;
 
     internal GoreFx Fx { get; private set; }
     internal GoreGibs Gibs { get; private set; }
     internal int MostGibs => mostGibs;
-    internal int MostSplats => mostSplats;
     internal float GibLie => gibLie;
     internal float GibSink => gibSink;
     internal float SpurtSeconds => spurtSeconds;
     internal float SpurtRate => spurtRate;
-    internal float WallSplat => wallSplat;
-    internal float PoolSize => poolSize;
-    internal float SplatSeconds => splatSeconds;
 
     private readonly List<GoreBody> bodies = new List<GoreBody>();
     private readonly Dictionary<EnemyHealth, GoreBody> byEnemy = new Dictionary<EnemyHealth, GoreBody>();
@@ -301,18 +289,18 @@ public sealed class ZombieGore : MonoBehaviour
     /// </summary>
     internal static void BurstHeadAt(Vector3 center, Vector3 direction, Transform body, Component target, Transform stump)
     {
-        if (instance != null) instance.BurstHead(center, direction, body, target, stump);
+        if (instance != null) instance.BurstHead(center, direction, target, stump);
     }
 
     // The head bursts and is gone: blood and guts fly along the shot, the neck is left a stump that pumps. Its skin is not
     // thrown as chunks: an open shell of skin showed its missing inside (the user, 2026-11-09: "걍 터뜨리고 없애도").
     private void Burst(GoreBody body, Vector3 center, Vector3 direction, Component target)
-        => BurstHead(center, direction, body.Model.transform, target, body.Hide(BodyPart.Head));
+        => BurstHead(center, direction, target, body.Hide(BodyPart.Head));
 
-    private void BurstHead(Vector3 center, Vector3 direction, Transform body, Component target, Transform stump)
+    private void BurstHead(Vector3 center, Vector3 direction, Component target, Transform stump)
     {
         Fx.Wound(center, direction, target, true);
-        Fx.Burst(center, direction, body, burstSpeed, gutChunks);
+        Fx.Burst(center, direction, burstSpeed, gutChunks);
         if (stump != null) Fx.Stump(stump, BodyPart.Head);
         HeadBurst?.Invoke(center);
     }

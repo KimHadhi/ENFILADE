@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// The Assault's frag (Throwable.Frag; the user, 2026-11-12: "어썰트: 시원한 고폭 수류탄"). Where it bursts: the blast in
-/// the game's own drawn look (CanBlastEffect, the user's pick for the fuel can), stones and grit thrown up and out, CS:GO's
+/// the game's own drawn look (BlastEffect, the user's pick for the fuel can), stones and grit thrown up and out, CS:GO's
 /// HE detonation, the view shaken the more the nearer, and a bang that brings calm zombies to look. On the thrower's PC it
 /// hurts what it reaches (no wall between: Throwables.Covered), most at its heart: a zombie it kills near the heart
 /// (GrenadeRules fragGib) is torn apart, two limbs off while it still stands and the head burst by the last of it
@@ -59,7 +59,7 @@ public static class FragBlast
         // Its look: the Realistic Gunslinger pack's frag, or for the claymore its shrapnel burst, toned in
         // Tables/PackFx.csv (fragBurst, claymoreBurst); the game's own drawn blast where the pack's is off or missing.
         if (alone && !GrenadePackFx.Play(spread > -1f ? "claymoreBurst" : "fragBurst", at, Quaternion.LookRotation(way), radius))
-            CanBlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
+            BlastEffect.Play(at, spread > -1f ? radius * .55f : radius, 0f);
         FragChunk.Throw(at, Mathf.RoundToInt(Throwables.Rule("fragChunks", 12f)), way, spread);
         if (alone)
         {
@@ -74,11 +74,6 @@ public static class FragBlast
         // A locked door in reach is blown in (a map gimmick: GimmickLock), loud as any smashed door; an alarm car in reach
         // goes off, a spilled pump catches and a smoke detector sets its fire alarm ringing (GimmickAlarmCar,
         // GimmickFuelTrap, GimmickFireAlarm).
-        GimmickLock.Blast(at, radius, info.Damage * harder, source);
-        GimmickAlarmCar.Blast(at, radius);
-        GimmickFuelTrap.Blast(at, radius, thrower);
-        GimmickFireAlarm.Blast(at, radius);
-        GimmickFuelTruck.Blast(at, radius, thrower);
         FragAftermath.Begin(at, radius, info.Damage * harder, source, way, spread);
     }
 

@@ -190,7 +190,7 @@ public sealed class MomentFx : MonoBehaviour
             landed = true;
             // The shell goes off in the Realistic Gunslinger pack's cluster burst (PackFx brokenArrow); the old can blast
             // only where the pack's look is missing.
-            if (PackFx.Play("brokenArrow", at, Quaternion.identity) == null) CanBlastEffect.Play(at, Mathf.Max(1f, value), 0f);
+            if (PackFx.Play("brokenArrow", at, Quaternion.identity) == null) BlastEffect.Play(at, Mathf.Max(1f, value), 0f);
             GameAudio.PlayAt(CardFx.Boom(), at, AudioChannel.Combat, 1f, 5f, 90f);
         }
         if (age >= life) { Destroy(gameObject); return; }

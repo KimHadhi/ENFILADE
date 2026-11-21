@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
-/// <summary>Music: the campaign's songs (CampaignMusic). Ambience: each map's background sound (MapAmbience).</summary>
+/// <summary>Music: the campaign's songs (ModeMusic). Ambience: each map's background sound (MapAmbience).</summary>
 public enum AudioChannel { Combat, Movement, Voice, UI, Music, Ambience }
 
 /// <summary>
@@ -186,7 +186,7 @@ public static class GameAudio
         {
             var item = bound[i];
             if (item.source == null) { bound.RemoveAt(i); continue; }
-            // A song slowed with the world would drift off its own beat (CampaignMusic times the boss to it).
+            // A song slowed with the world would drift off its own beat (ModeMusic times the boss to it).
             if (item.channel == AudioChannel.UI || item.channel == AudioChannel.Music) continue;
             if (!Mathf.Approximately(item.source.pitch, item.setPitch)) item.ownPitch = item.source.pitch;
             item.source.pitch = item.setPitch = item.ownPitch * WorldPitch;

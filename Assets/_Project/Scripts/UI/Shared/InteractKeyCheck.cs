@@ -26,14 +26,12 @@ internal static class InteractKeyCheck
     private static readonly string[] Offers =
     {
         SupportKit.PlanOffer, PlayerExecution.OfferId, GhostCards.ChainOffer, PlayerRevive.OfferId, DetenteKit.AnswerOffer,
-        FieldPickups.OfferId, ClassKit.CrateOffer, MovementFixtures.TopOffer, CampaignRun.ButtonOffer, CampaignRun.CanInHandOffer,
-        MapGimmicks.OfferId, CampaignRun.DoorOffer, CampaignRun.ShopOffer, CampaignRun.CanOnFloorOffer, TowerRun.ScannerOffer,
-        TowerRun.ShopOffer, HubLobby.StationOffer, DetenteKit.RaiseOffer, DetenteKit.TreatOffer, SupportKit.GiveOffer,
+        FieldPickups.OfferId, ClassKit.CrateOffer, MovementFixtures.TopOffer, HubLobby.StationOffer, DetenteKit.RaiseOffer, DetenteKit.TreatOffer, SupportKit.GiveOffer,
         SupportKit.MendOffer, PlayerTestInteraction.OfferId, PlayerPing.OfferId,
     };
     private static readonly HashSet<string> HeldOffers = new HashSet<string>
     {
-        PlayerRevive.OfferId, TowerRun.ScannerOffer, DetenteKit.RaiseOffer, SupportKit.MendOffer, PlayerPing.OfferId,
+        PlayerRevive.OfferId, DetenteKit.RaiseOffer, SupportKit.MendOffer, PlayerPing.OfferId,
     };
 
     static InteractKeyCheck() => new CheckOnRequest(Request, Run);
@@ -165,11 +163,9 @@ internal static class InteractKeyCheck
     // What was deliberate before the key had an owner, as the lists that are gone had it.
     private static void Order(CheckReport report)
     {
-        report.Rule("the order that was deliberate still holds: a takedown before a pickup and a ping, a pickup before the mission's prompts, those before a class's own acts");
+        report.Rule("the order that was deliberate still holds: a takedown before a pickup and a ping, a pickup before a class's own acts");
         void First(string a, string b) => report.Expect(Before(a, b), a + " does not come before " + b);
         string[] classActs = { SupportKit.GiveOffer, SupportKit.MendOffer, DetenteKit.RaiseOffer, DetenteKit.TreatOffer };
-        string[] mission = { CampaignRun.ButtonOffer, CampaignRun.CanInHandOffer, MapGimmicks.OfferId, CampaignRun.DoorOffer, CampaignRun.ShopOffer,
-            CampaignRun.CanOnFloorOffer, TowerRun.ScannerOffer, TowerRun.ShopOffer };
         First(PlayerExecution.OfferId, FieldPickups.OfferId);
         First(PlayerExecution.OfferId, PlayerRevive.OfferId);
         First(PlayerExecution.OfferId, PlayerTestInteraction.OfferId);
@@ -182,13 +178,6 @@ internal static class InteractKeyCheck
             First(FieldPickups.OfferId, act);
             First(MovementFixtures.TopOffer, act);
         }
-        foreach (string prompt in mission)
-        {
-            First(FieldPickups.OfferId, prompt);
-            foreach (string act in classActs) First(prompt, act);
-        }
-        for (int i = 0; i + 1 < 6; i++) First(mission[i], mission[i + 1]);          // CampaignRun.Prompt's own chain
-        First(TowerRun.ScannerOffer, TowerRun.ShopOffer);
         First(DetenteKit.RaiseOffer, DetenteKit.TreatOffer);
         First(SupportKit.GiveOffer, SupportKit.MendOffer);
         First(DetenteKit.AnswerOffer, SupportKit.MendOffer);
