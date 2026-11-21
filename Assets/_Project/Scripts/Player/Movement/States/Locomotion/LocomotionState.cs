@@ -6,6 +6,9 @@ public sealed class LocomotionState : MovementBaseState
 
     public override string Name => "Locomotion";
 
+    // Below this (m/s) a velocity has no way to turn: it starts or stops as a blend.
+    private const float KeepsPaceFrom = .5f;
+
     public override bool TryJump()
     {
         if (ctx.HasCeilingAbove(ctx.StandingColliderHeight)) return false;
@@ -58,9 +61,19 @@ public sealed class LocomotionState : MovementBaseState
 
         if (ctx.IsGrounded)
         {
-            // 지상: 지면 마찰 및 목표 속도로 가속 보간
+            // A change of way keeps the pace: the velocity turns toward the keys at the ground's ease while its speed eases
+            // to the new way's on its own, so a strafe off a run runs on at a run's pace. Blending the two velocities straight
+            // cut the corner: halfway from W to D the speed fell to 70% (a sprint's 6.0 m/s to 4.35, under the sprint's own
+            // thresholds, and the legs dropped to the jog's clips), and the strafe felt like braking (the user, 2026-11-21:
+            // "달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"). Setting off, stopping and a turn back further than
+            // Move.groundKeepPaceTurn still go through the middle: a body that reverses slows down to turn.
             float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
-            ctx.HorizontalVelocity = Vector3.Lerp(ctx.HorizontalVelocity, targetVelocity, t);
+            Vector3 now = ctx.HorizontalVelocity;
+            float speedNow = now.magnitude, speedWanted = targetVelocity.magnitude;
+            if (speedNow > KeepsPaceFrom && speedWanted > KeepsPaceFrom && Vector3.Angle(now, targetVelocity) <= ctx.GroundKeepPaceTurn)
+                ctx.HorizontalVelocity = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
+            else
+                ctx.HorizontalVelocity = Vector3.Lerp(now, targetVelocity, t);
 
             if (ctx.HorizontalVelocity.sqrMagnitude < 0.0001f)
             {

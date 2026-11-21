@@ -82,6 +82,9 @@ public sealed partial class PlayerMovement
 
     [Header("Air Movement & Jump")]
     [SerializeField, Min(0f)] internal float groundSharpness = 14f;
+    [Tooltip("A change of way on the ground up to this far round (degrees) keeps the pace: the velocity turns. Further, it slows "
+        + "through a stop as a body reversing does.")]
+    [SerializeField, Range(0f, 180f)] internal float groundKeepPaceTurn = 120f;
     [SerializeField, Min(0f)] internal float airControlSharpness = 5.0f;
     [SerializeField, Min(0f)] internal float jumpHeight = 1.3f;
     [SerializeField] internal float gravity = -24f;

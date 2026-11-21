@@ -255,6 +255,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float ProneSpeed => proneSpeed;
     public float SupineSpeed => supineSpeed;
     public float GroundSharpness => groundSharpness;
+    public float GroundKeepPaceTurn => groundKeepPaceTurn;
     public float AirControlSharpness => airControlSharpness;
 
     public float SlideMinStartSpeed => slideMinStartSpeed;
