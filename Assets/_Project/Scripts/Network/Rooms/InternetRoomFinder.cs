@@ -74,6 +74,7 @@ public sealed class InternetRoomFinder : IRoomList
         var properties = session.Properties;
         if (properties == null) return room;
         if (properties.TryGetValue(InternetRoom.MapKey, out var map)) room.map = map.Value;
+        if (properties.TryGetValue(InternetRoom.ModsKey, out var mods)) room.mods = mods.Value ?? "";
         if (properties.TryGetValue(InternetRoom.RegionKey, out var region) && regions != null && regions.TryGetValue(region.Value, out int mine)
             && properties.TryGetValue(InternetRoom.LatencyKey, out var host) && int.TryParse(host.Value, out int theirs))
             room.ping = mine + theirs;

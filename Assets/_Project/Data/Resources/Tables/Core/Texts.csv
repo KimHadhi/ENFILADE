@@ -832,6 +832,11 @@ servers.looking,방을 찾는 중입니다...,Searching for lobbies...,서버 �
 servers.address,주소로 참가,Join by Address,서버 찾기 창 > 아래 주소 칸 앞
 servers.hint,두 번 누르면 바로 참가,Double-click to join,서버 찾기 창 > 아래 안내
 servers.join,참가   <size=70%>Enter</size>,Join <size=70%>Enter</size>,서버 찾기 창 > 오른쪽 아래 분홍 버튼
+servers.modded,모드 서버: {0},Modded: {0},"서버 찾기 창 > 방 카드의 둘째 줄(분홍). 방장의 모드가 게임 수치를 바꾸는 방. {0} = 모드 이름들"
+servers.modded.title,모드가 적용된 서버,Modded server,"서버 찾기 창 > 모드 서버에 들어가기 전에 묻는 창의 제목"
+servers.modded.body,"이 방은 방장의 모드가 게임 수치를 바꿉니다: {0}
+들어가 있는 동안 내 모드의 표 대신 방장의 것을 씁니다. 접속할까요?","This room's numbers are changed by the host's mods: {0}
+While you are in it the host's tables are used instead of your mods'. Join?","서버 찾기 창 > 모드 서버 물음 창의 본문. {0} = 모드 이름들. 아래에 예/아니오"
 servers.join.cancel,접속 취소,Cancel,서버 찾기 창 > 오른쪽 아래 분홍 버튼(접속하는 동안)
 #--- 프로필 ---,,,
 profile.title,프로필,Profile,프로필 창 제목
@@ -1476,6 +1481,7 @@ net.join.internetfailed,방에 들어가지 못했습니다. 방이 닫혔거나
 net.join.relay,직접 연결이 되지 않아 릴레이로 다시 접속합니다...,Direct connection failed. Reconnecting via relay...,메인 메뉴 상태 줄 > 직접 연결 실패 뒤 릴레이로 다시 접속
 net.lost,방이 닫혔거나 연결이 끊겼습니다.,The lobby was closed or the connection was lost.,메인 메뉴 상태 줄 > 방에 있다가 끊겼을 때
 net.full,방이 가득 찼습니다.,The lobby is full.,메인 메뉴 상태 줄 > 방이 가득 차 거절됨(방장 PC의 표에서 읽어 보냄)
+net.join.modded,모드가 적용된 서버입니다: {0},This is a modded server: {0},"메인 메뉴 상태 줄 > 주소로 들어가려다 모드 서버라 방장이 물음을 돌려보냄. 서버 찾기 창이 예/아니오를 묻는다. {0} = 모드 이름들"
 net.host.creating,인터넷 방을 만드는 중입니다...,Creating internet lobby...,메인 메뉴 상태 줄 > 인터넷 방 만드는 중
 net.host.failed,방을 만들지 못했습니다. 인터넷 연결을 확인하세요.,Failed to create lobby. Check your internet connection.,메인 메뉴 상태 줄 > 인터넷 방 만들기 실패
 net.host.portbusy,방을 만들지 못했습니다. 포트 {0}을 다른 프로그램이 쓰고 있는지 확인하세요.,Failed to create lobby. Check if port {0} is in use.,메인 메뉴 상태 줄 > LAN 방 만들기 실패. {0}=포트 번호
@@ -1779,6 +1785,7 @@ settings.controls.callout_bubbles,동료 콜아웃 말풍선,Teammates' callout 
 settings.controls.callout_auto,저절로 외치기,Shout by myself,설정 > 조작. 잡히거나 쓰러질 때 도와달라고 · 엘리트를 처음 가까이 볼 때 그 이름을 · CHARGE 때 돌격을 저절로 외친다
 settings.controls.callout_feed,콜아웃 통신 화면,Callout comms feed,설정 > 조작. 콜아웃을 하면 외친 사람의 얼굴이 그 사람 앞 카메라로 실시간 오른쪽에 작게 뜬다(내 것도). 끄면 창도 카메라도 없다
 settings.controls.let_poke,친구가 내 캐릭터 찌르기,Friends can poke me,설정 > 조작. 켜면 친구가 F를 꾹 눌러 가리키는 손끝으로 내 볼·배·팔·어깨·정수리를 꾹 누를 수 있다(PlayerPoint·SkinPoke). 끄면 모두의 화면에서 손끝이 내 캐릭터 앞에서 멈춘다
+settings.controls.share_mods,친구와 아바타 모드 주고받기,Share avatar mods with friends,"설정 > 조작. 켜면 방에서 친구가 입은 아바타 모드가 이 PC에 없을 때 방장을 거쳐 받아 그 캐릭터로 보이고, 내가 입은 아바타 모드도 보낸다(ModShare). 끄면 둘 다 하지 않고 친구는 기본 캐릭터로 보인다"
 point.pinned.on,"손가락질 고정: F를 누르지 않아도 계속 가리킵니다(조준·장전·투척 중엔 쉼). Poke.csv의 Point.* 를 고쳐 저장하고 에디터로 돌아오면 바로 바뀝니다. F5로 몸 전체를 보고, 다시 /point 로 끕니다.","Pointing held: the hand keeps pointing without F (it rests while aiming, reloading or throwing). Edit Point.* in Poke.csv and save; it changes as soon as the editor has focus again. F5 shows the whole body; /point again lets go.",콘솔 /point (PlayerPoint.Command)
 point.pinned.off,손가락질 고정을 껐습니다.,Pointing no longer held.,콘솔 /point
 point.pinned.none,조종하는 플레이어가 없습니다.,No player to point with.,콘솔 /point

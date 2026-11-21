@@ -23,7 +23,9 @@ using UnityEngine;
 /// Every number and every word of the game is a table (GameTables, Texts), so this reaches balance, the shop, zombies,
 /// waves, classes, the HUD's layout and colours, and translations. The console's /mods lists what loaded, /mods reload
 /// reads the folders again, and /mods export writes the game's own tables out to copy from.
-/// Everyone in a room should run the same mods: the host decides most numbers, but each PC draws from its own tables.
+/// In a room the tables are the host's: a guest leaves its own mods' Tables out while it is there and uses the host's,
+/// which the host sends as the guest comes in (RoomTables, UseRoomTables); a room with them asks a guest before it joins
+/// (GameSession, the server browser). Avatar and outfit files pass round the room on their own (ModShare).
 /// </summary>
 public static class GameMods
 {
@@ -72,9 +74,56 @@ public static class GameMods
         {
             foreach (var worked in ModAvatars.TableTexts(mod, table)) yield return worked;
             foreach (var worked in ModOutfits.TableTexts(mod, table)) yield return worked;
-            if (!mod.Tables.TryGetValue(table, out string path)) continue;
+            // In someone else's room the game's numbers are the host's: this PC's own mods' tables stay out (RoomTables).
+            if (roomTables != null || !mod.Tables.TryGetValue(table, out string path)) continue;
             string text = Read(path);
             if (text != null) yield return new KeyValuePair<string, string>(mod.Name, text);
+        }
+        if (roomTables == null) yield break;
+        foreach (var sent in roomTables)
+            if (string.Equals(sent.Table, table, StringComparison.OrdinalIgnoreCase))
+                yield return new KeyValuePair<string, string>(sent.Mod + " (방장)", sent.Text);
+    }
+
+    /// <summary>One table of a mod's, as the host sends it to a guest (RoomTables).</summary>
+    public sealed class RoomTable
+    {
+        public string Mod, Table, Text;
+    }
+
+    // The host's mods' tables while this PC is a guest in its room (empty before they come); null: this PC's own.
+    private static List<RoomTable> roomTables;
+
+    /// <summary>This PC is a guest in someone else's room: the tables mods change are the host's.</summary>
+    public static bool InRoom => roomTables != null;
+
+    /// <summary>
+    /// The host's mods' tables take the place of this PC's own (an empty list: none at all, before the host's come); null
+    /// gives this PC's own back. The caller reads the tables again (GameTables.Reload).
+    /// </summary>
+    public static void UseRoomTables(List<RoomTable> tables) => roomTables = tables;
+
+    /// <summary>This PC's own mods' tables, as a host sends them (RoomTables).</summary>
+    public static List<RoomTable> OwnTables()
+    {
+        var own = new List<RoomTable>();
+        foreach (var mod in Loaded)
+            foreach (var pair in mod.Tables)
+            {
+                string text = Read(pair.Value, quiet: true);
+                if (text != null) own.Add(new RoomTable { Mod = mod.Name, Table = pair.Key, Text = text });
+            }
+        return own;
+    }
+
+    /// <summary>The names of this PC's own mods that change tables, comma-joined ("" for none): what a room says of itself.</summary>
+    public static string TableModNames
+    {
+        get
+        {
+            var names = new List<string>();
+            foreach (var mod in Loaded) if (mod.Tables.Count > 0) names.Add(mod.Name);
+            return string.Join(", ", names);
         }
     }
 

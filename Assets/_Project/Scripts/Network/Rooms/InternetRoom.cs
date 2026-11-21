@@ -28,7 +28,7 @@ using UnityEngine;
 /// </summary>
 public sealed class InternetRoom : INetworkHandler
 {
-    public const string MapKey = "map", RegionKey = "region", LatencyKey = "relayMs";
+    public const string MapKey = "map", RegionKey = "region", LatencyKey = "relayMs", ModsKey = "mods";
     // Where the host can be reached straight, for the room's members; and where a friend will probe from, for the host.
     private const string DirectKey = "direct", EndpointKey = "ep", Layout = "1", Nothing = "-";
     private const string Table = "Network", Column = "value", Loopback = "127.0.0.1";
@@ -139,6 +139,9 @@ public sealed class InternetRoom : INetworkHandler
                 MaxPlayers = maxPlayers,
                 SessionProperties = new Dictionary<string, SessionProperty> { { MapKey, new SessionProperty(map) } }
             };
+            // The host's mods that change the game's numbers: a guest is asked before it joins (RoomTables).
+            string mods = GameMods.TableModNames;
+            if (!string.IsNullOrEmpty(mods)) options.SessionProperties[ModsKey] = new SessionProperty(mods.Length > 200 ? mods.Substring(0, 200) : mods);
             if (nearest != null)
             {
                 options.SessionProperties[RegionKey] = new SessionProperty(nearest.Region);

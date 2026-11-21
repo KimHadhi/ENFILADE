@@ -64,6 +64,10 @@ public sealed class GameSettings
         "the head): the skin gives under their fingertip on every PC (SkinPoke). Off: their fingertip stops short of this " +
         "character everywhere, the others' screens included (PlayerPose carries it).")]
     public bool letOthersPoke = true;
+    [Tooltip("In a room, avatar mods a friend wears and this PC hasn't are fetched through the host, and the avatar mods " +
+        "this player wears go to the others (ModShare). Off: neither, and a friend in a mod this PC lacks shows the default " +
+        "character.")]
+    public bool shareAvatarMods = true;
     /// <summary>
     /// The keys the player picked in the key window (KeyBindings: the Input System's overrides as JSON, by binding id);
     /// empty for every default. The default keys themselves are Input/Player.inputactions.
@@ -226,6 +230,7 @@ public sealed class GameSettings
                 s.calloutOnRelease = d.calloutOnRelease; s.calloutBubbles = d.calloutBubbles; s.calloutAuto = d.calloutAuto;
                 s.calloutFeed = d.calloutFeed;
                 s.letOthersPoke = d.letOthersPoke;
+                s.shareAvatarMods = d.shareAvatarMods;
                 // The keys are left alone: the key window has its own reset per line and for all (KeyBindingsView), so
                 // putting the mouse back to default doesn't throw away every key the player set.
                 break;

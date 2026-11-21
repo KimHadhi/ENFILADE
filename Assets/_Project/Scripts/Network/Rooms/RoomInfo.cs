@@ -9,6 +9,8 @@ public sealed class RoomInfo
     public string id;
     public string title, map;
     public int players, maxPlayers;
+    /// <summary>The host's mods that change the game's numbers, comma-joined, "" for none (RoomTables): asked about before joining.</summary>
+    public string mods = "";
     /// <summary>Where to join a LAN room. An internet room is joined by its id.</summary>
     [NonSerialized] public string address;
     [NonSerialized] public bool internet;

@@ -32,6 +32,9 @@ public sealed class ServerBrowserView
 
     public bool IsOpen => shade.gameObject.activeSelf;
 
+    // Asked before joining a modded room, over this window.
+    private ModdedServerView modded;
+
     public ServerBrowserView(Transform canvas)
     {
         panel = W.Window(canvas, "Server Browser", Width, out shade);
@@ -105,6 +108,8 @@ public sealed class ServerBrowserView
 
     public void Close()
     {
+        // The question over it goes first.
+        if (modded != null && modded.IsOpen) { modded.Close(); return; }
         shade.gameObject.SetActive(false);
         StopSearching();
     }
@@ -130,6 +135,14 @@ public sealed class ServerBrowserView
         count.text = open > 0 ? Texts.Format("servers.count", open) : looking ? Texts.Get("servers.count.looking") : "";
         empty.text = looking ? Looking : NoRooms;
         joinLabel.text = Texts.Get(GameSession.IsOnline ? "servers.join.cancel" : "servers.join");
+        // Turned away from a room joined by its address, as a modded one: asked now, with the host's mods.
+        var refused = GameSession.Refused;
+        if (refused != null && !GameSession.IsOnline)
+        {
+            GameSession.Refused = null;
+            AskModded(refused.Room, refused.Address, refused.Title, refused.Mods);
+        }
+        if (modded != null && modded.IsOpen) return;
         JoinByKey();
     }
 
@@ -144,7 +157,7 @@ public sealed class ServerBrowserView
     }
 
     private static string Describe(RoomInfo room) =>
-        $"{room.id},{room.title},{room.map},{room.players},{room.maxPlayers},{room.ping / 10}";
+        $"{room.id},{room.title},{room.map},{room.players},{room.maxPlayers},{room.ping / 10},{room.mods}";
 
     private void Rebuild()
     {
@@ -177,6 +190,9 @@ public sealed class ServerBrowserView
         Thumb(row, room.map);
         string grey = "#" + ColorUtility.ToHtmlStringRGB(W.Muted);
         string reach = Texts.Get(room.internet ? "servers.internet" : "servers.lan");
+        // A modded room says so on its card, in the accent: the host's mods change the game's numbers there.
+        if (!string.IsNullOrEmpty(room.mods))
+            reach += $"  <color=#{ColorUtility.ToHtmlStringRGB(KitStyle.Accent)}>{Texts.Format("servers.modded", Escape(room.mods))}</color>";
         var title = W.Label(row, $"<b>{Escape(room.title)}</b>\n<size=13><color={grey}>{reach}</color></size>", 20f, W.Text);
         title.lineSpacing = -6f;
         W.Size(title, height: RowHeight, flexibleWidth: 1f);
@@ -259,10 +275,33 @@ public sealed class ServerBrowserView
     {
         if (GameSession.IsOnline) { GameSession.Leave(); return; }
         var room = rooms?.Rooms.FirstOrDefault(found => found.id == chosen);
+        // A modded room: asked first, joined on yes.
+        if (room != null && !string.IsNullOrEmpty(room.mods))
+        {
+            AskModded(room, room.address, room.title, room.mods);
+            return;
+        }
+        Join(room);
+    }
+
+    private void Join(RoomInfo room)
+    {
         if (room != null && room.internet) { GameSession.JoinInternet(room); return; }
         if (room != null) GameSettings.Current.lastAddress = room.address;
         GameSession.Join(GameSettings.Current.lastAddress);
         if (GameSession.IsOnline) GameSettings.Save();
+    }
+
+    // Yes joins that room (or address) as a modded one: the host lets this PC in.
+    private void AskModded(RoomInfo room, string address, string title, string mods)
+    {
+        modded ??= new ModdedServerView(shade.parent);
+        modded.Ask(title, mods, () =>
+        {
+            GameSession.AcceptModded(room, address);
+            if (room != null) Join(room);
+            else if (!string.IsNullOrEmpty(address)) GameSession.Join(address);
+        });
     }
 
     // Column titles over the cards, lined up with what the cards hold.

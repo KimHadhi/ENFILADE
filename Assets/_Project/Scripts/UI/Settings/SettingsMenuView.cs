@@ -267,6 +267,8 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.controls.callout_feed"), OffOn, s.calloutFeed ? 1 : 0, i => s.calloutFeed = i == 1);
         // Friends' pokes (a held F's fingertip, SkinPoke): off, theirs stop short of this character on every PC.
         rows.Choice(Texts.Get("settings.controls.let_poke"), OffOn, s.letOthersPoke ? 1 : 0, i => s.letOthersPoke = i == 1);
+        // Avatar mods passed round a room (ModShare): off, this PC neither fetches friends' nor offers its own.
+        rows.Choice(Texts.Get("settings.controls.share_mods"), OffOn, s.shareAvatarMods ? 1 : 0, i => s.shareAvatarMods = i == 1);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)

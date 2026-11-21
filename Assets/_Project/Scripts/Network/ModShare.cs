@@ -14,19 +14,22 @@ using UnityEngine;
 /// different people. Now the wearer's PC offers the files its look uses (each avatar file and its bundle, ModAvatars) to
 /// the room as it puts the look on (PlayerNetworkPose), and any PC that hasn't the same file (by name, size and an FNV
 /// hash of its bytes) asks for it. Every word goes through the host, as all of Netcode's named messages do: a guest's
-/// files go up to the host first, which keeps them and hands them on. A file comes in 16 KB pieces, a few a frame,
+/// files go up to the host first, which keeps them and hands them on. A file comes in 4 KB pieces, a few a frame,
 /// written to Mods/&lt;mod&gt;~방/Avatars/ (its own folder, so a mod of the same name the player keeps is never written
 /// over), checked against its hash, and the mods are read again (GameMods.Rescan) once nothing more is coming: the
 /// friend's copy is dressed again in what they really wear.
 /// Only avatar files (*.avatar.json) and bundles (*.bundle) travel, under a size cap, by bare file names (no folders), and
-/// only files this PC asked for are taken. A mod's tables never travel: they change the game's own numbers. Network.csv
-/// modShare 0 turns it off; modShareMostMB caps one file.
+/// only files this PC asked for are taken. A mod's tables don't travel here: the room's numbers are the host's
+/// (RoomTables). The player's setting turns it on and off (GameSettings.shareAvatarMods); Network.csv modShareMostMB caps
+/// one file.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ModShare : MonoBehaviour
 {
     private const string OfferMessage = "ENFILADE.ModOffer", WantMessage = "ENFILADE.ModWant", ChunkMessage = "ENFILADE.ModChunk";
-    private const int ChunkBytes = 16 * 1024, ChunksPerFrame = 4;
+    // A piece and its words must stay under Netcode's largest message here (UnityTransport MaxPayloadSize, 6144 bytes by
+    // default, which this game doesn't change).
+    private const int ChunkBytes = 4 * 1024, ChunksPerFrame = 8;
     private const string RoomMark = "~방", BundleExtension = ".bundle";
     // Mods are read again this long after the last piece of anything came, so a json and its bundle land together (s).
     private const float RescanAfter = .5f;
@@ -99,7 +102,8 @@ public sealed class ModShare : MonoBehaviour
         instance = host.AddComponent<ModShare>();
     }
 
-    private static bool On => NetSmoothing.Number("modShare", 1f) > .5f;
+    // The player's setting (GameSettings.shareAvatarMods): off, nothing is offered or fetched.
+    private static bool On => GameSettings.Current.shareAvatarMods;
     private static long MostBytes => (long)(Mathf.Max(1f, NetSmoothing.Number("modShareMostMB", 256f)) * 1024f * 1024f);
 
     // ---- The wearer's PC offers what its look uses ----

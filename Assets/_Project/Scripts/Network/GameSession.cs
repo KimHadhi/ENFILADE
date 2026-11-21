@@ -106,8 +106,32 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     public static RoomInfo DescribeRoom() => current == null || current.ending ? null : new RoomInfo
     {
         id = current.roomId, title = current.roomTitle, map = current.roomMap,
-        players = current.network.ConnectedClients.Count, maxPlayers = current.maxPlayers
+        players = current.network.ConnectedClients.Count, maxPlayers = current.maxPlayers, mods = GameMods.TableModNames
     };
+
+    // ---- Modded rooms: a guest says yes before it comes in ----
+
+    // The start of the host's word turning a guest away from a modded room it hadn't said yes to; the mods' names follow.
+    private const string ModdedMark = "MODDED\n";
+    // The room (its id) or address the player said yes to joining, modded as it is.
+    private static string acceptedModded;
+
+    /// <summary>A join turned away because the room is modded and the player hadn't said yes: whom to ask about, or null.</summary>
+    public sealed class ModdedRefusal
+    {
+        public string Mods, Title, Address;
+        public RoomInfo Room;
+    }
+
+    /// <summary>Set when the host turned this PC away for that; the server browser asks the player and clears it.</summary>
+    public static ModdedRefusal Refused { get; set; }
+
+    /// <summary>The player said yes to this modded room: joining it goes in.</summary>
+    public static void AcceptModded(RoomInfo room, string address) => acceptedModded = room != null && room.internet ? room.id : address;
+
+    // What a guest tells the host as it asks to come in: whether it said yes to a modded room (one byte).
+    private void SayAccepts(string target)
+        => network.NetworkConfig.ConnectionData = new[] { (byte)(!string.IsNullOrEmpty(target) && target == acceptedModded ? 1 : 0) };
 
     /// <summary>Opens a room. A room is either on the internet or on the local network: the transport can't do both.</summary>
     public static void Host(string map, string title, int maxPlayers, bool internet)
@@ -130,6 +154,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         if (address == null) { Status = Texts.Get("net.join.badaddress"); return; }
         var session = StartJoining(address);
         session.joinedAddress = address;
+        session.SayAccepts(address);
         session.transport.SetConnectionData(address, Port);
         if (!session.network.StartClient()) session.End(Texts.Get("net.join.nostart"));
     }
@@ -139,6 +164,7 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         if (IsOnline) return;
         var session = StartJoining(room.title);
         session.joining = room;
+        session.SayAccepts(room.id);
         session.JoinOnInternet(room.id);
     }
 
@@ -292,6 +318,15 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
     {
         response.Approved = network.ConnectedClients.Count < maxPlayers;
         response.Reason = response.Approved ? string.Empty : Texts.Get("net.full");
+        // A modded room (its mods change the game's numbers, RoomTables): only a guest that said yes to that comes in. One
+        // that didn't is turned away with the mods' names, and asked (the server browser).
+        string mods = GameMods.TableModNames;
+        // (Not the host's own player, which Netcode asks about too as the room opens.)
+        if (response.Approved && request.ClientNetworkId != NetworkManager.ServerClientId && !string.IsNullOrEmpty(mods) && (request.Payload == null || request.Payload.Length < 1 || request.Payload[0] != 1))
+        {
+            response.Approved = false;
+            response.Reason = ModdedMark + mods;
+        }
     }
 
     private void OnMapLoaded(string scene, LoadSceneMode mode, List<ulong> completed, List<ulong> timedOut)
@@ -365,6 +400,13 @@ public sealed class GameSession : MonoBehaviour, INetworkPrefabInstanceHandler
         Debug.Log($"[GameSession] disconnected in '{SceneManager.GetActiveScene().name}': {(told ? "the host said '" + reason + "'" : "no word from the host")}, "
             + $"was in {wasConnected}, a room load in flight {roomLoad != null && !roomLoad.isDone}, this PC's last frame took {Time.unscaledDeltaTime:0.0} s");
         if (!told) reason = wasConnected ? Texts.Get("net.lost") : Texts.Get("net.join.failed");
+        if (told && reason.StartsWith(ModdedMark, StringComparison.Ordinal))
+        {
+            string mods = reason.Substring(ModdedMark.Length);
+            Refused = new ModdedRefusal { Mods = mods, Room = joining, Address = joinedAddress, Title = joining != null ? joining.title : joinedAddress };
+            End(Texts.Format("net.join.modded", mods));
+            return;
+        }
         End(reason, !told);
     }
 
