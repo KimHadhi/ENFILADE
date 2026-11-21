@@ -913,6 +913,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             if (fromEdge) Restart(Find(fallFromEdge));
             return;
         }
+        // A vault's clip plays on to its touchdown and through it (PlayOutObstacle). A jump's landing taken there cut the vault
+        // for a pose a jump comes down in, then the run: the run after every vault stumbled (the user, 2026-11-21: "vaulting
+        // 이후에 달리고 있으면 모션 뭔가 버벅거리고"; the camera record had Land_ToRun1 after each kong vault).
+        if (playingOut && transition != null && transition == Find(obstacleClip)) return;
         if ((state == MovementState.Standing || state == MovementState.Crouching) && Time.time - climbedOffLadderAt > ClimbOffTouchdown)
         {
             string landing = LandingFor(state == MovementState.Crouching, wasTucked);
