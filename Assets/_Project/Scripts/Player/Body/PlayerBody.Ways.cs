@@ -14,7 +14,7 @@ using UnityEngine.Playables;
 public sealed partial class PlayerBody
 {
     [Header("One-off moves by the way they go (clip@degrees;…)")]
-    [SerializeField] private string rollWays = "", rollRunWays = "", dodgeWays = "", dodgeRunWays = "", dodgeSprintWays = "";
+    [SerializeField] private string rollWays = "", rollRunWays = "", dodgeWays = "", dodgeSprintWays = "";
     [SerializeField] private string jumpWays = "", runJumpWays = "";
     [SerializeField, Tooltip("Landing on the move: lightly, hard, and hard at a sprint (a stumble).")]
     private string landRunLight = "", landRunHard = "", landRunStumble = "";
@@ -26,7 +26,7 @@ public sealed partial class PlayerBody
     // Every clip of every way set, made ready with the others (Build).
     private IEnumerable<string> WayClips()
     {
-        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeRunWays, dodgeSprintWays, jumpWays, runJumpWays })
+        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays, jumpWays, runJumpWays })
             foreach (var (clip, _) in WaysOf(set))
                 yield return clip;
         yield return landRunLight;
@@ -76,16 +76,23 @@ public sealed partial class PlayerBody
         return local.sqrMagnitude > 1e-6f ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
     }
 
-    // A dodge's clip: stepping aside standing or walking, shifting into the run or the sprint on the move.
+    // A dodge's clip: stepping aside standing, walking or jogging; sprinting, shifting aside into the sprint. Picked by the
+    // gait (MovementGait.Position, the same on every PC), not by the speed now: the body meets a dodge in the frame its step
+    // has already thrown it at about 18 m/s (Ability.stepDistance over stepDuration), so until 0.9.284 the speed picked the
+    // dodge that runs on (ShiftToRun) for every dodge but straight ahead or back, even from a walk, and its running steps
+    // went on at their own pace after it (the user, 2026-11-21: "움직이면서 회피하면 회피 끝나고 캐릭터가 굉장히 빠른 속도로
+    // 달리는 모션이 생겨"). That dodge went with the run it ran on into (0.9.283).
     private string DodgeFor()
     {
         float heading = HeadingOf(player.Abilities.ActionDirection);
-        float speed = HorizontalSpeed();
         string side = heading < 0f ? dodgeLeft : dodgeRight;
         string standing = NearestWay(dodgeWays, heading, side);
-        if (player.SprintProgress > .5f) return NearestWay(dodgeSprintWays, heading, standing);
-        return speed >= jumpFastSpeed ? NearestWay(dodgeRunWays, heading, standing) : standing;
+        var gait = player.Actions != null ? player.Actions.Gait : null;
+        return gait != null && gait.Position > SprintsFrom ? NearestWay(dodgeSprintWays, heading, standing) : standing;
     }
+
+    // The gait past which a dodge shifts into the sprint: halfway from the jog (1) to the sprint (2).
+    private const float SprintsFrom = 1.5f;
 
     // A roll's clip the way the body is going: up running at a run's speed, else standing up.
     private string RollWay(string fallback)
@@ -123,7 +130,7 @@ public sealed partial class PlayerBody
         if (channel == null) return false;
         if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunHard) || channel == Find(landRunStumble))
             return true;
-        foreach (string set in new[] { rollRunWays, dodgeRunWays, dodgeSprintWays })
+        foreach (string set in new[] { rollRunWays, dodgeSprintWays })
             foreach (var (clip, _) in WaysOf(set))
                 if (channel == Find(clip)) return true;
         return false;

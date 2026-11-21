@@ -26,7 +26,7 @@ public sealed partial class PlayerBody
     {
         layers.SetLayerMaskFromAvatarMask(DodgeLayer, legMask);
         var names = new System.Collections.Generic.List<string> { dodgeLeft, dodgeRight };
-        foreach (string set in new[] { dodgeWays, dodgeRunWays, dodgeSprintWays })
+        foreach (string set in new[] { dodgeWays, dodgeSprintWays })
             foreach (var (clip, _) in WaysOf(set))
                 if (!names.Contains(clip)) names.Add(clip);
         dodgeMixer = AnimationMixerPlayable.Create(graph, names.Count);
