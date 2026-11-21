@@ -66,14 +66,6 @@ public sealed partial class FPSGun
         }
     }
 
-    // CasFPSWeapon keeps its camera shake protected; it is read through the serialized data like every other field.
-    private static object CameraShakeOf(CasFPSWeapon weapon)
-    {
-        var field = typeof(CasFPSWeapon).GetField("cameraShake",
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-        return field != null ? field.GetValue(weapon) : null;
-    }
-
     /// <summary>
     /// Takes the gun <paramref name="weight"/> of the way onto the right hand as it is now: once the body's own hands have
     /// moved it (to a ledge, a rung), where FPSAF had the hand in the graph is no longer where it is. FPSAF's right-hand

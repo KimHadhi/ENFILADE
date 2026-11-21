@@ -37,7 +37,7 @@ public sealed partial class FPSBody
         lastShot = Time.time;
         // A bolt or pump gun's shots come at its action's pace when that is slower (WeaponCycle).
         shotInterval = WeaponCycle.IntervalOf(data);
-        held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil, bodyCamera, !kinemationShake || controller.AimBlend >= .5f);
+        held.Fire(controller.LastShot.AmmoAfterShot == 0, recoil);
         // A gun worked by hand: the body works its bolt or pump now, done by the time the trigger may fire again (FPSGun.Cycle).
         held.Cycle(playables, bodyCamera);
     }

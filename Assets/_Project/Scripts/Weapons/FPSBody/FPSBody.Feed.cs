@@ -9,10 +9,8 @@ public sealed partial class FPSBody
     {
         Vector3 velocity = movement != null ? Vector3.ProjectOnPlane(movement.ActualVelocity, Vector3.up) : Vector3.zero;
         float speed = velocity.magnitude;
-        float walk = Mathf.Max(.1f, movement != null ? movement.WalkSpeed : 1f);
-        Vector3 local = transform.InverseTransformDirection(velocity) / walk;
-        // The gun swinging with the walk (FPSAF Sway's move input) as far as Rig.moveSway keeps it: none since 0.9.296.
-        input.SetValue(FPSANames.MoveInput, (Vector4)(Vector2.ClampMagnitude(new Vector2(local.x, local.z), 1f) * moveSway));
+        // FPSAF Sway's move input (the gun swinging with the steps) is left at none: 0 since 0.9.296 (the user, 2026-11-21:
+        // "그 총 procedural animation 좀 지워 주세요"), its feed gone in 0.9.321.
 
         // The view: FPSAF's pitch is down-positive; its yaw is how far the view turns from where the body faces. FPSAF's
         // Look spreads that yaw over the spine without a limit (90 degrees of input, 90 of twist), so where the legs can't
@@ -49,14 +47,12 @@ public sealed partial class FPSBody
         // the steadying off, SprintPoseWeight) was fed here until 0.9.319 and is gone with it: a gun's sprint never has
         // FPSAF's upper body now, and the pose only flashed as a sprint was let go.
         gunRunWeight = Mathf.MoveTowards(gunRunWeight, Body != null && Body.GunRuns ? 1f : 0f, dt / Mathf.Max(.01f, holdBlendTime));
-        input.SetValue(FPSANames.StabilizationWeight, 1f);
         input.SetValue("LookLayerWeight", Framework);
-        input.SetValue(FPSANames.PlayablesWeight, 1f);
 
         var state = movement != null ? movement.CurrentState : MovementState.Standing;
         bool crouched = state == MovementState.Crouching;
         crouchWeight = Mathf.Lerp(crouchWeight, crouched ? 1f : 0f, follow);
-        // Down the sights FPSAF's little moves stay out: they swung the sight off the target (aimedNoMotions).
+        // Down the sights FPSAF's little moves stay out: begun there they played on once it had the gun back.
         bool sighted = Sighted;
         if (crouched != wasCrouched) { wasCrouched = crouched; if (!sighted) Motion(assets.crouchingMotion); }
         if (grounded && !wasGrounded && !sighted) Motion(assets.jumpingMotion);
@@ -73,11 +69,9 @@ public sealed partial class FPSBody
 
         if (!HoldsGun) return;
         float aim = controller.AimBlend;
-        held.Steady(aim, hipSway, aimedKick, gunKick);
-        FeedConverge(dt, aim);
+        held.Steady(hipSway, gunKick);
+        FeedConverge(dt);
         FeedAction(dt, aim);
-        // FPSAF's Ads brings the sight up in our aim time, which an angled grip shortens (WeaponController.AdsTime).
-        if (held.Ads != null) held.Ads.aimingSpeed = 1f / Mathf.Max(.01f, controller.AdsTime);
         // KINEMATION's recoil animation kicks per shot or loops by the fire mode, which B changes while the gun is out; it
         // reads the field as each shot comes.
         if (recoil != null) recoil.fireMode = FireModeOf(HeldFireMode);
@@ -93,11 +87,10 @@ public sealed partial class FPSBody
         {
             if (wantsAim) SteadyForSights();
             aiming = wantsAim;
-            held.Aim(aiming, input, recoil);
-            // KINEMATION's aiming motion bobs the gun as it comes up; down a 4x or 8x sight that bob was the picture
-            // shaking just as the player wanted to look (user, 2026-11-10: "바로 흔들림 없이 줌"). It plays only as the gun
-            // comes down again.
-            if (!aiming) Motion(assets.aimingMotion);
+            held.Aim(aiming, recoil);
+            // KINEMATION's aiming motion played here as the sights came down, until 0.9.321: the aim clips have the arms
+            // down the sights, so it showed only once the gun was back at the hip, a wobble of ±2° over 0.9 s (the user,
+            // 2026-11-22: "줌을 풀면 팔이 띠용한다").
         }
     }
 }

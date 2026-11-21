@@ -202,7 +202,8 @@ public sealed partial class PlayerBody
         // spine's bend for the Q/E lean, the old one with nothing in hand, as far as takes the eyes the whole peek with
         // the fists (BodyLean).
         TuneLean();
-        bodyLean.BlendHands(HoldsGun, dt);
+        FollowAim(dt);
+        bodyLean.BlendHands(HoldsGun, AimsOnClip, dt);
         spineLookRoll = bodyLean.SpineRoll(bendWeight);
         // FPS Animation Framework has the upper body while a gun is held; the look bend hands it over and takes it back
         // as smoothly.

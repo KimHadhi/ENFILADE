@@ -59,7 +59,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private readonly float[] weights = new float[HoldCount];
     private readonly float[] restLifts = new float[2];
     private readonly float[] holding = new float[2];
-    private float fistsReady, leftOffGun, notRunning, stance;
+    private float fistsReady, leftOffGun, notRunning, stance, aimStance;
     private HandOwner handOwner;
 
     // A feeling shown from the callout wheel has both hands (HandOwner, body.emote: PlayerBody.Emote): the fists' guard
@@ -98,6 +98,15 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     /// gun by this, and brings the arms onto it by FrameworkShare.
     /// </summary>
     internal float BodyCarry => (1f - leftOffGun) * stance;
+
+    /// <summary>
+    /// How much of the upper body holds the gun up (0-1), FPS Animation Framework's at the hip or the gun's own aim clips
+    /// down the sights (PlayerBody.AimsOnClip): both hands on it in a shooting stance. The two hand over to each other at
+    /// one rate, so this stays whole through the change; FPSBody puts the hands on the gun's own contacts (a bolt worked,
+    /// the fingers, the elbows), the pistol's close hold, a bash and the gun's camera motion by it. By FrameworkShare alone
+    /// they all went out down the sights once the aim clips had the arms (0.9.318-0.9.320).
+    /// </summary>
+    internal float GunUpShare => BothHandsOnGun * Mathf.Clamp01(stance + aimStance);
 
     // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for. A step dodge counts too:
     // with a gun its clip takes only the legs over the standing pose (PlayerBody.Dodge). Left out, FPSAF let go of the gun
@@ -180,10 +189,11 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         // A point or an off-hand throw may have the left hand lent away from the gun (OffHand).
         EaseOffHand(dt);
         // Sprinting with a gun the gun's run has the upper body (PlayerBody.GunRuns), and aiming the gun's aim clips
-        // (PlayerBody.AimsOnClip), as a vault's clip has it: the hands are put on the gun here, which goes by the clip's
-        // right hand (FPSBody).
-        stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) && !body.GunRuns && body.AimsOnClip <= 0f ? 1f : 0f,
-            dt / blendTime);
+        // (PlayerBody.AimsOnClip), as a vault's clip has it: the hands are put on the gun here (FPSBody keeps it). The aim's
+        // share goes up as FPSAF's goes down, at one rate (GunUpShare).
+        bool shooting = alive && ShootingStance(state) && !body.GunRuns, onClip = body.AimsOnClip > 0f;
+        stance = Mathf.MoveTowards(stance, shooting && !onClip ? 1f : 0f, dt / blendTime);
+        aimStance = Mathf.MoveTowards(aimStance, shooting && onClip ? 1f : 0f, dt / blendTime);
         Ease(Hold.Gun, gun && (armed || oneHanded || (alive && use == TraversalHandUse.Gun)), dt);
         Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt) && !EmoteHasHands, dt);
         TrackEdgeHands(state);
@@ -317,10 +327,12 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
             if ((Hold)i == Hold.Ledge && !isLeft) weight *= 1f - leftOffGun;
             if ((Hold)i == Hold.Gun)
             {
-                // Where FPS Animation Framework holds the upper body its hands are already on the gun and only count; where
-                // the move's clip has it, the hand is put on the gun here, as before KINEMATION (FrameworkShare).
+                // Where FPS Animation Framework holds the whole upper body its hands are already on the gun and only count;
+                // where the move's clip has it, and while the two hand over, the hand is put on the gun here, as before
+                // KINEMATION. Shared by FrameworkShare through the handover, the hands came off the gun halfway and went
+                // back on (the user, 2026-11-22, leaving the sights: "줌을 풀면 팔이 띠용한다").
                 weight = Mathf.Max(0f, weight);
-                float framework = Mathf.Min(weight, FrameworkShare), solved = weight - framework;
+                float framework = FrameworkShare >= .999f ? Mathf.Min(weight, FrameworkShare) : 0f, solved = weight - framework;
                 elsewhere += framework;
                 if (solved <= 0f || !GunGrip(arm, isLeft, out Vector3 gp, out Quaternion gr, out Vector3 gh)) { elsewhere += solved; continue; }
                 total += solved;

@@ -10,8 +10,10 @@ using UnityEngine;
 /// (FPSHumanoidPlayer): FPSAnimator, its bone controller, input controller and playables controller (ours over FPSAF's,
 /// FPSBodyPlayables: on the Animator's graph, with the body's clips held as its base layer), the recoil animation, the rig with
 /// its IK weapon bone, and per gun the demo's humanoid animator profile. FPSAF then poses the upper body every frame: the
-/// gun's pose clip on the arms, the spine and head following the view (Look), the lean, the aim down the sight (Ads), sway,
-/// recoil, the gun held back from walls (GunCover) and both arms on the gun (IK).
+/// gun's pose clip on the arms, the spine and head following the view (Look), the lean, sway, recoil, the gun held back from
+/// walls (GunCover) and both arms on the gun (IK), at the hip. Down the sights the gun's own aim clips (BIPER Combat Girls)
+/// have the upper body and the gun is held on the eyes (FPSBody.AimOnClip, since 0.9.318); sprinting, the gun's run has it
+/// (PlayerBody.GunRuns).
 /// The clips are KINEMATION's own, remade for this body by KINEMATION Retarget Pro (GunBakes), and FPSAF's Pose Sampler
 /// starts the gun where Retarget Pro put it on this body. The camera socket FPSAF aims the sight at is the body's eyes,
 /// where the camera rides.
@@ -40,32 +42,18 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private float weightTime = .15f;
     [SerializeField, Min(.01f), Tooltip("How long FPSAF takes the upper body over when a gun is drawn, and gives it back when it is put away (s).")]
     private float holdBlendTime = .2f;
-    [SerializeField, Range(0f, 1f), Tooltip("Share of the body's walk and run fed to FPSAF's Sway as its move input: how far the gun "
-        + "swings with the steps. 0 since 0.9.296 (user, 2026-11-21: \"그 총 procedural animation 좀 지워 주세요. 걸을 때나 달릴 때나 튀는 "
-        + "거요\"): the gun no longer swings with the walk; its sway with the look stays.")]
-    private float moveSway = 0f;
-    [SerializeField, Range(0f, 1f), Tooltip("Share of FPSAF's Sway (the gun trailing the look and the steps) kept at the hip. Down the "
-        + "sights there is none, as in Rainbow Six Siege: the sight stays where the view is (user, 2026-11-09: \"흔들거려서\").")]
+    [SerializeField, Range(0f, 1f), Tooltip("Share of FPSAF's Sway (the gun trailing the look) kept at the hip. Down the sights there "
+        + "is none, as in Rainbow Six Siege: the aim clips hold the gun on the eyes (user, 2026-11-09: \"흔들거려서\").")]
     private float hipSway = .5f;
-    [SerializeField, Range(0f, 1f), Tooltip("Share of FPSAF's Additive layer (KINEMATION's recoil animation kicking the gun) kept down "
-        + "the sights. Its turn and lift are already cut there (aimedRecoilTurn, aimedRecoilLift), so the gun can kick back in full.")]
-    private float aimedKick = 1f;
     [SerializeField, Range(0f, 1f), Tooltip("Share of KINEMATION's recoil animation kicking the gun model at all (visual recoil): in full "
         + "it shook the gun more than the user liked (2026-11-09: \"비쥬얼 리코일 … 좀 쎄네\").")]
     private float gunKick = .6f;
-    [SerializeField, Tooltip("Play KINEMATION's camera shake with each shot from the hip. Off: the view's kick (WeaponFeedback) is the "
-        + "only shot shake, as in Rainbow Six Siege. Down the sights it never plays.")]
-    private bool kinemationShake;
     [SerializeField, Range(0f, 1f), Tooltip("Down the sights, the share of KINEMATION's recoil animation turning the gun and wandering "
         + "that stays (times its own aiming multipliers): Siege's guns kick back into the shoulder with the sight on the hit point.")]
     private float aimedRecoilTurn = .2f;
     [SerializeField, Range(0f, 1f), Tooltip("Down the sights, the share of the recoil animation lifting and pushing the gun sideways "
         + "that stays; its kick straight back stays whole.")]
     private float aimedRecoilLift = .3f;
-    [SerializeField, Range(0f, 1f), Tooltip("Aiming more than this much, or on the way in, FPSAF's little moves (a stop, a crouch, a "
-        + "landing, a jump, a lean) don't play: they swung the sight off the target. At 0.5 a stop begun early in the zoom bobbed "
-        + "the sight all through it (user, 2026-11-11).")]
-    private float aimedNoMotions;
 
     // Shots further apart than this many fire intervals have let go of the trigger: the recoil then settles.
     private const float TriggerReleaseIntervals = 1.5f;
@@ -228,7 +216,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
         // asset blends in at once), so the body never passes through its bind pose on the way.
         holdWeight = Mathf.MoveTowards(holdWeight, HoldsGun ? 1f : 0f, dt / Mathf.Max(.01f, holdBlendTime));
         playables.SetControllerWeight(holdWeight * Framework);
-        // Down the sights a bolt or pump worked after a shot sways the view only as much as it moves the gun (FPSBody.Contacts).
-        if (bodyCamera != null) bodyCamera.SetGunWeight(holdWeight * Framework * CycleViewShare);
+        // Down the sights a bolt or pump worked after a shot sways the view only as much as it moves the gun (FPSBody.Contacts):
+        // on the aim clips too (GunUp).
+        if (bodyCamera != null) bodyCamera.SetGunWeight(holdWeight * GunUp * CycleViewShare);
     }
 }

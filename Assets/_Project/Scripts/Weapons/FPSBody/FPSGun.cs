@@ -58,18 +58,15 @@ public sealed partial class FPSGun : MonoBehaviour
     internal GunConvergeLayerSettings Converge { get; set; }
     // This gun's own layer that moves it as its action playing now does (GunActionLayerSettings); FPSBody feeds it each frame.
     internal GunActionLayerSettings Action { get; set; }
-    // This gun's own copy of FPSAF's Ads: its aiming speed follows the gun's aim time, which an angled grip shortens.
-    internal KINEMATION.FPSAnimationFramework.Runtime.Layers.AdsLayer.AdsLayerSettings Ads { get; set; }
-
     /// <summary>
-    /// Aiming, the gun holds still on the sight as Rainbow Six Siege's do: Sway goes from hipSway of its own at the hip to
-    /// none down the sights, and Additive (the recoil animation's kick) to aimedKick of its own. Sets this frame's alphas;
-    /// FPSAF reads them as it weighs each layer.
+    /// At the hip, where FPSAF holds the gun: Sway (the gun trailing the look) at hipSway of its own and Additive (the
+    /// recoil animation's kick) at gunKick of its own. Sets this frame's alphas; FPSAF reads them as it weighs each layer.
+    /// Down the sights the aim clips hold the gun and FPSBody.AimOnClip gives the kick.
     /// </summary>
-    internal void Steady(float aim, float hipSway, float aimedKick, float gunKick = 1f)
+    internal void Steady(float hipSway, float gunKick)
     {
         foreach (var (layer, alpha, kick) in FeelLayers)
-            if (layer != null) layer.alpha = alpha * (kick ? gunKick * Mathf.Lerp(1f, aimedKick, aim) : Mathf.Lerp(hipSway, 0f, aim));
+            if (layer != null) layer.alpha = alpha * (kick ? gunKick : hipSway);
     }
 
     private FPSBodyAssets.Gun entry;
@@ -81,7 +78,6 @@ public sealed partial class FPSGun : MonoBehaviour
     private readonly System.Collections.Generic.List<Object> rated = new();
     private float actionUntil;
     private SimpleAnimationPlayer partsPlayer;
-    private FPSCameraShake shake;
     private bool reloadEmptyPlaying, reloading;
     // The gun-part player's rest pose has been seen to (EnsureRestPose), and the last shot's clip is holding the slide back.
     private bool restChecked, slideHeld;
@@ -136,19 +132,6 @@ public sealed partial class FPSGun : MonoBehaviour
         Entity = gameObject.GetComponent<FPSAnimatorEntity>();
         if (Entity == null) Entity = gameObject.AddComponent<FPSAnimatorEntity>();
         Entity.animatorProfile = profile;
-        Entity.defaultAimPoint = AimPoint;
-        // KINEMATION's FPS Animation Pack shake, as FPSAF's camera plays it (the two assets have the same fields).
-        if (kinemation != null && kinemation.weaponSettings != null)
-        {
-            object source = CameraShakeOf(kinemation);
-            if (source is Object asset && asset != null)
-            {
-                shake = ScriptableObject.CreateInstance<FPSCameraShake>();
-                shake.name = asset.name;
-                shake.hideFlags = HideFlags.DontSave;
-                JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(asset), shake);
-            }
-        }
         MeasureMuzzle();
         Surface = GunSurface.Of(transform);
         FindParked();

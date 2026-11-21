@@ -19,7 +19,12 @@ using UnityEngine;
 /// guard arm straight out (user's screenshot). The KINEMATION lean tipped the spine 40-60° for the whole peek, which looked
 /// grotesque with the fists up (user's screenshot). Both arms follow.
 ///
-/// A gun: the KINEMATION-era lean (0.7.35, the user's pick), whose camera rides the eyes, as the sight is lined up on them:
+/// A gun down the sights on its aim clips (PlayerBody.AimsOnClip): as the fists, the hips going over as far as the spine's
+/// small bend leaves of the peek, the camera on the eyes and the gun held on the camera. The spine alone tipped up to 60°
+/// for the whole peek while the gun on the camera tipped only as the view rolls (12°), and the arms twisted between them
+/// (the user, 2026-11-22: "줌 한 채로 기울이면 자세가 굉장히 기괴해진다", "자연스럽게").
+///
+/// A gun at the hip: the KINEMATION-era lean (0.7.35, the user's pick), whose camera rides the eyes, as the sight is lined up on them:
 /// FPS Animation Framework's Look tips the spine just far enough that the eyes go the lean's distance on this body, the
 /// angle found for how it shares the tip down the spine (RollFor). FPSAF tips it in the animation pass, before SpineLook
 /// keeps the clip's head, so PlayerBody.FollowHead leaves that part out (ClipHeadOffset); followed, it walked the body
@@ -103,11 +108,12 @@ internal sealed class BodyLean
 
     /// <summary>
     /// Toward the way for what is in the hands, so changing slots mid-lean doesn't pop. In Update, with the look's inputs.
-    /// Both move at one rate, so the fists' share (the rest) only ever stands between them.
+    /// Both move at one rate, so the fists' share (the rest) only ever stands between them. A gun down the sights on its
+    /// aim clips (<paramref name="aimOnClip"/>, 0-1) leans as the fists do, as far as it is aimed.
     /// </summary>
-    internal void BlendHands(bool holdsGun, float dt)
+    internal void BlendHands(bool holdsGun, float aimOnClip, float dt)
     {
-        float free = holdsGun || HoldsFists ? 0f : 1f, armed = holdsGun ? 1f : 0f;
+        float free = holdsGun || HoldsFists ? 0f : 1f, armed = holdsGun ? 1f - Mathf.Clamp01(aimOnClip) : 0f;
         float step = dt > 0f ? dt / Mathf.Max(.01f, blendTime) : 1f;
         handsFree = Mathf.MoveTowards(handsFree, free, step);
         gun = Mathf.MoveTowards(gun, armed, step);

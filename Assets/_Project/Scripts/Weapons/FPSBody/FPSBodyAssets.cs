@@ -105,7 +105,6 @@ public sealed class FPSBodyAssets : ScriptableObject
     public FPSAnimatorProfile idleProfile;
 
     [Header("IK motions (FPSAF demo)")]
-    public IkMotionLayerSettings aimingMotion;
     public IkMotionLayerSettings crouchingMotion;
     public IkMotionLayerSettings jumpingMotion;
     public IkMotionLayerSettings stopMotion;

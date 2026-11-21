@@ -1,8 +1,9 @@
 using UnityEngine;
+using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// With a gun held (aiming, and since 0.9.296 at the hip too: gunHipSteady), the eyes, the gun and its sight stay steady
-/// through the gait; the gun hung from a head the gait bobbed bounced at every step (the user, 2026-11-21: "걸을 때나 달릴 때나
+/// With a gun held up (at the hip by FPS Animation Framework, down the sights on the gun's aim clips), the eyes, the gun and
+/// its sight stay steady through the gait; the gun hung from a head the gait bobbed bounced at every step (the user, 2026-11-21: "걸을 때나 달릴 때나
 /// 튀는 거요. 너무 어색하거든요"). Aiming, the eyes, the gun and its sight stay steady through the gait: the hips' bob in the player's frame is smoothed
 /// (a lag of aimSteadyTime) by as much as the player aims, right after the animation pass and before the feet are planted
 /// and the camera is placed. The whole upper body moves as one, the head the camera rides, the gun FPS Animation Framework
@@ -18,11 +19,10 @@ public sealed partial class PlayerBody
     [SerializeField, Range(0f, .2f), Tooltip("The most the steadied hips may sit off the clip's, as a share of the hips' height "
         + "over the feet. A gait's bob is a few hundredths; a crouch or a stand is far more and passes through at once.")]
     private float aimSteadyReach = .08f;
-    [SerializeField, Range(0f, 1f), Tooltip("With a gun held at the hip, the share of the aim's steadiness the hips keep: 1 as steady "
-        + "as aiming. 0 lets the gait bob the gun again, as before 0.9.296.")]
-    private float gunHipSteady = 1f;
-
     private Vector3 steadyHips;
+    // How steady the hips are kept now (0-1): eased in and out as a gun's run, a vault or a slide takes the body and gives
+    // it back.
+    private float gunSteady;
     private bool hasSteadyHips;
 
     private void SetUpAimSteady() => hasSteadyHips = false;
@@ -39,9 +39,13 @@ public sealed partial class PlayerBody
         // the lag (user, 2026-11-08).
         float reach = Mathf.Max(0f, now.y) * aimSteadyReach;
         steadyHips = now + Vector3.ClampMagnitude(steadyHips - now, reach);
-        // Only while a gun is held up: by FPS Animation Framework (at the hip as steady as gunHipSteady keeps it, aiming
-        // fully) or on the gun's aim clips (AimsOnClip). The moves' own clips (a vault, a slide) keep their motion.
-        float aim = dead ? 0f : UpperBodyFromFramework ? Mathf.Max(AimBlend(), gunHipSteady) : AimsOnClip;
-        if (aim > 0f) hips.position = transform.TransformPoint(Vector3.Lerp(now, steadyHips, aim));
+        // Only while a gun is held up in a shooting stance, whoever holds the upper body: FPS Animation Framework at the
+        // hip, the gun's aim clips down the sights. Taken from who held it (FPSAF, or the aim clip's share) it went out
+        // for a moment as the sights came down and the hips jumped (the user, 2026-11-22: "줌을 풀면 팔이 띠용한다"). The
+        // moves' own clips (a gun's run, a vault, a slide) keep their motion.
+        bool gunUp = !dead && HoldsGun && !GunRuns && (state == MovementState.Standing || state == MovementState.Crouching
+            || state == MovementState.StepDodge);
+        gunSteady = Mathf.MoveTowards(gunSteady, gunUp ? 1f : 0f, dt / Mathf.Max(.01f, blendTime));
+        if (gunSteady > 0f) hips.position = transform.TransformPoint(Vector3.Lerp(now, steadyHips, gunSteady));
     }
 }

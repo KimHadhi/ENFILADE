@@ -89,7 +89,9 @@ public sealed partial class FPSBody
             return;
         }
         bash.Sample(bashClock, out Vector3 move, out Quaternion turn);
-        float weight = bashWeight * Framework;
+        // As far as the gun is held up, at the hip or down the sights (GunUp): by FPSAF's share alone a bash from the sights
+        // came in only as FPSAF took the arms back, 45% at its strike (0.9.318-0.9.320).
+        float weight = bashWeight * GunUp;
         if (weight <= 0f) return;
         var gun = rig.IkWeaponBone;
         Quaternion hold = gun.rotation;

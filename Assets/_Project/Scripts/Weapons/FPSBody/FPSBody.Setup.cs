@@ -32,7 +32,8 @@ public sealed partial class FPSBody
             Report($"{animator.name} is not a humanoid body FPSAF can hold guns with.");
             return;
         }
-        // FPSAF's Ads lines the sight up with the camera socket: the eyes, where the camera rides.
+        // The camera socket is the eyes, where the camera rides: GunConvergeLayer turns the barrel onto the crosshair's point
+        // from there.
         rig.Camera.position = body.EyePosition;
 
         var host = animator.gameObject;
@@ -179,7 +180,6 @@ public sealed partial class FPSBody
                 gun.FeelLayers.Add((layer, layer.alpha, layer is AdditiveLayerSettings));
             else if (layer is GunConvergeLayerSettings converge) gun.Converge = converge;
             else if (layer is GunActionLayerSettings action) gun.Action = action;
-            else if (layer is AdsLayerSettings ads) gun.Ads = ads;
         }
         // Where this gun's reload clips move the magazine and bolt, for WeaponFeedback's reload sounds (sound session). A
         // shell reload has a sound per step instead (WeaponData's reload sounds).
@@ -228,19 +228,11 @@ public sealed partial class FPSBody
                 profile.settings.Add(LookFor(look));
             else if (layer is AdsLayerSettings ads && weapon != null)
             {
-                var mine = Instantiate(ads);
-                Keep(mine);
-                mine.aimingSpeed = 1f / weapon.AdsTransitionTime;
-                // Down the sights the sight line goes through the eyes exactly. KINEMATION's Ads keeps positionBlend and
-                // rotationBlend (0.21-0.25 in the pistol profile, 0.38-0.41 in the rifle's) of the gun's offset from the
-                // eyes as it was when the profile linked: the last frame of whatever was held before, the view's pitch and
-                // all, while Ads itself works before Look. So each draw left the sight line somewhere else, 1-5 cm off the
-                // eyes: drawn after the MKR9, the R08's ran 2.2 cm above them, and its micro dot shows the dot only with the
-                // eye within 1.5 cm of that line (user, 2026-11-12: "R08 리볼버 조준경 줌 했을 때 안 보임. 도트 사이트 고장난 듯").
-                mine.positionBlend = default;
-                mine.rotationBlend = default;
-                profile.settings.Add(mine);
-                // Then the barrel turns onto the crosshair's point, before sway and recoil go on top (GunConvergeLayer).
+                // FPSAF's Ads itself stays out since 0.9.321: the gun's aim clips have the arms down the sights and the gun
+                // is held on the eyes there (FPSBody.AimOnClip), so Ads only showed as the sights came up, and lifted the
+                // gun again where the aim ended at once (a wall, a shove). Its place in the order is kept for the two of
+                // ours, on its rig:
+                // the barrel turns onto the crosshair's point, before sway and recoil go on top (GunConvergeLayer).
                 profile.settings.Add(ConvergeFor(ads));
                 // And the gun's own action playing moves it from there (GunActionLayer).
                 profile.settings.Add(ActionFor(ads));

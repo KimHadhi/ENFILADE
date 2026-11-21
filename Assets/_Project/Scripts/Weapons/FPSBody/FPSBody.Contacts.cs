@@ -42,7 +42,7 @@ public sealed partial class FPSBody
     [SerializeField, Tooltip("Reloads hold the gun and put the palms where KINEMATION's own clip has them (the gun's tracks). Off: the remade "
         + "clip alone, with the gun kept in the right hand.")]
     private bool reloadContacts = true;
-    [SerializeField, Tooltip("The plain hold (standing, aiming, walking, sprinting), the draw, the holster and the look over the gun "
+    [SerializeField, Tooltip("The plain hold (standing, walking, crouching, down the sights on the aim clips), the draw, the holster and the look over the gun "
         + "put the palms where KINEMATION's own clips have them on the gun, as reloads do. Off: FPSAF's hold from the remade pose clip "
         + "and the remade draw, holster and inspect, as before.")]
     private bool holdContacts = true;
@@ -252,7 +252,7 @@ public sealed partial class FPSBody
         if (!HoldsGun || rig == null) return false;
         float clip = hasContact ? contactWeight : 0f;
         float hold = HoldSide(isLeft, out GunContact steady) ? holdContactWeight : 0f;
-        weight = MixOf(clip, hold, out float mix) * Framework;
+        weight = MixOf(clip, hold, out float mix) * GunUp;
         if (weight <= 0f) return false;
         Vector3 holdPalm = isLeft ? steady.LeftPalm : steady.RightPalm, clipPalm = isLeft ? contact.LeftPalm : contact.RightPalm;
         Vector3 holdFingers = isLeft ? steady.LeftFingers : steady.RightFingers, clipFingers = isLeft ? contact.LeftFingers : contact.RightFingers;
@@ -329,7 +329,7 @@ public sealed partial class FPSBody
         Vector3[] clipWays = hasContact ? (isLeft ? contact.LeftDigits : contact.RightDigits) : null;
         Vector3[] holdWays = HoldSide(isLeft, out GunContact steady) ? (isLeft ? steady.LeftDigits : steady.RightDigits) : null;
         float clip = clipWays != null ? contactWeight : 0f, hold = holdWays != null ? holdContactWeight : 0f;
-        weight = MixOf(clip, hold, out float mix) * Framework;
+        weight = MixOf(clip, hold, out float mix) * GunUp;
         if (weight <= 0f) return false;
         if (mix >= .999f) digits = clipWays;
         else if (mix <= .001f) digits = holdWays;
@@ -340,7 +340,7 @@ public sealed partial class FPSBody
         }
         // Through a reload the fingers wear the clip's ways as they are; the hold wears its own the same way, so they don't
         // open off the gun the moment the reload ends.
-        still = stillHoldFixes && mix <= .001f && hold >= .999f && Framework >= .999f;
+        still = stillHoldFixes && mix <= .001f && hold >= .999f && GunUp >= .999f;
         return true;
     }
 

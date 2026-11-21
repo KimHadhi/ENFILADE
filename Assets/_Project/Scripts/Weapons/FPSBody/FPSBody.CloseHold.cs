@@ -82,7 +82,7 @@ public sealed partial class FPSBody
         muzzle = probeView != null ? probeView.position : Vector3.zero;
         foeClose = false;
         linger = Mathf.Max(0f, closeHold.linger);
-        if (!closeHold.on || !HoldsGun || eyes == null || !HeldPistol || held.HandsBusy || Framework < .999f
+        if (!closeHold.on || !HoldsGun || eyes == null || !HeldPistol || held.HandsBusy || GunUp < .999f
             || controller.Customizing || Excepted(held.Data)) return false;
         Vector3 clean = CleanMuzzle();
         muzzle = eyes.TransformPoint(clean + CloseMove(clean));
@@ -170,9 +170,10 @@ public sealed partial class FPSBody
         return feet + Vector3.up * Mathf.Clamp(point.y - feet.y, ManGirth, ManHeight - ManGirth);
     }
 
-    // How far the gun is held in this frame (0-1): eased, and only where FPSAF holds it (not in a vault or a slide) and not
-    // while the customize menu holds it out.
-    private float CloseShare => Mathf.SmoothStep(0f, 1f, closeWeight) * Framework * (1f - presentWeight);
+    // How far the gun is held in this frame (0-1): eased, and only where the gun is held up (GunUp: at the hip or down the
+    // sights, not in a vault or a slide) and not while the customize menu holds it out. By FPSAF's share alone an aimed
+    // pistol was never pulled in by a foe walking up (0.9.318-0.9.320).
+    private float CloseShare => Mathf.SmoothStep(0f, 1f, closeWeight) * GunUp * (1f - presentWeight);
 
     // After the clips have placed the gun (FollowContacts), before the bash goes on top, the weapon root rides it (RideGun)
     // and the hands take it (320): the gun held in close, as far as it is in.

@@ -41,7 +41,6 @@ public sealed partial class FPSGun
         foreach (var point in eyePoints)
             if (point.Value != null && point.Value != point.Key) Destroy(point.Value.gameObject);
         eyePoints.Clear();
-        if (Entity != null) Entity.defaultAimPoint = EyePoint;
     }
 
     /// <summary>
@@ -55,7 +54,7 @@ public sealed partial class FPSGun
     }
 
     /// <summary>
-    /// What FPSAF's Ads lines up with the eyes: the shown sight's own eye point, or a point behind it on the sight line by the
+    /// What is held on the eyes down the sights (FPSGun.HoldFromEyes): the shown sight's own eye point, or a point behind it on the sight line by the
     /// hold's eye relief on this body (GunHold.EyeRelief: a handgun whose sight wants the eye nearer than the arms can fold).
     /// One per sight, so another sight is another point and FPSAF eases the view across as it does between aim points.
     /// </summary>
@@ -81,7 +80,6 @@ public sealed partial class FPSGun
 
     private void OnDestroy()
     {
-        if (shake != null) Destroy(shake);
         if (aimedRecoil != null) Destroy(aimedRecoil);
         foreach (var copy in rated) if (copy != null) Destroy(copy);
     }

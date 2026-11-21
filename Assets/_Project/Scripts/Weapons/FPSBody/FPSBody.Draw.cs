@@ -52,11 +52,8 @@ public sealed partial class FPSBody
         if (held == null || linked) return;
         held.gameObject.SetActive(true);
         aiming = false;
-        // FPSAF is told too. Its Ads goes by an input of its own, which stayed up from the last gun when the swap was made
-        // down the sights: the new gun then rose to the eyes through its draw while the rules had no aim at all, and stood
-        // there until the next time the sights went up and down (Logs/gun-actions.txt, 2026-11-17: a Herrington drawn after
-        // an aimed MKR9 ended its draw at (0.0, -5.0, 30.7) cm from the eyes, where it is aimed, with the aim at 0).
-        if (input != null) held.Aim(false, input, recoil);
+        // The recoil animation is told too: its aimed share stayed on from the last gun when the swap was made down the sights.
+        held.Aim(false, recoil);
         held.Equip(framework, recoil, assets, 60f / Mathf.Max(.001f, held.Data.ShotInterval), FireModeOf(HeldFireMode), bodyCamera,
             aimedRecoilTurn, aimedRecoilLift);
         drawnAt = Time.time;

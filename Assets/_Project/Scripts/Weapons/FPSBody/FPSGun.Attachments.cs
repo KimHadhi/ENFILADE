@@ -128,8 +128,8 @@ public sealed partial class FPSGun
 
     /// <summary>
     /// Shows sight <paramref name="index"/>, held or not: picked in the customize menu, or the one a friend's PC has on their
-    /// gun (PlayerNetworkCombat). FPSAF's Ads eases the view over to the new aim point by itself (its aimPointSpeed), as
-    /// KINEMATION's demo switches sights. False when it is already up or the gun has no such sight.
+    /// gun (PlayerNetworkCombat). The gun is then held on the new sight's eye point (EyePoint). False when it is already up
+    /// or the gun has no such sight.
     /// </summary>
     internal bool ShowSight(int index)
     {
@@ -137,7 +137,6 @@ public sealed partial class FPSGun
         // leaves what is up.
         if (Sights == null || index < 0 || index >= Sights.Count || index == Sights.Current || !Sights.Offered(index)) return false;
         Sights.Select(index);
-        if (Entity != null) Entity.defaultAimPoint = EyePoint;
         return true;
     }
 
@@ -159,21 +158,21 @@ public sealed partial class FPSGun
         if (assets.unEquipMotion != null) animator.LinkAnimatorLayer(assets.unEquipMotion);
     }
 
-    /// <summary>Aiming starts or stops (Weapon.OnAimPressed / OnAimReleased); our look sets the field of view.</summary>
-    internal void Aim(bool aiming, UserInputController input, RecoilAnimation recoil)
+    /// <summary>Aiming starts or stops: KINEMATION's recoil animation takes its aimed share (aimedRecoilTurn,
+    /// aimedRecoilLift). Our look sets the field of view, and the gun's aim clips hold the gun down the sights
+    /// (FPSBody.AimOnClip); FPSAF's own aim (its Ads and IsAiming) is gone since 0.9.321.</summary>
+    internal void Aim(bool aiming, RecoilAnimation recoil)
     {
-        input.SetValue(FPSANames.IsAiming, aiming);
         if (recoil != null) recoil.isAiming = aiming;
     }
 
     /// <summary>
-    /// One of our shots (Weapon.OnFire): the recoil animation, the camera shake, and the gun's fire clips. Down the sights
-    /// KINEMATION's camera shake stays off: the view's own recoil (PlayerLook) is the kick there, and the shake only
-    /// rocked the sight off what it was on.
+    /// One of our shots (Weapon.OnFire): the recoil animation and the gun's fire clips. The view's own kick
+    /// (WeaponFeedback, PlayerLook) is the only shot shake; KINEMATION's camera shake, off everywhere since 2026-11-09, is
+    /// gone with its copy (0.9.321).
     /// </summary>
-    internal void Fire(bool lastRound, RecoilAnimation recoil, FPSCameraController camera, bool aimed = false)
+    internal void Fire(bool lastRound, RecoilAnimation recoil)
     {
-        if (camera != null && shake != null && !aimed) camera.PlayCameraShake(shake);
         if (recoil != null && recoil.isActiveAndEnabled) recoil.Play();
         if (Kinemation == null || partsPlayer == null) return;
         var settings = Kinemation.weaponSettings;

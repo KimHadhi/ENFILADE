@@ -9,10 +9,10 @@ public sealed partial class FPSBody
     // the gun eases onto the point instead of snapping to it.
     private const float ConvergeEase = .2f;
 
-    // How the distance to the crosshair's point is followed (half-lives, s) at the hip and down the sights: as before
-    // KINEMATION (WeaponData's aimFollowHalfLife .055 and adsAimFollowHalfLife .025, 0.7.34), followed as its reciprocal, so
-    // a swing from the sky onto a near wall doesn't hang far behind. The nearest it is taken (m), and without a point yet.
-    private const float AimFollowHalfLife = .055f, AdsAimFollowHalfLife = .025f, NearestAim = .5f, DefaultAim = 20f;
+    // How the distance to the crosshair's point is followed (half-life, s) at the hip, where FPSAF holds the gun: as before
+    // KINEMATION (WeaponData's aimFollowHalfLife .055, 0.7.34), followed as its reciprocal, so a swing from the sky onto a
+    // near wall doesn't hang far behind. The nearest it is taken (m), and without a point yet.
+    private const float AimFollowHalfLife = .055f, NearestAim = .5f, DefaultAim = 20f;
 
     // The nearest point a barrel is turned onto lies this far ahead of its own muzzle (m): GunConvergeLayerJob says why.
     private const float NearestAhead = .5f;
@@ -26,7 +26,7 @@ public sealed partial class FPSBody
 
     private const float PresentEase = .25f;
 
-    private void FeedConverge(float dt, float aim)
+    private void FeedConverge(float dt)
     {
         var converge = held.Converge;
         if (converge == null) return;
@@ -46,13 +46,13 @@ public sealed partial class FPSBody
         // The customize menu holds the gun out to show it (ArcCW's customize view).
         presentWeight = Mathf.MoveTowards(presentWeight, controller.Customizing ? 1f : 0f, dt / PresentEase);
         converge.present = Mathf.SmoothStep(0f, 1f, presentWeight);
-        // Down the sights Ads lines the sight up on the eyes; held back by a wall, its pose has the gun; shown off, the menu's.
-        converge.weight = convergeWeight * (1f - aim) * (1f - cover) * (1f - presentWeight);
+        // Held back by a wall, its pose has the gun; shown off, the menu's. Down the sights the aim clips hold it.
+        converge.weight = convergeWeight * (1f - cover) * (1f - presentWeight);
 
         float distance = DefaultAim;
         if (controller.HasAimPoint && eyes != null)
             distance = Mathf.Max(NearestAim, Vector3.Dot(controller.AimPoint - eyes.position, eyes.forward));
-        float halfLife = Mathf.Lerp(AimFollowHalfLife, AdsAimFollowHalfLife, aim);
+        float halfLife = AimFollowHalfLife;
         if (!hasAimDistance) { inverseAimDistance = 1f / distance; hasAimDistance = true; }
         else inverseAimDistance = Mathf.Lerp(inverseAimDistance, 1f / distance, 1f - Mathf.Exp(-Mathf.Log(2f) * dt / halfLife));
         converge.distance = 1f / Mathf.Max(1e-4f, inverseAimDistance);
@@ -69,6 +69,11 @@ public sealed partial class FPSBody
 
     // FPSAF's share of the upper body: both hands on the gun, standing or crouched (PlayerBodyHands.FrameworkShare).
     private float Framework => hands != null ? Mathf.Clamp01(hands.FrameworkShare) : 1f;
+
+    // How much of the upper body holds the gun up, FPSAF's at the hip or the gun's aim clips down the sights
+    // (PlayerBodyHands.GunUpShare): the hands on the gun's own contacts, the close hold, a bash and the gun's camera motion
+    // go by it.
+    private float GunUp => hands != null ? Mathf.Clamp01(hands.GunUpShare) : 1f;
 
     // How much FPSAF's body carries the gun rather than the view (PlayerBodyHands.BodyCarry): the gun's place goes by this.
     // By Framework it went by the hands too, and those come onto a gun over 0.15 s whenever it is drawn after bare hands
@@ -135,42 +140,23 @@ public sealed partial class FPSBody
         if (!Sighted) Motion(assets.jumpingMotion);
     }
 
-    // Down the sights or on the way in (aimedNoMotions): FPSAF's little moves stay out.
-    private bool Sighted => HoldsGun && (controller.AimBlend > aimedNoMotions || aiming);
+    // Down the sights or on the way in: FPSAF's little moves (a stop, a crouch, a landing, a jump, a lean) don't start.
+    // FPSAF hasn't the gun there (the aim clips have it), and one begun then played on once it had it back.
+    private bool Sighted => HoldsGun && (controller.AimBlend > 0f || aiming);
 
-    // How quickly a little move still playing eases out as the sights come up, and a reload settling into the hold lets
-    // go (s).
-    private const float StillTime = .1f, SightsCut = .1f;
-
-    private IkMotionLayerSettings stillMotion;
+    // How quickly a reload settling into the hold lets go as the sights come up (s).
+    private const float SightsCut = .1f;
 
     private float reloadEndedAt = -100f;
 
-    // An IK motion that moves nothing: linked, FPSAF eases whatever little move was playing back to rest over its blend
-    // time (IkMotionLayerJob blends from where the last one had the gun).
-    private IkMotionLayerSettings StillMotion
-    {
-        get
-        {
-            if (stillMotion != null || assets == null || assets.aimingMotion == null) return stillMotion;
-            stillMotion = Instantiate(assets.aimingMotion);
-            Keep(stillMotion);
-            stillMotion.rotationCurves = VectorCurve.Constant(0f, StillTime, 0f);
-            stillMotion.translationCurves = VectorCurve.Constant(0f, StillTime, 0f);
-            stillMotion.blendTime = StillTime;
-            stillMotion.playRate = 1f;
-            return stillMotion;
-        }
-    }
-
     // The sights coming up take the gun as it is, as Rainbow Six Siege's come straight up: a draw still playing lets go
-    // (CutDraw), a little move FPSAF is still playing (a stop, a landing, a crouch) eases out in StillTime, and a reload that
-    // has just ended stops settling into the hold, so nothing but the sight moves the gun as it rises.
+    // (CutDraw) and a reload that has just ended stops settling into the hold, so nothing but the sight moves the gun as it
+    // rises. FPSAF's little moves needn't be eased out here any more (StillMotion until 0.9.321): the aim clips hold the
+    // gun down the sights.
     private void SteadyForSights()
     {
         CutDraw();
         if (!HoldsGun) return;
-        Motion(StillMotion);
         if (!held.HandsBusy && Time.time - reloadEndedAt < reloadSettle)
         {
             // The gun and the hands let go of the clip's hold as it leaves the mix (FeedAction).
@@ -237,14 +223,15 @@ public sealed partial class FPSBody
             return;
         }
         float released = Released(false);
+        // On the aim clips the sights come down at the aim's own pace even where the aim ended at once (PlayerBody.FollowAim).
         float onClip = Body != null ? Body.AimsOnClip : 0f;
-        if (released <= 0f || !held.HoldFromEyes(aim, out KTransform kept)) return;
+        if (released <= 0f || !held.HoldFromEyes(Mathf.Max(aim, onClip), out KTransform kept)) return;
         gun.SetPositionAndRotation(Vector3.Lerp(gun.position, eyes.TransformPoint(kept.position), released),
             Quaternion.Slerp(gun.rotation, eyes.rotation * kept.rotation, released));
         // Sprinting the gun's run (Combat Girls *_Run) has the arms, and the gun goes where its right hand takes it, held
         // in that hand as FPSAF holds it (PlayerBody.GunRuns; the user, 2026-11-22: "combat girls animation을 처쓰라고").
         held.FollowHand(rig.WeaponBoneRight, gun, released * gunRunWeight);
-        AimKick(gun, released * onClip);
+        AimOnClip(gun, released * onClip);
         float leftReleased = Released(true);
         for (int i = 0; i < fingers.Count; i++)
             fingers[i].bone.localRotation = Quaternion.Slerp(fingers[i].bone.localRotation, fingerGrip[i], fingers[i].left ? leftReleased : released);
@@ -306,12 +293,12 @@ public sealed partial class FPSBody
     internal bool ReloadingGun => HoldsGun && held.HandsBusy;
 
     /// <summary>
-    /// The held gun's real surface while FPSAF holds it: what the hands rest on and the fingers close round, each hand
-    /// by how far it is on its grip (GripHold). Null otherwise. It once waited for the draw's motion to end and for no
+    /// The held gun's real surface while it is held up (at the hip or down the sights, GunUp): what the hands rest on and
+    /// the fingers close round, each hand by how far it is on its grip (GripHold). Null otherwise. It once waited for the draw's motion to end and for no
     /// reload, so the hands sat off the gun through the draw and the reload and snapped onto it after (user, 2026-11-08).
     /// </summary>
     internal GunSurface HeldSurface
-        => HoldsGun && Framework >= .999f && held.Surface != null && !held.Surface.Empty ? held.Surface : null;
+        => HoldsGun && GunUp >= .999f && held.Surface != null && !held.Surface.Empty ? held.Surface : null;
 
     // A hand is on its grip within this of where the bake had it, and off it beyond that (m, at model scale 1).
     private const float GripNear = .06f, GripFar = .12f;
