@@ -71,8 +71,6 @@ public sealed class StreakBadge
     private const float RowHeight = 32f, SkullSize = 30f, EyeGlowSize = 14f;
     // FeedFlame's trail image, and the point on it that sits on the middle of the row's left end. They match the shader.
     private static readonly Vector2 TrailSize = new Vector2(340f, 96f), TrailAnchor = new Vector2(196f, 48f);
-    // The eye on the right of the screen, in the skull texture's -1 to 1 space.
-    private static readonly Vector2 Eye = new Vector2(.29f, .1f);
     private static readonly Color Bone = new Color(.86f, .94f, 1f);
     private static readonly int TrailId = Shader.PropertyToID("_Trail");
     /// <summary>FeedFlame's modes: one flame, the trail off a row's left end, a border of fire round a whole row.</summary>
@@ -107,7 +105,9 @@ public sealed class StreakBadge
         neon = Image("Neon", CombatUIAssets.SkullNeon, SkullSize * CombatUIAssets.SkullNeonScale);
         skull = Image("Skull", CombatUIAssets.Skull, SkullSize);
         skull.color = Bone;
-        Vector2 eye = Eye * SkullSize * .5f;
+        // The eye on the right of the screen, found in whichever skull picture is shown (CombatUIAssets.SkullEye, read
+        // with the neon above).
+        Vector2 eye = CombatUIAssets.SkullEye * SkullSize * .5f;
         eyeGlow = Image("Eye Glow", CombatUIAssets.SoftGlow.texture, EyeGlowSize);
         eyeGlow.rectTransform.anchoredPosition = eye;
         eyeFlame = Flame("Eye Flame", root, false);

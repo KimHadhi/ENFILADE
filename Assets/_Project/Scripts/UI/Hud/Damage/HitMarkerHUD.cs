@@ -9,8 +9,8 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 /// snap to rest, hold a moment and fade sliding a few pixels outward, in .2 s; white, a pale gold headshot that pops twice,
 /// a red kill, a quiet grey for no effect, numbers in HitMarkers.csv (<see cref="CleanLook"/>, <see cref="LayoutClean"/>).
 /// Bold, the earlier look, described below, numbers in GunFeel. Both get the headshot's burst, the posture break's burst
-/// and the pierced tails, and a picture under the aim point for a kill (a skull, a knife, a burst ... by how it happened)
-/// and for a broken posture (<see cref="KillIcons"/>, <see cref="IconLook"/>).
+/// and the pierced tails, and under the aim point the kill chain: every kill of a run adds its picture (a skull, a
+/// knife, a burst ... by how it happened, <see cref="KillIcons"/>) to one row (<see cref="ChainLook"/>).
 /// A headshot's burst keeps the middle clear (<see cref="HeadLook"/>, HitMarkers.csv Head.*): a hollow eight-point star,
 /// a thin gold ring snapping out through the lines with a fainter echo, eight sparks from outside the lines, and a lens
 /// streak split down the middle and fired out both ways with a short split rise and two diamonds on a slant, all gone in
@@ -33,31 +33,42 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitMarkers)]
 public sealed class HitMarkerHUD : MonoBehaviour
 {
-    public const string TableName = "HitMarkers", CleanRow = "Clean", HeadRow = "Head", IconRow = "Icon";
+    public const string TableName = "HitMarkers", CleanRow = "Clean", HeadRow = "Head", ChainRow = "Chain";
 
     /// <summary>
-    /// The kill icon's look, in either look of the marker: HitMarkers.csv rows Icon.* (1920x1080 canvas units, seconds).
-    /// The picture (<see cref="KillIcons"/>: a skull, a shattered skull, a knife, a burst ... the user's seven, 2026-11-21)
-    /// pops under the aim point rather than on it, so the head it took and the next one lined up behind it stay in sight
-    /// (the user's rule for the marker: "시야를 너무 가리지도 않으면서"), holds long enough to be read at a glance and fades
-    /// sliding a little further down. A new kill starts it again with its own picture.
+    /// The kill chain under the screen's middle: Cool Killchains (a Garry's Mod addon), the user's pick on 2026-11-22
+    /// ("좋아"), its numbers read off the addon's code at 1080p (HitMarkers.csv rows Chain.*, 1920x1080 canvas units,
+    /// seconds). It is one row: every kill of a run adds its picture (<see cref="KillIcons"/>, tinted by its row) on the
+    /// right, and the row slides to stay centred. A run lasts as long as kills keep coming within its window, which grows
+    /// with each kill already in it; when the window ends the whole row fades over its last moment and is gone. A new
+    /// picture fades in from bigger over a share of the window. It took the place of the single picture that popped under
+    /// the aim for each kill (one owner for kill pictures under the aim).
     /// </summary>
     [System.Serializable]
-    public sealed class IconLook
+    public sealed class ChainLook
     {
-        [Tooltip("The picture's side (px). 0 turns the kill icon off.")]
-        public float size = 40f;
-        [Tooltip("From the aim point down to the picture's middle (px). 0 puts it on the aim point.")]
-        public float below = 62f;
-        [Tooltip("A fresh picture starts this much bigger (.35 = 35%) and snaps back over Pop Seconds.")]
-        public float pop = .35f;
-        public float popSeconds = .08f;
-        [Tooltip("Seconds it shows at full strength, the pop included, before it fades.")]
-        public float holdSeconds = .4f;
-        [Tooltip("Seconds it then takes to fade out.")]
-        public float fadeSeconds = .25f;
-        [Tooltip("How far it slides down while it fades (px).")]
-        public float drift = 6f;
+        [Tooltip("A picture's side (px). 0 turns the chain off.")]
+        public float size = 30f;
+        [Tooltip("From one picture's middle to the next (px).")]
+        public float spacing = 36f;
+        [Tooltip("From the screen's middle down to the row's middle (px).")]
+        public float below = 216f;
+        [Tooltip("A new picture starts this much bigger (.75 = 1.75 times) and settles as it fades in.")]
+        public float pop = .75f;
+        [Tooltip("The share of the run's window a new picture takes to fade in and settle.")]
+        public float popShare = 1f / 30f;
+        [Tooltip("The pictures' strength, 0 to 1.")]
+        public float alpha = .784f;
+        [Tooltip("Seconds the row waits for the next kill when it holds one picture.")]
+        public float windowSeconds = 4f;
+        [Tooltip("Seconds added to the window for every picture already in the row.")]
+        public float perKill = .33f;
+        [Tooltip("The row fades over this many seconds divided by the window (2 / 4 s = the last .5 s).")]
+        public float fade = 2f;
+        [Tooltip("Most pictures in the row; 0 = as many as fit in half the screen's width.")]
+        public float most;
+        [Tooltip("How fast the row slides to stay centred as pictures join (per second).")]
+        public float slide = 5f;
     }
 
     /// <summary>
@@ -189,14 +200,15 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private readonly Graphic[] flareDiamonds = new Graphic[2];
     private readonly CleanLook look = new CleanLook();
     private readonly HeadLook headLook = new HeadLook();
-    private readonly IconLook iconLook = new IconLook();
+    private readonly ChainLook chainLook = new ChainLook();
     private Image[] sparks;
-    // The kill icon: its picture, its row's colour, and whether it is a kill's, which a broken posture's never covers.
-    private RectTransform iconRoot;
-    private RawImage icon;
-    private Color iconColour = Color.white;
-    private bool iconIsKill;
-    private float iconAge = 99f;
+    // The kill chain: one link per kill of the run, oldest first (its picture, its row's colour, when it joined), the
+    // pictures no longer shown kept for the next run, when the run ends, its window, and the count the row is centred on.
+    private sealed class ChainLink { public RawImage Image; public Color Colour; public float Born; }
+    private readonly System.Collections.Generic.List<ChainLink> chain = new System.Collections.Generic.List<ChainLink>();
+    private readonly System.Collections.Generic.Stack<RawImage> spareLinks = new System.Collections.Generic.Stack<RawImage>();
+    private RectTransform chainRoot;
+    private float chainEnd, chainWindow, chainCentred;
     private RectTransform root, cleanRoot, headRoot, starRoot, breakRoot;
     // The look the showing marker started in: a change in the settings takes effect from the next hit.
     private HitMarkerStyle style;
@@ -225,15 +237,14 @@ public sealed class HitMarkerHUD : MonoBehaviour
         instance.breakAge = 0f;
         instance.breakRoot.gameObject.SetActive(true);
         instance.LayoutBreak(GunFeelSettings.Instance);
-        instance.ShowIcon(KillIcons.ForBreak(), false);
     }
 
-    /// <summary>The local player's kill: its picture (a KillIcons row, chosen by how it happened) under the aim point.</summary>
+    /// <summary>The local player's kill: its picture (a KillIcons row, chosen by how it happened) joins the kill chain.</summary>
     public static void ShowKill(KillIcons.Row row)
     {
         if (!Application.isPlaying || row == null || !GunFeelSettings.Instance.hitMarkers) return;
         Prepare();
-        instance.ShowIcon(row, true);
+        instance.AddLink(row);
     }
 
     public static void Prepare()
@@ -252,7 +263,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         FeelUI.SetupOverlay(gameObject, 26);
         GameTables.BindNested(TableName, CleanRow, this, look);
         GameTables.BindNested(TableName, HeadRow, this, headLook);
-        GameTables.BindNested(TableName, IconRow, this, iconLook);
+        GameTables.BindNested(TableName, ChainRow, this, chainLook);
         root = FeelUI.Rect("Marker", transform);
         ring = FeelUI.Rect("Ring", root).gameObject.AddComponent<RawImage>();
         ring.texture = FeelAssets.Ring; ring.raycastTarget = false;
@@ -301,11 +312,8 @@ public sealed class HitMarkerHUD : MonoBehaviour
         for (int i = 0; i < 4; i++) shards[i] = Tick("Shard " + i, breakRoot);
         breakRoot.gameObject.SetActive(false);
 
-        // The kill icon over everything: the picture is white with its own shadow drawn in, tinted by its row's colour.
-        iconRoot = FeelUI.Rect("Kill Icon", transform);
-        icon = iconRoot.gameObject.AddComponent<RawImage>();
-        icon.raycastTarget = false;
-        iconRoot.gameObject.SetActive(false);
+        // The kill chain over everything: the pictures are white with their own shadow drawn in, tinted by their rows' colours.
+        chainRoot = FeelUI.Rect("Kill Chain", transform);
         // The table and its pictures now, so the first kill loads nothing (this runs from CombatWarmup's Prepare).
         KillIcons.Prewarm();
     }
@@ -438,43 +446,77 @@ public sealed class HitMarkerHUD : MonoBehaviour
             if (breakAge >= settings.breakSeconds) breakRoot.gameObject.SetActive(false);
             else LayoutBreak(settings);
         }
-        if (iconRoot.gameObject.activeSelf)
-        {
-            iconAge += Time.unscaledDeltaTime;
-            if (iconAge >= IconSeconds()) iconRoot.gameObject.SetActive(false);
-            else LayoutIcon();
-        }
+        if (chain.Count > 0) LayoutChain();
     }
 
-    // kill: a kill's picture, which a broken posture's never covers while it is up (a kill and a break in one frame
-    // show the kill).
-    private void ShowIcon(KillIcons.Row row, bool kill)
+    // A kill joins the run (or starts a new one once the last has ended). The window is set from the pictures already in
+    // the row, so a long run waits longer for its next kill; a row as wide as allowed lets its oldest picture go.
+    private void AddLink(KillIcons.Row row)
     {
-        if (row == null || iconLook.size <= 0f) return;
-        if (!kill && iconIsKill && iconRoot.gameObject.activeSelf) return;
+        var l = chainLook;
+        if (l.size <= 0f) return;
         var picture = KillIcons.Picture(row);
         if (picture == null) return;
-        icon.texture = picture;
-        iconColour = row.Colour;
-        iconIsKill = kill;
-        iconAge = 0f;
-        iconRoot.gameObject.SetActive(true);
-        LayoutIcon();
+        float now = Time.unscaledTime;
+        if (now >= chainEnd) ClearChain();
+        chainWindow = Mathf.Max(.1f, l.windowSeconds + chain.Count * l.perKill);
+        chainEnd = now + chainWindow;
+        int most = l.most > 0f ? Mathf.RoundToInt(l.most) : Mathf.CeilToInt(960f / Mathf.Max(1f, l.spacing));
+        while (chain.Count >= Mathf.Max(1, most))
+        {
+            Recycle(chain[0]);
+            chain.RemoveAt(0);
+            chainCentred = Mathf.Max(0f, chainCentred - 1f);
+        }
+        var image = spareLinks.Count > 0 ? spareLinks.Pop() : NewLinkImage();
+        image.texture = picture;
+        image.gameObject.SetActive(true);
+        chain.Add(new ChainLink { Image = image, Colour = row.Colour, Born = now });
+        LayoutChain();
     }
 
-    private float IconSeconds() => Mathf.Max(.02f, iconLook.holdSeconds + iconLook.fadeSeconds);
-
-    // The kill icon snaps from big to its size, holds, then fades sliding down, under the aim point as it jumps with the
-    // view's kick, as the lines do.
-    private void LayoutIcon()
+    private RawImage NewLinkImage()
     {
-        var l = iconLook;
-        float settle = 1f - Mathf.Clamp01(iconAge / Mathf.Max(.01f, l.popSeconds));
-        float pop = 1f + l.pop * settle * settle * settle;
-        float fade = l.fadeSeconds > 0f ? Mathf.Clamp01((iconAge - l.holdSeconds) / l.fadeSeconds) : iconAge >= l.holdSeconds ? 1f : 0f;
-        iconRoot.anchoredPosition = AimPoint() + Vector2.down * (l.below + l.drift * Smooth(fade));
-        iconRoot.sizeDelta = Vector2.one * (l.size * pop);
-        icon.color = KitStyle.With(iconColour, iconColour.a * (1f - Smooth(fade)));
+        var image = FeelUI.Rect("Kill Chain Picture", chainRoot).gameObject.AddComponent<RawImage>();
+        image.raycastTarget = false;
+        return image;
+    }
+
+    private void Recycle(ChainLink link)
+    {
+        link.Image.gameObject.SetActive(false);
+        spareLinks.Push(link.Image);
+    }
+
+    private void ClearChain()
+    {
+        foreach (var link in chain) Recycle(link);
+        chain.Clear();
+        chainCentred = 0f;
+    }
+
+    // The addon's layout: the row centred on the count it is sliding to, a new picture fading in (quartic) from bigger and
+    // a little to the left, the whole row fading over the window's last moment. It sits still under the screen's middle
+    // (the addon's place), not on the kicked aim.
+    private void LayoutChain()
+    {
+        var l = chainLook;
+        float now = Time.unscaledTime;
+        if (now >= chainEnd) { ClearChain(); return; }
+        chainCentred = Mathf.Lerp(chainCentred, chain.Count, Mathf.Clamp01(Time.unscaledDeltaTime * l.slide));
+        float row = Mathf.Clamp01((chainEnd - now) * chainWindow / Mathf.Max(.01f, l.fade));
+        float scale = l.size / 30f;
+        for (int k = 0; k < chain.Count; k++)
+        {
+            var link = chain[k];
+            float settle = Mathf.Clamp01((now - link.Born) / Mathf.Max(.001f, chainWindow * l.popShare));
+            float fadeIn = settle * settle * settle * settle;
+            float grow = 1f + (1f - fadeIn) * l.pop;
+            var rect = link.Image.rectTransform;
+            rect.anchoredPosition = new Vector2(l.spacing * (k + 1 - (chainCentred + 1f) * .5f) - 3f * scale * (grow - 1f), -l.below);
+            rect.sizeDelta = Vector2.one * (l.size * grow);
+            link.Image.color = KitStyle.With(link.Colour, link.Colour.a * l.alpha * row * fadeIn);
+        }
     }
 
     /// <summary>Screen position of the steady aim as seen through the punched camera; centre when there is no punch.</summary>

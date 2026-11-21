@@ -17,11 +17,39 @@ public static class CombatUIAssets
 
     /// <summary>Eight-point burst: long cardinal tips, shorter diagonals.</summary>
     public static Texture2D CriticalBurst => criticalBurst != null ? criticalBurst : criticalBurst = Rasterize("Critical Burst (Runtime)", 64, BurstCoverage);
-    public static Texture2D Skull => skull != null ? skull : skull = Rasterize("Kill Skull (Runtime)", 64, SkullDistance);
+    /// <summary>The kill skull: the Cool Killchains drawing (KillIcons' Skull, white with its shadow drawn in), so the kill
+    /// feed, the streak badge and the damage numbers show the skull of the kill chain (the user, 2026-11-22: "여기에 쓰이는
+    /// 아이콘, 다른 해골 아이콘에도 쓸 것. 네가 만든 해골 아이콘 구림"). The skull drawn in code stays only for a build
+    /// without that picture.</summary>
+    public static Texture2D Skull
+    {
+        get
+        {
+            if (skull != null) return skull;
+            skull = KillIcons.PictureNamed(KillIcons.SkullPicture);
+            if (skull == null) skull = Rasterize("Kill Skull (Runtime)", 64, SkullDistance);
+            return skull;
+        }
+    }
+    /// <summary>The headshot's skull: the kill chain's shattered one, else the kill feed's drawn mark (WeaponIcons.Headshot),
+    /// else the burst.</summary>
+    public static Texture2D HeadshotSkull
+    {
+        get
+        {
+            var picture = KillIcons.PictureNamed(KillIcons.HeadshotSkullPicture);
+            if (picture != null) return picture;
+            var drawn = WeaponIcons.For(WeaponIcons.Headshot);
+            return drawn != null ? drawn.texture : CriticalBurst;
+        }
+    }
     /// <summary>How much larger than the skull to draw SkullNeon so the two line up.</summary>
     public const float SkullNeonScale = 1f / NeonFit;
     /// <summary>Light along the skull's outline: brightest at the edge, gone within a short reach, nothing inside its shape.</summary>
     public static Texture2D SkullNeon => skullNeon != null ? skullNeon : skullNeon = RasterizeSkullNeon(128);
+    /// <summary>The middle of the skull's right eye socket in its picture's -1 to 1 space (y up), found when SkullNeon reads
+    /// the picture (the streak badge lights a flame there); the drawn skull's until then.</summary>
+    public static Vector2 SkullEye { get; private set; } = new Vector2(.29f, .1f);
     /// <summary>Counter-clockwise return arrow: a ring with a gap and an arrowhead.</summary>
     public static Texture2D CounterArrow => counterArrow != null ? counterArrow : counterArrow = Rasterize("Counter Arrow (Runtime)", 64, CounterShape);
     /// <summary>Tactical knife tipped up-left with a crescent slash trail sweeping below it: the execution mark.</summary>
@@ -210,8 +238,138 @@ public static class CombatUIAssets
     // Crossing test: -1 inside the star polygon, 1 outside.
     private static float BurstCoverage(Vector2 p) => InPolygon(p, burst) ? -1f : 1f;
 
-    // Measured from the head alone, so the sockets stay dark and only the outline lights up.
+    // The neon round whichever skull Skull shows. The picture's white shape is read back through the GPU (the picture
+    // isn't kept readable on the CPU), its holes filled so the sockets stay dark, and the light falls off outward from that
+    // outline as the drawn skull's did; the two biggest holes are the eye sockets, and the right one is where the streak
+    // badge puts its flame.
     private static Texture2D RasterizeSkullNeon(int size)
+    {
+        var shape = Silhouette(Skull, size, NeonFit);
+        if (shape == null) return RasterizeDrawnSkullNeon(size);
+        int count = size * size;
+        var outside = new bool[count];
+        var queue = new Queue<int>();
+        for (int i = 0; i < size; i++)
+        {
+            foreach (int seed in new[] { i, (size - 1) * size + i, i * size, i * size + size - 1 })
+                if (!shape[seed] && !outside[seed]) { outside[seed] = true; queue.Enqueue(seed); }
+        }
+        while (queue.Count > 0)
+        {
+            int at = queue.Dequeue(), x = at % size, y = at / size;
+            if (x > 0) Visit(at - 1); if (x < size - 1) Visit(at + 1); if (y > 0) Visit(at - size); if (y < size - 1) Visit(at + size);
+        }
+        void Visit(int next) { if (!shape[next] && !outside[next]) { outside[next] = true; queue.Enqueue(next); } }
+
+        var filled = new bool[count];
+        for (int i = 0; i < count; i++) filled[i] = !outside[i];
+        float[] toShape = Chamfer(filled, size), toOutside = Chamfer(outside, size);
+        FindEye(shape, outside, size);
+
+        var texture = NewTexture("Skull Neon (Runtime)", size, size, true);
+        var pixels = new Color32[count];
+        float unit = 2f / size;
+        for (int i = 0; i < count; i++)
+        {
+            float distance = filled[i] ? -toOutside[i] * unit : toShape[i] * unit;
+            float falloff = Mathf.Clamp01(1f - Mathf.Max(0f, distance) / NeonReach);
+            float light = falloff * falloff * Mathf.Clamp01((distance + NeonInside) / NeonInside);
+            pixels[i] = new Color32(255, 255, 255, (byte)(light * 255f));
+        }
+        texture.SetPixels32(pixels); texture.Apply(true, true);
+        return texture;
+    }
+
+    // The picture's white shape on a size x size canvas, the picture taking the middle fit share of it (y up); null when
+    // there is no picture.
+    private static bool[] Silhouette(Texture2D source, int size, float fit)
+    {
+        if (source == null) return null;
+        var wrap = source.wrapMode;
+        source.wrapMode = TextureWrapMode.Clamp;
+        var target = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        var before = RenderTexture.active;
+        float scale = 1f / fit, offset = -(1f - fit) * .5f / fit;
+        Graphics.Blit(source, target, new Vector2(scale, scale), new Vector2(offset, offset));
+        RenderTexture.active = target;
+        var read = new Texture2D(size, size, TextureFormat.RGBA32, false, true);
+        read.ReadPixels(new Rect(0, 0, size, size), 0, 0, false);
+        read.Apply(false);
+        RenderTexture.active = before;
+        RenderTexture.ReleaseTemporary(target);
+        source.wrapMode = wrap;
+        var pixels = read.GetPixels32();
+        if (Application.isPlaying) Object.Destroy(read); else Object.DestroyImmediate(read);
+        // White and solid: the drawing, not its drop shadow.
+        var shape = new bool[size * size];
+        for (int i = 0; i < shape.Length; i++) shape[i] = pixels[i].a > 127 && pixels[i].r + pixels[i].g + pixels[i].b > 380;
+        return shape;
+    }
+
+    // Distance in pixels from every pixel to the nearest seed (0 on seeds), a two-pass 1/√2 chamfer.
+    private static float[] Chamfer(bool[] seed, int size)
+    {
+        const float Straight = 1f, Diagonal = 1.4142f, Far = 1e6f;
+        var d = new float[size * size];
+        for (int i = 0; i < d.Length; i++) d[i] = seed[i] ? 0f : Far;
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            int i = y * size + x; float v = d[i];
+            if (x > 0) v = Mathf.Min(v, d[i - 1] + Straight);
+            if (y > 0)
+            {
+                v = Mathf.Min(v, d[i - size] + Straight);
+                if (x > 0) v = Mathf.Min(v, d[i - size - 1] + Diagonal);
+                if (x < size - 1) v = Mathf.Min(v, d[i - size + 1] + Diagonal);
+            }
+            d[i] = v;
+        }
+        for (int y = size - 1; y >= 0; y--)
+        for (int x = size - 1; x >= 0; x--)
+        {
+            int i = y * size + x; float v = d[i];
+            if (x < size - 1) v = Mathf.Min(v, d[i + 1] + Straight);
+            if (y < size - 1)
+            {
+                v = Mathf.Min(v, d[i + size] + Straight);
+                if (x < size - 1) v = Mathf.Min(v, d[i + size + 1] + Diagonal);
+                if (x > 0) v = Mathf.Min(v, d[i + size - 1] + Diagonal);
+            }
+            d[i] = v;
+        }
+        return d;
+    }
+
+    // The holes (inside the outline, not drawn) gathered into blobs; the two biggest are the eyes, and SkullEye is the
+    // right one's middle in the picture's own -1 to 1 space.
+    private static void FindEye(bool[] shape, bool[] outside, int size)
+    {
+        var seen = new bool[shape.Length];
+        var queue = new Queue<int>();
+        var blobs = new List<(int count, Vector2 middle)>();
+        for (int start = 0; start < shape.Length; start++)
+        {
+            if (shape[start] || outside[start] || seen[start]) continue;
+            int count = 0; Vector2 sum = Vector2.zero;
+            seen[start] = true; queue.Enqueue(start);
+            while (queue.Count > 0)
+            {
+                int at = queue.Dequeue(), x = at % size, y = at / size;
+                count++; sum += new Vector2(x + .5f, y + .5f);
+                foreach (int next in new[] { x > 0 ? at - 1 : -1, x < size - 1 ? at + 1 : -1, y > 0 ? at - size : -1, y < size - 1 ? at + size : -1 })
+                    if (next >= 0 && !shape[next] && !outside[next] && !seen[next]) { seen[next] = true; queue.Enqueue(next); }
+            }
+            blobs.Add((count, sum / count));
+        }
+        if (blobs.Count < 2) return;
+        blobs.Sort((a, b) => b.count.CompareTo(a.count));
+        var right = blobs[0].middle.x > blobs[1].middle.x ? blobs[0].middle : blobs[1].middle;
+        SkullEye = new Vector2(right.x / size * 2f - 1f, right.y / size * 2f - 1f) / NeonFit;
+    }
+
+    // Measured from the head alone, so the sockets stay dark and only the outline lights up.
+    private static Texture2D RasterizeDrawnSkullNeon(int size)
     {
         var texture = NewTexture("Skull Neon (Runtime)", size, size, true);
         var pixels = new Color32[size * size];

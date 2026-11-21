@@ -102,6 +102,15 @@ public static class KillIcons
         return pictures[row.Picture] = picture;
     }
 
+    /// <summary>The plain kill skull and the headshot's shattered one among the pictures (the Cool Killchains drawings).</summary>
+    public const string SkullPicture = "Skull", HeadshotSkullPicture = "SkullShattered";
+
+    /// <summary>A picture by its name, found the way a row's is (Documents first, then the game's). The HUD's other skulls
+    /// draw these too, so the game has one skull: the user on the Cool Killchains icons, 2026-11-22, "여기에 쓰이는 아이콘,
+    /// 다른 해골 아이콘에도 쓸 것".</summary>
+    public static Texture2D PictureNamed(string name)
+        => string.IsNullOrEmpty(name) ? null : Picture(new Row { Id = name, Picture = name });
+
     /// <summary>Reads the table and every picture it names ahead (CombatWarmup through HitMarkerHUD.Prepare), so the first
     /// kill loads nothing.</summary>
     public static void Prewarm()
