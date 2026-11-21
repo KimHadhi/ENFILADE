@@ -1,17 +1,22 @@
 using UnityEngine;
 
 /// <summary>
-/// How fast the legs carry the player: a gait (walk, jog, run or sprint) and the way it goes. The body goes as fast as the
-/// gait's own clips carry it that way, so at every gait and in every way the feet stay where they come down (the user,
-/// 2026-11-21: "이 애니메이션에 최대한 맞출 수 있는 스트레이프 시스템으로", and asked, "네 단계 모두 클립 속도", sprinting
-/// any way). The speeds are rows of Tables/Player/Gaits.csv: each gait's clips (BIPER Female Runner) measured on the
-/// reference body with ClipBench by their root's travel, the speed the performer moved at, which Unity scales to every
-/// body alike, so a race between two players is never won by a body.
-/// The keys (the user's): walk mode (Caps Lock, Player/WalkMode) walks and jogs with Shift; otherwise the player runs,
-/// and sprints with Shift (PlayerMovement.SprintProgress, eased over Move.sprintRampUpDuration, as the walk to the jog is
-/// here). Crouched, the crouched walk goes at its own speed, walk mode or not: a mode changes a motion only where it has a
-/// motion of its own (the user, 2026-11-21: "걷기 모드라고 앉기 다르게 하지 마 따로 모션 없으면"; 0.9.253 slowed the crouched
-/// walk to the walk's speed in walk mode).
+/// How fast the legs carry the player: a gait (walk, jog or sprint) and the way it goes. Each gait plays its own clips
+/// (PlayerBody.Locomotion) and the body goes about as fast as their feet carry it that way, so at every gait and in every
+/// way the feet stay where they come down (the user, 2026-11-21: "이 애니메이션에 최대한 맞출 수 있는 스트레이프 시스템으로",
+/// sprinting any way). The speeds are rows of Tables/Player/Gaits.csv: what each gait's clips' (BIPER Female Runner) feet
+/// carry the body at, measured with ClipBench on four characters, times the row's boost, the share the game goes faster
+/// than that; the step's pace and the stride make up the boost (PlayerBody.Pace). The same for every body, so a race
+/// between two players is never won by a body.
+/// The keys (the user's): a direction key alone jogs, and sprints with Shift (PlayerMovement.SprintProgress, eased over
+/// Move.sprintRampUpDuration); walk mode (Caps Lock, Player/WalkMode) walks, and jogs with Shift (eased the same way here).
+/// Crouched, the crouched walk goes at its own speed, walk mode or not: a mode changes a motion only where it has a motion
+/// of its own (the user, 2026-11-21: "걷기 모드라고 앉기 다르게 하지 마 따로 모션 없으면"; 0.9.253 slowed the crouched walk
+/// to the walk's speed in walk mode).
+/// Until 0.9.283 a key alone ran, a gait of its own between the jog and the sprint (BIPER's Run_Lfoot and StrafeRun_*), and
+/// the jog was walk mode's Shift alone. The run and the sprint looked alike even on their own clips, the run went too fast
+/// and the jog too slow, so the run went and the jog took its place, boosted, with the sprint a little faster (the user,
+/// 2026-11-21: "달리기를 없애고 ... 조깅 좀 버프해 줘, 그리고 전력질주 속도 좀 살짝 버프").
 /// The body follows the gait's speed and way as quickly as it always has (Move.groundSharpness). 0.9.253 slowed that to
 /// the start clips' run-up (0.7-0.94 s to nine tenths) for every change, stopping and turning included, with no start, stop
 /// or turn motion to show for it: the body coasted under legs that had already changed (the user: "굉장히 얼음장 위를
@@ -29,20 +34,22 @@ public sealed class MovementGait
     // The ways a row gives a speed for, degrees from ahead (left and right alike).
     private static readonly float[] Angles = { 0f, 45f, 90f, 135f, 180f };
     private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back" };
-    private const int Walk = 0, Jog = 1, Run = 2, Sprint = 3, Crouch = 4;
-    private static readonly string[] Rows = { "walk", "jog", "run", "sprint", "crouch" };
-    // Read before the table is: what the clips' feet carry the body at, the mean of four characters (0.9.282).
+    private const int Walk = 0, Jog = 1, Sprint = 2, Crouch = 3;
+    private static readonly string[] Rows = { "walk", "jog", "sprint", "crouch" };
+    // Read before the table is: what the clips' feet carry the body at, the mean of four characters (0.9.282), and the
+    // share each gait goes faster than that (0.9.283).
     private static readonly float[,] Fallback =
     {
-        { 1.27f, 1.23f, 1.25f, 1.21f, 1.43f }, { 2.44f, 3.18f, 2.36f, 2.67f, 2.16f }, { 3.92f, 4.14f, 3.61f, 4.45f, 4.69f },
-        { 5.53f, 5.79f, 5.87f, 5.12f, 5.39f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f }
+        { 1.27f, 1.23f, 1.25f, 1.21f, 1.43f }, { 2.44f, 3.18f, 2.36f, 2.67f, 2.16f },
+        { 5.53f, 5.79f, 5.87f, 4.50f, 4.46f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f }
     };
+    private static readonly float[] FallbackBoost = { 1f, 1.23f, 1.08f, 1f };
     // How long the legs take to go from one gait's clips to the next (s), as walk mode or Shift changes it.
     private const float GaitChange = .25f;
 
     private readonly PlayerMovement ctx;
-    private readonly float[,] rows = new float[5, 5];
-    private float jogShare, position = 2f;
+    private readonly float[,] rows = new float[4, 5];
+    private float jogShare, position = Jog;
 
     internal MovementGait(PlayerMovement context)
     {
@@ -50,25 +57,25 @@ public sealed class MovementGait
         Read();
     }
 
-    /// <summary>The gait's speed straight ahead now (m/s), between the run and the sprint (or the walk and the jog) as far
+    /// <summary>The gait's speed straight ahead now (m/s), between the jog and the sprint (or the walk and the jog) as far
     /// as Shift has brought it.</summary>
     public float Speed => ctx.Input.WalkMode ? Mathf.Lerp(rows[Walk, 0], rows[Jog, 0], jogShare)
-        : Mathf.Lerp(rows[Run, 0], rows[Sprint, 0], ctx.SprintProgress);
+        : Mathf.Lerp(rows[Jog, 0], rows[Sprint, 0], ctx.SprintProgress);
 
     /// <summary>
-    /// Which gait the legs go (0 walk, 1 jog, 2 run, 3 sprint; between while Shift or walk mode changes it): the clips they
-    /// play are that gait's own (PlayerBody.Locomotion), not the ones whose feet happen to match the speed. Kept by the
-    /// player's own PC and sent with the pose (PlayerPose.Gait), so every PC plays the same.
+    /// Which gait the legs go (0 walk, 1 jog, 2 sprint; between while Shift or walk mode changes it): the clips they play
+    /// are that gait's own (PlayerBody.Locomotion), not the ones whose feet happen to match the speed. Kept by the player's
+    /// own PC and sent with the pose (PlayerPose.Gait), so every PC plays the same.
     /// </summary>
     public float Position => position;
 
     /// <summary>Another PC's gait as its pose says (MovementMirror).</summary>
-    internal void Mirror(float value) => position = Mathf.Clamp(value, 0f, 3f);
+    internal void Mirror(float value) => position = Mathf.Clamp(value, 0f, Sprint);
 
     /// <summary>
     /// Where a speed lies on the gaits' ladder the way it goes (<paramref name="angle"/>, degrees from ahead): 0 at the
-    /// walk's speed or slower, 1 at the jog's, 2 at the run's, 3 at the sprint's or faster, between in between. The legs
-    /// never play a gait faster than this: setting off, the body goes through the slower gaits' clips to its own.
+    /// walk's speed or slower, 1 at the jog's, 2 at the sprint's or faster, between in between. The legs never play a gait
+    /// faster than this: setting off, the body goes through the slower gaits' clips to its own.
     /// </summary>
     internal float PlaceOf(float speed, float angle)
     {
@@ -83,8 +90,8 @@ public sealed class MovementGait
         return Sprint;
     }
 
-    /// <summary>The run's speed straight ahead (m/s): the pace a direction key alone gives.</summary>
-    internal float RunAhead => rows[Run, 0];
+    /// <summary>The jog's speed straight ahead (m/s): the pace a direction key alone gives.</summary>
+    internal float JogAhead => rows[Jog, 0];
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go.</summary>
     internal float SprintAhead => rows[Sprint, 0];
     /// <summary>The crouched walk's speed straight ahead (m/s).</summary>
@@ -94,9 +101,8 @@ public sealed class MovementGait
     internal float SpeedFor(Vector2 input)
     {
         float angle = AngleOf(input);
-        float gait = ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, angle), At(Jog, angle), jogShare)
-            : Mathf.Lerp(At(Run, angle), At(Sprint, angle), ctx.SprintProgress);
-        return gait;
+        return ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, angle), At(Jog, angle), jogShare)
+            : Mathf.Lerp(At(Jog, angle), At(Sprint, angle), ctx.SprintProgress);
     }
 
     /// <summary>The speed for this input crouched (m/s): the crouched walk's, walk mode or not.</summary>
@@ -112,7 +118,7 @@ public sealed class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
-        float gait = ctx.Input.WalkMode ? jogShare : Run + ctx.SprintProgress;
+        float gait = ctx.Input.WalkMode ? jogShare : Jog + ctx.SprintProgress;
         position = Mathf.MoveTowards(position, gait, dt / GaitChange);
     }
 
@@ -137,8 +143,9 @@ public sealed class MovementGait
         for (int r = 0; r < Rows.Length; r++)
         {
             GameTables.TryGetRow(Table, Rows[r], out var row);
+            float boost = Mathf.Max(0f, row != null ? row.Number("boost", FallbackBoost[r]) : FallbackBoost[r]);
             for (int c = 0; c < Columns.Length; c++)
-                rows[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], Fallback[r, c]) : Fallback[r, c]);
+                rows[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], Fallback[r, c]) : Fallback[r, c]) * boost;
         }
     }
 }

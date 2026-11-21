@@ -40,9 +40,9 @@ public sealed class MovementAbilitySettings
     [Tooltip("넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본.")]
     [Min(0.1f)] public float vaultRate = 1f;
     [Tooltip("달리며 낮은 장애물 앞에서 일찍 누른 점프가 넘기가 걸리는 자리까지 빠르게 달려가 넘는 최대 거리(m). 0이면 Beatrun처럼 약 1.2m 안에서 눌러야 넘는다.")]
-    [Min(0f)] public float vaultSurgeDistance = 3f;
+    [Min(0f)] public float vaultSurgeDistance = 2f;
     [Tooltip("그렇게 달려갈 때의 가장 느린 속도(m/s). 이미 더 빠르면 그 속도를 유지한다.")]
-    [Min(1f)] public float vaultSurgeSpeed = 11f;
+    [Min(1f)] public float vaultSurgeSpeed = 7f;
     [Tooltip("달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전(도/초), 시야각을 넓히는 양(도/초). 화면 흔들림 설정을 따른다.")]
     public Vector2 vaultSurgeKick = new Vector2(25f, 120f);
     [Tooltip("긴 넘기(kong)를 클립의 손이 장애물을 짚는 대로 옮긴다(WarpedTraversal). 끄면 Beatrun 직선 경로.")]

@@ -893,7 +893,7 @@ settings.keys.move_up,앞으로,Forward,키 설정 창 > 줄(Player/Move 위)
 settings.keys.move_down,뒤로,Back,키 설정 창 > 줄(Player/Move 아래)
 settings.keys.move_left,왼쪽으로,Left,키 설정 창 > 줄(Player/Move 왼쪽)
 settings.keys.move_right,오른쪽으로,Right,키 설정 창 > 줄(Player/Move 오른쪽)
-settings.keys.sprint,전력질주 (걷기 모드: 조깅),Sprint (Jog in Walk Mode),"키 설정 창 > 줄(Player/Sprint). 0.9.245부터 누르는 동안 달리기가 전력질주, 걷기 모드에서는 걷기가 조깅이 된다(MovementGait)"
+settings.keys.sprint,전력질주 (걷기 모드: 조깅),Sprint (Jog in Walk Mode),"키 설정 창 > 줄(Player/Sprint). 누르는 동안 조깅이 전력질주(0.9.245~0.9.282에는 달리기가), 걷기 모드에서는 걷기가 조깅이 된다(MovementGait)"
 settings.keys.walk_mode,걷기 모드,Walk Mode,"키 설정 창 > 줄(Player/WalkMode. 기본 Caps Lock): 누를 때마다 걷기 모드를 켜고 끈다. 켜면 방향 키가 걷기, Shift가 조깅"
 settings.keys.jump,점프 · 넘기 · 오르기,Jump / vault / climb,키 설정 창 > 줄(Player/Jump)
 settings.keys.crouch,앉기 · 슬라이딩,Crouch / slide,키 설정 창 > 줄(Player/Crouch)

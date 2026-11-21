@@ -74,7 +74,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public bool Synced;
         /// <summary>A walk or run cycle's measured gait on this body (GaitClips), or null.</summary>
         public GaitClips.Gait Gait;
-        /// <summary>Which gait a cycle is (0 walk, 1 jog, 2 run, 3 sprint), by its name (PlayerBody.RankOf); -1 none.</summary>
+        /// <summary>Which gait a cycle is (0 walk, 1 jog, 2 sprint), by its name (PlayerBody.RankOf); -1 none.</summary>
         public float Rank = -1f;
     }
 

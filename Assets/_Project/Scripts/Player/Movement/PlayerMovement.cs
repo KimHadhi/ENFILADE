@@ -244,11 +244,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// </summary>
     public bool InputAvailable => CanAct && Time.timeScale > 0f && (!Application.isPlaying || InputFocus.TakesMove());
 
-    /// <summary>The run's speed straight ahead (m/s), the pace a direction key alone gives (Gaits.csv run). Named for the
-    /// row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk mode's.</summary>
-    public float WalkSpeed => Actions != null ? Actions.Gait.RunAhead : 3.93f;
+    /// <summary>The jog's speed straight ahead (m/s), the pace a direction key alone gives (Gaits.csv jog; the run's until
+    /// 0.9.283). Named for the row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk
+    /// mode's.</summary>
+    public float WalkSpeed => Actions != null ? Actions.Gait.JogAhead : 3f;
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (Gaits.csv sprint).</summary>
-    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 5.61f;
+    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 5.97f;
     /// <summary>The crouch's jog straight ahead (m/s, Gaits.csv crouchJog).</summary>
     public float CrouchSpeed => Actions != null ? Actions.Gait.CrouchAhead : 2.49f;
     public float ProneSpeed => proneSpeed;

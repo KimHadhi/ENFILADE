@@ -277,7 +277,7 @@ Move.coyoteTime,0.1,발판을 벗어난 뒤에도 점프를 받아 주는 시간
 Move.jumpBufferTime,0.15,착지 직전에 누른 점프를 기억하는 시간(초)
 # 이동: 모멘텀 (달릴수록 붙는 속도 → MovementMomentum. 디버그 HUD의 run 값),,
 # 이동: 슬라이딩,,
-Move.slideMinStartSpeed,5,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). 달리기(가장 빠른 쪽 4.69)보다 빠르고 전력질주(가장 느린 쪽 5.12)보다 느리게: 전력질주에서만. 0.9.282 전에는 6(걸음새 속도가 클립 루트였을 때)
+Move.slideMinStartSpeed,4.4,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). 조깅(가장 빠른 쪽 3.91)보다 빠르고 전력질주(가장 느린 쪽 4.82)보다 느리게: 전력질주에서만. 0.9.282 전에는 6(걸음새 속도가 클립 루트였을 때) · 0.9.282에 5
 Move.slideKickBoost,1,슬라이드 시작 때 더하는 속도(m/s)
 Move.slideFriction,4.2,슬라이드 감속(m/s²)
 Move.diveSlideFriction,9,머리부터 미끄러지기 감속(m/s²)
@@ -290,7 +290,7 @@ Move.diveSlideCancelMaxSpeed,2,머리부터 미끄러지기를 직접 멈출 수
 Move.supineSlideCancelMaxSpeed,5,누워 미끄러지는 중 Shift+이동 키나 Space로 바로 일어날 수 있는 최대 속도(m/s). 미끄럼이 Move.slideCancelMinDuration만큼 이어진 뒤부터다. Ctrl을 누르고 있으면 앉으며 일어난다
 Move.slideCancelMinDuration,0.5,슬라이드 시작 후 멈출 수 있게 되기까지(초)
 Move.slideBrakeDeceleration,18,제동 입력 때의 감속(m/s²)
-Move.landingSlideMinSpeed,5,Ctrl을 누른 채 착지하면 슬라이드로 이어지는 최소 속도(m/s). 슬라이드 시작과 같은 까닭으로 같다. 0.9.282 전에는 6
+Move.landingSlideMinSpeed,4.4,Ctrl을 누른 채 착지하면 슬라이드로 이어지는 최소 속도(m/s). 슬라이드 시작과 같은 까닭으로 같다. 0.9.282 전에는 6 · 0.9.282에 5
 Move.slideCooldown,0.4,슬라이드 재사용 대기(초)
 Move.slideSteerSharpness,4,슬라이드 중 A/D 조향 빠르기
 Move.slideLookSteerRate,90,슬라이드 중 마우스를 시선 제한(Body.slideTurnLimit) 너머로 밀면 미끄러지는 방향이 시선을 따라 도는 최대 빠르기(도/초). 0이면 예전처럼 시선이 제한에서 멈춘다
@@ -340,8 +340,8 @@ Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
 Ability.proneStepHeight,0.05,엎드리거나 누워서 넘는 턱 높이(m)
 Ability.mantleDuration,0.45,바·사다리 꼭대기처럼 경로를 따로 쓰는 올라서기의 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter
 Ability.vaultRate,1,넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본
-Ability.vaultSurgeDistance,3,달리며 낮은 장애물 앞에서 일찍 누른 점프는 넘기가 걸리는 자리까지 이만큼(m) 앞에서도 그 자리로 빠르게 달려가 바로 넘는다. 순간이동 없이 땅을 달려가며 달리기 동작도 빨라진다. 0이면 Beatrun처럼 장애물 앞면 약 1.2m 안에서 눌러야 넘는다(2026-11-06 사용자 요청: 대기 말고 빠르고 시원하게)
-Ability.vaultSurgeSpeed,11,그렇게 달려가는 가장 느린 속도(m/s). 질주(7.9)의 약 1.4배. 이미 더 빠르면 그 속도를 유지한다. 넘기 자체는 누르기 전 달리던 속도로 한다: 이 속도로 들어가면 넘기 클립이 빨리 감기처럼 잘려 보였다(2026-11-06 사용자)
+Ability.vaultSurgeDistance,2,"달리며 낮은 장애물 앞에서 일찍 누른 점프는 넘기가 걸리는 자리까지 이만큼(m) 앞에서도 그 자리로 빠르게 달려가 바로 넘는다. 순간이동 없이 땅을 달려가며 달리기 동작도 빨라진다. 0이면 Beatrun처럼 장애물 앞면 약 1.2m 안에서 눌러야 넘는다(2026-11-06 사용자 요청: 대기 말고 빠르고 시원하게). 0.9.283 전에는 3: 걸음새가 느려진 만큼 너무 멀리서 끌려갔다(사용자 11-21: ""써지 좀 너프해 줘, 속도에 비해 너무 빨라서 써지 거리나 그런 거"")"
+Ability.vaultSurgeSpeed,7,"그렇게 달려가는 가장 느린 속도(m/s). 전력질주(앞 5.97)의 약 1.2배, 조깅(앞 3.00)의 약 2.3배. 이미 더 빠르면 그 속도를 유지한다. 데탕트가 동료에게 달려가는 써지도 이 속도다. 넘기 자체는 누르기 전 달리던 속도로 한다: 이 속도로 들어가면 넘기 클립이 빨리 감기처럼 잘려 보였다(2026-11-06 사용자). 0.9.283 전에는 11(옛 질주 7.9의 약 1.4배): 걸음새를 클립 속도로 낮춘 뒤 속도에 비해 너무 빨랐다"
 Ability.vaultSurgeKick,25;120,"달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전과 시야각을 넓히는 양(도/초, 스프링에 주는 속도). 속도에 따른 시야각 넓힘이 그 뒤를 잇는다. 화면 흔들림 설정을 따른다"
 Ability.warpKong,0,긴 넘기(kong)를 클립의 손이 장애물을 짚는 대로 옮긴다(KINEMATION Motion Warping 방식). 0이면 Beatrun 직선 경로. 2026-11-07 꺼 둠: 클립에서 손 짚는 순간을 재는 규칙이 Beatrun 클립을 잘못 읽어(kong은 못 찾고 over는 0.54초로 늦게 잡음) 모션이 어긋났다
 Ability.warpOver,0,보통 넘기(over)를 손 짚는 대로 옮긴다. kong을 확인한 뒤 켠다
@@ -474,7 +474,7 @@ Ability.shoveFatigueMost,7,"연속 이 번째에 대기가 가장 길어지고, 
 Ability.shoveFatigueInterval,1.2,가장 긴 밀치기 대기(초)
 Ability.shoveFatigueRecovery,1,밀치지 않고 이만큼(초) 지날 때마다 연속 횟수가 하나 준다
 # 능력: 돌진 밀치기 (총·주먹 모두 달리며 V. Dynamic Landing Push),,
-Ability.dashPushMinSpeed,3.4,이 속도(m/s) 이상으로 시선 쪽으로 달릴 때 V가 돌진 밀치기가 된다. 조깅(가장 빠른 쪽 3.18)과 달리기(가장 느린 쪽 3.61) 사이. 0.9.282 전에는 4
+Ability.dashPushMinSpeed,2,이 속도(m/s) 이상으로 시선 쪽으로 달릴 때 V가 돌진 밀치기가 된다. 걷기(가장 빠른 쪽 1.43)와 조깅(가장 느린 쪽 2.66) 사이: 방향 키만 누른 조깅부터(0.9.283에 달리기가 빠지고 조깅이 그 자리를 이었다). 0.9.282 전에는 4 · 0.9.282에 3.4(달리기부터)
 Ability.dashPushDuration,0.25,돌진 시간(초). 누군가에 부딪히면 그 자리에서 멈춘다
 Ability.dashPushSpeedScale,2,돌진 속도 = 시작 속도 × 이 값
 Ability.dashPushCooldown,1,돌진이 끝난 뒤 다음 돌진까지(초). 그동안 V는 평소대로(총: 군중 밀치기. 빈손: 밀치기·가드 브레이크)
@@ -530,7 +530,7 @@ Body.runJumpWays,RunJump_AirL@-90;RunJump_AirR@90,"달리며 옆으로 점프하
 Body.landRunLight,Land_ToRun1,"앞으로 걷기보다 빨리 가다 가볍게 착지하면 그 걸음으로 받고 달려 나간다. BIPER Female Runner, 0.9.262"
 Body.landRunHard,Land_ToRun3,"앞으로 가다 세게 착지하면 깊게 받고 달려 나간다. BIPER Female Runner, 0.9.262"
 Body.landRunStumble,Land_ToStumble,"Body.landStumbleSpeed 이상으로 가다 세게 착지하면 비틀거리며 달려 나간다. BIPER Female Runner, 0.9.262"
-Body.landStumbleSpeed,5,이보다 빨리 가다 세게 착지하면 비틀거린다(m/s). 달리기(가장 빠른 쪽 4.69)와 전력질주(가장 느린 쪽 5.12) 사이: 전력질주에서. 0.9.282 전에는 6
+Body.landStumbleSpeed,5,이보다 빨리 가다 세게 착지하면 비틀거린다(m/s). 달리는 착지(Body.jumpFastSpeed 4.4 이상) 가운데 앞·옆 전력질주(5.97~6.34)만: 대각선 뒤·뒤 전력질주(4.86·4.82)는 세게 착지해 달려 나간다. 0.9.282 전에는 6
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
 Body.vault,vaultover,보통 넘기
 Body.mantle,climb1,올라서기
@@ -590,7 +590,7 @@ Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
 Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다
 Body.kickTurnSpeed,360,가만히 서서 찰 때 시선에서 비켜 있던 다리가 시선 쪽으로 도는 빠르기(도/초). 서 있는 다리는 시선에서 Body.turnStartAngle(60도)까지 어긋날 수 있다
 Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
-Body.jumpFastSpeed,3.4,이보다 빠르게 뛰면 달리며 점프(m/s). 조깅(가장 빠른 쪽 3.18)과 달리기(가장 느린 쪽 3.61) 사이: 달리기부터 달리는 점프. 0.9.282 전에는 4
+Body.jumpFastSpeed,4.4,"이보다 빠르면 달리는 점프·착지·구르기·회피(m/s). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서. 조깅은 가볍게 뛰기(Body.jumpSlow, 클립 2.8m)와 걸음에 섞이는 착지: 달리는 착지 클립의 걸음은 5.6m/s라 조깅에서는 몸보다 앞서 나간다. 0.9.282 전에는 4 · 0.9.282에 3.4(달리기부터)"
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
 Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
 Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)
@@ -750,7 +750,7 @@ Footsteps.liftHeight,0.04,자기 직전 접지 높이와 반대 지지 발보다
 Footsteps.contactHeight,0.02,든 발이 디딘 높이에서 이 안으로 내려오면 한 걸음(m)
 Footsteps.settleHeight,0.08,직전 접지 높이에서 이 안에서 하강 후 반등해도 한 걸음(m). 높이가 바뀐 완전한 발 구름도 접지로 인정
 Footsteps.minStepInterval,0.1,한 발이 다시 걸음 소리를 내기까지 최소 시간(초)
-Footsteps.runSpeed,1.8,이보다 느리면 걷는 발소리(StepWalk) 빠르면 뛰는 발소리(StepRun)(m/s). 웅크리면 StepSneak. 걷기(가장 빠른 쪽 1.43)와 조깅(가장 느린 쪽 2.16) 사이. 0.9.282 전에는 3
+Footsteps.runSpeed,1.8,이보다 느리면 걷는 발소리(StepWalk) 빠르면 뛰는 발소리(StepRun)(m/s). 웅크리면 StepSneak. 걷기(가장 빠른 쪽 1.43)와 조깅(가장 느린 쪽 2.66) 사이. 0.9.282 전에는 3
 Footsteps.releaseSpeed,3,이보다 빠르게 발을 떼면 바닥을 차는 소리(StepRelease)(m/s)
 Footsteps.calibrateTime,0.5,이만큼 가만히 서 있으면 양발의 접지 높이를 각각 다시 잰다(초). 이동 중에도 직전 접지를 추적
 # 소리: 동작 (MovementAudio 행 → PlayerMovementAudio. 어떤 소리가 나는지는 Tables/SoundCues),,
@@ -767,7 +767,7 @@ MovementAudio.slideLoudSpeed,8.4,긁는 소리가 가장 커지는 슬라이드 
 MovementAudio.slideFadeTime,0.15,긁는 소리가 커지고 사라지는 시간(초)
 MovementAudio.leanSoundShare,0.5,Q/E 기울이기가 이 비율만큼 기울면 옷 소리
 # 소리: 숨 (Breathing 행 → PlayerBreathing. Beatrun 숨소리),,
-Breathing.exertSpeed,5,땅에서 이보다 빠르게(전력질주) 달리거나 매달리고 오르는 중이면 숨이 찬다(m/s). 달리기(가장 빠른 쪽 4.69)와 전력질주(가장 느린 쪽 5.12) 사이. 0.9.282 전에는 6
+Breathing.exertSpeed,4.4,땅에서 이보다 빠르게(전력질주) 달리거나 매달리고 오르는 중이면 숨이 찬다(m/s). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이. 0.9.282 전에는 6 · 0.9.282에 5
 Breathing.stressGain,13,힘쓸 때 초당 쌓이는 숨참
 Breathing.stressRecovery,16.5,땅에서 힘쓰지 않을 때(걷기 포함) 초당 가라앉는 숨참
 Breathing.stressRange,-50;150,숨참 최저;최고. 처음과 다 쉰 상태가 최저다

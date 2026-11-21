@@ -224,14 +224,13 @@ public sealed partial class PlayerBody
         return channel;
     }
 
-    // Which gait a cycle is, by the word its name has (BIPER names every cycle so: Walk_Lfoot, StrafeJog_FL, R_Run,
-    // R_AimJog, CrouchWalk_F; a cycle polished in Blender keeps its name after "enf_"). A cycle named otherwise (a mod's)
-    // takes the gait whose speed its feet are nearest, straight ahead.
+    // Which gait a cycle is, by the word its name has (BIPER names every cycle so: Walk_Lfoot, StrafeJog_FL,
+    // R_AimJog, CrouchWalk_F; a cycle polished in Blender keeps its name after "enf_"). A cycle named otherwise (a mod's,
+    // or a run: the game has had no run since 0.9.283) takes the gait whose speed its feet are nearest, straight ahead.
     private float RankOf(string clipName, Channel cycle)
     {
         string name = clipName ?? "";
-        if (name.IndexOf("Sprint", System.StringComparison.OrdinalIgnoreCase) >= 0) return 3f;
-        if (name.IndexOf("Run", System.StringComparison.OrdinalIgnoreCase) >= 0) return 2f;
+        if (name.IndexOf("Sprint", System.StringComparison.OrdinalIgnoreCase) >= 0) return 2f;
         if (name.IndexOf("Jog", System.StringComparison.OrdinalIgnoreCase) >= 0) return 1f;
         if (name.IndexOf("Walk", System.StringComparison.OrdinalIgnoreCase) >= 0) return 0f;
         var gait = player != null && player.Actions != null ? player.Actions.Gait : null;
@@ -306,7 +305,7 @@ public sealed partial class PlayerBody
     // Below this the travel has no heading: the body stands (m/s).
     private const float StillTravel = .3f;
 
-    // This frame's gait for the cycles (0 walk to 3 sprint): the gait gone, no faster than the speed reached.
+    // This frame's gait for the cycles (0 walk, 1 jog, 2 sprint): the gait gone, no faster than the speed reached.
     private float gaitPlace;
 
     // Standing still this frame (Locomotion): the body keeps its place on the ground (PlaceBody, FollowHead).
@@ -353,8 +352,9 @@ public sealed partial class PlayerBody
     }
 
     // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
-    // round to the heading (Reach) and its cycles reach the gait (a gun's set has no sprint: the plain set sprints under the
-    // gun's upper body). Past that the next set down runs on under the same upper body.
+    // round to the heading (Reach) and its cycles reach the gait (a gun held at the hip has a walk only, and no gun's set
+    // sprints: the plain set jogs and sprints under the gun's upper body). Past that the next set down runs on under the
+    // same upper body.
     private float Carries(MoveSet set, float heading, float speed, float scale)
     {
         if (speed < StillTravel) return 1f;
