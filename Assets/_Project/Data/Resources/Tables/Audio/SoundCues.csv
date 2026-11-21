@@ -3,9 +3,21 @@ StepSneak,Movement/Sneak/{surface}; Movement/Cloth/MovementSneak,2,웅크려 걷
 StepWalk,Movement/Walk/{surface}; Movement/Cloth/MovementWalk,6,걷는 한 걸음 (Footsteps.runSpeed보다 느릴 때)
 StepRun,Movement/Run/{surface}; Movement/Cloth/MovementRun *0.22,12,뛰는 한 걸음. 옷은 발 디딤 뒤의 작은 질감
 StepRelease,Movement/Release/{surface} *0.3,4,빠르게 달리며 발을 뗄 때 작게 바닥을 차는 소리
-StepSneak@Heels,Movement/Heels/Sneak/{surface}; Movement/Cloth/MovementSneak,2,하이힐을 신은 발의 웅크려 걷는 한 걸음. 굽은 입힌 몸의 발밑에서 잰다(DrawnHeels: 뒤꿈치 끝과 앞꿈치가 바닥에 닿고 그 사이가 Player.csv Body.heelsFrom 이상 뜸). Art/Audio/Movement/Heels/Sneak(/표면) 폴더에 소리가 없으면 StepSneak을 낸다
-StepWalk@Heels,Movement/Heels/Walk/{surface}; Movement/Cloth/MovementWalk,6,하이힐을 신은 발의 걷는 한 걸음. 소리 파일은 Art/Audio/Movement/Heels/Walk에 넣는다(표면마다 다르게 하려면 Walk/Concrete·Walk/Carpet처럼 하위 폴더). 없으면 StepWalk
-StepRun@Heels,Movement/Heels/Run/{surface}; Movement/Cloth/MovementRun *0.22,12,하이힐을 신은 발의 뛰는 한 걸음. 소리 파일은 Art/Audio/Movement/Heels/Run. 없으면 StepRun
+StepSneak@Heels,Movement/Heels/Walk/{surface} *0.25; Movement/Cloth/MovementSneak,2,하이힐을 신은 발의 웅크려 걷는 한 걸음: 걷는 하이힐 소리를 4분의 1 크기로(DSteps가 웅크릴 때 하는 대로). 굽은 입힌 몸의 발밑에서 잰다(DrawnHeels: 뒤꿈치 끝과 앞꿈치가 바닥에 닿고 그 사이가 Player.csv Body.heelsFrom 이상 뜸). 하이힐 소리는 DSteps Dynamic High Heels Footsteps(GMod 창작마당 2789283802)이고 Tools/Audio/heel_steps.py가 표면별로 늘어놓는다
+StepWalk@Heels,Movement/Heels/Walk/{surface}; Movement/Cloth/MovementWalk,6,하이힐을 신은 발의 걷는 한 걸음. 표면마다 Art/Audio/Movement/Heels/Walk/<표면>
+StepRun@Heels,Movement/Heels/Run/{surface}; Movement/Cloth/MovementRun *0.22,12,하이힐을 신은 발의 뛰는 한 걸음. 표면마다 Heels/Run/<표면>
+Jump@Heels,Movement/Heels/Settle/{surface}; Movement/Cloth/MovementWalk,6,하이힐로 뛰어오르기: DSteps가 점프할 때와 멈출 때 내는 발 고쳐 딛는 소리(wander = Heels/Settle)
+LandSoft@Heels,Movement/Heels/Walk/{surface}; Movement/Cloth/MovementWalk,5,하이힐로 낮은 턱에서 내려서기
+LandSneak@Heels,Movement/Heels/Walk/{surface} *0.25; Movement/Cloth/MovementSneak; Movement/Cloth/FallShortMedium *0.35,0,하이힐로 앉은 채 조용히 착지
+Land@Heels,Movement/Land/{surface}; Movement/Heels/Run/{surface}; Movement/Heels/Run/{surface} +0.05; Movement/Cloth/MovementRun,12,하이힐로 착지: 몸이 닿는 소리 + 두 발의 굽이 잇달아(DSteps가 착지 때 뛰는 발소리 두 번을 낸다)
+Land@Heels/Gravel,Movement/Land/{surface}; Movement/Heels/Land/{surface}; Movement/Cloth/MovementRun,12,하이힐로 자갈·흙·풀·모래·눈에 착지: DSteps에 든 착지 소리(Heels/Land/Gravel·Dirt)
+Land@Heels/Metal,Movement/Land/{surface}; Movement/Heels/Land/{surface}; Movement/Cloth/MovementRun,12,하이힐로 쇠에 착지: DSteps에 든 착지 소리(Heels/Land/Metal)
+VaultLand@Heels,Movement/Land/{surface}; Movement/Heels/Run/{surface}; Movement/Cloth/MovementRun,10,하이힐로 넘은 뒤 착지
+MantleLand@Heels,Movement/Heels/Walk/{surface},5,하이힐로 기어오른 뒤 발 딛기
+LedgeClimb@Heels,Movement/HandSoft/{surface}; Voice/StrainSoft; Movement/Heels/Walk/{surface} +0.35,6,하이힐로 렛지 오르기: 손 + 숨 + 굽 한 걸음
+Dodge@Heels,Movement/Heels/Run/{surface}; Movement/Dodge/Wind; Movement/Dodge/Cloth; Voice/StrainSoft,8,하이힐로 스텝 회피
+DodgeLow@Heels,Movement/Heels/Walk/{surface} *0.25; Movement/Dodge/Wind *0.55; Movement/Dodge/Cloth *0.6; Movement/Cloth/MovementSneak,3,하이힐로 앉은 채 스텝 회피
+DashPush@Heels,Movement/Heels/Run/{surface}; Movement/Cloth/SideStep; Voice/StrainMedium,12,하이힐로 돌진 밀치기 시작
 Jump,Movement/Release/{surface}; Movement/Cloth/MovementWalk,6,점프 도약
 LandSoft,Movement/Walk/{surface}; Movement/Cloth/MovementWalk,5,낮은 턱에서 내려서기
 LandSneak,Movement/Sneak/{surface}; Movement/Cloth/MovementSneak; Movement/Cloth/FallShortMedium *0.35,0,"앉은 채(또는 공중에서 Ctrl을 누른 채) 내려선 조용한 착지. 세게 착지(Player.csv Ability.hardLandingHeight)가 아닌 낙하면 높이와 상관없이 이 소리다. 웅크린 한 걸음에 옷 소리가 조금 얹히고, 좀비는 듣지 못한다(noise 0. 사용자 2026-11-18: 사일런트 드랍). 어떤 착지가 이 소리인지는 PlayerMovementAudio.LandingCue"

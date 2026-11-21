@@ -22,9 +22,11 @@ Wood,,wood;timber,0.5,,나무
 WoodPanel,Wood,woodpanel;plywood,,,나무 판
 WoodPlank,Wood,plank;woodfloor;deck,,,나무 널빤지·마루
 Gravel,,gravel;pebble,0.5,,자갈
-Dirt,Gravel,dirt;mud;soil,0.5,,흙 (착지·슬라이드는 FEAR 소리 / 나머지는 자갈)
+Dirt,Gravel,dirt;soil,0.5,,흙 (착지·슬라이드는 FEAR 소리 / 나머지는 자갈)
 Grass,Dirt,grass;lawn;moss,0.5,,풀 (착지는 FEAR 소리 / 나머지는 흙→자갈)
 Sand,Gravel,sand,0.25,,모래 (슬라이드는 FEAR 소리 / 나머지는 자갈)
+Snow,Sand,snow,,,"눈. 하이힐 발소리(Art/Audio/Movement/Heels/*/Snow)만 따로 있고, 나머지 소리·관통·이펙트는 모래(Sand)를 따른다"
+Mud,Dirt,mud,,,"진흙. 하이힐 발소리(Heels/*/Mud)만 따로 있고, 나머지는 흙(Dirt)을 따른다. 키워드 mud는 흙에서 옮겨 왔다"
 Water,,water;puddle,1,,얕은 물
 Tarp,,tarp;canvas;tent,0.5,,방수포·천막
 Carpet,Tarp,carpet;rug;fabric,,,카펫

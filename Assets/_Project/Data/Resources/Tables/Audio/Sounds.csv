@@ -162,6 +162,10 @@ Movement/Walk/Tarp,1,0.9,1.1,Beatrun Walk.Tarp
 Movement/Walk/Wood,0.75,0.9,1.1,Beatrun Walk.Wood
 Movement/Walk/WoodPanel,0.75,0.9,1.1,Beatrun Walk.WoodPanel
 Movement/Walk/WoodPlank,0.75,0.9,1.1,Beatrun Walk.WoodPlank
+Movement/Heels/Walk/Concrete,1,0.75,0.75,DSteps concrete_walk: 그 애드온이 pitch 75로 튼다
+Movement/Heels/Walk/Marble,1,0.85,0.85,DSteps marble_walk: 그 애드온이 pitch 85로 튼다 (타일도 이 소리)
+Movement/Heels/Run/Marble,1,0.85,0.85,DSteps marble_run: pitch 85
+Movement/Heels/Settle/Marble,1,0.85,0.85,DSteps marble_wander: pitch 85
 Movement/WallRelease/Concrete,1,0.9,1.1,Beatrun WallrunRelease.Concrete
 Movement/WallStep/Concrete,1,0.9,1.1,Beatrun Wallrun.Concrete
 Movement/WallStep/ConcreteGrit,1,0.9,1.1,Beatrun Wallrun.ConcreteGrit
