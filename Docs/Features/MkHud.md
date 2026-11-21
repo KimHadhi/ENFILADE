@@ -13,7 +13,7 @@
 - 탄약(`DrawAmmo`): 탄창 상자 125×50(×0.75)의 왼쪽에 탄 종류 그림, 오른쪽 정렬 숫자 뒤에 흐린 000(50/255), 30% 이하 빨강. 옆 75×50 상자에 예비(150/255), 탄창 하나 이하면 빨강. 위에 띄어 쓴 무기 이름. 쏠 때마다 상자가 탄창이 빌수록 붉게 100/255로 빛나고 1초에 3만큼 꺼진다.
 - 장비 칸 55×55(×0.75): 수류탄 수(위로 칸 2개), 전술 칼(3.1개).
 - 획득 목록(`cl_history`): "AMMO PILE*30"이 2초에 걸쳐 무작위 기호에서 한 글자씩 해독, 같은 것은 숫자만 늘고, 위로 쌓이며 다섯째부터 흐려진다.
-- 무기 선택기(`cl_selector`): 450×150 상자 줄이 화면 가운데에 3초, 든 것은 흰 200/255에 검은 글자, 가운데에서 멀수록 흐리게. (애드온은 클릭해야 바뀐다.)
+- 무기 선택기(`cl_selector`): 450×150 상자 줄이 화면 가운데에 3초, 든 것은 흰 200/255에 검은 글자, 가운데에서 멀수록 흐리게. (애드온은 클릭해야 바뀐다.) 우리는 쓰지 않는다(아래 무기 슬롯).
 - 흔들림: 시선의 사본이 `LerpAngle(FrameTime×10)`으로 따라오고, HUD가 시선이 앞선 각도 × 2px 비켜난다.
 - 그 밖: 맞을 때 화면 가장자리 빛(vig.png, 50/255, 0.3초), 시야 흔들림·흐림, 피격 방향 호(`cl_indicator`), 피해 종류 아이콘(`cl_hazard`), 주사선·색 번짐·글리치(`sfx`), 적 이름(`cl_enemy`).
 
@@ -32,7 +32,7 @@
 - **탄약** (오른쪽 아래): 애드온 그대로. 탄 그림은 탄 종류마다(`AmmoIcon.*`: 권총 → Pistol, 소총·기관총 → AR2, 산탄 → Buckshot ...). 무기 이름 뒤에 사격 방식. 상자 아래 장전 선, 그 아래 할 일 한 줄(`[R] 장전`·`탄약 없음`·`예비 탄약 없음`·장전 남은 초, 총을 살펴볼 때(Y) 그 총의 등급과 처치), 예비 상자 아래 탄 이름. 연사 때의 빛은 부드럽게 따라가 깜빡이지 않고 은은히 켜져 있다. 주먹·칼은 숨는다.
 - **장비 칸** (예비 위로): 투척물(그림·남은 수·G), 클래스(아이콘, 왼쪽 세로 눈금 = 아드레날린·헤드헌터·탄·주사·배낭·포인트의 두 총, 아래부터 차오르는 흰색, 클래스 키가 쓸 수 있으면 분홍이 숨쉼, 휠 키 이름), 궁극기(아래 가로 눈금 10개 = 한 번 쓰는 데 드는 것의 10%씩, 다 차면 분홍이 숨쉼, X). 클래스 칸 왼쪽에 예전 클래스 판이 하던 말(키 글자·DEADEYE·DESPERADO·기다릴 초·제안·배낭 숫자)과 그 아래 세워 둔 설치물 줄(`판자 1/2`, 가득이면 호박색, 지금 세우는 것은 분홍).
 - **획득 목록** (가운데 오른쪽): 애드온 그대로. 수는 주운 것이 준 글의 첫 숫자(체력 +25 → 25, 돈 +1,240 → 1240, 없으면 1). 같은 것을 또 주우면 그 줄이 다시 머문다(시안).
-- **무기 선택기** (가운데): 숫자 키·휠로 무기를 바꾸면 3초. 무기는 예전처럼 키를 누르는 순간 바뀐다(애드온처럼 클릭해야 바뀌게 하는 것은 조작을 바꾸는 일이라 하지 않았다). 오른쪽 가장자리의 무기 칸은 없어졌다.
+- **무기 슬롯** (오른쪽 아래, 장비 칸 위): 2026-11-22 사용자가 처음 넣은 애드온 무기 선택기(화면 가운데 상자 줄)를 보고 "무기 슬롯 1,2,3,4번 그거는 기존 방식이 더 맘에 들어. 기존 방식으로 디자인만 바꿔서". 그래서 선택기(MkSelector)는 없애고 예전 무기 슬롯(`WeaponSlotsHUD`)을 그대로 두되 Mk II 모양으로 그린다. 하는 일은 예전 그대로: 무기를 바꾸거나 탄이 바뀌면(`SlotActivity`) 3초 보였다가 1초에 걸쳐 사라지고, 든 칸이 스프링으로 커지며 왼쪽으로 14px 툭 나왔다 돌아오고, 아이콘 아래 이름과 종류(RANGED·MELEE·SPECIAL), 긴 이름은 흘러간다. 근접 칸에 무기가 없으면 클래스 칼. 모양만 Mk II: 평평한 둥근 상자(기울기·조각 모양 없음), 칸 바탕 검정 50/255(`Colour.background`), 왼쪽 위 번호(`Text.alts`)와 흰 무기 그림(150/255), 빈 칸은 회색 `비어 있음`. 든 칸은 애드온 선택기의 흰 200/255 상자에 검은 번호·그림·이름(대문자, 들 때 0.35초 해독)과 분홍 종류 글자, 한 번 은은하게 밝아졌다 사라진다(깜빡임 없음). 탄창이 30%(`Ammo.low`) 이하인 총은 빨강. Mk II가 빌려준 틀(`MkHud.Lend`, 캔버스의 `Mk Slots`)에 그려서 다른 조각처럼 시선을 따라 흔들리고 Q/E에 돈다. 죽으면 숨는다. 자리(1080p): 폭은 탄약 블록(탄창 상자 왼쪽 x 1633.1 ~ 예비 상자 오른쪽 x 1785.0, 152px), 아래 끝은 궁극기 칸 위 4.1px(y 774.0)에서 위로 쌓는다(1번이 위). 안 든 칸 41.25, 든 칸 60, 사이 4.1이라 넷이 다 서면 y 577.9 ~ 774.0. 획득 목록과는 가장 긴 총 이름의 줄(`HERRINGTON 11-87*1`, 상자 오른쪽 끝 x 1590.6)로도 42px 떨어진다(Hitmarker Normal의 글자 폭으로 잰 값, 커닝 제외). 든 칸 이름 자리는 100px이라 그 이름만 16px 흘러간다. 수치 `Slots.*`. 설정 → HUD → 무기 슬롯의 A/C 모양은 `Hud.on` 0일 때만 쓰인다.
 - **화면 가장자리 빛**: 체력이 깎이면 붉게, 실드가 맞거나 실드를 받으면 회색, 체력이 차면 연두. 한 번 은은하게만.
 
 ## 예전 조각은 어떻게 됐나
@@ -42,7 +42,8 @@
 | 예전 | 지금 |
 | --- | --- |
 | 초상화·궁극 탄창·휘장 줄·HP 숫자 줄·체력 바·자세 그림(GameHUD `Left Panel/Health`) | 꺼짐(HudRig). 프로필 칸·체력·방어·계급 칸·자세 칸·궁극기 칸이 대신 |
-| 탄약 표시·무기 슬롯(GameHUD `Right Panel/AmmoHUD`·`WeaponSlotsHUD`) | 꺼짐(HudRig). 탄약·무기 선택기가 대신. 다른 곳이 부르던 `AmmoHUD.Blink`는 Mk II 탄약 상자를 빛낸다 |
+| 탄약 표시(GameHUD `Right Panel/AmmoHUD`) | 꺼짐(HudRig). 탄약이 대신. 다른 곳이 부르던 `AmmoHUD.Blink`는 Mk II 탄약 상자를 빛낸다 |
+| 무기 슬롯(GameHUD `Right Panel/WeaponSlotsHUD`) | 켜져 있다. 하는 일은 그대로이고 Mk II 모양으로 Mk II 캔버스에 그린다(사용자 11-22). 판(A)·카드(C) 모양은 `Hud.on` 0일 때 |
 | 목표 바·습격 단계 줄·Tab 키 칸·새 목표 카드(GameHUD `Mission`) | 모양만 숨김(MissionHUD는 남아 새 목표 소리를 낸다). 목표 블록·위 알림이 대신 |
 | 아군 체력 카드(TeamHealthPanel) | 만들지 않음(PlayerMovement). 동료 줄이 대신 |
 | 클래스 판·설치 개수 줄·지속 효과 칸(ClassHUD·DeployStrip·EffectStack) | ClassHUD는 계산만 하고(ClassReadout) 그리지 않는다. 장비 칸·클래스 글자·설치 줄·지속 효과 줄이 대신 |
@@ -58,14 +59,14 @@
 - **피해 종류 아이콘**(cl_hazard): 우리 피해 종류는 추락과 폭발 정도라 따로 두지 않았다. 그 칸 모양은 지속 효과 줄이 쓴다(시안).
 - **주사선·색 번짐·글리치**: 화면 전체를 렌더 텍스처로 다시 그려야 하는 효과라 하지 않았다. 글리치는 깜빡임이라 규칙상으로도 안 된다.
 - **시야 흔들림·흐림**: 우리 카메라 펀치와 피 효과가 이미 한다.
-- **소리**(선택기 select·click): 무기는 키를 누를 때 바로 바뀌고 그 소리가 이미 있어 넣지 않았다.
+- **무기 선택기**(`cl_selector`): 0.9.311에 MkSelector로 넣었다가 사용자가 예전 무기 슬롯이 낫다고 해서(11-22) 없앴다. 그 소리(select·click)도 없다. 무기는 예전처럼 키를 누르는 순간 바뀐다.
 - 궁극 탄창의 장전·탄피·탄창 떨어지는 움직임, 체력 바의 조각이 떨어져 나가는 효과, 위험 빗금, 회복 +N은 Mk II에 자리가 없어 없어졌다(애드온은 바와 자국뿐).
 
 ## 플레이해 본 뒤 지울 수 있는 것
 
-아무도 쓰지 않게 되면: `HudPortrait`, `UltimateMagazine`, `RankStrip`, `AdaptiveHealthHUD`·`HealthBarFlair`·`SlantedHealthGraphic`·`SlantedPiece`·`HealthLossTrail`·`ShieldShatter`·`ShieldHexGraphic`(체력 블록), `WeaponSlotsHUD`·`SlotShape`·`WeaponSlotSilhouette`(무기 아이콘이 없을 때 쓰는 곳 확인), `AmmoHUD`, `TeamHealthPanel`, `PickupFeedHUD`의 그리는 부분, `MissionBarLook`·`AssaultBar.*`·`ObjectiveAlert.*`, `ClassHUD`의 옛 판·`DeployStrip`·`EffectStack`, 프리팹의 `Health`·`AmmoHUD`·`WeaponSlotsHUD`. 지금은 `Hud.on`을 0으로 돌릴 수 있게 남겨 두었다.
+아무도 쓰지 않게 되면: `HudPortrait`, `UltimateMagazine`, `RankStrip`, `AdaptiveHealthHUD`·`HealthBarFlair`·`SlantedHealthGraphic`·`SlantedPiece`·`HealthLossTrail`·`ShieldShatter`·`ShieldHexGraphic`(체력 블록), `WeaponSlotsHUD`의 판(A)·카드(C) 모양과 `SlotShape`(무기 슬롯 자체와 `WeaponSlotSilhouette`은 Mk II에서도 쓴다), `AmmoHUD`, `TeamHealthPanel`, `PickupFeedHUD`의 그리는 부분, `MissionBarLook`·`AssaultBar.*`·`ObjectiveAlert.*`, `ClassHUD`의 옛 판·`DeployStrip`·`EffectStack`, 프리팹의 `Health`·`AmmoHUD`. 지금은 `Hud.on`을 0으로 돌릴 수 있게 남겨 두었다.
 
 ## 확인하는 법
 
-- 플레이 중 콘솔 `[HUD 겹침]` 줄, ENFILADE → HUD → 겹침 검사(`HudOverlap.csv`: Mk HUD 캔버스의 조각마다 따로 잰다. 가장자리 빛과 무기 선택기는 뺀다).
+- 플레이 중 콘솔 `[HUD 겹침]` 줄, ENFILADE → HUD → 겹침 검사(`HudOverlap.csv`: Mk HUD 캔버스의 조각마다 따로 잰다. 가장자리 빛은 뺀다. 무기 슬롯 `Mk Slots`는 바꾼 뒤에만 뜨는 조각이라 `IHudPreview`로 세워 잰다).
 - 아직 아무도 게임에서 보지 않았다(컴파일 검사만 통과).

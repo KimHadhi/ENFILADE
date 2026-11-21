@@ -1,6 +1,6 @@
 ﻿key,value,note
 #안내,,"HUD Mk II(게리 모드 애드온 HUD Mk II를 우리 게임에. 사용자 2026-11-22: 지금 HUD가 지저분하고 모바일 게임 같다 → 영상의 HUD Mk II, 시안 카드 '좋아' + '내 프로필 아이콘 넣을 공간 넣을 것'). 자리는 1920x1080 화면의 왼쪽 위에서 px(아래가 +). 애드온은 1920에서 Scale = ScreenScale(0.25) = 0.75라 '500 x Scale'은 375. 조각마다 가까운 화면 모서리에서 그 거리를 지킨다. 글자 크기는 GMod 글꼴 크기(칸 높이) 그대로 적고, Hitmarker Normal의 칸은 1.25em이라 화면에는 크기 ÷ Text.em으로 그린다"
-Hud.on,1,"1이면 HUD Mk II가 예전 HUD 대신 나온다(예전 체력 블록·초상화·궁극 탄창·탄약 표시·무기 슬롯·목표 바·새 목표 카드·클래스 판·지속 효과 칸·설치 개수 줄·아군 카드·획득 목록은 숨는다). 0이면 예전 HUD. 다음 장면부터 바뀐다"
+Hud.on,1,"1이면 HUD Mk II가 예전 HUD 대신 나온다(예전 체력 블록·초상화·궁극 탄창·탄약 표시·목표 바·새 목표 카드·클래스 판·지속 효과 칸·설치 개수 줄·아군 카드·획득 목록은 숨고, 무기 슬롯은 Mk II 모양으로 탄약 위에 남는다: Slots). 0이면 예전 HUD. 다음 장면부터 바뀐다"
 Hud.order,26,HUD Mk II 캔버스의 그리는 순서(피 효과 24·실드 효과 25 위)
 Hud.sway,2,"시야 흔들림: 시선이 늦게 따라오는 사본보다 1도 앞설 때마다 HUD가 비켜나는 px(애드온 hud_mk2_sway_intensity 기본 2). 설정 → HUD 흔들림 0.5(기본)일 때 이 값, 0이면 흔들림 없음"
 Hud.swayFollow,10,시선 사본이 따라오는 빠르기(1초에. 애드온 LerpAngle(FrameTime x 10))
@@ -28,11 +28,10 @@ Text.outlineAlpha,0.22,"테두리 진하기(애드온 20/255를 여덟 번 겹�
 Text.hangul,10,"작은 머리글 크기(9.6 → 7.68px)에 한글이 있으면 이 px로(7.68px 한글은 읽을 수 없다. 시안과 같음)"
 Text.label,9.6,"Nene.Label: 머리글·눈금·무기 이름(sw x 0.01)"
 Text.mags,28.8,"Nene.Mags: 탄창 숫자(sw x 0.03)"
-Text.ammo,19.2,"Nene.Ammo: 예비 숫자·선택기 탄 수(sw x 0.02)"
+Text.ammo,19.2,"Nene.Ammo: 예비 숫자(sw x 0.02)"
 Text.alts,14.4,"Nene.Alts: 칸 모서리 숫자(sw x 0.015)"
 Text.history,21.12,"Nene.History: 획득 줄·목표 제목(sw x 0.022)"
 Text.name,16.8,"Nene.Name: 클래스 키 글자(sw x 0.0175)"
-Text.selector,26.4,"Nene.Selector: 선택기 무기 이름(sw x 0.0275)"
 #체력,,"애드온 DrawHealth·DrawArmor. 자리는 시안(체력 블록을 왼쪽 아래로)"
 Status.x,317,체력 바 가운데 x(시안. 애드온은 화면 가운데 960)
 Status.y,1009.8,"체력 바 가운데 y(애드온 sh + sh x 0.87)"
@@ -165,21 +164,21 @@ Pickups.padH,1.2,바탕 상자 높이 = 글자 높이 x 이 값
 Pickups.dim,0.3,이 순서를 넘은 줄마다 흐려지는 몫
 Pickups.clear,4,이 순서까지는 흐려지지 않는다
 Pickups.chars,!@#$%^&*()_+{}:<>?~/|`,해독 중에 대신 보이는 글자들(애드온 randomChars). 목표 제목·위 알림도 같은 글자
-#무기 선택기,,"애드온 cl_selector.lua. 숫자 키·휠로 무기를 바꾸면 화면 가운데에 이 초 동안 뜬다(무기는 예전처럼 키를 누르면 바로 바뀐다)"
-Selector.seconds,3,떠 있는 시간
-Selector.x,960,가운데 x
-Selector.y,540,가운데 y
-Selector.width,337.5,"상자 폭(450 x Scale)"
-Selector.height,112.5,"상자 높이(150 x Scale)"
-Selector.gap,15,"상자 사이(20 x Scale)"
-Selector.follow,10,나타나고 미끄러지는 빠르기
-Selector.colourFollow,10,색이 바뀌는 빠르기
-Selector.held,#FFFFFFC8,"든 무기 상자(흰색 200/255)"
-Selector.back,#00000032,다른 상자
-Selector.heldText,#000000,든 무기 상자의 글자
-Selector.low,0.3,탄창이 이 몫 이하면 글자가 빨강
-Selector.falloff,1.5,"가운데에서 멀수록 흐려지는 정도(1 − 거리/1920 x 이 값)"
-Selector.iconAlpha,0.588,탄 아이콘 진하기(150/255)
+#무기 슬롯,,"숫자 키 1~4의 무기 슬롯을 Mk II 모양으로(사용자 2026-11-22: 무기 슬롯 1,2,3,4번 그거는 기존 방식이 더 맘에 들어. 기존 방식으로 디자인만 바꿔서. 애드온의 가운데 무기 선택기는 없앴다). 하는 일은 예전 무기 슬롯 그대로(WeaponSlotsHUD: 무기를 바꾸거나 탄이 바뀌면 3초 보였다가 1초에 걸쳐 사라짐, 든 칸이 커지며 왼쪽으로 툭 나왔다 돌아옴, 아이콘 아래 이름과 종류, 긴 이름은 흘러감). 줄 폭은 탄약 블록(탄창 상자 왼쪽 끝~예비 상자 오른쪽 끝, 1080p에서 x 1633~1785)이고 궁극기 칸 위로 gap만큼 띄워 아래부터 쌓는다(1번이 위, 4번이 아래). 색은 Colour 줄 그대로: 칸 바탕 Colour.background, 번호·아이콘 Colour.text, 빈 칸 Colour.tag, 탄창이 Ammo.low 이하인 총 Colour.low, 종류 글자 Colour.accent. 글자 크기는 번호·이름 Text.alts, 종류 Text.label"
+Slots.height,41.25,"안 든 칸 높이(55 x Scale. 장비 칸 한 변과 같음)"
+Slots.heightHeld,60,"든 칸 높이(80 x Scale). 아이콘 아래 이름 줄이 들어간다"
+Slots.gap,4.125,"칸 사이, 그리고 궁극기 칸 위 틈(장비 칸 사이와 같은 칸 x 0.1)"
+Slots.pad,4,칸 가장자리에서 번호와 이름 줄까지
+Slots.icon,93.75,"무기 아이콘 폭(탄창 상자 폭과 같음). 높이는 아이콘 캔버스 비율 3.2로"
+Slots.iconShift,7.5,아이콘이 칸 가운데에서 오른쪽으로 비켜난 만큼(왼쪽 위 번호 자리)
+Slots.iconAlpha,0.588,안 든 칸 아이콘 진하기(애드온 150/255). 든 칸은 1
+Slots.held,#FFFFFFC8,"든 칸(애드온 선택기의 흰색 200/255)"
+Slots.heldText,#000000,든 칸의 번호·아이콘·이름(애드온 선택기의 검은 글자)
+Slots.kick,14,"든 칸이 왼쪽으로 툭 나오는 거리(px). 0.16초에 제자리로(예전 판과 같음). 0이면 안 나온다"
+Slots.grow,0.14,칸이 커지는 데 걸리는 시간(살짝 넘었다 돌아온다. 예전 판과 같음)
+Slots.flash,0.3,"든 칸이 한 번 밝아졌다 사라지는 시간. 진하기는 애드온의 쏠 때 빛(Ammo.flickAlpha). 한 번 부드럽게만(깜빡임 없음)"
+Slots.decode,0.35,든 칸의 이름이 해독되는 시간(무작위 기호는 Pickups.chars)
+Slots.colourFollow,10,탄창이 낮아져 빨강이 되고 돌아오는 빠르기(1초에)
 #목표,,"시안의 목표 블록(애드온에는 없음, Mk II의 글자와 상자로)"
 Mission.x,70,왼쪽 끝
 Mission.y,58,머리글 줄 위쪽

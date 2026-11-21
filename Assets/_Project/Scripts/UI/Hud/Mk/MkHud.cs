@@ -9,8 +9,11 @@ using UnityEngine.UI;
 /// on this PC's player (PlayerMovement adds it), drawing on one flat overlay canvas, every number from
 /// Tables/Hud/MkHud.csv: health and armour with the profile picture, rank and stance (MkStatus), teammates (MkTeam), timed
 /// effects (MkEffects), the objective (MkMission) and the line that says a new one (MkNotice), the gun (MkAmmo), the
-/// tiles over it for the throwable, the class and the ultimate (MkGear), what was picked up (MkPickups), the weapon
-/// selector (MkSelector) and the screen-edge glow (MkFlare).
+/// tiles over it for the throwable, the class and the ultimate (MkGear), what was picked up (MkPickups) and the
+/// screen-edge glow (MkFlare). The weapon slots are drawn over the gun's block by their own owner, WeaponSlotsHUD, in Mk
+/// II's look on a frame lent here (Lend): the user turned down the addon's weapon selector across the screen's middle for
+/// the old slots in this look (2026-11-22: "무기 슬롯 1,2,3,4번 그거는 기존 방식이 더 맘에 들어. 기존 방식으로 디자인만
+/// 바꿔서").
 /// <para>Every piece sways as the addon's does: its place moves by how far the look has run ahead of a lagged copy of
 /// itself (Hud.sway px a degree, scaled by Settings → HUD 흔들림), and it turns with a Q/E lean as the rest of the HUD.
 /// The old pieces it replaces stand aside while MkHud.csv Hud.on is 1 (HudRig, MissionHUD, ClassHUD, PlayerMovement and
@@ -42,6 +45,9 @@ public sealed class MkHud : MonoBehaviour
 
     /// <summary>The player whose HUD this is.</summary>
     public PlayerMovement Player { get; private set; }
+
+    /// <summary>This PC's HUD Mk II once it is up: null before its Start, after it is gone, or while Hud.on is 0.</summary>
+    internal static MkHud Local => local != null && local.host != null ? local : null;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -106,13 +112,33 @@ public sealed class MkHud : MonoBehaviour
         ammo = Add(new MkAmmo(this, canvas));
         Add(new MkGear(this, canvas));
         pickups = Add(new MkPickups(this, canvas));
-        Add(new MkSelector(this, canvas));
     }
 
     private T Add<T>(T piece) where T : MkPiece
     {
         pieces.Add(piece);
         return piece;
+    }
+
+    /// <summary>
+    /// A frame on the Mk II canvas for something another owner draws there in Mk II's look, made once by its name and
+    /// pinned to <paramref name="corner"/> as a piece's frame is: it sways and turns with the lean as the pieces do, and
+    /// goes with the HUD. The weapon slots borrow one: the user wanted the old slots back in the new look (2026-11-22:
+    /// "기존 방식으로 디자인만 바꿔서"), so WeaponSlotsHUD stays their one owner rather than Mk II drawing a copy of them.
+    /// </summary>
+    internal RectTransform Lend(string name, Vector2 corner)
+    {
+        foreach (var piece in pieces)
+            if (piece is Lent && piece.Frame != null && piece.Frame.name == name) return piece.Frame;
+        return Add(new Lent(this, (RectTransform)host.transform, name, corner)).Frame;
+    }
+
+    // A lent frame: its borrower draws in it, the HUD only moves it.
+    private sealed class Lent : MkPiece
+    {
+        public Lent(MkHud hud, RectTransform canvas, string name, Vector2 corner) : base(hud, canvas, name, corner) { }
+
+        public override void Tick(float dt) { }
     }
 
     private void LateUpdate()

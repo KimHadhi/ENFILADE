@@ -44,7 +44,7 @@ public sealed class MkLook
     public sealed class Typeface
     {
         public float em = 1.25f, outline = .2f, outlineAlpha = .22f, hangul = 10f;
-        public float label = 9.6f, mags = 28.8f, ammo = 19.2f, alts = 14.4f, history = 21.12f, name = 16.8f, selector = 26.4f;
+        public float label = 9.6f, mags = 28.8f, ammo = 19.2f, alts = 14.4f, history = 21.12f, name = 16.8f;
     }
 
     /// <summary>Health, armour, the profile tile and the tiles past the bars (row Status).</summary>
@@ -110,13 +110,20 @@ public sealed class MkLook
         public string chars = "!@#$%^&*()_+{}:<>?~/|`";
     }
 
-    /// <summary>The weapon selector (row Selector).</summary>
+    /// <summary>
+    /// The weapon slots in Mk II's look (row Slots). WeaponSlotsHUD keeps drawing them as it always did, in Mk II's frame
+    /// (MkHud.Lend), because the user wanted the old slots back in the new look (2026-11-22: "무기 슬롯 1,2,3,4번 그거는
+    /// 기존 방식이 더 맘에 들어. 기존 방식으로 디자인만 바꿔서"). The column spans the gun's block (the magazine box's left to
+    /// the reserve box's right) and stands a gap over the tiles over the reserve; its colours are the Mk II palette's, but
+    /// for the slot in hand (the addon selector's white box with black words).
+    /// </summary>
     [Serializable]
-    public sealed class Selector
+    public sealed class WeaponColumn
     {
-        public float seconds = 3f, x = 960f, y = 540f, width = 337.5f, height = 112.5f, gap = 15f, follow = 10f, colourFollow = 10f;
-        public Color held = new Color(1f, 1f, 1f, 200f / 255f), back = new Color(0f, 0f, 0f, 50f / 255f), heldText = Color.black;
-        public float low = .3f, falloff = 1.5f, iconAlpha = 150f / 255f;
+        public float height = 41.25f, heightHeld = 60f, gap = 4.125f, pad = 4f;
+        public float icon = 93.75f, iconShift = 7.5f, iconAlpha = 150f / 255f;
+        public Color held = new Color(1f, 1f, 1f, 200f / 255f), heldText = Color.black;
+        public float kick = 14f, grow = .14f, flash = .3f, decode = .35f, colourFollow = 10f;
     }
 
     /// <summary>The objective (row Mission).</summary>
@@ -154,7 +161,7 @@ public sealed class MkLook
     public readonly Ammo Gun = new Ammo();
     public readonly Gear Kit = new Gear();
     public readonly Pickups Taken = new Pickups();
-    public readonly Selector Slots = new Selector();
+    public readonly WeaponColumn Weapons = new WeaponColumn();
     public readonly Mission Goal = new Mission();
     public readonly Notice Line = new Notice();
     public readonly Flare Glow = new Flare();
@@ -171,7 +178,7 @@ public sealed class MkLook
         GameTables.BindNested(MkHud.TableName, "Ammo", owner, Gun);
         GameTables.BindNested(MkHud.TableName, "Gear", owner, Kit);
         GameTables.BindNested(MkHud.TableName, "Pickups", owner, Taken);
-        GameTables.BindNested(MkHud.TableName, "Selector", owner, Slots);
+        GameTables.BindNested(MkHud.TableName, "Slots", owner, Weapons);
         GameTables.BindNested(MkHud.TableName, "Mission", owner, Goal);
         GameTables.BindNested(MkHud.TableName, "Notice", owner, Line);
         GameTables.BindNested(MkHud.TableName, "Flare", owner, Glow);

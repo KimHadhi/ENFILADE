@@ -56,6 +56,5 @@ Moment Notice,piece,궁극기 알림 띠(MomentHUD: 누가 궁극기를 썼는�
 Moment Tag,piece,내 화면 클래스 칸 위 작은 이름표(CHARGE·DUEL·REVERSAL·GUN KATA. MomentFx.csv Tag)
 Death Card,group,데스 스크린 카드(DeathScreen·DeathCard): 사망/전멸 판·이유 띠·숫자 판 셋·다음 줄이 저마다 한 조각. 화면 한가운데를 비워 두고 위아래로 나뉜다. 지나가는 조각이라 겹침 검사는 IHudPreview로 카드를 세워 잰다
 Death Film,skip,데스 스크린의 HUD 아래 애드온 비네트·피 그림(화면 전체를 덮는 배경)
-Mk HUD,group,"HUD Mk II 캔버스(MkHud): Mk Status(체력·방어·프로필·계급·자세), Mk Team, Mk Effects, Mk Mission, Mk Notice, Mk Ammo, Mk Gear, Mk Pickups가 저마다 한 조각"
+Mk HUD,group,"HUD Mk II 캔버스(MkHud): Mk Status(체력·방어·프로필·계급·자세), Mk Team, Mk Effects, Mk Mission, Mk Notice, Mk Ammo, Mk Gear, Mk Pickups, Mk Slots(무기 슬롯: WeaponSlotsHUD가 Mk II가 빌려준 틀에 그린다. 바꾼 뒤 잠깐 뜨는 조각이라 겹침 검사는 IHudPreview로 세워 잰다)가 저마다 한 조각"
 Mk Flare,skip,HUD Mk II 화면 가장자리 빛(맞거나 회복할 때 화면 전체에 잠깐. 배경)
-Mk Selector,skip,HUD Mk II 무기 선택기(숫자 키·휠을 누른 뒤 3초만 화면 가운데를 덮는다. 콜아웃 휠처럼 일부러 가운데)
