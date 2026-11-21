@@ -30,7 +30,7 @@
 | 걸음의 방향 | [PlayerBody.Locomotion](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Locomotion.cs) | 0.9.240. 방향은 클립마다 잰 만큼(8방향 스트레이프), 자세마다 한 줄의 표 [BodyMoves.csv](../../Assets/_Project/Data/Resources/Tables/Player/BodyMoves.csv) |
 | 맨몸 서기·걷기·조깅·달리기·전력질주, 스트레이프 | BodyMoves `plain`, Player.csv `Body.idle` | 0.9.240 |
 | 웅크려 서기·걷기·조깅 | BodyMoves `crouch`, `Body.crouchIdle` | 0.9.240 |
-| 총 든 채 서기·걷기·달리기 (권총·소총·샷건) | BodyMoves `<종류>` | 0.9.240. 탄 종류로 고른다 |
+| 총 든 채 서기·걷기·조깅·전력질주 (권총·소총·샷건) | BodyMoves `<종류>` | 0.9.240. 탄 종류로 고른다. 조깅은 `*_AimJog`(0.9.294), 전력질주는 그 총의 달리기 `*_Run`(0.9.314: 몸이 앞으로 R 33°·S 20°·P 42° 기운다. 맨몸 `Sprint_Lfoot` 46°. 사용자 11-22 "combat girls 적용한 거 맞냐? 달릴 때 너무 기우는데?"). 앞으로만 있어서 옆·뒤 전력질주는 맨몸 클립이 다리를 맡고 그동안 FPSAF가 상체와 총을 시선에 붙든다 |
 | 총 겨누고 서기·걷기·조깅, 웅크려 겨누기 | BodyMoves `<종류>.aim`, `.crouch`, `.crouch.aim` | 0.9.240 |
 | 다운될 때 무너지기 (`P_Die_F`) | [PlayerBody.Downed](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Downed.cs), `Body.downedFall` | 0.9.298. 서기·회피 스텝·밀치기 중에 다운되면 무릎이 꺾여 앞으로 엎어진 뒤 엎드림으로. 쓰러지는 1초(`Move.downedFallTime`)는 기지 못한다. 웅크림·누움·슬라이드·공중에서는 바로 엎드림 |
 | 맞으면 몸만 움찔 (`R_Hit_Upper`, `R_Hit_Low`) | [PlayerBody.Flinch](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Flinch.cs), `Body.flinch*` | 0.9.299. 서 있을 때 맞으면 등뼈·가슴만 클립을 따른다(층 FlinchLayer). 한 번에 20(`Body.flinchHardDamage`) 이상 들어가면 R_Hit_Low. 카메라는 맞은 순간의 눈 자리를 지키고 머리가 그리로 굽는다. 친구 PC에도 같은 세기로 |

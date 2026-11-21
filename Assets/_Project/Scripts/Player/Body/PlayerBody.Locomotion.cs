@@ -95,6 +95,9 @@ public sealed partial class PlayerBody
     // This frame's sets that may have the legs, first asked first, how much each wants, and what each was given.
     private readonly List<MoveSet> asking = new List<MoveSet>(4);
     private readonly List<float> wanting = new List<float>(4);
+    // How much of the legs a gun's own sets carried in the last Locomotion (0-1), and on which frame (GunLegs).
+    private float gunLegs = 1f;
+    private int gunLegsFrame = -10;
     private float legYaw;
     // How the feet step a turn on the spot (TurnOnTheSpot, FootPlanting).
     private readonly TurnPlanner turnPlanner = new TurnPlanner();
@@ -225,12 +228,14 @@ public sealed partial class PlayerBody
     }
 
     // Which gait a cycle is, by the word its name has (BIPER names every cycle so: Walk_Lfoot, StrafeJog_FL,
-    // R_AimJog, CrouchWalk_F; a cycle polished in Blender keeps its name after "enf_"). A cycle named otherwise (a mod's,
-    // or a run: the game has had no run since 0.9.283) takes the gait whose speed its feet are nearest, straight ahead.
+    // R_AimJog, CrouchWalk_F; a cycle polished in Blender keeps its name after "enf_"). A run is the sprint: the game has
+    // had no run gait since 0.9.283, and a gun's run (Combat Girls R_Run, P_Run, S_Run) is how a body holding that gun
+    // sprints (0.9.314). A cycle named otherwise (a mod's) takes the gait whose speed its feet are nearest, straight ahead.
     private float RankOf(string clipName, Channel cycle)
     {
         string name = clipName ?? "";
         if (name.IndexOf("Sprint", System.StringComparison.OrdinalIgnoreCase) >= 0) return 2f;
+        if (name.IndexOf("Run", System.StringComparison.OrdinalIgnoreCase) >= 0) return 2f;
         if (name.IndexOf("Jog", System.StringComparison.OrdinalIgnoreCase) >= 0) return 1f;
         if (name.IndexOf("Walk", System.StringComparison.OrdinalIgnoreCase) >= 0) return 0f;
         var gait = player != null && player.Actions != null ? player.Actions.Gait : null;
@@ -333,8 +338,17 @@ public sealed partial class PlayerBody
             left -= share;
         }
         if (left > 1e-4f) moving += Mix(stance, stance, left, heading, speed, scale);
+        // The sets asking are the gun's own (Locomotion): what they didn't take, a body without a gun's clips carried.
+        gunLegs = asking.Count > 0 ? 1f - Mathf.Clamp01(left) : 1f;
+        gunLegsFrame = Time.frameCount;
         return moving;
     }
+
+    /// <summary>How much of the legs the gun's own clips carry now (0-1; 1 with no gun, standing, or when the legs aren't
+    /// walking or running). FPSBody lets the upper body go to the legs' clip for a sprint only this far: the rest of a
+    /// sprint is a gun-less runner's (Female Runner's side and back sprints lean 45° ahead, 20-35° aside and twist 26-42°,
+    /// clip bench 11-22), and the gun followed that chest (the user, 2026-11-22: "달릴 때 너무 기우는데").</summary>
+    public float GunLegs => Time.frameCount - gunLegsFrame <= 2 ? gunLegs : 1f;
 
     // A set's share: on its idle as far as the body stands (the stance's idle for a set with none of its own), on its
     // cycles for the rest. Returns the moving part of the share.
@@ -352,9 +366,9 @@ public sealed partial class PlayerBody
     }
 
     // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
-    // round to the heading (Reach) and its cycles reach the gait (a gun held at the hip has a walk only, and no gun's set
-    // sprints: the plain set jogs and sprints under the gun's upper body). Past that the next set down runs on under the
-    // same upper body.
+    // round to the heading (Reach) and its cycles reach the gait (a gun held at the hip walks, jogs and runs ahead only:
+    // the plain set steps and sprints the other ways under the gun's upper body). Past that the next set down runs on
+    // under the same upper body.
     private float Carries(MoveSet set, float heading, float speed, float scale)
     {
         if (speed < StillTravel) return 1f;

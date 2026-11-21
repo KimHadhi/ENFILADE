@@ -29,7 +29,7 @@ using Object = UnityEngine.Object;
 ///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
 ///   stepfilm=Idle,R_Idle              a turn on the spot as the game steps it (StepBench): pictures and each step
 ///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
-///                                     head face and how fast the hands move against the chest (Track)
+///                                     head face, how fast the hands move against the chest and how the body and head lean (Track)
 /// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
 /// </summary>
 [InitializeOnLoad]
@@ -394,6 +394,7 @@ internal static class ClipBench
         Quaternion rootRotation = root.rotation;
         // The head's ahead, as it is in the model's own rest pose (facing the body's ahead).
         Vector3 headAhead = Quaternion.Inverse(head.rotation) * root.forward;
+        Vector3 headUp = Quaternion.Inverse(head.rotation) * root.up;
         float Facing(Vector3 left, Vector3 right)
         {
             Vector3 ahead = Vector3.Cross(root.InverseTransformVector(right - left), Vector3.up);
@@ -401,7 +402,7 @@ internal static class ClipBench
         }
         try
         {
-            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s | gone m");
+            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s | gone m | lean ahead side | head down roll");
             int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * TrackRate));
             Vector3 lastLeft = Vector3.zero, lastRight = Vector3.zero;
             float first = rootY != null ? rootY.Evaluate(0f) : 0f;
@@ -418,11 +419,18 @@ internal static class ClipBench
                 float over = (root.InverseTransformPoint(hips.position).y - feet) * scale;
                 Vector3 headForward = root.InverseTransformDirection(head.rotation * headAhead);
                 float headYaw = Mathf.Atan2(headForward.x, headForward.z) * Mathf.Rad2Deg;
+                // How the body leans (degrees): the hips-to-head line ahead and to the right, and the head's own nod down and
+                // roll to the right, all against the body's upright. A run's lean is what a first-person body shows of it.
+                Vector3 trunk = root.InverseTransformVector(head.position - hips.position);
+                float leanAhead = Mathf.Atan2(trunk.z, trunk.y) * Mathf.Rad2Deg, leanSide = Mathf.Atan2(trunk.x, trunk.y) * Mathf.Rad2Deg;
+                Vector3 headTop = root.InverseTransformDirection(head.rotation * headUp);
+                float headDown = -Mathf.Atan2(headForward.y, new Vector2(headForward.x, headForward.z).magnitude) * Mathf.Rad2Deg;
+                float headRoll = Mathf.Atan2(headTop.x, headTop.y) * Mathf.Rad2Deg;
                 float rise = rootY != null ? (rootY.Evaluate(t) - first) * human : 0f;
                 // How far the body centre has gone over the ground since the start (m).
                 float gone = rootX != null && rootZ != null
                     ? new Vector2(rootX.Evaluate(t) - rootX.Evaluate(0f), rootZ.Evaluate(t) - rootZ.Evaluate(0f)).magnitude * human : 0f;
-                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0} | {gone,5:0.00}"));
+                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0} | {gone,5:0.00} | {leanAhead,5:0} {leanSide,5:0} | {headDown,5:0} {headRoll,5:0}"));
             }
         }
         finally

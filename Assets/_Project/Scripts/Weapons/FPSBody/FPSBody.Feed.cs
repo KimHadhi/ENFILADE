@@ -50,8 +50,12 @@ public sealed partial class FPSBody
         // 할 때 가끔씩 처음에 엄청 흔들리면서").
         bool sighting = HoldsGun && controller.AimBlend > 0f;
         bool sprinting = grounded && sprint >= sprintFrom && speed > walk && !sighting;
+        // Only as far as the legs are the gun's own run (PlayerBody.GunLegs): the sprint gives the upper body to the legs'
+        // clip, and a gun-less runner's chest (the side and back sprints) leaned the gun 45° ahead, 20-35° aside and twisted
+        // it 26-42° (clip bench, 2026-11-22; the user: "달릴 때 너무 기우는데"). There the gun stays held on the view.
+        float gunRuns = Body != null ? Body.GunLegs : 1f;
         float follow = 1f - Mathf.Exp(-dt / weightTime);
-        sprintWeight = Mathf.Lerp(sprintWeight, sprinting ? 1f : 0f, sighting ? 1f - Mathf.Exp(-dt / (weightTime * AimedSprintShare)) : follow);
+        sprintWeight = Mathf.Lerp(sprintWeight, sprinting ? gunRuns : 0f, sighting ? 1f - Mathf.Exp(-dt / (weightTime * AimedSprintShare)) : follow);
         // Eased with the sprint pose instead of switched: the spine took the view back in a single frame as a sprint ended.
         input.SetValue(FPSANames.StabilizationWeight, 1f - sprintWeight);
         input.SetValue("LookLayerWeight", Mathf.Lerp(1f, sprintLookWeight, sprintWeight) * Framework);
