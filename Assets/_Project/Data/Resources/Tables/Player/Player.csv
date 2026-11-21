@@ -491,8 +491,6 @@ Ability.propShoveImpulse,60,V 밀치기가 물리 프랍에 주는 운동량(N·
 Ability.propBodyMass,70,슬라이드·다이브·돌진 밀치기로 프랍에 부딪힐 때의 몸무게(kg)
 Body.idle,Idle,몸 애니메이션 이름 (Art/Animations의 클립). 맨몸으로 서 있기(BIPER Female Runner). 걷기·달리기 클립은 BodyMoves.csv의 plain 줄. 예전 mx_idle
 Body.crouchIdle,CrouchIdle,웅크려 서 있기(BIPER Female Runner). 웅크린 걸음은 BodyMoves.csv의 crouch 줄. 예전 crouchstill
-Body.turnLeft,mx_turn_left,제자리에서 왼쪽으로 발을 옮기며 돌기. Body.turnSteps가 1일 때만 쓴다 (도는 각도는 몸이 직접)
-Body.turnRight,mx_turn_right,제자리에서 오른쪽으로 발을 옮기며 돌기. Body.turnSteps가 1일 때만 쓴다
 Body.jump,jumpfast,점프 도약
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하
@@ -602,9 +600,9 @@ Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m)
 Body.ladderHeadShift,0.2,사다리에서 눈을 카메라 높이에 맞추려고 몸 전체를 위아래로 옮기는 최대 거리(m). 가로대 클립과 미끄러지기 클립의 머리 높이 차이를 몸이 흡수해 카메라가 머리 안에 있다
 Body.turnStartAngle,60,"서 있을 때 시선이 다리에서 이만큼 돌아가면 다리가 시선 쪽으로 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다"
 Body.turnSpeed,150,다리가 시선 쪽으로 도는 가장 빠른 빠르기(도/초)
-Body.turnSteps,0,"1이면 제자리 돌기 때 다리가 돌기 클립(Body.turnLeft/turnRight)으로 발을 옮긴다. 0이면 선 자세 그대로 제자리에서 돈다. 클립의 걸음은 클립 자신이 도는 각도·빠르기에 맞춰져 있는데 그 회전은 빼고 몸이 따로 돌아서, 1이면 걸음 중간에 다리가 옆으로 갔다가 클립이 끝날 때 돌아온다"
+Body.turnSteps,1,1이면 제자리 돌기 때 다리가 돌기 클립으로 발을 옮긴다: 다리가 시선에서 뒤처진 각도에 가장 가까운 BIPER Female Runner의 제자리 돌기(TurnIP_L/R 45·90·135·180)를 제 속도로 재생하고 다리는 그 클립의 루트가 도는 곡선(GaitMoves.csv kind turn)대로 돈다. 그래서 발걸음과 도는 것이 맞는다(0.9.261). 0이면 선 자세 그대로 제자리에서 돈다. 예전에는 클립 하나를 다른 빠르기로 돌려서 다리가 옆으로 휘었다 튀어 꺼 두었다
 Body.turnEaseTime,0.08,Body.turnSteps가 0일 때 다리가 돌기 시작하고 멈추는 부드러움(초)
-Body.turnClipSpeed,1.5,제자리 돌기 클립 재생 속도 (Body.turnSteps가 1일 때)
+Body.turnClipSpeed,1,제자리 돌기 클립 재생 속도(Body.turnSteps가 1일 때). 1이면 클립 그대로(90°를 1.4초쯤에 거의 다 돈다). 0.9.261 전에는 1.5(Mixamo 돌기)
 Body.spineBendDown,0.45,내려다볼 때 시선 각도 중 허리가 맡는 비율. 나머지는 목·머리가 맡는다
 Body.spineBendUp,0.2,올려다볼 때 허리가 맡는 비율
 Body.leanSpineBend,14,아무것도 안 들었거나 주먹일 때 Q/E 기울이기를 끝까지 하면 척추가 허리부터 옆으로 휘는 각도(도). 머리는 화면 기울기(Ability.leanAngle)만큼만 기울고 나머지는 목이 되돌린다. 0.7.34까지의 기울이기. 총을 들면 눈이 엿보기 끝까지 가는 만큼 기운다(KINEMATION 기울이기)

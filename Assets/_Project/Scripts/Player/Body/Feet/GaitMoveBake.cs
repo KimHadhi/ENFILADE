@@ -29,11 +29,11 @@ internal static class GaitMoveBake
     internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, GameObject model, Animator animator, StringBuilder report)
     {
         var rows = new StringBuilder();
-        rows.Append("id,gait,kind,length,profile,phase,#설명\n");
+        rows.Append("id,gait,kind,length,profile,phase,turn,#설명\n");
         rows.Append("\"#설명 (ClipBench가 BIPER Female Runner의 출발·멈춤 클립에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다(Temp/enfilade-clipbench.request에 bake=gaitmoves). "
             + "length 클립 길이(초). profile 클립의 루트가 가는 속도를 같은 걸음새 반복 클립 루트 속도의 몫으로, 클립 길이를 고르게 나눈 " + Samples + "곳에서(';'). "
             + "게임은 그 걸음새 속도(Gaits.csv)에 이 몫을 곱해 몸을 움직인다. phase 출발은 끝에서, 멈춤은 처음에 반복 클립의 걸음 박자 어디인지(0 = 왼발 딛는 때, 0~1). "
-            + "출발은 그 박자로 반복 클립에 넘기고, 멈춤은 지금 박자에 가장 가까운 것을 고른다)\",,,,,,\n");
+            + "출발은 그 박자로 반복 클립에 넘기고, 멈춤은 지금 박자에 가장 가까운 것을 고른다. kind turn은 제자리 돌기(TurnIP_*): profile이 루트가 그때까지 돈 몫(0~1), turn이 그 클립이 도는 각도(+ 오른쪽)이고 몸은 그 곡선대로 돈다)\",,,,,,,\n");
         int baked = 0;
         foreach (var (gait, loopName) in Gaits)
         {
@@ -58,12 +58,24 @@ internal static class GaitMoveBake
                             : Mathf.Repeat(-downs[0] / stride, 1f);
                     }
                     rows.Append(string.Join(",", name, gait, kind, F(clip.length),
-                        string.Join(";", profile.Select(F)), F(phase), ""));
+                        string.Join(";", profile.Select(F)), F(phase), "", ""));
                     rows.Append('\n');
                     report.AppendLine(Invariant($"  {name,-20} {kind,-5} {clip.length:0.00}s phase {phase:0.00} speed {string.Join(" ", profile.Where((_, i) => i % 4 == 0).Select(v => v.ToString("0.00", CultureInfo.InvariantCulture)))} (left down x{downs.Count}, leg {left:0.00})"));
                     baked++;
                 }
         }
+        // Turning on the spot: how far round the root is through each clip, and its whole turn.
+        foreach (string side in Feet)
+            foreach (int angle in new[] { 45, 90, 135, 180 })
+            {
+                string name = $"TurnIP_{side}{angle}";
+                if (!clips.TryGetValue(name, out var clip)) continue;
+                var round = Round(clip, out float whole);
+                rows.Append(string.Join(",", name, "", "turn", F(clip.length), string.Join(";", round.Select(F)), "", F(whole), ""));
+                rows.Append('\n');
+                report.AppendLine(Invariant($"  {name,-20} turn  {clip.length:0.00}s turns {whole:0.0} share {string.Join(" ", round.Where((_, i) => i % 4 == 3).Select(v => v.ToString("0.00", CultureInfo.InvariantCulture)))}"));
+                baked++;
+            }
         WriteTable(rows.ToString());
         report.AppendLine($"  baked {baked} start and stop clips into {TablePath}");
     }
@@ -93,6 +105,48 @@ internal static class GaitMoveBake
             speeds[i] = new Vector2(tx.Evaluate(b) - tx.Evaluate(a), tz.Evaluate(b) - tz.Evaluate(a)).magnitude / (b - a) / loopSpeed;
         }
         return speeds;
+    }
+
+    // How far round the root has turned by the end of each of Samples shares of the clip (0-1 of the whole), and the whole
+    // (degrees, + to the right; a half turn reads as the way it went).
+    private static float[] Round(AnimationClip clip, out float whole)
+    {
+        var round = new float[Samples];
+        whole = 0f;
+        AnimationCurve qx = null, qy = null, qz = null, qw = null;
+        foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+        {
+            if (binding.type != typeof(Animator)) continue;
+            switch (binding.propertyName)
+            {
+                case "RootQ.x": qx = AnimationUtility.GetEditorCurve(clip, binding); break;
+                case "RootQ.y": qy = AnimationUtility.GetEditorCurve(clip, binding); break;
+                case "RootQ.z": qz = AnimationUtility.GetEditorCurve(clip, binding); break;
+                case "RootQ.w": qw = AnimationUtility.GetEditorCurve(clip, binding); break;
+            }
+        }
+        if (qx == null || qy == null || qz == null || qw == null) return round;
+        float Yaw(float time)
+        {
+            var q = new Quaternion(qx.Evaluate(time), qy.Evaluate(time), qz.Evaluate(time), qw.Evaluate(time)).normalized;
+            Vector3 ahead = Vector3.ProjectOnPlane(q * Vector3.forward, Vector3.up);
+            return Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
+        }
+        // Summed in small steps, so a half turn and more is followed round rather than read as its shortest way.
+        int steps = Samples * 8;
+        float last = Yaw(0f), turned = 0f;
+        var along = new float[steps + 1];
+        for (int i = 1; i <= steps; i++)
+        {
+            float now = Yaw(clip.length * i / steps);
+            turned += Mathf.DeltaAngle(last, now);
+            last = now;
+            along[i] = turned;
+        }
+        whole = turned;
+        for (int i = 0; i < Samples; i++)
+            round[i] = Mathf.Abs(whole) > 1e-3f ? along[(i + 1) * 8] / whole : 0f;
+        return round;
     }
 
     private static void Curves(AnimationClip clip, out AnimationCurve tx, out AnimationCurve tz)

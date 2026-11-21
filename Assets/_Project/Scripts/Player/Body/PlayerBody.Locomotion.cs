@@ -44,22 +44,20 @@ public sealed partial class PlayerBody
     private Vector2 hipTurnSpeeds = new Vector2(3f, 5f);
 
     [Header("Turning on the spot")]
-    [SerializeField] private string turnLeft = "mx_turn_left", turnRight = "mx_turn_right";
     [SerializeField, Range(10f, 120f), Tooltip("Standing still, the legs stay planted until the view has turned this far "
         + "from them (degrees); the chest twists toward the view meanwhile. Then the legs step round.")]
     private float turnStartAngle = 60f;
     [SerializeField, Min(10f), Tooltip("How fast the legs turn round to the view (degrees per second).")]
     private float turnSpeed = 150f;
-    // Off by default (user, 2026-11-09): the clips' own turn is cut out (inPlaceYaw) and the body turns the legs itself,
-    // but a clip's legs still swing as though its hips had turned, by the clip's angle over its 0.8 s, while the body
-    // turns about 60 degrees at turnSpeed with the hips kept on the standing clip. So mid-step the legs swung aside, and
-    // snapped back when the clip let go.
+    // On since 0.9.261: the legs turn by the stepping clip's own curve (TurnStep). Off until then (user, 2026-11-09): one
+    // clip's legs swung as though its hips had turned by its own angle over its own time while the body turned some other
+    // way at turnSpeed, so mid-step the legs swung aside and snapped back when the clip let go.
     [SerializeField, Tooltip("Step round with the turn clips on the legs. Off, the legs turn on the spot as they stand.")]
-    private bool turnSteps;
+    private bool turnSteps = true;
     [SerializeField, Min(0f), Tooltip("Turning on the spot without steps, how softly the legs start and stop (s).")]
     private float turnEaseTime = .08f;
-    [SerializeField, Min(.1f), Tooltip("Playback speed of the turn clips while the legs step round.")]
-    private float turnClipSpeed = 1.5f;
+    [SerializeField, Min(.1f), Tooltip("Playback speed of the turn clips while the legs step round (1: their own pace).")]
+    private float turnClipSpeed = 1f;
     [SerializeField, Min(0f), Tooltip("How quickly the legs follow a change in the way and speed of travel (s). Quick A/D or "
         + "W taps even out instead of flipping the stride from one side to the other.")]
     private float strideFollowTime = .12f;
@@ -255,43 +253,68 @@ public sealed partial class PlayerBody
     }
 
     // The turn clips play on the legs alone (TurnLayer, the kick's leg mask): the hips, spine and head stay on the standing
-    // clip, so the steps don't rock the head, and with it the camera on the eyes (item 312). The hips' turn comes from the
-    // body's own yaw (targetYaw), not the clip.
+    // clip, so the steps don't rock the head, and with it the camera on the eyes (item 312). Since 0.9.261 they are BIPER
+    // Female Runner's turns on the spot by angle (TurnIP_L/R 45, 90, 135, 180), their own turn taken out of the pose
+    // (clips.csv inPlaceYaw 1) and baked as how far round they are through their length (GaitMoves.csv kind turn): the legs
+    // turn by that very curve, so the steps and the turn agree. One clip of one angle, turned at the body's own speed,
+    // swung the legs aside mid-step and snapped them back as it let go (the user, 2026-11-09), so it was left off.
+    private sealed class TurnStep
+    {
+        public AnimationClipPlayable Playable;
+        public int Input;
+        public float Angle, Length;
+        public float[] Round;
+    }
+
+    private readonly List<TurnStep> turnClips = new List<TurnStep>();
     private AnimationMixerPlayable turnMixer;
-    private AnimationClipPlayable turnLeftClip, turnRightClip;
     private float turnLayerWeight, turnLayerTarget;
+    // The turn stepping now, how far into it (s), and the legs' yaw in the world it set off from.
+    private TurnStep stepping;
+    private float stepTime, stepFrom;
 
     // From BuildLayers, after BuildKick has made the leg mask.
     private void BuildTurn()
     {
         layers.SetLayerMaskFromAvatarMask(TurnLayer, legMask);
-        turnMixer = AnimationMixerPlayable.Create(graph, 2);
+        turnClips.Clear();
+        var rows = new List<(string clip, IReadOnlyDictionary<string, string> row)>();
+        foreach (string id in GameTables.RowIds(GaitMovesTable))
+            if (GameTables.TryGetRow(GaitMovesTable, id, out var row) && row.Text("kind") == "turn") rows.Add((id, row));
+        turnMixer = AnimationMixerPlayable.Create(graph, Mathf.Max(1, rows.Count));
         graph.Connect(turnMixer, 0, layers, TurnLayer);
-        turnLeftClip = TurnClip(turnLeft, 0);
-        turnRightClip = TurnClip(turnRight, 1);
+        foreach (var (clipName, row) in rows)
+        {
+            var clip = profile.Find(clipName);
+            if (clip == null)
+            {
+                Report($"clip '{clipName}' is not in the PlayerBody profile.");
+                continue;
+            }
+            var playable = ClipPlayable(clip);
+            playable.SetSpeed(0);
+            int input = turnClips.Count;
+            graph.Connect(playable, 0, turnMixer, input);
+            var round = new List<float>();
+            foreach (string cell in row.Text("profile").Split(';'))
+                if (float.TryParse(cell, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value))
+                    round.Add(value);
+            turnClips.Add(new TurnStep
+            {
+                Playable = playable, Input = input, Angle = row.Number("turn", 0f), Length = Mathf.Max(.05f, clip.length),
+                Round = round.ToArray()
+            });
+        }
+        stepping = null;
         turnLayerWeight = turnLayerTarget = 0f;
         layers.SetInputWeight(TurnLayer, 0f);
-    }
-
-    private AnimationClipPlayable TurnClip(string clipName, int input)
-    {
-        if (string.IsNullOrEmpty(clipName)) return default;
-        var clip = profile.Find(clipName);
-        if (clip == null)
-        {
-            Report($"clip '{clipName}' is not in the PlayerBody profile.");
-            return default;
-        }
-        var playable = ClipPlayable(clip);
-        playable.SetSpeed(0);
-        graph.Connect(playable, 0, turnMixer, input);
-        return playable;
     }
 
     private void TeardownTurn()
     {
         turnMixer = default;
-        turnLeftClip = turnRightClip = default;
+        turnClips.Clear();
+        stepping = null;
         turnLayerWeight = turnLayerTarget = 0f;
     }
 
@@ -303,6 +326,17 @@ public sealed partial class PlayerBody
         turnLayerTarget = 0f;
         turnLayerWeight = Mathf.MoveTowards(turnLayerWeight, target, dt / blendTime);
         layers.SetInputWeight(TurnLayer, turnLayerWeight);
+    }
+
+    // How far round a turn is at a moment (share of its whole): its samples joined in between.
+    private static float RoundAt(TurnStep step, float time)
+    {
+        var round = step.Round;
+        if (round == null || round.Length == 0) return Mathf.Clamp01(time / step.Length);
+        float at = Mathf.Clamp01(time / step.Length) * round.Length - 1f;
+        if (at < 0f) return round[0] * Mathf.Clamp01(at + 1f);
+        int i = Mathf.Min(round.Length - 1, Mathf.FloorToInt(at)), j = Mathf.Min(round.Length - 1, i + 1);
+        return Mathf.Lerp(round[i], round[j], at - i);
     }
 
     // The gun kind's sets in the hands now, by the ammunition the gun takes (BodyMoves.csv ammo; "*" for the rest), or
@@ -662,42 +696,64 @@ public sealed partial class PlayerBody
     }
 
     // Standing still, the legs keep their place while the view turns and turn round once it has turned far enough
-    // (the spine twists the chest toward the view meanwhile): on the spot, or stepping with the turn clips (turnSteps).
-    // True while the legs step (BlendTurn plays the clip on them).
+    // (the spine twists the chest toward the view meanwhile): stepping round with the turn-on-the-spot clip whose angle is
+    // nearest how far behind they are, at its own pace, the legs turned by that clip's own curve (TurnStep), or on the spot
+    // without steps (turnSteps off in the table: Body.turnSteps 0). True while the legs step (BlendTurn plays the clip on
+    // them).
     private bool TurnOnTheSpot(bool still, float dt)
     {
-        if (!still) { turning = 0; return false; }
+        if (!still) { turning = 0; stepping = null; return false; }
         float look = transform.eulerAngles.y, limit = turnStartAngle + 30f;
         float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
-        if (turning == 0 && Mathf.Abs(offset) > turnStartAngle)
+        if (turning == 0 && stepping == null && Mathf.Abs(offset) > turnStartAngle)
         {
             // Legs left behind on the left turn round to the right, and the other way round.
             turning = offset < 0f ? 1 : -1;
             turnVelocity = 0f;
-            var start = turning > 0 ? turnRightClip : turnLeftClip;
-            if (turnSteps && start.IsValid()) { start.SetTime(0); start.SetDone(false); }
-        }
-        bool stepping = false;
-        if (turning != 0)
-        {
-            offset = turnSteps ? Mathf.MoveTowards(offset, 0f, turnSpeed * dt)
-                : Mathf.SmoothDamp(offset, 0f, ref turnVelocity, turnEaseTime, turnSpeed, dt);
-            var clip = turning > 0 ? turnRightClip : turnLeftClip;
-            var other = turning > 0 ? turnLeftClip : turnRightClip;
-            if (turnSteps && clip.IsValid())
+            if (turnSteps) stepping = NearestTurn(-offset);
+            if (stepping != null)
             {
-                if (clip.GetTime() >= clip.GetAnimationClip().length) clip.SetTime(0);
-                clip.SetSpeed(turnClipSpeed);
-                turnMixer.SetInputWeight(turning > 0 ? 1 : 0, 1f);
-                turnMixer.SetInputWeight(turning > 0 ? 0 : 1, 0f);
-                if (other.IsValid()) other.SetSpeed(0);
-                stepping = true;
+                stepTime = 0f;
+                stepFrom = look + offset;
+                stepping.Playable.SetTime(0);
+                stepping.Playable.SetDone(false);
             }
+        }
+        bool steps = false;
+        if (stepping != null)
+        {
+            stepTime += dt * turnClipSpeed;
+            // The legs come round as far as the clip's root has by now; the view's own turn meanwhile is the spine's.
+            float legs = stepFrom + stepping.Angle * RoundAt(stepping, stepTime);
+            offset = Mathf.Clamp(Mathf.DeltaAngle(look, legs), -limit, limit);
+            stepFrom += Mathf.DeltaAngle(legs, look + offset);
+            stepping.Playable.SetTime(Mathf.Min(stepTime, stepping.Length));
+            foreach (var step in turnClips) turnMixer.SetInputWeight(step.Input, step == stepping ? 1f : 0f);
+            steps = true;
+            if (stepTime >= stepping.Length) { stepping = null; turning = 0; }
+        }
+        else if (turning != 0)
+        {
+            offset = Mathf.SmoothDamp(offset, 0f, ref turnVelocity, turnEaseTime, turnSpeed, dt);
             if (Mathf.Abs(offset) < 1f) turning = 0;
         }
         legYaw = look + offset;
         targetYaw = offset;
         legsPlanted = true;
-        return stepping;
+        return steps;
+    }
+
+    // The turn on the spot that turns the legs the way they must go (degrees, + to the right) by the angle nearest it.
+    private TurnStep NearestTurn(float needed)
+    {
+        TurnStep best = null;
+        float gap = float.PositiveInfinity;
+        foreach (var step in turnClips)
+        {
+            if (Mathf.Sign(step.Angle) != Mathf.Sign(needed)) continue;
+            float off = Mathf.Abs(step.Angle - needed);
+            if (off < gap) { gap = off; best = step; }
+        }
+        return best;
     }
 }
