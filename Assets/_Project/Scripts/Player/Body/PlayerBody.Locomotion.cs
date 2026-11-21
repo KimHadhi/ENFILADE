@@ -42,6 +42,9 @@ public sealed partial class PlayerBody
     private Vector2 hipTurn = new Vector2(70f, 45f);
     [SerializeField, Tooltip("The hips start turning toward the way of travel at x and turn all the way from y (m/s).")]
     private Vector2 hipTurnSpeeds = new Vector2(3f, 5f);
+    [SerializeField, Range(0f, 1f), Tooltip("Sprinting with a gun out from this far into the sprint (PlayerMovement.SprintProgress), the "
+        + "gun's run has the whole body (GunRuns).")]
+    private float gunRunFrom = .5f;
 
     [Header("Turning on the spot")]
     [SerializeField, Range(10f, 120f), Tooltip("Standing still, the legs stay planted until the view has turned this far "
@@ -95,9 +98,11 @@ public sealed partial class PlayerBody
     // This frame's sets that may have the legs, first asked first, how much each wants, and what each was given.
     private readonly List<MoveSet> asking = new List<MoveSet>(4);
     private readonly List<float> wanting = new List<float>(4);
-    // How much of the legs a gun's own sets carried in the last Locomotion (0-1), and on which frame (GunLegs).
-    private float gunLegs = 1f;
-    private int gunLegsFrame = -10;
+    // Sprinting with a gun out (GunRuns), the frame Locomotion last said so, and the sprint's progress then and whether it
+    // was rising (SprintingNow).
+    private bool gunRuns, sprintRising;
+    private int gunRunsFrame = -10;
+    private float sprintSeen;
     private float legYaw;
     // How the feet step a turn on the spot (TurnOnTheSpot, FootPlanting).
     private readonly TurnPlanner turnPlanner = new TurnPlanner();
@@ -276,6 +281,9 @@ public sealed partial class PlayerBody
         // carry the stance's own set (plain or crouched) does.
         var gun = GunInHand();
         float aim = gun != null ? AimBlend() : 0f;
+        bool sprinting = SprintingNow();
+        gunRuns = !crouched && gun != null && sprinting;
+        gunRunsFrame = Time.frameCount;
         asking.Clear();
         wanting.Clear();
         float legs = heading, turn = 0f;
@@ -288,7 +296,8 @@ public sealed partial class PlayerBody
         else
         {
             stance = plainSet;
-            turn = HipTurn(heading, speed);
+            // The gun's run goes ahead only: sprinting with a gun the body turns to the way it runs and runs it (GunRuns).
+            turn = gunRuns ? heading : HipTurn(heading, speed);
             legs = Mathf.DeltaAngle(0f, heading - turn);
             if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
         }
@@ -338,17 +347,27 @@ public sealed partial class PlayerBody
             left -= share;
         }
         if (left > 1e-4f) moving += Mix(stance, stance, left, heading, speed, scale);
-        // The sets asking are the gun's own (Locomotion): what they didn't take, a body without a gun's clips carried.
-        gunLegs = asking.Count > 0 ? 1f - Mathf.Clamp01(left) : 1f;
-        gunLegsFrame = Time.frameCount;
         return moving;
     }
 
-    /// <summary>How much of the legs the gun's own clips carry now (0-1; 1 with no gun, standing, or when the legs aren't
-    /// walking or running). FPSBody lets the upper body go to the legs' clip for a sprint only this far: the rest of a
-    /// sprint is a gun-less runner's (Female Runner's side and back sprints lean 45° ahead, 20-35° aside and twist 26-42°,
-    /// clip bench 11-22), and the gun followed that chest (the user, 2026-11-22: "달릴 때 너무 기우는데").</summary>
-    public float GunLegs => Time.frameCount - gunLegsFrame <= 2 ? gunLegs : 1f;
+    /// <summary>Sprinting with a gun out now: the gun's run (BIPER Combat Girls R_Run, P_Run, S_Run) has the whole body, arms
+    /// and gun with it: the body turns to the way it runs (the run goes ahead only), the hands give the upper body to the
+    /// clip (PlayerBodyHands), the gun rides the clip's right hand (FPSBody) and the sights and the trigger wait
+    /// (WeaponController). The user, 2026-11-22: "전력질주할 때 줌이나 총 못 쏘게 하고 combat girls animation을 처쓰라고".
+    /// False out of a walk or run on the ground (Locomotion not played this frame).</summary>
+    public bool GunRuns => gunRuns && Time.frameCount - gunRunsFrame <= 2;
+
+    // The player is sprinting now: gunRunFrom of the way into the sprint and not letting go. The sprint's progress only
+    // falls once Shift is let go, so the gun comes back at once; a friend's copy gets it in network steps, so an unchanged
+    // value keeps what it was.
+    private bool SprintingNow()
+    {
+        float sprint = player.SprintProgress;
+        if (sprint > sprintSeen + 1e-4f) sprintRising = true;
+        else if (sprint < sprintSeen - 1e-4f) sprintRising = false;
+        sprintSeen = sprint;
+        return sprint >= gunRunFrom && (sprintRising || sprint >= .999f);
+    }
 
     // A set's share: on its idle as far as the body stands (the stance's idle for a set with none of its own), on its
     // cycles for the rest. Returns the moving part of the share.
@@ -367,8 +386,8 @@ public sealed partial class PlayerBody
 
     // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
     // round to the heading (Reach) and its cycles reach the gait (a gun held at the hip walks, jogs and runs ahead only:
-    // the plain set steps and sprints the other ways under the gun's upper body). Past that the next set down runs on
-    // under the same upper body.
+    // the plain set steps the other ways under the gun's upper body, and a sprint with a gun turns the body to its way,
+    // GunRuns). Past that the next set down runs on under the same upper body.
     private float Carries(MoveSet set, float heading, float speed, float scale)
     {
         if (speed < StillTravel) return 1f;

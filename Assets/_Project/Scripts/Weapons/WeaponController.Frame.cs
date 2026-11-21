@@ -70,8 +70,11 @@ public sealed partial class WeaponController
         if (Mine && Runtime.OnlyEndLeft && !bodyAction && !stepDodging && shoveRecovery <= 0f
             && ReloadRules.EndCutBy(frame.FirePressed || frame.FireHeld, frame.AimHeld, sprinting))
             Runtime.Interrupt();
+        // Sprinting with the gun out the gun's run has the arms and the gun: no sights and no shot until the sprint is let
+        // go (PlayerBody.GunRuns; the user, 2026-11-22: "전력질주할 때 줌이나 총 못 쏘게 하고").
+        bool gunRuns = GunRuns;
         bool aiming = frame.AimHeld && !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f
-            && !stepDodging && !frame.ReloadPressed;
+            && !stepDodging && !frame.ReloadPressed && !gunRuns;
         float nextAim = Mathf.MoveTowards(AimBlend, aiming ? 1f : 0f, dt / AdsTime);
         Vector3 target = AimTarget(weaponData.Range, out Collider onCrosshair);
         AimPoint = target;
@@ -95,7 +98,7 @@ public sealed partial class WeaponController
         // A pistol comes in to the chest instead of going up, sights down (FPSBody.CloseHold).
         IsHeldClose = HoldClose(dt, ref blocked, target, IsHighReady ? RaisedClearance : 0f, WeaponAimSolver.IsFoe(onCrosshair));
         if (IsHeldClose) AimBlend = 0f;
-        bool readyToAct = !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f && !stepDodging;
+        bool readyToAct = !Runtime.IsReloading && !bodyAction && shoveRecovery <= 0f && !stepDodging && !gunRuns;
         bool wantsGun = aiming || (readyToAct && (frame.FirePressed || frame.FireHeld));
         if (blocked) raisedHoldLeft = RaisedHold;
         else if (IsHighReady && raisedHoldLeft > 0f)
@@ -115,7 +118,7 @@ public sealed partial class WeaponController
         chokeCharge = choking ? Mathf.MoveTowards(chokeCharge, 1f, dt / Mathf.Max(.01f, weaponData.ChokeSeconds)) : 0f;
         if (chokeBefore < 1f && chokeCharge >= 1f) { chokePop = ChokePopTime; ChokeCharged?.Invoke(); }
         chokePop = Mathf.Max(0f, chokePop - dt);
-        bool cannotFire = IsHighReady || shoveRecovery > 0f || bodyAction;
+        bool cannotFire = IsHighReady || shoveRecovery > 0f || bodyAction || gunRuns;
         if (cannotFire) Runtime.CancelBurst();
         if (blocked || !readyToAct) queuedFireLeft = 0f;
         else if (frame.FirePressed && IsHighReady) queuedFireLeft = QueuedFireWindow;

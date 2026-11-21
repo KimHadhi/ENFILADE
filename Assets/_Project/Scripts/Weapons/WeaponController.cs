@@ -220,6 +220,17 @@ public sealed partial class WeaponController : MonoBehaviour
     private float emptyReady;
     // The body's sprint (PlayerMovement.SprintProgress) as last seen, to tell one being asked for from one dying away.
     private float sprintSeen;
+    private PlayerBody runningBody;
+
+    // Sprinting with the gun out the gun's run has the arms and the gun (PlayerBody.GunRuns).
+    private bool GunRuns
+    {
+        get
+        {
+            if (runningBody == null && movement != null) runningBody = movement.GetComponent<PlayerBody>();
+            return runningBody != null && runningBody.GunRuns;
+        }
+    }
     // The held gun's WeaponRuntime.Loads as last seen: a reload cut short past its bolt loads the gun outside a frame's
     // tick (a swap, a climb), and its completion is told then.
     private int loadsSeen;

@@ -120,6 +120,8 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private WeaponData shownData;
     private bool shown = true, linked, aiming, firing, highReady, hasLook, wasGrounded = true, wasCrouched, wasMoving;
     private float lastShot, shotInterval, lastAim, lastYaw, lastPitch, leanSign, crouchWeight, sprintWeight, cover, holdWeight;
+    // How far the gun rides the gun's run's right hand (0-1, PlayerBody.GunRuns): sprinting with it out.
+    private float gunRunWeight;
     // When the gun was last drawn, and how long FPSAF's draw motion plays (s): the hip muzzle is learnt after it.
     private float drawnAt, drawSettle;
     // How FPSAF last held the gun (KeepGunInView): both hands on it and their fingers, once it has held the gun drawn now
