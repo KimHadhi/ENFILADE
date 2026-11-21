@@ -19,7 +19,7 @@ using UnityEngine;
 /// Until 0.9.245 a run built up the way Beatrun's move limit does (W alone 3.6 → 4.9 → 7.9 → 8.9 m/s, sideways and back
 /// held at 4.9 x 1.15, cut by sharp turns and walls) and every cycle was stretched to whatever that speed was.
 /// </summary>
-public sealed class MovementGait
+public sealed partial class MovementGait
 {
     private const string Table = "Gaits";
     // The ways a row gives a speed for, degrees from ahead (left and right alike).
@@ -60,14 +60,20 @@ public sealed class MovementGait
     internal float SpeedFor(Vector2 input)
     {
         float angle = AngleOf(input);
-        return ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, angle), At(Jog, angle), jogShare)
+        float gait = ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, angle), At(Jog, angle), jogShare)
             : Mathf.Lerp(At(Run, angle), At(Sprint, angle), ctx.SprintProgress);
+        // Setting off, as fast as the start clip's root goes by now (MovementGait.Moves).
+        return gait * StartShare;
     }
 
     /// <summary>The speed for this input crouched (m/s): the crouched walk's, walk mode or not.</summary>
     internal float CrouchSpeedFor(Vector2 input) => At(Crouch, AngleOf(input));
 
-    internal void Reset() => jogShare = 0f;
+    internal void Reset()
+    {
+        jogShare = 0f;
+        ResetMoves();
+    }
 
     /// <summary>Walk mode's Shift brings the jog in as the sprint's does the sprint, standing on the ground and moving.</summary>
     internal void Tick(float dt, Vector2 input)
@@ -77,6 +83,7 @@ public sealed class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
+        TickMoves(dt, input);
     }
 
     // Degrees from ahead, 0 to 180, left and right alike.
@@ -103,5 +110,6 @@ public sealed class MovementGait
             for (int c = 0; c < Columns.Length; c++)
                 rows[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], Fallback[r, c]) : Fallback[r, c]);
         }
+        ReadMoves();
     }
 }

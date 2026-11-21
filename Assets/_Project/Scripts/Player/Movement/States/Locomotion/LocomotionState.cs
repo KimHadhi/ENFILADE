@@ -46,6 +46,8 @@ public sealed class LocomotionState : MovementBaseState
         // The hands decide what the legs may do: rooted after a parry, a slow walk with the guard up (PlayerMeleeCombat).
         if (ctx.MeleeCombat != null) baseSpeed = ctx.MeleeCombat.LimitMoveSpeed(baseSpeed);
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
+        // A stop carries the body on and slows it as its clip does, keys or none (MovementGait.Coasting).
+        if (ctx.IsGrounded && ctx.Actions.Gait.Coasting(out var coasting)) targetVelocity = coasting;
 
         // A surge (GroundSurge: toward a vault until the jump goes, or a Détente's run to the friend it doses) carries the
         // run on at its own pace, whatever the keys say.

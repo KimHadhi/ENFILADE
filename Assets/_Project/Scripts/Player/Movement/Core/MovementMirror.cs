@@ -53,6 +53,7 @@ public sealed class MovementMirror
         };
         pose.Tuck = ctx.Posture.AirTuck;
         if (Body != null) pose.Step = Body.Step;
+        pose.GaitMove = ctx.Actions.Gait.MoveIndex;
         var marks = Marks.None;
         if (ctx.IsGrounded) marks |= Marks.Grounded;
         if (ctx.IsAirCrouching) marks |= Marks.AirCrouching;
@@ -137,6 +138,7 @@ public sealed class MovementMirror
         PlayerPoint.Mirror(ctx, Has(pose, Marks.Pointing), Has(pose, Marks.NoPoke), Has(pose, Marks.PingPoint), Has(pose, Marks.PointAway));
         ctx.Posture.mirroredTuck = pose.Tuck;
         if (Body != null) Body.Step = pose.Step;
+        ctx.Actions.Gait.Mirror(pose.GaitMove, dt);
         abilities.Lean.Share = Mathf.Lerp(abilities.Lean.Share, pose.Lean, follow);
         abilities.Landing.Mirror((MovementLanding.Tier)pose.LandingTier, (MovementLanding.Pose)pose.HeavyPose,
             state == State.HeavyLanding ? pose.Detail : abilities.Landing.HeavyYaw, Has(pose, Marks.BigFall), pose.FallSpeed);
