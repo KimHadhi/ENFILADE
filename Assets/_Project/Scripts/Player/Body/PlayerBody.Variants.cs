@@ -42,8 +42,11 @@ public sealed partial class PlayerBody
         + "and onto a higher one.")]
     private string clamberLow = "Jump_Climb_1h", clamberHigh = "Jump_Climb_2h";
     [SerializeField, Min(0f)] private float clamberHighFrom = 1.6f;
-    [SerializeField] private string ledgeCatch = "mx_ledge_catch_air";
-    [SerializeField] private string ledgeShimmyLeft = "mx_ledge_shimmy_left", ledgeShimmyRight = "mx_ledge_shimmy_right";
+    [SerializeField, Tooltip("Catching a ledge: Beatrun's hanghardstart, from the frame its body has come down under the hands "
+        + "(BeatrunBody.clips.csv), then the hang.")]
+    private string ledgeCatch = "hanghardstart";
+    [SerializeField, Tooltip("One step along a ledge each way (Beatrun's hangstrafe), played from each step's start.")]
+    private string ledgeShimmyLeft = "hangstrafeleft", ledgeShimmyRight = "hangstraferight";
     [SerializeField] private string wallClimbStart = "wallrunverticalstart", wallKickRight = "jumpwrright";
     [SerializeField, Tooltip("Play the gun-holding versions of clips. Off until the hands hold the gun by IK: those clips "
         + "relied on Source locking the hands to the gun, and without it the arms twist.")]
@@ -54,8 +57,6 @@ public sealed partial class PlayerBody
     private float jumpStillSpeed = 1f, jumpFastSpeed = 4f;
     [SerializeField, Min(0f), Tooltip("For a mantle off a bar, which has no move of its own (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
     private float mantleStepHeight = .7f, mantleLowHeight = 1.1f, mantleMidHeight = 1.6f;
-    [SerializeField, Min(.1f), Tooltip("Sideways speed the ledge shimmy clips were authored for (m/s).")]
-    private float shimmyClipSpeed = .5f;
     [SerializeField, Min(.1f), Tooltip("Playback speed of the vault and climb clips. The player is over before the clip is, "
         + "and it plays on until the feet are down and moving.")]
     private float vaultClipSpeed = 1f;
@@ -339,8 +340,15 @@ public sealed partial class PlayerBody
         else Want(player.FallSpeed > fallClipSpeed ? fall : air);
     }
 
-    // Catch the ledge and hang facing the wall wherever the player looks; shimmy, at the pace of the sideways
-    // movement, while A/D actually moves along the ledge.
+    // The step clip playing along a ledge and when it began (s into the hang); null with none.
+    private string shimmyClip;
+    private float shimmyAt;
+
+    // Catch the ledge and hang facing the wall wherever the player looks. Along it the body steps as Beatrun's hangstrafe
+    // does: one clip a step, from the moment the step begins (LedgeHangState.Step) at the clip's own pace, again for each step
+    // that follows on, and the last one played out into the hang. Every PC sees a step by the capsule moving along the wall,
+    // and each step lasts Ability.ledgeShimmyStepTime, so every PC starts the clip at the same moments. Before, a Mixamo
+    // shimmy looped at a pace fitted to the sideways speed (user, 2026-11-22: moving on a ledge wasn't Beatrun's animation).
     private void LedgePose()
     {
         var ledge = player.Abilities.Traversal.Ledge;
@@ -348,27 +356,37 @@ public sealed partial class PlayerBody
         inward = Vector3.ProjectOnPlane(inward, Vector3.up);
         if (inward.sqrMagnitude > .01f) targetYaw = Vector3.SignedAngle(transform.forward, inward, Vector3.up);
         float side = Vector3.Dot(player.ActualVelocity, Vector3.Cross(Vector3.up, inward.normalized));
-        // The catch's warp may swing the body along the wall before the hands hold; that is no shimmy.
         float catchTime = player.Abilities.Traversal.LedgeCatchTime;
-        if (LedgeCatchShare >= 1f && (player.IsNetworkDriven || Mathf.Abs(player.CurrentInput.x) > .1f) && Mathf.Abs(side) > .1f)
+        // The catch's warp may swing the body along the wall before the hands hold; that is no step.
+        if (LedgeCatchShare >= 1f && Mathf.Abs(side) > .1f)
         {
-            string shimmy = side < 0f ? ledgeShimmyLeft : ledgeShimmyRight;
-            Repeat(shimmy);
-            Find(shimmy)?.Playable.SetSpeed(Mathf.Clamp(Mathf.Abs(side) / shimmyClipSpeed, .5f, 2.5f));
+            string step = side < 0f ? ledgeShimmyLeft : ledgeShimmyRight;
+            if (step != shimmyClip || stateTime - shimmyAt >= player.AbilitySettings.ledgeShimmyStepTime)
+            {
+                // The clip ends in the pose it starts from, so the next step's start takes over from it without a jump.
+                shimmyClip = step;
+                shimmyAt = stateTime;
+                Restart(Find(step));
+            }
+            Want(step);
             FaceWall(Time.deltaTime);
         }
-        // The catch clip starts on the frame its hands touch (Mixamo.clips.csv): held there while the warp brings them to the
-        // edge (PlayerBody.LedgeCatch), and played on from the moment they touch it.
+        else if (shimmyClip != null && Find(shimmyClip) is Channel stepping && stateTime - shimmyAt < stepping.Length - blendTime)
+        {
+            Want(shimmyClip);
+            FaceWall(Time.deltaTime);
+        }
+        // The catch clip starts on the frame its body has come down under the hands (BeatrunBody.clips.csv): held there while
+        // the warp brings the hands to the edge (PlayerBody.LedgeCatch), and played on from the moment they touch it.
         else if (Find(ledgeCatch) is Channel catching && stateTime < catchTime + catching.Length - blendTime)
+        {
+            shimmyClip = null;
             Drive(ledgeCatch, Mathf.Max(0f, stateTime - catchTime) / Mathf.Max(.01f, catching.Length));
-        else HangLook(inward.normalized, Time.deltaTime);
-    }
-
-    // Keep a one-shot clip going round while it is wanted.
-    private void Repeat(string clipName)
-    {
-        var channel = Find(clipName);
-        if (channel != null && channel.Playable.GetTime() >= channel.Length) channel.Playable.SetTime(0);
-        Want(clipName);
+        }
+        else
+        {
+            shimmyClip = null;
+            HangLook(inward.normalized, Time.deltaTime);
+        }
     }
 }

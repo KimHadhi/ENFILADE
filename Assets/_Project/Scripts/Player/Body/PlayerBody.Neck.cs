@@ -182,7 +182,7 @@ public sealed partial class PlayerBody
             if (happens && cameraWhy.ToString().IndexOf(what, System.StringComparison.Ordinal) < 0)
                 cameraWhy.Append(cameraWhy.Length > 0 ? ", " : "").Append(what);
         }
-        Why(bodyCamera.EyeWeight < .99f, state == MovementState.Ladder ? "사다리 고정" : "주먹 고정");
+        Why(bodyCamera.EyeWeight < .99f, "주먹 고정");
         Why(runCalmWeight > .05f, "달리기 흔들림 잡기");
         Why(GameSettings.Current.bodySway < .999f, "몸 흔들림 설정");
         Why(bodyLean.CameraMakesUp > 0f && Mathf.Abs(player.LeanOffset) > .01f, "기울이기");

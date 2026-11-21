@@ -58,7 +58,9 @@ public sealed class LedgeHangState : MovementBaseState
             float speed = Mathf.Max(velocity.magnitude, settings.ledgeCatchLeastSpeed);
             Vector2 times = settings.ledgeCatchTimes;
             catchTime = Mathf.Clamp(Vector3.Distance(catchStart, contact) / speed, Mathf.Min(times.x, times.y), Mathf.Max(times.x, times.y));
+            catchVelocity = NoOvershoot(catchVelocity, contact - catchStart, catchTime);
         }
+        stepShare = 1f;
         traversal.LedgeCatchTime = catchTime;
         forwardWasHeld = ctx.CurrentInput.y > 0.1f;
         requestMantle = requestJump = false;
@@ -85,6 +87,32 @@ public sealed class LedgeHangState : MovementBaseState
     // How far above or below its hanging place the capsule may be when the hands touch (m): about an arm's length.
     private const float MostContactShift = .8f;
 
+    // The reach's start velocity, kept from carrying the capsule past where the hands touch and back (user, 2026-11-22: a
+    // jump onto a ledge floated up a little before it hung). A cubic Hermite that ends at rest stays between its ends on
+    // each axis only while its start tangent points toward the end and is at most three times the straight slope
+    // (Fritsch–Carlson); a jump still rising as the hands touch had more, so the capsule, and the body with it, rose past the
+    // touch and came back down. Each axis keeps what it can of the speed it came in with, never more.
+    private static Vector3 NoOvershoot(Vector3 velocity, Vector3 travel, float time)
+    {
+        for (int axis = 0; axis < 3; axis++)
+        {
+            float most = 3f * travel[axis] / Mathf.Max(1e-4f, time);
+            velocity[axis] = most >= 0f ? Mathf.Clamp(velocity[axis], 0f, most) : Mathf.Clamp(velocity[axis], most, 0f);
+        }
+        return velocity;
+    }
+
+    // A step along the ledge under way, as Beatrun's hangstrafe (climb.lua): how far through it (0-1; 1 is none), which way
+    // along the wall (-1 left, 1 right as one faces it) and how long it is (m): the whole Ability.ledgeShimmyStep, or what of
+    // it the ledge still has.
+    private float stepShare = 1f, stepSide, stepLength;
+    // Along the ledge the capsule goes in probes no longer than this (m), so it stops at a missing edge rather than crossing
+    // a gap in one go.
+    private const float ProbeSlice = .05f;
+
+    /// <summary>A step along the ledge is under way (Beatrun's hangstrafe): no jump or climb starts until it is done.</summary>
+    public bool Stepping => stepShare < 1f;
+
     public override void ProcessInput(Vector2 input)
     {
         // Only the crouch key lets go. The hands hold on whoever has the keys: with the chat or a menu up every key
@@ -104,9 +132,10 @@ public sealed class LedgeHangState : MovementBaseState
     {
         var ledge = ctx.Abilities.Traversal.Ledge;
         if (!WallDetector.CanUseSurface(ledge.Surface)) { Drop(); return; }
-        if (requestJump && Caught)
+        // A step along the ledge finishes first, as Beatrun only jumps or heaves from the hang itself.
+        if (requestJump && Caught && !Stepping)
         { ctx.Abilities.Traversal.JumpFromLedge(); return; }
-        if (requestMantle && Caught)
+        if (requestMantle && Caught && !Stepping)
         {
             requestMantle = false;
             // Asked to climb where there is no way up (a ledge to hang from only: something stands on it, or the top is
@@ -119,19 +148,7 @@ public sealed class LedgeHangState : MovementBaseState
     {
         var traversal = ctx.Abilities.Traversal;
         if (!WallDetector.CanUseSurface(traversal.Ledge.Surface)) { Drop(); return; }
-        if (Caught && traversal.FacingLedge() && Mathf.Abs(ctx.CurrentInput.x) > 0.1f)
-        {
-            Vector3 normal = traversal.Ledge.Surface.transform.TransformDirection(traversal.Ledge.LocalNormal);
-            Vector3 right = Vector3.Cross(normal, Vector3.up).normalized;
-            float remaining = ctx.CurrentInput.x * ctx.AbilitySettings.ledgeShimmySpeed * dt;
-            // Small probes stop at missing edges rather than crossing a gap in one frame.
-            int slices = Mathf.Max(1, Mathf.CeilToInt(Mathf.Abs(remaining) / 0.05f));
-            for (int i = 0; i < slices; i++)
-            {
-                if (!traversal.Detector.TryShimmy(traversal.Ledge, right * (remaining / slices), out LedgeTarget nextLedge)) break;
-                traversal.Ledge = nextLedge;
-            }
-        }
+        if (Caught) Step(dt);
         Vector3 hang = traversal.Ledge.Surface.transform.TransformPoint(traversal.Ledge.LocalHang);
         float time = ctx.CurrentStateDuration + dt;
         Vector3 next = Warp(hang, time);
@@ -148,6 +165,74 @@ public sealed class LedgeHangState : MovementBaseState
         }
         ctx.Motor.RequestDisplacement(next - ctx.transform.position);
     }
+
+    // Along the ledge a step at a time, as Beatrun's hangstrafe: A or D, with the hands on and the view on the wall, starts a
+    // step that goes Ability.ledgeShimmyStep along in Ability.ledgeShimmyStepTime whatever the keys do meanwhile, and a key
+    // still held as it ends starts the next at once, so the steps follow on with no stop between. The body plays a step's
+    // clip from each start (PlayerBody.LedgePose). Before, the capsule slid along at the keys' speed under a clip looped to
+    // that pace, and the clip was Mixamo's (user, 2026-11-22: moving on a ledge didn't use Beatrun's animation).
+    private void Step(float dt)
+    {
+        float left = dt / Mathf.Max(.01f, ctx.AbilitySettings.ledgeShimmyStepTime);
+        while (left > 0f)
+        {
+            if (stepShare >= 1f && !StartStep()) return;
+            float next = Mathf.Min(1f, stepShare + left);
+            left -= next - stepShare;
+            // The ledge stopped short of what was measured as the step began (it moved, or something came into the way).
+            if (!Along(stepSide * stepLength * (next - stepShare))) { stepShare = 1f; return; }
+            stepShare = next;
+        }
+    }
+
+    // A step starts the way the keys say, as far as the ledge goes within a step's length (Beatrun looks a step ahead before
+    // it steps; here a ledge shorter than a step is still reached to its end).
+    private bool StartStep()
+    {
+        float input = ctx.CurrentInput.x;
+        if (Mathf.Abs(input) <= .1f || !ctx.Abilities.Traversal.FacingLedge()) return false;
+        float side = Mathf.Sign(input), reach = Reach(side, ctx.AbilitySettings.ledgeShimmyStep);
+        if (reach < ProbeSlice) return false;
+        stepSide = side;
+        stepLength = reach;
+        stepShare = 0f;
+        return true;
+    }
+
+    // How far along the ledge this way it goes on, up to this length (m), probed as the capsule would move.
+    private float Reach(float side, float length)
+    {
+        var traversal = ctx.Abilities.Traversal;
+        LedgeTarget ledge = traversal.Ledge;
+        Vector3 right = Right(ledge);
+        int slices = Mathf.Max(1, Mathf.CeilToInt(length / ProbeSlice));
+        float slice = length / slices, gone = 0f;
+        for (int i = 0; i < slices; i++)
+        {
+            if (!traversal.Detector.TryShimmy(ledge, right * (side * slice), out LedgeTarget next)) break;
+            ledge = next;
+            gone += slice;
+        }
+        return gone;
+    }
+
+    // Moves the hang this far along the ledge (m, right positive), in probes; false where the ledge ends before it.
+    private bool Along(float distance)
+    {
+        var traversal = ctx.Abilities.Traversal;
+        Vector3 right = Right(traversal.Ledge);
+        int slices = Mathf.Max(1, Mathf.CeilToInt(Mathf.Abs(distance) / ProbeSlice));
+        for (int i = 0; i < slices; i++)
+        {
+            if (!traversal.Detector.TryShimmy(traversal.Ledge, right * (distance / slices), out LedgeTarget next)) return false;
+            traversal.Ledge = next;
+        }
+        return true;
+    }
+
+    // Along the ledge to the right as one faces its wall.
+    private static Vector3 Right(in LedgeTarget ledge)
+        => Vector3.Cross(ledge.Surface.transform.TransformDirection(ledge.LocalNormal), Vector3.up).normalized;
 
     // Where the capsule is this far into the hang (s). Reaching, on a cubic from where the warp went from at its velocity to
     // where the hands touch, at rest there; settling, eased on from there to the hanging place; then the hanging place.

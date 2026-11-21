@@ -218,9 +218,6 @@ public sealed partial class PlayerBody
         TuneGaze();
         bodyGaze.Update(LedClipWeight(), CarriedClipWeight(), AimBlend(), dead, spineLook.ClipHeadRotation, dt);
         float onEyes = 1f - punchEyeSteady * punchWeight;
-        // Rung and slide clips put the head at different heights. A steady ladder view prevents repeated
-        // up/down taps from turning that retargeted head offset into a camera lurch.
-        if (state == MovementState.Ladder) onEyes = 0f;
         bodyCamera.EaseOntoEyes(dead ? 0f : onEyes, eyeViewTime, dt);
         Vector3 eyeBefore = head.TransformPoint(eyeLocal);
         bodyLean.HangArm(spineLookRoll * spineLookWeight, dead, HoldsGun);

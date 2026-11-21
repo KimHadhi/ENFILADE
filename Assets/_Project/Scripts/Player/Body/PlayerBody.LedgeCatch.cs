@@ -4,14 +4,18 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The body's side of catching a ledge, warped as KINEMATION Motion Warping warps a move onto its target (LedgeHangState;
-/// WarpedTraversal does the same for the vaults). The catch clip starts on the frame its hands touch the edge
-/// (Mixamo.clips.csv), so the movement is told where the capsule has to be for that frame's wrists to rest on the edge
+/// WarpedTraversal does the same for the vaults). The catch clip (Beatrun's hanghardstart) starts on the frame its body has
+/// come down under its hands to the height it hangs at (BeatrunBody.clips.csv, from frame 5: the head as far under the
+/// wrists as in the hang clip), so the movement is told where the capsule has to be for that frame's wrists to rest on the edge
 /// (TryLedgeContact) and carries it there in ParkourTraversal.LedgeCatchTime. Meanwhile the body holds the catch clip on that
 /// frame (LedgePose), the hands reach for their holds over the edge (PlayerBodyHands.Ledge) and the hands take the body
 /// over (Grip), all eased by the one share of the catch (LedgeCatchShare), so nothing snaps; the clip plays on from the
 /// moment they touch. Every PC has the catch's time and its own copy's time in the state, so every PC shows the same catch.
 /// Before, the speed was cut to nothing at once, the capsule lerped to the hang in 0.14 s, and the body, the hands and the
 /// clip each snapped in over 0.15 s with the clip already past the touch (user, 2026-11-13: the catch popped).
+/// Until 0.9.301 the clip was Mixamo's mx_ledge_catch_air from the frame its hands touch: a jump still going up, the head
+/// 0.31 m over the wrists there against 0.26 m under them hanging, so the view rose about half a metre over where it hung and
+/// dropped back (user, 2026-11-22: catching from a jump floated up a little).
 /// </summary>
 public sealed partial class PlayerBody
 {

@@ -1137,7 +1137,7 @@ ModelImporter:
       name: hanghardstart
       takeName: BeatrunBody|hanghardstart
       internalID: 6358900780362896883
-      firstFrame: 0
+      firstFrame: 5
       lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 180

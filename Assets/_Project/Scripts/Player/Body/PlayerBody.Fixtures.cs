@@ -3,8 +3,13 @@ using UnityEngine.Playables;
 
 /// <summary>
 /// The body on the world's ladders and ziplines: taking hold, a clip for each rung by the hand going up, the fast
-/// slide down and the climb over the top, and the ride. The rungs and the pause between them are MoCap Online's
-/// ladder, the rest Beatrun's. Names and numbers come from Player.csv, row Body.
+/// slide down and the climb over the top, and the ride. All of the ladder is Beatrun's one set: each rung clip ends in the
+/// pose the other starts from and its still holds that pose, the getting-on clips end in a still, and the head stays at
+/// one height through all of them, so the view stays on the eyes there as everywhere else. Played at their own pace (a
+/// rung clip is about Ability.ladderRungInterval long). Until 0.9.301 the rungs were MoCap Online's two-rung loop halved
+/// and played twice as fast, its head bobbing 0.15 m, and to hide that the view left the eyes on a ladder while the body
+/// was moved up or down under it (user, 2026-11-22: scrap the ladder's patchwork, make it natural).
+/// Names come from Player.csv, row Body.
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -12,10 +17,8 @@ public sealed partial class PlayerBody
     [SerializeField, Tooltip("Taking hold of a ladder from the ground; catching one in the air.")]
     private string ladderEnter = "ladderenterbottom", ladderCatch = "ladderclimbhangstart";
     [SerializeField, Tooltip("One rung up, by the hand going up; then holding still with that hand high.")]
-    private string ladderLeft = "LDR_I400_Ascd_LU_Loop_IP", ladderRight = "LDR_I400_Ascd_RU_Loop_IP";
-    [SerializeField] private string ladderStillLeft = "LDR_I400_Ascd_RU_Idle_IP", ladderStillRight = "LDR_I400_Ascd_LU_Idle_IP";
-    [SerializeField, Min(.1f), Tooltip("Playback speed of a rung's clip, so it lasts Ability.ladderRungInterval.")]
-    private float ladderClipSpeed = 2f;
+    private string ladderLeft = "ladderclimbuplefthand", ladderRight = "ladderclimbuprighthand";
+    [SerializeField] private string ladderStillLeft = "ladderclimbuplefthandstill", ladderStillRight = "ladderclimbuprighthandstill";
     [SerializeField] private string ladderDown = "ladderclimbdownfast";
     [SerializeField, Tooltip("Climbing off the top, by the hand that went up last.")]
     private string ladderExitLeft = "ladderexittoplefthand", ladderExitRight = "ladderexittoprighthand";
@@ -65,10 +68,10 @@ public sealed partial class PlayerBody
             ladderStepsSeen = fixtures.LadderSteps;
             ladderStepAt = stateTime;
             Restart(Find(step));
-            Find(step)?.Playable.SetSpeed(ladderClipSpeed);
         }
+        // The rung clip ends in its still's pose, so handing over to the still before its end changes nothing but the clock.
         var climbing = Find(step);
-        Want(climbing != null && stateTime - ladderStepAt < climbing.Length / ladderClipSpeed - blendTime ? step : still);
+        Want(climbing != null && stateTime - ladderStepAt < climbing.Length - blendTime ? step : still);
     }
 
     private void ZiplinePose()

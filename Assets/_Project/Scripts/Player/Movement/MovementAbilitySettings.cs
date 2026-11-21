@@ -86,7 +86,10 @@ public sealed class MovementAbilitySettings
     [Min(0.01f)] public float ledgeHandRoom = 0.08f;
     [Min(0.05f)] public float ledgeCatchDuration = 0.14f;
     [Min(0.1f)] public float ledgeRegrabDelay = 0.4f;
-    [Min(0f)] public float ledgeShimmySpeed = 1.8f;
+    [Tooltip("Hanging, one step along the ledge as Beatrun's hangstrafe takes it (climb.lua: 30 units, at the scale a rung's 15.75 "
+        + "units is ladderRungHeight): how far (m); how long (s). A held key starts the next as one ends.")]
+    [Min(.05f)] public float ledgeShimmyStep = .74f;
+    [Min(.1f)] public float ledgeShimmyStepTime = 1f;
     [Min(0f)] public float airTraversalMaxFallSpeed = 8.75f;
     [Range(1f, 89f)] public float ledgeJumpLookAngle = 42f;
     [Min(0f)] public float ledgeJumpSpeed = 8.5f;
@@ -157,8 +160,8 @@ public sealed class MovementAbilitySettings
     [Min(.01f)] public float ladderEnterTime = .5f;
     [Tooltip("Seconds being pulled onto a ladder caught in the air takes; seconds before the first rung after one.")]
     [Min(.01f)] public float ladderCatchTime = .2f, ladderCatchDelay = .75f;
-    [Tooltip("Height of one rung (m); seconds moving up it; seconds from one rung to the next.")]
-    [Min(.01f)] public float ladderRungHeight = .39f, ladderRungTime = .25f, ladderRungInterval = .35f;
+    [Tooltip("Height of one rung (m); seconds from one rung to the next, all of it rising (LadderState).")]
+    [Min(.01f)] public float ladderRungHeight = .39f, ladderRungInterval = .35f;
     [Tooltip("Speed of the slide down with S (m/s).")]
     [Min(.1f)] public float ladderSlideSpeed = 8.5f;
     [Tooltip("The feet stop this far below the top of the rails; from there the player climbs off (m).")]

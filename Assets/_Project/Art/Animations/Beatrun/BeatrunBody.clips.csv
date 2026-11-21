@@ -68,7 +68,7 @@ runfwdstart,1,0,180.0,20,30.0
 crouchfwd,1,0,180.0,40,30.0
 crouchbwd,1,0,180.0,40,30.0
 crouchstill,1,0,180.0,81,30.0
-hanghardstart,0,0,180.0,31,30.0
+hanghardstart,0,0,180.0,31,30.0,,5
 ziplinestart,0,0,180.0,31,30.0
 zipline,1,0,180.0,401,40.0
 jumpzipline,0,0,180.0,75,30.0

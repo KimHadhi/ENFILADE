@@ -3,12 +3,16 @@ using UnityEngine;
 /// <summary>
 /// On a ladder, after Beatrun: W goes up it hand over hand a rung at a time, S slides down fast, Ctrl lets go. At the
 /// top it climbs off through the Mantle state when there is somewhere to stand; at the bottom a slide steps off.
+/// Each rung's rise takes the whole of Ability.ladderRungInterval, from rest on one rung to rest on the next (SmoothStep),
+/// as the rung clip pushes up and settles, so a held W climbs on without a stop between rungs and no move starts or ends
+/// at speed. Beatrun rose a rung in 0.25 s at an even speed and stood 0.1 s (user, 2026-11-22: make the ladder natural).
 /// </summary>
 public sealed class LadderState : MovementBaseState
 {
     private const float GroundReach = .25f;
     private Vector3 from, via, to;
-    private bool twoLegs, walkedOn;
+    // Caught in the air: the move onto the ladder starts at speed and eases to rest; every other starts from rest.
+    private bool twoLegs, walkedOn, fromFlight;
     private float progress, moveTime, nextStep;
     // Getting on from the top: the share of the move spent going out over the edge before going down.
     private const float OverShare = .35f;
@@ -21,6 +25,7 @@ public sealed class LadderState : MovementBaseState
         ctx.Abilities.Landing.SupportedByTraversal();
         from = ctx.transform.position;
         progress = 0f;
+        fromFlight = false;
         twoLegs = fixtures.LadderFromTop;
         if (twoLegs)
         {
@@ -33,12 +38,13 @@ public sealed class LadderState : MovementBaseState
             return;
         }
         to = fixtures.LadderHold(from.y);
+        fromFlight = fixtures.LadderCaught;
         moveTime = fixtures.LadderCaught ? settings.ladderCatchTime : settings.ladderEnterTime;
         nextStep = fixtures.LadderCaught ? settings.ladderCatchDelay : settings.ladderEnterTime;
     }
     private Vector3 Along(float share)
     {
-        if (!twoLegs) return Vector3.Lerp(from, to, share);
+        if (!twoLegs) return Vector3.Lerp(from, to, fromFlight ? 1f - (1f - share) * (1f - share) : Mathf.SmoothStep(0f, 1f, share));
         if (share >= OverShare) return Vector3.Lerp(via, to, Mathf.SmoothStep(0f, 1f, (share - OverShare) / (1f - OverShare)));
         float leg = share / OverShare;
         // Walked off onto it, the player is already moving out: the leg starts at speed and eases to a stop over the edge
@@ -102,9 +108,9 @@ public sealed class LadderState : MovementBaseState
         ctx.Abilities.Fixtures.LadderStepped();
         from = ctx.transform.position;
         to = from + Vector3.up * settings.ladderRungHeight;
-        twoLegs = false;
+        twoLegs = fromFlight = false;
         progress = 0f;
-        moveTime = settings.ladderRungTime;
+        moveTime = settings.ladderRungInterval;
         nextStep = ctx.CurrentStateDuration + settings.ladderRungInterval;
     }
     private void StopSliding()

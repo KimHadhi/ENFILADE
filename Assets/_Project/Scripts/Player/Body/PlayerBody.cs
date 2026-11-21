@@ -45,7 +45,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string prone = "diveslideidle", supine = "jumpturnlandidle", roll = "mx_sprint_roll";
     [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", dashPush = "bargein";
     [SerializeField] private string vault = "vaultover", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
-    [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "mx_ledge_hang_wall", ledgeJump = "hangheaveup";
+    [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "hang", ledgeJump = "hangheaveup";
     [SerializeField] private string death = "diestand";
 
     [Header("Feel")]
@@ -891,6 +891,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.LedgeHang:
                 Restart(Find(ledgeCatch));
                 hangYaw = 0f;
+                shimmyClip = null;
                 break;
             case MovementState.LacheRelease: Restart(Find(barRelease)); break;
             case MovementState.LedgeJump: Restart(Find(ledgeJump)); break;
