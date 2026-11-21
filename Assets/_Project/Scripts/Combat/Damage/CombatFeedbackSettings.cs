@@ -153,8 +153,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float counterSlashAngle = 32f;
     [Tooltip("Thin line that sweeps out sideways behind a finishing-blow number.")]
     public Color deathBlowSlashColor = new Color(1f, .25f, .18f);
-    [Tooltip("Blurred light behind a death-blow number. Kept small so the slash line reads first.")]
-    public Color deathBlowGlowColor = new Color(1f, .08f, .05f, .9f);
     public Color killIconColor = new Color(1f, .95f, .92f);
     [Min(8f), Tooltip("Settled number size, 1920x1080 canvas units.")]
     public float damageFontSize = 28f;
@@ -187,10 +185,7 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float deathBlowStartBoost = 1.25f;
     [Min(0f), Tooltip("Finishing-blow freeze at the peak, used instead of Punch Hold Seconds.")]
     public float deathBlowHoldSeconds = .08f;
-    [Min(0f), Tooltip("Finishing-blow number rattle right after impact, canvas units. Dies out over Death Blow Shake Seconds.")]
-    public float deathBlowShake = 7f;
-    [Min(.01f)] public float deathBlowShakeSeconds = .25f;
-    [Min(.01f), Tooltip("Icons pop in (scale + small twist) a beat after the number.")]
+    [Min(.01f), Tooltip("Icons pop in (scale) a beat after the number.")]
     public float punchIconPopSeconds = .12f;
 
     [Tooltip("How far a leaving number rises, canvas units. Where numbers stand is Hud.csv's Damage row.")]

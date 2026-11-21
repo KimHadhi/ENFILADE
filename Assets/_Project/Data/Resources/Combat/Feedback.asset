@@ -225,22 +225,22 @@ MonoBehaviour:
   popDamageRange: {x: 5, y: 120}
   popStartScale: {x: 1.15, y: 1.45}
   popShrinkSeconds: 0.12
-  popupLifetime: 0.8
-  deathBlowLifetime: 1.25
-  popupFadeSeconds: 0.25
+  popupLifetime: 0.5
+  deathBlowLifetime: 0.8
+  popupFadeSeconds: 0.2
   punchHoldSeconds: 0.035
   punchShrinkSeconds: 0.09
   punchSettleDip: 0.07
   punchFlashSeconds: 0.07
   punchStartBoost: 1.15
-  punchSettledScale: 1.12
-  deathBlowSettledScale: 1.5
-  deathBlowStartBoost: 1.25
-  deathBlowHoldSeconds: 0.08
+  punchSettledScale: 1.06
+  deathBlowSettledScale: 1.15
+  deathBlowStartBoost: 1.15
+  deathBlowHoldSeconds: 0.05
   deathBlowShake: 7
   deathBlowShakeSeconds: 0.25
   punchIconPopSeconds: 0.12
-  popupRise: 22
+  popupRise: 10
   popupFullSizeDistance: 6
   popupMinimumDistanceScale: 0.65
   enemyHealthColor: {r: 0.93, g: 0.13, b: 0.11, a: 1}

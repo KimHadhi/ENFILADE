@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// One damage number: a thin bar on the side facing its target, the number, and one mark after it (a burst for a
-/// critical hit, a return arrow for a counter, a skull for the finishing blow). It is laid out from its near edge, so it
-/// pops and grows away from the target instead of back over it. Add() folds another hit in: the digits count up, the
+/// One damage number: the number and one mark after it (a burst for a critical hit, a return arrow for a counter, a
+/// skull for the finishing blow), with a thin bar on the side facing its target when Hud.csv's Damage.bar is above 0.
+/// It is laid out from its near edge, so it pops and grows away from the target instead of back over it. Add() folds another hit in: the digits count up, the
 /// number pops by the hit's size, and on a running total a critical or counter colours it only for a moment.
 /// DamagePopupManager decides where it stands and when hits fold together. Colours, font and motion come from
 /// Resources/Combat/Feedback (Damage popups), the rest from Hud.csv's Damage row (DamageNumberLayout).
@@ -19,7 +19,7 @@ public sealed class DamageNumber
 
     private readonly RectTransform root, content;
     private readonly CanvasGroup group;
-    private readonly Image bar, glow;
+    private readonly Image bar;
     private readonly RawImage mark, slash, cut;
     private readonly TextMeshProUGUI label, shade;
 
@@ -44,11 +44,7 @@ public sealed class DamageNumber
         group.interactable = group.blocksRaycasts = false;
         content = FeelUI.Rect("Content", root);
 
-        glow = FeelUI.Rect("Kill Glow", content).gameObject.AddComponent<Image>();
-        glow.sprite = CombatUIAssets.SoftGlow;
-        glow.type = Image.Type.Sliced;
-        glow.raycastTarget = false;
-        slash = FeelUI.Rect("Kill Slash", content).gameObject.AddComponent<RawImage>();
+        slash =FeelUI.Rect("Kill Slash", content).gameObject.AddComponent<RawImage>();
         slash.texture = CombatUIAssets.SlashLine;
         slash.raycastTarget = false;
         cut = FeelUI.Rect("Counter Cut", content).gameObject.AddComponent<RawImage>();
@@ -166,37 +162,26 @@ public sealed class DamageNumber
             Color markTint = markKind == Mark.Kill ? settings.killIconColor : tint;
             if (fadeMarks && markKind != Mark.Kill) markTint.a *= 1f - Mathf.Clamp01((markAge - layout.markHold) / MarkFade);
             mark.color = markTint;
-            // The mark pops in with a small twist a beat after the number.
+            // The mark pops by the number's own punch boost on top of the number's pop, with no twist: a bigger burst of
+            // its own outgrew the digits, and the digits are what the eye should read first.
             float iconT = 1f - Mathf.Pow(1f - Mathf.Clamp01(markAge / Mathf.Max(.01f, settings.punchIconPopSeconds)), 3f);
-            mark.rectTransform.localScale = Vector3.one * (1.6f - .6f * iconT);
-            mark.rectTransform.localRotation = Quaternion.Euler(0f, 0f, side * (1f - iconT) * 25f);
+            float boost = Killed ? settings.deathBlowStartBoost : settings.punchStartBoost;
+            mark.rectTransform.localScale = Vector3.one * Mathf.Lerp(boost, 1f, iconT);
         }
         if (counterCut)
             cut.rectTransform.localScale = new Vector3(1f - Mathf.Pow(1f - Mathf.Clamp01(cutAge / .1f), 3f), 1f, 1f);
 
-        Vector2 shake = Vector2.zero;
+        // The finishing blow's slash sweeps out behind it. No glow and no rattle: colour, shadow, slash and skull already
+        // say "kill", and more on top read as too much (user, 11-22, beside Modern Damage Numbers' plain number).
         if (finisher)
-        {
-            // The light flares once on impact and then holds; the slash sweeps out; the number rattles and settles.
-            float flare = 1f - Mathf.Clamp01(killAge / .2f);
-            Color light = settings.deathBlowGlowColor;
-            light.a *= .5f + .4f * flare;
-            glow.color = light;
-            glow.rectTransform.localScale = Vector3.one * (1f + flare * .25f);
             slash.rectTransform.localScale = new Vector3(1f - Mathf.Pow(1f - Mathf.Clamp01(killAge / .12f), 3f), 1f, 1f);
-            if (killAge < settings.deathBlowShakeSeconds)
-            {
-                float decay = 1f - killAge / settings.deathBlowShakeSeconds;
-                shake = new Vector2(Mathf.Sin(killAge * 97f), Mathf.Cos(killAge * 71f)) * (settings.deathBlowShake * decay * decay);
-            }
-        }
 
         // It slides out from the body as it appears, and rises as it leaves.
         float slid = 1f - Mathf.Pow(1f - Mathf.Clamp01(slideAge / SlideSeconds), 3f);
         float fade = Mathf.Max(.01f, settings.popupFadeSeconds);
         float leave = leaveAge >= 0f ? Mathf.Clamp01(leaveAge / fade) : 0f;
         float rise = settings.popupRise * (1f - (1f - leave) * (1f - leave));
-        Vector2 at = spot + new Vector2(-side * layout.slide * (1f - slid) * far, lift + rise) + shake;
+        Vector2 at = spot + new Vector2(-side * layout.slide * (1f - slid) * far, lift + rise);
         root.anchoredPosition = layout.ClearOfCrosshair(at, side, size * .5f * scale);
         group.alpha = Mathf.Clamp01(slideAge / FadeIn) * (1f - leave);
     }
@@ -290,9 +275,8 @@ public sealed class DamageNumber
         Place(label.rectTransform, side, centre, measured.x + 6f, size * 1.3f);
         u += measured.x;
 
-        // Finishing blow: orange digits over a crimson copy offset down-right, a small glow and a slash line behind.
+        // Finishing blow: orange digits over a crimson copy offset down-right, and a slash line behind.
         shade.gameObject.SetActive(finisher);
-        glow.gameObject.SetActive(finisher);
         slash.gameObject.SetActive(finisher);
         if (finisher)
         {
@@ -301,7 +285,6 @@ public sealed class DamageNumber
             shade.color = settings.deathBlowShadowColor;
             Place(shade.rectTransform, side, centre, measured.x + 6f, size * 1.3f);
             shade.rectTransform.anchoredPosition += new Vector2(size * .06f, -size * .06f);
-            Place(glow.rectTransform, side, centre, measured.x + size * 1.3f, size * 1.6f);
             Place(slash.rectTransform, side, centre, measured.x + size * 1.8f, size * .12f);
             slash.rectTransform.anchoredPosition += new Vector2(0f, -size * .08f);
             slash.color = settings.deathBlowSlashColor;
@@ -342,7 +325,6 @@ public sealed class DamageNumber
         rect.anchoredPosition = new Vector2(side * u, 0f);
         rect.sizeDelta = new Vector2(width, height);
         rect.localScale = Vector3.one;
-        rect.localRotation = Quaternion.identity; // a reused mark may keep a previous twist
     }
 
     private static TextMeshProUGUI Label(string name, Transform parent, TMP_FontAsset font)
