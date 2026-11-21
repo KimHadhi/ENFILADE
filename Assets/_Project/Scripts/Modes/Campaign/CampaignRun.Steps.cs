@@ -169,7 +169,7 @@ public sealed partial class CampaignRun
     // Through unseen: the points, the words and three bells.
     private static void ShowUnseen()
     {
-        CombatFeedHUD.Award(Texts.Get("feed.score.unseen"), StealthScore.Unseen);
+        CombatFeedHUD.Score("feed.score.unseen", StealthScore.Unseen);
         AlertHUD.Self(Texts.Get("campaign.alert.unseen"));
         KitSound.Play(KitSound.Cue.Unseen, .8f);
     }

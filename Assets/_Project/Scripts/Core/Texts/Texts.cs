@@ -78,6 +78,21 @@ public static class Texts
         catch (FormatException) { return template; }
     }
 
+    /// <summary>The words for this id in English whatever language is chosen (the Korean when a row has no English), with
+    /// {0}, {1} ... filled in: for words the user wants in one language for everyone, such as the score popup's (the user,
+    /// 2026-11-22: "점수 팝업은 언어 상관 없이 영문 통일").</summary>
+    public static string InEnglish(string id, params object[] values)
+    {
+        if (string.IsNullOrEmpty(id)) return string.Empty;
+        if (!GameTables.TryGetRow(TableName, id, out var row)) return "[" + id + "]";
+        string words = row.TryGetValue(English, out string en) && en.Length > 0 ? en
+            : row.TryGetValue(Korean, out string ko) && ko.Length > 0 ? ko : "[" + id + "]";
+        words = KeyBindings.Relabel(Unescape(words));
+        if (values == null || values.Length == 0) return words;
+        try { return string.Format(CultureInfo.InvariantCulture, words, values); }
+        catch (FormatException) { return words; }
+    }
+
     /// <summary>Whether the table has this id at all (for words that are optional, such as a zombie look's name).</summary>
     public static bool Has(string id) => !string.IsNullOrEmpty(id) && GameTables.TryGetRow(TableName, id, out _);
 

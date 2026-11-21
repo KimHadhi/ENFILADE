@@ -1,5 +1,14 @@
 ﻿id,ko,en,#어디,ja
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구. 다른 언어를 편집할 때 참고할 수 있다,어디에 나오는지(게임은 이 열을 읽지 않는다),일본어 문구(번역 작업용)
+score.line.elimination,처치,Elimination,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.headshot,헤드샷,Headshot,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.explosive,폭발 처치,Explosive Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.burn,화염 처치,Burn Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.brutal,잔혹한 처치,Brutal Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.jumpshot,점프샷,Jumpshot,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.slaughter,학살(3연속),Slaughter,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.warrior,전사(4연속),Warrior,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+score.line.god_slayer,신을 죽인 자(5연속부터),God Slayer,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
 settings.controls.scope_sensitivity,배율 조준경 ×{0} 감도,Scope ×{0} sensitivity,"설정 창 > 조작 > 행. {0}=배율(GunParts.csv에 있는 배율마다 한 줄, ScopeLook)"
 settings.controls.scope_sensitivity.note,100% = 조준경 속 표적이 화면을 지나는 빠르기가 조준하지 않았을 때와 같아요,100% = a target crosses the screen as fast as it does unaimed,"설정 창 > 조작 > 배율 조준경 감도 줄들 아래의 설명"
 life.join.seconds,{0}초 뒤 합류합니다,Joining in {0}s,진행 중인 판에 늦게 들어와 관전하며 합류를 기다릴 때(죽은 사람이 돌아오는 것과 같은 시계). {0}=합류까지 남은 초
@@ -1208,21 +1217,13 @@ settings.hud.objective_alert,목표 알림,Objective Alert,설정 창 > HUD > �
 settings.hud.objective_alert.card,기본,Default,"설정 창 > HUD > 목표 알림 선택지 (흰 선에서 열리는 카드에 글자가 한 자씩 쾅, 끝나면 목표 바로 날아가 꽂힌다)"
 settings.hud.objective_alert.ribbon,심플,Minimal,설정 창 > HUD > 목표 알림 선택지 (가운데서 펼쳐지는 띠에 글자가 타자 치듯 찍힌다)
 #--- 처치 점수·킬 피드 ---,,,
-feed.score.kill,처치,Kill,처치 점수 팝업(총 오른쪽 위)의 줄
-feed.score.headshot,헤드샷,Headshot,처치 점수 팝업의 줄
 feed.score.long_range,원거리 사격,Long Range,처치 점수 팝업의 줄
 feed.score.pierced,관통 사살,Penetration Kill,처치 점수 팝업의 줄
-feed.score.execution,처형,Execution,처치 점수 팝업의 줄
-feed.score.counter,반격,Counter,처치 점수 팝업의 줄
 feed.score.takedown,암살,Takedown,처치 점수 팝업의 줄: 눈치채지 못한 좀비를 뒤에서 처치했을 때(처형 점수 위에 더 받는다)
 feed.score.bounty,현상금,Bounty,처치 점수 줄: 시순트가 자기 표식 대상을 처치했을 때
 feed.score.unseen,잠입 성공,Undetected,점수 팝업의 줄: 조용한 구간을 아무도 들키지 않고 휴게소나 버티기 자리까지 지나갔을 때
 feed.score.witness,입막음,Silenced Witness,점수 팝업의 줄: 나를 알아채고 다른 좀비를 부르려고 숨을 들이쉬는 좀비를 부르기 전에 처치했을 때(돈. Stealth.csv Score.witness)
 feed.score.heriot,사망세,Heriot,처치 점수 팝업의 줄: 사망세(Heriot) 카드가 처치 돈에 몫을 더 얹을 때
-feed.multi.double,더블 킬,Double Kill,처치 점수 팝업: 연속 처치 2
-feed.multi.triple,트리플 킬,Triple Kill,처치 점수 팝업: 연속 처치 3
-feed.multi.quad,쿼드 킬,Quad Kill,처치 점수 팝업: 연속 처치 4
-feed.multi.more,연속 처치 x{0},Kill Streak ×{0},처치 점수 팝업: 연속 처치 5 이상. {0}=연속 처치 수
 feed.money,돈,Cash,화면 오른쪽 위 돈 숫자 위의 작은 제목
 feed.weapon.execution,처형,Execution,킬 피드: 처형으로 잡았을 때 무기 자리
 knife.default.name,칼,Knife,클래스 칼 이름(ClassKnives.csv name): 줄이 없는 클래스의 칼. 근접 칸(무기 슬롯 3번)과 그 칼로 잡았을 때 킬 피드에 나온다

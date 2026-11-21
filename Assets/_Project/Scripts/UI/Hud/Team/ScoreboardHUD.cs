@@ -222,7 +222,9 @@ public sealed class ScoreboardHUD : MonoBehaviour
             + (view.Kept > 0 ? "  <color=#" + ColorUtility.ToHtmlStringRGB(Soft) + ">" + Texts.Format("score.rank.split", view.Kills.ToString("N0"), view.Kept.ToString("N0")) + "</color>" : "")
             : "";
         rankLeft.text = game;
-        rankWorth.text = Texts.Format("score.rank.kill", settings.killScore.ToString("N0"), (settings.killScore + settings.headshotBonus).ToString("N0"));
+        // What a kill is worth in experience: the score popup's rows (ScorePopup.csv), not its money.
+        rankWorth.text = Texts.Format("score.rank.kill", Mathf.RoundToInt(ScorePopupHUD.Value("elimination", 20f)).ToString("N0"),
+            Mathf.RoundToInt(ScorePopupHUD.Value("headshot", 20f)).ToString("N0"));
         rankRight.text = view.Climb > 0 ? "<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent) + ">" + Texts.Format("score.rank.climb", view.Climb) + "</color>  "
             + (view.Top ? Texts.Get("score.rank.top") : Texts.Format("score.rank.next", view.ToNext.ToString("N0")))
             : view.Top ? Texts.Get("score.rank.top") : Texts.Format("score.rank.next", view.ToNext.ToString("N0"));

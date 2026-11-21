@@ -12,13 +12,13 @@ public sealed partial class TowerRun
         float seconds = Time.time - startedAt;
         string clock = Mathf.FloorToInt(seconds / 60f).ToString("00") + ":" + Mathf.FloorToInt(seconds % 60f).ToString("00");
         EnfiladedFinale.Play(Texts.Get("tower.finale.heading"), Texts.Format("tower.finale.under", DayText(seed), clock), finaleSeconds);
-        CombatFeedHUD.Award(Texts.Get("tower.feed.clear"), clearBonus);
+        CombatFeedHUD.Score("tower.feed.clear", clearBonus);
         string today = seed.ToString();
         if (PlayerPrefs.GetString(FirstTodayKey, "") != today)
         {
             PlayerPrefs.SetString(FirstTodayKey, today);
             PlayerPrefs.Save();
-            CombatFeedHUD.Award(Texts.Get("tower.feed.today"), firstTodayBonus);
+            CombatFeedHUD.Score("tower.feed.today", firstTodayBonus);
         }
         PlayerRecords.ChapterEscaped(gameObject.scene.name);
         climb = ClassGrowth.Settle();

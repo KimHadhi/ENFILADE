@@ -92,9 +92,13 @@ public static class Wallet
 
     public static long Balance => Earned + Received - Given - Spent;
 
-    /// <summary>Experience so far: every point earned, plus the share of the money held, in points.</summary>
-    public static long Experience => CombatFeedHUD.TotalScore + LeftoverExperience + bonusExperience;
-    public static long LeftoverExperience => (long)(Math.Max(0L, Balance) / (double)WonPerPoint * LeftoverShare);
+    /// <summary>Experience so far, in score (the score popup's, ScorePopupHUD, the user's 2026-11-22 pick: "점수 체계도 저
+    /// 애드온대로, 지금 너무 레벨업이 과하게 빠르게 되는 감이 있음"): every point of score, plus the share of the money held
+    /// and the experience given outright, both points turned into score at the popup's share of a point (ScorePopup.csv
+    /// Score.perPoint), so a kill's 20 and a held won weigh what they did against each other.</summary>
+    public static long Experience => ScorePopupHUD.TotalScore + LeftoverExperience + (long)(bonusExperience * ScorePerPoint);
+    public static long LeftoverExperience => (long)(Math.Max(0L, Balance) / (double)WonPerPoint * LeftoverShare * ScorePerPoint);
+    private static double ScorePerPoint => Math.Max(0d, ScorePopupHUD.Value("perPoint", .2f));
 
     /// <summary>Money as it reads: 1,240 (with the table's sign in front, if it has one). Never shortened.</summary>
     public static string Format(long won) => (won < 0 ? "-" : "") + Symbol + Math.Abs(won).ToString("N0", CultureInfo.InvariantCulture);

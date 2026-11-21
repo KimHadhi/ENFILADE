@@ -221,7 +221,7 @@ public sealed partial class TowerRun
     private void PayQuiet(int k)
     {
         if ((quietPass & 1 << k) == 0) return;
-        CombatFeedHUD.Award(Texts.Get("tower.feed.quiet"), Mathf.Max(0, quietBonus));
+        CombatFeedHUD.Score("tower.feed.quiet", Mathf.Max(0, quietBonus));
     }
 
     // The rooms of a blackout floor are dark while the stretch they are in runs and their lane is not through them yet.

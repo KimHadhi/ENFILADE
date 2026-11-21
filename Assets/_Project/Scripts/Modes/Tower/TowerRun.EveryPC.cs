@@ -160,7 +160,7 @@ public sealed partial class TowerRun
             return;
         }
         KitSound.Play(KitSound.Cue.TowerClear, .9f);
-        CombatFeedHUD.Award(Texts.Format("tower.feed.floor", floor), Mathf.Max(0, plan.Of(floor).reward));
+        CombatFeedHUD.Score("tower.feed.floor", Mathf.Max(0, plan.Of(floor).reward), floor);
         PayQuiet(k);
     }
 

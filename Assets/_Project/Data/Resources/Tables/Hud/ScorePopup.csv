@@ -1,0 +1,43 @@
+﻿key,value,note
+#안내,,"점수 팝업(Black Ops 6 점수 팝업, 게리 모드 애드온 Black Ops VI Hitmarker를 사용자 영상에서 보던 대로. 사용자 2026-11-22: 우리도 점수 팝업으로, 점수 체계도 저 애드온대로, 영문 통일). 이 점수가 경험치(클래스 계급)다. 돈은 따로: 처치는 전처럼 돈을 준다(Money.csv, GunFeel). 줄 이름은 Texts.csv의 score.line.*(언제나 영어)"
+Score.elimination,20,그 밖의 처치(Elimination). 영상 속 애드온의 값
+Score.headshot,20,헤드샷 처치(Headshot). 처치 줄 대신 이 줄 하나
+Score.explosive,20,폭발로 처치(Explosive Kill). 헤드샷보다 앞선다
+Score.burn,20,불에 타 죽음(Burn Kill). 헤드샷보다 앞선다
+Score.brutal,20,"주먹·발·밀치기·칼·던진 칼·처형·반격·암살로 처치(Brutal Kill)"
+Score.jumpshot,5,공중에서 처치하면 더한다(Jumpshot). 애드온 파일의 25를 처치 100 → 20과 같은 비율로
+Score.slaughter,5,사슬의 3번째 처치(Slaughter)
+Score.warrior,5,4번째 처치(Warrior)
+Score.godSlayer,10,5번째부터 처치마다(God Slayer)
+Score.chainSeconds,4,처치와 처치 사이가 이 초 이내면 한 사슬(애드온 4초)
+Score.perPoint,0.2,"그 밖의 점수(원거리·관통·현상금·암살·패리·특수 처치·타워 층 ...)는 지금까지 주던 점수 × 이 값(처치가 100에서 20이 된 비율이라 처치에 견준 값어치는 그대로)"
+#모양,,"1920x1080 화면, 화면 가운데에서(위가 +). 자리와 크기는 영상을 1080p에서 재어 맞춘 것, 시간은 애드온 코드"
+Look.totalX,162,노란 합계의 오른쪽 끝(영상 x1122)
+Look.totalY,91,합계 글자의 바닥선(영상 y449)
+Look.totalSize,22,합계 글자 크기
+Look.totalPop,24,합계가 처음 뜰 때 더 큰 만큼(0.1초에 제 크기로)
+Look.rowX,160,"+점수의 오른쪽 끝(영상 x1120)"
+Look.rowY,64,첫 줄 바닥선(영상 y476)
+Look.rowStep,30.72,줄 사이(영상과 애드온 30.72)
+Look.plusSize,14.5,+점수 글자 크기
+Look.plusPop,17,+점수가 새로 뜨거나 합쳐질 때 더 큰 만큼(0.2초에 제 크기로)
+Look.nameSize,14,줄 이름 글자 크기
+Look.nameX,115.2,이름 왼쪽 끝의 출발점
+Look.nameSlide,76.8,이름이 휘어 들어오는 폭(왼쪽 끝 = nameX + nameSlide × sin θ)
+Look.nameTurn,0.75,θ가 멈추는 곳(π의 몇 배). 0.75면 76.8까지 넘쳤다가 54.3에 선다
+Look.nameTurnRate,10,θ가 도는 빠르기(1초에)
+Look.totalColour,#FFE955,합계 색(255·233·85)
+Look.lineColour,#FFFFFF,줄 색
+Look.rowSeconds,3,줄이 다 보이는 시간
+Look.rowIn,2,줄이 나타나는 빠르기(2면 0.5초)
+Look.rowOut,3,줄이 사라지는 빠르기(3이면 0.33초)
+Look.popOut,5,+점수가 제 크기로 줄어드는 빠르기(5면 0.2초)
+Look.totalIn,10,합계가 나타나는 빠르기(0.1초)
+Look.totalOut,5,합계가 사라지는 빠르기(0.2초)
+Look.totalPopOut,10,합계가 제 크기로 줄어드는 빠르기(0.1초)
+Look.count,10,합계 숫자가 따라 올라가는 빠르기
+Look.slide,10,줄이 새 자리로 미끄러지는 빠르기
+Look.dim,0.392,세 번째 줄부터 한 줄마다 흐려지는 만큼(100/255)
+Look.outline,0.2,글자 검은 테두리 굵기
+Look.outlineAlpha,0.55,테두리 진하기
+Look.descent,0.15,글자 바닥에서 바닥선까지(글자 크기의 몇 배. Hitmarker는 0.15)

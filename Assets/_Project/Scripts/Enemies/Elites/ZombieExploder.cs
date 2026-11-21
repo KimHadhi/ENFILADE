@@ -215,7 +215,7 @@ public sealed class ZombieExploder : MonoBehaviour
         GasPuff(at);
         GameAudio.PlayAt(Hiss(), at, AudioChannel.Combat, .9f, 2f, 25f);
         bool mine = hit.Source != null && hit.Source.GetComponentInParent<PlayerMovement>() is PlayerMovement by && by.IsLocal;
-        if (mine && defuseReward > 0) CombatFeedHUD.Special(Texts.Get("feed.score.exploder_defuse"), defuseReward, gasColor);
+        if (mine && defuseReward > 0) CombatFeedHUD.Score("feed.score.exploder_defuse", defuseReward);
     }
 
     private Transform Chest()
