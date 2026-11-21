@@ -28,7 +28,7 @@ EditorBuildSettings:
     guid: 6617f6fe9e425d44bad0c8ef17e13e16
   - enabled: 1
     path: Assets/_Project/Scenes/Hub/Hub.unity
-    guid: 6fdc6371627ad524e91f96bd67ff6a61
+    guid: 4140c47d0ef6c86468af130dda7656c9
   - enabled: 1
     path: Assets/_Project/Scenes/Campaign/EnfiladeTower.unity
     guid: f7b3ef1ccf651e7489ceb07c5f751e6b

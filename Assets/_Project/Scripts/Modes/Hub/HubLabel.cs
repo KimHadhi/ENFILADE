@@ -2,8 +2,9 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// Words standing in the hub (memo 46): the stations' signs (사격장, 지도, 클래스 ...) and the range's distance marks. The
-/// builder (HubBuilder) sets the words: a Texts id, or the words themselves (a distance such as "25 m"). They read from
+/// Words standing in the hub (memo 46): the stations' signs (사격장, 지도, 클래스 ...) and the range's distance marks. Its
+/// words are set on the object (the kit's Sign piece, Prefabs/Hub): a Texts id, or the words themselves (a distance such
+/// as "25 m"). They read from
 /// in front, which is where this object's forward points; a mark on the floor lies with its forward pointing up.
 /// </summary>
 [DisallowMultipleComponent]

@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// A place in the hub where something is laid out or done (memo 46). The builder (Editor/Maps/HubBuilder) stands one on
-/// each piece of furniture; at play HubLobby finds them and fills them from the tables, so a new chapter, class or gun
+/// A place in the hub where something is laid out or done (memo 46). Each working piece of the hub's kit (Prefabs/Hub,
+/// laid by hand in Scenes/Hub/Hub.unity) carries one; at play HubLobby finds them and fills them from the tables, so a new chapter, class or gun
 /// shows up without rebuilding the scene: the chapters' cards on the map table, a locker door per class on the class
 /// wall, a gun per FPSBody gun on the rack, the mirror's glass and dressing spot. <see cref="Size"/> is the area to lay
 /// things out in, on the station's own axes: x across, y up, z out of the face (a table's top faces up its local y, a

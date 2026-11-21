@@ -25,8 +25,9 @@ using UnityEngine;
 ///   the button sets off at once (soloDepartSeconds). Anyone who stops being ready stops the count.
 /// - Back from a chapter, its results play first (ResultsShow over the stage, MatchResults).
 /// The host keeps the chapter, who is ready and the count, and tells the room (a named message on change and every
-/// couple of seconds); a guest's press goes to the host, as CampaignRun's do. The builder (Editor/Maps/HubBuilder)
-/// stands the stations (HubStation) and the targets; this fills them from the tables at play (HubLobby.Stations).
+/// couple of seconds); a guest's press goes to the host, as CampaignRun's do. The scene (Scenes/Hub/Hub.unity, built by
+/// hand from the kit in Prefabs/Hub) has the stations (HubStation) and the targets; this fills them from the tables at
+/// play (HubLobby.Stations).
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Campaign)]
 public sealed partial class HubLobby : MonoBehaviour

@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// The hub's stage, where a chapter's results play over the players themselves (memo 37, ResultsShow): they stand in a
 /// row across it (its local x) at its spot, facing its forward, the best in the middle; the camera stands out in front
-/// at <see cref="cameraAt"/> (local) and backs off for a longer row. The builder (HubBuilder) puts one on the stage.
+/// at <see cref="cameraAt"/> (local) and backs off for a longer row. The kit's ResultsStage piece (Prefabs/Hub) carries one.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HubStage : MonoBehaviour

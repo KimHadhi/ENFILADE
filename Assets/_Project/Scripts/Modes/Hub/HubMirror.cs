@@ -27,7 +27,7 @@ using UnityEngine.Rendering.Universal;
 /// - Every PC draws its own, from its own eye: the player's camera, or the dressing spot's while it is open. While a
 ///   chapter's results play on the stage (ResultsShow) the glass stays dark: a second, wrong-angled picture of the lineup
 ///   behind the lineup would spoil the shot, and the results camera isn't an eye this follows.
-/// The builder (HubBuilder) stands it on the glass's middle with a HubStation of kind Mirror, whose size is the glass's;
+/// The kit's Mirror piece (Prefabs/Hub) stands it on the glass's middle with a HubStation of kind Mirror, whose size is the glass's;
 /// its forward points out of the glass into the hall. The glass itself is made here at play.
 /// </summary>
 [DisallowMultipleComponent, RequireComponent(typeof(HubStation)), DefaultExecutionOrder(FrameOrder.HubMirror)]

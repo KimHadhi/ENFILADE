@@ -1,5 +1,4 @@
 using System.IO;
-using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -12,8 +11,10 @@ using UnityEngine.SceneManagement;
 /// lobby) from code, as the chapters are built: the layout's boxes here, laid and dressed by the map dresser
 /// (GreyboxBuilder.Attach: Tables/MapSurfaces looks, the bought kit's models from Tables/MapArt; HubBuilder.Dressing has
 /// the dressing). It keeps its own saving because a chapter's builder saves under Scenes/Campaign and puts a chapter's
-/// run, walk mesh and culling in it. ENFILADE > 맵 > 허브 로비 짓기 makes Scenes/Hub/Hub.unity and puts it in the build;
-/// running it again rebuilds it from scratch (hand edits are lost: change the layout here).
+/// run, walk mesh and culling in it.
+/// Since 2026-11-22 this is the OLD hub, kept to look at: the user builds the hub by hand in Scenes/Hub/Hub.unity from
+/// the kit of working pieces in Prefabs/Hub ("new hub 내가 만들 건데 새 씬 만들어 줘"), and no code writes that scene. ENFILADE >
+/// 맵 > 옛 허브 다시 짓기 (참고용) rebuilds Scenes/Hub/HubOld.unity from scratch and leaves it out of the build.
 /// The layout, +Z north, metres:
 /// - The hideout, a warehouse 24 x 24 with a skylight: the start in its south half; the map table in the middle with the
 ///   next chapter's sign hanging over it; the class wall (lockers) on the west wall under a catwalk, reached by two crates
@@ -31,16 +32,16 @@ using UnityEngine.SceneManagement;
 public static partial class HubBuilder
 {
     private const string Folder = "Assets/_Project/Scenes/Hub";
-    private const string ScenePath = Folder + "/Hub.unity";
+    private const string ScenePath = Folder + "/HubOld.unity";
     private const string HudPrefab = "Assets/_Project/Prefabs/UI/HUD/GameHUD.prefab";
-    private const string Title = "허브 로비";
+    private const string Title = "옛 허브 (참고용)";
     private const float Lift = .05f;
 
     private static Scene scene;
     private static Transform terrain, fixtures, stations, range, systems, lights;
     private static Material concrete, road, metal, wood, marker;
 
-    [MenuItem("ENFILADE/맵/허브 로비 짓기")]
+    [MenuItem("ENFILADE/맵/옛 허브 다시 짓기 (참고용)")]
     private static void Build()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { Tell("Play를 멈춘 뒤에 실행해 주세요."); return; }
@@ -273,16 +274,11 @@ public static partial class HubBuilder
         dresser = null;
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/_Project/Scenes", "Hub");
         EditorSceneManager.MarkSceneDirty(scene);
+        // Out of the build: the game's hub is Hub.unity, made by hand; this one is only to look at in the editor.
         EditorSceneManager.SaveScene(scene, ScenePath);
-        var build = EditorBuildSettings.scenes.ToList();
-        if (!build.Any(entry => entry.path == ScenePath))
-        {
-            build.Add(new EditorBuildSettingsScene(ScenePath, true));
-            EditorBuildSettings.scenes = build.ToArray();
-        }
         AssetDatabase.SaveAssets();
-        Tell("허브를 지었어요: " + ScenePath + "\n\n메인 메뉴의 혼자 하기·방 만들기가 이제 허브로 들어가요. 지도 탁자에서 장을 고르고, " +
-             "클래스 벽에서 클래스를, 총 진열대에서 총을 [F]로 고른 뒤 준비 버튼을 누르면 출발해요. 사격장은 남쪽 문 너머예요." +
+        Tell("옛 허브를 다시 지었어요: " + ScenePath + "\n\n보기만 하는 참고용이라 빌드에는 넣지 않았어요. 게임의 허브는 손으로 짓는 " +
+             "Scenes/Hub/Hub.unity예요(일하는 조각은 Prefabs/Hub)." +
              (ladders.Length > 0 ? "\n\n" + ladders : "") + dressed);
     }
 
