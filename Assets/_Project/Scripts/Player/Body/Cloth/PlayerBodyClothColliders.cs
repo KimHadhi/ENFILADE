@@ -17,7 +17,9 @@ using UnityEngine;
 /// 뚫고"), so "shoulders" is the shoulders and both arms as solid shapes, which every hanging chain BoothImport made
 /// meets (PlayerBodyCloth.Touches). An arm moves far from where it stood as the body was made, so it is never fitted to
 /// a cloth part nor counted in the room a part has (moving): it only pushes cloth off itself, as a real arm does.
-/// The balls on the soft lumps of the trunk (a bust, a bottom) follow the flesh as it bounces (FleshFollow).
+/// Flesh that swings on a spring swings the shapes that stand for it (FleshFollow): a bust's ball follows it, and where
+/// a spring swings the skin round a measured part (a thigh, a bottom on the hips), a twin of the part's shape swings
+/// beside the one that stays (Twins).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerBodyClothColliders : MonoBehaviour
@@ -85,6 +87,12 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     [SerializeField, Range(0f, 1f), Tooltip("A shape made smaller for a cloth part lying inside it keeps at least this share of its girth, or the part meets the shape made from the bones instead.")]
     private float fitGirth = .25f;
 
+    [Header("Flesh that swings (Cloth.csv's springs), for what BoothImport made")]
+    [SerializeField, Range(.5f, 1f), Tooltip("A shape's swinging twin moves as far as this share of the swinging skin round it does, each spring bone's share taken where this share of the skin stays within it. The still shape holds the rest.")]
+    private float swingReach = .9f;
+    [SerializeField, Range(.3f, .95f), Tooltip("A ball's twin for the flesh one spring swings on it, as a share of the ball's size: it sits inside the ball touching it where that flesh lies. Larger follows the flesh's rim more closely but stands past the ball over skin that doesn't swing when the flesh swings far.")]
+    private float swingTwin = .75f;
+
     [Header("Chains that hang, for what BoothImport made")]
     [SerializeField, Range(.5f, 1f), Tooltip("A free bone's particle is as thick as its own cloth reaches toward the body: where this share of the cloth it carries lies nearer the bone's line.")]
     private float clothReach = .95f;
@@ -118,7 +126,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     private readonly HashSet<ColliderComponent> lumps = new HashSet<ColliderComponent>();
     // The shapes that move far from where they stood as the body was made (the arms): they push cloth, nothing more.
     private readonly HashSet<ColliderComponent> moving = new HashSet<ColliderComponent>();
-    // Moves the lumps' balls with their flesh.
+    // Moves the lumps' balls and the twins with their flesh.
     private readonly FleshFollow follow = new FleshFollow();
     private ArmBone[] arms;
     private CharacterController capsule;
@@ -142,8 +150,14 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
 
     private void ReadLumps() => follow.Read();
 
-    /// <summary>The hanging cloth's bones, which the play's record (Logs/cloth.txt) watches against the lumps.</summary>
-    internal void Watch(IEnumerable<Transform> cloth) => follow.Watch(cloth);
+    /// <summary>
+    /// A cloth part's moving bones and the shapes it meets, which the play's record (Logs/cloth.txt) watches: how much
+    /// deeper than drawn they get inside the shapes that swing with the flesh.
+    /// </summary>
+    internal void Watch(IEnumerable<Transform> bones, List<ColliderComponent> touching) => follow.Watch(bones, touching);
+
+    /// <summary>The record watches nothing until the body's cloth, built again, names what it meets (Watch).</summary>
+    internal void Unwatch() => follow.Unwatch();
 
     /// <summary>Whether a part's shapes ("legs|arms") let the arms press it.</summary>
     internal static bool PressedByArms(string shapes)
@@ -176,7 +190,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     /// chest (<paramref name="springs"/>: a bust) measured as a ball of its own.
     /// </summary>
     internal DressedBody Measure(Animator animator, string look, Func<SkinSample> read, HashSet<Transform> hanging, HashSet<Transform> springs) =>
-        DressedBody.Measure(animator, look, read, hanging, springs, bodySurface, bodySize, clothReach);
+        DressedBody.Measure(animator, look, read, hanging, springs, bodySurface, bodySize, clothReach, swingReach);
 
     /// <summary>
     /// Gives this component ClothBody.csv's numbers where it has no player to bind them (the menu's preview), its own
@@ -299,7 +313,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         {
             float start = size.x - by, end = size.y - by;
             if (start < size.x * fitGirth || end < size.y * fitGirth) return fitted[(shape, mm)] = null;
-            var thinner = Shape<MagicaCapsuleCollider>(at.parent, at.position, at.rotation);
+            // A shape that swings with its flesh (FleshFollow) carries its smaller copy with it.
+            var thinner = Shape<MagicaCapsuleCollider>(follow.Follows(shape) ? at : at.parent, at.position, at.rotation);
             thinner.direction = capsule.direction;
             thinner.alignedOnCenter = capsule.alignedOnCenter;
             thinner.reverseDirection = capsule.reverseDirection;
@@ -310,8 +325,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         {
             float radius = size.x - by;
             if (radius < size.x * fitGirth) return fitted[(shape, mm)] = null;
-            // A lump's smaller copy hangs from the lump's ball, so it bounces with the flesh as the ball does (FleshFollow).
-            var thinner = Shape<MagicaSphereCollider>(lumps.Contains(shape) ? at : at.parent, at.position, at.rotation);
+            var thinner = Shape<MagicaSphereCollider>(follow.Follows(shape) ? at : at.parent, at.position, at.rotation);
             thinner.SetSize(radius / scale);
             copy = thinner;
         }
@@ -366,22 +380,50 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
             fromBones[real] = set[i];
             if (moving.Contains(set[i])) moving.Add(real);
             set[i] = real;
+            Twins(measured, parts[i], real, set);
         }
-        // The trunk's soft lumps as balls where they rest (DressedBody): a bust on the chest with the head's set, a bottom
-        // or a belly with the legs' beside the pelvis. What hangs over them rests on them, and they bounce with the flesh
-        // (FleshFollow). The chest's rod is measured without them: a rod can't be round the ribs and out to the front of
-        // a bust both, and on Mayo it ran some 4 cm inside her bust, as far as her side locks sank.
-        if (head || legs)
+        // The chest's soft lumps (a bust) as balls where they rest (DressedBody), with the head's set: what hangs over them
+        // rests on them, and they bounce with the flesh (FleshFollow). The chest's rod is measured without them: a rod
+        // can't be round the ribs and out to the front of a bust both, and on Mayo it ran some 4 cm inside her bust, as
+        // far as her side locks sank.
+        if (head)
             for (int i = 0; i < measured.LumpCount; i++)
             {
-                if (measured.LumpBelowChest(i) != legs || !measured.Lump(i, out var bone, out var centre, out float radius)) continue;
+                if (!measured.Lump(i, out var bone, out var centre, out float radius)) continue;
                 Ball(bone, centre, radius, set);
                 var ball = set[set.Count - 1];
                 lumps.Add(ball);
-                if (measured.LumpCarriers(i, out var carriers, out var weights, out var points))
-                    follow.Add(ball.transform, bone, carriers, weights, points, radius);
+                if (measured.LumpSwing(i, out var swingBones, out var swingShares)) follow.Add(ball, swingBones, swingShares, null, null);
             }
         return made[shape + Measured] = set;
+    }
+
+    // Where a spring swings the flesh round a part, the part's shape stays for the skin that doesn't swing and twins
+    // beside it swing with the flesh (FleshFollow), so that between them they hold all of it (DressedBody.Swing, Twin):
+    // a rod's twin, the same rod with each end swung as far as most of the skin there; a ball's, one per spring on it, a
+    // smaller ball inside it touching it where that flesh lies, swung as the flesh there swings. A twin is the same
+    // shape at rest or lies inside it, so nothing is pushed until the flesh swings.
+    private void Twins(DressedBody measured, DressedBody.Part part, ColliderComponent still, List<ColliderComponent> set)
+    {
+        if (still is MagicaCapsuleCollider)
+        {
+            bool start = measured.Swing(part, false, out var startBones, out var startShares);
+            bool end = measured.Swing(part, true, out var endBones, out var endShares);
+            if ((!start && !end) || !measured.Rod(part, out var bone, out var a, out var b, out float startRadius, out float endRadius)) return;
+            Capsule(bone, a, b, startRadius, endRadius, set);
+            var twin = set[set.Count - 1];
+            if (moving.Contains(still)) moving.Add(twin);
+            follow.Add(twin, startBones, startShares, endBones, endShares);
+            return;
+        }
+        for (int i = 0; i < measured.TwinCount(part); i++)
+        {
+            if (!measured.Twin(part, i, out var toward, out var bones, out var shares)
+                || !measured.Ball(part, out var bone, out var centre, out float radius)) continue;
+            float size = radius * swingTwin;
+            Ball(bone, centre + toward * (radius - size), size, set);
+            follow.Add(set[set.Count - 1], bones, shares, null, null, centre + toward * radius);
+        }
     }
 
     // The parts of each set in the order the bones make them (MakeLegs, MakeHead, MakeShoulders): the floor comes after

@@ -142,6 +142,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         BodySurface surface = null;
         DressedBody measured = null;
         HashSet<Transform> armBones = null;
+        if (simulates && colliders != null) colliders.Unwatch();
         foreach (var (id, part, roots) in found)
         {
             // Read before the simulation first moves them.
@@ -153,6 +154,8 @@ public sealed class PlayerBodyCloth : MonoBehaviour
                 if (part.vrc) measured ??= colliders.Measure(animator, null, () => skin ??= SkinSample.Read(animator), hanging, springs);
                 touching = Touching(colliders, animator, part, shapes, item.Bones, measured);
                 item.Bones.MeasureRoom(point => colliders.Room(point, touching));
+                // The play's record (Logs/cloth.txt) watches the part against the shapes it meets that swing with the flesh.
+                colliders.Watch(item.Bones.Free, touching);
                 item.Cloth = part.Wear(animator.transform, id, roots, touching, item.Bones);
             }
             if (part.ring && PlayerBodyClothColliders.PressedByArms(part.shapes))
@@ -172,8 +175,6 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             }
             worn.Add(item);
         }
-        // The play's record (Logs/cloth.txt) watches the hanging cloth against the bouncing flesh it lies on.
-        if (simulates && colliders != null) colliders.Watch(hanging);
         contacts = arms != null ? new SkirtPress.Contact[arms.Length] : null;
         for (int side = 0; side < 2; side++)
         {

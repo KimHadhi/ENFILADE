@@ -24,9 +24,16 @@ using UnityEngine;
 /// a round part, so its ball is the sphere that fits its points best (Dome), which lies on the dome itself.
 /// It also measures how far each hanging bone's own cloth reaches from the bone toward the body (Reach): how thick that
 /// cloth is where it would touch, which a particle of the simulation needs to be, no more.
-/// Every soft lump of the trunk is measured so, not only the chest's: a bottom or a belly on the hips or the spine is a
-/// ball of its own beside the pelvis's, where a skirt meets it. A lump bounces on its spring and its ball follows it
-/// (FleshFollow), moved as its points move: the mean of the weights their bones carry them by (LumpCarriers).
+/// Flesh a spring swings (Cloth.csv's springs) swings the shapes measured round it (FleshFollow): a bust's ball follows
+/// its flesh as the mean of its points moves (Dome stands for the bust alone). Elsewhere the still shape stays for the
+/// skin that doesn't swing and a twin of it swings as far as most of the swinging skin does (Swing, Twin): a thigh's
+/// rod beside a twin swung by the share nine in ten of the thigh's skin stay within, so that between them they hold
+/// every point of it (measured on Ichigo's FBX at the game's limits: her thigh's skin came out of the still rod by up to
+/// 14 mm and out of the pair by 1.1); and on a ball, for each spring swinging some of it (a bottom, a belly on the hips),
+/// a smaller ball inside it touching it where that flesh lies, which swings with the flesh there and never stands past
+/// the still ball over skin that doesn't swing (the user, 2026-11-21: "내 허벅지가 물리 때문에 덜렁거려도 치마는 허벅지
+/// 영향을 안 받으니 그대로 뚫리는데?"). A ball of their own for a bottom or a belly, as the bust has, was tried: the sphere
+/// that fits a patch of hips stood up to 65 mm out of Ichigo's body below her bottom, and 87 mm round her belly.
 /// The shoulders and arms are measured as rods too, for the hair that hangs over and in front of them (the user,
 /// 2026-11-21: "머리카락이 내 몸에 충돌이 안 일어나서 내 몸을 뚫고"); the arms move far from where they stood as the body
 /// was made, so nothing is fitted or settled against them (Moves).
@@ -39,8 +46,8 @@ internal sealed class DressedBody
         LeftUpperArm, RightUpperArm, LeftForearm, RightForearm, LeftShoulder, RightShoulder
     }
     private const int PartCount = 13;
-    // A bone that carries less than this share of a lump's skin on average is left out of how the lump moves: a
-    // centimetre of its swing moves the lump by less than a tenth of a millimetre.
+    // A spring bone that carries less than this share of a shape's skin on average is left out of how the shape swings:
+    // a centimetre of its swing moves the shape by less than a tenth of a millimetre.
     private const float LeastCarried = .01f;
 
     // A part with fewer points than this isn't really there: a rig without that bone's skin, or meshes that can't be read.
@@ -67,18 +74,33 @@ internal sealed class DressedBody
         public Vector3 Start, End;
         // In the bone's own units.
         public float StartRadius, EndRadius;
+        // How the flesh round it swings (FleshFollow): a rod's twin at its start and its end; a lump's ball by its start;
+        // a ball's twins, one for each spring that swings some of its skin.
+        public FleshSwing StartSwing, EndSwing;
+        public BallTwin[] Twins;
     }
 
-    // A soft lump of the trunk: its ball, in the space of the body bone it hangs from; and the bones its skin moves with,
-    // by name (a look is remembered across bodies made again), each with the mean share it carries and the ball's middle
-    // in that bone's own space.
+    // How flesh swings a shape: the spring bones that swing it, by name (a look is remembered across bodies made again),
+    // and the share of the flesh each carries.
+    private struct FleshSwing
+    {
+        public string[] Bones;
+        public float[] Shares;
+    }
+
+    // A ball's twin for the flesh one spring swings on it: which way that flesh lies from the ball's middle (in the
+    // bone's own space, of length one) and how it swings.
+    private struct BallTwin
+    {
+        public Vector3 Toward;
+        public FleshSwing Swing;
+    }
+
+    // A soft lump of the trunk: its ball, in the space of the body bone it hangs from, with how it swings.
     private struct SoftLump
     {
         public HumanBodyBones Bone;
         public Shape Shape;
-        public string[] Carriers;
-        public float[] Weights;
-        public Vector3[] Points;
     }
 
     // One look's measure: the parts in Part's order, the lumps, and each hanging bone's cloth reach by the bone's name
@@ -97,7 +119,7 @@ internal sealed class DressedBody
     private readonly Shape[] shapes;
     private readonly SoftLump[] lumps;
     private readonly Dictionary<string, float> reach;
-    // The body's bones by name, for the lumps' carriers: made the first time one is asked for.
+    // The body's bones by name, for the springs that swing a shape: made the first time one is asked for.
     private Dictionary<string, Transform> named;
 
     private DressedBody(Animator animator, Measures measures)
@@ -117,30 +139,64 @@ internal sealed class DressedBody
     /// </summary>
     internal static bool Moves(Part part) => part is Part.LeftUpperArm or Part.RightUpperArm or Part.LeftForearm or Part.RightForearm;
 
-    /// <summary>Whether a lump rests on the hips or the spine (a bottom, a belly) rather than the chest (a bust).</summary>
-    internal bool LumpBelowChest(int index) => lumps[index].Bone is HumanBodyBones.Hips or HumanBodyBones.Spine;
+    /// <summary>
+    /// How a rod's twin swings with the flesh round it (FleshFollow): the spring bones that carry its skin near its start
+    /// or near its end, and the share of that skin each carries which most of it stays within (ClothBody.csv
+    /// swingReach). False where no spring carries enough of it, or none of those bones is on this body.
+    /// </summary>
+    internal bool Swing(Part part, bool end, out Transform[] bones, out float[] shares) =>
+        Resolve(end ? shapes[(int)part].EndSwing : shapes[(int)part].StartSwing, out bones, out shares);
+
+    /// <summary>How many twins a ball has: one for each spring that swings some of its skin.</summary>
+    internal int TwinCount(Part part) => shapes[(int)part].Twins?.Length ?? 0;
 
     /// <summary>
-    /// How a lump's ball moves with its flesh: the bones its skin moves with, the mean share each carries, and the ball's
-    /// middle in each bone's own space (TransformPoint it). False where none of them is on this body.
+    /// A ball's twin for the flesh one spring swings on it: which way that flesh lies from the ball's middle (world, of
+    /// length one), and the spring bones that swing it with their shares, as Swing.
     /// </summary>
-    internal bool LumpCarriers(int index, out Transform[] bones, out float[] weights, out Vector3[] points)
+    internal bool Twin(Part part, int index, out Vector3 toward, out Transform[] bones, out float[] shares)
     {
-        var lump = lumps[index];
-        weights = lump.Weights;
-        points = lump.Points;
+        var shape = shapes[(int)part];
+        var bone = Bone(part);
+        toward = default;
         bones = null;
-        if (lump.Carriers == null || lump.Carriers.Length == 0) return false;
+        shares = null;
+        if (!shape.Found || bone == null || shape.Twins == null || index < 0 || index >= shape.Twins.Length) return false;
+        toward = bone.TransformDirection(shape.Twins[index].Toward).normalized;
+        return Resolve(shape.Twins[index].Swing, out bones, out shares);
+    }
+
+    /// <summary>How a soft lump's ball swings with its flesh: the spring bones its skin moves with and the mean share each carries.</summary>
+    internal bool LumpSwing(int index, out Transform[] bones, out float[] shares) => Resolve(lumps[index].Shape.StartSwing, out bones, out shares);
+
+    private bool Resolve(in FleshSwing swing, out Transform[] bones, out float[] shares)
+    {
+        bones = null;
+        shares = null;
+        if (swing.Bones == null || swing.Shares == null) return false;
+        var found = new List<Transform>();
+        var kept = new List<float>();
+        for (int i = 0; i < swing.Bones.Length && i < swing.Shares.Length; i++)
+            if (swing.Shares[i] > 0f && Named(swing.Bones[i]) is { } bone)
+            {
+                found.Add(bone);
+                kept.Add(swing.Shares[i]);
+            }
+        if (found.Count == 0) return false;
+        bones = found.ToArray();
+        shares = kept.ToArray();
+        return true;
+    }
+
+    // A bone of the body by its name, or null.
+    private Transform Named(string name)
+    {
         if (named == null)
         {
             named = new Dictionary<string, Transform>();
             foreach (var bone in animator.GetComponentsInChildren<Transform>(true)) named.TryAdd(bone.name, bone);
         }
-        bones = new Transform[lump.Carriers.Length];
-        bool any = false;
-        for (int i = 0; i < bones.Length; i++)
-            any |= named.TryGetValue(lump.Carriers[i], out bones[i]);
-        return any;
+        return named.TryGetValue(name, out var found) ? found : null;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -153,17 +209,20 @@ internal sealed class DressedBody
     /// <param name="key">What the body is and wears, to remember the measure by; null measures every time.</param>
     /// <param name="read">The body's meshes as they stand, read only when the look isn't remembered.</param>
     /// <param name="hanging">Every bone of the cloth that hangs free: what it carries doesn't count.</param>
-    /// <param name="springs">The bones soft lumps hang from (Cloth.csv's springs): those on the trunk are measured as lumps.</param>
+    /// <param name="springs">The bones flesh hangs from (Cloth.csv's springs): those on the chest are measured as lumps, and
+    /// every shape learns how they swing it.</param>
     /// <param name="surface">The share of a direction's points that lie inside its outside.</param>
     /// <param name="size">Where, among a part's sizes all round, its size is taken (0.5: the middle one).</param>
     /// <param name="clothShare">Where, among the reaches of a hanging bone's cloth toward the body, its reach is taken.</param>
+    /// <param name="swingReach">The share of a twin's swinging skin whose share of the swing it takes (Swing).</param>
     internal static DressedBody Measure(Animator animator, string key, Func<SkinSample> read, HashSet<Transform> hanging,
-        HashSet<Transform> springs, float surface, float size, float clothShare)
+        HashSet<Transform> springs, float surface, float size, float clothShare, float swingReach)
     {
-        if (key != null) key = key + "|" + surface + "|" + size + "|" + clothShare;
+        if (key != null) key = key + "|" + surface + "|" + size + "|" + clothShare + "|" + swingReach;
         if (key == null || !remembered.TryGetValue(key, out var measures))
         {
-            measures = Fit(animator, read(), hanging, springs, Mathf.Clamp01(surface), Mathf.Clamp01(size), Mathf.Clamp01(clothShare));
+            measures = Fit(animator, read(), hanging, springs, Mathf.Clamp01(surface), Mathf.Clamp01(size), Mathf.Clamp01(clothShare),
+                Mathf.Clamp01(swingReach));
             if (key != null) Remember(key, measures);
         }
         return new DressedBody(animator, measures);
@@ -252,14 +311,14 @@ internal sealed class DressedBody
     }
 
     private static Measures Fit(Animator animator, SkinSample skin, HashSet<Transform> hanging, HashSet<Transform> springs,
-        float surface, float size, float clothShare)
+        float surface, float size, float clothShare, float swingReach)
     {
         var shapes = new Shape[PartCount];
         var measures = new Measures { Shapes = shapes, Lumps = Array.Empty<SoftLump>(), Reach = new Dictionary<string, float>() };
         if (animator == null || skin == null || skin.Points.Count == 0) return measures;
         // Each point belongs to the first body bone above the bone that carries most of it: a ribbon on the head is the
-        // head's. A point a soft lump of the trunk carries is that lump's instead. A lump on a thigh stays the thigh's:
-        // a rod round the leg is its outside already, and a ball on a patch of it would stand out of the leg.
+        // head's. A point a bust's spring carries most of is that lump's instead. Flesh elsewhere stays its part's, and the
+        // part's twins swing with it.
         var human = new Dictionary<Transform, HumanBodyBones>();
         for (var id = HumanBodyBones.Hips; id < HumanBodyBones.LastBone; id++)
         {
@@ -267,21 +326,33 @@ internal sealed class DressedBody
             if (bone != null) human[bone] = id;
         }
         var lumpRoots = new List<Transform>();
+        var lumpOwners = new List<HumanBodyBones>();
+        // Every bone that swings with a spring, and the spring's root it swings from: the root and what hangs from it,
+        // short of the body's own bones.
+        var chains = new Dictionary<Transform, Transform>();
         if (springs != null)
             foreach (var root in springs)
-                if (root != null && Owner(root, human, animator.transform)
-                        is HumanBodyBones.Chest or HumanBodyBones.UpperChest or HumanBodyBones.Spine or HumanBodyBones.Hips)
-                    lumpRoots.Add(root);
+            {
+                if (root == null) continue;
+                Swinging(root, root, human, chains);
+                var rests = Owner(root, human, animator.transform);
+                if (rests is not (HumanBodyBones.Chest or HumanBodyBones.UpperChest)) continue;
+                lumpRoots.Add(root);
+                lumpOwners.Add(rests);
+            }
         var lumpPoints = new List<Vector3>[lumpRoots.Count];
-        var lumpCarried = new Dictionary<Transform, float>[lumpRoots.Count];
+        var lumpIds = new List<int>[lumpRoots.Count];
         var lumpOf = new Dictionary<Transform, int>();
         var marks = skin.Marks(hanging);
         var owners = new Dictionary<Transform, HumanBodyBones>();
         var points = new Dictionary<HumanBodyBones, List<Vector3>>();
+        // Which points each part was measured from (their index in the sample), for how its flesh swings it.
+        var ids = new Dictionary<HumanBodyBones, List<int>>();
         // The hanging cloth's own vertices, by the bone that carries each most: how thick it is round that bone (Reach).
         var cloth = new Dictionary<Transform, List<Vector3>>();
-        foreach (var point in skin.Points)
+        for (int index = 0; index < skin.Points.Count; index++)
         {
+            var point = skin.Points[index];
             if (!skin.Shown(point)) continue;
             if (SkinSample.CarriedBy(point, marks))
             {
@@ -301,7 +372,7 @@ internal sealed class DressedBody
                 if (lump >= 0)
                 {
                     (lumpPoints[lump] ??= new List<Vector3>()).Add(point.Position);
-                    skin.AddCarriers(point, lumpCarried[lump] ??= new Dictionary<Transform, float>());
+                    (lumpIds[lump] ??= new List<int>()).Add(index);
                     continue;
                 }
             }
@@ -309,17 +380,20 @@ internal sealed class DressedBody
             if (owner == HumanBodyBones.LastBone) continue;
             if (!points.TryGetValue(owner, out var list)) points[owner] = list = new List<Vector3>();
             list.Add(point.Position);
+            if (!ids.TryGetValue(owner, out var idList)) ids[owner] = idList = new List<int>();
+            idList.Add(index);
         }
+        var carriers = new Transform[4];
+        var shares = new float[4];
         var lumps = new List<SoftLump>();
         for (int i = 0; i < lumpRoots.Count; i++)
         {
             if (lumpPoints[i] == null) continue;
-            var owner = Owner(lumpRoots[i], human, animator.transform);
-            var lump = new SoftLump { Bone = owner };
-            var ownerBone = animator.GetBoneTransform(owner);
+            var lump = new SoftLump { Bone = lumpOwners[i] };
+            var ownerBone = animator.GetBoneTransform(lumpOwners[i]);
             Dome(ref lump.Shape, ownerBone, lumpPoints[i], surface, size);
             if (!lump.Shape.Found) continue;
-            Carriers(ref lump, ownerBone.TransformPoint(lump.Shape.Start), lumpCarried[i], lumpPoints[i].Count);
+            lump.Shape.StartSwing = MeanSwing(lumpIds[i], skin, chains, carriers, shares);
             lumps.Add(lump);
         }
         measures.Lumps = lumps.ToArray();
@@ -351,38 +425,183 @@ internal sealed class DressedBody
             Gather(points, HumanBodyBones.LeftShoulder), surface, size);
         Limb(ref shapes[(int)Part.RightShoulder], Bone(animator, Part.RightShoulder), animator.GetBoneTransform(HumanBodyBones.RightUpperArm),
             Gather(points, HumanBodyBones.RightShoulder), surface, size);
+        // How the flesh round each part swings it (FleshFollow), from the points it was measured from.
+        if (chains.Count > 0)
+            for (int i = 0; i < PartCount; i++)
+            {
+                var part = (Part)i;
+                var from = Gather(ids, Sources[i]);
+                if (part is Part.Head or Part.Pelvis) BallTwins(ref shapes[i], Bone(animator, part), from, skin, chains, swingReach, carriers, shares);
+                else RodSwing(ref shapes[i], Bone(animator, part), from, skin, chains, swingReach, carriers, shares);
+            }
         ClothReach(animator, cloth, hanging, measures, clothShare);
         return measures;
     }
 
-    // How a lump's ball moves with its skin: each bone's mean share of the points it was measured from (the shares of a
-    // point sum to one, so their mean does too), the faint ones left out and the rest made whole again; and the ball's
-    // middle in each of those bones' own space. Skinned by these, the middle moves as the mean of its points does: the
-    // move of a ball that keeps them on its sphere best.
-    private static void Carriers(ref SoftLump lump, Vector3 centre, Dictionary<Transform, float> carried, int count)
+    // A spring's root and every bone hanging from it, short of the body's own bones: what swings with it, by its root.
+    private static void Swinging(Transform bone, Transform root, Dictionary<Transform, HumanBodyBones> human, Dictionary<Transform, Transform> into)
     {
-        if (carried == null || count == 0) return;
-        var bones = new List<Transform>();
-        var shares = new List<float>();
-        float total = 0f;
-        foreach (var pair in carried)
+        into[bone] = root;
+        foreach (Transform child in bone)
+            if (!human.ContainsKey(child)) Swinging(child, root, human, into);
+    }
+
+    // A lump's ball stands alone for its flesh, so it moves as the flesh does on average: each spring bone's mean share
+    // of its points, a bone under LeastCarried left out.
+    private static FleshSwing MeanSwing(List<int> ids, SkinSample skin, Dictionary<Transform, Transform> chains, Transform[] carriers, float[] shares)
+    {
+        var sums = new Dictionary<Transform, float>();
+        if (ids == null || ids.Count == 0) return default;
+        foreach (int id in ids)
         {
-            float share = pair.Value / count;
-            if (pair.Key == null || share < LeastCarried) continue;
-            bones.Add(pair.Key);
-            shares.Add(share);
-            total += share;
+            skin.Carriers(skin.Points[id], carriers, shares);
+            for (int k = 0; k < carriers.Length; k++)
+                if (carriers[k] != null && chains.ContainsKey(carriers[k]))
+                {
+                    sums.TryGetValue(carriers[k], out float sum);
+                    sums[carriers[k]] = sum + shares[k];
+                }
         }
-        if (bones.Count == 0 || total <= 0f) return;
-        lump.Carriers = new string[bones.Count];
-        lump.Weights = new float[bones.Count];
-        lump.Points = new Vector3[bones.Count];
-        for (int i = 0; i < bones.Count; i++)
+        var names = new List<string>();
+        var kept = new List<float>();
+        foreach (var pair in sums)
         {
-            lump.Carriers[i] = bones[i].name;
-            lump.Weights[i] = shares[i] / total;
-            lump.Points[i] = bones[i].InverseTransformPoint(centre);
+            float mean = pair.Value / ids.Count;
+            if (mean < LeastCarried) continue;
+            names.Add(pair.Key.name);
+            kept.Add(mean);
         }
+        return names.Count > 0 ? new FleshSwing { Bones = names.ToArray(), Shares = kept.ToArray() } : default;
+    }
+
+    // A rod's twin swings each end by the share of each spring bone that most of the skin near that end (swingReach of
+    // it, a point counting toward an end by how near along the rod it lies) stays within, the skin a bone doesn't carry
+    // counting as none. Moved by the mean instead, the twin lagged the most-carried skin: Ichigo's thigh skin came out of
+    // it by 8 mm where its own share was twice the mean.
+    private static void RodSwing(ref Shape shape, Transform bone, List<int> ids, SkinSample skin, Dictionary<Transform, Transform> chains,
+        float reach, Transform[] carriers, float[] shares)
+    {
+        if (!shape.Found || bone == null || ids.Count == 0) return;
+        Vector3 start = bone.TransformPoint(shape.Start), line = bone.TransformPoint(shape.End) - start;
+        if (line.sqrMagnitude < 1e-12f) return;
+        var nearStart = new Dictionary<Transform, List<(float Share, float Weight)>>();
+        var nearEnd = new Dictionary<Transform, List<(float Share, float Weight)>>();
+        float startTotal = 0f, endTotal = 0f;
+        foreach (int id in ids)
+        {
+            var point = skin.Points[id];
+            float along = Mathf.Clamp01(Vector3.Dot(point.Position - start, line) / line.sqrMagnitude);
+            startTotal += 1f - along;
+            endTotal += along;
+            skin.Carriers(point, carriers, shares);
+            for (int k = 0; k < carriers.Length; k++)
+            {
+                if (carriers[k] == null || !chains.ContainsKey(carriers[k])) continue;
+                if (!nearStart.TryGetValue(carriers[k], out var first))
+                {
+                    nearStart[carriers[k]] = first = new List<(float, float)>();
+                    nearEnd[carriers[k]] = new List<(float, float)>();
+                }
+                first.Add((shares[k], 1f - along));
+                nearEnd[carriers[k]].Add((shares[k], along));
+            }
+        }
+        var names = new List<string>();
+        var starts = new List<float>();
+        var ends = new List<float>();
+        foreach (var pair in nearStart)
+        {
+            float atStart = Reached(pair.Value, startTotal, reach), atEnd = Reached(nearEnd[pair.Key], endTotal, reach);
+            if (atStart < LeastCarried) atStart = 0f;
+            if (atEnd < LeastCarried) atEnd = 0f;
+            if (atStart <= 0f && atEnd <= 0f) continue;
+            names.Add(pair.Key.name);
+            starts.Add(atStart);
+            ends.Add(atEnd);
+        }
+        if (names.Count == 0) return;
+        shape.StartSwing = new FleshSwing { Bones = names.ToArray(), Shares = starts.ToArray() };
+        shape.EndSwing = new FleshSwing { Bones = names.ToArray(), Shares = ends.ToArray() };
+    }
+
+    // A ball's twins: for each spring that carries some of its skin (LeastCarried of it on average), which way that flesh
+    // lies from the ball's middle, each point weighted by how much the spring carries it, and the share of each of the
+    // spring's bones that most (reach) of that flesh stays within.
+    private static void BallTwins(ref Shape shape, Transform bone, List<int> ids, SkinSample skin, Dictionary<Transform, Transform> chains,
+        float reach, Transform[] carriers, float[] shares)
+    {
+        if (!shape.Found || bone == null || ids.Count == 0) return;
+        Vector3 centre = bone.TransformPoint(shape.Start);
+        var flesh = new Dictionary<Transform, (Vector3 Way, float Total, int Count, Dictionary<Transform, List<(float Share, float Weight)>> Bones)>();
+        var onPoint = new Dictionary<Transform, float>();
+        foreach (int id in ids)
+        {
+            var point = skin.Points[id];
+            skin.Carriers(point, carriers, shares);
+            onPoint.Clear();
+            for (int k = 0; k < carriers.Length; k++)
+                if (carriers[k] != null && chains.TryGetValue(carriers[k], out var root))
+                {
+                    onPoint.TryGetValue(root, out float sum);
+                    onPoint[root] = sum + shares[k];
+                }
+            foreach (var pair in onPoint)
+            {
+                if (pair.Value < LeastCarried) continue;
+                if (!flesh.TryGetValue(pair.Key, out var found))
+                    found = (Vector3.zero, 0f, 0, new Dictionary<Transform, List<(float, float)>>());
+                found.Way += (point.Position - centre) * pair.Value;
+                found.Total += pair.Value;
+                found.Count++;
+                for (int k = 0; k < carriers.Length; k++)
+                {
+                    if (carriers[k] == null || !chains.TryGetValue(carriers[k], out var root) || root != pair.Key) continue;
+                    if (!found.Bones.TryGetValue(carriers[k], out var list)) found.Bones[carriers[k]] = list = new List<(float, float)>();
+                    list.Add((shares[k], 1f));
+                }
+                flesh[pair.Key] = found;
+            }
+        }
+        var twins = new List<BallTwin>();
+        foreach (var pair in flesh)
+        {
+            var (way, total, count, bones) = pair.Value;
+            if (total / ids.Count < LeastCarried || way.sqrMagnitude < 1e-12f) continue;
+            var names = new List<string>();
+            var kept = new List<float>();
+            foreach (var carried in bones)
+            {
+                float share = Reached(carried.Value, count, reach);
+                if (share < LeastCarried) continue;
+                names.Add(carried.Key.name);
+                kept.Add(share);
+            }
+            if (names.Count == 0) continue;
+            twins.Add(new BallTwin
+            {
+                Toward = bone.InverseTransformDirection(way).normalized,
+                Swing = new FleshSwing { Bones = names.ToArray(), Shares = kept.ToArray() }
+            });
+        }
+        if (twins.Count > 0) shape.Twins = twins.ToArray();
+    }
+
+    // The share a bone carries that this share (reach) of some skin stays within, each point counted by its weight out
+    // of the whole (total); the skin it doesn't carry at all counts as carrying none.
+    private static float Reached(List<(float Share, float Weight)> carried, float total, float reach)
+    {
+        if (total <= 0f || carried.Count == 0) return 0f;
+        float below = total;
+        foreach (var (_, weight) in carried) below -= weight;
+        float wanted = reach * total;
+        if (below >= wanted) return 0f;
+        carried.Sort((a, b) => a.Share.CompareTo(b.Share));
+        foreach (var (share, weight) in carried)
+        {
+            below += weight;
+            if (below >= wanted) return share;
+        }
+        return carried[carried.Count - 1].Share;
     }
 
     // How far each hanging bone's cloth reaches from the bone toward the body: the vertices that bone carries most, each
@@ -471,9 +690,22 @@ internal sealed class DressedBody
         return -1;
     }
 
-    private static List<Vector3> Gather(Dictionary<HumanBodyBones, List<Vector3>> points, params HumanBodyBones[] owners)
+    // The body bones whose points each part is measured from, in Part's order (Fit's measures name the same).
+    private static readonly HumanBodyBones[][] Sources =
     {
-        var all = new List<Vector3>();
+        new[] { HumanBodyBones.Head, HumanBodyBones.Jaw, HumanBodyBones.LeftEye, HumanBodyBones.RightEye },
+        new[] { HumanBodyBones.Chest, HumanBodyBones.UpperChest, HumanBodyBones.Neck },
+        new[] { HumanBodyBones.Hips },
+        new[] { HumanBodyBones.LeftUpperLeg }, new[] { HumanBodyBones.RightUpperLeg },
+        new[] { HumanBodyBones.LeftLowerLeg }, new[] { HumanBodyBones.RightLowerLeg },
+        new[] { HumanBodyBones.LeftUpperArm }, new[] { HumanBodyBones.RightUpperArm },
+        new[] { HumanBodyBones.LeftLowerArm }, new[] { HumanBodyBones.RightLowerArm },
+        new[] { HumanBodyBones.LeftShoulder }, new[] { HumanBodyBones.RightShoulder }
+    };
+
+    private static List<T> Gather<T>(Dictionary<HumanBodyBones, List<T>> points, params HumanBodyBones[] owners)
+    {
+        var all = new List<T>();
         foreach (var owner in owners)
             if (points.TryGetValue(owner, out var list)) all.AddRange(list);
         return all;

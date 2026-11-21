@@ -125,25 +125,21 @@ internal sealed class SkinSample
     }
 
     /// <summary>
-    /// Adds what each bone carries of a vertex to <paramref name="carried"/>, by bone: summed over many vertices, how a
-    /// patch of skin moves with its bones on average (DressedBody's soft lumps, which follow their flesh by it).
+    /// The four bones a vertex is skinned to and the share each carries, into the caller's arrays of four (a bone is null
+    /// and its share 0 where the slot is empty): read point by point over a whole body, so nothing is made for each.
+    /// Summed over a patch of skin, how it moves with its bones on average (DressedBody.Swing).
     /// </summary>
-    internal void AddCarriers(in Point point, Dictionary<Transform, float> carried)
+    internal void Carriers(in Point point, Transform[] carriers, float[] shares)
     {
         BoneWeight w = point.Weight;
-        AddCarrier(point.Renderer, w.boneIndex0, w.weight0, carried);
-        AddCarrier(point.Renderer, w.boneIndex1, w.weight1, carried);
-        AddCarrier(point.Renderer, w.boneIndex2, w.weight2, carried);
-        AddCarrier(point.Renderer, w.boneIndex3, w.weight3, carried);
-    }
-
-    private void AddCarrier(int renderer, int index, float weight, Dictionary<Transform, float> carried)
-    {
-        if (weight <= 0f) return;
-        var bone = Bone(renderer, index);
-        if (bone == null) return;
-        carried.TryGetValue(bone, out float sum);
-        carried[bone] = sum + weight;
+        carriers[0] = w.weight0 > 0f ? Bone(point.Renderer, w.boneIndex0) : null;
+        carriers[1] = w.weight1 > 0f ? Bone(point.Renderer, w.boneIndex1) : null;
+        carriers[2] = w.weight2 > 0f ? Bone(point.Renderer, w.boneIndex2) : null;
+        carriers[3] = w.weight3 > 0f ? Bone(point.Renderer, w.boneIndex3) : null;
+        shares[0] = carriers[0] != null ? w.weight0 : 0f;
+        shares[1] = carriers[1] != null ? w.weight1 : 0f;
+        shares[2] = carriers[2] != null ? w.weight2 : 0f;
+        shares[3] = carriers[3] != null ? w.weight3 : 0f;
     }
 
     private Transform Bone(int renderer, int index)

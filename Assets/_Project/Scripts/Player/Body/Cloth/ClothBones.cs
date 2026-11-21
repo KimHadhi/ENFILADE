@@ -80,6 +80,16 @@ internal sealed class ClothBones
         Length = longest * Mathf.Abs(anchor.lossyScale.x);
     }
 
+    /// <summary>The bones the simulation moves, not the ones the part hangs from.</summary>
+    internal IEnumerable<Transform> Free
+    {
+        get
+        {
+            foreach (var bone in bones)
+                if (bone.Moves) yield return bone.Transform;
+        }
+    }
+
     /// <summary>Notes how far each free bone hangs, as the part is made, from what it rests against.</summary>
     internal void MeasureRoom(System.Func<Vector3, float> room)
     {
