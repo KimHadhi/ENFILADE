@@ -33,7 +33,7 @@ public sealed partial class PlayerBody
         {
             vault, vaultHigh, vaultKong, springboard, mantle, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeJump,
             wallClimbStart, wallClimb, wallKick, wallKickRight, barSwing, barRelease, clamberLow, clamberHigh,
-            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack, jump, jumpStill, jumpSlow,
+            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack, downedFall, jump, jumpStill, jumpSlow,
             diveStart, dive, dodgeLeft, dodgeRight, dashPush
         })
             Add(animationViewChannels, clip);

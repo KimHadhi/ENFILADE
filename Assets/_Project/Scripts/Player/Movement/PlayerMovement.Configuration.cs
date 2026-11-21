@@ -9,6 +9,9 @@ public sealed partial class PlayerMovement
     // Tables/Player/Gaits.csv (MovementGait), not fields here.
     [SerializeField, Min(0f)] internal float proneSpeed = 1.6f;
     [SerializeField, Min(0f)] internal float supineSpeed = 1.6f;
+    [Tooltip("Going down from on their feet, how long the body falls before the crawl can start (s): BIPER P_Die_F's body "
+        + "centre reaches the floor at 0.96 s and its hips settle by 1.03 s (PlayerBody.Downed).")]
+    [SerializeField, Min(0f)] internal float downedFallTime = 1f;
     [Tooltip("Seconds Shift takes from the run to the sprint, or in walk mode from the walk to the jog (MovementGait).")]
     [SerializeField, Min(0.01f)] internal float sprintRampUpDuration = 0.1f;
 

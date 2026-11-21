@@ -726,8 +726,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // leaves its feet.
             bool hold = transitionRuns ? onFeet && upright && HorizontalSpeed() > walkClipSpeed
                 : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
-            // A transition is the stance it began in: a getting up gives way to a crouch, a crouched landing to standing up.
-            if (upright && transitionStance != state
+            // A transition is the stance it began in: a getting up gives way to a crouch, a crouched landing to standing up,
+            // and either to lying down (gone down in the middle of a landing falls at once: PlayerBody.Downed).
+            if ((upright || Lies(state)) && transitionStance != state
                 && (transitionStance == MovementState.Standing || transitionStance == MovementState.Crouching))
                 hold = false;
             if (transitionLeft > blendTime && hold)
@@ -769,7 +770,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 Sequence(supineDiveAtOnce ? null : supineDiveStart, supineDive);
                 FaceBack(dt);
                 break;
-            case MovementState.Proning: Want(prone); FaceLying(dt); break;
+            case MovementState.Proning:
+                FaceLying(dt);
+                // Gone down from on the feet, the body falls first (PlayerBody.Downed).
+                if (!DownedFallPose()) Want(prone);
+                break;
             case MovementState.Supine: Want(supine); FaceLying(dt); break;
             case MovementState.StepDodge: DodgePose(); break;
             case MovementState.LandingRoll:
@@ -840,6 +845,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             PlayOn(rollClip);
         if (from == MovementState.StepDodge && onGround && to == MovementState.Standing) PlayOutDodge();
         StartLying(from, to);
+        if (to == MovementState.Proning) EnterProne(from);
         switch (to)
         {
             case MovementState.Sliding: Restart(Find(slideStart)); break;

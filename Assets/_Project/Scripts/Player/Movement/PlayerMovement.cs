@@ -141,6 +141,18 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsGrounded => Motor.isGrounded;
     /// <summary>On the ground, crawling and waiting to be got up (PlayerLife). Prone, and the prone controls for getting up do nothing.</summary>
     public bool IsDowned => DamageReceiver != null && DamageReceiver.IsDowned;
+    /// <summary>
+    /// Gone down from on their feet a moment ago: the body is still falling onto its front (PlayerBody.Downed), and the
+    /// crawl waits until it is down (Move.downedFallTime), so the fall is never carried along the ground.
+    /// </summary>
+    public bool DownedFalling => IsDowned && Time.time - downedFallAt < downedFallTime;
+    private float downedFallAt = float.NegativeInfinity;
+    /// <summary>
+    /// Going down from one of these on the ground, they fall before they lie (DownedFalling, PlayerBody.Downed). From a
+    /// crouch, lying, a slide, a climb or the air they are low or down already and go straight to the crawl.
+    /// </summary>
+    public static bool FallsWhenDowned(MovementState from) =>
+        from == MovementState.Standing || from == MovementState.StepDodge || from == MovementState.DashPush;
     public bool IsDead => DamageReceiver != null && !DamageReceiver.IsAlive;
     private PlayerHold hold;
     /// <summary>A shambler holds them (PlayerHold): they can't step anywhere or use a gun, but can shove or punch it off.</summary>
@@ -617,7 +629,11 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Posture.airBodyTucked || Posture.airCrouching) Posture.RebaseAirCrouchFeet();
         Motor.Reset();
         Actions.Reset();
-        if (IsDowned) ChangeState(MovementState.Proning);
+        if (IsDowned)
+        {
+            if (IsGrounded && FallsWhenDowned(CurrentState)) downedFallAt = Time.time;
+            ChangeState(MovementState.Proning);
+        }
         else if (!HasCeilingAbove(StandingColliderHeight)) ChangeState(MovementState.Standing);
         else if (!HasCeilingAbove(CrouchColliderHeight)) ChangeState(MovementState.Crouching);
         else ChangeState(MovementState.Proning);

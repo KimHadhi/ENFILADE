@@ -268,6 +268,7 @@ Posture.slideTransitionSharpness,8.5,슬라이드·다이브 때 자세가 바�
 # 이동: 걷기·질주·점프 (Move 행 → PlayerMovement),,
 Move.proneSpeed,1.6,엎드려 기는 속도(m/s)
 Move.supineSpeed,1.6,누워서 이동하는 속도(m/s)
+Move.downedFallTime,1,"서 있다가 다운되면 몸이 앞으로 쓰러지는 이 시간(초) 동안은 기지 못한다: 쓰러지는 몸이 땅 위로 끌려가지 않게(PlayerBody.Downed). BIPER P_Die_F의 몸 중심이 0.96초에 바닥에 닿고 엉덩이가 1.03초에 자리 잡는다(클립 검사대)"
 Move.sprintRampUpDuration,0.1,Shift를 누르고 달리기에서 전력질주로(걷기 모드면 걷기에서 조깅으로) 넘어가는 시간(초). 걸음새마다·가는 쪽마다의 속도는 Gaits.csv(0.9.245: 클립이 몸을 나르는 속도)
 Move.groundSharpness,10,지상에서 속도를 바꾸는 빠르기. 클수록 즉시 반응. 낮을수록 출발·정지가 묵직하다(0.7.28에 14에서 낮춤)
 Move.groundKeepPaceTurn,120,"땅에서 가는 쪽을 이만큼(도) 안으로 바꾸면 빠르기를 지킨 채 방향이 돈다(속도는 새 쪽의 빠르기로 따로 따라간다). 더 크게 바꾸면(뒤로 돌기) 멈췄다 가듯 가운데를 지난다. 0.9.292 전에는 두 속도를 곧게 섞어 W에서 D로 바꾸는 중간에 70%로 떨어졌다(전력질주 6.0→4.35m/s, 다리도 조깅 클립으로; 사용자 11-21: ""달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"")"
@@ -520,6 +521,8 @@ Body.bellySlide,diveslideidle,머리부터 슬라이딩
 Body.bellySlideEnd,diveslideend,머리부터 슬라이딩 끝
 Body.prone,diveslideidle,엎드림(전용 애니메이션이 생길 때까지 머리부터 슬라이딩 자세)
 Body.supine,jumpturnlandidle,누운 자세. Beatrun의 점프 턴처럼 등을 대고 누워 둘러본다
+Body.downedFall,P_Die_F,"서 있다가(서기·회피 스텝·밀치기) 다운되면 무릎이 꺾여 앞으로 엎어진 뒤 엎드림으로 이어진다(PlayerBody.Downed). 다운되면 권총을 들어서 권총 판(BIPER Combat Girls). 웅크림·누움·슬라이드·공중에서 다운되면 바로 엎드림. 죽음은 래그돌 그대로. 사용자 11-22 ""다운될 때 무너지기"""
+Body.downedSettleTime,0.4,"쓰러진 마지막 자세가 엎드림 자세로 바뀌는 시간(초): 두 누운 자세를 잇는 클립이 없어서. 다 쓰러진 뒤(Move.downedFallTime) 기기 시작하면 그때부터 바뀐다"
 Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
 Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝

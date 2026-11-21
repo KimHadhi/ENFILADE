@@ -77,7 +77,7 @@ public sealed partial class PlayerBody
         jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
         fallFlail, supineSlideEndCrouch, supineSlideEndProne, supineLand, supineGetUp, supineGetUpGun, supineGetUpCrouch,
         bellySlideEndCrouch, vaultHigh, vaultKong, springboard, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
-        wallClimbStart, wallKickRight, crouchDown, standUp, fallFromEdge, landMid, clamberLow, clamberHigh
+        wallClimbStart, wallKickRight, crouchDown, standUp, fallFromEdge, landMid, clamberLow, clamberHigh, downedFall
     };
 
     // The gun-holding channels of every one-shot clip the profile has one for.

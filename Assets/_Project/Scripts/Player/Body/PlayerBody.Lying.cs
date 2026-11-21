@@ -60,6 +60,7 @@ public sealed partial class PlayerBody
         if (dead) return;
         Vector3 want = Vector3.zero;
         float rate = FacingTurnRate;
+        crawling = false;
         if (state == MovementState.Diving) want = player.DiveBodyForward;
         else if (state == MovementState.HeadFirstSliding) want = player.SlideDirection;
         else if (state == MovementState.Proning)
@@ -74,6 +75,7 @@ public sealed partial class PlayerBody
                 // Crawling back the way the feet point keeps the heading; any other way turns the head toward it.
                 want = Vector3.Dot(crawl.normalized, heading) < -.5f ? -crawl : crawl;
                 rate = crawlTurnRate;
+                crawling = true;
             }
         }
         want = Vector3.ProjectOnPlane(want, Vector3.up);

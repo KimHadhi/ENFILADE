@@ -359,6 +359,8 @@ UE4용 ZIP의 `Source/FBX`(Punches는 `Content/Boxing_01/Source/FBX`)에 클립�
 
 같은 상태라도 상황에 맞는 클립을 고른다. 모두 `Body` 행에서 이름과 기준값을 바꾼다.
 
+- **BIPER Combat Girls (0.9.298~, [BiperAnimations](../Features/BiperAnimations.md) "Combat Girls에서 고른 것")**:
+  - 다운될 때 무너지기([PlayerBody.Downed](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Downed.cs), `Body.downedFall`): 서기·회피 스텝·밀치기 중에 다운되면 `P_Die_F`로 무릎이 꺾여 앞으로 엎어지고, 엎드림 자세가 `Body.downedSettleTime`(0.4초)에 걸쳐 이어받는다. 다운되면 권총을 들어서 권총 판이다. 쓰러지는 `Move.downedFallTime`(1초: 클립의 몸 중심이 0.96초에 바닥) 동안은 기지 못해서 쓰러지는 몸이 땅 위로 끌려가지 않고, 그 뒤 기기 시작하면 바로 엎드림이 맡는다. 웅크림·누움·슬라이드·공중에서 다운되면 예전처럼 바로 엎드린다. 시선은 크게 착지해 엎어질 때처럼 조금만 이끈다. 친구 PC에서는 상태와 다운 표시가 다른 메시지로 와서, 둘 다 온 첫 프레임에(크로스페이드 안이면) 같은 쓰러짐이 시작된다. 다운 중 착지 같은 전환이 돌고 있었으면 놓는다(전환은 시작한 자세에서만, 누우면 끝). 죽음은 래그돌 그대로. 0.9.298 전에는 다운되면 0.15초 만에 엎드림 자세로 바뀌었다.
 - **BIPER Female Runner 나머지 (0.9.285)**, 클립의 루트 곡선은 ClipBench가 [GaitMoves.csv](../../Assets/_Project/Data/Resources/Tables/Player/GaitMoves.csv)에 굽는다:
   - 서서 웅크리기·일어서기([PlayerBody.Posture](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Posture.cs), `Body.crouchDown`·`standUp`): 가만히 선 채 앉거나 일어서면 `IdleToCrouch`·`CrouchToIdle`. 클립은 제 시계(0.4초)가 아니라 눈높이가 바뀌는 만큼을 따른다(kind posture: 몸 중심이 제 길의 몇 %를 왔는지). 카메라가 머리라 제 시계로는 시야가 Ctrl보다 늦었다. 움직이면 웅크린 걸음이 맡는다.
   - 착지 높이: 2m(`Body.landMidHeight`) 이상에서 가볍게 착지하면 서서 `Land_2h`(점프 착지보다 깊게), 전력질주로 `Land_ToRun2`. 조깅으로 앞으로 가다 세게 착지하면 `Land_ToSlam`(한 손을 짚을 만큼 깊게 받고 이어 감, 클립 걸음 3.3m/s). 높이는 착지 속도로 판단해 모든 PC에서 같다.
