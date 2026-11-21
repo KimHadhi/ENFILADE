@@ -11,15 +11,8 @@ public sealed class CrouchingState : MovementBaseState
     public override void ProcessInput(Vector2 input)
     {
         bool crouchPressed = ctx.Input.CrouchHeld;
-        bool diveJustPressed = ctx.Input.DivePressed;
 
-        // 1. 앉은 상태에서 Z를 누르면 즉시 포복 자세로 진입
-        if (diveJustPressed && ctx.IsGrounded && ctx.Actions.ProneReady)
-        {
-            ctx.ChangeState(PlayerMovement.MovementState.Proning);
-            return;
-        }
-
+        // 1. Z lay the body down from a crouch until 0.9.289; low ceilings still do (below).
         // 2. Lower the body before the entrance, only if the prone route is clear.
         bool moving = input.sqrMagnitude > 0.01f;
         if (ctx.IsGrounded && (moving || ctx.HasCeilingAbove(ctx.CrouchColliderHeight)))

@@ -20,7 +20,7 @@ public sealed partial class PlayerBody
 
     private readonly BodyGaze bodyGaze = new BodyGaze();
     private readonly HashSet<Channel> animationViewChannels = new HashSet<Channel>();
-    // The clips whose head carries the view over (BodyGaze): the jumps, landings and rolls.
+    // The clips whose head carries the view over (BodyGaze): the landings and rolls.
     private readonly HashSet<Channel> carriedViewChannels = new HashSet<Channel>();
 
     private void SetUpAnimationViewChannels()
@@ -51,7 +51,7 @@ public sealed partial class PlayerBody
             landRunLight, landRunMid, landRunHard, landRunStumble, landSlam
         })
             Add(carriedViewChannels, clip);
-        foreach (string set in new[] { rollWays, rollRunWays, diveRollWays, diveRollRunWays })
+        foreach (string set in new[] { rollWays, rollRunWays })
             foreach (var (clip, _) in WaysOf(set))
                 Add(carriedViewChannels, clip);
 

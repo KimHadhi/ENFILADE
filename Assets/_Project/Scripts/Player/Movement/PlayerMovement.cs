@@ -304,7 +304,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float ControllerRadius => Motor.controller != null ? Motor.controller.radius : 0.5f;
 
     public InputAction SprintAction => Input.sprintAction;
-    public InputAction DiveAction => Input.diveAction;
 
 
     private void Awake()
@@ -600,7 +599,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal void RaiseLadderSlideStopped() => LadderSlideStopped?.Invoke();
     public void StartSlide(float speed, bool applyBoost = true) => Actions.StartSlide(speed, applyBoost);
     public void StartLandingSlide(MovementState state, float speed, Vector3 fallback, bool applyBoost) => Actions.StartLandingSlide(state, speed, fallback, applyBoost);
-    public void LaunchDive(Vector2 input) => Actions.LaunchDive(input);
     public float GetSpeedScaledPop(float speed) => Actions.GetSpeedScaledPop(speed);
     public float GetSlideSlopeDot(Vector3 direction) => Motor.GetSlideSlopeDot(direction);
     public bool IsSlideStepContact(ControllerColliderHit hit) => Motor.IsSlideStepContact(hit);

@@ -897,7 +897,6 @@ settings.keys.sprint,전력질주 (걷기 모드: 조깅),Sprint (Jog in Walk Mo
 settings.keys.walk_mode,걷기 모드,Walk Mode,"키 설정 창 > 줄(Player/WalkMode. 기본 Caps Lock): 누를 때마다 걷기 모드를 켜고 끈다. 켜면 방향 키가 걷기, Shift가 조깅"
 settings.keys.jump,점프 · 넘기 · 오르기,Jump / vault / climb,키 설정 창 > 줄(Player/Jump)
 settings.keys.crouch,앉기 · 슬라이딩,Crouch / slide,키 설정 창 > 줄(Player/Crouch)
-settings.keys.dive,다이브 · 엎드리기,Dive / prone,키 설정 창 > 줄(Player/Dive)
 settings.keys.dodge,회피,Dodge,키 설정 창 > 줄(Player/Dodge. 기본 왼쪽 Alt와 오른쪽 Alt)
 settings.keys.lean_left,왼쪽 기울이기,Lean left,키 설정 창 > 줄(Player/LeanLeft)
 settings.keys.lean_right,오른쪽 기울이기,Lean right,키 설정 창 > 줄(Player/LeanRight)

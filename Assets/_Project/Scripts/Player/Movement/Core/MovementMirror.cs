@@ -76,10 +76,8 @@ public sealed class MovementMirror
                 pose.Detail = abilities.ActionPosture == MovementPosture.Crouching ? 1f : 0f;
                 break;
             case State.HeavyLanding: pose.Detail = landing.HeavyYaw; break;
-            // 0 a landing's roll, 1 on the spot, 2 a dive roll, 3 a dive roll that runs on, 4 a landing's roll that runs on.
-            case State.LandingRoll:
-                pose.Detail = landing.LandsInPlace ? 1f : landing.DiveRoll ? (landing.RollRuns ? 3f : 2f) : landing.RollRuns ? 4f : 0f;
-                break;
+            // 0 a landing's roll that stands up out of it, 1 on the spot, 2 one that runs on.
+            case State.LandingRoll: pose.Detail = landing.LandsInPlace ? 1f : landing.RollRuns ? 2f : 0f; break;
             case State.Vault:
             case State.Mantle:
                 pose.Detail = traversal.ObstacleProgress;
@@ -182,8 +180,7 @@ public sealed class MovementMirror
             case State.LandingRoll:
                 int rollDetail = Mathf.RoundToInt(pose.Detail);
                 abilities.Landing.LandsInPlace = rollDetail == 1;
-                abilities.Landing.DiveRoll = rollDetail == 2 || rollDetail == 3;
-                abilities.Landing.RollRuns = rollDetail == 3 || rollDetail == 4;
+                abilities.Landing.RollRuns = rollDetail == 2;
                 break;
             case State.Vault:
             case State.Mantle:

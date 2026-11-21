@@ -300,21 +300,16 @@ Move.slideKickJumpHeight,1.05,슬라이드 점프 높이(m)
 Move.slideJumpMinSpeed,3,슬라이드 점프의 최소 수평 속도(m/s)
 Move.slideJumpSpeedBonus,0.8,슬라이드 점프 때 더하는 수평 속도(m/s)
 # 이동: 다이브·머리부터 미끄러지기,,
-Move.groundDiveLaunchSpeed,9,지상 다이브 시작 순간의 수평 속도(m/s). 공중에서 점점 줄어든다
-Move.groundDiveVerticalPop,4.6,지상 다이브의 위로 솟는 속도(m/s)
 Move.divePoseDelay,0.03,다이브 후 몸 높이를 그대로 두는 시간(초). 먼저 솟는 궤적을 보여 준다
 Move.divePoseDuration,0.5,엎드린 높이까지 몸과 시점을 낮추는 시간(초)
 Move.divePopPerSpeed,0.12,달리던 속도 1m/s당 더하는 위쪽 도약(m/s)
 Move.maxAdditionalDivePop,2.5,속도로 더하는 위쪽 도약의 최대치(m/s)
 Move.diveGravityScale,0.9,다이브 중 중력 배율
-Move.diveMomentumRetention,0.88,다이브 시작 때 달리던 속도를 남기는 비율. 시작 속도보다 느리면 시작 속도
 Move.diveAirResistance,0.12,다이브 공중 감속(m/s²)
 Move.diveSpeedHoldDuration,0.25,다이브 도약 후 수평 속도를 그대로 유지하는 시간(초)
 Move.diveBurstDuration,0.1,공중 감속이 0에서 설정값까지 서서히 강해지는 시간(초)
 Move.diveCarrySpeed,2.2,다이브 감속이 이 속도에서 멈춘다(m/s)
 Move.diveBurstBraking,2.6,다이브 공중 감속 세기
-Move.diveLandingRecovery,0.55,착지 직후 다이브를 다시 못 쓰는 시간(초). 시점 조작은 된다
-Move.airDiveMaxFallSpeed,8.75,공중 다이브는 이보다 느리게 떨어질 때만 된다(m/s). Beatrun의 350단위/초(다이브에 필요한 웅크린 점프의 한계). 큰 낙하로 허우적거리는 중에는 언제나 안 된다
 Move.diveSlideKickBoost,3.8,다이브 착지 후 머리부터 미끄러질 때 더하는 속도(m/s)
 Move.maxLandingSlideSpeed,10,착지 슬라이드 속도 상한(m/s). 이미 더 빠르면 그 속도를 유지
 # 이동: 충돌,,
@@ -450,11 +445,6 @@ Ability.rollRunTravel,RollToRun_F,착지 구르기(Ability.rollRunSpeed 이상�
 Ability.rollDistance,3.4,"착지 구르기가 가는 거리(m), 구르고 일어설 때. 클립 Roll_F가 기준 몸(이치고)에서 간 만큼(클립 검사대)"
 Ability.rollRunDistance,5.1,"착지 구르기가 가는 거리(m), 구르고 달려 나갈 때. 클립 RollToRun_F가 기준 몸에서 간 만큼"
 Ability.rollRunSpeed,4.4,착지할 때 이보다 빠르면(m/s) 구르고 달려 나간다(Body.rollRunWays). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서. 0.9.288 전에는 몸이 Body.jumpFastSpeed로 따로 골랐다
-Ability.diveRollTravel,DiveRoll_F,"다이브 구르기(땅에서 Z, 바로 뒤 말고)의 빠르기를 읽는 GaitMoves.csv 줄(kind travel): 서서. 몸은 클립이 땅 위로 가는 만큼의 빠르기로 가고(앞 0.8초에 5.2m, 그 뒤 일어서며 0.5m), 몸이 다시 서면 끝난다. 방향마다 클립은 거의 같은 거리를 간다. 0.9.285"
-Ability.diveRollRunTravel,DiveRollToRun_F,"전력질주하며 다이브 구르기의 빠르기를 읽는 줄: 구르고 달려 나간다(1.3초에 9m, 고르게). 0.9.285"
-Ability.diveRollDistance,5.7,"다이브 구르기가 가는 거리(m), 서서. 클립 DiveRoll_F가 기준 몸(이치고)에서 간 만큼(클립 검사대)"
-Ability.diveRollRunDistance,9.1,전력질주하며 다이브 구르기가 가는 거리(m). 클립 DiveRollToRun_F가 기준 몸에서 간 만큼
-Ability.diveRollRunSpeed,4.4,이보다 빠르면(m/s) 다이브 구르기가 구르고 달려 나간다. 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서
 Ability.rollLandSpeed,2,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). 걷기 출발 속도(Move.runStartSpeed 3.6)보다 낮아 걷다가 떨어져도 구른다(2026-11-06 사용자 요청). Beatrun의 200단위/초(약 4.9)는 걷기 속도와 같아 걸으면 늘 제자리 착지였다
 Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
 Ability.rollInPlaceDamageShare,0.5,제자리 착지(속도 없이 Ctrl)가 그래도 받는 낙하 피해 비율. 큰 낙하(바람 소리·허우적거림)가 시작된 낙하는 구르기 자체가 안 된다(Beatrun과 같음)
@@ -541,8 +531,6 @@ Body.rollWays,Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@
 Body.rollRunWays,RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_B@180;RollToRun_L@-90;RollToRun_L45@-45,"착지 구르기를 가는 쪽마다, Ability.rollRunSpeed 이상이면 구르고 달려 나간다. BIPER Female Runner RollToRun_*(0.97초 약 5m), 0.9.262"
 Body.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"회피를 가는 쪽마다(서서·걷거나 조깅하며): 몸을 비키는 짧은 스텝. BIPER Female Runner QuickShift_*(0.8초 3.25m), 0.9.262. 회피 클립은 걸음새로 고른다(MovementGait.Position): 0.9.284 전에는 그 순간의 속도로 골랐는데, 몸은 스텝이 이미 약 18m/s로 던진 프레임에 회피를 봐서 앞뒤 말고는 늘 달리며 회피(ShiftToRun_*, Body.dodgeRunWays)가 골라졌고 그 달리기 걸음이 회피 뒤에 제 빠르기로 이어졌다(사용자 11-21: ""회피 끝나고 캐릭터가 굉장히 빠른 속도로 달리는 모션""). 달리며 회피는 0.9.284에 달리기와 함께 뺐다"
 Body.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며(걸음새가 조깅과 전력질주의 가운데를 넘었을 때) 회피: 비키며 전력질주를 이어 간다. 앞뒤는 없어서 Body.dodgeWays. BIPER Female Runner ShiftToSprint_*, 0.9.262"
-Body.diveRollWays,DiveRoll_F@0,"다이브 구르기(땅에서 Z, S 없이): 몸을 던져 앞으로 구르고 일어선다(약 5.7m). 앞으로만: 0.9.285의 옆·대각선·뒤 판(DiveRoll_L·R·L45·R45·L135·R135·B)은 앞 구르기를 그쪽으로 돌려 한 것이라(몸이 0.2초 안에 90°까지 돌아섰다 돌아옴) 사용자가 옆 다이빙과 함께 뺐다(11-21: ""옆 다이브롤 모션이 따로 없다면 옆 다이빙과 옆 다이브롤은 삭제""). A·D와 Z는 앞으로 구른다. BIPER Female Runner, 0.9.286"
-Body.diveRollRunWays,DiveRollToRun_F@0,"전력질주하며(Ability.diveRollRunSpeed 이상) 다이브 구르기: 앞으로 구르고 달려 나간다(약 9m). 옆·뒤 판은 Body.diveRollWays와 같은 까닭으로 뺐다. BIPER Female Runner, 0.9.286"
 Body.dodgeShiftEnd,0.2,"회피 클립이 옆으로 비키는 동작이 끝나는 때(초). 스텝(Ability.stepDuration 0.14초) 동안 클립을 여기까지 틀고, 나머지(그 자리에서 일어나기)는 스텝 뒤에 마저 튼다. BIPER QuickShift_*는 0.06~0.2초에 3m를 간다(ClipBench track). 0.9.271 전에는 스텝이 끝나면 클립이 앞부분만 보이고 엉덩이가 튀어 올랐다"
 Body.jumpWays,Jump_AirL@-90;Jump_AirR@90,"걸으며 옆으로(앞에서 45~135°) 점프하면 그쪽으로 뛰는 클립. BIPER Female Runner Jump_AirL·R, 0.9.262"
 Body.runJumpWays,RunJump_AirL@-90;RunJump_AirR@90,"달리며 옆으로 점프하면 그쪽으로 뛰는 클립. BIPER Female Runner RunJump_AirL·R, 0.9.262"
@@ -649,7 +637,7 @@ Body.eyeViewTime,0.15,눈 위치와 고정 조준·사다리 위치 사이의 �
 Body.aimSteadyTime,0.45,조준하는 동안 걸음에 따른 엉덩이 출렁임을 얼마나 느리게 따라갈지(초). 길수록 조준 화면과 총이 덜 흔들린다. 걸음 출렁임은 1초에 두 번쯤이라 0.3이면 4분의 3쯤 줄어든다. 다리는 발 고정이 맞춘다
 Body.aimSteadyReach,0.08,조준 중 다듬은 엉덩이가 클립의 엉덩이에서 벗어날 수 있는 최대치(발에서 엉덩이까지 높이에 대한 비율). 걸음 출렁임만 걸러지고 앉기·일어서기는 바로 따라간다
 Body.animationViewStrength,0.65,선택된 행동의 머리 움직임을 카메라에 반영하는 비율. 0이면 카메라 방향은 마우스만 사용
-Body.animationViewFollow,1,"착지·구르기·다이브 구르기에서 머리가 몸의 옆축으로 도는 만큼(앞구르기, 착지의 끄덕임)을 카메라가 이 비율로 따라 돈다: 1이면 머리 그대로라 구르면 시야도 한 바퀴 돈다. 좌우·기울기는 다른 행동처럼 Body.animationViewLimits 안. 점프는 0.9.288에 여기서 빼 다른 행동처럼 Body.animationViewStrength로 조금만 이끈다(사용자 11-21: ""점프는 너무 멀미 나는데""). 0.9.286 전에는 이 클립들 대부분이 카메라에 아무것도 주지 않아 시야가 앞에 고정됐다(""억지로 앞에 강제로 닭처럼 고정된 느낌""). 0이면 그때처럼"
+Body.animationViewFollow,1,"착지·구르기에서 머리가 몸의 옆축으로 도는 만큼(앞구르기, 착지의 끄덕임)을 카메라가 이 비율로 따라 돈다: 1이면 머리 그대로라 구르면 시야도 한 바퀴 돈다. 좌우·기울기는 다른 행동처럼 Body.animationViewLimits 안. 점프는 0.9.288에 여기서 빼 다른 행동처럼 Body.animationViewStrength로 조금만 이끈다(사용자 11-21: ""점프는 너무 멀미 나는데""). 0.9.286 전에는 이 클립들 대부분이 카메라에 아무것도 주지 않아 시야가 앞에 고정됐다(""억지로 앞에 강제로 닭처럼 고정된 느낌""). 0이면 그때처럼"
 Body.animationViewLimits,18;12;10,강도 적용 전 카메라에 더할 애니메이션의 위아래;좌우;기울기 제한 각도(도)
 Body.animationViewTime,0.1,카메라에 더할 애니메이션 회전만 부드럽게 잇는 응답 시간(초). 마우스 입력은 즉시 반영
 Body.eyeViewAhead,0.02,카메라를 눈보다 이만큼 앞에 둔다(m). 카메라는 항상 눈을 따라간다
@@ -662,7 +650,7 @@ Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 �
 Body.barTurnLimit,45,봉에 매달려 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 봉과 같은 45
 Body.barReleaseTime,0.3,봉을 놓은 뒤 흔들리며 기울었던 몸이 똑바로 서는 시간(초)
 Body.supineDiveTurnLimit,75,공중에서 누운 다이브로 바꾼 뒤 등이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 점프 턴과 같은 75. 일반 다이브로 되돌아가지 않는다
-Body.supineDivePitchLimits,85;20,"공중에서 누운 다이브 중 시선의 위;아래 제한 각도(도). 등을 대고 날며 아래를 보면 머리가 가슴으로 굽어 카메라가 몸 안으로 들어갔다(사용자 11-21: ""아래를 보면 내 몸을 뚫고 머리가 안으로 들어가""). 아래 20°는 몸에서 재지 않은 추정치. 0.9.288"
+Body.supineDivePitchLimits,85;20,"공중에서 등을 대고 날 때(누운 채 턱에서 떨어질 때) 시선의 위;아래 제한 각도(도). 등을 대고 날며 아래를 보면 머리가 가슴으로 굽어 카메라가 몸 안으로 들어갔다(사용자 11-21: ""아래를 보면 내 몸을 뚫고 머리가 안으로 들어가""). 아래 20°는 몸에서 재지 않은 추정치. 0.9.288"
 Body.mantleTurnLimit,45,올라서는 동안(맨틀·매달린 데서 올라가기) 올라가는 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 높은 올라서기와 같은 45. 더 돌면 카메라가 자기 목을 뚫어 본다
 Body.headReachMove,0.08,카메라가 눈에서 벗어난 곳(주먹·피하기·기울이기·벽·몸 흔들림 설정)으로 등과 목을 굽혀 머리를 데려가는 최대 거리(m). 넘는 만큼은 전처럼 카메라만 벗어난다
 Body.headReachLimits,6;12,머리를 카메라로 데려갈 때 뼈마다 굽는 최대 각도(도): 등뼈 하나;목

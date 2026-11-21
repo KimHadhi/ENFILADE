@@ -5,7 +5,7 @@ using UnityEngine.InputSystem.Controls;
 public sealed class MovementInput
 {
     private readonly PlayerMovement ctx;
-    internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction, diveAction;
+    internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction;
     // Interact is not sampled here: it is shared by everything the key does, and whose a press is belongs to its one
     // owner (InteractKey), which a ladder's top asks like the rest (MovementFixtures).
     private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, walkModeAction;
@@ -20,8 +20,6 @@ public sealed class MovementInput
     /// <summary>Crouch intent: the key held, or latched by a press when the crouch toggle setting is on.</summary>
     public bool CrouchHeld { get; private set; }
     public bool DodgePressed { get; private set; }
-    /// <summary>Dive / prone (Player/Dive) was pressed this frame.</summary>
-    public bool DivePressed { get; private set; }
     public bool ShovePressed { get; private set; }
     public bool LeanPressed { get; private set; }
     public int LeanSide { get; private set; }
@@ -56,7 +54,6 @@ public sealed class MovementInput
         sprintAction = actions.FindAction("Player/Sprint", false);
         jumpAction = actions.FindAction("Player/Jump", false);
         crouchAction = actions.FindAction("Player/Crouch", false);
-        diveAction = actions.FindAction("Player/Dive", false) ?? actions.FindAction("Player/Prone", false);
         dodgeAction = actions.FindAction("Player/Dodge", false);
         leanLeftAction = actions.FindAction("Player/LeanLeft", false);
         leanRightAction = actions.FindAction("Player/LeanRight", false);
@@ -84,7 +81,6 @@ public sealed class MovementInput
         // word typed crouched behind a zombie stood the player up in its sight). A key held down reads as let go then.
         CrouchHeld = settings.crouchToggle ? crouchLatched : available && Held(crouchAction);
         DodgePressed = move && InputFocus.Pressed(dodgeAction);
-        DivePressed = move && InputFocus.Pressed(diveAction);
         ShovePressed = available && InputFocus.Pressed(shoveAction);
         // A switch, not a move: it flips whenever the keys are the game's, getting up off the back included.
         if (available && InputFocus.Pressed(walkModeAction)) WalkMode = !WalkMode;
@@ -115,7 +111,7 @@ public sealed class MovementInput
         bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
             || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning
             || ctx.CurrentState == PlayerMovement.MovementState.StepDodge || onLadder;
-        if (!settings.crouchToggle || !crouchState || sprintPressed || InputFocus.Pressed(jumpAction) || InputFocus.Pressed(diveAction))
+        if (!settings.crouchToggle || !crouchState || sprintPressed || InputFocus.Pressed(jumpAction))
             crouchLatched = false;
         if (settings.crouchToggle && InputFocus.Pressed(crouchAction)) crouchLatched = !crouchLatched;
 

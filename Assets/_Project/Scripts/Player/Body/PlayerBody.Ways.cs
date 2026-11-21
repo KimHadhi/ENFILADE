@@ -15,8 +15,6 @@ public sealed partial class PlayerBody
 {
     [Header("One-off moves by the way they go (clip@degrees;…)")]
     [SerializeField] private string rollWays = "", rollRunWays = "", dodgeWays = "", dodgeSprintWays = "";
-    [SerializeField, Tooltip("A dive roll (Z) the way it goes: up standing out of it, and at a sprint running on.")]
-    private string diveRollWays = "", diveRollRunWays = "";
     [SerializeField] private string jumpWays = "", runJumpWays = "";
     [SerializeField, Tooltip("Landing on the move: lightly, lightly from higher (Body.landMidHeight), hard, hard at a sprint "
         + "(a stumble), and hard at a jog (down to a hand and on).")]
@@ -29,7 +27,7 @@ public sealed partial class PlayerBody
     // Every clip of every way set, made ready with the others (Build).
     private IEnumerable<string> WayClips()
     {
-        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays, jumpWays, runJumpWays, diveRollWays, diveRollRunWays })
+        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays, jumpWays, runJumpWays })
             foreach (var (clip, _) in WaysOf(set))
                 yield return clip;
         yield return landRunLight;
@@ -138,15 +136,6 @@ public sealed partial class PlayerBody
         return Find(landSlam) != null ? landSlam : null;
     }
 
-    // A dive roll's clip the way it goes (the move's direction, as a dodge's): standing, it rolls and gets up; begun at a
-    // sprint, it rolls and runs on (MovementLanding.RollRuns, the same on every PC).
-    private string DiveRollWay()
-    {
-        float heading = HeadingOf(player.Abilities.ActionDirection);
-        string standing = NearestWay(diveRollWays, heading, roll);
-        return player.Abilities.Landing.RollRuns ? NearestWay(diveRollRunWays, heading, standing) : standing;
-    }
-
     // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge that shifts into
     // the run or the sprint. Their last steps are a run's, so they play out only while the body runs on; a body that has
     // stopped never shows them (the user, 2026-11-21: a slide's end ran in place, "갑자기 와다닥 달리는 모션하다 서기로").
@@ -156,7 +145,7 @@ public sealed partial class PlayerBody
         if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunMid) || channel == Find(landRunHard)
             || channel == Find(landRunStumble) || channel == Find(landSlam))
             return true;
-        foreach (string set in new[] { rollRunWays, dodgeSprintWays, diveRollRunWays })
+        foreach (string set in new[] { rollRunWays, dodgeSprintWays })
             foreach (var (clip, _) in WaysOf(set))
                 if (channel == Find(clip)) return true;
         return false;

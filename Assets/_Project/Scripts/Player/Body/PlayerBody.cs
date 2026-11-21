@@ -773,7 +773,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Supine: Want(supine); FaceLying(dt); break;
             case MovementState.StepDodge: DodgePose(); break;
             case MovementState.LandingRoll:
-                // A moving roll, a landing's or a dive's, plays on its own clock and the move goes at its clip's own travel
+                // A moving roll plays on its own clock and the move goes at its clip's own travel
                 // (MovementLanding.RollSpeed); a landing on the spot plays at its own pace and outlasts the move.
                 if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
                 else Drive(rollClip, stateTime / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));

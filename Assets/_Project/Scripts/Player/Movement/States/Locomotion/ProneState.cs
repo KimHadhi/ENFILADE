@@ -14,7 +14,7 @@ public sealed class ProneState : MovementBaseState
     private bool Settled => Time.time - enteredAt >= ctx.AbilitySettings.proneMinHold;
 
     public override void Enter() { enteredAt = Time.time; riseQueued = false; }
-    public override void Exit() { riseQueued = false; ctx.Actions.LeftProneAt = Time.time; }
+    public override void Exit() { riseQueued = false; }
 
     private int queuedFrame = -1;
     private void QueueRise(bool toCrouch)
@@ -73,10 +73,6 @@ public sealed class ProneState : MovementBaseState
         bool crouchPressed = ctx.Input.CrouchHeld;
         bool crouchJustPressed = ctx.Input.CrouchPressed;
 
-        bool diveJustPressed = ctx.InputAvailable && (
-            (ctx.DiveAction != null && ctx.DiveAction.WasPressedThisFrame())
-        );
-
         bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
 
         bool sprintJustPressed = ctx.InputAvailable
@@ -102,16 +98,15 @@ public sealed class ProneState : MovementBaseState
             return;
         }
 
-        // 2. 앉기 또는 다이빙 키를 다시 눌러 일어서기
-        if ((crouchJustPressed || diveJustPressed) && !Settled)
+        // 2. 앉기 키를 다시 눌러 일어서기 (Z did too until 0.9.289)
+        if (crouchJustPressed && !Settled)
         {
-            QueueRise(crouchJustPressed);
+            QueueRise(true);
             return;
         }
-        if ((crouchJustPressed || diveJustPressed)
-            && !ctx.HasCeilingAbove(ctx.CrouchColliderHeight))
+        if (crouchJustPressed && !ctx.HasCeilingAbove(ctx.CrouchColliderHeight))
         {
-            ctx.ChangeState(crouchJustPressed ? PlayerMovement.MovementState.Crouching : RiseTo());
+            ctx.ChangeState(PlayerMovement.MovementState.Crouching);
             return;
         }
 

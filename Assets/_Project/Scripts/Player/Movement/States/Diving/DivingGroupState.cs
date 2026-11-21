@@ -11,7 +11,6 @@ public sealed class DivingGroupState : MovementBaseState
 
     public override void OnLanding()
     {
-        ctx.Actions.Dive.Land();
         float speed = new Vector2(ctx.HorizontalVelocity.x, ctx.HorizontalVelocity.z).magnitude;
         bool supine = ctx.CurrentState == PlayerMovement.MovementState.SupineDiving;
         if (speed > ctx.SlideEndSpeed)

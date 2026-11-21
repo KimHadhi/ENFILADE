@@ -53,7 +53,6 @@ public sealed class MovementActions
         jumpBufferTimer -= dt;
         slideCooldownTimer -= dt;
         riseTimer -= dt;
-        Dive.Tick(dt);
     }
 
     internal void Reset()
@@ -95,16 +94,6 @@ public sealed class MovementActions
         float baseTargetSpeed = currentSpeed + boost;
         CurrentSlideSpeed = (currentSpeed > ctx.maxLandingSlideSpeed) ? currentSpeed : Mathf.Min(baseTargetSpeed, ctx.maxLandingSlideSpeed);
         slideCooldownTimer = ctx.slideCooldown;
-    }
-
-    /// <summary>When the player last got up off the ground (ProneState.Exit).</summary>
-    internal float LeftProneAt = float.NegativeInfinity;
-    /// <summary>Backlog 134: going down again right after getting up waits proneReentryDelay, so spamming can't flap the body.</summary>
-    internal bool ProneReady => Time.time - LeftProneAt >= ctx.AbilitySettings.proneReentryDelay;
-
-    public void LaunchDive(Vector2 input)
-    {
-        Dive.TryLaunch(input, true);
     }
 
     internal void ProcessSprintRampUp(float dt, Vector2 input)

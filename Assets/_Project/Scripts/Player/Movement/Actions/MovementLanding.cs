@@ -67,11 +67,9 @@ public sealed class MovementLanding
     public bool SprintBlocked => noSprintLeft > 0f;
     /// <summary>This landing roll stays where it came down.</summary>
     public bool LandsInPlace { get; internal set; }
-    /// <summary>The roll under way is a dive roll (Z, TryDiveRoll), not a landing's.</summary>
-    public bool DiveRoll { get; internal set; }
-    /// <summary>The roll under way began at a sprint and runs on out of itself (RollToRun, DiveRollToRun).</summary>
+    /// <summary>The landing roll under way began at a sprint and runs on out of itself (RollToRun).</summary>
     public bool RollRuns { get; internal set; }
-    // The moving roll's travel as its clip goes, a landing's or a dive's: the share of its way gone at evenly spaced moments
+    // The moving roll's travel as its clip goes: the share of its way gone at evenly spaced moments
     // of the clip, the clip's length and the moment its body is back up (s), and how far it goes (m).
     private float[] rollGone;
     private float rollLength, rollUp, rollDistance;
@@ -265,7 +263,7 @@ public sealed class MovementLanding
         // rolls on the spot, so the view and the body play the same move.
         if (!inPlace && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight))
             inPlace = true;
-        // A moving roll goes at its clip's own travel and pace, as a dive roll does (0.9.288). Until then it went at the
+        // A moving roll goes at its clip's own travel and pace (0.9.288; the dive roll had it first). Until then it went at the
         // landing's speed (Ability.rollSpeed 4 m/s at least) for Ability.rollDuration (1 s) with its clip squeezed into that:
         // Roll_F (1.47 s, 3.4 m gone in its first half second) played half as fast again as it was made (the user,
         // 2026-11-21: "착지할 때 dive roll 모션이 존나 빨라").
@@ -274,7 +272,6 @@ public sealed class MovementLanding
         if (!inPlace && !ReadTravel(runs ? settings.rollRunTravel : settings.rollTravel)) inPlace = true;
         else if (!inPlace) rollDistance = runs ? settings.rollRunDistance : settings.rollDistance;
         LandsInPlace = inPlace;
-        DiveRoll = false;
         RollRuns = runs && !inPlace;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
@@ -346,35 +343,8 @@ public sealed class MovementLanding
     {
         ClearFall();
         rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
-        IsKnockedBack = hurtLanding = DiveRoll = RollRuns = false;
+        IsKnockedBack = hurtLanding = RollRuns = false;
         LastTier = Tier.Light;
-    }
-
-    /// <summary>
-    /// A dive roll (Z on the ground going ahead; MovementDive): the body throws itself down the way it goes,
-    /// rolls over and is up again, or begun at a sprint runs on out of it (BIPER Female Runner's DiveRoll and
-    /// DiveRollToRun; 0.9.285, the user's pick for Z over the dive to the ground: "Z 다이브를 구르기로 교체"). The roll state
-    /// carries it as it carries a landing's roll, at the pace of its clip's own travel (Tables/Player/GaitMoves.csv kind
-    /// travel; Ability.diveRoll*), so the rolling body and the ground it covers stay together; it is over once the body is
-    /// back up, and the clip plays its last steps out. False under a roof too low to roll, as a landing's roll, or with no
-    /// travel baked.
-    /// </summary>
-    internal bool TryDiveRoll(Vector3 direction)
-    {
-        if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
-        var settings = ctx.AbilitySettings;
-        bool runs = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude >= settings.diveRollRunSpeed;
-        if (!ReadTravel(runs ? settings.diveRollRunTravel : settings.diveRollTravel)) return false;
-        rollDistance = runs ? settings.diveRollRunDistance : settings.diveRollDistance;
-        DiveRoll = true;
-        RollRuns = runs;
-        LandsInPlace = false;
-        ctx.Abilities.ActionDirection = direction;
-        ctx.ChangeState(State.LandingRoll);
-        ctx.Abilities.InputConsumed = true;
-        ctx.Actions.ClearJumpBuffer();
-        // The roll's head turns the view over (BodyGaze): no camera kick.
-        return true;
     }
 
     /// <summary>How fast the moving roll goes at this moment of it (m/s): its clip's travel from now to a frame on.</summary>

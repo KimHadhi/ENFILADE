@@ -1,13 +1,16 @@
 using UnityEngine;
-using State = PlayerMovement.MovementState;
 
-/// <summary>Short evasive launch, committed flight, and recovery shared by both dive poses.</summary>
+/// <summary>
+/// A dive's committed flight, shared by both dive poses: a slide's jump into one (SlidingState.TryJump), or a body lying on
+/// the ground that goes over an edge (ProneState). The flight keeps its takeoff speed a moment, then eases toward its carry
+/// speed; the body folds down over it (PoseProgress). Until 0.9.289 the Z key launched one too, from the ground or in the
+/// air, and on the ground it became a dive roll (0.9.285-0.9.288); the user had the key and the dive go (2026-11-21:
+/// "걍 z랑 다이브를 뺄까", then "Only remove Z and dive").
+/// </summary>
 public sealed class MovementDive
 {
     private readonly PlayerMovement ctx;
-    private bool usedInAir;
     private float flightTime;
-    public float RecoveryRemaining { get; private set; }
     internal float PoseProgress
     {
         get
@@ -19,56 +22,11 @@ public sealed class MovementDive
     }
     public float BurstWeight => ctx.IsDiving ? Mathf.Clamp01(1f - flightTime / Mathf.Max(0.01f, ctx.diveBurstDuration)) : 0f;
     internal MovementDive(PlayerMovement context) { ctx = context; }
-    // How far off straight ahead (or straight back) the keys may point for Z to go (degrees): W or S alone, not with A or D.
-    private const float ZWithin = 30f;
-
-    internal void Tick(float dt)
-    {
-        RecoveryRemaining = Mathf.Max(0f, RecoveryRemaining - dt);
-        if (ctx.IsGrounded && !ctx.IsDiving) usedInAir = false;
-    }
-
-    internal bool TryLaunch(Vector2 input, bool fromGround)
-    {
-        if (ctx.IsDiving || RecoveryRemaining > 0f || (!fromGround && usedInAir)) return false;
-        // As in Beatrun, where a dive needs the crouch jump and that needs a fall slower than 350 units/s: no diving
-        // out of a fast fall, nor out of a big fall's flailing.
-        if (!fromGround && (ctx.IsBigFall || -ctx.VerticalVelocity > ctx.airDiveMaxFallSpeed)) return false;
-        // Only ahead (W, within ZWithin of it), or on the ground straight back (S); any other way Z does nothing (the user,
-        // 2026-11-21: "옆 누르면서 z 누를 때 앞 다이브롤이 되니까 이상해 ... 이동 중일 때 z 누르면 아무것도 안 되게, 점프 z는
-        // 다이브로 근데 앞으로만"). 0.9.286 sent A or D with Z ahead; the side dive and the side dive rolls went in 0.9.286
-        // (BIPER's side dive rolls are its forward roll turned that way). No keys in the air dives ahead.
-        float off = input.sqrMagnitude > .01f ? Mathf.Abs(Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg) : 0f;
-        bool backward = fromGround && off >= 180f - ZWithin;
-        if (off > ZWithin && !backward) return false;
-        Vector3 direction = Vector3.ProjectOnPlane(backward ? -ctx.transform.forward : ctx.transform.forward, Vector3.up).normalized;
-        // On the ground ahead it is a dive roll (MovementLanding.TryDiveRoll, 0.9.285): the user's pick for Z, "Z 다이브를
-        // 구르기로 교체". Back on the ground stays the dive onto the back; in the air, the dive ahead.
-        if (fromGround && !backward && ctx.Abilities.Landing.TryDiveRoll(direction)) return true;
-        // This fixed axis classifies front/back relative to the flight direction.
-        // Negating it for an air back-dive made the next input tick flip upright.
-        ctx.DiveBodyForward = direction;
-        float speed = Mathf.Max(ctx.HorizontalVelocity.magnitude * ctx.diveMomentumRetention, ctx.groundDiveLaunchSpeed);
-        // Chaining from an impulse must not turn dive into a faster travel mode.
-        speed = Mathf.Min(speed, ctx.groundDiveLaunchSpeed * 1.1f);
-        ctx.HorizontalVelocity = direction * speed;
-        ctx.VerticalVelocity = fromGround ? ctx.groundDiveVerticalPop
-            : Mathf.Max(ctx.VerticalVelocity, ctx.groundDiveVerticalPop * 0.35f);
-        ctx.Actions.LeaveGround(); ctx.Actions.ClearJumpBuffer();
-        ctx.ChangeState(backward ? State.SupineDiving : State.Diving);
-        return true;
-    }
 
     internal void BeginFlight()
     {
-        flightTime = 0f; usedInAir = true; 
+        flightTime = 0f;
         ctx.Posture.BeginDive();
-    }
-
-    internal void Land()
-    {
-        RecoveryRemaining = Mathf.Max(RecoveryRemaining, ctx.diveLandingRecovery);
-        usedInAir = false;
     }
 
     internal void UpdateFlight(float dt)
@@ -98,5 +56,5 @@ public sealed class MovementDive
         ctx.HorizontalVelocity = direction * speed;
     }
 
-    internal void Reset() { usedInAir = false; flightTime = RecoveryRemaining = 0f; }
+    internal void Reset() { flightTime = 0f; }
 }

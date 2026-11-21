@@ -51,7 +51,6 @@ public static partial class KeyBindings
         new Entry("move", "walk_mode", "Player/WalkMode"),
         new Entry("move", "jump", "Player/Jump"),
         new Entry("move", "crouch", "Player/Crouch"),
-        new Entry("move", "dive", "Player/Dive"),
         new Entry("move", "dodge", "Player/Dodge"),
         new Entry("move", "lean_left", "Player/LeanLeft"),
         new Entry("move", "lean_right", "Player/LeanRight"),
@@ -148,7 +147,7 @@ public static partial class KeyBindings
         ("F", "Player/Interact"), ("V", "Player/Shove"), ("C", "Player/Customize"), ("L", "Player/Flashlight"),
         ("G", "Player/Grenade"), ("J", "Player/DropMoney"), ("T", "Player/Throw"), ("X", "Player/PerkCards"),
         ("B", "Player/FireMode"), ("Y", "Player/Inspect"), ("R", "Combat/Reload"), ("Q", "Player/LeanLeft"),
-        ("E", "Player/LeanRight"), ("Z", "Player/Dive"), ("좌클릭", "Combat/Fire"), ("LMB", "Combat/Fire"),
+        ("E", "Player/LeanRight"), ("좌클릭", "Combat/Fire"), ("LMB", "Combat/Fire"),
         ("우클릭", "Combat/Guard"), ("RMB", "Combat/Guard"), ("Space", "Player/Jump"), ("Shift", "Player/Sprint"),
         ("Ctrl", "Player/Crouch"), ("휠", "Player/ClassAbility"), ("Tab", "UI/OpenObjectiveBoard"),
     };

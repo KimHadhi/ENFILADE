@@ -272,7 +272,7 @@ public sealed partial class PlayerBody
     }
 
     // As Beatrun's safety roll picks them.
-    private string RollFor() => player.Abilities.Landing.DiveRoll ? DiveRollWay() : !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
+    private string RollFor() => !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
         : player.HasCeilingAbove(player.StandingColliderHeight) ? landCrouch : rollLand;
 
     private string DownClip(MovementLanding.Pose pose) =>
