@@ -1,7 +1,5 @@
 ﻿key,value,note
-Rig.sprintLookWeight,0.3,달리는 동안 상체가 시선을 따라가는 정도(0~1). FPSAF 데모가 질주 때 LookLayerWeight에 주는 값
 Rig.moveSway,0,"걷고 달릴 때 몸의 움직임을 FPSAF Sway에 넣는 비율: 총이 걸음에 따라 흔들리는 양. 0.9.296에 0(사용자 11-21: ""그 총 procedural animation 좀 지워 주세요. 걸을 때나 달릴 때나 튀는 거요""). 시선을 돌릴 때의 흔들림은 그대로"
-Rig.sprintFrom,0.5,걷기와 질주 사이 이만큼 넘어가면 질주로 본다(PlayerMovement의 SprintProgress)
 Rig.reloadBlendOut,0.15,끊긴 장전 동작이 풀리는 시간(초)
 Rig.reloadContacts,true,장전 동안 총과 두 손을 KINEMATION 원본 클립이 둔 자리에 둔다(GunArms·FPSBody.Contacts). 원본을 숨은 팔에 같이 틀어 총이 움직이는 만큼과 손바닥이 총의 어디에 있는지를 읽고 손은 IK로 맞춘다. false면 예전처럼 다시 만든 클립만 따르고 총은 오른손에 붙어 다닌다
 Rig.contactBlend,0.15,"장전·꺼내기·넣기·살펴보기가 시작될 때 총과 손이 원본 클립의 자리로 넘어가는 시간과, 총을 들 때 그냥 쥐기의 손 자리가 들어오는 시간(초). 끝날 때는 클립의 블렌드 아웃(Rig.reloadSettle 이상)으로 돌아온다"
@@ -11,11 +9,9 @@ Rig.stillHoldFixes,false,그냥 쥐기(총을 가만히 쥔 동안)에만 켜지
 Rig.fingerOpenMost,30,Rig.stillHoldFixes가 true일 때: 총을 가만히 쥐고 있을 때 원본보다 작은 손의 손가락이 총 속으로 파고들면 그 마디를 이만큼까지 펴서 총 표면에 얹는다(도). 0이면 원본 각도 그대로
 Rig.fingerClearance,0.002,Rig.stillHoldFixes가 true일 때: 손가락 피부가 총 표면에서 떨어져 쉬는 거리(m)
 Rig.muzzleDepth,0.015,KINEMATION 총에는 총구 뼈가 없어서 총 모양의 앞면에서 총구를 잰다. 그 앞면으로 보는 두께(m)
-Rig.weightTime,0.15,앉기·질주 가중치가 몸을 따라가는 빠르기(초)
+Rig.weightTime,0.15,앉기 가중치가 몸을 따라가는 빠르기(초)
 Rig.holdBlendTime,0.2,"총을 꺼낼 때 FPSAF가 상체를 넘겨받는 시간과, 넣을 때 몸의 클립으로 돌려주는 시간(초)"
 Rig.twistLimit,60,다리가 시선을 따라 돌지 못할 때(넘기·슬라이딩) 척추가 시선 쪽으로 비틀리는 최대 각도(도). FPSAF Look은 90에서 끝까지 비튼다. 나머지는 머리와 카메라가 맡는다
-Rig.cheekWeld,0,개머리판 달린 총을 조준할 때 눈이 총으로 내려오는 정도(0~1). 0이면 끔(총이 눈으로 올라온다). 2026-11-08 두 방식 모두 어색해서 꺼 둠
-Rig.cheekWeldLimits,30;15;10,뺨 붙이기로 목·윗가슴·가슴이 각각 굽을 수 있는 최대 각도(도). 머리는 목과 같이 개머리판 쪽으로 숙는다
 Rig.reloadSettle,0.35,장전 동작이 끝나 기본 자세로 돌아오는 시간(초). KINEMATION의 0.15는 팔이 기본 자세로 확 바뀌어 보였다
 Rig.aimedNoMotions,0,조준이 이만큼(0~1)을 넘었거나 조준을 시작하는 중이면 FPSAF의 작은 동작(멈춤·앉기·착지·점프·기울이기)이 재생되지 않고 재생 중이던 것은 0.1초에 풀린다. 0.5였을 때는 조준 앞부분에 시작된 멈춤 동작이 줌 내내 조준경을 흔들었다(2026-11-11 "줌 할 때 가끔씩 처음에 엄청 흔들리면서")
 Rig.reachMost,0.9,총을 쥔 팔은 이보다 곧게 펴지지 않는다(어깨 관절에서 손목까지 ÷ 그 팔의 길이 · 1이면 끝까지 폄). 재는 것은 그 몸 자신의 어깨와 팔뿐이다(GunHold · HoldBody). 넘으면 개머리판 있는 총은 개머리판이 어깨에 눌려 들어가고(stockPress) 받치는 손이 물러나며 권총은 몸 쪽으로 온다. 2026-11-12 사용자: 총을 너무 앞쪽에 잡아 팔이 끝까지 펴져 들쑥날쑥

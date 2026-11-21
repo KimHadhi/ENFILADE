@@ -20,8 +20,7 @@ using UnityEngine;
 /// its muzzle instead, as it was, the butt swung out of the shoulder with every near target, and a clip that idles with
 /// the muzzle up (the Herrington, 14 degrees) was levelled at the height of its muzzle, across the middle of the view (the
 /// user, 2026-11-14: "나 샷건을 왜 이따구로 듦?").
-/// Aiming, the butt stays where this puts it and the head comes down onto the stock (CheekWeldLayer reads the butt's place
-/// at the hip), so the pocket being this body's own is what makes that right on every body.
+/// The pocket being this body's own is what makes the hold right on every body.
 /// </summary>
 internal sealed class ShoulderedHold : GunHold
 {

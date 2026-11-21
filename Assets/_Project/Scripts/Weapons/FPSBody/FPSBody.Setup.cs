@@ -228,8 +228,6 @@ public sealed partial class FPSBody
                 profile.settings.Add(LookFor(look));
             else if (layer is AdsLayerSettings ads && weapon != null)
             {
-                // The cheek weld goes just before Ads: the head comes to a shouldered gun before the sight is lined up.
-                if (cheekWeld > 0f) profile.settings.Add(CheekWeldFor(ads));
                 var mine = Instantiate(ads);
                 Keep(mine);
                 mine.aimingSpeed = 1f / weapon.AdsTransitionTime;
@@ -307,18 +305,6 @@ public sealed partial class FPSBody
                 elements[i] = standIn;
             }
         }
-    }
-
-    // Our cheek weld layer (CheekWeldLayerSettings), on the same rig and blended out by the same full-body moves as Ads.
-    private CheekWeldLayerSettings CheekWeldFor(AdsLayerSettings ads)
-    {
-        var weld = ScriptableObject.CreateInstance<CheekWeldLayerSettings>();
-        Keep(weld);
-        weld.rigAsset = ads.rigAsset;
-        weld.curveBlending = new List<CurveBlend>(ads.curveBlending);
-        weld.share = cheekWeld;
-        weld.limits = cheekWeldLimits;
-        return weld;
     }
 
     // Our layer that turns the gun onto the crosshair's point (GunConvergeLayerSettings), on the same rig as Ads. Its weight

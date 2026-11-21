@@ -7,9 +7,9 @@ public sealed partial class FPSGun
     // The hold as FPSAF last held this gun clean (at the hip and fully aimed), from the eyes; until it has held it, the
     // bake's place from the eyes (GunBakes gunFromEyes), so a first draw has a hold to come up into. Kept per gun: the
     // body's last gun was another one's place mid-draw.
-    private KTransform holdAtHip, holdAimed;
+    private KTransform holdAtHip;
 
-    private bool hasHold, hasHoldAimed;
+    private bool hasHold;
 
     /// <summary>FPSAF has held this gun clean at the hip at least once on this body.</summary>
     internal bool HasLearnedHold { get; private set; }
@@ -22,15 +22,10 @@ public sealed partial class FPSGun
         hasHold = true;
     }
 
-    /// <summary>How FPSAF holds this gun now from the eyes, at the hip or fully aimed (FPSBody.KeepGunInView).</summary>
-    internal void LearnHold(KTransform fromEyes, bool aimed)
+    /// <summary>How FPSAF holds this gun now from the eyes at the hip (FPSBody.KeepGunInView). Aimed it is never FPSAF's
+    /// since 0.9.318: the gun's aim clips hold it (FPSBody.AimOnClip).</summary>
+    internal void LearnHold(KTransform fromEyes)
     {
-        if (aimed)
-        {
-            holdAimed = fromEyes;
-            hasHoldAimed = true;
-            return;
-        }
         holdAtHip = fromEyes;
         hasHold = HasLearnedHold = true;
     }
@@ -40,10 +35,9 @@ public sealed partial class FPSGun
     {
         kept = holdAtHip;
         if (!hasHold) return false;
-        if (hasHoldAimed) kept = KTransform.Lerp(holdAtHip, holdAimed, aim);
-        // Not yet held fully aimed on this body (a bolt worked after a shot fired on the way up, the first time): the sight on
-        // the eyes, where FPSAF's Ads brings it, so the gun doesn't drop back to the hip meanwhile.
-        else if (aim > 0f && AimedFromSight(out KTransform sighted)) kept = KTransform.Lerp(holdAtHip, sighted, aim);
+        // Aimed off the gun's aim clips (a move whose own clip has the arms): the sight on the eyes, where FPSAF's Ads
+        // would bring it.
+        if (aim > 0f && AimedFromSight(out KTransform sighted)) kept = KTransform.Lerp(holdAtHip, sighted, aim);
         return true;
     }
 

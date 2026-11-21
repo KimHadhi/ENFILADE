@@ -15,9 +15,9 @@ using UnityEngine.Playables;
 ///   stride is stretched for the rest (gaitStretch; FootPlanting.Stride), so the feet cover the ground the body covers and
 ///   stay where they come down. Until 0.8.260 the cycles played at their own pace whatever the speed and the feet skated
 ///   30-60% of it, with short quick steps (the user, 2026-11-12: "우스꽝스럽고 초보 같고 급하던데").
-/// - Running fast the hips turn toward the way of travel (hipTurn, from hipTurnSpeeds), as a person running sideways or
-///   back at a slant does, and the spine turns the chest back to the view (SpineLook, or FPSAF's Look with a gun), so the
-///   legs run a forward or back cycle instead of side-stepping at 5 m/s.
+/// - Sprinting with a gun out the gun's run has the whole body (GunRuns); it goes ahead only, so the gun sprints ahead or
+///   at a slant ahead (SprintsToward: W, W+A, W+D), the hips turned to the way it runs and the spine turning the chest
+///   back to the view (SpineLook).
 /// - With a gun out the idle is the gun's stance; aiming, the gun's aim cycles take over as far as they reach the speed.
 /// - Crouched, the crouch cycles, facing the view.
 /// Every PC works this out from the same speed and step (PlayerBody.Pace), so teammates see the same legs.
@@ -38,10 +38,6 @@ public sealed partial class PlayerBody
     private Vector2 gaitStretch = new Vector2(.8f, 1.3f);
     [SerializeField, Range(0f, .3f), Tooltip("The most the hips come down for a stretched stride's leg to reach, as a share of the leg.")]
     private float gaitStretchDrop = .08f;
-    [SerializeField, Tooltip("Running, the most the hips turn toward the way of travel (degrees): x heading ahead or to a side, y heading back.")]
-    private Vector2 hipTurn = new Vector2(70f, 45f);
-    [SerializeField, Tooltip("The hips start turning toward the way of travel at x and turn all the way from y (m/s).")]
-    private Vector2 hipTurnSpeeds = new Vector2(3f, 5f);
     [SerializeField, Range(0f, 1f), Tooltip("Sprinting with a gun out from this far into the sprint (PlayerMovement.SprintProgress), the "
         + "gun's run has the whole body (GunRuns).")]
     private float gunRunFrom = .5f;
@@ -108,7 +104,7 @@ public sealed partial class PlayerBody
     private readonly TurnPlanner turnPlanner = new TurnPlanner();
     private Vector3 stride;
     private int turning;
-    private bool legsPlanted, runsBack;
+    private bool legsPlanted;
     // This body's leg, hip joint to ankle (m), for the person's cadence (gaitCadence).
     private float legLength = .9f;
     // This frame's blend of cycles: their weight, weight by stride time (s), and weight by the velocity their feet carry the
@@ -296,7 +292,10 @@ public sealed partial class PlayerBody
         else
         {
             stance = plainSet;
-            turn = HipTurn(heading, speed);
+            // The gun's run goes ahead only: at a slant ahead the hips turn to the way it runs and the run plays, the spine
+            // turning the chest back to the view (SpineLook). The user, 2026-11-22: "WA, WD까진 허용할 수 있도록 한다.
+            // 자연스럽게".
+            if (gunRuns) turn = Mathf.Clamp(heading, -GunRunSlant, GunRunSlant);
             legs = Mathf.DeltaAngle(0f, heading - turn);
             if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
         }
@@ -355,19 +354,20 @@ public sealed partial class PlayerBody
     /// False out of a walk or run on the ground (Locomotion not played this frame).</summary>
     public bool GunRuns => gunRuns && Time.frameCount - gunRunsFrame <= 2;
 
-    /// <summary>How far the sights are up on the gun's own aim clips (0-1): standing or crouched with a gun out, the aim
-    /// clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog, BodyMoves .aim sets) have the upper body and arms, the
+    /// <summary>How far the sights are up on the gun's own aim clips (0-1): standing, crouched or in a step dodge (whose
+    /// clip has only the legs) with a gun out, the aim clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog, BodyMoves .aim sets) have the upper body and arms, the
     /// hands give it to them (PlayerBodyHands) and the gun goes where the clip's right hand has it, its sight on the view's
     /// line (FPSBody.AimOnClip). Before 0.9.318 FPSAF's Ads brought the sight onto the eyes, and the gun went through the
     /// head between the brows as others saw it (the user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가
     /// 보기에 내 미간 사이를 뚫어서 총을 위치하게 해서 조준하잖아, 카메라 때문이지만").</summary>
-    public float AimsOnClip => !dead && (state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching) && !GunRuns
-        && GunInHand() != null ? AimBlend() : 0f;
+    public float AimsOnClip => !dead && (state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching
+        || state == PlayerMovement.MovementState.StepDodge) && !GunRuns && GunInHand() != null ? AimBlend() : 0f;
 
     /// <summary>Whether the body has a sprint toward these keys (x right, y ahead, against the view): with a gun out only
-    /// where the gun's own run carries all of it (Combat Girls' runs go ahead only, so W alone); with none every way (the
-    /// 8-way sprints). The user, 2026-11-22: "총 들었을 때 모션 없으면 앞만 달릴 수 있게 해" (0.9.316 turned the body
-    /// to run the gun's run backwards: "뒤로 달리니까 개 어색하니까").</summary>
+    /// ahead and at a slant ahead (W, W+A, W+D: within GunRunSlant of a way the gun's own run goes, which the hips turn to,
+    /// Locomotion); with none every way (the 8-way sprints). The user, 2026-11-22: "총 들었을 때 모션 없으면 앞만 달릴 수
+    /// 있게 해" (0.9.316 turned the body to run the gun's run backwards: "뒤로 달리니까 개 어색하니까"), then "WA, WD까진
+    /// 허용할 수 있도록 한다. 자연스럽게".</summary>
     public bool SprintsToward(Vector2 keys)
     {
         var gun = GunInHand();
@@ -375,10 +375,13 @@ public sealed partial class PlayerBody
         float heading = Mathf.Atan2(keys.x, keys.y) * Mathf.Rad2Deg;
         foreach (var way in gun.Hip.Ways)
             if (way.Cycles.Count > 0 && way.Cycles[way.Cycles.Count - 1].Rank >= 2f
-                && Mathf.Abs(Mathf.DeltaAngle(way.Angle, heading)) <= LoneWayReach)
+                && Mathf.Abs(Mathf.DeltaAngle(way.Angle, heading)) <= GunRunSlant + 1f)
                 return true;
         return false;
     }
+
+    // How far round from the gun's run the gun sprints, the hips turned to it (degrees): a diagonal key's 45.
+    private const float GunRunSlant = 45f;
 
     // The player is sprinting now: gunRunFrom of the way into the sprint and not letting go. The sprint's progress only
     // falls once Shift is let go, so the gun comes back at once; a friend's copy gets it in network steps, so an unchanged
@@ -417,20 +420,6 @@ public sealed partial class PlayerBody
         if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
         float top = Mathf.Lerp(a.Cycles[a.Cycles.Count - 1].Rank, b.Cycles[b.Cycles.Count - 1].Rank, toward);
         return Reach(set, heading) * (1f - Mathf.InverseLerp(top, top + .5f, gaitPlace));
-    }
-
-    // Running fast the hips turn toward the way of travel: ahead up to past the side, back beyond, with a margin either way
-    // so a heading near the line doesn't flip from one to the other. Slow, the side and back cycles step facing the view.
-    private const float BackFrom = 112f, BackMargin = 10f;
-    private float HipTurn(float heading, float speed)
-    {
-        float share = Mathf.InverseLerp(hipTurnSpeeds.x, Mathf.Max(hipTurnSpeeds.x + .01f, hipTurnSpeeds.y), speed);
-        float away = Mathf.Abs(heading);
-        if (runsBack ? away < BackFrom - BackMargin : away > BackFrom + BackMargin) runsBack = !runsBack;
-        if (share <= 0f) return 0f;
-        float turn = runsBack ? Mathf.Clamp(Mathf.DeltaAngle(180f, heading), -hipTurn.y, hipTurn.y)
-            : Mathf.Clamp(heading, -hipTurn.x, hipTurn.x);
-        return turn * share;
     }
 
     // How much of the body moves rather than stands: up to the slowest cycle the way it goes, the stance shares it.

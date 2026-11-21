@@ -42,21 +42,15 @@ public sealed partial class FPSBody
         // Down the sights a peek keeps the sight where it is, as Siege's does: the lean's little gun motion is the hip's.
         if (sign != leanSign) { leanSign = sign; if (!Sighted) Motion(assets.leanMotion); }
 
-        // Sprinting the spine lets the view go and the upper body is no longer held steady (FPSController.OnSprintStarted).
-        float sprint = movement != null ? movement.SprintProgress : 0f;
         bool grounded = movement == null || movement.IsGrounded;
-        // The sights coming up end the sprint's hold at once: the body ran on above walking speed for a moment after the
-        // aim began, and the spine let the view go and then caught it again under the rising sight (user, 2026-11-11: "줌
-        // 할 때 가끔씩 처음에 엄청 흔들리면서").
-        bool sighting = HoldsGun && controller.AimBlend > 0f;
-        bool sprinting = grounded && sprint >= sprintFrom && speed > walk && !sighting;
         float follow = 1f - Mathf.Exp(-dt / weightTime);
-        sprintWeight = Mathf.Lerp(sprintWeight, sprinting ? 1f : 0f, sighting ? 1f - Mathf.Exp(-dt / (weightTime * AimedSprintShare)) : follow);
-        // Sprinting with the gun out the gun's run has the upper body and the gun rides its right hand (KeepGunInView).
+        // Sprinting with the gun out the gun's run (Combat Girls *_Run) has the whole body and the gun rides its right hand
+        // (PlayerBody.GunRuns, KeepGunInView). FPSAF's own sprint pose (its demo's: the spine letting the view go to 0.3,
+        // the steadying off, SprintPoseWeight) was fed here until 0.9.319 and is gone with it: a gun's sprint never has
+        // FPSAF's upper body now, and the pose only flashed as a sprint was let go.
         gunRunWeight = Mathf.MoveTowards(gunRunWeight, Body != null && Body.GunRuns ? 1f : 0f, dt / Mathf.Max(.01f, holdBlendTime));
-        // Eased with the sprint pose instead of switched: the spine took the view back in a single frame as a sprint ended.
-        input.SetValue(FPSANames.StabilizationWeight, 1f - sprintWeight);
-        input.SetValue("LookLayerWeight", Mathf.Lerp(1f, sprintLookWeight, sprintWeight) * Framework);
+        input.SetValue(FPSANames.StabilizationWeight, 1f);
+        input.SetValue("LookLayerWeight", Framework);
         input.SetValue(FPSANames.PlayablesWeight, 1f);
 
         var state = movement != null ? movement.CurrentState : MovementState.Standing;
@@ -74,7 +68,6 @@ public sealed partial class FPSBody
         // The Animator parameters FPSAF's profiles read. The demo's full-body actions take the upper body from FPSAF by
         // FullBodyWeight; ours are the climbs, hangs and rungs where the body's hands leave the gun.
         animator.SetFloat(CrouchWeightId, crouchWeight);
-        animator.SetFloat(SprintPoseWeightId, sprintWeight);
         animator.SetFloat(VelocityId, speed);
         animator.SetFloat(FullBodyWeightId, 1f - Framework);
 

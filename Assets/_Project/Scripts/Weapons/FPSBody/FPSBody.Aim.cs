@@ -138,9 +138,6 @@ public sealed partial class FPSBody
     // Down the sights or on the way in (aimedNoMotions): FPSAF's little moves stay out.
     private bool Sighted => HoldsGun && (controller.AimBlend > aimedNoMotions || aiming);
 
-    // The sprint pose lets go this share of weightTime once the sights come up.
-    private const float AimedSprintShare = .35f;
-
     // How quickly a little move still playing eases out as the sights come up, and a reload settling into the hold lets
     // go (s).
     private const float StillTime = .1f, SightsCut = .1f;
@@ -231,11 +228,8 @@ public sealed partial class FPSBody
             // FPSAF's equip motion with free hands, and its hold was learnt on the way up, 25 to 40 cm under itself
             // (Logs/gun-actions.txt, 2026-11-17: an MX16A4 and an M1911 were 0.0 cm from their "hold" all through coming
             // up); a slide begun then would have kept the gun down there.
-            if (Time.time - drawnAt >= drawSettle)
-            {
-                if (aim <= .001f) held.LearnHold(inView, false);
-                else if (aim >= .999f) held.LearnHold(inView, true);
-            }
+            // Only at the hip: aiming, the gun's aim clips have the arms (AimOnClip), never FPSAF's Ads.
+            if (Time.time - drawnAt >= drawSettle && aim <= .001f) held.LearnHold(inView);
             hasGunInView = held.HasLearnedHold;
             rightHandInGun = new KTransform(gun.InverseTransformPoint(right.position), Quaternion.Inverse(gun.rotation) * right.rotation, Vector3.one);
             leftHandInGun = new KTransform(gun.InverseTransformPoint(left.position), Quaternion.Inverse(gun.rotation) * left.rotation, Vector3.one);
@@ -285,15 +279,17 @@ public sealed partial class FPSBody
     }
 
     // Where the muzzle is when the gun is held clean at the hip, and fully down the sights, from the eyes (which stay put in
-    // the F5 view), for the wall rule's probes (Prepare): learnt only with FPSAF holding the whole gun at rest, the draw's
-    // motion over, no wall holding it back, no reload and not held in close (FPSBody.CloseHold), and only with the muzzle
-    // ahead of the eyes. Kept per gun across draws. The probes once read the gun's own muzzle until the first clean frame
+    // the F5 view), for the wall rule's probes (Prepare): learnt only with the gun held at rest (by FPSAF at the hip, on the
+    // gun's aim clips fully aimed: AimOnClip), the draw's motion over, no wall holding it back, no reload and not held in
+    // close (FPSBody.CloseHold), and only with the muzzle ahead of the eyes. Kept per gun across draws. Until 0.9.319 the
+    // aimed one was learnt under FPSAF's Ads, with the sight on the eyes; the aim clips hold the gun further out. The probes once read the gun's own muzzle until the first clean frame
     // after a draw: a gun caught at the draw was raised and swung aside, and never learnt again while raised, so it stayed
     // raised and couldn't fire (user, 2026-11-07).
     private void LearnHipMuzzle()
     {
         float aim = controller.AimBlend;
-        if (eyes == null || highReady || cover > 0f || closeWeight > 0f || held.HandsBusy || hasContact || Framework < .999f
+        bool atRest = aim >= .999f ? Body != null && Body.AimsOnClip >= .999f : Framework >= .999f;
+        if (eyes == null || highReady || cover > 0f || closeWeight > 0f || held.HandsBusy || hasContact || !atRest
             || (aim > .001f && aim < .999f) || Time.time - drawnAt < drawSettle) return;
         Vector3 fromEyes = muzzle.position - eyes.position;
         if (Vector3.Angle(eyes.forward, fromEyes) > HipMuzzleCone) return;

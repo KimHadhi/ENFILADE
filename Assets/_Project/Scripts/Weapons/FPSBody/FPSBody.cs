@@ -26,26 +26,17 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     public const string TableName = "FPSBody";
     private const string TableRow = "Rig";
 
-    [SerializeField, Range(0f, 1f), Tooltip("Aiming a gun with a stock, how much of the way the eyes come down onto it, so the butt "
-        + "stays in the shoulder (1) instead of the gun coming up to the eyes (0).")]
-    private float cheekWeld = 1f;
-    [SerializeField, Tooltip("The most the neck, upper chest and chest bend for the cheek weld (degrees).")]
-    private Vector3 cheekWeldLimits = new Vector3(30f, 15f, 10f);
     [SerializeField, Min(0f), Tooltip("How long a finished reload takes to settle back into the hold (s). KINEMATION's 0.15 made the arms "
         + "jump from the reload to the hold.")]
     private float reloadSettle = .35f;
     [SerializeField, Range(0f, 90f), Tooltip("Furthest the spine twists toward the view where the legs don't turn with it (degrees). "
         + "FPSAF's Look reaches its full twist at 90.")]
     private float twistLimit = 60f;
-    [SerializeField, Range(0f, 1f), Tooltip("How much of the view the spine follows while sprinting (FPSAF demo LookLayerWeight).")]
-    private float sprintLookWeight = .3f;
-    [SerializeField, Range(0f, 1f), Tooltip("Sprinting from this share of the way between walk and sprint (PlayerMovement.SprintProgress).")]
-    private float sprintFrom = .5f;
     [SerializeField, Min(0f), Tooltip("How quickly a reload cut short lets its clip go (s).")]
     private float reloadBlendOut = .15f;
     [SerializeField, Min(.001f), Tooltip("How deep the gun's front face is taken when the muzzle is found from the gun's shape (m).")]
     private float muzzleDepth = .015f;
-    [SerializeField, Min(.01f), Tooltip("How quickly crouch and sprint weights follow the body (s).")]
+    [SerializeField, Min(.01f), Tooltip("How quickly the crouch weight follows the body (s).")]
     private float weightTime = .15f;
     [SerializeField, Min(.01f), Tooltip("How long FPSAF takes the upper body over when a gun is drawn, and gives it back when it is put away (s).")]
     private float holdBlendTime = .2f;
@@ -90,7 +81,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     // GunCoverLayer's input property (InputConfig_Body).
     private const string CoverProperty = "CoverWeight";
     // The Animator parameters FPSAF's profiles read (Characters/BodyHost).
-    private static readonly int CrouchWeightId = Animator.StringToHash("CrouchWeight"), SprintPoseWeightId = Animator.StringToHash("SprintPoseWeight"),
+    private static readonly int CrouchWeightId = Animator.StringToHash("CrouchWeight"), 
         VelocityId = Animator.StringToHash("Velocity"), FullBodyWeightId = Animator.StringToHash("FullBodyWeight");
 
     private WeaponController controller;
@@ -119,7 +110,7 @@ public sealed partial class FPSBody : MonoBehaviour, IWeaponPose
     private FPSGun held;
     private WeaponData shownData;
     private bool shown = true, linked, aiming, firing, highReady, hasLook, wasGrounded = true, wasCrouched, wasMoving;
-    private float lastShot, shotInterval, lastAim, lastYaw, lastPitch, leanSign, crouchWeight, sprintWeight, cover, holdWeight;
+    private float lastShot, shotInterval, lastAim, lastYaw, lastPitch, leanSign, crouchWeight, cover, holdWeight;
     // How far the gun rides the gun's run's right hand (0-1, PlayerBody.GunRuns): sprinting with it out.
     private float gunRunWeight;
     // When the gun was last drawn, and how long FPSAF's draw motion plays (s): the hip muzzle is learnt after it.

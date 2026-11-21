@@ -226,7 +226,15 @@ public sealed partial class PlayerBody
         // No further from the chest than a neck turns (PlayerBody.Neck).
         bool neckHeld = bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt,
             GuardedChestAhead(), neckTurnLimit + NeckGuardSlack);
-        Vector3 eye = head.TransformPoint(eyeLocal);
+        Vector3 eye = head.TransformPoint(eyeLocal), eyeOnHead = eye;
+        // Aiming on the gun's aim clips (AimsOnClip) the camera goes onto the gun's sight line where the clip's hand holds
+        // the gun, level with the eyes (FPSBody.SightLineEye), and the head stays as the clip has it: the camera between
+        // the eyes with the gun brought onto it put the gun's line through the middle of the face, between the brows (the
+        // user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가 보기에 내 미간 사이를 뚫어서 총을 위치하게
+        // 해서 조준하잖아, 카메라 때문이지만"; 0.9.318 still did, "하나도 안 달라졌어").
+        float onClip = AimsOnClip;
+        if (onClip > 0f && Sights != null && Sights.SightLineEye(eye, bodyGaze.Rotation, out Vector3 onSight))
+            eye = Vector3.Lerp(eye, onSight, onClip);
         // Every PC's copy of the body moves its leaning hitboxes, with or without a camera of its own.
         Vector3 carried = bodyLean.Carry(eye, bendWeight, dead, dt);
         // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind). With nothing in hand
@@ -244,7 +252,7 @@ public sealed partial class PlayerBody
         // 방해가 되지 않게"). With FPSAF holding a gun only the neck bends, so the hands stay on it. Most frames the camera is
         // on the eyes and nothing moves.
         if (!dead && bodyCamera.HasPlace)
-            headReach.Meet(eyeLocal, bodyCamera.Placed, headReachMove, headReachLimits, UpperBodyFromFramework);
+            headReach.Meet(eyeLocal, Vector3.Lerp(bodyCamera.Placed, eyeOnHead, onClip), headReachMove, headReachLimits, UpperBodyFromFramework);
         RecordCameraOnHead(dt, neckHeld);
     }
 
@@ -322,6 +330,10 @@ public sealed partial class PlayerBody
         var climbed = player.Abilities.Traversal.Obstacle.FromBar;
         return climbed != null && !dead && (state == MovementState.Mantle || heaving) ? climbed.transform : null;
     }
+
+    private FPSBody sights;
+    // The gun's own place in the hands, for the sight line aiming on the aim clips (Look).
+    private FPSBody Sights => sights != null ? sights : sights = GetComponent<FPSBody>();
 
     private float AimBlend()
     {
