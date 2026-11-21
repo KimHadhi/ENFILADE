@@ -1,7 +1,7 @@
 """ENFILADE throwables workspace, Blender 4.5 LTS.
 
 START_GRENADE_ANIMATION.cmd opens ArtSource/Grenades/ENFILADE_Grenade_Animation.blend with truefps_tools.py and then
-this (the user, 2026-11-12: "수류탄 던지는 모션도 아쉬운데 드는 모션, 대기 모션, 던지는 모션 내가 블렌더로 수정할 수 있게 만들어서
+this (START_STONE_ANIMATION.cmd the same, on the stone's throw: asked_clip) (the user, 2026-11-12: "수류탄 던지는 모션도 아쉬운데 드는 모션, 대기 모션, 던지는 모션 내가 블렌더로 수정할 수 있게 만들어서
 적용해 봐"). The off hand's clips for G are drafted on Kazusa's free left arm (CTRL_hand.L, CTRL_elbow.L and the left
 fingers) while the right hand keeps the gun.
 It opens ready to work in, and saving sends the work to the game (the user, 2026-11-13: "내가 해야 하는 잡일을 최대한
@@ -18,6 +18,11 @@ It opens ready to work in, and saving sends the work to the game (the user, 2026
   Call of Duty's quick throw in one motion.
 - 나이프 · 꺼내기 / 대기 (되풀이) / 던지기: the Knight's throwing knife, the MW2019 viewmodel of GMod's "[MW] Quick Throwing
   Knife" mirrored onto the left hand bone for bone (build_grenade_workspace.py), its hold MW's still idle with a breath.
+- 돌 · 꺼내기 / 대기 (되풀이) / 던지기 / 톡 던지기: T's stone (the user, 2026-11-21: "돌 던지기 애니메이션 내가 직접 다듬고
+  싶은데"). Its four start as copies of the grenade's as they stood (ready_copy: what the game played for the stone until
+  then, so nothing looks different before the user polishes them) and are polished on their own from there. A file built
+  before the stone had its own gets the copies and the stone in the hand (ready_stone_look) on opening; the user's file is
+  never rebuilt. The stone has no pin: its 핀 mark is the hand closing on it (Stealth/StoneReady, PlayerGrenades.Pin).
 Sending writes Assets/_Project/Data/Resources/Tables/<table>.csv: per half frame, the wrist and the elbow from the eyes
 in game metres, the hand's run and facing, in the head camera's axes as Unity's (x right, y up, z forward), every finger
 joint as posed here (each segment's way in the hand's own frame and its twist: Tools/Blender/HandPaths/finger_ways.py,
@@ -94,9 +99,29 @@ MOVES = {
                        marks={}, look='knife', loop=True),
     'knife_throw': dict(label='나이프 · 던지기', group='나이프', action='enf_knife_throw', table='KnifeThrow', end=26,
                         marks={RELEASE: 11}, look='knife'),
+    # copy_of: the clip's draft is made from that clip as it stands (ready_copy), with its marks and last frame; marks and
+    # end here are only what a build without that clip would give.
+    'stone_draw': dict(label='돌 · 꺼내기', group='돌', action='enf_stone_draw', table='StoneDraw', end=14,
+                       marks={GRAB: 6, PIN: 12}, look='stone', copy_of='grenade_draw'),
+    'stone_hold': dict(label='돌 · 대기 (되풀이)', group='돌', action='enf_stone_hold', table='StoneHold', end=37,
+                       marks={}, look='stone', loop=True, copy_of='grenade_hold'),
+    'stone_throw': dict(label='돌 · 던지기', group='돌', action='enf_stone_throw', table='StoneThrow', end=19,
+                        marks={RELEASE: 8}, look='stone', copy_of='grenade_throw'),
+    'stone_tap': dict(label='돌 · 톡 던지기', group='돌', action='enf_stone_tap', table='StoneTap', end=19,
+                      marks={GRAB: 4, PIN: 6, RELEASE: 10}, look='stone', copy_of='grenade_tap'),
 }
+GROUPS = ('수류탄', '돌', '나이프')
 # The previews in the hand (never exported): the game's own models, seated as the game seats them (Tables/Grenades held*).
-LOOKS = {'grenade': 'PREVIEW_Grenade', 'knife': 'PREVIEW_Knife'}
+LOOKS = {'grenade': 'PREVIEW_Grenade', 'knife': 'PREVIEW_Knife', 'stone': 'PREVIEW_Stone'}
+PREVIEW = '06 Throwable preview - never exported'
+GRENADES_TABLE = 'Grenades'
+# The stone as the game draws it in the hand (ThrownStone.Held): Unity's sphere (1 across) at its row's size, flattened a
+# little (its x, y, z in Unity's axes), stone grey (ThrownStone.Look).
+STONE_SQUASH = (1.0, .78, .9)
+STONE_GREY = (.33, .32, .3, 1.0)
+# On a draft made as a copy (ready_copy): the marks and last frame it started with (이 클립을 시안으로 되돌리기 goes back to
+# them), and whether its source had changes the game had not been sent (the copy is then sent on the next save).
+DRAFT_MARKS, DRAFT_END, DRAFT_UNSENT = 'enf_draft_marks', 'enf_draft_end', 'enf_draft_unsent'
 
 ARM_PARTS = (('왼손', ARM_HAND), ('왼팔꿈치 방향', ARM_ELBOW))
 MOVE_DIRS = (('forward', '앞으로'), ('back', '뒤로'), ('up', '위로'), ('down', '아래로'), ('left', '왼쪽'), ('right', '오른쪽'))
@@ -276,6 +301,28 @@ def current_move(scene):
     return key if key in MOVES else 'grenade_throw'
 
 
+def _draft_of(key):
+    return bpy.data.actions.get(MOVES[key]['action'] + one_click().DRAFT)
+
+
+def draft_marks(key):
+    """A clip's first moments: those its copied draft started with (kept on it), else its drafted ones."""
+    draft = _draft_of(key)
+    try:
+        kept = json.loads(draft.get(DRAFT_MARKS, '')) if draft is not None else None
+        if isinstance(kept, dict):
+            return {k: int(v) for k, v in kept.items() if k in MARKS}
+    except (ValueError, TypeError):
+        pass
+    return dict(MOVES[key]['marks'])
+
+
+def draft_end(key):
+    """A clip's first last frame: its copied draft's, else its drafted one."""
+    draft = _draft_of(key)
+    return int(draft.get(DRAFT_END, MOVES[key]['end'])) if draft is not None else int(MOVES[key]['end'])
+
+
 def marks_of(scene, key):
     """A clip's moments (frames): as last left on the timeline, else the draft's."""
     try:
@@ -284,11 +331,11 @@ def marks_of(scene, key):
             return {k: int(v) for k, v in kept.items() if k in MARKS}
     except (ValueError, TypeError):
         pass
-    return dict(MOVES[key]['marks'])
+    return draft_marks(key)
 
 
 def end_of(scene, key):
-    return int(scene.get('enf_end_' + key, MOVES[key]['end']))
+    return int(scene.get('enf_end_' + key, draft_end(key)))
 
 
 def keep_marks(scene, key):
@@ -307,12 +354,39 @@ def remember(scene):
         keep_marks(scene, key)
 
 
+def ready_copy(context, key):
+    """A clip that starts as another's copy (copy_of: the stone's four, from the grenade's) gets its draft the first time
+    it is asked for: the other clip's action as it stands now, with its moments and last frame. That is what the game
+    played for it until then (the stone's tables were committed as copies of the grenade's), so it counts as sent unless
+    the other clip had changes not yet sent (DRAFT_UNSENT: the copy goes on the next save, as the user sees it here)."""
+    move = MOVES[key]
+    source = move.get('copy_of')
+    if source is None or _draft_of(key) is not None:
+        return
+    oc = one_click()
+    scene = context.scene
+    remember(scene)
+    action, locked = item(context, source)
+    if locked is not None:
+        # A touch-up alone is not the clip: copying a layered clip would need its draft baked in (no such clip is copied).
+        raise ValueError(f'{MOVES[source]["label"]}은 손질 층 클립이라 복사해 시작할 수 없습니다.')
+    draft = oc._copy(action, move['action'] + oc.DRAFT, 'draft')
+    draft[DRAFT_MARKS] = json.dumps(marks_of(scene, source))
+    draft[DRAFT_END] = end_of(scene, source)
+    if action.get(oc.SENT) != fingerprint(source):
+        draft[DRAFT_UNSENT] = True
+    print(f'ENFILADE: {move["label"]}를 {MOVES[source]["label"]}에서 복사해 시작했습니다')
+
+
 def item(context, key):
-    """The clip's action (made ready from an older file's layers) and the draft locked under it (None: edited directly).
-    A clip made ready untouched counts as sent: the build sent the drafts."""
+    """The clip's action (made ready from an older file's layers, or first copied from its copy_of clip) and the draft
+    locked under it (None: edited directly). A clip made ready untouched counts as sent: the build sent the drafts, and a
+    copy's table was committed as its source's."""
+    ready_copy(context, key)
     oc = one_click()
     action, draft, fresh = oc.item_action(context, find_rig(context.scene), MOVES[key]['action'], end_of(context.scene, key))
-    if fresh:
+    copied = _draft_of(key)
+    if fresh and not (copied is not None and copied.get(DRAFT_UNSENT)):
         oc.mark_sent(action, fingerprint(key))
     return action, draft
 
@@ -353,21 +427,42 @@ def select_move(context, key):
 
 
 def prepare(context):
-    """Every clip ready to work in (an older file's layers made into editable clips), the last one shown."""
+    """Every clip ready to work in (an older file's layers made into editable clips, the stone's copied in), the stone
+    in the hand made if the file has none, the last clip shown."""
     for key in MOVES:
         item(context, key)
+    ready_stone_look(context)
+    refresh_embedded()
     select_move(context, current_move(context.scene))
 
 
+def asked_clip():
+    """The clip a START file asks to open on, after Blender's own arguments (START_STONE_ANIMATION.cmd: -- --clip
+    stone_throw); None when it asks for none (the last clip worked on opens)."""
+    argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+    if '--clip' in argv and argv.index('--clip') + 1 < len(argv):
+        key = argv[argv.index('--clip') + 1]
+        return key if key in MOVES else None
+    return None
+
+
+# Asked for once per Blender run: a file opened later from the same Blender opens on its own last clip.
+_ASKED = [asked_clip()]
+
+
 def arrange(context):
-    """The workspace as the work needs it: the clip loaded, the left hand selected in Pose mode, the clip's keys in the
-    Dope Sheet, the tab open."""
+    """The workspace as the work needs it: the clip loaded (the one the START file asked for, else the last one worked
+    on), the left hand selected in Pose mode, the clip's keys in the Dope Sheet, the tab open."""
     scene = context.scene
     rig = find_rig(scene)
     if rig is None:
         return True
     # The clips first: they are ready even where the screen can't be (a window switches its workspace on the next tick).
     prepare(context)
+    if _ASKED[0] is not None:
+        # Shown through select_move, so the clip that was showing keeps its marks first.
+        select_move(context, _ASKED[0])
+        _ASKED[0] = None
     oc = one_click()
     if not oc.open_workspace(context):
         return False
@@ -411,6 +506,134 @@ def _frame_changed(scene, _depsgraph=None):
             show_held(scene)
     except (ReferenceError, KeyError, AttributeError):
         pass
+
+
+# ---- The previews' seat in the hand (the build's and an older file's, one way) -----------------------------------------
+
+def unity_cross(a, b):
+    """Unity's Vector3.Cross on vectors in Unity's axes."""
+    return Vector((a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x))
+
+
+def unity_euler(e):
+    """Unity's Quaternion.Euler(x, y, z) as a 3x3 on Unity's numbers (z first, then x, then y)."""
+    return (Matrix.Rotation(math.radians(e.y), 3, 'Y') @ Matrix.Rotation(math.radians(e.x), 3, 'X')
+            @ Matrix.Rotation(math.radians(e.z), 3, 'Z'))
+
+
+def grenade_row(root, row_id):
+    """A throwable's row of Tables/Grenades (its cells as text), or an empty one."""
+    import csv
+    path = table_file(root, GRENADES_TABLE, new_in='Grenades')
+    if not path.exists():
+        return {}
+    with open(path, encoding='utf-8-sig', newline='') as f:
+        for row in csv.DictReader(f):
+            if row.get('id') == row_id:
+                return row
+    return {}
+
+
+def held_numbers(root, row_id):
+    """Where the game holds a throwable (Tables/Grenades): the hold point from the wrist in hand lengths (held*), the
+    model's turn in the hand (heldTurn*, Unity's Euler angles) and the model's own point the fist closes on (grip*, m)."""
+    row = grenade_row(root, row_id)
+
+    def num(k, d):
+        return float(row.get(k) or d)
+    return (Vector((num('heldAcross', .12), num('heldPalm', .6), num('heldAlong', .9))),
+            Vector((num('heldTurnX', 0), num('heldTurnY', 0), num('heldTurnZ', 90))),
+            Vector((num('gripX', 0), num('gripY', 0), num('gripZ', 0))))
+
+
+def seat_preview(rig, context, holder, held_at, turn, grip):
+    """The preview where the game puts the model (GrenadeArm.Hold): the holder at the wrist plus the hand's frame times
+    held_at hand lengths, turned by the hand's frame times turn; the model in it moved back by its grip. The model's
+    axes in this file are Unity's (x, z, y): Art/Models imports swap them back (ModelImportRules). Any pose seats it the
+    same: it rides the wrist bone after."""
+    context.view_layer.update()
+    basis = view_basis()
+    wrist, along, palm, length = hand_frame(rig)
+    along_v, palm_v = to_view(along, basis), to_view(palm, basis)
+    side_v = unity_cross(palm_v, along_v)
+    hand = Matrix((side_v, palm_v, along_v)).transposed()
+    model = hand @ unity_euler(turn)
+    at = to_view(wrist, basis, True) + hand @ (held_at * length * GAME_SCALE) - model @ grip
+    cols = [to_world(model.col[0], basis), to_world(model.col[2], basis), to_world(model.col[1], basis)]
+    rot = Matrix((cols[0], cols[1], cols[2])).transposed().to_4x4()
+    holder.parent = None
+    holder.matrix_world = Matrix.Translation(to_world(at, basis, point=True)) @ rot
+    bone = rig.pose.bones[ARM_BONES['wrist']]
+    world = holder.matrix_world.copy()
+    holder.parent = rig
+    holder.parent_type = 'BONE'
+    holder.parent_bone = bone.name
+    context.view_layer.update()
+    holder.matrix_world = world
+
+
+def ready_stone_look(context):
+    """The stone in the hand, made once (a file built before the stone had its own clips gets it on opening): the pebble
+    the game draws (ThrownStone.Held: a sphere at the row's size, flattened, grey; its centre is what the fist holds),
+    seated as the game seats the stone (Tables/Grenades stone row), beside the other previews; never exported."""
+    import bmesh
+    scene = context.scene
+    rig, root = find_rig(scene), project_root()
+    if bpy.data.objects.get(LOOKS['stone']) is not None or rig is None or root is None:
+        return None
+    beside = bpy.data.objects.get(LOOKS['grenade'])
+    collection = beside.users_collection[0] if beside is not None and beside.users_collection else bpy.data.collections.get(PREVIEW)
+    if collection is None:
+        collection = bpy.data.collections.new(PREVIEW)
+        scene.collection.children.link(collection)
+    row = grenade_row(root, 'stone')
+    size = float(row.get('size') or .075)
+    holder = bpy.data.objects.new(LOOKS['stone'], None)
+    holder.empty_display_size = .02
+    collection.objects.link(holder)
+    mesh = bpy.data.meshes.new(LOOKS['stone'] + ' model')
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=.5)
+    for face in bm.faces:
+        face.smooth = True
+    bm.to_mesh(mesh)
+    bm.free()
+    material = bpy.data.materials.new(LOOKS['stone'] + ' grey')
+    material.diffuse_color = STONE_GREY
+    material.use_nodes = True
+    shader = material.node_tree.nodes.get('Principled BSDF')
+    if shader is not None:
+        shader.inputs['Base Color'].default_value = STONE_GREY
+        shader.inputs['Roughness'].default_value = .9
+    mesh.materials.append(material)
+    model = bpy.data.objects.new(LOOKS['stone'] + ' model', mesh)
+    collection.objects.link(model)
+    model.parent = holder
+    model.matrix_parent_inverse = Matrix.Identity(4)
+    # The holder's axes are Unity's x, z, y (seat_preview), so the pebble's Unity scale goes in that order.
+    sx, sy, sz = (size * s / GAME_SCALE for s in STONE_SQUASH)
+    model.scale = (sx, sz, sy)
+    model.hide_select = True
+    seat_preview(rig, context, holder, *held_numbers(root, 'stone'))
+    print('ENFILADE: 손에 쥔 돌 보기를 만들었습니다(Grenades.csv stone 줄의 크기와 쥐는 자리)')
+    return holder
+
+
+# What the .blend keeps as its fallback copy of these tools (run with Alt+P when the file was opened without the .cmd).
+EMBEDDED = 'START HERE - Throw tools.py'
+
+
+def refresh_embedded():
+    """The file's fallback copy of these tools kept as the tools are (a file built before carries the copy of its day)."""
+    text = bpy.data.texts.get(EMBEDDED)
+    root = project_root()
+    if text is None or root is None:
+        return
+    source = root / 'Tools/Blender/Grenades/grenade_tools.py'
+    if source.exists():
+        body = source.read_text(encoding='utf-8')
+        if text.as_string() != body:
+            text.from_string(body)
 
 
 # ---- Moving a part and keying it -----------------------------------------------------------------------------------
@@ -539,15 +762,16 @@ def revert(context, key):
             bag.fcurves.remove(curve)
     else:
         oc.revert(move['action'])
-    scene['enf_marks_' + key] = json.dumps(move['marks'])
-    scene['enf_end_' + key] = move['end']
+    first_marks, first_end = draft_marks(key), draft_end(key)
+    scene['enf_marks_' + key] = json.dumps(first_marks)
+    scene['enf_end_' + key] = first_end
     if current_move(scene) == key:
         # What select_move keeps for the clip shown is what the timeline has: the draft's, then.
         for marker in [m for m in scene.timeline_markers if m.name in MARKS]:
             scene.timeline_markers.remove(marker)
-        for name, frame in move['marks'].items():
+        for name, frame in first_marks.items():
             scene.timeline_markers.new(name, frame=frame)
-        scene.frame_end = move['end']
+        scene.frame_end = first_end
     select_move(context, key)
 
 
@@ -832,7 +1056,7 @@ class ENFTHROW_OT_export(bpy.types.Operator):
     bl_label = '게임에 보내기'
     bl_description = ('Ctrl+S와 같다: 바뀐 클립을 모두 게임 폴더로 보내고 작업 파일을 저장한다(저장하면 보내기를 꺼 두어도 보낸다). '
                       'Unity가 알아서 가져가고, Play 중이어도 다음 G부터 그 동작이 나온다')
-    every: bpy.props.BoolProperty(default=False, description='바뀌지 않은 클립까지 일곱 개 모두 다시 보낸다')
+    every: bpy.props.BoolProperty(default=False, description='바뀌지 않은 클립까지 모두(수류탄 넷 · 돌 넷 · 나이프 셋) 다시 보낸다')
 
     def execute(self, context):
         if not _ok(self, context):
@@ -881,7 +1105,7 @@ class ENFTHROW_PT_panel(bpy.types.Panel):
         fps = scene.render.fps / scene.render.fps_base
         box = layout.box()
         box.label(text='1. 클립 고르기')
-        for group in ('수류탄', '나이프'):
+        for group in GROUPS:
             col = box.column(align=True)
             for k, v in MOVES.items():
                 if v['group'] == group:
@@ -891,6 +1115,9 @@ class ENFTHROW_PT_panel(bpy.types.Panel):
             row = box.row(align=True)
             row.label(text=f'{marker.name}: {marker.frame}프레임 ({(marker.frame - scene.frame_start) / fps:.3f}초)')
             row.operator('enf_throw.mark', text='', icon='TIME').mark = marker.name
+        if move['group'] == '돌' and not move.get('loop'):
+            # The stone has no pin: the game plays its ready sound at the pin mark (PlayerGrenades.Pin).
+            box.label(text='돌: 쥐기 = 손에 돌이 보임 · 핀 = 돌 준비 소리')
         if move.get('loop'):
             box.label(text='되풀이: 끝 프레임이 처음과 같아야 이어진다')
         else:

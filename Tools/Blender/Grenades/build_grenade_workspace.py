@@ -1,5 +1,5 @@
 """Builds ArtSource/Grenades/ENFILADE_Grenade_Animation.blend from the True FPS start file and, with --export, sends its
-seven drafts to the game (the same buttons the user presses). Run from the project root:
+eleven clips to the game (the same buttons the user presses). Run from the project root:
 
   blender --background --factory-startup ArtSource/TrueFPS/ENFILADE_TrueFPS_Start.blend
           --python Tools/Blender/Grenades/build_grenade_workspace.py --
@@ -26,6 +26,8 @@ The drafts (30 fps; positions from the eyes in game metres, x right, y up, z for
   the viewmodel's camera; at this project's weapon size (0.01905 m a unit, the size its hands are ours) and spread from
   its 50.2 degree view to this camera's 58.7 (the game's 90 at 16:9), so the knife sits where GMod showed it.
 - 나이프 · 대기 (49, a loop of 1.6 s): MW's @idle (a still pose) with a breath like the grenade's.
+- 돌 · 꺼내기 / 대기 / 던지기 / 톡 던지기: copies of the grenade's four (grenade_tools.ready_copy), and the stone in the hand
+  (grenade_tools.ready_stone_look); a file built before the stone had them gets them on opening the same way.
 """
 import importlib.util
 import json
@@ -51,11 +53,8 @@ GUN_FILE = 'Assets/ThirdParty/KINEMATION/TacticalShooterPack/Meshes/Weapons/AK10
 GUN_HOLD = (0.0620, -0.0748, -0.2599)
 GRIPS = {'CTRL_hand.R': Vector((.016, -.157, -.097)), 'CTRL_hand.L': Vector((-.021, .107, -.046))}
 HOLD_CONSTRAINT = 'Hold the gun (throw workspace)'
-PREVIEW = '06 Throwable preview - never exported'
 MODELS = {'grenade': 'Assets/_Project/Art/Models/Addons/Grenades/GrenadeFrag/GrenadeFrag.fbx',
           'knife': 'Assets/_Project/Art/Models/Addons/Grenades/MWThrowingKnife/MWThrowingKnife.fbx'}
-TABLES_DIR = Path('Assets/_Project/Data/Resources/Tables')
-GRENADES_TABLE = 'Grenades'
 # Which row of Tables/Grenades each preview is seated by.
 HELD_ROW = {'grenade': 'frag', 'knife': 'knife'}
 
@@ -425,7 +424,7 @@ class MW:
             wrist, elbow, shoulder = at(MW_ARM['wrist']), at(MW_ARM['elbow']), at(MW_ARM['shoulder'])
             index, middle, little = at(MW_FINGERS['index'][0]), at(MW_FINGERS['middle'][0]), at(MW_FINGERS['little'][0])
             along = (middle - wrist).normalized()
-            palm = -unity_cross(along, index - little)
+            palm = -tools.unity_cross(along, index - little)
             palm = (palm - along * palm.dot(along)).normalized()
             ways = {}
             for finger, names in MW_FINGERS.items():
@@ -492,11 +491,6 @@ def fit_shape(P, Q):
     return best
 
 
-def unity_cross(a, b):
-    """Unity's Vector3.Cross on vectors in Unity's axes."""
-    return Vector((a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x))
-
-
 def key_knife(rig, context, key, frames):
     begin_draft(rig, key)
     scene = context.scene
@@ -556,11 +550,11 @@ def knife_held(idle):
     hand lengths), the model's own point there (its grip, m, in the model's axes: x across, y its broad side up, z back
     from the point) and its turn in the hand's frame (Unity's Euler angles: z, then x, then y)."""
     along, palm = idle['along'], idle['palm']
-    side = unity_cross(palm, along)
+    side = tools.unity_cross(palm, along)
     hand = Matrix((side, palm, along)).transposed()  # columns: the hand frame's x, y, z in the view's axes
     z = -idle['knife_tip']
     y = (idle['knife_up'] - z * idle['knife_up'].dot(z)).normalized()
-    x = unity_cross(y, z)
+    x = tools.unity_cross(y, z)
     knife = Matrix((x, y, z)).transposed()
     fist = idle['raw_wrist'] + hand @ (FIST * idle['hand'])
     grip = knife.transposed() @ (fist - idle['knife'])
@@ -572,34 +566,6 @@ def knife_held(idle):
 
 
 # ---- Previews in the left hand ----------------------------------------------------------------------------------------
-
-def table_file(root, name, new_in='Grenades'):
-    """The game's table of this name under the project root. Since 0.9.0 the tables are filed in sub-folders of
-    Data/Resources/Tables by subject and found by file name alone, as the game finds them (GameTables); a table that isn't
-    there yet is made in new_in."""
-    base = Path(root) / TABLES_DIR
-    for found in sorted(base.rglob(name + '.csv')):
-        return found
-    return base / new_in / (name + '.csv')
-
-
-def held_numbers(root, row_id):
-    import csv
-    with open(table_file(root, GRENADES_TABLE), encoding='utf-8-sig', newline='') as f:
-        for row in csv.DictReader(f):
-            if row.get('id') == row_id:
-                num = lambda k, d: float(row.get(k) or d)
-                return (Vector((num('heldAcross', .12), num('heldPalm', .6), num('heldAlong', .9))),
-                        Vector((num('heldTurnX', 0), num('heldTurnY', 0), num('heldTurnZ', 90))),
-                        Vector((num('gripX', 0), num('gripY', 0), num('gripZ', 0))))
-    return Vector((.12, .6, .9)), Vector((0, 0, 90)), Vector((0, 0, 0))
-
-
-def unity_euler(e):
-    """Unity's Quaternion.Euler(x, y, z) as a 3x3 on Unity's numbers (z first, then x, then y)."""
-    return (Matrix.Rotation(math.radians(e.y), 3, 'Y') @ Matrix.Rotation(math.radians(e.x), 3, 'X')
-            @ Matrix.Rotation(math.radians(e.z), 3, 'Z'))
-
 
 def make_preview(root, name, rel, collection):
     holder = bpy.data.objects.new(tools.LOOKS[name], None)
@@ -621,31 +587,6 @@ def make_preview(root, name, rel, collection):
     return holder
 
 
-def seat_preview(rig, context, holder, held_at, turn, grip):
-    """The preview where the game puts the model (GrenadeArm.Hold): the holder at the wrist plus the hand's frame times
-    held_at hand lengths, turned by the hand's frame times turn; the model in it moved back by its grip. The model's
-    axes in this file are Unity's (x, z, y): Art/Models imports swap them back (ModelImportRules)."""
-    context.view_layer.update()
-    basis = tools.view_basis()
-    wrist, along, palm, length = tools.hand_frame(rig)
-    along_v, palm_v = tools.to_view(along, basis), tools.to_view(palm, basis)
-    side_v = unity_cross(palm_v, along_v)
-    hand = Matrix((side_v, palm_v, along_v)).transposed()
-    model = hand @ unity_euler(turn)
-    at = tools.to_view(wrist, basis, True) + hand @ (held_at * length * tools.GAME_SCALE) - model @ grip
-    cols = [tools.to_world(model.col[0], basis), tools.to_world(model.col[2], basis), tools.to_world(model.col[1], basis)]
-    rot = Matrix((cols[0], cols[1], cols[2])).transposed().to_4x4()
-    holder.parent = None
-    holder.matrix_world = Matrix.Translation(tools.to_world(at, basis, point=True)) @ rot
-    bone = rig.pose.bones[tools.ARM_BONES['wrist']]
-    world = holder.matrix_world.copy()
-    holder.parent = rig
-    holder.parent_type = 'BONE'
-    holder.parent_bone = bone.name
-    context.view_layer.update()
-    holder.matrix_world = world
-
-
 def main():
     out, addon, export, force = args()
     if out.exists() and not force:
@@ -656,7 +597,7 @@ def main():
     tools.register()
     rig = tools.find_rig(scene)
     camera = bpy.data.objects[tools.CAMERA]
-    collection = bpy.data.collections.new(PREVIEW)
+    collection = bpy.data.collections.new(tools.PREVIEW)
     scene.collection.children.link(collection)
     gun_in_hand(root, rig, camera, collection, context)
     for old in list(bpy.data.actions):
@@ -674,7 +615,9 @@ def main():
     key_knife(rig, context, 'knife_throw', throw)
     key_knife_hold(rig, context, idle)
     for key, move in tools.MOVES.items():
-        tools.touch_up(move['action'])
+        # A clip copied from another (the stone's) gets its draft and action when it is first shown (ready_copy).
+        if 'copy_of' not in move:
+            tools.touch_up(move['action'])
 
     # The previews seated on the hold's pose (they follow the hand bone after).
     tools.select_move(context, 'grenade_hold')
@@ -682,10 +625,10 @@ def main():
     for name, rel in MODELS.items():
         holder = make_preview(root, name, rel, collection)
         if name == 'knife':
-            seat_preview(rig, context, holder, held_at, turn, grip)
+            tools.seat_preview(rig, context, holder, held_at, turn, grip)
         else:
-            at, rot, grab = held_numbers(root, HELD_ROW[name])
-            seat_preview(rig, context, holder, at, rot, grab)
+            tools.seat_preview(rig, context, holder, *tools.held_numbers(root, HELD_ROW[name]))
+    tools.ready_stone_look(context)
 
     text = bpy.data.texts.get('START HERE - Throw tools.py') or bpy.data.texts.new('START HERE - Throw tools.py')
     text.from_string((HERE / 'grenade_tools.py').read_text(encoding='utf-8'))

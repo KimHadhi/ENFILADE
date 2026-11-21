@@ -28,8 +28,9 @@ using UnityEngine;
 /// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
 /// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
 /// (PlayerNetworkCombat). The HUD shows the count beside the ammo (GrenadeHUD).
-/// T throws a stone with the same hand and clips (Throwable.Stone, since 2026-11-21): taken out while T is held and the
-/// stone's cooldown is over, never counted; what is the stone's own (its cooldown, its lure, friends' copies of the
+/// T throws a stone with the same hand (Throwable.Stone, since 2026-11-21), its own four clips (Tables/ThrowArms stone:
+/// begun as copies of the grenade's, polished by the user in the Blender throw workspace): taken out while T is held and
+/// the stone's cooldown is over, never counted; what is the stone's own (its cooldown, its lure, friends' copies of the
 /// flight) stays in PlayerThrow (the keys: PlayerGrenades.Key).
 /// </summary>
 [DisallowMultipleComponent]
