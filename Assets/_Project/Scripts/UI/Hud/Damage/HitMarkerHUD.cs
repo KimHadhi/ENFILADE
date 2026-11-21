@@ -9,7 +9,8 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 /// snap to rest, hold a moment and fade sliding a few pixels outward, in .2 s; white, a pale gold headshot that pops twice,
 /// a red kill, a quiet grey for no effect, numbers in HitMarkers.csv (<see cref="CleanLook"/>, <see cref="LayoutClean"/>).
 /// Bold, the earlier look, described below, numbers in GunFeel. Both get the headshot's burst, the posture break's burst
-/// and the pierced tails.
+/// and the pierced tails, and a picture under the aim point for a kill (a skull, a knife, a burst ... by how it happened)
+/// and for a broken posture (<see cref="KillIcons"/>, <see cref="IconLook"/>).
 /// A headshot's burst keeps the middle clear (<see cref="HeadLook"/>, HitMarkers.csv Head.*): a hollow eight-point star,
 /// a thin gold ring snapping out through the lines with a fainter echo, eight sparks from outside the lines, and a lens
 /// streak split down the middle and fired out both ways with a short split rise and two diamonds on a slant, all gone in
@@ -32,7 +33,32 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitMarkers)]
 public sealed class HitMarkerHUD : MonoBehaviour
 {
-    public const string TableName = "HitMarkers", CleanRow = "Clean", HeadRow = "Head";
+    public const string TableName = "HitMarkers", CleanRow = "Clean", HeadRow = "Head", IconRow = "Icon";
+
+    /// <summary>
+    /// The kill icon's look, in either look of the marker: HitMarkers.csv rows Icon.* (1920x1080 canvas units, seconds).
+    /// The picture (<see cref="KillIcons"/>: a skull, a shattered skull, a knife, a burst ... the user's seven, 2026-11-21)
+    /// pops under the aim point rather than on it, so the head it took and the next one lined up behind it stay in sight
+    /// (the user's rule for the marker: "시야를 너무 가리지도 않으면서"), holds long enough to be read at a glance and fades
+    /// sliding a little further down. A new kill starts it again with its own picture.
+    /// </summary>
+    [System.Serializable]
+    public sealed class IconLook
+    {
+        [Tooltip("The picture's side (px). 0 turns the kill icon off.")]
+        public float size = 40f;
+        [Tooltip("From the aim point down to the picture's middle (px). 0 puts it on the aim point.")]
+        public float below = 62f;
+        [Tooltip("A fresh picture starts this much bigger (.35 = 35%) and snaps back over Pop Seconds.")]
+        public float pop = .35f;
+        public float popSeconds = .08f;
+        [Tooltip("Seconds it shows at full strength, the pop included, before it fades.")]
+        public float holdSeconds = .4f;
+        [Tooltip("Seconds it then takes to fade out.")]
+        public float fadeSeconds = .25f;
+        [Tooltip("How far it slides down while it fades (px).")]
+        public float drift = 6f;
+    }
 
     /// <summary>
     /// The clean marker's numbers: HitMarkers.csv, rows Clean.* (1920x1080 canvas units). Measured off the user's PAYDAY 3
@@ -163,7 +189,14 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private readonly Graphic[] flareDiamonds = new Graphic[2];
     private readonly CleanLook look = new CleanLook();
     private readonly HeadLook headLook = new HeadLook();
+    private readonly IconLook iconLook = new IconLook();
     private Image[] sparks;
+    // The kill icon: its picture, its row's colour, and whether it is a kill's, which a broken posture's never covers.
+    private RectTransform iconRoot;
+    private RawImage icon;
+    private Color iconColour = Color.white;
+    private bool iconIsKill;
+    private float iconAge = 99f;
     private RectTransform root, cleanRoot, headRoot, starRoot, breakRoot;
     // The look the showing marker started in: a change in the settings takes effect from the next hit.
     private HitMarkerStyle style;
@@ -192,6 +225,15 @@ public sealed class HitMarkerHUD : MonoBehaviour
         instance.breakAge = 0f;
         instance.breakRoot.gameObject.SetActive(true);
         instance.LayoutBreak(GunFeelSettings.Instance);
+        instance.ShowIcon(KillIcons.ForBreak(), false);
+    }
+
+    /// <summary>The local player's kill: its picture (a KillIcons row, chosen by how it happened) under the aim point.</summary>
+    public static void ShowKill(KillIcons.Row row)
+    {
+        if (!Application.isPlaying || row == null || !GunFeelSettings.Instance.hitMarkers) return;
+        Prepare();
+        instance.ShowIcon(row, true);
     }
 
     public static void Prepare()
@@ -210,6 +252,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         FeelUI.SetupOverlay(gameObject, 26);
         GameTables.BindNested(TableName, CleanRow, this, look);
         GameTables.BindNested(TableName, HeadRow, this, headLook);
+        GameTables.BindNested(TableName, IconRow, this, iconLook);
         root = FeelUI.Rect("Marker", transform);
         ring = FeelUI.Rect("Ring", root).gameObject.AddComponent<RawImage>();
         ring.texture = FeelAssets.Ring; ring.raycastTarget = false;
@@ -257,6 +300,14 @@ public sealed class HitMarkerHUD : MonoBehaviour
         breakRing.texture = FeelAssets.Ring; breakRing.raycastTarget = false;
         for (int i = 0; i < 4; i++) shards[i] = Tick("Shard " + i, breakRoot);
         breakRoot.gameObject.SetActive(false);
+
+        // The kill icon over everything: the picture is white with its own shadow drawn in, tinted by its row's colour.
+        iconRoot = FeelUI.Rect("Kill Icon", transform);
+        icon = iconRoot.gameObject.AddComponent<RawImage>();
+        icon.raycastTarget = false;
+        iconRoot.gameObject.SetActive(false);
+        // The table and its pictures now, so the first kill loads nothing (this runs from CombatWarmup's Prepare).
+        KillIcons.Prewarm();
     }
 
     private static Image Tick(string name, Transform parent)
@@ -387,6 +438,43 @@ public sealed class HitMarkerHUD : MonoBehaviour
             if (breakAge >= settings.breakSeconds) breakRoot.gameObject.SetActive(false);
             else LayoutBreak(settings);
         }
+        if (iconRoot.gameObject.activeSelf)
+        {
+            iconAge += Time.unscaledDeltaTime;
+            if (iconAge >= IconSeconds()) iconRoot.gameObject.SetActive(false);
+            else LayoutIcon();
+        }
+    }
+
+    // kill: a kill's picture, which a broken posture's never covers while it is up (a kill and a break in one frame
+    // show the kill).
+    private void ShowIcon(KillIcons.Row row, bool kill)
+    {
+        if (row == null || iconLook.size <= 0f) return;
+        if (!kill && iconIsKill && iconRoot.gameObject.activeSelf) return;
+        var picture = KillIcons.Picture(row);
+        if (picture == null) return;
+        icon.texture = picture;
+        iconColour = row.Colour;
+        iconIsKill = kill;
+        iconAge = 0f;
+        iconRoot.gameObject.SetActive(true);
+        LayoutIcon();
+    }
+
+    private float IconSeconds() => Mathf.Max(.02f, iconLook.holdSeconds + iconLook.fadeSeconds);
+
+    // The kill icon snaps from big to its size, holds, then fades sliding down, under the aim point as it jumps with the
+    // view's kick, as the lines do.
+    private void LayoutIcon()
+    {
+        var l = iconLook;
+        float settle = 1f - Mathf.Clamp01(iconAge / Mathf.Max(.01f, l.popSeconds));
+        float pop = 1f + l.pop * settle * settle * settle;
+        float fade = l.fadeSeconds > 0f ? Mathf.Clamp01((iconAge - l.holdSeconds) / l.fadeSeconds) : iconAge >= l.holdSeconds ? 1f : 0f;
+        iconRoot.anchoredPosition = AimPoint() + Vector2.down * (l.below + l.drift * Smooth(fade));
+        iconRoot.sizeDelta = Vector2.one * (l.size * pop);
+        icon.color = KitStyle.With(iconColour, iconColour.a * (1f - Smooth(fade)));
     }
 
     /// <summary>Screen position of the steady aim as seen through the punched camera; centre when there is no punch.</summary>

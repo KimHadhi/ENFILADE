@@ -177,10 +177,11 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
         crosshair.OrNull()?.Kick(4f + data.ViewPunch.x * 4f);
 
-        // A bullet that reached a receiver but did nothing (guard, parry, invulnerability) gets its own grey marker.
+        // A bullet that reached a receiver but did nothing (guard, parry, invulnerability) gets its own grey marker and
+        // dull sound (HitConfirm, with the frame's other hits).
         var result = shot.Trace.Damage;
         if (result == DamageResult.Blocked || result == DamageResult.Parried || result == DamageResult.Invulnerable)
-            HitMarkerHUD.Show(HitMarkerKind.Blocked);
+            HitConfirm.Blocked();
     }
 
     /// <summary>

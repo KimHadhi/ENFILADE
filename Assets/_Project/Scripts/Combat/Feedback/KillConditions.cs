@@ -25,7 +25,7 @@ public static class KillConditions
 
     /// <summary>
     /// Everything a kill happened under, as the PC that calls it sees it: the blow (headshot, through something, from far,
-    /// a blast, an execution of one that never knew, a counter, a shove, a thrown knife, bare hands), who fell (named or elite), the
+    /// a blast, an execution of one that never knew, a counter, a shove, a thrown knife, a knife in hand, bare hands), who fell (named or elite), the
     /// killer's own state (from the hit, or this PC's own player's), and a Schießhund's quarry. distance: shooter to hit
     /// point (m), 0 when unknown.
     /// </summary>
@@ -48,6 +48,7 @@ public static class KillConditions
         // A class throwable: a frag's burst, a knife that struck as it flew (Throwables).
         else if (hit.Method == DamageMethod.Blast) marks |= KillMarks.Explosion;
         else if (hit.Method == DamageMethod.Thrown) marks |= KillMarks.Thrown;
+        else if (hit.Method == DamageMethod.Blade) marks |= KillMarks.Blade;
         // A can's blast is the one other player hit that says where it came from (CampaignCans); the rest is bare hands.
         else if (!bullet && hit.Method == DamageMethod.Other) marks |= hit.Origin.HasValue ? KillMarks.Explosion : KillMarks.Melee;
         if (target is EnemyHealth enemy)

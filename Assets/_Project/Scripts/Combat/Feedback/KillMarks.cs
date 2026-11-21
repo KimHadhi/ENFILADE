@@ -22,6 +22,9 @@ public enum KillMarks : uint
     Shove = 1 << 7,
     Melee = 1 << 8,
     Thrown = 1 << 11,
+    // The class knife in the melee slot (DamageMethod.Blade): a cut, which the crosshair's kill icon tells from a
+    // punch (KillIcons).
+    Blade = 1 << 12,
     // Who fell.
     Standout = 1 << 9,
     Elite = 1 << 10,

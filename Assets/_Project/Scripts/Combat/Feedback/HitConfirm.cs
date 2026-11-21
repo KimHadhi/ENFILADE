@@ -4,13 +4,18 @@ using UnityEngine;
 /// <summary>
 /// What the hits the local player lands show and sound like, once GunFeelDirector has decided they are theirs. The hits
 /// of one frame (a shotgun's pellets, a swing through a crowd) are confirmed once, at the end of the frame: one hit
-/// marker sized by the share of health they took, one dry tick, a metallic dink on top when enough of them were
-/// headshots (GunFeel → Headshot Hit Share, Overwatch's pellet rule), and a thump for kills that climbs a little with each
-/// kill of a streak (GunFeel → Kill Streak Pitch Step). A hit that breaks posture adds the break marker and a bone crack.
-/// When any of them came through or off something on the way (DamageHit.Pierced), the marker shows its pierced echo.
-/// Sounds come from the HitConfirm sound bank (Art/Audio/HitConfirm/Body, Head, Kill, Break; volume and pitch in
-/// Sounds.csv), so a sound is changed by swapping files; while the bank is missing a kill falls back to GunFeel's kill
-/// sounds. Created on first use during Play.
+/// marker sized by the share of health they took, and one confirm sound for the marker's kind, as the marker has one
+/// look: a hit (Body), a headshot when enough of them were headshots (Head; GunFeel → Headshot Hit Share, Overwatch's
+/// pellet rule), a kill that climbs a little with each kill of a streak (Kill; GunFeel → Kill Streak Pitch Step) with
+/// the head's bright double tick over it for a headshot kill (HeadKill), or, when nothing of the frame did any harm, the
+/// grey marker and its dull sound (Blocked). A kill also shows its picture under the aim point (KillIcons, chosen by its
+/// KillMarks). A hit that breaks posture adds the break marker, its picture and its sound (Break). When any of them came
+/// through or off something on the way (DamageHit.Pierced), the marker shows its pierced echo.
+/// Each sound is a whole marker sound (the user's set of 2026-11-21: mwhitmarker, headmarker, newkillmarker, killmarker,
+/// hitmarkfail, breakarmorr), so they are not stacked as the old dry tick under a dink was. They come from the HitConfirm
+/// sound bank (Art/Audio/HitConfirm/&lt;key&gt;; volume and pitch in Sounds.csv), so a sound is changed by swapping files;
+/// the earlier ones wait in BodyOld, HeadPing, KillOld and BreakOld. While the bank has no kill a kill falls back to
+/// GunFeel's kill sounds. Created on first use during Play.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitConfirm)]
 public sealed class HitConfirm : MonoBehaviour
@@ -25,8 +30,10 @@ public sealed class HitConfirm : MonoBehaviour
     private static bool bankLoaded;
     private static int streak;
     private static float lastKillTime = -99f;
-    private int hits, heads, kills, headKills, breaks, pierces;
+    private int hits, heads, kills, headKills, breaks, pierces, blocked;
     private float share;
+    // The picture of this frame's most telling kill (KillIcons.Better).
+    private KillIcons.Row killIcon;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -51,8 +58,11 @@ public sealed class HitConfirm : MonoBehaviour
         return instance;
     }
 
-    /// <summary>A hit the local player landed; confirmed with the rest of this frame's hits.</summary>
-    public static void Landed(CombatDamageReport report)
+    /// <summary>
+    /// A hit the local player landed; confirmed with the rest of this frame's hits. marks: what a killing blow happened
+    /// under (KillConditions), which picks its picture.
+    /// </summary>
+    public static void Landed(CombatDamageReport report, KillMarks marks = KillMarks.None)
     {
         if (!Application.isPlaying) return;
         var self = Get();
@@ -63,6 +73,7 @@ public sealed class HitConfirm : MonoBehaviour
         {
             self.kills++;
             if (report.IsCritical) self.headKills++;
+            self.killIcon = KillIcons.Better(self.killIcon, KillIcons.ForKill(marks));
         }
         self.share += report.MaximumHealth > 0f ? report.Applied / report.MaximumHealth : 1f;
         Remember(report.Target);
@@ -84,6 +95,16 @@ public sealed class HitConfirm : MonoBehaviour
         self.share += 1f;
     }
 
+    /// <summary>
+    /// A shot of the local player's that reached a target and did nothing (a guard, a parry, invulnerability): the grey
+    /// marker and its dull sound, unless a hit of the same frame did harm (a shotgun's other pellets), which speaks instead.
+    /// </summary>
+    public static void Blocked()
+    {
+        if (!Application.isPlaying) return;
+        Get().blocked++;
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this) { Destroy(this); return; }
@@ -95,6 +116,12 @@ public sealed class HitConfirm : MonoBehaviour
     private void LateUpdate()
     {
         if (hits > 0) Confirm();
+        else if (blocked > 0)
+        {
+            HitMarkerHUD.Show(HitMarkerKind.Blocked);
+            Play("Blocked");
+        }
+        blocked = 0;
         if (breaks > 0)
         {
             HitMarkerHUD.ShowBreak();
@@ -109,11 +136,15 @@ public sealed class HitConfirm : MonoBehaviour
         bool head = heads > 0 && heads >= settings.headshotHitShare * hits, kill = kills > 0, headKill = headKills > 0;
         HitMarkerHUD.Show(kill ? (headKill ? HitMarkerKind.HeadKill : HitMarkerKind.BodyKill) : head ? HitMarkerKind.Head : HitMarkerKind.Body,
             Mathf.Min(1f, share), pierces > 0);
-        Play("Body");
-        if (head || headKill) Play("Head");
-        if (kill) Kill(settings, headKill, kills);
+        if (kill)
+        {
+            Kill(settings, headKill, kills);
+            HitMarkerHUD.ShowKill(killIcon);
+        }
+        else Play(head ? "Head" : "Body");
         hits = heads = kills = headKills = pierces = 0;
         share = 0f;
+        killIcon = null;
     }
 
     private static void Kill(GunFeelSettings settings, bool head, int count)
@@ -123,7 +154,10 @@ public sealed class HitConfirm : MonoBehaviour
         streak = now - lastKillTime <= CombatFeedHUD.StreakWindow ? streak + count : count;
         lastKillTime = now;
         float climb = 1f + Mathf.Min(streak - 1, settings.killStreakSteps) * settings.killStreakPitchStep;
-        if (Play("Kill", climb)) return;
+        bool played = Play("Kill", climb);
+        // A headshot kill rings the head's bright double tick over the kill's own sound, in tune with its climb.
+        if (head) played |= Play("HeadKill", climb);
+        if (played) return;
         FeelAudio.Play(head ? FeelSound.HeadshotKill : FeelSound.Kill, head ? settings.headshotKillSounds : settings.killSounds,
             settings.killVolume, Random.Range(.97f, 1.03f) * climb);
     }

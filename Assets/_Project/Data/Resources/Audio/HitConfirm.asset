@@ -14,30 +14,51 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SoundBank
   id: HitConfirm
   entries:
+  - key: Blocked
+    clips:
+    - {fileID: 8300000, guid: 7a51841008f94300a0a3973c34c1b006, type: 3}
   - key: Body
+    clips:
+    - {fileID: 8300000, guid: 942e05a1b0674925943e1ec7dc1337ca, type: 3}
+  - key: BodyOld
     clips:
     - {fileID: 8300000, guid: 6e5df932a87f5524e9d6c01cd5673a32, type: 3}
   - key: Break
+    clips:
+    - {fileID: 8300000, guid: 4fa5073cd1f54f21b6636ce1fb398755, type: 3}
+  - key: BreakOld
     clips:
     - {fileID: 8300000, guid: 2cd11d243fe361887a40f684f5be20d4, type: 3}
     - {fileID: 8300000, guid: af147bc85c095d404dc8025beb56b5f3, type: 3}
     - {fileID: 8300000, guid: d8f4c874b4e8851825d475a612b1b0bb, type: 3}
   - key: Head
     clips:
-    - {fileID: 8300000, guid: 81ee0f6948a247e695d18ceaa8050b34, type: 3}
-    - {fileID: 8300000, guid: 8b66b79a6fca43599218524c230e0122, type: 3}
-    - {fileID: 8300000, guid: 6fe43f2a218d48c9a891ac57666e24a5, type: 3}
+    - {fileID: 8300000, guid: 6a14e86424874b079c387ba8ecb1e769, type: 3}
   - key: HeadAVA
     clips:
     - {fileID: 8300000, guid: 6f7850867e294022a4b434a592b4a091, type: 3}
     - {fileID: 8300000, guid: 6edf3c9a1f544259bec741dd434b910a, type: 3}
     - {fileID: 8300000, guid: 03e12ee83f694aaf8ac3b2cc7d078782, type: 3}
+  - key: HeadKill
+    clips:
+    - {fileID: 8300000, guid: b330c5291f6c49af8f1d8c118ec21db9, type: 3}
   - key: HeadOld
     clips:
     - {fileID: 8300000, guid: d7ef414e4a820c64cb0f11d69fb6f0cd, type: 3}
     - {fileID: 8300000, guid: a395ee728116ddd439074e80c6598427, type: 3}
+  - key: HeadPing
+    clips:
+    - {fileID: 8300000, guid: 81ee0f6948a247e695d18ceaa8050b34, type: 3}
+    - {fileID: 8300000, guid: 8b66b79a6fca43599218524c230e0122, type: 3}
+    - {fileID: 8300000, guid: 6fe43f2a218d48c9a891ac57666e24a5, type: 3}
   - key: Kill
+    clips:
+    - {fileID: 8300000, guid: fa91b438e8284fd185de2b483fa7951a, type: 3}
+  - key: KillOld
     clips:
     - {fileID: 8300000, guid: 8e6e4dbec5d5b48498204bc8da562db5, type: 3}
     - {fileID: 8300000, guid: 9a40003267eaf974d8c838b8b0976973, type: 3}
     - {fileID: 8300000, guid: 80567322988dc744dbcaac2e07705c04, type: 3}
+  - key: ShieldBreak
+    clips:
+    - {fileID: 8300000, guid: 394d32cc89134241aa7dd1f9dc2e7302, type: 3}

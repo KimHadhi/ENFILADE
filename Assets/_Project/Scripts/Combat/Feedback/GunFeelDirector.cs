@@ -53,7 +53,7 @@ public static class GunFeelDirector
             score.AnnounceKill(WeaponName(hit), CombatDamageEvents.DisplayNameOf(report.Target), critical && shot, standout, WeaponIcon(hit), marks);
         if (!byPlayer) return;
 
-        HitConfirm.Landed(report);
+        HitConfirm.Landed(report, marks);
         bool pulse = execution ? settings.killPulseOnExecution : hit.IsCounter ? settings.killPulseOnCounter
             : shot ? settings.killPulseOnGunKill : settings.killPulseOnOtherKill;
         if (!kill) return;

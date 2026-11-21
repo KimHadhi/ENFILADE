@@ -6,8 +6,8 @@ public enum GunSoundProfile { Rifle, Pistol, Heavy }
 // LowAmmo: the gun's own warning on a nearly empty magazine. LowAmmoClick: the click every gun shares on top of it.
 // LastRound: the shot that empties the magazine. SlideBack and SlideForward: a bolt or slide pulled back and let go, each
 // on its own when a reload clip times them (ReloadMoments); Bolt is both as one cue.
-// ShieldHit and ShieldBreak: a player's shield taking a hit and running out (backlog 321), until clips go in
-// Art/Audio/HitConfirm/ShieldHit and ShieldBreak.
+// ShieldHit and ShieldBreak: a player's shield taking a hit and running out (backlog 321). The break is the clip in
+// Art/Audio/HitConfirm/ShieldBreak (ShieldFeedback); the hit is made here until a clip goes in .../ShieldHit.
 public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagOut, MagIn, Bolt, HitMarker, Kill, HeadshotKill, BodyFall,
     LowAmmoClick, LastRound, SlideBack, SlideForward, ShieldBreak, ShieldHit, Draw }
 
@@ -15,7 +15,7 @@ public enum FeelSound { RifleShot, PistolShot, HeavyShot, DryFire, LowAmmo, MagO
 /// Shot, mechanical and confirm sounds. A gun sound is, in order: the clips assigned to it (GunFeel / WeaponData),
 /// a Tables/SoundCues row "Gun&lt;sound&gt;/&lt;gun&gt;" (GunBolt/Rifle: the slide pulled, then let go), the Guns sound bank's
 /// "&lt;gun&gt;/&lt;sound&gt;" then "&lt;sound&gt;" (Art/Audio/Guns/Rifle/Shot, Art/Audio/Guns/DryFire); with none of them
-/// it is silent. Only the shield's two sounds are still made here until their files are chosen. Every shot also gets
+/// it is silent. Only the shield's hit is still made here until its file is chosen. Every shot also gets
 /// the room's tail (GunReverb). Created on first use during Play; no scene setup.
 /// </summary>
 [DisallowMultipleComponent]
@@ -159,7 +159,7 @@ public sealed class FeelAudio : MonoBehaviour
     }
 
     /// <summary>
-    /// Builds the voices, loads the gun sounds and the room tails and makes the shield's two sounds, which the first shot
+    /// Builds the voices, loads the gun sounds and the room tails and makes the shield hit's sound, which the first shot
     /// or hit would otherwise stop to do.
     /// </summary>
     public static void Prepare()
@@ -167,7 +167,6 @@ public sealed class FeelAudio : MonoBehaviour
         if (!Application.isPlaying) return;
         Get().Bank(GunBank);
         GunReverb.Prepare();
-        Synthesized(FeelSound.ShieldBreak);
         Synthesized(FeelSound.ShieldHit);
         // The reload hits a timed reload lines up (WeaponFeedback), read now rather than on the first reload.
         foreach (GunSoundProfile gun in Enum.GetValues(typeof(GunSoundProfile)))
@@ -327,7 +326,7 @@ public sealed class FeelAudio : MonoBehaviour
     private void OnDestroy() { if (instance == this) instance = null; }
 
     /// <summary>
-    /// Assigned clips first, otherwise the shield's made variations; null (silence) for anything else. Avoids repeating
+    /// Assigned clips first, otherwise the shield hit's made variations; null (silence) for anything else. Avoids repeating
     /// the last pick.
     /// </summary>
     private AudioClip Pick(FeelSound sound, AudioClip[] overrides)
@@ -375,19 +374,16 @@ public sealed class FeelAudio : MonoBehaviour
 
     // ---------------------------------------------------------------- synthesis
 
-    // Only the shield's two sounds are still made here: no file has been chosen for them yet (SoundRebuild.md 5.4). Every
-    // other sound plays its files or nothing; the synthesized shots, mechanics, confirms and fall went in 0.9.237
-    // ("소리를 코드로 만들면 안 되잖아", user 2026-11-20), as their recorded files had long played first.
-    private static bool IsMade(FeelSound sound) => sound == FeelSound.ShieldBreak || sound == FeelSound.ShieldHit;
+    // Only the shield's hit is still made here: no file has been chosen for it yet (SoundRebuild.md 5.4). Every other
+    // sound plays its files or nothing; the synthesized shots, mechanics, confirms and fall went in 0.9.237 ("소리를 코드로
+    // 만들면 안 되잖아", user 2026-11-20), as their recorded files had long played first, and the shield's break in 0.9.238,
+    // when the user's breakarmorself went into Art/Audio/HitConfirm/ShieldBreak.
+    private static bool IsMade(FeelSound sound) => sound == FeelSound.ShieldHit;
 
     private static float[] Synthesize(FeelSound sound, System.Random random)
     {
         switch (sound)
         {
-            // A pane of energy giving way: a bright crack, the charge falling out of it (a falling whine over a low knock),
-            // and glass raining down in short high pings that thin out.
-            case FeelSound.ShieldBreak: return Finish(Mix(.6f, Hiss(random, 0f, .03f, .9f, 3200f), Sweep(900f, 170f, .09f, .45f),
-                Sweep(170f, 55f, .06f, .55f), Tinkles(random, 11)), .9f, 1.4f);
             // Energy taking a blow, never flesh: a sharp electric crack, a falling zap and a glassy ping over a short knock.
             case FeelSound.ShieldHit: return Finish(Mix(.24f, Hiss(random, 0f, .012f, 1f, 4500f), Sweep(2600f, 1100f, .035f, .45f),
                 Bell(3400f * Jitter(random, .05f), .03f, .3f, 1.52f, 2.31f), Sweep(220f, 90f, .03f, .5f)), .85f, 1.6f);
@@ -404,22 +400,6 @@ public sealed class FeelAudio : MonoBehaviour
             float t = i / (float)Rate - start, white = (float)(random.NextDouble() * 2.0 - 1.0);
             low += cut * (white - low);
             data[i] = (white - low) * Mathf.Exp(-t / decay) * gain * Mathf.Clamp01(t / .0005f);
-        }
-        return data;
-    }
-
-    /// <summary>Glass coming apart: a scatter of short high bells, thick at first and thinning out over a third of a second.</summary>
-    private static float[] Tinkles(System.Random random, int count)
-    {
-        var data = new float[Mathf.CeilToInt(.6f * Rate)];
-        for (int k = 0; k < count; k++)
-        {
-            float spread = (float)random.NextDouble();
-            float start = .004f + spread * spread * .32f;
-            float frequency = 2600f + (float)random.NextDouble() * 4200f;
-            float gain = (.5f - .3f * spread * spread) * Jitter(random, .2f);
-            var ping = Shift(Bell(frequency, .018f + (float)random.NextDouble() * .03f, gain, 1.47f, 2.09f), start);
-            for (int i = 0; i < Mathf.Min(ping.Length, data.Length); i++) data[i] += ping[i];
         }
         return data;
     }
@@ -446,12 +426,6 @@ public sealed class FeelAudio : MonoBehaviour
                 + .3f * Mathf.Sin(w * ratio3) * Mathf.Exp(-t / (decay * .3f))) * gain * Mathf.Clamp01(t / .0008f);
         }
         return data;
-    }
-
-    private static float[] Shift(float[] data, float seconds)
-    {
-        int offset = Mathf.RoundToInt(seconds * Rate); var shifted = new float[data.Length + offset];
-        Array.Copy(data, 0, shifted, offset, data.Length); return shifted;
     }
 
     private static float[] Mix(float seconds, params float[][] layers)

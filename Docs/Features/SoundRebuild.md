@@ -153,7 +153,7 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 
 | 파일 | 소리 | 0.9.237 |
 | --- | --- | --- |
-| `S/Combat/Feedback/FeelAudio.cs` | 소총·권총·중화기 사격, 빈 탄창 딸깍, 탄 적음 둘, 마지막 탄, 탄창 빼기, 탄창 넣기, 노리쇠, 슬라이드 뒤로·앞으로 (12), 처치, 헤드샷 처치, 몸 쓰러짐 (3) | 지웠다. 쓰이지 않던 `HitMarker`의 합성(5.2)도 함께 갔다. 남은 합성은 보호막 둘(5.4)뿐이고, 로딩 때(`FeelAudio.Prepare`) 19개 대신 그 둘만 만든다 |
+| `S/Combat/Feedback/FeelAudio.cs` | 소총·권총·중화기 사격, 빈 탄창 딸깍, 탄 적음 둘, 마지막 탄, 탄창 빼기, 탄창 넣기, 노리쇠, 슬라이드 뒤로·앞으로 (12), 처치, 헤드샷 처치, 몸 쓰러짐 (3) | 지웠다. 쓰이지 않던 `HitMarker`의 합성(5.2)도 함께 갔다. 남은 합성은 보호막 둘(5.4)뿐이고, 로딩 때(`FeelAudio.Prepare`) 19개 대신 그 둘만 만든다. 0.9.238에 보호막 깨짐도 사용자가 준 파일(`breakarmorself`)로 바뀌어 합성을 지웠고, 이제 보호막 맞음 하나만 남았다 |
 | `S/Enemies/Elites/ZombieReaper.cs` | 리퍼 낫 휘두름 (`tonfa_swing_miss1/2.ogg`) | 합성 휙을 지웠고, 휘두름과 차지 소리는 사용자가 준 소리로 바뀌었다(5.10) |
 | `S/Player/Stealth/PlayerKnock.cs` | 노크 (`A/Stealth/knock.wav`) | 기능째 지웠다(4장 5번) |
 | `S/Player/Stealth/PlayerThrow.cs` | 돌 부딪힘 (`qubodupImpactStone.ogg`) | 합성을 지웠고, 사용자가 준 `Stone hit`로 바뀌었다(5.10) |
@@ -191,7 +191,7 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 
 | 소리 | 지금 | 언제 | 바꿀 것 |
 | --- | --- | --- | --- |
-| 보호막 깨짐 (`FeelAudio.cs`) | 밝은 깨짐, 떨어지는 윙, 유리 핑 | 내 보호막이 다할 때 | **Vefects `SFX_Vefects_Electric_Discharge_01/02_One_Shot_01.wav`** 또는 **`SFX_Vefects_Radial_Burst_One_Shot_01.wav`**. 폴더 `A/HitConfirm/ShieldBreak`에 넣으면 바로 쓰인다 |
+| 보호막 깨짐 (`FeelAudio.cs`) | 밝은 깨짐, 떨어지는 윙, 유리 핑 | 내 보호막이 다할 때 | **했다(0.9.238)**: 사용자가 준 `breakarmorself.ogg`를 `A/HitConfirm/ShieldBreak`에 넣고 합성을 지웠다 |
 | 보호막 맞음 (`FeelAudio.cs`) | 전기 딱, 떨어지는 지직 | 내 보호막이 맞을 때, 친구 보호막이 맞을 때 | **Vefects `SFX_Vefects_Electric_Impact_01/02_One_Shot_01.wav`**. 폴더 `A/HitConfirm/ShieldHit`. 친구 쪽 길은 고쳐야 한다(6.1의 버그 2) |
 | 죽음 스팅 (`S/Audio/DeathSting.cs:32`) | 쿵, 먹먹해지는 소리, 낮은 울림, 귀울림, 느려지는 심장 두 번, 2.9초. **높음**(귀울림 2.35 kHz) | 내가 죽을 때. 2D, UI 채널 | "death sting, muffled impact, shell shock, 3 s". 부분 층: **`A/Movement/Fall/Death/deathfall1-4.wav`**, **`A/Movement/Fall/Heartbeat/heartbeat_beat_*.wav`**. 귀울림은 빼거나 낮게 |
 | 특수 처치 팅 (`S/UI/Hud/KillFeed/SpecialKillStamp.cs:263`) | 딱 뒤에 밝은 쇳소리 둘(1975·2637 Hz). **높음** | 미트샷, 레일건, 스키트 등 특수 처치 | "low UI stinger, soft impact + muted low chord, 0.3 s". 낮게 새로 고른다 |

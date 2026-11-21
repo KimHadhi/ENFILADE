@@ -9,7 +9,8 @@ using UnityEngine.UI;
 /// Running the shield out (backlog 321) gets a moment of its own: a cracked pane of the same cyan bursts outward off the
 /// screen's edge, the view takes a small extra knock, a glassy break plays and it is said at the top of the screen
 /// (AlertHUD); the HUD's band shatters (ShieldShatter).
-/// Sounds: clips in Art/Audio/HitConfirm/ShieldHit and ShieldBreak when there are any, else FeelAudio's synthesized ones.
+/// Sounds: the break is the clip in Art/Audio/HitConfirm/ShieldBreak (the user's breakarmorself, 2026-11-21); the hit is
+/// the clip in .../ShieldHit when there is one, else FeelAudio's made crack until its file is chosen.
 /// This PC's player only, as the shield is decided there; others see sparks on the body (PlayerNetworkCombat). Both
 /// overlays are built at spawn, so the first hit costs nothing in a fight. Numbers: Tables/Player.csv, row Shield.
 /// D-3, the third mockup round (the user, 2026-11-11: the honeycomb read as a mobile game; "B, C의 이펙트는 좋은데 나는
@@ -57,8 +58,6 @@ public sealed class ShieldFeedback : MonoBehaviour
     private float viewKick = 1.6f;
     [SerializeField, Range(0f, 1f), Tooltip("Extra shake when the shield runs out.")]
     private float trauma = .2f;
-    [SerializeField, Min(0f), Tooltip("Volume of the synthesized break. Clips use Sounds.csv's HitConfirm/ShieldBreak row.")]
-    private float breakVolume = .8f;
     [Header("Energy cut (D-3)")]
     [SerializeField, Range(0f, 1f), Tooltip("Brightness of the cut a hit makes on its side of the screen. 0 turns it off.")]
     private float cutStrength = 1f;
@@ -196,7 +195,7 @@ public sealed class ShieldFeedback : MonoBehaviour
     private void OnBroken(DamageHit hit)
     {
         if (!Application.isPlaying || receiver == null) return;
-        PlaySound(BreakKey, FeelSound.ShieldBreak, breakVolume);
+        PlaySound(BreakKey, null, 0f);
         // Broken by the blow that killed: the death screen has the moment.
         if (!receiver.IsAlive) return;
         AlertHUD.Self(Texts.Get("shield.broken"));
@@ -214,7 +213,9 @@ public sealed class ShieldFeedback : MonoBehaviour
             CameraViewPunch.For(view).DamagePunch(new Vector3(viewKick, 0f, Random.Range(-.4f, .4f) * viewKick), trauma);
     }
 
-    private void PlaySound(string key, FeelSound fallback, float volume)
+    // The bank's clip at its Sounds.csv volume and pitch; with none, the made fallback when the sound still has one, else
+    // silence.
+    private void PlaySound(string key, FeelSound? fallback, float volume)
     {
         var clip = bank != null ? bank.Pick(key) : null;
         if (clip != null)
@@ -223,7 +224,7 @@ public sealed class ShieldFeedback : MonoBehaviour
             FeelAudio.PlayClip(clip, tuning.Volume, tuning.RandomPitch());
             return;
         }
-        FeelAudio.Play(fallback, null, volume, Random.Range(.96f, 1.04f));
+        if (fallback.HasValue) FeelAudio.Play(fallback.Value, null, volume, Random.Range(.96f, 1.04f));
     }
 
     private void Update()

@@ -1,0 +1,13 @@
+﻿id,event,when,priority,on,picture,colour,note
+#설명,kill(처치) 또는 break(내 공격이 적의 체간을 무너뜨림. 처치가 아님),"조건(KillMarks 이름을 ;로. 모두 갖춰야 함. 비우면 모든 처치): Headshot Pierced LongRange Explosion Execution Takedown Counter Shove Melee Thrown Blade Standout Elite Charged Kata Ultimate Bounty Duel",중요도(큰 것 먼저. 처치가 여러 줄에 맞으면 가장 큰 줄의 그림이 뜬다),1 켬 · 0 끔,"그림 이름: Resources/UI/KillIcons/<이름>.png(흰 그림에 그림자까지 그려 넣은 것). 문서\ENFILADE\KillIcons\<이름>.png를 두면 그것을 먼저 쓴다",그림에 곱하는 색(#RRGGBB. #FFFFFF면 그림 그대로),"어느 처치인지. 그림은 사용자가 준 일곱 장(2026-11-21). 크기와 시간은 HitMarkers.csv의 Icon 줄"
+blade,kill,Blade,70,1,Knife,#FFFFFF,손에 든 클래스 칼로 처치 · 칼
+execution,kill,Execution,69,1,Knife,#FFFFFF,처형·암살(칼로 끝낸다) · 칼
+thrown,kill,Thrown,68,1,Knife,#FFFFFF,던진 칼이 꽂혀 처치 · 칼
+explosion,kill,Explosion,60,1,Burst,#FFFFFF,수류탄·지뢰·깡통 폭발 · 터지는 별
+counter,kill,Counter,50,1,BlockHit,#FFFFFF,반격·패리 반격 · 머리에 맞고 주저앉는 사람
+shove,kill,Shove,49,1,BlockHit,#FFFFFF,밀치기·발차기·개머리 치기·돌진 · 머리에 맞고 주저앉는 사람
+fist,kill,Melee,48,1,BlockHit,#FFFFFF,주먹·맨손 · 머리에 맞고 주저앉는 사람
+headshot,kill,Headshot,30,1,SkullShattered,#FFFFFF,헤드샷 처치 · 깨진 해골
+charge,kill,Charged,20,1,Flame,#FFFFFF,어썰트 CHARGE를 받은 총알로 처치(킬 피드에서 총열이 불타는 그 처치. 헤드샷이면 깨진 해골이 앞선다) · 불꽃
+kill,kill,,0,1,Skull,#FFFFFF,그 밖의 모든 처치 · 해골
+break,break,,0,1,BlockBreak,#FFFFFF,내 공격이 적의 체간을 무너뜨렸을 때(처치가 아님. 그 프레임에 처치도 했으면 처치 그림이 뜬다) · 머리 위에서 깨지는 블록

@@ -74,10 +74,12 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터였고, 0
 | `Assets/ThirdParty/DAVFX/Realistic Impacts Pack` | 266개, 473MB | DAVFX(구매) | VFX Graph 패키지가 있어야 재생된다. `Resources/Combat/ImpactLibrary`가 프리팹을, `Art/Materials/Impacts`가 총알 구멍 텍스처를 직접 가리킨다 |
 | `Assets/ThirdParty/JMO Assets/Cartoon FX Remaster` | 483개, 35MB | Cartoon FX Remaster Free | |
 | `Resources/Combat/Parry`의 `ParryFlare` | 1개 | Kenney Particle Pack(CC0) | |
-| `Art/Audio/HitConfirm/Body` | 1개 | Kenney Interface Sounds(CC0, OpenGameArt)의 `tick_002` | 2026-11-04 추가 |
-| `Art/Audio/HitConfirm/Head`, `Art/Audio/HitConfirm/Kill`의 `wood_hit_08` | 3개 | rubberduck의 100 CC0 metal and wood SFX(CC0, OpenGameArt): `hammer_03`, `metal_hit_05`, `wood_hit_08` | 2026-11-04 추가 |
-| `Art/Audio/HitConfirm/Kill`의 `bfh1_hit_08` | 1개 | rubberduck의 75 CC0 breaking / falling / hit sfx(CC0, OpenGameArt) | 2026-11-04 추가 |
-| `Art/Audio/HitConfirm/Kill`의 `qubodupImpactStone` | 1개 | qubodup의 Impact(CC0, OpenGameArt) | 2026-11-04 추가 |
+| `Art/Audio/HitConfirm/BodyOld` | 1개 | Kenney Interface Sounds(CC0, OpenGameArt)의 `tick_002` | 2026-11-04 추가. 2026-11-21까지 `Body` |
+| `Art/Audio/HitConfirm/HeadOld`, `Art/Audio/HitConfirm/KillOld`의 `wood_hit_08` | 3개 | rubberduck의 100 CC0 metal and wood SFX(CC0, OpenGameArt): `hammer_03`, `metal_hit_05`, `wood_hit_08` | 2026-11-04 추가 |
+| `Art/Audio/HitConfirm/KillOld`의 `bfh1_hit_08` | 1개 | rubberduck의 75 CC0 breaking / falling / hit sfx(CC0, OpenGameArt) | 2026-11-04 추가. 2026-11-21까지 `Kill` |
+| `Art/Audio/HitConfirm/KillOld`의 `qubodupImpactStone` | 1개 | qubodup의 Impact(CC0, OpenGameArt) | 2026-11-04 추가. 2026-11-21까지 `Kill` |
+| `Art/Audio/HitConfirm/Body`, `Head`, `Kill`, `HeadKill`, `Blocked`, `Break`, `ShieldBreak` | 7개 | 사용자가 준 히트마커 소리 `mwhitmarker`, `headmarker`, `newkillmarker`, `killmarker`, `hitmarkfail`, `breakarmorr`, `breakarmorself`(ogg, 받은 그대로) | 2026-11-21 추가(0.9.238) |
+| `Art/Resources/UI/KillIcons` | 7개 | 사용자가 준 처치 그림(128px 흰 그림에 그림자. 받은 그대로): `Skull`, `SkullShattered`, `Knife`, `BlockHit`, `BlockBreak`, `Flame`, `Burst` | 2026-11-21 추가(0.9.238) |
 | `Assets/ThirdParty/MagicaCloth2` | 328개, 146MB | Magica Cloth 2 | `Example (Can be deleted)` 143MB는 예제라 git에서 제외했고 지워도 된다. `Resources/Cloth`의 프리셋은 `Res/Preset`의 사본이다 |
 | `Art/Models/Characters/Sil` | 33개, 56MB | VRChat 아바타 シルエット; エッセンシャル(イドクロイ, BOOTH items/3361632, 구매) 1_2 패키지의 색 세트 01~04(2026-11-05에 02~04 추가) | 모델 데이터 재배포 금지. 모델은 [sil_model_to_fbx.py](../../Tools/Blender/sil_model_to_fbx.py)로 변환했다. 텍스처와 껍질 재질 `sil_01`~`sil_04`는 패키지 원본이다. 셰이더 `WES_soft_mod3`은 GrabPass만 URP의 Opaque Texture로 바꿨다. 뼈 재질 `ess01`~`ess04`는 원본(Poiyomi 7.2.41)의 값을 Poiyomi 10 URP에 옮겨 다시 만들었고, 원본에 없던 값은 블룸이 번지도록 올린 발광 세기 2.5(원본 1)뿐이다. 02는 원본에서 뼈 발광이 꺼져 있고 반짝이(Glitter)가 켜져 있다. 대응: 그림자 방식 Toon + Ramp Type 2(셰이드 맵) → `_LightingMode` 4, 그림자 마스크 → `_LightingShadowMasks`, 밝기 제한 없음 → `_LightingCapEnabled` 0(점광원도 `_LightingAdditiveLimited` 0), Indirect Color Mode 1 → `_LightingIndirectUsesNormals` 1, 다른 물체의 그림자는 원본처럼 받지 않음, 림 색 섞기 0.72 → Replace 0.72(Blur 1), 림의 Shadow Mix 0.808 → 폭 0.2763·Shrink In Shadow 0.08(밝은 쪽 폭과 어두운 쪽에서 사라지는 자리를 맞춤), 피부 밑 산란 Power 5·Scale 0.25 → Spread 5·Strength 0.25(빛 색 섞기 1, 그림자 0, 두께 보정 -1), 금속 반사 Metallic 0.58·Glossiness 0.53 → Mochie 0.58·0.53. 원본은 금속 맵(R 금속)과 반사 마스크(`_BRDFMetallicMap` = Rough 맵)를 따로 읽어서, 두 장을 픽셀 그대로 합친 `Mat0N_PackedMaps.png`(R 금속, G 255, B 반사 마스크, A 255, 원본처럼 sRGB)를 새로 만들었다. 원본의 반사율 0.66은 Poiyomi 10에 해당 값이 없어 옮기지 못했다. 원본이 가리키는 `_ToonRamp`(GUID 7b5d5a38…)는 패키지에 없지만, 원본은 셰이드 맵 방식이라 이 텍스처를 쓰지 않았다 |
 | `ThirdParty/BOOTH/Chocolate rice/0.MAYO` | 프리팹·모델·재질·텍스처, 166MB | VRChat 아바타 MAYO ver.1.02(Chocolate rice, BOOTH, 구매)와 같은 작가의 MAYO 복근 재질(MAYO_Abs_Material), 거울 옆머리(MAYO_Mirror_Side_Hair). 2026-11-11 [booth_extract.py](../../Tools/Booth/booth_extract.py)로 MAYO.prefab과 그것이 쓰는 파일만 풀었다(AFK 효과, VRChat 애니메이터·메뉴, PSD 원본 제외) | 이용 규약은 zip 속 `Terms of Use License for Mayo_*.pdf`. 개인적으로 쓴다(사용자). VRChat 부품은 [BoothImport](../../Assets/_Project/Editor/Characters/Booth/BoothImport.cs)가 프리팹에서 뺐고, 흔들림은 Cloth.csv로 옮겼다 |
@@ -140,7 +142,7 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터였고, 0
 
 | 위치 | 파일 | 아는 것 |
 | --- | --- | --- |
-| `Art/Audio/Combat/Hitfullness`, `Art/Audio/HitConfirm/Break` | 23개, 3MB | 총기 명중·처치에 겹치는 타격 소리. 커밋 0.6.0에 추가. 2026-11-04에 `bone_crack` 3개를 체간 붕괴 소리로 `HitConfirm/Break`에 옮겼다 |
+| `Art/Audio/Combat/Hitfullness`, `Art/Audio/HitConfirm/Break` | 23개, 3MB | 총기 명중·처치에 겹치는 타격 소리. 커밋 0.6.0에 추가. 2026-11-04에 `bone_crack` 3개를 체간 붕괴 소리로 `HitConfirm/Break`에 옮겼고, 2026-11-21에 사용자가 준 소리로 바꾸며 `HitConfirm/BreakOld`로 비켰다 |
 | `Art/Audio/Combat/Defense` | 16개, 1MB | 가드·패링·공격 예고 소리. 커밋 0.5.0에 추가 |
 | `Art/Audio/Combat/Player` | 28개, 2MB | BOOM으로 바꾸기 전의 주먹·피격 소리. 현재 연결하지 않은 클립이 있다 |
 | `Art/Audio/UI/MissionObjective.wav` | 1개 | 새 목표 알림 소리. 2026-11-20부터 사용자가 준 `Objective Changed.mp3`(예전 소리는 지지직거린다고 바꿈). 앞뒤 완전 무음(-70dB 아래)만 빼고 WAV로 3.52초. 출처는 사용자가 말하지 않았다 |

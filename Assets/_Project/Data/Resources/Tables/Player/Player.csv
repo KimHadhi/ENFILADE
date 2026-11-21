@@ -246,7 +246,6 @@ Shield.paneStrength,0,실드가 다 깨질 때 화면 가장자리에 금 간 �
 Shield.paneSeconds,0.5,그 유리판이 바깥으로 튀어 나가며 사라지는 시간(실제 초)
 Shield.viewKick,1.6,실드가 깨질 때 피격 흔들림 위에 더하는 화면 충격(도). 0이면 끈다
 Shield.trauma,0.2,실드가 깨질 때 피격 흔들림 위에 더하는 떨림(0~1)
-Shield.breakVolume,0.8,합성한 실드 깨지는 소리의 크기. Art/Audio/HitConfirm/ShieldBreak에 클립을 넣으면 Sounds.csv의 HitConfirm/ShieldBreak 행 크기로 튼다
 Shield.cutStrength,1,실드가 피해를 받을 때 맞은 쪽 화면 가장자리에서 들어오는 찢김(어두운 띠 둘과 하늘색 칼날 선)의 세기. 0이면 끈다. 벌집 빛(hitStrength)과 유리판(paneStrength)은 모바일 게임 같다는 말에 0으로 껐다(D 3차)
 Shield.cutSeconds,0.12,찢김이 보이는 시간(실제 초)
 Shield.cutReach,0.45,찢김이 가장자리에서 안쪽으로 들어오는 길이(화면 대각선 절반에 대한 비율)
