@@ -1,37 +1,32 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 /// <summary>
 /// A zombie holding a player (ZombieGrip: a shambler's grab, one kneeling to eat, a runner's pin) stands out on every PC
-/// while it holds: the holder outline where it can be seen (HitFlashRenderer.SetHolder) and a flat, throbbing silhouette
-/// where something stands in front of it (Hidden/ENFILADE/RevealThroughWalls on copies of its meshes, as EnemyReveal shows
-/// a wave's last enemies). The user's playtest of 2026-11-11: a shambler below a step grabbed them and the very floor they
-/// stood on hid it, and a friend who wants to help has to see at once both the grabbed teammate (DownedAura) and what
-/// holds them. A grip signs up here as it starts holding (Watch) and drops off once it lets go; one of these is made on
-/// first need and lives with the scene. Numbers: Tables/HoldReveal.csv.
+/// while it holds: the holder's band all round its body, seen or not (CombatFeedbackSettings holderOutlineColor, HDR so
+/// it catches the bloom), and a flat fill breathing over it where something stands in front of it (EnemyOutlines). The
+/// user's playtest of 2026-11-11: a shambler below a step grabbed them and the very floor they stood on hid it, and a
+/// friend who wants to help has to see at once both the grabbed teammate (DownedAura) and what holds them. A grip signs
+/// up here as it starts holding (Watch) and drops off once it lets go; one of these is made on first need and lives with
+/// the scene. Numbers: Tables/HoldReveal.csv (the fill's colour and its breaths, smooth ones: never a blink, the user's
+/// rule of 2026-11-14; until 2026-11-21 it was a saw that jumped back to full twice a second).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HoldReveal : MonoBehaviour
 {
     public const string TableName = "HoldReveal", TableRow = "Default";
-    private const string ShaderPath = "Combat/Shaders/RevealThroughWalls", CopyName = "Hold Reveal";
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
     private static HoldReveal instance;
 
-    [SerializeField, Tooltip("The holder's silhouette through walls; alpha is how solid it is at the top of a beat.")]
+    [SerializeField, Tooltip("The fill over the holder's hidden parts; alpha is how solid it is at the top of a breath.")]
     private Color holderColor = new Color(1f, .16f, .3f, .7f);
-    [SerializeField, Min(0f), Tooltip("Beats a minute: the silhouette throbs from dimShare up to full and back.")]
-    private float beats = 120f;
-    [SerializeField, Range(0f, 1f), Tooltip("How solid the silhouette stays between beats, as a share of holderColor's alpha.")]
+    [SerializeField, Min(0f), Tooltip("Breaths a minute: the fill rises from dimShare to full and back, smoothly.")]
+    private float beats = 90f;
+    [SerializeField, Range(0f, 1f), Tooltip("How solid the fill stays between breaths, as a share of holderColor's alpha.")]
     private float dimShare = .55f;
 
     private readonly List<ZombieGrip> watched = new List<ZombieGrip>();
-    private readonly Dictionary<ZombieGrip, List<GameObject>> shown = new Dictionary<ZombieGrip, List<GameObject>>();
+    private readonly HashSet<ZombieGrip> shown = new HashSet<ZombieGrip>();
     private readonly List<ZombieGrip> done = new List<ZombieGrip>();
-    private readonly List<Renderer> found = new List<Renderer>();
-    private Material material;
-    private float beat;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => instance = null;
@@ -49,46 +44,44 @@ public sealed class HoldReveal : MonoBehaviour
         if (!instance.watched.Contains(grip)) instance.watched.Add(grip);
     }
 
-    private void Awake()
+    /// <summary>
+    /// A holder's look on its body (EnemyOutlines; the editor's OutlineBench draws the same): the holder's band seen or hidden,
+    /// and over the hidden parts the fill at this breath (1 at the top, 0 at the bottom).
+    /// </summary>
+    public static OutlineLook LookOf(Color fillColour, float dim, float breath)
     {
-        var shader = Resources.Load<Shader>(ShaderPath);
-        if (shader == null) return;
-        material = new Material(shader) { name = "Hold Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave };
-        // Ahead of the teammates' auras (Transparent+50), whose stencil covers the held teammate's whole outline with a
-        // value that has this shader's bit in it: drawn after it, the holder's silhouette was cut where the two overlap
-        // (the 2026-11-11 review).
-        material.renderQueue = 3049;
+        var band = CombatFeedbackSettings.InstanceOrDefaults.holderOutlineColor;
+        band.a = 1f;
+        var fill = fillColour;
+        fill.a *= Mathf.Lerp(dim, 1f, Mathf.Clamp01(breath));
+        return new OutlineLook(band, band, fill);
     }
 
     private void OnDestroy()
     {
-        foreach (var pair in shown) Hide(pair.Key, pair.Value);
+        foreach (var grip in shown) Hide(grip);
         shown.Clear();
-        if (material != null) Destroy(material);
         if (instance == this) instance = null;
     }
 
     private void Update()
     {
-        if (material != null)
-        {
-            beat += Time.unscaledDeltaTime * beats / 60f;
-            float pulse = 1f - Mathf.Repeat(beat, 1f);
-            var color = holderColor;
-            color.a *= Mathf.Lerp(dimShare, 1f, pulse * pulse);
-            material.SetColor(ColorId, color);
-        }
+        float breath = .5f + .5f * Mathf.Cos(Time.unscaledTime * beats / 60f * 2f * Mathf.PI);
+        var look = LookOf(holderColor, dimShare, breath);
         done.Clear();
         foreach (var grip in watched)
         {
             bool holding = Holds(grip);
-            // By reference: a grip destroyed with its zombie still has its entry here, and its copies (gone with the
-            // body to its corpse) must go too.
-            bool has = !ReferenceEquals(grip, null) && shown.ContainsKey(grip);
-            if (holding && !has) shown.Add(grip, Show(grip));
-            else if (!holding && has)
+            // By reference: a grip destroyed with its zombie still has its entry here (its outline goes with its body).
+            bool has = !ReferenceEquals(grip, null) && shown.Contains(grip);
+            if (holding)
             {
-                Hide(grip, shown[grip]);
+                EnemyOutlines.Set(grip, OutlineSource.Holder, look);
+                if (!has) shown.Add(grip);
+            }
+            else if (has)
+            {
+                Hide(grip);
                 shown.Remove(grip);
             }
             if (!holding) done.Add(grip);
@@ -103,56 +96,8 @@ public sealed class HoldReveal : MonoBehaviour
         return grip.TryGetComponent(out EnemyHealth health) && health.IsAlive;
     }
 
-    // A copy of each of its meshes in the reveal material, riding the same bones, and the holder outline on the body.
-    private List<GameObject> Show(ZombieGrip grip)
+    private static void Hide(ZombieGrip grip)
     {
-        var copies = new List<GameObject>();
-        if (grip.TryGetComponent(out EnemyHealth health)) HitFlashRenderer.For(health).OrNull()?.SetHolder(1f);
-        if (material == null) return copies;
-        grip.GetComponentsInChildren(found);
-        foreach (var source in found)
-        {
-            if (!source.enabled || !source.gameObject.activeInHierarchy || ZombieBody.IsEye(source)) continue;
-            // Never a copy of a copy: a wave's reveal (EnemyReveal), a Ghost's sight (GhostSight), or this.
-            if (source.name == CopyName || source.name == "Reveal" || source.name == GhostSight.CopyName) continue;
-            Renderer copy;
-            Mesh mesh;
-            if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)
-            {
-                mesh = skinned.sharedMesh;
-                var glow = new GameObject(CopyName, typeof(SkinnedMeshRenderer)).GetComponent<SkinnedMeshRenderer>();
-                glow.transform.SetParent(skinned.transform, false);
-                glow.sharedMesh = mesh;
-                glow.bones = skinned.bones;
-                glow.rootBone = skinned.rootBone;
-                glow.updateWhenOffscreen = true;
-                copy = glow;
-            }
-            else if (source is MeshRenderer && source.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null)
-            {
-                mesh = filter.sharedMesh;
-                var holder = new GameObject(CopyName, typeof(MeshFilter), typeof(MeshRenderer));
-                holder.transform.SetParent(source.transform, false);
-                holder.GetComponent<MeshFilter>().sharedMesh = mesh;
-                copy = holder.GetComponent<MeshRenderer>();
-            }
-            else continue;
-            copy.gameObject.layer = source.gameObject.layer;
-            copy.shadowCastingMode = ShadowCastingMode.Off;
-            copy.receiveShadows = false;
-            var slots = new Material[Mathf.Max(1, mesh.subMeshCount)];
-            for (int i = 0; i < slots.Length; i++) slots[i] = material;
-            copy.sharedMaterials = slots;
-            copies.Add(copy.gameObject);
-        }
-        found.Clear();
-        return copies;
-    }
-
-    private static void Hide(ZombieGrip grip, List<GameObject> copies)
-    {
-        foreach (var copy in copies) if (copy != null) Destroy(copy);
-        copies.Clear();
-        if (grip != null && grip.TryGetComponent(out HitFlashRenderer flash)) flash.SetHolder(0f);
+        if (grip != null) EnemyOutlines.Clear(grip, OutlineSource.Holder);
     }
 }

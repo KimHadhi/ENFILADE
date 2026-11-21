@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 /// <summary>
 /// Marks where this PC's own player covers their own screen (stencil bit 128), so nothing drawn through walls takes the
 /// player's own body, gun or scope lens for the wall a foe or friend stands behind. SeeThrough.hlsl holds the rule for
-/// every see-through drawing: RevealThroughWalls (the Ghost's sight, pings, bounties, holders, a wave's last enemies) and
-/// MomentGlow (a friend's CHARGE outline).
+/// every see-through drawing: the enemy outlines (EnemyOutlines: pings, bounties, holders, the Ghost's sight, a wave's last
+/// enemies; OutlineLay leaves the marked pixels alone) and MomentGlow (a friend's CHARGE outline).
 /// The user, 2026-11-14, aiming a Ghost's magnified scope: "고스트 패시브가, 확대 조준경으로 보이는 확대댄 적과, 그냥 시야로
 /// 보이는 적 두 개가 뜨는 버그". The lens writes depth like any solid part, so on the player's screen every foe behind it
 /// counted as hidden. Its silhouette was drawn over the lens at the eye's own size, beside the scope's magnified picture,

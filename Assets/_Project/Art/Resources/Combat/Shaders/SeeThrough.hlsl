@@ -1,5 +1,5 @@
-// What may be drawn through walls: one rule for every see-through drawing, RevealThroughWalls (the Ghost's sight, pings,
-// bounties, holders, a wave's last enemies) and MomentGlow's second pass (a friend's CHARGE outline). A pixel of a body
+// What may be drawn through walls: one rule for every see-through drawing, the enemy outlines (OutlineMask, EnemyOutlines:
+// pings, bounties, holders, the Ghost's sight, a wave's last enemies) and MomentGlow's second pass (a friend's CHARGE outline). A pixel of a body
 // counts as hidden only where something in the scene stands clearly in front of it:
 // - by more than _SeeThroughGap (m; Tables/Hud/SeeThrough.csv gap, pushed here by OwnViewMask). A copy of a body and the
 //   body itself differ by a hair (skinning, blend shapes, depth precision). The depth bias meant to cover that is spread
@@ -12,7 +12,7 @@
 //   beside the scope's own magnified picture.
 // The scene's depth is URP's camera depth texture (the PC pipeline asset asks for it), copied after the opaque world.
 // Smoke hides too, though nothing of it is in that depth: a body's seen surface with smoke on the way shows the same
-// silhouette, as much as the smoke hides it (SmokeCover below; RevealThroughWalls' first pass draws it).
+// silhouette, as much as the smoke hides it (SmokeCover below; OutlineMask counts it as hidden).
 #ifndef ENFILADE_SEE_THROUGH_INCLUDED
 #define ENFILADE_SEE_THROUGH_INCLUDED
 

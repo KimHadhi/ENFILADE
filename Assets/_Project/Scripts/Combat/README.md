@@ -82,7 +82,7 @@ PlayerWeaponInput → WeaponController
 | [Feedback](Feedback/) | 21 | 맞았을 때의 표시·소리·화면 흔들림 |
 | [HitDetection](HitDetection/) | 6 | 레이·스윕 판정, 관통 |
 | [Impacts](Impacts/) | 6 | 탄착 효과와 총알 자국 |
-| [Marks](Marks/) | 4 | 벽 너머로 보이는 표식(가려졌다고 치는 규칙은 셰이더 SeeThrough.hlsl 하나: 0.12m보다 앞에 무언가 있고, 내 1인칭 몸·총·조준경은 빼고. 연막도 벽처럼 가린다: SmokeSight가 연막 구들을 셰이더에 알려, 시선이 연막을 `smokeHide`만큼 지나면 보이는 몸 위에도 같은 실루엣이 연기 위로 그려진다) |
+| [Marks](Marks/) | 6 | 적 외곽선과 벽 너머로 보이는 표식. 띠와 채움은 EnemyOutlines 하나가 정한다: 핑·현상금·붙잡은 좀비·처형·염료·고스트 시야·웨이브 끝 적이 모양을 말하고, OutlinePass가 표시된 몸을 마스크에 그려 화면에서 둘레에 고른 띠를 깐다(몸에 재질을 덧붙이거나 메시를 복사하지 않는다. [적 외곽선](../../../../Docs/Features/EnemyOutlines.md)), 굵기는 Tables/Hud/Outlines.csv (가려졌다고 치는 규칙은 셰이더 SeeThrough.hlsl 하나: 0.12m보다 앞에 무언가 있고, 내 1인칭 몸·총·조준경은 빼고. 연막도 벽처럼 가린다: SmokeSight가 연막 구들을 셰이더에 알려, 시선이 연막을 `smokeHide`만큼 지나면 보이는 몸 위에도 같은 실루엣이 연기 위로 그려진다) |
 | [Moments](Moments/) | 10 | 특수 순간 효과, 슬로 모션 |
 
 ## 무엇을 고치려면 어디를

@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 /// <summary>
-/// What a Ghost sees through walls, drawn as soft white silhouettes only where something stands in front of a zombie
-/// (Hidden/ENFILADE/RevealThroughWalls on copies of its meshes, as PingMarks and HoldReveal draw theirs):
+/// What a Ghost sees through walls, drawn only where something stands in front of a zombie: a soft white fill over its
+/// hidden parts and a white band round their shape, so the body reads as itself (EnemyOutlines, as pings and holders are):
 /// <list type="bullet">
 /// <item>Its own wall sight, the class's base (the user, 2026-11-14: "고스트는 패시브로 주변 근처에 있는 적을 벽을 뚫고 볼 수
 /// 있어"): on the Ghost's own PC only, every living zombie within its reach (GhostCards.SightReach: ClassAbilities
@@ -12,28 +11,24 @@ using UnityEngine.Rendering;
 /// <item>A Ghost's ultimate (GhostNet): on every PC, for its seconds, every zombie within its reach of that Ghost, coming
 /// in as a wave runs out from where it went off (Ghost.phantomWave), so the whole team sees what the Ghost sees.</item>
 /// </list>
-/// A ping's, a bounty's, a holder's or a wave's last enemies' silhouette wins where both would draw: those are drawn
-/// first and the shader's stencil lets one layer through. Each silhouette fades in and out on its own, never blinking,
-/// and goes the moment its zombie dies (its body goes to its corpse). One of these is made on first need and lives with
-/// the scene. Numbers: Tables/ClassAbilities Ghost.wallSight, sightAlpha, phantomWave.
+/// A ping's, a bounty's, a holder's or a wave's last enemies' look wins where both would draw (EnemyOutlines: the Ghost's is
+/// the weakest). Each fades in and out on its own, never blinking, and goes the moment its zombie dies (its body goes to
+/// its corpse). Nothing is copied from the zombie: until 2026-11-21 copies of its renderers were made the moment it came
+/// in reach, and one that came in reach as it appeared, still in the enemy's capsule shell before its body was put on,
+/// kept a copy of that capsule for as long as it stayed near: the white pill the user saw on a pinged reaper. One of
+/// these is made on first need and lives with the scene. Numbers: Tables/ClassAbilities Ghost.wallSight, sightAlpha,
+/// phantomWave.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class GhostSight : MonoBehaviour
 {
-    /// <summary>The name of its copies: the other reveals leave them alone, and it leaves theirs (never a copy of a copy).</summary>
-    public const string CopyName = "Ghost Reveal";
-    private const string ShaderPath = "Combat/Shaders/RevealThroughWalls", Row = PlayerClass.GhostRow;
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
-    // After the pings' and holders' silhouettes (3049) and a wave's last enemies' (3050): theirs win where both would draw.
-    private const int Queue = 3051;
+    private const string Row = PlayerClass.GhostRow;
     // How long a silhouette takes to come in and to go (s); how much farther than its reach one already shown keeps showing
     // (m), so one pacing at the edge doesn't come and go; how long the Ghost's own reach holds without being said again (s).
     private const float FadeIn = .3f, FadeOut = .45f, Linger = 1f, OwnHold = .5f;
 
     private sealed class Shown
     {
-        public readonly List<GameObject> Copies = new List<GameObject>();
-        public Material Material;
         // How strong it is wanted now (0: not), the last strength it was wanted at, and how far in it has faded (0 to 1).
         public float Want, Level, Faded;
     }
@@ -50,9 +45,6 @@ public sealed class GhostSight : MonoBehaviour
     private readonly Dictionary<EnemyHealth, Shown> shown = new Dictionary<EnemyHealth, Shown>();
     private readonly List<EnemyHealth> gone = new List<EnemyHealth>();
     private readonly List<Veil> veils = new List<Veil>();
-    private readonly Stack<Material> spare = new Stack<Material>();
-    private readonly List<Renderer> found = new List<Renderer>();
-    private Shader shader;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -150,21 +142,17 @@ public sealed class GhostSight : MonoBehaviour
         return instance;
     }
 
-    private void Awake() => shader = Resources.Load<Shader>(ShaderPath);
-
     private void OnDestroy()
     {
         gone.Clear();
         gone.AddRange(shown.Keys);
         foreach (var enemy in gone) Hide(enemy);
         gone.Clear();
-        while (spare.Count > 0) Destroy(spare.Pop());
         if (instance == this) instance = null;
     }
 
     private void Update()
     {
-        if (shader == null) return;
         float now = Time.time;
         for (int i = veils.Count - 1; i >= 0; i--)
             if (now >= veils[i].Until) veils.RemoveAt(i);
@@ -190,7 +178,7 @@ public sealed class GhostSight : MonoBehaviour
                     wanted = Within(at, middle, veil.Reach + slack) && (now - veil.Since) * wave >= Vector3.Distance(at, veil.From);
                 }
                 if (!wanted) continue;
-                if (entry == null && (entry = Show(enemy)) == null) continue;
+                if (entry == null) entry = Show(enemy);
                 entry.Want = strength;
             }
         Fade(Time.deltaTime);
@@ -198,7 +186,7 @@ public sealed class GhostSight : MonoBehaviour
 
     private static bool Within(Vector3 a, Vector3 b, float reach) => (a - b).sqrMagnitude <= reach * reach;
 
-    // Each silhouette in or out at its own pace, in the Ghost's white; one faded all the way out lets go of its copies.
+    // Each in or out at its own pace, in the Ghost's white; one faded all the way out is let go.
     private void Fade(float dt)
     {
         Color tint = MomentLook.ColorOf(PlayerClass.Ghost);
@@ -210,58 +198,28 @@ public sealed class GhostSight : MonoBehaviour
             if (entry.Want > 0f) entry.Level = entry.Want;
             entry.Faded = Mathf.MoveTowards(entry.Faded, entry.Want > 0f ? 1f : 0f, dt / (entry.Want > 0f ? FadeIn : FadeOut));
             if (entry.Faded <= 0f && entry.Want <= 0f) { gone.Add(pair.Key); continue; }
-            tint.a = entry.Level * Ease.Smooth(entry.Faded);
-            entry.Material.SetColor(ColorId, tint);
+            EnemyOutlines.Set(pair.Key, OutlineSource.Ghost, LookOf(tint, entry.Level, Ease.Smooth(entry.Faded)));
         }
         foreach (var enemy in gone) Hide(enemy);
         gone.Clear();
     }
 
-    // A copy of each of its meshes in its own reveal material, riding the same bones (PingMarks' way), never put out of
-    // sight by the map's baked occlusion: behind a wall is where it is meant to show.
+    /// <summary>
+    /// What the Ghost's sight lays on a zombie (EnemyOutlines; the editor's OutlineBench draws the same): only where hidden, a
+    /// fill in its colour at this strength and a band round the hidden shape, both as far faded in as <paramref name="shown"/>.
+    /// </summary>
+    public static OutlineLook LookOf(Color tint, float strength, float shown)
+    {
+        var band = tint;
+        band.a = shown;
+        var fill = tint;
+        fill.a = strength * shown;
+        return new OutlineLook(Color.clear, band, fill);
+    }
+
     private Shown Show(EnemyHealth enemy)
     {
-        var entry = new Shown { Material = Take() };
-        entry.Material.SetColor(ColorId, Color.clear);
-        enemy.GetComponentsInChildren(found);
-        foreach (var source in found)
-        {
-            if (source == null || !source.enabled || !source.gameObject.activeInHierarchy || ZombieBody.IsEye(source)) continue;
-            // Never a copy of a copy: a wave's reveal, a holder's, a ping's, or this.
-            string called = source.name;
-            if (called == CopyName || called == "Reveal" || called == "Hold Reveal" || called == "Ping Reveal") continue;
-            Renderer copy;
-            Mesh mesh;
-            if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)
-            {
-                mesh = skinned.sharedMesh;
-                var glow = new GameObject(CopyName, typeof(SkinnedMeshRenderer)).GetComponent<SkinnedMeshRenderer>();
-                glow.transform.SetParent(skinned.transform, false);
-                glow.sharedMesh = mesh;
-                glow.bones = skinned.bones;
-                glow.rootBone = skinned.rootBone;
-                glow.updateWhenOffscreen = true;
-                copy = glow;
-            }
-            else if (source is MeshRenderer && source.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null)
-            {
-                mesh = filter.sharedMesh;
-                var holder = new GameObject(CopyName, typeof(MeshFilter), typeof(MeshRenderer));
-                holder.transform.SetParent(source.transform, false);
-                holder.GetComponent<MeshFilter>().sharedMesh = mesh;
-                copy = holder.GetComponent<MeshRenderer>();
-            }
-            else continue;
-            copy.gameObject.layer = source.gameObject.layer;
-            copy.shadowCastingMode = ShadowCastingMode.Off;
-            copy.receiveShadows = false;
-            copy.allowOcclusionWhenDynamic = false;
-            var slots = new Material[Mathf.Max(1, mesh.subMeshCount)];
-            for (int i = 0; i < slots.Length; i++) slots[i] = entry.Material;
-            copy.sharedMaterials = slots;
-            entry.Copies.Add(copy.gameObject);
-        }
-        found.Clear();
+        var entry = new Shown();
         enemy.Died += Died;
         shown.Add(enemy, entry);
         return entry;
@@ -272,18 +230,10 @@ public sealed class GhostSight : MonoBehaviour
 
     private void Hide(EnemyHealth enemy)
     {
-        if (ReferenceEquals(enemy, null) || !shown.TryGetValue(enemy, out var entry)) return;
+        if (ReferenceEquals(enemy, null) || !shown.ContainsKey(enemy)) return;
         shown.Remove(enemy);
-        if (enemy != null) enemy.Died -= Died;
-        foreach (var copy in entry.Copies) if (copy != null) Destroy(copy);
-        entry.Copies.Clear();
-        if (entry.Material != null) spare.Push(entry.Material);
-    }
-
-    // Each silhouette fades on its own, so each has its own material: kept for the next once it is let go.
-    private Material Take()
-    {
-        if (spare.Count > 0) return spare.Pop();
-        return new Material(shader) { name = "Ghost Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave, renderQueue = Queue };
+        if (enemy == null) return;
+        enemy.Died -= Died;
+        EnemyOutlines.Clear(enemy, OutlineSource.Ghost);
     }
 }

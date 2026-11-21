@@ -1,7 +1,7 @@
 // A body glowing in a moment's colour (BodyShell over everyone a CHARGE took, ChargeGlow): light added over the body,
 // strongest at its edges as the eye sees them and faint over its face, pushed out a hair along the normals so it reads
 // as a glow round the outline. Additive, so it only ever brightens; per renderer values come through a property block.
-// Two passes, as RevealThroughWalls draws its silhouettes (URP draws SRPDefaultUnlit before UniversalForward for each
+// Two passes (URP draws SRPDefaultUnlit before UniversalForward for each
 // object):
 // - where the body is in sight, the glow, and those pixels marked in the stencil so the body never shows through itself
 //   (an arm behind the chest);
@@ -70,7 +70,7 @@ Shader "Hidden/ENFILADE/MomentGlow"
         }
         ENDHLSL
 
-        // In sight: the glow, and the pixel marked (stencil bit 32; RevealThroughWalls keeps to bit 64).
+        // In sight: the glow, and the pixel marked (stencil bit 32).
         Pass
         {
             Name "GlowSeen"

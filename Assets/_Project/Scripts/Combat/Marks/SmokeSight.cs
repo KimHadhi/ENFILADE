@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 /// enemy in a cloud kept only its diamond. The rule now counts smoke too, and by the game's own measure of it: the
 /// clouds as the spheres a zombie's eyes are judged by (SmokeScreen.Through) and the length of smoke that blinds one
 /// (GrenadeRules smokeHide), never the drawn puffs. So what a zombie cannot see through, a mark cuts through, on every PC
-/// the same. It covers everything RevealThroughWalls draws: pings, bounties, a holder, the Ghost's sight, a wave's last
+/// the same. It covers everything EnemyOutlines draws: pings, bounties, a holder, the Ghost's sight, a wave's last
 /// enemies.
 /// No object of its own: it listens for each frame's rendering and does nothing while no cloud hangs.
 /// </summary>

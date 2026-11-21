@@ -1,5 +1,7 @@
 // Drawn as an extra material over an enemy's own mesh while it reacts to a hit or is marked.
-// Whole-body tint (Minecraft-style red), a red rim, up to four glowing hit spots, a white kill flash, and an outline.
+// Whole-body tint (Minecraft-style red), a red rim, up to four glowing hit spots and a white kill flash. Outlines are
+// EnemyOutlines' (drawn from a mask over the screen) since 2026-11-21: this material's own outline pass pushed the back
+// faces of whatever mesh it was laid on, see-through copies with no depth among them, which drew a capsule copy solid.
 // Premultiplied output: tint and flash cover, glow adds light. Properties are driven by HitFlashRenderer.
 Shader "Hidden/ENFILADE/HitFlashOverlay"
 {
@@ -16,8 +18,6 @@ Shader "Hidden/ENFILADE/HitFlashOverlay"
         _Hit2 ("Hit 2", Vector) = (0, 0, 0, 0)
         _Hit3 ("Hit 3", Vector) = (0, 0, 0, 0)
         _White ("White Flash", Range(0, 1)) = 0
-        [HDR] _OutlineColor ("Outline Color", Color) = (1.6, 0.07, 0.12, 1)
-        _OutlineWidth ("Outline Width (px at 1080p)", Float) = 0
     }
     SubShader
     {
@@ -35,8 +35,6 @@ Shader "Hidden/ENFILADE/HitFlashOverlay"
             float _HitRadius;
             float4 _Hit0, _Hit1, _Hit2, _Hit3;
             half _White;
-            float4 _OutlineColor;
-            float _OutlineWidth;
         CBUFFER_END
 
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
@@ -96,39 +94,6 @@ Shader "Hidden/ENFILADE/HitFlashOverlay"
                 color = lerp(color, half3(1.0, 1.0, 1.0), _White);
                 alpha = max(alpha, _White);
                 return half4(color, alpha);
-            }
-            ENDHLSL
-        }
-
-        // The body's back faces pushed out along their normals: only the rim past the silhouette survives the depth test.
-        // URP runs this LightMode as well as the one above, so one material draws both passes.
-        Pass
-        {
-            Name "Outline"
-            Tags { "LightMode" = "UniversalForward" }
-            Blend One OneMinusSrcAlpha
-            ZWrite Off
-            ZTest LEqual
-            Cull Front
-
-            HLSLPROGRAM
-            #pragma vertex Vert
-            #pragma fragment Frag
-
-            float4 Vert(Attributes input) : SV_POSITION
-            {
-                if (_OutlineWidth <= 0.0) return float4(0.0, 0.0, 0.0, 0.0);
-                float4 position = TransformObjectToHClip(input.positionOS.xyz);
-                float2 normal = TransformWorldToHClipDir(TransformObjectToWorldNormal(input.normalOS)).xy;
-                // Same width on screen at any distance or resolution.
-                float2 pixel = float2(_ScaledScreenParams.y / _ScaledScreenParams.x, 1.0) * 2.0 / 1080.0;
-                position.xy += normalize(normal + float2(0.00001, 0.0)) * pixel * _OutlineWidth * position.w;
-                return position;
-            }
-
-            half4 Frag() : SV_Target
-            {
-                return half4(_OutlineColor.rgb, 1.0);
             }
             ENDHLSL
         }

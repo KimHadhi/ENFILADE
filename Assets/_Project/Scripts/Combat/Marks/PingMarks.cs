@@ -1,16 +1,14 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 /// <summary>
 /// Pinged enemies (PlayerPing, stage 3 of the classes; the user's Back 4 Blood ping): F on an enemy marks it for the
 /// whole team for a few seconds, on every PC (the pinger's at once, the others as PlayerNetworkCombat tells them): its
-/// outline in the ping's colour where it can be seen (HitFlashRenderer.SetPing), a flat throbbing silhouette where
-/// something stands in front of it or smoke lies on the way (Hidden/ENFILADE/RevealThroughWalls on copies of its meshes,
-/// as HoldReveal does; smoke counts as a wall there since 2026-11-18, SmokeSight), and a diamond over its head with how
-/// far it is. A plain ping is its pinger's own colour (PlayerTally.Color, the one the board and the chat show them in),
+/// outline in the ping's colour all round its body, seen or not, a flat breathing fill over it where something stands
+/// in front of it or smoke lies on the way (EnemyOutlines: smoke counts as a wall there since 2026-11-18, SmokeSight), and a
+/// diamond over its head with how far it is. A plain ping is its pinger's own colour (PlayerTally.Color, the one the board and the chat show them in),
 /// so the mark says who called it; until 2026-11-18 every ping was the HUD's pink whoever made it (the user: "콜아웃
 /// 색상이 Tab 현황판의 팀원 색상(파랑, 주황 등)과 연동되지 않고 분홍색으로 고정되는 문제"). A Schießhund's is its teal
 /// bounty mark, the class's own colour whoever plays it, which its class hunts (ClassKit) and lasts longer. Each player has one of each at a time: a new one moves it. A mark
@@ -21,8 +19,10 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class PingMarks : MonoBehaviour
 {
-    private const string ShaderPath = "Combat/Shaders/RevealThroughWalls", CopyName = "Ping Reveal";
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
+    // How solid the fill over its hidden parts is at the top of its breath, how far it dims between (a share of that), and
+    // how many breaths a second: a smooth one, never a blink (the user's rule of 2026-11-14; until 2026-11-21 it was a
+    // saw at two a second that jumped back to full).
+    private const float FillAlpha = .62f, FillDim = .55f, Breaths = 1f;
     // The diamond's size, how far over the head it stands (m), how much of the screen's edge it keeps off (px at 1080p),
     // and how long a new mark takes to land (s).
     private const float DiamondSize = 22f, OverHead = .45f, EdgeMargin = 40f, LandSeconds = .18f;
@@ -38,11 +38,8 @@ public sealed class PingMarks : MonoBehaviour
         public PlayerMovement By;
         public bool Bounty;
         public float Until, Since;
-        // Its colour as last drawn, and its own reveal material: marks are different colours at once now.
+        // Its colour as last drawn: marks are different colours at once now.
         public Color Colour;
-        public Material Reveal;
-        public HitFlashRenderer Outline;
-        public readonly List<GameObject> Copies = new List<GameObject>();
         public RectTransform Marker;
         public DiamondGraphic Diamond;
         public TextMeshProUGUI Distance;
@@ -50,10 +47,7 @@ public sealed class PingMarks : MonoBehaviour
 
     private static PingMarks instance;
     private readonly List<Mark> marks = new List<Mark>();
-    private readonly List<Renderer> found = new List<Renderer>();
-    private Shader reveal;
     private RectTransform canvas;
-    private float beat;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => instance = null;
@@ -107,7 +101,6 @@ public sealed class PingMarks : MonoBehaviour
 
     private void Awake()
     {
-        reveal = Resources.Load<Shader>(ShaderPath);
         var host = new GameObject("Ping markers", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         host.transform.SetParent(transform, false);
         var overlay = host.GetComponent<Canvas>();
@@ -141,9 +134,7 @@ public sealed class PingMarks : MonoBehaviour
             Enemy = enemy, Foe = foe, By = by, Bounty = bounty, Until = Time.time + Mathf.Max(.5f, seconds), Since = Time.unscaledTime
         };
         mark.Colour = ColourOf(mark);
-        Reveal(mark);
-        mark.Outline = HitFlashRenderer.For(enemy);
-        mark.Outline.OrNull()?.SetPing(1f, mark.Colour);
+        EnemyOutlines.Set(enemy, OutlineSource.Ping, LookOf(mark.Colour, 1f));
         mark.Marker = KitStyle.TopLeft(bounty ? "Bounty mark" : "Ping mark", canvas, Vector2.zero, new Vector2(140f, 60f));
         mark.Marker.anchorMin = mark.Marker.anchorMax = Vector2.zero;
         mark.Marker.pivot = new Vector2(.5f, 0f);
@@ -163,8 +154,7 @@ public sealed class PingMarks : MonoBehaviour
 
     private void Update()
     {
-        beat += Time.unscaledDeltaTime * 2f;
-        float pulse = 1f - Mathf.Repeat(beat, 1f);
+        float breath = .5f + .5f * Mathf.Cos(Time.unscaledTime * Breaths * 2f * Mathf.PI);
         var view = Camera.main;
         var local = PlayerRoster.Local;
         for (int i = marks.Count - 1; i >= 0; i--)
@@ -176,10 +166,9 @@ public sealed class PingMarks : MonoBehaviour
             if (colour != mark.Colour)
             {
                 mark.Colour = colour;
-                mark.Outline.OrNull()?.SetPing(1f, colour);
                 if (mark.Diamond != null) mark.Diamond.color = colour;
             }
-            Tint(mark.Reveal, colour, pulse);
+            EnemyOutlines.Set(mark.Enemy, OutlineSource.Ping, LookOf(colour, breath));
             Place(mark, view, local);
         }
     }
@@ -188,11 +177,17 @@ public sealed class PingMarks : MonoBehaviour
     private static Color ColourOf(Mark mark)
         => mark.Bounty ? BountyColor : mark.By != null && mark.By.TryGetComponent(out PlayerTally tally) ? tally.Color : KitStyle.Accent;
 
-    private static void Tint(Material material, Color color, float pulse)
+    /// <summary>
+    /// A mark's look on its body (EnemyOutlines; the editor's OutlineBench draws the same): the band in its colour seen or
+    /// hidden, and over the hidden parts a fill that breathes (breath 1 at the top, 0 at the bottom).
+    /// </summary>
+    public static OutlineLook LookOf(Color colour, float breath)
     {
-        if (material == null) return;
-        color.a = .62f * Mathf.Lerp(.55f, 1f, pulse * pulse);
-        material.SetColor(ColorId, color);
+        var band = colour;
+        band.a = 1f;
+        var fill = colour;
+        fill.a = FillAlpha * Mathf.Lerp(FillDim, 1f, Mathf.Clamp01(breath));
+        return new OutlineLook(band, band, fill);
     }
 
     // The diamond over its head, landing from large as the mark is made, kept on screen at its edge; how far off it is.
@@ -219,61 +214,15 @@ public sealed class PingMarks : MonoBehaviour
         if (mark.Distance.text != text) mark.Distance.text = text;
     }
 
-    // A copy of each of its meshes in the mark's reveal material, riding the same bones (HoldReveal's way).
-    private void Reveal(Mark mark)
-    {
-        if (reveal == null) return;
-        // Ahead of the teammates' auras (Transparent+50), as HoldReveal is, so the stencil there doesn't cut it.
-        var material = mark.Reveal = new Material(reveal)
-        {
-            name = mark.Bounty ? "Bounty Reveal (Runtime)" : "Ping Reveal (Runtime)", hideFlags = HideFlags.HideAndDontSave, renderQueue = 3049
-        };
-        Tint(material, mark.Colour, 1f);
-        mark.Enemy.GetComponentsInChildren(found);
-        foreach (var source in found)
-        {
-            if (!source.enabled || !source.gameObject.activeInHierarchy || ZombieBody.IsEye(source)) continue;
-            // Never a copy of a copy: a wave's reveal, a holder's, a Ghost's sight, or this.
-            if (source.name == CopyName || source.name == "Reveal" || source.name == "Hold Reveal" || source.name == GhostSight.CopyName) continue;
-            Renderer copy;
-            Mesh mesh;
-            if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)
-            {
-                mesh = skinned.sharedMesh;
-                var glow = new GameObject(CopyName, typeof(SkinnedMeshRenderer)).GetComponent<SkinnedMeshRenderer>();
-                glow.transform.SetParent(skinned.transform, false);
-                glow.sharedMesh = mesh;
-                glow.bones = skinned.bones;
-                glow.rootBone = skinned.rootBone;
-                glow.updateWhenOffscreen = true;
-                copy = glow;
-            }
-            else if (source is MeshRenderer && source.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null)
-            {
-                mesh = filter.sharedMesh;
-                var holder = new GameObject(CopyName, typeof(MeshFilter), typeof(MeshRenderer));
-                holder.transform.SetParent(source.transform, false);
-                holder.GetComponent<MeshFilter>().sharedMesh = mesh;
-                copy = holder.GetComponent<MeshRenderer>();
-            }
-            else continue;
-            copy.gameObject.layer = source.gameObject.layer;
-            copy.shadowCastingMode = ShadowCastingMode.Off;
-            copy.receiveShadows = false;
-            var slots = new Material[Mathf.Max(1, mesh.subMeshCount)];
-            for (int i = 0; i < slots.Length; i++) slots[i] = material;
-            copy.sharedMaterials = slots;
-            mark.Copies.Add(copy.gameObject);
-        }
-        found.Clear();
-    }
-
     private static void Clear(Mark mark)
     {
-        foreach (var copy in mark.Copies) if (copy != null) Destroy(copy);
-        mark.Copies.Clear();
-        if (mark.Reveal != null) { Destroy(mark.Reveal); mark.Reveal = null; }
-        if (mark.Enemy != null && mark.Enemy.TryGetComponent(out HitFlashRenderer flash)) flash.SetPing(0f, Color.clear);
+        if (mark.Enemy != null)
+        {
+            EnemyOutlines.Clear(mark.Enemy, OutlineSource.Ping);
+            // A bounty dye's outline is the dye's to say again: DyeMarks says it every frame the dye lasts and no mark is on
+            // the foe, so one that ran out under this mark would otherwise stay (as it was when both shared one outline).
+            EnemyOutlines.Clear(mark.Enemy, OutlineSource.Dye);
+        }
         if (mark.Marker != null) Destroy(mark.Marker.gameObject);
     }
 }

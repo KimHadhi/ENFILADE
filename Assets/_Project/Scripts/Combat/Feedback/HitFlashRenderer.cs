@@ -4,10 +4,13 @@ using UnityEngine;
 /// <summary>
 /// "I got hit" look for any damaged target: the whole body flashes red (Minecraft-style), the silhouette gets a red rim,
 /// and the exact hit spot glows hot and cools down (up to four spots at once). A kill flash turns the body white.
-/// A mark holds a faint tint and an outline for as long as it is set; ExecutableHighlight sets it.
+/// A mark holds a faint tint for as long as it is set, and its outline (EnemyOutlines); ExecutableHighlight sets it.
 /// Works by appending one overlay material (Hidden/ENFILADE/HitFlashOverlay) to the target's mesh renderers while the
 /// flash runs and removing it afterwards, so idle enemies cost nothing and their own materials are never modified.
 /// An extra material only draws a mesh's last submesh, so a multi-material model is covered in part.
+/// No outline is drawn here since 2026-11-21: the overlay's own pass pushed the back faces of every renderer under
+/// the enemy out into a band, other systems' see-through copies among them, and a copy writes no depth, so one of a
+/// capsule came out as a solid white pill (EnemyOutlines says more). Every outline is EnemyOutlines' now.
 /// Added on demand; timing and colours in GunFeel → Enemy hit flash, the mark's in Feedback → Executable body.
 /// </summary>
 [DisallowMultipleComponent]
@@ -19,8 +22,7 @@ public sealed class HitFlashRenderer : MonoBehaviour
     private static Material overlay;
     private static readonly int TintColorId = Shader.PropertyToID("_TintColor"), TintId = Shader.PropertyToID("_Tint"),
         RimColorId = Shader.PropertyToID("_RimColor"), RimId = Shader.PropertyToID("_Rim"), GlowColorId = Shader.PropertyToID("_GlowColor"),
-        RadiusId = Shader.PropertyToID("_HitRadius"), WhiteId = Shader.PropertyToID("_White"),
-        OutlineColorId = Shader.PropertyToID("_OutlineColor"), OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
+        RadiusId = Shader.PropertyToID("_HitRadius"), WhiteId = Shader.PropertyToID("_White");
     private static readonly int[] HitIds = { Shader.PropertyToID("_Hit0"), Shader.PropertyToID("_Hit1"), Shader.PropertyToID("_Hit2"), Shader.PropertyToID("_Hit3") };
 
     private readonly Spot[] spots = new Spot[4];
@@ -78,37 +80,25 @@ public sealed class HitFlashRenderer : MonoBehaviour
         Attach();
     }
 
-    /// <summary>Holds the mark's tint and outline at this strength; 0 lets them go.</summary>
+    /// <summary>Holds the mark's tint and its outline where the body is seen at this strength; 0 lets them go.</summary>
     public void SetMark(float amount)
     {
         mark = Mathf.Clamp01(amount);
+        var band = CombatFeedbackSettings.InstanceOrDefaults.executableOutlineColor;
+        band.a = mark;
+        EnemyOutlines.Set(this, OutlineSource.Executable, new OutlineLook(band, Color.clear, Color.clear));
         if (mark > 0f) Attach();
     }
 
     /// <summary>
-    /// Holds the holder's outline at this strength, 0 lets it go: the zombie has a player in its grip (HoldReveal, on every
-    /// PC since the 2026-11-11 playtest; first only on the held player's own), and stands out of the crowd so they see
-    /// which one to shove or shoot off (user, 2026-11-10, after Left 4 Dead 2's outlines). Behind a wall HoldReveal's
-    /// silhouette takes over. It goes over the executable mark's outline while both are set.
-    /// </summary>
-    public void SetHolder(float amount)
-    {
-        holder = Mathf.Clamp01(amount);
-        if (holder > 0f) Attach();
-    }
-    private float holder;
-    /// <summary>
-    /// Holds a ping's outline at this strength in this colour, 0 lets it go (PingMarks: F on an enemy, stage 3 of the
-    /// classes; a Schießhund's bounty mark is teal). Under a holder's outline, over the executable mark's.
+    /// Holds an outline where the body is seen, at this strength in this colour; 0 lets it go. A Schießhund's bounty dye
+    /// (DyeMarks) is what asks; a ping and a bounty mark say their own look to EnemyOutlines (PingMarks), which wins over this.
     /// </summary>
     public void SetPing(float amount, Color color)
     {
-        ping = Mathf.Clamp01(amount);
-        pingColor = color;
-        if (ping > 0f) Attach();
+        color.a = Mathf.Clamp01(amount);
+        EnemyOutlines.Set(this, OutlineSource.Dye, new OutlineLook(color, Color.clear, Color.clear));
     }
-    private float ping;
-    private Color pingColor;
 
     private bool Near(Vector3 point)
     {
@@ -173,7 +163,7 @@ public sealed class HitFlashRenderer : MonoBehaviour
             spots[i].age += dt;
             if (spots[i].strength > 0f && spots[i].age < settings.hitGlowSeconds) glowing = true;
         }
-        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f && holder <= 0f && ping <= 0f) { Detach(); enabled = false; return; }
+        if (tint <= .001f && white <= 0f && !glowing && mark <= 0f) { Detach(); enabled = false; return; }
 
         var feedback = CombatFeedbackSettings.InstanceOrDefaults;
         // The stronger tint shows, so a hit on a marked body still flashes.
@@ -181,9 +171,6 @@ public sealed class HitFlashRenderer : MonoBehaviour
         block.Clear();
         block.SetColor(TintColorId, marked ? feedback.executableBodyTint : settings.hitTintColor);
         block.SetFloat(TintId, marked ? mark : tint);
-        block.SetColor(OutlineColorId, holder > 0f ? feedback.holderOutlineColor : ping > 0f ? pingColor : feedback.executableOutlineColor);
-        block.SetFloat(OutlineWidthId, holder > 0f ? feedback.holderOutlineWidth * holder
-            : ping > 0f ? feedback.holderOutlineWidth * ping : feedback.executableOutlineWidth * mark);
         block.SetColor(RimColorId, settings.hitRimColor);
         block.SetFloat(RimId, Mathf.Clamp01(tint * 1.2f));
         block.SetColor(GlowColorId, settings.hitGlowColor);

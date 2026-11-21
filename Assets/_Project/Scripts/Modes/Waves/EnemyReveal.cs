@@ -1,103 +1,57 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 /// <summary>
 /// Horde-style: during a wave, once revealRemaining or fewer enemies are left (Waves.csv), the living ones show through walls
 /// in revealColor, on every PC (guests go by the host's count, WaveSync). Only waves turn it on, so objective and stealth
-/// play never show enemies. Each enemy gets a copy of each of its meshes in Hidden/ENFILADE/RevealThroughWalls, drawn only
-/// where something stands in front of it. A copy, as DownedAura does for downed teammates, because an extra material on
-/// the real mesh would cover only its last submesh and would sit among the hit flash's material slots.
+/// play never show enemies. Each enemy's body is filled in revealColor where something stands in front of it, with a band
+/// of the same colour round its hidden shape (EnemyOutlines); where it can be seen it shows as it is.
 /// </summary>
 [DisallowMultipleComponent, RequireComponent(typeof(WaveManager))]
 public sealed class EnemyReveal : MonoBehaviour
 {
     private const float CheckEvery = .2f;
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
-    private readonly Dictionary<EnemyHealth, List<GameObject>> shown = new Dictionary<EnemyHealth, List<GameObject>>();
+    private readonly HashSet<EnemyHealth> shown = new HashSet<EnemyHealth>();
     private readonly List<EnemyHealth> done = new List<EnemyHealth>();
-    private readonly List<Renderer> found = new List<Renderer>();
     private WaveManager waves;
-    private Material material;
     private float nextCheck;
 
-    private void Awake()
+    /// <summary>A wave's last enemy's look on its body (EnemyOutlines): only where hidden, the band and the fill in this colour.</summary>
+    public static OutlineLook LookOf(Color colour)
     {
-        waves = GetComponent<WaveManager>();
-        var shader = Resources.Load<Shader>("Combat/Shaders/RevealThroughWalls");
-        if (shader != null) material = new Material(shader) { name = "Reveal Through Walls (Runtime)", hideFlags = HideFlags.HideAndDontSave };
+        var band = colour;
+        band.a = 1f;
+        return new OutlineLook(Color.clear, band, colour);
     }
+
+    private void Awake() => waves = GetComponent<WaveManager>();
 
     private void OnDestroy()
     {
-        foreach (var copies in shown.Values) Hide(copies);
+        foreach (var enemy in shown) if (enemy != null) EnemyOutlines.Clear(enemy, OutlineSource.Wave);
         shown.Clear();
-        if (material != null) Destroy(material);
     }
 
     private void Update()
     {
-        if (material == null || Time.unscaledTime < nextCheck) return;
+        if (Time.unscaledTime < nextCheck) return;
         nextCheck = Time.unscaledTime + CheckEvery;
         bool on = waves.RevealsRemaining;
-        material.SetColor(ColorId, waves.RevealColor);
         done.Clear();
-        foreach (var pair in shown)
-            if (!on || pair.Key == null || !pair.Key.IsAlive) done.Add(pair.Key);
+        foreach (var enemy in shown)
+            if (!on || enemy == null || !enemy.IsAlive) done.Add(enemy);
         foreach (var enemy in done)
         {
-            Hide(shown[enemy]);
+            if (enemy != null) EnemyOutlines.Clear(enemy, OutlineSource.Wave);
             shown.Remove(enemy);
         }
         if (!on) return;
+        var look = LookOf(waves.RevealColor);
         foreach (var enemy in EnemyHealth.Living)
-            if (enemy != null && enemy.IsAlive && !shown.ContainsKey(enemy)) shown.Add(enemy, Show(enemy));
-    }
-
-    private List<GameObject> Show(EnemyHealth enemy)
-    {
-        var copies = new List<GameObject>();
-        enemy.GetComponentsInChildren(found);
-        foreach (var source in found)
         {
-            if (!source.enabled || !source.gameObject.activeInHierarchy) continue;
-            // Never a copy of HoldReveal's copies, nor of a Ghost's sight (GhostSight).
-            if (source.name == "Hold Reveal" || source.name == GhostSight.CopyName) continue;
-            Renderer copy;
-            Mesh mesh;
-            if (source is SkinnedMeshRenderer skinned && skinned.sharedMesh != null)
-            {
-                mesh = skinned.sharedMesh;
-                var glow = new GameObject("Reveal", typeof(SkinnedMeshRenderer)).GetComponent<SkinnedMeshRenderer>();
-                glow.transform.SetParent(skinned.transform, false);
-                glow.sharedMesh = mesh;
-                glow.bones = skinned.bones;
-                glow.rootBone = skinned.rootBone;
-                glow.updateWhenOffscreen = true;
-                copy = glow;
-            }
-            else if (source is MeshRenderer && source.TryGetComponent(out MeshFilter filter) && filter.sharedMesh != null)
-            {
-                mesh = filter.sharedMesh;
-                var holder = new GameObject("Reveal", typeof(MeshFilter), typeof(MeshRenderer));
-                holder.transform.SetParent(source.transform, false);
-                holder.GetComponent<MeshFilter>().sharedMesh = mesh;
-                copy = holder.GetComponent<MeshRenderer>();
-            }
-            else continue;
-            copy.gameObject.layer = source.gameObject.layer;
-            copy.shadowCastingMode = ShadowCastingMode.Off;
-            copy.receiveShadows = false;
-            var slots = new Material[Mathf.Max(1, mesh.subMeshCount)];
-            for (int i = 0; i < slots.Length; i++) slots[i] = material;
-            copy.sharedMaterials = slots;
-            copies.Add(copy.gameObject);
+            if (enemy == null || !enemy.IsAlive) continue;
+            EnemyOutlines.Set(enemy, OutlineSource.Wave, look);
+            shown.Add(enemy);
         }
-        return copies;
-    }
-
-    private static void Hide(List<GameObject> copies)
-    {
-        foreach (var copy in copies) if (copy != null) Destroy(copy);
     }
 }
