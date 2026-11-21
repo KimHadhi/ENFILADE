@@ -1,22 +1,127 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 /// <summary>Music: the campaign's songs (CampaignMusic). Ambience: each map's background sound (MapAmbience).</summary>
 public enum AudioChannel { Combat, Movement, Voice, UI, Music, Ambience }
 
 /// <summary>
-/// Volume channels for every sound the game plays. Bind a source once when it is created; its volume then follows the
-/// Esc menu, and master volume is the AudioListener volume. Play sounds with PlayOneShot volume scales, never by
-/// writing source.volume; a loop that fades sets its level with SetGain. This is the one place to switch to an
-/// AudioMixer later.
+/// Volume channels for every sound the game plays: the owner of the settings' channel volumes, the ducking, slow
+/// motion's pitch, the master volume and the pause, whichever way a sound is played.
+/// Two ways play today (Docs/Features/SoundRebuild.md, stage 1 of 4). The older: bind a source once when it is created;
+/// its volume then follows the Esc menu. Play sounds with PlayOneShot volume scales, never by writing source.volume; a
+/// loop that fades sets its level with SetGain. The newer: GameSounds plays through Sonity into the mixer (GameMixer,
+/// made by Tools/Audio/make_mixer.py), a group per channel whose exposed volume and pitch this writes from the same
+/// numbers, so a sound sits the same in either way. The older way goes as its callers move over (stages 2 to 4).
+/// Master volume is the AudioListener's, and the pause AudioListener.pause, both told through Sonity's SoundManager
+/// once it runs: it owns the listener and writes its own values back whenever it finds one.
 /// </summary>
 public static class GameAudio
 {
+    /// <summary>The sound engine's numbers (Tables/Audio/SoundEngine.csv, rows Engine.*): GameSounds and the mixer's Loud groups.</summary>
+    public const string EngineTable = "SoundEngine", EngineRow = "Engine";
+    private const string MixerPath = "Audio/GameMixer", LoudSuffix = " Loud";
     // ownPitch is the pitch the source's owner gave it; setPitch is what FollowWorldPitch last wrote over it.
     private struct Bound { public AudioSource source; public AudioChannel channel; public float gain, ownPitch, setPitch; }
     private static readonly List<Bound> bound = new List<Bound>();
     private static readonly float[] duck = { 1f, 1f, 1f, 1f, 1f, 1f };
-    private static bool listening;
+    private static readonly AudioChannel[] channels = (AudioChannel[])System.Enum.GetValues(typeof(AudioChannel));
+    // The mixer's exposed parameter names per channel (Tools/Audio/make_mixer.py), made once so a duck writes no garbage.
+    private static readonly string[] volumeNames = Names("Volume"), pitchNames = Names("Pitch"), loudNames = Names("LoudVolume");
+    private static readonly AudioMixerGroup[] groups = new AudioMixerGroup[channels.Length * 2];
+    private static AudioMixer mixer;
+    private static bool listening, mixerLooked;
+
+    private static string[] Names(string suffix)
+    {
+        var names = new string[channels.Length];
+        for (int i = 0; i < names.Length; i++) names[i] = channels[i] + suffix;
+        return names;
+    }
+
+    /// <summary>The game's mixer (Resources/Audio/GameMixer); null without it.</summary>
+    public static AudioMixer Mixer
+    {
+        get
+        {
+            if (!mixerLooked) { mixerLooked = true; mixer = Resources.Load<AudioMixer>(MixerPath); }
+            return mixer;
+        }
+    }
+
+    /// <summary>
+    /// A channel's mixer group, or its Loud group (under it, boosted by Tables/Audio/SoundEngine Engine.loudDecibel) for
+    /// a sound whose volume goes past full. Null without the mixer.
+    /// </summary>
+    public static AudioMixerGroup Group(AudioChannel channel, bool loud = false)
+    {
+        int index = (int)channel * 2 + (loud ? 1 : 0);
+        if (index < 0 || index >= groups.Length) return null;
+        if (groups[index] != null) return groups[index];
+        var found = Mixer;
+        if (found == null) return null;
+        string name = channel + (loud ? LoudSuffix : "");
+        foreach (var group in found.FindMatchingGroups(name))
+            if (group != null && group.name == name) return groups[index] = group;
+        return null;
+    }
+
+    /// <summary>How many times louder the Loud groups play (Engine.loudDecibel as a ratio).</summary>
+    public static float LoudRatio => Mathf.Pow(10f, Mathf.Clamp(GameTables.Number(EngineTable, EngineRow, "loudDecibel", 12f), 0f, 20f) / 20f);
+
+    /// <summary>
+    /// The pause menu's hold on every sound but the UI channel's (GamePause). Sonity's SoundManager, once it runs, owns
+    /// AudioListener.pause (it puts its own record back whenever it finds a listener) and pauses its voices with it, so
+    /// it is told; it acts only on a change, so its record is made to agree with the listener first.
+    /// </summary>
+    public static void SetPaused(bool paused)
+    {
+        var sonity = Sonity.Internal.SoundManagerBase.Instance as Sonity.SoundManager;
+        if (sonity == null)
+        {
+            AudioListener.pause = paused;
+            return;
+        }
+        var record = sonity.Internals.settings;
+        if (AudioListener.pause != record.globalPause) AudioListener.pause = record.globalPause;
+        if (paused) sonity.SetGlobalPause();
+        else sonity.SetGlobalUnpause();
+    }
+
+    // Master volume is the listener's; with Sonity's SoundManager running it is told through it, for the same reason as
+    // the pause: it writes its own value onto AudioListener.volume whenever it finds a listener.
+    private static void SetMaster(float volume)
+    {
+        volume = Mathf.Clamp01(volume);
+        var sonity = Sonity.Internal.SoundManagerBase.Instance as Sonity.SoundManager;
+        if (sonity != null) sonity.SetGlobalVolumeRatio(volume);
+        else AudioListener.volume = volume;
+    }
+
+    // What every bound source's volume carries (the channel's setting times its ducking), written on the mixer for
+    // Sonity's voices, in dB; and the Loud groups' boost from the table.
+    private static void MixLevels()
+    {
+        var found = Mixer;
+        if (found == null || !Application.isPlaying) return;
+        float loud = Mathf.Clamp(GameTables.Number(EngineTable, EngineRow, "loudDecibel", 12f), 0f, 20f);
+        for (int i = 0; i < channels.Length; i++)
+        {
+            found.SetFloat(volumeNames[i], Decibel(Volume(channels[i]) * duck[i]));
+            found.SetFloat(loudNames[i], loud);
+        }
+    }
+
+    // Slow motion on the mixer's world groups, as FollowWorldPitch does on bound sources (UI and Music keep theirs).
+    private static void MixPitch()
+    {
+        var found = Mixer;
+        if (found == null || !Application.isPlaying) return;
+        for (int i = 0; i < channels.Length; i++)
+            if (channels[i] != AudioChannel.UI && channels[i] != AudioChannel.Music) found.SetFloat(pitchNames[i], WorldPitch);
+    }
+
+    private static float Decibel(float level) => level <= .0001f ? -80f : Mathf.Max(-80f, 20f * Mathf.Log10(level));
 
     /// <summary>Share of their own pitch every world sound plays at (1 is normal); see FollowWorldPitch.</summary>
     public static float WorldPitch { get; private set; } = 1f;
@@ -87,6 +192,7 @@ public static class GameAudio
             item.source.pitch = item.setPitch = item.ownPitch * WorldPitch;
             bound[i] = item;
         }
+        MixPitch();
     }
 
     /// <summary>A bound source's own level under its channel volume (0–1), for loops that fade in and out.</summary>
@@ -146,9 +252,17 @@ public static class GameAudio
 
     private static void Refresh()
     {
-        AudioListener.volume = GameSettings.Current.masterVolume;
+        SetMaster(GameSettings.Current.masterVolume);
         bound.RemoveAll(item => item.source == null);
         foreach (var item in bound) item.source.volume = Volume(item.channel) * item.gain * duck[(int)item.channel];
+        MixLevels();
+    }
+
+    /// <summary>Puts the master volume and the mixer's levels and pitch in place again: GameSounds, as Sonity's SoundManager starts.</summary>
+    internal static void Reapply()
+    {
+        Refresh();
+        MixPitch();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -159,6 +273,9 @@ public static class GameAudio
         listener = null;
         WorldPitch = 1f;
         for (int i = 0; i < duck.Length; i++) duck[i] = 1f;
+        mixer = null;
+        mixerLooked = false;
+        System.Array.Clear(groups, 0, groups.Length);
     }
 
     // Master volume applies from the first frame, even before any source binds.

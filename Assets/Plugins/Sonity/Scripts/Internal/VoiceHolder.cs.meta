@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 749b770627b4d5747b9deda655670de2
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/VoiceHolder.cs
+  uploadId: 994666

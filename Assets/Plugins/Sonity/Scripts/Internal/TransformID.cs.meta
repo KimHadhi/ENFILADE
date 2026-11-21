@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: ca0bfcf9e9150cd4d833115ac65c8347
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/TransformID.cs
+  uploadId: 994666

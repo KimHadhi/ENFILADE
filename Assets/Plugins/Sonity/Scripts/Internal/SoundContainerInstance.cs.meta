@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 8cc553efd1cfceb41a52107a5b6a71c0
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/SoundContainerInstance.cs
+  uploadId: 994666

@@ -117,6 +117,9 @@ InitTestScene*.unity*
 # MagicaCloth2's sample scenes are not part of the game
 /[Aa]ssets/ThirdParty/MagicaCloth2/Example (Can be deleted)/
 /[Aa]ssets/ThirdParty/MagicaCloth2/Example (Can be deleted).meta
+# Sonity's example scenes, sounds and mixer (57 MB) are not part of the game: import the package again to look at them
+/[Aa]ssets/Plugins/Sonity/Examples/
+/[Aa]ssets/Plugins/Sonity/Examples.meta
 
 # Python caches the tools leave behind
 __pycache__/

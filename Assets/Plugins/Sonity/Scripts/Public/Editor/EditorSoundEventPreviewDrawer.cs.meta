@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 272da39cbf7430d4280305974b85ff2b
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Public/Editor/EditorSoundEventPreviewDrawer.cs
+  uploadId: 994666

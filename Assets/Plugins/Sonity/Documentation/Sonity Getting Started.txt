@@ -1,0 +1,49 @@
+// Created by Victor Engström
+// Copyright 2025 Sonigon AB
+// http://www.sonity.org/
+
+Note About Licences
+- The Sonity Unity Asset Store license is for a single user at a time.
+- If multiple people use Sonity, you need multiple licenses.
+
+How to Update
+- Backup your project before adding or updating Sonity.
+- Delete the whole Sonity folder if it says so in the Sonity Changelog.txt.
+- Import and install the latest version of Sonity from the Asset Store.
+- Restart Unity if needed.
+- If materials are pink, select all “ExampleMaterial” and upgrade to URP with:
+	Edit -> Rendering -> Materials -> Convert Selected Built-in Materials to URP.
+
+Getting Started
+- To get started check out the quickstart video tutorial at https://www.sonigon.com/sonity-tutorial/
+- If you want more in depth information documentation look at https://sonigon.com/sonity-documentation/
+- If you're offline, it's also availible in "Sonity Documentation.zip"
+- Join our discord if you need help or want to report bugs https://sonigon.com/sonity-discord/
+
+Special thanks to my great friends who have helped me:
+- Simon Palmblad for feedbacking and programming the PlayMaker integration
+	translating (and publishing) Sonity to Chinese, Japanese and Korean
+	and for letting me use his voice in the Steam Audio example.
+- Dangledorf for helping people in the discord and creating the SoundEvent preview drawer.
+- David Petterzon for helping out and programming the Entity Sound integration
+- Tobias "Mockarutan" for writing async loading code and help with optimization
+	And for letting me use his amazing GUID system for Sonity <3
+- Rickard Friesendorff for testing and feedbacking on the SoundArea pre-release
+	and helping out with ideas on improving the UI with toolbars
+- Jesper Söderlind for writing a cache for the Reference Finder tool
+- Erik Thomasson Forsberg, for helping me with your programmer wizard skills
+- Leo for finding and reporting bugs
+- Kristian Jonsson for feedback and ideas
+- Vile Hartman, for helping me with a lot of things
+- Pablo Sorribes Bernhard, for trying it out on your projects
+- Jesper Söderlind for help with programming feedback
+- Adam J Sporka, for feedbacking my documentation
+- Patrik Petterson, for helping me with making my videos and text better
+- Joakim Nordborg, for giving me feedback on my text
+- Landfall Games, for letting me use Rounds for my tutorials
+- Karan, for helping me to build the trial version
+- Eldar Kuchurbaev Karlsson for reviewing my tutorial videos
+- Jacob Akpinar Olsson, for finding nice tutorial topics
+- JoeFazz, Jazzay, Nich, OscarLeif, Kultie for pre-release testing
+- Alexey Perov for creating Dependencies Hunter
+- Matthew Miner for creating Selection History Navigator

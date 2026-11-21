@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 76373d47bbf2a7e458512e2a93aa4fa7
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/IndexedActiveList.cs
+  uploadId: 994666

@@ -58,7 +58,8 @@ public static class GamePause
         if (paused == IsPaused) return;
         IsPaused = paused;
         WorldTime.Stop(paused);
-        AudioListener.pause = paused;
+        // Through the sound owner: Sonity's SoundManager keeps its own record of the listener's pause (GameAudio.SetPaused).
+        GameAudio.SetPaused(paused);
     }
 
     // A holder that went with its scene no longer holds.

@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: e6eb75b7a57c15b48b263f4456659c9a
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/SonityEditorPrefs.cs
+  uploadId: 994666

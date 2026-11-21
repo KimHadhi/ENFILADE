@@ -1,0 +1,6 @@
+﻿key,value,note
+Engine.voiceLimit,32,Sonity가 한꺼번에 울리는 소리의 최대 수(SoundManager voiceLimit). 넘으면 가장 조용한 것(볼륨 × 우선순위)부터 끊는다. 아직 Sonity를 거치지 않는 소리(옛 AudioSource)는 따로 센다. ProjectSettings/AudioManager의 실제 음성 32와 맞췄다
+Engine.voices,4,한 소리(묶음/키)가 동시에 겹쳐 울리는 최대 수. 넘으면 그 소리의 가장 오래된 것을 끊는다. 소리마다 다르게 할 칸은 2단계에서 Sounds.csv에 더한다
+Engine.loudDecibel,12,Sounds.csv 볼륨이 1을 넘는 소리가 지나가는 Loud 그룹이 더하는 크기(dB). 12 = 4배까지. 그 소리는 볼륨 ÷ 이 배수로 재생되고 그룹이 다시 올린다(믹서 GameMixer의 <채널>LoudVolume)
+Engine.near,1.5,부르는 쪽이 거리를 말하지 않은 3D 소리가 온전히 들리는 거리(m). 예전 FeelAudio의 3D 소리와 같다
+Engine.far,14,그 소리가 다 사라지는 거리(m). 그 사이는 곧게 줄어든다

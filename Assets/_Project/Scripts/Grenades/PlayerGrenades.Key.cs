@@ -34,7 +34,7 @@ public sealed partial class PlayerGrenades
         var stoneKey = KeyBindings.Find(PlayerThrow.KeyName);
         if (arm == Arm.None)
         {
-            Start(info, key, stoneKey);
+            TakeOut(info, key, stoneKey);
             return;
         }
         bool drawn = arm == Arm.Draw || arm == Arm.Hold, inHand = drawn && !letGo;
@@ -82,7 +82,8 @@ public sealed partial class PlayerGrenades
     // Nothing in the hand: G pressed takes the class's throwable out; T held takes a stone, as soon as the last one's
     // cooldown is over (held through it, the next comes into the hand by itself, as the old aim waited held). The belt on
     // the x-ray tray (GimmickTray) keeps the class's throwable away, not a stone.
-    private void Start(ThrowableInfo info, InputAction key, InputAction stoneKey)
+    // Not "Start": Unity takes a MonoBehaviour's Start for its own message and logs a script error for one with parameters.
+    private void TakeOut(ThrowableInfo info, InputAction key, InputAction stoneKey)
     {
         if (Hands == null || !Hands.Could(HandUses.Grenade, this)) return;
         if (!movement.InputAvailable || !InputFocus.TakesInput() || !Hands.Stands(HandUses.Grenade)) return;

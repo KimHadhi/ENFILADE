@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 8e8e925b1102ce84f9f616bdc353bf6b
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/Editor/EditorGuiAssetTopToolbarButtons.cs
+  uploadId: 994666

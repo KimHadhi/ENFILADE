@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 075b6e8b3fc4fe4479c22a2d506950bc
+AssetOrigin:
+  serializedVersion: 1
+  productId: 229857
+  packageName: Sonity - Audio Middleware
+  packageVersion: 1.2.0.1
+  assetPath: Assets/Plugins/Sonity/Scripts/Internal/SoundTagGroup.cs
+  uploadId: 994666
