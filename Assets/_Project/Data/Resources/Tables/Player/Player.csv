@@ -499,6 +499,7 @@ Body.land,Land_3h,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊
 Body.slideStart,SlideToRun_Enter,슬라이딩 시작. BIPER Female Runner. 0.9.262 전에는 slidestart
 Body.slide,SlideToRun_Loop,슬라이딩. BIPER Female Runner. 0.9.262 전에는 slideloop
 Body.slideEnd,SlideToRun_Exit,슬라이딩 끝: 일어나 달려 나간다. BIPER Female Runner. 0.9.262 전에는 slideend
+Body.slideCrouchTime,0.3,슬라이딩이 웅크리기로 끝날 때 슬라이딩 자세에서 웅크린 자세로 바뀌는 시간(초). 그리로 가는 클립이 없어 두 자세 사이를 천천히 섞는다. 0.9.266 전에는 일어나 달려 나가는 Body.slideEnd를 틀어 섰다가 앉았다
 Body.diveStart,divestart,다이브 시작
 Body.dive,diveidle,다이브 공중
 Body.supineDiveStart,jumpturnfly,등을 대고 하는 다이브의 시작. Beatrun의 점프 턴처럼 공중에서 뒤로 눕는다

@@ -25,6 +25,8 @@ using Object = UnityEngine.Object;
 ///   skins=ichigo,mayo                 characters by id (ichigo)
 ///   bake=gaitmoves                    also bake the turns on the spot into Tables/Player/GaitMoves.csv (GaitMoveBake)
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
+///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
+///                                     head face and how fast the hands move against the chest (Track)
 /// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
 /// </summary>
 [InitializeOnLoad]
@@ -68,7 +70,7 @@ internal static class ClipBench
     private static void Run(string[] lines)
     {
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
-        HashSet<string> only = null;
+        HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         bool bakeMoves = false;
         foreach (string raw in lines)
         {
@@ -81,6 +83,7 @@ internal static class ClipBench
                 case "skins": skins = values; break;
                 case "models": models = values; break;
                 case "clips": only = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
+                case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
                 case "bake": bakeMoves = values.Any(v => v.Equals("gaitmoves", StringComparison.OrdinalIgnoreCase)); break;
             }
         }
@@ -140,6 +143,7 @@ internal static class ClipBench
                     foreach (var clip in ClipsIn(AnimationsFolder + folder).Where(c => only == null || only.Contains(c.name)))
                     {
                         text.AppendLine(Measure(model, clip, animator, scale));
+                        if (tracked.Contains(clip.name)) Track(clip, animator, scale, text);
                         measured++;
                     }
                 }
@@ -302,6 +306,78 @@ internal static class ClipBench
                 if (i == 0) start = over;
                 if (i == count) end = over;
                 lowest = Mathf.Min(lowest, over);
+            }
+        }
+        finally
+        {
+            for (int i = 0; i < bones.Length; i++)
+                if (bones[i] != null) bones[i].SetLocalPositionAndRotation(poses[i].localPosition, poses[i].localRotation);
+            root.SetPositionAndRotation(rootPosition, rootRotation);
+        }
+    }
+
+    // A clip's timeline, TrackRate times a second: t s; rise = the body centre over where it began (m, RootT); hips over the
+    // lowest foot (m); which way the hips (the thighs' line), the chest (the shoulders' line) and the head (its rest-pose
+    // ahead) face, degrees from the body's ahead, + to the right; each hand against the chest (x right, y up, z ahead, m)
+    // and how fast the faster hand moves against it (m/s). Sizes are the game's. The body's pose is put back afterwards.
+    private const float TrackRate = 15f;
+
+    private static void Track(AnimationClip clip, Animator animator, float scale, StringBuilder text)
+    {
+        var root = animator.transform;
+        Transform Bone(HumanBodyBones bone) => animator.GetBoneTransform(bone);
+        var hips = Bone(HumanBodyBones.Hips);
+        var chest = Bone(HumanBodyBones.UpperChest) ?? Bone(HumanBodyBones.Chest) ?? Bone(HumanBodyBones.Spine);
+        var head = Bone(HumanBodyBones.Head);
+        var leftArm = Bone(HumanBodyBones.LeftUpperArm);
+        var rightArm = Bone(HumanBodyBones.RightUpperArm);
+        var leftLeg = Bone(HumanBodyBones.LeftUpperLeg);
+        var rightLeg = Bone(HumanBodyBones.RightUpperLeg);
+        var leftHand = Bone(HumanBodyBones.LeftHand);
+        var rightHand = Bone(HumanBodyBones.RightHand);
+        var leftFoot = Bone(HumanBodyBones.LeftFoot);
+        var rightFoot = Bone(HumanBodyBones.RightFoot);
+        if (new[] { hips, chest, head, leftArm, rightArm, leftLeg, rightLeg, leftHand, rightHand, leftFoot, rightFoot }.Any(b => b == null))
+        {
+            text.AppendLine("    track: ! a bone is missing");
+            return;
+        }
+        AnimationCurve rootY = null;
+        foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+            if (binding.type == typeof(Animator) && binding.propertyName == "RootT.y") rootY = AnimationUtility.GetEditorCurve(clip, binding);
+        float human = animator.humanScale * scale;
+        var bones = root.GetComponentsInChildren<Transform>();
+        var poses = bones.Select(b => (b.localPosition, b.localRotation)).ToArray();
+        Vector3 rootPosition = root.position;
+        Quaternion rootRotation = root.rotation;
+        // The head's ahead, as it is in the model's own rest pose (facing the body's ahead).
+        Vector3 headAhead = Quaternion.Inverse(head.rotation) * root.forward;
+        float Facing(Vector3 left, Vector3 right)
+        {
+            Vector3 ahead = Vector3.Cross(root.InverseTransformVector(right - left), Vector3.up);
+            return Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
+        }
+        try
+        {
+            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s");
+            int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * TrackRate));
+            Vector3 lastLeft = Vector3.zero, lastRight = Vector3.zero;
+            float first = rootY != null ? rootY.Evaluate(0f) : 0f;
+            for (int i = 0; i <= count; i++)
+            {
+                float t = clip.length * i / count;
+                ClipSampler.Sample(clip, animator.gameObject, t);
+                Vector3 Against(Transform hand) => root.InverseTransformVector(hand.position - chest.position) * scale;
+                Vector3 left = Against(leftHand), right = Against(rightHand);
+                float speed = i == 0 ? 0f : Mathf.Max((left - lastLeft).magnitude, (right - lastRight).magnitude) / (clip.length / count);
+                lastLeft = left;
+                lastRight = right;
+                float feet = Mathf.Min(root.InverseTransformPoint(leftFoot.position).y, root.InverseTransformPoint(rightFoot.position).y);
+                float over = (root.InverseTransformPoint(hips.position).y - feet) * scale;
+                Vector3 headForward = root.InverseTransformDirection(head.rotation * headAhead);
+                float headYaw = Mathf.Atan2(headForward.x, headForward.z) * Mathf.Rad2Deg;
+                float rise = rootY != null ? (rootY.Evaluate(t) - first) * human : 0f;
+                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0}"));
             }
         }
         finally

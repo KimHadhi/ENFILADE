@@ -207,6 +207,7 @@ public sealed partial class PlayerBody
             transitionLeft = left;
         }
         transition = channel;
+        transitionStance = player.CurrentState;
         playingOut = true;
     }
 
@@ -222,8 +223,13 @@ public sealed partial class PlayerBody
         if (player.LastLandingTier != MovementLanding.Tier.Light)
             return crouched ? landCrouch : LandingOnTheMove(true) ?? land;
         if (wasTucked && HorizontalSpeed() > walkClipSpeed) return crouched ? coilLandCrouch : coilLand;
-        // A plain jump landed on the move takes the landing in its stride (Land_ToRun1); standing, it blends on.
-        return crouched ? null : LandingOnTheMove(false);
+        // A plain jump landed on the move takes the landing in its stride (Land_ToRun1); standing, the knees take it
+        // (touchdown: Land_1h starts from the arms a jump comes down with, where blending on dropped them in a blink);
+        // moving any other way, it blends on; down from a tuck on the spot it settles out of the tuck (SettleFromTuck).
+        if (crouched) return null;
+        string onTheMove = LandingOnTheMove(false);
+        if (onTheMove != null || wasTucked) return onTheMove;
+        return HorizontalSpeed() <= walkClipSpeed && Find(touchdown) != null ? touchdown : null;
     }
 
     // Down from a tuck on the spot, the knees stay bent a moment on planted feet before the body stands up. The crouch
@@ -233,6 +239,7 @@ public sealed partial class PlayerBody
         var channel = Find(crouchIdle);
         if (channel == null || channel.Synced) return;
         transition = channel;
+        transitionStance = player.CurrentState;
         transitionLeft = blendTime * 3f;
         playingOut = false;
     }
@@ -272,7 +279,9 @@ public sealed partial class PlayerBody
             case MovementState.Supine:
                 return to == MovementState.Standing ? (HoldsGun ? supineGetUpGun : supineGetUp)
                     : to == MovementState.Crouching ? supineGetUpCrouch : null;
-            case MovementState.Sliding: return to == MovementState.Proning ? null : slideEnd;
+            // The slide's end gets up and runs on (SlideToRun_Exit): into a crouch the slide's pose turns straight into it
+            // (SlowBlend), where it stood up first (the user, 2026-11-21: "섰다가 앉기로 가서 부자연스러워").
+            case MovementState.Sliding: return to == MovementState.Proning || to == MovementState.Crouching ? null : slideEnd;
             case MovementState.SupineSliding:
                 return to == MovementState.Proning ? supineSlideEndProne : to == MovementState.Crouching ? supineSlideEndCrouch : supineSlideEnd;
             case MovementState.HeadFirstSliding:
@@ -294,7 +303,9 @@ public sealed partial class PlayerBody
             tucked = true;
             Want(airTuck);
         }
-        else if (jumped && airTime < (Find(jumpClip)?.Length ?? 0f)) Want(jumpClip);
+        // A jump's clip follows the flight (PlayerBody.Flight); one with no baked flight plays on its own clock.
+        else if (jumped && FollowFlight(Time.deltaTime)) { }
+        else if (jumped && !flights.ContainsKey(jumpClip ?? "") && airTime < (Find(jumpClip)?.Length ?? 0f)) Want(jumpClip);
         else Want(player.FallSpeed > fallClipSpeed ? fall : air);
     }
 

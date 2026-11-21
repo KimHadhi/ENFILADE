@@ -25,7 +25,7 @@ public sealed partial class PlayerBody
 
     private Channel heaveClip;
     private bool heaving, heavePressing;
-    private float heavePeak, heaveLetGoAt, heaveSettled, standBlendLeft;
+    private float heavePeak, heaveLetGoAt, heaveSettled;
     private Vector3 heaveRoot;
 
     /// <summary>The arms have finished pressing and the hands come off the ledge.</summary>

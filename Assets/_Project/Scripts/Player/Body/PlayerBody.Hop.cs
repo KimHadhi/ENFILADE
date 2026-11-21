@@ -18,6 +18,7 @@ public sealed partial class PlayerBody
     private void BindHops()
     {
         AddChannel(touchdown, 0f);
+        ReadFlights();
         touchdownLeft = 0f;
         jumpQueued = jumpPending = false;
         player.Landed -= OnHopLanded;
@@ -57,6 +58,8 @@ public sealed partial class PlayerBody
             jumpQueued = false;
             jumped = jumpPending = true;
             airTime = 0f;
+            // Its flight is measured from here: a copy on another PC may have missed the ground between two poses.
+            StartFlight();
             jumpClip = JumpFor(HorizontalSpeed());
         }
         if (!jumpPending || ShowsTouchdown) return;

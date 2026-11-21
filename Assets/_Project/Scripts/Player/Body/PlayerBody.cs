@@ -27,6 +27,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
     [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";
+    [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
+        + "No pack has a clip for it; the slide's getting up (slideEnd) stood the body up first.")]
+    private float slideCrouchTime = .3f;
     [SerializeField] private string diveStart = "divestart", dive = "diveidle";
     [SerializeField, Tooltip("A dive on the back, as Beatrun's jump turn: lying back in the air, then its loop. Turned over "
         + "from a front dive, or off an edge while lying, the body is already down and goes straight to the loop.")]
@@ -42,6 +45,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [Header("Feel")]
     [SerializeField, Min(.01f), Tooltip("Crossfade between clips (s).")]
     private float blendTime = .15f;
+    // A while (slowBlendLeft, s) when the clips cross over this slowly instead (slowBlendTime, s): standing up from the
+    // crouch a climb ends in, going from a slide into a crouch (SlowBlend).
+    private float slowBlendTime, slowBlendLeft;
     [SerializeField, Min(.1f), Tooltip("Faster than this the player counts as moving off (m/s): a landing or a slide's end stops "
         + "playing out, and a landing from a tuck takes its running version. The cycles' own paces are measured (GaitClips).")]
     private float walkClipSpeed = 1.7f;
@@ -270,7 +276,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
         state = player.CurrentState;
         grounded = player.IsGrounded;
-        stateTime = airTime = gripWeight = standBlendLeft = 0f;
+        stateTime = airTime = gripWeight = slowBlendLeft = 0f;
         heaving = false;
         heaveClip = null;
         hips = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
@@ -691,6 +697,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // leaves its feet.
             bool hold = transitionRuns ? onFeet && upright && HorizontalSpeed() > walkClipSpeed
                 : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
+            // A transition is the stance it began in: a getting up gives way to a crouch, a crouched landing to standing up.
+            if (upright && transitionStance != state
+                && (transitionStance == MovementState.Standing || transitionStance == MovementState.Crouching))
+                hold = false;
             if (transitionLeft > blendTime && hold)
             {
                 transition.Target = 1f;
@@ -781,7 +791,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         if ((from == MovementState.Vault || from == MovementState.Mantle) && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOutObstacle();
-        if (heaving && from == MovementState.Mantle) standBlendLeft = heaveStandTime;
+        if (heaving && from == MovementState.Mantle) SlowBlend(heaveStandTime);
+        // Out of a slide straight into a crouch: no clip goes there, so the slide's pose turns into the crouch's slowly.
+        if (from == MovementState.Sliding && to == MovementState.Crouching) SlowBlend(slideCrouchTime);
         if (from == MovementState.DashPush && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(dashPush);
         if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
@@ -849,6 +861,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (onGround && springing) { transition = null; playingOut = springing = false; }
         if (!onGround)
         {
+            StartFlight();
             // A jump starts its clip in TickHops; anything else that throws the body up starts it here.
             jumped = jumpQueued || jumpPending || player.VerticalVelocity > 1f;
             if (jumped && !jumpQueued && !jumpPending)
@@ -872,8 +885,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     private void Blend(float dt)
     {
-        float step = dt / (standBlendLeft > 0f ? heaveStandTime : blendTime), total = 0f;
-        standBlendLeft -= dt;
+        float step = dt / (slowBlendLeft > 0f ? slowBlendTime : blendTime), total = 0f;
+        slowBlendLeft -= dt;
         foreach (var channel in channels)
         {
             channel.Weight = Mathf.MoveTowards(channel.Weight, channel.Target, step);
@@ -915,9 +928,16 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (channel == null) return;
         Restart(channel);
         transition = channel;
+        transitionStance = player.CurrentState;
         transitionLeft = channel.Length;
         playingOut = transitionRuns = false;
     }
+
+    // The stance a transition began in (PlayTransition, PlayOn, PlayOutObstacle, SettleFromTuck).
+    private MovementState transitionStance;
+
+    // The clips cross over this slowly for this long (s), where no clip goes from one pose to the other.
+    private void SlowBlend(float time) => slowBlendTime = slowBlendLeft = time;
 
     // The transition playing is a landing that runs on (PlayerBody.Ways): it holds on the move.
     private bool transitionRuns;
@@ -931,6 +951,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         float left = channel.Length - (float)channel.Playable.GetTime();
         if (left <= blendTime) return;
         transition = channel;
+        transitionStance = player.CurrentState;
         transitionLeft = left;
         playingOut = false;
     }
