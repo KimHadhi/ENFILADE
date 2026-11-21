@@ -250,7 +250,12 @@ public static class PlayerClass
     /// A factor on how long a gun takes to come out for <paramref name="who"/>: none at all in a Point's Gun Kata (ClassKit),
     /// and a Schießhund's Desperado quicker with its 빠른 뽑기 card (ClassKit.DesperadoDraw).
     /// </summary>
-    public static float DrawFactor(PlayerMovement who) => InKata(who) ? 0f : ClassKit.DesperadoDraw(who);
+    public static float DrawFactor(PlayerMovement who)
+    {
+        // Someone else's copy draws at their PC's pace, which knows their kata and their gun: it comes with their stance.
+        if (who != null && !who.IsLocal && who.TryGetComponent(out PlayerNetworkCombat shown)) return shown.ShownDrawFactor;
+        return InKata(who) ? 0f : ClassKit.DesperadoDraw(who);
+    }
 
     /// <summary>
     /// A factor on the spread moving adds to <paramref name="who"/>'s shots: none in a Point's Gun Kata, shooting on the run;

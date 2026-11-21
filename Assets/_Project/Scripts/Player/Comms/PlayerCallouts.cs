@@ -79,7 +79,7 @@ public sealed class PlayerCallouts : MonoBehaviour
     /// This PC's player said this line: the zombie it pinged (or null), and the spot it pinned when the bool says so.
     /// PlayerNetworkCombat tells the other PCs.
     /// </summary>
-    public event Action<string, EnemyHealth, Vector3, bool> Called;
+    public event Action<string, EnemyHealth, Vector3, bool, uint> Called;
 
     // When each line was last heard on this PC from anyone.
     private static readonly Dictionary<string, float> heard = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
@@ -351,10 +351,16 @@ public sealed class PlayerCallouts : MonoBehaviour
         if (auto) lastAuto = now;
         var marked = line.MarksTarget && sense.Target != null && sense.Target.IsAlive ? sense.Target : null;
         bool pins = line.MarksPoint && sense.HasSpot;
-        Hear(movement, line.Id, marked, sense.Spot, pins);
-        Called?.Invoke(line.Id, marked, sense.Spot, pins);
+        // The shout's own seed goes with it: every PC plays the same take of the line, its mouth with it (SharedRandom;
+        // SyncAudit.md, item 13).
+        uint seed = SharedRandom.Seed(SharedRandom.LocalClient, ++shouts, 0xCA11u);
+        using (SharedRandom.Scope(seed)) Hear(movement, line.Id, marked, sense.Spot, pins);
+        Called?.Invoke(line.Id, marked, sense.Spot, pins, seed);
         return true;
     }
+
+    // This PC's player's shouts so far, for each one's seed.
+    private ulong shouts;
 
     /// <summary>
     /// A callout said by speaker, on this PC: their voice from where they stand, their words over their head (this

@@ -53,23 +53,24 @@ public sealed partial class PlayerNetworkCombat
         if (marked.TryGetComponent(out EnemyHealth health)) HoundDuel.Begin(mover != null ? mover : GetComponent<PlayerMovement>(), health, seconds, ace);
     }
 
-    private void OnCalled(string line, EnemyHealth target, Vector3 point, bool pins)
+    private void OnCalled(string line, EnemyHealth target, Vector3 point, bool pins, uint seed)
     {
         ulong marked = target != null && target.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.NetworkObjectId : ulong.MaxValue;
-        CalloutRpc(new Unity.Collections.FixedString64Bytes(line), marked, point, pins);
+        CalloutRpc(new Unity.Collections.FixedString64Bytes(line), marked, point, pins, seed);
     }
 
     // This player shouted a callout (PlayerCallouts): every other PC hears it from them, reads it over their head, and
     // pings the zombie or pins the spot it was about. The line goes by its id, not a list index, so the table's order
     // can never make two PCs read it differently.
+    // Seed: the shout's, so the same take of the line plays here as on their PC (SharedRandom).
     [Rpc(SendTo.NotMe)]
-    private void CalloutRpc(Unity.Collections.FixedString64Bytes line, ulong target, Vector3 point, bool pins)
+    private void CalloutRpc(Unity.Collections.FixedString64Bytes line, ulong target, Vector3 point, bool pins, uint seed)
     {
         EnemyHealth enemy = null;
         if (target != ulong.MaxValue && NetworkManager != null && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(target, out var marked))
             marked.TryGetComponent(out enemy);
         var speaker = mover != null ? mover : GetComponent<PlayerMovement>();
-        PlayerCallouts.Hear(speaker, line.ToString(), enemy, point, pins);
+        using (SharedRandom.Scope(seed)) PlayerCallouts.Hear(speaker, line.ToString(), enemy, point, pins);
         // A call for healing: a Détente here sees them marked, and its offer takes at once (DetenteKit).
         DetenteKit.Called(speaker, line.ToString());
     }

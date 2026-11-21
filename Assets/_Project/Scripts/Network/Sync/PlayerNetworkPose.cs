@@ -21,6 +21,12 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     /// <summary>This player's look as the room knows it (empty before it is first sent): the results stand a copy of it.</summary>
     internal string Look => skin.Value.ToString();
+    // The face this player picked in the wardrobe to show when looked at (CharacterFace.SavedShowFace): their copy holds it
+    // on every PC, where it used to pose at random (SyncAudit.md, item 13).
+    private readonly NetworkVariable<FixedString128Bytes> showFace = new NetworkVariable<FixedString128Bytes>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    /// <summary>The face their player picked to show when looked at ("" for the cute face), as the room knows it.</summary>
+    internal string ShowFace => showFace.Value.ToString();
     /// <summary>
     /// What a copy shows of its player's body, as one value: the health, how much it can hold (a perk's 145, not the base
     /// 100: friend feedback C14, where a teammate's card read 100 for 145) and the shield over it. They were two values
@@ -122,7 +128,61 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
 
     private void Update()
     {
-        if (IsSpawned && !IsOwner) movement.Mirror.Apply(pose.Value, Time.deltaTime);
+        if (IsSpawned && !IsOwner) movement.Mirror.Apply(PoseDrawn(), Time.deltaTime);
+    }
+
+    // The poses come in as their owner takes them, each with its tick, and wait here until this PC draws the copy's place at
+    // that tick (NetworkTransform's buffer, NetSmoothing): shown the moment they came, a vault, a slide, a turn or a shot's
+    // stance began before the body was drawn where it began (SyncAudit.md, item 15). At most MostWaiting wait (the oldest
+    // goes on to be shown past that); with none old enough yet, the last shown stays, or the oldest waiting at first.
+    private const int MostWaiting = 48;
+    private readonly PlayerPose[] waiting = new PlayerPose[MostWaiting];
+    private int waitingFirst, waitingCount;
+    private PlayerPose drawn;
+    private bool drawnAny;
+
+    private PlayerPose PoseDrawn()
+    {
+        var network = NetworkManager;
+        if (network == null || !network.IsListening)
+            return pose.Value;
+        bool guestOnGuest = !network.IsServer && OwnerClientId != NetworkManager.ServerClientId;
+        long due = (long)network.ServerTime.Tick - NetSmoothing.DrawnBehind(network, guestOnGuest);
+        while (waitingCount > 0 && (long)waiting[waitingFirst].Tick <= due)
+        {
+            drawn = waiting[waitingFirst];
+            drawnAny = true;
+            waitingFirst = (waitingFirst + 1) % MostWaiting;
+            waitingCount--;
+        }
+        if (!drawnAny)
+        {
+            if (waitingCount == 0) return pose.Value;
+            drawn = waiting[waitingFirst];
+            drawnAny = true;
+        }
+        return drawn;
+    }
+
+    private void Wait(in PlayerPose next)
+    {
+        // A pose with no tick (before the first stamp) or behind the last one is shown as it comes.
+        if (next.Tick == 0 || (waitingCount > 0 && next.Tick < waiting[(waitingFirst + waitingCount - 1) % MostWaiting].Tick))
+        {
+            waitingCount = 0;
+            drawn = next;
+            drawnAny = true;
+            return;
+        }
+        if (waitingCount == MostWaiting)
+        {
+            drawn = waiting[waitingFirst];
+            drawnAny = true;
+            waitingFirst = (waitingFirst + 1) % MostWaiting;
+            waitingCount--;
+        }
+        waiting[(waitingFirst + waitingCount) % MostWaiting] = next;
+        waitingCount++;
     }
 
     private void LateUpdate()
@@ -143,7 +203,10 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
 
     // A copy's pose came in: how late, for the buffer (NetSmoothing). The host's own player comes the way zombies do.
     private void OnPoseChanged(PlayerPose previous, PlayerPose current)
-        => NetSmoothing.Heard(NetworkManager, current.Tick, OwnerClientId == NetworkManager.ServerClientId);
+    {
+        NetSmoothing.Heard(NetworkManager, current.Tick, OwnerClientId == NetworkManager.ServerClientId);
+        Wait(current);
+    }
 
     // The owner's picture, small, to everyone else: on joining, when it changes, and when a newcomer asks.
     private void SendPortrait()
@@ -171,6 +234,9 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         string look = OutfitLook.Join(PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant),
             OutfitLook.SavedText(skinId));
         if (skin.Value.ToString() != look) skin.Value = look;
+        string face = CharacterFace.SavedShowFace(skinId) ?? "";
+        if (face.Length > 120) face = face.Substring(0, 120);
+        if (showFace.Value.ToString() != face) showFace.Value = face;
     }
 
     private void OnSkinChanged(FixedString4096Bytes previous, FixedString4096Bytes current) => ShowSkin();

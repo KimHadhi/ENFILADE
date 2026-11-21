@@ -40,6 +40,11 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         /// </summary>
         public byte Muzzle, Under;
         public bool Light;
+        /// <summary>
+        /// How much of a gun's draw time their PC cuts (PlayerClass.DrawFactor: a Point's Gun Kata all of it, a Schießhund's
+        /// Desperado its share), in 255ths: 0, the default, cuts nothing. Their copy draws as fast (SyncAudit.md, item 12).
+        /// </summary>
+        public byte DrawCut;
         /// <summary>The grip on that gun plus one, 0 for no choice; their support hand goes on it there too.</summary>
         public byte Grip;
         /// <summary>How far into its clip their reload began, 0-255: theirs going on from a cut-short one (WeaponRuntime.ReloadStartShare).</summary>
@@ -333,6 +338,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             Sight = (byte)Mathf.Clamp(weapon.SightIndex + 1, 0, 255), Mode = gun != null ? (byte)((int)gun.FireMode + 1) : (byte)0,
             Muzzle = (byte)Mathf.Clamp(weapon.MuzzleIndex + 1, 0, 255), Under = (byte)Mathf.Clamp(weapon.UnderbarrelIndex + 1, 0, 255),
             Light = weapon.LightOn, Grip = (byte)Mathf.Clamp(weapon.GripIndex + 1, 0, 255),
+            DrawCut = (byte)Mathf.RoundToInt((1f - Mathf.Clamp01(PlayerClass.DrawFactor(mover))) * 255f),
             Aiming = weapon.AimBlend > AimingShare, Guarding = melee.IsGuarding || melee.IsParryActive,
             Reloading = gun != null && gun.IsReloading, EmptyReload = gun != null && gun.IsReloading && gun.IsEmptyReload,
             ReloadFrom = gun != null && gun.IsReloading ? (byte)Mathf.RoundToInt(gun.ReloadStartShare * 255f) : (byte)0,
@@ -342,6 +348,9 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     }
 
     private void OnStanceChanged(Stance previous, Stance current) => Show(current);
+
+    /// <summary>On someone else's copy: the factor on a gun's draw time their PC uses now (PlayerClass.DrawFactor).</summary>
+    internal float ShownDrawFactor => 1f - stance.Value.DrawCut / 255f;
 
     // A slot they aren't holding gets the gun their PC has there, for their body to wear (HolsteredGuns); one with no gun of
     // ours (0) clears only a gun, never some other special item their PC put there.

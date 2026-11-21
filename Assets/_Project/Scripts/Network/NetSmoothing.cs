@@ -140,6 +140,12 @@ public static class NetSmoothing
         NetworkTransform.InterpolationBufferTickOffset = offset;
     }
 
+    /// <summary>
+    /// How many ticks behind its clock of the server this PC draws a copy's place (Netcode's own sum; a guest's player seen
+    /// on a guest one more): its pose is shown as of the same tick (PlayerNetworkPose).
+    /// </summary>
+    internal static int DrawnBehind(NetworkManager network, bool guestOnGuest) => Behind(network, guestOnGuest);
+
     // How many ticks behind this PC draws a copy (Netcode's own sum); a guest's player seen on a guest is one more.
     private static int Behind(NetworkManager network, bool guestOnGuest)
         => Mathf.Max(1, network.NetworkTimeSystem.TickLatency + NetworkTransform.InterpolationBufferTickOffset) + (guestOnGuest ? 1 : 0);

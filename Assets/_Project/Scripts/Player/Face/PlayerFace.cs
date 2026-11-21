@@ -151,13 +151,17 @@ public sealed class PlayerFace : MonoBehaviour
             Fear();
         }
         Idle(dt, up && !guarding && !aiming);
-        // Looked at, this PC's own character holds the face its player picked in the wardrobe (CharacterFace.SavedShowFace,
-        // read as the looking starts, so a face tried at the mirror's wardrobe isn't undone); another player's poses now
-        // and then, as before (their pick stays on their PC).
+        // Looked at, a character holds the face its player picked in the wardrobe (CharacterFace.SavedShowFace, read as the
+        // looking starts, so a face tried at the mirror's wardrobe isn't undone): this PC's own from its settings, another
+        // player's as their PC sends it (PlayerNetworkPose.ShowFace), so it is the same face on every PC.
         bool shown = up && Looked(local);
-        if (shown && !face.Showing) face.ShowFace = local ? CharacterFace.SavedShowFace(face.Skin) : CharacterFace.Random;
+        if (shown && !face.Showing) face.ShowFace = local ? CharacterFace.SavedShowFace(face.Skin) : TheirShowFace();
         face.Showing = shown;
     }
+
+    // Another player's pick, as their PC sends it; the old random poses until it has come.
+    private string TheirShowFace()
+        => TryGetComponent(out PlayerNetworkPose pose) && pose.IsSpawned ? pose.ShowFace : CharacterFace.Random;
 
     // The face (made again with every new body: PlayerBody.WearFace) and the parts whose events make faces, which may be
     // added after this one (PlayerNetworkCombat adds some as it spawns).

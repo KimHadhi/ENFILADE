@@ -42,6 +42,19 @@ public sealed partial class PlayerBody
         lyingYaw = to == MovementState.Supine ? legYaw + 180f : legYaw;
     }
 
+    // How a copy is seen to move here (m/s, eased over a tenth of a second or so): where its body was last frame.
+    private Vector3 seenFrom, seenVelocity;
+    private bool seenKnown;
+
+    private Vector3 SeenVelocity(float dt)
+    {
+        Vector3 here = transform.position;
+        if (seenKnown && dt > 1e-4f) seenVelocity = Vector3.Lerp(seenVelocity, (here - seenFrom) / dt, 1f - Mathf.Exp(-dt / .12f));
+        seenFrom = here;
+        seenKnown = true;
+        return seenVelocity;
+    }
+
     private void FaceLying(float dt)
     {
         if (dead) return;
@@ -51,8 +64,11 @@ public sealed partial class PlayerBody
         else if (state == MovementState.HeadFirstSliding) want = player.SlideDirection;
         else if (state == MovementState.Proning)
         {
-            Vector3 crawl = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
-            if (player.CurrentInput.sqrMagnitude > .01f && crawl.sqrMagnitude > .04f)
+            // Someone else's copy has no input of its own (always none) and no motor speed: its crawl is read from how it
+            // moves here, so it turns toward where it crawls as it does on its own PC (SyncAudit.md, item 14).
+            bool copy = player.IsNetworkDriven;
+            Vector3 crawl = Vector3.ProjectOnPlane(copy ? SeenVelocity(dt) : player.ActualVelocity, Vector3.up);
+            if ((copy || player.CurrentInput.sqrMagnitude > .01f) && crawl.sqrMagnitude > .04f)
             {
                 Vector3 heading = Quaternion.Euler(0f, lyingYaw, 0f) * Vector3.forward;
                 // Crawling back the way the feet point keeps the heading; any other way turns the head toward it.
