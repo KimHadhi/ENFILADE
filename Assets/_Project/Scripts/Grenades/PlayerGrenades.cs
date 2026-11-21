@@ -51,6 +51,11 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     public event Action<Throwable, ushort, Vector3> Burst;
     /// <summary>This PC's player took a thrown knife back: friends' copies of it go.</summary>
     public event Action<ushort> KnifeTaken;
+    /// <summary>
+    /// This PC's player's thrown knife went in somewhere or came to lie (its number, where, lying on the floor): friends'
+    /// copies go there.
+    /// </summary>
+    public event Action<ushort, BodyPoint, bool> KnifeLanded;
     /// <summary>This PC's player's off hand went for a throwable, threw it or put it back: friends' copies move their arm so.</summary>
     public event Action<Throwable, HandPhase> Handed;
     /// <summary>

@@ -33,6 +33,12 @@
 사용자(2026-11-21): 두 규칙 먼저, 그다음 1-20 차례로(16-20은 코드로 먼저 확인), 마지막으로 NetworkTransform 압축.
 
 - **0.9.264 두 규칙**: 규칙 2는 [SharedRandom](../../Assets/_Project/Scripts/Core/Common/SharedRandom.cs). 사건 하나(총 한 발 `WeaponShot.Seed`, 명중 하나 `DamageHit.EventSeed`, 플레이어 피격 `HurtRpc`)가 씨앗 하나(4바이트)를 지니고 정한 PC가 보낸다(`ShotRpc`, `EnemyHitMessage`). 모든 PC가 그 사건의 모습·소리를 그 씨앗의 범위(`Scope`) 안에서 그리고, 그 안의 뽑기는 코드의 자리(파일 이름과 줄)마다 제 흐름이라 한 PC만 하는 뽑기(쏜 사람의 카메라 반동)가 다른 뽑기를 밀지 않는다. 효과 파일 12개의 뽑기 133곳(ImpactVfx, GoreFx, GoreGibs, WeaponFeedback, ParryVfx, BashImpact, KnifeHitFx, BulletHoles, BloodDecals, ImpactPool, CombatHitAudio, CorpseTopple)과 소리 고르기 두 곳(SoundBank.Pick, FeelAudio.Pick: 사건 안에서는 소리마다 제 흐름, 이 PC만의 "지난번 것 피하기"는 빠진다)을 바꿨다. 범위 밖(매 프레임의 흔들림 같은 것)은 전처럼 `UnityEngine.Random`. 규칙 1의 도구는 [BodyPoint](../../Assets/_Project/Scripts/Network/Sync/BodyPoint.cs): 몸 위의 점을 그 몸(네트워크 번호, 시체는 좀비의 번호)의 사람 뼈 기준 자리·면 방향(half float)으로 보내고 각 PC가 제 사본의 그 뼈에서 세계 자리로 되돌린다. 1·2번에서 쓴다.
+- **0.9.265 1-5번**:
+  1. 남의 총알: 쏜 사람이 [ShotPath](../../Assets/_Project/Scripts/Network/Sync/ShotPath.cs)(맞은 점은 BodyPoint, 관통·도탄 구간마다 출발점·방향·나온 면, 빗나간 구간의 길이, 들고 있는 칸과 총)를 보낸다. 다른 PC는 다시 추적하지 않고 그 점을 제 사본에 놓은 뒤 앞뒤 30cm 짧은 광선으로 거기 있는 것만 찾아 효과에 준다. 사본의 총이 아직 안 나와 있으면 그 칸·총을 먼저 꺼낸다(그 발이 통째로 없어지던 것). 쏜 사람 PC에서 시체를 맞힌 피는 다른 PC에서도 같은 씨앗으로 난다. 고스트의 과관통 배율을 따로 보내던 것은 길 자체가 가므로 없앴다.
+  2. 좀비 피: [EnemyHitMessage](../../Assets/_Project/Scripts/Network/Sync/EnemyHitMessage.cs)가 맞은 점을 그 좀비의 가장 가까운 사람 뼈 기준 자리로 싣고(13바이트), 받는 PC는 제 사본(이미 시체면 시체)의 그 뼈에 놓는다. 피·번쩍임·상처가 그 몸에 난다.
+  3. 시체: 시체는 제 처치자(runner)의 PC가 보낸 넘어짐만 따른다. 둘이 동시에 잡아 자기 PC에서 굴리던 쪽은 방장이 다른 사람의 처치라고 알리면(그 타격에서 방장의 체력이 0) 그 사람의 넘어짐으로 넘기고 지금 자리에서 따라간다(`ZombieCorpse.HandTo`).
+  4. 고어: 잘린 팔다리·내장 조각이 방 안에서는 PropNet 물건이다. 이름은 그 명중의 씨앗과 순번(모든 PC가 같다), 굴리는 것은 그 명중을 정한 PC(자기 플레이어의 타격, 플레이어가 아니면 방장), 나머지 PC는 같은 씨앗의 같은 던짐으로 날다가 그 말에 맞춰진다. 가라앉기 시작하면 공유를 놓는다. F로 들 수 없다. 내장 모양 고르기도 씨앗으로. 시체·먹는 시체의 머리가 터질 때도 그 총알의 씨앗을 보내 같은 피·같은 조각.
+  5. 던진 칼: 던진 사람의 칼이 꽂히거나(좀비의 뼈, 벽) 바닥에 떨어지면 그 자리를 보내고(`KnifeLandedRpc`), 다른 PC의 칼은 제가 맞힌 데가 어디든 그리로 옮겨 꽂힌다.
 
 ## 순위표 (보이는 정도 순)
 

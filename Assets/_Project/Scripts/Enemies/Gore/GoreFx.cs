@@ -70,7 +70,9 @@ internal sealed class GoreFx
         for (int i = 0; i < guts; i++)
         {
             var velocity = (direction + SharedRandom.InsideUnitSphere() * .55f).normalized * speed * SharedRandom.Range(.5f, 1.1f) + Vector3.up * SharedRandom.Range(.5f, 2.5f);
-            owner.Gibs.Gut(at + SharedRandom.InsideUnitSphere() * .06f, velocity, SharedRandom.Range(.09f, .16f), nextGut++);
+            // Which gut mesh: the event's draw inside one, so every PC throws the same; else this PC's own turn.
+            owner.Gibs.Gut(at + SharedRandom.InsideUnitSphere() * .06f, velocity, SharedRandom.Range(.09f, .16f),
+                SharedRandom.InScope ? SharedRandom.Range(0, 1 << 16) : nextGut++);
         }
         if (Cast(at, direction, 4.5f, body, out var hit)) Splat(hit.point, hit.normal, owner.WallSplat, SharedRandom.Range(0, int.MaxValue));
     }

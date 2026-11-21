@@ -61,8 +61,12 @@ public sealed class ZombieMealBody : MonoBehaviour, IDamageReceiver
 
     DamageResult IDamageReceiver.ReceiveHit(DamageHit hit)
     {
-        if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head && Burst(hit.Direction))
-            ZombieGore.ShotDeadHead(hit, true, id);
+        // This PC's shot decided it: its guts are this PC's to throw, in the shot's seed, as every PC throws them
+        // (SharedRandom, GoreGibs).
+        if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head)
+            using (SharedRandom.Scope(hit.EventSeed))
+            using (GoreGibs.Decide(true))
+                if (Burst(hit.Direction)) ZombieGore.ShotDeadHead(hit, true, id);
         return DamageResult.Ignored;
     }
 

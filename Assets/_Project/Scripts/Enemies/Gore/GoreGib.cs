@@ -57,6 +57,8 @@ internal sealed class GoreGib : MonoBehaviour
         float sink = owner != null ? owner.GibSink : 2f;
         if (sinkLeft <= 0f)
         {
+            // Its sinking is its own on each PC: no word moves it from here (PropNet).
+            GoreGibs.Unshare(this);
             sinkLeft = Mathf.Max(.05f, sink);
             if (rigid != null) rigid.isKinematic = true;
             foreach (var shape in shapes) shape.enabled = false;

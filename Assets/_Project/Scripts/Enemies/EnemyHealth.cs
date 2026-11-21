@@ -328,7 +328,14 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     // the host to remove it. Known: the killing hit came with it, so this PC knows whose PC runs the fall.
     private void ShowHealth(float health, in DamageHit hit, bool known)
     {
-        if (!IsAlive) return;
+        if (!IsAlive)
+        {
+            // Dead here already by this PC's own blow, and the host's count reached zero on someone else's: theirs is the
+            // kill, and the corpse this PC runs goes over to their fall (SyncAudit.md, item 3).
+            if (known && health <= 0f && network != null && network.IsSpawned)
+                ZombieCorpse.HandTo(network.NetworkObjectId, ZombieCorpse.RunnerOf(hit, true, out _));
+            return;
+        }
         // While this PC's own hits may still be on their way to the host (trustUntil), a report can only lower the
         // health: one the host sent before it heard of them would give back what they took, and the shot that should
         // have killed then left it standing on the shooter's screen until the host's count came round. The host's count

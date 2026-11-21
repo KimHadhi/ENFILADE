@@ -92,13 +92,62 @@ public struct BodyPoint : INetworkSerializable
         if (serializer.IsReader) value = new Vector3(Mathf.HalfToFloat(x), Mathf.HalfToFloat(y), Mathf.HalfToFloat(z));
     }
 
+    // ---- A hit's place on the body it was sent with (EnemyHitMessage) -----------------------------------------------
+
+    /// <summary>
+    /// The human bone of a body nearest a point, and the point in that bone's space: for a hit sent on that body's own
+    /// message, which names the body already. The body is a living one (its rig under <paramref name="body"/>) or the
+    /// corpse it left (by its network id). 0: neither has a human rig here, and the point is the world's.
+    /// </summary>
+    public static byte NearestBone(ulong id, Transform body, Vector3 point, out Vector3 local)
+    {
+        local = point;
+        var bones = BonesOf(id, body);
+        if (bones == null) return RootBone;
+        int best = -1;
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < bones.Length; i++)
+        {
+            if (bones[i] == null) continue;
+            float distance = (bones[i].position - point).sqrMagnitude;
+            if (distance < nearest) { nearest = distance; best = i; }
+        }
+        if (best < 0) return RootBone;
+        local = bones[best].InverseTransformPoint(point);
+        return (byte)(best + 1);
+    }
+
+    /// <summary>The point back on this PC's copy of the body or its corpse (NearestBone). False: neither is here.</summary>
+    public static bool FromBone(ulong id, Transform body, byte bone, Vector3 local, out Vector3 point)
+    {
+        point = local;
+        if (bone == RootBone) return false;
+        var bones = BonesOf(id, body);
+        var space = bones != null && bone - 1 < bones.Length ? bones[bone - 1] : null;
+        if (space == null) return false;
+        point = space.TransformPoint(local);
+        return true;
+    }
+
+    // A body's human bones: its living rig's, else those of the corpse it left here.
+    private static Transform[] BonesOf(ulong id, Transform body)
+    {
+        var animator = body != null ? HumanRig(body) : null;
+        if (animator != null)
+        {
+            var rig = RigOf(animator);
+            if (rig.Ids.Count > 0) return rig.Bones;
+        }
+        return ZombieCorpse.BonesOf(id);
+    }
+
     // ---- Finding the body and its bone ------------------------------------------------------------------------------
 
     // Per rig: its human bones by transform, so a hitbox anywhere under a bone finds it by walking up.
     private static readonly Dictionary<Animator, Rig> rigs = new Dictionary<Animator, Rig>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ClearStatics() => rigs.Clear();
+    private static void ClearStatics() { rigs.Clear(); bodies.Clear(); }
 
     private static bool TryBody(Collider collider, out ulong id, out byte bone, out Transform space)
     {
@@ -135,11 +184,31 @@ public struct BodyPoint : INetworkSerializable
     }
 
     // The body's own human rig: its first human Animator (a body's model; the same prefab gives every PC the same one).
+    // Kept per body, as every hit asks: a rig that has left its body (laid as a corpse) is looked for again.
+    private static readonly Dictionary<Transform, Animator> bodies = new Dictionary<Transform, Animator>();
+    private static readonly List<Animator> found = new List<Animator>();
+
     private static Animator HumanRig(Transform root)
     {
-        foreach (var animator in root.GetComponentsInChildren<Animator>(true))
-            if (animator != null && animator.isHuman && animator.avatar != null) return animator;
-        return null;
+        if (bodies.TryGetValue(root, out var kept) && kept != null && kept.transform.IsChildOf(root)) return kept;
+        if (bodies.Count > 512) PruneBodies();
+        Animator rig = null;
+        root.GetComponentsInChildren(true, found);
+        foreach (var animator in found)
+            if (animator != null && animator.isHuman && animator.avatar != null) { rig = animator; break; }
+        found.Clear();
+        if (rig != null) bodies[root] = rig;
+        else bodies.Remove(root);
+        return rig;
+    }
+
+    private static readonly List<Transform> goneBodies = new List<Transform>();
+    private static void PruneBodies()
+    {
+        goneBodies.Clear();
+        foreach (var pair in bodies) if (pair.Key == null || pair.Value == null) goneBodies.Add(pair.Key);
+        foreach (var body in goneBodies) bodies.Remove(body);
+        if (bodies.Count > 512) bodies.Clear();
     }
 
     // A rig's human bones, both ways, read the first time it is met (while its Animator is on, as a body lives).
@@ -161,7 +230,9 @@ public struct BodyPoint : INetworkSerializable
             rig.Bones[i] = transform;
             rig.Ids[transform] = (byte)(i + 1);
         }
-        return rigs[animator] = rig;
+        // A rig met with its Animator off reads no bones: not kept, so it is read again once it is on.
+        if (rig.Ids.Count > 0) rigs[animator] = rig;
+        return rig;
     }
 
     private static bool TryHumanBone(Animator animator, Transform from, out byte bone, out Transform space)

@@ -21,7 +21,12 @@ public sealed partial class PlayerGrenades
         if (armKind == Throwable.Knife)
         {
             var knife = ThrownKnife.Throw(from, velocity, movement, true);
-            if (knife != null) knives[id] = knife;
+            if (knife != null)
+            {
+                knives[id] = knife;
+                // Where it goes in or comes to lie goes to friends' PCs, whose copies go there (ThrownKnife.Land).
+                knife.Landing = (at, lying) => KnifeLanded?.Invoke(id, at, lying);
+            }
             Throwables.Play("KnifeThrow", from, .9f, 1.5f, 20f);
             Throwables.Play("KnifeThrowCloth", from, .8f, 1.5f, 15f);
         }

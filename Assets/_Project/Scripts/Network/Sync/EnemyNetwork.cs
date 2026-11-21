@@ -403,14 +403,14 @@ public sealed class EnemyNetwork : NetworkBehaviour
     /// This PC's player hit its copy, and this is what the hit did here: the health it took and whether it killed. The
     /// host applies exactly that (EnemyHealth.ReceiveSent).
     /// </summary>
-    internal void SendHit(in DamageHit hit, float taken, bool killed) => HitRpc(new EnemyHitMessage(hit, taken, killed));
+    internal void SendHit(in DamageHit hit, float taken, bool killed) => HitRpc(new EnemyHitMessage(hit, NetworkObjectId, transform, taken, killed));
 
     /// <summary>The host took a hit: everyone but the one who landed it sees it now. They saw it when they fired.</summary>
     internal void AnnounceHit(in DamageHit hit, float before, float after)
     {
         if (!IsSpawned) return;
         ulong attacker = hit.Source != null && hit.Source.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
-        ShowHitRpc(new EnemyHitMessage(hit), attacker, before, after);
+        ShowHitRpc(new EnemyHitMessage(hit, NetworkObjectId, transform), attacker, before, after);
     }
 
     /// <summary>A kill this PC judged: the corpse is out, and the host removes the enemy a moment later.</summary>
@@ -611,7 +611,7 @@ public sealed class EnemyNetwork : NetworkBehaviour
 
     [Rpc(SendTo.Server)]
     private void HitRpc(EnemyHitMessage message, RpcParams rpc = default)
-        => enemy.ReceiveSent(message.ToHit(PlayerOf(rpc.Receive.SenderClientId)), message.Taken, message.Killed);
+        => enemy.ReceiveSent(message.ToHit(PlayerOf(rpc.Receive.SenderClientId), NetworkObjectId, transform), message.Taken, message.Killed);
 
     [Rpc(SendTo.NotServer)]
     private void ShowHitRpc(EnemyHitMessage message, ulong attacker, float before, float after)
@@ -620,10 +620,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
         {
             // Their own PC showed the hit as they landed it. Only a kill it did not see coming is news: the host's count,
             // with a friend's hit this PC had not heard of yet, reached zero on this hit.
-            if (after <= 0f) enemy.ConfirmKill(message.ToHit(PlayerOf(attacker)));
+            if (after <= 0f) enemy.ConfirmKill(message.ToHit(PlayerOf(attacker), NetworkObjectId, transform));
             return;
         }
-        enemy.ShowHit(message.ToHit(PlayerOf(attacker)), before, after);
+        enemy.ShowHit(message.ToHit(PlayerOf(attacker), NetworkObjectId, transform), before, after);
     }
 
     private static GameObject PlayerOf(ulong client)

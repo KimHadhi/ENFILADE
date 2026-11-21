@@ -194,6 +194,9 @@ public sealed partial class WeaponController
                 // head's multiplier makes up what the range took (WeaponData.FalloffAt).
                 float falloff = AttackTrace.FirstExternalHit(owner, origin, direction, weaponData.Range, hitLayers, out RaycastHit first)
                     ? weaponData.FalloffAt(first.distance) : 1f;
+                // The pellet's seed (SharedRandom): its hits carry it too, so what they show on every PC (blood, a struck
+                // corpse's) draws from the same seed as the shot's own marks.
+                uint seed = SharedRandom.Seed(SharedRandom.LocalClient, (ulong)id, (ulong)pellet);
                 var attack = new DamageHit(
                     id,
                     weaponData.Damage * falloff,
@@ -202,7 +205,8 @@ public sealed partial class WeaponController
                     direction,
                     owner,
                     postureDamage: weaponData.PostureDamage,
-                    method: DamageMethod.Bullet);
+                    method: DamageMethod.Bullet,
+                    seed: seed);
 
                 var trace = AttackTrace.Bullet(
                     attack,
@@ -220,7 +224,8 @@ public sealed partial class WeaponController
                     recoil,
                     Runtime.Ammo + shots - i - 1,
                     later,
-                    pellet);
+                    pellet,
+                    seed);
 
                 LastShot = shot;
                 PushProp(trace, direction, 1f);

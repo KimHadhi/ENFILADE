@@ -349,27 +349,32 @@ public sealed partial class WeaponController : MonoBehaviour
     }
 
     /// <summary>
-    /// On someone else's copy: they fired. The muzzle, the tracer, the sound and the bullet's mark happen here, the same
-    /// way as for this PC's own shots; their PC already judged the hit. <paramref name="pierce"/> is their factor on the
-    /// gun's penetration, which only their PC knows (a Ghost's 과관통: PlayerPerks.OwnPierce).
+    /// On someone else's copy: they fired. The muzzle, the tracer, the sound and the bullet's marks happen here, the same
+    /// way as for this PC's own shots, along the path their PC traced (ShotPath: where it hit, went through, glanced off
+    /// and came out, put on this PC's copies). Nothing is traced or judged again here (SyncAudit.md, item 1): traced again
+    /// against this PC's copies, which stand a little elsewhere, the holes, sparks, tracer and blood were not where the
+    /// shooter saw them.
     /// </summary>
-    internal void ShowShot(Vector3 origin, Vector3 direction, int pellet = 0, float pierce = 1f, uint seed = 0u)
+    internal void ShowShot(in ShotPath path)
     {
         if (Runtime == null || weaponData == null) return;
-        // The same path their PC drew, walls passed and ricochets included: the randomness comes from the shot itself, and
-        // how far it gets through from their penetration. Traced with the gun's own, a round their card carried further
-        // stopped short here, and friends saw a short tracer.
-        var look = new DamageHit(0, 0f, DamageKind.Attack, origin, direction, owner, method: DamageMethod.Bullet);
-        var trace = AttackTrace.Bullet(look, origin, direction, weaponData.Range, hitLayers, 1f, weaponData.Penetration * Mathf.Max(0f, pierce), false,
-            out BulletLeg[] later, weaponData.BodyPierce);
-        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : origin, direction, trace, Vector2.zero, Runtime.Ammo, later, pellet,
-            seed);
+        var trace = path.Place(owner, hitLayers, out BulletLeg[] later);
+        LastShot = new WeaponShot(DamageHit.NewAttackId(), muzzlePoint != null ? muzzlePoint.position : path.Origin, path.Direction, trace,
+            Vector2.zero, Runtime.Ammo, later, path.Pellet, path.Seed);
         // The host's zombies hear a friend's shot as it reaches this PC (ZombieMind), once per shot however many pellets.
-        if (pellet == 0 && !ShotMuffle.Hides(trace)) Noise.Make(origin, ShotNoise, owner);
+        if (path.Pellet == 0 && !ShotMuffle.Hides(trace)) Noise.Make(path.Origin, ShotNoise, owner);
         // Drawn and heard from the shooter's seed, as on their PC (SharedRandom).
         using (SharedRandom.Scope(LastShot.Seed)) ShotFired?.Invoke(LastShot);
+        // A corpse it struck bleeds here as on their PC, where their bullet struck the doll (ZombieCorpse.OnStruck), each
+        // strike from the shot's seed afresh, as there.
+        path.ForEachCorpse(BleedCorpse);
         // The gun's kick once per shot, however many pellets it threw.
-        if (pellet == 0) presentation?.OnShot(weaponData, Vector2.zero);
+        if (path.Pellet == 0) presentation?.OnShot(weaponData, Vector2.zero);
+    }
+
+    private void BleedCorpse(ZombieCorpse corpse, Vector3 point, Vector3 direction)
+    {
+        using (SharedRandom.Scope(LastShot.Seed)) corpse.BleedShot(point, direction);
     }
 
     public void Equip(WeaponRuntime weapon)

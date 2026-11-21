@@ -41,6 +41,13 @@ public sealed partial class PlayerNetworkCombat
         if (grenades != null) grenades.ShowBurst((Throwable)kind, id, at);
     }
 
+    // A Knight's thrown knife went in (a zombie's bone, a wall) or came to lie on the floor: every other PC's copy goes there.
+    [Rpc(SendTo.NotMe)]
+    private void KnifeLandedRpc(ushort id, BodyPoint at, bool lying)
+    {
+        if (grenades != null) grenades.ShowKnifeLanded(id, at, lying);
+    }
+
     // A Knight took a thrown knife back: every other PC's copy of it goes.
     [Rpc(SendTo.NotMe)]
     private void KnifeTakenRpc(ushort id)

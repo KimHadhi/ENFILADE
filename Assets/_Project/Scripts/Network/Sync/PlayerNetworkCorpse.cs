@@ -61,17 +61,23 @@ public sealed class PlayerNetworkCorpse : NetworkBehaviour
     /// (ZombieMealBody), each known on every PC by the zombie's network id. The others burst it too, along the same shot;
     /// nothing happens alone or for a body with no id.
     /// </summary>
-    internal static void TellDeadHead(GameObject shooter, bool meal, ulong id, Vector3 direction)
+    internal static void TellDeadHead(GameObject shooter, bool meal, ulong id, Vector3 direction, uint seed)
     {
         if (id == 0UL || shooter == null) return;
         var sender = shooter.GetComponentInParent<PlayerNetworkCorpse>();
-        if (sender != null && sender.IsSpawned) sender.DeadHeadRpc(meal, id, direction);
+        if (sender != null && sender.IsSpawned) sender.DeadHeadRpc(meal, id, direction, seed);
     }
 
+    // Seed: the shot's, so the blood and guts are drawn and named as on the shooter's PC, whose guts these follow
+    // (SharedRandom, GoreGibs).
     [Rpc(SendTo.NotMe)]
-    private void DeadHeadRpc(bool meal, ulong id, Vector3 direction)
+    private void DeadHeadRpc(bool meal, ulong id, Vector3 direction, uint seed)
     {
-        if (meal) ZombieMealBody.TakeBurst(id, direction);
-        else ZombieCorpse.TakeHeadShot(id, direction);
+        using (SharedRandom.Scope(seed))
+        using (GoreGibs.Decide(false))
+        {
+            if (meal) ZombieMealBody.TakeBurst(id, direction);
+            else ZombieCorpse.TakeHeadShot(id, direction);
+        }
     }
 }

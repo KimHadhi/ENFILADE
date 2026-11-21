@@ -115,6 +115,12 @@ public sealed partial class PlayerGrenades
         if (chain.Count > 0) ClaymoreChain.GoOff(chain, ids.Length, middle);
     }
 
+    /// <summary>A friend's thrown knife went in or came to lie there on their PC: this PC's copy goes there.</summary>
+    internal void ShowKnifeLanded(ushort id, in BodyPoint at, bool lying)
+    {
+        if (knives.TryGetValue(id, out var knife) && knife != null) knife.Land(at, lying);
+    }
+
     /// <summary>A friend took a thrown knife back: this PC's copy of it goes.</summary>
     internal void ShowKnifeTaken(ushort id)
     {

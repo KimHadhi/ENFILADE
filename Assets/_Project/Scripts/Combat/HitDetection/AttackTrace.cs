@@ -145,7 +145,7 @@ public static class AttackTrace
             if (fresh && share > 0f)
                 result = receiver.ReceiveHit(new DamageHit(attack.Id, amount, attack.Kind, hit.point, direction, attack.Source,
                     attack.CanBeGuarded, attack.PostureDamage * share, attack.IsComboFinisher, attack.IsCritical || headshot, attack.IsCounter, attack.Method,
-                    shooter, attack.IsFatal, attack.Pierced || pierced, ZombieGore.PartOf(hit.collider)));
+                    shooter, attack.IsFatal, attack.Pierced || pierced, ZombieGore.PartOf(hit.collider), seed: attack.Seed));
         }
         return new AttackTraceResult(hasHit, hit, end, result, headshot);
     }

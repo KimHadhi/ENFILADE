@@ -29,6 +29,9 @@ public static class SharedRandom
     /// <summary>Inside an event's scope: draws are the event's, the same on every PC.</summary>
     public static bool InScope => frames.Count > 0;
 
+    /// <summary>The innermost event's seed, 0 outside one: a name for what the event makes, the same on every PC.</summary>
+    public static uint CurrentSeed => frames.Count > 0 ? frames.Peek().Seed : 0u;
+
     /// <summary>Closes the scope it was opened with.</summary>
     public readonly struct Handle : IDisposable
     {

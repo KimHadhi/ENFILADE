@@ -225,6 +225,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             grenades.Thrown += OnGrenadeThrown;
             grenades.Burst += OnGrenadeBurst;
             grenades.KnifeTaken += OnKnifeTaken;
+            grenades.KnifeLanded += OnKnifeLanded;
             grenades.Handed += OnGrenadeHanded;
             grenades.SetDown += OnMinePlaced;
             grenades.Chained += OnMinesChained;
@@ -293,7 +294,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (throws != null) throws.Thrown -= OnThrown;
         if (grenades != null)
         {
-            grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken;
+            grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken; grenades.KnifeLanded -= OnKnifeLanded;
             grenades.Handed -= OnGrenadeHanded;
             grenades.SetDown -= OnMinePlaced;
             grenades.Chained -= OnMinesChained;
@@ -382,7 +383,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (body != null) body.SetPace(1f - now.Slowed / 100f);
     }
 
-    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255), ShotPierce, shot.Seed);
+    private void OnShot(WeaponShot shot) => ShotRpc(ShotPath.Of(shot, (sbyte)slots.SelectedSlot, GunId(slots.SelectedWeapon)));
     private void OnPunched(float charge) => PunchRpc(charge, (byte)melee.LastStrike, melee.SwingReachIn);
     private void OnWound() => WindRpc();
     private void OnSwingDropped() => SwingDroppedRpc();
@@ -397,6 +398,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
     private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
     private void OnKnifeTaken(ushort id) => KnifeTakenRpc(id);
+    private void OnKnifeLanded(ushort id, BodyPoint at, bool lying) => KnifeLandedRpc(id, at, lying);
     private void OnGrenadeHanded(Throwable kind, PlayerGrenades.HandPhase phase) => GrenadeHandRpc((byte)kind, (byte)phase);
     private void OnMinePlaced(ushort id, Vector3 at, Quaternion facing, bool wall, ushort[] retired) => MineRpc(id, at, facing, wall, retired);
     private void OnMinesChained(ulong[] owners, ushort[] ids, Vector3 middle) => MineChainRpc(owners, ids, middle);

@@ -101,6 +101,10 @@ public sealed class ZombieCorpse : MonoBehaviour
     // Its human bones by HumanBodyBones, read while it lived (its Animator is off now): where a point sent on it lands.
     private Transform[] human;
     private PlayerNetworkCorpse runner, sender;
+    // The client whose PC runs this fall (its runner's), the only one whose word it follows; MaxValue: anyone's.
+    private ulong runnerClient = ulong.MaxValue;
+    // When this PC began following another's fall (its age then): how long it has heard nothing counts from here.
+    private float followSince;
     private CorpsePose pose;
     private Vector3 sinkFrom;
     private ulong id;
@@ -163,6 +167,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         this.id = id;
         this.simulated = simulated;
         runner = killer != null ? killer.GetComponent<PlayerNetworkCorpse>() : null;
+        runnerClient = runner != null ? runner.OwnerClientId : ulong.MaxValue;
         lying.Add(this);
         if (id != 0UL) byId[id] = this;
         HitFlashRenderer.For(this).OrNull()?.KillFlash(hit.Point, hit.IsCritical ? .16f : .11f);
@@ -277,7 +282,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         }
         LooseBounds();
         // Its runner went quiet mid-fall (it left): this PC takes the body over where it is, and it is cleared soon.
-        float quiet = hasPose ? Time.time - lastPoseAt : age;
+        float quiet = hasPose ? Time.time - lastPoseAt : age - followSince;
         if (quiet < orphanWait) return;
         TakeOver();
         lieUntil = Mathf.Min(lieUntil, age + orphanLie);
@@ -424,6 +429,16 @@ public sealed class ZombieCorpse : MonoBehaviour
     // as a falling one (one dropping off a roof is older than that and still falling).
     private bool Down => age >= shortestFall && doll.Settled(landedSpeed);
 
+    /// <summary>
+    /// Another PC's bullet struck this corpse (its path, ShotPath, met it here): it bleeds as it did there, where the
+    /// bullet struck the doll (OnStruck). The push and a burst head come from that PC on their own.
+    /// </summary>
+    internal void BleedShot(Vector3 point, Vector3 direction)
+    {
+        if (doll == null || direction.sqrMagnitude < 1e-4f) return;
+        ImpactVfx.Blood(point, direction, false, false, true, doll);
+    }
+
     private void OnStruck(DamageHit hit)
     {
         if (doll == null || hit.Direction.sqrMagnitude < 1e-4f) return;
@@ -437,8 +452,9 @@ public sealed class ZombieCorpse : MonoBehaviour
         else if (runner != null) runner.PushZombie(id, hit.Point, impulse);
         // A bullet in a corpse's head bursts it, as one bursts a living zombie's on the kill (ZombieGore): this is the
         // shooter's PC (only the shooter's own trace reaches a doll), which decides.
-        if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head && BurstHead(hit.Direction))
-            ZombieGore.ShotDeadHead(hit, false, id);
+        if (hit.Method == DamageMethod.Bullet && hit.Part == BodyPart.Head)
+            using (GoreGibs.Decide(true))
+                if (BurstHead(hit.Direction)) ZombieGore.ShotDeadHead(hit, false, id);
     }
 
     // Its head bursts where the doll has it now, if gore still has one on this body.
@@ -454,6 +470,9 @@ public sealed class ZombieCorpse : MonoBehaviour
         return false;
     }
 
+    /// <summary>The human bones of the corpse a zombie left here, by HumanBodyBones, or null (BodyPoint).</summary>
+    internal static Transform[] BonesOf(ulong id) => byId.TryGetValue(id, out var corpse) && corpse != null ? corpse.human : null;
+
     /// <summary>
     /// A human bone of the corpse a zombie left here (Root: the body itself), or null: where a point sent on it lands
     /// (BodyPoint).
@@ -466,9 +485,29 @@ public sealed class ZombieCorpse : MonoBehaviour
         return corpse.human != null && index >= 0 && index < corpse.human.Length ? corpse.human[index] : null;
     }
 
+    /// <summary>
+    /// The host named whose kill this was (its count reached zero on their hit), and it was not this PC's: a corpse this PC
+    /// laid running it as its own kill (two killed it at once) hands its fall to theirs and follows it from where it is,
+    /// as every other PC does, so it lies in one place everywhere (SyncAudit.md, item 3).
+    /// </summary>
+    internal static void HandTo(ulong id, PlayerMovement killer)
+    {
+        if (killer == null || killer.IsLocal || !byId.TryGetValue(id, out var corpse) || corpse == null) return;
+        if (!killer.TryGetComponent(out PlayerNetworkCorpse theirs)) return;
+        corpse.runner = theirs;
+        corpse.runnerClient = theirs.OwnerClientId;
+        if (!corpse.simulated || corpse.orphaned || corpse.doll == null) return;
+        corpse.simulated = false;
+        corpse.hasPose = corpse.heardRest = false;
+        corpse.Wake();
+        corpse.followSince = corpse.age;
+        corpse.doll.Yield();
+    }
+
     /// <summary>Another PC shot the head off this corpse: it bursts here too, along the same shot.</summary>
     internal static void TakeHeadShot(ulong id, Vector3 direction)
     {
+        // Its guts fly as the shooter's PC throws them (GoreGibs), in the shot's seed (PlayerNetworkCorpse.DeadHeadRpc).
         if (byId.TryGetValue(id, out var corpse) && corpse != null) corpse.BurstHead(direction);
     }
 
@@ -493,7 +532,10 @@ public sealed class ZombieCorpse : MonoBehaviour
     {
         if (byId.TryGetValue(fall.Id, out var corpse) && corpse != null)
         {
-            if (!corpse.simulated && corpse.doll != null) corpse.Show(fall);
+            // Only its runner's word: two who killed it at once each run their own fall for a moment and send it, and a
+            // body following both shook between them and lay in a different place on each PC (SyncAudit.md, item 3).
+            if (!corpse.simulated && corpse.doll != null && (corpse.runnerClient == ulong.MaxValue || from == corpse.runnerClient))
+                corpse.Show(fall);
             return;
         }
         if (ZombieBody.Follows(fall.Id, out var down))

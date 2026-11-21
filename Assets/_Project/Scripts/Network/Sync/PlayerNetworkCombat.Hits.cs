@@ -13,15 +13,21 @@ public sealed partial class PlayerNetworkCombat
             HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded, hit.EventSeed);
     }
 
-    // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark.
-    // With the shooter's penetration factor (ShotPierce), so the copy's round gets as far through as theirs did.
+    // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark,
+    // along the path the shooter's PC traced (ShotPath). The slot and gun come with it: the copy's stance may not have
+    // reached this PC yet after a quick swap, and its gun not be out, which used to drop the whole shot here (no sound,
+    // flash or marks: SyncAudit.md, item 1).
     [Rpc(SendTo.NotMe)]
-    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet, ushort pierce, uint seed)
-        => weapon.ShowShot(origin, direction, pellet, pierce / 100f, seed);
-
-    // This PC's factor on its guns' penetration (a Ghost's 과관통), in hundredths: only this PC knows how far its rounds get
-    // through, and friends' PCs trace each shot again to draw it.
-    private static ushort ShotPierce => (ushort)Mathf.Clamp(Mathf.RoundToInt(PlayerPerks.OwnPierce * 100f), 0, ushort.MaxValue);
+    private void ShotRpc(ShotPath path)
+    {
+        if (path.Slot >= 0 && slots != null && (slots.SelectedSlot != path.Slot || weapon.Runtime == null))
+        {
+            var gun = GunOf(path.Gun);
+            if (gun != null && slots.GetWeapon(path.Slot) != gun) slots.TrySetWeapon(path.Slot, gun);
+            slots.SelectSlot(path.Slot);
+        }
+        weapon.ShowShot(path);
+    }
 
     // A swing as the other PCs see it (the user's rule: what one sees is what the others see): its wind-up beginning,
     // which their copy's own timeline then carries on into the charge with its tremble (SwingTimeline, MeleeKnife), the

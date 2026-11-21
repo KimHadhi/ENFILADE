@@ -8,7 +8,9 @@ using UnityEngine;
 /// part it meets is gore's to cut). It goes in point first and stays there: in a zombie it rides the bone it hit, and
 /// drops to the floor when that zombie falls; in a wall it stays in the wall. The Knight takes it back by walking up to it
 /// (GrenadeRules pickupReach): one more in the belt, as Horde's and MW's thrown knives come back. On the thrower's PC it
-/// deals the hit; a friend's copy flies the same line, sticks where it meets something and goes when the thrower takes
+/// deals the hit; a friend's copy flies the same line and sticks where it meets something there, until the thrower's PC
+/// says where theirs went in or came to lie (Landing: on a zombie's bone, in a wall, on the floor), and the copy goes there
+/// (Land), so it is in the same zombie and the same wall on every PC (SyncAudit.md, item 5). It goes when the thrower takes
 /// theirs back (PlayerGrenades). A knife left lies for knifeLife seconds, then is gone.
 /// </summary>
 [DisallowMultipleComponent]
@@ -42,6 +44,12 @@ public sealed class ThrownKnife : MonoBehaviour
     internal static float Flinch => Mathf.Max(0f, Throwables.Rule("knifeFlinch", 1.5f));
     /// <summary>It has come to rest (in a body, a wall or on the floor) and can be taken back.</summary>
     internal bool Landed => state != State.Flying;
+
+    /// <summary>
+    /// On the thrower's PC: it went in (at a point on a body's bone or in the world, pointing along the facing) or came to
+    /// lie on the floor (lying: the point is the floor's, the facing the way it lies along). For the copies (Land).
+    /// </summary>
+    internal System.Action<BodyPoint, bool> Landing;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => knives.Clear();
@@ -185,9 +193,41 @@ public sealed class ThrownKnife : MonoBehaviour
             onBone = bone.InverseTransformPoint(transform.position);
             turnOnBone = Quaternion.Inverse(bone.rotation) * transform.rotation;
             Throwables.Play("KnifeFlesh", hit.point, headshot ? 1f : .85f, 1.5f, 30f);
+            if (mine) Landing?.Invoke(BodyPoint.Of(collider, transform.position, way), false);
             return;
         }
         Throwables.Play("KnifeWall", hit.point, .85f, 1.5f, 35f);
+        if (mine) Landing?.Invoke(BodyPoint.InWorld(transform.position, way), false);
+    }
+
+    /// <summary>
+    /// On a friend's copy: where the thrower's knife went in or came to lie, put on this PC's copies (the zombie's bone it
+    /// rides, the wall, the floor). Wherever this copy got to by itself, flying or stuck, it goes there.
+    /// </summary>
+    internal void Land(in BodyPoint at, bool lying)
+    {
+        if (mine || !at.Resolve(out var point, out var way, out var on)) return;
+        if (way.sqrMagnitude < 1e-6f) way = transform.forward;
+        StopStreak();
+        if (look != null) look.localRotation = Quaternion.identity;
+        bone = null;
+        stuckIn = null;
+        if (lying)
+        {
+            state = State.Lying;
+            Vector3 along = Vector3.ProjectOnPlane(way, Vector3.up);
+            if (along.sqrMagnitude < 1e-4f) along = Vector3.forward;
+            transform.SetPositionAndRotation(point, Quaternion.LookRotation(along.normalized, Vector3.up) * Quaternion.Euler(0f, 0f, 90f));
+            return;
+        }
+        state = State.Stuck;
+        transform.SetPositionAndRotation(point, Quaternion.LookRotation(way.normalized));
+        var enemy = on != null ? on.GetComponentInParent<EnemyHealth>() : null;
+        if (enemy == null || !enemy.IsAlive) return;
+        bone = on;
+        stuckIn = enemy;
+        onBone = bone.InverseTransformPoint(point);
+        turnOnBone = Quaternion.Inverse(bone.rotation) * transform.rotation;
     }
 
     // Riding its bone; the zombie gone or its part cut away, it drops to the floor below.
@@ -216,6 +256,7 @@ public sealed class ThrownKnife : MonoBehaviour
         if (along.sqrMagnitude < 1e-4f) along = Vector3.forward;
         // Flat on the floor: the point along it, a flat face up (the knife's flat faces are its ±X).
         transform.SetPositionAndRotation(floor, Quaternion.LookRotation(along.normalized, Vector3.up) * Quaternion.Euler(0f, 0f, 90f));
+        if (mine) Landing?.Invoke(BodyPoint.InWorld(floor, along), true);
     }
 
     // A small glint now and then on the thrower's own screen, so a Knight finds their knives again.

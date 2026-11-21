@@ -39,6 +39,57 @@ internal sealed class GoreGibs
 
     public GoreGibs(ZombieGore owner) => this.owner = owner;
 
+    /// <summary>
+    /// This PC decided the hit whose pieces are being thrown now (its own player landed it, or the host for one no player
+    /// landed): their flight is this PC's to run and to tell the others (PropNet). Set around each hit (Decide).
+    /// </summary>
+    internal static bool Deciding { get; private set; }
+
+    /// <summary>Deciding is <paramref name="here"/> until the handle is disposed.</summary>
+    internal static Decision Decide(bool here) => new Decision(here);
+
+    internal readonly struct Decision : System.IDisposable
+    {
+        private readonly bool was;
+        internal Decision(bool here) { was = Deciding; Deciding = here; }
+        public void Dispose() => Deciding = was;
+    }
+
+    // The seed of the hit whose pieces were named last, and how many it has thrown so far.
+    private uint namedSeed;
+    private int namedCount;
+
+    // In a room, a piece thrown for a hit every PC shows (inside its seed's scope: SharedRandom) is a shared prop, named by
+    // that seed and its place among the hit's pieces, the same on every PC: the PC that decided the hit runs its flight and
+    // sends it, the others' pieces fly the same throw (the same seed) and are pulled to its word, so a severed arm lies in
+    // one place on every PC (SyncAudit.md, item 4). Alone, or for a piece no shared hit threw, it is this PC's own as before.
+    // Before the throw: taking the word sets its body free.
+    private void Share(GoreGib gib)
+    {
+        uint seed = SharedRandom.CurrentSeed;
+        if (!PropNet.Shared || seed == 0u) { Unshare(gib); return; }
+        var prop = gib.GetComponent<PhysicsProp>();
+        if (prop == null) prop = gib.gameObject.AddComponent<PhysicsProp>();
+        // Never picked up with F (PropCarry): a piece of a body.
+        prop.OwnCarry = true;
+        if (seed != namedSeed) { namedSeed = seed; namedCount = 0; }
+        // A chunk thrown again starts its claims over, as the same chunk on another PC may be a different one of its pool.
+        prop.Epoch = 0;
+        prop.Driving = false;
+        prop.Following = !Deciding;
+        PropNet.Name(prop, "gore/" + seed + "/" + namedCount++);
+        if (Deciding) PropNet.Drive(prop);
+        else prop.ApplyMode();
+    }
+
+    /// <summary>A piece that sinks or is put away is no longer shared: nothing moves it but its sinking.</summary>
+    internal static void Unshare(GoreGib gib)
+    {
+        if (gib == null || !gib.TryGetComponent(out PhysicsProp prop)) return;
+        PropNet.Forget(prop);
+        prop.Driving = prop.Following = false;
+    }
+
     /// <summary>The corpses' layer: the players' own, which everything the players test their movement against leaves out.</summary>
     public static int Layer
     {
@@ -140,6 +191,7 @@ internal sealed class GoreGibs
             var gib = Build(body.Skins[i], shape, "Gore " + part, BodyParts.IsLeg(part) ? 7f : 2.5f);
             if (gib == null) continue;
             var velocity = direction * speed * SharedRandom.Range(.75f, 1.1f) + Vector3.up * SharedRandom.Range(1f, 2.2f) + carried;
+            Share(gib);
             Throw(gib, velocity, SharedRandom.InsideUnitSphere() * 14f);
             // Its torn end, where it left the body.
             owner.Fx.Cap(gib.transform, root.position, (root.position - root.parent.position).normalized * -1f,
@@ -262,12 +314,14 @@ internal sealed class GoreGibs
         host.SetActive(true);
         gib.Begin(owner, null, false);
         Keep(gib);
+        Share(gib);
         Throw(gib, velocity, SharedRandom.InsideUnitSphere() * 18f);
     }
 
     /// <summary>A gut chunk that has sunk (GoreGib): switched off and kept for the next burst.</summary>
     public void Release(GoreGib gib)
     {
+        Unshare(gib);
         live.Remove(gib);
         gib.gameObject.SetActive(false);
         idleGuts.Push(gib);

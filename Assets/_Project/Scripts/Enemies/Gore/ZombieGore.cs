@@ -206,7 +206,19 @@ public sealed class ZombieGore : MonoBehaviour
     {
         if (instance == null || !(report.Target is EnemyHealth enemy)) return;
         if (!instance.byEnemy.TryGetValue(enemy, out var body) || body == null || body.Model == null) return;
-        instance.Judge(body, report);
+        using (GoreGibs.Decide(DecidedHere(report.Hit))) instance.Judge(body, report);
+    }
+
+    /// <summary>
+    /// This PC decided the hit: its own player landed it, or, for one no player landed, this is the host (or alone). The
+    /// pieces it throws fly as this PC runs them (GoreGibs).
+    /// </summary>
+    internal static bool DecidedHere(in DamageHit hit)
+    {
+        var player = hit.Source != null ? hit.Source.GetComponentInParent<PlayerMovement>() : null;
+        if (player != null) return player.IsLocal;
+        var network = GameSession.Network;
+        return network == null || !network.IsListening || network.IsServer;
     }
 
     private void Judge(GoreBody body, in CombatDamageReport report)
@@ -279,7 +291,7 @@ public sealed class ZombieGore : MonoBehaviour
     /// </summary>
     internal static void ShotDeadHead(in DamageHit hit, bool meal, ulong id)
     {
-        PlayerNetworkCorpse.TellDeadHead(hit.Source, meal, id, hit.Direction);
+        PlayerNetworkCorpse.TellDeadHead(hit.Source, meal, id, hit.Direction, hit.EventSeed);
         if (PlayerPerks.IsMine(hit.Source)) HitConfirm.LandedOnDead(hit.Pierced);
     }
 
