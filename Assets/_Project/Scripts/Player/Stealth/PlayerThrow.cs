@@ -5,33 +5,34 @@ using Random = UnityEngine.Random;
 
 /// <summary>
 /// T: a stone thrown where the player looks, the 2026-11-11 stealth round's lure (after Advanced Stealth's thrown
-/// objects and sound grenade, F:\Addons). Held, T aims: the arc it will fly is drawn to where it lands, with the ring of
-/// how far its clack carries there, pink when a zombie that isn't awake will hear it, and those zombies' sight cones
-/// show pink (StealthView); let go, it is thrown (a tap throws at once). It flies through zombies and players, clacks
-/// where it lands, and that clack is a lure (Noise.Lure): every zombie that isn't awake and hears it turns to watch
-/// that spot a good while with its mind on it, and the nearest walks over to look, none learning where it came from. A
-/// zombie facing the way past is turned off it, or turned round for a takedown from behind. Stones never run out, one
-/// every cooldown seconds: generous, so trying is cheap. Every PC throws its own copy of a friend's stone
-/// (PlayerNetworkCombat), and the host's is the one its zombies hear. Numbers: Stealth.csv Throw.
+/// objects and sound grenade, F:\Addons). Since 2026-11-21 the left hand throws it as it throws the class throwable
+/// (the user: "T를 꾹 누를 때 애초에 돌을 왼손에 드는 모션이 없어서 Ready 소리가 안 나고"): PlayerGrenades owns the key, the
+/// hand (HandOwner grenade.throw), the clips (draw, hold, throw, tap) and the arc, with the stone as Throwable.Stone
+/// (Tables/Grenades stone: its flight and how the hand holds it). The draw brings a stone into the hand, and as it closes
+/// on it (the draw's pin moment) StoneReady sounds; held, the arc it will fly is drawn to where it lands, with the ring of
+/// how far its clack carries there, pink when a zombie that isn't awake will hear it, and those zombies' sight cones show
+/// pink (StealthView); let go, the throw clip lets it go (a tap throws at once).
+/// What stays here is the stone's own: it never runs out, one every cooldown seconds (generous, so trying is cheap); it
+/// flies through zombies and players, clacks where it lands, and that clack is a lure (Noise.Lure): every zombie that
+/// isn't awake and hears it turns to watch that spot a good while with its mind on it, and the nearest walks over to
+/// look, none learning where it came from. A zombie facing the way past is turned off it, or turned round for a takedown
+/// from behind. Every PC throws its own copy of a friend's stone (PlayerNetworkCombat), and the host's is the one its
+/// zombies hear. Numbers: Stealth.csv Throw (cooldown, how far it carries, how long it lies, its clack).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerThrow : MonoBehaviour, ITableBound
 {
     public const string TableName = "Stealth", TableRow = "Throw";
+    /// <summary>The key that throws a stone (KeyBindings; T unless the key window says otherwise).</summary>
+    public const string KeyName = "Player/Throw";
     /// <summary>The stealth sound bank (Art/Audio/Stealth), its keys StoneReady and StoneHit; volumes in Sounds.csv "Stealth/…".</summary>
     public const string BankId = "Stealth";
     internal const string ReadyKey = "StoneReady", HitKey = "StoneHit";
 
     [SerializeField, Min(0f), Tooltip("Seconds between two stones.")]
     private float cooldown = 2.5f;
-    [SerializeField, Min(1f), Tooltip("How fast it leaves the hand, the way the player looks (m/s).")]
-    private float speed = 15f;
-    [SerializeField, Min(0f), Tooltip("And upward on top of that (m/s): an arc, not a line.")]
-    private float lift = 2.5f;
     [SerializeField, Min(0f), Tooltip("How far its clack carries to a zombie (m), as a footstep's reach does (SoundCues.csv noise).")]
     private float noise = 16f;
-    [SerializeField, Min(.01f), Tooltip("Its size (m).")]
-    private float size = .075f;
     [SerializeField, Min(1f), Tooltip("How long it lies there before it sinks away (s).")]
     private float life = 7f;
     [SerializeField, Range(0f, 1f), Tooltip("Its clack's volume.")]
@@ -40,90 +41,39 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     /// <summary>This PC's player threw one: where from and how fast, for friends' PCs (PlayerNetworkCombat).</summary>
     public event Action<Vector3, Vector3> Thrown;
 
-    private PlayerMovement movement;
     private StealthView view;
-    // The aim's arc, shared with the class throwable's G (ThrowArc, PlayerGrenades).
-    private ThrowArc arc;
     private float readyAt;
-    private bool aiming, stoneInHand;
 
-    private void Awake()
-    {
-        movement = GetComponent<PlayerMovement>();
-        GameTables.Bind(TableName, TableRow, this);
-    }
+    /// <summary>A stone can come into the hand: the last one's cooldown is over.</summary>
+    public bool Ready => Time.time >= readyAt;
+
+    private void Awake() => GameTables.Bind(TableName, TableRow, this);
 
     void ITableBound.OnTableApplied() { }
 
-    private void Update()
+    // Its size and look come from its throwable row (Tables/Grenades stone), the one place the hand and the flight read.
+    private static float Size => Throwables.Of(Throwable.Stone) is ThrowableInfo stone ? stone.Size : .075f;
+
+    /// <summary>
+    /// The hand let go of a stone (PlayerGrenades, at its throw clip's release): it flies from there, the next one is a
+    /// cooldown away, and friends' PCs are told.
+    /// </summary>
+    internal void ThrowFrom(Vector3 from, Vector3 velocity)
     {
-        // Player/Throw (T unless the key window says otherwise).
-        var key = KeyBindings.Find("Player/Throw");
-        // The key itself is asked last (InputFocus.Takes): taken (a screen, another window, a board's pointer over a
-        // throw key that sits on a mouse button) is not let go. KeyBindings reads a taken key as not held, which below
-        // means "thrown", so the aim is put away here first and no stone leaves the hand.
-        bool able = movement != null && movement.InputAvailable && key != null && InputFocus.TakesInput() && !movement.IsDead && !movement.IsHeld
-            && !movement.CombatInputLocked && InputFocus.Takes(key);
-        var eye = Camera.main;
-        if (!able || eye == null) { StopAim(); return; }
-        if (KeyBindings.Pressed(key)) aiming = true;
-        if (!aiming) return;
-        if (KeyBindings.Held(key))
-        {
-            Aim(eye.transform);
-            // A stone comes into the hand as the aim starts with one ready, or as one gets ready while aiming (user,
-            // 2026-11-21: "Rock ready는 손에 돌 들었을 때").
-            bool inHand = Time.time >= readyAt;
-            if (inHand && !stoneInHand) ThrownStone.PlayReady();
-            stoneInHand = inHand;
-            return;
-        }
-        // Let go: thrown, if a stone is ready.
-        StopAim();
-        if (Time.time < readyAt) return;
         readyAt = Time.time + cooldown;
-        Launch(eye.transform, out Vector3 from, out Vector3 velocity);
-        ThrownStone.Throw(from, velocity, gameObject, noise, size, life, volume);
+        ThrownStone.Throw(from, velocity, gameObject, noise, Size, life, volume);
         Thrown?.Invoke(from, velocity);
     }
 
-    // Where it leaves the hand and how fast, from the eyes now.
-    private void Launch(Transform eye, out Vector3 from, out Vector3 velocity)
+    /// <summary>The held stone would land there (PlayerGrenades' arc, this frame): the reach of its clack and who would hear it (StealthView).</summary>
+    internal void ShowAim(Vector3 landing)
     {
-        from = eye.position + eye.forward * .35f + eye.right * .12f - eye.up * .12f;
-        // Face to a wall, it leaves from just this side of it.
-        if (Physics.Linecast(eye.position, from, out RaycastHit wall, ThrownStone.WorldMask, QueryTriggerInteraction.Ignore))
-            from = wall.point - (from - eye.position).normalized * .08f;
-        Vector3 carried = movement.ActualVelocity;
-        carried.y = 0f;
-        velocity = eye.forward * speed + Vector3.up * lift + carried * .5f;
-    }
-
-    // Held: the arc it would fly, to where it would land, and there the reach of its clack (StealthView).
-    private void Aim(Transform eye)
-    {
-        Launch(eye, out Vector3 at, out Vector3 velocity);
-        if (arc == null) arc = new ThrowArc(transform);
-        bool landed = arc.Trace(at, velocity, size * .5f);
-        bool ready = Time.time >= readyAt;
-        // Faint near the hand, solid along the flight and pink where it lands; grey while no stone is ready.
-        Color body = ready ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .35f), end = ready ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f);
-        arc.Draw(body, end, ready ? .85f : .4f);
         if (view == null) view = GetComponent<StealthView>();
-        if (view != null && landed) view.ShowAim(arc.Landing, noise, ready);
+        if (view != null) view.ShowAim(landing, noise, true);
     }
-
-    private void StopAim()
-    {
-        aiming = false;
-        stoneInHand = false;
-        arc?.Hide();
-    }
-
-    private void OnDisable() => StopAim();
 
     /// <summary>A friend's stone, seen here: this PC throws its own copy (the host's is the one its zombies hear).</summary>
-    internal void ShowThrow(Vector3 from, Vector3 velocity) => ThrownStone.Throw(from, velocity, gameObject, noise, size, life, volume);
+    internal void ShowThrow(Vector3 from, Vector3 velocity) => ThrownStone.Throw(from, velocity, gameObject, noise, Size, life, volume);
 }
 
 /// <summary>
@@ -162,6 +112,24 @@ public sealed class ThrownStone : MonoBehaviour
         return sounds;
     }
 
+    /// <summary>
+    /// The stone as the hand holds it (Throwables.Dress for Throwable.Stone): the same pebble that flies, its size from
+    /// its throwable row, no collider. The one place a stone's look is made.
+    /// </summary>
+    internal static GameObject Held(Transform parent, float size)
+    {
+        var held = new GameObject("Look");
+        held.transform.SetParent(parent, false);
+        held.transform.localScale = Scale(size);
+        held.AddComponent<MeshFilter>().sharedMesh = Shape();
+        var renderer = held.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = Look();
+        return held;
+    }
+
+    // A pebble: the sphere, flattened a little.
+    private static Vector3 Scale(float size) => new Vector3(size, size * .78f, size * .9f);
+
     /// <summary>A thrown stone's collider: bullets go through it.</summary>
     public static bool IsStone(Collider collider) => collider != null && stones.Contains(collider);
 
@@ -186,7 +154,7 @@ public sealed class ThrownStone : MonoBehaviour
         var host = new GameObject("Thrown Stone") { layer = GoreGibs.Layer };
         RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
         host.transform.SetPositionAndRotation(from, Random.rotation);
-        host.transform.localScale = new Vector3(size, size * .78f, size * .9f);
+        host.transform.localScale = Scale(size);
         host.AddComponent<MeshFilter>().sharedMesh = Shape();
         var renderer = host.AddComponent<MeshRenderer>();
         renderer.sharedMaterial = Look();

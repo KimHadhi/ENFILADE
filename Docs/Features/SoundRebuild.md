@@ -304,14 +304,19 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 
 ### 5.10 사용자가 준 소리 (2026-11-21, 0.9.237)
 
-MP3 그대로 폴더에 넣었다. 크기와 피치는 `Sounds.csv`의 줄이고 모두 1로 시작했다. 귀로 들어 보지 않았다.
+MP3 그대로 폴더에 넣었다. 크기와 피치는 `Sounds.csv`의 줄이고 모두 1로 시작했다. 나는 귀로 들어 보지 않았다.
+
+사용자가 들어 본 뒤(2026-11-21) 고친 것:
+- **리퍼가 전반적으로 너무 작다** → 볼륨 1.5배(`PlayOneShot`이라 1을 넘는다). 온전히 들리는 거리를 3~4m에서 8m로 늘렸다. 예전에는 링 끝(9m)에서 절반 아래로 들렸다. 이 거리는 `ZombieReaper.csv`의 `soundNear`·`soundFar`로 뺐다.
+- **줍기 공통 소리를 살짝 키워야** → `UI/Pick` 1.3배. 바닥 줍기는 0.8을 곱해 1에서 멈춘다.
+- **T를 꾹 눌러도 돌을 왼손에 드는 동작이 없어서 Ready가 안 난다** → 돌을 수류탄과 같은 왼손이 꺼내 들고 던지게 했다(`Throwable.Stone`, [투척물](Grenades.md)). Ready는 손이 돌을 쥐는 순간(꺼내기 클립의 핀 순간)에 난다. 원본이 아주 작아(최고 -29dB) 3배로 했다.
 
 | 파일 | 언제 | 묶음/키 |
 | --- | --- | --- |
-| `Reaper Attack` (5.6초, 0.8초쯤 가장 큼) | 리퍼가 낫을 모으기 시작할 때. 모든 PC, 3D 3~45m | `Zombie/Reaper/Attack`. 예전 차지 소리(`katana_deploy_01`)를 대신한다 |
-| `Reaper Attack Hit 1~6` | 낫이 한 바퀴 돌 때 누구라도 베였으면. 모든 PC, 3D 4~55m | `Zombie/Reaper/Hit`. 예전 휘두름(`tonfa_swing_miss1/2`, 0.62배 낮게)을 대신한다 |
+| `Reaper Attack` (5.6초, 0.8초쯤 가장 큼) | 리퍼가 낫을 모으기 시작할 때. 모든 PC, 3D(8m까지 온전히, 60m까지 줄어듦) | `Zombie/Reaper/Attack`. 예전 차지 소리(`katana_deploy_01`)를 대신한다 |
+| `Reaper Attack Hit 1~6` | 낫이 한 바퀴 돌 때 누구라도 베였으면. 모든 PC, 3D(8m까지 온전히) | `Zombie/Reaper/Hit`. 예전 휘두름(`tonfa_swing_miss1/2`, 0.62배 낮게)을 대신한다 |
 | `Reaper Attack Evaded 1·2` | 낫을 다 모아 휘둘렀는데 아무도 안 베였을 때(밑으로 피했거나 원 밖·벽 뒤) | `Zombie/Reaper/Evaded` |
-| `Stone Ready` | T를 눌러 손에 돌을 들 때. 돌이 아직 준비 중이면 준비되는 순간. 던지는 사람의 PC에만 2D | `Stealth/StoneReady`. 새 소리 묶음 `Stealth` = `Art/Audio/Stealth` |
+| `Stone Ready` | T를 누르고 있어 왼손이 돌을 꺼내 쥘 때(꺼내기 클립의 핀 순간). 던지는 사람의 PC에만 2D | `Stealth/StoneReady`. 새 소리 묶음 `Stealth` = `Art/Audio/Stealth` |
 | `Stone hit` | 던진 돌이 닿은 자리(착지와 튈 때 최대 3번) | `Stealth/StoneHit`. 예전 `StealthSounds` 에셋(킬 확인음과 같은 `qubodupImpactStone`)을 대신한다. 코드에 있던 피치 폭 0.9~1.15는 `Sounds.csv`로 옮겼다 |
 | `Pick Up SFX` | 무엇이든 손에 집을 때 공통으로, 종류별 소리 밑에 | `UI/Pick` (`KitSound.PlayPickup`) |
 

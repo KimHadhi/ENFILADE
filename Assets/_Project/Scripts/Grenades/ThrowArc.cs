@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The path a held throw would fly, drawn from the hand to where it lands: the stone's T (PlayerThrow) and the class
-/// throwable's G (PlayerGrenades) share it, so both aim the same way. It is drawn as a line faint at the hand and solid
+/// The path a held throw would fly, drawn from the hand to where it lands: the stone's T and the class throwable's G,
+/// both thrown by the left hand (PlayerGrenades), so both aim the same way. It is drawn as a line faint at the hand and solid
 /// along the flight; a throwable's burst reach can lie as a ring on what it lands on.
 /// Two things are drawn with it. What stops where it first lands (the stone, whose first clack is the lure, and the
 /// knife, which sticks) is traced to that landing (Trace): under gravity (a share of it: the thrown knife barely

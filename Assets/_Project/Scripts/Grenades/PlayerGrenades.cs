@@ -28,6 +28,9 @@ using UnityEngine;
 /// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
 /// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
 /// (PlayerNetworkCombat). The HUD shows the count beside the ammo (GrenadeHUD).
+/// T throws a stone with the same hand and clips (Throwable.Stone, since 2026-11-21): taken out while T is held and the
+/// stone's cooldown is over, never counted; what is the stone's own (its cooldown, its lure, friends' copies of the
+/// flight) stays in PlayerThrow (the keys: PlayerGrenades.Key).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed partial class PlayerGrenades : MonoBehaviour
@@ -178,7 +181,8 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         var held = Throwables.Of(armKind);
         float fuse = cooking && held != null && held.Fuse > 0f ? cookLeft / held.Fuse : -1f;
         if (info == null || kind == Throwable.None) GrenadeHUD.Hide();
-        else GrenadeHUD.Show(kind, count, aiming, fuse);
+        // Aiming a stone is not aiming the class's throwable: its count line stays as it is.
+        else GrenadeHUD.Show(kind, count, aiming && armKind == kind, fuse);
         // The fuse round the crosshair while one is held cooking (a tap's few tenths go by without it).
         GrenadeHUD.Ring(fuse >= 0f && !released && (holding || arm == Arm.Hold) ? fuse : -1f);
     }

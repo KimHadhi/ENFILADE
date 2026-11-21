@@ -7,6 +7,7 @@ public sealed partial class PlayerGrenades
     {
         // An ultimate's throw (ThrowForUltimate): the hand's release is all it wanted; nothing comes off the belt.
         if (ultimateRelease != null) { ReleaseForUltimate(info); return; }
+        if (armKind == Throwable.Stone) { ThrowStone(info); return; }
         var eye = Camera.main;
         if (eye == null || info == null || count <= 0) { cooking = false; return; }
         Launch(eye.transform, info, out Vector3 from, out Vector3 velocity);
@@ -33,6 +34,20 @@ public sealed partial class PlayerGrenades
         Thrown?.Invoke(armKind, id, from, velocity, fuse);
         Feel();
         PlayerCallouts.Thrown(info.Callout);
+    }
+
+    // A stone let go: from the hand toward the crosshair as any throw (its flight from its row of Tables/Grenades), but
+    // never counted and never in the kill feed; its cooldown, its flight's lure and friends' copies are the stone's own
+    // (PlayerThrow), and so is its whoosh (ThrownStone).
+    private void ThrowStone(ThrowableInfo info)
+    {
+        cooking = holding = letGo = false;
+        StopAim();
+        var eye = Camera.main;
+        if (eye == null || info == null || Stones == null) return;
+        Launch(eye.transform, info, out Vector3 from, out Vector3 velocity);
+        Stones.ThrowFrom(from, velocity);
+        Feel();
     }
 
     // The fuse it leaves the hand with, given what is left of a cooking one's then: the throw's own answer, and the aiming

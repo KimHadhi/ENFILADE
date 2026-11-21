@@ -9,8 +9,11 @@ using Random = UnityEngine.Random;
 /// 달랐으면 좋겠고 gmod 호드 모드처럼 G키로 퀵 그레네이드 던질 수 있었음 좋겠어"). Which class carries which is the
 /// table's class column (Tables/Grenades); a class without a row has none yet. Dye (the Schießhund's bounty dye) and
 /// Claymore (the Support's improvised directional mine, placed rather than thrown) came from the user's picks of 11-12.
+/// Stone is everyone's stealth lure on T (PlayerThrow), no class's: the same left hand draws, holds and throws it
+/// (2026-11-21, the user: "T를 꾹 누를 때 애초에 돌을 왼손에 드는 모션이 없어서"). Added last, so the numbers sent
+/// between PCs and kept in assets stay as they were.
 /// </summary>
-public enum Throwable : byte { None, Knife, Frag, Smoke, Flash, Mist, Dye, Claymore }
+public enum Throwable : byte { None, Knife, Frag, Smoke, Flash, Mist, Dye, Claymore, Stone }
 
 /// <summary>One throwable's numbers: a row of Tables/Grenades. Unused cells of a kind stay at their defaults.</summary>
 public sealed class ThrowableInfo
@@ -269,6 +272,14 @@ public static class Throwables
     /// </summary>
     public static GameObject Dress(Throwable kind, Transform parent)
     {
+        // The stone is the pebble it flies as (ThrownStone), made where that is made.
+        if (kind == Throwable.Stone)
+        {
+            var stone = ThrownStone.Held(parent, Of(kind) is ThrowableInfo pebble ? pebble.Size : .075f);
+            foreach (var renderer in stone.GetComponentsInChildren<Renderer>(true))
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            return stone;
+        }
         var model = Model(kind);
         GameObject look;
         if (model != null)

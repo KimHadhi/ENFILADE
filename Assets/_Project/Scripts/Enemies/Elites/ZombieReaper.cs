@@ -28,6 +28,8 @@ public sealed class ZombieReaper : ZombieElite
     // Its clips in the Zombie bank (Art/Audio/Enemies/Zombie/Reaper), the user's of 2026-11-21: the attack's start, and
     // the blade's end when it cut someone or no one.
     private const string AttackKey = "Reaper/Attack", HitKey = "Reaper/Hit", EvadedKey = "Reaper/Evaded";
+    // A Sounds.csv volume past this is a typo (+12 dB), as FeelAudio caps its voices.
+    private const float LoudestVolume = 4f;
     private static AudioClip windClip;
     private static SoundBank sounds;
     private static bool soundsLooked;
@@ -62,6 +64,11 @@ public sealed class ZombieReaper : ZombieElite
     [SerializeField, Min(.05f)] private float glowSize = .32f;
     [SerializeField, Range(0f, 1f), Tooltip("The cold wind gathering round it as it charges.")]
     private float windVolume = .55f;
+    [SerializeField, Min(.5f), Tooltip("Its attack's sounds are at full volume within this of it (m): the ring's reach, so " +
+        "everyone it could cut hears them whole. Farther they fade (logarithmic).")]
+    private float soundNear = 8f;
+    [SerializeField, Min(1f), Tooltip("And fade no further past this (m).")]
+    private float soundFar = 60f;
 
     private bool charging;
     private float reelAt = -1f, flashLeft;
@@ -107,7 +114,7 @@ public sealed class ZombieReaper : ZombieElite
         foreach (var player in PlayerRoster.All)
             if (player != null && player != mine && Reach(player, feet) == Blade.Cut) cutAnyone = true;
         if (Cut(mine, feet)) cutAnyone = true;
-        PlayKey(cutAnyone ? HitKey : EvadedKey, feet + Vector3.up * 1.1f, 4f, 55f);
+        PlayKey(cutAnyone ? HitKey : EvadedKey, feet + Vector3.up * 1.1f);
         // The host: the turn spent, it reels a moment (Interrupt tells the copies).
         if (Runs) reelAt = Time.time + spinSeconds;
     }
@@ -151,7 +158,7 @@ public sealed class ZombieReaper : ZombieElite
         bool winding = shown && combat != null && combat.IsPreparingAttack && combat.Move == AttackMove.Reap;
         float share = winding ? Mathf.Clamp01(combat.WindupElapsed / Mathf.Max(.05f, combat.Windup)) : 0f;
         // The attack begins (user, 2026-11-21: "Reaper Attack은 공격 시작할 때 play").
-        if (winding && !charging) PlayKey(AttackKey, Feet + Vector3.up * 1.6f, 3f, 45f);
+        if (winding && !charging) PlayKey(AttackKey, Feet + Vector3.up * 1.6f);
         charging = winding;
         if (!shown) flashLeft = 0f;
         DrawRings(winding, share);
@@ -263,8 +270,10 @@ public sealed class ZombieReaper : ZombieElite
 
     // One of the Zombie bank's reaper clips (Art/Audio/Enemies/Zombie/Reaper/<key>; volume and pitch in Sounds.csv
     // "Zombie/Reaper/<key>") where it stands, through the Combat volume, on a source of its own so a long one is never
-    // cut short by other sounds. Silent with no clip.
-    private static void PlayKey(string key, Vector3 at, float near, float far)
+    // cut short by other sounds. Silent with no clip. Whole within soundNear (Tables/ZombieReaper). The row's volume may
+    // go past 1 (PlayOneShot amplifies, as FeelAudio's voices do): at 1 and fading from 3–4 m, as 0.9.237 had it, the
+    // user found it far too quiet at the ring's edge (2026-11-21: "reaper는 전반적으로 소리가 넘 작고").
+    private void PlayKey(string key, Vector3 at)
     {
         if (!soundsLooked) { soundsLooked = true; sounds = SoundBank.Load(ZombieVoice.BankId); }
         var clip = sounds != null ? sounds.Pick(key) : null;
@@ -276,14 +285,12 @@ public sealed class ZombieReaper : ZombieElite
         source.playOnAwake = false;
         source.spatialBlend = 1f;
         source.rolloffMode = AudioRolloffMode.Logarithmic;
-        source.minDistance = near;
-        source.maxDistance = far;
+        source.minDistance = soundNear;
+        source.maxDistance = Mathf.Max(soundNear + 1f, soundFar);
         // Set before Bind, which keeps it as this source's own pitch under a slowdown (GameAudio.FollowWorldPitch).
         source.pitch = settings.RandomPitch();
         GameAudio.Bind(source, AudioChannel.Combat);
-        GameAudio.SetGain(source, settings.Volume);
-        source.clip = clip;
-        source.Play();
+        source.PlayOneShot(clip, Mathf.Clamp(settings.Volume, 0f, LoudestVolume));
         Destroy(source.gameObject, clip.length / Mathf.Max(.1f, source.pitch) + .1f);
     }
 

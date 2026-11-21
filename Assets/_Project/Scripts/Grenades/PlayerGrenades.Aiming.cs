@@ -20,9 +20,11 @@ public sealed partial class PlayerGrenades
         Color line = ready ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .35f), end = ready ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .35f);
         if (info.Fuse <= 0f)
         {
-            arc.Trace(from, velocity, Mathf.Max(.01f, info.Size * .5f), info.Gravity);
+            bool landed = arc.Trace(from, velocity, Mathf.Max(.01f, info.Size * .5f), info.Gravity);
             arc.Draw(line, end, ready ? .85f : .4f);
             arc.HideRing();
+            // A stone's landing is a lure: the reach of its clack there and who would hear it (StealthView).
+            if (armKind == Throwable.Stone && landed && Stones != null) Stones.ShowAim(arc.Landing);
             return;
         }
         // The fuse it would leave the hand with: a cooking one's now, less the swing still to come (its whole fuse while the

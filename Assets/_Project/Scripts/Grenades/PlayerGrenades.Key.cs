@@ -1,16 +1,24 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-// PlayerGrenades: The key. One part of the class; the rest is in PlayerGrenades.cs and the files beside it.
+// PlayerGrenades: The keys. One part of the class; the rest is in PlayerGrenades.cs and the files beside it.
 public sealed partial class PlayerGrenades
 {
     // The key was taken (a screen, another window) while it held a grenade back. Nobody saw whether it was let go
     // meanwhile, so the grenade waits in the hand until the key is seen held again: only a release the game sees throws.
     private bool keyLost;
+    // The stone's own rules (never runs out, its cooldown, its flight's lure, friends' copies): this player's PlayerThrow.
+    private PlayerThrow stones;
+
+    private PlayerThrow Stones => stones != null ? stones : stones = GetComponent<PlayerThrow>();
 
     /// <summary>
-    /// The key, and what becomes of a grenade in the hand. The hand that holds one keeps it and the throw stays possible,
-    /// unless something must have that hand (the user, 2026-11-18: "일단 왼손을 강제로 써야 하는 상황이 아니라면 수류탄을
-    /// 든 손이 우선 순위를 가져가게 해서 던질 수 있게 하고 싶군요"). Three cases, asked in this order:
+    /// The keys, and what becomes of what is in the hand. Two keys use the one left hand: G takes out the class's
+    /// throwable, T a stone (Throwable.Stone, everyone's lure; until 2026-11-21 PlayerThrow threw it from beside the eyes
+    /// with no hand at all, and the user: "T를 꾹 누를 때 애초에 돌을 왼손에 드는 모션이 없어서 Ready 소리가 안 나고").
+    /// Whatever the hand holds answers to the key that took it out. The hand that holds one keeps it and the throw stays
+    /// possible, unless something must have that hand (the user, 2026-11-18: "일단 왼손을 강제로 써야 하는 상황이 아니라면
+    /// 수류탄을 든 손이 우선 순위를 가져가게 해서 던질 수 있게 하고 싶군요"). Three cases, asked in this order:
     /// 1. Something must have the left hand (<see cref="HandGone"/>: the hands' owner says so): the pin goes back,
     ///    nothing spent.
     /// 2. The key is not the player's to read (a screen has the body's keys, the window is behind another, a board's
@@ -23,8 +31,16 @@ public sealed partial class PlayerGrenades
     private void Hand(ThrowableInfo info)
     {
         var key = KeyBindings.Find("Player/Grenade");
+        var stoneKey = KeyBindings.Find(PlayerThrow.KeyName);
+        if (arm == Arm.None)
+        {
+            Start(info, key, stoneKey);
+            return;
+        }
         bool drawn = arm == Arm.Draw || arm == Arm.Hold, inHand = drawn && !letGo;
-        if (info == null || key == null || HandGone())
+        bool stone = armKind == Throwable.Stone;
+        var heldKey = stone ? stoneKey : key;
+        if ((!stone && info == null) || heldKey == null || HandGone(stone))
         {
             // Going for it or holding it: the pin goes back; but a flashbang already burning keeps burning in the hand (a
             // grab bursts it round its holder: Cook).
@@ -34,7 +50,7 @@ public sealed partial class PlayerGrenades
         }
         // KeyBindings reads a taken key as not held, which below means "let go": taken is told apart here first. A throw
         // the player has already let go is theirs and goes on (Run).
-        bool keys = movement.InputAvailable && InputFocus.TakesInput() && InputFocus.Takes(key);
+        bool keys = movement.InputAvailable && InputFocus.TakesInput() && InputFocus.Takes(heldKey);
         if (!keys)
         {
             // Held out now, whatever the press began as (a tap cut short by the chat): its arc shows it is still there.
@@ -43,13 +59,6 @@ public sealed partial class PlayerGrenades
         }
         // Let go meanwhile, it leaves as the body comes out of the move (the key reads as let go then).
         if (!Hands.Stands(HandUses.Grenade)) return;
-        if (arm == Arm.None && KeyBindings.Pressed(key))
-        {
-            if (count <= 0) { GrenadeHUD.Refused(); return; }
-            if (Time.time < readyAt) return;
-            Begin();
-            return;
-        }
         if (!inHand) return;
         // The guard key put the pin back until 2026-11-18. With a gun that key is the aim, and aiming is no reason to lose
         // the grenade (the user: "조준을 하면 취소한단 뜻인가요?"): the left hand keeps it and the right hand aims
@@ -60,7 +69,7 @@ public sealed partial class PlayerGrenades
             PutBack();
             return;
         }
-        if (KeyBindings.Held(key))
+        if (KeyBindings.Held(heldKey))
         {
             keyLost = false;
             if (Time.time - pressedAt >= Mathf.Max(0f, Throwables.Rule("tapHold", .16f))) holding = true;
@@ -68,6 +77,25 @@ public sealed partial class PlayerGrenades
         }
         if (keyLost) return;
         LetGo(!holding);
+    }
+
+    // Nothing in the hand: G pressed takes the class's throwable out; T held takes a stone, as soon as the last one's
+    // cooldown is over (held through it, the next comes into the hand by itself, as the old aim waited held). The belt on
+    // the x-ray tray (GimmickTray) keeps the class's throwable away, not a stone.
+    private void Start(ThrowableInfo info, InputAction key, InputAction stoneKey)
+    {
+        if (Hands == null || !Hands.Could(HandUses.Grenade, this)) return;
+        if (!movement.InputAvailable || !InputFocus.TakesInput() || !Hands.Stands(HandUses.Grenade)) return;
+        if (info != null && key != null && !BeltAway() && InputFocus.Takes(key) && KeyBindings.Pressed(key))
+        {
+            if (count <= 0) { GrenadeHUD.Refused(); return; }
+            if (Time.time < readyAt) return;
+            Begin(kind);
+            return;
+        }
+        if (stoneKey != null && Stones != null && Stones.Ready && Time.time >= readyAt && Throwables.Of(Throwable.Stone) != null
+            && InputFocus.Takes(stoneKey) && KeyBindings.Held(stoneKey))
+            Begin(Throwable.Stone);
     }
 
     // ---- The left hand (HandOwner) ----
@@ -91,11 +119,12 @@ public sealed partial class PlayerGrenades
     /// 왼손을 강제로 써야 하는 상황이 아니라면 수류탄을 든 손이 우선 순위를 가져가게 해서 던질 수 있게 하고 싶군요").
     /// A grenade held goes back on the belt for these (the pin put back, nothing spent), and none can be taken out
     /// while one lasts. Until 2026-11-18 this was a list of its own here (HandForced), which asked "any parkour" where
-    /// only a hand on the world takes the hand: a step up, which uses no hand, put the pin back too.
+    /// only a hand on the world takes the hand: a step up, which uses no hand, put the pin back too. A stone
+    /// (<paramref name="stone"/>) is not on the belt, so the x-ray tray leaves it in the hand.
     /// </summary>
-    private bool HandGone()
+    private bool HandGone(bool stone = false)
     {
-        if (BeltAway() || Hands == null) return true;
+        if ((!stone && BeltAway()) || Hands == null) return true;
         if (handMine) return !Hands.Has(this);
         return arm != Arm.None || !Hands.Could(HandUses.Grenade, this);
     }
@@ -124,21 +153,22 @@ public sealed partial class PlayerGrenades
     }
 
     /// <summary>
-    /// G pressed: the off hand goes for the throwable. It asks the hands' owner for the left hand and for nothing else
-    /// (HandOwner; Tables/Player/HandUses.csv grenade.throw): the gun keeps the right hand, so it stays aimed, and fires,
-    /// with the grenade held ready in the left (the user, 2026-11-18: "오른손은 조준한 채로 왼손은 수류탄 대기하고 있으면
-    /// 되잖아요"). What the gun was doing with both hands is over by the gun's own word (a reload under way loses the
-    /// hand it needs and stops: WeaponController.MindHands), and a reload asked for while the grenade is held does not
-    /// start at all. Until 2026-11-18 this reached into the gun and stopped its reload itself, again every frame.
+    /// G pressed (or T held, for a stone): the off hand goes for <paramref name="which"/>. It asks the hands' owner for
+    /// the left hand and for nothing else (HandOwner; Tables/Player/HandUses.csv grenade.throw, every throw of the left
+    /// hand): the gun keeps the right hand, so it stays aimed, and fires, with the grenade held ready in the left (the
+    /// user, 2026-11-18: "오른손은 조준한 채로 왼손은 수류탄 대기하고 있으면 되잖아요"). What the gun was doing with both
+    /// hands is over by the gun's own word (a reload under way loses the hand it needs and stops:
+    /// WeaponController.MindHands), and a reload asked for while the grenade is held does not start at all. Until
+    /// 2026-11-18 this reached into the gun and stopped its reload itself, again every frame.
     /// </summary>
-    private void Begin()
+    private void Begin(Throwable which)
     {
         if (!TakeHand()) return;
-        StartArm(kind);
+        StartArm(which);
         pressedAt = Time.time;
         holding = letGo = keyLost = false;
-        if (kind == Throwable.Knife) KnifeOut(HandPoint());
-        Handed?.Invoke(kind, HandPhase.Draw);
+        if (which == Throwable.Knife) KnifeOut(HandPoint());
+        Handed?.Invoke(which, HandPhase.Draw);
     }
 
     // G let go (or the reflex): thrown from the hold at once, or as soon as the draw gets there. A tap plays the tap clip;

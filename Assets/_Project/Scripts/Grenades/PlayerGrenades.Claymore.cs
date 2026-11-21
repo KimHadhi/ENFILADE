@@ -214,6 +214,13 @@ public sealed partial class PlayerGrenades
     private void Pin(ThrowableInfo info)
     {
         pinned = true;
+        // A stone has no pin: this is the hand closing on it, and the thrower hears it come into the hand (the user,
+        // 2026-11-21: "Rock ready는 손에 돌 들었을 때"). Only on their own PC, as PlayerThrow had it.
+        if (armKind == Throwable.Stone)
+        {
+            if (movement.IsLocal) ThrownStone.PlayReady();
+            return;
+        }
         // A knife has no pin, nor does a claymore (its phone comes on once it is down).
         if (armKind == Throwable.Knife || (info != null && info.Places)) return;
         Vector3 at = armBody != null ? armBody.HeldPoint : HandPoint();
