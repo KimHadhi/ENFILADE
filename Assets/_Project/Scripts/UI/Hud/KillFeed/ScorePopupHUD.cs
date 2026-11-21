@@ -88,7 +88,9 @@ public sealed class ScorePopupHUD : MonoBehaviour
         var me = PlayerRoster.Local;
         if (me != null && !me.IsGrounded) Add("score.line.jumpshot", Mathf.RoundToInt(Value("jumpshot", 5f)));
         float now = Time.unscaledTime;
-        chainKills = now - lastKill <= Value("chainSeconds", 4f) ? chainKills + 1 : 1;
+        // The kill streak's own window (CombatFeedHUD.StreakWindow), as the streak badge, the kill chain and the multi kill
+        // count: one clock for every "kills in a row" (the user, 2026-11-22: "연속 처치 시간이랑 동기화 시켜야지").
+        chainKills = now - lastKill <= CombatFeedHUD.StreakWindow ? chainKills + 1 : 1;
         lastKill = now;
         if (chainKills == 3) Add("score.line.slaughter", Mathf.RoundToInt(Value("slaughter", 5f)));
         else if (chainKills == 4) Add("score.line.warrior", Mathf.RoundToInt(Value("warrior", 5f)));

@@ -69,6 +69,9 @@ MonoBehaviour:
   - key: BO6/Hit
     clips:
     - {fileID: 8300000, guid: 53af0e2be62a42f38eb91e79a5722c3b, type: 3}
+  - key: BO6/HitItem
+    clips:
+    - {fileID: 8300000, guid: b87ee50d9c31468ebcf7b2cbfaa93053, type: 3}
   - key: BO6/Kill
     clips:
     - {fileID: 8300000, guid: f39d8ac3a16947aeaf28cca3bb76898a, type: 3}

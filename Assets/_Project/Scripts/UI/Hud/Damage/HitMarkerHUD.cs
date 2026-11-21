@@ -5,18 +5,14 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 
 /// <summary>
 /// Crosshair hit confirmation, in the look the player picks (Settings → HUD → 히트 마커, <see cref="HitMarkerStyle"/>).
-/// Clean, the default (the user's pick of PAYDAY 3's marker, 2026-11-12): four hair lines at 45° that start a little big,
+/// Modern, the default since 2026-11-22: a Garry's Mod addon's marker drawn as its own code draws it, with its pictures
+/// and sounds (<see cref="ModernLook"/>; the user: "영상대로만 만들라고, 원본 그대로 implement"). Clean (the user's pick of
+/// PAYDAY 3's marker, 2026-11-12, the default before): four hair lines at 45° that start a little big,
 /// snap to rest, hold a moment and fade sliding a few pixels outward, in .2 s; white, a pale gold headshot that pops twice,
 /// a red kill, a quiet grey for no effect, numbers in HitMarkers.csv (<see cref="CleanLook"/>, <see cref="LayoutClean"/>).
-/// Bold, the earlier look, described below, numbers in GunFeel. Both get the headshot's burst, the posture break's burst
-/// and the pierced tails, and under the aim point the kill chain: every kill of a run adds its picture (a skull, a
+/// Bold, the earlier look, described below, numbers in GunFeel. Clean and Bold get the headshot's burst and the pierced
+/// tails; all three get the posture break's burst, and under the aim point the kill chain: every kill of a run adds its picture (a skull, a
 /// knife, a burst ... by how it happened, <see cref="KillIcons"/>) to one row (<see cref="ChainLook"/>).
-/// Over either look lies Black Ops 6's hit marker (the Garry's Mod addon Black Ops VI Hitmarker) as seven switches in
-/// Settings → HUD, all on by default (the user, 2026-11-22: "히트마커는 다 설정으로 넣어서 적용하고"; <see cref="Bo6Look"/>,
-/// HitMarkers.csv BO6.*): the lines fade by the same share every moment from each hit (about .9 s) in place of the look's
-/// hold and fade, start 1.8 times their size and shrink in, sit .3 s where they start (on the aim point aimed, at the
-/// gun's spread from the hip) and then move out, turn a little at random (a kill more), split in two on a headshot, and
-/// shake a little, smoothly. Its sounds are HitConfirm's.
 /// A headshot's burst keeps the middle clear (<see cref="HeadLook"/>, HitMarkers.csv Head.*): a hollow eight-point star,
 /// a thin gold ring snapping out through the lines with a fainter echo, eight sparks from outside the lines, and a lens
 /// streak split down the middle and fired out both ways with a short split rise and two diamonds on a slant, all gone in
@@ -39,16 +35,19 @@ public enum HitMarkerKind { Body, Head, BodyKill, HeadKill, Blocked }
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitMarkers)]
 public sealed class HitMarkerHUD : MonoBehaviour
 {
-    public const string TableName = "HitMarkers", CleanRow = "Clean", HeadRow = "Head", ChainRow = "Chain", Bo6Row = "BO6";
+    public const string TableName = "HitMarkers", CleanRow = "Clean", HeadRow = "Head", ChainRow = "Chain", ModernRow = "Modern";
 
     /// <summary>
     /// The kill chain under the screen's middle: Cool Killchains (a Garry's Mod addon), the user's pick on 2026-11-22
     /// ("좋아"), its numbers read off the addon's code at 1080p (HitMarkers.csv rows Chain.*, 1920x1080 canvas units,
     /// seconds). It is one row: every kill of a run adds its picture (<see cref="KillIcons"/>, tinted by its row) on the
-    /// right, and the row slides to stay centred. A run lasts as long as kills keep coming within its window, which grows
-    /// with each kill already in it; when the window ends the whole row fades over its last moment and is gone. A new
-    /// picture fades in from bigger over a share of the window. It took the place of the single picture that popped under
-    /// the aim for each kill (one owner for kill pictures under the aim).
+    /// right, and the row slides to stay centred. A run is the kill streak: its window is the streak's own
+    /// (<see cref="CombatFeedHUD.StreakWindow"/>, on the unscaled clock the streak badge, the multi kill and PlayerTally
+    /// count by), so the row lives while the streak lives and ends when it ends (the user, 2026-11-22: "킬 체인은 연속 처치
+    /// 시간이랑 동기화 시켜야지"; the addon's own window, 4 s and .33 s more per kill, outlasted the streak). When the
+    /// window ends the whole row fades over its last moment and is gone. A new picture fades in from bigger over a share of
+    /// the window. It took the place of the single picture that popped under the aim for each kill (one owner for kill
+    /// pictures under the aim).
     /// </summary>
     [System.Serializable]
     public sealed class ChainLook
@@ -65,11 +64,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         public float popShare = 1f / 30f;
         [Tooltip("The pictures' strength, 0 to 1.")]
         public float alpha = .784f;
-        [Tooltip("Seconds the row waits for the next kill when it holds one picture.")]
-        public float windowSeconds = 4f;
-        [Tooltip("Seconds added to the window for every picture already in the row.")]
-        public float perKill = .33f;
-        [Tooltip("The row fades over this many seconds divided by the window (2 / 4 s = the last .5 s).")]
+        [Tooltip("The row fades over this many seconds divided by the window (the streak's; 2 / 2.5 s = the last .8 s).")]
         public float fade = 2f;
         [Tooltip("Most pictures in the row; 0 = as many as fit in half the screen's width.")]
         public float most;
@@ -188,48 +183,57 @@ public sealed class HitMarkerHUD : MonoBehaviour
     }
 
     /// <summary>
-    /// Black Ops 6's hit marker (the Garry's Mod addon Black Ops VI Hitmarker, lua/autorun/blackops6_hitmarker.lua) as
-    /// seven switches in Settings → HUD, each on by default and each laid over either look: the user, 2026-11-22, on the
-    /// seven things it does that ours did not, "히트마커는 다 설정으로 넣어서 적용하고". Its numbers are read off the Lua at
-    /// 1080p (its ScreenScale(0.256) is .768 at 1920 wide) into HitMarkers.csv rows BO6.*. Its Lerp(FrameTime()*k, x, 0)
-    /// steps, which take k·dt of x away every frame, are written as e^-k a second, so they run alike at any frame rate.
-    /// Its arm pictures are not used: our lines stay, and what the addon does with its arms is done to them. The sixth
-    /// switch, its sounds, is HitConfirm's.
+    /// Modern, the default look: the Garry's Mod addon Black Ops VI Hitmarker's marker as its Lua draws it
+    /// (lua/autorun/blackops6_hitmarker.lua, DrawHitMarker and the bo6_hit and bo6_kill messages), with its own pictures
+    /// and sounds. The user, 2026-11-22, after seven switches had laid parts of it over our looks: "하등 쓸모 없는 것만
+    /// 처만들어 놨네… 영상대로만 만들라고, 원본 그대로 implement"; named by its look, never by a game ("대놓고 블랙 옵스 6
+    /// 히트마커라 하면 알아 듣겠냐?"). HitMarkers.csv rows Modern.* hold the Lua's numbers (1920x1080 canvas units: its
+    /// ScreenScale(0.256) is .768 at 1920 wide).
+    /// Four arm pictures (Resources/UI/HitMarkers/Modern l1 l2 r1 r2, decoded from its VTFs; Head/ for a headshot), each a
+    /// square of (Size Base + Size Grow) × Screen Scale at the hit shrinking to Size Base, white or a kill's red, fading;
+    /// each turned by one random whole-degree step about its own middle. The middles sit Scale − Rate apart from the aim
+    /// point per axis: on it for Hold Seconds aimed (Scale = Rate Aim), then out as Scale falls to nothing; from the hip
+    /// Rate is Rate Hip, so they start out and go farther. A hit on something not of flesh (IOwnHitFeedback, the steel
+    /// targets) adds its prop picture at the lower right, a burning hit (KillMarks.Fire) its flame. Its Lerp(FrameTime()*k,
+    /// x, y) steps are written as e^-k a second, what they come to at a high frame rate, so they run alike at any.
+    /// The one change from the Lua: it jumps the marker to a new random offset every frame, a flicker at the frame rate;
+    /// here a smooth noise of at most Shake Hz stands in, which the marker follows softly (the user's rule since
+    /// 2026-11-14: nothing blinks or jitters). Drawn on the kicked aim point as our other looks are; the Lua's is the
+    /// screen's middle, where its crosshair is.
     /// </summary>
     [System.Serializable]
-    public sealed class Bo6Look
+    public sealed class ModernLook
     {
-        [Tooltip("Fade: the marker's strength falls to e^-rate in a second and is full again at every hit (the addon: life = " +
-            "Lerp(FrameTime()*10/2, life, 0)).")]
-        public float fadeRate = 5f;
-        [Tooltip("Below this strength the marker is put away (.01 = .92 s at rate 5); the addon's never quite ends.")]
-        public float fadeEnd = .01f;
-        [Tooltip("Pop: the lines (length, gap and width) start this much bigger (.8 = 1.8 times, the addon's 90 then 50 px) " +
-            "and shrink back at Pop Rate (e^-rate a second), in place of the look's own first pop.")]
-        public float pop = .8f, popRate = 5f;
-        [Tooltip("Spread: seconds the lines stay where they start (the addon's 0.3 s timer), then how far they move out (px; " +
-            "the addon's 15.36 px on each axis, 21.7 px on the slant) and how fast (e^-rate a second). Takes the place of the " +
-            "look's own drift out (Clean) or slide in (Bold).")]
-        public float holdSeconds = .3f, spreadOut = 21.7f, spreadRate = 10f;
-        [Tooltip("From the hip the lines start out from the aim point by the gun's spread (as far as the crosshair's lines " +
-            "open) times this, nothing down the sights, and follow it at Hip Rate (e^-rate a second). 0 keeps them on the aim " +
-            "point. The addon stands them a fixed 21.7 px out from the hip.")]
-        public float hipScale = 1f, hipRate = 10f;
-        [Tooltip("1: a kill's marker stands at the hip spread too. 0, the addon's: a kill sits on the aim point always (its " +
-            "kill message sends hipfire false).")]
-        public float killHip;
-        [Tooltip("Turn: each hit turns the whole marker by up to this many degrees either way, a kill by up to Turn Kill, in " +
-            "whole-degree steps as LuaJIT's math.random(-2.5, 2.5) and math.random(-5, 5) give them.")]
+        [Tooltip("The addon's ScreenScale(0.256) at 1920 wide: its own px numbers are multiplied by this.")]
+        public float screenScale = .768f;
+        [Tooltip("The addon's mark size setting (bo6hitmarker_marksize, 1).")]
+        public float markSize = 1f;
+        [Tooltip("An arm picture's side: (Size Base + Size Grow × size) × Screen Scale × Mark Size, size 1 at the hit and " +
+            "falling to e^-Size Rate a second (size = Lerp(FrameTime()*10/2, size, 0)).")]
+        public float sizeBase = 50f, sizeGrow = 40f, sizeRate = 5f;
+        [Tooltip("Strength: 1 at the hit, falling to e^-Life Rate a second (life = Lerp(FrameTime()*10/2, life, 0)); under " +
+            "Life End (about one step of 255) the marker is put away.")]
+        public float lifeRate = 5f, lifeEnd = .004f;
+        [Tooltip("Scale × Screen Scale × Mark Size: how far the arms' middles stand out from where Rate puts them, for Hold " +
+            "Seconds after each hit (the addon's 0.3 s timer); then it falls to e^-Scale Fall a second.")]
+        public float holdSeconds = .3f, scale = 20f, scaleFall = 10f;
+        [Tooltip("The addon's scale_rate × Screen Scale × Mark Size: Rate Hip when the hit was from the hip (the aim not up; " +
+            "never for a kill, whose message sends hipfire false), Rate Aim when aimed; it eases there at e^-Rate Ease a " +
+            "second, between hits too.")]
+        public float rateHip = 40f, rateAim = 20f, rateEase = 10f;
+        [Tooltip("Each hit turns the arms by a whole-degree step up to this either way, a kill up to Turn Kill " +
+            "(math.random(-2.5, 2.5) and (-5, 5), which LuaJIT takes in whole steps from the low end).")]
         public float turnHit = 2.5f, turnKill = 5f;
-        [Tooltip("Twin: a headshot's line splits in two, each half turned this many degrees off the line, their outer ends " +
-            "this share of the line's length apart, so they open toward the aim point (measured off the addon's head " +
-            "pictures: two strokes 10° apart, 12 px apart outside and 25 px inside on a 76 px stroke).")]
-        public float twinTurn = 5f, twinApart = .16f;
-        [Tooltip("Shake: how far the marker shakes (px; ScrW × .0025), the share it leans up and left by (the addon's " +
-            "random − .8), the seconds it runs down in, the speed of its noise (Hz) and how fast the marker follows that " +
-            "(e^-rate a second). The addon jumps to a new random offset every frame; ours is a smooth noise of at most " +
-            "1.6 Hz, the user's rule for anything on screen that moves by itself (never a flicker).")]
-        public float shake = 4.8f, shakeBias = .8f, shakeSeconds = .5f, shakeHz = 1.6f, shakeFollow = 10.5f;
+        [Tooltip("The prop or flame picture's side is the arm picture's divided by this, and it sits that side's length " +
+            "right and down from the arms' place.")]
+        public float iconShare = 2.5f;
+        [Tooltip("The shake: up to Shake px (ScrW × .0025), leaning up and left by Shake Bias (the addon's random − .8), " +
+            "running down by Shake Drop a second (FrameTime()*10/5), as a smooth noise of Shake Hz the marker follows at " +
+            "e^-Shake Follow a second, in place of the addon's new random offset every frame.")]
+        public float shake = 4.8f, shakeBias = .8f, shakeDrop = 2f, shakeHz = 1.6f, shakeFollow = 10.5f;
+        [Tooltip("The arms' colour on a hit and on a kill (the addon's Color(255,255,255) and Color(255,0,0)), and the prop " +
+            "and flame pictures' (always white).")]
+        public Color hitColor = Color.white, killColor = Color.red, iconColor = Color.white;
     }
 
     // Between a tick's outer end and its pierced tail (canvas units).
@@ -249,25 +253,32 @@ public sealed class HitMarkerHUD : MonoBehaviour
     // The headshot's split streak (a glow and a core per half), its rise and its diamonds.
     private readonly RawImage[] flareHalves = new RawImage[2], flareGlows = new RawImage[2], riseHalves = new RawImage[2];
     private readonly Graphic[] flareDiamonds = new Graphic[2];
-    // A headshot's second line per arm under the Black Ops 6 twin switch: the Bold look's, and the clean look's with its
-    // dark edge.
-    private readonly Image[] tickTwins = new Image[4];
-    private readonly RawImage[] cleanTwins = new RawImage[4], cleanTwinEdges = new RawImage[4];
     private readonly CleanLook look = new CleanLook();
     private readonly HeadLook headLook = new HeadLook();
     private readonly ChainLook chainLook = new ChainLook();
-    private readonly Bo6Look bo6 = new Bo6Look();
-    // The Black Ops 6 switches as they stood at the showing marker's hit (a change in the settings shows from the next hit,
-    // as the look's does), whether its lines stand at the hip spread, the turn it drew, and the moving parts: the hip
-    // place now (px), the shake left (1 down to 0), the shake noise's clock and where the marker has followed it to.
-    private bool bo6Fade, bo6Pop, bo6Spread, bo6Turn, bo6Twin, bo6Shake, bo6Hip;
-    private float turn, hipNow, shakeLeft, shakeClock;
+    private readonly ModernLook modern = new ModernLook();
+    // The Modern look's arm pictures in the addon's order (l1 top left, l2 bottom left, r1 top right, r2 bottom right),
+    // where each one's middle goes for the gap d (the Lua's x ± (scale − scale_rate), its y turned up), its pictures for a
+    // body and a head, and the prop and flame pictures under them.
+    private static readonly string[] ArmPictures = { "l1", "l2", "r1", "r2" };
+    private static readonly Vector2[] ArmSides = { new Vector2(1f, -1f), new Vector2(1f, 1f), new Vector2(-1f, -1f), new Vector2(-1f, 1f) };
+    private const string ModernPictures = "UI/HitMarkers/Modern/";
+    private readonly RawImage[] modernArms = new RawImage[4];
+    private readonly Texture2D[] bodyArms = new Texture2D[4], headArms = new Texture2D[4];
+    private RawImage modernIcon;
+    private Texture2D propPicture, burnPicture;
+    private RectTransform modernRoot;
+    // The showing Modern marker as its hit set it: colour, head arms, the side picture it calls for, the turn it drew,
+    // whether it was from the hip; where its arms are easing out to (the Lua's scale_rate, kept between hits as the Lua
+    // keeps it, unset until the first), and the shake: how much is left, its noise clock and where the marker has
+    // followed it to.
+    private Color modernColor = Color.white;
+    private bool modernHead, modernHip, modernFlesh = true, modernBurn;
+    private float modernTurn, modernRate = -1f, shakeLeft, shakeClock;
     private Vector2 shakeAt;
-    // The local player and the gun whose spread the hip place follows.
-    private PlayerMovement spreadOwner;
-    private WeaponController spreadGun;
-    // The look's own span for this hit: the Bold kill ring keeps its pace while the Black Ops 6 fade keeps the lines longer.
-    private float baseLifetime = .2f;
+    // This PC's player and gun, for whether the sights were up at the hit.
+    private PlayerMovement aimOwner;
+    private WeaponController aimGun;
     private Image[] sparks;
     // The kill chain: one link per kill of the run, oldest first (its picture, its row's colour, when it joined), the
     // pictures no longer shown kept for the next run, when the run ends, its window, and the count the row is centred on.
@@ -288,12 +299,13 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private bool IsShowing => age < lifetime;
 
     /// <summary>share: the part of the target's health the hit took, which sizes body and head markers. pierced: the bullet
-    /// went through or off something on the way.</summary>
-    public static void Show(HitMarkerKind kind, float share = 1f, bool pierced = false)
+    /// went through or off something on the way. flesh: it struck a body (false: only things that sound their own hits,
+    /// the steel targets). burn: it was fire. The last two are the Modern look's prop and flame pictures.</summary>
+    public static void Show(HitMarkerKind kind, float share = 1f, bool pierced = false, bool flesh = true, bool burn = false)
     {
         if (!Application.isPlaying || !GunFeelSettings.Instance.hitMarkers) return;
         Prepare();
-        instance.Trigger(kind, share, pierced);
+        instance.Trigger(kind, share, pierced, flesh, burn);
     }
 
     /// <summary>The player's hit broke the target's posture.</summary>
@@ -331,27 +343,39 @@ public sealed class HitMarkerHUD : MonoBehaviour
         GameTables.BindNested(TableName, CleanRow, this, look);
         GameTables.BindNested(TableName, HeadRow, this, headLook);
         GameTables.BindNested(TableName, ChainRow, this, chainLook);
-        GameTables.BindNested(TableName, Bo6Row, this, bo6);
+        GameTables.BindNested(TableName, ModernRow, this, modern);
         root = FeelUI.Rect("Marker", transform);
         ring = FeelUI.Rect("Ring", root).gameObject.AddComponent<RawImage>();
         ring.texture = FeelAssets.Ring; ring.raycastTarget = false;
         for (int i = 0; i < 4; i++) ticks[i] = Tick("Tick " + i, root);
-        for (int i = 0; i < 4; i++) { tickTwins[i] = Tick("Tick Twin " + i, root); tickTwins[i].enabled = false; }
         for (int i = 0; i < 4; i++) { tails[i] = Tail("Pierced Tail " + i, root); tailEnds[i] = Tail("Pierced Tail End " + i, root); }
         root.gameObject.SetActive(false);
 
         // The clean marker, in the same place under the headshot burst: the dark edges first so every line covers them.
         cleanRoot = FeelUI.Rect("Clean Marker", transform);
         for (int i = 0; i < 4; i++) cleanEdges[i] = HairLine("Edge " + i, cleanRoot);
-        for (int i = 0; i < 4; i++) { cleanTwinEdges[i] = HairLine("Twin Edge " + i, cleanRoot); cleanTwinEdges[i].enabled = false; }
         for (int i = 0; i < 4; i++) cleanLines[i] = HairLine("Line " + i, cleanRoot);
-        for (int i = 0; i < 4; i++) { cleanTwins[i] = HairLine("Twin " + i, cleanRoot); cleanTwins[i].enabled = false; }
         for (int i = 0; i < 4; i++)
         {
             cleanTails[i] = HairLine("Pierced Tail " + i, cleanRoot);
             cleanTailEnds[i] = HairLine("Pierced Tail End " + i, cleanRoot);
         }
         cleanRoot.gameObject.SetActive(false);
+
+        // The Modern marker: the prop or flame picture first, then the four arms over it, as the Lua draws them.
+        modernRoot = FeelUI.Rect("Modern Marker", transform);
+        modernIcon = FeelUI.Rect("Side Picture", modernRoot).gameObject.AddComponent<RawImage>();
+        modernIcon.raycastTarget = false;
+        for (int i = 0; i < 4; i++)
+        {
+            modernArms[i] = FeelUI.Rect("Arm " + ArmPictures[i], modernRoot).gameObject.AddComponent<RawImage>();
+            modernArms[i].raycastTarget = false;
+            bodyArms[i] = Resources.Load<Texture2D>(ModernPictures + ArmPictures[i]);
+            headArms[i] = Resources.Load<Texture2D>(ModernPictures + "Head/" + ArmPictures[i]);
+        }
+        propPicture = Resources.Load<Texture2D>(ModernPictures + "prop");
+        burnPicture = Resources.Load<Texture2D>(ModernPictures + "burn");
+        modernRoot.gameObject.SetActive(false);
 
         // The headshot's burst over both looks' lines, bottom to top: the split streak with its rise and diamonds, added
         // onto the picture so they light it without covering it; the dark edge under the ring, the ring and its echo; the
@@ -450,26 +474,31 @@ public sealed class HitMarkerHUD : MonoBehaviour
 
     private void OnDestroy() { if (instance == this) instance = null; }
 
-    private void Trigger(HitMarkerKind next, float share, bool throughSomething)
+    private void Trigger(HitMarkerKind next, float share, bool throughSomething, bool flesh, bool burn)
     {
+        if (GameSettings.Current.hitMarkerStyle == HitMarkerStyle.Modern)
+        {
+            TriggerModern(next, flesh, burn);
+            return;
+        }
         // A fresh kill marker is not overwritten by the next body hit of the same burst.
-        if (IsShowing && IsKill(kind) && !IsKill(next) && age < .18f) return;
-        bool wasShowing = IsShowing;
+        if (style != HitMarkerStyle.Modern && IsShowing && IsKill(kind) && !IsKill(next) && age < .18f) return;
         kind = next; age = 0f;
         pierced = throughSomething;
         var settings = GunFeelSettings.Instance;
-        var game = GameSettings.Current;
-        style = game.hitMarkerStyle;
-        TakeBo6(game, next, wasShowing);
+        style = GameSettings.Current.hitMarkerStyle;
         bool clean = style == HitMarkerStyle.Clean, sized = !IsKill(next) && next != HitMarkerKind.Blocked;
         float hurt = Mathf.Clamp01(share / settings.markerFullDamage);
-        // Only one look shows at a time; the other may still be up from before the setting changed.
+        // Only one look shows at a time; the others may still be up from before the setting changed.
         (clean ? root : cleanRoot).gameObject.SetActive(false);
+        modernRoot.gameObject.SetActive(false);
         if (clean)
         {
             scale = sized ? Mathf.Lerp(look.smallScale, look.largeScale, hurt) : 1f;
             pace = 1f;
             lifetime = Mathf.Max(.02f, CleanHold() + CleanFade());
+            cleanRoot.gameObject.SetActive(true);
+            LayoutClean(settings);
         }
         else
         {
@@ -478,18 +507,6 @@ public sealed class HitMarkerHUD : MonoBehaviour
             pace = next == HitMarkerKind.Head ? Mathf.Max(1f, settings.headMarkerPace) : 1f;
             int frames = Mathf.Max(1, settings.markerHoldFrames + settings.markerShrinkFrames + settings.markerFadeFrames);
             lifetime = frames / settings.markerFrameRate / pace;
-        }
-        // The Black Ops 6 fade lasts until it has all but gone (.92 s against the look's .2); the look's own span still
-        // paces what is the look's (the Bold kill ring).
-        baseLifetime = lifetime;
-        if (bo6Fade) lifetime = Mathf.Max(.02f, Bo6Lifetime());
-        if (clean)
-        {
-            cleanRoot.gameObject.SetActive(true);
-            LayoutClean(settings);
-        }
-        else
-        {
             root.gameObject.SetActive(true);
             Layout(settings);
         }
@@ -509,16 +526,19 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private void LateUpdate()
     {
         var settings = GunFeelSettings.Instance;
-        bool clean = style == HitMarkerStyle.Clean;
-        var marker = clean ? cleanRoot : root;
-        if (marker.gameObject.activeSelf)
+        if (style == HitMarkerStyle.Modern)
         {
-            age += Time.unscaledDeltaTime;
-            if (age >= lifetime) marker.gameObject.SetActive(false);
-            else
+            if (modernRoot.gameObject.activeSelf) StepModern(Time.unscaledDeltaTime);
+        }
+        else
+        {
+            bool clean = style == HitMarkerStyle.Clean;
+            var marker = clean ? cleanRoot : root;
+            if (marker.gameObject.activeSelf)
             {
-                StepBo6(Time.unscaledDeltaTime);
-                if (clean) LayoutClean(settings);
+                age += Time.unscaledDeltaTime;
+                if (age >= lifetime) marker.gameObject.SetActive(false);
+                else if (clean) LayoutClean(settings);
                 else Layout(settings);
             }
         }
@@ -537,8 +557,8 @@ public sealed class HitMarkerHUD : MonoBehaviour
         if (chain.Count > 0) LayoutChain();
     }
 
-    // A kill joins the run (or starts a new one once the last has ended). The window is set from the pictures already in
-    // the row, so a long run waits longer for its next kill; a row as wide as allowed lets its oldest picture go.
+    // A kill joins the run (or starts a new one once the last has ended). The window is the kill streak's, from this
+    // kill, so the row ends when the streak does; a row as wide as allowed lets its oldest picture go.
     private void AddLink(KillIcons.Row row)
     {
         var l = chainLook;
@@ -547,7 +567,7 @@ public sealed class HitMarkerHUD : MonoBehaviour
         if (picture == null) return;
         float now = Time.unscaledTime;
         if (now >= chainEnd) ClearChain();
-        chainWindow = Mathf.Max(.1f, l.windowSeconds + chain.Count * l.perKill);
+        chainWindow = Mathf.Max(.1f, CombatFeedHUD.StreakWindow);
         chainEnd = now + chainWindow;
         int most = l.most > 0f ? Mathf.RoundToInt(l.most) : Mathf.CeilToInt(960f / Mathf.Max(1f, l.spacing));
         while (chain.Count >= Mathf.Max(1, most))
@@ -607,6 +627,120 @@ public sealed class HitMarkerHUD : MonoBehaviour
         }
     }
 
+    // A hit in the Modern look, as the addon's bo6_hit and bo6_kill messages set its marker: strength and size back to
+    // full, the arms back on their place for the hold, the shake back to full, white or a kill's red, a fresh turn, the
+    // head arms for a headshot, a hip shot when the sights weren't up (never a kill, as its kill message says) and the
+    // side picture. Every hit overwrites the last, a kill too, as there. A hit that did nothing shows nothing: the addon
+    // has no marker for it (its hook leaves when the damage is 0).
+    private void TriggerModern(HitMarkerKind next, bool flesh, bool burn)
+    {
+        if (next == HitMarkerKind.Blocked) return;
+        var m = modern;
+        bool fresh = style != HitMarkerStyle.Modern || !modernRoot.gameObject.activeSelf, kill = IsKill(next);
+        root.gameObject.SetActive(false);
+        cleanRoot.gameObject.SetActive(false);
+        style = HitMarkerStyle.Modern;
+        kind = next; age = 0f;
+        lifetime = Mathf.Log(1f / Mathf.Clamp(m.lifeEnd, .0001f, .99f)) / Mathf.Max(.01f, m.lifeRate);
+        // The Lua eases scale_rate every frame, shown or not: after a pause it has long reached where the last hit sent
+        // it (its first value is the aimed one).
+        if (fresh || modernRate < 0f)
+        {
+            modernRate = ModernRate(modernHip);
+            shakeAt = Vector2.zero;
+        }
+        modernHip = !kill && !Aimed();
+        modernHead = next == HitMarkerKind.Head || next == HitMarkerKind.HeadKill;
+        modernColor = kill ? m.killColor : m.hitColor;
+        modernFlesh = flesh;
+        modernBurn = burn;
+        // LuaJIT's math.random(m, n) is floor(r·(n − m + 1)) + m: for ±2.5 one of -2.5, -1.5 … 2.5, for ±5 one of -5 … 5.
+        float most = Mathf.Max(0f, kill ? m.turnKill : m.turnHit);
+        modernTurn = most > 0f ? Mathf.Min(most, Mathf.Floor(Random.value * (2f * most + 1f)) - most) : 0f;
+        shakeLeft = 1f;
+        for (int i = 0; i < 4; i++) modernArms[i].texture = modernHead ? headArms[i] : bodyArms[i];
+        modernRoot.gameObject.SetActive(true);
+        StepModern(0f);
+    }
+
+    // The Lua's scale_rate for a hit from the hip or aimed (px).
+    private float ModernRate(bool hip) => (hip ? modern.rateHip : modern.rateAim) * modern.screenScale * modern.markSize;
+
+    // Whether this PC's player had the sights up, or coming up, at the hit: the Lua's KeyDown(IN_ATTACK2).
+    private bool Aimed()
+    {
+        var local = PlayerRoster.Local;
+        if (local != aimOwner)
+        {
+            aimOwner = local;
+            aimGun = local != null ? local.GetComponentInChildren<WeaponController>() : null;
+        }
+        return aimGun != null && aimGun.isActiveAndEnabled && aimGun.EquippedData != null && aimGun.AimBlend > 0f;
+    }
+
+    // One frame of the Modern marker, as DrawHitMarker draws it: scale_rate easing to the hit's place, the shake, scale
+    // held for the hold and then falling, strength and size falling from the hit; the side picture (prop for a hit on
+    // something not of flesh, else the flame for fire) at the lower right, the four arms over it, each turned about its
+    // own middle. Put away once its strength is all but gone.
+    private void StepModern(float dt)
+    {
+        var m = modern;
+        age += dt;
+        float life = Mathf.Exp(-Mathf.Max(0f, m.lifeRate) * age);
+        if (life < m.lifeEnd)
+        {
+            modernRoot.gameObject.SetActive(false);
+            return;
+        }
+        float unit = m.screenScale * m.markSize;
+        modernRate = Mathf.Lerp(modernRate, ModernRate(modernHip), 1f - Mathf.Exp(-Mathf.Max(0f, m.rateEase) * dt));
+        float held = age < m.holdSeconds ? 1f : Mathf.Exp(-Mathf.Max(0f, m.scaleFall) * (age - m.holdSeconds));
+        float size = (m.sizeBase + m.sizeGrow * Mathf.Exp(-Mathf.Max(0f, m.sizeRate) * age)) * unit;
+        float d = m.scale * unit * held - modernRate;
+        StepShake(dt);
+        modernRoot.anchoredPosition = AimPoint() + shakeAt;
+        var turn = Quaternion.Euler(0f, 0f, modernTurn);
+        var icon = !modernFlesh ? propPicture : modernBurn ? burnPicture : null;
+        modernIcon.enabled = icon != null;
+        if (icon != null)
+        {
+            var rect = modernIcon.rectTransform;
+            // The Lua's (x − scale + scale_rate + size, y − scale + scale_rate + size), its y turned up.
+            rect.anchoredPosition = new Vector2(size - d, d - size);
+            rect.sizeDelta = Vector2.one * (size / Mathf.Max(.01f, m.iconShare));
+            rect.localRotation = turn;
+            modernIcon.texture = icon;
+            modernIcon.color = KitStyle.With(m.iconColor, m.iconColor.a * life);
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            var arm = modernArms[i];
+            var rect = arm.rectTransform;
+            rect.anchoredPosition = ArmSides[i] * d;
+            rect.sizeDelta = new Vector2(size, size);
+            rect.localRotation = turn;
+            arm.color = KitStyle.With(modernColor, modernColor.a * life);
+        }
+    }
+
+    // The Modern marker's shake: back to full at every hit and running down evenly as the Lua's does. The Lua jumps to a
+    // new random offset every frame, leaning up and left (random − .8); here a smooth noise of at most Shake Hz leans the
+    // same way, and the marker follows it softly, so nothing flickers at the frame rate.
+    private void StepShake(float dt)
+    {
+        var m = modern;
+        shakeClock += dt;
+        shakeLeft = Mathf.MoveTowards(shakeLeft, 0f, dt * Mathf.Max(0f, m.shakeDrop));
+        Vector2 target = Vector2.zero;
+        if (shakeLeft > 0f)
+        {
+            float t = shakeClock * Mathf.Max(0f, m.shakeHz);
+            // Its y grows down the screen, ours up.
+            target = shakeLeft * m.shake * new Vector2(Mathf.PerlinNoise(t, 3.7f) - m.shakeBias, m.shakeBias - Mathf.PerlinNoise(11.3f, t));
+        }
+        shakeAt = Vector2.Lerp(shakeAt, target, 1f - Mathf.Exp(-Mathf.Max(0f, m.shakeFollow) * dt));
+    }
+
     /// <summary>Screen position of the steady aim as seen through the punched camera; centre when there is no punch.</summary>
     private Vector2 AimPoint()
     {
@@ -624,28 +758,20 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private void Layout(GunFeelSettings settings)
     {
         bool kill = IsKill(kind), head = kind == HitMarkerKind.Head || kind == HitMarkerKind.HeadKill, blocked = kind == HitMarkerKind.Blocked;
-        // The Black Ops 6 shake and turn move the whole marker about the aim point (both nothing while switched off).
-        root.anchoredPosition = AimPoint() + shakeAt;
-        root.localRotation = Quaternion.Euler(0f, 0f, turn);
+        root.anchoredPosition = AimPoint();
         // Hold wide, slide the ticks in, one faded frame at the shrunk size, gone. A headshot runs it faster (pace).
         float frame = age * pace * settings.markerFrameRate;
         int hold = settings.markerHoldFrames, shrinkFrames = settings.markerShrinkFrames;
         float shrink = shrinkFrames > 0 ? Mathf.Clamp01((frame - hold) / shrinkFrames) : frame >= hold ? 1f : 0f;
         float alpha = frame >= hold + shrinkFrames ? settings.markerFadeAlpha : 1f;
-        // Black Ops 6's fade in place of the faded last frame.
-        if (bo6Fade) alpha = Bo6Alpha();
         // A little bigger at first, popping back, so every hit of a burst reads as its own; a headshot pops harder.
-        // Black Ops 6's pop takes its place, and swells the width with it as the addon's whole arm picture grows.
         float popBy = kind == HitMarkerKind.Head ? settings.headPop : settings.markerPop;
-        bool bigPop = bo6Pop && !blocked;
-        float pop = bigPop ? Bo6Pop() : 1f + popBy * (1f - Smooth(Mathf.Clamp01(age / settings.markerPopSeconds)));
+        float pop = 1f + popBy * (1f - Smooth(Mathf.Clamp01(age / settings.markerPopSeconds)));
         // Body and head hits share one shape; a headshot is gold and a little bolder, and the damage sets the size.
         bool bold = head && !kill;
         float length = settings.markerLength * (kill ? 1.45f : blocked ? .8f : bold ? settings.headLength : 1f) * scale * pop;
-        float thickness = settings.markerThickness * (kill ? 1.5f : blocked ? .75f : bold ? settings.headThickness : 1f) * (bigPop ? pop : 1f);
-        // Black Ops 6's hold, then spread, in place of the slide in: from where the ticks would have slid to.
-        float gap = bo6Spread ? settings.markerShrunkGap * pop + Bo6Spread()
-            : Mathf.Lerp(settings.markerGap, settings.markerShrunkGap, Smooth(shrink)) * pop;
+        float thickness = settings.markerThickness * (kill ? 1.5f : blocked ? .75f : bold ? settings.headThickness : 1f);
+        float gap = Mathf.Lerp(settings.markerGap, settings.markerShrunkGap, Smooth(shrink)) * pop;
         Color color = kill ? settings.killColor : head ? settings.headHitColor : blocked ? settings.blockedColor : settings.bodyHitColor;
         if (!blocked) color = Color.Lerp(Color.white, color, Mathf.Clamp01(age / .05f)); // white-hot first frame
         color.a *= alpha;
@@ -656,32 +782,21 @@ public sealed class HitMarkerHUD : MonoBehaviour
         Color near = color, far = color;
         near.a *= settings.piercedTailAlpha;
         far.a *= settings.piercedTailAlpha * .42f;
-        // Black Ops 6's headshot arm: each tick split in two from its outer end (head kills too).
-        bool twin = bo6Twin && head;
         for (int i = 0; i < 4; i++)
         {
             float angle = 45f + 90f * i;
-            Vector2 direction = Dir(angle);
-            tickTwins[i].enabled = twin;
-            if (twin)
-            {
-                TwinLine(angle, gap, length, 1f, out Vector2 one, out float oneTurn);
-                TwinLine(angle, gap, length, -1f, out Vector2 other, out float otherTurn);
-                Place(ticks[i], one, new Vector2(length, thickness), oneTurn, color);
-                Place(tickTwins[i], other, new Vector2(length, thickness), otherTurn, color);
-            }
-            else Place(ticks[i], direction * (gap + length * .5f), new Vector2(length, thickness), angle, color);
+            Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            Place(ticks[i], direction * (gap + length * .5f), new Vector2(length, thickness), angle, color);
             tails[i].enabled = tailEnds[i].enabled = pierced;
             if (!pierced) continue;
             Place(tails[i], direction * (tailStart + nearTail * .5f), new Vector2(nearTail, thickness * .7f), angle, near);
             Place(tailEnds[i], direction * (tailStart + nearTail + farTail * .5f), new Vector2(farTail, thickness * .5f), angle, far);
         }
 
-        // The kill ring is the look's own, on the look's own span however long the Black Ops 6 fade keeps the ticks.
-        ring.enabled = kill && age < baseLifetime;
-        if (ring.enabled)
+        ring.enabled = kill;
+        if (kill)
         {
-            float wave = Mathf.Clamp01(age / baseLifetime);
+            float wave = Mathf.Clamp01(age / lifetime);
             float size = Mathf.Lerp(gap * 2f, (settings.markerGap + length) * 2.8f, 1f - Mathf.Pow(1f - wave, 2f));
             ring.rectTransform.sizeDelta = new Vector2(size, size);
             Color ringColor = settings.killColor;
@@ -689,101 +804,6 @@ public sealed class HitMarkerHUD : MonoBehaviour
             ring.color = ringColor;
         }
     }
-
-    // The Black Ops 6 switches for this hit (read at each hit, as the look is) and what the hit itself sets off: a fresh
-    // turn, the shake back to full, and whether the lines stand at the hip spread. A hit that did nothing (Blocked) keeps
-    // the look's quiet: no pop, turn or shake, as it has no pop of its own.
-    private void TakeBo6(GameSettings game, HitMarkerKind next, bool wasShowing)
-    {
-        bool kill = IsKill(next), blocked = next == HitMarkerKind.Blocked;
-        bo6Fade = game.hitMarkerFade; bo6Pop = game.hitMarkerPop; bo6Spread = game.hitMarkerSpread;
-        bo6Turn = game.hitMarkerTurn; bo6Twin = game.hitMarkerTwin; bo6Shake = game.hitMarkerShake;
-        // A whole-degree step up from -most, as LuaJIT's math.random(m, n) is floor(r·(n − m + 1)) + m: for ±2.5 one of
-        // -2.5, -1.5 … 2.5, for ±5 one of -5 … 5.
-        float most = Mathf.Max(0f, kill ? bo6.turnKill : bo6.turnHit);
-        turn = bo6Turn && !blocked && most > 0f ? Mathf.Min(most, Mathf.Floor(Random.value * (2f * most + 1f)) - most) : 0f;
-        bo6Hip = !kill || bo6.killHip > 0f;
-        // The hip place eases from where it was while a marker shows (the addon eases it every frame); a fresh marker
-        // starts at it, and still.
-        if (!wasShowing)
-        {
-            hipNow = HipTarget();
-            shakeAt = Vector2.zero;
-        }
-        if (bo6Shake && !blocked) shakeLeft = 1f;
-    }
-
-    // Where the lines start out from the aim point (px on this canvas) under the Black Ops 6 spread switch: how far the
-    // crosshair's lines open for the gun in hand (WeaponController.UpdateCrosshair: its spread, and a shotgun's pellet
-    // circle), down to nothing as the sights come up, so the marker sits on the aim point aimed and around it from the
-    // hip, as the addon's two places do (its fixed 21.7 px from the hip made the gun's own).
-    private float HipTarget()
-    {
-        if (!bo6Spread || !bo6Hip || bo6.hipScale <= 0f) return 0f;
-        var local = PlayerRoster.Local;
-        if (local != spreadOwner)
-        {
-            spreadOwner = local;
-            spreadGun = local != null ? local.GetComponentInChildren<WeaponController>() : null;
-        }
-        var gun = spreadGun != null && spreadGun.isActiveAndEnabled ? spreadGun : null;
-        var data = gun != null ? gun.EquippedData : null;
-        var view = Camera.main;
-        if (data == null || view == null) return 0f;
-        float degrees = gun.CurrentSpread + (data.Pellets > 1 ? data.PelletCone(gun.AimBlend, gun.ChokeShare) : 0f);
-        float perTangent = ((RectTransform)transform).rect.height * .5f / Mathf.Tan(view.fieldOfView * .5f * Mathf.Deg2Rad);
-        return Mathf.Tan(Mathf.Clamp(degrees, 0f, 60f) * Mathf.Deg2Rad) * perTangent * (1f - Mathf.Clamp01(gun.AimBlend)) * bo6.hipScale;
-    }
-
-    // The Black Ops 6 parts that move on their own, each frame a marker shows: the hip place easing to the gun's spread
-    // (the addon's scale_rate Lerp), and the shake. The addon jumps the marker to a new random offset every frame, a
-    // flicker at the frame rate; here its strength runs down evenly as the addon's does, a smooth noise of at most
-    // Shake Hz stands in for the random numbers, and the marker follows it softly (the user's rule since 2026-11-14:
-    // nothing blinks or jitters, anything that moves by itself is smooth and slow).
-    private void StepBo6(float dt)
-    {
-        hipNow = Mathf.Lerp(hipNow, HipTarget(), 1f - Mathf.Exp(-Mathf.Max(0f, bo6.hipRate) * dt));
-        shakeClock += dt;
-        shakeLeft = bo6.shakeSeconds > 0f ? Mathf.MoveTowards(shakeLeft, 0f, dt / bo6.shakeSeconds) : 0f;
-        Vector2 target = Vector2.zero;
-        if (bo6Shake && shakeLeft > 0f)
-        {
-            float t = shakeClock * Mathf.Max(0f, bo6.shakeHz);
-            // Up and left, as the addon leans: its y grows down the screen, ours up.
-            target = shakeLeft * bo6.shake * new Vector2(Mathf.PerlinNoise(t, 3.7f) - bo6.shakeBias, bo6.shakeBias - Mathf.PerlinNoise(11.3f, t));
-        }
-        shakeAt = Vector2.Lerp(shakeAt, target, 1f - Mathf.Exp(-Mathf.Max(0f, bo6.shakeFollow) * dt));
-    }
-
-    // Black Ops 6's strength for the showing marker: full at the hit, e^-rate a second after.
-    private float Bo6Alpha() => Mathf.Exp(-Mathf.Max(0f, bo6.fadeRate) * age);
-
-    // How long the Black Ops 6 fade lasts: until it is under Fade End; with no fade, the look's own span.
-    private float Bo6Lifetime() =>
-        bo6.fadeRate > 0f ? Mathf.Log(1f / Mathf.Clamp(bo6.fadeEnd, .0001f, .99f)) / bo6.fadeRate : baseLifetime;
-
-    // Black Ops 6's size: 1 + Pop at the hit, shrinking back.
-    private float Bo6Pop() => 1f + bo6.pop * Mathf.Exp(-Mathf.Max(0f, bo6.popRate) * age);
-
-    // How far past the look's resting gap the lines stand under the Black Ops 6 spread: the hip place, and once the hold
-    // is over the move outward.
-    private float Bo6Spread()
-    {
-        float after = age - bo6.holdSeconds;
-        return hipNow + (after > 0f ? bo6.spreadOut * (1f - Mathf.Exp(-Mathf.Max(0f, bo6.spreadRate) * after)) : 0f);
-    }
-
-    // One of a headshot's two lines under the Black Ops 6 twin switch: the arm's line turned Twin Turn degrees about a point
-    // Twin Apart / 2 of its length beside its outer end, toward side (±1), so the pair start close outside and open toward
-    // the aim point, as the addon's head pictures draw them. inner: the arm's inner end's distance from the aim point.
-    private void TwinLine(float angle, float inner, float length, float side, out Vector2 middle, out float turned)
-    {
-        Vector2 outer = Dir(angle) * (inner + length) + Dir(angle + 90f) * (side * bo6.twinApart * length * .5f);
-        turned = angle - side * bo6.twinTurn;
-        middle = outer - Dir(turned) * (length * .5f);
-    }
-
-    private static Vector2 Dir(float degrees) => new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad));
 
     private float CleanHold() => IsKill(kind) ? look.killHoldSeconds : look.holdSeconds;
     private float CleanFade() => IsKill(kind) ? look.killFadeSeconds : look.fadeSeconds;
@@ -795,16 +815,11 @@ public sealed class HitMarkerHUD : MonoBehaviour
     private void LayoutClean(GunFeelSettings settings)
     {
         bool kill = IsKill(kind), head = kind == HitMarkerKind.Head || kind == HitMarkerKind.HeadKill, blocked = kind == HitMarkerKind.Blocked;
-        // The Black Ops 6 shake and turn move the whole marker about the aim point (both nothing while switched off).
-        cleanRoot.anchoredPosition = AimPoint() + shakeAt;
-        cleanRoot.localRotation = Quaternion.Euler(0f, 0f, turn);
+        cleanRoot.anchoredPosition = AimPoint();
         float hold = CleanHold(), fadeTime = CleanFade(), popTime = Mathf.Max(.01f, look.popSeconds);
         float popBy = blocked ? 0f : kill ? look.killPop : head ? look.headPop : look.pop;
         float settle = 1f - Mathf.Clamp01(age / popTime);
-        // Black Ops 6's pop takes the place of the first snap (a headshot's second still follows), and swells the width
-        // with it as the addon's whole arm picture grows.
-        bool bigPop = bo6Pop && !blocked;
-        float pop = bigPop ? Bo6Pop() : 1f + popBy * settle * settle * settle;
+        float pop = 1f + popBy * settle * settle * settle;
         if (head && look.headPopAgain > 0f && age >= look.headPopAgainAt)
         {
             float again = 1f - Mathf.Clamp01((age - look.headPopAgainAt) / popTime);
@@ -812,16 +827,8 @@ public sealed class HitMarkerHUD : MonoBehaviour
         }
         float fade = fadeTime > 0f ? Mathf.Clamp01((age - hold) / fadeTime) : age >= hold ? 1f : 0f;
         float alpha = 1f - Smooth(fade), drift = look.drift * (1f - (1f - fade) * (1f - fade));
-        // Black Ops 6's fade in place of the hold and fade, the drift going with how far it has faded.
-        if (bo6Fade)
-        {
-            alpha = Bo6Alpha();
-            drift = look.drift * (1f - alpha * alpha);
-        }
-        // Black Ops 6's hold, then spread, in place of the drift.
-        if (bo6Spread) drift = Bo6Spread();
         float length = look.length * (kill ? look.killLength : blocked ? look.blockedLength : head ? look.headLength : 1f) * scale * pop;
-        float thickness = look.thickness * (kill ? look.killThickness : blocked ? look.blockedThickness : 1f) * (bigPop ? Bo6Pop() : 1f);
+        float thickness = look.thickness * (kill ? look.killThickness : blocked ? look.blockedThickness : 1f);
         if (head && look.headThickness > 1f)
             thickness *= Mathf.Lerp(look.headThickness, 1f, Smooth(Mathf.Clamp01((age - look.flashSeconds) / popTime)));
         float gap = look.gap * pop + drift;
@@ -838,35 +845,15 @@ public sealed class HitMarkerHUD : MonoBehaviour
         Color near = color, far = color;
         near.a *= settings.piercedTailAlpha;
         far.a *= settings.piercedTailAlpha * .42f;
-        // Black Ops 6's headshot arm: each line split in two from its outer end (head kills too), each with its own edge.
-        bool twin = bo6Twin && head;
-        var lineSize = new Vector2(length, thickness * span);
-        var edgeSize = new Vector2(length + edgeWidth * 2f, (thickness + edgeWidth * 2f) * span);
         for (int i = 0; i < 4; i++)
         {
             float angle = 45f + 90f * i;
-            Vector2 direction = Dir(angle);
+            Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            Vector2 middle = direction * (gap + length * .5f);
             cleanEdges[i].enabled = edgeWidth > 0f;
-            cleanTwins[i].enabled = twin;
-            cleanTwinEdges[i].enabled = twin && edgeWidth > 0f;
-            if (twin)
-            {
-                TwinLine(angle, gap, length, 1f, out Vector2 one, out float oneTurn);
-                TwinLine(angle, gap, length, -1f, out Vector2 other, out float otherTurn);
-                if (edgeWidth > 0f)
-                {
-                    Place(cleanEdges[i], one, edgeSize, oneTurn, edge);
-                    Place(cleanTwinEdges[i], other, edgeSize, otherTurn, edge);
-                }
-                Place(cleanLines[i], one, lineSize, oneTurn, color);
-                Place(cleanTwins[i], other, lineSize, otherTurn, color);
-            }
-            else
-            {
-                Vector2 middle = direction * (gap + length * .5f);
-                if (edgeWidth > 0f) Place(cleanEdges[i], middle, edgeSize, angle, edge);
-                Place(cleanLines[i], middle, lineSize, angle, color);
-            }
+            if (edgeWidth > 0f)
+                Place(cleanEdges[i], middle, new Vector2(length + edgeWidth * 2f, (thickness + edgeWidth * 2f) * span), angle, edge);
+            Place(cleanLines[i], middle, new Vector2(length, thickness * span), angle, color);
             cleanTails[i].enabled = cleanTailEnds[i].enabled = pierced;
             if (!pierced) continue;
             Place(cleanTails[i], direction * (tailStart + nearTail * .5f), new Vector2(nearTail, thickness * .7f * span), angle, near);

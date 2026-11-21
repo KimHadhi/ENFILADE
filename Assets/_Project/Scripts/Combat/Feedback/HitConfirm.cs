@@ -15,9 +15,10 @@ using UnityEngine;
 /// hitmarkfail, breakarmorr), so they are not stacked as the old dry tick under a dink was. They come from the HitConfirm
 /// sound bank (Art/Audio/HitConfirm/&lt;key&gt;; volume and pitch in Sounds.csv), so a sound is changed by swapping files;
 /// the earlier ones wait in BodyOld, HeadPing, KillOld and BreakOld. While the bank has no kill a kill falls back to
-/// GunFeel's kill sounds. While Black Ops 6's sounds are switched on (Settings → HUD, the default since 2026-11-22) hits
-/// and kills play that addon's three layered sounds in place of these (<see cref="PlayBo6"/>); a hit that did nothing
-/// and a posture break keep ours, as the addon has none for them. Created on first use during Play.
+/// GunFeel's kill sounds. In the Modern look (Settings → HUD → 히트 마커, the default since 2026-11-22) hits and kills
+/// sound as that look's addon plays them instead (<see cref="PlayModern"/>), and the marker hears whether the frame's hits
+/// struck flesh and whether they were fire, for its prop and flame pictures. A hit that did nothing and a posture break
+/// keep these sounds in every look: the addon has none for them. Created on first use during Play.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitConfirm)]
 public sealed class HitConfirm : MonoBehaviour
@@ -33,6 +34,9 @@ public sealed class HitConfirm : MonoBehaviour
     private static int streak;
     private static float lastKillTime = -99f;
     private int hits, heads, kills, headKills, breaks, pierces, blocked;
+    // This frame's hits on flesh (anything but the targets that sound their own hits, IOwnHitFeedback: the steel targets)
+    // and by fire (KillMarks.Fire), for the Modern look's prop and flame pictures and its prop sound.
+    private int flesh, burns;
     private float share;
     // The picture of this frame's most telling kill (KillIcons.Better).
     private KillIcons.Row killIcon;
@@ -71,6 +75,8 @@ public sealed class HitConfirm : MonoBehaviour
         self.hits++;
         if (report.IsCritical) self.heads++;
         if (report.Hit.Pierced) self.pierces++;
+        if (!(report.Target is IOwnHitFeedback)) self.flesh++;
+        if ((report.Hit.Marks & KillMarks.Fire) != 0) self.burns++;
         if (report.IsKillingBlow)
         {
             self.kills++;
@@ -92,6 +98,7 @@ public sealed class HitConfirm : MonoBehaviour
         var self = Get();
         self.hits++;
         self.heads++;
+        self.flesh++;
         if (pierced) self.pierces++;
         // The whole head went, as all of a living one's health goes to a killing headshot: the marker at its full size.
         self.share += 1f;
@@ -108,6 +115,8 @@ public sealed class HitConfirm : MonoBehaviour
         var self = Get();
         self.hits++;
         self.kills++;
+        self.flesh++;
+        if ((marks & KillMarks.Fire) != 0) self.burns++;
         if ((marks & KillMarks.Headshot) != 0) { self.heads++; self.headKills++; }
         self.share += 1f;
         self.killIcon = KillIcons.Better(self.killIcon, KillIcons.ForKill(marks));
@@ -152,15 +161,17 @@ public sealed class HitConfirm : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         bool head = heads > 0 && heads >= settings.headshotHitShare * hits, kill = kills > 0, headKill = headKills > 0;
+        // A frame on flesh at all is a hit on flesh, as one pellet in a zombie makes it one; fire likewise.
+        bool onFlesh = flesh > 0, fire = burns > 0;
         HitMarkerHUD.Show(kill ? (headKill ? HitMarkerKind.HeadKill : HitMarkerKind.BodyKill) : head ? HitMarkerKind.Head : HitMarkerKind.Body,
-            Mathf.Min(1f, share), pierces > 0);
+            Mathf.Min(1f, share), pierces > 0, onFlesh, fire);
         if (kill)
         {
             Kill(settings, headKill, kills);
             HitMarkerHUD.ShowKill(killIcon);
         }
-        else if (!PlayBo6(false, head)) Play(head ? "Head" : "Body");
-        hits = heads = kills = headKills = pierces = 0;
+        else if (!PlayModern(false, head, onFlesh)) Play(head ? "Head" : "Body");
+        hits = heads = kills = headKills = pierces = flesh = burns = 0;
         share = 0f;
         killIcon = null;
     }
@@ -171,9 +182,9 @@ public sealed class HitConfirm : MonoBehaviour
         float now = Time.unscaledTime;
         streak = now - lastKillTime <= CombatFeedHUD.StreakWindow ? streak + count : count;
         lastKillTime = now;
-        // Black Ops 6's kill sounds when that switch is on: as the addon plays them, without our climb (the streak is
-        // still counted, so switching back climbs from the right kill).
-        if (PlayBo6(true, head)) return;
+        // The Modern look's kill sounds, as its addon plays them: no climb (the streak is still counted, so another look
+        // climbs from the right kill).
+        if (PlayModern(true, head, true)) return;
         float climb = 1f + Mathf.Min(streak - 1, settings.killStreakSteps) * settings.killStreakPitchStep;
         bool played = Play("Kill", climb);
         // A headshot kill rings the head's bright double tick over the kill's own sound, in tune with its climb.
@@ -205,21 +216,21 @@ public sealed class HitConfirm : MonoBehaviour
     }
 
     /// <summary>
-    /// Black Ops 6's hit sounds, the sixth of its switches in Settings → HUD (GameSettings.hitMarkerSounds, on by default;
-    /// the user, 2026-11-22: "히트마커는 다 설정으로 넣어서 적용하고"): the Garry's Mod addon's own files, three at once as
-    /// it plays them, the flesh (a headshot's for a headshot) and its layer under the marker's own sound: Hit.Body +
-    /// Hit.Body.Layer + Hit.Mark_bo6 for a hit, the head's set with Hit.Head.Mark_bo6 for a headshot, Kill.Mark_bo6 or
-    /// Kill.Head.Mark_bo6 for a kill. HitConfirm bank keys BO6/…; their pitch (80–110% on the marker sounds only, as the
-    /// addon's sound scripts set it) and one shared volume in Sounds.csv HitConfirm/BO6/…. False when the bank has none of
-    /// them yet (before the editor imports them), so ours play instead.
+    /// The Modern look's sounds: the Black Ops VI Hitmarker addon's own files (HitConfirm bank, BO6/…), three at once as
+    /// its Lua plays them on a hit (bo6_hit) and a kill (bo6_kill): a headshot Hit.Head.Mark_bo6 + Hit.Head +
+    /// Hit.Head.Layer; a hit Hit.Mark_bo6 (Hit.Mark.Item when it struck no flesh) + Hit.Body + Hit.Body.Layer; a kill
+    /// the flesh pair (the head's for a headshot) + Kill.Mark_bo6 or Kill.Head.Mark_bo6. Pitch 80–110% on the marker
+    /// sounds only, as its sound scripts set it; one shared volume (Sounds.csv HitConfirm/BO6/…). False in any other look,
+    /// or while the bank has none of them yet (before the editor imports them), so ours play.
     /// </summary>
-    private static bool PlayBo6(bool kill, bool head)
+    private static bool PlayModern(bool kill, bool head, bool onFlesh)
     {
-        if (!GameSettings.Current.hitMarkerSounds) return false;
-        string flesh = head ? "BO6/Head" : "BO6/Body";
-        bool played = Play(kill ? (head ? "BO6/HeadKill" : "BO6/Kill") : head ? "BO6/HeadHit" : "BO6/Hit");
-        played |= Play(flesh);
-        played |= Play(flesh + "Layer");
+        if (GameSettings.Current.hitMarkerStyle != HitMarkerStyle.Modern) return false;
+        string mark = kill ? (head ? "BO6/HeadKill" : "BO6/Kill") : head ? "BO6/HeadHit" : onFlesh ? "BO6/Hit" : "BO6/HitItem";
+        string fleshKey = head ? "BO6/Head" : "BO6/Body";
+        bool played = Play(mark);
+        played |= Play(fleshKey);
+        played |= Play(fleshKey + "Layer");
         return played;
     }
 

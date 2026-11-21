@@ -9,7 +9,6 @@ Score.jumpshot,5,공중에서 처치하면 더한다(Jumpshot). 애드온 파일
 Score.slaughter,5,사슬의 3번째 처치(Slaughter)
 Score.warrior,5,4번째 처치(Warrior)
 Score.godSlayer,10,5번째부터 처치마다(God Slayer)
-Score.chainSeconds,4,처치와 처치 사이가 이 초 이내면 한 사슬(애드온 4초)
 Score.perPoint,0.2,"그 밖의 점수(원거리·관통·현상금·암살·패리·특수 처치·타워 층 ...)는 지금까지 주던 점수 × 이 값(처치가 100에서 20이 된 비율이라 처치에 견준 값어치는 그대로)"
 #모양,,"1920x1080 화면, 화면 가운데에서(위가 +). 자리와 크기는 영상을 1080p에서 재어 맞춘 것, 시간은 애드온 코드"
 Look.totalX,162,노란 합계의 오른쪽 끝(영상 x1122)

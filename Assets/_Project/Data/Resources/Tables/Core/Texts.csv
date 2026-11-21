@@ -1,14 +1,6 @@
 ﻿id,ko,en,#어디,ja
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구. 다른 언어를 편집할 때 참고할 수 있다,어디에 나오는지(게임은 이 열을 읽지 않는다),일본어 문구(번역 작업용)
-settings.hud.bo6_header,블랙 옵스 6 히트 마커,Black Ops 6 Hit Marker,설정 창 > HUD > 히트 마커 스위치 일곱 개 위 머리글 (게리 모드 애드온 Black Ops VI Hitmarker. 2026-11-22 사용자: 히트마커는 다 설정으로),
-settings.hud.bo6.fade,서서히 사라짐,Slow Fade,설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 선이 맞을 때마다 다시 진해졌다가 같은 몫씩 흐려져 약 0.9초에 사라짐(끄면 고른 모양의 시간),
-settings.hud.bo6.pop,크게 떴다 줄어듦,Size Pop,설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 선이 1.8배로 떴다가 줄어듦,
-settings.hud.bo6.spread,머물다 벌어짐,"Hold, Then Spread",설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 선이 0.3초 조준점에 붙어 있다가(허리 사격은 총의 퍼짐만큼 바깥에서) 바깥으로 벌어짐,
-settings.hud.bo6.turn,무작위 기울기,Random Tilt,"설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 마커가 명중마다 ±2.5°, 처치는 ±5° 기움",
-settings.hud.bo6.twin,헤드샷 겹선,Headshot Double Lines,설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 헤드샷이면 선마다 두 갈래,
-settings.hud.bo6.sounds,BO6 소리,BO6 Sounds,설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 애드온 소리 세 겹(살·살 위 겹·마커음). 끄면 우리 확인음,
-settings.hud.bo6.shake,흔들림,Shake,설정 창 > HUD > 블랙 옵스 6 히트 마커 행: 맞으면 마커가 부드럽게 조금 흔들림,
-settings.hud.bo6_note,고른 히트 마커 모양 위에 블랙 옵스 6 히트마커(게리 모드 애드온)의 움직임과 소리를 얹습니다. 모두 끄면 고른 모양 그대로입니다.,"Adds the Black Ops 6 hit marker's motion and sounds (from a Garry's Mod addon) to the chosen look. With all of them off, the look plays as it is.",설정 창 > HUD > 블랙 옵스 6 히트 마커 행들 아래 안내,
+settings.hud.hit_markers.modern,모던,Modern,"설정 창 > HUD > 히트 마커 선택지 (기본. 네 갈래가 크게 떴다 줄며 사라지고 0.3초 뒤 바깥으로 벌어진다. 헤드샷은 두 줄 갈래, 처치는 빨강. 게임 이름이 아니라 모양으로 부른다: 2026-11-22 사용자 ""대놓고 블랙 옵스 6 히트마커라 하면 알아 듣겠냐?"")",
 hud.mk.objective,목표,Objective,"HUD Mk II 목표 블록(화면 왼쪽 위)의 작은 머리글: 캠페인이 조용할 때. 대문자로 띄어 쓴다(MkMission). 시끄러울 때는 hud.phase.*",
 hud.mk.mode.auto,AUTO,AUTO,HUD Mk II 탄약 상자 위 무기 이름 뒤의 사격 방식: 연사(MkAmmo),
 hud.mk.mode.burst,BURST,BURST,HUD Mk II 무기 이름 뒤의 사격 방식: 점사(MkAmmo),

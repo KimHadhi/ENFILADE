@@ -6,8 +6,12 @@ using UnityEngine;
 /// <summary>How damage numbers show: none, one running total per target, or one number per hit.</summary>
 public enum DamageNumberMode { Off, Stacked, Each }
 
-/// <summary>How the hit marker looks (HitMarkerHUD): thin lines that pop and fade, or the earlier thick ticks that slide in.</summary>
-public enum HitMarkerStyle { Clean, Bold }
+/// <summary>
+/// How the hit marker looks (HitMarkerHUD): thin lines that pop and fade, the earlier thick ticks that slide in, or
+/// Modern, a Garry's Mod addon's marker drawn as its own code draws it with its own pictures and sounds (the default
+/// since 2026-11-22). New looks go at the end: the saved settings keep the number.
+/// </summary>
+public enum HitMarkerStyle { Clean, Bold, Modern }
 
 /// <summary>How the weapon slots look (WeaponSlotsHUD): a column of leaning plates at the HUD's right (A), or a row of cards
 /// over the ammo (C).</summary>
@@ -92,23 +96,12 @@ public sealed class GameSettings
     public bool hudBoards;
     [Tooltip("Damage numbers: none, one running total per target (default), or one number per hit (DamagePopupManager).")]
     public DamageNumberMode damageNumbers = DamageNumberMode.Stacked;
-    [Tooltip("Hit marker look: Clean (four thin lines that pop out and fade, after PAYDAY 3, numbers in HitMarkers.csv) or " +
-        "Bold (the earlier thick outlined ticks that hold wide and slide in, numbers in GunFeel). The headshot's star, sparks " +
-        "and flare and the posture break's burst show with either.")]
-    public HitMarkerStyle hitMarkerStyle = HitMarkerStyle.Clean;
-    /// <summary>
-    /// Black Ops 6's hit marker (the Garry's Mod addon Black Ops VI Hitmarker) as seven switches, each laid over whichever
-    /// look is chosen above and each on by default: the user, 2026-11-22, on the seven things it does that ours did not,
-    /// "히트마커는 다 설정으로 넣어서 적용하고". Numbers in HitMarkers.csv BO6.* (HitMarkerHUD.Bo6Look); the sounds are the
-    /// addon's own files (HitConfirm bank, BO6/…).
-    /// </summary>
-    [Tooltip("Black Ops 6 hit marker switches, each over the chosen look. Fade: the lines fade away by the same share every " +
-        "moment, restarted by every hit, in place of the look's own hold and fade. Pop: they start 1.8 times their size and " +
-        "shrink in. Spread: they sit on the aim point .3 s (from the hip at the gun's spread), then move out. Turn: each marker " +
-        "is turned a little at random, a kill more. Twin: a headshot's lines are split in two. Sounds: the addon's layered " +
-        "sounds in place of ours. Shake: the marker shakes a little, smoothly.")]
-    public bool hitMarkerFade = true, hitMarkerPop = true, hitMarkerSpread = true, hitMarkerTurn = true, hitMarkerTwin = true,
-        hitMarkerSounds = true, hitMarkerShake = true;
+    [Tooltip("Hit marker look: Modern (the default: the Black Ops VI Hitmarker addon's four arms, headshot arms, prop and " +
+        "fire icons and layered sounds, as its Lua draws them; HitMarkers.csv Modern.*), Clean (four thin lines that pop out " +
+        "and fade, after PAYDAY 3, numbers in HitMarkers.csv) or Bold (the earlier thick outlined ticks that hold wide and " +
+        "slide in, numbers in GunFeel). Clean and Bold add the headshot's star, sparks and flare; the posture break's burst " +
+        "shows with all three.")]
+    public HitMarkerStyle hitMarkerStyle = HitMarkerStyle.Modern;
     [Tooltip("Weapon slots: Plates (a column of dark plates with cut corners at the HUD's right; the one in hand kicks out, " +
         "grows and shows its name; the default) or Cards (a row of small cards over the ammo; the one in hand turns into a " +
         "wide light card). Numbers in WeaponSlots.csv.")]
@@ -181,6 +174,8 @@ public sealed class GameSettings
     public List<string> playerColourSlots = new List<string>();
     [Tooltip("Set once the saved nickname and room title were checked for the Windows user name older versions put there (ForgetUserName).")]
     public bool userNameChecked;
+    [Tooltip("Set once a saved file was moved onto the Modern hit marker (TakeModernMarker).")]
+    public bool modernMarkerTaken;
     [Tooltip("Scene name of the map last chosen on the main menu (Data/Resources/Tables/Maps/Maps.csv).")]
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
@@ -262,9 +257,6 @@ public sealed class GameSettings
             case SettingsGroup.Hud:
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;
                 s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
-                s.hitMarkerFade = d.hitMarkerFade; s.hitMarkerPop = d.hitMarkerPop; s.hitMarkerSpread = d.hitMarkerSpread;
-                s.hitMarkerTurn = d.hitMarkerTurn; s.hitMarkerTwin = d.hitMarkerTwin; s.hitMarkerSounds = d.hitMarkerSounds;
-                s.hitMarkerShake = d.hitMarkerShake;
                 s.weaponSlots = d.weaponSlots;
                 s.deathScreen = d.deathScreen;
                 s.objectiveAlert = d.objectiveAlert;
@@ -296,8 +288,19 @@ public sealed class GameSettings
             return read;
         }) ?? GameSettingsPreset.Copy();
         settings.ForgetUserName();
+        settings.TakeModernMarker();
         settings.Clamp();
         return settings;
+    }
+
+    // Once per saved file: the hit marker becomes Modern, the addon's marker the user asked to be applied (2026-11-22:
+    // "히트마커는 다 설정으로 넣어서 적용하고", then "원본 그대로 implement"). A file saved before it would otherwise keep
+    // the look it had and never show it. Picked again after this, any look stays.
+    private void TakeModernMarker()
+    {
+        if (modernMarkerTaken) return;
+        modernMarkerTaken = true;
+        hitMarkerStyle = HitMarkerStyle.Modern;
     }
 
     // Once per saved file: the Windows user name the game used to fill in by itself is taken back out. The profile window
@@ -331,7 +334,7 @@ public sealed class GameSettings
         hudTilt = Mathf.Clamp(hudTilt, 0f, MaxHudTilt);
         hudAngle = Mathf.Clamp(hudAngle, 0f, MaxHudAngle);
         if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
-        if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Bold) hitMarkerStyle = HitMarkerStyle.Clean;
+        if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Modern) hitMarkerStyle = HitMarkerStyle.Modern;
         if (weaponSlots < WeaponSlotLook.Plates || weaponSlots > WeaponSlotLook.Cards) weaponSlots = WeaponSlotLook.Plates;
         if (deathScreen < DeathScreenMode.Full || deathScreen > DeathScreenMode.Off) deathScreen = DeathScreenMode.Full;
         if (objectiveAlert < ObjectiveAlertLook.Card || objectiveAlert > ObjectiveAlertLook.Ribbon) objectiveAlert = ObjectiveAlertLook.Card;
