@@ -57,6 +57,9 @@ public sealed class MeleeKnife : MonoBehaviour
         cockedFingers = new FingerWays();
     // clock: the draw's own (it is no swing of the timeline's). sinceSwing: since the last attack left, for the chain.
     private float clock, sinceSwing = 99f, blendLeft, guardClock, block;
+    // How much of the arm the knife's own move has (its draw, a wind-up, a swing): taken and handed back over the hands'
+    // own time between holds (Player.csv Hands.blendTime, read once), as the hands change any hold.
+    private float acting, handsBlend = .15f;
     private bool hasLast, wasOut, backNext;
 
     /// <summary>The player's melee knife, made on them if it is not there yet (ExecutionKnife asks).</summary>
@@ -206,8 +209,11 @@ public sealed class MeleeKnife : MonoBehaviour
     /// <summary>
     /// The right arm as the knife has it now: the swing's clip at the timeline's clip time (eased from the last pose),
     /// else the guard, drawn back to the coming swing's first frame through a wind-up and on to the heavy one's as a
-    /// charge grows, trembling; and how much of the arm it takes (the fists' block and parry take it back, and running
-    /// forward lets the run clip swing it, as the fists do). False while the knife is not out.
+    /// charge grows, trembling; and how much of the arm it takes. The knife's own moves (the draw, a wind-up, a swing) have
+    /// all of it whatever the legs do; only its guard at rest lets a run forward swing the arm, as the fists' guard does
+    /// (the user, 2026-11-21: "칼 드는 모션이 찰져서 … 움직이면서 칼 들면 칼 드는 팔 모션이 바로 걷기나 달리기에 뺏겨서 못
+    /// 보잖아": the draw went by the fists' rule, which hands the arm to the run, so a draw on the move never showed). The
+    /// fists' block and parry take the arm back from all of it. False while the knife is not out.
     /// </summary>
     internal bool Current(out KnifeSwing.Key key, out float weight, out ClassKnives.Knife inHand, FingerWays fingers = null)
     {
@@ -254,7 +260,7 @@ public sealed class MeleeKnife : MonoBehaviour
         fingers?.CopyFrom(sampledFingers);
         hasLast = true;
         float up = hands != null ? hands.FistsWeight : 1f;
-        weight = Mathf.Clamp01(up * (1f - block));
+        weight = Mathf.Clamp01(Mathf.Max(up, acting) * (1f - block));
         return true;
     }
 
@@ -300,6 +306,7 @@ public sealed class MeleeKnife : MonoBehaviour
     {
         movement = GetComponent<PlayerMovement>();
         hands = GetComponent<PlayerBodyHands>();
+        handsBlend = Mathf.Max(.01f, GameTables.Number(PlayerMovement.TableName, "Hands", "blendTime", .15f));
     }
 
     private void OnDisable()
@@ -325,6 +332,8 @@ public sealed class MeleeKnife : MonoBehaviour
         {
             swing = Swing.None;
             hasLast = false;
+            // The next draw takes the arm from wherever it then is, eased, not at once from what this one left.
+            acting = 0f;
             Sound(KnifeNow().SheathSound);
         }
         wasOut = outNow;
@@ -345,6 +354,10 @@ public sealed class MeleeKnife : MonoBehaviour
         }
         bool blocking = melee.IsGuarding || melee.IsParryActive || melee.IsGuardBreaking;
         block = Mathf.MoveTowards(block, blocking ? 1f : 0f, Time.unscaledDeltaTime / BlockBlend);
+        // The draw, a wind-up and a swing are the knife's own moves: the arm is theirs while they last, and goes back to
+        // whatever the fists' rule gives it (a run's swing, the guard) over the hands' time once they end.
+        bool moving = swing != Swing.None || melee.WindShare > 0f || melee.IsSwinging;
+        acting = Mathf.MoveTowards(acting, moving ? 1f : 0f, dt / handsBlend);
     }
 
     // The arm takes up this clip from where it is; null (and nothing changed) when the knife has no table for it.
