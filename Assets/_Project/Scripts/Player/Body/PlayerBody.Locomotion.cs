@@ -194,7 +194,7 @@ public sealed partial class PlayerBody
         }
         foreach (var way in set.Ways)
         {
-            way.Cycles.Sort((a, b) => a.Gait.Speed.CompareTo(b.Gait.Speed));
+            way.Cycles.Sort((a, b) => a.Rank != b.Rank ? a.Rank.CompareTo(b.Rank) : a.Gait.Speed.CompareTo(b.Gait.Speed));
             // The way is where its cycles go together: the mean of their measured ways.
             Vector2 sum = Vector2.zero;
             foreach (var cycle in way.Cycles) sum += cycle.Gait.Way;
@@ -220,7 +220,22 @@ public sealed partial class PlayerBody
         if (!byName.TryGetValue(clipName, out var channel) || !channel.Synced) return null;
         if (channel.Gait == null && channel.Playable.IsValid())
             channel.Gait = GaitClips.For(loadedModel, channel.Playable.GetAnimationClip(), animator);
+        if (channel.Rank < 0f) channel.Rank = RankOf(clipName, channel);
         return channel;
+    }
+
+    // Which gait a cycle is, by the word its name has (BIPER names every cycle so: Walk_Lfoot, StrafeJog_FL, R_Run,
+    // R_AimJog, CrouchWalk_F; a cycle polished in Blender keeps its name after "enf_"). A cycle named otherwise (a mod's)
+    // takes the gait whose speed its feet are nearest, straight ahead.
+    private float RankOf(string clipName, Channel cycle)
+    {
+        string name = clipName ?? "";
+        if (name.IndexOf("Sprint", System.StringComparison.OrdinalIgnoreCase) >= 0) return 3f;
+        if (name.IndexOf("Run", System.StringComparison.OrdinalIgnoreCase) >= 0) return 2f;
+        if (name.IndexOf("Jog", System.StringComparison.OrdinalIgnoreCase) >= 0) return 1f;
+        if (name.IndexOf("Walk", System.StringComparison.OrdinalIgnoreCase) >= 0) return 0f;
+        var gait = player != null && player.Actions != null ? player.Actions.Gait : null;
+        return gait != null && cycle.Gait != null ? Mathf.Round(gait.PlaceOf(cycle.Gait.Speed * GaitScale, 0f)) : 0f;
     }
 
     // The gun kind's sets in the hands now, by the ammunition the gun takes (BodyMoves.csv ammo; "*" for the rest), or
@@ -273,6 +288,13 @@ public sealed partial class PlayerBody
             legs = Mathf.DeltaAngle(0f, heading - turn);
             if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
         }
+        // The gait's own cycles play (MovementGait.Position), fitted to the speed by the stride (Pace), never a gait faster
+        // than the speed reached yet; crouched, the crouched walk. Until 0.9.282 the cycles were picked by speed alone,
+        // against what their feet carry on this body: our bodies' feet carry 20-35% less than the clips' own travel, so each
+        // gait played half of the next one's clip (the jog half the run, the run a quarter of the sprint), and the run and
+        // the sprint looked alike (the user, 2026-11-21: "달리기랑 전력 질주랑 걍 모션 똑같은 거 같은데").
+        var gaitNow = player.Actions != null ? player.Actions.Gait : null;
+        gaitPlace = crouched || gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, Mathf.Abs(heading)));
         float moving = MixSets(stance, legs, speed, scale);
         if (!crouched) Bank();
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
@@ -283,6 +305,9 @@ public sealed partial class PlayerBody
 
     // Below this the travel has no heading: the body stands (m/s).
     private const float StillTravel = .3f;
+
+    // This frame's gait for the cycles (0 walk to 3 sprint): the gait gone, no faster than the speed reached.
+    private float gaitPlace;
 
     // Standing still this frame (Locomotion): the body keeps its place on the ground (PlaceBody, FollowHead).
     private bool keepsPlace;
@@ -328,15 +353,14 @@ public sealed partial class PlayerBody
     }
 
     // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
-    // round to the heading (Reach) and its fastest cycles there reach the speed, played as fast and stretched as long as
-    // they may. Past that the next set down runs on under the same upper body.
+    // round to the heading (Reach) and its cycles reach the gait (a gun's set has no sprint: the plain set sprints under the
+    // gun's upper body). Past that the next set down runs on under the same upper body.
     private float Carries(MoveSet set, float heading, float speed, float scale)
     {
         if (speed < StillTravel) return 1f;
         if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
-        float top = Mathf.Lerp(a.Cycles[a.Cycles.Count - 1].Gait.Speed, b.Cycles[b.Cycles.Count - 1].Gait.Speed, toward)
-            * scale * gaitRate.y * gaitStretch.y;
-        return Reach(set, heading) * (1f - Mathf.InverseLerp(top * .85f, top * 1.1f, speed));
+        float top = Mathf.Lerp(a.Cycles[a.Cycles.Count - 1].Rank, b.Cycles[b.Cycles.Count - 1].Rank, toward);
+        return Reach(set, heading) * (1f - Mathf.InverseLerp(top, top + .5f, gaitPlace));
     }
 
     // Running fast the hips turn toward the way of travel: ahead up to past the side, back beyond, with a margin either way
@@ -427,7 +451,7 @@ public sealed partial class PlayerBody
         {
             float rad = heading * Mathf.Deg2Rad;
             var way = new Vector2(Mathf.Sin(rad), Mathf.Cos(rad));
-            Vector2 first = LadderVelocity(a.Cycles, speed, scale), second = LadderVelocity(b.Cycles, speed, scale);
+            Vector2 first = LadderVelocity(a.Cycles, gaitPlace, scale), second = LadderVelocity(b.Cycles, gaitPlace, scale);
             float x = Cross(first, way), y = Cross(second, way);
             if (Mathf.Abs(x - y) > 1e-4f) share = Mathf.Clamp01(x / (x - y));
         }
@@ -437,36 +461,37 @@ public sealed partial class PlayerBody
         static float Cross(Vector2 p, Vector2 q) => p.x * q.y - p.y * q.x;
     }
 
-    // The two cycles either side of the speed by their measured speeds; below the slowest or above the fastest, that one.
+    // The two cycles either side of this frame's gait (gaitPlace) by their gaits; below the slowest or above the fastest,
+    // that one.
     // Named MixLadder, not Ladder: inside PlayerBody a member called Ladder hides the Ladder fixture type (PlayerBody.LadderFeet).
     private void MixLadder(List<Channel> cycles, float speed, float weight, float scale)
     {
         if (weight <= 0f || cycles.Count == 0) return;
-        Bracket(cycles, speed, scale, out int low, out int high, out float t);
+        Bracket(cycles, gaitPlace, out int low, out int high, out float t);
         MixCycle(cycles[low], weight * (1f - t), scale);
         if (high != low) MixCycle(cycles[high], weight * t, scale);
     }
 
-    private static Vector2 LadderVelocity(List<Channel> cycles, float speed, float scale)
+    private static Vector2 LadderVelocity(List<Channel> cycles, float place, float scale)
     {
-        Bracket(cycles, speed, scale, out int low, out int high, out float t);
+        Bracket(cycles, place, out int low, out int high, out float t);
         return Velocity(cycles[low], scale) * (1f - t) + Velocity(cycles[high], scale) * t;
     }
 
-    private static void Bracket(List<Channel> cycles, float speed, float scale, out int low, out int high, out float t)
+    private static void Bracket(List<Channel> cycles, float place, out int low, out int high, out float t)
     {
         low = high = 0;
         t = 0f;
         int last = cycles.Count - 1;
-        if (last <= 0 || speed <= cycles[0].Gait.Speed * scale) return;
-        if (speed >= cycles[last].Gait.Speed * scale) { low = high = last; return; }
+        if (last <= 0 || place <= cycles[0].Rank) return;
+        if (place >= cycles[last].Rank) { low = high = last; return; }
         for (int i = 0; i < last; i++)
         {
-            float a = cycles[i].Gait.Speed * scale, b = cycles[i + 1].Gait.Speed * scale;
-            if (speed > b) continue;
+            float a = cycles[i].Rank, b = cycles[i + 1].Rank;
+            if (place > b) continue;
             low = i;
             high = i + 1;
-            t = b - a > 1e-3f ? (speed - a) / (b - a) : 1f;
+            t = b - a > 1e-3f ? (place - a) / (b - a) : 1f;
             return;
         }
     }

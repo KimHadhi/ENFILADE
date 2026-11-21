@@ -30,6 +30,8 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     /// <summary>Where they look. It travels here, not through NetworkTransform, whose buffer makes a turn arrive late and trail off.</summary>
     public float Yaw, Pitch;
     public float Lean, RunIntent, FallSpeed, LandImpact, Tuck;
+    /// <summary>Which gait the legs go, 0 walk to 3 sprint (MovementGait.Position): the clips the legs play.</summary>
+    public float Gait;
     /// <summary>The state's own numbers, see MovementMirror.</summary>
     public float Detail, Extent;
     public byte State, LandingTier, HeavyPose, LadderSteps, Vault;

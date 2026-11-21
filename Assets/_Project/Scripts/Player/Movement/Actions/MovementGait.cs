@@ -31,16 +31,18 @@ public sealed class MovementGait
     private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back" };
     private const int Walk = 0, Jog = 1, Run = 2, Sprint = 3, Crouch = 4;
     private static readonly string[] Rows = { "walk", "jog", "run", "sprint", "crouch" };
-    // Read before the table is: the clips' root travel measured on the reference body (0.9.253), the run 0.865 of it (0.9.258).
+    // Read before the table is: what the clips' feet carry the body at, the mean of four characters (0.9.282).
     private static readonly float[,] Fallback =
     {
-        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f }, { 3.21f, 3.95f, 3.28f, 3.55f, 2.98f }, { 4.50f, 4.70f, 4.35f, 4.70f, 4.70f },
-        { 7.16f, 6.99f, 6.89f, 6.39f, 5.42f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f }
+        { 1.27f, 1.23f, 1.25f, 1.21f, 1.43f }, { 2.44f, 3.18f, 2.36f, 2.67f, 2.16f }, { 3.92f, 4.14f, 3.61f, 4.45f, 4.69f },
+        { 5.53f, 5.79f, 5.87f, 5.12f, 5.39f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f }
     };
+    // How long the legs take to go from one gait's clips to the next (s), as walk mode or Shift changes it.
+    private const float GaitChange = .25f;
 
     private readonly PlayerMovement ctx;
     private readonly float[,] rows = new float[5, 5];
-    private float jogShare;
+    private float jogShare, position = 2f;
 
     internal MovementGait(PlayerMovement context)
     {
@@ -52,6 +54,34 @@ public sealed class MovementGait
     /// as Shift has brought it.</summary>
     public float Speed => ctx.Input.WalkMode ? Mathf.Lerp(rows[Walk, 0], rows[Jog, 0], jogShare)
         : Mathf.Lerp(rows[Run, 0], rows[Sprint, 0], ctx.SprintProgress);
+
+    /// <summary>
+    /// Which gait the legs go (0 walk, 1 jog, 2 run, 3 sprint; between while Shift or walk mode changes it): the clips they
+    /// play are that gait's own (PlayerBody.Locomotion), not the ones whose feet happen to match the speed. Kept by the
+    /// player's own PC and sent with the pose (PlayerPose.Gait), so every PC plays the same.
+    /// </summary>
+    public float Position => position;
+
+    /// <summary>Another PC's gait as its pose says (MovementMirror).</summary>
+    internal void Mirror(float value) => position = Mathf.Clamp(value, 0f, 3f);
+
+    /// <summary>
+    /// Where a speed lies on the gaits' ladder the way it goes (<paramref name="angle"/>, degrees from ahead): 0 at the
+    /// walk's speed or slower, 1 at the jog's, 2 at the run's, 3 at the sprint's or faster, between in between. The legs
+    /// never play a gait faster than this: setting off, the body goes through the slower gaits' clips to its own.
+    /// </summary>
+    internal float PlaceOf(float speed, float angle)
+    {
+        float below = At(Walk, angle);
+        if (speed <= below) return 0f;
+        for (int gait = Jog; gait <= Sprint; gait++)
+        {
+            float above = Mathf.Max(below, At(gait, angle));
+            if (speed < above) return gait - 1 + (speed - below) / Mathf.Max(1e-3f, above - below);
+            below = above;
+        }
+        return Sprint;
+    }
 
     /// <summary>The run's speed straight ahead (m/s): the pace a direction key alone gives.</summary>
     internal float RunAhead => rows[Run, 0];
@@ -82,6 +112,8 @@ public sealed class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
+        float gait = ctx.Input.WalkMode ? jogShare : Run + ctx.SprintProgress;
+        position = Mathf.MoveTowards(position, gait, dt / GaitChange);
     }
 
     // Degrees from ahead, 0 to 180, left and right alike.

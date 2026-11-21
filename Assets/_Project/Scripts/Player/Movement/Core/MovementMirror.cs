@@ -47,7 +47,7 @@ public sealed class MovementMirror
         {
             State = (byte)ctx.CurrentState, LandingTier = (byte)landing.LastTier, HeavyPose = (byte)landing.HeavyPose,
             Jumps = jumps, Landings = landings, DashHits = dashHits, LadderSteps = (byte)fixtures.LadderSteps,
-            Velocity = ctx.ActualVelocity, RunIntent = ctx.RunIntent, FallSpeed = ctx.FallSpeed, LandImpact = landImpact,
+            Velocity = ctx.ActualVelocity, RunIntent = ctx.RunIntent, Gait = ctx.Actions.Gait.Position, FallSpeed = ctx.FallSpeed, LandImpact = landImpact,
             Lean = abilities.Lean.Share, Yaw = ctx.transform.eulerAngles.y,
             Pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f
         };
@@ -133,6 +133,7 @@ public sealed class MovementMirror
         motor.HorizontalVelocity = Vector3.ProjectOnPlane(pose.Velocity, Vector3.up);
         motor.VerticalVelocity = pose.Velocity.y;
         ctx.Actions.sprintProgress = pose.RunIntent;
+        ctx.Actions.Gait.Mirror(pose.Gait);
         ctx.Posture.airCrouching = Has(pose, Marks.AirCrouching);
         PlayerPoint.Mirror(ctx, Has(pose, Marks.Pointing), Has(pose, Marks.NoPoke), Has(pose, Marks.PingPoint), Has(pose, Marks.PointAway));
         ctx.Posture.mirroredTuck = pose.Tuck;
