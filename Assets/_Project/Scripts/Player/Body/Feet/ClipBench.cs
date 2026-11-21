@@ -23,7 +23,7 @@ using Object = UnityEngine.Object;
 ///   folders=BiperRunner,BiperCombat   folders under Art/Animations (these two)
 ///   clips=Run_Lfoot,R_Run             only these clips
 ///   skins=ichigo,mayo                 characters by id (ichigo)
-///   bake=gaitmoves                    also bake the start and stop clips into Tables/Player/GaitMoves.csv (GaitMoveBake)
+///   bake=gaitmoves                    also bake the turns on the spot into Tables/Player/GaitMoves.csv (GaitMoveBake)
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
 /// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
 /// </summary>
@@ -126,12 +126,12 @@ internal static class ClipBench
                 float scale = eyes > .2f ? GameEyes / eyes : 1f;
                 text.AppendLine();
                 text.AppendLine($"== {id}: eyes {eyes:0.000} in its own units, so x{scale:0.000} to the game's size; human scale {animator.humanScale:0.000}");
-                // The start and stop clips' speed and stride, baked once, on the first body asked for (GaitMoveBake).
+                // The turns on the spot's curves, baked once (GaitMoveBake).
                 if (bakeMoves)
                 {
                     text.AppendLine("-- bake=gaitmoves");
                     var runner = ClipsIn(AnimationsFolder + "BiperRunner").GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    GaitMoveBake.Bake(runner, model, animator, text);
+                    GaitMoveBake.Bake(runner, text);
                     bakeMoves = false;
                 }
                 foreach (string folder in folders)

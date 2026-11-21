@@ -147,36 +147,13 @@ public sealed partial class PlayerBody
         }
         // The forward cycles' leaning and arcing ones, banked into by the view's turn (PlayerBody.Leans).
         AddLeans();
-        // The start and stop clips (Tables/Player/GaitMoves.csv), played as the movement times them (GaitMoves).
-        foreach (string id in GameTables.RowIds(GaitMovesTable))
-            if (!id.StartsWith("#", System.StringComparison.Ordinal)) AddChannel(id, 0f);
         turning = 0;
         strideCount = 0;
         strideStretch = FootPlanting.Stride.None;
     }
 
+    // The turn-on-the-spot clips' curves (Tables/Player/GaitMoves.csv, baked by ClipBench: GaitMoveBake).
     private const string GaitMovesTable = "GaitMoves";
-    // The starts the movement has handed over to the cycle, as last seen (MovementGait.Handed).
-    private int handedSeen;
-
-    // Setting off and stopping, the legs play the gait's start or stop clip at the moment the movement has it at, the body
-    // moving as that clip's root does (MovementGait.Moves). A start that ran to its end hands the stride over to the cycle
-    // where the clip left it, so the feet carry on in step. False when neither plays.
-    private bool GaitMoves(float speed, float dt)
-    {
-        var gait = player.Actions != null ? player.Actions.Gait : null;
-        if (gait == null) return false;
-        if (gait.Handed != handedSeen)
-        {
-            handedSeen = gait.Handed;
-            phase = gait.HandedPhase;
-        }
-        string clip = gait.MoveClip;
-        if (clip == null || !(Find(clip) is Channel channel) || channel.Synced) return false;
-        Drive(clip, gait.MoveTime / Mathf.Max(.01f, channel.Length));
-        Pace(speed, 0f, 1f, dt);
-        return true;
-    }
 
     private static float LegOf(Animator animator)
     {
@@ -383,7 +360,6 @@ public sealed partial class PlayerBody
         }
         else
         {
-            if (GaitMoves(speed, dt)) return;
             stance = plainSet;
             turn = HipTurn(heading, speed);
             legs = Mathf.DeltaAngle(0f, heading - turn);

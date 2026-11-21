@@ -16,10 +16,14 @@ using UnityEngine;
 /// the start clips' run-up (0.7-0.94 s to nine tenths) for every change, stopping and turning included, with no start, stop
 /// or turn motion to show for it: the body coasted under legs that had already changed (the user: "굉장히 얼음장 위를
 /// 걷는 느낌"). A run-up comes back with the start and stop clips themselves.
+/// Starts and stops played as their clips (0.9.259) went again in 0.9.263: BIPER's start and stop clips go straight ahead
+/// only (its other starts turn the whole body round to the way, for a body that faces where it goes), so setting off
+/// ahead was slow while a step to the side first skipped it, and a stop ran on ahead (the user: "왼쪽 오른쪽 뒤 대각선
+/// 시작하는 모션 없이 앞만 있는 거라면 이 기능 없애는 게 나을 듯").
 /// Until 0.9.245 a run built up the way Beatrun's move limit does (W alone 3.6 → 4.9 → 7.9 → 8.9 m/s, sideways and back
 /// held at 4.9 x 1.15, cut by sharp turns and walls) and every cycle was stretched to whatever that speed was.
 /// </summary>
-public sealed partial class MovementGait
+public sealed class MovementGait
 {
     private const string Table = "Gaits";
     // The ways a row gives a speed for, degrees from ahead (left and right alike).
@@ -62,18 +66,13 @@ public sealed partial class MovementGait
         float angle = AngleOf(input);
         float gait = ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, angle), At(Jog, angle), jogShare)
             : Mathf.Lerp(At(Run, angle), At(Sprint, angle), ctx.SprintProgress);
-        // Setting off, as fast as the start clip's root goes by now (MovementGait.Moves).
-        return gait * StartShare;
+        return gait;
     }
 
     /// <summary>The speed for this input crouched (m/s): the crouched walk's, walk mode or not.</summary>
     internal float CrouchSpeedFor(Vector2 input) => At(Crouch, AngleOf(input));
 
-    internal void Reset()
-    {
-        jogShare = 0f;
-        ResetMoves();
-    }
+    internal void Reset() => jogShare = 0f;
 
     /// <summary>Walk mode's Shift brings the jog in as the sprint's does the sprint, standing on the ground and moving.</summary>
     internal void Tick(float dt, Vector2 input)
@@ -83,7 +82,6 @@ public sealed partial class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
-        TickMoves(dt, input);
     }
 
     // Degrees from ahead, 0 to 180, left and right alike.
@@ -110,6 +108,5 @@ public sealed partial class MovementGait
             for (int c = 0; c < Columns.Length; c++)
                 rows[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], Fallback[r, c]) : Fallback[r, c]);
         }
-        ReadMoves();
     }
 }

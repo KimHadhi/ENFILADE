@@ -36,8 +36,6 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     public byte Jumps, Landings, DashHits;
     /// <summary>Where the stride is, so the legs step in time on every PC.</summary>
     public byte Step;
-    /// <summary>The start or stop the legs play (MovementGait.MoveIndex: 0 none), so it plays on every PC.</summary>
-    public byte GaitMove;
     public Marks Flags;
     /// <summary>
     /// The tick of its owner's clock of the server it was taken on, stamped only when something else changed: every PC
