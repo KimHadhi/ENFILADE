@@ -4,7 +4,7 @@ public sealed class StandingState : MovementBaseState
 {
     public StandingState(PlayerMovement context, MovementBaseState parent) : base(context, parent) { }
 
-    public override float LocomotionSpeed => ctx.Actions.Momentum.SpeedFor(ctx.CurrentInput);
+    public override float LocomotionSpeed => ctx.Actions.Gait.SpeedFor(ctx.CurrentInput);
 
     public override void ProcessInput(Vector2 input)
     {

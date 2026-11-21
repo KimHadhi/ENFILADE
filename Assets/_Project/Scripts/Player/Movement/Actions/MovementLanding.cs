@@ -297,7 +297,6 @@ public sealed class MovementLanding
         Vector3 flat = Vector3.ProjectOnPlane(velocity, Vector3.up);
         knockYaw = flat.sqrMagnitude > .01f ? Mathf.Atan2(-flat.x, -flat.z) * Mathf.Rad2Deg : ctx.transform.eulerAngles.y;
         if (ctx.CurrentState != State.Standing && ctx.CurrentState != State.Crouching) ctx.Abilities.ReturnToLocomotion();
-        ctx.Actions.Momentum.Stop();
         ctx.HorizontalVelocity = flat;
         rollBuffer = recoverLeft = noSprintLeft = 0f;
         if (velocity.y <= 0f && ctx.IsGrounded)

@@ -18,7 +18,8 @@ public sealed class LocomotionState : MovementBaseState
     public override void OnLanding()
     {
         bool crouchHeld = ctx.Input.CrouchHeld;
-        float requiredSpeed = Mathf.Max(ctx.landingSlideMinSpeed, ctx.WalkSpeed * ctx.StrafeCompensation + 0.1f);
+        // Faster than a run lands in a slide (the run's own speed was the floor before 0.9.245 too).
+        float requiredSpeed = Mathf.Max(ctx.landingSlideMinSpeed, ctx.WalkSpeed + 0.1f);
         float landingSpeed = new Vector2(ctx.HorizontalVelocity.x, ctx.HorizontalVelocity.z).magnitude;
         float measuredSpeed = new Vector2(ctx.ActualVelocity.x, ctx.ActualVelocity.z).magnitude;
         float entrySpeed = Mathf.Min(landingSpeed, measuredSpeed);
@@ -31,12 +32,11 @@ public sealed class LocomotionState : MovementBaseState
         Vector2 input = ctx.CurrentInput;
         float inputMagnitude = Mathf.Clamp01(input.magnitude);
 
-        // 입력 방향 및 Strafe 횡이동 보정
+        // The way the keys point. Its speed is the gait's that way (MovementGait); the side's 1.15x "so a side step doesn't
+        // look slow" went in 0.9.245, the side clips being measured now.
         Vector3 inputDirection = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
-        float lateralWeight = Mathf.Abs(input.x);
-        float visualBoost = Mathf.Lerp(1f, ctx.StrafeCompensation, lateralWeight);
 
-        float baseSpeed = ctx.StateMachine.Current.LocomotionSpeed * visualBoost;
+        float baseSpeed = ctx.StateMachine.Current.LocomotionSpeed;
         var weapon = ctx.GetComponent<WeaponController>();
         if (weapon != null) baseSpeed *= weapon.MovementMultiplier;
         // The class's pace: an Assault's adrenaline, a CHARGE (PlayerClass; this PC's own player only).

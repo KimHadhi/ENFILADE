@@ -244,12 +244,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// </summary>
     public bool InputAvailable => CanAct && Time.timeScale > 0f && (!Application.isPlaying || InputFocus.TakesMove());
 
-    public float WalkSpeed => walkSpeed;
-    public float SprintSpeed => sprintSpeed;
-    public float CrouchSpeed => crouchSpeed;
+    /// <summary>The run's speed straight ahead (m/s), the pace a direction key alone gives (Gaits.csv run). Named for the
+    /// row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk mode's.</summary>
+    public float WalkSpeed => Actions != null ? Actions.Gait.RunAhead : 3.93f;
+    /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (Gaits.csv sprint).</summary>
+    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 5.61f;
+    /// <summary>The crouch's jog straight ahead (m/s, Gaits.csv crouchJog).</summary>
+    public float CrouchSpeed => Actions != null ? Actions.Gait.CrouchAhead : 2.49f;
     public float ProneSpeed => proneSpeed;
     public float SupineSpeed => supineSpeed;
-    public float StrafeCompensation => strafeCompensation;
     public float GroundSharpness => groundSharpness;
     public float AirControlSharpness => airControlSharpness;
 
@@ -285,12 +288,13 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float ProneColliderHeight => proneColliderHeight;
 
     public float SprintProgress { get => Actions.sprintProgress; set => Actions.sprintProgress = value; }
-    /// <summary>The built-up run speed (m/s), see MovementMomentum.</summary>
-    public float RunSpeed => Actions != null ? Actions.Momentum.Speed : walkSpeed;
-    /// <summary>The fastest a forward run builds to (m/s).</summary>
-    public float TopRunSpeed => Mathf.Max(topSpeed, sprintSpeed);
-    /// <summary>0–1: how much the player runs forward on purpose (Shift, or W building a run).</summary>
-    public float RunIntent => Actions == null ? 0f : Mathf.Max(SprintProgress, Actions.Momentum.Driving ? 1f : 0f);
+    /// <summary>The gait's speed straight ahead now (m/s), see MovementGait.</summary>
+    public float RunSpeed => Actions != null ? Actions.Gait.Speed : WalkSpeed;
+    /// <summary>The fastest the legs go straight ahead (m/s): the sprint's.</summary>
+    public float TopRunSpeed => SprintSpeed;
+    /// <summary>0–1: how far the player is into a sprint (Shift). Sent to the other PCs as the sprint itself: until 0.9.245 a
+    /// run W built up counted too, so a friend's copy took the sprint pose that this PC's own body never did.</summary>
+    public float RunIntent => Actions == null ? 0f : SprintProgress;
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
     public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     /// <summary>Fall speed from actual descent, excluding time held against an edge (m/s).</summary>
@@ -482,7 +486,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (BodyLocked || !IsLocal || !DamageReceiver.IsAlive)
         {
             Input.Sample(false);
-            Actions.Momentum.Tick(dt, Vector2.zero);
+            Actions.Gait.Tick(dt, Vector2.zero);
             HorizontalVelocity = Vector3.zero;
             Motor.ApplyGravity(dt);
             Posture.UpdateHeightsAndTransform(dt);
@@ -501,7 +505,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
             else if (Input.ShovePressed && !fists && (!pinned || FightsPinned)) Abilities.Combat.TryShove();
             if (pinned) StayPinned();
             Input.Sample(false);
-            Actions.Momentum.Tick(dt, Vector2.zero);
+            Actions.Gait.Tick(dt, Vector2.zero);
             HorizontalVelocity = Vector3.zero;
             Motor.ApplyGravity(dt);
             Posture.UpdateHeightsAndTransform(dt);
@@ -510,7 +514,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         }
         Vector2 input = CurrentInput;
         Actions.ProcessSprintRampUp(dt, input);
-        Actions.Momentum.Tick(dt, input);
+        Actions.Gait.Tick(dt, input);
         if (!Abilities.ProcessInput()) StateMachine.Current.ProcessInput(input);
         StateMachine.Current.UpdateLogic(dt);
         Actions.ProcessJump();

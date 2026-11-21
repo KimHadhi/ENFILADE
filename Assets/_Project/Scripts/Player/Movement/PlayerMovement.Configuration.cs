@@ -5,31 +5,12 @@ using UnityEngine;
 public sealed partial class PlayerMovement
 {
     [Header("Locomotion Speeds")]
-    [SerializeField, Min(0f)] internal float walkSpeed = 5.2f;
-    [SerializeField, Min(0f)] internal float sprintSpeed = 8.4f;
-    [SerializeField, Min(0f)] internal float crouchSpeed = 3.0f;
+    // Walking, jogging, running and sprinting, standing or crouched, go as fast as their clips carry the body each way:
+    // Tables/Player/Gaits.csv (MovementGait), not fields here.
     [SerializeField, Min(0f)] internal float proneSpeed = 1.6f;
     [SerializeField, Min(0f)] internal float supineSpeed = 1.6f;
+    [Tooltip("Seconds Shift takes from the run to the sprint, or in walk mode from the walk to the jog (MovementGait).")]
     [SerializeField, Min(0.01f)] internal float sprintRampUpDuration = 0.1f;
-
-    [Header("Momentum (MovementMomentum)")]
-    [Tooltip("A run starts at this speed in any direction (m/s). Set it to walkSpeed for an instant start.")]
-    [SerializeField, Min(0f)] internal float runStartSpeed = 3.8f;
-    [Tooltip("Seconds W alone takes from the start speed to walkSpeed, and to sprintSpeed.")]
-    [SerializeField, Min(0.01f)] internal float walkBuildTime = 1f, sprintBuildTime = 3.5f;
-    [Tooltip("Fastest a forward run builds to (m/s).")]
-    [SerializeField, Min(0f)] internal float topSpeed = 9.5f;
-    [Tooltip("Seconds a forward run takes from sprintSpeed to topSpeed.")]
-    [SerializeField, Min(0.01f)] internal float topBuildTime = 2f;
-    [Tooltip("Turning the view faster than this while moving cuts the built speed (deg/s).")]
-    [SerializeField, Min(0f)] internal float turnCutRate = 90f;
-    [Tooltip("Built speed lost per degree of such a turn (m/s).")]
-    [SerializeField, Min(0f)] internal float turnCutPerDegree = 0.025f;
-    [Tooltip("How fast the built speed falls once the player stops running forward (m/s²).")]
-    [SerializeField, Min(0f)] internal float momentumFalloff = 20f;
-
-    [Header("FOV & Visual Compensation")]
-    [SerializeField, Range(1f, 1.3f)] internal float strafeCompensation = 1.15f;
 
     [Header("Heights & Eye Offsets")]
     [Tooltip("선택 사항. 비워두면 플레이어 자식의 CrouchPivot을 자동 탐색합니다. 별도 피벗을 쓸 때만 지정하세요.")]

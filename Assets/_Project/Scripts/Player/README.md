@@ -46,7 +46,7 @@
 | 이동 상태 전환·처리 순서 | [PlayerMovement](Movement/PlayerMovement.cs), [이동 코드 구조](Movement/README.md) |
 | 접지·경사·중력·실제 몸 이동 / 다른 플레이어 위에 서면 그 사람과 함께 움직이기(`Ride`) | [MovementMotor](Movement/Core/MovementMotor.cs) |
 | 자세 높이·천장·환풍구·눈높이(신은 신발만큼 카메라 자리도 오르내림, `PlayerMovement.EyeRise`) | [MovementPostureController](Movement/Core/MovementPostureController.cs) |
-| 달리며 쌓이는 속도 | [MovementMomentum](Movement/Actions/MovementMomentum.cs) |
+| 걸음새(걷기·조깅·달리기·전력질주)와 그 속도: 걷기 모드(Caps Lock), Shift, 클립이 나르는 속도의 표 Gaits.csv (0.9.245. 예전의 달리며 쌓이는 속도를 대신함) | [MovementGait](Movement/Actions/MovementGait.cs) |
 | 착지 단계·구르기·큰 낙하·넉백 | [MovementLanding](Movement/Actions/MovementLanding.cs), [HeavyLanding 상태](Movement/States/) |
 | 스텝 회피·기울이기·적 통과 | [Dodge](Movement/Dodge/), [MovementAbilities](Movement/Actions/MovementAbilities.cs) |
 | Vault·맨틀·렛지·벽·봉·사다리(꼭대기에서는 걸어 나가 몸이 사다리에 닿으면 레포데처럼 저절로 탄다. F로도)·집라인 / 동작마다 총을 든 손(구르기, 크게 착지, 장전 중에 시작한 넘기는 총을 넣음) | [Parkour](Movement/Parkour/), [States/Parkour](Movement/States/Parkour/) / [TraversalHands](Movement/Parkour/TraversalHands.cs) |

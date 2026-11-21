@@ -39,12 +39,13 @@ public sealed class MovementActions
     public bool SlideBrakeArmed;
     public Vector3 DiveBodyForward = Vector3.forward;
     public MovementDive Dive { get; }
-    public MovementMomentum Momentum { get; }
+    /// <summary>The legs' gait and how fast it goes each way (walk mode, Shift).</summary>
+    public MovementGait Gait { get; }
     internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer, riseTimer;
     /// <summary>Getting up off the back: every key waits until the body is up (Ability.supineRiseTime).</summary>
     public bool IsRising => riseTimer > 0f;
 
-    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Momentum = new MovementMomentum(ctx); }
+    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Gait = new MovementGait(ctx); }
 
     internal void TickTimers(float dt)
     {
@@ -61,7 +62,7 @@ public sealed class MovementActions
         coyoteTimer = jumpBufferTimer = slideCooldownTimer = riseTimer = 0f;
         SlideBrakeArmed = SlideFacesBack = false;
         Dive.Reset();
-        Momentum.Reset();
+        Gait.Reset();
     }
 
     public void StartSlide(float currentSpeed, bool applyBoost = true)
@@ -75,7 +76,7 @@ public sealed class MovementActions
         // The body drops into the slide facing the way the player looks: along the slide, or back along it when the run
         // carried them backwards. That holds for the slide; looking round in it doesn't turn it (SlideFacesBack).
         FaceSlideFrom(ctx.transform.eulerAngles.y);
-        CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, ctx.sprintSpeed) + ctx.slideKickBoost : currentSpeed;
+        CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, ctx.SprintSpeed) + ctx.slideKickBoost : currentSpeed;
         SlideBrakeArmed = !ctx.Input.CrouchHeld;
         slideCooldownTimer = ctx.slideCooldown;
     }
@@ -112,8 +113,10 @@ public sealed class MovementActions
         // A short step interrupts movement, not the held sprint intent or its acceleration.
         bool canSprintState = ctx.CurrentState == MovementState.Standing ||
             (ctx.CurrentState == MovementState.StepDodge && ctx.Abilities.ActionPosture == MovementPosture.Standing);
-        bool wantsToSprint = ctx.InputAvailable && ctx.Motor.isGrounded && sprintHeld && input.y > 0.1f && canSprintState
-            && !ctx.Abilities.Landing.SprintBlocked;
+        // Any way the keys point (the user, 2026-11-21: the sprint's strafe clips go every way), and not in walk mode, where
+        // Shift jogs (MovementGait). Until 0.9.245 only a run with W in it sprinted.
+        bool wantsToSprint = ctx.InputAvailable && ctx.Motor.isGrounded && sprintHeld && input.sqrMagnitude > .01f && canSprintState
+            && !ctx.Abilities.Landing.SprintBlocked && !ctx.Input.WalkMode;
 
         if (wantsToSprint) sprintProgress = Mathf.MoveTowards(sprintProgress, 1f, dt / Mathf.Max(0.01f, ctx.sprintRampUpDuration));
         else if (!ctx.IsSliding)

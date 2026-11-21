@@ -22,7 +22,7 @@
 | [Core/SurgeWay.cs](Core/SurgeWay.cs) | 써지를 부르기 전에 그 길을 걸어 보는 계산(벽·닫힌 문·구덩이·낭떠러지·높은 턱은 길이 아니고 계단은 길이다)과, 게임 물리로 답하는 `Walker`. 표 Player.csv `Surge.*` |
 | [Actions/MovementAbilities.cs](Actions/MovementAbilities.cs) | 독점 행동의 입력 우선순위, 회피·파쿠르·전투 서비스 연결 |
 | [Actions/MovementDive.cs](Actions/MovementDive.cs) / [MovementLanding.cs](Actions/MovementLanding.cs) | 다이브 비행 / 착지 단계·구르기·낙하 피해·큰 낙하·넉백 |
-| [Actions/MovementMomentum.cs](Actions/MovementMomentum.cs) | 달리며 쌓이는 속도 |
+| [Actions/MovementGait.cs](Actions/MovementGait.cs) | 걸음새(걷기·조깅·달리기·전력질주)와 가는 쪽마다의 속도(Gaits.csv) |
 | [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과 |
 | [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs). 사다리 꼭대기는 걸어 나가 몸이 사다리에 닿으면 레포데처럼 저절로, 또는 F. 집라인은 뛰어오른 공중이나 Space를 누른 채일 때만) |
 | [States/](States/) | 자세·행동별 입력, 전환, 물리 정책 |

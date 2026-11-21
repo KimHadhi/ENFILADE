@@ -8,7 +8,7 @@ public sealed class MovementInput
     internal readonly InputAction moveAction, sprintAction, jumpAction, crouchAction, diveAction;
     // Interact is not sampled here: it is shared by everything the key does, and whose a press is belongs to its one
     // owner (InteractKey), which a ladder's top asks like the rest (MovementFixtures).
-    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction;
+    private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, walkModeAction;
     private bool crouchLatched, weaponInputSought;
     private int leanLatched;
     private PlayerWeaponInput weaponInput;
@@ -25,6 +25,12 @@ public sealed class MovementInput
     public bool ShovePressed { get; private set; }
     public bool LeanPressed { get; private set; }
     public int LeanSide { get; private set; }
+    /// <summary>
+    /// Walk mode is on (Player/WalkMode, Caps Lock: a press turns it on, the next off): the keys walk, and jog with Shift,
+    /// instead of running and sprinting (MovementGait). The game's own switch, not the keyboard's Caps Lock light, which
+    /// another window can change behind the game's back.
+    /// </summary>
+    public bool WalkMode { get; private set; }
     internal bool SprintButtonHeld
     {
         get
@@ -55,6 +61,7 @@ public sealed class MovementInput
         leanLeftAction = actions.FindAction("Player/LeanLeft", false);
         leanRightAction = actions.FindAction("Player/LeanRight", false);
         shoveAction = actions.FindAction("Player/Shove", false);
+        walkModeAction = actions.FindAction("Player/WalkMode", false);
     }
     /// <summary>
     /// The input frame the movement reads. available false (the keys are a screen's or another window's, control is
@@ -79,6 +86,8 @@ public sealed class MovementInput
         DodgePressed = move && InputFocus.Pressed(dodgeAction);
         DivePressed = move && InputFocus.Pressed(diveAction);
         ShovePressed = available && InputFocus.Pressed(shoveAction);
+        // A switch, not a move: it flips whenever the keys are the game's, getting up off the back included.
+        if (available && InputFocus.Pressed(walkModeAction)) WalkMode = !WalkMode;
         if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
         AimHeld = available && weaponInput != null && weaponInput.GuardHeld;
         

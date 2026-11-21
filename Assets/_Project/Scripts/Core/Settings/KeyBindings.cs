@@ -48,6 +48,7 @@ public static partial class KeyBindings
         new Entry("move", "move_left", "Player/Move", "left"),
         new Entry("move", "move_right", "Player/Move", "right"),
         new Entry("move", "sprint", "Player/Sprint"),
+        new Entry("move", "walk_mode", "Player/WalkMode"),
         new Entry("move", "jump", "Player/Jump"),
         new Entry("move", "crouch", "Player/Crouch"),
         new Entry("move", "dive", "Player/Dive"),

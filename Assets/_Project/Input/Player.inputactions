@@ -52,6 +52,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "WalkMode",
+                    "type": "Button",
+                    "id": "9b16f5ab-7fad-439f-b336-001283d3a425",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Crouch",
                     "type": "Button",
                     "id": "c865b3ff-258d-4f85-b704-f7cecfe7f813",
@@ -390,6 +399,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ddf1e5c9-0986-4d0f-842d-70259e5621db",
+                    "path": "<Keyboard>/capsLock",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "WalkMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e68ba7df-c61d-453f-aef9-ab02a9e50fd7",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "WalkMode",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

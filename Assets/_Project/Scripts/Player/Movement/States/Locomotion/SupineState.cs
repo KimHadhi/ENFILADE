@@ -23,10 +23,7 @@ public sealed class SupineState : MovementBaseState
 
         float inputMagnitude = Mathf.Clamp01(input.magnitude);
         Vector3 inputDirection = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
-        float lateralWeight = Mathf.Abs(input.x);
-        float visualBoost = Mathf.Lerp(1f, ctx.StrafeCompensation, lateralWeight);
-
-        float finalSpeed = LocomotionSpeed * visualBoost;
+        float finalSpeed = LocomotionSpeed;
         Vector3 targetVelocity = inputDirection * (finalSpeed * inputMagnitude);
 
         float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);

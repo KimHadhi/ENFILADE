@@ -1,0 +1,8 @@
+﻿id,ahead,aheadSide,side,backSide,back,#설명
+"#설명 (걸음새마다 한 줄: 그 걸음새로 갈 때의 속도(m/s)를 가는 쪽마다. ahead 앞 0°, aheadSide 대각선 앞 45°, side 옆 90°, backSide 대각선 뒤 135°, back 뒤 180°. 사이의 각도는 이웃한 두 값을 각도로 잇는다. 값은 그 걸음새 클립이 기준 몸(이치고)을 그쪽으로 나르는 속도를 클립 검사대(ClipBench)로 잰 것이고, 왼쪽·오른쪽 클립의 평균이다. 그래서 그 속도에서 발이 디딘 자리에 있다. 모든 캐릭터가 같은 속도로 간다(다른 몸은 걸음 박자·보폭이 맞춘다). 키: 걷기 모드(Caps Lock)면 walk, Shift를 누르면 jog. 아니면 run, Shift를 누르면 sprint(어느 쪽이든). 웅크리면 걷기 모드에서 crouchWalk, 아니면 crouchJog. 걸음새 사이는 Move.sprintRampUpDuration에 걸쳐 넘어간다. 조준하면 총의 이동 배율, 가드·착지 회복·클래스 효과가 그 위에 곱해진다)",,,,,,
+walk,1.07,1.08,1.05,1.02,1.34,걷기: Walk_Lfoot · StrafeWalk_L45/R45 · FL/FR · L135/R135 · B
+jog,2.06,3.22,2.47,2.48,1.85,조깅: Jog_Lfoot · StrafeJog_*. 대각선 앞(3.35·3.09)이 앞(2.06)보다 빠른 것은 클립 그대로다. 앞보다 빨리 가는 게 싫으면 aheadSide를 2.06 아래로 낮춘다(그만큼 대각선에서 보폭이 줄어든다)
+run,3.93,3.74,3.06,3.99,4.21,달리기: Run_Lfoot · StrafeRun_*
+sprint,5.61,5.68,5.55,4.10,4.37,"전력질주: Sprint_Lfoot · StrafeSprint_*. 0.9.245 전에는 Shift가 7.9, 앞으로 쌓이면 8.9였다"
+crouchWalk,1.99,1.96,1.71,0.58,0.99,웅크려 걷기: CrouchWalk_*. 대각선 뒤가 0.58(왼쪽 0.51·오른쪽 0.64)로 느린 것도 클립 그대로
+crouchJog,2.49,3.04,2.64,2.60,2.51,웅크려 조깅: CrouchJog_*. 0.9.245 전에는 웅크리면 어느 쪽이든 2.8(Move.crouchSpeed)

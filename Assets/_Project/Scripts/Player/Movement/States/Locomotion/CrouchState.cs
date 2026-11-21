@@ -6,7 +6,7 @@ public sealed class CrouchingState : MovementBaseState
 
     public CrouchingState(PlayerMovement context, MovementBaseState parent) : base(context, parent) { }
 
-    public override float LocomotionSpeed => ctx.CrouchSpeed;
+    public override float LocomotionSpeed => ctx.Actions.Gait.CrouchSpeedFor(ctx.CurrentInput);
 
     public override void ProcessInput(Vector2 input)
     {

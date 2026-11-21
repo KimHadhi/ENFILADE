@@ -179,8 +179,8 @@ public sealed class PlayerCombatActions
         bool rescued = target != null && ShoveRescue.Reached(ctx, target, point);
         if (!rescued) Throw(target, damage, shove, point, direction);
 
-        // The dash stops dead on the body it hit, and the run with it.
-        ctx.Actions.Momentum.Stop();
+        // The dash stops dead on the body it hit (there is no built-up run to stop with it since 0.9.245: the legs go at
+        // their gait's speed, MovementGait).
         ctx.GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(
             new Vector3(-20f, UnityEngine.Random.Range(-5f, 5f), UnityEngine.Random.Range(-8f, 8f)), -20f);
         // Shares time ownership with perfect defense.
