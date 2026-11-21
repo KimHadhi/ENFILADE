@@ -500,6 +500,8 @@ Body.slideStart,SlideToRun_Enter,슬라이딩 시작. BIPER Female Runner. 0.9.2
 Body.slide,SlideToRun_Loop,슬라이딩. BIPER Female Runner. 0.9.262 전에는 slideloop
 Body.slideEnd,SlideToRun_Exit,슬라이딩 끝: 일어나 달려 나간다. BIPER Female Runner. 0.9.262 전에는 slideend
 Body.slideCrouchTime,0.3,슬라이딩이 웅크리기로 끝날 때 슬라이딩 자세에서 웅크린 자세로 바뀌는 시간(초). 그리로 가는 클립이 없어 두 자세 사이를 천천히 섞는다. 0.9.266 전에는 일어나 달려 나가는 Body.slideEnd를 틀어 섰다가 앉았다
+Body.slideEndUp,0.4,"슬라이딩이 제자리에서 멈춰 서면 끝 동작(Body.slideEnd: 일어나 달려 나가기)을 여기까지만 튼다(초): 땅을 짚고 일어나 앞을 보는 데까지, 첫 달리는 걸음(0.47초) 전. ClipBench track으로 잼(엉덩이 0.24→0.67m, 몸이 앞을 봄). 달리며 끝나면 끝까지 달려 나간다. 0.9.271 전에는 멈춰 서도 끝까지 틀어 제자리에서 달렸다"
+Body.standSettleTime,0.3,달려 나가며 끝나는 동작(슬라이딩 끝·달리며 착지·달리며 구르기·달리기로 잇는 회피)을 몸이 멈춰 놓을 때 그 자세를 멈춘 채 서 있기로 바뀌는 시간(초). 그런 자세에서 서는 클립이 없어 천천히 섞는다. 0.9.271
 Body.diveStart,divestart,다이브 시작
 Body.dive,diveidle,다이브 공중
 Body.supineDiveStart,jumpturnfly,등을 대고 하는 다이브의 시작. Beatrun의 점프 턴처럼 공중에서 뒤로 눕는다
@@ -522,6 +524,7 @@ Body.rollRunWays,RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_B@180;R
 Body.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"회피를 가는 쪽마다(서서·걸으며): 몸을 비키는 짧은 스텝. BIPER Female Runner QuickShift_*(0.8초 3.25m), 0.9.262"
 Body.dodgeRunWays,ShiftToRun_L@-90;ShiftToRun_L45@-45;ShiftToRun_R45@45;ShiftToRun_R@90,"달리며(Body.jumpFastSpeed 이상) 회피: 옆으로 비키며 달리기를 이어 간다. 앞뒤는 없어서 Body.dodgeWays. BIPER Female Runner ShiftToRun_*, 0.9.262"
 Body.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며 회피: 비키며 전력질주를 이어 간다. BIPER Female Runner ShiftToSprint_*, 0.9.262"
+Body.dodgeShiftEnd,0.2,"회피 클립이 옆으로 비키는 동작이 끝나는 때(초). 스텝(Ability.stepDuration 0.14초) 동안 클립을 여기까지 틀고, 나머지(그 자리에서 일어나기)는 스텝 뒤에 마저 튼다. BIPER QuickShift_*는 0.06~0.2초에 3m를 간다(ClipBench track). 0.9.271 전에는 스텝이 끝나면 클립이 앞부분만 보이고 엉덩이가 튀어 올랐다"
 Body.jumpWays,Jump_AirL@-90;Jump_AirR@90,"걸으며 옆으로(앞에서 45~135°) 점프하면 그쪽으로 뛰는 클립. BIPER Female Runner Jump_AirL·R, 0.9.262"
 Body.runJumpWays,RunJump_AirL@-90;RunJump_AirR@90,"달리며 옆으로 점프하면 그쪽으로 뛰는 클립. BIPER Female Runner RunJump_AirL·R, 0.9.262"
 Body.landRunLight,Land_ToRun1,"앞으로 걷기보다 빨리 가다 가볍게 착지하면 그 걸음으로 받고 달려 나간다. BIPER Female Runner, 0.9.262"

@@ -15,6 +15,11 @@ public sealed partial class PlayerBody
     private readonly System.Collections.Generic.Dictionary<string, (AnimationClipPlayable playable, int input)> dodgeLegs =
         new System.Collections.Generic.Dictionary<string, (AnimationClipPlayable, int)>();
     private float dodgeLayerWeight, dodgeLayerTarget;
+    // After the step, the legs play the dodge's clip out (PlayOutDodge).
+    private bool dodgeLegsOut;
+    [SerializeField, Min(.01f), Tooltip("Where a dodge clip's shift is done (s): the step (Ability.stepDuration) plays the clip up "
+        + "to here, the rest (getting back up on the spot) plays after it.")]
+    private float dodgeShiftEnd = .2f;
 
     // From BuildLayers, after BuildKick has made the leg mask: the side dodges and every dodge of the ways (PlayerBody.Ways).
     private void BuildDodge()
@@ -33,6 +38,7 @@ public sealed partial class PlayerBody
             if (playable.IsValid()) dodgeLegs[names[i]] = (playable, i);
         }
         dodgeLayerWeight = dodgeLayerTarget = 0f;
+        dodgeLegsOut = false;
         layers.SetInputWeight(DodgeLayer, 0f);
     }
 
@@ -71,18 +77,51 @@ public sealed partial class PlayerBody
         // From a crouch: the crouch held low as the body slides along, a crouched slide (user, 2026-11-12: "앉아서 회피할
         // 때는 앉아서 슬라이딩하는 회피 모션"); the standing clip hopped up out of the crouch and its feet ran.
         if (player.IsCrouchStance) { Want(crouchIdle); return; }
-        if (HoldsGun && dodgeLegs.ContainsKey(dodgeClip ?? ""))
+        // The clip's shift at the pace of the step: BIPER's QuickShift goes 3 m sideways between 0.06 and 0.2 s, about as
+        // fast as the step's 2.6 m in 0.14 s (ClipBench track, 2026-11-21); on its own clock half of it was still to come
+        // when the body had stopped, and the feet would skate.
+        float at = Mathf.Min(1f, stateTime / Mathf.Max(.01f, player.AbilitySettings.stepDuration)) * dodgeShiftEnd;
+        if (HoldsGun && dodgeLegs.TryGetValue(dodgeClip ?? "", out var legs))
         {
             Want(idle);
             dodgeLayerTarget = 1f;
+            legs.playable.SetSpeed(0);
+            legs.playable.SetTime(at);
         }
+        else if (Find(dodgeClip) is Channel whole) Drive(dodgeClip, at / Mathf.Max(.01f, whole.Length));
         else Want(dodgeClip);
+    }
+
+    // The step dodge is over in Ability.stepDuration (0.14 s) and the clip had only begun: its low step and getting back up
+    // (QuickShift 0.8 s, the hips down to 0.42 m and up again) were cut and the body popped up within the blend. Now the
+    // rest of it plays out on the spot as a landing does, giving way once the body moves off; one that shifts into the run
+    // plays out only on the run (RunsOut). With a gun the legs play it out (dodgeLegsOut), under the gun hold.
+    private void PlayOutDodge()
+    {
+        if (player.IsCrouchStance || string.IsNullOrEmpty(dodgeClip)) return;
+        if (HoldsGun && dodgeLegs.TryGetValue(dodgeClip, out var legs))
+        {
+            legs.playable.SetSpeed(1);
+            dodgeLegsOut = true;
+            return;
+        }
+        PlayOn(dodgeClip);
     }
 
     // From BlendLayers, after ChoosePose has said whether the legs dodge this frame.
     private void BlendDodge(float dt)
     {
         if (!dodgeMixer.IsValid()) return;
+        if (dodgeLegsOut)
+        {
+            bool runs = RunsOut(Find(dodgeClip));
+            bool moving = HorizontalSpeed() > walkClipSpeed;
+            bool on = !dead && state == PlayerMovement.MovementState.Standing && grounded && runs == moving
+                && dodgeLegs.TryGetValue(dodgeClip ?? "", out var legs)
+                && legs.playable.GetTime() < legs.playable.GetAnimationClip().length - blendTime;
+            if (on) dodgeLayerTarget = 1f;
+            else dodgeLegsOut = false;
+        }
         float target = dead ? 0f : dodgeLayerTarget;
         dodgeLayerTarget = 0f;
         dodgeLayerWeight = Mathf.MoveTowards(dodgeLayerWeight, target, dt / blendTime);

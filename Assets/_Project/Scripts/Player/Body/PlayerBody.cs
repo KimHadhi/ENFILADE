@@ -30,6 +30,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
         + "No pack has a clip for it; the slide's getting up (slideEnd) stood the body up first.")]
     private float slideCrouchTime = .3f;
+    [SerializeField, Min(0f), Tooltip("A slide that stops on the spot plays its end (slideEnd, which gets up and runs on) only this "
+        + "far: up off the ground and facing ahead, before its first running step (s).")]
+    private float slideEndUp = .4f;
+    [SerializeField, Min(.01f), Tooltip("A clip that ends running, given up because the body has stopped, holds its pose and the "
+        + "standing takes over this slowly (s).")]
+    private float standSettleTime = .3f;
     [SerializeField] private string diveStart = "divestart", dive = "diveidle";
     [SerializeField, Tooltip("A dive on the back, as Beatrun's jump turn: lying back in the air, then its loop. Turned over "
         + "from a front dive, or off an edge while lying, the body is already down and goes straight to the loop.")]
@@ -706,6 +712,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 transition.Target = 1f;
                 return;
             }
+            if (RunsOut(transition)) GiveUpRunOut(transition);
             transition = null;
             playingOut = transitionRuns = false;
         }
@@ -788,6 +795,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             string exit = SlideEndFor(from, to);
             if (exit != null) PlayTransition(exit);
+            // The slide's end gets up and runs on (SlideToRun_Exit): cancelled into a run it runs out with the body; stopped
+            // on the spot it gets up only (slideEndUp), and its running steps never show (GiveUpRunOut). It played whole, so
+            // a slide that stopped ran in place before standing (the user, 2026-11-21).
+            if (exit != null && exit == slideEnd)
+            {
+                if (HorizontalSpeed() > walkClipSpeed) transitionRuns = true;
+                else transitionLeft = Mathf.Min(transitionLeft, slideEndUp + blendTime);
+            }
         }
         if ((from == MovementState.Vault || from == MovementState.Mantle) && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOutObstacle();
@@ -798,6 +813,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             PlayOn(dashPush);
         if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(rollClip);
+        if (from == MovementState.StepDodge && onGround && to == MovementState.Standing) PlayOutDodge();
         // Down from a side dive, sliding or lying (PlayerBody.SideDive).
         if (from == MovementState.Diving)
             sideDiveLanded = sideDiveSide != 0 && (to == MovementState.HeadFirstSliding || to == MovementState.Proning);
@@ -820,6 +836,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 if (!supineDiveAtOnce) Restart(Find(supineDiveStart));
                 break;
             case MovementState.StepDodge:
+                dodgeLegsOut = false;
                 dodgeClip = DodgeFor();
                 // From a crouch the body stays low and slides along (DodgePose): no hop out of the crouch.
                 if (player.IsCrouchStance) break;
@@ -950,10 +967,20 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (channel == null || channel.Synced) return;
         float left = channel.Length - (float)channel.Playable.GetTime();
         if (left <= blendTime) return;
+        // One that ends running plays on only on the run (RunsOut); on the spot its steps would run in place.
+        bool runs = RunsOut(channel);
+        if (runs && HorizontalSpeed() <= walkClipSpeed)
+        {
+            GiveUpRunOut(channel);
+            return;
+        }
         transition = channel;
         transitionStance = player.CurrentState;
         transitionLeft = left;
         playingOut = false;
+        transitionRuns = runs;
+        // A clip the move drove (a dodge's step) goes on at its own pace.
+        channel.Playable.SetSpeed(1);
     }
 
     private static void Restart(Channel channel)

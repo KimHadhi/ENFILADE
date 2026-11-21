@@ -319,7 +319,8 @@ internal static class ClipBench
     // A clip's timeline, TrackRate times a second: t s; rise = the body centre over where it began (m, RootT); hips over the
     // lowest foot (m); which way the hips (the thighs' line), the chest (the shoulders' line) and the head (its rest-pose
     // ahead) face, degrees from the body's ahead, + to the right; each hand against the chest (x right, y up, z ahead, m)
-    // and how fast the faster hand moves against it (m/s). Sizes are the game's. The body's pose is put back afterwards.
+    // and how fast the faster hand moves against it (m/s); how far the body centre has gone over the ground (m). Sizes are
+    // the game's. The body's pose is put back afterwards.
     private const float TrackRate = 15f;
 
     private static void Track(AnimationClip clip, Animator animator, float scale, StringBuilder text)
@@ -342,9 +343,15 @@ internal static class ClipBench
             text.AppendLine("    track: ! a bone is missing");
             return;
         }
-        AnimationCurve rootY = null;
+        AnimationCurve rootX = null, rootY = null, rootZ = null;
         foreach (var binding in AnimationUtility.GetCurveBindings(clip))
-            if (binding.type == typeof(Animator) && binding.propertyName == "RootT.y") rootY = AnimationUtility.GetEditorCurve(clip, binding);
+            if (binding.type == typeof(Animator))
+                switch (binding.propertyName)
+                {
+                    case "RootT.x": rootX = AnimationUtility.GetEditorCurve(clip, binding); break;
+                    case "RootT.y": rootY = AnimationUtility.GetEditorCurve(clip, binding); break;
+                    case "RootT.z": rootZ = AnimationUtility.GetEditorCurve(clip, binding); break;
+                }
         float human = animator.humanScale * scale;
         var bones = root.GetComponentsInChildren<Transform>();
         var poses = bones.Select(b => (b.localPosition, b.localRotation)).ToArray();
@@ -359,7 +366,7 @@ internal static class ClipBench
         }
         try
         {
-            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s");
+            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s | gone m");
             int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * TrackRate));
             Vector3 lastLeft = Vector3.zero, lastRight = Vector3.zero;
             float first = rootY != null ? rootY.Evaluate(0f) : 0f;
@@ -377,7 +384,10 @@ internal static class ClipBench
                 Vector3 headForward = root.InverseTransformDirection(head.rotation * headAhead);
                 float headYaw = Mathf.Atan2(headForward.x, headForward.z) * Mathf.Rad2Deg;
                 float rise = rootY != null ? (rootY.Evaluate(t) - first) * human : 0f;
-                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0}"));
+                // How far the body centre has gone over the ground since the start (m).
+                float gone = rootX != null && rootZ != null
+                    ? new Vector2(rootX.Evaluate(t) - rootX.Evaluate(0f), rootZ.Evaluate(t) - rootZ.Evaluate(0f)).magnitude * human : 0f;
+                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0} | {gone,5:0.00}"));
             }
         }
         finally

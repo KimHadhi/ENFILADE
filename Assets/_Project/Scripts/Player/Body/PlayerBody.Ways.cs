@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Playables;
 
 /// <summary>
 /// One-off moves that go a way of their own, picked by the way the body goes (the user, 2026-11-21, on BIPER Female Runner:
@@ -103,13 +104,38 @@ public sealed partial class PlayerBody
         return NearestWay(speed >= jumpFastSpeed ? runJumpWays : jumpWays, heading, bySpeed);
     }
 
-    // A landing on the move runs on out of it; null when the body stands, or there is no such clip.
+    // A landing at a run runs on out of it; null slower, or with no such clip. Its steps are a run's (Land_ToRun1 goes
+    // 5.6 m/s): taken at a jog's or a walk's speed, they ran ahead of the body.
     private string LandingOnTheMove(bool hard)
     {
         float speed = HorizontalSpeed();
-        if (speed <= walkClipSpeed) return null;
+        if (speed < jumpFastSpeed) return null;
         if (Mathf.Abs(HeadingOf(player.ActualVelocity)) > 45f) return null;
         string clip = !hard ? landRunLight : speed >= landStumbleSpeed ? landRunStumble : landRunHard;
         return Find(clip) != null ? clip : null;
+    }
+
+    // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge that shifts into
+    // the run or the sprint. Their last steps are a run's, so they play out only while the body runs on; a body that has
+    // stopped never shows them (the user, 2026-11-21: a slide's end ran in place, "갑자기 와다닥 달리는 모션하다 서기로").
+    private bool RunsOut(Channel channel)
+    {
+        if (channel == null) return false;
+        if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunHard) || channel == Find(landRunStumble))
+            return true;
+        foreach (string set in new[] { rollRunWays, dodgeRunWays, dodgeSprintWays })
+            foreach (var (clip, _) in WaysOf(set))
+                if (channel == Find(clip)) return true;
+        return false;
+    }
+
+    // A clip that ends running, given up or never played on: its pose holds where it is while what follows takes over, so no
+    // running step shows as it fades; a body that has stopped settles into standing slowly (Body.standSettleTime), as there
+    // is no clip from those poses to standing.
+    private void GiveUpRunOut(Channel channel)
+    {
+        if (channel == null || channel.Synced) return;
+        channel.Playable.SetSpeed(0);
+        if (HorizontalSpeed() <= walkClipSpeed) SlowBlend(standSettleTime);
     }
 }
