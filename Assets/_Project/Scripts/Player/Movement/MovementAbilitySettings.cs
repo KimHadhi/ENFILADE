@@ -160,8 +160,9 @@ public sealed class MovementAbilitySettings
     [Min(.01f)] public float ladderEnterTime = .5f;
     [Tooltip("Seconds being pulled onto a ladder caught in the air takes; seconds before the first rung after one.")]
     [Min(.01f)] public float ladderCatchTime = .2f, ladderCatchDelay = .75f;
-    [Tooltip("Height of one rung (m); seconds from one rung to the next, all of it rising (LadderState).")]
-    [Min(.01f)] public float ladderRungHeight = .39f, ladderRungInterval = .35f;
+    [Tooltip("Height of one rung (m); seconds from one rung to the next, all of it rising evenly: half of the climbing cycle's "
+        + "1.4 s (LadderState, PlayerBody.Fixtures).")]
+    [Min(.01f)] public float ladderRungHeight = .39f, ladderRungInterval = .7f;
     [Tooltip("Speed of the slide down with S (m/s).")]
     [Min(.1f)] public float ladderSlideSpeed = 8.5f;
     [Tooltip("The feet stop this far below the top of the rails; from there the player climbs off (m).")]

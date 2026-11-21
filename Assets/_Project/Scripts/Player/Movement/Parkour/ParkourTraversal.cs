@@ -120,6 +120,11 @@ public sealed class ParkourTraversal
         var settings = ctx.AbilitySettings;
         if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= 0.1f || ledgeLock > 0f
             || ctx.Abilities.SwingHoldsBody || settings.clamberHighest <= 0f) return false;
+        // Walking is the walk gait (walk mode, Shift not jogging), the user's word for it. Until 0.9.302 it was any speed
+        // under clamberMaxSpeed, which standing pressed against a box (0 m/s) or setting off is too, so the quick climb onto
+        // a box the jog and sprint have always had never came from there and this slow one came instead (user, 2026-11-22:
+        // "mantling이 안 되고 매우 이상하게 그 오르는 게 박스에서 발견됨").
+        if (!ctx.Input.WalkMode || ctx.Actions.Gait.Position > .5f) return false;
         if (Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude > settings.clamberMaxSpeed) return false;
         if (!Detector.TryClamber(ctx.transform.position, ctx.transform.forward, settings.clamberReach, settings.clamberLowest,
                 settings.clamberHighest, out ObstacleTarget target) || traversedObstacles.Contains(target.Surface)) return false;

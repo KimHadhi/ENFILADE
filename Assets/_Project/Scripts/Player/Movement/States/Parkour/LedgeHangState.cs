@@ -171,17 +171,22 @@ public sealed class LedgeHangState : MovementBaseState
     // still held as it ends starts the next at once, so the steps follow on with no stop between. The body plays a step's
     // clip from each start (PlayerBody.LedgePose). Before, the capsule slid along at the keys' speed under a clip looped to
     // that pace, and the clip was Mixamo's (user, 2026-11-22: moving on a ledge didn't use Beatrun's animation).
+    // A tick is far shorter than a step, so it holds at most the rest of one step and the start of the next: two parts, a
+    // fixed count. 0.9.301 looped while time was left, and a sliver of it too small to move a share near 1 by one float
+    // step never ran out: the game froze holding A or D on a ledge (user, 2026-11-22: had to end it from Task Manager).
     private void Step(float dt)
     {
         float left = dt / Mathf.Max(.01f, ctx.AbilitySettings.ledgeShimmyStepTime);
-        while (left > 0f)
+        for (int part = 0; part < 2 && left > 0f; part++)
         {
             if (stepShare >= 1f && !StartStep()) return;
-            float next = Mathf.Min(1f, stepShare + left);
-            left -= next - stepShare;
+            float rest = 1f - stepShare;
+            bool ends = left >= rest;
+            float share = ends ? rest : left;
+            left = ends ? left - rest : 0f;
             // The ledge stopped short of what was measured as the step began (it moved, or something came into the way).
-            if (!Along(stepSide * stepLength * (next - stepShare))) { stepShare = 1f; return; }
-            stepShare = next;
+            if (!Along(stepSide * stepLength * share)) { stepShare = 1f; return; }
+            stepShare = ends ? 1f : stepShare + share;
         }
     }
 
