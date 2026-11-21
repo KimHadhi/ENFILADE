@@ -117,6 +117,17 @@ public sealed partial class PlayerMeleeCombat : MonoBehaviour
         || player.CurrentState == PlayerMovement.MovementState.StepDodge
         || player.CurrentState == PlayerMovement.MovementState.DashPush
         || (player.IsLandingRecovery && !player.FightsPinned) || (player.IsPinned && !player.FightsPinned);
+    /// <summary>
+    /// The knife's arm is out: winding up, charging, or a swing whose clip is not home yet. No parkour move begins over it
+    /// (MovementAbilities.SwingHoldsBody), as no swing begins over a parkour move (MovementBlocksAttack): whichever the body
+    /// began first keeps it. A vault or a ledge caught mid-swing used to drop the swing (SuspendActionsForMovement), so a
+    /// jump at a head with the knife charged went over the target or hung from it and the stab was thrown away, its blade
+    /// cut off mid-cut (Logs/knife-play.txt and ledge-probe.txt, 2026-11-21; the user: "칼을 차징하거나 휘두르고 있을 땐
+    /// 파쿠르 안 되게"). The whole clip, not only up to its next mark: a jump's stab reaches its next mark about a quarter
+    /// of a second after it leaves (KnifeMeleeStab: next 0.233 s of 0.367), with the body still in the air at the head,
+    /// where the same vault would come right after it.
+    /// </summary>
+    public bool HoldsBody => swing.Now != SwingTimeline.Phase.Idle;
     public bool IsActive => isActiveAndEnabled && slots != null && slots.UsesFists && player != null && player.IsInitialized && player.DamageReceiver.IsAlive;
     /// <summary>The feet are planted after a parry (real time): the legs give no speed, the hands are free.</summary>
     public bool IsRooted => IsActive && Time.unscaledTime < rootUntil;

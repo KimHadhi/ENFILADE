@@ -187,9 +187,10 @@ public sealed class ParkourTraversal
         bool surging = Surge.RunsFor(this);
         // W starts a surge; once it is under way it runs to its vault whatever the keys do. Read every frame, W came up
         // released within a tenth of a second of most surges (2026-11-09) and the press went as a jump over the obstacle
-        // instead.
+        // instead. A knife swing keeps the body (MovementAbilities.SwingHoldsBody): no surge starts, one under way ends, and
+        // the press goes as a jump, the one a jump at a head with the knife charged is.
         if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || (!surging && ctx.CurrentInput.y <= 0.1f) || ledgeLock > 0f
-            || settings.vaultSurgeDistance <= 0f)
+            || settings.vaultSurgeDistance <= 0f || ctx.Abilities.SwingHoldsBody)
         {
             StopSurge();
             return false;

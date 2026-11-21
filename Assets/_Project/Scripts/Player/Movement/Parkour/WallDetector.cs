@@ -11,9 +11,14 @@ public sealed class WallDetector
     internal WallDetector(PlayerMovement context) { ctx = context; }
     // Enemy bodies can still support short obstacle/head traversals, but never climbing or hanging.
     // Moving bodies (physics props, ragdolls) are never wall-run, hung from or vaulted: they would roll away mid-move.
+    // An enemy is anything the players fight: a zombie's body as the dodge knows bodies (DodgeEnemyPassThrough.IsEnemy), and
+    // any foe (ICombatFoe, CombatFoe.Of), which is the one that knows the hub range's practice targets: a steel stand the
+    // dodge's list has no word for. Its head arm was caught as a ledge and climbed (Logs/ledge-probe.txt, 2026-11-21:
+    // "머리 팔", climb Stand), and a target tips over when it is shot down. The user: "적에 매달려요".
     internal static bool CanUseSurface(Collider collider)
         => collider != null && collider.enabled && collider.gameObject.activeInHierarchy
             && collider.GetComponentInParent<SwingBar>() == null && !DodgeEnemyPassThrough.IsEnemy(collider)
+            && CombatFoe.Of(collider) == null
             && (collider.attachedRigidbody == null || collider.attachedRigidbody.isKinematic);
 
     /// <summary>The wall this way against the torso, from 0.45 m up: what keeps a wall climb going on it.</summary>

@@ -22,6 +22,13 @@ public sealed class MovementAbilities
         (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
     public bool IsOrdinaryAirborne => !ctx.IsGrounded &&
         (ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching);
+    /// <summary>
+    /// A knife swing has the body (PlayerMeleeCombat.HoldsBody: winding up, charging, or its clip not home yet): no parkour
+    /// move begins until it is over. Asked where parkour begins: the moves in the air here (TryStartAirAction) and the
+    /// jump's surge to a vault (ParkourTraversal.SurgesToVault); the press then goes as the jump it is. Ladders and cables
+    /// (Fixtures) don't ask: walking off a roof onto its ladder is what keeps the player from falling off it.
+    /// </summary>
+    internal bool SwingHoldsBody => ctx.MeleeCombat != null && ctx.MeleeCombat.HoldsBody;
 
     internal MovementAbilities(PlayerMovement context)
     {
@@ -71,7 +78,7 @@ public sealed class MovementAbilities
         }
         if (Fixtures.TryStart())
             return InputConsumed = true;
-        if (IsOrdinaryAirborne && Traversal.TryStartAirAction())
+        if (IsOrdinaryAirborne && !SwingHoldsBody && Traversal.TryStartAirAction())
             return InputConsumed = true;
         // Running, V is the dash push with a gun or fists. Otherwise the fists own V (shove, guard break), and with a
         // gun it is the crowd shove. PlayerMeleeCombat runs first and drops its pending shove once the dash is under way.

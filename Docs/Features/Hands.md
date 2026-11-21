@@ -96,7 +96,7 @@
 
 | 무엇 | 손 | 급 | 못 할 때 | 사는 곳 |
 | --- | --- | --- | --- | --- |
-| 칼 휘두르기·차징 | 오른팔 | 쥔다 | 파쿠르·다이브·슬라이드·쓰러짐·회피·대시·착지 회복·눌림이면 안 나간다 | `PlayerMeleeCombat.MovementBlocksAttack` |
+| 칼 휘두르기·차징 | 오른팔 | 쥔다 | 파쿠르·다이브·슬라이드·쓰러짐·회피·대시·착지 회복·눌림이면 안 나간다. 거꾸로 선딜·차징·클립이 끝날 때까지는 파쿠르(사다리·짚라인 말고)가 시작하지 않는다(11-21) | `PlayerMeleeCombat.MovementBlocksAttack`, `PlayerMeleeCombat.HoldsBody` → `MovementAbilities.SwingHoldsBody` |
 | 주먹 자세, 막기·패링 | 두 손 | 쥔다 | 위와 같다 | `PlayerBodyHands`의 `Hold.Fists`, `FistsView` |
 | 가드 브레이크(V 유지), 완벽 방어의 카운터 | 두 손 | 빼앗는다 (몸도 잠근다) | | `PlayerMovement.BodyLocked` |
 | 콜아웃 몸짓의 팔(총이 없을 때만) | 왼팔 | 양보한다 | 머리만 움직인다 | `CalloutGesture.HandsFree` |
