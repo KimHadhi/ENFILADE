@@ -25,6 +25,8 @@ using Object = UnityEngine.Object;
 ///   skins=ichigo,mayo                 characters by id (ichigo)
 ///   bake=gaitmoves                    also bake the turns on the spot into Tables/Player/GaitMoves.csv (GaitMoveBake)
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
+///   turnsim=TurnIP_L90,R_AimTurn_L90   turns on the spot put together as the game does (TurnBench): how the feet slide
+///                                     and jump with the turn layer's mask, over the stance's idle (R_Idle for R_...)
 ///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
 ///                                     head face and how fast the hands move against the chest (Track)
 /// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
@@ -71,6 +73,7 @@ internal static class ClipBench
     {
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string[] simulated = Array.Empty<string>();
         bool bakeMoves = false;
         foreach (string raw in lines)
         {
@@ -83,6 +86,7 @@ internal static class ClipBench
                 case "skins": skins = values; break;
                 case "models": models = values; break;
                 case "clips": only = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
+                case "turnsim": simulated = values; break;
                 case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
                 case "bake": bakeMoves = values.Any(v => v.Equals("gaitmoves", StringComparison.OrdinalIgnoreCase)); break;
             }
@@ -136,8 +140,26 @@ internal static class ClipBench
                     // Female Runner's turns and jumps, Combat Girls' gun turns.
                     var packs = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
                         .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    GaitMoveBake.Bake(packs, text);
+                    GaitMoveBake.Bake(packs, text, animator, scale);
                     bakeMoves = false;
+                }
+                if (simulated.Length > 0)
+                {
+                    text.AppendLine("-- turnsim");
+                    var packs = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
+                        .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
+                    foreach (string asked in simulated)
+                    {
+                        // clip@idle names the idle under it; else a gun's turn stands over that gun's idle (R_AimTurn_L90 over
+                        // R_Idle), the runner's over Idle.
+                        int at = asked.IndexOf('@');
+                        string name = at > 0 ? asked.Substring(0, at) : asked;
+                        if (!packs.TryGetValue(name, out var turn)) { text.AppendLine($"  ! no clip '{name}'"); continue; }
+                        string prefix = name.Length > 2 && name[1] == '_' ? name.Substring(0, 2) : "";
+                        packs.TryGetValue(at > 0 ? asked.Substring(at + 1) : prefix + "Idle", out var still);
+                        GaitMoveBake.Span(turn, out float start, out float end);
+                        TurnBench.Simulate(animator, scale, turn, still, start, end, text);
+                    }
                 }
                 foreach (string folder in folders)
                 {

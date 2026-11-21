@@ -14,7 +14,9 @@ using UnityEngine.Playables;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    private const int MovesLayer = 0, ClenchLayer = 1, PunchLayer = 2, TurnLayer = 3, KickLayer = 4, DodgeLayer = 5;
+    // The turn on the spot sits under the fists (0.9.277): it has the hips and the legs, and a punch thrown meanwhile keeps
+    // its own body over them.
+    private const int MovesLayer = 0, TurnLayer = 1, ClenchLayer = 2, PunchLayer = 3, KickLayer = 4, DodgeLayer = 5;
 
     [Header("Fists")]
     [SerializeField, Tooltip("Looped while fists are up. Only its fingers play, so the hands make fists.")]

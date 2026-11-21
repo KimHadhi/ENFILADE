@@ -232,8 +232,11 @@ public sealed partial class PlayerBody
         return channel;
     }
 
-    // The turn clips play on the legs alone (TurnLayer, the kick's leg mask): the hips, spine and head stay on the standing
-    // clip, so the steps don't rock the head, and with it the camera on the eyes (item 312). Since 0.9.261 they are BIPER
+    // The turn clips play on the hips and legs (TurnLayer, the kick's mask). Until 0.9.277 they played on the legs alone so
+    // the steps wouldn't rock the head (item 312), but a turn's legs step as its own hips swing: hung from the standing
+    // clip's hips, the feet it plants slid 28-56 cm through a turn and jumped 4-44 cm as the layer came in and went out
+    // (TurnBench, 2026-11-21; the user: "쪼로로... 오다가 쿵! 발 딛는"). With its hips its feet go where it put them; the head
+    // moves with them, 9-19 cm. Since 0.9.261 they are BIPER
     // Female Runner's turns on the spot by angle (TurnIP_L/R 45, 90, 135, 180), their own turn taken out of the pose
     // (clips.csv inPlaceYaw 1) and baked as how far round they are through their length (GaitMoves.csv kind turn): the legs
     // turn by that very curve, so the steps and the turn agree. One clip of one angle, turned at the body's own speed,
@@ -242,11 +245,15 @@ public sealed partial class PlayerBody
     {
         public AnimationClipPlayable Playable;
         public int Input;
-        // Its whole turn (degrees, + right), its length, and where its turn starts and is done (s, baked: start, end).
-        public float Angle, Length, Start, End;
+        // Its whole turn (degrees, + right), its length, and where its turn starts and its feet have come to rest (s, baked:
+        // start, end); and where its hips are all but round (TurnedBy), from when a view gone on ahead may start the next.
+        public float Angle, Length, Start, End, TurnedBy;
         public float[] Round;
         // Its share of the turn layer, eased so one turn hands over to the next (BlendTurn).
         public float Weight;
+        // The same clip on a second input, for a turn that hands over to another of its own (a view going on round the
+        // same way): one playable can't blend into itself, and jumped back to its start.
+        public TurnStep Twin;
     }
 
     private readonly Dictionary<string, TurnStep> turnByName = new Dictionary<string, TurnStep>(System.StringComparer.OrdinalIgnoreCase);
@@ -256,6 +263,8 @@ public sealed partial class PlayerBody
     private float stepAngle;
     // A clip's turn is stretched or shrunk to what the legs need at most this much (share of its own).
     private const float TurnScale = .4f;
+    // A turn this far round (share) has its hips round; what is left is its feet coming to rest.
+    private const float TurnedShare = .98f;
 
     private readonly List<TurnStep> turnClips = new List<TurnStep>();
     private AnimationMixerPlayable turnMixer;
@@ -267,14 +276,14 @@ public sealed partial class PlayerBody
     // From BuildLayers, after BuildKick has made the leg mask.
     private void BuildTurn()
     {
-        layers.SetLayerMaskFromAvatarMask(TurnLayer, legMask);
+        layers.SetLayerMaskFromAvatarMask(TurnLayer, kickMask);
         turnClips.Clear();
         turnByName.Clear();
         shownTurn = null;
         var rows = new List<(string clip, IReadOnlyDictionary<string, string> row)>();
         foreach (string id in GameTables.RowIds(GaitMovesTable))
             if (GameTables.TryGetRow(GaitMovesTable, id, out var row) && row.Text("kind") == "turn") rows.Add((id, row));
-        turnMixer = AnimationMixerPlayable.Create(graph, Mathf.Max(1, rows.Count));
+        turnMixer = AnimationMixerPlayable.Create(graph, Mathf.Max(1, rows.Count * 2));
         graph.Connect(turnMixer, 0, layers, TurnLayer);
         foreach (var (clipName, row) in rows)
         {
@@ -284,23 +293,36 @@ public sealed partial class PlayerBody
                 Report($"clip '{clipName}' is not in the PlayerBody profile.");
                 continue;
             }
-            var playable = ClipPlayable(clip);
-            playable.SetSpeed(0);
-            int input = turnClips.Count;
-            graph.Connect(playable, 0, turnMixer, input);
             var round = new List<float>();
             foreach (string cell in row.Text("profile").Split(';'))
                 if (float.TryParse(cell, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value))
                     round.Add(value);
             float length = Mathf.Max(.05f, clip.length);
             float start = Mathf.Clamp(row.Number("start", 0f), 0f, length), end = Mathf.Clamp(row.Number("end", length), start + .05f, length);
-            var step = new TurnStep
+            TurnStep first = null;
+            for (int copy = 0; copy < 2; copy++)
             {
-                Playable = playable, Input = input, Angle = row.Number("turn", 0f), Length = length, Start = start, End = end,
-                Round = round.ToArray()
-            };
-            turnClips.Add(step);
-            turnByName[clipName] = step;
+                var playable = ClipPlayable(clip);
+                playable.SetSpeed(0);
+                int input = turnClips.Count;
+                graph.Connect(playable, 0, turnMixer, input);
+                var step = new TurnStep
+                {
+                    Playable = playable, Input = input, Angle = row.Number("turn", 0f), Length = length, Start = start, End = end,
+                    Round = round.ToArray()
+                };
+                step.TurnedBy = end;
+                float from = RoundAt(step, start), to = RoundAt(step, end);
+                for (int i = 0; i <= 100 && Mathf.Abs(to - from) > 1e-3f; i++)
+                {
+                    float time = Mathf.Lerp(start, end, i / 100f);
+                    if ((RoundAt(step, time) - from) / (to - from) >= TurnedShare) { step.TurnedBy = time; break; }
+                }
+                turnClips.Add(step);
+                if (first == null) first = step;
+                else { first.Twin = step; step.Twin = first; }
+            }
+            turnByName[clipName] = first;
         }
         stepping = null;
         turnLayerWeight = turnLayerTarget = 0f;
@@ -369,6 +391,7 @@ public sealed partial class PlayerBody
         local.y = 0f;
         float speed = local.magnitude;
         float heading = speed > StillTravel ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
+        keepsPlace = speed < StillTravel;
         float scale = GaitScale;
         mixWeight = mixStride = 0f;
         mixVelocity = Vector2.zero;
@@ -409,6 +432,9 @@ public sealed partial class PlayerBody
 
     // Below this the travel has no heading: the body stands (m/s).
     private const float StillTravel = .3f;
+
+    // Standing still this frame (Locomotion): the body keeps its place on the ground (PlaceBody, FollowHead).
+    private bool keepsPlace;
 
     private void Ask(MoveSet set, float want)
     {
@@ -718,12 +744,17 @@ public sealed partial class PlayerBody
         if (!still) { turning = 0; stepping = null; return false; }
         float look = transform.eulerAngles.y, limit = turnStartAngle + 30f;
         float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
-        if (turning == 0 && stepping == null && Mathf.Abs(offset) > turnStartAngle)
+        // A turn whose hips are round hands over to the next at once if the view has gone on that far again: its feet come
+        // to rest over most of a second more (BIPER's runner turns until 2 s of 2.27, measured), and a view still turning
+        // would have dragged the legs round meanwhile.
+        bool free = stepping == null ? turning == 0 : stepTime >= stepping.TurnedBy;
+        if (free && Mathf.Abs(offset) > turnStartAngle)
         {
             // Legs left behind on the left turn round to the right, and the other way round.
             turning = offset < 0f ? 1 : -1;
             turnVelocity = 0f;
             if (turnSteps) stepping = NearestTurn(-offset, turns);
+            if (stepping != null && stepping == shownTurn && stepping.Twin != null) stepping = stepping.Twin;
             if (stepping != null)
             {
                 stepTime = stepping.Start;

@@ -575,7 +575,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (StaysLimp()) return;
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
-        legsPlanted = false;
+        legsPlanted = keepsPlace = false;
         ChoosePose(dt);
         Blend(dt);
         BlendLayers(dt);
@@ -586,6 +586,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             legYaw = transform.eulerAngles.y + yaw;
         }
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        KeepPlaceAsTheViewTurns();
         PlaceBody();
         PlacePaired();
         AimLook(dt);
@@ -618,7 +619,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
             HoldHeadPlace();
-            if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody) FollowHead(Time.deltaTime);
+            if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
             else if (gripWeight <= 0f && slideBodyAnchored && !ClipCarriesBody) FollowHeadAlongSlide(Time.deltaTime);
             using (GripMarker.Auto()) Grip(Time.deltaTime);
             using (FeetMarker.Auto())
@@ -639,8 +640,26 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private static readonly Unity.Profiling.ProfilerMarker GripMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Grip"),
         FeetMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Feet"), LookMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Look");
 
+    // The body's place (headAlignment) is held in the view's frame, so as the view turned, the body went round the capsule
+    // with it: standing still with the legs planted, a look 60° round moved the feet about 12 cm sideways before any step,
+    // and turning on the spot the feet crept round and then stepped (the user, 2026-11-21: "쪼로로... 오다가 쿵!"). Standing
+    // still, the place is turned back by the view's own turn, so the body stays where it stands on the ground: the head
+    // turns on the neck and the camera on the eyes goes with it, as a head does. Moving, it follows the view as before.
+    private float lastViewYaw;
+    private bool hasViewYaw;
+
+    private void KeepPlaceAsTheViewTurns()
+    {
+        float view = transform.eulerAngles.y;
+        if (keepsPlace && hasViewYaw && !slideBodyAnchored)
+            headAlignment = Quaternion.Euler(0f, -Mathf.DeltaAngle(lastViewYaw, view), 0f) * headAlignment;
+        lastViewYaw = view;
+        hasViewYaw = true;
+    }
+
     // Clips put the head in different places (lying slides keep it far behind the feet). Ease the body so its head
-    // stays just behind the camera; the follow is slower than a stride, so running sway is not cancelled.
+    // stays just behind the camera; the follow is slower than a stride, so running sway is not cancelled. Standing still it
+    // rests (keepsPlace): the feet stay where they stand, and the camera rides the eyes wherever the head is.
     private void FollowHead(float dt)
     {
         if (head == null || view == null || view.parent == null || dt <= 0f) return;

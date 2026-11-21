@@ -27,14 +27,17 @@ internal static class GaitMoveBake
     internal const int Samples = 24, JumpSamples = 48;
     private static readonly string[] Sides = { "L", "R" };
 
-    internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, StringBuilder report)
+    // With a body to stand them on (ClipBench's), a turn's end is where its feet come to rest (TurnBench.SettledAt) rather
+    // than where its hips are all but round.
+    internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, StringBuilder report, Animator body = null, float scale = 1f)
     {
         var rows = new StringBuilder();
         rows.Append("id,kind,length,profile,turn,leave,top,land,start,end,#설명\n");
         rows.Append("\"#설명 (ClipBench가 BIPER Female Runner의 클립에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다"
             + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). kind turn 제자리 돌기(TurnIP_*): profile 루트가 그때까지 돈 몫(0~1), "
             + "클립 길이를 고르게 나눈 " + Samples + "곳의 끝에서(';'), turn 그 클립이 도는 각도(+ 오른쪽), start 돌기 시작(" + StartShare * 100f
-            + "%가 되기 " + StartLead + "초 전: 첫 발을 드는 때), end 다 돈 때(" + EndShare * 100f + "%). 게임은 start부터 end까지만 틀고, 다리는 이 곡선대로 돈다"
+            + "%가 되기 " + StartLead + "초 전: 첫 발을 드는 때), end 발이 자리를 잡은 때(" + EndShare * 100f + "% 돈 뒤 두 발이 클립 끝의 자리에서 2cm 안에 "
+            + "머무는 때). 게임은 start부터 end까지만 틀고, 다리는 이 곡선대로 돈다"
             + "(PlayerBody.TurnOnTheSpot). "
             + "kind jump 점프(Jump_*·RunJump_*): profile 몸 중심이 처음보다 높은 정도(꼭대기 = 1), 처음부터 끝까지 고르게 " + JumpSamples + "곳(';'), "
             + "leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). 점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight))\",,,,,,,,,,\n");
@@ -51,6 +54,7 @@ internal static class GaitMoveBake
             if (!clips.TryGetValue(name, out var clip)) continue;
             var round = Round(clip, out float whole);
             Span(clip, out float start, out float end);
+            if (body != null) end = TurnBench.SettledAt(body, scale, clip, end);
             rows.Append(string.Join(",", name, "turn", F(clip.length), string.Join(";", round.Select(F)), F(whole), "", "", "", F(start), F(end), ""));
             rows.Append('\n');
             report.AppendLine(Invariant($"  {name,-20} turn  {clip.length:0.00}s turns {whole:0.0} from {start:0.00} to {end:0.00}s share {string.Join(" ", round.Where((_, i) => i % 4 == 3).Select(v => v.ToString("0.00", CultureInfo.InvariantCulture)))}"));
@@ -118,7 +122,7 @@ internal static class GaitMoveBake
     private const float StartShare = .03f, StartLead = .15f, EndShare = .98f;
 
     // Where a turn starts and is done (s), read finely from its root's turn.
-    private static void Span(AnimationClip clip, out float start, out float end)
+    internal static void Span(AnimationClip clip, out float start, out float end)
     {
         start = 0f;
         end = clip.length;
@@ -143,6 +147,9 @@ internal static class GaitMoveBake
             round[i] = Mathf.Abs(whole) > 1e-3f ? along[(i + 1) * 8] / whole : 0f;
         return round;
     }
+
+    /// <summary>The root's turn summed from the start at 241 evenly spaced moments (degrees), and the whole (TurnBench).</summary>
+    internal static float[] TurnedFinely(AnimationClip clip, out float whole) => Turned(clip, 240, out whole);
 
     // The root's turn summed from the start at each of steps+1 evenly spaced moments (degrees), and the whole; null without
     // root curves.
