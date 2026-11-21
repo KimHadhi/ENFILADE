@@ -45,13 +45,38 @@ public sealed class FontFaces : ScriptableObject
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() => instance = null;
 
-    /// <summary>The face with this key, or null.</summary>
+    /// <summary>Where a face's own TTF can ship instead of a TMP asset made in the editor: Resources/UI/Fonts/&lt;key&gt;.ttf.</summary>
+    public const string ShippedFontsFolder = "UI/Fonts";
+
+    // Faces made at run time from a shipped TTF, by key.
+    private static readonly System.Collections.Generic.Dictionary<string, TMP_FontAsset> madeFaces =
+        new System.Collections.Generic.Dictionary<string, TMP_FontAsset>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The face with this key, or null. A key this asset doesn't list may be a TTF shipped in
+    /// Resources/UI/Fonts (the Hitmarker faces of the 2026-11-22 HUD, the user's pick of the Garry's Mod addons' fonts):
+    /// it becomes a dynamic TMP face the first time it is asked for, its glyphs drawn as they are met, so a face can come
+    /// into the game as its file alone without the editor's Font Asset Creator. Hangul and anything else it lacks fall
+    /// through to TMP's global fallbacks like every face's.</summary>
     public TMP_FontAsset Font(string key)
     {
-        if (string.IsNullOrEmpty(key) || faces == null) return null;
-        foreach (var face in faces)
-            if (face != null && string.Equals(face.key, key, StringComparison.OrdinalIgnoreCase)) return face.font;
-        return null;
+        if (string.IsNullOrEmpty(key)) return null;
+        if (faces != null)
+            foreach (var face in faces)
+                if (face != null && string.Equals(face.key, key, StringComparison.OrdinalIgnoreCase)) return face.font;
+        return Shipped(key);
+    }
+
+    private static TMP_FontAsset Shipped(string key)
+    {
+        if (madeFaces.TryGetValue(key, out var made) && made != null) return made;
+        var file = Resources.Load<Font>(ShippedFontsFolder + "/" + key);
+        if (file == null) return null;
+        made = TMP_FontAsset.CreateFontAsset(file, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024,
+            AtlasPopulationMode.Dynamic, true);
+        if (made == null) return null;
+        made.name = key + " (shipped)";
+        made.hideFlags = HideFlags.DontSave;
+        return madeFaces[key] = made;
     }
 
     /// <summary>The preset material with this key, or null.</summary>

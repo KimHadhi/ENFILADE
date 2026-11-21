@@ -38,6 +38,14 @@ public static class FontRoles
     public const string Chat = "Chat";
     /// <summary>Text that asks for no font: TMP's default font, which TMP Settings must name too.</summary>
     public const string Body = "Body";
+    /// <summary>The score popup's yellow total and +points (Hitmarker Text Bold, shipped as its TTF).</summary>
+    public const string Score = "Score";
+    /// <summary>The score popup's line names, always English (Hitmarker Text Medium).</summary>
+    public const string ScoreLine = "ScoreLine";
+    /// <summary>The name under an enemy's health bar (Hitmarker Text Medium).</summary>
+    public const string EnemyBar = "EnemyBar";
+    /// <summary>HUD Mk II text: health, ammo, pickups, weapon names (Hitmarker Normal).</summary>
+    public const string MkHud = "MkHud";
 
     // Fields of a role's rows in Fonts.csv ("Label.face").
     public const string FaceField = "face", PresetField = "preset", WarmField = "warm", PrefabsField = "prefabs";

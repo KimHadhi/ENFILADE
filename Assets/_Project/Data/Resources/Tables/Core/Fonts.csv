@@ -21,6 +21,14 @@ Alarm.warm,texts,
 Chat.face,scoredream-5,채팅 줄. 예전 ChattingFont(Score5)
 Chat.warm,texts,
 Chat.prefabs,Chatting/,"같은 글꼴을 쓰는 역할이 둘이면, 프리팹 경로에 이 말이 든 글자가 이 역할이다(ENFILADE → 글꼴이 역할을 고를 때)"
+Score.face,hitmarker-text-bold,"점수 팝업의 노란 합계와 +점수(BO6 점수 팝업, 2026-11-22). Hitmarker Text Bold: 게리 모드 애드온 영상에서 쓰던 글꼴(액티비전 2023). 파일은 Resources/UI/Fonts/<이름>.ttf, 게임이 켜질 때 TMP 글꼴로 만든다(FontFaces)"
+Score.warm,digits,
+ScoreLine.face,hitmarker-text-medium,"점수 팝업의 줄 이름(Elimination·Headshot ...). 언어와 상관없이 영어(사용자 2026-11-22: 점수 팝업은 영문 통일). Hitmarker Text Medium"
+ScoreLine.warm,latin,
+EnemyBar.face,hitmarker-text-medium,"좀비 머리 위 체력바의 이름(BO6 좀비 체력바). Hitmarker Text Medium. 한글 이름은 전역 대체 글꼴(Pretendard)로 그려진다"
+EnemyBar.warm,texts,
+MkHud.face,hitmarker-normal-regular,"HUD Mk II 글자(체력·탄약·획득 줄·무기 이름 ...). Hitmarker Normal: 영상의 HUD Mk II 글꼴"
+MkHud.warm,texts,
 Body.face,pretendard-6,글꼴을 고르지 않은 글자. TMP 기본 글꼴과 같아야 한다(역할 맞추기가 TMP Settings에 적는다)
 Body.warm,latin,
 Warmup.delay,0.5,게임을 켜고 첫 씬이 뜬 뒤 미리 그리기를 시작할 때까지(초)
