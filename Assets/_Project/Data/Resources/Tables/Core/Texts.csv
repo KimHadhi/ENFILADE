@@ -834,9 +834,7 @@ servers.hint,두 번 누르면 바로 참가,Double-click to join,서버 찾기 
 servers.join,참가   <size=70%>Enter</size>,Join <size=70%>Enter</size>,서버 찾기 창 > 오른쪽 아래 분홍 버튼
 servers.modded,모드 서버: {0},Modded: {0},"서버 찾기 창 > 방 카드의 둘째 줄(분홍). 방장의 모드가 게임 수치를 바꾸는 방. {0} = 모드 이름들"
 servers.modded.title,모드가 적용된 서버,Modded server,"서버 찾기 창 > 모드 서버에 들어가기 전에 묻는 창의 제목"
-servers.modded.body,"이 방은 방장의 모드가 게임 수치를 바꿉니다: {0}
-들어가 있는 동안 내 모드의 표 대신 방장의 것을 씁니다. 접속할까요?","This room's numbers are changed by the host's mods: {0}
-While you are in it the host's tables are used instead of your mods'. Join?","서버 찾기 창 > 모드 서버 물음 창의 본문. {0} = 모드 이름들. 아래에 예/아니오"
+servers.modded.body,"이 방은 방장의 모드가 게임 수치를 바꿉니다: {0}\n들어가 있는 동안 내 모드의 표 대신 방장의 것을 씁니다. 접속할까요?","This room's numbers are changed by the host's mods: {0}\nWhile you are in it the host's tables are used instead of your mods'. Join?","서버 찾기 창 > 모드 서버 물음 창의 본문. {0} = 모드 이름들. 아래에 예/아니오"
 servers.join.cancel,접속 취소,Cancel,서버 찾기 창 > 오른쪽 아래 분홍 버튼(접속하는 동안)
 #--- 프로필 ---,,,
 profile.title,프로필,Profile,프로필 창 제목
