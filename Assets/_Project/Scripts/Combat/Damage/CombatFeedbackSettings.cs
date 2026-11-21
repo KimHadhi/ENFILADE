@@ -4,12 +4,9 @@ using UnityEngine;
 /// <summary>Shared imported presentation assets, loaded for existing scenes without prefab migration.</summary>
 public sealed class CombatFeedbackSettings : ScriptableObject
 {
-    public Texture2D staggerImage;
     public AudioClip staggerSound;
     [Range(0f, 1f), Tooltip("Volume of the stagger cue. 0 mutes it; 1 is full volume.")]
     public float staggerSoundVolume = .25f;
-    [Min(40f), Tooltip("Stagger image width at 3 metres, in reference screen pixels before the opening pop. Closer grows up to 2x; farther shrinks with distance.")]
-    public float staggerImageWidth = 260f;
     /// <summary>
     /// The prompt font: the Prompt text role (Fonts.csv), no longer a field of this asset, so every reader of this name
     /// follows the role table.
@@ -20,17 +17,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public CrosshairProfile gunCrosshair;
     [Tooltip("Fists and melee weapons without a Crosshair Profile of their own.")]
     public CrosshairProfile meleeCrosshair;
-    [Header("Executable heartbeat")]
-    [Range(0f, .4f), Tooltip("Stagger icon swell on each heartbeat (lub, then a smaller dub). 0 turns the pulse off.")]
-    public float heartbeatScale = .28f;
-    [Range(0f, 1f), Tooltip("Master strength of everything that beats: swell, glow, echo and the HP bar's ripples. 0 keeps the mark still.")]
-    public float heartbeatStrength = .35f;
-    [Tooltip("Heartbeats per minute when the enemy becomes executable / just before posture fully recovers. Speeds up as the window closes.")]
-    public Vector2 heartbeatBpm = new Vector2(72f, 150f);
-    [Tooltip("Bloom and elliptical waves around the enemy HP bar while executable. Off-white so it never reads as red health. Alpha is the brightest heartbeat.")]
-    public Color executableGlowColor = new Color(.93f, .91f, .9f, .85f);
-    [Tooltip("Round glow behind the execution mark, pulsing with the heartbeat.")]
-    public Color executableMarkGlowColor = new Color(1f, .12f, .2f, .85f);
     [Header("Executable body (the enemy itself while executable)")]
     [Tooltip("Faint tint over the whole body. Alpha is its strength.")]
     public Color executableBodyTint = new Color(1f, .06f, .1f, .3f);
@@ -41,23 +27,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     [Header("Holder (a zombie that has this PC's player in its grip)")]
     [ColorUsage(false, true), Tooltip("Outline round a zombie holding or pinning a player, seen or not (HoldReveal, EnemyOutlines; its width is Tables/Hud/Outlines'). Above 1 it catches the bloom.")]
     public Color holderOutlineColor = new Color(2f, 1.05f, .1f, 1f);
-    [Header("Executable palette (whole enemy bar re-dresses while executable)")]
-    [Tooltip("Remaining health fill. Bright crimson pink: clearly not the normal red, without going dull.")]
-    public Color executableHealthColor = new Color(.98f, .24f, .42f);
-    [Tooltip("Already lost part of the health track.")]
-    public Color executableHealthLostColor = new Color(.45f, .05f, .16f, .4f);
-    [Tooltip("Dark soft plate behind the bar, so the re-dressed bar stands out on any background.")]
-    public Color executablePlateColor = new Color(.06f, 0f, .03f, .8f);
-    [Tooltip("< > brackets and the posture bar (counts down the window as it refills).")]
-    public Color executableAccentColor = new Color(.95f, .93f, .92f);
-    [Tooltip("Enemy name above the bar.")]
-    public Color executableNameColor = new Color(1f, .5f, .6f);
-    [Range(0f, .5f), Tooltip("Enemy HP bar scale kick when the enemy becomes executable.")]
-    public float executableBarPunch = .22f;
-    [Min(.05f), Tooltip("White flash + light sweep across the HP bar at the moment of becoming executable.")]
-    public float executableFlashSeconds = .4f;
-    [Min(0f), Tooltip("How far the elliptical waves radiate out from the HP bar on each heartbeat, bar units (bar is 120 wide).")]
-    public float executableRippleReach = 36f;
     [Header("Shove Impacts")]
     public AudioClip[] shoveEnemySounds;
     public AudioClip shoveWorldSound;
@@ -194,12 +163,7 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float popupFullSizeDistance = 6f;
     [Range(.2f, 1f)] public float popupMinimumDistanceScale = .65f;
 
-    [Header("Enemy health bar")]
-    public Color enemyHealthColor = new Color(.93f, .13f, .11f);
-    [Tooltip("Already lost health: almost invisible grey.")]
-    public Color enemyHealthLostColor = new Color(.62f, .62f, .62f, .12f);
-
-    [Header("Health loss (enemy and player bars)")]
+    [Header("Health loss (the player's bar; an enemy's is EnemyHealthBarHUD's, Tables/Hud/EnemyBars)")]
     [Tooltip("Off: every trail is Small Loss Color (plain yellow). On: yellow -> orange by hit size.")]
     public bool colorTrailByLossSize = true;
     [Tooltip("Trail colour for a tiny hit.")]
@@ -218,19 +182,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float trailStripeScroll = 14f;
     [Tooltip("Thin white line where remaining health ends while a trail is showing.")]
     public bool trailEdgeLine = true;
-    [Range(.5f, 8f), Tooltip("Edge line thickness at rest, bar units (bar is 120 wide, 8 tall). Sits mostly on the lost side so it reads as the boundary.")]
-    public float trailEdgeWidth = 3f;
-    [Header("Health edge hit pulse (enemy bar)")]
-    [Range(0f, 4f), Tooltip("On a hit the edge line snaps this much taller (1.6 = 2.6x), springs back with a small squash and settles. 0 turns the pulse off.")]
-    public float trailEdgePulseScale = 1.6f;
-    [Range(0f, 20f), Tooltip("On a hit the edge line also stretches this far to the right (into the lost part), bar units, then snaps back faster than the height.")]
-    public float trailEdgeHitStretch = 6f;
-    [Min(.05f), Tooltip("Time for the spring back to settle after the snap, seconds. Bigger = slower, floatier.")]
-    public float trailEdgeSettleSeconds = .5f;
-    [Tooltip("Edge line alpha: x = at rest, y = at the moment of the hit.")]
-    public Vector2 trailEdgeAlpha = new Vector2(.75f, 1f);
-    [Tooltip("Soft glow that blooms around the edge line on a hit and fades with the spring. Alpha is the peak; 0 turns it off.")]
-    public Color trailEdgeGlowColor = new Color(1f, .97f, .94f, .8f);
     [Min(0f), Tooltip("The trail starts white and settles into its loss colour over this time.")]
     public float trailFlashSeconds = .12f;
     [Min(0f), Tooltip("Seconds the lost part stays full before draining.")]
@@ -239,8 +190,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float trailDrainPerSecond = .6f;
     [Min(0f), Tooltip("Extra drain speed per remaining fraction, so large chunks catch up. 70% drains in about 0.45 s.")]
     public float trailDrainCatchUp = 4f;
-    [Min(0f), Tooltip("Enemy bar shake for a hit removing all health, bar units (bar is 120 wide). Scales with the share of health lost.")]
-    public float enemyShakeMax = 14f;
     [Min(.05f), Tooltip("How long the enemy bar rattles after a hit.")]
     public float enemyShakeSeconds = .32f;
     [Min(1f), Tooltip("Enemy bar rattle speed, back-and-forth swings per second.")]

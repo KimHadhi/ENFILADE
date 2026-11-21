@@ -1,0 +1,56 @@
+﻿key,value,note
+#안내,,"BO6 좀비 체력바: 게리 모드 애드온 Black Ops 6 Zombies Healthbars(cl_bo6healthbar.lua)를 그대로 옮긴 수치(EnemyHealthBarHUD, Docs/Features/EnemyBars.md). 길이는 1920x1080 화면 기준 px이고 가로 값은 화면 너비÷1920, 세로 값은 높이÷1080을 곱한다(애드온이 ScrW·ScrH에 곱한 비율 그대로). '화면 px'라고 쓴 것만 해상도와 상관없다. 시간은 초. 화면에 뜨는 바는 하나: 조준점 아래의 적이나 내가 방금 때린 적"
+Bar.width,142,"바 너비(px, 가로). 애드온 ScrW*0.07395833"
+Bar.height,8.9964,"바 높이(px, 세로). ScrH*0.00833. 정수로 잘려 1080p에서 8px로 그려진다(Bar.wholePixels)"
+Bar.above,21.6,"적 머리 위의 점(충돌 캡슐 꼭대기 가운데를 화면에 옮긴 점)에서 바 가운데까지 올린 거리(px, 세로). ScrH*0.02. 바 위 끝은 그 점에서 21.6 + 높이/2 = 26.0982px 위"
+Bar.background,#45494C,"바탕 색(69,73,76)"
+Bar.altBackground,false,true면 바탕을 무늬 그림 bg_alt_1.png로(애드온 설정 froze_bo6hbar_alt_bg_texture. 기본 꺼짐)
+Bar.follower,#FFFFFF,맞은 만큼 남았다가 따라 줄어드는 흰 꼬리
+Bar.health,#DD473B,"남은 체력(221,71,59)"
+Bar.edge,#000000,남은 체력 끝의 검은 선(체력이 가득일 때는 없다)
+Bar.outline,#000000,검은 테두리. 바 안쪽에 그린다
+Bar.line,1,"끝 선과 테두리의 두께, 맞은 조각이 테두리 안으로 들어오는 폭(화면 px)"
+Bar.hold,1,"맞은 뒤 흰 꼬리가 기다리는 시간(초, 게임 시간). 기다리는 동안 더 맞아도 처음 맞은 때부터 센다"
+Bar.follow,0.11,흰 꼬리가 남은 체력으로 줄어드는 빠르기: 프레임마다 남은 거리의 (프레임 시간 ÷ 이 값)만큼(초)
+Bar.snap,1.03,남은 체력 × 이 값이 꼬리보다 길면 꼬리가 체력에 붙는다(다 따라왔거나 회복했을 때)
+Bar.deadHold,0.4,처치된(또는 사라진) 적의 바가 체력 0으로 그 자리에 남는 시간(초)
+Bar.wholePixels,true,사각형의 좌표·크기를 정수로 잘라 그리고 글자 자리는 올림한다(Source의 surface 함수와 draw.SimpleText처럼). false면 소수점 그대로
+Name.show,true,이름을 그린다(애드온 설정 froze_bo6hbar_enabled_name_cl)
+Name.shadow,true,이름 뒤에 흐린 검은 그림자를 그린다(froze_bo6hbar_enabled_name_shadow_cl)
+Name.cell,15.12,"이름 글자 칸 높이(px, 세로). ScrH*0.014, 정수로 잘린다(1080p 15px). 글꼴은 Fonts.csv의 EnemyBar 역할(Hitmarker Text Medium). 이름은 대문자로"
+Name.blurCell,16.2,"그림자용 흐린 글자의 칸 높이(px, 세로). ScrH*0.015 → 16px"
+Name.cellPerEm,1.25,글자 칸 높이 ÷ 글자 크기(em). Hitmarker의 winAscent+winDescent = 1.25em이고 Windows는 칸 높이로 글꼴을 고른다. 글자 크기는 반올림한 px(1080p 12px)
+Name.ascent,1,칸 위 끝에서 글자 기준선까지(em). Hitmarker의 winAscent ÷ unitsPerEm
+Name.gap,2,바 아래 끝에서 이름 칸 위 끝까지(화면 px)
+Name.color,#FFFFFF,이름 색
+Name.shadowColor,#000000,그림자 색
+Name.drop,1,글자 바로 밑 그림자가 오른쪽 아래로 비키는 거리(화면 px). 애드온 이름 글꼴의 shadow = true
+Name.blur,2,흐린 그림자 글꼴의 blursize(화면 px). Source는 σ = 0.683 × 이 값인 (2×이 값+1)칸 가우스로 흐린다
+Name.passes,6,흐린 그림자를 겹쳐 그리는 횟수
+Icon.normalSize,24;24,보통 아이콘(icon_normal.png) 가로;세로(px). 애드온은 둘 다 ScrW*0.0125라 둘 다 화면 너비를 따른다
+Icon.normalLeft,25.5,"바 왼쪽 끝에서 보통 아이콘 왼쪽 끝까지(px, 가로). ScrW*(0.0125 + 0.00078125)"
+Icon.bossSize,26.496;38.016,"보스 아이콘(icon_boss.png) 가로;세로(px). ScrW*0.0138, ScrH*0.0352"
+Icon.bossLeft,27.996,"바 왼쪽 끝에서 보스 아이콘 왼쪽 끝까지(px, 가로). ScrW*(0.0138 + 0.00078125)"
+Icon.up,5.0004,"바 위 끝에서 아이콘 위 끝까지 올린 거리(px, 세로). ScrH*0.00463"
+Icon.bossKinds,Brute;Exploder;Charger;Ninja;Candyman;Breadbag;Reaper,보스 아이콘을 다는 좀비 종류(ZombieKinds). 애드온의 보스 목록(이름에 boss가 든 NPC와 froze_bo6hbar_add_boss) 자리. 나머지(Shambler·Runner)와 좀비 아닌 표적은 보통 아이콘
+Hit.start,4.4982,"맞은 자리에서 솟는 기둥의 처음 높이(px, 세로). 바 높이의 절반"
+Hit.rise,11.988,"기둥이 바 높이보다 더 솟는 높이(px, 세로). ScrH*0.0111. 다 솟으면 20.9844px"
+Hit.riseTime,0.16,기둥이 솟는 빠르기(초. Bar.follow와 같은 방식)
+Hit.lineTime,0.08,기둥 왼쪽의 선이 솟는 빠르기(초)
+Hit.lineWidth,2,그 선의 두께(화면 px)
+Hit.fadeFrom,0.95,기둥이 다 솟은 높이의 이 몫을 넘으면 흐려지기 시작한다
+Hit.fadeTime,0.15,기둥이 흐려지는 빠르기(초)
+Hit.lineFadeTime,0.1,선이 흐려지는 빠르기(초)
+Hit.gone,0.01,기둥의 진하기(0~255)가 이 아래로 내려가면 지운다
+Hit.color,#FFFFFF,몸샷 기둥과 바 안 조각의 색
+Hit.headColor,#FFFF5E,"헤드샷 기둥과 조각의 색(255,255,94)"
+Hit.firstAlpha,60,체력이 준 것을 본 순간의 기둥 진하기(0~255). 맞은 소식으로 칠하기 전
+Hit.firstLineAlpha,100,그때 선의 진하기
+Hit.alpha,100,맞은 소식으로 칠한 뒤의 기둥 진하기(0~255)
+Hit.lineAlpha,140,그때 선의 진하기
+Hit.wordDelay,0.05,"맞은 소식이 온 뒤 마지막 기둥을 칠할 때까지(초, 게임 시간). 헤드샷이면 노랗게"
+Aim.reach,57.15,"이 거리(m) 안의 적만 조준해서 바를 띄운다. 애드온 froze_bo6hbar_max_distance 3000(게리 모드 단위, 1단위 0.01905m)"
+Aim.keep,3,조준점이 적에서 벗어난 뒤 바가 남는 시간(초)
+Aim.traceRange,624.2304,조준점 광선의 길이(m). 게리 모드 GetEyeTrace의 32768단위
+Aim.pause,0.4,"내가 처치한 뒤 이 시간(초, 게임 시간) 동안 조준이나 내 타격으로 바가 다른 적에게 옮겨 가지 않는다"
+Aim.damagedWindow,0.1,"내가 때린 뒤 이 시간(초, 게임 시간) 동안은 조준점 아래가 적이 아닌 물리 물체여도 조준한 것으로 센다(Aim.keep을 다시 센다)"

@@ -29,14 +29,14 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
 
     /// <summary>
     /// Its name over its health bar and in the kill feed: a zombie's kind's words from Texts.csv (ZombieType), where every
-    /// zombie used to read its prefab's name, Enemy_Test (user, 2026-11-11 playtest).
+    /// zombie used to read its prefab's name, Enemy_Test (user, 2026-11-11 playtest). The bar reads it each frame it shows
+    /// (EnemyHealthBarHUD), so a name a copy hears of late needs no word to it.
     /// </summary>
     internal void SetDisplayName(string name)
     {
         name = name ?? "";
         if (name == displayName) return;
         displayName = name;
-        if (TryGetComponent(out EnemyVitalsHUD vitals)) vitals.Rename();
     }
     public EnemyRank Rank => rank;
     /// <summary>Named or elite: its kill stands out in the feed.</summary>

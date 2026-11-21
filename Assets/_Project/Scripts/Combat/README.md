@@ -17,7 +17,7 @@
 | `Waves/` | 웨이브 생성·처치 집계·진행 | [WaveManager](../Modes/Waves/WaveManager.cs) |
 | `../Player/Combat/` | 플레이어 입력, 슬롯, 공격, 방어·반격·처형·슬라이드 접촉 | [PlayerWeaponSlots](../Weapons/PlayerWeaponSlots.cs), [PlayerMeleeCombat](../Melee/PlayerMeleeCombat.cs), [SlideCombat](../Melee/SlideCombat.cs) |
 | `../Enemies/` | 실제 적 HP·사망·추적·공격 | [EnemyHealth](../Enemies/EnemyHealth.cs), [EnemyCombatAI](../Enemies/EnemyCombatAI.cs) |
-| `../UI/` | 탄약·슬롯·체력·체간·처형 안내 | [AmmoHUD](../UI/Hud/Weapons/AmmoHUD.cs), [EnemyVitalsHUD](../UI/Hud/Damage/EnemyVitalsHUD.cs), [ExecutionHUD](../UI/Hud/Prompts/ExecutionHUD.cs) |
+| `../UI/` | 탄약·슬롯·체력·체간·처형 안내 | [AmmoHUD](../UI/Hud/Weapons/AmmoHUD.cs), [EnemyHealthBarHUD](../UI/Hud/Damage/EnemyHealthBarHUD.cs), [ExecutionHUD](../UI/Hud/Prompts/ExecutionHUD.cs) |
 | `../Debug/Combat/` | 연습 표적·진단 HUD·시험용 소환 | [WeaponTrainingTarget](../Dev/WeaponTrainingTarget.cs), [ConsoleEnemySpawner](../Dev/ConsoleEnemySpawner.cs) |
 
 `Feel`의 대부분은 표시·소리지만 `EnemyHitReaction`은 적 이동과 공격을 바꾸는 게임 규칙이다. 이 컴포넌트를 화면 효과로만 취급해 제거하지 않는다.

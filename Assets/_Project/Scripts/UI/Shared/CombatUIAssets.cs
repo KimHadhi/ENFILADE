@@ -11,7 +11,7 @@ public static class CombatUIAssets
     // The skull's share of the neon texture, and how far past its outline the light reaches, in the texture's -1 to 1 space.
     private const float NeonFit = .6f, NeonReach = .4f, NeonInside = .05f;
     private static Texture2D skullNeon;
-    private static Texture2D criticalBurst, skull, glowTexture, stripes, counterArrow, executionKnife, slashLine, bladeSlash, shoveHand;
+    private static Texture2D criticalBurst, skull, glowTexture, counterArrow, executionKnife, slashLine, bladeSlash, shoveHand;
     private static Sprite glowSprite, discSprite, ringSprite, hexagonSprite;
     private static readonly Dictionary<(TMP_FontAsset, Color, float), Material> outlined = new Dictionary<(TMP_FontAsset, Color, float), Material>();
 
@@ -98,32 +98,6 @@ public static class CombatUIAssets
             }
             slashLine.SetPixels32(pixels); slashLine.Apply(false, true);
             return slashLine;
-        }
-    }
-
-    /// <summary>Tileable 45° stripes, half duty, white with alpha. Use with RawImage.uvRect to repeat.</summary>
-    public static Texture2D TrailStripes
-    {
-        get
-        {
-            if (stripes != null) return stripes;
-            const int size = 16;
-            stripes = NewTexture("Trail Stripes (Runtime)", size, size, false);
-            stripes.wrapMode = TextureWrapMode.Repeat;
-            var pixels = new Color32[size * size];
-            for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                int inside = 0;
-                for (int s = 0; s < 16; s++)
-                {
-                    float u = ((x + (s % 4 + .5f) / 4f) + (y + (s / 4 + .5f) / 4f)) % size;
-                    if (u < size * .5f) inside++;
-                }
-                pixels[y * size + x] = new Color32(255, 255, 255, (byte)(inside * 255 / 16));
-            }
-            stripes.SetPixels32(pixels); stripes.Apply(false, true);
-            return stripes;
         }
     }
 

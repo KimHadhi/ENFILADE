@@ -136,9 +136,9 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
     private void Start() => EnsureHUD();
     private void EnsureHUD()
     {
-        // Runtime attachment also covers existing scenes/prefabs without requiring asset migration.
-        if (Application.isPlaying && GetComponent<ICombatVitals>() != null && GetComponent<EnemyVitalsHUD>() == null)
-            gameObject.AddComponent<EnemyVitalsHUD>();
+        // Runtime attachment also covers existing scenes/prefabs without requiring asset migration. Its health bar is the
+        // one screen overlay's (EnemyHealthBarHUD), which keeps every target's bar from here on.
+        if (Application.isPlaying && GetComponent<ICombatVitals>() != null) EnemyHealthBarHUD.Track(this);
         if (Application.isPlaying && GetComponent<ExecutableHighlight>() == null) gameObject.AddComponent<ExecutableHighlight>();
     }
     private void Update()
