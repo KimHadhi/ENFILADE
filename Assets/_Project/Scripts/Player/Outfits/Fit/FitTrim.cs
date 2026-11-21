@@ -20,6 +20,16 @@ using UnityEngine;
 /// past a crossing, on a triangle still drawn, is pulled back to just short of it along its own edge, never further.
 /// So what shows keeps the shape its maker gave it, a loose sock still drapes over the shoe it was made with, and the
 /// worst a wrong measure does is leave a piece as it was.
+/// One small move is made on purpose: whatever lies under a garment that moves with it lies Rules.Dive under it, seen
+/// or hidden, tucked in or not. A seen point with the garment less than that over it goes in to that depth along its
+/// own normal, never further, and nothing else of it changes. Makers fit clothes tight: Sailor Maiden's skirt stands a
+/// median 5.8 mm off Mayo's bottom, but the nearest twentieth of the skin under it only 1.0 to 1.4 mm (measured on the
+/// FBX against the skirt's surface, 2026-11-21). Two surfaces that close shimmer through each other, and as the bottom
+/// bounces or a thigh lifts (skin and skirt carry those bones by slightly different shares) a few points came out
+/// through the skirt by 0.5 to 2.6 mm (the user, 2026-11-21: "치마가 엉덩이를 가끔씩 뚫는 느낌"); with this the nearest
+/// twentieth lies 3.7 mm under it, and 2.2 mm or more in those poses. The few points that still came out had the skirt
+/// neither straight over nor straight behind them as made, so nothing here moves them. Only a garment that hides can
+/// do it: under a sheer stocking the skin shows, and pushed in it would look hollow.
 /// One layer against one garment is measured once (Cut) and kept; a whole outfit is their sum (Solve).
 /// Plain arrays, no engine objects: the measuring runs on worker threads, and the offline checks run this file as it is.
 /// </summary>
@@ -56,7 +66,10 @@ internal static class FitTrim
         public float Behind;
         /// <summary>A point pulled back stops this far short of the crossing (m).</summary>
         public float Inset;
-        /// <summary>A hidden point on a triangle still drawn goes this far in under the garment (m); 0 leaves it.</summary>
+        /// <summary>
+        /// How far under a garment a layer lies (m): a hidden point on a triangle still drawn goes this far in, and a seen
+        /// one that a garment lies on nearer than this, or one tucked in, goes in to this depth. 0 leaves them.
+        /// </summary>
         public float Dive;
         /// <summary>
         /// A point lying on the outside of a garment no deeper than this (m) is tucked in under it: a sock a few
@@ -95,6 +108,11 @@ internal static class FitTrim
         public bool[] Behind;
         /// <summary>For each of them, how far straight behind it the garment lies (m); -1 when it isn't within reach there.</summary>
         public float[] Depth;
+        /// <summary>
+        /// For each of them, how far straight out over it the garment lies (m), within Rules.Dive; -1 when it doesn't, or
+        /// the garment hides nothing. Null when the garment hides nothing.
+        /// </summary>
+        public float[] Over;
         /// <summary>The layer's edges that pass through the garment, and where along each (shares from its first point).</summary>
         public int[] Edges;
         public float[] First, Last;
@@ -143,10 +161,12 @@ internal static class FitTrim
         var cut = new Cut
         {
             Near = near.ToArray(), Behind = new bool[near.Count], Depth = new float[near.Count], Stopped = hides ? new ulong[near.Count] : null,
-            On = hides ? new bool[near.Count] : null
+            On = hides ? new bool[near.Count] : null, Over = hides && rules.Dive > 0f ? new float[near.Count] : null
         };
         for (int i = 0; i < cut.Depth.Length; i++) cut.Depth[i] = -1f;
-        float facing = rules.Facing, behind = rules.Behind, tuck = rules.Tuck, on = rules.On;
+        if (cut.Over != null)
+            for (int i = 0; i < cut.Over.Length; i++) cut.Over[i] = -1f;
+        float facing = rules.Facing, behind = rules.Behind, tuck = rules.Tuck, on = rules.On, dive = rules.Dive;
         Parallel.For(0, cut.Near.Length, i =>
         {
             int p = cut.Near[i];
@@ -169,6 +189,8 @@ internal static class FitTrim
                         stopped |= 1UL << w;
                 cut.Stopped[i] = stopped;
             }
+            // Straight out: a garment lying on the point closer than a layer lies under one.
+            if (cut.Over != null) cut.Over[i] = garment.Nearest(at, normal, dive, counted);
             // Straight behind, and leaning four ways round it.
             Vector3 back = -normal;
             float depth = garment.Nearest(at, back, Mathf.Max(behind, tuck), counted);
@@ -241,10 +263,12 @@ internal static class FitTrim
         var depth = new float[count];
         var on = new bool[count];
         var stopped = new ulong[count];
+        var over = new float[count];
+        for (int p = 0; p < count; p++) over[p] = -1f;
         var crossed = new bool[edgeCount];
         var first = new float[edgeCount];
         var last = new float[edgeCount];
-        bool anyCrossed = false, anyStopped = false;
+        bool anyCrossed = false, anyStopped = false, anyOver = false;
         foreach (var cut in cuts)
         {
             if (cut == null) continue;
@@ -255,6 +279,12 @@ internal static class FitTrim
                 if (cut.Behind[i]) behind[p] = true;
                 // The nearest garment behind the point is the one it lies on.
                 if (cut.Depth[i] >= 0f && (depth[p] <= 0f || cut.Depth[i] < depth[p])) depth[p] = cut.Depth[i];
+                // And the nearest over it, the one it lies under.
+                if (cut.Over != null && cut.Over[i] >= 0f && (over[p] < 0f || cut.Over[i] < over[p]))
+                {
+                    over[p] = cut.Over[i];
+                    anyOver = true;
+                }
                 if (cut.Stopped != null && cut.Stopped[i] != 0)
                 {
                     stopped[p] |= cut.Stopped[i];
@@ -279,7 +309,7 @@ internal static class FitTrim
             }
         }
         var result = new Result { Gone = new bool[shape.TriangleCount], Moved = Array.Empty<int>(), MovedTo = Array.Empty<Vector3>() };
-        if (!anyCrossed && !anyStopped) return result;
+        if (!anyCrossed && !anyStopped && !anyOver) return result;
 
         // Hidden: something lies on the point, and every way out on its outer side is stopped.
         var hidden = new bool[count];
@@ -435,6 +465,8 @@ internal static class FitTrim
         }
         var moved = new List<int>();
         var movedTo = new List<Vector3>();
+        // How far under a garment a layer lies once tucked in: as deep as anything else under one.
+        float under = Mathf.Max(rules.Inset, rules.Dive);
         for (int p = 0; p < count; p++)
         {
             if (shares[p] > 0)
@@ -446,7 +478,14 @@ internal static class FitTrim
             {
                 // Lying on the outside of a garment, a little way out: in under it, as a shoe holds a sock.
                 moved.Add(p);
-                movedTo.Add(points[p] - normals[p] * (depth[p] + rules.Inset));
+                movedTo.Add(points[p] - normals[p] * (depth[p] + under));
+            }
+            else if (rules.Dive > 0f && over[p] >= 0f && over[p] < rules.Dive && reached[p] && drawn[p] && !hidden[p] && normals[p] != Vector3.zero)
+            {
+                // Seen, with a garment that moves with it lying on it closer than a layer lies under one: in to that
+                // depth, so the two neither shimmer through each other nor cross as they move.
+                moved.Add(p);
+                movedTo.Add(points[p] - normals[p] * (rules.Dive - over[p]));
             }
             else if (rules.Dive > 0f && hidden[p] && reached[p] && drawn[p] && normals[p] != Vector3.zero)
             {

@@ -156,6 +156,8 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             }
             worn.Add(item);
         }
+        // The play's record (Logs/cloth.txt) watches the hanging cloth against the bouncing flesh it lies on.
+        if (simulates && colliders != null) colliders.Watch(hanging);
         contacts = arms != null ? new SkirtPress.Contact[arms.Length] : null;
         for (int side = 0; side < 2; side++)
         {
@@ -239,7 +241,8 @@ public sealed class PlayerBodyCloth : MonoBehaviour
 
     // The body a row's cloth rests against. A row written by hand, a ring and a spring: their shapes, as they say (a
     // spring, a chest's or a bottom's own jiggle, stays inside the body it is part of). A chain BoothImport made from a
-    // PhysBone: all of the body, the head and chest and the hips and legs, besides whatever its maker listed. VRChat keeps
+    // PhysBone: all of the body, the head and chest, the hips and legs and the shoulders and arms, besides whatever its
+    // maker listed. VRChat keeps
     // such a chain off the body with few colliders or none (Mayo's long side locks list only her arms and the floor) and
     // with limit cones turned so that the chain rests on their edge, free to swing out but not in; Magica's cones can't
     // turn, so here the body itself has to stop it. A chain with no colliders met nothing and passed through the body
@@ -262,8 +265,9 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         return string.Join("|", all);
     }
 
-    // What a chain BoothImport made meets wherever it hangs (Touches).
-    private static readonly string[] WholeBody = { "head", "legs" };
+    // What a chain BoothImport made meets wherever it hangs (Touches): with the shoulders and arms, since hair falls over
+    // the shoulders and in front of the arms, and an arm raised to a gun went through it.
+    private static readonly string[] WholeBody = { "head", "legs", "shoulders" };
 
     // Every humanoid bone of both arms, upper arms down to the fingers.
     private static HashSet<Transform> ArmTransforms(Animator animator)

@@ -10,14 +10,19 @@ using UnityEngine;
 /// part that rests on it (Fit). They stop cloth and nothing else: combat never
 /// reads them. The PC that simulates the cloth makes them. A copy makes the legs only when a pressed skirt has no measured
 /// skin to stop at (BodySurface), to know where they are; nothing collides with them there. Numbers: Tables/ClothBody.
-/// The arms aren't colliders. A collider pushes cloth out of itself every way, so a hand the clip puts inside a skirt
-/// would swell it like a fist in a bag. They press skirts in once the cloth has moved instead (SkirtPress), measured here
-/// the same way.
+/// The arms aren't colliders for a skirt. A collider pushes cloth out of itself every way, so a hand the clip puts inside
+/// a skirt would swell it like a fist in a bag. They press skirts in once the cloth has moved instead (SkirtPress),
+/// measured here the same way. Hair is another matter: it hangs over the shoulders and in front of the arms, and an arm
+/// raised to a gun went straight through it (the user, 2026-11-21: "머리카락이 내 몸에 충돌이 안 일어나서 내 몸을
+/// 뚫고"), so "shoulders" is the shoulders and both arms as solid shapes, which every hanging chain BoothImport made
+/// meets (PlayerBodyCloth.Touches). An arm moves far from where it stood as the body was made, so it is never fitted to
+/// a cloth part nor counted in the room a part has (moving): it only pushes cloth off itself, as a real arm does.
+/// The balls on the soft lumps of the trunk (a bust, a bottom) follow the flesh as it bounces (FleshFollow).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class PlayerBodyClothColliders : MonoBehaviour
 {
-    private const string Legs = "legs", Arms = "arms", Head = "head";
+    private const string Legs = "legs", Arms = "arms", Head = "head", Shoulders = "shoulders";
     private const char ShapeSeparator = '|';
 
     /// <summary>One bone of an arm as a skirt meets it: a rounded rod from one joint to the next.</summary>
@@ -111,11 +116,34 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     // The chest's soft lumps as balls, and the smaller copies made of them: the shapes that lie on the body's real surface,
     // which a hanging chain may settle onto (ClothBones.Settle).
     private readonly HashSet<ColliderComponent> lumps = new HashSet<ColliderComponent>();
+    // The shapes that move far from where they stood as the body was made (the arms): they push cloth, nothing more.
+    private readonly HashSet<ColliderComponent> moving = new HashSet<ColliderComponent>();
+    // Moves the lumps' balls with their flesh.
+    private readonly FleshFollow follow = new FleshFollow();
     private ArmBone[] arms;
     private CharacterController capsule;
     private PlayerMovement player;
     private Animator madeFor;
     private MagicaPlaneCollider floor;
+
+    private void OnEnable()
+    {
+        MagicaManager.OnPreSimulation += PlaceLumps;
+        MagicaManager.OnPostSimulation += ReadLumps;
+    }
+
+    private void OnDisable()
+    {
+        MagicaManager.OnPreSimulation -= PlaceLumps;
+        MagicaManager.OnPostSimulation -= ReadLumps;
+    }
+
+    private void PlaceLumps() => follow.Place();
+
+    private void ReadLumps() => follow.Read();
+
+    /// <summary>The hanging cloth's bones, which the play's record (Logs/cloth.txt) watches against the lumps.</summary>
+    internal void Watch(IEnumerable<Transform> cloth) => follow.Watch(cloth);
 
     /// <summary>Whether a part's shapes ("legs|arms") let the arms press it.</summary>
     internal static bool PressedByArms(string shapes)
@@ -180,7 +208,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
     internal float Room(Vector3 point, List<ColliderComponent> shapes)
     {
         float least = float.PositiveInfinity;
-        foreach (var shape in shapes) least = Mathf.Min(least, Gap(point, shape));
+        foreach (var shape in shapes)
+            if (!moving.Contains(shape)) least = Mathf.Min(least, Gap(point, shape));
         return least;
     }
 
@@ -214,7 +243,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         for (int i = shapes.Count - 1; i >= 0; i--)
         {
             var shape = shapes[i];
-            if (shape == null || shape is MagicaPlaneCollider) continue;
+            if (shape == null || shape is MagicaPlaneCollider || moving.Contains(shape)) continue;
             var kept = Fitted(shape, bones, clear, roots);
             var twin = kept != shape && fromBones.TryGetValue(shape, out var boneMade) ? Fitted(boneMade, bones, clear, roots) : null;
             if (kept == null) (kept, twin) = (twin, null);
@@ -248,6 +277,7 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         float least = float.PositiveInfinity;
         foreach (var shape in shapes)
         {
+            if (moving.Contains(shape)) continue;
             float gap = Gap(point, shape);
             if (gap >= least) continue;
             least = gap;
@@ -280,7 +310,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         {
             float radius = size.x - by;
             if (radius < size.x * fitGirth) return fitted[(shape, mm)] = null;
-            var thinner = Shape<MagicaSphereCollider>(at.parent, at.position, at.rotation);
+            // A lump's smaller copy hangs from the lump's ball, so it bounces with the flesh as the ball does (FleshFollow).
+            var thinner = Shape<MagicaSphereCollider>(lumps.Contains(shape) ? at : at.parent, at.position, at.rotation);
             thinner.SetSize(radius / scale);
             copy = thinner;
         }
@@ -311,6 +342,8 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         fitted.Clear();
         fromBones.Clear();
         lumps.Clear();
+        moving.Clear();
+        follow.Clear(animator != null ? animator.name : "");
         arms = null;
         madeFor = animator;
     }
@@ -323,34 +356,46 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         // (Fit); the rest is that set's own shape.
         var bones = Set(animator, shape);
         set = new List<ColliderComponent>(bones);
-        var parts = string.Equals(shape, Legs, StringComparison.OrdinalIgnoreCase) ? LegParts
-            : string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase) ? HeadParts : Array.Empty<DressedBody.Part>();
+        bool legs = string.Equals(shape, Legs, StringComparison.OrdinalIgnoreCase), head = string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase);
+        var parts = legs ? LegParts : head ? HeadParts
+            : string.Equals(shape, Shoulders, StringComparison.OrdinalIgnoreCase) ? ShoulderParts : Array.Empty<DressedBody.Part>();
         for (int i = 0; i < parts.Length && i < set.Count; i++)
         {
             var real = MakeMeasured(measured, parts[i]);
             if (real == null) continue;
             fromBones[real] = set[i];
+            if (moving.Contains(set[i])) moving.Add(real);
             set[i] = real;
         }
-        // The chest's soft lumps (a bust) as balls where they rest on the chest (DressedBody), so what hangs over them
-        // rests on them. The chest's rod is measured without them: a rod can't be round the ribs and out to the front of
+        // The trunk's soft lumps as balls where they rest (DressedBody): a bust on the chest with the head's set, a bottom
+        // or a belly with the legs' beside the pelvis. What hangs over them rests on them, and they bounce with the flesh
+        // (FleshFollow). The chest's rod is measured without them: a rod can't be round the ribs and out to the front of
         // a bust both, and on Mayo it ran some 4 cm inside her bust, as far as her side locks sank.
-        if (string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase))
+        if (head || legs)
             for (int i = 0; i < measured.LumpCount; i++)
-                if (measured.Lump(i, out var bone, out var centre, out float radius))
-                {
-                    Ball(bone, centre, radius, set);
-                    lumps.Add(set[set.Count - 1]);
-                }
+            {
+                if (measured.LumpBelowChest(i) != legs || !measured.Lump(i, out var bone, out var centre, out float radius)) continue;
+                Ball(bone, centre, radius, set);
+                var ball = set[set.Count - 1];
+                lumps.Add(ball);
+                if (measured.LumpCarriers(i, out var carriers, out var weights, out var points))
+                    follow.Add(ball.transform, bone, carriers, weights, points, radius);
+            }
         return made[shape + Measured] = set;
     }
 
-    // The parts of each set in the order the bones make them (MakeLegs, MakeHead): the floor comes after the legs.
+    // The parts of each set in the order the bones make them (MakeLegs, MakeHead, MakeShoulders): the floor comes after
+    // the legs, and the shoulders after the arms, as a rig may have no collarbones.
     private static readonly DressedBody.Part[] LegParts =
     {
         DressedBody.Part.Pelvis, DressedBody.Part.LeftThigh, DressedBody.Part.RightThigh, DressedBody.Part.LeftShin, DressedBody.Part.RightShin
     };
     private static readonly DressedBody.Part[] HeadParts = { DressedBody.Part.Head, DressedBody.Part.Chest };
+    private static readonly DressedBody.Part[] ShoulderParts =
+    {
+        DressedBody.Part.LeftUpperArm, DressedBody.Part.RightUpperArm, DressedBody.Part.LeftForearm, DressedBody.Part.RightForearm,
+        DressedBody.Part.LeftShoulder, DressedBody.Part.RightShoulder
+    };
 
     // One part of the body as its meshes measured it, or null where they couldn't.
     private static ColliderComponent MakeMeasured(DressedBody measured, DressedBody.Part part)
@@ -371,7 +416,32 @@ public sealed class PlayerBodyClothColliders : MonoBehaviour
         set = new List<ColliderComponent>();
         if (string.Equals(shape, Legs, StringComparison.OrdinalIgnoreCase)) MakeLegs(animator, set);
         else if (string.Equals(shape, Head, StringComparison.OrdinalIgnoreCase)) MakeHead(animator, set);
+        else if (string.Equals(shape, Shoulders, StringComparison.OrdinalIgnoreCase)) MakeShoulders(animator, set);
         return made[shape] = set;
+    }
+
+    // Both arms, upper arm then forearm, as thick as they are where they press a skirt (the same shares), and the
+    // shoulders from the collarbone out to the arm as thick as the arm's top. The arms are moving shapes.
+    private void MakeShoulders(Animator animator, List<ColliderComponent> into)
+    {
+        Transform leftUpper = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm), rightUpper = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+        Transform leftLower = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm), rightLower = animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
+        Transform leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand), rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+        if (leftUpper == null || rightUpper == null || leftLower == null || rightLower == null || leftHand == null || rightHand == null) return;
+        Limb(leftUpper, leftLower, upperArmStart, upperArmEnd, into);
+        moving.Add(into[into.Count - 1]);
+        Limb(rightUpper, rightLower, upperArmStart, upperArmEnd, into);
+        moving.Add(into[into.Count - 1]);
+        Limb(leftLower, leftHand, forearmStart, forearmEnd, into);
+        moving.Add(into[into.Count - 1]);
+        Limb(rightLower, rightHand, forearmStart, forearmEnd, into);
+        moving.Add(into[into.Count - 1]);
+        Transform leftShoulder = animator.GetBoneTransform(HumanBodyBones.LeftShoulder), rightShoulder = animator.GetBoneTransform(HumanBodyBones.RightShoulder);
+        if (leftShoulder == null || rightShoulder == null) return;
+        float left = Vector3.Distance(leftUpper.position, leftLower.position) * upperArmStart;
+        float right = Vector3.Distance(rightUpper.position, rightLower.position) * upperArmStart;
+        Capsule(leftShoulder, leftUpper, left, left, into);
+        Capsule(rightShoulder, rightUpper, right, right, into);
     }
 
     // A rig whose humanoid finds no bones (the avatar let go: an outfit's bone of the same name under one of the body's,

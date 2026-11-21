@@ -124,6 +124,28 @@ internal sealed class SkinSample
         return transform != null && set.Contains(transform);
     }
 
+    /// <summary>
+    /// Adds what each bone carries of a vertex to <paramref name="carried"/>, by bone: summed over many vertices, how a
+    /// patch of skin moves with its bones on average (DressedBody's soft lumps, which follow their flesh by it).
+    /// </summary>
+    internal void AddCarriers(in Point point, Dictionary<Transform, float> carried)
+    {
+        BoneWeight w = point.Weight;
+        AddCarrier(point.Renderer, w.boneIndex0, w.weight0, carried);
+        AddCarrier(point.Renderer, w.boneIndex1, w.weight1, carried);
+        AddCarrier(point.Renderer, w.boneIndex2, w.weight2, carried);
+        AddCarrier(point.Renderer, w.boneIndex3, w.weight3, carried);
+    }
+
+    private void AddCarrier(int renderer, int index, float weight, Dictionary<Transform, float> carried)
+    {
+        if (weight <= 0f) return;
+        var bone = Bone(renderer, index);
+        if (bone == null) return;
+        carried.TryGetValue(bone, out float sum);
+        carried[bone] = sum + weight;
+    }
+
     private Transform Bone(int renderer, int index)
     {
         var list = bones[renderer];

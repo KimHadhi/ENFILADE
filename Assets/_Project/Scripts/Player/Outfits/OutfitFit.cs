@@ -16,7 +16,9 @@ using Object = UnityEngine.Object;
 /// - Trim: what of a layer is hidden under the garments over it, or came out through one, is not drawn, and a little of
 ///   it lying on a garment's rim is tucked in under it (FitTrim). Nothing is pressed about: the press this replaces
 ///   (UnderwearFit.Press, OutfitDresser.PressUnder) moved every point up to 2.3 cm along its normal to the nearest
-///   garment surface, and crushed feet in shoes.
+///   garment surface, and crushed feet in shoes. The one move left is small and the same everywhere: a layer lies the
+///   table's dive (4 mm) under a garment that moves with it, so skin a tight skirt was made almost touching no longer
+///   shimmers or pokes through it as the two move.
 /// Measuring a layer against a garment is the dear part (tens of milliseconds), so each pair is measured once and kept
 /// for as long as both stay as they were, and each outfit's result is kept as a ready mesh: the wardrobe stands the
 /// character up again for every try, and a look seen before costs a few lookups.

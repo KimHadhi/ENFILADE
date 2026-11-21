@@ -17,17 +17,31 @@ using UnityEngine;
 /// try, measures each look once. Numbers: Tables/ClothBody (bodySurface, bodySize).
 /// A soft lump on the chest (a bust, a spring of Cloth.csv) is measured as a ball of its own from the points its bones
 /// carry, and the chest's rod without them: a rod round the ribs can't also reach the front of a bust, and Mayo's ran
-/// some 4 cm inside hers, as far as her side locks sank into it. The ball stays on the chest, where the bust rests:
+/// some 4 cm inside hers, as far as her side locks sank into it. The ball hangs from the chest, where the bust rests:
 /// Magica puts a spring's bones back where they rest before it reads any collider, so a ball on them wouldn't follow the
-/// jiggle either, and an object under them would become part of the spring. A lump is a dome lying against the ribs, not
+/// jiggle, and an object under them would become part of the spring; FleshFollow moves it with the jiggle instead (on
+/// the chest it stood still while the bust bounced through the hair lying on it). A lump is a dome lying against the ribs, not
 /// a round part, so its ball is the sphere that fits its points best (Dome), which lies on the dome itself.
 /// It also measures how far each hanging bone's own cloth reaches from the bone toward the body (Reach): how thick that
 /// cloth is where it would touch, which a particle of the simulation needs to be, no more.
+/// Every soft lump of the trunk is measured so, not only the chest's: a bottom or a belly on the hips or the spine is a
+/// ball of its own beside the pelvis's, where a skirt meets it. A lump bounces on its spring and its ball follows it
+/// (FleshFollow), moved as its points move: the mean of the weights their bones carry them by (LumpCarriers).
+/// The shoulders and arms are measured as rods too, for the hair that hangs over and in front of them (the user,
+/// 2026-11-21: "머리카락이 내 몸에 충돌이 안 일어나서 내 몸을 뚫고"); the arms move far from where they stood as the body
+/// was made, so nothing is fitted or settled against them (Moves).
 /// </summary>
 internal sealed class DressedBody
 {
-    internal enum Part { Head, Chest, Pelvis, LeftThigh, RightThigh, LeftShin, RightShin }
-    private const int PartCount = 7;
+    internal enum Part
+    {
+        Head, Chest, Pelvis, LeftThigh, RightThigh, LeftShin, RightShin,
+        LeftUpperArm, RightUpperArm, LeftForearm, RightForearm, LeftShoulder, RightShoulder
+    }
+    private const int PartCount = 13;
+    // A bone that carries less than this share of a lump's skin on average is left out of how the lump moves: a
+    // centimetre of its swing moves the lump by less than a tenth of a millimetre.
+    private const float LeastCarried = .01f;
 
     // A part with fewer points than this isn't really there: a rig without that bone's skin, or meshes that can't be read.
     private const int LeastPoints = 24;
@@ -55,11 +69,16 @@ internal sealed class DressedBody
         public float StartRadius, EndRadius;
     }
 
-    // A soft lump of the chest: its ball, in the space of the body bone it hangs from.
-    private struct ChestLump
+    // A soft lump of the trunk: its ball, in the space of the body bone it hangs from; and the bones its skin moves with,
+    // by name (a look is remembered across bodies made again), each with the mean share it carries and the ball's middle
+    // in that bone's own space.
+    private struct SoftLump
     {
         public HumanBodyBones Bone;
         public Shape Shape;
+        public string[] Carriers;
+        public float[] Weights;
+        public Vector3[] Points;
     }
 
     // One look's measure: the parts in Part's order, the lumps, and each hanging bone's cloth reach by the bone's name
@@ -67,7 +86,7 @@ internal sealed class DressedBody
     private sealed class Measures
     {
         public Shape[] Shapes;
-        public ChestLump[] Lumps;
+        public SoftLump[] Lumps;
         public Dictionary<string, float> Reach;
     }
 
@@ -76,8 +95,10 @@ internal sealed class DressedBody
 
     private readonly Animator animator;
     private readonly Shape[] shapes;
-    private readonly ChestLump[] lumps;
+    private readonly SoftLump[] lumps;
     private readonly Dictionary<string, float> reach;
+    // The body's bones by name, for the lumps' carriers: made the first time one is asked for.
+    private Dictionary<string, Transform> named;
 
     private DressedBody(Animator animator, Measures measures)
     {
@@ -87,8 +108,40 @@ internal sealed class DressedBody
         reach = measures.Reach;
     }
 
-    /// <summary>How many soft lumps of the chest were measured (Lump).</summary>
+    /// <summary>How many soft lumps of the trunk were measured (Lump).</summary>
     internal int LumpCount => lumps.Length;
+
+    /// <summary>
+    /// Whether a part moves far from where it stood as the body was made (an arm): cloth is neither fitted nor laid
+    /// against it, it only pushes cloth away.
+    /// </summary>
+    internal static bool Moves(Part part) => part is Part.LeftUpperArm or Part.RightUpperArm or Part.LeftForearm or Part.RightForearm;
+
+    /// <summary>Whether a lump rests on the hips or the spine (a bottom, a belly) rather than the chest (a bust).</summary>
+    internal bool LumpBelowChest(int index) => lumps[index].Bone is HumanBodyBones.Hips or HumanBodyBones.Spine;
+
+    /// <summary>
+    /// How a lump's ball moves with its flesh: the bones its skin moves with, the mean share each carries, and the ball's
+    /// middle in each bone's own space (TransformPoint it). False where none of them is on this body.
+    /// </summary>
+    internal bool LumpCarriers(int index, out Transform[] bones, out float[] weights, out Vector3[] points)
+    {
+        var lump = lumps[index];
+        weights = lump.Weights;
+        points = lump.Points;
+        bones = null;
+        if (lump.Carriers == null || lump.Carriers.Length == 0) return false;
+        if (named == null)
+        {
+            named = new Dictionary<string, Transform>();
+            foreach (var bone in animator.GetComponentsInChildren<Transform>(true)) named.TryAdd(bone.name, bone);
+        }
+        bones = new Transform[lump.Carriers.Length];
+        bool any = false;
+        for (int i = 0; i < bones.Length; i++)
+            any |= named.TryGetValue(lump.Carriers[i], out bones[i]);
+        return any;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
@@ -100,7 +153,7 @@ internal sealed class DressedBody
     /// <param name="key">What the body is and wears, to remember the measure by; null measures every time.</param>
     /// <param name="read">The body's meshes as they stand, read only when the look isn't remembered.</param>
     /// <param name="hanging">Every bone of the cloth that hangs free: what it carries doesn't count.</param>
-    /// <param name="springs">The bones soft lumps hang from (Cloth.csv's springs): those on the chest are measured as lumps.</param>
+    /// <param name="springs">The bones soft lumps hang from (Cloth.csv's springs): those on the trunk are measured as lumps.</param>
     /// <param name="surface">The share of a direction's points that lie inside its outside.</param>
     /// <param name="size">Where, among a part's sizes all round, its size is taken (0.5: the middle one).</param>
     /// <param name="clothShare">Where, among the reaches of a hanging bone's cloth toward the body, its reach is taken.</param>
@@ -129,7 +182,7 @@ internal sealed class DressedBody
         return true;
     }
 
-    /// <summary>A soft lump of the chest as a ball: the body bone it rests on, its middle (world) and its size (metres).</summary>
+    /// <summary>A soft lump of the trunk as a ball, as drawn: the body bone it rests on, its middle (world) and its size (metres).</summary>
     internal bool Lump(int index, out Transform bone, out Vector3 centre, out float radius)
     {
         var lump = lumps[index];
@@ -181,7 +234,13 @@ internal sealed class DressedBody
         Part.LeftThigh => animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg),
         Part.RightThigh => animator.GetBoneTransform(HumanBodyBones.RightUpperLeg),
         Part.LeftShin => animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg),
-        _ => animator.GetBoneTransform(HumanBodyBones.RightLowerLeg),
+        Part.RightShin => animator.GetBoneTransform(HumanBodyBones.RightLowerLeg),
+        Part.LeftUpperArm => animator.GetBoneTransform(HumanBodyBones.LeftUpperArm),
+        Part.RightUpperArm => animator.GetBoneTransform(HumanBodyBones.RightUpperArm),
+        Part.LeftForearm => animator.GetBoneTransform(HumanBodyBones.LeftLowerArm),
+        Part.RightForearm => animator.GetBoneTransform(HumanBodyBones.RightLowerArm),
+        Part.LeftShoulder => animator.GetBoneTransform(HumanBodyBones.LeftShoulder),
+        _ => animator.GetBoneTransform(HumanBodyBones.RightShoulder),
     };
 
     private static void Remember(string key, Measures measures)
@@ -196,10 +255,11 @@ internal sealed class DressedBody
         float surface, float size, float clothShare)
     {
         var shapes = new Shape[PartCount];
-        var measures = new Measures { Shapes = shapes, Lumps = Array.Empty<ChestLump>(), Reach = new Dictionary<string, float>() };
+        var measures = new Measures { Shapes = shapes, Lumps = Array.Empty<SoftLump>(), Reach = new Dictionary<string, float>() };
         if (animator == null || skin == null || skin.Points.Count == 0) return measures;
         // Each point belongs to the first body bone above the bone that carries most of it: a ribbon on the head is the
-        // head's. A point a soft lump of the chest carries is that lump's instead.
+        // head's. A point a soft lump of the trunk carries is that lump's instead. A lump on a thigh stays the thigh's:
+        // a rod round the leg is its outside already, and a ball on a patch of it would stand out of the leg.
         var human = new Dictionary<Transform, HumanBodyBones>();
         for (var id = HumanBodyBones.Hips; id < HumanBodyBones.LastBone; id++)
         {
@@ -209,9 +269,11 @@ internal sealed class DressedBody
         var lumpRoots = new List<Transform>();
         if (springs != null)
             foreach (var root in springs)
-                if (root != null && Owner(root, human, animator.transform) is HumanBodyBones.Chest or HumanBodyBones.UpperChest)
+                if (root != null && Owner(root, human, animator.transform)
+                        is HumanBodyBones.Chest or HumanBodyBones.UpperChest or HumanBodyBones.Spine or HumanBodyBones.Hips)
                     lumpRoots.Add(root);
         var lumpPoints = new List<Vector3>[lumpRoots.Count];
+        var lumpCarried = new Dictionary<Transform, float>[lumpRoots.Count];
         var lumpOf = new Dictionary<Transform, int>();
         var marks = skin.Marks(hanging);
         var owners = new Dictionary<Transform, HumanBodyBones>();
@@ -239,6 +301,7 @@ internal sealed class DressedBody
                 if (lump >= 0)
                 {
                     (lumpPoints[lump] ??= new List<Vector3>()).Add(point.Position);
+                    skin.AddCarriers(point, lumpCarried[lump] ??= new Dictionary<Transform, float>());
                     continue;
                 }
             }
@@ -247,14 +310,17 @@ internal sealed class DressedBody
             if (!points.TryGetValue(owner, out var list)) points[owner] = list = new List<Vector3>();
             list.Add(point.Position);
         }
-        var lumps = new List<ChestLump>();
+        var lumps = new List<SoftLump>();
         for (int i = 0; i < lumpRoots.Count; i++)
         {
             if (lumpPoints[i] == null) continue;
             var owner = Owner(lumpRoots[i], human, animator.transform);
-            var lump = new ChestLump { Bone = owner };
-            Dome(ref lump.Shape, animator.GetBoneTransform(owner), lumpPoints[i], surface, size);
-            if (lump.Shape.Found) lumps.Add(lump);
+            var lump = new SoftLump { Bone = owner };
+            var ownerBone = animator.GetBoneTransform(owner);
+            Dome(ref lump.Shape, ownerBone, lumpPoints[i], surface, size);
+            if (!lump.Shape.Found) continue;
+            Carriers(ref lump, ownerBone.TransformPoint(lump.Shape.Start), lumpCarried[i], lumpPoints[i].Count);
+            lumps.Add(lump);
         }
         measures.Lumps = lumps.ToArray();
 
@@ -272,8 +338,51 @@ internal sealed class DressedBody
             Gather(points, HumanBodyBones.LeftLowerLeg), surface, size);
         Limb(ref shapes[(int)Part.RightShin], Bone(animator, Part.RightShin), animator.GetBoneTransform(HumanBodyBones.RightFoot),
             Gather(points, HumanBodyBones.RightLowerLeg), surface, size);
+        // Sleeves count with the arm they are on, as clothes do with the legs; a rig without collarbones has no shoulders.
+        Limb(ref shapes[(int)Part.LeftUpperArm], Bone(animator, Part.LeftUpperArm), animator.GetBoneTransform(HumanBodyBones.LeftLowerArm),
+            Gather(points, HumanBodyBones.LeftUpperArm), surface, size);
+        Limb(ref shapes[(int)Part.RightUpperArm], Bone(animator, Part.RightUpperArm), animator.GetBoneTransform(HumanBodyBones.RightLowerArm),
+            Gather(points, HumanBodyBones.RightUpperArm), surface, size);
+        Limb(ref shapes[(int)Part.LeftForearm], Bone(animator, Part.LeftForearm), animator.GetBoneTransform(HumanBodyBones.LeftHand),
+            Gather(points, HumanBodyBones.LeftLowerArm), surface, size);
+        Limb(ref shapes[(int)Part.RightForearm], Bone(animator, Part.RightForearm), animator.GetBoneTransform(HumanBodyBones.RightHand),
+            Gather(points, HumanBodyBones.RightLowerArm), surface, size);
+        Limb(ref shapes[(int)Part.LeftShoulder], Bone(animator, Part.LeftShoulder), animator.GetBoneTransform(HumanBodyBones.LeftUpperArm),
+            Gather(points, HumanBodyBones.LeftShoulder), surface, size);
+        Limb(ref shapes[(int)Part.RightShoulder], Bone(animator, Part.RightShoulder), animator.GetBoneTransform(HumanBodyBones.RightUpperArm),
+            Gather(points, HumanBodyBones.RightShoulder), surface, size);
         ClothReach(animator, cloth, hanging, measures, clothShare);
         return measures;
+    }
+
+    // How a lump's ball moves with its skin: each bone's mean share of the points it was measured from (the shares of a
+    // point sum to one, so their mean does too), the faint ones left out and the rest made whole again; and the ball's
+    // middle in each of those bones' own space. Skinned by these, the middle moves as the mean of its points does: the
+    // move of a ball that keeps them on its sphere best.
+    private static void Carriers(ref SoftLump lump, Vector3 centre, Dictionary<Transform, float> carried, int count)
+    {
+        if (carried == null || count == 0) return;
+        var bones = new List<Transform>();
+        var shares = new List<float>();
+        float total = 0f;
+        foreach (var pair in carried)
+        {
+            float share = pair.Value / count;
+            if (pair.Key == null || share < LeastCarried) continue;
+            bones.Add(pair.Key);
+            shares.Add(share);
+            total += share;
+        }
+        if (bones.Count == 0 || total <= 0f) return;
+        lump.Carriers = new string[bones.Count];
+        lump.Weights = new float[bones.Count];
+        lump.Points = new Vector3[bones.Count];
+        for (int i = 0; i < bones.Count; i++)
+        {
+            lump.Carriers[i] = bones[i].name;
+            lump.Weights[i] = shares[i] / total;
+            lump.Points[i] = bones[i].InverseTransformPoint(centre);
+        }
     }
 
     // How far each hanging bone's cloth reaches from the bone toward the body: the vertices that bone carries most, each
@@ -289,6 +398,8 @@ internal sealed class DressedBody
         for (int i = 0; i < PartCount; i++)
         {
             var part = (Part)i;
+            // What the cloth rests against, not an arm that happened to stand near it as the body was made.
+            if (Moves(part)) continue;
             if (part is Part.Head or Part.Pelvis)
             {
                 if (body.Ball(part, out _, out var centre, out float radius)) cores.Add((centre, centre, radius, radius));
