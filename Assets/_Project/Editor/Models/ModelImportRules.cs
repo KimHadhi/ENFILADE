@@ -14,7 +14,7 @@ using UnityEngine;
 /// Characters get a humanoid avatar. Files under Art/Animations are humanoid clips; a "&lt;file&gt;.clips.csv" beside one,
 /// or "&lt;folder&gt;.clips.csv" for a folder of one-clip files (columns clip, loop, inPlace, inPlaceY, inPlaceYaw,
 /// yawOffset, cycleOffset, from, to), names its clips, marks loops and keeps the authored root unless an inPlace
-/// column is 1.
+/// column is 1. In a folder of one-clip files each clip is named after its file, whatever its take is called.
 /// Every clip there keeps every key as authored (Anim. Compression Off, set on every import, KeepEveryKey): Unity's default
 /// Keyframe Reduction let each joint drift up to its 0.5 degree error, and the drift adds up along an arm (the user,
 /// 2026-11-14, on the clips the Blender workspaces send: "안 좋은 거면 근본적으로 해결해 줘"; the poses kept theirs already,
@@ -235,6 +235,7 @@ internal sealed class ModelImportRules : AssetPostprocessor
         }
         if (!IsAnimationFile(assetPath)) return;
         string listPath = Path.ChangeExtension(assetPath, null) + ".clips.csv";
+        bool folderList = false;
         if (!File.Exists(listPath))
         {
             string folder = Path.GetDirectoryName(assetPath).Replace('\\', '/');
@@ -244,6 +245,7 @@ internal sealed class ModelImportRules : AssetPostprocessor
                 if (ZombieClipFolders.SlotOf(assetPath) != null) ZombieSlotDefaults((ModelImporter)assetImporter);
                 return;
             }
+            folderList = true;
         }
         context.DependsOnSourceAsset(listPath);
         var list = CsvTable.Parse(File.ReadAllText(listPath));
@@ -253,8 +255,11 @@ internal sealed class ModelImportRules : AssetPostprocessor
         {
             int bar = clip.takeName.LastIndexOf('|');
             clip.name = bar >= 0 ? clip.takeName.Substring(bar + 1) : clip.takeName;
-            // Mixamo names every take "mixamo.com"; a file of one such take is named after the file instead.
-            if (clips.Length == 1 && clip.name == GenericMixamoTake) clip.name = Path.GetFileNameWithoutExtension(assetPath);
+            // In a folder of one-clip files (its list is the folder's) each clip is its file: the file's name is the clip's.
+            // Mixamo names every take "mixamo.com" and BIPER's Female Runner every one "Take 001", so a take's own name
+            // says nothing there and every clip of the pack would share one name in the body's library. Anywhere else a
+            // file of one "mixamo.com" take is named after the file too.
+            if (clips.Length == 1 && (folderList || clip.name == GenericMixamoTake)) clip.name = Path.GetFileNameWithoutExtension(assetPath);
             list.TryGetRow(clip.name, out var row);
             clip.loopTime = Flag(row, "loop");
             // Height and facing stay as authored. Travel stays too, so feet keep their place, unless inPlace = 1;

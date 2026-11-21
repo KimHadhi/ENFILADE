@@ -21,8 +21,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 {
     [Header("Clips (names in the PlayerBody profile)")]
     [SerializeField] private string idle = "mx_idle";
-    // The walk and run cycles are lists by way of travel (PlayerBody.Locomotion: forwardMoves, rightMoves, backMoves, leftMoves).
-    [SerializeField] private string crouchIdle = "crouchstill", crouchWalk = "crouchfwd", crouchBack = "crouchbwd";
+    // The walk and run cycles of every stance are rows of Tables/Player/BodyMoves.csv (PlayerBody.Locomotion), each going the
+    // way its feet were measured to go; idle and crouchIdle are the plain and crouched sets' idles.
+    [SerializeField] private string crouchIdle = "crouchstill";
     [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
     [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";

@@ -24,21 +24,8 @@ using UnityEngine.Playables;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    [Header("Directional locomotion")]
-    [SerializeField, Tooltip("Cycles that move ahead, in any order: the body measures how fast each carries it (GaitClips) and "
-        + "blends the two either side of the speed.")]
-    private string[] forwardMoves = { "mx_walk", "mx_run", "sprintfwd" };
-    [SerializeField, Tooltip("Cycles that move right, in any order.")]
-    private string[] rightMoves = { "mx_strafe_walk_right", "mx_strafe_run_right" };
-    [SerializeField, Tooltip("Cycles that move back, in any order.")]
-    private string[] backMoves = { "mx_walk_back", "mx_run_back" };
-    [SerializeField, Tooltip("Cycles that move left, in any order.")]
-    private string[] leftMoves = { "mx_strafe_walk_left", "mx_strafe_run_left" };
-    [SerializeField] private string crouchLeft = "crouchleft", crouchRight = "crouchright";
-    [SerializeField, Tooltip("Standing moves with that gun out, in this order: idle; walk forward, right, back, left; jog forward, "
-        + "right, back, left; run forward. The idle is the gun's stance; aiming, the moves take over as far as they reach the "
-        + "speed. A set with its idle or a way missing leaves the plain moves in place.")]
-    private string[] rifleMoves = GunMoves, pistolMoves = GunMoves;
+    // The cycles of every stance are rows of Tables/Player/BodyMoves.csv (MoveSets), not fields: a set lists its cycles in
+    // any order and the body measures which way and how fast each one goes (GaitClips).
 
     [Header("Stride")]
     [SerializeField, Tooltip("A person's steps a second by speed for a leg of gaitLeg: pairs of speed (m/s); steps a second.")]
@@ -51,9 +38,6 @@ public sealed partial class PlayerBody
     private Vector2 gaitStretch = new Vector2(.8f, 1.3f);
     [SerializeField, Range(0f, .3f), Tooltip("The most the hips come down for a stretched stride's leg to reach, as a share of the leg.")]
     private float gaitStretchDrop = .08f;
-    [SerializeField, Range(0f, 1f), Tooltip("With a gun out and not aiming, how much the gun's aim cycles still take the legs, as far as "
-        + "they reach the speed (aiming they always do). 0: the plain run under the gun; 1: the gun's cycles, stride-matched.")]
-    private float gunHipMoves;
     [SerializeField, Tooltip("Running, the most the hips turn toward the way of travel (degrees): x heading ahead or to a side, y heading back.")]
     private Vector2 hipTurn = new Vector2(70f, 45f);
     [SerializeField, Tooltip("The hips start turning toward the way of travel at x and turn all the way from y (m/s).")]
@@ -80,21 +64,47 @@ public sealed partial class PlayerBody
         + "W taps even out instead of flipping the stride from one side to the other.")]
     private float strideFollowTime = .12f;
 
-    private static readonly string[] GunMoves =
-    {
-        "W1_Stand_Aim_Idle_IPC", "W1_Walk_Aim_F_Loop_IPC", "W1_Walk_Aim_R_Loop_IPC", "W1_Walk_Aim_B_Loop_IPC", "W1_Walk_Aim_L_Loop_IPC",
-        "W1_Jog_Aim_F_Loop_IPC", "W1_Jog_Aim_R_Loop_IPC", "W1_Jog_Aim_B_Loop_IPC", "W1_Jog_Aim_L_Loop_IPC", "W1_Run_F_Loop_IPC"
-    };
+    // The table of the stances' cycles (Tables/Player/BodyMoves.csv): a row a set, its idle and its cycles. "plain" and
+    // "crouch" stand on Body.idle and Body.crouchIdle; a gun's sets are "<kind>", "<kind>.aim", "<kind>.crouch" and
+    // "<kind>.crouch.aim", and the kind row's ammo cell names the ammunition (Weapons.csv ammo) that takes them, "*" for any
+    // the other kinds don't name.
+    private const string MovesTable = "BodyMoves", PlainSetId = "plain", CrouchSetId = "crouch", AnyAmmunition = "*";
+    // Cycles measured within this many degrees of each other go the same way: one way's walk, jog and run.
+    private const float SameWay = 15f;
+    // Two measured ways this far apart or less blend into every heading between them (a four-way set's are 90 degrees apart).
+    private const float WaysJoin = 120f;
+    // A way with no neighbour that near carries a heading within half an eight-way set's step of it, and none from a whole
+    // step off: further round, its feet would push the body sideways off the travel, which the other set's cycles carry.
+    private const float LoneWayReach = 22.5f, LoneWayEnd = 45f;
 
-    // A stance and its cycles: ways ahead, right, back and left (0-3), each slowest first.
+    // One way of travel in a set: where its cycles' feet carry the body (degrees, 0 ahead, 90 right), slowest cycle first.
+    private sealed class Way
+    {
+        public float Angle;
+        public readonly List<Channel> Cycles = new List<Channel>();
+    }
+
+    // A stance and its cycles, grouped by the way each was measured to go on this body, by angle round from ahead.
     private sealed class MoveSet
     {
         public Channel Idle;
-        public readonly List<Channel>[] Ways = { new List<Channel>(), new List<Channel>(), new List<Channel>(), new List<Channel>() };
-        public bool Complete => Idle != null && Ways[0].Count > 0 && Ways[1].Count > 0 && Ways[2].Count > 0 && Ways[3].Count > 0;
+        public readonly List<Way> Ways = new List<Way>();
     }
 
-    private MoveSet plainSet, rifleSet, pistolSet, crouchSet;
+    // A gun kind's sets: held at the hip, aimed, and both crouched; any may be missing (null), and what a set can't carry
+    // goes to the next set down, the plain or crouch set last.
+    private sealed class GunSets
+    {
+        public MoveSet Hip, Aim, Crouch, CrouchAim;
+    }
+
+    private MoveSet plainSet, crouchSet;
+    // The gun kinds' sets by kind, and the kind each ammunition takes (AnyAmmunition for the rest).
+    private readonly Dictionary<string, GunSets> gunSets = new Dictionary<string, GunSets>(System.StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> kindOfAmmunition = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+    // This frame's sets that may have the legs, first asked first, how much each wants, and what each was given.
+    private readonly List<MoveSet> asking = new List<MoveSet>(4);
+    private readonly List<float> wanting = new List<float>(4);
     private float legYaw, turnVelocity;
     private Vector3 stride;
     private int turning;
@@ -119,10 +129,24 @@ public sealed partial class PlayerBody
     private void AddLocomotionChannels()
     {
         legLength = LegOf(animator);
-        plainSet = MakeSet(idle, forwardMoves, rightMoves, backMoves, leftMoves);
-        rifleSet = GunSet(rifleMoves);
-        pistolSet = GunSet(pistolMoves);
-        crouchSet = MakeSet(crouchIdle, new[] { crouchWalk }, new[] { crouchRight }, new[] { crouchBack }, new[] { crouchLeft });
+        plainSet = SetFromTable(PlainSetId, idle) ?? new MoveSet();
+        crouchSet = SetFromTable(CrouchSetId, crouchIdle) ?? new MoveSet();
+        gunSets.Clear();
+        kindOfAmmunition.Clear();
+        foreach (string id in GameTables.RowIds(MovesTable))
+        {
+            if (id.IndexOf('.') >= 0 || id.StartsWith("#", System.StringComparison.Ordinal)
+                || string.Equals(id, PlainSetId, System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(id, CrouchSetId, System.StringComparison.OrdinalIgnoreCase)) continue;
+            gunSets[id] = new GunSets
+            {
+                Hip = SetFromTable(id, null), Aim = SetFromTable(id + ".aim", null),
+                Crouch = SetFromTable(id + ".crouch", null), CrouchAim = SetFromTable(id + ".crouch.aim", null)
+            };
+            if (GameTables.TryGetRow(MovesTable, id, out var row))
+                foreach (string ammunition in row.Text("ammo").Split(new[] { ';', ',', ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
+                    kindOfAmmunition[ammunition] = id;
+        }
         turning = 0;
         strideCount = 0;
         strideStretch = FootPlanting.Stride.None;
@@ -138,34 +162,49 @@ public sealed partial class PlayerBody
         return leg > .2f ? leg : .9f;
     }
 
-    // The gun's moves (idle; walk F, R, B, L; jog F, R, B, L; run F) as a set, or the plain moves if one is missing.
-    private MoveSet GunSet(string[] moves)
+    // A set as its table row has it: its idle (the row's, else the stance's own), and its cycles grouped by the way each
+    // one's feet were measured to carry this body. Null for a row that isn't there or holds nothing this body can play.
+    private MoveSet SetFromTable(string id, string stanceIdle)
     {
-        if (moves == null || moves.Length < 10) return plainSet;
-        var set = MakeSet(moves[0], new[] { moves[1], moves[5], moves[9] }, new[] { moves[2], moves[6] },
-            new[] { moves[3], moves[7] }, new[] { moves[4], moves[8] });
-        return set.Complete ? set : plainSet;
-    }
-
-    private MoveSet MakeSet(string still, string[] forward, string[] right, string[] back, string[] left)
-    {
+        if (!GameTables.TryGetRow(MovesTable, id, out var row)) return null;
         var set = new MoveSet();
-        AddChannel(still, 0f);
-        byName.TryGetValue(still ?? "", out set.Idle);
-        var ways = new[] { forward, right, back, left };
-        for (int w = 0; w < 4; w++)
+        string still = row.Text("idle");
+        if (string.IsNullOrEmpty(still)) still = stanceIdle;
+        if (!string.IsNullOrEmpty(still))
         {
-            if (ways[w] == null) continue;
-            foreach (string clip in ways[w])
-            {
-                var cycle = AddCycle(clip);
-                if (cycle != null && cycle.Gait != null && cycle.Gait.Moves && !set.Ways[w].Contains(cycle)) set.Ways[w].Add(cycle);
-                else if (cycle != null && (cycle.Gait == null || !cycle.Gait.Moves))
-                    Report($"'{clip}' was listed as a walk or run but its feet don't carry the body (GaitClips): left out.");
-            }
-            set.Ways[w].Sort((a, b) => a.Gait.Speed.CompareTo(b.Gait.Speed));
+            AddChannel(still, 0f);
+            byName.TryGetValue(still, out set.Idle);
         }
-        return set;
+        foreach (string clip in row.Text("moves").Split(new[] { ';', ',', ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var cycle = AddCycle(clip);
+            if (cycle == null) continue;
+            if (cycle.Gait == null || !cycle.Gait.Moves)
+            {
+                Report($"'{clip}' was listed as a walk or run but its feet don't carry the body (GaitClips): left out.");
+                continue;
+            }
+            float angle = Mathf.Repeat(Mathf.Atan2(cycle.Gait.Way.x, cycle.Gait.Way.y) * Mathf.Rad2Deg, 360f);
+            Way way = null;
+            foreach (var known in set.Ways)
+                if (Mathf.Abs(Mathf.DeltaAngle(known.Angle, angle)) <= SameWay) { way = known; break; }
+            if (way == null)
+            {
+                way = new Way { Angle = angle };
+                set.Ways.Add(way);
+            }
+            if (!way.Cycles.Contains(cycle)) way.Cycles.Add(cycle);
+        }
+        foreach (var way in set.Ways)
+        {
+            way.Cycles.Sort((a, b) => a.Gait.Speed.CompareTo(b.Gait.Speed));
+            // The way is where its cycles go together: the mean of their measured ways.
+            Vector2 sum = Vector2.zero;
+            foreach (var cycle in way.Cycles) sum += cycle.Gait.Way;
+            if (sum.sqrMagnitude > 1e-6f) way.Angle = Mathf.Repeat(Mathf.Atan2(sum.x, sum.y) * Mathf.Rad2Deg, 360f);
+        }
+        set.Ways.Sort((a, b) => a.Angle.CompareTo(b.Angle));
+        return set.Idle == null && set.Ways.Count == 0 ? null : set;
     }
 
     // A cycle polished in the Blender run workspace (ArtSource/Run, "게임에 보내기") comes into the profile as "enf_" and the
@@ -238,13 +277,16 @@ public sealed partial class PlayerBody
         layers.SetInputWeight(TurnLayer, turnLayerWeight);
     }
 
-    // The set in the hands: the gun's while one is out, else the plain one.
-    private MoveSet SetInHand()
+    // The gun kind's sets in the hands now, by the ammunition the gun takes (BodyMoves.csv ammo; "*" for the rest), or
+    // null with no gun out. A friend's copy has the same gun out, so the same sets.
+    private GunSets GunInHand()
     {
         if (weapons == null) weapons = player.GetComponent<WeaponController>();
         var gun = weapons != null && weapons.ShowsWeapon ? weapons.EquippedData : null;
-        if (gun == null) return plainSet;
-        return gun.SoundProfile == GunSoundProfile.Pistol ? pistolSet : rifleSet;
+        if (gun == null || gunSets.Count == 0) return null;
+        if (!kindOfAmmunition.TryGetValue(gun.Ammunition, out string kind) && !kindOfAmmunition.TryGetValue(AnyAmmunition, out kind))
+            return null;
+        return gunSets.TryGetValue(kind, out var sets) ? sets : null;
     }
 
     // The cycles are measured in the Animator's own units; its scale (the fit to the camera) makes them metres.
@@ -258,37 +300,93 @@ public sealed partial class PlayerBody
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
-        float heading = speed > .3f ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
+        float heading = speed > StillTravel ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
         float scale = GaitScale;
         mixWeight = mixStride = 0f;
         mixVelocity = Vector2.zero;
 
-        float legs = heading, moving;
+        // A gun out asks for its aimed set as far as the sights are up and for its own set otherwise; what they can't
+        // carry the stance's own set (plain or crouched) does.
+        var gun = GunInHand();
+        float aim = gun != null ? AimBlend() : 0f;
+        asking.Clear();
+        wanting.Clear();
+        float legs = heading, turn = 0f;
+        MoveSet stance;
         if (crouched)
         {
-            moving = MovingShare(crouchSet, heading, speed, scale);
-            MixIdle(crouchSet, 1f - moving);
-            Ways(crouchSet, heading, speed, moving, scale);
+            stance = crouchSet;
+            if (gun != null) { Ask(gun.CrouchAim, aim); Ask(gun.Crouch, 1f); }
         }
         else
         {
-            var hand = SetInHand();
-            float turn = HipTurn(heading, speed);
+            stance = plainSet;
+            turn = HipTurn(heading, speed);
             legs = Mathf.DeltaAngle(0f, heading - turn);
-            float aim = hand != plainSet ? AimShare(hand, legs, speed, scale) : 0f;
-            moving = Mathf.Lerp(MovingShare(plainSet, legs, speed, scale), MovingShare(hand, legs, speed, scale), aim);
-            MixIdle(hand, 1f - moving);
-            if (TurnOnTheSpot(speed < .3f, dt)) turnLayerTarget = 1f - moving;
-            Ways(plainSet, legs, speed, moving * (1f - aim), scale);
-            Ways(hand, legs, speed, moving * aim, scale);
+            if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
+        }
+        float moving = MixSets(stance, legs, speed, scale);
+        if (!crouched)
+        {
+            if (TurnOnTheSpot(speed < StillTravel, dt)) turnLayerTarget = 1f - moving;
             if (!legsPlanted) targetYaw = turn;
         }
         Pace(speed, legs, moving, dt);
     }
 
+    // Below this the travel has no heading: the body stands (m/s).
+    private const float StillTravel = .3f;
+
+    private void Ask(MoveSet set, float want)
+    {
+        if (set == null || want <= 0f) return;
+        asking.Add(set);
+        wanting.Add(want);
+    }
+
+    // Shares the legs among the sets asking for them, first asked first: each takes what it wants of what is left, as far
+    // as its cycles can carry this travel (Carries); the stance's own set has the rest. Before 0.9.240 a gun's set was its
+    // aim cycles alone, taken only while aiming (or by Body.gunHipMoves), and a set missing any of four ways fell back
+    // whole to the plain one. How much of the body moves rather than stands comes back.
+    private float MixSets(MoveSet stance, float heading, float speed, float scale)
+    {
+        float left = 1f, moving = 0f;
+        for (int i = 0; i < asking.Count && left > 1e-4f; i++)
+        {
+            float share = left * Mathf.Clamp01(wanting[i]) * Carries(asking[i], heading, speed, scale);
+            if (share <= 0f) continue;
+            moving += Mix(asking[i], stance, share, heading, speed, scale);
+            left -= share;
+        }
+        if (left > 1e-4f) moving += Mix(stance, stance, left, heading, speed, scale);
+        return moving;
+    }
+
+    // A set's share: on its idle as far as the body stands (the stance's idle for a set with none of its own), on its
+    // cycles for the rest. Returns the moving part of the share.
+    private float Mix(MoveSet set, MoveSet stance, float share, float heading, float speed, float scale)
+    {
+        float moving = share * MovingShare(set, heading, speed, scale);
+        MixIdle(set.Idle != null ? set : stance, share - moving);
+        Ways(set, heading, speed, moving, scale);
+        return moving;
+    }
+
     private void MixIdle(MoveSet set, float weight)
     {
         if (set.Idle != null && weight > 0f) set.Idle.Target += weight;
+    }
+
+    // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
+    // round to the heading (Reach) and its fastest cycles there reach the speed, played as fast and stretched as long as
+    // they may. Past that the next set down runs on under the same upper body.
+    private float Carries(MoveSet set, float heading, float speed, float scale)
+    {
+        if (speed < StillTravel) return 1f;
+        if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
+        float top = Mathf.Lerp(a.Cycles[a.Cycles.Count - 1].Gait.Speed, b.Cycles[b.Cycles.Count - 1].Gait.Speed, toward)
+            * scale * gaitRate.y * gaitStretch.y;
+        return Reach(set, heading) * (1f - Mathf.InverseLerp(top * .85f, top * 1.1f, speed));
     }
 
     // Running fast the hips turn toward the way of travel: ahead up to past the side, back beyond, with a margin either way
@@ -308,31 +406,58 @@ public sealed partial class PlayerBody
     // How much of the body moves rather than stands: up to the slowest cycle the way it goes, the stance shares it.
     private float MovingShare(MoveSet set, float heading, float speed, float scale)
     {
-        Around(heading, out int from, out int to, out float toward);
-        float slow = Mathf.Lerp(Slowest(set.Ways[from]), Slowest(set.Ways[to]), toward / 90f) * scale;
+        if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
+        float slow = Mathf.Lerp(a.Cycles[0].Gait.Speed, b.Cycles[0].Gait.Speed, toward) * scale;
         return Mathf.Clamp01(speed / Mathf.Max(.1f, slow));
-
-        static float Slowest(List<Channel> cycles) => cycles.Count > 0 ? cycles[0].Gait.Speed : 1f;
     }
 
-    // Aiming with a gun, its aim cycles take the legs as far as they can reach the speed (their fastest, played as fast and
-    // stretched as long as they may); past that the plain cycles run on under the aimed gun.
-    private float AimShare(MoveSet set, float heading, float speed, float scale)
+    // The two ways of a set either side of a heading (0 ahead, 90 right), round the circle: how far the heading is from the
+    // first toward the second (0-1) and how far apart they are (degrees). A set of one way has it as both.
+    private static bool Around(MoveSet set, float heading, out Way from, out Way to, out float toward, out float gap)
     {
-        Around(heading, out int from, out int to, out float toward);
-        float top = Mathf.Lerp(Fastest(set.Ways[from]), Fastest(set.Ways[to]), toward / 90f) * scale * gaitRate.y * gaitStretch.y;
-        return Mathf.Max(AimBlend(), Mathf.Clamp01(gunHipMoves)) * (1f - Mathf.InverseLerp(top * .85f, top * 1.1f, speed));
-
-        static float Fastest(List<Channel> cycles) => cycles.Count > 0 ? cycles[cycles.Count - 1].Gait.Speed : 1f;
+        from = to = null;
+        toward = 0f;
+        gap = 360f;
+        int count = set.Ways.Count;
+        if (count == 0) return false;
+        from = to = set.Ways[0];
+        if (count == 1) return true;
+        float at = Mathf.Repeat(heading, 360f);
+        for (int i = 0; i < count; i++)
+        {
+            Way a = set.Ways[i], b = set.Ways[(i + 1) % count];
+            float span = Mathf.Repeat(b.Angle - a.Angle, 360f), off = Mathf.Repeat(at - a.Angle, 360f);
+            if (off > span) continue;
+            from = a;
+            to = b;
+            gap = span;
+            toward = span > 1e-3f ? off / span : 0f;
+            return true;
+        }
+        return true;
     }
 
-    // The two ways either side of a heading (0 ahead, 90 right) and how far it is past the first toward the second.
-    private static void Around(float heading, out int from, out int to, out float toward)
+    // The ways a heading blends: the two either side while they join (WaysJoin), else the nearer one alone.
+    private static bool Pair(MoveSet set, float heading, out Way from, out Way to, out float toward)
     {
-        float sector = Mathf.Repeat(heading, 360f) / 90f;
-        from = Mathf.FloorToInt(sector) % 4;
-        to = (from + 1) % 4;
-        toward = (sector - Mathf.Floor(sector)) * 90f;
+        if (!Around(set, heading, out from, out to, out toward, out float gap)) return false;
+        if (from != to && gap > WaysJoin)
+        {
+            if (toward > .5f) from = to;
+            else to = from;
+            toward = 0f;
+        }
+        return true;
+    }
+
+    // How far a set's ways reach round to a heading (0-1): all the way between two that join; within LoneWayReach of a way
+    // with no joining neighbour on that side, none from LoneWayEnd.
+    private static float Reach(MoveSet set, float heading)
+    {
+        if (!Around(set, heading, out var a, out var b, out float toward, out float gap)) return 0f;
+        if (a != b && gap <= WaysJoin) return 1f;
+        float off = a == b ? Mathf.Abs(Mathf.DeltaAngle(a.Angle, heading)) : Mathf.Min(toward, 1f - toward) * gap;
+        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(LoneWayReach, LoneWayEnd, off));
     }
 
     // Shares the weight between the two ways either side of the heading so their blended feet push back along it: each
@@ -341,23 +466,23 @@ public sealed partial class PlayerBody
     // that pointed well off the travel, and the feet slid sideways.
     private void Ways(MoveSet set, float heading, float speed, float weight, float scale)
     {
-        if (weight <= 0f) return;
-        Around(heading, out int from, out int to, out float toward);
-        var a = set.Ways[from];
-        var b = set.Ways[to];
-        float share = toward / 90f;
-        if (a.Count > 0 && b.Count > 0 && toward > .01f && toward < 89.99f)
+        if (weight <= 0f || !Pair(set, heading, out var a, out var b, out float toward)) return;
+        if (a == b)
+        {
+            MixLadder(a.Cycles, speed, weight, scale);
+            return;
+        }
+        float share = toward;
+        if (toward > 1e-4f && toward < 1f - 1e-4f)
         {
             float rad = heading * Mathf.Deg2Rad;
             var way = new Vector2(Mathf.Sin(rad), Mathf.Cos(rad));
-            Vector2 first = LadderVelocity(a, speed, scale), second = LadderVelocity(b, speed, scale);
+            Vector2 first = LadderVelocity(a.Cycles, speed, scale), second = LadderVelocity(b.Cycles, speed, scale);
             float x = Cross(first, way), y = Cross(second, way);
             if (Mathf.Abs(x - y) > 1e-4f) share = Mathf.Clamp01(x / (x - y));
         }
-        else if (a.Count == 0) share = 1f;
-        else if (b.Count == 0) share = 0f;
-        MixLadder(a, speed, weight * (1f - share), scale);
-        MixLadder(b, speed, weight * share, scale);
+        MixLadder(a.Cycles, speed, weight * (1f - share), scale);
+        MixLadder(b.Cycles, speed, weight * share, scale);
 
         static float Cross(Vector2 p, Vector2 q) => p.x * q.y - p.y * q.x;
     }
