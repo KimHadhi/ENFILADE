@@ -437,7 +437,9 @@ public sealed partial class WeaponController : MonoBehaviour
     {
         if (crosshair == null) return;
         // A choke shotgun keeps its ring down the sights, closing in as the choke draws, as the Peacekeeper's reticle does.
-        crosshair.SetCombatHidden(AimBlend > .001f && !weaponData.HasChoke);
+        // While a grenade cooks its ring takes the crosshair's place, as in the video the user picked (2026-11-22 v2-card-nade
+        // "원본대로": the quick grenade is a weapon of its own, so the gun's crosshair isn't up while it is in hand).
+        crosshair.SetCombatHidden((AimBlend > .001f && !weaponData.HasChoke) || GrenadeHUD.RingShown);
         if (viewCamera == null) return;
         var canvas = crosshair.GetComponentInParent<Canvas>();
         // Canvas pixels a spread of tangent 1 covers from the screen's middle.

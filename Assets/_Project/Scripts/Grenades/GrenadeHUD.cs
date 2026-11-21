@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,20 +8,43 @@ using UnityEngine.UI;
 /// corner where the ammo display isn't up (a Knight's fists): the throwable's silhouette (Throwables.Icon), how many are
 /// left, its key, and while one cooks the fuse running out under it. It leans at its own angle (Persona
 /// style: GrenadeRules hudYaw/hudRoll), pops when the count changes and blinks when some come back. It sits apart from the
-/// weapon slots and touches none of them. While a cooking one is held, its fuse also runs down in a ring round the
-/// crosshair (GrenadeCookRing), where the eyes are. PlayerGrenades (this PC's player) says what to show every frame.
+/// weapon slots and touches none of them. While a cooking one is held, the cook ring of [MW] Quick Grenade closes in round
+/// the crosshair (GrenadeCookRing, GrenadeIndicators.csv Ring.*), where the eyes are. PlayerGrenades (this PC's player)
+/// says what to show every frame.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.AmmoHud + 1)]
 public sealed class GrenadeHUD : MonoBehaviour
 {
-    private const float Width = 132f, Height = 58f, PopSeconds = .22f, ShakeSeconds = .3f, RingFade = 12f;
+    private const float Width = 132f, Height = 58f, PopSeconds = .22f, ShakeSeconds = .3f;
     private static readonly Color PanelColor = new Color(.025f, .045f, .065f, .85f), Muted = new Color(.59f, .67f, .71f);
     private static GrenadeHUD current;
     private static float lookForAmmoAt;
 
+    /// <summary>
+    /// The cook ring: [MW] Quick Grenade and Grenade Indicator's Indicator:DrawTimer as it is (the user, 2026-11-22:
+    /// "원본대로 하라고"), GrenadeIndicators.csv rows Ring.* (1080p canvas px, seconds). Times are from the pin.
+    /// </summary>
+    [Serializable]
+    public sealed class RingLook
+    {
+        public bool on = true;
+        /// <summary>The inside radius at the pin (px), closing to 0 as the fuse burns; the width outward; the sides.</summary>
+        public float radius = 40f, thickness = 2f;
+        public int segments = 30;
+        /// <summary>Shown this long after the pin (s); turns late this long before the fuse ends (s).</summary>
+        public float showAfter = .5f, redLead = 1.5f;
+        /// <summary>The time constants it comes up, fades and turns colour by (s), and the strength under which it is gone.</summary>
+        public float fadeInTau = .3f, fadeOutTau = .1f, colorTau = .3f, gone = .014f;
+        public Color color = Color.white, lateColor = Color.red;
+    }
+
+    private readonly RingLook ringLook = new RingLook();
     private GrenadeCookRing ring;
     private Transform crosshair;
-    private float ringShare = -1f, ringShown, ringAlpha, lookForCrosshairAt;
+    // ringHeld: how long the one in hand has burnt (s), below 0 for none; burnt and fuse: the last told, kept while it
+    // fades (the original's m_FragSafeTime stops at the throw); the ring's strength and colour as they follow.
+    private float ringHeld = -1f, burnt, fuseSeconds, ringAlpha, lookForCrosshairAt;
+    private Color ringColor = Color.white;
 
     private RectTransform root, plate, fuseFill;
     private CanvasGroup group;
@@ -66,18 +90,28 @@ public sealed class GrenadeHUD : MonoBehaviour
     {
         if (current == null) return;
         current.wanted = false;
-        current.ringShare = -1f;
+        current.ringHeld = -1f;
     }
 
     /// <summary>
-    /// This frame's fuse ring round the crosshair: the share of the fuse left while a cooking throwable is held, below 0
-    /// for none (it fades out).
+    /// This frame's cook ring round the crosshair: how long the cooking throwable in hand has burnt and how long its fuse
+    /// is (s); held below 0 for none (it fades out at the size it was).
     /// </summary>
-    internal static void Ring(float share)
+    internal static void Ring(float held, float fuse)
     {
         var hud = Ensure();
-        if (hud != null) hud.ringShare = share;
+        if (hud == null) return;
+        hud.ringHeld = held;
+        if (held < 0f) return;
+        hud.burnt = held;
+        hud.fuseSeconds = fuse;
     }
+
+    /// <summary>
+    /// The cook ring is on the screen: the gun's crosshair steps aside meanwhile (WeaponController.UpdateCrosshair), since
+    /// the addon's quick grenade is a weapon of its own, so the gun's crosshair isn't drawn while it is in hand.
+    /// </summary>
+    internal static bool RingShown => current != null && current.ringAlpha > 0f;
 
     /// <summary>Some came back (an ammo pile, the shop, a Support, a knife taken back): the plate blinks.</summary>
     internal static void Blink(Color color)
@@ -110,6 +144,8 @@ public sealed class GrenadeHUD : MonoBehaviour
 
     private void Build()
     {
+        GameTables.BindNested(GrenadeIndicators.TableName, GrenadeIndicators.RingRow, this, ringLook);
+        ringColor = ringLook.color;
         root = (RectTransform)transform;
         root.anchorMin = root.anchorMax = new Vector2(.5f, .5f);
         root.pivot = new Vector2(1f, 0f);
@@ -166,41 +202,55 @@ public sealed class GrenadeHUD : MonoBehaviour
         if (cooking)
         {
             fuseFill.sizeDelta = new Vector2((Width - 16f) * Mathf.Clamp01(fuseShare), 3f);
-            // As the ring round the crosshair: white while there is time, pink for the last share.
-            fuseBar.color = fuseShare <= Throwables.Rule("ringPink", .2f)
-                ? Color.Lerp(KitStyle.Accent, Color.white, Mathf.PingPong(Time.unscaledTime * 8f, 1f)) : Color.white;
+            // The cook ring's colour: white, turning red over the fuse's last seconds once the ring is up. It used to
+            // swing between pink and white four times a second, a flicker the user's rule forbids.
+            fuseBar.color = ringColor;
         }
     }
 
-    // The fuse ring, made beside the HUD crosshair the first time a fuse is held and kept on its middle: white while
-    // there is time, the game's pink for the last share (GrenadeRules ringPink), with a small beat there.
+    // The cook ring as the addon draws it: shown once the fuse has burnt showAfter, the strength coming up (fadeInTau) and
+    // going (fadeOutTau) by the original's frame-time Lerp, white turning red over the fuse's last redLead seconds
+    // (colorTau), the inside radius closing from radius to nothing as the fuse burns; let go, it fades at the size it was.
+    // Made beside the HUD crosshair the first time it shows and kept on its middle (the screen's, where the addon drew it).
     private void DrawRing()
     {
+        var look = ringLook;
         float dt = Time.unscaledDeltaTime;
-        bool on = ringShare >= 0f;
-        if (on) ringShown = ringShare;
-        ringAlpha = Mathf.MoveTowards(ringAlpha, on ? 1f : 0f, dt * RingFade);
+        if (!look.on || ringHeld < look.showAfter)
+        {
+            if (ringAlpha > look.gone) ringAlpha = Mathf.Lerp(ringAlpha, 0f, Step(dt, look.fadeOutTau));
+            else
+            {
+                ringAlpha = 0f;
+                ringColor = look.color;
+                if (ring != null && ring.gameObject.activeSelf) ring.gameObject.SetActive(false);
+                return;
+            }
+        }
+        else ringAlpha = Mathf.Lerp(ringAlpha, 1f, Step(dt, look.fadeInTau));
+        ringColor = Color.Lerp(ringColor, burnt >= fuseSeconds - look.redLead ? look.lateColor : look.color, Step(dt, look.colorTau));
         if (ring == null)
         {
-            if (!on || Time.unscaledTime < lookForCrosshairAt) return;
+            if (Time.unscaledTime < lookForCrosshairAt) return;
             lookForCrosshairAt = Time.unscaledTime + 1f;
             var view = DynamicCrosshairView.FindHud();
             if (view == null || view.transform.parent == null) return;
             crosshair = view.transform;
             ring = GrenadeCookRing.Create(crosshair.parent);
         }
-        bool shown = ringAlpha > 0f && crosshair != null;
+        bool shown = crosshair != null;
         if (ring.gameObject.activeSelf != shown) ring.gameObject.SetActive(shown);
         if (!shown) return;
         ring.rectTransform.position = crosshair.position;
         ring.rectTransform.rotation = crosshair.rotation;
-        bool late = ringShown <= Throwables.Rule("ringPink", .2f);
-        float beat = late ? 1f + .3f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 14f)) : 1f;
-        Color arc = late ? KitStyle.Accent : Color.white;
-        arc.a *= ringAlpha;
-        ring.Set(ringShown, Throwables.Rule("ringRadius", 64f), Throwables.Rule("ringLine", 4f) * beat, Throwables.Rule("ringEdge", 2f),
-            arc, new Color(0f, 0f, 0f, .75f * ringAlpha));
+        float share = fuseSeconds > 0f ? Mathf.Clamp01(burnt / fuseSeconds) : 1f;
+        var tint = ringColor;
+        tint.a = ringAlpha;
+        ring.Show(look.radius - look.radius * share, look.thickness, look.segments, tint);
     }
+
+    // Lerp(FrameTime() / tau, ...): the share of the way a value goes this frame, as the addon steps it.
+    private static float Step(float dt, float tau) => Mathf.Clamp01(dt / Mathf.Max(1e-4f, tau));
 
     // Just left of the ammo display, bottom edges level; where the ammo display isn't up, in its corner.
     private void Place()

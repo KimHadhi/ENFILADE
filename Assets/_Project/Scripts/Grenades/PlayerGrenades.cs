@@ -130,7 +130,7 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         handMine = false;
         if (arc != null) arc.Hide();
         preview?.Hide();
-        if (Local == this) GrenadeHUD.Ring(-1f);
+        if (Local == this) GrenadeHUD.Ring(-1f, 0f);
     }
 
     // A class picked is a fresh kit: its throwable, all of them.
@@ -185,11 +185,13 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         else StopAim();
         if ((pickLeft -= dt) <= 0f) { pickLeft = .1f; TakeKnivesBack(); }
         var held = Throwables.Of(armKind);
-        float fuse = cooking && held != null && held.Fuse > 0f ? cookLeft / held.Fuse : -1f;
+        bool burning = cooking && held != null && held.Fuse > 0f;
+        float fuse = burning ? cookLeft / held.Fuse : -1f;
         if (info == null || kind == Throwable.None) GrenadeHUD.Hide();
         // Aiming a stone is not aiming the class's throwable: its count line stays as it is.
         else GrenadeHUD.Show(kind, count, aiming && armKind == kind, fuse);
-        // The fuse round the crosshair while one is held cooking (a tap's few tenths go by without it).
-        GrenadeHUD.Ring(fuse >= 0f && !released && (holding || arm == Arm.Hold) ? fuse : -1f);
+        // The cook ring round the crosshair while one is held cooking: how long it has burnt of its fuse (a tap is let go
+        // before the ring comes up).
+        GrenadeHUD.Ring(burning && !released && (holding || arm == Arm.Hold) ? held.Fuse - cookLeft : -1f, burning ? held.Fuse : 0f);
     }
 }

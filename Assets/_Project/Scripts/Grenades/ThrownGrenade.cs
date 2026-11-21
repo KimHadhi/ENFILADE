@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -81,6 +82,8 @@ public sealed class ThrownGrenade : MonoBehaviour
         grenade.spin = Throwables.Spin(14f) * Mathf.Rad2Deg;
         // What the flight says now of where it will burst, kept to be set beside where it does (the record).
         if (mine && PlayRecord.On) grenade.predicted = GrenadeFlight.Fly(from, velocity, grenade.fuse, grenade.body, grenade.rules).Position;
+        // The indicators round the crosshair show every live one (made with the first throw on this PC).
+        GrenadeIndicators.Prepare();
         return grenade;
     }
 
@@ -124,8 +127,26 @@ public sealed class ThrownGrenade : MonoBehaviour
     /// </summary>
     internal static event Action<ThrownGrenade> Turned;
 
+    /// <summary>
+    /// Every thrown grenade on this PC, flying or lying, this PC's player's own and the copies of friends': what the
+    /// grenade indicators round the crosshair show (GrenadeIndicators), as the addons they come from look at every
+    /// grenade entity there is. Each is in it from its throw until its object is gone; one that burst this frame is
+    /// still in it until the end of the frame, marked Done.
+    /// </summary>
+    internal static readonly List<ThrownGrenade> Live = new List<ThrownGrenade>();
+
+    /// <summary>It burst (its own fuse, or the thrower's PC said where): gone from the world at the end of this frame.</summary>
+    internal bool Done => done;
+
+    private void OnEnable() => Live.Add(this);
+    private void OnDisable() => Live.Remove(this);
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => Turned = null;
+    private static void ResetStatics()
+    {
+        Turned = null;
+        Live.Clear();
+    }
 
     /// <summary>Its flight as it is now (the thrower's PC sends it as it turns).</summary>
     internal GrenadeFlight Flight => flight;
