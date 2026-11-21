@@ -188,9 +188,6 @@ public sealed class WeaponData : ScriptableObject
         "dmr, sniper, shotgun, none …). Empty: the row its kind stands for (MuzzleFlashLooks). Suppressed, built in or put on, " +
         "it reads the row that one points at.")]
     [SerializeField] private string flash = "";
-    // No longer read: a shot's flame is a row of Tables/MuzzleFlash (MuzzleFlashLooks), not a number of each gun's own.
-    // The field stays only because the gun assets and DesperadoSetup still write it; it goes when that line does.
-    [SerializeField, Range(0f, 3f)] private float muzzleFlashScale = 1f;
     [SerializeField] private bool ejectShells = true;
     [Tooltip("Synthesized shot used when Fire Sounds is empty.")]
     [SerializeField] private GunSoundProfile soundProfile = GunSoundProfile.Rifle;

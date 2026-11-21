@@ -277,7 +277,7 @@ Move.coyoteTime,0.1,발판을 벗어난 뒤에도 점프를 받아 주는 시간
 Move.jumpBufferTime,0.15,착지 직전에 누른 점프를 기억하는 시간(초)
 # 이동: 모멘텀 (달릴수록 붙는 속도 → MovementMomentum. 디버그 HUD의 run 값),,
 # 이동: 슬라이딩,,
-Move.slideMinStartSpeed,4.5,달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). 달리기(앞 3.93·뒤 4.21)보다 빠르고 전력질주(앞 5.61·옆 5.55)보다 느리게: 전력질주에서 슬라이드한다. 0.9.245 전에는 5(그때 W만 눌러도 1초에 4.9, 3.5초에 7.9)
+Move.slideMinStartSpeed,4.5,"달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). 달리기(앞 3.93·뒤 4.21)보다 빠르고 전력질주(앞 5.61·옆 5.55)보다 느리게: 전력질주에서 슬라이드한다. 0.9.245 전에는 5(그때 W만 눌러도 1초에 4.9, 3.5초에 7.9)"
 Move.slideKickBoost,1,슬라이드 시작 때 더하는 속도(m/s)
 Move.slideFriction,4.2,슬라이드 감속(m/s²)
 Move.diveSlideFriction,9,머리부터 미끄러지기 감속(m/s²)

@@ -36,8 +36,6 @@ internal static class DesperadoSetup
     private const string Made = "DesperadoSetup 2";
     // The R08 rig turns its cylinder a chamber of eight a shot; the Fatebringer's has six (ChamberTurn).
     private const float ChamberRatio = 8f / 6f;
-    // A hand cannon's shot throws a bigger flame than the R08's 1.1 (MuzzleFlash).
-    private const float FlashScale = 1.35f;
     // The look of the Fatebringer's materials, from its VMTs (Source phong and env map): dark bronze metal whose base
     // map's alpha is its reflection mask ($basemapalphaenvmapmask), small parts that glow ($selfillummask, emission map),
     // and matte dark sights. Made once; tune them on the materials afterwards.
@@ -129,7 +127,7 @@ internal static class DesperadoSetup
         }
         var write = new SerializedObject(weapon);
         write.FindProperty("displayName").stringValue = Weapon;
-        write.FindProperty("muzzleFlashScale").floatValue = FlashScale;
+        // Its flame is no number of its own: Weapons.csv's flash cell names a MuzzleFlash row (MuzzleFlashLooks).
         // Its shot, and the reload's moments as the R08's clip moves the parts (ReloadMoments): the crane swung out, the
         // spent rounds out, the new ones in, the crane shut.
         if (!Clips(write, "fireSounds", "Fatebringer_Fire_01", "Fatebringer_Fire_02", "Fatebringer_Fire_03")
