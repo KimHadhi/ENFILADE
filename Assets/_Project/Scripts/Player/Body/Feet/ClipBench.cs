@@ -25,6 +25,7 @@ using Object = UnityEngine.Object;
 ///   skins=ichigo,mayo                 characters by id (ichigo)
 ///   bake=gaitmoves                    also bake the turns on the spot into Tables/Player/GaitMoves.csv (GaitMoveBake)
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
+///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
 ///   stepfilm=Idle,R_Idle              a turn on the spot as the game steps it (StepBench): pictures and each step
 ///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
 ///                                     head face and how fast the hands move against the chest (Track)
@@ -72,7 +73,7 @@ internal static class ClipBench
     {
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string[] stepped = Array.Empty<string>();
+        string[] stepped = Array.Empty<string>(), lifted = Array.Empty<string>();
         bool bakeMoves = false;
         foreach (string raw in lines)
         {
@@ -86,6 +87,7 @@ internal static class ClipBench
                 case "models": models = values; break;
                 case "clips": only = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
                 case "stepfilm": stepped = values; break;
+                case "lifts": lifted = values; break;
                 case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
                 case "bake": bakeMoves = values.Any(v => v.Equals("gaitmoves", StringComparison.OrdinalIgnoreCase)); break;
             }
@@ -141,6 +143,15 @@ internal static class ClipBench
                         .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
                     GaitMoveBake.Bake(packs, text);
                     bakeMoves = false;
+                }
+                if (lifted.Length > 0)
+                {
+                    text.AppendLine("-- lifts");
+                    var takes = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
+                        .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
+                    foreach (string name in lifted)
+                        if (takes.TryGetValue(name, out var take)) StepBench.Lifts(animator, scale, take, text);
+                        else text.AppendLine($"  ! no clip '{name}'");
                 }
                 if (stepped.Length > 0)
                 {

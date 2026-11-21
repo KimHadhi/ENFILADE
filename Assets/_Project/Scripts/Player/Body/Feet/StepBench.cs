@@ -18,8 +18,8 @@ internal static class StepBench
 {
     private const float Dt = 1f / 60f, End = 3.6f;
     // PlayerBody's numbers (Player.csv Body.*), as the game turns and plants.
-    private const float TurnStart = 60f, TurnSpeed = 150f, TurnEase = .08f;
-    private const float Twist = 25f, Drop = .05f, Release = .12f, StepTime = .22f, StepHeight = .08f;
+    private const float TurnStart = 60f, TurnStepTime = .3f;
+    private const float Twist = 45f, Drop = .05f, Release = .12f, StepTime = .22f, StepHeight = .05f;
     private const int Size = 200, Columns = 13;
 
     // The view: still, a flick 90° to the right, held, a turn 150° to the left, held.
@@ -79,8 +79,8 @@ internal static class StepBench
                     tile.GetComponent<MeshRenderer>().sharedMaterial = (x + z & 1) == 0 ? shine : light;
                 }
             var tuning = new FootPlanting.Tuning(.3f, .5f, .08f, 30f, 20f, 25f, .15f);
-            float legYaw = 0f, velocity = 0f;
-            int turning = 0;
+            float legYaw = 0f;
+            var planner = new TurnPlanner();
             bool leftWas = false, rightWas = false;
             Vector3 leftKept = Vector3.zero, rightKept = Vector3.zero;
             float leftSlid = 0f, rightSlid = 0f;
@@ -92,22 +92,14 @@ internal static class StepBench
             for (float time = 0f; time <= End; time += Dt)
             {
                 // The legs as TurnOnTheSpot turns them.
-                float look = View(time), limit = TurnStart + 30f;
-                float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
-                if (turning == 0 && Mathf.Abs(offset) > TurnStart) { turning = offset < 0f ? 1 : -1; velocity = 0f; }
-                if (turning != 0)
-                {
-                    offset = Mathf.SmoothDamp(offset, 0f, ref velocity, TurnEase, TurnSpeed, Dt);
-                    if (Mathf.Abs(offset) < 1f) turning = 0;
-                }
-                legYaw = look + offset;
+                legYaw = planner.Tick(View(time), legYaw, true, Dt, TurnStart, TurnStepTime, TurnStart + 30f);
                 // The animation pass, then the feet, as in the game's frame.
                 root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                 ClipSampler.Sample(idle, animator.gameObject, time % Mathf.Max(.01f, idle.length));
                 root.SetPositionAndRotation(Vector3.zero, Quaternion.Euler(0f, legYaw, 0f));
                 root.localScale = rootScale * scale;
                 feet.Plant(true, 0f, Physics.DefaultRaycastLayers, tuning, Dt, FootPlanting.Stride.None,
-                    new FootPlanting.Hold(true, Vector3.zero, root.eulerAngles.y, Twist, Drop, Release, StepTime, StepHeight));
+                    new FootPlanting.Hold(true, Vector3.zero, root.eulerAngles.y, Twist, Drop, Release, StepTime, StepHeight, planner.Lead, planner.Share));
                 Note(feet.Left, "L", time, ref leftWas, ref leftKept, ref leftSlid, steps);
                 Note(feet.Right, "R", time, ref rightWas, ref rightKept, ref rightSlid, steps);
                 while (shot < shots.Count && time >= shots[shot] - Dt * .5f)
@@ -154,6 +146,93 @@ internal static class StepBench
             root.localScale = rootScale;
         }
     }
+
+    /// <summary>
+    /// How a captured turn on the spot steps (ClipBench lifts=), to take the game's step from people rather than from a
+    /// guess: each time a foot comes up (its ankle more than LiftFrom over the lowest it stands in the clip) until it is down
+    /// again, how long, how high, and how far round the body had turned (its root, degrees) when it came up and when it was
+    /// down. Sizes are the game's.
+    /// </summary>
+    internal static void Lifts(Animator animator, float scale, AnimationClip clip, StringBuilder text)
+    {
+        var root = animator.transform;
+        var feet = new[] { animator.GetBoneTransform(HumanBodyBones.LeftFoot), animator.GetBoneTransform(HumanBodyBones.RightFoot) };
+        if (feet[0] == null || feet[1] == null) return;
+        AnimationCurve qx = null, qy = null, qz = null, qw = null;
+        foreach (var binding in UnityEditor.AnimationUtility.GetCurveBindings(clip))
+        {
+            if (binding.type != typeof(Animator)) continue;
+            switch (binding.propertyName)
+            {
+                case "RootQ.x": qx = UnityEditor.AnimationUtility.GetEditorCurve(clip, binding); break;
+                case "RootQ.y": qy = UnityEditor.AnimationUtility.GetEditorCurve(clip, binding); break;
+                case "RootQ.z": qz = UnityEditor.AnimationUtility.GetEditorCurve(clip, binding); break;
+                case "RootQ.w": qw = UnityEditor.AnimationUtility.GetEditorCurve(clip, binding); break;
+            }
+        }
+        float Yaw(float time)
+        {
+            if (qx == null || qy == null || qz == null || qw == null) return 0f;
+            var q = new Quaternion(qx.Evaluate(time), qy.Evaluate(time), qz.Evaluate(time), qw.Evaluate(time)).normalized;
+            Vector3 ahead = Vector3.ProjectOnPlane(q * Vector3.forward, Vector3.up);
+            return Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
+        }
+        var bones = root.GetComponentsInChildren<Transform>();
+        var poses = Array.ConvertAll(bones, b => (b.localPosition, b.localRotation));
+        Vector3 rootPosition = root.position;
+        Quaternion rootRotation = root.rotation;
+        try
+        {
+            int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * 120f));
+            var heights = new float[2, count + 1];
+            var turned = new float[count + 1];
+            float last = Yaw(0f), sum = 0f;
+            var lowest = new[] { float.PositiveInfinity, float.PositiveInfinity };
+            for (int i = 0; i <= count; i++)
+            {
+                float time = clip.length * i / count;
+                float now = Yaw(time);
+                sum += Mathf.DeltaAngle(last, now);
+                last = now;
+                turned[i] = sum;
+                root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                ClipSampler.Sample(clip, animator.gameObject, time);
+                for (int f = 0; f < 2; f++)
+                {
+                    heights[f, i] = root.InverseTransformPoint(feet[f].position).y * scale;
+                    lowest[f] = Mathf.Min(lowest[f], heights[f, i]);
+                }
+            }
+            text.AppendLine(Invariant($"  {clip.name}: {clip.length:0.00}s, turns {sum:0}"));
+            for (int f = 0; f < 2; f++)
+            {
+                int from = -1;
+                float top = 0f;
+                for (int i = 0; i <= count; i++)
+                {
+                    float over = heights[f, i] - lowest[f];
+                    bool up = over > LiftFrom;
+                    if (up && from < 0) { from = i; top = 0f; }
+                    if (up) top = Mathf.Max(top, over);
+                    if ((!up || i == count) && from >= 0)
+                    {
+                        float a = clip.length * from / count, b = clip.length * i / count;
+                        text.AppendLine(Invariant($"    {(f == 0 ? "L" : "R")} up {a:0.00}-{b:0.00}s ({b - a:0.00}s) {top * 100f:0.0}cm high, body turned {turned[from]:0} -> {turned[i]:0}"));
+                        from = -1;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            for (int i = 0; i < bones.Length; i++)
+                if (bones[i] != null) bones[i].SetLocalPositionAndRotation(poses[i].localPosition, poses[i].localRotation);
+            root.SetPositionAndRotation(rootPosition, rootRotation);
+        }
+    }
+
+    // A foot is up while its ankle is more than this over the lowest it stands in the clip (m, game size).
+    private const float LiftFrom = .015f;
 
     // A foot's steps as they start and land, and how far it moved while it kept its place.
     private static void Note(FootPlanting.Leg leg, string name, float time, ref bool was, ref Vector3 kept, ref float slid, StringBuilder steps)

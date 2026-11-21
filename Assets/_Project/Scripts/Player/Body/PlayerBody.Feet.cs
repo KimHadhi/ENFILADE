@@ -44,7 +44,7 @@ public sealed partial class PlayerBody
     [Header("Feet keep their place")]
     [SerializeField, Min(0f), Tooltip("The body stands (its feet keep their places) while it travels slower than this over the ground (m/s).")]
     private float footHoldSpeed = .15f;
-    [SerializeField, Range(1f, 90f), Tooltip("A kept foot steps once the legs have turned this far over it (degrees).")]
+    [SerializeField, Range(1f, 90f), Tooltip("A kept foot steps once the legs have turned this far over it (degrees), when no turn on the spot leads the steps.")]
     private float footHoldTwist = 25f;
     [SerializeField, Min(.05f), Tooltip("How long a foot's step takes, up off its place and down in its new one (s).")]
     private float footStepTime = .22f;
@@ -130,7 +130,8 @@ public sealed partial class PlayerBody
         // The legs turning on the spot no longer carry the feet round with them (as up to 0.9.278, over 40° a second): the
         // feet stay where they stand and step round themselves (FootPlanting.Stand), at any speed of turn.
         bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed;
-        var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight);
+        var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight,
+            turnPlanner.Lead, turnPlanner.Share);
         // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
             new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,

@@ -47,10 +47,9 @@ public sealed partial class PlayerBody
     [SerializeField, Range(10f, 120f), Tooltip("Standing still, the legs stay planted until the view has turned this far "
         + "from them (degrees); the chest twists toward the view meanwhile. Then the legs step round.")]
     private float turnStartAngle = 60f;
-    [SerializeField, Min(10f), Tooltip("How fast the legs turn round to the view (degrees per second).")]
-    private float turnSpeed = 150f;
-    [SerializeField, Min(0f), Tooltip("Turning on the spot, how softly the legs start and stop (s).")]
-    private float turnEaseTime = .08f;
+    [SerializeField, Min(.05f), Tooltip("Turning on the spot, how long a step that turns the hips 45° takes (s); a step that turns "
+        + "further takes longer, by the square root (TurnPlanner).")]
+    private float turnStepTime = .3f;
     [SerializeField, Min(0f), Tooltip("How quickly the legs follow a change in the way and speed of travel (s). Quick A/D or "
         + "W taps even out instead of flipping the stride from one side to the other.")]
     private float strideFollowTime = .12f;
@@ -96,7 +95,9 @@ public sealed partial class PlayerBody
     // This frame's sets that may have the legs, first asked first, how much each wants, and what each was given.
     private readonly List<MoveSet> asking = new List<MoveSet>(4);
     private readonly List<float> wanting = new List<float>(4);
-    private float legYaw, turnVelocity;
+    private float legYaw;
+    // How the feet step a turn on the spot (TurnOnTheSpot, FootPlanting).
+    private readonly TurnPlanner turnPlanner = new TurnPlanner();
     private Vector3 stride;
     private int turning;
     private bool legsPlanted, runsBack;
@@ -579,33 +580,23 @@ public sealed partial class PlayerBody
         return text.ToString();
     }
 
-    // Standing still, the legs keep their place while the view turns, the chest twisting toward it (SpineLook), and turn
-    // round to it once it has gone turnStartAngle away (turnSpeed, eased by turnEaseTime). The feet stay where they stand
-    // and step round themselves meanwhile (FootPlanting.Stand: a foot the legs have turned Body.footHoldTwist over comes
-    // up and round, the one on the side of the turn first), at any speed and angle, in any stance and on any body.
-    // From 0.9.261 to 0.9.278 the legs stepped round with BIPER's turn-on-the-spot clips instead (Female Runner's TurnIP,
-    // Combat Girls' AimTurn): whole-body turns made for a body turning from rest to a new heading, 2.27 s with a lead-in
-    // and a settle, at their own angles, glued on once the view had gone 60° away. The legs waited, then went through the
-    // clip's own timing, and each fix patched that seam (the user, 2026-11-21: "turn in place 모션이 있는 거야 없는 거야",
-    // "구조와 근본의 문제인 듯").
+    // Standing still, the legs keep their place while the view turns, the chest twisting toward it (SpineLook), and once it
+    // has gone turnStartAngle away they step round to it as people do (TurnPlanner): the foot on the side of the turn first,
+    // carrying most of it, the other foot closing, the hips turning while a foot is in the air and the standing foot
+    // pivoting (FootPlanting). At any speed and angle, in any stance and on any body.
+    // From 0.9.261 to 0.9.278 the legs stepped round with BIPER's turn-on-the-spot clips instead: whole-body turns made for a
+    // body turning from rest to a new heading, 2.27 s, glued on once the view had gone 60° away ("구조와 근본의 문제인 듯").
+    // 0.9.279 let the hips turn at their own speed and the feet catch up every 25° of it: four quick steps to a 90° turn
+    // ("발을 네 번이나 뚝뚝뚝뚝 하는 건 좀 투머치"); the captured turns take two, and turn with them.
     private void TurnOnTheSpot(bool still, float dt)
     {
-        if (!still) { turning = 0; return; }
-        float look = transform.eulerAngles.y, limit = turnStartAngle + 30f;
-        float offset = Mathf.Clamp(Mathf.DeltaAngle(look, legYaw), -limit, limit);
-        if (turning == 0 && Mathf.Abs(offset) > turnStartAngle)
-        {
-            // Legs left behind on the left turn round to the right, and the other way round.
-            turning = offset < 0f ? 1 : -1;
-            turnVelocity = 0f;
-        }
-        if (turning != 0)
-        {
-            offset = Mathf.SmoothDamp(offset, 0f, ref turnVelocity, turnEaseTime, turnSpeed, dt);
-            if (Mathf.Abs(offset) < 1f) turning = 0;
-        }
-        legYaw = look + offset;
-        targetYaw = offset;
+        // Another state had the legs meanwhile (a slide, a ladder, a bar): a turn that was under way is over.
+        if (turning == 0 && turnPlanner.Lead != 0) turnPlanner.Reset();
+        float look = transform.eulerAngles.y;
+        legYaw = turnPlanner.Tick(look, legYaw, still, dt, turnStartAngle, turnStepTime, turnStartAngle + 30f);
+        turning = turnPlanner.Lead;
+        if (!still) return;
+        targetYaw = Mathf.DeltaAngle(look, legYaw);
         legsPlanted = true;
     }
 }
