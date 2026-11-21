@@ -270,10 +270,8 @@ public sealed class MovementLanding
         ctx.ChangeState(State.LandingRoll);
         ctx.Abilities.InputConsumed = true;
         ctx.Actions.ClearJumpBuffer();
-
-        // [카메라 연출 추가] 구르기 시작 시 피치(x축)를 강하게 앞으로 쏠리게 함
-        if (!inPlace) ctx.GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
-
+        // No camera kick: the roll's head turns the view over (BodyGaze). Until 0.9.286 a 75-degree pitch spring stood in
+        // for it.
         return true;
     }
 
@@ -365,8 +363,7 @@ public sealed class MovementLanding
         ctx.ChangeState(State.LandingRoll);
         ctx.Abilities.InputConsumed = true;
         ctx.Actions.ClearJumpBuffer();
-        // The camera's pitch thrown forward as a landing's roll throws it.
-        ctx.GetComponentInChildren<PlayerCameraEffects>().OrNull()?.ApplyCameraImpulse(new Vector3(75f, 0f, 0f), 0f);
+        // The roll's head turns the view over (BodyGaze): no camera kick.
         return true;
     }
 

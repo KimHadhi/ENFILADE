@@ -8,8 +8,6 @@ public sealed class MovementDive
     private bool usedInAir;
     private float flightTime;
     public float RecoveryRemaining { get; private set; }
-    /// <summary>Backlog 135: a dive launched mostly sideways, -1 left, +1 right, 0 otherwise (PlayerBody.SideDive lays the body on its side).</summary>
-    public int Side { get; private set; }
     internal float PoseProgress
     {
         get
@@ -21,8 +19,6 @@ public sealed class MovementDive
     }
     public float BurstWeight => ctx.IsDiving ? Mathf.Clamp01(1f - flightTime / Mathf.Max(0.01f, ctx.diveBurstDuration)) : 0f;
     internal MovementDive(PlayerMovement context) { ctx = context; }
-    // Within 22.5 degrees of straight back (its cosine): S alone, not S with A or D.
-    private const float StraightBack = .924f;
 
     internal void Tick(float dt)
     {
@@ -36,15 +32,14 @@ public sealed class MovementDive
         // As in Beatrun, where a dive needs the crouch jump and that needs a fall slower than 350 units/s: no diving
         // out of a fast fall, nor out of a big fall's flailing.
         if (!fromGround && (ctx.IsBigFall || -ctx.VerticalVelocity > ctx.airDiveMaxFallSpeed)) return false;
-        Vector3 direction = ctx.transform.right * input.x + ctx.transform.forward * input.y;
-        direction = Vector3.ProjectOnPlane(direction.sqrMagnitude > 0.01f ? direction : ctx.transform.forward, Vector3.up).normalized;
-        // On the ground any way but straight back it is a dive roll (MovementLanding.TryDiveRoll, 0.9.285): the user's pick
-        // for Z, "Z 다이브를 구르기로 교체". Straight back stays the dive onto the back; in the air, the dive.
-        if (fromGround && Vector3.Dot(direction, -ctx.transform.forward) < StraightBack && ctx.Abilities.Landing.TryDiveRoll(direction))
-            return true;
-        bool backward = Vector3.Dot(direction, ctx.transform.forward) < -0.2f;
-        float side = Vector3.Dot(direction, ctx.transform.right);
-        Side = !backward && Mathf.Abs(side) >= ctx.AbilitySettings.sideDiveMinSideways ? (side > 0f ? 1 : -1) : 0;
+        // Ahead, or back with S: never to the side. BIPER's side dive rolls are its forward roll turned that way (the body
+        // swings round 90 degrees and back), and the side dive (backlog 135) laid the body on its side; the user had both go
+        // (2026-11-21: "옆 다이브롤 모션이 따로 없다면 옆 다이빙과 옆 다이브롤은 삭제"). A or D with Z goes ahead.
+        bool backward = input.y < -0.1f;
+        Vector3 direction = Vector3.ProjectOnPlane(backward ? -ctx.transform.forward : ctx.transform.forward, Vector3.up).normalized;
+        // On the ground ahead it is a dive roll (MovementLanding.TryDiveRoll, 0.9.285): the user's pick for Z, "Z 다이브를
+        // 구르기로 교체". Back stays the dive onto the back; in the air, the dive.
+        if (fromGround && !backward && ctx.Abilities.Landing.TryDiveRoll(direction)) return true;
         // This fixed axis classifies front/back relative to the flight direction.
         // Negating it for an air back-dive made the next input tick flip upright.
         ctx.DiveBodyForward = direction;
@@ -69,8 +64,6 @@ public sealed class MovementDive
     {
         RecoveryRemaining = Mathf.Max(RecoveryRemaining, ctx.diveLandingRecovery);
         usedInAir = false;
-        // A dive started some other way (off an edge while lying) is never a side dive.
-        Side = 0;
     }
 
     internal void UpdateFlight(float dt)

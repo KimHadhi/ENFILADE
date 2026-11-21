@@ -212,7 +212,7 @@ public sealed partial class PlayerBody
     {
         if (head == null || dt <= 0f) return;
         TuneGaze();
-        bodyGaze.Update(GazeClipWeight(), AimBlend(), dead, spineLook.ClipHeadRotation, dt);
+        bodyGaze.Update(LedClipWeight(), CarriedClipWeight(), AimBlend(), dead, spineLook.ClipHeadRotation, dt);
         float onEyes = 1f - punchEyeSteady * punchWeight;
         // Rung and slide clips put the head at different heights. A steady ladder view prevents repeated
         // up/down taps from turning that retargeted head offset into a camera lurch.

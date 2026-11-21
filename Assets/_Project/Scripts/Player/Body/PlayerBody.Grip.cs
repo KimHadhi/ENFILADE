@@ -36,7 +36,6 @@ public sealed partial class PlayerBody
         // Catching a ledge, the hands take the body only as they come onto its edge (PlayerBody.LedgeCatch), so it is there
         // when they are, neither pulled ahead of them nor snapped in at the end.
         if (state == MovementState.LedgeHang && !dead) gripWeight = Mathf.Min(gripWeight, LedgeCatchWeight);
-        SideDive(dt);
         if (leftHand == null || rightHand == null) return;
         SwingWithBar(dt);
         Vector3 placed = body.position;

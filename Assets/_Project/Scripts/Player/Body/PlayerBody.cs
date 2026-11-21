@@ -757,14 +757,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 // the lying body round under the camera.
                 FaceSlide();
                 break;
-            // Down from a side dive the body already lies in the slide's pose (SideDivePose): no landing clip to swing the arms.
             case MovementState.HeadFirstSliding:
-                Sequence(sideDiveLanded ? null : bellySlideStart, bellySlide);
+                Sequence(bellySlideStart, bellySlide);
                 FaceLying(dt);
                 break;
             case MovementState.Diving:
-                if (SideDivePose) Want(bellySlide);
-                else Sequence(diveStart, dive);
+                Sequence(diveStart, dive);
                 FaceLying(dt);
                 break;
             case MovementState.SupineDiving:
@@ -842,9 +840,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(rollClip);
         if (from == MovementState.StepDodge && onGround && to == MovementState.Standing) PlayOutDodge();
-        // Down from a side dive, sliding or lying (PlayerBody.SideDive).
-        if (from == MovementState.Diving)
-            sideDiveLanded = sideDiveSide != 0 && (to == MovementState.HeadFirstSliding || to == MovementState.Proning);
         StartLying(from, to);
         switch (to)
         {
@@ -855,9 +850,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 Restart(Find(slidesOnBack ? supineLand : supineSlideStart));
                 break;
             case MovementState.HeadFirstSliding:
-                if (!sideDiveLanded) Restart(Find(bellySlideStart));
+                Restart(Find(bellySlideStart));
                 break;
-            case MovementState.Diving: if (player.Actions.Dive.Side == 0) Restart(Find(diveStart)); break;
+            case MovementState.Diving: Restart(Find(diveStart)); break;
             case MovementState.SupineDiving:
                 // Turned over from a front dive, or off an edge while lying, the body is already down.
                 supineDiveAtOnce = from == MovementState.Diving || from == MovementState.Supine;

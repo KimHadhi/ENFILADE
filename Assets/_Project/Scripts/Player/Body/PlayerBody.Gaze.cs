@@ -11,6 +11,8 @@ public sealed partial class PlayerBody
     [Header("Animation-led gaze")]
     [SerializeField, Range(0f, 1f), Tooltip("How much selected parkour/action clips lead the gaze. Mouse input stays immediate.")]
     private float animationViewStrength = .65f;
+    [SerializeField, Range(0f, 1f), Tooltip("How much of the jumps', landings' and rolls' head turn over the body's right carries the view.")]
+    private float animationViewFollow = 1f;
     [SerializeField, Tooltip("Maximum animation view offset in degrees: pitch, yaw, roll. A roll never spins the horizon all the way round.")]
     private Vector3 animationViewLimits = new Vector3(18f, 12f, 10f);
     [SerializeField, Min(.01f), Tooltip("Response time of animation rotation only (s); mouse look is never smoothed.")]
@@ -18,39 +20,58 @@ public sealed partial class PlayerBody
 
     private readonly BodyGaze bodyGaze = new BodyGaze();
     private readonly HashSet<Channel> animationViewChannels = new HashSet<Channel>();
+    // The clips whose head carries the view over (BodyGaze): the jumps, landings and rolls.
+    private readonly HashSet<Channel> carriedViewChannels = new HashSet<Channel>();
 
     private void SetUpAnimationViewChannels()
     {
         animationViewChannels.Clear();
+        carriedViewChannels.Clear();
         // Walking, idle and turn clips never steer the gaze. Ladder rungs and sustained hangs also stay
         // input-led; climbing over the top, catching a ledge, and other committed actions may lead it.
         foreach (string clip in new[]
         {
             vault, vaultHigh, vaultKong, springboard, mantle, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeJump,
-            wallClimbStart, wallClimb, wallKick, wallKickRight, barSwing, barRelease,
-            ladderExitLeft, ladderExitRight, roll, rollLand, landCrouch, heavyLand, heavyLandFaceDown, heavyLandBack,
+            wallClimbStart, wallClimb, wallKick, wallKickRight, barSwing, barRelease, clamberLow, clamberHigh,
+            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack,
             diveStart, dive, dodgeLeft, dodgeRight, dashPush
         })
+            Add(animationViewChannels, clip);
+        // The jumps, landings and rolls: their head carries the view (BodyGaze). Until 0.9.286 only the old names led it at
+        // all (roll, rollLand, landCrouch), and none of BIPER's jumps, landings or rolls did, so through them the view stayed
+        // held ahead under a head that went over (the user, 2026-11-21: "닭처럼 고정된 느낌").
+        foreach (string clip in new[]
         {
-            Add(clip);
-            if (!string.IsNullOrEmpty(clip)) { Add(clip + rifleSuffix); Add(clip + pistolSuffix); }
-        }
-        void Add(string clip)
+            jump, jumpStill, jumpSlow, touchdown, land, landMid, landCrouch, roll, rollLand, fallFromEdge,
+            landRunLight, landRunMid, landRunHard, landRunStumble, landSlam
+        })
+            Add(carriedViewChannels, clip);
+        foreach (string set in new[] { rollWays, rollRunWays, diveRollWays, diveRollRunWays, jumpWays, runJumpWays })
+            foreach (var (clip, _) in WaysOf(set))
+                Add(carriedViewChannels, clip);
+
+        void Add(HashSet<Channel> into, string clip)
         {
-            if (!string.IsNullOrEmpty(clip) && byName.TryGetValue(clip, out var channel)) animationViewChannels.Add(channel);
+            if (string.IsNullOrEmpty(clip)) return;
+            foreach (string name in new[] { clip, clip + rifleSuffix, clip + pistolSuffix })
+                if (byName.TryGetValue(name, out var channel) && !animationViewChannels.Contains(channel)) into.Add(channel);
         }
     }
 
-    // How much of the pose the gaze-leading clips have: the actual crossfade, an action playing out after its movement
-    // state ends included.
-    private float GazeClipWeight()
+    // How much of the pose the gaze-leading clips have (led: a bounded share; carried: the head carries the view): the actual
+    // crossfade, an action playing out after its movement state ends included. A paired execution's clip leads it as a
+    // committed action does (PlayerBody.Execution).
+    private float LedClipWeight() => Weight(animationViewChannels) + pairedWeight;
+    private float CarriedClipWeight() => Weight(carriedViewChannels);
+    private float GazeClipWeight() => LedClipWeight() + CarriedClipWeight();
+
+    private float Weight(HashSet<Channel> channels)
     {
         float weight = 0f;
         if (mixer.IsValid())
-            foreach (var channel in animationViewChannels) weight += mixer.GetInputWeight(channel.Input);
-        // A paired execution's clip leads it as a committed action does (PlayerBody.Execution).
-        return weight + pairedWeight;
+            foreach (var channel in channels) weight += mixer.GetInputWeight(channel.Input);
+        return weight;
     }
 
-    private void TuneGaze() => bodyGaze.Tune(animationViewStrength, animationViewLimits, animationViewTime);
+    private void TuneGaze() => bodyGaze.Tune(animationViewStrength, animationViewFollow, animationViewLimits, animationViewTime);
 }

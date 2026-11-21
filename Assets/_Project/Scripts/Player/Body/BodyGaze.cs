@@ -2,8 +2,12 @@ using UnityEngine;
 
 /// <summary>
 /// Where the body looks:
-/// - the mouse leads the view at once; selected action clips (a vault, a climb, a roll; PlayerBody picks them) add a
-///   bounded share of their head's turn on top, smoothed on its own, less the more the player aims (Update);
+/// - the mouse leads the view at once; selected action clips (a vault, a climb; PlayerBody picks them) add a bounded
+///   share of their head's turn on top, smoothed on its own, less the more the player aims (Update). The jumps, landings and
+///   rolls go further: their head's turn about the body's own right (a somersault, a landing's nod) carries the view all
+///   the way, so a roll turns the view over with the head (the user, 2026-11-21: the view held ahead through a dive roll
+///   or a jump, "억지로 앞에 강제로 닭처럼 고정된 느낌"); their turn about up and ahead stays bounded, so the aim keeps its way
+///   round and the horizon about level;
 /// - in every state the head turns to look where the view looks, as far as a committed action's clip doesn't carry it, as
 ///   it did up to 0.7.34: with the look bend only upright or sliding, a vault, hang, roll or rung left the head where the
 ///   clip had it, away from the aim in the F5 view and on friends' screens (user picked it back, 2026-11-08). Q/E tilts it
@@ -18,7 +22,7 @@ internal sealed class BodyGaze
     private Transform root, lookPivot, model, head, neck;
     private Quaternion headToGaze = Quaternion.identity, rotation = Quaternion.identity, actionTurn = Quaternion.identity;
     private float actionWeight, faceWeight;
-    private float strength = .65f, time = .1f;
+    private float strength = .65f, follow = 1f, time = .1f;
     private Vector3 limits = new Vector3(18f, 12f, 10f);
 
     /// <summary>Where the view looks this frame: the mouse's look with the action clips' share on top.</summary>
@@ -54,25 +58,30 @@ internal sealed class BodyGaze
         rotation = Input;
     }
 
-    /// <summary>How much the action clips lead the view (0-1), the most they turn it before that (degrees: pitch, yaw, roll),
-    /// and how quickly their turn follows (s).</summary>
-    internal void Tune(float strength, Vector3 limits, float time)
+    /// <summary>How much the action clips lead the view (0-1), how much of their head's turn over the body's right the
+    /// carrying clips give it (0-1), the most the leading clips turn it (degrees: pitch, yaw, roll), and how quickly their
+    /// turn follows (s).</summary>
+    internal void Tune(float strength, float follow, Vector3 limits, float time)
     {
         this.strength = strength;
+        this.follow = follow;
         this.limits = limits;
         this.time = time;
     }
 
     /// <summary>
-    /// This frame's gaze. <paramref name="clipWeight"/> is how much of the pose the gaze-leading action clips have (their
-    /// actual crossfade, an action playing out after its move included); <paramref name="clipHead"/> the head as the clips
-    /// posed it, before the look bent it (SpineLook keeps it), so neither last frame's camera nor its effects feed back.
+    /// This frame's gaze. <paramref name="ledWeight"/> is how much of the pose the gaze-leading action clips have and
+    /// <paramref name="carriedWeight"/> the clips whose head carries the view (their actual crossfade, an action playing out
+    /// after its move included); <paramref name="clipHead"/> the head as the clips posed it, before the look bent it
+    /// (SpineLook keeps it), so neither last frame's camera nor its effects feed back.
     /// </summary>
-    internal void Update(float clipWeight, float aimBlend, bool dead, Quaternion clipHead, float dt)
+    internal void Update(float ledWeight, float carriedWeight, float aimBlend, bool dead, Quaternion clipHead, float dt)
     {
         Quaternion input = Input;
-        actionWeight = Mathf.Clamp01(clipWeight);
-        float weight = dead ? 0f : actionWeight * Mathf.Clamp01(strength) * (1f - aimBlend);
+        actionWeight = Mathf.Clamp01(ledWeight + carriedWeight);
+        float steady = dead ? 0f : 1f - aimBlend;
+        float led = Mathf.Clamp01(ledWeight) * Mathf.Clamp01(strength) * steady;
+        float carried = Mathf.Clamp01(carriedWeight) * Mathf.Clamp01(follow) * steady;
 
         // Body yaw belongs to the hips, not aim.
         Quaternion authored = Quaternion.Inverse(model.rotation) * (clipHead * headToGaze);
@@ -84,7 +93,14 @@ internal sealed class BodyGaze
             Mathf.Atan2(forward.x, Mathf.Abs(forward.z)),
             Mathf.Atan2(right.y, Mathf.Abs(up.y))) * Mathf.Rad2Deg;
         angles = new Vector3(Limit(angles.x, limits.x), Limit(angles.y, limits.y), Limit(angles.z, limits.z));
-        Quaternion target = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(angles), weight);
+        // The carrying clips' turn over the body's right, all of it: read from whichever of the head's ahead and up lies more
+        // in that plane, so it goes on round past upside down without a jump. Until 0.9.286 it was folded into the bounded
+        // pitch, and a roll moved the view by 12 degrees while the head went over.
+        float over = new Vector2(forward.y, forward.z).sqrMagnitude >= new Vector2(up.y, up.z).sqrMagnitude
+            ? Mathf.Atan2(-forward.y, forward.z) : Mathf.Atan2(up.z, up.y);
+        float sideways = Mathf.Clamp01(led + carried);
+        Quaternion target = Quaternion.AngleAxis(over * Mathf.Rad2Deg * carried, Vector3.right)
+            * Quaternion.Euler(angles.x * led, angles.y * sideways, angles.z * sideways);
         actionTurn = Quaternion.Slerp(actionTurn, target, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, time)));
         rotation = input * actionTurn;
 

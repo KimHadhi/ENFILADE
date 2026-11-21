@@ -31,8 +31,6 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float proneMinHold = 0.45f;
     [Tooltip("After getting up, going down again in place waits this long (s) (backlog 134).")]
     [Min(0f)] public float proneReentryDelay = 0.35f;
-    [Tooltip("A dive whose direction is at least this sideways (0-1, dot with the view's right) is a side dive: the body lies on its side, head leading (backlog 135).")]
-    [Range(0.3f, 1f)] public float sideDiveMinSideways = 0.7f;
     [Tooltip("Lying down, pushing the mouse this far (degrees) past the view's limit (PlayerBody.lyingLookLimit) rolls the player over, front to back or back to front.")]
     [Min(0f)] public float lyingRollMousePush = 25f;
     [Tooltip("How long rolling over carries the view round (s).")]
