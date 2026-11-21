@@ -12,33 +12,30 @@ using UnityEngine;
 /// here). Crouched, the crouched walk goes at its own speed, walk mode or not: a mode changes a motion only where it has a
 /// motion of its own (the user, 2026-11-21: "걷기 모드라고 앉기 다르게 하지 마 따로 모션 없으면"; 0.9.253 slowed the crouched
 /// walk to the walk's speed in walk mode).
-/// The body comes up to the gait's speed, and round to a new way, the way the gait's start clip does: nine tenths of it
-/// in the row's runUp (0.7-0.94 s). Until 0.9.253 it came within 0.3 s at any gait (Move.groundSharpness 10), which the
-/// user felt as "속도가 너무 휙휙 바뀌는 느낌".
+/// The body follows the gait's speed and way as quickly as it always has (Move.groundSharpness). 0.9.253 slowed that to
+/// the start clips' run-up (0.7-0.94 s to nine tenths) for every change, stopping and turning included, with no start, stop
+/// or turn motion to show for it: the body coasted under legs that had already changed (the user: "굉장히 얼음장 위를
+/// 걷는 느낌"). A run-up comes back with the start and stop clips themselves.
 /// Until 0.9.245 a run built up the way Beatrun's move limit does (W alone 3.6 → 4.9 → 7.9 → 8.9 m/s, sideways and back
 /// held at 4.9 x 1.15, cut by sharp turns and walls) and every cycle was stretched to whatever that speed was.
 /// </summary>
 public sealed class MovementGait
 {
     private const string Table = "Gaits";
-    // The ways a row gives a speed for, degrees from ahead (left and right alike), and its run-up after them.
+    // The ways a row gives a speed for, degrees from ahead (left and right alike).
     private static readonly float[] Angles = { 0f, 45f, 90f, 135f, 180f };
-    private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back", "runUp" };
-    private const int RunUpColumn = 5;
+    private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back" };
     private const int Walk = 0, Jog = 1, Run = 2, Sprint = 3, Crouch = 4;
     private static readonly string[] Rows = { "walk", "jog", "run", "sprint", "crouch" };
-    // Read before the table is: the reference body's measured speeds and run-ups (0.9.253).
+    // Read before the table is: the clips' root travel measured on the reference body (0.9.253).
     private static readonly float[,] Fallback =
     {
-        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f, .81f }, { 3.21f, 3.95f, 3.28f, 3.55f, 2.98f, .86f },
-        { 5.20f, 5.43f, 5.03f, 5.43f, 5.43f, .94f }, { 7.16f, 6.99f, 6.89f, 6.39f, 5.42f, .70f },
-        { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f, .81f }
+        { 1.57f, 1.53f, 1.54f, 1.55f, 1.70f }, { 3.21f, 3.95f, 3.28f, 3.55f, 2.98f }, { 5.20f, 5.43f, 5.03f, 5.43f, 5.43f },
+        { 7.16f, 6.99f, 6.89f, 6.39f, 5.42f }, { 2.34f, 2.30f, 2.25f, 2.23f, 1.86f }
     };
-    // ln 10: an approach that closes this much of the gap a second closes nine tenths of it in a second.
-    private const float NineTenths = 2.302585f;
 
     private readonly PlayerMovement ctx;
-    private readonly float[,] rows = new float[5, 6];
+    private readonly float[,] rows = new float[5, 5];
     private float jogShare;
 
     internal MovementGait(PlayerMovement context)
@@ -69,16 +66,6 @@ public sealed class MovementGait
 
     /// <summary>The speed for this input crouched (m/s): the crouched walk's, walk mode or not.</summary>
     internal float CrouchSpeedFor(Vector2 input) => At(Crouch, AngleOf(input));
-
-    /// <summary>How fast the body's speed follows the gait's (per second, for an exponential approach), crouched or not: the
-    /// gait's start clip's run-up.</summary>
-    internal float Sharpness(bool crouched)
-    {
-        float runUp = crouched ? rows[Crouch, RunUpColumn]
-            : ctx.Input.WalkMode ? Mathf.Lerp(rows[Walk, RunUpColumn], rows[Jog, RunUpColumn], jogShare)
-            : Mathf.Lerp(rows[Run, RunUpColumn], rows[Sprint, RunUpColumn], ctx.SprintProgress);
-        return NineTenths / Mathf.Max(.05f, runUp);
-    }
 
     internal void Reset() => jogShare = 0f;
 

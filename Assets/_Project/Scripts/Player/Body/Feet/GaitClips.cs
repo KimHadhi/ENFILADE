@@ -7,8 +7,8 @@ using UnityEngine;
 /// afterwards, as ObstacleClipContacts does) in the Animator's space, x right, y up, z ahead, and read like this:
 /// - a foot is down while its ankle or its toes are within a few hundredths of a leg of their lowest;
 /// - while down it moves back under the hips as fast as the clip carries the body (the cycles are in place), so the
-///   clip's speed is the median of that, along the way the down feet move back from (its travel), at the toes while they
-///   are down; a cycle that carries its travel in its root goes at its root's speed instead;
+///   clip's speed is the median of that, along the way the down feet move back from (its travel), at the point of the sole
+///   that is on the ground (the heel or the toes);
 /// - the left foot's touchdowns count the strides and set where a stride starts, so cycles that blend put the same foot
 ///   down at the same moment, whatever their length or where their file starts.
 /// The table's playback speeds before this were guesses and set to the movement's speeds (Body.runClipSpeed 4.9 for a
@@ -24,9 +24,6 @@ internal static class GaitClips
     private const float AnkleDown = .04f, ToesDown = .025f;
     // One foot comes down at most every this many seconds even sprinting: closer touchdowns are one landing (heel, then toes).
     private const float SameFootGap = .25f;
-    // A root that travels at least this many legs a second carries the cycle's travel (a clip made in place moves its root
-    // by a few millimetres at most).
-    private const float RootTravels = .1f;
 
     /// <summary>How one cycle moves on one model.</summary>
     internal sealed class Gait
@@ -89,6 +86,8 @@ internal static class GaitClips
         var hip = new Vector3[count];
         var feet = new[] { new Vector3[count], new Vector3[count] };
         var toes = new[] { leftToes != null ? new Vector3[count] : null, rightToes != null ? new Vector3[count] : null };
+        // Each foot's turn in the Animator's space, to carry its heel (Heel).
+        var turns = new[] { new Quaternion[count], new Quaternion[count] };
         float leg = 0f;
 
         // The body is sampled where it stands and put back as it was: its own graph poses it again before it is drawn.
@@ -105,6 +104,8 @@ internal static class GaitClips
                 feet[1][i] = root.InverseTransformPoint(rightFoot.position);
                 if (toes[0] != null) toes[0][i] = root.InverseTransformPoint(leftToes.position);
                 if (toes[1] != null) toes[1][i] = root.InverseTransformPoint(rightToes.position);
+                turns[0][i] = Quaternion.Inverse(root.rotation) * leftFoot.rotation;
+                turns[1][i] = Quaternion.Inverse(root.rotation) * rightFoot.rotation;
                 if (i == 0)
                     leg = Vector3.Distance(root.InverseTransformPoint(upper.position), root.InverseTransformPoint(lower.position))
                         + Vector3.Distance(root.InverseTransformPoint(lower.position), feet[0][0]);
@@ -121,14 +122,18 @@ internal static class GaitClips
 
         var gait = new Gait { Length = length, Leg = leg };
         var down = new[] { Down(feet[0], toes[0], leg), Down(feet[1], toes[1], leg) };
-        var toesDown = new[] { ToesOnGround(toes[0], leg), ToesOnGround(toes[1], leg) };
+        var heels = new[] { Heel(feet[0], toes[0], turns[0]), Heel(feet[1], toes[1], turns[1]) };
 
-        // How each down foot moves against the hips, from the samples either side (the loop wraps), at the point of it that
-        // is on the ground: the toes while they are down, else the ankle. The ankle alone rose and swung forward round the
-        // planted toes as the heel came up, so a foot pushing off read slower than the ground under it went by: BIPER's
-        // Female Runner cycles measured 20-50% under the travel their own root carries (walk 1.07 against 1.57 m/s on
-        // Ichigo, 2026-11-21, ClipBench), and the game moved the body that much slower than the stride, which the user saw
-        // as "모션은 큰데 속도가 느려서 어색".
+        // How each down foot moves against the hips, from the samples either side (the loop wraps), at the point of its sole
+        // that is on the ground: the heel or the toes, whichever is lower (the ankle for a body without toe bones). The ankle
+        // alone is no point of the sole: as a heel comes down and rolls, and as it rises round the planted toes, the ankle
+        // moves over the ground, and walks, jogs and runs read 15-25% under their root's travel even on BIPER's own body (walk
+        // 1.32 against 1.54 m/s, a back step landing on its toes 1.66 against 1.67; 2026-11-21, ClipBench). This is what this
+        // body's feet do: the stride the game stretches to its speed (FootPlanting.Stride), so a body whose legs are another
+        // length for its hips than the performer's still keeps its feet where they come down. 0.9.253 took the root's travel
+        // for it instead, which is the performer's: on the game's bodies the soles go 20-35% slower than that (Ichigo's walk
+        // 1.24 against 1.57 m/s, Mayo's run 3.78 against 5.14), so their strides were never stretched to the speed and the
+        // feet slid under them (the user: "굉장히 얼음장 위를 걷는 느낌"). The game's speeds are the performer's (Gaits.csv).
         var moving = new List<Vector2>();
         Vector2 sum = Vector2.zero;
         for (int f = 0; f < 2; f++)
@@ -136,7 +141,7 @@ internal static class GaitClips
             {
                 if (!down[f][i]) continue;
                 int before = (i + count - 1) % count, after = (i + 1) % count;
-                var point = toesDown[f] != null && toesDown[f][before] && toesDown[f][after] ? toes[f] : feet[f];
+                var point = heels[f] == null ? feet[f] : heels[f][i].y <= toes[f][i].y ? heels[f] : toes[f];
                 Vector3 from = point[before] - hip[before], to = point[after] - hip[after];
                 var v = new Vector2(to.x - from.x, to.z - from.z) / (2f * step);
                 moving.Add(v);
@@ -148,16 +153,9 @@ internal static class GaitClips
             var back = new List<float>(moving.Count);
             foreach (var v in moving) back.Add(-Vector2.Dot(v, gait.Way));
             back.Sort();
+            // The median: on BIPER's own body it reads within 1-15% of the root's travel at every gait and way (a trimmed mean
+            // came nearer forward but 30-35% off stepping back and crouched; 2026-11-21, ClipBench).
             gait.Speed = Mathf.Max(0f, back[back.Count / 2]);
-            // A cycle that carries its travel in its root (mocap exported with root motion, as BIPER's are) goes as fast as
-            // its root goes: that is the speed the performer moved at, scaled to this body as Unity scales root motion (its
-            // human scale), and the speed a blend tree's thresholds are computed from. The feet can't tell it as well: a
-            // heel coming down and rolling is no point of the foot the bones have, and walks, jogs and runs read 15-25%
-            // slow even on BIPER's own body (walk 1.32 against 1.54 m/s; a back step, landing on the toes, 1.66 against
-            // 1.67; 2026-11-21, ClipBench). A cycle made in place has no root travel and keeps its feet's reading.
-            Vector3 average = clip.averageSpeed;
-            float rooted = new Vector2(average.x, average.z).magnitude * animator.humanScale;
-            if (clip.isHumanMotion && rooted > RootTravels * leg) gait.Speed = rooted;
         }
 
         // Where each stride starts: the left foot at its furthest along the travel, ahead of the hips, which is the moment
@@ -205,15 +203,30 @@ internal static class GaitClips
         return gait;
     }
 
-    // The toes on the ground: within ToesDown of their lowest. Null for a body without toe bones (then the ankle is the foot).
-    private static bool[] ToesOnGround(Vector3[] toes, float leg)
+    // A foot's heel through the clip: the point of the sole under the ankle, found where the foot lies flattest in the clip
+    // itself (ankle and toes both nearest their lowest) and carried with the foot's turn. Null for a body without toes.
+    private static Vector3[] Heel(Vector3[] ankle, Vector3[] toes, Quaternion[] turns)
     {
         if (toes == null) return null;
-        float lowest = float.PositiveInfinity;
-        foreach (var p in toes) lowest = Mathf.Min(lowest, p.y);
-        var down = new bool[toes.Length];
-        for (int i = 0; i < toes.Length; i++) down[i] = (toes[i].y - lowest) / leg < ToesDown;
-        return down;
+        int count = ankle.Length;
+        float lowestAnkle = float.PositiveInfinity, lowestToes = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
+        {
+            lowestAnkle = Mathf.Min(lowestAnkle, ankle[i].y);
+            lowestToes = Mathf.Min(lowestToes, toes[i].y);
+        }
+        int flat = 0;
+        float flattest = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
+        {
+            float off = ankle[i].y - lowestAnkle + toes[i].y - lowestToes;
+            if (off < flattest) { flattest = off; flat = i; }
+        }
+        Vector3 sole = new Vector3(ankle[flat].x, toes[flat].y, ankle[flat].z);
+        Vector3 local = Quaternion.Inverse(turns[flat]) * (sole - ankle[flat]);
+        var heel = new Vector3[count];
+        for (int i = 0; i < count; i++) heel[i] = ankle[i] + turns[i] * local;
+        return heel;
     }
 
     // Down while the ankle or the toes are near their lowest; up again only past twice that, so a millimetre's wobble at the
