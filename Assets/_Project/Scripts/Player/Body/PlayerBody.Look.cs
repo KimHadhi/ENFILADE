@@ -227,14 +227,14 @@ public sealed partial class PlayerBody
         bool neckHeld = bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt,
             GuardedChestAhead(), neckTurnLimit + NeckGuardSlack);
         Vector3 eye = head.TransformPoint(eyeLocal), eyeOnHead = eye;
-        // Aiming on the gun's aim clips (AimsOnClip) the camera goes onto the gun's sight line where the clip's hand holds
-        // the gun, level with the eyes (FPSBody.SightLineEye), and the head stays as the clip has it: the camera between
-        // the eyes with the gun brought onto it put the gun's line through the middle of the face, between the brows (the
-        // user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가 보기에 내 미간 사이를 뚫어서 총을 위치하게
-        // 해서 조준하잖아, 카메라 때문이지만"; 0.9.318 still did, "하나도 안 달라졌어").
+        // Aiming on the gun's aim clips (AimsOnClip) the camera goes to the right eye, and the gun, sighted on the camera
+        // (FPSBody.KeepGunInView), lines up with the right eye and the stock runs by the right cheek; the head stays as the
+        // clip has it. Between the eyes the gun's line went through the middle of the face, between the brows (the user,
+        // 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가 보기에 내 미간 사이를 뚫어서 총을 위치하게 해서
+        // 조준하잖아, 카메라 때문이지만"). 0.9.319 put the camera on the sight line of the gun in the clip's hand instead,
+        // and the camera went in among the arms ("줌 하면 이 지랄이 나는데").
         float onClip = AimsOnClip;
-        if (onClip > 0f && Sights != null && Sights.SightLineEye(eye, bodyGaze.Rotation, out Vector3 onSight))
-            eye = Vector3.Lerp(eye, onSight, onClip);
+        if (onClip > 0f) eye += RightEyeShift() * onClip;
         // Every PC's copy of the body moves its leaning hitboxes, with or without a camera of its own.
         Vector3 carried = bodyLean.Carry(eye, bendWeight, dead, dt);
         // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind). With nothing in hand
@@ -331,9 +331,20 @@ public sealed partial class PlayerBody
         return climbed != null && !dead && (state == MovementState.Mantle || heaving) ? climbed.transform : null;
     }
 
-    private FPSBody sights;
-    // The gun's own place in the hands, for the sight line aiming on the aim clips (Look).
-    private FPSBody Sights => sights != null ? sights : sights = GetComponent<FPSBody>();
+    // From between the eyes to the right eye: half of left eye to right eye where the avatar's eye bones sit like eyes
+    // (as EyesAtRest takes them), else half a person's eye span to the view's right.
+    private const float HalfEyeSpan = .032f;
+    private Vector3 RightEyeShift()
+    {
+        var left = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.LeftEye) : null;
+        var right = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightEye) : null;
+        if (left != null && right != null)
+        {
+            float apart = Vector3.Distance(left.position, right.position);
+            if (apart > .015f && apart < player.runtimeBodyDefaults.w * .2f) return (right.position - left.position) * .5f;
+        }
+        return bodyGaze.Rotation * Vector3.right * HalfEyeSpan;
+    }
 
     private float AimBlend()
     {

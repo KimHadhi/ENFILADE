@@ -128,7 +128,7 @@ public sealed partial class PlayerBody
     private const string CameraRecordHeading = "카메라 기록 (PlayerBody.Neck): 1인칭 카메라가 눈에서 CameraOffMetres(3cm)보다 떨어지거나 "
         + "머리가 보는 쪽에서 CameraTurnDegrees(8°)보다 돌아간 때마다, 돌아온 뒤 한 줄: 상태, 몇 초, 가장 멀리 떨어진 거리(cm)와 각도, 그때 "
         + "가장 무거운 클립, 왜 떨어졌는지(사다리·주먹의 고정, 달리기 흔들림 잡기, 몸 흔들림 설정, 기울이기, 벽, 동작 클립이 머리를 이끎, 총이 "
-        + "머리를 가짐(FPSAF), 조준 클립의 가늠자 선, 목의 한계, 머리를 카메라로 데려갈 수 있는 거리(Body.headReachMove)를 넘음)";
+        + "머리를 가짐(FPSAF), 조준(오른눈), 목의 한계, 머리를 카메라로 데려갈 수 있는 거리(Body.headReachMove)를 넘음)";
     private const float CameraOffMetres = .03f, CameraTurnDegrees = 8f, CameraBackFor = .25f, CameraLongest = 5f;
     private float cameraAwaySince = -1f, cameraBackFor, cameraOffMost, cameraTurnMost;
     private MovementState cameraAwayState;
@@ -189,7 +189,7 @@ public sealed partial class PlayerBody
         Why(bodyCamera.WallCut > .01f, $"벽({bodyCamera.WallCut * 100f:0}cm)");
         Why(GazeClipWeight() > .1f, "동작 클립이 머리를 이끎");
         Why(UpperBodyFromFramework, "총(FPSAF)이 머리를 가짐");
-        Why(AimsOnClip > .05f, "조준 클립의 가늠자 선");
+        Why(AimsOnClip > .05f, "조준(오른눈)");
         Why(neckHeld, "목의 한계");
         Why(off > headReachMove, "머리를 데려갈 거리 넘음");
     }

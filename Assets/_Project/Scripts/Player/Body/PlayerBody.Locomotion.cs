@@ -355,10 +355,10 @@ public sealed partial class PlayerBody
     public bool GunRuns => gunRuns && Time.frameCount - gunRunsFrame <= 2;
 
     /// <summary>How far the sights are up on the gun's own aim clips (0-1): standing, crouched or in a step dodge (whose
-    /// clip has only the legs) with a gun out, the aim clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog, BodyMoves .aim sets) have the upper body and arms, the
-    /// hands give it to them (PlayerBodyHands) and the gun goes where the clip's right hand has it, its sight on the view's
-    /// line (FPSBody.AimOnClip). Before 0.9.318 FPSAF's Ads brought the sight onto the eyes, and the gun went through the
-    /// head between the brows as others saw it (the user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가
+    /// clip has only the legs) with a gun out, the aim clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog,
+    /// BodyMoves .aim sets) have the upper body and arms, the hands give it to them (PlayerBodyHands), the gun is sighted
+    /// on the camera (FPSBody.KeepGunInView) and the camera is on the right eye (Look). Before 0.9.318 FPSAF had the upper
+    /// body and the camera sat between the eyes, and the gun went through the head between the brows as others saw it (the user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가
     /// 보기에 내 미간 사이를 뚫어서 총을 위치하게 해서 조준하잖아, 카메라 때문이지만").</summary>
     public float AimsOnClip => !dead && (state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching
         || state == PlayerMovement.MovementState.StepDodge) && !GunRuns && GunInHand() != null ? AimBlend() : 0f;
@@ -375,13 +375,15 @@ public sealed partial class PlayerBody
         float heading = Mathf.Atan2(keys.x, keys.y) * Mathf.Rad2Deg;
         foreach (var way in gun.Hip.Ways)
             if (way.Cycles.Count > 0 && way.Cycles[way.Cycles.Count - 1].Rank >= 2f
-                && Mathf.Abs(Mathf.DeltaAngle(way.Angle, heading)) <= GunRunSlant + 1f)
+                && Mathf.Abs(Mathf.DeltaAngle(way.Angle, heading)) <= GunRunSlant + GunRunSlantSlack)
                 return true;
         return false;
     }
 
-    // How far round from the gun's run the gun sprints, the hips turned to it (degrees): a diagonal key's 45.
-    private const float GunRunSlant = 45f;
+    // How far round from the gun's run the gun sprints, the hips turned to it (degrees): a diagonal key's 45. The run's
+    // way is measured from its feet, a degree or two off straight ahead (R_Run's -1°, the set's mean 1.5°), so a diagonal
+    // key is let in that much further: at 1° it shut W+A out (0.9.319; the user: "W+A는 안 되잖아").
+    private const float GunRunSlant = 45f, GunRunSlantSlack = 10f;
 
     // The player is sprinting now: gunRunFrom of the way into the sprint and not letting go. The sprint's progress only
     // falls once Shift is let go, so the gun comes back at once; a friend's copy gets it in network steps, so an unchanged

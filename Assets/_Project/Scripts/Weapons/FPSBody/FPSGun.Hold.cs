@@ -23,7 +23,7 @@ public sealed partial class FPSGun
     }
 
     /// <summary>How FPSAF holds this gun now from the eyes at the hip (FPSBody.KeepGunInView). Aimed it is never FPSAF's
-    /// since 0.9.318: the gun's aim clips hold it (FPSBody.AimOnClip).</summary>
+    /// since 0.9.318: the gun's aim clips have the arms (PlayerBody.AimsOnClip) and the gun is held from the eyes.</summary>
     internal void LearnHold(KTransform fromEyes)
     {
         holdAtHip = fromEyes;
