@@ -51,6 +51,7 @@
 | --- | --- |
 | [외부 에셋 출처](Records/AssetSources.md) | 어떤 팩을 어디서 얻었고 무엇에 쓰는지 |
 | [애드온 이식 기록](Records/AddonPortNotes.md) | GMod·L4D2 워크숍 애드온에서 옮긴 것 |
+| [동기화 점검](Records/SyncAudit.md) | 한 PC의 화면이 다른 PC와 다르게 보이는 곳 (2026-11-21, 0.9.257 기준), 고칠 순위와 최적화 |
 
 ## 작업실과 도구의 안내
 
