@@ -6,8 +6,10 @@ using UnityEngine.AI;
 /// The Parish): while its step runs (the escape), its segments give way one after another from the far end, each a few
 /// seconds after the one before, so they run for it. A segment going is its standing boxes switched off (their colliders
 /// and looks: whoever stands there falls) and a carve over its place in the walk mesh, while a loose copy of it tips and
-/// drops to the road below and stays there as rubble. Every PC times it from when it saw the step begin; a wipe that
-/// sends the run back before it puts the road back. It has no state of its own to share.
+/// drops to the road below and stays there as rubble. Every PC times it from when the host's step began, by the network's
+/// clock (CampaignRun.SinceStepBegan): each segment goes at the same moment on every PC, and one who joins mid-run sees
+/// those already gone fall at once rather than the road standing whole (SyncAudit.md, item 9: each PC timed it from when
+/// it heard of the step). A wipe that sends the run back before it puts the road back. It has no state of its own to share.
 /// </summary>
 public sealed class GimmickCollapse : GimmickSwitch
 {
@@ -50,7 +52,7 @@ public sealed class GimmickCollapse : GimmickSwitch
         if (CampaignRun.IsRunning(step))
         {
             if (began < 0f) began = Time.time;
-            float since = Time.time - began;
+            float since = CampaignRun.SinceStepBegan;
             for (int i = 0; i < segments.Length; i++)
                 if (fellAt[i] < 0f && since >= first + i * every) Fall(i);
         }

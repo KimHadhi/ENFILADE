@@ -85,8 +85,11 @@ public sealed partial class CampaignRun
                 break;
             case CampaignStepKind.Hold:
                 // A manned hold (chapter 4's tug) counts only while someone stands at its spot, and pauses otherwise; a burn
-                // hold (chapter 2's car pile) only while its fire has fuel.
+                // hold (chapter 2's car pile) only while its fire has fuel. Whether it is counting goes to the guests at once
+                // (Status.HeldRunning).
+                float heldBefore = held;
                 held = now.Manned ? held + (AnyoneAt(now) ? dt : 0f) : now.Burn > 0f ? held + (Burn(now, dt) ? dt : 0f) : SongTime(now, dt, 0f);
+                heldRunning = held > heldBefore;
                 if (held >= TotalOf(step)) Advance();
                 else ShowHeld(now);
                 break;
@@ -213,6 +216,7 @@ public sealed partial class CampaignRun
         if (done.Kind == CampaignStepKind.Checkpoint) checkpoint = step;
         step++;
         held = 0f;
+        stepBeganAt = Now;
         // A whole quiet stretch got through without one zombie finding anyone: into the rest stop, or up to where a hold
         // or the escape begins. Every player is paid for it, each PC on the host's word (Status.Unseen).
         var next = Current;
@@ -292,6 +296,7 @@ public sealed partial class CampaignRun
         burning = false;
         step = checkpoint + 1;
         held = 0f;
+        stepBeganAt = Now;
         BeginQuiet();
         // Back in the rest stop with its doors shut, not standing open on the horde (user, 2026-11-11 playtest: "죽고 나서
         // 다시 시작할 때 문이 열려 있어서 매번 식겁함"). Status shares the doors with the room.

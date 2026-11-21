@@ -19,11 +19,18 @@ public sealed partial class PlayerNetworkCombat
     [Rpc(SendTo.NotMe)]
     private void TauntRpc(Vector3 at) => ClassKit.ReceiveTaunt(mover != null ? mover : GetComponent<PlayerMovement>(), at, false);
 
-    // A stone this player threw: every other PC throws its own copy, and the host's is the one its zombies hear.
+    // A stone this player threw: every other PC throws its copy, which follows theirs (PropNet).
     [Rpc(SendTo.NotMe)]
-    private void ThrowRpc(Vector3 from, Vector3 velocity)
+    private void ThrowRpc(Vector3 from, Vector3 velocity, ushort id)
     {
-        if (throws != null) throws.ShowThrow(from, velocity);
+        if (throws != null) throws.ShowThrow(from, velocity, id);
+    }
+
+    // Their stone first landed there: its lure, on every other PC (the host's zombies hear it there).
+    [Rpc(SendTo.NotMe)]
+    private void StoneLureRpc(Vector3 at)
+    {
+        if (throws != null) throws.ShowLure(at);
     }
 
     // This player threw their class throwable: every other PC throws its own copy of it.

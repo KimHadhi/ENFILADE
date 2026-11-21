@@ -118,7 +118,8 @@ public sealed class ZombieVoice : MonoBehaviour
         // No two voices start together. One for this PC's own player waits only for another of its own, and a leap at
         // them for nothing: a voice for somebody else must never take the turn of the zombie about to hit me.
         if (atMine ? !leap && Time.time < nextMine : Time.time < nextVoice) return false;
-        if (!atMine && Random.value > othersShare) return false;
+        // The wind-up's draw (SharedRandom): every PC but its target's agrees whether it is heard.
+        if (!atMine && SharedRandom.Value() > othersShare) return false;
         if (bank == null)
         {
             if (Time.unscaledTime < nextBankTry) return false;
@@ -167,7 +168,7 @@ public sealed class ZombieVoice : MonoBehaviour
             : build.IndexOf("_Female_", System.StringComparison.OrdinalIgnoreCase) >= 0 ? female
             : build.IndexOf("_Male_", System.StringComparison.OrdinalIgnoreCase) >= 0 ? male : null;
         bool hasPlain = bank.TryGet(plain, out _), hasOwn = own != null && bank.TryGet(own, out _);
-        if (hasOwn && !(hasPlain && Random.value < neutralShare)) return own;
+        if (hasOwn && !(hasPlain && SharedRandom.Value() < neutralShare)) return own;
         if (hasPlain) return plain;
         if (bank.TryGet(male, out _)) return male;
         return bank.TryGet(female, out _) ? female : null;

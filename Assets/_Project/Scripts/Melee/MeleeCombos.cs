@@ -236,7 +236,7 @@ public sealed class MeleeCombos : MonoBehaviour
         if (Mine) linkUntil = clock + link.window;
     }
 
-    private void OnThrown(Vector3 from, Vector3 velocity) => chaseUntil = clock + chase.window;
+    private void OnThrown(Vector3 from, Vector3 velocity, ushort id) => chaseUntil = clock + chase.window;
 
     private PlayerMeleeCombat Melee => melee != null ? melee : melee = player != null ? player.MeleeCombat : null;
     private bool Mine => player != null && player.IsLocal && !player.IsNetworkDriven;

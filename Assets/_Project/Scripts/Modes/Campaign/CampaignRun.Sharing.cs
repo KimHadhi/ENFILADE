@@ -12,7 +12,8 @@ public sealed partial class CampaignRun
         var now = new Status
         {
             Step = (byte)Mathf.Clamp(step, 0, 255), Finished = (byte)(finished ? 1 : 0),
-            Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = (ushort)Mathf.Clamp(Mathf.FloorToInt(held), 0, ushort.MaxValue),
+            Checkpoint = (byte)Mathf.Clamp(checkpoint + 1, 0, 255), Held = held, At = Now,
+            HeldRunning = (byte)(heldRunning && Current != null && Current.Kind == CampaignStepKind.Hold ? 1 : 0), StepAt = stepBeganAt,
             Doors = DoorBits(), Quiet = (byte)(quiet ? lull ? 2 : 1 : 0), Unseen = unseenCount, Alarm = (byte)(alarm ? 1 : 0),
             Phase = (byte)phase, Song = CampaignMusic.IndexOf(music.Playing), Burning = (byte)(burning ? 1 : 0),
             SongAt = (ushort)Mathf.Clamp(Mathf.RoundToInt(music.Clock * 10f), 0, ushort.MaxValue)
@@ -40,6 +41,9 @@ public sealed partial class CampaignRun
         step = status.Step;
         checkpoint = status.Checkpoint - 1;
         held = status.Held;
+        heldAt = status.At;
+        heldRunning = status.HeldRunning != 0;
+        stepBeganAt = status.StepAt;
         quiet = status.Quiet != 0;
         lull = status.Quiet == 2;
         alarm = status.Alarm != 0;

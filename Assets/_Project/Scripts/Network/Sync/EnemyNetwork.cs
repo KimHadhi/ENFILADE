@@ -421,13 +421,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
     }
 
     /// <summary>The host's enemy began an attack on this player (null: on nobody's, a Support's barricade: ZombieBreach).</summary>
-    internal void AnnounceWindup(PlayerMovement victim, int combo, AttackMove move)
+    internal void AnnounceWindup(PlayerMovement victim, int combo, AttackMove move, uint seed)
     {
         if (!IsSpawned) return;
         // No client has this id, so every copy shows the windup and none judges a blow of it on its player.
         ulong client = victim == null ? ulong.MaxValue
             : victim.TryGetComponent(out NetworkObject player) ? player.OwnerClientId : NetworkManager.ServerClientId;
-        WindupRpc(client, combo, (byte)move);
+        WindupRpc(client, combo, (byte)move, seed);
     }
 
     /// <summary>The host's zombie called the others: every PC hears its roar (ZombieMind.ShowCall).</summary>
@@ -471,6 +471,8 @@ public sealed class EnemyNetwork : NetworkBehaviour
     /// <summary>A parry, a punch or a shove on this PC's copy reaches the enemy that really moves and fights.</summary>
     internal void SendPosture(float amount, float stun, bool interrupt, bool broke = false) => PostureRpc(amount, stun, interrupt, broke);
     internal void SendInterrupt(float duration) => InterruptRpc(duration);
+    /// <summary>On the host: it flinched, by that client's player; every other copy shows it.</summary>
+    internal void ShareInterrupt(float duration, ulong by) => ShowInterruptRpc(duration, by);
     internal void SendShove(Vector3 impulse, Vector3 point) => ShoveRpc(impulse, point);
     /// <summary>
     /// This PC's player knocked its copy down. Runs: it fell here at once and this PC runs its doll (ZombieBody.FallHere),
@@ -537,8 +539,10 @@ public sealed class EnemyNetwork : NetworkBehaviour
         paceLeft = seconds;
     }
 
+    // Seed: the wind-up's, so its voice is the same on every PC (EnemyCombatAI.Telegraph).
     [Rpc(SendTo.NotServer)]
-    private void WindupRpc(ulong victim, int combo, byte move) => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo, (AttackMove)move);
+    private void WindupRpc(ulong victim, int combo, byte move, uint seed)
+        => combat.ShowWindup(victim == NetworkManager.LocalClientId, combo, (AttackMove)move, seed);
 
     [Rpc(SendTo.NotServer)]
     private void CancelRpc() => combat.CancelAttack();
@@ -571,7 +575,13 @@ public sealed class EnemyNetwork : NetworkBehaviour
     private void PostureRpc(float amount, float stun, bool interrupt, bool broke) => target.ApplySentPosture(amount, stun, interrupt, broke);
 
     [Rpc(SendTo.Server)]
-    private void InterruptRpc(float duration) => target.Interrupt(duration);
+    private void InterruptRpc(float duration, RpcParams rpc = default) => target.Interrupt(duration, rpc.Receive.SenderClientId);
+
+    [Rpc(SendTo.NotServer)]
+    private void ShowInterruptRpc(float duration, ulong by)
+    {
+        if (by != NetworkManager.LocalClientId) target.ShowInterrupt(duration);
+    }
 
     [Rpc(SendTo.Server)]
     private void ShoveRpc(Vector3 impulse, Vector3 point) => target.ReceiveShove(impulse, point);

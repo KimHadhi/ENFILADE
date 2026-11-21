@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -38,8 +39,16 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     [SerializeField, Range(0f, 1f), Tooltip("Its clack's volume.")]
     private float volume = .9f;
 
-    /// <summary>This PC's player threw one: where from and how fast, for friends' PCs (PlayerNetworkCombat).</summary>
-    public event Action<Vector3, Vector3> Thrown;
+    /// <summary>This PC's player threw one: where from, how fast and its number, for friends' PCs (PlayerNetworkCombat).</summary>
+    public event Action<Vector3, Vector3, ushort> Thrown;
+    /// <summary>
+    /// This PC's player's stone first landed there: the lure, for friends' PCs, the host's zombies among them
+    /// (PlayerNetworkCombat). Their own copies of it never lure.
+    /// </summary>
+    public event Action<Vector3> Lured;
+
+    // This player's stones so far, for their names between PCs (ThrownStone).
+    private ushort thrownCount;
 
     private StealthView view;
     private float readyAt;
@@ -61,9 +70,22 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
     internal void ThrowFrom(Vector3 from, Vector3 velocity)
     {
         readyAt = Time.time + cooldown;
-        ThrownStone.Throw(from, velocity, gameObject, noise, Size, life, volume);
-        Thrown?.Invoke(from, velocity);
+        ushort id = ++thrownCount;
+        var stone = ThrownStone.Throw(from, velocity, gameObject, noise, Size, life, volume, true, id);
+        if (stone != null) stone.Landed = Lure;
+        Thrown?.Invoke(from, velocity, id);
     }
+
+    // This PC's own stone landed: the lure is there, here and on every other PC (SyncAudit.md, item 6: the host's copy used
+    // to lure where it landed, which was not where the thrower's did).
+    private void Lure(Vector3 at)
+    {
+        Noise.Make(at, noise, gameObject, true);
+        Lured?.Invoke(at);
+    }
+
+    /// <summary>A friend's stone first landed there on their PC: its lure, here (the host's zombies hear it).</summary>
+    internal void ShowLure(Vector3 at) => Noise.Make(at, noise, gameObject, true);
 
     /// <summary>The held stone would land there (PlayerGrenades' arc, this frame): the reach of its clack and who would hear it (StealthView).</summary>
     internal void ShowAim(Vector3 landing)
@@ -72,8 +94,12 @@ public sealed class PlayerThrow : MonoBehaviour, ITableBound
         if (view != null) view.ShowAim(landing, noise, true);
     }
 
-    /// <summary>A friend's stone, seen here: this PC throws its own copy (the host's is the one its zombies hear).</summary>
-    internal void ShowThrow(Vector3 from, Vector3 velocity) => ThrownStone.Throw(from, velocity, gameObject, noise, Size, life, volume);
+    /// <summary>
+    /// A friend's stone, seen here: this PC throws its copy, which follows their PC's stone (PropNet) and never lures
+    /// (ShowLure does, from where theirs landed).
+    /// </summary>
+    internal void ShowThrow(Vector3 from, Vector3 velocity, ushort id)
+        => ThrownStone.Throw(from, velocity, gameObject, noise, Size, life, volume, false, id);
 }
 
 /// <summary>
@@ -133,9 +159,15 @@ public sealed class ThrownStone : MonoBehaviour
     /// <summary>A thrown stone's collider: bullets go through it.</summary>
     public static bool IsStone(Collider collider) => collider != null && stones.Contains(collider);
 
+    /// <summary>On the thrower's PC: where it first landed, the lure's place (a hand's width up).</summary>
+    internal Action<Vector3> Landed;
+
     private GameObject thrower;
     private Collider box;
     private Rigidbody body;
+    // The thrower's PC's stone (theirs runs its flight and lures), or another PC's copy of it.
+    private bool mine;
+    private PhysicsProp prop;
     private float reach, lifeSeconds, volume, age, lastClack = -1f, sinking = -1f;
     private int clacks;
     private bool landed;
@@ -149,11 +181,20 @@ public sealed class ThrownStone : MonoBehaviour
         soundsLooked = false;
     }
 
-    internal static ThrownStone Throw(Vector3 from, Vector3 velocity, GameObject thrower, float noise, float size, float life, float volume)
+    /// <summary>
+    /// Throws one. Mine: this PC's player threw it, and this PC runs its flight; else it is a friend's copy. Id: the
+    /// thrower's number for it. In a room it is a shared prop named by its thrower and number (PropNet): the thrower's PC
+    /// runs its flight and every copy follows it, so it bounces, rolls and stops in one place on every PC, and its spin
+    /// and sounds draw from that name (SharedRandom).
+    /// </summary>
+    internal static ThrownStone Throw(Vector3 from, Vector3 velocity, GameObject thrower, float noise, float size, float life, float volume,
+        bool mine, ushort id)
     {
+        ulong client = thrower != null && thrower.TryGetComponent(out NetworkObject network) && network.IsSpawned ? network.OwnerClientId : 0UL;
+        using var drawn = SharedRandom.Scope(SharedRandom.Seed(client, id, 0x570E5u));
         var host = new GameObject("Thrown Stone") { layer = GoreGibs.Layer };
         RuntimeSceneHierarchy.Group(host, RuntimeSceneHierarchy.World, "Debris");
-        host.transform.SetPositionAndRotation(from, Random.rotation);
+        host.transform.SetPositionAndRotation(from, SharedRandom.Rotation());
         host.transform.localScale = Scale(size);
         host.AddComponent<MeshFilter>().sharedMesh = Shape();
         var renderer = host.AddComponent<MeshRenderer>();
@@ -173,8 +214,21 @@ public sealed class ThrownStone : MonoBehaviour
         rigid.interpolation = RigidbodyInterpolation.Interpolate;
         // Small and fast: swept, so it never passes through a thin wall.
         rigid.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        stone.mine = mine;
+        if (PropNet.Shared)
+        {
+            // Taking the word (or waiting on the thrower's) before it is thrown: it sets the body free on a guest's PC.
+            var prop = stone.prop = host.AddComponent<PhysicsProp>();
+            prop.OwnCarry = true;
+            prop.Epoch = 0;
+            prop.Driving = false;
+            prop.Following = !mine;
+            PropNet.Name(prop, "stone/" + client + "/" + id);
+            if (mine) PropNet.Drive(prop);
+            else prop.ApplyMode();
+        }
         rigid.linearVelocity = velocity;
-        rigid.angularVelocity = Random.insideUnitSphere * 18f;
+        rigid.angularVelocity = SharedRandom.InsideUnitSphere() * 18f;
         // Players pass through it, as through magazines and corpses; the thrower's own body above all.
         foreach (var player in PlayerRoster.All)
         {
@@ -185,7 +239,7 @@ public sealed class ThrownStone : MonoBehaviour
         stone.reach = noise;
         stone.lifeSeconds = life;
         stone.volume = volume;
-        PlayAt(Whoosh(), from, volume * .45f, Random.Range(.92f, 1.08f));
+        PlayAt(Whoosh(), from, volume * .45f, SharedRandom.Range(.92f, 1.08f));
         return stone;
     }
 
@@ -208,6 +262,8 @@ public sealed class ThrownStone : MonoBehaviour
         if (sinking >= 0f) return;
         sinking = 0f;
         sinkFrom = transform.position;
+        // Its sinking is its own on each PC: no word moves it from here.
+        if (prop != null) { PropNet.Forget(prop); prop.Driving = prop.Following = false; }
         if (body != null) { body.isKinematic = true; body.detectCollisions = false; }
     }
 
@@ -228,9 +284,10 @@ public sealed class ThrownStone : MonoBehaviour
             PlayAt(clip, point, volume * settings.Volume * Mathf.Lerp(.4f, 1f, strength) * (landed ? .55f : 1f), settings.RandomPitch());
         }
         if (landed) return;
-        // The first landing is the lure, a hand's width up so the stone itself doesn't muffle it.
+        // The first landing is the lure, a hand's width up so the stone itself doesn't muffle it: the thrower's stone's,
+        // told to every PC from there (PlayerThrow). A copy's landing only clacks.
         landed = true;
-        Noise.Make(point + Vector3.up * .15f, reach, thrower, true);
+        if (mine) Landed?.Invoke(point + Vector3.up * .15f);
     }
 
     private void OnDestroy()

@@ -315,7 +315,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
             lockedAim = breach.Face;
             UpdateIndicator(true);
             Telegraph(false);
-            if (network != null) network.AnnounceWindup(null, 0, move);
+            if (network != null) network.AnnounceWindup(null, 0, move, windupSeed);
             return;
         }
         timer += dt;
@@ -346,7 +346,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         lockedAim = player.transform.position + Vector3.up * AimHeightFor(player);
         UpdateIndicator(true);
         Telegraph(player.IsLocal);
-        if (network != null) network.AnnounceWindup(player, comboIndex, move);
+        if (network != null) network.AnnounceWindup(player, comboIndex, move, windupSeed);
     }
 
     private void FireAttack()
@@ -487,7 +487,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
         lockedAim = lockedFeet + Vector3.up * AimHeightFor(target);
         UpdateIndicator(true);
         Telegraph(target.IsLocal);
-        if (network != null) network.AnnounceWindup(target, 0, move);
+        if (network != null) network.AnnounceWindup(target, 0, move, windupSeed);
     }
 
     // The leap came down on the spot it aimed at as it began, and whoever has stayed within its reach since for the
@@ -606,14 +606,14 @@ public sealed class EnemyCombatAI : MonoBehaviour
         lockedAim = target.transform.position + Vector3.up * AimHeightFor(target);
         UpdateIndicator(true);
         Telegraph(target.IsLocal);
-        if (network != null) network.AnnounceWindup(target, 0, move);
+        if (network != null) network.AnnounceWindup(target, 0, move, windupSeed);
     }
 
     /// <summary>
     /// On a copy: the host's enemy began an attack. Aimed at this PC's player, the windup is timed here, so the cue and
     /// the hit stay as far apart as they are alone and the parry window doesn't move with the connection.
     /// </summary>
-    internal void ShowWindup(bool atThisPlayer, int combo, AttackMove shown)
+    internal void ShowWindup(bool atThisPlayer, int combo, AttackMove shown, uint seed)
     {
         preparing = true; timer = 0f; comboIndex = combo; move = shown;
         var mine = atThisPlayer ? PlayerRoster.Local : null;
@@ -626,7 +626,7 @@ public sealed class EnemyCombatAI : MonoBehaviour
             lockedAim = lockedFeet + Vector3.up * AimHeightFor(mine);
         }
         UpdateIndicator(true);
-        Telegraph(aimedHere);
+        Telegraph(aimedHere, seed);
     }
 
     private float CuePitch => move == AttackMove.Bite ? BitePitch : move == AttackMove.Grab || move == AttackMove.Feed ? GrabPitch
@@ -646,13 +646,25 @@ public sealed class EnemyCombatAI : MonoBehaviour
     /// exploder's close-up swing does no harm (the burst is its attack): it has no voice, and its cue stays at its
     /// plain volume, so the loud cue always means a blow to answer.
     /// </summary>
-    private void Telegraph(bool atMine)
+    private void Telegraph(bool atMine, uint seed = 0u)
     {
-        bool harmless = move == AttackMove.Swing && damage <= 0f;
-        cueAudio = CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine && !harmless));
-        if (comboIndex > 0 || enemyHealth == null || !enemyHealth.IsAlive || harmless) return;
-        if (ZombieVoice.Attacks(this, move == AttackMove.Pounce, atMine, Time.time - voicedAt)) voicedAt = Time.time;
+        // The wind-up's own seed: made where zombies think (the host, or alone) and sent with it (AnnounceWindup), so
+        // whether a zombie going for someone else snarls, which snarl and at what pitch are the same on every PC (SyncAudit.md,
+        // item 8, SharedRandom). Its target's PC always hears it, as before.
+        windupSeed = seed != 0u ? seed
+            : SharedRandom.Seed(network != null && network.IsSpawned ? network.NetworkObjectId : (ulong)(uint)GetInstanceID(), ++windups, 0x501CEu);
+        using (SharedRandom.Scope(windupSeed))
+        {
+            bool harmless = move == AttackMove.Swing && damage <= 0f;
+            cueAudio = CombatCueAudio.Play(gameObject, CombatCue.EnemyAttackStart, CuePitch, gain: ZombieVoice.SignalGain(atMine && !harmless));
+            if (comboIndex > 0 || enemyHealth == null || !enemyHealth.IsAlive || harmless) return;
+            if (ZombieVoice.Attacks(this, move == AttackMove.Pounce, atMine, Time.time - voicedAt)) voicedAt = Time.time;
+        }
     }
+
+    // The last wind-up's seed, and how many this zombie has begun (for the next seed).
+    private uint windupSeed;
+    private ulong windups;
 
     // Someone lying on the ground, pinned there by a runner, or down: they are eaten. Down, the eating kills them fast
     // (PlayerHold downedBiteDamage; friend feedback C8: being down was safe from the zombies).

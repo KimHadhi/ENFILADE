@@ -51,8 +51,21 @@ public sealed partial class CampaignRun : MonoBehaviour
         public byte Step, Finished;
         /// <summary>The last rest stop's step plus one; 0 is the chapter's start.</summary>
         public byte Checkpoint;
-        /// <summary>Whole seconds a hold has lasted.</summary>
-        public ushort Held;
+        /// <summary>
+        /// How long a hold has lasted (s), as of At, and whether it is counting on (someone at a manned hold's spot, a burn's
+        /// fire burning): a guest counts on from there by the network's clock (HeldNow), so a set piece moved by it (chapter
+        /// 4's pushback) is where the host's is, to the frame, and stops when the host's stops (SyncAudit.md, item 11). It
+        /// used to come in whole seconds. Held and At change every frame, so they ride along and are left out of Equals;
+        /// HeldRunning is in it, so a hold pausing or going on is sent at once.
+        /// </summary>
+        public float Held;
+        public double At;
+        public byte HeldRunning;
+        /// <summary>
+        /// When the step under way began, by the network's clock (CampaignRun.Now): every PC times what a step sets going
+        /// (a road falling in, GimmickCollapse) from the same moment, a late joiner too (SyncAudit.md, item 9).
+        /// </summary>
+        public double StepAt;
         /// <summary>Which rest-stop doors are shut, a bit each (CampaignRun.doors).</summary>
         public byte Doors;
         /// <summary>1 while the stretch is quiet: no horde until a zombie notices someone.</summary>
@@ -69,7 +82,7 @@ public sealed partial class CampaignRun : MonoBehaviour
         /// the rest and is left out of Equals.</summary>
         public ushort SongAt;
         public bool Equals(Status other) => Step == other.Step && Finished == other.Finished && Checkpoint == other.Checkpoint
-            && Held == other.Held && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Alarm == other.Alarm
+            && HeldRunning == other.HeldRunning && StepAt == other.StepAt && Doors == other.Doors && Quiet == other.Quiet && Unseen == other.Unseen && Alarm == other.Alarm
             && Phase == other.Phase && Song == other.Song && Burning == other.Burning;
     }
 
@@ -127,6 +140,10 @@ public sealed partial class CampaignRun : MonoBehaviour
     private float burnLeft;
     private bool burning;
     private float held, finishedAt, nextShare, nextBruteTry;
+    // The hold's count was last moved on (the host) or heard (a guest) at this time on the network's clock, and is going
+    // on; when the step under way began, on the same clock.
+    private double heldAt, stepBeganAt;
+    private bool heldRunning;
     // The fight's phase on this PC (the host's word), and the track a hold without a song shows, one assault its whole
     // length (TryPhase).
     private CombatPhase phase;
@@ -204,7 +221,31 @@ public sealed partial class CampaignRun : MonoBehaviour
         if (active.step < index) return 0f;
         var now = active.steps[index];
         float total = now.Kind == CampaignStepKind.Hold ? active.TotalOf(index) : 0f;
-        return total > 0f ? Mathf.Clamp01(active.held / total) : 0f;
+        return total > 0f ? Mathf.Clamp01(active.HeldNow / total) : 0f;
+    }
+
+    /// <summary>The time on the network's clock: the host's, which every PC in a room reads the same; alone, this PC's.</summary>
+    public static double Now
+    {
+        get
+        {
+            var network = GameSession.Network;
+            return network != null && network.IsListening ? network.ServerTime.Time : Time.timeAsDouble;
+        }
+    }
+
+    /// <summary>How long the step under way has run, by the network's clock (0 outside a chapter).</summary>
+    public static float SinceStepBegan => active != null ? (float)System.Math.Max(0d, Now - active.stepBeganAt) : 0f;
+
+    // The hold's count now: the host's own, or on a guest the host's last word counted on by the clock since, while it said
+    // it was going on.
+    private float HeldNow
+    {
+        get
+        {
+            if (network == null || !network.IsListening || network.IsServer || !heldRunning) return held;
+            return held + (float)System.Math.Max(0d, Now - heldAt);
+        }
     }
 
     /// <summary>
@@ -219,7 +260,7 @@ public sealed partial class CampaignRun : MonoBehaviour
         if (now == null || (now.Kind != CampaignStepKind.Hold && now.Kind != CampaignStepKind.Escape)) return false;
         length = active.TotalOf(active.step);
         if (length <= 0f) return false;
-        elapsed = Mathf.Min(active.held, length);
+        elapsed = Mathf.Min(active.HeldNow, length);
         return true;
     }
 

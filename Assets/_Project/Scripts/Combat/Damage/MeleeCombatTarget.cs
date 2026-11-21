@@ -229,11 +229,23 @@ public sealed class MeleeCombatTarget : MonoBehaviour, IShoveReceiver, ITableBou
         if (broke && IsAvailable && !IsStaggered) Posture = 0f;
         ApplyPostureDamage(amount, stun, interrupt);
     }
-    public void Interrupt(float duration)
+    public void Interrupt(float duration) => Interrupt(duration, GameSession.Network != null && GameSession.Network.IsListening
+        ? GameSession.Network.LocalClientId : 0UL);
+
+    /// <summary>
+    /// It flinches and its attack is cut short (a headshot's stun, damage adding up, a grab). By: the client whose player did
+    /// it. A copy sends it to the host; the host passes it on to every other copy, which used to show only an attack cut
+    /// short and no flinch (SyncAudit.md, item 7), all but the copy of the PC that did it, which showed it at once.
+    /// </summary>
+    internal void Interrupt(float duration, ulong by)
     {
         if (IsAvailable && IsCopy) network.SendInterrupt(duration);
+        else if (IsAvailable && network != null && network.IsSpawned) network.ShareInterrupt(duration, by);
         InterruptHere(duration);
     }
+
+    /// <summary>On a copy: the host says it flinched (Interrupt). Shown here; nothing goes back.</summary>
+    internal void ShowInterrupt(float duration) => InterruptHere(duration);
     private void InterruptHere(float duration)
     {
         if (!IsAvailable) return;

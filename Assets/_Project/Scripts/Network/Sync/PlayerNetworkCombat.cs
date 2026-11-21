@@ -222,6 +222,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (IsOwner)
         {
             throws.Thrown += OnThrown;
+            throws.Lured += OnStoneLured;
             grenades.Thrown += OnGrenadeThrown;
             grenades.Burst += OnGrenadeBurst;
             grenades.KnifeTaken += OnKnifeTaken;
@@ -291,7 +292,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (execution != null) execution.Started -= OnExecutionStarted;
         if (executionPairs != null) { executionPairs.Began -= OnPairBegan; executionPairs.Stopped -= OnPairStopped; }
         if (executionKnife != null) executionKnife.Phased -= OnExecutionKnife;
-        if (throws != null) throws.Thrown -= OnThrown;
+        if (throws != null) { throws.Thrown -= OnThrown; throws.Lured -= OnStoneLured; }
         if (grenades != null)
         {
             grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken; grenades.KnifeLanded -= OnKnifeLanded;
@@ -394,7 +395,8 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnBashed() => BashRpc();
     private void OnEvaded(int side) => EvadedRpc((sbyte)Mathf.Clamp(side, -1, 1));
     private void OnGuardPosed(Vector3 threat) => GuardPoseRpc(threat);
-    private void OnThrown(Vector3 from, Vector3 velocity) => ThrowRpc(from, velocity);
+    private void OnThrown(Vector3 from, Vector3 velocity, ushort id) => ThrowRpc(from, velocity, id);
+    private void OnStoneLured(Vector3 at) => StoneLureRpc(at);
     private void OnGrenadeThrown(Throwable kind, ushort id, Vector3 from, Vector3 velocity, float fuse) => GrenadeRpc((byte)kind, id, from, velocity, fuse);
     private void OnGrenadeBurst(Throwable kind, ushort id, Vector3 at) => GrenadeBurstRpc((byte)kind, id, at);
     private void OnKnifeTaken(ushort id) => KnifeTakenRpc(id);
