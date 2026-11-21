@@ -114,6 +114,8 @@ public static class HandUses
     // Something held in the hand, or a gesture of it.
     public const string Grenade = "grenade.throw", Dose = "detente.dose", Repair = "support.repair", GuardPose = "guard.pose",
         PointPing = "point.ping", PointHold = "point.hold", CalloutArm = "callout.arm";
+    // The whole body showing a feeling (the callout wheel's 감정 page: PlayerBody.Emote), the gun put away meanwhile.
+    public const string Emote = "body.emote";
     // What the gun does with the hands that are on it.
     public const string GunHold = "gun.hold", GunAim = "gun.aim", GunFire = "gun.fire", GunReload = "gun.reload",
         GunInspect = "gun.inspect", GunSwap = "gun.swap", GunBash = "gun.bash";

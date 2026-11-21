@@ -51,6 +51,13 @@ thanks.freed,thanks,freed,20,,callout.line.thanks.freed,,relief,nod,붙잡혔다
 thanks.raised,thanks,revived,20,,callout.line.thanks.raised,,call.thanks,nod,쓰러졌다 일어난 지 8초 안
 thanks.healed,thanks,healed,15,,callout.line.thanks.healed,,call.thanks,nod,남이 체력을 채워 준 지 8초 안
 thanks.plain,thanks,always,0,,callout.line.thanks.plain,,call.thanks,nod,
+emote.greeting,emote.greeting,always,0,,,,pose.smile,emote:CBG_Greeting,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 왼손을 들어 흔드는 인사 2.5초
+emote.smile,emote.smile,always,0,,,,pose.wink,emote:CBG_Smile,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 뒷짐을 지고 미소 3.3초
+emote.shy,emote.shy,always,0,,,,call.oops,emote:CBG_Shy,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 몸을 돌리며 두 손을 가슴에 모으는 수줍음 2.7초(엉덩이 44°)
+emote.surprise,emote.surprise,always,0,,,,call.alarm,emote:CBG_Surprise,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 두 손을 들어 올리며 놀람 2.7초
+emote.angry,emote.angry,always,0,,,,pose.pout,emote:CBG_Angry,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 허리에 손을 얹은 뾰로통 2.7초
+emote.disappointment,emote.disappointment,always,0,,,,call.no,emote:CBG_Disappointment,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 한 손을 얼굴 앞으로 드는 실망 2.8초
+emote.sad,emote.sad,always,0,,,,downed,emote:CBG_Sad,감정 표현(휠 > 감정): 말 없이 몸과 표정만. 몸은 BIPER Combat Girls 클립(PlayerBody.Emote). 사용자 11-22 / 고개를 떨군 슬픔 2.7초(얼굴은 쓰러졌을 때의 우는 얼굴)
 yes.ok,yes,always,0,,callout.line.yes.ok,,call.yes,nod,
 yes.roger,yes,always,0,,callout.line.yes.roger,,call.yes,nod,
 no.no,no,always,0,,callout.line.no.no,,call.no,shake,

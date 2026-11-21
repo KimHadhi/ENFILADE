@@ -17,6 +17,8 @@ using UnityEngine;
 public static class CalloutLines
 {
     public const string TableName = "Callouts";
+    /// <summary>A gesture cell that starts so names a clip the whole body plays: a feeling shown (Line.Emote).</summary>
+    public const string EmotePrefix = "emote:";
 
     public sealed class Line
     {
@@ -28,6 +30,13 @@ public static class CalloutLines
         public string Face;
         /// <summary>The body's motion saying it (CalloutGesture.Kind: nod, shake, tilt, jut, point, wave, raise, beckon).</summary>
         public string Gesture;
+        /// <summary>
+        /// A feeling shown, not said (the wheel's 감정 page): the gesture cell "emote:&lt;clip&gt;" names a clip of the
+        /// PlayerBody profile the whole body plays (PlayerBody.Emote); such a line has no words, voice or comms feed, only
+        /// its face (the user, 2026-11-22: "몸과 표정만, 말 없음"). Null for a line that is said.
+        /// </summary>
+        public string Emote => Gesture != null && Gesture.StartsWith(EmotePrefix, StringComparison.OrdinalIgnoreCase)
+            ? Gesture.Substring(EmotePrefix.Length).Trim() : null;
         public int Order;
         /// <summary>Its clips in the Voice bank.</summary>
         public string VoiceKey => "Callout/" + Id;
@@ -116,9 +125,11 @@ public static class CalloutLines
             var line = new Line
             {
                 Id = id, Slot = Cell(row, "slot"), When = Cell(row, "when", "always"), Mark = Cell(row, "mark"),
-                Face = Cell(row, "face"), Gesture = Cell(row, "gesture"), Text = Words(row, id),
+                Face = Cell(row, "face"), Gesture = Cell(row, "gesture"),
                 Order = int.TryParse(Cell(row, "order", "0"), out int order) ? order : 0
             };
+            // A feeling shown says nothing: no words to fall back on its id.
+            line.Text = line.Emote != null ? "" : Words(row, id);
             lines.Add(line);
             byId[id] = line;
         }

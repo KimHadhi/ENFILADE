@@ -73,6 +73,20 @@ public sealed class PlayerFace : MonoBehaviour
         if (speaker != null && line != null && speaker.TryGetComponent(out PlayerFace face)) face.Say(line, voice, toward, aims);
     }
 
+    /// <summary>
+    /// A feeling shown from the wheel's 감정 page (CalloutLines.Line.Emote), on every PC: the face wears the line's mood
+    /// for the <paramref name="seconds"/> the body shows it (PlayerBody.Emote). Nothing is said: no mouth, no comms feed,
+    /// no callout gesture (the body's clip is the gesture).
+    /// </summary>
+    public static void Emoted(PlayerMovement speaker, CalloutLines.Line line, float seconds)
+    {
+        if (speaker == null || line == null || !speaker.TryGetComponent(out PlayerFace face) || face.face == null) return;
+        face.idle = 0f;
+        string mood = line.Face;
+        if (string.IsNullOrEmpty(mood) || FaceTables.Find(mood) == null) mood = CallMood;
+        face.face.Pulse(mood, 1f, Mathf.Max(seconds, FaceTables.Number("Talk.tail", .5f)));
+    }
+
     /// <summary>This PC's player spent the full gauge on their class's ultimate (PerkCardScreen): everyone sees the face.</summary>
     public static void Ultimate(PlayerMovement player)
     {

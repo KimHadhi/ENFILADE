@@ -305,8 +305,9 @@ public sealed partial class WeaponController : MonoBehaviour
 
     private void LateUpdate()
     {
-        // A climb that needs both hands, or an execution's knife stroke (ExecutionKnife), puts the gun away.
-        bool bare = TraversalHands.For(movement) == TraversalHandUse.Bare || ExecutionKnife.HoldsHands(movement);
+        // A climb that needs both hands, or an execution's knife stroke (ExecutionKnife), puts the gun away; so does a
+        // feeling shown from the callout wheel while it has both hands (HandOwner, body.emote: PlayerBody.Emote).
+        bool bare = TraversalHands.For(movement) == TraversalHandUse.Bare || ExecutionKnife.HoldsHands(movement) || EmoteHasHands;
         if (bare && bareHandsLeft <= 0f) Runtime?.Interrupt();
         if (Runtime != null && Runtime.Loads != loadsSeen)
         {

@@ -247,6 +247,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             detente.TreatStopped += OnTreatStopped;
             ping.Pinged += OnPinged;
             callouts.Called += OnCalled;
+            if (body != null) body.EmoteCut += OnEmoteCut;
             face.Shared += OnFaceShared;
             support.Raised += OnRaised;
             support.TookDown += OnTookDown;
@@ -311,6 +312,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (cover != null) { cover.Opened -= OnCoverOpened; cover.Stepped -= OnCoverStepped; }
         if (ping != null) ping.Pinged -= OnPinged;
         if (callouts != null) callouts.Called -= OnCalled;
+        if (body != null) body.EmoteCut -= OnEmoteCut;
         if (face != null) face.Shared -= OnFaceShared;
         if (support != null) { support.Raised -= OnRaised; support.TookDown -= OnTookDown; support.ToolHeld -= OnToolHeld; }
         if (receiver != null) receiver.HitResolved -= OnHit;

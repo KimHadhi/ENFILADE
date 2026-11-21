@@ -22,6 +22,7 @@ gun.swap,right,left,37,any,,,,총 꺼내기·넣기. 그동안 왼손은 주사�
 gun.inspect,both,,36,any,,,,총 살펴보기(Y). 손을 달라는 것이 생기면 끝난다
 point.ping,left,,35,Standing|Crouching,,,,핑의 손짓(F 탭). 조준 중에도 된다(조준의 받침 손 30보다 높다)
 gun.aim,right,left,30,any,,,,조준. 오른손이면 되고 왼손은 있으면 받친다
+body.emote,both,,20,Standing,away,,,"감정 표현(콜아웃 휠 > 감정, BIPER CBG_*): 두 손으로 몸 전체를 쓴다. 들고 있던 총은 그동안 넣는다(WeaponController). 조준(30)·꺼내기·장전·수류탄처럼 더 높은 것이 손을 달라면 감정이 끝나고, 총을 넣은 동안 쏘기·조준 버튼을 누르면 총이 조준의 손을 달라고 해서 끝난다. 총을 그냥 든 것(5)·가리키기(10)보다 높다. 사용자 11-22 ""휠에 '감정' 쪽 추가"""
 point.hold,left,,10,Standing|Crouching,,,,가리키기(F 길게). 조준·장전·꺼내는 중에는 안 된다
 gun.hold,right,left,5,any,,,,총을 들고 있음. 왼손은 달라는 쓰임에게 빌려 준다
 gun.fire,right,,,any,,,,쏘기. 손을 쥐지 않고 '오른손이 총의 것인가'만 묻는다

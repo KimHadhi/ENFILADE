@@ -208,6 +208,7 @@
 | `gun.swap` | right | left | 37 | any | | | 꺼내기·넣기 |
 | `gun.inspect` | both | | 36 | any | | | 살펴보기 |
 | `gun.aim` | right | left | 30 | any | | | 조준 |
+| `body.emote` | both | | 20 | Standing | away | | 감정 표현(콜아웃 휠 > 감정, 0.9.300, PlayerBody.Emote): 몸 전체로 하는 동안 총을 넣는다. 조준·꺼내기·장전·수류탄이 오면 끝나고, 총을 넣은 동안 쏘기·조준 버튼은 총이 `gun.aim`을 달라고 해서 끝낸다(`WeaponController.WantGunBack`). 총이 넣는 것은 아직 이 줄만 주인에게 묻는다(`EmoteHasHands`): 다른 `away` 줄은 9장 6번 조각 전까지 옛 깃발 |
 | `gun.hold` | right | left | 5 | any | | | 총을 들고 있음 |
 | `gun.fire` | right | | | any | | | 쏘기. 손을 쥐지 않고 "오른손이 총의 것인가"만 묻는다 |
 | *몸짓* | | | | | | | |

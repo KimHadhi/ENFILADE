@@ -60,6 +60,18 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     private readonly float[] restLifts = new float[2];
     private readonly float[] holding = new float[2];
     private float fistsReady, leftOffGun, notRunning, stance;
+    private HandOwner handOwner;
+
+    // A feeling shown from the callout wheel has both hands (HandOwner, body.emote: PlayerBody.Emote): the fists' guard
+    // comes down for its arms, as the gun is put away for them (WeaponController).
+    private bool EmoteHasHands
+    {
+        get
+        {
+            if (handOwner == null) handOwner = HandOwner.Of(player);
+            return handOwner != null && handOwner.Up(HandUses.Emote);
+        }
+    }
 
     /// <summary>How far the hands have gone up as fists (0-1).</summary>
     internal float FistsWeight => weights[(int)Hold.Fists];
@@ -169,7 +181,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         EaseOffHand(dt);
         stance = Mathf.MoveTowards(stance, alive && ShootingStance(state) ? 1f : 0f, dt / blendTime);
         Ease(Hold.Gun, gun && (armed || oneHanded || (alive && use == TraversalHandUse.Gun)), dt);
-        Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt), dt);
+        Ease(Hold.Fists, armed && fists != null && fists.IsActive && FistsUp(dt) && !EmoteHasHands, dt);
         TrackEdgeHands(state);
         Ease(Hold.Ledge, alive && WantsEdge(state), dt);
         bool onLadder = alive && state == MovementState.Ladder && player.Abilities.Fixtures.Ladder != null

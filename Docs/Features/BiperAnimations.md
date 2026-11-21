@@ -34,6 +34,7 @@
 | 총 겨누고 서기·걷기·조깅, 웅크려 겨누기 | BodyMoves `<종류>.aim`, `.crouch`, `.crouch.aim` | 0.9.240 |
 | 다운될 때 무너지기 (`P_Die_F`) | [PlayerBody.Downed](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Downed.cs), `Body.downedFall` | 0.9.298. 서기·회피 스텝·밀치기 중에 다운되면 무릎이 꺾여 앞으로 엎어진 뒤 엎드림으로. 쓰러지는 1초(`Move.downedFallTime`)는 기지 못한다. 웅크림·누움·슬라이드·공중에서는 바로 엎드림 |
 | 맞으면 몸만 움찔 (`R_Hit_Upper`, `R_Hit_Low`) | [PlayerBody.Flinch](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Flinch.cs), `Body.flinch*` | 0.9.299. 서 있을 때 맞으면 등뼈·가슴만 클립을 따른다(층 FlinchLayer). 한 번에 20(`Body.flinchHardDamage`) 이상 들어가면 R_Hit_Low. 카메라는 맞은 순간의 눈 자리를 지키고 머리가 그리로 굽는다. 친구 PC에도 같은 세기로 |
+| 감정 표현 (`CBG_*` 7개) | [PlayerBody.Emote](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Emote.cs), Callouts.csv `emote.*`(gesture `emote:<클립>`), CalloutSlots.csv 쪽 `emote`, HandUses.csv `body.emote` | 0.9.300. 콜아웃 휠 > 감정(고마워 자리, 고마워는 감정 쪽 8번째). 인사·미소·수줍음·놀람·화남·실망·슬픔. 말·목소리·통신 화면 없이 몸과 표정만, 모든 PC에. 상체는 늘, 엉덩이·다리는 가만히 서 있을 때만. 두 손을 쓰므로 총은 그동안 넣고, 쏘기·조준 버튼이나 더 센 손 쓰임(꺼내기·장전·수류탄 등)이 오면 끝난다 |
 | 걸음새와 속도: 방향 키 조깅(0.9.283 전에는 달리기), Shift 전력질주(8방향), Caps Lock 걷기 모드의 걷기와 Shift 조깅, 웅크려 걷기·조깅. 몸은 그 걸음새 클립이 그쪽으로 나르는 속도로 간다 | [MovementGait](../../Assets/_Project/Scripts/Player/Movement/Actions/MovementGait.cs), [Gaits.csv](../../Assets/_Project/Data/Resources/Tables/Player/Gaits.csv) | 0.9.245. 가속으로 쌓이던 속도와 골반 돌림은 없앴다. 0.9.253: 게임 속도를 루트 이동으로 다시 재고(걷기 1.07→1.57, 달리기 3.93→5.20, 전력질주 5.61→7.16). 0.9.256: 출발 클립 가속은 되돌리고(얼음 느낌), 몸마다의 다리 맞춤은 그 몸의 발바닥 속도로. 0.9.283: 달리기를 빼고 방향 키는 조깅(1.23배), 전력질주 1.08배 |
 
 ## Combat Girls에서 고른 것 (3단계, 사용자 2026-11-22)
@@ -44,8 +45,8 @@
 | --- | --- | --- |
 | `P_Die_F` | 다운될 때 무너지기: 서 있다가 다운되면 앞으로 엎어져 엎드림으로 | 0.9.298 |
 | `R_Hit_Upper`, `R_Hit_Low` | 맞으면 몸만 움찔(시점·총·조작은 그대로): 가벼운 공격은 상체가 뒤로, 20 이상은 앞으로 꺾임 | 0.9.299 |
-| `*_TakeGun` | 다리·몸통만: 꺼내기는 FPSAF 그대로, BIPER 꺼내기의 무릎·허리만 아래에 | 다음 |
-| `CBG_*` 7개 | 콜아웃 휠에 '감정' 쪽 | 다음 |
+| `*_TakeGun` | 안 씀: 처음에 "다리·몸통만"(꺼내기는 FPSAF 그대로, BIPER 꺼내기의 무릎·허리만 아래에)을 골랐다가, 무릎이 굽으려면 엉덩이가 내려가야 해서 카메라=머리인 이 게임에서는 꺼낼 때마다 시점이 8~13cm 내려갔다 올라온다(엉덩이 0.97→0.84m)는 것과 엉덩이를 빼면 가슴이 0.3초 20°쯤 비틀리는 것뿐이라는 것을 듣고 빼기로(사용자 11-22) | 안 씀 |
+| `CBG_*` 7개 | 콜아웃 휠에 '감정' 쪽: 휠의 '고마워' 자리가 감정 쪽을 열고 고마워는 그 쪽 8번째로. 말 없이 몸과 표정만(사용자 11-22) | 0.9.300 |
 | `*_PutGun` | 안 씀: 넣기가 0초(총을 바꾸면 바로 사라짐)라 틀 자리가 없다 | 안 씀 |
 | `*_Evade` | 안 씀: 회피는 0.14초 2.6m 스텝 + QuickShift 다리 그대로 | 안 씀 |
 | `*_Shoot`, `*_Reload`, `R_AutoShoot`, `R_AimIdle_AutoShoot` | 안 씀: 1인칭 상체·손은 FPSAF와 총 트랙, 0.9.296에 총의 걸음 흔들림을 껐다 | 안 씀 |
@@ -56,13 +57,13 @@
 
 각 단계는 검사대 숫자를 먼저 보고 한다. 새 동작이 필요한 것은 그 동작의 주인(몸의 층, 무기 상태)을 먼저 정한다.
 
-1. **꺼내기·넣기 몸 동작** (`*_TakeGun`, `*_PutGun`): 총을 꺼낼 때 손이 총이 걸린 자리로 갔다가 들어 올리는 몸 전체 동작. 총의 자리는 총 다루기 다시 세우기의 GunCarry가 주인이라([GunHandling.md](GunHandling.md) 4.2, 5단계 무기 상태) 그 설계 안에서 "오른손이 든다 → 몸통이 든다"로 넘겨야 한다. FPSAF의 꺼내기 클립이 있는 총 10개와 없는 총 18개가 다르다.
+1. **꺼내기·넣기 몸 동작** (`*_TakeGun`, `*_PutGun`, 쓰지 않기로 함: 위 "Combat Girls에서 고른 것"): 총을 꺼낼 때 손이 총이 걸린 자리로 갔다가 들어 올리는 몸 전체 동작. 총의 자리는 총 다루기 다시 세우기의 GunCarry가 주인이라([GunHandling.md](GunHandling.md) 4.2, 5단계 무기 상태) 그 설계 안에서 "오른손이 든다 → 몸통이 든다"로 넘겨야 한다. FPSAF의 꺼내기 클립이 있는 총 10개와 없는 총 18개가 다르다.
 2. **출발·멈춤**: 0.9.259에 연결했다가 0.9.263에 뺐다. 클립이 앞쪽뿐이라 옆·뒤·대각선 출발이 없어 앞으로만 무거웠다(사용자 판단). `*_Start_*`·`*_Stop_*`는 쓰지 않는다. **방향 꺾기**(기울기·호: 0.9.260에 연결, 시선이 도는 빠르기로 섞음. 반대로 꺾기 Turn은 쓸 순간이 없어 안 씀) (`*_Turn*`, `*_Arc_*`, `*_Lean*`, `ShiftTo*`: ShiftTo는 0.9.262에 달리며 회피로).
 3. **제자리 돌기** (`TurnIP_L/R 45·90·135·180`, `*_AimTurn_*`): 0.9.261~0.9.278에 연결했다가 0.9.279에 뺐다. 쉬던 몸이 새 방향으로 돌아서는 3인칭용 동작(2.27초)이라, 시선을 따라 도는 1인칭 몸에 붙이면 다리가 기다렸다가 클립의 시간대로 돌았다(사용자: "구조와 근본의 문제인 듯"). 이제 발이 스스로 걷는다(FootPlanting 걸음, PlayerBodyGuide 제자리 돌기). 클립은 쓰지 않는다.
 4. **점프·착지·구르기·슬라이드**(0.9.290에 점프·옆 점프·가벼운 달리는 착지·점프 착지는 Beatrun 것으로 되돌렸다: 팔을 너무 휘둘렀다(사용자). 0.9.262에 연결: 제자리 Jump_1h, 걸으며 RunJump_1m, 달리며 RunJump_2m, 옆으로 Jump_AirL·R·RunJump_AirL·R. 착지 가볍게 Land_1h, 세게 Land_3h, 크게 Land_4h, 앞으로 가며 Land_ToRun1·3, 전력질주에서 세게 Land_ToStumble. 구르기 느리면 Roll_* 8방향, 빠르면 RollToRun_*. 슬라이드 SlideToRun_Enter·Loop·Exit. 공중 클립은 높이를 자세에서 뺌. 0.9.266: 점프 클립은 땅을 떠나는 순간부터 게임의 비행 높이를 따른다(PlayerBody.Flight, GaitMoves.csv kind jump). 서서 가볍게 착지하면 Land_1h. 슬라이드가 웅크림으로 끝나면 Exit 없이 바로 웅크림. 0.9.271: 달려 나가며 끝나는 클립(SlideToRun_Exit, Land_ToRun*, Land_ToStumble, RollToRun_*, ShiftTo*)은 몸이 달릴 때만 끝까지, 멈추면 자세를 멈춘 채 서기로. 제자리에서 멈춘 슬라이드는 Exit를 일어나는 데까지만. Land_ToRun은 달리기 빠르기 이상에서만. 회피 클립은 스텝(0.14초) 뒤 나머지를 마저 튼다. 코드 PlayerBody.Ways, 표 Player.csv Body.*Ways. 아직: 다이브 구르기 DiveRoll·Flip·높은 점프 Jump_2h·3h·RunJump_hyper·obstacle·난간 잡고 오르기 Jump_Climb_*). 예전 목록 (`Jump_*`, `RunJump_*`, `Land_*`, `Land_To*`, `Roll_*`, `DiveRoll_*`, `RollToRun_*`, `SlideToRun_*`, `Flip_*`, `Jump_Climb_*`): 지금 Beatrun·Mixamo 클립이 맡은 자리들(`Body.jump`, `land`, `roll` 등)에 높이·방향별로.
 5. **회피**(0.9.262에 연결: 서서 QuickShift_* 8방향, 전력질주 ShiftToSprint_*, 걸음새로 고름. 달리며 ShiftToRun_*은 0.9.284에 달리기와 함께 뺌. Combat Girls `*_Evade`는 쓰지 않는다(사용자 11-22)): 지금 `Body.dodgeLeft/Right`.
 6. **맞기·쓰러지기·기절** (`*_Hit_Low`, `*_Hit_Upper`, `*_Die_F/B`, `*_Stun`): 위 "Combat Girls에서 고른 것". 다운될 때 `P_Die_F`는 0.9.298, 맞으면 몸만 움찔 `R_Hit_Upper`·`R_Hit_Low`는 0.9.299에 연결.
-7. **감정 표현** (`CBG_*` 7개): 제스처 자리.
+7. **감정 표현** (`CBG_*` 7개): 제스처 자리. 0.9.300에 콜아웃 휠의 감정 쪽으로 연결.
 8. **사격·장전 몸 동작** (`*_Shoot`, `*_Reload`, `R_AutoShoot`): 1인칭 총과 손은 FPSAF와 총 트랙이 주인이라, 쓴다면 다리와 몸통의 흔들림만이다. 쓰지 않는다(사용자 11-22).
 9. L135·R135 스트레이프(옆으로 갈 때 다리가 뒤로 엇갈리는 판): 검사대로 방향을 잰 뒤, 뒤쪽으로 갈 때 고르는 판으로.
 

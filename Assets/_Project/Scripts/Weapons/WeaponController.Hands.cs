@@ -15,6 +15,17 @@ public sealed partial class WeaponController
     /// </summary>
     public bool CanBash => Hands == null || !Hands.Kept(HandUses.GunBash, this);
 
+    // A feeling shown from the callout wheel has both hands (PlayerBody.Emote): the gun is put away meanwhile.
+    private bool EmoteHasHands => Hands != null && Hands.Up(HandUses.Emote);
+
+    // The trigger or the sights pressed while a feeling has the gun put away: the player wants the gun, so it asks for
+    // the hands as an aim does (30, over the feeling's 20). The feeling, having lost them, ends and the gun comes out
+    // (PlayerBody.Emote tells the other PCs). This PC's own player only.
+    private void WantGunBack(WeaponInputFrame frame)
+    {
+        if (Mine && (frame.FirePressed || frame.AimHeld) && EmoteHasHands) Hands.Take(HandUses.GunAim, this);
+    }
+
     // Whether the gun would get the hands of this row if it asked now. noted: the player pressed a key for it, so a no
     // goes to the record (Logs/hands.txt) with the hand it could not have and whose that is.
     private bool HandsFor(string row, bool noted) => Hands == null || Hands.Could(row, this, noted);

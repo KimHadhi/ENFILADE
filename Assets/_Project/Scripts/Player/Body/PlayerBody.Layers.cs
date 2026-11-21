@@ -10,7 +10,8 @@ using UnityEngine.Playables;
 /// it (PlayerBodyHands); the other hand stays on its fist target, which keeps the view framed the way FistsView set it.
 /// Without a clip FistsView's targets alone throw the punch. A reload kick, the steps of a turn on the spot and a step
 /// dodge with a gun out take only the legs (PlayerBody.Kick, PlayerBody.Locomotion, PlayerBody.Dodge); a blow's flinch
-/// only the spine (PlayerBody.Flinch).
+/// only the spine (PlayerBody.Flinch); a feeling shown from the callout wheel the upper body, and the hips and legs
+/// while standing still (PlayerBody.Emote).
 /// Names and numbers come from Player.csv, row Body.
 /// </summary>
 public sealed partial class PlayerBody
@@ -66,6 +67,7 @@ public sealed partial class PlayerBody
         BuildKick();
         BuildDodge();
         BuildFlinch();
+        BuildEmotes();
         BuildExecution();
         return layers;
     }
@@ -78,6 +80,7 @@ public sealed partial class PlayerBody
         punchTimeLeft = punchWeight = leftArmShare = rightArmShare = 0f;
         TeardownDodge();
         TeardownFlinch();
+        TeardownEmotes();
         TeardownExecution();
         TeardownKick();
         if (fingerMask != null) Destroy(fingerMask);
@@ -141,6 +144,7 @@ public sealed partial class PlayerBody
         BlendKick(dt);
         BlendDodge(dt);
         BlendFlinch(dt);
+        BlendEmote(dt);
         BlendExecution(dt);
         // A guard or a climb takes the arm back at once: the parry's sweep and the hold need the hand on its target.
         var melee = player.MeleeCombat;

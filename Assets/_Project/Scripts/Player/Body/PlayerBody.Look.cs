@@ -240,7 +240,7 @@ public sealed partial class PlayerBody
             : runCalmShare * Mathf.InverseLerp(runCalmSpeeds.x, Mathf.Max(runCalmSpeeds.x + .01f, runCalmSpeeds.y), gaitSpeed);
         runCalmWeight = Mathf.MoveTowards(runCalmWeight, calmTarget, dt / RunCalmEase);
         bodyCamera.Place(eye, eyeBefore, carried, bodyLean.CameraMakesUp, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
-            dt, bodySwayTime, runCalm * runCalmWeight, FlinchHold);
+            dt, bodySwayTime, runCalm * runCalmWeight, Mathf.Max(FlinchHold, EmoteHold));
         // Then the head goes where the camera went: off the eyes (a punch, a slip's dip, a peek's share, a wall, less body
         // sway) the spine, chest and neck bend it there, so the view is never outside the head, seen from outside too (the
         // user, 2026-11-12: "캐릭터의 머리와 카메라가 일치해서 True FPS의 몰입감은 있으면서 너무 멀미나거나 게임 플레이에

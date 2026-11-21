@@ -10,6 +10,8 @@ public sealed partial class WeaponController
         var mover = owner != null ? owner.GetComponent<PlayerMovement>() : null;
         if (mover != null && (mover.CombatInputLocked || mover.IsHeld))
         { Runtime?.Interrupt(); ResetPresentation(); return; }
+        // Before the melee slot's early way out: a press ends a feeling with fists out too.
+        WantGunBack(frame);
         if (Runtime == null || Runtime.Data.Category == WeaponCategory.Melee ||
             aimOrigin == null ||
             !isActiveAndEnabled ||

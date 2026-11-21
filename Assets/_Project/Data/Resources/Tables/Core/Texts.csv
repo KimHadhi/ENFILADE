@@ -1772,6 +1772,14 @@ callout.slot.no,안 돼,No,콜아웃 휠 > 말
 callout.slot.wait,기다려,Wait,콜아웃 휠 > 말
 callout.slot.sorry,미안,Sorry,콜아웃 휠 > 말
 callout.slot.quiet,조용히,Quiet,콜아웃 휠 > 말
+callout.slot.emote,감정,Emotes,콜아웃 휠 칸(왼쪽 위): 고르면 감정 표현 일곱 칸과 감사로 넘어간다. 감정은 말 없이 몸과 표정만
+callout.slot.emote.greeting,인사,Greeting,콜아웃 휠 > 감정
+callout.slot.emote.smile,미소,Smile,콜아웃 휠 > 감정
+callout.slot.emote.shy,수줍음,Shy,콜아웃 휠 > 감정
+callout.slot.emote.surprise,놀람,Surprised,콜아웃 휠 > 감정
+callout.slot.emote.angry,화남,Angry,콜아웃 휠 > 감정
+callout.slot.emote.disappointment,실망,Disappointed,콜아웃 휠 > 감정
+callout.slot.emote.sad,슬픔,Sad,콜아웃 휠 > 감정
 callout.hint.release,놓으면 말한다 · 우클릭 취소,Let go to say it · right click cancels,콜아웃 휠 가운데 아래 안내(놓으면 말하기 켬)
 callout.hint.click,클릭해서 말한다 · 우클릭 취소,Click to say it · right click cancels,콜아웃 휠 가운데 아래 안내(놓으면 말하기 끔)
 callout.hint.page,골라서 클릭 · 우클릭 취소,Pick one and click · right click cancels,콜아웃 휠 > 말 쪽 가운데 아래 안내

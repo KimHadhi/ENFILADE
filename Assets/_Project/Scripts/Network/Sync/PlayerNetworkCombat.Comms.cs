@@ -75,6 +75,13 @@ public sealed partial class PlayerNetworkCombat
         DetenteKit.Called(speaker, line.ToString());
     }
 
+    // A feeling shown from the wheel's 감정 page comes as a callout (CalloutRpc above). Its own end every PC sees for
+    // itself; an end only this player's PC knows of (the trigger pressed, a hand wanted elsewhere: PlayerBody.Emote) is told.
+    private void OnEmoteCut() => EmoteCutRpc();
+
+    [Rpc(SendTo.NotMe)]
+    private void EmoteCutRpc() => body.OrNull()?.CutEmote();
+
     // A moment of face only this player's PC knows the reason for (their ultimate, a parry, a perfect evade, a special
     // kill, an execution: PlayerFace.Shared). Everything else their face shows, every PC reads from what it already has.
     private void OnFaceShared(string mood) => FaceRpc(new Unity.Collections.FixedString32Bytes(mood));

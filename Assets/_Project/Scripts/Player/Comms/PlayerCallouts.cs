@@ -343,6 +343,8 @@ public sealed class PlayerCallouts : MonoBehaviour
     private bool Say(CalloutLines.Line line, bool auto)
     {
         if (line == null) return false;
+        // A feeling this body can't show now (off its feet, its hands kept by a reload or a grenade) is never sent.
+        if (line.Emote != null && (!TryGetComponent(out PlayerBody body) || !body.CanEmote(line.Emote))) return false;
         float now = Time.time;
         if (now - lastCall < callGap || (line.Id == lastLine && now - lastLineAt < sameLineGap)) return false;
         if (auto && (now - lastAuto < autoGap || (heard.TryGetValue(line.Id, out float at) && now - at < heardGap))) return false;
@@ -371,6 +373,14 @@ public sealed class PlayerCallouts : MonoBehaviour
         var line = CalloutLines.Find(lineId);
         if (speaker == null || line == null) return;
         heard[line.Id] = Time.time;
+        // A feeling from the 감정 page is shown, not said (the user, 2026-11-22: "몸과 표정만, 말 없음"): the whole body plays
+        // its clip and the face wears its mood for as long, with no voice, words or comms feed (PlayerBody.Emote).
+        if (line.Emote != null)
+        {
+            float seconds = speaker.TryGetComponent(out PlayerBody body) ? body.Emote(line.Emote) : 0f;
+            if (seconds > 0f) PlayerFace.Emoted(speaker, line, seconds);
+            return;
+        }
         var mouth = Voice(speaker, line.VoiceKey);
         CalloutBubbles.Say(speaker, line.Text);
         // Their face says it too (Callouts.csv face), the mouth moving to the voice (PlayerFace, CharacterFace), their body
