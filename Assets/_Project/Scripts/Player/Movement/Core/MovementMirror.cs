@@ -70,13 +70,6 @@ public sealed class MovementMirror
             // The way the dive flies: a dive on the back faces back along it.
             case State.Diving:
             case State.SupineDiving: pose.Direction = ctx.DiveBodyForward; break;
-            // Turning round on the run: which clip, the way it began and how far it goes (MovementTurnBack).
-            case State.Standing:
-                var turnBack = ctx.Actions.TurnBack;
-                pose.Detail = turnBack.Code;
-                pose.Direction = Quaternion.Euler(0f, turnBack.FromYaw, 0f) * Vector3.forward;
-                pose.Extent = turnBack.Turn;
-                break;
             // A dodge from a crouch stays low (a crouched slide): the copies dodge low too, and their zombies hear it so.
             case State.StepDodge:
                 pose.Direction = abilities.ActionDirection;
@@ -180,9 +173,6 @@ public sealed class MovementMirror
                 break;
             case State.Diving:
             case State.SupineDiving: ctx.DiveBodyForward = pose.Direction; break;
-            case State.Standing:
-                ctx.Actions.TurnBack.Mirror(Mathf.RoundToInt(pose.Detail), Mathf.Atan2(pose.Direction.x, pose.Direction.z) * Mathf.Rad2Deg, pose.Extent);
-                break;
             case State.StepDodge:
                 abilities.ActionDirection = pose.Direction;
                 abilities.ActionPosture = pose.Detail > .5f ? MovementPosture.Crouching : MovementPosture.Standing;

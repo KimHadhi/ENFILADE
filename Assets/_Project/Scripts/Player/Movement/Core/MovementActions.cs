@@ -41,13 +41,11 @@ public sealed class MovementActions
     public MovementDive Dive { get; }
     /// <summary>The legs' gait and how fast it goes each way (walk mode, Shift).</summary>
     public MovementGait Gait { get; }
-    /// <summary>Turning round on the run when the view swings back (MovementTurnBack).</summary>
-    public MovementTurnBack TurnBack { get; }
     internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer, riseTimer;
     /// <summary>Getting up off the back: every key waits until the body is up (Ability.supineRiseTime).</summary>
     public bool IsRising => riseTimer > 0f;
 
-    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Gait = new MovementGait(ctx); TurnBack = new MovementTurnBack(ctx); }
+    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Gait = new MovementGait(ctx); }
 
     internal void TickTimers(float dt)
     {
@@ -64,7 +62,6 @@ public sealed class MovementActions
         SlideBrakeArmed = SlideFacesBack = false;
         Dive.Reset();
         Gait.Reset();
-        TurnBack.Stop();
     }
 
     public void StartSlide(float currentSpeed, bool applyBoost = true)

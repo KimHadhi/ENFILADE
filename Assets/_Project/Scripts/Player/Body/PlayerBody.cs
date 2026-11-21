@@ -745,8 +745,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Standing:
             case MovementState.Crouching:
                 // Standing still down into a crouch or up out of it, the posture's clip (PlayerBody.Posture).
-                // Turning round on the run, the turn's clip (PlayerBody.TurnBack).
-                if (onGround) { if (!TurnBackPose() && !FollowPosture()) Locomotion(state == MovementState.Crouching, dt); }
+                if (onGround) { if (!FollowPosture()) Locomotion(state == MovementState.Crouching, dt); }
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;

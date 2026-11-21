@@ -233,11 +233,6 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float rollDistance = 3.4f, rollRunDistance = 5.1f;
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
     [Min(0f)] public float rollRunSpeed = 4.4f;
-    [Tooltip("Turning round on the run (MovementTurnBack): the clips, turning left and right, at a jog and a sprint.")]
-    public string turnBackJogLeft = "Jog_TurnL_Lfoot", turnBackJogRight = "Jog_TurnR_Lfoot",
-        turnBackSprintLeft = "Sprint_TurnL_Lfoot", turnBackSprintRight = "Sprint_TurnR_Lfoot";
-    [Tooltip("The gait (MovementGait.Position: 0 walk, 1 jog, 2 sprint) from which a view swung back turns the body round on a clip.")]
-    [Range(0f, 2f)] public float turnBackFromGait = .75f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;

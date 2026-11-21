@@ -446,11 +446,6 @@ Ability.rollRunTravel,RollToRun_F,착지 구르기(Ability.rollRunSpeed 이상�
 Ability.rollDistance,3.4,"착지 구르기가 가는 거리(m), 구르고 일어설 때. 클립 Roll_F가 기준 몸(이치고)에서 간 만큼(클립 검사대)"
 Ability.rollRunDistance,5.1,"착지 구르기가 가는 거리(m), 구르고 달려 나갈 때. 클립 RollToRun_F가 기준 몸에서 간 만큼"
 Ability.rollRunSpeed,4.4,착지할 때 이보다 빠르면(m/s) 구르고 달려 나간다(Body.rollRunWays). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서. 0.9.288 전에는 몸이 Body.jumpFastSpeed로 따로 골랐다
-Ability.turnBackJogLeft,Jog_TurnL_Lfoot,"달리다 뒤로 돌기(조깅, 왼쪽으로): 조깅이나 전력질주로 W를 누른 채 시선을 Move.groundKeepPaceTurn(120°)보다 크게 뒤로 돌리면 몸이 이 클립으로 발을 디디며 돌아 다시 달려 나가고, 몸은 클립의 루트가 가는 길로 간다(클립의 돌기는 시선이 돈 만큼으로 늘려서). 길과 돌기는 GaitMoves.csv kind turn(클립 검사대). S로 뒤로 가는 것은 돌기가 아니라 뒷걸음. 0.9.295(사용자 11-21: ""뒤로 돌 때는 turn 애니메이션 있는 게 좋을 듯요"", ""마우스로 뒤돌 때"")"
-Ability.turnBackJogRight,Jog_TurnR_Lfoot,"달리다 뒤로 돌기(조깅, 오른쪽으로). Ability.turnBackJogLeft와 같이"
-Ability.turnBackSprintLeft,Sprint_TurnL_Lfoot,"달리다 뒤로 돌기(전력질주, 왼쪽으로). Ability.turnBackJogLeft와 같이"
-Ability.turnBackSprintRight,Sprint_TurnR_Lfoot,"달리다 뒤로 돌기(전력질주, 오른쪽으로). Ability.turnBackJogLeft와 같이"
-Ability.turnBackFromGait,0.75,"이 걸음새부터(MovementGait.Position: 0 걷기, 1 조깅, 2 전력질주) 시선을 뒤로 돌리면 클립으로 돌아선다. 1.5 이상이면 전력질주 클립. 더 느리면 예전처럼 멈췄다 간다"
 Ability.rollLandSpeed,2,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). 걷기 출발 속도(Move.runStartSpeed 3.6)보다 낮아 걷다가 떨어져도 구른다(2026-11-06 사용자 요청). Beatrun의 200단위/초(약 4.9)는 걷기 속도와 같아 걸으면 늘 제자리 착지였다
 Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
 Ability.rollInPlaceDamageShare,0.5,제자리 착지(속도 없이 Ctrl)가 그래도 받는 낙하 피해 비율. 큰 낙하(바람 소리·허우적거림)가 시작된 낙하는 구르기 자체가 안 된다(Beatrun과 같음)
