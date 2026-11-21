@@ -64,7 +64,7 @@ public sealed partial class PlayerBody
         + "bends to it (HeadReach). 0 rides the eyes as before.")]
     private float runCalm = .45f;
     [SerializeField, Tooltip("The run's calm starts at x and is whole from y (m/s).")]
-    private Vector2 runCalmSpeeds = new Vector2(2f, 4f);
+    private Vector2 runCalmSpeeds = new Vector2(1.5f, 2.6f);
 
     // How much of the run's calm is on (eased, so a landing or a stop never jolts the camera back onto the eyes).
     private float runCalmWeight;
