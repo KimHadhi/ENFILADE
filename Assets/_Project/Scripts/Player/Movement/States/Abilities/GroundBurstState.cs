@@ -54,12 +54,10 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void UpdatePhysics(float dt)
     {
-        // A landing roll keeps the speed it landed with; a landing on the spot stops dead.
+        // A roll goes at its clip's own travel (MovementLanding.RollSpeed, 0.9.288); a landing on the spot stops dead.
         float speed = kind == State.StepDodge ? ctx.AbilitySettings.stepDistance / Mathf.Max(0.05f, Duration) :
             kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed :
-            rollStopped ? 0f :
-            ctx.Abilities.Landing.DiveRoll ? ctx.Abilities.Landing.DiveRollSpeed(ctx.CurrentStateDuration, dt) :
-            ctx.Abilities.Landing.LandsInPlace ? 0f : Mathf.Max(ctx.AbilitySettings.rollSpeed, initialSpeed);
+            rollStopped || ctx.Abilities.Landing.LandsInPlace ? 0f : ctx.Abilities.Landing.RollSpeed(ctx.CurrentStateDuration, dt);
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
         if (kind == State.StepDodge)

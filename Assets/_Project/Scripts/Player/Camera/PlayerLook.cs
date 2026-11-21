@@ -361,6 +361,15 @@ public sealed class PlayerLook : MonoBehaviour
             low = Mathf.Max(low, -limits.x);
             high = Mathf.Min(high, limits.y);
         }
+        else if (movement != null && movement.CurrentState == PlayerMovement.MovementState.SupineDiving && !movement.IsGrounded)
+        {
+            // Flying on the back the view looks down only so far: past that the head bent into the chest and the camera on
+            // the eyes went into the body (the user, 2026-11-21: "아래를 보면 내 몸을 뚫고 머리가 안으로 들어가").
+            if (body == null) body = GetComponent<PlayerBody>();
+            Vector2 limits = body != null ? body.SupineDiveLookPitchLimits : new Vector2(85f, 20f);
+            low = Mathf.Max(low, -limits.x);
+            high = Mathf.Min(high, limits.y);
+        }
         return Mathf.Clamp(candidate, low, high);
     }
 }

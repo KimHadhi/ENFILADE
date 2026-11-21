@@ -69,14 +69,15 @@ public sealed class MovementLanding
     public bool LandsInPlace { get; internal set; }
     /// <summary>The roll under way is a dive roll (Z, TryDiveRoll), not a landing's.</summary>
     public bool DiveRoll { get; internal set; }
-    /// <summary>The dive roll began at a sprint and runs on out of itself.</summary>
-    public bool DiveRollRuns { get; internal set; }
-    // The dive roll's travel as its clip goes: the share of its way gone at evenly spaced moments of the clip, the clip's
-    // length and the moment its body is back up (s), and how far it goes (m).
-    private float[] diveGone;
-    private float diveLength, diveUp, diveDistance;
-    /// <summary>How long the landing roll under way lasts (s). A landing on the spot that hurt holds longer.</summary>
-    public float RollTime => DiveRoll ? diveUp : !LandsInPlace ? ctx.AbilitySettings.rollDuration
+    /// <summary>The roll under way began at a sprint and runs on out of itself (RollToRun, DiveRollToRun).</summary>
+    public bool RollRuns { get; internal set; }
+    // The moving roll's travel as its clip goes, a landing's or a dive's: the share of its way gone at evenly spaced moments
+    // of the clip, the clip's length and the moment its body is back up (s), and how far it goes (m).
+    private float[] rollGone;
+    private float rollLength, rollUp, rollDistance;
+    /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, its clip at its own pace; a
+    /// landing on the spot holds its time, longer when it hurt.</summary>
+    public float RollTime => !LandsInPlace ? rollUp
         : hurtLanding ? Mathf.Max(ctx.AbilitySettings.rollLandTime, ctx.AbilitySettings.rollLandHurtTime) : ctx.AbilitySettings.rollLandTime;
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
@@ -264,8 +265,17 @@ public sealed class MovementLanding
         // rolls on the spot, so the view and the body play the same move.
         if (!inPlace && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight))
             inPlace = true;
+        // A moving roll goes at its clip's own travel and pace, as a dive roll does (0.9.288). Until then it went at the
+        // landing's speed (Ability.rollSpeed 4 m/s at least) for Ability.rollDuration (1 s) with its clip squeezed into that:
+        // Roll_F (1.47 s, 3.4 m gone in its first half second) played half as fast again as it was made (the user,
+        // 2026-11-21: "착지할 때 dive roll 모션이 존나 빨라").
+        var settings = ctx.AbilitySettings;
+        bool runs = !inPlace && ctx.HorizontalVelocity.magnitude >= settings.rollRunSpeed;
+        if (!inPlace && !ReadTravel(runs ? settings.rollRunTravel : settings.rollTravel)) inPlace = true;
+        else if (!inPlace) rollDistance = runs ? settings.rollRunDistance : settings.rollDistance;
         LandsInPlace = inPlace;
-        DiveRoll = DiveRollRuns = false;
+        DiveRoll = false;
+        RollRuns = runs && !inPlace;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
         ctx.Abilities.InputConsumed = true;
@@ -336,12 +346,12 @@ public sealed class MovementLanding
     {
         ClearFall();
         rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
-        IsKnockedBack = hurtLanding = DiveRoll = DiveRollRuns = false;
+        IsKnockedBack = hurtLanding = DiveRoll = RollRuns = false;
         LastTier = Tier.Light;
     }
 
     /// <summary>
-    /// A dive roll (Z on the ground, any way but straight back; MovementDive): the body throws itself down the way it goes,
+    /// A dive roll (Z on the ground going ahead; MovementDive): the body throws itself down the way it goes,
     /// rolls over and is up again, or begun at a sprint runs on out of it (BIPER Female Runner's DiveRoll and
     /// DiveRollToRun; 0.9.285, the user's pick for Z over the dive to the ground: "Z 다이브를 구르기로 교체"). The roll state
     /// carries it as it carries a landing's roll, at the pace of its clip's own travel (Tables/Player/GaitMoves.csv kind
@@ -355,9 +365,9 @@ public sealed class MovementLanding
         var settings = ctx.AbilitySettings;
         bool runs = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude >= settings.diveRollRunSpeed;
         if (!ReadTravel(runs ? settings.diveRollRunTravel : settings.diveRollTravel)) return false;
-        diveDistance = runs ? settings.diveRollRunDistance : settings.diveRollDistance;
+        rollDistance = runs ? settings.diveRollRunDistance : settings.diveRollDistance;
         DiveRoll = true;
-        DiveRollRuns = runs;
+        RollRuns = runs;
         LandsInPlace = false;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
@@ -367,23 +377,23 @@ public sealed class MovementLanding
         return true;
     }
 
-    /// <summary>How fast the dive roll goes at this moment of it (m/s): its clip's travel from now to a frame on.</summary>
-    internal float DiveRollSpeed(float time, float dt)
+    /// <summary>How fast the moving roll goes at this moment of it (m/s): its clip's travel from now to a frame on.</summary>
+    internal float RollSpeed(float time, float dt)
     {
-        if (diveGone == null || dt <= 0f) return 0f;
-        return diveDistance * (GoneAt(time + dt) - GoneAt(time)) / dt;
+        if (rollGone == null || dt <= 0f) return 0f;
+        return rollDistance * (GoneAt(time + dt) - GoneAt(time)) / dt;
     }
 
-    // The share of the dive roll's way gone at this moment of its clip.
+    // The share of the moving roll's way gone at this moment of its clip.
     private float GoneAt(float time)
     {
-        if (diveGone == null || diveGone.Length < 2 || diveLength <= 0f) return 1f;
-        float at = Mathf.Clamp01(time / diveLength) * (diveGone.Length - 1);
-        int low = Mathf.Min(diveGone.Length - 2, Mathf.FloorToInt(at));
-        return Mathf.Lerp(diveGone[low], diveGone[low + 1], at - low);
+        if (rollGone == null || rollGone.Length < 2 || rollLength <= 0f) return 1f;
+        float at = Mathf.Clamp01(time / rollLength) * (rollGone.Length - 1);
+        int low = Mathf.Min(rollGone.Length - 2, Mathf.FloorToInt(at));
+        return Mathf.Lerp(rollGone[low], rollGone[low + 1], at - low);
     }
 
-    // A dive roll's travel as ClipBench baked it (kind travel): the profile, the clip's length and when the body is up.
+    // A roll's travel as ClipBench baked it (kind travel): the profile, the clip's length and when the body is up.
     private bool ReadTravel(string id)
     {
         if (string.IsNullOrEmpty(id) || !GameTables.TryGetRow("GaitMoves", id, out var row) || row.Text("kind") != "travel") return false;
@@ -391,10 +401,10 @@ public sealed class MovementLanding
         foreach (string text in row.Text("profile").Split(';'))
             if (float.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value))
                 gone.Add(value);
-        diveLength = row.Number("length", 0f);
-        diveUp = row.Number("land", diveLength);
-        if (gone.Count < 2 || diveLength <= 0f || diveUp <= 0f) return false;
-        diveGone = gone.ToArray();
+        rollLength = row.Number("length", 0f);
+        rollUp = row.Number("land", rollLength);
+        if (gone.Count < 2 || rollLength <= 0f || rollUp <= 0f) return false;
+        rollGone = gone.ToArray();
         return true;
     }
 }

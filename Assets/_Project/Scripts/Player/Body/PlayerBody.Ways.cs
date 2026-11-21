@@ -99,12 +99,13 @@ public sealed partial class PlayerBody
     // The gait past which a dodge shifts into the sprint: halfway from the jog (1) to the sprint (2).
     private const float SprintsFrom = 1.5f;
 
-    // A roll's clip the way the body is going: up running at a run's speed, else standing up.
+    // A roll's clip the way the body is going: begun at a sprint it runs on, else it stands up (MovementLanding.RollRuns, the
+    // movement's own choice, whose travel it goes at; the same on every PC).
     private string RollWay(string fallback)
     {
         Vector3 velocity = player.ActualVelocity;
         float heading = HeadingOf(velocity);
-        return HorizontalSpeed() >= jumpFastSpeed ? NearestWay(rollRunWays, heading, fallback) : NearestWay(rollWays, heading, fallback);
+        return player.Abilities.Landing.RollRuns ? NearestWay(rollRunWays, heading, fallback) : NearestWay(rollWays, heading, fallback);
     }
 
     // A jump's clip: by its speed as before when it goes ahead or back, else the leap to that side.
@@ -138,12 +139,12 @@ public sealed partial class PlayerBody
     }
 
     // A dive roll's clip the way it goes (the move's direction, as a dodge's): standing, it rolls and gets up; begun at a
-    // sprint, it rolls and runs on (MovementLanding.DiveRollRuns, the same on every PC).
+    // sprint, it rolls and runs on (MovementLanding.RollRuns, the same on every PC).
     private string DiveRollWay()
     {
         float heading = HeadingOf(player.Abilities.ActionDirection);
         string standing = NearestWay(diveRollWays, heading, roll);
-        return player.Abilities.Landing.DiveRollRuns ? NearestWay(diveRollRunWays, heading, standing) : standing;
+        return player.Abilities.Landing.RollRuns ? NearestWay(diveRollRunWays, heading, standing) : standing;
     }
 
     // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge that shifts into

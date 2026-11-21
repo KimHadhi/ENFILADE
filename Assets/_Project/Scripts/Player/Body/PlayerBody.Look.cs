@@ -44,6 +44,9 @@ public sealed partial class PlayerBody
     [SerializeField, Range(0f, 90f), Tooltip("A dive turned onto the back in the air: look limit either side of the way the "
         + "back faces (degrees), as Beatrun's jump turn holds it (75), so the view can't swing round to a front dive again.")]
     private float supineDiveTurnLimit = 75f;
+    [SerializeField, Tooltip("A dive onto the back in the air: how far the view may look up; down (degrees). Flying on the back, a "
+        + "look down bent the head into the chest and the camera went into the body.")]
+    private Vector2 supineDivePitchLimits = new Vector2(85f, 20f);
     [SerializeField, Range(0f, 180f), Tooltip("Climbing up (a mantle): look limit either side of the way the climb goes "
         + "(degrees), as Beatrun holds its high climb (45). The camera rides the head, so looking back over the shoulder "
         + "would look through the own neck.")]
@@ -77,6 +80,7 @@ public sealed partial class PlayerBody
     public float SlideLookYawLimit => Mathf.Min(SlideViewYawLimit, SlideTwistLimit);
     public float HeavyLandingLookYawLimit => Mathf.Clamp(heavyLandingTurnLimit, 0f, 180f);
     public float SupineDiveLookYawLimit => Mathf.Clamp(supineDiveTurnLimit, 0f, 90f);
+    public Vector2 SupineDiveLookPitchLimits => new Vector2(Mathf.Clamp(supineDivePitchLimits.x, 0f, 89f), Mathf.Clamp(supineDivePitchLimits.y, 0f, 89f));
     public float MantleLookYawLimit => Mathf.Clamp(mantleTurnLimit, 0f, 180f);
     public Vector2 SlideLookPitchLimits => new Vector2(Mathf.Clamp(slidePitchLimits.x, 0f, 85f), Mathf.Clamp(slidePitchLimits.y, 0f, 85f));
     /// <summary>Share of a downward / upward look the spine takes (SpineLook); neck and head take the rest.</summary>

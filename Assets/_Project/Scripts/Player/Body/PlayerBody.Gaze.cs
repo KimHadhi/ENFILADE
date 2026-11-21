@@ -33,20 +33,25 @@ public sealed partial class PlayerBody
         {
             vault, vaultHigh, vaultKong, springboard, mantle, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeJump,
             wallClimbStart, wallClimb, wallKick, wallKickRight, barSwing, barRelease, clamberLow, clamberHigh,
-            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack,
+            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack, jump, jumpStill, jumpSlow,
             diveStart, dive, dodgeLeft, dodgeRight, dashPush
         })
             Add(animationViewChannels, clip);
-        // The jumps, landings and rolls: their head carries the view (BodyGaze). Until 0.9.286 only the old names led it at
-        // all (roll, rollLand, landCrouch), and none of BIPER's jumps, landings or rolls did, so through them the view stayed
+        // The jumps lead it a bounded share as the moves above do: carried all the way (0.9.286) their head's nods made the
+        // user sick ("점프는 너무 멀미 나는데").
+        foreach (string set in new[] { jumpWays, runJumpWays })
+            foreach (var (clip, _) in WaysOf(set))
+                Add(animationViewChannels, clip);
+        // The landings and rolls: their head carries the view (BodyGaze). Until 0.9.286 only the old names led it at all
+        // (roll, rollLand, landCrouch), and none of BIPER's jumps, landings or rolls did, so through them the view stayed
         // held ahead under a head that went over (the user, 2026-11-21: "닭처럼 고정된 느낌").
         foreach (string clip in new[]
         {
-            jump, jumpStill, jumpSlow, touchdown, land, landMid, landCrouch, roll, rollLand, fallFromEdge,
+            touchdown, land, landMid, landCrouch, roll, rollLand, fallFromEdge,
             landRunLight, landRunMid, landRunHard, landRunStumble, landSlam
         })
             Add(carriedViewChannels, clip);
-        foreach (string set in new[] { rollWays, rollRunWays, diveRollWays, diveRollRunWays, jumpWays, runJumpWays })
+        foreach (string set in new[] { rollWays, rollRunWays, diveRollWays, diveRollRunWays })
             foreach (var (clip, _) in WaysOf(set))
                 Add(carriedViewChannels, clip);
 

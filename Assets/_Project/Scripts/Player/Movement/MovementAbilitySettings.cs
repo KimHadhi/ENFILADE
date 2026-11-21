@@ -229,9 +229,12 @@ public sealed class MovementAbilitySettings
     [Tooltip("How quickly a heavy landing's skid along the ground dies away (share of the speed per second).")]
     [Min(0f)] public float heavyLandingBraking = 10f;
     [Min(0.01f)] public float rollInputWindow = 0.5f;
-    [Min(0.05f)] public float rollDuration = 1f;
-    [Tooltip("Slowest a landing roll moves (m/s); a faster landing keeps its speed.")]
-    [Min(0f)] public float rollSpeed = 4f;
+    [Tooltip("A landing roll: the Tables/Player/GaitMoves.csv rows its travel is read from, standing up out of it and running on.")]
+    public string rollTravel = "Roll_F", rollRunTravel = "RollToRun_F";
+    [Tooltip("How far a landing roll goes (m), standing up and running on: its clips' own on the reference body (ClipBench).")]
+    [Min(0f)] public float rollDistance = 3.4f, rollRunDistance = 5.1f;
+    [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
+    [Min(0f)] public float rollRunSpeed = 4.4f;
     [Tooltip("A dive roll (Z on the ground): the Tables/Player/GaitMoves.csv rows its travel is read from, standing and at a sprint.")]
     public string diveRollTravel = "DiveRoll_F", diveRollRunTravel = "DiveRollToRun_F";
     [Tooltip("How far a dive roll goes (m), standing and at a sprint: its clips' own on the reference body (ClipBench).")]

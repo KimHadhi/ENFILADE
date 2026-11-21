@@ -773,11 +773,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Supine: Want(supine); FaceLying(dt); break;
             case MovementState.StepDodge: DodgePose(); break;
             case MovementState.LandingRoll:
-                // A roll lasts as long as the move; a landing on the spot plays at its own pace and outlasts it. A dive roll
-                // plays on its own clock, the move going at its clip's own travel (MovementLanding.TryDiveRoll).
-                if (player.Abilities.Landing.DiveRoll) Drive(rollClip, stateTime / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
-                else if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
-                else Drive(rollClip, stateTime / Mathf.Max(.05f, player.AbilitySettings.rollDuration));
+                // A moving roll, a landing's or a dive's, plays on its own clock and the move goes at its clip's own travel
+                // (MovementLanding.RollSpeed); a landing on the spot plays at its own pace and outlasts the move.
+                if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
+                else Drive(rollClip, stateTime / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
             case MovementState.DashPush: Want(dashPush); break;

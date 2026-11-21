@@ -34,8 +34,8 @@ internal static class GaitMoveBake
             + "kind jump(Jump_*·RunJump_*): profile 몸 중심이 처음보다 높은 정도(꼭대기 = 1), leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). "
             + "점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight). kind posture(IdleToCrouch·CrouchToIdle): profile 몸 중심이 "
             + "처음 높이에서 끝 높이까지 간 정도(0~1), leave 움직이기 시작하는 때(2%), land 다 간 때(98%). 서서 앉고 일어설 때 클립이 자세가 바뀌는 만큼을 "
-            + "따른다(PlayerBody.Posture). kind travel(DiveRoll*): profile 루트가 땅 위로 간 길의 몫(끝 = 1), top 몸 중심이 가장 낮은 때, land 몸이 "
-            + "다시 선 때(낮아진 만큼의 10% 안으로 돌아옴). 다이브 구르기는 이 빠르기로 간다(MovementLanding.TryDiveRoll))\",,,,,,,\n");
+            + "따른다(PlayerBody.Posture). kind travel(DiveRoll*·Roll_*·RollToRun_*): profile 루트가 땅 위로 간 길의 몫(끝 = 1), top 몸 중심이 가장 낮은 때, land 몸이 "
+            + "다시 선 때(낮아진 만큼의 10% 안으로 돌아옴). 다이브 구르기와 착지 구르기는 이 빠르기로 간다(MovementLanding.RollSpeed))\",,,,,,,\n");
         int jumps = 0, postures = 0, travels = 0;
         foreach (var clip in clips.Values.OrderBy(c => c.name, StringComparer.Ordinal))
         {
@@ -55,7 +55,8 @@ internal static class GaitMoveBake
                 report.AppendLine(Invariant($"  {clip.name,-20} posture  {clip.length:0.00}s sets off {from:0.00} there {to:0.00}"));
                 postures++;
             }
-            else if (clip.name.StartsWith("DiveRoll", StringComparison.Ordinal) && Travel(clip, out float[] gone, out float low, out float up))
+            else if ((clip.name.StartsWith("DiveRoll", StringComparison.Ordinal) || clip.name.StartsWith("Roll_", StringComparison.Ordinal)
+                    || clip.name.StartsWith("RollToRun_", StringComparison.Ordinal)) && Travel(clip, out float[] gone, out float low, out float up))
             {
                 rows.Append(string.Join(",", clip.name, "travel", F(clip.length), string.Join(";", gone.Select(F)), "", F(low), F(up), ""));
                 rows.Append('\n');
