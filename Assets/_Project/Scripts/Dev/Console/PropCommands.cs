@@ -8,8 +8,9 @@ using UnityEngine;
 /// /prop makes Impact CFX's items in front of this PC's player, to try physics props anywhere, the hub included (the
 /// user, 2026-11-21: "그 impact cfx에 있는 아이템들도 다 허브에 테스팅용으로 넣어 줘. 아님 콘솔로 생성할 수 있게"):
 /// /prop lists them (PropShelf), /prop &lt;name or number&gt; [count] makes them, /prop clear takes away what it made.
-/// A loose one (with a Rigidbody) is a PhysicsProp: kick, shove or shoot it into a zombie and the strike is yours
-/// (PropStrike, the breaking block under the crosshair on a kill). What it makes is this PC's alone, not the room's.
+/// A loose one (with a Rigidbody) is a PhysicsProp: pick it up with F and throw it with the left button (PropCarry), or
+/// kick, shove or shoot it, into a zombie, and the strike is yours (PropStrike, the breaking block under the crosshair on
+/// a kill). What it makes is made on every PC of the room, and taken away from them all (PropNet).
 /// Registered in GameCommands, so the chat's console channel has it too.
 /// </summary>
 public static class PropCommands
@@ -21,8 +22,8 @@ public static class PropCommands
 
     public static void Register(ChatCommandRouter router)
     {
-        router.Register("prop", "Impact CFX 물건 — 비우면 목록 · <이름 또는 번호> [개수] 눈앞에 만들기 · clear 만든 것 치우기. 차고 밀고 쏘아 좀비를 맞혀 죽이면 "
-            + "물리 프롭 처치(깨지는 블록). 이 PC에만 생긴다 (PropShelf, PropStrike)", Run);
+        router.Register("prop", "Impact CFX 물건 — 비우면 목록 · <이름 또는 번호> [개수] 눈앞에 만들기 · clear 만든 것 치우기. F로 들고 좌클릭으로 던지거나, 차고 밀고 쏘아 "
+            + "좀비를 맞혀 죽이면 물리 프롭 처치(깨지는 블록). 방의 모든 PC에 생긴다 (PropShelf, PropCarry, PropNet, PropStrike)", Run);
     }
 
     private static string Run(string args)
@@ -35,13 +36,13 @@ public static class PropCommands
         if (words[0] == "clear") return Clear();
         var prefab = shelf.Find(words[0]);
         if (prefab == null) return "'" + words[0] + "'에 맞는 물건이 하나가 아닙니다. 목록: /prop";
+        int item = IndexOf(shelf, prefab);
         int count = 1;
         if (words.Length > 1 && (!int.TryParse(words[1], out count) || count < 1)) return "사용법: /prop <이름 또는 번호> [개수] — 개수는 1 이상의 정수";
         count = Mathf.Min(count, MostAtOnce);
         var mine = PlayerRoster.Local;
         if (mine == null) return "대상 플레이어를 찾지 못했습니다.";
         var view = mine.TryGetComponent(out PlayerBody body) && body.View != null ? body.View : mine.transform;
-        CollisionEffects.Ensure();
         Vector3 forward = Vector3.ProjectOnPlane(view.forward, Vector3.up);
         if (forward.sqrMagnitude < 1e-4f) forward = mine.transform.forward;
         forward.Normalize();
@@ -51,13 +52,16 @@ public static class PropCommands
         {
             // A row across the view, a little above the eyes, so they drop and settle.
             Vector3 place = at + right * ((i - (count - 1) * .5f) * Apart) + Vector3.up * (.2f + (i % 3) * .15f);
-            var item = Object.Instantiate(prefab, place, Quaternion.LookRotation(-forward));
-            item.name = prefab.name;
-            RuntimeSceneHierarchy.Group(item, RuntimeSceneHierarchy.World, "Props");
-            if (item.TryGetComponent(out Rigidbody _) && !item.TryGetComponent(out PhysicsProp _)) item.AddComponent<PhysicsProp>();
-            made.Add(item);
+            var thing = PropNet.Make(item, place, Quaternion.LookRotation(-forward));
+            if (thing != null) made.Add(thing);
         }
-        return prefab.name + " " + count + "개를 만들었습니다 (이 PC에만). 치우기: /prop clear";
+        return prefab.name + " " + count + "개를 만들었습니다 (방의 모든 PC에). F로 들고 좌클릭으로 던집니다. 치우기: /prop clear";
+    }
+
+    private static int IndexOf(PropShelf shelf, GameObject prefab)
+    {
+        for (int i = 0; i < shelf.Items.Count; i++) if (shelf.Items[i] == prefab) return i;
+        return -1;
     }
 
     private static string List(PropShelf shelf)
@@ -79,7 +83,7 @@ public static class PropCommands
     private static string Clear()
     {
         int count = 0;
-        foreach (var item in made) if (item != null) { Object.Destroy(item); count++; }
+        foreach (var thing in made) if (thing != null) { PropNet.Unmake(thing); count++; }
         made.Clear();
         return count + "개를 치웠습니다.";
     }

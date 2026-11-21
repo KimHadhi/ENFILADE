@@ -38,6 +38,7 @@ F는 **한 번에 한 가지**를 한다. 플레이어 앞에 F로 할 수 있�
 | 70 | `crate` | 조준한 탄약 상자. 기다리는 동안은 거절 | 누름 |
 | 80 | `ladder.top` | 사다리 위에서 내려가기 | 누름 |
 | 100~150 | `campaign.button` · `campaign.can.hand` · `gimmick` · `campaign.door` · `campaign.shop` · `campaign.can.floor` | 캠페인: 단계 버튼, 든 연료통, 맵 기믹, 문, 상점, 바닥의 연료통 | 누름 (기믹 일부는 누른 채) |
+| 115, 160 | `prop.hand` · `prop.pick` | 물리 물건: 두 손에 든 것 내려놓기(든 동안 좌클릭은 던지기), 바라보는 물건 들기 (PropCarry) | 누름 |
 | 200, 210 | `tower.scanner` · `tower.shop` | 타워: 스캐너에 손, 상점 | 스캐너는 누르고 있는 동안 |
 | 300 | `hub.station` | 허브의 시설 | 누름 |
 | 400, 410 | `detente.raise` · `detente.treat` | 데탕트: 죽은 동료 부활, 손 치료 제안 | 부활은 누르고 있는 동안 |

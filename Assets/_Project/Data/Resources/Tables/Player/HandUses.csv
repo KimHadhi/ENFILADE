@@ -10,7 +10,7 @@ melee.counter,both,,160,any,stays,1,,완벽 방어의 카운터
 detente.bandage,both,,150,any,stays,1,,데탕트의 붕대 치료: 왼손이 붕대를 감고 오른손은 총을 든 채 멈춘다
 move.climb,both,,140,any,away,,,"두 손이 세상을 잡는다: 매달리기, 높이 오르기, 벽 동작, 봉, 사다리, 짚라인, 장전 중에 시작한 넘기 (TraversalHands의 Bare)"
 move.vault,left,,140,any,,,,넘기와 허리 높이 오르기: 왼손이 장애물을 짚고 총은 오른손에 (TraversalHands의 LeftHand)
-carry.can,both,,130,any,away,,,연료통을 두 손으로 든다
+carry.can,both,,130,any,away,,,"두 손으로 무엇을 든다: 캠페인 연료통, F로 든 물리 물건(PropCarry). 이름은 연료통 때의 것 그대로"
 grenade.throw,left,,60,Standing|Crouching|Sliding,,,,"G 투척(수류탄·섬광·연막·염료·통·칼), 클레이모어 놓기, 궁극기의 투척. 사실이 아닌 것은 이 손을 가져가지 못한다: 든 수류탄이 먼저다(사용자, 2026-11-18)"
 move.roll,both,,45,any,away,,,착지 구르기와 큰 착지: 두 손이 땅을 짚는다. 총은 넣지만 주먹에 쥔 수류탄은 남는다
 gun.reload,both,,40,any,,,,장전. 주사와 rank가 같아 먼저 시작한 쪽이 지킨다: 장전 중에는 주사가 안 되고 주사 중에는 장전이 시작하지 않는다

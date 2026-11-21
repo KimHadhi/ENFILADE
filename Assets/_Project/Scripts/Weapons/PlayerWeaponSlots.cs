@@ -418,9 +418,21 @@ public sealed class PlayerWeaponSlots : MonoBehaviour
     /// <summary>The guns are elsewhere (GimmickTray: on an airport's x-ray belt), so nothing is held (HoldGunsAway).</summary>
     public bool GunsAway => gunsAway;
 
-    /// <summary>Something fills both hands (a campaign fuel can, CampaignCans): nothing is held and the number keys do
-    /// nothing until it is put down, then back to what was held.</summary>
-    internal void HoldHandsFull(bool full) => Empty(ref handsFull, full);
+    // Whatever fills both hands now, each said every frame by its own owner (a fuel can: CampaignCans; a carried prop:
+    // PropCarry), so one owner letting go never empties the hands another still fills.
+    private readonly HashSet<object> fillers = new HashSet<object>();
+
+    /// <summary>
+    /// Something of <paramref name="by"/>'s fills both hands (a fuel can, a carried prop), or no longer does: nothing is
+    /// held and the number keys do nothing while anything does, then back to what was held.
+    /// </summary>
+    internal void HoldHandsFull(object by, bool full)
+    {
+        if (by == null) return;
+        if (full) fillers.Add(by);
+        else fillers.Remove(by);
+        Empty(ref handsFull, fillers.Count > 0);
+    }
 
     /// <summary>The guns ride an x-ray belt (GimmickTray): nothing is held and the number keys do nothing until they are
     /// taken back, then back to what was held. A fuel can still fits the empty hands; downed, the pistol comes out.</summary>

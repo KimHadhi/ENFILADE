@@ -1234,6 +1234,8 @@ knife.support.name,마체테,Machete,서포트의 칼 이름(근접 칸·킬 피
 feed.weapon.counter,반격,Counter,킬 피드: 반격으로 잡았을 때 무기 자리
 feed.weapon.shove,밀치기,Shove,킬 피드: 밀치기로 잡았을 때 무기 자리
 feed.weapon.fist,주먹,Fists,킬 피드: 맨손·그 밖의 처치 무기 자리
+hud.prop.pick,[{0}] 들기,[{0}] Pick up,조준점 앞의 물리 물건 위에 뜨는 안내: F로 두 손에 든다 (PropCarry). {0}는 상호작용 키
+hud.prop.held,[{0}] 던지기 · [{1}] 내려놓기,[{0}] Throw · [{1}] Put down,물리 물건을 든 동안 조준점 아래 안내 (PropCarry). {0}는 사격 키, {1}은 상호작용 키
 feed.weapon.prop,물건,Prop,킬 피드: 플레이어가 던지거나 차거나 쏴서 날린 물리 물건(연료통·병·축구공 ...)에 맞아 죽었을 때 무기 자리 (PropStrike)
 feed.notice.dead,사망,Died,킬 피드(방에서): 플레이어가 죽었을 때
 feed.notice.downed,쓰러짐,Downed,킬 피드(방에서): 플레이어가 쓰러졌을 때

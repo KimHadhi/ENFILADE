@@ -96,7 +96,8 @@ public static class KillIcons
     {
         if (row == null || string.IsNullOrEmpty(row.Picture)) return null;
         if (pictures.TryGetValue(row.Picture, out var known)) return known;
-        var picture = FromFolder(row.Picture) ?? Resources.Load<Texture2D>(ResourcesFolder + "/" + row.Picture);
+        var picture = FromFolder(row.Picture);
+        if (picture == null) picture = Resources.Load<Texture2D>(ResourcesFolder + "/" + row.Picture);
         if (picture == null) Debug.LogWarning($"[KillIcons] {TableName}.csv [{row.Id}] picture '{row.Picture}': no {row.Picture}.png in Resources/{ResourcesFolder} or {Folder}.");
         return pictures[row.Picture] = picture;
     }

@@ -20,8 +20,9 @@ using UnityEngine;
 /// every frame while one moves, and every couple of seconds), whose copies follow it and touch nothing. A guest asks the
 /// host to pick up, put down, pour or throw, and a shot from a guest goes to the host (CampaignRun). What the host judges
 /// for a guest (their can's blast, fire or strike) carries KillMarks.JudgedByHost, so their PC still shows the kill. A wipe
-/// puts every can back where it started. Each PC hangs a carried can from its carrier: in front of this PC's own camera,
-/// from the right hand on everyone else. CampaignRun owns it: input, the step, the messages' registration. Numbers: the
+/// puts every can back where it started. Each PC hangs a carried can from its carrier as every carried thing hangs
+/// (CarryHold: in front of this PC's own camera, from the right hand on everyone else), and a throw leaves the hands as
+/// every thrown thing does (CarryHold, the arms' push over the can's mass). CampaignRun owns it: input, the step, the messages' registration. Numbers: the
 /// constants below.
 /// </summary>
 internal sealed class CampaignCans
@@ -33,9 +34,9 @@ internal sealed class CampaignCans
     // How near a can must be to pick it up, and a little more for a guest whose copy lags (m).
     public const float Reach = 1.8f;
     private const float ReachSlack = .8f, ShareEvery = 2f, DropAhead = .6f, GroundSearch = 4f;
-    // A throw: how fast it leaves the hands along the aim and up (m/s), how fast it tumbles (rad/s), and the longest it
-    // counts as flying, whatever it does (s).
-    private const float ThrowSpeed = 11f, ThrowLift = 2.5f, ThrowSpin = 8f, LongestFlight = 6f;
+    // The longest a thrown can counts as flying, whatever it does (s). How it leaves the hands is every carried thing's
+    // (CarryHold: the arms' push over its mass, about 11 m/s for a can).
+    private const float LongestFlight = 6f;
     // A thrown can lies again (to be picked up) once slower than this (m/s), and not before this long after the throw (s).
     private const float RestSpeed = .6f, RestAfter = .25f;
     // A 20 L jerry can about half full (kg): heavy enough to floor the zombie it is thrown at (PropStrike), too heavy to fly
@@ -51,8 +52,6 @@ internal sealed class CampaignCans
     private const float PouredBack = 12f;
     // A view within this of the blast shakes, harder nearer (m).
     private const float ShakeReach = 18f;
-    // Where a carried can sits in this PC's own view, from the camera (m: right, up, ahead).
-    private static readonly Vector3 InView = new Vector3(.28f, -.42f, .62f);
 
     private struct Can : INetworkSerializeByMemcpy
     {
@@ -307,10 +306,10 @@ internal sealed class CampaignCans
                 if (aim.sqrMagnitude < 1e-4f) aim = who.transform.forward;
                 aim.Normalize();
                 can.Mode = (byte)Mode.Flying;
-                can.Position = who.transform.position + Vector3.up * 1.4f + aim * .6f;
+                can.Position = CarryHold.ThrowFrom(who, aim);
                 can.Rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(aim, Vector3.up).sqrMagnitude > 1e-4f ? Vector3.ProjectOnPlane(aim, Vector3.up) : who.transform.forward);
                 flown[index] = 0f;
-                Throw(index, can.Position, can.Rotation, aim * ThrowSpeed + Vector3.up * ThrowLift, who);
+                Throw(index, can.Position, can.Rotation, CarryHold.ThrowVelocity(CanMass, aim), who);
                 break;
         }
         state[index] = can;
@@ -426,7 +425,7 @@ internal sealed class CampaignCans
         if (rb != null && !rb.isKinematic)
         {
             rb.linearVelocity = velocity;
-            rb.angularVelocity = Random.onUnitSphere * ThrowSpin;
+            rb.angularVelocity = Random.onUnitSphere * CarryHold.ThrowSpin;
         }
         if (props[index] != null && by != null) props[index].SetAttacker(by.gameObject);
     }
@@ -455,6 +454,8 @@ internal sealed class CampaignCans
         var rb = bodies[index];
         if (rb == null || rb.isKinematic != on) return;
         rb.isKinematic = !on;
+        // Moved by hand each frame while off, so physics must not blend it back toward its last step.
+        rb.interpolation = on ? RigidbodyInterpolation.Interpolate : RigidbodyInterpolation.None;
         if (solids[index] != null) foreach (var collider in solids[index]) if (collider != null) collider.enabled = on;
         if (on) rb.WakeUp();
     }
@@ -580,19 +581,10 @@ internal sealed class CampaignCans
                 if (!simulating) Follow(i);
                 continue;
             }
-            var carrier = PlayerRoster.ById(state[i].Carrier);
-            if (carrier == null) continue;
-            if (carrier == mine && view != null)
-            {
-                can.SetPositionAndRotation(view.TransformPoint(InView), Quaternion.Euler(0f, view.eulerAngles.y, 0f));
-                continue;
-            }
-            var hand = carrier.TryGetComponent(out PlayerBody body) && body.BodyAnimator != null && body.BodyAnimator.isHuman
-                ? body.BodyAnimator.GetBoneTransform(HumanBodyBones.RightHand) : null;
-            Vector3 at = hand != null ? hand.position + Vector3.down * .22f : carrier.transform.position + Vector3.up * .8f + carrier.transform.right * .25f;
-            can.SetPositionAndRotation(at, Quaternion.Euler(0f, carrier.transform.eulerAngles.y, 0f));
+            // Where every carried thing sits (CarryHold): before this PC's camera, or at its carrier's right hand.
+            CarryHold.Place(can, PlayerRoster.ById(state[i].Carrier), mine, view);
         }
-        if (mine != null && mine.TryGetComponent(out PlayerWeaponSlots slots)) slots.HoldHandsFull(CarriedBy(mine) >= 0);
+        if (mine != null && mine.TryGetComponent(out PlayerWeaponSlots slots)) slots.HoldHandsFull(this, CarriedBy(mine) >= 0);
     }
 
     // A guest's copy of a loose can eases toward the host's word, and jumps there when it is far (a wipe, a restart).
