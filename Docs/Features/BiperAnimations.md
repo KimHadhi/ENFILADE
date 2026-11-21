@@ -32,7 +32,7 @@
 | 웅크려 서기·걷기·조깅 | BodyMoves `crouch`, `Body.crouchIdle` | 0.9.240 |
 | 총 든 채 서기·걷기·달리기 (권총·소총·샷건) | BodyMoves `<종류>` | 0.9.240. 탄 종류로 고른다 |
 | 총 겨누고 서기·걷기·조깅, 웅크려 겨누기 | BodyMoves `<종류>.aim`, `.crouch`, `.crouch.aim` | 0.9.240 |
-| 걸음새와 속도: 방향 키 달리기, Shift 전력질주(8방향), Caps Lock 걷기 모드의 걷기와 Shift 조깅, 웅크려 걷기·조깅. 몸은 그 걸음새 클립이 그쪽으로 나르는 속도로 간다 | [MovementGait](../../Assets/_Project/Scripts/Player/Movement/Actions/MovementGait.cs), [Gaits.csv](../../Assets/_Project/Data/Resources/Tables/Player/Gaits.csv) | 0.9.245. 가속으로 쌓이던 속도와 골반 돌림은 없앴다. 0.9.253: 클립 속도를 발 대신 루트 이동으로 다시 재고(걷기 1.07→1.57, 달리기 3.93→5.20, 전력질주 5.61→7.16), 웅크리면 같은 모드에서 서 있을 때보다 빨라지지 않게, 몸의 속도는 출발 클립처럼 0.7~0.94초에 따라가게 |
+| 걸음새와 속도: 방향 키 달리기, Shift 전력질주(8방향), Caps Lock 걷기 모드의 걷기와 Shift 조깅, 웅크려 걷기·조깅. 몸은 그 걸음새 클립이 그쪽으로 나르는 속도로 간다 | [MovementGait](../../Assets/_Project/Scripts/Player/Movement/Actions/MovementGait.cs), [Gaits.csv](../../Assets/_Project/Data/Resources/Tables/Player/Gaits.csv) | 0.9.245. 가속으로 쌓이던 속도와 골반 돌림은 없앴다. 0.9.253: 클립 속도를 발 대신 루트 이동으로 다시 재고(걷기 1.07→1.57, 달리기 3.93→5.20, 전력질주 5.61→7.16), 몸의 속도는 출발 클립처럼 0.7~0.94초에 따라가게 |
 
 ## 아직 연결하지 않은 것 (다음 단계)
 
