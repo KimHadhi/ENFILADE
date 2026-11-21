@@ -139,8 +139,8 @@ internal sealed class GoreGibs
             if (!Bake(body, i, part, out var shape)) continue;
             var gib = Build(body.Skins[i], shape, "Gore " + part, BodyParts.IsLeg(part) ? 7f : 2.5f);
             if (gib == null) continue;
-            var velocity = direction * speed * Random.Range(.75f, 1.1f) + Vector3.up * Random.Range(1f, 2.2f) + carried;
-            Throw(gib, velocity, Random.insideUnitSphere * 14f);
+            var velocity = direction * speed * SharedRandom.Range(.75f, 1.1f) + Vector3.up * SharedRandom.Range(1f, 2.2f) + carried;
+            Throw(gib, velocity, SharedRandom.InsideUnitSphere() * 14f);
             // Its torn end, where it left the body.
             owner.Fx.Cap(gib.transform, root.position, (root.position - root.parent.position).normalized * -1f,
                 BodyParts.CutRadius(part));
@@ -252,7 +252,7 @@ internal sealed class GoreGibs
         if (gib == null) gib = NewGut();
         var host = gib.gameObject;
         host.layer = Layer;
-        host.transform.SetPositionAndRotation(at, Random.rotation);
+        host.transform.SetPositionAndRotation(at, SharedRandom.Rotation());
         host.transform.localScale = Vector3.one * (size / Mathf.Max(.01f, mesh.bounds.size.magnitude));
         host.GetComponent<MeshFilter>().sharedMesh = mesh;
         host.GetComponent<MeshRenderer>().sharedMaterial = material;
@@ -262,7 +262,7 @@ internal sealed class GoreGibs
         host.SetActive(true);
         gib.Begin(owner, null, false);
         Keep(gib);
-        Throw(gib, velocity, Random.insideUnitSphere * 18f);
+        Throw(gib, velocity, SharedRandom.InsideUnitSphere() * 18f);
     }
 
     /// <summary>A gut chunk that has sunk (GoreGib): switched off and kept for the next burst.</summary>

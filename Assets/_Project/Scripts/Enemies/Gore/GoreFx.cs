@@ -69,10 +69,10 @@ internal sealed class GoreFx
     {
         for (int i = 0; i < guts; i++)
         {
-            var velocity = (direction + Random.insideUnitSphere * .55f).normalized * speed * Random.Range(.5f, 1.1f) + Vector3.up * Random.Range(.5f, 2.5f);
-            owner.Gibs.Gut(at + Random.insideUnitSphere * .06f, velocity, Random.Range(.09f, .16f), nextGut++);
+            var velocity = (direction + SharedRandom.InsideUnitSphere() * .55f).normalized * speed * SharedRandom.Range(.5f, 1.1f) + Vector3.up * SharedRandom.Range(.5f, 2.5f);
+            owner.Gibs.Gut(at + SharedRandom.InsideUnitSphere() * .06f, velocity, SharedRandom.Range(.09f, .16f), nextGut++);
         }
-        if (Cast(at, direction, 4.5f, body, out var hit)) Splat(hit.point, hit.normal, owner.WallSplat, Random.Range(0, int.MaxValue));
+        if (Cast(at, direction, 4.5f, body, out var hit)) Splat(hit.point, hit.normal, owner.WallSplat, SharedRandom.Range(0, int.MaxValue));
     }
 
     /// <summary>A stump on the body: a torn face of gut at the joint, a few beats of blood and a pool spreading under it.</summary>
@@ -103,7 +103,7 @@ internal sealed class GoreFx
         if (outward.sqrMagnitude < 1e-4f) outward = parent.up;
         // Flattened along the cut, so it reads as a face rather than a lump.
         cap.transform.SetPositionAndRotation(at + outward * radius * .15f,
-            Quaternion.LookRotation(outward) * Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
+            Quaternion.LookRotation(outward) * Quaternion.Euler(0f, 0f, SharedRandom.Range(0f, 360f)));
         float scale = radius * 2.6f / Mathf.Max(.01f, mesh.bounds.size.magnitude * .6f);
         Vector3 lossy = parent.lossyScale;
         cap.transform.localScale = new Vector3(scale / Mathf.Max(1e-4f, Mathf.Abs(lossy.x)), scale / Mathf.Max(1e-4f, Mathf.Abs(lossy.y)),
@@ -117,10 +117,10 @@ internal sealed class GoreFx
     /// <summary>A trail drop off a flying piece; `strength` 0..1 thins it as it goes.</summary>
     public void Drip(Vector3 at, Vector3 velocity, float strength)
     {
-        if (Random.value > strength * .8f) return;
-        emit.position = at + Random.insideUnitSphere * .03f;
-        emit.velocity = velocity * .3f + Random.insideUnitSphere * .4f;
-        Drop(Random.Range(.012f, .024f), Random.Range(.4f, .8f));
+        if (SharedRandom.Value() > strength * .8f) return;
+        emit.position = at + SharedRandom.InsideUnitSphere() * .03f;
+        emit.velocity = velocity * .3f + SharedRandom.InsideUnitSphere() * .4f;
+        Drop(SharedRandom.Range(.012f, .024f), SharedRandom.Range(.4f, .8f));
     }
 
     public void Tick(float dt)
@@ -141,9 +141,9 @@ internal sealed class GoreFx
                 while (spurt.carry >= 1f)
                 {
                     spurt.carry -= 1f;
-                    emit.position = at + Random.insideUnitSphere * spurt.radius * .6f;
-                    emit.velocity = (outward + Random.insideUnitSphere * .35f).normalized * Random.Range(1.4f, 3.4f) * (.5f + .5f * push);
-                    Drop(Random.Range(.012f, .028f), Random.Range(.45f, .9f));
+                    emit.position = at + SharedRandom.InsideUnitSphere() * spurt.radius * .6f;
+                    emit.velocity = (outward + SharedRandom.InsideUnitSphere() * .35f).normalized * SharedRandom.Range(1.4f, 3.4f) * (.5f + .5f * push);
+                    Drop(SharedRandom.Range(.012f, .028f), SharedRandom.Range(.45f, .9f));
                 }
             }
             if (!spurt.pooled && spurt.age >= PoolDelay)
@@ -186,7 +186,7 @@ internal sealed class GoreFx
     /// </summary>
     public void Splat(Vector3 point, Vector3 normal, float size, int pick = -1)
     {
-        var decal = Take(pick < 0 ? Random.Range(0, int.MaxValue) : pick);
+        var decal = Take(pick < 0 ? SharedRandom.Range(0, int.MaxValue) : pick);
         if (decal == null) return;
         Place(decal, point, normal, size, size, 0f);
     }
@@ -194,7 +194,7 @@ internal sealed class GoreFx
     // A pool that spreads under a stump.
     private void Pool(Vector3 point, Vector3 normal)
     {
-        var decal = Take(Random.Range(0, int.MaxValue));
+        var decal = Take(SharedRandom.Range(0, int.MaxValue));
         if (decal == null) return;
         Place(decal, point, normal, owner.PoolSize * .15f, owner.PoolSize, PoolGrow);
     }
@@ -205,7 +205,7 @@ internal sealed class GoreFx
         const float depth = .5f;
         var projector = decal.projector;
         projector.transform.SetPositionAndRotation(point + normal * depth * .4f,
-            Quaternion.LookRotation(-normal) * Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
+            Quaternion.LookRotation(-normal) * Quaternion.Euler(0f, 0f, SharedRandom.Range(0f, 360f)));
         projector.size = new Vector3(from, from, depth);
         projector.pivot = new Vector3(0f, 0f, depth * .5f);
         projector.fadeFactor = 1f;
@@ -240,16 +240,16 @@ internal sealed class GoreFx
     {
         for (int i = 0; i < count; i++)
         {
-            emit.position = at + Random.insideUnitSphere * .05f;
-            emit.velocity = (direction + Random.insideUnitSphere * .7f).normalized * Random.Range(.4f, 1f) * speed + Vector3.up * Random.Range(0f, 1.5f);
-            Drop(Random.Range(.012f, .03f), Random.Range(.4f, .9f));
+            emit.position = at + SharedRandom.InsideUnitSphere() * .05f;
+            emit.velocity = (direction + SharedRandom.InsideUnitSphere() * .7f).normalized * SharedRandom.Range(.4f, 1f) * speed + Vector3.up * SharedRandom.Range(0f, 1.5f);
+            Drop(SharedRandom.Range(.012f, .03f), SharedRandom.Range(.4f, .9f));
         }
     }
 
     private void Drop(float size, float life)
     {
         var settings = GunFeelSettings.Instance;
-        Color color = settings.bloodColor * Random.Range(.7f, 1.1f);
+        Color color = settings.bloodColor * SharedRandom.Range(.7f, 1.1f);
         color.a = 1f;
         emit.startColor = color;
         emit.startSize = size;

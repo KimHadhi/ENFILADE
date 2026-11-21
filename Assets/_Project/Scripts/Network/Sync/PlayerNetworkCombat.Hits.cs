@@ -9,13 +9,15 @@ public sealed partial class PlayerNetworkCombat
     private void OnHit(DamageHit hit, DamageResult result)
     {
         // A hold taking hold is no wound: friends see no blood on them for it either.
-        if (result == DamageResult.Damaged && !hit.TakesHold) HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded);
+        if (result == DamageResult.Damaged && !hit.TakesHold)
+            HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded, hit.EventSeed);
     }
 
     // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark.
     // With the shooter's penetration factor (ShotPierce), so the copy's round gets as far through as theirs did.
     [Rpc(SendTo.NotMe)]
-    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet, ushort pierce) => weapon.ShowShot(origin, direction, pellet, pierce / 100f);
+    private void ShotRpc(Vector3 origin, Vector3 direction, byte pellet, ushort pierce, uint seed)
+        => weapon.ShowShot(origin, direction, pellet, pierce / 100f, seed);
 
     // This PC's factor on its guns' penetration (a Ghost's 과관통), in hundredths: only this PC knows how far its rounds get
     // through, and friends' PCs trace each shot again to draw it.

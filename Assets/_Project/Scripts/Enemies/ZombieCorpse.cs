@@ -98,6 +98,8 @@ public sealed class ZombieCorpse : MonoBehaviour
     private readonly List<SkinnedMeshRenderer> skins = new List<SkinnedMeshRenderer>();
     private RagdollCorpse doll;
     private Animator animator;
+    // Its human bones by HumanBodyBones, read while it lived (its Animator is off now): where a point sent on it lands.
+    private Transform[] human;
     private PlayerNetworkCorpse runner, sender;
     private CorpsePose pose;
     private Vector3 sinkFrom;
@@ -148,6 +150,7 @@ public sealed class ZombieCorpse : MonoBehaviour
         animator.writeDefaultValuesOnDisable = false;
         animator.enabled = false;
         corpse.animator = animator;
+        corpse.human = human;
         body.GetComponentsInChildren(true, corpse.skins);
         corpse.Begin(doll, hit, simulated, id, runner, velocity, lying != null);
     }
@@ -441,6 +444,27 @@ public sealed class ZombieCorpse : MonoBehaviour
     // Its head bursts where the doll has it now, if gore still has one on this body.
     private bool BurstHead(Vector3 direction)
         => doll != null && doll.TryHeadCenter(out var center) && ZombieGore.BurstCorpseHead(gameObject, center, direction, this);
+
+    /// <summary>The zombie whose corpse lies on this doll here (its network id), for a point sent on it (BodyPoint).</summary>
+    internal static bool IdOf(RagdollCorpse doll, out ulong id)
+    {
+        foreach (var corpse in lying)
+            if (corpse != null && corpse.doll == doll) { id = corpse.id; return true; }
+        id = 0;
+        return false;
+    }
+
+    /// <summary>
+    /// A human bone of the corpse a zombie left here (Root: the body itself), or null: where a point sent on it lands
+    /// (BodyPoint).
+    /// </summary>
+    internal static Transform BoneOf(ulong id, HumanBodyBones bone, bool root)
+    {
+        if (!byId.TryGetValue(id, out var corpse) || corpse == null) return null;
+        if (root) return corpse.transform;
+        int index = (int)bone;
+        return corpse.human != null && index >= 0 && index < corpse.human.Length ? corpse.human[index] : null;
+    }
 
     /// <summary>Another PC shot the head off this corpse: it bursts here too, along the same shot.</summary>
     internal static void TakeHeadShot(ulong id, Vector3 direction)

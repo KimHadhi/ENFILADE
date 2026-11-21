@@ -57,17 +57,25 @@ public readonly struct DamageHit
     /// (EnemyHitMessage). Executions and takedowns are silent without it.
     /// </summary>
     public readonly bool Silent;
+    /// <summary>
+    /// The seed of this hit's look and sound (SharedRandom), the same on every PC: 0 on the PC that decides the hit, where
+    /// EventSeed makes it from this PC's client id and the hit's id; the others get that number with the hit
+    /// (EnemyHitMessage). Presentation only.
+    /// </summary>
+    public readonly uint Seed;
+    /// <summary>The seed every PC shows this hit with (Seed, or this PC's own for a hit it decided).</summary>
+    public uint EventSeed => Seed != 0u ? Seed : SharedRandom.Seed(SharedRandom.LocalClient, (ulong)Id);
     public DamageHit(long id, float amount, DamageKind kind, Vector3 point, Vector3 direction, GameObject source = null,
         bool canBeGuarded = false, float postureDamage = 0f, bool isComboFinisher = true, bool isCritical = false, bool isCounter = false,
         DamageMethod method = DamageMethod.Other, Vector3? origin = null, bool isFatal = false, bool pierced = false,
-        BodyPart part = BodyPart.None, KillMarks marks = KillMarks.None, bool silent = false)
+        BodyPart part = BodyPart.None, KillMarks marks = KillMarks.None, bool silent = false, uint seed = 0u)
     { Id = id; Amount = amount; Kind = kind; Point = point; Direction = direction; Source = source;
         CanBeGuarded = canBeGuarded; PostureDamage = postureDamage; IsComboFinisher = isComboFinisher; IsCritical = isCritical; IsCounter = isCounter;
-        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; Marks = marks; Silent = silent; }
+        Method = method; Origin = origin; IsFatal = isFatal; Pierced = pierced; Part = part; Marks = marks; Silent = silent; Seed = seed; }
 
     /// <summary>The same hit, marked silent.</summary>
     public DamageHit Silenced() => new DamageHit(Id, Amount, Kind, Point, Direction, Source, CanBeGuarded, PostureDamage, IsComboFinisher,
-        IsCritical, IsCounter, Method, Origin, IsFatal, Pierced, Part, Marks, true);
+        IsCritical, IsCounter, Method, Origin, IsFatal, Pierced, Part, Marks, true, EventSeed);
 }
 
 public interface IDamageReceiver { DamageResult ReceiveHit(DamageHit hit); }

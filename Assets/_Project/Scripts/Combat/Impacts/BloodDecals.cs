@@ -99,7 +99,7 @@ public sealed class BloodDecals : MonoBehaviour
         if (normal.sqrMagnitude < 1e-6f) normal = Vector3.up;
         // Projects along its forward, into the surface, its box centred on the point. Turned at random so a run of hits
         // doesn't read as one stamp repeated.
-        var turn = Quaternion.LookRotation(-normal.normalized) * Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+        var turn = Quaternion.LookRotation(-normal.normalized) * Quaternion.Euler(0f, 0f, SharedRandom.Range(0f, 360f));
         var projector = slot.Projector;
         projector.material = material;
         projector.size = new Vector3(size, size, depth);
@@ -123,8 +123,8 @@ public sealed class BloodDecals : MonoBehaviour
         var library = GoreLibrary.Instance;
         int count = library != null && library.splats != null ? library.splats.Length : 0;
         if (count == 0) return null;
-        int pick = Random.Range(0, count);
-        if (count > 1 && pick == lastPicture) pick = (pick + 1 + Random.Range(0, count - 1)) % count;
+        int pick = SharedRandom.Range(0, count);
+        if (count > 1 && pick == lastPicture) pick = (pick + 1 + SharedRandom.Range(0, count - 1)) % count;
         lastPicture = pick;
         return library.Splat(pick);
     }

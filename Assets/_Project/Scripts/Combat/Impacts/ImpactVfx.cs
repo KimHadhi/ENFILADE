@@ -107,11 +107,11 @@ public sealed class ImpactVfx : MonoBehaviour
         var emit = new ParticleSystem.EmitParams();
         for (int i = 0; i < 14; i++)
         {
-            emit.position = point - direction * .04f + Random.insideUnitSphere * .02f;
-            emit.velocity = Cone(-direction, 70f) * Random.Range(1.5f, 5f);
-            emit.startSize = Random.Range(.008f, .018f);
-            emit.startLifetime = Random.Range(.1f, .22f);
-            emit.startColor = Color.Lerp(color, Color.white, Random.Range(0f, .5f));
+            emit.position = point - direction * .04f + SharedRandom.InsideUnitSphere() * .02f;
+            emit.velocity = Cone(-direction, 70f) * SharedRandom.Range(1.5f, 5f);
+            emit.startSize = SharedRandom.Range(.008f, .018f);
+            emit.startLifetime = SharedRandom.Range(.1f, .22f);
+            emit.startColor = Color.Lerp(color, Color.white, SharedRandom.Range(0f, .5f));
             shieldSparks.Emit(emit, 1);
         }
         emit.position = point - direction * .05f;
@@ -131,11 +131,11 @@ public sealed class ImpactVfx : MonoBehaviour
         var emit = new ParticleSystem.EmitParams();
         for (int i = 0; i < settings.bodyDroplets; i++)
         {
-            emit.position = point + Random.insideUnitSphere * .03f;
-            emit.velocity = Cone(direction, 22f) * Random.Range(1.8f, 5.2f) + Vector3.up * Random.Range(0f, 1f);
-            emit.startSize = Random.Range(.012f, .034f);
-            emit.startLifetime = Random.Range(.35f, .75f);
-            emit.startColor = Shade(settings.bloodColor, Random.Range(.75f, 1.15f));
+            emit.position = point + SharedRandom.InsideUnitSphere() * .03f;
+            emit.velocity = Cone(direction, 22f) * SharedRandom.Range(1.8f, 5.2f) + Vector3.up * SharedRandom.Range(0f, 1f);
+            emit.startSize = SharedRandom.Range(.012f, .034f);
+            emit.startLifetime = SharedRandom.Range(.35f, .75f);
+            emit.startColor = Shade(settings.bloodColor, SharedRandom.Range(.75f, 1.15f));
             droplets.Emit(emit, 1);
         }
         Splat(point + direction * .05f, direction, 3.5f, target != null ? target.transform : null, .45f);
@@ -155,26 +155,26 @@ public sealed class ImpactVfx : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             // About two thirds leave through the exit side; the rest splash back toward the shooter.
-            bool exit = !bullet || Random.value < .68f;
+            bool exit = !bullet || SharedRandom.Value() < .68f;
             Vector3 axis = exit ? direction : -direction;
-            Vector3 velocity = Cone(axis, bullet ? (exit ? 28f : 40f) : 75f) * Random.Range(1.2f, 4.6f) * force + Vector3.up * Random.Range(0f, 1.3f);
-            emit.position = point + Random.insideUnitSphere * .03f;
+            Vector3 velocity = Cone(axis, bullet ? (exit ? 28f : 40f) : 75f) * SharedRandom.Range(1.2f, 4.6f) * force + Vector3.up * SharedRandom.Range(0f, 1.3f);
+            emit.position = point + SharedRandom.InsideUnitSphere() * .03f;
             emit.velocity = velocity;
-            emit.startSize = Random.Range(.012f, .034f) * (critical ? 1.3f : 1f);
-            emit.startLifetime = Random.Range(.35f, .75f);
-            emit.startColor = Shade(settings.bloodColor, Random.Range(.75f, 1.15f));
+            emit.startSize = SharedRandom.Range(.012f, .034f) * (critical ? 1.3f : 1f);
+            emit.startLifetime = SharedRandom.Range(.35f, .75f);
+            emit.startColor = Shade(settings.bloodColor, SharedRandom.Range(.75f, 1.15f));
             droplets.Emit(emit, 1);
         }
         int puffs = splashed ? 0 : kill ? 5 : critical ? 4 : 2;
         for (int i = 0; i < puffs; i++)
         {
-            emit.position = point + Random.insideUnitSphere * .04f;
-            emit.velocity = (direction * Random.Range(.2f, 1.2f) + Random.insideUnitSphere * .5f) * force;
-            emit.startSize = Random.Range(.14f, .26f) * (critical ? 1.35f : 1f);
-            emit.startLifetime = Random.Range(.22f, .42f);
+            emit.position = point + SharedRandom.InsideUnitSphere() * .04f;
+            emit.velocity = (direction * SharedRandom.Range(.2f, 1.2f) + SharedRandom.InsideUnitSphere() * .5f) * force;
+            emit.startSize = SharedRandom.Range(.14f, .26f) * (critical ? 1.35f : 1f);
+            emit.startLifetime = SharedRandom.Range(.22f, .42f);
             Color color = Shade(settings.bloodColor, 1.1f); color.a = .55f;
             emit.startColor = color;
-            emit.rotation = Random.Range(0f, 360f);
+            emit.rotation = SharedRandom.Range(0f, 360f);
             mist.Emit(emit, 1);
         }
         // Splats: behind the target along the shot, and on the floor below the wound.
@@ -198,7 +198,7 @@ public sealed class ImpactVfx : MonoBehaviour
         }
         if (!found) return;
         // Painted into the surface, not hung off it as a quad: see BloodDecals for why the quads flickered.
-        BloodDecals.Splat(chosen.point, chosen.normal, size * Random.Range(.8f, 1.2f));
+        BloodDecals.Splat(chosen.point, chosen.normal, size * SharedRandom.Range(.8f, 1.2f));
     }
 
     private void Puff(Vector3 point, float scale)
@@ -207,21 +207,21 @@ public sealed class ImpactVfx : MonoBehaviour
         int count = Mathf.RoundToInt(6 * Mathf.Clamp(scale, .3f, 2f));
         for (int i = 0; i < count; i++)
         {
-            Vector2 ring = Random.insideUnitCircle.normalized;
+            Vector2 ring = SharedRandom.InsideUnitCircle().normalized;
             emit.position = point + new Vector3(ring.x, .05f, ring.y) * .25f * scale;
-            emit.velocity = new Vector3(ring.x, .25f, ring.y) * Random.Range(.8f, 1.8f) * scale;
-            emit.startSize = Random.Range(.25f, .45f) * scale;
-            emit.startLifetime = Random.Range(.6f, 1f);
+            emit.velocity = new Vector3(ring.x, .25f, ring.y) * SharedRandom.Range(.8f, 1.8f) * scale;
+            emit.startSize = SharedRandom.Range(.25f, .45f) * scale;
+            emit.startLifetime = SharedRandom.Range(.6f, 1f);
             emit.startColor = new Color(.62f, .58f, .52f, .35f);
-            emit.rotation = Random.Range(0f, 360f);
+            emit.rotation = SharedRandom.Range(0f, 360f);
             dust.Emit(emit, 1);
         }
     }
 
     private static Vector3 Cone(Vector3 axis, float degrees)
     {
-        Vector3 random = Random.onUnitSphere;
-        return Vector3.Slerp(axis, random, Random.Range(0f, degrees / 180f)).normalized;
+        Vector3 random = SharedRandom.OnUnitSphere();
+        return Vector3.Slerp(axis, random, SharedRandom.Range(0f, degrees / 180f)).normalized;
     }
 
     private static Color Shade(Color color, float value)

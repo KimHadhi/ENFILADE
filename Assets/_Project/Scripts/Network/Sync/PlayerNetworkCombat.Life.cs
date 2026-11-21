@@ -5,8 +5,14 @@ using UnityEngine;
 public sealed partial class PlayerNetworkCombat
 {
     // shielded: their shield took all of it, so others see its sparks and hear its crack, not blood (Apex Legends' shields).
+    // Seed: the hurt's look and sound, drawn the same on every PC (SharedRandom).
     [Rpc(SendTo.NotMe)]
-    private void HurtRpc(Vector3 point, Vector3 direction, bool fall, bool shielded)
+    private void HurtRpc(Vector3 point, Vector3 direction, bool fall, bool shielded, uint seed)
+    {
+        using (SharedRandom.Scope(seed)) ShowHurt(point, direction, fall, shielded);
+    }
+
+    private void ShowHurt(Vector3 point, Vector3 direction, bool fall, bool shielded)
     {
         if (shielded)
         {

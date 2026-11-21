@@ -18,7 +18,7 @@ public struct EnemyHitMessage : INetworkSerializeByMemcpy
 
     private Vector3 point, direction, origin;
     private float amount, postureDamage, taken;
-    private uint attacker;
+    private uint attacker, seed;
     private byte kind, method, part;
     private Marks marks;
 
@@ -55,12 +55,14 @@ public struct EnemyHitMessage : INetworkSerializeByMemcpy
         if (hit.Silent) marks |= Marks.Silent;
         // What the hit already carried (a friend's, relayed by the host) and, for this PC's own player, their state now.
         attacker = (uint)(hit.Marks | KillConditions.Attacker(hit.Source));
+        // Its look's seed, so every PC shows it the same (SharedRandom).
+        seed = hit.EventSeed;
     }
 
     public DamageHit ToHit(GameObject source) => new DamageHit(DamageHit.NewAttackId(), amount, (DamageKind)kind, point, direction, source,
         Has(Marks.Guardable), postureDamage, Has(Marks.Finisher), Has(Marks.Critical), Has(Marks.Counter), (DamageMethod)method,
         Has(Marks.HasOrigin) ? origin : (Vector3?)null, pierced: Has(Marks.Pierced), part: (BodyPart)part, marks: (KillMarks)attacker,
-        silent: Has(Marks.Silent));
+        silent: Has(Marks.Silent), seed: seed);
 
     private bool Has(Marks mark) => (marks & mark) != 0;
 }

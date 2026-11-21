@@ -67,9 +67,9 @@ public sealed class BulletHoles : MonoBehaviour
         var hole = holes[slot];
         hole.material = material;
         vary = Mathf.Clamp(vary, 0f, .9f);
-        float width = size * (1f + Random.Range(-vary, vary)), length = width;
+        float width = size * (1f + SharedRandom.Range(-vary, vary)), length = width;
         // Projects along its forward, into the wall. Turned at random so a burst doesn't read as one stamp repeated.
-        var turn = Quaternion.LookRotation(-normal) * Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+        var turn = Quaternion.LookRotation(-normal) * Quaternion.Euler(0f, 0f, SharedRandom.Range(0f, 360f));
         if (stretchMost > 1f && incoming.sqrMagnitude > 1e-8f)
         {
             incoming.Normalize();
@@ -82,7 +82,7 @@ public sealed class BulletHoles : MonoBehaviour
                 length = width * stretch;
                 // Its long side lies along the bullet's way, either end first so one picture gives two marks, and it is
                 // moved on by half of what it grew so that it starts where the bullet struck.
-                turn = Quaternion.LookRotation(-normal, Random.value < .5f ? along : -along);
+                turn = Quaternion.LookRotation(-normal, SharedRandom.Value() < .5f ? along : -along);
                 point += along * ((length - width) * .5f);
             }
         }

@@ -116,7 +116,7 @@ public sealed class ParryVfx : MonoBehaviour
         if (!Application.isPlaying) return;
         var self = Get();
         self.EmitFlare(burst);
-        self.shows.Add(new Show { Burst = burst, Tilt = Random.Range(-SlashTilt, SlashTilt) });
+        self.shows.Add(new Show { Burst = burst, Tilt = SharedRandom.Range(-SlashTilt, SlashTilt) });
     }
 
     private void Update()
@@ -177,7 +177,7 @@ public sealed class ParryVfx : MonoBehaviour
         var emit = new ParticleSystem.EmitParams
         {
             position = burst.Point, velocity = Vector3.zero, startSize = 1.5f * burst.Scale, startLifetime = .1f,
-            startColor = new Color(Pale.r, Pale.g, Pale.b, burst.FlareBrightness), rotation = Random.Range(-4f, 4f)
+            startColor = new Color(Pale.r, Pale.g, Pale.b, burst.FlareBrightness), rotation = SharedRandom.Range(-4f, 4f)
         };
         flare.Emit(emit, 1);
         if (!burst.Break) return;
@@ -190,13 +190,13 @@ public sealed class ParryVfx : MonoBehaviour
         var emit = new ParticleSystem.EmitParams();
         for (int i = 0; i < burst.Sparks; i++)
         {
-            emit.position = burst.Point + Random.insideUnitSphere * .012f;
+            emit.position = burst.Point + SharedRandom.InsideUnitSphere() * .012f;
             // Most fly with the sweep; a few leave the fan so it never reads as a neat cone.
             float scatter = i % 4 == 0 ? .75f : .32f;
-            emit.velocity = Vector3.Slerp(burst.Spray, Random.onUnitSphere, Random.Range(0f, scatter)).normalized * Random.Range(1.6f, 7f);
-            emit.startSize = Random.Range(.005f, .012f);
-            emit.startLifetime = Random.Range(.14f, .36f);
-            emit.startColor = Random.value < .3f ? Pale : Gold;
+            emit.velocity = Vector3.Slerp(burst.Spray, SharedRandom.OnUnitSphere(), SharedRandom.Range(0f, scatter)).normalized * SharedRandom.Range(1.6f, 7f);
+            emit.startSize = SharedRandom.Range(.005f, .012f);
+            emit.startLifetime = SharedRandom.Range(.14f, .36f);
+            emit.startColor = SharedRandom.Value() < .3f ? Pale : Gold;
             sparks.Emit(emit, 1);
         }
     }
@@ -206,10 +206,10 @@ public sealed class ParryVfx : MonoBehaviour
         var emit = new ParticleSystem.EmitParams();
         for (int i = 0; i < burst.Embers; i++)
         {
-            emit.position = burst.Point + (burst.Right * Random.Range(-.16f, .16f) + burst.Up * Random.Range(-.1f, .12f)) * burst.Scale;
-            emit.velocity = burst.Up * Random.Range(.08f, .4f) + burst.Spray * Random.Range(.05f, .6f) + Random.insideUnitSphere * .16f;
-            emit.startSize = Random.Range(.005f, .012f);
-            emit.startLifetime = Random.Range(.6f, 1.25f);
+            emit.position = burst.Point + (burst.Right * SharedRandom.Range(-.16f, .16f) + burst.Up * SharedRandom.Range(-.1f, .12f)) * burst.Scale;
+            emit.velocity = burst.Up * SharedRandom.Range(.08f, .4f) + burst.Spray * SharedRandom.Range(.05f, .6f) + SharedRandom.InsideUnitSphere() * .16f;
+            emit.startSize = SharedRandom.Range(.005f, .012f);
+            emit.startLifetime = SharedRandom.Range(.6f, 1.25f);
             emit.startColor = burst.Break && i % 2 == 0 ? Crimson : Gold;
             embers.Emit(emit, 1);
         }

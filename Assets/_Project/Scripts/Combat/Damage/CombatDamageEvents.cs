@@ -45,11 +45,15 @@ public static class CombatDamageEvents
         var handlers = Damaged;
         if (handlers == null) return;
         var report = new CombatDamageReport(target, hit, healthBefore, healthAfter, maximumHealth, scale);
-        // A presentation failure must never interrupt damage or the death callback that follows.
-        foreach (Action<CombatDamageReport> handler in handlers.GetInvocationList())
+        // Everything this hit shows and sounds draws from its own seed, so every PC shows it the same (SharedRandom).
+        using (SharedRandom.Scope(hit.EventSeed))
         {
-            try { handler(report); }
-            catch (Exception exception) { Debug.LogException(exception, target); }
+            // A presentation failure must never interrupt damage or the death callback that follows.
+            foreach (Action<CombatDamageReport> handler in handlers.GetInvocationList())
+            {
+                try { handler(report); }
+                catch (Exception exception) { Debug.LogException(exception, target); }
+            }
         }
     }
 

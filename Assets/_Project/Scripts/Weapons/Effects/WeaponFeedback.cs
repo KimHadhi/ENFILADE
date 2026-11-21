@@ -119,7 +119,7 @@ public sealed class WeaponFeedback : MonoBehaviour
         // A gun with a draw sound of its own plays it (the Desperado's Fatebringer); WeaponController has it equipped by now.
         var own = weapon != null && weapon.EquippedData != null ? weapon.EquippedData.DrawSounds : null;
         if (settings != null && settings.gunSounds)
-            Sound(FeelSound.Draw, Own(own, null), settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, gun);
+            Sound(FeelSound.Draw, Own(own, null), settings.mechanicalVolume, SharedRandom.Range(.98f, 1.02f), MechanicalReach, gun);
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         var settings = GunFeelSettings.Instance;
         if (sound == null || settings == null || !settings.gunSounds) return;
-        Sound(FeelSound.Bolt, new[] { sound }, settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, Gun);
+        Sound(FeelSound.Bolt, new[] { sound }, settings.mechanicalVolume, SharedRandom.Range(.98f, 1.02f), MechanicalReach, Gun);
     }
 
     // A gun's own clips for a sound, else the shared ones (null: the gun profile's cue).
@@ -148,7 +148,7 @@ public sealed class WeaponFeedback : MonoBehaviour
 
         if (settings.gunSounds)
         {
-            float pitch = 1f + Random.Range(-1f, 1f) * settings.gunshotPitchJitter;
+            float pitch = 1f + SharedRandom.Range(-1f, 1f) * settings.gunshotPitchJitter;
             // Which clips, how loud and how high is the gun's (WeaponData.ShotSounds): its open shot, the suppressed one of
             // a suppressor put on, or the only shot of a gun built with its suppressor. A suppressed shot is heard nearer
             // and rings the room far less (GunReverb), whichever of them it is.
@@ -170,8 +170,8 @@ public sealed class WeaponFeedback : MonoBehaviour
             float loose = 1f - ads;
             // The lift that springs back is only a flinch on top of the recoil that stays (PlayerLook); down the sights it is
             // half again, or the view bounced up and down with every shot.
-            var kick = new Vector3(p.x * Random.Range(.85f, 1.1f) * Mathf.Lerp(1f, .5f, ads), p.y * Random.Range(-1f, 1f) * loose,
-                p.z * Random.Range(.55f, 1f) * (Random.value < .5f ? -1f : 1f) * loose);
+            var kick = new Vector3(p.x * SharedRandom.Range(.85f, 1.1f) * Mathf.Lerp(1f, .5f, ads), p.y * SharedRandom.Range(-1f, 1f) * loose,
+                p.z * SharedRandom.Range(.55f, 1f) * (SharedRandom.Value() < .5f ? -1f : 1f) * loose);
             punch.Punch(kick * scale, data.ViewPunchFov * scale, data.ShakeTrauma * scale * loose);
         }
         if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
@@ -217,7 +217,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     private void OnDryFire()
     {
         var settings = GunFeelSettings.Instance;
-        if (settings.gunSounds) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume, Random.Range(.96f, 1.04f), Gun);
+        if (settings.gunSounds) FeelAudio.Play(FeelSound.DryFire, settings.dryFireSounds, settings.mechanicalVolume, SharedRandom.Range(.96f, 1.04f), Gun);
         if (crosshair == null) crosshair = DynamicCrosshairView.FindHud();
         crosshair.OrNull()?.Kick(2f);
     }
@@ -233,7 +233,7 @@ public sealed class WeaponFeedback : MonoBehaviour
             trackingReload = false;
             if (settings.gunSounds)
                 Sound(FeelSound.MagOut, empty ? data.ReloadStartEmptySounds : data.ReloadStartSounds, settings.mechanicalVolume,
-                    Random.Range(.98f, 1.02f), MechanicalReach, Gun);
+                    SharedRandom.Range(.98f, 1.02f), MechanicalReach, Gun);
             return;
         }
         // A reload going on from where a cut-short one got to (WeaponRuntime.ReloadStartShare) made its earlier sounds then.
@@ -245,7 +245,7 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (whole != null && whole.Length > 0 && from <= 0f)
         {
             trackingReload = false;
-            if (settings.gunSounds) Sound(FeelSound.MagOut, whole, settings.mechanicalVolume, Random.Range(.99f, 1.01f), MechanicalReach, Gun);
+            if (settings.gunSounds) Sound(FeelSound.MagOut, whole, settings.mechanicalVolume, SharedRandom.Range(.99f, 1.01f), MechanicalReach, Gun);
             return;
         }
         trackingReload = true; magOutPlayed = magInPlayed = boltBackPlayed = boltPlayed = false; emptyReload = empty;
@@ -267,7 +267,7 @@ public sealed class WeaponFeedback : MonoBehaviour
         magOutPlayed = true;
         magInPlayed = from >= untimed.MagIn;
         if (from <= 0f && settings.gunSounds)
-            Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+            Sound(FeelSound.MagOut, settings.magOutSounds, settings.mechanicalVolume, SharedRandom.Range(.97f, 1.03f), MechanicalReach, Gun);
     }
 
     // A timed sound at this share of the reload had its moment before the reload went on from <from>.
@@ -303,9 +303,9 @@ public sealed class WeaponFeedback : MonoBehaviour
         var data = weapon != null ? weapon.EquippedData : null;
         if (data == null || !settings.gunSounds) return;
         if (step == WeaponRuntime.ReloadStep.Shell)
-            Sound(FeelSound.MagIn, data.ShellInsertSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+            Sound(FeelSound.MagIn, data.ShellInsertSounds, settings.mechanicalVolume, SharedRandom.Range(.97f, 1.03f), MechanicalReach, Gun);
         else if (step == WeaponRuntime.ReloadStep.End)
-            Sound(FeelSound.Bolt, data.ReloadEndSounds, settings.mechanicalVolume, Random.Range(.98f, 1.02f), MechanicalReach, Gun);
+            Sound(FeelSound.Bolt, data.ReloadEndSounds, settings.mechanicalVolume, SharedRandom.Range(.98f, 1.02f), MechanicalReach, Gun);
     }
 
     private void UpdateReload()
@@ -331,12 +331,12 @@ public sealed class WeaponFeedback : MonoBehaviour
         if (!magInPlayed && progress >= untimed.MagIn)
         {
             magInPlayed = true;
-            if (settings.gunSounds) Sound(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+            if (settings.gunSounds) Sound(FeelSound.MagIn, settings.magInSounds, settings.mechanicalVolume, SharedRandom.Range(.97f, 1.03f), MechanicalReach, Gun);
         }
         if (emptyReload && !boltPlayed && untimed.Loaded > untimed.MagIn && progress >= untimed.Loaded)
         {
             boltPlayed = true;
-            if (settings.gunSounds) Sound(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+            if (settings.gunSounds) Sound(FeelSound.Bolt, settings.boltSounds, settings.mechanicalVolume, SharedRandom.Range(.97f, 1.03f), MechanicalReach, Gun);
         }
     }
 
@@ -346,7 +346,7 @@ public sealed class WeaponFeedback : MonoBehaviour
     {
         if (played || share < 0f || progress < share - lead / duration) return;
         played = true;
-        if (settings.gunSounds) Sound(sound, clips, settings.mechanicalVolume, Random.Range(.97f, 1.03f), MechanicalReach, Gun);
+        if (settings.gunSounds) Sound(sound, clips, settings.mechanicalVolume, SharedRandom.Range(.97f, 1.03f), MechanicalReach, Gun);
     }
 
     private void Update()
@@ -371,9 +371,9 @@ public sealed class WeaponFeedback : MonoBehaviour
         Vector3 port = muzzle.position - forward * .26f + right * .028f + up * .012f;
         casing.transform.SetPositionAndRotation(port, Quaternion.LookRotation(right, up));
         casing.transform.localScale = Vector3.one;
-        casing.velocity = right * Random.Range(1.7f, 2.5f) + up * Random.Range(1.1f, 1.8f) - forward * Random.Range(.1f, .5f)
+        casing.velocity = right * SharedRandom.Range(1.7f, 2.5f) + up * SharedRandom.Range(1.1f, 1.8f) - forward * SharedRandom.Range(.1f, .5f)
             + (movement != null ? movement.ActualVelocity : Vector3.zero);
-        casing.spin = new Vector3(Random.Range(-900f, 900f), Random.Range(-1500f, -600f), Random.Range(-300f, 300f));
+        casing.spin = new Vector3(SharedRandom.Range(-900f, 900f), SharedRandom.Range(-1500f, -600f), SharedRandom.Range(-300f, 300f));
         casing.age = casing.rest = 0f; casing.bounces = 0;
         casing.active = true; casing.resting = false;
         casing.transform.gameObject.SetActive(true);

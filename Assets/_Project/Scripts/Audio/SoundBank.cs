@@ -24,7 +24,9 @@ public sealed class SoundBank : ScriptableObject
     {
         public readonly float Volume, PitchMin, PitchMax;
         public Settings(float volume, float pitchMin, float pitchMax) { Volume = volume; PitchMin = pitchMin; PitchMax = pitchMax; }
-        public float RandomPitch() => UnityEngine.Random.Range(PitchMin, PitchMax);
+        /// <summary>A pitch in the row's range: from the event's seed inside one (SharedRandom), the caller's own place.</summary>
+        public float RandomPitch([System.Runtime.CompilerServices.CallerFilePath] string file = "",
+            [System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => SharedRandom.Range(PitchMin, PitchMax, file, line);
     }
 
     [SerializeField] private string id;
@@ -67,10 +69,26 @@ public sealed class SoundBank : ScriptableObject
     {
         if (!TryGet(key, out var clips)) return null;
         lastPick.TryGetValue(key, out int last);
+        // Inside an event every PC picks the same, from the event's seed, a stream of the key's own (SharedRandom); this
+        // PC's memory of its last pick is its own, so it is left out there.
+        if (SharedRandom.InScope)
+        {
+            int picked = SharedRandom.Range(0, clips.Length, "SoundBank.Pick", KeyPlace(key));
+            lastPick[key] = picked;
+            return clips[picked];
+        }
         int index = UnityEngine.Random.Range(0, clips.Length);
         if (clips.Length > 1 && index == last) index = (index + 1 + UnityEngine.Random.Range(0, clips.Length - 1)) % clips.Length;
         lastPick[key] = index;
         return clips[index];
+    }
+
+    // A key's own stream inside an event (SharedRandom): its letters, hashed the same on every PC.
+    private static int KeyPlace(string key)
+    {
+        uint hash = 2166136261u;
+        if (key != null) foreach (char c in key) { hash ^= c; hash *= 16777619u; }
+        return (int)hash;
     }
 
     /// <summary>Volume and pitch range from Sounds.csv; 1, 1–1 when the key has no row.</summary>

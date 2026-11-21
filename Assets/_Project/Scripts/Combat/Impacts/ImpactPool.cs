@@ -34,7 +34,7 @@ public sealed class ImpactPool : MonoBehaviour
         public Material PickHole()
         {
             if (Holes.Length == 0) return null;
-            int pick = UnityEngine.Random.Range(0, Holes.Length);
+            int pick = SharedRandom.Range(0, Holes.Length);
             if (pick == LastHole && Holes.Length > 1) pick = (pick + 1) % Holes.Length;
             LastHole = pick;
             return Holes[pick];
@@ -262,7 +262,7 @@ public sealed class ImpactPool : MonoBehaviour
     // One of the presets, never the one played last when there is a choice, at the row's scale times `scale`.
     private void Spawn(Row row, List<Preset> presets, ref int last, Vector3 point, Vector3 up, float scale)
     {
-        int pick = UnityEngine.Random.Range(0, presets.Count);
+        int pick = SharedRandom.Range(0, presets.Count);
         if (pick == last) pick = (pick + 1) % presets.Count;
         last = pick;
         var preset = presets[pick];

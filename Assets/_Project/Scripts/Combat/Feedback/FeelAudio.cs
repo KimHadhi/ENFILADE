@@ -333,6 +333,19 @@ public sealed class FeelAudio : MonoBehaviour
     {
         AudioClip[] pool = HasAny(overrides) ? overrides : Synthesized(sound);
         if (pool == null) return null;
+        // Inside an event every PC picks the same, from the event's seed, a stream of the sound's own (SharedRandom).
+        if (SharedRandom.InScope)
+        {
+            int start = SharedRandom.Range(0, pool.Length, "FeelAudio.Pick", (int)sound);
+            for (int i = 0; i < pool.Length; i++)
+            {
+                var clip = pool[(start + i) % pool.Length];
+                if (clip == null) continue;
+                previous[sound] = clip;
+                return clip;
+            }
+            return null;
+        }
         previous.TryGetValue(sound, out var last);
         AudioClip chosen = null; int candidates = 0;
         foreach (var clip in pool)

@@ -165,7 +165,7 @@ public sealed class CombatHitAudio : MonoBehaviour
         if (!item.spatial)
         {
             var source = flat.Take();
-            source.pitch = 1f + Random.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
+            source.pitch = 1f + SharedRandom.Range(-settings.hitPitchVariance, settings.hitPitchVariance);
             source.PlayOneShot(clip, volume);
             return;
         }
@@ -221,7 +221,7 @@ public sealed class CombatHitAudio : MonoBehaviour
         AudioClip chosen = fallback;
         if (alternatives > 0)
         {
-            int choice = Random.Range(0, alternatives);
+            int choice = SharedRandom.Range(0, alternatives);
             foreach (var clip in clips)
                 if (clip != null && clip != last && choice-- == 0) { chosen = clip; break; }
         }

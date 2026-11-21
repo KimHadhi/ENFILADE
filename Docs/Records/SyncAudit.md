@@ -28,6 +28,12 @@
 
 물리로 굴러가는 조각(잘린 팔다리, 던진 돌, 던진 칼이 떨어진 뒤, 바리케이드 판자)은 PropNet에 올리면 된다(정한 PC가 굴리고 나머지는 따라간다).
 
+## 진행
+
+사용자(2026-11-21): 두 규칙 먼저, 그다음 1-20 차례로(16-20은 코드로 먼저 확인), 마지막으로 NetworkTransform 압축.
+
+- **0.9.264 두 규칙**: 규칙 2는 [SharedRandom](../../Assets/_Project/Scripts/Core/Common/SharedRandom.cs). 사건 하나(총 한 발 `WeaponShot.Seed`, 명중 하나 `DamageHit.EventSeed`, 플레이어 피격 `HurtRpc`)가 씨앗 하나(4바이트)를 지니고 정한 PC가 보낸다(`ShotRpc`, `EnemyHitMessage`). 모든 PC가 그 사건의 모습·소리를 그 씨앗의 범위(`Scope`) 안에서 그리고, 그 안의 뽑기는 코드의 자리(파일 이름과 줄)마다 제 흐름이라 한 PC만 하는 뽑기(쏜 사람의 카메라 반동)가 다른 뽑기를 밀지 않는다. 효과 파일 12개의 뽑기 133곳(ImpactVfx, GoreFx, GoreGibs, WeaponFeedback, ParryVfx, BashImpact, KnifeHitFx, BulletHoles, BloodDecals, ImpactPool, CombatHitAudio, CorpseTopple)과 소리 고르기 두 곳(SoundBank.Pick, FeelAudio.Pick: 사건 안에서는 소리마다 제 흐름, 이 PC만의 "지난번 것 피하기"는 빠진다)을 바꿨다. 범위 밖(매 프레임의 흔들림 같은 것)은 전처럼 `UnityEngine.Random`. 규칙 1의 도구는 [BodyPoint](../../Assets/_Project/Scripts/Network/Sync/BodyPoint.cs): 몸 위의 점을 그 몸(네트워크 번호, 시체는 좀비의 번호)의 사람 뼈 기준 자리·면 방향(half float)으로 보내고 각 PC가 제 사본의 그 뼈에서 세계 자리로 되돌린다. 1·2번에서 쓴다.
+
 ## 순위표 (보이는 정도 순)
 
 | # | 무엇이 다른가 | 지금 | 근거 | 고치는 법 |

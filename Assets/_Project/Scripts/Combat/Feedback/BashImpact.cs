@@ -104,7 +104,7 @@ public sealed class BashImpact : MonoBehaviour
         var emit = new ParticleSystem.EmitParams
         {
             position = point, velocity = Vector3.zero, startSize = .5f * size, startLifetime = .09f,
-            startColor = new Color(Hot, Hot, Hot, .9f), rotation = Random.Range(0f, 360f)
+            startColor = new Color(Hot, Hot, Hot, .9f), rotation = SharedRandom.Range(0f, 360f)
         };
         flash.Emit(emit, 1);
         emit.startSize = 1.25f * size; emit.startLifetime = .16f; emit.startColor = new Color(Hot, Hot, Hot, .85f);
@@ -113,12 +113,12 @@ public sealed class BashImpact : MonoBehaviour
         int count = Mathf.RoundToInt(10 * size);
         for (int i = 0; i < count; i++)
         {
-            spark.position = point + Random.insideUnitSphere * .03f;
+            spark.position = point + SharedRandom.InsideUnitSphere() * .03f;
             // Most fly on with the blow; some burst out every way, so it reads as a shock rather than a spray.
-            Vector3 way = i % 3 == 0 ? Random.onUnitSphere : Vector3.Slerp(along, Random.onUnitSphere, Random.Range(.15f, .55f)).normalized;
-            spark.velocity = way * Random.Range(3.5f, 9f) * Mathf.Sqrt(size);
-            spark.startSize = Random.Range(.012f, .022f) * size;
-            spark.startLifetime = Random.Range(.07f, .15f);
+            Vector3 way = i % 3 == 0 ? SharedRandom.OnUnitSphere() : Vector3.Slerp(along, SharedRandom.OnUnitSphere(), SharedRandom.Range(.15f, .55f)).normalized;
+            spark.velocity = way * SharedRandom.Range(3.5f, 9f) * Mathf.Sqrt(size);
+            spark.startSize = SharedRandom.Range(.012f, .022f) * size;
+            spark.startLifetime = SharedRandom.Range(.07f, .15f);
             spark.startColor = i % 4 == 0 ? new Color(Hot, Hot * .85f, Hot * .6f, 1f) : new Color(Pale.r * Hot, Pale.g * Hot, Pale.b * Hot, 1f);
             streaks.Emit(spark, 1);
         }
@@ -128,11 +128,11 @@ public sealed class BashImpact : MonoBehaviour
             var puff = new ParticleSystem.EmitParams();
             for (int i = 0; i < 5; i++)
             {
-                Vector3 flat = Random.insideUnitCircle;
+                Vector3 flat = SharedRandom.InsideUnitCircle();
                 puff.position = floor.point + new Vector3(flat.x, .05f, flat.y) * .25f * size;
                 puff.velocity = (new Vector3(flat.x, .4f, flat.y) * 1.2f + Vector3.ProjectOnPlane(along, Vector3.up) * .8f) * size;
-                puff.startSize = Random.Range(.25f, .4f) * size;
-                puff.startLifetime = Random.Range(.35f, .55f);
+                puff.startSize = SharedRandom.Range(.25f, .4f) * size;
+                puff.startLifetime = SharedRandom.Range(.35f, .55f);
                 puff.startColor = Dust;
                 dust.Emit(puff, 1);
             }
@@ -140,6 +140,6 @@ public sealed class BashImpact : MonoBehaviour
         if (by == null || !by.IsLocal || by.IsNetworkDriven || knockFrame == Time.frameCount) return;
         knockFrame = Time.frameCount;
         var view = by.GetComponentInChildren<Camera>();
-        CameraViewPunch.For(view).OrNull()?.ImpactPunch(new Vector3(-1.1f * size, Random.Range(-.8f, .8f), Random.Range(-1.4f, 1.4f)), -1.2f * size, .06f * size);
+        CameraViewPunch.For(view).OrNull()?.ImpactPunch(new Vector3(-1.1f * size, SharedRandom.Range(-.8f, .8f), SharedRandom.Range(-1.4f, 1.4f)), -1.2f * size, .06f * size);
     }
 }

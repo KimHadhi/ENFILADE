@@ -112,6 +112,23 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
         return index >= 0 ? PartOfShape(index) : BodyPart.None;
     }
 
+    /// <summary>
+    /// The human bone the part of one of its shapes turns, and that real bone: a hit on a corpse is sent as a point on
+    /// that bone (BodyPoint), so every PC puts it on its own copy of the body.
+    /// </summary>
+    public bool BoneOf(Collider shape, out HumanBodyBones id, out Transform real)
+    {
+        int index = shape != null ? shapes.IndexOf(shape) : -1;
+        int part = index >= 0 ? parts.IndexOf(shapeParts[index]) : -1;
+        if (part < 0 || part >= boneIds.Count || part >= bones.Count || bones[part] == null)
+        {
+            id = HumanBodyBones.LastBone; real = null;
+            return false;
+        }
+        id = boneIds[part]; real = bones[part];
+        return true;
+    }
+
     /// <summary>The middle of its head where the doll has it now (the skull's shape), for what befalls a corpse's head.</summary>
     public bool TryHeadCenter(out Vector3 center)
     {
@@ -428,7 +445,8 @@ public sealed class RagdollCorpse : MonoBehaviour, IDamageReceiver
 
     DamageResult IDamageReceiver.ReceiveHit(DamageHit hit)
     {
-        Struck?.Invoke(hit);
+        // What the hit shows on a body draws from its seed, as on a living one (SharedRandom).
+        using (SharedRandom.Scope(hit.EventSeed)) Struck?.Invoke(hit);
         return DamageResult.Ignored;
     }
 

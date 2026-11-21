@@ -84,7 +84,7 @@ public sealed class KnifeHitFx : MonoBehaviour
         // Across the blow, leaning a little: the cut a blade leaves, not the line it came in on.
         Vector3 across = Vector3.Cross(Vector3.up, direction);
         if (across.sqrMagnitude < 1e-6f) across = Vector3.right;
-        across = Quaternion.AngleAxis(Random.Range(-Tilt, Tilt), direction) * across.normalized;
+        across = Quaternion.AngleAxis(SharedRandom.Range(-Tilt, Tilt), direction) * across.normalized;
         Vector3 at = point - direction * Lift;
         float life = CutLife * (head ? HeadLife : 1f), bright = head ? HeadBright : 1f;
         Cut(at, across, CutWidth * (heavy ? 1.25f : 1f), life, bright);
@@ -92,12 +92,12 @@ public sealed class KnifeHitFx : MonoBehaviour
         int count = heavy ? HeavySparks : Sparks;
         for (int i = 0; i < count; i++)
         {
-            float side = Random.value < .5f ? -1f : 1f;
-            Vector3 way = (across * side + -direction * Random.Range(.1f, .6f) + Random.insideUnitSphere * .35f).normalized;
+            float side = SharedRandom.Value() < .5f ? -1f : 1f;
+            Vector3 way = (across * side + -direction * SharedRandom.Range(.1f, .6f) + SharedRandom.InsideUnitSphere() * .35f).normalized;
             sparks.Emit(new ParticleSystem.EmitParams
             {
-                position = at, velocity = way * SparkSpeed * Random.Range(.6f, 1.2f), startSize = Random.Range(.012f, .022f),
-                startLifetime = SparkLife * Random.Range(.6f, 1.1f), startColor = Color.white,
+                position = at, velocity = way * SparkSpeed * SharedRandom.Range(.6f, 1.2f), startSize = SharedRandom.Range(.012f, .022f),
+                startLifetime = SparkLife * SharedRandom.Range(.6f, 1.1f), startColor = Color.white,
             }, 1);
         }
     }

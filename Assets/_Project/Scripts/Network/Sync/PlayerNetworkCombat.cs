@@ -382,7 +382,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (body != null) body.SetPace(1f - now.Slowed / 100f);
     }
 
-    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255), ShotPierce);
+    private void OnShot(WeaponShot shot) => ShotRpc(shot.Origin, shot.Direction, (byte)Mathf.Clamp(shot.Pellet, 0, 255), ShotPierce, shot.Seed);
     private void OnPunched(float charge) => PunchRpc(charge, (byte)melee.LastStrike, melee.SwingReachIn);
     private void OnWound() => WindRpc();
     private void OnSwingDropped() => SwingDroppedRpc();
