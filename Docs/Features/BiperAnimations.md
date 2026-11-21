@@ -39,7 +39,7 @@
 각 단계는 검사대 숫자를 먼저 보고 한다. 새 동작이 필요한 것은 그 동작의 주인(몸의 층, 무기 상태)을 먼저 정한다.
 
 1. **꺼내기·넣기 몸 동작** (`*_TakeGun`, `*_PutGun`): 총을 꺼낼 때 손이 총이 걸린 자리로 갔다가 들어 올리는 몸 전체 동작. 총의 자리는 총 다루기 다시 세우기의 GunCarry가 주인이라([GunHandling.md](GunHandling.md) 4.2, 5단계 무기 상태) 그 설계 안에서 "오른손이 든다 → 몸통이 든다"로 넘겨야 한다. FPSAF의 꺼내기 클립이 있는 총 10개와 없는 총 18개가 다르다.
-2. **출발·멈춤**(0.9.259에 연결: 앞으로 출발·멈춤, 몸이 클립의 루트처럼 가속·감속, MovementGait.Moves · GaitMoves.csv). **방향 꺾기** (`*_Start_*`, `*_Stop_*`, `*_Turn*`, `*_Arc_*`, `*_Lean*`, `ShiftTo*`): 걸음 사이의 한 번짜리 동작. 다리 층의 일이다.
+2. **출발·멈춤**(0.9.259에 연결: 앞으로 출발·멈춤, 몸이 클립의 루트처럼 가속·감속, MovementGait.Moves · GaitMoves.csv). **방향 꺾기**(기울기·호: 0.9.260에 연결, 시선이 도는 빠르기로 섞음. 반대로 꺾기 Turn은 아직) (`*_Start_*`, `*_Stop_*`, `*_Turn*`, `*_Arc_*`, `*_Lean*`, `ShiftTo*`): 걸음 사이의 한 번짜리 동작. 다리 층의 일이다.
 3. **제자리 돌기** (`TurnIP_L/R 45·90·135·180`, `*_AimTurn_*`): 각도별 클립이 있어서, `Body.turnSteps`가 꺼져 있던 까닭(클립 하나의 각도와 몸의 회전이 안 맞음)을 각도로 고르는 것으로 풀 수 있다.
 4. **점프·착지·구르기·다이브·슬라이드** (`Jump_*`, `RunJump_*`, `Land_*`, `Land_To*`, `Roll_*`, `DiveRoll_*`, `RollToRun_*`, `SlideToRun_*`, `Flip_*`, `Jump_Climb_*`): 지금 Beatrun·Mixamo 클립이 맡은 자리들(`Body.jump`, `land`, `roll` 등)에 높이·방향별로.
 5. **회피** (`QuickShift_*` 8방향, `*_Evade`): 지금 `Body.dodgeLeft/Right`.

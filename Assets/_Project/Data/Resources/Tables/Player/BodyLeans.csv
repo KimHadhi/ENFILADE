@@ -1,0 +1,6 @@
+﻿id,left,right,arcLeft,arcRight,arcRate,#설명
+"#설명 (앞으로 가는 걸음 클립마다 한 줄: 시선을 돌리며 달릴 때 그 걸음 대신 섞는 기운 걸음. 시선이 도는 빠르기가 arcRate(도/초)의 절반까지는 곧은 걸음에서 left/right(기운 채 곧게 달리는 클립)로, 거기서 arcRate까지는 arcLeft/arcRight(호를 그리는 클립. 그 회전은 루트로 빼서 자세만 쓴다: clips.csv inPlaceYaw 1)로 넘어간다. arcRate는 호 클립이 한 바퀴에 도는 90°를 그 길이로 나눈 값(클립 검사대로 잼): 그 걸음으로 사람이 도는 빠르기. 몸은 늘 시선을 보고 돈다(0.9.260)",,,,,,
+Walk_Lfoot,Walk_LeanL,Walk_LeanR,Walk_Arc_L90,Walk_Arc_R90,79.4,걷기: 호 1.133초에 90°
+Jog_Lfoot,Jog_LeanL,Jog_LeanR,Jog_Arc_L90,Jog_Arc_R90,96.5,조깅: 호 0.933초에 90°
+Run_Lfoot,Run_LeanL,Run_LeanR,Run_Arc_L90,Run_Arc_R90,135,달리기: 호 0.667초에 90°
+Sprint_Lfoot,Sprint_LeanL,Sprint_LeanR,Sprint_Arc_L90,Sprint_Arc_R90,150,전력질주: 호 0.600초에 90°

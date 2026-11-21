@@ -39,8 +39,8 @@ Flip_FwdDiver,0,1,0,0,0,0,,,35,Female Runner: Flip_FwdDiver
 Flip_FwdRoll,0,1,0,0,0,0,,,,Female Runner: Flip_FwdRoll
 Idle,1,0,0,0,0,0,,,91,서 있기
 IdleToCrouch,0,0,0,0,0,0,,,,Female Runner: IdleToCrouch
-Jog_Arc_L90,1,1,0,0,0,0,,,29,Female Runner: Jog_Arc_L90
-Jog_Arc_R90,1,1,0,0,0,0,,,29,Female Runner: Jog_Arc_R90
+Jog_Arc_L90,1,1,0,1,0,0,,,29,Female Runner: Jog_Arc_L90
+Jog_Arc_R90,1,1,0,1,0,0,,,29,Female Runner: Jog_Arc_R90
 Jog_LeanL,1,1,0,0,0,0,,,29,Female Runner: Jog_LeanL
 Jog_LeanR,1,1,0,0,0,0,,,29,Female Runner: Jog_LeanR
 Jog_Lfoot,1,1,0,0,0,0,,,29,Female Runner: Jog_Lfoot
@@ -109,8 +109,8 @@ RunJump_AirL,0,1,0,0,0,0,,,,Female Runner: RunJump_AirL
 RunJump_AirR,0,1,0,0,0,0,,,,Female Runner: RunJump_AirR
 RunJump_hyper,0,1,0,0,0,0,,,53,Female Runner: RunJump_hyper
 RunJump_obstacle,0,1,0,0,0,0,,,,Female Runner: RunJump_obstacle
-Run_Arc_L90,1,1,0,0,0,0,,,21,Female Runner: Run_Arc_L90
-Run_Arc_R90,1,1,0,0,0,0,,,21,Female Runner: Run_Arc_R90
+Run_Arc_L90,1,1,0,1,0,0,,,21,Female Runner: Run_Arc_L90
+Run_Arc_R90,1,1,0,1,0,0,,,21,Female Runner: Run_Arc_R90
 Run_LeanL,1,1,0,0,0,0,,,21,Female Runner: Run_LeanL
 Run_LeanR,1,1,0,0,0,0,,,21,Female Runner: Run_LeanR
 Run_Lfoot,1,1,0,0,0,0,,,21,Female Runner: Run_Lfoot
@@ -144,8 +144,8 @@ SlideToRun_5m,0,1,0,0,0,0,,,46,Female Runner: SlideToRun_5m
 SlideToRun_Enter,0,1,0,0,0,0,,,22,Female Runner: SlideToRun_Enter
 SlideToRun_Exit,0,1,0,0,0,0,,,25,Female Runner: SlideToRun_Exit
 SlideToRun_Loop,1,1,0,0,0,0,,,28,Female Runner: SlideToRun_Loop
-Sprint_Arc_L90,1,1,0,0,0,0,,,19,Female Runner: Sprint_Arc_L90
-Sprint_Arc_R90,1,1,0,0,0,0,,,19,Female Runner: Sprint_Arc_R90
+Sprint_Arc_L90,1,1,0,1,0,0,,,19,Female Runner: Sprint_Arc_L90
+Sprint_Arc_R90,1,1,0,1,0,0,,,19,Female Runner: Sprint_Arc_R90
 Sprint_LeanL,1,1,0,0,0,0,,,19,Female Runner: Sprint_LeanL
 Sprint_LeanR,1,1,0,0,0,0,,,19,Female Runner: Sprint_LeanR
 Sprint_Lfoot,1,1,0,0,0,0,,,19,Female Runner: Sprint_Lfoot
@@ -214,8 +214,8 @@ TurnIP_R135,0,0,0,0,0,0,,,69,Female Runner: TurnIP_R135
 TurnIP_R180,0,0,0,0,0,0,,,69,Female Runner: TurnIP_R180
 TurnIP_R45,0,0,0,0,0,0,,,69,Female Runner: TurnIP_R45
 TurnIP_R90,0,0,0,0,0,0,,,69,Female Runner: TurnIP_R90
-Walk_Arc_L90,1,1,0,0,0,0,,,35,Female Runner: Walk_Arc_L90
-Walk_Arc_R90,1,1,0,0,0,0,,,35,Female Runner: Walk_Arc_R90
+Walk_Arc_L90,1,1,0,1,0,0,,,35,Female Runner: Walk_Arc_L90
+Walk_Arc_R90,1,1,0,1,0,0,,,35,Female Runner: Walk_Arc_R90
 Walk_LeanL,1,1,0,0,0,0,,,35,Female Runner: Walk_LeanL
 Walk_LeanR,1,1,0,0,0,0,,,35,Female Runner: Walk_LeanR
 Walk_Lfoot,1,1,0,0,0,0,,,35,Female Runner: Walk_Lfoot

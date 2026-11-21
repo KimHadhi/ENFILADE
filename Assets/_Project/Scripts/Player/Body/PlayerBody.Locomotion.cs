@@ -147,6 +147,8 @@ public sealed partial class PlayerBody
                 foreach (string ammunition in row.Text("ammo").Split(new[] { ';', ',', ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
                     kindOfAmmunition[ammunition] = id;
         }
+        // The forward cycles' leaning and arcing ones, banked into by the view's turn (PlayerBody.Leans).
+        AddLeans();
         // The start and stop clips (Tables/Player/GaitMoves.csv), played as the movement times them (GaitMoves).
         foreach (string id in GameTables.RowIds(GaitMovesTable))
             if (!id.StartsWith("#", System.StringComparison.Ordinal)) AddChannel(id, 0f);
@@ -330,6 +332,7 @@ public sealed partial class PlayerBody
         float scale = GaitScale;
         mixWeight = mixStride = 0f;
         mixVelocity = Vector2.zero;
+        FollowTurn(dt);
 
         // A gun out asks for its aimed set as far as the sights are up and for its own set otherwise; what they can't
         // carry the stance's own set (plain or crouched) does.
@@ -355,6 +358,7 @@ public sealed partial class PlayerBody
         float moving = MixSets(stance, legs, speed, scale);
         if (!crouched)
         {
+            Bank();
             if (TurnOnTheSpot(speed < StillTravel, dt)) turnLayerTarget = 1f - moving;
             if (!legsPlanted) targetYaw = turn;
         }

@@ -176,6 +176,8 @@ Beatrun의 손맛을 옮긴 부분입니다. 수치는 모두 [Player.csv](../..
 
 **출발과 멈춤 (0.9.259)**: 멈춰 서 있다가 앞(±45°)으로 출발하면 다리가 그 걸음새의 출발 클립(`*_Start_L0`·`R0`, 왼발·오른발 번갈아)을 재생하고, 몸은 그 클립의 루트가 가는 만큼 가속합니다(최고 속도까지 0.9~1.4초). 끝나면 클립이 남긴 걸음 박자에서 반복 걸음으로 넘어가 발이 이어집니다. 앞으로 가다가 키를 모두 놓으면(그 걸음새 속도의 절반 이상일 때) 지금 걸음 박자에 맞는 멈춤 클립(`*_Stop_Lfoot`·`Rfoot`)을 재생하고, 몸은 가던 쪽으로 그 클립처럼 감속하며 섭니다(걷기 약 1.1m, 조깅 1.9m, 달리기 2.3m, 전력질주 4m). 멈추는 중 키를 다시 누르면 바로 끊고 이어 가고, 출발 중 키를 놓거나 앞에서 45°보다 틀면 출발이 끝납니다. 점프·슬라이드·회피 등 서서 걷기를 떠나는 것은 둘 다 끝냅니다. 클립의 속도 곡선과 박자는 클립 검사대가 구운 [GaitMoves.csv](../../Assets/_Project/Data/Resources/Tables/Player/GaitMoves.csv)(`bake=gaitmoves`)이고, [Gaits.csv](../../Assets/_Project/Data/Resources/Tables/Player/Gaits.csv)의 `starts`·`stops`를 0으로 하면 그 걸음새는 끕니다. 친구 PC에도 같은 클립이 나옵니다(`PlayerPose.GaitMove`). 옆·뒤·웅크림에는 출발·멈춤 클립이 없어 예전처럼 곧바로 갑니다.
 
+**돌며 달리기 (0.9.260)**: 앞으로 걷거나 달리며 시선을 돌리면 다리가 그 걸음의 기운 걸음(`*_LeanL`·`R`, 기운 채 곧게 달림)으로, 더 빨리 돌면 호 걸음(`*_Arc_L90`·`R90`, 그 회전은 빼고 자세만)으로 넘어갑니다. 호 클립이 한 바퀴에 도는 빠르기(걷기 79, 조깅 97, 달리기 135, 전력질주 150도/초)의 절반에서 다 기울고, 그 빠르기에서 다 호입니다. 몸은 늘 시선을 따라 돕니다. 표 [BodyLeans.csv](../../Assets/_Project/Data/Resources/Tables/Player/BodyLeans.csv), 코드 [PlayerBody.Leans](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Leans.cs).
+
 속도에 기대는 문턱은 걸음새 사이에 둡니다: 슬라이드 시작·착지 슬라이드 6m/s(전력질주에서), 돌진 밀치기 4(달리기부터), 달리는 점프 클립 4(`Body.jumpFastSpeed`), 숨참 6(`Breathing.exertSpeed`), 힘쓰는 얼굴 6(`FaceLife.csv Mood.sprintSpeed`). 빨리 달릴 때 골반을 가는 쪽으로 돌리던 규칙(`Body.hipTurn`)은 0으로 꺼서, 옆·뒤로 전력질주해도 시선 쪽을 본 채 스트레이프 클립으로 뜁니다.
 
 공중에서는 속도가 그대로 이어집니다. 멀리뛰기는 전력질주 7.16m/s로 약 4.7m입니다(점프 높이 1.3m, 중력 24에서 공중 0.66초. 예전 질주 7.9는 약 5.2m, 최고 8.9는 약 5.9m).
