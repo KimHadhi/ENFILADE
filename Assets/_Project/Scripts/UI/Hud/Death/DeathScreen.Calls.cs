@@ -3,12 +3,11 @@
 public sealed partial class DeathScreen
 {
     /// <summary>
-    /// The card, the film and the sting made, and the blur drawn once at a strength nobody sees, behind the loading screen
-    /// (SceneWarmup), so the first death never waits on them.
+    /// The card and the film made, the whistle read, and the blur drawn once at a strength nobody sees, behind the loading
+    /// screen (SceneWarmup), so the first death never waits on them.
     /// </summary>
     public static void Prepare()
     {
-        _ = DeathSting.Clip;
         var mine = PlayerRoster.Local;
         if (mine != null && mine.TryGetComponent(out DeathScreen screen)) screen.Warm();
     }

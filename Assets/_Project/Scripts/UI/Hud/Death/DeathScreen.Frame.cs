@@ -97,13 +97,13 @@ public sealed partial class DeathScreen
         facts.Next = Next(now, out _);
         card.Begin(facts, now);
         Grade(true);
-        Sting();
+        Whistle();
     }
 
     private void Leave(float now, float seconds, bool cut)
     {
         if (phase != Phase.Showing) return;
-        Levels(now, out colourFrom, out edgeFrom, out blurFrom, out inkFrom, out bloodFrom, out muffleFrom);
+        Levels(now, out colourFrom, out vignetteFrom, out blurFrom, out bloodFrom, out muffleFrom);
         phase = Phase.Leaving;
         leaveAt = now;
         leaveFor = Mathf.Max(.01f, seconds);
@@ -125,17 +125,18 @@ public sealed partial class DeathScreen
     {
         if (cutting) Cut(now);
         if (phase == Phase.Hidden) return;
-        Levels(now, out float colour, out float darkness, out float blurred, out float inkLevel, out float bloodLevel, out float muffled);
+        Levels(now, out float colour, out float darkness, out float blurred, out float bloodLevel, out float muffled);
         float shown = phase == Phase.Showing ? 1f : 1f - Mathf.Clamp01((now - leaveAt) / leaveFor);
-        ApplyGrade(colour, darkness, blurred);
+        ApplyGrade(colour, blurred);
         Muffle(muffled);
         string next = Next(now, out float fill);
-        card.Tick(now, shown, next, fill, look.ink * inkLevel, look.blood * bloodLevel);
+        card.Tick(now, shown, next, fill, look.vignette * darkness, look.blood * bloodLevel);
         if (phase == Phase.Leaving && now - leaveAt >= leaveFor) Finish();
     }
 
-    // How far each part has come: in by its own time while showing, fading out together from where it got while leaving.
-    private void Levels(float now, out float colour, out float darkness, out float blurred, out float inkLevel, out float bloodLevel, out float muffled)
+    // How far each part has come (the addon's levels: colour, vignette, blur, blood; and our muffling): in by its own
+    // time while showing, fading out together, linearly, from where it got while leaving.
+    private void Levels(float now, out float colour, out float darkness, out float blurred, out float bloodLevel, out float muffled)
     {
         if (phase == Phase.Showing)
         {
@@ -143,16 +144,14 @@ public sealed partial class DeathScreen
             colour = In(t, look.colourSeconds);
             darkness = In(t, look.vignetteSeconds);
             blurred = In(t - look.blurDelay, look.blurSeconds);
-            inkLevel = In(t, look.inkSeconds);
             bloodLevel = Ease.Smooth((t - look.bloodDelay) / Mathf.Max(.01f, look.bloodSeconds));
             muffled = In(t, look.muffleSeconds);
             return;
         }
         float f = phase == Phase.Leaving ? 1f - Mathf.Clamp01((now - leaveAt) / leaveFor) : 0f;
         colour = colourFrom * f;
-        darkness = edgeFrom * f;
+        darkness = vignetteFrom * f;
         blurred = blurFrom * f;
-        inkLevel = inkFrom * f;
         bloodLevel = bloodFrom * f;
         muffled = muffleFrom * f;
     }
