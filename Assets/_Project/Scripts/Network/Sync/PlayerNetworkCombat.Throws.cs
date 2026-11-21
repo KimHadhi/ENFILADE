@@ -55,6 +55,35 @@ public sealed partial class PlayerNetworkCombat
         if (grenades != null) grenades.ShowKnifeLanded(id, at, lying);
     }
 
+    // This PC's player's grenade bounced or came to rest: its flight, for the copies (ThrownGrenade.Follow).
+    private void OnGrenadeTurned(ThrownGrenade grenade)
+    {
+        if (grenade == null || !IsSpawned || !IsOwner || grenade.Thrower == null || grenade.Thrower != mover) return;
+        var flight = grenade.Flight;
+        GrenadeFlightRpc(grenade.Id, flight.Position, flight.Velocity, flight.Age, (byte)Mathf.Clamp(flight.Bounces, 0, 255), flight.Resting, flight.RolledAt);
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void GrenadeFlightRpc(ushort id, Vector3 position, Vector3 velocity, float age, byte bounces, bool resting, float rolledAt)
+    {
+        if (grenades == null) return;
+        var flight = GrenadeFlight.From(position, velocity);
+        flight.Age = age;
+        flight.Bounces = bounces;
+        flight.Resting = resting;
+        flight.RolledAt = rolledAt;
+        grenades.ShowFlight(id, flight);
+    }
+
+    /// <summary>This PC's player's dye reached these zombies here (DyeBurst): every other PC dyes the same ones.</summary>
+    internal void TellDyed(ulong[] ids, ulong marked)
+    {
+        if (IsSpawned && IsOwner) DyedRpc(ids, marked);
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void DyedRpc(ulong[] ids, ulong marked) => DyeBurst.Dyed(ids, marked, mover != null ? mover : GetComponent<PlayerMovement>());
+
     // A Knight took a thrown knife back: every other PC's copy of it goes.
     [Rpc(SendTo.NotMe)]
     private void KnifeTakenRpc(ushort id)

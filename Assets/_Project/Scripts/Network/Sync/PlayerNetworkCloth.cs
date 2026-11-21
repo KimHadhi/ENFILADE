@@ -29,6 +29,10 @@ public sealed class PlayerNetworkCloth : NetworkBehaviour
     private ushort[] shownTurns = Array.Empty<ushort>();
     private bool[] shownAny = Array.Empty<bool>();
     private int shownBones = -1;
+    // Since when the poses that came have not fitted this copy (s, unscaled; below 0: they fit), and how long until it
+    // runs its own cloth.
+    private float unfitSince = -1f;
+    private const float UnfitSeconds = 2f;
 
     public override void OnNetworkSpawn()
     {
@@ -82,8 +86,17 @@ public sealed class PlayerNetworkCloth : NetworkBehaviour
     {
         if (cloth == null) return;
         int bones = Mathf.Min(cloth.PoseBones, ClothPose.MostBones);
-        // A copy that hasn't changed to their skin and clothes yet carries other bones: it waits for a pose that fits.
-        if (bones == 0 || pose.Total != bones || pose.Start + pose.Count > bones) return;
+        // A copy that hasn't changed to their skin and clothes yet carries other bones: it waits for a pose that fits. One
+        // that still doesn't after a while wears another body here (a mod this PC hasn't yet): it runs its own cloth until
+        // a pose fits again (PlayerBodyCloth.SimulateHere).
+        if (bones == 0 || pose.Total != bones || pose.Start + pose.Count > bones)
+        {
+            if (unfitSince < 0f) unfitSince = Time.unscaledTime;
+            else if (Time.unscaledTime - unfitSince > UnfitSeconds) cloth.SimulateHere(true);
+            return;
+        }
+        unfitSince = -1f;
+        cloth.SimulateHere(false);
         int runs = ClothPose.Runs(bones);
         if (bones != shownBones)
         {

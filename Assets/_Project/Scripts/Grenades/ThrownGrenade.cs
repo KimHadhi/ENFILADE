@@ -97,7 +97,13 @@ public sealed class ThrownGrenade : MonoBehaviour
             if (mine && flight.Over(fuse)) break;
             owed -= rules.Tick;
             before = flight.Position;
-            if (flight.Step(body, rules, out Vector3 struck, out float speed)) Clatter(struck, speed);
+            bool wasResting = flight.Resting;
+            if (flight.Step(body, rules, out Vector3 struck, out float speed))
+            {
+                Clatter(struck, speed);
+                if (mine) Turned?.Invoke(this);
+            }
+            else if (mine && flight.Resting && !wasResting) Turned?.Invoke(this);
         }
         if (mine && flight.Over(fuse))
         {
@@ -109,6 +115,36 @@ public sealed class ThrownGrenade : MonoBehaviour
         if (!flight.Resting) transform.Rotate(spin * dt, Space.World);
         if (!mine && age >= fuse + CopyGrace) Burst(flight.Position);
         else if (age >= Life) Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// On the thrower's PC: one of its own bounced, or came to rest. Its flight goes to the copies then (Flight, Follow), so
+    /// a copy that bounced off something a little different on its PC (a door mid-swing, a set piece, a barricade) is put
+    /// back on the thrower's path at once rather than jumping to where it bursts (SyncAudit.md, item 18).
+    /// </summary>
+    internal static event Action<ThrownGrenade> Turned;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => Turned = null;
+
+    /// <summary>Its flight as it is now (the thrower's PC sends it as it turns).</summary>
+    internal GrenadeFlight Flight => flight;
+    internal PlayerMovement Thrower => thrower;
+
+    // A copy further than this from the thrower's flight, at the same age, takes it (m).
+    private const float FollowSlack = .05f;
+
+    /// <summary>
+    /// A friend's copy: the thrower's flight as it bounced or came to rest. Flown on here to this copy's age; where this
+    /// copy has gone another way, it goes on from there.
+    /// </summary>
+    internal void Follow(GrenadeFlight theirs)
+    {
+        if (done || mine) return;
+        for (int ticks = 0; theirs.Age < flight.Age - 1e-4f && ticks < 600; ticks++) theirs.Step(body, rules, out _, out _);
+        if ((theirs.Position - flight.Position).sqrMagnitude <= FollowSlack * FollowSlack && theirs.Resting == flight.Resting) return;
+        flight = theirs;
+        before = flight.Position;
     }
 
     /// <summary>The thrower's PC says it burst there: this copy bursts in that very spot.</summary>

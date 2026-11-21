@@ -13,6 +13,15 @@ public sealed partial class PlayerNetworkCombat
             HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded, hit.EventSeed);
     }
 
+    /// <summary>This PC's player's blow met there (BashImpact): every other PC shows its shock there, as big, from its seed.</summary>
+    internal void TellBash(Vector3 point, Vector3 push, float size, uint seed)
+    {
+        if (IsSpawned && IsOwner) BashBurstRpc(point, push, size, seed);
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void BashBurstRpc(Vector3 point, Vector3 push, float size, uint seed) => BashImpact.Show(point, push, size, seed);
+
     // Each of a shotgun's pellets comes on its own, numbered, so the copy's gun fires once and each pellet leaves its mark,
     // along the path the shooter's PC traced (ShotPath). The slot and gun come with it: the copy's stance may not have
     // reached this PC yet after a quick swap, and its gun not be out, which used to drop the whole shot here (no sound,

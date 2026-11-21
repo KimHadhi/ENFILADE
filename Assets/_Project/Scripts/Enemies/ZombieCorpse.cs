@@ -281,19 +281,40 @@ public sealed class ZombieCorpse : MonoBehaviour
             return;
         }
         LooseBounds();
-        // Its runner went quiet mid-fall (it left): this PC takes the body over where it is, and it is cleared soon.
+        // Its runner went quiet mid-fall (it left). The host takes the body over where it is and runs it from there,
+        // telling the others as the runner did, so it still lies in one place on every PC (SyncAudit.md, item 19: each PC
+        // used to take it over and run it alone). A guest follows the host's word from then on; only if that does not come
+        // either does it run the body itself, sending nothing, and it is cleared soon.
         float quiet = hasPose ? Time.time - lastPoseAt : age - followSince;
         if (quiet < orphanWait) return;
-        TakeOver();
+        var network = GameSession.Network;
+        bool room = network != null && network.IsListening;
+        if (room && network.IsServer)
+        {
+            TakeOver(true);
+            return;
+        }
+        if (room && runnerClient != NetworkManager.ServerClientId)
+        {
+            runner = null;
+            runnerClient = NetworkManager.ServerClientId;
+            hasPose = false;
+            followSince = age;
+            return;
+        }
+        TakeOver(false);
         lieUntil = Mathf.Min(lieUntil, age + orphanLie);
     }
 
-    // Runs the body here from now on, pushed by this PC's own blows; it sends nothing (each PC left behind does this).
-    private void TakeOver()
+    // Runs the body here from now on, pushed by this PC's own blows. Tells: this is the host, which sends it on as the runner
+    // did; otherwise it sends nothing (a guest the host left too).
+    private void TakeOver(bool tells)
     {
         if (doll == null || simulated) return;
-        simulated = orphaned = true;
+        simulated = true;
+        orphaned = !tells;
         runner = null;
+        sentRest = false;
         doll.Simulate();
     }
 

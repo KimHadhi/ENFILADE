@@ -230,6 +230,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
             throws.Lured += OnStoneLured;
             grenades.Thrown += OnGrenadeThrown;
             grenades.Burst += OnGrenadeBurst;
+            ThrownGrenade.Turned += OnGrenadeTurned;
             grenades.KnifeTaken += OnKnifeTaken;
             grenades.KnifeLanded += OnKnifeLanded;
             grenades.Handed += OnGrenadeHanded;
@@ -300,7 +301,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
         if (throws != null) { throws.Thrown -= OnThrown; throws.Lured -= OnStoneLured; }
         if (grenades != null)
         {
-            grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; grenades.KnifeTaken -= OnKnifeTaken; grenades.KnifeLanded -= OnKnifeLanded;
+            grenades.Thrown -= OnGrenadeThrown; grenades.Burst -= OnGrenadeBurst; ThrownGrenade.Turned -= OnGrenadeTurned; grenades.KnifeTaken -= OnKnifeTaken; grenades.KnifeLanded -= OnKnifeLanded;
             grenades.Handed -= OnGrenadeHanded;
             grenades.SetDown -= OnMinePlaced;
             grenades.Chained -= OnMinesChained;

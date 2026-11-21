@@ -61,6 +61,8 @@
 | --- | --- |
 | 적·웨이브 공유 (호스트가 진행) | [EnemyNetwork](Sync/EnemyNetwork.cs), [EnemyHitMessage](Sync/EnemyHitMessage.cs), [WaveSync](Sync/WaveSync.cs) |
 | 친구의 무기·사격·주먹 표시 | [PlayerNetworkCombat](Sync/PlayerNetworkCombat.cs) |
+| 남의 총알이 쏜 사람의 길대로 (맞은 점은 몸의 뼈 기준, 관통·도탄 구간, 들고 있는 칸·총) | [ShotPath](Sync/ShotPath.cs), `WeaponController.ShowShot` |
+| 방 안에서 아바타 모드 나눠 주기 (없는 PC가 방장을 거쳐 받아 `Mods/<모드>~방/`에 두고 다시 읽음, Network.csv `modShare`·`modShareMostMB`) | [ModShare](ModShare.cs) |
 | 모든 PC가 같게 보는 것의 두 규칙 ([SyncAudit](../../../../Docs/Records/SyncAudit.md)): 정한 PC가 결과를 보내고 다른 PC는 그것을 그린다(몸 위의 점은 그 몸의 사람 뼈 기준으로 보냄) / 보이는 무작위는 사건의 씨앗으로(총 한 발·한 명중·피격마다 4바이트, 그 범위 안의 뽑기는 모든 PC가 같다. 코드의 자리마다 제 흐름이라 한 PC만 하는 뽑기가 다른 것을 밀지 않는다) | [BodyPoint](Sync/BodyPoint.cs) / [SharedRandom](../Core/Common/SharedRandom.cs), `DamageHit.EventSeed`, `WeaponShot.Seed`, `CombatDamageEvents.Report` |
 | 방 채팅 (받은 줄에 말한 사람의 플레이어가 따라와 그 사람 사진·그 사람의 색을 쓴다) / 닉네임 | [PlayerChat](PlayerChat.cs) / [ProfileView](../UI/Menu/Profile/ProfileView.cs) |
 | 실제 핑·전송량·연결 경로(직접/Relay) 측정 (`/net`) | [NetworkStatsHUD](NetworkStatsHUD.cs), [CountingTransport](Rooms/CountingTransport.cs) |

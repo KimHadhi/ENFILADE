@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
@@ -6,28 +8,63 @@ using UnityEngine;
 /// carries a small bounty for its row's seconds (DyeMarks). The strongest elite among them takes the Schießhund's real
 /// bounty mark, as F on it would (PingMarks, its earlier mark moving here). The in-world reason: a hunting dog follows
 /// this dye by its smell, and it glows in the dark.
-/// On every PC (GrenadeBursts): each dyes its own copies and marks the same elite, so everyone sees them; only the
-/// thrower's PC gains from them.
+/// The puff is on every PC (GrenadeBursts). Which zombies it reached is the thrower's PC's to say, from where its copies
+/// stood (the user's rule: the acting PC decides): it sends their numbers (PlayerNetworkCombat.TellDyed), and every PC
+/// dyes those and marks that elite, so the same zombies glow on every screen (SyncAudit.md, item 16: each PC used to dye
+/// its own copies, which stand a little elsewhere). Only the thrower's PC gains from them.
 /// </summary>
 public static class DyeBurst
 {
-    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower)
+    private static readonly List<ulong> dyed = new List<ulong>();
+
+    public static void Play(Vector3 at, ThrowableInfo info, PlayerMovement thrower, bool mine)
     {
         if (info == null) return;
         float radius = Mathf.Max(.5f, info.Radius);
         DyePuff.Spawn(at, radius, info.Tint);
         Throwables.Play("Smoke", at + Vector3.up * .2f, .55f, 3f, 40f, 1.7f);
+        // A friend's: their PC says whom it reached (Dyed).
+        if (!mine && Shared) return;
         Vector3 heart = at + Vector3.up * .3f;
         EnemyHealth strongest = null;
+        dyed.Clear();
         foreach (var enemy in EnemyHealth.Living)
         {
             if (enemy == null || !enemy.IsAlive) continue;
             if ((enemy.transform.position - at).sqrMagnitude > radius * radius) continue;
             if (Throwables.Covered(heart, enemy.transform.position + Vector3.up)) continue;
             DyeMarks.Dye(enemy, thrower, info.Seconds);
+            if (enemy.TryGetComponent(out NetworkObject network) && network.IsSpawned) dyed.Add(network.NetworkObjectId);
             if (PlayerClass.IsElite(enemy) && (strongest == null || enemy.MaximumHealth > strongest.MaximumHealth)) strongest = enemy;
         }
         if (strongest != null && thrower != null) PingMarks.Ping(strongest, thrower, true);
+        if (!Shared || thrower == null || !thrower.TryGetComponent(out PlayerNetworkCombat net)) return;
+        ulong marked = strongest != null && strongest.TryGetComponent(out NetworkObject top) && top.IsSpawned ? top.NetworkObjectId : ulong.MaxValue;
+        net.TellDyed(dyed.ToArray(), marked);
+    }
+
+    /// <summary>A friend's dye reached these zombies on their PC (their numbers), the strongest elite among them marked.</summary>
+    internal static void Dyed(ulong[] ids, ulong marked, PlayerMovement thrower)
+    {
+        var info = Throwables.Of(Throwable.Dye);
+        var network = GameSession.Network;
+        if (info == null || ids == null || network == null || network.SpawnManager == null) return;
+        foreach (ulong id in ids)
+            if (network.SpawnManager.SpawnedObjects.TryGetValue(id, out var found) && found != null
+                && found.TryGetComponent(out EnemyHealth enemy) && enemy.IsAlive)
+            {
+                DyeMarks.Dye(enemy, thrower, info.Seconds);
+                if (id == marked && thrower != null) PingMarks.Ping(enemy, thrower, true);
+            }
+    }
+
+    private static bool Shared
+    {
+        get
+        {
+            var network = GameSession.Network;
+            return network != null && network.IsListening;
+        }
     }
 }
 

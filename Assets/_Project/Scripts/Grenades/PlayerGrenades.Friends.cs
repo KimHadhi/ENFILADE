@@ -115,6 +115,12 @@ public sealed partial class PlayerGrenades
         if (chain.Count > 0) ClaymoreChain.GoOff(chain, ids.Length, middle);
     }
 
+    /// <summary>A friend's grenade bounced or came to rest on their PC, flying so: this PC's copy follows it.</summary>
+    internal void ShowFlight(ushort id, GrenadeFlight theirs)
+    {
+        if (flying.TryGetValue(id, out var grenade) && grenade != null) grenade.Follow(theirs);
+    }
+
     /// <summary>A friend's thrown knife went in or came to lie there on their PC: this PC's copy goes there.</summary>
     internal void ShowKnifeLanded(ushort id, in BodyPoint at, bool lying)
     {

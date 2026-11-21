@@ -81,6 +81,9 @@ public struct GrenadeFlight
     // all the time it rolls, though the sweep only meets the floor every other tick or so.
     private float rolledAt;
 
+    /// <summary>When it last lay on a face without bouncing (below 0: not since it last flew), to carry a flight whole.</summary>
+    public float RolledAt { get => rolledAt; set => rolledAt = value; }
+
     /// <summary>A flight about to start: out of the hand there, that fast.</summary>
     public static GrenadeFlight From(Vector3 from, Vector3 velocity) => new GrenadeFlight { Position = from, Velocity = velocity, rolledAt = -1f };
 

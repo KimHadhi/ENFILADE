@@ -92,8 +92,29 @@ public sealed class BashImpact : MonoBehaviour
     public static void Play(Vector3 point, Vector3 push, float size = 1f, PlayerMovement by = null)
     {
         if (!Application.isPlaying) return;
-        Get().Burst(point, push, Mathf.Max(.2f, size), by);
+        size = Mathf.Max(.2f, size);
+        // This PC's own player's blow: the same shock, where it met and as big, on every other PC, from one seed
+        // (SyncAudit.md, item 17: a friend's bash showed a fixed one ahead of their eyes, and a guard break's or a combo
+        // finisher's burst not at all).
+        if (by != null && by.IsLocal && !by.IsNetworkDriven && by.TryGetComponent(out PlayerNetworkCombat net) && net.IsSpawned)
+        {
+            uint seed = SharedRandom.Seed(SharedRandom.LocalClient, ++bursts, 0xBA5Eu);
+            using (SharedRandom.Scope(seed)) Get().Burst(point, push, size, by);
+            net.TellBash(point, push, size, seed);
+            return;
+        }
+        Get().Burst(point, push, size, by);
     }
+
+    /// <summary>A friend's blow met there on their PC: its shock here, drawn from their seed.</summary>
+    internal static void Show(Vector3 point, Vector3 push, float size, uint seed)
+    {
+        if (!Application.isPlaying) return;
+        using (SharedRandom.Scope(seed)) Get().Burst(point, push, Mathf.Max(.2f, size), null);
+    }
+
+    // This PC's player's blows so far, for each one's seed.
+    private static ulong bursts;
 
     private void Burst(Vector3 point, Vector3 push, float size, PlayerMovement by)
     {

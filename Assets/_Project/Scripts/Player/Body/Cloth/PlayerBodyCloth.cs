@@ -63,6 +63,22 @@ public sealed class PlayerBodyCloth : MonoBehaviour
 
     /// <summary>The body the cloth was last built for, and the bones of what it wears that hang free (a skirt, coat tails).</summary>
     internal Animator BuiltFor => builtFor;
+
+    /// <summary>
+    /// A copy whose owner's cloth poses don't fit what it wears here (it shows another body: a mod this PC hasn't yet,
+    /// ModShare) runs its own cloth, so its hair and skirt still move rather than stand still (SyncAudit.md, item 20).
+    /// </summary>
+    internal bool SimulatesHere { get; private set; }
+
+    internal void SimulateHere(bool on)
+    {
+        if (SimulatesHere == on) return;
+        SimulatesHere = on;
+        builtFor = null;
+    }
+
+    // Its cloth is simulated here: this PC's own player's, or a copy's that runs its own (SimulatesHere).
+    private bool RunsHere => !player.IsNetworkDriven || SimulatesHere;
     internal HashSet<Transform> Hanging => hangingBones;
 
     /// <summary>
@@ -95,14 +111,14 @@ public sealed class PlayerBodyCloth : MonoBehaviour
             else item.Bones.Follow(followRate, Time.deltaTime);
         }
         // A copy's bones are where they stay this frame now; the simulating PC's only once Magica has run.
-        if (player.IsNetworkDriven) Press();
+        if (!RunsHere) Press();
     }
 
     // Magica has written this frame's bones. Every body hears it, so a copy, which simulates nothing, lets it pass.
     private void AfterSimulation()
     {
-        if (player.IsNetworkDriven || worn.Count == 0) return;
-        Simulated?.Invoke();
+        if (!RunsHere || worn.Count == 0) return;
+        if (!player.IsNetworkDriven) Simulated?.Invoke();
         Press();
     }
 
@@ -121,7 +137,7 @@ public sealed class PlayerBodyCloth : MonoBehaviour
         var found = Rows(animator, body.Skin.Id, body.Wears, Part, cloth, hanging, springs);
         hangingBones.UnionWith(hanging);
         var colliders = GetComponent<PlayerBodyClothColliders>();
-        bool simulates = !player.IsNetworkDriven;
+        bool simulates = RunsHere;
         SkinSample skin = null;
         BodySurface surface = null;
         DressedBody measured = null;

@@ -234,12 +234,20 @@ public sealed class PlayerNetworkPose : NetworkBehaviour
         string look = OutfitLook.Join(PlayerBodyProfile.LookId(settings.characterSkin, settings.characterVariant),
             OutfitLook.SavedText(skinId));
         if (skin.Value.ToString() != look) skin.Value = look;
+        // What it draws on from avatar mods goes round the room, for PCs that haven't them (ModShare).
+        ModShare.OfferLook(look);
         string face = CharacterFace.SavedShowFace(skinId) ?? "";
         if (face.Length > 120) face = face.Substring(0, 120);
         if (showFace.Value.ToString() != face) showFace.Value = face;
     }
 
     private void OnSkinChanged(FixedString4096Bytes previous, FixedString4096Bytes current) => ShowSkin();
+
+    /// <summary>The mods were read again (ModShare brought one): this copy is dressed again in what its player wears.</summary>
+    internal void ShowSkinAgain()
+    {
+        if (IsSpawned && !IsOwner) ShowSkin();
+    }
 
     private void ShowSkin()
     {
