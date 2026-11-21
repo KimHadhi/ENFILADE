@@ -137,6 +137,7 @@ public sealed partial class PlayerBody
         restForward = leftUpperArm != null && rightUpperArm != null
             ? Vector3.Cross(rightUpperArm.position - leftUpperArm.position, body.up).normalized : body.forward;
         if (restForward.sqrMagnitude < .001f) restForward = body.forward;
+        SetUpNeck();
         Vector3 eye = EyesAtRest() + body.up * eyeAdjust.x + restForward * (eyeAdjust.y + eyeViewAhead);
         eyeLocal = head.InverseTransformPoint(eye);
         bodyLean.Bind(eyeLocal, leftUpperArm, rightUpperArm);
@@ -221,7 +222,9 @@ public sealed partial class PlayerBody
         bodyLean.HangArm(spineLookRoll * spineLookWeight, dead, HoldsGun);
         ClearFace();
         // The head to the gaze, Q/E tilting it as far as the view rolls; FPSAF's while it holds a gun (BodyGaze).
-        bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt);
+        // No further from the chest than a neck turns (PlayerBody.Neck).
+        bool neckHeld = bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt,
+            GuardedChestAhead(), neckTurnLimit + NeckGuardSlack);
         Vector3 eye = head.TransformPoint(eyeLocal);
         // Every PC's copy of the body moves its leaning hitboxes, with or without a camera of its own.
         Vector3 carried = bodyLean.Carry(eye, bendWeight, dead, dt);
@@ -241,6 +244,7 @@ public sealed partial class PlayerBody
         // on the eyes and nothing moves.
         if (!dead && bodyCamera.HasPlace)
             headReach.Meet(eyeLocal, bodyCamera.Placed, headReachMove, headReachLimits, UpperBodyFromFramework);
+        RecordCameraOnHead(dt, neckHeld);
     }
 
     // On the back in the air the body faces back the way it flies, as Beatrun's jump turn sets it, and the view turns within

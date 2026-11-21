@@ -44,6 +44,11 @@ internal sealed class BodyCamera
     internal Vector3 Placed { get; private set; }
     internal bool HasPlace { get; private set; }
 
+    /// <summary>How far the camera rides the eyes (1) rather than its place in the capsule (0) this frame.</summary>
+    internal float EyeWeight => eyeWeight;
+    /// <summary>How far a wall stopped the camera short of where it was going this frame (m).</summary>
+    internal float WallCut { get; private set; }
+
     /// <summary>Finds the player's camera and its resting place. Before the body is made.</summary>
     internal void Find(PlayerMovement player, Transform owner)
     {
@@ -142,6 +147,7 @@ internal sealed class BodyCamera
         // The pose cleared the wall first; this stable capsule-to-eye sweep is the final guard for any remaining contact.
         clearance.Ignored = ignored;
         view.position = clearance.Resolve(SafeAnchor(), target, Radius(), Blockers, owner);
+        WallCut = Vector3.Distance(target, view.position);
         Placed = view.position;
         HasPlace = true;
         PlayerView.Follow(eyes, view);

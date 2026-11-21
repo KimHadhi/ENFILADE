@@ -116,7 +116,12 @@ public sealed class PlayerLook : MonoBehaviour
         float now = transform.eulerAngles.y;
         // Where this push would take the view from the way the slide faces, and how far past the edge that is.
         float wanted = Mathf.DeltaAngle(movement.SlideFacingYaw, now) + mouseX;
-        float past = Mathf.Abs(wanted) - limit;
+        // The edge on that side is nearer where the head can't turn so far (PlayerBody.HeadReachArc: the slide sits turned
+        // to one side), and the push past it steers the slide round there.
+        float edge = limit;
+        if (body != null && body.HeadReachArc(out float facing, out float lo, out float hi))
+            edge = Mathf.Min(limit, Mathf.Abs(Mathf.DeltaAngle(movement.SlideFacingYaw, facing + (wanted > 0f ? hi : lo))));
+        float past = Mathf.Abs(wanted) - edge;
         // Only a push outward counts; one back toward the middle from outside the arc doesn't steer.
         if (past <= 0f || Mathf.Sign(mouseX) != Mathf.Sign(wanted)) return;
         float turn = Mathf.Sign(mouseX) * Mathf.Min(past, Mathf.Min(Mathf.Abs(mouseX), movement.SlideLookSteerRate * Time.deltaTime));
@@ -235,7 +240,17 @@ public sealed class PlayerLook : MonoBehaviour
     }
     private void OnDisable() => ClearRecoil();
 
+    // Each move's own arc first (ClampStateYaw); on top, the view turns no further than the head can on the pose the body is
+    // in (PlayerBody.HeadReachArc): the camera is the head, and the head never turns into the body (the user, 2026-11-21).
     private float ClampLookYaw(float candidate)
+    {
+        candidate = ClampStateYaw(candidate);
+        if (body == null) body = GetComponent<PlayerBody>();
+        if (body == null || !body.HeadReachArc(out float facing, out float lo, out float hi)) return candidate;
+        return WithinArc(facing + (lo + hi) * .5f, (hi - lo) * .5f, candidate);
+    }
+
+    private float ClampStateYaw(float candidate)
     {
         if (movement != null && movement.CurrentState == PlayerMovement.MovementState.Sliding)
         {

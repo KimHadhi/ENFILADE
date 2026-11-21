@@ -607,6 +607,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (body != null && !limp) PlayClipsInOnePlace();
         if (body != null && !limp)
         {
+            // Where the clip has the chest, before the look bends it: how far the head can turn (PlayerBody.Neck).
+            MeasureClipChest();
             // First, as the last step of the animation pass: the spine, neck and head bend with the view.
             spineLook.KeepClipHead();
             spineLook.Apply(spineLookWeight, spineLookPitch, spineLookYaw, spineLookRoll);

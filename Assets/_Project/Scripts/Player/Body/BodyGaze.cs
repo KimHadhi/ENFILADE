@@ -24,6 +24,9 @@ internal sealed class BodyGaze
     /// <summary>Where the view looks this frame: the mouse's look with the action clips' share on top.</summary>
     internal Quaternion Rotation => rotation;
 
+    /// <summary>Where the head looks now (its gaze, as the rest pose measured it).</summary>
+    internal Quaternion HeadGaze => head != null ? head.rotation * headToGaze : rotation;
+
     /// <summary>Where the mouse alone has the view.</summary>
     internal Quaternion Input => lookPivot != null ? lookPivot.rotation : root.rotation;
 
@@ -91,17 +94,34 @@ internal sealed class BodyGaze
     /// <summary>
     /// Turns the head (and a little of the neck) to the gaze, tilted by <paramref name="leanRoll"/> (degrees, the view's
     /// Q/E roll), as far as the action clips don't carry it. <paramref name="off"/>: the head isn't this one's (dead, or
-    /// FPSAF holds a gun); it hands over and takes it back over <paramref name="blendTime"/> (s).
+    /// FPSAF holds a gun); it hands over and takes it back over <paramref name="blendTime"/> (s). With
+    /// <paramref name="neckLimit"/> above 0 the head turns no further than that (degrees) from <paramref name="chestAhead"/>,
+    /// the way the chest faces; true when it had to stop there (PlayerBody.Neck).
     /// </summary>
-    internal void FaceHead(bool off, float leanRoll, float blendTime, float dt)
+    internal bool FaceHead(bool off, float leanRoll, float blendTime, float dt, Vector3 chestAhead = default, float neckLimit = 0f)
     {
         faceWeight = Mathf.MoveTowards(faceWeight, off ? 0f : 1f, dt / blendTime);
-        if (faceWeight <= 0f || head == null) return;
+        if (faceWeight <= 0f || head == null) return false;
         Quaternion gaze = rotation * Quaternion.Euler(0f, 0f, leanRoll);
+        bool held = false;
+        // The view is held where the head can turn (PlayerLook, PlayerBody.HeadReachArc); this catches a frame a clip turned
+        // the chest away faster than that, so the head never turns into the shoulder.
+        Vector3 ahead = Vector3.ProjectOnPlane(gaze * Vector3.forward, Vector3.up);
+        Vector3 chest = Vector3.ProjectOnPlane(chestAhead, Vector3.up);
+        if (neckLimit > 0f && chest.sqrMagnitude > 1e-6f && ahead.sqrMagnitude > .04f)
+        {
+            float turn = Vector3.SignedAngle(chest, ahead, Vector3.up);
+            if (Mathf.Abs(turn) > neckLimit)
+            {
+                gaze = Quaternion.AngleAxis(Mathf.Sign(turn) * neckLimit - turn, Vector3.up) * gaze;
+                held = true;
+            }
+        }
         Quaternion target = Quaternion.Slerp(gaze * Quaternion.Inverse(headToGaze), head.rotation, actionWeight);
         target = Quaternion.Slerp(head.rotation, target, faceWeight);
         if (neck != null)
             neck.rotation = Quaternion.Slerp(Quaternion.identity, target * Quaternion.Inverse(head.rotation), .3f) * neck.rotation;
         head.rotation = target;
+        return held;
     }
 }
