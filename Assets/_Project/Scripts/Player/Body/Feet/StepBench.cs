@@ -234,6 +234,61 @@ internal static class StepBench
     // A foot is up while its ankle is more than this over the lowest it stands in the clip (m, game size).
     private const float LiftFrom = .015f;
 
+    /// <summary>
+    /// Cycles side by side (ClipBench cyclefilm=): each clip one row of eight moments through its cycle, from the side at the
+    /// game's size, to look at how a jog, a run and a sprint differ, not only measure their speeds.
+    /// </summary>
+    internal static void Cycles(Animator animator, float scale, System.Collections.Generic.IReadOnlyList<AnimationClip> clips, string path, StringBuilder text)
+    {
+        var root = animator.transform;
+        var bones = root.GetComponentsInChildren<Transform>();
+        var poses = Array.ConvertAll(bones, b => (b.localPosition, b.localRotation));
+        Vector3 rootPosition = root.position, rootScale = root.localScale;
+        Quaternion rootRotation = root.rotation;
+        var made = new List<Object>();
+        var pictures = new List<Texture2D>();
+        bool wasAsync = UnityEditor.ShaderUtil.allowAsyncCompilation;
+        const int Moments = 8;
+        try
+        {
+            UnityEditor.ShaderUtil.allowAsyncCompilation = false;
+            var lens = Lens(animator.gameObject.scene, made);
+            foreach (var clip in clips)
+                for (int m = 0; m < Moments; m++)
+                {
+                    root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                    root.localScale = rootScale * scale;
+                    ClipSampler.Sample(clip, animator.gameObject, clip.length * m / Moments);
+                    root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                    Vector3 hips = animator.GetBoneTransform(HumanBodyBones.Hips).position;
+                    Vector3 aim = new Vector3(hips.x, .85f, hips.z), side = aim + new Vector3(2.6f, .1f, .2f);
+                    pictures.Add(Shoot(lens, side, Quaternion.LookRotation(aim - side), 42f));
+                }
+            var sheet = new Texture2D(Size * Moments, Size * clips.Count, TextureFormat.RGB24, false);
+            made.Add(sheet);
+            for (int i = 0; i < pictures.Count; i++)
+                sheet.SetPixels32(i % Moments * Size, (clips.Count - 1 - i / Moments) * Size, Size, Size, pictures[i].GetPixels32());
+            sheet.Apply();
+            System.IO.File.WriteAllBytes(path, sheet.EncodeToPNG());
+            text.AppendLine($"  {clips.Count} cycles, {Moments} moments each -> {path}");
+        }
+        finally
+        {
+            UnityEditor.ShaderUtil.allowAsyncCompilation = wasAsync;
+            foreach (var picture in pictures)
+                if (picture != null) Object.DestroyImmediate(picture);
+            foreach (var thing in made)
+            {
+                if (thing is RenderTexture texture) texture.Release();
+                if (thing != null) Object.DestroyImmediate(thing);
+            }
+            for (int i = 0; i < bones.Length; i++)
+                if (bones[i] != null) bones[i].SetLocalPositionAndRotation(poses[i].localPosition, poses[i].localRotation);
+            root.SetPositionAndRotation(rootPosition, rootRotation);
+            root.localScale = rootScale;
+        }
+    }
+
     // A foot's steps as they start and land, and how far it moved while it kept its place.
     private static void Note(FootPlanting.Leg leg, string name, float time, ref bool was, ref Vector3 kept, ref float slid, StringBuilder steps)
     {
@@ -251,6 +306,13 @@ internal static class StepBench
 
     private static Camera Lens(UnityEngine.SceneManagement.Scene scene, List<Object> made)
     {
+        // Outside play nothing re-skins a mesh between two renders: each picture skins it again (as GunBench's do).
+        foreach (var thing in scene.GetRootGameObjects())
+            foreach (var skinned in thing.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                skinned.updateWhenOffscreen = true;
+                skinned.forceMatrixRecalculationPerRender = true;
+            }
         var lensObject = new GameObject("Step bench lens") { hideFlags = HideFlags.HideAndDontSave };
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(lensObject, scene);
         made.Add(lensObject);
