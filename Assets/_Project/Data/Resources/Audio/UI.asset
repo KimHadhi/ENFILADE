@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SoundBank
   id: UI
   entries:
+  - key: Death
+    clips:
+    - {fileID: 8300000, guid: 49b5887fe0b3411691abfc55a480b302, type: 3}
   - key: Pick
     clips:
     - {fileID: 8300000, guid: 36ad033b22ac8d248b39a79a96028258, type: 3}

@@ -383,5 +383,17 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.hud.weapon_slots"), WeaponSlotLookNames, (int)s.weaponSlots, i => s.weaponSlots = (WeaponSlotLook)i);
         rows.Choice(Texts.Get("settings.hud.death_screen"), DeathScreenNames, (int)s.deathScreen, i => s.deathScreen = (DeathScreenMode)i);
         rows.Choice(Texts.Get("settings.hud.objective_alert"), ObjectiveAlertNames, (int)s.objectiveAlert, i => s.objectiveAlert = (ObjectiveAlertLook)i);
+
+        // Black Ops 6's hit marker, one switch per thing it does (the user, 2026-11-22: "히트마커는 다 설정으로 넣어서
+        // 적용하고"), under their own header so they read as one set laid over the 히트 마커 look chosen above.
+        rows.Header(Texts.Get("settings.hud.bo6_header"));
+        rows.Choice(Texts.Get("settings.hud.bo6.fade"), OffOn, s.hitMarkerFade ? 1 : 0, i => s.hitMarkerFade = i == 1);
+        rows.Choice(Texts.Get("settings.hud.bo6.pop"), OffOn, s.hitMarkerPop ? 1 : 0, i => s.hitMarkerPop = i == 1);
+        rows.Choice(Texts.Get("settings.hud.bo6.spread"), OffOn, s.hitMarkerSpread ? 1 : 0, i => s.hitMarkerSpread = i == 1);
+        rows.Choice(Texts.Get("settings.hud.bo6.turn"), OffOn, s.hitMarkerTurn ? 1 : 0, i => s.hitMarkerTurn = i == 1);
+        rows.Choice(Texts.Get("settings.hud.bo6.twin"), OffOn, s.hitMarkerTwin ? 1 : 0, i => s.hitMarkerTwin = i == 1);
+        rows.Choice(Texts.Get("settings.hud.bo6.sounds"), OffOn, s.hitMarkerSounds ? 1 : 0, i => s.hitMarkerSounds = i == 1);
+        rows.Choice(Texts.Get("settings.hud.bo6.shake"), OffOn, s.hitMarkerShake ? 1 : 0, i => s.hitMarkerShake = i == 1);
+        rows.Note(Texts.Get("settings.hud.bo6_note"));
     }
 }

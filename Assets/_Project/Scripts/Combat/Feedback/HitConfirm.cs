@@ -15,7 +15,9 @@ using UnityEngine;
 /// hitmarkfail, breakarmorr), so they are not stacked as the old dry tick under a dink was. They come from the HitConfirm
 /// sound bank (Art/Audio/HitConfirm/&lt;key&gt;; volume and pitch in Sounds.csv), so a sound is changed by swapping files;
 /// the earlier ones wait in BodyOld, HeadPing, KillOld and BreakOld. While the bank has no kill a kill falls back to
-/// GunFeel's kill sounds. Created on first use during Play.
+/// GunFeel's kill sounds. While Black Ops 6's sounds are switched on (Settings → HUD, the default since 2026-11-22) hits
+/// and kills play that addon's three layered sounds in place of these (<see cref="PlayBo6"/>); a hit that did nothing
+/// and a posture break keep ours, as the addon has none for them. Created on first use during Play.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitConfirm)]
 public sealed class HitConfirm : MonoBehaviour
@@ -157,7 +159,7 @@ public sealed class HitConfirm : MonoBehaviour
             Kill(settings, headKill, kills);
             HitMarkerHUD.ShowKill(killIcon);
         }
-        else Play(head ? "Head" : "Body");
+        else if (!PlayBo6(false, head)) Play(head ? "Head" : "Body");
         hits = heads = kills = headKills = pierces = 0;
         share = 0f;
         killIcon = null;
@@ -169,6 +171,9 @@ public sealed class HitConfirm : MonoBehaviour
         float now = Time.unscaledTime;
         streak = now - lastKillTime <= CombatFeedHUD.StreakWindow ? streak + count : count;
         lastKillTime = now;
+        // Black Ops 6's kill sounds when that switch is on: as the addon plays them, without our climb (the streak is
+        // still counted, so switching back climbs from the right kill).
+        if (PlayBo6(true, head)) return;
         float climb = 1f + Mathf.Min(streak - 1, settings.killStreakSteps) * settings.killStreakPitchStep;
         bool played = Play("Kill", climb);
         // A headshot kill rings the head's bright double tick over the kill's own sound, in tune with its climb.
@@ -197,6 +202,25 @@ public sealed class HitConfirm : MonoBehaviour
         if (!Application.isPlaying || target == null || !recentHits.TryGetValue(target, out float at)) return;
         recentHits.Remove(target);
         if (Time.unscaledTime - at <= BreakWindow) Get().breaks++;
+    }
+
+    /// <summary>
+    /// Black Ops 6's hit sounds, the sixth of its switches in Settings → HUD (GameSettings.hitMarkerSounds, on by default;
+    /// the user, 2026-11-22: "히트마커는 다 설정으로 넣어서 적용하고"): the Garry's Mod addon's own files, three at once as
+    /// it plays them, the flesh (a headshot's for a headshot) and its layer under the marker's own sound: Hit.Body +
+    /// Hit.Body.Layer + Hit.Mark_bo6 for a hit, the head's set with Hit.Head.Mark_bo6 for a headshot, Kill.Mark_bo6 or
+    /// Kill.Head.Mark_bo6 for a kill. HitConfirm bank keys BO6/…; their pitch (80–110% on the marker sounds only, as the
+    /// addon's sound scripts set it) and one shared volume in Sounds.csv HitConfirm/BO6/…. False when the bank has none of
+    /// them yet (before the editor imports them), so ours play instead.
+    /// </summary>
+    private static bool PlayBo6(bool kill, bool head)
+    {
+        if (!GameSettings.Current.hitMarkerSounds) return false;
+        string flesh = head ? "BO6/Head" : "BO6/Body";
+        bool played = Play(kill ? (head ? "BO6/HeadKill" : "BO6/Kill") : head ? "BO6/HeadHit" : "BO6/Hit");
+        played |= Play(flesh);
+        played |= Play(flesh + "Layer");
+        return played;
     }
 
     // One clip of the key at its Sounds.csv volume and pitch; false when the bank has none.

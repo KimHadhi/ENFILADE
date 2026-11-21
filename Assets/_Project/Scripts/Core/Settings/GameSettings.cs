@@ -96,6 +96,19 @@ public sealed class GameSettings
         "Bold (the earlier thick outlined ticks that hold wide and slide in, numbers in GunFeel). The headshot's star, sparks " +
         "and flare and the posture break's burst show with either.")]
     public HitMarkerStyle hitMarkerStyle = HitMarkerStyle.Clean;
+    /// <summary>
+    /// Black Ops 6's hit marker (the Garry's Mod addon Black Ops VI Hitmarker) as seven switches, each laid over whichever
+    /// look is chosen above and each on by default: the user, 2026-11-22, on the seven things it does that ours did not,
+    /// "히트마커는 다 설정으로 넣어서 적용하고". Numbers in HitMarkers.csv BO6.* (HitMarkerHUD.Bo6Look); the sounds are the
+    /// addon's own files (HitConfirm bank, BO6/…).
+    /// </summary>
+    [Tooltip("Black Ops 6 hit marker switches, each over the chosen look. Fade: the lines fade away by the same share every " +
+        "moment, restarted by every hit, in place of the look's own hold and fade. Pop: they start 1.8 times their size and " +
+        "shrink in. Spread: they sit on the aim point .3 s (from the hip at the gun's spread), then move out. Turn: each marker " +
+        "is turned a little at random, a kill more. Twin: a headshot's lines are split in two. Sounds: the addon's layered " +
+        "sounds in place of ours. Shake: the marker shakes a little, smoothly.")]
+    public bool hitMarkerFade = true, hitMarkerPop = true, hitMarkerSpread = true, hitMarkerTurn = true, hitMarkerTwin = true,
+        hitMarkerSounds = true, hitMarkerShake = true;
     [Tooltip("Weapon slots: Plates (a column of dark plates with cut corners at the HUD's right; the one in hand kicks out, " +
         "grows and shows its name; the default) or Cards (a row of small cards over the ammo; the one in hand turns into a " +
         "wide light card). Numbers in WeaponSlots.csv.")]
@@ -249,6 +262,9 @@ public sealed class GameSettings
             case SettingsGroup.Hud:
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;
                 s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
+                s.hitMarkerFade = d.hitMarkerFade; s.hitMarkerPop = d.hitMarkerPop; s.hitMarkerSpread = d.hitMarkerSpread;
+                s.hitMarkerTurn = d.hitMarkerTurn; s.hitMarkerTwin = d.hitMarkerTwin; s.hitMarkerSounds = d.hitMarkerSounds;
+                s.hitMarkerShake = d.hitMarkerShake;
                 s.weaponSlots = d.weaponSlots;
                 s.deathScreen = d.deathScreen;
                 s.objectiveAlert = d.objectiveAlert;

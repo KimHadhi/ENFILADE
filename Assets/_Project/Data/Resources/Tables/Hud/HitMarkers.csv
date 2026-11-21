@@ -94,3 +94,23 @@ Chain.perKill,0.33,줄에 이미 있는 그림 하나마다 기다리는 시간�
 Chain.fade,2,줄이 사라지는 시간 = 이 값 ÷ 기다리는 시간(2 ÷ 4초 = 마지막 0.5초)
 Chain.most,0,줄에 둘 수 있는 그림 수. 0이면 화면 너비 절반에 들어가는 만큼(27개). 넘치면 가장 오래된 것부터 빠진다
 Chain.slide,5,그림이 들어올 때 줄이 다시 가운데로 미끄러지는 빠르기(1초에)
+#BO6,,"블랙 옵스 6 히트마커(게리 모드 애드온 Black Ops VI Hitmarker의 lua/autorun/blackops6_hitmarker.lua)의 일곱 가지. 사용자 2026-11-22: ""히트마커는 다 설정으로 넣어서 적용하고"" → 설정 → HUD → 블랙 옵스 6 히트 마커에서 하나씩 켜고 끈다(모두 기본 켬). 깔끔·굵게 어느 모양에나 얹힌다(헤드샷 터짐·관통 꼬리·킬체인은 그대로). 크기는 1920x1080 화면 기준 px(애드온의 ScreenScale(0.256)은 1920에서 0.768). 빠르기는 1초에 줄어드는 지수: 원본 Lerp(FrameTime()*k, x, 0)은 프레임마다 k×dt씩 줄어 1초에 약 e^-k"
+BO6.fadeRate,5,"서서히 사라짐: 진하기가 1초에 e^-5배씩 준다(0.14초에 절반). 맞을 때마다 다시 1. 원본 hitmarker.life = Lerp(FrameTime()*10/2, life, 0)"
+BO6.fadeEnd,0.01,진하기가 이 아래로 내려가면 마커를 끈다(0.01이면 0.92초). 원본은 끝없이 줄어든다
+BO6.pop,0.8,"크게 떴다 줄어듦: 선(길이·간격·두께)이 1+이 값 배로 떠서 popRate로 제 크기가 된다. 원본 size = (50 + hitmarker.size×40): 처음 90, 끝 50이라 1.8배. 고른 모양의 첫 튕김(Clean.pop·headPop·killPop, 굵게의 Marker Pop)을 대신한다. 헤드샷의 두 번째 튕김(Clean.headPopAgain)은 그대로"
+BO6.popRate,5,"줄어드는 빠르기(1초에 e^-5). 원본 hitmarker.size = Lerp(FrameTime()*10/2, size, 0)"
+BO6.holdSeconds,0.3,"머물다 벌어짐: 선이 제자리(조준하면 조준점에 붙고, 허리 사격이면 총의 퍼짐만큼 바깥)에 머무는 시간(초). 원본 timer.Create('bo6_hitmarker', 0.3, …) 뒤 hitmarker.scale = 0"
+BO6.spreadOut,21.7,그 뒤 선이 바깥으로 벌어지는 거리(px). 원본은 가로세로 20×ScreenScale(0.256) = 15.36px씩이라 대각선으로 21.7px. 고른 모양의 바깥 밀림(Clean.drift)과 굵게의 안쪽 미끄러짐을 대신한다(굵게는 미끄러진 뒤 자리 Marker Shrunk Gap에서 시작)
+BO6.spreadRate,10,"벌어지는 빠르기(1초에 e^-10). 원본 scale = Lerp(FrameTime()*10, scale, 0)"
+BO6.hipScale,1,허리 사격이면 선이 처음부터 총의 퍼짐(조준점 표시가 벌어지는 만큼: WeaponController.CurrentSpread와 산탄 원)에 이 배율을 곱한 만큼 바깥에 선다. 조준(ADS)하는 만큼 0으로 줄어든다. 원본은 총과 상관없이 15.36px씩(대각선 21.7px). 0이면 늘 조준점에 붙는다
+BO6.hipRate,10,"허리 사격 자리가 바뀔 때 따라가는 빠르기(1초에 e^-10). 원본 scale_rate = Lerp(FrameTime()*10, scale_rate, …)"
+BO6.killHip,0,"처치 마커도 허리 사격 자리에 설지(1), 늘 조준점에 붙을지(0). 원본은 처치 메시지의 hipfire가 늘 false라서 처치는 조준점에 붙는다"
+BO6.turnHit,2.5,"무작위 기울기: 명중마다 마커 전체가 -이 값~+이 값°로 기운다. 원본 math.random(-2.5, 2.5): LuaJIT는 1° 간격이라 -2.5·-1.5·-0.5·0.5·1.5·2.5 중 하나. 여기도 같은 간격"
+BO6.turnKill,5,"처치는 -5~+5°(1° 간격 11가지). 원본 math.random(-5, 5). 처치 색은 원래도 빨강(Clean.killColor, 굵게는 GunFeel의 Kill Color)"
+BO6.twinTurn,5,헤드샷 겹선: 헤드샷(헤드샷 처치도)이면 선마다 두 갈래가 된다. 두 선이 제 방향에서 각각 이 각도(°)만큼 벌어진다. 원본 헤드샷 그림(materials/bo6_hitmarker/head)은 몸샷 선과 같은 길이·두께의 선 둘이 49.9°·39.8°로 10° 벌어져 있다(그림을 재어 얻은 값)
+BO6.twinApart,0.16,"두 갈래 선의 바깥 끝 사이 거리(선 길이의 몫). 원본 그림에서 길이 76px 선 둘의 바깥 끝이 12px(0.16), 안쪽 끝이 25px 떨어져 있다: 바깥 끝에서 갈라져 조준점 쪽으로 벌어진다"
+BO6.shake,4.8,흔들림: 맞으면 마커가 이 px까지 흔들린다. 원본 shake_scale = ScrW()×0.0025(1920에서 4.8)
+BO6.shakeBias,0.8,흔들림이 치우치는 몫. 원본 (math.random() - 0.8)이라 왼쪽 위로 -0.8~+0.2 사이(평균 1.4px 왼쪽 위). 0.5면 가운데
+BO6.shakeSeconds,0.5,"흔들림이 0으로 줄어드는 시간(초, 고르게). 원본 shake = Approach(shake, 0, FrameTime()*10/5): 1초에 2"
+BO6.shakeHz,1.6,"흔들림의 빠르기(Hz). 원본은 프레임마다 새 난수라 화면 주사율로 떨린다. 깜빡임 규칙(부드럽게, 1.6Hz 이하)대로 부드러운 잡음(Perlin)으로 바꿨다"
+BO6.shakeFollow,10.5,마커가 흔들림을 따라가는 빠르기(1초에 e^-10.5: 1.7Hz 아래만 남긴다). 사용자가 본 HUD 시안 페이지(2026-11-22)와 같은 값

@@ -7,6 +7,14 @@ HitConfirm/ShieldHit,0.7,0.95,1.05,내 실드가 피해를 받을 때(깨질 때
 HitConfirm/ShieldBreak,0.7,0.97,1.03,내 실드가 다 깨질 때. 사용자가 준 breakarmorself(2026-11-21). 예전의 합성한 유리 깨지는 소리는 0.9.238에 지웠다
 HitConfirm/HeadKill,0.8,0.97,1,헤드샷 처치 때 처치 소리(Kill) 위에 겹치는 밝은 두 번 딱. 처치 소리와 함께 연속 처치마다 높아진다. 사용자가 준 killmarker(2026-11-21)
 HitConfirm/Blocked,0.35,0.98,1.02,맞혔지만 피해가 없을 때(가드·패링·무적. 회색 히트마커와 함께). 같은 프레임에 피해를 준 명중이 있으면 그 소리만 난다. 사용자가 준 hitmarkfail(2026-11-21)
+HitConfirm/BO6/Hit,0.3,0.8,1.1,"설정 → HUD → 블랙 옵스 6 히트 마커 → BO6 소리(기본 켬)의 몸 명중 마커음: 게리 모드 애드온 Black Ops VI Hitmarker의 sound/bo6/hit1.wav(Hit.Mark_bo6, 음높이 80~110%). BO6/Body·BodyLayer와 함께 세 겹. 크기는 BO6 소리 모두 같은 0.3(애드온은 모두 1)이라 애드온 안의 균형이 그대로이고, 세 겹을 합친 크기가 우리 확인음과 비슷하다. 끄면 HitConfirm/Body"
+HitConfirm/BO6/HeadHit,0.3,0.8,1.1,"BO6 소리의 헤드샷 명중 마커음: 애드온 sound/bo6/hit2.wav(Hit.Head.Mark_bo6, 80~110%). BO6/Head·HeadLayer와 함께"
+HitConfirm/BO6/Kill,0.3,0.8,1.1,"BO6 소리의 처치 마커음: 애드온 sound/bo6/kill.wav(Kill.Mark_bo6, 80~110%). BO6/Body·BodyLayer와 함께. 연속 처치에 높아지지 않는다(애드온대로). 밝은 편(2.2kHz 위가 전체의 -7dB, 무게중심 5.8kHz)"
+HitConfirm/BO6/HeadKill,0.3,0.8,1.1,"BO6 소리의 헤드샷 처치 마커음: 애드온 sound/bo6/headshot.wav(Kill.Head.Mark_bo6, 80~110%, 1.7초). BO6/Head·HeadLayer와 함께"
+HitConfirm/BO6/Body,0.3,1,1,"BO6 소리의 몸 살 소리: 애드온 sound/flesh/body/body_01~06.wav(Hit.Body, 음높이 그대로)"
+HitConfirm/BO6/BodyLayer,0.3,1,1,"BO6 소리의 몸 살 소리 위 겹: 애드온 sound/flesh/body/body_layer_01~06.wav(Hit.Body.Layer, 음높이 그대로)"
+HitConfirm/BO6/Head,0.3,1,1,"BO6 소리의 머리 소리: 애드온 sound/flesh/head/head_01~11.wav(Hit.Head, 음높이 그대로). 밝은 편: 뼈 깨지는 고음이 많다(2.2kHz 위가 전체의 -3.5~-7dB, 무게중심 3.8~8.2kHz. head_03·07·08·11이 가장 밝다)"
+HitConfirm/BO6/HeadLayer,0.3,1,1,"BO6 소리의 머리 소리 위 겹: 애드온 sound/flesh/head/head_layer_01~12.wav(Hit.Head.Layer, 음높이 그대로). 조금 밝은 편(head_layer_08·09가 가장)"
 Movement/Bar/Grab,0.75,0.9,1.1,Beatrun Handsteps.MetalPipeGrab
 Movement/Bar/LetGo,0.5,0.9,1.1,Beatrun Handsteps.MetalPipeLetGo
 Movement/Bar/Release,1,0.8,1,Beatrun Handsteps.MetalPipeRelease
