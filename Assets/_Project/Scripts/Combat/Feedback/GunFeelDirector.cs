@@ -105,6 +105,8 @@ public static class GunFeelDirector
         if (hit.Kind == DamageKind.Fall) return WeaponIcons.Fall;
         if (hit.IsCounter) return WeaponIcons.Counter;
         if (hit.Method == DamageMethod.Shove) return WeaponIcons.Shove;
+        // A loose physics object a player set flying (PropStrike).
+        if (hit.Method == DamageMethod.Prop) return WeaponIcons.Prop;
         // A class throwable's own picture (Throwables: ThrowingKnife, GrenadeFrag, ...).
         if (hit.Method == DamageMethod.Thrown || hit.Method == DamageMethod.Blast) return Throwables.FeedIcon(hit);
         // The class knife in the melee slot: the striker's class's knife (MeleeKnife).
@@ -123,6 +125,7 @@ public static class GunFeelDirector
         if (hit.Kind == DamageKind.Execution) return Texts.Get("feed.weapon.execution");
         if (hit.IsCounter) return Texts.Get("feed.weapon.counter");
         if (hit.Method == DamageMethod.Shove) return Texts.Get("feed.weapon.shove");
+        if (hit.Method == DamageMethod.Prop) return Texts.Get("feed.weapon.prop");
         // A class throwable's: the knife that struck or the frag that burst, by the thrower's throwable (Throwables).
         if (hit.Method == DamageMethod.Thrown || hit.Method == DamageMethod.Blast) return Throwables.FeedName(hit);
         if (hit.Method == DamageMethod.Blade) return MeleeKnife.FeedName(hit);

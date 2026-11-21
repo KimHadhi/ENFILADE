@@ -10,7 +10,8 @@ public enum DamageResult { Ignored, Duplicate, Evaded, Damaged, Blocked, Parried
 /// Assault's frag). The kill feed names the thrower's throwable for both (Throwables.FeedName).
 /// </summary>
 // Blade: a class knife in hand in place of the fists (MeleeKnife): the kill feed names the knife and its hits bleed as shots do.
-public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce, Slam, Thrown, Blast, Blade }
+// Prop: a loose physics object a player set flying (thrown, kicked, shoved, shot) striking its target (PropStrike).
+public enum DamageMethod { Other, Bullet, Shove, Grab, Feed, Pounce, Slam, Thrown, Blast, Blade, Prop }
 
 /// <summary>One ID per attack activation, shared by all of its hitboxes.</summary>
 public readonly struct DamageHit

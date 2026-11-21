@@ -288,7 +288,7 @@ public sealed partial class WeaponController
     private void PushProp(in AttackTraceResult trace, Vector3 direction, float share)
     {
         var prop = trace.HasHit ? PhysicsProp.Of(trace.Hit.collider) : null;
-        if (prop != null) prop.Push(direction.normalized * (weaponData.PropImpulse * share), trace.Hit.point);
+        if (prop != null) prop.Push(direction.normalized * (weaponData.PropImpulse * share), trace.Hit.point, by: movement != null ? movement.gameObject : null);
     }
 
     private Vector3 AimTarget(float range, out Collider aimed) => AimTarget(aimOrigin.forward, range, out aimed);

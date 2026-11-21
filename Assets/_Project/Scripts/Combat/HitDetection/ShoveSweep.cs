@@ -136,7 +136,7 @@ public static class ShoveSweep
             Vector3 impulse = push * settings.shovePushSpeed;
             var prop = PhysicsProp.Of(collider);
             if (shove != null) shove.ReceiveShove(impulse, point);
-            else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed);
+            else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed, player.gameObject);
             else if (body != null && !body.isKinematic) body.AddForceAtPosition(impulse, point, ForceMode.Impulse);
             count++;
             if (posture != null) { hitEnemy = true; BashImpact.Play(point, push, 1f, player); }

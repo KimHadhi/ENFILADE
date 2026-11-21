@@ -49,6 +49,7 @@ public static class KillConditions
         else if (hit.Method == DamageMethod.Blast) marks |= KillMarks.Explosion;
         else if (hit.Method == DamageMethod.Thrown) marks |= KillMarks.Thrown;
         else if (hit.Method == DamageMethod.Blade) marks |= KillMarks.Blade;
+        else if (hit.Method == DamageMethod.Prop) marks |= KillMarks.Prop;
         // A can's blast is the one other player hit that says where it came from (CampaignCans); the rest is bare hands.
         else if (!bullet && hit.Method == DamageMethod.Other) marks |= hit.Origin.HasValue ? KillMarks.Explosion : KillMarks.Melee;
         if (target is EnemyHealth enemy)

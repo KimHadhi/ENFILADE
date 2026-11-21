@@ -140,7 +140,7 @@ public sealed class MovementMotor
         var prop = PhysicsProp.Of(collider);
         float speed = HorizontalVelocity.magnitude;
         if (prop == null || speed < .1f) return false;
-        float kept = prop.Kick(HorizontalVelocity / speed, speed, ctx.AbilitySettings.propBodyMass, point);
+        float kept = prop.Kick(HorizontalVelocity / speed, speed, ctx.AbilitySettings.propBodyMass, point, ctx.gameObject);
         if (kept < speed * .3f) return false;
         keptVelocity = HorizontalVelocity * (kept / speed);
         return true;

@@ -538,7 +538,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
         StateMachine?.Current.OnColliderHit(hit);
         // Walking into a physics prop carries it along; standing on top of one does not drive it into the ground.
         var prop = hit.normal.y < .7f ? PhysicsProp.Of(hit.collider) : null;
-        if (prop != null) prop.PushFromWalker(ActualVelocity, AbilitySettings.propPushForce);
+        if (prop != null) prop.PushFromWalker(ActualVelocity, AbilitySettings.propPushForce, gameObject);
     }
 
     public void ChangeState(MovementState state) => StateMachine.ChangeState(state);

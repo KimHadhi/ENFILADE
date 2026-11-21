@@ -1,20 +1,39 @@
 using UnityEngine;
 
 /// <summary>
-/// A free physics object (fruit, crate, debris). Its Rigidbody mass alone decides how it reacts: walking leans on it
-/// with a force, V shove and bullets hit it with momentum (N·s), so a light prop flies and a heavy one barely
-/// moves. A push never makes it faster than what pushed it. Parkour ignores it, so the player never hangs from
-/// something that rolls away. Built from a model with ENFILADE → 모델 → 물리 소품 프리팹 만들기.
+/// A free physics object (fruit, crate, debris, a fuel can, Impact CFX's items). Its Rigidbody mass alone decides how it
+/// reacts: walking leans on it with a force, V shove and bullets hit it with momentum (N·s), so a light prop flies and a
+/// heavy one barely moves. A push never makes it faster than what pushed it. Parkour ignores it, so the player never hangs
+/// from something that rolls away. Built from a model with ENFILADE → 모델 → 물리 소품 프리팹 만들기.
+/// Whoever last set it moving is its attacker for a few seconds (the Source engine's physics attacker), so if it then
+/// strikes an enemy hard enough the blow is theirs (PropStrike).
 /// </summary>
 [DisallowMultipleComponent, RequireComponent(typeof(Rigidbody))]
 public sealed class PhysicsProp : MonoBehaviour
 {
     // Upper bound for any single push, so a very light prop does not shoot off at bullet speed.
     private const float MaxPushSpeed = 12f;
+    // The same enemy is struck again only after this long: one blow per meeting, however many contacts it makes (s).
+    private const float StrikeAgain = .35f;
 
     private Rigidbody body;
+    private PlayerMovement attacker;
+    private float attackedAt = -99f, struckAt = -99f;
+    private EnemyHealth struck;
 
     private Rigidbody Body => body != null ? body : body = GetComponent<Rigidbody>();
+
+    /// <summary>
+    /// One PC runs this prop's motion for everyone (a fuel can: CampaignCans on the host), so its strikes are judged there
+    /// for whoever set it moving, not on the attacker's own PC (PropStrike).
+    /// </summary>
+    public bool HostJudged { get; set; }
+
+    /// <summary>The player who set it moving within PropStrike's credit window, or null.</summary>
+    public PlayerMovement Attacker => attacker != null && Time.time - attackedAt <= PropStrike.CreditSeconds ? attacker : null;
+
+    /// <summary>Its velocity as of the last physics step, before a contact changed it: the way a strike was going.</summary>
+    public Vector3 Going { get; private set; }
 
     public static PhysicsProp Of(Collider collider)
     {
@@ -22,8 +41,17 @@ public sealed class PhysicsProp : MonoBehaviour
         return attached != null && attached.TryGetComponent(out PhysicsProp prop) ? prop : null;
     }
 
+    /// <summary>A player set it moving (a throw, a kick, a shove, a shot, a lean): theirs for PropStrike's credit window.</summary>
+    public void SetAttacker(GameObject by)
+    {
+        var player = by != null ? by.GetComponentInParent<PlayerMovement>() : null;
+        if (player == null) return;
+        attacker = player;
+        attackedAt = Time.time;
+    }
+
     /// <summary>The walking body leans on the prop with <paramref name="force"/> newtons this frame, never past its own speed.</summary>
-    public void PushFromWalker(Vector3 walkerVelocity, float force)
+    public void PushFromWalker(Vector3 walkerVelocity, float force, GameObject by = null)
     {
         var rb = Body;
         Vector3 horizontal = Vector3.ProjectOnPlane(walkerVelocity, Vector3.up);
@@ -34,6 +62,7 @@ public sealed class PhysicsProp : MonoBehaviour
         if (missing <= 0f) return;
         // Through the centre of mass: leaning on a prop moves it without flicking it into a spin.
         rb.AddForce(direction * Mathf.Min(missing, force * Time.deltaTime / rb.mass), ForceMode.VelocityChange);
+        SetAttacker(by);
     }
 
     /// <summary>
@@ -41,7 +70,7 @@ public sealed class PhysicsProp : MonoBehaviour
     /// one shared speed: a light prop leaves at the body's speed for almost nothing, one as heavy as the body halves both.
     /// Returns the body's speed afterwards (0 when the prop cannot move).
     /// </summary>
-    public float Kick(Vector3 direction, float speed, float bodyMass, Vector3 point)
+    public float Kick(Vector3 direction, float speed, float bodyMass, Vector3 point, GameObject by = null)
     {
         var rb = Body;
         if (rb.isKinematic) return 0f;
@@ -49,16 +78,36 @@ public sealed class PhysicsProp : MonoBehaviour
         float change = target - Vector3.Dot(rb.linearVelocity, direction);
         if (change <= 0f) return speed;
         rb.AddForceAtPosition(direction * change * rb.mass, point, ForceMode.Impulse);
+        SetAttacker(by);
         return Mathf.Max(0f, speed - rb.mass * change / bodyMass);
     }
 
     /// <summary>A hit carrying <paramref name="momentum"/> (N·s) at a point: the prop gains momentum ÷ mass, at most <paramref name="maxSpeed"/>.</summary>
-    public void Push(Vector3 momentum, Vector3 point, float maxSpeed = MaxPushSpeed)
+    public void Push(Vector3 momentum, Vector3 point, float maxSpeed = MaxPushSpeed, GameObject by = null)
     {
         var rb = Body;
         if (rb.isKinematic) return;
         Vector3 change = Vector3.ClampMagnitude(momentum / rb.mass, Mathf.Min(maxSpeed, MaxPushSpeed));
         // At the contact point, so a hit high on the prop also tips or spins it.
-        if (change.sqrMagnitude > .0001f) rb.AddForceAtPosition(change * rb.mass, point, ForceMode.Impulse);
+        if (change.sqrMagnitude <= .0001f) return;
+        rb.AddForceAtPosition(change * rb.mass, point, ForceMode.Impulse);
+        SetAttacker(by);
     }
+
+    /// <summary>A strike on <paramref name="enemy"/> may land now: not the same one again within a moment.</summary>
+    internal bool MayStrike(EnemyHealth enemy)
+    {
+        if (enemy == struck && Time.time - struckAt < StrikeAgain) return false;
+        struck = enemy;
+        struckAt = Time.time;
+        return true;
+    }
+
+    // Kept only while someone could be credited with a strike, so a resting prop costs nothing.
+    private void FixedUpdate()
+    {
+        if (attacker != null) Going = Body.linearVelocity;
+    }
+
+    private void OnCollisionEnter(Collision collision) => PropStrike.Struck(this, Body, collision);
 }

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b247ce93477f5c47809c5c2a4ff4d24, type: 3}
+  m_Name: Soda_Audio_Hard
+  m_EditorClassIdentifier: 
+  velocityReferenceRange:
+    Min: 0.25
+    Max: 6
+  scaleVolumeWithVelocity: 1
+  collisionNormalInfluence: 0.75
+  velocityPitchInfluence: 0.025
+  randomPitchRange:
+    Min: 0.9
+    Max: 1.1
+  randomVolumeRange:
+    Min: 0.9
+    Max: 1.1
+  collisionClipSelectionMode: 0
+  collisionAudioClips:
+  - {fileID: 8300000, guid: 2c294278e312d3347ad2f05d841ad318, type: 3}
+  - {fileID: 8300000, guid: e303fa164a999de4aae3bcb7ffb7d4fe, type: 3}
+  - {fileID: 8300000, guid: 1ae5546fa7f06574fbf1f24e1b12bbe1, type: 3}
+  - {fileID: 8300000, guid: 94826c53f0ad49d46bee467d2cf66e4b, type: 3}
+  - {fileID: 8300000, guid: e8d4b5e58bdc8e84385c2fa05eabc09a, type: 3}
+  slideAudioClip: {fileID: 8300000, guid: 4b5dadf347e61674e8be70e05ac7a3a7, type: 3}
+  rollAudioClip: {fileID: 8300000, guid: cab115a9550d67e45b96aaea5ce0ed69, type: 3}
+  audioSourceTemplate: {fileID: 785337933298209690, guid: bebae4d7725bf8645a711d046d12cf02,
+    type: 3}

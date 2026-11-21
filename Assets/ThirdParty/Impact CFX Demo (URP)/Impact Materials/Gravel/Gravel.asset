@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0dc03d00c243c24591d7d189726431b, type: 3}
+  m_Name: Gravel
+  m_EditorClassIdentifier: 
+  materialTags:
+    Value: 1
+  effectSets:
+  - Name: Bullet
+    IncludeTags:
+      TagMask:
+        Value: 4
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: a4e9d1ce1a8d1f1458f30ec1d0313063, type: 2}
+    - {fileID: 11400000, guid: 8e51a7e96cff3104494141d7ed224927, type: 2}
+    - {fileID: 11400000, guid: 84274472d33979f45bb208d58f4b01f5, type: 2}
+  - Name: Footstep Left
+    IncludeTags:
+      TagMask:
+        Value: 8
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: d5fc33bf06f7e9648bc7f7c5d5cad750, type: 2}
+  - Name: Footstep Right
+    IncludeTags:
+      TagMask:
+        Value: 16
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: ec6ce18ce079f7a4290b3f976c46975b, type: 2}
+  fallbackTags:
+    Value: 0

@@ -16,6 +16,7 @@ public static class GameCommands
         MapCommands.Register(router); // /noclip and the map probes: flying through a map to look at its colliders
         GunCommands.Register(router); // /drop: the gun in hand put down as it is, until the Tab menu's drop is there
         HandCommands.Register(router); // /hands: whose each hand is, and a use held by hand for trying the rule (Docs/Features/Hands.md)
+        PropCommands.Register(router); // /prop: Impact CFX's items made in front of the player, to try physics props (PropShelf)
         router.Register("help", "명령어 목록", _ => router.Help());
         router.Register("mods", "불러온 모드 목록 · reload 모드와 표 다시 읽기 · export 게임의 원래 표를 Mods 폴더에 꺼내기", GameMods.Command);
         router.Register("echo", "입력한 내용 출력", text => text);

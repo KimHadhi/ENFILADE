@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0dc03d00c243c24591d7d189726431b, type: 3}
+  m_Name: Metal
+  m_EditorClassIdentifier: 
+  materialTags:
+    Value: 1
+  effectSets:
+  - Name: Footsteps
+    IncludeTags:
+      TagMask:
+        Value: 24
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: 374645b0e94319c478b136ff75416cb2, type: 2}
+  - Name: Bullet
+    IncludeTags:
+      TagMask:
+        Value: 4
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: 9b7bc61e009ef6e469e0d04c4c36cbd6, type: 2}
+    - {fileID: 11400000, guid: 47478e2465272804b8b3284d5b17caf8, type: 2}
+    - {fileID: 11400000, guid: 3a53ddeaa74ddbf42839380fffb1f85d, type: 2}
+  fallbackTags:
+    Value: 0

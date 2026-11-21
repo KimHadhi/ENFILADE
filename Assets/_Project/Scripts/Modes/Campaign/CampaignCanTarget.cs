@@ -25,10 +25,11 @@ public sealed class CampaignCanTarget : MonoBehaviour, IDamageReceiver
         set { if (box != null && box.enabled != value) box.enabled = value; }
     }
 
+    // A box of its own, fitted to the can's look: the can's own shape (a jerry can's mesh, a marker's box) is its solid
+    // body for physics (CampaignCans), which this must never turn into a trigger.
     private void Awake()
     {
-        box = gameObject.GetComponent<BoxCollider>();
-        if (box == null) box = gameObject.AddComponent<BoxCollider>();
+        box = gameObject.AddComponent<BoxCollider>();
         box.isTrigger = true;
         boxes.Add(box);
     }

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0dc03d00c243c24591d7d189726431b, type: 3}
+  m_Name: JerryCan
+  m_EditorClassIdentifier: 
+  materialTags:
+    Value: 1
+  effectSets:
+  - Name: Hard
+    IncludeTags:
+      TagMask:
+        Value: 1
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: d8e880a2cd551674fabba3d3133886a1, type: 2}
+  - Name: Soft
+    IncludeTags:
+      TagMask:
+        Value: 2
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: 4433abb078de66241b1351a60da337a2, type: 2}
+  fallbackTags:
+    Value: 1

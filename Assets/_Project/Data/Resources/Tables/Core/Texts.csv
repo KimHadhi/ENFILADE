@@ -1234,6 +1234,7 @@ knife.support.name,마체테,Machete,서포트의 칼 이름(근접 칸·킬 피
 feed.weapon.counter,반격,Counter,킬 피드: 반격으로 잡았을 때 무기 자리
 feed.weapon.shove,밀치기,Shove,킬 피드: 밀치기로 잡았을 때 무기 자리
 feed.weapon.fist,주먹,Fists,킬 피드: 맨손·그 밖의 처치 무기 자리
+feed.weapon.prop,물건,Prop,킬 피드: 플레이어가 던지거나 차거나 쏴서 날린 물리 물건(연료통·병·축구공 ...)에 맞아 죽었을 때 무기 자리 (PropStrike)
 feed.notice.dead,사망,Died,킬 피드(방에서): 플레이어가 죽었을 때
 feed.notice.downed,쓰러짐,Downed,킬 피드(방에서): 플레이어가 쓰러졌을 때
 feed.notice.up,일어남,Revived,킬 피드(방에서): 쓰러진 플레이어가 일어났을 때

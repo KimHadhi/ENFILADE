@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b247ce93477f5c47809c5c2a4ff4d24, type: 3}
+  m_Name: WindChime_C3_Audio
+  m_EditorClassIdentifier: 
+  velocityReferenceRange:
+    Min: 0
+    Max: 5
+  scaleVolumeWithVelocity: 1
+  collisionNormalInfluence: 1
+  velocityPitchInfluence: 0.025
+  randomPitchRange:
+    Min: 1
+    Max: 1
+  randomVolumeRange:
+    Min: 1
+    Max: 1
+  collisionClipSelectionMode: 1
+  collisionAudioClips:
+  - {fileID: 8300000, guid: d48d8ea7019581e4999175d741d79d76, type: 3}
+  - {fileID: 8300000, guid: d137ec3700b06724d8563d06acc734ea, type: 3}
+  slideAudioClip: {fileID: 0}
+  rollAudioClip: {fileID: 0}
+  audioSourceTemplate: {fileID: 785337933298209690, guid: bebae4d7725bf8645a711d046d12cf02,
+    type: 3}

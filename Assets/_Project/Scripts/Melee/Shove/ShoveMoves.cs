@@ -365,7 +365,7 @@ public sealed class ShoveMoves : MonoBehaviour
         }
         var prop = PhysicsProp.Of(collider);
         if (landed && shove != null) shove.ReceiveShove(push * settings.shovePushSpeed, point);
-        else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed);
+        else if (prop != null) prop.Push(push * settings.propShoveImpulse, point, settings.shovePushSpeed, player.gameObject);
         if (landed && (posture != null || receiver != null)) BashImpact.Play(point, push, 1f, player);
         audio.Play(posture != null || receiver != null ? ShoveImpactKind.Enemy : ShoveImpactKind.World);
         player.HorizontalVelocity -= push * (player.IsGrounded ? kickPushback : kickPushback * 2f);

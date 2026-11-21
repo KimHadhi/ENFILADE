@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b247ce93477f5c47809c5c2a4ff4d24, type: 3}
+  m_Name: Ragdoll_Audio_Slide
+  m_EditorClassIdentifier: 
+  velocityReferenceRange:
+    Min: 0
+    Max: 10
+  scaleVolumeWithVelocity: 1
+  collisionNormalInfluence: 1
+  velocityPitchInfluence: 0.025
+  randomPitchRange:
+    Min: 0.9
+    Max: 1.1
+  randomVolumeRange:
+    Min: 0.6
+    Max: 0.8
+  collisionClipSelectionMode: 1
+  collisionAudioClips: []
+  slideAudioClip: {fileID: 8300000, guid: 16abb576f1ec074489a398c4c34d75ed, type: 3}
+  rollAudioClip: {fileID: 0}
+  audioSourceTemplate: {fileID: 785337933298209690, guid: bebae4d7725bf8645a711d046d12cf02,
+    type: 3}

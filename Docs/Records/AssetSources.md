@@ -72,6 +72,7 @@ Hiro 모델(`Art/Models/Characters/Hiro`)은 허락을 받은 캐릭터였고, 0
 | `Art/Animations/Mixamo` | 28개, 13MB | mixamo.com, X Bot | |
 | `Assets/ThirdParty/Vefects/Combat Flipbook VFX URP` | 688개, 328MB | Vefects(구매) | 재색 사본이 `Prefabs/Effects/Parry`, `Art/Materials/Parry`에 있다 |
 | `Assets/ThirdParty/DAVFX/Realistic Impacts Pack` | 266개, 473MB | DAVFX(구매) | VFX Graph 패키지가 있어야 재생된다. `Resources/Combat/ImpactLibrary`가 프리팹을, `Art/Materials/Impacts`가 총알 구멍 텍스처를 직접 가리킨다 |
+| `Assets/ThirdParty/Impact CFX`, `Assets/ThirdParty/Impact CFX Demo (URP)` | 619개, 53MB | Road Turtle Games의 Impact CFX - Collision Effects System 1.5.7(구매, 2026-11-21 0.9.245) | 팩의 GUID 그대로 들였다. 뺀 것: 안의 데모 unitypackage 셋, Gizmos, 데모 씬·지형, 데모 설정 창(DemoSetup.cs, 열 때마다 뜸), 물건이 쓰지 않는 데모 스크립트. Unity 6의 API 갱신기가 `ImpactContactPoint`·`ImpactMaterialMapping`·`RigidbodyContainer`를 고쳤다(PhysicMaterial → PhysicsMaterial, velocity → linearVelocity). 소리 틀 프리팹 셋(`Prefabs/Audio`)의 스크립트를 게임의 `GameImpactAudioSource`로 바꿨다. 관리자 프리팹 `Resources/World/ImpactCFXManager`는 데모 씬의 관리자를 그대로 잘라 만든 것 |
 | `Assets/ThirdParty/JMO Assets/Cartoon FX Remaster` | 483개, 35MB | Cartoon FX Remaster Free | |
 | `Resources/Combat/Parry`의 `ParryFlare` | 1개 | Kenney Particle Pack(CC0) | |
 | `Art/Audio/HitConfirm/BodyOld` | 1개 | Kenney Interface Sounds(CC0, OpenGameArt)의 `tick_002` | 2026-11-04 추가. 2026-11-21까지 `Body` |

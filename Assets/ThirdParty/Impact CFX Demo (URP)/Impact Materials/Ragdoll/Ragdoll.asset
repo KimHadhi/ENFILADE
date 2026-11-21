@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0dc03d00c243c24591d7d189726431b, type: 3}
+  m_Name: Ragdoll
+  m_EditorClassIdentifier: 
+  materialTags:
+    Value: 2
+  effectSets:
+  - Name: Impact
+    IncludeTags:
+      TagMask:
+        Value: 3
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: 7f4b492e2f431c04ba0171ca4b39c39d, type: 2}
+    - {fileID: 11400000, guid: c129fad0c57858044b1be1ccab529baa, type: 2}
+  fallbackTags:
+    Value: 0

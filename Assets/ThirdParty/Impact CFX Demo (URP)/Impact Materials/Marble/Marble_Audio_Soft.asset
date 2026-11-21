@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b247ce93477f5c47809c5c2a4ff4d24, type: 3}
+  m_Name: Marble_Audio_Soft
+  m_EditorClassIdentifier: 
+  velocityReferenceRange:
+    Min: 1
+    Max: 4
+  scaleVolumeWithVelocity: 1
+  collisionNormalInfluence: 1
+  velocityPitchInfluence: 0.025
+  randomPitchRange:
+    Min: 0.8
+    Max: 1.2
+  randomVolumeRange:
+    Min: 0.9
+    Max: 1.1
+  collisionClipSelectionMode: 0
+  collisionAudioClips:
+  - {fileID: 8300000, guid: 8fe5b8e56605b9c46b5e36c5a0e325db, type: 3}
+  - {fileID: 8300000, guid: a74a159a5a365cf42a2b9caf3841a07d, type: 3}
+  - {fileID: 8300000, guid: bd7d73dfea759a44b8ab2e4197cd4188, type: 3}
+  - {fileID: 8300000, guid: 04ed032ff5f36e948a325734aa1840f4, type: 3}
+  - {fileID: 8300000, guid: 4531ddf7db4df3d4d8e03a21ed223cca, type: 3}
+  slideAudioClip: {fileID: 0}
+  rollAudioClip: {fileID: 0}
+  audioSourceTemplate: {fileID: 785337933298209690, guid: 2776e9feb67d1864d8743395813793d8,
+    type: 3}

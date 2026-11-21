@@ -122,6 +122,9 @@ public sealed class PlayerNetworkScore : NetworkBehaviour
     {
         CombatFeedHUD.PlayerKill(GetComponent<PlayerMovement>(), weapon.ToString(), target.ToString(), headshot, streak, standout, icon.ToString(),
             (KillMarks)marks);
+        // A kill the host judged for this player (their fuel can, a can they threw) never landed on their own PC: it
+        // shows and sounds there as their kill now.
+        if (IsOwner && ((KillMarks)marks & KillMarks.JudgedByHost) != 0) HitConfirm.HostKill((KillMarks)marks);
         // The host's count is the one: the killer's own PC keeps the best of it for the chapter's results.
         tally.NoteStreak(streak);
         // Every PC hears of this kill, so the first skull of a streak slows the whole room (item 18), and a named or

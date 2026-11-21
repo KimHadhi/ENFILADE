@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14444be9a1b16584a8a221bad0a7e7f9, type: 3}
+  m_Name: Metal_BulletImpact_Decal
+  m_EditorClassIdentifier: 
+  minimumVelocity: 0
+  collisionNormalInfluence: 1
+  decalPrefab: {fileID: 2301725260352387389, guid: e0eedf84dece7fd43941bc62b3a541ef,
+    type: 3}
+  createOnCollision: 1
+  createOnSlide: 0
+  createOnRoll: 0
+  creationInterval:
+    Min: 0.5
+    Max: 0.5
+  creationIntervalType: 1

@@ -25,6 +25,14 @@ public enum KillMarks : uint
     // The class knife in the melee slot (DamageMethod.Blade): a cut, which the crosshair's kill icon tells from a
     // punch (KillIcons).
     Blade = 1 << 12,
+    // A loose physics object a player set flying struck it (DamageMethod.Prop, PropStrike).
+    Prop = 1 << 13,
+    // Burnt: standing in a fuel can's fire (CampaignCans).
+    Fire = 1 << 14,
+    // Where the kill was judged, not how: on the host, for a player on another PC (their fuel can's blast or fire, a can
+    // they threw), so that player's own PC never saw the hit land. Their PC shows the kill as its own when the host
+    // announces it (PlayerNetworkScore → HitConfirm.HostKill).
+    JudgedByHost = 1 << 15,
     // Who fell.
     Standout = 1 << 9,
     Elite = 1 << 10,

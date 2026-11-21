@@ -25,8 +25,9 @@ public static class WeaponIcons
 {
     public const string TableName = "WeaponIcons", ResourcesFolder = "UI/WeaponIcons", DefaultStyle = "Solid";
     /// <summary>Killers that are not a weapon: bare hands (punches, kicks, card blows), a shove (and a dash's or a
-    /// kick's push), an execution, a counter, a blast, a fall.</summary>
-    public const string Fist = "fist", Shove = "shove", Execution = "execution", Counter = "counter", Explosion = "explosion", Fall = "fall";
+    /// kick's push), an execution, a counter, a blast, a fall, a physics object set flying (PropStrike).</summary>
+    public const string Fist = "fist", Shove = "shove", Execution = "execution", Counter = "counter", Explosion = "explosion", Fall = "fall",
+        Prop = "prop";
     /// <summary>The headshot's mark after the weapon in the kill feed: a skull, Counter-Strike's way, in the canvas's middle
     /// square (the user, 2026-11-12: "헤드샷은 Counter Strike처럼 두개골 모양이었으면 좋겠어 직관적이게").</summary>
     public const string Headshot = "headshot";

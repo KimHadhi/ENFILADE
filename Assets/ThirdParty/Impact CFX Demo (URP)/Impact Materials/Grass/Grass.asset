@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0dc03d00c243c24591d7d189726431b, type: 3}
+  m_Name: Grass
+  m_EditorClassIdentifier: 
+  materialTags:
+    Value: 2
+  effectSets:
+  - Name: Bullet
+    IncludeTags:
+      TagMask:
+        Value: 4
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: b9bbcb287eb37794aa273f44fb90c1f8, type: 2}
+    - {fileID: 11400000, guid: a440661d821bb234ea33386ee01e5f4d, type: 2}
+    - {fileID: 11400000, guid: c7581fb2229d680409656d257e5a679e, type: 2}
+  - Name: Footstep Left
+    IncludeTags:
+      TagMask:
+        Value: 8
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: e8a607ed9e5147642b099074e64e3b5c, type: 2}
+  - Name: Footstep Right
+    IncludeTags:
+      TagMask:
+        Value: 16
+      Exact: 0
+    ExcludeTags:
+      TagMask:
+        Value: 0
+      Exact: 0
+    Effects:
+    - {fileID: 11400000, guid: b4f400a611601ea49bfccf4784e73a33, type: 2}
+  fallbackTags:
+    Value: 1

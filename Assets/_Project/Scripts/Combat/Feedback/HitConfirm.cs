@@ -96,6 +96,22 @@ public sealed class HitConfirm : MonoBehaviour
     }
 
     /// <summary>
+    /// A kill of this PC's player that the host judged (KillMarks.JudgedByHost: their fuel can's blast or fire, a can they
+    /// threw), heard as the host announces it (PlayerNetworkScore): shown and sounded as their own kill, with its picture,
+    /// with this frame's other hits. Their PC never saw that hit land, so nothing else would show it there.
+    /// </summary>
+    public static void HostKill(KillMarks marks)
+    {
+        if (!Application.isPlaying) return;
+        var self = Get();
+        self.hits++;
+        self.kills++;
+        if ((marks & KillMarks.Headshot) != 0) { self.heads++; self.headKills++; }
+        self.share += 1f;
+        self.killIcon = KillIcons.Better(self.killIcon, KillIcons.ForKill(marks));
+    }
+
+    /// <summary>
     /// A shot of the local player's that reached a target and did nothing (a guard, a parry, invulnerability): the grey
     /// marker and its dull sound, unless a hit of the same frame did harm (a shotgun's other pellets), which speaks instead.
     /// </summary>
