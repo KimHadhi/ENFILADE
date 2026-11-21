@@ -97,7 +97,7 @@ public sealed partial class PlayerBody
         }
     }
 
-    private string JumpFor(float speed) => speed < jumpStillSpeed ? jumpStill : speed < jumpFastSpeed ? jumpSlow : jump;
+    private string JumpFor(float speed) => JumpWay(speed < jumpStillSpeed ? jumpStill : speed < jumpFastSpeed ? jumpSlow : jump, speed);
 
     private string ObstacleClip()
     {
@@ -219,9 +219,11 @@ public sealed partial class PlayerBody
     // jumps blend on.
     private string LandingFor(bool crouched, bool wasTucked)
     {
-        if (player.LastLandingTier != MovementLanding.Tier.Light) return crouched ? landCrouch : land;
+        if (player.LastLandingTier != MovementLanding.Tier.Light)
+            return crouched ? landCrouch : LandingOnTheMove(true) ?? land;
         if (wasTucked && HorizontalSpeed() > walkClipSpeed) return crouched ? coilLandCrouch : coilLand;
-        return null;
+        // A plain jump landed on the move takes the landing in its stride (Land_ToRun1); standing, it blends on.
+        return crouched ? null : LandingOnTheMove(false);
     }
 
     // Down from a tuck on the spot, the knees stay bent a moment on planted feet before the body stands up. The crouch
@@ -236,7 +238,7 @@ public sealed partial class PlayerBody
     }
 
     // As Beatrun's safety roll picks them.
-    private string RollFor() => !player.Abilities.Landing.LandsInPlace ? roll
+    private string RollFor() => !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
         : player.HasCeilingAbove(player.StandingColliderHeight) ? landCrouch : rollLand;
 
     private string DownClip(MovementLanding.Pose pose) =>

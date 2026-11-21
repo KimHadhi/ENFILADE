@@ -41,8 +41,8 @@
 1. **꺼내기·넣기 몸 동작** (`*_TakeGun`, `*_PutGun`): 총을 꺼낼 때 손이 총이 걸린 자리로 갔다가 들어 올리는 몸 전체 동작. 총의 자리는 총 다루기 다시 세우기의 GunCarry가 주인이라([GunHandling.md](GunHandling.md) 4.2, 5단계 무기 상태) 그 설계 안에서 "오른손이 든다 → 몸통이 든다"로 넘겨야 한다. FPSAF의 꺼내기 클립이 있는 총 10개와 없는 총 18개가 다르다.
 2. **출발·멈춤**(0.9.259에 연결: 앞으로 출발·멈춤, 몸이 클립의 루트처럼 가속·감속, MovementGait.Moves · GaitMoves.csv). **방향 꺾기**(기울기·호: 0.9.260에 연결, 시선이 도는 빠르기로 섞음. 반대로 꺾기 Turn은 아직) (`*_Start_*`, `*_Stop_*`, `*_Turn*`, `*_Arc_*`, `*_Lean*`, `ShiftTo*`): 걸음 사이의 한 번짜리 동작. 다리 층의 일이다.
 3. **제자리 돌기** (`TurnIP_L/R 45·90·135·180`, `*_AimTurn_*`): 각도별 클립이 있어서, `Body.turnSteps`가 꺼져 있던 까닭(클립 하나의 각도와 몸의 회전이 안 맞음)을 각도로 고르는 것으로 풀 수 있다.
-4. **점프·착지·구르기·다이브·슬라이드** (`Jump_*`, `RunJump_*`, `Land_*`, `Land_To*`, `Roll_*`, `DiveRoll_*`, `RollToRun_*`, `SlideToRun_*`, `Flip_*`, `Jump_Climb_*`): 지금 Beatrun·Mixamo 클립이 맡은 자리들(`Body.jump`, `land`, `roll` 등)에 높이·방향별로.
-5. **회피** (`QuickShift_*` 8방향, `*_Evade`): 지금 `Body.dodgeLeft/Right`.
+4. **점프·착지·구르기·슬라이드**(0.9.262에 연결: 제자리 Jump_1h, 걸으며 RunJump_1m, 달리며 RunJump_2m, 옆으로 Jump_AirL·R·RunJump_AirL·R. 착지 가볍게 Land_1h, 세게 Land_3h, 크게 Land_4h, 앞으로 가며 Land_ToRun1·3, 전력질주에서 세게 Land_ToStumble. 구르기 느리면 Roll_* 8방향, 빠르면 RollToRun_*. 슬라이드 SlideToRun_Enter·Loop·Exit. 공중 클립은 높이를 자세에서 뺌. 코드 PlayerBody.Ways, 표 Player.csv Body.*Ways. 아직: 다이브 구르기 DiveRoll·Flip·높은 점프 Jump_2h·3h·RunJump_hyper·obstacle·난간 잡고 오르기 Jump_Climb_*). 예전 목록 (`Jump_*`, `RunJump_*`, `Land_*`, `Land_To*`, `Roll_*`, `DiveRoll_*`, `RollToRun_*`, `SlideToRun_*`, `Flip_*`, `Jump_Climb_*`): 지금 Beatrun·Mixamo 클립이 맡은 자리들(`Body.jump`, `land`, `roll` 등)에 높이·방향별로.
+5. **회피**(0.9.262에 연결: 서서 QuickShift_* 8방향, 달리며 ShiftToRun_*, 전력질주 ShiftToSprint_*. Combat Girls `*_Evade`는 아직): 지금 `Body.dodgeLeft/Right`.
 6. **맞기·쓰러지기·기절** (`*_Hit_Low`, `*_Hit_Upper`, `*_Die_F/B`, `*_Stun`).
 7. **감정 표현** (`CBG_*` 7개): 제스처 자리.
 8. **사격·장전 몸 동작** (`*_Shoot`, `*_Reload`, `R_AutoShoot`): 1인칭 총과 손은 FPSAF와 총 트랙이 주인이라, 쓴다면 다리와 몸통의 흔들림만이다.

@@ -491,14 +491,14 @@ Ability.propShoveImpulse,60,V 밀치기가 물리 프랍에 주는 운동량(N·
 Ability.propBodyMass,70,슬라이드·다이브·돌진 밀치기로 프랍에 부딪힐 때의 몸무게(kg)
 Body.idle,Idle,몸 애니메이션 이름 (Art/Animations의 클립). 맨몸으로 서 있기(BIPER Female Runner). 걷기·달리기 클립은 BodyMoves.csv의 plain 줄. 예전 mx_idle
 Body.crouchIdle,CrouchIdle,웅크려 서 있기(BIPER Female Runner). 웅크린 걸음은 BodyMoves.csv의 crouch 줄. 예전 crouchstill
-Body.jump,jumpfast,점프 도약
+Body.jump,RunJump_2m,달리며 점프(Body.jumpFastSpeed 이상). BIPER Female Runner: 달리며 멀리 뛰기(클립은 4.1m). 공중 높이는 자세에서 뺐다(clips.csv inPlaceY 1): 게임의 점프가 몸을 올린다. 0.9.262 전에는 jumpfast(Beatrun)
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하
 Body.fallFlail,fallinguncontrolled,큰 낙하(Ability.bigFallHeight) 동안 허우적거리기. 이때 Ctrl은 착지 구르기만 준비하고 웅크리지 않는다
-Body.land,mx_fall_land,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊게 굽힌다
-Body.slideStart,slidestart,슬라이딩 시작
-Body.slide,slideloop,슬라이딩
-Body.slideEnd,slideend,슬라이딩 끝
+Body.land,Land_3h,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊게 굽힌다. BIPER Female Runner(엉덩이가 발 위 0.38m까지). 달리며 세게 착지하면 Body.landRunHard. 0.9.262 전에는 mx_fall_land
+Body.slideStart,SlideToRun_Enter,슬라이딩 시작. BIPER Female Runner. 0.9.262 전에는 slidestart
+Body.slide,SlideToRun_Loop,슬라이딩. BIPER Female Runner. 0.9.262 전에는 slideloop
+Body.slideEnd,SlideToRun_Exit,슬라이딩 끝: 일어나 달려 나간다. BIPER Female Runner. 0.9.262 전에는 slideend
 Body.diveStart,divestart,다이브 시작
 Body.dive,diveidle,다이브 공중
 Body.supineDiveStart,jumpturnfly,등을 대고 하는 다이브의 시작. Beatrun의 점프 턴처럼 공중에서 뒤로 눕는다
@@ -511,11 +511,22 @@ Body.supine,jumpturnlandidle,누운 자세. Beatrun의 점프 턴처럼 등을 �
 Body.supineSlideStart,meslidestart,누워서 미끄러지기 시작
 Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
-Body.roll,mx_sprint_roll,착지 구르기. Ability.rollDuration 동안 재생. 끝까지 발을 내디디며 달려 나간다
-Body.rollLand,land,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch
-Body.touchdown,land,점프를 연달아 할 때 땅에 닿는 순간 무릎이 받는 동작. 바로 다시 뛰어도 Body.touchdownSeconds 동안 보인다
-Body.dodgeLeft,dodgejumpleft,왼쪽 회피
-Body.dodgeRight,dodgejumpright,오른쪽 회피
+Body.roll,RollToRun_F,"착지 구르기. Ability.rollDuration 동안 재생. 가는 쪽마다의 클립이 Body.rollWays(느리면 구르고 일어서기)·rollRunWays(달리기 빠르기 이상이면 구르고 달려 나가기)에 있고, 이 줄은 그 표가 없을 때. 0.9.262 전에는 mx_sprint_roll"
+Body.rollLand,Land_1h,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch. BIPER Female Runner: 가볍게 착지. 0.9.262 전에는 land
+Body.touchdown,Land_1h,점프를 연달아 할 때 땅에 닿는 순간 무릎이 받는 동작. 바로 다시 뛰어도 Body.touchdownSeconds 동안 보인다. BIPER Female Runner. 0.9.262 전에는 land
+Body.dodgeLeft,QuickShift_L,"왼쪽 회피. 가는 쪽마다의 클립은 Body.dodgeWays(서서·걸으며)·dodgeRunWays(달리며)·dodgeSprintWays(전력질주)에 있고, 이 줄은 그 표에 그쪽이 없을 때. BIPER Female Runner. 0.9.262 전에는 dodgejumpleft"
+Body.dodgeRight,QuickShift_R,오른쪽 회피(Body.dodgeLeft와 같이). 0.9.262 전에는 dodgejumpright
+Body.rollWays,Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@-135;Roll_L@-90;Roll_L45@-45,"착지 구르기를 가는 쪽마다(클립@도. 0 앞 90 오른쪽): 달리기 빠르기(Body.jumpFastSpeed)보다 느리면 구르고 일어선다. 가장 가까운 쪽이 45°보다 멀면 Body.roll. BIPER Female Runner Roll_*(1.47초 3.4m), 0.9.262"
+Body.rollRunWays,RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_B@180;RollToRun_L@-90;RollToRun_L45@-45,"착지 구르기를 가는 쪽마다, 달리기 빠르기 이상이면 구르고 달려 나간다. BIPER Female Runner RollToRun_*(0.97초 약 5m), 0.9.262"
+Body.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"회피를 가는 쪽마다(서서·걸으며): 몸을 비키는 짧은 스텝. BIPER Female Runner QuickShift_*(0.8초 3.25m), 0.9.262"
+Body.dodgeRunWays,ShiftToRun_L@-90;ShiftToRun_L45@-45;ShiftToRun_R45@45;ShiftToRun_R@90,"달리며(Body.jumpFastSpeed 이상) 회피: 옆으로 비키며 달리기를 이어 간다. 앞뒤는 없어서 Body.dodgeWays. BIPER Female Runner ShiftToRun_*, 0.9.262"
+Body.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며 회피: 비키며 전력질주를 이어 간다. BIPER Female Runner ShiftToSprint_*, 0.9.262"
+Body.jumpWays,Jump_AirL@-90;Jump_AirR@90,"걸으며 옆으로(앞에서 45~135°) 점프하면 그쪽으로 뛰는 클립. BIPER Female Runner Jump_AirL·R, 0.9.262"
+Body.runJumpWays,RunJump_AirL@-90;RunJump_AirR@90,"달리며 옆으로 점프하면 그쪽으로 뛰는 클립. BIPER Female Runner RunJump_AirL·R, 0.9.262"
+Body.landRunLight,Land_ToRun1,"앞으로 걷기보다 빨리 가다 가볍게 착지하면 그 걸음으로 받고 달려 나간다. BIPER Female Runner, 0.9.262"
+Body.landRunHard,Land_ToRun3,"앞으로 가다 세게 착지하면 깊게 받고 달려 나간다. BIPER Female Runner, 0.9.262"
+Body.landRunStumble,Land_ToStumble,"Body.landStumbleSpeed 이상으로 가다 세게 착지하면 비틀거리며 달려 나간다. BIPER Female Runner, 0.9.262"
+Body.landStumbleSpeed,6,"이보다 빨리 가다 세게 착지하면 비틀거린다(m/s). 달리기(가장 빠른 쪽 4.70)와 전력질주(앞 7.16) 사이: 전력질주에서, 0.9.262"
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
 Body.vault,vaultover,보통 넘기
 Body.mantle,climb1,올라서기
@@ -526,11 +537,11 @@ Body.barRelease,swingjumpoff,봉에서 뛰어내리기
 Body.ledgeHang,mx_ledge_hang_wall,난간 매달리기
 Body.ledgeJump,jumpfast,난간에서 뛰어오르기
 Body.death,diestand,사망
-Body.jumpStill,jumpstill,제자리 점프 (도움닫기 속도가 jumpStillSpeed 미만)
-Body.jumpSlow,jumpslow,걸으며 점프 (jumpFastSpeed 미만). 그보다 빠르면 Body.jump
+Body.jumpStill,Jump_1h,제자리 점프(도움닫기 속도가 jumpStillSpeed 미만). BIPER Female Runner: 제자리에서 뛰기. 0.9.262 전에는 jumpstill
+Body.jumpSlow,RunJump_1m,걸으며 점프(jumpFastSpeed 미만). 그보다 빠르면 Body.jump. BIPER Female Runner: 가볍게 뛰기(클립은 2.8m). 0.9.262 전에는 jumpslow
 Body.airTuck,jumpcoil,공중에서 Ctrl로 무릎을 접은 자세 (Beatrun 코일)
 Body.landCrouch,landcrouch,웅크린 채 세게 착지 (서지 않고 웅크린 채 끝남)
-Body.heavyLand,mx_hard_landing,크게 착지: 손과 무릎을 짚었다 일어난다. Ability.heavyLandingTime 동안 재생
+Body.heavyLand,Land_4h,크게 착지: 깊이 주저앉았다 일어선다. Ability.heavyLandingTime 동안 재생. BIPER Female Runner(가장 높은 데서 내린 착지). 0.9.262 전에는 mx_hard_landing(손과 무릎을 짚음)
 Body.heavyLandFaceDown,mx_get_up,아주 크게 착지(Ability.faceDownLandingSpeed): 엎어졌다 일어난다
 Body.heavyLandBack,mx_stand_up_back,뒤로 움직이며 크게 착지하거나 넉백: 등으로 떨어졌다 일어난다
 Body.coilLand,jumpcoilend,공중에서 무릎을 접었다가 가볍게 착지할 때 다리를 펴는 동작

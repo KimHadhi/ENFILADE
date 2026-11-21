@@ -11,17 +11,27 @@ using UnityEngine.Playables;
 public sealed partial class PlayerBody
 {
     private AnimationMixerPlayable dodgeMixer;
-    private AnimationClipPlayable dodgeLeftLegs, dodgeRightLegs;
+    // Every dodge's legs-only copy by its clip's name, and the input it is on.
+    private readonly System.Collections.Generic.Dictionary<string, (AnimationClipPlayable playable, int input)> dodgeLegs =
+        new System.Collections.Generic.Dictionary<string, (AnimationClipPlayable, int)>();
     private float dodgeLayerWeight, dodgeLayerTarget;
 
-    // From BuildLayers, after BuildKick has made the leg mask.
+    // From BuildLayers, after BuildKick has made the leg mask: the side dodges and every dodge of the ways (PlayerBody.Ways).
     private void BuildDodge()
     {
         layers.SetLayerMaskFromAvatarMask(DodgeLayer, legMask);
-        dodgeMixer = AnimationMixerPlayable.Create(graph, 2);
+        var names = new System.Collections.Generic.List<string> { dodgeLeft, dodgeRight };
+        foreach (string set in new[] { dodgeWays, dodgeRunWays, dodgeSprintWays })
+            foreach (var (clip, _) in WaysOf(set))
+                if (!names.Contains(clip)) names.Add(clip);
+        dodgeMixer = AnimationMixerPlayable.Create(graph, names.Count);
         graph.Connect(dodgeMixer, 0, layers, DodgeLayer);
-        dodgeLeftLegs = DodgeLegsClip(dodgeLeft, 0);
-        dodgeRightLegs = DodgeLegsClip(dodgeRight, 1);
+        dodgeLegs.Clear();
+        for (int i = 0; i < names.Count; i++)
+        {
+            var playable = DodgeLegsClip(names[i], i);
+            if (playable.IsValid()) dodgeLegs[names[i]] = (playable, i);
+        }
         dodgeLayerWeight = dodgeLayerTarget = 0f;
         layers.SetInputWeight(DodgeLayer, 0f);
     }
@@ -40,21 +50,19 @@ public sealed partial class PlayerBody
     private void TeardownDodge()
     {
         dodgeMixer = default;
-        dodgeLeftLegs = dodgeRightLegs = default;
+        dodgeLegs.Clear();
         dodgeLayerWeight = dodgeLayerTarget = 0f;
     }
 
     // From Enter: the legs' copy of the dodge starts with the whole clip, so either can take over this frame.
-    private void StartDodgeLegs(bool left)
+    private void StartDodgeLegs(string clip)
     {
         if (!dodgeMixer.IsValid()) return;
-        dodgeMixer.SetInputWeight(0, left ? 1f : 0f);
-        dodgeMixer.SetInputWeight(1, left ? 0f : 1f);
-        var legs = left ? dodgeLeftLegs : dodgeRightLegs;
-        if (!legs.IsValid()) return;
-        legs.SetTime(0);
-        legs.SetSpeed(1);
-        legs.SetDone(false);
+        foreach (var entry in dodgeLegs) dodgeMixer.SetInputWeight(entry.Value.input, entry.Key == clip ? 1f : 0f);
+        if (!dodgeLegs.TryGetValue(clip ?? "", out var legs)) return;
+        legs.playable.SetTime(0);
+        legs.playable.SetSpeed(1);
+        legs.playable.SetDone(false);
     }
 
     // From ChoosePose. With a gun the body stands as it does still and the legs dodge; otherwise the whole clip plays.
@@ -63,8 +71,7 @@ public sealed partial class PlayerBody
         // From a crouch: the crouch held low as the body slides along, a crouched slide (user, 2026-11-12: "앉아서 회피할
         // 때는 앉아서 슬라이딩하는 회피 모션"); the standing clip hopped up out of the crouch and its feet ran.
         if (player.IsCrouchStance) { Want(crouchIdle); return; }
-        var legs = dodgeClip == dodgeLeft ? dodgeLeftLegs : dodgeRightLegs;
-        if (HoldsGun && legs.IsValid())
+        if (HoldsGun && dodgeLegs.ContainsKey(dodgeClip ?? ""))
         {
             Want(idle);
             dodgeLayerTarget = 1f;

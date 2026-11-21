@@ -256,6 +256,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                      prone, supine, roll, dodgeLeft, dodgeRight, dashPush,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
+        // The rolls, dodges, jumps and landings by the way they go (PlayerBody.Ways).
+        foreach (string clip in WayClips()) AddChannel(clip, 0f);
         foreach (string clip in VariantClips) AddChannel(clip, 0f);
         AddHangChannels();
         foreach (string clip in FixtureClips) AddChannel(clip, 0f);
@@ -685,14 +687,17 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 || state == MovementState.Proning || state == MovementState.Supine);
             bool movingOff = transitionLeft < transition.Length - .25f && HorizontalSpeed() > walkClipSpeed;
             bool upright = state == MovementState.Standing || state == MovementState.Crouching;
-            bool hold = playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
+            // A landing that runs on out of itself (Land_ToRun) holds on the move, and gives way once the body slows or
+            // leaves its feet.
+            bool hold = transitionRuns ? onFeet && upright && HorizontalSpeed() > walkClipSpeed
+                : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
             if (transitionLeft > blendTime && hold)
             {
                 transition.Target = 1f;
                 return;
             }
             transition = null;
-            playingOut = false;
+            playingOut = transitionRuns = false;
         }
 
         switch (state)
@@ -803,11 +808,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 if (!supineDiveAtOnce) Restart(Find(supineDiveStart));
                 break;
             case MovementState.StepDodge:
-                dodgeClip = Vector3.Dot(player.Abilities.ActionDirection, transform.right) < 0f ? dodgeLeft : dodgeRight;
+                dodgeClip = DodgeFor();
                 // From a crouch the body stays low and slides along (DodgePose): no hop out of the crouch.
                 if (player.IsCrouchStance) break;
                 Restart(Find(dodgeClip));
-                StartDodgeLegs(dodgeClip == dodgeLeft);
+                StartDodgeLegs(dodgeClip);
                 break;
             case MovementState.LandingRoll:
                 rollClip = RollFor();
@@ -856,7 +861,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if ((state == MovementState.Standing || state == MovementState.Crouching) && Time.time - climbedOffLadderAt > ClimbOffTouchdown)
         {
             string landing = LandingFor(state == MovementState.Crouching, wasTucked);
-            if (landing != null) PlayTransition(landing);
+            if (landing != null)
+            {
+                PlayTransition(landing);
+                transitionRuns = landing == landRunLight || landing == landRunHard || landing == landRunStumble;
+            }
             else if (wasTucked && state == MovementState.Standing) SettleFromTuck();
         }
     }
@@ -907,8 +916,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         Restart(channel);
         transition = channel;
         transitionLeft = channel.Length;
-        playingOut = false;
+        playingOut = transitionRuns = false;
     }
+
+    // The transition playing is a landing that runs on (PlayerBody.Ways): it holds on the move.
+    private bool transitionRuns;
 
     // A one-shot clip carries on from where it is as a landing-like transition: the barge recovers on the spot when a
     // dash push stops on someone, and gives way at once to a run that carries on.
