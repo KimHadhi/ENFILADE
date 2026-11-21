@@ -318,6 +318,19 @@ MP3 그대로 폴더에 넣었다. 크기와 피치는 `Sounds.csv`의 줄이고
 - **리퍼의 "누구라도"**: 각 PC가 자기 플레이어는 실제로 베어 보고(행동한 PC가 정한다), 친구의 사본은 같은 규칙(원 안, 같은 층, 사이에 벽 없음, 낮은 자세 아님)으로 읽는다. 친구의 자세는 `MovementMirror`로 모든 PC에 같으므로 기다리지 않고 모든 PC가 같은 소리를 낸다. 어긋나는 드문 경우: 친구의 PC에서 피해가 막혔을 때(무적 시간 등) 그 친구의 PC만 Evaded를 듣는다.
 - **줍기 두 겹**: 사용자: "Pick up SFX는 일단 줍기고 거기에 체력이나 쉴드나 그런 거에 따라 따로 추가 효과음이 있으면 되는 거 아님?" 그래서 손에 집는 모든 곳이 `Pick`을 깔고 그 위에 종류 소리(`PickAmmo`·`PickHeal`·`PickShield`·`PickGun`·`PickMoney`)를 겹친다: 바닥 줍기 다섯 종류(`FieldPickups`), 던진 나이프 다시 줍기, 허브의 총 거치대와 탄약 상자. 동료가 건네준 것(서포트 보급, 데탕트 치료, 동료의 치료)은 줍는 일이 아니라서 종류 소리만 난다. 종류 소리는 지금의 파일(RE4, MWII, L4D1 줍기 소리와 레이저 소리)이고, 돈은 아직 합성 동전(5.9)이다. 종류 소리를 줍기와 다른 "추가 효과음"으로 바꾸려면 그 폴더의 파일만 바꾸면 된다.
 
+### 5.11 자리만 만들어 둔 소리: 하이힐 발소리 (2026-11-21, 0.9.241)
+
+사용자: "하이힐 사운드 넣었어? 옷장에서 발이 하이힐이면 하이힐 사운드로 해줘." 하이힐 소리 파일은 프로젝트에도, 산 패키지에도 없다. 합성하지 않는다. 그래서 고르는 쪽만 지었다: 입힌 몸의 발 밑을 재서 굽이 3cm 이상이면(`DrawnHeels`, Player.csv `Body.heelsFrom`) 발소리 큐가 `@Heels` 줄을 쓴다(자세한 것은 [유지 보수 안내](../Guides/MaintenanceGuide.md)의 "하이힐 발소리").
+
+| 큐 | 파일을 넣을 폴더 (`Movement` 묶음) | 없을 때 |
+| --- | --- | --- |
+| `StepWalk@Heels` | `Art/Audio/Movement/Heels/Walk` | `StepWalk` |
+| `StepRun@Heels` | `Art/Audio/Movement/Heels/Run` | `StepRun` |
+| `StepSneak@Heels` | `Art/Audio/Movement/Heels/Sneak` | `StepSneak` |
+
+- 폴더에 바로 넣으면 모든 표면에서 그 소리를 쓴다. 표면마다 다르게 하려면 `Heels/Walk/Concrete`·`Heels/Walk/Carpet`처럼 하위 폴더를 만든다(없는 표면은 표면의 부모를 따라간다).
+- 옷 스치는 소리(`Cloth/Movement…`)는 원래 발소리와 같이 깔린다. 착지·발 떼기(`StepRelease`)·회피는 아직 하이힐 줄이 없어 원래 소리다. 줄을 더하면 된다(`Land@Heels`처럼).
+
 ## 6. 함께 찾은 것
 
 ### 6.1 버그

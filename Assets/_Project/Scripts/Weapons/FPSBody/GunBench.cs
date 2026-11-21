@@ -231,7 +231,7 @@ internal static class GunBench
         try
         {
             if (ask.Pictures) stage = new Stage();
-            float camera = CameraHeight();
+            float camera = PlayerBody.StandingCamera();
             int done = 0;
             foreach (var skin in profile.Skins)
             {
@@ -281,14 +281,6 @@ internal static class GunBench
         }
         rules = (GunHold.Rules)boxed;
         return text.ToString();
-    }
-
-    // The standing camera height the game sizes every body to (Player.prefab's CrouchPivot, as the hold check takes it).
-    private static float CameraHeight()
-    {
-        var player = Resources.Load<GameObject>("Characters/Player");
-        var pivot = player != null ? player.transform.Find("CrouchPivot") : null;
-        return pivot != null ? pivot.localPosition.y : 1.6f;
     }
 
     // One character with every gun asked for.

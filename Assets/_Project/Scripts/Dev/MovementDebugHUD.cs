@@ -103,6 +103,9 @@ public sealed class MovementDebugHUD : MonoBehaviour
         }
         if (footsteps == null) footsteps = playerMovement.GetComponent<PlayerFootsteps>();
         if (footsteps != null) GUILayout.Label($"Surface: {footsteps.LastSurface}", labelStyle);
+        // What the feet stand in, as measured from the dressed body (PlayerBody.MeasureHeels): what the steps sound like.
+        if (playerMovement.TryGetComponent(out PlayerBody body))
+            GUILayout.Label($"Heels: {body.HeelHeight * 100f:0.0} cm ({body.Footwear ?? "ordinary steps"})", labelStyle);
         if (playerMovement.Abilities != null)
         {
             var landing = playerMovement.Abilities.Landing;

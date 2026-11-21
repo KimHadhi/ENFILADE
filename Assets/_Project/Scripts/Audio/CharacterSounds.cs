@@ -39,6 +39,13 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
     /// <summary>True while a grunt is playing, waiting for the mouth, or due from a cue; breaths wait.</summary>
     public bool MouthBusy => (queued.Clip != null && queued.IsLine) || Time.unscaledTime < lineUntil || Time.time < reservedUntil;
 
+    /// <summary>
+    /// What the feet stand in ("Heels"; null for ordinary shoes), set by whoever dresses this character (PlayerBody, as it
+    /// measures the look it put on). A cue with a version for it in SoundCues.csv ("StepWalk@Heels") plays that version.
+    /// Every PC dresses and measures each player's body from the same look, so a friend's heels sound the same on all.
+    /// </summary>
+    public string Footwear { get; set; }
+
     private sealed class Voice
     {
         public AudioSource Source;
@@ -75,13 +82,13 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
     void ITableBound.OnTableApplied() => rebuild = true;
 
     /// <summary>
-    /// Plays a SoundCues row at a world point. The surface picks the "{surface}" keys and the cue's surface version;
-    /// volume scales every part and the noise.
+    /// Plays a SoundCues row at a world point. The surface picks the "{surface}" keys and the cue's surface version, and
+    /// what the feet stand in (Footwear) its version for them; volume scales every part and the noise.
     /// </summary>
     public void Play(string cue, Vector3 point, string surface = null, float volume = 1f)
     {
         if (!isActiveAndEnabled || volume <= 0f) return;
-        var found = SoundCues.Find(cue, surface);
+        var found = Worn(cue, surface) ?? SoundCues.Find(cue, surface);
         if (found == null) return;
         float loudness = 1f;
         bool measured = false;
@@ -233,6 +240,26 @@ public sealed class CharacterSounds : MonoBehaviour, ITableBound
     }
 
     private static bool IsVoice(SoundCues.Item item) => string.Equals(item.Bank, VoiceBank, StringComparison.OrdinalIgnoreCase);
+
+    // The cue's version for what the feet stand in, when the table has one and the banks hold every sound it names on
+    // this surface. Otherwise null and the cue itself plays: feet in heels whose sounds nobody has given yet still sound
+    // as steps, never as silence, and a version given only for some surfaces is used only on those.
+    private SoundCues.Cue Worn(string cue, string surface)
+    {
+        var version = SoundCues.FindFootwear(cue, Footwear, surface);
+        if (version == null) return null;
+        foreach (var item in version.Items)
+        {
+            if (IsVoice(item)) continue;
+            var bank = Bank(item.Bank);
+            bool has = bank != null && (item.OnSurface ? bank.Find(item.Key, surface, out _) != null : bank.TryGet(item.Key, out _));
+            if (has) continue;
+            Report($"'{version.Id}' plays '{cue}' instead: the {item.Bank} bank has no '{item.Key}{(item.OnSurface ? SoundCues.SurfaceMarker : "")}' "
+                + $"yet (Art/Audio/{item.Bank}/{item.Key}/).");
+            return null;
+        }
+        return version;
+    }
 
     // Plays one part of a cue. Returns the sound's table volume, 0 when nothing played.
     private float PlayItem(SoundCues.Item item, Vector3 point, string surface, float volume)

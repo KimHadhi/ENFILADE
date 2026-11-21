@@ -53,7 +53,29 @@ public sealed partial class PlayerBody
     [SerializeField, Min(.01f), Tooltip("How long a foot that let go takes to ease to where the clip has it (s).")]
     private float footHoldRelease = .12f;
 
+    [Header("What the feet stand in")]
+    [SerializeField, Min(0f), Tooltip("Heels at least this high (m, at the size the body is drawn) sound like heels: the feet play "
+        + "the '@Heels' versions of their cues in SoundCues.csv. Measured from the dressed look (DrawnHeels), any character or shoe.")]
+    private float heelsFrom = .03f;
+
     private FootPlanting feet;
+    // How high the heels the body stands in are, as dressing left it (m at its size; 0 for flat shoes and bare feet).
+    private float heelHeight;
+
+    /// <summary>How high the heels this body stands in are (m), measured as it was dressed; 0 for flat shoes and bare feet.</summary>
+    internal float HeelHeight => heelHeight;
+    /// <summary>What the feet stand in, as the sounds name it (DrawnHeels.Footwear), or null for ordinary shoes.</summary>
+    internal string Footwear => DrawnHeels.FootwearOf(heelHeight, heelsFrom);
+
+    // Reads the heels off the look as dressed, before any clip has posed it (Build), and has the feet sound like them. A
+    // character's own shoes, the wardrobe's and a modder's avatar are read alike, so nothing is listed per shoe (the user,
+    // 2026-11-21: "기본이 하이힐인 애들도 있을 거 아니야 … 모드로 캐릭터를 추가할 거라서 알아서").
+    private void MeasureHeels()
+    {
+        heelHeight = body != null ? DrawnHeels.Of(body, animator) * body.localScale.y : 0f;
+        if (TryGetComponent(out CharacterSounds sounds)) sounds.Footwear = Footwear;
+    }
+
     // What moved the hips sideways this frame that is no step (the lean), for the feet to take back out; and the legs'
     // yaw last frame, for how fast they turn.
     private Vector3 hipsCarried;

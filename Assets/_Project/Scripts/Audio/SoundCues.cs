@@ -10,11 +10,14 @@ using UnityEngine;
 ///   … *0.5                             a volume scale
 ///   … +0.1                             seconds after the cue
 /// "noise" is how far the cue carries for enemy hearing (m). A cue may have surface versions: "Vault/Gantry" is
-/// used on a gantry before "Vault".
+/// used on a gantry before "Vault". It may also have versions for what the feet stand in: "StepWalk@Heels" is used by
+/// a character in heels (CharacterSounds.Footwear), and "StepWalk@Heels/Carpet" by one in heels on carpet.
 /// </summary>
 public static class SoundCues
 {
     public const string SurfaceMarker = "/{surface}";
+    /// <summary>Between a cue and what the feet stand in, in a footwear version's id: "StepWalk@Heels".</summary>
+    public const char FootwearMarker = '@';
     private const string Table = "SoundCues";
 
     public readonly struct Item
@@ -64,6 +67,22 @@ public static class SoundCues
 
     /// <summary>The row with exactly this id; false, and no warning, when there is none (the caller has a fallback).</summary>
     public static bool TryFind(string id, out Cue cue) => Load().TryGetValue(id ?? "", out cue);
+
+    /// <summary>
+    /// The cue's version for what the feet stand in ("StepWalk@Heels"), or that version's surface version
+    /// ("StepWalk@Heels/Carpet", following the surface's fallbacks); null, and no warning, when the table has neither or
+    /// <paramref name="footwear"/> is empty (the caller plays the cue itself).
+    /// </summary>
+    public static Cue FindFootwear(string id, string footwear, string surface)
+    {
+        if (string.IsNullOrEmpty(footwear)) return null;
+        var all = Load();
+        string worn = id + FootwearMarker + footwear;
+        if (!string.IsNullOrEmpty(surface))
+            foreach (string candidate in Surfaces.Fallbacks(surface))
+                if (all.TryGetValue(worn + "/" + candidate, out var version)) return version;
+        return all.TryGetValue(worn, out var cue) ? cue : null;
+    }
 
     private static Dictionary<string, Cue> Load()
     {

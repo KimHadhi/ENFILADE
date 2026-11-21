@@ -130,14 +130,6 @@ internal static partial class InjectBench
         }
     }
 
-    // The standing camera height the game sizes every body to (Player.prefab's CrouchPivot, as the gun bench takes it).
-    private static float CameraHeight()
-    {
-        var player = Resources.Load<GameObject>("Characters/Player");
-        var pivot = player != null ? player.transform.Find("CrouchPivot") : null;
-        return pivot != null ? pivot.localPosition.y : 1.6f;
-    }
-
     private static void Run(Ask ask)
     {
         var report = new Report();
@@ -163,7 +155,7 @@ internal static partial class InjectBench
                     stage = new WardrobeBench.Stage();
                     Directory.CreateDirectory(Folder);
                 }
-                float camera = CameraHeight();
+                float camera = PlayerBody.StandingCamera();
                 int done = 0;
                 foreach (var skin in profile.Skins)
                 {

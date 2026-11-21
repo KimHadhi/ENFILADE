@@ -223,6 +223,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         dressing = OutfitDresser.Dress(body.gameObject, loadedModel, loadedSkin, outfit);
         loadedOutfit = outfit.ToString();
         StandOnSoles(fit);
+        // At the size it stands at, before any clip, as the soles are.
+        MeasureHeels();
         // The face once dressed, so a mask's keys that follow the face's move with it (PlayerBody.Face).
         WearFace();
         headParts.AddRange(dressing.HeadParts);
@@ -427,6 +429,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         // Without a body the camera rests at the capsule's own height again.
         eyeRise = 0f;
         if (player != null) player.EyeRise = 0f;
+        // … and the feet stand in nothing in particular.
+        heelHeight = 0f;
+        if (TryGetComponent(out CharacterSounds sounds)) sounds.Footwear = null;
         thirdPerson = false;
     }
 
@@ -474,6 +479,17 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         float fit = FitScaleOf(animator, model, camera);
         SizeOnSoles(animator, camera, DrawnSole.Of(model), ref fit);
         return fit;
+    }
+
+    /// <summary>
+    /// The standing camera height the game sizes every body to (m), read off the player prefab (its CrouchPivot), for the
+    /// editor's benches, which size bodies nobody plays (DrawnScaleOf): the gun, hold, healing-arm and wardrobe benches.
+    /// </summary>
+    internal static float StandingCamera()
+    {
+        var player = Resources.Load<GameObject>("Characters/Player");
+        var pivot = player != null ? player.transform.Find("CrouchPivot") : null;
+        return pivot != null ? pivot.localPosition.y : 1.6f;
     }
 
     /// <summary>

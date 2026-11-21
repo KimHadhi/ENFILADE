@@ -27,12 +27,14 @@ using Object = UnityEngine.Object;
 ///   rule after every script reload (WardrobeBench.Positions.cs);
 /// - every way of wearing every hung piece on every character: dressed, then measured from the eyes in eye spacings
 ///   (where the piece's own spot went, what it follows, whether a pair mirrors, whether it covers what it should), and
-///   photographed from the front, the side and the back.
+///   photographed from the front, the side and the back;
+/// - the heels every character stands in, as it comes, barefoot and in each pair of shoes it can wear, as the feet will
+///   sound them (DrawnHeels; WardrobeBench.Heels.cs, Logs/WardrobeBench/heels.txt).
 /// Those that load every model run when asked: ENFILADE → 캐릭터 → 옷장 검사대, or a tool outside Unity making the file
 /// Temp/enfilade-wardrobebench.request, whose lines say what to stand (all optional):
 ///   skins=mayo,ichigo        characters by id (all)
 ///   models=welding-mask      outfit models by id (all)
-///   check=parts,positions    which of the two (both)
+///   check=parts,positions    which of parts, positions and heels (all three)
 ///   pictures=no              the positions' numbers only (pictures are taken unless told not to)
 ///   width=256                one picture's width and height in pixels
 /// Logs/WardrobeBench/parts.txt and positions.txt have the answers; each character's pictures are one sheet,
@@ -83,7 +85,7 @@ internal static partial class WardrobeBench
     private sealed class Ask
     {
         public HashSet<string> Skins, Models;
-        public bool Parts = true, Positions = true, Pictures = true;
+        public bool Parts = true, Positions = true, Heels = true, Pictures = true;
         public int Width = 256;
 
         public static Ask Read(string[] lines)
@@ -107,6 +109,7 @@ internal static partial class WardrobeBench
                         var which = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
                         ask.Parts = which.Contains("parts");
                         ask.Positions = which.Contains("positions");
+                        ask.Heels = which.Contains("heels");
                         break;
                     case "pictures":
                         ask.Pictures = values.Length == 0 || values[0].ToLowerInvariant() != "no";
@@ -274,6 +277,7 @@ internal static partial class WardrobeBench
         }
         if (ask.Parts) RunParts(ask, profile);
         if (ask.Positions) RunPositions(ask, profile);
+        if (ask.Heels) RunHeels(ask, profile);
     }
 
     private static void RunParts(Ask ask, PlayerBodyProfile profile)

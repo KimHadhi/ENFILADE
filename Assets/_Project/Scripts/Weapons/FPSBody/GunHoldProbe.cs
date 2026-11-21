@@ -103,7 +103,7 @@ internal static class GunHoldProbe
                 spreads[i] = new Spread();
                 Describe(assets.guns[i], guns[i], text);
             }
-            float camera = CameraHeight();
+            float camera = PlayerBody.StandingCamera();
             foreach (var skin in profile.Skins)
             {
                 var model = skin != null ? profile.ModelOf(skin) : null;
@@ -125,14 +125,6 @@ internal static class GunHoldProbe
         Directory.CreateDirectory(Path.GetDirectoryName(ReportPath));
         File.WriteAllText(ReportPath, text.ToString());
         Debug.Log($"GunHoldProbe: every character's hold of every gun is in {ReportPath}.");
-    }
-
-    // The standing camera height the game sizes every body to (Player.prefab's CrouchPivot, as GunClipRetarget takes it).
-    private static float CameraHeight()
-    {
-        var player = Resources.Load<GameObject>("Characters/Player");
-        var pivot = player != null ? player.transform.Find("CrouchPivot") : null;
-        return pivot != null ? pivot.localPosition.y : 1.6f;
     }
 
     // The gun's hold, from a copy of its model as a body wears it (FPSBody.AddGun reads the handles the same way).

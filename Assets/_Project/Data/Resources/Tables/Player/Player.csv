@@ -686,6 +686,7 @@ Body.footHoldRelease,0.12,자리를 놓은 발이 클립의 발 자리로 옮겨
 Body.maxFootTilt,30,땅을 디딘 발이 경사에 맞춰 기우는 최대 각도(도)
 Body.maxAnkleTurn,20,어떤 동작에서든 발이 정강이 축으로 돌아가는 최대 각도(도). 넘는 만큼은 잘라서 발목이 꼬이지 않는다
 Body.maxAnkleRoll,25,어떤 동작에서든 발이 옆으로 꺾이는 최대 각도(도)
+Body.heelsFrom,0.03,"입은 신발의 굽이 이만큼(m, 게임에서 그려지는 크기) 이상이면 발소리가 하이힐 소리(SoundCues.csv의 @Heels 줄)가 된다. 굽은 몸을 입힐 때마다 발 밑 메시에서 잰다(DrawnHeels): 캐릭터가 원래 신은 신발, 옷장 신발, 모드 캐릭터 모두 같은 규칙. 옷장 검사대(check=heels)가 캐릭터·신발마다 잰 값을 Logs/WardrobeBench/heels.txt에 쓴다"
 Hands.blendTime,0.15,손이 총·주먹·난간·사다리·자유 사이를 옮겨 가는 시간(초)
 Hands.shoulderReach,15,손이 닿지 않을 때 어깨가 그쪽으로 도는 최대 각도(도)
 Hands.softReachFrom,0.93,손 자리가 팔 길이의 이 비율보다 멀면 팔이 끝까지 펴지며 확 튀지 않게 남은 거리를 부드럽게 줄여 다가간다(소프트 IK · ArmIK.Soften). 끝까지 펴질 무렵 팔꿈치 각도는 아주 작은 움직임에도 크게 바뀐다
