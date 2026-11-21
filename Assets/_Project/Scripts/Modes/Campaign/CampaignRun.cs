@@ -444,7 +444,7 @@ public sealed partial class CampaignRun : MonoBehaviour
     private void LateUpdate()
     {
         var mine = PlayerRoster.Local;
-        fuel.Place(mine, mine != null && mine.TryGetComponent(out PlayerBody body) ? body.View : null, IsHost);
+        fuel.Place(mine, mine != null && mine.TryGetComponent(out PlayerBody body) ? body.View : null);
     }
 
     private bool AnyoneAt(CampaignStep at)

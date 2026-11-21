@@ -9,10 +9,9 @@ using UnityEngine;
 /// it meets the enemy (½ m v², at the speed the two met), so a thrown fuel can floors a zombie, a soda can stings and a
 /// marble does nothing. The blow's posture damage is the same share of it, so a hard one staggers as a shove does
 /// (EnemyHitReaction). Numbers: Tables/Maps/PropStrike.csv, rows Strike.*.
-/// Who judges a strike: the PC whose own player is the attacker, as every hit is judged by the PC that lands it, on its
-/// own copy of the prop. A prop whose motion one PC runs for everyone (a fuel can, on the host: CampaignCans,
-/// PhysicsProp.HostJudged) is judged there, for whoever set it moving, and marked JudgedByHost so that player's own PC
-/// still shows the kill.
+/// Who judges a strike: the PC whose own player is the attacker, as every hit is judged by the PC that lands it. That PC
+/// is also the one with the word on the prop's motion (PropNet: a player's touch takes it), so the strike happens on the
+/// copy every other PC follows.
 /// </summary>
 public static class PropStrike
 {
@@ -31,8 +30,8 @@ public static class PropStrike
         if (attacker == null || body == null || collision == null || collision.collider == null) return false;
         var enemy = collision.collider.GetComponentInParent<EnemyHealth>();
         if (enemy == null || !enemy.IsAlive) return false;
-        // The attacker's own PC judges, or the one PC that runs this prop for everyone.
-        if (prop.HostJudged ? GameSession.IsGuest : !attacker.IsLocal) return false;
+        // The attacker's own PC judges.
+        if (!attacker.IsLocal) return false;
         float speed = collision.relativeVelocity.magnitude;
         if (speed < GameTables.Number(TableName, Row, "minSpeed", 3f) || !prop.MayStrike(enemy)) return false;
         float joules = .5f * body.mass * speed * speed;
@@ -41,10 +40,8 @@ public static class PropStrike
         Vector3 point = collision.contactCount > 0 ? collision.GetContact(0).point : body.worldCenterOfMass;
         // The way it was going as it met them, from the speed it carried into the contact.
         Vector3 going = prop.Going.sqrMagnitude > .01f ? prop.Going.normalized : (enemy.transform.position - body.position).normalized;
-        var marks = attacker.IsLocal ? KillMarks.None : KillMarks.JudgedByHost;
         enemy.ReceiveHit(new DamageHit(DamageHit.NewAttackId(), damage, DamageKind.Attack, point, going, attacker.gameObject,
-            canBeGuarded: false, postureDamage: damage * GameTables.Number(TableName, Row, "postureShare", 1f), method: DamageMethod.Prop,
-            marks: marks));
+            canBeGuarded: false, postureDamage: damage * GameTables.Number(TableName, Row, "postureShare", 1f), method: DamageMethod.Prop));
         return true;
     }
 }

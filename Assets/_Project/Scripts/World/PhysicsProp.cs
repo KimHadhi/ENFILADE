@@ -23,7 +23,7 @@ public sealed class PhysicsProp : MonoBehaviour
     private PlayerMovement attacker;
     private float attackedAt = -99f, struckAt = -99f, halfSize = -1f;
     private EnemyHealth struck;
-    private bool hostJudged, fixedBody;
+    private bool fixedBody;
     // How its body is smoothed between physics steps when physics runs it; none while it is moved by hand.
     private RigidbodyInterpolation smoothing;
     // Its own solid shape: off while it is carried, so it never shoves its carrier.
@@ -36,6 +36,8 @@ public sealed class PhysicsProp : MonoBehaviour
     // when this PC last told the others; how long it has lain still; the word it follows.
     internal ushort Epoch;
     internal bool Driving, Following;
+    // Something this PC's word should be told of now, not at the next tick: a push, a hit.
+    internal bool Jolted;
     internal float SentAt = -99f, QuietFor;
     internal Vector3 FollowPosition;
     internal Quaternion FollowRotation = Quaternion.identity;
@@ -43,14 +45,10 @@ public sealed class PhysicsProp : MonoBehaviour
     internal Rigidbody Body => body != null ? body : body = GetComponent<Rigidbody>();
 
     /// <summary>
-    /// One PC runs this prop's motion for everyone (a fuel can: CampaignCans on the host), so its strikes are judged there
-    /// for whoever set it moving, not on the attacker's own PC (PropStrike); it is not carried by F nor shared by PropNet.
+    /// Carried only its own way, never by F's PropCarry: a campaign fuel can, whose carrying the run decides (CampaignCans).
+    /// Its motion is shared like every prop's (PropNet).
     /// </summary>
-    public bool HostJudged
-    {
-        get => hostJudged;
-        set { hostJudged = value; if (value) PropNet.Forget(this); }
-    }
+    public bool OwnCarry { get; set; }
 
     /// <summary>Who carries it in both hands (PropCarry), as every PC knows it; null while it is loose.</summary>
     public PlayerMovement Holder { get; private set; }
@@ -136,7 +134,7 @@ public sealed class PhysicsProp : MonoBehaviour
     {
         if (Holder != null) return false;
         var player = by != null ? by.GetComponentInParent<PlayerMovement>() : null;
-        if (hostJudged || player == null) return true;
+        if (player == null) return true;
         if (!player.IsLocal) return !PropNet.Shared;
         PropNet.Drive(this);
         return true;
@@ -150,13 +148,14 @@ public sealed class PhysicsProp : MonoBehaviour
     }
 
     /// <summary>
-    /// Its body as its state wants it: carried, moved by hand and touching nothing; following another PC's word, moved by
-    /// hand but still solid (a bullet stops at it, F finds it); otherwise physics runs it.
+    /// Its body as its state wants it: carried, moved by hand and touching nothing; on a guest's PC while nobody has the
+    /// word on it, frozen where the last word left it (PropNet.Frozen); otherwise physics runs it, also while it follows
+    /// another PC's word, so it collides (and clatters) here as it does there.
     /// </summary>
     internal void ApplyMode()
     {
         var rb = Body;
-        bool byHand = fixedBody || Holder != null || Following;
+        bool byHand = fixedBody || Holder != null || PropNet.Frozen(this);
         if (rb.isKinematic != byHand) rb.isKinematic = byHand;
         // Moved by hand each frame, so physics must not blend it back toward its last step.
         var wanted = byHand ? RigidbodyInterpolation.None : smoothing;
@@ -180,6 +179,32 @@ public sealed class PhysicsProp : MonoBehaviour
             rb.angularVelocity = spin;
         }
         Going = velocity;
+    }
+
+    /// <summary>
+    /// Another PC's word on it while it moves (PropNet): it takes that word's speed and spin, and closes half the gap to its
+    /// place and turn, or jumps there when it is further than <paramref name="snap"/> (m); between words its own physics
+    /// carries it on.
+    /// </summary>
+    internal void Correct(Vector3 at, Quaternion turn, Vector3 velocity, Vector3 spin, float snap)
+    {
+        var rb = Body;
+        if (rb.isKinematic) { Teleport(at, turn, velocity, spin); return; }
+        Vector3 error = at - rb.position;
+        if (error.sqrMagnitude > snap * snap)
+        {
+            rb.position = at;
+            rb.rotation = turn;
+            transform.SetPositionAndRotation(at, turn);
+        }
+        else
+        {
+            rb.position += error * .5f;
+            rb.rotation = Quaternion.Slerp(rb.rotation, turn, .5f);
+        }
+        rb.linearVelocity = velocity;
+        rb.angularVelocity = spin;
+        rb.WakeUp();
     }
 
     private List<Collider> Solids
@@ -232,5 +257,10 @@ public sealed class PhysicsProp : MonoBehaviour
         if (attacker != null) Going = Body.linearVelocity;
     }
 
-    private void OnCollisionEnter(Collision collision) => PropStrike.Struck(this, Body, collision);
+    private void OnCollisionEnter(Collision collision)
+    {
+        // A hit changes its course: this PC's word on it goes out at once, not at the next tick (PropNet).
+        if (Driving) Jolted = true;
+        PropStrike.Struck(this, Body, collision);
+    }
 }

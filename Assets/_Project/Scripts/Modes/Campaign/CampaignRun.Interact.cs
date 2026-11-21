@@ -161,6 +161,8 @@ public sealed partial class CampaignRun
 
     private void CanAct(CampaignCans.Act act, int index, PlayerMovement mine, Vector3 aim = default)
     {
+        // A put-down or a throw leaves the hands on this PC at once, the acting player's own; the run's word follows.
+        if (act == CampaignCans.Act.Drop || act == CampaignCans.Act.Throw) fuel.LetGo(act, index, mine, aim);
         if (IsHost) fuel.Apply(act, index, mine, MayPour(mine), aim);
         else CampaignCans.Send(network, act, index, aim);
     }

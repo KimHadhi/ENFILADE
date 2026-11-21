@@ -87,7 +87,7 @@ public sealed class PropCarry : MonoBehaviour
 
     // Loose, nobody's, the run's own cans aside, and no heavier or bigger than two hands lift.
     private static bool Liftable(PhysicsProp prop)
-        => prop != null && !prop.HostJudged && !prop.FixedBody && prop.Holder == null && prop.isActiveAndEnabled
+        => prop != null && !prop.OwnCarry && !prop.FixedBody && prop.Holder == null && prop.isActiveAndEnabled
             && prop.Body.mass <= CarryHold.Number("Carry", "maxMass", 25f) && prop.HalfSize * 2f <= CarryHold.Number("Carry", "maxSize", 1.6f);
 
     private void PickUp(PlayerMovement mine, PhysicsProp prop)

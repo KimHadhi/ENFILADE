@@ -11,19 +11,22 @@ using UnityEngine;
 /// hurt and knocked flat, the brute only hurt) and burns a while, hurting zombies that stand in the fire, then turns up
 /// again where it first lay, so the step can still be done. The blast and the fire are drawn by CanBlastEffect, in the
 /// game's own flat style.
-/// Since 0.9.245 a can is Impact CFX's red jerry can (PropShelf.FuelCan; the user, 2026-11-21: "3챕에 기름통도 저 impact
-/// cfx에 있는 기름통으로 바꿔 줘 물리랑 해서"), a real physics body: thrown it tumbles, bounces and rolls, clatters as the
-/// pack made it (CollisionEffects), is knocked about by kicks, shoves and blasts, and a can that strikes a zombie hard hurts
-/// it as the thrower's blow (PhysicsProp, PropStrike: a fuel can floors a normal zombie). The map's marker for each can (a
-/// plain box) only says where it first stands. A kill by the can's fire is KillMarks.Fire (the flame under the crosshair).
-/// The host, or the PC alone, keeps every can's state and runs its body; it tells the others (a named message on change,
-/// every frame while one moves, and every couple of seconds), whose copies follow it and touch nothing. A guest asks the
-/// host to pick up, put down, pour or throw, and a shot from a guest goes to the host (CampaignRun). What the host judges
-/// for a guest (their can's blast, fire or strike) carries KillMarks.JudgedByHost, so their PC still shows the kill. A wipe
-/// puts every can back where it started. Each PC hangs a carried can from its carrier as every carried thing hangs
-/// (CarryHold: in front of this PC's own camera, from the right hand on everyone else), and a throw leaves the hands as
-/// every thrown thing does (CarryHold, the arms' push over the can's mass). CampaignRun owns it: input, the step, the messages' registration. Numbers: the
-/// constants below.
+/// A can is Impact CFX's red jerry can (PropShelf.FuelCan; the user, 2026-11-21: "3챕에 기름통도 저 impact cfx에 있는
+/// 기름통으로 바꿔 줘 물리랑 해서"), a real physics body of CanMass: thrown it tumbles, bounces and rolls, clatters as the
+/// pack made it, is knocked about by kicks, shoves and shots, and a can that strikes a zombie hard is the thrower's blow
+/// (PhysicsProp, PropStrike). The map's marker for each can (a plain box) only says where it first stands. A kill by the
+/// can's fire is KillMarks.Fire (the flame under the crosshair).
+/// Two owners, each of one thing (0.9.256; the user: "what I see is what others see"): this keeps the run's word on each
+/// can, the host's, as every PC's mode of it (lying, carried by whom, poured, burning, gone) shared by a named message on
+/// change and every couple of seconds; a guest asks the host to pick up, put down, pour or throw, and a guest's shot goes
+/// to the host (CampaignRun). Where a can is and how it moves is every loose prop's (PropNet): the PC of whoever touches it
+/// last runs it (the thrower's, the kicker's, the host's for one at rest or set back), so a guest's throw and kick move it
+/// for everyone, its strike is judged on the thrower's PC, and it clatters on every PC from its own collisions. The host
+/// hands a picked can to its carrier by PropNet's word, and the carrier's own PC lets it go (CanAct → LetGo). What the host
+/// judges for a guest (their can's blast or fire) carries KillMarks.JudgedByHost, so their PC still shows the kill. A wipe
+/// puts every can back where it started. Each PC hangs a carried can as every carried thing hangs (CarryHold), and a throw
+/// leaves the hands as every thrown thing does. CampaignRun owns it: input, the step, the messages' registration.
+/// Numbers: the constants below.
 /// </summary>
 internal sealed class CampaignCans
 {
@@ -42,8 +45,9 @@ internal sealed class CampaignCans
     // A 20 L jerry can about half full (kg): heavy enough to floor the zombie it is thrown at (PropStrike), too heavy to fly
     // off at a bullet's push. The pack's demo can weighs 1 kg, an empty one.
     private const float CanMass = 8f;
-    // A guest's copy closes this share of the gap to the host's word every 1/60 s, and jumps across anything farther (m).
-    private const float FollowRate = .35f, FollowJump = 3f;
+    // After this PC's own player lets go of a can (CanAct), the run's word may still say they carry it for this long (s):
+    // their PC does not take it back into their hands meanwhile.
+    private const float LetGoGrace = 1.5f;
     // The blast: how far it reaches (m), its damage at the middle and at the edge, how long it knocks zombies down (s).
     private const float BlastRadius = 5f, BlastDamage = 180f, BlastEdgeDamage = 60f, BlastKnockdown = 2.2f;
     // The fire after it: how wide (m), damage a second to a zombie in it, how long it burns, how long the can is gone (s).
@@ -57,7 +61,7 @@ internal sealed class CampaignCans
     {
         public byte Mode;
         public ulong Carrier;
-        // Lying, carried or flying: the body's place and turn; burning: the fire's place on the floor.
+        // Burning: the fire's place on the floor. Otherwise where the run last knew its body (PropNet has it exactly).
         public Vector3 Position;
         public Quaternion Rotation;
     }
@@ -69,9 +73,8 @@ internal sealed class CampaignCans
     }
 
     private readonly Transform[] cans;
-    private readonly Rigidbody[] bodies;
     private readonly PhysicsProp[] props;
-    // Each body's own solid shape, off whenever its body is moved by hand (carried; every copy on a guest).
+    // Each body's own solid shape, set aside while a can is set down so the floor is found under it, not itself.
     private readonly List<Collider>[] solids;
     // From each body's pivot down to the bottom of its shape (m), so it is set down standing on the floor.
     private readonly float[] lift;
@@ -80,10 +83,13 @@ internal sealed class CampaignCans
     // The host's own bookkeeping: how long a can has been flying, the time left burning or gone, and who set it off.
     private readonly float[] timeLeft, flown, nextBurn;
     private readonly ulong[] setOffBy;
+    // When this PC's own player last let go of each can (LetGo).
+    private readonly float[] letGo;
     // What each PC last showed of each can, so a can catching fire shows its blast once.
     private readonly byte[] shown;
     private readonly CanBlastEffect[] fires;
     private readonly HashSet<EnemyHealth> struck = new HashSet<EnemyHealth>();
+    private readonly RaycastHit[] under = new RaycastHit[8];
     private AudioClip blastSound;
     private bool changed = true;
     private float nextShare;
@@ -93,7 +99,6 @@ internal sealed class CampaignCans
         marks ??= new Transform[0];
         int count = marks.Length;
         cans = new Transform[count];
-        bodies = new Rigidbody[count];
         props = new PhysicsProp[count];
         solids = new List<Collider>[count];
         lift = new float[count];
@@ -104,6 +109,7 @@ internal sealed class CampaignCans
         flown = new float[count];
         nextBurn = new float[count];
         setOffBy = new ulong[count];
+        letGo = new float[count];
         shown = new byte[count];
         fires = new CanBlastEffect[count];
         var shelf = count > 0 ? PropShelf.Get() : null;
@@ -111,21 +117,21 @@ internal sealed class CampaignCans
         if (count > 0) CollisionEffects.Ensure();
         for (int i = 0; i < count; i++)
         {
+            letGo[i] = -99f;
             var mark = marks[i];
             if (mark == null) continue;
             cans[i] = Dress(mark, fuelCan, i);
-            // Still until Place sets it loose on the PC that runs it (the host).
-            Simulate(i, false);
             var turn = Quaternion.Euler(0f, mark.eulerAngles.y, 0f);
             start[i] = state[i] = new Can { Mode = (byte)Mode.Lying, Position = RestOn(i, mark.position, -1), Rotation = turn };
-            cans[i].SetPositionAndRotation(state[i].Position, turn);
+            props[i].Teleport(state[i].Position, turn, Vector3.zero, Vector3.zero);
             targets[i] = cans[i].gameObject.AddComponent<CampaignCanTarget>();
             targets[i].Index = i;
         }
     }
 
     // A can's body: the shelf's fuel can where the map's marker stands (the marker, a plain box, is hidden), or the marker
-    // itself made solid when there is none. Either way a physics body of CanMass, whose strikes the host judges.
+    // itself made solid when there is none. Either way a loose prop of CanMass, named the same on every PC (PropNet) and
+    // carried only the run's way (PhysicsProp.OwnCarry).
     private Transform Dress(Transform mark, GameObject prefab, int index)
     {
         Transform body;
@@ -146,13 +152,13 @@ internal sealed class CampaignCans
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         // Thrown fast at a zombie, it must not pass through its body between two physics steps.
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        bodies[index] = rb;
-        if (!body.TryGetComponent(out PhysicsProp prop)) prop = body.gameObject.AddComponent<PhysicsProp>();
-        prop.HostJudged = true;
-        props[index] = prop;
         var own = new List<Collider>();
         foreach (var collider in body.GetComponentsInChildren<Collider>(true)) if (!collider.isTrigger) own.Add(collider);
         solids[index] = own;
+        if (!body.TryGetComponent(out PhysicsProp prop)) prop = body.gameObject.AddComponent<PhysicsProp>();
+        prop.OwnCarry = true;
+        PropNet.Name(prop, "fuelcan/" + mark.gameObject.scene.name + "/" + index);
+        props[index] = prop;
         lift[index] = Lift(body);
         return body;
     }
@@ -177,11 +183,15 @@ internal sealed class CampaignCans
     private Vector3 Floor(int index, Vector3 at, int playerLayer)
     {
         var own = solids[index];
-        if (own == null) return Ground(at, playerLayer);
-        var was = new bool[own.Count];
-        for (int i = 0; i < own.Count; i++) if (own[i] != null) { was[i] = own[i].enabled; own[i].enabled = false; }
-        var floor = Ground(at, playerLayer);
-        for (int i = 0; i < own.Count; i++) if (own[i] != null) own[i].enabled = was[i];
+        int count = Physics.RaycastNonAlloc(at + Vector3.up * .5f, Vector3.down, under, GroundSearch, SolidMask(playerLayer), QueryTriggerInteraction.Ignore);
+        float nearest = float.MaxValue;
+        Vector3 floor = at;
+        for (int i = 0; i < count; i++)
+        {
+            if (under[i].distance >= nearest || own != null && own.Contains(under[i].collider)) continue;
+            nearest = under[i].distance;
+            floor = under[i].point;
+        }
         return floor;
     }
 
@@ -224,7 +234,7 @@ internal sealed class CampaignCans
         {
             state[index].Position = start[index].Position;
             state[index].Rotation = start[index].Rotation;
-            Teleport(index, start[index].Position, start[index].Rotation);
+            SetDown(index, start[index].Position, start[index].Rotation, Vector3.zero, Vector3.zero);
         }
         changed = true;
     }
@@ -256,24 +266,57 @@ internal sealed class CampaignCans
         return -1;
     }
 
-    /// <summary>The nearest can lying within reach of <paramref name="at"/>, or -1.</summary>
+    /// <summary>The nearest can lying within reach of <paramref name="at"/>, or -1: where its body is on this PC.</summary>
     public int NearestLying(Vector3 at, float reach = Reach)
     {
         int nearest = -1;
         float best = reach * reach;
         for (int i = 0; i < state.Length; i++)
         {
-            if (state[i].Mode != (byte)Mode.Lying) continue;
-            float distance = (state[i].Position - at).sqrMagnitude;
+            if (state[i].Mode != (byte)Mode.Lying || cans[i] == null) continue;
+            float distance = (cans[i].position - at).sqrMagnitude;
             if (distance <= best) { best = distance; nearest = i; }
         }
         return nearest;
     }
 
+    // ---- The acting player's own PC ----
+
+    /// <summary>
+    /// This PC's own player puts down or throws the can they carry (CampaignRun.CanAct, before the run hears of it): their
+    /// PC sets it loose now and runs its flight for everyone (PropNet), so the throw leaves the hands without waiting on
+    /// the host, and its strike is theirs to judge. The run's word follows (Apply).
+    /// </summary>
+    public void LetGo(Act act, int index, PlayerMovement who, Vector3 aim)
+    {
+        if (who == null || index < 0 || index >= cans.Length || props[index] == null || CarriedBy(who) != index) return;
+        letGo[index] = Time.time;
+        if (act == Act.Throw)
+        {
+            if (aim.sqrMagnitude < 1e-4f) aim = who.transform.forward;
+            aim.Normalize();
+            Vector3 level = Vector3.ProjectOnPlane(aim, Vector3.up);
+            var turn = Quaternion.LookRotation(level.sqrMagnitude > 1e-4f ? level : who.transform.forward);
+            PropNet.Release(props[index], CarryHold.ThrowFrom(who, aim), turn, CarryHold.ThrowVelocity(CanMass, aim),
+                Random.onUnitSphere * CarryHold.ThrowSpin);
+            props[index].SetAttacker(who.gameObject);
+            return;
+        }
+        SetDown(index, RestOn(index, who.transform.position + who.transform.forward * DropAhead, who.gameObject.layer),
+            Quaternion.Euler(0f, who.transform.eulerAngles.y, 0f), Vector3.zero, Vector3.zero);
+    }
+
+    // Its body put loose somewhere by this PC, which runs it from there (PropNet).
+    private void SetDown(int index, Vector3 at, Quaternion turn, Vector3 velocity, Vector3 spin)
+    {
+        if (props[index] != null) PropNet.Release(props[index], at, turn, velocity, spin);
+    }
+
     // ---- The host's side ----
 
     /// <summary>On the host: does it, if it may. <paramref name="mayPour"/> says whether this player stands where the
-    /// fuel goes while the step wants it; <paramref name="aim"/> is where a throw goes.</summary>
+    /// fuel goes while the step wants it. A put-down or a throw is already in the carrier's hands' doing (LetGo): this is
+    /// the run's word on it.</summary>
     public bool Apply(Act act, int index, PlayerMovement who, bool mayPour, Vector3 aim = default)
     {
         if (index < 0 || index >= state.Length || who == null || who.IsDead || who.DamageReceiver.IsDowned) return false;
@@ -281,19 +324,17 @@ internal sealed class CampaignCans
         switch (act)
         {
             case Act.Pick:
-                if (can.Mode != (byte)Mode.Lying || CarriedBy(who) >= 0
-                    || (can.Position - who.transform.position).sqrMagnitude > (Reach + ReachSlack) * (Reach + ReachSlack))
+                if (can.Mode != (byte)Mode.Lying || CarriedBy(who) >= 0 || cans[index] == null
+                    || (cans[index].position - who.transform.position).sqrMagnitude > (Reach + ReachSlack) * (Reach + ReachSlack))
                     return false;
                 can.Mode = (byte)Mode.Carried;
                 can.Carrier = PlayerRoster.IdOf(who);
-                Simulate(index, false);
+                // In their hands on every PC, by the word on its motion.
+                if (props[index] != null) PropNet.Hold(props[index], who);
                 break;
             case Act.Drop:
                 if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who)) return false;
                 can.Mode = (byte)Mode.Lying;
-                can.Position = RestOn(index, who.transform.position + who.transform.forward * DropAhead, who.gameObject.layer);
-                can.Rotation = Quaternion.Euler(0f, who.transform.eulerAngles.y, 0f);
-                Teleport(index, can.Position, can.Rotation);
                 break;
             case Act.Pour:
                 if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who) || !mayPour) return false;
@@ -303,13 +344,8 @@ internal sealed class CampaignCans
                 break;
             case Act.Throw:
                 if (can.Mode != (byte)Mode.Carried || can.Carrier != PlayerRoster.IdOf(who)) return false;
-                if (aim.sqrMagnitude < 1e-4f) aim = who.transform.forward;
-                aim.Normalize();
                 can.Mode = (byte)Mode.Flying;
-                can.Position = CarryHold.ThrowFrom(who, aim);
-                can.Rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(aim, Vector3.up).sqrMagnitude > 1e-4f ? Vector3.ProjectOnPlane(aim, Vector3.up) : who.transform.forward);
                 flown[index] = 0f;
-                Throw(index, can.Position, can.Rotation, CarryHold.ThrowVelocity(CanMass, aim), who);
                 break;
         }
         state[index] = can;
@@ -338,8 +374,8 @@ internal sealed class CampaignCans
     }
 
     /// <summary>
-    /// On the host, each frame: a can whose carrier went down, died or left falls where they were; loose cans are where
-    /// their bodies are; fires burn and go out; a can gone that long is back where it first lay.
+    /// On the host, each frame: a can whose carrier went down, died or left falls where they were; a thrown can lies again
+    /// once it has all but stopped; fires burn and go out; a can gone that long is back where it first lay.
     /// </summary>
     public void Tick(float dt)
     {
@@ -353,12 +389,11 @@ internal sealed class CampaignCans
                     state[i].Mode = (byte)Mode.Lying;
                     state[i].Position = carrier != null ? RestOn(i, carrier.transform.position, carrier.gameObject.layer)
                         : cans[i] != null ? RestOn(i, cans[i].position, -1) : state[i].Position;
-                    Teleport(i, state[i].Position, state[i].Rotation);
+                    SetDown(i, state[i].Position, state[i].Rotation, Vector3.zero, Vector3.zero);
                     changed = true;
                     break;
-                case Mode.Lying:
                 case Mode.Flying:
-                    Track(i, dt);
+                    Land(i, dt);
                     break;
                 case Mode.Burning:
                     if ((nextBurn[i] -= dt) <= 0f) { nextBurn[i] += FireEvery; Burn(state[i].Position, PlayerRoster.ById(setOffBy[i])); }
@@ -379,90 +414,30 @@ internal sealed class CampaignCans
         }
     }
 
-    // Back where it first lay, at rest.
+    // Back where it first lay, at rest: the host sets it there for everyone.
     private void Restart(int index)
     {
         state[index] = start[index];
-        Teleport(index, start[index].Position, start[index].Rotation);
+        SetDown(index, start[index].Position, start[index].Rotation, Vector3.zero, Vector3.zero);
         changed = true;
     }
 
-    // The host's word on a loose can is where its body is: physics moves it (a throw, a kick, a shove, a blast), and the
-    // others hear of it every frame it moves. A thrown can lies again once it has all but stopped.
-    private void Track(int index, float dt)
+    // A thrown can lies again (to be picked up) once it has all but stopped, wherever its body is (PropNet has every PC's
+    // copy where the thrower's PC runs it); one that falls out of the world is back where it first lay.
+    private void Land(int index, float dt)
     {
         var body = cans[index];
         if (body == null || !body.gameObject.activeInHierarchy) return;
         if (body.position.y < -100f) { Restart(index); return; }
-        var can = state[index];
-        if ((body.position - can.Position).sqrMagnitude > 1e-6f || Quaternion.Angle(body.rotation, Turn(can.Rotation)) > .1f)
-        {
-            can.Position = body.position;
-            can.Rotation = body.rotation;
-            changed = true;
-        }
-        if (can.Mode == (byte)Mode.Flying)
-        {
-            flown[index] += dt;
-            var rb = bodies[index];
-            float speed = rb != null && !rb.isKinematic ? rb.linearVelocity.magnitude : 0f;
-            if (flown[index] >= LongestFlight || flown[index] >= RestAfter && speed < RestSpeed)
-            {
-                can.Mode = (byte)Mode.Lying;
-                changed = true;
-            }
-        }
-        state[index] = can;
+        flown[index] += dt;
+        var rb = props[index] != null ? props[index].Body : null;
+        float speed = rb != null && !rb.isKinematic ? rb.linearVelocity.magnitude : 0f;
+        if (flown[index] < LongestFlight && (flown[index] < RestAfter || speed >= RestSpeed)) return;
+        state[index].Mode = (byte)Mode.Lying;
+        state[index].Position = body.position;
+        state[index].Rotation = body.rotation;
+        changed = true;
     }
-
-    // Out of the hands and into the air: its body on physics, leaving along the aim and tumbling, the thrower's blow if it
-    // strikes a zombie (PropStrike).
-    private void Throw(int index, Vector3 from, Quaternion turn, Vector3 velocity, PlayerMovement by)
-    {
-        Teleport(index, from, turn);
-        Simulate(index, true);
-        var rb = bodies[index];
-        if (rb != null && !rb.isKinematic)
-        {
-            rb.linearVelocity = velocity;
-            rb.angularVelocity = Random.onUnitSphere * CarryHold.ThrowSpin;
-        }
-        if (props[index] != null && by != null) props[index].SetAttacker(by.gameObject);
-    }
-
-    // Its body put somewhere at once, standing still.
-    private void Teleport(int index, Vector3 position, Quaternion rotation)
-    {
-        var body = cans[index];
-        if (body == null) return;
-        rotation = Turn(rotation);
-        var rb = bodies[index];
-        if (rb != null && body.gameObject.activeInHierarchy)
-        {
-            if (!rb.isKinematic) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
-            rb.position = position;
-            rb.rotation = rotation;
-        }
-        body.SetPositionAndRotation(position, rotation);
-    }
-
-    // The host's body runs on physics while the can lies or flies. Carried, or on a guest's PC at all, it is moved by hand
-    // and touches nothing: its solid shape is off, so it never shoves its carrier or a guest's player, and only the host's
-    // body strikes anyone.
-    private void Simulate(int index, bool on)
-    {
-        var rb = bodies[index];
-        if (rb == null || rb.isKinematic != on) return;
-        rb.isKinematic = !on;
-        // Moved by hand each frame while off, so physics must not blend it back toward its last step.
-        rb.interpolation = on ? RigidbodyInterpolation.Interpolate : RigidbodyInterpolation.None;
-        if (solids[index] != null) foreach (var collider in solids[index]) if (collider != null) collider.enabled = on;
-        if (on) rb.WakeUp();
-    }
-
-    // A turn from a message: an unset one (all zero) is upright.
-    private static Quaternion Turn(Quaternion turn)
-        => turn.x == 0f && turn.y == 0f && turn.z == 0f && turn.w == 0f ? Quaternion.identity : turn;
 
     // The blast: zombies within reach are hurt by how near they are, and knocked flat (a brute shrugs that off).
     private void Blast(Vector3 at, PlayerMovement by)
@@ -557,11 +532,11 @@ internal sealed class CampaignCans
     }
 
     /// <summary>
-    /// Late each frame: every can where it is, its blast and fire shown once, and this PC's own player's hands full or
-    /// free. <paramref name="simulating"/>: this PC runs the cans' bodies (the host, or the PC alone); a guest's copies
-    /// follow the host's word.
+    /// Late each frame: a can shown or hidden as the run's word says, its blast and fire shown once, the one in this PC's
+    /// own player's hands before their camera, and their hands full or free. Where a loose can is, and a carried one on
+    /// the others' screens, is PropNet's.
     /// </summary>
-    public void Place(PlayerMovement mine, Transform view, bool simulating = true)
+    public void Place(PlayerMovement mine, Transform view)
     {
         for (int i = 0; i < cans.Length; i++)
         {
@@ -570,32 +545,23 @@ internal sealed class CampaignCans
             var mode = (Mode)state[i].Mode;
             ShowFire(i, mode, mine);
             bool hidden = mode == Mode.Poured || mode == Mode.Burning || mode == Mode.Gone;
-            if (can.gameObject.activeSelf == hidden) can.gameObject.SetActive(!hidden);
-            if (targets[i] != null) targets[i].Shootable = mode == Mode.Lying || mode == Mode.Flying;
-            if (hidden) continue;
-            bool loose = mode == Mode.Lying || mode == Mode.Flying;
-            Simulate(i, simulating && loose);
-            if (loose)
+            if (can.gameObject.activeSelf == hidden)
             {
-                // The host's physics has it where it is; a guest's copy follows the host's word.
-                if (!simulating) Follow(i);
-                continue;
+                // Hidden, nobody runs its motion; set back, the host's word places it again (Restart).
+                if (hidden && props[i] != null) { props[i].Driving = false; props[i].Following = false; }
+                can.gameObject.SetActive(!hidden);
             }
-            // Where every carried thing sits (CarryHold): before this PC's camera, or at its carrier's right hand.
-            CarryHold.Place(can, PlayerRoster.ById(state[i].Carrier), mine, view);
+            if (targets[i] != null) targets[i].Shootable = mode == Mode.Lying || mode == Mode.Flying;
+            if (hidden || mode != Mode.Carried) continue;
+            // In this PC's own player's hands (by PropNet's word), and not just let go of: before their camera.
+            if (mine != null && props[i] != null && props[i].Holder == mine && Time.time - letGo[i] > LetGoGrace)
+                CarryHold.Place(can, mine, mine, view);
         }
-        if (mine != null && mine.TryGetComponent(out PlayerWeaponSlots slots)) slots.HoldHandsFull(this, CarriedBy(mine) >= 0);
-    }
-
-    // A guest's copy of a loose can eases toward the host's word, and jumps there when it is far (a wipe, a restart).
-    private void Follow(int index)
-    {
-        var body = cans[index];
-        Vector3 to = state[index].Position;
-        var turn = Turn(state[index].Rotation);
-        if ((body.position - to).sqrMagnitude > FollowJump * FollowJump) { body.SetPositionAndRotation(to, turn); return; }
-        float share = 1f - Mathf.Pow(1f - FollowRate, Time.deltaTime * 60f);
-        body.SetPositionAndRotation(Vector3.Lerp(body.position, to, share), Quaternion.Slerp(body.rotation, turn, share));
+        if (mine != null && mine.TryGetComponent(out PlayerWeaponSlots slots))
+        {
+            int carried = CarriedBy(mine);
+            slots.HoldHandsFull(this, carried >= 0 && Time.time - letGo[carried] > LetGoGrace);
+        }
     }
 
     // A can that just caught fire blows up here (seen and heard on every PC), and its fire burns until it goes out.
@@ -626,9 +592,4 @@ internal sealed class CampaignCans
         if (playerLayer >= 0) mask &= ~(1 << playerLayer);
         return mask;
     }
-
-    // Down onto whatever is under it, the carrier's own layer (players are on 31) and enemies aside.
-    private static Vector3 Ground(Vector3 at, int playerLayer)
-        => Physics.Raycast(at + Vector3.up * .5f, Vector3.down, out RaycastHit hit, GroundSearch, SolidMask(playerLayer), QueryTriggerInteraction.Ignore)
-            ? hit.point : at;
 }
