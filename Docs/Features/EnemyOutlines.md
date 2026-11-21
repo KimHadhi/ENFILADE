@@ -31,10 +31,10 @@
 
 | 무엇 | 어디 | 하는 일 |
 | --- | --- | --- |
-| 주인 | [EnemyOutlines](../../Assets/_Project/Scripts/Combat/Marks/EnemyOutlines.cs) | 출처마다 `Set(적, 출처, 모양)` / `Clear`. 적마다 세 가지(보일 때의 띠, 가려졌을 때의 띠, 가려진 곳의 채움)를 각각 가장 센 출처에서 고른다. 그릴 부품: 몸을 입었으면 그 몸(`ZombieBody.Model`), 아니면 적 자신의 렌더러. 꺼진 것·그림자 전용·눈빛은 빼고, 표시된 동안은 굽힌 오클루전 컬링에서 뺀다(벽 뒤가 보여야 할 곳이라서. 애니메이터도 계속 자세를 잡는다) |
+| 주인 | [EnemyOutlines](../../Assets/_Project/Scripts/Combat/Marks/EnemyOutlines.cs) | 출처마다 `Set(적, 출처, 모양)` / `Clear`. 적마다 세 가지(보일 때의 띠, 가려졌을 때의 띠, 가려진 곳의 채움)를 각각 가장 센 출처에서 고른다. 그릴 부품: 몸을 입었으면 그 몸(`ZombieBody.Model`), 아니면 적 자신의 렌더러. 꺼진 것·그림자 전용·눈빛은 빼고, 그중 눈에 단단하게 보이는 서브메시만(불투명·컷아웃 재질, OwnViewMask와 같은 규칙. 사격장 과녁의 납 자국 같은 반투명 사각형은 띠에 네모로 찍혔다), 표시된 동안은 굽힌 오클루전 컬링에서 뺀다(벽 뒤가 보여야 할 곳이라서. 애니메이터도 계속 자세를 잡는다) |
 | 출처와 순서 | `OutlineSource` (약한 것부터) | 웨이브 끝 적(`EnemyReveal`) < 고스트 시야(`GhostSight`) < 처형 가능(`ExecutableHighlight` → `HitFlashRenderer.SetMark`) < 현상금 염료(`DyeMarks` → `HitFlashRenderer.SetPing`) < 핑·현상금 표식(`PingMarks`) < 붙잡은 좀비(`HoldReveal`) |
 | 모양 | `OutlineLook` | `Seen`(보이는 곳 둘레의 띠), `Hidden`(가려진 곳 둘레의 띠), `Fill`(가려진 곳 위의 채움). 알파가 세기(0은 없음), 색은 HDR이어도 된다(붙잡은 좀비의 노랑·처형의 빨강은 1을 넘어 블룸을 받는다) |
-| 그리기 | [OutlinePass](../../Assets/_Project/Scripts/Combat/Marks/OutlinePass.cs), 셰이더 [OutlineMask](../../Assets/_Project/Art/Resources/Combat/Shaders/OutlineMask.shader)·[OutlineLay](../../Assets/_Project/Art/Resources/Combat/Shaders/OutlineLay.shader) | 게임 카메라마다(내 시야, 조준경의 그림) 투명한 것(연막 포함) 뒤, 후처리 앞에서: ① 표시된 몸을 마스크에 그린다(가장 앞의 몸이 이김. 픽셀마다 보이는지 가려졌는지를 [SeeThrough.hlsl](../../Assets/_Project/Art/Resources/Combat/Shaders/SeeThrough.hlsl) 규칙 하나로 정함: 0.12m보다 앞에 무언가 있거나 연막이 가림, 내 1인칭 몸·총·조준경 렌즈는 빼고) ② 줄마다 가장 가까운 띠 픽셀 ③ 그 줄들로 진짜 거리를 내서 띠와 바깥의 얇은 어두운 테두리를 깔고, 가려진 곳엔 채움. 내 1인칭 몸·총·렌즈 자리(스텐실 비트 128, OwnViewMask)는 건드리지 않는다. 렌더러 애셋에 등록하지 않고 카메라가 그리기 시작할 때 줄에 넣는다(아무것도 표시되지 않으면 아무 비용이 없다) |
+| 그리기 | [OutlinePass](../../Assets/_Project/Scripts/Combat/Marks/OutlinePass.cs), 셰이더 [OutlineMask](../../Assets/_Project/Art/Resources/Combat/Shaders/OutlineMask.shader)·[OutlineLay](../../Assets/_Project/Art/Resources/Combat/Shaders/OutlineLay.shader) | 게임 카메라마다(내 시야, 조준경의 그림) 투명한 것(연막 포함) 뒤, 후처리 앞에서: ① 표시된 몸을 카메라와 같은 MSAA 샘플 수의 마스크에, 카메라 자신의 깊이 버퍼에 대고 그린다. 가려졌는지는 [SeeThrough.hlsl](../../Assets/_Project/Art/Resources/Combat/Shaders/SeeThrough.hlsl)의 규칙(0.12m보다 앞에 무언가 있음, 연막이 가림)을 하드웨어 깊이 테스트가 **샘플마다** 정한다(몸의 깊이를 0.12m 당겨 두고, 가려진 패스 ZTest Greater를 먼저, 보이는 패스 ZTest LEqual을 나중에 그려 눈에 보이는 면이 이김) ② 모으기: 픽셀마다 몸이 덮은 몫·띠를 원하는 몫·색·채움 ③ 줄마다 몸 가장자리가 가장 가까운 픽셀(덮은 몫으로 픽셀 안의 위치까지) ④ 그 줄들로 진짜 거리를 내서 띠와 바깥의 얇은 어두운 테두리를 몸이 덮지 않은 몫에만 깔고, 가려진 곳엔 채움. 내 1인칭 몸·총·렌즈 자리(스텐실 비트 128, OwnViewMask)는 건드리지 않는다. 렌더러 애셋에 등록하지 않고 카메라가 그리기 시작할 때 줄에 넣는다(아무것도 표시되지 않으면 아무 비용이 없다) |
 | 숫자 | [Outlines.csv](../../Assets/_Project/Data/Resources/Tables/Hud/Outlines.csv) | `width` 띠 굵기 3px, `edge` 어두운 테두리 1.5px, `edgeAlpha` 그 진하기 0.45 (1080p 기준). 모든 표시가 같은 띠다 |
 | 색 | 출처마다 그대로 | 핑은 찍은 사람의 색(`PlayerTally.Color`), 현상금 표식·염료는 청록, 붙잡은 좀비의 띠는 `CombatFeedbackSettings.holderOutlineColor`·채움은 [HoldReveal.csv](../../Assets/_Project/Data/Resources/Tables/Player/HoldReveal.csv), 처형은 `executableOutlineColor`, 고스트는 고스트 색(채움은 `Ghost.sightAlpha`), 웨이브는 Waves.csv `revealColor` |
 
@@ -57,9 +57,17 @@
 - 숨쉬기: 핑의 채움은 전에 1초에 두 번 톱니처럼 확 밝아졌고, 붙잡은 좀비는 1분에 120번 그랬다. 깜빡임 규칙(부드럽게, 1초에 1.6번 이하)대로 둘 다 부드러운 사인이 됐고 붙잡은 좀비는 90번이 됐다.
 - 지운 것: 셰이더 `RevealThroughWalls`(복사본용), `HitFlashOverlay`의 외곽선 패스, `CombatFeedbackSettings`의 `executableOutlineWidth`·`holderOutlineWidth`(굵기는 표 하나), `HitFlashRenderer.SetHolder`, 네 곳의 메시 복사 코드와 "복사하지 말 이름" 목록.
 
-## 5. 플레이 없이 확인
+## 5. 조준 중 깜빡임 (0.9.248)
 
-ENFILADE → 전투 → 외곽선 점검 (눈으로 본 화면), 또는 `Temp/enfilade-outlines.request` 파일을 만든다([OutlineBench](../../Assets/_Project/Editor/Combat/OutlineBench.cs)). 리퍼와 보통 좀비를 7m·15m에, 트인 곳과 허리 높이 엄폐물 뒤에 세우고, 출처마다 그 출처가 쓰는 모양 그대로 표시해 플레이어 눈 높이(1.62m, 가로 90°, MSAA 4x)에서 게임의 셰이더와 이 패스로 그린다. 몸을 입기 전에 표시된 리퍼(이번 일)도 그린다.
+사용자(2026-11-21, 사격장에서 과녁을 핑하고 도트 조준기로 조준한 채): "핑하고 줌한 채로 보면 아웃라인이 flickering".
+
+원인 (점검에서 잰 것, 플레이에서 본 것이 아니다): 조준 중에는 숨쉬기로 화면이 한 프레임에 픽셀의 몇 분의 1씩 계속 흐른다. 0.9.242의 띠는 픽셀마다 '덮였다/아니다'만 아는 마스크로 정수 픽셀 거리를 재서 깔았고, 가려졌는지도 픽셀 하나의 깊이로 정했다. 그래서 몸이나 앞을 가린 것(조준기 테두리, 사격장 난간)이 반 픽셀 움직일 때마다 띠의 가장자리 픽셀과 가려진 곳 채움의 경계 줄이 통째로 켜졌다 꺼졌다. 리퍼 12m, 한 프레임에 0.15px씩 흐르는 시야에서 띠 픽셀의 3.7%(프레임마다 90개)가, 앞을 지나가는 기둥에서는 가끔 채움 한 열(약 100픽셀)이 한꺼번에 바뀌었다.
+
+고친 것: 출시 게임의 넓은 외곽선처럼 마스크를 카메라의 MSAA 샘플로 그리고(픽셀마다 몸이 덮은 몫을 앎), 띠까지의 거리를 그 몫으로 픽셀 안의 위치까지 잰다. 가려졌는지는 카메라 자신의 깊이 버퍼에 대고 하드웨어가 샘플마다 판단한다. 같은 점검에서 흐르는 시야의 뒤집힘이 프레임마다 90개 → 12개(0.5%, 남은 것은 오목한 모서리의 낱개 픽셀), 기둥 앞의 채움은 18개·최대 102개 → 0개가 됐다. 사격장 과녁의 납 자국(반투명 사각형)은 이제 마스크에 들어가지 않는다.
+
+## 6. 플레이 없이 확인
+
+ENFILADE → 전투 → 외곽선 점검 (눈으로 본 화면), 또는 `Temp/enfilade-outlines.request` 파일을 만든다([OutlineBench](../../Assets/_Project/Editor/Combat/OutlineBench.cs)). 리퍼와 보통 좀비를 7m·15m에, 트인 곳과 허리 높이 엄폐물 뒤에 세우고, 출처마다 그 출처가 쓰는 모양 그대로 표시해 플레이어 눈 높이(1.62m, 가로 90°, MSAA 4x)에서 게임의 셰이더와 이 패스로 그린다. 몸을 입기 전에 표시된 리퍼(이번 일)도 그린다. 그리고 시야가 한 프레임에 0.15px씩 흐르는 14프레임과, 리퍼 앞을 기둥이 0.15px씩 지나가는 14프레임을 그려 프레임 사이에 절반 넘게 바뀌는 외곽선 픽셀(뒤집힘)을 센다(`sway.drift`, `sway.pole`; 그림은 앞 여섯 프레임과, 가장 많이 뒤집힌 프레임에 뒤집힌 픽셀을 하늘색으로 칠한 것).
 
 - `Logs/outlines.txt`: 경우마다 몸 픽셀 수, 표시가 바꾼 픽셀이 몸 위·1~6px 밖(띠)·7~20px·20px 밖 중 어디에 있는지, 셰이더 컴파일 결과.
 - `Logs/Outlines/<경우>.png`: 왼쪽 표시 없음, 오른쪽 표시.

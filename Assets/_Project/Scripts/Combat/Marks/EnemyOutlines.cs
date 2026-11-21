@@ -54,7 +54,9 @@ public struct OutlineLook
 /// its capsule shell before its body was put on, the ping's extra material then went on that copy too, and a copy
 /// writes no depth, so the whole back of the capsule was painted in their colour (OutlineBench, Logs/outlines.txt).
 /// The parts drawn are the body's as it stands each frame: the worn character (ZombieBody.Model) once there is one, else
-/// the foe's own renderers; switched-off, shadow-only and eye-glow renderers never. A marked body is kept from the map's
+/// the foe's own renderers; switched-off, shadow-only and eye-glow renderers never, and of each only what the eye sees as
+/// solid (opaque and cut-out materials, OwnViewMask's rule): a see-through quad riding a body, as a steel target's lead
+/// splashes do, came out as a square in the outline. A marked body is kept from the map's
 /// occlusion culling while marked, since behind a wall is where it is meant to show, and its animator keeps posing it.
 /// Numbers: Tables/Hud/Outlines (the band's width, the dark edge outside it).
 /// </summary>
@@ -64,6 +66,8 @@ public static class EnemyOutlines
     private const string ShaderPath = "Combat/Shaders/OutlineMask";
     private static readonly int SeenId = Shader.PropertyToID("_Seen"), HiddenId = Shader.PropertyToID("_Hidden"), FillId = Shader.PropertyToID("_Fill");
     private static readonly int SourceCount = System.Enum.GetValues(typeof(OutlineSource)).Length;
+    // The last queue a material may have and still be drawn as the body: opaque and cut-out (AlphaTest) parts.
+    private const int SolidQueue = 2500;
 
     /// <summary>One draw of the mask: a part of a marked body, one submesh of it, in that body's mask material.</summary>
     internal struct Draw
@@ -73,17 +77,25 @@ public static class EnemyOutlines
         public int Submesh;
     }
 
+    // One solid submesh of a body's renderer.
+    private struct Part
+    {
+        public Renderer Renderer;
+        public int Submesh;
+    }
+
     private sealed class Marked
     {
         public GameObject Foe;
         public readonly OutlineLook[] Looks = new OutlineLook[SourceCount];
         public Material Material;
-        public readonly List<Renderer> Parts = new List<Renderer>();
+        public readonly List<Part> Parts = new List<Part>();
     }
 
     private static readonly Dictionary<GameObject, Marked> marked = new Dictionary<GameObject, Marked>();
     private static readonly List<GameObject> gone = new List<GameObject>();
     private static readonly List<Renderer> found = new List<Renderer>();
+    private static readonly List<Material> looks = new List<Material>();
     private static readonly Stack<Material> spare = new Stack<Material>();
     // Renderers kept from occlusion culling while marked, with what they had before.
     private static readonly Dictionary<Renderer, bool> unculled = new Dictionary<Renderer, bool>();
@@ -137,10 +149,11 @@ public static class EnemyOutlines
             if (entry.Material == null) continue;
             foreach (var part in entry.Parts)
             {
+                var renderer = part.Renderer;
                 // As it stands at the draw: one switched off since the frame's gathering is not drawn.
-                if (part == null || !part.enabled || !part.gameObject.activeInHierarchy || (layers & (1 << part.gameObject.layer)) == 0) continue;
-                int submeshes = Submeshes(part);
-                for (int i = 0; i < submeshes; i++) draws.Add(new Draw { Renderer = part, Material = entry.Material, Submesh = i });
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy
+                    || (layers & (1 << renderer.gameObject.layer)) == 0) continue;
+                draws.Add(new Draw { Renderer = renderer, Material = entry.Material, Submesh = part.Submesh });
             }
         }
     }
@@ -161,7 +174,7 @@ public static class EnemyOutlines
         {
             Resolve(entry);
             Parts(entry);
-            foreach (var part in entry.Parts) drawn.Add(part);
+            foreach (var part in entry.Parts) drawn.Add(part.Renderer);
         }
         // Behind a wall is where a marked body shows: kept from the map's occlusion culling while marked.
         foreach (var part in drawn)
@@ -198,7 +211,8 @@ public static class EnemyOutlines
         entry.Material.SetColor(FillId, top.Fill);
     }
 
-    // The body as it stands now: the worn character once it has one (never the enemy's capsule shell), else the foe's own.
+    // The body as it stands now: the worn character once it has one (never the enemy's capsule shell), else the foe's own;
+    // of each renderer its solid submeshes (a material past the mesh's last submesh, as the hit flash lays one, is not one).
     private static void Parts(Marked entry)
     {
         entry.Parts.Clear();
@@ -208,10 +222,14 @@ public static class EnemyOutlines
         {
             if (!(part is SkinnedMeshRenderer) && !(part is MeshRenderer)) continue;
             if (!part.enabled || !part.gameObject.activeInHierarchy || part.forceRenderingOff) continue;
-            if (part.shadowCastingMode == ShadowCastingMode.ShadowsOnly || ZombieBody.IsEye(part) || Submeshes(part) == 0) continue;
-            entry.Parts.Add(part);
+            if (part.shadowCastingMode == ShadowCastingMode.ShadowsOnly || ZombieBody.IsEye(part)) continue;
+            int submeshes = Submeshes(part);
+            part.GetSharedMaterials(looks);
+            for (int i = 0; i < submeshes && i < looks.Count; i++)
+                if (looks[i] != null && looks[i].renderQueue <= SolidQueue) entry.Parts.Add(new Part { Renderer = part, Submesh = i });
         }
         found.Clear();
+        looks.Clear();
     }
 
     private static int Submeshes(Renderer part)
@@ -235,9 +253,10 @@ public static class EnemyOutlines
         // Its parts go back to the map's occlusion culling now: with nothing marked no frame gathers again to do it.
         foreach (var part in entry.Parts)
         {
-            if (ReferenceEquals(part, null) || !unculled.TryGetValue(part, out bool before)) continue;
-            if (part != null) part.allowOcclusionWhenDynamic = before;
-            unculled.Remove(part);
+            var renderer = part.Renderer;
+            if (ReferenceEquals(renderer, null) || !unculled.TryGetValue(renderer, out bool before)) continue;
+            if (renderer != null) renderer.allowOcclusionWhenDynamic = before;
+            unculled.Remove(renderer);
         }
         entry.Parts.Clear();
     }

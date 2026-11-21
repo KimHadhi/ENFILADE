@@ -18,8 +18,10 @@ using Object = UnityEngine.Object;
 /// What the player sees of an enemy's outline, drawn from the player's eye with the game's own shaders and its own outline
 /// pass (EnemyOutlines, OutlinePass) without Play: every mark's look (a ping in the user's own colour and in the default
 /// pink, the executable mark, a holder, a Ghost's sight, a wave's last enemies), each on the reaper and on a plain zombie,
-/// at 7 m and 15 m, in the open and behind waist-high cover; and an enemy marked the moment it appeared, still in its
-/// capsule shell, then dressed and pinged (the test-room reaper of 2026-11-21).
+/// at 7 m and 15 m, in the open and behind waist-high cover; an enemy marked the moment it appeared, still in its
+/// capsule shell, then dressed and pinged (the test-room reaper of 2026-11-21); and whether the outline holds still while
+/// the view drifts a fraction of a pixel a frame, or a pole slides in front of the enemy (Sway: the flicker the user saw
+/// aiming at a pinged target the same day).
 /// Each enemy is dressed as ZombieBody dresses it (the kind's body at its kind's size standing on the enemy capsule's
 /// feet, the capsule shell switched off, the reaper's axe in its hand), posed from the pack's idle, and marked with the
 /// look each source gives (PingMarks.LookOf, HoldReveal.LookOf, GhostSight.LookOf, EnemyReveal.LookOf, and
@@ -148,9 +150,126 @@ internal static class OutlineBench
             }
         }
         text.AppendLine();
+        looked += Sway(text);
         text.AppendLine($"({looked} pictures)");
         File.WriteAllText(ReportFile, text.ToString(), new UTF8Encoding(false));
         Debug.Log($"OutlineBench: {looked} pictures. {ReportFile}, {Folder}");
+    }
+
+    // ---- Steady while the view sways ----
+
+    // Aimed, the sight's breathing moves the picture a fraction of a pixel a frame: each frame here turns the eye (or slides
+    // a pole in front of the enemy) by this share of a pixel, for this many frames.
+    private const float SwayStep = .15f;
+    private const int SwayFrames = 14, StripFrames = 6, StripZoom = 3;
+
+    // The user, 2026-11-21, a pinged target looked at aimed: "아웃라인이 flickering". An outline that holds still under a
+    // drift of a fraction of a pixel changes each of its pixels a little from frame to frame; one that snaps to whole
+    // pixels turns whole pixels on and off: those are counted (flips), and six frames are kept side by side.
+    private static int Sway(StringBuilder text)
+    {
+        text.AppendLine($"Steady while the view sways: {SwayFrames} frames, the eye turning (or a pole sliding in front of the enemy) {SwayStep.ToString("0.00", CultureInfo.InvariantCulture)} px a frame; the pinged reaper at 12 m.");
+        text.AppendLine("  flips   pixels of the mark's own drawing (marked minus unmarked) that change by more than half between two frames: an outline that holds still has none");
+        text.AppendLine("  drawn   the mark's pixels in a frame, on average");
+        int pictures = 0;
+        foreach (bool pole in new[] { false, true })
+        using (var stage = new Stage())
+        {
+            Body body = null;
+            try
+            {
+                var empty = stage.Shoot();
+                body = stage.Zombie(ZombieKind.Reaper, 12f);
+                float degreesPerPixel = Camera.HorizontalToVerticalFieldOfView(FieldAcross, Aspect) / Height;
+                float metresPerPixel = 2f * 11f * Mathf.Tan(Camera.HorizontalToVerticalFieldOfView(FieldAcross, Aspect) * .5f * Mathf.Deg2Rad) / Height;
+                float[] last = null;
+                var strip = new List<Color32[]>();
+                Color32[] worst = null;
+                RectInt box = Nothing();
+                int flipsMost = 0, flipsAll = 0, drawnAll = 0;
+                for (int frame = 0; frame < SwayFrames; frame++)
+                {
+                    if (pole) stage.Pole(true, -.32f + frame * SwayStep * metresPerPixel, 11f);
+                    else stage.Turn(frame * SwayStep * degreesPerPixel);
+                    Take(body);
+                    var plain = stage.Shoot();
+                    Put(body, Mark.PingPink);
+                    var marked = stage.Shoot();
+                    pictures += 2;
+                    if (frame == 0)
+                        for (int i = 0; i < plain.Length; i++)
+                            if (Moved(empty[i], plain[i]) || Moved(plain[i], marked[i])) Grow(ref box, i);
+                    var layer = new float[plain.Length];
+                    int drawn = 0;
+                    for (int i = 0; i < plain.Length; i++)
+                    {
+                        layer[i] = (Math.Abs(marked[i].r - plain[i].r) + Math.Abs(marked[i].g - plain[i].g) + Math.Abs(marked[i].b - plain[i].b)) / 765f;
+                        if (layer[i] > .1f) drawn++;
+                    }
+                    drawnAll += drawn;
+                    if (last != null)
+                    {
+                        int flips = 0;
+                        var marks = (Color32[])marked.Clone();
+                        for (int i = 0; i < layer.Length; i++)
+                            if (Math.Abs(layer[i] - last[i]) > .5f * Math.Max(.2f, Math.Max(layer[i], last[i])) && Math.Abs(layer[i] - last[i]) > .15f)
+                            {
+                                flips++;
+                                marks[i] = new Color32(0, 255, 255, 255);
+                            }
+                        flipsAll += flips;
+                        // The frame with the most, its flipped pixels painted cyan (the strip's last picture).
+                        if (flips >= flipsMost) worst = marks;
+                        flipsMost = Math.Max(flipsMost, flips);
+                    }
+                    last = layer;
+                    if (frame < StripFrames) strip.Add(marked);
+                }
+                if (worst != null) strip.Add(worst);
+                string name = pole ? "sway.pole" : "sway.drift";
+                int steps = SwayFrames - 1;
+                text.AppendLine($"   {name,-34} drawn {drawnAll / SwayFrames,6} | flips a frame: mean {flipsAll / (float)steps,7:0.0} ({100f * flipsAll / Math.Max(1, steps) / Math.Max(1, drawnAll / SwayFrames),4:0.0}% of drawn), most {flipsMost}");
+                SaveStrip(name, strip, box);
+            }
+            catch (Exception error)
+            {
+                text.AppendLine($"!  sway ({(pole ? "pole" : "drift")}): not looked at ({error.GetType().Name}: {error.Message})");
+                Debug.LogException(error);
+            }
+            finally
+            {
+                body?.Dispose();
+            }
+        }
+        text.AppendLine();
+        return pictures;
+    }
+
+    // Frames side by side, cut round the enemy and enlarged (whole pixels, no smoothing) so a pixel that turns on and off shows.
+    private static void SaveStrip(string name, List<Color32[]> frames, RectInt box)
+    {
+        if (box.x == int.MaxValue || frames.Count == 0) return;
+        const int margin = 12, gap = 4;
+        int left = Math.Max(0, box.x - margin), bottom = Math.Max(0, box.y - margin);
+        int right = Math.Min(Width - 1, box.width + margin), top = Math.Min(Height - 1, box.height + margin);
+        int w = (right - left + 1) * StripZoom, h = (top - bottom + 1) * StripZoom;
+        var picture = new Texture2D(w * frames.Count + gap * (frames.Count - 1), h, TextureFormat.RGB24, false) { hideFlags = HideFlags.HideAndDontSave };
+        try
+        {
+            var pixels = new Color32[picture.width * h];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(255, 255, 255, 255);
+            for (int f = 0; f < frames.Count; f++)
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                pixels[y * picture.width + f * (w + gap) + x] = frames[f][(bottom + y / StripZoom) * Width + left + x / StripZoom];
+            picture.SetPixels32(pixels);
+            picture.Apply();
+            File.WriteAllBytes(Path.Combine(Folder, name + ".png"), picture.EncodeToPNG());
+        }
+        finally
+        {
+            Object.DestroyImmediate(picture);
+        }
     }
 
     // ---- Marks, by each source's own look ----
@@ -327,7 +446,7 @@ internal static class OutlineBench
     private sealed class Stage : IDisposable
     {
         private readonly Scene scene;
-        private readonly GameObject root, cover;
+        private readonly GameObject root, cover, pole;
         private readonly Camera eye;
         private readonly RenderTexture film;
         private readonly Texture2D shot;
@@ -385,6 +504,8 @@ internal static class OutlineBench
             floor.transform.localScale = new Vector3(20f, 1f, 20f);
             cover = Solid(PrimitiveType.Cube, "Cover", coverLook);
             cover.SetActive(false);
+            pole = Solid(PrimitiveType.Cube, "Pole", coverLook);
+            pole.SetActive(false);
             // The game puts the pass in its cameras' queue on its own at play; the editor's cameras get it from here.
             OutlinePass.Hook();
         }
@@ -427,6 +548,17 @@ internal static class OutlineBench
             renderer.GetPropertyBlock(block);
             block.CopySHCoefficientArraysFrom(probes);
             renderer.SetPropertyBlock(block);
+        }
+
+        /// <summary>The eye turned this far to the right of straight ahead (degrees).</summary>
+        public void Turn(float yaw) => eye.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+
+        /// <summary>A pole 6 cm wide standing at (x, z) on the floor, as a sight's edge or a post in front of the enemy; or none.</summary>
+        public void Pole(bool on, float x, float z)
+        {
+            pole.SetActive(on);
+            pole.transform.localPosition = new Vector3(x, 1.5f, z);
+            pole.transform.localScale = new Vector3(.06f, 3f, .06f);
         }
 
         /// <summary>A wall 1 m high, 2.5 m wide, 1.5 m before the enemy at this distance; or none.</summary>

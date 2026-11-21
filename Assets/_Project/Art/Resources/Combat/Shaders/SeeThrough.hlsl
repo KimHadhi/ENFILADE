@@ -1,5 +1,7 @@
 // What may be drawn through walls: one rule for every see-through drawing, the enemy outlines (OutlineMask, EnemyOutlines:
-// pings, bounties, holders, the Ghost's sight, a wave's last enemies) and MomentGlow's second pass (a friend's CHARGE outline). A pixel of a body
+// pings, bounties, holders, the Ghost's sight, a wave's last enemies) and MomentGlow's second pass (a friend's CHARGE outline).
+// The outlines test it by the hardware against the camera's own depth buffer, sample by sample (the body's depth pulled
+// SeeThroughGap nearer the eye); MomentGlow by BehindSomething below, pixel by pixel. A pixel of a body
 // counts as hidden only where something in the scene stands clearly in front of it:
 // - by more than _SeeThroughGap (m; Tables/Hud/SeeThrough.csv gap, pushed here by OwnViewMask). A copy of a body and the
 //   body itself differ by a hair (skinning, blend shapes, depth precision). The depth bias meant to cover that is spread
@@ -21,14 +23,16 @@
 // Set from the table (0 until then: the same number as the table's).
 float _SeeThroughGap;
 
+// How clearly something must stand in front (m): the table's gap, 0.12 until OwnViewMask has pushed it.
+float SeeThroughGap() { return _SeeThroughGap > 0.0 ? _SeeThroughGap : 0.12; }
+
 // Whether something in the scene stands in front of this fragment by more than the gap. positionCS is the fragment's
 // SV_Position, eyeDepth its distance along the view (from the vertex shader: -TransformWorldToView(positionWS).z).
 bool BehindSomething(float4 positionCS, float eyeDepth)
 {
     float2 uv = positionCS.xy / _ScaledScreenParams.xy;
     float scene = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
-    float gap = _SeeThroughGap > 0.0 ? _SeeThroughGap : 0.12;
-    return eyeDepth - scene > gap;
+    return eyeDepth - scene > SeeThroughGap();
 }
 
 // ---- Smoke ----
