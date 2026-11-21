@@ -67,6 +67,14 @@ public sealed class LocomotionState : MovementBaseState
             // thresholds, and the legs dropped to the jog's clips), and the strafe felt like braking (the user, 2026-11-21:
             // "달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"). Setting off, stopping and a turn back further than
             // Move.groundKeepPaceTurn still go through the middle: a body that reverses slows down to turn.
+            // Turned round on the run (the view swung back with W on): the body goes along its turn's clip until it is
+            // round (MovementTurnBack).
+            var turnBack = ctx.Actions.TurnBack;
+            if ((turnBack.Active || turnBack.TryBegin(ctx.HorizontalVelocity, targetVelocity, input)) && turnBack.Advance(dt, out Vector3 turning))
+            {
+                ctx.HorizontalVelocity = turning;
+                return;
+            }
             float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
             Vector3 now = ctx.HorizontalVelocity;
             float speedNow = now.magnitude, speedWanted = targetVelocity.magnitude;

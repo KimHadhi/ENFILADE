@@ -143,7 +143,8 @@ internal static class ClipBench
                     // Female Runner's turns and jumps, Combat Girls' gun turns.
                     var packs = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
                         .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    GaitMoveBake.Bake(packs, text);
+                    // Metres on this, the reference body: its root's units times its human scale and fit (as Track measures).
+                    GaitMoveBake.Bake(packs, text, animator.humanScale * scale);
                     bakeMoves = false;
                 }
                 if (cycled.Length > 0)

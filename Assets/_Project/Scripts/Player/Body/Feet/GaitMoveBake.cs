@@ -25,7 +25,7 @@ internal static class GaitMoveBake
     // Samples along a jump (its moment is looked up by its height).
     internal const int JumpSamples = 48;
 
-    internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, StringBuilder report)
+    internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, StringBuilder report, float metres)
     {
         var rows = new StringBuilder();
         rows.Append("id,kind,length,profile,leave,top,land,#설명\n");
@@ -35,8 +35,10 @@ internal static class GaitMoveBake
             + "점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight). kind posture(IdleToCrouch·CrouchToIdle): profile 몸 중심이 "
             + "처음 높이에서 끝 높이까지 간 정도(0~1), leave 움직이기 시작하는 때(2%), land 다 간 때(98%). 서서 앉고 일어설 때 클립이 자세가 바뀌는 만큼을 "
             + "따른다(PlayerBody.Posture). kind travel(Roll_*·RollToRun_*): profile 루트가 땅 위로 간 길의 몫(끝 = 1), top 몸 중심이 가장 낮은 때, land 몸이 "
-            + "다시 선 때(낮아진 만큼의 10% 안으로 돌아옴). 착지 구르기는 이 빠르기로 간다(MovementLanding.RollSpeed))\",,,,,,,\n");
-        int jumps = 0, postures = 0, travels = 0;
+            + "다시 선 때(낮아진 만큼의 10% 안으로 돌아옴). 착지 구르기는 이 빠르기로 간다(MovementLanding.RollSpeed). "
+            + "kind turn(*_TurnL·R_Lfoot·Rfoot): profile 곳마다 루트가 처음 자리에서 간 x:z(m, 기준 몸, 처음 앞이 +z):루트가 돈 각도(도, + 오른쪽), "
+            + "top 다 돈 각도. 달리다 뒤로 돌기는 이 길로 간다(MovementTurnBack))\",,,,,,,\n");
+        int jumps = 0, postures = 0, travels = 0, turns = 0;
         foreach (var clip in clips.Values.OrderBy(c => c.name, StringComparer.Ordinal))
         {
             bool jump = clip.name.StartsWith("RunJump_", StringComparison.Ordinal)
@@ -63,9 +65,17 @@ internal static class GaitMoveBake
                 report.AppendLine(Invariant($"  {clip.name,-20} travel  {clip.length:0.00}s lowest {low:0.00} up {up:0.00}"));
                 travels++;
             }
+            else if (TurnName.IsMatch(clip.name) && Turn(clip, metres, out Vector2[] at, out float[] round))
+            {
+                string profile = string.Join(";", Enumerable.Range(0, JumpSamples).Select(i => F(at[i].x) + ":" + F(at[i].y) + ":" + F(round[i])));
+                rows.Append(string.Join(",", clip.name, "turn", F(clip.length), profile, "", F(round[JumpSamples - 1]), "", ""));
+                rows.Append('\n');
+                report.AppendLine(Invariant($"  {clip.name,-20} turn  {clip.length:0.00}s turns {round[JumpSamples - 1]:0} to ({at[JumpSamples - 1].x:0.00}, {at[JumpSamples - 1].y:0.00}) m"));
+                turns++;
+            }
         }
         WriteTable(rows.ToString());
-        report.AppendLine($"  baked {jumps} jumps, {postures} postures and {travels} travels into {TablePath}");
+        report.AppendLine($"  baked {jumps} jumps, {postures} postures, {travels} travels and {turns} turns into {TablePath}");
     }
 
     // The crouch's way down and up, standing still (PlayerBody.Posture).
@@ -136,6 +146,52 @@ internal static class GaitMoveBake
         float dip = start - lowest;
         for (int i = lowAt; i <= steps; i++)
             if (start - y.Evaluate(length * i / steps) <= dip * .1f) { up = length * i / steps; break; }
+        return true;
+    }
+
+    // The turns on the run (MovementTurnBack).
+    private static readonly System.Text.RegularExpressions.Regex TurnName =
+        new System.Text.RegularExpressions.Regex("^(Walk|Jog|Run|Sprint)_Turn[LR]_[LR]foot$");
+
+    // A turn on the run from its root: where the root is at JumpSamples evenly spaced moments, from where it began, in metres
+    // on the reference body (x right, y ahead of the way it began facing), and how far round it has turned (deg, + to the
+    // right, unwrapped). False for a clip without its root's curves.
+    private static bool Turn(AnimationClip clip, float metres, out Vector2[] at, out float[] round)
+    {
+        at = null;
+        round = null;
+        AnimationCurve x = Curve(clip, "RootT.x"), z = Curve(clip, "RootT.z");
+        AnimationCurve qx = Curve(clip, "RootQ.x"), qy = Curve(clip, "RootQ.y"), qz = Curve(clip, "RootQ.z"), qw = Curve(clip, "RootQ.w");
+        if (x == null || z == null || qx == null || qy == null || qz == null || qw == null) return false;
+        float Yaw(float time)
+        {
+            var q = new Quaternion(qx.Evaluate(time), qy.Evaluate(time), qz.Evaluate(time), qw.Evaluate(time)).normalized;
+            Vector3 ahead = Vector3.ProjectOnPlane(q * Vector3.forward, Vector3.up);
+            return Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
+        }
+        float length = clip.length, start = Yaw(0f);
+        var origin = new Vector2(x.Evaluate(0f), z.Evaluate(0f));
+        int steps = Mathf.Max(60, Mathf.CeilToInt(length * 240f));
+        var unwrapped = new float[steps + 1];
+        float last = start;
+        for (int i = 1; i <= steps; i++)
+        {
+            float now = Yaw(length * i / steps);
+            unwrapped[i] = unwrapped[i - 1] + Mathf.DeltaAngle(last, now);
+            last = now;
+        }
+        at = new Vector2[JumpSamples];
+        round = new float[JumpSamples];
+        float r = -start * Mathf.Deg2Rad, c = Mathf.Cos(r), s = Mathf.Sin(r);
+        for (int i = 0; i < JumpSamples; i++)
+        {
+            float time = length * i / (JumpSamples - 1);
+            Vector2 gone = (new Vector2(x.Evaluate(time), z.Evaluate(time)) - origin) * metres;
+            at[i] = new Vector2(gone.x * c + gone.y * s, -gone.x * s + gone.y * c);
+            float f = (float)i * steps / (JumpSamples - 1);
+            int a = Mathf.Min(steps, Mathf.FloorToInt(f)), b = Mathf.Min(steps, a + 1);
+            round[i] = Mathf.Lerp(unwrapped[a], unwrapped[b], f - a);
+        }
         return true;
     }
 
