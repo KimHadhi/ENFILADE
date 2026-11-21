@@ -44,10 +44,12 @@ public sealed partial class PlayerBody
     [Header("Feet keep their place")]
     [SerializeField, Min(0f), Tooltip("The body stands (its feet keep their places) while it travels slower than this over the ground (m/s).")]
     private float footHoldSpeed = .15f;
-    [SerializeField, Min(0f), Tooltip("... and its legs turn slower than this (degrees a second). Legs turning quicker carry the feet round with them, as before.")]
-    private float footHoldTurnRate = 40f;
-    [SerializeField, Range(1f, 90f), Tooltip("A kept foot lets go once the legs have turned this far over it (degrees), and takes its new place: a step.")]
+    [SerializeField, Range(1f, 90f), Tooltip("A kept foot steps once the legs have turned this far over it (degrees).")]
     private float footHoldTwist = 25f;
+    [SerializeField, Min(.05f), Tooltip("How long a foot's step takes, up off its place and down in its new one (s).")]
+    private float footStepTime = .22f;
+    [SerializeField, Min(0f), Tooltip("How high a stepping foot comes up at the middle of its step (m).")]
+    private float footStepHeight = .08f;
     [SerializeField, Min(0f), Tooltip("The hips come down at most this far for a leg to reach a kept foot they have gone over away from (m). Further, the foot lets go.")]
     private float footHoldDrop = .05f;
     [SerializeField, Min(.01f), Tooltip("How long a foot that let go takes to ease to where the clip has it (s).")]
@@ -76,11 +78,8 @@ public sealed partial class PlayerBody
         if (TryGetComponent(out CharacterSounds sounds)) sounds.Footwear = Footwear;
     }
 
-    // What moved the hips sideways this frame that is no step (the lean), for the feet to take back out; and the legs'
-    // yaw last frame, for how fast they turn.
+    // What moved the hips sideways this frame that is no step (the lean), for the feet to take back out.
     private Vector3 hipsCarried;
-    private float lastFeetYaw;
-    private bool hasFeetYaw;
 
     /// <summary>
     /// How far each ankle is from the place it keeps, level (m), after this frame's leg IK; zero for a foot that keeps
@@ -127,15 +126,11 @@ public sealed partial class PlayerBody
         // in any case. The turn is the legs' own, the model's: standing, they keep their facing while the view turns
         // (TurnOnTheSpot) and the feet under them stay; the player's own facing is the view's and says nothing of the feet.
         float yaw = body.eulerAngles.y;
-        float turnRate = hasFeetYaw && dt > 0f ? Mathf.Abs(Mathf.DeltaAngle(lastFeetYaw, yaw)) / dt : 0f;
-        lastFeetYaw = yaw;
-        hasFeetYaw = true;
         Vector3 travel = player.ActualVelocity;
-        // A turn on the spot's clip steps the feet round itself (TurnOnTheSpot): kept feet fought its steps, held where its
-        // lead-in and settle turn slowly and let go where its middle turns fast, so the feet stuck and jumped.
-        bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed && turnRate < footHoldTurnRate
-            && stepping == null;
-        var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease);
+        // The legs turning on the spot no longer carry the feet round with them (as up to 0.9.278, over 40° a second): the
+        // feet stay where they stand and step round themselves (FootPlanting.Stand), at any speed of turn.
+        bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed;
+        var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight);
         // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
             new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,

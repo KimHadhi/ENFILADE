@@ -13,7 +13,7 @@ using UnityEngine.Playables;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    private const int ExecutionLayer = 6;
+    private const int ExecutionLayer = 5;
 
     private AnimationClipPlayable pairedClip;
     private bool paired;

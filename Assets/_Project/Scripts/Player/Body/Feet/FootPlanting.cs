@@ -65,7 +65,10 @@ internal sealed class FootPlanting
     /// <see cref="Stands"/>: the body neither travels nor turns, so each foot that is down keeps the very place it took
     /// when the body came to rest, whatever else moves the hips over it (a gun's lean rolling them, the head followed,
     /// an idle's sway), until the body has turned <see cref="Twist"/> degrees over it or the leg can no longer reach
-    /// with the hips down <see cref="MaxDrop"/>; then it lets go and takes its new place over <see cref="Release"/> s.
+    /// with the hips down <see cref="MaxDrop"/>; then it steps: it comes up off its place and round to where the stance
+    /// has it now over <see cref="StepTime"/> s, <see cref="StepHeight"/> m up at the middle, one foot at a time and the
+    /// one on the side the body turns to first (0.9.279). A foot that stops standing (the body sets off) lets go and eases
+    /// to the clip's place over <see cref="Release"/> s.
     /// Until 2026-11-18 a foot's height was the ground's and its place was wherever the hips had carried it, so a lean
     /// slid both feet sideways with the pelvis (the user: "제자리에서 상체만 기울어야 하나 ... 발(하체)까지 옆으로 이동").
     /// </summary>
@@ -73,13 +76,14 @@ internal sealed class FootPlanting
     {
         public readonly bool Stands;
         public readonly Vector3 Carried;
-        public readonly float Yaw, Twist, MaxDrop, Release;
+        public readonly float Yaw, Twist, MaxDrop, Release, StepTime, StepHeight;
 
-        public Hold(bool stands, Vector3 carried, float yaw, float twist, float maxDrop, float release)
+        public Hold(bool stands, Vector3 carried, float yaw, float twist, float maxDrop, float release, float stepTime, float stepHeight)
         {
             Stands = stands;
             Carried = Vector3.ProjectOnPlane(carried, Vector3.up);
             Yaw = yaw; Twist = Mathf.Max(1f, twist); MaxDrop = Mathf.Max(0f, maxDrop); Release = Mathf.Max(.01f, release);
+            StepTime = Mathf.Max(.05f, stepTime); StepHeight = Mathf.Max(0f, stepHeight);
         }
     }
 
@@ -94,6 +98,11 @@ internal sealed class FootPlanting
         public float KeptYaw;
         /// <summary>How far the foot stands from where the clip has it (world, level): the kept place's, or what is left of it easing away.</summary>
         public Vector3 Off;
+        /// <summary>A step under way (Hold): how far through it (0-1), where it left from (world, level), and how high the
+        /// foot is off the ground this frame (m).</summary>
+        public bool Stepping;
+        public float StepClock, StepLift;
+        public Vector3 StepFrom;
         public AnkleLimit Ankle;
         /// <summary>The ankle's height above the sole, measured in the rest pose (m).</summary>
         public float Sole;
@@ -227,7 +236,8 @@ internal sealed class FootPlanting
         {
             settled = false;
             strideDrop = 0f;
-            Left.Kept = Right.Kept = false;
+            Left.Kept = Right.Kept = Left.Stepping = Right.Stepping = false;
+            Left.StepLift = Right.StepLift = 0f;
             Left.Off = Right.Off = Vector3.zero;
             return;
         }
@@ -264,9 +274,19 @@ internal sealed class FootPlanting
         // (a crouch) is as much on the ground as a flat one, and its ankle stands centimetres higher.
         float leftOver = leftLift - leftDepth, rightOver = rightLift - rightDepth, lowerOver = Mathf.Min(leftOver, rightOver);
         body.position += Vector3.up * ((hipFloor - clipFloor) * Weight);
-        // Where each foot stands, level: the clip's place with the stride's stretch, or the place it keeps (Hold).
-        Vector3 leftAt = Stand(Left, leftLift, leftOver - lowerOver, onFeet, hold, dt);
-        Vector3 rightAt = Stand(Right, rightLift, rightOver - lowerOver, onFeet, hold, dt);
+        // Where each foot stands, level: the clip's place with the stride's stretch, the place it keeps, or where a step has
+        // it (Hold). Turning to the right the right foot leads, to the left the left one.
+        Vector3 leftAt, rightAt;
+        if (Mathf.DeltaAngle(Left.Kept ? Left.KeptYaw : hold.Yaw, hold.Yaw) > 0f)
+        {
+            rightAt = Stand(Right, Left, rightLift, rightOver - lowerOver, onFeet, hold, dt);
+            leftAt = Stand(Left, Right, leftLift, leftOver - lowerOver, onFeet, hold, dt);
+        }
+        else
+        {
+            leftAt = Stand(Left, Right, leftLift, leftOver - lowerOver, onFeet, hold, dt);
+            rightAt = Stand(Right, Left, rightLift, rightOver - lowerOver, onFeet, hold, dt);
+        }
         // A stretched stride, or hips that went over away from where a foot stands (a kept place, the lean's shift), can
         // put a foot further from its hip than the leg reaches: the hips come down that much, as far as each allows.
         float reach = Mathf.Max(ReachDrop(Left, leftLift, leftAt), ReachDrop(Right, rightLift, rightAt));
@@ -275,8 +295,9 @@ internal sealed class FootPlanting
         strideDrop = Mathf.Lerp(strideDrop, reach, 1f - Mathf.Exp(-dt / StrideDropTime));
         body.position += Vector3.down * (strideDrop * Weight);
         Vector3 hips = (Right.Upper.position - Left.Upper.position).normalized;
-        Place(Left, leftLift, leftLift - lowerLift, hips, tuning, leftAt);
-        Place(Right, rightLift, rightLift - lowerLift, hips, tuning, rightAt);
+        // A stepping foot is that much off the ground, and swings at the clip's angle rather than lying on the slope.
+        Place(Left, leftLift + Left.StepLift, leftLift + Left.StepLift - lowerLift, hips, tuning, leftAt);
+        Place(Right, rightLift + Right.StepLift, rightLift + Right.StepLift - lowerLift, hips, tuning, rightAt);
     }
 
     // The clip has a foot down when its sole is within this of its lower foot's (m); a foot whose place has eased to
@@ -285,16 +306,49 @@ internal sealed class FootPlanting
 
     // Where this foot stands this frame (world; only its level place is used). The clip's place is the foot's with what
     // carried the hips sideways taken back out and the stride's stretch added. While the body stands, a foot that is
-    // down keeps the place it took as the body came to rest; turned too far over, or out of the leg's reach, it lets go,
-    // eases to where the clip has it and takes that place.
-    private Vector3 Stand(Leg leg, float lift, float over, bool onFeet, in Hold hold, float dt)
+    // down keeps the place it took as the body came to rest; turned too far over, or out of the leg's reach, it steps:
+    // up off its place, round to where the clip has it now and down, then keeps that place. One foot steps at a time
+    // (<paramref name="other"/>), unless this one can no longer reach where it stands. Until 0.9.279 a foot let go and
+    // slid to its new place on the ground, which is why the turns on the spot were clips (0.9.261-0.9.278).
+    private Vector3 Stand(Leg leg, Leg other, float lift, float over, bool onFeet, in Hold hold, float dt)
     {
         Vector3 clip = leg.Foot.position - hold.Carried + leg.Shift;
         bool keep = onFeet && hold.Stands && over < DownHeight && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
+        leg.StepLift = 0f;
+        if (leg.Stepping)
+        {
+            // The body set off or left the ground mid-step: the foot eases on to the clip from where the step had it.
+            if (!keep) leg.Stepping = false;
+            else
+            {
+                leg.StepClock = Mathf.Min(1f, leg.StepClock + dt / hold.StepTime);
+                float s = leg.StepClock, along = s * s * (3f - 2f * s);
+                leg.StepLift = hold.StepHeight * Mathf.Sin(Mathf.PI * s);
+                leg.Off = Vector3.ProjectOnPlane(Vector3.Lerp(leg.StepFrom, clip, along) - clip, Vector3.up);
+                if (s >= 1f)
+                {
+                    leg.Stepping = false;
+                    leg.Kept = true;
+                    leg.Place = clip;
+                    leg.KeptYaw = hold.Yaw;
+                    leg.Off = Vector3.zero;
+                }
+                return clip + leg.Off;
+            }
+        }
         if (!keep) leg.Kept = false;
         else if (leg.Kept)
         {
-            if (Mathf.Abs(Mathf.DeltaAngle(leg.KeptYaw, hold.Yaw)) > hold.Twist || OutOfReach(leg, lift, leg.Place, hold.MaxDrop)) leg.Kept = false;
+            bool far = OutOfReach(leg, lift, leg.Place, hold.MaxDrop);
+            if ((far || Mathf.Abs(Mathf.DeltaAngle(leg.KeptYaw, hold.Yaw)) > hold.Twist) && (!other.Stepping || far))
+            {
+                leg.Kept = false;
+                leg.Stepping = true;
+                leg.StepClock = 0f;
+                leg.StepFrom = leg.Place;
+                leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
+                return clip + leg.Off;
+            }
         }
         else if (leg.Off.sqrMagnitude < Arrived * Arrived)
         {

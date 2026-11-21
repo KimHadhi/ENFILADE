@@ -14,9 +14,8 @@ using UnityEngine.Playables;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    // The turn on the spot sits under the fists (0.9.277): it has the hips and the legs, and a punch thrown meanwhile keeps
-    // its own body over them.
-    private const int MovesLayer = 0, TurnLayer = 1, ClenchLayer = 2, PunchLayer = 3, KickLayer = 4, DodgeLayer = 5;
+    // The turn-on-the-spot clips' layer went in 0.9.279: the feet step round themselves (FootPlanting).
+    private const int MovesLayer = 0, ClenchLayer = 1, PunchLayer = 2, KickLayer = 3, DodgeLayer = 4;
 
     [Header("Fists")]
     [SerializeField, Tooltip("Looped while fists are up. Only its fingers play, so the hands make fists.")]
@@ -63,7 +62,6 @@ public sealed partial class PlayerBody
         graph.Connect(punchMixer, 0, layers, PunchLayer);
         foreach (string clip in new[] { punchLeft, punchRight, punchLeftHard, punchRightHard }) AddPunch(clip);
         BuildKick();
-        BuildTurn();
         BuildDodge();
         BuildExecution();
         return layers;
@@ -77,7 +75,6 @@ public sealed partial class PlayerBody
         punchTimeLeft = punchWeight = leftArmShare = rightArmShare = 0f;
         TeardownDodge();
         TeardownExecution();
-        TeardownTurn();
         TeardownKick();
         if (fingerMask != null) Destroy(fingerMask);
         if (upperMask != null) Destroy(upperMask);
@@ -137,7 +134,6 @@ public sealed partial class PlayerBody
     private void BlendLayers(float dt)
     {
         layers.SetInputWeight(ClenchLayer, hands != null ? hands.FistsWeight : 0f);
-        BlendTurn(dt);
         BlendKick(dt);
         BlendDodge(dt);
         BlendExecution(dt);
