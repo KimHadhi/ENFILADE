@@ -8,8 +8,8 @@ CBG_Smile,0,0,0,0,0,0,,,101,Combat Girls 감정 표현 (권총·소총·샷건 �
 CBG_Surprise,0,0,0,0,0,0,,,81,Combat Girls 감정 표현 (권총·소총·샷건 팩에 같은 바이트로 들어 있어 한 벌만)
 P_AimIdle,1,0,0,0,0,0,,,78,Combat Girls 권총: AimIdle
 P_AimJog,1,1,0,0,0,0,,,25,Combat Girls 권총: AimJog
-P_AimTurn_L90,0,0,0,0,0,0,,,31,Combat Girls 권총: AimTurn_L90
-P_AimTurn_R90,0,0,0,0,0,0,,,31,Combat Girls 권총: AimTurn_R90
+P_AimTurn_L90,0,0,0,1,0,0,,,31,Combat Girls 권총: AimTurn_L90
+P_AimTurn_R90,0,0,0,1,0,0,,,31,Combat Girls 권총: AimTurn_R90
 P_AimWalk_B,1,1,0,0,0,0,,,35,Combat Girls 권총: AimWalk_B
 P_AimWalk_BL,1,1,0,0,0,0,,,35,Combat Girls 권총: AimWalk_BL
 P_AimWalk_BR,1,1,0,0,0,0,,,35,Combat Girls 권총: AimWalk_BR
@@ -46,8 +46,8 @@ P_Walk,1,1,0,0,0,0,,,35,Combat Girls 권총: Walk
 R_AimIdle,1,0,0,0,0,0,,,78,Combat Girls 소총: AimIdle
 R_AimIdle_AutoShoot,1,0,0,0,0,0,,,30,Combat Girls 소총: AimIdle_AutoShoot
 R_AimJog,1,1,0,0,0,0,,,25,Combat Girls 소총: AimJog
-R_AimTurn_L90,0,0,0,0,0,0,,,31,Combat Girls 소총: AimTurn_L90
-R_AimTurn_R90,0,0,0,0,0,0,,,31,Combat Girls 소총: AimTurn_R90
+R_AimTurn_L90,0,0,0,1,0,0,,,31,Combat Girls 소총: AimTurn_L90
+R_AimTurn_R90,0,0,0,1,0,0,,,31,Combat Girls 소총: AimTurn_R90
 R_AimWalk_B,1,1,0,0,0,0,,,35,Combat Girls 소총: AimWalk_B
 R_AimWalk_BL,1,1,0,0,0,0,,,35,Combat Girls 소총: AimWalk_BL
 R_AimWalk_BR,1,1,0,0,0,0,,,35,Combat Girls 소총: AimWalk_BR
@@ -85,8 +85,8 @@ R_TakeGun,0,0,0,0,0,0,,,53,Combat Girls 소총: TakeGun
 R_Walk,1,1,0,0,0,0,,,35,Combat Girls 소총: Walk
 S_AimIdle,1,0,0,0,0,0,,,78,Combat Girls 샷건: AimIdle
 S_AimJog,1,1,0,0,0,0,,,25,Combat Girls 샷건: AimJog
-S_AimTurn_L90,0,0,0,0,0,0,,,41,Combat Girls 샷건: AimTurn_L90
-S_AimTurn_R90,0,0,0,0,0,0,,,41,Combat Girls 샷건: AimTurn_R90
+S_AimTurn_L90,0,0,0,1,0,0,,,41,Combat Girls 샷건: AimTurn_L90
+S_AimTurn_R90,0,0,0,1,0,0,,,41,Combat Girls 샷건: AimTurn_R90
 S_AimWalk_B,1,1,0,0,0,0,,,35,Combat Girls 샷건: AimWalk_B
 S_AimWalk_BL,1,1,0,0,0,0,,,35,Combat Girls 샷건: AimWalk_BL
 S_AimWalk_BR,1,1,0,0,0,0,,,35,Combat Girls 샷건: AimWalk_BR

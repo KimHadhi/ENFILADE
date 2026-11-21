@@ -133,8 +133,10 @@ internal static class ClipBench
                 if (bakeMoves)
                 {
                     text.AppendLine("-- bake=gaitmoves");
-                    var runner = ClipsIn(AnimationsFolder + "BiperRunner").GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    GaitMoveBake.Bake(runner, text);
+                    // Female Runner's turns and jumps, Combat Girls' gun turns.
+                    var packs = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
+                        .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
+                    GaitMoveBake.Bake(packs, text);
                     bakeMoves = false;
                 }
                 foreach (string folder in folders)

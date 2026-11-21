@@ -10,8 +10,10 @@ using UnityEngine;
 
 /// <summary>
 /// Bakes from BIPER Female Runner's clips what the game follows them by, read from each clip's own root curves:
-/// - turns on the spot (TurnIP_L/R 45, 90, 135, 180): how far round the root is through the clip and its whole turn, so the
-///   legs turn by that very curve while the clip steps them round (PlayerBody.TurnOnTheSpot);
+/// - turns on the spot (Female Runner's TurnIP_L/R 45, 90, 135, 180; Combat Girls' gun turns P_/R_/S_AimTurn_L90/R90,
+///   0.9.275): how far round the root is through the clip and its whole turn, so the legs turn by that very curve while the
+///   clip steps them round (PlayerBody.TurnOnTheSpot), and where the turn starts and is done (start, end): the clips stand
+///   a while before and after it, and the game plays only between;
 /// - jumps (Jump_*, RunJump_*; 0.9.266): where the body leaves the ground, tops out and comes back down to where it left,
 ///   and how high the body centre is between, so the clip's moment follows the game's own flight (PlayerBody.FollowFlight).
 /// Written to Tables/Player/GaitMoves.csv by ClipBench (request line bake=gaitmoves); the game only reads it. These are
@@ -28,31 +30,39 @@ internal static class GaitMoveBake
     internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, StringBuilder report)
     {
         var rows = new StringBuilder();
-        rows.Append("id,kind,length,profile,turn,leave,top,land,#설명\n");
+        rows.Append("id,kind,length,profile,turn,leave,top,land,start,end,#설명\n");
         rows.Append("\"#설명 (ClipBench가 BIPER Female Runner의 클립에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다"
             + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). kind turn 제자리 돌기(TurnIP_*): profile 루트가 그때까지 돈 몫(0~1), "
-            + "클립 길이를 고르게 나눈 " + Samples + "곳의 끝에서(';'), turn 그 클립이 도는 각도(+ 오른쪽). 다리는 이 곡선대로 돈다(PlayerBody.TurnOnTheSpot). "
+            + "클립 길이를 고르게 나눈 " + Samples + "곳의 끝에서(';'), turn 그 클립이 도는 각도(+ 오른쪽), start 돌기 시작(" + StartShare * 100f
+            + "%가 되기 " + StartLead + "초 전: 첫 발을 드는 때), end 다 돈 때(" + EndShare * 100f + "%). 게임은 start부터 end까지만 틀고, 다리는 이 곡선대로 돈다"
+            + "(PlayerBody.TurnOnTheSpot). "
             + "kind jump 점프(Jump_*·RunJump_*): profile 몸 중심이 처음보다 높은 정도(꼭대기 = 1), 처음부터 끝까지 고르게 " + JumpSamples + "곳(';'), "
-            + "leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). 점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight))\",,,,,,,,\n");
+            + "leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). 점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight))\",,,,,,,,,,\n");
         int baked = 0;
+        var turns = new List<string>();
         foreach (string side in Sides)
             foreach (int angle in new[] { 45, 90, 135, 180 })
-            {
-                string name = $"TurnIP_{side}{angle}";
-                if (!clips.TryGetValue(name, out var clip)) continue;
-                var round = Round(clip, out float whole);
-                rows.Append(string.Join(",", name, "turn", F(clip.length), string.Join(";", round.Select(F)), F(whole), "", "", "", ""));
-                rows.Append('\n');
-                report.AppendLine(Invariant($"  {name,-20} turn  {clip.length:0.00}s turns {whole:0.0} share {string.Join(" ", round.Where((_, i) => i % 4 == 3).Select(v => v.ToString("0.00", CultureInfo.InvariantCulture)))}"));
-                baked++;
-            }
+                turns.Add($"TurnIP_{side}{angle}");
+        foreach (string gun in new[] { "P", "R", "S" })
+            foreach (string side in Sides)
+                turns.Add($"{gun}_AimTurn_{side}90");
+        foreach (string name in turns)
+        {
+            if (!clips.TryGetValue(name, out var clip)) continue;
+            var round = Round(clip, out float whole);
+            Span(clip, out float start, out float end);
+            rows.Append(string.Join(",", name, "turn", F(clip.length), string.Join(";", round.Select(F)), F(whole), "", "", "", F(start), F(end), ""));
+            rows.Append('\n');
+            report.AppendLine(Invariant($"  {name,-20} turn  {clip.length:0.00}s turns {whole:0.0} from {start:0.00} to {end:0.00}s share {string.Join(" ", round.Where((_, i) => i % 4 == 3).Select(v => v.ToString("0.00", CultureInfo.InvariantCulture)))}"));
+            baked++;
+        }
         int jumps = 0;
         foreach (var clip in clips.Values.OrderBy(c => c.name, StringComparer.Ordinal))
         {
             bool jump = clip.name.StartsWith("RunJump_", StringComparison.Ordinal)
                 || clip.name.StartsWith("Jump_", StringComparison.Ordinal) && !clip.name.StartsWith("Jump_Climb", StringComparison.Ordinal);
             if (!jump || !Flight(clip, out float[] rise, out float leave, out float top, out float land)) continue;
-            rows.Append(string.Join(",", clip.name, "jump", F(clip.length), string.Join(";", rise.Select(F)), "", F(leave), F(top), F(land), ""));
+            rows.Append(string.Join(",", clip.name, "jump", F(clip.length), string.Join(";", rise.Select(F)), "", F(leave), F(top), F(land), "", "", ""));
             rows.Append('\n');
             report.AppendLine(Invariant($"  {clip.name,-20} jump  {clip.length:0.00}s leaves {leave:0.00} tops {top:0.00} lands {land:0.00}"));
             jumps++;
@@ -103,11 +113,41 @@ internal static class GaitMoveBake
     private static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
+    // A turn starts this long before its root has turned StartShare of the whole (the first foot comes up before the hips
+    // turn), and is done once it has turned EndShare.
+    private const float StartShare = .03f, StartLead = .15f, EndShare = .98f;
+
+    // Where a turn starts and is done (s), read finely from its root's turn.
+    private static void Span(AnimationClip clip, out float start, out float end)
+    {
+        start = 0f;
+        end = clip.length;
+        var fine = Turned(clip, 240, out float whole);
+        if (fine == null || Mathf.Abs(whole) < 1f) return;
+        int steps = fine.Length - 1;
+        // Its own way only: some first turn a little the other way as the weight shifts (TurnIP_R135 -9%).
+        int first = Array.FindIndex(fine, v => v / whole >= StartShare);
+        int done = Array.FindIndex(fine, v => v / whole >= EndShare);
+        if (first > 0) start = Mathf.Max(0f, clip.length * first / steps - StartLead);
+        if (done > 0) end = clip.length * done / steps;
+    }
+
     // How far round the root has turned by the end of each of Samples shares of the clip (0-1 of the whole), and the whole
     // (degrees, + to the right; a half turn reads as the way it went).
     private static float[] Round(AnimationClip clip, out float whole)
     {
         var round = new float[Samples];
+        var along = Turned(clip, Samples * 8, out whole);
+        if (along == null) return round;
+        for (int i = 0; i < Samples; i++)
+            round[i] = Mathf.Abs(whole) > 1e-3f ? along[(i + 1) * 8] / whole : 0f;
+        return round;
+    }
+
+    // The root's turn summed from the start at each of steps+1 evenly spaced moments (degrees), and the whole; null without
+    // root curves.
+    private static float[] Turned(AnimationClip clip, int steps, out float whole)
+    {
         whole = 0f;
         AnimationCurve qx = null, qy = null, qz = null, qw = null;
         foreach (var binding in AnimationUtility.GetCurveBindings(clip))
@@ -121,7 +161,7 @@ internal static class GaitMoveBake
                 case "RootQ.w": qw = AnimationUtility.GetEditorCurve(clip, binding); break;
             }
         }
-        if (qx == null || qy == null || qz == null || qw == null) return round;
+        if (qx == null || qy == null || qz == null || qw == null) return null;
         float Yaw(float time)
         {
             var q = new Quaternion(qx.Evaluate(time), qy.Evaluate(time), qz.Evaluate(time), qw.Evaluate(time)).normalized;
@@ -129,7 +169,6 @@ internal static class GaitMoveBake
             return Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
         }
         // Summed in small steps, so a half turn and more is followed round rather than read as its shortest way.
-        int steps = Samples * 8;
         float last = Yaw(0f), turned = 0f;
         var along = new float[steps + 1];
         for (int i = 1; i <= steps; i++)
@@ -140,9 +179,7 @@ internal static class GaitMoveBake
             along[i] = turned;
         }
         whole = turned;
-        for (int i = 0; i < Samples; i++)
-            round[i] = Mathf.Abs(whole) > 1e-3f ? along[(i + 1) * 8] / whole : 0f;
-        return round;
+        return along;
     }
 
     // A table the editor may hold open is written in place, its old tail cut after (a shorter text written over a mapped

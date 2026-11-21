@@ -131,7 +131,10 @@ public sealed partial class PlayerBody
         lastFeetYaw = yaw;
         hasFeetYaw = true;
         Vector3 travel = player.ActualVelocity;
-        bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed && turnRate < footHoldTurnRate;
+        // A turn on the spot's clip steps the feet round itself (TurnOnTheSpot): kept feet fought its steps, held where its
+        // lead-in and settle turn slowly and let go where its middle turns fast, so the feet stuck and jumped.
+        bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed && turnRate < footHoldTurnRate
+            && stepping == null;
         var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease);
         // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
