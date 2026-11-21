@@ -5,11 +5,14 @@ using UnityEngine;
 public sealed partial class PlayerNetworkCombat
 {
     // shielded: their shield took all of it, so others see its sparks and hear its crack, not blood (Apex Legends' shields).
-    // Seed: the hurt's look and sound, drawn the same on every PC (SharedRandom).
+    // Seed: the hurt's look and sound, drawn the same on every PC (SharedRandom). taken: what the blow took off them (shield
+    // and health together), so their body flinches as hard here as on their own PC (PlayerBody.Flinch); a fall's hurt is
+    // the landing's. (HurtRpc until 0.9.299, without it.)
     [Rpc(SendTo.NotMe)]
-    private void HurtRpc(Vector3 point, Vector3 direction, bool fall, bool shielded, uint seed)
+    private void HurtTakenRpc(Vector3 point, Vector3 direction, bool fall, bool shielded, float taken, uint seed)
     {
         using (SharedRandom.Scope(seed)) ShowHurt(point, direction, fall, shielded);
+        if (!fall) body.OrNull()?.Flinch(taken);
     }
 
     private void ShowHurt(Vector3 point, Vector3 direction, bool fall, bool shielded)

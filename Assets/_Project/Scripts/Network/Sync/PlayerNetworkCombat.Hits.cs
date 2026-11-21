@@ -10,7 +10,8 @@ public sealed partial class PlayerNetworkCombat
     {
         // A hold taking hold is no wound: friends see no blood on them for it either.
         if (result == DamageResult.Damaged && !hit.TakesHold)
-            HurtRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded, hit.EventSeed);
+            HurtTakenRpc(hit.Point, hit.Direction, hit.Kind == DamageKind.Fall, receiver.LastHitShielded,
+                receiver.LastShieldTaken + receiver.LastHealthTaken, hit.EventSeed);
     }
 
     /// <summary>This PC's player's blow met there (BashImpact): every other PC shows its shock there, as big, from its seed.</summary>
