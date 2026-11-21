@@ -240,7 +240,8 @@ public sealed class StanceFigure
         }
     }
 
-    private static Texture2D Picture(Pose pose)
+    /// <summary>A stance's picture (Resources/UI/Icons/Stance_*), or null for none; HUD Mk II's stance tile shows it too.</summary>
+    public static Texture2D Picture(Pose pose)
     {
         if (pose == Pose.None) return null;
         int index = (int)pose;

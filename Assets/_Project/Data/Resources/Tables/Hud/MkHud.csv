@@ -1,0 +1,225 @@
+﻿key,value,note
+#안내,,"HUD Mk II(게리 모드 애드온 HUD Mk II를 우리 게임에. 사용자 2026-11-22: 지금 HUD가 지저분하고 모바일 게임 같다 → 영상의 HUD Mk II, 시안 카드 '좋아' + '내 프로필 아이콘 넣을 공간 넣을 것'). 자리는 1920x1080 화면의 왼쪽 위에서 px(아래가 +). 애드온은 1920에서 Scale = ScreenScale(0.25) = 0.75라 '500 x Scale'은 375. 조각마다 가까운 화면 모서리에서 그 거리를 지킨다. 글자 크기는 GMod 글꼴 크기(칸 높이) 그대로 적고, Hitmarker Normal의 칸은 1.25em이라 화면에는 크기 ÷ Text.em으로 그린다"
+Hud.on,1,"1이면 HUD Mk II가 예전 HUD 대신 나온다(예전 체력 블록·초상화·궁극 탄창·탄약 표시·무기 슬롯·목표 바·새 목표 카드·클래스 판·지속 효과 칸·설치 개수 줄·아군 카드·획득 목록은 숨는다). 0이면 예전 HUD. 다음 장면부터 바뀐다"
+Hud.order,26,HUD Mk II 캔버스의 그리는 순서(피 효과 24·실드 효과 25 위)
+Hud.sway,2,"시야 흔들림: 시선이 늦게 따라오는 사본보다 1도 앞설 때마다 HUD가 비켜나는 px(애드온 hud_mk2_sway_intensity 기본 2). 설정 → HUD 흔들림 0.5(기본)일 때 이 값, 0이면 흔들림 없음"
+Hud.swayFollow,10,시선 사본이 따라오는 빠르기(1초에. 애드온 LerpAngle(FrameTime x 10))
+Hud.swayMost,40,흔들림으로 비켜나는 가장 큰 거리(px. 시안의 ±40)
+Hud.lean,1,"Q/E 기울이기에 HUD의 다른 조각처럼 따라 돈다(1/0, HudCamera.LeanRoll)"
+Hud.tabFade,1,Tab 화면이 올라오는 동안 목표가 비켜나는 정도(1 = 다 사라짐)
+#색,,"애드온의 색 그대로, 강조색 하나만 우리 HUD 분홍"
+Colour.health,#DFFF8F,체력 바(애드온 health_color 223 255 143)
+Colour.armor,#FFFFFF,방어(실드) 칸
+Colour.low,#FF0000,"낮음: 체력 30% 이하, 탄창 30% 이하, 예비가 탄창 하나 이하(애드온 Colors.Low)"
+Colour.loss,#FF9600,잃은 만큼 남았다가 따라 줄어드는 자국(애드온 Colors.Loss)
+Colour.over,#9696FF,"한 바를 넘친 둘째 바(애드온 150,150,255)"
+Colour.overMore,#FF9614,"둘째 바도 넘친 셋째 바(애드온 255,150,20)"
+Colour.text,#FFFFFF,글자와 아이콘
+Colour.tag,#9B9B9B,"작은 글자: 0·50·100 눈금, 키 이름, 목표 머리글(애드온 Colors.Ammo 155)"
+Colour.background,#00000032,"상자 바탕(애드온 Colors.Background 0,0,0,50)"
+Colour.accent,#FF4F78,"강조색 하나: 우리 HUD 분홍(KitStyle.Accent, PlayerColours.csv 첫 줄). 프로필 사진이 없을 때 바탕, 효과 칸 채움, 준비된 클래스·궁극기, 습격"
+Colour.rest,#4A86FF,"캠페인 휴식 시간의 머리글(예전 단계 줄의 파랑, 사용자 11-14: 휴식은 파란색)"
+Colour.gone,#999EA8,죽거나 합류를 기다리는 동료
+Colour.empty,1.75,"다 쓴 투척물·궁극기 칸은 색을 이 값으로 나눈 어두운 색(애드온 Color(r/1.75, ...))"
+#글자,,"글꼴은 Fonts.csv MkHud(Hitmarker Normal, 한글은 Pretendard로 대신). 크기는 GMod 크기(화면 가로 절반 x 비율)"
+Text.em,1.25,Hitmarker 칸 높이 ÷ 글자 크기(winAscent+winDescent 2500 ÷ 2000)
+Text.outline,0.2,"글자 검은 테두리 굵기(애드온 SimpleTextOutlined 2px)"
+Text.outlineAlpha,0.22,"테두리 진하기(애드온 20/255를 여덟 번 겹쳐 그리는 것을 시안에서 0.22로 맞춤)"
+Text.hangul,10,"작은 머리글 크기(9.6 → 7.68px)에 한글이 있으면 이 px로(7.68px 한글은 읽을 수 없다. 시안과 같음)"
+Text.label,9.6,"Nene.Label: 머리글·눈금·무기 이름(sw x 0.01)"
+Text.mags,28.8,"Nene.Mags: 탄창 숫자(sw x 0.03)"
+Text.ammo,19.2,"Nene.Ammo: 예비 숫자·선택기 탄 수(sw x 0.02)"
+Text.alts,14.4,"Nene.Alts: 칸 모서리 숫자(sw x 0.015)"
+Text.history,21.12,"Nene.History: 획득 줄·목표 제목(sw x 0.022)"
+Text.name,16.8,"Nene.Name: 클래스 키 글자(sw x 0.0175)"
+Text.selector,26.4,"Nene.Selector: 선택기 무기 이름(sw x 0.0275)"
+#체력,,"애드온 DrawHealth·DrawArmor. 자리는 시안(체력 블록을 왼쪽 아래로)"
+Status.x,317,체력 바 가운데 x(시안. 애드온은 화면 가운데 960)
+Status.y,1009.8,"체력 바 가운데 y(애드온 sh + sh x 0.87)"
+Status.width,375,"바 길이(애드온 500 x Scale)"
+Status.height,7.5,"체력 바 두께(10 x Scale)"
+Status.pad,3.75,"바탕 상자가 바보다 넓은 만큼(5 x Scale)"
+Status.corner,6,상자 모서리 둥글기(px. draw.RoundedBox 6)
+Status.armorY,1026,"방어 바 가운데 y(체력 y + sh x 0.03)"
+Status.armorHeight,6,"방어 칸 두께(8 x Scale)"
+Status.parts,10,방어 칸 수
+Status.cell,0.9,칸 하나가 칸 간격에서 차지하는 몫
+Status.armorLeast,100,"방어 바 하나 = 최대 체력과 이 값 중 큰 것만큼의 실드(예전 실드 띠와 같은 잣대). 넘치면 파란 둘째 바"
+Status.follow,10,바가 값을 따라가는 빠르기(애드온 Lerp 10)
+Status.wait,0.5,값이 바뀐 뒤 잃은 자국이 멈춰 있는 시간(초. 애드온 timer 0.5)
+Status.lag,5,잃은 자국이 따라 줄어드는 빠르기(애드온 5)
+Status.low,0.3,체력이 이 몫 이하면 빨강
+Status.colourFollow,10,색이 바뀌는 빠르기(애드온 LerpColor 10)
+Status.tile,41.25,"바 옆 칸 한 변(애드온 55 x Scale)"
+Status.tileY,1022.9,"칸 가운데 y(체력 y + 칸/2 − 체력 두께)"
+Status.profileX,96.5,"프로필 사진 칸 가운데 x(애드온 주사기 칸 자리: 바 왼쪽 끝 − 칸/1.25). 사용자: 내 프로필 아이콘 넣을 공간"
+Status.profileInset,2,사진이 칸 가장자리에서 들어간 만큼(px)
+Status.letter,0.5,사진이 없을 때 이름 첫 글자 크기(칸의 몫)
+Status.rankX,537.5,"계급 칸 가운데 x(애드온 방탄판 칸 자리: 바 오른쪽 끝 + 칸/1.25)"
+Status.stanceX,589.1,"자세 칸 가운데 x(계급 칸 + 칸 x 1.25)"
+Status.iconAlpha,0.588,칸 아이콘 진하기(애드온 150/255)
+Status.fillAlpha,0.392,계급 칸이 아래부터 차는 색의 진하기(애드온 BTC_Text 100/255)
+Status.gainSeconds,0.9,처치 때 계급 칸 위에 뜨는 +XP가 떠 있는 시간
+Status.gainRise,10,그동안 오르는 px
+Status.popSeconds,0.14,자세가 바뀔 때 커졌다 돌아오는 시간
+Status.popScale,1.35,그때 커지는 배율
+#동료,,"시안의 동료 줄(애드온에는 없음). 위에서 아래로 한 사람에 한 줄"
+Team.x,129,줄 왼쪽 끝
+Team.y,880,첫 줄 체력 선의 y
+Team.step,27,줄 간격
+Team.width,168,줄 길이
+Team.back,2.5,바탕 상자가 선보다 넓은 만큼
+Team.box,9.5,바탕 상자 높이
+Team.hp,3,체력 선 두께
+Team.cellY,4.5,체력 선 위에서 실드 칸까지
+Team.cellHeight,2,실드 칸 두께
+Team.cell,0.9,칸 하나가 칸 간격에서 차지하는 몫
+Team.cellBack,0.08,빈 실드 칸의 진하기
+Team.cells,10,실드 칸 수
+Team.limit,3,이보다 동료가 많으면 줄이 사라지고 머리 위 표시만 남는다(예전 카드와 같음)
+Team.nameRise,14,체력 선 위로 이름 줄이 올라간 만큼
+Team.nameSize,13.44,"이름 글자 크기(GMod. Nene.Name x 0.8)"
+Team.nameSpacing,8,이름 글자 사이(0.08em)
+Team.seatWidth,3,이름 앞 그 사람 색 막대 폭
+Team.seatHeight,9,그 막대 높이
+Team.seatGap,6,막대와 이름 사이
+Team.low,0.3,체력이 이 몫 이하면 빨강
+#지속 효과,,"내게 걸린 지속 효과(TimedEffects)가 칸 하나씩. 애드온의 위험 칸(Hazards) 모양으로 시안이 그린 것"
+Effects.x,129,첫 칸 왼쪽 끝
+Effects.y,962,칸 위쪽 끝
+Effects.size,28.8,"칸 한 변(1920 x 0.016 x Scale x 1.25)"
+Effects.step,1.25,칸 자리 간격(칸 몫. 애드온 hazard.x = (k−1) x 1.25)
+Effects.spread,4.2,"칸 사이를 이름이 들어가게 벌리는 배율(시안: 칸 x 1.25 x 4.2 = 151px)"
+Effects.inset,2,아이콘이 칸 가장자리에서 들어간 만큼
+Effects.fill,0.55,남은 시간만큼 아래부터 차는 강조색의 진하기
+Effects.back,0.2,칸 바탕 진하기
+Effects.breath,0.19,바탕이 숨쉬는 폭(애드온의 |sin 2t| 깜빡임을 반 아래로는 안 어두워지게)
+Effects.breathRate,2,숨쉬는 빠르기(|sin(이 값 x t)|: 1초에 0.64번)
+Effects.breathFloor,0.55,숨이 가장 옅을 때의 몫
+Effects.fadeIn,3,칸이 나타나는 빠르기(애드온 3)
+Effects.fadeOut,2,칸이 사라지는 빠르기(애드온 2)
+Effects.follow,10,칸이 새 자리로 미끄러지는 빠르기(애드온 10)
+Effects.labelGap,6,칸과 이름 사이
+#탄약,,애드온 DrawAmmo
+Ammo.x,1680,"탄창 상자 가운데 x(sw x 2 − sw x 0.25)"
+Ammo.y,972,"탄창 상자 가운데 y(sh + sh x 0.8)"
+Ammo.magWidth,93.75,"탄창 상자 폭(125 x Scale)"
+Ammo.magHeight,37.5,"상자 높이(50 x Scale)"
+Ammo.reserveWidth,56.25,"예비 상자 폭(75 x Scale)"
+Ammo.reserveSpread,1.95,"예비 상자 가운데 = x + (탄창 폭 + 예비 폭) ÷ 이 값"
+Ammo.textAt,2.5,"숫자의 오른쪽 끝 = x + 상자 폭 ÷ 이 값"
+Ammo.nameX,0.45,"무기 이름 왼쪽 = x − 상자 폭 x 이 값"
+Ammo.nameY,0.35,"무기 이름 위 = y − 상자 폭 x 이 값"
+Ammo.ghost,0.196,숫자 뒤 흐린 000의 진하기(50/255)
+Ammo.reserveAlpha,0.588,예비 숫자의 진하기(150/255)
+Ammo.iconAlpha,0.588,탄 아이콘 진하기(150/255)
+Ammo.flickAlpha,0.392,쏠 때 상자가 밝아지는 진하기(100/255). 탄창이 빌수록 붉다
+Ammo.flickFade,3,그 빛이 사라지는 빠르기(애드온 3)
+Ammo.flickFollow,14,"빛이 부드럽게 따라가는 빠르기(연사해도 깜빡이지 않고 은은히 켜져 있게. 시안)"
+Ammo.low,0.3,탄창이 이 몫 이하면 빨강
+Ammo.follow,10,숫자가 따라가는 빠르기(애드온 10)
+Ammo.colourFollow,10,색이 바뀌는 빠르기
+Ammo.reloadGap,4,탄창 상자 아래 장전 선까지
+Ammo.reloadHeight,2,장전 선 두께
+Ammo.reloadAlpha,0.7,장전 선 진하기
+Ammo.statusGap,9,"상자 아래 할 일 줄(장전·탄약 없음·살펴보기)까지"
+Ammo.rankUpSeconds,2.5,총을 살펴볼 때 새 등급이 할 일 줄에 남는 시간
+#장비 칸,,"예비 상자 위로 쌓인 칸: 투척물(애드온 수류탄 칸, 위로 칸 x 2), 클래스(애드온 칼 칸 자리 3.1), 궁극기(시안 4.2)"
+Gear.x,1762.5,"칸 가운데 x(예비 상자 가운데 + (예비 폭 − 칸) x Scale ÷ 2)"
+Gear.tile,41.25,"칸 한 변(55 x Scale)"
+Gear.grenadeRise,2,투척물 칸: 탄약 y에서 칸 몇 개 위
+Gear.classRise,3.1,클래스 칸
+Gear.ultRise,4.2,궁극기 칸
+Gear.iconAlpha,0.588,칸 아이콘 진하기(150/255)
+Gear.tickOn,0.9,찬 눈금의 진하기
+Gear.tickOff,0.22,빈 눈금의 진하기
+Gear.tickPad,3,눈금이 칸 가장자리에서 들어간 만큼
+Gear.tickGap,1.5,눈금 사이
+Gear.tickThick,2,눈금 두께
+Gear.fill,0.3,칸이 아래부터 차는 흰색의 진하기
+Gear.readyFloor,0.45,클래스 키가 준비됐을 때 강조색이 숨쉬는 가장 옅은 진하기
+Gear.readyAmp,0.15,숨쉬는 폭
+Gear.readyRate,0.8,숨쉬는 빠르기(1초에. 1.6 이하)
+Gear.ultFloor,0.5,궁극기가 다 찼을 때 숨쉬는 가장 옅은 진하기
+Gear.ultRate,0.7,그 빠르기(1초에)
+Gear.ultTicks,10,궁극기 눈금 수(한 칸 = 한 번 쓰는 데 드는 것의 10%)
+Gear.keyPad,3,칸 안 아래 왼쪽 키 이름의 여백
+Gear.wordsGap,8,칸 왼쪽 클래스 글자와 칸 사이
+Gear.lineStep,12,"클래스 글자 아래 줄들(설치 개수)의 간격"
+Gear.colourFollow,10,색이 바뀌는 빠르기
+#획득,,"애드온 cl_history.lua"
+Pickups.x,1392,"아이콘 가운데 x(sw x 2 − sw x 0.55)"
+Pickups.y,810,"기준 y(sh + sh x 0.5). 줄은 y − 글자 높이 x 2 − (순서 x (글자 높이 + 줄 간격))"
+Pickups.decode,2,이름이 해독되는 시간(초)
+Pickups.life,3,"줄이 머무는 시간: 마지막으로 주운 뒤 decode + life x 순서 초"
+Pickups.icon,22.5,"아이콘 한 변(30 x Scale)"
+Pickups.iconDrop,3,"아이콘이 글자보다 내려간 만큼(4 x Scale)"
+Pickups.textX,11.25,"글자가 아이콘 가운데에서 오른쪽으로(15 x Scale)"
+Pickups.rowGap,11.25,"줄 사이(15 x Scale)"
+Pickups.follow,10,줄이 움직이고 나타나고 사라지는 빠르기
+Pickups.back,0.196,줄 바탕 상자 진하기(50/255)
+Pickups.padX,0.075,바탕 상자 왼쪽 = 아이콘 x − 글자 폭 x 이 값
+Pickups.padW,1.15,바탕 상자 폭 = 글자 폭 x 이 값
+Pickups.padY,0.45,바탕 상자 위 = 줄 y − 글자 높이 x 이 값
+Pickups.padH,1.2,바탕 상자 높이 = 글자 높이 x 이 값
+Pickups.dim,0.3,이 순서를 넘은 줄마다 흐려지는 몫
+Pickups.clear,4,이 순서까지는 흐려지지 않는다
+Pickups.chars,!@#$%^&*()_+{}:<>?~/|`,해독 중에 대신 보이는 글자들(애드온 randomChars). 목표 제목·위 알림도 같은 글자
+#무기 선택기,,"애드온 cl_selector.lua. 숫자 키·휠로 무기를 바꾸면 화면 가운데에 이 초 동안 뜬다(무기는 예전처럼 키를 누르면 바로 바뀐다)"
+Selector.seconds,3,떠 있는 시간
+Selector.x,960,가운데 x
+Selector.y,540,가운데 y
+Selector.width,337.5,"상자 폭(450 x Scale)"
+Selector.height,112.5,"상자 높이(150 x Scale)"
+Selector.gap,15,"상자 사이(20 x Scale)"
+Selector.follow,10,나타나고 미끄러지는 빠르기
+Selector.colourFollow,10,색이 바뀌는 빠르기
+Selector.held,#FFFFFFC8,"든 무기 상자(흰색 200/255)"
+Selector.back,#00000032,다른 상자
+Selector.heldText,#000000,든 무기 상자의 글자
+Selector.low,0.3,탄창이 이 몫 이하면 글자가 빨강
+Selector.falloff,1.5,"가운데에서 멀수록 흐려지는 정도(1 − 거리/1920 x 이 값)"
+Selector.iconAlpha,0.588,탄 아이콘 진하기(150/255)
+#목표,,"시안의 목표 블록(애드온에는 없음, Mk II의 글자와 상자로)"
+Mission.x,70,왼쪽 끝
+Mission.y,58,머리글 줄 위쪽
+Mission.width,375,폭(체력 바와 같은 375)
+Mission.titleRise,14,머리글 아래 제목 줄까지
+Mission.barY,102,막대 위쪽
+Mission.barHeight,5,막대 두께
+Mission.segment,0.9,목표 칸 하나가 칸 간격에서 차지하는 몫
+Mission.mostSegments,30,목표 수가 이 이하면 칸으로 나눈다
+Mission.track,0.1,빈 칸의 진하기
+Mission.zero,0.2,숫자 앞 흐린 0의 진하기
+Mission.slash,0.5,' / '의 진하기
+Mission.decode,1,새 제목이 해독되는 시간
+Mission.decodeWindow,2,그 뒤 이 초까지만 해독을 그린다
+Mission.songRise,9,막대 아래 노래 줄까지
+Mission.breathRate,1.2,습격 임박 머리글이 숨쉬는 빠르기(1초에. 1.6 이하)
+Mission.breathFloor,0.55,숨이 가장 옅을 때의 몫
+#위 알림,,"새 목표가 생길 때 화면 위 가운데 한 줄(시안. 예전 새 목표 카드 자리)"
+Notice.y,150,머리글 위쪽
+Notice.textRise,14,머리글 아래 글자까지
+Notice.lineRise,50,머리글 아래 선까지
+Notice.lineWidth,440,선이 다 열린 폭
+Notice.lineGrow,0.5,선이 열리는 시간
+Notice.lineAlpha,0.7,선 진하기
+Notice.lineThick,1.5,선 두께
+Notice.seconds,2.4,떠 있는 시간
+Notice.fadeOut,0.4,사라지는 시간
+Notice.decode,0.9,글자가 해독되는 시간
+Notice.size,1.25,"글자 크기 = Text.history x 이 값"
+#화면 가장자리 빛,,"애드온 Nene.DamageEffect(vig.png). 한 번 은은하게만(깜빡임 없음)"
+Flare.seconds,0.3,사라지는 시간(애드온 flick_fade 0.3)
+Flare.alpha,0.196,가장 진할 때(50/255)
+Flare.damage,#960000,"체력이 깎일 때(150 x (1,0,0))"
+Flare.heal,#789600,"체력이 찰 때(150 x (0.8,1,0))"
+Flare.armor,#969696,"실드가 맞거나 실드를 받을 때(150 x (1,1,1))"
+#탄 아이콘,,"총의 탄(Weapons.csv ammo)마다 애드온 탄 그림(Resources/UI/MkHud/<이름>.png). 없는 탄은 other"
+AmmoIcon.pistol,ammotype_3,권총탄(애드온 Pistol)
+AmmoIcon.smg,ammotype_4,기관단총탄(애드온 SMG1)
+AmmoIcon.shotgun,ammotype_7,산탄(애드온 Buckshot)
+AmmoIcon.rifle,ammotype_1,소총탄(애드온 AR2)
+AmmoIcon.marksman,ammotype_5,저격탄(애드온 357)
+AmmoIcon.mg,ammotype_1,기관총탄(애드온 AR2)
+AmmoIcon.other,weapon,"그 총만의 탄이나 위에 없는 탄(애드온 0번, 상자)"

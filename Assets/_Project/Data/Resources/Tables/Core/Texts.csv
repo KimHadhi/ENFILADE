@@ -1,5 +1,16 @@
 ﻿id,ko,en,#어디,ja
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구. 다른 언어를 편집할 때 참고할 수 있다,어디에 나오는지(게임은 이 열을 읽지 않는다),일본어 문구(번역 작업용)
+hud.mk.objective,목표,Objective,"HUD Mk II 목표 블록(화면 왼쪽 위)의 작은 머리글: 캠페인이 조용할 때. 대문자로 띄어 쓴다(MkMission). 시끄러울 때는 hud.phase.*",
+hud.mk.mode.auto,AUTO,AUTO,HUD Mk II 탄약 상자 위 무기 이름 뒤의 사격 방식: 연사(MkAmmo),
+hud.mk.mode.burst,BURST,BURST,HUD Mk II 무기 이름 뒤의 사격 방식: 점사(MkAmmo),
+hud.mk.mode.fan,FAN,FAN,HUD Mk II 무기 이름 뒤의 사격 방식: 패닝(MkAmmo),
+hud.mk.mode.semi,SEMI,SEMI,HUD Mk II 무기 이름 뒤의 사격 방식: 단발(MkAmmo),
+hud.mk.ammo.reload,[{0}] 장전,[{0}] RELOAD,"HUD Mk II 탄약 상자 아래 할 일 줄: 탄창이 비었거나 30% 이하(예전 탄약 표시의 [R] RELOAD). {0}=장전 키 이름",
+hud.mk.ammo.reloading,장전 중 {0}초,RELOADING {0}s,"HUD Mk II 탄약 상자 아래 할 일 줄: 장전 중. {0}=남은 초(소수 한 자리)",
+hud.mk.ammo.out,탄약 없음,OUT OF AMMO,HUD Mk II 탄약 상자 아래 할 일 줄: 탄창도 예비도 비었을 때,
+hud.mk.ammo.noreserve,예비 탄약 없음,NO RESERVE,HUD Mk II 탄약 상자 아래 할 일 줄: 예비 탄약이 없을 때,
+hud.mk.song,♪ {0} — {1},♪ {0} — {1},"HUD Mk II 목표 막대 아래: 캠페인이 시끄러운 동안 나오는 노래. {0}=곡 제목, {1}=가수(MkMission)",
+hud.mk.siren,♪ 사이렌,♪ SIREN,HUD Mk II 목표 막대 아래: 노래 없는 버티기(셔터 사이렌·견인차)(MkMission),
 score.line.elimination,처치,Elimination,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
 score.line.headshot,헤드샷,Headshot,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
 score.line.explosive,폭발 처치,Explosive Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",

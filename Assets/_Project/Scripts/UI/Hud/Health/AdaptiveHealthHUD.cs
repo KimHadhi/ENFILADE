@@ -160,6 +160,8 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     /// </summary>
     public static void Blink(Color color, bool shield)
     {
+        // Under HUD Mk II a shield given glows the screen's edge (MkFlare); health coming back glows it by itself.
+        if (MkHud.On) { if (shield) MkHud.BlinkShield(); return; }
         if (current == null || current.visualRoot == null) return;
         bool band = shield && current.shieldGraphic != null && current.shieldGraphic.gameObject.activeSelf;
         HudBlink.On(band ? current.shieldGraphic.rectTransform : current.visualRoot, color);

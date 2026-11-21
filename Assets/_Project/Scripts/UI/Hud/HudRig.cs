@@ -37,6 +37,23 @@ public sealed class HudRig : MonoBehaviour
             var element = Find(all, id);
             if (element != null) HudTilt.Attach(element);
         }
+        if (MkHud.On) Retire(all);
+    }
+
+    // HUD Mk II (MkHud, the user's pick of the HUD drafts, 2026-11-22) draws the health block, the gun and the weapon
+    // selector itself: the prefab's own pieces for them stand aside. The objective block stays on, unseen, to keep
+    // sounding a new objective (MissionHUD); the chat, the crosshair and the prompts are not Mk II's.
+    private static readonly (string Parent, string Name)[] Retired = { (LeftName, "Health"), (RightName, "WeaponSlotsHUD"), (RightName, "AmmoHUD") };
+
+    private static void Retire(RectTransform[] all)
+    {
+        foreach (var (parent, name) in Retired)
+            foreach (var rect in all)
+                if (rect.name == name && rect.parent != null && rect.parent.name == parent)
+                {
+                    rect.gameObject.SetActive(false);
+                    break;
+                }
     }
 
     private static RectTransform Find(RectTransform[] all, string name)

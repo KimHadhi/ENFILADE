@@ -42,6 +42,8 @@ public sealed class AmmoHUD : MonoBehaviour
     /// <summary>The display blinks once: what it shows just changed by something taken (FieldPickups: ammo, a gun).</summary>
     public static void Blink(Color color)
     {
+        // Under HUD Mk II the gun's boxes are MkAmmo's.
+        if (MkHud.On) { MkHud.BlinkAmmo(color); return; }
         if (current != null && current.panel != null) HudBlink.On(current.panel, color);
     }
 

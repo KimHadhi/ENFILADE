@@ -80,6 +80,13 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
         Look();
         if (alert != null && !alert.TryGetComponent(out alertView)) alertView = alert.gameObject.AddComponent<ObjectiveAlert>();
         GameTables.Bind(HudCamera.TableName, "MissionTab", this);
+        // HUD Mk II draws the objective and says a new one at the top (MkMission, MkNotice; the user's pick of the HUD
+        // drafts, 2026-11-22). This block stays to keep the tracker's sound for a new objective, its own look unseen.
+        if (MkHud.On)
+        {
+            foreach (Transform child in transform) child.gameObject.SetActive(false);
+            if (alert != null) alert.gameObject.SetActive(false);
+        }
     }
 
     public void OnTableApplied()
@@ -273,6 +280,12 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     /// </summary>
     public void ShowAlert(string missionTitle)
     {
+        // Under HUD Mk II only the sound is this block's; the words are MkNotice's.
+        if (MkHud.On)
+        {
+            if (audioSource != null && alertSound != null && !previewing) { audioSource.Stop(); audioSource.PlayOneShot(alertSound, alertVolume); }
+            return;
+        }
         if (alertView == null) return;
         alertView.Play(missionTitle, AlertWidest(), missionBar, look);
         if (alertGroup != null) alertGroup.alpha = 1f - makeWay;

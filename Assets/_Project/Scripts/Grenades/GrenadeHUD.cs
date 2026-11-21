@@ -73,7 +73,9 @@ public sealed class GrenadeHUD : MonoBehaviour
     {
         var hud = Ensure();
         if (hud == null) return;
-        hud.wanted = kind != Throwable.None;
+        // With the Mk II HUD on (2026-11-22) its grenade tile shows the count, so the plate stays away; the cook ring
+        // (DrawRing) still draws either way.
+        hud.wanted = kind != Throwable.None && !MkHud.On;
         if (hud.kind != kind) { hud.kind = kind; hud.shown = -1; if (hud.icon != null) hud.icon.texture = Throwables.Icon(kind); }
         if (count != hud.shown)
         {

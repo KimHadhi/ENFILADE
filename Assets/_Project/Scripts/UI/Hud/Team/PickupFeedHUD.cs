@@ -46,6 +46,8 @@ public sealed class PickupFeedHUD : MonoBehaviour
     public static void Show(Texture icon, Color tint, string name, string amount, Sprite gun = null)
     {
         if (!Application.isPlaying) return;
+        // HUD Mk II lists what was taken in its own rows (MkPickups, the addon's pickup history).
+        if (MkHud.On) { MkHud.Picked(icon, name, amount, gun != null); return; }
         if (instance == null)
         {
             var host = new GameObject("Pickup Feed", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
