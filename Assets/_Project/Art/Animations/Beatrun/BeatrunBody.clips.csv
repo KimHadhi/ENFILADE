@@ -1,4 +1,4 @@
-clip,loop,inPlace,yawOffset,#frames,#fps,cycleOffset,from,to
+clip,loop,inPlace,yawOffset,#frames,#fps,cycleOffset,from,to,inPlaceY
 climb1,0,0,180.0,41,55.0
 climb2,0,0,180.0,30,55.0
 slidestart,0,0,180.0,41,55.0
@@ -11,8 +11,8 @@ meslideendcrouch,0,0,180.0,25,30.0
 meroll,0,0,180.0,38,30.0
 merollcrouch,0,0,180.0,14,30.0
 mecoil,0,0,180.0,35,30.0
-jumpslow,0,0,180.0,83,40.0
-jumpfast,0,0,180.0,84,40.0
+jumpslow,0,0,180.0,83,40.0,,,,1
+jumpfast,0,0,180.0,84,40.0,,,,1
 jumpwrleft,0,0,180.0,45,30.0
 jumpair,0,0,180.0,117,39.0
 jumpidle,1,0,180.0,241,45.0
@@ -81,7 +81,7 @@ meleeairstill,0,0,180.0,22,30.0
 diestand,0,0,180.0,130,30.0
 diestandlong,0,0,180.0,277,30.0
 walkfwd,1,0,180.0,30,30.0
-jumpstill,0,0,180.0,31,30.0
+jumpstill,0,0,180.0,31,30.0,,,,1
 jumpcrouch,0,0,180.0,57,30.0
 ladderclimbdownfast,1,0,180.0,101,30.0
 walkbalancedfwdlean,1,0,180.0,24,30.0

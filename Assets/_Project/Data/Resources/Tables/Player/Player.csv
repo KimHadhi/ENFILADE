@@ -524,7 +524,7 @@ Body.supineSlide,meslideloop,누워서 미끄러지기
 Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
 Body.roll,RollToRun_F,"착지 구르기. 클립은 제 빠르기로 틀고 몸은 그 클립이 땅 위로 가는 만큼 간다(Ability.rollTravel). 가는 쪽마다의 클립이 Body.rollWays(구르고 일어서기)·rollRunWays(Ability.rollRunSpeed 이상이면 구르고 달려 나가기)에 있고, 이 줄은 그 표가 없을 때. 0.9.262 전에는 mx_sprint_roll"
 Body.rollLand,Land_1h,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch. BIPER Female Runner: 가볍게 착지. 0.9.262 전에는 land
-Body.touchdown,land,점프를 연달아 할 때 땅에 닿는 순간과 서서 가볍게 착지할 때 무릎이 받는 동작: Beatrun land. 0.9.262~0.9.289에는 BIPER Land_1h였는데 BIPER 점프의 팔을 든 자세에서 시작해서 Beatrun 점프 뒤에는 팔이 튀어 0.9.290에 되돌렸다
+Body.touchdown,Land_1h,"점프를 연달아 할 때 땅에 닿는 순간과 서서 가볍게 착지할 때 무릎이 받는 동작: BIPER Land_1h(몸 중심이 0.31m 내려감, 엉덩이 0.89→0.73m). 0.9.290에 Beatrun land로 되돌렸더니 그 클립은 큰 낙하의 착지라 0.13초 만에 0.65m 주저앉아(엉덩이 0.90→0.27m) 눈에 붙은 카메라가 함께 떨어졌다: 제자리 점프마다 낙하한 것처럼 보였다(사용자 11-21: ""제자리 점프하면 낙하 모션 있는데""). 달리며 뛰면 이 동작이 없어 제자리 점프만 그랬다. 0.9.291"
 Body.dodgeLeft,QuickShift_L,"왼쪽 회피. 가는 쪽마다의 클립은 Body.dodgeWays(서서·걷거나 조깅하며)·dodgeSprintWays(전력질주)에 있고, 이 줄은 그 표에 그쪽이 없을 때. BIPER Female Runner. 0.9.262 전에는 dodgejumpleft"
 Body.dodgeRight,QuickShift_R,오른쪽 회피(Body.dodgeLeft와 같이). 0.9.262 전에는 dodgejumpright
 Body.rollWays,Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@-135;Roll_L@-90;Roll_L45@-45,"착지 구르기를 가는 쪽마다(클립@도. 0 앞 90 오른쪽): Ability.rollRunSpeed보다 느리면 구르고 일어선다. 가장 가까운 쪽이 45°보다 멀면 Body.roll. BIPER Female Runner Roll_*(1.47초 3.4m), 0.9.262"
