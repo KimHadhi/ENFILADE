@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: ASVal_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 244564eab3852b9498c7180b88d95cb5,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: 922d9cdca0e56b847b3d45c3cd2a9ffd, type: 2}
   cameraShake: {fileID: 11400000, guid: 2e9f7663262a80b4cb90c0c3b91d70d1, type: 2}
   ikOffset: {x: -0.02, y: 0.005, z: -0.01}

@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: Viper-357_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 6bec316cc9ccb784d9580ebe298fe1eb,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: 03d24b75a79fced4a8001cd7377d410b, type: 2}
   cameraShake: {fileID: 11400000, guid: d35b9d13b07093d458e2d57942114d5e, type: 2}
   ikOffset: {x: 0, y: 0, z: 0}

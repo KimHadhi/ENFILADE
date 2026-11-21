@@ -97,7 +97,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: a47a74635c50f9a41901a4eee7c70668, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 5c65b8260112b3f4f9b7a7e2a859d6a8, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: -2983086846802854130, guid: bc4b400aee10ee24baab6ff6a70164c7, type: 3}
     sourceReloadEnd: {fileID: -4723861991537922142, guid: fce2d0f5b09763a4a885a16ef16876e9, type: 3}
     reloadShell: {fileID: 11400000, guid: dcba9a9b5829db64fa5ab010383835f9, type: 2}
@@ -128,7 +128,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: 9bd7778205f72dd4bbc3784ec075f288, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 73b4fc7d406ce804fb72c958a6468028, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -159,7 +159,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: f0548eca5c321804eb37a3990b350b5f, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 50a61cc8ba8d9af43b46c26aa684965f, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -190,7 +190,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: 5578ebe23437fc04ea7101944281a2f7, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 44cb92face95ff542a53f5e9f08c8ad8, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -221,7 +221,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: 9cfa0caf412d9af4d805922cac6cb79d, type: 2}
     reloadEmpty: {fileID: 11400000, guid: a23051a85a2c8b24b84c8284cb6ca0b3, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -252,7 +252,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: 20b130a281325f241a275060d8512f57, type: 2}
     reloadEmpty: {fileID: 11400000, guid: a232a1143edd14145bd0278efb3478c2, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -283,7 +283,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: 15196b5c33dd3674ead35f5af0e476dd, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 1aed031d80b5d2445920f824752c541d, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -314,7 +314,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: b475505cb3eb98e40a59cb131cf53b40, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 005bf440900dd414b91662c419395dbe, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -345,7 +345,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: bf07258a7aa17934e939f3b2f6dda455, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 808316a3c93116c4ba7190b1c4e90553, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}
@@ -376,7 +376,7 @@ MonoBehaviour:
     reloadTactical: {fileID: 11400000, guid: b475505cb3eb98e40a59cb131cf53b40, type: 2}
     reloadEmpty: {fileID: 11400000, guid: 005bf440900dd414b91662c419395dbe, type: 2}
     sourceArms: {fileID: 919132149155446097, guid: 9713510aa4164a84e90ad27b9bca8f8b, type: 3}
-    sourceCameraRig: {fileID: 1455423802687713497, guid: b6d4ea9ea9d91294caf1c1199a4a4fc0, type: 3}
+    sourceCameraRig: {fileID: 0}
     sourceReloadShell: {fileID: 0}
     sourceReloadEnd: {fileID: 0}
     reloadShell: {fileID: 0}

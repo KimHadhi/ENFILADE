@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: AK_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 30455ef43c1629e408172e2a70eefaa5,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: 82e14385f13665f448bbe47b08855281, type: 2}
   cameraShake: {fileID: 11400000, guid: 086415fa15ad83d418182a4eb84c4dff, type: 2}
   ikOffset: {x: 0.01, y: 0.01, z: -0.04}

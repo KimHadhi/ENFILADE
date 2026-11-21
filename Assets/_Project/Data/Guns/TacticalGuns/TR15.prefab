@@ -27480,7 +27480,7 @@ MonoBehaviour:
   weaponSettings: {fileID: 11400000, guid: c98b445d53ff1284999b334836336afd, type: 2}
   aimPoint: {fileID: 528246586402263664}
   fireMode: 0
-  cameraShake: {fileID: 11400000, guid: e9f26f7a3cac4aefbab188eb9adedc74, type: 2}
+  cameraShake: {fileID: 0}
   fire:
     character: {fileID: 0}
     weapon: {fileID: 11400000, guid: e735351740551e74090f82ad3980d79f, type: 2}

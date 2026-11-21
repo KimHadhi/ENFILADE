@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: Drake-12_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 0a8ded73ee53fb040a4ff44ea141ad0d,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: ffdb152eda02565429ca3224afa8113c, type: 2}
   cameraShake: {fileID: 11400000, guid: 1edc38bdec62dc244accf1909cbfe27e, type: 2}
   ikOffset: {x: 0, y: 0, z: 0}

@@ -32,6 +32,32 @@ internal static partial class TacticalGunSetup
     private const string AssetsPath = ProjectFolders.DataByName + FPSBodyAssets.ResourcePath + ".asset";
     private const string Operator = Pack + "/Meshes/Character/Operator/SKM_Operator.fbx";
     private const string CameraRig = Pack + "/Prefabs/TacticalShooterCharacter.prefab";
+
+    /// <summary>
+    /// Where a KINEMATION skeleton's camera sees its guns from, for the bake (GunClipRetarget): the Tactical Shooter Pack's
+    /// operator through TacticalShooterCharacter's FPCamera; null for any other (the arms' CameraSocket). Found by path in
+    /// the editor, never kept on FPSBody: that asset is loaded by the game, and a reference there put the pack's whole demo
+    /// character (its demo guns, animator and settings, about 225 MB) in the build.
+    /// </summary>
+    internal static GameObject CameraRigFor(GameObject arms)
+        => arms != null && AssetDatabase.GetAssetPath(arms) == Operator ? AssetDatabase.LoadAssetAtPath<GameObject>(CameraRig) : null;
+
+    /// <summary>
+    /// Clears what a gun's CAS script links to that the game never reads: its CAS character settings (the pack's player arms,
+    /// their animator and clips) and its CAS camera shake (the view's kick is ours). The game reads only its weapon settings,
+    /// aim point and gun-part clips; the links only pulled the demo's assets into the build.
+    /// </summary>
+    internal static void DropDemoLinks(CasFPSWeapon cas)
+    {
+        if (cas == null) return;
+        var write = new SerializedObject(cas);
+        foreach (string name in new[] { "animationSettings", "cameraShake" })
+        {
+            var link = write.FindProperty(name);
+            if (link != null) link.objectReferenceValue = null;
+        }
+        write.ApplyModifiedPropertiesWithoutUndo();
+    }
     // The FPS Animation Pack guns whose settings and FPSAF assets the pack's guns start from: the rifle for the long guns,
     // the pistol for the one-handed ones (KINEMATION's isOneHanded).
     private const string RifleWeapon = "MX16A4", PistolWeapon = "M1911";
@@ -244,7 +270,6 @@ internal static partial class TacticalGunSetup
             reloadTactical = BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadTactical.asset", .15f, shells ? .1f : .15f),
             reloadEmpty = BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadEmpty.asset", .15f, shells ? .1f : .15f),
             sourceArms = AssetDatabase.LoadAssetAtPath<GameObject>(Operator),
-            sourceCameraRig = AssetDatabase.LoadAssetAtPath<GameObject>(CameraRig),
             sourceReloadShell = Body(spec.reloadShell),
             sourceReloadEnd = Body(spec.reloadEnd),
             reloadShell = shells ? BodyAsset(reloadTemplate, $"{stem}_Anim_ReloadShell.asset", .1f, .1f) : null,

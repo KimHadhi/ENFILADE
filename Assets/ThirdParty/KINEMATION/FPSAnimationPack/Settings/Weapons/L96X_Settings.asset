@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: L96X_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 40c0597b9633b4d45be1fc1d43530612,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: 7afbf1e70ac54904a957479194f046f1, type: 2}
   cameraShake: {fileID: 11400000, guid: 6ade850d026721a47a0c5cefc0ec36a3, type: 2}
   ikOffset: {x: 0, y: 0, z: 0}

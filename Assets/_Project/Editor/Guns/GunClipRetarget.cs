@@ -153,8 +153,10 @@ internal static partial class GunClipRetarget
     private static string SourceOf(GameObject skin, FPSBodyAssets assets, FPSBodyAssets.Gun gun)
     {
         string source = $"{Version}|{Guid(skin)}|{Guid(gun.ArmsOr(assets.armsModel))}|{Guid(gun.sourcePose)}|{Guid(gun.sourceReloadTactical)}|{Guid(gun.sourceReloadEmpty)}";
-        if (gun.sourceReloadShell != null || gun.sourceReloadEnd != null || gun.sourceCameraRig != null)
-            source += $"|{Guid(gun.sourceReloadShell)}|{Guid(gun.sourceReloadEnd)}|{Guid(gun.sourceCameraRig)}";
+        // The rig is found by path now (CameraRigOf), with the same GUID, so the bakes stay as they are.
+        var cameraRig = CameraRigOf(gun.ArmsOr(assets.armsModel));
+        if (gun.sourceReloadShell != null || gun.sourceReloadEnd != null || cameraRig != null)
+            source += $"|{Guid(gun.sourceReloadShell)}|{Guid(gun.sourceReloadEnd)}|{Guid(cameraRig)}";
         if (gun.sourceDraw != null || gun.sourceHolster != null || gun.sourceInspect != null)
             source += $"|{Guid(gun.sourceDraw)}|{Guid(gun.sourceHolster)}|{Guid(gun.sourceInspect)}";
         // A gun worked by hand after every shot (a bolt, a pump) adds that clip, so the others keep their bakes.

@@ -345,13 +345,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1a00000000000000000000000000001, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animationSettings: {fileID: 11400000, guid: 26b679d7561f4bf4a0b9ff1824ebe9ec, type: 2}
+  animationSettings: {fileID: 0}
   rightHandTarget: {fileID: 0}
   leftHandTarget: {fileID: 0}
   weaponSettings: {fileID: 11400000, guid: 0d5d7ddd7b3afca4189ec22886a2d4fb, type: 2}
   aimPoint: {fileID: 4229817621398393540}
   fireMode: 0
-  cameraShake: {fileID: 11400000, guid: 8ee3331788fa4325aaa86f8f510adef7, type: 2}
+  cameraShake: {fileID: 0}
   fire:
     character: {fileID: 11400000, guid: 43da57a51d0f46a0a4939be1e813f5cc, type: 2}
     weapon: {fileID: 11400000, guid: 7aa0787b3ad946448233685995b4c61b, type: 2}

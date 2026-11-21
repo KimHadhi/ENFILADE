@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: PDW90_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 6ad61b5a3e0968341a9eee28d0396e3d,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: fd1f40b74ab8a7a4eb65ec01ce2b7400, type: 2}
   cameraShake: {fileID: 11400000, guid: 06527ce2104021f4aa2134ee18d98d59, type: 2}
   ikOffset: {x: 0, y: 0, z: 0}

@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: Kolibri_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: de70d9def269c144e94d3eca9fe020f9,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: e5aa7967ab8b47d41a092a19856fe96b, type: 2}
   cameraShake: {fileID: 11400000, guid: d488ccb41a4a1224c9a97b32cd93bf84, type: 2}
   ikOffset: {x: 0, y: 0.01, z: 0.03}

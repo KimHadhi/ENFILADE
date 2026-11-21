@@ -154,6 +154,7 @@ internal static partial class TacticalGunSetup
                 foreach (var script in instance.GetComponentsInChildren<MonoBehaviour>(true))
                     if (script != null && IsPack(script)) Object.DestroyImmediate(script);
 
+            DropDemoLinks(instance.GetComponent<CasFPSWeapon>());
             var saved = PrefabUtility.SaveAsPrefabAsset(instance, $"{PackGunsFolder}/{spec.weapon}.prefab", out bool ok);
             return ok ? saved : null;
         }

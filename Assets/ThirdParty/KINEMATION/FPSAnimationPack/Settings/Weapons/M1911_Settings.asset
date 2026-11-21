@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067a66f68d8440b2b8854c722342a2b2, type: 3}
   m_Name: M1911_Settings
   m_EditorClassIdentifier: 
-  characterController: {fileID: 22100000, guid: 4b9d0b1b8b6cc3541862224040f3defe,
-    type: 2}
+  characterController: {fileID: 0}
   recoilAnimData: {fileID: 11400000, guid: 92673ffc2b52cbe49b5ca835e895cc09, type: 2}
   cameraShake: {fileID: 11400000, guid: 51e31a48fd04bce48a71191e26e85118, type: 2}
   ikOffset: {x: 0, y: 0, z: 0}

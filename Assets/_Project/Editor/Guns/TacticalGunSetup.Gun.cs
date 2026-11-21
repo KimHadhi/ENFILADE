@@ -99,14 +99,12 @@ internal static partial class TacticalGunSetup
             cas.fireOut = new FPSAnimationPair { weapon = fireOut };
             cas.reloadTactical = new FPSAnimationPair { weapon = reloadTactical };
             cas.reloadEmpty = new FPSAnimationPair { weapon = reloadEmpty };
-            // The rifle's camera shake (a CAS asset, which FPSGun copies into FPSAF's); semi-automatic.
+            // Semi-automatic; no CAS camera shake or character settings (DropDemoLinks).
             var casWrite = new SerializedObject(cas);
-            var shake = casWrite.FindProperty("cameraShake");
-            var rifleShake = new SerializedObject(rifle).FindProperty("cameraShake");
-            if (shake != null && rifleShake != null) shake.objectReferenceValue = rifleShake.objectReferenceValue;
             var mode = casWrite.FindProperty("fireMode");
             if (mode != null) mode.enumValueIndex = 0;
             casWrite.ApplyModifiedPropertiesWithoutUndo();
+            DropDemoLinks(cas);
 
             var made = PrefabUtility.SaveAsPrefabAsset(instance, path, out bool saved);
             return saved ? made : null;

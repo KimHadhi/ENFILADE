@@ -46,13 +46,8 @@ internal static partial class GunClipRetarget
         return made.Count > 0 ? made : null;
     }
 
-    // The first camera rig given for a skeleton's guns (FPSBodyAssets.Gun.sourceCameraRig); null: the arms' CameraSocket.
-    private static GameObject CameraRigOf(FPSBodyAssets assets, GameObject arms)
-    {
-        foreach (var gun in assets.guns)
-            if (gun.sourceCameraRig != null && gun.ArmsOr(assets.armsModel) == arms) return gun.sourceCameraRig;
-        return null;
-    }
+    // Where the skeleton's camera sees its guns from (TacticalGunSetup.CameraRigFor); null: the arms' CameraSocket.
+    private static GameObject CameraRigOf(GameObject arms) => TacticalGunSetup.CameraRigFor(arms);
 
     private static List<GunBakes.Entry> BakeFrom(GameObject skin, GameObject arms, FPSBodyAssets assets, GunClipFingers fingers, string dir,
         List<GunBakes.Entry> previous, bool all)
@@ -83,7 +78,7 @@ internal static partial class GunClipRetarget
             var source = baker.SourcePreviewInstance.transform;
             var body = baker.TargetPreviewInstance.transform;
             var sourceWeapon = Hierarchy.Find(source, WeaponBone);
-            var cameraRig = CameraRigOf(assets, arms);
+            var cameraRig = CameraRigOf(arms);
             var sourceCamera = cameraRig != null ? AddCameraFrom(source, cameraRig) : AddCameraSocket(source);
             var bodyWeapon = Hierarchy.Find(body, WeaponBone);
             if (sourceWeapon == null || bodyWeapon == null)
