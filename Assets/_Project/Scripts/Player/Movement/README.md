@@ -23,7 +23,8 @@
 | [Actions/MovementAbilities.cs](Actions/MovementAbilities.cs) | 독점 행동의 입력 우선순위, 회피·파쿠르·전투 서비스 연결 |
 | [Actions/MovementDive.cs](Actions/MovementDive.cs) / [MovementLanding.cs](Actions/MovementLanding.cs) | 다이브 비행 / 착지 단계·구르기·낙하 피해·큰 낙하·넉백 |
 | [Actions/MovementGait.cs](Actions/MovementGait.cs) | 걸음새(걷기·조깅·달리기·전력질주)와 가는 쪽마다의 속도(Gaits.csv) |
-| [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과 |
+| [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과, 어느 클립으로 회피하는가([DodgeMove](Dodge/DodgeMove.cs)), 회피 이펙트(DodgeDash) |
+| [Actions/ClipTravel.cs](Actions/ClipTravel.cs) / [ClipWays.cs](Actions/ClipWays.cs) | 클립대로 가는 동작(구르기·회피)이 매 프레임 갈 거리(`GaitMoves.csv` kind travel) / 가는 쪽마다 클립을 적은 줄(`클립@도`)에서 고르기 |
 | [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs). 사다리 꼭대기는 걸어 나가 몸이 사다리에 닿으면 레포데처럼 저절로, 또는 F. 집라인은 뛰어오른 공중이나 Space를 누른 채일 때만) |
 | [States/](States/) | 자세·행동별 입력, 전환, 물리 정책 |
 | [../Combat/SlideCombat.cs](../../Melee/SlideCombat.cs) | 슬라이딩의 적 접촉·가속·저스트 판정 |
@@ -90,7 +91,7 @@ Movement
 
 처리하지 않은 입력·로직·물리 이벤트는 `MovementBaseState`의 기본 구현을 통해 부모로 전달됩니다. 재정의한 말단에서 부모 동작도 필요하면 명시적으로 기본 구현을 호출해야 합니다. `Enter/Exit`는 상태 머신만 호출합니다.
 
-같은 상태로의 전환은 재진입이나 지속 시간 초기화를 하지 않습니다. `Enter/Exit` 안에서 다시 전환하면 예외를 발생시킵니다. 성공 후 연속 스텝은 `GroundBurstState.RestartStep()`처럼 필요한 행동 데이터만 명시적으로 다시 시작합니다.
+같은 상태로의 전환은 재진입이나 지속 시간 초기화를 하지 않습니다. `Enter/Exit` 안에서 다시 전환하면 예외를 발생시킵니다. 성공 후 연속 스텝은 `StepDodgeState.Restart()`처럼 필요한 행동 데이터만 명시적으로 다시 시작합니다.
 
 접지는 상태 계층과 별도의 물리 관측값입니다. 점프 중에도 Standing일 수 있고, 슬라이딩 중 턱을 벗어나 공중에 있을 수도 있습니다. 상태 이름만으로 접지 여부를 추론하지 않습니다.
 

@@ -405,7 +405,7 @@ public sealed partial class PlayerNetworkCombat : NetworkBehaviour
     private void OnShoveSound(ShoveImpactKind impact) => ShoveSoundRpc(impact);
     private void OnKicked() => KickRpc();
     private void OnBashed() => BashRpc();
-    private void OnEvaded(int side) => EvadedRpc((sbyte)Mathf.Clamp(side, -1, 1));
+    private void OnEvaded() => EvadedRpc();
     private void OnGuardPosed(Vector3 threat) => GuardPoseRpc(threat);
     private void OnThrown(Vector3 from, Vector3 velocity, ushort id) => ThrowRpc(from, velocity, id);
     private void OnStoneLured(Vector3 at) => StoneLureRpc(at);

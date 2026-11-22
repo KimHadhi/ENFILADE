@@ -42,9 +42,8 @@ public sealed partial class PlayerBody
         // Only while a gun is held up in a shooting stance, whoever holds the upper body: FPS Animation Framework at the
         // hip, the gun's aim clips down the sights. Taken from who held it (FPSAF, or the aim clip's share) it went out
         // for a moment as the sights came down and the hips jumped (the user, 2026-11-22: "줌을 풀면 팔이 띠용한다"). The
-        // moves' own clips (a gun's run, a vault, a slide) keep their motion.
-        bool gunUp = !dead && HoldsGun && !GunRuns && (state == MovementState.Standing || state == MovementState.Crouching
-            || state == MovementState.StepDodge);
+        // moves' own clips (a gun's run, a vault, a slide, a dodge) keep their motion.
+        bool gunUp = !dead && HoldsGun && !GunRuns && (state == MovementState.Standing || state == MovementState.Crouching);
         gunSteady = Mathf.MoveTowards(gunSteady, gunUp ? 1f : 0f, dt / Mathf.Max(.01f, blendTime));
         if (gunSteady > 0f) hips.position = transform.TransformPoint(Vector3.Lerp(now, steadyHips, gunSteady));
     }

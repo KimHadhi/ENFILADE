@@ -52,7 +52,7 @@ public sealed class MovementStateMachine
             { MovementState.SupineSliding, new SupineSlidingState(ctx, sliding) },
             { MovementState.Diving, new DivingState(ctx, diving) },
             { MovementState.SupineDiving, new SupineDivingState(ctx, diving) },
-            { MovementState.StepDodge, new GroundBurstState(ctx, evasion, MovementState.StepDodge) },
+            { MovementState.StepDodge, new StepDodgeState(ctx, evasion) },
             { MovementState.LandingRoll, new GroundBurstState(ctx, recovery, MovementState.LandingRoll) },
             { MovementState.HeavyLanding, new HeavyLandingState(ctx, recovery) },
             { MovementState.DashPush, new GroundBurstState(ctx, assault, MovementState.DashPush) },

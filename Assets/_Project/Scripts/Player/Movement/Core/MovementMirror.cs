@@ -6,7 +6,7 @@ using State = PlayerMovement.MovementState;
 /// Turns a character's movement into a PlayerPose on the PC that plays it, and back again on every other PC, so the
 /// copy's body, hands and sounds read what they always read. The copy's states never run and nothing here moves it.
 /// A pose's Detail and Extent mean: the way the body faces, down after a heavy landing; whether a slide's body faces back
-/// along it (1) or along it (0); a vault or mantle's progress and height; a bar's angle and swing speed; the rung's
+/// along it (1) or along it (0); a dodge's kind and its number (DodgeMove); a vault or mantle's progress and height; a bar's angle and swing speed; the rung's
 /// progress on a ladder and, while getting on from its top, how long that takes; the ride's speed on a cable; how long a
 /// ledge catch's hands take to reach the edge (Extent).
 /// </summary>
@@ -70,10 +70,12 @@ public sealed class MovementMirror
             // The way the dive flies: a dive on the back faces back along it.
             case State.Diving:
             case State.SupineDiving: pose.Direction = ctx.DiveBodyForward; break;
-            // A dodge from a crouch stays low (a crouched slide): the copies dodge low too, and their zombies hear it so.
+            // The way, the kind and the number: the copies pick the same clip. One from a crouch stays low (a crouched
+            // slide), and their zombies hear it so.
             case State.StepDodge:
                 pose.Direction = abilities.ActionDirection;
-                pose.Detail = abilities.ActionPosture == MovementPosture.Crouching ? 1f : 0f;
+                pose.Detail = abilities.DodgeMove.Kind;
+                pose.Extent = abilities.DodgeMove.Serial & 255;
                 break;
             case State.HeavyLanding: pose.Detail = landing.HeavyYaw; break;
             // 0 a landing's roll that stands up out of it, 1 on the spot, 2 one that runs on.
@@ -175,7 +177,9 @@ public sealed class MovementMirror
             case State.SupineDiving: ctx.DiveBodyForward = pose.Direction; break;
             case State.StepDodge:
                 abilities.ActionDirection = pose.Direction;
-                abilities.ActionPosture = pose.Detail > .5f ? MovementPosture.Crouching : MovementPosture.Standing;
+                int dodge = Mathf.RoundToInt(pose.Detail);
+                abilities.ActionPosture = dodge == 1 ? MovementPosture.Crouching : MovementPosture.Standing;
+                abilities.DodgeMove.Mirror(pose.Direction, pose.Yaw, dodge, Mathf.RoundToInt(pose.Extent));
                 break;
             case State.LandingRoll:
                 int rollDetail = Mathf.RoundToInt(pose.Detail);

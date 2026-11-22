@@ -353,8 +353,8 @@ public sealed partial class PlayerBody
     /// False out of a walk or run on the ground (Locomotion not played this frame).</summary>
     public bool GunRuns => gunRuns && Time.frameCount - gunRunsFrame <= 2;
 
-    /// <summary>How far the sights are up on the gun's own aim clips (0-1, FollowAim): standing, crouched or in a step dodge
-    /// (whose clip has only the legs) with a gun out, the aim clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog,
+    /// <summary>How far the sights are up on the gun's own aim clips (0-1, FollowAim): standing or crouched
+    /// with a gun out, the aim clips (BIPER Combat Girls *_AimIdle, *_AimWalk_*, *_AimJog,
     /// BodyMoves .aim sets) have the upper body and arms, the hands give it to them (PlayerBodyHands), the gun is sighted
     /// on the camera (FPSBody.KeepGunInView) and the camera is on the right eye (Look). Before 0.9.318 FPSAF had the upper
     /// body and the camera sat between the eyes, and the gun went through the head between the brows as others saw it (the user, 2026-11-22: "조준하는 것도 이 애니메이션 써. 지금 제 3자가
@@ -369,8 +369,7 @@ public sealed partial class PlayerBody
     // In Update with the look (AimLook), once a frame.
     private void FollowAim(float dt)
     {
-        bool stance = state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching
-            || state == PlayerMovement.MovementState.StepDodge;
+        bool stance = state == PlayerMovement.MovementState.Standing || state == PlayerMovement.MovementState.Crouching;
         float now = !dead && stance && !GunRuns && GunInHand() != null ? AimBlend() : 0f;
         if (dead || now >= aimShown) { aimShown = now; return; }
         float time = weapons != null ? weapons.AdsTime : .2f;

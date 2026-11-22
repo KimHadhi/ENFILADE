@@ -8,9 +8,8 @@ using UnityEngine.Playables;
 /// Layers over the movement clips, so the hips and legs carry on under them: the fingers make fists while fists are
 /// up, and a punch's chest and arms come from its clip. The hands' IK lets go of the punching arm while the clip has
 /// it (PlayerBodyHands); the other hand stays on its fist target, which keeps the view framed the way FistsView set it.
-/// Without a clip FistsView's targets alone throw the punch. A reload kick, the steps of a turn on the spot and a step
-/// dodge with a gun out take only the legs (PlayerBody.Kick, PlayerBody.Locomotion, PlayerBody.Dodge); a blow's flinch
-/// only the spine (PlayerBody.Flinch); a feeling shown from the callout wheel the upper body, and the hips and legs
+/// Without a clip FistsView's targets alone throw the punch. A reload kick takes the legs and the body over them
+/// (PlayerBody.Kick); a blow's flinch only the spine (PlayerBody.Flinch); a feeling shown from the callout wheel the upper body, and the hips and legs
 /// while standing still (PlayerBody.Emote).
 /// Names and numbers come from Player.csv, row Body.
 /// </summary>
@@ -18,7 +17,7 @@ public sealed partial class PlayerBody
 {
     // The turn-on-the-spot clips' layer went in 0.9.279: the feet step round themselves (FootPlanting). A blow's flinch
     // (0.9.299) is under the fists' own clips: a punch thrown as it lands keeps the arm and chest.
-    private const int MovesLayer = 0, ClenchLayer = 1, FlinchLayer = 2, PunchLayer = 3, KickLayer = 4, DodgeLayer = 5;
+    private const int MovesLayer = 0, ClenchLayer = 1, FlinchLayer = 2, PunchLayer = 3, KickLayer = 4;
 
     [Header("Fists")]
     [SerializeField, Tooltip("Looped while fists are up. Only its fingers play, so the hands make fists.")]
@@ -65,7 +64,6 @@ public sealed partial class PlayerBody
         graph.Connect(punchMixer, 0, layers, PunchLayer);
         foreach (string clip in new[] { punchLeft, punchRight, punchLeftHard, punchRightHard }) AddPunch(clip);
         BuildKick();
-        BuildDodge();
         BuildFlinch();
         BuildEmotes();
         BuildExecution();
@@ -78,7 +76,6 @@ public sealed partial class PlayerBody
         punchByName.Clear();
         punch = null;
         punchTimeLeft = punchWeight = leftArmShare = rightArmShare = 0f;
-        TeardownDodge();
         TeardownFlinch();
         TeardownEmotes();
         TeardownExecution();
@@ -142,7 +139,6 @@ public sealed partial class PlayerBody
     {
         layers.SetInputWeight(ClenchLayer, hands != null ? hands.FistsWeight : 0f);
         BlendKick(dt);
-        BlendDodge(dt);
         BlendFlinch(dt);
         BlendEmote(dt);
         BlendExecution(dt);

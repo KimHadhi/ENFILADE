@@ -34,7 +34,7 @@ public sealed partial class PlayerBody
             vault, vaultHigh, vaultKong, springboard, mantle, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeJump,
             wallClimbStart, wallClimb, wallKick, wallKickRight, barSwing, barRelease, clamberLow, clamberHigh,
             ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack, downedFall,
-            diveStart, dive, dodgeLeft, dodgeRight, dashPush
+            diveStart, dive, dashPush
         })
             Add(animationViewChannels, clip);
         // A jump and a light landing leave the view to the mouse (the user, 2026-11-22: "점프할 때 카메라 덜 흔들리게"): the
@@ -49,7 +49,7 @@ public sealed partial class PlayerBody
         })
             Add(carriedViewChannels, clip);
         foreach (string set in new[] { rollWays, rollRunWays })
-            foreach (var (clip, _) in WaysOf(set))
+            foreach (var (clip, _) in ClipWays.Of(set))
                 Add(carriedViewChannels, clip);
 
         void Add(HashSet<Channel> into, string clip)

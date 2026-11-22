@@ -85,7 +85,7 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
 
     /// <summary>
     /// How much of the upper body FPS Animation Framework holds the gun with (0-1): both hands on it, standing or crouched
-    /// (walking, running and jumps included) and through a step dodge. In every other move (a vault, a slide, a dive, a roll, a heavy landing) the
+    /// (walking, running and jumps included). In every other move (a vault, a slide, a dodge, a dive, a roll, a heavy landing) the
     /// move's own armed clip poses the upper body, as it did before KINEMATION (0.7.34), and the hands are put on the gun
     /// here, where FPSBody keeps it (user, 2026-11-07: "움직임은 클립이").
     /// </summary>
@@ -108,11 +108,10 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
     /// </summary>
     internal float GunUpShare => BothHandsOnGun * Mathf.Clamp01(stance + aimStance);
 
-    // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for. A step dodge counts too:
-    // with a gun its clip takes only the legs over the standing pose (PlayerBody.Dodge). Left out, FPSAF let go of the gun
-    // and took it back within the dodge, and the hands came off the gun and went back on (user, 2026-11-09).
+    // Standing or crouched, the shooting stances FPS Animation Framework's profiles are made for. A step dodge's own clip has
+    // the whole body (PlayerBody.Dodge), as a slide's does, since 0.9.335; until then its legs alone went under FPSAF's hold.
     private static bool ShootingStance(MovementState state)
-        => state == MovementState.Standing || state == MovementState.Crouching || state == MovementState.StepDodge;
+        => state == MovementState.Standing || state == MovementState.Crouching;
 
     /// <summary>How much of a hand something holds this frame (0-1): the gun, the fists, a ledge, a rung or a bar.</summary>
     internal float Holding(bool isLeft) => holding[isLeft ? 0 : 1];

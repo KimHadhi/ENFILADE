@@ -1,105 +1,50 @@
 using UnityEngine;
 using State = PlayerMovement.MovementState;
 
-/// <summary>Finite ground movement shared by step dodge, landing roll and dash push.</summary>
+/// <summary>Finite ground movement shared by the landing roll and the dash push. The step dodge has a state of its own (StepDodgeState).</summary>
 public sealed class GroundBurstState : MovementBaseState
 {
+    // Moving less than this share of what it asked to against something beside it, a roll is up against a wall.
+    private const float HeldBackShare = .3f;
+
     private readonly State kind;
-    private float initialSpeed;
-    private float stepElapsed;
-    private float stepExpectedAdvance;
-    private float exitElapsed;
-    private Vector3 stepFrameStart;
-    private bool interrupted;
+    private float initialSpeed, expected;
+    private Vector3 frameStart;
     // Backlog 155: a landing roll that meets a wall stops moving but plays to its end. Ending it at the wall stood or
     // crouched the player at once while the body still played the roll out, so the view and the body disagreed.
     private bool rollStopped;
     public GroundBurstState(PlayerMovement ctx, MovementBaseState parent, State kind) : base(ctx, parent) { this.kind = kind; }
     public override string Name => kind.ToString();
     // A dash push stays upright, so a run that carries on after it never dips the body.
-    public override MovementPosture Posture => kind == State.StepDodge ? ctx.Abilities.ActionPosture :
-        kind == State.DashPush ? MovementPosture.Standing : MovementPosture.Crouching;
-    private float Duration => kind == State.StepDodge ? ctx.AbilitySettings.stepDuration :
-        kind == State.LandingRoll ? ctx.Abilities.Landing.RollTime : ctx.AbilitySettings.dashPushDuration;
-    public override void Enter() { interrupted = rollStopped = false; stepElapsed = stepExpectedAdvance = exitElapsed = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
-    internal void RestartStep()
-    {
-        // Restart only after a confirmed success; do not retain the burst speed
-        // as normal locomotion momentum, or cancel the newly opened window.
-        stepElapsed = stepExpectedAdvance = exitElapsed = 0f;
-        interrupted = false;
-        ctx.StateMachine.Duration = 0f; ctx.Actions.ClearJumpBuffer();
-    }
+    public override MovementPosture Posture => kind == State.DashPush ? MovementPosture.Standing : MovementPosture.Crouching;
+    private float Duration => kind == State.LandingRoll ? ctx.Abilities.Landing.RollTime : ctx.AbilitySettings.dashPushDuration;
+    public override void Enter() { rollStopped = false; expected = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
     public override void UpdateLogic(float dt)
     {
         // A dash push stops dead on the first body it meets, before this frame's move.
         if (kind == State.DashPush && ctx.Abilities.Combat.DashInto(ctx.Abilities.Combat.DashSpeed * dt))
         {
-            interrupted = true;
             ctx.HorizontalVelocity = Vector3.zero;
             ctx.Abilities.ReturnToLocomotion(); return;
         }
-        if (kind == State.StepDodge && stepExpectedAdvance > 0f
-            && (ctx.Motor.lastMoveFlags & CollisionFlags.Sides) != 0
-            && Vector3.Dot(ctx.transform.position - stepFrameStart, ctx.Abilities.ActionDirection) < stepExpectedAdvance - 0.025f)
-        {
-            interrupted = true;
-            ctx.Abilities.Dodge.CancelWindow(); ctx.HorizontalVelocity = Vector3.zero;
-            ctx.Abilities.ReturnToLocomotion(); return;
-        }
-        bool expired = kind == State.StepDodge ? stepElapsed >= Mathf.Max(0.05f, Duration) - 0.00001f : ctx.CurrentStateDuration >= Duration;
-        if (kind == State.StepDodge && expired && ctx.IsGrounded && ctx.DodgePassThrough.HasEnemyOverlap
-            && exitElapsed < ctx.AbilitySettings.dodgeExitAssistTime && ctx.DodgePassThrough.TryGetForwardExit(out _)) return;
-        if (!ctx.IsGrounded || expired) ctx.Abilities.ReturnToLocomotion();
+        if (kind == State.LandingRoll && expected > .01f && (ctx.Motor.lastMoveFlags & CollisionFlags.Sides) != 0
+            && Vector3.Dot(ctx.transform.position - frameStart, ctx.Abilities.ActionDirection) < expected * HeldBackShare) StopRoll();
+        if (!ctx.IsGrounded || ctx.CurrentStateDuration >= Duration) ctx.Abilities.ReturnToLocomotion();
     }
     public override void UpdatePhysics(float dt)
     {
         // A roll goes at its clip's own travel (MovementLanding.RollSpeed, 0.9.288); a landing on the spot stops dead.
-        float speed = kind == State.StepDodge ? ctx.AbilitySettings.stepDistance / Mathf.Max(0.05f, Duration) :
-            kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed :
-            rollStopped || ctx.Abilities.Landing.LandsInPlace ? 0f : ctx.Abilities.Landing.RollSpeed(ctx.CurrentStateDuration, dt);
+        float speed = kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed
+            : rollStopped || ctx.Abilities.Landing.LandsInPlace ? 0f : ctx.Abilities.Landing.RollSpeed(dt);
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
-        if (kind == State.StepDodge)
-        {
-            float duration = Mathf.Max(0.05f, Duration);
-            float movementDt = ctx.DodgePassThrough.MovementDelta(Mathf.Max(0f, dt));
-            if (stepElapsed >= duration - .00001f && ctx.DodgePassThrough.HasEnemyOverlap
-                && ctx.DodgePassThrough.TryGetForwardExit(out var exit))
-            {
-                // Finish through the body at normal speed, preserving wall collisions and floor support.
-                movementDt = Time.timeScale > 0f ? Mathf.Min(.05f, dt / Time.timeScale) : 0f;
-                exitElapsed += movementDt;
-                Vector3 move = Vector3.ClampMagnitude(exit - ctx.transform.position, speed * movementDt);
-                stepExpectedAdvance = 0f;
-                ctx.Motor.RequestDisplacement(move + Vector3.up * (ctx.VerticalVelocity * dt));
-                return;
-            }
-            float activeDt = Mathf.Min(movementDt, duration - stepElapsed);
-            stepExpectedAdvance = speed * activeDt; stepFrameStart = ctx.transform.position;
-            stepElapsed = Mathf.Min(duration, stepElapsed + activeDt);
-            // Integrate the final partial frame, preserving distance at any frame rate.
-            ctx.Motor.RequestDisplacement(ctx.HorizontalVelocity * activeDt + Vector3.up * (ctx.VerticalVelocity * dt));
-        }
+        expected = speed * dt;
+        frameStart = ctx.transform.position;
     }
     public override void Exit()
     {
-        if (kind == State.StepDodge) ctx.DodgePassThrough.OrNull()?.Finish();
         if (kind == State.DashPush) ctx.Abilities.Combat.EndDashPush();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(initialSpeed, ctx.WalkSpeed));
-        bool completedStep = kind == State.StepDodge && !interrupted && stepElapsed >= Mathf.Max(0.05f, Duration) - 0.00001f;
-        bool sprintHeld = ctx.InputAvailable && ctx.Input.SprintButtonHeld;
-        if (completedStep && ctx.IsGrounded && sprintHeld && ctx.CurrentInput.y > 0.1f
-            && ctx.Abilities.ActionPosture == MovementPosture.Standing
-            && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
-        {
-            // Resume the held running direction, not the side/back direction of the dodge.
-            float speed = Mathf.Max(ctx.RunSpeed, Mathf.Lerp(ctx.WalkSpeed, ctx.SprintSpeed, ctx.SprintProgress));
-            ctx.HorizontalVelocity = ctx.Abilities.InputDirection(ctx.transform.forward) * speed;
-        }
-        // Normal completion keeps the independently timed shared dodge window.
-        // Wall interruption / loss of support still cancels it immediately.
-        if (kind == State.StepDodge && stepElapsed < Mathf.Max(0.05f, Duration) - 0.00001f) ctx.Abilities.Dodge.CancelWindow();
     }
     public override void OnColliderHit(ControllerColliderHit hit)
     {
@@ -107,17 +52,21 @@ public sealed class GroundBurstState : MovementBaseState
         if (hit.normal.y >= Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return;
         if (Vector3.Dot(ctx.Abilities.ActionDirection, -hit.normal) < 0.55f) return;
         if (kind == State.DashPush && hit.collider.GetComponentInParent<IBreakable>() != null) return;
-        // A light physics prop is kicked away instead of ending the dash or dodge.
+        // A light physics prop is kicked away instead of ending the dash or the roll.
         if (ctx.Motor.TryKickProp(hit.collider, hit.point, out Vector3 kept)) { ctx.HorizontalVelocity = kept; return; }
         if (kind == State.LandingRoll)
         {
-            rollStopped = true;
-            ctx.HorizontalVelocity = Vector3.zero;
+            // A step it goes up is no wall; one it can't is seen by how little it moved (UpdateLogic).
+            if (!ctx.IsSlideStepContact(hit)) StopRoll();
             return;
         }
-        interrupted = true;
-        if (kind == State.StepDodge) ctx.Abilities.Dodge.CancelWindow();
         ctx.HorizontalVelocity = Vector3.zero;
         ctx.Abilities.ReturnToLocomotion();
+    }
+    private void StopRoll()
+    {
+        rollStopped = true;
+        expected = 0f;
+        ctx.HorizontalVelocity = Vector3.zero;
     }
 }

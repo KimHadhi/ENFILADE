@@ -69,13 +69,11 @@ public sealed class MovementLanding
     public bool LandsInPlace { get; internal set; }
     /// <summary>The landing roll under way began at a sprint and runs on out of itself (RollToRun).</summary>
     public bool RollRuns { get; internal set; }
-    // The moving roll's travel as its clip goes: the share of its way gone at evenly spaced moments
-    // of the clip, the clip's length and the moment its body is back up (s), and how far it goes (m).
-    private float[] rollGone;
-    private float rollLength, rollUp, rollDistance;
+    // The moving roll's travel as its clip goes.
+    private readonly ClipTravel roll = new ClipTravel();
     /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, its clip at its own pace; a
     /// landing on the spot holds its time, longer when it hurt.</summary>
-    public float RollTime => !LandsInPlace ? rollUp
+    public float RollTime => !LandsInPlace ? roll.Up
         : hurtLanding ? Mathf.Max(ctx.AbilitySettings.rollLandTime, ctx.AbilitySettings.rollLandHurtTime) : ctx.AbilitySettings.rollLandTime;
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
@@ -269,8 +267,7 @@ public sealed class MovementLanding
         // 2026-11-21: "착지할 때 dive roll 모션이 존나 빨라").
         var settings = ctx.AbilitySettings;
         bool runs = !inPlace && ctx.HorizontalVelocity.magnitude >= settings.rollRunSpeed;
-        if (!inPlace && !ReadTravel(runs ? settings.rollRunTravel : settings.rollTravel)) inPlace = true;
-        else if (!inPlace) rollDistance = runs ? settings.rollRunDistance : settings.rollDistance;
+        if (!inPlace && !roll.Begin(runs ? settings.rollRunTravel : settings.rollTravel, 0f, settings.clipTravelMost)) inPlace = true;
         LandsInPlace = inPlace;
         RollRuns = runs && !inPlace;
         ctx.Abilities.ActionDirection = direction;
@@ -347,34 +344,6 @@ public sealed class MovementLanding
         LastTier = Tier.Light;
     }
 
-    /// <summary>How fast the moving roll goes at this moment of it (m/s): its clip's travel from now to a frame on.</summary>
-    internal float RollSpeed(float time, float dt)
-    {
-        if (rollGone == null || dt <= 0f) return 0f;
-        return rollDistance * (GoneAt(time + dt) - GoneAt(time)) / dt;
-    }
-
-    // The share of the moving roll's way gone at this moment of its clip.
-    private float GoneAt(float time)
-    {
-        if (rollGone == null || rollGone.Length < 2 || rollLength <= 0f) return 1f;
-        float at = Mathf.Clamp01(time / rollLength) * (rollGone.Length - 1);
-        int low = Mathf.Min(rollGone.Length - 2, Mathf.FloorToInt(at));
-        return Mathf.Lerp(rollGone[low], rollGone[low + 1], at - low);
-    }
-
-    // A roll's travel as ClipBench baked it (kind travel): the profile, the clip's length and when the body is up.
-    private bool ReadTravel(string id)
-    {
-        if (string.IsNullOrEmpty(id) || !GameTables.TryGetRow("GaitMoves", id, out var row) || row.Text("kind") != "travel") return false;
-        var gone = new System.Collections.Generic.List<float>();
-        foreach (string text in row.Text("profile").Split(';'))
-            if (float.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value))
-                gone.Add(value);
-        rollLength = row.Number("length", 0f);
-        rollUp = row.Number("land", rollLength);
-        if (gone.Count < 2 || rollLength <= 0f || rollUp <= 0f) return false;
-        rollGone = gone.ToArray();
-        return true;
-    }
+    /// <summary>How fast the moving roll goes over this frame (m/s): its clip's travel from now to a frame on.</summary>
+    internal float RollSpeed(float dt) => dt > 0f ? roll.Go(dt) / dt : 0f;
 }

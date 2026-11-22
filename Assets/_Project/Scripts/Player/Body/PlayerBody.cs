@@ -45,7 +45,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
     [SerializeField] private string supineSlideStart = "meslidestart", supineSlide = "meslideloop", supineSlideEnd = "meslideend";
     [SerializeField] private string prone = "diveslideidle", supine = "jumpturnlandidle", roll = "mx_sprint_roll";
-    [SerializeField] private string dodgeLeft = "dodgejumpleft", dodgeRight = "dodgejumpright", dashPush = "bargein";
+    [SerializeField] private string dashPush = "bargein";
     [SerializeField] private string vault = "vaultover", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
     [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "hang", ledgeJump = "hangheaveup";
     [SerializeField] private string death = "diestand";
@@ -64,8 +64,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField, Min(.01f), Tooltip("How quickly the body slides to keep its head under the camera (s). Slower than a stride, so running sway stays.")]
     private float headFollowTime = .25f;
     [SerializeField, Min(.01f), Tooltip("In the air, how quickly the body is carried to keep its eyes at their standing height (s), and "
-        + "how quickly it keeps its head over the capsule (s): the view holds still through a jump's clip.")]
-    private float airLiftTime = .05f, airFollowTime = .08f;
+        + "how quickly it keeps its head over the capsule (s; a dodge too): the view holds still through the clip's swing of the trunk.")]
+    private float airLiftTime = .05f, quickFollowTime = .08f;
     [SerializeField, Min(0f), Tooltip("Falling faster than this plays the fast-fall clip (m/s).")]
     private float fallClipSpeed = 7.2f;
     [SerializeField, Tooltip("F5 view from behind, in look-pivot space (m).")]
@@ -110,7 +110,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private AnimationMixerPlayable mixer;
     private Channel transition;
     private MovementState state;
-    private string dodgeClip;
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
     // Strides taken so far, for cycles holding more than one stride (GaitClips.Gait.ShareAt); phase is within the stride.
     private int strideCount;
@@ -272,7 +271,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
                      diveStart, dive, supineDiveStart, supineDive, bellySlideStart, bellySlide, bellySlideEnd,
                      supineSlideStart, supineSlide, supineSlideEnd,
-                     prone, supine, roll, dodgeLeft, dodgeRight, dashPush,
+                     prone, supine, roll, dashPush,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
         // The rolls, dodges, jumps and landings by the way they go (PlayerBody.Ways).
@@ -695,8 +694,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         // Not the Q/E lean's part of where the head is: followed, it walked the body back under the pivot (BodyLean).
         Vector3 error = camera - transform.InverseTransformPoint(spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt));
         error.y = 0f;
-        // In the air the head stays over the capsule closer, so the trunk's swing in a jump doesn't move the view.
-        float follow = !player.IsGrounded && state == MovementState.Standing ? Mathf.Min(headFollowTime, airFollowTime) : headFollowTime;
+        // In the air and through a dodge the head stays over the capsule closer, so the trunk's swing doesn't move the view.
+        bool quick = state == MovementState.StepDodge || (!player.IsGrounded && state == MovementState.Standing);
+        float follow = quick ? Mathf.Min(headFollowTime, quickFollowTime) : headFollowTime;
         headAlignment += error * (1f - Mathf.Exp(-dt / follow));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
     }
@@ -879,7 +879,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             PlayOn(dashPush);
         if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(rollClip);
-        if (from == MovementState.StepDodge && onGround && to == MovementState.Standing) PlayOutDodge();
+        if (from == MovementState.StepDodge && onGround) LeaveDodge(to);
         StartLying(from, to);
         if (to == MovementState.Proning) EnterProne(from);
         switch (to)
@@ -899,14 +899,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 supineDiveAtOnce = from == MovementState.Diving || from == MovementState.Supine;
                 if (!supineDiveAtOnce) Restart(Find(supineDiveStart));
                 break;
-            case MovementState.StepDodge:
-                dodgeLegsOut = false;
-                dodgeClip = DodgeFor();
-                // From a crouch the body stays low and slides along (DodgePose): no hop out of the crouch.
-                if (player.IsCrouchStance) break;
-                Restart(Find(dodgeClip));
-                StartDodgeLegs(dodgeClip);
-                break;
+            case MovementState.StepDodge: StartDodge(); break;
             case MovementState.LandingRoll:
                 rollClip = RollFor();
                 Restart(Find(rollClip));

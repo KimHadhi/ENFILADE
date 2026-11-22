@@ -80,12 +80,12 @@ public sealed partial class PlayerNetworkCombat
         if (kicks != null) kicks.ShowBash();
     }
 
-    // The dodger's PC judged the evade: every other PC's copy of them turns that dodge's streak red too (DodgeDash), as
-    // the dodger sees it (the user's rule: what one sees is what the others see). side: a Q/E slip's lean side, 0 for a step.
+    // The dodger's PC judged the evade: every other PC's copy of them turns that dodge's afterimage red too (DodgeDash), as
+    // the dodger sees it (the user's rule: what one sees is what the others see).
     [Rpc(SendTo.NotMe)]
-    private void EvadedRpc(sbyte side)
+    private void EvadedRpc()
     {
-        if (dodgeLook != null) dodgeLook.ShowEvaded(side);
+        if (dodgeLook != null) dodgeLook.ShowEvaded();
     }
 
     // The player struck the guard's parry pose (a Knight's cover turning a blow, GuardPose): every other PC's copy of them

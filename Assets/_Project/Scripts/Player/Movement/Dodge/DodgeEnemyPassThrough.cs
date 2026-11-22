@@ -49,7 +49,7 @@ public sealed class DodgeEnemyPassThrough : MonoBehaviour
         travelDirection = player.Abilities.ActionDirection;
         if (travelDirection.sqrMagnitude < .01f) travelDirection = transform.forward;
         if (ignored.Count == 0 && IsFree(transform.position)) { lastSafe = transform.position; hasSafe = true; }
-        float range = Mathf.Max(5f, player.AbilitySettings.stepDistance + body.height + 1f);
+        float range = Mathf.Max(5f, player.Abilities.DodgeMove.Distance + body.height + 1f);
         foreach (var collider in Physics.OverlapSphere(transform.position, range, ~0, QueryTriggerInteraction.Ignore))
         {
             if (!IsEnemy(collider) || collider.transform.IsChildOf(transform)) continue;

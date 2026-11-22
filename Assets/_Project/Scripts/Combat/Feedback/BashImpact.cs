@@ -79,7 +79,7 @@ public sealed class BashImpact : MonoBehaviour
         return nearest < float.PositiveInfinity;
     }
 
-    /// <summary>Makes the emitters now (this PC's player at spawn, DodgeFlash), so the first bash in a fight costs nothing.</summary>
+    /// <summary>Makes the emitters now (this PC's player at spawn, PlayerPerfectDefense), so the first bash in a fight costs nothing.</summary>
     public static void Prepare()
     {
         if (Application.isPlaying) Get();

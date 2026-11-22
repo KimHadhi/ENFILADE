@@ -99,7 +99,7 @@ public sealed class MovementActions
     internal void ProcessSprintRampUp(float dt, Vector2 input)
     {
         bool sprintHeld = ctx.Input.SprintButtonHeld;
-        // A short step interrupts movement, not the held sprint intent or its acceleration.
+        // A step dodge interrupts movement, not the held sprint intent or its acceleration.
         bool canSprintState = ctx.CurrentState == MovementState.Standing ||
             (ctx.CurrentState == MovementState.StepDodge && ctx.Abilities.ActionPosture == MovementPosture.Standing);
         // Any way the keys point (the user, 2026-11-21: the sprint's strafe clips go every way), and not in walk mode, where

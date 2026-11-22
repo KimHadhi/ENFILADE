@@ -6,8 +6,17 @@ using UnityEngine;
 public sealed class MovementAbilitySettings
 {
     [Header("Dodge & Lean")]
-    [Min(0.05f)] public float stepDuration = 0.14f;
-    [Min(0f)] public float stepDistance = 2.6f;
+    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right): standing, walking or jogging, and sprinting (DodgeMove). It goes as each clip carries its body (GaitMoves.csv kind travel).")]
+    public string dodgeWays = "QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45";
+    public string dodgeSprintWays = "ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90";
+    [Tooltip("The moment of a dodge's clip the legs are the player's again (s).")]
+    [Min(0.05f)] public float dodgeUntil = 0.5f;
+    [Tooltip("A dodge from a crouch, or chained on a confirmed one, starts at this moment of the clip (s): its push, low already.")]
+    [Min(0f)] public float dodgeLowFrom = 0.07f;
+    [Tooltip("The moment of the clip a dodge from a crouch is over (s), before the body rises.")]
+    [Min(0.05f)] public float dodgeLowUntil = 0.36f;
+    [Tooltip("The fastest a move that goes as its clip does carries the body (m/s); what a clip throws past it is paid in the frames after (ClipTravel).")]
+    [Min(1f)] public float clipTravelMost = 18f;
     [Tooltip("회피가 적 몸 안에서 끝나면 진행 방향의 안전한 출구를 찾는 탐색 거리.")]
     [Min(0f)] public float dodgeExitAssistDistance = 1.6f;
     [Min(.01f)] public float dodgeExitAssistTime = .2f;
@@ -231,10 +240,8 @@ public sealed class MovementAbilitySettings
     [Tooltip("How quickly a heavy landing's skid along the ground dies away (share of the speed per second).")]
     [Min(0f)] public float heavyLandingBraking = 10f;
     [Min(0.01f)] public float rollInputWindow = 0.5f;
-    [Tooltip("A landing roll: the Tables/Player/GaitMoves.csv rows its travel is read from, standing up out of it and running on.")]
+    [Tooltip("A landing roll: the Tables/Player/GaitMoves.csv rows (kind travel) its way and pace are read from, standing up out of it and running on.")]
     public string rollTravel = "Roll_F", rollRunTravel = "RollToRun_F";
-    [Tooltip("How far a landing roll goes (m), standing up and running on: its clips' own on the reference body (ClipBench).")]
-    [Min(0f)] public float rollDistance = 3.4f, rollRunDistance = 5.1f;
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
     [Min(0f)] public float rollRunSpeed = 4.4f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "

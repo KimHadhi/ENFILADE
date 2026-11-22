@@ -6,6 +6,8 @@ public sealed class MovementAbilities
 {
     private readonly PlayerMovement ctx;
     public DodgeController Dodge { get; } = new DodgeController();
+    /// <summary>The step dodge under way: its clip and how that carries the body.</summary>
+    public DodgeMove DodgeMove { get; }
     public MovementLean Lean { get; }
     public StepDodgeTrail StepTrail { get; }
     public ParkourTraversal Traversal { get; }
@@ -33,6 +35,7 @@ public sealed class MovementAbilities
     internal MovementAbilities(PlayerMovement context)
     {
         ctx = context;
+        DodgeMove = new DodgeMove(ctx);
         Lean = new MovementLean(ctx);
         StepTrail = new StepDodgeTrail(ctx);
         Surge = new GroundSurge(ctx);
@@ -71,7 +74,8 @@ public sealed class MovementAbilities
         {
             ActionDirection = InputDirection(-ctx.transform.forward);
             if (!continuingStep) ActionPosture = ctx.IsCrouching ? MovementPosture.Crouching : MovementPosture.Standing;
-            if (continuingStep) ((GroundBurstState)ctx.StateMachine.Current).RestartStep();
+            DodgeMove.Begin(ActionDirection, ActionPosture == MovementPosture.Crouching, continuingStep);
+            if (continuingStep) ((StepDodgeState)ctx.StateMachine.Current).Restart();
             else ctx.ChangeState(State.StepDodge);
             StepTrail.Begin();
             return InputConsumed = true;
@@ -110,7 +114,7 @@ public sealed class MovementAbilities
     }
     internal void Reset()
     {
-        Dodge.Reset(); StepTrail.Clear(); Lean.Reset(); Surge.Stop(); Traversal.Reset(); Fixtures.Reset(); Landing.Reset(); Combat.Reset(); Slide.Reset();
+        Dodge.Reset(); DodgeMove.Reset(); StepTrail.Clear(); Lean.Reset(); Surge.Stop(); Traversal.Reset(); Fixtures.Reset(); Landing.Reset(); Combat.Reset(); Slide.Reset();
         InputConsumed = false;
     }
 }

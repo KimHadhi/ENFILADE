@@ -138,6 +138,12 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private void UpdateCollisionImpacts()
     {
         float currentHSpeed = movement.HorizontalVelocity.magnitude;
+        // A dodge or a roll throws the body and lets it go as its clip does: no collision (it jolted the view at every dodge).
+        if (movement.CurrentState == PlayerMovement.MovementState.StepDodge || movement.CurrentState == PlayerMovement.MovementState.LandingRoll)
+        {
+            lastHorizontalSpeed = 0f;
+            return;
+        }
 
         // 슬라이드, 다이브 중 벽이나 부서지는 문에 강하게 충돌했을 때 속도 급감을 감지하여 카메라 타격감 발생
         if (lastHorizontalSpeed - currentHSpeed > 6.0f)

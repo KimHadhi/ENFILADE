@@ -26,3 +26,5 @@ WoodPlank,,,,,,,탄흔만(Hivemind Plank + Rocks). 나무 널빤지·마루
 Dirt,,,,,,,탄흔만(Hivemind Mud). 흙
 Tarp,,,,,,,탄흔만(Hivemind Fabric). 방수포·천막. 카펫도 여기로 온다
 Plastic,,,,,,,탄흔만(Hivemind Plastic). 플라스틱
+DodgeKick,Dust Impact 2; Dust Impact 4; Dust Impact 5,3,0.55,,,,스텝 회피로 차고 나갈 때 발밑 먼지(DodgeDash). 가는 쪽 반대로 낮게 인다. 사용자 11-22: 먼지 + 잔상
+DodgeStop,Dust Impact 2; Dust Impact 4; Dust Impact 5,3,0.4,,,,스텝 회피의 미끄러짐이 멈출 때 발밑 먼지(DodgeDash)

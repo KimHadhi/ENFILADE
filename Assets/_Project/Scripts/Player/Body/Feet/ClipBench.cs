@@ -23,7 +23,7 @@ using Object = UnityEngine.Object;
 ///   folders=BiperRunner,BiperCombat   folders under Art/Animations (these two)
 ///   clips=Run_Lfoot,R_Run             only these clips
 ///   skins=ichigo,mayo                 characters by id (ichigo)
-///   bake=gaitmoves                    also bake the turns on the spot into Tables/Player/GaitMoves.csv (GaitMoveBake)
+///   bake=gaitmoves                    also bake the crouches and travels into Tables/Player/GaitMoves.csv (GaitMoveBake)
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
 ///   cyclefilm=Run_Lfoot,Sprint_Lfoot   cycles side by side, eight moments each (StepBench.Cycles)
 ///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
@@ -140,10 +140,10 @@ internal static class ClipBench
                 if (bakeMoves)
                 {
                     text.AppendLine("-- bake=gaitmoves");
-                    // Female Runner's turns and jumps, Combat Girls' gun turns.
+                    // Female Runner's crouches, rolls and dodges, at this body's size.
                     var packs = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
                         .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    GaitMoveBake.Bake(packs, text);
+                    GaitMoveBake.Bake(packs, animator.humanScale * scale, text);
                     bakeMoves = false;
                 }
                 if (cycled.Length > 0)

@@ -60,41 +60,13 @@ Slip.glintColor,#E0EDF7,그 빛의 색
 Slip.lockAngle,40,"슬립하면 시선이 공격한 적에게 붙는다(비켜 돌기). 그 적이 시선에서 이 각도(도) 안에 있을 때만. 슬립하는 동안 머리가 비켜 나갔다 돌아와도 적이 화면 가운데에 있고, 곧은 주먹 반격은 달려드는 동안에도 그 적을 본다. 0이면 끈다"
 Slip.lockRate,20,시선이 그 적에게 도는 빠르기(1/초). 남은 각도 중 이 비율을 1초에 돈다
 Slip.lockLetGo,5,붙어 있는 동안 마우스로 이 각도(도)만큼 돌리면 놓는다. 다른 적을 반격할 때
-DodgeLook.ghostAlpha,0.5,스텝 회피의 잔상(사용자가 보낸 대시 VFX 영상 그대로이되 잔상은 내 캐릭터 그대로 비쳐 보임): 막 남은 잔상이 덮는 정도(0~1. 1이면 안 비침). 시작 자리에 하나와 도착하는 몸 바로 뒤에 잔영 하나. 옷마다 제 텍스처·색으로 그린다
-DodgeLook.ghostSeconds,0.32,시작 자리 잔상이 사라지는 시간(실제 초)
-DodgeLook.echoAt,0.1,도착하는 몸 바로 뒤에 남는 잔영을 대시 시작 몇 초에 남기는지(실제 초. 대시는 0.14초). 1인칭에서는 카메라가 그 몸 안이라 없다
-DodgeLook.echoSeconds,0.22,그 잔영이 사라지는 시간(실제 초)
-DodgeLook.ghostRise,0.04,내 잔상이 떠오르는 시간(실제 초). 구울 때 카메라가 아직 그 머리 안이라 빠져나간 뒤 보이게
+DodgeLook.ghostAlpha,0.5,"스텝 회피의 잔상(내 캐릭터 그대로 비쳐 보임): 막 남은 잔상이 덮는 정도(0~1. 1이면 안 비침). 출발한 자리에 하나. 옷마다 제 텍스처·색으로 그린다. 사용자 11-22: ""먼지 + 잔상"". 먼지는 ImpactEffects.csv DodgeKick·DodgeStop"
+DodgeLook.ghostSeconds,0.4,잔상이 사라지는 시간(실제 초)
+DodgeLook.ghostFrom,0.6,1인칭에서는 몸이 잔상에서 이만큼(m) 떠난 뒤에 잔상이 보인다(구울 때 카메라가 그 안이라서)
+DodgeLook.evadedTint,#FF241F,회피 성공(공격을 흘려보냄) 때 잔상의 색. 모든 PC에서(친구 화면도 같게)
+DodgeLook.evadedSeconds,0.7,성공한 잔상이 그때부터 사라지는 시간(실제 초)
+DodgeLook.stopAt,0.24,회피를 시작하고 미끄러짐이 멈춰 발밑 먼지(ImpactEffects.csv DodgeStop)가 이는 때(초)
 DodgeLook.ghostVertexBudget,150000,잔상 하나에 굽는 정점 수 상한. 무거운 옷은 이걸 넘는 메시를 뺀다
-DodgeLook.lineCount,4,번개처럼 두 번 꺾인 가는 흰 선 수. 시작 자리 조금 뒤에서 몸까지 정강이·무릎·엉덩이·허리 높이로(레퍼런스의 3~4가닥)
-DodgeLook.lineHeights,0.12;0.38;0.65;0.92,선마다 바닥에서의 높이(m). 모자라면 마지막 값
-DodgeLook.lineWidth,0.035,선 굵기(m)
-DodgeLook.lineKink,0.14,꺾인 곳이 선에서 튀어나가는 거리(m)
-DodgeLook.lineTail,0.5,선이 시작 자리 뒤로 끌리는 길이(m)
-DodgeLook.lineSeconds,0.26,착지한 뒤 선이 가늘어지며 사라지는 시간(실제 초)
-DodgeLook.lineColor,#F2FAFF,선·긴 줄기·바람의 색
-DodgeLook.lineGlow,2.6,그 밝기(1을 넘으면 번진다)
-DodgeLook.streakCount,2,어깨·머리 높이에서 몸 뒤로 시작 자리 너머까지 길게 뻗는 곧은 빛줄기 수(레퍼런스의 긴 줄기). 1인칭에서는 눈높이라 없다
-DodgeLook.streakHeights,1.25;1.5,그 줄기마다 몸 쪽 끝의 높이(m)
-DodgeLook.streakWidth,0.022,그 굵기(m)
-DodgeLook.streakLength,3.2,몸에서 뒤로 뻗는 길이(m)
-DodgeLook.streakRise,0.45,먼 끝이 올라가는 높이(m)
-DodgeLook.streakSeconds,0.14,착지한 뒤 사라지는 시간(실제 초)
-DodgeLook.popSize,0.75,차고 나가는 발밑의 밝은 흰 폭발 크기(m)
-DodgeLook.smokePuffs,6,그 둘레에서 뒤로 퍼지는 연기 수
-DodgeLook.smokeSeconds,0.45,연기 하나가 남는 시간(실제 초)
-DodgeLook.dustPuffs,2,착지할 때 지나온 길에 남는 작은 먼지 수
-DodgeLook.curls,3,착지할 때 몸을 양옆으로 감으며 올라가는 바람 수(레퍼런스의 몸을 감는 바람. 0이면 끈다). 1인칭에서는 안 나온다
-DodgeLook.curlHeights,0.75;1.1;1.45,바람마다 바닥에서의 높이(m)
-DodgeLook.curlSeconds,0.3,바람이 남는 시간(실제 초)
-DodgeLook.lowShare,0.6,앉은 채 하는 회피(앉아서 미끄러지는 회피)의 높이 비율: 선·줄기·바람이 이만큼 낮게
-DodgeLook.successLine,#FF241F,회피 성공(공격을 흘려보냄) 때 선·긴 줄기·바람 색. 모든 PC에서(친구 화면에도 같게). 잔상은 캐릭터 그대로
-DodgeLook.slipLength,0.9,Q/E로 흘려보낸 성공(대시가 없음)의 붉은 줄기 길이(m). 흘려보낸 쪽에서 몸으로 온다
-DodgeView.strokes,4,1인칭에서 옆·앞으로 피할 때 화면에 그리는 같은 선의 획 수(세계의 선이 화면 밖이라서). 뒤로 피하면 세계의 잔상과 선이 앞에 보여 안 그린다
-DodgeView.strokeSeconds,0.26,그 획이 남는 시간(실제 초)
-DodgeView.strokeWidth,4.5,획 굵기(1080p 기준 px)
-DodgeView.strokeKink,22,획의 꺾인 곳이 튀어나가는 거리(1080p 기준 px)
-DodgeView.strokeAlpha,0.9,획 진하기(0~1)
 Parry.handSweepSeconds,0.45,패링 때 손 동작 전체 시간: 뻗기+멈춤+돌아오기(실제 초)
 Parry.handSweepAttack,0.04,손이 화면을 가로질러 뻗는 시간(실제 초)
 Parry.handSweepHold,0.16,뻗은 자세로 멈추는 시간(실제 초). 히트스톱과 맞물린다
@@ -320,8 +292,12 @@ Move.doorBreakSpeedRetention,0.85,문을 부수고 남는 속도 비율
 Move.wallBounceBounciness,0.5,슬라이드로 벽에 부딪혔을 때 튕겨 나오는 비율
 Move.supineBounceThreshold,7,튕겨 나온 속도가 이 이상이면 뒤로 누워 미끄러진다(m/s)
 # 능력: 회피·기울이기 (Ability 행 → PlayerMovement의 Ability Settings),,
-Ability.stepDuration,0.14,Alt 스텝 회피 이동 시간(초)
-Ability.stepDistance,2.6,스텝 회피 거리(m)
+Ability.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"스텝 회피(Alt)의 클립을 가는 쪽마다(클립@도. 0 앞 90 오른쪽): 서서·걷거나 조깅하며. BIPER Female Runner QuickShift_*(0.8초 약 3.4m). 몸은 클립이 땅 위로 가는 그대로 간다(GaitMoves.csv kind travel, DodgeMove). 사용자 11-22: ""회피는 모션을 위해 개편하고(너무 일찍 끝나고 이펙트가 구림)"" → ""QuickShift 끝까지"". 0.9.334까지는 0.14초 2.6m를 따로 가고 클립은 앞 0.2초만 보였다"
+Ability.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며(걸음새가 조깅과 전력질주의 가운데를 넘었을 때) 옆·대각선 앞으로 회피: 비키며 전력질주를 이어 간다(0.73초 4.3~5.2m). 이 쪽들에서 30° 안일 때만, 아니면 Ability.dodgeWays. BIPER Female Runner ShiftToSprint_*"
+Ability.dodgeUntil,0.5,"회피 클립의 이 순간(초)까지 다리가 클립 것이고, 그 뒤 이동 키가 먹는다. 남은 일어나기는 멈춰 있으면 끝까지, 움직이면 걸음에 섞인다. 그 전에도 미끄러짐이 끝나면(약 0.2초) 점프로 끊을 수 있고, 다음 회피는 회피 규칙대로"
+Ability.dodgeLowFrom,0.07,"앉아서 하는 회피, 성공한 회피에 이어 하는 회피는 클립의 이 순간(초, 이미 낮은 자세로 차고 나가는 때)부터 시작한다"
+Ability.dodgeLowUntil,0.36,앉아서 하는 회피가 끝나는 클립의 순간(초): 몸을 세우기 전. 끝나면 앉은 자세로 이어진다
+Ability.clipTravelMost,18,클립대로 가는 동작(회피·구르기·다이브 롤)이 몸을 나르는 가장 빠른 속도(m/s). 클립이 그보다 빨리 던지는 몫은 다음 프레임들에 나눠 간다(ClipTravel): QuickShift는 0.03초에 1.2m를 가서 그대로면 순간이동처럼 보인다
 Ability.dodgeExitAssistDistance,1.6,회피가 적 몸 안에서 끝나면 진행 방향의 출구를 찾는 거리(m)
 Ability.dodgeExitAssistTime,0.2,그 출구로 빠져나가는 데 허용하는 시간(초)
 Ability.stepInvulnerability,0.18,스텝 회피 입력부터 공격을 회피로 인정하는 시간(초)
@@ -444,8 +420,6 @@ Ability.heavyLandingBraking,10,크게 착지해 바닥을 미끄러지는 속도
 Ability.rollInputWindow,0.5,세게·크게 착지하기 전 이 시간 안에 Ctrl을 누르면 구른다(초). 피해·감속 없이 속도 유지
 Ability.rollTravel,Roll_F,"착지 구르기(느리면 구르고 일어섬)의 빠르기를 읽는 GaitMoves.csv 줄(kind travel). 몸은 클립이 땅 위로 가는 그대로 가고(앞 0.5초에 3m, 그 뒤 일어서며), 몸이 다시 서면 끝나고 클립의 끝은 흘려 보낸다. 0.9.288 전에는 착지 속도(최소 Ability.rollSpeed 4m/s)로 Ability.rollDuration(1초) 동안 갔고 클립(1.47초)을 그 1초에 맞춰 틀어 1.5배 빨랐다(사용자 11-21: ""착지할 때 dive roll 모션이 존나 빨라"")"
 Ability.rollRunTravel,RollToRun_F,착지 구르기(Ability.rollRunSpeed 이상이면 구르고 달려 나감)의 빠르기를 읽는 줄: 0.97초에 약 5m. 0.9.288
-Ability.rollDistance,3.4,"착지 구르기가 가는 거리(m), 구르고 일어설 때. 클립 Roll_F가 기준 몸(이치고)에서 간 만큼(클립 검사대)"
-Ability.rollRunDistance,5.1,"착지 구르기가 가는 거리(m), 구르고 달려 나갈 때. 클립 RollToRun_F가 기준 몸에서 간 만큼"
 Ability.rollRunSpeed,4.4,착지할 때 이보다 빠르면(m/s) 구르고 달려 나간다(Body.rollRunWays). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서. 0.9.288 전에는 몸이 Body.jumpFastSpeed로 따로 골랐다
 Ability.rollLandSpeed,2,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). 걷기 출발 속도(Move.runStartSpeed 3.6)보다 낮아 걷다가 떨어져도 구른다(2026-11-06 사용자 요청). Beatrun의 200단위/초(약 4.9)는 걷기 속도와 같아 걸으면 늘 제자리 착지였다
 Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
@@ -535,13 +509,9 @@ Body.roll,RollToRun_F,"착지 구르기. 클립은 제 빠르기로 틀고 몸�
 Body.rollLand,Land_1h,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch. BIPER Female Runner: 가볍게 착지. 0.9.262 전에는 land
 Body.touchdown,Land_1h,"점프를 연달아 할 때 땅에 닿는 순간과 서서 가볍게 착지할 때 무릎이 받는 동작: BIPER Land_1h(몸 중심이 0.31m 내려감, 엉덩이 0.89→0.73m). 0.9.290에 Beatrun land로 되돌렸더니 그 클립은 큰 낙하의 착지라 0.13초 만에 0.65m 주저앉아(엉덩이 0.90→0.27m) 눈에 붙은 카메라가 함께 떨어졌다: 제자리 점프마다 낙하한 것처럼 보였다(사용자 11-21: ""제자리 점프하면 낙하 모션 있는데""). 달리며 뛰면 이 동작이 없어 제자리 점프만 그랬다. 0.9.291"
 Body.touchdownShare,0.5,"가벼운 착지 동작(Body.touchdown)이 몸을 갖는 비율, 나머지는 서기. 동작 그대로면 점프할 때마다 눈(카메라)이 0.28m 내려갔다 올라온다(클립 검사대). 사용자 11-22: ""점프할 때 카메라 덜 흔들리게"""
-Body.dodgeLeft,QuickShift_L,"왼쪽 회피. 가는 쪽마다의 클립은 Body.dodgeWays(서서·걷거나 조깅하며)·dodgeSprintWays(전력질주)에 있고, 이 줄은 그 표에 그쪽이 없을 때. BIPER Female Runner. 0.9.262 전에는 dodgejumpleft"
-Body.dodgeRight,QuickShift_R,오른쪽 회피(Body.dodgeLeft와 같이). 0.9.262 전에는 dodgejumpright
 Body.rollWays,Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@-135;Roll_L@-90;Roll_L45@-45,"착지 구르기를 가는 쪽마다(클립@도. 0 앞 90 오른쪽): Ability.rollRunSpeed보다 느리면 구르고 일어선다. 가장 가까운 쪽이 45°보다 멀면 Body.roll. BIPER Female Runner Roll_*(1.47초 3.4m), 0.9.262"
 Body.rollRunWays,RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_B@180;RollToRun_L@-90;RollToRun_L45@-45,"착지 구르기를 가는 쪽마다, Ability.rollRunSpeed 이상이면 구르고 달려 나간다. BIPER Female Runner RollToRun_*(0.97초 약 5m), 0.9.262"
-Body.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"회피를 가는 쪽마다(서서·걷거나 조깅하며): 몸을 비키는 짧은 스텝. BIPER Female Runner QuickShift_*(0.8초 3.25m), 0.9.262. 회피 클립은 걸음새로 고른다(MovementGait.Position): 0.9.284 전에는 그 순간의 속도로 골랐는데, 몸은 스텝이 이미 약 18m/s로 던진 프레임에 회피를 봐서 앞뒤 말고는 늘 달리며 회피(ShiftToRun_*, Body.dodgeRunWays)가 골라졌고 그 달리기 걸음이 회피 뒤에 제 빠르기로 이어졌다(사용자 11-21: ""회피 끝나고 캐릭터가 굉장히 빠른 속도로 달리는 모션""). 달리며 회피는 0.9.284에 달리기와 함께 뺐다"
-Body.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며(걸음새가 조깅과 전력질주의 가운데를 넘었을 때) 회피: 비키며 전력질주를 이어 간다. 앞뒤는 없어서 Body.dodgeWays. BIPER Female Runner ShiftToSprint_*, 0.9.262"
-Body.dodgeShiftEnd,0.2,"회피 클립이 옆으로 비키는 동작이 끝나는 때(초). 스텝(Ability.stepDuration 0.14초) 동안 클립을 여기까지 틀고, 나머지(그 자리에서 일어나기)는 스텝 뒤에 마저 튼다. BIPER QuickShift_*는 0.06~0.2초에 3m를 간다(ClipBench track). 0.9.271 전에는 스텝이 끝나면 클립이 앞부분만 보이고 엉덩이가 튀어 올랐다"
+Body.dodgeStandTime,0.25,회피가 끝나 걷기·달리기·앉기로 이어질 때 두 자세를 섞는 시간(초): 다리를 돌려받을 때 몸이 아직 낮다
 Body.landRunLight,,앞으로 달리다 가볍게 착지할 때의 클립. 비어 있으면 걸음에 섞여 이어 간다(Beatrun처럼). 0.9.262~0.9.289에는 BIPER Land_ToRun1(RunJump의 착지 자세에서 시작)이었는데 Beatrun 점프로 되돌리며 뺐다(0.9.290)
 Body.landRunMid,,Body.landMidHeight 이상에서 앞으로 달리다 가볍게 착지할 때의 클립. 비어 있으면 걸음에 섞인다. 0.9.285~0.9.289에는 BIPER Land_ToRun2였는데 Body.landRunLight와 같은 까닭으로 뺐다(0.9.290)
 Body.landRunHard,Land_ToRun3,"앞으로 가다 세게 착지하면 깊게 받고 달려 나간다. BIPER Female Runner, 0.9.262"
@@ -626,7 +596,7 @@ Body.backOffset,0.12,머리를 카메라 뒤에 두는 거리(m). 내려다볼 �
 Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞추는 속도(초). 달리기 흔들림보다 느리게
 Body.fallClipSpeed,7.2,이보다 빠르게 떨어지면 빠른 낙하 애니메이션(fall)(m/s)
 Body.airLiftTime,0.05,"공중에서 눈이 서 있을 때 높이에 머물게 몸을 옮기는 빠르기(초). 점프 동작은 웅크린 자세에서 시작해 눈이 0.34m 꺼졌다 올라온다: 몸을 그만큼 들어 카메라가 점프만큼만 오르내린다(PlayerBody.HoldEyesInAir). 사용자 11-22: ""점프할 때 카메라 덜 흔들리게 (점프를 자유롭게)"""
-Body.airFollowTime,0.08,공중에서 머리가 캡슐 위에 머물게 몸을 옮기는 빠르기(초). 땅에서는 Body.headFollowTime
+Body.quickFollowTime,0.08,공중과 회피 중에 머리가 캡슐 위에 머물게 몸을 옮기는 빠르기(초): 동작이 몸통을 앞으로 숙였다 세워도 화면이 앞뒤로 밀리지 않게. 다른 때는 Body.headFollowTime
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
 Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)
 Body.turnStartAngle,60,"서 있을 때 시선이 다리에서 이만큼 돌아가면 다리가 시선 쪽으로 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다"

@@ -4,30 +4,27 @@ using UnityEngine.Playables;
 
 /// <summary>
 /// One-off moves that go a way of their own, picked by the way the body goes (the user, 2026-11-21, on BIPER Female Runner:
-/// "점프 착지 구르기 회피"): a roll and a dodge each have a clip for each way their pack made them (Player.csv rows
-/// Body.*Ways, "clip@degrees;…", 0 ahead, 90 right), and the one whose way is nearest is the one that plays. A dodge on the
-/// run shifts into the run (ShiftToRun, ShiftToSprint) where standing it steps aside (QuickShift); a roll at a run comes up
-/// running (RollToRun) where a slower one stands up (Roll); a landing on the move runs on out of it (Land_ToRun,
-/// Land_ToStumble). Ways as their names say them; ClipBench measured the travel of every one. A jump has one clip whatever
-/// its way (Body.jump).
+/// "점프 착지 구르기 회피"): a roll has a clip for each way its pack made it (Player.csv rows Body.*Ways, ClipWays), and the one
+/// whose way is nearest is the one that plays. A roll at a run comes up running (RollToRun) where a slower one stands up
+/// (Roll); a landing on the move runs on out of it (Land_ToRun, Land_ToStumble). Ways as their names say them; ClipBench
+/// measured the travel of every one. A dodge's way is the movement's own pick (DodgeMove); a jump has one clip whatever its
+/// way (Body.jump).
 /// </summary>
 public sealed partial class PlayerBody
 {
     [Header("One-off moves by the way they go (clip@degrees;…)")]
-    [SerializeField] private string rollWays = "", rollRunWays = "", dodgeWays = "", dodgeSprintWays = "";
+    [SerializeField] private string rollWays = "", rollRunWays = "";
     [SerializeField, Tooltip("Landing on the move: lightly, lightly from higher (Body.landMidHeight), hard, hard at a sprint "
         + "(a stumble), and hard at a jog (down to a hand and on).")]
     private string landRunLight = "", landRunMid = "", landRunHard = "", landRunStumble = "", landSlam = "";
     [SerializeField, Min(0f), Tooltip("A hard landing at least this fast stumbles on (m/s).")]
     private float landStumbleSpeed = 6f;
 
-    private readonly Dictionary<string, List<(string clip, float way)>> ways = new Dictionary<string, List<(string, float)>>();
-
     // Every clip of every way set, made ready with the others (Build).
     private IEnumerable<string> WayClips()
     {
-        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays })
-            foreach (var (clip, _) in WaysOf(set))
+        foreach (string set in new[] { rollWays, rollRunWays, player.AbilitySettings.dodgeWays, player.AbilitySettings.dodgeSprintWays })
+            foreach (var (clip, _) in ClipWays.Of(set))
                 yield return clip;
         yield return landRunLight;
         yield return landRunMid;
@@ -36,25 +33,7 @@ public sealed partial class PlayerBody
         yield return landSlam;
     }
 
-    private List<(string clip, float way)> WaysOf(string set)
-    {
-        set ??= "";
-        if (ways.TryGetValue(set, out var known)) return known;
-        var list = new List<(string, float)>();
-        foreach (string entry in set.Split(';'))
-        {
-            int at = entry.IndexOf('@');
-            if (at <= 0) continue;
-            if (float.TryParse(entry.Substring(at + 1), System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out float degrees))
-                list.Add((entry.Substring(0, at).Trim(), degrees));
-        }
-        ways[set] = list;
-        return list;
-    }
-
-    // A set's way further than this from the heading is no move that way (degrees): the fallback plays instead (a dodge
-    // back at a run is no shift into the run sideways).
+    // A set's way further than this from the heading is no move that way (degrees): the fallback plays instead.
     private const float WayWithin = 45f;
 
     // The clip of a set whose way is nearest this heading (degrees from the body's ahead), or the fallback for an empty set
@@ -63,7 +42,7 @@ public sealed partial class PlayerBody
     {
         string best = fallback;
         float gap = WayWithin;
-        foreach (var (clip, way) in WaysOf(set))
+        foreach (var (clip, way) in ClipWays.Of(set))
         {
             float off = Mathf.Abs(Mathf.DeltaAngle(way, heading));
             if (off <= gap && Find(clip) != null) { gap = off; best = clip; }
@@ -77,24 +56,6 @@ public sealed partial class PlayerBody
         Vector3 local = transform.InverseTransformDirection(Vector3.ProjectOnPlane(direction, Vector3.up));
         return local.sqrMagnitude > 1e-6f ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
     }
-
-    // A dodge's clip: stepping aside standing, walking or jogging; sprinting, shifting aside into the sprint. Picked by the
-    // gait (MovementGait.Position, the same on every PC), not by the speed now: the body meets a dodge in the frame its step
-    // has already thrown it at about 18 m/s (Ability.stepDistance over stepDuration), so until 0.9.284 the speed picked the
-    // dodge that runs on (ShiftToRun) for every dodge but straight ahead or back, even from a walk, and its running steps
-    // went on at their own pace after it (the user, 2026-11-21: "움직이면서 회피하면 회피 끝나고 캐릭터가 굉장히 빠른 속도로
-    // 달리는 모션이 생겨"). That dodge went with the run it ran on into (0.9.283).
-    private string DodgeFor()
-    {
-        float heading = HeadingOf(player.Abilities.ActionDirection);
-        string side = heading < 0f ? dodgeLeft : dodgeRight;
-        string standing = NearestWay(dodgeWays, heading, side);
-        var gait = player.Actions != null ? player.Actions.Gait : null;
-        return gait != null && gait.Position > SprintsFrom ? NearestWay(dodgeSprintWays, heading, standing) : standing;
-    }
-
-    // The gait past which a dodge shifts into the sprint: halfway from the jog (1) to the sprint (2).
-    private const float SprintsFrom = 1.5f;
 
     // A roll's clip the way the body is going: begun at a sprint it runs on, else it stands up (MovementLanding.RollRuns, the
     // movement's own choice, whose travel it goes at; the same on every PC).
@@ -135,8 +96,8 @@ public sealed partial class PlayerBody
         if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunMid) || channel == Find(landRunHard)
             || channel == Find(landRunStumble) || channel == Find(landSlam))
             return true;
-        foreach (string set in new[] { rollRunWays, dodgeSprintWays })
-            foreach (var (clip, _) in WaysOf(set))
+        foreach (string set in new[] { rollRunWays, player.AbilitySettings.dodgeSprintWays })
+            foreach (var (clip, _) in ClipWays.Of(set))
                 if (channel == Find(clip)) return true;
         return false;
     }

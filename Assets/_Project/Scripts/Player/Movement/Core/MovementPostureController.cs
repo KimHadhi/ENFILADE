@@ -252,6 +252,7 @@ public sealed class MovementPostureController
         bool isCrawling = ctx.CurrentState == MovementState.Proning || ctx.CurrentState == MovementState.Supine;
         bool canStep = ctx.Motor.isGrounded && (ctx.CurrentState == MovementState.Standing ||
                              ctx.CurrentState == MovementState.Crouching ||
+                             ctx.CurrentState == MovementState.StepDodge || ctx.CurrentState == MovementState.LandingRoll ||
                              ctx.IsSliding || isCrawling);
 
         float stepHeight = isCrawling

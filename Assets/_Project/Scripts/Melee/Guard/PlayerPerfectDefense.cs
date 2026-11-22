@@ -75,8 +75,8 @@ public sealed class PlayerPerfectDefense : MonoBehaviour
         // The evade and block cues play on this body: their voice is made now, not on the first perfect evade.
         CombatCueAudio.Prepare(gameObject);
         if (Application.isPlaying && owner.IsLocal && GetComponent<PerfectDefenseHUD>() == null) gameObject.AddComponent<PerfectDefenseHUD>();
-        // The slip's numbers, the head moves and the edge light are made at spawn, not in the first fight.
-        if (Application.isPlaying && owner.IsLocal) { MicroSlip.For(owner); CombatHeadMotion.For(owner); CombatEdgeGlint.For(owner); DodgeFlash.For(owner); }
+        // The slip's numbers, the head moves, the edge light and the bash's emitters are made at spawn, not in the first fight.
+        if (Application.isPlaying && owner.IsLocal) { MicroSlip.For(owner); CombatHeadMotion.For(owner); CombatEdgeGlint.For(owner); BashImpact.Prepare(); }
     }
     private void OnEnable() { var owner = GetComponent<PlayerMovement>(); if (owner.OrNull()?.DamageReceiver != null) Initialize(owner); }
     private void OnResolved(DamageHit hit, DamageResult result)
