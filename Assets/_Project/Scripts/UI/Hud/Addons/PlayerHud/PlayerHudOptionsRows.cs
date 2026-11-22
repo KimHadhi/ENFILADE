@@ -117,7 +117,7 @@ namespace HudAddons
             rows.Slider(T("color.a"), 0f, 255f, get().a, v => { var c = get(); c.a = (byte)Mathf.RoundToInt(v); set(c); }, Whole, wholeNumbers: true);
         }
 
-        // The panel's "Font" text box: a face name; an empty one goes back to the addon's.
+        // The panel's "Font" text box: a face name; an empty one goes back to the default (the video's).
         private static void Font(SettingsRows rows, PlayerHudOptions o)
         {
             var row = SettingsWidgets.Row(rows.Parent, T("font"));
@@ -126,7 +126,7 @@ namespace HudAddons
             TypingLook.On(field, row.childCount > 0 ? row.GetChild(0).GetComponent<TMP_Text>() : null);
             field.onEndEdit.AddListener(text =>
             {
-                o.font = string.IsNullOrWhiteSpace(text) ? "Unifont" : text.Trim();
+                o.font = string.IsNullOrWhiteSpace(text) ? PlayerHudOptions.VideoFont : text.Trim();
                 field.SetTextWithoutNotify(o.font);
                 GameSettings.Apply();
             });

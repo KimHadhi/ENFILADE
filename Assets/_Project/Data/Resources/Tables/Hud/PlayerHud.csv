@@ -23,7 +23,6 @@ Font.alts,0.015,"Nene.Alts: 자극제·수류탄 개수"
 Font.history,0.022,"Nene.History: 획득 기록"
 Font.selector,0.0275,"Nene.Selector: 선택기의 무기 이름"
 Font.weightUnit,500,"글꼴 굵기 = 이 값 x 설정의 글자 굵기(기본 2 → 1000: 굵게)"
-Font.face,Unifont,"설정의 글꼴 칸이 비었을 때(애드온 기본 'Unifont', AddonFonts.csv)"
 Place.health,1;1.87,"configs.lua Positions.Health = (sw, sh + sh*.87): 체력 막대 가운데"
 Place.armorDrop,0.03,"방어구 막대는 체력 자리에서 sh x 이 값 x 크기만큼 아래"
 Place.hazards,0.805;1.775,"Positions.Hazards = (sw*.805, sh + sh*.775)"
@@ -145,3 +144,18 @@ Slots.fadeSeconds,1,"1초에 걸쳐 사라진다"
 Slots.pitchMin,0.8,"슬롯을 바꿀 때 'Select' 소리(select.wav): pitch {80,110}, volume 1"
 Slots.pitchMax,1.1,
 Slots.volume,1,
+Portrait.size,196,"우리 프사·궁극기·계급(HUD Mk II에는 없는 조각)을 애드온 상자로 그린다(사용자 2026-11-22: ""프사 이 정도로 크게랑 경험치 바랑 탄창 느낌의 궁극기 게이지 살려서 저 디자인으로 개편""). 체력 막대 왼끝 위에 서고 체력 자리(health_x/y)를 따라간다. 크기는 애드온처럼 px x Scale(1080p에서 0.75배). 사진 한 변: 196 = 1080p 147px, 예전 HUD 초상화의 사진과 검은 테"
+Portrait.magazine,32,"사진 왼쪽 궁극기 막대의 바깥 폭(1080p 24px, 예전 탄창 폭)"
+Portrait.gap,8,"궁극기 막대와 사진 사이, 사진과 계급 줄 사이, 계급 상자와 막대 사이"
+Portrait.rise,10,계급 줄 아래 끝과 체력 막대 바탕 상자 사이
+Portrait.insignia,55,"계급 휘장 상자 한 변(자극제 상자와 같은 55, BT_Text). 이번 판에 오를 계급 수는 상자 오른쪽 위에 +N"
+Portrait.rankHeight,8,"계급 막대 두께(방어구 막대와 같은 8, BL_Rect: 바탕 상자, 줄면 주황이 남았다 따라 내려감)"
+Portrait.rounds,10,궁극기 막대 칸 수: 한 번 쓸 만큼이 이 칸을 다 채운다(탄창의 탄). 그보다 더 모은 몫은 같은 칸을 Colour.overOne 색으로 다시 채운다(rect.lua 값 > 1)
+Portrait.roundGap,0.1,칸마다 위에 비우는 비율(BSS_Rect와 같은 10%)
+Portrait.initial,0.5,프로필 사진이 없을 때 이름 첫 글자: 글자 칸 높이 = 사진 한 변 x 이 값
+Portrait.ultimate,#FFFFFFFF,궁극기 칸 색(애드온 탄약·장비 기본 흰색)
+Portrait.held,#9B9B9BFF,계급 막대: 판 시작 때 쌓여 있던 몫(Colors.Ammo 회색)
+Portrait.game,#FFFFFFFF,계급 막대: 이번 판 처치 몫(흰색)
+Portrait.kept,#FFFFFF96,"계급 막대: 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫(흰색 알파 150, 돈을 쓰면 줄어 주황이 남는다)"
+Portrait.gainSeconds,0.9,처치 때 막대 위에 뜨는 +경험치가 떠 있는 시간(초)
+Portrait.gainRise,10,그동안 올라가는 높이(px x Scale)

@@ -51,14 +51,13 @@ namespace HudAddons
             public float dim = 1.75f;
         }
 
-        /// <summary>configs.lua CreateFont: size = sw x share x scale, weight = unit x the weight option.</summary>
+        /// <summary>configs.lua CreateFont: size = sw x share x scale, weight = unit x the weight option. The face is the
+        /// font option's (never empty: PlayerHudOptions.Clamp).</summary>
         [Serializable]
         public sealed class FontRow
         {
             public float label = .01f, mags = .03f, ammo = .02f, alts = .015f, history = .022f, selector = .0275f;
             public float weightUnit = 500f;
-            /// <summary>The face when the font option is empty.</summary>
-            public string face = "Unifont";
         }
 
         /// <summary>configs.lua Nene.Config.Positions, as multiples of (sw, sh).</summary>
@@ -278,6 +277,39 @@ namespace HudAddons
             public float pitchMin = .8f, pitchMax = 1.1f, volume = 1f;
         }
 
+        /// <summary>
+        /// Our portrait, ultimate and rank (the addon has none of them), in its boxes over the health bar's left end.
+        /// Sizes are px x Scale like the addon's; the 196 picture is 147 px on 1080p, the old HUD portrait's picture and mat.
+        /// </summary>
+        [Serializable]
+        public sealed class PortraitRow
+        {
+            /// <summary>The picture's side.</summary>
+            public float size = 196f;
+            /// <summary>The ultimate's bar left of the picture, its outer width.</summary>
+            public float magazine = 32f;
+            /// <summary>Between the ultimate and the picture, the picture and the rank row, the rank box and its bar.</summary>
+            public float gap = 8f;
+            /// <summary>Between the rank row's foot and the health bar's frame.</summary>
+            public float rise = 10f;
+            /// <summary>The rank's box, as the stims box (55).</summary>
+            public float insignia = 55f;
+            /// <summary>The rank bar's thickness, as the armour bar's (8).</summary>
+            public float rankHeight = 8f;
+            /// <summary>The ultimate's rounds: one use's charge in this many segments; each leaves gap of its room empty.</summary>
+            public int rounds = 10;
+            public float roundGap = .1f;
+            /// <summary>With no picture chosen, the name's first letter: its cell this share of the picture.</summary>
+            public float initial = .5f;
+            public Color ultimate = new Color32(255, 255, 255, 255);
+            /// <summary>The rank bar: growth held when the game began, this game's kills, the share of the money held.</summary>
+            public Color held = new Color32(155, 155, 155, 255);
+            public Color game = new Color32(255, 255, 255, 255);
+            public Color kept = new Color32(255, 255, 255, 150);
+            /// <summary>A kill's "+N XP" over the bar: how long it floats and how far it rises.</summary>
+            public float gainSeconds = .9f, gainRise = 10f;
+        }
+
         public readonly HudRow Hud = new HudRow();
         public readonly ColourRow Colour = new ColourRow();
         public readonly FontRow Font = new FontRow();
@@ -292,6 +324,7 @@ namespace HudAddons
         public readonly FlareRow Flare = new FlareRow();
         public readonly FxRow Fx = new FxRow();
         public readonly SlotsRow Slots = new SlotsRow();
+        public readonly PortraitRow Portrait = new PortraitRow();
 
         /// <summary>Binds every row to the table for as long as <paramref name="owner"/> lives (and again on a reload).</summary>
         public void Bind(UnityEngine.Object owner)
@@ -310,6 +343,7 @@ namespace HudAddons
             GameTables.BindNested(TableName, "Flare", owner, Flare);
             GameTables.BindNested(TableName, "Fx", owner, Fx);
             GameTables.BindNested(TableName, "Slots", owner, Slots);
+            GameTables.BindNested(TableName, "Portrait", owner, Portrait);
         }
     }
 }

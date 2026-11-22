@@ -2,18 +2,25 @@
 
 2026-11-22 사용자: "애드온을 넣으라고", "원본 그대로 따오되 네 디자인, 기획 센스 처넣으니까 망하는 거지". 게리 모드 애드온 **HUD Mk2**(`lua/hud_mkii`: `configs.lua`, `shared.lua`, `utils/*.lua`, `elements/client/cl_*.lua`, `elements/server/sv_*.lua`, 그림 `materials/vgui/nene/*`, 소리 `sound/nene.hud/*`, 글꼴 `resource/fonts/*.ttf`)의 Lua를 모두 읽고, 생김새·수치·시간·설정은 원본 그대로 두고 코드는 새로 썼다(`Scripts/UI/Hud/Addons/PlayerHud/`, 네임스페이스 `HudAddons`). 원본의 버그는 고쳤다(아래 '고친 버그'). 손으로 만든 옛 복사본(`Scripts/UI/Hud/Mk/`, `MkHud.csv`)의 코드와 수치는 쓰지 않았다.
 
+기본값은 사용자가 준 영상(youtu.be/gG4QmyzPM2Q)의 설정이다(11-22 사용자: "영상처럼 HUD 만들어"). 영상을 장면마다 픽셀로 재 보니 받은 파일의 기본과 다른 것이 글꼴(Hitmarker Normal, 보통 굵기)과 체력·방어구·탄약·수류탄의 자리다. 이 둘을 설정의 기본값으로 넣었고(`PlayerHudOptions`), 생김새·수치는 받은 파일 그대로다.
+
 빠진 것: 적 이름(`cl_enemy.lua`)은 사용자가 적 정보로 Black Ops 6 체력바를 골라서 다른 모듈(EnemyBars)이다. 무기 선택기의 고르는 방식(휠·숫자 키로 고르고 클릭으로 확정)은 사용자가 우리 슬롯 방식을 원해서 빠지고 생김새만 왔다(아래).
 
 ## 무엇이 어디에 (1080p, 크기 1 기준: Scale = ScreenScale(0.25) = 0.75)
 
-그리는 순서는 원본 `shared.lua`의 HUDPaint 그대로: 체력·방어구 → 환경 위험 → 탄약·수류탄 → 획득 기록 → 피해 방향 → 무기 선택기(우리 슬롯) → (특수 효과로 HUD 전체를 화면에 얹고) → 비네트. 모든 조각은 시선을 돌리면 늦게 따라온다(흔들림: 시선 사본이 LerpAngle(10)으로 따라가고 그 차이 x 세기 2만큼 비켜남. 왼쪽으로 돌면 오른쪽으로, 아래를 보면 위로).
+그리는 순서는 원본 `shared.lua`의 HUDPaint 그대로: 체력·방어구 → (우리 프사 판) → 환경 위험 → 탄약·수류탄 → 획득 기록 → 피해 방향 → 무기 선택기(우리 슬롯) → (특수 효과로 HUD 전체를 화면에 얹고) → 비네트. 모든 조각은 시선을 돌리면 늦게 따라온다(흔들림: 시선 사본이 LerpAngle(10)으로 따라가고 그 차이 x 세기 2만큼 비켜남. 왼쪽으로 돌면 오른쪽으로, 아래를 보면 위로).
 
-- **체력** (`cl_health.lua`): 화면 가운데 아래(960, 1009.8), 375 x 7.5 막대, 둘레 3.75 여백의 바탕(검정 알파 50, 모서리 6). 색은 설정의 체력 색(223,255,143), 30% 이하면 빨강(255,0,0)으로 부드럽게 바뀐다. 줄면 줄어든 자리가 주황(255,150,0)으로 남았다가 0.5초 뒤 따라 내려온다. 처음 나올 때 0에서 차오른다.
-- **자극제** (`cl_health.lua`의 stims): 체력 막대 왼쪽 41.25 상자, 구급 십자 그림(알파 150), 오른쪽 위에 개수. 원본은 다른 애드온(메디샷·스팀)의 소지 수인데 우리 게임에서는 **데탕트 주사기에 남은 투약 수**(DetenteKit.Doses)이고, 다른 클래스에게는 없어서 보이지 않는다. 0이면 색이 1/1.75로 어두워진다.
-- **방어구** (`cl_armor.lua`): 체력 바로 밑(sh x 0.03 x 크기 아래) 375 x 6 막대, 10칸(칸마다 뒤 10% 비움), 바탕이 아래로 글자 높이만큼 길고 그 안에 회색(155) 0·50·100. 값 = 실드 / 100(GMod GetMaxArmor 기본: 우리 실드에는 최대가 없다). 100을 넘으면 넘친 만큼 (150,150,255)로, 200을 넘으면 (255,150,20)으로 겹쳐 그린다.
+- **체력** (`cl_health.lua`): 화면 왼쪽 아래(330, 979.8: 영상의 자리. 원본 기본 (960, 1009.8)에서 설정의 가로 -630·세로 -30), 375 x 7.5 막대, 둘레 3.75 여백의 바탕(검정 알파 50, 모서리 6). 색은 설정의 체력 색(223,255,143), 30% 이하면 빨강(255,0,0)으로 부드럽게 바뀐다. 줄면 줄어든 자리가 주황(255,150,0)으로 남았다가 0.5초 뒤 따라 내려온다. 처음 나올 때 0에서 차오른다.
+- **자극제** (`cl_health.lua`의 stims): 체력 막대 왼쪽 41.25 상자(원본은 이 상자를 체력의 가로·세로 설정 전 자리에서 재므로 자극제 가로·세로 기본도 -630, -30), 구급 십자 그림(알파 150), 오른쪽 위에 개수. 원본은 다른 애드온(메디샷·스팀)의 소지 수인데 우리 게임에서는 **데탕트 주사기에 남은 투약 수**(DetenteKit.Doses)이고, 다른 클래스에게는 없어서 보이지 않는다. 0이면 색이 1/1.75로 어두워진다.
+- **방어구** (`cl_armor.lua`): 체력 바로 밑(sh x 0.03 x 크기 아래, 가로·세로 기본 -630, -30) 375 x 6 막대, 10칸(칸마다 뒤 10% 비움), 바탕이 아래로 글자 높이만큼 길고 그 안에 회색(155) 0·50·100. 값 = 실드 / 100(GMod GetMaxArmor 기본: 우리 실드에는 최대가 없다). 100을 넘으면 넘친 만큼 (150,150,255)로, 200을 넘으면 (255,150,20)으로 겹쳐 그린다.
 - **환경 위험** (`cl_hazard.lua`): (772.8, 958.5)에서 오른쪽으로, 23.04 상자. 맞은 피해 종류의 그림이 위험 색(빨강)으로, 바탕이 0.64Hz로 숨쉬며, 위에서 아래로 자라고 다 자라면 위험 색 번쩍임이 한 번 사라진다. 마지막으로 맞은 뒤 5초. 원본의 11가지 중 게임에 있는 것은 **추락**(DamageKind.Fall)과 **폭발**(수류탄 폭발, 자폭 좀비)뿐이다.
-- **탄약** (`cl_ammo.lua`): (1680, 972)에 93.75 x 37.5 탄창 상자(왼쪽에 탄 그림, 오른쪽에 탄 수, 뒤에 흐린 "000"), 그 오른쪽에 56.25 x 37.5 예비 탄약 상자(알파 150), 상자 위에 무기 이름이 대문자로 글자마다 띄어("M X 1 6 A 4"). 탄 수와 예비는 새 숫자로 굴러간다. 탄창 30% 이하면 탄 수가, 예비가 한 탄창 이하면 예비가 빨강. 쏘면 탄창 상자에 빛이 켜진다(광과민 규칙으로 부드럽게: 아래). 근접 무기와 클래스 칼은 원본의 근접 무기처럼 1 / 0, 상자 그림. 탄 그림은 Weapons.csv의 ammo 종류로 고른다: 소총·기관총 = AR2 탄, 권총 = 권총탄, SMG = SMG1, 산탄 = 산탄, 지정사수 = .357, 그 밖(데스페라도 등) = 상자(`PlayerHud.csv AmmoIcon.kinds`).
-- **수류탄** (`cl_ammo.lua`의 eqp): 예비 탄약 상자 위(상자 높이 x 2)에 41.25 상자, 수류탄 그림과 클래스 투척물 개수(PlayerGrenades.Count). 0이면 어두워진다. 원본의 전술 칼 상자는 그 애드온이 없으면 안 나오므로 없다.
+- **탄약** (`cl_ammo.lua`): (1690, 998)(영상의 자리: 원본 기본 (1680, 972)에서 가로 10·세로 26)에 93.75 x 37.5 탄창 상자(왼쪽에 탄 그림, 오른쪽에 탄 수, 뒤에 흐린 "000"), 그 오른쪽에 56.25 x 37.5 예비 탄약 상자(알파 150), 상자 위에 무기 이름이 대문자로 글자마다 띄어("M X 1 6 A 4"). 탄 수와 예비는 새 숫자로 굴러간다. 탄창 30% 이하면 탄 수가, 예비가 한 탄창 이하면 예비가 빨강. 쏘면 탄창 상자에 빛이 켜진다(광과민 규칙으로 부드럽게: 아래). 근접 무기와 클래스 칼은 원본의 근접 무기처럼 1 / 0, 상자 그림. 탄 그림은 Weapons.csv의 ammo 종류로 고른다: 소총·기관총 = AR2 탄, 권총 = 권총탄, SMG = SMG1, 산탄 = 산탄, 지정사수 = .357, 그 밖(데스페라도 등) = 상자(`PlayerHud.csv AmmoIcon.kinds`).
+- **수류탄** (`cl_ammo.lua`의 eqp): 예비 탄약 상자 위(상자 높이 x 2)에 41.25 상자, 수류탄 그림과 클래스 투척물 개수(PlayerGrenades.Count). 영상의 자리는 (1776.5, 943.5): 원본 기본 (1762.5, 889.5)에서 가로 14·세로 54. 0이면 어두워진다. 원본의 전술 칼 상자는 그 애드온이 없으면 안 나오므로 없다.
+- **프사·궁극기·계급** (우리 조각, 애드온에 없음. [PlayerHud.Portrait](../../Assets/_Project/Scripts/UI/Hud/Addons/PlayerHud/PlayerHud.Portrait.cs)): 11-22 사용자: "프사 이 정도로 크게랑 경험치 바랑 탄창 느낌의 궁극기 게이지 살려서 저 디자인으로 개편", 디자인은 애드온 기준, 그것들을 넣으려고 살짝 고칠 수 있다. 체력 막대 바탕 상자 왼끝 위에 서고(사이 7.5) 체력의 가로·세로 설정을 따라 움직이며, 다른 조각처럼 흔들린다. 모두 애드온의 상자(검정 알파 50, 모서리 6, 둘레 3.75)다.
+  - 프사: 프로필 사진 147 x 147(예전 HUD 초상화의 사진·검은 테 크기)을 상자 안에. 사진이 없으면 이름 첫 글자(흰색, 테두리 글자, 글자 칸 = 사진의 반).
+  - 궁극기: 사진 왼쪽 폭 24 세로 막대. 방어구의 칸 막대(BSS_Rect)를 세운 것으로 10칸이 탄창의 탄이다. 1회 소비량만큼 모이면 10칸이 다 흰색으로 차고, 최대 보유량까지 더 모은 몫은 같은 칸을 아래부터 넘침 색(150,150,255)으로 다시 채운다(원본 막대가 값 1을 넘을 때처럼). 쓰면 칸이 줄고 줄어든 자리에 주황이 0.5초 남았다 따라 내려간다.
+  - 계급: 사진 아래 줄. 왼쪽에 자극제 상자 모양의 41.25 상자(이번 판 성장까지 더한 휘장 그림, 알파 150; 이번 판에 오를 휘장 수는 오른쪽 위에 +N), 오른쪽에 사진 상자 오른끝까지 두께 6 막대(BL_Rect: 다음 휘장까지). 회색(155)은 판 시작 때 쌓인 몫, 흰색은 이번 판 처치, 흐린 흰색(알파 150)은 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫이라 돈을 쓰면 줄고 주황이 남는다. 휘장이 바뀌면 막대가 새로 시작한다(주황 없이). 처치 때 이번 판 몫 끝 위로 "+N XP"가 0.9초 동안 7.5 올라가며 사라진다(가까운 처치는 한 숫자로 더한다).
+  - 예전 왼쪽 판의 초상화 타일(HudPortrait, SquarePortrait 재질), 그 옆 탄창(UltimateMagazine, UltMagazine.csv), 휘장 줄(RankStrip, Hud.csv Rank 줄)을 대신한다. 그 셰이더는 콜아웃 통신 화면이 계속 쓴다(Resources/Combat/Shaders).
 - **획득 기록** (`cl_history.lua`): (1392, 810) 위로 쌓인다. 줄마다 그림(22.5, 탄은 탄 그림, 나머지는 상자) + "이름*개수", 흐린 바탕(알파 50). 같은 것을 또 주우면 그 줄의 개수가 늘며 굴러간다. 순번 k인 줄은 2 + 3k초 보이고, 5번째부터 흐려진다.
 - **피해 방향** (`cl_indicator.lua`): 화면 가운데에서 반지름 270 고리 위, 맞은 쪽(위 = 앞)에 호. 처음 162 두께 30°에서 0.28초에 15%까지 얇아지고 2°로 좁아진 뒤 1초에 걸쳐 사라진다(넓어지며). 색: 맞음 (200,30,30), 실드가 있으면 (200,200,200), 폭발 (255,170,64). 공격자마다 하나(같은 공격자가 또 때리면 그 호가 다시 시작).
 - **무기 선택기 = 우리 슬롯** (자리와 배치는 우리 슬롯, 그리기는 `cl_selector.lua`): 사용자: "무기 슬롯 1,2,3,4번 그거는 기존 방식이 더 맘에 들어. 기존 방식으로 디자인만 바꿔서", 자리는 "예전 자리(오른쪽)". 우리 슬롯(WeaponSlotsHUD의 기본 모양 A "조각 판", WeaponSlots.csv `Plates`)에서 그대로: 화면 오른쪽에 1~4번이 위에서 아래로 쌓이고, 쌓인 상자의 오른쪽 끝이 화면 오른쪽 끝에서 70px 안(1080p에서 x = 1850), 가운데가 화면 가운데보다 14px 위(y = 526). 상자 240 x 60, 사이 14, 슬롯마다 왼쪽으로 0·10·3·14px 나와 있다. 손에 든 슬롯은 스프링으로 240 x 80까지 커지고(0.14초, 살짝 넘었다 돌아옴), 바꿔 드는 순간 왼쪽으로 14px 툭 나왔다가 +3px까지 지나쳐 0.16초에 제자리. 근접 칸이 비면 클래스 칼, 빈 슬롯은 자리를 지키며 "비어 있음"(hud.weapon_slot.empty)을 쓴다. 바꾸기·줍기·채우기·탄 변화(PlayerWeaponSlots.SlotActivity) 뒤 3초 보이고 1초에 사라진다. 보이는 동안 오른쪽 가장자리 자리를 차지해(HudRoom) 콜아웃 창이 비켜 간다. 크기·간격·튀어나옴은 설정의 크기를 곱하고, 설정의 가로·세로 위치만큼 옮긴다. 선택기에서 그대로: 상자 안 가운데 위에 이름(대문자, Nene.Selector), 아래에 "탄/예비"(근접은 "1", Nene.Ammo), 왼쪽 위에 탄 그림(상자 높이의 1/3, 알파 150). 손에 든 슬롯: 선택기 색 알파 200 상자에 검은 글자, 나머지: 검정 알파 50 상자에 선택기 색 글자, 탄창 30% 이하면 빨간 글자(색은 빠르기 10으로 바뀐다). 슬롯을 바꾸면 원본의 `Select` 소리(select.wav, 피치 0.8~1.1). 쓰지 않은 것: 선택기의 화면 가운데 가로 줄(고른 상자로 미끄러지고 멀수록 흐려짐), 고르는 방식, 확정의 `Click` 소리. 조각 판의 잘린 모서리·기울기·번호 칸·분홍 테두리·흰 번쩍임·무기 그림·이름 줄(상자의 생김새는 선택기 것이다).
@@ -36,13 +43,13 @@
 | `hide` | 0 | `hide` | 기본 > 체력·방어구 자동 숨기기 |
 | `sway_intensity` | 2 (1~5) | `swayIntensity` | 기본 > 흔들림 세기 |
 | `scale` | 1 (0~3) | `scale` | 기본 > 크기 |
-| `font` | Unifont | `font` | 기본 > 글꼴 (AddonFonts.csv의 이름: Unifont, EvanstonTavernM, Hitmarker Text…; 없는 이름은 Label 글꼴) |
-| `weight` | 2 (0~5) | `weight` | 기본 > 글자 굵기 (500 x 값, 550을 넘으면 굵게) |
-| `health`, `health_x/y`, `health_color_r/g/b/a` | 1, 0, 0, (223,255,143,255) | `health`, `healthX/Y`, `healthColor` | 체력 |
-| `stims`, `stims_x/y` | 1, 0, 0 | `stims`, `stimsX/Y` | 자극제 |
-| `armor`, `armor_x/y`, `armor_color_*` | 1, 0, 0, 흰색 | `armor`, `armorX/Y`, `armorColor` | 방어구 |
-| `weapon`, `weapon_x/y`, `weapon_color_*` | 1, 0, 0, 흰색 | `weapon`, `weaponX/Y`, `weaponColor` | 탄약 |
-| `eqp`, `eqp_x/y`, `eqp_color_*` | 1, 0, 0, 흰색 | `eqp`, `eqpX/Y`, `eqpColor` | 수류탄 |
+| `font` | Hitmarker Normal (영상. 원본 Unifont) | `font` | 기본 > 글꼴 (AddonFonts.csv의 이름: Hitmarker Normal, Unifont, EvanstonTavernM, Hitmarker Text…; 없는 이름은 Label 글꼴; 비우면 Hitmarker Normal) |
+| `weight` | 1 (영상: 보통 굵기로 잰 글자 폭. 원본 2) (0~5) | `weight` | 기본 > 글자 굵기 (500 x 값, 550을 넘으면 굵게) |
+| `health`, `health_x/y`, `health_color_r/g/b/a` | 1, -630, -30 (영상. 원본 0, 0), (223,255,143,255) | `health`, `healthX/Y`, `healthColor` | 체력 |
+| `stims`, `stims_x/y` | 1, -630, -30 (체력 옆에 붙게. 원본 0, 0) | `stims`, `stimsX/Y` | 자극제 |
+| `armor`, `armor_x/y`, `armor_color_*` | 1, -630, -30 (영상. 원본 0, 0), 흰색 | `armor`, `armorX/Y`, `armorColor` | 방어구 |
+| `weapon`, `weapon_x/y`, `weapon_color_*` | 1, 10, 26 (영상. 원본 0, 0), 흰색 | `weapon`, `weaponX/Y`, `weaponColor` | 탄약 |
+| `eqp`, `eqp_x/y`, `eqp_color_*` | 1, 14, 54 (영상. 원본 0, 0), 흰색 | `eqp`, `eqpX/Y`, `eqpColor` | 수류탄 |
 | `selector`, `selector_x/y`, `selector_color_*` | 1, 0, 0, 흰색 | `selector`, `selectorX/Y`, `selectorColor` | 무기 선택기 |
 | `hazards`, `hazards_x/y`, `hazards_color_*` | 1, 0, 0, (255,0,0,255) | `hazards`, `hazardsX/Y`, `hazardsColor` | 환경 위험 |
 | `sense` | 1 | `sense` | 표시기 > 피해 방향 표시 |
@@ -88,15 +95,16 @@
 
 - 소리: `Art/Audio/Addons/PlayerHud/Select/select.wav`(원본 그대로, 키 `PlayerHud/Select`). 3kHz·6kHz가 강한 소리지만 거르지 않는다(사용자 11-22: "원본 그대로").
 - 그림: `Art/Resources/UI/Addons/PlayerHud/`의 `weapon`(상자), `ammotype/1~10`, `stims`, `fall`, `blast`, `vig`(원본 vtf/png를 원래 크기로, `Tools/HudAddons/addon_picture.py`).
-- 글꼴: `Art/Resources/UI/Fonts/unifont.ttf`(원본 unifont13.0.01.ttf, 기본 글꼴), `evanstontavernm.ttf`(글꼴 칸에 쓸 수 있는 원본 글꼴).
+- 글꼴: `Art/Resources/UI/Fonts/hitmarker-normal-regular.ttf`(애드온이 함께 주는 hitmarkernormal-regular.ttf, 영상의 글꼴이라 기본), `unifont.ttf`(원본 unifont13.0.01.ttf, 애드온 원래 기본), `evanstontavernm.ttf`(글꼴 칸에 쓸 수 있는 원본 글꼴). Hitmarker에 없는 한글은 TMP의 공용 대체 글꼴로 그린다.
 
 ## 수치
 
-모두 [Tables/Hud/PlayerHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/PlayerHud.csv)(PlayerHudLook): `Hud.*`, `Colour.*`, `Font.*`, `Place.*`, `Bar.*`, `Status.*`, `Ammo.*`, `AmmoIcon.*`, `History.*`, `Hazard.*`, `Sense.*`, `Flare.*`, `Fx.*`, `Slots.*`. 크기는 원본 px(Scale을 곱한다), 자리는 화면 절반의 배수. `Slots.*`의 자리·크기는 우리 슬롯의 1080p px(설정의 크기만 곱한다).
+모두 [Tables/Hud/PlayerHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/PlayerHud.csv)(PlayerHudLook): `Hud.*`, `Colour.*`, `Font.*`, `Place.*`, `Bar.*`, `Status.*`, `Ammo.*`, `AmmoIcon.*`, `History.*`, `Hazard.*`, `Sense.*`, `Flare.*`, `Fx.*`, `Slots.*`, `Portrait.*`(우리 프사 판). 크기는 원본 px(Scale을 곱한다), 자리는 화면 절반의 배수. `Slots.*`의 자리·크기는 우리 슬롯의 1080p px(설정의 크기만 곱한다).
 
 ## 게임과의 연결
 
 - 스스로 듣는 것: 로컬 플레이어의 `PlayerDamageReceiver.HitResolved`(맞음: 피해 방향, 위험 칸, 글리치, 비네트, 흔들림; 잡기는 상처가 아니라 빼고), 체력 증가(회복 비네트), `PlayerWeaponSlots.SlotActivity`(슬롯 보이기)와 `SelectionChanged`(Select 소리).
 - 불러 주어야 하는 것(줍기): `PlayerHudModule.AmmoPicked(gun, rounds)`, `ThrowablesPicked(count)`, `ItemPicked(name)`, `WeaponPicked(gun)` — 원본의 HUDAmmoPickedUp / HUDItemPickedUp / HUDWeaponPickedUp. FieldPickups에서.
 - 켜기: `HudAddons.Boot.Install`의 `PlayerHudModule.Install()`.
-- 켜져 있는 동안(`PlayerHudModule.On`: 설정의 사용, 기본 켬) 같은 일을 하는 우리 조각은 그리지 않는다: 체력·실드 막대와 그 조각·숫자(AdaptiveHealthHUD, HealthBarFlair; 자세 그림은 그대로), 탄약 표시(AmmoHUD), 무기 슬롯 판(WeaponSlotsHUD), 투척물 판(GrenadeHUD), 획득 목록(PickupFeedHUD), 피해 방향 호와 맞을 때 시점 흔들림(PlayerDamageFeedback; 피는 그대로). 애드온에 없는 우리 조각(목표, 동료 카드, 클래스 판·설치 줄·지속 효과, 초상화·궁극기 탄창, 킬 피드, 돈)은 그대로 보인다. 사용을 끄면 우리 조각이 다시 나온다.
+- 켜져 있는 동안(`PlayerHudModule.On`: 설정의 사용, 기본 켬) 같은 일을 하는 우리 조각은 그리지 않는다: 체력·실드 막대와 그 조각·숫자(AdaptiveHealthHUD, HealthBarFlair; 자세 그림은 그대로), 탄약 표시(AmmoHUD), 무기 슬롯 판(WeaponSlotsHUD), 투척물 판(GrenadeHUD), 획득 목록(PickupFeedHUD), 피해 방향 호와 맞을 때 시점 흔들림(PlayerDamageFeedback; 피는 그대로). 애드온에 없는 우리 조각(목표, 동료 카드, 클래스 판·설치 줄·지속 효과, 킬 피드, 돈)은 그대로 보인다. 사용을 끄면 우리 조각이 다시 나온다. 프사·궁극기·계급은 이 모듈이 그리므로 사용을 끄면 함께 없다.
+- 프사 판이 읽는 것: `ProfilePicture.Current`(없으면 `GameSettings.DisplayName`의 첫 글자), 로컬 플레이어의 `UltimateCharge`(CurrentCharge / RequiredCharge), `RankProgress.Now()`, `ClassGrowth.Insignia`.

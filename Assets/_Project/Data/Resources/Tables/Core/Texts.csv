@@ -19,7 +19,7 @@ settings.addon.playerhud.sway,흔들림,Sway,"설정 창 > HUD > 플레이어 HU
 settings.addon.playerhud.hide,체력·방어구 자동 숨기기,Hide Health & Armor Automatically,"설정 창 > HUD > 플레이어 HUD > 기본 > 행: 맞은 뒤 3초만 체력·방어구가 보인다",
 settings.addon.playerhud.sway_intensity,흔들림 세기,Sway Intensity,"설정 창 > HUD > 플레이어 HUD > 기본 > 행(패널 Intensity, 1~5)",
 settings.addon.playerhud.scale,크기,Scale,"설정 창 > HUD > 플레이어 HUD > 기본 > 행(0~3)",
-settings.addon.playerhud.font,글꼴,Font,"설정 창 > HUD > 플레이어 HUD > 기본 > 행: 글꼴 이름을 적는 칸(기본 Unifont, EvanstonTavernM도 있다)",
+settings.addon.playerhud.font,글꼴,Font,"설정 창 > HUD > 플레이어 HUD > 기본 > 행: 글꼴 이름을 적는 칸(기본 Hitmarker Normal: 영상의 글꼴. Unifont, EvanstonTavernM도 있다)",
 settings.addon.playerhud.weight,글자 굵기,Text Weight,"설정 창 > HUD > 플레이어 HUD > 기본 > 행(0~5)",
 settings.addon.playerhud.x,가로 위치,Horizontal Offset,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 행: 원래 자리에서 옮기는 px",
 settings.addon.playerhud.y,세로 위치,Vertical Offset,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 행: 원래 자리에서 옮기는 px",
@@ -1470,7 +1470,7 @@ special.lastround,LAST ROUND,LAST ROUND,특수 처치: 탄창의 마지막 한 �
 special.lastround.note,탄창의 마지막 한 발로,With the magazine's last round,특수 처치 도장의 이유 줄
 special.savior,SAVIOR,SAVIOR,특수 처치: 동료를 붙잡은(잡기·먹기·깔기) 좀비를 처치했을 때
 special.savior.note,동료를 붙든 놈을,The one holding a teammate,특수 처치 도장의 이유 줄
-hud.rank.gain,+{0} XP,+{0} XP,초상화 아래 휘장 줄: 처치 때 막대 위에 잠깐 뜨는 경험치
+hud.rank.gain,+{0} XP,+{0} XP,HUD 프사 판의 계급 막대: 처치 때 막대 위에 잠깐 뜨는 경험치
 score.rank.game,이번 판 +{0} 경험치,This game +{0} XP,Tab 화면 휘장 막대 아래: 이번 판에 번 성장
 score.rank.split,(처치 +{0} · 남긴 돈 몫 +{1}),(kills +{0} · money kept +{1}),Tab 화면: 이번 판 성장의 내역. 판이 끝날 때 가진 돈의 절반도 성장이 된다
 score.rank.kill,처치 하나 +{0} 경험치 · 헤드샷 처치 +{1},A kill +{0} XP · a headshot kill +{1},Tab 화면: 처치 하나가 주는 경험치

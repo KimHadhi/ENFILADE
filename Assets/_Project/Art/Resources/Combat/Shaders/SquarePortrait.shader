@@ -1,11 +1,12 @@
-// The HUD portrait tile (HudPortrait), drawn whole on one square quad, back to front:
+// The callout feed's window tile (CalloutFeedHUD), drawn whole on one square quad, back to front:
 //   two slabs leaning behind it at their own angles (pink peeking out top left, a black shadow bottom right), Persona-style;
 //   a black mat around the picture;
-//   the picture (the player's profile picture, ProfilePicture) with two corners cut like the menus' cards (KitStyle.Cut),
+//   the picture (the caller's face) with two corners cut like the menus' cards (KitStyle.Cut),
 //   a thin near-white edge, a soft dark vignette and the pink bar along its foot, as on the lobby's profile chip;
-//   a faint frame line on the mat, with faint corner brackets on it.
-// _GlowColor, _GlowIntensity and _GlowBloomSpread could be driven by UltimatePortraitGlow; since round 4 (2026-11-11) the
-// ultimate is the magazine beside the tile (UltimateMagazine), so that is off and the brackets stay a faint white.
+//   a faint frame line on the mat, with faint corner brackets on it (a faint white glow).
+// It was the HUD portrait's tile until 2026-11-22, when the portrait went into the HUD Mk II boxes (HudAddons.PlayerHud);
+// the defaults below are that portrait material's, so the window keeps its look. In Resources/Combat/Shaders so a build
+// has it for Shader.Find, and the first fight's warm-up (CombatRehearsal) draws it with the rest.
 // Sizes are fractions of the quad's side (the quad is square). Output is premultiplied, so the glow adds light.
 Shader "UI/Custom/SquarePortrait"
 {
@@ -44,9 +45,9 @@ Shader "UI/Custom/SquarePortrait"
         _FrameColor ("Faint Frame Line Color", Color) = (1, 0.96, 0.97, 0.18)
 
         [Header(Glow)]
-        _GlowColor ("Glow Color", Color) = (1, 0.31, 0.47, 1)
-        _GlowIntensity ("Glow Intensity", Range(0.0, 10.0)) = 1.0
-        _GlowBloomSpread ("Glow Spread", Range(0.001, 0.06)) = 0.005
+        _GlowColor ("Glow Color", Color) = (1, 0.96, 0.97, 1)
+        _GlowIntensity ("Glow Intensity", Range(0.0, 10.0)) = 0.3
+        _GlowBloomSpread ("Glow Spread", Range(0.001, 0.06)) = 0.003
 
         // --- UGUI Canvas ---
         [HideInInspector] _StencilComp ("Stencil Comparison", Float) = 8

@@ -6,8 +6,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Where the class played now stands on its insignia ladder while a game is on, read for the HUD (RankStrip under the
-/// portrait, the Tab screen): the growth it had when the game began, what this game has added so far (kills, and the
+/// Where the class played now stands on its insignia ladder while a game is on, read for the HUD (the rank row under the
+/// portrait, HudAddons.PlayerHud.Portrait; the Tab screen): the growth it had when the game began, what this game has added so far (kills, and the
 /// share of the money held that counts when it ends), the insignia that adds up to, and the way to the next. The user
 /// asked for it during play (2026-11-11: "경험치를 얼마나 받는지 잘 모르겠음 ... 내 현재 랭크가 어딘지, 그리고 지금까지
 /// 내가 번 경험치로 나는 내 랭크를 얼마나 성장시킬 수 있는지 게임을 플레이하면서 바로 직관적으로"), which overturns the

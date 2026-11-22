@@ -8,11 +8,14 @@ namespace HudAddons
     /// (cl_ammo), the pickup history (cl_history), the damage direction arcs (cl_indicator), the weapon selector's boxes
     /// (cl_selector, drawn for our weapon slots), all on one painter, swaying with the view; then the damage, heal and armour
     /// vignette (cl_effects) over it, and the view shake on the camera. With the special effects on (sfx.lua) the painter's
-    /// canvas goes through PlayerHudFx: scanlines, red and cyan copies, the glitch on a hit.
+    /// canvas goes through PlayerHudFx: scanlines, red and cyan copies, the glitch on a hit. Our own portrait, ultimate and
+    /// rank stand over the health bar in the addon's boxes (PlayerHud.Portrait). The defaults set it as the video the
+    /// user gave shows it (PlayerHudOptions): the bars at the foot of the left side, the Hitmarker Normal face.
     /// <para>What it reads, never writes: the local player's PlayerDamageReceiver (health, shield, its HitResolved event: the
     /// addon's EntityTakeDamage net messages), PlayerWeaponSlots (the held slot, each slot's weapon and rounds, its
     /// SlotActivity and SelectionChanged events: our slots' own showing), PlayerGrenades (the grenade box), DetenteKit
-    /// (the stims box: a Détente's doses). Pickups come in through PlayerHudModule (FieldPickups).</para>
+    /// (the stims box: a Détente's doses), the player's UltimateCharge, ProfilePicture and RankProgress (the portrait
+    /// panel). Pickups come in through PlayerHudModule (FieldPickups).</para>
     /// <para>The addon's frame-rate bound Lerp(FrameTime() * k) runs as Smooth's time-based equivalent, on unscaled time, so
     /// a paused game's HUD still settles. Nothing is allocated a frame: texts are rebuilt only when what they say changes.</para>
     /// </summary>
@@ -121,6 +124,7 @@ namespace HudAddons
 
             painter.Begin();
             DrawStatus(o);
+            DrawPortrait();
             DrawHazards(o);
             DrawAmmo(o);
             if (o.history) DrawHistory(o);

@@ -8,7 +8,6 @@ Mission,group,목표 블록의 틀. 목표 바·Tab 키 칸·'목표·점수판'
 Assault Time,piece,캠페인이 시끄러울 때 목표 바 아래 단계 줄(비스듬한 단계 판·지난 시간·습격 구간이 분홍인 노래 선·전체 길이). 목표 바와 따로 잰다
 Right Plane,group,런타임 HUD 캔버스의 오른쪽 면(킬 피드·돈·콜아웃 통신 화면)
 Left Plane,group,런타임 HUD 캔버스의 왼쪽 면(아군 카드)
-HPCharacterRoot,piece,체력 블록의 초상화 칸(랭크 띠 포함)
 HPTextRoot,piece,체력 블록의 숫자 줄
 HPHealthBar,piece,체력바(실드 띠·위험 표시·회복 +N 포함)
 HPUltRoot,piece,궁극기 탄창

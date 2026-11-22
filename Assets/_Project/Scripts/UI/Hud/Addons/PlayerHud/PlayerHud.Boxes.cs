@@ -9,7 +9,7 @@ namespace HudAddons
     public sealed partial class PlayerHud
     {
         // configs.lua's fonts (Nene.Label, Mags, Ammo, Alts, History, Selector), made again when what they hang on changes.
-        private HudFont labelFont, magsFont, ammoFont, altsFont, historyFont, selectorFont;
+        private HudFont labelFont, magsFont, ammoFont, altsFont, historyFont, selectorFont, initialFont;
         private float fontWidth = -1f, fontScale = -1f, fontWeight = -1f;
         private string fontFace;
         // Nene.Config.Colors this frame.
@@ -18,7 +18,7 @@ namespace HudAddons
 
         private void MeasureFonts(PlayerHudOptions o)
         {
-            string face = string.IsNullOrWhiteSpace(o.font) ? look.Font.face : o.font;
+            string face = o.font;
             if (screenWidth == fontWidth && o.scale == fontScale && o.weight == fontWeight && face == fontFace && labelFont != null) return;
             fontWidth = screenWidth;
             fontScale = o.scale;
@@ -32,6 +32,8 @@ namespace HudAddons
             altsFont = HudFont.Get(face, sw * f.alts * o.scale, weight);
             historyFont = HudFont.Get(face, sw * f.history * o.scale, weight);
             selectorFont = HudFont.Get(face, sw * f.selector * o.scale, weight);
+            var p = look.Portrait;
+            initialFont = HudFont.Get(face, p.size * scale * p.initial, weight);
         }
 
         private void MeasureColours()
@@ -101,6 +103,12 @@ namespace HudAddons
                     last = value;
                 }
                 if (now >= holdUntil) Loss = Smooth.Lerp(row.lossFollow, Loss, value);
+            }
+
+            /// <summary>Stands at the value at once with nothing lost under it (a bar that starts over, not one that fell).</summary>
+            public void Snap(float value)
+            {
+                Fill = Loss = last = value;
             }
         }
 

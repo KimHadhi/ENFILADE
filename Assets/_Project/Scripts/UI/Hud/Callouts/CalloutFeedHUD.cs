@@ -16,8 +16,8 @@ using UnityEngine.UI;
 /// in the way (as the third-person camera does), and draws the caller's third-person body with its gun; this PC's own
 /// player is drawn whole for it, the head that first person shows only as a shadow included (HubMirror does the same).
 /// One camera serves every window in turn, at most one small render a frame, only while a window shows; no MSAA, HDR,
-/// post or shadows, a short far plane, occlusion culling on. The window is the HUD portrait's tile (SquarePortrait
-/// shader: leaning slabs, black mat, cut corners, brackets) with the caller's name in their seat colour, in a column on
+/// post or shadows, a short far plane, occlusion culling on. The window is a SquarePortrait tile (the shader the old HUD
+/// portrait was drawn with: leaning slabs, black mat, cut corners, brackets) with the caller's name in their seat colour, in a column on
 /// the right edge between the kill feed and the ammo, each leaning at its own angle (hud-tilt rule). It lasts as long as
 /// the voice plus Feed.linger, then fades; at most Feed.most at once, the oldest giving way. Every PC makes its own from
 /// its copy of the caller when CalloutRpc arrives (PlayerCallouts.Hear → PlayerFace.Said): nothing more goes over the
@@ -224,19 +224,13 @@ public sealed class CalloutFeedHUD : MonoBehaviour
         window.tag.color = named ? tally.Color : KitStyle.Accent;
     }
 
-    // The HUD portrait's own tile look (its material when the HUD has one, else the shader), with a larger picture.
+    // The tile's look with a larger picture (the shader ships in Resources/Combat/Shaders, so a build has it to find).
     private Material Tile(float half)
     {
         if (tile != null) return tile;
-        Material source = null;
-        var portrait = FindAnyObjectByType<HudPortrait>(FindObjectsInactive.Include);
-        if (portrait != null && portrait.TryGetComponent(out RawImage image) && image.material != null
-            && image.material.shader != null && image.material.shader.name == TileShader)
-            source = image.material;
-        var shader = source != null ? source.shader : Shader.Find(TileShader);
+        var shader = Shader.Find(TileShader);
         if (shader == null) return null;
-        tile = source != null ? new Material(source) : new Material(shader);
-        tile.hideFlags = HideFlags.HideAndDontSave;
+        tile = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
         tile.SetFloat("_Half", half);
         tile.SetFloat("_SlabHalf", Mathf.Min(.48f, half + .03f));
         tile.SetFloat("_ShadowHalf", Mathf.Min(.48f, half + .025f));

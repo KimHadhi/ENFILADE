@@ -28,7 +28,7 @@ using Object = UnityEngine.Object;
 [DisallowMultipleComponent]
 internal sealed class CombatRehearsal : MonoBehaviour
 {
-    private const string ShaderFolder = "Combat/Shaders", FeedTileShader = "UI/Custom/SquarePortrait";
+    private const string ShaderFolder = "Combat/Shaders";
     // The callout feed's picture and lens, as CalloutFeedHUD makes them (Faces.csv Feed.size 256, fov 34, near 0.05).
     private const int FaceSize = 256;
     private const float FaceFov = 34f, FaceNear = .05f, FaceFar = 40f, FaceDistance = .85f;
@@ -95,9 +95,6 @@ internal sealed class CombatRehearsal : MonoBehaviour
             if (shader != null && shader.isSupported) steps.Add(() => Quad(Own(new Material(shader) { name = shader.name + " (Rehearsal)" })));
         // The grey of a frag's thrown grit, and of a throwable drawn from plain shapes.
         steps.Add(() => Quad(Throwables.Look(Color.gray)));
-        // The callout feed's picture tile (CalloutFeedHUD), a UI shader found by name.
-        var tile = Shader.Find(FeedTileShader);
-        if (tile != null && tile.isSupported) steps.Add(() => Quad(Own(new Material(tile) { name = FeedTileShader + " (Rehearsal)" })));
 
         var gore = GoreLibrary.Instance;
         if (gore != null)
