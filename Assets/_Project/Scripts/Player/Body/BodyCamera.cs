@@ -128,13 +128,12 @@ internal sealed class BodyCamera
     /// <summary>
     /// Puts the camera on this frame's eyes. <paramref name="eye"/> is where they ended up, and <paramref name="eyeBefore"/>
     /// where they were before the lean's hanging arm, the face's clearance and the head's turn to the gaze; a camera steadied
-    /// off the eyes keeps that move. <paramref name="carried"/> and <paramref name="makesUp"/> are the lean's
-    /// (BodyLean.Carry, BodyLean.CameraMakesUp). <paramref name="gaze"/> is where the view looks and <paramref name="input"/>
+    /// off the eyes keeps that move. <paramref name="gaze"/> is where the view looks and <paramref name="input"/>
     /// where the mouse alone has it. The sweep goes past <paramref name="ignored"/>. <paramref name="dt"/> and
     /// <paramref name="swayTime"/> (s) ease the path the camera follows with less body sway (GameSettings.bodySway).
     /// <paramref name="calm"/> is the share of the eyes' sway it keeps to that path on top (running, PlayerBody.runCalm).
     /// </summary>
-    internal void Place(Vector3 eye, Vector3 eyeBefore, Vector3 carried, float makesUp, Quaternion gaze, Quaternion input, Transform ignored,
+    internal void Place(Vector3 eye, Vector3 eyeBefore, Quaternion gaze, Quaternion input, Transform ignored,
         float dt = 0f, float swayTime = 0f, float calm = 0f, float hold = 0f)
     {
         if (view == null) return;
@@ -142,10 +141,8 @@ internal sealed class BodyCamera
         Turn(gaze, input);
         // Combat's head moves (a slip's dip) go on the eyes as they are; the head then bends to the camera (HeadReach).
         Vector3 headMove = effects != null ? effects.HeadDisplacement : Vector3.zero;
-        // The Q/E lean's whole peek (wall-limited by the camera effects), the share the camera makes up.
-        Vector3 lean = (effects != null ? effects.LeanDisplacement : owner.right * player.LeanOffset) * makesUp;
         Vector3 riding = Sway(eye, anchor, dt, swayTime, calm, hold);
-        Vector3 target = Vector3.Lerp(anchor + lean + eye - eyeBefore, riding + lean - carried * makesUp, eyeWeight) + headMove;
+        Vector3 target = Vector3.Lerp(anchor + eye - eyeBefore, riding, eyeWeight) + headMove;
         // The pose cleared the wall first; this stable capsule-to-eye sweep is the final guard for any remaining contact.
         clearance.Ignored = ignored;
         view.position = clearance.Resolve(SafeAnchor(), target, Radius(), Blockers, owner);

@@ -54,7 +54,6 @@ public sealed class PlayerCameraEffects : MonoBehaviour
     private WeaponController weapon;
     internal Vector3 CameraLocalHome => baseCameraPosition;
     internal Vector3 CameraAnchorPosition => targetCamera.parent.TransformPoint(baseCameraPosition);
-    internal Vector3 LeanDisplacement { get; private set; }
     /// <summary>Where combat's head moves put the eyes this frame (CombatHeadMotion.Offset, in the world). The body adds it too.</summary>
     internal Vector3 HeadDisplacement { get; private set; }
     private CombatHeadMotion headMotion;
@@ -181,25 +180,21 @@ public sealed class PlayerCameraEffects : MonoBehaviour
 
     private void ApplyLeanPosition()
     {
+        // Combat's head moves (a slip's dip): right, up and forward of the body, on top of everything, as asked.
+        var head = HeadMotion;
+        HeadDisplacement = head != null ? movement.transform.TransformDirection(head.Offset) : Vector3.zero;
+        if (body == null) body = movement.GetComponent<PlayerBody>();
+        // The visible body composes the final eye view after these effects and moves the leaning hitboxes to where its eyes
+        // went (BodyLean). Without a body, the pivot camera goes sideways by the lean.
+        if (body != null && body.isActiveAndEnabled && body.BodyAnimator != null && body.View == targetCamera) return;
         Vector3 origin = targetCamera.parent.TransformPoint(baseCameraPosition);
-        // A lean peeks sideways without dragging the eye down as camera roll increases.
         Vector3 offset = movement.transform.right * movement.LeanOffset;
         float distance = offset.magnitude;
         if (distance > 0.001f && Physics.SphereCast(origin, 0.1f, offset / distance, out RaycastHit hit,
             distance + 0.02f, movement.groundLayers, QueryTriggerInteraction.Ignore))
             offset *= Mathf.Clamp01((hit.distance - 0.02f) / distance);
-        LeanDisplacement = offset;
-        // Combat's head moves (a slip's dip): right, up and forward of the body, on top of everything, as asked.
-        var head = HeadMotion;
-        HeadDisplacement = head != null ? movement.transform.TransformDirection(head.Offset) : Vector3.zero;
-        if (body == null) body = movement.GetComponent<PlayerBody>();
-        // The visible body composes the final eye view after these effects. Without a body, keep the pivot camera.
-        // The visible body then moves the leaning hitboxes to where its eyes went (BodyLean).
-        if (body == null || !body.isActiveAndEnabled || body.BodyAnimator == null || body.View != targetCamera)
-        {
-            targetCamera.position = origin + offset + HeadDisplacement;
-            movement.GetComponent<PlayerLeanHitboxes>().OrNull()?.Sync(offset);
-        }
+        targetCamera.position = origin + offset + HeadDisplacement;
+        movement.GetComponent<PlayerLeanHitboxes>().OrNull()?.Sync(offset);
     }
 
     // How far down the sights the held gun is (0 at the hip or high ready, 1 aimed), for the zoom and the still view.

@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Q/E: the lean the key holds, and the slip a micro dodge makes when it catches a real blow (MicroSlip): out to just
-/// clear the blow's line, held while it goes by, then back to the held lean. The body never moves; only the lean does,
+/// Q/E: the lean the key holds, and the slip a micro dodge makes when it catches a real blow (MicroSlip): all the way over,
+/// held while the blow goes by, then back to the held lean. The body never moves; only the lean does,
 /// so the camera, the body's bend, the upper body's hit volumes and the other PCs all follow it as they follow a lean.
 /// </summary>
 public sealed class MovementLean
@@ -13,7 +13,10 @@ public sealed class MovementLean
     private float slipTime = -1f, slipStart;
     private int slipSide, slipActivation;
     public float Roll => -lean * ctx.AbilitySettings.leanAngle;
-    public float Offset => lean * ctx.AbilitySettings.leanOffset;
+    public float Offset => lean * Reach;
+    /// <summary>How far a full lean takes the eyes sideways (m), as the body leans (BodyLean measures it); this where there
+    /// is no body.</summary>
+    internal float Reach { get; set; } = .16f;
     /// <summary>How far the lean has gone, -1 to 1. Carried to the other PCs as it is.</summary>
     internal float Share { get => lean; set => lean = held = value; }
     /// <summary>
@@ -55,10 +58,8 @@ public sealed class MovementLean
         var slip = MicroSlip.For(ctx);
         if (slip == null) { slipTime = -1f; lean = held; return; }
         slipTime += Mathf.Min(.05f, Time.unscaledDeltaTime);
-        float room = Mathf.Abs(CollisionLimitedLean(slipSide));
-        float clear = Mathf.Min(room, slip.Clearance / Mathf.Max(.01f, ctx.AbilitySettings.leanOffset));
-        // Out at least as far as the slip needs, further if the key holds the lean further that way.
-        float outward = slipSide * Mathf.Max(clear, held * slipSide);
+        // All the way over, as far as a wall lets it.
+        float outward = slipSide * Mathf.Max(Mathf.Abs(CollisionLimitedLean(slipSide)), held * slipSide);
         float back = slip.SlipSeconds + slip.HoldSeconds;
         if (slipTime < slip.SlipSeconds) lean = Mathf.Lerp(slipStart, outward, Ease.Out(slipTime / slip.SlipSeconds));
         else if (slipTime < back) lean = outward;
@@ -82,8 +83,8 @@ public sealed class MovementLean
         if (side == 0) return 0f;
         Vector3 eye = ctx.transform.position + Vector3.up * (ctx.IsCrouching ? ctx.CrouchColliderHeight : ctx.StandingColliderHeight) * .85f;
         if (Physics.SphereCast(eye, .12f, ctx.transform.right * side, out RaycastHit hit,
-            ctx.AbilitySettings.leanOffset + .08f, ctx.groundLayers, QueryTriggerInteraction.Ignore))
-            target *= Mathf.Clamp01((hit.distance - .03f) / Mathf.Max(.01f, ctx.AbilitySettings.leanOffset));
+            Reach + .08f, ctx.groundLayers, QueryTriggerInteraction.Ignore))
+            target *= Mathf.Clamp01((hit.distance - .03f) / Mathf.Max(.01f, Reach));
         return target;
     }
     internal void Reset() { lean = held = slipStart = 0f; slipTime = -1f; slipSide = slipActivation = 0; }

@@ -2,8 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Separate combat volumes while peeking; the locomotion capsule remains planted behind cover. The upper one goes where the
-/// visible body's eyes went holding a gun or the fists, by the lean's whole distance with nothing in hand (BodyLean.Carry),
-/// or by the lean's distance where no body poses them.
+/// visible body's eyes went (BodyLean.Carry), or by the lean's reach where no body poses them.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.LeanHitboxes)]
 public sealed class PlayerLeanHitboxes : MonoBehaviour
@@ -23,7 +22,7 @@ public sealed class PlayerLeanHitboxes : MonoBehaviour
         Sync(offset);
     }
 
-    // The body's measure while it keeps coming (it is from the end of the last frame), else the lean's distance.
+    // The body's measure while it keeps coming (it is from the end of the last frame), else the lean's reach.
     private Vector3 Offset => Time.frameCount - eyesFrame <= 2 ? eyesOffset : player.transform.right * player.LeanOffset;
     private void Awake()
     {

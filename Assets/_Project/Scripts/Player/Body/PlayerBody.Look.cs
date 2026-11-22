@@ -134,7 +134,7 @@ public sealed partial class PlayerBody
         bodyGaze.Reset(transform, lookPivot);
         TuneGaze();
         bodyLean.Reset(player, transform, body, head, spineLook, HoldsGun);
-        TuneLean(0f);
+        TuneLean();
         SetUpAimSteady();
         if (head == null) return;
         // Imported avatars need not face their prefab's +Z (Kazusa and Sil face -Z in their rest pose).
@@ -202,9 +202,8 @@ public sealed partial class PlayerBody
         // The view's yaw as the hips see it: the body's own facing plus the turn back toward the view.
         spineLookYaw = transform.eulerAngles.y + yaw + twist;
         // About the view's forward axis a positive angle tips the top to the left, as the camera's own roll does: the
-        // spine's bend for the Q/E lean, the old one with nothing in hand, as far as takes the eyes the whole peek with
-        // the fists (BodyLean).
-        TuneLean(dt);
+        // spine's bend for the Q/E lean (BodyLean).
+        TuneLean();
         FollowAim(dt);
         bodyLean.BlendHands(HoldsGun, dt);
         spineLookRoll = bodyLean.SpineRoll(bendWeight);
@@ -240,17 +239,15 @@ public sealed partial class PlayerBody
         float onClip = AimsOnClip;
         if (onClip > 0f) eye += RightEyeShift() * onClip;
         // Every PC's copy of the body moves its leaning hitboxes, with or without a camera of its own.
-        Vector3 carried = bodyLean.Carry(eye, bendWeight, dead, dt);
-        // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind). With nothing in hand
-        // the body carries part of the Q/E peek and the camera makes up the rest, as up to 0.7.34; holding a gun or the
-        // fists the body carries all of it and the camera stays on the eyes, where the guard and the sight are placed from.
+        bodyLean.Carry(eye, dead, dt);
+        // In the F5 view too: the eyes take this pose, then the camera moves behind (PlaceViewBehind).
         // Running on the ground, part of the eyes' bob is steadied (runCalm); off the cycles it eases back onto the eyes.
         float calmTarget = dead || strideFrame != Time.frameCount ? 0f
             : runCalmShare * Mathf.InverseLerp(runCalmSpeeds.x, Mathf.Max(runCalmSpeeds.x + .01f, runCalmSpeeds.y), gaitSpeed);
         runCalmWeight = Mathf.MoveTowards(runCalmWeight, calmTarget, dt / RunCalmEase);
-        bodyCamera.Place(eye, eyeBefore, carried, bodyLean.CameraMakesUp, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
+        bodyCamera.Place(eye, eyeBefore, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
             dt, bodySwayTime, runCalm * runCalmWeight, Mathf.Max(FlinchHold, EmoteHold));
-        // Then the head goes where the camera went: off the eyes (a punch, a slip's dip, a peek's share, a wall, less body
+        // Then the head goes where the camera went: off the eyes (a punch, a slip's dip, a wall, less body
         // sway) the spine, chest and neck bend it there, so the view is never outside the head, seen from outside too (the
         // user, 2026-11-12: "캐릭터의 머리와 카메라가 일치해서 True FPS의 몰입감은 있으면서 너무 멀미나거나 게임 플레이에
         // 방해가 되지 않게"). With FPSAF holding a gun only the neck bends, so the hands stay on it. Most frames the camera is

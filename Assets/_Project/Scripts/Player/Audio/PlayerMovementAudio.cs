@@ -317,8 +317,7 @@ public sealed class PlayerMovementAudio : MonoBehaviour
 
     private void Lean()
     {
-        float full = player.AbilitySettings.leanOffset;
-        float share = full > 0f ? player.LeanOffset / full : 0f;
+        float share = player.Abilities != null ? player.Abilities.Lean.Share : 0f;
         if (Mathf.Abs(share) < leanSoundShare * .5f) leanSide = 0;
         else if (Mathf.Abs(share) >= leanSoundShare && (int)Mathf.Sign(share) != leanSide)
         {

@@ -2,9 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// How a Q/E micro dodge that catches a real blow moves: a slip that turns onto its attacker. The head leaves the blow's
-/// line just far enough (the eyes end at least clearance to the pressed side of where they stood, as a lean), dips a
-/// little and goes back to where the key holds the lean once the blow is past. Meanwhile the look locks onto the
-/// attacker: it turns to face them and keeps them there while the head slips out and comes back, so stepping aside and
+/// line by the whole lean, dips a little and goes back to where the key holds the lean once the blow is past. Meanwhile
+/// the look locks onto the attacker: it turns to face them and keeps them there while the head slips out and comes back, so stepping aside and
 /// turning in are one move. A straight counter keeps the look on its target as it dashes in; turning the look yourself
 /// lets go, for instance to counter another attacker. The body never moves, so a counter is still in reach. The edge of
 /// the screen on the side the blow went by glints. Real time throughout, so it is as quick inside the evade's slow
@@ -14,8 +13,6 @@ using UnityEngine;
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.MicroSlip)]
 public sealed class MicroSlip : MonoBehaviour
 {
-    [SerializeField, Min(0f), Tooltip("The eyes end at least this far (m) to the pressed side of where they stood; a lean already further stays.")]
-    private float clearance = .25f;
     [SerializeField, Min(.01f), Tooltip("Slipping out, real seconds.")]
     private float slipSeconds = .12f;
     [SerializeField, Min(0f), Tooltip("Held out while the blow goes by, real seconds.")]
@@ -43,7 +40,6 @@ public sealed class MicroSlip : MonoBehaviour
     private float lockLeft, lastYaw, asked, ownTurn;
     private bool measured;
 
-    public float Clearance => clearance;
     public float SlipSeconds => slipSeconds;
     public float HoldSeconds => holdSeconds;
     public float ReturnSeconds => returnSeconds;
