@@ -51,7 +51,7 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0.1f)] internal float slideCancelMinDuration = 0.5f;
     [SerializeField, Min(0f)] internal float slideCooldown = 0.4f;
     [SerializeField, Min(0f)] internal float slideSteerSharpness = 4.0f;
-    [Tooltip("Sliding, the mouse pushed on past the view's limit (Body.slideTurnLimit) turns the slide after it, up to this fast (degrees per second). 0 stops the view at the limit as before.")]
+    [Tooltip("Sliding, the mouse pushed on past the view's right limit (Body.slideLookLimits) turns the slide after it, up to this fast (degrees per second). 0 stops the view at the limit as before.")]
     [SerializeField, Min(0f)] internal float slideLookSteerRate = 90f;
     [SerializeField, Min(0.1f)] internal float groundSnapDistance = 0.5f;
     [SerializeField, Min(0.01f)] internal float slideJumpMinDuration = 0.1f;

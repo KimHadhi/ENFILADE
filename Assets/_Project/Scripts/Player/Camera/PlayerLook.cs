@@ -99,33 +99,35 @@ public sealed class PlayerLook : MonoBehaviour
         TickRecoil(Time.deltaTime);
     }
 
-    // Sliding, the view stops slideTurnLimit either side of the way the slide goes (ClampLookYaw). The mouse pushed on
-    // past that edge turns the slide itself after it, up to Move.slideLookSteerRate degrees a second (user, 2026-11-10:
-    // "방향을 틀면 슬라이딩도 틀기", as Apex Legends' slide steers), so the look is slowed there instead of stopped
-    // dead, and the legs come round with the slide (PlayerBody.FaceSlide). Only on the ground: in the air a slide keeps
-    // its line. Called before the mouse turns the view, so the arc has already moved when the view is held to it.
+    // Sliding, the view stops Body.slideLookLimits from the way the slide faces (ClampLookYaw). To the right the mouse
+    // pushed on past that edge turns the slide itself after it, up to Move.slideLookSteerRate degrees a second (user,
+    // 2026-11-10: "방향을 틀면 슬라이딩도 틀기", as Apex Legends' slide steers), so the look is slowed there instead of stopped
+    // dead, and the legs come round with the slide (PlayerBody.FaceSlide). To the left view and slide both stop: further
+    // round the head would turn into the body (the user, 2026-11-22: "왼쪽으로 화면 못 돌리게 하는 기능 고장", then "완전히
+    // 멈춤"). Only on the ground: in the air a slide keeps its line. Called before the mouse turns the view, so the arc has
+    // already moved when the view is held to it.
     private void SteerSlide(float mouseX)
     {
-        if (mouseX == 0f || movement == null || movement.CurrentState != PlayerMovement.MovementState.Sliding
+        if (mouseX <= 0f || movement == null || movement.CurrentState != PlayerMovement.MovementState.Sliding
             || !movement.IsGrounded || movement.SlideLookSteerRate <= 0f) return;
         Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
         if (direction.sqrMagnitude < .0001f) return;
-        if (body == null) body = GetComponent<PlayerBody>();
-        // The view's own edge (friend feedback C11 widened it to 120°), not the body's twist limit.
-        float limit = body != null ? body.SlideViewYawLimit : 120f;
-        float now = transform.eulerAngles.y;
-        // Where this push would take the view from the way the slide faces, and how far past the edge that is.
-        float wanted = Mathf.DeltaAngle(movement.SlideFacingYaw, now) + mouseX;
-        // The edge on that side is nearer where the head can't turn so far (PlayerBody.HeadReachArc: the slide sits turned
-        // to one side), and the push past it steers the slide round there.
-        float edge = limit;
-        if (body != null && body.HeadReachArc(out float facing, out float lo, out float hi))
-            edge = Mathf.Min(limit, Mathf.Abs(Mathf.DeltaAngle(movement.SlideFacingYaw, facing + (wanted > 0f ? hi : lo))));
-        float past = Mathf.Abs(wanted) - edge;
-        // Only a push outward counts; one back toward the middle from outside the arc doesn't steer.
-        if (past <= 0f || Mathf.Sign(mouseX) != Mathf.Sign(wanted)) return;
-        float turn = Mathf.Sign(mouseX) * Mathf.Min(past, Mathf.Min(Mathf.Abs(mouseX), movement.SlideLookSteerRate * Time.deltaTime));
+        // Where this push would take the view from the way the slide faces, and how far past the right edge (friend
+        // feedback C11 widened it to 120°) that is.
+        float past = Mathf.DeltaAngle(movement.SlideFacingYaw, transform.eulerAngles.y) + mouseX - SlideLookLimits.y;
+        if (past <= 0f) return;
+        float turn = Mathf.Min(past, Mathf.Min(mouseX, movement.SlideLookSteerRate * Time.deltaTime));
         movement.SlideDirection = Quaternion.Euler(0f, turn, 0f) * direction.normalized;
+    }
+
+    // Sliding, how far the view turns left (x) and right (y) of the way the slide faces (degrees).
+    private Vector2 SlideLookLimits
+    {
+        get
+        {
+            if (body == null) body = GetComponent<PlayerBody>();
+            return body != null ? body.SlideLookLimits : new Vector2(35f, 120f);
+        }
     }
 
     // Backlog 123: on a swing bar the view stops at the bar's look limit; the mouse pushed on past it by
@@ -247,7 +249,7 @@ public sealed class PlayerLook : MonoBehaviour
         candidate = ClampStateYaw(candidate);
         if (body == null) body = GetComponent<PlayerBody>();
         if (body == null || !body.HeadReachArc(out float facing, out float lo, out float hi)) return candidate;
-        return WithinArc(facing + (lo + hi) * .5f, (hi - lo) * .5f, candidate);
+        return WithinArc(facing, lo, hi, candidate);
     }
 
     private float ClampStateYaw(float candidate)
@@ -256,12 +258,11 @@ public sealed class PlayerLook : MonoBehaviour
         {
             Vector3 direction = Vector3.ProjectOnPlane(movement.SlideDirection, Vector3.up);
             if (direction.sqrMagnitude < .0001f) return candidate;
-            if (body == null) body = GetComponent<PlayerBody>();
-            float limit = body != null ? body.SlideViewYawLimit : 120f;
+            Vector2 limits = SlideLookLimits;
             // Around the way the slide's body faces, which the slide holds: along it, or back along it after a backward
             // entry or a bounce (MovementActions.SlideFacesBack). It was worked out from the view itself, so a look past 90°
             // turned the arc round with the body and the view could go on round to the slide's front from behind.
-            return WithinArc(movement.SlideFacingYaw, limit, candidate);
+            return WithinArc(movement.SlideFacingYaw, -limits.x, limits.y, candidate);
         }
         if (movement != null && movement.CurrentState == PlayerMovement.MovementState.SupineSliding)
         {
@@ -339,16 +340,19 @@ public sealed class PlayerLook : MonoBehaviour
         return center + Mathf.Clamp(Mathf.DeltaAngle(center, candidate), -wallClimbYawLimit, wallClimbYawLimit);
     }
 
-    // Ordinary mouse look stops at the arc's edge without ever turning what the arc follows. A view already outside it
-    // (a sideways slide bounce, a blow from behind) is brought back smoothly. Measured from where the view is now, so a
-    // quick flick past 180 degrees from the centre can't come round on the arc's other side.
-    private float WithinArc(float center, float limit, float candidate)
+    private float WithinArc(float center, float limit, float candidate) => WithinArc(center, -limit, limit, candidate);
+
+    // Ordinary mouse look stops at the arc's edges (lo and hi, degrees from the way it faces) without ever turning what the
+    // arc follows. A view already outside it (a sideways slide bounce, a blow from behind) is brought back smoothly, the way
+    // it went out: in degrees from the facing, never wrapped. Until 2026-11-22 it was measured from the arc's middle and
+    // turned the short way, so a view out past a lopsided arc's left edge went on round behind to its right one (the slide's
+    // left look). Measured from where the view is now, so a quick flick past 180 degrees can't come round on the other side.
+    private float WithinArc(float facing, float lo, float hi, float candidate)
     {
-        float now = transform.eulerAngles.y, from = Mathf.DeltaAngle(center, now);
-        float clamped = center + Mathf.Clamp(from + Mathf.DeltaAngle(now, candidate), -limit, limit);
-        if (Mathf.Abs(from) > limit + .01f)
-            return Mathf.MoveTowardsAngle(now, clamped, 360f * Time.deltaTime);
-        return clamped;
+        float now = transform.eulerAngles.y, from = Mathf.DeltaAngle(facing, now);
+        float held = Mathf.Clamp(from + Mathf.DeltaAngle(now, candidate), lo, hi);
+        if (from < lo - .01f || from > hi + .01f) held = Mathf.MoveTowards(from, held, 360f * Time.deltaTime);
+        return facing + held;
     }
 
     private float ClampLookPitch(float candidate)

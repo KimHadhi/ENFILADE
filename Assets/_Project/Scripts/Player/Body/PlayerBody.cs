@@ -24,7 +24,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // The walk and run cycles of every stance are rows of Tables/Player/BodyMoves.csv (PlayerBody.Locomotion), each going the
     // way its feet were measured to go; idle and crouchIdle are the plain and crouched sets' idles.
     [SerializeField] private string crouchIdle = "crouchstill";
-    [SerializeField] private string jump = "jumpfast", air = "jumpidle", fall = "mx_fall";
+    // One jump, whatever the speed or the way (the user, 2026-11-22: "점프 모션 항상 제자리 점프할 때 나오는 모션으로"): until
+    // 0.9.333 walking, running and sideways jumps had clips of their own.
+    [SerializeField] private string jump = "jumpstill", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
     [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";
     [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
@@ -61,6 +63,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private float backOffset = .12f;
     [SerializeField, Min(.01f), Tooltip("How quickly the body slides to keep its head under the camera (s). Slower than a stride, so running sway stays.")]
     private float headFollowTime = .25f;
+    [SerializeField, Min(.01f), Tooltip("In the air, how quickly the body is carried to keep its eyes at their standing height (s), and "
+        + "how quickly it keeps its head over the capsule (s): the view holds still through a jump's clip.")]
+    private float airLiftTime = .05f, airFollowTime = .08f;
     [SerializeField, Min(0f), Tooltip("Falling faster than this plays the fast-fall clip (m/s).")]
     private float fallClipSpeed = 7.2f;
     [SerializeField, Tooltip("F5 view from behind, in look-pivot space (m).")]
@@ -288,7 +293,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         heaving = false;
         heaveClip = null;
         hips = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
-        jumpClip = jump; obstacleClip = vault; wallKickClip = wallKick; rollClip = roll; downClip = heavyLand; tucked = flailing = false;
+        obstacleClip = vault; wallKickClip = wallKick; rollClip = roll; downClip = heavyLand; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
         ApplyView();
@@ -623,6 +628,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             HoldHeadPlace();
             if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
             else if (gripWeight <= 0f && slideBodyAnchored && !ClipCarriesBody) FollowHeadAlongSlide(Time.deltaTime);
+            HoldEyesInAir(Time.deltaTime);
             using (GripMarker.Auto()) Grip(Time.deltaTime);
             using (FeetMarker.Auto())
             {
@@ -659,6 +665,26 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         hasViewYaw = true;
     }
 
+    // In the air the body is carried so its eyes keep the height they stand at over the capsule, and the camera on them rises
+    // and falls with the jump alone (the user, 2026-11-22: "점프할 때 카메라 덜 흔들리게 (점프를 자유롭게)"). The jump's clip
+    // (Beatrun jumpstill, its own rise taken out) starts from a crouch 0.34 m down, so at every jump the eyes sank that far
+    // under a rising capsule and came back up at the landing. Nothing under the body shows it: the feet are off the ground,
+    // and the legs the clip draws up hang where they would. A tuck, a flail, a vault playing out keep their own height.
+    private float airLift;
+
+    private void HoldEyesInAir(float dt)
+    {
+        if (head == null || dt <= 0f) return;
+        bool inAir = !dead && state == MovementState.Standing && !player.IsGrounded && !tucked && !flailing && !ClipCarriesBody
+            && transition == null;
+        // By where the head is, not the eyes: a look up or down moves those about the head as it does standing.
+        float target = inAir ? bodyCamera.Anchor().y - (head.position.y + eyeOverHead) : 0f;
+        // Never more than a leg: a pose that far off its place is not a jump's.
+        target = Mathf.Clamp(target, -legLength * .5f, legLength * .5f);
+        airLift = Mathf.Lerp(airLift, target, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, airLiftTime)));
+        if (Mathf.Abs(airLift) > 1e-4f) body.position += Vector3.up * airLift;
+    }
+
     // Clips put the head in different places (lying slides keep it far behind the feet). Ease the body so its head
     // stays just behind the camera; the follow is slower than a stride, so running sway is not cancelled. Standing still it
     // rests (keepsPlace): the feet stay where they stand, and the camera rides the eyes wherever the head is.
@@ -669,7 +695,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         // Not the Q/E lean's part of where the head is: followed, it walked the body back under the pivot (BodyLean).
         Vector3 error = camera - transform.InverseTransformPoint(spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt));
         error.y = 0f;
-        headAlignment += error * (1f - Mathf.Exp(-dt / headFollowTime));
+        // In the air the head stays over the capsule closer, so the trunk's swing in a jump doesn't move the view.
+        float follow = !player.IsGrounded && state == MovementState.Standing ? Mathf.Min(headFollowTime, airFollowTime) : headFollowTime;
+        headAlignment += error * (1f - Mathf.Exp(-dt / follow));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
     }
 
@@ -733,7 +761,15 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 hold = false;
             if (transitionLeft > blendTime && hold)
             {
-                transition.Target = 1f;
+                // A light landing takes only its share of the body and the still pose the rest: the knees take it half as
+                // deep, and the eyes, which carry the camera, dip half as far.
+                float share = transition == Find(touchdown) ? touchdownShare : 1f;
+                transition.Target = share;
+                if (share < 1f)
+                {
+                    var still = GunInHand()?.Hip;
+                    MixIdle(still != null && still.Idle != null ? still : plainSet, 1f - share);
+                }
                 return;
             }
             if (RunsOut(transition)) GiveUpRunOut(transition);
@@ -907,14 +943,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (onGround && springing) { transition = null; playingOut = springing = false; }
         if (!onGround)
         {
-            StartFlight();
             // A jump starts its clip in TickHops; anything else that throws the body up starts it here.
             jumped = jumpQueued || jumpPending || player.VerticalVelocity > 1f;
-            if (jumped && !jumpQueued && !jumpPending)
-            {
-                jumpClip = JumpFor(HorizontalSpeed());
-                Restart(Find(jumpClip));
-            }
+            if (jumped && !jumpQueued && !jumpPending) Restart(Find(jump));
             // Off an edge without a jump, onto a drop: the step off and the fall's start (Body.fallFromEdge).
             fromEdge = !jumped && state == MovementState.Standing && DropsFar();
             if (fromEdge) Restart(Find(fallFromEdge));

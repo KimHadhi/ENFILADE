@@ -12,10 +12,13 @@ using MovementState = PlayerMovement.MovementState;
 /// - The view's reach (HeadReachArc): wherever the legs don't come round after the view (anything but standing and
 ///   crouching, where they step round: TurnOnTheSpot), the view turns only as far as the head can on the pose the clip has:
 ///   from where the clip turns the chest (the shoulders' line, read after the animation pass), what the look's own twist of
-///   the spine adds (SpineLook: 60% of the view's turn, as far as the slide's twist limit) and the neck's turn on top
+///   the spine adds (SpineLook: 60% of the view's turn) and the neck's turn on top
 ///   (Body.neckTurnLimit). PlayerLook holds the mouse there, so the camera and the head stay one and look the same way.
 ///   Lying, diving, rolling, hanging from a ledge or a bar keep their own limits: their head turns are the clips' own or a
-///   roll of the whole body, and a body that isn't upright has no chest facing to turn from.
+///   roll of the whole body, and a body that isn't upright has no chest facing to turn from. Sliding has fixed limits
+///   (Body.slideLookLimits): its clips swing the chest from 6 to 70 degrees to the right and back within the slide (measured
+///   in Blender, 2026-11-22), so a reach read each frame opened to 120 degrees left and shut to 12 again, and a view caught
+///   outside it was flung. A step dodge has none: the body turns with the view through it.
 /// - The neck's guard (FaceHead): a clip that turns the chest away faster than the view is held could still wring the head
 ///   for a frame, so the head itself stops a little past the same limit.
 /// - The record (카메라 기록, Logs/camera-head.txt): each time the camera is off the eyes by more than CameraOffMetres or
@@ -71,7 +74,6 @@ public sealed partial class PlayerBody
     {
         switch (state)
         {
-            case MovementState.Sliding:
             case MovementState.Vault:
             case MovementState.Mantle:
             case MovementState.WallClimb:
@@ -79,7 +81,6 @@ public sealed partial class PlayerBody
             case MovementState.LedgeJump:
             case MovementState.Ladder:
             case MovementState.Zipline:
-            case MovementState.StepDodge:
             case MovementState.DashPush:
             case MovementState.HeavyLanding:
                 return true;
@@ -99,18 +100,9 @@ public sealed partial class PlayerBody
         facing = lo = hi = 0f;
         if (body == null || !chestMeasured || !torsoUpright || dead || limp || !ReachHolds(state)) return false;
         facing = BodyFacingYaw;
-        // The spine twists its share of the view's turn as far as the slide lets it (AimLook); the neck turns the rest.
+        // The spine twists its share of the view's turn (AimLook); the neck turns the rest, as far as it can.
         float share = SpineTwistShare * Mathf.Clamp01(spineLookWeight);
-        float twist = state == MovementState.Sliding ? SlideLookYawLimit : 180f;
-        float neck = neckTurnLimit, chest = clipChestTurn;
-        float Edge(float side)
-        {
-            // Where the neck reaches its limit while the spine still twists its share...
-            float inside = (side * neck + chest) / Mathf.Max(.05f, 1f - share);
-            if (Mathf.Abs(inside) <= twist) return inside;
-            // ...or, past the spine's own limit, where the neck takes all the rest.
-            return side * neck + chest + share * twist * Mathf.Sign(inside);
-        }
+        float Edge(float side) => (side * neckTurnLimit + clipChestTurn) / Mathf.Max(.05f, 1f - share);
         lo = Mathf.Max(-180f, Edge(-1f));
         hi = Mathf.Min(180f, Edge(1f));
         return hi > lo;

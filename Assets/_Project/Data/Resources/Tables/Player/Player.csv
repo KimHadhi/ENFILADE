@@ -272,7 +272,7 @@ Move.downedFallTime,1,"서 있다가 다운되면 몸이 앞으로 쓰러지는 
 Move.sprintRampUpDuration,0.1,Shift를 누르고 달리기에서 전력질주로(걷기 모드면 걷기에서 조깅으로) 넘어가는 시간(초). 걸음새마다·가는 쪽마다의 속도는 Gaits.csv(0.9.245: 클립이 몸을 나르는 속도)
 Move.groundSharpness,10,지상에서 속도를 바꾸는 빠르기. 클수록 즉시 반응. 낮을수록 출발·정지가 묵직하다(0.7.28에 14에서 낮춤)
 Move.groundKeepPaceTurn,120,"땅에서 가는 쪽을 이만큼(도) 안으로 바꾸면 빠르기를 지킨 채 방향이 돈다(속도는 새 쪽의 빠르기로 따로 따라간다). 더 크게 바꾸면(뒤로 돌기) 멈췄다 가듯 가운데를 지난다. 0.9.292 전에는 두 속도를 곧게 섞어 W에서 D로 바꾸는 중간에 70%로 떨어졌다(전력질주 6.0→4.35m/s, 다리도 조깅 클립으로; 사용자 11-21: ""달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"")"
-Move.airControlSharpness,5,공중에서 방향을 바꾸는 빠르기
+Move.airControlSharpness,9,공중에서 이동 키로 방향을 트는 빠르기. Move.groundKeepPaceTurn 안이면 빠르기를 지킨 채 방향이 돈다. 0.9.333까지 5(사용자 11-22: 공중 방향 전환)
 Move.jumpHeight,1.3,점프 높이(m)
 Move.gravity,-24,중력(m/s²). 음수이고 더 작을수록 빨리 떨어진다
 Move.coyoteTime,0.1,발판을 벗어난 뒤에도 점프를 받아 주는 시간(초)
@@ -295,7 +295,7 @@ Move.slideBrakeDeceleration,18,제동 입력 때의 감속(m/s²)
 Move.landingSlideMinSpeed,4.4,Ctrl을 누른 채 착지하면 슬라이드로 이어지는 최소 속도(m/s). 슬라이드 시작과 같은 까닭으로 같다. 0.9.282 전에는 6 · 0.9.282에 5
 Move.slideCooldown,0.4,슬라이드 재사용 대기(초)
 Move.slideSteerSharpness,4,슬라이드 중 A/D 조향 빠르기
-Move.slideLookSteerRate,90,슬라이드 중 마우스를 시선 제한(Body.slideTurnLimit) 너머로 밀면 미끄러지는 방향이 시선을 따라 도는 최대 빠르기(도/초). 0이면 예전처럼 시선이 제한에서 멈춘다
+Move.slideLookSteerRate,90,슬라이드 중 마우스를 오른쪽 시선 제한(Body.slideLookLimits) 너머로 밀면 미끄러지는 방향이 시선을 따라 도는 최대 빠르기(도/초). 왼쪽은 완전히 멈춘다. 0이면 오른쪽도 제한에서 멈춘다
 Move.groundSnapDistance,0.5,슬라이드 중 바닥에 붙여 두는 거리(m)
 Move.slideJumpMinDuration,0.1,슬라이드 시작 후 점프(다이브로 이어짐)가 가능해지기까지(초)
 Move.slideKickJumpHeight,1.05,슬라이드 점프 높이(m)
@@ -497,7 +497,7 @@ Body.idle,Idle,몸 애니메이션 이름 (Art/Animations의 클립). 맨몸으�
 Body.crouchIdle,CrouchIdle,웅크려 서 있기(BIPER Female Runner). 웅크린 걸음은 BodyMoves.csv의 crouch 줄. 예전 crouchstill
 Body.crouchDown,IdleToCrouch,"서 있다가 웅크릴 때(가만히 서서만): 무릎을 굽혀 내려가는 동작. 클립은 제 시계가 아니라 자세가 바뀌는 만큼(Posture.transitionSharpness)을 따른다: 몸 중심이 제 길의 몇 %를 왔는지가 눈높이가 온 만큼과 같은 순간(GaitMoves.csv kind posture). 카메라가 머리라 클립 제 시계(0.4초)로는 시야가 Ctrl보다 늦었다. 움직이며 웅크리면 웅크린 걸음이 맡는다. BIPER Female Runner, 0.9.285. 그 전에는 두 자세가 그냥 섞였다"
 Body.standUp,CrouchToIdle,"웅크렸다 일어설 때(가만히 서서만). Body.crouchDown과 같이 자세를 따른다. BIPER Female Runner, 0.9.285"
-Body.jump,jumpfast,"달리며 점프(Body.jumpFastSpeed 이상): Beatrun jumpfast. 0.9.290에 Beatrun 점프로 되돌렸다: BIPER Female Runner 점프는 팔을 너무 크게 휘둘렀다(클립 검사대, 손 평균 3.2~3.4m/s·최대 7m/s·위아래 0.88m, Beatrun jumpfast·jumpslow는 1.6~1.7·3.9~4.7·0.34~0.58; 사용자 11-21: ""점프 모션은 너무 과하고(팔이 존나 앞뒤로 슝 하는 게 뭐야)"", 기준은 Beatrun 영상). Beatrun 클립은 구운 비행이 없어 제 시계로 튼다(PlayerBody.Flight는 구운 클립만). 0.9.262~0.9.289에는 RunJump_2m"
+Body.jump,jumpstill,"점프: 제자리·걷기·조깅·전력질주·옆 모두 이 하나(Beatrun jumpstill, 제 시계로). 사용자 11-22: ""점프 모션 항상 제자리 점프할 때 나오는 모션으로"". 0.9.333까지는 속도별로 jumpstill·jumpslow·jumpfast, 0.9.262~0.9.289에는 BIPER Female Runner 점프(팔을 너무 크게 휘둘러 뺐다)"
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하
 Body.fallFlail,fallinguncontrolled,큰 낙하(Ability.bigFallHeight) 동안 허우적거리기. 이때 Ctrl은 착지 구르기만 준비하고 웅크리지 않는다
@@ -534,6 +534,7 @@ Body.supineSlideEnd,meslideend,누워서 미끄러지기 끝
 Body.roll,RollToRun_F,"착지 구르기. 클립은 제 빠르기로 틀고 몸은 그 클립이 땅 위로 가는 만큼 간다(Ability.rollTravel). 가는 쪽마다의 클립이 Body.rollWays(구르고 일어서기)·rollRunWays(Ability.rollRunSpeed 이상이면 구르고 달려 나가기)에 있고, 이 줄은 그 표가 없을 때. 0.9.262 전에는 mx_sprint_roll"
 Body.rollLand,Land_1h,구르기 대신 제자리에 착지할 때(Ability.rollLandSpeed). 낮은 천장 아래에서는 Body.landCrouch. BIPER Female Runner: 가볍게 착지. 0.9.262 전에는 land
 Body.touchdown,Land_1h,"점프를 연달아 할 때 땅에 닿는 순간과 서서 가볍게 착지할 때 무릎이 받는 동작: BIPER Land_1h(몸 중심이 0.31m 내려감, 엉덩이 0.89→0.73m). 0.9.290에 Beatrun land로 되돌렸더니 그 클립은 큰 낙하의 착지라 0.13초 만에 0.65m 주저앉아(엉덩이 0.90→0.27m) 눈에 붙은 카메라가 함께 떨어졌다: 제자리 점프마다 낙하한 것처럼 보였다(사용자 11-21: ""제자리 점프하면 낙하 모션 있는데""). 달리며 뛰면 이 동작이 없어 제자리 점프만 그랬다. 0.9.291"
+Body.touchdownShare,0.5,"가벼운 착지 동작(Body.touchdown)이 몸을 갖는 비율, 나머지는 서기. 동작 그대로면 점프할 때마다 눈(카메라)이 0.28m 내려갔다 올라온다(클립 검사대). 사용자 11-22: ""점프할 때 카메라 덜 흔들리게"""
 Body.dodgeLeft,QuickShift_L,"왼쪽 회피. 가는 쪽마다의 클립은 Body.dodgeWays(서서·걷거나 조깅하며)·dodgeSprintWays(전력질주)에 있고, 이 줄은 그 표에 그쪽이 없을 때. BIPER Female Runner. 0.9.262 전에는 dodgejumpleft"
 Body.dodgeRight,QuickShift_R,오른쪽 회피(Body.dodgeLeft와 같이). 0.9.262 전에는 dodgejumpright
 Body.rollWays,Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@-135;Roll_L@-90;Roll_L45@-45,"착지 구르기를 가는 쪽마다(클립@도. 0 앞 90 오른쪽): Ability.rollRunSpeed보다 느리면 구르고 일어선다. 가장 가까운 쪽이 45°보다 멀면 Body.roll. BIPER Female Runner Roll_*(1.47초 3.4m), 0.9.262"
@@ -541,14 +542,12 @@ Body.rollRunWays,RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_B@180;R
 Body.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"회피를 가는 쪽마다(서서·걷거나 조깅하며): 몸을 비키는 짧은 스텝. BIPER Female Runner QuickShift_*(0.8초 3.25m), 0.9.262. 회피 클립은 걸음새로 고른다(MovementGait.Position): 0.9.284 전에는 그 순간의 속도로 골랐는데, 몸은 스텝이 이미 약 18m/s로 던진 프레임에 회피를 봐서 앞뒤 말고는 늘 달리며 회피(ShiftToRun_*, Body.dodgeRunWays)가 골라졌고 그 달리기 걸음이 회피 뒤에 제 빠르기로 이어졌다(사용자 11-21: ""회피 끝나고 캐릭터가 굉장히 빠른 속도로 달리는 모션""). 달리며 회피는 0.9.284에 달리기와 함께 뺐다"
 Body.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며(걸음새가 조깅과 전력질주의 가운데를 넘었을 때) 회피: 비키며 전력질주를 이어 간다. 앞뒤는 없어서 Body.dodgeWays. BIPER Female Runner ShiftToSprint_*, 0.9.262"
 Body.dodgeShiftEnd,0.2,"회피 클립이 옆으로 비키는 동작이 끝나는 때(초). 스텝(Ability.stepDuration 0.14초) 동안 클립을 여기까지 틀고, 나머지(그 자리에서 일어나기)는 스텝 뒤에 마저 튼다. BIPER QuickShift_*는 0.06~0.2초에 3m를 간다(ClipBench track). 0.9.271 전에는 스텝이 끝나면 클립이 앞부분만 보이고 엉덩이가 튀어 올랐다"
-Body.jumpWays,,옆으로 점프하는 클립(클립@도). 비어 있으면 속도대로 Body.jumpStill·jumpSlow·jump. 0.9.262~0.9.289에는 BIPER Jump_AirL·R였는데 BIPER 점프와 함께 뺐다(Body.jump)
-Body.runJumpWays,,달리며 옆으로 점프하는 클립. 비어 있으면 Body.jump. 0.9.262~0.9.289에는 BIPER RunJump_AirL·R였는데 BIPER 점프와 함께 뺐다(Body.jump)
 Body.landRunLight,,앞으로 달리다 가볍게 착지할 때의 클립. 비어 있으면 걸음에 섞여 이어 간다(Beatrun처럼). 0.9.262~0.9.289에는 BIPER Land_ToRun1(RunJump의 착지 자세에서 시작)이었는데 Beatrun 점프로 되돌리며 뺐다(0.9.290)
 Body.landRunMid,,Body.landMidHeight 이상에서 앞으로 달리다 가볍게 착지할 때의 클립. 비어 있으면 걸음에 섞인다. 0.9.285~0.9.289에는 BIPER Land_ToRun2였는데 Body.landRunLight와 같은 까닭으로 뺐다(0.9.290)
 Body.landRunHard,Land_ToRun3,"앞으로 가다 세게 착지하면 깊게 받고 달려 나간다. BIPER Female Runner, 0.9.262"
 Body.landRunStumble,Land_ToStumble,"Body.landStumbleSpeed 이상으로 가다 세게 착지하면 비틀거리며 달려 나간다. BIPER Female Runner, 0.9.262"
 Body.landSlam,Land_ToSlam,"조깅으로 앞으로 가다 세게 착지하면 한 손을 짚을 만큼 깊게 받고 이어 간다(클립의 걸음은 3.3m/s로 조깅 빠르기). 걷기보다 느리거나 다른 쪽이면 Body.land, 전력질주면 Body.landRunHard·landRunStumble. BIPER Female Runner, 0.9.285"
-Body.landStumbleSpeed,5,이보다 빨리 가다 세게 착지하면 비틀거린다(m/s). 달리는 착지(Body.jumpFastSpeed 4.4 이상) 가운데 앞·옆 전력질주(5.97~6.34)만: 대각선 뒤·뒤 전력질주(4.86·4.82)는 세게 착지해 달려 나간다. 0.9.282 전에는 6
+Body.landStumbleSpeed,5,이보다 빨리 가다 세게 착지하면 비틀거린다(m/s). 달려 나가는 착지(Body.landRunSpeed 4.4 이상) 가운데 앞·옆 전력질주(5.97~6.34)만: 대각선 뒤·뒤 전력질주(4.86·4.82)는 세게 착지해 달려 나간다. 0.9.282 전에는 6
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
 Body.vault,vaultover,보통 넘기
 Body.mantle,climb1,올라서기
@@ -559,8 +558,6 @@ Body.barRelease,swingjumpoff,봉에서 뛰어내리기
 Body.ledgeHang,hang,"난간 매달리기: Beatrun hang. 둘러보는 자세(Body.hangPose)·좌우 걸음·잡기가 모두 같은 Beatrun 것이라 서로 이어진다. 0.9.301 전에는 Mixamo mx_ledge_hang_wall"
 Body.ledgeJump,jumpfast,난간에서 뛰어오르기
 Body.death,diestand,사망
-Body.jumpStill,jumpstill,제자리 점프(도움닫기 속도가 Body.jumpStillSpeed 미만): Beatrun jumpstill. 0.9.262~0.9.289에는 Jump_1h(Body.jump의 까닭으로 되돌림)
-Body.jumpSlow,jumpslow,걸으며 점프(Body.jumpStillSpeed 이상 jumpFastSpeed 미만): Beatrun jumpslow. 0.9.262~0.9.289에는 RunJump_1m(Body.jump의 까닭으로 되돌림)
 Body.airTuck,jumpcoil,공중에서 Ctrl로 무릎을 접은 자세 (Beatrun 코일)
 Body.landCrouch,landcrouch,웅크린 채 세게 착지 (서지 않고 웅크린 채 끝남)
 Body.heavyLand,Land_4h,크게 착지: 깊이 주저앉았다 일어선다. Ability.heavyLandingTime 동안 재생. BIPER Female Runner(가장 높은 데서 내린 착지). 0.9.262 전에는 mx_hard_landing(손과 무릎을 짚음)
@@ -569,7 +566,7 @@ Body.heavyLandBack,mx_stand_up_back,뒤로 움직이며 크게 착지하거나 �
 Body.coilLand,jumpcoilend,공중에서 무릎을 접었다가 가볍게 착지할 때 다리를 펴는 동작
 Body.coilLandCrouch,jumpcoilendcrouch,같은 착지를 웅크린 채로
 Body.supineSlideEndCrouch,meslideendcrouch,누워 미끄러지다 웅크리며 끝내기
-Body.supineSlideEndProne,meslideendprone,슬라이드가 누운 자세로 끝날 때(조준을 누른 채 W 없이). 다리를 들었다가 눕는다(Beatrun)
+Body.supineSlideEndProne,meslideendprone,누워 미끄러지다(벽에 세게 튕김) 멈춰 누울 때. 다리를 들었다가 눕는다(Beatrun). 0.9.333까지는 조준을 누른 채 슬라이드가 끝나도 이것으로 누웠다(사용자 11-22에 뺌)
 Body.supineLand,jumpturnland,누운 다이브가 느리게 내려앉아 누울 때
 Body.supineGetUp,jumpturnlandstand,누운 자세에서 일어설 때. 일어나는 동안은 Ability.supineRiseTime만큼 움직일 수 없다
 Body.supineGetUpGun,jumpturnlandstandgun,총을 든 채 누운 자세에서 일어설 때(Beatrun과 같음)
@@ -610,8 +607,7 @@ Body.kickClipSpeed,1,발차기 클립 재생 속도. 1이면 발이 가장 멀�
 Body.kickBlendIn,0.06,발차기 클립이 다리를 넘겨받는 시간(초)
 Body.kickBlendOut,0.2,발차기 클립이 다리를 돌려주는 시간(초). 클립이 끝나기 이만큼 전부터 돌려준다
 Body.kickTurnSpeed,360,가만히 서서 찰 때 시선에서 비켜 있던 다리가 시선 쪽으로 도는 빠르기(도/초). 서 있는 다리는 시선에서 Body.turnStartAngle(60도)까지 어긋날 수 있다
-Body.jumpStillSpeed,1,이보다 느리게 뛰면 제자리 점프(m/s)
-Body.jumpFastSpeed,4.4,"이보다 빠르면 달리는 점프·착지·구르기·회피(m/s). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서. 조깅은 가볍게 뛰기(Body.jumpSlow, 클립 2.8m)와 걸음에 섞이는 착지: 달리는 착지 클립의 걸음은 5.6m/s라 조깅에서는 몸보다 앞서 나간다. 0.9.282 전에는 4 · 0.9.282에 3.4(달리기부터)"
+Body.landRunSpeed,4.4,"이보다 빠르면(m/s) 세게 착지해도 달려 나간다(Body.landRunHard·landRunStumble), 느리면 무릎으로 받거나(Body.land) 조깅이면 손을 짚는다(Body.landSlam). 조깅(가장 빠른 쪽 3.91)과 전력질주(가장 느린 쪽 4.82) 사이: 전력질주에서. 0.9.333까지는 Body.jumpFastSpeed(달리는 점프도 이 값이었다)"
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
 Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
 Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)
@@ -629,6 +625,8 @@ Body.gunRunFrom,0.5,"총을 든 채 전력질주가 이만큼(0~1, PlayerMovemen
 Body.backOffset,0.12,머리를 카메라 뒤에 두는 거리(m). 내려다볼 때 목 안쪽이 보이지 않게
 Body.headFollowTime,0.25,자세가 바뀔 때 머리를 카메라 밑으로 맞추는 속도(초). 달리기 흔들림보다 느리게
 Body.fallClipSpeed,7.2,이보다 빠르게 떨어지면 빠른 낙하 애니메이션(fall)(m/s)
+Body.airLiftTime,0.05,"공중에서 눈이 서 있을 때 높이에 머물게 몸을 옮기는 빠르기(초). 점프 동작은 웅크린 자세에서 시작해 눈이 0.34m 꺼졌다 올라온다: 몸을 그만큼 들어 카메라가 점프만큼만 오르내린다(PlayerBody.HoldEyesInAir). 사용자 11-22: ""점프할 때 카메라 덜 흔들리게 (점프를 자유롭게)"""
+Body.airFollowTime,0.08,공중에서 머리가 캡슐 위에 머물게 몸을 옮기는 빠르기(초). 땅에서는 Body.headFollowTime
 Body.thirdPersonOffset,0.35;0.2;-2.4,F5 뒤에서 보기 카메라 위치(오른쪽;위;앞)
 Body.ledgeGrip,0.05;0.05,매달릴 때 손목 위치: 난간 윗면보다 위(m);벽면에서 안쪽(m)
 Body.turnStartAngle,60,"서 있을 때 시선이 다리에서 이만큼 돌아가면 다리가 시선 쪽으로 돈다(도). 그 전까지는 다리는 그대로, 상체만 비튼다"
@@ -643,14 +641,14 @@ Body.eyeViewTime,0.15,눈 위치와 고정 조준·사다리 위치 사이의 �
 Body.aimSteadyTime,0.45,조준하는 동안 걸음에 따른 엉덩이 출렁임을 얼마나 느리게 따라갈지(초). 길수록 조준 화면과 총이 덜 흔들린다. 걸음 출렁임은 1초에 두 번쯤이라 0.3이면 4분의 3쯤 줄어든다. 다리는 발 고정이 맞춘다
 Body.aimSteadyReach,0.08,조준 중 다듬은 엉덩이가 클립의 엉덩이에서 벗어날 수 있는 최대치(발에서 엉덩이까지 높이에 대한 비율). 걸음 출렁임만 걸러지고 앉기·일어서기는 바로 따라간다
 Body.animationViewStrength,0.65,선택된 행동의 머리 움직임을 카메라에 반영하는 비율. 0이면 카메라 방향은 마우스만 사용
-Body.animationViewFollow,1,"착지·구르기에서 머리가 몸의 옆축으로 도는 만큼(앞구르기, 착지의 끄덕임)을 카메라가 이 비율로 따라 돈다: 1이면 머리 그대로라 구르면 시야도 한 바퀴 돈다. 좌우·기울기는 다른 행동처럼 Body.animationViewLimits 안. 점프는 0.9.288에 여기서 빼 다른 행동처럼 Body.animationViewStrength로 조금만 이끈다(사용자 11-21: ""점프는 너무 멀미 나는데""). 0.9.286 전에는 이 클립들 대부분이 카메라에 아무것도 주지 않아 시야가 앞에 고정됐다(""억지로 앞에 강제로 닭처럼 고정된 느낌""). 0이면 그때처럼"
+Body.animationViewFollow,1,"세게 착지·구르기에서 머리가 몸의 옆축으로 도는 만큼(앞구르기, 착지의 끄덕임)을 카메라가 이 비율로 따라 돈다: 1이면 머리 그대로라 구르면 시야도 한 바퀴 돈다. 좌우·기울기는 다른 행동처럼 Body.animationViewLimits 안. 점프와 가벼운 착지는 시선을 건드리지 않는다(사용자 11-22: ""점프할 때 카메라 덜 흔들리게""). 0.9.286 전에는 이 클립들 대부분이 카메라에 아무것도 주지 않아 시야가 앞에 고정됐다(""억지로 앞에 강제로 닭처럼 고정된 느낌""). 0이면 그때처럼"
 Body.animationViewLimits,18;12;10,강도 적용 전 카메라에 더할 애니메이션의 위아래;좌우;기울기 제한 각도(도)
 Body.animationViewTime,0.1,카메라에 더할 애니메이션 회전만 부드럽게 잇는 응답 시간(초). 마우스 입력은 즉시 반영
 Body.eyeViewAhead,0.02,카메라를 눈보다 이만큼 앞에 둔다(m). 카메라는 항상 눈을 따라간다
 Body.eyeAdjust,0;0,"캐릭터의 눈 위치가 어긋날 때 옮기는 값: 위(m);앞(m). 얼굴 안쪽이 보이면 앞을 늘리고, 눈보다 높거나 낮게 보이면 위를 조절"
 Body.headNearClip,0.05,내 머리카락 보기를 켰을 때 카메라에서 이보다 가까운 것은 잘라 낸다(m)
-Body.slideTurnLimit,120,슬라이딩 시선의 좌우 제한 각도(도). 하체는 이동 방향에 고정하고 상체는 90도까지 돌고 나머지는 머리가 돈다. 75는 좁았다(친구 피드백 C11). 뒤로 미끄러지는 슬라이드(뒤로 달리다 슬라이딩·벽에 튕김)는 몸이 향한 쪽 기준이고 그 방향은 슬라이드 내내 그대로다
-Body.neckTurnLimit,75,머리가 가슴에서 돌 수 있는 가장 큰 각도(도): 목이 도는 만큼. 다리가 시선을 따라 돌지 않는 동작(슬라이딩·넘기·올라서기·벽 오르기·사다리·줄·회피·밀치기·크게 착지)에서는 시선이 그 순간 클립의 가슴 방향 + 허리가 비트는 몫 + 이 각도까지만 돈다(PlayerBody.Neck). 카메라가 머리이므로 머리가 몸을 뚫지 않는다. BIPER 슬라이드는 몸이 오른쪽으로 50° 돌아 있어 왼쪽은 약 62°까지만 본다(오른쪽은 slideTurnLimit 120). 0.9.274 전에는 왼쪽 120°를 보면 목이 116° 돌아 머리가 어깨 속으로 들어갔다(사용자 11-21)
+Body.slideLookLimits,35;120,"슬라이딩 시선이 몸이 향한 쪽에서 도는 각도(도): 왼쪽;오른쪽. 하체는 이동 방향에 고정하고 상체는 90도까지 돌고 나머지는 머리가 돈다. 왼쪽은 여기서 완전히 멈춘다(더 밀어도 슬라이드가 안 꺾인다. 오른쪽은 끝을 밀면 Move.slideLookSteerRate로 꺾인다). BIPER 슬라이드는 가슴이 오른쪽으로 40~70° 돌아 있어 더 왼쪽을 보면 머리가 어깨 속으로 들어간다(목 75°, 허리 60%로 잰 값). 0.9.274~0.9.333에는 매 프레임 가슴을 재서 정했는데 클립이 가슴을 6°에서 70°까지 돌려서 왼쪽 한계가 120°와 12° 사이를 오갔고, 한계 밖에 걸린 시선이 뒤로 돌아갔다(사용자 11-22: ""슬라이딩 중 왼쪽으로 화면 못 돌리게 하는 기능 고장""). 뒤로 미끄러지는 슬라이드(뒤로 달리다 슬라이딩·벽에 튕김)는 몸이 향한 쪽 기준이고 그 방향은 슬라이드 내내 그대로다"
+Body.neckTurnLimit,75,"머리가 가슴에서 돌 수 있는 가장 큰 각도(도): 목이 도는 만큼. 다리가 시선을 따라 돌지 않는 동작(넘기·올라서기·벽 오르기·사다리·줄·밀치기·크게 착지)에서는 시선이 그 순간 클립의 가슴 방향 + 허리가 비트는 몫 + 이 각도까지만 돈다(PlayerBody.Neck). 카메라가 머리이므로 머리가 몸을 뚫지 않는다. 슬라이딩은 정해진 각도(Body.slideLookLimits)이고, 회피는 몸이 시선을 따라 돌아 제한이 없다"
 Body.slidePitchLimits,40;55,슬라이딩 시선의 위;아래 제한 각도(도). 상체와 카메라가 같은 범위를 쓴다
 Body.heavyLandingTurnLimit,90,크게 착지해 쓰러져 있는 동안 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). 더 돌면 카메라가 자기 머리를 뚫어 본다
 Body.barTurnLimit,45,봉에 매달려 몸이 향한 쪽에서 좌우로 돌아볼 수 있는 각도(도). Beatrun의 봉과 같은 45
@@ -739,11 +737,8 @@ Punch.stepPunch,0.45;0.5,한 걸음 펀치: 아래로 끄덕(도);디딘 발 쪽
 Punch.stepRollBySpeed,1.25;0.5,걸음 기울기 배율: 멈춰 있을 때;최고 속도일 때. 빠를수록 덜 기운다
 Punch.stepStrength,0.5;0.25,걸음 펀치 세기: 속도가 쌓이는 중;최고 속도(Move.topSpeed)
 Punch.armedStep,0.25;0.25,총을 들었을 때 남는 비율: 끄덕;기울기. Shift로 질주 중엔 기울기 그대로
-Punch.jumpPitch,-2,앞으로 달리며 점프할 때 시점이 드는 각도(도). 음수가 위
-Punch.jumpMinSpeed,1.9,이보다 느린 점프는 시점이 들리지 않는다(m/s)
-Punch.landPunch,3;1.5,착지 펀치: 끄덕(도);기울기(도). landingPerSpeed × 낙하 속도를 곱한다
-Punch.landingPerSpeed,0.09,낙하 속도 1m/s당 착지 펀치 배율. 1.3m 점프 착지는 약 8m/s
-Punch.landMinSpeed,1.5,이보다 살살 닿으면 착지 펀치 없음(m/s)
+Punch.landPunch,3;1.5,세게·크게 착지 펀치: 끄덕(도);기울기(도). landingPerSpeed × 낙하 속도를 곱한다. 점프와 가벼운 착지는 화면을 치지 않는다(사용자 11-22)
+Punch.landingPerSpeed,0.09,낙하 속도 1m/s당 착지 펀치 배율
 Punch.hardLandPunch,10;2;5,세게·크게 착지하면 착지 펀치에 더하는 펀치: 끄덕(도);오른쪽으로 돌기(도);기울기(도). Beatrun hardland 값
 Punch.ladderStepRoll,1.5,사다리 한 칸마다 시점이 기우는 각도(도). 올리는 손에 따라 좌우가 바뀐다
 Punch.ladderCatchPunch,15;5;-15,공중에서 사다리를 잡을 때 펀치: 끄덕(도);오른쪽으로 돌기(도);기울기(도). Beatrun 값

@@ -82,27 +82,18 @@ public sealed class LocomotionState : MovementBaseState
         }
         else if (!ctx.Abilities.Landing.IsKnockedBack) // A blow's throw flies on untouched.
         {
-            // 공중: 점프로 얻은 고속 모멘텀 보존 및 공중 제어(Air Control)
-            float currentAirSpeed = ctx.HorizontalVelocity.magnitude;
-
-            if (currentAirSpeed > baseSpeed)
-            {
-                // 이미 달리기 등으로 가속된 상태라면 속도 크기를 줄이지 않고 입력 방향으로만 조향
-                if (inputMagnitude > 0.01f)
-                {
-                    ctx.HorizontalVelocity = Vector3.MoveTowards(
-                        ctx.HorizontalVelocity,
-                        inputDirection * currentAirSpeed,
-                        ctx.AirControlSharpness * currentAirSpeed * dt
-                    );
-                }
-            }
-            else
-            {
-                // 저속 체공 시 부드러운 공중 이동 보간
-                float t = 1f - Mathf.Exp(-ctx.AirControlSharpness * dt);
-                ctx.HorizontalVelocity = Vector3.Lerp(ctx.HorizontalVelocity, targetVelocity, t);
-            }
+            // In the air the keys turn the flight as they turn a run (the user, 2026-11-22: "점프를 자유롭게", 공중 방향 전환):
+            // up to Move.groundKeepPaceTurn round it comes about at its own pace, further it goes through a stop. A flight
+            // faster than the keys' own pace (a run-up, a leap) keeps its speed; with no keys it flies on.
+            float t = 1f - Mathf.Exp(-ctx.AirControlSharpness * dt);
+            Vector3 now = ctx.HorizontalVelocity;
+            float speedNow = now.magnitude, speedWanted = targetVelocity.magnitude;
+            bool keys = inputMagnitude > 0.01f;
+            if (keys && speedNow > KeepsPaceFrom && Vector3.Angle(now, inputDirection) <= ctx.GroundKeepPaceTurn)
+                ctx.HorizontalVelocity = Vector3.Slerp(now / speedNow, inputDirection, t)
+                    * (speedNow > speedWanted ? speedNow : Mathf.Lerp(speedNow, speedWanted, t));
+            else if (keys || speedNow <= baseSpeed)
+                ctx.HorizontalVelocity = Vector3.Lerp(now, targetVelocity, t);
         }
     }
 }

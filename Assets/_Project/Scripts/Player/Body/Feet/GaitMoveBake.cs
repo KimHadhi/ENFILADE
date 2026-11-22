@@ -9,46 +9,34 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Bakes from BIPER Female Runner's jumps (Jump_*, RunJump_*; 0.9.266) where the body leaves the ground, tops out and
-/// comes back down to where it left, and how high the body centre is between, read from each clip's own root curve, so
-/// the clip's moment follows the game's own flight (PlayerBody.FollowFlight). Since 0.9.285 also the crouch's way down and
-/// up (kind posture: IdleToCrouch, CrouchToIdle; PlayerBody.Posture follows the posture's ease on them) and the
-/// landing rolls' travel (kind travel: Roll_*, RollToRun_*, the share of the way gone as the clip goes; MovementLanding
-/// moves the body at that pace; the dive rolls had it 0.9.285-0.9.288). Written to Tables/Player/GaitMoves.csv by
-/// ClipBench (request line bake=gaitmoves); the game only reads it. These are measurements: bake again after a clip
-/// changes, never edit by hand. (It baked the start and stop clips until 0.9.263, and the turns on the spot's curves
-/// until 0.9.279, when the feet began to step round themselves.)
+/// Bakes from BIPER Female Runner's clips, off each one's own root curve, the crouch's way down and up (kind posture:
+/// IdleToCrouch, CrouchToIdle; PlayerBody.Posture follows the posture's ease on them) and the travel of the landing rolls
+/// (kind travel: Roll_*, RollToRun_*, the share of the way gone as the clip goes; MovementLanding moves the body at that
+/// pace). Written to Tables/Player/GaitMoves.csv by ClipBench (request line bake=gaitmoves); the game only reads it. These
+/// are measurements: bake again after a clip changes, never edit by hand. (It baked the start and stop clips until 0.9.263,
+/// the turns on the spot's curves until 0.9.279 and the jumps' flights until 0.9.333: the jump is one Beatrun clip on its
+/// own clock.)
 /// </summary>
 internal static class GaitMoveBake
 {
     internal const string TablePath = "Assets/_Project/Data/Resources/Tables/Player/GaitMoves.csv";
-    // Samples along a jump (its moment is looked up by its height).
-    internal const int JumpSamples = 48;
+    // Samples along a clip.
+    internal const int Samples = 48;
 
     internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, StringBuilder report)
     {
         var rows = new StringBuilder();
         rows.Append("id,kind,length,profile,leave,top,land,#설명\n");
         rows.Append("\"#설명 (ClipBench가 BIPER Female Runner 클립의 루트 곡선에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다"
-            + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). profile은 처음부터 끝까지 고르게 " + JumpSamples + "곳(';'). "
-            + "kind jump(Jump_*·RunJump_*): profile 몸 중심이 처음보다 높은 정도(꼭대기 = 1), leave 땅을 떠나는 때, top 꼭대기, land 처음 높이로 돌아오는 때(초). "
-            + "점프 클립은 이 곡선대로 게임의 비행 높이를 따른다(PlayerBody.FollowFlight). kind posture(IdleToCrouch·CrouchToIdle): profile 몸 중심이 "
+            + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). profile은 처음부터 끝까지 고르게 " + Samples + "곳(';'). "
+            + "kind posture(IdleToCrouch·CrouchToIdle): profile 몸 중심이 "
             + "처음 높이에서 끝 높이까지 간 정도(0~1), leave 움직이기 시작하는 때(2%), land 다 간 때(98%). 서서 앉고 일어설 때 클립이 자세가 바뀌는 만큼을 "
             + "따른다(PlayerBody.Posture). kind travel(Roll_*·RollToRun_*): profile 루트가 땅 위로 간 길의 몫(끝 = 1), top 몸 중심이 가장 낮은 때, land 몸이 "
             + "다시 선 때(낮아진 만큼의 10% 안으로 돌아옴). 착지 구르기는 이 빠르기로 간다(MovementLanding.RollSpeed))\",,,,,,,\n");
-        int jumps = 0, postures = 0, travels = 0;
+        int postures = 0, travels = 0;
         foreach (var clip in clips.Values.OrderBy(c => c.name, StringComparer.Ordinal))
         {
-            bool jump = clip.name.StartsWith("RunJump_", StringComparison.Ordinal)
-                || clip.name.StartsWith("Jump_", StringComparison.Ordinal) && !clip.name.StartsWith("Jump_Climb", StringComparison.Ordinal);
-            if (jump && Flight(clip, out float[] rise, out float leave, out float top, out float land))
-            {
-                rows.Append(string.Join(",", clip.name, "jump", F(clip.length), string.Join(";", rise.Select(F)), F(leave), F(top), F(land), ""));
-                rows.Append('\n');
-                report.AppendLine(Invariant($"  {clip.name,-20} jump  {clip.length:0.00}s leaves {leave:0.00} tops {top:0.00} lands {land:0.00}"));
-                jumps++;
-            }
-            else if (Array.IndexOf(PostureClips, clip.name) >= 0 && Posture(clip, out float[] share, out float from, out float to))
+            if (Array.IndexOf(PostureClips, clip.name) >= 0 && Posture(clip, out float[] share, out float from, out float to))
             {
                 rows.Append(string.Join(",", clip.name, "posture", F(clip.length), string.Join(";", share.Select(F)), F(from), "", F(to), ""));
                 rows.Append('\n');
@@ -65,14 +53,14 @@ internal static class GaitMoveBake
             }
         }
         WriteTable(rows.ToString());
-        report.AppendLine($"  baked {jumps} jumps, {postures} postures and {travels} travels into {TablePath}");
+        report.AppendLine($"  baked {postures} postures and {travels} travels into {TablePath}");
     }
 
     // The crouch's way down and up, standing still (PlayerBody.Posture).
     private static readonly string[] PostureClips = { "IdleToCrouch", "CrouchToIdle" };
 
     // A change of posture from its body centre's height (RootT.y): how far of its way from where it began to where it ends
-    // it has come (0-1) at JumpSamples evenly spaced moments, when it sets off (past 2%) and when it is there (98%). False
+    // it has come (0-1) at Samples evenly spaced moments, when it sets off (past 2%) and when it is there (98%). False
     // for a clip whose body ends about where it began.
     private static bool Posture(AnimationClip clip, out float[] share, out float from, out float to)
     {
@@ -83,8 +71,8 @@ internal static class GaitMoveBake
         float length = clip.length, start = height.Evaluate(0f), end = height.Evaluate(length);
         if (Mathf.Abs(end - start) < .05f) return false;
         float Share(float time) => Mathf.Clamp01((height.Evaluate(time) - start) / (end - start));
-        share = new float[JumpSamples];
-        for (int i = 0; i < JumpSamples; i++) share[i] = Share(length * i / (JumpSamples - 1));
+        share = new float[Samples];
+        for (int i = 0; i < Samples; i++) share[i] = Share(length * i / (Samples - 1));
         int steps = Mathf.Max(60, Mathf.CeilToInt(length * 240f));
         from = -1f;
         to = length;
@@ -99,7 +87,7 @@ internal static class GaitMoveBake
     }
 
     // A roll's travel from its root's path along the ground (RootT.x, RootT.z): the share of the whole path gone at
-    // JumpSamples evenly spaced moments; when its body centre (RootT.y) is lowest, and when it is back up, within a tenth of
+    // Samples evenly spaced moments; when its body centre (RootT.y) is lowest, and when it is back up, within a tenth of
     // that dip of where it began. False for a clip that goes nowhere.
     private static bool Travel(AnimationClip clip, out float[] gone, out float low, out float up)
     {
@@ -124,10 +112,10 @@ internal static class GaitMoveBake
         }
         float total = along[steps];
         if (total < .05f) return false;
-        gone = new float[JumpSamples];
-        for (int i = 0; i < JumpSamples; i++)
+        gone = new float[Samples];
+        for (int i = 0; i < Samples; i++)
         {
-            float f = (float)i * steps / (JumpSamples - 1);
+            float f = (float)i * steps / (Samples - 1);
             int a = Mathf.Min(steps, Mathf.FloorToInt(f)), b = Mathf.Min(steps, a + 1);
             gone[i] = Mathf.Lerp(along[a], along[b], f - a) / total;
         }
@@ -144,45 +132,6 @@ internal static class GaitMoveBake
         foreach (var binding in AnimationUtility.GetCurveBindings(clip))
             if (binding.type == typeof(Animator) && binding.propertyName == property) return AnimationUtility.GetEditorCurve(clip, binding);
         return null;
-    }
-
-    // A jump's flight from its body centre's height (RootT.y): its rise at JumpSamples evenly spaced moments, as a share of
-    // the top; where it leaves the ground (the last moment before the top that is no higher than where it began: after the
-    // dip of the push), its top, and where it comes back down to where it began (its end if it never does). False for a
-    // clip that never rises.
-    private static bool Flight(AnimationClip clip, out float[] rise, out float leave, out float top, out float land)
-    {
-        rise = null;
-        leave = top = land = 0f;
-        AnimationCurve height = null;
-        foreach (var binding in AnimationUtility.GetCurveBindings(clip))
-            if (binding.type == typeof(Animator) && binding.propertyName == "RootT.y") height = AnimationUtility.GetEditorCurve(clip, binding);
-        if (height == null) return false;
-        float start = height.Evaluate(0f), length = clip.length;
-        int steps = Mathf.Max(60, Mathf.CeilToInt(length * 240f));
-        var along = new float[steps + 1];
-        int highest = 0;
-        for (int i = 0; i <= steps; i++)
-        {
-            along[i] = height.Evaluate(length * i / steps) - start;
-            if (along[i] > along[highest]) highest = i;
-        }
-        float peak = along[highest];
-        if (peak < .05f) return false;
-        float At(int i) => length * i / steps;
-        // Where a crossing of the start's height falls between two steps.
-        float Crossing(int a, int b) => Mathf.Lerp(At(a), At(b), Mathf.InverseLerp(along[a], along[b], 0f));
-        top = At(highest);
-        leave = 0f;
-        for (int i = highest; i > 0; i--)
-            if (along[i - 1] <= 0f) { leave = Crossing(i - 1, i); break; }
-        land = length;
-        for (int i = highest; i < steps; i++)
-            if (along[i + 1] <= 0f) { land = Crossing(i, i + 1); break; }
-        rise = new float[JumpSamples];
-        for (int i = 0; i < JumpSamples; i++)
-            rise[i] = (height.Evaluate(length * i / (JumpSamples - 1)) - start) / peak;
-        return true;
     }
 
     private static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);

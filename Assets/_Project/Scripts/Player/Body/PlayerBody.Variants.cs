@@ -3,7 +3,7 @@ using UnityEngine.Playables;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// Which clip of a family fits the moment: jumps by run-up speed, the mid-air knee tuck, a long fall's flailing, vaults and mantles by
+/// Which clip of a family fits the moment: the mid-air knee tuck, a long fall's flailing, vaults and mantles by
 /// obstacle height, landings by how hard they were (MovementLanding's tier), the way a heavy landing goes down, a fast
 /// landing roll or a landing on the spot, crouched landings and slide exits, the ledge catch and shimmy, the wall kick's side, and the
 /// gun-holding version of a clip while a rifle or pistol is out. Names and thresholds come from Player.csv, row Body.
@@ -11,7 +11,7 @@ using MovementState = PlayerMovement.MovementState;
 public sealed partial class PlayerBody
 {
     [Header("Clip variants")]
-    [SerializeField] private string jumpStill = "jumpstill", jumpSlow = "jumpslow", airTuck = "jumpcoil";
+    [SerializeField] private string airTuck = "jumpcoil";
     [SerializeField] private string landCrouch = "landcrouch", coilLand = "jumpcoilend", coilLandCrouch = "jumpcoilendcrouch";
     [SerializeField, Tooltip("Down after a heavy landing and up again: onto hands and knees, flat on the face (a huge "
         + "fall), onto the back (moving backwards, or thrown by a blow). Each plays over the time the player stays down.")]
@@ -30,7 +30,7 @@ public sealed partial class PlayerBody
     [SerializeField, Min(0f)] private float landMidHeight = 2f;
     [SerializeField] private string supineSlideEndCrouch = "meslideendcrouch", supineSlideEndProne = "meslideendprone";
     [SerializeField, Tooltip("Lying on the back as Beatrun's jump turn does: coming down onto it from a dive, and getting up "
-        + "from it standing (with a gun out, its gun version) or under a low ceiling crouched. A slide ends onto it with "
+        + "from it standing (with a gun out, its gun version) or under a low ceiling crouched. A slide on the back ends onto it with "
         + "supineSlideEndProne, legs up first.")]
     private string supineLand = "jumpturnland", supineGetUp = "jumpturnlandstand", supineGetUpGun = "jumpturnlandstandgun",
         supineGetUpCrouch = "jumpturnlandcrouch";
@@ -53,8 +53,9 @@ public sealed partial class PlayerBody
     private bool armedClips;
     [SerializeField, Tooltip("Ending of the gun-holding version of a clip, played while that gun is out (meslideloop → meslideloop_ar2).")]
     private string rifleSuffix = "_ar2", pistolSuffix = "_pistol";
-    [SerializeField, Min(0f), Tooltip("Run-up speed (m/s): below the first a jump is a standing jump, above the second a running jump.")]
-    private float jumpStillSpeed = 1f, jumpFastSpeed = 4f;
+    [SerializeField, Min(0f), Tooltip("At least this fast (m/s) a hard landing runs on out of itself (LandingOnTheMove); slower it takes "
+        + "the knees, a hand down at a jog.")]
+    private float landRunSpeed = 4.4f;
     [SerializeField, Min(0f), Tooltip("For a mantle off a bar, which has no move of its own (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
     private float mantleStepHeight = .7f, mantleLowHeight = 1.1f, mantleMidHeight = 1.6f;
     [SerializeField, Min(.1f), Tooltip("Playback speed of the vault and climb clips. The player is over before the clip is, "
@@ -69,13 +70,13 @@ public sealed partial class PlayerBody
     private float lastVaultAt = float.NegativeInfinity;
 
     private WeaponController weapons;
-    private string jumpClip, obstacleClip, wallKickClip, rollClip, downClip;
+    private string obstacleClip, wallKickClip, rollClip, downClip;
     private float obstacleYaw;
     private bool tucked, flailing, fromEdge;
 
     private string[] VariantClips => new[]
     {
-        jumpStill, jumpSlow, airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
+        airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
         fallFlail, supineSlideEndCrouch, supineSlideEndProne, supineLand, supineGetUp, supineGetUpGun, supineGetUpCrouch,
         bellySlideEndCrouch, vaultHigh, vaultKong, springboard, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
         wallClimbStart, wallKickRight, crouchDown, standUp, fallFromEdge, landMid, clamberLow, clamberHigh, downedFall
@@ -109,8 +110,6 @@ public sealed partial class PlayerBody
             return weapons != null && weapons.ShowsWeapon && weapons.EquippedData != null;
         }
     }
-
-    private string JumpFor(float speed) => JumpWay(speed < jumpStillSpeed ? jumpStill : speed < jumpFastSpeed ? jumpSlow : jump, speed);
 
     private string ObstacleClip()
     {
@@ -237,9 +236,8 @@ public sealed partial class PlayerBody
         if (player.LastLandingTier != MovementLanding.Tier.Light)
             return crouched ? landCrouch : LandingOnTheMove(true) ?? SlamOnTheMove() ?? land;
         if (wasTucked && HorizontalSpeed() > walkClipSpeed) return crouched ? coilLandCrouch : coilLand;
-        // A plain jump landed on the move takes the landing in its stride (Land_ToRun1); standing, the knees take it
-        // (touchdown: Land_1h starts from the arms a jump comes down with, where blending on dropped them in a blink);
-        // moving any other way, it blends on; down from a tuck on the spot it settles out of the tuck (SettleFromTuck).
+        // Standing, the knees take a jump's landing (touchdown); on the move it blends on into the run; down from a tuck on
+        // the spot it settles out of the tuck (SettleFromTuck).
         if (crouched) return null;
         string onTheMove = LandingOnTheMove(false);
         if (onTheMove != null || wasTucked) return onTheMove;
@@ -299,8 +297,7 @@ public sealed partial class PlayerBody
         if (from == MovementState.SupineSliding && slidesOnBack) from = MovementState.Supine;
         // Beatrun's jump turn on the ground: down onto the back legs first, and up again with jumpturnlandstand.
         if (to == MovementState.Supine)
-            return from == MovementState.Sliding || from == MovementState.SupineSliding ? supineSlideEndProne
-                : from == MovementState.SupineDiving ? supineLand : null;
+            return from == MovementState.SupineSliding ? supineSlideEndProne : from == MovementState.SupineDiving ? supineLand : null;
         switch (from)
         {
             // Beatrun's DoJumpTurnStand: holding a weapon it stands up with jumpturnlandstandgun.
@@ -331,9 +328,7 @@ public sealed partial class PlayerBody
             tucked = true;
             Want(airTuck);
         }
-        // A jump's clip follows the flight (PlayerBody.Flight); one with no baked flight plays on its own clock.
-        else if (jumped && FollowFlight(Time.deltaTime)) { }
-        else if (jumped && !flights.ContainsKey(jumpClip ?? "") && airTime < (Find(jumpClip)?.Length ?? 0f)) Want(jumpClip);
+        else if (jumped && airTime < (Find(jump)?.Length ?? 0f)) Want(jump);
         // Off an edge onto a drop: the step off on its own clock (BIPER Jump_Falldown, its height left to the fall itself),
         // then the fall pose. Until 0.9.285 a walk off an edge went straight to the fall pose.
         else if (fromEdge && airTime < (Find(fallFromEdge)?.Length ?? 0f)) Want(fallFromEdge);

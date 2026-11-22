@@ -6,8 +6,9 @@ using MovementState = PlayerMovement.MovementState;
 /// - Each footstep nods the view a little and rolls it toward the foot coming down, so the roll alternates. Steps roll
 ///   less the faster the run, and kick harder while the run is still building speed. A gun in the hands steadies the
 ///   nod, and the roll too unless sprinting with Shift. Crouched steps don't punch.
-/// - A jump while moving forward tips the view up. A landing nods it down and rolls it, 2:1, by the fall speed; a hard
-///   or heavy landing adds Beatrun's hard-land jolt.
+/// - A hard or heavy landing nods it down and rolls it, 2:1, by the fall speed, and adds Beatrun's hard-land jolt. A jump
+///   and a light landing leave the view alone (the user, 2026-11-22: "점프할 때 카메라 덜 흔들리게"; until 0.9.333 a jump
+///   tipped it up and every landing nodded it).
 /// - Each ladder rung rolls the view toward the hand going up. Catching a ladder in the air jolts it, and stopping a
 ///   slide down one nods it.
 /// PlayerCameraEffects adds Angles to the camera with its other effects, scaled by the Esc menu's screen shake.
@@ -36,19 +37,12 @@ public sealed class PlayerMovementPunch : MonoBehaviour
     [SerializeField, Tooltip("Share of the step nod; roll left with a gun out. The roll stays whole while sprinting with Shift.")]
     private Vector2 armedStep = new Vector2(.25f, .25f);
 
-    [Header("Jumps and landings")]
-    [SerializeField, Tooltip("A jump while moving forward tips the view by this (degrees; negative looks up).")]
-    private float jumpPitch = -2f;
-    [SerializeField, Min(0f), Tooltip("Slower jumps don't tip the view (m/s).")]
-    private float jumpMinSpeed = 1.9f;
-    [SerializeField, Tooltip("Landing punch per landingPerSpeed: nod (down); roll in degrees.")]
+    [Header("Hard landings")]
+    [SerializeField, Tooltip("A hard or heavy landing's punch (MovementLanding's tier) per landingPerSpeed: nod (down); roll in degrees.")]
     private Vector2 landPunch = new Vector2(3f, 1.5f);
-    [SerializeField, Min(0f), Tooltip("Landing punch scale per m/s of fall speed. A 1.3 m jump lands at about 8 m/s.")]
+    [SerializeField, Min(0f), Tooltip("Landing punch scale per m/s of fall speed.")]
     private float landingPerSpeed = .09f;
-    [SerializeField, Min(0f), Tooltip("Gentler touchdowns don't punch (m/s).")]
-    private float landMinSpeed = 1.5f;
-    [SerializeField, Tooltip("A hard or heavy landing (MovementLanding's tier) kicks this on top: nod (down); turn (right); "
-        + "roll in degrees. Beatrun's hard land: 10, 2, 5.")]
+    [SerializeField, Tooltip("It kicks this on top: nod (down); turn (right); roll in degrees. Beatrun's hard land: 10, 2, 5.")]
     private Vector3 hardLandPunch = new Vector3(10f, 2f, 5f);
 
     [Header("Ladders")]
@@ -77,7 +71,6 @@ public sealed class PlayerMovementPunch : MonoBehaviour
     {
         if (player == null) return;
         player.Landed += OnLanded;
-        player.Jumped += OnJumped;
         player.StateChanged += OnStateChanged;
         player.LadderStepped += OnLadderStepped;
         player.LadderSlideStopped += OnLadderSlideStopped;
@@ -90,7 +83,6 @@ public sealed class PlayerMovementPunch : MonoBehaviour
         if (player != null)
         {
             player.Landed -= OnLanded;
-            player.Jumped -= OnJumped;
             player.StateChanged -= OnStateChanged;
             player.LadderStepped -= OnLadderStepped;
             player.LadderSlideStopped -= OnLadderSlideStopped;
@@ -136,21 +128,13 @@ public sealed class PlayerMovementPunch : MonoBehaviour
         Kick(new Vector3(stepPunch.x * nodShare, 0f, stepPunch.y * roll * rollShare * side) * strength);
     }
 
-    private void OnJumped()
-    {
-        Vector3 run = player.HorizontalVelocity;
-        if (run.magnitude < jumpMinSpeed || Vector3.Dot(run, transform.forward) < 0f) return;
-        Kick(new Vector3(jumpPitch, 0f, 0f));
-    }
-
-    // A landing roll pitches the view on its own. A hard or heavy one jolts it on top of the usual landing punch.
+    // A landing roll pitches the view on its own.
     private void OnLanded(float impact)
     {
-        if (impact < landMinSpeed || player.CurrentState == MovementState.LandingRoll) return;
+        if (player.LastLandingTier == MovementLanding.Tier.Light || player.CurrentState == MovementState.LandingRoll) return;
         float scale = impact * landingPerSpeed;
         Kick(new Vector3(landPunch.x, 0f, landPunch.y * side) * scale);
-        if (player.LastLandingTier != MovementLanding.Tier.Light)
-            Kick(new Vector3(hardLandPunch.x, hardLandPunch.y, hardLandPunch.z * side));
+        Kick(new Vector3(hardLandPunch.x, hardLandPunch.y, hardLandPunch.z * side));
         side = -side;
     }
 

@@ -4,18 +4,17 @@ using UnityEngine.Playables;
 
 /// <summary>
 /// One-off moves that go a way of their own, picked by the way the body goes (the user, 2026-11-21, on BIPER Female Runner:
-/// "점프 착지 구르기 회피"): a roll, a dodge and a jump each have a clip for each way their pack made them (Player.csv rows
+/// "점프 착지 구르기 회피"): a roll and a dodge each have a clip for each way their pack made them (Player.csv rows
 /// Body.*Ways, "clip@degrees;…", 0 ahead, 90 right), and the one whose way is nearest is the one that plays. A dodge on the
 /// run shifts into the run (ShiftToRun, ShiftToSprint) where standing it steps aside (QuickShift); a roll at a run comes up
-/// running (RollToRun) where a slower one stands up (Roll); a jump to the side leaps that way (Jump_Air, RunJump_Air); a
-/// landing on the move runs on out of it (Land_ToRun, Land_ToStumble). Ways as their names say them; ClipBench measured
-/// the travel of every one.
+/// running (RollToRun) where a slower one stands up (Roll); a landing on the move runs on out of it (Land_ToRun,
+/// Land_ToStumble). Ways as their names say them; ClipBench measured the travel of every one. A jump has one clip whatever
+/// its way (Body.jump).
 /// </summary>
 public sealed partial class PlayerBody
 {
     [Header("One-off moves by the way they go (clip@degrees;…)")]
     [SerializeField] private string rollWays = "", rollRunWays = "", dodgeWays = "", dodgeSprintWays = "";
-    [SerializeField] private string jumpWays = "", runJumpWays = "";
     [SerializeField, Tooltip("Landing on the move: lightly, lightly from higher (Body.landMidHeight), hard, hard at a sprint "
         + "(a stumble), and hard at a jog (down to a hand and on).")]
     private string landRunLight = "", landRunMid = "", landRunHard = "", landRunStumble = "", landSlam = "";
@@ -27,7 +26,7 @@ public sealed partial class PlayerBody
     // Every clip of every way set, made ready with the others (Build).
     private IEnumerable<string> WayClips()
     {
-        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays, jumpWays, runJumpWays })
+        foreach (string set in new[] { rollWays, rollRunWays, dodgeWays, dodgeSprintWays })
             foreach (var (clip, _) in WaysOf(set))
                 yield return clip;
         yield return landRunLight;
@@ -106,21 +105,12 @@ public sealed partial class PlayerBody
         return player.Abilities.Landing.RollRuns ? NearestWay(rollRunWays, heading, fallback) : NearestWay(rollWays, heading, fallback);
     }
 
-    // A jump's clip: by its speed as before when it goes ahead or back, else the leap to that side.
-    private string JumpWay(string bySpeed, float speed)
-    {
-        float heading = HeadingOf(player.ActualVelocity);
-        float side = Mathf.Abs(heading);
-        if (speed < jumpStillSpeed || side < 45f || side > 135f) return bySpeed;
-        return NearestWay(speed >= jumpFastSpeed ? runJumpWays : jumpWays, heading, bySpeed);
-    }
-
     // A landing at a run runs on out of it; null slower, or with no such clip. Its steps are a run's (Land_ToRun1 goes
     // 5.6 m/s): taken at a jog's or a walk's speed, they ran ahead of the body.
     private string LandingOnTheMove(bool hard)
     {
         float speed = HorizontalSpeed();
-        if (speed < jumpFastSpeed) return null;
+        if (speed < landRunSpeed) return null;
         if (Mathf.Abs(HeadingOf(player.ActualVelocity)) > 45f) return null;
         string clip = !hard ? (DroppedFar && Find(landRunMid) != null ? landRunMid : landRunLight)
             : speed >= landStumbleSpeed ? landRunStumble : landRunHard;
@@ -132,7 +122,7 @@ public sealed partial class PlayerBody
     private string SlamOnTheMove()
     {
         float speed = HorizontalSpeed();
-        if (speed <= walkClipSpeed || speed >= jumpFastSpeed || Mathf.Abs(HeadingOf(player.ActualVelocity)) > 45f) return null;
+        if (speed <= walkClipSpeed || speed >= landRunSpeed || Mathf.Abs(HeadingOf(player.ActualVelocity)) > 45f) return null;
         return Find(landSlam) != null ? landSlam : null;
     }
 

@@ -11,7 +11,7 @@ public sealed partial class PlayerBody
     [Header("Animation-led gaze")]
     [SerializeField, Range(0f, 1f), Tooltip("How much selected parkour/action clips lead the gaze. Mouse input stays immediate.")]
     private float animationViewStrength = .65f;
-    [SerializeField, Range(0f, 1f), Tooltip("How much of the jumps', landings' and rolls' head turn over the body's right carries the view.")]
+    [SerializeField, Range(0f, 1f), Tooltip("How much of the hard landings' and rolls' head turn over the body's right carries the view.")]
     private float animationViewFollow = 1f;
     [SerializeField, Tooltip("Maximum animation view offset in degrees: pitch, yaw, roll. A roll never spins the horizon all the way round.")]
     private Vector3 animationViewLimits = new Vector3(18f, 12f, 10f);
@@ -33,22 +33,19 @@ public sealed partial class PlayerBody
         {
             vault, vaultHigh, vaultKong, springboard, mantle, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeJump,
             wallClimbStart, wallClimb, wallKick, wallKickRight, barSwing, barRelease, clamberLow, clamberHigh,
-            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack, downedFall, jump, jumpStill, jumpSlow,
+            ladderExitLeft, ladderExitRight, heavyLand, heavyLandFaceDown, heavyLandBack, downedFall,
             diveStart, dive, dodgeLeft, dodgeRight, dashPush
         })
             Add(animationViewChannels, clip);
-        // The jumps lead it a bounded share as the moves above do: carried all the way (0.9.286) their head's nods made the
-        // user sick ("점프는 너무 멀미 나는데").
-        foreach (string set in new[] { jumpWays, runJumpWays })
-            foreach (var (clip, _) in WaysOf(set))
-                Add(animationViewChannels, clip);
-        // The landings and rolls: their head carries the view (BodyGaze). Until 0.9.286 only the old names led it at all
-        // (roll, rollLand, landCrouch), and none of BIPER's jumps, landings or rolls did, so through them the view stayed
-        // held ahead under a head that went over (the user, 2026-11-21: "닭처럼 고정된 느낌").
+        // A jump and a light landing leave the view to the mouse (the user, 2026-11-22: "점프할 때 카메라 덜 흔들리게"): the
+        // jump's head nods 16-35 degrees through its flight, and carried all the way (0.9.286), or a bounded share of it
+        // (0.9.288), it moved the aim at every jump ("점프는 너무 멀미 나는데").
+        // The hard landings and rolls: their head carries the view (BodyGaze). Until 0.9.286 only the old names led it at all
+        // (roll, landCrouch), and none of BIPER's landings or rolls did, so through them the view stayed held ahead under a
+        // head that went over (the user, 2026-11-21: "닭처럼 고정된 느낌").
         foreach (string clip in new[]
         {
-            touchdown, land, landMid, landCrouch, roll, rollLand, fallFromEdge,
-            landRunLight, landRunMid, landRunHard, landRunStumble, landSlam
+            land, landCrouch, roll, fallFromEdge, landRunHard, landRunStumble, landSlam
         })
             Add(carriedViewChannels, clip);
         foreach (string set in new[] { rollWays, rollRunWays })

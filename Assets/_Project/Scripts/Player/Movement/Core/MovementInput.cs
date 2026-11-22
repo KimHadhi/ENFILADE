@@ -9,12 +9,9 @@ public sealed class MovementInput
     // Interact is not sampled here: it is shared by everything the key does, and whose a press is belongs to its one
     // owner (InteractKey), which a ladder's top asks like the rest (MovementFixtures).
     private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, walkModeAction;
-    private bool crouchLatched, weaponInputSought;
+    private bool crouchLatched;
     private int leanLatched;
-    private PlayerWeaponInput weaponInput;
     public bool JumpPressed { get; private set; }
-    /// <summary>The aim/guard button (Combat/Guard) is held.</summary>
-    public bool AimHeld { get; private set; }
     public bool JumpHeld { get; private set; }
     public bool CrouchPressed { get; private set; }
     /// <summary>Crouch intent: the key held, or latched by a press when the crouch toggle setting is on.</summary>
@@ -66,7 +63,7 @@ public sealed class MovementInput
     /// and the states go on from that frame by their own rules (a hang hangs on, a slide slides out, a held key's move
     /// ends as if the key were released).
     /// moving false (getting up off the back) keeps the body's own moves (jump, crouch press, dodge, dive, sprint, lean)
-    /// from starting, while the hands stay free: the shove and the aim still read, and a crouch held from before still
+    /// from starting, while the hands stay free: the shove still reads, and a crouch held from before still
     /// counts, since the body rose into it.
     /// </summary>
     internal void Sample(bool available, bool moving = true)
@@ -84,8 +81,6 @@ public sealed class MovementInput
         ShovePressed = available && InputFocus.Pressed(shoveAction);
         // A switch, not a move: it flips whenever the keys are the game's, getting up off the back included.
         if (available && InputFocus.Pressed(walkModeAction)) WalkMode = !WalkMode;
-        if (!weaponInputSought) { weaponInput = ctx.GetComponentInChildren<PlayerWeaponInput>(); weaponInputSought = true; }
-        AimHeld = available && weaponInput != null && weaponInput.GuardHeld;
         
         int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
         // As the crouch: a lean on toggle stays put while a screen has the keys; a lean on a held key reads as let go.
