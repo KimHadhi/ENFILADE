@@ -70,6 +70,8 @@ namespace HudAddons
             public Vector2 health = new Vector2(1f, 1.87f);
             /// <summary>The armour bar under health: sh x this x the scale option lower.</summary>
             public float armorDrop = .03f;
+            /// <summary>The armour bar's drop with the wide spacing.</summary>
+            public float armorDropWide = .0444f;
             public Vector2 hazards = new Vector2(.805f, 1.775f);
             public Vector2 ammo = new Vector2(1.75f, 1.8f);
             public Vector2 history = new Vector2(1.45f, 1.5f);
@@ -263,6 +265,8 @@ namespace HudAddons
             public float magazine = 32f;
             /// <summary>Between the ultimate and the picture's box, the rank's emblem and its bar.</summary>
             public float gap = 10f;
+            /// <summary>With the wide spacing: between the ultimate and the picture's box, and the box's foot and the health bar.</summary>
+            public float gapWide = 18.67f, riseWide = 34.67f;
             /// <summary>Between the box's foot and the health bar's frame.</summary>
             public float rise = 10f;
             /// <summary>The rank in the picture's box: how much of the box under the picture is its, and its emblem's side.</summary>

@@ -30,6 +30,7 @@ namespace HudAddons
             Toggle(rows, T("hide"), o.hide, v => o.hide = v);
             rows.Slider(T("sway_intensity"), 1f, 5f, o.swayIntensity, v => o.swayIntensity = v, Two);
             rows.Slider(T("scale"), 0f, 3f, o.scale, v => o.scale = v, Two);
+            rows.Choice(T("spacing"), new[] { T("spacing.default"), T("spacing.wide") }, (int)o.spacing, i => o.spacing = (HudSpacing)i);
             Font(rows, o);
             rows.Slider(T("weight"), 0f, 5f, o.weight, v => o.weight = v, Two);
 

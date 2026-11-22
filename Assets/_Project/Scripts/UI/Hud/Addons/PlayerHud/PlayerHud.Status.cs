@@ -21,7 +21,8 @@ namespace HudAddons
             var place = look.Place;
             float x = sw * place.health.x + swayX, y = sh * place.health.y - swayY;
             DrawHealth(o, x, y, alpha);
-            DrawArmor(o, x, sh * place.health.y + sh * place.armorDrop * o.scale - swayY, alpha);
+            float drop = o.spacing == HudSpacing.Wide ? place.armorDropWide : place.armorDrop;
+            DrawArmor(o, x, sh * place.health.y + sh * drop * o.scale - swayY, alpha);
             painter.AlphaScale = 1f;
         }
 

@@ -25,6 +25,7 @@ Font.history,0.022,"Nene.History: 획득 기록"
 Font.weightUnit,500,"글꼴 굵기 = 이 값 x 설정의 글자 굵기(기본 2 → 1000: 굵게)"
 Place.health,1;1.87,"configs.lua Positions.Health = (sw, sh + sh*.87): 체력 막대 가운데"
 Place.armorDrop,0.03,"방어구 막대는 체력 자리에서 sh x 이 값 x 크기만큼 아래"
+Place.armorDropWide,0.0444,설정의 간격이 넓게일 때 방어구 막대의 그 값(체력 바탕 상자와 10px 사이. 체력바 시안 2차의 간격)
 Place.hazards,0.805;1.775,"Positions.Hazards = (sw*.805, sh + sh*.775)"
 Place.ammo,1.75;1.8,"Positions.Ammo = (sw*2 - sw*.25, sh + sh*.8)"
 Place.history,1.45;1.5,"Positions.History = (sw*2 - sw*.55, sh + sh*.5)"
@@ -126,7 +127,9 @@ Fx.hold,0.3,"맞을 때마다 이만큼 밀린 채로 있는다"
 Portrait.size,196,"우리 프사·궁극기·계급(HUD Mk II에는 없는 조각)을 애드온 상자로 그린다(사용자 2026-11-22: ""프사 이 정도로 크게랑 경험치 바랑 탄창 느낌의 궁극기 게이지 살려서 저 디자인으로 개편""). 체력 막대 왼끝 위에 서고 체력 자리(health_x/y)를 따라간다. 크기는 애드온처럼 px x Scale(1080p에서 0.75배). 사진 한 변: 196 = 1080p 147px, 예전 HUD 초상화의 사진과 검은 테"
 Portrait.magazine,32,"사진 왼쪽 궁극기 탄창의 바깥 폭(1080p 24px, 예전 탄창 폭). 생김새·움직임은 Magazine 줄"
 Portrait.gap,10,"탄창과 사진 상자 사이, 계급 그림과 막대 사이(탄창 덮개가 사진 상자에 닿지 않게)"
+Portrait.gapWide,18.67,설정의 간격이 넓게일 때 탄창과 사진 상자 사이(1080p 14px)
 Portrait.rise,10,사진 상자 아래 끝과 체력 막대 바탕 상자 사이
+Portrait.riseWide,34.67,설정의 간격이 넓게일 때 사진 상자 아래 끝과 체력 막대 바탕 상자 사이(1080p 26px)
 Portrait.strip,50,"사진 상자에서 사진 밑 계급 자리의 높이(1080p 37.5px). 계급이 사진과 체력 막대 사이의 따로 선 줄이던 것을 사진과 한 상자로(체력바 시안 2차 B, 사용자 11-22: ""너무 겹쳐 있어서 섹션 구분이 안 되는 게 문제였어"", ""B에 간격은 기존 걸로"")"
 Portrait.emblem,40,"계급 그림 한 변(1080p 30px). 육각 판 없는 흰 그림(Resources/UI/Ranks/Flat, Tools/Icons/rank_icons.py. 사용자 11-22: ""계급 아이콘은 너무 혼자서 튀니까 simple로""). 이번 판에 오를 계급 수는 그림 오른쪽 위에 +N"
 Portrait.rankHeight,12,"계급 막대 두께(1080p 9px. 사용자 11-22: ""경험치 쪽은 가시성이 안 좋고""). BL_Rect: 바탕 상자, 줄면 주황이 남았다 따라 내려감"

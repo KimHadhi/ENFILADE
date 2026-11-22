@@ -52,6 +52,7 @@
 | `hide` | 0 | `hide` | 기본 > 체력·방어구 자동 숨기기 |
 | `sway_intensity` | 2 (1~5) | `swayIntensity` | 기본 > 흔들림 세기 |
 | `scale` | 1 (0~3) | `scale` | 기본 > 크기 |
+| (우리 것) | 기본 | `spacing` (`Default`, `Wide`) | 기본 > 간격 (넓게: 프로필 상자와 체력 26px, 체력과 방어구 상자 10px, 탄창과 사진 14px. 체력바 시안 2차의 간격, 11-22 사용자: "근데 그 시안에서 간격 좋던데 설정값으로 넣어 주세요") |
 | `font` | Hitmarker Normal (영상. 원본 Unifont) | `font` | 기본 > 글꼴 (AddonFonts.csv의 이름: Hitmarker Normal, Unifont, EvanstonTavernM, Hitmarker Text…; 없는 이름은 Label 글꼴; 비우면 Hitmarker Normal) |
 | `weight` | 1 (영상: 보통 굵기로 잰 글자 폭. 원본 2) (0~5) | `weight` | 기본 > 글자 굵기 (500 x 값, 550을 넘으면 굵게) |
 | `health`, `health_x/y`, `health_color_r/g/b/a` | 1, -630, -30 (영상. 원본 0, 0), (223,255,143,255) | `health`, `healthX/Y`, `healthColor` | 체력 |

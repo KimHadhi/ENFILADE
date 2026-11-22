@@ -37,12 +37,13 @@ namespace HudAddons
             var s = look.Status;
             var o = Options;
             float frame = s.frame * scale, side = p.size * scale, strip = p.strip * scale;
+            bool wider = o.spacing == HudSpacing.Wide;
             // The health bar's frame, wherever its options put it: the panel stands on its left end.
             float barX = sw * look.Place.health.x + swayX + o.healthX, barY = sh * look.Place.health.y - swayY + o.healthY;
             float left = barX - s.width * scale * .5f - frame;
-            float foot = barY - s.healthHeight * scale * .5f - frame - p.rise * scale;
+            float foot = barY - s.healthHeight * scale * .5f - frame - (wider ? p.riseWide : p.rise) * scale;
             float wide = side + frame * 2f, tall = frame + side + strip, top = foot - tall;
-            float magazine = p.magazine * scale, pictureLeft = left + magazine + p.gap * scale;
+            float magazine = p.magazine * scale, pictureLeft = left + magazine + (wider ? p.gapWide : p.gap) * scale;
             // Where the class UI stands when it goes beside the portrait (PlayerHud.Class).
             panelRight = pictureLeft + wide;
             panelFoot = foot;

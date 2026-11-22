@@ -29,6 +29,9 @@ namespace HudAddons
         // ---- Main (hud_mk2_hud, scale, font, weight, sway, sway_intensity, hide) ----
         public bool enabled = true;
         public float scale = 1f;
+        /// <summary>Ours: how far apart the portrait's box, the health bar and the armour bar stand (the gaps of health bar draft
+        /// B, which the user liked but wanted as a choice).</summary>
+        public HudSpacing spacing = HudSpacing.Default;
         /// <summary>The face every text is drawn in (the panel's text box); a name AddonFonts.csv has, else the Label face.
         /// The video's: the Hitmarker Normal the addon ships, at a weight that keeps it regular (its letters measure as
         /// the regular face's; weight 2 would embolden them). The addon's own default is Unifont at 2.</summary>
@@ -103,6 +106,7 @@ namespace HudAddons
         public void Clamp()
         {
             scale = Range(scale, 0f, 3f, 1f);
+            if (spacing < HudSpacing.Default || spacing > HudSpacing.Wide) spacing = HudSpacing.Default;
             weight = Range(weight, 0f, 5f, 1f);
             swayIntensity = Range(swayIntensity, 1f, 5f, 2f);
             font = string.IsNullOrWhiteSpace(font) ? VideoFont : font.Trim();
@@ -125,6 +129,13 @@ namespace HudAddons
             => float.IsNaN(value) || float.IsInfinity(value) ? fallback : Mathf.Clamp(value, min, max);
 
         private static float Offset(float value, float reach) => Range(value, -reach * 2f, reach * 2f, 0f);
+    }
+
+    /// <summary>How far apart the portrait, the health bar and the armour bar stand (PlayerHudLook: the Wide numbers).</summary>
+    public enum HudSpacing
+    {
+        Default,
+        Wide,
     }
 
     /// <summary>Where the class UI stands: under the screen's middle, or beside the portrait over the health bar.</summary>
