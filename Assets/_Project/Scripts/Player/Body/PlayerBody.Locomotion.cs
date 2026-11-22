@@ -276,6 +276,7 @@ public sealed partial class PlayerBody
         float scale = GaitScale;
         mixWeight = mixStride = mixSpeed = 0f;
         mixVelocity = Vector2.zero;
+        postureClip = PostureClip(crouched);
         FollowTurn(dt);
 
         // A gun out asks for its aimed set as far as the sights are up and for its own set otherwise; what they can't
@@ -315,6 +316,7 @@ public sealed partial class PlayerBody
             gaitPlace = 0f;
             moving += MixSets(crouchSet, legs, speed, scale, postureDown);
         }
+        postureClip = null;
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
         TurnOnTheSpot(speed < StillTravel, dt);
         if (!crouched && !legsPlanted) targetYaw = turn;
@@ -428,9 +430,11 @@ public sealed partial class PlayerBody
         return moving;
     }
 
+    // The part of the body that stands: on its set's idle, or on the clip that takes it down into a crouch or up out of one.
     private void MixIdle(MoveSet set, float weight)
     {
-        if (set.Idle != null && weight > 0f) set.Idle.Target += weight;
+        var idle = postureClip ?? set.Idle;
+        if (idle != null && weight > 0f) idle.Target += weight;
     }
 
     // How much of a travel a set can carry at a gait (0-1): as far as its ways reach round to the heading (Reach) and its

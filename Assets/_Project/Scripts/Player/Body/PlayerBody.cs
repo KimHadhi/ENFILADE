@@ -800,9 +800,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Standing:
             case MovementState.Crouching:
                 bool crouched = state == MovementState.Crouching;
-                // Down into a crouch or up out of it: standing still its clip (PlayerBody.Posture).
                 TickPosture(crouched, dt);
-                if (onGround) { if (!ShowPosture(crouched)) Locomotion(crouched, dt); }
+                if (onGround) Locomotion(crouched, dt);
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;
@@ -1087,9 +1086,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         var channel = Find(clipName);
         if (channel == null || channel.Synced) { Want(clipName); return; }
+        HoldAt(channel, share);
+        channel.Target = 1f;
+    }
+
+    private static void HoldAt(Channel channel, float share)
+    {
         channel.Playable.SetSpeed(0);
         channel.Playable.SetTime(Mathf.Clamp01(share) * channel.Length);
-        channel.Target = 1f;
     }
 
     private float HorizontalSpeed() => new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;

@@ -8,16 +8,8 @@ using UnityEngine;
 public sealed class MovementLean
 {
     private readonly PlayerMovement ctx;
-    // lean is what everything shows; held is where the key alone would have it, going at heldPace (a second).
-    // As Rainbow Six's does (the user, 2026-11-23: "기울이기는 최신 레식처럼"), it sets off and stops smoothly, turns back from where
-    // it is and goes straight over to the other side, no faster from side to side than from upright. Until 0.9.356 it set off at
-    // its fastest in one frame, 3.9 m/s of head from side to side, some 24 g, and the hair was thrown about; now 1.6 m/s and 4 g,
-    // one side in as long as it was (90 % in 0.23 s) and the other in 0.30 s.
-    // Once begun it goes on most of the way to its side (toward) before the key turns it (Ability.leanGoes), so keys tapped over
-    // and over lean it over and back smoothly, where they shook it 3 cm fourteen times a second (the user, 2026-11-23: "한번
-    // 기울이거나 앉기 시작했으면 좀 진행하도록 ... 부드럽고 자연스럽게 다시 복귀해서 돌아오고 반대편으로 갈 수 있게").
-    private float lean, held, heldPace;
-    private int toward;
+    // lean is what everything shows; held is where the key alone would have it.
+    private float lean, held;
     private float slipTime = -1f, slipStart;
     private int slipSide, slipActivation;
     public float Roll => -lean * ctx.AbilitySettings.leanAngle;
@@ -25,7 +17,7 @@ public sealed class MovementLean
     /// <summary>How far a full lean takes the eyes sideways (m), as the body's lean says (BodyLean).</summary>
     internal float Reach { get; set; } = .2f;
     /// <summary>How far the lean has gone, -1 to 1. Carried to the other PCs as it is.</summary>
-    internal float Share { get => lean; set { lean = held = value; heldPace = 0f; } }
+    internal float Share { get => lean; set => lean = held = value; }
     /// <summary>
     /// The console's /lean holds the lean here while it measures the feet (LeanProbe): the keys, the walls and a slip are
     /// left out while it is set, and the lean goes back to the keys once it is cleared. Held here, where the lean is
@@ -37,7 +29,7 @@ public sealed class MovementLean
     internal void Tick(float dt)
     {
         if (dt <= 0f || Time.timeScale <= 0f) return;
-        if (Probed.HasValue) { Share = Mathf.Clamp(Probed.Value, -1f, 1f); slipTime = -1f; return; }
+        if (Probed.HasValue) { lean = held = Mathf.Clamp(Probed.Value, -1f, 1f); slipTime = -1f; return; }
         // What the body can do (on its feet, not in a move of its own). Whose the keys are is not asked here: with them
         // taken, a held lean already reads as let go and a toggled one stays (MovementInput), and a slip under way out
         // of a blow's line is not thrown away because the chat opened.
@@ -54,10 +46,7 @@ public sealed class MovementLean
                 ctx.AbilitySettings.microInvulnerability, ctx.AbilitySettings.dodgeCooldown);
         // Fresh defensive input replaces the slip instead of stacking two directions.
         if (!allowed || slipActivation != ctx.Abilities.Dodge.Activation) slipTime = -1f;
-        float time = ctx.AbilitySettings.leanTime, target = CollisionLimitedLean(toward);
-        if (side != toward && (!allowed || Mathf.Abs(held - target) <= 1f - ctx.AbilitySettings.leanGoes))
-            target = CollisionLimitedLean(toward = side);
-        held = Mathf.SmoothDamp(held, target, ref heldPace, time, 1f / time, dt);
+        held = Mathf.Lerp(held, CollisionLimitedLean(side), 1f - Mathf.Exp(-ctx.AbilitySettings.leanSharpness * dt));
         if (slipTime >= 0f) AdvanceSlip();
         else lean = held;
     }
@@ -97,5 +86,5 @@ public sealed class MovementLean
             target *= Mathf.Clamp01((hit.distance - .03f) / Mathf.Max(.01f, Reach));
         return target;
     }
-    internal void Reset() { Share = slipStart = 0f; slipTime = -1f; toward = slipSide = slipActivation = 0; }
+    internal void Reset() { lean = held = slipStart = 0f; slipTime = -1f; slipSide = slipActivation = 0; }
 }

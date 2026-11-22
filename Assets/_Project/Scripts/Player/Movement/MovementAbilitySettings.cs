@@ -24,10 +24,7 @@ public sealed class MovementAbilitySettings
     [Tooltip("스텝 닷지 실패 시 다음 회피까지의 시간. 회피 성공 시 공통 쿨타임이 즉시 초기화됩니다.")]
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
     [Range(0f, 30f)] public float leanAngle = 15f;
-    [Tooltip("How gently a lean goes over (s, a smoothing time): it sets off and turns back smoothly, and goes no faster than one side in this long.")]
-    [Min(.01f)] public float leanTime = .12f;
-    [Tooltip("A lean once begun goes on until it is this near where it goes (1 all the way) before the key turns it.")]
-    [Range(0f, 1f)] public float leanGoes = .8f;
+    [Min(1f)] public float leanSharpness = 10f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;

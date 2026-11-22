@@ -44,9 +44,6 @@ public sealed class MovementActions
     /// <summary>The legs' gait and how fast it goes each way (walk mode, Shift).</summary>
     public MovementGait Gait { get; }
     internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer, riseTimer;
-    private float stanceTimer;
-    /// <summary>The crouch key waits for the body to have stood up (KeyTurnsStance).</summary>
-    internal bool CrouchWaits { get; private set; }
     /// <summary>Getting up off the back: every key waits until the body is up (Ability.supineRiseTime).</summary>
     public bool IsRising => riseTimer > 0f;
 
@@ -64,32 +61,12 @@ public sealed class MovementActions
         jumpBufferTimer -= dt;
         slideCooldownTimer -= dt;
         riseTimer -= dt;
-        stanceTimer -= dt;
     }
-
-    /// <summary>
-    /// Asked each frame by the standing and the crouched state: whether the crouch key has the player go down, or get up, now.
-    /// Once begun, either goes to its end before the key turns it (BeginStance), and what the key says then goes: tapped over and
-    /// over, the body goes down and comes back up smoothly and never turns on its way (the user, 2026-11-23: "한번 기울이거나 앉기
-    /// 시작했으면 좀 진행하도록, 그래야 빠르게 반복해서 순간이동하지 않고 부드럽고 자연스럽게 다시 복귀해서 돌아오고"). Until
-    /// 0.9.355 each tap turned it, 11-31 cm up and down at seven a second, and the hair and chest were thrown about; 0.9.356 left
-    /// taps that came too soon out altogether.
-    /// </summary>
-    internal bool KeyTurnsStance(bool crouched)
-    {
-        bool turns = ctx.Input.CrouchHeld != crouched, free = stanceTimer <= 0f;
-        CrouchWaits = turns && !free && !crouched;
-        return turns && free;
-    }
-
-    /// <summary>Going down into a crouch, or up out of one, by the key.</summary>
-    internal void BeginStance(bool down) => stanceTimer = ctx.PostureSeconds(down);
 
     internal void Reset()
     {
         CurrentSlideSpeed = sprintProgress = 0f;
-        coyoteTimer = jumpBufferTimer = slideCooldownTimer = riseTimer = stanceTimer = 0f;
-        CrouchWaits = false;
+        coyoteTimer = jumpBufferTimer = slideCooldownTimer = riseTimer = 0f;
         SlideBrakeArmed = SlideFacesBack = false;
         Dive.Reset();
         Gait.Reset();

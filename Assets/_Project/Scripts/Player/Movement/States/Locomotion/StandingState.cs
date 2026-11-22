@@ -8,7 +8,7 @@ public sealed class StandingState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
-        bool goesDown = ctx.Actions.KeyTurnsStance(false);
+        bool crouchPressed = ctx.Input.CrouchHeld;
         bool crouchJustPressed = ctx.Input.CrouchPressed;
 
         float measuredSpeed = new Vector2(ctx.ActualVelocity.x, ctx.ActualVelocity.z).magnitude;
@@ -24,9 +24,8 @@ public sealed class StandingState : MovementBaseState
         }
 
         // 2. 일반 앉기
-        if (goesDown && ctx.IsGrounded)
+        if (crouchPressed && ctx.IsGrounded)
         {
-            ctx.Actions.BeginStance(true);
             ctx.ChangeState(PlayerMovement.MovementState.Crouching);
         }
     }
