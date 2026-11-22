@@ -47,6 +47,10 @@ using static ArmBones;
 /// that spot leaves this reach; then the ping's point is over and the arm drops back over Point.turnOut from where it was
 /// (PlayerPoint.TurnAway). A held point follows the view, so it never leaves the reach; only its spring could swing it
 /// past on a quick flick, and the reach holds it there too.
+/// The arm stops short of its own legs as it does of a wall, and its elbow comes out to the side instead of down (the user,
+/// 2026-11-23: "앉은 채로 내 다리쪽으로 가면 내 팔과 손이 다리를 뚫는데"): crouched, the thighs and shins stand between the shoulder
+/// and where the finger points. The legs are the bones' capsules the cloth meets (ClothBody.csv), so no collider is added and
+/// nothing is asked of the physics.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.GunFramework + 6)]
 public sealed class PointArm : MonoBehaviour
@@ -63,6 +67,11 @@ public sealed class PointArm : MonoBehaviour
     // otherUpper: the right upper arm, whose shoulder with this one's gives the way the chest faces (ShoulderReach).
     private Transform eyes, indexTip, otherUpper;
     private readonly ArmBones arm = new ArmBones();
+    // The thighs and the shins, hip to knee and knee to ankle, and how thick each is against its length.
+    private readonly (Transform from, Transform to, float thick)[] legs = new (Transform, Transform, float)[4];
+    // How far short of where it points the legs hold the fingertip now (m), eased over this long (s).
+    private float legHold;
+    private const float LegEase = .05f;
     // The wrist as the body was modelled, straight and untwisted (its skin's bind pose): the hand's turn from the forearm
     // then, and the forearm's way into the wrist in the hand's own frame (BindWrist).
     private Quaternion wristBind = Quaternion.identity;
@@ -78,7 +87,7 @@ public sealed class PointArm : MonoBehaviour
     // taken as the drop began (wasAway: it was dropping the frame before).
     private Vector3 awayLocal;
     private float tipLength, touchBlend;
-    private bool bound, hasAim, hasTouch, touching, wasAway;
+    private bool bound, hasAim, hasTouch, touching, wasAway, hasLegHold;
     private PokeHit touch;
     // The drawn hand's joints as this arm wears them: the table's (PokeTables.HandWays, shared, never changed), the index's
     // tip laid straight on from its middle joint.
@@ -106,7 +115,7 @@ public sealed class PointArm : MonoBehaviour
         if (weight <= 0f)
         {
             Let();
-            hasAim = hasTouch = wasAway = false;
+            hasAim = hasTouch = wasAway = hasLegHold = false;
             press = touchBlend = 0f;
             return;
         }
@@ -133,11 +142,23 @@ public sealed class PointArm : MonoBehaviour
         if (movement == null || point == null || animator == null || !animator.isHuman) return false;
         if (!arm.Bind(animator)) return false;
         otherUpper = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+        BindLegs();
         var lastJoint = arm.Fingers[Index * 3 + 2];
         indexTip = lastJoint != null && lastJoint.childCount > 0 ? lastJoint.GetChild(0) : null;
         BindWrist();
         bound = true;
         return true;
+    }
+
+    private void BindLegs()
+    {
+        float thigh = GameTables.Number(PlayerBodyCloth.TableName, PlayerBodyCloth.TableRow, "thighStart", .17f);
+        float shin = GameTables.Number(PlayerBodyCloth.TableName, PlayerBodyCloth.TableRow, "shinStart", .15f);
+        Transform Bone(HumanBodyBones bone) => animator.GetBoneTransform(bone);
+        legs[0] = (Bone(HumanBodyBones.LeftUpperLeg), Bone(HumanBodyBones.LeftLowerLeg), thigh);
+        legs[1] = (Bone(HumanBodyBones.RightUpperLeg), Bone(HumanBodyBones.RightLowerLeg), thigh);
+        legs[2] = (Bone(HumanBodyBones.LeftLowerLeg), Bone(HumanBodyBones.LeftFoot), shin);
+        legs[3] = (Bone(HumanBodyBones.RightLowerLeg), Bone(HumanBodyBones.RightFoot), shin);
     }
 
     // The wrist as the body was modelled, from its skin's bind pose (the pose its mesh was weighted in, where a wrist looks
@@ -268,6 +289,16 @@ public sealed class PointArm : MonoBehaviour
         float goalDistance = toGoal.magnitude;
         if (goalDistance > 1e-3f && FirstSolid(shoulder, toGoal / goalDistance, goalDistance + hover, out RaycastHit block))
             goal = shoulder + toGoal / goalDistance * Mathf.Max(.05f, block.distance - hover);
+        // Nor into the player's own legs: it stops on them, eased over their edges.
+        toGoal = goal - shoulder;
+        goalDistance = toGoal.magnitude;
+        float legAt = goalDistance > 1e-3f ? LegAt(shoulder, toGoal / goalDistance) : float.PositiveInfinity;
+        float hold = Mathf.Max(0f, goalDistance - Mathf.Max(armLength * .3f, legAt));
+        legHold = hasLegHold ? Mathf.Lerp(legHold, hold, 1f - Mathf.Exp(-dt / LegEase)) : hold;
+        hasLegHold = true;
+        if (goalDistance > 1e-3f) goal -= toGoal / goalDistance * Mathf.Min(legHold, goalDistance);
+        // Held back, the elbow has to go somewhere: out to the side, not down into the thigh.
+        float held = Mathf.Clamp01(legHold / (armLength * .4f));
 
         // The hand first along the way it points (from the shoulder at the aim, or onto the friend), to learn where its
         // fingertip sits; the arm bends (the elbow a little, down and out) to put the fingertip there; the hand then turns
@@ -276,7 +307,7 @@ public sealed class PointArm : MonoBehaviour
         // bends it past the limit; the pitch is the shoulder's and the elbow's (the user, 2026-11-12: "손가락질하면서 위나
         // 아래를 보면 손목이 기괴하게 꺾임"). 0.8.253 checked the limit before the arm's last bend, so a big bend at a
         // steep look carried the wrist past it.
-        Vector3 hint = shoulder + (-Vector3.up * PokeTables.Number("Point.elbowDown", .8f) - viewRight * PokeTables.Number("Point.elbowOut", .55f)
+        Vector3 hint = shoulder + (-Vector3.up * (PokeTables.Number("Point.elbowDown", .8f) * (1f - held)) - viewRight * (PokeTables.Number("Point.elbowOut", .55f) + held)
             - viewAhead * PokeTables.Number("Point.elbowBack", .1f)) * reach;
         Quaternion aimed = PoseHand(goalDistance > 1e-3f ? toGoal / goalDistance : aimWay, viewRight, viewAhead, out Vector3 palm);
         Quaternion handGoal = aimed;
@@ -465,6 +496,38 @@ public sealed class PointArm : MonoBehaviour
             first = candidate;
         }
         return nearest < float.PositiveInfinity;
+    }
+
+    // How far along a line from the shoulder the player's own legs begin, a hand's half thickness kept off them (m).
+    private float LegAt(Vector3 from, Vector3 way)
+    {
+        float clear = PokeTables.Number("Point.legClear", .04f), nearest = float.PositiveInfinity;
+        foreach (var (start, end, thick) in legs)
+            if (start != null && end != null)
+                nearest = Mathf.Min(nearest, CapsuleAt(from, way, start.position, end.position,
+                    Vector3.Distance(start.position, end.position) * thick + clear));
+        return nearest;
+    }
+
+    // How far along a line a capsule begins; infinity past it, or begun inside it.
+    private static float CapsuleAt(Vector3 from, Vector3 way, Vector3 a, Vector3 b, float radius)
+    {
+        Vector3 along = b - a, off = from - a;
+        float length = along.sqrMagnitude, turn = Vector3.Dot(along, way), up = Vector3.Dot(along, off);
+        float side = length - turn * turn, half = length * Vector3.Dot(way, off) - up * turn;
+        float rest = length * off.sqrMagnitude - up * up - radius * radius * length, root = half * half - side * rest;
+        if (root < 0f) return float.PositiveInfinity;
+        float at = side > 1e-8f ? (-half - Mathf.Sqrt(root)) / side : 0f, over = up + at * turn;
+        if (side <= 1e-8f || over <= 0f || over >= length)
+        {
+            // Past an end: the ball there.
+            off = over <= 0f ? off : from - b;
+            half = Vector3.Dot(way, off);
+            root = half * half - off.sqrMagnitude + radius * radius;
+            if (root < 0f) return float.PositiveInfinity;
+            at = -half - Mathf.Sqrt(root);
+        }
+        return at >= 0f ? at : float.PositiveInfinity;
     }
 
     // The friend the finger is on: found along the look this frame, else the last one for a moment (Touch.lose), so a

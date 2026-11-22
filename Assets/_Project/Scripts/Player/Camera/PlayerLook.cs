@@ -90,6 +90,7 @@ public sealed class PlayerLook : MonoBehaviour
         float mouseX = delta.x * scale;
         float mouseY = delta.y * scale * (settings.invertY ? 1f : -1f);
 
+        if (HoldDiveRoll()) mouseX = mouseY = 0f;
         TryMouseTurnOnBar(mouseX);
         TryMouseRollOver(mouseX);
         SteerSlide(mouseX);
@@ -97,6 +98,20 @@ public sealed class PlayerLook : MonoBehaviour
         yaw = ClampLookYaw(yaw);
         pitch = ClampLookPitch(pitch + mouseY);
         TickRecoil(Time.deltaTime);
+    }
+
+    // Rolling over out of a slide's jump the mouse turns nothing: the view comes round ahead, the way the body rolls, level, and
+    // stays there for the head to carry over. Turned meanwhile, the camera on the eyes went into the body rolled up under it (the
+    // user, 2026-11-23: "카메라 고정해 주세요, 움직일 수 있으니까 내 몸 내부로 머리를 넣을 수 있네요").
+    private const float DiveRollTurn = 360f;
+    private bool HoldDiveRoll()
+    {
+        if (movement == null || movement.Abilities == null || !movement.Abilities.Landing.DiveRolls) return false;
+        Vector3 way = movement.Abilities.ActionDirection;
+        float turn = DiveRollTurn * Time.deltaTime;
+        yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(way.x, way.z) * Mathf.Rad2Deg, turn);
+        pitch = Mathf.MoveTowards(pitch, 0f, turn);
+        return true;
     }
 
     // Sliding, the view stops Body.slideLookLimits from the way the slide faces (ClampLookYaw). To the right the mouse
