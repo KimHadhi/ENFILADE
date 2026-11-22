@@ -220,8 +220,8 @@ public sealed class ScoreboardHUD : MonoBehaviour
             : "";
         rankLeft.text = game;
         // What a kill is worth in experience: the hit feedback addon's kill row (HitFeedback.csv Points.kill, every kind
-        // alike, a headshot's too), not its money.
-        string killWorth = HudAddons.HitFeedbackModule.KillPoints.ToString("N0");
+        // alike, a headshot's too) at Money.csv experiencePerScore, not its money.
+        string killWorth = Mathf.RoundToInt((float)(HudAddons.HitFeedbackModule.KillPoints * Wallet.ExperiencePerScore)).ToString("N0");
         rankWorth.text = Texts.Format("score.rank.kill", killWorth, killWorth);
         rankRight.text = view.Climb > 0 ? "<color=#" + ColorUtility.ToHtmlStringRGB(KitStyle.Accent) + ">" + Texts.Format("score.rank.climb", view.Climb) + "</color>  "
             + (view.Top ? Texts.Get("score.rank.top") : Texts.Format("score.rank.next", view.ToNext.ToString("N0")))

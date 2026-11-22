@@ -83,11 +83,16 @@ public static class Wallet
 
     public static long Balance => Earned + Received - Given - Spent;
 
-    /// <summary>Experience so far, in score (the hit feedback addon's score popup, HudAddons.HitFeedbackModule.TotalScore,
-    /// the user's 2026-11-22 pick: "점수 체계도 저 애드온대로, 지금 너무 레벨업이 과하게 빠르게 되는 감이 있음"): every
-    /// point of score, plus the share of the money held and the experience given outright, both points turned into score
-    /// at the money table's share of a point (Money.csv scorePerPoint).</summary>
-    public static long Experience => HudAddons.HitFeedbackModule.TotalScore + LeftoverExperience + (long)(bonusExperience * ScorePerPoint);
+    /// <summary>Experience so far: the hit feedback addon's score (HudAddons.HitFeedbackModule.TotalScore, the user's
+    /// 2026-11-22 pick: "점수 체계도 저 애드온대로, 지금 너무 레벨업이 과하게 빠르게 되는 감이 있음") at Money.csv
+    /// experiencePerScore, plus the share of the money held and the experience given outright, both points turned into
+    /// experience at the money table's share of a point (Money.csv scorePerPoint).</summary>
+    public static long Experience => ScoreExperience + LeftoverExperience + (long)(bonusExperience * ScorePerPoint);
+    /// <summary>The score popup's points as experience. The popup shows the addon's own numbers (a kill is 100); the user
+    /// wanted levelling slower than that (2026-11-22, "바꿔" to 100 a kill), so experience counts a share of them
+    /// (Money.csv experiencePerScore, 0.2: a kill is 20, the pace 0.9.307 set).</summary>
+    public static long ScoreExperience => (long)(HudAddons.HitFeedbackModule.TotalScore * ExperiencePerScore);
+    public static double ExperiencePerScore => Math.Max(0d, Number("experiencePerScore", .2f));
     public static long LeftoverExperience => (long)(Math.Max(0L, Balance) / (double)WonPerPoint * LeftoverShare * ScorePerPoint);
     private static double ScorePerPoint => Math.Max(0d, Number("scorePerPoint", .2f));
 
