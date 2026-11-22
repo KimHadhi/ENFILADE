@@ -120,14 +120,16 @@ namespace HudAddons
                 climbText = climbShown > 0 ? "+" + Digits.Of(climbShown) : string.Empty;
             }
 
-            // The stims box with the insignia for its picture, whole (the addon's 150 alpha made it hard to read).
+            // The stims box with the rank's plain white emblem for its picture (the coloured insignia on its dark hexagon
+            // stood out alone: the user, 11-22), whole (the addon's 150 alpha made it hard to read).
             painter.RoundedBox(look.Hud.corner, left, top, box, box, ownBox);
-            var insignia = ClassGrowth.Insignia(view.Rank);
-            if (insignia != null)
+            var emblem = ClassGrowth.Emblem(view.Rank);
+            if (emblem != null)
             {
+                float inset = box * p.emblemInset;
                 painter.DrawColor = White;
-                painter.Picture = insignia;
-                painter.TexturedRect(left, top, box, box);
+                painter.Picture = emblem;
+                painter.TexturedRect(left + inset, top + inset, box - inset * 2f, box - inset * 2f);
             }
             if (climbText.Length > 0) BoxText(climbText, altsFont, left + box * .5f, top + box * .5f, box, box, p.game, TextAlign.Right, TextAlign.Top);
 

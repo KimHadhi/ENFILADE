@@ -20,7 +20,7 @@ using UnityEngine.SceneManagement;
 public static class ClassGrowth
 {
     public const string ClassTable = "Classes", RankTable = "ClassRanks", GrowthTable = "ClassGrowth", GrowthRow = "Default";
-    private const string FileName = "classes.json", RankFolder = "UI/Ranks/";
+    private const string FileName = "classes.json", RankFolder = "UI/Ranks/", FlatFolder = "Flat/";
 
     [Serializable]
     public sealed class Entry
@@ -213,6 +213,20 @@ public static class ClassGrowth
         if (!icons.TryGetValue(icon, out var texture) || texture == null)
             icons[icon] = texture = Resources.Load<Texture2D>(RankFolder + icon);
         return texture;
+    }
+
+    /// <summary>The same rank as a plain white shape (Resources/UI/Ranks/Flat, Tools/Icons/rank_icons.py), for the HUD, whose
+    /// pictures are all white; its insignia where there is none.</summary>
+    public static Texture2D Emblem(int rank)
+    {
+        var all = Ranks();
+        if (all.Count == 0) return null;
+        string icon = all[Mathf.Clamp(rank, 1, all.Count) - 1].Icon;
+        if (string.IsNullOrEmpty(icon)) return null;
+        string flat = FlatFolder + icon;
+        if (!icons.TryGetValue(flat, out var texture) || texture == null)
+            icons[flat] = texture = Resources.Load<Texture2D>(RankFolder + flat);
+        return texture != null ? texture : Insignia(rank);
     }
 
     private static int RankOf(long points)

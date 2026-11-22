@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
@@ -8,10 +7,10 @@ using UnityEngine.UI;
 /// The weapon slots (user, 2026-11-12: "무기 슬롯 리디자인하고 …"; of the four drafts: "슬롯 디자인은 A랑 C 정말 마음에
 /// 들었고"), in the look the player picks in Settings → HUD → 무기 슬롯 (GameSettings.weaponSlots):
 /// <para>Plates (draft A, the default): a column of dark plates at the HUD's right, their top left and bottom right corners
-/// cut, each leaning its own way and standing its own distance out (never one shared slant), a leaning number tab at its
-/// left. The slot taken in hand kicks out to the left with a white flash and grows: its tab lights, a line runs down its
-/// left side, its icon lifts and turns full white, its name and kind show under it, and the HUD strip's corner and shard
-/// light at its top right.</para>
+/// cut, all upright on one line with a number tab at their left (they leaned each their own way until the user, 2026-11-22:
+/// "각자 기울이는 거 없이 깔끔하게 정렬"). The slot taken in hand kicks out to the left with a white flash and grows: its tab
+/// lights, a line runs down its left side, its icon lifts and turns full white, its name and kind show under it, and the
+/// HUD strip's corner and shard light at its top right.</para>
 /// <para>Cards (draft C): a row of small cards in the corner over the ammo boxes, each with its number and a small icon, an empty slot striped.
 /// The one in hand widens into a light card with the gun drawn dark on it, its name and kind, and a dark line drawn along
 /// its top.</para>
@@ -53,7 +52,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     private sealed class Shape
     {
         public float Width, Height, WidthHeld, HeightHeld, Gap, Cut, Icon, IconHeld, IconAlpha, Kick, Grow, Flash, Bar, Right, Bottom;
-        public readonly float[] Lean = new float[Count], Shift = new float[Count];
     }
 
     private sealed class Slot
@@ -137,7 +135,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             var slot = built[i];
             float on = Mathf.Clamp01(slot.on), height = Mathf.LerpUnclamped(shape.Height, shape.HeightHeld, slot.on);
             slot.root.sizeDelta = new Vector2(shape.Width, height);
-            slot.root.anchoredPosition = new Vector2(shape.Shift[i] + Kick(slot, now), top - height * .5f);
+            slot.root.anchoredPosition = new Vector2(Kick(slot, now), top - height * .5f);
             top -= height + shape.Gap;
             var data = Weapon(i);
             slot.plate.color = Color.Lerp(HudTone.Box, HudTone.BoxHeld, on);
@@ -166,8 +164,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         var root = slot.root;
         root.anchorMin = root.anchorMax = Vector2.zero;
         root.pivot = new Vector2(1f, .5f);
-        // Leans are the drafts' CSS degrees, clockwise.
-        root.localRotation = Quaternion.Euler(0f, 0f, -shape.Lean[index]);
         slot.plate = MakeShape(root, "Plate", SlotShape.Kind.Plate, shape.Cut);
         KitStyle.Stretch(slot.plate.rectTransform);
         slot.icon = MakePicture(root, new Vector2(1f, .5f));
@@ -184,7 +180,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         slot.flash = MakeShape(root, "Flash", SlotShape.Kind.Plate, shape.Cut);
         KitStyle.Stretch(slot.flash.rectTransform);
         // The number's tab stands out past the plate's left side, over everything on it.
-        slot.tab = MakeShape(root, "Tab", SlotShape.Kind.Tab, 0f, 5f);
+        slot.tab = MakeShape(root, "Tab", SlotShape.Kind.Tab);
         Place(slot.tab.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-12f, -9f), new Vector2(28f, 28f));
         slot.number = MakeNumber(slot.tab.rectTransform, index, 20f);
         KitStyle.Stretch(slot.number.rectTransform);
@@ -232,7 +228,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         var root = slot.root;
         root.anchorMin = root.anchorMax = Vector2.zero;
         root.pivot = new Vector2(1f, 0f);
-        root.localRotation = Quaternion.Euler(0f, 0f, -shape.Lean[index]);
         slot.plate = MakeShape(root, "Card", SlotShape.Kind.Plate, shape.Cut);
         KitStyle.Stretch(slot.plate.rectTransform);
         slot.icon = MakePicture(root, new Vector2(.5f, .5f));
@@ -406,10 +401,10 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
 
     // ---- pieces ----
 
-    private static SlotShape MakeShape(RectTransform parent, string name, SlotShape.Kind kind, float cut = 0f, float shear = 0f)
+    private static SlotShape MakeShape(RectTransform parent, string name, SlotShape.Kind kind, float cut = 0f)
     {
         var shape = FeelUI.Rect(name, parent).gameObject.AddComponent<SlotShape>();
-        shape.Set(kind, cut, shear);
+        shape.Set(kind, cut);
         return shape;
     }
 
@@ -435,7 +430,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     {
         var number = FeelUI.ScoreLabel("Number", parent, size, TextAlignmentOptions.Center);
         HudTone.Apply(number);
-        number.fontStyle = FontStyles.Italic;
         number.text = (index + 1).ToString(CultureInfo.InvariantCulture);
         return number;
     }
@@ -489,21 +483,9 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             Right = Number(row, "right", 20f),
             Bottom = Number(row, "bottom", 104f),
         };
-        Numbers(row, "lean", shape.Lean, plates ? new[] { -2f, 1.6f, -1.1f, 2.2f } : new[] { -3f, 2.2f, -1.4f, 2.8f });
-        Numbers(row, "shift", shape.Shift, plates ? new[] { 0f, -10f, -3f, -14f } : new[] { 0f, 0f, 0f, 0f });
         return shape;
     }
 
     private static float Number(string row, string field, float fallback)
         => GameTables.Number(TableName, row, field, fallback);
-
-    // One number per slot, ;-separated; a missing or unreadable one keeps its fallback.
-    private static void Numbers(string row, string field, float[] into, float[] fallback)
-    {
-        string[] parts = GameTables.TryGetRow(TableName, row, out var cells) && cells.TryGetValue(field, out string raw)
-            ? raw.Split(';') : Array.Empty<string>();
-        for (int i = 0; i < into.Length; i++)
-            into[i] = i < parts.Length && TableCells.TryNumber(parts[i].Trim(), out float value)
-                ? value : i < fallback.Length ? fallback[i] : 0f;
-    }
 }

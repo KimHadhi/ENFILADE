@@ -128,6 +128,7 @@ Portrait.magazine,32,"사진 왼쪽 궁극기 탄창의 바깥 폭(1080p 24px, �
 Portrait.gap,10,"탄창과 사진 사이, 사진과 계급 줄 사이, 계급 상자와 막대 사이(탄창 덮개가 사진 상자에 닿지 않게)"
 Portrait.rise,10,계급 줄 아래 끝과 체력 막대 바탕 상자 사이
 Portrait.insignia,55,"계급 휘장 상자 한 변(자극제 상자와 같은 55, BT_Text). 이번 판에 오를 계급 수는 상자 오른쪽 위에 +N"
+Portrait.emblemInset,0.12,"계급 상자 안 계급 그림 둘레의 여백(상자 한 변에 대한 비율). 그림은 육각 판 없는 흰 그림(Resources/UI/Ranks/Flat, Tools/Icons/rank_icons.py. 사용자 11-22: ""계급 아이콘은 너무 혼자서 튀니까 simple로"")"
 Portrait.rankHeight,12,"계급 막대 두께(1080p 9px. 사용자 11-22: ""경험치 쪽은 가시성이 안 좋고""). BL_Rect: 바탕 상자, 줄면 주황이 남았다 따라 내려감"
 Portrait.initial,0.5,프로필 사진이 없을 때 이름 첫 글자: 글자 칸 높이 = 사진 한 변 x 이 값
 Portrait.scanline,70,"프로필 사진은 특수 효과 위에 따로 그리고(사용자 11-22: ""프로필 사진 쪽 노이즈는 살짝 연하게 해서 원본 사진이 더 잘 보이게"") 그 위에 이 알파의 옅은 주사선만 한 줄 건너 얹는다(나머지 HUD는 Fx.scanline 175). 특수 효과나 주사선을 끄면 없다"

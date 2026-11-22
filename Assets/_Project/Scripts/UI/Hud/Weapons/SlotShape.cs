@@ -3,8 +3,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// The weapon slots' flat pieces (WeaponSlotsHUD), drawn as shapes so they stay crisp at any size: a plate with its top
-/// left and bottom right corners cut (with a line of colour down its left side for the slot in hand), a number tab leaning
-/// as the HUD's slants do (its top to the right), and the pink corner and small shard of the HUD's strip.
+/// left and bottom right corners cut (with a line of colour down its left side for the slot in hand), a number tab, and the
+/// corner and small shard of the HUD's strip.
 /// </summary>
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class SlotShape : MaskableGraphic
@@ -12,15 +12,14 @@ public sealed class SlotShape : MaskableGraphic
     public enum Kind { Plate, Tab, Corner, Shard }
 
     private Kind kind;
-    private float cut, shear, edgeWidth;
+    private float cut, edgeWidth;
     private Color edgeColour;
 
-    /// <summary>What it draws: cut is a plate's corner cut (px), shear how far a tab's top runs right of its bottom (px).</summary>
-    public void Set(Kind kind, float cut = 0f, float shear = 0f)
+    /// <summary>What it draws: cut is a plate's corner cut (px).</summary>
+    public void Set(Kind kind, float cut = 0f)
     {
         this.kind = kind;
         this.cut = Mathf.Max(0f, cut);
-        this.shear = shear;
         raycastTarget = false;
         SetVerticesDirty();
     }
@@ -57,12 +56,8 @@ public sealed class SlotShape : MaskableGraphic
                 break;
             }
             case Kind.Tab:
-            {
-                float s = shear * .5f;
-                Fan(mesh, color, new Vector2(r.xMin - s, r.yMin), new Vector2(r.xMin + s, r.yMax), new Vector2(r.xMax + s, r.yMax),
-                    new Vector2(r.xMax - s, r.yMin));
+                Fan(mesh, color, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax), new Vector2(r.xMax, r.yMin));
                 break;
-            }
             case Kind.Corner:
                 Fan(mesh, color, new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax), new Vector2(r.xMax, r.yMin));
                 break;

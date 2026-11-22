@@ -265,8 +265,8 @@ namespace HudAddons
             public float gap = 10f;
             /// <summary>Between the rank row's foot and the health bar's frame.</summary>
             public float rise = 10f;
-            /// <summary>The rank's box, as the stims box (55).</summary>
-            public float insignia = 55f;
+            /// <summary>The rank's box, as the stims box (55), and the room round its emblem (a share of the box).</summary>
+            public float insignia = 55f, emblemInset = .12f;
             /// <summary>The rank bar's thickness (the health bar's 10 and a half: 9 px on 1080p).</summary>
             public float rankHeight = 12f;
             /// <summary>With no picture chosen, the name's first letter: its cell this share of the picture.</summary>
