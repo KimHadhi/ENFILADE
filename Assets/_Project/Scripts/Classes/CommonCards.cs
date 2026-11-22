@@ -61,6 +61,5 @@ public static class CommonCards
         }
         if (!any) return;
         slots.NotifyAmmo();
-        AmmoHUD.Blink(KitStyle.Ice);
     }
 }

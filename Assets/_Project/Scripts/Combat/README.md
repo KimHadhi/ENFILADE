@@ -16,7 +16,7 @@
 | `Feel/` | 화면 킥·총성·히트마커·혈흔·점수·처치 효과, 총알 피격 반응 | [WeaponFeedback](../Weapons/Effects/WeaponFeedback.cs), [GunFeelDirector](Feedback/GunFeelDirector.cs), [EnemyHitReaction](Feedback/EnemyHitReaction.cs) |
 | `../Player/Combat/` | 플레이어 입력, 슬롯, 공격, 방어·반격·처형·슬라이드 접촉 | [PlayerWeaponSlots](../Weapons/PlayerWeaponSlots.cs), [PlayerMeleeCombat](../Melee/PlayerMeleeCombat.cs), [SlideCombat](../Melee/SlideCombat.cs) |
 | `../Enemies/` | 실제 적 HP·사망·추적·공격 | [EnemyHealth](../Enemies/EnemyHealth.cs), [EnemyCombatAI](../Enemies/EnemyCombatAI.cs) |
-| `../UI/` | 탄약·슬롯·체력·체간·처형 안내 | [AmmoHUD](../UI/Hud/Weapons/AmmoHUD.cs), [EnemyBarsHud](../UI/Hud/Addons/EnemyBars/EnemyBarsHud.cs), [ExecutionHUD](../UI/Hud/Prompts/ExecutionHUD.cs) |
+| `../UI/` | 탄약·슬롯·체력·체간·처형 안내 | [PlayerHud](../UI/Hud/Addons/PlayerHud/PlayerHud.cs), [EnemyBarsHud](../UI/Hud/Addons/EnemyBars/EnemyBarsHud.cs), [ExecutionHUD](../UI/Hud/Prompts/ExecutionHUD.cs) |
 | `../Debug/Combat/` | 연습 표적·진단 HUD·시험용 소환 | [WeaponTrainingTarget](../Dev/WeaponTrainingTarget.cs), [ConsoleEnemySpawner](../Dev/ConsoleEnemySpawner.cs) |
 
 `Feel`의 대부분은 표시·소리지만 `EnemyHitReaction`은 적 이동과 공격을 바꾸는 게임 규칙이다. 이 컴포넌트를 화면 효과로만 취급해 제거하지 않는다.

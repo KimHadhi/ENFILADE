@@ -28,7 +28,7 @@
   - DEADEYE·DESPERADO(고스트·시순트): 키 안내 줄 왼쪽에 내 색으로, 같은 빠르기로 숨 쉰다. 키 상자와 만나면 한 줄 위로 올라간다(11-22 사용자: "프사 옆에 뒀을 때 시순트 DESPERADO 글씨가 저거 능력 쓸 수 있는지 상태 바랑 겹치니까").
   - 설치 개수와 지속 효과: 획득 기록 줄 같은 흐린 상자 줄. 설치는 종류마다 칩 하나('판자 1/2', 가득 차면 숫자가 주황 = 다음에 놓으면 가장 오래된 것이 사라짐, 세우는 종류는 밑에 내 색 선, 더는 들고 있지 않은 것은 흐리게). 지속 효과는 효과마다 색 점·이름·남은 초·줄어드는 선([TimedEffects](../../Assets/_Project/Scripts/Classes/TimedEffects.cs), 시작한 순서).
   - 자리(설정): **중앙 하단**(기본)은 클래스 상자 왼쪽 위가 화면 가운데에서 148 왼쪽, 아래에서 159 위(예전 클래스 판 자리). 설치·효과는 그 아래로(설치 한 줄 넷, 효과 한 줄 둘, 화면 아래 끝에서 멈춘다). **프로필 옆**은 프사 판 오른쪽 11, 클래스 상자 아래끝이 계급 줄 아래끝에 맞고 막대는 체력 막대 오른끝까지. 설치·효과는 키 안내 위로 쌓인다. 크기를 키우면 위로 자란다.
-  - 흐린 것의 세기: 시안은 특수 효과의 알파 제곱(`PlayerHudFx`)과 선형 공간 합성을 빼고 그렸다. 게임에서 시안만큼 보이게 우리 조각의 상자는 102(`Colour.box`), 빈 칸은 0.17, 준비 빛은 0.16~0.34, 글자 테두리는 32(16번 겹쳐 찍힌다)다. 특수 효과를 끄면 상자는 시안의 어두운 쪽에 가깝고 흰 칸은 조금 더 밝다.
+  - 흐린 것의 세기(0.9.332): 시안은 특수 효과의 알파 제곱(`PlayerHudFx`)과 선형 공간 합성을 빼고 그렸다. 게임에서 시안만큼 보이게 우리 조각의 상자는 102(`Colour.box`), 빈 칸은 0.17, 준비 빛은 0.16~0.34, 글자 테두리는 32(16번 겹쳐 찍힌다)다. 특수 효과를 끄면 상자는 시안의 어두운 쪽에 가깝고 흰 칸은 조금 더 밝다.
   - 색: 흰색이 기본이고 내 플레이어 색(PlayerTally.Color)은 포인트에만 쓴다: 이름 앞 막대, 키 칸, 준비됐을 때의 빛, DEADEYE·DESPERADO, 세우는 설치물, 궁극기 탄창에서 한 번 쓸 만큼을 넘어 모은 탄. 설정에서 내 색 쓰기를 끄면 고른 색(기본은 애드온 체력 색).
   - 중앙 하단의 키 안내 위끝은 화면 아래에서 196이라 순간 알림 이름표(MomentFx.csv `Tag.bottom` 202)가 그 위에 선다.
 - **획득 기록** (`cl_history.lua`): (1392, 810) 위로 쌓인다. 줄마다 그림(22.5, 탄은 탄 그림, 나머지는 상자) + "이름*개수", 흐린 바탕(알파 50). 같은 것을 또 주우면 그 줄의 개수가 늘며 굴러간다. 순번 k인 줄은 2 + 3k초 보이고, 5번째부터 흐려진다.
@@ -121,5 +121,5 @@
 - 스스로 듣는 것: 로컬 플레이어의 `PlayerDamageReceiver.HitResolved`(맞음: 피해 방향, 위험 칸, 글리치, 비네트, 흔들림; 잡기는 상처가 아니라 빼고), 체력 증가(회복 비네트), `PlayerWeaponSlots.SlotActivity`(슬롯 보이기)와 `SelectionChanged`(Select 소리).
 - 불러 주어야 하는 것(줍기): `PlayerHudModule.AmmoPicked(gun, rounds)`, `ThrowablesPicked(count)`, `ItemPicked(name)`, `WeaponPicked(gun)` — 원본의 HUDAmmoPickedUp / HUDItemPickedUp / HUDWeaponPickedUp. FieldPickups에서.
 - 켜기: `HudAddons.Boot.Install`의 `PlayerHudModule.Install()`.
-- 켜져 있는 동안(`PlayerHudModule.On`: 설정의 사용, 기본 켬) 같은 일을 하는 우리 조각은 그리지 않는다: 체력·실드 막대와 그 조각·숫자(AdaptiveHealthHUD, HealthBarFlair; 자세 그림은 그대로), 탄약 표시(AmmoHUD), 투척물 판(GrenadeHUD), 획득 목록(PickupFeedHUD), 피해 방향 호와 맞을 때 시점 흔들림(PlayerDamageFeedback; 피는 그대로). 애드온에 없는 우리 조각(목표, 동료 카드, 무기 슬롯, 킬 피드, 돈)은 그대로 보인다. 사용을 끄면 우리 조각이 다시 나온다. 프사·궁극기·계급과 클래스 UI는 이 모듈이 그리므로 사용을 끄면 함께 없다.
+- 사용(설정, 기본 켬)을 끄면 이 모듈이 그리는 것은 하나도 없다: 체력·방어구·탄약·투척물·획득 기록·피해 방향·시점 흔들림, 프사·궁극기·계급, 클래스 UI. 0.9.333까지는 같은 일을 하던 우리 옛 조각이 그 자리로 돌아왔다(사용자 11-22: "구시대 허드 다 죽여. hud 끄기는 끄기지 왜 옛 허드가 나와"): 체력·실드 막대와 그 조각·숫자·자세 그림·이음 띠(AdaptiveHealthHUD, HealthBarFlair, StanceFigure, ShieldShatter, HudTilt, HudBridge), 탄약 표시(AmmoHUD), 투척물 판(GrenadeHUD), 획득 목록(PickupFeedHUD), 피해 방향 호와 맞을 때 시점 흔들림(PlayerDamageFeedback; 피와 실드 빛은 그대로). 모두 지웠다: GameHUD 프리팹의 체력·탄약 오브젝트, HealthBar.csv, HudTilt.csv, 자세 그림도 함께. 애드온에 없는 우리 조각(목표, 동료 카드, 무기 슬롯, 킬 피드, 돈)은 그대로 보인다.
 - 프사 판이 읽는 것: `ProfilePicture.Current`(없으면 `GameSettings.DisplayName`의 첫 글자), 로컬 플레이어의 `UltimateCharge`(CurrentCharge / RequiredCharge), `RankProgress.Now()`, `ClassGrowth.Insignia`.

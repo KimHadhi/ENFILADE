@@ -5,18 +5,9 @@ using UnityEngine;
 public sealed class PlayerDamageFeedbackSettings : ScriptableObject
 {
     [Header("Layers")]
-    public bool directionArcs = true;
     public bool bloodVignette = true;
     public bool cameraShake = true;
     public bool criticalPulse = true;
-
-    [Header("Independent hit arcs (maximum 24 simultaneous hits)")]
-    public Color arcColor = new Color(1f, .12f, .08f, .95f);
-    [Min(.1f)] public float hitSeconds = 1.65f;
-    [Range(0f, 1f)] public float holdFraction = .22f;
-    [Min(30f)] public float arcRadius = 88f;
-    [Range(2f, 20f)] public float arcThickness = 5f;
-    [Range(12f, 100f)] public float arcDegrees = 48f;
 
     [Header("Blood vignette (screen-locked, maximum 32 splashes)")]
     [Tooltip("Pooled blood toward the screen edge.")]
@@ -36,12 +27,10 @@ public sealed class PlayerDamageFeedbackSettings : ScriptableObject
     [Min(.1f), Tooltip("Time for a rivulet to reach its full length.")] public float dripSeconds = 2.4f;
     [Range(0f, 1f)] public float rearWashOpacity = .14f;
 
-    [Header("Damage camera channel (Trauma squared, independent of gunfire)")]
-    [Range(0f, 1f)] public float traumaPerHit = .38f;
+    [Header("Damage camera channel (Trauma squared, independent of gunfire): the shield's break")]
     [Range(0f, 6f)] public float shakeMaxAngle = 2.2f;
     [Min(.1f)] public float shakeRecovery = 1.5f;
     [Min(1f)] public float shakeFrequency = 23f;
-    [Range(0f, 3f)] public float impactKickDegrees = .75f;
 
     [Header("Low health: persistent stain and heartbeat")]
     [Range(.01f, 1f), Tooltip("A faint permanent stain starts below this HP ratio.")] public float injuredHealthFraction = .5f;

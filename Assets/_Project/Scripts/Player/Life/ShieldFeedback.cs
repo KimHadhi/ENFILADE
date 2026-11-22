@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// (PlayerDamageFeedback leaves out the blood and colours its arc to match; the HUD's shield band flashes white).
 /// Running the shield out (backlog 321) gets a moment of its own: a cracked pane of the same cyan bursts outward off the
 /// screen's edge, the view takes a small extra knock, a glassy break plays and it is said at the top of the screen
-/// (AlertHUD); the HUD's band shatters (ShieldShatter).
+/// (AlertHUD).
 /// Sounds: the break is the clip in Art/Audio/HitConfirm/ShieldBreak (the user's breakarmorself, 2026-11-21); the hit is
 /// the clip in .../ShieldHit when there is one, else FeelAudio's made crack until its file is chosen.
 /// This PC's player only, as the shield is decided there; others see sparks on the body (PlayerNetworkCombat). Both

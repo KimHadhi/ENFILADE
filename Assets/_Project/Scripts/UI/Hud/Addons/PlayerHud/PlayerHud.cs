@@ -91,12 +91,14 @@ namespace HudAddons
             fallPicture = Pictures.Get(Folder + "fall");
             blastPicture = Pictures.Get(Folder + "blast");
             vignette = Pictures.Get(Folder + "vig");
+            GunKills.RankUpAnnounced += OnRankUpAnnounced;
         }
 
         private void OnDestroy()
         {
             if (instance != this) return;
             instance = null;
+            GunKills.RankUpAnnounced -= OnRankUpAnnounced;
             Unbind();
             fx?.Destroy();
             if (scanlines != null) Destroy(scanlines);
@@ -217,6 +219,7 @@ namespace HudAddons
             HoldShake();
             receiver = null;
             slots = null;
+            weapon = null;
             view = null;
             shake = null;
             lookForView = float.NegativeInfinity;

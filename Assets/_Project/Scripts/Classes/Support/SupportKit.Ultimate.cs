@@ -35,13 +35,8 @@ public sealed partial class SupportKit
         if (player.TryGetComponent(out PlayerWeaponSlots slots)) slots.RefillAmmo();
         PlayerGrenades.Fill(player);
         float full = Mathf.Max(shield, receiver.MaximumHealth);
-        if (full > receiver.Shield + .5f)
-        {
-            receiver.SetShield(full);
-            AdaptiveHealthHUD.Blink(KitStyle.Ice, true);
-        }
+        if (full > receiver.Shield + .5f) receiver.SetShield(full);
         KitSound.Play(KitSound.Cue.PickAmmo, .9f);
-        AmmoHUD.Blink(KitStyle.Ice);
         if (!string.IsNullOrEmpty(from)) AlertHUD.Self(Texts.Format("class.support.ult.got", from));
     }
 }

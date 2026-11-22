@@ -21,7 +21,6 @@ public sealed partial class PlayerGrenades
             knife.Take();
             KnifeTaken?.Invoke(pair.Key);
             KitSound.PlayPickup(KitSound.Cue.PickAmmo, .6f);
-            GrenadeHUD.Blink(KitStyle.Ice);
         }
         foreach (ushort id in gone) knives.Remove(id);
     }

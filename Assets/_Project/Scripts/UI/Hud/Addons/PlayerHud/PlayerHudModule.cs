@@ -1,7 +1,10 @@
 namespace HudAddons
 {
     /// <summary>
-    /// The PlayerHud module: the player's own HUD from the HUD Mk II addon (health, armour, ammo, effects, hazards, pickup history, the damage direction indicator, and our portrait, ultimate magazine and rank in its boxes), drawn on the shared layer (Overlay, Painter, HudFont, Pictures, Sound, Smooth).
+    /// The PlayerHud module: the player's own HUD from the HUD Mk II addon (health, armour, ammo, effects, hazards, pickup
+    /// history, the damage direction indicator, and our portrait, ultimate magazine, rank and class UI in its boxes), drawn
+    /// on the shared layer (Overlay, Painter, HudFont, Pictures, Sound, Smooth). Switched off in the options, none of it
+    /// shows: there is no other HUD of ours to fall back to (the user, 2026-11-22: "hud 끄기는 끄기지 왜 옛 허드가 나와").
     /// Boot.Install calls Install when the local player's HUD comes up, again for every new local player, so it must be
     /// safe to call more than once. Hits, heals and the weapon slots' activity it hears for itself (PlayerDamageReceiver,
     /// PlayerWeaponSlots events); pickups come in through the calls below, which FieldPickups makes (the addon's
@@ -10,14 +13,6 @@ namespace HudAddons
     public static class PlayerHudModule
     {
         public static void Install() => PlayerHud.Install();
-
-        /// <summary>
-        /// The addon HUD is the player's HUD now (its Enable option, on by default): our own pieces it has an element for
-        /// (the health and shield bar, the ammo display, the weapon slots, the throwable plate, the pickup lines, the damage
-        /// direction arcs and the hit shake) stay away meanwhile, so the player never sees two of one thing (the user,
-        /// 2026-11-22: "애드온을 넣으라고"). Switched off in the options, ours come back.
-        /// </summary>
-        public static bool On => UnityEngine.Application.isPlaying && GameSettings.Current.addonPlayerHud is { enabled: true };
 
         /// <summary>HUDAmmoPickedUp: rounds of the ammunition this gun takes went into the reserve (an ammo pile, a gun of
         /// a kind already held taken for its rounds).</summary>

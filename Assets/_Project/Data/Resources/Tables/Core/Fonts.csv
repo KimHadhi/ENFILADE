@@ -7,15 +7,10 @@ Prompt.face,scoredream-6,"안내·알림(FeelUI.Label, 처형·사다리·쓰러
 Prompt.warm,texts,
 Damage.face,scoredream-6,데미지 숫자. 예전에도 프롬프트 폰트였다
 Damage.warm,digits,
-Ammo.face,pretendard-6,탄약 표시(AmmoHUD). 예전에는 숨은 프리팹 글자의 TMP 샘플 폰트 LiberationSans를 빌려 써서 상태 줄의 한글만 다른 글꼴이었다
-Ammo.warm,texts,
 HudText.face,scoredream-5,"HUD 프리팹 글자(무기 이름, 칸 번호, 상호작용 안내, 채팅 채널, 음악 이름). 예전 ChatSettingFont(Score5)"
 HudText.warm,texts,
 HudBold.face,pretendard-7,"HUD 프리팹의 굵은 글자(체력 숫자, 목표 제목, TAB, ASSAULT). 예전 HealthFont·WaveFontStandard(Pretendard Bold 복사본)"
 HudBold.warm,texts,
-Shield.face,scoredream-6,실드 숫자. 예전 ShieldFont(Score6)
-Shield.preset,shield,"민트 외곽선과 초록 그림자. 예전 ShieldFont의 재질을 50pt 아틀라스에 맞게 옮긴 것(외곽선 0.2→0.111, 그림자 거리 -1→-0.327, 퍼짐 0.7→0.229: 화면에서 같은 두께)"
-Shield.warm,digits,
 Chat.face,scoredream-5,채팅 줄. 예전 ChattingFont(Score5)
 Chat.warm,texts,
 Chat.prefabs,Chatting/,"같은 글꼴을 쓰는 역할이 둘이면, 프리팹 경로에 이 말이 든 글자가 이 역할이다(ENFILADE → 글꼴이 역할을 고를 때)"

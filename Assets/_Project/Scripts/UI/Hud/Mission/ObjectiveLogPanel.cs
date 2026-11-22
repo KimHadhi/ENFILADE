@@ -107,10 +107,10 @@ public sealed class ObjectiveLogPanel
         if (numeric) fill.sizeDelta = new Vector2((Width - TextInset * 2f) * objective.Progress, ProgressHeight);
     }
 
-    private static SlantedHealthGraphic Plate(RectTransform rect, Color color)
+    private static SlantedPlate Plate(RectTransform rect, Color color)
     {
-        var plate = rect.gameObject.AddComponent<SlantedHealthGraphic>();
-        plate.Configure(1f, 1f, 1d, false, Shear, 0f, color, Color.clear, Color.clear);
+        var plate = rect.gameObject.AddComponent<SlantedPlate>();
+        plate.Configure(1f, Shear, color);
         return plate;
     }
 
@@ -120,7 +120,7 @@ public sealed class ObjectiveLogPanel
         var tick = FeelUI.Rect("Tick", plate);
         tick.anchorMin = Vector2.zero; tick.anchorMax = Vector2.one;
         tick.offsetMin = tick.offsetMax = Vector2.zero;
-        tick.gameObject.AddComponent<SlantedHealthGraphic>().Configure(TickShare, 1f, 1d, false, Shear, 0f, HudTone.Text, Color.clear, Color.clear);
+        tick.gameObject.AddComponent<SlantedPlate>().Configure(TickShare, Shear, HudTone.Text);
     }
 
     private static void Place(RectTransform rect, float x, float y, float width, float height)

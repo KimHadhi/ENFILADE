@@ -9,8 +9,7 @@ namespace HudAddons
     /// and Arctic's Grenade Indicators; DeathScreen: the MW3 death screen). It runs again for every new local player (a new
     /// map, a new room), so each module's Install() must be safe to call more than once.
     /// <para>They are the game's HUD for these topics (the user, 2026-11-22: "애드온을 넣으라고"): the hand-made copies of
-    /// 0.9.304-0.9.317 are gone, and our own pieces the addons have an element for stand aside while they draw
-    /// (PlayerHudModule.On).</para>
+    /// 0.9.304-0.9.317 are gone, and so are our own older pieces the addons have an element for: off is off.</para>
     /// </summary>
     public static class Boot
     {

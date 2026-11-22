@@ -30,6 +30,37 @@ namespace HudAddons
         private int flickClip;
         private float flick = -1f, glow;
         private string ammoName, ammoNameSpaced = string.Empty;
+        // Y: the gun is looked over. A rank it reached since its last look-over is announced as it begins (its line for a
+        // moment), then its rank, kills and headshots, in place of its name (the user, 2026-11-12: "킬스트릭 스탯은 무기
+        // 관찰할 때만 뜨게 할 것"; the kill plate on the gun is GunKillPlate's).
+        private const float RankUpHold = 2.5f;
+        private WeaponController weapon;
+        private WeaponData rankUpGun;
+        private string rankUpText;
+        private float rankUpUntil;
+
+        private void OnRankUpAnnounced(WeaponData gun)
+        {
+            if (gun == null) return;
+            rankUpText = Texts.Format("gunkills.rankup", GunKills.Title(gun));
+            rankUpGun = gun;
+            rankUpUntil = Smooth.Now + RankUpHold;
+        }
+
+        private string LookOverLine()
+        {
+            if (weapon == null) slots.TryGetComponent(out weapon);
+            var runtime = slots.GetRuntime(slots.SelectedSlot);
+            if (weapon == null || runtime == null || runtime.Data.Category == WeaponCategory.Melee
+                || !weapon.IsInspecting || runtime.IsReloading)
+            {
+                rankUpUntil = 0f;
+                return null;
+            }
+            GunKills.AnnounceRankUp(runtime.Data);
+            if (Smooth.Now < rankUpUntil && rankUpGun == runtime.Data) return rankUpText;
+            return Texts.Format("gunkills.inspect", GunKills.Title(runtime.Data), GunKills.Kills(runtime.Data), GunKills.Headshots(runtime.Data));
+        }
 
         private bool TryHeld(int slot, out Held held)
         {
@@ -109,10 +140,16 @@ namespace HudAddons
                     ammoName = held.Name;
                     ammoNameSpaced = Spaced(held.Name);
                 }
-                painter.OutlinedText(ammoNameSpaced, labelFont, ax - magW * a.nameLeft, ay - magW * a.nameUp, magsTint,
+                string line = LookOverLine();
+                painter.OutlinedText(line ?? ammoNameSpaced, labelFont, ax - magW * a.nameLeft, ay - magW * a.nameUp, line != null ? loss : magsTint,
                     TextAlign.Left, TextAlign.Top, outlineWidth, outline);
                 TextBox(Digits.Of(Digits.Round(reserveShown)), ammoFont, ax + (magW + resW) / a.reserveSpread, ay, resW, resH,
                     Gm.WithAlpha(reserveTint, a.reserveAlpha), TextAlign.Center, TextAlign.Center);
+                // The boxes stay under the right edge's column of callout windows, so those keep above them (HudRoom; on a 21:9
+                // screen a second window came down onto the ammo).
+                float roomRight = ax + (magW + resW) / a.reserveSpread + resW * .5f, roomTop = ay - magW * a.nameUp;
+                if (o.eqp) roomTop = Mathf.Min(roomTop, y + o.eqpY - a.eqp * scale * (a.eqpRise + .5f));
+                HudRoom.Take(this, screenWidth - roomRight, screenWidth - (ax - magW * .5f), roomTop, ay + magH * .5f, HudRoom.Way.Over);
             }
             if (o.eqp)
             {

@@ -13,7 +13,6 @@ public sealed partial class PlayerGrenades
     {
         var eye = Camera.main;
         if (eye == null || info == null) return;
-        aiming = true;
         Launch(eye.transform, info, out Vector3 from, out Vector3 velocity);
         if (arc == null) arc = new ThrowArc(transform);
         bool ready = Time.time >= readyAt;
@@ -39,7 +38,6 @@ public sealed partial class PlayerGrenades
 
     private void StopAim()
     {
-        aiming = false;
         arc?.Hide();
         preview?.Hide();
     }

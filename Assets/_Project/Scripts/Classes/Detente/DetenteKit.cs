@@ -38,18 +38,6 @@ public sealed class DetenteKit : MonoBehaviour
     // The ultimate's cloud spots, gathered afresh each time it goes off.
     private static readonly List<Vector3> spots = new List<Vector3>();
 
-    // The class's mint (ClassColours.csv detente, the disinfectant's), for the health bar's blink when its care fills it.
-    private static Color Mint
-    {
-        get
-        {
-            var colour = KillFlairs.ClassColourOf(PlayerClass.Detente);
-            if (colour.a <= 0f) return new Color(.49f, .94f, .69f);
-            colour.a = 1f;
-            return colour;
-        }
-    }
-
     /// <summary>This PC's own player's, while they play a Détente.</summary>
     public static DetenteKit Local { get; private set; }
     // This PC's own player's, whatever they play: a Détente's offer to them, and a treatment's rest, are theirs.
@@ -426,7 +414,6 @@ public sealed class DetenteKit : MonoBehaviour
         bool down = receiver.IsDowned;
         if (down) receiver.GetUp(receiver.MaximumHealth);
         else receiver.Heal(receiver.MaximumHealth);
-        AdaptiveHealthHUD.Blink(Mint, false);
         KitSound.Play(KitSound.Cue.PickHeal, .8f);
         AlertHUD.Self(Texts.Format(down ? "class.detente.ult.up" : "class.detente.ult.got", Name(detente)));
     }
@@ -539,7 +526,6 @@ public sealed class DetenteKit : MonoBehaviour
         if (receiver == null) receiver = movement.DamageReceiver;
         if (receiver == null || !receiver.IsAlive || receiver.IsDowned || receiver.Health >= receiver.MaximumHealth - .5f) return;
         receiver.Heal(given * share);
-        AdaptiveHealthHUD.Blink(Mint, false);
     }
 
     /// <summary>More in the syringe (a shop's refill, a Support's top-up), up to the most it holds; false when it was full.</summary>
@@ -578,7 +564,6 @@ public sealed class DetenteKit : MonoBehaviour
         if (receiver != null && receiver.IsAlive && !receiver.IsDowned)
         {
             receiver.Heal(receiver.MaximumHealth);
-            AdaptiveHealthHUD.Blink(Mint, false);
         }
         float radius = Mathf.Max(.5f, Number("ultGasRadius", 4f)), seconds = Mathf.Max(.5f, Number("ultGasSeconds", 3f));
         float slow = Mathf.Clamp01(Number("ultGasSlow", .5f));

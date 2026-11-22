@@ -245,29 +245,3 @@ MonoBehaviour:
   popupMinimumDistanceScale: 0.65
   enemyHealthColor: {r: 0.93, g: 0.13, b: 0.11, a: 1}
   enemyHealthLostColor: {r: 0.62, g: 0.62, b: 0.62, a: 0.12}
-  colorTrailByLossSize: 1
-  smallLossColor: {r: 1, g: 0.9, b: 0.2, a: 1}
-  largeLossColor: {r: 1, g: 0.57, b: 0.12, a: 1}
-  fullLossColor: {r: 1, g: 0.4, b: 0.1, a: 1}
-  largeLossFraction: 0.7
-  trailStripes: 1
-  trailStripeLighten: 0.35
-  trailStripeScroll: 14
-  trailEdgeLine: 1
-  trailEdgeWidth: 3
-  trailEdgePulseScale: 1.6
-  trailEdgeHitStretch: 6
-  trailEdgeSettleSeconds: 0.5
-  trailEdgeAlpha: {x: 0.75, y: 1}
-  trailEdgeGlowColor: {r: 1, g: 0.97, b: 0.94, a: 0.8}
-  trailFlashSeconds: 0.12
-  trailHoldSeconds: 0.15
-  trailDrainPerSecond: 0.6
-  trailDrainCatchUp: 4
-  enemyShakeMax: 14
-  enemyShakeSeconds: 0.32
-  enemyShakeFrequency: 18
-  enemyShakeDamping: 12
-  enemyShakeScalePunch: 0.07
-  playerShakeMax: 16
-  shakeSeconds: 0.35

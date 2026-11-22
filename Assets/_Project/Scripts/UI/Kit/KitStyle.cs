@@ -6,8 +6,8 @@ using UnityEngine.UI;
 /// The menus' look. Started from the user's references (2026-11-09: a Roblox shooter's main menu for the layout, a
 /// "BASE UPGRADE" panel video for the motion) and then given ENFILADE's own identity: "enfilade" is fire along the
 /// length of a line, so the menus are drawn like a rangefinder (rails, scale ticks, bearings, cut corners). Colours are
-/// the HUD's (draft A, the user's pick on 2026-11-09): near-black, white, and one pink, the same pink as the HUD's accent
-/// (HudTilt.bridgeAccent) and the same near-white as its band. The member names stay as they were (Accent, Ice …) so
+/// the HUD's (draft A, the user's pick on 2026-11-09): near-black, white, and one pink. The member names stay as they were
+/// (Accent, Ice …) so
 /// other menus built on the kit (shop, gun customize) follow without changes. The motion is KitReveal, KitHover,
 /// KitScramble, KitPulse, KitRail. Built in code like the rest of the HUD (FeelUI), in the score font.
 /// </summary>

@@ -89,7 +89,7 @@ public sealed partial class PlayerGrenades
         if (!movement.InputAvailable || !InputFocus.TakesInput() || !Hands.Stands(HandUses.Grenade)) return;
         if (info != null && key != null && !BeltAway() && InputFocus.Takes(key) && KeyBindings.Pressed(key))
         {
-            if (count <= 0) { GrenadeHUD.Refused(); return; }
+            if (count <= 0) return;
             if (Time.time < readyAt) return;
             Begin(kind);
             return;

@@ -12,7 +12,6 @@ public sealed partial class PlayerGrenades
         int room = Mathf.Max(0, grenades.Carry - grenades.count), given = Mathf.Min(room, amount);
         if (given <= 0) return 0;
         grenades.count += given;
-        if (who.IsLocal) GrenadeHUD.Blink(KitStyle.Ice);
         return given;
     }
 

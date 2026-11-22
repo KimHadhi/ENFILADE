@@ -5,7 +5,7 @@ using UnityEngine.UI;
 /// Keeps a group the HUD prefab drew for a 1920 x 1080 screen at the distances from the screen's edges it was drawn with,
 /// whatever the screen's shape. GameHUD's Left Panel, Right Panel and Center are 100 px boxes centred on the canvas whose
 /// contents were laid out from a frame the size of the reference screen (Mission stretches its box out to 1920 x 1080,
-/// Health hangs off its box's bottom-left corner, the weapon slots off its right side). The canvas is that size only on a
+/// the weapon slots hang off the right side). The canvas is that size only on a
 /// 16:9 screen (CanvasScaler matches width and height half and half): on a 4:3 screen it is 1663 x 1247 and the HUD ran
 /// 129 px off the left and right edges (the objective bar's key cap and the ult magazine fully off), on 21:9 it is
 /// 2217 x 935 and the HUD ran 72 px off the top and bottom (2026-11-12). The box grows or shrinks by what the canvas

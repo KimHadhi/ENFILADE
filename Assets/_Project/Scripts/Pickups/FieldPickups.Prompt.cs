@@ -62,14 +62,11 @@ public sealed partial class FieldPickups
         return gun.Spare > 0 ? Texts.Format("pickup.gives.gunspare", rounds, gun.Spare) : Texts.Format("pickup.gives.gunrounds", rounds);
     }
 
-    // What was taken, on the taker's own PC (the user's pick of the pickup drafts, 2026-11-10, draft C, after "줍는 소리,
-    // 화면 효과, 줍는 동작, 주울 때 뜨는 글자 다 부족"): a row in the list at the bottom of the screen, the taking's
-    // sound under its kind's own (KitSound.PlayPickup), a blink of the HUD part it went to, and the gun in hand dipping as the body goes for it. Money has no part
-    // to blink: its number counts up by itself.
-    private static void Pop(Kind kind, string name, string amount, WeaponData gun = null)
+    // What was taken, on the taker's own PC (the user, 2026-11-10: "줍는 소리, 화면 효과, 줍는 동작 …"): the taking's
+    // sound under its kind's own (KitSound.PlayPickup) and the gun in hand dipping as the body goes for it. The addon
+    // player HUD lists what was taken (PlayerHudModule).
+    private static void Pop(Kind kind)
     {
-        Color tint = ColorOf(kind);
-        PickupFeedHUD.Show(IconOf(kind), tint, name, amount, kind == Kind.Gun ? WeaponIcons.For(gun) : null);
         KitSound.PlayPickup(kind switch
         {
             Kind.Gun => KitSound.Cue.PickGun,
@@ -78,22 +75,10 @@ public sealed partial class FieldPickups
             Kind.Shield => KitSound.Cue.PickShield,
             _ => KitSound.Cue.PickMoney
         }, .8f);
-        if (kind == Kind.Gun || kind == Kind.Ammo) AmmoHUD.Blink(KitStyle.Ice);
-        else if (kind == Kind.Heal || kind == Kind.Shield) AdaptiveHealthHUD.Blink(KitStyle.Ice, kind == Kind.Shield);
         var player = PlayerRoster.Local;
         var weapons = player != null ? player.GetComponentInChildren<WeaponController>() : null;
         if (weapons != null) FPSBody.Holding(weapons).OrNull()?.Reach();
     }
-
-    // The list's icon for a kind; a gun has none and shows a gun's outline.
-    private static Texture IconOf(Kind kind) => kind switch
-    {
-        Kind.Ammo => KitButtons.Icon("Bullet"),
-        Kind.Heal => KitButtons.Icon("Heart"),
-        Kind.Shield => KitButtons.Icon("Armor"),
-        Kind.Money => MoneyIcon.Texture,
-        _ => null
-    };
 
     private void Build()
     {

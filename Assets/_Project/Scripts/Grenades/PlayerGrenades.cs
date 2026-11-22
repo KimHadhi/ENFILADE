@@ -27,7 +27,7 @@ using UnityEngine;
 /// A few are carried (the table's carry: a fresh kit holds them all, every chapter and every class pick); ammo piles, the
 /// shop and a Support give some back, and a Knight walks over its thrown knives to take them back. Horde's 0.35 s guard
 /// between throws stays (cooldown). On every player: this PC's own throws, and friends' throws and arm copied here
-/// (PlayerNetworkCombat). The HUD shows the count beside the ammo (GrenadeHUD).
+/// (PlayerNetworkCombat). The addon player HUD shows the count beside the ammo (PlayerHud.Ammo).
 /// T throws a stone with the same hand (Throwable.Stone, since 2026-11-21), its own four clips (Tables/ThrowArms stone:
 /// begun as copies of the grenade's, polished by the user in the Blender throw workspace): taken out while T is held and
 /// the stone's cooldown is over, never counted; what is the stone's own (its cooldown, its lure, friends' copies of the
@@ -77,7 +77,7 @@ public sealed partial class PlayerGrenades : MonoBehaviour
     private Throwable kind, armKind;
     private Arm arm;
     private int count;
-    private bool holding, aiming, cooking, wired, letGo, released, pinned;
+    private bool holding, cooking, wired, letGo, released, pinned;
     // clip: the arm's clip playing (a table of GrenadeArmPath); clipTime: how far into it (s at its own speed); speed: how
     // fast it plays (its motion's draw, tap or throw speed).
     private float pressedAt, cookLeft, readyAt, pickLeft, clipTime, speed, lowerLeft, knifeShakeAt;
@@ -124,7 +124,7 @@ public sealed partial class PlayerGrenades : MonoBehaviour
 
     private void OnDisable()
     {
-        holding = aiming = cooking = letGo = false;
+        holding = cooking = letGo = false;
         arm = Arm.None;
         if (handMine && hands != null) hands.Give(this);
         handMine = false;
@@ -187,10 +187,6 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         if ((pickLeft -= dt) <= 0f) { pickLeft = .1f; TakeKnivesBack(); }
         var held = Throwables.Of(armKind);
         bool burning = cooking && held != null && held.Fuse > 0f;
-        float fuse = burning ? cookLeft / held.Fuse : -1f;
-        if (info == null || kind == Throwable.None) GrenadeHUD.Hide();
-        // Aiming a stone is not aiming the class's throwable: its count line stays as it is.
-        else GrenadeHUD.Show(kind, count, aiming && armKind == kind, fuse);
         // The quick grenade addon's fuse ring round the crosshair while one is held cooking (HudAddons.GrenadesModule): how
         // long it has burnt of its fuse (a tap is let go before the ring comes up).
         HudAddons.GrenadesModule.Cook(burning && !released && (holding || arm == Arm.Hold) ? held.Fuse - cookLeft : -1f, burning ? held.Fuse : 0f);

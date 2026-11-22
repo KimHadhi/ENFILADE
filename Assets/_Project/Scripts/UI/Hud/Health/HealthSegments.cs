@@ -5,8 +5,7 @@ using UnityEngine.UI;
 /// Health as ten cells, each a tenth of the maximum, filled from the left: green, yellow under 40%, red under 25%, as in
 /// Left 4 Dead. The cell being used up shows how much of it is left. Teammates' marks and the team panel share it.
 /// A shield shows as a thin band of cells over the health's (ShowShield), each over the health cell worth the same, in
-/// the shield's own colour, the way the player's own bar wears its shield (AdaptiveHealthHUD): a friend's vitals read
-/// the same wherever they are drawn. Before 2026-11-18 a friend's shield was nowhere on the screen.
+/// the shield's own colour: a friend's vitals read the same wherever they are drawn.
 /// </summary>
 public sealed class HealthSegments
 {

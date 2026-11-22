@@ -46,7 +46,6 @@ public sealed partial class SupportKit
         // take comes through here as well (ClassKit.Crate).
         PlayerGrenades.Resupplied(player);
         KitSound.Play(KitSound.Cue.PickAmmo, .9f);
-        AmmoHUD.Blink(KitStyle.Ice);
         AlertHUD.Self(Texts.Format("class.support.got", from));
     }
 }

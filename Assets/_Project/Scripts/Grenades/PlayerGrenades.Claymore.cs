@@ -73,7 +73,6 @@ public sealed partial class PlayerGrenades
     // Held: the spot, the fan it would guard, and lines to the claymores it would go off with.
     private void Preview()
     {
-        aiming = true;
         if (preview == null) preview = new ClaymorePreview(transform);
         if (Spot(out Vector3 at, out Quaternion facing, out bool wall)) preview.Show(at, facing, wall, Leaving());
         else preview.Hide();
@@ -91,7 +90,6 @@ public sealed partial class PlayerGrenades
                 facing.eulerAngles.y, MineSize, spotBy, transform);
         if (info == null || count <= 0 || !found)
         {
-            GrenadeHUD.Refused();
             Lower();
             Handed?.Invoke(armKind, HandPhase.Lower);
             return;

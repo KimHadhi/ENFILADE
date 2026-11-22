@@ -22,7 +22,7 @@ public static class HudRoom
         In,
         /// <summary>It stays over the passing piece (the hub's card): stand under it.</summary>
         Under,
-        /// <summary>It stays under the passing piece (the ammo display): keep above it.</summary>
+        /// <summary>It stays under the passing piece (the player HUD's ammo boxes): keep above it.</summary>
         Over,
     }
 

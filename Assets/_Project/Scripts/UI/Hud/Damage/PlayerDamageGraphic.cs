@@ -4,7 +4,7 @@ using UnityEngine.UI;
 /// <summary>
 /// One full-screen UI mesh drawn with the procedural blood vignette shader. The grid's vertex alpha is the blood amount
 /// per screen direction (first 49x29 vertices); the shader turns it into an organic liquid front with veins and gloss.
-/// Drips and world-bearing arcs follow with uv.x = -1 so the shader passes their vertex colour through unchanged.
+/// Drips follow with uv.x = -1 so the shader passes their vertex colour through unchanged.
 /// </summary>
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class PlayerDamageGraphic : MaskableGraphic
@@ -65,27 +65,6 @@ public sealed class PlayerDamageGraphic : MaskableGraphic
         Rect rect = GetPixelAdjustedRect();
         AddBloodField(mesh, rect);
         for (int i = 0; i < Owner.ActiveDripCount; i++) AddDrip(mesh, rect, Owner.Drips[i], settings);
-        // The addon player HUD has its own damage direction indicator (HudAddons.PlayerHudModule.On): while it is on, these
-        // arcs stay away and only the blood draws here.
-        if (settings.directionArcs && !HudAddons.PlayerHudModule.On)
-        {
-            Color shield = Owner.ShieldTint;
-            for (int i = 0; i < Owner.ActiveHitCount; i++)
-            {
-                var hit = Owner.Hits[i];
-                if (!hit.Directional) continue;
-                float radius = Mathf.Max(30f, settings.arcRadius) + i % 3 * (settings.arcThickness + 3f)
-                    + 9f * Mathf.Exp(-hit.Age * 18f);
-                float angle = Mathf.Atan2(hit.Direction.y, hit.Direction.x);
-                // What the shield took shows in its colour, over a dark blue edge instead of the dark red.
-                Color tint = Color.Lerp(settings.arcColor, new Color(shield.r, shield.g, shield.b, settings.arcColor.a), hit.Shield);
-                Color arc = Color.Lerp(Color.white, tint, Mathf.Clamp01(hit.Age / .075f));
-                arc.a = settings.arcColor.a * hit.Alpha;
-                AddArc(mesh, rect.center, angle, radius, settings.arcThickness + 3f, settings.arcDegrees + 1.5f,
-                    Color.Lerp(new Color(.05f, 0f, 0f, arc.a * .7f), new Color(0f, .03f, .07f, arc.a * .7f), hit.Shield));
-                AddArc(mesh, rect.center, angle, radius, settings.arcThickness, settings.arcDegrees, arc);
-            }
-        }
     }
 
     private void AddBloodField(VertexHelper mesh, Rect rect)
@@ -160,26 +139,6 @@ public sealed class PlayerDamageGraphic : MaskableGraphic
             int v = first + 1 + i * 2;
             mesh.AddTriangle(first, v, v + 2);
             mesh.AddTriangle(v, v + 1, v + 3); mesh.AddTriangle(v, v + 3, v + 2);
-        }
-    }
-
-    private static void AddArc(VertexHelper mesh, Vector2 center, float angle, float radius, float thickness, float degrees, Color color)
-    {
-        const int segments = 24;
-        int start = mesh.currentVertCount;
-        float half = Mathf.Clamp(degrees, 1f, 150f) * Mathf.Deg2Rad * .5f;
-        for (int i = 0; i <= segments; i++)
-        {
-            float t = (float)i / segments;
-            float a = angle + Mathf.Lerp(-half, half, t);
-            Vector2 normal = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-            Color tint = color;
-            tint.a *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(t, 1f - t) * 8f));
-            mesh.AddVert(center + normal * (radius - thickness * .5f), tint, Passthrough);
-            mesh.AddVert(center + normal * (radius + thickness * .5f), tint, Passthrough);
-            if (i == segments) continue;
-            int v = start + i * 2;
-            mesh.AddTriangle(v, v + 2, v + 1); mesh.AddTriangle(v + 1, v + 2, v + 3);
         }
     }
 }

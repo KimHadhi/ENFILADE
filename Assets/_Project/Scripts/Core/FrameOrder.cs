@@ -98,8 +98,6 @@ public static class FrameOrder
 
     // ---- After the player's frame ----
 
-    /// <summary>The ammo HUD, after the weapon's frame.</summary>
-    public const int AmmoHud = 400;
     /// <summary>The kill score popup (CombatFeedHUD).</summary>
     public const int CombatFeedHud = 470;
     /// <summary>A dead body's ragdoll, after the living body's pose work.</summary>

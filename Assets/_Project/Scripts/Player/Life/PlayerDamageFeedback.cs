@@ -2,8 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Presentation of accepted incoming damage. Each hit retains a world POSITION, never a source Transform or
-/// cached screen angle. LateUpdate recomputes bearings after the camera has moved, looked and received its punch.
+/// Presentation of accepted incoming damage: blood on the screen, and the shield's light on the side it was hit (ShieldFeedback).
+/// Where a hit came from, and its shake of the view, are the addon player HUD's (PlayerHud.Sense, PlayerHudShake).
 /// Blood is screen-locked: each splash keeps the bearing it arrived from, creeps in, holds, then recedes slowly.
 /// Low health adds a persistent blood baseline that surges with every heartbeat instead of blinking on and off.
 /// Pools are bounded; only a saturated pool replaces its oldest entry. No per-hit objects, materials or textures.
@@ -11,17 +11,6 @@ using UnityEngine.UI;
 [DisallowMultipleComponent, RequireComponent(typeof(PlayerDamageReceiver)), DefaultExecutionOrder(FrameOrder.DamageFeedback)]
 public sealed class PlayerDamageFeedback : MonoBehaviour
 {
-    internal struct Hit
-    {
-        internal Vector3 Origin;
-        internal Vector2 Direction;
-        internal bool Directional;
-        internal float Age, Lifetime, Strength, Alpha;
-        /// <summary>Share of the hit the shield took: its arc is drawn that much in the shield's colour.</summary>
-        internal float Shield;
-        internal ulong Serial;
-    }
-
     internal struct Splash
     {
         internal Vector2 Direction;
@@ -41,22 +30,17 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     [SerializeField, Tooltip("Optional. Defaults to the player's child camera.")]
     private Camera view;
     private PlayerDamageReceiver receiver;
-    private CameraViewPunch punch;
     [SerializeField, HideInInspector] private GameObject overlay;
     private PlayerDamageGraphic graphic;
     private float heartbeatTime, steadyBlood, criticalWeight;
     private ulong serial;
-    internal readonly Hit[] Hits = new Hit[24];
     internal readonly Splash[] Splashes = new Splash[32];
     internal readonly Drip[] Drips = new Drip[24];
-    public int ActiveHitCount { get; private set; }
     public int ActiveSplashCount { get; private set; }
     public int ActiveDripCount { get; private set; }
     public bool IsCritical { get; private set; }
     /// <summary>Heartbeat envelope, 0 between beats and 1 at the peak of the systole.</summary>
     public float PulseWeight { get; private set; }
-    /// <summary>The shield's colour for arcs of hits it took (ShieldFeedback's, else its world colour).</summary>
-    internal Color ShieldTint => TryGetComponent(out ShieldFeedback shield) ? shield.Tint : ShieldFeedback.WorldColor;
     /// <summary>Blood amount present on every edge from low health, including the current heartbeat surge.</summary>
     public float Baseline { get; private set; }
     public float Freshness { get; private set; }
@@ -90,12 +74,11 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
 
     public void Clear()
     {
-        ActiveHitCount = ActiveSplashCount = ActiveDripCount = 0;
+        ActiveSplashCount = ActiveDripCount = 0;
         serial = 0;
         IsCritical = false;
         PulseWeight = heartbeatTime = steadyBlood = criticalWeight = 0f;
         Baseline = Freshness = RearWash = Vignette = 0f;
-        if (punch != null) punch.ClearDamage();
         if (graphic != null) graphic.SetVerticesDirty();
     }
 
@@ -132,15 +115,11 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         bool directional = TryOrigin(hit, out Vector3 origin);
         Vector2 direction = directional ? Bearing(camera.transform, origin) : Vector2.zero;
         float strength = Mathf.Lerp(.55f, 1f, Mathf.Clamp01(hit.Amount / receiver.MaximumHealth * 4f));
-        // What the shield took is energy, not blood, as in Apex Legends: its honeycomb lights on that side (ShieldFeedback)
-        // and the arc takes its colour. Only what reached health bleeds, sized by that part alone.
+        // What the shield took is energy, not blood, as in Apex Legends: its honeycomb lights on that side (ShieldFeedback).
+        // Only what reached health bleeds, sized by that part alone.
         float shieldTaken = receiver.LastShieldTaken, healthTaken = receiver.LastHealthTaken;
-        float shieldShare = shieldTaken + healthTaken > 0f ? shieldTaken / (shieldTaken + healthTaken) : 0f;
         if (shieldTaken > 0f && TryGetComponent(out ShieldFeedback shieldLight))
             shieldLight.ShowHit(direction, directional, Mathf.Lerp(.55f, 1f, Mathf.Clamp01(shieldTaken / receiver.MaximumHealth * 4f)));
-        int index = ActiveHitCount < Hits.Length ? ActiveHitCount++ : OldestHit();
-        Hits[index] = new Hit { Origin = origin, Direction = direction, Directional = directional,
-            Lifetime = Mathf.Max(.1f, settings.hitSeconds), Strength = strength, Alpha = strength, Shield = shieldShare, Serial = ++serial };
         bool bleeds = healthTaken > 0f;
         if (bleeds) strength = Mathf.Lerp(.55f, 1f, Mathf.Clamp01(healthTaken / receiver.MaximumHealth * 4f));
         if (settings.bloodVignette && bleeds)
@@ -152,17 +131,6 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
                 Rear = directional ? Mathf.Max(0f, -direction.y) : 0f, Hold = Mathf.Max(0f, settings.bloodHoldSeconds),
                 Fade = Mathf.Max(.1f, settings.bloodFadeSeconds), Serial = ++serial };
             Freshness = 1f;
-        }
-        // The addon player HUD shakes the view on a hit itself (HudAddons.PlayerHudModule.On, its Damage Shake): while it is
-        // on, this flinch stays away so a hit never shakes twice.
-        if (settings.cameraShake && !HudAddons.PlayerHudModule.On)
-        {
-            punch = CameraViewPunch.For(camera);
-            float side = directional ? direction.x : Random.Range(-.5f, .5f);
-            // The shield softens the flinch: a hit it took whole knocks the view about two thirds as hard.
-            float flinch = strength * (bleeds ? 1f : .65f);
-            punch.DamagePunch(new Vector3(.45f, side * .35f, -side) * (settings.impactKickDegrees * flinch),
-                settings.traumaPerHit * flinch);
         }
         graphic.SetVerticesDirty();
     }
@@ -247,13 +215,6 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         return oldest;
     }
 
-    private int OldestHit()
-    {
-        int oldest = 0;
-        for (int i = 1; i < Hits.Length; i++) if (Hits[i].Serial < Hits[oldest].Serial) oldest = i;
-        return oldest;
-    }
-
     private int OldestSplash()
     {
         int oldest = 0;
@@ -274,22 +235,13 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     private void LateUpdate()
     {
         if (receiver == null || !receiver.isActiveAndEnabled || !receiver.IsAlive)
-        { if (ActiveHitCount > 0 || ActiveSplashCount > 0 || ActiveDripCount > 0 || IsCritical || Baseline > 0f) Clear(); return; }
+        { if (ActiveSplashCount > 0 || ActiveDripCount > 0 || IsCritical || Baseline > 0f) Clear(); return; }
         var camera = ResolveCamera();
         if (camera == null) { Clear(); return; }
         var settings = PlayerDamageFeedbackSettings.Instance;
         // Freeze visual lifetimes during pause; run at real speed during combat hit-stop/slow motion.
         float dt = Time.timeScale > 0f ? Time.unscaledDeltaTime : 0f;
         Clock += dt;
-        for (int i = ActiveHitCount - 1; i >= 0; i--)
-        {
-            var hit = Hits[i]; hit.Age += dt;
-            if (hit.Age >= hit.Lifetime) { RemoveHit(i); continue; }
-            if (hit.Directional) hit.Direction = Bearing(camera.transform, hit.Origin);
-            float fade = Mathf.InverseLerp(Mathf.Clamp(settings.holdFraction, 0f, .95f), 1f, hit.Age / hit.Lifetime);
-            hit.Alpha = hit.Strength * (1f - Mathf.SmoothStep(0f, 1f, fade));
-            Hits[i] = hit;
-        }
         float rear = 0f;
         for (int i = ActiveSplashCount - 1; i >= 0; i--)
         {
@@ -328,10 +280,9 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         Vignette = settings.criticalVignette * criticalWeight;
         if (Baseline > 0f || Vignette > 0f) EnsureOverlay();
 
-        if (!settings.cameraShake && punch != null) punch.ClearDamage();
         if (graphic != null)
         {
-            bool showing = ActiveHitCount > 0 || ActiveSplashCount > 0 || ActiveDripCount > 0 || Baseline > .001f || Vignette > .001f;
+            bool showing = ActiveSplashCount > 0 || ActiveDripCount > 0 || Baseline > .001f || Vignette > .001f;
             graphic.enabled = showing;
             if (showing) { graphic.SetVerticesDirty(); graphic.ApplyShaderState(); }
         }
@@ -339,8 +290,6 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
 
     private static float Beat(float phase, float centre, float attack, float release)
     { float distance = (phase - centre) / (phase < centre ? attack : release); return Mathf.Exp(-distance * distance * .5f); }
-    private void RemoveHit(int index)
-    { for (int i = index; i < ActiveHitCount - 1; i++) Hits[i] = Hits[i + 1]; ActiveHitCount--; }
     private void RemoveSplash(int index)
     { for (int i = index; i < ActiveSplashCount - 1; i++) Splashes[i] = Splashes[i + 1]; ActiveSplashCount--; }
     private void RemoveDrip(int index)

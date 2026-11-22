@@ -12,7 +12,7 @@ using UnityEngine.UI;
 /// left. The slot taken in hand kicks out to the left with a white flash and grows: its tab lights, a line runs down its
 /// left side, its icon lifts and turns full white, its name and kind show under it, and the HUD strip's corner and shard
 /// light at its top right.</para>
-/// <para>Cards (draft C): a row of small cards over the ammo, each with its number and a small icon, an empty slot striped.
+/// <para>Cards (draft C): a row of small cards in the corner over the ammo boxes, each with its number and a small icon, an empty slot striped.
 /// The one in hand widens into a light card with the gun drawn dark on it, its name and kind, and a dark line drawn along
 /// its top.</para>
 /// Each weapon shows its own picture (WeaponIcons), kept to the icons' one canvas so a pistol stays smaller than a rifle; a
@@ -46,8 +46,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     private WeaponSlotLook look;
     private Shape shape;
     private int shownSelected = -2;
-    private AmmoHUD ammo;
-    private float ammoLookedAt = -99f;
     private readonly System.Collections.Generic.List<RectTransform> roomRects = new System.Collections.Generic.List<RectTransform>();
     private static Texture2D stripes;
 
@@ -105,7 +103,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         if (look == WeaponSlotLook.Plates) LayPlates(selected, now, dt, ref readable);
         else
         {
-            PlaceOverAmmo(now);
+            PlaceInCorner();
             LayCards(selected, now, dt, ref readable);
         }
         restartNames = false;
@@ -260,22 +258,17 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         return slot;
     }
 
-    // Over the ammo, wherever the HUD's layout and lean put it: Cards.right px in from its right end and Cards.bottom px up
-    // from its foot, turned as it is. Without an ammo display, at the bottom right of the slots' own box.
-    private void PlaceOverAmmo(float now)
+    // In the HUD's bottom right corner, over the addon's ammo boxes: Cards.right px in from the margin and Cards.bottom px
+    // up from it, in the plane the HUD's right side is drawn on and turned as it is.
+    private const float CornerMargin = 40f;
+    private void PlaceInCorner()
     {
-        if (ammo == null && now - ammoLookedAt > 1f)
+        var canvas = GetComponentInParent<Canvas>();
+        if (canvas != null && transform.parent is RectTransform side)
         {
-            ammoLookedAt = now;
-            var canvas = GetComponentInParent<Canvas>();
-            ammo = canvas != null ? canvas.rootCanvas.GetComponentInChildren<AmmoHUD>(true) : null;
-            if (ammo == null) ammo = FindAnyObjectByType<AmmoHUD>(FindObjectsInactive.Include);
-        }
-        if (ammo != null && ammo.transform is RectTransform rect)
-        {
-            Rect r = rect.rect;
-            holder.position = rect.TransformPoint(new Vector3(r.xMax - shape.Right, r.yMin + shape.Bottom, 0f));
-            holder.rotation = rect.rotation;
+            Vector2 half = ((RectTransform)canvas.rootCanvas.transform).rect.size * .5f;
+            holder.position = side.TransformPoint(side.rect.center + new Vector2(half.x - CornerMargin - shape.Right, CornerMargin - half.y + shape.Bottom));
+            holder.rotation = side.rotation;
             return;
         }
         holder.anchorMin = holder.anchorMax = new Vector2(1f, 0f);

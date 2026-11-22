@@ -75,13 +75,6 @@ public sealed class CameraViewPunch : MonoBehaviour
         damageTrauma = Mathf.Clamp01(damageTrauma + addTrauma);
     }
 
-    public void ClearDamage()
-    {
-        damageRotation.Reset(); damageTrauma = damageNoiseTime = 0f;
-        // This can run after LateUpdate (death, revive or a layer toggle). Preserve the already-rendered gun kick/FOV.
-        if (applied) transform.localRotation = steadyRotation * appliedGunRotation;
-    }
-
     private void LateUpdate()
     {
         Restore();

@@ -24,8 +24,6 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     public event Action Died;
     /// <summary>A hit took the last of the shield (backlog 321). Raised after HitResolved, on the owner's PC only.</summary>
     public event Action<DamageHit> ShieldBroken;
-    /// <summary>How many times the shield has broken, for HUDs that poll rather than listen (AdaptiveHealthHUD).</summary>
-    public int ShieldBreaks { get; private set; }
     /// <summary>Of the last damaging hit, what the shield took and what health lost, set before HitResolved: a hit the shield
     /// took whole shows no blood, only the shield's light (PlayerDamageFeedback, ShieldFeedback, PlayerNetworkCombat).</summary>
     public float LastShieldTaken { get; private set; }
@@ -137,7 +135,7 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
         LastHealthTaken = Mathf.Max(0f, healthBefore - Health);
         melee.OrNull()?.NotifyDamaged();
         HitResolved?.Invoke(hit, DamageResult.Damaged);
-        if (shieldBroke) { ShieldBreaks++; ShieldBroken?.Invoke(hit); }
+        if (shieldBroke) ShieldBroken?.Invoke(hit);
         // Flesh only when health was reached; the shield's own sound is ShieldFeedback's.
         if ((movement == null || movement.IsLocal) && LastHealthTaken > 0f) CombatHitAudio.PlayPlayerHit(hit);
         if (!IsAlive && (hit.IsFatal || !TryGetComponent(out PlayerLife life) || !life.TryGoDown()))
@@ -252,7 +250,6 @@ public sealed class PlayerDamageReceiver : MonoBehaviour, IDamageReceiver, ITabl
     {
         if (Shield <= 0f || !IsAlive) return false;
         shield = 0f;
-        ShieldBreaks++;
         ShieldBroken?.Invoke(cause);
         return true;
     }

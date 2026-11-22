@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 /// in their hands, and its headshots too; at thresholds the count names a rank (Tables/KillCounter.csv Ranks.kills, the
 /// names Texts.csv gunrank.N), worn before the gun's name like a strange weapon's. Kept in gun_kills.json beside the other
 /// saves. In a game it shows only while the gun is looked over (Y): its counter on the gun (GunKillPlate) and its line
-/// under the ammo display (AmmoHUD); a rank reached in a fight waits and is announced at the gun's next look-over (user,
+/// by the ammo boxes (PlayerHud.Ammo); a rank reached in a fight waits and is announced at the gun's next look-over (user,
 /// 2026-11-12: "킬스트릭 스탯은 무기 관찰할 때만 뜨게 할 것"). The title screen's weapons tab shows it too.
 /// </summary>
 public static class GunKills
@@ -45,7 +45,7 @@ public static class GunKills
     /// <summary>A kill counted for a gun: the gun, its kills now, and whether that took it to a new rank.</summary>
     public static event Action<WeaponData, int, bool> Counted;
 
-    /// <summary>A rank the gun reached is announced, as its look-over begins (AmmoHUD's line, GunKillPlate's flash).</summary>
+    /// <summary>A rank the gun reached is announced, as its look-over begins (PlayerHud.Ammo's line, GunKillPlate's flash).</summary>
     public static event Action<WeaponData> RankUpAnnounced;
 
     public static string FilePath => Path.Combine(Application.persistentDataPath, FileName);

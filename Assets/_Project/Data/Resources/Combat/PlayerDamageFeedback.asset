@@ -12,16 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24087ad842facfe41923ad7f23442835, type: 3}
   m_Name: PlayerDamageFeedback
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageFeedbackSettings
-  directionArcs: 1
   bloodVignette: 1
   cameraShake: 1
   criticalPulse: 1
-  arcColor: {r: 1, g: 0.12, b: 0.08, a: 0.95}
-  hitSeconds: 1.65
-  holdFraction: 0.22
-  arcRadius: 88
-  arcThickness: 5
-  arcDegrees: 48
   bloodColor: {r: 0.36, g: 0.01, b: 0.02, a: 1}
   freshColor: {r: 0.62, g: 0.02, b: 0.035, a: 1}
   bloodPerHit: 0.42
@@ -36,11 +29,9 @@ MonoBehaviour:
   dripMaxLength: 170
   dripSeconds: 2.4
   rearWashOpacity: 0.14
-  traumaPerHit: 0.38
   shakeMaxAngle: 2.2
   shakeRecovery: 1.5
   shakeFrequency: 23
-  impactKickDegrees: 0.75
   injuredHealthFraction: 0.5
   injuredBlood: 0.2
   criticalHealthFraction: 0.25

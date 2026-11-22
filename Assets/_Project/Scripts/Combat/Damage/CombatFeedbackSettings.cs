@@ -163,55 +163,6 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float popupFullSizeDistance = 6f;
     [Range(.2f, 1f)] public float popupMinimumDistanceScale = .65f;
 
-    [Header("Health loss (the player's bar; an enemy's is the enemy bars addon's, HudAddons.EnemyBarsHud)")]
-    [Tooltip("Off: every trail is Small Loss Color (plain yellow). On: yellow -> orange by hit size.")]
-    public bool colorTrailByLossSize = true;
-    [Tooltip("Trail colour for a tiny hit.")]
-    public Color smallLossColor = new Color(1f, .9f, .2f);
-    [Tooltip("Trail colour when one hit removes Large Loss Fraction of maximum health (orange).")]
-    public Color largeLossColor = new Color(1f, .57f, .12f);
-    [Tooltip("Trail colour for a near-total hit (deep orange, deliberately not red so it never reads as the bar).")]
-    public Color fullLossColor = new Color(1f, .4f, .1f);
-    [Range(.05f, .95f), Tooltip("Single-hit fraction of maximum health that reads orange.")]
-    public float largeLossFraction = .7f;
-    [Tooltip("Lighter diagonal stripes over the trail, so it never reads as remaining health.")]
-    public bool trailStripes = true;
-    [Range(0f, 1f), Tooltip("How much lighter the alternate stripes are (0 = invisible, 1 = white).")]
-    public float trailStripeLighten = .35f;
-    [Min(.01f), Tooltip("Stripes slide toward the remaining health, units per second.")]
-    public float trailStripeScroll = 14f;
-    [Tooltip("Thin white line where remaining health ends while a trail is showing.")]
-    public bool trailEdgeLine = true;
-    [Min(0f), Tooltip("The trail starts white and settles into its loss colour over this time.")]
-    public float trailFlashSeconds = .12f;
-    [Min(0f), Tooltip("Seconds the lost part stays full before draining.")]
-    public float trailHoldSeconds = .15f;
-    [Min(.01f), Tooltip("Base drain speed, fraction of maximum health per second.")]
-    public float trailDrainPerSecond = .6f;
-    [Min(0f), Tooltip("Extra drain speed per remaining fraction, so large chunks catch up. 70% drains in about 0.45 s.")]
-    public float trailDrainCatchUp = 4f;
-    [Min(.05f), Tooltip("How long the enemy bar rattles after a hit.")]
-    public float enemyShakeSeconds = .32f;
-    [Min(1f), Tooltip("Enemy bar rattle speed, back-and-forth swings per second.")]
-    public float enemyShakeFrequency = 18f;
-    [Min(0f), Tooltip("How quickly the enemy rattle dies out. Higher = shorter, snappier.")]
-    public float enemyShakeDamping = 12f;
-    [Range(0f, .3f), Tooltip("Enemy bar briefly grows by this much on a heavy hit (half of maximum health or more).")]
-    public float enemyShakeScalePunch = .07f;
-    [Min(0f), Tooltip("Player HP bar shake for a hit removing all health, 1920x1080 canvas units.")]
-    public float playerShakeMax = 16f;
-    [Min(.05f)] public float shakeSeconds = .35f;
-
-    /// <summary>Yellow → orange (at Large Loss Fraction) → red, by single-hit fraction of maximum health.</summary>
-    public Color HealthLossColor(float fraction)
-    {
-        if (!colorTrailByLossSize) return smallLossColor;
-        float large = Mathf.Clamp(largeLossFraction, .05f, .95f);
-        fraction = Mathf.Clamp01(fraction);
-        return fraction <= large
-            ? Color.Lerp(smallLossColor, largeLossColor, fraction / large)
-            : Color.Lerp(largeLossColor, fullLossColor, (fraction - large) / (1f - large));
-    }
 
     private static CombatFeedbackSettings cached, defaults;
     public static CombatFeedbackSettings Instance => cached != null ? cached : cached = Resources.Load<CombatFeedbackSettings>("Combat/Feedback");

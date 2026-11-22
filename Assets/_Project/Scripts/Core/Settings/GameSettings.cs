@@ -74,8 +74,8 @@ public sealed class GameSettings
     public float bodySway = 1f;
     [Tooltip("How much the HUD trails the look when turning (HudCamera). 0 keeps it still.")]
     public float hudSway = .5f;
-    [Tooltip("Scales each HUD element's own lean: the rows of HudTilt.csv, the teammate cards and the score popup. " +
-        "0 lays them flat on their side of the HUD, 2 doubles them. HudTilt slides leaning pieces apart so none covers another.")]
+    [Tooltip("Scales each HUD element's own lean: the teammate cards, the chat frame, the callout windows, the moment notice " +
+        "and the hub board. 0 lays them flat on their side of the HUD, 2 doubles them.")]
     public float hudTilt = 1f;
     [Tooltip("How far the HUD's left and right sides turn away at their inner edge (°), like the inside of a curved " +
         "screen (HudPlane). 0 is a flat HUD.")]

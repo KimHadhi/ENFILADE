@@ -18,8 +18,8 @@ using UnityEngine.UI;
 /// dropped also with its starting reserve beside it for its first taker. Taken, it goes into an empty gun slot, else
 /// in place of the gun in hand, which is left on the floor as it is for someone else; the reserve is the player's and
 /// stays with them (PlayerWeaponSlots.Put). A gun of a kind already held is not taken: its rounds go into that kind's
-/// reserve as far as there is room, and it stays where it lay with the rest. What was taken is listed at the bottom of
-/// the screen (PickupFeedHUD), with a sound of its kind, a blink of the HUD part it went to and a dip of the gun in hand.
+/// reserve as far as there is room, and it stays where it lay with the rest. What was taken is listed by the addon player
+/// HUD (PlayerHudModule), with a sound of its kind and a dip of the gun in hand.
 /// <para>The host, or the PC alone, keeps every item and tells the others (a named message on change and every couple
 /// of seconds, so late joiners catch up); a guest asks the host to take one, and the host hands the taker's PC the item
 /// as it lay, which applies it there (its own guns, rounds, health, shield and money are its own to count; a gun it

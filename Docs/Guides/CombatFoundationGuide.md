@@ -81,7 +81,7 @@
 | 조준 반동, 총 모델 추적·high-ready 반응, 무기 사운드·아이콘 | [무기 데이터 폴더](../../Assets/_Project/Data/Guns/Weapons) → 해당 `WeaponData`의 Recoil Feel / Aim Tracking Feel / High-ready 항목 |
 | 무기별 총성, 화면 킥, 총구·탄피, 총알 체간 피해 | `WeaponData`의 Feel 및 Feel → Target Reaction 항목 |
 | 전체 타격감 켜기·끄기, 체간 붕괴 표시, 점수, 피격·처치 효과 | [GunFeel.asset](../../Assets/_Project/Data/Resources/Combat/GunFeel.asset) (히트 마커·점수 팝업·킬 체인은 히트 피드백 애드온: [HitFeedback.csv](../../Assets/_Project/Data/Resources/Tables/Hud/HitFeedback.csv), 설정 → HUD → 히트 마커) |
-| 플레이어 피격 아크·혈흔·쉐이크·25% 빈사 박동 | [PlayerDamageFeedback.asset](../../Assets/_Project/Data/Resources/Combat/PlayerDamageFeedback.asset), [피격 효과 안내](PlayerDamageFeedbackGuide.md) |
+| 플레이어 피격 혈흔·실드 빛·25% 빈사 박동(방향 표시와 시점 흔들림은 플레이어 HUD) | [PlayerDamageFeedback.asset](../../Assets/_Project/Data/Resources/Combat/PlayerDamageFeedback.asset), [피격 효과 안내](PlayerDamageFeedbackGuide.md) |
 | 방어·밀치기 소리, 반격, 흐트러짐 표시, 피해 팝업·HP 손실 표시 | [Feedback.asset](../../Assets/_Project/Data/Resources/Combat/Feedback.asset) |
 | 시작 무기와 시작 슬롯 | 플레이어의 `PlayerWeaponSlots` → Slot 1~4 / Starting Slot |
 | 주먹·가드·패링·V 홀드 | [Player.csv](../../Assets/_Project/Data/Resources/Tables/Player/Player.csv)의 `Fists` 행 |
@@ -94,7 +94,7 @@
 | 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../../Assets/_Project/Data/Resources/Enemies)의 `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../../Assets/_Project/Input/Player.inputactions)의 Combat 맵 |
 | 슬롯 숫자 키 | Player.inputactions의 Combat 맵 `Slot1`~`Slot4`(주 키 숫자열, 보조 키 숫자패드). 플레이어는 설정 → 조작 → 키 설정에서 바꾼다 |
-| 탄약 UI의 위치·크기·색 | 씬의 `AmmoHUD` → Screen Margin / Hud Scale / Colors |
+| 탄약 UI의 위치·크기·색 | 설정 → HUD → 플레이어 HUD → 탄약(사용, 가로·세로 위치, 색), [PlayerHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/PlayerHud.csv) `Ammo.*` |
 
 슬롯 키는 Input Actions의 `Slot1`~`Slot4` 액션이다. [PlayerWeaponSlots](../../Assets/_Project/Scripts/Weapons/PlayerWeaponSlots.cs)는 `KeyBindings.Pressed`로 읽으므로 에셋의 바인딩과 키 설정 창에서 바꾼 키가 그대로 먹힌다. 사격 모드(B)·총 꾸미기(C)·살펴보기(Y)·라이트(L)도 같다.
 

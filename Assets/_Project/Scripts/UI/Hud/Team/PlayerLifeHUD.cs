@@ -154,7 +154,7 @@ public sealed class PlayerLifeHUD : MonoBehaviour
         panel = FeelUI.Rect("Rescue", canvas.transform);
         panel.sizeDelta = new Vector2(PanelWidth, PanelHeight);
         panel.anchoredPosition = new Vector2(0f, -182f);
-        panel.gameObject.AddComponent<SlantedHealthGraphic>().Configure(1f, 1f, 1d, false, Shear, 0f, Plate, Color.clear, Color.clear);
+        panel.gameObject.AddComponent<SlantedPlate>().Configure(1f, Shear, Plate);
 
         float halfWidth = PanelWidth * .5f, textWidth = PanelWidth - Inset * 2f - 96f;
         who = FeelUI.ScoreLabel("Who", panel, 20f, TextAlignmentOptions.MidlineLeft);

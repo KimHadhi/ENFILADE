@@ -5,7 +5,7 @@
 - **MW Quick Grenade and Grenade Indicator**(`lua/autorun/client/cl_quicknade.lua`, `sh_quicknade.lua`, `server/sv_quicknade.lua`, `weapons/weapon_quicknade.lua`, 뷰모델 `models/weapons/quick_grenade/c_eq_frag.mdl`, 그림 `materials/vgui/frag`·`frag_arrow`, 소리 `sound/quicknade`·`sound/weapmvmt`): 쿠킹 링, 다가오는 세열 표시, 퀵 수류탄의 소리. 퀵 수류탄 무기 자체(G로 꺼내 던지기)는 게임에 이미 있는 게임플레이라 옮기지 않았다([클래스 투척물](Grenades.md)).
 - **Arctic's Grenade Indicators**(`lua/autorun/cl_grenade_indicator.lua`, `cl_grenade_indicator_menu.lua`, 그림 `materials/ugi/triangle.png`, `ugi/holo.vtf`의 다섯 프레임): 빨간 세모와 홀로그램.
 
-수류탄 개수 판(GrenadeHUD의 판)은 게임 것이라 이 모듈과 상관없다. 애드온 플레이어 HUD(PlayerHud)가 켜져 있으면 그 수류탄 칸이 개수를 보여 주므로 이 판은 뜨지 않는다.
+수류탄 개수는 이 모듈이 아니라 플레이어 HUD 모듈(PlayerHud)의 수류탄 칸이 보여 준다. 예전 투척물 판(GrenadeHUD)은 0.9.333에 지웠다(사용자: "구시대 허드 다 죽여").
 
 ## 무엇인가
 
