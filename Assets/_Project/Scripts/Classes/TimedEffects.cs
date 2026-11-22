@@ -7,7 +7,7 @@ using UnityEngine;
 /// Every timed effect on this PC's own player, in one place: a class's own (a Point's Gun Kata, a Schießhund's Return
 /// Back), a card's (Gunslinger, Momentum), and one a friend gave (an Assault's CHARGE, a Détente's adrenaline shot, a
 /// Knight's cover). Each is an entry of its own with its own time left, and the HUD lays every one of them out in a slot
-/// of its own (EffectStack), however many run at once.
+/// of its own (the class UI's effect rows, HudAddons.PlayerHud.Class), however many run at once.
 /// <para>
 /// The user, 2026-11-18: "건 카타 발동 중 무기를 교체해 공격력 증가 스킬이 추가 발동하는 경우 … 늦게 발동한 스킬의
 /// 지속시간 하나만 남고 기존 정보가 덮어씌워지거나 … 독립적인 다중 슬롯/스택 레이아웃으로 분리 표시". Until then there was
@@ -23,7 +23,7 @@ using UnityEngine;
 /// forget: an effect nobody spoke for this frame is over. The entries keep the order they began in, so a slot never
 /// jumps when another effect starts; the one above it ending lets the rest move up.
 /// </para>
-/// What each one is called, its colour and icon, and whether it shows at all are rows of Tables/TimedEffects (a mod
+/// What each one is called, its colour, and whether it shows at all are rows of Tables/TimedEffects (a mod
 /// restyles or hides one there, and code of its own shows a new one by one Report with a new row).
 /// Checked without playing: the console's /effects lists what runs, and every effect's beginning and end go to
 /// Logs/timed-effects.txt with what else ran beside it (PlayRecord): the proof that two ran and showed at once.
@@ -37,7 +37,7 @@ public static class TimedEffects
     /// <summary>What an effect is to the eye: a row of Tables/TimedEffects.</summary>
     public sealed class Kind
     {
-        public string Id = "", Icon = "";
+        public string Id = "";
         public Color Colour = Color.white;
         public int Order;
         public bool Shown = true;
@@ -118,7 +118,7 @@ public static class TimedEffects
             if (string.IsNullOrEmpty(id) || id[0] == '#' || !GameTables.TryGetRow(TableName, id, out var row)) continue;
             var kind = new Kind
             {
-                Id = id.Trim(), NameCell = row.Text("name"), Icon = row.Text("icon").Trim(),
+                Id = id.Trim(), NameCell = row.Text("name"),
                 Order = Mathf.RoundToInt(row.Number("order", kinds.Count)), Shown = row.Number("show", 1f) > .5f,
                 Colour = ColourOf(row.Text("colour")),
             };

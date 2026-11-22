@@ -420,8 +420,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && GetComponent<DodgeDash>() == null) gameObject.AddComponent<DodgeDash>();
         // The class at work (stage 7): starting guns, the class key, adrenaline, CHARGE, a Point's guns reloading aside.
         if (Application.isPlaying && GetComponent<ClassKit>() == null) gameObject.AddComponent<ClassKit>();
-        if (Application.isPlaying && IsLocal && GetComponent<ClassHUD>() == null) gameObject.AddComponent<ClassHUD>();
-        // The Garry's Mod HUD addons' modules (HudAddons.Boot), brought up with this player's HUD.
+        // The Garry's Mod HUD addons' modules (HudAddons.Boot), brought up with this player's HUD; the class UI is drawn in
+        // their parts (HudAddons.PlayerHud.Class).
         if (Application.isPlaying && IsLocal) HudAddons.Boot.Install();
         // Callouts (memo 4, G&B's wheel): solo has no network, so it can't wait for PlayerNetworkCombat to add it.
         if (Application.isPlaying && GetComponent<PlayerCallouts>() == null) gameObject.AddComponent<PlayerCallouts>();

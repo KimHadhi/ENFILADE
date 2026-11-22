@@ -294,10 +294,37 @@ namespace HudAddons
             public float seatSeconds = .22f, seatPush = 16f, slamSeconds = .16f, stripSeconds = .3f;
             public float dropSeconds = .45f, dropFall = 120f, freshDelay = .2f, freshSeconds = .35f, freshRise = 70f;
             public float sweepSeconds = 1.25f, caseSeconds = .55f, beatsPerSecond = 1.1f;
-            /// <summary>A round: its case and its bullet; past one use, the case in the addon's over-full colour.</summary>
+            /// <summary>A round: its case and its bullet. Past one use, both are the player's own colour (PlayerHud.Class).</summary>
             public Color round = new Color32(255, 255, 255, 255);
             public Color bullet = new Color32(155, 155, 155, 255);
             public Color spent = new Color32(255, 150, 0, 255);
+        }
+
+        /// <summary>
+        /// Our class UI in the addon's parts (PlayerHud.Class): sizes are px on 1080p times the scale option and the class
+        /// UI's own size; text sizes are GMod cell heights like the addon's fonts.
+        /// </summary>
+        [Serializable]
+        public sealed class ClassRow
+        {
+            /// <summary>Under the screen's middle: the class box's top left this far left of the middle and up from the foot.</summary>
+            public float centreLeft = 148f, centreUp = 159f;
+            /// <summary>Under the middle, the bar's length; beside the portrait it reaches the health bar's right end.</summary>
+            public float barWidth = 244f;
+            /// <summary>Beside the portrait: the room between the portrait panel and the class box.</summary>
+            public float portraitGap = 11f;
+            public float box = 41.25f, gap = 8f, barHeight = 7.5f, frame = 3.75f, under = 12f;
+            /// <summary>Each pip takes its share of the bar and fills the first (1 - gap) of it, as the armour bar's segments.</summary>
+            public float pipGap = .1f;
+            public float keyHeight = 28f, keyAbove = 37f, rowHeight = 22f, rowGap = 4f, chipMost = 92f;
+            /// <summary>Text cells: the class name, the small words, the key's word, the gun digits, the mark.</summary>
+            public float nameText = 16.8f, smallText = 14.4f, wordText = 19.2f, digitText = 28.8f, markText = 19.2f;
+            /// <summary>The text outline: the addon's (black, 2 px) a little darker, so the words read on bright ground.</summary>
+            public Color outline = new Color32(0, 0, 0, 110);
+            /// <summary>The ready glow of the key box and the mark's beat: between these, this many times a second.</summary>
+            public float glowLeast = .12f, glowMost = .42f, beatsPerSecond = .7f;
+            /// <summary>The faint empty segments, a recharging box's fill and the deploy chips of a kind no longer held.</summary>
+            public float emptyAlpha = .13f, riseAlpha = .28f, unheldAlpha = .4f;
         }
 
         public readonly HudRow Hud = new HudRow();
@@ -315,6 +342,7 @@ namespace HudAddons
         public readonly FxRow Fx = new FxRow();
         public readonly PortraitRow Portrait = new PortraitRow();
         public readonly MagazineRow Magazine = new MagazineRow();
+        public readonly ClassRow Class = new ClassRow();
 
         /// <summary>Binds every row to the table for as long as <paramref name="owner"/> lives (and again on a reload).</summary>
         public void Bind(UnityEngine.Object owner)
@@ -334,6 +362,7 @@ namespace HudAddons
             GameTables.BindNested(TableName, "Fx", owner, Fx);
             GameTables.BindNested(TableName, "Portrait", owner, Portrait);
             GameTables.BindNested(TableName, "Magazine", owner, Magazine);
+            GameTables.BindNested(TableName, "Class", owner, Class);
         }
     }
 }

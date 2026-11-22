@@ -9,7 +9,7 @@ public sealed partial class SupportKit
 
     /// <summary>
     /// The friend F would throw a supply pack to now (the throw card, 보급 꾸러미 던지기: the class key held, a standing
-    /// friend under the crosshair within Support.throwReach and in sight), or null. ClassHUD names them.
+    /// friend under the crosshair within Support.throwReach and in sight), or null. The class UI names them (ClassReadout).
     /// </summary>
     public PlayerMovement Tossable { get; private set; }
 

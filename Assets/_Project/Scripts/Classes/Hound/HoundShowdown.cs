@@ -58,7 +58,7 @@ public sealed class HoundShowdown : MonoBehaviour
     /// <summary>Whether this PC's hound is in its showdown now: being taken, or in the arena.</summary>
     public static bool Busy(PlayerMovement who) => Of(who) is HoundShowdown showdown && showdown.phase != Phase.None;
 
-    /// <summary>How much of the crowd's strength is left on this PC's hound, 0 to 1 (ClassHUD's bar; 0: none).</summary>
+    /// <summary>How much of the crowd's strength is left on this PC's hound, 0 to 1 (0: none).</summary>
     public static float CheerShare(PlayerMovement who)
         => Of(who) is HoundShowdown showdown && showdown.cheerUntil > Time.time ? Mathf.Clamp01((showdown.cheerUntil - Time.time) / showdown.cheerTotal) : 0f;
 

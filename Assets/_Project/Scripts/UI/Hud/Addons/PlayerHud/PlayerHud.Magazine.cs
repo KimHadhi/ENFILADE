@@ -8,7 +8,8 @@ namespace HudAddons
     // user, 11-22: "궁극기 게이지는 탄창이란 느낌이 안 나잖아"), drawn on the HUD's painter in the addon's colours (the
     // user's pick: addon colours only, no pink):
     // - one round is a tenth of one use's cost (UltimateCharge.RequiredCharge), so ten rounds is ready; room up to the most
-    //   held makes more slots over a white line, their cases in the addon's over-full colour. Rounds lie on their side,
+    //   held makes more slots, those rounds in the player's own colour (no line between: the user, 11-22: "가능선은 좀
+    //   별로니까 채워지는 총알 색깔로 다르게"). Rounds lie on their side,
     //   bullet towards the picture, stacked from the foot, a tick per round on the left;
     // - the next round's outline is drawn round as the charge comes; complete, it is pushed in from the left with sparks;
     // - ready: the cover over the magazine is slammed shut white, its edge beats, a light runs up the rounds;
@@ -29,6 +30,8 @@ namespace HudAddons
         // Where drawing goes: turned about a pivot, then moved, at an opacity (the falling and the fresh magazine).
         private Vector2 poseMove, posePivot;
         private float poseCos = 1f, poseSin, poseAlpha = 1f;
+        // The rounds past one use are told apart by colour, the player's own (no line between: the user, 11-22).
+        private Color32 magazineAccent = new Color32(255, 79, 120, 255);
 
         // The magazine's column: (x, y) its top left, w x h with the cover over the body.
         private void DrawMagazine(float x, float y, float w, float h)
@@ -127,12 +130,6 @@ namespace HudAddons
                 float y = r.yMax - pad - pitch * (i + .5f), tick = ((i + 1) % 5 == 0 ? 8f : 4f) * unit;
                 Line(new Vector2(r.xMin - tick - unit, y), new Vector2(r.xMin - unit, y), 1.4f * unit, With(Color.white, i < count ? .7f : .22f));
             }
-            if (roundSlots > perUse)
-            {
-                float y = r.yMax - pad - pitch * perUse, half = .8f * unit;
-                Quad(new Vector2(r.xMin - 11f * unit, y - half), new Vector2(r.xMax, y - half), new Vector2(r.xMax, y + half),
-                    new Vector2(r.xMin - 11f * unit, y + half), Color.white);
-            }
             float x = r.xMin + 3f * unit;
             for (int i = 0; i < roundSlots; i++)
             {
@@ -143,8 +140,10 @@ namespace HudAddons
                     if (s < 0f) continue; // queued behind the round before it
                     bool seating = s < 1f;
                     float dx = seating ? -m.seatPush * unit * (1f - Kick(s)) : 0f;
-                    Color body = i < perUse ? m.round : (Color)overOne;
-                    Round(x + dx, y, length, h, body, seating && s < .3f ? Color.white : m.bullet);
+                    bool past = i >= perUse;
+                    Color body = past ? (Color)magazineAccent : m.round;
+                    Color bullet = past ? (Color)magazineAccent * new Color(.8f, .8f, .8f, 1f) : m.bullet;
+                    Round(x + dx, y, length, h, body, seating && s < .3f ? Color.white : bullet);
                     if (seating) Sparks(new Vector2(x + dx - 2f * unit, y), s, i);
                 }
                 else

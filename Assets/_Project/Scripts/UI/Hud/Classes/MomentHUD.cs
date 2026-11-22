@@ -144,7 +144,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         seat.raycastTarget = false;
         band.gameObject.SetActive(false);
 
-        // The tag is flat over the class chip, as the chip is (ClassHUD).
+        // The tag is flat over the class UI under the screen's middle (HudAddons.PlayerHud.Class).
         var tagHost = new GameObject("Moment Tag HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         tagHost.transform.SetParent(transform, false);
         FeelUI.SetupOverlay(tagHost, 77);

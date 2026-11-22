@@ -84,6 +84,18 @@ namespace HudAddons
             Toggle(rows, T("scanline"), o.scanline, v => o.scanline = v);
             Toggle(rows, T("aberration"), o.aberration, v => o.aberration = v);
             Toggle(rows, T("glitch"), o.glitch, v => o.glitch = v);
+
+            // Ours, in the addon's parts: the class UI with the addon's kinds of option for a part, a size, where it stands
+            // and whose colour it points with.
+            rows.Header(T("section.classui"));
+            Toggle(rows, T("enable"), o.classUi, v => o.classUi = v);
+            rows.Choice(T("classui.place"), new[] { T("classui.place.centre"), T("classui.place.portrait") }, (int)o.classPlace,
+                i => o.classPlace = (ClassUiPlace)i);
+            rows.Slider(T("classui.scale"), .5f, 2f, o.classScale, v => o.classScale = v, Two);
+            Offsets(rows, o.classX, o.classY, v => o.classX = v, v => o.classY = v);
+            Toggle(rows, T("classui.own_colour"), o.classOwnColour, v => o.classOwnColour = v);
+            Colour(rows, () => o.classColor, c => o.classColor = c);
+            rows.Note(T("classui_note"));
         }
 
         private static string T(string id) => Texts.Get(Prefix + id);

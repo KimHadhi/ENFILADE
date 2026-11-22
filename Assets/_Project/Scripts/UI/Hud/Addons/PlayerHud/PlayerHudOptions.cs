@@ -87,6 +87,17 @@ namespace HudAddons
         // ---- Special effects (sfx, scanline, abberation, glitch) ----
         public bool sfx = true, scanline = true, aberration = true, glitch = true;
 
+        // ---- Class UI (ours, drawn in the addon's parts: PlayerHud.Class) ----
+        // The addon's own kinds of option for one of its parts (on, where, its colour), plus a size of its own and where
+        // it stands (the user, 2026-11-22: both places of the draft as a choice). Its colour is the player's own by default;
+        // a colour of one's own replaces it, by default the addon's health colour (the HUD has no pink since 11-22).
+        public bool classUi = true;
+        public ClassUiPlace classPlace = ClassUiPlace.Centre;
+        public float classScale = 1f;
+        public float classX, classY;
+        public bool classOwnColour = true;
+        public Color32 classColor = new Color32(223, 255, 143, 255);
+
         /// <summary>Keeps every field in range after settings.json is read or a row changes it (GameSettings.Clamp): the
         /// panel's slider ranges.</summary>
         public void Clamp()
@@ -105,11 +116,21 @@ namespace HudAddons
             eqpX = Offset(eqpX, OffsetX); eqpY = Offset(eqpY, OffsetY);
             hazardsX = Offset(hazardsX, OffsetX); hazardsY = Offset(hazardsY, OffsetY);
             historyX = Offset(historyX, OffsetX); historyY = Offset(historyY, OffsetY);
+            if (classPlace < ClassUiPlace.Centre || classPlace > ClassUiPlace.Portrait) classPlace = ClassUiPlace.Centre;
+            classScale = Range(classScale, .5f, 2f, 1f);
+            classX = Offset(classX, OffsetX); classY = Offset(classY, OffsetY);
         }
 
         private static float Range(float value, float min, float max, float fallback)
             => float.IsNaN(value) || float.IsInfinity(value) ? fallback : Mathf.Clamp(value, min, max);
 
         private static float Offset(float value, float reach) => Range(value, -reach * 2f, reach * 2f, 0f);
+    }
+
+    /// <summary>Where the class UI stands: under the screen's middle, or beside the portrait over the health bar.</summary>
+    public enum ClassUiPlace
+    {
+        Centre,
+        Portrait,
     }
 }

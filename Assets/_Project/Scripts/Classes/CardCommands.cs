@@ -15,7 +15,7 @@ public static class CardCommands
         // What the class kits keep count of, as words (each registered here beside /card: the classes' own console lines).
         router.Register("deploy", "내가 세워 둔 설치물: 종류마다 지금 수/최대, 다음에 놓으면 사라질 것의 자리, 이 PC에 서 있는 것 모두 (Deployables)",
             Deployables.Report);
-        router.Register("effects", "지금 내게 걸린 지속 효과: 효과마다 이름·남은 초·전체 초, 시작한 순서(= HUD 클래스 칸 아래 칸 순서) (TimedEffects)",
+        router.Register("effects", "지금 내게 걸린 지속 효과: 효과마다 이름·남은 초·전체 초, 시작한 순서(= 클래스 UI의 지속 효과 줄 순서) (TimedEffects)",
             TimedEffects.Dump);
         router.Register("lay", "gun · ammo · heal · shield · money — 그 줍기 물건을 내 앞 바닥(서포트가 가장 가까이 세울 수 있는 자리)에 놓는다. "
             + "그 위에 설치물을 세워 보는 시험용: 물건은 설치를 막지 않고, 설치물이 선 뒤 옆 빈 바닥으로 비켜난다 (FieldPickups, 기록은 Logs/placement.txt)",

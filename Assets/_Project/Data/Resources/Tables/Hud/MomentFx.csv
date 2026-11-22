@@ -42,7 +42,7 @@ Notice.lean.pulse,1.5,데탕트 띠(위 줄에 심전도 한 박동)
 Notice.lean.diamond,2.75,시순트 띠(끝에 겹 마름모)
 Notice.lean.hazard,0.5,서포트 띠(끝에 경고 빗금)
 Tag.on,1,내 화면 클래스 칸 위의 작은 이름표(CHARGE·DUEL·REVERSAL·GUN KATA)를 켤지(1/0)
-Tag.bottom,196,"이름표 아래 끝(px, 화면 아래부터). 클래스 칸(ClassHUD 112~156px)과 키 안내(~184px) 위"
+Tag.bottom,202,"이름표 아래 끝(px, 화면 아래부터). 중앙 하단 클래스 UI의 키 안내(위끝이 화면 아래에서 196px) 위"
 Tag.seconds,0.9,이름표가 보이는 시간(초)
 Tag.line,176,이름표 밑줄의 반 길이(px)
 Tag.lean,2,"이름표가 기우는 각도(°, 반시계). HUD 기울기가 곱해진다"

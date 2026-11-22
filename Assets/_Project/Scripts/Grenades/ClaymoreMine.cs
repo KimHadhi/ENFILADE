@@ -22,6 +22,8 @@ using UnityEngine;
 public sealed class ClaymoreMine : MonoBehaviour, IPlaced
 {
     private const float RetireSeconds = .45f, LampSize = .022f;
+    // The amber over the one the next claymore takes back (the barricades' preview blinks the same over theirs).
+    internal static readonly Color TakenBack = new Color(1f, .62f, .18f);
     // Every claymore down on this PC, anyone's (this PC's player's, or the copies of friends'), in the order set down.
     private static readonly List<ClaymoreMine> placed = new List<ClaymoreMine>();
 
@@ -318,11 +320,11 @@ internal sealed class ClaymorePreview
         // The spot itself, on a floor (a ring on a wall would lie on the ground below it).
         if (wall) ring.HideRing();
         else ring.Ring(at, up, .12f, KitStyle.With(KitStyle.Ice, .9f));
-        // The one it would take back, ringed in the amber its chip on the HUD is in (DeployStrip): known before it goes
-        // (the user, 2026-11-18: "기존 설치물이 소멸하는 기준을 파악할 수 있도록"). It breathes, slowly, never out.
+        // The one it would take back, ringed in amber, as its kind's count on the HUD turns orange when full: known before it
+        // goes (the user, 2026-11-18: "기존 설치물이 소멸하는 기준을 파악할 수 있도록"). It breathes, slowly, never out.
         if (leaving != null && leaving.Live)
             goes.Ring(leaving.transform.position, leaving.transform.up, .2f,
-                KitStyle.With(DeployStrip.Amber, .775f + .225f * Mathf.Sin(Time.unscaledTime * 2f * Mathf.PI * 1.2f)));
+                KitStyle.With(ClaymoreMine.TakenBack, .775f + .225f * Mathf.Sin(Time.unscaledTime * 2f * Mathf.PI * 1.2f)));
         else goes.HideRing();
         Link(heart, leaving);
     }

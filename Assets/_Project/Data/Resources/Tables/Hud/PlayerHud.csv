@@ -136,7 +136,7 @@ Portrait.game,#FFE955FF,계급 막대: 이번 판 처치 몫. 점수 팝업 합�
 Portrait.kept,#FFE95570,"계급 막대: 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫(흐린 노랑, 돈을 쓰면 줄어 주황이 남는다)"
 Portrait.gainSeconds,0.9,처치 때 막대 위에 뜨는 +경험치가 떠 있는 시간(초)
 Portrait.gainRise,10,그동안 올라가는 높이(px x Scale)
-Magazine.rounds,10,"궁극기 탄창: 예전 HUD 탄창(UltimateMagazine, 11-11 4차 시안: B의 자리, C의 움직임, A의 탄창 교체)을 애드온 색으로(사용자 11-22: ""궁극기 게이지는 탄창이란 느낌이 안 나잖아"", 색은 애드온 색만). 한 발 = 1회 소비량의 이 수분의 1, 이 수만큼이면 준비. 최대 보유량까지 남는 칸(최대 16)은 흰 선 위 여분 칸이고 탄피가 넘침 색(Colour.overOne)"
+Magazine.rounds,10,"궁극기 탄창: 예전 HUD 탄창(UltimateMagazine, 11-11 4차 시안: B의 자리, C의 움직임, A의 탄창 교체)을 애드온 색으로. 한 발 = 1회 소비량의 이 수분의 1, 이 수만큼이면 준비. 최대 보유량까지 남는 칸(최대 16)은 그 위에 쌓이고 그 탄은 내 플레이어 색(11-22: ""가능선은 좀 별로니까 채워지는 총알 색깔로 다르게"", 선은 없다)"
 Magazine.seatSeconds,0.22,다 찬 탄이 왼쪽에서 밀려 들어오는 시간(초). 불꽃 셋이 왼쪽으로 튄다
 Magazine.seatPush,16,밀려 들어오기 전 탄이 왼쪽으로 물러나 있는 거리(1080p px)
 Magazine.slamSeconds,0.16,다 차면 탄창 위 덮개가 흰 판으로 닫히는 시간(초). 닫힌 덮개 테두리는 심장 박동처럼 뛰고 빛이 탄을 타고 올라간다
@@ -152,3 +152,30 @@ Magazine.beatsPerSecond,1.1,"준비 상태에서 덮개 테두리가 뛰는 빠�
 Magazine.round,#FFFFFFFF,탄피 색(애드온 흰색). 덮개가 닫히면 이 색
 Magazine.bullet,#9B9B9BFF,탄두 색(애드온 Colors.Ammo 회색). 막 들어오는 탄은 잠깐 흰색
 Magazine.spent,#FF9600FF,쓴 탄의 날아가는 탄피(애드온 Colors.Loss 주황)
+Class.centreLeft,148,"우리 클래스 UI(PlayerHud.Class)를 애드온 HUD의 부품으로: 41.25 클래스 상자(수류탄 칸), 방어구 칸 막대의 자원, 예비 탄약 상자 같은 키 안내, 획득 기록 줄 같은 설치 개수·지속 효과. 사용자 11-22 클래스 UI 시안 7차(흰색, 내 색은 포인트만, 애드온 노이즈). 크기는 1080p px x 설정의 크기 x 클래스 UI 크기. 중앙 하단: 클래스 상자 왼쪽 위가 화면 가운데에서 이만큼 왼쪽"
+Class.centreUp,159,"중앙 하단: 클래스 상자 위끝이 화면 아래에서 이만큼 위(1080p에서 y 921, 예전 클래스 판 자리)"
+Class.barWidth,244,중앙 하단: 자원 막대 길이(클래스 상자 + 틈 + 막대 = 예전 클래스 판 폭 300). 프로필 옆에서는 체력 막대 오른끝까지
+Class.portraitGap,11,프로필 옆: 프로필 판 오른끝과 클래스 상자 사이
+Class.box,41.25,"클래스 상자 한 변(수류탄 칸과 같다): 클래스 그림, 오른쪽 위에 개수, 기다리는 능력은 아래에서부터 차오른다"
+Class.gap,8,클래스 상자와 막대 사이
+Class.barHeight,7.5,자원 막대 두께(체력 막대와 같다)
+Class.frame,3.75,막대 둘레 바탕 상자 여백(체력·방어구와 같다)
+Class.under,12,"막대 밑 회색 글자 칸(방어구의 0·50·100 자리): 왼쪽에 남은 시간 같은 설명, 오른쪽에 5/8"
+Class.pipGap,0.1,칸마다 뒤에 비우는 비율(방어구 칸 막대와 같은 10%)
+Class.keyHeight,28,키 안내 상자 높이
+Class.keyAbove,37,"키 안내 상자 위끝이 클래스 상자 위끝보다 이만큼 위. DEADEYE·DESPERADO는 같은 줄 왼쪽, 키 상자와 만나면 한 줄 위로(프로필 옆에서 결투 키와 겹치던 것)"
+Class.rowHeight,22,설치 개수·지속 효과 한 줄 높이(획득 기록 줄 같은 흐린 상자)
+Class.rowGap,4,줄 사이와 칸 사이
+Class.chipMost,92,설치 개수 칸 하나의 최대 폭
+Class.nameText,16.8,"클래스 이름 글자 칸 높이(GMod 크기, 굵게, 글자마다 띄움)"
+Class.smallText,14.4,"작은 글자(막대 밑 글자, 개수, 설치·효과 줄)"
+Class.wordText,19.2,키 안내 글자(굵게)
+Class.digitText,28.8,포인트의 두 총 칸 숫자
+Class.markText,19.2,DEADEYE·DESPERADO(프로필 옆에서는 0.875배)
+Class.outline,#0000006E,"글자 테두리: 애드온의 검정(알파 20)보다 진하게(110), 밝은 배경에서도 읽히게"
+Class.glowLeast,0.12,키 안내가 준비됐을 때 상자에 비치는 내 색의 가장 옅은 알파
+Class.glowMost,0.42,가장 짙은 알파
+Class.beatsPerSecond,0.7,그 빛과 DEADEYE 글자가 숨 쉬는 빠르기(초당. 광과민 규칙 1.6 아래)
+Class.emptyAlpha,0.13,빈 칸의 흰색 알파
+Class.riseAlpha,0.28,기다리는 능력이 차오르는 흰색 알파
+Class.unheldAlpha,0.4,더는 들고 있지 않은 설치물 줄의 알파(서 있는 동안만 남는다)

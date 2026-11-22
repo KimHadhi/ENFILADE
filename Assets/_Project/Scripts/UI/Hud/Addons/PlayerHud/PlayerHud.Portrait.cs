@@ -41,7 +41,13 @@ namespace HudAddons
             float rowTop = barY - s.healthHeight * scale * .5f - frame - p.rise * scale - box;
             float tall = side + frame * 2f, top = rowTop - gap - tall;
             float magazine = p.magazine * scale, pictureLeft = left + magazine + gap;
+            // Where the class UI stands when it goes beside the portrait (PlayerHud.Class).
+            panelRight = pictureLeft + tall;
+            panelTop = top;
+            panelRowFoot = rowTop + box;
+            healthRight = barX + s.width * scale * .5f + frame;
 
+            magazineAccent = Accent(o);
             DrawMagazine(left, top, magazine, tall);
             painter.RoundedBox(look.Hud.corner, pictureLeft, top, tall, tall, background);
             pictureRect = new Rect(pictureLeft + frame, top + frame, side, side);

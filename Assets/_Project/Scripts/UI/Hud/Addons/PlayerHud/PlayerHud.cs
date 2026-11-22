@@ -128,6 +128,7 @@ namespace HudAddons
             painter.Begin();
             DrawStatus(o);
             DrawPortrait();
+            DrawClass(o);
             DrawHazards(o);
             DrawAmmo(o);
             if (o.history) DrawHistory(o);

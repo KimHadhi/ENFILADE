@@ -381,7 +381,7 @@ def from_drawing(path):
     """
     The user's picture as coverage: black (and the webp's faint noise in it) clear, white solid, grey between. A grey
     is its LINEAR brightness, not its 0-255 value: the game blends in linear colour, so on the dark plates every class
-    icon stands on (class tab, ClassHUD, cards) a part shows the very grey it has in the picture (Détente's cross 55/255
+    icon stands on (class tab, class UI, cards) a part shows the very grey it has in the picture (Détente's cross 55/255
     reads 55, not the 128 its plain value as coverage gave in the first preview).
     """
     low, high = 4 / 255.0, 251 / 255.0
