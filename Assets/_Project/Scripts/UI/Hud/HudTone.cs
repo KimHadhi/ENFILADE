@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// The look our own HUD pieces share with the addon HUD (the user, 2026-11-22: "디자인을 통일감 있게", their pick: the
@@ -14,7 +15,7 @@ public static class HudTone
     private const string Table = HudAddons.PlayerHudLook.TableName, Row = "Colour";
 
     private static bool read;
-    private static Color box, grey, low, loss, overOne;
+    private static Color box, ownBox, outline, grey, low, loss, overOne, life;
     private static string face;
     private static TMP_FontAsset font;
 
@@ -27,6 +28,12 @@ public static class HudTone
     public static Color Box { get { Read(); return box; } }
     /// <summary>A box that stands out (the slot in hand): the same black, twice as dense.</summary>
     public static Color BoxHeld { get { Read(); return With(box, Mathf.Min(1f, box.a * 2f)); } }
+    /// <summary>The box of our own pieces on the addon HUD (portrait, class UI): the addon's, darker, as it reads over the game.</summary>
+    public static Color OwnBox { get { Read(); return ownBox; } }
+    /// <summary>The rim stamped round every text of ours on the HUD's painters.</summary>
+    public static Color Outline { get { Read(); return outline; } }
+    /// <summary>The addon's health colour (a yellow green): what is on, well, done.</summary>
+    public static Color Life { get { Read(); return life; } }
     /// <summary>The chosen box lit white, as the addon's selector draws it (alpha 200).</summary>
     public static Color Lit => new Color(1f, 1f, 1f, 200f / 255f);
     /// <summary>Quiet text: labels, kinds, empty slots (Colors.Ammo).</summary>
@@ -77,20 +84,71 @@ public static class HudTone
         label.fontStyle &= ~FontStyles.Bold;
     }
 
+    // ---- the addon's rounded box, for a uGUI image ----
+
+    private const int RoundSide = 48, RoundCorner = 20;
+    private static Sprite round;
+
+    /// <summary>A uGUI box with the addon's rounded corners (draw.RoundedBox's 6), taking no clicks.</summary>
+    public static Image Rounded(RectTransform rect, Color colour, float radius = 6f)
+    {
+        var image = rect.gameObject.AddComponent<Image>();
+        image.color = colour;
+        image.raycastTarget = false;
+        Round(image, radius);
+        return image;
+    }
+
+    /// <summary>Gives an image the addon's rounded corners.</summary>
+    public static void Round(Image image, float radius = 6f)
+    {
+        image.sprite = RoundSprite();
+        image.type = Image.Type.Sliced;
+        image.pixelsPerUnitMultiplier = RoundCorner / Mathf.Max(.5f, radius);
+    }
+
+    // A white square with round corners, its edge softened by a pixel, cut in nine.
+    private static Sprite RoundSprite()
+    {
+        if (round != null) return round;
+        var picture = new Texture2D(RoundSide, RoundSide, TextureFormat.RGBA32, false)
+        {
+            name = "HUD Round (Runtime)", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.HideAndDontSave
+        };
+        var texels = new Color32[RoundSide * RoundSide];
+        for (int y = 0; y < RoundSide; y++)
+            for (int x = 0; x < RoundSide; x++)
+            {
+                float dx = Mathf.Max(0f, RoundCorner - (x + .5f), x + .5f - (RoundSide - RoundCorner));
+                float dy = Mathf.Max(0f, RoundCorner - (y + .5f), y + .5f - (RoundSide - RoundCorner));
+                float over = Mathf.Sqrt(dx * dx + dy * dy) - RoundCorner;
+                texels[y * RoundSide + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(255f * Mathf.Clamp01(.5f - over)));
+            }
+        picture.SetPixels32(texels);
+        picture.Apply(false, true);
+        round = Sprite.Create(picture, new Rect(0f, 0f, RoundSide, RoundSide), new Vector2(.5f, .5f), 100f, 0, SpriteMeshType.FullRect,
+            new Vector4(RoundCorner, RoundCorner, RoundCorner, RoundCorner));
+        round.hideFlags = HideFlags.HideAndDontSave;
+        return round;
+    }
+
     private static void Read()
     {
         if (read) return;
         read = true;
-        box = Colour("background", new Color32(0, 0, 0, 50));
-        grey = Colour("ammo", new Color32(155, 155, 155, 255));
-        low = Colour("low", new Color32(255, 0, 0, 255));
-        loss = Colour("loss", new Color32(255, 150, 0, 255));
-        overOne = Colour("overOne", new Color32(150, 150, 255, 255));
+        box = Colour(Row, "background", new Color32(0, 0, 0, 50));
+        ownBox = Colour(Row, "box", new Color32(0, 0, 0, 102));
+        outline = Colour("Class", "outline", new Color32(0, 0, 0, 32));
+        life = new HudAddons.PlayerHudOptions().healthColor;
+        grey = Colour(Row, "ammo", new Color32(155, 155, 155, 255));
+        low = Colour(Row, "low", new Color32(255, 0, 0, 255));
+        loss = Colour(Row, "loss", new Color32(255, 150, 0, 255));
+        overOne = Colour(Row, "overOne", new Color32(150, 150, 255, 255));
     }
 
-    private static Color Colour(string field, Color fallback)
+    private static Color Colour(string row, string field, Color fallback)
     {
-        string text = GameTables.Text(Table, Row, field, "");
+        string text = GameTables.Text(Table, row, field, "");
         return text.Length > 0 && ColorUtility.TryParseHtmlString(text.StartsWith("#") ? text : "#" + text, out var colour) ? colour : fallback;
     }
 }

@@ -10,7 +10,6 @@ public sealed partial class PerkCardScreen
         host = new GameObject("Perk Cards", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         FeelUI.SetupOverlay(host, Order);
         var canvas = (RectTransform)host.transform;
-        BuildPrompt(canvas);
 
         layer = KitStyle.Stretch("Cards", canvas);
         layerGroup = layer.gameObject.AddComponent<CanvasGroup>();
@@ -68,30 +67,6 @@ public sealed partial class PerkCardScreen
 
         fx = KitStyle.Stretch("Effects", stage);
         layer.gameObject.SetActive(false);
-    }
-
-    // "능력 준비 [X]" at the bottom, shown while the gauge is full and the cards are away.
-    private void BuildPrompt(RectTransform canvas)
-    {
-        prompt = FeelUI.Rect("Ready", canvas);
-        prompt.anchorMin = prompt.anchorMax = prompt.pivot = new Vector2(.5f, 0f);
-        prompt.anchoredPosition = new Vector2(0f, 172f);
-        prompt.sizeDelta = new Vector2(250f, 48f);
-        promptGroup = prompt.gameObject.AddComponent<CanvasGroup>();
-        promptGroup.blocksRaycasts = promptGroup.interactable = false;
-        KitSkew.On(KitStyle.Fill(prompt, KitStyle.With(KitStyle.Night, .82f)), 14f);
-        promptBar = KitStyle.Bar("Bar", prompt, Vector2.zero, new Vector2(6f, 48f), KitStyle.Accent);
-        KitSkew.On(promptBar, 14f);
-        promptLabel = KitStyle.Flat(KitStyle.TopLeft("Text", prompt, new Vector2(24f, 0f), new Vector2(160f, 48f)), Texts.Get("perk.ready"), 21f,
-            TextAlignmentOptions.MidlineLeft);
-        var key = KitStyle.TopLeft("Key", prompt, new Vector2(250f - 52f, 8f), new Vector2(32f, 32f));
-        KitStyle.Fill(key, KitStyle.Ice);
-        // The key the player put on Player/PerkCards (X by default), read again each time the prompt shows.
-        promptKey = KitStyle.Flat(key, KeyBindings.Name("Player/PerkCards"), 18f, TextAlignmentOptions.Center, KitStyle.Ink);
-        promptKey.enableAutoSizing = true;
-        promptKey.fontSizeMin = 9f;
-        promptKey.fontSizeMax = 18f;
-        prompt.gameObject.SetActive(false);
     }
 
     private Card BuildCard(int index)

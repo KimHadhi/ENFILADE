@@ -16,14 +16,12 @@ public sealed class HubLabel : MonoBehaviour
     private float height = .4f;
     [SerializeField, Min(.1f), Tooltip("How wide the line may get (m).")]
     private float width = 4f;
-    [SerializeField, Tooltip("In the one pink instead of white.")]
-    private bool accent;
 
     private void Start()
     {
         string text = Texts.Has(words) ? Texts.Get(words) : words;
         var board = HubDisplays.Board(transform, "Words", new Vector2(width, height * 1.5f), Vector3.zero, Quaternion.LookRotation(Vector3.back, Vector3.up));
-        HubDisplays.Words(board, text, height * HubDisplays.PixelsPerMetre, accent ? KitStyle.Accent : KitStyle.Ice, TextAlignmentOptions.Center)
+        HubDisplays.Words(board, text, height * HubDisplays.PixelsPerMetre, HudTone.Text, TextAlignmentOptions.Center)
             .textWrappingMode = TextWrappingModes.NoWrap;
     }
 }

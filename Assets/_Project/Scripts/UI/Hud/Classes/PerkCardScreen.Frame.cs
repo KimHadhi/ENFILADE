@@ -16,7 +16,7 @@ public sealed partial class PerkCardScreen
 
         if (!open)
         {
-            ShowPrompt(ready && !Blocked(), cards);
+            Ready = !ready || Blocked() ? ReadyFor.Nothing : cards ? ReadyFor.Cards : ReadyFor.Ultimate;
             // Player/PerkCards (X unless the key window says otherwise).
             if (ready && KeyBindings.Pressed("Player/PerkCards") && !Blocked())
             {
@@ -31,7 +31,7 @@ public sealed partial class PerkCardScreen
             }
             return;
         }
-        ShowPrompt(false, true);
+        Ready = ReadyFor.Nothing;
         if (keyboard != null && picked < 0 && !closing)
         {
             // The same key closes the cards: the cards' own key, read as the cards (alone they hold the player's keys; in
@@ -51,26 +51,6 @@ public sealed partial class PerkCardScreen
             || HubDressing.IsOpen) return true;
         if (chat == null) chat = SceneOne<SinglePlayerChatManager>.Get();
         return chat != null && chat.BlocksMissionInputThisFrame;
-    }
-
-    private void ShowPrompt(bool show, bool cards)
-    {
-        if (prompt.gameObject.activeSelf != show)
-        {
-            prompt.gameObject.SetActive(show);
-            if (show) promptKey.text = KeyBindings.Name("Player/PerkCards");
-        }
-        if (show && cards != promptCards)
-        {
-            promptCards = cards;
-            promptLabel.text = Texts.Get(cards ? "perk.ready" : "perk.ult.ready");
-        }
-        if (!show) return;
-        float time = Time.unscaledTime;
-        promptBar.color = KitStyle.With(KitStyle.Accent, .55f + .45f * Mathf.Abs(Mathf.Sin(time * 3f)));
-        float bob = 1f + .03f * Mathf.Sin(time * 3f);
-        prompt.localScale = new Vector3(bob, bob, 1f);
-        promptGroup.alpha = 1f;
     }
 
     private void Animate()

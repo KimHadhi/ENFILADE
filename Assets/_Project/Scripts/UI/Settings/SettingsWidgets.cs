@@ -7,7 +7,8 @@ using UnityEngine.UI;
 /// <summary>
 /// Code-built uGUI pieces for the Esc menu and the title screen's windows, in the menus' kit look (KitStyle, 2026-11-09):
 /// the HUD's near-black, white and one pink, slanted buttons and choices, thin sliders with a slanted handle, windows
-/// with cut corners and a pink mark. No imported sprites.
+/// with cut corners and a pink mark. No imported sprites. Under a HudMenuHost (the settings) each piece is the HUD's look
+/// instead (HudMenu).
 /// </summary>
 public static class SettingsWidgets
 {
@@ -70,7 +71,7 @@ public static class SettingsWidgets
         TextAlignmentOptions alignment = TextAlignmentOptions.MidlineLeft)
     {
         var label = Rect("Text", parent).gameObject.AddComponent<TextMeshProUGUI>();
-        label.font = Font();
+        label.font = HudMenuHost.Of(parent) != null ? HudMenu.Font : Font();
         label.text = text; label.fontSize = size; label.color = color; label.alignment = alignment;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
@@ -80,6 +81,8 @@ public static class SettingsWidgets
     /// <summary>A labelled row: name on the left, then whatever control the caller adds.</summary>
     public static RectTransform Row(Transform parent, string name)
     {
+        var host = HudMenuHost.Of(parent);
+        if (host != null) return HudMenu.Row(host, parent, name);
         var row = Rect(name, parent);
         var layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 16f; layout.childAlignment = TextAnchor.MiddleLeft;
@@ -100,6 +103,7 @@ public static class SettingsWidgets
     public static Slider Slider(Transform parent, float min, float max, float value, Action<float> changed,
         bool wholeNumbers = false)
     {
+        if (HudMenuHost.Of(parent) != null) return HudMenu.Slider(parent, min, max, value, changed, wholeNumbers);
         var root = Rect("Slider", parent);
         Size(root, height: 28f, flexibleWidth: 1f);
         Fill(root, Color.clear); // the whole row height takes clicks, not just the thin track
@@ -138,6 +142,7 @@ public static class SettingsWidgets
     /// </summary>
     public static RectTransform Choice(Transform parent, string[] options, int selected, Action<int> changed, out Action<int> show)
     {
+        if (HudMenuHost.Of(parent) != null) return HudMenu.Choice(parent, options, selected, changed, out show);
         var root = Rect("Choice", parent);
         Size(root, height: 34f, flexibleWidth: 1f, flexibleHeight: 0f);
         var layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -173,14 +178,25 @@ public static class SettingsWidgets
         return root;
     }
 
+    /// <summary>An off/on control: a switch in the HUD's look, two options side by side in the kit's. <paramref name="show"/>
+    /// sets it without calling <paramref name="changed"/>.</summary>
+    public static RectTransform Toggle(Transform parent, bool value, Action<bool> changed, out Action<bool> show)
+    {
+        if (HudMenuHost.Of(parent) != null) return HudMenu.Switch(parent, value, changed, out show);
+        var root = Choice(parent, new[] { Texts.Get("settings.off"), Texts.Get("settings.on") }, value ? 1 : 0, i => changed(i == 1), out var pick);
+        show = on => pick(on ? 1 : 0);
+        return root;
+    }
+
     /// <summary>
     /// One option at a time between a back and a forward arrow, for lists too long to lay side by side (resolutions,
     /// monitors). Stops at either end.
     /// </summary>
     public static RectTransform Stepper(Transform parent, string[] options, int selected, Action<int> changed)
     {
+        bool hud = HudMenuHost.Of(parent) != null;
         var root = Rect("Stepper", parent);
-        Size(root, height: 34f, flexibleWidth: 1f, flexibleHeight: 0f);
+        Size(root, height: hud ? 36f : 34f, flexibleWidth: 1f, flexibleHeight: 0f);
         var layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 6f;
         layout.childControlWidth = layout.childControlHeight = true;
@@ -191,6 +207,12 @@ public static class SettingsWidgets
         void Show()
         {
             value.text = options.Length > 0 ? options[index] : "";
+            if (hud)
+            {
+                HudHover.On(back, index > 0 ? HudMenu.Surface : HudMenu.Field, index > 0 ? HudMenu.Over : HudMenu.Field);
+                HudHover.On(forward, index < options.Length - 1 ? HudMenu.Surface : HudMenu.Field, index < options.Length - 1 ? HudMenu.Over : HudMenu.Field);
+                return;
+            }
             back.color = index > 0 ? Surface : Track * new Color(1f, 1f, 1f, .4f);
             forward.color = index < options.Length - 1 ? Surface : Track * new Color(1f, 1f, 1f, .4f);
         }
@@ -205,7 +227,8 @@ public static class SettingsWidgets
         back = Arrow(root, "<", () => Step(-1));
         var box = Rect("Value", root);
         Size(box, flexibleWidth: 1f);
-        KitSkew.On(Fill(box, Surface), Slant * .8f);
+        if (hud) HudMenu.Box(box, HudMenu.Field);
+        else KitSkew.On(Fill(box, Surface), Slant * .8f);
         value = Label(box, "", 19f, Text, TextAlignmentOptions.Center);
         KitStyle.Stretch(value.rectTransform);
         forward = Arrow(root, ">", () => Step(1));
@@ -215,6 +238,7 @@ public static class SettingsWidgets
 
     private static Image Arrow(Transform parent, string glyph, Action clicked)
     {
+        if (HudMenuHost.Of(parent) != null) return HudMenu.Arrow(parent, glyph, clicked);
         var rect = Rect(glyph == "<" ? "Back" : "Forward", parent);
         Size(rect, width: 44f);
         var image = Fill(rect, Surface);
@@ -231,6 +255,7 @@ public static class SettingsWidgets
     /// <summary>A vertical scroll view taking the rest of its layout parent. Rows go into the returned content.</summary>
     public static RectTransform ScrollArea(Transform parent)
     {
+        bool hud = HudMenuHost.Of(parent) != null;
         var root = Rect("Scroll", parent);
         Size(root, flexibleWidth: 1f, flexibleHeight: 1f);
         var viewport = Rect("Viewport", root);
@@ -242,21 +267,22 @@ public static class SettingsWidgets
         content.anchorMin = new Vector2(0f, 1f); content.anchorMax = Vector2.one; content.pivot = new Vector2(.5f, 1f);
         content.sizeDelta = Vector2.zero;
         var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.spacing = 8f;
+        layout.spacing = hud ? 12f : 8f;
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
         content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         var bar = Rect("Scrollbar", root);
         bar.anchorMin = new Vector2(1f, 0f); bar.anchorMax = Vector2.one; bar.pivot = new Vector2(1f, .5f);
-        bar.sizeDelta = new Vector2(4f, 0f);
-        Fill(bar, Track);
+        bar.sizeDelta = new Vector2(hud ? 6f : 4f, 0f);
+        if (hud) HudMenu.Box(bar, HudMenu.Card, true, 3f);
+        else Fill(bar, Track);
         var slidingArea = Rect("Sliding Area", bar);
         KitStyle.Stretch(slidingArea);
         var handle = Rect("Handle", slidingArea);
         handle.sizeDelta = Vector2.zero;
         var scrollbar = bar.gameObject.AddComponent<Scrollbar>();
-        scrollbar.handleRect = handle; scrollbar.targetGraphic = Fill(handle, Muted);
+        scrollbar.handleRect = handle; scrollbar.targetGraphic = hud ? HudMenu.Box(handle, HudMenu.Muted, true, 3f) : Fill(handle, Muted);
         scrollbar.direction = Scrollbar.Direction.BottomToTop;
 
         var scroll = root.gameObject.AddComponent<ScrollRect>();
@@ -295,6 +321,11 @@ public static class SettingsWidgets
     /// </summary>
     public static void Panel(RectTransform panel)
     {
+        if (HudMenuHost.Of(panel) != null)
+        {
+            HudMenu.Panel(panel);
+            return;
+        }
         KitStyle.Cut(panel, new Color(1f, 1f, 1f, .12f));
         var fill = Rect("Fill", panel);
         KitStyle.Stretch(fill);
@@ -324,13 +355,17 @@ public static class SettingsWidgets
 
     public static TMP_InputField TextInput(Transform parent, string value, Action<string> changed)
     {
+        bool hud = HudMenuHost.Of(parent) != null;
         var root = Rect("Input", parent);
         Size(root, height: 34f, flexibleWidth: 1f);
-        var image = Fill(root, Surface);
-        var line = Rect("Line", root);
-        line.anchorMin = Vector2.zero; line.anchorMax = new Vector2(1f, 0f); line.pivot = new Vector2(.5f, 0f);
-        line.sizeDelta = new Vector2(0f, 2f);
-        Fill(line, Track).raycastTarget = false;
+        var image = hud ? HudMenu.Box(root, HudMenu.Field, true) : Fill(root, Surface);
+        if (!hud)
+        {
+            var line = Rect("Line", root);
+            line.anchorMin = Vector2.zero; line.anchorMax = new Vector2(1f, 0f); line.pivot = new Vector2(.5f, 0f);
+            line.sizeDelta = new Vector2(0f, 2f);
+            Fill(line, Track).raycastTarget = false;
+        }
         var viewport = Rect("Viewport", root);
         KitStyle.Stretch(viewport);
         viewport.offsetMin = new Vector2(10f, 0f); viewport.offsetMax = new Vector2(-10f, 0f);
@@ -348,7 +383,7 @@ public static class SettingsWidgets
         input.enabled = true;
         // TMP's own caret is dark grey, which vanished on these dark fields.
         input.customCaretColor = true; input.caretColor = Text; input.caretWidth = 2;
-        input.selectionColor = new Color(Accent.r, Accent.g, Accent.b, .45f);
+        input.selectionColor = hud ? new Color(1f, 1f, 1f, .3f) : new Color(Accent.r, Accent.g, Accent.b, .45f);
         CaretWhileSelected.On(input);
         input.SetTextWithoutNotify(value);
         input.onValueChanged.AddListener(v => changed(v));
@@ -367,7 +402,8 @@ public static class SettingsWidgets
     public static TMP_InputField NumberBox(Transform parent, Func<string> shown, Func<string> editing, Action<float> typed)
     {
         var field = TextInput(parent, shown(), _ => { });
-        Size(field, width: 104f, height: 30f, flexibleWidth: 0f);
+        var host = HudMenuHost.Of(parent);
+        Size(field, width: host != null ? host.BoxWidth : 104f, height: host != null ? 34f : 30f, flexibleWidth: 0f);
         field.characterLimit = 12;
         field.onFocusSelectAll = true;
         var text = (TextMeshProUGUI)field.textComponent;
@@ -412,6 +448,7 @@ public static class SettingsWidgets
 
     public static Button ActionButton(Transform parent, string text, bool primary, Action clicked)
     {
+        if (HudMenuHost.Of(parent) != null) return HudMenu.ActionButton(parent, text, primary, clicked);
         var rect = Rect(text, parent);
         Size(rect, width: 180f, height: 48f);
         var image = Fill(rect, primary ? Accent : Surface);

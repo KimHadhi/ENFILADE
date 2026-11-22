@@ -23,10 +23,11 @@ public sealed partial class HubLobby
         public string Id = "";
         public Transform At;
         public TMP_Text Label;
-        public Graphic Frame;
+        public Graphic Frame, Back;
         public Transform Lift;
         public WeaponData Gun;
-        public Color LabelColor = KitStyle.Text;
+        // What Back rests at; while the view points at it (or it is set, the ready tag), it lights and its words turn black.
+        public Color Rest = HubDisplays.Back;
         // A flat thing (the mirror's glass): its width and height on At's own axes, facing along At's forward. Aimed
         // wherever the view falls on it within reach, not by the cone round At.
         public Vector2 Area;
@@ -39,9 +40,9 @@ public sealed partial class HubLobby
     private Transform door;
     private Vector3 doorShut;
     private float doorRise;
-    private TMP_Text signNumber, signName, boardTitle, boardList, boardCount, readyLabel;
+    private TMP_Text signNumber, signName, boardTitle, boardList, boardCount;
     private RawImage signPicture;
-    private Image readyLight;
+    private Pick readyPick;
     private string shownChapter, shownBoard;
 
     private void BuildStations()
@@ -53,8 +54,8 @@ public sealed partial class HubLobby
                 case HubStation.Kind.MapTable: BuildTable(station); break;
                 case HubStation.Kind.ClassWall: BuildClasses(station); break;
                 case HubStation.Kind.GunRack: BuildGuns(station); break;
-                case HubStation.Kind.Ammo: Single(station, Act.Ammo, Texts.Get("hub.sign.ammo"), out _); break;
-                case HubStation.Kind.Ready: readyLabel = Single(station, Act.Ready, Texts.Get("hub.sign.ready"), out readyLight); break;
+                case HubStation.Kind.Ammo: Single(station, Act.Ammo, Texts.Get("hub.sign.ammo")); break;
+                case HubStation.Kind.Ready: readyPick = Single(station, Act.Ready, Texts.Get("hub.sign.ready")); break;
                 case HubStation.Kind.ReadyBoard: BuildBoard(station); break;
                 case HubStation.Kind.ChapterSign: BuildSign(station); break;
                 case HubStation.Kind.DepartDoor:
@@ -79,7 +80,7 @@ public sealed partial class HubLobby
         BuildDressingMark(mirror);
     }
 
-    // The dressing spot on the stage in front of the glass, as the wardrobe's viewfinder: four pink corners lying on the
+    // The dressing spot on the stage in front of the glass, as the wardrobe's viewfinder: four white corners lying on the
     // floor and the word under them, read from the hall. Hidden while the results play on the stage.
     private void BuildDressingMark(HubMirror mirror)
     {
@@ -96,10 +97,10 @@ public sealed partial class HubLobby
         foreach (var corner in new[] { Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, 1f), Vector2.one })
         {
             float x = corner.x * (px.x - arm), y = corner.y * (px.y - arm);
-            HubDisplays.Block(mark, "Corner", new Vector2(x, corner.y * (px.y - bar)), new Vector2(arm, bar), KitStyle.Accent);
-            HubDisplays.Block(mark, "Corner", new Vector2(corner.x * (px.x - bar), y), new Vector2(bar, arm), KitStyle.Accent);
+            HubDisplays.Block(mark, "Corner", new Vector2(x, corner.y * (px.y - bar)), new Vector2(arm, bar), HudTone.Text);
+            HubDisplays.Block(mark, "Corner", new Vector2(corner.x * (px.x - bar), y), new Vector2(bar, arm), HudTone.Text);
         }
-        HubDisplays.Words(mark, Texts.Get("hub.sign.mirror"), 40f, KitStyle.Ice, TextAlignmentOptions.Center, new Vector2(0f, px.y - 74f), new Vector2(px.x, 52f));
+        HubDisplays.Words(mark, Texts.Get("hub.sign.mirror"), 40f, HudTone.Text, TextAlignmentOptions.Center, new Vector2(0f, px.y - 74f), new Vector2(px.x, 52f));
         dressingMark = holder.gameObject;
     }
 
@@ -127,12 +128,14 @@ public sealed partial class HubLobby
             lift.localPosition = new Vector3(x, top.y * .5f + .006f, z);
             var card = HubDisplays.Board(lift, "Card", new Vector2(width, height), Vector3.zero, lying);
             Vector2 px = card.sizeDelta;
-            var frame = HubDisplays.Block(card, "Chosen frame", new Vector2(-10f, -10f), px + new Vector2(20f, 20f), KitStyle.Accent, true);
-            HubDisplays.Block(card, "Card", Vector2.zero, px, KitStyle.Panel, true);
-            HubDisplays.Picture(card, "Picture", new Vector2(8f, 8f), new Vector2(px.x - 16f, px.y - 70f), MapTable.Picture(maps[i]));
-            var name = HubDisplays.Words(card, MapTable.DisplayName(maps[i]), 30f, KitStyle.Text, TextAlignmentOptions.MidlineLeft,
-                new Vector2(16f, px.y - 58f), new Vector2(px.x - 32f, 50f));
-            picks.Add(new Pick { Act = Act.Chapter, Id = maps[i], At = lift, Label = name, Frame = frame, Lift = card });
+            // Chosen: a white frame round the card. Pointed at: the name's strip lights white, as the HUD's selector does.
+            var frame = HubDisplays.Block(card, "Chosen frame", new Vector2(-8f, -8f), px + new Vector2(16f, 16f), HudTone.Text, true);
+            HubDisplays.Block(card, "Card", Vector2.zero, px, new Color(0f, 0f, 0f, .92f), true);
+            HubDisplays.Picture(card, "Picture", new Vector2(10f, 10f), new Vector2(px.x - 20f, px.y - 82f), MapTable.Picture(maps[i]));
+            var strip = HubDisplays.Block(card, "Name", new Vector2(10f, px.y - 64f), new Vector2(px.x - 20f, 54f), Color.clear, true);
+            var name = HubDisplays.Words(card, MapTable.DisplayName(maps[i]), 30f, HudTone.Text, TextAlignmentOptions.MidlineLeft,
+                new Vector2(22f, px.y - 62f), new Vector2(px.x - 44f, 50f));
+            picks.Add(new Pick { Act = Act.Chapter, Id = maps[i], At = lift, Label = name, Frame = frame, Lift = card, Back = strip, Rest = Color.clear });
         }
         shownChapter = null;
     }
@@ -160,14 +163,14 @@ public sealed partial class HubLobby
             at.localPosition = new Vector3(x, 0f, size.z * .5f + .01f);
             var door = HubDisplays.Board(at, "Door", new Vector2(width, height), new Vector3(0f, -size.y * .5f + height * .5f, 0f), facing);
             Vector2 px = door.sizeDelta;
-            var frame = HubDisplays.Block(door, "Chosen frame", new Vector2(-10f, -10f), px + new Vector2(20f, 20f), KitStyle.Accent, true);
-            HubDisplays.Block(door, "Door", Vector2.zero, px, KitStyle.Panel, true);
-            HubDisplays.Block(door, "Edge", Vector2.zero, new Vector2(px.x, 8f), KitStyle.With(KitStyle.Ice, .25f));
+            var frame = HubDisplays.Block(door, "Chosen frame", new Vector2(-8f, -8f), px + new Vector2(16f, 16f), HudTone.Text, true);
+            HubDisplays.Block(door, "Door", Vector2.zero, px, new Color(0f, 0f, 0f, .92f), true);
+            var strip = HubDisplays.Block(door, "Name", new Vector2(14f, 212f), new Vector2(px.x - 28f, 70f), Color.clear, true);
             var icon = HubDisplays.Picture(door, "Icon", new Vector2(px.x * .5f - 75f, 50f), new Vector2(150f, 150f),
                 Resources.Load<Texture2D>("UI/Icons/Class_" + info.Id));
-            icon.color = icon.texture != null ? KitStyle.Ice : Color.clear;
-            var name = HubDisplays.Words(door, info.Title, 52f, KitStyle.Text, TextAlignmentOptions.Center, new Vector2(10f, 215f), new Vector2(px.x - 20f, 64f));
-            var role = HubDisplays.Words(door, info.Role, 24f, KitStyle.Soft, TextAlignmentOptions.Top, new Vector2(24f, 290f), new Vector2(px.x - 48f, 220f));
+            icon.color = icon.texture != null ? HudTone.Text : Color.clear;
+            var name = HubDisplays.Words(door, info.Title, 52f, HudTone.Text, TextAlignmentOptions.Center, new Vector2(10f, 215f), new Vector2(px.x - 20f, 64f));
+            var role = HubDisplays.Words(door, info.Role, 24f, HudTone.Grey, TextAlignmentOptions.Top, new Vector2(24f, 290f), new Vector2(px.x - 48f, 220f));
             role.textWrappingMode = TextWrappingModes.Normal;
             role.fontStyle = FontStyles.Normal;
             // The class's rank insignia (stage 6E): growth shows as the insignia alone, no numbers.
@@ -175,8 +178,8 @@ public sealed partial class HubLobby
             var insignia = HubDisplays.Picture(door, "Insignia", new Vector2(px.x * .5f - 85f, px.y - 270f), new Vector2(170f, 170f), ClassGrowth.Insignia(rank));
             if (insignia.texture == null) insignia.color = Color.clear;
             if (!info.Ready)
-                HubDisplays.Words(door, Texts.Get("classes.later"), 28f, KitStyle.Soft, TextAlignmentOptions.Center, new Vector2(10f, px.y - 80f), new Vector2(px.x - 20f, 50f));
-            picks.Add(new Pick { Act = Act.Class, Id = info.Id, At = at, Label = name, Frame = frame });
+                HubDisplays.Words(door, Texts.Get("classes.later"), 28f, HudTone.Grey, TextAlignmentOptions.Center, new Vector2(10f, px.y - 80f), new Vector2(px.x - 20f, 50f));
+            picks.Add(new Pick { Act = Act.Class, Id = info.Id, At = at, Label = name, Frame = frame, Back = strip, Rest = Color.clear });
             frame.enabled = string.Equals(info.Id, PlayerClass.KitOf(current), System.StringComparison.OrdinalIgnoreCase);
         }
     }
@@ -219,9 +222,9 @@ public sealed partial class HubLobby
             var piece = HubDisplays.Showpiece(this, gun.prefab, at, shown => Fit(shown, at, slot * .86f));
             piece.localRotation = Quaternion.LookRotation(Vector3.left, Vector3.up);
             var tag = HubDisplays.Board(at, "Tag", new Vector2(slot - .06f, .16f), new Vector3(0f, -rowHeight * .38f, -.1f), facing);
-            HubDisplays.Block(tag, "Back", Vector2.zero, tag.sizeDelta, KitStyle.With(KitStyle.Night, .85f), true);
-            var name = HubDisplays.Words(tag, gun.weapon.DisplayName, 30f, KitStyle.Text, TextAlignmentOptions.Center);
-            picks.Add(new Pick { Act = Act.Gun, Id = gun.weapon.name, At = at, Label = name, Gun = gun.weapon });
+            var back = HubDisplays.Block(tag, "Back", Vector2.zero, tag.sizeDelta, HubDisplays.Back, true);
+            var name = HubDisplays.Words(tag, gun.weapon.DisplayName, 30f, HudTone.Text, TextAlignmentOptions.Center);
+            picks.Add(new Pick { Act = Act.Gun, Id = gun.weapon.name, At = at, Label = name, Gun = gun.weapon, Back = back });
         }
     }
 
@@ -237,7 +240,7 @@ public sealed partial class HubLobby
 
     // ---- One-of stations: the ammo crate and the ready button ----
 
-    private TMP_Text Single(HubStation station, Act act, string words, out Image light)
+    private Pick Single(HubStation station, Act act, string words)
     {
         Vector3 size = station.Size;
         var at = new GameObject(act.ToString()).transform;
@@ -245,10 +248,11 @@ public sealed partial class HubLobby
         at.localPosition = new Vector3(0f, size.y * .5f, 0f);
         // A tag standing over it, turned to face the room (the station's forward).
         var tag = HubDisplays.Board(at, "Tag", new Vector2(1.1f, .32f), new Vector3(0f, .45f, 0f), Quaternion.LookRotation(Vector3.back, Vector3.up));
-        light = HubDisplays.Block(tag, "Light", Vector2.zero, tag.sizeDelta, KitStyle.With(KitStyle.Night, .9f), true);
-        var label = HubDisplays.Words(tag, words, 60f, KitStyle.Text, TextAlignmentOptions.Center);
-        picks.Add(new Pick { Act = act, At = at, Label = label });
-        return label;
+        var back = HubDisplays.Block(tag, "Light", Vector2.zero, tag.sizeDelta, HubDisplays.Back, true);
+        var label = HubDisplays.Words(tag, words, 60f, HudTone.Text, TextAlignmentOptions.Center);
+        var pick = new Pick { Act = act, At = at, Label = label, Back = back };
+        picks.Add(pick);
+        return pick;
     }
 
     // ---- The board over the way out and the sign over the table ----
@@ -258,11 +262,10 @@ public sealed partial class HubLobby
         Vector2 size = new Vector2(station.Size.x, station.Size.y);
         var board = HubDisplays.Board(station.transform, "Ready board", size, Vector3.zero, Quaternion.LookRotation(Vector3.back, Vector3.up));
         Vector2 px = board.sizeDelta;
-        HubDisplays.Block(board, "Back", Vector2.zero, px, KitStyle.Panel, true);
-        HubDisplays.Block(board, "Rail", Vector2.zero, new Vector2(px.x, 12f), KitStyle.Accent);
-        boardTitle = HubDisplays.Words(board, "", 80f, KitStyle.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 30f), new Vector2(px.x * .7f, 100f));
-        boardCount = HubDisplays.Words(board, "", 220f, KitStyle.Accent, TextAlignmentOptions.MidlineRight, new Vector2(px.x * .6f, 10f), new Vector2(px.x * .4f - 50f, 200f));
-        boardList = HubDisplays.Words(board, "", 56f, KitStyle.Text, TextAlignmentOptions.TopLeft, new Vector2(50f, 160f), new Vector2(px.x - 100f, px.y - 190f));
+        HubDisplays.Block(board, "Back", Vector2.zero, px, HubDisplays.Back, true);
+        boardTitle = HubDisplays.Words(board, "", 80f, HudTone.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 30f), new Vector2(px.x * .7f, 100f));
+        boardCount = HubDisplays.Words(board, "", 220f, HudTone.Text, TextAlignmentOptions.MidlineRight, new Vector2(px.x * .6f, 10f), new Vector2(px.x * .4f - 50f, 200f));
+        boardList = HubDisplays.Words(board, "", 56f, HudTone.Text, TextAlignmentOptions.TopLeft, new Vector2(50f, 160f), new Vector2(px.x - 100f, px.y - 190f));
         boardList.textWrappingMode = TextWrappingModes.Normal;
         boardList.overflowMode = TextOverflowModes.Truncate;
         shownBoard = null;
@@ -273,11 +276,13 @@ public sealed partial class HubLobby
         Vector2 size = new Vector2(station.Size.x, station.Size.y);
         var sign = HubDisplays.Board(station.transform, "Chapter sign", size, Vector3.zero, Quaternion.LookRotation(Vector3.back, Vector3.up));
         Vector2 px = sign.sizeDelta;
-        HubDisplays.Block(sign, "Back", Vector2.zero, px, KitStyle.Panel, true);
+        HubDisplays.Block(sign, "Back", Vector2.zero, px, HubDisplays.Back, true);
         signPicture = HubDisplays.Picture(sign, "Picture", new Vector2(16f, 16f), new Vector2(px.x - 32f, px.y - 200f), null);
-        HubDisplays.Words(sign, Texts.Get("hub.sign.next"), 40f, KitStyle.Soft, TextAlignmentOptions.MidlineLeft, new Vector2(40f, px.y - 175f), new Vector2(500f, 50f));
-        signNumber = HubDisplays.Words(sign, "", 110f, KitStyle.Accent, TextAlignmentOptions.MidlineLeft, new Vector2(40f, px.y - 130f), new Vector2(260f, 120f));
-        signName = HubDisplays.Words(sign, "", 72f, KitStyle.Text, TextAlignmentOptions.MidlineLeft, new Vector2(290f, px.y - 120f), new Vector2(px.x - 330f, 100f));
+        HubDisplays.Words(sign, Texts.Get("hub.sign.next"), 40f, HudTone.Grey, TextAlignmentOptions.MidlineLeft, new Vector2(40f, px.y - 175f), new Vector2(500f, 50f));
+        // The number in black on a lit plate, the name beside it, as the HUD's next operation card writes them.
+        HubDisplays.Block(sign, "Number", new Vector2(40f, px.y - 118f), new Vector2(190f, 92f), HudTone.Lit, true);
+        signNumber = HubDisplays.Words(sign, "", 84f, HudTone.Ink, TextAlignmentOptions.Center, new Vector2(40f, px.y - 118f), new Vector2(190f, 92f));
+        signName = HubDisplays.Words(sign, "", 72f, HudTone.Text, TextAlignmentOptions.MidlineLeft, new Vector2(262f, px.y - 122f), new Vector2(px.x - 302f, 100f));
         shownChapter = null;
     }
 
@@ -301,17 +306,18 @@ public sealed partial class HubLobby
                 signNumber.text = number;
                 signName.text = name;
                 signPicture.texture = MapTable.Picture(chapter);
-                signPicture.color = signPicture.texture != null ? Color.white : KitStyle.With(KitStyle.Night, .9f);
+                signPicture.color = signPicture.texture != null ? Color.white : HubDisplays.NoPicture;
             }
             RenameObjective();
         }
         ShowBoard();
-        if (readyLabel != null)
+        if (readyPick != null)
         {
             var mine = PlayerRoster.Local;
             bool set = mine != null && IsReady(mine);
-            readyLabel.text = set ? Texts.Get("hub.sign.ready.set") : Texts.Get("hub.sign.ready");
-            if (readyLight != null) readyLight.color = set ? KitStyle.With(KitStyle.Green, .9f) : KitStyle.With(KitStyle.Night, .9f);
+            readyPick.Label.text = set ? Texts.Get("hub.sign.ready.set") : Texts.Get("hub.sign.ready");
+            readyPick.Rest = set ? HudTone.Life : HubDisplays.Back;
+            Paint(readyPick, set);
         }
         // The way out's shutter rises as the count runs down, and drops back if it stops.
         if (door != null)
@@ -329,10 +335,10 @@ public sealed partial class HubLobby
         {
             if (someone == null || !(someone.IsLocal || someone.IsNetworkDriven) || !someone.TryGetComponent(out PlayerTally tally)) continue;
             bool set = IsReady(someone);
-            text.Append(set ? "<color=#4CDB85>■</color>  " : "<color=#FFFFFF55>□</color>  ")
+            text.Append(set ? "<color=#DFFF8F>■</color>  " : "<color=#FFFFFF55>□</color>  ")
                 .Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(tally.Color)).Append('>').Append(tally.DisplayName).Append("</color>")
                 .Append("  <size=70%><color=#FFFFFF88>").Append(ClassGrowth.TitleOf(tally.ClassId)).Append("</color></size>")
-                .Append(set ? "  <size=70%><color=#4CDB85>" + Texts.Get("hub.board.ready") + "</color></size>" : "").Append('\n');
+                .Append(set ? "  <size=70%><color=#DFFF8F>" + Texts.Get("hub.board.ready") + "</color></size>" : "").Append('\n');
         }
         string count = countdown >= 0f ? Mathf.CeilToInt(countdown).ToString() : "";
         string all = MapTable.DisplayName(chapter) + "|" + text + "|" + count;
@@ -375,9 +381,10 @@ public sealed partial class HubLobby
         }
         if (found != aimed)
         {
-            if (aimed != null && aimed.Label != null) aimed.Label.color = aimed.LabelColor;
+            var was = aimed;
             aimed = found;
-            if (aimed != null && aimed.Label != null) { aimed.LabelColor = aimed.Label.color; aimed.Label.color = KitStyle.Accent; }
+            Paint(was);
+            Paint(aimed);
         }
         // A station looked at: F works it. F is shared, so the station says so to the key's one owner (InteractKey), shows
         // its words while the owner says F is the station's, and is worked on the press the owner gives it (the ping
@@ -389,6 +396,15 @@ public sealed partial class HubLobby
         if (dressingMark != null && dressingMark.activeSelf == ResultsShow.IsPlaying) dressingMark.SetActive(!ResultsShow.IsPlaying);
         if (!offers || !InteractKey.Pressed(StationOffer)) return;
         Work(aimed, mine);
+    }
+
+    // What is pointed at lights white with black words, as the HUD's selector lights the chosen box.
+    private void Paint(Pick pick, bool lit = false)
+    {
+        if (pick == null || pick.Label == null) return;
+        bool pointed = pick == aimed;
+        if (pick.Back != null) pick.Back.color = pointed ? HudTone.Lit : pick.Rest;
+        pick.Label.color = pointed || lit ? HudTone.Ink : HudTone.Text;
     }
 
     // The view's ray meets the front of a flat pick within reach, inside its width and height.

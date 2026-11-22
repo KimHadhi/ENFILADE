@@ -52,6 +52,10 @@ namespace HudAddons
         /// <summary>The installed HUD's host, or null before Install.</summary>
         internal static PlayerHud Instance => instance;
 
+        /// <summary>The sway this frame, as an offset on the screen (x right, y down), for our own pieces that move with the HUD.</summary>
+        internal static Vector2 Sway => instance != null && instance.hud != null && instance.hud.Visible
+            ? new Vector2(instance.swayX, -instance.swayY) : Vector2.zero;
+
         private PlayerHudOptions Options => GameSettings.Current.addonPlayerHud;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

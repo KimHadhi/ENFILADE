@@ -14,7 +14,9 @@ namespace HudAddons
     // - Pips: the armour bar's segmented bar, white, the grey words under it where the armour's 0 · 50 · 100 stand (the
     //   note left, "5/8" right). The Point's two guns: two small magazine boxes with their reload lines.
     // - The key: a box like the reserve box with a key cap in the player's colour and a bold white word; it glows softly
-    //   while it may be acted on; red where it can't. DEADEYE / DESPERADO in the player's colour, beating.
+    //   while it may be acted on; red where it can't. The full ability gauge's key ("[X] 능력 준비", PerkCardScreen.Ready)
+    //   is a second such box left of it, on a row above when there is no room (its own plate stood over this row: the
+    //   user, 11-22). DEADEYE / DESPERADO in the player's colour, beating.
     // - Deployables and timed effects: rows like the pickup history's (a faint box, a word, a number).
     // Two places (an option): under the screen's middle, the rows hanging under it; or beside the portrait over the
     // health bar, the rows stacking up from it. Where the mark and the key would meet on a narrow row, the mark takes a
@@ -40,11 +42,16 @@ namespace HudAddons
 
         private void DrawClass(PlayerHudOptions o)
         {
-            if (!o.classUi) return;
-            ClassReadout.Read(player, classView);
-            if (!classView.Shown) return;
             var c = look.Class;
             var v = classView;
+            bool shown = o.classUi;
+            if (shown)
+            {
+                ClassReadout.Read(player, v);
+                shown = v.Shown;
+            }
+            string readyWord = ReadyWord();
+            if (!shown && readyWord == null) return;
             float u = scale / Mathf.Max(.01f, hud.ScreenScale(look.Hud.scale)) * o.classScale;
             Color32 accent = Accent(o), white = White, grey = ammoGrey, outlineColour = c.outline;
             int bold = 1000, regular = (int)(look.Font.weightUnit * o.weight);
@@ -75,6 +82,14 @@ namespace HudAddons
             rowTop += o.classY;
             float barX = x0 + box + gap, barMid = rowTop + box * .55f, right = barX + barW + frame;
             float blockW = right - x0;
+            float keyH = c.keyHeight * u, readyW = readyWord != null ? KeyBoxWidth(readyWord, wordFont, u) : 0f;
+            if (!shown)
+            {
+                // No class UI (off in the options, or a class without one): the full gauge's key alone, in its place.
+                float alone = portrait ? x0 : x0 + (blockW - readyW) * .5f;
+                KeyBox(alone, rowTop + (box - keyH) * .5f, readyW, keyH, readyKey, readyWord, accent, white, true, accent, u, smallBold, wordFont, outlineColour);
+                return;
+            }
 
             // The class box.
             painter.RoundedBox(look.Hud.corner, x0, rowTop, box, box, ownBox);
@@ -130,28 +145,35 @@ namespace HudAddons
 
             // The key row over the class row: the key at the right, the mark at the left; the mark takes its own row above
             // when the two would meet.
-            float keyTop = rowTop - c.keyAbove * u, keyH = c.keyHeight * u, rowsTop = keyTop;
+            float keyTop = rowTop - c.keyAbove * u, rowsTop = keyTop;
             float keyLeft = right;
             if (v.Key)
             {
-                float keyW = 40f * u + wordFont.Width(v.Word) + 10f * u;
+                float keyW = KeyBoxWidth(v.Word, wordFont, u);
                 keyLeft = right - keyW;
-                painter.RoundedBox(look.Hud.corner, keyLeft, keyTop, keyW, keyH, ownBox);
-                float beat = .5f + .5f * Mathf.Sin(now * Mathf.PI * 2f * c.beatsPerSecond);
-                if (v.Beat) painter.RoundedBox(look.Hud.corner, keyLeft, keyTop, keyW, keyH, Gm.WithAlpha(accent, 255f * Mathf.Lerp(c.glowLeast, c.glowMost, beat)));
-                Color32 cap = v.Deny ? low : accent;
-                painter.RoundedBox(4f * u, keyLeft + 5f * u, keyTop + 3f * u, 26f * u, keyH - 6f * u, cap);
-                painter.Text(KeyName(), smallBold, keyLeft + 18f * u, keyTop + keyH * .5f, new Color32(12, 12, 15, 255), TextAlign.Center, TextAlign.Center);
-                painter.OutlinedText(v.Word, wordFont, keyLeft + 38f * u, keyTop + keyH * .5f, v.Deny ? low : white, TextAlign.Left, TextAlign.Center, outlineW, outlineColour);
+                KeyBox(keyLeft, keyTop, keyW, keyH, KeyName(), v.Word, v.Deny ? low : accent, v.Deny ? low : white, v.Beat, accent, u, smallBold, wordFont, outlineColour);
+            }
+            // The full gauge's key left of it, or over the row when the two would not fit.
+            if (readyWord != null)
+            {
+                float readyLeft = keyLeft - (v.Key ? c.rowGap * u : 0f) - readyW, readyTop = keyTop;
+                if (readyLeft < x0)
+                {
+                    readyTop = keyTop - keyH - c.rowGap * u;
+                    readyLeft = right - readyW;
+                    rowsTop = readyTop;
+                }
+                else keyLeft = readyLeft;
+                KeyBox(readyLeft, readyTop, readyW, keyH, readyKey, readyWord, accent, white, true, accent, u, smallBold, wordFont, outlineColour);
             }
             if (v.Mark != null)
             {
                 var markFont = HudFont.Get(o.font, c.markText * u * (portrait ? .875f : 1f), bold);
                 float markW = markFont.Width(v.Mark), markY = keyTop + keyH * .5f;
-                if (v.Key && barX + markW + 8f * u > keyLeft)
+                if (keyLeft < right && barX + markW + 8f * u > keyLeft)
                 {
-                    markY -= keyH + c.rowGap * u;
-                    rowsTop = keyTop - keyH - c.rowGap * u;
+                    rowsTop -= keyH + c.rowGap * u;
+                    markY = rowsTop + keyH * .5f;
                 }
                 float beat = .8f + .2f * Mathf.Sin(now * Mathf.PI * 2f * c.beatsPerSecond);
                 painter.AlphaScale = beat;
@@ -178,6 +200,39 @@ namespace HudAddons
         }
 
         private string spacedTitleOf, spacedTitle = string.Empty;
+
+        // What the full gauge's key says, or null while it isn't ready; its key's name is read again as it comes up.
+        private PerkCardScreen.ReadyFor readyFor;
+        private string readyWordShown, readyKey = string.Empty;
+
+        private string ReadyWord()
+        {
+            var ready = PerkCardScreen.Ready;
+            if (ready != readyFor)
+            {
+                readyFor = ready;
+                readyWordShown = ready == PerkCardScreen.ReadyFor.Nothing ? null
+                    : Texts.Get(ready == PerkCardScreen.ReadyFor.Cards ? "perk.ready" : "perk.ult.ready");
+                readyKey = KeyBindings.Name("Player/PerkCards");
+                if (string.IsNullOrEmpty(readyKey)) readyKey = "?";
+            }
+            return readyWordShown;
+        }
+
+        // A key to press: a box like the reserve box, a key cap, a bold word.
+        private static float KeyBoxWidth(string word, HudFont wordFont, float u) => 40f * u + wordFont.Width(word) + 10f * u;
+
+        private void KeyBox(float x, float y, float w, float h, string key, string word, Color32 cap, Color32 ink, bool beats, Color32 glow, float u,
+            HudFont keyFont, HudFont wordFont, Color32 outlineColour)
+        {
+            var c = look.Class;
+            painter.RoundedBox(look.Hud.corner, x, y, w, h, ownBox);
+            float beat = .5f + .5f * Mathf.Sin(now * Mathf.PI * 2f * c.beatsPerSecond);
+            if (beats) painter.RoundedBox(look.Hud.corner, x, y, w, h, Gm.WithAlpha(glow, 255f * Mathf.Lerp(c.glowLeast, c.glowMost, beat)));
+            painter.RoundedBox(4f * u, x + 5f * u, y + 3f * u, 26f * u, h - 6f * u, cap);
+            painter.Text(key, keyFont, x + 18f * u, y + h * .5f, new Color32(12, 12, 15, 255), TextAlign.Center, TextAlign.Center);
+            painter.OutlinedText(word, wordFont, x + 38f * u, y + h * .5f, ink, TextAlign.Left, TextAlign.Center, outlineWidth, outlineColour);
+        }
 
         // The armour bar's segments: faint where empty, white as full as the pips are, a pip that just changed lit white.
         private void Pips(ClassReadout.View v, float x, float y, float w, float h, PlayerHudLook.ClassRow c, Color32 white, float u)

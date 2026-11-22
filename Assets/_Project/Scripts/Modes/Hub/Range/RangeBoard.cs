@@ -27,15 +27,14 @@ public sealed class RangeBoard : MonoBehaviour
     {
         var face = HubDisplays.Board(transform, "Range board", size, Vector3.zero, Quaternion.LookRotation(Vector3.back, Vector3.up));
         Vector2 px = face.sizeDelta;
-        HubDisplays.Block(face, "Back", Vector2.zero, px, KitStyle.Panel, true);
-        HubDisplays.Block(face, "Rail", Vector2.zero, new Vector2(px.x, 12f), KitStyle.Accent);
-        HubDisplays.Words(face, Texts.Get("hub.range.title"), 72f, KitStyle.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 30f), new Vector2(px.x * .5f, 90f));
-        HubDisplays.Words(face, Texts.Get("hub.range.last"), 44f, KitStyle.Soft, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 140f), new Vector2(500f, 50f));
-        damage = HubDisplays.Words(face, "-", 220f, KitStyle.Ice, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 185f), new Vector2(600f, 240f));
-        part = HubDisplays.Words(face, "", 80f, KitStyle.Accent, TextAlignmentOptions.MidlineLeft, new Vector2(640f, 200f), new Vector2(px.x - 690f, 90f));
-        detail = HubDisplays.Words(face, Texts.Get("hub.range.hint"), 56f, KitStyle.Soft, TextAlignmentOptions.MidlineLeft, new Vector2(640f, 300f), new Vector2(px.x - 690f, 70f));
-        dropped = HubDisplays.Words(face, "", 60f, KitStyle.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, px.y - 200f), new Vector2(px.x - 100f, 80f));
-        farthest = HubDisplays.Words(face, "", 48f, KitStyle.Soft, TextAlignmentOptions.MidlineLeft, new Vector2(50f, px.y - 110f), new Vector2(px.x - 100f, 70f));
+        HubDisplays.Block(face, "Back", Vector2.zero, px, HubDisplays.Back, true);
+        HubDisplays.Words(face, Texts.Get("hub.range.title"), 72f, HudTone.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 30f), new Vector2(px.x * .5f, 90f));
+        HubDisplays.Words(face, Texts.Get("hub.range.last"), 44f, HudTone.Grey, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 140f), new Vector2(500f, 50f));
+        damage = HubDisplays.Words(face, "-", 220f, HudTone.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, 185f), new Vector2(600f, 240f));
+        part = HubDisplays.Words(face, "", 80f, HudTone.Text, TextAlignmentOptions.MidlineLeft, new Vector2(640f, 200f), new Vector2(px.x - 690f, 90f));
+        detail = HubDisplays.Words(face, Texts.Get("hub.range.hint"), 56f, HudTone.Grey, TextAlignmentOptions.MidlineLeft, new Vector2(640f, 300f), new Vector2(px.x - 690f, 70f));
+        dropped = HubDisplays.Words(face, "", 60f, HudTone.Text, TextAlignmentOptions.MidlineLeft, new Vector2(50f, px.y - 200f), new Vector2(px.x - 100f, 80f));
+        farthest = HubDisplays.Words(face, "", 48f, HudTone.Grey, TextAlignmentOptions.MidlineLeft, new Vector2(50f, px.y - 110f), new Vector2(px.x - 100f, 70f));
         RangeTarget.Struck += OnStruck;
     }
 
@@ -46,7 +45,7 @@ public sealed class RangeBoard : MonoBehaviour
         if (shot.Target == null) return;
         damage.text = Mathf.RoundToInt(shot.Damage).ToString();
         part.text = Texts.Get(shot.Headshot ? "hub.range.head" : "hub.range.body");
-        part.color = shot.Headshot ? KitStyle.Accent : KitStyle.Text;
+        part.color = shot.Headshot ? HudTone.Loss : HudTone.Text;
         detail.text = Texts.Format("hub.range.detail", shot.Target.DisplayName, shot.Distance.ToString("0.0"));
         hitsOn.TryGetValue(shot.Target, out int hits);
         hitsOn[shot.Target] = ++hits;

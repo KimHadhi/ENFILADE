@@ -1,92 +1,98 @@
-using TMPro;
+using HudAddons;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
-/// The hub's corner of the HUD (memo 46): the chapter the party will set off to, as the title screen's map card shows it
-/// (its picture, the big pink number, the name), and, once everyone is ready, the count to setting off, big. Drawn
-/// through the HUD camera like the rest of the HUD, at the top right, leaning its own way (the HUD's Persona tilt).
-/// Who is ready is the objective line's (HubLobby) and the board's over the way out.
+/// The hub's corner of the HUD (memo 46): the chapter the party will set off to (its picture, its number, its name), and,
+/// once everyone is ready, the count to setting off, big in a lit box. At the top right, in the player HUD's parts
+/// (HudSheet), upright and moving with its sway (the user, 2026-11-22: "맵 선택이나 다 우리 hud랑 통일성 있게 리디자인"; it
+/// was a leaning dark card with a pink rail and number). Who is ready is the objective line's (HubLobby) and the board's
+/// over the way out.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HubPanel : MonoBehaviour
 {
     // Under the money and the feed's first rows at the top right.
-    private const float Width = 420f, Height = 168f, Edge = 48f, Top = 190f, Tilt = -2.5f;
+    private const float Wide = 432f, Frame = 5f, PictureWide = 160f, PictureTall = 90f, Edge = 48f, Top = 190f, Pad = 14f,
+        SmallCell = 14.4f, TitleCell = 24f, NumberCell = 16.8f, CountCell = 64f, FlashSeconds = .3f;
+    private const int Order = 28;
 
-    private RectTransform root;
-    private RawImage picture;
-    private Image flash;
-    private TMP_Text number, title, count, hint;
-    private string shownChapter;
+    private HudSheet sheet;
+    private Texture picture;
+    private string shownChapter, number = "", title = "", count = "", caption = "", hint = "";
     private int shownCount = int.MinValue;
+    private float changedAt = -99f, countedAt = -99f;
 
     public static HubPanel Make()
     {
-        var host = new GameObject("Hub Panel", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        FeelUI.SetupHud(host, 30);
-        var panel = host.AddComponent<HubPanel>();
-        panel.Build();
+        var sheet = new HudSheet("Hub Panel", Order);
+        var panel = sheet.Overlay.gameObject.AddComponent<HubPanel>();
+        panel.sheet = sheet;
         return panel;
-    }
-
-    private void Build()
-    {
-        root = KitStyle.TopLeft("Card", transform, Vector2.zero, new Vector2(Width, Height));
-        root.anchorMin = root.anchorMax = root.pivot = new Vector2(1f, 1f);
-        root.anchoredPosition = new Vector2(-Edge, -Top);
-        root.localRotation = Quaternion.Euler(0f, 0f, Tilt);
-        KitStyle.Cut(KitStyle.Stretch("Back", root), KitStyle.Panel);
-        KitStyle.Bar("Rail", root, Vector2.zero, new Vector2(Width, KitStyle.AccentWidth), KitStyle.Accent);
-        var frame = KitStyle.TopLeft("Picture", root, new Vector2(12f, 16f), new Vector2(150f, 100f));
-        picture = frame.gameObject.AddComponent<RawImage>();
-        picture.raycastTarget = false;
-        KitStyle.Flat(KitStyle.TopLeft("Caption", root, new Vector2(176f, 14f), new Vector2(230f, 22f)), Texts.Get("hub.panel.next"), 15f,
-            TextAlignmentOptions.MidlineLeft, KitStyle.Soft).fontStyle = FontStyles.Normal;
-        number = KitStyle.Flat(KitStyle.TopLeft("Number", root, new Vector2(176f, 34f), new Vector2(230f, 52f)), "", 46f,
-            TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
-        title = KitStyle.Flat(KitStyle.TopLeft("Title", root, new Vector2(176f, 86f), new Vector2(232f, 30f)), "", 22f,
-            TextAlignmentOptions.MidlineLeft, KitStyle.Text);
-        hint = KitStyle.Flat(KitStyle.TopLeft("Hint", root, new Vector2(12f, 128f), new Vector2(Width - 24f, 28f)), "", 15f,
-            TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
-        hint.fontStyle = FontStyles.Normal;
-        count = KitStyle.Flat(KitStyle.TopLeft("Count", root, new Vector2(Width - 120f, 24f), new Vector2(110f, 96f)), "", 84f,
-            TextAlignmentOptions.MidlineRight, KitStyle.Ice);
-        flash = KitStyle.Fill(KitStyle.Stretch("Flash", root), Color.clear);
     }
 
     /// <summary>This frame's chapter and count (negative: not counting).</summary>
     public void Show(string chapter, float countdown)
     {
-        if (root == null) return;
         if (chapter != shownChapter)
         {
             shownChapter = chapter;
-            HubDisplays.SplitChapter(MapTable.DisplayName(chapter), out string chapterNumber, out string name);
-            number.text = chapterNumber;
-            title.text = name;
-            picture.texture = MapTable.Picture(chapter);
-            picture.color = picture.texture != null ? Color.white : KitStyle.With(KitStyle.Night, .9f);
-            KitPulse.Play(flash, KitStyle.Flash, .35f);
+            HubDisplays.SplitChapter(MapTable.DisplayName(chapter), out number, out title);
+            picture = MapTable.Picture(chapter);
+            caption = Texts.Get("hub.panel.next");
+            changedAt = Smooth.Now;
         }
         int now = countdown >= 0f ? Mathf.CeilToInt(countdown) : -1;
         if (now == shownCount) return;
         shownCount = now;
-        count.text = now >= 0 ? now.ToString() : "";
-        title.gameObject.SetActive(now < 0);
-        hint.text = now >= 0 ? Texts.Get("hub.panel.going") : Texts.Get(GameSession.IsOnline ? "hub.panel.hint.room" : "hub.panel.hint.solo");
-        if (now >= 0) count.rectTransform.localScale = Vector3.one * 1.25f;
+        count = now >= 0 ? now.ToString() : "";
+        hint = now >= 0 ? Texts.Get("hub.panel.going") : Texts.Get(GameSession.IsOnline ? "hub.panel.hint.room" : "hub.panel.hint.solo");
+        if (now >= 0) countedAt = Smooth.Now;
     }
 
     private void LateUpdate()
     {
-        // The count's number lands big and settles.
-        if (count != null && count.rectTransform.localScale.x > 1f)
-            count.rectTransform.localScale = Vector3.one * Mathf.MoveTowards(count.rectTransform.localScale.x, 1f, Time.unscaledDeltaTime * 2.5f);
+        if (sheet == null) return;
+        bool show = shownChapter != null && PlayerRoster.Local != null && !ResultsShow.IsPlaying && !HubDressing.IsOpen && !LoadingScreen.Visible;
+        sheet.Visible = show;
+        if (!show)
+        {
+            HudRoom.Free(this);
+            return;
+        }
+        float tall = PictureTall + Frame * 2f;
+        Vector2 sway = HudSheet.Sway;
+        float x = sheet.Width - Edge - Wide + sway.x, y = Top + sway.y;
+        sheet.Begin();
+        sheet.Box(x, y, Wide, tall);
+        if (picture != null) sheet.Picture(picture, x + Frame, y + Frame, PictureWide, PictureTall, HudSheet.White);
+        else sheet.Fill(x + Frame, y + Frame, PictureWide, PictureTall, new Color32(255, 255, 255, 20));
+
+        bool counting = shownCount >= 0;
+        float left = x + Frame + PictureWide + Pad, right = x + Wide - Pad;
+        if (counting) right -= tall;
+        sheet.Text(caption, SmallCell, left, y + 22f, sheet.Grey, TextAlign.Left, TextAlign.Center, true);
+        // The chapter's number on a small lit plate, then its name.
+        float numberWide = sheet.Measure(number, NumberCell, true) + 12f, nameY = y + tall * .5f;
+        sheet.Box(left, nameY - 11f, numberWide, 22f, HudSheet.Lit, 4f);
+        sheet.Plain(number, NumberCell, left + numberWide * .5f, nameY, HudSheet.Ink, TextAlign.Center, TextAlign.Center, true);
+        float nameLeft = left + numberWide + 8f;
+        sheet.Text(sheet.Fit(title, TitleCell, right - nameLeft, true), TitleCell, nameLeft, nameY, HudSheet.White, TextAlign.Left, TextAlign.Center, true);
+        sheet.Text(sheet.Fit(hint, SmallCell, right - left), SmallCell, left, y + tall - 20f, sheet.Grey);
+
+        // The count in a lit box at the right end, its number landing big and settling.
+        if (counting)
+        {
+            float side = tall - Frame * 2f, bx = x + Wide - Frame - side;
+            float land = 1f + .25f * (1f - Mathf.Clamp01((Smooth.Now - countedAt) / .1f));
+            sheet.Box(bx, y + Frame, side, side, HudSheet.Lit);
+            sheet.Plain(count, CountCell * land, bx + side * .5f, y + tall * .5f, HudSheet.Ink, TextAlign.Center, TextAlign.Center, true);
+        }
+        float flash = 1f - Mathf.Clamp01((Smooth.Now - changedAt) / FlashSeconds);
+        if (flash > 0f) sheet.Box(x, y, Wide, tall, Gm.WithAlpha(HudSheet.White, 110f * flash));
+        sheet.End();
         // The card stays over the right edge's column of callout windows, so they stand under it: in play (2026-11-13)
         // the HUD overlap check measured a callout window 12.4 px into it.
-        if (root != null && HudRoom.Measure(root, out float near, out float far, out float top, out float bottom))
-            HudRoom.Take(this, near, far, top, bottom, HudRoom.Way.Under);
+        HudRoom.Take(this, Edge, Edge + Wide, Top, Top + tall, HudRoom.Way.Under);
     }
 
     private void OnDisable() => HudRoom.Free(this);

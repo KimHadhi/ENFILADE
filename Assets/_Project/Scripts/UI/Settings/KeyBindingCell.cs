@@ -5,16 +5,15 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// One key slot in the key window (<see cref="KeyBindingsView"/>): a slanted plate with the key's name. It answers the
+/// One key slot in the key window (<see cref="KeyBindingsView"/>): a box with the key's name. It answers the
 /// pointer going down rather than a click, so the button that finishes a listen (a mouse button being bound) can't
-/// start another on its release. Pink while it listens; a short pink bar at its left while its key isn't the
-/// default; a quick pink flash when a swap changes it, gone within half a second.
+/// start another on its release. Lit white while it listens; a short white bar at its left while its key isn't the
+/// default; a quick white flash when a swap changes it, gone within half a second.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class KeyBindingCell : MonoBehaviour, IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    private const float Slant = 8f, FlashSeconds = .45f;
-    private static readonly Color Hover = new Color(1f, 1f, 1f, .13f), Flashed = KitStyle.With(KitStyle.Accent, .8f);
+    private const float FlashSeconds = .45f;
 
     /// <summary>Which of its line's slots this is: 0 the first key, 1 the second.</summary>
     public int Which { get; private set; }
@@ -36,16 +35,14 @@ public sealed class KeyBindingCell : MonoBehaviour, IPointerDownHandler, IPointe
         cell.Which = which;
         cell.Line = line;
         cell.pressed = pressed;
-        cell.fill = SettingsWidgets.Fill(rect, SettingsWidgets.Surface); // the plate takes the pointer
-        KitSkew.On(cell.fill, Slant);
+        cell.fill = HudMenu.Box(rect, HudMenu.Surface, true); // the box takes the pointer
         var markRect = SettingsWidgets.Rect("Changed", rect);
         markRect.anchorMin = Vector2.zero; markRect.anchorMax = new Vector2(0f, 1f); markRect.pivot = new Vector2(0f, .5f);
-        markRect.sizeDelta = new Vector2(4f, 0f);
-        markRect.anchoredPosition = Vector2.zero;
-        cell.mark = SettingsWidgets.Fill(markRect, KitStyle.Accent);
+        markRect.sizeDelta = new Vector2(3f, -14f);
+        markRect.anchoredPosition = new Vector2(8f, 0f);
+        cell.mark = SettingsWidgets.Fill(markRect, HudMenu.Text);
         cell.mark.raycastTarget = false;
-        KitSkew.On(cell.mark, Slant);
-        cell.label = SettingsWidgets.Label(rect, "", 19f, SettingsWidgets.Text, TextAlignmentOptions.Center);
+        cell.label = SettingsWidgets.Label(rect, "", 18f, HudMenu.Text, TextAlignmentOptions.Center);
         KitStyle.Stretch(cell.label.rectTransform);
         cell.label.richText = false; // a key named "<" or "[" is the key, not a tag
         cell.Paint();
@@ -62,7 +59,7 @@ public sealed class KeyBindingCell : MonoBehaviour, IPointerDownHandler, IPointe
         Paint();
     }
 
-    /// <summary>A swap or a reset changed this slot: it lights pink and fades back at once.</summary>
+    /// <summary>A swap or a reset changed this slot: it lights white and fades back at once.</summary>
     public void Flash()
     {
         flash = 1f;
@@ -95,14 +92,14 @@ public sealed class KeyBindingCell : MonoBehaviour, IPointerDownHandler, IPointe
         if (fill == null) return;
         if (listening)
         {
-            fill.color = KitStyle.Accent;
-            label.color = KitStyle.Ink;
+            fill.color = HudMenu.Lit;
+            label.color = HudMenu.Ink;
             label.fontStyle = FontStyles.Bold;
             mark.enabled = false;
             return;
         }
-        fill.color = Color.Lerp(over ? Hover : SettingsWidgets.Surface, Flashed, flash);
-        label.color = empty ? SettingsWidgets.Muted : flash > .5f ? KitStyle.Ink : SettingsWidgets.Text;
+        fill.color = Color.Lerp(over ? HudMenu.Over : HudMenu.Surface, HudMenu.Lit, flash);
+        label.color = empty ? HudMenu.Muted : flash > .5f ? HudMenu.Ink : HudMenu.Text;
         label.fontStyle = moved ? FontStyles.Bold : FontStyles.Normal;
         mark.enabled = moved;
     }

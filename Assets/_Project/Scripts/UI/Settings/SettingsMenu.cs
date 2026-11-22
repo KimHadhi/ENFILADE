@@ -37,6 +37,8 @@ public sealed class SettingsMenu : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = .5f;
         gameObject.AddComponent<GraphicRaycaster>();
+        // Everything built on this canvas wears the HUD's look (HudMenu).
+        gameObject.AddComponent<HudMenuHost>();
         view = new SettingsMenuView(transform, Close, LeaveToMainMenu, QuitGame);
     }
 

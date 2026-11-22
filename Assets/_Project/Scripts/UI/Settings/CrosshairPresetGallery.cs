@@ -14,9 +14,8 @@ public sealed class CrosshairPresetGallery
     private const int Columns = 6, RowsShown = 2;
     private const float TileHeight = 92f;
     private const float GlowSeconds = .3f;
-    private static readonly Color Hover = new Color(1f, 1f, 1f, .14f), Pressed = new Color(1f, 1f, 1f, .2f),
-        Picked = new Color(W.Accent.r, W.Accent.g, W.Accent.b, .24f), PickedHover = new Color(W.Accent.r, W.Accent.g, W.Accent.b, .34f),
-        PickedGlow = new Color(W.Accent.r, W.Accent.g, W.Accent.b, .5f);
+    private static readonly Color Hover = HudMenu.Over, Pressed = HudMenu.Track, Picked = HudMenu.Track, PickedHover = new Color(.33f, .33f, .34f),
+        PickedGlow = HudMenu.Muted;
     private static CrosshairProfile[] tileProfiles = new CrosshairProfile[0];
     private static string carriedInfo; // a message that outlives the rebuild a successful read causes
     private static int glowTile = -1; // the tile just picked glows softly once as the tab rebuilds
@@ -75,11 +74,11 @@ public sealed class CrosshairPresetGallery
     {
         var preset = CrosshairPresets.All[index];
         var tile = W.Rect(preset.Name, row);
-        var image = W.Fill(tile, Color.white); // the button's tint gives the colour
+        var image = HudMenu.Box(tile, Color.white, true); // the button's tint gives the colour
         var button = tile.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
         var colors = button.colors;
-        colors.normalColor = colors.selectedColor = picked ? Picked : W.Surface;
+        colors.normalColor = colors.selectedColor = picked ? Picked : HudMenu.Card;
         colors.highlightedColor = picked ? PickedHover : Hover;
         colors.pressedColor = Pressed;
         button.colors = colors;
@@ -97,7 +96,8 @@ public sealed class CrosshairPresetGallery
         art.offsetMin = art.offsetMax = Vector2.zero;
         CrosshairPreview.Draw(art).ApplyProfile(TileProfile(index, preset, look));
 
-        var name = W.Label(tile, preset.Name, 15f, picked ? W.Accent : W.Muted, TextAlignmentOptions.Center);
+        var name = W.Label(tile, preset.Name, 15f, picked ? HudMenu.Text : HudMenu.Muted, TextAlignmentOptions.Center);
+        if (picked) name.fontStyle = FontStyles.Bold;
         name.rectTransform.anchorMin = Vector2.zero; name.rectTransform.anchorMax = new Vector2(1f, .24f);
         name.rectTransform.offsetMin = new Vector2(0f, 4f); name.rectTransform.offsetMax = Vector2.zero;
     }

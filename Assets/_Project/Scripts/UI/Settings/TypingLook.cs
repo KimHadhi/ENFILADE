@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// 2026-11-12: "숫자 입력 중인지 잘 모르겠음 뭐 티가 안 나서"). While it has the keyboard the box turns near-black inside
 /// a pink frame over a thicker pink underline, its text goes white and bold over a pink selection, a pink caret blinks
 /// after it, and the row's name turns pink, the way a chosen settings tab is dark with a pink edge. It all switches at
-/// once, on and off, leaving nothing to fade. Pointed at, the box brightens a little so it reads as a thing to click.
+/// once, on and off, leaving nothing to fade. Pointed at, the box brightens a little so it reads as a thing to click. In the
+/// HUD's look (HudMenuHost) the pink is white and the box keeps its round corners.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class TypingLook : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
@@ -21,7 +22,7 @@ public sealed class TypingLook : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private Image fill, line;
     private GameObject frame;
     private TMP_Text text, rowName;
-    private Color rowNameColor;
+    private Color rowNameColor, accent, rest, pointed, typed, typingInk;
     private bool over, painted, shownTyping, shownOver;
 
     /// <summary>
@@ -40,41 +41,47 @@ public sealed class TypingLook : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         field = input;
         fill = input.targetGraphic as Image;
+        bool hud = HudMenuHost.Of(input.transform) != null;
+        accent = hud ? HudMenu.Text : KitStyle.Accent;
+        rest = hud ? HudMenu.Field : SettingsWidgets.Surface;
+        pointed = hud ? HudMenu.Surface : Hover;
+        typed = hud ? Color.black : Typing;
+        typingInk = hud ? HudMenu.Text : SettingsWidgets.Muted;
         var lineRect = input.transform.Find("Line");
         line = lineRect != null ? lineRect.GetComponent<Image>() : null;
         text = input.textComponent;
         rowName = name;
         if (rowName != null) rowNameColor = rowName.color;
         input.customCaretColor = true;
-        input.caretColor = KitStyle.Accent;
+        input.caretColor = accent;
         input.caretWidth = 3;
-        input.selectionColor = KitStyle.With(KitStyle.Accent, .5f);
-        if (frame == null) frame = BuildFrame((RectTransform)input.transform);
+        input.selectionColor = hud ? new Color(1f, 1f, 1f, .3f) : KitStyle.With(KitStyle.Accent, .5f);
+        if (frame == null) frame = BuildFrame((RectTransform)input.transform, accent);
         painted = false;
         Paint(false, false);
     }
 
-    // Four pink lines just inside the box's edge, over everything in it; off unless typing.
-    private static GameObject BuildFrame(RectTransform box)
+    // Four lines just inside the box's edge, over everything in it; off unless typing.
+    private static GameObject BuildFrame(RectTransform box, Color colour)
     {
         var root = SettingsWidgets.Rect("Typing Frame", box);
         KitStyle.Stretch(root);
-        Edge(root, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, Frame));
-        Edge(root, Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, Frame));
-        Edge(root, Vector2.zero, new Vector2(0f, 1f), new Vector2(Frame, 0f));
-        Edge(root, new Vector2(1f, 0f), Vector2.one, new Vector2(Frame, 0f));
+        Edge(root, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, Frame), colour);
+        Edge(root, Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, Frame), colour);
+        Edge(root, Vector2.zero, new Vector2(0f, 1f), new Vector2(Frame, 0f), colour);
+        Edge(root, new Vector2(1f, 0f), Vector2.one, new Vector2(Frame, 0f), colour);
         root.gameObject.SetActive(false);
         return root.gameObject;
     }
 
-    private static void Edge(RectTransform parent, Vector2 min, Vector2 max, Vector2 size)
+    private static void Edge(RectTransform parent, Vector2 min, Vector2 max, Vector2 size, Color colour)
     {
         var edge = SettingsWidgets.Rect("Edge", parent);
         edge.anchorMin = min; edge.anchorMax = max;
         edge.pivot = new Vector2(min.x == max.x ? min.x : .5f, min.y == max.y ? min.y : .5f);
         edge.sizeDelta = size;
         edge.anchoredPosition = Vector2.zero;
-        SettingsWidgets.Fill(edge, KitStyle.Accent).raycastTarget = false;
+        SettingsWidgets.Fill(edge, colour).raycastTarget = false;
     }
 
     public void OnPointerEnter(PointerEventData eventData) => over = true;
@@ -101,18 +108,18 @@ public sealed class TypingLook : MonoBehaviour, IPointerEnterHandler, IPointerEx
         painted = true;
         shownTyping = typing;
         shownOver = hover;
-        if (fill != null) fill.color = typing ? Typing : hover ? Hover : SettingsWidgets.Surface;
+        if (fill != null) fill.color = typing ? typed : hover ? pointed : rest;
         if (frame != null) frame.SetActive(typing);
         if (line != null)
         {
-            line.color = typing ? KitStyle.Accent : hover ? LineHover : SettingsWidgets.Track;
+            line.color = typing ? accent : hover ? LineHover : SettingsWidgets.Track;
             line.rectTransform.sizeDelta = new Vector2(0f, typing ? LineTyping : Line);
         }
         if (text != null)
         {
-            text.color = typing || hover ? SettingsWidgets.Text : SettingsWidgets.Muted;
+            text.color = typing || hover ? SettingsWidgets.Text : typingInk;
             text.fontStyle = typing ? FontStyles.Bold : FontStyles.Normal;
         }
-        if (rowName != null) rowName.color = typing ? KitStyle.Accent : rowNameColor;
+        if (rowName != null) rowName.color = typing ? accent : rowNameColor;
     }
 }

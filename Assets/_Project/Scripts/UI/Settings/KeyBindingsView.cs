@@ -13,13 +13,15 @@ using W = SettingsWidgets;
 /// listens for the next key or mouse button (Esc keeps the old one); a right click empties the slot. A key another line
 /// already uses is swapped (that line gets this slot's old key), said in the line at the bottom, and the changed slot
 /// flashes. "기본" on a line puts that line back; "모두 기본값" (pressed twice) puts every key back. Keys save as they
-/// change. In the settings' kit look: the menus' window with cut corners, slanted plates, black, white and one pink.
+/// change. In the settings' look (HudMenu): a dark upright window, the key being listened for lit white.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class KeyBindingsView : MonoBehaviour
 {
     private const float Width = 1060f, Height = 860f, Margin = 44f, ListTop = 154f, ListBottom = 112f, NameWidth = 330f,
-        KeyWidth = 230f, ResetWidth = 64f, RowHeight = 38f, Gap = 12f, ConfirmSeconds = 3f;
+        KeyWidth = 230f, ResetWidth = 64f, RowHeight = 40f, Gap = 12f, ConfirmSeconds = 3f;
+    // A line's inset in its section's card.
+    private const int CardInset = 14;
 
     private sealed class Line
     {
@@ -42,7 +44,7 @@ public sealed class KeyBindingsView : MonoBehaviour
         if (current != null) current.Close();
         var shade = W.Rect("Key Bindings", layer);
         KitStyle.Stretch(shade);
-        W.Fill(shade, new Color(0f, 0f, 0f, .72f)); // also keeps clicks off the settings beneath
+        W.Fill(shade, new Color(0f, 0f, 0f, .85f)); // also keeps clicks off the settings beneath
         shade.SetAsLastSibling();
         var view = shade.gameObject.AddComponent<KeyBindingsView>();
         view.closed = onClosed;
@@ -96,21 +98,20 @@ public sealed class KeyBindingsView : MonoBehaviour
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
         panel.sizeDelta = new Vector2(Width, Height);
         W.Panel(panel);
-        var reveal = panel.gameObject.AddComponent<KitReveal>();
-        reveal.Hide();
 
         var title = KitStyle.TopLeft("Title", panel, new Vector2(Margin, 34f), new Vector2(420f, 64f));
-        title.localRotation = Quaternion.Euler(0f, 0f, 3f);
-        KitStyle.Flat(title, Texts.Get("settings.keys.title"), 48f, TextAlignmentOptions.MidlineLeft);
+        var name = W.Label(title, Texts.Get("settings.keys.title"), 36f, HudMenu.Text);
+        KitStyle.Stretch(name.rectTransform);
+        name.fontStyle = FontStyles.Bold;
         var hint = KitStyle.TopLeft("Hint", panel, new Vector2(Width - Margin - 600f, 44f), new Vector2(600f, 30f));
-        KitStyle.Flat(hint, Texts.Get("settings.keys.hint"), 16f, TextAlignmentOptions.MidlineRight, KitStyle.Soft).fontStyle = FontStyles.Normal;
+        KitStyle.Stretch(W.Label(hint, Texts.Get("settings.keys.hint"), 16f, HudMenu.Muted, TextAlignmentOptions.MidlineRight).rectTransform);
 
         // The column heads over the slots, and a rule under them.
-        float first = Margin + NameWidth + Gap, second = first + KeyWidth + Gap;
-        Head(panel, Texts.Get("settings.keys.column.action"), Margin, NameWidth, TextAlignmentOptions.BottomLeft);
+        float left = Margin + CardInset + 6f, first = left + NameWidth + Gap, second = first + KeyWidth + Gap;
+        Head(panel, Texts.Get("settings.keys.column.action"), left, NameWidth, TextAlignmentOptions.BottomLeft);
         Head(panel, Texts.Get("settings.keys.column.first"), first, KeyWidth, TextAlignmentOptions.Bottom);
         Head(panel, Texts.Get("settings.keys.column.second"), second, KeyWidth, TextAlignmentOptions.Bottom);
-        KitStyle.Bar("Rule", panel, new Vector2(Margin, ListTop - 8f), new Vector2(Width - Margin * 2f, 1f), KitStyle.With(KitStyle.Ice, .1f));
+        KitStyle.Bar("Rule", panel, new Vector2(Margin, ListTop - 8f), new Vector2(Width - Margin * 2f, 1f), HudMenu.Line);
 
         var list = KitStyle.TopLeft("List", panel, new Vector2(Margin, ListTop), new Vector2(Width - Margin * 2f, Height - ListTop - ListBottom));
         var layout = list.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -118,21 +119,23 @@ public sealed class KeyBindingsView : MonoBehaviour
         layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
         var content = W.ScrollArea(list);
         string section = null;
+        Transform card = content;
         foreach (var entry in KeyBindings.Entries)
         {
             if (entry.Section != section)
             {
                 section = entry.Section;
-                Section(content, Texts.Get("settings.keys.section." + section));
+                card = HudMenu.NewCard(content);
+                HudMenu.Header(card, Texts.Get("settings.keys.section." + section));
             }
-            lines.Add(BuildLine(content, entry));
+            lines.Add(BuildLine(card, entry));
         }
         var fixedKeys = W.Label(content, Texts.Get("settings.keys.fixed"), 16f, W.Muted);
         fixedKeys.textWrappingMode = TextWrappingModes.Normal;
         W.Size(fixedKeys, height: 64f);
 
-        // The bottom: what just happened at the left, then every key back and closing in pink.
-        KitStyle.Bar("Line", panel, new Vector2(Margin, Height - 100f), new Vector2(Width - Margin * 2f, 1f), KitStyle.With(KitStyle.Ice, .1f));
+        // The bottom: what just happened at the left, then every key back and closing.
+        KitStyle.Bar("Line", panel, new Vector2(Margin, Height - 100f), new Vector2(Width - Margin * 2f, 1f), HudMenu.Line);
         var bottom = KitStyle.TopLeft("Buttons", panel, new Vector2(Margin, Height - 82f), new Vector2(Width - Margin * 2f, 50f));
         var row = bottom.gameObject.AddComponent<HorizontalLayoutGroup>();
         row.spacing = 12f;
@@ -150,24 +153,12 @@ public sealed class KeyBindingsView : MonoBehaviour
 
         Refresh();
         Say(null);
-        reveal.Open();
     }
 
     private static void Head(RectTransform panel, string words, float x, float width, TextAlignmentOptions alignment)
     {
         var rect = KitStyle.TopLeft("Head", panel, new Vector2(x, ListTop - 40f), new Vector2(width, 28f));
-        var label = KitStyle.Flat(rect, words, 15f, alignment, KitStyle.Soft);
-        label.fontStyle = FontStyles.Normal;
-        label.characterSpacing = 4f;
-    }
-
-    private static void Section(Transform parent, string words)
-    {
-        var label = W.Label(parent, words, 16f, W.Accent);
-        W.Size(label, height: 38f);
-        label.alignment = TextAlignmentOptions.BottomLeft;
-        label.fontStyle = FontStyles.Bold;
-        label.characterSpacing = 4f;
+        KitStyle.Stretch(W.Label(rect, words, 16f, HudMenu.Muted, alignment).rectTransform);
     }
 
     private Line BuildLine(Transform parent, KeyBindings.Entry entry)
@@ -176,11 +167,12 @@ public sealed class KeyBindingsView : MonoBehaviour
         var row = W.Rect(entry.Id, parent);
         var layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = Gap;
+        layout.padding = new RectOffset(CardInset, 0, 0, 0);
         layout.childAlignment = TextAnchor.MiddleLeft;
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = layout.childForceExpandHeight = false;
         W.Size(row, height: RowHeight, flexibleHeight: 0f);
-        W.Size(W.Label(row, entry.Name, 21f, W.Text), NameWidth, RowHeight);
+        W.Size(W.Label(row, entry.Name, 19f, HudMenu.Text), NameWidth, RowHeight);
         for (int which = 0; which < 2; which++)
             line.Cells[which] = KeyBindingCell.Build(row, line, which, KeyWidth, RowHeight - 4f, Press);
         var reset = W.ActionButton(row, Texts.Get("settings.keys.reset"), false, () =>
@@ -320,13 +312,13 @@ public sealed class KeyBindingsView : MonoBehaviour
             }
     }
 
-    // The line at the bottom: what just happened (pink when a key moved from another line), else the standing hint.
+    // The line at the bottom: what just happened (the HUD's orange when a key moved from another line), else the standing hint.
     private void Say(string words, bool loud = false)
     {
         if (notice == null) return;
         bool idle = string.IsNullOrEmpty(words);
         notice.text = idle ? Texts.Format("settings.keys.status", KeyBindings.ChangedCount()) : words;
-        notice.color = !idle && loud ? KitStyle.Accent : W.Muted;
+        notice.color = !idle && loud ? HudTone.Loss : HudMenu.Muted;
     }
 
     // A button that keeps the selection would take Enter or Space as a click later, while a key is wanted.

@@ -119,6 +119,11 @@ settings.hud.death.blood,피 오버레이 강도,Blood overlay strength,설정 �
 settings.hud.death.blood_delay,피 페이드 인 지연(초),Blood fade-in delay (seconds),설정 → HUD → 데스 스크린: 죽은 뒤 피 그림이 나타나기 시작하기까지(0~5초. mw3death_blood_delay),
 settings.hud.death.preview,미리 보기,Preview,설정 → HUD → 데스 스크린: 죽지 않고 한 번 보여 주는 버튼(게임 중 살아 있을 때. /death와 같다),
 settings.hud.death.reset,기본값으로,Reset to defaults,설정 → HUD → 데스 스크린: 이 묶음의 다섯 값을 기본값으로 돌리는 버튼,
+settings.controls.header.keys,키,Keys,설정 창 > 조작 > 줄 묶음의 머리글,
+settings.controls.header.mouse,마우스,Mouse,설정 창 > 조작 > 줄 묶음의 머리글,
+settings.controls.header.moves,움직임,Movement,설정 창 > 조작 > 줄 묶음의 머리글,
+settings.controls.header.callouts,콜아웃,Callouts,설정 창 > 조작 > 줄 묶음의 머리글,
+settings.controls.header.party,같이 하기,Playing Together,설정 창 > 조작 > 줄 묶음의 머리글,
 settings.controls.scope_sensitivity,배율 조준경 ×{0} 감도,Scope ×{0} sensitivity,"설정 창 > 조작 > 행. {0}=배율(GunParts.csv에 있는 배율마다 한 줄, ScopeLook)"
 settings.controls.scope_sensitivity.note,100% = 조준경 속 표적이 화면을 지나는 빠르기가 조준하지 않았을 때와 같아요,100% = a target crosses the screen as fast as it does unaimed,"설정 창 > 조작 > 배율 조준경 감도 줄들 아래의 설명"
 life.join.seconds,{0}초 뒤 합류합니다,Joining in {0}s,진행 중인 판에 늦게 들어와 관전하며 합류를 기다릴 때(죽은 사람이 돌아오는 것과 같은 시계). {0}=합류까지 남은 초
@@ -752,7 +757,7 @@ settings.tab.sound,소리,Sound,설정 창 > 왼쪽 탭
 settings.tab.controls,조작,Controls,설정 창 > 왼쪽 탭
 settings.tab.screen,화면,Video,설정 창 > 왼쪽 탭
 settings.tab.camera,카메라,Camera,설정 창 > 왼쪽 탭
-settings.tab.hud,UI,UI,설정 창 > 왼쪽 탭
+settings.tab.hud,HUD,HUD,설정 창 > 왼쪽 탭
 settings.tab.crosshair,크로스헤어,Crosshair,설정 창 > 왼쪽 탭
 settings.defaults,이 탭 기본값,Reset current tap to defaults,설정 창 > 아래 왼쪽 버튼
 settings.main_menu,메인 메뉴,Main Menu,설정 창 > 아래 버튼(게임 안에서만)
@@ -1145,8 +1150,8 @@ execution.stealth,{0} 암살하기,{0} Takedown,모르는 적 뒤에서 몰래 �
 execution.keys.both,[좌클릭·F],[LMB·F],처형 안내의 키: 가까운 적과 먼 적 둘 다 될 때
 execution.keys.click,[좌클릭],[LMB],처형 안내의 키: 맨손으로 달려들어 처형할 때
 #--- 능력 카드 ---,,,
-perk.ready,능력 준비,Perk Ready,게이지가 찼을 때 화면 아래 안내(옆에 X 키)
-perk.ult.ready,궁극 준비,Ultimate Ready,카드를 다 모은 뒤 게이지가 찼을 때 화면 아래 안내(옆에 X 키). X로 클래스 궁극을 바로 쓴다
+perk.ready,능력 준비,Perk Ready,게이지가 찼을 때 클래스 UI의 키 줄(X 키 상자)
+perk.ult.ready,궁극 준비,Ultimate Ready,카드를 다 모은 뒤 게이지가 찼을 때 클래스 UI의 키 줄(X 키 상자). X로 클래스 궁극을 바로 쓴다
 perk.title,능력 선택,Choose a Perk,카드 화면 왼쪽 위 큰 제목
 perk.cost,게이지 {0}% 사용,Uses {0}% of the gauge,카드 화면 제목 아래 분홍 띠. {0}=쓰는 게이지(%)
 perk.hint,<b>1 · 2 · 3</b>  고르기\n<b>X</b>  닫기,<b>1 · 2 · 3</b>  Choose\n<b>X</b>  Close,카드 화면 오른쪽 위 키 안내(두 줄)
@@ -1493,7 +1498,7 @@ hub.sign.next,다음 작전,NEXT OPERATION,허브 > 지도 탁자 위 표지판�
 hub.sign.classes,클래스,CLASSES,허브 > 클래스 벽 위 글자
 hub.sign.guns,총기,ARMORY,허브 > 총 진열대 위 글자
 hub.sign.range,사격장,FIRING RANGE,허브 > 사격장 입구 위 글자
-hub.sign.mirror,꾸미기,WARDROBE,허브 > 무대 거울 앞 바닥 표시(꾸미기 자리의 분홍 모서리 밑 글자)
+hub.sign.mirror,꾸미기,WARDROBE,허브 > 무대 거울 앞 바닥 표시(꾸미기 자리의 흰 모서리 밑 글자)
 hub.board.title,출발 준비  ·  {0},Ready Up  ·  {0},허브 > 출발 문 위 판의 제목. {0}=고른 장
 hub.board.ready,준비,Ready,허브 > 출발 문 위 판: 준비한 사람 이름 옆
 hub.panel.next,다음 작전,Next Operation,허브 > 오른쪽 위 카드의 작은 글자

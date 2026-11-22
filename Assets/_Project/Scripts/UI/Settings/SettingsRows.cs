@@ -6,25 +6,42 @@ using W = SettingsWidgets;
 
 /// <summary>
 /// Labelled settings rows under one parent. Each change writes through the caller's setter, applies
-/// <see cref="GameSettings"/> and then calls the optional <c>changed</c> callback.
+/// <see cref="GameSettings"/> and then calls the optional <c>changed</c> callback. In the HUD's look (HudMenuHost) the rows
+/// stand in cards, a heading starting the next.
 /// </summary>
 public sealed class SettingsRows
 {
-    private readonly Transform parent;
+    private readonly Transform root;
     private readonly Action changed;
+    private readonly bool hud;
+    private Transform card;
 
     /// <summary>Where the rows go, for controls that are not settings rows.</summary>
-    public Transform Parent => parent;
+    public Transform Parent
+    {
+        get
+        {
+            if (!hud) return root;
+            if (card == null) card = HudMenu.NewCard(root);
+            return card;
+        }
+    }
 
     public SettingsRows(Transform parent, Action changed = null)
     {
-        this.parent = parent;
+        root = parent;
+        hud = HudMenuHost.Of(parent) != null;
         this.changed = changed;
     }
 
     public TextMeshProUGUI Header(string text)
     {
-        var label = W.Label(parent, text, 16f, W.Accent);
+        if (hud)
+        {
+            card = HudMenu.NewCard(root);
+            return HudMenu.Header(card, text);
+        }
+        var label = W.Label(root, text, 16f, W.Accent);
         W.Size(label, height: 38f);
         label.alignment = TextAlignmentOptions.BottomLeft;
         label.fontStyle = FontStyles.Bold;
@@ -46,7 +63,7 @@ public sealed class SettingsRows
     public Slider Slider(string name, float min, float max, float value, Action<float> set, Func<float, string> format,
         bool wholeNumbers = false, float shownScale = 1f)
     {
-        var row = W.Row(parent, name);
+        var row = W.Row(Parent, name);
         TMP_InputField box = null;
         Slider slider = null;
         slider = W.Slider(row, min, max, value, v =>
@@ -73,7 +90,7 @@ public sealed class SettingsRows
     public RectTransform NumberChoice(string name, int[] presets, Func<int, string> label, int value, int min, int max,
         Action<int> set)
     {
-        var row = W.Row(parent, name);
+        var row = W.Row(Parent, name);
         int current = value;
         var options = new string[presets.Length];
         for (int i = 0; i < presets.Length; i++) options[i] = label(presets[i]);
@@ -98,7 +115,7 @@ public sealed class SettingsRows
 
     public RectTransform Choice(string name, string[] options, int selected, Action<int> set)
     {
-        var row = W.Row(parent, name);
+        var row = W.Row(Parent, name);
         W.Choice(row, options, selected, i =>
         {
             set(i);
@@ -107,10 +124,24 @@ public sealed class SettingsRows
         return row;
     }
 
+    /// <summary>An off/on row. <paramref name="show"/> sets it without calling <paramref name="set"/> (a reset).</summary>
+    public RectTransform Toggle(string name, bool value, Action<bool> set, out Action<bool> show)
+    {
+        var row = W.Row(Parent, name);
+        W.Toggle(row, value, on =>
+        {
+            set(on);
+            Apply();
+        }, out show);
+        return row;
+    }
+
+    public RectTransform Toggle(string name, bool value, Action<bool> set) => Toggle(name, value, set, out _);
+
     /// <summary>A row stepping through options one at a time (<see cref="SettingsWidgets.Stepper"/>).</summary>
     public RectTransform Stepper(string name, string[] options, int selected, Action<int> set)
     {
-        var row = W.Row(parent, name);
+        var row = W.Row(Parent, name);
         W.Stepper(row, options, selected, i =>
         {
             set(i);
@@ -122,7 +153,8 @@ public sealed class SettingsRows
     /// <summary>A muted line of explanation under the rows above it.</summary>
     public TextMeshProUGUI Note(string text)
     {
-        var label = W.Label(parent, text, 17f, W.Muted);
+        if (hud) return HudMenu.Note(Parent, text);
+        var label = W.Label(root, text, 17f, W.Muted);
         label.textWrappingMode = TextWrappingModes.Normal;
         W.Size(label, height: 28f);
         return label;

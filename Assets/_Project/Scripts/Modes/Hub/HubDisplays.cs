@@ -5,13 +5,15 @@ using UnityEngine.UI;
 
 /// <summary>
 /// The hub's things to read in the world (memo 46): small world-space canvases for the chapter cards, the class
-/// lockers' doors, the gun rack's labels and the boards, in the menus' kit (KitStyle: near-black, white, one pink, the
-/// score font), and the gun rack's guns themselves, copies of the FPSBody guns with nothing but their looks.
+/// lockers' doors, the gun rack's labels and the boards, in the HUD's look (HudTone: rounded black boxes, white, a lit
+/// white box with black words for what is pointed at, the HUD's face), and the gun rack's guns themselves, copies of the FPSBody guns with nothing but their looks.
 /// A canvas is 400 units to the metre (2.5 mm each): a 30-unit word is 7.5 cm tall, readable from a step or two away.
 /// </summary>
 public static class HubDisplays
 {
     public const float PixelsPerMetre = 400f;
+    /// <summary>A board's ground: the HUD's black box, thick enough to read on any wall.</summary>
+    public static readonly Color Back = new Color(0f, 0f, 0f, .8f);
 
     /// <summary>A world canvas <paramref name="metres"/> across on <paramref name="parent"/>. A canvas reads right for a
     /// viewer looking along its forward, so <paramref name="turn"/> points that forward into the wall or table it sits on.</summary>
@@ -30,7 +32,7 @@ public static class HubDisplays
         return rect;
     }
 
-    /// <summary>Words filling <paramref name="parent"/> (or the box given), in the score font.</summary>
+    /// <summary>Words filling <paramref name="parent"/> (or the box given), in the HUD's face.</summary>
     public static TextMeshProUGUI Words(RectTransform parent, string text, float size, Color color, TextAlignmentOptions alignment,
         Vector2? at = null, Vector2? box = null)
     {
@@ -49,8 +51,8 @@ public static class HubDisplays
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
         }
-        var font = GunFeelSettings.Instance != null ? GunFeelSettings.Instance.scoreFont : null;
-        if (font == null && CombatFeedbackSettings.Instance != null) font = CombatFeedbackSettings.Instance.promptFont;
+        var font = HudTone.Font;
+        if (font == null && GunFeelSettings.Instance != null) font = GunFeelSettings.Instance.scoreFont;
         if (font != null) label.font = font;
         label.text = text;
         label.fontSize = size;
@@ -64,12 +66,15 @@ public static class HubDisplays
         return label;
     }
 
-    /// <summary>A flat colour block at <paramref name="at"/> (px from the top left) of <paramref name="size"/>.</summary>
-    public static Image Block(RectTransform parent, string name, Vector2 at, Vector2 size, Color color, bool cut = false)
+    /// <summary>A flat colour block, its corners round when asked, at <paramref name="at"/> (px from the top left) of <paramref name="size"/>.</summary>
+    public static Image Block(RectTransform parent, string name, Vector2 at, Vector2 size, Color color, bool round = false)
     {
         var rect = KitStyle.TopLeft(name, parent, at, size);
-        return cut ? KitStyle.Cut(rect, color) : KitStyle.Fill(rect, color);
+        return round ? HudTone.Rounded(rect, color, 14f) : KitStyle.Fill(rect, color);
     }
+
+    /// <summary>Where a picture is missing.</summary>
+    public static readonly Color NoPicture = new Color(1f, 1f, 1f, .06f);
 
     /// <summary>A picture at <paramref name="at"/> of <paramref name="size"/>; none shows as a dark block.</summary>
     public static RawImage Picture(RectTransform parent, string name, Vector2 at, Vector2 size, Texture texture)
@@ -77,7 +82,7 @@ public static class HubDisplays
         var rect = KitStyle.TopLeft(name, parent, at, size);
         var image = rect.gameObject.AddComponent<RawImage>();
         image.texture = texture;
-        image.color = texture != null ? Color.white : KitStyle.With(KitStyle.Night, .9f);
+        image.color = texture != null ? Color.white : NoPicture;
         image.raycastTarget = false;
         return image;
     }

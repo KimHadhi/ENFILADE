@@ -7,12 +7,11 @@ using UnityEngine.UI;
 using W = SettingsWidgets;
 
 /// <summary>
-/// Builds the Esc menu panel in the menus' kit look (2026-11-09): "설정" tilted at the top left, a slanted plate per
-/// group of settings down the left (the chosen one dark with a thin pink edge and a pink bar, as the lobby's ways to
-/// play), the group's controls at the right, each bound to <see cref="GameSettings.Current"/>, and the buttons along the
-/// bottom ("이 탭 기본값" at the left, 돌아가기 in pink at the right). The tabs grow in together as it opens (one after
-/// another from the top read as slow; user, 2026-11-10). The tabs follow
-/// <see cref="SettingsGroup"/>'s order, so "이 탭 기본값" resets the group of the tab on show.
+/// Builds the Esc menu panel in the HUD's look (HudMenu; the user, 2026-11-22: "설정창도 리디자인해서 시인성, 가독성,
+/// 통일성 좋게"; it was the menus' pink kit): a dark side with the tabs, the chosen one lit white, and leaving at its foot;
+/// at the right the tab's name with "이 탭 기본값", its settings in cards under headings, each bound to
+/// <see cref="GameSettings.Current"/>, and 돌아가기 at the foot. The tabs follow <see cref="SettingsGroup"/>'s order, so
+/// "이 탭 기본값" resets the group of the tab on show.
 /// There is no 캐릭터 tab (user, 2026-11-12: "설정에서 캐릭터 바꾸는 거 이제 없애도 될 듯"): the character, its colours,
 /// clothes and body are chosen in the title screen's wardrobe, and in the hub at the stage's mirror (HubDressing).
 /// SettingsGroup.Character stays as the reset group for those settings.
@@ -25,14 +24,10 @@ public sealed class SettingsMenuView
         "settings.tab.sound", "settings.tab.controls", "settings.tab.screen", "settings.tab.camera", "settings.tab.hud",
         "settings.tab.crosshair",
     };
-    // The panel (px at 1080p), its margins, the tab column and where the page starts.
-    private const float PanelWidth = 1360f, PanelHeight = 860f, Margin = 48f, TabsTop = 132f, TabWidth = 270f, TabHeight = 54f,
-        TabGap = 10f, TabSlant = 14f, PageLeft = Margin + TabWidth + 52f, PageWidth = PanelWidth - PageLeft - Margin,
-        PageHeight = PanelHeight - TabsTop - 112f;
-    private static readonly Color TabClear = KitStyle.With(KitStyle.Ice, .05f), TabDark = KitStyle.With(KitStyle.Night, .92f),
-        TabGrey = KitStyle.With(KitStyle.Ice, .35f);
+    // The panel (px at 1080p), its side, the page beside it.
+    private const float PanelWidth = 1480f, PanelHeight = 900f, SideWidth = 270f, TabsTop = 112f, TabHeight = 52f, TabGap = 6f, SideInset = 16f,
+        PageLeft = SideWidth + 34f, PageWidth = PanelWidth - PageLeft - 30f, PageTop = 112f, PageHeight = PanelHeight - PageTop - 96f;
     // Built when asked rather than held in static fields, so reloaded or translated words show at the next build.
-    private static string[] OffOn => new[] { Texts.Get("settings.off"), Texts.Get("settings.on") };
     private static string[] HoldToggle => new[] { Texts.Get("settings.hold"), Texts.Get("settings.toggle") };
     // In DamageNumberMode's order.
     private static string[] DamageNumberNames => new[]
@@ -64,17 +59,17 @@ public sealed class SettingsMenuView
     };
     private static int tab; // reopening shows the last tab
     private readonly RectTransform root;
-    private const float ButtonWidth = 156f;
     private readonly Action resume, leave, quit;
     private RectTransform panel, page;
-    private readonly List<(Image edge, Image plate, Image bar, TMP_Text label)> tabPlates = new List<(Image, Image, Image, TMP_Text)>();
+    private TextMeshProUGUI pageTitle;
+    private readonly List<HudMenu.Entry> tabs = new List<HudMenu.Entry>();
 
     public SettingsMenuView(Transform canvas, Action resume, Action leave, Action quit)
     {
         this.resume = resume; this.leave = leave; this.quit = quit;
         root = W.Rect("Settings", canvas);
         KitStyle.Stretch(root);
-        W.Fill(root, new Color(0f, 0f, 0f, .62f));
+        W.Fill(root, new Color(0f, 0f, 0f, .8f));
         root.gameObject.SetActive(false);
         // Another monitor offers other resolutions: list them once the window is there.
         DisplaySettings.Moved += () =>
@@ -95,109 +90,74 @@ public sealed class SettingsMenuView
     private void Build()
     {
         if (panel != null) UnityEngine.Object.Destroy(panel.gameObject);
-        tabPlates.Clear();
+        tabs.Clear();
         // A tab remembered from before it went (the 캐릭터 tab) reopens on the first.
         if (tab < 0 || tab >= TabIds.Length) tab = 0;
         panel = W.Rect("Panel", root);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
         panel.sizeDelta = new Vector2(PanelWidth, PanelHeight);
         W.Panel(panel);
-        var reveal = panel.gameObject.AddComponent<KitReveal>();
-        reveal.Hide();
 
-        var title = KitStyle.TopLeft("Title", panel, new Vector2(Margin, 34f), new Vector2(400f, 64f));
-        title.localRotation = Quaternion.Euler(0f, 0f, 3f);
-        KitStyle.Flat(title, Texts.Get("settings.title"), 48f, TextAlignmentOptions.MidlineLeft);
-        var hint = KitStyle.TopLeft("Hint", panel, new Vector2(PanelWidth - Margin - 300f, 44f), new Vector2(300f, 30f));
-        KitStyle.Flat(hint, Texts.Get("settings.hint.close"), 16f, TextAlignmentOptions.MidlineRight, KitStyle.Soft).fontStyle = FontStyles.Normal;
-
-        // All at the same moment, not one after another.
-        const float TabsAt = .05f;
+        // The side: the menu's name, the tabs, leaving at the foot.
+        var side = KitStyle.TopLeft("Side", panel, new Vector2(1f, 1f), new Vector2(SideWidth, PanelHeight - 2f));
+        HudMenu.Box(side, HudMenu.Side, false, 9f);
+        var title = W.Label(KitStyle.TopLeft("Title", side, new Vector2(SideInset + 14f, 30f), new Vector2(SideWidth - 40f, 56f)),
+            Texts.Get("settings.title"), 38f, HudMenu.Text);
+        KitStyle.Stretch(title.rectTransform);
+        title.fontStyle = FontStyles.Bold;
         for (int i = 0; i < TabIds.Length; i++)
         {
-            var plate = Tab(i);
-            var lid = KitStyle.Fill(KitStyle.Stretch("Flash", plate), KitStyle.Flash);
-            KitSkew.On(lid, TabSlant);
-            reveal.Card(plate, lid, TabsAt);
+            int index = i;
+            var rect = KitStyle.TopLeft("Tab " + TabIds[i], side, new Vector2(SideInset, TabsTop + i * (TabHeight + TabGap)),
+                new Vector2(SideWidth - SideInset * 2f, TabHeight));
+            tabs.Add(new HudMenu.Entry(rect, Texts.Get(TabIds[i]), 21f, () => Choose(index)));
         }
-        PaintTabs();
+        float foot = PanelHeight - SideInset - 46f;
+        SideButton(side, foot, "settings.quit", quit);
+        if (!MainMenuScreen.IsOpen) SideButton(side, foot - 52f, "settings.main_menu", leave);
 
-        page = KitStyle.TopLeft("Page", panel, new Vector2(PageLeft, TabsTop), new Vector2(PageWidth, PageHeight));
+        // The page: the tab's name and its defaults over it, 돌아가기 under it.
+        pageTitle = W.Label(KitStyle.TopLeft("Page Title", panel, new Vector2(PageLeft + 6f, 34f), new Vector2(600f, 48f)), "", 32f, HudMenu.Text);
+        KitStyle.Stretch(pageTitle.rectTransform);
+        pageTitle.fontStyle = FontStyles.Bold;
+        var defaults = KitStyle.TopLeft("Defaults", panel, new Vector2(PageLeft + PageWidth - 170f, 36f), new Vector2(170f, 42f));
+        Filled(W.ActionButton(defaults, Texts.Get("settings.defaults"), false, () =>
+        {
+            GameSettings.ResetToDefaults((SettingsGroup)tab);
+            BuildPage();
+        }));
+        KitStyle.Bar("Line", panel, new Vector2(PageLeft, 96f), new Vector2(PageWidth, 1f), HudMenu.Line);
+
+        page = KitStyle.TopLeft("Page", panel, new Vector2(PageLeft, PageTop), new Vector2(PageWidth, PageHeight));
         var pageLayout = page.gameObject.AddComponent<VerticalLayoutGroup>();
-        pageLayout.spacing = 8f;
+        pageLayout.spacing = 10f;
         pageLayout.childControlWidth = pageLayout.childControlHeight = true;
         pageLayout.childForceExpandWidth = true; pageLayout.childForceExpandHeight = false;
         BuildPage();
 
-        // The buttons: this tab's defaults at the left, then leaving, then back to the game in pink.
-        var line = KitStyle.Bar("Line", panel, new Vector2(Margin, PanelHeight - 100f), new Vector2(PanelWidth - Margin * 2f, 1f),
-            KitStyle.With(KitStyle.Ice, .1f));
-        line.raycastTarget = false;
-        var buttons = KitStyle.TopLeft("Buttons", panel, new Vector2(Margin, PanelHeight - 82f), new Vector2(PanelWidth - Margin * 2f, 50f));
-        var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.spacing = 12f;
-        row.childAlignment = TextAnchor.MiddleLeft;
-        row.childControlWidth = row.childControlHeight = true;
-        row.childForceExpandWidth = row.childForceExpandHeight = false;
-        W.Size(W.ActionButton(buttons, Texts.Get("settings.defaults"), false, () => { GameSettings.ResetToDefaults((SettingsGroup)tab); Build(); }),
-            ButtonWidth + 20f, 46f);
-        W.Size(W.Rect("Gap", buttons), flexibleWidth: 1f);
-        if (!MainMenuScreen.IsOpen) W.Size(W.ActionButton(buttons, Texts.Get("settings.main_menu"), false, leave), ButtonWidth, 46f);
-        W.Size(W.ActionButton(buttons, Texts.Get("settings.quit"), false, quit), ButtonWidth, 46f);
-        W.Size(W.ActionButton(buttons, Texts.Get("settings.resume"), true, resume), ButtonWidth + 20f, 46f);
-        reveal.Open();
+        var back = KitStyle.TopLeft("Back", panel, new Vector2(PageLeft + PageWidth - 220f, PanelHeight - 72f), new Vector2(220f, 48f));
+        Filled(W.ActionButton(back, Texts.Get("settings.resume"), true, resume));
+        var hint = W.Label(KitStyle.TopLeft("Hint", panel, new Vector2(PageLeft + 6f, PanelHeight - 72f), new Vector2(400f, 48f)),
+            Texts.Get("settings.hint.close"), 16f, HudMenu.Muted);
+        KitStyle.Stretch(hint.rectTransform);
     }
 
-    // One slanted tab plate down the left; pressing it shows its group.
-    private RectTransform Tab(int index)
-    {
-        string name = Texts.Get(TabIds[index]);
-        var plate = KitStyle.TopLeft("Tab " + name, panel, new Vector2(Margin + (index % 2) * 8f, TabsTop + index * (TabHeight + TabGap)),
-            new Vector2(TabWidth, TabHeight));
-        // The see-through image that takes the tab's clicks leans as its plate does (KitSkew's hit shape, 2026-11-12).
-        var hit = KitStyle.Fill(plate, Color.clear);
-        hit.raycastTarget = true;
-        KitSkew.On(hit, TabSlant);
-        var edgeRect = KitStyle.Stretch("Edge", plate);
-        edgeRect.sizeDelta = new Vector2(2f, 2f);
-        var edge = KitStyle.Fill(edgeRect, Color.clear);
-        KitSkew.On(edge, TabSlant);
-        var fill = KitStyle.Fill(KitStyle.Stretch("Plate", plate), TabClear);
-        KitSkew.On(fill, TabSlant);
-        var bar = KitStyle.Bar("Bar", plate, Vector2.zero, new Vector2(4f, TabHeight), TabGrey);
-        KitSkew.On(bar, TabSlant);
-        var label = KitStyle.Flat(KitStyle.TopLeft("Name", plate, new Vector2(26f, 0f), new Vector2(TabWidth - 40f, TabHeight)), name, 21f,
-            TextAlignmentOptions.MidlineLeft);
-        label.fontStyle = FontStyles.Normal;
-        tabPlates.Add((edge, fill, bar, label));
-        var button = plate.gameObject.AddComponent<Button>();
-        button.transition = Selectable.Transition.None;
-        button.onClick.AddListener(() =>
-        {
-            if (tab == index) return;
-            tab = index;
-            PaintTabs();
-            BuildPage();
-        });
-        plate.gameObject.AddComponent<KitHover>();
-        return plate;
-    }
+    private static void SideButton(RectTransform side, float top, string id, Action clicked)
+        => Filled(W.ActionButton(KitStyle.TopLeft(id, side, new Vector2(SideInset, top), new Vector2(SideWidth - SideInset * 2f, 44f)), Texts.Get(id), false, clicked));
 
-    private void PaintTabs()
+    private static void Filled(Button button) => KitStyle.Stretch((RectTransform)button.transform);
+
+    private void Choose(int index)
     {
-        for (int i = 0; i < tabPlates.Count; i++)
-        {
-            bool on = i == tab;
-            var (edge, plate, bar, label) = tabPlates[i];
-            edge.color = KitStyle.With(KitStyle.Accent, on ? .7f : 0f);
-            plate.color = on ? TabDark : TabClear;
-            bar.color = on ? KitStyle.Accent : TabGrey;
-            label.color = on ? KitStyle.Text : KitStyle.Soft;
-        }
+        if (tab == index) return;
+        tab = index;
+        BuildPage();
     }
 
     private void BuildPage()
     {
+        for (int i = 0; i < tabs.Count; i++) tabs[i].Show(i == tab);
+        pageTitle.text = Texts.Get(TabIds[tab]);
         W.Clear(page);
         var group = (SettingsGroup)tab;
         if (group == SettingsGroup.Crosshair)
@@ -229,6 +189,7 @@ public sealed class SettingsMenuView
     {
         // Every key the game reads, in a window of its own (KeyBindingsView; user, 2026-11-12: "키 설정 창을 아예 따로
         // 만들었으면 좋겠음"). The class, knock and callout keys that had rows here are lines there.
+        rows.Header(Texts.Get("settings.controls.header.keys"));
         var keys = W.Row(rows.Parent, Texts.Get("settings.controls.keys"));
         W.Size(W.ActionButton(keys, Texts.Get("settings.controls.keys_open"), false, () =>
         {
@@ -237,7 +198,8 @@ public sealed class SettingsMenuView
         }), 250f, 40f);
         int moved = KeyBindings.ChangedCount();
         W.Size(W.Label(keys, moved > 0 ? Texts.Format("settings.controls.keys_changed", moved) : Texts.Get("settings.controls.keys_default"), 17f,
-            moved > 0 ? W.Accent : W.Muted), flexibleWidth: 1f);
+            moved > 0 ? HudMenu.Text : HudMenu.Muted), flexibleWidth: 1f);
+        rows.Header(Texts.Get("settings.controls.header.mouse"));
         rows.Slider(Texts.Get("settings.controls.sensitivity"), GameSettings.MinSensitivity, GameSettings.MaxSensitivity, s.mouseSensitivity,
             v => s.mouseSensitivity = v, v => v.ToString("0.00") + "×");
         // The mouse through each magnification the game's scopes have (ScopeLook reads them from GunParts.csv, so a mod's
@@ -246,19 +208,22 @@ public sealed class SettingsMenuView
             rows.Slider(Texts.Format("settings.controls.scope_sensitivity", power.ToString("0.#")), ScopeLook.Least, ScopeLook.Most, ScopeLook.Of(s, power),
                 v => ScopeLook.Set(s, power, v), v => Mathf.RoundToInt(v * 100f) + "%", shownScale: 100f);
         if (ScopeLook.Magnifications.Count > 0) rows.Note(Texts.Get("settings.controls.scope_sensitivity.note"));
-        rows.Choice(Texts.Get("settings.controls.invert_y"), OffOn, s.invertY ? 1 : 0, i => s.invertY = i == 1);
+        rows.Toggle(Texts.Get("settings.controls.invert_y"), s.invertY, on => s.invertY = on);
+        rows.Header(Texts.Get("settings.controls.header.moves"));
         rows.Choice(Texts.Get("settings.controls.crouch"), HoldToggle, s.crouchToggle ? 1 : 0, i => s.crouchToggle = i == 1);
         rows.Choice(Texts.Get("settings.controls.lean"), HoldToggle, s.leanToggle ? 1 : 0, i => s.leanToggle = i == 1);
-        rows.Choice(Texts.Get("settings.controls.auto_reload"), OffOn, s.autoReload ? 1 : 0, i => s.autoReload = i == 1);
+        rows.Toggle(Texts.Get("settings.controls.auto_reload"), s.autoReload, on => s.autoReload = on);
+        rows.Header(Texts.Get("settings.controls.header.callouts"));
         // Callouts (memo 4, G&B's wheel): how the wheel's key says (the key itself is in the key window).
-        rows.Choice(Texts.Get("settings.controls.callout_release"), OffOn, s.calloutOnRelease ? 1 : 0, i => s.calloutOnRelease = i == 1);
-        rows.Choice(Texts.Get("settings.controls.callout_bubbles"), OffOn, s.calloutBubbles ? 1 : 0, i => s.calloutBubbles = i == 1);
-        rows.Choice(Texts.Get("settings.controls.callout_auto"), OffOn, s.calloutAuto ? 1 : 0, i => s.calloutAuto = i == 1);
-        rows.Choice(Texts.Get("settings.controls.callout_feed"), OffOn, s.calloutFeed ? 1 : 0, i => s.calloutFeed = i == 1);
+        rows.Toggle(Texts.Get("settings.controls.callout_release"), s.calloutOnRelease, on => s.calloutOnRelease = on);
+        rows.Toggle(Texts.Get("settings.controls.callout_bubbles"), s.calloutBubbles, on => s.calloutBubbles = on);
+        rows.Toggle(Texts.Get("settings.controls.callout_auto"), s.calloutAuto, on => s.calloutAuto = on);
+        rows.Toggle(Texts.Get("settings.controls.callout_feed"), s.calloutFeed, on => s.calloutFeed = on);
+        rows.Header(Texts.Get("settings.controls.header.party"));
         // Friends' pokes (a held F's fingertip, SkinPoke): off, theirs stop short of this character on every PC.
-        rows.Choice(Texts.Get("settings.controls.let_poke"), OffOn, s.letOthersPoke ? 1 : 0, i => s.letOthersPoke = i == 1);
+        rows.Toggle(Texts.Get("settings.controls.let_poke"), s.letOthersPoke, on => s.letOthersPoke = on);
         // Avatar mods passed round a room (ModShare): off, this PC neither fetches friends' nor offers its own.
-        rows.Choice(Texts.Get("settings.controls.share_mods"), OffOn, s.shareAvatarMods ? 1 : 0, i => s.shareAvatarMods = i == 1);
+        rows.Toggle(Texts.Get("settings.controls.share_mods"), s.shareAvatarMods, on => s.shareAvatarMods = on);
     }
 
     private static void ScreenTab(SettingsRows rows, GameSettings s)
@@ -289,9 +254,9 @@ public sealed class SettingsMenuView
 
         rows.Header(Texts.Get("settings.screen.frame"));
         RectTransform limitRow = null;
-        rows.Choice(Texts.Get("settings.screen.vsync"), OffOn, s.vSync ? 1 : 0, i =>
+        rows.Toggle(Texts.Get("settings.screen.vsync"), s.vSync, on =>
         {
-            s.vSync = i == 1;
+            s.vSync = on;
             limitRow.gameObject.SetActive(!s.vSync); // vSync follows the monitor, so a cap means nothing
         });
         // The presets, or any cap typed in the row's box (0 for none).
@@ -309,7 +274,7 @@ public sealed class SettingsMenuView
         rows.Volume(Texts.Get("settings.screen.shake"), s.screenShake, v => s.screenShake = v);
         // How much of the body's own sway the view follows; the head bends to the view either way (HeadReach).
         rows.Volume(Texts.Get("settings.screen.body_sway"), s.bodySway, v => s.bodySway = v);
-        rows.Choice(Texts.Get("settings.screen.own_head"), OffOn, s.showOwnHead ? 1 : 0, i => s.showOwnHead = i == 1);
+        rows.Toggle(Texts.Get("settings.screen.own_head"), s.showOwnHead, on => s.showOwnHead = on);
     }
 
     // The first option is the monitor's own resolution (saved as 0 x 0), so it stays right on another monitor.
@@ -335,24 +300,23 @@ public sealed class SettingsMenuView
     {
         rows.Header(Texts.Get("settings.camera.rookie_header"));
         var moves = new List<RectTransform>();
-        rows.Choice(Texts.Get("settings.camera.rookie"), OffOn, s.rookieMode ? 1 : 0, i =>
+        rows.Toggle(Texts.Get("settings.camera.rookie"), s.rookieMode, on =>
         {
-            s.rookieMode = i == 1;
+            s.rookieMode = on;
             foreach (var move in moves) move.gameObject.SetActive(s.rookieMode); // the moves only count with it on
         });
         rows.Note(Texts.Get("settings.camera.rookie_note"));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.vault"), OffOn, s.rookieVault ? 1 : 0, i => s.rookieVault = i == 1));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.ladder"), OffOn, s.rookieLadder ? 1 : 0, i => s.rookieLadder = i == 1));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.landing_roll"), OffOn, s.rookieLandingRoll ? 1 : 0,
-            i => s.rookieLandingRoll = i == 1));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.dodge"), OffOn, s.rookieDodge ? 1 : 0, i => s.rookieDodge = i == 1));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.zipline"), OffOn, s.rookieZipline ? 1 : 0, i => s.rookieZipline = i == 1));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.slide"), OffOn, s.rookieSlide ? 1 : 0, i => s.rookieSlide = i == 1));
-        moves.Add(rows.Choice(Texts.Get("settings.camera.rookie.bars"), OffOn, s.rookieBars ? 1 : 0, i => s.rookieBars = i == 1));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.vault"), s.rookieVault, on => s.rookieVault = on));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.ladder"), s.rookieLadder, on => s.rookieLadder = on));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.landing_roll"), s.rookieLandingRoll, on => s.rookieLandingRoll = on));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.dodge"), s.rookieDodge, on => s.rookieDodge = on));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.zipline"), s.rookieZipline, on => s.rookieZipline = on));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.slide"), s.rookieSlide, on => s.rookieSlide = on));
+        moves.Add(rows.Toggle(Texts.Get("settings.camera.rookie.bars"), s.rookieBars, on => s.rookieBars = on));
         foreach (var move in moves) move.gameObject.SetActive(s.rookieMode);
 
         rows.Header(Texts.Get("settings.camera.cinematic_header"));
-        rows.Choice(Texts.Get("settings.camera.execution"), OffOn, s.executionCinematic ? 1 : 0, i => s.executionCinematic = i == 1);
+        rows.Toggle(Texts.Get("settings.camera.execution"), s.executionCinematic, on => s.executionCinematic = on);
         rows.Note(Texts.Get("settings.camera.execution_note"));
     }
 
@@ -366,8 +330,8 @@ public sealed class SettingsMenuView
             v => SettingsRows.Percent(Mathf.Round(v * 20f) / 20f), shownScale: 100f);
         rows.Slider(Texts.Get("settings.hud.angle"), 0f, GameSettings.MaxHudAngle, s.hudAngle, v => s.hudAngle = Mathf.Round(v),
             v => Mathf.RoundToInt(v) + "°");
-        rows.Choice(Texts.Get("settings.hud.follow_lean"), OffOn, s.hudFollowsLean ? 1 : 0, i => s.hudFollowsLean = i == 1);
-        rows.Choice(Texts.Get("settings.hud.boards"), OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
+        rows.Toggle(Texts.Get("settings.hud.follow_lean"), s.hudFollowsLean, on => s.hudFollowsLean = on);
+        rows.Toggle(Texts.Get("settings.hud.boards"), s.hudBoards, on => s.hudBoards = on);
         rows.Choice(Texts.Get("settings.hud.damage_numbers"), DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
         rows.Choice(Texts.Get("settings.hud.weapon_slots"), WeaponSlotLookNames, (int)s.weaponSlots, i => s.weaponSlots = (WeaponSlotLook)i);
         rows.Choice(Texts.Get("settings.hud.objective_alert"), ObjectiveAlertNames, (int)s.objectiveAlert, i => s.objectiveAlert = (ObjectiveAlertLook)i);

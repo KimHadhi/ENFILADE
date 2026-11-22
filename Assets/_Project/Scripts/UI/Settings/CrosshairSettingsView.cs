@@ -26,7 +26,6 @@ public sealed class CrosshairSettingsView
     private static string[] SquareOrCircle => new[] { Texts.Get("crosshair.dot.square"), Texts.Get("crosshair.dot.circle") };
     private static string[] BarOrSprite => new[] { Texts.Get("crosshair.lines.bar"), Texts.Get("crosshair.lines.sprite") };
     private static string[] SolidOrRainbow => new[] { Texts.Get("crosshair.color.solid"), Texts.Get("crosshair.color.rainbow") };
-    private static string[] OffOn => new[] { Texts.Get("settings.off"), Texts.Get("settings.on") };
     private static string[] FixedOrSpread => new[] { Texts.Get("crosshair.spread.fixed"), Texts.Get("crosshair.spread.follows") };
     private static readonly Color[] Swatches =
     {
@@ -135,14 +134,14 @@ public sealed class CrosshairSettingsView
                     Pixels, wholeNumbers: true);
                 rows.Slider(Texts.Get("crosshair.lines.gap"), 0f, CrosshairSettings.MaxGap, s.gap, v => s.gap = v, Pixels, wholeNumbers: true);
                 // CS2's T style; the angle went to the turning section to keep this one at six rows.
-                rows.Choice(Texts.Get("crosshair.lines.t"), OffOn, s.tStyle ? 1 : 0, i => s.tStyle = i == 1);
+                rows.Toggle(Texts.Get("crosshair.lines.t"), s.tStyle, on => s.tStyle = on);
                 break;
             case 3:
                 Colour(rows, s);
                 break;
             case 4:
                 rows.Slider(Texts.Get("crosshair.lines.angle"), 0f, CrosshairSettings.MaxAngle, s.angle, v => s.angle = Step(v), v => Step(v) + "°");
-                rows.Choice(Texts.Get("crosshair.spin"), OffOn, s.spinning ? 1 : 0, i => { s.spinning = i == 1; BuildSection(); });
+                rows.Toggle(Texts.Get("crosshair.spin"), s.spinning, on => { s.spinning = on; BuildSection(); });
                 if (s.spinning)
                     rows.Slider(Texts.Get("crosshair.spin.speed"), CrosshairSettings.MinSpin, CrosshairSettings.MaxSpin, s.spin, v => s.spin = Step(v),
                         v => Step(v) + "°");

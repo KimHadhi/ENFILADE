@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
-/// The perk card pick (stage 6C, the user's rules on 2026-11-09). When the ultimate gauge is full a "능력 준비 [X]"
-/// prompt glows at the bottom. X opens the show:
+/// The perk card pick (stage 6C, the user's rules on 2026-11-09). When the ultimate gauge is full the HUD's
+/// class UI shows "[X] 능력 준비" beside the class's key (Ready; PlayerHud.Class). X opens the show:
 /// <list type="bullet">
 /// <item>the screen darkens, a pink slash band tears across it and "능력 선택" slams in;</item>
 /// <item>three big cards are dealt face down from below one after another, each landing with a ring burst and a jolt,
@@ -98,6 +98,12 @@ public sealed partial class PerkCardScreen : MonoBehaviour
         public float Age, Life, From, To;
     }
 
+    /// <summary>What a full gauge is ready for.</summary>
+    public enum ReadyFor { Nothing, Cards, Ultimate }
+
+    /// <summary>The gauge is full and X may be pressed now: for the cards, or, every card taken, for the class's ultimate.</summary>
+    public static ReadyFor Ready { get; private set; }
+
     private static PerkCardScreen instance;
     private static int closedFrame = -1;
 
@@ -109,12 +115,10 @@ public sealed partial class PerkCardScreen : MonoBehaviour
     private PlayerDamageReceiver receiver;
     private SinglePlayerChatManager chat;
     private GameObject host;
-    private RectTransform layer, stage, fx, prompt, band, title, tray, landing;
-    private CanvasGroup layerGroup, promptGroup, titleGroup, landingGroup;
-    private Image veil, promptBar, bandImage;
-    private TMP_Text costLabel, emptyLabel, promptLabel, promptKey, practiceLabel;
-    // What the ready prompt says now: the cards, or, every card taken, the class's ultimate.
-    private bool promptCards = true;
+    private RectTransform layer, stage, fx, band, title, tray, landing;
+    private CanvasGroup layerGroup, titleGroup, landingGroup;
+    private Image veil, bandImage;
+    private TMP_Text costLabel, emptyLabel, practiceLabel;
     private readonly List<Card> cards = new List<Card>();
     private readonly List<Fleck> flecks = new List<Fleck>();
     private readonly List<Burst> bursts = new List<Burst>();
@@ -132,6 +136,7 @@ public sealed partial class PerkCardScreen : MonoBehaviour
     {
         instance = null;
         closedFrame = -1;
+        Ready = ReadyFor.Nothing;
     }
 
     private void Awake()
@@ -158,7 +163,9 @@ public sealed partial class PerkCardScreen : MonoBehaviour
         PlayerPerks.Changed -= OnPerksChanged;
         if (open) Release();
         if (host != null) Destroy(host);
-        if (instance == this) instance = null;
+        if (instance != this) return;
+        instance = null;
+        Ready = ReadyFor.Nothing;
     }
 
     // ---- The health perk ----
