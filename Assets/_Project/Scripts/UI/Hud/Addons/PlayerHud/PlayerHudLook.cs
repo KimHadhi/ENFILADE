@@ -70,7 +70,6 @@ namespace HudAddons
             public float armorDrop = .03f;
             public Vector2 hazards = new Vector2(.805f, 1.775f);
             public Vector2 ammo = new Vector2(1.75f, 1.8f);
-            public Vector2 selector = new Vector2(1f, 1f);
             public Vector2 history = new Vector2(1.45f, 1.5f);
             public Vector2 sense = new Vector2(1f, 1f);
         }
@@ -249,13 +248,26 @@ namespace HudAddons
             public float rise = .3f, fall = .33f, hold = .3f;
         }
 
-        /// <summary>cl_selector.lua's boxes, drawn for our weapon slots (WeaponSlotsHUD's showing and fading).</summary>
+        /// <summary>
+        /// Our weapon slots where and how WeaponSlotsHUD's default look (A, "조각 판", WeaponSlots.csv Plates) laid them,
+        /// each drawn with cl_selector.lua's box, colours, texts and ammo picture.
+        /// </summary>
         [Serializable]
         public sealed class SlotsRow
         {
-            public float width = 450f, height = 150f, gap = 20f;
-            /// <summary>A box dims by its distance from the selected one: 1 - distance / ScrW() x this.</summary>
-            public float falloff = 1.5f;
+            /// <summary>A slot's box (px at 1080p, times the scale option); the one in hand grows to the held size.</summary>
+            public float width = 240f, height = 60f, widthHeld = 240f, heightHeld = 80f;
+            /// <summary>Between two slots, top to bottom.</summary>
+            public float gap = 14f;
+            /// <summary>Where the stack hangs: its right end this far in from the screen's right edge, its middle this far
+            /// below the screen's middle (GameHUD's WeaponSlotsHUD: Right Panel's right side + 840, 14 up).</summary>
+            public float right = 70f, middle = -14f;
+            /// <summary>Each slot's box stands this far further left (px, - is left), slots 1-4.</summary>
+            public float[] shift = { 0f, -10f, -3f, -14f };
+            /// <summary>The slot taken in hand kicks this far left and back past its place (to +3) in kickSeconds.</summary>
+            public float kick = 14f, kickSeconds = .16f;
+            /// <summary>The slot in hand grows on a spring that gets there in about this long, a little past and back.</summary>
+            public float grow = .14f;
             public float follow = 10f;
             public float heldAlpha = 200f, idleAlpha = 50f;
             public float low = .3f;

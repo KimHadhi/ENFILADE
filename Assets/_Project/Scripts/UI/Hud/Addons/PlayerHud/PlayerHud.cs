@@ -91,6 +91,7 @@ namespace HudAddons
             if (instance != this) return;
             instance = null;
             Unbind();
+            HudRoom.Free(this);
             fx?.Destroy();
             if (top != null) Destroy(top.gameObject);
         }
@@ -110,6 +111,7 @@ namespace HudAddons
             if (!show)
             {
                 HoldShake();
+                HudRoom.Free(this);
                 // Health that came back while nothing showed is no heal to flare when the HUD shows again.
                 lastHealth = float.NaN;
                 return;
