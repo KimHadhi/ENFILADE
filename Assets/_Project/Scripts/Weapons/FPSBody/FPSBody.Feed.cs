@@ -32,7 +32,7 @@ public sealed partial class FPSBody
         // Q/E: FPSAF's roll tips the top to the left for a positive angle, as our view's roll does.
         float share = movement != null && movement.Abilities != null ? movement.Abilities.Lean.Share : 0f;
         // As far as the lean bends this body's spine (PlayerBody.LeanGunRoll), as FPSAF's Look shares it down for this gun; the
-        // legs and the pelvis do theirs under it (BodyLean.MoveHips). Until 0.9.341 the spine alone went the whole peek.
+        // hips and the pelvis do theirs under it (BodyLean.MoveHips). Until 0.9.341 the spine alone went the whole peek.
         float roll = held != null && body != null ? share * body.LeanGunRoll(held.LeanChain) : 0f;
         input.SetValue(FPSANames.LeanInput, -roll);
         float sign = Mathf.Abs(share) > .05f ? Mathf.Sign(share) : 0f;

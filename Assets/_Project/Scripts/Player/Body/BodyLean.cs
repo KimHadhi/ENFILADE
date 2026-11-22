@@ -3,17 +3,19 @@ using UnityEngine;
 
 /// <summary>
 /// The Q/E lean of the visible body: one lean, whatever is in the hands and whether the sights are up (the user, 2026-11-22:
-/// "주먹이든 줌이든 기울이기 하나로 통일하자", "왜 25cm가 고정으로 가야 돼? 그리고 걍 자연스럽게 하면 안 돼?"). The weight goes
-/// over onto that foot, the legs leaning from the planted feet (MoveHips), the pelvis tips after them and the spine bends on
-/// from it, a few degrees each, and the eyes go as far as that carries them on this body. The camera stays on them, and
-/// what has to know how far they go (the wall a lean stops at, the leaning hitboxes) reads it off the body (Reach, Carry).
+/// "주먹이든 줌이든 기울이기 하나로 통일하자", "걍 자연스럽게 하면 안 돼?"). The weight goes over onto that foot, the hips a
+/// little over it and the legs leaning from the planted feet (MoveHips), the pelvis tips after them, and the spine bends on
+/// from it as far as brings the eyes over: 5 and 15 cm on every body ("골반 가는 거리 5cm", "눈 거리도 15cm로 깔끔하게"), about
+/// ten degrees of spine on Ichigo, a little more or less on a longer or shorter trunk (BendSpine). How far the head comes
+/// down is what that bend brings, nothing holds it up. The camera stays on the eyes and the leaning hitboxes go with them
+/// (Carry).
 /// The head tilts only as far as the view rolls (Ability.leanAngle, BodyGaze.FaceHead), the neck taking back the difference.
 /// At the hip with a gun FPS Animation Framework has the upper body, so its Look bends the spine the same angle (GunRoll)
 /// and the head and the gun go with the chest as one piece. FPSAF tips the spine in the animation pass, before SpineLook
 /// keeps the clip's head, so PlayerBody.FollowHead leaves that part out (ClipHeadOffset); followed, it walked the body back
 /// under the camera's pivot and the lean came undone ("오른쪽으로 기울였는데 왼쪽으로 다시 움직여", 2026-11-08).
-/// Until 0.9.343 the eyes had to go a set distance (0.35 m, then 0.25), and how a body got them there was a lean of its own
-/// for nothing in hand, the fists, a gun at the hip (its spine alone, 38 degrees on Ichigo) and one down the sights.
+/// Until 0.9.343 the eyes went 0.25 m (0.35 before), and how a body got them there was a lean of its own for nothing in hand,
+/// the fists, a gun at the hip (its spine alone, 38 degrees on Ichigo) and one down the sights.
 /// Every other PC's copy leans from the player's pose the same way.
 ///
 /// A plain class PlayerBody owns (stage 3 of the body restructure, 2026-11-09): everything it reads from the body comes in
@@ -24,13 +26,15 @@ internal sealed class BodyLean
 {
     // Under this share of a full lean the body counts as upright, and where the eyes sit sideways then is learnt.
     private const float LeanAtRest = .02f;
+    // The most the spine bends for it, whatever the body (degrees).
+    private const float MostSpine = 25f;
 
     private PlayerMovement player;
     private PlayerLeanHitboxes hitboxes;
     private SpineLook spineLook;
     private Transform root, model, head, leftUpperArm, rightUpperArm;
     private Vector3 eyeLocal;
-    private float legs = 3f, pelvis = 4f, spine = 11f, blendTime = .15f;
+    private float hipsOver = .05f, eyesOver = .15f, pelvis = 4f, spine = 10f, blendTime = .15f;
     // How far nothing is in the hands now (HangArm).
     private float handsFree = 1f;
     private float eyesSideAtRest, clipHeadSideAtRest;
@@ -68,13 +72,13 @@ internal sealed class BodyLean
         this.rightUpperArm = rightUpperArm;
     }
 
-    /// <summary>At a full lean, how far the legs lean over onto the foot, the pelvis tips and the spine bends on from it
+    /// <summary>At a full lean, how far the hips go over onto the foot and the eyes sideways (m), how far the pelvis tips
     /// (degrees), and the body's blend time (s).</summary>
-    internal void Tune(float legs, float pelvis, float spine, float blendTime)
+    internal void Tune(float hipsOver, float eyesOver, float pelvis, float blendTime)
     {
-        this.legs = legs;
+        this.hipsOver = hipsOver;
+        this.eyesOver = eyesOver;
         this.pelvis = pelvis;
-        this.spine = spine;
         this.blendTime = blendTime;
     }
 
@@ -113,8 +117,7 @@ internal sealed class BodyLean
     internal Vector3 MoveHips(Transform hips, float bendWeight, bool dead, Transform leftThigh, Transform rightThigh)
     {
         if (hips == null || head == null || root == null || dead) return Vector3.zero;
-        float height = Vector3.Dot(hips.position - root.position, root.up), over = height * Mathf.Sin(legs * Mathf.Deg2Rad);
-        if (!Leaning(false)) MeasureReach(height, over);
+        if (!Leaning(false)) BendSpine(Vector3.Dot(hips.position - root.position, root.up));
         float share = RawShare * bendWeight;
         if (Mathf.Abs(share) < .001f) return Vector3.zero;
         // The pelvis tips a little the way of the lean (the user, 2026-11-18, asked whether to: "그 편이 더 자연스럽다면
@@ -130,24 +133,24 @@ internal sealed class BodyLean
             if (leftThigh != null) leftThigh.rotation = left;
             if (rightThigh != null) rightThigh.rotation = right;
         }
-        Vector3 moved = root.right * (share * over);
+        Vector3 moved = root.right * (share * hipsOver);
         hips.position += moved;
         return moved;
     }
 
-    // How far a full lean takes this body's eyes sideways as it stands now (m): the hips over the foot, and each joint's turn
-    // by how far the eyes are above it. The movement asks it for the wall a lean stops at (MovementLean).
-    private void MeasureReach(float hipsHeight, float over)
+    // How far the spine bends at a full lean on this body as it stands now: what the hips' way over and the pelvis's tip leave of
+    // the eyes' way, each spine bone turning its equal share of it (SpineLook) under eyes that far above it.
+    private void BendSpine(float hipsHeight)
     {
         if (player == null || player.Abilities == null || spineLook == null) return;
         Vector3 up = root.up;
-        float eyes = Vector3.Dot(head.TransformPoint(eyeLocal) - root.position, up);
-        float reach = over + (eyes - hipsHeight) * Mathf.Sin(pelvis * Mathf.Deg2Rad);
+        float eyes = Vector3.Dot(head.TransformPoint(eyeLocal) - root.position, up), above = 0f;
         var bones = spineLook.Spine;
-        float each = Mathf.Sin(spine / Mathf.Max(1, bones.Count) * Mathf.Deg2Rad);
         foreach (var bone in bones)
-            if (bone != null) reach += (eyes - Vector3.Dot(bone.position - root.position, up)) * each;
-        player.Abilities.Lean.Reach = Mathf.Max(.02f, reach);
+            if (bone != null) above += eyes - Vector3.Dot(bone.position - root.position, up);
+        float left = eyesOver - hipsOver - (eyes - hipsHeight) * Mathf.Sin(pelvis * Mathf.Deg2Rad);
+        spine = above > .05f ? Mathf.Min(Mathf.Asin(Mathf.Clamp01(left / above)) * Mathf.Rad2Deg * bones.Count, MostSpine) : 0f;
+        player.Abilities.Lean.Reach = Mathf.Max(.02f, eyesOver);
     }
 
     /// <summary>

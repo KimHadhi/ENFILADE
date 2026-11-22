@@ -8,14 +8,13 @@ using UnityEngine;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    [SerializeField, Range(0f, 15f), Tooltip("Q/E at a full lean, whatever is in the hands: how far the legs lean over onto that foot from "
-        + "where the feet stand (degrees); the hips go over with them.")]
-    private float leanLegs = 3f;
-    [SerializeField, Range(0f, 15f), Tooltip("The same: how far the pelvis tips (degrees).")]
+    [SerializeField, Min(0f), Tooltip("Q/E at a full lean, whatever is in the hands and whatever the body: how far the hips go over onto that "
+        + "foot (m); the feet stay where they stood.")]
+    private float leanHips = .05f;
+    [SerializeField, Min(0f), Tooltip("The same: how far the eyes go sideways (m). The spine bends as far as the hips and the pelvis leave of it.")]
+    private float leanEyes = .15f;
+    [SerializeField, Range(0f, 15f), Tooltip("The same: how far the pelvis tips (degrees); the spine's bend goes on from it.")]
     private float leanPelvis = 4f;
-    [SerializeField, Range(0f, 40f), Tooltip("The same: how far the spine bends sideways on from the pelvis (degrees). The eyes go as far "
-        + "as the three carry them.")]
-    private float leanSpine = 11f;
 
     private readonly BodyLean bodyLean = new BodyLean();
 
@@ -23,5 +22,5 @@ public sealed partial class PlayerBody
     /// <paramref name="chain"/> shares it (BodyLean.GunRoll). FPSBody tips it by that.</summary>
     internal float LeanGunRoll(IReadOnlyList<(Transform bone, float share)> chain) => bodyLean.GunRoll(chain);
 
-    private void TuneLean() => bodyLean.Tune(leanLegs, leanPelvis, leanSpine, blendTime);
+    private void TuneLean() => bodyLean.Tune(leanHips, leanEyes, leanPelvis, blendTime);
 }
