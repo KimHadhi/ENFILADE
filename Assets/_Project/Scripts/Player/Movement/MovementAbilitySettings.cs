@@ -34,7 +34,7 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float dodgeCooldown = 0.55f;
     [Tooltip("스텝 닷지 실패 시 다음 회피까지의 시간. 회피 성공 시 공통 쿨타임이 즉시 초기화됩니다.")]
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
-    [Range(0f, 30f)] public float leanAngle = 18f;
+    [Range(0f, 30f)] public float leanAngle = 15f;
     [Min(1f)] public float leanSharpness = 10f;
 
     [Header("Step / Vault / Mantle")]

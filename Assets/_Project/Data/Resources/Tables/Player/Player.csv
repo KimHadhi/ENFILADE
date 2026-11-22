@@ -300,7 +300,7 @@ Ability.stepDodgeRecognitionPadding,0.12,스텝 회피 판정 때 몸 반경에 
 Ability.microInvulnerability,0.08,Q/E 직후 공격을 회피로 인정하는 시간(초)
 Ability.dodgeCooldown,0.55,회피 공통 재사용 대기(초). 회피에 성공하면 바로 초기화
 Ability.stepDodgeCooldown,1.25,스텝 회피에 실패한 뒤 다음 회피까지(초)
-Ability.leanAngle,12,Q/E 기울이기 화면 기울기(도). 머리도 이만큼 기운다. 몸이 기우는 만큼 화면도 기울게 10에서 18로 올렸다가(친구 피드백 C10) 필요 이상으로 기운다는 말에 3분의 2로 줄임(2026-11-11)
+Ability.leanAngle,15,"Q/E 기울이기 화면 기울기(도). 머리도 이만큼 기운다(가슴은 약 18°라 목이 3° 되돌린다). 10에서 18로 올렸다가(친구 피드백 C10) 필요 이상으로 기운다는 말에 12로 줄였고(2026-11-11), 0.9.348에 15(사용자 11-22: ""화면 15도가 되게 자연스럽게"")"
 Ability.leanSharpness,10,기울이기 반응 빠르기
 # 능력: 턱·볼트·맨틀,,
 Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)

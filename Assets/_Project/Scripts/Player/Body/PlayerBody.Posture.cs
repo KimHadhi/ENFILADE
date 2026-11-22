@@ -9,8 +9,11 @@ using MovementState = PlayerMovement.MovementState;
 /// poses blended into each other in a straight line. The clip follows the posture rather than its own clock: the eye and
 /// the capsule ease toward the new stance at Posture.transitionSharpness (nine tenths in about a sixth of a second) while
 /// the clip's body takes 0.4 s, and the camera rides the head, so on its own clock the view would lag the key. Its moment
-/// is where its body centre has come as far of its way as the posture has (Tables/Player/GaitMoves.csv kind posture,
-/// baked by ClipBench). Standing still only: moving, the walk's crouched cycles take the body down and up.
+/// is where its body centre has come as far of its way as the eyes have (Tables/Player/GaitMoves.csv kind posture, baked by
+/// ClipBench; MovementPostureController.CrouchShare), so turned back half way down, the getting up begins half way up. Until
+/// 0.9.348 it went by the time since the stance changed, and the other clip began at its far end: crouching and standing
+/// over and over, the chest jumped down and up (the user, 2026-11-22: "가슴이 내려가다가 갑자기 위로 텔포돼서 올라가다가 아래로
+/// 텔포돼서"). Standing still only: moving, the walk's crouched cycles take the body down and up.
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -57,13 +60,13 @@ public sealed partial class PlayerBody
         postureClip = clip;
     }
 
-    // From ChoosePose, standing or crouched on the ground: the clip at the posture's share of its way. False once it is
+    // From ChoosePose, standing or crouched on the ground: the clip at the eyes' share of its way. False once it is
     // there, or the body moves off (the stance's own moves take over, blended).
     private bool FollowPosture()
     {
         if (postureClip == null) return false;
         var channel = Find(postureClip);
-        float share = 1f - Mathf.Exp(-Mathf.Max(.1f, player.transitionSharpness) * stateTime);
+        float down = player.Posture.CrouchShare, share = postureClip == crouchDown ? down : 1f - down;
         if (channel == null || channel.Synced || channel.Length <= 0f || share >= PostureThere || HorizontalSpeed() > StillTravel
             || !postureWays.TryGetValue(postureClip, out var way))
         {
