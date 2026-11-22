@@ -24,7 +24,7 @@ public sealed class TeamHealthPanel : MonoBehaviour
     [Tooltip("Left edge of the cards from the screen's left (px at 1080p).")]
     [SerializeField] private float left = 74f;
     [Tooltip("Bottom of the lowest card from the screen's bottom (px at 1080p), just above the player's own portrait panel " +
-        "(HudAddons.PlayerHud.Portrait, up to 317 px).")]
+        "(HudAddons.PlayerHud.Portrait, up to 304 px).")]
     [SerializeField] private float bottom = 330f;
     [Tooltip("How much further back the lowest card leans than the plane it sits on (°). Positive sends the right side away.")]
     [SerializeField] private float yaw = 8f;

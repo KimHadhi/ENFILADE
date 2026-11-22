@@ -27,8 +27,8 @@ namespace HudAddons
         private readonly Dictionary<string, (float value, int stacks, string words)> effectWords = new Dictionary<string, (float, int, string)>();
         private static readonly string[] tenths = new string[1000];
         private PlayerTally tally;
-        // The portrait panel this frame (DrawPortrait): its right edge, its top, the rank row's foot, the health bar's right end.
-        private float panelRight, panelTop, panelRowFoot, healthRight;
+        // The portrait panel this frame (DrawPortrait): its right edge, its foot, the health bar's right end.
+        private float panelRight, panelFoot, healthRight;
 
         /// <summary>The colour the class UI and the magazine point with: the player's own, unless the options give one.</summary>
         private Color32 Accent(PlayerHudOptions o)
@@ -60,9 +60,9 @@ namespace HudAddons
             float x0, rowTop, barW;
             if (portrait)
             {
-                // On the rank row's foot, so a larger class UI grows up and never onto the health bar.
+                // On the panel's foot, so a larger class UI grows up and never onto the health bar.
                 x0 = panelRight + c.portraitGap * u;
-                rowTop = panelRowFoot - box;
+                rowTop = panelFoot - box;
                 barW = Mathf.Max(40f * u, healthRight - frame - (x0 + box + gap));
             }
             else

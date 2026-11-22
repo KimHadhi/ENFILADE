@@ -261,12 +261,12 @@ namespace HudAddons
             public float size = 196f;
             /// <summary>The ultimate's bar left of the picture, its outer width.</summary>
             public float magazine = 32f;
-            /// <summary>Between the ultimate and the picture, the picture and the rank row, the rank box and its bar.</summary>
+            /// <summary>Between the ultimate and the picture's box, the rank's emblem and its bar.</summary>
             public float gap = 10f;
-            /// <summary>Between the rank row's foot and the health bar's frame.</summary>
+            /// <summary>Between the box's foot and the health bar's frame.</summary>
             public float rise = 10f;
-            /// <summary>The rank's box, as the stims box (55), and the room round its emblem (a share of the box).</summary>
-            public float insignia = 55f, emblemInset = .12f;
+            /// <summary>The rank in the picture's box: how much of the box under the picture is its, and its emblem's side.</summary>
+            public float strip = 50f, emblem = 40f;
             /// <summary>The rank bar's thickness (the health bar's 10 and a half: 9 px on 1080p).</summary>
             public float rankHeight = 12f;
             /// <summary>With no picture chosen, the name's first letter: its cell this share of the picture.</summary>
@@ -281,7 +281,7 @@ namespace HudAddons
             public Color game = new Color32(255, 233, 85, 255);
             public Color kept = new Color32(255, 233, 85, 110);
             /// <summary>A kill's "+N XP" over the bar: how long it floats and how far it rises.</summary>
-            public float gainSeconds = .9f, gainRise = 10f;
+            public float gainSeconds = .9f, gainRise = 3f;
         }
 
         /// <summary>

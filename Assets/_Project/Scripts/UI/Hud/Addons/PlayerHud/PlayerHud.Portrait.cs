@@ -10,9 +10,11 @@ namespace HudAddons
     // - the profile picture in a framed box (the name's first letter when none is chosen), drawn over the special effects
     //   with faint scanlines of its own, so the photo reads (the rest of the HUD keeps the addon's);
     // - left of it the ultimate as the old HUD's magazine (PlayerHud.Magazine);
-    // - under it the rank: the insignia in the stims box (how many this game climbs at its corner) beside a bar to the next
-    //   insignia in the score popup's yellow: white what was held when the game began, yellow this game's kills, faint
-    //   yellow the share of the money held, with a kill's "+N XP" rising off it.
+    // - under the picture, in the same box, the rank: its white emblem (how many this game climbs at its corner) and a bar to
+    //   the next one in the score popup's yellow: white what was held when the game began, yellow this game's kills, faint
+    //   yellow the share of the money held, with a kill's "+N XP" rising off it. One box for the two (health bar draft B,
+    //   the user, 11-22: "너무 겹쳐 있어서 섹션 구분이 안 되는 게 문제였어"): the rank stood as a row of its own between the
+    //   picture and the health bar, three bars one under the other.
     // Replaces HudPortrait, UltimateMagazine and RankStrip (the old portrait tile on the left board).
     public sealed partial class PlayerHud
     {
@@ -34,25 +36,24 @@ namespace HudAddons
             var p = look.Portrait;
             var s = look.Status;
             var o = Options;
-            float frame = s.frame * scale, gap = p.gap * scale, side = p.size * scale, box = p.insignia * scale;
+            float frame = s.frame * scale, side = p.size * scale, strip = p.strip * scale;
             // The health bar's frame, wherever its options put it: the panel stands on its left end.
             float barX = sw * look.Place.health.x + swayX + o.healthX, barY = sh * look.Place.health.y - swayY + o.healthY;
             float left = barX - s.width * scale * .5f - frame;
-            float rowTop = barY - s.healthHeight * scale * .5f - frame - p.rise * scale - box;
-            float tall = side + frame * 2f, top = rowTop - gap - tall;
-            float magazine = p.magazine * scale, pictureLeft = left + magazine + gap;
+            float foot = barY - s.healthHeight * scale * .5f - frame - p.rise * scale;
+            float wide = side + frame * 2f, tall = frame + side + strip, top = foot - tall;
+            float magazine = p.magazine * scale, pictureLeft = left + magazine + p.gap * scale;
             // Where the class UI stands when it goes beside the portrait (PlayerHud.Class).
-            panelRight = pictureLeft + tall;
-            panelTop = top;
-            panelRowFoot = rowTop + box;
+            panelRight = pictureLeft + wide;
+            panelFoot = foot;
             healthRight = barX + s.width * scale * .5f + frame;
 
             magazineAccent = Accent(o);
             DrawMagazine(left, top, magazine, tall);
-            painter.RoundedBox(look.Hud.corner, pictureLeft, top, tall, tall, ownBox);
+            painter.RoundedBox(look.Hud.corner, pictureLeft, top, wide, tall, ownBox);
             pictureRect = new Rect(pictureLeft + frame, top + frame, side, side);
             if (ProfilePicture.Current == null) DrawInitial();
-            DrawRank(left, rowTop, box, pictureLeft + tall, frame, gap, p);
+            DrawRank(pictureLeft + frame, pictureLeft + wide - frame, foot - strip * .5f, p);
         }
 
         // No picture chosen: the name's first letter, as every profile square shows it.
@@ -98,7 +99,8 @@ namespace HudAddons
             return scanlines;
         }
 
-        private void DrawRank(float left, float top, float box, float right, float frame, float gap, PlayerHudLook.PortraitRow p)
+        // The rank in the box's lower part: between these two sides, round this middle.
+        private void DrawRank(float left, float right, float middle, PlayerHudLook.PortraitRow p)
         {
             var view = RankProgress.Now();
             float kills = view.Earned > 0 ? Mathf.Lerp(view.StoredShare, view.Share, view.Kills / (float)view.Earned) : view.StoredShare;
@@ -120,24 +122,21 @@ namespace HudAddons
                 climbText = climbShown > 0 ? "+" + Digits.Of(climbShown) : string.Empty;
             }
 
-            // The stims box with the rank's plain white emblem for its picture (the coloured insignia on its dark hexagon
-            // stood out alone: the user, 11-22), whole (the addon's 150 alpha made it hard to read).
-            painter.RoundedBox(look.Hud.corner, left, top, box, box, ownBox);
+            // The rank's plain white emblem (the coloured insignia on its dark hexagon stood out alone: the user, 11-22).
+            float size = p.emblem * scale;
             var emblem = ClassGrowth.Emblem(view.Rank);
             if (emblem != null)
             {
-                float inset = box * p.emblemInset;
                 painter.DrawColor = White;
                 painter.Picture = emblem;
-                painter.TexturedRect(left + inset, top + inset, box - inset * 2f, box - inset * 2f);
+                painter.TexturedRect(left, middle - size * .5f, size, size);
             }
-            if (climbText.Length > 0) BoxText(climbText, altsFont, left + box * .5f, top + box * .5f, box, box, p.game, TextAlign.Right, TextAlign.Top);
+            if (climbText.Length > 0) BoxText(climbText, altsFont, left + size * .5f, middle, size, size, p.game, TextAlign.Right, TextAlign.Top);
 
-            // BL_Rect beside it, the frame's outer edge reaching the picture box's right side.
-            float barLeft = left + box + gap + frame, barWidth = right - frame - barLeft, barHeight = p.rankHeight * scale;
-            float barTop = top + (box - barHeight) * .5f;
+            // BL_Rect's bar beside it, in the one box.
+            float barLeft = left + size + p.gap * scale, barWidth = right - look.Status.frame * scale - barLeft, barHeight = p.rankHeight * scale;
+            float barTop = middle - barHeight * .5f;
             if (barWidth <= 0f) return;
-            painter.RoundedBox(look.Hud.corner, barLeft - frame, barTop - frame, barWidth + frame * 2f, barHeight + frame * 2f, ownBox);
             rankBar.Step(view.Share, now, look.Bar);
             heldShown = Smooth.Lerp(look.Bar.follow, heldShown, view.StoredShare);
             killsShown = Smooth.Lerp(look.Bar.follow, killsShown, kills);
@@ -148,7 +147,8 @@ namespace HudAddons
             Fill(barLeft, barTop, barWidth * Mathf.Min(total, Mathf.Clamp01(killsShown)), barHeight, p.game);
             Fill(barLeft, barTop, barWidth * Mathf.Min(total, Mathf.Clamp01(heldShown)), barHeight, p.held);
 
-            // A kill's growth rises off where this game's part ends; kills close together add up in one.
+            // A kill's growth rises off where this game's part ends, in the room over the bar (the picture is drawn over the
+            // HUD, so nothing may stand on it); kills close together add up in one.
             if (killsSeen >= 0 && view.Playing && view.Kills > killsSeen)
             {
                 gainAmount = gainAge < .4f ? gainAmount + (view.Kills - killsSeen) : view.Kills - killsSeen;
@@ -160,7 +160,7 @@ namespace HudAddons
             gainAge += dt;
             float k = Mathf.Clamp01(gainAge / Mathf.Max(.05f, p.gainSeconds));
             painter.AlphaScale = 1f - k * k;
-            painter.OutlinedText(gainText, altsFont, barLeft + barWidth * Mathf.Clamp01(killsShown), barTop - frame - p.gainRise * scale * k,
+            painter.OutlinedText(gainText, altsFont, barLeft + barWidth * Mathf.Clamp01(killsShown), barTop - p.gainRise * scale * k,
                 p.game, TextAlign.Center, TextAlign.Bottom, outlineWidth, outline);
             painter.AlphaScale = 1f;
         }
