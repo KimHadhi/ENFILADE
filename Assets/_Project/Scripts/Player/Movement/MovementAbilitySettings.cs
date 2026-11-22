@@ -26,8 +26,8 @@ public sealed class MovementAbilitySettings
     [Range(0f, 30f)] public float leanAngle = 15f;
     [Tooltip("How gently a lean goes over (s, a smoothing time): it sets off and turns back smoothly, and goes no faster than one side in this long.")]
     [Min(.01f)] public float leanTime = .12f;
-    [Tooltip("The crouch key pressed or let go again within this long (s) is not taken until it is left alone that long (CrouchKey).")]
-    [Min(0f)] public float crouchAgain = .25f;
+    [Tooltip("A lean once begun goes on until it is this near where it goes (1 all the way) before the key turns it.")]
+    [Range(0f, 1f)] public float leanGoes = .8f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;

@@ -285,35 +285,36 @@ public sealed partial class PlayerBody
         bool sprinting = SprintingNow();
         gunRuns = !crouched && gun != null && sprinting;
         gunRunsFrame = Time.frameCount;
-        asking.Clear();
-        wanting.Clear();
-        float legs = heading, turn = 0f;
-        MoveSet stance;
-        if (crouched)
-        {
-            stance = crouchSet;
-            if (gun != null) { Ask(gun.CrouchAim, aim); Ask(gun.Crouch, 1f); }
-        }
-        else
-        {
-            stance = plainSet;
-            // The gun's run goes ahead only: at a slant ahead the hips turn to the way it runs and the run plays, the spine
-            // turning the chest back to the view (SpineLook). The user, 2026-11-22: "WA, WD까진 허용할 수 있도록 한다.
-            // 자연스럽게".
-            if (gunRuns) turn = Mathf.Clamp(heading, -GunRunSlant, GunRunSlant);
-            legs = Mathf.DeltaAngle(0f, heading - turn);
-            if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
-        }
-        // The gait's own cycles play (MovementGait.Position), fitted to the speed by the stride (Pace), never a gait faster
-        // than the speed reached yet; crouched, the crouched walk. Until 0.9.282 the cycles were picked by speed alone,
-        // against what their feet carry on this body: our bodies' feet carry 20-35% less than the clips' own travel, so each
-        // gait played half of the next one's clip (the jog half the run, the run a quarter of the sprint), and the run and
-        // the sprint looked alike (the user, 2026-11-21: "달리기랑 전력 질주랑 걍 모션 똑같은 거 같은데").
+        // The gun's run goes ahead only: at a slant ahead the hips turn to the way it runs and the run plays, the spine turning
+        // the chest back to the view (SpineLook). The user, 2026-11-22: "WA, WD까진 허용할 수 있도록 한다. 자연스럽게".
+        float turn = gunRuns ? Mathf.Clamp(heading, -GunRunSlant, GunRunSlant) : 0f;
+        float legs = Mathf.DeltaAngle(0f, heading - turn), moving = 0f;
         var gaitNow = player.Actions != null ? player.Actions.Gait : null;
-        // Aimed, they walk.
-        gaitPlace = crouched || gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, heading)) * (1f - aim);
-        float moving = MixSets(stance, legs, speed, scale);
-        if (!crouched) Bank();
+        // Down into a crouch or up out of it on the move, the two stances share the legs as far as the body is down
+        // (PlayerBody.Posture).
+        if (postureDown < 1f)
+        {
+            asking.Clear();
+            wanting.Clear();
+            if (gun != null) { Ask(gun.Aim, aim); Ask(gun.Hip, 1f); }
+            // The gait's own cycles play (MovementGait.Position), fitted to the speed by the stride (Pace), never a gait faster
+            // than the speed reached yet; aimed, they walk. Until 0.9.282 the cycles were picked by speed alone, against what
+            // their feet carry on this body: our bodies' feet carry 20-35% less than the clips' own travel, so each gait played
+            // half of the next one's clip (the jog half the run, the run a quarter of the sprint), and the run and the sprint
+            // looked alike (the user, 2026-11-21: "달리기랑 전력 질주랑 걍 모션 똑같은 거 같은데").
+            gaitPlace = gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, heading)) * (1f - aim);
+            moving += MixSets(plainSet, legs, speed, scale, 1f - postureDown);
+            Bank();
+        }
+        if (postureDown > 0f)
+        {
+            asking.Clear();
+            wanting.Clear();
+            if (gun != null) { Ask(gun.CrouchAim, aim); Ask(gun.Crouch, 1f); }
+            // Crouched, the crouched walk.
+            gaitPlace = 0f;
+            moving += MixSets(crouchSet, legs, speed, scale, postureDown);
+        }
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
         TurnOnTheSpot(speed < StillTravel, dt);
         if (!crouched && !legsPlanted) targetYaw = turn;
@@ -339,10 +340,10 @@ public sealed partial class PlayerBody
     // Shares the legs among the sets asking for them, first asked first: each takes what it wants of what is left, as far
     // as its cycles can carry this travel (Carries); the stance's own set has the rest. Before 0.9.240 a gun's set was its
     // aim cycles alone, taken only while aiming (or by Body.gunHipMoves), and a set missing any of four ways fell back
-    // whole to the plain one. How much of the body moves rather than stands comes back.
-    private float MixSets(MoveSet stance, float heading, float speed, float scale)
+    // whole to the plain one. How much of the body moves rather than stands comes back, of the part of it they have.
+    private float MixSets(MoveSet stance, float heading, float speed, float scale, float part)
     {
-        float left = 1f, moving = 0f;
+        float left = part, moving = 0f;
         for (int i = 0; i < asking.Count && left > 1e-4f; i++)
         {
             float share = left * Mathf.Clamp01(wanting[i]) * (speed < StillTravel ? 1f : Carries(asking[i], heading, gaitPlace));

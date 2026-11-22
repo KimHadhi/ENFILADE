@@ -295,7 +295,7 @@ Ability.dodgeCooldown,0.55,회피 공통 재사용 대기(초). 회피에 성공
 Ability.stepDodgeCooldown,1.25,스텝 회피에 실패한 뒤 다음 회피까지(초)
 Ability.leanAngle,15,"Q/E 기울이기 화면 기울기(도). 머리도 이만큼 기운다(가슴은 약 18°라 목이 3° 되돌린다). 10에서 18로 올렸다가(친구 피드백 C10) 필요 이상으로 기운다는 말에 12로 줄였고(2026-11-11), 0.9.348에 15(사용자 11-22: ""화면 15도가 되게 자연스럽게"")"
 Ability.leanTime,0.12,"Q/E 기울이기의 부드러움(초). 레식처럼 부드럽게 출발하고 멈추며, 도중에 바꾸면 그 자리에서 반대쪽으로 곧장 넘어간다(0.9.356, 사용자 11-23: ""기울이기는 최신 레식처럼""). 0.12면 한쪽까지 0.23초, 반대쪽까지 0.30초(90%). 크게 하면 더 부드럽고 느리다"
-Ability.crouchAgain,0.25,"앉기 키를 이보다 빨리(초) 다시 누르거나 떼면 받지 않고, 이만큼 손을 멈추면 그때 키가 말하는 대로 한다(0.9.356, 사용자 11-23: ""앉기는 최신 카스처럼"", ""너무 빨리 다시 누른 입력은 받지 않습니다""). 한 번 시작한 앉기·일어서기는 끝까지 간다(CrouchKey)"
+Ability.leanGoes,0.8,"한번 시작한 기울이기가 키를 다시 받기까지 가는 정도(1이면 끝까지). 빠르게 반복해도 이만큼은 갔다가 부드럽게 돌아와 반대편으로 간다(0.9.357, 사용자 11-23: ""한번 기울이거나 앉기 시작했으면 좀 진행하도록""). 앉기·일어서기는 끝까지 간다"
 # 능력: 턱·볼트·맨틀,,
 Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
 Ability.proneStepHeight,0.05,엎드리거나 누워서 넘는 턱 높이(m)
@@ -460,8 +460,8 @@ Ability.propShoveImpulse,60,V 밀치기가 물리 프랍에 주는 운동량(N·
 Ability.propBodyMass,70,슬라이드·다이브·돌진 밀치기로 프랍에 부딪힐 때의 몸무게(kg)
 Body.idle,Idle,몸 애니메이션 이름 (Art/Animations의 클립). 맨몸으로 서 있기(BIPER Female Runner). 걷기·달리기 클립은 BodyMoves.csv의 plain 줄. 예전 mx_idle
 Body.crouchIdle,CrouchIdle,웅크려 서 있기(BIPER Female Runner). 웅크린 걸음은 BodyMoves.csv의 crouch 줄. 예전 crouchstill
-Body.crouchDown,IdleToCrouch,"서 있다가 웅크릴 때(가만히 서서만): 무릎을 굽혀 내려가는 동작. 클립의 원래 빠르기(내려가는 데 0.38초)로 틀고, 도중에 일어서면 지금 높이에서 Body.standUp이 이어진다. 움직이며 앉고 일어설 때는 웅크린 걸음과 0.3초에 섞는다. 0.9.349 전에는 눈높이(Posture.transitionSharpness)를 따라 0.05초에 절반이 내려갔다(사용자 11-22: ""걍 한번에 확 내려가고""). BIPER Female Runner, 0.9.285"
-Body.standUp,CrouchToIdle,"웅크렸다 일어설 때(가만히 서서만). Body.crouchDown과 같이 원래 빠르기(0.49초)로. BIPER Female Runner, 0.9.285"
+Body.crouchDown,IdleToCrouch,"서 있다가 웅크릴 때: 무릎을 굽혀 내려가는 동작. 클립의 원래 빠르기(내려가는 데 0.38초)로 틀고 한번 시작하면 끝까지 간다. 움직이며 앉고 일어설 때도 같은 빠르기로, 서서 걷는 걸음과 웅크린 걸음이 몸이 내려온 만큼 나눠 튼다(0.9.357. 전에는 0.3초에 섞었는데 옆·대각선에서는 0.1초에 끝났다). 0.9.349 전에는 눈높이(Posture.transitionSharpness)를 따라 0.05초에 절반이 내려갔다(사용자 11-22: ""걍 한번에 확 내려가고""). BIPER Female Runner, 0.9.285"
+Body.standUp,CrouchToIdle,"웅크렸다 일어설 때. Body.crouchDown과 같이 원래 빠르기(0.49초)로. BIPER Female Runner, 0.9.285"
 Body.jump,jumpstill,"점프: 제자리·걷기·조깅·전력질주·옆 모두 이 하나(Beatrun jumpstill, 제 시계로). 사용자 11-22: ""점프 모션 항상 제자리 점프할 때 나오는 모션으로"". 0.9.333까지는 속도별로 jumpstill·jumpslow·jumpfast, 0.9.262~0.9.289에는 BIPER Female Runner 점프(팔을 너무 크게 휘둘러 뺐다)"
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하

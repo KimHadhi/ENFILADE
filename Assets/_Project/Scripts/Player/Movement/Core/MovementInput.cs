@@ -111,8 +111,8 @@ public sealed class MovementInput
         bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
             || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning
             || ctx.CurrentState == PlayerMovement.MovementState.StepDodge || onLadder
-            // Pressed while the body is still getting up, it stays until it is taken (CrouchKey).
-            || ctx.CurrentState == PlayerMovement.MovementState.Standing && ctx.Actions.CrouchKey.Wants;
+            // Pressed while the body is still getting up, it stays until the body may go down again.
+            || ctx.CurrentState == PlayerMovement.MovementState.Standing && ctx.Actions.CrouchWaits;
         if (!settings.crouchToggle || !crouchState || sprintPressed || InputFocus.Pressed(jumpAction))
             crouchLatched = false;
         if (settings.crouchToggle && InputFocus.Pressed(crouchAction)) crouchLatched = !crouchLatched;

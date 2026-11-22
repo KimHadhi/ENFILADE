@@ -799,8 +799,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             case MovementState.Standing:
             case MovementState.Crouching:
-                // Standing still down into a crouch or up out of it, the posture's clip (PlayerBody.Posture).
-                if (onGround) { if (!FollowPosture(dt)) Locomotion(state == MovementState.Crouching, dt); }
+                bool crouched = state == MovementState.Crouching;
+                // Down into a crouch or up out of it: standing still its clip (PlayerBody.Posture).
+                TickPosture(crouched, dt);
+                if (onGround) { if (!ShowPosture(crouched)) Locomotion(crouched, dt); }
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;
@@ -873,8 +875,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void Enter(MovementState from, MovementState to, bool onGround)
     {
         if (from == MovementState.Mantle && player.Abilities.Traversal.Obstacle.ExitLadder != null) climbedOffLadderAt = Time.time;
-        if (onGround) StartPosture(from, to);
-        else postureClip = null;
+        // A step off a bump in this very frame is still the ground.
+        StartPosture(from, to, onGround || grounded);
         if (onGround && (to == MovementState.Standing || to == MovementState.Crouching || to == MovementState.Proning
             || to == MovementState.Supine))
         {

@@ -13,7 +13,11 @@ public sealed class MovementLean
     // it is and goes straight over to the other side, no faster from side to side than from upright. Until 0.9.356 it set off at
     // its fastest in one frame, 3.9 m/s of head from side to side, some 24 g, and the hair was thrown about; now 1.6 m/s and 4 g,
     // one side in as long as it was (90 % in 0.23 s) and the other in 0.30 s.
+    // Once begun it goes on most of the way to its side (toward) before the key turns it (Ability.leanGoes), so keys tapped over
+    // and over lean it over and back smoothly, where they shook it 3 cm fourteen times a second (the user, 2026-11-23: "한번
+    // 기울이거나 앉기 시작했으면 좀 진행하도록 ... 부드럽고 자연스럽게 다시 복귀해서 돌아오고 반대편으로 갈 수 있게").
     private float lean, held, heldPace;
+    private int toward;
     private float slipTime = -1f, slipStart;
     private int slipSide, slipActivation;
     public float Roll => -lean * ctx.AbilitySettings.leanAngle;
@@ -50,8 +54,10 @@ public sealed class MovementLean
                 ctx.AbilitySettings.microInvulnerability, ctx.AbilitySettings.dodgeCooldown);
         // Fresh defensive input replaces the slip instead of stacking two directions.
         if (!allowed || slipActivation != ctx.Abilities.Dodge.Activation) slipTime = -1f;
-        float time = ctx.AbilitySettings.leanTime;
-        held = Mathf.SmoothDamp(held, CollisionLimitedLean(side), ref heldPace, time, 1f / time, dt);
+        float time = ctx.AbilitySettings.leanTime, target = CollisionLimitedLean(toward);
+        if (side != toward && (!allowed || Mathf.Abs(held - target) <= 1f - ctx.AbilitySettings.leanGoes))
+            target = CollisionLimitedLean(toward = side);
+        held = Mathf.SmoothDamp(held, target, ref heldPace, time, 1f / time, dt);
         if (slipTime >= 0f) AdvanceSlip();
         else lean = held;
     }
@@ -91,5 +97,5 @@ public sealed class MovementLean
             target *= Mathf.Clamp01((hit.distance - .03f) / Mathf.Max(.01f, Reach));
         return target;
     }
-    internal void Reset() { Share = slipStart = 0f; slipTime = -1f; slipSide = slipActivation = 0; }
+    internal void Reset() { Share = slipStart = 0f; slipTime = -1f; toward = slipSide = slipActivation = 0; }
 }
