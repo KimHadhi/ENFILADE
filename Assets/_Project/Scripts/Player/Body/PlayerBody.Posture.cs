@@ -2,15 +2,15 @@ using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// Down into a crouch and up out of it standing still, on BIPER Female Runner's own clips (IdleToCrouch, CrouchToIdle;
-/// 0.9.285, the user: "Female Runner first", the pack's clips not yet in the game). Until then the two stances' still
-/// poses blended into each other in a straight line. Each clip plays at its own pace, 0.4 s down and 0.5 s up, from the
-/// moment its body sets off, and turned back half way the
-/// other goes on from the height the body is at: how far of its way down it is (postureDown) is the clips' common measure,
-/// so neither begins at its far end. Until 0.9.348 they followed the eyes' ease (Posture.transitionSharpness), so the view
-/// would not lag the key: half the way in 0.05 s, 21 % of it in the first frame, the chest dropped and shot up in one go
-/// (the user, 2026-11-22: "원래 애니메이션 속도 이렇게 빨라? 가슴이 앉을 때 자연스럽게 내려가는 게 아니라 걍 한번에 확 내려가고").
-/// Standing still only: moving, the walk's crouched cycles take the body down and up, over about as long (MovingPosture).
+/// Down into a crouch and up out of it, on BIPER Female Runner's own clips (IdleToCrouch, CrouchToIdle; 0.9.285). One measure
+/// says how far down the body is (postureDown), and the clip of the way it goes takes it there at its own pace, 0.4 s down and
+/// 0.5 s up, from the height it is at (ClipMotion). Standing still the clip shows; moving, the two stances' cycles share the
+/// legs by the same measure (Locomotion).
+/// Turned back on the way, the body does not turn in a frame: the clip's pace goes over to the other way's through a stand,
+/// in Ability.turnTime. Until 0.9.353 the other clip took over at once at its full pace: crouching and standing over and over
+/// the hips went from 2.6 m/s down to as much up in a frame, some 25 g, and the hair and chest were thrown about (the user,
+/// 2026-11-23: "캐릭터가 너무 순식간에 움직여서 물리가 ... 텔포되고", "한 프레임만에 서로 바뀌지 않게 하는 게 더 나을 것
+/// 같은데"). Until 0.9.348 the clips followed the eyes' ease, half the way in 0.05 s (2026-11-22: "걍 한번에 확 내려가고").
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -18,61 +18,62 @@ public sealed partial class PlayerBody
     private string crouchDown = "IdleToCrouch", standUp = "CrouchToIdle";
 
     // Its body sets off this far off where it begins and is there this near where it ends (share of its way).
-    private const float SetsOff = .02f;
-    // The posture clip under way, or null, and how far down the body is (0 standing, 1 crouched).
-    private string postureClip;
-    private float postureDown;
-    // Moving, the stances' cycles cross over this slowly (s), about as long as the clips take.
-    private const float MovingPosture = .3f;
+    private const float SetsOff = .005f;
+    // Down or up in this long where the body has no clip for it (s).
+    private const float PlainPosture = .4f;
+    // How far down the body is (0 standing, 1 crouched); which way it goes and how much of that way's clip's pace it has (1 down,
+    // -1 up, 0 at rest); the clip's moment; and whether it is on its way.
+    private float postureDown, postureWay, postureMoment;
+    private bool posturing;
 
-    // From Enter, on the ground: a body standing still going down or getting up takes its clip, from the height it is at; one
-    // moving, the cycles.
-    private void StartPosture(MovementState from, MovementState to)
+    // From Enter: the stance changed. Turned back on the way, the same body goes on (TickPosture).
+    private void StartPosture(MovementState from, MovementState to, bool onGround)
     {
-        bool turnsBack = postureClip != null;
-        postureClip = null;
-        string clip = from == MovementState.Standing && to == MovementState.Crouching ? crouchDown
-            : from == MovementState.Crouching && to == MovementState.Standing ? standUp : null;
-        if (clip == null) return;
-        if (HorizontalSpeed() > StillTravel || MotionOf(clip) == null || Find(clip) == null)
-        {
-            SlowBlend(MovingPosture);
-            return;
-        }
-        if (!turnsBack) postureDown = from == MovementState.Standing ? 0f : 1f;
-        Restart(Find(clip));
-        postureClip = clip;
+        bool goes = onGround && (from == MovementState.Standing && to == MovementState.Crouching
+            || from == MovementState.Crouching && to == MovementState.Standing);
+        if (goes && posturing) return;
+        posturing = goes;
+        postureWay = 0f;
+        if (goes) postureDown = from == MovementState.Standing ? 0f : 1f;
     }
 
-    // From ChoosePose, standing or crouched on the ground: the clip a step on from where the body is in it. False once it is
-    // there, or the body moves off (the stance's own moves take over, blended).
-    private bool FollowPosture(float dt)
+    // From ChoosePose, standing or crouched on the ground: how far down the body is now.
+    private void TickPosture(bool crouched, float dt)
     {
-        if (postureClip == null) return false;
-        var channel = Find(postureClip);
-        bool goesDown = postureClip == crouchDown;
-        var motion = MotionOf(postureClip);
-        if (channel == null || channel.Synced || motion == null)
+        if (!posturing)
         {
-            postureClip = null;
-            return false;
+            postureDown = crouched ? 1f : 0f;
+            return;
         }
-        if (HorizontalSpeed() > StillTravel)
+        postureWay = Mathf.MoveTowards(postureWay, crouched ? 1f : -1f, 2f * dt / Mathf.Max(.01f, player.AbilitySettings.turnTime));
+        bool down = postureWay >= 0f, there;
+        var motion = MotionOf(down ? crouchDown : standUp);
+        if (motion != null)
         {
-            postureClip = null;
-            SlowBlend(MovingPosture);
-            return false;
+            postureMoment = motion.MomentAt(Mathf.Clamp(1f - postureDown, SetsOff, 1f - SetsOff)) + Mathf.Abs(postureWay) * dt;
+            postureDown = 1f - Mathf.Clamp01(motion.HeightAt(postureMoment));
+            there = postureMoment >= motion.MomentAt(down ? SetsOff : 1f - SetsOff);
         }
-        // How high the body is (0 crouched, 1 standing) is both clips' common measure.
-        float moment = motion.MomentAt(Mathf.Clamp(1f - postureDown, SetsOff, 1f - SetsOff)) + dt;
-        if (moment >= motion.MomentAt(goesDown ? SetsOff : 1f - SetsOff))
+        else
         {
-            postureDown = goesDown ? 1f : 0f;
-            postureClip = null;
-            return false;
+            postureDown = Mathf.Clamp01(postureDown + postureWay * dt / PlainPosture);
+            there = down ? postureDown >= 1f : postureDown <= 0f;
         }
-        postureDown = 1f - Mathf.Clamp01(motion.HeightAt(moment));
-        Drive(postureClip, moment / motion.Length);
+        if (!there || down != crouched) return;
+        postureDown = crouched ? 1f : 0f;
+        posturing = false;
+    }
+
+    // Standing still on its way, the clip itself at the moment the body is at. False once it is there or moves off: the stances'
+    // own sets take over, by the same measure.
+    private bool ShowPosture()
+    {
+        if (!posturing || HorizontalSpeed() > StillTravel) return false;
+        string clip = postureWay >= 0f ? crouchDown : standUp;
+        var channel = Find(clip);
+        var motion = MotionOf(clip);
+        if (channel == null || channel.Synced || motion == null) return false;
+        Drive(clip, postureMoment / motion.Length);
         return true;
     }
 }

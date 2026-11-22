@@ -25,6 +25,8 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
     [Range(0f, 30f)] public float leanAngle = 15f;
     [Min(1f)] public float leanSharpness = 10f;
+    [Tooltip("A lean from one side to the other and a crouch to a stand (and back) turn over this long (s), not in a frame.")]
+    [Min(.01f)] public float turnTime = .2f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;
