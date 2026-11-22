@@ -477,7 +477,9 @@ Body.land,Land_3h,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊
 Body.landMid,Land_2h,"서서 가볍게 착지하되 Body.landMidHeight 이상에서 떨어졌을 때: 점프 착지(Land_1h)보다 깊게 무릎으로 받는다(엉덩이가 발 위 0.40m까지). 세게 착지(Ability.hardLandingHeight 3.5m)는 Body.land. BIPER Female Runner, 0.9.285"
 Body.landMidHeight,2,이 높이(m) 이상에서 떨어진 가벼운 착지는 Body.landMid·landRunMid. 제자리 점프(1.3m)보다 높고 세게 착지(3.5m)보다 낮게. 착지 속도로 판단해 모든 PC에서 같다
 Body.slideStart,SlideToRun_Enter,슬라이딩 시작. BIPER Female Runner. 0.9.262 전에는 slidestart
-Body.slide,SlideToRun_10m,"슬라이딩 중: SlideToRun_10m의 가운데(0.70~1.93초, 엉덩이가 바닥 가까이 머무는 동안)를 고리로(BiperRunner.clips.csv from 21 to 58). 0.9.285 전에는 SlideToRun_Loop(멈춘 한 자세)였다(사용자 11-21: 고리 대신 살아 있는 중간). 1.23초보다 길게 미끄러지면 처음으로 돌아가 이어진다. BIPER Female Runner. 0.9.262 전에는 slideloop"
+Body.slide,SlideToRun_10m,"슬라이딩 중: SlideToRun_10m의 가운데(0.70~1.93초, 엉덩이가 바닥 가까이 머무는 동안. BiperRunner.clips.csv from 21 to 58)를 슬라이딩 시작(Body.slideStart)이 끝난 자리에서 처음부터 튼다. 오래 미끄러지면 Body.slideSway만큼 가운데를 오간다(0.9.337. 그 전에는 제 시계로 돌던 고리라 아무 데서나 시작했고, 끝에서 처음으로 튀었다). 0.9.285 전에는 SlideToRun_Loop(멈춘 한 자세)였다(사용자 11-21: 고리 대신 살아 있는 중간). BIPER Female Runner. 0.9.262 전에는 slideloop"
+Body.slideSway,0.71;0.26,"슬라이딩 클립이 여기(초)까지 간 뒤에는 앞뒤로 이만큼(초)씩 오간다: 0.45~0.97초, 엉덩이가 가장 낮고 자세가 천천히 바뀌는 동안(클립 검사대 track). 처음으로 되돌아가지 않으니 튀지 않는다. 평지 슬라이딩은 약 0.8초까지만 간다"
+Body.slideEndTime,0.25,"슬라이딩 자세에서 끝 동작(Body.slideEnd)으로 바뀌는 시간(초). 끝날 때의 자세(엉덩이 17°, 가슴 26°)와 끝 동작의 시작(50°, 59°)이 달라서, 보통 빠르기(0.15초)면 몸이 한 번 비틀렸다 돌아온다. 0.9.337"
 Body.slideEnd,SlideToRun_Exit,슬라이딩 끝: 일어나 달려 나간다. BIPER Female Runner. 0.9.262 전에는 slideend
 Body.slideCrouchTime,0.3,슬라이딩이 웅크리기로 끝날 때 슬라이딩 자세에서 웅크린 자세로 바뀌는 시간(초). 그리로 가는 클립이 없어 두 자세 사이를 천천히 섞는다. 0.9.266 전에는 일어나 달려 나가는 Body.slideEnd를 틀어 섰다가 앉았다
 Body.slideEndUp,0.4,"슬라이딩이 제자리에서 멈춰 서면 끝 동작(Body.slideEnd: 일어나 달려 나가기)을 여기까지만 튼다(초): 땅을 짚고 일어나 앞을 보는 데까지, 첫 달리는 걸음(0.47초) 전. ClipBench track으로 잼(엉덩이 0.24→0.67m, 몸이 앞을 봄). 달리며 끝나면 끝까지 달려 나간다. 0.9.271 전에는 멈춰 서도 끝까지 틀어 제자리에서 달렸다"

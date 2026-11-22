@@ -6,7 +6,8 @@ using MovementState = PlayerMovement.MovementState;
 /// body moves (LedgeHold): still, the holds are a shoulder width apart (Hands.ledgeHandSpacing); going along the ledge they
 /// go hand over hand (Ability.ledgeHand*). The leading hand lets go and reaches on as the body starts to move, taking hold
 /// ledgeHandLead ahead of its place, where the body will be as it lands; the body goes on under the hands, and the other
-/// hand follows once it is left ledgeHandLag behind, only while the first holds again, so one hand always holds. A hand on
+/// hand follows once it is left ledgeHandLag behind, only while the first holds again, so one hand always holds, and it
+/// takes hold a shoulder width from the first, never nearer. A hand on
 /// its way lifts over the top (ledgeHandLift) with its fingers open. Stopped for ledgeHandSettle, a hand left apart comes
 /// back to its place. A hold is only ever taken where a palm can rest: a top within a hand's height of the edge's, with
 /// room over it, so at the ledge's end, a gap or an inside corner the hand holds the furthest such place short of it
@@ -215,8 +216,13 @@ public sealed partial class PlayerBodyHands
         else if (ledgeStill >= settings.ledgeHandSettle)
         {
             // Stopped: the hand furthest from its place comes back to it.
+            // Where the other stands in its way, that one goes first.
             int far = Mathf.Abs(Off(0)) >= Mathf.Abs(Off(1)) ? 0 : 1;
-            if (Mathf.Abs(Off(far)) > SettleSlack) result = MoveHold(far, Off(far), 0f);
+            for (int i = 0; i < 2 && result == 0; i++)
+            {
+                int hand = i == 0 ? far : 1 - far;
+                if (Mathf.Abs(Off(hand)) > SettleSlack) result = MoveHold(hand, Off(hand), 0f);
+            }
         }
         if (result < 0) ledgeRetry = RetryTime;
 
@@ -229,12 +235,20 @@ public sealed partial class PlayerBodyHands
         {
             float off = Off(hand);
             if (off * way > -lag) return 0;
-            return MoveHold(hand, off, way * (settings.ledgeHandLead + Mathf.Abs(ledgeSpeed) * stepTime));
+            // The pace of a step along the ledge, which every one goes at from its start (LedgeHangState.Step): the speed read off
+            // the body is still rising as the first hand reaches, and it took hold short.
+            float pace = settings.ledgeShimmyStep / Mathf.Max(.01f, settings.ledgeShimmyStepTime);
+            return MoveHold(hand, off, way * (settings.ledgeHandLead + pace * stepTime));
         }
 
         // From off to as near to as has a top, looking back from it, if that gets the hand at least LeastMove.
         int MoveHold(int hand, float off, float to)
         {
+            // Never nearer the other hand than a shoulder width. Both reached as far ahead of their places, so the one that
+            // followed landed beside the first or on it: at the 0.74 m/s of Beatrun's step (0.9.301) the body had come up under
+            // the first by then (the user, 2026-11-22: "ledge hanging 후 왼쪽 오른쪽 이동할 때 손이 겹친다").
+            float other = Off(1 - hand);
+            to = hand == 0 ? Mathf.Min(to, other) : Mathf.Max(to, other);
             if (Mathf.Abs(to - off) < LeastMove) return 0;
             float direction = Mathf.Sign(to - off);
             var arm = hand == 0 ? left : right;

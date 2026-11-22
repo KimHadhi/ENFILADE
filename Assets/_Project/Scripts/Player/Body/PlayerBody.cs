@@ -32,6 +32,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
         + "No pack has a clip for it; the slide's getting up (slideEnd) stood the body up first.")]
     private float slideCrouchTime = .3f;
+    [SerializeField, Tooltip("A slide that goes on past this moment of its clip (s) sways between that much before and after it: "
+        + "the clip's middle to and fro, so it never jumps back to its start.")]
+    private Vector2 slideSway = new Vector2(.71f, .26f);
+    [SerializeField, Min(.01f), Tooltip("Out of a slide into its getting up (slideEnd) the poses cross over this slowly (s): the "
+        + "slide lies another way round by then than the clip begins.")]
+    private float slideEndTime = .25f;
     [SerializeField, Min(0f), Tooltip("A slide that stops on the spot plays its end (slideEnd, which gets up and runs on) only this "
         + "far: up off the ground and facing ahead, before its first running step (s).")]
     private float slideEndUp = .4f;
@@ -786,7 +792,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;
-            case MovementState.Sliding: Sequence(slideStart, slide); FaceSlide(); break;
+            case MovementState.Sliding: SlidePose(); FaceSlide(); break;
             case MovementState.SupineSliding:
                 if (slidesOnBack) Sequence(supineLand, supine);
                 else Sequence(supineSlideStart, supineSlide);
@@ -867,6 +873,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // a slide that stopped ran in place before standing (the user, 2026-11-21).
             if (exit != null && exit == slideEnd)
             {
+                SlowBlend(slideEndTime);
                 if (HorizontalSpeed() > walkClipSpeed) transitionRuns = true;
                 else transitionLeft = Mathf.Min(transitionLeft, slideEndUp + blendTime);
             }

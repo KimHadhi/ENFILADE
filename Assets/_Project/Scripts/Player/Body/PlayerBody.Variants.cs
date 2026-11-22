@@ -302,6 +302,22 @@ public sealed partial class PlayerBody
         turning = 0;
     }
 
+    // The slide: down into it, then the slide's clip from its start, where the entry leaves off (hips 58-61 degrees round,
+    // chest 64-66), on to its middle and swaying about there for as long as it lasts (slideSway). Until 0.9.336 the clip went
+    // round as a loop on a clock of its own, never begun with the slide: it took over anywhere in itself, and its end jumped
+    // back to its start, 34 degrees of hips and 45 of chest, about once a slide (the user, 2026-11-22: "슬라이딩 중에 모션 한번
+    // 버벅이고").
+    private void SlidePose()
+    {
+        var entry = Find(slideStart);
+        float time = entry != null ? stateTime - (entry.Length - blendTime) : stateTime;
+        if (time < 0f) { Want(slideStart); return; }
+        float centre = slideSway.x, sway = slideSway.y;
+        // At the clip's own pace up to the middle and through it, so nothing starts or stops there.
+        if (time > centre) time = sway > 0f ? centre + sway * Mathf.Sin((time - centre) / sway) : centre;
+        Drive(slide, time / Mathf.Max(.05f, Find(slide)?.Length ?? 1f));
+    }
+
     private string SlideEndFor(MovementState from, MovementState to)
     {
         // A slide that came down from a dive on the back is lying already: it stays down, or gets up as from lying.
