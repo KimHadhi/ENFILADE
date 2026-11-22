@@ -5,8 +5,9 @@ using UnityEngine;
 /// The Q/E lean of the visible body: one lean, whatever is in the hands and whether the sights are up (the user, 2026-11-22:
 /// "주먹이든 줌이든 기울이기 하나로 통일하자", "걍 자연스럽게 하면 안 돼?"). The weight goes over onto that foot, the hips a
 /// little over it and the legs leaning from the planted feet (MoveHips), the pelvis tips after them, and the spine bends on
-/// from it as far as brings the eyes over: 5 and 15 cm on every body ("골반 가는 거리 5cm", "눈 거리도 15cm로 깔끔하게"), about
-/// ten degrees of spine on Ichigo, a little more or less on a longer or shorter trunk (BendSpine). How far the head comes
+/// from it as far as brings the eyes over: 7 and 20 cm on every body, halfway between what was too much (10 and 25, 0.9.342)
+/// and too little (5 and 15, 0.9.345; "거리 늘리되 골디락스 존을 찾자"), about thirteen degrees of spine on Ichigo, a little
+/// more or less on a longer or shorter trunk (BendSpine). How far the head comes
 /// down is what that bend brings, nothing holds it up. The camera stays on the eyes and the leaning hitboxes go with them
 /// (Carry).
 /// The head tilts only as far as the view rolls (Ability.leanAngle, BodyGaze.FaceHead), the neck taking back the difference.
@@ -34,7 +35,7 @@ internal sealed class BodyLean
     private SpineLook spineLook;
     private Transform root, model, head, leftUpperArm, rightUpperArm;
     private Vector3 eyeLocal;
-    private float hipsOver = .05f, eyesOver = .15f, pelvis = 4f, spine = 10f, blendTime = .15f;
+    private float hipsOver = .07f, eyesOver = .2f, pelvis = 5f, spine = 13f, blendTime = .15f;
     // How far nothing is in the hands now (HangArm).
     private float handsFree = 1f;
     private float eyesSideAtRest, clipHeadSideAtRest;

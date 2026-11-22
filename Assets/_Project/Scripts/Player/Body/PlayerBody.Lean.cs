@@ -10,11 +10,11 @@ public sealed partial class PlayerBody
 {
     [SerializeField, Min(0f), Tooltip("Q/E at a full lean, whatever is in the hands and whatever the body: how far the hips go over onto that "
         + "foot (m); the feet stay where they stood.")]
-    private float leanHips = .05f;
+    private float leanHips = .07f;
     [SerializeField, Min(0f), Tooltip("The same: how far the eyes go sideways (m). The spine bends as far as the hips and the pelvis leave of it.")]
-    private float leanEyes = .15f;
+    private float leanEyes = .2f;
     [SerializeField, Range(0f, 15f), Tooltip("The same: how far the pelvis tips (degrees); the spine's bend goes on from it.")]
-    private float leanPelvis = 4f;
+    private float leanPelvis = 5f;
 
     private readonly BodyLean bodyLean = new BodyLean();
 

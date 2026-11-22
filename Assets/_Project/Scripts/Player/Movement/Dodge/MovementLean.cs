@@ -15,7 +15,7 @@ public sealed class MovementLean
     public float Roll => -lean * ctx.AbilitySettings.leanAngle;
     public float Offset => lean * Reach;
     /// <summary>How far a full lean takes the eyes sideways (m), as the body's lean says (BodyLean).</summary>
-    internal float Reach { get; set; } = .15f;
+    internal float Reach { get; set; } = .2f;
     /// <summary>How far the lean has gone, -1 to 1. Carried to the other PCs as it is.</summary>
     internal float Share { get => lean; set => lean = held = value; }
     /// <summary>
