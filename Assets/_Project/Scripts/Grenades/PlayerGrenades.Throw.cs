@@ -34,7 +34,8 @@ public sealed partial class PlayerGrenades
         {
             var grenade = ThrownGrenade.Throw(armKind, id, from, velocity, fuse, movement, true, OnOwnBurst);
             if (grenade != null) flying[id] = grenade;
-            Throwables.Play("Throw", from, .8f, 1.5f, 20f);
+            // No world whoosh here: this PC's player hears the quick grenade addon's throw sounds (StartThrow, StartTap);
+            // friends' PCs play the world's for their copy (ShowThrow).
         }
         Thrown?.Invoke(armKind, id, from, velocity, fuse);
         Feel();

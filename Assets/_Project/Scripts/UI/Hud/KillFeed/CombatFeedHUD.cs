@@ -5,10 +5,10 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Kill rewards and the kill feed. A kill pays its points (money in play: Wallet turns them into money, a number beside a
-/// banknote; the rolling total sits top right) and shows in the score popup (ScorePopupHUD: Black Ops 6's yellow total
-/// and "+20 Elimination" rows, the user's pick of 2026-11-22, whose score is the player's experience, apart from money).
-/// The old popup hung off the gun (GunScoreAnchor) with Korean lines and the money number; it went with that pick.
-/// The kill feed sits at the top right. Created on first use during Play; GunFeel → Score.
+/// banknote; the rolling total sits top right). The score popup and its score, the player's experience apart from money,
+/// are the hit feedback addon's (HudAddons.HitFeedbackModule: the Black Ops VI Hitmarker's rows, counted from the kill
+/// HitConfirm hands it); our own bonuses pay money only, as the addon has no row for them. The kill feed sits at the top
+/// right. Created on first use during Play; GunFeel → Score.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.CombatFeedHud)]
 public sealed class CombatFeedHUD : MonoBehaviour
@@ -20,12 +20,12 @@ public sealed class CombatFeedHUD : MonoBehaviour
     private static CombatFeedHUD instance;
 
     public static long TotalScore { get; private set; }
-    /// <summary>A new run starts from nothing, whatever the last room earned: money's points and the popup's score.</summary>
+    /// <summary>A new run starts from nothing, whatever the last room earned: money's points and the addon's score.</summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     public static void ResetScore()
     {
         TotalScore = 0;
-        ScorePopupHUD.ResetScore();
+        HudAddons.HitFeedbackModule.ResetScore();
     }
 
     private RectTransform totalRoot, feedRoot;
@@ -52,7 +52,7 @@ public sealed class CombatFeedHUD : MonoBehaviour
 
     /// <summary>
     /// Makes ahead, out of sight, what the first kill would otherwise make mid-fight (SceneWarmup's pools step, behind the
-    /// loading screen): this HUD, the score popup and its kill feed rows up to the most it shows, each row with every piece
+    /// loading screen): this HUD and its kill feed rows up to the most it shows, each row with every piece
     /// its flairs draw (KillFeedRow.Prewarm: the CHARGE fire layer and its material, the bounty's stamp and chip, the
     /// skull's ring and the rest), the shapes the lines draw with, the tables the flairs read (KillFlairs.Prewarm) and every
     /// weapon picture (WeaponIcons.Prewarm). What is made stays made: calling it again only tops the pools up, and rows on
@@ -62,7 +62,6 @@ public sealed class CombatFeedHUD : MonoBehaviour
     {
         if (!Application.isPlaying) return;
         Get().FillPools();
-        ScorePopupHUD.Prewarm();
         KillFlairs.Prewarm();
         WeaponIcons.Prewarm();
         // Drawn on first ask: a kill's skull, a headshot's burst, a counter's arrow, an execution's knife.
@@ -116,28 +115,20 @@ public sealed class CombatFeedHUD : MonoBehaviour
             gained += tax;
             TotalScore += gained;
             self.totalPop = 1f;
-            // Score: the kill's own row the addon's way, then a row for each extra of ours the addon has no row for.
-            ScorePopupHUD.Kill(marks, headshot, execution, counter, takedown);
-            if (far) ScorePopupHUD.Points("feed.score.long_range", settings.longRangeBonus);
-            if (through) ScorePopupHUD.Points("feed.score.pierced", settings.piercedBonus);
-            if (takedown) ScorePopupHUD.Points("feed.score.takedown", StealthScore.Takedown);
-            if (bounty > 0) ScorePopupHUD.Points("feed.score.bounty", bounty);
-            if (tax > 0) ScorePopupHUD.Points("feed.score.heriot", tax);
         }
         if (feedRow && settings.killFeed)
             self.AddKill(PlayerRoster.Local, weapon, weaponIcon, target, headshot, true, StreakOf(PlayerRoster.Local), standout, marks);
     }
 
     /// <summary>
-    /// Points for something other than a kill (a parry, a special kill, a stealth stretch, a tower floor): money as a
-    /// kill's points are, and a row of the score popup in its words (a Texts id, shown in English; ScorePopupHUD.Points).
+    /// Points for something other than a kill (a parry, a special kill, a stealth stretch): money as a kill's points are.
+    /// The hit feedback addon's score popup has no row for them, so they show as the money total's pop only.
     /// </summary>
-    public static void Score(string textId, int points, params object[] values)
+    public static void Score(int points)
     {
         if (!Application.isPlaying || points <= 0) return;
         TotalScore += points;
         Get().totalPop = 1f;
-        ScorePopupHUD.Points(textId, points, values);
     }
 
     /// <summary>A kill in a room, as the host counted it, in the feed only: the score is the killer's own. weaponIcon and

@@ -89,6 +89,9 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     private float flairEnd = float.NaN, flairHeight;
     private float lastHealth = float.NaN;
     private bool flairDrawn, shieldGlinted, labelRolled;
+    // Standing aside for the addon player HUD (StandAsideForAddon), and the groups that hide the bar and its numbers.
+    private bool asideForAddon;
+    private CanvasGroup barGroup, numberGroup, stanceGroup;
     private Vector2 restingPosition;
     private double healthStep;
     private bool healthBlocks;
@@ -160,8 +163,8 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
     /// </summary>
     public static void Blink(Color color, bool shield)
     {
-        // Under HUD Mk II a shield given glows the screen's edge (MkFlare); health coming back glows it by itself.
-        if (MkHud.On) { if (shield) MkHud.BlinkShield(); return; }
+        // The addon player HUD flares its own boxes when health or armour comes back; ours isn't showing meanwhile.
+        if (HudAddons.PlayerHudModule.On) return;
         if (current == null || current.visualRoot == null) return;
         bool band = shield && current.shieldGraphic != null && current.shieldGraphic.gameObject.activeSelf;
         HudBlink.On(band ? current.shieldGraphic.rectTransform : current.visualRoot, color);
@@ -210,6 +213,7 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         if (visualRoot == null) Initialize();
         if (dirty) Refresh();
         if (!Application.IsPlaying(gameObject)) return;
+        StandAsideForAddon();
         WatchShieldBreaks(receiver);
         shatter?.Tick(Time.unscaledDeltaTime);
         AnimateDamage(Time.unscaledDeltaTime);
@@ -217,6 +221,28 @@ public sealed class AdaptiveHealthHUD : MonoBehaviour
         // The figure's slot moves when the lean setting changes (its turned corners reach further) or, should it ever,
         // when it steps past the number row: the bar's marks past its end move with it.
         if (stance != null && stance.End != flairEnd) PlaceFlair(flairEnd);
+    }
+
+    // The addon player HUD (HudAddons.PlayerHudModule.On; the user, 2026-11-22: "애드온을 넣으라고") draws the health and
+    // armour itself: while it is on, this bar with every piece drawn on it (cells, shield band, flair, shatter, blinks) and
+    // the numbers over it stay away. The stance figure beside it stays: the addon has nothing for it, so it keeps its own
+    // group, apart from the bar's, only while the bar stands aside.
+    private void StandAsideForAddon()
+    {
+        bool aside = HudAddons.PlayerHudModule.On;
+        if (aside == asideForAddon || visualRoot == null) return;
+        asideForAddon = aside;
+        GroupOf(visualRoot, ref barGroup).alpha = aside ? 0f : 1f;
+        if (hpText != null && hpText.transform.parent is RectTransform numbers) GroupOf(numbers, ref numberGroup).alpha = aside ? 0f : 1f;
+        if (stance != null) GroupOf(stance.Figure, ref stanceGroup).ignoreParentGroups = aside;
+    }
+
+    private static CanvasGroup GroupOf(RectTransform rect, ref CanvasGroup group)
+    {
+        if (group != null) return group;
+        if (!rect.TryGetComponent(out group)) group = rect.gameObject.AddComponent<CanvasGroup>();
+        group.blocksRaycasts = group.interactable = false;
+        return group;
     }
 
     // The bar's own marks past its end (the "위험" tag, heal +N) start past the stance figure's slot, so they never land

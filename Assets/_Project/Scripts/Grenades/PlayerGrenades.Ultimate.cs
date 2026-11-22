@@ -52,7 +52,8 @@ public sealed partial class PlayerGrenades
         var eye = Camera.main;
         Vector3 from = HandPoint();
         if (eye != null && info != null) Launch(eye.transform, info, out from, out _);
-        Throwables.Play("Throw", from, .8f, 1.5f, 20f);
+        // No world whoosh: an ultimate's throw is always this PC's player's, who hears the quick grenade addon's throw
+        // sounds from the tap (StartTap) or the throw (StartThrow).
         Feel();
         release?.Invoke(from);
     }

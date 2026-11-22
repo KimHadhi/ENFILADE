@@ -15,26 +15,15 @@ using UnityEngine.UI;
 /// <para>Cards (draft C): a row of small cards over the ammo, each with its number and a small icon, an empty slot striped.
 /// The one in hand widens into a light card with the gun drawn dark on it, its name and kind, and a pink line drawn along
 /// its top.</para>
-/// <para>HUD Mk II (MkHud.csv Hud.on, the player's HUD since 2026-11-22): these same slots in Mk II's look, whatever the
-/// setting says. Mk II brought its own weapon selector across the screen's middle, and the user wanted these back instead
-/// (2026-11-22: "무기 슬롯 1,2,3,4번 그거는 기존 방식이 더 맘에 들어. 기존 방식으로 디자인만 바꿔서"), so only the drawing
-/// changes: a flat column over the gun's block at the bottom right, on a frame Mk II lends (MkHud.Lend) so it sways and
-/// turns with the lean as Mk II's pieces do; a faint dark rounded box a slot with its number in the corner and the
-/// weapon's picture in white; the slot in hand opens into the addon selector's white box, its picture and number black,
-/// its name (decoding, as Mk II's words come in) and kind under the picture; a gun with its magazine at 30 % or under in
-/// red. When the slots show and fade, the spring, the kick and the scrolling name are the old slots' own. Numbers:
-/// MkHud.csv Slots, with Mk II's Colour, Text, Ammo and Gear rows it shares.</para>
 /// Each weapon shows its own picture (WeaponIcons), kept to the icons' one canvas so a pistol stays smaller than a rifle; a
 /// weapon without one shows the vector outline (WeaponSlotSilhouette). A name too long for its room scrolls to its end and
 /// back. Built here in code; the prefab's first slot views stay hidden. Numbers: Tables/WeaponSlots.csv.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
+public sealed class WeaponSlotsHUD : MonoBehaviour
 {
     public const string TableName = "WeaponSlots";
     private const int Count = PlayerWeaponSlots.SlotCount;
-    // The frame HUD Mk II lends the slots (its name on the Mk II canvas, measured on its own by the HUD overlap check).
-    private const string MkFrame = "Mk Slots";
     private static readonly Color PlateDark = new Color(.055f, .055f, .067f, .8f), PlateHeld = new Color(.1f, .1f, .12f, .95f),
         CardDark = new Color(.055f, .055f, .067f, .82f), Stripes = new Color(1f, 1f, 1f, .45f);
 
@@ -48,7 +37,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
 
     private PlayerWeaponSlots bound;
     private float lastActivity = float.NegativeInfinity;
-    private bool restartNames, made, previewing;
+    private bool restartNames, made;
     private readonly Slot[] built = new Slot[Count];
     private RectTransform holder;
     private WeaponSlotLook look;
@@ -58,10 +47,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
     private float ammoLookedAt = -99f;
     private readonly System.Collections.Generic.List<RectTransform> roomRects = new System.Collections.Generic.List<RectTransform>();
     private static Texture2D stripes;
-    // HUD Mk II's look while it is drawn (null in the player's own looks), and the column's own group: the column stands
-    // on Mk II's canvas, out from under this object's group, so its fade is set there too.
-    private MkLook mk;
-    private CanvasGroup mkGroup;
 
     // One look's numbers (WeaponSlots.csv), read when the look is built.
     private sealed class Shape
@@ -74,30 +59,16 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
     {
         public RectTransform root, nameView;
         public SlotShape plate, flash, tab, corner, shard;
-        public MkShapes shapes;
         public Image icon, bar;
         public WeaponSlotSilhouette outline;
         public RawImage hatch;
         public TextMeshProUGUI number, empty, name, kind;
-        public float on, speed, popAt = -99f, scrolled, nameWidth, kindWidth, low, glow;
-        public string shownRaw, shownName, shownKind;
+        public float on, speed, popAt = -99f, scrolled, nameWidth, kindWidth;
+        public string shownName, shownKind;
     }
 
     private void OnEnable() => Bind();
-
-    private void OnDisable()
-    {
-        if (bound != null) bound.SlotActivity -= Reveal;
-        bound = null;
-        HudRoom.Free(this);
-        if (mkGroup != null) mkGroup.alpha = 0f;
-    }
-
-    // The Mk II column is not under this object: it goes with it.
-    private void OnDestroy()
-    {
-        if (mk != null && holder != null) Destroy(holder.gameObject);
-    }
+    private void OnDisable() { if (bound != null) bound.SlotActivity -= Reveal; bound = null; HudRoom.Free(this); }
 
     private void Bind()
     {
@@ -108,22 +79,24 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
         if (bound != null) bound.SlotActivity += Reveal;
     }
 
-    public void Reveal() { lastActivity = Time.unscaledTime; restartNames = true; if (group != null) group.alpha = 1f; }
+    public void Reveal() { lastActivity = Time.unscaledTime; restartNames = true; if (group != null && !HudAddons.PlayerHudModule.On) group.alpha = 1f; }
     private void LateUpdate() => Refresh(Time.unscaledDeltaTime);
-
-    /// <summary>ENFILADE → HUD → 겹침 검사: the slots held in view as a switch leaves them, so the check measures them.</summary>
-    public void Preview(bool show) => previewing = show;
 
     public void Refresh(float deltaTime)
     {
         Bind();
         if (group == null) return;
         group.blocksRaycasts = group.interactable = false;
+        // The addon player HUD draws these same slots in its weapon selector's boxes (HudAddons.PlayerHudModule.On): while
+        // it is on, these stay away, and so does their room on the right edge.
+        if (HudAddons.PlayerHudModule.On)
+        {
+            group.alpha = 0f;
+            HudRoom.Free(this);
+            return;
+        }
         var wanted = GameSettings.Current.weaponSlots;
-        // While HUD Mk II stands in, its look on its canvas, from when it is up (it starts with this PC's player).
-        var mkHud = MkHud.On ? MkHud.Local : null;
-        if (MkHud.On && mkHud == null) { HudRoom.Free(this); return; }
-        if (mkHud != null ? mk == null || holder == null : !made || mk != null || wanted != look) Build(wanted, mkHud);
+        if (!made || wanted != look) Build(wanted);
         float now = Time.unscaledTime, dt = Mathf.Max(0f, deltaTime);
         int selected = source != null ? source.SelectedSlot : -1;
         if (selected != shownSelected)
@@ -134,33 +107,24 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
         }
         for (int i = 0; i < Count; i++) Spring(built[i], i == selected ? 1f : 0f, dt, shape.Grow);
         float readable = visibleSeconds;
-        if (mk != null) LayMk(selected, now, dt, ref readable);
-        else if (look == WeaponSlotLook.Plates) LayPlates(selected, now, dt, ref readable);
+        if (look == WeaponSlotLook.Plates) LayPlates(selected, now, dt, ref readable);
         else
         {
             PlaceOverAmmo(now);
             LayCards(selected, now, dt, ref readable);
         }
         restartNames = false;
-        float age = previewing ? 0f : now - lastActivity;
+        float age = now - lastActivity;
         group.alpha = age <= readable ? 1f : fadeSeconds <= 0f ? 0f : 1f - Mathf.Clamp01((age - readable) / fadeSeconds);
-        float shown = group.alpha;
-        if (mkGroup != null)
-        {
-            // Mk II's pieces stand aside while the player is dead; so do the slots drawn among them.
-            var owner = Owner;
-            if (owner != null && owner.IsDead && !previewing) shown = 0f;
-            mkGroup.alpha = shown;
-        }
-        TakeRoom(shown);
+        TakeRoom();
     }
 
     // While the slots show, the room they take on the right edge, so a passing piece (a callout window) steps clear of
     // them rather than over them (HudRoom; the overlap check measured a callout window 107.5 px over the plates in play).
-    private void TakeRoom(float shown)
+    private void TakeRoom()
     {
         roomRects.Clear();
-        if (shown > .02f)
+        if (group.alpha > .02f)
             for (int i = 0; i < Count; i++)
                 if (built[i] != null && built[i].root != null) roomRects.Add(built[i].root);
         if (roomRects.Count > 0 && HudRoom.Measure(roomRects, out float near, out float far, out float top, out float bottom))
@@ -323,105 +287,19 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
         holder.localRotation = Quaternion.identity;
     }
 
-    // ---- HUD Mk II ----
-
-    // A flat column as wide as the gun's block under it (the magazine box's left to the reserve box's right), its slots
-    // stacked up from a gap over the ultimate's tile, slot 1 on top, the one in hand opening upward; placed in the lent
-    // frame's px from its top left, y down, as Mk II's pieces place everything (MkPiece), so it keeps to the screen's
-    // bottom right corner as the gun's block does.
-    private void LayMk(int selected, float now, float dt, ref float readable)
-    {
-        var s = mk.Weapons;
-        var c = mk.Colour;
-        var gun = mk.Gun;
-        float left = gun.x - gun.magWidth * .5f;
-        float right = gun.x + (gun.magWidth + gun.reserveWidth) / gun.reserveSpread + gun.reserveWidth * .5f;
-        float width = right - left, foot = gun.y - mk.Kit.tile * (mk.Kit.ultRise + .5f) - s.gap;
-        float corner = mk.Health.corner, iconHeight = s.icon / WeaponIcons.Aspect;
-        for (int i = Count - 1; i >= 0; i--)
-        {
-            var slot = built[i];
-            float on = Mathf.Clamp01(slot.on), height = Mathf.LerpUnclamped(s.height, s.heightHeld, slot.on);
-            float top = foot - height;
-            foot = top - s.gap;
-            slot.root.anchoredPosition = new Vector2(left + Kick(slot, now), -top);
-            slot.root.sizeDelta = new Vector2(width, height);
-            var data = Weapon(i);
-            bool knife = KnifeSlot(i, data), any = data != null || knife;
-            // A gun at Mk II's low share of its magazine (Ammo.low) turns red, as Mk II's own magazine box does.
-            var runtime = data != null ? source.GetRuntime(i) : null;
-            bool low = runtime != null && runtime.Data.Category != WeaponCategory.Melee && runtime.Ammo <= runtime.Data.MagazineSize * gun.low;
-            slot.low = MkText.Follow(slot.low, low ? 1f : 0f, s.colourFollow, dt);
-            Color ink = Color.Lerp(Color.Lerp(c.text, s.heldText, on), c.low, slot.low);
-            Color quiet = Color.Lerp(c.tag, s.heldText, on);
-            slot.shapes.Clear();
-            slot.shapes.Box(0f, 0f, width, height, Color.Lerp(c.background, s.held, on), corner);
-            // The slot just taken in hand lights once and lets go (the addon's shot flicker, Ammo.flickAlpha), eased in as
-            // Mk II eases its shot light (Ammo.flickFollow), so quick switching glows instead of blinking.
-            slot.glow = MkText.Follow(slot.glow, Flashing(slot, now), gun.flickFollow, dt);
-            slot.shapes.Box(0f, 0f, width, height, MkText.Fade(c.text, gun.flickAlpha * slot.glow), corner);
-            slot.shapes.Show();
-            MkText.At(slot.number, s.pad, s.pad * .5f);
-            slot.number.color = any ? ink : quiet;
-            // The picture keeps its place under the box's top as the box opens under it for the name.
-            var iconRect = slot.icon.rectTransform;
-            iconRect.sizeDelta = new Vector2(s.icon, iconHeight);
-            iconRect.anchoredPosition = new Vector2(s.iconShift, (height - s.height) * .5f);
-            ShowWeapon(slot, data, MkText.Fade(ink, Mathf.Lerp(s.iconAlpha, 1f, on)), knife ? MeleeKnife.SlotIcon(Owner) : null);
-            slot.empty.gameObject.SetActive(!any);
-            MkText.At(slot.empty, width * .5f + s.iconShift, s.height * .5f);
-            slot.empty.color = quiet;
-            Meta(slot, data, i, s.pad, s.pad, width - 2f * s.pad, ink, on, dt, i == selected, ref readable);
-        }
-    }
-
-    private Slot MakeMk(int index)
-    {
-        var slot = new Slot { root = FeelUI.Rect("Slot " + (index + 1), holder) };
-        var root = slot.root;
-        root.anchorMin = root.anchorMax = root.pivot = new Vector2(0f, 1f);
-        slot.shapes = MkShapes.Make("Box", root);
-        slot.icon = MakePicture(root, new Vector2(.5f, .5f));
-        slot.outline = MakeOutline(root, new Vector2(.5f, .5f));
-        // The number in the box's top left corner, in Mk II's corner-number size (a tile's count).
-        slot.number = MkText.Make("Number", root, mk, 0f, 0f);
-        MkText.Size(slot.number, mk, mk.Text.alts);
-        slot.number.text = (index + 1).ToString(CultureInfo.InvariantCulture);
-        slot.empty = MkText.Make("Empty", root, mk, .5f, .5f);
-        MkText.Label(slot.empty, mk, Texts.Get("hud.weapon_slot.empty"));
-        MakeMeta(slot, 0f);
-        return slot;
-    }
-
     // ---- both ----
 
-    private void Build(WeaponSlotLook wanted, MkHud mkHud)
+    private void Build(WeaponSlotLook wanted)
     {
         look = wanted;
         made = true;
-        mk = mkHud != null ? mkHud.Look : null;
-        shape = mk != null ? Read(mk) : Read(wanted);
+        shape = Read(wanted);
         if (holder != null) Destroy(holder.gameObject);
-        mkGroup = null;
-        if (mk != null)
-        {
-            // A layer filling the frame Mk II lends, with its own group for the fade.
-            holder = FeelUI.Rect("Weapon slots", mkHud.Lend(MkFrame, new Vector2(1f, 0f)));
-            holder.anchorMin = Vector2.zero;
-            holder.anchorMax = Vector2.one;
-            holder.sizeDelta = Vector2.zero;
-            mkGroup = holder.gameObject.AddComponent<CanvasGroup>();
-            mkGroup.interactable = mkGroup.blocksRaycasts = false;
-            for (int i = 0; i < Count; i++) built[i] = MakeMk(i);
-        }
-        else
-        {
-            bool plates = wanted == WeaponSlotLook.Plates;
-            holder = FeelUI.Rect(plates ? "Plates" : "Cards", transform);
-            holder.anchorMin = holder.anchorMax = holder.pivot = plates ? new Vector2(1f, .5f) : new Vector2(1f, 0f);
-            holder.anchoredPosition = Vector2.zero;
-            for (int i = 0; i < Count; i++) built[i] = plates ? MakePlate(i) : MakeCard(i);
-        }
+        bool plates = wanted == WeaponSlotLook.Plates;
+        holder = FeelUI.Rect(plates ? "Plates" : "Cards", transform);
+        holder.anchorMin = holder.anchorMax = holder.pivot = plates ? new Vector2(1f, .5f) : new Vector2(1f, 0f);
+        holder.anchoredPosition = Vector2.zero;
+        for (int i = 0; i < Count; i++) built[i] = plates ? MakePlate(i) : MakeCard(i);
         shownSelected = -2;
     }
 
@@ -455,28 +333,15 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
         slot.nameView = FeelUI.Rect("Name", slot.root);
         slot.nameView.gameObject.AddComponent<RectMask2D>();
         slot.nameView.anchorMin = slot.nameView.anchorMax = slot.nameView.pivot = Vector2.zero;
-        if (mk != null)
-        {
-            // Mk II's words: its face and faint outline, the name in its corner-number size, the kind in its label size
-            // and its one accent.
-            slot.name = MkText.Make("Text", slot.nameView, mk, 0f, 1f);
-            slot.name.fontSize = mk.Em(mk.Text.alts);
-            slot.kind = MkText.Make("Kind", slot.root, mk, 0f, 1f);
-            slot.kind.fontSize = mk.Em(mk.Text.label);
-            slot.kind.color = mk.Colour.accent;
-        }
-        else
-        {
-            slot.name = FeelUI.ScoreLabel("Text", slot.nameView, size, TextAlignmentOptions.BottomLeft);
-            slot.name.fontStyle = FontStyles.Bold;
-            slot.kind = FeelUI.ScoreLabel("Kind", slot.root, 10f, TextAlignmentOptions.BottomLeft);
-            FontRoles.Apply(slot.kind, FontRoles.HudBold);
-            slot.kind.fontStyle = FontStyles.Bold;
-            slot.kind.characterSpacing = 16f;
-            slot.kind.color = KitStyle.Accent;
-        }
+        slot.name = FeelUI.ScoreLabel("Text", slot.nameView, size, TextAlignmentOptions.BottomLeft);
+        slot.name.fontStyle = FontStyles.Bold;
         var text = slot.name.rectTransform;
         text.anchorMin = text.anchorMax = text.pivot = Vector2.zero;
+        slot.kind = FeelUI.ScoreLabel("Kind", slot.root, 10f, TextAlignmentOptions.BottomLeft);
+        FontRoles.Apply(slot.kind, FontRoles.HudBold);
+        slot.kind.fontStyle = FontStyles.Bold;
+        slot.kind.characterSpacing = 16f;
+        slot.kind.color = KitStyle.Accent;
         var kind = slot.kind.rectTransform;
         kind.anchorMin = kind.anchorMax = kind.pivot = Vector2.zero;
     }
@@ -497,12 +362,9 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
             slot.shownKind = slot.kind.text = kind;
             slot.kindWidth = Mathf.Ceil(slot.kind.GetPreferredValues(kind).x) + 2f;
         }
-        string raw = data != null ? data.DisplayName ?? "" : MeleeKnife.SlotName(Owner);
-        if (raw != slot.shownRaw)
+        string name = data != null ? data.DisplayName ?? "" : MeleeKnife.SlotName(Owner);
+        if (name != slot.shownName)
         {
-            slot.shownRaw = raw;
-            // Mk II says a weapon's name in capitals (its selector's way).
-            string name = mk != null ? raw.ToUpperInvariant() : raw;
             slot.shownName = slot.name.text = name;
             slot.nameWidth = Mathf.Ceil(slot.name.GetPreferredValues(name).x) + 2f;
             slot.scrolled = 0f;
@@ -526,11 +388,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
         slot.name.rectTransform.anchoredPosition = new Vector2(offset, 0f);
         slot.name.color = KitStyle.With(ink, on);
         slot.kind.alpha = on;
-        // Mk II's words come in decoding (its pickup rows, its objective): the name of the slot just taken in hand shows a
-        // random symbol a letter until that letter's turn.
-        if (mk != null)
-            MkText.Say(slot.name, held ? MkText.Scramble(slot.shownName, (Time.unscaledTime - slot.popAt) / Mathf.Max(.01f, mk.Weapons.decode), mk.Taken.chars)
-                : slot.shownName);
     }
 
     // ---- motion ----
@@ -553,13 +410,10 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
         return k < .55f ? Mathf.Lerp(-shape.Kick, 3f, Ease.Out(k / .55f)) : Mathf.Lerp(3f, 0f, (k - .55f) / .45f);
     }
 
-    private float Flash(Slot slot, float now) => .9f * Flashing(slot, now);
-
-    // How much is left of the light the slot just taken in hand shows (1 going to 0 over the look's flash time).
-    private float Flashing(Slot slot, float now)
+    private float Flash(Slot slot, float now)
     {
         float t = (now - slot.popAt) / Mathf.Max(.01f, shape.Flash);
-        return t < 0f || t >= 1f ? 0f : 1f - Ease.Out(t);
+        return t < 0f || t >= 1f ? 0f : .9f * (1f - Ease.Out(t));
     }
 
     // ---- pieces ----
@@ -624,10 +478,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour, IHudPreview
     }
 
     // ---- numbers ----
-
-    // HUD Mk II's look: the spring, the kick and the light from MkHud.csv Slots; its places are worked out from Mk II's
-    // rows as it is laid (LayMk).
-    private static Shape Read(MkLook mk) => new Shape { Grow = mk.Weapons.grow, Kick = mk.Weapons.kick, Flash = mk.Weapons.flash };
 
     private static Shape Read(WeaponSlotLook which)
     {

@@ -421,8 +421,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         // The class at work (stage 7): starting guns, the class key, adrenaline, CHARGE, a Point's guns reloading aside.
         if (Application.isPlaying && GetComponent<ClassKit>() == null) gameObject.AddComponent<ClassKit>();
         if (Application.isPlaying && IsLocal && GetComponent<ClassHUD>() == null) gameObject.AddComponent<ClassHUD>();
-        // The player's HUD, HUD Mk II (the user's pick of the HUD drafts, 2026-11-22), while MkHud.csv Hud.on stands.
-        if (Application.isPlaying && IsLocal && MkHud.On && GetComponent<MkHud>() == null) gameObject.AddComponent<MkHud>();
+        // The Garry's Mod HUD addons' modules (HudAddons.Boot), brought up with this player's HUD.
+        if (Application.isPlaying && IsLocal) HudAddons.Boot.Install();
         // Callouts (memo 4, G&B's wheel): solo has no network, so it can't wait for PlayerNetworkCombat to add it.
         if (Application.isPlaying && GetComponent<PlayerCallouts>() == null) gameObject.AddComponent<PlayerCallouts>();
         // The visible body (true first person) appears once Resources/Characters/PlayerBody names a character.
@@ -452,9 +452,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
             gameObject.AddComponent<MoneyDrops>();
             gameObject.AddComponent<PerkCardScreen>(); // the perk cards a full gauge buys, and their health perk
             gameObject.AddComponent<PlayerLifeHUD>();
-            gameObject.AddComponent<DeathScreen>(); // dying: the world drained, blurred and muffled, the sting, the card (Settings → HUD)
+            gameObject.AddComponent<DeathScreen>(); // dying: our death card over the death screen addon (HudAddons.DeathScreenModule; Settings → HUD)
             gameObject.AddComponent<TeammateMarkerHUD>();
-            if (!MkHud.On) gameObject.AddComponent<TeamHealthPanel>(); // HUD Mk II draws teammates itself (MkTeam)
+            gameObject.AddComponent<TeamHealthPanel>();
             gameObject.AddComponent<ScoreboardHUD>();
             gameObject.AddComponent<ShoveFatigueHUD>();
         }

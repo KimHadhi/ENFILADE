@@ -142,7 +142,7 @@ public sealed class ZombieBreadbag : ZombieElite
             melee.ReceiveShove(direction * bounceForce, transform.position + Vector3.up);
             melee.ApplyPostureDamage(bounceBreak, bounceStun);
         }
-        if (by.IsLocal && parryReward > 0) CombatFeedHUD.Score("feed.score.saw_parry", parryReward);
+        if (by.IsLocal && parryReward > 0) CombatFeedHUD.Score(parryReward);
     }
 
     // ---- Every PC: its light, the engine ----

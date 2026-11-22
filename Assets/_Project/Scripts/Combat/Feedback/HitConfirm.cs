@@ -2,23 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// What the hits the local player lands show and sound like, once GunFeelDirector has decided they are theirs. The hits
-/// of one frame (a shotgun's pellets, a swing through a crowd) are confirmed once, at the end of the frame: one hit
-/// marker sized by the share of health they took, and one confirm sound for the marker's kind, as the marker has one
-/// look: a hit (Body), a headshot when enough of them were headshots (Head; GunFeel → Headshot Hit Share, Overwatch's
-/// pellet rule), a kill that climbs a little with each kill of a streak (Kill; GunFeel → Kill Streak Pitch Step) with
-/// the head's bright double tick over it for a headshot kill (HeadKill), or, when nothing of the frame did any harm, the
-/// grey marker and its dull sound (Blocked). A kill also shows its picture under the aim point (KillIcons, chosen by its
-/// KillMarks). A hit that breaks posture adds the break marker, its picture and its sound (Break). When any of them came
-/// through or off something on the way (DamageHit.Pierced), the marker shows its pierced echo.
-/// Each sound is a whole marker sound (the user's set of 2026-11-21: mwhitmarker, headmarker, newkillmarker, killmarker,
-/// hitmarkfail, breakarmorr), so they are not stacked as the old dry tick under a dink was. They come from the HitConfirm
-/// sound bank (Art/Audio/HitConfirm/&lt;key&gt;; volume and pitch in Sounds.csv), so a sound is changed by swapping files;
-/// the earlier ones wait in BodyOld, HeadPing, KillOld and BreakOld. While the bank has no kill a kill falls back to
-/// GunFeel's kill sounds. In the Modern look (Settings → HUD → 히트 마커, the default since 2026-11-22) hits and kills
-/// sound as that look's addon plays them instead (<see cref="PlayModern"/>), and the marker hears whether the frame's hits
-/// struck flesh and whether they were fire, for its prop and flame pictures. A hit that did nothing and a posture break
-/// keep these sounds in every look: the addon has none for them. Created on first use during Play.
+/// What the hits the local player lands show and sound like, once GunFeelDirector has decided they are theirs. A hit and
+/// a kill go to the hit feedback addon (HudAddons.HitFeedbackModule: the Black Ops VI Hitmarker's marker, its three-layer
+/// sounds and its score popup, and Cool Killchains' skulls), which shows a frame's hits once. Ours stay only where the
+/// addon has no element: a shot that reached a target and did nothing (a guard, a parry, invulnerability) gives its dull
+/// sound (Blocked) unless a hit of the same frame did harm, and a hit that breaks posture adds the break burst under the
+/// aim (PostureBreakHUD) and its sound (Break). Those two sounds come from the HitConfirm sound bank
+/// (Art/Audio/HitConfirm/&lt;key&gt;; volume and pitch in Sounds.csv), so a sound is changed by swapping files. Created on
+/// first use during Play.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.HitConfirm)]
 public sealed class HitConfirm : MonoBehaviour
@@ -31,15 +22,8 @@ public sealed class HitConfirm : MonoBehaviour
     private static HitConfirm instance;
     private static SoundBank bank;
     private static bool bankLoaded;
-    private static int streak;
-    private static float lastKillTime = -99f;
-    private int hits, heads, kills, headKills, breaks, pierces, blocked;
-    // This frame's hits on flesh (anything but the targets that sound their own hits, IOwnHitFeedback: the steel targets)
-    // and by fire (KillMarks.Fire), for the Modern look's prop and flame pictures and its prop sound.
-    private int flesh, burns;
-    private float share;
-    // The picture of this frame's most telling kill (KillIcons.Better).
-    private KillIcons.Row killIcon;
+    // This frame's hits (any of them keeps the blocked sound quiet), posture breaks and shots that did nothing.
+    private int hits, breaks, blocked;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -47,7 +31,6 @@ public sealed class HitConfirm : MonoBehaviour
         recentHits.Clear();
         instance = null;
         bank = null; bankLoaded = false;
-        streak = 0; lastKillTime = -99f;
     }
 
     // After MeleeCombatTarget clears its event at subsystem registration.
@@ -65,66 +48,49 @@ public sealed class HitConfirm : MonoBehaviour
     }
 
     /// <summary>
-    /// A hit the local player landed; confirmed with the rest of this frame's hits. marks: what a killing blow happened
-    /// under (KillConditions), which picks its picture.
+    /// A hit the local player landed. marks: what a killing blow happened under (KillConditions), which picks the addon's
+    /// kill row and skull. A hit on something that sounds its own hits (IOwnHitFeedback: the steel targets) is no hit on
+    /// flesh (the addon's prop badge and item sound); fire is the flame badge. A practice target's kill shows and sounds
+    /// but counts neither for the score nor the chain, as the game counts it in neither.
     /// </summary>
     public static void Landed(CombatDamageReport report, KillMarks marks = KillMarks.None)
     {
         if (!Application.isPlaying) return;
+        bool flesh = !(report.Target is IOwnHitFeedback);
+        if (report.IsKillingBlow) HudAddons.HitFeedbackModule.Kill(marks, report.IsCritical, flesh, !report.IsPractice);
+        else if (report.Applied > 0f) HudAddons.HitFeedbackModule.Hit(report.IsCritical, flesh, (report.Hit.Marks & KillMarks.Fire) != 0);
         var self = Get();
         self.hits++;
-        if (report.IsCritical) self.heads++;
-        if (report.Hit.Pierced) self.pierces++;
-        if (!(report.Target is IOwnHitFeedback)) self.flesh++;
-        if ((report.Hit.Marks & KillMarks.Fire) != 0) self.burns++;
-        if (report.IsKillingBlow)
-        {
-            self.kills++;
-            if (report.IsCritical) self.headKills++;
-            self.killIcon = KillIcons.Better(self.killIcon, KillIcons.ForKill(marks));
-        }
-        self.share += report.MaximumHealth > 0f ? report.Applied / report.MaximumHealth : 1f;
         Remember(report.Target);
     }
 
     /// <summary>
     /// A shot of the local player's that burst a dead body's head (ZombieGore: a zombie's corpse, or the body a calm zombie
-    /// was eating): it shows and sounds as a headshot on a living head does, with this frame's other hits (the user,
-    /// 2026-11-15: "히트 마커는 넣어 줘"). Nothing more follows it: no kill, number, kill screen or reward.
+    /// was eating): it shows and sounds as a headshot on a living head does (the user, 2026-11-15: "히트 마커는 넣어 줘").
+    /// Nothing more follows it: no kill, number, kill screen or reward.
     /// </summary>
-    public static void LandedOnDead(bool pierced)
+    public static void LandedOnDead()
     {
         if (!Application.isPlaying) return;
-        var self = Get();
-        self.hits++;
-        self.heads++;
-        self.flesh++;
-        if (pierced) self.pierces++;
-        // The whole head went, as all of a living one's health goes to a killing headshot: the marker at its full size.
-        self.share += 1f;
+        HudAddons.HitFeedbackModule.Hit(true, true, false);
+        Get().hits++;
     }
 
     /// <summary>
     /// A kill of this PC's player that the host judged (KillMarks.JudgedByHost: their fuel can's blast or fire, a can they
-    /// threw), heard as the host announces it (PlayerNetworkScore): shown and sounded as their own kill, with its picture,
-    /// with this frame's other hits. Their PC never saw that hit land, so nothing else would show it there.
+    /// threw), heard as the host announces it (PlayerNetworkScore): shown and sounded as their own kill. Their PC never saw
+    /// that hit land, so nothing else would show it there.
     /// </summary>
     public static void HostKill(KillMarks marks)
     {
         if (!Application.isPlaying) return;
-        var self = Get();
-        self.hits++;
-        self.kills++;
-        self.flesh++;
-        if ((marks & KillMarks.Fire) != 0) self.burns++;
-        if ((marks & KillMarks.Headshot) != 0) { self.heads++; self.headKills++; }
-        self.share += 1f;
-        self.killIcon = KillIcons.Better(self.killIcon, KillIcons.ForKill(marks));
+        HudAddons.HitFeedbackModule.Kill(marks, (marks & KillMarks.Headshot) != 0);
+        Get().hits++;
     }
 
     /// <summary>
-    /// A shot of the local player's that reached a target and did nothing (a guard, a parry, invulnerability): the grey
-    /// marker and its dull sound, unless a hit of the same frame did harm (a shotgun's other pellets), which speaks instead.
+    /// A shot of the local player's that reached a target and did nothing (a guard, a parry, invulnerability): its dull
+    /// sound, unless a hit of the same frame did harm (a shotgun's other pellets), which speaks instead.
     /// </summary>
     public static void Blocked()
     {
@@ -142,56 +108,14 @@ public sealed class HitConfirm : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (hits > 0) Confirm();
-        else if (blocked > 0)
-        {
-            HitMarkerHUD.Show(HitMarkerKind.Blocked);
-            Play("Blocked");
-        }
-        blocked = 0;
+        if (hits == 0 && blocked > 0) Play("Blocked");
+        hits = blocked = 0;
         if (breaks > 0)
         {
-            HitMarkerHUD.ShowBreak();
+            PostureBreakHUD.Show();
             Play("Break");
             breaks = 0;
         }
-    }
-
-    private void Confirm()
-    {
-        var settings = GunFeelSettings.Instance;
-        bool head = heads > 0 && heads >= settings.headshotHitShare * hits, kill = kills > 0, headKill = headKills > 0;
-        // A frame on flesh at all is a hit on flesh, as one pellet in a zombie makes it one; fire likewise.
-        bool onFlesh = flesh > 0, fire = burns > 0;
-        HitMarkerHUD.Show(kill ? (headKill ? HitMarkerKind.HeadKill : HitMarkerKind.BodyKill) : head ? HitMarkerKind.Head : HitMarkerKind.Body,
-            Mathf.Min(1f, share), pierces > 0, onFlesh, fire);
-        if (kill)
-        {
-            Kill(settings, headKill, kills);
-            HitMarkerHUD.ShowKill(killIcon);
-        }
-        else if (!PlayModern(false, head, onFlesh)) Play(head ? "Head" : "Body");
-        hits = heads = kills = headKills = pierces = flesh = burns = 0;
-        share = 0f;
-        killIcon = null;
-    }
-
-    private static void Kill(GunFeelSettings settings, bool head, int count)
-    {
-        // The kill feed's streak window, so the climb follows the same kills as its numerals.
-        float now = Time.unscaledTime;
-        streak = now - lastKillTime <= CombatFeedHUD.StreakWindow ? streak + count : count;
-        lastKillTime = now;
-        // The Modern look's kill sounds, as its addon plays them: no climb (the streak is still counted, so another look
-        // climbs from the right kill).
-        if (PlayModern(true, head, true)) return;
-        float climb = 1f + Mathf.Min(streak - 1, settings.killStreakSteps) * settings.killStreakPitchStep;
-        bool played = Play("Kill", climb);
-        // A headshot kill rings the head's bright double tick over the kill's own sound, in tune with its climb.
-        if (head) played |= Play("HeadKill", climb);
-        if (played) return;
-        FeelAudio.Play(head ? FeelSound.HeadshotKill : FeelSound.Kill, head ? settings.headshotKillSounds : settings.killSounds,
-            settings.killVolume, Random.Range(.97f, 1.03f) * climb);
     }
 
     private static void Remember(Component target)
@@ -215,33 +139,13 @@ public sealed class HitConfirm : MonoBehaviour
         if (Time.unscaledTime - at <= BreakWindow) Get().breaks++;
     }
 
-    /// <summary>
-    /// The Modern look's sounds: the Black Ops VI Hitmarker addon's own files (HitConfirm bank, BO6/…), three at once as
-    /// its Lua plays them on a hit (bo6_hit) and a kill (bo6_kill): a headshot Hit.Head.Mark_bo6 + Hit.Head +
-    /// Hit.Head.Layer; a hit Hit.Mark_bo6 (Hit.Mark.Item when it struck no flesh) + Hit.Body + Hit.Body.Layer; a kill
-    /// the flesh pair (the head's for a headshot) + Kill.Mark_bo6 or Kill.Head.Mark_bo6. Pitch 80–110% on the marker
-    /// sounds only, as its sound scripts set it; one shared volume (Sounds.csv HitConfirm/BO6/…). False in any other look,
-    /// or while the bank has none of them yet (before the editor imports them), so ours play.
-    /// </summary>
-    private static bool PlayModern(bool kill, bool head, bool onFlesh)
-    {
-        if (GameSettings.Current.hitMarkerStyle != HitMarkerStyle.Modern) return false;
-        string mark = kill ? (head ? "BO6/HeadKill" : "BO6/Kill") : head ? "BO6/HeadHit" : onFlesh ? "BO6/Hit" : "BO6/HitItem";
-        string fleshKey = head ? "BO6/Head" : "BO6/Body";
-        bool played = Play(mark);
-        played |= Play(fleshKey);
-        played |= Play(fleshKey + "Layer");
-        return played;
-    }
-
-    // One clip of the key at its Sounds.csv volume and pitch; false when the bank has none.
-    private static bool Play(string key, float pitchScale = 1f)
+    // One clip of the key at its Sounds.csv volume and pitch; nothing while the bank has none.
+    private static void Play(string key)
     {
         if (!bankLoaded) { bank = SoundBank.Load(BankId); bankLoaded = true; }
         var clip = bank != null ? bank.Pick(key) : null;
-        if (clip == null) return false;
+        if (clip == null) return;
         var tuning = bank.SettingsOf(key);
-        FeelAudio.PlayClip(clip, tuning.Volume, tuning.RandomPitch() * pitchScale);
-        return true;
+        FeelAudio.PlayClip(clip, tuning.Volume, tuning.RandomPitch());
     }
 }

@@ -192,7 +192,7 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 | --- | --- | --- | --- |
 | 보호막 깨짐 (`FeelAudio.cs`) | 밝은 깨짐, 떨어지는 윙, 유리 핑 | 내 보호막이 다할 때 | **했다(0.9.238)**: 사용자가 준 `breakarmorself.ogg`를 `A/HitConfirm/ShieldBreak`에 넣고 합성을 지웠다 |
 | 보호막 맞음 (`FeelAudio.cs`) | 전기 딱, 떨어지는 지직 | 내 보호막이 맞을 때, 친구 보호막이 맞을 때 | **Vefects `SFX_Vefects_Electric_Impact_01/02_One_Shot_01.wav`**. 폴더 `A/HitConfirm/ShieldHit`. 친구 쪽 길은 고쳐야 한다(6.1의 버그 2) |
-| 죽음 스팅 (예전 `S/Audio/DeathSting.cs`) | 쿵, 먹먹해지는 소리, 낮은 울림, 귀울림, 느려지는 심장 두 번, 2.9초. **높음**(귀울림 2.35 kHz) | 내가 죽을 때. 2D, UI 채널 | **했다(0.9.308)**: 사용자가 고른 MW3 Death Screen 애드온 화면(2026-11-22)과 함께 애드온 소리 `Art/Audio/UI/Death/Whistle.mp3`를 UI 묶음 `Death`(Sounds.csv `UI/Death`)로 내고 합성과 DeathSting을 지웠다. 약 1.8 kHz 울림이 있다 |
+| 죽음 스팅 (예전 `S/Audio/DeathSting.cs`) | 쿵, 먹먹해지는 소리, 낮은 울림, 귀울림, 느려지는 심장 두 번, 2.9초. **높음**(귀울림 2.35 kHz) | 내가 죽을 때. 2D, UI 채널 | **했다(0.9.308)**: 사용자가 고른 MW3 Death Screen 애드온 화면(2026-11-22)과 함께 애드온 소리를 내고 합성과 DeathSting을 지웠다. 2026-11-22부터 그 휘슬은 데스 스크린 애드온 모듈의 것(`Art/Audio/Addons/DeathScreen/Whistle`, HudAddons 묶음 `DeathScreen/Whistle`)이고 UI 묶음 `Death`와 그 파일은 지웠다. 약 1.8 kHz 울림이 있다 |
 | 특수 처치 팅 (`S/UI/Hud/KillFeed/SpecialKillStamp.cs:263`) | 딱 뒤에 밝은 쇳소리 둘(1975·2637 Hz). **높음** | 미트샷, 레일건, 스키트 등 특수 처치 | "low UI stinger, soft impact + muted low chord, 0.3 s". 낮게 새로 고른다 |
 
 ### 5.5 클래스·카드·순간 연출 (26개)

@@ -65,7 +65,9 @@ public sealed class PlayerDamageGraphic : MaskableGraphic
         Rect rect = GetPixelAdjustedRect();
         AddBloodField(mesh, rect);
         for (int i = 0; i < Owner.ActiveDripCount; i++) AddDrip(mesh, rect, Owner.Drips[i], settings);
-        if (settings.directionArcs)
+        // The addon player HUD has its own damage direction indicator (HudAddons.PlayerHudModule.On): while it is on, these
+        // arcs stay away and only the blood draws here.
+        if (settings.directionArcs && !HudAddons.PlayerHudModule.On)
         {
             Color shield = Owner.ShieldTint;
             for (int i = 0; i < Owner.ActiveHitCount; i++)

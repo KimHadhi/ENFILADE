@@ -8,11 +8,7 @@ using UnityEngine;
 /// </summary>
 public static class FeelAssets
 {
-    private static Texture2D softDot, flashStar, flashSpike, ring, glint, hairLine, streakTaper;
-    private static readonly Dictionary<int, Texture2D> hollowGlints = new Dictionary<int, Texture2D>(), hollowGlows = new Dictionary<int, Texture2D>();
-    /// <summary>How many times taller than the line it shows a <see cref="HairLine"/> quad is drawn: its fading outer
-    /// thirds add up to one more third, so the line shows two thirds of the quad's height.</summary>
-    public const float HairLineSpan = 1.5f;
+    private static Texture2D softDot, flashStar, flashSpike, ring, glint;
     private static Mesh muzzleMesh, casingMesh, quad;
     private static Shader particleShader, overlayShader;
     private static Material uiAdditive;
@@ -128,54 +124,6 @@ public static class FeelAssets
         Mathf.Max(Mathf.Clamp01((.2f - Mathf.Sqrt(u * u + v * v)) * 24f), Mathf.Max(GlintRay(u, v), GlintRay(v, u)));
 
     private static float GlintRay(float along, float across) => Mathf.Clamp01((.14f * (1f - Mathf.Abs(along)) - Mathf.Abs(across)) * 32f);
-
-    private static float GlowCoverage(float u, float v) =>
-        Mathf.Max(Mathf.Exp(-(u * u + v * v) / (2f * .2f * .2f)), Mathf.Max(GlowRay(u, v), GlowRay(v, u)));
-
-    private static float GlowRay(float along, float across) =>
-        Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Abs(along)), 1.8f) * Mathf.Exp(-across * across / (2f * .065f * .065f));
-
-    /// <summary>
-    /// <see cref="Glint"/> with its middle cut away out to <paramref name="hole"/> of its half-size, over a soft edge a
-    /// tenth wide. A headshot's star then frames the head it hit instead of covering it (the user found the solid star
-    /// hid the target, 2026-11-12). One texture per hole size, to two decimals.
-    /// </summary>
-    public static Texture2D HollowGlint(float hole) => Hollow(hollowGlints, "Feel Hollow Glint ", hole, GlintCoverage, .1f);
-
-    /// <summary><see cref="GlintGlow"/> cut out the same way, over a softer edge, so the star's light leaves the middle too.</summary>
-    public static Texture2D HollowGlintGlow(float hole) => Hollow(hollowGlows, "Feel Hollow Glint Glow ", hole, GlowCoverage, .15f);
-
-    private static Texture2D Hollow(Dictionary<int, Texture2D> cache, string name, float hole, Coverage coverage, float edge)
-    {
-        int key = Mathf.RoundToInt(Mathf.Clamp01(hole) * 100f);
-        if (cache.TryGetValue(key, out var texture) && texture != null) return texture;
-        float cut = key / 100f;
-        texture = Generate(name + key, 128, 128, (u, v) => coverage(u, v) * Mathf.Clamp01((Mathf.Sqrt(u * u + v * v) - cut) / edge));
-        cache[key] = texture;
-        return texture;
-    }
-
-    /// <summary>
-    /// Half of a lens streak along U for the headshot's split flare: brightest at its inner end (U = -1), thinning to
-    /// nothing at the outer one, and soft across like <see cref="HairLine"/>. No mipmaps for the same reason as the hair
-    /// line: it is drawn a few pixels tall. Turn it 180° for the other half.
-    /// </summary>
-    public static Texture2D StreakTaper => streakTaper != null ? streakTaper : streakTaper = Generate("Feel Streak Taper", 128, 32, (u, v) =>
-    {
-        float along = (u + 1f) * .5f, across = Mathf.Clamp01((1f - Mathf.Abs(v)) * 1.5f);
-        return Mathf.Pow(1f - along, 1.4f) * Mathf.Clamp01(along / .05f) * across * across * (3f - 2f * across);
-    }, false);
-
-    /// <summary>
-    /// A thin line along U for the clean hit marker: solid through the middle third of its height, fading to nothing over
-    /// the outer thirds, with ends that soften over their last few percent. The HUD draws without anti-aliasing, so a
-    /// plain quad two pixels thick and turned 45° steps like a staircase; the fade inside the texture smooths its edges
-    /// instead, about a pixel wide on a two-pixel line. No mipmaps: drawn a few pixels tall, a mip would average the fade
-    /// away into a flat band with hard edges again. Draw the quad <see cref="HairLineSpan"/> times as tall as the line
-    /// should look.
-    /// </summary>
-    public static Texture2D HairLine => hairLine != null ? hairLine : hairLine = Generate("Feel Hair Line", 64, 32, (u, v) =>
-        Mathf.Clamp01((1f - Mathf.Abs(v)) * 1.5f) * Mathf.Clamp01((1f - Mathf.Abs(u)) / .08f), false);
 
     /// <summary>Unit quad in the XY plane facing -Z (double-sided material).</summary>
     public static Mesh Quad

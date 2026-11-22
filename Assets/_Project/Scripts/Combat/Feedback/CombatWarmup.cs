@@ -21,7 +21,7 @@ public static class CombatWarmup
         CombatHitAudio.Prepare();
         ZombieVoice.Prepare();
         FeelAudio.Prepare();
-        HitMarkerHUD.Prepare();
+        PostureBreakHUD.Prepare();
         DamagePopupManager.Prepare();
         PostProcessWarmup.Run();
         SkullSlowMotion.Prepare();

@@ -135,6 +135,8 @@ public sealed partial class FieldPickups
                 if (slots != null) AddMagazines(slots, magazines);
                 // The class throwable comes with it (Grenades.csv refill), as Horde's ammo boxes give grenades.
                 int thrown = PlayerGrenades.FromAmmoPile(player);
+                // The addon player HUD's pickup history lists the rounds (AddMagazines) and the throwables apart.
+                HudAddons.PlayerHudModule.ThrowablesPicked(thrown);
                 string gives = Texts.Format("pickup.gives.ammo", magazines);
                 // A scavenger's share more says so on the line, as Heriot's does on a kill's points.
                 if (PlayerPerks.Has(PlayerPerks.Scavenger))
@@ -145,14 +147,17 @@ public sealed partial class FieldPickups
             case Kind.Heal:
                 receiver.Heal(row.Amount);
                 Pop(row.Kind, row.Name, Texts.Format("pickup.gives.heal", Mathf.RoundToInt(row.Amount)));
+                HudAddons.PlayerHudModule.ItemPicked(row.Name);
                 break;
             case Kind.Shield:
                 receiver.SetShield(Mathf.Max(receiver.Shield, row.Amount));
                 Pop(row.Kind, row.Name, Texts.Format("pickup.gives.shield", Mathf.RoundToInt(row.Amount)));
+                HudAddons.PlayerHudModule.ItemPicked(row.Name);
                 break;
             case Kind.Money:
                 Wallet.Receive((long)row.Amount);
                 Pop(row.Kind, row.Name, "+" + Wallet.Format((long)row.Amount));
+                HudAddons.PlayerHudModule.ItemPicked(row.Name);
                 break;
         }
     }
@@ -172,7 +177,11 @@ public sealed partial class FieldPickups
         if (held >= 0)
         {
             int taken = slots.TakeRounds(held, gun, out GunState left);
-            if (taken > 0) Pop(Kind.Ammo, row.Name, Texts.Format("pickup.gives.rounds", taken));
+            if (taken > 0)
+            {
+                Pop(Kind.Ammo, row.Name, Texts.Format("pickup.gives.rounds", taken));
+                HudAddons.PlayerHudModule.AmmoPicked(gun.Weapon, taken);
+            }
             // It was taken off the ground to be handed here; it goes back where it lay, with what is left in it.
             Leave(left, lay);
             return;
@@ -189,6 +198,7 @@ public sealed partial class FieldPickups
         // The line says what was got: the rounds in it, and of those lying with it what the reserve had room for.
         var mine = slots.GetRuntime(slot);
         Pop(row.Kind, row.Name, Holds(gun.Holding(gun.Rounds, mine != null ? gun.Spare - mine.Spare : gun.Spare)), gun.Weapon);
+        HudAddons.PlayerHudModule.WeaponPicked(gun.Weapon);
         if (before is GunState old) Leave(old, player.transform.position + player.transform.forward * LeaveAhead);
     }
 
@@ -204,7 +214,11 @@ public sealed partial class FieldPickups
             if (data == null || data.Category != WeaponCategory.Ranged || slots.KeepsOwnRounds(i)) continue;
             var runtime = slots.GetRuntime(i);
             int room = slots.ReserveCap(i) - runtime.ReserveAmmo;
-            if (room > 0) runtime.AddReserve(Mathf.Min(room, Mathf.RoundToInt(data.SupplyRounds * magazines * share)));
+            if (room <= 0) continue;
+            int added = Mathf.Min(room, Mathf.RoundToInt(data.SupplyRounds * magazines * share));
+            runtime.AddReserve(added);
+            // The addon player HUD's pickup history: one line per gun's ammunition taken (HUDAmmoPickedUp).
+            HudAddons.PlayerHudModule.AmmoPicked(data, added);
         }
     }
 

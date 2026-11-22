@@ -153,7 +153,9 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
                 Fade = Mathf.Max(.1f, settings.bloodFadeSeconds), Serial = ++serial };
             Freshness = 1f;
         }
-        if (settings.cameraShake)
+        // The addon player HUD shakes the view on a hit itself (HudAddons.PlayerHudModule.On, its Damage Shake): while it is
+        // on, this flinch stays away so a hit never shakes twice.
+        if (settings.cameraShake && !HudAddons.PlayerHudModule.On)
         {
             punch = CameraViewPunch.For(camera);
             float side = directional ? direction.x : Random.Range(-.5f, .5f);

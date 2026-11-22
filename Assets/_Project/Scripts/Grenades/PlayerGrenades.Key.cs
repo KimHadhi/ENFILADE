@@ -170,6 +170,8 @@ public sealed partial class PlayerGrenades
         holding = letGo = keyLost = false;
         if (which == Throwable.Knife) KnifeOut(HandPoint());
         Handed?.Invoke(which, HandPhase.Draw);
+        // The quick grenade addon's pull-out rattle (HudAddons.GrenadesModule): a grenade only, not a knife, a stone or a mine.
+        if (which != Throwable.Knife && which != Throwable.Stone && which != Throwable.Claymore) HudAddons.GrenadesModule.PullOut();
     }
 
     // G let go (or the reflex): thrown from the hold at once, or as soon as the draw gets there. A tap plays the tap clip;
@@ -190,6 +192,8 @@ public sealed partial class PlayerGrenades
         cooking = holding = letGo = keyLost = false;
         StopAim();
         Lower();
+        // The pin is back in: the quick grenade addon's sounds still to come stay silent.
+        HudAddons.GrenadesModule.PutBack();
         Handed?.Invoke(armKind, HandPhase.Lower);
     }
 

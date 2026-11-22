@@ -22,8 +22,8 @@ public enum KillMarks : uint
     Shove = 1 << 7,
     Melee = 1 << 8,
     Thrown = 1 << 11,
-    // The class knife in the melee slot (DamageMethod.Blade): a cut, which the crosshair's kill icon tells from a
-    // punch (KillIcons).
+    // The class knife in the melee slot (DamageMethod.Blade): a cut, which the kill chain's skull tells from a punch
+    // (HudAddons.HitFeedbackModule.KindOf).
     Blade = 1 << 12,
     // A loose physics object a player set flying struck it (DamageMethod.Prop, PropStrike).
     Prop = 1 << 13,

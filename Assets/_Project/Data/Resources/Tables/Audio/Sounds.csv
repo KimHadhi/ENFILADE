@@ -7,15 +7,6 @@ HitConfirm/ShieldHit,0.7,0.95,1.05,내 실드가 피해를 받을 때(깨질 때
 HitConfirm/ShieldBreak,0.7,0.97,1.03,내 실드가 다 깨질 때. 사용자가 준 breakarmorself(2026-11-21). 예전의 합성한 유리 깨지는 소리는 0.9.238에 지웠다
 HitConfirm/HeadKill,0.8,0.97,1,헤드샷 처치 때 처치 소리(Kill) 위에 겹치는 밝은 두 번 딱. 처치 소리와 함께 연속 처치마다 높아진다. 사용자가 준 killmarker(2026-11-21)
 HitConfirm/Blocked,0.35,0.98,1.02,맞혔지만 피해가 없을 때(가드·패링·무적. 회색 히트마커와 함께). 같은 프레임에 피해를 준 명중이 있으면 그 소리만 난다. 사용자가 준 hitmarkfail(2026-11-21)
-HitConfirm/BO6/Hit,0.3,0.8,1.1,"히트 마커 모던(설정 → HUD → 히트 마커, 기본)의 명중 마커음: 게리 모드 애드온 Black Ops VI Hitmarker의 sound/bo6/hit1.wav(Hit.Mark_bo6, 음높이 80~110%). BO6/Body·BodyLayer와 함께 세 겹. 크기는 BO6 소리 모두 같은 0.3(애드온은 모두 1)이라 애드온 안의 균형이 그대로이고, 세 겹을 합친 크기가 다른 모양의 확인음과 비슷하다"
-HitConfirm/BO6/HeadHit,0.3,0.8,1.1,"모던의 헤드샷 명중 마커음: 애드온 sound/bo6/hit2.wav(Hit.Head.Mark_bo6, 80~110%). BO6/Head·HeadLayer와 함께"
-HitConfirm/BO6/Kill,0.3,0.8,1.1,"모던의 처치 마커음: 애드온 sound/bo6/kill.wav(Kill.Mark_bo6, 80~110%). BO6/Body·BodyLayer와 함께. 연속 처치에 높아지지 않는다(애드온대로). 밝은 편(2.2kHz 위가 전체의 -7dB, 무게중심 5.8kHz)"
-HitConfirm/BO6/HeadKill,0.3,0.8,1.1,"모던의 헤드샷 처치 마커음: 애드온 sound/bo6/headshot.wav(Kill.Head.Mark_bo6, 80~110%, 1.7초). BO6/Head·HeadLayer와 함께"
-HitConfirm/BO6/HitItem,0.3,0.8,1.1,"모던의 명중 마커음 중 살이 아닌 것(강철 과녁)을 맞혔을 때: 애드온 sound/hititem.ogg(Hit.Mark.Item, 80~110%). BO6/Body·BodyLayer와 함께(애드온대로)"
-HitConfirm/BO6/Body,0.3,1,1,"모던의 몸 살 소리: 애드온 sound/flesh/body/body_01~06.wav(Hit.Body, 음높이 그대로)"
-HitConfirm/BO6/BodyLayer,0.3,1,1,"모던의 몸 살 소리 위 겹: 애드온 sound/flesh/body/body_layer_01~06.wav(Hit.Body.Layer, 음높이 그대로)"
-HitConfirm/BO6/Head,0.3,1,1,"모던의 머리 소리: 애드온 sound/flesh/head/head_01~11.wav(Hit.Head, 음높이 그대로). 밝은 편: 뼈 깨지는 고음이 많다(2.2kHz 위가 전체의 -3.5~-7dB, 무게중심 3.8~8.2kHz. head_03·07·08·11이 가장 밝다)"
-HitConfirm/BO6/HeadLayer,0.3,1,1,"모던의 머리 소리 위 겹: 애드온 sound/flesh/head/head_layer_01~12.wav(Hit.Head.Layer, 음높이 그대로). 조금 밝은 편(head_layer_08·09가 가장)"
 Movement/Bar/Grab,0.75,0.9,1.1,Beatrun Handsteps.MetalPipeGrab
 Movement/Bar/LetGo,0.5,0.9,1.1,Beatrun Handsteps.MetalPipeLetGo
 Movement/Bar/Release,1,0.8,1,Beatrun Handsteps.MetalPipeRelease
@@ -258,7 +249,6 @@ Zombie/Reaper/Evaded,1.5,1,1,낫을 다 모아 휘둘렀는데 아무도 안 베
 Guns/Heavy/MagOut,1,0.97,1.03,Heavy 탄창 총(SRM-12·Mk14 EBR·MX68)의 탄창 빼기. 전에는 키가 없어 합성음이었다. L4D1 Weapon Audio(3785893356) sniper_military_clip_out_1
 Guns/Heavy/SlideBack,1,1,1,Heavy 탄창 총의 장전손잡이 당기기(ReloadMoments가 클립의 노리쇠 움직임에 맞춰 낸다). 전에는 합성음. L4D1 Weapon Audio sniper_military_slideback_1
 Guns/Heavy/SlideForward,1,1,1,Heavy 탄창 총의 장전손잡이 놓기. 전에는 합성음. L4D1 Weapon Audio sniper_military_slideforward_1
-UI/Death,1,1,1,"데스 스크린: 진짜로 죽을 때 한 번(DeathScreen → UI 묶음 Death). GMod MW3 Death Screen 애드온의 소리 그대로(Art/Audio/UI/Death/Whistle.mp3, 사용자 2026-11-22 v2-card-death). 예전에 합성하던 DeathSting은 지움. 약 1.8kHz 울림이 있어 귀에 거슬리면 이 줄을 줄인다"
 UI/Pick,1.3,1,1,"줍기 공통: 바닥·총 거치대·탄약 상자에서 무엇이든 손에 집을 때(던진 나이프를 다시 주울 때도) 종류별 소리(UI/PickAmmo 등) 밑에 깔린다(KitSound.PlayPickup). 사용자가 준 Pick Up SFX.mp3(2026-11-21) 그대로 1.23초. 사용자: 'Pick up SFX는 일단 줍기고 거기에 체력이나 쉴드나 그런 거에 따라 따로 추가 효과음'. 동료가 건네준 것(서포트 보급·치료)에는 나지 않는다. 1.3배(사용자: 살짝 키워야, 2026-11-21. 부르는 쪽의 0.8과 곱해 1에서 멈춘다)"
 UI/PickAmmo,1,0.97,1.03,필드 줍기: 탄약(FieldPickups → KitSound PickAmmo). RE4 standard pick up sound(L4D2 워크숍 2432848231)의 itempickup에서 앞뒤 무음을 잘라 0.34초. 바닥·상자에서 집을 때는 줍기 공통(UI/Pick) 위에 겹친다. 폴더를 비우면 이 층은 소리가 없다
 UI/PickGun,1,0.97,1.03,필드 줍기: 총. [COD:MWII] Shove and Pick-up Sounds(L4D2 워크숍 2907759388)의 itempickup을 0.42초로 자름. 줍기 공통(UI/Pick) 위에 겹친다. 비우면 이 층은 소리가 없다

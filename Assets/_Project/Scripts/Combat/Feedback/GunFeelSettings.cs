@@ -78,56 +78,16 @@ public sealed class GunFeelSettings : ScriptableObject
     [Min(0), Tooltip("Magazines this size or smaller get no low-ammo sounds (TFA's autodetection: 4); their last round still " +
         "clicks empty.")]
     public int lowAmmoSmallMagazine = 4;
-    [Tooltip("Only used while the HitConfirm sound bank (Art/Audio/HitConfirm) has no Kill clips; empty = silent.")]
-    public AudioClip[] killSounds, headshotKillSounds;
-    [Range(0f, 1f)] public float killVolume = .6f;
-    [Range(0f, .1f), Tooltip("Each kill inside the kill feed's streak window raises the kill confirm's pitch by this much.")]
-    public float killStreakPitchStep = .025f;
-    [Min(0), Tooltip("Kills after which the kill confirm stops climbing.")]
-    public int killStreakSteps = 10;
 
-    [Header("Hit markers (1920x1080 canvas units)")]
-    public Color bodyHitColor = Color.white;
-    public Color headHitColor = new Color(1f, .82f, .2f);
-    public Color killColor = new Color(1f, .16f, .12f);
-    public Color blockedColor = new Color(.62f, .66f, .72f);
-    [Min(1f)] public float markerLength = 16.5f;
-    [Min(.5f)] public float markerThickness = 2.9f;
-    [Min(0f), Tooltip("Distance from the aim point to the inner end of each tick while the marker is at full size.")]
+    [Header("Posture break marker (1920x1080 canvas units; PostureBreakHUD)")]
+    [Min(1f), Tooltip("Length the break's shards are measured from (they fly out at 70% of it, shrinking).")]
+    public float markerLength = 16.5f;
+    [Min(.5f), Tooltip("The shards are 1.2 times this thick.")]
+    public float markerThickness = 2.9f;
+    [Min(0f), Tooltip("Distance from the aim point the shards start at (80% of it) and, with Marker Length, how far the ring and shards reach.")]
     public float markerGap = 24f;
-    [Min(0f), Tooltip("Inner-end distance once the marker has shrunk (Back 4 Blood style: the ticks slide in, their length stays).")]
+    [Min(0f), Tooltip("The ring bursts out from twice this radius.")]
     public float markerShrunkGap = 15.5f;
-    [Tooltip("Frames are counted at this rate, so the marker times the same at any real framerate.")]
-    [Min(1f)] public float markerFrameRate = 60f;
-    [Min(0)] public int markerHoldFrames = 7;
-    [Min(0)] public int markerShrinkFrames = 9;
-    [Min(0), Tooltip("Frames shown faded at the shrunk size right before the marker disappears.")]
-    public int markerFadeFrames = 1;
-    [Range(0f, 1f)] public float markerFadeAlpha = .5f;
-    [Range(0f, 1f), Tooltip("A fresh marker starts this much bigger and settles over Marker Pop Seconds, so each hit of a burst reads on its own.")]
-    public float markerPop = .3f;
-    [Min(.01f)] public float markerPopSeconds = .07f;
-    [Tooltip("Body and head markers sized by the share of the target's health the hit took: a graze at the small size, " +
-        "Marker Full Damage or more at the large one. Kills and blocked hits keep their own size.")]
-    public float markerSmallScale = .85f;
-    public float markerLargeScale = 1.25f;
-    [Range(.05f, 1f)] public float markerFullDamage = .5f;
-    [Tooltip("Headshot ticks are this much thicker and longer than a body hit's, so the gold reads at a glance.")]
-    public float headThickness = 1.5f, headLength = 1.15f;
-    // A headshot's burst (star, ring, sparks, split flare) is in HitMarkers.csv, rows Head.* (HitMarkerHUD.HeadLook), for
-    // both looks: the glint, bloom and lens flare that were here hid the head they marked (2026-11-12).
-    [Min(1f), Tooltip("A headshot's ticks run their frames this much faster than a body hit's, so they snap in and out.")]
-    public float headMarkerPace = 1.6f;
-    [Range(0f, 1f), Tooltip("How much bigger a headshot's ticks start before popping back (a body hit uses Marker Pop).")]
-    public float headPop = .55f;
-    [Range(0f, 1f), Tooltip("Of the hits landed in one frame (a shotgun's pellets), at least this share must be headshots for the " +
-        "headshot marker and sound, as in Overwatch. A single hit always counts.")]
-    public float headshotHitShare = .3f;
-    [Range(0f, 2f), Tooltip("A hit whose bullet went through or off something on the way (DamageHit.Pierced): each tick trails a fading " +
-        "tail outward, this share of the tick's length by the time the marker goes (it starts at 60% of that).")]
-    public float piercedTailLength = .75f;
-    [Range(0f, 1f), Tooltip("Opacity of the tail's near half, as a share of the marker's own; the far half shows at 42% of it.")]
-    public float piercedTailAlpha = .38f;
     [Tooltip("The posture break marker: a ring and four shards bursting out from the aim point.")]
     public Color breakColor = new Color(1f, .52f, .14f);
     [Min(.05f)] public float breakSeconds = .4f;

@@ -1,0 +1,21 @@
+﻿key,value,note
+#안내,,"데스 스크린(HudAddons.DeathScreen): MW3 Death Screen 애드온(lua/autorun/mw3_deathscreen.lua)의 상수 그대로. 시간은 죽은 순간부터 초. 설정 → HUD → 데스 스크린의 다섯 값(켜기·휘슬 음량·흐림 강도·피 강도·피 지연)은 애드온의 convar라 여기 없고 GameSettings.addonDeathScreen에 있다. 파일 이름이 DeathScreen이 아닌 것은 Tables/Player/DeathScreen.csv(카드의 흐름)와 이름이 겹치지 않게 하려고"
+Screen.colourDelay,0,색 보정이 자라기 시작하는 때(초). 원본 T_COLOR[1] = 0
+Screen.colourSeconds,1.2,색 보정이 다 자라기까지(초). 원본 T_COLOR[2] = 1.2. 곡선은 easeOut 1-(1-x)²
+Screen.vignetteDelay,0,비네트 그림이 나타나기 시작하는 때(초). 원본 T_VIGNETTE[1] = 0
+Screen.vignetteSeconds,1.6,비네트가 다 짙어지기까지(초). 원본 T_VIGNETTE[2] = 1.6. easeOut
+Screen.blurDelay,0.15,흐림이 시작하는 때(초). 원본 T_BLUR[1] = 0.15
+Screen.blurSeconds,2.4,흐림이 다 차기까지(초). 원본 T_BLUR[2] = 2.4. easeOut
+Screen.blurPasses,4,흐림을 겹쳐 그리는 횟수. 원본 passes = 4: i번째는 3×3 상자 흐림을 (i/4)×흐림 강도×진행도 px 간격으로
+Screen.bloodSeconds,1.6,피 그림이 다 짙어지기까지(초). 원본 T_BLOOD_FADE = 1.6. 곡선은 smoothstep. 시작은 설정의 '피 페이드 인 지연'
+Screen.clearSeconds,0.3,다시 살아나면 그때까지 온 데서부터 화면이 걷히는 시간(초). 원본 FADE_OUT_SCREEN = 0.3
+Screen.whistleCutSeconds,0.06,다시 살아나면 휘슬 소리가 끊기는 시간(초. 딸깍 소리 막는 짧은 경사). 원본 FADE_OUT_SOUND = 0.06
+Grade.addRed,0.05,다 자랐을 때 빨강에 더하는 양(화면 값 0~1). 원본 $pp_colour_addr = 0.05 × 진행도
+Grade.addGreen,0,초록에 더하는 양. 원본 $pp_colour_addg = 0
+Grade.addBlue,-0.015,파랑에 더하는 양. 원본 $pp_colour_addb = -0.015 × 진행도
+Grade.brightness,-0.03,모든 색에 더하는 밝기. 원본 $pp_colour_brightness = -0.03 × 진행도
+Grade.contrast,0.08,대비 = 1 + 이 값 × 진행도. 원본 $pp_colour_contrast = 1 + 0.08 × 진행도
+Grade.colour,-0.42,채도 = 1 + 이 값 × 진행도(색이 세 채널 평균 회색 쪽으로). 원본 $pp_colour_colour = 1 - 0.42 × 진행도
+Grade.mulRed,0,원본 $pp_colour_mulr = 0(빨강이 다른 채널보다 큰 만큼의 제곱을 더하는 항. 원본이 0이라 아무것도 안 한다)
+Grade.mulGreen,0,원본 $pp_colour_mulg = 0
+Grade.mulBlue,0,원본 $pp_colour_mulb = 0

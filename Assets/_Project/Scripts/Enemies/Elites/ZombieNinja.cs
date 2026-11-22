@@ -270,7 +270,7 @@ public sealed class ZombieNinja : ZombieElite
     {
         if (combat == null || combat.Move != AttackMove.Backstab || by == null || !by.IsLocal) return;
         if (melee != null) melee.ApplyPostureDamage(parryBreak, parryStun);
-        if (parryReward > 0) CombatFeedHUD.Score("feed.score.ninja_parry", parryReward);
+        if (parryReward > 0) CombatFeedHUD.Score(parryReward);
     }
 
     protected override void BuildHand(Transform holder)

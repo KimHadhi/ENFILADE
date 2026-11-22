@@ -1,70 +1,69 @@
 # 데스 스크린 (죽었을 때 화면)
 
-2026-11-12 사용자: "그리고 게리모드에 애드온 새로운 거 하나 추가했는데 그거처럼 데스 스크린도 만들어 봐." 처음(0.8.270)에는 그 애드온(MW3 Death Screen, 워크숍 3833150063)의 느낌만 가져와 우리 HUD 말투로 다시 그렸다(코드가 그린 먹빛 막과 피, 코드가 만든 효과음).
+2026-11-12 사용자: "그리고 게리모드에 애드온 새로운 거 하나 추가했는데 그거처럼 데스 스크린도 만들어 봐." 0.8.270~0.9.308에는 그 애드온(MW3 Death Screen)을 흉내 낸 사본을 우리가 그렸다.
 
-2026-11-22 사용자가 애드온 시안을 보고: "여기에 우리 데스 정보 보여주는 거 합치면 돼." 그래서 이제 **애드온 화면을 그대로** 쓰고(그 그림 둘과 소리, 그 숫자와 시간표), 그 위에 우리 데스 카드(사망/전멸·무엇에 죽었나·버틴 시간·처치·돈·다음 줄)를 얹는다. 수치는 표가 진실이고, 이 문서는 무엇을 왜 그렇게 했는지 적는다.
+2026-11-22 사용자: "애드온을 넣으라고", "원본 그대로 따오되 네 디자인, 기획 센스 처넣으니까 망하는 거지", 그리고 애드온 시안을 보고 "여기에 우리 데스 정보 보여주는 거 합치면 돼". 그래서 이제 **애드온 화면은 원본 그대로**(HudAddons 모듈 `DeathScreen`: 원본 Lua를 다 읽고 C#으로 새로 쓴 것)이고, 그 위에 **우리 데스 카드**(사망/전멸·무엇에 죽었나·버틴 시간·처치·돈·다음 줄)가 뜬다. 애드온에 손댄 것은 카드를 얹은 것 하나다.
 
-## 애드온이 하는 일 (`lua/autorun/mw3_deathscreen.lua`를 한 줄씩 읽은 것)
+## 애드온이 하는 일 (`lua/autorun/mw3_deathscreen.lua`)
 
-- 죽은 순간부터 부분마다 제 시계로(곡선은 처음에 빠르고 끝에 느린 `1-(1-x)²`):
-  - 색(GMod의 색 보정 `DrawColorModify`): 1.2초 동안. 다 바뀌면 빨강 +0.05, 파랑 -0.015, 밝기 -0.03, 대비 ×1.08, 채도 0.58(색이 42% 빠짐). 모든 숫자가 진행도만큼 자란다.
-  - 흐림(`pp/blurscreen`): 0.15초 뒤부터 2.4초 동안. 세기 최대 8, 갈수록 세지는 네 번(2·4·6·8)을 겹쳐 그려 화면 전체가 고르게 흐려진다.
-  - 비네트 그림(`deathscreen/vignette`, 1024×512, 제 알파): 1.6초 동안 불투명도 0→1. 검붉은 가장자리에 얼룩이 박혀 있고 가운데는 거의 비었다(알파 약 0.1).
-  - 피 그림(`deathscreen/blood`): 1초 뒤부터 1.6초 동안, 이것만 부드러운 S자 곡선(smoothstep). 붉은 얼룩과 핏방울.
-  - 두 그림은 HUD 밑(`HUDPaintBackground`)에 화면 전체로 늘려 그린다. 색과 흐림은 세상에만 걸린다.
-- 소리: `whistle.mp3`(4.2초. 낮게 먹먹한 웅웅거림 위로 가는 울림)를 죽을 때 한 번, 음량 1.
-- 다시 살아나면 화면은 그때까지 온 데서부터 0.3초 동안 곧게 걷히고, 소리는 0.06초 만에 끊긴다.
-- 글자·누가 죽였나·킬캠은 없다. 설정은 켜기, 소리 크기, 블러 세기, 피 세기, 피가 비치기까지의 시간, 미리 보기(5초), 기본값.
+- 죽은 순간부터 부분마다 제 시계로(곡선은 `easeOut` = 1-(1-x)², 피만 `smoothstep`):
+  - 색(`DrawColorModify`): 0초부터 1.2초 동안. 다 바뀌면 빨강 +0.05, 초록 0, 파랑 -0.015, 밝기 -0.03, 대비 ×1.08, 채도 0.58, mul 셋 0. 모든 숫자가 진행도만큼 자란다.
+  - 흐림(`pp/blurscreen`): 0.15초 뒤부터 2.4초 동안. 네 번 겹쳐 그리고, i번째의 세기는 (i/4)×흐림 강도(기본 8)×진행도.
+  - 비네트 그림(`deathscreen/vignette`, 1024×512, 제 알파): 0초부터 1.6초 동안 불투명도 0→1.
+  - 피 그림(`deathscreen/blood`, 1024×512): 피 지연(기본 1초) 뒤부터 1.6초 동안, 불투명도 0→피 강도.
+  - 그리는 차례: 세상 → 색 → 흐림 → 비네트 → 피 → HUD(`RenderScreenspaceEffects` 다음 `HUDPaintBackground`, 그 위에 `HUDPaint`). 두 그림은 화면 전체로 늘린다.
+- 소리: `whistle.mp3`(4.2초)를 죽을 때 한 번, 음량 = 휘슬 음량(0이면 안 남).
+- 다시 살아나면: 화면은 그때까지 온 데서부터 0.3초 동안 곧게 걷히고, 소리는 0.06초 만에 끊긴다.
+- 설정(콘솔 변수 5개): 켜기(1), 휘슬 음량(1, 0~2), 흐림 강도(8, 0~20), 피 강도(1, 0~1), 피 페이드 인 지연(1, 0~5). 미리 보기 버튼(5초), 기본값 버튼. 끄면 죽은 채라도 화면이 걷힌다(미리 보기는 빼고).
+- 글자·누가 죽였나는 없다. 깜박이는 것도 없다(깜박임 규칙으로 바꾼 것 없음).
 
-## 우리 것
+## 우리 게임에서 어떻게 그리나
 
-진행 중인 판에 늦게 들어와 합류를 기다리는 사람(`PlayerDamageReceiver.IsWaiting`)에게는 뜨지 않는다. 쓰러진 적이 없기 때문이다(2026-11-18, 중간 참여). 그 사람이 기다리는 동안 전멸이 나면 전멸 카드는 뜬다.
+- **한 장의 렌더 패스**(`DeathScreenPass`): 세상을 그리는 카메라(Base, 화면으로 가는 것)의 그림에, 포스트 효과 뒤(`AfterRenderingPostProcessing`)·HUD 카메라 앞에서 그린다. 그래서 HUD와 우리 카드는 흐려지지 않고 원본처럼 위에 또렷하다. 카메라가 그리기 시작할 때 큐에 넣으니 렌더러 에셋은 고치지 않았고, 죽음 화면이 없으면 큐에 넣지도 않는다(그 프레임 비용 0).
+- **원본의 셈 그대로**: 게리모드 설치본의 컴파일된 셰이더(`garrysmod_dir.vpk`의 `g_colourmodify_ps20.vcs`·`g_screenspace_ps20.vcs`)를 풀어 읽고, `pp/blurscreen`의 `$blur`가 샘플 간격이 되는 곳은 `game_shader_generic_garrysmod.dll`에서 읽었다.
+  - 색: 채널마다 add → 세 채널 **평균** 회색 쪽으로 채도(휘도 아님) → mul 항(각 채널이 다른 둘보다 큰 만큼의 제곱, 원본은 0) → 밝기 더하기 → 대비 곱하기 → 0~1로 자르기. URP 볼륨의 색 보정(로그 공간 대비·선형 채도)으로 옮기면 회색 한 점에서만 맞으므로 쓰지 않고, 이 셈을 화면에 보이는 값(감마 인코딩 0~1)에 그대로 한다.
+  - 흐림: 한 번은 자기와 이웃 8개(간격 = 그 패스의 px) 아홉 샘플(쌍선형) 평균 = 3×3 상자. 원본처럼 앞 패스의 결과를 다시 흐린다(기본 8이면 2·4·6·8px).
+  - 그림: 비네트 다음 피, 각자 알파 × 그리는 색의 알파(원본 `alphaByte`처럼 0~255 정수로 반올림).
+  - 원본은 이 모두를 8비트 감마 화면 버퍼에서 했으므로, 중간 그림도 8비트 감마(R8G8B8A8)에 담고 마지막에 선형 빛으로 되돌린다. UI 캔버스는 선형 공간에서 섞어 비네트 가장자리가 원본보다 옅게 보였을 것이라 캔버스에 그리지 않았다.
+- **크기**: 흐림의 px는 다른 애드온 모듈처럼 **1080p px**로 읽는다(화면 배율 √(w/1920·h/1080)). 1080p에서는 원본과 같고, 1440p·4K에서는 원본(실제 화면 px)보다 같은 비율만큼 넓다.
+- **소리**: `Art/Audio/Addons/DeathScreen/Whistle/whistle.mp3`(원본 파일 그대로, 정규화 없음)를 HudAddons 소리 묶음의 `DeathScreen/Whistle`로, UI 채널(UI 음량을 따르고 일시 정지·리스너 필터와 상관없음)에서 2D로. 원본 채널은 음량 2까지 키웠으므로(1이 넘으면 증폭) 1을 넘는 몫은 같은 샘플에서 함께 시작하는 두 번째 소리가 맡는다(같은 위상 둘 = 그 배율). 두 소리를 한 샘플에 맞추려고 부른 뒤 0.05초에 시작한다(원본의 `sound.PlayFile`도 파일을 읽고 비동기로 시작했다). Sounds.csv에 `HudAddons/DeathScreen/Whistle` 줄을 두면 음량·피치가 곱해진다(없으면 1).
+- **시간**: 모두 실제 시간(`RealTime`). 일시 정지 메뉴 밑에서도 흐른다.
 
-- **세상의 색** (월드 카메라의 포스트 프로세싱. HUD 카메라는 받지 않는다): 표에는 애드온 숫자를 그대로 적고(`addRed`·`addGreen`·`addBlue`·`brightness`·`contrast`·`colour`), 코드가 URP 색 보정으로 옮긴다. GMod는 화면의 0~1 값에 더하고 곱하고, URP는 빛을 로그로 다루므로 **18% 회색(눈이 그림을 판단하는 가운데 밝기)에서 같아지게** 맞춘다: 회색이 얼마나 밝아지나 → 노출, 그 둘레가 얼마나 가팔라지나 → 대비, 채널마다 더한 것 → 색 필터, 채도는 같은 숫자. Full이면 노출 +0.03, 대비 +7, 색 필터 빨강 ×1.27·파랑 ×0.93, 채도 -42. (애드온의 ×1.08과 -0.03은 회색 둘레에서 거의 서로 지워져 대비만 조금 남는다. URP 색 보정을 흉내 내어 회색 계단 전체를 견줘 보니 차이는 평균 0.5% 안쪽이고, 아주 어두운 곳(5% 아래)만 조금 더 어둡다. 게임에서 그려 본 것은 아니다.)
-- **흐림**: URP에는 화면 전체를 흐리는 것이 피사계 심도뿐이라, 보케 모드로 초점을 가장 가까이(0.1m) 두고 렌즈를 바꿔 **멀고 가까운 것을 고르게** 흐린다(0.5m보다 먼 것은 모두 80% 넘게, 1m 너머는 90% 넘게). 세기는 애드온처럼 진행도에 곧게 비례하고, 날 9개·곡률 1로 둥글게. `blur` 1이 URP가 낼 수 있는 가장 큰 흐림(1080p에서 반지름 14px 원)이고 그것이 애드온 블러 8의 자리다. GMod의 8을 픽셀로 똑같이 옮길 수는 없어서(셰이더가 다르다) 가장 가까운 것을 골랐다.
-- **HUD 아래 그림** (HUD 카메라로 GameHUD 캔버스 밑, 순서 -5): 애드온의 비네트와 피 그림 그대로(`Art/Resources/UI/DeathScreen/Vignette.png`·`Blood.png`, VTF에서 풀어낸 1024×512 RGBA, 밉맵 없음). 화면 전체로 늘려 비네트 밑, 피 위로. 세기는 CanvasRenderer 알파라 메시를 다시 만들지 않는다. 그림이 없으면 하얀 화면 대신 아무것도 그리지 않는다.
-- **소리**: 애드온 소리(`Art/Audio/UI/Death/Whistle.mp3`, 받은 파일 그대로)를 UI 묶음의 `Death`로 한 번, 음량 1(UI 음량을 따른다). 세상 소리는 0.35초 동안 650Hz까지 먹먹해진다(리스너의 저역 통과. 느린 화면 SlowMotionSound와 같은 필터를 쓰고 둘 다면 더 낮은 쪽). UI 채널은 그 필터를 거치지 않아 애드온 소리는 맑게 난다. 먹먹함은 애드온에 없는 우리 것이다. 예전에 코드가 만든 효과음(DeathSting)은 더 쓰지 않는다.
-- **카드** (HUD 위. 화면 한가운데는 비워 두어 쓰러진 눈에 앞이 보인다):
-  - 위: 검은 판 위의 큰 `사망`(전멸이면 `전멸`). 뒤로 분홍 사선이 굵게서 가늘게 그어지고, 판 왼쪽 위 모서리에 분홍 삼각, 오른쪽 끝 너머에 분홍 조각 둘(HUD 띠의 강조). 글자가 크게 쾅 들어오며 자간이 좁혀진다.
-  - 그 아래: 무엇에 죽었나. `거구에게 당했다`처럼 좀비 종류 이름이 분홍, 엘리트·이름 있는 놈이면 작은 분홍 `엘리트` 표, 끝에 작게 어떻게(내동댕이쳐짐·물어뜯김·덮쳐짐·폭발·총탄·투척·뜯어먹힘). 쓰러진 채 피를 흘려 죽었으면 `거구에게 쓰러진 뒤 피를 너무 흘렸다`, 떨어져서면 `떨어져 죽었다`, 아군 사격이면 `아군 ○○에게 당했다`(그 사람 색).
-  - 가운데 아래: 숫자 판 셋, 하나씩 톡 튀어나오며 0부터 센다. 버틴 시간(이번 목숨, 분:초)·처치(이번 목숨)·가진 돈(지폐 그림과 숫자. 돈 규칙대로).
-  - 맨 아래: 다음에 올 일 한 줄과 그 밑에서 줄어드는 분홍 실선. 방에서는 `20초 뒤 돌아옵니다`/`다음 웨이브에 돌아옵니다`/`다음 휴게층에서 돌아옵니다`(PlayerLifeHUD와 같은 글), 전멸이면 `3초 뒤 마지막 휴식처에서 다시`·`이 구간 스캐너부터`·`1웨이브부터`·`처음 자리에서`.
-  - 조각마다 제 기울기(제목 3°, 이유 -1.2°, 숫자 판 2°·-1°·1.5°, 줄 -1°). 기울인 채 잰 간격: 제목↔이유 16px, 숫자 판끼리 19px, 숫자 판↔줄 25px, 이유 띠는 화면 가운데에서 41px 위, 숫자 판은 62px 아래. 21:9처럼 낮은 화면에서는 카드 전체를 가운데 기준으로 줄여 위 가운데 새 목표 알림(위에서 243px까지)과 20px를 둔다.
+## 카드와 흐름 (우리 것, 그대로)
 
-## 언제 뜨고 어디로 넘어가나
+애드온의 Think 훅이 `ply:Alive()`를 보던 자리는 게임의 죽음 흐름(`global::DeathScreen`)이 맡는다. 그것이 카드를 띄우고 물리는 바로 그때 `HudAddons.DeathScreenModule`을 부른다: 뜰 때 `Die`, 다시 살아날 때와 미리 보기가 끝날 때 `Respawn`(0.3초 걷힘, 소리 끊김. 원본의 미리 보기도 onRespawn으로 끝난다), 관전으로 넘어갈 때 `Leave`(0.3초 걷힘, 소리는 끝까지), 켜기를 끈 채 보이던 것도 `Respawn`, 플레이어가 사라지거나 겹침 검사로 카드만 세울 때 `Stop`(한 번에 끔). "죽음이 보이는가"의 주인은 하나다.
 
-- 진짜로 죽을 때만. 쓰러질 때는 뜨지 않는다.
-- **방**: 쓰러진 몸의 눈으로 보는 동안(Spectate.csv `deathViewSeconds` 3초, 클릭하면 바로) 뜨고, 관전이 시작되면 0.45초 동안 그때까지 온 데서부터 물러난다(소리는 끝까지 난다). 그 뒤는 PlayerLifeHUD가 원래대로 남은 초와 관전 줄을 보여 준다. 뜨는 동안 PlayerLifeHUD의 가운데 글자는 카드 밑에서 기다리고(`DeathScreen.Covers`), 아래 관전 키 안내는 그대로 보인다.
-- **혼자**: 죽음이 곧 전멸이라 `전멸`로 뜨고 전멸이 끝나 모두 돌아올 때까지 머문다.
-- **나중에 전멸**: 관전하던 사람에게는 자기 죽음의 카드가 `전멸`로 다시 뜨고(소리도 다시), 쓰러져 있던 사람에게는 `모두 쓰러졌다`로 뜬다. 이미 떠 있던 카드는 제목만 `전멸`로 다시 쾅.
-- **다시 살아나면**(부활 시간·웨이브·데탕트의 부활·전멸 끝): 0.3초 만에 걷히고 소리는 0.06초 만에 끊긴다(애드온 그대로).
-- **결과 화면**: 장이 끝나 씬이 바뀌면 카드와 그림은 플레이어와 함께 사라진다.
-- **동료 화면**: 누가 죽으면 이미 화면 위에 `○○ 사망`, 킬 피드에 `사망` 줄, 알림 소리가 난다(PlayerTally). 새로 만들지 않았다.
+- 진짜로 죽을 때만. 쓰러질 때는 뜨지 않는다. 진행 중인 판에 늦게 들어와 기다리는 사람(`PlayerDamageReceiver.IsWaiting`)에게도 뜨지 않는다(원본의 "처음 읽은 값은 기록만" 규칙의 자리).
+- **방**: 쓰러진 몸의 눈으로 보는 동안 뜨고, 관전이 시작되면 물러난다(원본에는 관전이 없다). **혼자**: 죽음이 곧 전멸이라 `전멸`로 뜨고 모두 돌아올 때까지. **나중에 전멸**: 관전하던 사람에게 다시 `전멸`로(소리도 다시), 쓰러져 있던 사람에게도 뜬다.
+- 카드는 화면과 함께, 화면이 걷히는 시간(`DeathScreenModule.ClearSeconds`, 0.3초)에 물러난다. 카드 흐름의 표 [DeathScreen.csv](../../Assets/_Project/Data/Resources/Tables/Player/DeathScreen.csv)에는 머무는 시간(`holdSeconds`)과 미리 보기 시간(`previewSeconds`)만 남았다.
+- 카드: 위에 `사망`/`전멸`, 무엇에 죽었나(좀비 종류 분홍·엘리트 표·어떻게), 아래에 버틴 시간·처치·가진 돈, 맨 아래 다음에 올 일과 줄어드는 분홍 실선. 모양과 움직임은 [DeathCard](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCard.cs).
+- 동료 화면: 누가 죽으면 `○○ 사망`, 킬 피드 줄, 알림 소리(PlayerTally).
 
 ## 설정과 표
 
-- 설정 → HUD → 데스 스크린: 켬(Full: 애드온 숫자 그대로) / 짧게(Short: 우리 것. 같은 화면을 1.4초만, 더 옅게, 피 없이, 소리 0.75) / 끔(Off: 예전 글자만). `GameSettings.deathScreen`, 새 플레이어 기본값은 [SettingsDefaults.csv](../../Assets/_Project/Data/Resources/Tables/Core/SettingsDefaults.csv) `deathScreen`.
-- 수치: [DeathScreen.csv](../../Assets/_Project/Data/Resources/Tables/Player/DeathScreen.csv) `Full`·`Short` 줄. 머무는 시간, 미리 보기 시간, 색(`colourSeconds`·`addRed`·`addGreen`·`addBlue`·`brightness`·`contrast`·`colour`: 애드온과 같은 뜻의 숫자), 비네트 그림(`vignette` 불투명도·`vignetteSeconds`), 흐림(`blur`·`blurDelay`·`blurSeconds`), 피 그림(`blood`·`bloodDelay`·`bloodSeconds`), 먹먹함(`muffle` Hz·`muffleSeconds`), 소리(`whistle`), 물러나는 시간, 걷히는 시간, 소리 끊기는 시간. `blood`를 0으로 하면 피가 없고, `blur`를 0으로 하면 흐림이 없고, `muffle`을 0으로 하면 먹먹함이 없다.
-- 글자: [Texts.csv](../../Assets/_Project/Data/Resources/Tables/Core/Texts.csv) `death.*`(제목·이유·어떻게·숫자 판·전멸 뒤 줄)와 `settings.hud.death_screen*`. 방에서의 다음 줄은 `life.respawn.*`를 같이 쓴다. 글자 편집기(ENFILADE → 글자 → 글자 편집기)에서 고친다.
-- 소리를 바꾸려면: Art/Audio/UI/Death 폴더의 파일을 바꾸면 소리 묶음이 저절로 다시 만들어진다(UI 묶음의 `Death`). 음량은 표의 `whistle`에 Sounds.csv `UI/Death` 줄의 음량(줄이 없으면 1)을 곱한다.
-- 겹침 검사: HudOverlap.csv `Death Card`(조각 여섯이 저마다 잰다)·`Death Film`(화면 전체를 덮는 배경 그림이라 뺀다). 카드는 IHudPreview라 ENFILADE → HUD → 겹침 검사가 견본 글자로 세워 잰다(그림과 소리는 없이).
+- 설정 → HUD → 데스 스크린(애드온 패널의 차례와 말): 설명 줄, **데스 스크린 켜기**(끄면 화면도 카드도 소리도 없다), **휘슬 음량** 0~2(소수 둘), **흐림 강도** 0~20(정수, 0이면 흐림 없음), **피 오버레이 강도** 0~1(소수 둘), **피 페이드 인 지연(초)** 0~5(소수 하나), **미리 보기**(게임 중 살아 있을 때. `/death`와 같아서 카드도 함께), **기본값으로**. 저장: `GameSettings.addonDeathScreen`([DeathScreenOptions](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptions.cs)).
+- 원본 상수: [AddonDeathScreen.csv](../../Assets/_Project/Data/Resources/Tables/Hud/AddonDeathScreen.csv) `Screen`(시간표·흐림 횟수·걷힘·소리 끊김)·`Grade`(색 숫자). 파일 이름이 `DeathScreen`이 아닌 것은 카드 흐름의 [Tables/Player/DeathScreen.csv](../../Assets/_Project/Data/Resources/Tables/Player/DeathScreen.csv)와 이름이 겹치지 않게(표는 파일 이름으로 찾는다).
+- 글자: Texts.csv `settings.hud.death.*`(설정 줄), `death.*`(카드).
 
 ## 시험
 
-- 콘솔 `/death`: 죽지 않고 미리 보기(5초, 거구가 내동댕이친 견본). `/death wipe`(전멸), `/death exploder`·`/death runner`·`/death ninja` 등(좀비 종류), `/death fall`·`/death bleed`·`/death friend`, 끝에 `short`나 `full`. 설정이 끔이어도 보인다.
-- 진짜 죽음: `/fatal`(쓰러짐 없이 즉사. 이유는 `떨어져 죽었다`로 나온다), 방에서는 좀비에게 맞아 쓰러진 뒤 피 흘려 죽기, 전멸.
-- 볼 것: 색이 1.2초에 붉게 빠지고, 비네트가 1.6초에 닫히고, 0.15초 뒤부터 2.4초 동안 세상 전체가 고르게 흐려지고, 1초 뒤 피가 비치고, 소리가 한 번. 살아나면 0.3초에 걷히고 소리가 바로 끊긴다. 카드와 HUD는 흐려지지 않는다.
+- 콘솔 `/death`: 죽지 않고 5초. `/death wipe`, `/death exploder` 등. 설정 → HUD → 데스 스크린 → 미리 보기도 같다.
+- 진짜 죽음: `/fatal`, 방에서 쓰러져 피 흘려 죽기, 전멸.
+- 볼 것: 세상이 1.2초에 붉은 갈색으로 빠지고, 0.15초 뒤부터 2.4초 동안 고르게 흐려지고(손과 총도), 비네트가 1.6초에 닫히고, 1초 뒤 피가 1.6초에 걸쳐 비치고, 소리 한 번. HUD와 카드는 또렷하다. 살아나면 0.3초에 걷히고 소리가 바로 끊긴다. 관전으로 넘어가면 0.3초에 걷히고 소리는 끝까지 난다. 피 그림의 큰 얼룩은 화면 오른쪽 아래에 있어야 한다(위아래가 뒤집히면 왼쪽 위).
 
 ## 파일
 
-- [DeathScreen](../../Assets/_Project/Scripts/UI/Hud/Death/DeathScreen.cs): 언제 뜨고 넘어가나, 무엇에 죽었나, 세상 색·흐림(애드온 숫자를 URP로 옮기는 곳은 `DeathScreen.Look.cs`), 먹먹함, 소리, 미리 보기와 `/death`, 로딩 화면 뒤 미리 만들기(`DeathScreen.Prepare`, SceneWarmup: 카드·그림·소리 읽기·흐림 한 번).
-- [DeathCard](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCard.cs): 카드와 그림의 캔버스, 조각 자리와 기울기, 들어오고 물러나는 움직임.
-- [DeathCardGraphic](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCardGraphic.cs): 제목 판(사선·삼각·조각)·이유 띠·숫자 판 모양.
-- 그림: `Art/Resources/UI/DeathScreen/Vignette.png`·`Blood.png`. 소리: `Art/Audio/UI/Death/Whistle.mp3`.
-- 걸어 둔 곳(한두 줄): PlayerMovement(붙이기), PlayerLifeHUD(가운데 글자 비키기), PlayerLife(`WipeLeft`), GameSettings·SettingsMenuView(설정), GameCommands(`/death`), SceneWarmup(미리 만들기), FrameOrder(`DeathScreen` 차례: 관전 카메라와 느린 화면 먹먹함 다음).
+- [DeathScreenModule](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenModule.cs): 바깥에서 부르는 곳(`Install`·`Die`·`Respawn`·`Leave`·`Stop`·`Enabled`·`ClearSeconds`).
+- [DeathScreenDriver](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenDriver.cs): 원본의 상태(levels, onDeath/onRespawn, 켜기 감시)와 소리.
+- [DeathScreenPass](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenPass.cs) + 셰이더 `Art/Resources/UI/Addons/DeathScreen/DeathScreenFilm.shader`: 색·흐림·그림.
+- [DeathScreenLook](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenLook.cs)(표), [DeathScreenOptions](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptions.cs)·[DeathScreenOptionsRows](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptionsRows.cs)(설정).
+- 그림: `Art/Resources/UI/Addons/DeathScreen/vignette.png`·`blood.png`(원본 VTF를 `Tools/HudAddons/addon_picture.py`로 원래 크기 그대로). 소리: `Art/Audio/Addons/DeathScreen/Whistle/whistle.mp3`.
+- 카드와 흐름: [DeathScreen](../../Assets/_Project/Scripts/UI/Hud/Death/DeathScreen.cs)(언제·무엇에 죽었나·`/death`), [DeathCard](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCard.cs), [DeathCardGraphic](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCardGraphic.cs).
 
-## 원본과 아닌 것
+## 원본과 다른 것
 
-- 애드온에서 그대로 가져온 것(2026-11-22 사용자 결정): 비네트·피 그림(blood.vtf·vignette.vtf를 PNG로 푼 것), 소리(whistle.mp3), 색·흐림·그림·소리의 숫자와 시간표, 걷히고 끊기는 시간. 이 그림과 소리는 애드온이 Call of Duty에서 뽑은 것이다. 0.8.270에서는 그래서 쓰지 않았지만 사용자가 애드온 화면 그대로를 골랐다.
-- 우리 것: 코드, 카드(모양·글자·움직임), 세상 소리 먹먹함, 짧게(Short) 줄, 흐름(방·혼자·전멸·관전).
-- 그대로 옮기지 못한 것: GMod 블러 8은 URP 보케의 가장 큰 흐림으로 대신했다(위 흐림). 색 보정은 회색에서 맞췄다(위 세상의 색). URP는 HUD를 선형 색 공간에서 섞어서, 반투명한 그림이 GMod보다 조금 옅고 덜 진하게 보일 수 있다.
+- 카드(사용자가 더하라고 한 것)와 그 흐름(방·혼자·전멸·관전). 관전으로 넘어갈 때 화면이 걷히는 것은 원본에 없다(원본은 살아날 때까지 그대로).
+- 흐림의 px를 1080p px로 읽는다(위 크기).
+- 소리가 0.05초 늦게 시작한다(두 소리를 한 샘플에 맞추느라).
+- mul 숫자는 다른 색 숫자처럼 진행도만큼 자란다(원본은 0을 그대로 써서 차이 없음).
+- 원본에서 고친 것: 원본은 `pp/blurscreen`의 `$blur`를 공용 머티리얼에 남겨 두어 뒤에 그 머티리얼을 쓰는 다른 애드온의 흐림을 바꿨고, `DrawColorModify`가 `$pp_colour_inv`를 정하지 않아 다른 애드온이 켜 둔 색 반전이 데스 스크린에 묻어날 수 있었다(여기서는 반전 없음). 소리 파일을 못 열면 `surface.PlaySound`로 음량 설정을 무시하고 끊을 수도 없게 틀던 것도 없다(소리가 없으면 경고 한 번).

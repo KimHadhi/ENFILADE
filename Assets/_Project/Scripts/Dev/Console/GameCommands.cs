@@ -34,10 +34,14 @@ public static class GameCommands
         router.Register("pso", "trace · save · (비우면 상태) — 빌드의 그래픽 상태 기록, 개발 빌드에서 (PsoWarmup)", PsoWarmup.Command);
         router.Register("sound", "<뱅크>/<키> · cue <큐> · list <뱅크> — 소리 미리 듣기 (예: /sound cue Execution/Behind)", SoundPreview.Command);
         router.Register("point", "F 없이 손가락질 고정·풀기 — 손 모양을 Poke.csv Point.* 로 고치며 보기 (F5로 몸 전체)", PlayerPoint.Command);
-        router.Register("death", "[좀비 종류 / fall / bleed / friend] [wipe] [short / full] — 죽지 않고 데스 스크린만 미리 보기 (DeathScreen)", DeathScreen.Command);
+        router.Register("death", "[좀비 종류 / fall / bleed / friend] [wipe] — 죽지 않고 데스 스크린만 미리 보기 (DeathScreen, 데스 스크린 애드온)", DeathScreen.Command);
         router.Register("hits", "UI 클릭 판정 모양 보기 켜기·끄기 — 하늘색 = 누를 수 있는 곳, 분홍 = 지금 커서가 고르는 것, 노랑 = 호버로 비킨 원래 자리 (KitHit)", KitHitView.Command);
         router.Register("colours", "플레이어 색 — 팔레트와 색 사이 거리, 이 PC의 플레이어마다 고른 색과 받은 색 · cases 겹침 규칙만 따로 검사 → Logs/player-colours.txt (PlayerColours)", PlayerColours.Command);
         router.Register("decks", "카드 덱 — 지금 클래스와 쓰이는 덱, 다른 클래스 몫으로 보관 중인 카드 · cases 클래스마다 덱에 남의 카드가 없는지 검사 → Logs/card-decks.txt (PlayerPerks)", PlayerPerks.Report);
         router.Register("interact", "F 키(상호작용)의 주인 — F로 하는 일의 순서(표), 지금 나선 것과 누가 맨 앞인지, 마지막 누름을 누가 가져갔고 누가 거절했는지. 누름마다 Logs/interact.txt에도 적힌다 (InteractKey, Tables/Player/InteractKey.csv)", InteractKey.Dump);
+        // The enemy bars addon's two console commands (froze_bo6hbar_add_boss / _remove_boss): which zombie kinds wear the
+        // boss icon, saved with the settings (HudAddons.EnemyBarsModule).
+        router.Register("hbar_add_boss", Texts.Get("addon.enemybars.cmd.add_boss"), HudAddons.EnemyBarsModule.AddBoss);
+        router.Register("hbar_remove_boss", Texts.Get("addon.enemybars.cmd.remove_boss"), HudAddons.EnemyBarsModule.RemoveBoss);
     }
 }

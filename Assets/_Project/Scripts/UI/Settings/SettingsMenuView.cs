@@ -39,22 +39,10 @@ public sealed class SettingsMenuView
     {
         Texts.Get("settings.off"), Texts.Get("settings.hud.damage_numbers.total"), Texts.Get("settings.hud.damage_numbers.each"),
     };
-    // In HitMarkerStyle's order. Each look is named by how it looks, never by the game it came from: a player can't be
-    // expected to know another game's marker (the user, 2026-11-22: "대놓고 블랙 옵스 6 히트마커라 하면 알아 듣겠냐?").
-    private static string[] HitMarkerStyleNames => new[]
-    {
-        Texts.Get("settings.hud.hit_markers.clean"), Texts.Get("settings.hud.hit_markers.bold"),
-        Texts.Get("settings.hud.hit_markers.modern"),
-    };
     // In WeaponSlotLook's order.
     private static string[] WeaponSlotLookNames => new[]
     {
         Texts.Get("settings.hud.weapon_slots.plates"), Texts.Get("settings.hud.weapon_slots.cards"),
-    };
-    // In DeathScreenMode's order.
-    private static string[] DeathScreenNames => new[]
-    {
-        Texts.Get("settings.on"), Texts.Get("settings.hud.death_screen.short"), Texts.Get("settings.off"),
     };
     // In ObjectiveAlertLook's order.
     private static string[] ObjectiveAlertNames => new[]
@@ -381,9 +369,13 @@ public sealed class SettingsMenuView
         rows.Choice(Texts.Get("settings.hud.follow_lean"), OffOn, s.hudFollowsLean ? 1 : 0, i => s.hudFollowsLean = i == 1);
         rows.Choice(Texts.Get("settings.hud.boards"), OffOn, s.hudBoards ? 1 : 0, i => s.hudBoards = i == 1);
         rows.Choice(Texts.Get("settings.hud.damage_numbers"), DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
-        rows.Choice(Texts.Get("settings.hud.hit_markers"), HitMarkerStyleNames, (int)s.hitMarkerStyle, i => s.hitMarkerStyle = (HitMarkerStyle)i);
         rows.Choice(Texts.Get("settings.hud.weapon_slots"), WeaponSlotLookNames, (int)s.weaponSlots, i => s.weaponSlots = (WeaponSlotLook)i);
-        rows.Choice(Texts.Get("settings.hud.death_screen"), DeathScreenNames, (int)s.deathScreen, i => s.deathScreen = (DeathScreenMode)i);
         rows.Choice(Texts.Get("settings.hud.objective_alert"), ObjectiveAlertNames, (int)s.objectiveAlert, i => s.objectiveAlert = (ObjectiveAlertLook)i);
+        // The Garry's Mod HUD addons' rows, each module's own (Scripts/UI/Hud/Addons/<Module>/<Module>OptionsRows.cs).
+        HudAddons.PlayerHudOptionsRows.BuildRows(rows, s.addonPlayerHud);
+        HudAddons.HitFeedbackOptionsRows.BuildRows(rows, s.addonHitFeedback);
+        HudAddons.EnemyBarsOptionsRows.BuildRows(rows, s.addonEnemyBars);
+        HudAddons.GrenadesOptionsRows.BuildRows(rows, s.addonGrenades);
+        HudAddons.DeathScreenOptionsRows.BuildRows(rows, s.addonDeathScreen);
     }
 }

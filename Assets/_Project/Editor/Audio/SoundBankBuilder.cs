@@ -27,6 +27,9 @@ internal sealed class SoundBankBuilder : AssetPostprocessor
         ("Grenades", "Assets/_Project/Art/Audio/Grenades"),
         // The stealth round (PlayerThrow): the stone taken in hand (StoneReady) and where it lands (StoneHit).
         (PlayerThrow.BankId, "Assets/_Project/Art/Audio/Stealth"),
+        // The Garry's Mod HUD addons' sounds (HudAddons.Sound): Art/Audio/Addons/<Module>/<Key>, so each module adds its
+        // own folders and this list never changes for them.
+        (HudAddons.Sound.BankId, HudAddons.Sound.Folder),
     };
     private static bool queued;
 

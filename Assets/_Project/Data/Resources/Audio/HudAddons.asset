@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0513b63a8f85441499f8c22cf0761180, type: 3}
+  m_Name: HudAddons
+  m_EditorClassIdentifier: Assembly-CSharp::SoundBank
+  id: HudAddons
+  entries:
+  - key: DeathScreen/Whistle
+    clips:
+    - {fileID: 8300000, guid: a8bf9c48261243209881167ebde5b3e1, type: 3}
+  - key: Grenades/PinPull
+    clips:
+    - {fileID: 8300000, guid: e4fed5d99c694da68591f0ad59062600, type: 3}
+    - {fileID: 8300000, guid: 3149510240b94e3fbcdf18fefa766044, type: 3}
+    - {fileID: 8300000, guid: dac1ba337b8a4f7aa2394bd2f14eb14a, type: 3}
+  - key: Grenades/PinPullCloth
+    clips:
+    - {fileID: 8300000, guid: 56f144a9a2c94faba4093ef4eb2161b6, type: 3}
+    - {fileID: 8300000, guid: 4116c38b5ddc493c94ee619cb52aed1c, type: 3}
+    - {fileID: 8300000, guid: e3bf40f1832b43918661eabefbc0117e, type: 3}
+    - {fileID: 8300000, guid: 44edf961a40b46a194a5ea0f14e5b4cb, type: 3}
+    - {fileID: 8300000, guid: 60bd5e7bc54646a9bb141dd675b98595, type: 3}
+    - {fileID: 8300000, guid: 69b2dfc74df34fab86acbe29583939f6, type: 3}
+  - key: Grenades/RattleMedium
+    clips:
+    - {fileID: 8300000, guid: 5cdcfd6d904d4ee98395de4402835210, type: 3}
+    - {fileID: 8300000, guid: 334454b3e453447ba5595838e68ff6b7, type: 3}
+    - {fileID: 8300000, guid: b8c28936cf5d4c129213ee4b2ec184df, type: 3}
+    - {fileID: 8300000, guid: 26148c4e328f4edbb9dc77c92021f13a, type: 3}
+    - {fileID: 8300000, guid: 7b943faad1f144248f663fc84c3115b6, type: 3}
+    - {fileID: 8300000, guid: df2ba23bcb894d949fa70c141859ea60, type: 3}
+    - {fileID: 8300000, guid: f75d93e014644ba5b7d102600aacfcad, type: 3}
+    - {fileID: 8300000, guid: 4c319d8b76af428ebbb360fe710cf0c5, type: 3}
+    - {fileID: 8300000, guid: 2a023801a8f745e899ec6edca753ed90, type: 3}
+    - {fileID: 8300000, guid: de1a0b896a6f42aab51af5a40e1ee0c3, type: 3}
+  - key: Grenades/RattleSmall
+    clips:
+    - {fileID: 8300000, guid: d0696449a8744196afabe91fd98def09, type: 3}
+    - {fileID: 8300000, guid: 8b04c66edfa34c54b1188b0ecd072d2a, type: 3}
+    - {fileID: 8300000, guid: 94f33d5d391a4a88a8f599927aa262cb, type: 3}
+    - {fileID: 8300000, guid: 7a338347eb51408d9febb9ee2bb2397f, type: 3}
+    - {fileID: 8300000, guid: 2dd7f6fdf998490d84143d720d38965b, type: 3}
+    - {fileID: 8300000, guid: f4b2cf999b704b75b1c4e867e742b3b8, type: 3}
+    - {fileID: 8300000, guid: 5976e57a60f9402fb1b94d88149177c7, type: 3}
+    - {fileID: 8300000, guid: 7ab47b5f8d61452daa565b0566d08411, type: 3}
+    - {fileID: 8300000, guid: fc6d2953c3ba46539e1b37f79f2b6cb1, type: 3}
+  - key: Grenades/Throw
+    clips:
+    - {fileID: 8300000, guid: 50635405a9004fa4831976ea6b9a375f, type: 3}
+  - key: HitFeedback/Body
+    clips:
+    - {fileID: 8300000, guid: f51e11192e6740f88fbf3f22076e586b, type: 3}
+    - {fileID: 8300000, guid: 165f27ebb9d64b0288d0294ab1d3dfcc, type: 3}
+    - {fileID: 8300000, guid: 440338d4e1884f3eaee856bf5b33ff3f, type: 3}
+    - {fileID: 8300000, guid: 6d501e331ea245da89a1447c441b6c09, type: 3}
+    - {fileID: 8300000, guid: 517e91208c844532b884248d395ff637, type: 3}
+    - {fileID: 8300000, guid: 184cac98dc254410a5d48d7d81b4cd31, type: 3}
+  - key: HitFeedback/BodyLayer
+    clips:
+    - {fileID: 8300000, guid: 6ed6a5d23a034890a611a6e37b6f8a05, type: 3}
+    - {fileID: 8300000, guid: 920115b5b0144a869cd8e0050a2a5374, type: 3}
+    - {fileID: 8300000, guid: eed48117bd0644b8912fb9fd81867007, type: 3}
+    - {fileID: 8300000, guid: 15162dced3f04244972719238670b092, type: 3}
+    - {fileID: 8300000, guid: fb9d9eda25124eba87485438e391eae5, type: 3}
+    - {fileID: 8300000, guid: 5aa265723f004dd69db5688831724f2b, type: 3}
+  - key: HitFeedback/Head
+    clips:
+    - {fileID: 8300000, guid: 99ed962a4e364abd89b879184cfac181, type: 3}
+    - {fileID: 8300000, guid: 05cc4c5a5db84e8bb875ceb5c3111399, type: 3}
+    - {fileID: 8300000, guid: 42e335eb2f4147008b71332b1d2188c5, type: 3}
+    - {fileID: 8300000, guid: f65b2e65e56c46c19f67ff2a708df44a, type: 3}
+    - {fileID: 8300000, guid: b31ad421d576434993f512dc85cdcc27, type: 3}
+    - {fileID: 8300000, guid: 8b90fc23d8144fe29160e23b7ef44316, type: 3}
+    - {fileID: 8300000, guid: 22ef0849f8ee4825b48b3b77ce4fd032, type: 3}
+    - {fileID: 8300000, guid: f79d5a9fb23144398978ef4ea51f66e1, type: 3}
+    - {fileID: 8300000, guid: d578df8d5d224c7481d0bd5710977d5a, type: 3}
+    - {fileID: 8300000, guid: f80c43d52bbe4b0dad8ef0e8b50e2132, type: 3}
+    - {fileID: 8300000, guid: 2cddd1ad559642a5959e101bac888abf, type: 3}
+  - key: HitFeedback/HeadKillMark
+    clips:
+    - {fileID: 8300000, guid: 9fe0bb40a3bf4a8b9fd4ee744615d63e, type: 3}
+  - key: HitFeedback/HeadLayer
+    clips:
+    - {fileID: 8300000, guid: 1838a009cc1d4a6499efee09501dd045, type: 3}
+    - {fileID: 8300000, guid: 0781b52f87a14d9cb1825425e8a1da19, type: 3}
+    - {fileID: 8300000, guid: 84e7c96166e8458ca3ddca3bc8c354b3, type: 3}
+    - {fileID: 8300000, guid: 1ba34535ea2647e283f3bbd2f53d760a, type: 3}
+    - {fileID: 8300000, guid: 3630a60371aa4231a14dbe78b5c1d3b5, type: 3}
+    - {fileID: 8300000, guid: 77a18cb047ad46df891f8db64705afc7, type: 3}
+    - {fileID: 8300000, guid: 6e51297b308b42ddae26a100f599ddee, type: 3}
+    - {fileID: 8300000, guid: a2a5c899a37a47bfaeeba0c2573dc799, type: 3}
+    - {fileID: 8300000, guid: 4bcb274429184ce790e2e8b5f5878a6c, type: 3}
+    - {fileID: 8300000, guid: 83802f8401924f9c83f2286f697d4fa5, type: 3}
+    - {fileID: 8300000, guid: 02a8184deed14f54a04d9e2bd7e16b80, type: 3}
+    - {fileID: 8300000, guid: 999ecfd2f23a42779405a59e40e18db9, type: 3}
+  - key: HitFeedback/HeadMark
+    clips:
+    - {fileID: 8300000, guid: d50360db382f4ecd9738276f2a3a6cab, type: 3}
+  - key: HitFeedback/HitMark
+    clips:
+    - {fileID: 8300000, guid: 9f472892d6fc4154ba6a20000703885c, type: 3}
+  - key: HitFeedback/ItemMark
+    clips:
+    - {fileID: 8300000, guid: 53efbf1313a24c7da53c39f0abe9d52f, type: 3}
+  - key: HitFeedback/KillMark
+    clips:
+    - {fileID: 8300000, guid: 3485ec042eb0407897079fb38b07c669, type: 3}
+  - key: PlayerHud/Select
+    clips:
+    - {fileID: 8300000, guid: e6fec8ef930943c8a8bfdc574d34a671, type: 3}

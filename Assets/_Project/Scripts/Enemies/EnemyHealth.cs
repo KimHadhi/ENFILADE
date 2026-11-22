@@ -30,7 +30,7 @@ public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver, ICombatVitals,
     /// <summary>
     /// Its name over its health bar and in the kill feed: a zombie's kind's words from Texts.csv (ZombieType), where every
     /// zombie used to read its prefab's name, Enemy_Test (user, 2026-11-11 playtest). The bar reads it each frame it shows
-    /// (EnemyHealthBarHUD), so a name a copy hears of late needs no word to it.
+    /// (HudAddons.EnemyBarsHud), so a name a copy hears of late needs no word to it.
     /// </summary>
     internal void SetDisplayName(string name)
     {

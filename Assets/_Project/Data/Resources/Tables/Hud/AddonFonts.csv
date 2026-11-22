@@ -1,0 +1,12 @@
+﻿id,file,unitsPerEm,winAscent,winDescent,weightClass,#note
+#설명,"그릴 글꼴 파일: Resources/UI/Fonts/<file>.ttf(FontFaces가 처음 쓸 때 TMP 글꼴로 만든다)",em 크기(head),윈도 위 높이(OS/2 usWinAscent),윈도 아래 깊이(OS/2 usWinDescent),"굵기(OS/2 usWeightClass. 550 이하인 글꼴에 550보다 굵게 부르면 TMP 굵게로 그린다: 윈도가 가짜 굵게를 하듯)","게리 모드 애드온이 surface.CreateFont에 쓰는 글꼴 이름(id)마다 한 줄. GMod의 글꼴 크기는 칸 높이(윈도 위+아래)라서 TMP 크기 = 크기 x unitsPerEm / (winAscent + winDescent), 기준선은 칸 위에서 winAscent/(winAscent+winDescent) 아래(HudAddons.HudFont). 숫자는 Tools/HudAddons/font_metrics.py가 TTF에서 읽는다. 파일이 게임에 없으면 Label 역할의 글꼴로 그린다"
+Unifont,unifont,1024,896,128,500,"HUD Mk II의 기본 글꼴(애드온 resource/fonts/unifont13.0.01.ttf, 굵기 500 x 2 = 1000으로 불러 굵게). 파일: Resources/UI/Fonts/unifont.ttf"
+EvanstonTavernM,evanstontavernm,1000,1134,125,400,"HUD Mk II가 함께 주는 글꼴(애드온 설정의 글꼴 칸에 쓰는 이름). 파일: Resources/UI/Fonts/evanstontavernm.ttf"
+HelveticaNeue Condensed,helveticaneue-condensed,1000,932,212,400,"Black Ops VI Hitmarker의 점수·처치 글꼴(애드온 helveticaneue-condensed.ttf. 굵기 600으로도 부른다 → 굵게). hhea(714/-176)가 윈도 값과 달라 이 표가 필요한 글꼴. 파일: Resources/UI/Fonts/helveticaneue-condensed.ttf"
+Hitmarker Text Medium,hitmarker-text-medium,2000,2000,500,500,"BO6 좀비 체력바의 이름 글꼴"
+Hitmarker Text Bold,hitmarker-text-bold,2000,2000,500,700,"BO6 좀비 체력바의 굵은 이름 글꼴(굵기 1000으로 부르지만 이미 굵은 글꼴)"
+Hitmarker Text Regular,hitmarker-text-regular,2000,2000,500,400,"Hitmarker Text 보통(HUD Mk II도 함께 준다)"
+Hitmarker Text,hitmarker-text-regular,2000,2000,500,400,"윈도의 글꼴 집안 이름으로 부를 때"
+Hitmarker Normal Regular,hitmarker-normal-regular,2000,2000,500,400,"Hitmarker Normal 보통(HUD Mk II도 함께 준다)"
+Hitmarker Normal,hitmarker-normal-regular,2000,2000,500,400,"윈도의 글꼴 집안 이름으로 부를 때"
+Hitmarker VF Condensed Light,hitmarker-vf-condensed-light,2000,2000,500,300,"BO6 좀비 체력바의 피해 숫자 글꼴. 변수 글꼴 hitmarker-vf.ttf의 Condensed Light 인스턴스인데 TMP는 변수 글꼴의 기본 인스턴스만 그리므로 그 인스턴스를 정적 TTF로 잘라 넣어야 한다. 아직 게임에 없다"

@@ -3,11 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// The death screen's pieces on the screen (DeathScreen says what goes in them and when):
-/// - The film over the world, under the HUD (drawn through HudCamera beneath the GameHUD canvas): the MW3 Death Screen
-///   addon's own two pictures, its flecked dark-red vignette and its blood, each stretched over the whole screen as the
-///   addon draws them (2026-11-22, the user: use the addon's screen as it is and put our death info on it).
-/// - The card, over the HUD, framing the middle of the screen so the fallen eyes still see what is in front of them:
+/// Our death card (DeathScreen says what goes in it and when), over the MW3 Death Screen addon's screen
+/// (HudAddons.DeathScreenModule; 2026-11-22, the user: use the addon's screen as it is and put our death info on it).
+/// The card, over the HUD, frames the middle of the screen so the fallen eyes still see what is in front of them:
 ///   above it the word (사망, or 전멸 for a wipe) on a near-black plate with a pink slash crossing behind it, and under
 ///   that what killed them on a thin dark band; below it three numbers on their own plates (how long they lasted,
 ///   their kills this life, the money they hold beside its banknote), and under those the one line that says what
@@ -16,8 +14,8 @@ using UnityEngine.UI;
 /// On a short screen (21:9 and wider) the whole card is drawn smaller about the middle, so it keeps clear of the top
 /// centre's alerts. Its entrance: the slash draws out and the word slams in from large, its letters closing up; the
 /// cause slides in; the numbers pop in one after another and count up; the line comes last. It leaves by fading as the
-/// film does.
-/// Real time throughout. The canvases are made on first use and destroyed with the player.
+/// addon's screen clears.
+/// Real time throughout. The canvas is made on first use and destroyed with the player.
 /// </summary>
 public sealed class DeathCard
 {
@@ -32,10 +30,6 @@ public sealed class DeathCard
 
     // Over the HUD and its prompts, under PlayerLifeHUD (80: the spectate keys stay readable), the score board and menus.
     private const int CardOrder = 78;
-    // Under the GameHUD canvas (0) on the HUD camera, over the world.
-    private const int FilmOrder = -5;
-    // The addon's pictures (Art/Resources/UI/DeathScreen, 1024x512 with their own alpha, decoded from its VTFs).
-    private const string VignettePicture = "UI/DeathScreen/Vignette", BloodPicture = "UI/DeathScreen/Blood";
     // Where each piece sits (px at 1080p from the screen's middle), how big it is, and its own lean (° anticlockwise).
     // Measured with the leans on (polygon distances at full size): the word's piece, slash and shards included, clears the
     // cause band by 16 px and reaches 249 px over the middle; the band's lowest corner stays 41 px over the middle and the
@@ -58,9 +52,8 @@ public sealed class DeathCard
     private const float TileFrom = .36f, TileGap = .07f, TileFor = .14f, CountFor = .45f, NextFrom = .62f, NextFor = .18f;
     private const float HairlineWidth = 420f;
 
-    private GameObject cardHost, filmHost;
+    private GameObject cardHost;
     private RectTransform card;
-    private RawImage vignette, blood;
     private CanvasGroup titleGroup, causeGroup, nextGroup;
     private readonly CanvasGroup[] tileGroups = new CanvasGroup[3];
     private RectTransform titleRect, causeRect, nextRect;
@@ -73,16 +66,10 @@ public sealed class DeathCard
     private float startedAt = -1f, wordAt = -1f;
     private bool still;
 
-    /// <summary>Makes the canvases ahead of the first death (DeathScreen.Prepare), hidden.</summary>
+    /// <summary>Makes the canvas ahead of the first death (DeathScreen.Prepare), hidden.</summary>
     public void Build()
     {
         if (cardHost != null) return;
-        filmHost = new GameObject("Death Film", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        FeelUI.SetupHud(filmHost, FilmOrder);
-        // The vignette under the blood, in the order the addon draws them.
-        vignette = Film("Death Vignette", VignettePicture);
-        blood = Film("Death Blood", BloodPicture);
-
         cardHost = new GameObject("Death Screen", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         FeelUI.SetupOverlay(cardHost, CardOrder);
         card = FeelUI.Rect("Death Card", cardHost.transform);
@@ -93,12 +80,11 @@ public sealed class DeathCard
         Show(false);
     }
 
-    /// <summary>Destroys both canvases (the player is going).</summary>
+    /// <summary>Destroys the canvas (the player is going).</summary>
     public void Destroy()
     {
         if (cardHost != null) Object.Destroy(cardHost);
-        if (filmHost != null) Object.Destroy(filmHost);
-        cardHost = filmHost = null;
+        cardHost = null;
     }
 
     /// <summary>Starts the entrance with these words, now.</summary>
@@ -134,7 +120,7 @@ public sealed class DeathCard
         causeText.text = said.Cause ?? "";
         nextText.text = said.Next ?? "";
         Show(true);
-        Tick(float.MaxValue, 1f, "", -1f, 0f, 0f);
+        Tick(float.MaxValue, 1f, "", -1f);
     }
 
     /// <summary>Hides everything at once.</summary>
@@ -147,14 +133,12 @@ public sealed class DeathCard
 
     /// <summary>
     /// This frame's look: the entrance by the time since it began, everything faded by <paramref name="shown"/> (1 while
-    /// it holds, falling to 0 as it leaves), the line's words and its hairline (<paramref name="fill"/> 0-1, below 0 for
-    /// none), and the film's two pictures' opacity (the addon's vertex alpha).
+    /// it holds, falling to 0 as it leaves), and the line's words and its hairline (<paramref name="fill"/> 0-1, below 0
+    /// for none). The screen under it is the death screen addon's (HudAddons.DeathScreenModule).
     /// </summary>
-    public void Tick(float now, float shown, string next, float fill, float vignetteLevel, float bloodLevel)
+    public void Tick(float now, float shown, string next, float fill)
     {
         if (cardHost == null) return;
-        vignette.canvasRenderer.SetAlpha(Mathf.Clamp01(vignetteLevel));
-        blood.canvasRenderer.SetAlpha(Mathf.Clamp01(bloodLevel));
         if (!still && startedAt < 0f) return;
         float since = still ? 99f : now - startedAt, word = still ? 99f : now - wordAt;
         shown = Mathf.Clamp01(shown);
@@ -208,7 +192,6 @@ public sealed class DeathCard
     private void Show(bool on)
     {
         if (cardHost != null && cardHost.activeSelf != on) cardHost.SetActive(on);
-        if (filmHost != null && filmHost.activeSelf != on) filmHost.SetActive(on);
     }
 
     // An overshoot that settles: the slam.
@@ -217,25 +200,6 @@ public sealed class DeathCard
         const float s = 1.6f;
         t -= 1f;
         return t * t * ((s + 1f) * t + s) + 1f;
-    }
-
-    // One of the addon's pictures stretched over the whole screen (its DrawTexturedRect(0, 0, ScrW(), ScrH())), white so
-    // the picture shows as it is; its strength is the CanvasRenderer's alpha, so fading it never rebuilds the mesh.
-    private RawImage Film(string name, string picture)
-    {
-        var rect = KitStyle.Stretch(name, filmHost.transform);
-        var film = rect.gameObject.AddComponent<RawImage>();
-        film.raycastTarget = false;
-        film.color = Color.white;
-        film.texture = Resources.Load<Texture2D>(picture);
-        // Without its picture a RawImage draws plain white over the whole screen: better nothing.
-        if (film.texture == null)
-        {
-            film.enabled = false;
-            Debug.LogWarning("[DeathCard] Missing death screen picture Resources/" + picture + ".png");
-        }
-        film.canvasRenderer.SetAlpha(0f);
-        return film;
     }
 
     private RectTransform Piece(string name, Vector2 at, Vector2 size, float lean, out CanvasGroup group)

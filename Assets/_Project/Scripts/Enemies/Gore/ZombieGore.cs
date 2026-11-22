@@ -280,7 +280,7 @@ public sealed class ZombieGore : MonoBehaviour
     internal static void ShotDeadHead(in DamageHit hit, bool meal, ulong id)
     {
         PlayerNetworkCorpse.TellDeadHead(hit.Source, meal, id, hit.Direction, hit.EventSeed);
-        if (PlayerPerks.IsMine(hit.Source)) HitConfirm.LandedOnDead(hit.Pierced);
+        if (PlayerPerks.IsMine(hit.Source)) HitConfirm.LandedOnDead();
     }
 
     /// <summary>

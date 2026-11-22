@@ -42,8 +42,6 @@ public sealed class AmmoHUD : MonoBehaviour
     /// <summary>The display blinks once: what it shows just changed by something taken (FieldPickups: ammo, a gun).</summary>
     public static void Blink(Color color)
     {
-        // Under HUD Mk II the gun's boxes are MkAmmo's.
-        if (MkHud.On) { MkHud.BlinkAmmo(color); return; }
         if (current != null && current.panel != null) HudBlink.On(current.panel, color);
     }
 
@@ -87,8 +85,9 @@ public sealed class AmmoHUD : MonoBehaviour
         var runtime = weaponSlots != null && weaponSlots.isActiveAndEnabled
             ? weaponSlots.GetRuntime(weaponSlots.SelectedSlot) : null;
         if (health == null && weaponSlots != null) health = weaponSlots.GetComponent<PlayerDamageReceiver>();
+        // The addon player HUD has the gun's boxes (HudAddons.PlayerHudModule.On): while it is on this display stays away.
         bool visible = runtime != null && runtime.Data.Category != WeaponCategory.Melee
-            && (health == null || health.IsAlive);
+            && (health == null || health.IsAlive) && !HudAddons.PlayerHudModule.On;
         group.alpha = visible ? 1f : 0f;
         // While it shows, the display stays under the right edge's column of callout windows, so they keep above it: on
         // a 21:9 screen (935 px of canvas) a second window came down onto it.

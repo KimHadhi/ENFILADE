@@ -34,11 +34,14 @@
 | [처형·암살](Features/Executions.md) | 자세별 짝 애니메이션 |
 | [투척물](Features/Grenades.md) | G 투척과 클래스 투척물 |
 | [좀비 엘리트](Features/ZombieElites.md) | 특수 좀비 |
-| [데스 스크린](Features/DeathScreen.md) | 죽었을 때의 화면 |
+| [데스 스크린](Features/DeathScreen.md) | 죽었을 때의 화면: MW3 Death Screen 애드온 그대로(HUD 애드온 모듈 DeathScreen)와 그 위 우리 데스 카드 |
 | [자연스러운 달리기](Features/NaturalRun.md) | 걸음과 달리기 다리 |
 | [손가락질과 찌르기](Features/Poke.md) | F 길게 눌러 가리키기 |
 | [적 외곽선](Features/EnemyOutlines.md) | 핑·현상금·붙잡은 좀비·처형·염료·고스트 시야·웨이브 끝 적의 띠와 벽 너머 채움을 한 곳(EnemyOutlines)이 정하고, 표시된 몸을 마스크에 그려 화면에서 둘레에 고른 띠를 깐다. 0.9.242의 흰 알약(고스트 시야가 복사한 캡슐에 핑 외곽선이 붙음)의 원인과 플레이 없이 확인하는 법 |
-| [적 체력바 (BO6 좀비 체력바)](Features/EnemyBars.md) | 게리 모드 애드온 Black Ops 6 Zombies Healthbars를 그대로 옮긴 바 하나(조준한 적이나 방금 때린 적): 애드온의 수치와 표의 자리, 원본과 다른 점 |
+| [적 체력바 (BO6 좀비 체력바)](Features/EnemyBars.md) | 게리 모드 애드온 Black Ops 6 Zombies Healthbars를 그대로 옮긴 바 하나(조준한 적이나 방금 때린 적, HUD 애드온 모듈 EnemyBars): 애드온의 수치와 표의 자리, 원본과 다른 점 |
+| [플레이어 HUD (HUD Mk II)](Features/PlayerHud.md) | 게리 모드 애드온 HUD Mk2를 그대로 옮긴 플레이어 HUD(HUD 애드온 모듈 PlayerHud): 체력·방어구·탄약·수류탄·환경 위험·획득 기록·피해 방향·무기 선택기·효과, 켜져 있는 동안 비켜서는 우리 조각 |
+| [히트 피드백](Features/HitFeedback.md) | 게리 모드 애드온 Black Ops VI Hitmarker와 Cool Killchains를 한 모듈로(HUD 애드온 모듈 HitFeedback): 히트 마커·소리·점수 팝업(점수 = 경험치)·킬 체인 |
+| [수류탄 HUD 애드온](Features/AddonGrenades.md) | 게리 모드 애드온 MW Quick Grenade와 Arctic's Grenade Indicators를 한 모듈로(HUD 애드온 모듈 Grenades): 쿠킹 링·다가오는 세열·세모·홀로그램·퀵 수류탄 소리 |
 | [소리 다시 세우기 (설계)](Features/SoundRebuild.md) | 코드로 계산해 만드는 소리 120개(지금 들리는 것 92개)를 무엇으로 바꿀지의 목록, 소리 내는 일을 Sonity 하나에 맡기는 설계와 순서, 함께 찾은 버그. 사용자의 결정(2026-11-21: 숫자는 표에 남고 표와 폴더가 Sonity를 움직인다), 0.9.237에 지운 합성 대체 코드와 사용자가 준 소리 12개(리퍼·돌·줍기), 0.9.249에 지은 1단계(Sonity 바닥: 믹서, 얇은 층 GameSounds, 플레이 없는 점검) |
 
 ## 기록 (Records)

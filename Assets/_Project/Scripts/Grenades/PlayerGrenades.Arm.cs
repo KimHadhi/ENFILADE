@@ -23,6 +23,8 @@ public sealed partial class PlayerGrenades
         clip = motion.ThrowTable;
         clipTime = 0f;
         speed = motion.ThrowSpeed;
+        // This PC's player hears the quick grenade addon's throw sounds, its whoosh just before the hand lets go.
+        if (movement.IsLocal && armKind != Throwable.Knife && armKind != Throwable.Stone) HudAddons.GrenadesModule.Throw(SwingLeft());
     }
 
     // A tap's own clip, where its motion has one (a claymore is set down, never tapped out of the hand). A clip of its own
@@ -38,6 +40,8 @@ public sealed partial class PlayerGrenades
         clip = motion.TapTable;
         clipTime = at;
         speed = motion.TapSpeed;
+        // As for a held throw: the quick grenade addon's throw sounds for this PC's player.
+        if (movement.IsLocal && armKind != Throwable.Knife && armKind != Throwable.Stone) HudAddons.GrenadesModule.Throw(SwingLeft());
         return true;
     }
 

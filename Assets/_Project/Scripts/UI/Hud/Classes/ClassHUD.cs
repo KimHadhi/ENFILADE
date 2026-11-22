@@ -4,33 +4,35 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
-/// The class's own resource (stage 7, ClassKit). What it says is worked out here every frame into a ClassReadout
-/// (ClassReadout.Local): for an Assault its adrenaline as ticks that fill pink, "[휠] CHARGE" once they are full, and with
-/// 데인저 클로즈 its barrage's wait or aim; for a Point its two guns, each with a line that runs out while the gun put
-/// away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks, the newest flashing white as it comes
-/// and all of them as they are lost, and "DEADEYE" while the gun in hand holds its first round since loading; for a
-/// Knight "[휠] 원호" while its cover is ready and the wait in its place while not; for a Schießhund its Desperado's
-/// rounds as teal ticks, the newest flashing as a bounty loads it, and "DESPERADO" while it is in hand with a round in
-/// it; for a Détente its syringe as a tick a dose, red, "[휠] 주사" while a dose is in it, and how many Resurrections are
-/// left; for a Support its bag. Classes whose abilities come later show their name only.
-/// <para>Who draws it: HUD Mk II's class tile and the words beside it (MkGear) while HUD Mk II stands in (MkHud.On, the
-/// user's pick of the HUD drafts, 2026-11-22); otherwise the old dark slanted plate at the foot of the screen with its
-/// leaning pips, and under it, in a flow, what the player has standing in the world (DeployStrip), then every timed
-/// effect on them, each in a slot of its own with its own time (EffectStack over TimedEffects). The plate used to carry
-/// ONE draining bar there, and this class chose what it showed by a chain of "this if it runs, else that" (the user,
-/// 2026-11-18: a gun swapped during the Gun Kata started Gunslinger and the kata's time was gone). Nothing chooses any
-/// more: the features say what runs and every one of them is shown.</para>
+/// The class's own resource, at the foot of the screen (stage 7, ClassKit): a dark slanted plate with the class's name,
+/// and for an Assault its adrenaline as a row of leaning pips that fill pink, "[휠] CHARGE" beating on it once they are
+/// full, and with 데인저 클로즈 its barrage's wait or aim past the
+/// pips; for a Point its two guns' numbers, each with a line
+/// that runs out while the gun put away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks as
+/// the pips, the newest flashing white as it comes and all of them as they are lost, and "DEADEYE" over the plate while
+/// the gun in hand holds its first round since loading; for a Knight "[휠] 원호" while its cover is ready and the wait in
+/// its place while not; for a Schießhund its Desperado's rounds as teal pips, the newest flashing as a bounty loads it,
+/// and "DESPERADO" over the plate while it is in hand with a round in it; for a Détente its syringe as a pip a dose,
+/// red, "[휠] 주사" while a dose is in it, and how many Resurrections are left beside them. Classes whose abilities
+/// come later show their name only.
+/// Under the plate, in a flow: what the player has standing in the world (DeployStrip), then every timed effect on
+/// them, each in a slot of its own with its own time (EffectStack over TimedEffects): a CHARGE, a Gun Kata, Gunslinger,
+/// Return Back, Golden Hour, a friend's adrenaline shot or cover, Momentum and the rest. The plate used to carry ONE
+/// draining bar there, and this class chose what it showed by a chain of "this if it runs, else that" (a card's state,
+/// then a friend's shot, then the taunt, the kata, the duel, the cheer, Return Back, the CHARGE): whatever came later in
+/// the chain was not on the screen while something earlier ran (the user, 2026-11-18: a gun swapped during the Gun
+/// Kata started Gunslinger and the kata's time was gone). Nothing chooses any more: the features say what runs and
+/// every one of them is shown.
 /// Local player only (PlayerMovement). HUD look: black, white and pink.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassHUD : MonoBehaviour
 {
-    private const int MostPips = ClassReadout.MostTicks;
+    private const int MostPips = 12;
     private const float Width = 300f, Height = 44f, Above = 112f, Slant = 12f, PipWidth = 14f, PipHeight = 14f, PipGap = 5f;
 
     private PlayerMovement movement;
     private ClassKit kit;
-    private readonly ClassReadout read = new ClassReadout();
     private RectTransform plate, pipRow, slotRow;
     private readonly Image[] pips = new Image[MostPips];
     private readonly Image[] slotLines = new Image[2], slotBacks = new Image[2];
@@ -40,17 +42,12 @@ public sealed class ClassHUD : MonoBehaviour
     private KeyCapGraphic keyCap;
     private TextMeshProUGUI keyLabel, keyWord, deadeye;
     private InputAction ability;
-    private string shownClass, paintedClass;
-    private int shownPips = -1, paintedPips = -1;
-    // Where the note stands on the old plate (past the pips, past the Point's guns, or at its place).
-    private float noteX = 128f;
+    private string shownClass;
+    private int shownPips;
     // What this player has standing in the world, under the plate (how many of each kind, how many may: DeployStrip),
-    // and under that every timed effect on them, a slot each (EffectStack). The old plate's only.
+    // and under that every timed effect on them, a slot each (EffectStack).
     private DeployStrip deploy;
     private EffectStack effects;
-
-    // The old plate draws the readout; HUD Mk II draws it instead while it stands in (MkGear).
-    private static bool Plate => !MkHud.On;
 
     private void OnEnable()
     {
@@ -62,25 +59,18 @@ public sealed class ClassHUD : MonoBehaviour
     {
         if (movement == null || !movement.IsLocal) return;
         if (kit == null) kit = GetComponent<ClassKit>();
-        ClassReadout.Local = read;
-        bool drawn = Plate;
-        if (drawn) Build();
+        Build();
         string id = PlayerClass.CurrentId;
         if (id != shownClass) Show(id);
         bool dead = movement.IsDead;
-        read.Hidden = dead;
-        if (drawn)
-        {
-            plate.gameObject.SetActive(!dead);
-            // The count of what this player has standing, whatever their class and whether or not they are placing now
-            // (the user, 2026-11-18: "현재 설치 개수/최대 제한 현황 표시"); what comes next in the flow stands under it.
-            deploy.Show(movement, Placing(), !dead);
-            // Every timed effect on this player, a slot each, under the count line (or right under the plate when that
-            // shows nothing): the features say what runs (TimedEffects) and none of it is chosen between here.
-            effects.Show(Above - deploy.Reach, !dead);
-        }
+        plate.gameObject.SetActive(!dead);
+        // The count of what this player has standing, whatever their class and whether or not they are placing now (the
+        // user, 2026-11-18: "현재 설치 개수/최대 제한 현황 표시"); what comes next in the flow stands under it.
+        deploy.Show(movement, Placing(), !dead);
+        // Every timed effect on this player, a slot each, under the count line (or right under the plate when that
+        // shows nothing): the features say what runs (TimedEffects) and none of it is chosen between here.
+        effects.Show(Above - deploy.Reach, !dead);
         if (dead || kit == null) return;
-        read.Key = KeyName();
         if (PlayerClass.Is(PlayerClass.Assault)) Adrenaline();
         else if (PlayerClass.Is(PlayerClass.Point)) Guns();
         else if (PlayerClass.Is(PlayerClass.Ghost)) Hunter();
@@ -88,12 +78,11 @@ public sealed class ClassHUD : MonoBehaviour
         else if (PlayerClass.Is(PlayerClass.Schiesshund)) Hound();
         else if (PlayerClass.Is(PlayerClass.Detente)) Detente();
         else if (PlayerClass.Is(PlayerClass.Support)) Support();
-        if (drawn) Paint();
     }
 
     // The kind of thing being placed now, as Tables/Deployables names it ("" for none): a Support's structure while
-    // its key is held, or a claymore held out. HUD Mk II's deploy lines ask it too.
-    internal static string Placing()
+    // its key is held, or a claymore held out.
+    private static string Placing()
     {
         var support = SupportKit.Local;
         if (support != null && support.Planning) return Barricade.KindName(support.PlanKind);
@@ -105,44 +94,39 @@ public sealed class ClassHUD : MonoBehaviour
     {
         shownClass = id;
         var info = PlayerClass.Find(id);
-        read.ClassId = id;
-        read.Title = info != null ? info.Title : id;
-        read.Icon = KitButtons.Icon(MainMenuClasses.Icon(id));
-        bool hound = PlayerClass.Is(PlayerClass.Schiesshund), knight = PlayerClass.Is(PlayerClass.Knight);
-        bool detente = PlayerClass.Is(PlayerClass.Detente), support = PlayerClass.Is(PlayerClass.Support), point = PlayerClass.Is(PlayerClass.Point);
-        read.Mark = Texts.Get(hound ? "class.hud.desperado" : "class.hud.deadeye");
-        read.MarkShown = false;
-        read.KeyReady = false;
-        read.Guns = false;
+        title.text = info != null ? info.Title : id;
+        icon.texture = KitButtons.Icon(MainMenuClasses.Icon(id));
+        icon.enabled = icon.texture != null;
+        bool assault = PlayerClass.Is(PlayerClass.Assault), point = PlayerClass.Is(PlayerClass.Point);
+        bool ghost = PlayerClass.Is(PlayerClass.Ghost), knight = PlayerClass.Is(PlayerClass.Knight), hound = PlayerClass.Is(PlayerClass.Schiesshund);
+        bool detente = PlayerClass.Is(PlayerClass.Detente), support = PlayerClass.Is(PlayerClass.Support);
+        pipRow.gameObject.SetActive(assault || ghost || hound || detente || support);
+        deadeye.text = Texts.Get(hound ? "class.hud.desperado" : "class.hud.deadeye");
+        slotRow.gameObject.SetActive(point);
+        keyRect.gameObject.SetActive(false);
+        deadeye.gameObject.SetActive(false);
         Word(Texts.Get(knight ? "class.hud.cover" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : hound ? "class.hud.duel"
             : point ? "class.hud.kata" : "class.hud.charge"), KitStyle.Accent);
-        read.Note = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
+        note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
-        noteX = 128f;
-        shownPips = -1;
-        read.Count = 0;
-        if (PlayerClass.Is(PlayerClass.Assault)) Pips(kit != null ? kit.StackMax : 8);
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
+        shownPips = 0;
+        if (assault) Pips(kit != null ? kit.StackMax : 8);
     }
 
-    // As many ticks as the resource holds (an Assault's adrenaline; a Ghost's Head Hunter, whose most the cards may raise).
+    // As many pips as the resource holds (an Assault's adrenaline; a Ghost's Head Hunter, whose most the cards may raise).
     private void Pips(int most)
     {
         int count = Mathf.Clamp(most, 1, MostPips);
         if (count == shownPips) return;
         shownPips = count;
-        read.Count = count;
+        for (int i = 0; i < MostPips; i++) pips[i].gameObject.SetActive(i < count);
     }
 
-    // Tick i: how full and in what colour.
-    private void Tick(int i, float fill, Color colour)
-    {
-        read.Fill[i] = fill;
-        read.Colour[i] = colour;
-    }
-
-    // Adrenaline: a tick a stack (as many as its most, which the 깊은 숨 card raises), all beating with the key's prompt
-    // once full. With 데인저 클로즈 (ClassCards) its barrage goes past the ticks: that the key held aims it, or its wait;
-    // and while the key is held to aim, "[휠] 놓으면 포격" ("포격 불가" in red where it can't fall) and how to call it off.
+    // Adrenaline: a pip a stack (as many as its most, which the 깊은 숨 card raises), all beating with the key's prompt once
+    // full. With 데인저 클로즈 (ClassCards) its barrage goes past the pips: that the key held aims it, or its wait; and while
+    // the key is held to aim, "[휠] 놓으면 포격" over the plate ("포격 불가" in red where it can't fall) and how to call it
+    // off past the pips.
     private void Adrenaline()
     {
         Pips(kit.StackMax);
@@ -150,30 +134,30 @@ public sealed class ClassHUD : MonoBehaviour
         bool ready = kit.ChargeReady;
         float beat = ready ? .75f + .25f * Mathf.Sin(Time.unscaledTime * 9f) : 1f;
         for (int i = 0; i < count; i++)
-            Tick(i, i < stacks ? 1f : 0f, i < stacks ? KitStyle.With(KitStyle.Accent, beat) : KitStyle.With(KitStyle.Ice, .14f));
+            pips[i].color = i < stacks ? KitStyle.With(KitStyle.Accent, beat) : KitStyle.With(KitStyle.Ice, .14f);
         var cards = ClassCards.Local;
         string side = "";
         if (cards != null && cards.DangerAiming)
         {
             bool fits = cards.DangerFits;
-            read.KeyReady = true;
+            KeyPrompt(true);
             Word(Texts.Get(fits ? "class.hud.danger.aim" : "class.hud.danger.no"), fits ? KitStyle.Accent : KitStyle.Red);
             side = Texts.Get(fits ? "class.hud.danger.cancel" : "class.assault.danger.ground");
         }
         else
         {
-            read.KeyReady = ready;
+            KeyPrompt(ready);
             Word(Texts.Get("class.hud.charge"), KitStyle.Accent);
             if (cards != null && cards.HasDanger)
                 side = cards.DangerReady ? Texts.Format("class.hud.danger.hold", KeyName())
                     : Texts.Format("class.hud.danger_wait", Mathf.CeilToInt(cards.DangerWait));
         }
-        read.Note = side;
-        noteX = 128f + count * (PipWidth + PipGap) + 6f;
+        if (note.text != side) note.text = side;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
-    // A Ghost's Head Hunter: a tick a stack. The one that came flashes white, the one lost too, and all of them when a
-    // hurt takes every stack. "DEADEYE" while the gun in hand holds its first round since loading.
+    // A Ghost's Head Hunter: a pip a stack. The one that came flashes white, the one lost too, and all of them when a
+    // hurt takes every stack. "DEADEYE" over the plate while the gun in hand holds its first round since loading.
     private void Hunter()
     {
         Pips(kit.HunterMax);
@@ -183,15 +167,15 @@ public sealed class ClassHUD : MonoBehaviour
         {
             Color color = i < stacks ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .14f);
             bool changed = change == -2 || (change == 1 && i == stacks - 1) || (change == -1 && i == stacks);
-            Tick(i, i < stacks ? 1f : 0f, flash > 0f && changed ? Color.Lerp(color, KitStyle.Ice, flash) : color);
+            pips[i].color = flash > 0f && changed ? Color.Lerp(color, KitStyle.Ice, flash) : color;
         }
         bool ready = kit.DeadeyeReady;
-        read.MarkShown = ready;
-        if (ready) read.MarkColour = KitStyle.With(KitStyle.Accent, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+        deadeye.gameObject.SetActive(ready);
+        if (ready) deadeye.color = KitStyle.With(KitStyle.Accent, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
     }
 
-    // A Schießhund's Desperado: a teal tick a round in its cylinder, the newest flashing white as a bounty loads it, and
-    // "DESPERADO" while it is in hand with a round in it (its next shot spends one).
+    // A Schießhund's Desperado: a teal pip a round in its cylinder, the newest flashing white as a bounty loads it, and
+    // "DESPERADO" over the plate while it is in hand with a round in it (its next shot spends one).
     private void Hound()
     {
         Pips(kit.RoundMax);
@@ -200,21 +184,22 @@ public sealed class ClassHUD : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Color color = i < rounds ? PingMarks.BountyColor : KitStyle.With(KitStyle.Ice, .14f);
-            Tick(i, i < rounds ? 1f : 0f, flash > 0f && i == rounds - 1 ? Color.Lerp(color, KitStyle.Ice, flash) : color);
+            pips[i].color = flash > 0f && i == rounds - 1 ? Color.Lerp(color, KitStyle.Ice, flash) : color;
         }
         bool loaded = kit.DesperadoLoaded;
-        read.MarkShown = loaded;
-        if (loaded) read.MarkColour = KitStyle.With(PingMarks.BountyColor, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
-        // Its duel on the class key: the prompt while it may be called, the seconds left to wait past the ticks while not.
+        deadeye.gameObject.SetActive(loaded);
+        if (loaded) deadeye.color = KitStyle.With(PingMarks.BountyColor, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+        // Its duel on the class key: the prompt while it may be called, the seconds left to wait past the pips while not.
         bool ready = kit.DuelReady;
-        read.KeyReady = ready;
-        read.Note = ready ? "" : Texts.Format("class.hud.duel_wait", Mathf.CeilToInt(kit.DuelWait));
-        noteX = 128f + count * (PipWidth + PipGap) + 6f;
+        KeyPrompt(ready);
+        string wait = ready ? "" : Texts.Format("class.hud.duel_wait", Mathf.CeilToInt(kit.DuelWait));
+        if (note.text != wait) note.text = wait;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
-    // A Détente: a red tick a dose left in the syringe (the newest flashing white as one goes in), "[휠] 주사" while there
-    // is one, and how many Resurrections are left. A treatment by hand or a Resurrection under way and Golden Hour are
-    // timed effects like any other (DetenteKit says them).
+    // A Détente: a red pip a dose left in the syringe (the newest flashing white as one goes in), "[휠] 주사" while there
+    // is one, and how many Resurrections are left beside the pips. A treatment by hand or a Resurrection under way and
+    // Golden Hour are timed effects like any other, each in its slot under the plate (DetenteKit says them).
     private void Detente()
     {
         var detente = DetenteKit.Local;
@@ -225,23 +210,26 @@ public sealed class ClassHUD : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Color color = i < doses ? KitStyle.Red : KitStyle.With(KitStyle.Ice, .14f);
-            Tick(i, i < doses ? 1f : 0f, flash > 0f && i == doses ? Color.Lerp(color, KitStyle.Ice, flash) : color);
+            pips[i].color = flash > 0f && i == doses ? Color.Lerp(color, KitStyle.Ice, flash) : color;
         }
-        read.KeyReady = !detente.Empty;
+        KeyPrompt(!detente.Empty);
         // By hand (the syringe empty): the offer to make, the answer awaited, else the syringe's state.
         var friend = detente.Candidate;
-        read.Note = detente.Treating != null ? "" : detente.Offering != null ? Texts.Format("class.hud.treat.waiting", PlayerTally.NameOf(detente.Offering))
+        string side = detente.Treating != null ? "" : detente.Offering != null ? Texts.Format("class.hud.treat.waiting", PlayerTally.NameOf(detente.Offering))
             : friend != null ? Texts.Format(DetenteKit.Asked(friend) ? "class.hud.treat.asked" : "class.hud.treat.offer", PlayerTally.NameOf(friend))
             : detente.Empty ? Texts.Get("class.hud.empty") : detente.RaisesLeft > 0 ? Texts.Format("class.hud.raises", detente.RaisesLeft) : "";
-        noteX = 128f + count * (PipWidth + PipGap) + 6f;
+        if (note.text != side) note.text = side;
+        note.rectTransform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
-    // A Support's bag: a tick a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
-    // up, and beside it "[F] 보급 · name" while a friend is in reach, else the bag in numbers (the user, 2026-11-12:
-    // "배낭이 얼마나 찼는지 보이나? 나는 바리케이드 설치 가능 횟수만 보여서": the pips alone didn't read as the bag). While
-    // the class key is held to place one (SupportKit's preview): "[휠] 놓으면 설치" and "[우클릭] 취소" where it may go
-    // up, "[휠] 설치 불가" in red and why where it can't; and with the throw card, "[F] 던지기 · name" while a friend is
-    // under the crosshair in reach, F throwing them a supply pack then instead of choosing the next kind.
+    // A Support's bag: a pip a resupply's worth (white when full, the next one filling), "[휠] 바리케이드" while one can go
+    // up, and beside the pips "[F] 보급 · name" while a friend is in reach, else the bag in numbers and how many of its
+    // barricades stand (a barricade under the crosshair has its own line at the foot of the screen: SupportKit) (the user,
+    // 2026-11-12: "배낭이 얼마나 찼는지 보이나? 나는 바리케이드 설치 가능 횟수만 보여서": the pips alone didn't read as the
+    // bag). While the
+    // class key is held to place one (SupportKit's preview): "[휠] 놓으면 설치" and "[우클릭] 취소" where it may go up,
+    // "[휠] 설치 불가" in red and why where it can't; and with the throw card, "[F] 던지기 · name" while a friend is under
+    // the crosshair in reach, F throwing them a supply pack then instead of choosing the next kind.
     private void Support()
     {
         var support = SupportKit.Local;
@@ -253,17 +241,17 @@ public sealed class ClassHUD : MonoBehaviour
         {
             float fill = Mathf.Clamp01(bags - i);
             Color color = fill >= 1f ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .14f + .3f * fill);
-            Tick(i, fill, flash > 0f && i == Mathf.FloorToInt(bags) ? Color.Lerp(color, KitStyle.Accent, flash) : color);
+            pips[i].color = flash > 0f && i == Mathf.FloorToInt(bags) ? Color.Lerp(color, KitStyle.Accent, flash) : color;
         }
         string side;
         if (support.Planning)
         {
             bool fits = support.PlanFit == Barricade.Fit.Ok;
-            read.KeyReady = true;
+            KeyPrompt(true);
             // What it puts up and for how much; F goes on to the next kind held.
             string what = Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant());
             // With as many standing as may, putting it up takes the oldest down: the word says so ("놓으면 교체"), as the
-            // amber line of what stands and the amber ghost over that one in the world do.
+            // amber chip under the plate and the amber ghost over that one in the world do.
             bool swaps = fits && support.NextDown != null;
             Word(Texts.Format(!fits ? "class.hud.place.kind.no" : swaps ? "class.hud.place.kind.swap" : "class.hud.place.kind", what,
                 Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
@@ -275,16 +263,17 @@ public sealed class ClassHUD : MonoBehaviour
         }
         else
         {
-            read.KeyReady = support.CanBuild;
+            KeyPrompt(support.CanBuild);
             Word(Texts.Get("class.hud.barricade"), KitStyle.Accent);
             var friend = support.Offered;
             // A barricade under the crosshair has its own line at the foot of the screen, where the eyes are (SupportKit).
-            // How many of each structure stand is the deploy line's (DeployStrip, MkGear): every kind at once.
+            // How many of each structure stand is the line under the plate's (DeployStrip): every kind at once, and still
+            // there while placing, where this note showed the one kind in hand and hid it then.
             side = friend != null ? Texts.Format("class.hud.resupply", friend.TryGetComponent(out PlayerTally tally) ? tally.DisplayName : friend.name)
                 : Texts.Format("class.hud.bag", Mathf.FloorToInt(support.Supply), Mathf.RoundToInt(support.SupplyMax));
         }
-        read.Note = side;
-        noteX = 128f + count * (PipWidth + PipGap) + 6f;
+        if (note.text != side) note.text = side;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + count * (PipWidth + PipGap) + 6f, 0f);
     }
 
     // A Knight's cover (KnightCover): the key's prompt while it is ready; while held, the friend under the crosshair (or
@@ -293,82 +282,19 @@ public sealed class ClassHUD : MonoBehaviour
     {
         var cover = KnightCover.Local;
         bool ready = cover != null && cover.Ready;
-        read.KeyReady = ready;
-        read.Note = cover == null ? ""
+        KeyPrompt(ready);
+        string side = cover == null ? ""
             : cover.Planning ? (cover.Aimed != null ? Texts.Format("class.hud.cover.aim", PlayerTally.NameOf(cover.Aimed)) : Texts.Get("class.hud.cover.look"))
             : cover.Watched != null ? Texts.Format("class.hud.cover.watch", PlayerTally.NameOf(cover.Watched))
             : ready ? "" : Texts.Format("class.hud.cover_wait", Mathf.CeilToInt(cover.Wait));
+        if (note.text != side) note.text = side;
     }
 
-    // The word for the class key, and its colour (a Support's turns red where its barricade can't go).
+    // The word beside the key's cap, and its colour (a Support's turns red where its barricade can't go).
     private void Word(string text, Color color)
     {
-        read.Word = text;
-        read.WordColour = color;
-    }
-
-    // A Point's two guns: the line under each runs out while it reloads put away, and flashes when it has.
-    private void Guns()
-    {
-        read.Guns = true;
-        read.Count = 2;
-        for (int slot = 0; slot < 2; slot++)
-        {
-            float share = kit.AsideShare(slot), since = kit.SinceRefill(slot);
-            float flash = Mathf.Clamp01(1f - since / .5f);
-            Tick(slot, share, Color.Lerp(KitStyle.With(KitStyle.Ice, .12f), KitStyle.With(KitStyle.Accent, .85f), flash));
-        }
-        // The Gun Kata on the class key: the prompt while it may be used, the seconds left to wait past the guns while not.
-        bool ready = kit.KataReady;
-        read.KeyReady = ready;
-        read.Note = ready ? "" : Texts.Format("class.hud.kata_wait", Mathf.CeilToInt(kit.KataWait));
-        noteX = 128f + 160f + 6f;
-    }
-
-    private string KeyName()
-    {
-        if (ability == null && InputSystem.actions != null) ability = InputSystem.actions.FindAction("Player/ClassAbility", false);
-        return KeyBindings.Name(ability);
-    }
-
-    // ---- The old plate: the readout drawn at the foot of the screen ----
-
-    private void Paint()
-    {
-        if (paintedClass != shownClass)
-        {
-            paintedClass = shownClass;
-            title.text = read.Title;
-            icon.texture = read.Icon;
-            icon.enabled = icon.texture != null;
-            bool assault = PlayerClass.Is(PlayerClass.Assault), ghost = PlayerClass.Is(PlayerClass.Ghost), hound = PlayerClass.Is(PlayerClass.Schiesshund);
-            bool detente = PlayerClass.Is(PlayerClass.Detente), support = PlayerClass.Is(PlayerClass.Support);
-            pipRow.gameObject.SetActive(assault || ghost || hound || detente || support);
-            slotRow.gameObject.SetActive(read.Guns || PlayerClass.Is(PlayerClass.Point));
-            deadeye.text = read.Mark;
-            paintedPips = -1;
-        }
-        if (!read.Guns && read.Count != paintedPips)
-        {
-            paintedPips = read.Count;
-            for (int i = 0; i < MostPips; i++) pips[i].gameObject.SetActive(i < read.Count);
-        }
-        if (read.Guns)
-            for (int slot = 0; slot < 2; slot++)
-            {
-                slotLines[slot].rectTransform.anchorMax = new Vector2(read.Fill[slot], 1f);
-                slotLines[slot].color = KitStyle.Accent;
-                slotBacks[slot].color = read.Colour[slot];
-            }
-        else
-            for (int i = 0; i < read.Count && i < MostPips; i++) pips[i].color = read.Colour[i];
-        KeyPrompt(read.KeyReady);
-        if (keyWord.text != read.Word) keyWord.text = read.Word;
-        if (keyWord.color != read.WordColour) keyWord.color = read.WordColour;
-        if (note.text != read.Note) note.text = read.Note;
-        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(noteX, 0f);
-        deadeye.gameObject.SetActive(read.MarkShown);
-        if (read.MarkShown) deadeye.color = read.MarkColour;
+        if (keyWord.text != text) keyWord.text = text;
+        if (keyWord.color != color) keyWord.color = color;
     }
 
     // "[휠] CHARGE" or "[휠] 도발" over the plate's right end, beating, while the class key has something to do.
@@ -376,7 +302,7 @@ public sealed class ClassHUD : MonoBehaviour
     {
         keyRect.gameObject.SetActive(ready);
         if (!ready) return;
-        string key = read.Key;
+        string key = KeyName();
         if (keyLabel.text != key)
         {
             keyLabel.text = key;
@@ -385,6 +311,31 @@ public sealed class ClassHUD : MonoBehaviour
             keyCap.SetVerticesDirty();
         }
         keyRect.localScale = Vector3.one * (1f + .06f * Mathf.Sin(Time.unscaledTime * 9f));
+    }
+
+    // A Point's two guns: the line under each runs out while it reloads put away, and flashes when it has.
+    private void Guns()
+    {
+        for (int slot = 0; slot < 2; slot++)
+        {
+            float share = kit.AsideShare(slot), since = kit.SinceRefill(slot);
+            slotLines[slot].rectTransform.anchorMax = new Vector2(share, 1f);
+            slotLines[slot].color = KitStyle.Accent;
+            float flash = Mathf.Clamp01(1f - since / .5f);
+            slotBacks[slot].color = Color.Lerp(KitStyle.With(KitStyle.Ice, .12f), KitStyle.With(KitStyle.Accent, .85f), flash);
+        }
+        // The Gun Kata on the class key: the prompt while it may be used, the seconds left to wait past the guns while not.
+        bool ready = kit.KataReady;
+        KeyPrompt(ready);
+        string wait = ready ? "" : Texts.Format("class.hud.kata_wait", Mathf.CeilToInt(kit.KataWait));
+        if (note.text != wait) note.text = wait;
+        ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f + 160f + 6f, 0f);
+    }
+
+    private string KeyName()
+    {
+        if (ability == null && InputSystem.actions != null) ability = InputSystem.actions.FindAction("Player/ClassAbility", false);
+        return KeyBindings.Name(ability);
     }
 
     private void Build()
@@ -480,7 +431,6 @@ public sealed class ClassHUD : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (ClassReadout.Local == read) ClassReadout.Local = null;
         deploy?.Dispose();
         effects?.Dispose();
         if (plate == null) return;

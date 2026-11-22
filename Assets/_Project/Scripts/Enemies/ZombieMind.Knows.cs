@@ -125,7 +125,7 @@ public sealed partial class ZombieMind
         var mine = PlayerRoster.Local;
         if (mine == null || report.Hit.Source == null || report.Hit.Source.GetComponentInParent<PlayerMovement>() != mine) return;
         int points = StealthScore.Witness;
-        if (points > 0) CombatFeedHUD.Score("feed.score.witness", points);
+        if (points > 0) CombatFeedHUD.Score(points);
     }
 
     private void Start()

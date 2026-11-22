@@ -227,7 +227,7 @@ public static class SpecialKills
         // The reason under the word: how many in a row, how many with one shot.
         string note = kind == Kind.HatTrick ? Texts.Format(key + ".note", count)
             : kind == Kind.Collateral && count > 2 ? Texts.Format(key + ".many", count) : Texts.Get(key + ".note");
-        CombatFeedHUD.Score(key, rule.points);
+        CombatFeedHUD.Score(rule.points);
         SpecialKillStamp.Show(word, note, rule.colour);
         Scored?.Invoke(kind);
     }

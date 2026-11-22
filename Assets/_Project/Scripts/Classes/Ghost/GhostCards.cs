@@ -570,7 +570,7 @@ public sealed class GhostCards : MonoBehaviour
     private void Assassinated()
     {
         int points = StealthScore.Takedown;
-        if (points > 0) CombatFeedHUD.Score("feed.score.takedown", points);
+        if (points > 0) CombatFeedHUD.Score(points);
         if (kit != null) kit.HuntBonus(Mathf.Max(0, Mathf.RoundToInt(PlayerClass.Ability(Row, "quietHunter", 1f))));
     }
 

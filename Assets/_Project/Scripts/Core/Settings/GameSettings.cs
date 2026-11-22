@@ -6,19 +6,9 @@ using UnityEngine;
 /// <summary>How damage numbers show: none, one running total per target, or one number per hit.</summary>
 public enum DamageNumberMode { Off, Stacked, Each }
 
-/// <summary>
-/// How the hit marker looks (HitMarkerHUD): thin lines that pop and fade, the earlier thick ticks that slide in, or
-/// Modern, a Garry's Mod addon's marker drawn as its own code draws it with its own pictures and sounds (the default
-/// since 2026-11-22). New looks go at the end: the saved settings keep the number.
-/// </summary>
-public enum HitMarkerStyle { Clean, Bold, Modern }
-
 /// <summary>How the weapon slots look (WeaponSlotsHUD): a column of leaning plates at the HUD's right (A), or a row of cards
 /// over the ammo (C).</summary>
 public enum WeaponSlotLook { Plates, Cards }
-
-/// <summary>How dying looks (DeathScreen): all of it until spectating or coming back, a shorter one, or none at all.</summary>
-public enum DeathScreenMode { Full, Short, Off }
 
 /// <summary>How a new objective is announced at the top of the screen (ObjectiveAlert): the card that flies into the
 /// objective bar (기본), or the ribbon its words are typed on (심플).</summary>
@@ -96,24 +86,22 @@ public sealed class GameSettings
     public bool hudBoards;
     [Tooltip("Damage numbers: none, one running total per target (default), or one number per hit (DamagePopupManager).")]
     public DamageNumberMode damageNumbers = DamageNumberMode.Stacked;
-    [Tooltip("Hit marker look: Modern (the default: the Black Ops VI Hitmarker addon's four arms, headshot arms, prop and " +
-        "fire icons and layered sounds, as its Lua draws them; HitMarkers.csv Modern.*), Clean (four thin lines that pop out " +
-        "and fade, after PAYDAY 3, numbers in HitMarkers.csv) or Bold (the earlier thick outlined ticks that hold wide and " +
-        "slide in, numbers in GunFeel). Clean and Bold add the headshot's star, sparks and flare; the posture break's burst " +
-        "shows with all three.")]
-    public HitMarkerStyle hitMarkerStyle = HitMarkerStyle.Modern;
     [Tooltip("Weapon slots: Plates (a column of dark plates with cut corners at the HUD's right; the one in hand kicks out, " +
         "grows and shows its name; the default) or Cards (a row of small cards over the ammo; the one in hand turns into a " +
         "wide light card). Numbers in WeaponSlots.csv.")]
     public WeaponSlotLook weaponSlots = WeaponSlotLook.Plates;
-    [Tooltip("Death screen (DeathScreen): Full drains, blurs and muffles the world with the sting and the card of what killed " +
-        "the player, how long they lasted and what comes next, until spectating or coming back; Short is the same over a " +
-        "shorter time and lighter; Off shows only the plain lines (PlayerLifeHUD). Numbers in DeathScreen.csv.")]
-    public DeathScreenMode deathScreen = DeathScreenMode.Full;
     [Tooltip("New objective alert (ObjectiveAlert): Card (a white line, a dark card opening from it, the words landing letter " +
         "by letter, then the card flying into the objective bar; the default) or Ribbon (a band opening from the middle with " +
         "the words typed on it; simpler).")]
     public ObjectiveAlertLook objectiveAlert = ObjectiveAlertLook.Card;
+    [Tooltip("The Garry's Mod HUD addons' own options, one block per module (Scripts/UI/Hud/Addons/<Module>/<Module>Options.cs): " +
+        "the player's HUD (HUD Mk II), hit and kill feedback (Black Ops VI Hitmarker, Cool Killchains), enemy bars, grenades " +
+        "and the death screen. Their rows are on the HUD tab, which also resets them.")]
+    public HudAddons.PlayerHudOptions addonPlayerHud = new HudAddons.PlayerHudOptions();
+    public HudAddons.HitFeedbackOptions addonHitFeedback = new HudAddons.HitFeedbackOptions();
+    public HudAddons.EnemyBarsOptions addonEnemyBars = new HudAddons.EnemyBarsOptions();
+    public HudAddons.GrenadesOptions addonGrenades = new HudAddons.GrenadesOptions();
+    public HudAddons.DeathScreenOptions addonDeathScreen = new HudAddons.DeathScreenOptions();
     [Tooltip("Horizontal field of view in degrees, measured at 16:9. Wider screens see more at the sides.")]
     public float fieldOfView = 90f;
     [Tooltip("Show the player's own hair and head in first person, cut only where the camera sits inside them.")]
@@ -174,8 +162,6 @@ public sealed class GameSettings
     public List<string> playerColourSlots = new List<string>();
     [Tooltip("Set once the saved nickname and room title were checked for the Windows user name older versions put there (ForgetUserName).")]
     public bool userNameChecked;
-    [Tooltip("Set once a saved file was moved onto the Modern hit marker (TakeModernMarker).")]
-    public bool modernMarkerTaken;
     [Tooltip("Scene name of the map last chosen on the main menu (Data/Resources/Tables/Maps/Maps.csv).")]
     public string lastMap = "";
     [Tooltip("Address last typed on the main menu to join a room.")]
@@ -256,10 +242,12 @@ public sealed class GameSettings
                 break;
             case SettingsGroup.Hud:
                 s.hudSway = d.hudSway; s.hudTilt = d.hudTilt; s.hudAngle = d.hudAngle; s.hudFollowsLean = d.hudFollowsLean;
-                s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers; s.hitMarkerStyle = d.hitMarkerStyle;
+                s.hudBoards = d.hudBoards; s.damageNumbers = d.damageNumbers;
                 s.weaponSlots = d.weaponSlots;
-                s.deathScreen = d.deathScreen;
                 s.objectiveAlert = d.objectiveAlert;
+                // d is a fresh copy, nothing shares these blocks.
+                s.addonPlayerHud = d.addonPlayerHud; s.addonHitFeedback = d.addonHitFeedback; s.addonEnemyBars = d.addonEnemyBars;
+                s.addonGrenades = d.addonGrenades; s.addonDeathScreen = d.addonDeathScreen;
                 break;
             case SettingsGroup.Crosshair:
                 s.steadyCrosshair = d.steadyCrosshair;
@@ -288,19 +276,8 @@ public sealed class GameSettings
             return read;
         }) ?? GameSettingsPreset.Copy();
         settings.ForgetUserName();
-        settings.TakeModernMarker();
         settings.Clamp();
         return settings;
-    }
-
-    // Once per saved file: the hit marker becomes Modern, the addon's marker the user asked to be applied (2026-11-22:
-    // "히트마커는 다 설정으로 넣어서 적용하고", then "원본 그대로 implement"). A file saved before it would otherwise keep
-    // the look it had and never show it. Picked again after this, any look stays.
-    private void TakeModernMarker()
-    {
-        if (modernMarkerTaken) return;
-        modernMarkerTaken = true;
-        hitMarkerStyle = HitMarkerStyle.Modern;
     }
 
     // Once per saved file: the Windows user name the game used to fill in by itself is taken back out. The profile window
@@ -334,9 +311,7 @@ public sealed class GameSettings
         hudTilt = Mathf.Clamp(hudTilt, 0f, MaxHudTilt);
         hudAngle = Mathf.Clamp(hudAngle, 0f, MaxHudAngle);
         if (damageNumbers < DamageNumberMode.Off || damageNumbers > DamageNumberMode.Each) damageNumbers = DamageNumberMode.Stacked;
-        if (hitMarkerStyle < HitMarkerStyle.Clean || hitMarkerStyle > HitMarkerStyle.Modern) hitMarkerStyle = HitMarkerStyle.Modern;
         if (weaponSlots < WeaponSlotLook.Plates || weaponSlots > WeaponSlotLook.Cards) weaponSlots = WeaponSlotLook.Plates;
-        if (deathScreen < DeathScreenMode.Full || deathScreen > DeathScreenMode.Off) deathScreen = DeathScreenMode.Full;
         if (objectiveAlert < ObjectiveAlertLook.Card || objectiveAlert > ObjectiveAlertLook.Ribbon) objectiveAlert = ObjectiveAlertLook.Card;
         fieldOfView = Mathf.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
         frameLimit = frameLimit <= 0 ? 0 : Mathf.Clamp(frameLimit, MinFrameLimit, MaxFrameLimit);
@@ -353,6 +328,11 @@ public sealed class GameSettings
         if (textureDetail < TextureDetail.Full || textureDetail > TextureDetail.Low) textureDetail = TextureDetail.High;
         (gunCrosshair ??= CrosshairSettings.Default(CrosshairKind.Gun)).Clamp();
         (meleeCrosshair ??= CrosshairSettings.Default(CrosshairKind.Melee)).Clamp();
+        (addonPlayerHud ??= new HudAddons.PlayerHudOptions()).Clamp();
+        (addonHitFeedback ??= new HudAddons.HitFeedbackOptions()).Clamp();
+        (addonEnemyBars ??= new HudAddons.EnemyBarsOptions()).Clamp();
+        (addonGrenades ??= new HudAddons.GrenadesOptions()).Clamp();
+        (addonDeathScreen ??= new HudAddons.DeathScreenOptions()).Clamp();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

@@ -72,6 +72,10 @@ public sealed class StanceFigure
     /// </summary>
     public float End { get; private set; }
 
+    /// <summary>The figure itself, under the bar's root: AdaptiveHealthHUD keeps it showing when the bar stands aside for
+    /// the addon player HUD.</summary>
+    public RectTransform Figure => rect;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Forget() => Array.Clear(pictures, 0, pictures.Length);
 
@@ -240,8 +244,7 @@ public sealed class StanceFigure
         }
     }
 
-    /// <summary>A stance's picture (Resources/UI/Icons/Stance_*), or null for none; HUD Mk II's stance tile shows it too.</summary>
-    public static Texture2D Picture(Pose pose)
+    private static Texture2D Picture(Pose pose)
     {
         if (pose == Pose.None) return null;
         int index = (int)pose;

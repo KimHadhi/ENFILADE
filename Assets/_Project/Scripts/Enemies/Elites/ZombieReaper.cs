@@ -125,7 +125,7 @@ public sealed class ZombieReaper : ZombieElite
     {
         if (mine == null || mine.DamageReceiver == null) return false;
         var blade = Reach(mine, feet);
-        if (blade == Blade.Under && dodgeReward > 0) CombatFeedHUD.Score("feed.score.reap_dodge", dodgeReward);
+        if (blade == Blade.Under && dodgeReward > 0) CombatFeedHUD.Score(dodgeReward);
         if (blade != Blade.Cut) return false;
         Vector3 flat = Flat(mine.transform.position - feet);
         float away = flat.magnitude;

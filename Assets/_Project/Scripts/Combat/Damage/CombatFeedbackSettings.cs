@@ -163,7 +163,7 @@ public sealed class CombatFeedbackSettings : ScriptableObject
     public float popupFullSizeDistance = 6f;
     [Range(.2f, 1f)] public float popupMinimumDistanceScale = .65f;
 
-    [Header("Health loss (the player's bar; an enemy's is EnemyHealthBarHUD's, Tables/Hud/EnemyBars)")]
+    [Header("Health loss (the player's bar; an enemy's is the enemy bars addon's, HudAddons.EnemyBarsHud)")]
     [Tooltip("Off: every trail is Small Loss Color (plain yellow). On: yellow -> orange by hit size.")]
     public bool colorTrailByLossSize = true;
     [Tooltip("Trail colour for a tiny hit.")]

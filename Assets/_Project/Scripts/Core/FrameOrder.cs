@@ -117,7 +117,7 @@ public static class FrameOrder
     /// <summary>Hit markers and damage numbers, after the view punch.</summary>
     public const int HitMarkers = 10010;
     public const int DamagePopups = 10010;
-    /// <summary>The health bar over an enemy (EnemyHealthBarHUD) is placed from the finished camera, the view punch on, so
+    /// <summary>The health bar over an enemy (the enemy bars addon, HudAddons.EnemyBarsHud) is placed from the finished camera, the view punch on, so
     /// it never swims a frame behind the enemy it hangs over; this frame's hits have all landed by then.</summary>
     public const int EnemyBars = 10010;
     /// <summary>Incoming damage's screen effects and the HUD camera, from the final camera.</summary>

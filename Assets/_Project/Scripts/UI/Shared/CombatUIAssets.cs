@@ -15,9 +15,14 @@ public static class CombatUIAssets
     private static Sprite glowSprite, discSprite, ringSprite, hexagonSprite;
     private static readonly Dictionary<(TMP_FontAsset, Color, float), Material> outlined = new Dictionary<(TMP_FontAsset, Color, float), Material>();
 
+    // The kill chain's two skulls among the hit feedback addon's pictures (Cool Killchains' skull and skullhs): one skull
+    // for the whole game, the chain's (the user, 2026-11-22: "여기에 쓰이는 아이콘, 다른 해골 아이콘에도 쓸 것").
+    private const string KillChainSkull = "HitFeedback/profiteers/skull", KillChainHeadshotSkull = "HitFeedback/profiteers/skullhs";
+
     /// <summary>Eight-point burst: long cardinal tips, shorter diagonals.</summary>
     public static Texture2D CriticalBurst => criticalBurst != null ? criticalBurst : criticalBurst = Rasterize("Critical Burst (Runtime)", 64, BurstCoverage);
-    /// <summary>The kill skull: the Cool Killchains drawing (KillIcons' Skull, white with its shadow drawn in), so the kill
+    /// <summary>The kill skull: the Cool Killchains drawing (the hit feedback addon's own skull, HudAddons.Pictures
+    /// HitFeedback/profiteers/skull, white with its shadow drawn in), so the kill
     /// feed, the streak badge and the damage numbers show the skull of the kill chain (the user, 2026-11-22: "여기에 쓰이는
     /// 아이콘, 다른 해골 아이콘에도 쓸 것. 네가 만든 해골 아이콘 구림"). The skull drawn in code stays only for a build
     /// without that picture.</summary>
@@ -26,7 +31,7 @@ public static class CombatUIAssets
         get
         {
             if (skull != null) return skull;
-            skull = KillIcons.PictureNamed(KillIcons.SkullPicture);
+            skull = HudAddons.Pictures.Get(KillChainSkull);
             if (skull == null) skull = Rasterize("Kill Skull (Runtime)", 64, SkullDistance);
             return skull;
         }
@@ -37,7 +42,7 @@ public static class CombatUIAssets
     {
         get
         {
-            var picture = KillIcons.PictureNamed(KillIcons.HeadshotSkullPicture);
+            var picture = HudAddons.Pictures.Get(KillChainHeadshotSkull);
             if (picture != null) return picture;
             var drawn = WeaponIcons.For(WeaponIcons.Headshot);
             return drawn != null ? drawn.texture : CriticalBurst;

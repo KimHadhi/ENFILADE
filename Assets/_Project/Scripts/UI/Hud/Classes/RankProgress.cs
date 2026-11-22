@@ -78,7 +78,7 @@ public static class RankProgress
         if (mode != LoadSceneMode.Single) return;
         playing = Array.IndexOf(MapTable.All(), scene.name) >= 0;
         baseExperience = Wallet.Experience;
-        baseScore = ScorePopupHUD.TotalScore;
+        baseScore = HudAddons.HitFeedbackModule.TotalScore;
         lookedAt = float.NegativeInfinity;
     }
 
@@ -95,8 +95,8 @@ public static class RankProgress
         view.Stored = StoredOf(ClassGrowth.GrowthOf(id), out view.PrestigeBefore);
         if (withGame)
         {
-            // The score this game (the popup's: experience), apart from the share of the money held.
-            view.Kills = Math.Max(0L, ScorePopupHUD.TotalScore - baseScore);
+            // The score this game (the hit feedback addon's: experience), apart from the share of the money held.
+            view.Kills = Math.Max(0L, HudAddons.HitFeedbackModule.TotalScore - baseScore);
             view.Kept = Math.Max(0L, Wallet.Experience - baseExperience - view.Kills);
         }
         var all = Ranks();

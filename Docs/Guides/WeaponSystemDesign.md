@@ -298,51 +298,18 @@ HP·체간 바, 흐트러짐 표시와 처형 안내는 기존 적·프리팹에
 
 ### 히트마커와 점수
 
-히트마커 모양은 설정 → HUD → 히트 마커에서 고른다(`GameSettings.hitMarkerStyle`, 기본값은 [SettingsDefaults.csv](../../Assets/_Project/Data/Resources/Tables/Core/SettingsDefaults.csv)의 `hitMarkerStyle`).
+명중·처치의 히트 마커와 그 소리, 점수 팝업, 조준점 아래 킬 체인은 HUD 애드온 모듈 HitFeedback이 게리 모드 애드온 Black Ops VI Hitmarker와 Cool Killchains 원본 그대로 그린다(2026-11-22 사용자: "애드온을 넣으라고"): [히트 피드백](../Features/HitFeedback.md). [HitConfirm](../../Assets/_Project/Scripts/Combat/Feedback/HitConfirm.cs)이 내 명중과 처치를 모듈에 넘긴다(`HitFeedbackModule.Hit`·`Kill`; 한 프레임의 명중은 모듈이 한 번에 보인다). 손으로 만든 예전 모양(깔끔·굵게·모던, 헤드샷 터짐, 관통 꼬리, 킬체인)과 그 설정(설정 → HUD → 히트 마커), 표 HitMarkers.csv, 명중·처치 확인음과 연속 처치 음 상승은 2026-11-22에 애드온으로 바뀌며 지웠다.
 
-- **모던**(기본, `Modern`): 아래 모던 설명대로. 수치는 [HitMarkers.csv](../../Assets/_Project/Data/Resources/Tables/Hud/HitMarkers.csv)의 `Modern.*`.
-- **깔끔**(`Clean`, 2026-11-22까지 기본): 사용자가 고른 페이데이 3 히트 마커(2026-11-12)를 스크린샷에서 재어 만들었다. 정확히 45°인 얇은 선 넷(1080p 기준 안쪽 끝 13px, 길이 21px, 두께 2px)이 30% 크게 떠서 0.06초 만에 제자리로 튕기고, 0.07초까지 진하게 있다가 0.13초 동안 바깥으로 3px 밀려나며 사라진다. 몸샷은 0.2초 안에 끝난다. 몸샷은 흰색, 헤드샷은 페이데이 3의 연한 금색(#F5DB6E)으로 조금 길고 더 튄다. 처치는 빨강으로 더 길고 굵게 0.28초, 피해 없음은 짧고 흐린 회색이다. 고리와 안쪽으로 미끄러지는 움직임은 없다. 선이 얇고 금방 사라져 과녁을 가리지 않고, 튕기는 움직임이 타격감을 준다. 선 밑에는 선보다 빨리 사라지는 흐린 검은 테두리가 있어 밝은 벽이나 하늘에서도 흰 선이 보인다. HUD는 안티에일리어싱 없이 그려지므로 선은 가장자리가 부드러운 텍스처(`FeelAssets.HairLine`)로 그려 45°에서도 계단이 지지 않는다. 수치는 [HitMarkers.csv](../../Assets/_Project/Data/Resources/Tables/Hud/HitMarkers.csv)의 `Clean.*`.
-- **굵게**(`Bold`, 예전 모양): 아래 표와 그 아래 설명대로. 수치는 GunFeel의 Hit markers.
+애드온에 없는 우리 것만 남았다.
 
-깔끔의 헤드샷 선은 조금 더 길고(1.25배) 굵게 시작해, 몸샷이 한 번 튕길 때 '빵-똮' 두 번 튕긴다(0.045초 뒤 한 번 더. `Clean.headPopAgain`·`headPopAgainAt`·`headThickness`). 과녁 위에 아무것도 더 그리지 않고도 헤드샷인 줄 알게 하려는 것이다.
-
-헤드샷 터짐, 관통 꼬리는 깔끔·굵게에 뜬다. 모던에는 원본에 없는 것이라 뜨지 않는다. 체간 붕괴의 고리와 파편, 조준점 아래 킬체인(줄은 연속 처치 시간 `CombatFeedHUD.StreakWindow` 동안 살아 있다)은 세 모양 모두에 뜬다. 새 모양은 다음 명중부터 적용된다.
-
-**모던**(2026-11-22, `HitMarkerHUD.ModernLook`). 게리 모드 애드온 Black Ops VI Hitmarker의 히트마커를 원본 Lua(`lua/autorun/blackops6_hitmarker.lua`의 `DrawHitMarker`와 `bo6_hit`·`bo6_kill` 메시지)가 그리는 그대로 옮겼다. 처음에는 그 동작 일곱 가지를 우리 선 위에 얹는 스위치로 만들었는데(0.9.313), 사용자가 "영상대로만 만들라고, 원본 그대로 implement"라고 해서 스위치를 지우고 원본 그대로인 세 번째 모양으로 바꿨다. 설정 이름은 게임이 아니라 모양으로 부른다(사용자: "대놓고 블랙 옵스 6 히트마커라 하면 알아 듣겠냐?"). 수치는 [HitMarkers.csv](../../Assets/_Project/Data/Resources/Tables/Hud/HitMarkers.csv)의 `Modern.*`이고 원본의 1920 너비 값이다(원본 `ScreenScale(0.256)`이 0.768). 원본의 `Lerp(FrameTime()*k, x, y)`는 높은 프레임률에서 그렇게 되듯 1초에 e^-k로 옮겼다.
-
-- **그림**: 원본 VTF(1024px DXT5)를 풀어 만든 팔 그림 넷(`Art/Resources/UI/HitMarkers/Modern`의 `l1` 왼쪽 위·`l2` 왼쪽 아래·`r1` 오른쪽 위·`r2` 오른쪽 아래). 헤드샷(헤드샷 처치도)은 `Head/`의 그림으로, 팔마다 줄이 두 갈래다. 그림마다 정사각형 한 귀퉁이에 팔이 있고 검은 그림자가 깔려 있다. 그려지는 크기가 38~69px이라 1024px 원본을 256px로 가져온다(밉맵이 같은 크기를 쓴다).
-- **크기와 진하기**: 팔 그림 한 변이 (50 + 40 × size) × 0.768, 맞은 순간 69px에서 38px로 준다. 진하기는 맞을 때마다 1이고 크기와 같이 1초에 e^-5로 준다(0.14초에 절반). 255단계의 한 칸 아래(0.004, 약 1.1초)에서 끈다.
-- **자리**: 팔 그림 가운데가 조준점에서 가로세로 (scale − scale_rate) × 0.768 떨어진다. scale은 맞은 뒤 0.3초 동안 20이고 그 뒤 1초에 e^-10로 0이 된다. scale_rate는 조준(ADS)하고 맞히면 20, 허리 사격이면 40이고, 그 값으로 1초에 e^-10로 따라간다. 그래서 조준 사격은 0.3초 동안 조준점에 붙어 있다가 가로세로 15.36px 벌어지고, 허리 사격은 15.36px 바깥에서 30.72px까지 벌어진다. 처치는 원본대로 늘 조준 쪽이다. 조준은 원본의 `KeyDown(IN_ATTACK2)` 대신 맞힌 순간 조준이 올라오는 중이거나 올라와 있으면(`WeaponController.AimBlend` > 0)이다. 사용자 영상은 모두 조준 사격이다.
-- **색과 기울기**: 명중은 흰색, 처치는 빨강(255, 0, 0). 맞을 때마다 팔 그림이 각자 제 가운데에서 명중 -2.5~2.5°, 처치 -5~5° 돈다(LuaJIT `math.random`대로 1° 간격).
-- **옆 그림**: 살이 아닌 것(스스로 맞은 소리를 내는 `IOwnHitFeedback`, 지금은 허브의 강철 과녁)을 맞히면 원본 `prop.png`, 불 피해(`KillMarks.Fire`, 연료통 불)면 `burn.png`가 팔 그림 한 변 ÷ 2.5 크기로 오른쪽 아래에 뜬다. 흰색이다.
-- **흔들림**: 맞으면 최대 4.8px, 왼쪽 위로 치우쳐(원본 `math.random() - 0.8`) 흔들리다 0.5초에 고르게 멎는다. 원본과 다른 것은 이것 하나다. 원본은 프레임마다 새 난수로 화면 주사율만큼 떠는데, 깜빡임 규칙(2026-11-14: 부드럽게, 1.6Hz 이하)대로 1.6Hz의 부드러운 잡음을 마커가 천천히 따라간다.
-- **자리 기준**: 원본은 화면 가운데(원본의 조준점)에 그린다. 여기서는 다른 두 모양처럼 화면 킥을 따라가는 조준점이다.
-- **덮어쓰기**: 새 명중은 원본처럼 앞의 마커를 늘 덮어쓴다(처치 마커도). 피해 없음(가드·패링·무적)에는 마커가 없다: 원본은 피해가 0이면 아무것도 하지 않는다. 그때 소리는 우리 피해 없음 소리다.
-- **소리**: 원본 파일 그대로 세 겹(`HitConfirm.PlayModern`). 명중은 마커음(`BO6/Hit`, 살이 아닌 것을 맞히면 `BO6/HitItem`) + 살(`BO6/Body`) + 살 위 겹(`BO6/BodyLayer`), 헤드샷은 `BO6/HeadHit` + `BO6/Head` + `BO6/HeadLayer`, 처치는 그 살 두 겹 + `BO6/Kill`(헤드샷 처치는 `BO6/HeadKill`). 마커음만 음높이 80~110%다(원본 사운드 스크립트대로). 처치음은 연속 처치에 높아지지 않는다. 피해 없음과 체간 붕괴는 원본에 없어 우리 소리다. 크기는 [Sounds.csv](../../Assets/_Project/Data/Resources/Tables/Audio/Sounds.csv)의 `HitConfirm/BO6/…`에서 모두 0.3이다(원본은 모두 1). 원본 안의 균형은 그대로이고, 세 겹을 합친 크기가 다른 모양의 확인음과 비슷하다. 파일은 가져올 때 정규화를 껐다.
-
-헤드샷 터짐(2026-11-12 새로 만듦, [HitMarkers.csv](../../Assets/_Project/Data/Resources/Tables/Hud/HitMarkers.csv)의 `Head.*`)은 조준점 둘레 약 12px 안을 비운다. 맞힌 머리와 그 뒤에 줄 선 다음 머리가 보이게 하려는 것이다. 예전 것(가운데가 꽉 찬 별, 밝은 원, 링 두 겹, 불똥 열두 개, 가로 360px 렌즈 줄기)은 비교 페이지에서 10m 좀비 머리를 0.15초 동안 다 가렸고, 사용자가 "너무 과해서 시야를 가린다"고 했다. 여섯 시안 중 사용자가 고른 B(금 고리)·C(갈라진 플레어)·F(덜어낸 예전 것)·E(두 번 튕기는 선과 소리)를 합쳤다. 모두 하얗게 터졌다가 금색으로 바뀌고 0.16초 안에 끝난다.
-
-- **속 빈 별**: 빛살 22px의 여덟 갈래 별(네 갈래 둘을 45° 엇갈림)이 1.3배로 터졌다가 돌아오며 30° 돌고 0.14초에 사라진다. 가운데를 반지름의 42%(겹친 작은 별은 62%)까지 비워, 머리가 별 속으로 보인다. 뒤에 더하는 빛도 가운데가 비어 있다(`FeelAssets.HollowGlint`·`HollowGlintGlow`).
-- **금 고리**: 얇은 고리(3.2→1px)가 반지름 16에서 46px로 선 사이를 지나 탁 퍼지고, 옅은 고리가 0.03초 뒤 60px까지 따라 나간다. 밑에 흐린 검은 고리가 있어 밝은 하늘에서도 보인다. HUD에 안티에일리어싱이 없어 고리는 가장자리가 부드러운 텍스처를 띠로 두른 `SoftRingGraphic`으로 그린다.
-- **불똥 여덟 개**: 선 방향 사이로 16px 바깥에서 50px까지 날아간다.
-- **갈라진 렌즈 줄기**: 줄기를 가운데에서 갈라 반쪽씩 좌우로 쏜다. 바깥 끝은 24px에서 210px까지 0.05초 만에 뻗고 안쪽 끝도 70px까지 밀려나 가운데가 점점 더 비워진다(`FeelAssets.StreakTaper`). 위아래로 갈라진 짧은 세로 줄기와 사선 위 다이아몬드 둘이 함께 뜬다. 빛을 더하는 방식이라 아무것도 덮지 않는다.
-
-크기를 0으로 두면 그 부분만 꺼진다(예: `Head.flareTo` 0이면 줄기·세로 줄기·다이아몬드가 꺼진다). 시안과 수치의 출처는 [ArtSource/HitMarkers/headshot-drafts-2.html](../../ArtSource/HitMarkers/headshot-drafts-2.html).
-
-| 판정 | 히트마커(굵게) | 소리 |
+| 판정 | 표시 | 소리 |
 | --- | --- | --- |
-| 몸샷 | 흰 X | 마른 틱 |
-| 헤드샷 | 살짝 굵고 긴 금색 X가 더 크게 튀고 더 빨리 사라짐. 그 위에 위의 헤드샷 터짐(속 빈 별, 금 고리, 불똥 여덟, 갈라진 렌즈 줄기)이 0.16초 | 틱 위에 맑은 '팅' |
-| 몸샷·헤드샷 처치 | 빨간 X와 충격 링 | 묵직한 타격음. 연속 처치마다 조금씩 높아진다 |
-| 체간 붕괴 | 위 마커 위에 주황 링과 파편 네 개가 터진다 | 뼈 부러지는 소리 |
-| 벽이나 다른 몸을 뚫거나 튕겨 나온 총알의 명중(관통) | 위 판정의 X 각 선 바깥으로 같은 색의 흐린 꼬리가 두 마디로 뻗고, 마커가 떠 있는 동안 조금 길어진다 | 위 판정의 소리 그대로 |
-| 가드·패링·무적 등 피해 없음 | 얇은 회색 X | 없음 |
+| 체간 붕괴 | 조준점 둘레에 주황 링과 파편 네 개가 터진다([PostureBreakHUD](../../Assets/_Project/Scripts/UI/Hud/Damage/PostureBreakHUD.cs), 수치 GunFeel의 Posture break marker) | breakarmorr (`HitConfirm/Break`) |
+| 가드·패링·무적 등 피해 없음 | 없음(애드온은 피해가 0이면 아무것도 하지 않는다) | hitmarkfail (`HitConfirm/Blocked`). 같은 프레임에 피해를 준 명중이 있으면 나지 않는다 |
 
-굵게 히트마커는 기준 60fps에서 7프레임 넓게 유지 → 9프레임 동안 선을 안쪽으로 이동 → 1프레임 흐리게 표시한 뒤 사라진다. 실제 프레임률과 무관하게 같은 시간을 사용한다. 새 적중은 다시 넓은 상태로 시작하되, 막 뜬 처치 마커는 0.18초 동안 후속 일반 명중이 덮어쓰지 않는다. 막 뜬 마커는 30% 크게 시작해 0.07초 만에 제자리로 돌아오므로, 연사해도 한 발씩 구분된다(블랙옵스 6이 같은 이유로 히트마커를 고쳤다). 몸샷·헤드샷 마커의 선 길이는 그 명중이 앗아 간 체력 비율을 따른다. 스친 명중은 0.85배, 체력의 절반 이상이면 1.25배다. 체간 붕괴는 플레이어의 명중이 들어간 직후 0.25초 안에 적의 체간이 깨질 때 뜬다(`MeleeCombatTarget.AnyStaggered`). 한 프레임에 들어간 명중(산탄총의 산탄, 여러 적을 한 번에 벤 휘두르기)은 프레임 끝에 마커 하나와 소리 한 벌로 묶는다. 이때 헤드샷 표시는 그중 30% 이상이 머리에 맞았을 때만 뜬다(오버워치의 산탄 규칙, GunFeel의 `Headshot Hit Share`). 단발 명중은 그대로 헤드샷이다. 관통 꼬리는 묶인 명중 중 하나라도 관통이면 뜬다(`DamageHit.Pierced`). 꼬리에는 어두운 테두리가 없어서 두 번째 마커가 아니라 선의 잔상으로 보인다. 처치 마커 보호, 산탄 묶기, 관통 꼬리는 깔끔 모양에도 같다. 굵게의 크기·색·시간은 GunFeel의 Hit markers에서 조절한다. 꼬리는 `Pierced Tail Length`(선 길이의 0.75배, 처음에는 그 60%)와 `Pierced Tail Alpha`(가까운 마디 0.38, 먼 마디는 그 42%)로 조절한다.
+체간 붕괴는 플레이어의 명중이 들어간 직후 0.25초 안에 적의 체간이 깨질 때 뜬다(`MeleeCombatTarget.AnyStaggered`). 화면 킥이 적용된 카메라를 기준으로 그려져 실제 조준점을 따라간다. 소리 파일은 `Art/Audio/HitConfirm`의 `Break`·`Blocked` 폴더, 볼륨과 피치는 [Sounds.csv](../../Assets/_Project/Data/Resources/Tables/Audio/Sounds.csv)의 `HitConfirm/…` 행이다. 예전 체간 붕괴음은 `BreakOld`에 있고 폴더 이름을 맞바꾸면 돌아간다.
 
-점수는 처치에만 부여한다. 크로스헤어 오른쪽 아래에 점수와 처치 사유를 표시하고 연속 처치 동안 누적한다. 처치한 총알이 벽이나 다른 몸을 뚫거나 튕겨서 왔으면 "관통 사살"이 붙는다(GunFeel의 `Pierced Bonus`, 25). 헤드샷 사유는 금색 폭발 아이콘과 함께 금색으로 표시하므로 헤드샷 처치는 마커의 추가 왕관 대신 이 줄로 구분된다. 처형은 전술 단검과 베기 자국 아이콘과 빨간색, 반격은 되돌아오는 화살표 아이콘과 반격 색(Feedback → Counter Color, 피해 팝업과 같은 색)으로 표시한다. 반격 아이콘은 Feedback의 `Counter Icon`이 지정되어 있으면 그것을 쓴다. 오른쪽 위에는 누적 XP와 킬로그가 나온다. `Score Font`, `Score Offset`, 보너스와 유지 시간을 GunFeel에서 조절한다.
-
-히트마커와 피해 팝업은 화면 킥이 적용된 카메라를 기준으로 그려진다. 실제 조준점과 명중 대상의 연결을 유지하면서 화면 효과를 따라간다. 확인음([HitConfirm](../../Assets/_Project/Scripts/Combat/Feedback/HitConfirm.cs))은 살 타격음 위에 겹친다. 소리 파일은 `Art/Audio/HitConfirm`의 `Body`·`Head`·`Kill`·`Break` 폴더에 넣으면 그대로 쓰이고, 볼륨과 피치는 [Sounds.csv](../../Assets/_Project/Data/Resources/Tables/Audio/Sounds.csv)의 `HitConfirm/…` 행에서 바꾼다. 헤드샷 소리(2026-11-12부터)는 사용자가 오버워치 헤드샷처럼 "찰지고 시원하고 경쾌한" 소리를 원해서 새로 합성한 '팅'이다: 1ms 노이즈가 3.4·7.2kHz에서 울리는 딱 소리, 쇠막대의 배음(1·2·2.76·4.1·5.4배)이 4.5% 높게 시작해 몇 ms 만에 제 음으로 떨어지는 맑은 울림, 짧은 '똑'(1150→540Hz)과 낮은 '퍽', 작은 방 울림. 0.35초 안에 끝나고, 연속 헤드샷이 같은 소리로 겹치지 않게 음이 반음씩 다른 3개다(`Art/Audio/HitConfirm/Head/headshot_ping_01~03`). [Tools/Audio/headshot_ping.py](../../Tools/Audio/headshot_ping.py)로 다시 만든다. 예전 금속음(hammer_03·metal_hit_05)은 `HeadOld` 폴더에 있고, 되돌리려면 `Head`와 `HeadOld` 폴더 이름을 맞바꾼다(`/sound HitConfirm/HeadOld`로 들어 본다). 연속 처치 때의 처치음 상승 폭은 GunFeel의 `Kill Streak Pitch Step`과 `Kill Streak Steps`다. 히트 마커가 모던(기본)이면 명중과 처치에는 이 소리 대신 `Art/Audio/HitConfirm/BO6/…`의 원본 소리가 세 겹으로 난다(위 모던).
+점수: 처치는 돈이 되는 점수를 예전대로 준다(GunFeel → Score, [CombatFeedHUD](../../Assets/_Project/Scripts/UI/Hud/KillFeed/CombatFeedHUD.cs), Wallet). 경험치는 애드온 점수 팝업의 점수다(`HitFeedbackModule.TotalScore`: 처치 100, 점프샷 25, 연속 3·4번째 25, 5번째부터 50). 원거리·관통·현상금·암살·패리·특수 처치 같은 우리 보너스는 돈만 준다(애드온에 그 줄이 없다). 남은 돈과 따로 받은 경험치는 [Money.csv](../../Assets/_Project/Data/Resources/Tables/Economy/Money.csv) `scorePerPoint`(0.2)로 점수가 된다. 오른쪽 위에는 돈과 킬로그가 나온다.
 
 ### 적 피격과 처치 효과
 

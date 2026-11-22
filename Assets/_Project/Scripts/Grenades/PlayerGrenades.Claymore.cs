@@ -224,7 +224,10 @@ public sealed partial class PlayerGrenades
         // A knife has no pin, nor does a claymore (its phone comes on once it is down).
         if (armKind == Throwable.Knife || (info != null && info.Places)) return;
         Vector3 at = armBody != null ? armBody.HeldPoint : HandPoint();
-        Throwables.Play("Pin", at, movement.IsLocal ? .7f : .5f, 1f, 15f);
+        // The thrower hears the quick grenade addon's pin sounds (HudAddons.GrenadesModule) instead of the world's pin;
+        // everyone else hears the world's, at the hand.
+        if (movement.IsLocal) HudAddons.GrenadesModule.PinPulled();
+        else Throwables.Play("Pin", at, .5f, 1f, 15f);
         if (!movement.IsLocal || info == null || !info.Cooks) return;
         cooking = true;
         cookLeft = info.Fuse;

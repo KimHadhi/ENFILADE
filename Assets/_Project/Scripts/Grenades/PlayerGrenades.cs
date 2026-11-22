@@ -16,7 +16,7 @@ using UnityEngine;
 /// let go, the throw clip lets it go at its release moment. The guard key while it is held puts the pin back: nothing
 /// thrown, nothing spent.
 /// One that cooks (the Assault's frag, the Point's flashbang) burns from the pin: its fuse runs down in a ring round the
-/// crosshair (GrenadeHUD.Ring), so it can be let go to burst in the air. Never a minus: a frag held to the end is thrown on
+/// crosshair (the quick grenade addon's, HudAddons.GrenadesModule.Cook), so it can be let go to burst in the air. Never a minus: a frag held to the end is thrown on
 /// reflex at the last moment (the Assault counts the fuse and the hand lets go by itself: GrenadeRules reflexLead), and a
 /// flashbang held to the end goes off in the hand, which only staggers the zombies round its holder. Knife, smoke,
 /// canister and dye don't cook; holding them only aims. The Support's claymore is set down, not thrown (the user: "던지는
@@ -130,7 +130,8 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         handMine = false;
         if (arc != null) arc.Hide();
         preview?.Hide();
-        if (Local == this) GrenadeHUD.Ring(-1f, 0f);
+        // Nothing cooks in this hand any more, and the quick grenade's sounds still to come stay silent.
+        if (Local == this) { HudAddons.GrenadesModule.Cook(-1f, 0f); HudAddons.GrenadesModule.PutBack(); }
     }
 
     // A class picked is a fresh kit: its throwable, all of them.
@@ -190,8 +191,8 @@ public sealed partial class PlayerGrenades : MonoBehaviour
         if (info == null || kind == Throwable.None) GrenadeHUD.Hide();
         // Aiming a stone is not aiming the class's throwable: its count line stays as it is.
         else GrenadeHUD.Show(kind, count, aiming && armKind == kind, fuse);
-        // The cook ring round the crosshair while one is held cooking: how long it has burnt of its fuse (a tap is let go
-        // before the ring comes up).
-        GrenadeHUD.Ring(burning && !released && (holding || arm == Arm.Hold) ? held.Fuse - cookLeft : -1f, burning ? held.Fuse : 0f);
+        // The quick grenade addon's fuse ring round the crosshair while one is held cooking (HudAddons.GrenadesModule): how
+        // long it has burnt of its fuse (a tap is let go before the ring comes up).
+        HudAddons.GrenadesModule.Cook(burning && !released && (holding || arm == Arm.Hold) ? held.Fuse - cookLeft : -1f, burning ? held.Fuse : 0f);
     }
 }

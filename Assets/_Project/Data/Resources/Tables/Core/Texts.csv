@@ -1,24 +1,115 @@
 ﻿id,ko,en,#어디,ja
 #설명,"한국어 문구. {0} {1}은 코드가 채우는 자리. \n은 줄바꿈. <color>, <b> 같은 리치 텍스트 태그를 쓸 수 있다",영어 문구. 다른 언어를 편집할 때 참고할 수 있다,어디에 나오는지(게임은 이 열을 읽지 않는다),일본어 문구(번역 작업용)
-settings.hud.hit_markers.modern,모던,Modern,"설정 창 > HUD > 히트 마커 선택지 (기본. 네 갈래가 크게 떴다 줄며 사라지고 0.3초 뒤 바깥으로 벌어진다. 헤드샷은 두 줄 갈래, 처치는 빨강. 게임 이름이 아니라 모양으로 부른다: 2026-11-22 사용자 ""대놓고 블랙 옵스 6 히트마커라 하면 알아 듣겠냐?"")",
-hud.mk.objective,목표,Objective,"HUD Mk II 목표 블록(화면 왼쪽 위)의 작은 머리글: 캠페인이 조용할 때. 대문자로 띄어 쓴다(MkMission). 시끄러울 때는 hud.phase.*",
-hud.mk.mode.auto,AUTO,AUTO,HUD Mk II 탄약 상자 위 무기 이름 뒤의 사격 방식: 연사(MkAmmo),
-hud.mk.mode.burst,BURST,BURST,HUD Mk II 무기 이름 뒤의 사격 방식: 점사(MkAmmo),
-hud.mk.mode.fan,FAN,FAN,HUD Mk II 무기 이름 뒤의 사격 방식: 패닝(MkAmmo),
-hud.mk.mode.semi,SEMI,SEMI,HUD Mk II 무기 이름 뒤의 사격 방식: 단발(MkAmmo),
-hud.mk.ammo.reload,[{0}] 장전,[{0}] RELOAD,"HUD Mk II 탄약 상자 아래 할 일 줄: 탄창이 비었거나 30% 이하(예전 탄약 표시의 [R] RELOAD). {0}=장전 키 이름",
-hud.mk.ammo.reloading,장전 중 {0}초,RELOADING {0}s,"HUD Mk II 탄약 상자 아래 할 일 줄: 장전 중. {0}=남은 초(소수 한 자리)",
-hud.mk.ammo.out,탄약 없음,OUT OF AMMO,HUD Mk II 탄약 상자 아래 할 일 줄: 탄창도 예비도 비었을 때,
-hud.mk.ammo.noreserve,예비 탄약 없음,NO RESERVE,HUD Mk II 탄약 상자 아래 할 일 줄: 예비 탄약이 없을 때,
-score.line.elimination,처치,Elimination,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.headshot,헤드샷,Headshot,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.explosive,폭발 처치,Explosive Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.burn,화염 처치,Burn Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.brutal,잔혹한 처치,Brutal Kill,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.jumpshot,점프샷,Jumpshot,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.slaughter,학살(3연속),Slaughter,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.warrior,전사(4연속),Warrior,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
-score.line.god_slayer,신을 죽인 자(5연속부터),God Slayer,"점수 팝업의 줄 이름(ScorePopupHUD). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻",
+settings.addon.playerhud.title,플레이어 HUD,Player HUD,"설정 창 > HUD > 플레이어 HUD 묶음의 머리글(애드온 HUD Mk II의 체력·방어구·탄약·선택기·위험·표시기·획득 기록·특수 효과)",
+settings.addon.playerhud.section.main,기본,Main,"설정 창 > HUD > 플레이어 HUD > 소제목(애드온 패널 Main)",
+settings.addon.playerhud.section.health,체력,Health,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Health)",
+settings.addon.playerhud.section.stims,자극제,Stims,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Health의 --Stims)",
+settings.addon.playerhud.section.armor,방어구,Armor,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Armor)",
+settings.addon.playerhud.section.ammo,탄약,Ammo,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Ammo)",
+settings.addon.playerhud.section.grenade,수류탄,Grenade,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Ammo의 --Grenade)",
+settings.addon.playerhud.section.selector,무기 선택기,Weapon Selector,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Weapon Selector: 무기 슬롯 1~4가 이 모양으로 그려진다)",
+settings.addon.playerhud.section.hazards,환경 위험,Environment Hazards,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Enviroment Hazards: 추락·폭발 피해 칸)",
+settings.addon.playerhud.section.indicators,표시기,Indicators,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Indicators)",
+settings.addon.playerhud.section.glitter,피해 반짝임,Damage Glitter,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Indicators의 --Damage Glitter: 맞거나 나을 때 화면 가장자리 빛)",
+settings.addon.playerhud.section.effect,피해 효과,Damage Effect,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Indicators의 --Damage Effect)",
+settings.addon.playerhud.section.history,획득 기록,Pick Up History,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Pick Up History)",
+settings.addon.playerhud.section.sfx,특수 효과,Special Effects,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Special Effects)",
+settings.addon.playerhud.enable,사용,Enable,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 켬/끔 행(패널 Enable)",
+settings.addon.playerhud.sway,흔들림,Sway,"설정 창 > HUD > 플레이어 HUD > 기본 > 행: 시선을 돌리면 HUD가 늦게 따라온다",
+settings.addon.playerhud.hide,체력·방어구 자동 숨기기,Hide Health & Armor Automatically,"설정 창 > HUD > 플레이어 HUD > 기본 > 행: 맞은 뒤 3초만 체력·방어구가 보인다",
+settings.addon.playerhud.sway_intensity,흔들림 세기,Sway Intensity,"설정 창 > HUD > 플레이어 HUD > 기본 > 행(패널 Intensity, 1~5)",
+settings.addon.playerhud.scale,크기,Scale,"설정 창 > HUD > 플레이어 HUD > 기본 > 행(0~3)",
+settings.addon.playerhud.font,글꼴,Font,"설정 창 > HUD > 플레이어 HUD > 기본 > 행: 글꼴 이름을 적는 칸(기본 Unifont, EvanstonTavernM도 있다)",
+settings.addon.playerhud.weight,글자 굵기,Text Weight,"설정 창 > HUD > 플레이어 HUD > 기본 > 행(0~5)",
+settings.addon.playerhud.x,가로 위치,Horizontal Offset,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 행: 원래 자리에서 옮기는 px",
+settings.addon.playerhud.y,세로 위치,Vertical Offset,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 행: 원래 자리에서 옮기는 px",
+settings.addon.playerhud.color.r,색: 빨강,Color: Red,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 색 행(0~255)",
+settings.addon.playerhud.color.g,색: 초록,Color: Green,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 색 행(0~255)",
+settings.addon.playerhud.color.b,색: 파랑,Color: Blue,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 색 행(0~255)",
+settings.addon.playerhud.color.a,색: 불투명도,Color: Alpha,"설정 창 > HUD > 플레이어 HUD > 각 묶음의 색 행(0~255): 그 묶음 전체의 불투명도",
+settings.addon.playerhud.stims_note,데탕트만 보인다: 주사기에 남은 투약 수,Détente only: doses left in the syringe,"설정 창 > HUD > 플레이어 HUD > 자극제 밑의 설명",
+settings.addon.playerhud.sense,피해 방향 표시,Damage Indicator,"설정 창 > HUD > 플레이어 HUD > 표시기 > 행: 맞은 쪽을 가리키는 호",
+settings.addon.playerhud.flick_armor,방어구 반짝임,Armor Glitter,"설정 창 > HUD > 플레이어 HUD > 피해 반짝임 > 행: 실드가 받았을 때 흰 빛",
+settings.addon.playerhud.flick_damage,체력 반짝임,Health Glitter,"설정 창 > HUD > 플레이어 HUD > 피해 반짝임 > 행: 체력이 깎였을 때 붉은 빛",
+settings.addon.playerhud.flick_heal,회복 반짝임,Recover Glitter,"설정 창 > HUD > 플레이어 HUD > 피해 반짝임 > 행: 나았을 때 연두 빛",
+settings.addon.playerhud.fade,사라지는 속도,Fade Speed,"설정 창 > HUD > 플레이어 HUD > 피해 반짝임·피해 효과 > 행: 사라지는 데 걸리는 초(0~3)",
+settings.addon.playerhud.shake,피해 흔들림,Damage Shake,"설정 창 > HUD > 플레이어 HUD > 피해 효과 > 행: 맞으면 시야가 잠깐 떨린다",
+settings.addon.playerhud.intensity,세기,Intensity,"설정 창 > HUD > 플레이어 HUD > 피해 효과 > 행(0~5)",
+settings.addon.playerhud.sfx_credit,4HUD(YuRaNnNzZZ와 DBot)에서 온 효과,Cool stuff from 4HUD by YuRaNnNzZZ && DBot,"설정 창 > HUD > 플레이어 HUD > 특수 효과 밑의 설명(애드온 패널의 ControlHelp 그대로)",
+settings.addon.playerhud.scanline,주사선,Scanline,"설정 창 > HUD > 플레이어 HUD > 특수 효과 > 행: HUD에 한 줄 건너 어두운 줄",
+settings.addon.playerhud.aberration,색수차,Aberration,"설정 창 > HUD > 플레이어 HUD > 특수 효과 > 행: HUD 양옆의 빨강·청록 그림자",
+settings.addon.playerhud.glitch,글리치,Glitch,"설정 창 > HUD > 플레이어 HUD > 특수 효과 > 행: 맞으면 HUD가 띠로 갈라져 밀린다",
+hud.playerhud.throwable,투척물,Throwable,"플레이어 HUD 획득 기록: 탄약 더미에서 받은 클래스 투척물의 이름을 찾지 못했을 때",
+hitfeedback.name.eliminate,처치,Eliminate,"점수 팝업의 줄 이름(HudAddons.HitFeedbackModule, 원본 bo6hitmarker_achievements_eliminate 기본값). 언어와 상관없이 en 칸이 보인다(사용자 2026-11-22: 점수 팝업은 영문 통일). ko는 글자 편집기에서 읽기 위한 뜻. 설정에서 이름을 적으면 그 이름이 보인다",
+hitfeedback.name.headshot,헤드샷,Headshot,"점수 팝업의 줄 이름(원본 bo6hitmarker_achievements_headshot 기본값). en 칸이 보인다",
+hitfeedback.name.jump,점프샷,Jumpshot,"점수 팝업의 줄 이름: 공중에서 처치(원본 bo6hitmarker_achievements_jump 기본값). en 칸이 보인다",
+hitfeedback.name.melee,잔혹한 처치,Brutal Kill,"점수 팝업의 줄 이름: 근접 처치(원본 bo6hitmarker_achievements_melee 기본값). en 칸이 보인다",
+hitfeedback.name.burn,화염 처치,Burn Kill,"점수 팝업의 줄 이름(원본 bo6hitmarker_achievements_burn 기본값). en 칸이 보인다",
+hitfeedback.name.explosive,폭발 처치,Explosive Kill,"점수 팝업의 줄 이름(원본 bo6hitmarker_achievements_expl 기본값). en 칸이 보인다",
+hitfeedback.name.triple,학살(연속 3번째),Slaughter,"점수 팝업의 줄 이름: 연속 처치 3번째(원본 bo6hitmarker_achievements_3 기본값). en 칸이 보인다",
+hitfeedback.name.quadra,전사(연속 4번째),Warrior,"점수 팝업의 줄 이름: 연속 처치 4번째(원본 bo6hitmarker_achievements_4 기본값). en 칸이 보인다",
+hitfeedback.name.penta,신을 죽인 자(연속 5번째부터),God Slayer,"점수 팝업의 줄 이름: 연속 처치 5번째부터(원본 bo6hitmarker_achievements_5 기본값). en 칸이 보인다",
+hitfeedback.debug,디버그 모드,Debug Mode,"점수 팝업의 디버그 모드 본보기 줄(설정 > HUD > 히트 마커 > 디버그 모드). en 칸이 보인다",
+settings.hitfeedback.header,히트 마커,Hit Marker,"설정 창 > HUD > 머리줄(히트 마커·점수 팝업의 기본 설정. 원본 패널 ""Main"")",
+settings.hitfeedback.enable,켜기,Enable,설정 창 > HUD > 히트 마커 > 행(맞힘·처치를 보이고 들려줄지. 꺼도 점수는 쌓인다),
+settings.hitfeedback.hitmark,히트 마크,Hitmark,설정 창 > HUD > 히트 마커 > 행(맞히면 흰 마커),
+settings.hitfeedback.killmark,킬 마크,Killmark,설정 창 > HUD > 히트 마커 > 행(처치하면 빨간 마커),
+settings.hitfeedback.score,점수,Score,설정 창 > HUD > 히트 마커 > 행(노란 합계와 줄마다 +점수),
+settings.hitfeedback.achievements,업적,Achievements,설정 창 > HUD > 히트 마커 > 행(점수 팝업 줄마다 이름),
+settings.hitfeedback.hit_sound,히트 소리,Hit Sound,설정 창 > HUD > 히트 마커 > 행,
+settings.hitfeedback.kill_sound,킬 소리,Kill Sound,설정 창 > HUD > 히트 마커 > 행,
+settings.hitfeedback.debug,디버그 모드,Debug Mode,설정 창 > HUD > 히트 마커 > 행(점수 팝업 자리를 잡을 본보기를 늘 보인다),
+settings.hitfeedback.horizontal,가로 위치,Horizontal Offset,설정 창 > HUD > 히트 마커 > 행(점수 팝업을 오른쪽으로 옮기는 px. 마커는 조준점 그대로),
+settings.hitfeedback.vertical,세로 위치,Vertical Offset,설정 창 > HUD > 히트 마커 > 행(점수 팝업을 아래로 옮기는 px),
+settings.hitfeedback.mark_size,히트 마크 크기,Hitmark Size,설정 창 > HUD > 히트 마커 > 행,
+settings.hitfeedback.text_size,글자 크기,Text Size,설정 창 > HUD > 히트 마커 > 행(점수 팝업 글자),
+settings.hitfeedback.reset,기본값으로,Reset to Default,설정 창 > HUD > 히트 마커·업적 이름 > 단추(그 묶음만 처음 값으로),
+settings.hitfeedback.names_header,업적 이름,Achievements,"설정 창 > HUD > 머리줄(점수 팝업 줄 이름. 원본 패널 ""Achievements"")",
+settings.hitfeedback.name.eliminate,사람 처치,Kill Human,설정 창 > HUD > 업적 이름 > 행(보통 처치의 줄 이름을 적는 칸),
+settings.hitfeedback.name.headshot,헤드샷,Headshot,설정 창 > HUD > 업적 이름 > 행,
+settings.hitfeedback.name.jump,점프 처치,Jump Kill,설정 창 > HUD > 업적 이름 > 행,
+settings.hitfeedback.name.melee,근접 처치,Melee Kill,설정 창 > HUD > 업적 이름 > 행,
+settings.hitfeedback.name.burn,화염 처치,Burn Kill,설정 창 > HUD > 업적 이름 > 행,
+settings.hitfeedback.name.explosive,폭발 처치,Explosive Kill,설정 창 > HUD > 업적 이름 > 행,
+settings.hitfeedback.name.triple,트리플 킬,Triple kill,설정 창 > HUD > 업적 이름 > 행(연속 처치 3번째),
+settings.hitfeedback.name.quadra,쿼드라 킬,Quadra kill,설정 창 > HUD > 업적 이름 > 행(연속 처치 4번째),
+settings.hitfeedback.name.penta,펜타 킬,Penta kill,설정 창 > HUD > 업적 이름 > 행(연속 처치 5번째부터),
+settings.hitfeedback.chain_header,킬 체인,Killchains,"설정 창 > HUD > 머리줄(조준점 아래 해골 줄. 원본 ""Killchains""의 Client)",
+settings.hitfeedback.chain_caption,연속 처치 해골,Killstreak skulls,설정 창 > HUD > 킬 체인 > 설명 줄(원본 ControlHelp),
+settings.hitfeedback.skulls,조준점 아래 해골,Show killstreak skulls under crosshair,설정 창 > HUD > 킬 체인 > 행(연속 처치 해골을 보일지),
+settings.hitfeedback.skull_scale,해골 크기,Skulls scale,설정 창 > HUD > 킬 체인 > 행,
+settings.hitfeedback.skull_offset,해골 세로 위치,Skulls vertical offset,설정 창 > HUD > 킬 체인 > 행(화면 높이에서의 비율),
+settings.hitfeedback.skull_max,화면에 보일 최대 수,Max streak on screen,설정 창 > HUD > 킬 체인 > 행,
+settings.hitfeedback.skull_max_note,0이면 자동: 화면 너비의 절반을 넘지 않는다,0 means autocalculated - won't take more than half of screen width,설정 창 > HUD > 킬 체인 > 설명 줄,
+addon.enemybars.header,적 체력바,ENEMY HEALTH BARS,"설정 창 > HUD > 적 체력바 묶음 제목 (EnemyBars 모듈, 원본 Black Ops 6 Zombies Healthbars. 게임 이름은 쓰지 않는다)",
+addon.enemybars.enabled,체력바 표시,Show health bars,"설정 창 > HUD > 적 체력바: 조준하거나 맞힌 적 머리 위의 체력바를 그린다 (원본 froze_bo6hbar_enabled + froze_bo6hbar_enabled_cl, 기본 켬)",
+addon.enemybars.name,이름 표시,Show names,"설정 창 > HUD > 적 체력바: 바 아래 적 이름 (원본 froze_bo6hbar_enabled_name_cl, 기본 켬)",
+addon.enemybars.name_shadow,이름 그림자,Name shadow,"설정 창 > HUD > 적 체력바: 이름 뒤 흐린 검은 그림자 (원본 froze_bo6hbar_enabled_name_shadow_cl, 기본 켬)",
+addon.enemybars.damage_numbers,피해 숫자,Damage numbers,"설정 창 > HUD > 적 체력바: 바 오른쪽에 맞힌 피해 합계 (원본 froze_bo6hbar_enabled_dmg_numbers_cl, 기본 끔)",
+addon.enemybars.alt_background,무늬 바탕,Textured background,"설정 창 > HUD > 적 체력바: 바 바탕을 회색 대신 무늬 그림으로 (원본 froze_bo6hbar_alt_bg_texture, 기본 끔)",
+addon.enemybars.max_distance,최대 거리,Max distance,"설정 창 > HUD > 적 체력바: 이 거리 안의 적만 조준으로 바를 띄운다 (원본 froze_bo6hbar_max_distance 3000단위 = 57.15m)",
+addon.enemybars.metres,{0:0.##} m,{0:0.##} m,설정 창 > HUD > 적 체력바 > 최대 거리 값 칸. {0}은 미터,
+addon.enemybars.cmd.add_boss,"좀비 종류(이름 또는 Brute 같은 영문) — 그 종류의 체력바에 보스 아이콘을 단다(엘리트·네임드는 늘 보스). 설정에 저장. 비우면 지금 목록","Zombie kind (its name or e.g. Brute) — that kind's health bar wears the boss icon (elite and named always do). Saved with the settings. Empty: the list","콘솔 /hbar_add_boss 도움말 (원본 froze_bo6hbar_add_boss)",
+addon.enemybars.cmd.remove_boss,"좀비 종류 — 보스 아이콘 목록에서 뺀다. 비우면 지금 목록","Zombie kind — off the boss icon list. Empty: the list","콘솔 /hbar_remove_boss 도움말 (원본 froze_bo6hbar_remove_boss)",
+addon.enemybars.cmd.list,보스 아이콘을 다는 좀비 종류: {0} (엘리트·네임드는 늘),"Zombie kinds with the boss icon: {0} (elite and named always)","콘솔 /hbar_add_boss, /hbar_remove_boss의 답. {0}은 종류 목록",
+addon.enemybars.cmd.none,없음,none,콘솔 /hbar_add_boss 답에서 목록이 비었을 때,
+addon.enemybars.cmd.unknown,'{0}'은(는) 좀비 종류가 아니다. 종류: {1},'{0}' is not a zombie kind. Kinds: {1},"콘솔 /hbar_add_boss, /hbar_remove_boss에 모르는 종류를 넣었을 때. {1}은 모든 종류",
+settings.hud.grenades.quick,퀵 수류탄,Quick Grenade,"설정 창 > HUD > 수류탄 애드온 머리줄(MW Quick Grenade 애드온의 옵션 칸 ""[MW] Quick Grenade"". 게임 이름은 빼고)",
+settings.hud.grenades.indicator,수류탄 표시기,Grenade indicator,"설정 창 > HUD > 퀵 수류탄: 다가오는 세열 그림과 화살표를 화면 가운데 둘레에 보이기(원본 cl_qg_indicator ""Grenade indicator"")",
+settings.hud.grenades.fuse_indicator,신관 시간 표시기,Fuse time indicator,"설정 창 > HUD > 퀵 수류탄: 쿠킹하는 동안 조준점 둘레에 줄어드는 신관 링(원본 cl_qg_fuse_indicator ""Fuse time indicator"")",
+settings.hud.grenades.list,수류탄 표시기 목록,Grenade Indicators,"설정 창 > HUD > 수류탄 애드온 머리줄(Arctic's Grenade Indicators의 메뉴 창 이름 ""Grenade Indicators"": 무엇을 수류탄으로 칠지 더하는 목록)",
+settings.hud.grenades.list.claymore,클레이모어,Claymore,"설정 창 > HUD > 수류탄 표시기 목록: 놓인 클레이모어도 세모와 홀로그램으로 보이기(원본 메뉴에 엔티티 이름을 더하는 것. 기본은 빈 목록)",
+settings.hud.grenades.list.note,던진 수류탄은 처음부터 목록에 있다. 여기서 켠 것도 수류탄처럼 세모와 홀로그램으로 보인다. 기본 설정으로 되돌리기는 이 탭의 초기화.,Thrown grenades are always on the list. What you turn on here shows with a triangle and a hologram too. This tab's reset is the list's reset to default settings.,설정 창 > HUD > 수류탄 표시기 목록 아래 설명 줄,
+settings.hud.death.header,데스 스크린,Death Screen,설정 → HUD → 데스 스크린 묶음의 제목(애드온 설정 창 이름),
+settings.hud.death.help,죽었을 때 보이는 화면입니다. 설정은 이 컴퓨터에 저장됩니다.,Death screen. Your settings are saved on your computer.,설정 → HUD → 데스 스크린 제목 밑 설명(애드온 패널 첫 줄 Help),
+settings.hud.death.enabled,데스 스크린 켜기,Enable the death screen,설정 → HUD → 데스 스크린: 끔/켬(mw3death_enabled),
+settings.hud.death.enabled_note,"끄면 죽어도 평소 화면 그대로입니다. 흐림도, 피도, 휘슬 소리도, 사망 정보도 없습니다.","Turn this off and dying looks normal again: no blur, no blood, no whistle, no death card.",설정 → HUD → 데스 스크린: 켜기 밑 설명(애드온 패널 두 번째 Help. 사망 정보 카드가 합쳐져 그것도 적음),
+settings.hud.death.volume,휘슬 음량,Whistle volume,설정 → HUD → 데스 스크린: 죽을 때 한 번 나는 소리의 크기(0~2. mw3death_volume),
+settings.hud.death.blur,흐림 강도,Blur strength,설정 → HUD → 데스 스크린: 가장 흐릴 때의 세기(0~20. 0이면 흐림 없음. mw3death_blur),
+settings.hud.death.blood,피 오버레이 강도,Blood overlay strength,설정 → HUD → 데스 스크린: 화면 피 그림의 가장 짙은 정도(0~1. 0이면 없음. mw3death_blood),
+settings.hud.death.blood_delay,피 페이드 인 지연(초),Blood fade-in delay (seconds),설정 → HUD → 데스 스크린: 죽은 뒤 피 그림이 나타나기 시작하기까지(0~5초. mw3death_blood_delay),
+settings.hud.death.preview,미리 보기,Preview,설정 → HUD → 데스 스크린: 죽지 않고 한 번 보여 주는 버튼(게임 중 살아 있을 때. /death와 같다),
+settings.hud.death.reset,기본값으로,Reset to defaults,설정 → HUD → 데스 스크린: 이 묶음의 다섯 값을 기본값으로 돌리는 버튼,
 settings.controls.scope_sensitivity,배율 조준경 ×{0} 감도,Scope ×{0} sensitivity,"설정 창 > 조작 > 행. {0}=배율(GunParts.csv에 있는 배율마다 한 줄, ScopeLook)"
 settings.controls.scope_sensitivity.note,100% = 조준경 속 표적이 화면을 지나는 빠르기가 조준하지 않았을 때와 같아요,100% = a target crosses the screen as fast as it does unaimed,"설정 창 > 조작 > 배율 조준경 감도 줄들 아래의 설명"
 life.join.seconds,{0}초 뒤 합류합니다,Joining in {0}s,진행 중인 판에 늦게 들어와 관전하며 합류를 기다릴 때(죽은 사람이 돌아오는 것과 같은 시계). {0}=합류까지 남은 초
@@ -794,9 +885,6 @@ settings.hud.boards,HUD 그리드 배경,HUD Grid Background,설정 창 > HUD > 
 settings.hud.damage_numbers,데미지 숫자,Damage Numbers,설정 창 > HUD > 행
 settings.hud.damage_numbers.total,합산,Combined,설정 창 > HUD > 데미지 숫자 선택지
 settings.hud.damage_numbers.each,낱개,Individual,설정 창 > HUD > 데미지 숫자 선택지
-settings.hud.hit_markers,히트 마커,Hit Markers,설정 창 > HUD > 행
-settings.hud.hit_markers.clean,깔끔,Clean,설정 창 > HUD > 히트 마커 선택지 (얇은 선이 톡 튀고 바로 사라지는 페이데이 3식. 기본)
-settings.hud.hit_markers.bold,굵게,Bold,설정 창 > HUD > 히트 마커 선택지 (예전의 굵은 선이 안쪽으로 미끄러지는 모양)
 settings.hud.weapon_slots,무기 슬롯,Weapon Slots,설정 창 > HUD > 행
 settings.hud.weapon_slots.plates,조각 판,Plates,설정 창 > HUD > 무기 슬롯 선택지 (화면 오른쪽에 세로로 쌓인 기운 판. 든 판이 왼쪽으로 튀어나오며 커진다. 기본)
 settings.hud.weapon_slots.cards,카드 부채,Card Fan,설정 창 > HUD > 무기 슬롯 선택지 (탄약 위에 가로로 놓인 작은 카드. 든 카드가 밝은 카드로 넓어진다)
@@ -1000,18 +1088,10 @@ death.stat.lasted,버틴 시간,Time Survived,데스 스크린 아래 숫자 판
 death.stat.kills,처치,Kills,데스 스크린 아래 숫자 판 위 작은 글자: 이번 목숨의 처치 수
 death.stat.money,가진 돈,Cash,데스 스크린 아래 숫자 판 위 작은 글자: 지금 가진 돈(지폐 그림과 숫자)
 death.next.wipe.start,{0}초 뒤 처음 자리에서 다시,Back at the start in {0}s,데스 스크린 마지막 줄(전멸 뒤 그 밖의 맵). {0}=남은 초
-settings.hud.death_screen,데스 스크린,Death Screen,설정 창 > HUD > 행 (죽었을 때 화면. 켬·짧게·끔)
-settings.hud.death_screen.short,짧게,Short,"설정 창 > HUD > 데스 스크린 선택지 (같은 연출을 짧고 옅게, 피 없이. 수치는 DeathScreen.csv Short 줄)"
 settings.hud.objective_alert,목표 알림,Objective Alert,설정 창 > HUD > 행 (새 목표가 들어올 때 화면 위 가운데 알림. 기본·심플)
 settings.hud.objective_alert.card,기본,Default,"설정 창 > HUD > 목표 알림 선택지 (흰 선에서 열리는 카드에 글자가 한 자씩 쾅, 끝나면 목표 바로 날아가 꽂힌다)"
 settings.hud.objective_alert.ribbon,심플,Minimal,설정 창 > HUD > 목표 알림 선택지 (가운데서 펼쳐지는 띠에 글자가 타자 치듯 찍힌다)
 #--- 처치 점수·킬 피드 ---,,,
-feed.score.long_range,원거리 사격,Long Range,처치 점수 팝업의 줄
-feed.score.pierced,관통 사살,Penetration Kill,처치 점수 팝업의 줄
-feed.score.takedown,암살,Takedown,처치 점수 팝업의 줄: 눈치채지 못한 좀비를 뒤에서 처치했을 때(처형 점수 위에 더 받는다)
-feed.score.bounty,현상금,Bounty,처치 점수 줄: 시순트가 자기 표식 대상을 처치했을 때
-feed.score.witness,입막음,Silenced Witness,점수 팝업의 줄: 나를 알아채고 다른 좀비를 부르려고 숨을 들이쉬는 좀비를 부르기 전에 처치했을 때(돈. Stealth.csv Score.witness)
-feed.score.heriot,사망세,Heriot,처치 점수 팝업의 줄: 사망세(Heriot) 카드가 처치 돈에 몫을 더 얹을 때
 feed.money,돈,Cash,화면 오른쪽 위 돈 숫자 위의 작은 제목
 feed.weapon.execution,처형,Execution,킬 피드: 처형으로 잡았을 때 무기 자리
 knife.default.name,칼,Knife,클래스 칼 이름(ClassKnives.csv name): 줄이 없는 클래스의 칼. 근접 칸(무기 슬롯 3번)과 그 칼로 잡았을 때 킬 피드에 나온다
@@ -1402,10 +1482,6 @@ hud.alert.candyman,캔디맨 — 갈고리로 동료를 끌고 간다. 쫓아가
 hud.alert.breadbag,브레드백 — 전기톱 시동 소리에 패링하면 튕겨 나간다. 가드는 갈려 뚫린다,Breadbag: parry the chainsaw as it revs. A guard alone gets ground through,화면 위 경고 띠: 브레드백을 처음 가까이 봤을 때 한 번
 hud.alert.reaper,그림 리퍼 — 도끼를 허리 높이로 원 끝까지 크게 휘두른다. 품에 바짝 붙어 앉으면 자루 안쪽이라 날이 머리 위로 지나간다,Grim Reaper: its axe sweeps waist-high out to the ring. Hug it and crouch: inside the haft the blade passes overhead,화면 위 경고 띠: 그림 리퍼를 처음 가까이 봤을 때 한 번. 무엇을 하고 어떻게 이기는지(이유와 함께)
 hud.hold.hooked,갈고리에 걸렸다 — 살을 파고들어 계속 아프다. V를 연타해 몸부림쳐라,Hooked: it tears at you all the while. Mash V to struggle free,캔디맨의 갈고리에 걸려 끌려갈 때 내 화면 위 알림 한 번
-feed.score.ninja_parry,닌자 튕겨내기,Ninja parried,점수 팝업의 줄: 닌자의 등 뒤 공격을 돌아서 패링했을 때(돈)
-feed.score.saw_parry,전기톱 튕겨내기,Chainsaw parried,점수 팝업의 줄: 브레드백의 전기톱을 패링했을 때(돈)
-feed.score.reap_dodge,도끼 밑으로,Under the axe,점수 팝업의 줄: 그림 리퍼의 품에 붙어 앉아 도끼를 피했을 때(돈)
-feed.score.exploder_defuse,숨골 끊어 해체,Defused: brainstem cut first,점수 팝업의 줄: 자폭 좀비를 암살·처형해 터지기 전에 해체했을 때(돈. 칼끝이 가스주머니에 불이 붙기 전에 숨골을 끊는다)
 menu.launch.solo.hub,싱글 플레이  ·  허브에서 {0} 준비,Solo · Prepare for {0} at Hub,"메인 메뉴 > 출격 버튼 아래 줄(혼자 하기, 허브가 있을 때). {0}=맵 이름"
 menu.launch.host.hub,방 만들기  ·  허브에서 {0} 준비,Create Lobby · Prepare for {0} at Hub,"메인 메뉴 > 출격 버튼 아래 줄(방 만들기, 허브가 있을 때). {0}=맵 이름"
 hub.objective.title,출발 준비  ·  {0},Ready Up  ·  {0},허브 > 임무 칸 제목. {0}=고른 장
