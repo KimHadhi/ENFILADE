@@ -27,6 +27,11 @@ public sealed class MovementAbilitySettings
     [Min(1f)] public float leanSharpness = 10f;
     [Tooltip("A lean from one side to the other and a crouch to a stand (and back) turn over this long (s), not in a frame.")]
     [Min(.01f)] public float turnTime = .2f;
+    [Tooltip("Crouching and standing over and over: turned back on the way, the body loses this share of its pace (crouchTire), down to "
+        + "crouchTiredPace at the least, and gets crouchRest of it back a second.")]
+    [Range(0f, 1f)] public float crouchTire = .25f;
+    [Range(.1f, 1f)] public float crouchTiredPace = .35f;
+    [Min(0f)] public float crouchRest = .5f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;

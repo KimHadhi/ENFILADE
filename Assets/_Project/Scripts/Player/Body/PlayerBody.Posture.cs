@@ -11,6 +11,9 @@ using MovementState = PlayerMovement.MovementState;
 /// the hips went from 2.6 m/s down to as much up in a frame, some 25 g, and the hair and chest were thrown about (the user,
 /// 2026-11-23: "캐릭터가 너무 순식간에 움직여서 물리가 ... 텔포되고", "한 프레임만에 서로 바뀌지 않게 하는 게 더 나을 것
 /// 같은데"). Until 0.9.348 the clips followed the eyes' ease, half the way in 0.05 s (2026-11-22: "걍 한번에 확 내려가고").
+/// Turned back over and over it also tires, as in CS2: each turn back takes some of its pace (Ability.crouchTire) and it comes
+/// back by itself, so a crouch tapped again and again only bobs the body a little (10-13 cm at ten taps a second, at any
+/// frame rate), and one that is let end is never slowed (0.9.354, the user, 2026-11-23).
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -22,16 +25,21 @@ public sealed partial class PlayerBody
     // Down or up in this long where the body has no clip for it (s).
     private const float PlainPosture = .4f;
     // How far down the body is (0 standing, 1 crouched); which way it goes and how much of that way's clip's pace it has (1 down,
-    // -1 up, 0 at rest); the clip's moment; and whether it is on its way.
-    private float postureDown, postureWay, postureMoment;
+    // -1 up, 0 at rest); how much of the pace it has left (1 rested); the clip's moment; and whether it is on its way.
+    private float postureDown, postureWay, posturePace = 1f, postureMoment;
     private bool posturing;
 
-    // From Enter: the stance changed. Turned back on the way, the same body goes on (TickPosture).
+    // From Enter: the stance changed. Turned back on the way, the same body goes on (TickPosture), more tired.
     private void StartPosture(MovementState from, MovementState to, bool onGround)
     {
         bool goes = onGround && (from == MovementState.Standing && to == MovementState.Crouching
             || from == MovementState.Crouching && to == MovementState.Standing);
-        if (goes && posturing) return;
+        if (goes && posturing)
+        {
+            var ability = player.AbilitySettings;
+            posturePace = Mathf.Max(ability.crouchTiredPace, posturePace - ability.crouchTire);
+            return;
+        }
         posturing = goes;
         postureWay = 0f;
         if (goes) postureDown = from == MovementState.Standing ? 0f : 1f;
@@ -40,12 +48,14 @@ public sealed partial class PlayerBody
     // From ChoosePose, standing or crouched on the ground: how far down the body is now.
     private void TickPosture(bool crouched, float dt)
     {
+        var ability = player.AbilitySettings;
+        posturePace = Mathf.MoveTowards(posturePace, 1f, ability.crouchRest * dt);
         if (!posturing)
         {
             postureDown = crouched ? 1f : 0f;
             return;
         }
-        postureWay = Mathf.MoveTowards(postureWay, crouched ? 1f : -1f, 2f * dt / Mathf.Max(.01f, player.AbilitySettings.turnTime));
+        postureWay = Mathf.MoveTowards(postureWay, crouched ? posturePace : -posturePace, 2f * dt / Mathf.Max(.01f, ability.turnTime));
         bool down = postureWay >= 0f, there;
         var motion = MotionOf(down ? crouchDown : standUp);
         if (motion != null)

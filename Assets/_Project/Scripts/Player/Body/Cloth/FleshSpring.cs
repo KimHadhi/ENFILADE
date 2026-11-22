@@ -21,10 +21,14 @@ using UnityEngine;
 /// That was firmer than flesh is (the user, 2026-11-12: "살이 이게 가슴이나 엉덩이나 너무 딱딱하게 굳은 것 같은데 더
 /// 출렁거려도 될 듯 ... 현실적으로"): walking moved Mayo's breast 0.8 cm and running 1.2 cm, where an unsupported breast
 /// moves about 4 cm against the trunk walking and 15 cm running, half of it up and down (treadmill studies of D cups).
-/// Now breasts spring at 2.2-3.6 Hz with damping .16-.27 (ClothFlesh.csv), feel the body's bob while running (feltSpeed
-/// 3.5), and a lump whose bone stands upright slides a little on its root (slide), since turning can't show a bounce
-/// along the bone: Mayo's breast 2.1 cm walking, 6.6 cm running, a landing 4.9 cm with four bounces in a second; her
-/// bottom (a bone 32° off upright) 0.9 cm running by turning alone, 3.2 cm with the slide.
+/// So flesh feels the body's bob while running (feltSpeed 3.5), and a lump whose bone stands upright slides a little on its
+/// root (slide), since turning can't show a bounce along the bone: Mayo's bottom (a bone 32° off upright) 0.9 cm running by
+/// turning alone, 3.2 cm with the slide.
+/// Breasts sprang at 2.2-3.6 Hz with damping .16-.27 until 0.9.353. The body bobs about as often (measured on the clips: a jog
+/// 14 cm at 2.1 Hz, a run 12 cm at 3.0 Hz), so a jog already threw a breast to the end of its maker's cone and Magica's limit
+/// holds it there without giving any of its speed back: Ichigo's (her cone is 3.8 cm) stayed at it 1.3 s of 3 in a jog and .3 s
+/// in one crouch, stopped dead and not springing (the user, 2026-11-23: "가슴은 찰지게"). At 3.4-3.9 Hz with damping .15-.2 they
+/// swing back by themselves before it (.1 s and none; Mayo's goes 4.3 cm of her 6.3 in a jog) and ring in quicker bounces.
 /// How Magica's angle restoration becomes that spring (AngleConstraint.SolverConstraint): each step it turns a bone
 /// toward its drawn direction in three passes (Define.System.AngleLimitIteration), each by stiffness × .2 of the angle
 /// (AngleConstraint's Convert scales it so), about a centre .1, .3 then .5 of the way out from the parent; the parent

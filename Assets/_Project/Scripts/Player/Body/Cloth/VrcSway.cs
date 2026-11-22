@@ -285,8 +285,8 @@ public static class VrcSway
     // FleshSpring), by the kind its name says (ClothFlesh.csv: breasts swing softer than a bottom, a belly or thighs, which
     // muscle holds). How hard its maker pulls it back (pull; in VRChat's advanced mode its stiffness too) sets how many
     // times a second it swings, and how much it wobbles on the way (spring) how much of each swing it keeps, both read down
-    // the whole chain and spread over the kind's bands: Mayo's breasts (pull .9 rising from half, spring .95) swing 3.2
-    // times a second keeping .17, Ichigo's (pull .38 and spring .85, both falling to half) 2.6 and .2. Only the bones on
+    // the whole chain and spread over the kind's bands: Mayo's breasts (pull .9 rising from half, spring .95) swing 3.7
+    // times a second keeping .15, Ichigo's (pull .38 and spring .85, both falling to half) 3.5 and .17. Only the bones on
     // the root swing (one lump: ClothPart.HoldStill), so the maker's limit is read at their depth down the chain, as VRChat
     // reads it for them (Mayo's 24.7°, Ichigo's 16.7°; read at the far end it cut Ichigo's to 12.5°). A lump whose bone
     // stands upright can't show its bounce by turning (Mayo's bottom, 32° off upright): its root slides that kind's share
