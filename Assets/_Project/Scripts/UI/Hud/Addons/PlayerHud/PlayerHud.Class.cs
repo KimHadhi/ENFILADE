@@ -77,7 +77,7 @@ namespace HudAddons
             float blockW = right - x0;
 
             // The class box.
-            painter.RoundedBox(look.Hud.corner, x0, rowTop, box, box, background);
+            painter.RoundedBox(look.Hud.corner, x0, rowTop, box, box, ownBox);
             if (v.Rise > 0f) Fill(x0, rowTop + box * (1f - v.Rise), box, box * v.Rise, Gm.WithAlpha(white, 255f * c.riseAlpha));
             if (v.Icon != null)
             {
@@ -102,7 +102,7 @@ namespace HudAddons
             float underY = barMid + barH * .5f + c.under * u * .5f + u;
             if (v.Most > 0)
             {
-                painter.RoundedBox(look.Hud.corner, barX - frame, barMid - barH * .5f - frame, barW + frame * 2f, barH + c.under * u + frame * 2f, background);
+                painter.RoundedBox(look.Hud.corner, barX - frame, barMid - barH * .5f - frame, barW + frame * 2f, barH + c.under * u + frame * 2f, ownBox);
                 Pips(v, barX, barMid - barH * .5f, barW, barH, c, white, u);
                 string count = Fraction(Mathf.FloorToInt(v.Filled + .001f), v.Most);
                 float sideRoom = barW - (smallFont.Width(count) + 8f * u);
@@ -118,7 +118,7 @@ namespace HudAddons
                 for (int g = 0; g < 2; g++)
                 {
                     float gx = barX + g * (gw + 8f * u);
-                    painter.RoundedBox(look.Hud.corner, gx, gy, gw, gh, background);
+                    painter.RoundedBox(look.Hud.corner, gx, gy, gw, gh, ownBox);
                     if (v.GunFlash[g] > 0f) painter.RoundedBox(look.Hud.corner, gx, gy, gw, gh, Gm.WithAlpha(accent, 115f * v.GunFlash[g]));
                     painter.OutlinedText(Digits.Of(g + 1), digits, gx + 8f * u, gy + gh * .5f, white, TextAlign.Left, TextAlign.Center, outlineW, outlineColour);
                     Fill(gx + 3f * u, gy + gh - 4f * u, (gw - 6f * u) * Mathf.Clamp01(v.Gun[g]), 2.5f * u, white);
@@ -136,7 +136,7 @@ namespace HudAddons
             {
                 float keyW = 40f * u + wordFont.Width(v.Word) + 10f * u;
                 keyLeft = right - keyW;
-                painter.RoundedBox(look.Hud.corner, keyLeft, keyTop, keyW, keyH, background);
+                painter.RoundedBox(look.Hud.corner, keyLeft, keyTop, keyW, keyH, ownBox);
                 float beat = .5f + .5f * Mathf.Sin(now * Mathf.PI * 2f * c.beatsPerSecond);
                 if (v.Beat) painter.RoundedBox(look.Hud.corner, keyLeft, keyTop, keyW, keyH, Gm.WithAlpha(accent, 255f * Mathf.Lerp(c.glowLeast, c.glowMost, beat)));
                 Color32 cap = v.Deny ? low : accent;
@@ -216,7 +216,7 @@ namespace HudAddons
                 bool picked = placing.Length > 0 && string.Equals(placing, line.Kind.Id, System.StringComparison.OrdinalIgnoreCase);
                 float held = line.Held ? 1f : look.Class.unheldAlpha;
                 painter.AlphaScale = held;
-                painter.RoundedBox(look.Hud.corner, cx, cy, chipW, rowH, background);
+                painter.RoundedBox(look.Hud.corner, cx, cy, chipW, rowH, ownBox);
                 if (picked) Fill(cx + 3f * u, cy + rowH - 3f * u, chipW - 6f * u, 2f * u, accent);
                 painter.OutlinedText(line.Kind.Short, font, cx + 6f * u, cy + rowH * .5f, White, TextAlign.Left, TextAlign.Center, outlineWidth, outlineColour);
                 Color32 tint = line.Full ? Gm.WithAlpha(loss, 255f * (picked ? breath : 1f)) : White;
@@ -249,7 +249,7 @@ namespace HudAddons
                 index++;
                 if (!upward && cy + rowH > floor) break;
                 Color32 colour = entry.Kind.Colour;
-                painter.RoundedBox(look.Hud.corner, cx, cy, cellW, rowH, background);
+                painter.RoundedBox(look.Hud.corner, cx, cy, cellW, rowH, ownBox);
                 painter.RoundedBox(2f * u, cx + 6f * u, cy + rowH * .5f - 4f * u, 8f * u, 8f * u, colour);
                 painter.OutlinedText(EffectName(entry), font, cx + 19f * u, cy + rowH * .5f, White, TextAlign.Left, TextAlign.Center, outlineWidth, outlineColour);
                 painter.OutlinedText(Tenths(entry.Left), bold, cx + cellW - 6f * u, cy + rowH * .5f, White, TextAlign.Right, TextAlign.Center, outlineWidth, outlineColour);

@@ -49,7 +49,7 @@ namespace HudAddons
 
             magazineAccent = Accent(o);
             DrawMagazine(left, top, magazine, tall);
-            painter.RoundedBox(look.Hud.corner, pictureLeft, top, tall, tall, background);
+            painter.RoundedBox(look.Hud.corner, pictureLeft, top, tall, tall, ownBox);
             pictureRect = new Rect(pictureLeft + frame, top + frame, side, side);
             if (ProfilePicture.Current == null) DrawInitial();
             DrawRank(left, rowTop, box, pictureLeft + tall, frame, gap, p);
@@ -121,7 +121,7 @@ namespace HudAddons
             }
 
             // The stims box with the insignia for its picture, whole (the addon's 150 alpha made it hard to read).
-            painter.RoundedBox(look.Hud.corner, left, top, box, box, background);
+            painter.RoundedBox(look.Hud.corner, left, top, box, box, ownBox);
             var insignia = ClassGrowth.Insignia(view.Rank);
             if (insignia != null)
             {
@@ -135,7 +135,7 @@ namespace HudAddons
             float barLeft = left + box + gap + frame, barWidth = right - frame - barLeft, barHeight = p.rankHeight * scale;
             float barTop = top + (box - barHeight) * .5f;
             if (barWidth <= 0f) return;
-            painter.RoundedBox(look.Hud.corner, barLeft - frame, barTop - frame, barWidth + frame * 2f, barHeight + frame * 2f, background);
+            painter.RoundedBox(look.Hud.corner, barLeft - frame, barTop - frame, barWidth + frame * 2f, barHeight + frame * 2f, ownBox);
             rankBar.Step(view.Share, now, look.Bar);
             heldShown = Smooth.Lerp(look.Bar.follow, heldShown, view.StoredShare);
             killsShown = Smooth.Lerp(look.Bar.follow, killsShown, kills);

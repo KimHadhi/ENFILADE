@@ -12,6 +12,7 @@ Colour.loss,#FF9600FF,"Colors.Loss = Color(255,150,0): 막대가 줄어든 자�
 Colour.ammo,#9B9B9BFF,"Colors.Ammo = Color(155,155,155): 방어구 막대 밑 0·50·100 글자"
 Colour.overOne,#9696FFFF,"rect.lua: 값이 1을 넘으면 그 위에 다시 그리는 색 Color(150,150,255)"
 Colour.overTwo,#FF9614FF,"rect.lua: 값이 2를 넘으면 Color(255,150,20)"
+Colour.box,#00000066,"우리 조각(프사 판, 궁극기 탄창, 클래스 UI)의 상자: 애드온 상자(50)를 쓰면 특수 효과가 알파를 제곱해 화면에서 거의 안 보인다. 시안에서 보인 만큼 보이도록 102"
 Colour.outline,#00000014,"모든 글자의 테두리 Color(0,0,0,20)(draw.SimpleTextOutlined)"
 Colour.outlineWidth,2,"글자 테두리 두께(px)"
 Colour.follow,10,"Nene.LerpColor(이름,10): 색이 바뀌는 빠르기"
@@ -172,10 +173,10 @@ Class.smallText,14.4,"작은 글자(막대 밑 글자, 개수, 설치·효과 �
 Class.wordText,19.2,키 안내 글자(굵게)
 Class.digitText,28.8,포인트의 두 총 칸 숫자
 Class.markText,19.2,DEADEYE·DESPERADO(프로필 옆에서는 0.875배)
-Class.outline,#0000006E,"글자 테두리: 애드온의 검정(알파 20)보다 진하게(110), 밝은 배경에서도 읽히게"
-Class.glowLeast,0.12,키 안내가 준비됐을 때 상자에 비치는 내 색의 가장 옅은 알파
-Class.glowMost,0.42,가장 짙은 알파
+Class.outline,#00000020,글자 테두리: 16번 겹쳐 찍히므로 옅은 값이 부드러운 테두리가 된다. 애드온(알파 20)보다 조금 진한 32. 110이던 때는 테두리가 시커멓게 뭉개졌다(11-22)
+Class.glowLeast,0.16,키 안내가 준비됐을 때 상자에 비치는 내 색의 가장 옅은 알파(특수 효과가 알파를 제곱하므로 시안의 0.12보다 조금 크다)
+Class.glowMost,0.34,가장 짙은 알파(시안의 0.42에 맞춤)
 Class.beatsPerSecond,0.7,그 빛과 DEADEYE 글자가 숨 쉬는 빠르기(초당. 광과민 규칙 1.6 아래)
-Class.emptyAlpha,0.13,빈 칸의 흰색 알파
+Class.emptyAlpha,0.17,빈 칸의 흰색 알파(특수 효과가 알파를 제곱하므로 시안의 0.13보다 크다)
 Class.riseAlpha,0.28,기다리는 능력이 차오르는 흰색 알파
 Class.unheldAlpha,0.4,더는 들고 있지 않은 설치물 줄의 알파(서 있는 동안만 남는다)

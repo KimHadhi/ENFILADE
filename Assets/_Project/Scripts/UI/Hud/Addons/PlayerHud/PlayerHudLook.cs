@@ -43,6 +43,9 @@ namespace HudAddons
             /// <summary>rect.lua: a value past full draws again over the bar in these two.</summary>
             public Color overOne = new Color32(150, 150, 255, 255);
             public Color overTwo = new Color32(255, 150, 20, 255);
+            /// <summary>The box of our own pieces (portrait panel, magazine, class UI): the addon's black, denser, so that it is
+            /// as visible as the draft's under the special effects, which square the HUD's alpha (PlayerHudFx).</summary>
+            public Color box = new Color32(0, 0, 0, 102);
             public Color outline = new Color32(0, 0, 0, 20);
             public float outlineWidth = 2f;
             /// <summary>Nene.LerpColor(name, 10).</summary>
@@ -319,12 +322,13 @@ namespace HudAddons
             public float keyHeight = 28f, keyAbove = 37f, rowHeight = 22f, rowGap = 4f, chipMost = 92f;
             /// <summary>Text cells: the class name, the small words, the key's word, the gun digits, the mark.</summary>
             public float nameText = 16.8f, smallText = 14.4f, wordText = 19.2f, digitText = 28.8f, markText = 19.2f;
-            /// <summary>The text outline: the addon's (black, 2 px) a little darker, so the words read on bright ground.</summary>
-            public Color outline = new Color32(0, 0, 0, 110);
+            /// <summary>The text outline's colour: GMod stamps it 16 times, so a faint one builds up to a soft rim (the addon's 20
+            /// about half opaque at the glyph's edge); a little more, so the words read on bright ground.</summary>
+            public Color outline = new Color32(0, 0, 0, 32);
             /// <summary>The ready glow of the key box and the mark's beat: between these, this many times a second.</summary>
-            public float glowLeast = .12f, glowMost = .42f, beatsPerSecond = .7f;
+            public float glowLeast = .16f, glowMost = .34f, beatsPerSecond = .7f;
             /// <summary>The faint empty segments, a recharging box's fill and the deploy chips of a kind no longer held.</summary>
-            public float emptyAlpha = .13f, riseAlpha = .28f, unheldAlpha = .4f;
+            public float emptyAlpha = .17f, riseAlpha = .28f, unheldAlpha = .4f;
         }
 
         public readonly HudRow Hud = new HudRow();

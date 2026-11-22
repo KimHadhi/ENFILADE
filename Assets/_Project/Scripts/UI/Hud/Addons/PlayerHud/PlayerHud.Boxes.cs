@@ -14,7 +14,7 @@ namespace HudAddons
         private float fontWidth = -1f, fontScale = -1f, fontWeight = -1f;
         private string fontFace;
         // Nene.Config.Colors this frame.
-        private Color32 background, low, loss, ammoGrey, overOne, overTwo, outline;
+        private Color32 background, ownBox, low, loss, ammoGrey, overOne, overTwo, outline;
         private float outlineWidth;
 
         private void MeasureFonts(PlayerHudOptions o)
@@ -40,6 +40,7 @@ namespace HudAddons
         {
             var c = look.Colour;
             background = c.background;
+            ownBox = c.box;
             low = c.low;
             loss = c.loss;
             ammoGrey = c.ammo;

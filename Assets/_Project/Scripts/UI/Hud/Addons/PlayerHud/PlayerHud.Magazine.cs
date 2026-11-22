@@ -123,12 +123,12 @@ namespace HudAddons
             int perUse = Mathf.Clamp(m.rounds, 1, MostRounds);
             float pad = MagazinePad * unit, pitch = (r.height - 2f * pad) / roundSlots;
             float h = Mathf.Min(8f * unit, pitch * .62f), length = r.width - 6f * unit;
-            Quad(new Vector2(r.xMin, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin, r.yMax), (Color)background);
+            Quad(new Vector2(r.xMin, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin, r.yMax), (Color)ownBox);
             Frame(r, unit, With(Color.white, .28f));
             for (int i = 0; i < roundSlots; i++)
             {
                 float y = r.yMax - pad - pitch * (i + .5f), tick = ((i + 1) % 5 == 0 ? 8f : 4f) * unit;
-                Line(new Vector2(r.xMin - tick - unit, y), new Vector2(r.xMin - unit, y), 1.4f * unit, With(Color.white, i < count ? .7f : .22f));
+                Line(new Vector2(r.xMin - tick - unit, y), new Vector2(r.xMin - unit, y), 1.4f * unit, With(Color.white, i < count ? .7f : .28f));
             }
             float x = r.xMin + 3f * unit;
             for (int i = 0; i < roundSlots; i++)
@@ -148,7 +148,7 @@ namespace HudAddons
                 }
                 else
                 {
-                    Round(x, y, length, h, With(Color.white, .06f), With(Color.white, .09f));
+                    Round(x, y, length, h, With(Color.white, .12f), With(Color.white, .17f));
                     if (live && i == count && partial > .02f)
                     {
                         Round(x, y, length, h, With(m.round, .3f * partial), With(Color.white, .3f * partial));
@@ -170,7 +170,7 @@ namespace HudAddons
             if (roundSlots <= 0) return;
             float x0 = r.xMin - CoverSide * unit, foot = r.yMin - 4f * unit, w = r.width + CoverSide * 2f * unit;
             float cx = x0 + w * .5f + CoverSkew * unit * .5f, cy = foot - CoverHeight * unit * .5f;
-            Plate(x0, foot, w, (Color)background);
+            Plate(x0, foot, w, (Color)ownBox);
             PlateOutline(x0, foot, w, 0f, 1.2f * unit, With(Color.white, .35f));
             Diamond(cx, cy, 4.5f * unit, With(Color.white, .45f), false);
             bool closed = magazineReady && gameNow >= readyAt;
