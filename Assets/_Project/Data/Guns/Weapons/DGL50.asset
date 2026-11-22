@@ -79,7 +79,6 @@ MonoBehaviour:
   recoilResponse: 22
   recoilRetention: 0.2
   adsFov: 45
-  adsMoveMultiplier: 0.7
   adsTransitionTime: 0.13
   highReadyRaiseHalfLife: 0.045
   highReadyLowerHalfLife: 0.055

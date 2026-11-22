@@ -22,7 +22,7 @@
 | [Core/SurgeWay.cs](Core/SurgeWay.cs) | 써지를 부르기 전에 그 길을 걸어 보는 계산(벽·닫힌 문·구덩이·낭떠러지·높은 턱은 길이 아니고 계단은 길이다)과, 게임 물리로 답하는 `Walker`. 표 Player.csv `Surge.*` |
 | [Actions/MovementAbilities.cs](Actions/MovementAbilities.cs) | 독점 행동의 입력 우선순위, 회피·파쿠르·전투 서비스 연결 |
 | [Actions/MovementDive.cs](Actions/MovementDive.cs) / [MovementLanding.cs](Actions/MovementLanding.cs) | 다이브 비행(누운 채 턱에서 떨어질 때) / 착지 단계·구르기·슬라이딩 점프(다이브 롤)·낙하 피해·큰 낙하·넉백 |
-| [Actions/MovementGait.cs](Actions/MovementGait.cs) | 걸음새(걷기·조깅·달리기·전력질주)와 가는 쪽마다의 속도(Gaits.csv) |
+| [Actions/MovementGait.cs](Actions/MovementGait.cs) | 걸음새(걷기·조깅·전력질주)와 총·조준, 가는 쪽마다의 속도(Gaits.csv: 클립의 속도 그대로) |
 | [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과, 어느 클립으로 회피하는가([DodgeMove](Dodge/DodgeMove.cs)), 회피 이펙트(DodgeDash) |
 | [Actions/ClipTravel.cs](Actions/ClipTravel.cs) / [ClipWays.cs](Actions/ClipWays.cs) | 클립대로 가는 동작(구르기·다이브 롤·회피)이 매 프레임 갈 거리(`GaitMoves.csv` kind travel) / 가는 쪽마다 클립을 적은 줄(`클립@도`)에서 고르기 |
 | [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs). 사다리 꼭대기는 걸어 나가 몸이 사다리에 닿으면 레포데처럼 저절로, 또는 F. 집라인은 뛰어오른 공중이나 Space를 누른 채일 때만) |

@@ -40,8 +40,6 @@ public sealed class LocomotionState : MovementBaseState
         Vector3 inputDirection = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
 
         float baseSpeed = ctx.StateMachine.Current.LocomotionSpeed;
-        var weapon = ctx.GetComponent<WeaponController>();
-        if (weapon != null) baseSpeed *= weapon.MovementMultiplier;
         // The class's pace: an Assault's adrenaline, a CHARGE (PlayerClass; this PC's own player only).
         baseSpeed *= PlayerClass.MoveFactor(ctx);
         // Getting over a hard landing, the legs give only part of the usual speed.

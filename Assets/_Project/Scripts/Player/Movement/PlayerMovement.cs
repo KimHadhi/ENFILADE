@@ -254,12 +254,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// </summary>
     public bool InputAvailable => CanAct && Time.timeScale > 0f && (!Application.isPlaying || InputFocus.TakesMove());
 
-    /// <summary>The jog's speed straight ahead (m/s), the pace a direction key alone gives (Gaits.csv jog; the run's until
-    /// 0.9.283). Named for the row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk
+    /// <summary>The jog's speed straight ahead (m/s), the pace a direction key alone gives (Gaits.csv jog, or the gun's; the
+    /// run's until 0.9.283). Named for the row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk
     /// mode's.</summary>
-    public float WalkSpeed => Actions != null ? Actions.Gait.JogAhead : 3f;
-    /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (Gaits.csv sprint).</summary>
-    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 5.97f;
+    public float WalkSpeed => Actions != null ? Actions.Gait.JogAhead : 2.5f;
+    /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (Gaits.csv sprint, or the gun's).</summary>
+    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 6.01f;
     public float ProneSpeed => proneSpeed;
     public float SupineSpeed => supineSpeed;
     public float GroundSharpness => groundSharpness;
@@ -306,13 +306,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// run W built up counted too, so a friend's copy took the sprint pose that this PC's own body never did.</summary>
     public float RunIntent => Actions == null ? 0f : SprintProgress;
 
-    private PlayerBody sprintBody;
+    private PlayerBody body;
+    private PlayerBody Body => body != null ? body : body = GetComponent<PlayerBody>();
     // Whether the body has a sprint toward these keys (PlayerBody.SprintsToward): with a gun out, only where the gun runs.
-    internal bool SprintsToward(Vector2 keys)
-    {
-        if (sprintBody == null) sprintBody = GetComponent<PlayerBody>();
-        return sprintBody == null || sprintBody.SprintsToward(keys);
-    }
+    internal bool SprintsToward(Vector2 keys) => Body == null || Body.SprintsToward(keys);
+    /// <summary>A gun out has the legs: its own walk, jog, run and crouched walk (PlayerBody, BodyMoves.csv).</summary>
+    internal bool GunHasLegs => Body != null && Body.GunHasLegs;
+    /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
+    internal float AimShare => Body != null ? Body.AimShare : 0f;
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
     public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     /// <summary>Fall speed from actual descent, excluding time held against an edge (m/s).</summary>

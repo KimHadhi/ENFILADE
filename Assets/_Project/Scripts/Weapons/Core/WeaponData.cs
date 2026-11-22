@@ -164,7 +164,6 @@ public sealed class WeaponData : ScriptableObject
     [SerializeField, Range(0f, 1f)] private float recoilRetention = .22f;
     [Header("Aim down sights")]
     [SerializeField, Range(20f, 100f)] private float adsFov = 40f;
-    [SerializeField, Range(.1f, 1f)] private float adsMoveMultiplier = .6f;
     [SerializeField, Min(.01f)] private float adsTransitionTime = .16f;
     [Header("High-ready pose (level view space; Weapons.csv)")]
     [Tooltip("Seconds to halve the visual distance to high ready. Cover and ADS blocking remain immediate.")]
@@ -326,7 +325,6 @@ public sealed class WeaponData : ScriptableObject
     public AudioClip[] DrawSounds => drawSounds;
     public AudioClip[] CycleSounds => cycleSounds;
     public float AdsFov => Mathf.Clamp(adsFov, 20f, 100f);
-    public float AdsMoveMultiplier => Mathf.Clamp(adsMoveMultiplier, .1f, 1f);
     public float AdsTransitionTime => Mathf.Max(.01f, adsTransitionTime);
     public float HighReadyRaiseHalfLife => Mathf.Clamp(highReadyRaiseHalfLife, .01f, .2f);
     public float HighReadyLowerHalfLife => Mathf.Clamp(highReadyLowerHalfLife, .01f, .2f);

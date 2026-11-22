@@ -84,7 +84,6 @@ public sealed partial class WeaponController : MonoBehaviour
     /// </summary>
     public bool IsHeldClose { get; private set; }
     public float CurrentSpread { get; private set; }
-    public float MovementMultiplier => EquippedData == null ? 1f : Mathf.Lerp(1f, EquippedData.AdsMoveMultiplier, AimBlend);
 
     public event Action<WeaponShot> ShotFired;
     /// <summary>Trigger pulled on an empty magazine (no shot, no automatic reload).</summary>

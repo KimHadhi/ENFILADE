@@ -8,7 +8,7 @@ using UnityEngine;
 /// - a foot is down while its ankle or its toes are within a few hundredths of a leg of their lowest;
 /// - while down it moves back under the hips as fast as the clip carries the body (the cycles are in place), so the
 ///   clip's speed is the median of that, along the way the down feet move back from (its travel), at the point of the sole
-///   that is on the ground (the heel or the toes);
+///   that is on the ground (the heel or the toes); a foot that only hangs low carries nothing and is left out (CarryShare);
 /// - the left foot's touchdowns count the strides and set where a stride starts, so cycles that blend put the same foot
 ///   down at the same moment, whatever their length or where their file starts.
 /// The table's playback speeds before this were guesses and set to the movement's speeds (Body.runClipSpeed 4.9 for a
@@ -22,6 +22,8 @@ internal static class GaitClips
     private const float SampleRate = 60f;
     // A foot is down within this share of the leg's length of its lowest ankle or toes, and lifts again past twice that.
     private const float AnkleDown = .04f, ToesDown = .025f;
+    // A down foot carries the body while it moves back at least this share as fast as the fastest down feet do.
+    private const float CarryShare = .5f;
     // One foot comes down at most every this many seconds even sprinting: closer touchdowns are one landing (heel, then toes).
     private const float SameFootGap = .25f;
 
@@ -133,9 +135,8 @@ internal static class GaitClips
         // length for its hips than the performer's still keeps its feet where they come down. 0.9.253 took the root's travel
         // for it instead, which is the performer's: on the game's bodies the soles go 20-35% slower than that (Ichigo's walk
         // 1.24 against 1.57 m/s, Mayo's run 3.78 against 5.14), so their strides were never stretched to the speed and the
-        // feet slid under them (the user: "굉장히 얼음장 위를 걷는 느낌"). The game's speeds are the performer's (Gaits.csv).
+        // feet slid under them (the user: "굉장히 얼음장 위를 걷는 느낌"). The game's speeds are these feet's, the mean of four bodies' (Gaits.csv).
         var moving = new List<Vector2>();
-        Vector2 sum = Vector2.zero;
         for (int f = 0; f < 2; f++)
             for (int i = 0; i < count; i++)
             {
@@ -143,18 +144,26 @@ internal static class GaitClips
                 int before = (i + count - 1) % count, after = (i + 1) % count;
                 var point = heels[f] == null ? feet[f] : heels[f][i].y <= toes[f][i].y ? heels[f] : toes[f];
                 Vector3 from = point[before] - hip[before], to = point[after] - hip[after];
-                var v = new Vector2(to.x - from.x, to.z - from.z) / (2f * step);
-                moving.Add(v);
-                sum += v;
+                moving.Add(new Vector2(to.x - from.x, to.z - from.z) / (2f * step));
             }
-        if (moving.Count > 0 && sum.magnitude / moving.Count > 1e-3f * leg)
+        if (Along(moving, leg, out Vector2 way))
         {
-            gait.Way = -(sum / moving.Count).normalized;
-            var back = new List<float>(moving.Count);
-            foreach (var v in moving) back.Add(-Vector2.Dot(v, gait.Way));
-            back.Sort();
-            // The median: on BIPER's own body it reads within 1-15% of the root's travel at every gait and way (a trimmed mean
-            // came nearer forward but 30-35% off stepping back and crouched; 2026-11-21, ClipBench).
+            // Only the feet that carry: a foot that hangs a moment just over the floor counts as down by its height but
+            // moves little or the other way, and a crouched back step has more of that than of standing: BIPER's
+            // CrouchWalk_L135 read 0.4 m/s for feet that go 2.2 (its root 2.3), so the game played it a fifth faster and its
+            // strides a third longer than it was made (0.9.350, measured foot by foot in Blender).
+            List<Vector2> carry = moving;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                float least = CarryShare * Speeds(moving, way)[(int)(moving.Count * .9f)];
+                Vector2 toward = way;
+                carry = moving.FindAll(v => -Vector2.Dot(v, toward) >= least);
+                if (!Along(carry, leg, out way)) way = toward;
+            }
+            var back = Speeds(carry, way);
+            gait.Way = way;
+            // The median: on BIPER's own body it reads within 8% of the root's travel at every walk and crouch and within 10%
+            // in the jogs and sprints, whose feet roll over the toes (2026-11-22, ClipBench).
             gait.Speed = Mathf.Max(0f, back[back.Count / 2]);
         }
 
@@ -201,6 +210,25 @@ internal static class GaitClips
         gait.Cycles = Mathf.Max(1, touchdowns.Count);
         gait.LeftDown = touchdowns.Count > 0 ? touchdowns[0] / (float)count : 0f;
         return gait;
+    }
+
+    // The way these feet carry the body: against their mean. False where they go nowhere together.
+    private static bool Along(List<Vector2> moving, float leg, out Vector2 way)
+    {
+        Vector2 sum = Vector2.zero;
+        foreach (var v in moving) sum += v;
+        bool goes = moving.Count > 0 && sum.magnitude / moving.Count > 1e-3f * leg;
+        way = goes ? -sum.normalized : Vector2.zero;
+        return goes;
+    }
+
+    // How fast each goes back along the way, slowest first.
+    private static List<float> Speeds(List<Vector2> moving, Vector2 way)
+    {
+        var back = new List<float>(moving.Count);
+        foreach (var v in moving) back.Add(-Vector2.Dot(v, way));
+        back.Sort();
+        return back;
     }
 
     // A foot's heel through the clip: the point of the sole under the ankle, found where the foot lies flattest in the clip

@@ -10,10 +10,12 @@ using UnityEngine.Playables;
 ///   along the travel: a slow side cycle takes more of a diagonal than a fast forward one, so neither skates sideways.
 /// - Every cycle shares one step: each stride starts with the left foot down, wherever its file starts or however many
 ///   strides it holds.
-/// - The pace follows a person's (gaitCadence by speed, for this body's leg) within gaitRate of the cycle's own, and the
-///   stride is stretched for the rest (gaitStretch; FootPlanting.Stride), so the feet cover the ground the body covers and
-///   stay where they come down. Until 0.8.260 the cycles played at their own pace whatever the speed and the feet skated
-///   30-60% of it, with short quick steps (the user, 2026-11-12: "우스꽝스럽고 초보 같고 급하던데").
+/// - The game goes at the cycles' own speeds (MovementGait), so they play at their own pace and stride; what a body goes
+///   faster or slower than its cycles is shared evenly between the two, within gaitRate and gaitStretch (Pace,
+///   FootPlanting.Stride), so the feet cover the ground the body covers and stay where they come down. Until 0.8.260 the
+///   cycles played at their own pace whatever the speed and the feet skated 30-60% of it (the user, 2026-11-12: "우스꽝스럽고
+///   초보 같고 급하던데"), and until 0.9.350 the pace was a person's for the speed (gaitCadence), which stepped BIPER's walks
+///   a tenth faster and shorter than they are made.
 /// - Sprinting with a gun out the gun's run has the whole body (GunRuns); it goes ahead only, so the gun sprints ahead or
 ///   at a slant ahead (SprintsToward: W, W+A, W+D), the hips turned to the way it runs and the spine turning the chest
 ///   back to the view (SpineLook).
@@ -27,10 +29,6 @@ public sealed partial class PlayerBody
     // any order and the body measures which way and how fast each one goes (GaitClips).
 
     [Header("Stride")]
-    [SerializeField, Tooltip("A person's steps a second by speed for a leg of gaitLeg: pairs of speed (m/s); steps a second.")]
-    private float[] gaitCadence = { 0f, 1.5f, 1.4f, 1.9f, 2.2f, 2.3f, 2.6f, 2.6f, 3.5f, 2.75f, 5f, 2.95f, 7f, 3.3f, 9f, 3.85f };
-    [SerializeField, Min(.3f), Tooltip("The leg (hip joint to ankle, m) gaitCadence is for: a shorter one steps faster at a speed.")]
-    private float gaitLeg = .9f;
     [SerializeField, Tooltip("How much slower (x) and faster (y) than its own pace a cycle may play.")]
     private Vector2 gaitRate = new Vector2(.85f, 1.2f);
     [SerializeField, Tooltip("How much shorter (x) and longer (y) than its own a cycle's stride may be stretched.")]
@@ -104,11 +102,11 @@ public sealed partial class PlayerBody
     private Vector3 stride;
     private int turning;
     private bool legsPlanted;
-    // This body's leg, hip joint to ankle (m), for the person's cadence (gaitCadence).
+    // This body's leg, hip joint to ankle (m).
     private float legLength = .9f;
-    // This frame's blend of cycles: their weight, weight by stride time (s), and weight by the velocity their feet carry the
-    // body (m/s, in the body's own frame: x right, y ahead).
-    private float mixWeight, mixStride;
+    // This frame's blend of cycles: their weight, weight by stride time (s), weight by the speed and by the velocity their feet
+    // carry the body at (m/s, in the body's own frame: x right, y ahead).
+    private float mixWeight, mixStride, mixSpeed;
     private Vector2 mixVelocity;
     // What the feet stretch the stride by (PlantFeet), the frame it was worked out on (a landing or a jump plays no cycles and
     // stretches nothing), and the numbers behind it for the /gait readout.
@@ -242,6 +240,11 @@ public sealed partial class PlayerBody
         return gait != null && cycle.Gait != null ? Mathf.Round(gait.PlaceOf(cycle.Gait.Speed * GaitScale, 0f)) : 0f;
     }
 
+    /// <summary>A gun out has the legs: its own sets (BodyMoves.csv).</summary>
+    internal bool GunHasLegs => GunInHand() != null;
+    /// <summary>How far the legs are on its aim walk (0-1).</summary>
+    internal float AimShare => GunHasLegs ? AimBlend() : 0f;
+
     // The gun kind's sets in the hands now, by the ammunition the gun takes (BodyMoves.csv ammo; "*" for the rest), or
     // null with no gun out. A friend's copy has the same gun out, so the same sets.
     private GunSets GunInHand()
@@ -268,7 +271,7 @@ public sealed partial class PlayerBody
         float heading = speed > StillTravel ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
         keepsPlace = speed < StillTravel;
         float scale = GaitScale;
-        mixWeight = mixStride = 0f;
+        mixWeight = mixStride = mixSpeed = 0f;
         mixVelocity = Vector2.zero;
         FollowTurn(dt);
 
@@ -564,13 +567,15 @@ public sealed partial class PlayerBody
         cycle.Target += weight;
         mixWeight += weight;
         mixStride += weight * cycle.Gait.Stride;
-        mixVelocity += weight * Velocity(cycle, scale);
+        Vector2 velocity = Velocity(cycle, scale);
+        mixSpeed += weight * velocity.magnitude;
+        mixVelocity += weight * velocity;
     }
 
-    // The step's pace and the stride's stretch. The blended cycles carry the body at their own speed along the travel and
-    // step at their own pace; a person at this speed steps at gaitCadence's pace (for this leg), so the cycles play that much
-    // faster or slower, within gaitRate, and the stride is stretched by what is left, within gaitStretch. If the stretch runs
-    // out the pace makes up the rest, within gaitRate again; anything past that the feet slide.
+    // The step's pace and the stride's stretch. The cycles play as they were made where the body goes as fast as they do;
+    // what it goes faster or slower (its own legs against the four the speeds are for, a class's pace, a guard's slow walk) the
+    // pace and the stride share evenly, and what two ways lose blended (a diagonal of two steps at a right angle is three
+    // quarters as long as either) the stride makes up alone. Within gaitRate and gaitStretch; past both the feet slide.
     private void Pace(float speed, float legs, float moving, float dt)
     {
         if (player.IsNetworkDriven) FollowStep(dt);
@@ -591,7 +596,7 @@ public sealed partial class PlayerBody
         {
             float lo = Mathf.Min(gaitRate.x, gaitRate.y), hi = Mathf.Max(gaitRate.x, gaitRate.y);
             float shortest = Mathf.Min(gaitStretch.x, gaitStretch.y), longest = Mathf.Max(gaitStretch.x, gaitStretch.y);
-            rate = Mathf.Clamp(CadenceFor(speed) * strideTime * .5f, lo, hi);
+            rate = Mathf.Clamp(Mathf.Sqrt(speed / Mathf.Max(.05f, mixSpeed / mixWeight)), lo, hi);
             stretch = speed / (rate * along);
             if (stretch > longest || stretch < shortest)
             {
@@ -612,29 +617,6 @@ public sealed partial class PlayerBody
         float legsOwn = 1f - kickWeight;
         strideStretch = new FootPlanting.Stride(stride, stretch, moving * legsOwn, gaitStretchDrop * legLength);
         strideFrame = Time.frameCount;
-    }
-
-    // A person's steps a second at this speed (gaitCadence), for this body's leg: alike in build, a shorter leg at the same
-    // speed runs as a longer one does at a speed higher by the root of their ratio, and steps that much faster.
-    private float CadenceFor(float speed)
-    {
-        float like = Mathf.Sqrt(Mathf.Max(.3f, gaitLeg) / Mathf.Max(.2f, legLength));
-        float at = speed * like;
-        var points = gaitCadence;
-        if (points == null || points.Length < 2) return 2.8f * like;
-        float steps = points[1];
-        for (int i = 0; i + 3 < points.Length; i += 2)
-        {
-            if (at <= points[i]) { steps = points[i + 1]; break; }
-            steps = points[i + 3];
-            if (at <= points[i + 2])
-            {
-                float t = points[i + 2] - points[i] > 1e-4f ? (at - points[i]) / (points[i + 2] - points[i]) : 1f;
-                steps = Mathf.Lerp(points[i + 1], points[i + 3], t);
-                break;
-            }
-        }
-        return steps * like;
     }
 
     /// <summary>This frame's run for the /gait averages: the speed (m/s), steps a minute, the stride's stretch and how fast the

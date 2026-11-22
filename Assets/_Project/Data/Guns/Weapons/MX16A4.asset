@@ -46,7 +46,6 @@ MonoBehaviour:
   - {x: 1.15, y: -0.35}
   - {x: 1.0, y: 0.15}
   adsFov: 40
-  adsMoveMultiplier: 0.6
   adsTransitionTime: 0.16
   sightHeight: 0.035
   aimFollowHalfLife: 0.055
