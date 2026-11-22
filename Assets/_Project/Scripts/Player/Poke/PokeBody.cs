@@ -371,6 +371,44 @@ public sealed class PokeBody : MonoBehaviour
         return true;
     }
 
+    private static readonly List<float> nearStart = new List<float>(), nearEnd = new List<float>();
+    // A limb's thickness is as far out as this share of its points lie; with fewer points than this it is not known.
+    private const float ThicknessShare = .85f;
+    private const int ThicknessPoints = 24;
+
+    /// <summary>
+    /// How thick a limb is with what is worn on it, toward its start and toward its end (m, from the line to the next joint out).
+    /// False until the body is read, or for a limb with no skin of its own.
+    /// </summary>
+    internal bool Thickness(Transform limb, Transform next, out float start, out float end)
+    {
+        start = end = 0f;
+        if (!baked || limb == null || next == null) return false;
+        Vector3 from = limb.position, along = next.position - from;
+        float length2 = along.sqrMagnitude;
+        if (length2 < 1e-6f) return false;
+        nearStart.Clear();
+        nearEnd.Clear();
+        foreach (var patch in patches)
+        {
+            if (patch.Bone == null || !patch.Bone.IsChildOf(limb) || patch.Bone.IsChildOf(next)) continue;
+            var matrix = patch.Bone.localToWorldMatrix;
+            foreach (var local in patch.Points)
+            {
+                Vector3 offset = matrix.MultiplyPoint3x4(local) - from;
+                float at = Vector3.Dot(offset, along) / length2;
+                if (at < .1f || at > 1f) continue;
+                (at < .5f ? nearStart : nearEnd).Add((offset - along * at).magnitude);
+            }
+        }
+        if (nearStart.Count < ThicknessPoints || nearEnd.Count < ThicknessPoints) return false;
+        nearStart.Sort();
+        nearEnd.Sort();
+        start = nearStart[(int)((nearStart.Count - 1) * ThicknessShare)];
+        end = nearEnd[(int)((nearEnd.Count - 1) * ThicknessShare)];
+        return true;
+    }
+
     private PokeZone ZoneOf(Patch patch, Vector3 point)
     {
         switch (patch.Part)
