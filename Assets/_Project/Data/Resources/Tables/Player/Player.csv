@@ -466,8 +466,8 @@ Ability.propShoveImpulse,60,V 밀치기가 물리 프랍에 주는 운동량(N·
 Ability.propBodyMass,70,슬라이드·다이브·돌진 밀치기로 프랍에 부딪힐 때의 몸무게(kg)
 Body.idle,Idle,몸 애니메이션 이름 (Art/Animations의 클립). 맨몸으로 서 있기(BIPER Female Runner). 걷기·달리기 클립은 BodyMoves.csv의 plain 줄. 예전 mx_idle
 Body.crouchIdle,CrouchIdle,웅크려 서 있기(BIPER Female Runner). 웅크린 걸음은 BodyMoves.csv의 crouch 줄. 예전 crouchstill
-Body.crouchDown,IdleToCrouch,"서 있다가 웅크릴 때(가만히 서서만): 무릎을 굽혀 내려가는 동작. 클립은 제 시계가 아니라 자세가 바뀌는 만큼(Posture.transitionSharpness)을 따른다: 몸 중심이 제 길의 몇 %를 왔는지가 눈높이가 온 만큼과 같은 순간(GaitMoves.csv kind posture). 카메라가 머리라 클립 제 시계(0.4초)로는 시야가 Ctrl보다 늦었다. 움직이며 웅크리면 웅크린 걸음이 맡는다. BIPER Female Runner, 0.9.285. 그 전에는 두 자세가 그냥 섞였다"
-Body.standUp,CrouchToIdle,"웅크렸다 일어설 때(가만히 서서만). Body.crouchDown과 같이 자세를 따른다. BIPER Female Runner, 0.9.285"
+Body.crouchDown,IdleToCrouch,"서 있다가 웅크릴 때(가만히 서서만): 무릎을 굽혀 내려가는 동작. 클립의 원래 빠르기(내려가는 데 0.38초)로 틀고, 도중에 일어서면 지금 높이에서 Body.standUp이 이어진다. 움직이며 앉고 일어설 때는 웅크린 걸음과 0.3초에 섞는다. 0.9.349 전에는 눈높이(Posture.transitionSharpness)를 따라 0.05초에 절반이 내려갔다(사용자 11-22: ""걍 한번에 확 내려가고""). BIPER Female Runner, 0.9.285"
+Body.standUp,CrouchToIdle,"웅크렸다 일어설 때(가만히 서서만). Body.crouchDown과 같이 원래 빠르기(0.49초)로. BIPER Female Runner, 0.9.285"
 Body.jump,jumpstill,"점프: 제자리·걷기·조깅·전력질주·옆 모두 이 하나(Beatrun jumpstill, 제 시계로). 사용자 11-22: ""점프 모션 항상 제자리 점프할 때 나오는 모션으로"". 0.9.333까지는 속도별로 jumpstill·jumpslow·jumpfast, 0.9.262~0.9.289에는 BIPER Female Runner 점프(팔을 너무 크게 휘둘러 뺐다)"
 Body.air,jumpidle,공중
 Body.fall,mx_fall,빠른 낙하

@@ -16,8 +16,6 @@ public sealed class MovementPostureController
     internal readonly float standingColliderHeight, standingColliderRadius, defaultStepOffset;
     private readonly float baseCameraY;
     private float currentOffset;
-    /// <summary>How far the eyes have come from standing (0) to crouched (1), as they ease.</summary>
-    internal float CrouchShare => Mathf.Abs(ctx.crouchOffset) > .01f ? Mathf.Clamp01(currentOffset / ctx.crouchOffset) : 0f;
     private float traversalCameraRecovery;
     private float diveEntryOffset, diveEntryHeight;
 

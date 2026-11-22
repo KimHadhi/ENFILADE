@@ -6,18 +6,17 @@ using MovementState = PlayerMovement.MovementState;
 /// <summary>
 /// Down into a crouch and up out of it standing still, on BIPER Female Runner's own clips (IdleToCrouch, CrouchToIdle;
 /// 0.9.285, the user: "Female Runner first", the pack's clips not yet in the game). Until then the two stances' still
-/// poses blended into each other in a straight line. The clip follows the posture rather than its own clock: the eye and
-/// the capsule ease toward the new stance at Posture.transitionSharpness (nine tenths in about a sixth of a second) while
-/// the clip's body takes 0.4 s, and the camera rides the head, so on its own clock the view would lag the key. Its moment
-/// is where its body centre has come as far of its way as the eyes have (Tables/Player/GaitMoves.csv kind posture, baked by
-/// ClipBench; MovementPostureController.CrouchShare), so turned back half way down, the getting up begins half way up. Until
-/// 0.9.348 it went by the time since the stance changed, and the other clip began at its far end: crouching and standing
-/// over and over, the chest jumped down and up (the user, 2026-11-22: "가슴이 내려가다가 갑자기 위로 텔포돼서 올라가다가 아래로
-/// 텔포돼서"). Standing still only: moving, the walk's crouched cycles take the body down and up.
+/// poses blended into each other in a straight line. Each clip plays at its own pace, 0.4 s down and 0.5 s up, from the
+/// moment its body sets off (Tables/Player/GaitMoves.csv kind posture, baked by ClipBench), and turned back half way the
+/// other goes on from the height the body is at: how far of its way down it is (postureDown) is the clips' common measure,
+/// so neither begins at its far end. Until 0.9.348 they followed the eyes' ease (Posture.transitionSharpness), so the view
+/// would not lag the key: half the way in 0.05 s, 21 % of it in the first frame, the chest dropped and shot up in one go
+/// (the user, 2026-11-22: "원래 애니메이션 속도 이렇게 빨라? 가슴이 앉을 때 자연스럽게 내려가는 게 아니라 걍 한번에 확 내려가고").
+/// Standing still only: moving, the walk's crouched cycles take the body down and up, over about as long (MovingPosture).
 /// </summary>
 public sealed partial class PlayerBody
 {
-    [SerializeField, Tooltip("Standing still, down into a crouch and up out of one; they follow the posture's own ease.")]
+    [SerializeField, Tooltip("Standing still, down into a crouch and up out of one, at their own pace.")]
     private string crouchDown = "IdleToCrouch", standUp = "CrouchToIdle";
 
     // A posture clip's way as baked: when its body sets off and is there (s), and how far of its way it is (0-1) at evenly
@@ -29,10 +28,11 @@ public sealed partial class PlayerBody
     }
 
     private readonly Dictionary<string, PostureWay> postureWays = new Dictionary<string, PostureWay>();
-    // The posture clip under way, or null.
+    // The posture clip under way, or null, and how far down the body is (0 standing, 1 crouched).
     private string postureClip;
-    // Past this share of its way the posture is there, and the stance's own pose takes over.
-    private const float PostureThere = .97f;
+    private float postureDown;
+    // Moving, the stances' cycles cross over this slowly (s), about as long as the clips take.
+    private const float MovingPosture = .3f;
 
     private void ReadPostures()
     {
@@ -48,33 +48,62 @@ public sealed partial class PlayerBody
         }
     }
 
-    // From Enter, on the ground: a body standing still going down or getting up takes its clip; anything else, none.
+    // From Enter, on the ground: a body standing still going down or getting up takes its clip, from the height it is at; one
+    // moving, the cycles.
     private void StartPosture(MovementState from, MovementState to)
     {
+        bool turnsBack = postureClip != null;
         postureClip = null;
-        if (HorizontalSpeed() > StillTravel) return;
         string clip = from == MovementState.Standing && to == MovementState.Crouching ? crouchDown
             : from == MovementState.Crouching && to == MovementState.Standing ? standUp : null;
-        if (clip == null || !postureWays.ContainsKey(clip) || Find(clip) == null) return;
+        if (clip == null) return;
+        if (HorizontalSpeed() > StillTravel || !postureWays.ContainsKey(clip) || Find(clip) == null)
+        {
+            SlowBlend(MovingPosture);
+            return;
+        }
+        if (!turnsBack) postureDown = from == MovementState.Standing ? 0f : 1f;
         Restart(Find(clip));
         postureClip = clip;
     }
 
-    // From ChoosePose, standing or crouched on the ground: the clip at the eyes' share of its way. False once it is
+    // From ChoosePose, standing or crouched on the ground: the clip a step on from where the body is in it. False once it is
     // there, or the body moves off (the stance's own moves take over, blended).
-    private bool FollowPosture()
+    private bool FollowPosture(float dt)
     {
         if (postureClip == null) return false;
         var channel = Find(postureClip);
-        float down = player.Posture.CrouchShare, share = postureClip == crouchDown ? down : 1f - down;
-        if (channel == null || channel.Synced || channel.Length <= 0f || share >= PostureThere || HorizontalSpeed() > StillTravel
-            || !postureWays.TryGetValue(postureClip, out var way))
+        bool goesDown = postureClip == crouchDown;
+        if (channel == null || channel.Synced || channel.Length <= 0f || !postureWays.TryGetValue(postureClip, out var way))
         {
             postureClip = null;
             return false;
         }
-        Drive(postureClip, PostureMoment(way, channel.Length, share) / channel.Length);
+        if (HorizontalSpeed() > StillTravel)
+        {
+            postureClip = null;
+            SlowBlend(MovingPosture);
+            return false;
+        }
+        float moment = PostureMoment(way, channel.Length, goesDown ? postureDown : 1f - postureDown) + dt;
+        if (moment >= way.To)
+        {
+            postureDown = goesDown ? 1f : 0f;
+            postureClip = null;
+            return false;
+        }
+        float share = PostureShare(way, channel.Length, moment);
+        postureDown = goesDown ? share : 1f - share;
+        Drive(postureClip, moment / channel.Length);
         return true;
+    }
+
+    // How far of its way the clip's body has come at this moment.
+    private static float PostureShare(PostureWay way, float length, float moment)
+    {
+        float at = Mathf.Clamp01(moment / length) * (way.Share.Length - 1);
+        int low = Mathf.Min(way.Share.Length - 2, Mathf.FloorToInt(at));
+        return Mathf.Clamp01(Mathf.Lerp(way.Share[low], way.Share[low + 1], at - low));
     }
 
     // The moment the clip's body has come this share of its way, between setting off and being there.
