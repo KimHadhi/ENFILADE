@@ -227,7 +227,7 @@ public sealed class HealthBarFlair
             if (!low && number != null) number.color = numberColor;
         }
         if (!danger) return;
-        float beat = Heartbeat(clock, Config.beatsPerSecond);
+        float beat = HudAddons.Smooth.Heartbeat(clock, Config.beatsPerSecond);
         if (number != null) number.color = Color.Lerp(KitStyle.Accent, Color.white, beat * .6f);
         float pulse = .65f + .35f * Mathf.Sin(clock * 9f);
         dangerGlyph.color = new Color(1f, 1f, 1f, pulse);
@@ -263,14 +263,5 @@ public sealed class HealthBarFlair
     public void Restore()
     {
         if (number != null) number.color = numberColor;
-    }
-
-    // A heart's double beat, 0 to 1: the low number's pulse.
-    private static float Heartbeat(float time, float frequency)
-    {
-        float phase = Mathf.Repeat(time * Mathf.Max(0.1f, frequency), 1f);
-        float first = (phase - 0.12f) / 0.055f;
-        float second = (phase - 0.32f) / 0.075f;
-        return Mathf.Clamp01(Mathf.Exp(-first * first) + 0.6f * Mathf.Exp(-second * second));
     }
 }

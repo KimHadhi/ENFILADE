@@ -21,7 +21,6 @@ Font.mags,0.03,"Nene.Mags: 탄창 수"
 Font.ammo,0.02,"Nene.Ammo: 예비 탄약, 선택기의 '탄/예비'"
 Font.alts,0.015,"Nene.Alts: 자극제·수류탄 개수"
 Font.history,0.022,"Nene.History: 획득 기록"
-Font.selector,0.0275,"Nene.Selector: 선택기의 무기 이름"
 Font.weightUnit,500,"글꼴 굵기 = 이 값 x 설정의 글자 굵기(기본 2 → 1000: 굵게)"
 Place.health,1;1.87,"configs.lua Positions.Health = (sw, sh + sh*.87): 체력 막대 가운데"
 Place.armorDrop,0.03,"방어구 막대는 체력 자리에서 sh x 이 값 x 크기만큼 아래"
@@ -123,39 +122,33 @@ Fx.tint,#FF647DFF,"글리치 동안 HUD 색 Color(255,100,125)"
 Fx.rise,0.3,"광과민 규칙: 원본은 0.5초에 띠를 12번 새로 잘라 번쩍였다. 한 번 자른 띠가 이만큼(초)에 걸쳐 부드럽게 밀려났다가"
 Fx.fall,0.33,"이만큼에 걸쳐 돌아온다(한 번 0.63초 = 1.6Hz 이하)"
 Fx.hold,0.3,"맞을 때마다 이만큼 밀린 채로 있는다"
-Slots.width,240,"우리 무기 슬롯의 예전 자리와 배치(WeaponSlotsHUD 기본 모양 A 조각 판, WeaponSlots.csv Plates)에 애드온 선택기의 상자·색·글자·탄 그림으로 그린다. 상자 240 x 60(px, 설정의 크기를 곱한다)"
-Slots.height,60,
-Slots.widthHeld,240,"손에 든 슬롯의 상자 240 x 80(스프링으로 커진다)"
-Slots.heightHeld,80,
-Slots.gap,14,"슬롯 사이(위에서 아래로 1~4번)"
-Slots.right,70,"쌓인 상자의 오른쪽 끝이 화면 오른쪽 끝에서 이만큼 안쪽(GameHUD의 WeaponSlotsHUD: Right Panel 오른쪽 + 840 = 1850)"
-Slots.middle,-14,"쌓인 상자의 가운데가 화면 가운데에서 이만큼 아래(-는 위: 14px 위)"
-Slots.shift,0;-10;-3;-14,"슬롯마다 왼쪽으로 나온 거리(px. -가 왼쪽)"
-Slots.kick,14,"손에 든 슬롯이 왼쪽으로 툭 튀어나오는 거리(px). +3까지 지나쳤다 제자리로"
-Slots.kickSeconds,0.16,"그 튀어나옴이 끝나는 시간(초)"
-Slots.grow,0.14,"손에 든 슬롯이 커지는 데 걸리는 시간(살짝 넘었다 돌아온다)"
-Slots.follow,10,"cl_selector.lua: 상자와 글자의 색이 바뀌는 빠르기(Nene.LerpColor(..,10))"
-Slots.heldAlpha,200,"손에 든 슬롯 상자: 선택기 색, 알파 200, 검은 글자"
-Slots.idleAlpha,50,"나머지: 검정 알파 50, 선택기 색 글자"
-Slots.low,0.3,"탄창이 이 비율 이하이면 빨간 글자"
-Slots.iconAlpha,150,"탄 그림 알파"
-Slots.visibleSeconds,3,"우리 슬롯 방식(WeaponSlotsHUD): 바꾸기·줍기·채우기·탄 변화 뒤 3초 보이고"
-Slots.fadeSeconds,1,"1초에 걸쳐 사라진다"
-Slots.pitchMin,0.8,"슬롯을 바꿀 때 'Select' 소리(select.wav): pitch {80,110}, volume 1"
-Slots.pitchMax,1.1,
-Slots.volume,1,
 Portrait.size,196,"우리 프사·궁극기·계급(HUD Mk II에는 없는 조각)을 애드온 상자로 그린다(사용자 2026-11-22: ""프사 이 정도로 크게랑 경험치 바랑 탄창 느낌의 궁극기 게이지 살려서 저 디자인으로 개편""). 체력 막대 왼끝 위에 서고 체력 자리(health_x/y)를 따라간다. 크기는 애드온처럼 px x Scale(1080p에서 0.75배). 사진 한 변: 196 = 1080p 147px, 예전 HUD 초상화의 사진과 검은 테"
-Portrait.magazine,32,"사진 왼쪽 궁극기 막대의 바깥 폭(1080p 24px, 예전 탄창 폭)"
-Portrait.gap,8,"궁극기 막대와 사진 사이, 사진과 계급 줄 사이, 계급 상자와 막대 사이"
+Portrait.magazine,32,"사진 왼쪽 궁극기 탄창의 바깥 폭(1080p 24px, 예전 탄창 폭). 생김새·움직임은 Magazine 줄"
+Portrait.gap,10,"탄창과 사진 사이, 사진과 계급 줄 사이, 계급 상자와 막대 사이(탄창 덮개가 사진 상자에 닿지 않게)"
 Portrait.rise,10,계급 줄 아래 끝과 체력 막대 바탕 상자 사이
 Portrait.insignia,55,"계급 휘장 상자 한 변(자극제 상자와 같은 55, BT_Text). 이번 판에 오를 계급 수는 상자 오른쪽 위에 +N"
-Portrait.rankHeight,8,"계급 막대 두께(방어구 막대와 같은 8, BL_Rect: 바탕 상자, 줄면 주황이 남았다 따라 내려감)"
-Portrait.rounds,10,궁극기 막대 칸 수: 한 번 쓸 만큼이 이 칸을 다 채운다(탄창의 탄). 그보다 더 모은 몫은 같은 칸을 Colour.overOne 색으로 다시 채운다(rect.lua 값 > 1)
-Portrait.roundGap,0.1,칸마다 위에 비우는 비율(BSS_Rect와 같은 10%)
+Portrait.rankHeight,12,"계급 막대 두께(1080p 9px. 사용자 11-22: ""경험치 쪽은 가시성이 안 좋고""). BL_Rect: 바탕 상자, 줄면 주황이 남았다 따라 내려감"
 Portrait.initial,0.5,프로필 사진이 없을 때 이름 첫 글자: 글자 칸 높이 = 사진 한 변 x 이 값
-Portrait.ultimate,#FFFFFFFF,궁극기 칸 색(애드온 탄약·장비 기본 흰색)
-Portrait.held,#9B9B9BFF,계급 막대: 판 시작 때 쌓여 있던 몫(Colors.Ammo 회색)
-Portrait.game,#FFFFFFFF,계급 막대: 이번 판 처치 몫(흰색)
-Portrait.kept,#FFFFFF96,"계급 막대: 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫(흰색 알파 150, 돈을 쓰면 줄어 주황이 남는다)"
+Portrait.scanline,70,"프로필 사진은 특수 효과 위에 따로 그리고(사용자 11-22: ""프로필 사진 쪽 노이즈는 살짝 연하게 해서 원본 사진이 더 잘 보이게"") 그 위에 이 알파의 옅은 주사선만 한 줄 건너 얹는다(나머지 HUD는 Fx.scanline 175). 특수 효과나 주사선을 끄면 없다"
+Portrait.track,#FFFFFF26,계급 막대의 빈 길이(흰색 알파 38): 막대가 어디까지인지 보이게
+Portrait.held,#FFFFFFC8,계급 막대: 판 시작 때 쌓여 있던 몫(흰색)
+Portrait.game,#FFE955FF,계급 막대: 이번 판 처치 몫. 점수 팝업 합계와 같은 노랑(HitFeedback.csv Score.totalColour)이라 점수가 경험치로 쌓이는 것이 보인다. +XP 글자와 오를 계급 수(+N)도 이 색
+Portrait.kept,#FFE95570,"계급 막대: 지금 가진 돈 중 판이 끝나면 성장으로 치는 몫(흐린 노랑, 돈을 쓰면 줄어 주황이 남는다)"
 Portrait.gainSeconds,0.9,처치 때 막대 위에 뜨는 +경험치가 떠 있는 시간(초)
 Portrait.gainRise,10,그동안 올라가는 높이(px x Scale)
+Magazine.rounds,10,"궁극기 탄창: 예전 HUD 탄창(UltimateMagazine, 11-11 4차 시안: B의 자리, C의 움직임, A의 탄창 교체)을 애드온 색으로(사용자 11-22: ""궁극기 게이지는 탄창이란 느낌이 안 나잖아"", 색은 애드온 색만). 한 발 = 1회 소비량의 이 수분의 1, 이 수만큼이면 준비. 최대 보유량까지 남는 칸(최대 16)은 흰 선 위 여분 칸이고 탄피가 넘침 색(Colour.overOne)"
+Magazine.seatSeconds,0.22,다 찬 탄이 왼쪽에서 밀려 들어오는 시간(초). 불꽃 셋이 왼쪽으로 튄다
+Magazine.seatPush,16,밀려 들어오기 전 탄이 왼쪽으로 물러나 있는 거리(1080p px)
+Magazine.slamSeconds,0.16,다 차면 탄창 위 덮개가 흰 판으로 닫히는 시간(초). 닫힌 덮개 테두리는 심장 박동처럼 뛰고 빛이 탄을 타고 올라간다
+Magazine.stripSeconds,0.3,궁극기를 쓰면 쓴 탄이 위로 빠져나가는 시간(초)
+Magazine.dropSeconds,0.45,빈 탄창이 돌며 떨어져 사라지기까지(초)
+Magazine.dropFall,120,빈 탄창이 떨어지는 거리(1080p px)
+Magazine.freshDelay,0.2,탄이 빠진 뒤 새 탄창이 올라오기 시작하기까지(초)
+Magazine.freshSeconds,0.35,남은 탄을 담은 새 탄창이 올라와 꽂히는 시간(초)
+Magazine.freshRise,70,새 탄창이 올라오기 전 아래로 내려가 있는 거리(1080p px)
+Magazine.sweepSeconds,1.25,준비 상태에서 빛이 탄을 타고 올라가는 주기(초)
+Magazine.caseSeconds,0.55,쓴 탄의 탄피가 왼쪽으로 날아가 사라지기까지(초)
+Magazine.beatsPerSecond,1.1,"준비 상태에서 덮개 테두리가 뛰는 빠르기(초당 박동, 부드러운 맥박)"
+Magazine.round,#FFFFFFFF,탄피 색(애드온 흰색). 덮개가 닫히면 이 색
+Magazine.bullet,#9B9B9BFF,탄두 색(애드온 Colors.Ammo 회색). 막 들어오는 탄은 잠깐 흰색
+Magazine.spent,#FF9600FF,쓴 탄의 날아가는 탄피(애드온 Colors.Loss 주황)

@@ -7,7 +7,6 @@ settings.addon.playerhud.section.stims,자극제,Stims,"설정 창 > HUD > 플�
 settings.addon.playerhud.section.armor,방어구,Armor,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Armor)",
 settings.addon.playerhud.section.ammo,탄약,Ammo,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Ammo)",
 settings.addon.playerhud.section.grenade,수류탄,Grenade,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Ammo의 --Grenade)",
-settings.addon.playerhud.section.selector,무기 선택기,Weapon Selector,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Weapon Selector: 무기 슬롯 1~4가 이 모양으로 그려진다)",
 settings.addon.playerhud.section.hazards,환경 위험,Environment Hazards,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Enviroment Hazards: 추락·폭발 피해 칸)",
 settings.addon.playerhud.section.indicators,표시기,Indicators,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Indicators)",
 settings.addon.playerhud.section.glitter,피해 반짝임,Damage Glitter,"설정 창 > HUD > 플레이어 HUD > 소제목(패널 Indicators의 --Damage Glitter: 맞거나 나을 때 화면 가장자리 빛)",

@@ -9,23 +9,26 @@ using UnityEngine.UI;
 /// 들었고"), in the look the player picks in Settings → HUD → 무기 슬롯 (GameSettings.weaponSlots):
 /// <para>Plates (draft A, the default): a column of dark plates at the HUD's right, their top left and bottom right corners
 /// cut, each leaning its own way and standing its own distance out (never one shared slant), a leaning number tab at its
-/// left. The slot taken in hand kicks out to the left with a white flash and grows: its tab turns pink, a pink line runs
-/// down its left side, its icon lifts and turns full white, its name and kind show under it, and the HUD strip's pink corner
-/// and shard light at its top right.</para>
+/// left. The slot taken in hand kicks out to the left with a white flash and grows: its tab lights, a line runs down its
+/// left side, its icon lifts and turns full white, its name and kind show under it, and the HUD strip's corner and shard
+/// light at its top right.</para>
 /// <para>Cards (draft C): a row of small cards over the ammo, each with its number and a small icon, an empty slot striped.
-/// The one in hand widens into a light card with the gun drawn dark on it, its name and kind, and a pink line drawn along
+/// The one in hand widens into a light card with the gun drawn dark on it, its name and kind, and a dark line drawn along
 /// its top.</para>
 /// Each weapon shows its own picture (WeaponIcons), kept to the icons' one canvas so a pistol stays smaller than a rifle; a
 /// weapon without one shows the vector outline (WeaponSlotSilhouette). A name too long for its room scrolls to its end and
 /// back. Built here in code; the prefab's first slot views stay hidden. Numbers: Tables/WeaponSlots.csv.
+/// <para>Surfaces in the HUD's one look (HudTone, 2026-11-22: the user wanted these plates and their motion kept and only
+/// the design made one with the addon HUD's, in its colours alone): the addon's faint black box for a plate, white for the
+/// slot in hand (its edge, corner and shard, its tab lit white with a black number, as the addon's selector lights the
+/// chosen box), grey for the quiet words, the HUD's face for every letter. Pink is gone from them.</para>
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class WeaponSlotsHUD : MonoBehaviour
 {
     public const string TableName = "WeaponSlots";
     private const int Count = PlayerWeaponSlots.SlotCount;
-    private static readonly Color PlateDark = new Color(.055f, .055f, .067f, .8f), PlateHeld = new Color(.1f, .1f, .12f, .95f),
-        CardDark = new Color(.055f, .055f, .067f, .82f), Stripes = new Color(1f, 1f, 1f, .45f);
+    private static readonly Color Stripes = new Color(1f, 1f, 1f, .45f);
 
     [SerializeField] private PlayerWeaponSlots source;
     [SerializeField] private CanvasGroup group;
@@ -79,7 +82,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         if (bound != null) bound.SlotActivity += Reveal;
     }
 
-    public void Reveal() { lastActivity = Time.unscaledTime; restartNames = true; if (group != null && !HudAddons.PlayerHudModule.On) group.alpha = 1f; }
+    public void Reveal() { lastActivity = Time.unscaledTime; restartNames = true; if (group != null) group.alpha = 1f; }
     private void LateUpdate() => Refresh(Time.unscaledDeltaTime);
 
     public void Refresh(float deltaTime)
@@ -87,14 +90,6 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         Bind();
         if (group == null) return;
         group.blocksRaycasts = group.interactable = false;
-        // The addon player HUD draws these same slots in its weapon selector's boxes (HudAddons.PlayerHudModule.On): while
-        // it is on, these stay away, and so does their room on the right edge.
-        if (HudAddons.PlayerHudModule.On)
-        {
-            group.alpha = 0f;
-            HudRoom.Free(this);
-            return;
-        }
         var wanted = GameSettings.Current.weaponSlots;
         if (!made || wanted != look) Build(wanted);
         float now = Time.unscaledTime, dt = Mathf.Max(0f, deltaTime);
@@ -147,23 +142,23 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             slot.root.anchoredPosition = new Vector2(shape.Shift[i] + Kick(slot, now), top - height * .5f);
             top -= height + shape.Gap;
             var data = Weapon(i);
-            slot.plate.color = Color.Lerp(PlateDark, PlateHeld, on);
-            slot.plate.Edge(KitStyle.With(KitStyle.Accent, on), 3f);
+            slot.plate.color = Color.Lerp(HudTone.Box, HudTone.BoxHeld, on);
+            slot.plate.Edge(HudTone.With(HudTone.Text, on), 3f);
             slot.flash.color = new Color(1f, 1f, 1f, Flash(slot, now));
-            slot.tab.color = Color.Lerp(KitStyle.Ice, KitStyle.Accent, on);
-            slot.number.color = Color.Lerp(KitStyle.Night, Color.white, on);
-            slot.corner.color = KitStyle.With(KitStyle.Accent, on);
-            slot.shard.color = KitStyle.With(KitStyle.Accent, on);
+            slot.tab.color = Color.Lerp(HudTone.Box, HudTone.Lit, on);
+            slot.number.color = Color.Lerp(HudTone.Text, HudTone.Ink, on);
+            slot.corner.color = HudTone.With(HudTone.Text, on);
+            slot.shard.color = HudTone.With(HudTone.Text, on);
             // The icon sits at the plate's middle and lifts a tenth of it to make room for the name under it.
             float iconHeight = shape.Icon / WeaponIcons.Aspect;
             var iconRect = slot.icon.rectTransform;
             iconRect.sizeDelta = new Vector2(shape.Icon, iconHeight);
             iconRect.anchoredPosition = new Vector2(-16f, height * .1f * on);
-            ShowWeapon(slot, data, KitStyle.With(KitStyle.Ice, Mathf.Lerp(shape.IconAlpha, 1f, on)), KnifeSlot(i, data) ? MeleeKnife.SlotIcon(Owner) : null);
+            ShowWeapon(slot, data, HudTone.With(HudTone.Text, Mathf.Lerp(shape.IconAlpha, 1f, on)), KnifeSlot(i, data) ? MeleeKnife.SlotIcon(Owner) : null);
             slot.empty.gameObject.SetActive(data == null && !KnifeSlot(i, data));
-            slot.empty.color = KitStyle.Soft;
+            slot.empty.color = HudTone.Grey;
             // Name and kind under the icon, from the tab's right to the plate's right end.
-            Meta(slot, data, i, 26f, 9f, shape.Width - 26f - 16f, KitStyle.Ice, on, dt, i == selected, ref readable);
+            Meta(slot, data, i, 26f, 9f, shape.Width - 26f - 16f, HudTone.Text, on, dt, i == selected, ref readable);
         }
     }
 
@@ -180,6 +175,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         slot.icon = MakePicture(root, new Vector2(1f, .5f));
         slot.outline = MakeOutline(root, new Vector2(1f, .5f));
         slot.empty = FeelUI.ScoreLabel("Empty", root, 13f, TextAlignmentOptions.MidlineRight);
+        HudTone.Apply(slot.empty);
         Place(slot.empty.rectTransform, new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-20f, 0f), new Vector2(120f, 20f));
         slot.empty.text = Texts.Get("hud.weapon_slot.empty");
         MakeMeta(slot, 15f);
@@ -213,22 +209,22 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             slot.root.anchoredPosition = new Vector2(x, 0f);
             x -= width + shape.Gap;
             var data = Weapon(i);
-            slot.plate.color = Color.Lerp(CardDark, KitStyle.Ice, on);
+            slot.plate.color = Color.Lerp(HudTone.Box, HudTone.Lit, on);
             slot.flash.color = new Color(1f, 1f, 1f, Flash(slot, now));
-            slot.number.color = Color.Lerp(KitStyle.Soft, KitStyle.Accent, on);
-            // The pink line is drawn along the top as the card turns, and is simply gone once it isn't in hand.
+            slot.number.color = Color.Lerp(HudTone.Grey, HudTone.Ink, on);
+            // The dark line is drawn along the top as the card turns, and is simply gone once it isn't in hand.
             slot.bar.rectTransform.localScale = new Vector3(i == selected ? Ease.Out((now - slot.popAt) / Mathf.Max(.01f, shape.Bar)) : 0f, 1f, 1f);
             // The icon a little under the middle, lifting as the card opens for its name under it; drawn dark on the light card.
             float iconWidth = Mathf.LerpUnclamped(shape.Icon, shape.IconHeld, slot.on);
             var iconRect = slot.icon.rectTransform;
             iconRect.sizeDelta = new Vector2(iconWidth, iconWidth / WeaponIcons.Aspect);
             iconRect.anchoredPosition = new Vector2(0f, Mathf.Lerp(-.06f, .08f, on) * height);
-            Color ink = Color.Lerp(KitStyle.With(Color.white, shape.IconAlpha), KitStyle.Night, on);
+            Color ink = Color.Lerp(HudTone.With(HudTone.Text, shape.IconAlpha), HudTone.Ink, on);
             ShowWeapon(slot, data, ink, KnifeSlot(i, data) ? MeleeKnife.SlotIcon(Owner) : null);
             slot.hatch.gameObject.SetActive(data == null && !KnifeSlot(i, data));
-            slot.hatch.color = Color.Lerp(Stripes, KitStyle.With(KitStyle.Night, .45f), on);
+            slot.hatch.color = Color.Lerp(Stripes, HudTone.With(HudTone.Ink, .45f), on);
             slot.hatch.rectTransform.anchoredPosition = new Vector2(0f, -.08f * height);
-            Meta(slot, data, i, 12f, 8f, width - 24f, KitStyle.Night, on, dt, i == selected, ref readable);
+            Meta(slot, data, i, 12f, 8f, width - 24f, HudTone.Ink, on, dt, i == selected, ref readable);
         }
     }
 
@@ -252,7 +248,7 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         MakeMeta(slot, 13f);
         slot.bar = FeelUI.Rect("Line", root).gameObject.AddComponent<Image>();
         slot.bar.raycastTarget = false;
-        slot.bar.color = KitStyle.Accent;
+        slot.bar.color = HudTone.With(HudTone.Ink, .7f);
         var bar = slot.bar.rectTransform;
         bar.anchorMin = new Vector2(0f, 1f); bar.anchorMax = Vector2.one; bar.pivot = new Vector2(0f, 1f);
         bar.sizeDelta = new Vector2(0f, 3f); bar.anchoredPosition = Vector2.zero;
@@ -334,14 +330,13 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
         slot.nameView.gameObject.AddComponent<RectMask2D>();
         slot.nameView.anchorMin = slot.nameView.anchorMax = slot.nameView.pivot = Vector2.zero;
         slot.name = FeelUI.ScoreLabel("Text", slot.nameView, size, TextAlignmentOptions.BottomLeft);
-        slot.name.fontStyle = FontStyles.Bold;
+        HudTone.Apply(slot.name);
         var text = slot.name.rectTransform;
         text.anchorMin = text.anchorMax = text.pivot = Vector2.zero;
         slot.kind = FeelUI.ScoreLabel("Kind", slot.root, 10f, TextAlignmentOptions.BottomLeft);
-        FontRoles.Apply(slot.kind, FontRoles.HudBold);
-        slot.kind.fontStyle = FontStyles.Bold;
+        HudTone.Apply(slot.kind);
         slot.kind.characterSpacing = 16f;
-        slot.kind.color = KitStyle.Accent;
+        slot.kind.color = HudTone.Grey;
         var kind = slot.kind.rectTransform;
         kind.anchorMin = kind.anchorMax = kind.pivot = Vector2.zero;
     }
@@ -446,8 +441,8 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
     private static TextMeshProUGUI MakeNumber(RectTransform parent, int index, float size)
     {
         var number = FeelUI.ScoreLabel("Number", parent, size, TextAlignmentOptions.Center);
-        FontRoles.Apply(number, FontRoles.HudBold);
-        number.fontStyle = FontStyles.Bold | FontStyles.Italic;
+        HudTone.Apply(number);
+        number.fontStyle = FontStyles.Italic;
         number.text = (index + 1).ToString(CultureInfo.InvariantCulture);
         return number;
     }

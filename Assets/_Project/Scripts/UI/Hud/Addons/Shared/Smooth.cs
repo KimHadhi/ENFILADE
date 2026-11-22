@@ -35,5 +35,14 @@ namespace HudAddons
 
         /// <summary><c>math.Approach(current, target, FrameTime() * perSecond)</c>: a steady move that stops on the target.</summary>
         public static float Approach(float current, float target, float perSecond) => Gm.Approach(current, target, perSecond * Dt);
+
+        /// <summary>A heart's double beat, 0 to 1, <paramref name="frequency"/> beats a second: the pulse of something that
+        /// waits ready (the full magazine) or in danger (the old health bar's low number). Smooth, never a flash.</summary>
+        public static float Heartbeat(float time, float frequency)
+        {
+            float phase = Mathf.Repeat(time * Mathf.Max(.1f, frequency), 1f);
+            float first = (phase - .12f) / .055f, second = (phase - .32f) / .075f;
+            return Mathf.Clamp01(Mathf.Exp(-first * first) + .6f * Mathf.Exp(-second * second));
+        }
     }
 }

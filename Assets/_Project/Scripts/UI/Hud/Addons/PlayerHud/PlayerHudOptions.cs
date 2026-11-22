@@ -4,7 +4,7 @@ using UnityEngine;
 namespace HudAddons
 {
     /// <summary>
-    /// The PlayerHud module's options: the player's own HUD from the HUD Mk II addon (health, armour, ammo, effects, hazards, pickup history, the damage direction indicator and the selector box drawn for our weapon slots). Saved in settings.json as GameSettings.addonPlayerHud.
+    /// The PlayerHud module's options: the player's own HUD from the HUD Mk II addon (health, armour, ammo, effects, hazards, pickup history, the damage direction indicator, and our portrait, ultimate magazine and rank in its boxes). Saved in settings.json as GameSettings.addonPlayerHud.
     /// The field initialisers are the defaults: the addon's own convar defaults, except where the video the user gave
     /// (youtu.be/gG4QmyzPM2Q, measured frame by frame on 2026-11-22) shows its HUD set otherwise: the font, the text
     /// weight and the health, armour, stims, weapon and grenade offsets (the user: "영상처럼 HUD 만들어"). A new player
@@ -14,7 +14,8 @@ namespace HudAddons
     /// <para>One field per convar of the addon's configs.lua that its options panel shows and its code reads, named after
     /// the convar (hud_mk2_&lt;name&gt;). Left out, each for a reason given in Docs/Features/PlayerHud.md: the armour plates'
     /// three (our game carries no plates), the enemy name's one (the user picked the Black Ops 6 bars for enemies), the
-    /// damage blur's three (Unity has no motion blur amount to add to), and the ones nothing in the addon reads
+    /// weapon selector's four (not drawn: our weapon slots keep their own look), the damage blur's three (Unity has no
+    /// motion blur amount to add to), and the ones nothing in the addon reads
     /// (health_wave, abl*, indicator, flick, distort, distort_mult).</para>
     /// </summary>
     [Serializable]
@@ -63,11 +64,6 @@ namespace HudAddons
         public float eqpX = 14f, eqpY = 54f;
         public Color32 eqpColor = new Color32(255, 255, 255, 255);
 
-        // ---- Weapon selector (selector, selector_x/y, selector_color_*): drawn for our weapon slots ----
-        public bool selector = true;
-        public float selectorX, selectorY;
-        public Color32 selectorColor = new Color32(255, 255, 255, 255);
-
         // ---- Environment hazards (hazards, hazards_x/y, hazards_color_*) ----
         public bool hazards = true;
         public float hazardsX, hazardsY;
@@ -104,7 +100,6 @@ namespace HudAddons
             armorX = Offset(armorX, OffsetX); armorY = Offset(armorY, OffsetY);
             weaponX = Offset(weaponX, OffsetX); weaponY = Offset(weaponY, OffsetY);
             eqpX = Offset(eqpX, OffsetX); eqpY = Offset(eqpY, OffsetY);
-            selectorX = Offset(selectorX, OffsetX); selectorY = Offset(selectorY, OffsetY);
             hazardsX = Offset(hazardsX, OffsetX); hazardsY = Offset(hazardsY, OffsetY);
             historyX = Offset(historyX, OffsetX); historyY = Offset(historyY, OffsetY);
         }

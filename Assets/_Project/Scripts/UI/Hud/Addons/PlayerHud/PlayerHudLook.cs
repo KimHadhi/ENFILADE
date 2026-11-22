@@ -56,7 +56,7 @@ namespace HudAddons
         [Serializable]
         public sealed class FontRow
         {
-            public float label = .01f, mags = .03f, ammo = .02f, alts = .015f, history = .022f, selector = .0275f;
+            public float label = .01f, mags = .03f, ammo = .02f, alts = .015f, history = .022f;
             public float weightUnit = 500f;
         }
 
@@ -248,36 +248,6 @@ namespace HudAddons
         }
 
         /// <summary>
-        /// Our weapon slots where and how WeaponSlotsHUD's default look (A, "조각 판", WeaponSlots.csv Plates) laid them,
-        /// each drawn with cl_selector.lua's box, colours, texts and ammo picture.
-        /// </summary>
-        [Serializable]
-        public sealed class SlotsRow
-        {
-            /// <summary>A slot's box (px at 1080p, times the scale option); the one in hand grows to the held size.</summary>
-            public float width = 240f, height = 60f, widthHeld = 240f, heightHeld = 80f;
-            /// <summary>Between two slots, top to bottom.</summary>
-            public float gap = 14f;
-            /// <summary>Where the stack hangs: its right end this far in from the screen's right edge, its middle this far
-            /// below the screen's middle (GameHUD's WeaponSlotsHUD: Right Panel's right side + 840, 14 up).</summary>
-            public float right = 70f, middle = -14f;
-            /// <summary>Each slot's box stands this far further left (px, - is left), slots 1-4.</summary>
-            public float[] shift = { 0f, -10f, -3f, -14f };
-            /// <summary>The slot taken in hand kicks this far left and back past its place (to +3) in kickSeconds.</summary>
-            public float kick = 14f, kickSeconds = .16f;
-            /// <summary>The slot in hand grows on a spring that gets there in about this long, a little past and back.</summary>
-            public float grow = .14f;
-            public float follow = 10f;
-            public float heldAlpha = 200f, idleAlpha = 50f;
-            public float low = .3f;
-            public float iconAlpha = 150f;
-            /// <summary>Our slots' own showing: this long after a switch, a pickup, a refill or an ammo change, then a fade.</summary>
-            public float visibleSeconds = 3f, fadeSeconds = 1f;
-            /// <summary>sound.Add "Select": pitch {80, 110}, volume 1.</summary>
-            public float pitchMin = .8f, pitchMax = 1.1f, volume = 1f;
-        }
-
-        /// <summary>
         /// Our portrait, ultimate and rank (the addon has none of them), in its boxes over the health bar's left end.
         /// Sizes are px x Scale like the addon's; the 196 picture is 147 px on 1080p, the old HUD portrait's picture and mat.
         /// </summary>
@@ -289,25 +259,45 @@ namespace HudAddons
             /// <summary>The ultimate's bar left of the picture, its outer width.</summary>
             public float magazine = 32f;
             /// <summary>Between the ultimate and the picture, the picture and the rank row, the rank box and its bar.</summary>
-            public float gap = 8f;
+            public float gap = 10f;
             /// <summary>Between the rank row's foot and the health bar's frame.</summary>
             public float rise = 10f;
             /// <summary>The rank's box, as the stims box (55).</summary>
             public float insignia = 55f;
-            /// <summary>The rank bar's thickness, as the armour bar's (8).</summary>
-            public float rankHeight = 8f;
-            /// <summary>The ultimate's rounds: one use's charge in this many segments; each leaves gap of its room empty.</summary>
-            public int rounds = 10;
-            public float roundGap = .1f;
+            /// <summary>The rank bar's thickness (the health bar's 10 and a half: 9 px on 1080p).</summary>
+            public float rankHeight = 12f;
             /// <summary>With no picture chosen, the name's first letter: its cell this share of the picture.</summary>
             public float initial = .5f;
-            public Color ultimate = new Color32(255, 255, 255, 255);
-            /// <summary>The rank bar: growth held when the game began, this game's kills, the share of the money held.</summary>
-            public Color held = new Color32(155, 155, 155, 255);
-            public Color game = new Color32(255, 255, 255, 255);
-            public Color kept = new Color32(255, 255, 255, 150);
+            /// <summary>The picture is drawn over the special effects with its own faint scanlines (alpha of the dark line
+            /// every other screen row; the rest of the HUD's is Fx.scanline, 175).</summary>
+            public float scanline = 70f;
+            /// <summary>The rank bar: its empty length, the growth held when the game began, this game's kills (the score
+            /// popup's total colour, so it reads as the score's), the share of the money held.</summary>
+            public Color track = new Color32(255, 255, 255, 38);
+            public Color held = new Color32(255, 255, 255, 200);
+            public Color game = new Color32(255, 233, 85, 255);
+            public Color kept = new Color32(255, 233, 85, 110);
             /// <summary>A kill's "+N XP" over the bar: how long it floats and how far it rises.</summary>
             public float gainSeconds = .9f, gainRise = 10f;
+        }
+
+        /// <summary>
+        /// The ultimate's magazine left of the picture: the old HUD's magazine (11-11 round 4: rounds lying on their side,
+        /// the next drawn as it charges and pushed in, the cover slammed shut when ready, the change when spent), drawn in
+        /// the addon's colours. Sizes px on 1080p (times the scale option), times seconds.
+        /// </summary>
+        [Serializable]
+        public sealed class MagazineRow
+        {
+            /// <summary>One use's charge in this many rounds; room up to the most held makes more (to 16).</summary>
+            public int rounds = 10;
+            public float seatSeconds = .22f, seatPush = 16f, slamSeconds = .16f, stripSeconds = .3f;
+            public float dropSeconds = .45f, dropFall = 120f, freshDelay = .2f, freshSeconds = .35f, freshRise = 70f;
+            public float sweepSeconds = 1.25f, caseSeconds = .55f, beatsPerSecond = 1.1f;
+            /// <summary>A round: its case and its bullet; past one use, the case in the addon's over-full colour.</summary>
+            public Color round = new Color32(255, 255, 255, 255);
+            public Color bullet = new Color32(155, 155, 155, 255);
+            public Color spent = new Color32(255, 150, 0, 255);
         }
 
         public readonly HudRow Hud = new HudRow();
@@ -323,8 +313,8 @@ namespace HudAddons
         public readonly SenseRow Sense = new SenseRow();
         public readonly FlareRow Flare = new FlareRow();
         public readonly FxRow Fx = new FxRow();
-        public readonly SlotsRow Slots = new SlotsRow();
         public readonly PortraitRow Portrait = new PortraitRow();
+        public readonly MagazineRow Magazine = new MagazineRow();
 
         /// <summary>Binds every row to the table for as long as <paramref name="owner"/> lives (and again on a reload).</summary>
         public void Bind(UnityEngine.Object owner)
@@ -342,8 +332,8 @@ namespace HudAddons
             GameTables.BindNested(TableName, "Sense", owner, Sense);
             GameTables.BindNested(TableName, "Flare", owner, Flare);
             GameTables.BindNested(TableName, "Fx", owner, Fx);
-            GameTables.BindNested(TableName, "Slots", owner, Slots);
             GameTables.BindNested(TableName, "Portrait", owner, Portrait);
+            GameTables.BindNested(TableName, "Magazine", owner, Magazine);
         }
     }
 }

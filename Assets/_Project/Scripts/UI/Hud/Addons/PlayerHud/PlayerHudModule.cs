@@ -1,7 +1,7 @@
 namespace HudAddons
 {
     /// <summary>
-    /// The PlayerHud module: the player's own HUD from the HUD Mk II addon (health, armour, ammo, effects, hazards, pickup history, the damage direction indicator and the selector box drawn for our weapon slots), drawn on the shared layer (Overlay, Painter, HudFont, Pictures, Sound, Smooth).
+    /// The PlayerHud module: the player's own HUD from the HUD Mk II addon (health, armour, ammo, effects, hazards, pickup history, the damage direction indicator, and our portrait, ultimate magazine and rank in its boxes), drawn on the shared layer (Overlay, Painter, HudFont, Pictures, Sound, Smooth).
     /// Boot.Install calls Install when the local player's HUD comes up, again for every new local player, so it must be
     /// safe to call more than once. Hits, heals and the weapon slots' activity it hears for itself (PlayerDamageReceiver,
     /// PlayerWeaponSlots events); pickups come in through the calls below, which FieldPickups makes (the addon's

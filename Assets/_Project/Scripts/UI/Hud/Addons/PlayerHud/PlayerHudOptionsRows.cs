@@ -13,7 +13,8 @@ namespace HudAddons
     /// Enviroment Hazards, Indicators, Pick Up History, Special Effects), in its order and its words: a checkbox is an
     /// off/on choice, a NumSlider a slider over the same range, the font's text box a text box, a colour picker four 0-255
     /// sliders (its alpha is the element's opacity). Its rows for what this game has no part for are left out (armour
-    /// plates, the enemy name, the damage blur).</para>
+    /// plates, the enemy name, the damage blur), and the weapon selector's, which is not drawn (our weapon slots keep
+    /// their own look, WeaponSlotsHUD).</para>
     /// </summary>
     public static class PlayerHudOptionsRows
     {
@@ -54,11 +55,6 @@ namespace HudAddons
             Toggle(rows, T("enable"), o.eqp, v => o.eqp = v);
             Offsets(rows, o.eqpX, o.eqpY, v => o.eqpX = v, v => o.eqpY = v);
             Colour(rows, () => o.eqpColor, c => o.eqpColor = c);
-
-            rows.Header(T("section.selector"));
-            Toggle(rows, T("enable"), o.selector, v => o.selector = v);
-            Offsets(rows, o.selectorX, o.selectorY, v => o.selectorX = v, v => o.selectorY = v);
-            Colour(rows, () => o.selectorColor, c => o.selectorColor = c);
 
             rows.Header(T("section.hazards"));
             Toggle(rows, T("enable"), o.hazards, v => o.hazards = v);

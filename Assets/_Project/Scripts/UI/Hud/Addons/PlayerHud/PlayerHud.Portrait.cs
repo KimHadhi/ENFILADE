@@ -2,29 +2,32 @@ using UnityEngine;
 
 namespace HudAddons
 {
-    // Our portrait, the class's ultimate and its rank, which HUD Mk II has no element for, drawn with the addon's own
-    // pieces (the user, 2026-11-22: "프사 이 정도로 크게랑 경험치 바랑 탄창 느낌의 궁극기 게이지 살려서 저 디자인으로
-    // 개편", the design being the addon's, with leave to rework it a little for them). Over the health bar's left end,
-    // following its place (health_x/y) and swaying with the rest:
-    // - the profile picture in a framed box (the name's first letter when none is chosen);
-    // - left of it the ultimate as rect.lua's segmented bar stood up, its segments the rounds of a magazine: one use's
-    //   charge fills them all, what is held past that fills them again in the addon's over-colour, a use drops them with
-    //   the orange loss lagging behind;
-    // - under it the rank as the stims box (the insignia, how many this game climbs at its corner) beside a lagging bar
-    //   to the next insignia: grey what was held when the game began, white this game's kills, faint white the share of
-    //   the money held, with a kill's "+N XP" rising off it.
+    // Our portrait, the class's ultimate and its rank, which HUD Mk II has no element for, drawn in the addon's boxes and
+    // colours (the user, 2026-11-22: "프사 이 정도로 크게랑 경험치 바랑 탄창 느낌의 궁극기 게이지 살려서 저 디자인으로
+    // 개편", the design being the addon's; then "프로필 사진 쪽 노이즈는 살짝 연하게", "경험치 쪽은 가시성이 안 좋고",
+    // "궁극기 게이지는 탄창이란 느낌이 안 나잖아"; colours: the addon's only). Over the health bar's left end, following its
+    // place (health_x/y) and swaying with the rest:
+    // - the profile picture in a framed box (the name's first letter when none is chosen), drawn over the special effects
+    //   with faint scanlines of its own, so the photo reads (the rest of the HUD keeps the addon's);
+    // - left of it the ultimate as the old HUD's magazine (PlayerHud.Magazine);
+    // - under it the rank: the insignia in the stims box (how many this game climbs at its corner) beside a bar to the next
+    //   insignia in the score popup's yellow: white what was held when the game began, yellow this game's kills, faint
+    //   yellow the share of the money held, with a kill's "+N XP" rising off it.
     // Replaces HudPortrait, UltimateMagazine and RankStrip (the old portrait tile on the left board).
     public sealed partial class PlayerHud
     {
         private static readonly Color32 White = new Color32(255, 255, 255, 255);
 
-        private readonly Bar ultimateBar = new Bar(), rankBar = new Bar();
+        private readonly Bar rankBar = new Bar();
         // The rank bar's parts as drawn (held, then held + kills), and the insignia they belong to (-1: none seen yet).
         private float heldShown, killsShown;
         private int rankShown = -1, prestigeShown = -1, climbShown;
         private string climbText = string.Empty, gainText = string.Empty, initialName, initialText = string.Empty;
         private long killsSeen = -1, gainAmount;
         private float gainAge = float.MaxValue;
+        // Where the picture goes this frame (drawn over the effects by DrawPicture), and its scanlines' pattern.
+        private Rect pictureRect;
+        private Texture2D scanlines;
 
         private void DrawPortrait()
         {
@@ -39,60 +42,54 @@ namespace HudAddons
             float tall = side + frame * 2f, top = rowTop - gap - tall;
             float magazine = p.magazine * scale, pictureLeft = left + magazine + gap;
 
-            DrawUltimate(left, top, magazine, tall, frame, p);
-            DrawPicture(pictureLeft, top, side, frame);
+            DrawMagazine(left, top, magazine, tall);
+            painter.RoundedBox(look.Hud.corner, pictureLeft, top, tall, tall, background);
+            pictureRect = new Rect(pictureLeft + frame, top + frame, side, side);
+            if (ProfilePicture.Current == null) DrawInitial();
             DrawRank(left, rowTop, box, pictureLeft + tall, frame, gap, p);
         }
 
-        private void DrawPicture(float x, float y, float side, float frame)
+        // No picture chosen: the name's first letter, as every profile square shows it.
+        private void DrawInitial()
         {
-            painter.RoundedBox(look.Hud.corner, x, y, side + frame * 2f, side + frame * 2f, background);
-            var picture = ProfilePicture.Current;
-            if (picture != null)
-            {
-                painter.DrawColor = White;
-                painter.Picture = picture;
-                painter.TexturedRect(x + frame, y + frame, side, side);
-                return;
-            }
             string name = GameSettings.Current.DisplayName;
             if (name != initialName)
             {
                 initialName = name;
                 initialText = ProfilePicture.Initial(name);
             }
-            painter.OutlinedText(initialText, initialFont, x + frame + side * .5f, y + frame + side * .5f, White,
+            painter.OutlinedText(initialText, initialFont, pictureRect.center.x, pictureRect.center.y, White,
                 TextAlign.Center, TextAlign.Center, outlineWidth, outline);
         }
 
-        // BSS_Rect stood up: the loss, the fill, and what is held past one use and two drawn again over it.
-        private void DrawUltimate(float x, float y, float w, float h, float frame, PlayerHudLook.PortraitRow p)
+        // The photo over the special effects (their scanlines darken every other row at 175 and the HUD goes on the screen
+        // at three quarters), with its own fainter scanlines while the HUD's are on.
+        private void DrawPicture(PlayerHudOptions o)
         {
-            painter.RoundedBox(look.Hud.corner, x, y, w, h, background);
-            var source = player.Ultimate;
-            if (source == null || source.RequiredCharge <= 0f) return;
-            float value = source.CurrentCharge / source.RequiredCharge;
-            ultimateBar.Step(value, now, look.Bar);
-            float left = x + frame, top = y + frame, width = w - frame * 2f, height = h - frame * 2f;
-            Rounds(left, top, width, height, p, Mathf.Clamp01(ultimateBar.Loss), loss);
-            Rounds(left, top, width, height, p, Mathf.Clamp01(ultimateBar.Fill), p.ultimate);
-            if (value > 1f) Rounds(left, top, width, height, p, Mathf.Clamp01(ultimateBar.Fill - 1f), overOne);
-            if (value > 2f) Rounds(left, top, width, height, p, Mathf.Clamp01(ultimateBar.Fill - 2f), overTwo);
+            var picture = ProfilePicture.Current;
+            if (picture == null) return;
+            picturePainter.DrawColor = White;
+            picturePainter.Picture = picture;
+            picturePainter.TexturedRect(pictureRect.x, pictureRect.y, pictureRect.width, pictureRect.height);
+            if (!o.sfx || !o.scanline || look.Portrait.scanline <= 0f) return;
+            // One texel a screen row, the dark row every other one, as the effects' scanlines lie.
+            float row = hud.Height / Mathf.Max(1, Screen.height);
+            picturePainter.DrawColor = Gm.Rgba(0f, 0f, 0f, look.Portrait.scanline);
+            picturePainter.Picture = Scanlines();
+            picturePainter.TexturedRectUV(pictureRect.x, pictureRect.y, pictureRect.width, pictureRect.height,
+                0f, pictureRect.yMin / (row * 2f), 1f, pictureRect.yMax / (row * 2f));
         }
 
-        // Segments() from the foot up: round i takes h / rounds and fills the lower (1 - gap) of it, as far as the share reaches.
-        private void Rounds(float left, float top, float w, float h, PlayerHudLook.PortraitRow p, float share, Color32 colour)
+        private Texture2D Scanlines()
         {
-            int rounds = Mathf.Max(1, p.rounds);
-            if (share <= 0f) return;
-            float foot = top + h, room = h / rounds, filled = room * (1f - p.roundGap), reach = foot - h * share;
-            for (int i = 0; i < rounds; i++)
+            if (scanlines != null) return scanlines;
+            scanlines = new Texture2D(1, 2, TextureFormat.RGBA32, false)
             {
-                float bottom = foot - room * i;
-                if (bottom <= reach) break;
-                float upper = Mathf.Max(bottom - filled, reach);
-                Fill(left, upper, w, bottom - upper, colour);
-            }
+                name = "Portrait Scanlines (Runtime)", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Point, hideFlags = HideFlags.DontSave
+            };
+            scanlines.SetPixels32(new[] { new Color32(255, 255, 255, 255), new Color32(255, 255, 255, 0) });
+            scanlines.Apply(false, true);
+            return scanlines;
         }
 
         private void DrawRank(float left, float top, float box, float right, float frame, float gap, PlayerHudLook.PortraitRow p)
@@ -117,11 +114,16 @@ namespace HudAddons
                 climbText = climbShown > 0 ? "+" + Digits.Of(climbShown) : string.Empty;
             }
 
-            // The stims box with the insignia for its picture.
+            // The stims box with the insignia for its picture, whole (the addon's 150 alpha made it hard to read).
             painter.RoundedBox(look.Hud.corner, left, top, box, box, background);
             var insignia = ClassGrowth.Insignia(view.Rank);
-            if (insignia != null) Picture(insignia, White, left, top, box);
-            if (climbText.Length > 0) BoxText(climbText, altsFont, left + box * .5f, top + box * .5f, box, box, White, TextAlign.Right, TextAlign.Top);
+            if (insignia != null)
+            {
+                painter.DrawColor = White;
+                painter.Picture = insignia;
+                painter.TexturedRect(left, top, box, box);
+            }
+            if (climbText.Length > 0) BoxText(climbText, altsFont, left + box * .5f, top + box * .5f, box, box, p.game, TextAlign.Right, TextAlign.Top);
 
             // BL_Rect beside it, the frame's outer edge reaching the picture box's right side.
             float barLeft = left + box + gap + frame, barWidth = right - frame - barLeft, barHeight = p.rankHeight * scale;
@@ -132,6 +134,7 @@ namespace HudAddons
             heldShown = Smooth.Lerp(look.Bar.follow, heldShown, view.StoredShare);
             killsShown = Smooth.Lerp(look.Bar.follow, killsShown, kills);
             float total = Mathf.Clamp01(rankBar.Fill);
+            Fill(barLeft, barTop, barWidth, barHeight, p.track);
             Fill(barLeft, barTop, barWidth * Mathf.Clamp01(rankBar.Loss), barHeight, loss);
             Fill(barLeft, barTop, barWidth * total, barHeight, p.kept);
             Fill(barLeft, barTop, barWidth * Mathf.Min(total, Mathf.Clamp01(killsShown)), barHeight, p.game);
@@ -150,7 +153,7 @@ namespace HudAddons
             float k = Mathf.Clamp01(gainAge / Mathf.Max(.05f, p.gainSeconds));
             painter.AlphaScale = 1f - k * k;
             painter.OutlinedText(gainText, altsFont, barLeft + barWidth * Mathf.Clamp01(killsShown), barTop - frame - p.gainRise * scale * k,
-                White, TextAlign.Center, TextAlign.Bottom, outlineWidth, outline);
+                p.game, TextAlign.Center, TextAlign.Bottom, outlineWidth, outline);
             painter.AlphaScale = 1f;
         }
     }

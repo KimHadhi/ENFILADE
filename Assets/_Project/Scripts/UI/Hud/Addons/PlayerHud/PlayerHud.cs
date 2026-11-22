@@ -5,15 +5,17 @@ namespace HudAddons
     /// <summary>
     /// The player's own HUD as the HUD Mk II addon draws it (lua/hud_mkii: shared.lua's HUDPaint and the elements it calls,
     /// in its order): health and armour (cl_health, cl_armor), environment hazards (cl_hazard), ammo and the grenade count
-    /// (cl_ammo), the pickup history (cl_history), the damage direction arcs (cl_indicator), the weapon selector's boxes
-    /// (cl_selector, drawn for our weapon slots), all on one painter, swaying with the view; then the damage, heal and armour
-    /// vignette (cl_effects) over it, and the view shake on the camera. With the special effects on (sfx.lua) the painter's
-    /// canvas goes through PlayerHudFx: scanlines, red and cyan copies, the glitch on a hit. Our own portrait, ultimate and
-    /// rank stand over the health bar in the addon's boxes (PlayerHud.Portrait). The defaults set it as the video the
-    /// user gave shows it (PlayerHudOptions): the bars at the foot of the left side, the Hitmarker Normal face.
+    /// (cl_ammo), the pickup history (cl_history), the damage direction arcs (cl_indicator), all on one painter, swaying
+    /// with the view; then the damage, heal and armour vignette (cl_effects) over it, and the view shake on the camera. With
+    /// the special effects on (sfx.lua) the painter's canvas goes through PlayerHudFx: scanlines, red and cyan copies, the
+    /// glitch on a hit. Our own portrait, ultimate magazine and rank stand over the health bar in the addon's boxes
+    /// (PlayerHud.Portrait, PlayerHud.Magazine), the photo itself over the effects. The defaults set it as the video the
+    /// user gave shows it (PlayerHudOptions): the bars at the foot of the left side, the Hitmarker Normal face. The weapon
+    /// selector (cl_selector) is not drawn: our weapon slots keep their own look (WeaponSlotsHUD; the user, 11-22: "기존의
+    /// 무기 슬롯 디자인이나 이펙트는 좋았는데 ... 아예 저걸로 바꾸지 말고").
     /// <para>What it reads, never writes: the local player's PlayerDamageReceiver (health, shield, its HitResolved event: the
-    /// addon's EntityTakeDamage net messages), PlayerWeaponSlots (the held slot, each slot's weapon and rounds, its
-    /// SlotActivity and SelectionChanged events: our slots' own showing), PlayerGrenades (the grenade box), DetenteKit
+    /// addon's EntityTakeDamage net messages), PlayerWeaponSlots (the held slot's weapon and rounds), PlayerGrenades (the
+    /// grenade box), DetenteKit
     /// (the stims box: a Détente's doses), the player's UltimateCharge, ProfilePicture and RankProgress (the portrait
     /// panel). Pickups come in through PlayerHudModule (FieldPickups).</para>
     /// <para>The addon's frame-rate bound Lerp(FrameTime() * k) runs as Smooth's time-based equivalent, on unscaled time, so
@@ -30,7 +32,7 @@ namespace HudAddons
 
         private readonly PlayerHudLook look = new PlayerHudLook();
         private Overlay hud, top;
-        private Painter painter, flarePainter;
+        private Painter painter, picturePainter, flarePainter;
         private PlayerHudFx fx;
         private Texture2D crate, stimsPicture, fallPicture, blastPicture, vignette;
         private readonly Texture2D[] ammoPictures = new Texture2D[11];
@@ -75,10 +77,12 @@ namespace HudAddons
             look.Bind(this);
             hud = GetComponent<Overlay>();
             painter = hud.AddPainter("HUD");
-            // Over the HUD: its picture when the special effects draw it, then the vignette, which the addon draws after
-            // the effects (Nene.DamageEffect after Nene.PostDrawHUDFX), so neither scanlines nor copies touch it.
+            // Over the HUD: its picture when the special effects draw it, the profile photo (clear of the effects), then
+            // the vignette, which the addon draws after the effects (Nene.DamageEffect after Nene.PostDrawHUDFX), so neither
+            // scanlines nor copies touch it.
             top = Overlay.Create("PlayerHud Over", hud.Canvas.sortingOrder + 1);
             fx = new PlayerHudFx(hud, top.AddLayer("Effects"));
+            picturePainter = top.AddPainter("Portrait");
             flarePainter = top.AddPainter("Vignette");
             crate = Pictures.Get(Folder + "weapon");
             ammoPictures[0] = crate;
@@ -94,8 +98,8 @@ namespace HudAddons
             if (instance != this) return;
             instance = null;
             Unbind();
-            HudRoom.Free(this);
             fx?.Destroy();
+            if (scanlines != null) Destroy(scanlines);
             if (top != null) Destroy(top.gameObject);
         }
 
@@ -114,7 +118,6 @@ namespace HudAddons
             if (!show)
             {
                 HoldShake();
-                HudRoom.Free(this);
                 // Health that came back while nothing showed is no heal to flare when the HUD shows again.
                 lastHealth = float.NaN;
                 return;
@@ -129,10 +132,12 @@ namespace HudAddons
             DrawAmmo(o);
             if (o.history) DrawHistory(o);
             DrawSense(o);
-            DrawSlots(o);
             painter.End();
 
             fx.Draw(look.Fx, o, now, dt, screenWidth, screenHeight);
+            picturePainter.Begin();
+            DrawPicture(o);
+            picturePainter.End();
             flarePainter.Begin();
             DrawVignette(o);
             flarePainter.End();
@@ -202,21 +207,12 @@ namespace HudAddons
                 receiver = player.DamageReceiver;
                 if (receiver != null) receiver.HitResolved += OnHit;
             }
-            if (slots == null && player.TryGetComponent(out slots))
-            {
-                slots.SlotActivity += OnSlotActivity;
-                slots.SelectionChanged += OnSelectionChanged;
-            }
+            if (slots == null) player.TryGetComponent(out slots);
         }
 
         private void Unbind()
         {
             if (receiver != null) receiver.HitResolved -= OnHit;
-            if (slots != null)
-            {
-                slots.SlotActivity -= OnSlotActivity;
-                slots.SelectionChanged -= OnSelectionChanged;
-            }
             HoldShake();
             receiver = null;
             slots = null;

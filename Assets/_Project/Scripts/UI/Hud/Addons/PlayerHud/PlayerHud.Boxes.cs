@@ -8,8 +8,9 @@ namespace HudAddons
     // boxes every element is made of, the bars' lag, the eased colours and numbers.
     public sealed partial class PlayerHud
     {
-        // configs.lua's fonts (Nene.Label, Mags, Ammo, Alts, History, Selector), made again when what they hang on changes.
-        private HudFont labelFont, magsFont, ammoFont, altsFont, historyFont, selectorFont, initialFont;
+        // configs.lua's fonts (Nene.Label, Mags, Ammo, Alts, History; the selector's is not drawn), and the portrait's
+        // first letter, made again when what they hang on changes.
+        private HudFont labelFont, magsFont, ammoFont, altsFont, historyFont, initialFont;
         private float fontWidth = -1f, fontScale = -1f, fontWeight = -1f;
         private string fontFace;
         // Nene.Config.Colors this frame.
@@ -31,7 +32,6 @@ namespace HudAddons
             ammoFont = HudFont.Get(face, sw * f.ammo * o.scale, weight);
             altsFont = HudFont.Get(face, sw * f.alts * o.scale, weight);
             historyFont = HudFont.Get(face, sw * f.history * o.scale, weight);
-            selectorFont = HudFont.Get(face, sw * f.selector * o.scale, weight);
             var p = look.Portrait;
             initialFont = HudFont.Get(face, p.size * scale * p.initial, weight);
         }
