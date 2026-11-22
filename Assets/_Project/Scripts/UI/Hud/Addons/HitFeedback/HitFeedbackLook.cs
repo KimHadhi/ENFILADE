@@ -73,8 +73,6 @@ namespace HudAddons
         public int plusWeight = 600, nameWeight = 500, totalWeight = 600;
         /// <summary>Color(255, 233, 85) for the total, white rows, black outlines.</summary>
         public Color totalColour = new Color(1f, 233f / 255f, 85f / 255f), rowColour = Color.white, outlineColour = Color.black;
-        /// <summary>Debug Mode's sample: '100' and '+100'.</summary>
-        public int debugPoints = 100;
     }
 
     /// <summary>

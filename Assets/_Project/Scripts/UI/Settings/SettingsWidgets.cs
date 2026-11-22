@@ -231,6 +231,15 @@ public static class SettingsWidgets
         else KitSkew.On(Fill(box, Surface), Slant * .8f);
         value = Label(box, "", 19f, Text, TextAlignmentOptions.Center);
         KitStyle.Stretch(value.rectTransform);
+        if (hud)
+        {
+            // A long name (a font's, a monitor's) shrinks into a narrow row.
+            value.rectTransform.offsetMin = new Vector2(8f, 0f);
+            value.rectTransform.offsetMax = new Vector2(-8f, 0f);
+            value.enableAutoSizing = true;
+            value.fontSizeMin = 10f;
+            value.fontSizeMax = 18f;
+        }
         forward = Arrow(root, ">", () => Step(1));
         Show();
         return root;

@@ -49,6 +49,7 @@ namespace HudAddons
             var z = look.Hazard;
             float size = screenWidth * z.size * scale;
             float x = sw * look.Place.hazards.x + swayX + o.hazardsX, y = sh * look.Place.hazards.y - swayY + o.hazardsY;
+            if (hazards.Count > 0) HudStage.Mark(HudPart.Hazards, x, y, size * (1f + (hazards.Count - 1) * z.spacing), size);
             float pulse = Mathf.Abs(Mathf.Sin(now * z.pulse));
             Color32 colour = Rgb(o.hazardsColor);
             float opacity = Opacity(o.hazardsColor);

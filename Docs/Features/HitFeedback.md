@@ -58,7 +58,7 @@
 
 ## 어디에 있나
 
-- 코드: [Scripts/UI/Hud/Addons/HitFeedback/](../../Assets/_Project/Scripts/UI/Hud/Addons/HitFeedback) — `HitFeedbackModule`(들어오는 길, 점수, 처치 방식), `HitFeedbackHud`(오버레이와 한 프레임 한 번 확인, 소리), `HitFeedbackMarker`, `HitFeedbackScore`, `HitFeedbackChain`, `HitFeedbackLook`(표 숫자), `HitFeedbackOptions`·`HitFeedbackOptionsRows`(설정 → HUD).
+- 코드: [Scripts/UI/Hud/Addons/HitFeedback/](../../Assets/_Project/Scripts/UI/Hud/Addons/HitFeedback) — `HitFeedbackModule`(들어오는 길, 점수, 처치 방식), `HitFeedbackHud`(오버레이와 한 프레임 한 번 확인, 소리), `HitFeedbackMarker`, `HitFeedbackScore`, `HitFeedbackChain`, `HitFeedbackLook`(표 숫자), `HitFeedbackOptions`(설정).
 - 그림: `Art/Resources/UI/Addons/HitFeedback/bo6_hitmarker/`(갈래 l1·l2·r1·r2, head/, prop, burn), `.../profiteers/`(skull, skullhs, explosion, fire, knife, kick2, propkill).
 - 소리: `Art/Audio/Addons/HitFeedback/<키>/`(HitMark, HeadMark, KillMark, HeadKillMark, ItemMark, Body, BodyLayer, Head, HeadLayer) → 소리 은행 `HudAddons`.
 - 글꼴: `Art/Resources/UI/Fonts/helveticaneue-condensed.ttf`(AddonFonts.csv `HelveticaNeue Condensed`).

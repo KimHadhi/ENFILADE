@@ -42,36 +42,44 @@
 
 켜면 체력·방어구(자극제 포함)가 맞은 뒤 3초만 보이고 부드럽게 사라진다(원본 hideTimer).
 
-## 설정 (설정 창 > HUD > 플레이어 HUD, `GameSettings.addonPlayerHud`)
+## 설정 (설정 창 > HUD, `GameSettings.addonPlayerHud`)
 
-원본 패널(Q 메뉴 > Options > HUD Mk2의 9쪽)의 순서와 말. 체크박스는 끔/켬, 슬라이더는 같은 범위, 글꼴은 글자 칸, 색 고르기는 빨강·초록·파랑·불투명도 0~255.
+HUD는 HUD 위에서 고친다([HudSettingsView](../../Assets/_Project/Scripts/UI/Settings/HudSettings/HudSettingsView.cs), 11-22 사용자: "이 hud 설정하는 창 글만 보고선 이해할 수가 없는데 직관적이고 바로 볼 수 있게 좀 hud를 위한 설정창을 만들어 봐". 그 전에는 원본 패널 9쪽을 글로 옮긴 긴 목록이었다). 설정 창의 HUD 탭을 누르면 창이 비키고 화면에 HUD가 견본 값으로 그대로 선다([HudStage](../../Assets/_Project/Scripts/UI/Hud/Addons/Shared/HudStage.cs): 게임 중이면 게임 위에, 타이틀이면 맵 그림 위에. 그리는 코드는 게임과 같고 수만 견본이다. 세거나 소리 내는 것은 없다).
 
-| 원본 convar (`hud_mk2_`) | 기본 | 필드 | 줄 |
+- 위 줄: 묶음(전체, 내 상태, 무기, 전투, 맞을 때, 임무)과 그 항목. 꺼진 항목은 흐리다.
+- 화면: 조각에 마우스를 대면 흰 테두리와 이름, 누르면 고르고, 끌면 옮긴다. 방향키는 1, Shift와 함께는 10씩. 조각의 자리는 그려질 때마다 `HudStage.Mark`로 알린다.
+- 항목 창: 고른 조각의 반대쪽에 뜬다. 한 줄 설명, 스위치, 그림으로 고르는 것(간격, 클래스 UI 자리, 무기 칸, 피해 숫자, 새 목표 알림), 자리 숫자와 "제자리로", 색(색상 판·애드온 색 여섯·진하기), "이 항목 기본값".
+- 고른 조각은 게임에서처럼 움직인다: 체력·방어구는 깎였다 차고, 탄약은 쏘고 갈고, 궁극기 탄창은 차고 쓰이고, 맞은 방향·번쩍임·지직거림은 되풀이되고, 전투 묶음은 짧은 싸움(맞힘 둘, 처치 넷)이 3.6초마다 돈다.
+- 프로필을 끌면 체력·방어구·주사기가 같이 움직인다. 연속 처치 해골은 위아래로만.
+- 항목이 무엇을 바꾸는지는 [HudSettingsPages](../../Assets/_Project/Scripts/UI/Settings/HudSettings/HudSettingsPages.cs), 글은 Texts `settings.hudedit.*`.
+- 원본의 크기 0~3은 0.5~2로, 글자 굵기 0~5는 굵게 켜고 끄기로(550을 넘느냐만 달라진다), 글꼴 글자 칸은 있는 글꼴을 넘기며 고르는 것으로 놓았다. 저장된 값의 범위는 원본 그대로다.
+
+| 원본 convar (`hud_mk2_`) | 기본 | 필드 | 항목 |
 | --- | --- | --- | --- |
-| `hud` | 1 | `enabled` | 기본 > 사용 |
-| `sway` | 1 | `sway` | 기본 > 흔들림 |
-| `hide` | 0 | `hide` | 기본 > 체력·방어구 자동 숨기기 |
-| `sway_intensity` | 2 (1~5) | `swayIntensity` | 기본 > 흔들림 세기 |
-| `scale` | 1 (0~3) | `scale` | 기본 > 크기 |
-| (우리 것) | 기본 | `spacing` (`Default`, `Wide`) | 기본 > 간격 (넓게: 프로필 상자와 체력 26px, 체력과 방어구 상자 10px, 탄창과 사진 14px. 체력바 시안 2차의 간격, 11-22 사용자: "근데 그 시안에서 간격 좋던데 설정값으로 넣어 주세요") |
-| `font` | Hitmarker Normal (영상. 원본 Unifont) | `font` | 기본 > 글꼴 (AddonFonts.csv의 이름: Hitmarker Normal, Unifont, EvanstonTavernM, Hitmarker Text…; 없는 이름은 Label 글꼴; 비우면 Hitmarker Normal) |
-| `weight` | 1 (영상: 보통 굵기로 잰 글자 폭. 원본 2) (0~5) | `weight` | 기본 > 글자 굵기 (500 x 값, 550을 넘으면 굵게) |
+| `hud` | 1 | `enabled` | HUD 전체 > 보이기 |
+| `sway` | 1 | `sway` | HUD 전체 > 시선 따라 흔들기 |
+| `hide` | 0 | `hide` | HUD 전체 > 맞을 때만 체력 표시 |
+| `sway_intensity` | 2 (1~5) | `swayIntensity` | HUD 전체 > 흔들리는 정도 |
+| `scale` | 1 (0~3) | `scale` | HUD 전체 > 크기 |
+| (우리 것) | 기본 | `spacing` (`Default`, `Wide`) | 프로필·궁극기 > 간격 (넓게: 프로필 상자와 체력 26px, 체력과 방어구 상자 10px, 탄창과 사진 14px. 체력바 시안 2차의 간격, 11-22 사용자: "근데 그 시안에서 간격 좋던데 설정값으로 넣어 주세요") |
+| `font` | Hitmarker Normal (영상. 원본 Unifont) | `font` | HUD 전체 > 글꼴 (AddonFonts.csv의 이름: Hitmarker Normal, Unifont, EvanstonTavernM, Hitmarker Text…; 없는 이름은 Label 글꼴; 비우면 Hitmarker Normal) |
+| `weight` | 1 (영상: 보통 굵기로 잰 글자 폭. 원본 2) (0~5) | `weight` | HUD 전체 > 글자 굵게 (500 x 값, 550을 넘으면 굵게) |
 | `health`, `health_x/y`, `health_color_r/g/b/a` | 1, -630, -30 (영상. 원본 0, 0), (223,255,143,255) | `health`, `healthX/Y`, `healthColor` | 체력 |
-| `stims`, `stims_x/y` | 1, -630, -30 (체력 옆에 붙게. 원본 0, 0) | `stims`, `stimsX/Y` | 자극제 |
+| `stims`, `stims_x/y` | 1, -630, -30 (체력 옆에 붙게. 원본 0, 0) | `stims`, `stimsX/Y` | 주사기 |
 | `armor`, `armor_x/y`, `armor_color_*` | 1, -630, -30 (영상. 원본 0, 0), 흰색 | `armor`, `armorX/Y`, `armorColor` | 방어구 |
 | `weapon`, `weapon_x/y`, `weapon_color_*` | 1, 10, 26 (영상. 원본 0, 0), 흰색 | `weapon`, `weaponX/Y`, `weaponColor` | 탄약 |
-| `eqp`, `eqp_x/y`, `eqp_color_*` | 1, 14, 54 (영상. 원본 0, 0), 흰색 | `eqp`, `eqpX/Y`, `eqpColor` | 수류탄 |
+| `eqp`, `eqp_x/y`, `eqp_color_*` | 1, 14, 54 (영상. 원본 0, 0), 흰색 | `eqp`, `eqpX/Y`, `eqpColor` | 투척물 |
 | `hazards`, `hazards_x/y`, `hazards_color_*` | 1, -243, 10 (체력 막대 옆. 원본 0, 0), (255,0,0,255) | `hazards`, `hazardsX/Y`, `hazardsColor` | 환경 위험 |
-| `sense` | 1 | `sense` | 표시기 > 피해 방향 표시 |
-| `flick_armor`, `flick_damage`, `flick_heal`, `flick_fade` | 1, 1, 1, 0.3 (0~3) | `flickArmor`, `flickDamage`, `flickHeal`, `flickFade` | 피해 반짝임 |
-| `shake`, `shake_intensity`, `shake_fade` | 1, 1 (0~5), 0.1 (0~3) | `shake`, `shakeIntensity`, `shakeFade` | 피해 효과 |
-| `history`, `history_x/y`, `history_color_*` | 1, 0, 0, 흰색 | `history`, `historyX/Y`, `historyColor` | 획득 기록 |
-| `sfx`, `scanline`, `abberation`, `glitch` | 1, 1, 1, 1 | `sfx`, `scanline`, `aberration`, `glitch` | 특수 효과 |
-| (우리 것) | 켬 | `classUi` | 클래스 UI > 사용 |
+| `sense` | 1 | `sense` | 맞은 방향 |
+| `flick_armor`, `flick_damage`, `flick_heal`, `flick_fade` | 1, 1, 1, 0.3 (0~3) | `flickArmor`, `flickDamage`, `flickHeal`, `flickFade` | 번쩍임과 흔들림 |
+| `shake`, `shake_intensity`, `shake_fade` | 1, 1 (0~5), 0.1 (0~3) | `shake`, `shakeIntensity`, `shakeFade` | 번쩍임과 흔들림 |
+| `history`, `history_x/y`, `history_color_*` | 1, 0, 0, 흰색 | `history`, `historyX/Y`, `historyColor` | 주운 물건 |
+| `sfx`, `scanline`, `abberation`, `glitch` | 1, 1, 1, 1 | `sfx`, `scanline`, `aberration`, `glitch` | 화면 노이즈 |
+| (우리 것) | 켬 | `classUi` | 클래스 UI > 보이기 |
 | (우리 것) | 중앙 하단 | `classPlace` (`Centre`, `Portrait`) | 클래스 UI > 자리 (중앙 하단 · 프로필 옆) |
 | (우리 것) | 1 (0.5~2) | `classScale` | 클래스 UI > 크기 (설정의 크기에 곱한다) |
-| (우리 것) | 0, 0 | `classX`, `classY` | 클래스 UI > 가로·세로 위치 |
-| (우리 것) | 켬 | `classOwnColour` | 클래스 UI > 내 플레이어 색 쓰기 |
+| (우리 것) | 0, 0 | `classX`, `classY` | 클래스 UI > 자리 |
+| (우리 것) | 켬 | `classOwnColour` | 클래스 UI > 내 색 쓰기 |
 | (우리 것) | (223,255,143,255) | `classColor` | 클래스 UI > 색 (내 색 쓰기를 끄면) |
 
 클래스 UI 줄은 원본 패널에 없다. 원본이 조각마다 주는 것(사용, 가로·세로 위치, 색)과 전체의 크기를 같은 꼴로 두고, 자리 두 가지와 내 색 쓰기를 더했다(11-22 사용자: "원본 애드온은 어떤 커스텀 기능을 넣어 놨는지 보고 우리 쪽에서도 쓸 수 있겠다 싶은 건 설정으로"). 원본의 글꼴·글자 굵기·흔들림·특수 효과 설정은 클래스 UI에도 그대로 걸린다.

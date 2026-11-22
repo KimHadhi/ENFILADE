@@ -101,6 +101,48 @@ namespace HudAddons
             MakeTaps();
         }
 
+        // ---- The HUD settings' stage (HudStage): one enemy's bar over the screen's middle, hurt by the short fight -----
+
+        private EnemyBar stageBar;
+        private float stageHealth = 1f;
+
+        private void StageBar(EnemyBarsOptions options)
+        {
+            float now = Time.time, width = overlay.Width, height = overlay.Height;
+            if (height != fontsFor) MakeFonts(height);
+            stageBar ??= new EnemyBar();
+            var item = stageBar;
+            item.Maximum = 1f;
+            item.Show = true;
+            item.Name = Texts.Get("settings.hudedit.sample.enemy").ToUpperInvariant();
+            if (HudStage.At(HudStage.FightSeconds, .05f))
+            {
+                stageHealth = item.Follower = item.LastHealth = 1f;
+                item.Total = 0f;
+                item.Pillars.Clear();
+            }
+            float before = stageHealth;
+            if (HudStage.At(HudStage.FightSeconds, .1f)) stageHealth = .72f;
+            if (HudStage.At(HudStage.FightSeconds, .4f)) stageHealth = .3f;
+            if (HudStage.At(HudStage.FightSeconds, .75f)) stageHealth = 0f;
+            if (HudStage.At(HudStage.FightSeconds, 2.6f)) stageHealth = item.Follower = item.LastHealth = 1f;
+            else Read(item, stageHealth);
+            if (stageHealth < before)
+            {
+                if (options.damageNumbers) item.Total += Mathf.Round((before - stageHealth) * 100f);
+                item.Paint = true;
+                item.PaintHead = stageHealth <= .3f && stageHealth > 0f;
+            }
+            if (!options.damageNumbers) item.Total = 0f;
+            if (item.Paint) PaintNewest(item);
+            item.Follower = Smooth.Lerp(1f / Mathf.Max(1e-4f, bar.followTime), item.Follower, stageHealth);
+            if (!options.enabled) return;
+            float barW = width * bar.width, barH = height * bar.height, x = (width - barW) * .5f, y = height * .33f;
+            HudStage.Mark(HudPart.EnemyBar, x - barW * .2f, y - barH * 2f, barW * 1.4f, barH * 5f);
+            DrawBar(item, options, false, x, y, width, height, barW, barH, stageHealth);
+            Rise(item, true, x, y, height, barW, barH);
+        }
+
         // ---- The hit's word (net.Receive "BO6HBAR_SendDamageToClient") ------------------------------------------------
 
         /// <summary>
@@ -201,7 +243,8 @@ namespace HudAddons
             if (painter == null) return;
             Track();
             painter.Begin();
-            if (bars.Count > 0) Frame(GameSettings.Current.addonEnemyBars);
+            if (HudStage.Fight) StageBar(GameSettings.Current.addonEnemyBars);
+            else if (bars.Count > 0) Frame(GameSettings.Current.addonEnemyBars);
             painter.End();
         }
 

@@ -37,7 +37,10 @@ namespace HudAddons
         {
             if (!o.classOwnColour) return o.classColor;
             if (tally == null && player != null) player.TryGetComponent(out tally);
-            return tally != null ? (Color32)tally.Color : new Color32(255, 79, 120, 255);
+            if (tally != null) return tally.Color;
+            // No player (the settings' stage on the title screen): the colour the player would have.
+            uint wish = PlayerColours.WishOf(GameSettings.Current.playerColour);
+            return wish != 0u ? PlayerColours.Colour(wish) : PlayerColours.Palette.Count > 0 ? PlayerColours.Palette[0] : White;
         }
 
         private void DrawClass(PlayerHudOptions o)
@@ -48,6 +51,7 @@ namespace HudAddons
             if (shown)
             {
                 ClassReadout.Read(player, v);
+                if (HudStage.On && !v.Shown) ClassReadout.Sample(v);
                 shown = v.Shown;
             }
             string readyWord = ReadyWord();
@@ -87,6 +91,7 @@ namespace HudAddons
             {
                 // No class UI (off in the options, or a class without one): the full gauge's key alone, in its place.
                 float alone = portrait ? x0 : x0 + (blockW - readyW) * .5f;
+                HudStage.Mark(HudPart.ClassUi, alone, rowTop + (box - keyH) * .5f, readyW, keyH);
                 KeyBox(alone, rowTop + (box - keyH) * .5f, readyW, keyH, readyKey, readyWord, accent, white, true, accent, u, smallBold, wordFont, outlineColour);
                 return;
             }
@@ -181,6 +186,8 @@ namespace HudAddons
                 painter.AlphaScale = 1f;
             }
 
+            HudStage.Mark(HudPart.ClassUi, x0, rowsTop, blockW, rowTop + box + 8f * u - rowsTop);
+
             // Deployables and timed effects: under the middle they hang below the class row; beside the portrait they
             // stack up above the key row.
             Deployables.Readout(player, deployLines);
@@ -207,7 +214,7 @@ namespace HudAddons
 
         private string ReadyWord()
         {
-            var ready = PerkCardScreen.Ready;
+            var ready = HudStage.On ? HudStage.Chosen == HudPart.ClassUi ? PerkCardScreen.ReadyFor.Cards : PerkCardScreen.ReadyFor.Nothing : PerkCardScreen.Ready;
             if (ready != readyFor)
             {
                 readyFor = ready;

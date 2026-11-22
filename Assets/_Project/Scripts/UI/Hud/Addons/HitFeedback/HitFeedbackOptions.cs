@@ -13,6 +13,8 @@ namespace HudAddons
     /// <para>The achievement names are the addon's text-entry convars (bo6hitmarker_achievements_*). Their defaults are
     /// player text, which lives in Texts.csv (hitfeedback.name.*), so an empty field here means "the addon's own name"
     /// and the score popup reads it from there; a name the player typed is kept as typed.</para>
+    /// <para>bo6hitmarker_debug (a still sample of the popup to place it by) is left out too: the HUD settings play the popup
+    /// itself while it is placed (HudStage).</para>
     /// <para>Left out, with nothing in this game to drive them: the names for a device kill ("Device Shutdown") and an
     /// alien kill ("Cleaner") — no enemy here is a turret, a scanner or a headcrab — and Cool Killchains' "Server
     /// Overrides" form, since no host here pushes its HUD options onto the other players.</para>
@@ -37,8 +39,6 @@ namespace HudAddons
         public bool hitSound = true;
         /// <summary>bo6hitmarker_kill_sound 1.</summary>
         public bool killSound = true;
-        /// <summary>bo6hitmarker_debug 0: a still sample of the popup ("100", "Debug Mode", "+100") to place it by.</summary>
-        public bool debug;
         /// <summary>bo6hitmarker_horizontal 0: the popup's offset right, in 1920x1080 units (the panel's slider runs
         /// -ScrW()..ScrW()). The marker itself stays on the crosshair, as in the addon.</summary>
         public float horizontal;

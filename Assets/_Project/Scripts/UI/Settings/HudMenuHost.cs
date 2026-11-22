@@ -10,8 +10,8 @@ public sealed class HudMenuHost : MonoBehaviour
 {
     /// <summary>The width of a row's name, and a row's height (px).</summary>
     public float LabelWidth = 320f, RowHeight = 46f;
-    /// <summary>The width of a value's box at the end of a row (px).</summary>
-    public float BoxWidth = 104f;
+    /// <summary>The width of a value's box at the end of a row, and the size of a row's name (px).</summary>
+    public float BoxWidth = 104f, LabelSize = 19f;
 
     /// <summary>The look's host over <paramref name="at"/>, or null in the title's kit.</summary>
     public static HudMenuHost Of(Transform at) => at != null ? at.GetComponentInParent<HudMenuHost>(true) : null;

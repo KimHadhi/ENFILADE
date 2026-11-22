@@ -94,7 +94,7 @@
 | 적의 몸 크기·밀치기 연쇄 | [적 프리팹](../../Assets/_Project/Data/Resources/Enemies)의 `MeleeCombatTarget` |
 | 사격·장전·가드 키 | [Player.inputactions](../../Assets/_Project/Input/Player.inputactions)의 Combat 맵 |
 | 슬롯 숫자 키 | Player.inputactions의 Combat 맵 `Slot1`~`Slot4`(주 키 숫자열, 보조 키 숫자패드). 플레이어는 설정 → 조작 → 키 설정에서 바꾼다 |
-| 탄약 UI의 위치·크기·색 | 설정 → HUD → 플레이어 HUD → 탄약(사용, 가로·세로 위치, 색), [PlayerHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/PlayerHud.csv) `Ammo.*` |
+| 탄약 UI의 위치·크기·색 | 설정 → HUD → 무기 → 탄약(보이기, 끌어서 자리, 색), [PlayerHud.csv](../../Assets/_Project/Data/Resources/Tables/Hud/PlayerHud.csv) `Ammo.*` |
 
 슬롯 키는 Input Actions의 `Slot1`~`Slot4` 액션이다. [PlayerWeaponSlots](../../Assets/_Project/Scripts/Weapons/PlayerWeaponSlots.cs)는 `KeyBindings.Pressed`로 읽으므로 에셋의 바인딩과 키 설정 창에서 바꾼 키가 그대로 먹힌다. 사격 모드(B)·총 꾸미기(C)·살펴보기(Y)·라이트(L)도 같다.
 

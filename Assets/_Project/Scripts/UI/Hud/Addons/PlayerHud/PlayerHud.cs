@@ -84,7 +84,7 @@ namespace HudAddons
             // Over the HUD: its picture when the special effects draw it, the profile photo (clear of the effects), then
             // the vignette, which the addon draws after the effects (Nene.DamageEffect after Nene.PostDrawHUDFX), so neither
             // scanlines nor copies touch it.
-            top = Overlay.Create("PlayerHud Over", hud.Canvas.sortingOrder + 1);
+            top = Overlay.Create("PlayerHud Over", hud.Order + 1);
             fx = new PlayerHudFx(hud, top.AddLayer("Effects"));
             picturePainter = top.AddPainter("Portrait");
             flarePainter = top.AddPainter("Vignette");
@@ -117,7 +117,7 @@ namespace HudAddons
             now = Smooth.Now;
             dt = Smooth.Dt;
             Bind(PlayerRoster.Local);
-            bool show = o != null && o.enabled && player != null && receiver != null && !LoadingScreen.Visible;
+            bool show = o != null && o.enabled && (HudStage.On || (player != null && receiver != null)) && !LoadingScreen.Visible;
             if (hud.Visible != show) hud.Visible = show;
             if (top.Visible != show) top.Visible = show;
             fx.Set(show && o.sfx);
@@ -128,8 +128,9 @@ namespace HudAddons
                 lastHealth = float.NaN;
                 return;
             }
-            WatchHealing();
+            if (!HudStage.On) WatchHealing();
             Measure(o);
+            Stage(o);
 
             painter.Begin();
             DrawStatus(o);
@@ -164,6 +165,11 @@ namespace HudAddons
 
             // The HUD trails the view: a copy of the eye's angles eases after them and the HUD stands off by the gap,
             // times the intensity (x right when the view turns left, y up when it looks down).
+            if (HudStage.On)
+            {
+                StageSway(o);
+                return;
+            }
             var eye = Eye();
             if (eye != null)
             {

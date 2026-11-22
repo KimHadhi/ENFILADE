@@ -49,6 +49,7 @@ namespace HudAddons
 
         private string LookOverLine()
         {
+            if (HudStage.On) return null;
             if (weapon == null) slots.TryGetComponent(out weapon);
             var runtime = slots.GetRuntime(slots.SelectedSlot);
             if (weapon == null || runtime == null || runtime.Data.Category == WeaponCategory.Melee
@@ -64,6 +65,7 @@ namespace HudAddons
 
         private bool TryHeld(int slot, out Held held)
         {
+            if (HudStage.On) return StageHeld(out held);
             held = default;
             if (slots == null || slot < 0 || slot >= PlayerWeaponSlots.SlotCount) return false;
             var data = slots.GetWeapon(slot);
@@ -99,7 +101,7 @@ namespace HudAddons
             var a = look.Ammo;
             float x = sw * look.Place.ammo.x + swayX, y = sh * look.Place.ammo.y - swayY;
             float magW = a.magWidth * scale, magH = a.magHeight * scale, resW = a.reserveWidth * scale, resH = a.reserveHeight * scale;
-            if (o.weapon && slots != null && TryHeld(slots.SelectedSlot, out var held))
+            if (o.weapon && (slots != null || HudStage.On) && TryHeld(slots != null ? slots.SelectedSlot : 0, out var held))
             {
                 painter.AlphaScale = Opacity(o.weaponColor);
                 float ax = x + o.weaponX, ay = y + o.weaponY;
@@ -148,6 +150,7 @@ namespace HudAddons
                 // The boxes stay under the right edge's column of callout windows, so those keep above them (HudRoom; on a 21:9
                 // screen a second window came down onto the ammo).
                 float roomRight = ax + (magW + resW) / a.reserveSpread + resW * .5f, roomTop = ay - magW * a.nameUp;
+                HudStage.Mark(HudPart.Ammo, ax - magW * .5f, roomTop, roomRight - ax + magW * .5f, ay + magH * .5f - roomTop);
                 if (o.eqp) roomTop = Mathf.Min(roomTop, y + o.eqpY - a.eqp * scale * (a.eqpRise + .5f));
                 HudRoom.Take(this, screenWidth - roomRight, screenWidth - (ax - magW * .5f), roomTop, ay + magH * .5f, HudRoom.Way.Over);
             }
@@ -156,14 +159,14 @@ namespace HudAddons
                 painter.AlphaScale = Opacity(o.eqpColor);
                 float size = a.eqp * scale;
                 var grenades = PlayerGrenades.Local;
-                int count = grenades != null ? grenades.Count : 0;
+                int count = HudStage.On ? HudStage.Grenades : grenades != null ? grenades.Count : 0;
                 Color32 colour = Rgb(o.eqpColor);
                 var tint = fragColour.Step(count <= 0 ? Dim(colour) : colour, look.Colour.follow);
                 int picture = Mathf.Clamp(look.AmmoIcon.grenade, 0, ammoPictures.Length - 1);
                 // As the addon places it: over the reserve box, (reserve - box) x Scale / 2 to its right.
-                IconBox(ammoPictures[picture], Digits.Of(count), altsFont,
-                    x + o.eqpX + (magW + resW) / a.reserveSpread + (resW - size) * scale * .5f, y + o.eqpY - size * a.eqpRise,
-                    size, size, tint, TextAlign.Right, TextAlign.Top);
+                float gx = x + o.eqpX + (magW + resW) / a.reserveSpread + (resW - size) * scale * .5f, gy = y + o.eqpY - size * a.eqpRise;
+                HudStage.Mark(HudPart.Grenade, gx - size * .5f, gy - size * .5f, size, size);
+                IconBox(ammoPictures[picture], Digits.Of(count), altsFont, gx, gy, size, size, tint, TextAlign.Right, TextAlign.Top);
             }
             painter.AlphaScale = 1f;
         }

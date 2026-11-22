@@ -20,11 +20,11 @@
 ## 수치와 파일
 
 - 수치: [Tables/Hud/AddonGrenades.csv](../../Assets/_Project/Data/Resources/Tables/Hud/AddonGrenades.csv) (`Ring.*`, `Frag.*`, `Arctic.*`, `Holo.*`, `Sound.*`). 거리는 원본대로 소스 단위(1 = 2.54 cm), 색은 0~255. 이름이 Grenades.csv가 아닌 것은 투척물 표가 이미 그 이름이라서다(표는 파일 이름으로 찾는다).
-- 코드: [Scripts/UI/Hud/Addons/Grenades](../../Assets/_Project/Scripts/UI/Hud/Addons/Grenades) — `GrenadesModule`(설치, 게임이 부르는 입구), `GrenadesHud`(매 프레임 그리기), `GrenadeTracker`(수류탄 추적 하나), `GrenadeHoloPass`(홀로그램 렌더 패스), `QuickNadeSounds`(소리 시각), `GrenadesLooks`(표 줄), `GrenadesOptions`·`GrenadesOptionsRows`(설정).
+- 코드: [Scripts/UI/Hud/Addons/Grenades](../../Assets/_Project/Scripts/UI/Hud/Addons/Grenades) — `GrenadesModule`(설치, 게임이 부르는 입구), `GrenadesHud`(매 프레임 그리기), `GrenadeTracker`(수류탄 추적 하나), `GrenadeHoloPass`(홀로그램 렌더 패스), `QuickNadeSounds`(소리 시각), `GrenadesLooks`(표 줄), `GrenadesOptions`(설정).
 - 그림: [Art/Resources/UI/Addons/Grenades](../../Assets/_Project/Art/Resources/UI/Addons/Grenades) (`frag.png` 256, `frag_arrow.png` 512, `triangle.png` 128, `holo_0~4.png` 128, 애드온 파일 그대로 풂), 셰이더 `GrenadeHolo.shader`.
 - 소리: [Art/Audio/Addons/Grenades](../../Assets/_Project/Art/Audio/Addons/Grenades) (`PinPull` 3, `PinPullCloth` 6, `Throw` 1, `RattleSmall` 9, `RattleMedium` 10. 애드온 파일 그대로, 노멀라이즈 끔).
 
-## 설정 (설정 창 > HUD)
+## 설정 (HUD 설정 > 전투 > 수류탄 경고)
 
 | 원본 | 줄 | 기본 |
 | --- | --- | --- |

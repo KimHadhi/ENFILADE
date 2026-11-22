@@ -99,12 +99,18 @@ namespace HudAddons
         {
             var options = GameSettings.Current?.addonGrenades;
             var view = Camera.main;
-            bool seen = options != null && view != null && painter != null;
+            bool staged = HudStage.On && HudStage.Chosen == HudPart.Incoming;
+            bool seen = options != null && (view != null || staged) && painter != null;
             if (overlay.Visible != seen) overlay.Visible = seen;
             GrenadeHoloPass.Draws.Clear();
             if (!seen)
             {
                 ringAlpha = 0f;
+                return;
+            }
+            if (staged)
+            {
+                Stage(options);
                 return;
             }
             var eye = view.transform;
@@ -117,6 +123,39 @@ namespace HudAddons
             Triangles(now);
             Ring(options);
             Frags(options);
+            painter.End();
+        }
+
+        // The HUD settings' stage: a frag's picture and arrow going round the middle, a triangle across from it, the fuse
+        // ring closing.
+        private void Stage(GrenadesOptions options)
+        {
+            float now = Smooth.Now, cx = overlay.Width * .5f, cy = overlay.Height * .5f;
+            painter.Begin();
+            float bearing = 50f + 35f * Mathf.Sin(now * .8f);
+            float size = overlay.ScreenScale(arctic.size), radius = overlay.ScreenScale(arctic.radius), radians = (bearing + 120f) * Mathf.Deg2Rad;
+            float pulse = .5f - .5f * Mathf.Cos(2f * Mathf.PI * Mathf.Max(0f, arctic.pulseHz) * now);
+            painter.Picture = trianglePicture;
+            painter.SetColor(arctic.color.x, arctic.color.y, arctic.color.z, 255f * (pulse + arctic.floor));
+            painter.TexturedRectRotated(Mathf.Cos(radians) * radius + cx, -Mathf.Sin(radians) * radius + cy, size, size, bearing + 120f - 90f);
+            if (options.fuseIndicator)
+            {
+                float share = Mathf.Repeat(now / 3f, 1f);
+                var tint = Gm.Rgba(255f * GrenadesTable.Rgb(share > .8f ? ring.lateColor : ring.color).r, 255f * GrenadesTable.Rgb(share > .8f ? ring.lateColor : ring.color).g,
+                    255f * GrenadesTable.Rgb(share > .8f ? ring.lateColor : ring.color).b);
+                Arc(cx, cy, ring.radius - ring.radius * share, ring.thickness, ring.segments, tint);
+            }
+            if (options.indicator)
+            {
+                float fragSize = overlay.ScreenScale(frag.size), fragRadius = overlay.ScreenScale(frag.radius), angle = bearing * Mathf.Deg2Rad;
+                float x = Mathf.Cos(angle) * fragRadius + cx, y = -Mathf.Sin(angle) * fragRadius + cy;
+                Color near = GrenadesTable.Rgb(frag.nearColor);
+                painter.SetColor(near.r * 255f, near.g * 255f, near.b * 255f);
+                painter.Picture = fragPicture;
+                painter.TexturedRectRotated(x, y, fragSize, fragSize, 0f);
+                painter.Picture = arrowPicture;
+                painter.TexturedRectRotated(x, y, fragSize * frag.arrow, fragSize * frag.arrow, bearing - 90f);
+            }
             painter.End();
         }
 

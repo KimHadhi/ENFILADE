@@ -64,7 +64,7 @@ public static class HudMenu
         layout.childForceExpandWidth = layout.childForceExpandHeight = false;
         W.Size(row, height: host.RowHeight, flexibleHeight: 0f);
         HudHover.On(Box(row, Color.clear, true), Clear(RowOver), RowOver);
-        var label = W.Label(row, name, 19f, Text);
+        var label = W.Label(row, name, host.LabelSize, Text);
         label.overflowMode = TextOverflowModes.Ellipsis;
         W.Size(label, width: host.LabelWidth, height: host.RowHeight);
         return row;

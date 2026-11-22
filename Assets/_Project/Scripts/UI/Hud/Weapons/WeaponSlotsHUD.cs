@@ -96,6 +96,8 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             if (shownSelected != -2 && selected >= 0 && selected < Count) built[selected].popAt = now;
             shownSelected = selected;
         }
+        // On the HUD settings' stage they stay up, and say where they stand.
+        if (HudAddons.HudStage.On) lastActivity = now;
         for (int i = 0; i < Count; i++) Spring(built[i], i == selected ? 1f : 0f, dt, shape.Grow);
         float readable = visibleSeconds;
         if (look == WeaponSlotLook.Plates) LayPlates(selected, now, dt, ref readable);
@@ -119,7 +121,10 @@ public sealed class WeaponSlotsHUD : MonoBehaviour
             for (int i = 0; i < Count; i++)
                 if (built[i] != null && built[i].root != null) roomRects.Add(built[i].root);
         if (roomRects.Count > 0 && HudRoom.Measure(roomRects, out float near, out float far, out float top, out float bottom))
+        {
             HudRoom.Take(this, near, far, top, bottom);
+            if (HudAddons.HudStage.On) HudAddons.HudStage.Mark(HudAddons.HudPart.Slots, HudAddons.HudStage.Width - far, top, far - near, bottom - top);
+        }
         else HudRoom.Free(this);
     }
 

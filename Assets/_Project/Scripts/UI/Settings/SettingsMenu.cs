@@ -55,6 +55,8 @@ public sealed class SettingsMenu : MonoBehaviour
         if (IsOpen && KeyBindingsView.TakeEscape()) return;
         // An open colour board next (ColourPanel, in this menu or a lobby window): Esc puts it away and nothing else.
         if (ColourPanel.TakeEscape()) return;
+        // The HUD settings go back to the settings window under them.
+        if (IsOpen && HudSettingsView.TakeEscape()) return;
         // Esc closes the developer console, the shop, the gun's customize menu, the perk cards or the hub's mirror first.
         if (DevConsole.TakesKeyboard || ShopMenu.TakesKeyboard || GunCustomizeMenu.TakesKeyboard || PerkCardScreen.TakesKeyboard
             || HubDressing.TakesKeyboard || MainMenuScreen.TakesEscape) return;

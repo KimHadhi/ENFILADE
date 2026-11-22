@@ -97,6 +97,23 @@ public static class ClassReadout
         else if (PlayerClass.Is(PlayerClass.Support)) Support(view);
     }
 
+    /// <summary>The HUD settings' sample where no player has a class UI (HudStage on the title screen): the class to be
+    /// played, some of its pips full, its key ready.</summary>
+    public static void Sample(View view)
+    {
+        Clear(view);
+        string id = ClassGrowth.CurrentId;
+        var info = PlayerClass.Find(id);
+        view.Shown = true;
+        view.Id = id;
+        view.Title = info != null ? info.Title : id;
+        view.Icon = KitButtons.Icon(MainMenuClasses.Icon(id));
+        view.Most = 8;
+        view.Filled = 5f;
+        view.Key = view.Beat = true;
+        view.Word = Texts.Get("settings.hudedit.sample.key");
+    }
+
     private static void Clear(View view)
     {
         view.Shown = false;

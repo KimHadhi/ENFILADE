@@ -66,16 +66,6 @@ namespace HudAddons
             chain = new HitFeedbackChain();
         }
 
-        private void OnEnable()
-        {
-            GameTables.Reloaded -= OnTablesReloaded;
-            GameTables.Reloaded += OnTablesReloaded;
-        }
-
-        private void OnDisable() => GameTables.Reloaded -= OnTablesReloaded;
-
-        private void OnTablesReloaded() => score?.ForgetTexts();
-
         /// <summary>A hit that killed nothing, one of this frame's.</summary>
         public void QueueHit(bool headshot, bool organism, bool burn)
         {
@@ -103,9 +93,11 @@ namespace HudAddons
         private void LateUpdate()
         {
             var o = GameSettings.Current.addonHitFeedback;
+            if (HudStage.Fight) Stage(o);
             Confirm(o);
             chainPainter.Begin();
             if (o.skulls) chain.Draw(chainPainter, overlay, chainLook, o);
+            if (HudStage.Fight) MarkParts(o);
             chainPainter.End();
             markerPainter.Begin();
             marker.Draw(markerPainter, overlay, markerLook, o.markSize);
@@ -124,16 +116,48 @@ namespace HudAddons
                 if (kill)
                 {
                     marker.Take(true, killHead, killFlesh, false, killBurn, o.killmark, markerLook);
-                    if (o.killSound) KillSounds(killHead);
+                    if (o.killSound && !HudStage.On) KillSounds(killHead);
                 }
                 else
                 {
                     marker.Take(false, hitHead, hitFlesh, !Aimed(), hitBurn, o.hitmark, markerLook);
-                    if (o.hitSound) HitSounds(hitHead, hitFlesh);
+                    if (o.hitSound && !HudStage.On) HitSounds(hitHead, hitFlesh);
                 }
             }
             hit = hitHead = hitFlesh = hitBurn = false;
             kill = killHead = killFlesh = killBurn = false;
+        }
+
+        // The HUD settings' short fight (HudStage): two hits, a headshot, then four kills, silent and counted nowhere.
+        private void Stage(HitFeedbackOptions o)
+        {
+            if (HudStage.At(HudStage.FightSeconds, .1f)) QueueHit(false, true, false);
+            if (HudStage.At(HudStage.FightSeconds, .4f)) QueueHit(true, true, false);
+            if (HudStage.At(HudStage.FightSeconds, .75f)) StageKill(o, HitFeedbackKill.Plain, false, o.nameEliminate, "hitfeedback.name.eliminate");
+            if (HudStage.At(HudStage.FightSeconds, 1.2f)) StageKill(o, HitFeedbackKill.Plain, true, o.nameHeadshot, "hitfeedback.name.headshot");
+            if (HudStage.At(HudStage.FightSeconds, 1.75f)) StageKill(o, HitFeedbackKill.Blast, false, o.nameExplosive, "hitfeedback.name.explosive");
+            if (HudStage.At(HudStage.FightSeconds, 2.2f)) StageKill(o, HitFeedbackKill.Melee, false, o.nameMelee, "hitfeedback.name.melee");
+        }
+
+        private void StageKill(HitFeedbackOptions o, HitFeedbackKill kind, bool head, string typed, string textId)
+        {
+            QueueKill(head, true, false);
+            if (o.enable) AddRow(string.IsNullOrEmpty(typed) ? Texts.InEnglish(textId) : typed, HitFeedbackModule.KillPoints);
+            if (o.skulls) AddSkull(kind, head, Smooth.Now + HudStage.FightSeconds - HudStage.FightTime);
+        }
+
+        // Where the fight's parts stand, for the settings to press and drag.
+        private void MarkParts(HitFeedbackOptions o)
+        {
+            float cx = overlay.Width * .5f, cy = overlay.Height * .5f;
+            float screen = overlay.ScreenScale(scoreLook.screenScale), text = screen * o.textSize;
+            float x = cx * scoreLook.anchorX + o.horizontal, y = cy * scoreLook.anchorY + o.vertical;
+            float side = (markerLook.baseSize + markerLook.growSize) * overlay.ScreenScale(markerLook.screenScale) * Mathf.Max(.3f, o.markSize) * 1.6f;
+            HudStage.Mark(HudPart.Marker, cx - side * .5f, cy - side * .5f, side, side);
+            float left = x + scoreLook.columnGap * screen, top = y - scoreLook.rowStep * screen - scoreLook.totalSize * text;
+            HudStage.Mark(HudPart.Score, left, top, (scoreLook.nameSwing + 190f) * screen, y + scoreLook.rowStep * screen * 3f - top);
+            float cell = (chainLook.skullSize + chainLook.gap) * overlay.Width / chainLook.unit * o.skullScale, wide = cell * 4f;
+            if (o.skulls) HudStage.Mark(HudPart.Skulls, cx - wide * .5f, overlay.Height * o.skullOffset - cell * .5f, wide, cell);
         }
 
         // A headshot: Hit.Head.Mark_bo6 + Hit.Head + Hit.Head.Layer; a hit: Hit.Mark_bo6 (Hit.Mark.Item off flesh) +

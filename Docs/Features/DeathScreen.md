@@ -41,13 +41,13 @@
 
 ## 설정과 표
 
-- 설정 → HUD → 데스 스크린(애드온 패널의 차례와 말): 설명 줄, **데스 스크린 켜기**(끄면 화면도 카드도 소리도 없다), **휘슬 음량** 0~2(소수 둘), **흐림 강도** 0~20(정수, 0이면 흐림 없음), **피 오버레이 강도** 0~1(소수 둘), **피 페이드 인 지연(초)** 0~5(소수 하나), **미리 보기**(게임 중 살아 있을 때. `/death`와 같아서 카드도 함께), **기본값으로**. 저장: `GameSettings.addonDeathScreen`([DeathScreenOptions](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptions.cs)).
+- HUD 설정 → 맞을 때 → 사망 화면: **보이기**(끄면 화면도 카드도 소리도 없다), **휘슬 소리** 0~200%, **흐림** 0~20(정수, 0이면 흐림 없음), **피** 0~100%, **피가 번지기까지** 0~5초, **직접 보기**(게임 중 살아 있을 때. `/death`와 같아서 카드도 함께), **이 항목 기본값**. 저장: `GameSettings.addonDeathScreen`([DeathScreenOptions](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptions.cs)).
 - 원본 상수: [AddonDeathScreen.csv](../../Assets/_Project/Data/Resources/Tables/Hud/AddonDeathScreen.csv) `Screen`(시간표·흐림 횟수·걷힘·소리 끊김)·`Grade`(색 숫자). 파일 이름이 `DeathScreen`이 아닌 것은 카드 흐름의 [Tables/Player/DeathScreen.csv](../../Assets/_Project/Data/Resources/Tables/Player/DeathScreen.csv)와 이름이 겹치지 않게(표는 파일 이름으로 찾는다).
 - 글자: Texts.csv `settings.hud.death.*`(설정 줄), `death.*`(카드).
 
 ## 시험
 
-- 콘솔 `/death`: 죽지 않고 5초. `/death wipe`, `/death exploder` 등. 설정 → HUD → 데스 스크린 → 미리 보기도 같다.
+- 콘솔 `/death`: 죽지 않고 5초. `/death wipe`, `/death exploder` 등. 설정 → HUD → 사망 화면 → 직접 보기도 같다.
 - 진짜 죽음: `/fatal`, 방에서 쓰러져 피 흘려 죽기, 전멸.
 - 볼 것: 세상이 1.2초에 붉은 갈색으로 빠지고, 0.15초 뒤부터 2.4초 동안 고르게 흐려지고(손과 총도), 비네트가 1.6초에 닫히고, 1초 뒤 피가 1.6초에 걸쳐 비치고, 소리 한 번. HUD와 카드는 또렷하다. 살아나면 0.3초에 걷히고 소리가 바로 끊긴다. 관전으로 넘어가면 0.3초에 걷히고 소리는 끝까지 난다. 피 그림의 큰 얼룩은 화면 오른쪽 아래에 있어야 한다(위아래가 뒤집히면 왼쪽 위).
 
@@ -56,7 +56,7 @@
 - [DeathScreenModule](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenModule.cs): 바깥에서 부르는 곳(`Install`·`Die`·`Respawn`·`Leave`·`Stop`·`Enabled`·`ClearSeconds`).
 - [DeathScreenDriver](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenDriver.cs): 원본의 상태(levels, onDeath/onRespawn, 켜기 감시)와 소리.
 - [DeathScreenPass](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenPass.cs) + 셰이더 `Art/Resources/UI/Addons/DeathScreen/DeathScreenFilm.shader`: 색·흐림·그림.
-- [DeathScreenLook](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenLook.cs)(표), [DeathScreenOptions](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptions.cs)·[DeathScreenOptionsRows](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptionsRows.cs)(설정).
+- [DeathScreenLook](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenLook.cs)(표), [DeathScreenOptions](../../Assets/_Project/Scripts/UI/Hud/Addons/DeathScreen/DeathScreenOptions.cs)(설정).
 - 그림: `Art/Resources/UI/Addons/DeathScreen/vignette.png`·`blood.png`(원본 VTF를 `Tools/HudAddons/addon_picture.py`로 원래 크기 그대로). 소리: `Art/Audio/Addons/DeathScreen/Whistle/whistle.mp3`.
 - 카드와 흐름: [DeathScreen](../../Assets/_Project/Scripts/UI/Hud/Death/DeathScreen.cs)(언제·무엇에 죽었나·`/death`), [DeathCard](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCard.cs), [DeathCardGraphic](../../Assets/_Project/Scripts/UI/Hud/Death/DeathCardGraphic.cs).
 

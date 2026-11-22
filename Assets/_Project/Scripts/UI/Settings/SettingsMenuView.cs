@@ -11,7 +11,8 @@ using W = SettingsWidgets;
 /// 통일성 좋게"; it was the menus' pink kit): a dark side with the tabs, the chosen one lit white, and leaving at its foot;
 /// at the right the tab's name with "이 탭 기본값", its settings in cards under headings, each bound to
 /// <see cref="GameSettings.Current"/>, and 돌아가기 at the foot. The tabs follow <see cref="SettingsGroup"/>'s order, so
-/// "이 탭 기본값" resets the group of the tab on show.
+/// "이 탭 기본값" resets the group of the tab on show. HUD has no page here: its tab opens the HUD settings on the HUD itself
+/// (HudSettingsView).
 /// There is no 캐릭터 tab (user, 2026-11-12: "설정에서 캐릭터 바꾸는 거 이제 없애도 될 듯"): the character, its colours,
 /// clothes and body are chosen in the title screen's wardrobe, and in the hub at the stage's mirror (HubDressing).
 /// SettingsGroup.Character stays as the reset group for those settings.
@@ -29,21 +30,6 @@ public sealed class SettingsMenuView
         PageLeft = SideWidth + 34f, PageWidth = PanelWidth - PageLeft - 30f, PageTop = 112f, PageHeight = PanelHeight - PageTop - 96f;
     // Built when asked rather than held in static fields, so reloaded or translated words show at the next build.
     private static string[] HoldToggle => new[] { Texts.Get("settings.hold"), Texts.Get("settings.toggle") };
-    // In DamageNumberMode's order.
-    private static string[] DamageNumberNames => new[]
-    {
-        Texts.Get("settings.off"), Texts.Get("settings.hud.damage_numbers.total"), Texts.Get("settings.hud.damage_numbers.each"),
-    };
-    // In WeaponSlotLook's order.
-    private static string[] WeaponSlotLookNames => new[]
-    {
-        Texts.Get("settings.hud.weapon_slots.plates"), Texts.Get("settings.hud.weapon_slots.cards"),
-    };
-    // In ObjectiveAlertLook's order.
-    private static string[] ObjectiveAlertNames => new[]
-    {
-        Texts.Get("settings.hud.objective_alert.card"), Texts.Get("settings.hud.objective_alert.ribbon"),
-    };
     // In WindowMode's order.
     private static string[] WindowModeNames => new[]
     {
@@ -59,7 +45,9 @@ public sealed class SettingsMenuView
     };
     private static int tab; // reopening shows the last tab
     private readonly RectTransform root;
+    private static readonly Color Dim = new Color(0f, 0f, 0f, .8f);
     private readonly Action resume, leave, quit;
+    private readonly Image dim;
     private RectTransform panel, page;
     private TextMeshProUGUI pageTitle;
     private readonly List<HudMenu.Entry> tabs = new List<HudMenu.Entry>();
@@ -69,7 +57,7 @@ public sealed class SettingsMenuView
         this.resume = resume; this.leave = leave; this.quit = quit;
         root = W.Rect("Settings", canvas);
         KitStyle.Stretch(root);
-        W.Fill(root, new Color(0f, 0f, 0f, .8f));
+        dim = W.Fill(root, Dim);
         root.gameObject.SetActive(false);
         // Another monitor offers other resolutions: list them once the window is there.
         DisplaySettings.Moved += () =>
@@ -82,7 +70,11 @@ public sealed class SettingsMenuView
     public void Show(bool visible)
     {
         if (visible) Build();
-        else KeyBindingsView.CloseIfOpen();
+        else
+        {
+            KeyBindingsView.CloseIfOpen();
+            HudSettingsView.CloseIfOpen();
+        }
         root.gameObject.SetActive(visible);
     }
 
@@ -92,7 +84,8 @@ public sealed class SettingsMenuView
         if (panel != null) UnityEngine.Object.Destroy(panel.gameObject);
         tabs.Clear();
         // A tab remembered from before it went (the 캐릭터 tab) reopens on the first.
-        if (tab < 0 || tab >= TabIds.Length) tab = 0;
+        if (tab < 0 || tab >= TabIds.Length || tab == (int)SettingsGroup.Hud) tab = 0;
+        dim.color = Dim;
         panel = W.Rect("Panel", root);
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(.5f, .5f);
         panel.sizeDelta = new Vector2(PanelWidth, PanelHeight);
@@ -110,7 +103,8 @@ public sealed class SettingsMenuView
             int index = i;
             var rect = KitStyle.TopLeft("Tab " + TabIds[i], side, new Vector2(SideInset, TabsTop + i * (TabHeight + TabGap)),
                 new Vector2(SideWidth - SideInset * 2f, TabHeight));
-            tabs.Add(new HudMenu.Entry(rect, Texts.Get(TabIds[i]), 21f, () => Choose(index)));
+            string name = Texts.Get(TabIds[i]);
+            tabs.Add(new HudMenu.Entry(rect, i == (int)SettingsGroup.Hud ? name + "  >" : name, 21f, () => Choose(index)));
         }
         float foot = PanelHeight - SideInset - 46f;
         SideButton(side, foot, "settings.quit", quit);
@@ -149,9 +143,27 @@ public sealed class SettingsMenuView
 
     private void Choose(int index)
     {
+        if (index == (int)SettingsGroup.Hud)
+        {
+            OpenHud();
+            return;
+        }
         if (tab == index) return;
         tab = index;
         BuildPage();
+    }
+
+    // The HUD is set on the HUD itself (HudSettingsView), so the window steps aside for it and comes back as it was.
+    private void OpenHud()
+    {
+        panel.gameObject.SetActive(false);
+        dim.color = Color.clear;
+        HudSettingsView.Open(root, () =>
+        {
+            dim.color = Dim;
+            panel.gameObject.SetActive(true);
+            BuildPage();
+        });
     }
 
     private void BuildPage()
@@ -170,8 +182,7 @@ public sealed class SettingsMenuView
         if (group == SettingsGroup.Sound) SoundTab(rows, s);
         else if (group == SettingsGroup.Controls) ControlsTab(rows, s);
         else if (group == SettingsGroup.Screen) ScreenTab(rows, s);
-        else if (group == SettingsGroup.Camera) CameraTab(rows, s);
-        else HudTab(rows, s);
+        else CameraTab(rows, s);
     }
 
     private static void SoundTab(SettingsRows rows, GameSettings s)
@@ -318,28 +329,5 @@ public sealed class SettingsMenuView
         rows.Header(Texts.Get("settings.camera.cinematic_header"));
         rows.Toggle(Texts.Get("settings.camera.execution"), s.executionCinematic, on => s.executionCinematic = on);
         rows.Note(Texts.Get("settings.camera.execution_note"));
-    }
-
-    private static void HudTab(SettingsRows rows, GameSettings s)
-    {
-        // The player's own colour (PlayerColours): the slots of their own colours, each made on the colour board.
-        PlayerColourRow.Controls(W.Row(rows.Parent, Texts.Get("profile.colour")), false);
-        rows.Note(Texts.Get("profile.colour.hint"));
-        rows.Volume(Texts.Get("settings.hud.sway"), s.hudSway, v => s.hudSway = v);
-        rows.Slider(Texts.Get("settings.hud.tilt"), 0f, GameSettings.MaxHudTilt, s.hudTilt, v => s.hudTilt = Mathf.Round(v * 20f) / 20f,
-            v => SettingsRows.Percent(Mathf.Round(v * 20f) / 20f), shownScale: 100f);
-        rows.Slider(Texts.Get("settings.hud.angle"), 0f, GameSettings.MaxHudAngle, s.hudAngle, v => s.hudAngle = Mathf.Round(v),
-            v => Mathf.RoundToInt(v) + "°");
-        rows.Toggle(Texts.Get("settings.hud.follow_lean"), s.hudFollowsLean, on => s.hudFollowsLean = on);
-        rows.Toggle(Texts.Get("settings.hud.boards"), s.hudBoards, on => s.hudBoards = on);
-        rows.Choice(Texts.Get("settings.hud.damage_numbers"), DamageNumberNames, (int)s.damageNumbers, i => s.damageNumbers = (DamageNumberMode)i);
-        rows.Choice(Texts.Get("settings.hud.weapon_slots"), WeaponSlotLookNames, (int)s.weaponSlots, i => s.weaponSlots = (WeaponSlotLook)i);
-        rows.Choice(Texts.Get("settings.hud.objective_alert"), ObjectiveAlertNames, (int)s.objectiveAlert, i => s.objectiveAlert = (ObjectiveAlertLook)i);
-        // The Garry's Mod HUD addons' rows, each module's own (Scripts/UI/Hud/Addons/<Module>/<Module>OptionsRows.cs).
-        HudAddons.PlayerHudOptionsRows.BuildRows(rows, s.addonPlayerHud);
-        HudAddons.HitFeedbackOptionsRows.BuildRows(rows, s.addonHitFeedback);
-        HudAddons.EnemyBarsOptionsRows.BuildRows(rows, s.addonEnemyBars);
-        HudAddons.GrenadesOptionsRows.BuildRows(rows, s.addonGrenades);
-        HudAddons.DeathScreenOptionsRows.BuildRows(rows, s.addonDeathScreen);
     }
 }

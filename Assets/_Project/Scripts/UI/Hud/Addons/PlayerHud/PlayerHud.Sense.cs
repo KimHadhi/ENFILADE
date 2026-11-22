@@ -18,6 +18,9 @@ namespace HudAddons
             public Color32 Colour;
             public float Thickness, Life, Narrow;
             public bool Live;
+            // On the settings' stage the hit comes from a bearing of its own (Stage).
+            public bool Staged;
+            public float Bearing;
         }
 
         private readonly Arc[] arcs = new Arc[MostArcs];
@@ -90,8 +93,8 @@ namespace HudAddons
                     arc.Live = false;
                     continue;
                 }
-                if (!o.sense || eye == null) continue;
-                float bearing = Bearing(eye, arc.From);
+                if (!o.sense || (eye == null && !arc.Staged)) continue;
+                float bearing = arc.Staged ? arc.Bearing : Bearing(eye, arc.From);
                 DrawArc(cx, cy, radius, -screenHeight * s.thickness * arc.Thickness * arc.Life,
                     s.start + s.narrow * arc.Narrow - bearing, s.end - s.narrow * arc.Narrow - bearing, s.segments,
                     Gm.WithAlpha(arc.Colour, arc.Colour.a * arc.Life));

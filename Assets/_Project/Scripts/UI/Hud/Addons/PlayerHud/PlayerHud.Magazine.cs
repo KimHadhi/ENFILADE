@@ -38,15 +38,18 @@ namespace HudAddons
         {
             var m = look.Magazine;
             unit = scale / Mathf.Max(.01f, hud.ScreenScale(look.Hud.scale));
-            gameNow = Time.time;
-            var source = player.Ultimate;
-            if (source == null || source.RequiredCharge <= 0f)
+            // Game time, so a use made while the perk cards pause the game plays out as it goes on; the stage runs over a
+            // paused game.
+            gameNow = HudStage.On ? Smooth.Now : Time.time;
+            var source = player != null ? player.Ultimate : null;
+            if (!HudStage.On && (source == null || source.RequiredCharge <= 0f))
             {
                 roundSlots = 0;
                 magazinePrimed = false;
                 return;
             }
-            ReadMagazine(source.CurrentCharge, source.RequiredCharge, source.MaximumCharge, m);
+            if (HudStage.On) ReadMagazine(HudStage.Charge * 100f, 100f, 160f, m);
+            else ReadMagazine(source.CurrentCharge, source.RequiredCharge, source.MaximumCharge, m);
             float top = y + (CoverHeight + 4f) * unit;
             var body = Rect.MinMaxRect(x, top, x + w, y + h);
             float c = gameNow - changeAt;

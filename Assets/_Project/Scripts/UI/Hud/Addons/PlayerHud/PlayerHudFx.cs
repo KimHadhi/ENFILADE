@@ -28,7 +28,6 @@ namespace HudAddons
         private static bool reported;
 
         private readonly Overlay hud;
-        private readonly int order;
         private readonly PlayerHudFxImage image;
         private readonly Material material;
         private readonly PlayerHudFxImage.Strip[] strips = new PlayerHudFxImage.Strip[MostStrips];
@@ -41,7 +40,6 @@ namespace HudAddons
         public PlayerHudFx(Overlay hud, RectTransform layer)
         {
             this.hud = hud;
-            order = hud.Canvas.sortingOrder;
             var shader = Resources.Load<Shader>(ShaderPath);
             if (shader == null || !shader.isSupported)
             {
@@ -83,7 +81,7 @@ namespace HudAddons
             else
             {
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvas.sortingOrder = order;
+                hud.ApplyOrder();
                 ReleaseTarget();
             }
             if (view != null) view.enabled = on;

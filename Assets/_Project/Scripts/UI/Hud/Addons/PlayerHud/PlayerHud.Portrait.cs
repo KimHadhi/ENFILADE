@@ -49,6 +49,8 @@ namespace HudAddons
             panelFoot = foot;
             healthRight = barX + s.width * scale * .5f + frame;
 
+            HudStage.Mark(HudPart.Portrait, left, top, pictureLeft + wide - left, tall);
+
             magazineAccent = Accent(o);
             DrawMagazine(left, top, magazine, tall);
             painter.RoundedBox(look.Hud.corner, pictureLeft, top, wide, tall, ownBox);

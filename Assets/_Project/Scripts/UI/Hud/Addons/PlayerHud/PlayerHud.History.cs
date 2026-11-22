@@ -75,6 +75,7 @@ namespace HudAddons
             float follow = Smooth.Factor(h.follow);
             Color32 colour = Rgb(o.historyColor);
             painter.AlphaScale = Opacity(o.historyColor);
+            float nearest = float.PositiveInfinity, farthest = float.NegativeInfinity, top = float.PositiveInfinity, foot = float.NegativeInfinity;
             for (int i = 0; i < records.Count; i++)
             {
                 var record = records[i];
@@ -102,9 +103,14 @@ namespace HudAddons
                 painter.DrawColor = Gm.WithAlpha(colour, 255f * alpha);
                 painter.Picture = record.Icon;
                 painter.TexturedRectRotated(rx, ry + h.iconDrop * scale, h.icon * scale, h.icon * scale, 0f);
+                nearest = Mathf.Min(nearest, rx - w * h.padLeft);
+                farthest = Mathf.Max(farthest, rx - w * h.padLeft + w * h.boxWidth);
+                top = Mathf.Min(top, ry - tall * h.boxTop);
+                foot = Mathf.Max(foot, ry - tall * h.boxTop + tall * h.boxHeight);
                 bool over = now - record.Start > h.duration + h.life * place;
                 record.Alpha = Mathf.LerpUnclamped(record.Alpha, over ? 0f : 1f, follow);
             }
+            if (records.Count > 0) HudStage.Mark(HudPart.History, nearest, top, farthest - nearest, foot - top);
             // Gone rows leave after the loop: the addon took them out mid-loop, so the next row skipped a frame (a blink).
             for (int i = records.Count - 1; i >= 0; i--)
             {

@@ -30,9 +30,6 @@ namespace HudAddons
         private float totalAlpha, totalPop = float.NaN, total, totalShown;
         private int totalWritten = int.MinValue;
         private string totalText = "";
-        // Debug Mode's sample texts (English, as the popup is: Texts.InEnglish), made when first drawn.
-        private string debugLabel, debugTotal, debugPlus;
-        private int debugFor = int.MinValue;
 
         /// <summary>AddScore(name, exp): a row at the bottom, and its points into the popup's sum.</summary>
         public void Add(string name, int points, HitFeedbackScoreLook look)
@@ -46,9 +43,6 @@ namespace HudAddons
             rows.Add(row);
             total += points;
         }
-
-        /// <summary>Forget the words made from Texts.csv (after a table reload).</summary>
-        public void ForgetTexts() => debugLabel = null;
 
         /// <summary>One frame of BlackOps6Hitmark, in its order.</summary>
         public void Draw(Painter painter, Overlay overlay, HitFeedbackScoreLook look, HitFeedbackOptions o)
@@ -110,8 +104,6 @@ namespace HudAddons
                         look.outline, outlineColour);
             }
             if (finished > 0) RemoveFinished(now);
-
-            if (o.debug) DrawSample(painter, look, x, y, screen, textScale, sepW, sepH, lift, nameFont);
         }
 
         // The rows done fading leave together, keeping the others' order.
@@ -125,26 +117,6 @@ namespace HudAddons
                 rows[kept++] = row;
             }
             rows.RemoveRange(kept, rows.Count - kept);
-        }
-
-        // Debug Mode: '100' at the total's place, 'Debug Mode' and '+100' on the first row's line, all fully shown.
-        private void DrawSample(Painter painter, HitFeedbackScoreLook look, float x, float y, float screen, float textScale,
-            float sepW, float sepH, float lift, HudFont nameFont)
-        {
-            if (debugLabel == null) debugLabel = Texts.InEnglish("hitfeedback.debug");
-            if (debugFor != look.debugPoints)
-            {
-                debugFor = look.debugPoints;
-                debugTotal = debugFor.ToString(CultureInfo.InvariantCulture);
-                debugPlus = "+" + debugTotal;
-            }
-            Color32 outline = Gm.WithAlpha(look.outlineColour, look.outlineAlpha), white = look.rowColour;
-            painter.OutlinedText(debugTotal, HudFont.Get(look.font, look.totalSize * textScale, look.totalWeight), x + look.totalX * screen,
-                y - sepH, look.totalColour, TextAlign.Right, TextAlign.Bottom, look.outline, outline);
-            painter.OutlinedText(debugLabel, nameFont, x + sepW + look.nameSwing * Mathf.Sin(look.nameTurn * Mathf.PI) * screen,
-                y - lift, white, TextAlign.Left, TextAlign.Bottom, look.outline, outline);
-            painter.OutlinedText(debugPlus, HudFont.Get(look.font, look.plusSize * textScale, look.plusWeight), x + sepW + look.plusX * screen,
-                y - lift, white, TextAlign.Right, TextAlign.Bottom, look.outline, outline);
         }
 
         // string.format("%.0f", total_fade), made again only when the number changes.

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +15,36 @@ namespace HudAddons
     public sealed class Overlay : MonoBehaviour
     {
         private const float ReferenceWidth = 1920f, ReferenceHeight = 1080f;
+
+        private static readonly List<Overlay> all = new List<Overlay>();
+        private static int raised;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            all.Clear();
+            raised = 0;
+        }
+
+        /// <summary>Draws every overlay this much higher among the canvases (the HUD settings' stage on the title screen; 0
+        /// puts them back).</summary>
+        internal static void Raise(int by)
+        {
+            raised = by;
+            foreach (var overlay in all) overlay.ApplyOrder();
+        }
+
+        /// <summary>Its place among the screen canvases.</summary>
+        public int Order { get; private set; }
+
+        internal void ApplyOrder()
+        {
+            if (Canvas != null) Canvas.sortingOrder = Order + raised;
+        }
+
+        private void Awake() => all.Add(this);
+
+        private void OnDestroy() => all.Remove(this);
 
         /// <summary>The screen root: stretched over the canvas, pivot at its top-left.</summary>
         public RectTransform Root { get; private set; }
@@ -50,6 +81,8 @@ namespace HudAddons
             FeelUI.SetupOverlay(host, sortOrder);
             var overlay = host.AddComponent<Overlay>();
             overlay.Canvas = host.GetComponent<Canvas>();
+            overlay.Order = sortOrder;
+            overlay.ApplyOrder();
             // TextMeshPro's text and its outline stamps carry a second UV set; ask for it up front rather than on the
             // first text's mesh.
             overlay.Canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1

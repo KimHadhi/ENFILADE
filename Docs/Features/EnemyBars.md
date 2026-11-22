@@ -12,7 +12,7 @@
 - 죽거나 사라진 적의 바는 체력 0으로 그 자리에 0.4초 남는다. 처치한 사람은 0.4초 동안 조준이나 타격으로 바를 옮기지 않는다(죽은 적의 바가 보이게).
 - 보스 아이콘: 원본은 클래스 이름에 `boss`가 든 NPC와 `froze_bo6hbar_add_boss` 목록. 게임은 엘리트·네임드 등급(Enemies.csv `rank`, `/spawn n elite`)과 보스 목록의 좀비 종류. 목록은 콘솔 `/hbar_add_boss 종류`, `/hbar_remove_boss 종류`(원본 명령 두 개, 원본의 `data/bo6hbar/bosses.json` 대신 설정 파일에 저장).
 
-## 설정 (설정 창 > HUD > 적 체력바, `GameSettings.addonEnemyBars`)
+## 설정 (HUD 설정 > 전투 > 적 체력바, `GameSettings.addonEnemyBars`)
 
 | 원본 convar | 기본 | 필드 | 줄 |
 | --- | --- | --- | --- |
@@ -61,7 +61,7 @@
 
 ## 어디에 있나
 
-- 코드: [Scripts/UI/Hud/Addons/EnemyBars](../../Assets/_Project/Scripts/UI/Hud/Addons/EnemyBars) — `EnemyBarsModule`(Install, 콘솔 명령), `EnemyBarsHud`(모든 바의 단 하나의 주인: 타격, 조준, 그리기), `EnemyBar`(적 하나의 상태, 풀), `EnemyBarsLook`(표 줄), `EnemyBarsBosses`(보스 목록), `EnemyBarsOptions`/`EnemyBarsOptionsRows`(설정).
+- 코드: [Scripts/UI/Hud/Addons/EnemyBars](../../Assets/_Project/Scripts/UI/Hud/Addons/EnemyBars) — `EnemyBarsModule`(Install, 콘솔 명령), `EnemyBarsHud`(모든 바의 단 하나의 주인: 타격, 조준, 그리기), `EnemyBar`(적 하나의 상태, 풀), `EnemyBarsLook`(표 줄), `EnemyBarsBosses`(보스 목록), `EnemyBarsOptions`(설정).
 - 데이터: `EnemyHealth.Living`(적), `CombatDamageEvents.Damaged`(모든 PC에서 모든 타격: 원본 서버의 `net.Broadcast`), `Camera.main`의 광선. 읽기만 한다.
 - 그림: [Art/Resources/UI/Addons/EnemyBars](../../Assets/_Project/Art/Resources/UI/Addons/EnemyBars) (`icon_normal.png` 47x45, `icon_boss.png` 59x81, `bg_alt_1.png` 1420x90, 애드온 파일 그대로).
 - 글꼴: `Hitmarker Text Medium`(hitmarker-text-medium.ttf), `Hitmarker VF Condensed Light`(hitmarker-vf-condensed-light.ttf), [AddonFonts.csv](../../Assets/_Project/Data/Resources/Tables/Hud/AddonFonts.csv).
