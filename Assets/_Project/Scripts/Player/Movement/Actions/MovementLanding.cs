@@ -14,7 +14,7 @@ using State = PlayerMovement.MovementState;
 ///   control: onto hands and knees, flat on the face from a huge fall, or onto the back when moving backwards.
 /// - Ctrl within rollInputWindow before a hard or heavy touchdown rolls instead: no damage, no slowdown, speed kept.
 ///   Slower than rollLandSpeed, or pulling back, it lands on the spot for rollLandTime instead, as Beatrun's safety roll
-///   does, and still takes rollInPlaceDamageShare of the damage, held for rollLandHurtTime when it hurt. A fall that
+///   does, and still takes rollInPlaceDamageShare of the damage. A fall that
 ///   turned into a big fall can't be rolled: in
 ///   Beatrun the panic starts at the speed where no roll saves you.
 /// - KnockBack throws the player; they land heavily on their back facing the blow, hurt or not.
@@ -29,7 +29,7 @@ public sealed class MovementLanding
     private readonly PlayerMovement ctx;
     private float rollBuffer;
     private float impactSpeed;
-    private bool trackingFall, panicked, hurtLanding;
+    private bool trackingFall, panicked;
     private float fallDistance, fallSpeedSquared, pendingDownwardSpeed;
     private float recoverLeft, noSprintLeft, knockYaw;
     public float LastImpactSpeed { get; private set; }
@@ -76,9 +76,8 @@ public sealed class MovementLanding
     // The moving roll's travel as its clip goes.
     private readonly ClipTravel roll = new ClipTravel();
     /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, its clip at its own pace; a
-    /// landing on the spot holds its time, longer when it hurt.</summary>
-    public float RollTime => !LandsInPlace ? roll.Up - RollFrom
-        : hurtLanding ? Mathf.Max(ctx.AbilitySettings.rollLandTime, ctx.AbilitySettings.rollLandHurtTime) : ctx.AbilitySettings.rollLandTime;
+    /// landing on the spot its clip's length.</summary>
+    public float RollTime => LandsInPlace ? ctx.AbilitySettings.rollLandTime : roll.Up - RollFrom;
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
     /// <summary>The player has no control: thrown by a blow, or down after a heavy landing.</summary>
@@ -236,7 +235,6 @@ public sealed class MovementLanding
         // Only a landing on the feet rolls or goes down; slides, dives and prone keep their own landings.
         bool onFeet = ctx.CurrentState == State.Standing || ctx.CurrentState == State.Crouching;
         float damage = (LastImpactSpeed - settings.safeFallSpeed) * settings.fallDamagePerSpeed;
-        hurtLanding = hurts;
         if (onFeet && rollPressed && !knocked && !bigFall && TryRoll())
         {
             if (hurts && LandsInPlace) TakeFallDamage(damage * settings.rollInPlaceDamageShare);
@@ -368,7 +366,7 @@ public sealed class MovementLanding
     {
         ClearFall();
         rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
-        IsKnockedBack = hurtLanding = RollRuns = DiveRoll = false;
+        IsKnockedBack = RollRuns = DiveRoll = false;
         LastTier = Tier.Light;
     }
 

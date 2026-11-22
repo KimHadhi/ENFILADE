@@ -102,6 +102,9 @@ public sealed class MovementGait
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go: with a gun out, its own run's.</summary>
     internal float SprintAhead => At(Sprint, 0f);
 
+    /// <summary>The fastest any legs go ahead (m/s): the empty hands' sprint.</summary>
+    internal float Fastest => rows[Sprint, 0];
+
     /// <summary>The speed for this input standing (m/s): the gait now, the way the input points; the aim's as far as the
     /// sights are up.</summary>
     internal float SpeedFor(Vector2 input)

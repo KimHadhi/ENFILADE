@@ -39,13 +39,21 @@ public sealed class MovementActions
     public bool SlideBrakeArmed;
     public Vector3 DiveBodyForward = Vector3.forward;
     public MovementDive Dive { get; }
+    /// <summary>The feet-first slide's pace, its clips' own.</summary>
+    internal SlidePace SlidePace { get; }
     /// <summary>The legs' gait and how fast it goes each way (walk mode, Shift).</summary>
     public MovementGait Gait { get; }
     internal float sprintProgress, slideCooldownTimer, coyoteTimer, jumpBufferTimer, riseTimer;
     /// <summary>Getting up off the back: every key waits until the body is up (Ability.supineRiseTime).</summary>
     public bool IsRising => riseTimer > 0f;
 
-    internal MovementActions(PlayerMovement context) { ctx = context; Dive = new MovementDive(ctx); Gait = new MovementGait(ctx); }
+    internal MovementActions(PlayerMovement context)
+    {
+        ctx = context;
+        Dive = new MovementDive(ctx);
+        Gait = new MovementGait(ctx);
+        SlidePace = new SlidePace(ctx);
+    }
 
     internal void TickTimers(float dt)
     {
@@ -67,6 +75,7 @@ public sealed class MovementActions
     public void StartSlide(float currentSpeed, bool applyBoost = true)
     {
         ctx.ChangeState(MovementState.Sliding);
+        SlidePace.Begin();
         sprintProgress = 0f;
         Vector2 input = ctx.CurrentInput;
         Vector3 inputDir = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
@@ -75,7 +84,7 @@ public sealed class MovementActions
         // The body drops into the slide facing the way the player looks: along the slide, or back along it when the run
         // carried them backwards. That holds for the slide; looking round in it doesn't turn it (SlideFacesBack).
         FaceSlideFrom(ctx.transform.eulerAngles.y);
-        CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, ctx.SprintSpeed) + ctx.slideKickBoost : currentSpeed;
+        CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, SlidePace.Speed) : currentSpeed;
         SlideBrakeArmed = !ctx.Input.CrouchHeld;
         slideCooldownTimer = ctx.slideCooldown;
     }

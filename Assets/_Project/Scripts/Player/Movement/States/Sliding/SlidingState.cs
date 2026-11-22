@@ -7,14 +7,15 @@ public sealed class SlidingState : MovementBaseState
     public SlidingState(PlayerMovement context, MovementBaseState parent) : base(context, parent) { }
 
     public override float SlideFriction => ctx.SlideFriction;
+    public override float SlideFloor => ctx.Actions.SlidePace.Speed;
 
     public override void ProcessInput(Vector2 input)
     {
         bool sprintHeld = ctx.InputAvailable && ctx.SprintAction != null && ctx.SprintAction.IsPressed();
         bool wantsSprintForward = sprintHeld && input.y > 0.1f;
 
-        // 1. 달리기 캔슬: 최소 유지 시간 충족 + 캔슬 허용 속도(5m/s) 이하일 때 즉시 기상
-        if (ctx.CurrentStateDuration >= ctx.SlideCancelMinDuration &&
+        // 1. 달리기 캔슬: 시작 동작이 끝나 몸이 다 내려간 뒤(SlidePace), 캔슬 허용 속도 이하일 때 바로 일어나 이어 달린다
+        if (ctx.Actions.SlidePace.IsDown && ctx.CurrentStateDuration >= ctx.SlideCancelMinDuration &&
             ctx.CurrentSlideSpeed <= ctx.SlideCancelMaxSpeed &&
             wantsSprintForward &&
             !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
@@ -25,8 +26,8 @@ public sealed class SlidingState : MovementBaseState
             return;
         }
 
-        // 2. 속도가 다 빠지면 정지
-        if (ctx.CurrentSlideSpeed <= ctx.SlideEndSpeed)
+        // 2. 속도가 다 빠졌거나, 키를 누른 채 클립이 일어나는 때가 되면 끝
+        if (ctx.CurrentSlideSpeed <= ctx.SlideEndSpeed || (input.sqrMagnitude > .01f && ctx.Actions.SlidePace.Ends(ctx.CurrentSlideSpeed)))
         {
             StopSlide();
         }
@@ -74,6 +75,7 @@ public sealed class SlidingState : MovementBaseState
             return;
         }
 
+        ctx.Actions.SlidePace.Throw();
         Vector3 reflectDir = Vector3.Reflect(ctx.SlideDirection, wallNormal).normalized;
         ctx.SlideDirection = Vector3.Lerp(reflectDir, wallNormal, 0.6f).normalized;
 

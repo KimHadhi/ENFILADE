@@ -125,7 +125,9 @@ public sealed class StepDodgeState : MovementBaseState
         if (!runsOn && (!Move.Over || stopped)) ctx.Abilities.Dodge.CancelWindow();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(entrySpeed, ctx.WalkSpeed));
         // At its own speed at once, the way the keys point now: the body never stopped for it.
-        if (runsOn) ctx.HorizontalVelocity = ctx.Abilities.InputDirection(ctx.transform.forward) * ctx.Actions.Gait.SpeedFor(ctx.CurrentInput);
+        if (!runsOn) return;
+        Vector3 way = ctx.Abilities.InputDirection(ctx.transform.forward);
+        ctx.HorizontalVelocity = way * Move.PaceInto(way);
     }
 
     public override void OnColliderHit(ControllerColliderHit hit)

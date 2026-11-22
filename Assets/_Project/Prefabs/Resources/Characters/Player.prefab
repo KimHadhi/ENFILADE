@@ -243,7 +243,6 @@ MonoBehaviour:
   transitionSharpness: 14
   slideTransitionSharpness: 8.5
   slideMinStartSpeed: 5.3
-  slideKickBoost: 1
   slideFriction: 4.2
   diveSlideFriction: 9
   supineSlideFriction: 9

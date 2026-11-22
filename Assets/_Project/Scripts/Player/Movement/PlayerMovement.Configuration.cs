@@ -34,20 +34,19 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0f)] internal float slideTransitionSharpness = 8.5f;
 
     [Header("Sliding Physics")]
-    [SerializeField, Min(1f)] internal float slideMinStartSpeed = 5.3f;
-    [SerializeField, Min(0f)] internal float slideKickBoost = 1.0f;
+    [SerializeField, Min(1f)] internal float slideMinStartSpeed = 4f;
     [SerializeField, Min(0f)] internal float slideFriction = 4.2f;
     [SerializeField, Min(0f)] internal float diveSlideFriction = 9f;
     [SerializeField, Min(0f)] internal float supineSlideFriction = 9f;
     [SerializeField, Range(0.05f, 0.8f)] internal float airSlideFrictionMultiplier = 0.25f;
     [SerializeField, Min(0f)] internal float slopeSlideGravity = 28f;
     [SerializeField, Min(0f)] internal float slideEndSpeed = 1.5f;
-    [SerializeField, Min(1f)] internal float slideCancelMaxSpeed = 5.0f;
+    [SerializeField, Min(1f)] internal float slideCancelMaxSpeed = 5.5f;
     [SerializeField, Min(1f)] internal float diveSlideCancelMaxSpeed = 2.0f;
     [Tooltip("Sliding on the back, Shift with a move key or Space gets up once the slide is this slow (m/s) and slideCancelMinDuration old.")]
     [SerializeField, Min(1f)] internal float supineSlideCancelMaxSpeed = 5.0f;
     [SerializeField, Min(0f)] internal float slideBrakeDeceleration = 18f;
-    [SerializeField, Min(0f)] internal float landingSlideMinSpeed = 6.5f;
+    [SerializeField, Min(0f)] internal float landingSlideMinSpeed = 4f;
     [SerializeField, Min(0.1f)] internal float slideCancelMinDuration = 0.5f;
     [SerializeField, Min(0f)] internal float slideCooldown = 0.4f;
     [SerializeField, Min(0f)] internal float slideSteerSharpness = 4.0f;

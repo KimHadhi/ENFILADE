@@ -67,8 +67,8 @@ public sealed partial class PlayerBody
         return player.Abilities.Landing.RollRuns ? NearestWay(rollRunWays, heading, fallback) : NearestWay(rollWays, heading, fallback);
     }
 
-    // A landing at a run runs on out of it; null slower, or with no such clip. Its steps are a run's (Land_ToRun1 goes
-    // 5.6 m/s): taken at a jog's or a walk's speed, they ran ahead of the body.
+    // A landing at a run runs on out of it, the body at its pace (RunOutPace); null slower, or with no such clip: its steps
+    // are a run's.
     private string LandingOnTheMove(bool hard)
     {
         float speed = HorizontalSpeed();

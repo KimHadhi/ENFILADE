@@ -33,6 +33,11 @@ public sealed class SlidingGroupState : MovementBaseState
         }
         ctx.SlideDirection = direction;
 
+        bool crouchHeld = ctx.Input.CrouchHeld;
+        if (!crouchHeld) ctx.SlideBrakeArmed = true;
+        bool wantsBrake = ctx.InputAvailable && ((ctx.SlideBrakeArmed && crouchHeld) || IsBrakeInput(input));
+        ctx.Actions.SlidePace.Tick(dt);
+
         // 계단 접촉 법선으로 수평 진행 방향을 꺾지 않습니다.
         float slopeDot = ctx.IsGrounded ? ctx.GetSlideSlopeDot(direction) : 0f;
         float activeFriction = ctx.IsGrounded ? ctx.StateMachine.Current.SlideFriction : ctx.StateMachine.Current.SlideFriction * ctx.AirSlideFrictionMultiplier;
@@ -44,12 +49,13 @@ public sealed class SlidingGroupState : MovementBaseState
         else
         {
             float uphillResistance = ctx.IsGrounded && slopeDot < -0.05f ? Mathf.Abs(slopeDot) * 15f : 0f;
-            ctx.CurrentSlideSpeed -= (activeFriction + uphillResistance) * dt;
+            // Friction takes it down to the clip's own pace and no further while the keys go on (SlidePace); one slower than
+            // the clip from the start keeps what it has.
+            float floor = input.sqrMagnitude > .01f && !wantsBrake
+                ? Mathf.Min(ctx.CurrentSlideSpeed, ctx.StateMachine.Current.SlideFloor) : 0f;
+            ctx.CurrentSlideSpeed = Mathf.Max(ctx.CurrentSlideSpeed - activeFriction * dt, floor) - uphillResistance * dt;
         }
 
-        bool crouchHeld = ctx.Input.CrouchHeld;
-        if (!crouchHeld) ctx.SlideBrakeArmed = true;
-        bool wantsBrake = ctx.InputAvailable && ((ctx.SlideBrakeArmed && crouchHeld) || IsBrakeInput(input));
         if (ctx.IsGrounded && wantsBrake)
         {
             float downhillAcceleration = Mathf.Max(0f, slopeDot) * ctx.SlopeSlideGravity;

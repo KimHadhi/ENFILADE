@@ -28,7 +28,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // 0.9.333 walking, running and sideways jumps had clips of their own.
     [SerializeField] private string jump = "jumpstill", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
-    [SerializeField] private string slideStart = "slidestart", slide = "slideloop", slideEnd = "slideend";
+    [SerializeField] private string slideEnd = "slideend";
+    private string slideStart => player.AbilitySettings.slideStart;
+    private string slide => player.AbilitySettings.slide;
     [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
         + "No pack has a clip for it; the slide's getting up (slideEnd) stood the body up first.")]
     private float slideCrouchTime = .3f;
@@ -80,6 +82,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private sealed class Channel
     {
         public AnimationClipPlayable Playable;
+        /// <summary>The clip's name in the profile.</summary>
+        public string Clip;
         public int Input;
         public float Length, AuthoredSpeed, Weight, Target;
         public bool Synced;
@@ -560,7 +564,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         graph.Connect(playable, 0, mixer, input);
         var channel = new Channel
         {
-            Playable = playable, Input = input, Length = Mathf.Max(.01f, clip.length),
+            Playable = playable, Clip = clipName, Input = input, Length = Mathf.Max(.01f, clip.length),
             AuthoredSpeed = authoredSpeed, Synced = authoredSpeed > 0f
         };
         // Locomotion cycles share one phase so blending between them never puts the feet out of step.
@@ -756,10 +760,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 || state == MovementState.Proning || state == MovementState.Supine);
             bool movingOff = transitionLeft < transition.Length - .25f && HorizontalSpeed() > walkClipSpeed;
             bool upright = state == MovementState.Standing || state == MovementState.Crouching;
-            // A landing that runs on out of itself (Land_ToRun) holds on the move, and gives way once the body slows or
-            // leaves its feet.
+            // A landing that runs on out of itself (Land_ToRun) holds on the move, and gives way once the body is no longer
+            // going as it does (RunOutPace) or leaves its feet. Up out of a slide, the getting up plays whatever the body does.
             runOutGrace = Mathf.Max(0f, runOutGrace - dt);
-            bool hold = transitionRuns ? onFeet && upright && (HorizontalSpeed() > walkClipSpeed || runOutGrace > 0f)
+            bool getsUp = transition == Find(slideEnd) && transition.Playable.GetTime() < slideEndUp;
+            bool hold = transitionRuns ? onFeet && upright && (getsUp || runOutGrace > 0f
+                    || (HorizontalSpeed() > Mathf.Min(walkClipSpeed, RunOutPace * RunOutLeast)
+                        && Mathf.Abs(HeadingOf(player.ActualVelocity)) < RunOutAhead))
                 : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
             // A transition is the stance it began in: a getting up gives way to a crouch, a crouched landing to standing up,
             // and either to lying down (gone down in the middle of a landing falls at once: PlayerBody.Downed).
@@ -870,14 +877,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             string exit = SlideEndFor(from, to);
             if (exit != null) PlayTransition(exit);
-            // The slide's end gets up and runs on (SlideToRun_Exit): cancelled into a run it runs out with the body; stopped
-            // on the spot it gets up only (slideEndUp), and its running steps never show (GiveUpRunOut). It played whole, so
-            // a slide that stopped ran in place before standing (the user, 2026-11-21).
+            // The slide's end gets up and runs on (SlideToRun_Exit), the body at its pace; stopped on the spot it gets up only
+            // (slideEndUp), and its running steps never show (GiveUpRunOut). It played whole, so a slide that stopped ran in
+            // place before standing (the user, 2026-11-21).
             if (exit != null && exit == slideEnd)
             {
                 SlowBlend(slideEndTime);
-                if (HorizontalSpeed() > walkClipSpeed) transitionRuns = true;
-                else transitionLeft = Mathf.Min(transitionLeft, slideEndUp + blendTime);
+                transitionRuns = true;
             }
         }
         if ((from == MovementState.Vault || from == MovementState.Mantle) && (to == MovementState.Standing || to == MovementState.Crouching))
@@ -1028,6 +1034,15 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     // The transition playing is a landing that runs on (PlayerBody.Ways): it holds on the move.
     private bool transitionRuns;
+    // It gives way below this share of its clip's pace, and going this far round from ahead (degrees).
+    private const float RunOutLeast = .5f, RunOutAhead = 75f;
+
+    /// <summary>How fast the body goes over the ground while a clip that ends running plays on (m/s; RunsOut): its clip's own
+    /// pace at its moment (ClipTravel), no faster than a sprint; 0 for none. The movement goes at it (LocomotionState), so its
+    /// steps are the body's. Until 0.9.351 a hard landing on the run slowed the body to a tenth under steps of 4-6 m/s, which
+    /// then gave way at once (the user, 2026-11-22: "이런 속도를 애니메이션에 맞춰 줄 수 없나?").</summary>
+    internal float RunOutPace => !transitionRuns || transition == null || !transition.Playable.IsValid() ? 0f
+        : Mathf.Min(ClipTravel.PaceAt(transition.Clip, (float)transition.Playable.GetTime()), player.Actions.Gait.Fastest);
 
     // A one-shot clip carries on from where it is as a landing-like transition: the barge recovers on the spot when a
     // dash push stops on someone, and gives way at once to a run that carries on.

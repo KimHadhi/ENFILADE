@@ -10,9 +10,10 @@ using UnityEngine;
 
 /// <summary>
 /// Bakes from BIPER Female Runner's clips, off each one's own root curve, the crouch's way down and up (kind posture:
-/// IdleToCrouch, CrouchToIdle; PlayerBody.Posture follows the posture's ease on them) and the travel of the moves the body
-/// goes through at its clip's own pace (kind travel: the landing rolls Roll_* and RollToRun_*, the slide's jump DiveRoll_F,
-/// the dodges QuickShift_*: how far it goes and the share of that gone as the clip goes, ClipTravel).
+/// IdleToCrouch, CrouchToIdle; PlayerBody.Posture) and the travel of the moves the body goes through at its clip's own pace
+/// (kind travel: the landing rolls Roll_* and RollToRun_*, the slide's jump DiveRoll_F, the dodges QuickShift_*, the slide
+/// SlideToRun_* and the clips that end running, Land_To* and ShiftToSprint_*: how far it goes and the share of that gone as
+/// the clip goes, ClipTravel).
 /// Written to Tables/Player/GaitMoves.csv by ClipBench (request line bake=gaitmoves); the game only reads it. These are
 /// measurements: bake again after a clip changes, never edit by hand. (It baked the start and stop clips until 0.9.263,
 /// the turns on the spot's curves until 0.9.279 and the jumps' flights until 0.9.333: the jump is one Beatrun clip on its
@@ -25,7 +26,11 @@ internal static class GaitMoveBake
     internal const int Samples = 48;
 
     // The moves whose travel the body goes at: every clip that begins with one of these (one that is a whole name, itself).
-    private static readonly string[] TravelClips = { "Roll_", "RollToRun_", "QuickShift_", "DiveRoll_F" };
+    private static readonly string[] TravelClips =
+    {
+        "Roll_", "RollToRun_", "QuickShift_", "DiveRoll_F", "SlideToRun_Enter", "SlideToRun_10m", "SlideToRun_Exit", "ShiftToSprint_",
+        "Land_ToRun3", "Land_ToStumble", "Land_ToSlam"
+    };
 
     // metres: what one unit of a clip's root curve is on the body the numbers are for (its human scale at the game's size).
     internal static void Bake(IReadOnlyDictionary<string, AnimationClip> clips, float metres, StringBuilder report)
@@ -35,10 +40,10 @@ internal static class GaitMoveBake
         rows.Append("\"#설명 (ClipBench가 BIPER Female Runner 클립의 루트 곡선에서 구운 값: 손으로 고치지 않고 클립이 바뀌면 다시 굽는다"
             + "(Temp/enfilade-clipbench.request에 bake=gaitmoves). length 클립 길이(초). profile은 처음부터 끝까지 고르게 " + Samples + "곳(';'). "
             + "kind posture(IdleToCrouch·CrouchToIdle): profile 몸 중심이 "
-            + "처음 높이에서 끝 높이까지 간 정도(0~1), leave 움직이기 시작하는 때(2%), land 다 간 때(98%). 서서 앉고 일어설 때 클립이 자세가 바뀌는 만큼을 "
-            + "따른다(PlayerBody.Posture). kind travel(Roll_*·RollToRun_*·QuickShift_*·DiveRoll_F): profile 루트가 땅 위로 간 길의 몫(끝 = 1), "
+            + "처음 높이에서 끝 높이까지 간 정도(0~1), leave 움직이기 시작하는 때(2%), land 다 간 때(98%). 서서 앉고 일어설 때 쓴다"
+            + "(PlayerBody.Posture). kind travel(Roll_*·RollToRun_*·QuickShift_*·DiveRoll_F·SlideToRun_*·ShiftToSprint_*·Land_To*): profile 루트가 땅 위로 간 길의 몫(끝 = 1), "
             + "top 몸 중심이 가장 낮은 때, land 몸이 다시 선 때(낮아진 만큼의 10% 안으로 돌아옴), metres 기준 몸(이치고)에서 간 길이(m). "
-            + "구르기·다이브 롤은 이 길이를, 회피는 Ability.dodgeDistance를 이 빠르기로 간다(ClipTravel))\",,,,,,,,\n");
+            + "구르기·다이브 롤·회피는 이 길이를 이 빠르기로 가고(ClipTravel), 슬라이딩(SlidePace)과 달려 나가며 끝나는 클립(PlayerBody.RunOutPace)은 이 빠르기로 간다)\",,,,,,,,\n");
         int postures = 0, travels = 0;
         foreach (var clip in clips.Values.OrderBy(c => c.name, StringComparer.Ordinal))
         {

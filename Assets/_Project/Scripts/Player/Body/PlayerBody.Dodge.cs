@@ -6,7 +6,7 @@ using UnityEngine.Playables;
 /// clock. When the legs are the player's again the rest of it, getting up, plays out on the spot as a landing does, giving
 /// way slowly (dodgeStandTime) once the body moves off; one from a crouch goes into the crouch as slowly.
 /// Out of a run that goes on (StepDodgeState.RunsOn) it goes straight on into the run: aside into a sprint ahead with the
-/// clip the pack has for it (DodgeMove.RunOut), else into the cycles, and either way the run picks up on the foot that is
+/// clip the pack has for it (DodgeMove.RunOutToward), else into the cycles, and either way the run picks up on the foot that is
 /// down (PickUpStep). Until 0.9.341 the cycles came in wherever in their stride they had been left, so the legs changed
 /// over in the crossfade (the user, 2026-11-22: "달리면서 회피 이후 달리는 모션이 자연스럽게 이어지지 않는 거 같아").
 /// With a gun out too, the whole body: the hands are put on the gun where FPSBody keeps it in view, as in a slide. Until
@@ -25,8 +25,6 @@ public sealed partial class PlayerBody
     // The run-out takes over this quickly (s): it starts in the pose the dodge is in. Off the dodge's own speed the body is up
     // to the run's in a moment; the run-out waits this long for it (s; a copy's velocity is smoothed too).
     private const float RunOutTakes = .1f, RunOutGrace = .2f;
-    // A run-out goes ahead: it plays for a run this near ahead (degrees).
-    private const float RunOutWithin = 30f;
     // A copy that leaves the dodge this much before its end (s) runs on, whatever its smoothed velocity says yet.
     private const float LeftEarly = .08f;
     // Half a stride at a run, the feet this far apart along it as one lands (share of the leg), and a foot this much higher
@@ -68,15 +66,13 @@ public sealed partial class PlayerBody
         else if (!StartRunOut()) PickUpStep();
     }
 
-    // The dodge aside comes up into the sprint ahead; false where there is no clip for it, the run goes another way, or a gun
-    // is out: the gun's own run has the body then (GunRuns), and this clip's trunk would carry the gun down with it.
+    // The dodge aside comes up into the sprint ahead; false where there is no clip for it.
     private bool StartRunOut()
     {
-        dodgeRunOut = player.Abilities.DodgeMove.RunOut;
+        dodgeRunOut = player.Abilities.DodgeMove.RunOutToward(player.HorizontalVelocity);
         var channel = Find(dodgeRunOut);
         float from = player.AbilitySettings.dodgeRunFrom;
-        if (channel == null || channel.Synced || channel.Length - from <= blendTime || GunInHand() != null
-            || Mathf.Abs(HeadingOf(player.HorizontalVelocity)) > RunOutWithin) return false;
+        if (channel == null || channel.Synced || channel.Length - from <= blendTime) return false;
         Restart(channel);
         channel.Playable.SetTime(from);
         transition = channel;

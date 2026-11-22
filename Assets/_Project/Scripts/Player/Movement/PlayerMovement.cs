@@ -314,6 +314,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal bool GunHasLegs => Body != null && Body.GunHasLegs;
     /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
     internal float AimShare => Body != null ? Body.AimShare : 0f;
+    /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>
+    internal float RunOutPace => Body != null ? Body.RunOutPace : 0f;
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
     public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     /// <summary>Fall speed from actual descent, excluding time held against an edge (m/s).</summary>

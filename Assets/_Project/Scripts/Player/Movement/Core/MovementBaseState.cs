@@ -29,5 +29,7 @@ public abstract class MovementBaseState : IMovementState
     public virtual MovementPosture Posture => Parent != null ? Parent.Posture : MovementPosture.Standing;
     public virtual float LocomotionSpeed => Parent != null ? Parent.LocomotionSpeed : 0f;
     public virtual float SlideFriction => Parent != null ? Parent.SlideFriction : 0f;
+    /// <summary>Friction takes a slide no slower than this while the keys go on (m/s).</summary>
+    public virtual float SlideFloor => Parent != null ? Parent.SlideFloor : 0f;
     public virtual void HandleWallCollision(Vector3 wallNormal, float impactDot) { }
 }

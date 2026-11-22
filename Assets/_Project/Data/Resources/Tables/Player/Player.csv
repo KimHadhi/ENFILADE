@@ -251,14 +251,13 @@ Move.jumpBufferTime,0.15,착지 직전에 누른 점프를 기억하는 시간(�
 # 이동: 모멘텀 (달릴수록 붙는 속도 → MovementMomentum. 디버그 HUD의 run 값),,
 # 이동: 슬라이딩,,
 Move.slideMinStartSpeed,4,"달리며 Ctrl로 슬라이드를 시작할 수 있는 최소 속도(m/s). 조깅(가장 빠른 쪽 3.36)보다 빠르고 전력질주(가장 느린 쪽 4.46, 총을 들면 4.55)보다 느리게: 전력질주에서만. 0.9.350 전에는 4.4"
-Move.slideKickBoost,1,슬라이드 시작 때 더하는 속도(m/s)
-Move.slideFriction,4.2,슬라이드 감속(m/s²)
+Move.slideFriction,4.2,"슬라이드 감속(m/s²). 키를 누르고 있으면 클립의 빠르기(Ability.slideStart·slide, SlidePace: 시작 6.5에서 가운데 약 4)까지만 느려지고, 키를 놓으면 멈출 때까지 느려진다. 0.9.351"
 Move.diveSlideFriction,9,머리부터 미끄러지기 감속(m/s²)
 Move.supineSlideFriction,9,누워 미끄러지기 감속(m/s²)
 Move.airSlideFrictionMultiplier,0.25,슬라이드 중 공중에 뜬 동안의 감속 배율
 Move.slopeSlideGravity,28,내리막에서 슬라이드가 빨라지는 정도(m/s²)
-Move.slideEndSpeed,1.5,이 속도 아래로 느려지면 슬라이드가 끝난다(m/s)
-Move.slideCancelMaxSpeed,5,슬라이드를 직접 멈출 수 있는 최대 속도(m/s)
+Move.slideEndSpeed,1.5,이 속도 아래로 느려지면 슬라이드가 끝난다(m/s). 키를 누르고 있으면 그 전에 클립의 몸이 일어나는 때(약 1.8초) 끝나고 달려 나간다(SlidePace)
+Move.slideCancelMaxSpeed,5.5,"Shift+W로 슬라이드를 끝내고 달려 나갈 수 있는 최대 속도(m/s). 시작 동작(Ability.slideStart 0.7초)이 끝난 뒤부터이고, 그때 클립은 약 5m/s다. 0.9.351 전에는 5"
 Move.diveSlideCancelMaxSpeed,2,머리부터 미끄러지기를 직접 멈출 수 있는 최대 속도(m/s)
 Move.supineSlideCancelMaxSpeed,5,누워 미끄러지는 중 Shift+이동 키나 Space로 바로 일어날 수 있는 최대 속도(m/s). 미끄럼이 Move.slideCancelMinDuration만큼 이어진 뒤부터다. Ctrl을 누르고 있으면 앉으며 일어난다
 Move.slideCancelMinDuration,0.5,슬라이드 시작 후 멈출 수 있게 되기까지(초)
@@ -284,8 +283,7 @@ Move.doorBreakSpeedRetention,0.85,문을 부수고 남는 속도 비율
 Move.wallBounceBounciness,0.5,슬라이드로 벽에 부딪혔을 때 튕겨 나오는 비율
 Move.supineBounceThreshold,7,튕겨 나온 속도가 이 이상이면 뒤로 누워 미끄러진다(m/s)
 # 능력: 회피·기울이기 (Ability 행 → PlayerMovement의 Ability Settings),,
-Ability.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,스텝 회피(Alt)의 클립을 가는 쪽마다(클립@도. 0 앞 90 오른쪽): 서서도 달리면서도. BIPER Female Runner QuickShift_*(0.8초). 빠르기는 클립 그대로이고 거리는 모두 Ability.dodgeDistance. 0.9.341 전에는 전력질주하며 옆으로 하면 Ability.dodgeSprintWays를 통째로 썼다
-Ability.dodgeDistance,2.6,"회피가 가는 거리(m). 서서도 달리면서도, 어느 쪽이든 같다. 0.9.341 전에는 클립마다 3.3~3.4m, 전력질주하며 옆으로는 달리는 빠르기로 4.3~5.2m라 짧게 느껴졌다(사용자 11-22: ""회피 거리 줄이긴 해야겠더라""). 0.9.335 전에는 2.6"
+Ability.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"스텝 회피(Alt)의 클립을 가는 쪽마다(클립@도. 0 앞 90 오른쪽): 서서도 달리면서도. BIPER Female Runner QuickShift_*(0.8초). 빠르기도 거리(3.28~3.44m)도 클립 그대로다(0.9.351, 사용자 11-22: ""전부 맞추기"". 0.9.341~0.9.350에는 Ability.dodgeDistance 2.6m)"
 Ability.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며 옆·대각선으로 회피한 뒤 앞으로 계속 달릴 때, 낮은 자세에서 일어나며 달려 나가는 클립을 회피한 쪽마다(클립@도, 30° 안). Ability.dodgeRunFrom부터 튼다. 다른 쪽으로 달리면 달리는 걸음으로 바로 이어진다. BIPER Female Runner ShiftToSprint_*. 0.9.341 전에는 회피 자체를 이 클립으로 했는데, 옆으로 비킨 뒤 앞으로 달려 나가는 길을 통째로 옆으로 가서 다리는 앞으로 달리고 몸은 옆으로 미끄러졌다(사용자 11-22: ""달리는 모션이 자연스럽게 이어지지 않는 거 같아"")"
 Ability.dodgeRunFrom,0.233,"그 클립을 트는 순간(초): 몸이 회피와 똑같이 낮고 다리가 벌어진 때(Blender로 잼: 골반 높이 0.54m, 두 발 자리가 같다). 여기서부터 일어나며 앞으로 달린다"
 Ability.dodgeUntil,0.5,"회피 클립의 이 순간(초)까지 다리가 클립 것이고, 그 뒤 이동 키가 먹는다. 남은 일어나기는 멈춰 있으면 끝까지, 움직이면 걸음에 섞인다. 달리면서 한 회피는 Ability.dodgeRunAt. 그 전에도 미끄러짐이 끝나면(약 0.2초) 점프로 끊을 수 있고, 다음 회피는 회피 규칙대로"
@@ -399,7 +397,7 @@ Ability.ziplineReleaseShare,0.75,놓을 때 남는 속도 비율
 Ability.ziplineRegrabDelay,0.75,놓은 뒤 줄이 다시 잡히기까지(초)
 # 능력: 착지 단계·구르기·낙하 피해 (MovementLanding. 디버그 HUD의 Last landing),,
 Ability.hardLandingHeight,3.5,"이 높이(m)에서 그냥 떨어진 것만큼, 또는 그보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지. 높이로 적는다: 맵을 짓는 단위가 높이라서다. 기준은 건물 한 층 3.0m이고 그보다 0.5m 높게 잡았다: 한 층은 세게 착지가 아니어야 앉은 채 한 층을 조용히 내려설 수 있다(사용자 2026-11-18). 중력 24에서 3.5m는 13.0m/s. 예전 값은 속도 12m/s(= 3.0m, 한 층이 딱 걸렸다). 공중에서 Ctrl로 다리를 접어도 착지는 발이 닿았을 높이로 잰다(접은 0.85m만큼 더 떨어진 것으로 치지 않는다)"
-Ability.hardLandingRecoverTime,1,세게 착지한 뒤 원래 이동 속도로 돌아오기까지(초)
+Ability.hardLandingRecoverTime,1,"세게 착지한 뒤 원래 이동 속도로 돌아오기까지(초). 달리며 세게 착지해 달려 나가는 클립(Body.landRunHard·landRunStumble·landSlam)이 나오는 동안은 그 클립의 빠르기로 간다(PlayerBody.RunOutPace, 0.9.351)"
 Ability.hardLandingMoveScale,0.1,세게 착지한 직후 이동 속도 배율. hardLandingRecoverTime에 걸쳐 1로 돌아온다
 Ability.hardLandingNoSprintTime,0.5,세게 착지한 뒤 Shift나 W 달리기로 속도를 쌓지 못하는 시간(초)
 Ability.safeFallSpeed,16,이보다 빠르게(그리고 safeFallDistance보다 높이) 떨어지면 낙하 피해와 크게 착지(Dynamic Landing): 쓰러졌다 일어날 때까지 조작 불가(m/s). 약 5.3m
@@ -407,7 +405,7 @@ Ability.safeFallDistance,4,이보다 높이 떨어져야 낙하 피해(m)
 Ability.fallDamagePerSpeed,4,safeFallSpeed를 넘은 1m/s당 피해
 Ability.faceDownLandingSpeed,26,크게 착지할 때 이보다 빠르면 손과 무릎 대신 엎어진다(m/s). 약 14m. 피해 40
 Ability.backLandingMinSpeed,0.4,크게 착지할 때 시선 반대쪽으로 이보다 빠르게 움직이고 있었으면 등으로 떨어진다(m/s)
-Ability.heavyLandingTime,1.6,손과 무릎을 짚었다 일어나기까지 조작 불가(초). Body.heavyLand가 이 시간에 맞춰 재생된다
+Ability.heavyLandingTime,1.567,크게 착지해 주저앉았다 일어나기까지 조작 불가(초): Body.heavyLand(Land_4h)의 길이 그대로
 Ability.faceDownLandingTime,1.5,엎어졌다 일어나기까지(초). Body.heavyLandFaceDown
 Ability.backLandingTime,2.8,등으로 떨어졌다 일어나기까지(초). Body.heavyLandBack. 넉백(PlayerMovement.KnockBack)도 이것
 Ability.heavyLandingBraking,10,크게 착지해 바닥을 미끄러지는 속도가 줄어드는 빠르기(초당 비율)
@@ -415,13 +413,14 @@ Ability.rollInputWindow,0.5,세게·크게 착지하기 전 이 시간 안에 Ct
 Ability.rollTravel,Roll_F,"착지 구르기(느리면 구르고 일어섬)의 빠르기를 읽는 GaitMoves.csv 줄(kind travel). 몸은 클립이 땅 위로 가는 그대로 가고(앞 0.5초에 3m, 그 뒤 일어서며), 몸이 다시 서면 끝나고 클립의 끝은 흘려 보낸다. 0.9.288 전에는 착지 속도(최소 Ability.rollSpeed 4m/s)로 Ability.rollDuration(1초) 동안 갔고 클립(1.47초)을 그 1초에 맞춰 틀어 1.5배 빨랐다(사용자 11-21: ""착지할 때 dive roll 모션이 존나 빨라"")"
 Ability.rollRunTravel,RollToRun_F,착지 구르기(Ability.rollRunSpeed 이상이면 구르고 달려 나감)의 빠르기를 읽는 줄: 0.97초에 약 5m. 0.9.288
 Ability.rollRunSpeed,4,착지할 때 이보다 빠르면(m/s) 구르고 달려 나간다(Body.rollRunWays). 조깅(가장 빠른 쪽 3.36)과 전력질주(가장 느린 쪽 4.46) 사이: 전력질주에서. 0.9.288 전에는 몸이 Body.jumpFastSpeed로 따로 골랐다
+Ability.slideStart,SlideToRun_Enter,"슬라이딩 시작 동작(0.7초): 달리다 바닥으로 내려간다. 슬라이딩은 이 클립의 빠르기(6.5 → 약 5m/s)로 시작한다(SlidePace, GaitMoves.csv kind travel. 0.9.351. 그 전에는 Body.slideStart이고 전력질주 속도에 Move.slideKickBoost 1을 더해 시작했다). BIPER Female Runner"
+Ability.slide,SlideToRun_10m,"슬라이딩 중: SlideToRun_10m의 가운데(0.70~1.93초, 엉덩이가 바닥 가까이 머무는 동안. BiperRunner.clips.csv from 21 to 58)를 시작 동작이 끝난 자리에서 처음부터 튼다. 키를 누르고 있으면 이 클립의 빠르기(약 4m/s)로, 클립의 몸이 다시 일어나는 때(1.1초)까지 미끄러지고 달려 나간다. Shift+W면 시작 동작 뒤 바로 일어난다(SlideToRun_5m와 같은 동작). 내리막으로 오래 미끄러지면 Body.slideSway만큼 가운데를 오간다. 0.9.351 전에는 Body.slide"
 Ability.diveRoll,DiveRoll_F,"슬라이딩 점프(Space)의 클립: 몸을 던져 앞으로 구르고 일어선다. 가는 거리와 빠르기는 GaitMoves.csv의 같은 이름 줄(kind travel)대로, 몸이 다시 서면 끝난다. 사용자 11-22: ""슬라이딩 점프는 female runner escape 모션의 다이브 롤 … 다이브 롤 후 서기로"". 0.9.336 전에는 공중으로 뛰는 다이브"
 Ability.diveRollFrom,0.14,다이브 롤이 시작하는 클립의 순간(초): 이미 몸을 던진 때. 앞의 선 자세와 한순간 14m/s로 차고 나가는 몫은 슬라이딩에서 이어지니 건너뛴다(그 뒤로는 약 6.5m/s라 슬라이딩과 이어진다)
 Ability.diveRollDown,0.5,다이브 롤의 몸이 바닥에 닿는 클립의 순간(초): 구르는 소리가 나는 때
 Ability.rollLandSpeed,2,수평 속도가 이보다 느리거나 S를 누르고 있으면 구르지 않고 제자리에 착지한다(m/s). 걷기 출발 속도(Move.runStartSpeed 3.6)보다 낮아 걷다가 떨어져도 구른다(2026-11-06 사용자 요청). Beatrun의 200단위/초(약 4.9)는 걷기 속도와 같아 걸으면 늘 제자리 착지였다
-Ability.rollLandTime,0.6,제자리 착지로 멈춰 있는 시간(초)
+Ability.rollLandTime,1,제자리 착지로 멈춰 있는 시간(초): Body.rollLand(Land_1h)의 길이 그대로. 0.9.351 전에는 0.6(다쳤으면 1)
 Ability.rollInPlaceDamageShare,0.5,제자리 착지(속도 없이 Ctrl)가 그래도 받는 낙하 피해 비율. 큰 낙하(바람 소리·허우적거림)가 시작된 낙하는 구르기 자체가 안 된다(Beatrun과 같음)
-Ability.rollLandHurtTime,1,다칠 만큼 높은 곳에서 제자리 착지했을 때 멈춰 있는 시간(초). 다치지 않으면 rollLandTime
 Ability.supineRiseTime,1,누운 자세에서 일어나는 동안 이동(걷기·점프·회피·다이브·기울이기)을 못 하는 시간(초). 일어나는 동작을 끝까지 보여 준다(Beatrun의 JumpTurnRecovery 1초). 사격·조준·밀치기·주먹은 된다
 Ability.bigFallHeight,8.5,낙하 꼭대기부터 아래 땅까지 이보다 높으면 큰 낙하: 바람·심장 박동·화면 일그러짐·허우적(m)
 Ability.bigFallMinSpeed,9,이보다 빠르게 떨어져야 큰 낙하가 될 수 있다(m/s). 틈 건너뛰기는 해당 없음
@@ -477,13 +476,11 @@ Body.fallFromEdgeDrop,1,발밑 땅이 이보다 깊으면(m) 턱에서 떨어지
 Body.land,Land_3h,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊게 굽힌다. BIPER Female Runner(엉덩이가 발 위 0.38m까지). 달리며 세게 착지하면 Body.landRunHard. 0.9.262 전에는 mx_fall_land
 Body.landMid,Land_2h,"서서 가볍게 착지하되 Body.landMidHeight 이상에서 떨어졌을 때: 점프 착지(Land_1h)보다 깊게 무릎으로 받는다(엉덩이가 발 위 0.40m까지). 세게 착지(Ability.hardLandingHeight 3.5m)는 Body.land. BIPER Female Runner, 0.9.285"
 Body.landMidHeight,2,이 높이(m) 이상에서 떨어진 가벼운 착지는 Body.landMid·landRunMid. 제자리 점프(1.3m)보다 높고 세게 착지(3.5m)보다 낮게. 착지 속도로 판단해 모든 PC에서 같다
-Body.slideStart,SlideToRun_Enter,슬라이딩 시작. BIPER Female Runner. 0.9.262 전에는 slidestart
-Body.slide,SlideToRun_10m,"슬라이딩 중: SlideToRun_10m의 가운데(0.70~1.93초, 엉덩이가 바닥 가까이 머무는 동안. BiperRunner.clips.csv from 21 to 58)를 슬라이딩 시작(Body.slideStart)이 끝난 자리에서 처음부터 튼다. 오래 미끄러지면 Body.slideSway만큼 가운데를 오간다(0.9.337. 그 전에는 제 시계로 돌던 고리라 아무 데서나 시작했고, 끝에서 처음으로 튀었다). 0.9.285 전에는 SlideToRun_Loop(멈춘 한 자세)였다(사용자 11-21: 고리 대신 살아 있는 중간). BIPER Female Runner. 0.9.262 전에는 slideloop"
-Body.slideSway,0.71;0.26,"슬라이딩 클립이 여기(초)까지 간 뒤에는 앞뒤로 이만큼(초)씩 오간다: 0.45~0.97초, 엉덩이가 가장 낮고 자세가 천천히 바뀌는 동안(클립 검사대 track). 처음으로 되돌아가지 않으니 튀지 않는다. 평지 슬라이딩은 약 0.8초까지만 간다"
+Body.slideSway,0.71;0.26,"슬라이딩 클립이 여기(초)까지 간 뒤에는 앞뒤로 이만큼(초)씩 오간다: 0.45~0.97초, 엉덩이가 가장 낮고 자세가 천천히 바뀌는 동안(클립 검사대 track). 처음으로 되돌아가지 않으니 튀지 않는다. 평지 슬라이딩은 키를 누르고 있으면 약 1.1초, 놓으면 약 0.8초까지 간다"
 Body.slideEndTime,0.25,"슬라이딩 자세에서 끝 동작(Body.slideEnd)으로 바뀌는 시간(초). 끝날 때의 자세(엉덩이 17°, 가슴 26°)와 끝 동작의 시작(50°, 59°)이 달라서, 보통 빠르기(0.15초)면 몸이 한 번 비틀렸다 돌아온다. 0.9.337"
-Body.slideEnd,SlideToRun_Exit,슬라이딩 끝: 일어나 달려 나간다. BIPER Female Runner. 0.9.262 전에는 slideend
+Body.slideEnd,SlideToRun_Exit,"슬라이딩 끝: 일어나 달려 나간다(0.8초). 키를 누르고 있으면 그동안 몸도 이 클립의 빠르기로 간다(PlayerBody.RunOutPace, 0.9.351). BIPER Female Runner. 0.9.262 전에는 slideend"
 Body.slideCrouchTime,0.3,슬라이딩이 웅크리기로 끝날 때 슬라이딩 자세에서 웅크린 자세로 바뀌는 시간(초). 그리로 가는 클립이 없어 두 자세 사이를 천천히 섞는다. 0.9.266 전에는 일어나 달려 나가는 Body.slideEnd를 틀어 섰다가 앉았다
-Body.slideEndUp,0.4,"슬라이딩이 제자리에서 멈춰 서면 끝 동작(Body.slideEnd: 일어나 달려 나가기)을 여기까지만 튼다(초): 땅을 짚고 일어나 앞을 보는 데까지, 첫 달리는 걸음(0.47초) 전. ClipBench track으로 잼(엉덩이 0.24→0.67m, 몸이 앞을 봄). 달리며 끝나면 끝까지 달려 나간다. 0.9.271 전에는 멈춰 서도 끝까지 틀어 제자리에서 달렸다"
+Body.slideEndUp,0.4,"슬라이딩이 제자리에서 멈춰 서면 끝 동작(Body.slideEnd: 일어나 달려 나가기)을 여기까지만 튼다(초): 땅을 짚고 일어나 앞을 보는 데까지, 첫 달리는 걸음(0.47초) 전. 일어나는 여기까지는 멈춰 있어도 늘 나온다. ClipBench track으로 잼(엉덩이 0.24→0.67m, 몸이 앞을 봄). 달리며 끝나면 끝까지 달려 나간다. 0.9.271 전에는 멈춰 서도 끝까지 틀어 제자리에서 달렸다"
 Body.standSettleTime,0.3,달려 나가며 끝나는 동작(슬라이딩 끝·달리며 착지·달리며 구르기·달리기로 잇는 회피)을 몸이 멈춰 놓을 때 그 자세를 멈춘 채 서 있기로 바뀌는 시간(초). 그런 자세에서 서는 클립이 없어 천천히 섞는다. 0.9.271
 Body.diveStart,divestart,다이브 시작
 Body.dive,diveidle,다이브 공중
@@ -513,9 +510,9 @@ Body.rollRunWays,RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_B@180;R
 Body.dodgeStandTime,0.25,회피가 끝나 걷기·달리기·앉기로 이어질 때 두 자세를 섞는 시간(초): 다리를 돌려받을 때 몸이 아직 낮다
 Body.landRunLight,,앞으로 달리다 가볍게 착지할 때의 클립. 비어 있으면 걸음에 섞여 이어 간다(Beatrun처럼). 0.9.262~0.9.289에는 BIPER Land_ToRun1(RunJump의 착지 자세에서 시작)이었는데 Beatrun 점프로 되돌리며 뺐다(0.9.290)
 Body.landRunMid,,Body.landMidHeight 이상에서 앞으로 달리다 가볍게 착지할 때의 클립. 비어 있으면 걸음에 섞인다. 0.9.285~0.9.289에는 BIPER Land_ToRun2였는데 Body.landRunLight와 같은 까닭으로 뺐다(0.9.290)
-Body.landRunHard,Land_ToRun3,"앞으로 가다 세게 착지하면 깊게 받고 달려 나간다. BIPER Female Runner, 0.9.262"
-Body.landRunStumble,Land_ToStumble,"Body.landStumbleSpeed 이상으로 가다 세게 착지하면 비틀거리며 달려 나간다. BIPER Female Runner, 0.9.262"
-Body.landSlam,Land_ToSlam,"조깅으로 앞으로 가다 세게 착지하면 한 손을 짚을 만큼 깊게 받고 이어 간다(클립의 걸음은 3.3m/s로 조깅 빠르기). 걷기보다 느리거나 다른 쪽이면 Body.land, 전력질주면 Body.landRunHard·landRunStumble. BIPER Female Runner, 0.9.285"
+Body.landRunHard,Land_ToRun3,"앞으로 가다 세게 착지하면 깊게 받고 달려 나간다(0.87초). 그동안 몸도 이 클립의 빠르기(평균 5.8m/s)로 간다(0.9.351. 그 전에는 몸이 0.1배로 느려져 동작이 바로 끊겼다). BIPER Female Runner, 0.9.262"
+Body.landRunStumble,Land_ToStumble,"Body.landStumbleSpeed 이상으로 가다 세게 착지하면 비틀거리며 달려 나간다(1.17초). 그동안 몸도 이 클립의 빠르기(평균 3.9m/s)로 간다(0.9.351). BIPER Female Runner, 0.9.262"
+Body.landSlam,Land_ToSlam,"조깅으로 앞으로 가다 세게 착지하면 한 손을 짚을 만큼 깊게 받고 이어 간다(1초). 그동안 몸도 이 클립의 빠르기(짚는 동안 1.2, 일어나며 4.7m/s)로 간다(0.9.351). 걷기보다 느리거나 다른 쪽이면 Body.land, 전력질주면 Body.landRunHard·landRunStumble. BIPER Female Runner, 0.9.285"
 Body.landStumbleSpeed,5,이보다 빨리 가다 세게 착지하면 비틀거린다(m/s). 달려 나가는 착지(Body.landRunSpeed 이상) 가운데 맨손 앞·옆 전력질주(5.79~6.18)만: 총을 든 전력질주(4.55)와 대각선 뒤·뒤 전력질주(4.93·4.46)는 세게 착지해 달려 나간다
 Body.dashPush,bargein,돌진 밀치기. 적에 부딪혀 멈추면 끝까지 재생
 Body.vault,vaultover,보통 넘기

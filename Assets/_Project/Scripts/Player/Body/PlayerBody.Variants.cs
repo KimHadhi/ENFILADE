@@ -55,7 +55,7 @@ public sealed partial class PlayerBody
     private string rifleSuffix = "_ar2", pistolSuffix = "_pistol";
     [SerializeField, Min(0f), Tooltip("At least this fast (m/s) a hard landing runs on out of itself (LandingOnTheMove); slower it takes "
         + "the knees, a hand down at a jog.")]
-    private float landRunSpeed = 4.4f;
+    private float landRunSpeed = 4f;
     [SerializeField, Min(0f), Tooltip("For a mantle off a bar, which has no move of its own (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
     private float mantleStepHeight = .7f, mantleLowHeight = 1.1f, mantleMidHeight = 1.6f;
     [SerializeField, Min(.1f), Tooltip("Playback speed of the vault and climb clips. The player is over before the clip is, "

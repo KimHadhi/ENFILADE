@@ -44,6 +44,9 @@ public sealed class LocomotionState : MovementBaseState
         baseSpeed *= PlayerClass.MoveFactor(ctx);
         // Getting over a hard landing, the legs give only part of the usual speed.
         if (ctx.IsGrounded) baseSpeed *= ctx.Abilities.Landing.RecoveryScale;
+        // Out of a landing, a slide or a dodge on the run, going on ahead, its clip's last steps carry the body at their own pace.
+        float runsOut = ctx.IsGrounded && input.y > .1f ? ctx.RunOutPace : 0f;
+        if (runsOut > 0f) baseSpeed = runsOut;
         // The hands decide what the legs may do: rooted after a parry, a slow walk with the guard up (PlayerMeleeCombat).
         if (ctx.MeleeCombat != null) baseSpeed = ctx.MeleeCombat.LimitMoveSpeed(baseSpeed);
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);

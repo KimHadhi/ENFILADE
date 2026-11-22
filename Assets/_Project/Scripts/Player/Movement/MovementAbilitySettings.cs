@@ -6,10 +6,8 @@ using UnityEngine;
 public sealed class MovementAbilitySettings
 {
     [Header("Dodge & Lean")]
-    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right; DodgeMove). It goes at each clip's own pace (GaitMoves.csv kind travel), dodgeDistance far.")]
+    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right; DodgeMove). It goes as far and at the pace each clip does (GaitMoves.csv kind travel).")]
     public string dodgeWays = "QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45";
-    [Tooltip("How far a dodge goes (m), whatever the clip and the pace it began at.")]
-    [Min(0.5f)] public float dodgeDistance = 2.6f;
     [Tooltip("Out of a dodge aside into a sprint ahead: the clip by the dodge's way, from its moment dodgeRunFrom (s), where its body is as low and wide as the dodge's and goes on up into the sprint.")]
     public string dodgeSprintWays = "ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90";
     [Min(0f)] public float dodgeRunFrom = 0.233f;
@@ -225,7 +223,7 @@ public sealed class MovementAbilitySettings
         + "built in: one storey of a building is 3.0 m and must stay under it, so a "
         + "crouched drop of a storey is a quiet one (the user, 2026-11-18). MovementLanding.HardSpeed is the speed it means.")]
     [Min(0f)] public float hardLandingHeight = 3.5f;
-    [Tooltip("Seconds a hard landing takes to get back to full ground speed.")]
+    [Tooltip("Seconds a hard landing takes to get back to full ground speed; one that runs out of itself goes at its clip's pace instead (PlayerBody.RunOutPace).")]
     [Min(0f)] public float hardLandingRecoverTime = 1f;
     [Tooltip("Share of the ground speed right after a hard landing; it eases back to 1 over hardLandingRecoverTime.")]
     [Range(0f, 1f)] public float hardLandingMoveScale = .1f;
@@ -241,14 +239,16 @@ public sealed class MovementAbilitySettings
     [Tooltip("A heavy landing moving backwards faster than this (against the view) falls onto the back (m/s).")]
     [Min(0f)] public float backLandingMinSpeed = .4f;
     [Tooltip("Seconds a heavy landing keeps the player down: onto hands and knees, onto the face, onto the back.")]
-    [Min(.1f)] public float heavyLandingTime = 1.6f, faceDownLandingTime = 1.5f, backLandingTime = 2.8f;
+    [Min(.1f)] public float heavyLandingTime = 1.567f, faceDownLandingTime = 1.5f, backLandingTime = 2.8f;
     [Tooltip("How quickly a heavy landing's skid along the ground dies away (share of the speed per second).")]
     [Min(0f)] public float heavyLandingBraking = 10f;
     [Min(0.01f)] public float rollInputWindow = 0.5f;
     [Tooltip("A landing roll: the Tables/Player/GaitMoves.csv rows (kind travel) its way and pace are read from, standing up out of it and running on.")]
     public string rollTravel = "Roll_F", rollRunTravel = "RollToRun_F";
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
-    [Min(0f)] public float rollRunSpeed = 4.4f;
+    [Min(0f)] public float rollRunSpeed = 4f;
+    [Tooltip("The slide's clips, down into it and along: the slide goes at their pace (SlidePace) and the body plays them (PlayerBody.SlidePose).")]
+    public string slideStart = "SlideToRun_Enter", slide = "SlideToRun_10m";
     [Tooltip("A slide's jump, a dive roll: its clip. How far and at what pace it goes is its Tables/Player/GaitMoves.csv row (kind travel).")]
     public string diveRoll = "DiveRoll_F";
     [Tooltip("The clip's moment a dive roll begins at (s), the body already thrown: the stand and the kick before it are left "
@@ -257,12 +257,10 @@ public sealed class MovementAbilitySettings
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;
-    [Tooltip("Seconds a landing on the spot holds the player there.")]
-    [Min(0.05f)] public float rollLandTime = 0.6f;
+    [Tooltip("Seconds a landing on the spot holds the player there: its clip's own length (Body.rollLand).")]
+    [Min(0.05f)] public float rollLandTime = 1f;
     [Tooltip("Share of the fall damage a landing on the spot still takes: with no run to roll into, the legs take it. A big fall can't be rolled at all, as in Beatrun.")]
     [Range(0f, 1f)] public float rollInPlaceDamageShare = .5f;
-    [Tooltip("Seconds a landing on the spot that hurt holds the player there, the legs getting over it before they walk.")]
-    [Min(0.05f)] public float rollLandHurtTime = 1f;
     [Tooltip("Seconds getting up off the back keeps the player from moving off while the body gets up, as Beatrun's "
         + "JumpTurnRecovery does. The hands stay free: shooting, aiming, the shove and the fists work.")]
     [Min(0f)] public float supineRiseTime = 1f;
