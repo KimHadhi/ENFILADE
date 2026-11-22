@@ -27,8 +27,12 @@ using UnityEngine;
 /// Breasts sprang at 2.2-3.6 Hz with damping .16-.27 until 0.9.353. The body bobs about as often (measured on the clips: a jog
 /// 14 cm at 2.1 Hz, a run 12 cm at 3.0 Hz), so a jog already threw a breast to the end of its maker's cone and Magica's limit
 /// holds it there without giving any of its speed back: Ichigo's (her cone is 3.8 cm) stayed at it 1.3 s of 3 in a jog and .3 s
-/// in one crouch, stopped dead and not springing (the user, 2026-11-23: "가슴은 찰지게"). At 3.4-3.9 Hz with damping .15-.2 they
-/// swing back by themselves before it (.1 s and none; Mayo's goes 4.3 cm of her 6.3 in a jog) and ring in quicker bounces.
+/// in one crouch, stopped dead and not springing (the user, 2026-11-23: "가슴은 찰지게"). 0.9.354 made them 3.4-3.9 Hz, so they
+/// kept off it; but near the body's own pace they swing harder than the body does, and a body turned back from down to up in a
+/// moment threw them against the cone and up with it, at 19 g where the body made 11 (the user, 2026-11-23: "가슴이 올라서려할 때
+/// 자연스러운 물리 법칙이 아니라 바로 위로 텔레포트를 한단 거였어"). Since 0.9.359 they are softer (2.8-3.2 Hz, damping .18-.24), feel
+/// .65 of the body's movement and may turn 30° at least (ClothFlesh.csv): they lag behind it and follow, at .3 to 1 of its
+/// acceleration, 3 cm in a crouch, 4.5 in a jog and 6.5 of their 7.2 in a run.
 /// How Magica's angle restoration becomes that spring (AngleConstraint.SolverConstraint): each step it turns a bone
 /// toward its drawn direction in three passes (Define.System.AngleLimitIteration), each by stiffness × .2 of the angle
 /// (AngleConstraint's Convert scales it so), about a centre .1, .3 then .5 of the way out from the parent; the parent

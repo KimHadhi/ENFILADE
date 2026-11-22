@@ -64,6 +64,14 @@ public static class VrcSway
     // for the body, 360°/s felt by the cloth). Half keeps a calm maker's hair calmer than a free one's: Ichigo's back
     // hair takes 0.57 of the body's moves, near the 0.7 Kazusa's hand-tuned hair swings with.
     private const float ImmobileShare = .5f;
+    // How fast a chain that hangs may feel the character go through the world, and its own body move (m/s). Magica carries a
+    // chain along with whatever is faster, its end as well as its root. The preset let it feel 1 m/s of both together, so a head
+    // that moved faster took the hair with it, whole: leaning over to the other side, the end of a 30 cm strand went 14 cm in
+    // .07 s with the head (16 g) instead of staying behind and swinging after (2 g so; the user, 2026-11-23: "머리카락도
+    // 마찬가지고 반대 방향으로 기울이면 그쪽으로 텔레포트를 하니까"). Running still streams it by 1 m/s and no more; the body's own
+    // moves it feels whole, up to the 4 m/s Magica's particles go, at its maker's share (immobile takes off any motion).
+    // The rows in Cloth.csv were changed with this and the breasts (0.9.359), so nothing is written again for it.
+    private const string HangingWorldSpeed = "1", HangingFeltSpeed = "4";
     // How much VRChat's advanced stiffness (a bone keeping its turn) firms flesh beside pull: the weight Stiffness() gives
     // it against pull's (.3 to .35).
     private const float AdvancedHold = .86f;
@@ -212,7 +220,8 @@ public static class VrcSway
             ["damping"] = Text(Mathf.Lerp(.25f, .03f, Mathf.Clamp01(bone.Spring))),
             ["worldInertia"] = Text(Mathf.Clamp01(1f - bone.Immobile)),
             ["localInertia"] = "1",
-            ["speedLimit"] = "5",
+            ["speedLimit"] = ring || spring ? "5" : HangingWorldSpeed,
+            ["feltSpeed"] = ring || spring ? "" : HangingFeltSpeed,
             ["centrifugal"] = ring ? "0.1" : "0.3",
             ["windPower"] = ring ? "0.2" : "0.5",
             ["movingWind"] = ring ? "0" : "1",
@@ -274,7 +283,7 @@ public static class VrcSway
         }
         float root = still[0], end = still[Samples - 1];
         bool fading = root > end && end < 1f;
-        row["worldInertia"] = Text(1f - (fading ? end : (root + end) * .5f));
+        row["worldInertia"] = row["localInertia"] = Text(1f - (fading ? end : (root + end) * .5f));
         row["depthInertia"] = Text(fading ? (root - end) / (1f - end) : 0f);
         row["gravity"] = Text(Mathf.Clamp(gravity * 10f, 0f, 10f));
         row["gravityFalloff"] = "1";
@@ -285,8 +294,8 @@ public static class VrcSway
     // FleshSpring), by the kind its name says (ClothFlesh.csv: breasts swing softer than a bottom, a belly or thighs, which
     // muscle holds). How hard its maker pulls it back (pull; in VRChat's advanced mode its stiffness too) sets how many
     // times a second it swings, and how much it wobbles on the way (spring) how much of each swing it keeps, both read down
-    // the whole chain and spread over the kind's bands: Mayo's breasts (pull .9 rising from half, spring .95) swing 3.7
-    // times a second keeping .15, Ichigo's (pull .38 and spring .85, both falling to half) 3.5 and .17. Only the bones on
+    // the whole chain and spread over the kind's bands: Mayo's breasts (pull .9 rising from half, spring .95) swing 3.1
+    // times a second keeping .18, Ichigo's (pull .38 and spring .85, both falling to half) 2.9 and .2. Only the bones on
     // the root swing (one lump: ClothPart.HoldStill), so the maker's limit is read at their depth down the chain, as VRChat
     // reads it for them (Mayo's 24.7°, Ichigo's 16.7°; read at the far end it cut Ichigo's to 12.5°). A lump whose bone
     // stands upright can't show its bounce by turning (Mayo's bottom, 32° off upright): its root slides that kind's share
@@ -320,7 +329,8 @@ public static class VrcSway
         row["bounce"] = Text(Mathf.Lerp(kind.DeadBounce, kind.LiveBounce, wobble));
         row["feltSpeed"] = Text(kind.FeltSpeed);
         row["slide"] = Text(kind.Slide * upright);
-        row["angleLimit"] = Text(Mathf.Clamp(Limit(bone, swingDepth), 5f, 180f));
+        row["localInertia"] = Text(kind.Inertia);
+        row["angleLimit"] = Text(Mathf.Clamp(Mathf.Max(Limit(bone, swingDepth), kind.Limit), 5f, 180f));
         row["angleCurve"] = "1";
         row["stiffness"] = "";
         row["damping"] = "";
@@ -338,12 +348,13 @@ public static class VrcSway
             .Select(ignored => ignored.name).Distinct();
 
     // How makers' numbers become one kind of flesh (a row of Tables/ClothFlesh): pull 0..1 spread from softHz to firmHz,
-    // spring 0..1 from deadBounce to liveBounce, the speed of the body it feels, and how far it slides where its bone
-    // stands upright. The defaults are the table's Default row, for a missing table.
+    // spring 0..1 from deadBounce to liveBounce, the speed of the body it feels, how far it slides where its bone stands
+    // upright, how much of the body's movement it feels and the least it may turn (degrees). The defaults are the table's
+    // Default row, for a missing table.
     private sealed class FleshKind
     {
         public string[] Words = Array.Empty<string>();
-        public float SoftHz = 2.8f, FirmHz = 4.4f, DeadBounce = .3f, LiveBounce = .18f, FeltSpeed = 3.5f, Slide = .15f;
+        public float SoftHz = 2.8f, FirmHz = 4.4f, DeadBounce = .3f, LiveBounce = .18f, FeltSpeed = 3.5f, Slide = .15f, Inertia = 1f, Limit;
     }
 
     // The kinds of flesh in the table's order, the first whose words a root's name holds taking it, Default the rest.
@@ -369,6 +380,8 @@ public static class VrcSway
                 kind.LiveBounce = row.Number("liveBounce", kind.LiveBounce);
                 kind.FeltSpeed = row.Number("feltSpeed", kind.FeltSpeed);
                 kind.Slide = row.Number("slide", kind.Slide);
+                kind.Inertia = row.Number("inertia", kind.Inertia);
+                kind.Limit = row.Number("limit", kind.Limit);
                 if (string.Equals(id, FleshRow, StringComparison.OrdinalIgnoreCase)) read.rest = kind;
                 else read.kinds.Add(kind);
             }

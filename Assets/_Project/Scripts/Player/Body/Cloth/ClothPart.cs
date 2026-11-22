@@ -71,8 +71,9 @@ public sealed class ClothPart
     /// <summary>How much of each swing that flesh loses: its damping ratio (.5 swings back once, .25 two or three times).</summary>
     public float bounce = .3f;
     /// <summary>
-    /// The fastest movement of the body this part feels (m/s, Magica's local movement speed limit): what the body moves
-    /// beyond it the part goes along with. Zero keeps the preset's.
+    /// The fastest movement of the body this part feels (m/s, Magica's local movement speed limit; the character's own way through
+    /// the world counts too, up to speedLimit): what the body moves beyond it the part goes along with, its end as well as its
+    /// root. Zero keeps the preset's.
     /// </summary>
     public float feltSpeed;
     /// <summary>
