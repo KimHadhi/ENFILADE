@@ -55,19 +55,12 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0f)] internal float slideLookSteerRate = 90f;
     [SerializeField, Min(0.1f)] internal float groundSnapDistance = 0.5f;
     [SerializeField, Min(0.01f)] internal float slideJumpMinDuration = 0.1f;
-    [SerializeField, Min(0.2f)] internal float slideKickJumpHeight = 1.05f;
-    [Tooltip("슬라이딩 점프의 최소 수평 발사 속도")]
-    [SerializeField, Min(0f)] internal float slideJumpMinSpeed = 3f;
-    [Tooltip("슬라이딩 점프 시 현재 수평 속도에 더하는 도약 보너스")]
-    [SerializeField, Min(0f)] internal float slideJumpSpeedBonus = 0.8f;
 
-    [Header("Dive pose (a slide's jump, a lying body off an edge)")]
+    [Header("Dive pose (a lying body off an edge)")]
     [Tooltip("다이브 시작 후 기존 눈높이/몸 높이를 유지하는 시간. 먼저 위로 솟는 궤적을 보여 줍니다.")]
     [SerializeField, Min(0f)] internal float divePoseDelay = 0.03f;
     [Tooltip("도약 후 엎드린 높이까지 몸과 시점을 부드럽게 낮추는 시간. 수평 이동 속도와는 별개입니다.")]
     [SerializeField, Min(0.05f)] internal float divePoseDuration = 0.5f;
-    [SerializeField, Min(0f)] internal float divePopPerSpeed = 0.12f;
-    [SerializeField, Min(0f)] internal float maxAdditionalDivePop = 2.5f;
 
     [Header("Diving In-Air Flight Physics")]
     [SerializeField, Range(0.5f, 1.2f)] internal float diveGravityScale = 0.9f;
@@ -78,10 +71,6 @@ public sealed partial class PlayerMovement
     [SerializeField, Min(0.01f)] internal float diveBurstDuration = 0.1f;
     [SerializeField, Min(0f)] internal float diveCarrySpeed = 2.2f;
     [SerializeField, Min(0.1f)] internal float diveBurstBraking = 2.6f;
-
-    [Header("Head-First Slide")]
-    [SerializeField, Min(0f)] internal float diveSlideKickBoost = 3.8f;
-    [SerializeField, Min(0f)] internal float maxLandingSlideSpeed = 10.0f;
 
     [Header("Air Movement & Jump")]
     [SerializeField, Min(0f)] internal float groundSharpness = 14f;

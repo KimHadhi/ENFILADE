@@ -26,6 +26,7 @@ public sealed partial class PlayerBody
         foreach (string set in new[] { rollWays, rollRunWays, player.AbilitySettings.dodgeWays, player.AbilitySettings.dodgeSprintWays })
             foreach (var (clip, _) in ClipWays.Of(set))
                 yield return clip;
+        yield return player.AbilitySettings.diveRoll;
         yield return landRunLight;
         yield return landRunMid;
         yield return landRunHard;

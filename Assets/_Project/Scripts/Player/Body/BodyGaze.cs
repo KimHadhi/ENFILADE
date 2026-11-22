@@ -99,7 +99,8 @@ internal sealed class BodyGaze
         float over = new Vector2(forward.y, forward.z).sqrMagnitude >= new Vector2(up.y, up.z).sqrMagnitude
             ? Mathf.Atan2(-forward.y, forward.z) : Mathf.Atan2(up.z, up.y);
         float sideways = Mathf.Clamp01(led + carried);
-        Quaternion target = Quaternion.AngleAxis(over * Mathf.Rad2Deg * carried, Vector3.right)
+        // About the body's own right, not the view's: a dive roll out of a slide goes the slide's way with the view looking aside.
+        Quaternion target = Quaternion.AngleAxis(over * Mathf.Rad2Deg * carried, Quaternion.Inverse(input) * (model.rotation * Vector3.right))
             * Quaternion.Euler(angles.x * led, angles.y * sideways, angles.z * sideways);
         actionTurn = Quaternion.Slerp(actionTurn, target, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, time)));
         rotation = input * actionTurn;

@@ -1,11 +1,10 @@
 using UnityEngine;
 
 /// <summary>
-/// A dive's committed flight, shared by both dive poses: a slide's jump into one (SlidingState.TryJump), or a body lying on
-/// the ground that goes over an edge (ProneState). The flight keeps its takeoff speed a moment, then eases toward its carry
-/// speed; the body folds down over it (PoseProgress). Until 0.9.289 the Z key launched one too, from the ground or in the
-/// air, and on the ground it became a dive roll (0.9.285-0.9.288); the user had the key and the dive go (2026-11-21:
-/// "걍 z랑 다이브를 뺄까", then "Only remove Z and dive").
+/// A dive's committed flight, shared by both dive poses: a body lying on the ground that goes over an edge (ProneState). The
+/// flight keeps its takeoff speed a moment, then eases toward its carry speed; the body folds down over it (PoseProgress).
+/// Until 0.9.289 the Z key launched one too (the user, 2026-11-21: "Only remove Z and dive"), and until 0.9.335 a slide's
+/// jump, which is a dive roll on the ground now (MovementLanding.TryDiveRoll).
 /// </summary>
 public sealed class MovementDive
 {

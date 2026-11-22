@@ -270,9 +270,20 @@ public sealed partial class PlayerBody
         playingOut = false;
     }
 
-    // As Beatrun's safety roll picks them.
-    private string RollFor() => !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
+    // A slide's jump is the dive roll; a landing's as Beatrun's safety roll picks them.
+    private string RollFor() => player.Abilities.Landing.DiveRoll ? player.AbilitySettings.diveRoll
+        : !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
         : player.HasCeilingAbove(player.StandingColliderHeight) ? landCrouch : rollLand;
+
+    // A dive roll goes the way the slide went, wherever the view looks: the body keeps facing it, as it did sliding.
+    private void FaceRoll()
+    {
+        Vector3 way = Vector3.ProjectOnPlane(player.Abilities.ActionDirection, Vector3.up);
+        if (way.sqrMagnitude > 1e-4f) legYaw = Mathf.Atan2(way.x, way.z) * Mathf.Rad2Deg;
+        targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
+        legsPlanted = true;
+        turning = 0;
+    }
 
     private string DownClip(MovementLanding.Pose pose) =>
         pose == MovementLanding.Pose.Back ? heavyLandBack : pose == MovementLanding.Pose.FaceDown ? heavyLandFaceDown : heavyLand;

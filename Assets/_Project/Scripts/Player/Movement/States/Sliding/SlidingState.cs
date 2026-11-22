@@ -34,16 +34,10 @@ public sealed class SlidingState : MovementBaseState
 
     public override bool TryJump()
     {
-        if (ctx.CurrentStateDuration < ctx.slideJumpMinDuration || ctx.HasCeilingAbove(ctx.StandingColliderHeight)) return false;
-        Vector3 direction = new Vector3(ctx.SlideDirection.x, 0f, ctx.SlideDirection.z).normalized;
-        if (direction.sqrMagnitude < 0.01f) direction = ctx.transform.forward;
-        float speed = Mathf.Max(ctx.slideJumpMinSpeed, ctx.CurrentSlideSpeed + ctx.slideJumpSpeedBonus);
-        ctx.HorizontalVelocity = direction * speed;
-        ctx.VerticalVelocity = Mathf.Sqrt(2f * ctx.slideKickJumpHeight * Mathf.Abs(ctx.gravity)) + ctx.GetSpeedScaledPop(speed);
-        ctx.DiveBodyForward = direction;
-        ctx.ChangeState(PlayerMovement.MovementState.Diving);
-        ctx.Actions.LeaveGround();
-        return true;
+        // A dive roll ahead; the pack has none for a body sliding back first.
+        if (ctx.CurrentStateDuration < ctx.slideJumpMinDuration || ctx.Actions.SlideFacesBack) return false;
+        Vector3 direction = Vector3.ProjectOnPlane(ctx.SlideDirection, Vector3.up).normalized;
+        return direction.sqrMagnitude > .01f && ctx.Abilities.Landing.TryDiveRoll(direction);
     }
 
     private void StopSlide()

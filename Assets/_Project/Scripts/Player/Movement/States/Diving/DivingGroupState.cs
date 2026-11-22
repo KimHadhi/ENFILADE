@@ -15,7 +15,7 @@ public sealed class DivingGroupState : MovementBaseState
         bool supine = ctx.CurrentState == PlayerMovement.MovementState.SupineDiving;
         if (speed > ctx.SlideEndSpeed)
             ctx.StartLandingSlide(supine ? PlayerMovement.MovementState.SupineSliding : PlayerMovement.MovementState.HeadFirstSliding,
-                speed, supine ? -ctx.DiveBodyForward : ctx.DiveBodyForward, false);
+                speed, supine ? -ctx.DiveBodyForward : ctx.DiveBodyForward);
         else
             ctx.ChangeState(supine ? PlayerMovement.MovementState.Supine : PlayerMovement.MovementState.Proning);
     }

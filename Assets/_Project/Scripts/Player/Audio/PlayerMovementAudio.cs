@@ -128,6 +128,12 @@ public sealed class PlayerMovementAudio : MonoBehaviour
                     Cue("BarSwing", null, true);
                 lastBarAngle = traversal.Angle;
                 break;
+            case MovementState.LandingRoll:
+                // A dive roll's body meets the ground a moment after it throws itself on.
+                float downAt = player.AbilitySettings.diveRollDown - player.AbilitySettings.diveRollFrom;
+                if (player.Abilities.Landing.DiveRoll && player.CurrentStateDuration >= downAt && player.CurrentStateDuration - dt < downAt)
+                    Cue("Roll", Ground());
+                break;
             case MovementState.HeavyLanding:
                 // Once, as the body pushes itself up off the ground.
                 float upAt = getUpShare * player.Abilities.Landing.HeavyDuration;
@@ -183,7 +189,9 @@ public sealed class PlayerMovementAudio : MonoBehaviour
             case MovementState.SupineDiving: Cue("Dive", Ground()); break;
             // From a crouch the dodge is a crouched slide, as quiet as a crouched step to zombies (SoundCues DodgeLow).
             case MovementState.StepDodge: Cue(player.IsCrouchStance ? "DodgeLow" : "Dodge", Ground()); break;
-            case MovementState.LandingRoll: Cue(player.Abilities.Landing.LandsInPlace ? "LandInPlace" : "Roll", Ground()); break;
+            case MovementState.LandingRoll:
+                Cue(player.Abilities.Landing.LandsInPlace ? "LandInPlace" : player.Abilities.Landing.DiveRoll ? "Dive" : "Roll", Ground());
+                break;
             case MovementState.DashPush: Cue("DashPush", Ground()); break;
             case MovementState.Vault: Cue("Vault", Surfaces.Of(traversal.Obstacle.Surface), true); break;
             case MovementState.Mantle:

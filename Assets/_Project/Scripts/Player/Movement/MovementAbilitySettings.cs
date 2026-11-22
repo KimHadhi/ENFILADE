@@ -244,6 +244,11 @@ public sealed class MovementAbilitySettings
     public string rollTravel = "Roll_F", rollRunTravel = "RollToRun_F";
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
     [Min(0f)] public float rollRunSpeed = 4.4f;
+    [Tooltip("A slide's jump, a dive roll: its clip. How far and at what pace it goes is its Tables/Player/GaitMoves.csv row (kind travel).")]
+    public string diveRoll = "DiveRoll_F";
+    [Tooltip("The clip's moment a dive roll begins at (s), the body already thrown: the stand and the kick before it are left "
+        + "out, for it comes up out of a slide. And the moment the body meets the ground (s, the roll's sound).")]
+    [Min(0f)] public float diveRollFrom = .14f, diveRollDown = .5f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;

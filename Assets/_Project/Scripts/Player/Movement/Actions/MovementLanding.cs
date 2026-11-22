@@ -69,11 +69,15 @@ public sealed class MovementLanding
     public bool LandsInPlace { get; internal set; }
     /// <summary>The landing roll under way began at a sprint and runs on out of itself (RollToRun).</summary>
     public bool RollRuns { get; internal set; }
+    /// <summary>The roll under way is a slide's jump (TryDiveRoll), not a landing's.</summary>
+    public bool DiveRoll { get; internal set; }
+    /// <summary>The clip's moment the moving roll begins at (s).</summary>
+    public float RollFrom => DiveRoll ? ctx.AbilitySettings.diveRollFrom : 0f;
     // The moving roll's travel as its clip goes.
     private readonly ClipTravel roll = new ClipTravel();
     /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, its clip at its own pace; a
     /// landing on the spot holds its time, longer when it hurt.</summary>
-    public float RollTime => !LandsInPlace ? roll.Up
+    public float RollTime => !LandsInPlace ? roll.Up - RollFrom
         : hurtLanding ? Mathf.Max(ctx.AbilitySettings.rollLandTime, ctx.AbilitySettings.rollLandHurtTime) : ctx.AbilitySettings.rollLandTime;
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
@@ -270,12 +274,36 @@ public sealed class MovementLanding
         if (!inPlace && !roll.Begin(runs ? settings.rollRunTravel : settings.rollTravel, 0f, settings.clipTravelMost)) inPlace = true;
         LandsInPlace = inPlace;
         RollRuns = runs && !inPlace;
+        DiveRoll = false;
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
         ctx.Abilities.InputConsumed = true;
         ctx.Actions.ClearJumpBuffer();
         // No camera kick: the roll's head turns the view over (BodyGaze). Until 0.9.286 a 75-degree pitch spring stood in
         // for it.
+        return true;
+    }
+
+    /// <summary>
+    /// A slide's jump (SlidingState): the body throws itself on the way it slides, rolls over and is up on its feet (BIPER Female
+    /// Runner's DiveRoll_F; the user, 2026-11-22: "슬라이딩 점프는 female runner escape 모션의 다이브 롤 있으니까 다이브 롤 후
+    /// 서기로 바꿔"). The roll state carries it as it does a landing's roll, at its clip's own travel, until the body is back up;
+    /// the body keeps facing the way it went (PlayerBody.FaceRoll). Until 0.9.335 the jump was a dive through the air onto the
+    /// belly. False in the air, under a roof too low to roll, against a wall, or with no travel baked.
+    /// </summary>
+    internal bool TryDiveRoll(Vector3 direction)
+    {
+        if (!ctx.IsGrounded || ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
+        // A wall right ahead; a step or a slope up the capsule goes over is none.
+        Vector3 ahead = ctx.transform.position + direction * 0.6f
+            + Vector3.up * (ctx.Posture.defaultStepOffset * Mathf.Abs(ctx.transform.lossyScale.y));
+        if (!ctx.Abilities.Traversal.Detector.ClearCapsule(ahead, ctx.CrouchColliderHeight)) return false;
+        var settings = ctx.AbilitySettings;
+        if (!roll.Begin(settings.diveRoll, settings.diveRollFrom, settings.clipTravelMost)) return false;
+        LandsInPlace = RollRuns = false;
+        DiveRoll = true;
+        ctx.Abilities.ActionDirection = direction;
+        ctx.ChangeState(State.LandingRoll);
         return true;
     }
 
@@ -340,7 +368,7 @@ public sealed class MovementLanding
     {
         ClearFall();
         rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
-        IsKnockedBack = hurtLanding = RollRuns = false;
+        IsKnockedBack = hurtLanding = RollRuns = DiveRoll = false;
         LastTier = Tier.Light;
     }
 

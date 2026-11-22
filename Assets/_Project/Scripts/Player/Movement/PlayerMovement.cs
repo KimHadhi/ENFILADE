@@ -616,8 +616,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal void RaiseLadderStepped(bool leftHand) => LadderStepped?.Invoke(leftHand);
     internal void RaiseLadderSlideStopped() => LadderSlideStopped?.Invoke();
     public void StartSlide(float speed, bool applyBoost = true) => Actions.StartSlide(speed, applyBoost);
-    public void StartLandingSlide(MovementState state, float speed, Vector3 fallback, bool applyBoost) => Actions.StartLandingSlide(state, speed, fallback, applyBoost);
-    public float GetSpeedScaledPop(float speed) => Actions.GetSpeedScaledPop(speed);
+    public void StartLandingSlide(MovementState state, float speed, Vector3 fallback) => Actions.StartLandingSlide(state, speed, fallback);
     public float GetSlideSlopeDot(Vector3 direction) => Motor.GetSlideSlopeDot(direction);
     public bool IsSlideStepContact(ControllerColliderHit hit) => Motor.IsSlideStepContact(hit);
     public bool HasCeilingAbove(float height) => Posture.HasCeilingAbove(height);

@@ -80,7 +80,7 @@ public sealed class MovementActions
         slideCooldownTimer = ctx.slideCooldown;
     }
 
-    public void StartLandingSlide(MovementState slideState, float currentSpeed, Vector3 fallbackDir, bool applyBoost)
+    public void StartLandingSlide(MovementState slideState, float currentSpeed, Vector3 fallbackDir)
     {
         ctx.ChangeState(slideState);
         sprintProgress = 0f;
@@ -90,9 +90,7 @@ public sealed class MovementActions
         // As StartSlide. Down from a dive on the back the view is round toward the back (PlayerLook holds it there), so
         // the slide on the back faces back along the slide, feet trailing, as the dive did.
         FaceSlideFrom(ctx.transform.eulerAngles.y);
-        float boost = applyBoost ? ctx.diveSlideKickBoost : 0f;
-        float baseTargetSpeed = currentSpeed + boost;
-        CurrentSlideSpeed = (currentSpeed > ctx.maxLandingSlideSpeed) ? currentSpeed : Mathf.Min(baseTargetSpeed, ctx.maxLandingSlideSpeed);
+        CurrentSlideSpeed = currentSpeed;
         slideCooldownTimer = ctx.slideCooldown;
     }
 
@@ -155,6 +153,4 @@ public sealed class MovementActions
         LeaveGround();
         ctx.RaiseJumped();
     }
-
-    public float GetSpeedScaledPop(float speed) => Mathf.Min(Mathf.Max(0f, speed) * ctx.divePopPerSpeed, ctx.maxAdditionalDivePop);
 }
