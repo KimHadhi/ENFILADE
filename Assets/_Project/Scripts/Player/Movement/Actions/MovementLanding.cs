@@ -80,17 +80,12 @@ public sealed class MovementLanding
     public string RollClip { get; private set; } = "";
     /// <summary>The clip's moment a roll begins at (s): a slide's jump, once its body has thrown itself on, for it comes up out
     /// of a slide.</summary>
-    private float RollFrom => RollKind == Roll.Dive ? RollMotion?.BurstTo ?? 0f : 0f;
-    // How much faster than its clip was made a roll goes: the slide's jump (the user, 2026-11-23: "다이브롤 거리인지 속도인지 암튼
-    // 상향해 주시고").
-    private float RollPace => RollKind == Roll.Dive ? ctx.AbilitySettings.diveRollPace : 1f;
-    /// <summary>The clip's moment the roll is at, this long into it (s).</summary>
-    public float RollMoment(float into) => RollFrom + into * RollPace;
+    public float RollFrom => RollKind == Roll.Dive ? RollMotion?.BurstTo ?? 0f : 0f;
     /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, a landing on the spot its clip's
     /// length.</summary>
-    public float RollTime => RollMotion == null ? PlainRoll : RollKind == Roll.OnTheSpot ? RollMotion.Length : (RollMotion.Up - RollFrom) / RollPace;
+    public float RollTime => RollMotion == null ? PlainRoll : RollKind == Roll.OnTheSpot ? RollMotion.Length : RollMotion.Up - RollFrom;
     /// <summary>How long into the roll its body meets the ground (s).</summary>
-    public float RollDown => RollMotion != null ? (RollMotion.Down - RollFrom) / RollPace : 0f;
+    public float RollDown => RollMotion != null ? RollMotion.Down - RollFrom : 0f;
     /// <summary>Rolling over out of a slide's jump.</summary>
     public bool DiveRolls => ctx.CurrentState == State.LandingRoll && RollKind == Roll.Dive;
     private ClipMotion RollMotion => ctx.MotionOf(RollClip);
@@ -414,8 +409,9 @@ public sealed class MovementLanding
         LastTier = Tier.Light;
     }
 
-    /// <summary>How fast the moving roll goes over this frame (m/s): its clip's travel from now to a frame on, a slide's jump's so
-    /// much longer.</summary>
+    /// <summary>How fast the moving roll goes over this frame (m/s): its clip's travel from now to a frame on. A slide's jump goes
+    /// further than its clip (Ability.diveRollReach; the user, 2026-11-23: "다이브롤 거리인지 속도인지 암튼 상향해 주시고"), in the
+    /// clip's own time and with the clip played as it is ("걸리는 시간 바꾸지 마시고요... 애니메이션 그대로 쓰라고").</summary>
     internal float RollSpeed(float dt)
-        => dt > 0f ? roll.Go(dt * RollPace) / dt * (RollKind == Roll.Dive ? ctx.AbilitySettings.diveRollReach : 1f) : 0f;
+        => dt > 0f ? roll.Go(dt) / dt * (RollKind == Roll.Dive ? ctx.AbilitySettings.diveRollReach : 1f) : 0f;
 }

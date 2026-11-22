@@ -245,8 +245,7 @@ public sealed class MovementAbilitySettings
     public string slideStart = "SlideToRun_Enter", slide = "SlideToRun_10m";
     [Tooltip("A slide's jump, a dive roll: its clip. It goes as far and at the pace the clip does, from where its body has thrown itself on (ClipMotion).")]
     public string diveRoll = "DiveRoll_F";
-    [Tooltip("The dive roll's clip and its way go this much faster than they were made (1), and the way is this much longer (1).")]
-    [Min(.1f)] public float diveRollPace = 1.2f;
+    [Tooltip("How much further than its clip the dive roll goes (1 as the clip does), in the clip's own time.")]
     [Min(.1f)] public float diveRollReach = 1.25f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]

@@ -836,7 +836,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 // A moving roll plays on its own clock and the move goes at its clip's own travel
                 // (MovementLanding.RollSpeed); a landing on the spot plays at its own pace and outlasts the move.
                 if (player.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot) Want(rollClip);
-                else Drive(rollClip, player.Abilities.Landing.RollMoment(stateTime) / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
+                else Drive(rollClip, (player.Abilities.Landing.RollFrom + stateTime) / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
                 if (player.Abilities.Landing.RollKind == MovementLanding.Roll.Dive) FaceRoll();
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
