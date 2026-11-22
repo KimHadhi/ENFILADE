@@ -7,21 +7,23 @@ using UnityEngine.UI;
 /// (GameSettings.objectiveAlert; the user, 2026-11-14, of the two drafts: "A랑 B 둘다 마음에 들어서 설정에서 선택할 수
 /// 있었으면 좋겠어 일단 기본 A, 심플은 B"):
 /// 기본, the card (ObjectiveAlert.Card.cs): a white line is drawn across, a dark card opens up and down from it, NEW
-/// OBJECTIVE and 새 목표 come in on a chip, the objective's words land letter by letter, a pink line runs under them, a
+/// OBJECTIVE and 새 목표 come in on a chip, the objective's words land letter by letter, a white line runs under them, a
 /// soft light passes; then the card flies off into the objective bar at the top left, which lights up as it lands
 /// (MissionBarLook.Land).
-/// 심플, the ribbon (ObjectiveAlert.Ribbon.cs): a band opens from the middle with a pink head, NEW OBJECTIVE and its
-/// breathing arrows, and the words are typed onto it after a pink caret; then the band closes.
+/// 심플, the ribbon (ObjectiveAlert.Ribbon.cs): a band opens from the middle with a lit head, NEW OBJECTIVE and its
+/// breathing arrows, and the words are typed onto it after a white caret; then the band closes.
+/// Their surfaces are the addon HUD's (HudTone): its black box held dense, white lines and words, the head lit as its
+/// selector lights the chosen box with ink on it, every word in its face.
 /// Nothing blinks: what draws the eye breathes slowly (the old alert flashed on and off, and the drafts' fast blink nearly
-/// gave the user a panic attack). Built in code on the HUD prefab's ObjectiveAlert, the place at the top centre; MissionHUD
-/// says what, how wide it may be (clear of the bar), plays its sound and makes it give way to the Tab screen. Real time.
+/// gave the user a panic attack). Built in code on the HUD prefab's ObjectiveAlert, the place at the top centre, its
+/// middle as far down as Hud.csv ObjectiveAlert.top says (above the warning bands, AlertHUD); MissionHUD says what, how
+/// wide it may be (clear of the bar), plays its sound and makes it give way to the Tab screen. Real time.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed partial class ObjectiveAlert : MonoBehaviour
 {
     // Each letter lands this long after the one before, over this long (s), from this many times its size.
     private const float LetterStep = .035f, LetterSeconds = .3f, LetterFrom = 2f;
-    private static readonly Color BodyColor = new Color(.07f, .06f, .08f, .96f);
 
     private RectTransform root;
     private ObjectiveAlertLook shown;
@@ -40,6 +42,9 @@ public sealed partial class ObjectiveAlert : MonoBehaviour
     public void Play(string words, float widest, RectTransform bar, MissionBarLook barLook)
     {
         root = (RectTransform)transform;
+        // Its middle this far under the screen's top (px at 1080p), clear above the warning bands. The fly into the bar
+        // reads the bar's place from here every frame, so it lands wherever the alert stands.
+        root.anchoredPosition = new Vector2(root.anchoredPosition.x, -GameTables.Number(HudCamera.TableName, "ObjectiveAlert", "top", 96f));
         shown = GameSettings.Current.objectiveAlert;
         target = bar;
         landOn = barLook;
@@ -97,9 +102,11 @@ public sealed partial class ObjectiveAlert : MonoBehaviour
         image.uvRect = new Rect(0f, 0f, Mathf.Max(1f, size.x / tile), Mathf.Max(1f, size.y / tile));
     }
 
+    // A label in the addon HUD's face, flat on the card or band.
     private static TextMeshProUGUI Words(RectTransform rect, float size, Color color, TextAlignmentOptions alignment)
     {
         var text = KitStyle.Flat(rect, "", size, alignment, color);
+        HudTone.Apply(text);
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = TextOverflowModes.Overflow;
         return text;

@@ -10,10 +10,11 @@ using UnityEngine.UI;
 /// 설치 개수/최대 제한 현황 표시". Before, the class plate's note gave the count of the one kind in hand, hid it while a
 /// barricade was being placed (the very moment it matters), and the mines had none.
 /// <para>
-/// A kind with as many standing as may stand reads in amber, the colour the preview blinks over the oldest one in the
-/// world (BarricadeGhost's, ClaymorePreview's): the next one set down takes that one away. The kind being placed now
-/// has the HUD's pink edge on top, and its amber breathes while it is full. A count that changes pops. Every kind the
-/// player holds shows, placing or not, and one they no longer hold shows dim for as long as any of it still stands.
+/// A kind with as many standing as may stand reads in the addon HUD's orange (HudTone.Loss), near the amber the preview
+/// blinks over the oldest one in the world (BarricadeGhost's, ClaymorePreview's): the next one set down takes that one
+/// away. The kind being placed now has a white edge on top, and its orange breathes while it is full. A count that
+/// changes pops. Every kind the player holds shows, placing or not, and one they no longer hold shows dim for as long as
+/// any of it still stands. Its surfaces are the addon HUD's (HudTone); its shapes and motion are its own.
 /// </para>
 /// It stands in the flow under the class plate: ClassHUD puts whatever comes next (the timed effects) under Reach.
 /// The chips' places are a pure function of how many there are (Slot), so the line can be checked without playing.
@@ -22,7 +23,7 @@ using UnityEngine.UI;
 public sealed class DeployStrip
 {
     public const string Table = "ClassHud", Row = "Deploy";
-    /// <summary>The colour of the one that goes next: the amber the previews blink over it in the world.</summary>
+    /// <summary>The colour of the one that goes next in the world: the amber the previews blink over it (ClaymoreMine's).</summary>
     public static readonly Color Amber = new Color(1f, .62f, .18f);
     private const float PopSeconds = .22f;
 
@@ -140,21 +141,21 @@ public sealed class DeployStrip
             chip.Count.rectTransform.localScale = Vector3.one * (1f + .16f * (1f - Mathf.Clamp01(chip.PopAge / PopSeconds)));
             bool picked = chosen.Length > 0 && string.Equals(chosen, line.Kind.Id, System.StringComparison.OrdinalIgnoreCase);
             float held = line.Held ? 1f : .4f;
-            chip.Name.color = KitStyle.With(KitStyle.Ice, (picked ? .95f : .6f) * held);
-            Color count = line.Full ? KitStyle.With(Amber, picked ? breath : 1f) : KitStyle.Ice;
+            chip.Name.color = HudTone.With(HudTone.Text, (picked ? .95f : .6f) * held);
+            Color count = line.Full ? HudTone.With(HudTone.Loss, picked ? breath : 1f) : HudTone.Text;
             count.a *= held;
             chip.Count.color = count;
-            chip.Top.color = picked ? KitStyle.Accent : Color.clear;
-            // The foot: how full, as a bar; amber once full.
+            chip.Top.color = picked ? HudTone.Text : Color.clear;
+            // The foot: how full, as a bar; orange once full.
             chip.FootFill.anchorMax = new Vector2(line.Most > 0 ? Mathf.Clamp01((float)line.Count / line.Most) : 0f, 1f);
-            chip.Foot.color = line.Full ? KitStyle.With(Amber, held) : KitStyle.With(KitStyle.Ice, .55f * held);
+            chip.Foot.color = line.Full ? HudTone.With(HudTone.Loss, held) : HudTone.With(HudTone.Text, .55f * held);
         }
     }
 
     private Chip Make()
     {
         var chip = new Chip { Root = KitStyle.TopLeft("Chip", root, Vector2.zero, new Vector2(least, height)) };
-        KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Back", chip.Root), KitStyle.With(KitStyle.Ink, .78f)), 4f);
+        KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Back", chip.Root), HudTone.Box), 4f);
         var top = KitStyle.Stretch("Top", chip.Root);
         top.anchorMin = new Vector2(0f, 1f);
         top.anchorMax = Vector2.one;
@@ -166,23 +167,24 @@ public sealed class DeployStrip
         track.anchorMax = new Vector2(1f, 0f);
         track.pivot = new Vector2(.5f, 0f);
         track.sizeDelta = new Vector2(0f, 3f);
-        KitStyle.Fill(track, KitStyle.With(KitStyle.Ice, .12f));
+        KitStyle.Fill(track, HudTone.With(HudTone.Text, .12f));
         chip.FootFill = KitStyle.Stretch("Fill", track);
-        chip.Foot = KitStyle.Fill(chip.FootFill, KitStyle.Ice);
+        chip.Foot = KitStyle.Fill(chip.FootFill, HudTone.Text);
         // The name small over the count: a chip is too narrow for both on one line.
         var name = KitStyle.Stretch("Name", chip.Root);
         name.anchorMin = new Vector2(0f, .5f);
         name.offsetMin = new Vector2(5f, 0f);
         name.offsetMax = new Vector2(-3f, -2f);
-        chip.Name = KitStyle.Label(name, "", nameSize, TextAlignmentOptions.TopLeft, KitStyle.Soft);
-        chip.Name.fontStyle = FontStyles.Normal;
+        chip.Name = KitStyle.Label(name, "", nameSize, TextAlignmentOptions.TopLeft, HudTone.Grey);
+        HudTone.Apply(chip.Name);
         chip.Name.textWrappingMode = TextWrappingModes.NoWrap;
         chip.Name.overflowMode = TextOverflowModes.Ellipsis;
         var count = KitStyle.Stretch("Count", chip.Root);
         count.anchorMax = new Vector2(1f, .62f);
         count.offsetMin = new Vector2(5f, 4f);
         count.offsetMax = new Vector2(-3f, 0f);
-        chip.Count = KitStyle.Label(count, "", countSize, TextAlignmentOptions.BottomLeft, KitStyle.Ice);
+        chip.Count = KitStyle.Label(count, "", countSize, TextAlignmentOptions.BottomLeft, HudTone.Text);
+        HudTone.Apply(chip.Count);
         chip.Count.textWrappingMode = TextWrappingModes.NoWrap;
         return chip;
     }

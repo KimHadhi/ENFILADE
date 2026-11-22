@@ -14,8 +14,8 @@ public static class KitSound
 {
     /// <summary>
     /// Buy: something was paid for. Refuse: it couldn't be. Alert: a teammate went down or died (AlertHUD). The Pick
-    /// cues: this player took ammo, a medkit, a shield cell, money or a gun off the floor (FieldPickups). Escape: a
-    /// chapter is escaped (ChapterEndBanner). Stealth (StealthMarkersHUD, CampaignRun): Suspect, a zombie stopped to look
+    /// cues: this player took ammo, a medkit, a shield cell, money or a gun off the floor (FieldPickups). Escape: the
+    /// results show's rows and its wait (ResultsShow). Stealth (StealthMarkersHUD, CampaignRun): Suspect, a zombie stopped to look
     /// this player's way; Spotted, one woke on them; Unseen, a stretch got through without being found.
     /// </summary>
     /// Charge: an Assault's CHARGE sounded (ClassKit). Taunt: a Knight's taunt went out (its own, or a friend's, softer

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 // ObjectiveAlert: 심플, the ribbon the objective's words are typed onto. One part of the class; the rest is in ObjectiveAlert.cs and the file beside it.
 public sealed partial class ObjectiveAlert
 {
-    // The ribbon: its height, slant, the pink head's width and slant, its least width, the room round the words, the
+    // The ribbon: its height, slant, the lit head's width and slant, its least width, the room round the words, the
     // words' size and least size (px).
     private const float RibbonHeight = 52f, RibbonSlant = 14f, HeadWidth = 176f, HeadSlant = 16f, RibbonLeast = 440f,
         RibbonRoom = 232f, TypeSize = 25f, TypeLeast = 16f;
@@ -15,7 +15,6 @@ public sealed partial class ObjectiveAlert
         RibbonHeld = 1.4f;
     // The head's arrows and the caret breathe: once in this long (s), dimming only to this.
     private const float ArrowBreath = 1.4f, ArrowDim = .6f, CaretBreath = 1.6f, CaretDim = .35f;
-    private static readonly Color RibbonColor = new Color(.06f, .05f, .07f, .94f);
 
     private RectTransform ribbon, band, caret;
     private RawImage ribbonGrain;
@@ -67,18 +66,19 @@ public sealed partial class ObjectiveAlert
     {
         ribbon = Stretched("Ribbon", root);
         ribbonGroup = ribbon.gameObject.AddComponent<CanvasGroup>();
+        // The band is the HUD's box, held dense as an alert stands out.
         band = Stretched("Band", ribbon);
-        KitSkew.On(Fill(band, RibbonColor), RibbonSlant);
+        KitSkew.On(Fill(band, HudTone.BoxHeld), RibbonSlant);
         band.gameObject.AddComponent<Mask>().showMaskGraphic = true;
         ribbonGrain = KitStyle.Raw(Stretched("Grain", band), KitShapes.Grain, KitStyle.With(Color.white, .05f));
 
-        // The pink head: three arrows breathing, and NEW OBJECTIVE.
+        // The head, lit as the addon's selector lights its chosen box: three arrows breathing, and NEW OBJECTIVE, in ink.
         var head = FeelUI.Rect("Head", band);
         head.anchorMin = Vector2.zero;
         head.anchorMax = Vector2.up;
         head.pivot = new Vector2(0f, .5f);
         head.sizeDelta = new Vector2(HeadWidth, 0f);
-        KitSkew.On(Fill(head, KitStyle.Accent), HeadSlant);
+        KitSkew.On(Fill(head, HudTone.Lit), HeadSlant);
         var arrowRoot = FeelUI.Rect("Arrows", head);
         arrowRoot.anchorMin = arrowRoot.anchorMax = new Vector2(0f, .5f);
         arrowRoot.pivot = new Vector2(0f, .5f);
@@ -90,28 +90,26 @@ public sealed partial class ObjectiveAlert
         label.anchorMax = Vector2.one;
         label.offsetMin = new Vector2(48f, 0f);
         label.offsetMax = new Vector2(-14f, 0f);
-        headWords = Words(label, 11f, Color.white, TextAlignmentOptions.MidlineLeft);
-        headWords.fontStyle |= FontStyles.Bold;
+        headWords = Words(label, 11f, HudTone.Ink, TextAlignmentOptions.MidlineLeft);
         headWords.characterSpacing = 24f;
 
-        // The words, typed in after a pink caret.
+        // The words, typed in after a white caret.
         var words = FeelUI.Rect("Words", band);
         words.anchorMin = Vector2.zero;
         words.anchorMax = Vector2.one;
         words.offsetMin = new Vector2(HeadWidth + 16f, 0f);
         words.offsetMax = new Vector2(-26f, 0f);
-        typed = Words(words, TypeSize, Color.white, TextAlignmentOptions.MidlineLeft);
-        FontRoles.Apply(typed, FontRoles.Alarm);
+        typed = Words(words, TypeSize, HudTone.Text, TextAlignmentOptions.MidlineLeft);
         caret = FeelUI.Rect("Caret", typed.rectTransform);
         caret.anchorMin = caret.anchorMax = new Vector2(.5f, .5f);
         caret.pivot = new Vector2(0f, .5f);
         caret.sizeDelta = new Vector2(3f, 26f);
         caretGroup = caret.gameObject.AddComponent<CanvasGroup>();
-        Fill(caret, KitStyle.Accent);
+        Fill(caret, HudTone.Text);
         ribbon.gameObject.SetActive(false);
     }
 
-    // One arrow (>) of two thin strokes meeting at its point, this far along the head.
+    // One arrow (>) of two thin strokes meeting at its point, this far along the head, in ink on the lit head.
     private static void Arrow(RectTransform parent, float x)
     {
         for (int k = 0; k < 2; k++)
@@ -122,7 +120,7 @@ public sealed partial class ObjectiveAlert
             stroke.anchoredPosition = new Vector2(x + 7f, 0f);
             stroke.sizeDelta = new Vector2(8f, 2.5f);
             stroke.localRotation = Quaternion.Euler(0f, 0f, k == 0 ? 40f : -40f);
-            Fill(stroke, Color.white);
+            Fill(stroke, HudTone.Ink);
         }
     }
 }

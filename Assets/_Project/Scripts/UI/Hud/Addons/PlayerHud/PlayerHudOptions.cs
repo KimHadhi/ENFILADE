@@ -65,8 +65,11 @@ namespace HudAddons
         public Color32 eqpColor = new Color32(255, 255, 255, 255);
 
         // ---- Environment hazards (hazards, hazards_x/y, hazards_color_*) ----
+        // The addon's place (772.8, 958.5) is beside its centred health bar; with the bar moved left as the video has it,
+        // that place fell on our class plate at the foot of the screen's middle. The boxes go with the bar instead, just
+        // past its right end: (530, 968.5) on 1080p.
         public bool hazards = true;
-        public float hazardsX, hazardsY;
+        public float hazardsX = -243f, hazardsY = 10f;
         public Color32 hazardsColor = new Color32(255, 0, 0, 255);
 
         // ---- Indicators (sense; flick_armor, flick_damage, flick_heal, flick_fade; shake, shake_intensity, shake_fade) ----

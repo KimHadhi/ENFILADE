@@ -40,13 +40,13 @@ public static class MomentLook
 
     /// <summary>
     /// The colour a class's moments are drawn in: the class's one colour (ClassLook, Tables/Classes ClassColours.csv), the
-    /// same one its cards, its row on the Tab board and its kill feed flairs wear, or the HUD's pink for a class without
+    /// same one its cards, its row on the Tab board and its kill feed flairs wear, or the HUD's white for a class without
     /// a row. Until 2026-11-18 the moments had colours of their own here (MomentFx.csv Class.&lt;id&gt; and a copy in this
     /// code), and four classes showed in two colours: the Knight purple on its ultimate's band and steel blue on its
     /// cards, the Point orange and pink, the Détente red and mint, the Support blue and orange. The user, asked which is
-    /// the class's colour: "카드 쪽이 그 클래스의 색을 써야 합니다". The rest of the HUD stays black, white and pink.
+    /// the class's colour: "카드 쪽이 그 클래스의 색을 써야 합니다". The rest of the HUD wears the addon HUD's colours (HudTone).
     /// </summary>
-    public static Color ColorOf(string classId) => ClassLook.Colour(Id(classId), KitStyle.Accent);
+    public static Color ColorOf(string classId) => ClassLook.Colour(Id(classId), HudTone.Text);
 
     /// <summary>A class's own sigil (the C drafts, with the user's notes).</summary>
     public static Sigil SigilOf(string classId) => Id(classId) switch

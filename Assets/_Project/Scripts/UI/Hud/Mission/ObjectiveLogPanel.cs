@@ -2,9 +2,10 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// The objectives on the Tab screen, in the manner of PAYDAY 2's list: what's been done in green, and what to do now in
-/// white with its progress and details. It slides in where the mission bar slides out, so one reads as turning into the
-/// other. Reads MissionTracker. Its rows are made up front.
+/// The objectives on the Tab screen, in the manner of PAYDAY 2's list: what's been done quiet in grey, and what to do now
+/// in white with its progress and details. It slides in where the mission bar slides out, so one reads as turning into
+/// the other. Its surfaces are the addon HUD's (HudTone): its black box under each row (held dense under what to do now),
+/// white ticks and progress, its face. Reads MissionTracker. Its rows are made up front.
 /// </summary>
 public sealed class ObjectiveLogPanel
 {
@@ -17,10 +18,11 @@ public sealed class ObjectiveLogPanel
     private static string Waiting => Texts.Get("objective.waiting");
     private static string WaitingDetail => Texts.Get("objective.waiting.detail");
     private const float TickShare = 7f / Width;
-    // The mint of the HUD's TAB key, so the list reads as what that key opens and not as the mission bar again.
+    // A mint that ModeScreen's title and the downed countdown (PlayerLifeHUD) are drawn in; the list itself wears the
+    // HUD's tones (HudTone).
     public static readonly Color Accent = new Color(.34f, .91f, .72f);
-    private static readonly Color DonePlate = new Color(0f, 0f, 0f, .4f), CurrentPlate = new Color(0f, 0f, 0f, .55f);
-    private static readonly Color Track = new Color(.34f, .91f, .72f, .18f), Soft = new Color(.82f, .84f, .88f);
+    // The progress track: white, faint.
+    private const float TrackAlpha = .18f;
 
     private sealed class DoneRow { public RectTransform root; public TextMeshProUGUI label; }
 
@@ -37,10 +39,11 @@ public sealed class ObjectiveLogPanel
         for (int i = 0; i < DoneRows; i++)
         {
             var row = new DoneRow { root = FeelUI.Rect("Done", root) };
-            Plate(row.root, DonePlate);
+            Plate(row.root, HudTone.Box);
             Tick(row.root);
             row.label = FeelUI.ScoreLabel("Label", row.root, 18f, TextAlignmentOptions.Left);
-            row.label.color = Accent;
+            HudTone.Apply(row.label);
+            row.label.color = HudTone.Grey;
             Place(row.label.rectTransform, TextInset, 0f, Width - TextInset * 2f, DoneHeight);
             row.label.alignment = TextAlignmentOptions.MidlineLeft;
             row.root.gameObject.SetActive(false);
@@ -48,21 +51,25 @@ public sealed class ObjectiveLogPanel
         }
 
         current = FeelUI.Rect("Current", root);
-        Plate(current, CurrentPlate);
+        Plate(current, HudTone.BoxHeld);
         Tick(current);
         title = FeelUI.ScoreLabel("Title", current, 21f, TextAlignmentOptions.MidlineLeft);
+        HudTone.Apply(title);
+        title.color = HudTone.Text;
         counter = FeelUI.ScoreLabel("Counter", current, 19f, TextAlignmentOptions.MidlineRight);
-        counter.color = Accent;
+        HudTone.Apply(counter);
+        counter.color = HudTone.Text;
         track = FeelUI.Rect("Track", current);
         var trackFill = track.gameObject.AddComponent<UnityEngine.UI.Image>();
-        trackFill.color = Track;
+        trackFill.color = HudTone.With(HudTone.Text, TrackAlpha);
         trackFill.raycastTarget = false;
         fill = FeelUI.Rect("Fill", track);
         var barFill = fill.gameObject.AddComponent<UnityEngine.UI.Image>();
-        barFill.color = Accent;
+        barFill.color = HudTone.Text;
         barFill.raycastTarget = false;
         detail = FeelUI.ScoreLabel("Detail", current, 16f, TextAlignmentOptions.TopLeft);
-        detail.color = Soft;
+        HudTone.Apply(detail);
+        detail.color = HudTone.Grey;
         detail.textWrappingMode = TextWrappingModes.Normal;
         Place(title.rectTransform, TextInset, 0f, Width - 120f, CurrentHeight);
         Place(counter.rectTransform, Width - 108f, 0f, 90f, CurrentHeight);
@@ -113,7 +120,7 @@ public sealed class ObjectiveLogPanel
         var tick = FeelUI.Rect("Tick", plate);
         tick.anchorMin = Vector2.zero; tick.anchorMax = Vector2.one;
         tick.offsetMin = tick.offsetMax = Vector2.zero;
-        tick.gameObject.AddComponent<SlantedHealthGraphic>().Configure(TickShare, 1f, 1d, false, Shear, 0f, Accent, Color.clear, Color.clear);
+        tick.gameObject.AddComponent<SlantedHealthGraphic>().Configure(TickShare, 1f, 1d, false, Shear, 0f, HudTone.Text, Color.clear, Color.clear);
     }
 
     private static void Place(RectTransform rect, float x, float y, float width, float height)

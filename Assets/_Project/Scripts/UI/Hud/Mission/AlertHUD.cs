@@ -13,7 +13,10 @@ using UnityEngine.UI;
 /// and drops from above. A thin line under the words runs out as the band's time does. A danger with a place also
 /// leaves a mark on it: the hazard square and the distance, sliding to the screen's edge and pointing the way when it is
 /// out of view, and staying a while after the band has gone (draft B). The downed keep the mark they had
-/// (TeammateMarkerHUD). Bands turn with a lean as the rest of the HUD does; marks stand where the world is. Built on
+/// (TeammateMarkerHUD). Bands turn with a lean as the rest of the HUD does; marks stand where the world is. The bands
+/// stack under the new-objective card (Hud.csv Alert.firstY, Alert.step), so the two never cover each other. Their
+/// surfaces are the addon HUD's (HudTone): its black box held dense as an alert stands out, the cap lit as its selector
+/// lights the chosen box with the stripes or the diamond in ink, white words, lines and chevrons, its face. Built on
 /// first use, on real time.
 /// </summary>
 [DisallowMultipleComponent]
@@ -22,9 +25,9 @@ public sealed class AlertHUD : MonoBehaviour
     public enum Kind { Danger, Team, Self }
 
     private const int MostBands = 3, MostMarks = 4, Chevrons = 3;
-    // The band (px at 1080p): how far under the screen's top the first stands, its height and the gap to the next, its cap
-    // and lean, the words' size and their room either side, the distance's room, and the least width.
-    private const float Top = 168f, Height = 52f, Gap = 10f, Cap = 60f, Slant = 12f, TextSize = 27f, Pad = 18f, DistanceRoom = 96f,
+    // The band (px at 1080p): its height, its cap and lean, the words' size and their room either side, the distance's
+    // room, and the least width.
+    private const float Height = 52f, Cap = 60f, Slant = 12f, TextSize = 27f, Pad = 18f, DistanceRoom = 96f,
         PlainEnd = 28f, LeastWidth = 300f;
     // Its life (real s): in, all of it, out. How far to the side it starts, or how far above with no side.
     private const float InSeconds = .2f, Life = 2.8f, OutSeconds = .3f, SlideFrom = 300f, DropFrom = 22f;
@@ -32,8 +35,12 @@ public sealed class AlertHUD : MonoBehaviour
     private const float ChevronStep = 18f, ChevronSpeed = 36f, ChevronWidth = 11f, ChevronHeight = 30f, ChevronStroke = 4f;
     // The mark: how far in from the screen's edge it stops, its square, its fade out (s), and how near it steps aside (m).
     private const float EdgeMargin = 76f, Glyph = 40f, MarkOutSeconds = .4f, HiddenWithin = 4f, ShownFrom = 6.5f;
-    private static readonly Color Plate = new Color(.024f, .024f, .031f, .9f);
     private static AlertHUD instance;
+
+    // How far under the screen's top the first band's middle stands, and from one band's middle to the next (Hud.csv
+    // Alert, px at 1080p): under the new-objective card (ObjectiveAlert.top).
+    private static float FirstY => GameTables.Number(HudCamera.TableName, "Alert", "firstY", 188f);
+    private static float Step => GameTables.Number(HudCamera.TableName, "Alert", "step", 62f);
 
     private sealed class Band
     {
@@ -60,7 +67,7 @@ public sealed class AlertHUD : MonoBehaviour
         public RectTransform root, pointer;
         public CanvasGroup group;
         public HazardGraphic hazard;
-        // A place to find (Find) wears the HUD's diamond in ice instead of the hazard square.
+        // A place to find (Find) wears the HUD's diamond instead of the hazard square.
         public DiamondGraphic diamond;
         public UITriangle arrow;
         public bool find;
@@ -84,7 +91,7 @@ public sealed class AlertHUD : MonoBehaviour
     /// (it died) or it is no longer there.
     /// </summary>
     public static void Danger(string what, Transform where = null, float markSeconds = 0f, Func<bool> gone = null)
-        => Show(Kind.Danger, what, where, KitStyle.Accent, markSeconds, gone);
+        => Show(Kind.Danger, what, where, HudTone.Text, markSeconds, gone);
 
     /// <summary>
     /// An enemy saying who it is: an elite first coming near (its name and how to beat it), a brute arriving or falling.
@@ -100,7 +107,7 @@ public sealed class AlertHUD : MonoBehaviour
     public static void Team(string what, Transform where, Color tint) => Show(Kind.Team, what, where, tint, 0f, null);
 
     /// <summary>Something happened to the player themself.</summary>
-    public static void Self(string what) => Show(Kind.Self, what, null, KitStyle.Ice, 0f, null);
+    public static void Self(string what) => Show(Kind.Self, what, null, HudTone.Text, 0f, null);
 
     private static void Show(Kind kind, string what, Transform where, Color tint, float markSeconds, Func<bool> gone, bool find = false)
     {
@@ -122,13 +129,14 @@ public sealed class AlertHUD : MonoBehaviour
         canvas = (RectTransform)transform;
         bandRoot = FeelUI.Rect("Bands", canvas);
         bandRoot.anchorMin = bandRoot.anchorMax = new Vector2(.5f, 1f);
-        bandRoot.anchoredPosition = new Vector2(0f, -Top);
     }
 
     private void OnDestroy() { if (instance == this) instance = null; }
 
     private void Add(Kind kind, string what, Transform where, Color tint)
     {
+        // Where the bands stand, read as each one comes so a changed table moves them at once.
+        bandRoot.anchoredPosition = new Vector2(0f, -FirstY);
         // The same thing said again while it is still up starts over rather than stacking.
         Band band = null;
         foreach (var live in shown)
@@ -138,7 +146,7 @@ public sealed class AlertHUD : MonoBehaviour
             if (shown.Count >= MostBands) Retire(0);
             band = spare.Count > 0 ? spare.Pop() : BuildBand();
             shown.Add(band);
-            band.y = -(shown.Count - 1) * (Height + Gap);
+            band.y = -(shown.Count - 1) * Step;
         }
         band.kind = kind; band.what = what; band.where = where; band.tint = tint;
         band.age = 0f;
@@ -177,7 +185,6 @@ public sealed class AlertHUD : MonoBehaviour
         mark.find = find;
         mark.hazard.gameObject.SetActive(!find);
         mark.diamond.gameObject.SetActive(find);
-        mark.arrow.color = find ? KitStyle.Ice : KitStyle.Accent;
         // It floats over the head, however tall the thing stands.
         mark.height = (where.TryGetComponent(out CapsuleCollider capsule) ? capsule.height * where.lossyScale.y : 1.8f) + .35f;
         mark.root.gameObject.SetActive(true);
@@ -204,10 +211,11 @@ public sealed class AlertHUD : MonoBehaviour
             shown[i].age += dt;
             if (shown[i].age >= Life) Retire(i);
         }
+        float step = Step;
         for (int i = 0; i < shown.Count; i++)
         {
             // One above it gone, it moves up into the room.
-            shown[i].y = Mathf.Lerp(shown[i].y, -i * (Height + Gap), 1f - Mathf.Exp(-14f * dt));
+            shown[i].y = Mathf.Lerp(shown[i].y, -i * step, 1f - Mathf.Exp(-14f * dt));
             Layout(shown[i], view);
         }
         for (int i = marks.Count - 1; i >= 0; i--)
@@ -231,16 +239,16 @@ public sealed class AlertHUD : MonoBehaviour
     private void Dress(Band band)
     {
         bool danger = band.kind == Kind.Danger, self = band.kind == Kind.Self;
-        band.cap.color = self ? KitStyle.Ice : KitStyle.Accent;
+        band.cap.color = self ? HudTone.Text : HudTone.Lit;
         band.hazard.gameObject.SetActive(danger);
         band.diamond.gameObject.SetActive(!danger);
         band.label.text = band.what;
-        band.label.color = danger ? KitStyle.Accent : KitStyle.Ice;
-        band.line.color = danger ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .55f);
+        band.label.color = HudTone.Text;
+        band.line.color = danger ? HudTone.Text : HudTone.With(HudTone.Text, .55f);
         band.flash.enabled = danger;
         band.distance.gameObject.SetActive(band.placed);
         band.arrows.gameObject.SetActive(band.placed);
-        Color arrow = danger ? KitStyle.Accent : band.tint;
+        Color arrow = danger ? HudTone.Text : band.tint;
         foreach (var chevron in band.chevrons) chevron.color = arrow;
 
         float width = Mathf.Max(LeastWidth, Cap + Pad + band.label.preferredWidth + (band.placed ? DistanceRoom : PlainEnd));
@@ -328,16 +336,16 @@ public sealed class AlertHUD : MonoBehaviour
         var band = new Band { root = FeelUI.Rect("Band", bandRoot) };
         band.group = band.root.gameObject.AddComponent<CanvasGroup>();
         band.group.blocksRaycasts = band.group.interactable = false;
-        band.plate = FeelUI.Panel("Plate", band.root, Plate);
+        band.plate = FeelUI.Panel("Plate", band.root, HudTone.BoxHeld);
         KitSkew.On(band.plate, Slant);
-        band.cap = FeelUI.Panel("Cap", band.root, KitStyle.Accent);
+        band.cap = FeelUI.Panel("Cap", band.root, HudTone.Lit);
         band.cap.rectTransform.sizeDelta = new Vector2(Cap, Height);
         KitSkew.On(band.cap, Slant);
-        band.hazard = HudShapes.Make<HazardGraphic>("Hazard", band.cap.transform, KitStyle.Ink);
+        band.hazard = HudShapes.Make<HazardGraphic>("Hazard", band.cap.transform, HudTone.Ink);
         band.hazard.rectTransform.sizeDelta = new Vector2(Cap, Height);
         band.hazard.Stripe = 9f;
         band.hazard.Slant = Slant;
-        band.diamond = HudShapes.Make<DiamondGraphic>("Diamond", band.cap.transform, KitStyle.Ink);
+        band.diamond = HudShapes.Make<DiamondGraphic>("Diamond", band.cap.transform, HudTone.Ink);
         band.diamond.rectTransform.sizeDelta = Vector2.one * 26f;
 
         band.label = Words("Words", band.root, TextSize, TextAlignmentOptions.MidlineLeft);
@@ -345,8 +353,8 @@ public sealed class AlertHUD : MonoBehaviour
         band.distance = Words("Distance", band.root, 23f, TextAlignmentOptions.MidlineRight);
         band.distance.rectTransform.pivot = new Vector2(1f, .5f);
         band.distance.rectTransform.sizeDelta = new Vector2(DistanceRoom, Height);
-        band.distance.color = KitStyle.Ice;
-        band.line = FeelUI.Panel("Time", band.root, KitStyle.Accent);
+        band.distance.color = HudTone.Text;
+        band.line = FeelUI.Panel("Time", band.root, HudTone.Text);
         band.line.rectTransform.pivot = new Vector2(0f, .5f);
         band.flash = FeelUI.Panel("Glint", band.root, Color.white);
         KitSkew.On(band.flash, Slant);
@@ -354,7 +362,7 @@ public sealed class AlertHUD : MonoBehaviour
         band.arrows = FeelUI.Rect("Arrows", band.root);
         for (int i = 0; i < Chevrons; i++)
         {
-            band.chevrons[i] = HudShapes.Make<ChevronGraphic>("Chevron " + i, band.arrows, KitStyle.Accent);
+            band.chevrons[i] = HudShapes.Make<ChevronGraphic>("Chevron " + i, band.arrows, HudTone.Text);
             band.chevrons[i].rectTransform.sizeDelta = new Vector2(ChevronWidth, ChevronHeight);
         }
         band.root.gameObject.SetActive(false);
@@ -366,34 +374,37 @@ public sealed class AlertHUD : MonoBehaviour
         var mark = new Mark { root = FeelUI.Rect("Mark", canvas) };
         mark.group = mark.root.gameObject.AddComponent<CanvasGroup>();
         mark.group.blocksRaycasts = mark.group.interactable = false;
-        // The hazard square: the HUD's near-black, its pink stripes running.
-        FeelUI.Panel("Square", mark.root, KitStyle.Ink).rectTransform.sizeDelta = Vector2.one * Glyph;
-        mark.hazard = HudShapes.Make<HazardGraphic>("Hazard", mark.root, KitStyle.Accent);
+        // The hazard square: the HUD's box held dense, its white stripes running.
+        FeelUI.Panel("Square", mark.root, HudTone.BoxHeld).rectTransform.sizeDelta = Vector2.one * Glyph;
+        mark.hazard = HudShapes.Make<HazardGraphic>("Hazard", mark.root, HudTone.Text);
         mark.hazard.rectTransform.sizeDelta = Vector2.one * (Glyph - 6f);
         mark.hazard.Stripe = 6f;
         mark.pointer = FeelUI.Rect("Pointer", mark.root);
         mark.pointer.sizeDelta = new Vector2(13f, 20f);
-        mark.diamond = HudShapes.Make<DiamondGraphic>("Diamond", mark.root, KitStyle.Ice);
+        mark.diamond = HudShapes.Make<DiamondGraphic>("Diamond", mark.root, HudTone.Text);
         mark.diamond.rectTransform.sizeDelta = Vector2.one * (Glyph - 8f);
         mark.diamond.gameObject.SetActive(false);
         var arrow = mark.arrow = mark.pointer.gameObject.AddComponent<UITriangle>();
         arrow.raycastTarget = false;
-        arrow.color = KitStyle.Accent;
+        arrow.color = HudTone.Text;
         // Pointing along its own right, so turning it to the way out is one angle.
         arrow.SetCorners(new Vector2(0f, 1f), new Vector2(1f, .5f), new Vector2(0f, 0f));
+        // The distance in the HUD's face, keeping its soft shadow: it stands over the world, not on a plate.
         mark.distance = FeelUI.ScoreLabel("Distance", mark.root, 20f, TextAlignmentOptions.Center);
+        HudTone.Apply(mark.distance);
+        FeelUI.ShadowScore(mark.distance);
         mark.distance.rectTransform.sizeDelta = new Vector2(120f, 26f);
-        mark.distance.color = KitStyle.Ice;
+        mark.distance.color = HudTone.Text;
         mark.root.gameObject.SetActive(false);
         return mark;
     }
 
-    // The band's type: the score font, flat on the plate (a shadow only muddies it there).
+    // The band's type: the HUD's face, flat on the plate (a shadow only muddies it there).
     private static TextMeshProUGUI Words(string name, Transform parent, float size, TextAlignmentOptions alignment)
     {
         var text = FeelUI.ScoreLabel(name, parent, size, alignment);
+        HudTone.Apply(text);
         if (text.font != null && text.font.material != null) text.fontSharedMaterial = text.font.material;
-        text.fontStyle = FontStyles.Bold;
         return text;
     }
 }

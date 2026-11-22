@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// The HUD's shared moves: an ease that overshoots and settles (things that land), and words that land letter by
-/// letter (TMP's own vertices). Used by the new-objective alert (ObjectiveAlert) and the assault panel (AssaultBar).
+/// letter (TMP's own vertices). Used by the new-objective alert (ObjectiveAlert): its card and its ribbon.
 /// </summary>
 public static class KitMotion
 {

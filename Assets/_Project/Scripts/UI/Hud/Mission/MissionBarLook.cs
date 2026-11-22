@@ -5,9 +5,10 @@ using UnityEngine.UI;
 /// <summary>
 /// How the objective bar looks (Hud.csv's Mission row); MissionHUD decides what it says. The sections stand on one line
 /// and rise to their own heights: the ! tab tallest, the count box next, the objective text lowest. That line is the
-/// progress, one segment per target while they fit, and the segment that just filled flashes. The count box carries the strip's dark on past its end, edged in the tab's
-/// orange, its number big and the total small beside it, and the number punches when it moves. One palette: the tab's
-/// orange, the strip's dark, white.
+/// progress, one segment per target while they fit, and the segment that just filled flashes. The count box carries the
+/// strip's box on past its end, edged in the accent, its number big and the total small beside it, and the number punches
+/// when it moves. Its surfaces are the addon HUD's (HudTone): the strip and the count box its faint black box, the accent
+/// white (the table's), the ! tab lit as the addon lights its chosen box with the ! in ink on it, every word in its face.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MissionBarLook : MonoBehaviour, ITableBound
@@ -26,7 +27,7 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
     [SerializeField, Min(16)] private float counterHeight = 43f;
     [SerializeField, Min(6)] private float symbolSize = 38f, titleSize = 19f, counterSize = 24f;
     [Tooltip("The bar's one colour: the ! tab, the count box's edge and the done part of the line.")]
-    [SerializeField] private Color accent = new Color(.937f, .522f, .259f);
+    [SerializeField] private Color accent = Color.white;
     [Tooltip("The line's undone part: the accent darkened to this share.")]
     [SerializeField, Range(0f, 1f)] private float trackShade = .32f;
     [Tooltip("The line's thickness, and the gap between it and the sections above (px).")]
@@ -74,8 +75,10 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         // The thin track that sat inside the strip gives way to the line under the whole bar.
         if (oldProgress != null) oldProgress.transform.parent.gameObject.SetActive(false);
         line = Part<MissionLineGraphic>(LineName);
-        var font = GunFeelSettings.Instance.scoreFont;
-        if (font != null) counter.font = font;
+        // The bar's words in the addon HUD's face, over the faces the prefab gave them.
+        HudTone.Apply(title);
+        HudTone.Apply(counter);
+        HudTone.Apply(symbol);
         // The prefab clips the count with "…". TMP once could not find it here, warned and cut the count plainly (user,
         // 2026-11-11); ClippedOverflow keeps "…" wherever TMP will find it for this font and style.
         counter.overflowMode = FontRoles.ClippedOverflow(counter);
@@ -175,14 +178,17 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
 
     private void LayOut()
     {
-        Color dark = strip != null ? strip.color : new Color(0f, 0f, 0f, .73f);
+        // The strip and the count box are the addon HUD's box.
+        Color dark = HudTone.Box;
+        if (strip != null) strip.color = dark;
         if (badge != null)
         {
             badge.anchorMin = badge.anchorMax = badge.pivot = Vector2.zero;
             badge.anchoredPosition = Vector2.zero;
             badge.sizeDelta = badgeSize;
-            if (tab != null) tab.color = accent;
-            if (symbol != null) symbol.fontSize = symbolSize;
+            // Lit as the addon's selector lights its chosen box: the accent at that box's alpha, the ! in ink on it.
+            if (tab != null) tab.color = HudTone.With(accent, HudTone.Lit.a);
+            if (symbol != null) { symbol.fontSize = symbolSize; symbol.color = HudTone.Ink; }
         }
 
         // The strip, as long as its title needs.
@@ -194,12 +200,12 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         title.rectTransform.offsetMin = new Vector2(titleLeft, 4f);
         title.rectTransform.offsetMax = new Vector2(-TitlePad, -4f);
 
-        // The count box hangs past the strip's end on the same bottom line, in the strip's dark, edged in the accent.
+        // The count box hangs past the strip's end on the same bottom line, in the strip's box, edged in the accent.
         float counterWidth = 0f;
         if (numeric)
         {
             counter.fontSize = counterSize;
-            counter.color = Color.white;
+            counter.color = HudTone.Text;
             counter.alignment = TextAlignmentOptions.Center;
             counterWidth = Mathf.Max(84f, counter.GetPreferredValues(counter.text).x + EdgeWidth + 28f);
             counterRect.anchorMin = counterRect.anchorMax = Vector2.right;

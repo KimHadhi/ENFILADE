@@ -8,20 +8,23 @@ using UnityEngine.UI;
 /// <item>The ultimate's notice, on every PC, whoever fired it. The user's main note on the pick page: "컷인 띠의 저
 /// 깔끔함과 시인성이 좋다. 특히 왼쪽 아래에 궁극기 썼다고 나오는 게 팀원들한테도 뜨면 누가 궁극기 썼는지 다른 데 보고 있어도
 /// 바로 알 것 같아서".
-/// It is a near-black band leaning its class's own way, on the HUD's left plane, beside the teammates' cards. Its parts:
-/// the class colour along its top (white for a frame); the class's sigil drawing itself in its emblem and stamping (the C
-/// drafts' sigils); the ultimate's name; who fired it, in their seat colour; the HUD's pink shard past its tip.
+/// It is a band in the addon HUD's faint black box leaning its class's own way, on the HUD's left plane, at the top left
+/// under the mission bar's Tab row, clear of the portrait panel and the teammates' cards it overlapped where it stood
+/// beside the cards (2026-11-22). Its parts: the class colour along its top (white for a frame); the class's sigil
+/// drawing itself in its emblem and stamping (the C drafts' sigils); the ultimate's name; who fired it, in their seat
+/// colour; a white shard past its tip.
 /// Each class ends its band its own way, so two never read as one template: a blade's point, rank bars, a rangefinder's
 /// ticks, twin cuts, a heartbeat, a nested diamond, hazard stripes.
-/// It wipes open from its left end, holds long enough to read and closes back into it, so it never passes over the
-/// cards beside it; a new one takes the old one's place. Its right end keeps clear of the pieces that follow the
-/// screen's middle (rescue panel, pickup feed, special-kill stamp), so a narrower screen draws it smaller, and it leans
-/// clockwise only, the chat's input being above its right end.</item>
+/// It wipes open from its left end, holds long enough to read and closes back into it; a new one takes the old one's
+/// place. Its right end keeps clear of the pieces that follow the screen's middle (rescue panel, pickup feed,
+/// special-kill stamp), so a narrower screen draws it smaller, and it leans clockwise only, its right end down and away
+/// from the mission bar above it.</item>
 /// <item>The small tag over the class chip, on this player's own screen: CHARGE, DUEL, REVERSAL, GUN KATA. It is a
 /// hairline drawn out from the middle, the word, and a line under it in the class colour (the A drafts). The kata's tag
 /// stamps its own sigil beside the word.</item>
 /// </list>
-/// Real time. Numbers: Tables/MomentFx.csv, rows Notice and Tag.
+/// Both wear the addon HUD's white and font (HudTone), with the class colours. Real time. Numbers: Tables/MomentFx.csv,
+/// rows Notice and Tag.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class MomentHUD : MonoBehaviour, IHudPreview
@@ -95,7 +98,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
 
     /// <summary>This player's reversal: its tag (pick A).</summary>
     public static void Reversal()
-        => Tag(MomentLook.Text(TagRow, "reversal.word", "moment.tag.reversal.word"), MomentLook.Text(TagRow, "reversal.under", "moment.tag.reversal.under"), KitStyle.Accent);
+        => Tag(MomentLook.Text(TagRow, "reversal.word", "moment.tag.reversal.word"), MomentLook.Text(TagRow, "reversal.under", "moment.tag.reversal.under"), HudTone.Text);
 
     /// <summary>This player's Gun Kata: its tag with the kata's own sigil stamped beside it (pick C).</summary>
     public static void Kata(float seconds)
@@ -113,7 +116,9 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         noticeCanvas = (RectTransform)noticeHost.transform;
         plane = HudPlane.Create("Left Plane", noticeHost.transform, HudPlane.Side.Left);
         band = FeelUI.Rect("Moment Notice", plane);
-        band.anchorMin = band.anchorMax = Vector2.zero;
+        // It hangs from the top left, under the mission bar's Tab row, as the bar hangs from the screen's top: placed from
+        // the bottom, a wider screen (21:9) would lift it into the bar. It still opens, leans and grows about its bottom left.
+        band.anchorMin = band.anchorMax = Vector2.up;
         band.pivot = Vector2.zero;
         plate = band.gameObject.AddComponent<BandGraphic>();
         plate.raycastTarget = false;
@@ -122,12 +127,14 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         emblem = emblemRect.gameObject.AddComponent<SigilGraphic>();
         emblem.raycastTarget = false;
         title = FeelUI.ScoreLabel("Title", band, 27f, TextAlignmentOptions.BottomLeft);
-        title.fontStyle = FontStyles.Bold | FontStyles.Italic;
+        HudTone.Apply(title);
+        title.fontStyle = FontStyles.Italic;
         title.characterSpacing = 4f;
         title.textWrappingMode = TextWrappingModes.NoWrap;
         title.overflowMode = TextOverflowModes.Overflow;
         title.raycastTarget = false;
         who = FeelUI.ScoreLabel("Who", band, 13f, TextAlignmentOptions.BottomLeft);
+        HudTone.Apply(who);
         who.characterSpacing = 2f;
         who.textWrappingMode = TextWrappingModes.NoWrap;
         who.raycastTarget = false;
@@ -151,12 +158,13 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         lineGlow = Bar("Line glow", tagRoot, 6f);
         line = Bar("Line", tagRoot, 1.6f);
         tagTitle = FeelUI.ScoreLabel("Word", tagRoot, 24f, TextAlignmentOptions.Bottom);
+        HudTone.Apply(tagTitle);
         tagTitle.characterSpacing = 9f;
-        tagTitle.fontStyle = FontStyles.Bold;
         tagTitle.textWrappingMode = TextWrappingModes.NoWrap;
         tagTitle.raycastTarget = false;
         Place(tagTitle.rectTransform, new Vector2(.5f, 0f), new Vector2(0f, 16f), new Vector2(420f, 30f));
         tagSub = FeelUI.ScoreLabel("Under", tagRoot, 13f, TextAlignmentOptions.Top);
+        HudTone.Apply(tagSub);
         tagSub.characterSpacing = 3f;
         tagSub.textWrappingMode = TextWrappingModes.NoWrap;
         tagSub.raycastTarget = false;
@@ -206,7 +214,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         emblem.Progress = 0f;
         emblem.Ring = -1f;
         title.text = MomentLook.UltTitle(classId);
-        title.color = KitStyle.Ice;
+        title.color = HudTone.Text;
         Place(title.rectTransform, Vector2.zero, new Vector2(block + 22f, height * .38f), new Vector2(width - block - 60f, height * .6f));
         who.text = (string.IsNullOrEmpty(name) ? "" : name + "  ·  ") + MomentLook.UltWhat(classId);
         who.color = colour;
@@ -222,15 +230,17 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
     private void PoseNotice()
     {
         float inSeconds = MomentLook.Number(NoticeRow, "in", .09f), outSeconds = MomentLook.Number(NoticeRow, "out", .14f);
-        float left = MomentLook.Number(NoticeRow, "left", 246f), bottom = MomentLook.Number(NoticeRow, "bottom", 292f);
-        // It wipes open from its left end and closes back into it, so it never passes over the teammates' cards beside it.
+        // Notice.top: its top edge under the screen's top. Notice.floor measures from the foot, so its bottom edge too.
+        float left = MomentLook.Number(NoticeRow, "left", 60f), top = MomentLook.Number(NoticeRow, "top", 180f);
+        float height = band.sizeDelta.y, bottom = (noticeCanvas != null ? noticeCanvas.rect.height : 1080f) - top - height;
+        // It wipes open from its left end and closes back into it.
         float open = 1f - Mathf.Pow(1f - Mathf.Clamp01(noticeAge / Mathf.Max(.01f, inSeconds)), 3f);
         float close = Mathf.Pow(Mathf.Clamp01((noticeAge - inSeconds - noticeHold) / Mathf.Max(.01f, outSeconds)), 3f);
         float fit = NoticeFit(left);
-        band.anchoredPosition = new Vector2(left, bottom);
+        band.anchoredPosition = new Vector2(left, -top - height);
         band.localScale = new Vector3(fit * open * (1f - close), fit, 1f);
-        // Its own roll, clockwise only: raised, its right end would reach the chat's input above; lowered, it stops short
-        // of the HP block below (Notice.floor).
+        // Its own roll, clockwise only: its right end goes down, away from the mission bar above it, and never under
+        // Notice.floor (the HP block's top).
         float tilt = GameSettings.Current.hudTilt;
         float reach = band.sizeDelta.x * fit;
         float most = reach > 1f ? Mathf.Asin(Mathf.Clamp01((bottom - MomentLook.Number(NoticeRow, "floor", 235f)) / reach)) * Mathf.Rad2Deg : 0f;
@@ -246,15 +256,15 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
         if (noticeAge > inSeconds + noticeHold + outSeconds && !previewing) { band.gameObject.SetActive(false); noticeAge = -1f; }
     }
 
-    // The scale that keeps the band between the teammates' cards and the pieces that keep to the screen's middle (the
-    // rescue panel, the pickup feed, the special-kill stamp; stance-room's measure of 2026-11-12): its right end stops at
-    // Notice.right or Notice.middleGap short of the middle, whichever comes first. A narrower screen draws it smaller.
+    // The scale that keeps the band's right end clear of the pieces that keep to the screen's middle (the rescue panel,
+    // the pickup feed, the special-kill stamp; stance-room's measure of 2026-11-12): its right end stops at Notice.right
+    // or Notice.middleGap short of the middle, whichever comes first. A narrower screen draws it smaller.
     private float NoticeFit(float left)
     {
         float design = Mathf.Max(1f, band.sizeDelta.x);
         float canvasWidth = noticeCanvas != null ? noticeCanvas.rect.width : 0f;
         if (canvasWidth <= 1f) return 1f;
-        float right = Mathf.Min(MomentLook.Number(NoticeRow, "right", 706f), canvasWidth * .5f - MomentLook.Number(NoticeRow, "middleGap", 232f));
+        float right = Mathf.Min(MomentLook.Number(NoticeRow, "right", 520f), canvasWidth * .5f - MomentLook.Number(NoticeRow, "middleGap", 232f));
         return Mathf.Clamp((right - left) / design, .4f, 1f);
     }
 
@@ -263,7 +273,7 @@ public sealed class MomentHUD : MonoBehaviour, IHudPreview
     private void ShowTag(string word, string under, Color colour, MomentLook.Sigil? sigil)
     {
         tagTitle.text = word;
-        tagTitle.color = KitStyle.Ice;
+        tagTitle.color = HudTone.Text;
         tagSub.text = under;
         tagSub.color = colour;
         line.color = Color.Lerp(colour, Color.white, .6f);

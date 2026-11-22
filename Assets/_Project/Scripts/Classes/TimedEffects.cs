@@ -126,19 +126,21 @@ public static class TimedEffects
         }
     }
 
-    // A colour cell: one of the HUD's own by name, or #RRGGBB.
+    // A colour cell: one of the HUD's own by name, or #RRGGBB. The HUD's accent and ice are its white emphasis and its red
+    // the addon's (HudTone: the user's pick on 2026-11-22, the addon's colours only, no pink); green, cyan and the bounty's
+    // teal stay, as effects told apart by them and the teal pairs with the bounty marks in the world.
     private static Color ColourOf(string cell)
     {
         switch ((cell ?? "").Trim().ToLowerInvariant())
         {
-            case "accent": return KitStyle.Accent;
-            case "ice": return KitStyle.Ice;
-            case "red": return KitStyle.Red;
+            case "accent": return HudTone.Text;
+            case "ice": return HudTone.Text;
+            case "red": return HudTone.Low;
             case "green": return KitStyle.Green;
             case "cyan": return KitStyle.Cyan;
             case "bounty": return PingMarks.BountyColor;
         }
-        return ColorUtility.TryParseHtmlString(cell, out Color colour) ? colour : KitStyle.Ice;
+        return ColorUtility.TryParseHtmlString(cell, out Color colour) ? colour : HudTone.Text;
     }
 
     /// <summary>

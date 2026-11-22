@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// The angled orange objective tab stays crisp at any Canvas resolution.
+// The objective bar's angled ! tab, drawn as a mesh so it stays crisp at any Canvas resolution.
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class MissionBadgeGraphic : MaskableGraphic
 {

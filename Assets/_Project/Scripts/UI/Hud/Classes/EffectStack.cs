@@ -17,7 +17,8 @@ using UnityEngine.UI;
 /// </para>
 /// It stands in the flow under the class plate, below the count of what the player has standing (DeployStrip) when
 /// that shows. Where each slot goes is a pure function of how many there are and how much room there is (Slot), so the
-/// stack can be checked without playing. Numbers: Tables/ClassHud, rows Effects.*. Real time, this PC's own player only.
+/// stack can be checked without playing. Its box, text and font are the addon HUD's (HudTone); each effect keeps its own
+/// colour. Numbers: Tables/ClassHud, rows Effects.*. Real time, this PC's own player only.
 /// </summary>
 public sealed class EffectStack
 {
@@ -157,7 +158,7 @@ public sealed class EffectStack
         slot.Group = slot.Root.gameObject.AddComponent<CanvasGroup>();
         slot.Group.interactable = slot.Group.blocksRaycasts = false;
         slot.Group.alpha = 0f;
-        KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Back", slot.Root), KitStyle.With(KitStyle.Ink, .78f)), 4f);
+        KitSkew.On(KitStyle.Fill(KitStyle.Stretch("Back", slot.Root), HudTone.Box), 4f);
         var edge = KitStyle.Stretch("Edge", slot.Root);
         edge.anchorMax = new Vector2(0f, 1f);
         edge.pivot = new Vector2(0f, .5f);
@@ -169,14 +170,14 @@ public sealed class EffectStack
         track.pivot = new Vector2(.5f, 0f);
         track.offsetMin = new Vector2(3f, 0f);
         track.offsetMax = new Vector2(0f, 2f);
-        KitStyle.Fill(track, KitStyle.With(KitStyle.Ice, .12f));
+        KitStyle.Fill(track, HudTone.With(HudTone.Text, .12f));
         slot.Fill = KitStyle.Stretch("Fill", track);
         slot.Line = KitStyle.Fill(slot.Fill, kind.Colour);
         float left = 8f;
         var texture = kind.Icon.Length > 0 ? KitButtons.Icon(kind.Icon) : null;
         if (texture != null)
         {
-            slot.Icon = KitButtons.IconImage(slot.Root, kind.Icon, height - 6f, KitStyle.Ice);
+            slot.Icon = KitButtons.IconImage(slot.Root, kind.Icon, height - 6f, HudTone.Text);
             slot.Icon.rectTransform.anchorMin = slot.Icon.rectTransform.anchorMax = new Vector2(0f, .5f);
             slot.Icon.rectTransform.anchoredPosition = new Vector2(left + (height - 6f) * .5f, 1f);
             left += height - 2f;
@@ -187,11 +188,13 @@ public sealed class EffectStack
         time.offsetMin = new Vector2(-40f, 2f);
         time.offsetMax = new Vector2(-6f, 0f);
         slot.Time = KitStyle.Label(time, "", timeSize, TextAlignmentOptions.MidlineRight, kind.Colour);
+        HudTone.Apply(slot.Time);
         slot.Time.textWrappingMode = TextWrappingModes.NoWrap;
         var name = KitStyle.Stretch("Name", slot.Root);
         name.offsetMin = new Vector2(left, 2f);
         name.offsetMax = new Vector2(-44f, 0f);
-        slot.Name = KitStyle.Label(name, "", nameSize, TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
+        slot.Name = KitStyle.Label(name, "", nameSize, TextAlignmentOptions.MidlineLeft, HudTone.Text);
+        HudTone.Apply(slot.Name);
         slot.Name.textWrappingMode = TextWrappingModes.NoWrap;
         slot.Name.overflowMode = TextOverflowModes.Ellipsis;
         slots.Add(slot);

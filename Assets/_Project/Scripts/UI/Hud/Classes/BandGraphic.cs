@@ -3,12 +3,12 @@ using UnityEngine.UI;
 
 /// <summary>
 /// The ultimate notice's band (MomentHUD), one mesh. Its parts:
-/// - the near-black plate, its right end cut on a slant;
+/// - the plate in the addon HUD's faint black box (HudTone.Box), its right end cut on a slant;
 /// - the class colour along its top;
 /// - the class's own end (a blade's point, rank bars, a rangefinder's ticks, twin cuts, a heartbeat, a nested diamond,
 ///   hazard stripes);
-/// - the emblem's square;
-/// - the HUD's pink shard past its tip, and a smaller one past that.
+/// - the emblem's square, the same black twice as dense (HudTone.BoxHeld) so the sigil stands out on it;
+/// - a white shard past its tip, and a smaller one past that.
 /// </summary>
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class BandGraphic : MaskableGraphic
@@ -39,7 +39,7 @@ public sealed class BandGraphic : MaskableGraphic
     {
         width = bandWidth; height = bandHeight; slant = cut; cap = end; tint = colour;
         // Each its own lean, never one shared slant (the HUD's rule). MomentHUD turns the band clockwise only, its right
-        // end down: raised, the end would reach the chat's input above (stance-room's measure, 2026-11-12).
+        // end down, away from the mission bar above it.
         Lean = MomentLook.Number("Notice", "lean." + end.ToString().ToLowerInvariant(), end switch
         {
             Cap.Blade => 2f, Cap.Ranks => 3f, Cap.Ticks => 1f, Cap.Twin => 2.5f, Cap.Pulse => 1.5f, Cap.Diamond => 2.75f, _ => .5f,
@@ -51,9 +51,11 @@ public sealed class BandGraphic : MaskableGraphic
     {
         vh.Clear();
         float w = width, h = height, a = color.a;
-        Color ink = new Color(.047f, .047f, .059f, .93f * a), stripe = Color.Lerp(tint, Color.white, flash * .85f);
+        Color ink = HudTone.Box, held = HudTone.BoxHeld, stripe = Color.Lerp(tint, Color.white, flash * .85f);
+        ink.a *= a;
+        held.a *= a;
         stripe.a = a;
-        Color mark = new Color(tint.r, tint.g, tint.b, a), pink = new Color(KitStyle.Accent.r, KitStyle.Accent.g, KitStyle.Accent.b, a);
+        Color mark = new Color(tint.r, tint.g, tint.b, a), shard = HudTone.With(HudTone.Text, a);
         bool blade = cap == Cap.Blade;
         // The plate.
         if (blade) Poly(vh, ink, new Vector2(0f, h), new Vector2(w - 30f, h), new Vector2(w + 26f, h * .55f), new Vector2(w - slant - 34f, 0f), new Vector2(0f, 0f));
@@ -90,14 +92,14 @@ public sealed class BandGraphic : MaskableGraphic
                 for (int i = 0; i < 6; i++) { float x = w - 108f + i * 16f; Poly(vh, mark, new Vector2(x + 12f, h - 9f), new Vector2(x + 19f, h - 9f), new Vector2(x + 7f, 4f), new Vector2(x, 4f)); }
                 break;
         }
-        // The emblem's square: dark, rimmed in the class colour.
+        // The emblem's square: darker than the plate, rimmed in the class colour.
         float block = h - 12f;
-        Poly(vh, new Color(.02f, .02f, .03f, a), new Vector2(9f, 5f), new Vector2(9f + block, 5f), new Vector2(9f + block, 5f + block), new Vector2(9f, 5f + block));
+        Poly(vh, held, new Vector2(9f, 5f), new Vector2(9f + block, 5f), new Vector2(9f + block, 5f + block), new Vector2(9f, 5f + block));
         Frame(vh, new Rect(9f, 5f, block, block), 1.5f, mark);
-        // The HUD's pink shard past the tip, and a smaller one past it.
+        // A white shard past the tip, and a smaller one past it.
         float tip = blade ? w + 30f : w + 6f;
-        Poly(vh, pink, new Vector2(tip, h), new Vector2(tip + 28f, h), new Vector2(tip + 6f, h - 22f));
-        Poly(vh, pink, new Vector2(tip + 36f, h - 4f), new Vector2(tip + 48f, h - 4f), new Vector2(tip + 39f, h - 13f));
+        Poly(vh, shard, new Vector2(tip, h), new Vector2(tip + 28f, h), new Vector2(tip + 6f, h - 22f));
+        Poly(vh, shard, new Vector2(tip + 36f, h - 4f), new Vector2(tip + 48f, h - 4f), new Vector2(tip + 39f, h - 13f));
     }
 
     internal static void Poly(VertexHelper vh, Color color, params Vector2[] points)

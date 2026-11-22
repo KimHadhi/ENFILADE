@@ -8,8 +8,10 @@ using UnityEngine.UI;
 /// What the bar says is decided here; how it looks is MissionBarLook's (Hud.csv's Mission row).
 /// Under the bar stand the scoreboard's key cap and the 목표·점수판 hint, each in a slot of its own (Hud.csv MissionTab):
 /// the cap is as wide as the key's name, the hint starts after it, and both step down out of the way of whatever row the
-/// bar draws under itself (an assault's time row lay over them; user, 2026-11-12: "아니 TAB이랑 목표 점수판 저거랑
-/// 겹치는데?"). The alert stays narrower than the room right of the bar leaves, so it never shares a column with it.
+/// bar draws under itself (user, 2026-11-12, of a row that lay over them: "아니 TAB이랑 목표 점수판 저거랑 겹치는데?").
+/// They wear the addon HUD's tones (HudTone): the cap its faint black box with the key's name white, the hint quiet
+/// grey, both in its face. The alert stays narrower than the room right of the bar leaves, so it never shares a column
+/// with it.
 /// </summary>
 public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
 {
@@ -41,9 +43,9 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     [SerializeField, Min(0)] private float keyPad = 6f;
     [Tooltip("Room between the key cap and the 목표·점수판 hint (px).")]
     [SerializeField, Min(0)] private float hintGap = 9f;
-    [Tooltip("Least room between the bar's lowest row (its progress line, or an assault's time row) and the key cap and hint under it (px).")]
+    [Tooltip("Least room between the bar's lowest row (its progress line) and the key cap and hint under it (px).")]
     [SerializeField, Min(0)] private float rowGap = 6f;
-    [Tooltip("How fast the key cap and hint step down out of an assault's time row, and back up after it (px/s).")]
+    [Tooltip("How fast the key cap and hint step down out of a row the bar draws lower than the prefab left room for, and back up after it (px/s).")]
     [SerializeField, Min(1)] private float stepSpeed = 220f;
     [Tooltip("Least room between the new-objective alert and the bar's right end (px), lean included. The alert stays narrower than that leaves.")]
     [SerializeField, Min(0)] private float alertGap = 28f;
@@ -124,6 +126,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
         keyCap = transform.Find(KeyCapName) as RectTransform;
         keyLabel = keyCap != null ? keyCap.GetComponentInChildren<TMP_Text>(true) : null;
         if (keyCap != null) keyCapWidth = keyCap.sizeDelta.x;
+        Tone();
         float foot = missionBar != null && missionBar.parent == transform ? Bottom(missionBar, missionBar.anchoredPosition) : 0f;
         room = float.PositiveInfinity;
         foreach (Transform child in transform)
@@ -135,6 +138,15 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
             if (under) room = Mathf.Min(room, foot - Top(rect, rect.anchoredPosition));
             parts.Add(new Part { Rect = rect, Group = group, Home = rect.anchoredPosition, Authored = rect.anchoredPosition, Turn = rect.localRotation, Under = under });
         }
+    }
+
+    // The key cap and the hint in the addon HUD's tones and face, over the prefab's mint cap and white hint: the cap its
+    // faint black box with the key's name white, the hint quiet grey. Before LayOutTabRow measures the key's name.
+    private void Tone()
+    {
+        if (keyCap != null && keyCap.TryGetComponent(out Image cap)) cap.color = HudTone.Box;
+        if (keyLabel != null) { HudTone.Apply(keyLabel); keyLabel.color = HudTone.Text; }
+        if (boardHint != null) { HudTone.Apply(boardHint); boardHint.color = HudTone.Grey; }
     }
 
     private static float Top(RectTransform rect, Vector2 at) => at.y + rect.rect.height * (1f - rect.pivot.y);
@@ -219,7 +231,7 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     }
 
     // The bar leaves as the Tab screen's list arrives. What stands under it steps down while the bar draws a row of its
-    // own lower than the prefab left room for (an assault's time row), and back up once it has gone.
+    // own lower than the prefab left room for, and back up once it has gone.
     private void MakeWayForTabScreen(float dt)
     {
         float away = Mathf.SmoothStep(0f, 1f, ScoreboardHUD.Openness);

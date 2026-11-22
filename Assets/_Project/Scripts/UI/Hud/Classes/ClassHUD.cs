@@ -4,8 +4,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
-/// The class's own resource, at the foot of the screen (stage 7, ClassKit): a dark slanted plate with the class's name,
-/// and for an Assault its adrenaline as a row of leaning pips that fill pink, "[휠] CHARGE" beating on it once they are
+/// The class's own resource, at the foot of the screen (stage 7, ClassKit): a slanted plate with the class's name,
+/// and for an Assault its adrenaline as a row of leaning pips that fill white, "[휠] CHARGE" beating on it once they are
 /// full, and with 데인저 클로즈 its barrage's wait or aim past the
 /// pips; for a Point its two guns' numbers, each with a line
 /// that runs out while the gun put away reloads itself and a flash when it has; for a Ghost its Head Hunter stacks as
@@ -23,7 +23,8 @@ using UnityEngine.UI;
 /// the chain was not on the screen while something earlier ran (the user, 2026-11-18: a gun swapped during the Gun
 /// Kata started Gunslinger and the kata's time was gone). Nothing chooses any more: the features say what runs and
 /// every one of them is shown.
-/// Local player only (PlayerMovement). HUD look: black, white and pink.
+/// Local player only (PlayerMovement). Its surfaces are the addon HUD's (HudTone: the faint black box, white, grey, the low
+/// red, the HUD's font), so it reads as one HUD with it; its shapes, places and motion are its own.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class ClassHUD : MonoBehaviour
@@ -36,6 +37,8 @@ public sealed class ClassHUD : MonoBehaviour
     private RectTransform plate, pipRow, slotRow;
     private readonly Image[] pips = new Image[MostPips];
     private readonly Image[] slotLines = new Image[2], slotBacks = new Image[2];
+    // A Point's gun numbers: black while their box flashes lit, as the addon's selector writes its chosen box's name.
+    private readonly TextMeshProUGUI[] slotNumbers = new TextMeshProUGUI[2];
     private TextMeshProUGUI title, note;
     private RawImage icon;
     private RectTransform keyRect;
@@ -106,11 +109,12 @@ public sealed class ClassHUD : MonoBehaviour
         keyRect.gameObject.SetActive(false);
         deadeye.gameObject.SetActive(false);
         Word(Texts.Get(knight ? "class.hud.cover" : detente ? "class.hud.inject" : support ? "class.hud.barricade" : hound ? "class.hud.duel"
-            : point ? "class.hud.kata" : "class.hud.charge"), KitStyle.Accent);
+            : point ? "class.hud.kata" : "class.hud.charge"), HudTone.Text);
         note.text = info != null && !info.Ready ? Texts.Get("class.hud.later") : "";
         // A Détente moves the note past its pips; every other class has it back in its place.
         ((RectTransform)note.rectTransform.parent).anchoredPosition = new Vector2(128f, 0f);
         shownPips = 0;
+        for (int i = 0; i < MostPips; i++) pips[i].rectTransform.localScale = Vector3.one;
         if (assault) Pips(kit != null ? kit.StackMax : 8);
     }
 
@@ -134,20 +138,20 @@ public sealed class ClassHUD : MonoBehaviour
         bool ready = kit.ChargeReady;
         float beat = ready ? .75f + .25f * Mathf.Sin(Time.unscaledTime * 9f) : 1f;
         for (int i = 0; i < count; i++)
-            pips[i].color = i < stacks ? KitStyle.With(KitStyle.Accent, beat) : KitStyle.With(KitStyle.Ice, .14f);
+            pips[i].color = i < stacks ? HudTone.With(HudTone.Text, beat) : HudTone.With(HudTone.Text, .14f);
         var cards = ClassCards.Local;
         string side = "";
         if (cards != null && cards.DangerAiming)
         {
             bool fits = cards.DangerFits;
             KeyPrompt(true);
-            Word(Texts.Get(fits ? "class.hud.danger.aim" : "class.hud.danger.no"), fits ? KitStyle.Accent : KitStyle.Red);
+            Word(Texts.Get(fits ? "class.hud.danger.aim" : "class.hud.danger.no"), fits ? HudTone.Text : HudTone.Low);
             side = Texts.Get(fits ? "class.hud.danger.cancel" : "class.assault.danger.ground");
         }
         else
         {
             KeyPrompt(ready);
-            Word(Texts.Get("class.hud.charge"), KitStyle.Accent);
+            Word(Texts.Get("class.hud.charge"), HudTone.Text);
             if (cards != null && cards.HasDanger)
                 side = cards.DangerReady ? Texts.Format("class.hud.danger.hold", KeyName())
                     : Texts.Format("class.hud.danger_wait", Mathf.CeilToInt(cards.DangerWait));
@@ -165,13 +169,16 @@ public sealed class ClassHUD : MonoBehaviour
         float flash = Mathf.Clamp01(1f - kit.SinceHunterChange / .3f);
         for (int i = 0; i < count; i++)
         {
-            Color color = i < stacks ? KitStyle.Accent : KitStyle.With(KitStyle.Ice, .14f);
+            Color color = i < stacks ? HudTone.Text : HudTone.With(HudTone.Text, .14f);
             bool changed = change == -2 || (change == 1 && i == stacks - 1) || (change == -1 && i == stacks);
-            pips[i].color = flash > 0f && changed ? Color.Lerp(color, KitStyle.Ice, flash) : color;
+            pips[i].color = flash > 0f && changed ? Color.Lerp(color, HudTone.Text, flash) : color;
+            // A stack that came is white flashing to white, which no longer shows (the pips used to fill pink): it swells
+            // for the flash instead.
+            pips[i].rectTransform.localScale = Vector3.one * (flash > 0f && changed && change == 1 ? 1f + .35f * flash : 1f);
         }
         bool ready = kit.DeadeyeReady;
         deadeye.gameObject.SetActive(ready);
-        if (ready) deadeye.color = KitStyle.With(KitStyle.Accent, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
+        if (ready) deadeye.color = HudTone.With(HudTone.Text, .78f + .22f * Mathf.Sin(Time.unscaledTime * 6f));
     }
 
     // A Schießhund's Desperado: a teal pip a round in its cylinder, the newest flashing white as a bounty loads it, and
@@ -183,8 +190,8 @@ public sealed class ClassHUD : MonoBehaviour
         float flash = Mathf.Clamp01(1f - kit.SinceBounty / .4f);
         for (int i = 0; i < count; i++)
         {
-            Color color = i < rounds ? PingMarks.BountyColor : KitStyle.With(KitStyle.Ice, .14f);
-            pips[i].color = flash > 0f && i == rounds - 1 ? Color.Lerp(color, KitStyle.Ice, flash) : color;
+            Color color = i < rounds ? PingMarks.BountyColor : HudTone.With(HudTone.Text, .14f);
+            pips[i].color = flash > 0f && i == rounds - 1 ? Color.Lerp(color, HudTone.Text, flash) : color;
         }
         bool loaded = kit.DesperadoLoaded;
         deadeye.gameObject.SetActive(loaded);
@@ -209,8 +216,8 @@ public sealed class ClassHUD : MonoBehaviour
         float flash = Mathf.Clamp01(1f - detente.SinceInject / .35f);
         for (int i = 0; i < count; i++)
         {
-            Color color = i < doses ? KitStyle.Red : KitStyle.With(KitStyle.Ice, .14f);
-            pips[i].color = flash > 0f && i == doses ? Color.Lerp(color, KitStyle.Ice, flash) : color;
+            Color color = i < doses ? HudTone.Low : HudTone.With(HudTone.Text, .14f);
+            pips[i].color = flash > 0f && i == doses ? Color.Lerp(color, HudTone.Text, flash) : color;
         }
         KeyPrompt(!detente.Empty);
         // By hand (the syringe empty): the offer to make, the answer awaited, else the syringe's state.
@@ -240,8 +247,8 @@ public sealed class ClassHUD : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             float fill = Mathf.Clamp01(bags - i);
-            Color color = fill >= 1f ? KitStyle.Ice : KitStyle.With(KitStyle.Ice, .14f + .3f * fill);
-            pips[i].color = flash > 0f && i == Mathf.FloorToInt(bags) ? Color.Lerp(color, KitStyle.Accent, flash) : color;
+            Color color = fill >= 1f ? HudTone.Text : HudTone.With(HudTone.Text, .14f + .3f * fill);
+            pips[i].color = flash > 0f && i == Mathf.FloorToInt(bags) ? Color.Lerp(color, HudTone.Text, flash) : color;
         }
         string side;
         if (support.Planning)
@@ -251,10 +258,10 @@ public sealed class ClassHUD : MonoBehaviour
             // What it puts up and for how much; F goes on to the next kind held.
             string what = Texts.Get("class.hud.build." + support.PlanKind.ToString().ToLowerInvariant());
             // With as many standing as may, putting it up takes the oldest down: the word says so ("놓으면 교체"), as the
-            // amber chip under the plate and the amber ghost over that one in the world do.
+            // orange chip under the plate and the amber ghost over that one in the world do.
             bool swaps = fits && support.NextDown != null;
             Word(Texts.Format(!fits ? "class.hud.place.kind.no" : swaps ? "class.hud.place.kind.swap" : "class.hud.place.kind", what,
-                Mathf.RoundToInt(support.BuildCost)), fits ? KitStyle.Accent : KitStyle.Red);
+                Mathf.RoundToInt(support.BuildCost)), fits ? HudTone.Text : HudTone.Low);
             // With the throw card and a friend under the crosshair, F throws them a pack instead (SupportKit.Tossable).
             var catcher = support.Tossable;
             side = (fits ? Texts.Get("class.hud.place.cancel") : support.PlanWhy) + " · "
@@ -264,7 +271,7 @@ public sealed class ClassHUD : MonoBehaviour
         else
         {
             KeyPrompt(support.CanBuild);
-            Word(Texts.Get("class.hud.barricade"), KitStyle.Accent);
+            Word(Texts.Get("class.hud.barricade"), HudTone.Text);
             var friend = support.Offered;
             // A barricade under the crosshair has its own line at the foot of the screen, where the eyes are (SupportKit).
             // How many of each structure stand is the line under the plate's (DeployStrip): every kind at once, and still
@@ -320,9 +327,10 @@ public sealed class ClassHUD : MonoBehaviour
         {
             float share = kit.AsideShare(slot), since = kit.SinceRefill(slot);
             slotLines[slot].rectTransform.anchorMax = new Vector2(share, 1f);
-            slotLines[slot].color = KitStyle.Accent;
+            slotLines[slot].color = HudTone.Text;
             float flash = Mathf.Clamp01(1f - since / .5f);
-            slotBacks[slot].color = Color.Lerp(KitStyle.With(KitStyle.Ice, .12f), KitStyle.With(KitStyle.Accent, .85f), flash);
+            slotBacks[slot].color = Color.Lerp(HudTone.With(HudTone.Text, .12f), HudTone.Lit, flash);
+            slotNumbers[slot].color = Color.Lerp(HudTone.Text, HudTone.Ink, flash);
         }
         // The Gun Kata on the class key: the prompt while it may be used, the seconds left to wait past the guns while not.
         bool ready = kit.KataReady;
@@ -358,26 +366,27 @@ public sealed class ClassHUD : MonoBehaviour
         plate.anchoredPosition = new Vector2(0f, Above);
         plate.sizeDelta = new Vector2(Width, Height);
         plate.localRotation = Quaternion.Euler(0f, 0f, 1.5f);
-        var back = KitStyle.Fill(KitStyle.Stretch("Plate", plate), KitStyle.With(KitStyle.Ink, .78f));
+        var back = KitStyle.Fill(KitStyle.Stretch("Plate", plate), HudTone.Box);
         KitSkew.On(back, Slant);
-        var edge = KitStyle.Bar("Edge", plate, Vector2.zero, new Vector2(4f, Height), KitStyle.Accent);
+        var edge = KitStyle.Bar("Edge", plate, Vector2.zero, new Vector2(4f, Height), HudTone.Text);
         KitSkew.On(edge, Slant);
 
-        icon = KitButtons.IconImage(plate, "", 28f, KitStyle.Ice);
+        icon = KitButtons.IconImage(plate, "", 28f, HudTone.Text);
         icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, .5f);
         icon.rectTransform.anchoredPosition = new Vector2(28f, 0f);
         title = KitStyle.Label(KitStyle.TopLeft("Title", plate, new Vector2(46f, 0f), new Vector2(80f, Height)), "", 16f,
-            TextAlignmentOptions.MidlineLeft, KitStyle.Ice);
+            TextAlignmentOptions.MidlineLeft, HudTone.Text);
+        HudTone.Apply(title);
         title.characterSpacing = 2f;
         note = KitStyle.Label(KitStyle.TopLeft("Note", plate, new Vector2(128f, 0f), new Vector2(160f, Height)), "", 13f,
-            TextAlignmentOptions.MidlineLeft, KitStyle.Soft);
-        note.fontStyle = FontStyles.Normal;
+            TextAlignmentOptions.MidlineLeft, HudTone.Grey);
+        HudTone.Apply(note);
 
         pipRow = KitStyle.TopLeft("Adrenaline", plate, new Vector2(128f, (Height - PipHeight) * .5f), new Vector2(160f, PipHeight));
         for (int i = 0; i < MostPips; i++)
         {
             var pip = KitStyle.Fill(KitStyle.TopLeft("Pip", pipRow, new Vector2(i * (PipWidth + PipGap), 0f), new Vector2(PipWidth, PipHeight)),
-                KitStyle.With(KitStyle.Ice, .14f));
+                HudTone.With(HudTone.Text, .14f));
             KitSkew.On(pip, 5f);
             pips[i] = pip;
         }
@@ -386,9 +395,10 @@ public sealed class ClassHUD : MonoBehaviour
         for (int slot = 0; slot < 2; slot++)
         {
             var box = KitStyle.TopLeft("Gun " + (slot + 1), slotRow, new Vector2(slot * 62f, 0f), new Vector2(52f, Height - 14f));
-            slotBacks[slot] = KitStyle.Fill(box, KitStyle.With(KitStyle.Ice, .12f));
+            slotBacks[slot] = KitStyle.Fill(box, HudTone.With(HudTone.Text, .12f));
             KitSkew.On(slotBacks[slot], 6f);
-            KitStyle.Label(box, (slot + 1).ToString(), 15f, TextAlignmentOptions.Center, KitStyle.Ice);
+            slotNumbers[slot] = KitStyle.Label(box, (slot + 1).ToString(), 15f, TextAlignmentOptions.Center, HudTone.Text);
+            HudTone.Apply(slotNumbers[slot]);
             var line = KitStyle.Stretch("Reload", box);
             line.anchorMin = Vector2.zero;
             line.anchorMax = new Vector2(0f, 0f);
@@ -406,20 +416,25 @@ public sealed class ClassHUD : MonoBehaviour
         keyRect.anchoredPosition = new Vector2(-84f, Height * .5f + 16f);
         keyCap = keyRect.GetComponent<KeyCapGraphic>();
         keyCap.raycastTarget = false;
-        keyCap.color = KitStyle.Accent;
-        keyLabel = KitStyle.Label(keyRect, "", 13f, TextAlignmentOptions.Center, KitStyle.Ice);
+        // The cap is a rim round a faint dark inside (KeyCapGraphic), not a filled box: its rim is a white line, as the
+        // plate's edge, and the key's name white inside it.
+        keyCap.color = HudTone.Text;
+        keyLabel = KitStyle.Label(keyRect, "", 13f, TextAlignmentOptions.Center, HudTone.Text);
+        HudTone.Apply(keyLabel);
         var word = KitStyle.TopLeft("Charge word", keyRect, new Vector2(0f, 0f), new Vector2(80f, 24f));
         word.anchorMin = word.anchorMax = new Vector2(1f, .5f);
         word.pivot = new Vector2(0f, .5f);
         word.anchoredPosition = new Vector2(8f, 0f);
-        keyWord = KitStyle.Label(word, Texts.Get("class.hud.charge"), 15f, TextAlignmentOptions.MidlineLeft, KitStyle.Accent);
+        keyWord = KitStyle.Label(word, Texts.Get("class.hud.charge"), 15f, TextAlignmentOptions.MidlineLeft, HudTone.Text);
+        HudTone.Apply(keyWord);
         keyRect.gameObject.SetActive(false);
 
         // A Ghost's "DEADEYE", over the plate's right end where a key's prompt would be.
         var mark = KitStyle.TopLeft("Deadeye", plate, Vector2.zero, new Vector2(120f, 24f));
         mark.anchorMin = mark.anchorMax = mark.pivot = new Vector2(1f, .5f);
         mark.anchoredPosition = new Vector2(-14f, Height * .5f + 16f);
-        deadeye = KitStyle.Label(mark, Texts.Get("class.hud.deadeye"), 15f, TextAlignmentOptions.MidlineRight, KitStyle.Accent);
+        deadeye = KitStyle.Label(mark, Texts.Get("class.hud.deadeye"), 15f, TextAlignmentOptions.MidlineRight, HudTone.Text);
+        HudTone.Apply(deadeye);
         deadeye.characterSpacing = 3f;
         deadeye.gameObject.SetActive(false);
 

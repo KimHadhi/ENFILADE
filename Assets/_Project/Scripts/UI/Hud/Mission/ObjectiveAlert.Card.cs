@@ -14,9 +14,8 @@ public sealed partial class ObjectiveAlert
     private const float LineDraw = .12f, LineFade = .5f, OpenAt = .08f, OpenSeconds = .26f, ChipAt = .22f, ChipSeconds = .3f,
         WordsAt = .34f, UnderAt = .6f, UnderSeconds = .4f, SheenAt = 1.05f, SheenSeconds = .9f, FlyAt = 2.35f, FlySeconds = .55f,
         CardLength = 2.95f, CardHeld = 1.6f;
-    // How small the card is as it reaches the bar, and the pink shadow under the words (px).
+    // How small the card is as it reaches the bar, and the drop shadow under the words (px).
     private const float FlyScale = .24f, ShadeOffset = 3f;
-    private static readonly Color ShadeColor = new Color(.83f, .17f, .35f);
 
     private RectTransform card, content, line, body, chip, chipPlate, chipShadow, sheen, under, halftone;
     private RawImage halftoneImage, grainImage;
@@ -110,7 +109,7 @@ public sealed partial class ObjectiveAlert
         content = Stretched("Content", card);
         contentGroup = content.gameObject.AddComponent<CanvasGroup>();
 
-        // The white line the card opens from, with a pink glow under it.
+        // The white line the card opens from, with a soft glow under it.
         line = FeelUI.Rect("Line", content);
         line.anchorMin = line.anchorMax = new Vector2(0f, .5f);
         line.pivot = new Vector2(0f, .5f);
@@ -121,39 +120,41 @@ public sealed partial class ObjectiveAlert
         var glow = lineGlow.gameObject.AddComponent<Image>();
         glow.sprite = CombatUIAssets.SoftGlow;
         glow.type = Image.Type.Sliced;
-        glow.color = KitStyle.With(KitStyle.Accent, .5f);
+        glow.color = HudTone.With(HudTone.Text, .5f);
         glow.raycastTarget = false;
         Fill(Stretched("White", line), Color.white);
 
-        // The card: dark, leaning, edged in pink along its top, halftone and grain on it, clipped to its lean.
+        // The card: the HUD's box, held dense as an alert stands out, leaning, edged in white along its top, halftone
+        // and grain on it, clipped to its lean. The halftone fades in under the card's own box.
         body = FeelUI.Rect("Body", content);
         body.anchorMin = Vector2.zero;
         body.anchorMax = Vector2.one;
         body.offsetMin = Vector2.zero;
         body.offsetMax = new Vector2(0f, -CardTop);
-        KitSkew.On(Fill(body, BodyColor), CardSlant);
+        Color box = HudTone.BoxHeld;
+        KitSkew.On(Fill(body, box), CardSlant);
         body.gameObject.AddComponent<Mask>().showMaskGraphic = true;
         halftone = FeelUI.Rect("Halftone", body);
         halftone.anchorMin = new Vector2(.52f, 0f);
         halftone.anchorMax = Vector2.one;
         halftone.offsetMin = halftone.offsetMax = Vector2.zero;
-        halftoneImage = KitStyle.Raw(halftone, KitShapes.Halftone, KitStyle.With(KitStyle.Accent, .42f));
+        halftoneImage = KitStyle.Raw(halftone, KitShapes.Halftone, HudTone.With(HudTone.Text, .42f));
         var fade = FeelUI.Rect("Halftone Fade", halftone);
         fade.anchorMin = Vector2.zero;
         fade.anchorMax = new Vector2(.7f, 1f);
         fade.offsetMin = fade.offsetMax = Vector2.zero;
-        KitStyle.Raw(fade, KitShapes.Fade, BodyColor);
+        KitStyle.Raw(fade, KitShapes.Fade, box);
         grainImage = KitStyle.Raw(Stretched("Grain", body), KitShapes.Grain, KitStyle.With(Color.white, .05f));
         var top = FeelUI.Rect("Top Edge", body);
         top.anchorMin = new Vector2(0f, 1f);
         top.anchorMax = Vector2.one;
         top.pivot = new Vector2(.5f, 1f);
         top.sizeDelta = new Vector2(0f, 4f);
-        Fill(top, KitStyle.Accent);
+        Fill(top, HudTone.Text);
         var notch = FeelUI.Rect("Notch", body);
         notch.anchorMin = notch.anchorMax = notch.pivot = Vector2.right;
         notch.sizeDelta = new Vector2(90f, 6f);
-        KitSkew.On(Fill(notch, KitStyle.Accent), 6f);
+        KitSkew.On(Fill(notch, HudTone.Text), 6f);
         sheen = FeelUI.Rect("Sheen", body);
         sheen.anchorMin = Vector2.zero;
         sheen.anchorMax = Vector2.up;
@@ -161,7 +162,7 @@ public sealed partial class ObjectiveAlert
         sheen.sizeDelta = new Vector2(90f, 0f);
         KitSkew.On(Fill(sheen, KitStyle.With(Color.white, .12f)), 30f);
 
-        // NEW OBJECTIVE on a white chip with a pink shadow, tilted a little, and 새 목표 beside it.
+        // NEW OBJECTIVE on a white chip with a black drop shadow, tilted a little, and 새 목표 beside it.
         chip = FeelUI.Rect("Chip", body);
         chip.anchorMin = chip.anchorMax = chip.pivot = Vector2.up;
         chipHome = new Vector2(CardInset, -9f);
@@ -170,29 +171,28 @@ public sealed partial class ObjectiveAlert
         chipShadow = FeelUI.Rect("Shadow", chip);
         chipShadow.anchorMin = chipShadow.anchorMax = chipShadow.pivot = Vector2.up;
         chipShadow.anchoredPosition = new Vector2(3f, -3f);
-        Fill(chipShadow, KitStyle.Accent);
+        Fill(chipShadow, HudTone.Ink);
         chipPlate = FeelUI.Rect("Plate", chip);
         chipPlate.anchorMin = chipPlate.anchorMax = chipPlate.pivot = Vector2.up;
         Fill(chipPlate, Color.white);
         var chipText = Stretched("Words", chipPlate);
-        chipWords = Words(chipText, 10.5f, KitStyle.Ink, TextAlignmentOptions.Center);
-        chipWords.fontStyle |= FontStyles.Bold;
+        chipWords = Words(chipText, 10.5f, HudTone.Ink, TextAlignmentOptions.Center);
         chipWords.characterSpacing = 26f;
         var korean = FeelUI.Rect("Korean", chip);
         korean.anchorMin = korean.anchorMax = Vector2.up;
         korean.pivot = new Vector2(0f, .5f);
         korean.sizeDelta = new Vector2(160f, 18f);
-        chipKorean = Words(korean, 13f, KitStyle.Accent, TextAlignmentOptions.MidlineLeft);
-        chipKorean.fontStyle |= FontStyles.Bold;
+        chipKorean = Words(korean, 13f, HudTone.Text, TextAlignmentOptions.MidlineLeft);
 
-        // The objective's words over their pink shadow, leaning, and the line that runs under them.
-        shade = Title("Shade", ShadeColor, new Vector2(ShadeOffset, -ShadeOffset));
-        title = Title("Words", Color.white, Vector2.zero);
+        // The objective's words over their black drop shadow (the addon draws its words over one), leaning, and the
+        // line that runs under them.
+        shade = Title("Shade", HudTone.Ink, new Vector2(ShadeOffset, -ShadeOffset));
+        title = Title("Words", HudTone.Text, Vector2.zero);
         under = FeelUI.Rect("Under", body);
         under.anchorMin = under.anchorMax = new Vector2(0f, .5f);
         under.pivot = new Vector2(0f, .5f);
         under.anchoredPosition = new Vector2(CardInset, -38f);
-        Fill(under, KitStyle.Accent);
+        Fill(under, HudTone.Text);
         card.gameObject.SetActive(false);
     }
 
@@ -204,8 +204,7 @@ public sealed partial class ObjectiveAlert
         rect.offsetMin = new Vector2(CardInset, -32f) + offset;
         rect.offsetMax = new Vector2(-CardInset, 12f) + offset;
         var text = Words(rect, TitleSize, color, TextAlignmentOptions.MidlineLeft);
-        // The objective's words draw in the alert's own role (Fonts.csv Alarm), leaning.
-        FontRoles.Apply(text, FontRoles.Alarm);
+        // The objective's words lean.
         text.fontStyle |= FontStyles.Italic;
         return text;
     }

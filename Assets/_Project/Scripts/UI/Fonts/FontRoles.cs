@@ -10,9 +10,9 @@ using UnityEngine;
 /// The roles were cut from what the game drew with before them (2026-11-12), so the look stayed: Label = the old GunFeel
 /// score font (Pretendard ExtraBold: menus, kit labels, kill feed), Prompt and Damage = the old Feedback prompt font
 /// (S-Core Dream 6), HudText and Chat = the HUD and chat prefabs' S-Core Dream 5 copies, HudBold = their Pretendard Bold
-/// copies, Shield = the shield number's outlined S-Core Dream 6 copy, Alarm = the objective banner's Pretendard Medium
-/// copy, Ammo = the ammo display (it drew in TMP's sample font LiberationSans until then), Body = whatever asks for no
-/// font (TMP's default font).
+/// copies, Shield = the shield number's outlined S-Core Dream 6 copy, Ammo = the ammo display (it drew in TMP's sample
+/// font LiberationSans until then), Body = whatever asks for no font (TMP's default font). The HUD pieces that match the
+/// addon HUD take its face instead (HudTone).
 /// </summary>
 public static class FontRoles
 {
@@ -28,8 +28,6 @@ public static class FontRoles
     public const string Ammo = "Ammo";
     /// <summary>HUD prefab bold text: health numbers, objective titles, the TAB hint.</summary>
     public const string HudBold = "HudBold";
-    /// <summary>The objective banner.</summary>
-    public const string Alarm = "Alarm";
     /// <summary>Text that asks for no font: TMP's default font, which TMP Settings must name too.</summary>
     public const string Body = "Body";
 

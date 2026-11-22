@@ -16,8 +16,6 @@ HudBold.warm,texts,
 Shield.face,scoredream-6,실드 숫자. 예전 ShieldFont(Score6)
 Shield.preset,shield,"민트 외곽선과 초록 그림자. 예전 ShieldFont의 재질을 50pt 아틀라스에 맞게 옮긴 것(외곽선 0.2→0.111, 그림자 거리 -1→-0.327, 퍼짐 0.7→0.229: 화면에서 같은 두께)"
 Shield.warm,digits,
-Alarm.face,pretendard-8,새 목표 알림(ObjectiveAlert)의 목표 글자: 기본 카드와 심플 리본. 알림을 새로 그리며 Pretendard Medium에서 ExtraBold로 바꿨다(예전 AlarmBarFont)
-Alarm.warm,texts,
 Chat.face,scoredream-5,채팅 줄. 예전 ChattingFont(Score5)
 Chat.warm,texts,
 Chat.prefabs,Chatting/,"같은 글꼴을 쓰는 역할이 둘이면, 프리팹 경로에 이 말이 든 글자가 이 역할이다(ENFILADE → 글꼴이 역할을 고를 때)"
