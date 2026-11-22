@@ -285,9 +285,12 @@ Move.doorBreakSpeedRetention,0.85,문을 부수고 남는 속도 비율
 Move.wallBounceBounciness,0.5,슬라이드로 벽에 부딪혔을 때 튕겨 나오는 비율
 Move.supineBounceThreshold,7,튕겨 나온 속도가 이 이상이면 뒤로 누워 미끄러진다(m/s)
 # 능력: 회피·기울이기 (Ability 행 → PlayerMovement의 Ability Settings),,
-Ability.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,"스텝 회피(Alt)의 클립을 가는 쪽마다(클립@도. 0 앞 90 오른쪽): 서서·걷거나 조깅하며. BIPER Female Runner QuickShift_*(0.8초 약 3.4m). 몸은 클립이 땅 위로 가는 그대로 간다(GaitMoves.csv kind travel, DodgeMove). 사용자 11-22: ""회피는 모션을 위해 개편하고(너무 일찍 끝나고 이펙트가 구림)"" → ""QuickShift 끝까지"". 0.9.334까지는 0.14초 2.6m를 따로 가고 클립은 앞 0.2초만 보였다"
-Ability.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며(걸음새가 조깅과 전력질주의 가운데를 넘었을 때) 옆·대각선 앞으로 회피: 비키며 전력질주를 이어 간다(0.73초 4.3~5.2m). 이 쪽들에서 30° 안일 때만, 아니면 Ability.dodgeWays. BIPER Female Runner ShiftToSprint_*"
-Ability.dodgeUntil,0.5,"회피 클립의 이 순간(초)까지 다리가 클립 것이고, 그 뒤 이동 키가 먹는다. 남은 일어나기는 멈춰 있으면 끝까지, 움직이면 걸음에 섞인다. 그 전에도 미끄러짐이 끝나면(약 0.2초) 점프로 끊을 수 있고, 다음 회피는 회피 규칙대로"
+Ability.dodgeWays,QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45,스텝 회피(Alt)의 클립을 가는 쪽마다(클립@도. 0 앞 90 오른쪽): 서서도 달리면서도. BIPER Female Runner QuickShift_*(0.8초). 빠르기는 클립 그대로이고 거리는 모두 Ability.dodgeDistance. 0.9.341 전에는 전력질주하며 옆으로 하면 Ability.dodgeSprintWays를 통째로 썼다
+Ability.dodgeDistance,2.6,"회피가 가는 거리(m). 서서도 달리면서도, 어느 쪽이든 같다. 0.9.341 전에는 클립마다 3.3~3.4m, 전력질주하며 옆으로는 달리는 빠르기로 4.3~5.2m라 짧게 느껴졌다(사용자 11-22: ""회피 거리 줄이긴 해야겠더라""). 0.9.335 전에는 2.6"
+Ability.dodgeSprintWays,ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90,"전력질주하며 옆·대각선으로 회피한 뒤 앞으로 계속 달릴 때, 낮은 자세에서 일어나며 달려 나가는 클립을 회피한 쪽마다(클립@도, 30° 안). Ability.dodgeRunFrom부터 튼다. 다른 쪽으로 달리면 달리는 걸음으로 바로 이어진다. BIPER Female Runner ShiftToSprint_*. 0.9.341 전에는 회피 자체를 이 클립으로 했는데, 옆으로 비킨 뒤 앞으로 달려 나가는 길을 통째로 옆으로 가서 다리는 앞으로 달리고 몸은 옆으로 미끄러졌다(사용자 11-22: ""달리는 모션이 자연스럽게 이어지지 않는 거 같아"")"
+Ability.dodgeRunFrom,0.233,"그 클립을 트는 순간(초): 몸이 회피와 똑같이 낮고 다리가 벌어진 때(Blender로 잼: 골반 높이 0.54m, 두 발 자리가 같다). 여기서부터 일어나며 앞으로 달린다"
+Ability.dodgeUntil,0.5,"회피 클립의 이 순간(초)까지 다리가 클립 것이고, 그 뒤 이동 키가 먹는다. 남은 일어나기는 멈춰 있으면 끝까지, 움직이면 걸음에 섞인다. 달리면서 한 회피는 Ability.dodgeRunAt. 그 전에도 미끄러짐이 끝나면(약 0.2초) 점프로 끊을 수 있고, 다음 회피는 회피 규칙대로"
+Ability.dodgeRunAt,0.4;0.23,"달리면서 회피했고 이동 키를 계속 누르고 있으면 달리기가 이어지는 회피 클립의 순간(초): 조깅;전력질주. 그 순간 바로 제 빠르기로 달리고, 걸음은 디디고 있는 발부터 이어진다(PlayerBody.PickUpStep). 0.9.341"
 Ability.dodgeLowFrom,0.07,"앉아서 하는 회피, 성공한 회피에 이어 하는 회피는 클립의 이 순간(초, 이미 낮은 자세로 차고 나가는 때)부터 시작한다"
 Ability.dodgeLowUntil,0.36,앉아서 하는 회피가 끝나는 클립의 순간(초): 몸을 세우기 전. 끝나면 앉은 자세로 이어진다
 Ability.clipTravelMost,18,클립대로 가는 동작(회피·구르기·다이브 롤)이 몸을 나르는 가장 빠른 속도(m/s). 클립이 그보다 빨리 던지는 몫은 다음 프레임들에 나눠 간다(ClipTravel): QuickShift는 0.03초에 1.2m를 가서 그대로면 순간이동처럼 보인다

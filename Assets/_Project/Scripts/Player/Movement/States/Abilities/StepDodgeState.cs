@@ -2,8 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// The step dodge (Alt) while it has the legs: the body goes the way it was pointed at its clip's own pace (DodgeMove,
-/// ClipTravel) and the keys have it back once it is nearly up again (Ability.dodgeUntil), so the motion is seen. The next
-/// dodge cuts in by the dodge's own rules (MovementAbilities), a jump once the slide is done. A wall stops the body and ends
+/// ClipTravel) and the keys have it back once it is nearly up again (Ability.dodgeUntil), so the motion is seen; a run it
+/// began in and the keys still ask for goes on sooner (dodgeRunAt). The next dodge cuts in by the dodge's own rules
+/// (MovementAbilities), a jump once the slide is done. A wall stops the body and ends
 /// the dodge's window, not the motion: it ended the dodge itself until 0.9.334, and the body snapped upright against the
 /// wall. Nothing solid to it is an enemy (DodgeEnemyPassThrough); slid into one it is carried on out of them.
 /// </summary>
@@ -11,6 +12,8 @@ public sealed class StepDodgeState : MovementBaseState
 {
     // Moving less than it asked to by more than this (m) against something beside it, the body is up against a wall.
     private const float HeldBack = .025f;
+    // Slower than this as it began (m/s), it began in no run.
+    private const float RunFrom = 1f;
 
     private float entrySpeed, pushedOut, expected;
     private Vector3 frameStart;
@@ -49,7 +52,20 @@ public sealed class StepDodgeState : MovementBaseState
     {
         if (expected > 0f && (ctx.Motor.lastMoveFlags & CollisionFlags.Sides) != 0
             && Vector3.Dot(ctx.transform.position - frameStart, ctx.Abilities.ActionDirection) < expected - HeldBack) Stop();
-        if (!ctx.IsGrounded || (Move.Over && !PushesOut(out _))) ctx.Abilities.ReturnToLocomotion();
+        if (!ctx.IsGrounded || ((Move.Over || RunsOn) && !PushesOut(out _))) ctx.Abilities.ReturnToLocomotion();
+    }
+
+    // The run it began in goes on now: the keys are still held, and its moment has come.
+    private bool RunsOn
+    {
+        get
+        {
+            if (stopped || entrySpeed < RunFrom || !ctx.IsGrounded || ctx.Abilities.ActionPosture != MovementPosture.Standing
+                || !ctx.InputAvailable || ctx.CurrentInput.sqrMagnitude < .01f) return false;
+            Vector2 at = ctx.AbilitySettings.dodgeRunAt;
+            bool sprints = Move.Runs && ctx.Input.SprintButtonHeld && ctx.SprintsToward(ctx.CurrentInput);
+            return Move.Time >= (sprints ? at.y : at.x) && !ctx.HasCeilingAbove(ctx.StandingColliderHeight);
+        }
     }
 
     public override void UpdatePhysics(float dt)
@@ -104,16 +120,12 @@ public sealed class StepDodgeState : MovementBaseState
     public override void Exit()
     {
         ctx.DodgePassThrough.OrNull()?.Finish();
-        bool whole = Move.Over && !stopped;
+        bool runsOn = RunsOn;
         // Cut short (a wall, the ground gone, a jump), what is left of its window goes; played to here it ran out long ago.
-        if (!whole) ctx.Abilities.Dodge.CancelWindow();
+        if (!runsOn && (!Move.Over || stopped)) ctx.Abilities.Dodge.CancelWindow();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(entrySpeed, ctx.WalkSpeed));
-        if (!whole || !Move.Runs || !ctx.IsGrounded || !ctx.InputAvailable || !ctx.Input.SprintButtonHeld
-            || ctx.CurrentInput.sqrMagnitude < .01f || !ctx.SprintsToward(ctx.CurrentInput)
-            || ctx.HasCeilingAbove(ctx.StandingColliderHeight)) return;
-        // The sprint it shifted aside in goes on, the way the keys point now.
-        float speed = Mathf.Max(ctx.RunSpeed, Mathf.Lerp(ctx.WalkSpeed, ctx.SprintSpeed, ctx.SprintProgress));
-        ctx.HorizontalVelocity = ctx.Abilities.InputDirection(ctx.transform.forward) * speed;
+        // At its own speed at once, the way the keys point now: the body never stopped for it.
+        if (runsOn) ctx.HorizontalVelocity = ctx.Abilities.InputDirection(ctx.transform.forward) * ctx.Actions.Gait.SpeedFor(ctx.CurrentInput);
     }
 
     public override void OnColliderHit(ControllerColliderHit hit)

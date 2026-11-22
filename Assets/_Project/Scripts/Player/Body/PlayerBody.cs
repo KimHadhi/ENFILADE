@@ -758,7 +758,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             bool upright = state == MovementState.Standing || state == MovementState.Crouching;
             // A landing that runs on out of itself (Land_ToRun) holds on the move, and gives way once the body slows or
             // leaves its feet.
-            bool hold = transitionRuns ? onFeet && upright && HorizontalSpeed() > walkClipSpeed
+            runOutGrace = Mathf.Max(0f, runOutGrace - dt);
+            bool hold = transitionRuns ? onFeet && upright && (HorizontalSpeed() > walkClipSpeed || runOutGrace > 0f)
                 : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
             // A transition is the stance it began in: a getting up gives way to a crouch, a crouched landing to standing up,
             // and either to lying down (gone down in the middle of a landing falls at once: PlayerBody.Downed).
@@ -778,7 +779,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 }
                 return;
             }
-            if (RunsOut(transition)) GiveUpRunOut(transition);
+            if (OutOfDodge(transition) && state == MovementState.Standing && HorizontalSpeed() > walkClipSpeed) PickUpStep();
+            else if (RunsOut(transition)) GiveUpRunOut(transition);
             transition = null;
             playingOut = transitionRuns = false;
         }

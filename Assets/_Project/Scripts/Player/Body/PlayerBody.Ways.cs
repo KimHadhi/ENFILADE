@@ -88,8 +88,8 @@ public sealed partial class PlayerBody
         return Find(landSlam) != null ? landSlam : null;
     }
 
-    // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge that shifts into
-    // the run or the sprint. Their last steps are a run's, so they play out only while the body runs on; a body that has
+    // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge's coming up into
+    // the sprint. Their last steps are a run's, so they play out only while the body runs on; a body that has
     // stopped never shows them (the user, 2026-11-21: a slide's end ran in place, "갑자기 와다닥 달리는 모션하다 서기로").
     private bool RunsOut(Channel channel)
     {

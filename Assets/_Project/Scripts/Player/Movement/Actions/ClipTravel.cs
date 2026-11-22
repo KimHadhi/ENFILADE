@@ -26,8 +26,9 @@ public sealed class ClipTravel
     public float Share => Distance > 0f ? Mathf.Clamp01(GoneAt(Time) - owed / Distance) : 1f;
 
     /// <summary>The way of <paramref name="clip"/> from its moment <paramref name="from"/> (s), never faster than
-    /// <paramref name="mostSpeed"/> (m/s). False for a clip with no baked travel.</summary>
-    public bool Begin(string clip, float from, float mostSpeed)
+    /// <paramref name="mostSpeed"/> (m/s); the whole clip <paramref name="distance"/> (m) far, or as far as its own body goes
+    /// (0). False for a clip with no baked travel.</summary>
+    public bool Begin(string clip, float from, float mostSpeed, float distance = 0f)
     {
         Clear(from, mostSpeed);
         if (string.IsNullOrEmpty(clip) || !GameTables.TryGetRow(Table, clip, out var row) || row.Text("kind") != "travel") return false;
@@ -37,7 +38,7 @@ public sealed class ClipTravel
             if (!float.TryParse(cells[i], NumberStyles.Float, CultureInfo.InvariantCulture, out read[i])) return false;
         length = row.Number("length", 0f);
         Up = row.Number("land", length);
-        Distance = row.Number("metres", 0f);
+        Distance = distance > 0f ? distance : row.Number("metres", 0f);
         if (read.Length < 2 || length <= 0f || Up <= 0f || Distance <= 0f) { Clear(from, mostSpeed); return false; }
         gone = read;
         return true;

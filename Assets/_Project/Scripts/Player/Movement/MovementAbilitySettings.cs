@@ -6,11 +6,17 @@ using UnityEngine;
 public sealed class MovementAbilitySettings
 {
     [Header("Dodge & Lean")]
-    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right): standing, walking or jogging, and sprinting (DodgeMove). It goes as each clip carries its body (GaitMoves.csv kind travel).")]
+    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right; DodgeMove). It goes at each clip's own pace (GaitMoves.csv kind travel), dodgeDistance far.")]
     public string dodgeWays = "QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45";
+    [Tooltip("How far a dodge goes (m), whatever the clip and the pace it began at.")]
+    [Min(0.5f)] public float dodgeDistance = 2.6f;
+    [Tooltip("Out of a dodge aside into a sprint ahead: the clip by the dodge's way, from its moment dodgeRunFrom (s), where its body is as low and wide as the dodge's and goes on up into the sprint.")]
     public string dodgeSprintWays = "ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90";
+    [Min(0f)] public float dodgeRunFrom = 0.233f;
     [Tooltip("The moment of a dodge's clip the legs are the player's again (s).")]
     [Min(0.05f)] public float dodgeUntil = 0.5f;
+    [Tooltip("The same with the jog (x) or the sprint (y) the dodge began in still asked for: the run goes on from there.")]
+    public Vector2 dodgeRunAt = new Vector2(0.4f, 0.23f);
     [Tooltip("A dodge from a crouch, or chained on a confirmed one, starts at this moment of the clip (s): its push, low already.")]
     [Min(0f)] public float dodgeLowFrom = 0.07f;
     [Tooltip("The moment of the clip a dodge from a crouch is over (s), before the body rises.")]
