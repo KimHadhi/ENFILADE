@@ -2,8 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// The step dodge (Alt) while it has the legs: the body goes the way it was pointed at its clip's own pace (DodgeMove,
-/// ClipTravel) and the keys have it back once it is nearly up again (Ability.dodgeUntil), so the motion is seen; a run it
-/// began in and the keys still ask for goes on sooner (dodgeRunAt). The next dodge cuts in by the dodge's own rules
+/// ClipTravel) and the keys have it back once its legs are under it again (DodgeMove.Over), so the motion is seen; a run it
+/// began in and the keys still ask for goes on sooner (DodgeMove.RunsOn). The next dodge cuts in by the dodge's own rules
 /// (MovementAbilities), a jump once the slide is done. A wall stops the body and ends
 /// the dodge's window, not the motion: it ended the dodge itself until 0.9.334, and the body snapped upright against the
 /// wall. Nothing solid to it is an enemy (DodgeEnemyPassThrough); slid into one it is carried on out of them.
@@ -62,9 +62,8 @@ public sealed class StepDodgeState : MovementBaseState
         {
             if (stopped || entrySpeed < RunFrom || !ctx.IsGrounded || ctx.Abilities.ActionPosture != MovementPosture.Standing
                 || !ctx.InputAvailable || ctx.CurrentInput.sqrMagnitude < .01f) return false;
-            Vector2 at = ctx.AbilitySettings.dodgeRunAt;
             bool sprints = Move.Runs && ctx.Input.SprintButtonHeld && ctx.SprintsToward(ctx.CurrentInput);
-            return Move.Time >= (sprints ? at.y : at.x) && !ctx.HasCeilingAbove(ctx.StandingColliderHeight);
+            return Move.RunsOn(sprints) && !ctx.HasCeilingAbove(ctx.StandingColliderHeight);
         }
     }
 

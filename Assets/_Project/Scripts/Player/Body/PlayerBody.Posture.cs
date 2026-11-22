@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
@@ -7,7 +5,7 @@ using MovementState = PlayerMovement.MovementState;
 /// Down into a crouch and up out of it standing still, on BIPER Female Runner's own clips (IdleToCrouch, CrouchToIdle;
 /// 0.9.285, the user: "Female Runner first", the pack's clips not yet in the game). Until then the two stances' still
 /// poses blended into each other in a straight line. Each clip plays at its own pace, 0.4 s down and 0.5 s up, from the
-/// moment its body sets off (Tables/Player/GaitMoves.csv kind posture, baked by ClipBench), and turned back half way the
+/// moment its body sets off, and turned back half way the
 /// other goes on from the height the body is at: how far of its way down it is (postureDown) is the clips' common measure,
 /// so neither begins at its far end. Until 0.9.348 they followed the eyes' ease (Posture.transitionSharpness), so the view
 /// would not lag the key: half the way in 0.05 s, 21 % of it in the first frame, the chest dropped and shot up in one go
@@ -19,34 +17,13 @@ public sealed partial class PlayerBody
     [SerializeField, Tooltip("Standing still, down into a crouch and up out of one, at their own pace.")]
     private string crouchDown = "IdleToCrouch", standUp = "CrouchToIdle";
 
-    // A posture clip's way as baked: when its body sets off and is there (s), and how far of its way it is (0-1) at evenly
-    // spaced moments from its start to its end.
-    private sealed class PostureWay
-    {
-        public float From, To;
-        public float[] Share;
-    }
-
-    private readonly Dictionary<string, PostureWay> postureWays = new Dictionary<string, PostureWay>();
+    // Its body sets off this far off where it begins and is there this near where it ends (share of its way).
+    private const float SetsOff = .02f;
     // The posture clip under way, or null, and how far down the body is (0 standing, 1 crouched).
     private string postureClip;
     private float postureDown;
     // Moving, the stances' cycles cross over this slowly (s), about as long as the clips take.
     private const float MovingPosture = .3f;
-
-    private void ReadPostures()
-    {
-        postureWays.Clear();
-        foreach (string id in GameTables.RowIds(GaitMovesTable))
-        {
-            if (!GameTables.TryGetRow(GaitMovesTable, id, out var row) || row.Text("kind") != "posture") continue;
-            var share = new List<float>();
-            foreach (string cell in row.Text("profile").Split(';'))
-                if (float.TryParse(cell, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)) share.Add(value);
-            if (share.Count < 2) continue;
-            postureWays[id] = new PostureWay { From = row.Number("leave", 0f), To = row.Number("land", 0f), Share = share.ToArray() };
-        }
-    }
 
     // From Enter, on the ground: a body standing still going down or getting up takes its clip, from the height it is at; one
     // moving, the cycles.
@@ -57,7 +34,7 @@ public sealed partial class PlayerBody
         string clip = from == MovementState.Standing && to == MovementState.Crouching ? crouchDown
             : from == MovementState.Crouching && to == MovementState.Standing ? standUp : null;
         if (clip == null) return;
-        if (HorizontalSpeed() > StillTravel || !postureWays.ContainsKey(clip) || Find(clip) == null)
+        if (HorizontalSpeed() > StillTravel || MotionOf(clip) == null || Find(clip) == null)
         {
             SlowBlend(MovingPosture);
             return;
@@ -74,7 +51,8 @@ public sealed partial class PlayerBody
         if (postureClip == null) return false;
         var channel = Find(postureClip);
         bool goesDown = postureClip == crouchDown;
-        if (channel == null || channel.Synced || channel.Length <= 0f || !postureWays.TryGetValue(postureClip, out var way))
+        var motion = MotionOf(postureClip);
+        if (channel == null || channel.Synced || motion == null)
         {
             postureClip = null;
             return false;
@@ -85,44 +63,16 @@ public sealed partial class PlayerBody
             SlowBlend(MovingPosture);
             return false;
         }
-        float moment = PostureMoment(way, channel.Length, goesDown ? postureDown : 1f - postureDown) + dt;
-        if (moment >= way.To)
+        // How high the body is (0 crouched, 1 standing) is both clips' common measure.
+        float moment = motion.MomentAt(Mathf.Clamp(1f - postureDown, SetsOff, 1f - SetsOff)) + dt;
+        if (moment >= motion.MomentAt(goesDown ? SetsOff : 1f - SetsOff))
         {
             postureDown = goesDown ? 1f : 0f;
             postureClip = null;
             return false;
         }
-        float share = PostureShare(way, channel.Length, moment);
-        postureDown = goesDown ? share : 1f - share;
-        Drive(postureClip, moment / channel.Length);
+        postureDown = 1f - Mathf.Clamp01(motion.HeightAt(moment));
+        Drive(postureClip, moment / motion.Length);
         return true;
-    }
-
-    // How far of its way the clip's body has come at this moment.
-    private static float PostureShare(PostureWay way, float length, float moment)
-    {
-        float at = Mathf.Clamp01(moment / length) * (way.Share.Length - 1);
-        int low = Mathf.Min(way.Share.Length - 2, Mathf.FloorToInt(at));
-        return Mathf.Clamp01(Mathf.Lerp(way.Share[low], way.Share[low + 1], at - low));
-    }
-
-    // The moment the clip's body has come this share of its way, between setting off and being there.
-    private static float PostureMoment(PostureWay way, float length, float share)
-    {
-        var shares = way.Share;
-        float step = length / (shares.Length - 1);
-        float lastTime = way.From, last = 0f;
-        for (int i = 0; i < shares.Length; i++)
-        {
-            float time = i * step;
-            if (time <= way.From) continue;
-            if (time > way.To) break;
-            float value = shares[i];
-            if (value >= share)
-                return Mathf.Lerp(lastTime, time, Mathf.Approximately(value, last) ? 1f : Mathf.InverseLerp(last, value, share));
-            lastTime = time;
-            last = value;
-        }
-        return way.To;
     }
 }

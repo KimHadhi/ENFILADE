@@ -29,20 +29,18 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string jump = "jumpstill", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
     [SerializeField] private string slideEnd = "slideend";
+    // The moves' clips the movement goes by too are its own (MovementAbilitySettings).
     private string slideStart => player.AbilitySettings.slideStart;
     private string slide => player.AbilitySettings.slide;
+    private string heavyLand => player.AbilitySettings.heavyLand;
+    private string rollLand => player.AbilitySettings.rollLand;
+    private string rollLandLow => player.AbilitySettings.rollLandLow;
     [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
         + "No pack has a clip for it; the slide's getting up (slideEnd) stood the body up first.")]
     private float slideCrouchTime = .3f;
-    [SerializeField, Tooltip("A slide that goes on past this moment of its clip (s) sways between that much before and after it: "
-        + "the clip's middle to and fro, so it never jumps back to its start.")]
-    private Vector2 slideSway = new Vector2(.71f, .26f);
     [SerializeField, Min(.01f), Tooltip("Out of a slide into its getting up (slideEnd) the poses cross over this slowly (s): the "
         + "slide lies another way round by then than the clip begins.")]
     private float slideEndTime = .25f;
-    [SerializeField, Min(0f), Tooltip("A slide that stops on the spot plays its end (slideEnd, which gets up and runs on) only this "
-        + "far: up off the ground and facing ahead, before its first running step (s).")]
-    private float slideEndUp = .4f;
     [SerializeField, Min(.01f), Tooltip("A clip that ends running, given up because the body has stopped, holds its pose and the "
         + "standing takes over this slowly (s).")]
     private float standSettleTime = .3f;
@@ -52,7 +50,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private string supineDiveStart = "jumpturnfly", supineDive = "jumpturnflyidle";
     [SerializeField] private string bellySlideStart = "diveslidestart", bellySlide = "diveslideidle", bellySlideEnd = "diveslideend";
     [SerializeField] private string supineSlideStart = "meslidestart", supineSlide = "meslideloop", supineSlideEnd = "meslideend";
-    [SerializeField] private string prone = "diveslideidle", supine = "jumpturnlandidle", roll = "mx_sprint_roll";
+    [SerializeField] private string prone = "diveslideidle", supine = "jumpturnlandidle";
     [SerializeField] private string dashPush = "bargein";
     [SerializeField] private string vault = "vaultover", mantle = "climb1", wallClimb = "wallrunvertical", wallKick = "jumpwrleft";
     [SerializeField] private string barSwing = "swing", barRelease = "swingjumpoff", ledgeHang = "hang", ledgeJump = "hangheaveup";
@@ -91,6 +89,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public GaitClips.Gait Gait;
         /// <summary>Which gait a cycle is (0 walk, 1 jog, 2 sprint), by its name (PlayerBody.RankOf); -1 none.</summary>
         public float Rank = -1f;
+        /// <summary>How fast a cycle's own body goes over the ground (m/s, ClipMotion.CycleSpeed).</summary>
+        public float Own;
     }
 
     private readonly List<Channel> channels = new List<Channel>();
@@ -209,6 +209,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         Teardown();
         thirdPerson = wasThirdPerson;
         rebuild = false;
+        motions.Clear();
+        ClipMotion.Metres = clipMetres;
         player = GetComponent<PlayerMovement>();
         profile = PlayerBodyProfile.Load();
         if (player == null || profile == null) { enabled = false; return; }
@@ -281,7 +283,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
                      diveStart, dive, supineDiveStart, supineDive, bellySlideStart, bellySlide, bellySlideEnd,
                      supineSlideStart, supineSlide, supineSlideEnd,
-                     prone, supine, roll, dashPush,
+                     prone, supine, dashPush,
                      vault, mantle, wallClimb, wallKick, barSwing, barRelease, ledgeHang, ledgeJump, death })
             AddChannel(clip, 0f);
         // The rolls, dodges, jumps and landings by the way they go (PlayerBody.Ways).
@@ -292,6 +294,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         BindHops();
         AddArmedChannels();
         AddLocomotionChannels();
+        ReadMotions();
         SetUpAnimationViewChannels();
         leftHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
         rightHand = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
@@ -302,7 +305,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         heaving = false;
         heaveClip = null;
         hips = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
-        obstacleClip = vault; wallKickClip = wallKick; rollClip = roll; downClip = heavyLand; tucked = flailing = false;
+        obstacleClip = vault; wallKickClip = wallKick; rollClip = ""; downClip = heavyLand; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
         ApplyView();
@@ -763,7 +766,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // A landing that runs on out of itself (Land_ToRun) holds on the move, and gives way once the body is no longer
             // going as it does (RunOutPace) or leaves its feet. Up out of a slide, the getting up plays whatever the body does.
             runOutGrace = Mathf.Max(0f, runOutGrace - dt);
-            bool getsUp = transition == Find(slideEnd) && transition.Playable.GetTime() < slideEndUp;
+            bool getsUp = transition == Find(slideEnd) && transition.Playable.GetTime() < (MotionOf(slideEnd)?.OnFeet ?? 0f);
             bool hold = transitionRuns ? onFeet && upright && (getsUp || runOutGrace > 0f
                     || (HorizontalSpeed() > Mathf.Min(walkClipSpeed, RunOutPace * RunOutLeast)
                         && Mathf.Abs(HeadingOf(player.ActualVelocity)) < RunOutAhead))
@@ -831,9 +834,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.LandingRoll:
                 // A moving roll plays on its own clock and the move goes at its clip's own travel
                 // (MovementLanding.RollSpeed); a landing on the spot plays at its own pace and outlasts the move.
-                if (player.Abilities.Landing.LandsInPlace) Want(rollClip);
+                if (player.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot) Want(rollClip);
                 else Drive(rollClip, (player.Abilities.Landing.RollFrom + stateTime) / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
-                if (player.Abilities.Landing.DiveRoll) FaceRoll();
+                if (player.Abilities.Landing.RollKind == MovementLanding.Roll.Dive) FaceRoll();
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
             case MovementState.DashPush: Want(dashPush); break;
@@ -878,7 +881,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             string exit = SlideEndFor(from, to);
             if (exit != null) PlayTransition(exit);
             // The slide's end gets up and runs on (SlideToRun_Exit), the body at its pace; stopped on the spot it gets up only
-            // (slideEndUp), and its running steps never show (GiveUpRunOut). It played whole, so a slide that stopped ran in
+            // (ClipMotion.OnFeet), and its running steps never show (GiveUpRunOut). It played whole, so a slide that stopped ran in
             // place before standing (the user, 2026-11-21).
             if (exit != null && exit == slideEnd)
             {
@@ -917,7 +920,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 break;
             case MovementState.StepDodge: StartDodge(); break;
             case MovementState.LandingRoll:
-                rollClip = RollFor();
+                rollClip = player.Abilities.Landing.RollClip;
                 Restart(Find(rollClip));
                 break;
             case MovementState.HeavyLanding: downClip = DownClip(player.Abilities.Landing.HeavyPose); break;
@@ -1038,11 +1041,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private const float RunOutLeast = .5f, RunOutAhead = 75f;
 
     /// <summary>How fast the body goes over the ground while a clip that ends running plays on (m/s; RunsOut): its clip's own
-    /// pace at its moment (ClipTravel), no faster than a sprint; 0 for none. The movement goes at it (LocomotionState), so its
+    /// pace at its moment (ClipMotion), no faster than a sprint; 0 for none. The movement goes at it (LocomotionState), so its
     /// steps are the body's. Until 0.9.351 a hard landing on the run slowed the body to a tenth under steps of 4-6 m/s, which
     /// then gave way at once (the user, 2026-11-22: "이런 속도를 애니메이션에 맞춰 줄 수 없나?").</summary>
     internal float RunOutPace => !transitionRuns || transition == null || !transition.Playable.IsValid() ? 0f
-        : Mathf.Min(ClipTravel.PaceAt(transition.Clip, (float)transition.Playable.GetTime()), player.Actions.Gait.Fastest);
+        : Mathf.Min(MotionOf(transition.Clip)?.PaceAt((float)transition.Playable.GetTime()) ?? 0f, SprintOwn);
 
     // A one-shot clip carries on from where it is as a landing-like transition: the barge recovers on the spot when a
     // dash push stops on someone, and gives way at once to a run that carries on.

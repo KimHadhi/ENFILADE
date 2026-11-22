@@ -8,18 +8,20 @@ using UnityEngine;
 /// "QuickShift 끝까지"): until 0.9.334 a dodge was 2.6 m in 0.14 s of a move of its own, BIPER's 0.8 s QuickShift showed its
 /// first fifth of a second over it and was dropped as soon as the keys moved the body, and with a gun out only the legs had it.
 /// - Upright: QuickShift_*, the way the keys point: a burst, down low, and up again, as far as the clip's own body goes
-///   (3.3-3.4 m) however this one was going (2.6 m from 0.9.341 to 0.9.350). The legs are the clip's until
-///   Ability.dodgeUntil; the rest of getting up plays out if the body stays.
-/// - Out of a jog or a sprint still asked for, the run goes on sooner (Ability.dodgeRunAt, StepDodgeState). Begun at a sprint
+///   however this one was going. The legs are the clip's until its body has its own under it again (ClipMotion.LegsUnder);
+///   the rest of getting up plays out if the body stays.
+/// - Out of a jog or a sprint still asked for, the run goes on sooner (RunsOn): a jog once the body begins to get up, a
+///   sprint once it has slid out. Begun at a sprint
 ///   (by the gait, MovementGait.Position, the same on every PC, not the speed now: the burst is faster than any gait) and
-///   aside, the body comes up into it with ShiftToSprint_* from the moment it is as low as the dodge (RunOutToward), at that
+///   aside, the body comes up into it with ShiftToSprint_* from the moment the dodge is at (RunOutToward), at that
 ///   clip's own pace (PlayerBody.RunOutPace). Until 0.9.341
 ///   a sprint's dodge was that clip whole, and the whole length of its way, which shifts aside and then runs on ahead, went
 ///   aside: the legs ran ahead under a body still going sideways, at the pace of a run and not of a dodge (the user,
 ///   2026-11-22: "달리면서 회피하면 평소보다 회피 거리가 짧고", "오른쪽 회피 이후에 잠깐 매우 빠르게 달리는 모션").
-/// - Crouched: the low part of the same clip, from its push to before it rises (dodgeLowFrom, dodgeLowUntil), into the crouch.
+/// - Crouched: the low part of the same clip, from its burst to before it rises, into the crouch.
 ///   Until 0.9.334 it slid along in the still crouch pose.
-/// - Chained on a confirmed dodge it starts from that push too: the body is low already.
+/// - Chained on a confirmed dodge it starts from that burst too: the body is low already.
+/// Every one of those moments is the clip's own (ClipMotion); until 0.9.352 each was a number of the table's.
 /// </summary>
 public sealed class DodgeMove
 {
@@ -49,23 +51,19 @@ public sealed class DodgeMove
     public bool Runs => kind == Sprint;
     // The clip it comes up into a sprint ahead with, empty for none.
     private string runOut = "";
-    /// <summary>The clip's moment it is at (s).</summary>
-    public float Time => travel.Time;
     /// <summary>Counts the dodges, so one chained on another is seen to begin.</summary>
     public int Serial { get; private set; }
     /// <summary>How far its clip goes (m).</summary>
     public float Distance => travel.Distance;
     /// <summary>The slide is done; what is left is getting up.</summary>
     public bool Shifted => travel.Share >= ShiftedShare;
+    /// <summary>The clip's moment the legs are the player's again (s).</summary>
+    public float LegsAt => travel.Motion == null ? PlainSeconds : kind == Low ? travel.Motion.Rises : travel.Motion.LegsUnder;
     /// <summary>The legs are the player's again.</summary>
-    public bool Over
-    {
-        get
-        {
-            var settings = ctx.AbilitySettings;
-            return travel.Time >= (kind == Low ? settings.dodgeLowUntil : settings.dodgeUntil);
-        }
-    }
+    public bool Over => travel.Time >= LegsAt;
+    /// <summary>A run it began in, still asked for, goes on from here: into a sprint once it has slid out, into a jog once its
+    /// body begins to get up.</summary>
+    internal bool RunsOn(bool sprints) => sprints ? Shifted : travel.Time >= (travel.Motion != null ? travel.Motion.Rises : PlainSeconds);
 
     internal int Kind => kind;
 
@@ -92,12 +90,14 @@ public sealed class DodgeMove
         this.kind = kind;
         Clip = ClipWays.Nearest(settings.dodgeWays, heading, 180f) ?? "";
         runOut = kind == Sprint ? ClipWays.Nearest(settings.dodgeSprintWays, heading, SprintWithin) ?? "" : "";
-        From = kind == Low || chained ? settings.dodgeLowFrom : 0f;
-        if (!travel.Begin(Clip, From, settings.clipTravelMost))
+        var motion = ctx.MotionOf(Clip);
+        From = motion != null && (kind == Low || chained) ? motion.BurstFrom : 0f;
+        if (!travel.Begin(motion, From, settings.clipTravelMost))
             travel.BeginPlain(PlainDistance, PlainSeconds, From, settings.clipTravelMost);
     }
 
-    /// <summary>The clip it comes up into a run this way with (from Ability.dodgeRunFrom): aside out of a sprint and on ahead.
+    /// <summary>The clip it comes up into a run this way with, from the moment the dodge is at: the pack made both of one shift,
+    /// so their bodies are in the same place then. Aside out of a sprint and on ahead.
     /// Empty where there is none, the run goes another way, or a gun is out: its own run has the body then (PlayerBody.GunRuns),
     /// and this clip's trunk would carry the gun down with it.</summary>
     internal string RunOutToward(Vector3 way)
@@ -106,8 +106,8 @@ public sealed class DodgeMove
     /// <summary>How fast the body goes on that way out of it (m/s): the run-out's own pace, or the legs'.</summary>
     internal float PaceInto(Vector3 way)
     {
-        float pace = ClipTravel.PaceAt(RunOutToward(way), ctx.AbilitySettings.dodgeRunFrom);
-        return pace > 0f ? pace : ctx.Actions.Gait.SpeedFor(ctx.CurrentInput);
+        var motion = ctx.MotionOf(RunOutToward(way));
+        return motion != null ? Mathf.Min(motion.PaceAt(travel.Time), ctx.Actions.Gait.SprintAhead) : ctx.Actions.Gait.SpeedFor(ctx.CurrentInput);
     }
 
     // Degrees from the way they face, + to the right.

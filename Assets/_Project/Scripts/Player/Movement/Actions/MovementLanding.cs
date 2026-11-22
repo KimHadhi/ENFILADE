@@ -13,7 +13,7 @@ using State = PlayerMovement.MovementState;
 ///   damage, which bypasses dodge i-frames, then the HeavyLanding state takes the player down and up again without
 ///   control: onto hands and knees, flat on the face from a huge fall, or onto the back when moving backwards.
 /// - Ctrl within rollInputWindow before a hard or heavy touchdown rolls instead: no damage, no slowdown, speed kept.
-///   Slower than rollLandSpeed, or pulling back, it lands on the spot for rollLandTime instead, as Beatrun's safety roll
+///   Slower than rollLandSpeed, or pulling back, it lands on the spot for its clip's length instead, as Beatrun's safety roll
 ///   does, and still takes rollInPlaceDamageShare of the damage. A fall that
 ///   turned into a big fall can't be rolled: in
 ///   Beatrun the panic starts at the speed where no roll saves you.
@@ -23,6 +23,9 @@ using State = PlayerMovement.MovementState;
 public sealed class MovementLanding
 {
     public enum Tier { Light, Hard, Heavy }
+    /// <summary>A roll: one that stands up out of itself, a landing on the spot, one that runs on out of itself, a slide's jump.
+    /// The pose sends it as it is numbered (MovementMirror).</summary>
+    public enum Roll { StandsUp, OnTheSpot, RunsOn, Dive }
     /// <summary>How a heavy landing goes down: onto hands and knees, flat on the face, or onto the back.</summary>
     public enum Pose { Front, FaceDown, Back }
 
@@ -49,35 +52,43 @@ public sealed class MovementLanding
         {
             var settings = ctx.AbilitySettings;
             return HeavyPose == Pose.Back ? settings.backLandingTime
-                : HeavyPose == Pose.FaceDown ? settings.faceDownLandingTime : settings.heavyLandingTime;
+                : HeavyPose == Pose.FaceDown ? settings.faceDownLandingTime : ctx.MotionOf(settings.heavyLand)?.Length ?? PlainDown;
         }
     }
-    /// <summary>Share of the usual ground speed while getting over a hard landing; 1 otherwise.</summary>
+    // Down this long where the body has no clip of its own for it (s).
+    private const float PlainDown = 1.5f, PlainRoll = 1f;
+    /// <summary>How fast and which way the feet met the ground (m/s): what the landing's clip is chosen by (PlayerBody.LandingFor).</summary>
+    public Vector3 Touchdown { get; private set; }
+    /// <summary>Share of the usual ground speed while getting over a hard landing; 1 otherwise. From the frame after the feet met
+    /// the ground: in that one the body picks the landing's clip, which may run on at a pace of its own. Slowed already in it,
+    /// the clip was chosen at a speed the frame's length decided: a gun's sprint took a jog's landing at 60 frames a second
+    /// (0.9.351).</summary>
     public float RecoveryScale
     {
         get
         {
             var settings = ctx.AbilitySettings;
-            if (recoverLeft <= 0f || settings.hardLandingRecoverTime <= 0f) return 1f;
+            if (ctx.LandedThisFrame || recoverLeft <= 0f || settings.hardLandingRecoverTime <= 0f) return 1f;
             float share = 1f - recoverLeft / settings.hardLandingRecoverTime;
             return Mathf.Lerp(settings.hardLandingMoveScale, 1f, Mathf.SmoothStep(0f, 1f, share));
         }
     }
     /// <summary>Shift and a W run cannot build speed yet after a hard landing.</summary>
     public bool SprintBlocked => noSprintLeft > 0f;
-    /// <summary>This landing roll stays where it came down.</summary>
-    public bool LandsInPlace { get; internal set; }
-    /// <summary>The landing roll under way began at a sprint and runs on out of itself (RollToRun).</summary>
-    public bool RollRuns { get; internal set; }
-    /// <summary>The roll under way is a slide's jump (TryDiveRoll), not a landing's.</summary>
-    public bool DiveRoll { get; internal set; }
-    /// <summary>The clip's moment the moving roll begins at (s).</summary>
-    public float RollFrom => DiveRoll ? ctx.AbilitySettings.diveRollFrom : 0f;
+    /// <summary>The roll under way, and its clip (the PlayerBody profile's name).</summary>
+    public Roll RollKind { get; private set; }
+    public string RollClip { get; private set; } = "";
+    /// <summary>The clip's moment a roll begins at (s): a slide's jump, once its body has thrown itself on, for it comes up out
+    /// of a slide.</summary>
+    public float RollFrom => RollKind == Roll.Dive ? RollMotion?.BurstTo ?? 0f : 0f;
+    /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, a landing on the spot its clip's
+    /// length.</summary>
+    public float RollTime => RollMotion == null ? PlainRoll : RollKind == Roll.OnTheSpot ? RollMotion.Length : RollMotion.Up - RollFrom;
+    /// <summary>How long into the roll its body meets the ground (s).</summary>
+    public float RollDown => RollMotion != null ? RollMotion.Down - RollFrom : 0f;
+    private ClipMotion RollMotion => ctx.MotionOf(RollClip);
     // The moving roll's travel as its clip goes.
     private readonly ClipTravel roll = new ClipTravel();
-    /// <summary>How long the roll under way lasts (s): a moving one until its body is back up, its clip at its own pace; a
-    /// landing on the spot its clip's length.</summary>
-    public float RollTime => LandsInPlace ? ctx.AbilitySettings.rollLandTime : roll.Up - RollFrom;
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
     /// <summary>The player has no control: thrown by a blow, or down after a heavy landing.</summary>
@@ -214,6 +225,7 @@ public sealed class MovementLanding
     internal bool OnLanding(float tuck = 0f)
     {
         var settings = ctx.AbilitySettings;
+        Touchdown = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
         // Judged where the feet were, not where the tucked capsule's bottom was (FeetImpact).
         float gravity = Mathf.Abs(ctx.gravity * (ctx.IsDiving ? ctx.diveGravityScale : 1f));
         LastTuck = tuck;
@@ -237,7 +249,7 @@ public sealed class MovementLanding
         float damage = (LastImpactSpeed - settings.safeFallSpeed) * settings.fallDamagePerSpeed;
         if (onFeet && rollPressed && !knocked && !bigFall && TryRoll())
         {
-            if (hurts && LandsInPlace) TakeFallDamage(damage * settings.rollInPlaceDamageShare);
+            if (hurts && RollKind == Roll.OnTheSpot) TakeFallDamage(damage * settings.rollInPlaceDamageShare);
             return true;
         }
         if (hurts && !TakeFallDamage(damage)) return true;
@@ -263,16 +275,12 @@ public sealed class MovementLanding
         // rolls on the spot, so the view and the body play the same move.
         if (!inPlace && !ctx.Abilities.Traversal.Detector.ClearCapsule(ctx.transform.position + direction * 0.6f, ctx.CrouchColliderHeight))
             inPlace = true;
-        // A moving roll goes at its clip's own travel and pace (0.9.288; the dive roll had it first). Until then it went at the
-        // landing's speed (Ability.rollSpeed 4 m/s at least) for Ability.rollDuration (1 s) with its clip squeezed into that:
-        // Roll_F (1.47 s, 3.4 m gone in its first half second) played half as fast again as it was made (the user,
-        // 2026-11-21: "착지할 때 dive roll 모션이 존나 빨라").
+        // A moving roll goes at its clip's own travel and pace (0.9.288). Until then it went at the landing's speed for a second
+        // with its clip squeezed into that: Roll_F (1.47 s) played half as fast again as it was made (the user, 2026-11-21:
+        // "착지할 때 dive roll 모션이 존나 빨라"). And until 0.9.352 at the forward clip's whatever way it rolled.
         var settings = ctx.AbilitySettings;
-        bool runs = !inPlace && ctx.HorizontalVelocity.magnitude >= settings.rollRunSpeed;
-        if (!inPlace && !roll.Begin(runs ? settings.rollRunTravel : settings.rollTravel, 0f, settings.clipTravelMost)) inPlace = true;
-        LandsInPlace = inPlace;
-        RollRuns = runs && !inPlace;
-        DiveRoll = false;
+        SetRoll(inPlace ? Roll.OnTheSpot : ctx.HorizontalVelocity.magnitude >= settings.rollRunSpeed ? Roll.RunsOn : Roll.StandsUp, HeadingOf(direction, ctx.transform.eulerAngles.y));
+        if (!inPlace && !roll.Begin(RollMotion, 0f, settings.clipTravelMost)) SetRoll(Roll.OnTheSpot, 0f);
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
         ctx.Abilities.InputConsumed = true;
@@ -296,14 +304,42 @@ public sealed class MovementLanding
         Vector3 ahead = ctx.transform.position + direction * 0.6f
             + Vector3.up * (ctx.Posture.defaultStepOffset * Mathf.Abs(ctx.transform.lossyScale.y));
         if (!ctx.Abilities.Traversal.Detector.ClearCapsule(ahead, ctx.CrouchColliderHeight)) return false;
-        var settings = ctx.AbilitySettings;
-        if (!roll.Begin(settings.diveRoll, settings.diveRollFrom, settings.clipTravelMost)) return false;
-        LandsInPlace = RollRuns = false;
-        DiveRoll = true;
+        Roll before = RollKind;
+        string clip = RollClip;
+        SetRoll(Roll.Dive, 0f);
+        if (!roll.Begin(RollMotion, RollFrom, ctx.AbilitySettings.clipTravelMost))
+        {
+            (RollKind, RollClip) = (before, clip);
+            return false;
+        }
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
         return true;
     }
+
+    // The clip a roll of this kind going this way (degrees from the way they face) is: running on out of it where the pack has
+    // that way, else standing up.
+    private void SetRoll(Roll kind, float heading)
+    {
+        var settings = ctx.AbilitySettings;
+        string clip = kind == Roll.RunsOn ? ClipWays.Nearest(settings.rollRunWays, heading, RunsOnWithin) : null;
+        if (kind == Roll.RunsOn && clip == null) kind = Roll.StandsUp;
+        RollKind = kind;
+        RollClip = kind == Roll.RunsOn ? clip
+            : kind == Roll.Dive ? settings.diveRoll
+            : kind == Roll.OnTheSpot ? ctx.HasCeilingAbove(ctx.StandingColliderHeight) ? settings.rollLandLow : settings.rollLand
+            : ClipWays.Nearest(settings.rollWays, heading, 180f) ?? "";
+    }
+
+    /// <summary>Another PC's roll as its pose says: the same kind and way are the same clip.</summary>
+    internal void MirrorRoll(Roll kind, Vector3 direction, float yaw) => SetRoll(kind, HeadingOf(direction, yaw));
+
+    // A way this far from every running roll's is none of theirs (degrees).
+    private const float RunsOnWithin = 45f;
+
+    // Degrees from the way they face, + to the right.
+    private static float HeadingOf(Vector3 direction, float yaw)
+        => Mathf.DeltaAngle(yaw, Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg);
 
     // Down after a heavy landing, facing the view (or the blow): backwards onto the back, a huge fall flat on the face,
     // otherwise onto hands and knees.
@@ -366,7 +402,8 @@ public sealed class MovementLanding
     {
         ClearFall();
         rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
-        IsKnockedBack = RollRuns = DiveRoll = false;
+        IsKnockedBack = false;
+        RollKind = Roll.StandsUp;
         LastTier = Tier.Light;
     }
 

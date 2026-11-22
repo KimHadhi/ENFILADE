@@ -6,7 +6,7 @@ public sealed partial class PlayerMovement
 {
     [Header("Locomotion Speeds")]
     // Walking, jogging, running and sprinting, standing or crouched, go as fast as their clips carry the body each way:
-    // Tables/Player/Gaits.csv (MovementGait), not fields here.
+    // the clips' own (MovementGait), not fields here.
     [SerializeField, Min(0f)] internal float proneSpeed = 1.6f;
     [SerializeField, Min(0f)] internal float supineSpeed = 1.6f;
     [Tooltip("Going down from on their feet, how long the body falls before the crawl can start (s): BIPER P_Die_F's body "

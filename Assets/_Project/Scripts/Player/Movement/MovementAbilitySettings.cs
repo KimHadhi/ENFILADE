@@ -6,19 +6,10 @@ using UnityEngine;
 public sealed class MovementAbilitySettings
 {
     [Header("Dodge & Lean")]
-    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right; DodgeMove). It goes as far and at the pace each clip does (GaitMoves.csv kind travel).")]
+    [Tooltip("The step dodge's clips by the way it goes (clip@degrees;…, 0 ahead, 90 right; DodgeMove). It goes as far and at the pace each clip does (ClipMotion).")]
     public string dodgeWays = "QuickShift_F@0;QuickShift_R45@45;QuickShift_R@90;QuickShift_R135@135;QuickShift_B@180;QuickShift_L135@-135;QuickShift_L@-90;QuickShift_L45@-45";
-    [Tooltip("Out of a dodge aside into a sprint ahead: the clip by the dodge's way, from its moment dodgeRunFrom (s), where its body is as low and wide as the dodge's and goes on up into the sprint.")]
+    [Tooltip("Out of a dodge aside into a sprint ahead: the clip by the dodge's way, from the moment the dodge is at.")]
     public string dodgeSprintWays = "ShiftToSprint_L@-90;ShiftToSprint_L45@-45;ShiftToSprint_R45@45;ShiftToSprint_R@90";
-    [Min(0f)] public float dodgeRunFrom = 0.233f;
-    [Tooltip("The moment of a dodge's clip the legs are the player's again (s).")]
-    [Min(0.05f)] public float dodgeUntil = 0.5f;
-    [Tooltip("The same with the jog (x) or the sprint (y) the dodge began in still asked for: the run goes on from there.")]
-    public Vector2 dodgeRunAt = new Vector2(0.4f, 0.23f);
-    [Tooltip("A dodge from a crouch, or chained on a confirmed one, starts at this moment of the clip (s): its push, low already.")]
-    [Min(0f)] public float dodgeLowFrom = 0.07f;
-    [Tooltip("The moment of the clip a dodge from a crouch is over (s), before the body rises.")]
-    [Min(0.05f)] public float dodgeLowUntil = 0.36f;
     [Tooltip("The fastest a move that goes as its clip does carries the body (m/s); what a clip throws past it is paid in the frames after (ClipTravel).")]
     [Min(1f)] public float clipTravelMost = 18f;
     [Tooltip("회피가 적 몸 안에서 끝나면 진행 방향의 안전한 출구를 찾는 탐색 거리.")]
@@ -238,27 +229,27 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float faceDownLandingSpeed = 26f;
     [Tooltip("A heavy landing moving backwards faster than this (against the view) falls onto the back (m/s).")]
     [Min(0f)] public float backLandingMinSpeed = .4f;
-    [Tooltip("Seconds a heavy landing keeps the player down: onto hands and knees, onto the face, onto the back.")]
-    [Min(.1f)] public float heavyLandingTime = 1.567f, faceDownLandingTime = 1.5f, backLandingTime = 2.8f;
+    [Tooltip("Down after a heavy landing and up again: its clip, for as long as it lasts.")]
+    public string heavyLand = "Land_4h";
+    [Tooltip("Seconds one keeps the player down on the face, on the back.")]
+    [Min(.1f)] public float faceDownLandingTime = 1.5f, backLandingTime = 2.8f;
     [Tooltip("How quickly a heavy landing's skid along the ground dies away (share of the speed per second).")]
     [Min(0f)] public float heavyLandingBraking = 10f;
     [Min(0.01f)] public float rollInputWindow = 0.5f;
-    [Tooltip("A landing roll: the Tables/Player/GaitMoves.csv rows (kind travel) its way and pace are read from, standing up out of it and running on.")]
-    public string rollTravel = "Roll_F", rollRunTravel = "RollToRun_F";
+    [Tooltip("The landing rolls' clips by the way they go (clip@degrees;…, 0 ahead, 90 right): standing up out of it, and running on. The roll goes as far and at the pace its clip does (ClipMotion).")]
+    public string rollWays = "Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@-135;Roll_L@-90;Roll_L45@-45";
+    public string rollRunWays = "RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_L@-90;RollToRun_L45@-45";
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
     [Min(0f)] public float rollRunSpeed = 4f;
     [Tooltip("The slide's clips, down into it and along: the slide goes at their pace (SlidePace) and the body plays them (PlayerBody.SlidePose).")]
     public string slideStart = "SlideToRun_Enter", slide = "SlideToRun_10m";
-    [Tooltip("A slide's jump, a dive roll: its clip. How far and at what pace it goes is its Tables/Player/GaitMoves.csv row (kind travel).")]
+    [Tooltip("A slide's jump, a dive roll: its clip. It goes as far and at the pace the clip does, from where its body has thrown itself on (ClipMotion).")]
     public string diveRoll = "DiveRoll_F";
-    [Tooltip("The clip's moment a dive roll begins at (s), the body already thrown: the stand and the kick before it are left "
-        + "out, for it comes up out of a slide. And the moment the body meets the ground (s, the roll's sound).")]
-    [Min(0f)] public float diveRollFrom = .14f, diveRollDown = .5f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;
-    [Tooltip("Seconds a landing on the spot holds the player there: its clip's own length (Body.rollLand).")]
-    [Min(0.05f)] public float rollLandTime = 1f;
+    [Tooltip("A landing on the spot: its clip, for as long as it lasts, and the one under a low ceiling.")]
+    public string rollLand = "Land_1h", rollLandLow = "landcrouch";
     [Tooltip("Share of the fall damage a landing on the spot still takes: with no run to roll into, the legs take it. A big fall can't be rolled at all, as in Beatrun.")]
     [Range(0f, 1f)] public float rollInPlaceDamageShare = .5f;
     [Tooltip("Seconds getting up off the back keeps the player from moving off while the body gets up, as Beatrun's "

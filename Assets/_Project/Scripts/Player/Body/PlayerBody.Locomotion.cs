@@ -10,7 +10,7 @@ using UnityEngine.Playables;
 ///   along the travel: a slow side cycle takes more of a diagonal than a fast forward one, so neither skates sideways.
 /// - Every cycle shares one step: each stride starts with the left foot down, wherever its file starts or however many
 ///   strides it holds.
-/// - The game goes at the cycles' own speeds (MovementGait), so they play at their own pace and stride; what a body goes
+/// - The game goes at the cycles' own speeds (LegSpeed, MovementGait), so they play at their own pace and stride; what a body goes
 ///   faster or slower than its cycles is shared evenly between the two, within gaitRate and gaitStretch (Pace,
 ///   FootPlanting.Stride), so the feet cover the ground the body covers and stay where they come down. Until 0.8.260 the
 ///   cycles played at their own pace whatever the speed and the feet skated 30-60% of it (the user, 2026-11-12: "우스꽝스럽고
@@ -147,9 +147,6 @@ public sealed partial class PlayerBody
         strideStretch = FootPlanting.Stride.None;
     }
 
-    // The turn-on-the-spot clips' curves (Tables/Player/GaitMoves.csv, baked by ClipBench: GaitMoveBake).
-    private const string GaitMovesTable = "GaitMoves";
-
     private static float LegOf(Animator animator)
     {
         var upper = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg) : null;
@@ -222,6 +219,12 @@ public sealed partial class PlayerBody
         if (channel.Gait == null && channel.Playable.IsValid())
             channel.Gait = GaitClips.For(loadedModel, channel.Playable.GetAnimationClip(), animator);
         if (channel.Rank < 0f) channel.Rank = RankOf(clipName, channel);
+        if (channel.Own <= 0f)
+        {
+            // A cycle made on the spot (a mod's, one polished in Blender) goes as fast as its feet here carry it.
+            channel.Own = ClipMotion.CycleSpeed(channel.Playable.GetAnimationClip());
+            if (channel.Own < .1f && channel.Gait != null) channel.Own = channel.Gait.Speed * GaitScale;
+        }
         return channel;
     }
 
@@ -307,7 +310,8 @@ public sealed partial class PlayerBody
         // gait played half of the next one's clip (the jog half the run, the run a quarter of the sprint), and the run and
         // the sprint looked alike (the user, 2026-11-21: "달리기랑 전력 질주랑 걍 모션 똑같은 거 같은데").
         var gaitNow = player.Actions != null ? player.Actions.Gait : null;
-        gaitPlace = crouched || gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, Mathf.Abs(heading)));
+        // Aimed, they walk.
+        gaitPlace = crouched || gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, heading)) * (1f - aim);
         float moving = MixSets(stance, legs, speed, scale);
         if (!crouched) Bank();
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
@@ -341,7 +345,7 @@ public sealed partial class PlayerBody
         float left = 1f, moving = 0f;
         for (int i = 0; i < asking.Count && left > 1e-4f; i++)
         {
-            float share = left * Mathf.Clamp01(wanting[i]) * Carries(asking[i], heading, speed, scale);
+            float share = left * Mathf.Clamp01(wanting[i]) * (speed < StillTravel ? 1f : Carries(asking[i], heading, gaitPlace));
             if (share <= 0f) continue;
             moving += Mix(asking[i], stance, share, heading, speed, scale);
             left -= share;
@@ -428,16 +432,61 @@ public sealed partial class PlayerBody
         if (set.Idle != null && weight > 0f) set.Idle.Target += weight;
     }
 
-    // How much of this travel a set can carry (0-1): standing, all of it (on its idle); moving, as far as its ways reach
-    // round to the heading (Reach) and its cycles reach the gait (a gun held at the hip walks, jogs and runs ahead only:
-    // the plain set steps the other ways under the gun's upper body, and a gun's sprint goes ahead only, SprintsToward).
-    // Past that the next set down runs on under the same upper body.
-    private float Carries(MoveSet set, float heading, float speed, float scale)
+    // How much of a travel a set can carry at a gait (0-1): as far as its ways reach round to the heading (Reach) and its
+    // cycles reach the gait (a gun held at the hip walks, jogs and runs ahead only: the plain set steps the other ways under
+    // the gun's upper body, and a gun's sprint goes ahead only, SprintsToward). Past that the next set down runs on under the
+    // same upper body.
+    private static float Carries(MoveSet set, float heading, float place)
     {
-        if (speed < StillTravel) return 1f;
         if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
         float top = Mathf.Lerp(a.Cycles[a.Cycles.Count - 1].Rank, b.Cycles[b.Cycles.Count - 1].Rank, toward);
-        return Reach(set, heading) * (1f - Mathf.InverseLerp(top, top + .5f, gaitPlace));
+        return Reach(set, heading) * (1f - Mathf.InverseLerp(top, top + .5f, place));
+    }
+
+    /// <summary>How fast the legs' own clips go this way (m/s; degrees from ahead, + to the right): at this gait (0 walk, 1 jog,
+    /// 2 sprint) or crouched, and this far aimed (0-1). The sets share it as they share the legs (MixSets), each way's clips
+    /// at their own speed (ClipMotion.CycleSpeed). The movement goes at it (MovementGait), so whatever clips a set lists, the
+    /// game goes as they do. 0 for a body with none.</summary>
+    internal float LegSpeed(float heading, float place, bool crouched, float aim)
+    {
+        var stance = crouched ? crouchSet : plainSet;
+        if (stance == null) return 0f;
+        var gun = GunInHand();
+        if (gun == null) aim = 0f;
+        place = crouched ? 0f : place * (1f - aim);
+        // The hips turn to the way the gun's run goes (Locomotion).
+        if (gun != null && place >= 1f + gunRunFrom) heading -= Mathf.Clamp(heading, -GunRunSlant, GunRunSlant);
+        float left = 1f, speed = 0f;
+        if (gun != null)
+        {
+            Take(crouched ? gun.CrouchAim : gun.Aim, aim, ref left, ref speed);
+            Take(crouched ? gun.Crouch : gun.Hip, 1f, ref left, ref speed);
+        }
+        return speed + left * OwnSpeed(stance, heading, place);
+
+        void Take(MoveSet set, float want, ref float left, ref float speed)
+        {
+            if (set == null || want <= 0f) return;
+            float share = left * Mathf.Clamp01(want) * Carries(set, heading, place);
+            speed += share * OwnSpeed(set, heading, place);
+            left -= share;
+        }
+    }
+
+    /// <summary>The fastest the legs go ahead (m/s): the empty hands' sprint.</summary>
+    private float SprintOwn => plainSet != null ? OwnSpeed(plainSet, 0f, 2f) : 0f;
+
+    // A set's own speed this way at this gait: its two ways' either side, joined by the angle.
+    private static float OwnSpeed(MoveSet set, float heading, float place)
+    {
+        if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
+        return Mathf.Lerp(WayOwn(a), WayOwn(b), toward);
+
+        float WayOwn(Way way)
+        {
+            Bracket(way.Cycles, place, out int low, out int high, out float t);
+            return Mathf.Lerp(way.Cycles[low].Own, way.Cycles[high].Own, t);
+        }
     }
 
     // How much of the body moves rather than stands: up to the slowest cycle the way it goes, the stance shares it.

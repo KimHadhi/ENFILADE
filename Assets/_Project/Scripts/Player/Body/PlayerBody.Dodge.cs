@@ -61,7 +61,7 @@ public sealed partial class PlayerBody
         SlowBlend(dodgeStandTime);
         if (to == PlayerMovement.MovementState.Crouching) return;
         bool goes = player.HorizontalVelocity.magnitude > walkClipSpeed
-            || (player.IsNetworkDriven && stateTime < player.AbilitySettings.dodgeUntil - LeftEarly);
+            || (player.IsNetworkDriven && stateTime < player.Abilities.DodgeMove.LegsAt - player.Abilities.DodgeMove.From - LeftEarly);
         if (!goes) PlayOn(dodgeClip);
         else if (!StartRunOut()) PickUpStep();
     }
@@ -71,7 +71,8 @@ public sealed partial class PlayerBody
     {
         dodgeRunOut = player.Abilities.DodgeMove.RunOutToward(player.HorizontalVelocity);
         var channel = Find(dodgeRunOut);
-        float from = player.AbilitySettings.dodgeRunFrom;
+        // From the moment the dodge is at: the two were made of one shift.
+        float from = Find(dodgeClip) is Channel dodge && !dodge.Synced ? (float)dodge.Playable.GetTime() : 0f;
         if (channel == null || channel.Synced || channel.Length - from <= blendTime) return false;
         Restart(channel);
         channel.Playable.SetTime(from);

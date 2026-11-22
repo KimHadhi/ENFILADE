@@ -15,9 +15,7 @@ public sealed partial class PlayerBody
     [SerializeField] private string landCrouch = "landcrouch", coilLand = "jumpcoilend", coilLandCrouch = "jumpcoilendcrouch";
     [SerializeField, Tooltip("Down after a heavy landing and up again: onto hands and knees, flat on the face (a huge "
         + "fall), onto the back (moving backwards, or thrown by a blow). Each plays over the time the player stays down.")]
-    private string heavyLand = "mx_hard_landing", heavyLandFaceDown = "mx_get_up", heavyLandBack = "mx_stand_up_back";
-    [SerializeField, Tooltip("A landing too slow to roll on stays where it came down (Ability.rollLandSpeed), or crouched under a low ceiling.")]
-    private string rollLand = "land";
+    private string heavyLandFaceDown = "mx_get_up", heavyLandBack = "mx_stand_up_back";
     [SerializeField, Tooltip("A long fall (Ability.bigFallHeight): arms and legs flail until touchdown, Ctrl or not.")]
     private string fallFlail = "fallinguncontrolled";
     [SerializeField, Tooltip("Off an edge without a jump, onto a drop deeper than fallFromEdgeDrop (m): the step off and the "
@@ -76,7 +74,7 @@ public sealed partial class PlayerBody
 
     private string[] VariantClips => new[]
     {
-        airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand,
+        airTuck, landCrouch, coilLand, coilLandCrouch, heavyLand, heavyLandFaceDown, heavyLandBack, rollLand, rollLandLow,
         fallFlail, supineSlideEndCrouch, supineSlideEndProne, supineLand, supineGetUp, supineGetUpGun, supineGetUpCrouch,
         bellySlideEndCrouch, vaultHigh, vaultKong, springboard, stepUp, mantleLow, mantleMid, ledgeClimbUp, ledgeCatch, ledgeShimmyLeft, ledgeShimmyRight,
         wallClimbStart, wallKickRight, crouchDown, standUp, fallFromEdge, landMid, clamberLow, clamberHigh, downedFall
@@ -270,11 +268,6 @@ public sealed partial class PlayerBody
         playingOut = false;
     }
 
-    // A slide's jump is the dive roll; a landing's as Beatrun's safety roll picks them.
-    private string RollFor() => player.Abilities.Landing.DiveRoll ? player.AbilitySettings.diveRoll
-        : !player.Abilities.Landing.LandsInPlace ? RollWay(roll)
-        : player.HasCeilingAbove(player.StandingColliderHeight) ? landCrouch : rollLand;
-
     // A dive roll goes the way the slide went, wherever the view looks: the body keeps facing it, as it did sliding.
     private void FaceRoll()
     {
@@ -303,7 +296,7 @@ public sealed partial class PlayerBody
     }
 
     // The slide: down into it, then the slide's clip from its start, where the entry leaves off (hips 58-61 degrees round,
-    // chest 64-66), on to its middle and swaying about there for as long as it lasts (slideSway). Until 0.9.336 the clip went
+    // chest 64-66), on to its middle and swaying about there for as long as it lasts. Until 0.9.336 the clip went
     // round as a loop on a clock of its own, never begun with the slide: it took over anywhere in itself, and its end jumped
     // back to its start, 34 degrees of hips and 45 of chest, about once a slide (the user, 2026-11-22: "슬라이딩 중에 모션 한번
     // 버벅이고").
@@ -312,7 +305,9 @@ public sealed partial class PlayerBody
         var entry = Find(slideStart);
         float time = entry != null ? stateTime - (entry.Length - blendTime) : stateTime;
         if (time < 0f) { Want(slideStart); return; }
-        float centre = slideSway.x, sway = slideSway.y;
+        // Between where its body is down and where it begins to get up.
+        var motion = MotionOf(slide);
+        float centre = motion != null ? (motion.Down + motion.Rises) * .5f : 0f, sway = motion != null ? (motion.Rises - motion.Down) * .5f : 0f;
         // At the clip's own pace up to the middle and through it, so nothing starts or stops there.
         if (time > centre) time = sway > 0f ? centre + sway * Mathf.Sin((time - centre) / sway) : centre;
         Drive(slide, time / Mathf.Max(.05f, Find(slide)?.Length ?? 1f));

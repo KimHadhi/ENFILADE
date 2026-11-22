@@ -1,17 +1,13 @@
 using UnityEngine;
 
 /// <summary>
-/// How fast the legs carry the player: a gait (walk, jog or sprint) and the way it goes. Each gait plays its own clips
-/// (PlayerBody.Locomotion) and the body goes as fast as their feet carry it that way, so at every gait and in every way the
-/// clips play as they were made (the user, 2026-11-21: "이 애니메이션에 최대한 맞출 수 있는 스트레이프 시스템으로"; 2026-11-22:
-/// "이런 속도를 애니메이션에 맞춰 줄 수 없나?", "전부 맞추기"). The speeds are rows of Tables/Player/Gaits.csv: what each gait's
-/// clips' (BIPER Female Runner) feet carry the body at, measured with ClipBench on four characters, the same for every body,
-/// so a race between two players is never won by a body. A gun out, the legs are that gun's own walk, jog, run and crouched
-/// walk ahead (Combat Girls), and its sights up, its aim walk, each with speeds of its own (rows gun.* and aim*); where the gun
-/// has no clip the legs, and the speed, are the empty hands'. Until 0.9.350 the jog went 1.23 and the sprint 1.08 times their
-/// clips, a gun jogged, ran and crouched at the empty hands' pace (its run a third faster than it is made) and aimed at a
-/// share of it that each gun had of its own (Weapons.csv adsMoveMultiplier, 0.45-0.8), and the step's pace and the stride
-/// made up the rest.
+/// How fast the legs carry the player: a gait (walk, jog or sprint) and the way it goes. Each gait plays its own clips and the
+/// body goes as fast as those clips go that way (PlayerBody.LegSpeed, off the clips themselves), so at every gait and in every
+/// way they play as they were made (the user, 2026-11-21: "이 애니메이션에 최대한 맞출 수 있는 스트레이프 시스템으로";
+/// 2026-11-22: "이런 속도를 애니메이션에 맞춰 줄 수 없나?", "걍 애니메이션 하나만 있으면"). A clip's way is every body's alike,
+/// so a race between two players is never won by a body. A gun out or aimed, the legs are that gun's own, and so is the
+/// speed. Until 0.9.352 the speeds were rows of a table (Gaits.csv), measured with ClipBench and typed, and until 0.9.350
+/// boosted over their clips.
 /// The keys (the user's): a direction key alone jogs, and sprints with Shift (PlayerMovement.SprintProgress, eased over
 /// Move.sprintRampUpDuration); walk mode (Caps Lock, Player/WalkMode) walks, and jogs with Shift (eased the same way here).
 /// Crouched, the crouched walk goes at its own speed, walk mode or not: a mode changes a motion only where it has a motion
@@ -34,40 +30,23 @@ using UnityEngine;
 /// </summary>
 public sealed class MovementGait
 {
-    private const string Table = "Gaits";
-    // The ways a row gives a speed for, degrees from ahead (left and right alike).
-    private static readonly float[] Angles = { 0f, 45f, 90f, 135f, 180f };
-    private static readonly string[] Columns = { "ahead", "aheadSide", "side", "backSide", "back" };
-    private const int Walk = 0, Jog = 1, Sprint = 2, Crouch = 3, Gun = 4, Aim = 8, AimCrouch = 9;
-    private static readonly string[] Rows =
-    {
-        "walk", "jog", "sprint", "crouch", "gun.walk", "gun.jog", "gun.sprint", "gun.crouch", "aim", "aim.crouch"
-    };
-    // The row whose clips, and speed, a gun's or an aim's legs have where its own cell is empty.
-    private static readonly int[] Under = { Walk, Jog, Sprint, Crouch, Walk, Jog, Sprint, Crouch, Walk, Crouch };
-    // Read before the table is: what the clips' feet carry the body at, the mean of four characters (0.9.350).
-    private static readonly float[,] Fallback =
-    {
-        { 1.33f, 1.26f, 1.31f, 1.38f, 1.50f }, { 2.50f, 3.36f, 2.66f, 2.79f, 2.69f },
-        { 6.01f, 5.79f, 6.18f, 4.93f, 4.46f }, { 2.21f, 2.15f, 1.86f, 2.09f, 1.66f }
-    };
+    private const int Walk = 0, Jog = 1, Sprint = 2;
+    // A body with no cycles of its own goes this fast (m/s): the walk, the jog, the sprint, and crouched.
+    private static readonly float[] Bare = { 1.3f, 2.7f, 6f };
+    private const float BareCrouch = 2f;
     // How long the legs take to go from one gait's clips to the next (s), as walk mode or Shift changes it.
     private const float GaitChange = .25f;
 
     private readonly PlayerMovement ctx;
-    private readonly float[,] rows = new float[Rows.Length, Columns.Length];
     private float jogShare, position = Jog;
 
-    internal MovementGait(PlayerMovement context)
-    {
-        ctx = context;
-        Read();
-    }
+    internal MovementGait(PlayerMovement context) { ctx = context; }
 
-    /// <summary>The gait's speed straight ahead now (m/s), between the jog and the sprint (or the walk and the jog) as far
-    /// as Shift has brought it.</summary>
-    public float Speed => ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, 0f), At(Jog, 0f), jogShare)
-        : Mathf.Lerp(At(Jog, 0f), At(Sprint, 0f), ctx.SprintProgress);
+    // The gait the keys ask for now: between the jog and the sprint (or the walk and the jog) as far as Shift has brought it.
+    private float Asked => ctx.Input.WalkMode ? jogShare : Jog + ctx.SprintProgress;
+
+    /// <summary>The gait's speed straight ahead now (m/s).</summary>
+    public float Speed => Legs(0f, Asked, 0f);
 
     /// <summary>
     /// Which gait the legs go (0 walk, 1 jog, 2 sprint; between while Shift or walk mode changes it): the clips they play
@@ -80,17 +59,17 @@ public sealed class MovementGait
     internal void Mirror(float value) => position = Mathf.Clamp(value, 0f, Sprint);
 
     /// <summary>
-    /// Where a speed lies on the gaits' ladder the way it goes (<paramref name="angle"/>, degrees from ahead): 0 at the
+    /// Where a speed lies on the gaits' ladder the way it goes (<paramref name="heading"/>, degrees from ahead): 0 at the
     /// walk's speed or slower, 1 at the jog's, 2 at the sprint's or faster, between in between. The legs never play a gait
     /// faster than this: setting off, the body goes through the slower gaits' clips to its own.
     /// </summary>
-    internal float PlaceOf(float speed, float angle)
+    internal float PlaceOf(float speed, float heading)
     {
-        float below = Aimed(At(Walk, angle), Aim, angle);
+        float below = Legs(heading, Walk, 0f);
         if (speed <= below) return 0f;
         for (int gait = Jog; gait <= Sprint; gait++)
         {
-            float above = Mathf.Max(below, At(gait, angle));
+            float above = Mathf.Max(below, Legs(heading, gait, 0f));
             if (speed < above) return gait - 1 + (speed - below) / Mathf.Max(1e-3f, above - below);
             below = above;
         }
@@ -98,30 +77,29 @@ public sealed class MovementGait
     }
 
     /// <summary>The jog's speed straight ahead (m/s): the pace a direction key alone gives.</summary>
-    internal float JogAhead => At(Jog, 0f);
+    internal float JogAhead => Legs(0f, Jog, 0f);
     /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go: with a gun out, its own run's.</summary>
-    internal float SprintAhead => At(Sprint, 0f);
-
-    /// <summary>The fastest any legs go ahead (m/s): the empty hands' sprint.</summary>
-    internal float Fastest => rows[Sprint, 0];
+    internal float SprintAhead => Legs(0f, Sprint, 0f);
 
     /// <summary>The speed for this input standing (m/s): the gait now, the way the input points; the aim's as far as the
     /// sights are up.</summary>
-    internal float SpeedFor(Vector2 input)
-    {
-        float angle = AngleOf(input);
-        return Aimed(ctx.Input.WalkMode ? Mathf.Lerp(At(Walk, angle), At(Jog, angle), jogShare)
-            : Mathf.Lerp(At(Jog, angle), At(Sprint, angle), ctx.SprintProgress), Aim, angle);
-    }
+    internal float SpeedFor(Vector2 input) => Legs(Heading(input), Asked, ctx.AimShare);
 
     /// <summary>The speed for this input crouched (m/s): the crouched walk's, walk mode or not.</summary>
     internal float CrouchSpeedFor(Vector2 input)
     {
-        float angle = AngleOf(input);
-        return Aimed(At(Crouch, angle), AimCrouch, angle);
+        float speed = ctx.LegSpeed(Heading(input), Walk, true, ctx.AimShare);
+        return speed > 0f ? speed : BareCrouch;
     }
 
-    private float Aimed(float speed, int aim, float angle) => Mathf.Lerp(speed, RowAt(aim, angle), ctx.AimShare);
+    private float Legs(float heading, float gait, float aim)
+    {
+        float speed = ctx.LegSpeed(heading, gait, false, aim);
+        return speed > 0f ? speed : gait < Jog ? Mathf.Lerp(Bare[Walk], Bare[Jog], gait) : Mathf.Lerp(Bare[Jog], Bare[Sprint], gait - Jog);
+    }
+
+    // Degrees from ahead, + to the right.
+    private static float Heading(Vector2 input) => input.sqrMagnitude > 1e-6f ? Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg : 0f;
 
     internal void Reset() => jogShare = 0f;
 
@@ -133,39 +111,6 @@ public sealed class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
-        float gait = ctx.Input.WalkMode ? jogShare : Jog + ctx.SprintProgress;
-        position = Mathf.MoveTowards(position, gait, dt / GaitChange);
-    }
-
-    // Degrees from ahead, 0 to 180, left and right alike.
-    private static float AngleOf(Vector2 input)
-        => input.sqrMagnitude > 1e-6f ? Mathf.Abs(Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg) : 0f;
-
-    // A gait's speed at an angle: the gun's in the hands, or the empty hands'.
-    private float At(int gait, float angle) => RowAt(ctx.GunHasLegs ? gait + Gun : gait, angle);
-
-    // A row's speed at an angle: the two measured ways either side of it, joined by the angle.
-    private float RowAt(int row, float angle)
-    {
-        for (int i = 0; i < Angles.Length - 1; i++)
-        {
-            if (angle > Angles[i + 1]) continue;
-            float t = (angle - Angles[i]) / (Angles[i + 1] - Angles[i]);
-            return Mathf.Lerp(rows[row, i], rows[row, i + 1], t);
-        }
-        return rows[row, Angles.Length - 1];
-    }
-
-    private void Read()
-    {
-        for (int r = 0; r < Rows.Length; r++)
-        {
-            GameTables.TryGetRow(Table, Rows[r], out var row);
-            for (int c = 0; c < Columns.Length; c++)
-            {
-                float under = r == Under[r] ? Fallback[r, c] : rows[Under[r], c];
-                rows[r, c] = Mathf.Max(0f, row != null ? row.Number(Columns[c], under) : under);
-            }
-        }
+        position = Mathf.MoveTowards(position, Asked, dt / GaitChange);
     }
 }

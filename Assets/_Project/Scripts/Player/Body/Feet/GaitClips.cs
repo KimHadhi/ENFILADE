@@ -135,7 +135,8 @@ internal static class GaitClips
         // length for its hips than the performer's still keeps its feet where they come down. 0.9.253 took the root's travel
         // for it instead, which is the performer's: on the game's bodies the soles go 20-35% slower than that (Ichigo's walk
         // 1.24 against 1.57 m/s, Mayo's run 3.78 against 5.14), so their strides were never stretched to the speed and the
-        // feet slid under them (the user: "굉장히 얼음장 위를 걷는 느낌"). The game's speeds are these feet's, the mean of four bodies' (Gaits.csv).
+        // feet slid under them (the user: "굉장히 얼음장 위를 걷는 느낌"). The game's speeds are the clips' own (ClipMotion), which
+        // these feet come within a tenth of.
         var moving = new List<Vector2>();
         for (int f = 0; f < 2; f++)
             for (int i = 0; i < count; i++)

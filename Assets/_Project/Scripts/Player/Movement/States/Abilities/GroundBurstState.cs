@@ -35,7 +35,7 @@ public sealed class GroundBurstState : MovementBaseState
     {
         // A roll goes at its clip's own travel (MovementLanding.RollSpeed, 0.9.288); a landing on the spot stops dead.
         float speed = kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed
-            : rollStopped || ctx.Abilities.Landing.LandsInPlace ? 0f : ctx.Abilities.Landing.RollSpeed(dt);
+            : rollStopped || ctx.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot ? 0f : ctx.Abilities.Landing.RollSpeed(dt);
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
         expected = speed * dt;

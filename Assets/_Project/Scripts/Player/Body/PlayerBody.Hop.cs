@@ -22,7 +22,6 @@ public sealed partial class PlayerBody
     private void BindHops()
     {
         AddChannel(touchdown, 0f);
-        ReadPostures();
         touchdownLeft = 0f;
         jumpQueued = jumpPending = false;
         player.Landed -= OnHopLanded;

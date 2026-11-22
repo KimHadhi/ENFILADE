@@ -254,12 +254,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// </summary>
     public bool InputAvailable => CanAct && Time.timeScale > 0f && (!Application.isPlaying || InputFocus.TakesMove());
 
-    /// <summary>The jog's speed straight ahead (m/s), the pace a direction key alone gives (Gaits.csv jog, or the gun's; the
-    /// run's until 0.9.283). Named for the row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk
+    /// <summary>The jog's speed straight ahead (m/s), the pace a direction key alone gives (its clip's, MovementGait; the run's
+    /// until 0.9.283). Named for the row it took over (Move.walkSpeed 4.9 was the run until 0.9.245); the walk proper is walk
     /// mode's.</summary>
-    public float WalkSpeed => Actions != null ? Actions.Gait.JogAhead : 2.5f;
-    /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (Gaits.csv sprint, or the gun's).</summary>
-    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 6.01f;
+    public float WalkSpeed => Actions != null ? Actions.Gait.JogAhead : 2.7f;
+    /// <summary>The sprint's speed straight ahead (m/s), the fastest the legs go (its clip's, or the gun's run's).</summary>
+    public float SprintSpeed => Actions != null ? Actions.Gait.SprintAhead : 6f;
     public float ProneSpeed => proneSpeed;
     public float SupineSpeed => supineSpeed;
     public float GroundSharpness => groundSharpness;
@@ -312,6 +312,10 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal bool SprintsToward(Vector2 keys) => Body == null || Body.SprintsToward(keys);
     /// <summary>A gun out has the legs: its own walk, jog, run and crouched walk (PlayerBody, BodyMoves.csv).</summary>
     internal bool GunHasLegs => Body != null && Body.GunHasLegs;
+    /// <summary>How fast the legs' own clips go (m/s); 0 for a body with none (PlayerBody.LegSpeed).</summary>
+    internal float LegSpeed(float heading, float gait, bool crouched, float aim) => Body != null ? Body.LegSpeed(heading, gait, crouched, aim) : 0f;
+    /// <summary>What a clip's own body does (PlayerBody.MotionOf); null for a body without it.</summary>
+    internal ClipMotion MotionOf(string clip) => Body != null ? Body.MotionOf(clip) : null;
     /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
     internal float AimShare => Body != null ? Body.AimShare : 0f;
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>

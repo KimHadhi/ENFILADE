@@ -23,7 +23,6 @@ using Object = UnityEngine.Object;
 ///   folders=BiperRunner,BiperCombat   folders under Art/Animations (these two)
 ///   clips=Run_Lfoot,R_Run             only these clips
 ///   skins=ichigo,mayo                 characters by id (ichigo)
-///   bake=gaitmoves                    also bake the crouches and travels into Tables/Player/GaitMoves.csv (GaitMoveBake)
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
 ///   cyclefilm=Run_Lfoot,Sprint_Lfoot   cycles side by side, eight moments each (StepBench.Cycles)
 ///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
@@ -75,7 +74,6 @@ internal static class ClipBench
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string[] stepped = Array.Empty<string>(), lifted = Array.Empty<string>(), cycled = Array.Empty<string>();
-        bool bakeMoves = false;
         foreach (string raw in lines)
         {
             int cut = raw.IndexOf('=');
@@ -91,7 +89,6 @@ internal static class ClipBench
                 case "lifts": lifted = values; break;
                 case "cyclefilm": cycled = values; break;
                 case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
-                case "bake": bakeMoves = values.Any(v => v.Equals("gaitmoves", StringComparison.OrdinalIgnoreCase)); break;
             }
         }
 
@@ -136,16 +133,6 @@ internal static class ClipBench
                 float scale = eyes > .2f ? GameEyes / eyes : 1f;
                 text.AppendLine();
                 text.AppendLine($"== {id}: eyes {eyes:0.000} in its own units, so x{scale:0.000} to the game's size; human scale {animator.humanScale:0.000}");
-                // The turns on the spot's curves, baked once (GaitMoveBake).
-                if (bakeMoves)
-                {
-                    text.AppendLine("-- bake=gaitmoves");
-                    // Female Runner's crouches, rolls and dodges, at this body's size.
-                    var packs = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
-                        .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    GaitMoveBake.Bake(packs, animator.humanScale * scale, text);
-                    bakeMoves = false;
-                }
                 if (cycled.Length > 0)
                 {
                     text.AppendLine("-- cyclefilm");
@@ -241,10 +228,14 @@ internal static class ClipBench
             float human = animator.humanScale * scale;
             line.Append(Invariant($"  root ({travel.x * human,5:0.00},{travel.z * human,5:0.00}) m = {travel.magnitude * human / Mathf.Max(.01f, clip.length):0.00} m/s turn {turn,6:0.0} rise {low * human:0.00}..{high * human:0.00}"));
             if (!clip.isLooping && reached >= 0f) line.Append(Invariant($" 90%@{reached:0.00}s"));
-            // Unity's own average of the root's travel, as a build can read it (GaitClips takes a cycle's speed from it).
+            // Unity's own average of the root's travel, as a build can read it.
             var average = clip.averageSpeed;
             line.Append(Invariant($" avg {new Vector2(average.x, average.z).magnitude * human:0.00}"));
         }
+        // What the game goes by (ClipMotion): a cycle's own speed; a move's way and its moments.
+        if (clip.isLooping) line.Append(Invariant($"  game {ClipMotion.CycleSpeed(clip):0.00} m/s"));
+        else if (ClipMotion.Of(clip, animator) is ClipMotion motion)
+            line.Append(Invariant($"  game {motion.Distance:0.00} m burst {motion.BurstFrom:0.00}..{motion.BurstTo:0.00} down {motion.Down:0.00} lowest {motion.Lowest:0.00} rises {motion.Rises:0.00} legs {motion.LegsUnder:0.00} feet {motion.OnFeet:0.00} up {motion.Up:0.00}"));
         Hips(clip, animator, scale, out float start, out float lowest, out float end);
         line.Append(Invariant($"  hips {start:0.00}/{lowest:0.00}/{end:0.00}"));
         return line.ToString();
