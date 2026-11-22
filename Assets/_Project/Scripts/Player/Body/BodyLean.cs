@@ -19,39 +19,37 @@ using UnityEngine;
 /// guard arm straight out (user's screenshot). The KINEMATION lean tipped the spine 40-60° for the whole peek, which looked
 /// grotesque with the fists up (user's screenshot). Both arms follow.
 ///
-/// A gun down the sights on its aim clips (PlayerBody.AimsOnClip): as the fists, the hips going over as far as the spine's
-/// small bend leaves of the peek, the camera on the eyes and the gun held on the camera. The spine alone tipped up to 60°
-/// for the whole peek while the gun on the camera tipped only as the view rolls (12°), and the arms twisted between them
-/// (the user, 2026-11-22: "줌 한 채로 기울이면 자세가 굉장히 기괴해진다", "자연스럽게").
-///
-/// A gun at the hip: the KINEMATION-era lean (0.7.35, the user's pick), whose camera rides the eyes, as the sight is lined up on them:
-/// FPS Animation Framework's Look tips the spine just far enough that the eyes go the lean's distance on this body, the
-/// angle found for how it shares the tip down the spine (RollFor). FPSAF tips it in the animation pass, before SpineLook
-/// keeps the clip's head, so PlayerBody.FollowHead leaves that part out (ClipHeadOffset); followed, it walked the body
-/// back under the camera's pivot and the peek came undone ("오른쪽으로 기울였는데 왼쪽으로 다시 움직여", 2026-11-08).
+/// A gun, at the hip and down the sights alike (0.9.342): as the fists, each part a little. The spine bends leanGunBend (more
+/// on the move, where a body carried far over its feet would walk askew), the pelvis tips leanGunTilt, and the hips go over
+/// as far as that leaves of the peek, so the eyes reach it and the camera stays on them. At the hip FPS Animation
+/// Framework has the spine and its Look bends it that far (GunRoll); it carries the head and the gun with it, so they lean
+/// as one piece with the chest. Down the sights the look bend bends it (SpineRoll), the head keeps to the view and the gun
+/// is held on the camera. The trunk and the hips are in the same place either way, so the sights come up in a lean without
+/// the body moving. Both ways came from a lean of their own before: at the hip the spine alone went the whole peek, 38
+/// degrees on Ichigo, over hips that stayed where they were (KINEMATION's, 0.7.35), and down the sights the fists' 14 with
+/// the hips 13 cm over (0.9.321). The user, 2026-11-22: "그냥 기울이기는 너무 기울이고 너무 꺾여", "좋은 점만 서로 딸 순 없나?".
+/// FPSAF tips the spine in the animation pass, before SpineLook keeps the clip's head, so PlayerBody.FollowHead leaves that
+/// part out (ClipHeadOffset); followed, it walked the body back under the camera's pivot and the peek came undone ("오른쪽으로
+/// 기울였는데 왼쪽으로 다시 움직여", 2026-11-08).
 ///
 /// Holding something, the leaning hitboxes follow the eyes' actual sideways move. Every other PC's copy leans from the
 /// player's pose and slot the same way.
 ///
 /// A plain class PlayerBody owns (stage 3 of the body restructure, 2026-11-09): everything it reads from the body comes in
 /// through Reset, Bind, Tune or the call itself, and all its state is here. The numbers stay PlayerBody's table-bound fields
-/// (Player.csv Body.leanSpineBend, Body.leanHipShift, Body.leanHipReach), handed over each frame by Tune.
+/// (Player.csv Body.lean*), handed over each frame by Tune.
 /// </summary>
 internal sealed class BodyLean
 {
-    // The furthest the spine tips for a peek with a gun (degrees), whatever the body.
-    private const float MostLeanRoll = 60f;
     // Under this share of a full lean the body counts as upright, and where the eyes sit sideways then is learnt.
     private const float LeanAtRest = .02f;
 
-    private readonly List<(Transform bone, float share)> spineChain = new List<(Transform bone, float share)>();
-    private readonly float[] heights = new float[8], shares = new float[8], reachX = new float[8], reachY = new float[8];
     private PlayerMovement player;
     private PlayerLeanHitboxes hitboxes;
     private SpineLook spineLook;
     private Transform root, model, head, leftUpperArm, rightUpperArm;
     private Vector3 eyeLocal;
-    private float spineBend = 20f, hipShift = .08f, hipReach = .2f, pelvisTilt, blendTime = .15f;
+    private float spineBend = 20f, hipShift = .08f, hipReach = .2f, pelvisTilt, gunBend = 18f, gunTilt = 4f, blendTime = .15f;
     // How much of each way the lean goes now: nothing in hand, a gun; the fists are the rest.
     private float handsFree = 1f, gun;
     private float eyesSideAtRest, clipHeadSideAtRest;
@@ -60,7 +58,9 @@ internal sealed class BodyLean
     /// <summary>The part of the peek the camera adds to the eyes: the rest of it with nothing in hand, none holding something.</summary>
     internal float CameraMakesUp => handsFree;
 
-    private float FistsShare => Mathf.Clamp01(1f - handsFree - gun);
+    // The spine's bend and the pelvis's tip at a full lean, for what is in the hands.
+    private float Bend => Mathf.Lerp(spineBend, gunBend, gun);
+    private float Tilt => Mathf.Lerp(pelvisTilt, gunTilt, gun);
 
     // The fists are the chosen weapon (a slot with no gun in it), on this PC or as the other PC's slot shows on the copy.
     private bool HoldsFists => player != null && player.MeleeCombat != null && player.MeleeCombat.IsActive;
@@ -81,7 +81,6 @@ internal sealed class BodyLean
         this.spineLook = spineLook;
         leftUpperArm = rightUpperArm = null;
         eyeLocal = Vector3.zero;
-        spineChain.Clear();
         hasEyesSide = hasClipHeadSide = false;
         handsFree = holdsGun || HoldsFists ? 0f : 1f;
         gun = holdsGun ? 1f : 0f;
@@ -96,9 +95,12 @@ internal sealed class BodyLean
         this.rightUpperArm = rightUpperArm;
     }
 
-    /// <summary>The body's lean numbers (degrees, m, m), its blend time (s) and the pelvis's tip (degrees).</summary>
-    internal void Tune(float spineBend, float hipShift, float hipReach, float blendTime, float pelvisTilt)
+    /// <summary>The body's lean numbers (degrees, m, m), its blend time (s) and the pelvis's tip (degrees); with a gun out
+    /// the spine's bend and the pelvis's tip instead.</summary>
+    internal void Tune(float spineBend, float hipShift, float hipReach, float blendTime, float pelvisTilt, float gunBend, float gunTilt)
     {
+        this.gunBend = gunBend;
+        this.gunTilt = gunTilt;
         this.spineBend = spineBend;
         this.hipShift = hipShift;
         this.hipReach = hipReach;
@@ -108,93 +110,40 @@ internal sealed class BodyLean
 
     /// <summary>
     /// Toward the way for what is in the hands, so changing slots mid-lean doesn't pop. In Update, with the look's inputs.
-    /// Both move at one rate, so the fists' share (the rest) only ever stands between them. A gun down the sights on its
-    /// aim clips (<paramref name="aimOnClip"/>, 0-1) leans as the fists do, as far as it is aimed.
+    /// Both move at one rate, so the fists' share (the rest) only ever stands between them.
     /// </summary>
-    internal void BlendHands(bool holdsGun, float aimOnClip, float dt)
+    internal void BlendHands(bool holdsGun, float dt)
     {
-        float free = holdsGun || HoldsFists ? 0f : 1f, armed = holdsGun ? 1f - Mathf.Clamp01(aimOnClip) : 0f;
+        float free = holdsGun || HoldsFists ? 0f : 1f, armed = holdsGun ? 1f : 0f;
         float step = dt > 0f ? dt / Mathf.Max(.01f, blendTime) : 1f;
         handsFree = Mathf.MoveTowards(handsFree, free, step);
         gun = Mathf.MoveTowards(gun, armed, step);
     }
 
-    // The look bend tips the spine bones it bends evenly (SpineLook: each its equal share of the roll).
-    private IReadOnlyList<(Transform bone, float share)> SpineChain
+    /// <summary>
+    /// The roll (degrees, positive) FPS Animation Framework's Look takes at a full lean to bend the body the gun's lean, as
+    /// <paramref name="chain"/> shares it down this body's spine: a body with fewer spine bones takes more of it in each.
+    /// </summary>
+    internal float GunRoll(IReadOnlyList<(Transform bone, float share)> chain)
     {
-        get
-        {
-            if (spineChain.Count == 0 && spineLook != null)
-            {
-                var bones = spineLook.Spine;
-                foreach (var bone in bones) spineChain.Add((bone, 1f / Mathf.Max(1, bones.Count)));
-            }
-            return spineChain;
-        }
+        float sum = 0f;
+        if (chain != null)
+            foreach (var (bone, share) in chain)
+                if (bone != null) sum += share;
+        return sum > .01f ? Mathf.Min(gunBend / sum, 90f) : 0f;
     }
 
     /// <summary>
-    /// The roll (degrees, positive) that carries the eyes <paramref name="offset"/> (m) sideways when the spine tips as
-    /// <paramref name="chain"/> shares it, from the lowest bone up: each bone turns its share about itself, carrying the
-    /// ones above it. Heights are the bones' as the body stands now.
+    /// The look bend's tip this frame (positive tips the top to the left, as the camera's own roll does), by
+    /// <paramref name="bendWeight"/> (how far the body bends with the view). At the hip FPSAF has the upper body and bends it
+    /// itself (GunRoll).
     /// </summary>
-    internal float RollFor(float offset, IReadOnlyList<(Transform bone, float share)> chain)
-    {
-        if (offset <= .001f || chain == null || chain.Count == 0 || head == null || root == null) return 0f;
-        int count = Mathf.Min(chain.Count, heights.Length - 1);
-        Vector3 up = root.up;
-        for (int i = 0; i < count; i++)
-        {
-            heights[i] = chain[i].bone != null ? Vector3.Dot(chain[i].bone.position, up) : 0f;
-            shares[i] = chain[i].bone != null ? chain[i].share : 0f;
-        }
-        heights[count] = Vector3.Dot(head.TransformPoint(eyeLocal), up);
-        if (Reach(MostLeanRoll) <= offset) return MostLeanRoll;
-        float low = 0f, high = MostLeanRoll;
-        for (int step = 0; step < 14; step++)
-        {
-            float middle = (low + high) * .5f;
-            if (Reach(middle) < offset) low = middle; else high = middle;
-        }
-        return (low + high) * .5f;
-
-        // How far sideways the eyes go for a roll, all the points starting on one upright line.
-        float Reach(float roll)
-        {
-            for (int i = 0; i <= count; i++) { reachX[i] = 0f; reachY[i] = heights[i]; }
-            for (int i = 0; i < count; i++)
-            {
-                float angle = roll * shares[i] * Mathf.Deg2Rad, cos = Mathf.Cos(angle), sin = Mathf.Sin(angle);
-                for (int j = i + 1; j <= count; j++)
-                {
-                    float dx = reachX[j] - reachX[i], dy = reachY[j] - reachY[i];
-                    reachX[j] = reachX[i] + dx * cos + dy * sin;
-                    reachY[j] = reachY[i] - dx * sin + dy * cos;
-                }
-            }
-            return reachX[count];
-        }
-    }
-
-    /// <summary>
-    /// The look bend's tip this frame (positive tips the top to the left, as the camera's own roll does): the old bend with
-    /// nothing in hand or the fists, by <paramref name="bendWeight"/> (how far the body bends with the view). With a gun
-    /// FPSAF has the upper body; where the look bend has it anyway (a slide with the gun), as far as takes the eyes the
-    /// whole peek, as in 0.7.35.
-    /// </summary>
-    internal float SpineRoll(float bendWeight)
-    {
-        float share = RawShare;
-        float old = -share * bendWeight * spineBend;
-        if (gun <= 0f) return old;
-        float reach = Mathf.Abs(share) < .001f ? 0f : -Mathf.Sign(share) * RollFor(Mathf.Abs(player.LeanOffset), SpineChain);
-        return Mathf.Lerp(old, reach, gun);
-    }
+    internal float SpineRoll(float bendWeight) => -RawShare * bendWeight * Bend;
 
     /// <summary>
     /// Before the feet are planted: the weight goes onto the leaning side. The whole body above moves as one. Nothing in
-    /// hand, a set hip shift (the camera makes up the rest); the fists, as far as the spine's bend leaves of the peek, up
-    /// to the hip reach, so the eyes reach it; a gun, none (FPSAF's tip reaches it).
+    /// hand, a set hip shift (the camera makes up the rest); the fists or a gun, as far as the spine's bend leaves of the peek,
+    /// up to the hip reach, so the eyes reach it.
     /// Returns how far it moved the hips (world): the legs hang from them, so the feet went that far too, and the feet's
     /// owner takes it back out (FootPlanting.Hold.Carried). This comment used to say "PlantFeet keeps the feet where they
     /// stood", which nothing did: the feet's height was the ground's and their place wherever the hips had gone, so the
@@ -206,11 +155,10 @@ internal sealed class BodyLean
         if (hips == null || head == null || root == null || dead || Mathf.Abs(share) < .001f) return Vector3.zero;
         // The pelvis tips a little the way of the lean (the user, 2026-11-18, asked whether to: "그 편이 더 자연스럽다면
         // 그렇게"): with the weight gone over one planted foot a pelvis does not stay level, and a spine bent from a level
-        // pelvis kinks at the waist. Not with a gun, where FPS Animation Framework leans the body and gives the hips
-        // their share itself. The thighs are turned back as they were, so the legs stay the clip's (the hip joints move a
-        // few millimetres) and only what is above the pelvis goes with it: the eyes go further, so the fists' hips, just
+        // pelvis kinks at the waist. The thighs are turned back as they were, so the legs stay the clip's (the hip joints
+        // move a few millimetres) and only what is above the pelvis goes with it: the eyes go further, so the hips, just
         // below, have less far to go for the same peek.
-        float tilt = -share * pelvisTilt * (1f - gun);
+        float tilt = -share * Tilt;
         if (Mathf.Abs(tilt) > .01f)
         {
             Quaternion left = leftThigh != null ? leftThigh.rotation : Quaternion.identity;
@@ -220,12 +168,12 @@ internal sealed class BodyLean
             if (rightThigh != null) rightThigh.rotation = right;
         }
         float shift = share * hipShift * handsFree;
-        float fists = FistsShare;
-        if (fists > 0f)
+        float holding = Mathf.Clamp01(1f - handsFree);
+        if (holding > 0f)
         {
             float peek = player.LeanOffset * bendWeight, toward = Mathf.Sign(share);
             float bent = hasEyesSide ? Vector3.Dot(head.TransformPoint(eyeLocal) - root.position, root.right) - eyesSideAtRest : 0f;
-            shift += toward * Mathf.Clamp((peek - bent) * toward, 0f, hipReach * Mathf.Abs(share)) * fists;
+            shift += toward * Mathf.Clamp((peek - bent) * toward, 0f, hipReach * Mathf.Abs(share)) * holding;
         }
         Vector3 moved = root.right * shift;
         hips.position += moved;
@@ -234,7 +182,7 @@ internal sealed class BodyLean
 
     /// <summary>
     /// The sideways part of the clip's head (SpineLook.ClipHeadPosition) that the lean put there, for FollowHead to leave
-    /// out. FPS Animation Framework tips the spine before the clip's head is kept, so with a gun the whole peek is in it;
+    /// out. FPS Animation Framework tips the spine before the clip's head is kept, so with a gun at the hip its tip is in it;
     /// the look bend's own tip comes after, so with the fists or nothing in hand it stays about zero. Measured against
     /// where it sits upright in the model's own frame, so the body's following doesn't feed back into it.
     /// </summary>
@@ -278,7 +226,7 @@ internal sealed class BodyLean
         if (hitboxes != null)
             hitboxes.FollowEyes(Vector3.Lerp(carried, leaning ? root.right * player.LeanOffset : Vector3.zero, handsFree));
         if (!leaning) return Vector3.zero;
-        float drop = Mathf.Abs(side - eyesSideAtRest) * Mathf.Tan(Mathf.Abs(RawShare * bendWeight * spineBend) * .5f * Mathf.Deg2Rad);
+        float drop = Mathf.Abs(side - eyesSideAtRest) * Mathf.Tan(Mathf.Abs(RawShare * bendWeight * Bend) * .5f * Mathf.Deg2Rad);
         return carried - root.up * drop;
     }
 }

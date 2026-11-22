@@ -31,10 +31,9 @@ public sealed partial class FPSBody
 
         // Q/E: FPSAF's roll tips the top to the left for a positive angle, as our view's roll does.
         float share = movement != null && movement.Abilities != null ? movement.Abilities.Lean.Share : 0f;
-        // As far as takes the eyes the lean's distance on this body, as FPSAF's Look shares the tip down the spine for this
-        // gun (PlayerBody.LeanRollFor); the demo's fixed 25° carried them about 0.25 m of the 0.35 m peek (2026-11-08).
-        float roll = Mathf.Abs(share) > .001f && held != null && body != null
-            ? Mathf.Sign(share) * body.LeanRollFor(Mathf.Abs(movement.LeanOffset), held.LeanChain) : 0f;
+        // As far as the gun's lean bends this body (PlayerBody.LeanGunRoll), as FPSAF's Look shares it down the spine for this
+        // gun; the hips go the rest of the peek (BodyLean.MoveHips). Until 0.9.341 the spine alone went the whole of it.
+        float roll = held != null && body != null ? share * body.LeanGunRoll(held.LeanChain) : 0f;
         input.SetValue(FPSANames.LeanInput, -roll);
         float sign = Mathf.Abs(share) > .05f ? Mathf.Sign(share) : 0f;
         // Down the sights a peek keeps the sight where it is, as Siege's does: the lean's little gun motion is the hip's.

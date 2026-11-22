@@ -134,7 +134,7 @@ public sealed partial class PlayerBody
         bodyGaze.Reset(transform, lookPivot);
         TuneGaze();
         bodyLean.Reset(player, transform, body, head, spineLook, HoldsGun);
-        TuneLean();
+        TuneLean(0f);
         SetUpAimSteady();
         if (head == null) return;
         // Imported avatars need not face their prefab's +Z (Kazusa and Sil face -Z in their rest pose).
@@ -204,9 +204,9 @@ public sealed partial class PlayerBody
         // About the view's forward axis a positive angle tips the top to the left, as the camera's own roll does: the
         // spine's bend for the Q/E lean, the old one with nothing in hand, as far as takes the eyes the whole peek with
         // the fists (BodyLean).
-        TuneLean();
+        TuneLean(dt);
         FollowAim(dt);
-        bodyLean.BlendHands(HoldsGun, AimsOnClip, dt);
+        bodyLean.BlendHands(HoldsGun, dt);
         spineLookRoll = bodyLean.SpineRoll(bendWeight);
         // FPS Animation Framework has the upper body while a gun is held; the look bend hands it over and takes it back
         // as smoothly.
