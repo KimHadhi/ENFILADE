@@ -39,6 +39,8 @@ public sealed class MovementActions
     public bool SlideBrakeArmed;
     public Vector3 DiveBodyForward = Vector3.forward;
     public MovementDive Dive { get; }
+    /// <summary>When the crouch key takes the player down and lets them up.</summary>
+    internal CrouchKey CrouchKey { get; }
     /// <summary>The feet-first slide's pace, its clips' own.</summary>
     internal SlidePace SlidePace { get; }
     /// <summary>The legs' gait and how fast it goes each way (walk mode, Shift).</summary>
@@ -53,6 +55,7 @@ public sealed class MovementActions
         Dive = new MovementDive(ctx);
         Gait = new MovementGait(ctx);
         SlidePace = new SlidePace(ctx);
+        CrouchKey = new CrouchKey(ctx);
     }
 
     internal void TickTimers(float dt)
@@ -70,6 +73,7 @@ public sealed class MovementActions
         SlideBrakeArmed = SlideFacesBack = false;
         Dive.Reset();
         Gait.Reset();
+        CrouchKey.Reset();
     }
 
     public void StartSlide(float currentSpeed, bool applyBoost = true)

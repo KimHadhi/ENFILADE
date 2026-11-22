@@ -316,6 +316,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal float LegSpeed(float heading, float gait, bool crouched, float aim) => Body != null ? Body.LegSpeed(heading, gait, crouched, aim) : 0f;
     /// <summary>What a clip's own body does (PlayerBody.MotionOf); null for a body without it.</summary>
     internal ClipMotion MotionOf(string clip) => Body != null ? Body.MotionOf(clip) : null;
+    /// <summary>How long going down into a crouch, or up out of it, takes the body (s).</summary>
+    internal float PostureSeconds(bool down) => Body != null ? Body.PostureSeconds(down) : 0f;
     /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
     internal float AimShare => Body != null ? Body.AimShare : 0f;
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>

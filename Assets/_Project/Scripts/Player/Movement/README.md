@@ -14,6 +14,7 @@
 | [PlayerMovement.Configuration.cs](PlayerMovement.Configuration.cs) | 이동·자세·슬라이드·다이브 설정 선언. 값은 `Player.csv`의 `Move`·`Posture` 행 |
 | [MovementAbilitySettings.cs](MovementAbilitySettings.cs) | 회피·파쿠르·착지·슬라이딩 공격·밀치기·사다리·집라인 설정 선언. 값은 `Player.csv`의 `Ability` 행 |
 | [Core/MovementInput.cs](Core/MovementInput.cs) | Input System 액션 샘플링 |
+| [Core/CrouchKey.cs](Core/CrouchKey.cs) | 앉기 키를 언제 받는지: 시작한 앉기·일어서기는 끝까지, 너무 빨리 다시 누른 것은 받지 않음 |
 | [Core/MovementStateMachine.cs](Core/MovementStateMachine.cs) | 상태 등록, 활성 경로, 공통 조상 기준 전환 |
 | [Core/MovementMotor.cs](Core/MovementMotor.cs) | 속도·접지·경사·중력·CharacterController 이동 |
 | [Core/MovementPostureController.cs](Core/MovementPostureController.cs) | 몸·눈높이, 공중 웅크리기, 천장·통로 공간 검사 |

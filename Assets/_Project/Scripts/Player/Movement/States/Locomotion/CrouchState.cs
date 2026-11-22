@@ -10,7 +10,7 @@ public sealed class CrouchingState : MovementBaseState
 
     public override void ProcessInput(Vector2 input)
     {
-        bool crouchPressed = ctx.Input.CrouchHeld;
+        bool crouches = ctx.Actions.CrouchKey.Crouches(ctx.Input.CrouchHeld, true);
 
         // 1. Z lay the body down from a crouch until 0.9.289; low ceilings still do (below).
         // 2. Lower the body before the entrance, only if the prone route is clear.
@@ -27,8 +27,9 @@ public sealed class CrouchingState : MovementBaseState
         }
 
         // 3. 앉기 키를 놓았을 때만 천장 확인 후 기립
-        if (!crouchPressed && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
+        if (!crouches && !ctx.HasCeilingAbove(ctx.StandingColliderHeight))
         {
+            ctx.Actions.CrouchKey.Goes(false);
             ctx.ChangeState(PlayerMovement.MovementState.Standing);
         }
     }

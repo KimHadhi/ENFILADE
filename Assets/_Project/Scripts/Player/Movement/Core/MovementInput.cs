@@ -10,7 +10,7 @@ public sealed class MovementInput
     // owner (InteractKey), which a ladder's top asks like the rest (MovementFixtures).
     private readonly InputAction dodgeAction, leanLeftAction, leanRightAction, shoveAction, walkModeAction;
     private bool crouchLatched;
-    private int leanLatched;
+    private int leanLatched, leanLast;
     public bool JumpPressed { get; private set; }
     public bool JumpHeld { get; private set; }
     public bool CrouchPressed { get; private set; }
@@ -82,7 +82,12 @@ public sealed class MovementInput
         // A switch, not a move: it flips whenever the keys are the game's, getting up off the back included.
         if (available && InputFocus.Pressed(walkModeAction)) WalkMode = !WalkMode;
         
-        int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
+        // Both down, the one pressed last: changing sides goes straight over, where it came back upright for as long as both
+        // were down (until 0.9.356).
+        bool leftHeld = Held(leanLeftAction), rightHeld = Held(leanRightAction);
+        if (InputFocus.Pressed(leanLeftAction)) leanLast = -1;
+        if (InputFocus.Pressed(leanRightAction)) leanLast = 1;
+        int heldSide = leftHeld && rightHeld ? leanLast : (rightHeld ? 1 : 0) - (leftHeld ? 1 : 0);
         // As the crouch: a lean on toggle stays put while a screen has the keys; a lean on a held key reads as let go.
         LeanSide = settings.leanToggle ? leanLatched : move ? heldSide : 0;
         LeanPressed = move && LeanSide != 0 && (InputFocus.Pressed(leanLeftAction) || InputFocus.Pressed(leanRightAction));
@@ -105,7 +110,9 @@ public sealed class MovementInput
             || (ctx.CurrentState == PlayerMovement.MovementState.Mantle && ctx.Abilities != null && ctx.Abilities.Traversal.Obstacle.ExitLadder != null);
         bool crouchState = ctx.CurrentState == PlayerMovement.MovementState.Crouching || ctx.IsSliding
             || ctx.IsAirCrouching || ctx.CurrentState == PlayerMovement.MovementState.Proning
-            || ctx.CurrentState == PlayerMovement.MovementState.StepDodge || onLadder;
+            || ctx.CurrentState == PlayerMovement.MovementState.StepDodge || onLadder
+            // Pressed while the body is still getting up, it stays until it is taken (CrouchKey).
+            || ctx.CurrentState == PlayerMovement.MovementState.Standing && ctx.Actions.CrouchKey.Wants;
         if (!settings.crouchToggle || !crouchState || sprintPressed || InputFocus.Pressed(jumpAction))
             crouchLatched = false;
         if (settings.crouchToggle && InputFocus.Pressed(crouchAction)) crouchLatched = !crouchLatched;

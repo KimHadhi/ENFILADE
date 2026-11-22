@@ -24,7 +24,10 @@ public sealed class MovementAbilitySettings
     [Tooltip("스텝 닷지 실패 시 다음 회피까지의 시간. 회피 성공 시 공통 쿨타임이 즉시 초기화됩니다.")]
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
     [Range(0f, 30f)] public float leanAngle = 15f;
-    [Min(1f)] public float leanSharpness = 10f;
+    [Tooltip("How gently a lean goes over (s, a smoothing time): it sets off and turns back smoothly, and goes no faster than one side in this long.")]
+    [Min(.01f)] public float leanTime = .12f;
+    [Tooltip("The crouch key pressed or let go again within this long (s) is not taken until it is left alone that long (CrouchKey).")]
+    [Min(0f)] public float crouchAgain = .25f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;
