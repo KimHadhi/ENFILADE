@@ -17,7 +17,8 @@ using MovementState = PlayerMovement.MovementState;
 ///   to ride them (off them toward the capsule on a ladder and through a punch).
 /// - Wherever the camera goes, the head goes with it (HeadReach): where it steadies off the eyes, the spine, chest and neck
 ///   bend the head to it, so the camera never sits outside the head (the user, 2026-11-12).
-/// - The Esc menu's own-head option shows the hair (and ears, a hat); the face itself is never drawn in first person
+/// - The Esc menu's own-head option shows the hair (and ears, a hat), laid over the view so what comes right up to the camera
+///   thins out instead of being cut (OwnHeadView, ownHeadFade); the face itself is never drawn in first person
 ///   (HeadMeshes.IsFace), so the near clip plane stays a centimetre and a hand at the face is never cut (firstPersonNear).
 /// </summary>
 public sealed partial class PlayerBody
@@ -34,6 +35,9 @@ public sealed partial class PlayerBody
     [SerializeField, Min(.001f), Tooltip("Near clip plane in first person: anything closer to the camera is cut (m). Small, so another "
         + "player's finger at the face is never cut; the face itself isn't drawn in first person instead of being cut.")]
     private float firstPersonNear = .01f;
+    [SerializeField, Tooltip("In first person the own hair, ears and hat show nothing of themselves nearer the camera than x and all "
+        + "of themselves from y (m), thinning out between (OwnHeadView).")]
+    private Vector2 ownHeadFade = new Vector2(.02f, .05f);
     [SerializeField, Tooltip("Sliding, how far the view turns from the way the slide faces: left; right (degrees). The legs keep following "
         + "travel; the torso turns at most SlideTwistLimit of it and the head the rest. To the left it stops short: the slide's clips "
         + "(BIPER SlideToRun) sit turned to the right, the chest 40-70 degrees round, and a look further left turned the head into "
@@ -110,7 +114,6 @@ public sealed partial class PlayerBody
     private Vector3 slideBodyOffset, slideWorldOffset;
     private bool slideBodyAnchored;
 
-    private bool ShowsOwnHead => SeenFromOutside || GameSettings.Current.showOwnHead;
     // Nobody looks out through this head: F5, watched as a corpse, or another player's copy.
     private bool SeenFromOutside => thirdPerson || watchedFromOutside || !player.IsLocal;
 
@@ -356,20 +359,39 @@ public sealed partial class PlayerBody
         return weapons != null && weapons.EquippedData != null && !weapons.IsHighReady ? weapons.AimBlend : 0f;
     }
 
-    // The hair renders in first person when the Esc menu says so; the face never does, only its shadow (HeadMeshes.IsFace).
-    // Up to 0.9.365 the whole head was drawn and the near clip plane cut what sat within 5 cm of the camera (the inside of the
-    // face, the nearest hair), and with it the finger of anyone who poked a cheek (the user, 2026-11-23: "누가 내 입에 손가락
-    // 집어 넣을 때 손가락이 짤리면 안 되잖아"). Now the plane is a centimetre whatever the setting.
+    /// <summary>How near the camera the own hair, ears and hat thin out in first person (m: none of them nearer than x, all
+    /// from y; OwnHeadView).</summary>
+    internal Vector2 OwnHeadFade => ownHeadFade;
+
+    // In first person the camera's own passes draw none of the head: the hair, ears and hat are laid over the view by
+    // OwnHeadView when the Esc menu says so, thinning out as they come up to the camera, and the face never shows, only its
+    // shadow (HeadMeshes.IsFace). Up to 0.9.365 the whole head was drawn and the near clip plane cut what sat within 5 cm of
+    // the camera (the inside of the face, the nearest hair), and with it the finger of anyone who poked a cheek (the user,
+    // 2026-11-23: "누가 내 입에 손가락 집어 넣을 때 손가락이 짤리면 안 되잖아"); in 0.9.366 the plane was a centimetre and a
+    // strand swinging into the camera was cut where it crossed ("머리카락이 자꾸 가까운 부분은 사라져").
     private void ApplyHeadVisibility()
     {
-        var mode = ShowsOwnHead ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        var mode = SeenFromOutside ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         foreach (var part in headParts)
             if (part != null) part.shadowCastingMode = mode;
-        // A mask or glasses sit in front of the eyes and would cover the view, so in first person only their shadows stay
-        // (OutfitSlot.View.Hide).
-        var face = SeenFromOutside ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        // The face, and a mask or glasses before the eyes, which would cover the view (OutfitSlot.View.Hide).
         foreach (var part in faceParts)
-            if (part != null) part.shadowCastingMode = face;
+            if (part != null) part.shadowCastingMode = mode;
+        LayOwnHead(!SeenFromOutside && GameSettings.Current.showOwnHead);
         bodyCamera.NearInFirstPerson(!thirdPerson && !watchedFromOutside, firstPersonNear);
+    }
+
+    private OwnHeadView ownHead;
+
+    private void LayOwnHead(bool show)
+    {
+        var eyes = show && view != null ? view.GetComponent<Camera>() : null;
+        if (eyes == null)
+        {
+            if (ownHead != null) ownHead.Hide();
+            return;
+        }
+        if (ownHead == null && !TryGetComponent(out ownHead)) ownHead = gameObject.AddComponent<OwnHeadView>();
+        ownHead.Show(eyes, headParts, this);
     }
 }
