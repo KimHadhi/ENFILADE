@@ -2,8 +2,9 @@
 // player's own view, sample by sample. What lies nearer the camera than _OwnHeadFade.x shows not at all, from _OwnHeadFade.y
 // all of it, in between that share of its colour, so a strand that swings into the camera thins out and goes instead of
 // being cut where it crosses the near clip plane. The camera's own depth decides what is in front (another player's finger at
-// the face covers the hair). Pass 0 lays the colour; pass 1 writes the depth and the own-view mark (stencil bit 128,
-// OwnViewMask) where at least half of it shows, so what is drawn later goes behind it.
+// the face covers the hair). Pass 0 lays the colour; pass 1 leaves the own-view mark (stencil bit 128, OwnViewMask) where at
+// least half of it shows. Neither writes depth: it is laid before the transparent queue, and smoke, fire and glass go over
+// it as they go over the world behind it.
 // _OwnHeadSize: x, y the picture's pixels; z, w how far a pixel at the picture's right and top edges looks aside per metre ahead.
 Shader "Hidden/ENFILADE/OwnHeadView"
 {
@@ -106,9 +107,9 @@ Shader "Hidden/ENFILADE/OwnHeadView"
 
         Pass
         {
-            Name "Depth"
+            Name "Mark"
             ColorMask 0
-            ZWrite On
+            ZWrite Off
             Stencil { Ref 128 WriteMask 128 Comp Always Pass Replace }
 
             HLSLPROGRAM

@@ -16,25 +16,26 @@ using UnityEngine.Rendering.Universal;
 ///   number, all of it from the second, in between that share of its colour (as an eye sees a strand at its lashes: not
 ///   sharp, not cut);
 /// - the camera's own depth still decides what is in front, so another player's finger at the face covers the hair behind it;
-/// - laid after the transparent queue, so smoke, fire and glass, which are never nearer than the hair, lie behind all of it,
-///   the parts thinning out too;
-/// - where it shows it writes its depth and the own-view mark (stencil bit 128, OwnViewMask), so the see-through outlines
-///   drawn after it go behind it as behind the rest of the body.
+/// - laid before the transparent queue and leaving no depth, so smoke, fire, mist and glass go over the hair as they go over
+///   the world behind it: standing in smoke, the hair is in it as the gun and the arms are (the user, 2026-11-23, of 0.9.368,
+///   which laid it after them: "여전히 연기는 뚫음", the hair standing out sharp and red in a grey cloud; and of 0.9.367,
+///   which left depth where most of it showed: the smoke went over its thinning parts only);
+/// - where it shows it leaves the own-view mark (stencil bit 128, OwnViewMask), so the see-through outlines and a friend's
+///   CHARGE glow go behind it as behind the rest of the body.
 /// Whatever shader a character's hair uses (lilToon, Poiyomi, one a player's mod brings), it is drawn as that shader draws it:
 /// nothing here asks anything of the shader. Between frames the renderers are first-person shadows (PlayerBody.
 /// ApplyHeadVisibility), as the face is, so any other camera leaves them out or shows them its own way (a mirror, a callout's
 /// portrait). For the moment the player's own view renders they are put on a layer of their own (WorldLayers.OwnHead) that the
 /// renderer assets leave out of every pass of theirs, and drawn whole, with their shadow; then they go back.
 /// 0.9.367 drew them one renderer at a time (DrawRenderer): no light probe reached lilToon's hair that way, and it came out
-/// flat and dark against the mirror's; and laid before the transparent queue, smoke went over the parts thinning out (the
-/// user's screenshots of 2026-11-23). Up to 0.9.366 the whole head was drawn by the camera's own passes and the near clip plane
+/// flat and dark against the mirror's (the user's screenshots of 2026-11-23). Up to 0.9.366 the whole head was drawn by the camera's own passes and the near clip plane
 /// cut it: at 5 cm the hair near the eyes and any finger at the face, at 1 cm a strand swinging into the camera.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class OwnHeadView : MonoBehaviour
 {
     private const string ShaderPath = "Combat/Shaders/OwnHeadView";
-    private const int ColourPass = 0, DepthPass = 1;
+    private const int ColourPass = 0, MarkPass = 1;
     private static readonly int ColourId = Shader.PropertyToID("_OwnHeadColor"), DepthId = Shader.PropertyToID("_OwnHeadDepth"),
         FadeId = Shader.PropertyToID("_OwnHeadFade"), SizeId = Shader.PropertyToID("_OwnHeadSize");
     // The passes URP's own opaque and transparent passes draw, in their order (DrawObjectsPass).
@@ -171,9 +172,9 @@ public sealed class OwnHeadView : MonoBehaviour
         public HeadPass(OwnHeadView owner)
         {
             this.owner = owner;
-            // After the transparent queue, so smoke and glass lie behind all of the hair; before the see-through outlines
-            // (OutlinePass, AfterRenderingTransparents), so they find the mark it leaves.
-            renderPassEvent = RenderPassEvent.AfterRenderingTransparents - 1;
+            // After the opaque world and the sky, so the lay is tested against all of it; before the transparent queue, so
+            // smoke, fire and glass go over the hair as over the world, and the see-through glows there find the mark.
+            renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
             // Laid with the camera's own depth buffer, never the screen's.
             requiresIntermediateTexture = true;
         }
@@ -260,9 +261,9 @@ public sealed class OwnHeadView : MonoBehaviour
                     block.SetTexture(DepthId, ((RTHandle)job.Depth).rt);
                     block.SetVector(FadeId, job.Fade);
                     block.SetVector(SizeId, job.Size);
-                    // One triangle over the whole picture: the colour, then the depth and the mark where it shows.
+                    // One triangle over the whole picture: the colour, then the mark where it shows.
                     context.cmd.DrawProcedural(Matrix4x4.identity, job.Lay, ColourPass, MeshTopology.Triangles, 3, 1, block);
-                    context.cmd.DrawProcedural(Matrix4x4.identity, job.Lay, DepthPass, MeshTopology.Triangles, 3, 1, block);
+                    context.cmd.DrawProcedural(Matrix4x4.identity, job.Lay, MarkPass, MeshTopology.Triangles, 3, 1, block);
                 });
             }
         }
