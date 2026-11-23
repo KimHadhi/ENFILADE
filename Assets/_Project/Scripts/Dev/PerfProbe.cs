@@ -17,8 +17,9 @@ using UnityEditorInternal;
 /// coroutine is a sample of its own there. While /perf is on, the editor's profiler records Play (not the editor), and
 /// one frame in ReadEvery is read whole, besides every frame of LongFrameMs or more. Per scene it adds up each marker's
 /// time with what it calls (total) and without (self); /perf again, or Play stopping, writes Logs/perf.txt: the frame
-/// times, the main thread split into the game and the editor around it, the scripts by their time a frame, the markers by
-/// their own time, and the longest frames with what took them. Editor only. The profiler's own cost is in the numbers
+/// times, the GPU's time a frame and which side the frames waited on (FrameTimingManager), the main thread split into
+/// the game and the editor around it, the scripts by their time a frame, the markers by their own time, and the longest
+/// frames with what took them. Editor only. The profiler's own cost is in the numbers
 /// (a few percent with deep profiling off); compare runs made the same way.
 /// </summary>
 public sealed class PerfProbe : MonoBehaviour
@@ -86,6 +87,10 @@ public sealed class PerfProbe : MonoBehaviour
         public int Calls;
     }
 
+    // What a frame waited on, by Unity's own bottleneck test for FrameTimingManager: the part near the whole frame's
+    // time while the others are not. Capped = a frame limit or vSync held the frame back (Esc settings).
+    private enum Wait { Gpu, Cpu, Capped, Balanced, Count }
+
     private sealed class LongFrame
     {
         public float Ms, At;
@@ -101,6 +106,10 @@ public sealed class PerfProbe : MonoBehaviour
         public double Textures, TexturesFull;
         public int MipmapLimit;
         public readonly List<float> Frames = new List<float>();
+        // FrameTimingManager's view of the same frames (ms): the GPU, the main thread, the render thread; and which one
+        // each frame waited on (Bottleneck).
+        public readonly List<float> Gpu = new List<float>(), CpuMain = new List<float>(), CpuRender = new List<float>();
+        public readonly int[] Waits = new int[(int)Wait.Count];
         public int Read;
         public double Main, Loop, Editor, Repaint, Cameras;
         public readonly Dictionary<int, Stat> Markers = new Dictionary<int, Stat>();
@@ -114,6 +123,9 @@ public sealed class PerfProbe : MonoBehaviour
     private float[] stackTime = new float[64], stackChildren = new float[64];
     private Section section;
     private int nextFrame = -1, skippedFrames;
+    private readonly FrameTiming[] timing = new FrameTiming[1];
+    // The frame FrameTimingManager last handed over, so a frame is not counted twice.
+    private ulong lastTimingStart;
     private bool wasEnabled, wasEditor, deep, finished;
     private string began;
 
@@ -184,9 +196,12 @@ public sealed class PerfProbe : MonoBehaviour
             Finish();
             return;
         }
+        // Taken every frame, the loading screen's too, so the frame handed over next is always the newest finished one.
+        FrameTimingManager.CaptureFrameTimings();
         // Frames under the loading screen are a load's, not the scene's play.
         if (LoadingScreen.Visible || section == null) { nextFrame = Mathf.Max(nextFrame, ProfilerDriver.lastFrameIndex + 1); return; }
         section.Frames.Add(Time.unscaledDeltaTime * 1000f);
+        Timing();
         int last = ProfilerDriver.lastFrameIndex;
         if (last < 0) return;
         int first = ProfilerDriver.firstFrameIndex;
@@ -205,6 +220,37 @@ public sealed class PerfProbe : MonoBehaviour
             Read(view, longOne);
         }
         nextFrame = last + 1;
+    }
+
+    // The GPU's time for a frame, which the profiler's CPU samples cannot give (perf.txt at 0.9.371 had CPU time only, so
+    // nobody could say whether frames wait on the graphics card). FrameTimingManager hands over each finished frame four
+    // frames late; it is always on in the editor (a release build would need Player Settings' Frame Timing Stats). In the
+    // editor the GPU time is the editor's whole frame: the Game view, plus the Scene view or other windows if they draw.
+    private void Timing()
+    {
+        if (FrameTimingManager.GetLatestTimings(1, timing) < 1) return;
+        var frame = timing[0];
+        if (frame.frameStartTimestamp == lastTimingStart) return;
+        lastTimingStart = frame.frameStartTimestamp;
+        float whole = (float)frame.cpuFrameTime, gpu = (float)frame.gpuFrameTime, main = (float)frame.cpuMainThreadFrameTime,
+            render = (float)frame.cpuRenderThreadFrameTime;
+        section.CpuMain.Add(main);
+        section.CpuRender.Add(render);
+        // No GPU time (a graphics API that gives none): the frame is not judged.
+        if (gpu <= 0f) return;
+        section.Gpu.Add(gpu);
+        section.Waits[(int)Bottleneck(whole, gpu, main, render, (float)frame.cpuMainThreadPresentWaitTime)]++;
+    }
+
+    // The test of Unity's FrameTimingManager sample: a part within a fifth of the whole frame's time is what the frame
+    // waited on when the other parts are not; none near it while the main thread waited to present = held by a cap.
+    private static Wait Bottleneck(float whole, float gpu, float main, float render, float presentWait)
+    {
+        float near = .8f * whole;
+        if (gpu > near && main < near && render < near) return Wait.Gpu;
+        if (gpu < near && (main > near || render > near)) return Wait.Cpu;
+        if (presentWait > .5f && gpu < near && main < near && render < near) return Wait.Capped;
+        return Wait.Balanced;
     }
 
     // One frame of the main thread, whole: each sample adds its time to its marker's total (once, when the same marker is
@@ -284,6 +330,13 @@ public sealed class PerfProbe : MonoBehaviour
         return stat;
     }
 
+    private static string MeanP95(List<float> values)
+    {
+        if (values.Count == 0) return "-";
+        var sorted = values.OrderBy(ms => ms).ToList();
+        return $"mean {sorted.Average():0.0} p95 {sorted[Mathf.Min(sorted.Count - 1, (int)(sorted.Count * .95f))]:0.0}";
+    }
+
     private string NameOf(int marker) => names.TryGetValue(marker, out string name) && !string.IsNullOrEmpty(name) ? name : "#" + marker;
 
     // A long frame kept with the samples that took it: the largest own times, and the scripts with what they called.
@@ -356,6 +409,15 @@ public sealed class PerfProbe : MonoBehaviour
         text.Append($"\n=== {part.Scene}, {part.From} to {part.To} ({part.Seconds:0} s, {sorted.Count} frames, {part.Read} read whole)\n");
         text.Append($"frame ms: mean {sorted.Average():0.0}  p50 {At(.5f):0.0}  p95 {At(.95f):0.0}  p99 {At(.99f):0.0}  max {sorted[sorted.Count - 1]:0}"
             + $"  | 25 ms or more {Share(25f):0.0}%  50 ms or more {Share(50f):0.00}%\n");
+        if (part.Gpu.Count > 0)
+        {
+            float waits = part.Gpu.Count / 100f;
+            text.Append($"GPU ms (FrameTimingManager, {part.Gpu.Count} frames; in the editor the whole editor frame's drawing): {MeanP95(part.Gpu)}"
+                + $"  | CPU main thread {MeanP95(part.CpuMain)}  render thread {MeanP95(part.CpuRender)}\n");
+            text.Append($"frames that waited on: the GPU {part.Waits[(int)Wait.Gpu] / waits:0}%  the CPU {part.Waits[(int)Wait.Cpu] / waits:0}%"
+                + $"  a frame cap or vSync {part.Waits[(int)Wait.Capped] / waits:0}%  neither alone {part.Waits[(int)Wait.Balanced] / waits:0}%\n");
+        }
+        else text.Append("GPU ms: none (FrameTimingManager gave no GPU time with this graphics API)\n");
         text.Append($"main thread {main:0.0} ms a frame = the game {game:0.0} + the editor {outside + windows:0.0}"
             + $" (outside the player loop {outside:0.0}, of it EditorLoop {editorLoop:0.0}; the editor windows' repaint inside the loop {windows:0.0});"
             + $" the game's cameras draw {cameras:0.0} of the game's (in a build they draw in PostLateUpdate.FinishFrameRendering)\n");
