@@ -3,8 +3,8 @@
 // all of it, in between that share of its colour, so a strand that swings into the camera thins out and goes instead of
 // being cut where it crosses the near clip plane. The camera's own depth decides what is in front (another player's finger at
 // the face covers the hair). Pass 0 lays the colour; pass 1 leaves the own-view mark (stencil bit 128, OwnViewMask) where at
-// least half of it shows. Neither writes depth: it is laid before the transparent queue, and smoke, fire and glass go over
-// it as they go over the world behind it.
+// least half of it shows. Neither writes depth: it is laid after the transparent queue, the nearest thing there is, and
+// what is drawn after it (the see-through outlines) keeps off it by the mark.
 // _OwnHeadSize: x, y the picture's pixels; z, w how far a pixel at the picture's right and top edges looks aside per metre ahead.
 Shader "Hidden/ENFILADE/OwnHeadView"
 {

@@ -16,12 +16,13 @@ using UnityEngine.Rendering.Universal;
 ///   number, all of it from the second, in between that share of its colour (as an eye sees a strand at its lashes: not
 ///   sharp, not cut);
 /// - the camera's own depth still decides what is in front, so another player's finger at the face covers the hair behind it;
-/// - laid before the transparent queue and leaving no depth, so smoke, fire, mist and glass go over the hair as they go over
-///   the world behind it: standing in smoke, the hair is in it as the gun and the arms are (the user, 2026-11-23, of 0.9.368,
-///   which laid it after them: "여전히 연기는 뚫음", the hair standing out sharp and red in a grey cloud; and of 0.9.367,
-///   which left depth where most of it showed: the smoke went over its thinning parts only);
-/// - where it shows it leaves the own-view mark (stencil bit 128, OwnViewMask), so the see-through outlines and a friend's
-///   CHARGE glow go behind it as behind the rest of the body.
+/// - laid after the transparent queue, as what it is: the nearest thing there is, a few centimetres from the eyes. Smoke,
+///   fire, glass, tracers, a muzzle's flame and the boards standing about the map (world-space canvases) all lie further off,
+///   so they go behind it, its thinning parts too (the user, 2026-11-23: "현실적이고 자연스럽고 몰입감 있는 쪽으로"). 0.9.369
+///   laid it before them so that smoke would cover it, and with the smoke every board of the map showed over the hair ("이런
+///   맵에 있는 UI … 머리 무시하고 걍 위에 그려져 있는 게 의도된 거야?");
+/// - where it shows it leaves the own-view mark (stencil bit 128, OwnViewMask), so the see-through outlines drawn after it
+///   go behind it as behind the rest of the body.
 /// Whatever shader a character's hair uses (lilToon, Poiyomi, one a player's mod brings), it is drawn as that shader draws it:
 /// nothing here asks anything of the shader. Between frames the renderers are first-person shadows (PlayerBody.
 /// ApplyHeadVisibility), as the face is, so any other camera leaves them out or shows them its own way (a mirror, a callout's
@@ -172,9 +173,9 @@ public sealed class OwnHeadView : MonoBehaviour
         public HeadPass(OwnHeadView owner)
         {
             this.owner = owner;
-            // After the opaque world and the sky, so the lay is tested against all of it; before the transparent queue, so
-            // smoke, fire and glass go over the hair as over the world, and the see-through glows there find the mark.
-            renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
+            // After the transparent queue, so everything further off than the hair lies behind it; before the see-through
+            // outlines (OutlinePass, AfterRenderingTransparents), so they find the mark it leaves.
+            renderPassEvent = RenderPassEvent.AfterRenderingTransparents - 1;
             // Laid with the camera's own depth buffer, never the screen's.
             requiresIntermediateTexture = true;
         }
