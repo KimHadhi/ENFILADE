@@ -18,9 +18,7 @@ using UnityEngine.Rendering.Universal;
 /// - the camera's own depth still decides what is in front, so another player's finger at the face covers the hair behind it;
 /// - laid after the transparent queue, as what it is: the nearest thing there is, a few centimetres from the eyes. Smoke,
 ///   fire, glass, tracers, a muzzle's flame and the boards standing about the map (world-space canvases) all lie further off,
-///   so they go behind it, its thinning parts too (the user, 2026-11-23: "현실적이고 자연스럽고 몰입감 있는 쪽으로"). 0.9.369
-///   laid it before them so that smoke would cover it, and with the smoke every board of the map showed over the hair ("이런
-///   맵에 있는 UI … 머리 무시하고 걍 위에 그려져 있는 게 의도된 거야?");
+///   so they go behind it, its thinning parts too (the user, 2026-11-23: "현실적이고 자연스럽고 몰입감 있는 쪽으로");
 /// - where it shows it leaves the own-view mark (stencil bit 128, OwnViewMask), so the see-through outlines drawn after it
 ///   go behind it as behind the rest of the body.
 /// Whatever shader a character's hair uses (lilToon, Poiyomi, one a player's mod brings), it is drawn as that shader draws it:
@@ -29,7 +27,12 @@ using UnityEngine.Rendering.Universal;
 /// portrait). For the moment the player's own view renders they are put on a layer of their own (WorldLayers.OwnHead) that the
 /// renderer assets leave out of every pass of theirs, and drawn whole, with their shadow; then they go back.
 /// 0.9.367 drew them one renderer at a time (DrawRenderer): no light probe reached lilToon's hair that way, and it came out
-/// flat and dark against the mirror's (the user's screenshots of 2026-11-23). Up to 0.9.366 the whole head was drawn by the camera's own passes and the near clip plane
+/// flat and dark against the mirror's (the user's screenshots of 2026-11-23). From 0.9.368 to 0.9.370 it was meant to be laid
+/// after the transparent queue and never was: URP records a pass at the injection point at or before its event, and an event
+/// of AfterRenderingTransparents - 1 is BeforeRenderingTransparents' (ScriptableRenderer.RecordCustomRenderGraphPasses), so
+/// the smoke and the map's boards went over the hair ("이런 맵에 있는 UI … 머리 무시하고 걍 위에 그려져 있는 게 의도된
+/// 거야?", "고친 거야 안 고친 거야...?"), and in 0.9.368, which left depth where most of it showed, the smoke stopped at the
+/// hair's thinning parts and the clear world showed through them. Up to 0.9.366 the whole head was drawn by the camera's own passes and the near clip plane
 /// cut it: at 5 cm the hair near the eyes and any finger at the face, at 1 cm a strand swinging into the camera.
 /// </summary>
 [DisallowMultipleComponent]
@@ -173,9 +176,11 @@ public sealed class OwnHeadView : MonoBehaviour
         public HeadPass(OwnHeadView owner)
         {
             this.owner = owner;
-            // After the transparent queue, so everything further off than the hair lies behind it; before the see-through
-            // outlines (OutlinePass, AfterRenderingTransparents), so they find the mark it leaves.
-            renderPassEvent = RenderPassEvent.AfterRenderingTransparents - 1;
+            // After the transparent queue, so everything further off than the hair lies behind it. AfterRenderingTransparents
+            // itself: URP records a pass at the injection point at or before its event, and one a step earlier is recorded
+            // before the transparent queue. The see-through outlines at the same point go behind the hair either way: laid
+            // first, the hair goes over them; laid after, they keep off its mark.
+            renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
             // Laid with the camera's own depth buffer, never the screen's.
             requiresIntermediateTexture = true;
         }
