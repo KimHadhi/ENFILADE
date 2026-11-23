@@ -65,7 +65,9 @@ public sealed class PointArm : MonoBehaviour
     private Transform eyes, indexTip, otherUpper;
     private readonly ArmBones arm = new ArmBones();
     private readonly ArmOffLegs offLegs = new ArmOffLegs();
-    // This body as a finger meets it, for how thick its legs and arm are; looked at again each time the point begins.
+    // The player's own legs (PlayerBody.Legs), which the arm keeps off.
+    private OwnLegs legs;
+    // This body as a finger meets it, for how thick its arm is; looked at again each time the point begins.
     private PokeBody self;
     private bool selfSought, selfMeasured;
     // The wrist as the body was modelled, straight and untwisted (its skin's bind pose): the hand's turn from the forearm
@@ -139,7 +141,8 @@ public sealed class PointArm : MonoBehaviour
         if (movement == null || point == null || animator == null || !animator.isHuman) return false;
         if (!arm.Bind(animator)) return false;
         otherUpper = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
-        offLegs.Bind(animator, arm);
+        legs = movement.TryGetComponent(out PlayerBody body) ? body.Legs : null;
+        offLegs.Bind(arm, legs);
         var lastJoint = arm.Fingers[Index * 3 + 2];
         indexTip = lastJoint != null && lastJoint.childCount > 0 ? lastJoint.GetChild(0) : null;
         BindWrist();
@@ -150,6 +153,7 @@ public sealed class PointArm : MonoBehaviour
     // How thick this body's legs and arm are with what is worn on them, read a slice a frame the first time (PokeBody).
     private void MeasureSelf()
     {
+        legs?.Read(movement);
         if (!selfSought)
         {
             selfSought = true;

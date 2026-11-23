@@ -179,6 +179,12 @@ public sealed partial class FPSBody
             if (layer is SwayLayerSettings || layer is AdditiveLayerSettings)
                 gun.FeelLayers.Add((layer, layer.alpha, layer is AdditiveLayerSettings));
             else if (layer is GunConvergeLayerSettings converge) gun.Converge = converge;
+            else if (layer is SpineRoomLayerSettings room)
+            {
+                gun.Room = room;
+                for (int i = 0; i < room.spine.Count; i++)
+                    if (rig.Component.GetRigTransform(room.spine[i]) is Transform bone) gun.PitchChain.Add((bone, room.angles[i]));
+            }
             else if (layer is GunActionLayerSettings action) gun.Action = action;
         }
         // Where this gun's reload clips move the magazine and bolt, for WeaponFeedback's reload sounds (sound session). A
@@ -225,7 +231,12 @@ public sealed partial class FPSBody
                 profile.settings.Add(mine);
             }
             else if (layer is LookLayerSettings look)
-                profile.settings.Add(LookFor(look));
+            {
+                var mine = LookFor(look);
+                profile.settings.Add(mine);
+                // Right after it, the spine's bend kept within how far it may bend down (SpineRoomLayer).
+                profile.settings.Add(RoomFor(mine));
+            }
             else if (layer is AdsLayerSettings ads && weapon != null)
             {
                 // FPSAF's Ads itself stays out since 0.9.321: the gun's aim clips have the arms down the sights and the gun
@@ -297,6 +308,36 @@ public sealed partial class FPSBody
                 elements[i] = standIn;
             }
         }
+    }
+
+    // Our layer after Look (SpineRoomLayerSettings): of Look's bend for a look down, the spine's part is kept within how far
+    // the spine may bend down, the head taking the rest. Its weight is Look's (the same curves), so it takes back only what
+    // Look put on. The spine's bones are Look's pitch bones but the neck and the head (a stand-in folded away has no angle).
+    private SpineRoomLayerSettings RoomFor(LookLayerSettings look)
+    {
+        var room = ScriptableObject.CreateInstance<SpineRoomLayerSettings>();
+        Keep(room);
+        room.rigAsset = look.rigAsset;
+        room.alpha = look.alpha;
+        room.curveBlending = new List<CurveBlend>(look.curveBlending);
+        Transform neck = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Neck) : null;
+        Transform head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        foreach (var element in look.pitchOffsetElements)
+        {
+            var bone = rig.Component.GetRigTransform(element.rigElement);
+            if (bone == null) continue;
+            if (bone == head)
+            {
+                room.head = element.rigElement;
+                room.hasHead = true;
+                continue;
+            }
+            // Look takes x for a look down.
+            if (bone == neck || element.clampedAngle.x <= 0f) continue;
+            room.spine.Add(element.rigElement);
+            room.angles.Add(element.clampedAngle.x);
+        }
+        return room;
     }
 
     // Our layer that turns the gun onto the crosshair's point (GunConvergeLayerSettings), on the same rig as Ads. Its weight

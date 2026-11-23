@@ -56,6 +56,10 @@ public sealed partial class FPSGun : MonoBehaviour
     internal readonly System.Collections.Generic.List<(FPSAnimatorLayerSettings layer, float alpha, bool kick)> FeelLayers = new();
     // This gun's own layer that turns it onto the crosshair's point (GunConvergeLayerSettings); FPSBody feeds it each frame.
     internal GunConvergeLayerSettings Converge { get; set; }
+    // This gun's limit on how far FPSAF's Look bends the spine down (SpineRoomLayer), and the bones it bends with their angles
+    // at a 90° look down, for the body to work out the limit by (PlayerBody.TakeFrameworkSpine).
+    internal SpineRoomLayerSettings Room { get; set; }
+    internal System.Collections.Generic.List<(Transform bone, float angle)> PitchChain { get; set; } = new();
     // This gun's own layer that moves it as its action playing now does (GunActionLayerSettings); FPSBody feeds it each frame.
     internal GunActionLayerSettings Action { get; set; }
     /// <summary>

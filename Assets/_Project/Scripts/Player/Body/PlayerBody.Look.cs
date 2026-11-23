@@ -10,7 +10,8 @@ using MovementState = PlayerMovement.MovementState;
 /// - Q/E tips the spine sideways from the waist, the look bend's roll; the leaning hitboxes follow (BodyLean).
 /// - In every state the head looks where the view looks, as far as a committed action's clip doesn't carry it (BodyGaze).
 /// - Aiming, the hips' gait bob is smoothed away so the eyes, the gun and the sight stay steady (PlayerBody.AimSteady).
-/// - Near a wall a downward look gives back as much of the spine's bend as it takes for the face to stay clear (ClearFace).
+/// - A look down bends the spine no further than keeps the face, the eyes and the shoulders off the player's own legs and the
+///   face out of walls, with a gun as with nothing in hand (PlayerBody.Clearance, SpineRoom).
 /// - The mouse leads the camera; selected action clips add a bounded rotation (BodyGaze).
 /// - The camera rides the eyes (BodyCamera): this hands it the eyes, the lean's carry and the gaze each frame, and how far
 ///   to ride them (off them toward the capsule on a ladder and through a punch).
@@ -127,6 +128,7 @@ public sealed partial class PlayerBody
         lookPivot = view == null || view.parent == null ? null
             : view.parent.name == "CameraEffectsPivot" && view.parent.parent != null ? view.parent.parent : view.parent;
         spineLook.Bind(animator, SpineBendDown, SpineBendUp);
+        SetUpRoom();
         headReach.Bind(animator);
         bendWeight = spineLookWeight = spineLookPitch = spineLookRoll = 0f;
         slideLookPitch = slideLookTwist = 0f;
@@ -224,7 +226,6 @@ public sealed partial class PlayerBody
         bodyCamera.EaseOntoEyes(dead ? 0f : onEyes, eyeViewTime, dt);
         Vector3 eyeBefore = head.TransformPoint(eyeLocal);
         bodyLean.HangArm(spineLookRoll * spineLookWeight, dead, HoldsGun);
-        ClearFace();
         // The head to the gaze, Q/E tilting it as far as the view rolls; FPSAF's while it holds a gun (BodyGaze).
         // No further from the chest than a neck turns (PlayerBody.Neck).
         bool neckHeld = bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt,

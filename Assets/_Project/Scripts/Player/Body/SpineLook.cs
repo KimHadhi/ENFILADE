@@ -10,6 +10,9 @@ using UnityEngine;
 /// - yaw (the turn back toward the view): the spine 60% shared evenly, the neck 20%, the head 20% (40% with no neck);
 /// - pitch (down positive): the spine its share (PlayerBody's spineBendDown / spineBendUp) shared evenly, the neck 30% and
 ///   the head 70% of the rest, about the body's right axis turned by the yaw it was just given.
+/// It turns first (Turn: roll and yaw) and bends after (Bend: pitch). Between the two PlayerBody works out how far the spine may
+/// bend down (SpineRoom: the face, the eyes and the shoulders off the player's own legs, the face out of walls), and the spine
+/// bends no further; the head takes what it gives up.
 /// Before it bends, it keeps the head as the clips posed it (ClipHeadPosition / ClipHeadRotation). With a gun out, that is
 /// FPS Animation Framework's pose, since FPSAF runs in the animation pass.
 /// This is a plain class, not a component. PlayerBody runs it as the first step of its late pose work, so its place in the
@@ -20,7 +23,6 @@ internal sealed class SpineLook
     private const float SpineYawShare = .6f, NeckYawShare = .2f, NeckPitchShare = .3f;
 
     private readonly List<Transform> spine = new List<Transform>();
-    private readonly List<float> spinePitch = new List<float>();
     private Transform root, neck, head;
     private float spineDownShare, spineUpShare, neckDownShare, neckUpShare, headDownShare, headUpShare, headYawShare;
     private Vector3 clipHeadPosition;
@@ -43,7 +45,7 @@ internal sealed class SpineLook
         head = animator.GetBoneTransform(HumanBodyBones.Head);
         neck = animator.GetBoneTransform(HumanBodyBones.Neck);
         foreach (var bone in new[] { HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest })
-            if (animator.GetBoneTransform(bone) is Transform found) { spine.Add(found); spinePitch.Add(0f); }
+            if (animator.GetBoneTransform(bone) is Transform found) spine.Add(found);
         int count = Mathf.Max(1, spine.Count);
         spineDownShare = Mathf.Clamp01(spineDown) / count;
         spineUpShare = Mathf.Clamp01(spineUp) / count;
@@ -58,7 +60,6 @@ internal sealed class SpineLook
     internal void Clear()
     {
         spine.Clear();
-        spinePitch.Clear();
         root = neck = head = null;
         hasClipHead = false;
         appliedYaw = 0f;
@@ -69,7 +70,7 @@ internal sealed class SpineLook
     internal Vector3 ClipHeadPosition => hasClipHead ? root.TransformPoint(clipHeadPosition) : head != null ? head.position : Vector3.zero;
     internal Quaternion ClipHeadRotation => hasClipHead ? root.rotation * clipHeadRotation : head != null ? head.rotation : Quaternion.identity;
 
-    /// <summary>Copies the head as the clips posed it. Call it after the animation pass and before Apply.</summary>
+    /// <summary>Copies the head as the clips posed it. Call it after the animation pass and before Turn.</summary>
     internal void KeepClipHead()
     {
         if (!IsBound) return;
@@ -78,21 +79,18 @@ internal sealed class SpineLook
         hasClipHead = true;
     }
 
-    /// <summary>The axis the spine was pitched about this frame (world).</summary>
+    /// <summary>The axis the spine is pitched about this frame (world), as Turn left it: a turn about it by a positive angle
+    /// bends the top forward and down.</summary>
     internal Vector3 PitchAxis => root != null ? root.rotation * Quaternion.Euler(0f, appliedYaw, 0f) * Vector3.right : Vector3.right;
 
-    /// <summary>How far (degrees) spine bone <paramref name="index"/> was pitched this frame.</summary>
-    internal float SpinePitch(int index) => index >= 0 && index < spinePitch.Count ? spinePitch[index] : 0f;
-
     /// <summary>
-    /// Bends the body by <paramref name="weight"/> of the look: <paramref name="pitch"/> (down positive),
-    /// <paramref name="viewYaw"/> (the view's yaw in the world; the body turns back toward it from its own facing) and
-    /// <paramref name="roll"/> (positive tips the top to the left), in degrees.
+    /// First: turns the body by <paramref name="weight"/> of the look's <paramref name="viewYaw"/> (the view's yaw in the world;
+    /// the body turns back toward it from its own facing) and <paramref name="roll"/> (positive tips the top to the left), in
+    /// degrees.
     /// </summary>
-    internal void Apply(float weight, float pitch, float viewYaw, float roll)
+    internal void Turn(float weight, float viewYaw, float roll)
     {
         appliedYaw = 0f;
-        for (int i = 0; i < spinePitch.Count; i++) spinePitch[i] = 0f;
         weight = Mathf.Clamp01(weight);
         if (!IsBound || weight <= 0f) return;
         Quaternion space = root.rotation;
@@ -100,30 +98,46 @@ internal sealed class SpineLook
 
         // Roll: the spine tips sideways from the hips up, about the body's forward axis.
         var tip = Quaternion.Euler(0f, 0f, roll * weight / count);
-        foreach (var bone in spine) Turn(bone, space, tip);
+        foreach (var bone in spine) TurnBone(bone, space, tip);
 
         // Yaw: the turn from the body's facing back toward the view, as the body's root sees it.
         float yaw = Mathf.DeltaAngle(0f, (Quaternion.Inverse(space) * Quaternion.Euler(0f, viewYaw, 0f)).eulerAngles.y) * weight;
         appliedYaw = yaw;
         var spineTurn = Quaternion.Euler(0f, yaw * SpineYawShare / count, 0f);
-        foreach (var bone in spine) Turn(bone, space, spineTurn);
-        if (neck != null) Turn(neck, space, Quaternion.Euler(0f, yaw * NeckYawShare, 0f));
-        Turn(head, space, Quaternion.Euler(0f, yaw * headYawShare, 0f));
+        foreach (var bone in spine) TurnBone(bone, space, spineTurn);
+        if (neck != null) TurnBone(neck, space, Quaternion.Euler(0f, yaw * NeckYawShare, 0f));
+        TurnBone(head, space, Quaternion.Euler(0f, yaw * headYawShare, 0f));
+    }
 
-        // Pitch: about the right axis as the turn just left it.
-        Quaternion pitchSpace = space * Quaternion.Euler(0f, yaw, 0f);
+    /// <summary>How far the spine bends, all its bones together, for <paramref name="weight"/> of a look of
+    /// <paramref name="pitch"/> (down positive, degrees), before any limit.</summary>
+    internal float SpineBendFor(float weight, float pitch)
+    {
+        pitch *= Mathf.Clamp01(weight);
+        return pitch * (pitch > 0f ? spineDownShare : spineUpShare) * spine.Count;
+    }
+
+    /// <summary>
+    /// Then: bends the spine, the neck and the head by <paramref name="weight"/> of a look of <paramref name="pitch"/> (down
+    /// positive, degrees), about the right axis as Turn left it. The spine bends down no further than
+    /// <paramref name="spineMost"/> (all its bones together, eased into it: SpineRoom.Soft), and the head takes what the spine
+    /// gives up, so it still looks as far down.
+    /// </summary>
+    internal void Bend(float weight, float pitch, float spineMost)
+    {
+        weight = Mathf.Clamp01(weight);
+        if (!IsBound || weight <= 0f) return;
+        Quaternion pitchSpace = root.rotation * Quaternion.Euler(0f, appliedYaw, 0f);
+        float spineBend = SpineBendFor(weight, pitch), spineKept = SpineRoom.Soft(spineBend, spineMost);
         pitch *= weight;
         bool down = pitch > 0f;
-        for (int i = 0; i < spine.Count; i++)
-        {
-            spinePitch[i] = pitch * (down ? spineDownShare : spineUpShare);
-            Turn(spine[i], pitchSpace, Quaternion.Euler(spinePitch[i], 0f, 0f));
-        }
-        if (neck != null) Turn(neck, pitchSpace, Quaternion.Euler(pitch * (down ? neckDownShare : neckUpShare), 0f, 0f));
-        Turn(head, pitchSpace, Quaternion.Euler(pitch * (down ? headDownShare : headUpShare), 0f, 0f));
+        var each = Quaternion.Euler(spine.Count > 0 ? spineKept / spine.Count : 0f, 0f, 0f);
+        foreach (var bone in spine) TurnBone(bone, pitchSpace, each);
+        if (neck != null) TurnBone(neck, pitchSpace, Quaternion.Euler(pitch * (down ? neckDownShare : neckUpShare), 0f, 0f));
+        TurnBone(head, pitchSpace, Quaternion.Euler(pitch * (down ? headDownShare : headUpShare) + spineBend - spineKept, 0f, 0f));
     }
 
     // Turns a bone by an offset given in another frame (the body's root), carrying the bones under it.
-    private static void Turn(Transform bone, Quaternion space, Quaternion offset)
+    private static void TurnBone(Transform bone, Quaternion space, Quaternion offset)
         => bone.rotation = space * offset * (Quaternion.Inverse(space) * bone.rotation);
 }

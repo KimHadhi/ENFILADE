@@ -10,7 +10,7 @@ using UnityEngine;
 /// - the Q/E lean's peek: with nothing in hand the body carries part of it and the camera makes up the rest, as up to
 ///   0.7.34; holding a gun or the fists the body carries all of it and the camera stays on the eyes (BodyLean);
 /// - a sweep from a steady point inside the movement capsule to the eyes keeps it out of walls (CameraClearance), the last
-///   guard after the face has cleared them (PlayerBody.ClearFace);
+///   guard after the spine has bent no further than keeps the face clear of them (PlayerBody.Clearance, SpineRoom);
 /// - F5 puts it behind the body (PlaceBehind); the Esc menu's own-head option sets the near clip plane (CutOwnHead).
 /// - Settings → 화면 → 몸 흔들림 (GameSettings.bodySway): below 1 it follows an eased path through the eyes instead of the
 ///   eyes themselves. Wherever it ends up, the body then bends its head to it (HeadReach, from Placed), so the camera

@@ -613,10 +613,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
 
     /// <summary>
     /// The pose work after the animation pass, in this order:
-    /// 1. the look bend (SpineLook), keeping the clip's head first;
+    /// 1. the look bend (SpineLook), keeping the clip's head first: its turn, then how far the spine may bend down (SpineRoom,
+    ///    PlayerBody.Clearance), then its bend within that;
     /// 2. the aim's steady hips, then the body placed under the camera (HoldHeadPlace, FollowHead) or by the hands (Grip);
     /// 3. the legs (tucked feet, the lean's hips, planted feet, ladder feet, legs off walls);
-    /// 4. the eyes and the camera (Look: the hanging lean arm, the face clear of walls, the head to the gaze, the camera).
+    /// 4. the eyes and the camera (Look: the hanging lean arm, the head to the gaze, the camera).
     /// Then the gun kept in view (FPSBody), the weapons, the hands' IK (PlayerBodyHands), FPSAF's late work
     /// (FPSBodyAnimator) and the cloth run in their own LateUpdates, in the order FrameOrder sets.
     /// </summary>
@@ -631,7 +632,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             MeasureClipChest();
             // First, as the last step of the animation pass: the spine, neck and head bend with the view.
             spineLook.KeepClipHead();
-            spineLook.Apply(spineLookWeight, spineLookPitch, spineLookYaw, spineLookRoll);
+            spineLook.Turn(spineLookWeight, spineLookYaw, spineLookRoll);
+            // The spine bends down no further than keeps the face, the eyes and the shoulders off the knees and the face out
+            // of walls, with nothing in hand as with a gun (FPSAF's Look is given the same limit: SpineRoomLayer).
+            MeasureSpineRoom(Time.deltaTime);
+            spineLook.Bend(spineLookWeight, spineLookPitch, spineRoom.Most);
             // Then the steadied body, so the feet, the hands and the camera all work from it.
             SteadyAim(Time.deltaTime);
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at

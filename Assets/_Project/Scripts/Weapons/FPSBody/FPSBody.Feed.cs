@@ -23,6 +23,15 @@ public sealed partial class FPSBody
         float limit = stance == MovementState.Standing || stance == MovementState.Crouching ? 90f : twistLimit;
         float twist = Mathf.Clamp(Mathf.DeltaAngle(animator.transform.eulerAngles.y, transform.eulerAngles.y), -limit, limit);
         input.SetValue(FPSANames.MouseInput, new Vector4(twist, pitchDown));
+        // How far the spine may bend down before the face, the eyes or the shoulders go into the knees or the face into a
+        // wall: the same limit as with nothing in hand (PlayerBody.SpineMost), which FPSAF's Look is bent back to
+        // (SpineRoomLayer). The body works the next one out from the spine as Look bends it (TakeFrameworkSpine).
+        if (held != null && held.Room != null && body != null)
+        {
+            held.Room.most = body.SpineMost;
+            body.TakeFrameworkSpine(held.PitchChain, pitchDown, Framework, held.Room.most,
+                animator.transform.rotation * Quaternion.Euler(0f, twist, 0f) * Vector3.right);
+        }
         // FPSAF's Look twists the spine by this. Its IK layer can also turn the feet back by it (offsetFeetTargets), because
         // the demo turns the whole character with the view; ours already faces the legs, so that is off in our profiles
         // (user, 2026-11-09: turning on the spot with a gun out, the legs slid round instead of stepping).

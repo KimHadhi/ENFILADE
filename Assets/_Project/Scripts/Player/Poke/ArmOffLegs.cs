@@ -12,17 +12,10 @@ using UnityEngine;
 /// 0.9.360 asked only how far the line the finger points along may go before it meets a leg: the forearm went through a thigh
 /// beside that line, and the arm jumped between two poses at a leg's edge (the user's film of 2026-11-23). Tried on crouched
 /// legs with the look thrown about, the arm as posed goes 11 cm deep and this none, and it moves no more in a frame than the
-/// pose does.
+/// pose does. The legs are the body's own (OwnLegs), the shape the bent spine keeps the head off too (SpineRoom).
 /// </summary>
 internal sealed class ArmOffLegs
 {
-    private struct Rod
-    {
-        public Transform From, To;
-        // How thick toward each end: as it stands on this body, and as its length says.
-        public float Start, End, SaidStart, SaidEnd;
-    }
-
     // Shoulder, elbow, wrist, fingertip, and the three parts between them.
     private const int Joints = 4, Parts = 3;
     // How far up a push goes beside straight out (1 as far).
@@ -38,8 +31,10 @@ internal sealed class ArmOffLegs
     // A limb is never taken thinner or thicker than these shares of what its length says.
     private const float Thinnest = .7f, Thickest = 2f;
 
-    private readonly Rod[] legs = new Rod[4];
-    private readonly Vector3[] legFrom = new Vector3[4], legTo = new Vector3[4];
+    private OwnLegs legs;
+    private readonly Vector3[] legFrom = new Vector3[OwnLegs.Count], legTo = new Vector3[OwnLegs.Count];
+    private readonly float[] legStart = new float[OwnLegs.Count], legEnd = new float[OwnLegs.Count];
+    private readonly bool[] legHere = new bool[OwnLegs.Count];
     private readonly float[] thick = new float[Parts], said = new float[Parts], length = new float[Parts];
     // From the shoulder, in the body's own frame: where the pose has each joint now and had it last, how far off it stands,
     // and where it is.
@@ -48,13 +43,10 @@ internal sealed class ArmOffLegs
     private float bend;
     private bool held;
 
-    internal void Bind(Animator animator, ArmBones arm)
+    /// <summary>Takes the arm and the legs it keeps off (the body's own, PlayerBody.Legs; none keeps it nowhere).</summary>
+    internal void Bind(ArmBones arm, OwnLegs ownLegs)
     {
-        Transform Bone(HumanBodyBones bone) => animator.GetBoneTransform(bone);
-        Leg(0, Bone(HumanBodyBones.LeftUpperLeg), Bone(HumanBodyBones.LeftLowerLeg), Share("thighStart", .17f), Share("thighEnd", .165f));
-        Leg(1, Bone(HumanBodyBones.RightUpperLeg), Bone(HumanBodyBones.RightLowerLeg), Share("thighStart", .17f), Share("thighEnd", .165f));
-        Leg(2, Bone(HumanBodyBones.LeftLowerLeg), Bone(HumanBodyBones.LeftFoot), Share("shinStart", .15f), Share("shinEnd", .13f));
-        Leg(3, Bone(HumanBodyBones.RightLowerLeg), Bone(HumanBodyBones.RightFoot), Share("shinStart", .15f), Share("shinEnd", .13f));
+        legs = ownLegs;
         said[0] = Vector3.Distance(arm.Upper.position, arm.Lower.position) * Share("upperArmEnd", .11f);
         said[1] = Vector3.Distance(arm.Lower.position, arm.Hand.position) * Share("forearmStart", .12f);
         said[2] = arm.HandLength * .4f;
@@ -64,21 +56,9 @@ internal sealed class ArmOffLegs
 
     private static float Share(string column, float fallback) => GameTables.Number(PlayerBodyCloth.TableName, PlayerBodyCloth.TableRow, column, fallback);
 
-    private void Leg(int index, Transform from, Transform to, float start, float end)
-    {
-        float span = from != null && to != null ? Vector3.Distance(from.position, to.position) : 0f;
-        legs[index] = new Rod { From = from, To = to, Start = span * start, End = span * end, SaidStart = span * start, SaidEnd = span * end };
-    }
-
-    /// <summary>The legs and the arm as thick as they are on this body with what is worn on them (PokeBody), where it could be read.</summary>
+    /// <summary>The arm as thick as it is on this body with what is worn on it (PokeBody), where it could be read.</summary>
     internal void Measure(PokeBody body, ArmBones arm)
     {
-        for (int i = 0; i < legs.Length; i++)
-            if (body.Thickness(legs[i].From, legs[i].To, out float start, out float end))
-            {
-                legs[i].Start = Between(start, legs[i].SaidStart);
-                legs[i].End = Between(end, legs[i].SaidEnd);
-            }
         if (body.Thickness(arm.Upper, arm.Lower, out _, out float upper)) thick[0] = Between(upper, said[0]);
         if (body.Thickness(arm.Lower, arm.Hand, out float fore, out float wrist)) thick[1] = Between(Mathf.Max(fore, wrist), said[1]);
     }
@@ -97,12 +77,14 @@ internal sealed class ArmOffLegs
         goal[2] = into * (wrist - shoulder);
         goal[3] = into * (tip - shoulder);
         for (int part = 0; part < Parts; part++) length[part] = (goal[part + 1] - goal[part]).magnitude;
-        for (int i = 0; i < legs.Length; i++)
-            if (legs[i].From != null && legs[i].To != null)
-            {
-                legFrom[i] = into * (legs[i].From.position - shoulder);
-                legTo[i] = into * (legs[i].To.position - shoulder);
-            }
+        for (int i = 0; i < OwnLegs.Count; i++)
+        {
+            legHere[i] = false;
+            if (legs == null || !legs.Rod(i, out Vector3 from, out Vector3 to, out legStart[i], out legEnd[i])) continue;
+            legHere[i] = true;
+            legFrom[i] = into * (from - shoulder);
+            legTo[i] = into * (to - shoulder);
+        }
         bend = Vector3.Angle(goal[2] - goal[1], goal[3] - goal[2]) + WristGive;
 
         float move = 0f;
@@ -144,8 +126,8 @@ internal sealed class ArmOffLegs
         for (int pass = 0; pass < Passes; pass++)
         {
             for (int part = Parts - 1; part >= 0; part--)
-                for (int i = 0; i < legs.Length; i++)
-                    if (legs[i].From != null && legs[i].To != null) Push(part, i);
+                for (int i = 0; i < OwnLegs.Count; i++)
+                    if (legHere[i]) Push(part, i);
             at[1] = at[1].normalized * length[0];
             Join(1, .5f);
             Join(2, .3f);
@@ -178,7 +160,7 @@ internal sealed class ArmOffLegs
     {
         Nearest(at[part], at[part + 1], legFrom[leg], legTo[leg], out float along, out float down);
         Vector3 away = Vector3.Lerp(at[part], at[part + 1], along) - Vector3.Lerp(legFrom[leg], legTo[leg], down);
-        float apart = away.magnitude, need = thick[part] + Mathf.Lerp(legs[leg].Start, legs[leg].End, down) - apart;
+        float apart = away.magnitude, need = thick[part] + Mathf.Lerp(legStart[leg], legEnd[leg], down) - apart;
         if (need <= 0f) return;
         away = apart > 1e-4f ? away / apart : up;
         Vector3 way = (away + up * Lift).normalized;
