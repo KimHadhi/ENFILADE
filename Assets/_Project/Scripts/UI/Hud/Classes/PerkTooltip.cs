@@ -90,7 +90,7 @@ public sealed class PerkTooltip : MonoBehaviour
         shownFor = badge;
         gameObject.SetActive(true);
         transform.SetAsLastSibling();
-        float width = Mathf.Max(200f, GameTables.Number(HudCamera.TableName, "Board", "tipWidth", 400f)), inner = width - Pad * 2f - 4f;
+        float width = Mathf.Max(200f, GameTables.Number(HudCamera.TableName, "Scoreboard", "tipWidth", 400f)), inner = width - Pad * 2f - 4f;
         Color colour = ClassLook.CardColour(perk.Class);
         bar.color = colour;
         title.text = perk.Name;

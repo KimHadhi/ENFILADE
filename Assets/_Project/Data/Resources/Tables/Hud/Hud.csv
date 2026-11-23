@@ -40,13 +40,13 @@ Team.fan,2.5,위 카드로 갈수록 한 장마다 더 기우는 각도(°)
 Team.roll,1.5,카드가 화면 안에서 도는 각도(°). +면 오른쪽이 올라간다
 Team.shieldBand,2,아군 카드에서 체력 칸 위에 뜨는 쉴드 띠의 높이(px). 띠의 칸 하나는 그 아래 체력 칸과 같은 양(최대 체력의 10분의 1)이고 색은 Player.csv Shield.color. 키우면 이름 줄이 그만큼 올라가 카드 위로 넘칠 수 있다(새로 만드는 카드부터 적용)
 Team.shieldGap,1,체력 칸과 쉴드 띠 사이(px)
-Board.classIcon,30,Tab 현황판 줄에서 이름 앞에 서는 클래스 아이콘 한 변(px). 색은 ClassColours.csv의 그 클래스 색
-Board.classGap,8,클래스 아이콘과 이름 사이(px)
-Board.hintSize,15,Tab 현황판 표 오른쪽 위의 우클릭 안내 글자 크기
-Board.hintRise,30,그 안내가 표의 열 이름 줄보다 얼마나 위에 서는지(px)
-Board.deckWidth,46,Tab 현황판 줄에서 이름 칸 오른쪽 끝에 서는 덱 칸의 너비(px). 누르면 아래 배지 줄이 그 사람의 카드로 바뀐다
-Board.deckHeight,30,덱 칸의 높이(px)
-Board.tipWidth,400,카드 설명 창의 너비(px). 글은 이 너비에서 줄을 바꾼다
+Scoreboard.classIcon,30,Tab 현황판 줄에서 이름 앞에 서는 클래스 아이콘 한 변(px). 색은 ClassColours.csv의 그 클래스 색
+Scoreboard.classGap,8,클래스 아이콘과 이름 사이(px)
+Scoreboard.hintSize,15,Tab 현황판 표 오른쪽 위의 우클릭 안내 글자 크기
+Scoreboard.hintRise,30,그 안내가 표의 열 이름 줄보다 얼마나 위에 서는지(px)
+Scoreboard.deckWidth,46,Tab 현황판 줄에서 이름 칸 오른쪽 끝에 서는 덱 칸의 너비(px). 누르면 아래 배지 줄이 그 사람의 카드로 바뀐다
+Scoreboard.deckHeight,30,덱 칸의 높이(px)
+Scoreboard.tipWidth,400,카드 설명 창의 너비(px). 글은 이 너비에서 줄을 바꾼다
 PlayerColour.apart,0.1,두 플레이어의 색이 이보다 가까우면 같은 색으로 친다(0 = 같은 색이고 1 = 검정과 흰색). 그러면 뒤에 온 사람이 그 색에 가장 가까운 남는 팔레트 색을 받는다. PlayerColours.csv의 줄끼리는 이보다 멀어야 한다(지금 가장 가까운 두 줄이 0.127)
 PlayerColour.dim,0.07,플레이어의 색이 이보다 어두우면(눈에 보이는 밝기: 0 = 검정이고 1 = 흰색) 읽히는 밝기까지 올려 쓴다. 이름과 표식이 HUD의 검은 판 위에 그려지기 때문이다. 0.07은 순수한 파랑(#0000FF)의 밝기 바로 아래라서 선명한 색은 모두 그대로이고 그보다 어두운 색만 같은 색조로 밝아진다(검은 판에 대해 2:1쯤). 색상 판의 사각형은 처음부터 이 밝기 이상의 색만 담는다. 0이면 어떤 색이든 그대로 쓴다
 PlayerColour.slots,5,설정과 프로필의 '내 색' 줄에 두는 제 색 칸의 수(1~12). 칸마다 플레이어가 색상 판으로 만든 색 하나를 기억한다

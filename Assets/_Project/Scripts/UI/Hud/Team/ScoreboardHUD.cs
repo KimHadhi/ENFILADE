@@ -122,8 +122,8 @@ public sealed class ScoreboardHUD : MonoBehaviour
         Header();
         for (int i = 0; i < RowCount; i++) rows.Add(BuildRow(i));
         // What the right mouse button does here, over the table's right end.
-        pointerHint = Text("Pointer Hint", table, GameTables.Number(HudCamera.TableName, "Board", "hintSize", 15f),
-            new Vector2(TableWidth * .5f - 230f, -HeaderY + GameTables.Number(HudCamera.TableName, "Board", "hintRise", 30f)), 460f,
+        pointerHint = Text("Pointer Hint", table, GameTables.Number(HudCamera.TableName, "Scoreboard", "hintSize", 15f),
+            new Vector2(TableWidth * .5f - 230f, -HeaderY + GameTables.Number(HudCamera.TableName, "Scoreboard", "hintRise", 30f)), 460f,
             TextAlignmentOptions.Right);
         pointerHint.color = Soft;
         pointerHint.text = Texts.Get("score.pointer.show");
@@ -283,13 +283,13 @@ public sealed class ScoreboardHUD : MonoBehaviour
         row.seat.raycastTarget = false;
         // The class icon stands where the player column began; the name and the line under it start past it and end
         // short of the kills column.
-        float classSize = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "classIcon", 30f));
-        float textLeft = PlayerColumn + classSize + Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "classGap", 8f));
+        float classSize = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Scoreboard", "classIcon", 30f));
+        float textLeft = PlayerColumn + classSize + Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Scoreboard", "classGap", 8f));
         // The deck chip stands at the column's right end, and the name ends short of it.
-        float deckWidth = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "deckWidth", 46f));
+        float deckWidth = Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Scoreboard", "deckWidth", 46f));
         float deckLeft = KillsAt - 10f - deckWidth;
         float textWidth = deckLeft - textLeft - 8f;
-        BuildDeck(row, index, deckLeft, deckWidth, Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Board", "deckHeight", 30f)));
+        BuildDeck(row, index, deckLeft, deckWidth, Mathf.Max(0f, GameTables.Number(HudCamera.TableName, "Scoreboard", "deckHeight", 30f)));
         var classRect = FeelUI.Rect("Class", row.root);
         classRect.anchorMin = classRect.anchorMax = new Vector2(0f, .5f);
         classRect.anchoredPosition = new Vector2(PlayerColumn + classSize * .5f, 0f);
