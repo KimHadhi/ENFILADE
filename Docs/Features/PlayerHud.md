@@ -114,7 +114,7 @@ HUD는 HUD 위에서 고친다([HudSettingsView](../../Assets/_Project/Scripts/U
 ## 성능
 
 - 그리는 모든 것은 한 Painter(QuadBatch + 글자 풀). 매 프레임 같은 것을 그리면 메시를 다시 만들지 않는다. 글자는 말이 바뀔 때만 새로 만든다(숫자 문자열은 캐시).
-- 특수 효과를 켜면 HUD 캔버스를 그리는 카메라가 하나 더 돈다(화면 크기 렌더 텍스처, 후처리·그림자 끔). 게임 렌더러의 기능(SSAO)이 그 빈 그림에도 돈다. 특수 효과를 끄면 카메라가 멈추고 HUD는 보통 오버레이가 된다.
+- 특수 효과를 켜면 HUD 캔버스를 그리는 카메라가 하나 더 돈다(화면 크기 렌더 텍스처, 후처리·그림자 끔). 이 카메라는 기능 없는 렌더러(PC_PlainRenderer, [PlainRenderer](../../Assets/_Project/Scripts/Core/Scene/PlainRenderer.cs))로 그려서 게임 렌더러의 SSAO가 빈 그림에 돌지 않는다(0.9.373). 특수 효과를 끄면 카메라가 멈추고 HUD는 보통 오버레이가 된다.
 
 ## 소리·그림·글꼴
 

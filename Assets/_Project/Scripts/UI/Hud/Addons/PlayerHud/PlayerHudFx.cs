@@ -14,8 +14,8 @@ namespace HudAddons
     /// cuts in half a second (Nene.GenerateGlitch(0.5, 12, 10)). Twelve jumps in half a second strobe, so under the
     /// photosensitivity rule it is one cut eased out and back as a single smooth pulse (FxRow rise/fall, under 1.6 Hz),
     /// held while hits keep coming. A new cut is made only once the last has eased home, so the strips never jump.</para>
-    /// <para>The camera runs the game renderer's features too (its SSAO among them, over an empty picture): the effects'
-    /// price, paid only while they are on.</para>
+    /// <para>The camera draws with the renderer that runs no features (PlainRenderer), so the game renderer's SSAO no
+    /// longer runs over its empty picture; the camera itself is the effects' price, paid only while they are on.</para>
     /// </summary>
     internal sealed class PlayerHudFx
     {
@@ -187,6 +187,8 @@ namespace HudAddons
             data.antialiasing = AntialiasingMode.None;
             data.requiresColorOption = CameraOverrideOption.Off;
             data.requiresDepthOption = CameraOverrideOption.Off;
+            // Without the game renderer's SSAO, which had nothing here to darken.
+            PlainRenderer.Use(view);
         }
     }
 }

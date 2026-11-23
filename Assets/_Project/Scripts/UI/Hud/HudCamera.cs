@@ -100,6 +100,8 @@ public sealed class HudCamera : MonoBehaviour
         data.renderType = CameraRenderType.Overlay;
         data.renderPostProcessing = false;
         data.renderShadows = false;
+        // Without the game renderer's SSAO, which ran over the HUD's planes every frame for nothing.
+        PlainRenderer.Use(view);
         GameTables.BindNested(TableName, "Camera", this, look);
         GameTables.BindNested(TableName, "Planes", this, look);
         GameTables.BindNested(TableName, "Sway", this, look);

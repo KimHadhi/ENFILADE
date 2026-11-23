@@ -31,6 +31,8 @@ public sealed class StandbyCamera : MonoBehaviour
         view.cullingMask = 0;
         view.depth = -100f;
         view.enabled = false;
+        // Black with nothing in it: no SSAO over it while it stands in.
+        PlainRenderer.Use(view);
         listener = gameObject.AddComponent<AudioListener>();
         listener.enabled = false;
     }
