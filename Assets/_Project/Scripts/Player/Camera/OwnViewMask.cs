@@ -128,6 +128,8 @@ public sealed class OwnViewMask : MonoBehaviour
             var renderer = part.Renderer;
             if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy || renderer.forceRenderingOff
                 || renderer.shadowCastingMode == ShadowCastingMode.ShadowsOnly || (layers & (1 << renderer.gameObject.layer)) == 0
+                // The own hair as the view renders it: OwnHeadView marks what of it shows.
+                || renderer.gameObject.layer == WorldLayers.OwnHead
                 || !GeometryUtility.TestPlanesAABB(planes, renderer.bounds)) continue;
             Mesh mesh = part.Skin != null ? part.Skin.sharedMesh : part.Filter != null ? part.Filter.sharedMesh : null;
             if (mesh == null) continue;

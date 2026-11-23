@@ -9,46 +9,50 @@ using UnityEngine.Rendering.Universal;
 /// The own head's hair, ears and hat in first person, laid over the player's own view so that what comes right up to the
 /// camera thins out and goes instead of being cut (the user, 2026-11-23: "머리카락이 자꾸 가까운 부분은 사라져, 즉 일부만 보임",
 /// "어떤 캐릭터는 릴툰을 쓰고 어떤 캐릭터는 포요요미 … 모드로 유저들이 추가한 캐릭터는 어떤 쉐이더를 쓸지 모르는 상황").
-/// It is the one body the world has, not a copy: the same renderers in the same pose, drawn by their own materials and shader
-/// passes (DrawRenderer, as OwnViewMask draws them), only into a picture of their own first and then laid over the camera's:
+/// It is the one body the world has, not a copy: the same renderers in the same pose, drawn as the camera's own passes draw
+/// anything (a renderer list of the camera's own culling, by the same shader passes, lit by the same light probes, lights and
+/// shadows), only into a picture of their own first and then laid over the camera's:
 /// - each sample's distance from the camera gives how much of it shows: none nearer than PlayerBody.ownHeadFade's first
 ///   number, all of it from the second, in between that share of its colour (as an eye sees a strand at its lashes: not
 ///   sharp, not cut);
 /// - the camera's own depth still decides what is in front, so another player's finger at the face covers the hair behind it;
-/// - where it shows it writes its depth and the own-view mark (stencil bit 128, OwnViewMask), so what is drawn later (smoke,
-///   glass, the see-through outlines) goes behind it as behind the rest of the body.
+/// - laid after the transparent queue, so smoke, fire and glass, which are never nearer than the hair, lie behind all of it,
+///   the parts thinning out too;
+/// - where it shows it writes its depth and the own-view mark (stencil bit 128, OwnViewMask), so the see-through outlines
+///   drawn after it go behind it as behind the rest of the body.
 /// Whatever shader a character's hair uses (lilToon, Poiyomi, one a player's mod brings), it is drawn as that shader draws it:
-/// nothing here asks anything of the shader. The renderers are first-person shadows meanwhile (PlayerBody.ApplyHeadVisibility),
-/// so the camera's own passes leave them out and only their shadow is cast; a mirror shows them whole (HubMirror).
-/// Up to 0.9.366 the whole head was drawn by the camera's own passes and the near clip plane cut it: at 5 cm the hair near the
-/// eyes and any finger at the face, at 1 cm a strand swinging into the camera, cut off where it crossed.
+/// nothing here asks anything of the shader. Between frames the renderers are first-person shadows (PlayerBody.
+/// ApplyHeadVisibility), as the face is, so any other camera leaves them out or shows them its own way (a mirror, a callout's
+/// portrait). For the moment the player's own view renders they are put on a layer of their own (WorldLayers.OwnHead) that the
+/// renderer assets leave out of every pass of theirs, and drawn whole, with their shadow; then they go back.
+/// 0.9.367 drew them one renderer at a time (DrawRenderer): no light probe reached lilToon's hair that way, and it came out
+/// flat and dark against the mirror's; and laid before the transparent queue, smoke went over the parts thinning out (the
+/// user's screenshots of 2026-11-23). Up to 0.9.366 the whole head was drawn by the camera's own passes and the near clip plane
+/// cut it: at 5 cm the hair near the eyes and any finger at the face, at 1 cm a strand swinging into the camera.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class OwnHeadView : MonoBehaviour
 {
     private const string ShaderPath = "Combat/Shaders/OwnHeadView";
-    // The last queue a material may have and still write depth: solid parts first, then the see-through ones far to near.
-    private const int SolidQueue = 2500;
     private const int ColourPass = 0, DepthPass = 1;
-    private static readonly ShaderTagId LightMode = new ShaderTagId("LightMode");
     private static readonly int ColourId = Shader.PropertyToID("_OwnHeadColor"), DepthId = Shader.PropertyToID("_OwnHeadDepth"),
         FadeId = Shader.PropertyToID("_OwnHeadFade"), SizeId = Shader.PropertyToID("_OwnHeadSize");
+    // The passes URP's own opaque and transparent passes draw, in their order (DrawObjectsPass).
+    private static readonly List<ShaderTagId> Tags = new List<ShaderTagId>
+        { new ShaderTagId("SRPDefaultUnlit"), new ShaderTagId("UniversalForward"), new ShaderTagId("UniversalForwardOnly") };
     private static Shader shader;
     // The lay with the keyword for each count of samples a pixel (the camera's: 1, 2, 4 or 8).
     private static readonly Dictionary<int, Material> lays = new Dictionary<int, Material>();
-    // Each material's passes that draw it to the screen in URP (its forward pass, an outline's unlit pass), found once.
-    private static readonly Dictionary<Material, int[]> passes = new Dictionary<Material, int[]>();
 
-    private struct Draw
+    // A part put on the layer for the view's render, and what it had before.
+    private struct Lifted
     {
         public Renderer Renderer;
-        public Material Material;
-        public int Submesh, Pass;
-        public float Far;
+        public int Layer;
+        public ShadowCastingMode Mode;
     }
 
-    private readonly List<Material> looks = new List<Material>();
-    private readonly List<int> found = new List<int>();
+    private readonly List<Lifted> lifted = new List<Lifted>();
     private IReadOnlyList<Renderer> parts;
     private Camera eyes;
     private PlayerBody body;
@@ -59,7 +63,6 @@ public sealed class OwnHeadView : MonoBehaviour
     {
         shader = null;
         lays.Clear();
-        passes.Clear();
     }
 
     /// <summary>Lays <paramref name="renderers"/> over what <paramref name="camera"/> sees, faded by <paramref name="owner"/>'s
@@ -73,9 +76,18 @@ public sealed class OwnHeadView : MonoBehaviour
 
     internal void Hide() => parts = null;
 
-    private void OnEnable() => RenderPipelineManager.beginCameraRendering += BeforeRender;
+    private void OnEnable()
+    {
+        RenderPipelineManager.beginCameraRendering += BeforeRender;
+        RenderPipelineManager.endCameraRendering += AfterRender;
+    }
 
-    private void OnDisable() => RenderPipelineManager.beginCameraRendering -= BeforeRender;
+    private void OnDisable()
+    {
+        RenderPipelineManager.beginCameraRendering -= BeforeRender;
+        RenderPipelineManager.endCameraRendering -= AfterRender;
+        Drop();
+    }
 
     private static bool Ready()
     {
@@ -92,75 +104,58 @@ public sealed class OwnHeadView : MonoBehaviour
         return made;
     }
 
-    // As a camera begins: only the player's own view, drawing to the screen, lays the head; a mirror, a scope, the editor's
-    // scene view and any other camera draw it as they draw the rest of the body.
+    // As a camera begins, before it culls: only the player's own view, drawing to the screen, lays the head; a mirror, a
+    // scope, the editor's scene view and any other camera find the parts as first-person shadows.
     private void BeforeRender(ScriptableRenderContext context, Camera camera)
     {
+        Drop();
         if (parts == null || parts.Count == 0 || camera == null || camera != eyes || camera.targetTexture != null) return;
         if (!camera.TryGetComponent(out UniversalAdditionalCameraData data) || data.renderType != CameraRenderType.Base) return;
         var renderer = data.scriptableRenderer;
         if (renderer == null || !Ready()) return;
+        Lift();
+        if (lifted.Count == 0) return;
         if (pass == null) pass = new HeadPass(this);
         renderer.EnqueuePass(pass);
     }
 
-    private Vector2 Fade => body != null ? body.OwnHeadFade : new Vector2(.02f, .05f);
-
-    // What of the head this camera draws this frame: each submesh of each part that is switched on and in view, by each of its
-    // material's screen passes; the solid ones first, then the see-through ones far to near.
-    private void Collect(Camera camera, Plane[] planes, List<Draw> solid, List<Draw> clear)
+    private void AfterRender(ScriptableRenderContext context, Camera camera)
     {
-        if (parts == null) return;
-        GeometryUtility.CalculateFrustumPlanes(camera, planes);
-        Vector3 at = camera.transform.position;
+        if (camera == eyes) Drop();
+    }
+
+    // Each part that shows, on the head's layer and drawn whole (with its shadow) for this render.
+    private void Lift()
+    {
         foreach (var renderer in parts)
         {
-            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy || renderer.forceRenderingOff
-                || !GeometryUtility.TestPlanesAABB(planes, renderer.bounds)) continue;
-            Mesh mesh = renderer is SkinnedMeshRenderer skin ? skin.sharedMesh
-                : renderer.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh : null;
-            if (mesh == null) continue;
-            renderer.GetSharedMaterials(looks);
-            float far = (renderer.bounds.center - at).sqrMagnitude;
-            // A mesh draws only as many parts as it has materials for.
-            int count = Mathf.Min(mesh.subMeshCount, looks.Count);
-            for (int i = 0; i < count; i++)
-            {
-                var look = looks[i];
-                if (look == null || look.shader == null) continue;
-                var list = look.renderQueue <= SolidQueue ? solid : clear;
-                foreach (int index in PassesOf(look))
-                    list.Add(new Draw { Renderer = renderer, Material = look, Submesh = i, Pass = index, Far = far });
-            }
-            looks.Clear();
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy || renderer.forceRenderingOff) continue;
+            lifted.Add(new Lifted { Renderer = renderer, Layer = renderer.gameObject.layer, Mode = renderer.shadowCastingMode });
+            renderer.gameObject.layer = WorldLayers.OwnHead;
+            renderer.shadowCastingMode = ShadowCastingMode.On;
         }
-        clear.Sort((a, b) => b.Far.CompareTo(a.Far));
     }
 
-    // The passes URP draws a material with on the screen, in their order: its forward pass, and an unlit one (lilToon's
-    // outline, or a shader that names no light mode), each as the material has it switched on.
-    private int[] PassesOf(Material look)
+    // Back as they were, before anything but this render sees them.
+    private void Drop()
     {
-        if (passes.TryGetValue(look, out var known)) return known;
-        found.Clear();
-        for (int index = 0; index < look.passCount; index++)
+        foreach (var part in lifted)
         {
-            string mode = look.shader.FindPassTagValue(index, LightMode).name;
-            if (string.IsNullOrEmpty(mode)) mode = "SRPDefaultUnlit";
-            if (mode != "UniversalForward" && mode != "UniversalForwardOnly" && mode != "SRPDefaultUnlit") continue;
-            if (look.GetShaderPassEnabled(mode)) found.Add(index);
+            if (part.Renderer == null) continue;
+            part.Renderer.gameObject.layer = part.Layer;
+            part.Renderer.shadowCastingMode = part.Mode;
         }
-        known = found.ToArray();
-        passes[look] = known;
-        return known;
+        lifted.Clear();
     }
+
+    private Vector2 Fade => body != null ? body.OwnHeadFade : new Vector2(.02f, .05f);
 
     /// <summary>The head drawn into its own picture, then laid over the camera's.</summary>
     private sealed class HeadPass : ScriptableRenderPass
     {
         private sealed class DrawData
         {
-            public readonly List<Draw> Solid = new List<Draw>(), Clear = new List<Draw>();
+            public RendererListHandle Solid, Clear;
         }
 
         private sealed class LayData
@@ -172,31 +167,28 @@ public sealed class OwnHeadView : MonoBehaviour
         }
 
         private readonly OwnHeadView owner;
-        private readonly List<Draw> solid = new List<Draw>(), clear = new List<Draw>();
-        private readonly Plane[] planes = new Plane[6];
 
         public HeadPass(OwnHeadView owner)
         {
             this.owner = owner;
-            // After the opaque world and the sky, so the lay is tested against all of it; before the transparent queue, so
-            // what is drawn there goes behind the hair as behind the rest of the body.
-            renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
+            // After the transparent queue, so smoke and glass lie behind all of the hair; before the see-through outlines
+            // (OutlinePass, AfterRenderingTransparents), so they find the mark it leaves.
+            renderPassEvent = RenderPassEvent.AfterRenderingTransparents - 1;
             // Laid with the camera's own depth buffer, never the screen's.
             requiresIntermediateTexture = true;
         }
 
         public override void RecordRenderGraph(RenderGraph graph, ContextContainer frame)
         {
-            if (owner == null) return;
+            if (owner == null || owner.lifted.Count == 0) return;
             var resources = frame.Get<UniversalResourceData>();
-            var camera = frame.Get<UniversalCameraData>().camera;
+            var cameraData = frame.Get<UniversalCameraData>();
+            var renderingData = frame.Get<UniversalRenderingData>();
+            var lightData = frame.Get<UniversalLightData>();
+            var camera = cameraData.camera;
             var target = resources.activeColorTexture;
             var depth = resources.activeDepthTexture;
             if (camera == null || !target.IsValid() || !depth.IsValid()) return;
-            solid.Clear();
-            clear.Clear();
-            owner.Collect(camera, planes, solid, clear);
-            if (solid.Count + clear.Count == 0) return;
             var depthDesc = graph.GetTextureDesc(depth);
             int width = depthDesc.width, height = depthDesc.height;
             if (width <= 0 || height <= 0) return;
@@ -218,24 +210,31 @@ public sealed class OwnHeadView : MonoBehaviour
             headDepthDesc.bindTextureMS = count > 1;
             var headDepth = graph.CreateTexture(headDepthDesc);
 
+            // The head's layer, as the camera's own opaque and transparent passes would draw it.
+            int layer = 1 << WorldLayers.OwnHead;
+            var solid = graph.CreateRendererList(new RendererListParams(renderingData.cullResults,
+                CreateDrawingSettings(Tags, renderingData, cameraData, lightData, cameraData.defaultOpaqueSortFlags),
+                new FilteringSettings(RenderQueueRange.opaque, layer)));
+            var clear = graph.CreateRendererList(new RendererListParams(renderingData.cullResults,
+                CreateDrawingSettings(Tags, renderingData, cameraData, lightData, SortingCriteria.CommonTransparent),
+                new FilteringSettings(RenderQueueRange.transparent, layer)));
+
             using (var builder = graph.AddRasterRenderPass<DrawData>("Own head", out var data))
             {
-                data.Solid.Clear();
-                data.Solid.AddRange(solid);
-                data.Clear.Clear();
-                data.Clear.AddRange(clear);
+                data.Solid = solid;
+                data.Clear = clear;
+                builder.UseRendererList(solid);
+                builder.UseRendererList(clear);
                 builder.SetRenderAttachment(colour, 0, AccessFlags.Write);
                 builder.SetRenderAttachmentDepth(headDepth, AccessFlags.Write);
-                // The hair's own shaders light it as the camera's own passes would: the lights, their shadows and the rest
-                // URP has set for the frame.
+                // The lights' shadows and the rest URP has set for the frame, as its own passes read them.
                 builder.UseAllGlobalTextures(true);
+                builder.AllowGlobalStateModification(true);
                 builder.AllowPassCulling(false);
                 builder.SetRenderFunc((DrawData job, RasterGraphContext context) =>
                 {
-                    foreach (var draw in job.Solid)
-                        if (draw.Renderer != null) context.cmd.DrawRenderer(draw.Renderer, draw.Material, draw.Submesh, draw.Pass);
-                    foreach (var draw in job.Clear)
-                        if (draw.Renderer != null) context.cmd.DrawRenderer(draw.Renderer, draw.Material, draw.Submesh, draw.Pass);
+                    context.cmd.DrawRendererList(job.Solid);
+                    context.cmd.DrawRendererList(job.Clear);
                 });
             }
 
