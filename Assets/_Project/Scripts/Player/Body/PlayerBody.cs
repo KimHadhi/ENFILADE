@@ -84,6 +84,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public string Clip;
         public int Input;
         public float Length, AuthoredSpeed, Weight, Target;
+        /// <summary>How fast its weight is going toward its target (a second; Blend).</summary>
+        public float Rate;
         public bool Synced;
         /// <summary>A walk or run cycle's measured gait on this body (GaitClips), or null.</summary>
         public GaitClips.Gait Gait;
@@ -795,8 +797,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 }
                 return;
             }
-            if (OutOfDodge(transition) && state == MovementState.Standing && HorizontalSpeed() > walkClipSpeed) PickUpStep();
-            else if (RunsOut(transition)) GiveUpRunOut(transition);
+            // Going on, the walk or run takes the stride where the clip giving way has its feet (StepFrom), and a clip that
+            // ends running plays on under it at its own pace; it is held still only for a body that stops (GiveUpRunOut).
+            if (onFeet && upright && HorizontalSpeed() > walkClipSpeed) StepFrom(transition);
+            if (RunsOut(transition)) GiveUpRunOut(transition);
             transition = null;
             playingOut = transitionRuns = false;
         }
@@ -986,13 +990,20 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
     }
 
+    // A channel's weight goes to its target in the blend's time (blendTime, or a slow blend's) for the whole way, easing into
+    // and out of its pace over this share of it, so a cross-fade starts and ends without a kink. It went at one even pace until
+    // 0.9.378, and every cross-fade (a run taking over from a landing, a roll, a slide's end) began and ended with a jolt in
+    // the legs and the eyes on them (the experts' read of 2026-11-23).
+    private const float BlendEase = .3f;
+
     private void Blend(float dt)
     {
-        float step = dt / (slowBlendLeft > 0f ? slowBlendTime : blendTime), total = 0f;
+        float time = Mathf.Max(.01f, slowBlendLeft > 0f ? slowBlendTime : blendTime), total = 0f;
         slowBlendLeft -= dt;
+        float ease = time * BlendEase, most = 1f / (time - ease), push = most / ease;
         foreach (var channel in channels)
         {
-            channel.Weight = Mathf.MoveTowards(channel.Weight, channel.Target, step);
+            channel.Weight = Follow(channel.Weight, channel.Target, ref channel.Rate, most, push, dt);
             total += channel.Weight;
         }
         if (total <= .0001f) return;
@@ -1004,6 +1015,29 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             if (channel.Synced)
                 channel.Playable.SetTime((channel.Gait != null ? channel.Gait.ShareAt(strideCount, phase) : phase) * channel.Length);
         }
+    }
+
+    // Toward its target at most `most` a second, its pace changing at most `push` a second each second and slowing in time to
+    // stop on the target, never past it.
+    private static float Follow(float weight, float target, ref float rate, float most, float push, float dt)
+    {
+        float left = target - weight;
+        if (Mathf.Abs(left) < 1e-4f)
+        {
+            rate = 0f;
+            return target;
+        }
+        float want = Mathf.Sign(left) * Mathf.Min(most, Mathf.Sqrt(2f * push * Mathf.Abs(left)));
+        float before = rate;
+        rate = Mathf.MoveTowards(rate, want, push * dt);
+        // At the mean of its pace over the step, so it takes the same time at any frame rate.
+        float next = weight + (before + rate) * .5f * dt;
+        if ((next - target) * left > 0f)
+        {
+            rate = 0f;
+            return target;
+        }
+        return Mathf.Clamp01(next);
     }
 
     private void Want(string clipName)
@@ -1061,7 +1095,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         var channel = Find(clipName);
         if (channel == null || channel.Synced) return;
         float left = channel.Length - (float)channel.Playable.GetTime();
-        if (left <= blendTime) return;
+        if (left <= blendTime)
+        {
+            // Too near its end to play on, it gives way at once: a body going on takes its stride from it all the same.
+            if (HorizontalSpeed() > walkClipSpeed) StepFrom(channel);
+            return;
+        }
         // One that ends running plays on only on the run (RunsOut); on the spot its steps would run in place.
         bool runs = RunsOut(channel);
         if (runs && HorizontalSpeed() <= walkClipSpeed)

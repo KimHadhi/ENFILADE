@@ -12,6 +12,7 @@ using UnityEngine.Playables;
 /// move goes as far whoever makes it.
 /// Until 0.9.352 the way was baked off the clips' curves into a table in the editor (GaitMoves.csv, GaitMoveBake), and the
 /// moments and lengths were numbers of the tables', each measured once and typed.
+/// It also marks the clip's own footfalls (StepAt), so a run taking over from it takes the stride where the clip has its feet.
 /// </summary>
 public sealed class ClipMotion
 {
@@ -23,6 +24,13 @@ public sealed class ClipMotion
     // Its body is down this near its lowest; of its way back up it begins to rise here, has its legs under it here, is on its
     // feet here and up here (shares of the height between its lowest and where it begins or ends).
     private const float DownShare = .25f, RisesShare = .1f, LegsShare = .25f, FeetShare = .75f, UpShare = .9f;
+    // A footfall is a foot at its furthest ahead of the hips within this long either side (s), at least this far ahead and no
+    // higher than this off the floor (the clip's own metres), while the hips are at least this high off it (the clip's own
+    // metres; a performer's stand at about 1) and the body goes at least this fast (the clip's own m/s): a foot reaching out to
+    // come down, not one flung over in a roll.
+    private const float StepWindow = .12f, ReachLeast = .05f, FootLow = .3f, UprightHips = .55f, MovingPace = 1f;
+    // A stride's half where the clip has only one footfall to go by (s).
+    private const float HalfStride = .33f;
 
     /// <summary>How far the game goes for one of the clip's own metres (Body.clipMetres): a clip is a performer's, whose legs
     /// are longer for their height than the game's characters'.</summary>
@@ -33,6 +41,9 @@ public sealed class ClipMotion
     // Along the clip at even moments: how far it has gone (its own metres) and how high its body is (share of the way between
     // its lowest and its highest end).
     private readonly float[] gone, height;
+    // Its footfalls in order: when (s) and which foot, as a stride's place (0 the left, .5 the right), as GaitClips marks a
+    // walk or run cycle's: the foot at its furthest ahead of the hips, just before it comes down.
+    private readonly float[] stepTimes, stepPlaces;
 
     /// <summary>The clip's length (s).</summary>
     public float Length { get; }
@@ -50,11 +61,14 @@ public sealed class ClipMotion
     public float OnFeet { get; }
     public float Up { get; }
 
-    private ClipMotion(float length, float[] gone, float[] height)
+    private ClipMotion(float length, float[] gone, float[] height, List<(float time, float place)> steps)
     {
         Length = length;
         this.gone = gone;
         this.height = height;
+        stepTimes = new float[steps.Count];
+        stepPlaces = new float[steps.Count];
+        for (int i = 0; i < steps.Count; i++) (stepTimes[i], stepPlaces[i]) = steps[i];
         int last = gone.Length - 1, peak = 1, low = 0;
         for (int i = 1; i <= last; i++)
         {
@@ -114,6 +128,41 @@ public sealed class ClipMotion
         return Length;
     }
 
+    /// <summary>
+    /// Where a walk or run's stride stands at the clip's moment, by the clip's own footfalls (0 the left foot about to come down,
+    /// .5 the right; the cycles' own measure): so a run taking over from it goes on with the foot the clip has going. False for
+    /// a clip whose feet never step.
+    /// </summary>
+    public bool StepAt(float time, out float place)
+    {
+        place = 0f;
+        int count = stepTimes.Length;
+        if (count == 0) return false;
+        int k = -1;
+        while (k + 1 < count && stepTimes[k + 1] <= time) k++;
+        if (k < 0)
+        {
+            // Before the first: back from it by its span to the next.
+            float span = count > 1 ? stepTimes[1] - stepTimes[0] : HalfStride;
+            place = stepPlaces[0] - .5f * (stepTimes[0] - time) / Mathf.Max(.05f, span);
+        }
+        else if (k == count - 1)
+        {
+            // After the last: on from it at its span from the one before.
+            float span = count > 1 ? stepTimes[k] - stepTimes[k - 1] : HalfStride;
+            place = stepPlaces[k] + .5f * (time - stepTimes[k]) / Mathf.Max(.05f, span);
+        }
+        else
+        {
+            // Between two: the same foot twice is a whole stride (a footfall between them not marked), the other foot half.
+            float gap = Mathf.Repeat(stepPlaces[k + 1] - stepPlaces[k], 1f);
+            if (gap <= 0f) gap = 1f;
+            place = stepPlaces[k] + gap * (time - stepTimes[k]) / Mathf.Max(1e-3f, stepTimes[k + 1] - stepTimes[k]);
+        }
+        place = Mathf.Repeat(place, 1f);
+        return true;
+    }
+
     private float At(float[] values, float time)
     {
         float at = Mathf.Clamp01(time / Length) * (values.Length - 1);
@@ -147,12 +196,17 @@ public sealed class ClipMotion
     private static ClipMotion Read(AnimationClip clip, Animator animator)
     {
         Transform root = animator.transform, hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+        Transform[] feet = { animator.GetBoneTransform(HumanBodyBones.LeftFoot), animator.GetBoneTransform(HumanBodyBones.RightFoot) };
         int count = Mathf.Max(8, Mathf.CeilToInt(clip.length * SampleRate));
         float step = clip.length / count;
         // The clip's own metres: the root's motion goes with the body's size.
         float own = 1f / Mathf.Max(1e-4f, animator.humanScale * Mathf.Abs(root.lossyScale.y));
         var gone = new float[count + 1];
         var height = new float[count + 1];
+        // Each foot: how far ahead of the hips (along the body's facing) and how high off the floor (the clip's own metres).
+        var reach = new[] { new float[count + 1], new float[count + 1] };
+        var lift = new[] { new float[count + 1], new float[count + 1] };
+        bool hasFeet = hips != null && feet[0] != null && feet[1] != null;
 
         // Played where the body stands and put back as it was: its own graph poses it again before it is drawn.
         var bones = root.GetComponentsInChildren<Transform>();
@@ -184,6 +238,12 @@ public sealed class ClipMotion
                     gone[i] = gone[i - 1] + went.magnitude * own;
                 }
                 height[i] = Vector3.Dot(hips.position - root.position, root.up) * own;
+                if (!hasFeet) continue;
+                for (int f = 0; f < 2; f++)
+                {
+                    reach[f][i] = Vector3.Dot(feet[f].position - hips.position, root.forward) * own;
+                    lift[f][i] = Vector3.Dot(feet[f].position - root.position, root.up) * own;
+                }
             }
         }
         finally
@@ -199,7 +259,34 @@ public sealed class ClipMotion
         float lowest = float.PositiveInfinity, end = Mathf.Max(height[0], height[count]);
         foreach (float h in height) lowest = Mathf.Min(lowest, h);
         float dip = Mathf.Max(1e-3f, end - lowest);
+        var upright = new bool[count + 1];
+        for (int i = 0; i <= count; i++) upright[i] = height[i] >= UprightHips;
         for (int i = 0; i <= count; i++) height[i] = (height[i] - lowest) / dip;
-        return new ClipMotion(clip.length, gone, height);
+        var steps = new List<(float time, float place)>();
+        if (hasFeet) Footfalls(clip.length, gone, upright, reach, lift, steps);
+        return new ClipMotion(clip.length, gone, height, steps);
+    }
+
+    // Each foot at its furthest ahead of the hips while the body is up and going, low to the floor: the moment before it comes
+    // down, as GaitClips marks a cycle's strides. In time order, left 0 and right .5.
+    private static void Footfalls(float length, float[] gone, bool[] upright, float[][] reach, float[][] lift,
+        List<(float time, float place)> steps)
+    {
+        int last = gone.Length - 1;
+        float step = length / last;
+        int window = Mathf.Max(1, Mathf.RoundToInt(StepWindow / step));
+        for (int f = 0; f < 2; f++)
+            for (int i = 1; i < last; i++)
+            {
+                float here = reach[f][i];
+                if (here < ReachLeast || lift[f][i] > FootLow || !upright[i]) continue;
+                int from = Mathf.Max(0, i - window), to = Mathf.Min(last, i + window);
+                if ((gone[to] - gone[from]) / ((to - from) * step) < MovingPace) continue;
+                bool furthest = true;
+                for (int j = from; j <= to && furthest; j++)
+                    if (j != i && (reach[f][j] > here || (reach[f][j] == here && j < i))) furthest = false;
+                if (furthest) steps.Add((length * i / last, f * .5f));
+            }
+        steps.Sort((a, b) => a.time.CompareTo(b.time));
     }
 }

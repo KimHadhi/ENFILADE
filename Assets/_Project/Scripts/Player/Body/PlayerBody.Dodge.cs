@@ -63,7 +63,7 @@ public sealed partial class PlayerBody
         bool goes = player.HorizontalVelocity.magnitude > walkClipSpeed
             || (player.IsNetworkDriven && stateTime < player.Abilities.DodgeMove.LegsAt - player.Abilities.DodgeMove.From - LeftEarly);
         if (!goes) PlayOn(dodgeClip);
-        else if (!StartRunOut()) PickUpStep();
+        else if (!StartRunOut()) StepFrom(Find(dodgeClip));
     }
 
     // The dodge aside comes up into the sprint ahead; false where there is no clip for it.
@@ -88,9 +88,25 @@ public sealed partial class PlayerBody
 
     private bool OutOfDodge(Channel channel) => channel != null && (channel == Find(dodgeClip) || channel == Find(dodgeRunOut));
 
-    // The run picks up where the feet are: the stride's place (phase: 0 the left foot landing, .5 the right) by which foot is
-    // down and how far the feet are apart along the run, its speed and way the body's own from the first step, not what they
-    // were before the dodge.
+    // A walk or run taking over from a one-shot clip takes the stride where that clip has its feet: the clip's own footfalls at
+    // the moment it is at (ClipMotion.StepAt), so it goes on with the foot the clip has going, the same on every PC; its speed
+    // and way the body's own from the first step. Until 0.9.378 only a dodge did, and by where the feet stood after the foot IK
+    // (PickUpStep, now for a clip with no footfalls read): out of a slide, a landing or a roll the run came back at the stride
+    // it had left off before them, and the legs swapped as it took over (the experts' read of 2026-11-23).
+    private void StepFrom(Channel channel)
+    {
+        if (channel != null && !channel.Synced && channel.Playable.IsValid() && motions.TryGetValue(channel.Clip, out var motion)
+            && motion != null && motion.StepAt((float)channel.Playable.GetTime(), out float place))
+        {
+            phase = place;
+            stride = Vector3.ProjectOnPlane(player.HorizontalVelocity, Vector3.up);
+            return;
+        }
+        PickUpStep();
+    }
+
+    // Where the feet are: the stride's place (phase: 0 the left foot landing, .5 the right) by which foot is down and how far
+    // the feet are apart along the run.
     private void PickUpStep()
     {
         stride = Vector3.ProjectOnPlane(player.HorizontalVelocity, Vector3.up);
