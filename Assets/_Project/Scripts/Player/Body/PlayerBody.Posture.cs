@@ -12,11 +12,14 @@ using MovementState = PlayerMovement.MovementState;
 /// Until 0.9.357 the clip took the whole body once it stood still and nothing else of the legs went on meanwhile: the speed they
 /// had still stopping in (stride) was kept, the feet and the way the body faces were let go of and caught again, and the body
 /// took a step as the clip ended (the user, 2026-11-23: "움직이면서 앉다가 속도 0인채 일어나면 덜컥 거리는 느낌").
-/// Turned back on its way, the other clip goes on at once from the height the body is at. Nothing stands between the key and
-/// that: the pace turning over in 0.2 s, slowing when tapped over and over, taps too soon left out and a way begun going to its
-/// end were each tried on 2026-11-23 (0.9.353-0.9.357), the lean's alike, and taken out (the user: "그 앉기랑 기울이기에 뭐 이상한
-/// 기능 넣지 말고"). Until 0.9.348 the clips followed the eyes' ease (Posture.transitionSharpness), half the way in 0.05 s
-/// (2026-11-22: "걍 한번에 확 내려가고").
+/// Turned back on its way, the other clip goes on at once from the height the body is at.
+/// Down and up over and over, the body tires as in CS2 (the user, 2026-11-23: "한번 CS2처럼 해 볼래?", the one place a clip
+/// is played slower than its own pace, at the user's word): each start down or up takes Ability.crouchTire of its pace, down to
+/// crouchTiredPace, and it gets crouchRest back a second; the first press after a rest is free, so a crouch now and then is
+/// never slowed. The pace is the body's, so the eyes (the camera) and the hits on the body slow with it; the capsule keeps its
+/// own. On 2026-11-23 (0.9.353-0.9.357) a tiring on turning back only, taps too soon left out and a way begun going to its end
+/// were tried with the lean's, and taken out with "그 앉기랑 기울이기에 뭐 이상한 기능 넣지 말고". Until 0.9.348 the clips
+/// followed the eyes' ease (Posture.transitionSharpness), half the way in 0.05 s (2026-11-22: "걍 한번에 확 내려가고").
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -30,6 +33,30 @@ public sealed partial class PlayerBody
     // How far down the body is (0 standing, 1 crouched), the moment its clip is at (s), and whether it is on its way.
     private float postureDown, postureMoment;
     private bool posturing;
+    // How rested the body is for going down and up (1 + Ability.crouchTire rested; its pace is this within crouchTiredPace and
+    // 1), and when that was last brought up to date.
+    private float postureStamina = float.PositiveInfinity, postureStaminaAt;
+
+    // The pace the body goes down and up at now: 1 the clip's own.
+    private float PosturePace
+    {
+        get
+        {
+            var ability = player.AbilitySettings;
+            float rested = 1f + ability.crouchTire;
+            postureStamina = Mathf.Min(rested, postureStamina + ability.crouchRest * Mathf.Max(0f, Time.time - postureStaminaAt));
+            postureStaminaAt = Time.time;
+            return Mathf.Clamp(postureStamina, ability.crouchTiredPace, 1f);
+        }
+    }
+
+    // A start down or up tires the body (CS2's crouch spam).
+    private void TirePosture()
+    {
+        var ability = player.AbilitySettings;
+        _ = PosturePace;
+        postureStamina = Mathf.Max(ability.crouchTiredPace, postureStamina - ability.crouchTire);
+    }
     // While the legs are shared out (Locomotion), the clip that has the part of them that stands; null for the stances' idles.
     private Channel postureClip;
 
@@ -56,6 +83,7 @@ public sealed partial class PlayerBody
         }
         if (!posturing) postureDown = down ? 0f : 1f;
         posturing = true;
+        TirePosture();
         var motion = PostureMotion(down);
         postureMoment = motion != null ? motion.MomentAt(Mathf.Clamp(1f - postureDown, SetsOff, 1f - SetsOff)) : 0f;
     }
@@ -67,8 +95,9 @@ public sealed partial class PlayerBody
         if (posturing)
         {
             var motion = PostureMotion(crouched);
-            postureMoment += dt;
-            if (motion == null) postureDown = Mathf.MoveTowards(postureDown, end, dt / PlainPosture);
+            float pace = PosturePace;
+            postureMoment += dt * pace;
+            if (motion == null) postureDown = Mathf.MoveTowards(postureDown, end, dt * pace / PlainPosture);
             else if (postureMoment < motion.MomentAt(crouched ? SetsOff : 1f - SetsOff)) postureDown = 1f - Mathf.Clamp01(motion.HeightAt(postureMoment));
             else postureDown = end;
             posturing = postureDown != end;

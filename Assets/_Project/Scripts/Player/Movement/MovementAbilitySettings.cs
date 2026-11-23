@@ -25,6 +25,12 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float stepDodgeCooldown = 1.25f;
     [Range(0f, 30f)] public float leanAngle = 15f;
     [Min(1f)] public float leanSharpness = 10f;
+    [Tooltip("Crouching and standing over and over tire the body, as in CS2 (PlayerBody.Posture): each time it starts down or up it "
+        + "loses crouchTire of its pace, down to crouchTiredPace at the least, and gets crouchRest back a second; one press after a "
+        + "rest is free, so a crouch now and then goes at the clip's own pace.")]
+    [Range(0f, 1f)] public float crouchTire = .25f;
+    [Range(.1f, 1f)] public float crouchTiredPace = .35f;
+    [Min(0f)] public float crouchRest = .5f;
 
     [Header("Step / Vault / Mantle")]
     [Range(0.05f, 0.5f)] public float stepHeight = 0.3f;
