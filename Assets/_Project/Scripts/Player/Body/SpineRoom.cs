@@ -28,8 +28,11 @@ internal sealed class SpineRoom
     // a second). Held only while the bend goes on getting nearer than that, a crouched walk's knees, at their highest at every
     // step, swung the bend 8 to 11 degrees (worked out on a crouch leaning 25 to 35 degrees forward); held so, it stays.
     private const float HoldFor = .6f, OpenPace = 45f, Touch = 2f;
-    // A ball is kept this far off the legs' skin (m).
-    private const float LegGap = .01f;
+    // A ball is kept this far off the legs' skin (m). At 1 cm the camera still cut into the left thigh crouched, walking ahead
+    // and looking straight down (the user, 2026-11-23): the legs' rods are a little short of the leg itself there (the feet are
+    // fitted to the ground after the limit is found and move the knee; a thigh's top lies past the 85% its thickness is read
+    // at; nothing worn over it is in the rods).
+    private const float LegGap = .03f;
     private const int MostJoints = 8, MostPoints = 8;
 
     private readonly Vector3[] joints = new Vector3[MostJoints];
