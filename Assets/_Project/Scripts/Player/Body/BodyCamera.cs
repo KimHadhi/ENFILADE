@@ -11,7 +11,7 @@ using UnityEngine;
 ///   0.7.34; holding a gun or the fists the body carries all of it and the camera stays on the eyes (BodyLean);
 /// - a sweep from a steady point inside the movement capsule to the eyes keeps it out of walls (CameraClearance), the last
 ///   guard after the spine has bent no further than keeps the face clear of them (PlayerBody.Clearance, SpineRoom);
-/// - F5 puts it behind the body (PlaceBehind); the Esc menu's own-head option sets the near clip plane (CutOwnHead).
+/// - F5 puts it behind the body (PlaceBehind); in first person its near clip plane is the body's (NearInFirstPerson).
 /// - Settings → 화면 → 몸 흔들림 (GameSettings.bodySway): below 1 it follows an eased path through the eyes instead of the
 ///   eyes themselves. Wherever it ends up, the body then bends its head to it (HeadReach, from Placed), so the camera
 ///   steadies without leaving the head.
@@ -193,10 +193,9 @@ internal sealed class BodyCamera
         view.position = wanted;
     }
 
-    /// <summary>With the own head shown in first person, the near clip plane cuts what sits around the camera (the inside
-    /// of the face) at <paramref name="headNearClip"/> (m) at least; otherwise it is the camera's own.</summary>
-    internal void CutOwnHead(bool cut, float headNearClip)
+    /// <summary>In first person the near clip plane is <paramref name="near"/> (m); otherwise it is the camera's own.</summary>
+    internal void NearInFirstPerson(bool firstPerson, float near)
     {
-        if (camera != null) camera.nearClipPlane = cut ? Mathf.Max(baseNearClip, headNearClip) : baseNearClip;
+        if (camera != null) camera.nearClipPlane = firstPerson ? near : baseNearClip;
     }
 }

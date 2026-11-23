@@ -96,7 +96,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private readonly List<Channel> channels = new List<Channel>();
     private readonly Dictionary<string, Channel> byName = new Dictionary<string, Channel>(StringComparer.OrdinalIgnoreCase);
     private readonly List<Renderer> headParts = new List<Renderer>();
-    // Worn over the face (a mask, glasses): only their shadows in first person, whatever the head setting says.
+    // The face itself (HeadMeshes.IsFace) and what is worn over it (a mask, glasses): only their shadows in first person,
+    // whatever the head setting says. From the eyes a face is only ever seen from inside.
     private readonly List<Renderer> faceParts = new List<Renderer>();
     private readonly HashSet<string> reported = new HashSet<string>();
     private OutfitDresser.Dressing dressing;
@@ -241,7 +242,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             }
             foreach (string part in profile.FirstPersonShadowOnly)
                 onHead |= string.Equals(renderer.name, part, StringComparison.OrdinalIgnoreCase);
-            if (onHead) headParts.Add(renderer);
+            if (onHead) (renderer is SkinnedMeshRenderer skin && HeadMeshes.IsFace(skin, animator) ? faceParts : headParts).Add(renderer);
         }
         float fit = FitScale();
         body.localScale = Vector3.one * fit;

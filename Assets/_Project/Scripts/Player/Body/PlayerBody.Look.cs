@@ -17,7 +17,8 @@ using MovementState = PlayerMovement.MovementState;
 ///   to ride them (off them toward the capsule on a ladder and through a punch).
 /// - Wherever the camera goes, the head goes with it (HeadReach): where it steadies off the eyes, the spine, chest and neck
 ///   bend the head to it, so the camera never sits outside the head (the user, 2026-11-12).
-/// - The Esc menu's own-head option shows the head and hair; the near clip plane cuts what sits around the camera.
+/// - The Esc menu's own-head option shows the hair (and ears, a hat); the face itself is never drawn in first person
+///   (HeadMeshes.IsFace), so the near clip plane stays a centimetre and a hand at the face is never cut (firstPersonNear).
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -30,8 +31,9 @@ public sealed partial class PlayerBody
     private float eyeViewAhead = .02f;
     [SerializeField, Tooltip("Moves the eye point if it sits wrong on a character: up, forward (m).")]
     private Vector2 eyeAdjust;
-    [SerializeField, Min(.01f), Tooltip("Near clip plane while the own head is shown: anything closer to the camera is cut (m).")]
-    private float headNearClip = .05f;
+    [SerializeField, Min(.001f), Tooltip("Near clip plane in first person: anything closer to the camera is cut (m). Small, so another "
+        + "player's finger at the face is never cut; the face itself isn't drawn in first person instead of being cut.")]
+    private float firstPersonNear = .01f;
     [SerializeField, Tooltip("Sliding, how far the view turns from the way the slide faces: left; right (degrees). The legs keep following "
         + "travel; the torso turns at most SlideTwistLimit of it and the head the rest. To the left it stops short: the slide's clips "
         + "(BIPER SlideToRun) sit turned to the right, the chest 40-70 degrees round, and a look further left turned the head into "
@@ -354,8 +356,10 @@ public sealed partial class PlayerBody
         return weapons != null && weapons.EquippedData != null && !weapons.IsHighReady ? weapons.AimBlend : 0f;
     }
 
-    // Head and hair render in first person when the Esc menu says so; the near clip plane then cuts what sits
-    // around the camera (the inside of the face) instead of hiding the whole head.
+    // The hair renders in first person when the Esc menu says so; the face never does, only its shadow (HeadMeshes.IsFace).
+    // Up to 0.9.365 the whole head was drawn and the near clip plane cut what sat within 5 cm of the camera (the inside of the
+    // face, the nearest hair), and with it the finger of anyone who poked a cheek (the user, 2026-11-23: "누가 내 입에 손가락
+    // 집어 넣을 때 손가락이 짤리면 안 되잖아"). Now the plane is a centimetre whatever the setting.
     private void ApplyHeadVisibility()
     {
         var mode = ShowsOwnHead ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
@@ -366,6 +370,6 @@ public sealed partial class PlayerBody
         var face = SeenFromOutside ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         foreach (var part in faceParts)
             if (part != null) part.shadowCastingMode = face;
-        bodyCamera.CutOwnHead(!thirdPerson && !watchedFromOutside && GameSettings.Current.showOwnHead, headNearClip);
+        bodyCamera.NearInFirstPerson(!thirdPerson && !watchedFromOutside, firstPersonNear);
     }
 }

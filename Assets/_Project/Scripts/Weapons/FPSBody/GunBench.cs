@@ -164,7 +164,7 @@ internal static class GunBench
     private struct Numbers
     {
         public GunHold.Rules Rules;
-        public float SlideFade, ShoulderReach, HeadNearClip;
+        public float SlideFade, ShoulderReach, Near;
         // The game's camera sits this far above and ahead of the eye bones (PlayerBody's eyeAdjust and eyeViewAhead, m).
         public float EyeUp, EyeAhead;
     }
@@ -197,7 +197,7 @@ internal static class GunBench
             Rules = FPSBody.TableRules(),
             SlideFade = FPSBody.TableSlideFade(),
             ShoulderReach = GameTables.Number(PlayerMovement.TableName, "Hands", "shoulderReach", 15f),
-            HeadNearClip = GameTables.Number(PlayerMovement.TableName, "Body", "headNearClip", .05f)
+            Near = GameTables.Number(PlayerMovement.TableName, "Body", "firstPersonNear", .01f)
         };
         EyeOffsets(out numbers.EyeUp, out numbers.EyeAhead);
         string whatIf = Suppose(ask, ref numbers.Rules);
@@ -369,7 +369,7 @@ internal static class GunBench
                         Frame = frame, Start = pose.Gun, Set = set, Bake = bake, Body = body,
                         Slide = new SupportSlide(pose.Slide, hold != null ? hold.Gun.LeftPalm.z : 0f, numbers.SlideFade),
                         Hold = hold, Reach = ask.Reach, HoldsWithin = numbers.Rules.HoldsWithin,
-                        ShoulderReach = numbers.ShoulderReach, HeadNearClip = numbers.HeadNearClip,
+                        ShoulderReach = numbers.ShoulderReach, Near = numbers.Near,
                         EyeUp = numbers.EyeUp, EyeAhead = numbers.EyeAhead, HeadParts = headParts
                     };
                     one.FindEyes();
@@ -458,7 +458,7 @@ internal static class GunBench
         public GunHold Hold;
         public Carry Reach;
         public float HoldsWithin;
-        public float ShoulderReach, HeadNearClip, EyeUp, EyeAhead;
+        public float ShoulderReach, Near, EyeUp, EyeAhead;
         // The body's own head (hidden for the view from the eyes).
         public List<Renderer> HeadParts;
         // The game's camera and the eyes themselves (HoldBody.Eyes), each as a point of the head.
@@ -724,7 +724,7 @@ internal static class GunBench
                     foreach (var part in one.HeadParts) part.forceRenderingOff = true;
                     try
                     {
-                        rows[row++].Add(stage.Shoot(eyes, Quaternion.LookRotation(ahead, up) * posed.CameraTurn, field, one.HeadNearClip, width, height));
+                        rows[row++].Add(stage.Shoot(eyes, Quaternion.LookRotation(ahead, up) * posed.CameraTurn, field, one.Near, width, height));
                     }
                     finally
                     {
