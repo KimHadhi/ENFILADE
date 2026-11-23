@@ -44,6 +44,16 @@ public sealed partial class PlayerBody
             posturing = false;
             return;
         }
+        // Down from a crouch jump's tuck with the key still held, the body is low already: the movement only turns its standing
+        // in the air into a crouch as it touches down, and it lands crouched, from the tuck into the crouch, instead of going
+        // down from standing (the user, 2026-11-23: "덕 점프로 공중에서 앉고 있을 때 바닥에 닿으면 앉은 채가 아니라 한번
+        // 일어났다 다시 앉는데?"). Enter comes before Touch in a frame, so the tuck is still marked here.
+        if (down && tucked)
+        {
+            posturing = false;
+            postureDown = 1f;
+            return;
+        }
         if (!posturing) postureDown = down ? 0f : 1f;
         posturing = true;
         var motion = PostureMotion(down);
