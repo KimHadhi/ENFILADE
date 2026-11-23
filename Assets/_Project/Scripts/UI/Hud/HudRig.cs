@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// Sets GameHUD up for depth when Play starts: draws its canvas through HudCamera, turns Left Panel and Right Panel into
+/// Sets the HUD canvas (GameHud builds it as a play scene loads) up for depth: draws its canvas through HudCamera, turns Left Panel and Right Panel into
 /// the two sides of a curved screen and stands each on a visible glass board (HudBoard), lifts what must stay flat off
 /// those sides (the new-objective alert in the top centre).
 /// Center (crosshair, prompts) stays flat. The groups were LEFT, MIDDLE and RIGHT, with ★ on Mission, Chat and Health,
 /// until the user asked for a tidy hierarchy (2026-11-11); the old wave indicator under Center is switched off.
-/// All three keep the margins to the screen's edges the prefab drew them with on any screen shape (HudFrame).
+/// All three keep the margins to the screen's edges they are laid out with on any screen shape (HudFrame).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class HudRig : MonoBehaviour

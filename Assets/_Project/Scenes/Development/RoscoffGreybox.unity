@@ -52987,24 +52987,6 @@ MonoBehaviour:
   m_PointerBehavior: 0
   m_CursorLockBehavior: 0
   m_ScrollDeltaPerTick: 6
---- !u!1001 &1900000
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications: []
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 2e8c44e739ff12447867668ff2ae7d3b, type: 3}
---- !u!224 &1900001 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 2186313754710708430, guid: 2e8c44e739ff12447867668ff2ae7d3b, type: 3}
-  m_PrefabInstance: {fileID: 1900000}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -53022,4 +53004,3 @@ SceneRoots:
   - {fileID: 1005491}
   - {fileID: 1005911}
   - {fileID: 1005931}
-  - {fileID: 1900001}

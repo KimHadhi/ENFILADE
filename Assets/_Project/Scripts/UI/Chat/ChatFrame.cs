@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// The chat's box on the HUD's left plane, redone 2026-11-12 with its lines (ChatMessageItem). It puts the chat where
 /// Chat.csv Place says, measured from the screen's bottom left like the teammate cards under it (the prefab measured
 /// from the screen's middle, which pushed it off a 4:3 screen and onto the cards of a short one), keeps its top under
-/// the mission bar's TAB row, and gives it its own small lean on the plane. It dresses GameHUD's prefab parts in the
+/// the mission bar's TAB row, and gives it its own small lean on the plane. It dresses the chat's parts (SinglePlayerChatManager.Build) in the
 /// HUD's black, white and one pink: the history's panel (only while typing) with a pink mark on its top edge, a thin
 /// pink scrollbar, newest lines at the bottom right over the input box (the prefab hung them from the top), and the
 /// input box near black with a pink underline, a channel tab in the channel's colour with its name in dark ink, and
@@ -114,7 +114,7 @@ public sealed class ChatFrame
         placedTilt = tilt;
 
         var place = look.Place;
-        // The parent (GameHUD's Left Panel) is a small square on the canvas's middle that HudPlane turns about the screen's
+        // The parent (the HUD canvas's Left Panel) is a small square on the canvas's middle that HudPlane turns about the screen's
         // left edge, so the canvas's bottom left lies half the canvas from its middle.
         var parent = chat.parent as RectTransform;
         Rect parentRect = parent != null ? parent.rect : new Rect(0f, 0f, 0f, 0f);

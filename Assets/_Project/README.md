@@ -8,7 +8,7 @@
 | [Editor](Editor/README.md) | Unity 편집기 도구 (ENFILADE 메뉴) |
 | Art | 보고 듣는 것 전부: 그림, 소리, 모델, 동작, 셰이더, 재질 |
 | Data | 숫자와 장부: [표](Data/Resources/Tables)(분야별 CSV), 목록 에셋, 총 데이터, 구운 클립 |
-| Prefabs | 조립해 둔 물건 (GameHUD, 플레이어, 효과) |
+| Prefabs | 조립해 둔 물건 (플레이어, 효과, 허브 조각) |
 | Scenes | 씬 |
 | Input, Settings | 입력 액션, 렌더링 설정 |
 

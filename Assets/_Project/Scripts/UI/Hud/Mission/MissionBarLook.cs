@@ -110,15 +110,6 @@ public sealed class MissionBarLook : MonoBehaviour, ITableBound
         LayOut();
     }
 
-    /// <summary>Editor (ENFILADE > HUD): the bar with its sample texts and the count showing, the way Play draws it.</summary>
-    public void LayOutForEditor(float canvasWidth)
-    {
-        this.canvasWidth = canvasWidth;
-        numeric = true;
-        counterRoot.SetActive(true);
-        LayOut();
-    }
-
     /// <summary>
     /// The new-objective card has flown into the bar (ObjectiveAlert): the strip and its tab light up white once, softly,
     /// and fade (never a blink).

@@ -13,12 +13,12 @@ using UnityEngine.UI;
 /// grey, both in its face. The alert stays narrower than the room right of the bar leaves, so it never shares a column
 /// with it.
 /// </summary>
-public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
+public sealed partial class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
 {
     private static string TabHint => Texts.Get("objective.tab_hint");
     // How far the bar slides off as the Tab screen's list takes its place (px at 1080p).
     private const float MakeWay = 24f;
-    // The prefab's key cap, beside the hint (KeyBindings names the key in its Label).
+    // The key cap, beside the hint (KeyBindings names the key in its Label).
     private const string KeyCapName = "TabKey";
 
     [Header("Mission")]
@@ -35,9 +35,6 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     [SerializeField] private CanvasGroup alertGroup;
     [SerializeField, Min(100)] private float maxAlertWidth = 820;
     [Header("Alert sound")]
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip alertSound;
-    [SerializeField, Range(0, 1)] private float alertVolume = .45f;
     [Header("Under the bar (Hud.csv MissionTab)")]
     [Tooltip("Room left and right of the key's name inside its cap (px). A long key name widens the cap; it is never narrower than the prefab drew it.")]
     [SerializeField, Min(0)] private float keyPad = 6f;
@@ -78,7 +75,6 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
 
     private void Awake()
     {
-        GameAudio.Bind(audioSource, AudioChannel.UI);
         Look();
         if (alert != null && !alert.TryGetComponent(out alertView)) alertView = alert.gameObject.AddComponent<ObjectiveAlert>();
         GameTables.Bind(HudCamera.TableName, "MissionTab", this);
@@ -87,15 +83,6 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
     public void OnTableApplied()
     {
         if (parts.Count > 0) LayOutTabRow();
-    }
-
-    /// <summary>
-    /// Editor (ENFILADE > HUD): lays the bar out from Hud.csv with its sample texts and the count showing, so the prefab
-    /// looks in the editor the way it will in Play.
-    /// </summary>
-    public void LayOutForEditor()
-    {
-        if (Look() != null) look.LayOutForEditor(CanvasWidth());
     }
 
     /// <summary>ENFILADE → HUD → 겹침 검사: holds the new-objective alert open on the bar's objective while it measures.</summary>
@@ -168,7 +155,6 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
         KeyBindings.Changed -= ShowBoardKey;
         if (tracker != null) tracker.Changed -= Refresh;
         HideAlert();
-        if (audioSource != null) audioSource.Stop();
     }
 
     // HudRig puts the sides on their planes in its Awake; by now every Awake has run.
@@ -288,10 +274,8 @@ public sealed class MissionHUD : MonoBehaviour, ITableBound, IHudPreview
         if (alertView == null) return;
         alertView.Play(missionTitle, AlertWidest(), missionBar, look);
         if (alertGroup != null) alertGroup.alpha = 1f - makeWay;
-        if (audioSource != null && alertSound != null && !previewing)
-        {
-            audioSource.Stop(); audioSource.PlayOneShot(alertSound, alertVolume);
-        }
+        // Its sound is the UI bank's (Art/Audio/UI/Objective, Sounds.csv UI/Objective).
+        if (!previewing) GameSounds.Play("UI", "Objective", AudioChannel.UI);
     }
 
     // How wide the alert may be. Centred at the top, it keeps right of the bar's right end, so the two never share a

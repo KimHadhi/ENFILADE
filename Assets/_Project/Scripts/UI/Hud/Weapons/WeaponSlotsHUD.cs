@@ -16,7 +16,7 @@ using UnityEngine.UI;
 /// its top.</para>
 /// Each weapon shows its own picture (WeaponIcons), kept to the icons' one canvas so a pistol stays smaller than a rifle; a
 /// weapon without one shows the vector outline (WeaponSlotSilhouette). A name too long for its room scrolls to its end and
-/// back. Built here in code; the prefab's first slot views stay hidden. Numbers: Tables/WeaponSlots.csv.
+/// back. Built here in code, the box itself too (Build). Numbers: Tables/WeaponSlots.csv.
 /// <para>Surfaces in the HUD's one look (HudTone, 2026-11-22: the user wanted these plates and their motion kept and only
 /// the design made one with the addon HUD's, in its colours alone): the addon's faint black box for a plate, white for the
 /// slot in hand (its edge, corner and shard, its tab lit white with a black number, as the addon's selector lights the
@@ -25,6 +25,20 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class WeaponSlotsHUD : MonoBehaviour
 {
+    /// <summary>The slots on the HUD's right side (GameHud): a box on its right edge, its fade a CanvasGroup's.</summary>
+    internal static WeaponSlotsHUD Build(Transform side)
+    {
+        var rect = FeelUI.Rect("WeaponSlotsHUD", side);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, .5f);
+        rect.anchoredPosition = new Vector2(840f, 14f);
+        rect.sizeDelta = new Vector2(220f, 316f);
+        var fade = rect.gameObject.AddComponent<CanvasGroup>();
+        fade.interactable = fade.blocksRaycasts = false;
+        var slots = rect.gameObject.AddComponent<WeaponSlotsHUD>();
+        slots.group = fade;
+        return slots;
+    }
+
     public const string TableName = "WeaponSlots";
     private const int Count = PlayerWeaponSlots.SlotCount;
     private static readonly Color Stripes = new Color(1f, 1f, 1f, .45f);

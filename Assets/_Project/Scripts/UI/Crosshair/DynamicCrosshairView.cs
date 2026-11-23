@@ -56,6 +56,29 @@ public class DynamicCrosshairView : MonoBehaviour
         return null;
     }
 
+    /// <summary>The HUD's crosshair, built in code (GameHud): the designed gun crosshair until the player's own takes over
+    /// (WeaponCrosshairSelector). Its part template, like the preview's, is a hidden child copied for each part.</summary>
+    public static DynamicCrosshairView BuildHud(Transform center)
+    {
+        var rect = FeelUI.Rect("Crosshair", center);
+        rect.sizeDelta = new Vector2(100f, 100f);
+        var dotRect = FeelUI.Rect("CenterDot", rect);
+        dotRect.sizeDelta = new Vector2(4f, 4f);
+        var dot = dotRect.gameObject.AddComponent<Image>();
+        dot.raycastTarget = false;
+        var parts = FeelUI.Rect("CrossPartsContainer", rect);
+        parts.sizeDelta = new Vector2(100f, 100f);
+        var template = FeelUI.Rect("Part Template", rect);
+        template.gameObject.AddComponent<Image>().raycastTarget = false;
+        template.gameObject.SetActive(false);
+        var view = rect.gameObject.AddComponent<DynamicCrosshairView>();
+        view.centerDot = dot;
+        view.partsContainer = parts;
+        view.partPrefab = template.gameObject;
+        view.currentProfile = PlayerCrosshairs.Design(CrosshairKind.Gun);
+        return view;
+    }
+
     /// <summary>Wires a crosshair built in code for the settings preview. The template is copied for each part.</summary>
     public void ConfigurePreview(Image dot, RectTransform parts, GameObject partTemplate)
     {

@@ -32,7 +32,7 @@ ENFILADE/
 | `Art` | 보고 듣는 것 전부 | `Animations`, `Audio`, `Models`, `Materials`, `Textures`, `Shaders`, `Sky`, `Sprites`, `Fonts`, 그리고 이름으로 부르는 것의 서랍 `Resources` |
 | `Data` | 숫자와 장부 | `Resources/Tables`(표), `Resources`의 목록 에셋·소리 묶음, `Guns`(무기 데이터, 총 프리팹, 캐릭터별로 구운 총 클립), `UI` |
 | `Data/Resources/Tables` | 모든 숫자와 글자 | 분야별 폴더 14개. 파일 **이름**으로만 찾으므로 폴더는 자유롭게 옮겨도 된다 |
-| `Prefabs` | 조립해 둔 물건 | `UI`(GameHUD 등), `Effects`, `Props`, 이름으로 꺼내는 것의 서랍 `Resources`(플레이어, 적, 클래스 소품) |
+| `Prefabs` | 조립해 둔 물건 | `Effects`, `Props`, 이름으로 꺼내는 것의 서랍 `Resources`(플레이어, 적, 클래스 소품) |
 | `Scenes` | 씬 | `MainMenu`, `Hub`, `Campaign`(1~4장, 타워), `Development`(테스팅 룸) |
 | `Input`, `Settings` | 입력 액션, 렌더링 설정 | |
 

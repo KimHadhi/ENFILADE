@@ -8,27 +8,23 @@ using TMPro;
 using System;
 
 /// <summary>
-/// The chat on GameHUD's left plane: Enter opens it, Enter sends, Esc closes, Tab (the key window's 채팅 채널) swaps chat
+/// The chat on the HUD's left plane: Enter opens it, Enter sends, Esc closes, Tab (the key window's 채팅 채널) swaps chat
 /// and console, up and down recall what was sent. Since the 2026-11-12 redesign each line is drawn on its own plate in
-/// code (ChatMessageItem; the prefab line now only lends its font), the box is placed and dressed by ChatFrame, and the
-/// numbers are Tables/Chat.csv (ChatLook).
+/// code (ChatMessageItem) in the Chat role's face, the box is made in code (Build), placed and dressed by ChatFrame, and
+/// the numbers are Tables/Chat.csv (ChatLook).
 /// </summary>
-public class SinglePlayerChatManager : MonoBehaviour
+public partial class SinglePlayerChatManager : MonoBehaviour
 {
     [Header("Player Control")]
     [SerializeField] private PlayerInput playerInput;
 
     [Header("UI References")]
-    [SerializeField] private CanvasGroup chatBoxBackground;
     [SerializeField] private TMP_InputField chatInput;
     [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private RectTransform messageContainer;
-    [Tooltip("The old one-text line. Lines are built in code now (ChatMessageItem); its font is the chat's font.")]
-    [SerializeField] private GameObject messagePrefab;
 
     [Header("Input channel")]
     [SerializeField] private ChatChannel inputChannel = ChatChannel.Note;
-    [SerializeField] private Image channelAccent;
     [SerializeField] private TMP_Text channelLabel;
     [SerializeField] private ChatChannelIcon channelIcon;
     [SerializeField] private Button channelButton;
@@ -110,8 +106,6 @@ public class SinglePlayerChatManager : MonoBehaviour
         }
         frame = new ChatFrame((RectTransform)transform, scrollRect, chatInput, channelButton);
         frame.Dress(look);
-        // The tab is coloured whole now; the prefab's thin accent line on it is the old badge's.
-        if (channelAccent != null) channelAccent.enabled = false;
     }
 
     private void Start()
@@ -198,14 +192,6 @@ public class SinglePlayerChatManager : MonoBehaviour
         isChatOpen = true;
         InputHold.Take(this);
 
-        // 1. 전체 배경 켜기
-        if (chatBoxBackground != null)
-        {
-            chatBoxBackground.alpha = 1f;
-            chatBoxBackground.blocksRaycasts = true;
-            chatBoxBackground.interactable = true;
-        }
-
         // 2. Scroll View 배경 이미지 켜기
         if (scrollRectImage != null)
         {
@@ -233,14 +219,6 @@ public class SinglePlayerChatManager : MonoBehaviour
         lastClosedFrame = Time.frameCount;
 
         if (wasOpen) InputHold.Release(this);
-
-        // 1. 전체 배경 끄기
-        if (chatBoxBackground != null)
-        {
-            chatBoxBackground.alpha = 0f;
-            chatBoxBackground.blocksRaycasts = false;
-            chatBoxBackground.interactable = false;
-        }
 
         // 2. Scroll View 배경 이미지 끄기
         if (scrollRectImage != null)
@@ -391,10 +369,11 @@ public class SinglePlayerChatManager : MonoBehaviour
         RefreshInputChannel();
     }
 
-    // The chat's own font, the one its prefab line carried (ChattingFont): the lines are built in code now, in the same type.
+    // The chat's own font (Fonts.csv's Chat role), in which its lines are built (ChatMessageItem).
     private TMP_FontAsset LineFont()
     {
-        if (messagePrefab != null && messagePrefab.TryGetComponent(out TMP_Text text) && text.font != null) return text.font;
+        var chatFont = FontRoles.Font(ChatRoleName);
+        if (chatFont != null) return chatFont;
         if (chatInput != null && chatInput.textComponent != null && chatInput.textComponent.font != null) return chatInput.textComponent.font;
         return CombatUIAssets.ResolveFont(null);
     }

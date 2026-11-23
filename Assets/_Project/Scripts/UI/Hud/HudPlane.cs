@@ -2,8 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// Turns one side of the HUD about the screen edge on that side, so its inner edge recedes like the inside of a curved
-/// screen (The Division), and lets the look sway carry it. Goes on a group that is centred on its root canvas (GameHUD's
-/// LEFT and RIGHT, or a group Create makes to fill the canvas); nothing else may move that group. The angle is the
+/// screen (The Division), and lets the look sway carry it. Goes on a group that is centred on its root canvas (the HUD
+/// canvas's Left Panel and Right Panel, or a group Create makes to fill the canvas); nothing else may move that group. The angle is the
 /// player's (Settings → HUD 원근 각도), Hud.csv's Planes row the lean back. While the player leans with Q/E the side also
 /// turns within the screen about the middle of that edge (HudCamera.LeanRoll), so the corners stay on the screen.
 /// Only a canvas drawn through HudCamera shows the depth.
