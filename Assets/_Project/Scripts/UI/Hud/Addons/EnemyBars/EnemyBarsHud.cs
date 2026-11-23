@@ -28,7 +28,7 @@ namespace HudAddons
         private const int RayRoom = 64;
 
         private readonly EnemyBarsLook.Bar bar = new EnemyBarsLook.Bar();
-        private readonly EnemyBarsLook.Name name = new EnemyBarsLook.Name();
+        private readonly EnemyBarsLook.Name nameLook = new EnemyBarsLook.Name();
         private readonly EnemyBarsLook.Icon icon = new EnemyBarsLook.Icon();
         private readonly EnemyBarsLook.Total total = new EnemyBarsLook.Total();
         private readonly EnemyBarsLook.Pillar pillar = new EnemyBarsLook.Pillar();
@@ -69,7 +69,7 @@ namespace HudAddons
             overlay = host;
             painter = host.AddPainter("Bars");
             GameTables.BindNested(EnemyBarsLook.Table, EnemyBarsLook.BarRow, this, bar);
-            GameTables.BindNested(EnemyBarsLook.Table, EnemyBarsLook.NameRow, this, name);
+            GameTables.BindNested(EnemyBarsLook.Table, EnemyBarsLook.NameRow, this, nameLook);
             GameTables.BindNested(EnemyBarsLook.Table, EnemyBarsLook.IconRow, this, icon);
             GameTables.BindNested(EnemyBarsLook.Table, EnemyBarsLook.TotalRow, this, total);
             GameTables.BindNested(EnemyBarsLook.Table, EnemyBarsLook.PillarRow, this, pillar);
@@ -452,7 +452,7 @@ namespace HudAddons
             p.DrawColor = bar.outline;
             p.OutlinedRect(x, y, w, h, bar.outlineWidth);
 
-            Label(item, options, valid, x, y + barH + name.gap);
+            Label(item, options, valid, x, y + barH + nameLook.gap);
 
             // The icon: the boss's for an elite or named enemy or a kind on the boss list, the normal one otherwise. Its
             // picture is settled while the enemy is there and kept after.
@@ -513,14 +513,14 @@ namespace HudAddons
             {
                 // The blurred font is a size up; the addon centres it on the name by both texts' sizes, the name's height
                 // counting its drop shadow (Source's font height is the cell plus the shadow's offset).
-                float nameW = nameFont.Width(text), nameH = nameFont.Size + name.shadow;
+                float nameW = nameFont.Width(text), nameH = nameFont.Size + nameLook.shadow;
                 float blurW = blurFont.Width(text), blurH = blurFont.Size;
                 float bx = x - (blurW - nameW) * .5f, by = top - (blurH - nameH) * .5f;
                 for (int t = 0; t < tapAt.Length; t++)
                     p.TextLines(text, blurFont, bx + tapAt[t].x, by + tapAt[t].y, tapColor[t]);
             }
-            p.TextLines(text, nameFont, x + name.shadow, top + name.shadow, name.shadowColor);
-            p.TextLines(text, nameFont, x, top, name.color);
+            p.TextLines(text, nameFont, x + nameLook.shadow, top + nameLook.shadow, nameLook.shadowColor);
+            p.TextLines(text, nameFont, x, top, nameLook.color);
         }
 
         // DamageBlocks: each pillar rises from the bar's foot and fades once nearly up, shown or not; drawn over the rest
@@ -707,8 +707,8 @@ namespace HudAddons
         private void MakeFonts(float height)
         {
             fontsFor = height;
-            nameFont = HudFont.Get(name.face, height * name.size, name.weight);
-            blurFont = HudFont.Get(name.face, height * name.blurSize, name.weight);
+            nameFont = HudFont.Get(nameLook.face, height * nameLook.size, nameLook.weight);
+            blurFont = HudFont.Get(nameLook.face, height * nameLook.blurSize, nameLook.weight);
             totalFont = HudFont.Get(total.face, height * total.size, total.weight);
         }
 
@@ -722,15 +722,15 @@ namespace HudAddons
         /// </summary>
         private void MakeTaps()
         {
-            int radius = Mathf.Clamp(name.blur, 0, 8), side = radius * 2 + 1, count = side * side;
+            int radius = Mathf.Clamp(nameLook.blur, 0, 8), side = radius * 2 + 1, count = side * side;
             if (tapAt.Length != count)
             {
                 tapAt = new Vector2[count];
                 tapColor = new Color32[count];
             }
-            double sigma = name.sigma * radius;
-            int passes = Mathf.Max(1, name.passes), k = 0;
-            Color32 black = name.blurColor;
+            double sigma = nameLook.sigma * radius;
+            int passes = Mathf.Max(1, nameLook.passes), k = 0;
+            Color32 black = nameLook.blurColor;
             for (int j = -radius; j <= radius; j++)
             for (int i = -radius; i <= radius; i++, k++)
             {
@@ -742,6 +742,6 @@ namespace HudAddons
         }
 
         private double Gauss(int d, double sigma) =>
-            1.0 / Math.Sqrt(2.0 * name.pi * sigma * sigma) * Math.Pow(name.e, -(d * d) / (2.0 * sigma * sigma));
+            1.0 / Math.Sqrt(2.0 * nameLook.pi * sigma * sigma) * Math.Pow(nameLook.e, -(d * d) / (2.0 * sigma * sigma));
     }
 }

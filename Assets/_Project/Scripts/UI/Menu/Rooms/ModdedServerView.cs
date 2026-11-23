@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using W = SettingsWidgets;
 
@@ -24,7 +25,7 @@ public sealed class ModdedServerView
         W.Size(W.Label(panel, Texts.Get("servers.modded.title"), 32f, W.Text), height: 50f);
         string what = string.IsNullOrEmpty(roomTitle) ? "" : "<b>" + roomTitle.Replace("<", "<​") + "</b>\n";
         var body = W.Label(panel, what + Texts.Format("servers.modded.body", (mods ?? "").Replace("<", "<​")), 19f, W.Muted);
-        body.enableWordWrapping = true;
+        body.textWrappingMode = TextWrappingModes.Normal;
         W.Size(body, height: 150f);
         var buttons = W.ButtonRow(panel);
         W.ActionButton(buttons, Texts.Get("common.no"), false, Close);

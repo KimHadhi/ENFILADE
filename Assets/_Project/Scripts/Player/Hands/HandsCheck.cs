@@ -34,7 +34,7 @@ internal static class HandsCheck
     private static readonly string[] Asks =
     {
         HandUses.Grenade, HandUses.Dose, HandUses.Repair, HandUses.GuardPose, HandUses.PointPing, HandUses.PointHold, HandUses.CalloutArm,
-        HandUses.GunHold, HandUses.GunAim, HandUses.GunReload, HandUses.GunInspect, HandUses.GunSwap, HandUses.GunBash,
+        HandUses.GunHold, HandUses.GunAim, HandUses.GunReload, HandUses.GunInspect, HandUses.GunSwap, HandUses.GunBash, HandUses.Emote,
     };
 
     static HandsCheck() => new CheckOnRequest(Request, Run);

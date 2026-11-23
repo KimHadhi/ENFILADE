@@ -18,7 +18,7 @@ public sealed class HudStageFrame : MonoBehaviour, IPointerEnterHandler, IPointe
     private const float Room = 4f, Thick = 2f, Corner = 8f, TagHeight = 26f;
 
     private HudSettingsView view;
-    private RectTransform rect, tag;
+    private RectTransform rect, nameTag;
     private CanvasGroup look;
     private GameObject corners;
     private Canvas canvas;
@@ -54,14 +54,14 @@ public sealed class HudStageFrame : MonoBehaviour, IPointerEnterHandler, IPointe
         }
         frame.corners = handles.gameObject;
         // The name over the frame's left end, under it where there is no room above (Place).
-        var tag = frame.tag = W.Rect("Name", shown);
-        tag.anchorMin = tag.anchorMax = new Vector2(0f, 1f);
-        tag.pivot = new Vector2(0f, 0f);
-        HudMenu.Box(tag, Color.white, false, 4f);
-        var label = W.Label(tag, name, 16f, HudMenu.Ink, TextAlignmentOptions.Center);
+        var nameTag = frame.nameTag = W.Rect("Name", shown);
+        nameTag.anchorMin = nameTag.anchorMax = new Vector2(0f, 1f);
+        nameTag.pivot = new Vector2(0f, 0f);
+        HudMenu.Box(nameTag, Color.white, false, 4f);
+        var label = W.Label(nameTag, name, 16f, HudMenu.Ink, TextAlignmentOptions.Center);
         KitStyle.Stretch(label.rectTransform);
         label.fontStyle = FontStyles.Bold;
-        tag.sizeDelta = new Vector2(label.preferredWidth + 18f, TagHeight);
+        nameTag.sizeDelta = new Vector2(label.preferredWidth + 18f, TagHeight);
         return frame;
     }
 
@@ -87,9 +87,9 @@ public sealed class HudStageFrame : MonoBehaviour, IPointerEnterHandler, IPointe
         look.alpha = chosen ? 1f : pointed ? .7f : 0f;
         if (corners.activeSelf != chosen) corners.SetActive(chosen);
         bool under = at.y < HudSettingsView.BarHeight + TagHeight + 8f;
-        tag.anchorMin = tag.anchorMax = new Vector2(0f, under ? 0f : 1f);
-        tag.pivot = new Vector2(0f, under ? 1f : 0f);
-        tag.anchoredPosition = new Vector2(0f, under ? -4f : 4f);
+        nameTag.anchorMin = nameTag.anchorMax = new Vector2(0f, under ? 0f : 1f);
+        nameTag.pivot = new Vector2(0f, under ? 1f : 0f);
+        nameTag.anchoredPosition = new Vector2(0f, under ? -4f : 4f);
     }
 
     public void OnPointerEnter(PointerEventData eventData) => pointed = true;
