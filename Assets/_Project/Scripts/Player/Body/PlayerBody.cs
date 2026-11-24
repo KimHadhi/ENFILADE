@@ -439,6 +439,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         GameSettings.Changed -= OnSettingsChanged;
         UnhookGaitRecord();
+        UnhookPopRecord();
         UnbindHops();
         // The graph is the Animator's; it goes with the body.
         graph = default;
@@ -617,6 +618,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         PlacePaired();
         AimLook(dt);
         RecordGait(dt);
+        HookPopRecord();
     }
 
     /// <summary>
