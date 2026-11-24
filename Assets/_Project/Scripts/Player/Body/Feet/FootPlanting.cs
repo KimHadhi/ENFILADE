@@ -400,10 +400,16 @@ internal sealed class FootPlanting
     // up off its place, round to where the clip has it now and down, then keeps that place. One foot steps at a time
     // (<paramref name="other"/>), unless this one can no longer reach where it stands. Until 0.9.279 a foot let go and
     // slid to its new place on the ground, which is why the turns on the spot were clips (0.9.261-0.9.278).
+    // Setting off, a foot that stood keeps its place until its clip lifts it, or its leg can no longer reach it: the walk's
+    // first step leaves from where the foot stood, the other keeps its place until its own lift, and each lets go in the air.
+    // Until 0.9.396 both let go the moment the body moved (Body.footHoldSpeed) and slid to the clip's places on the ground
+    // over Body.footHoldRelease, and the legs flicked at every start (the user, 2026-11-24: "걷기 시작할 때 다리가 튕겨나").
     private Vector3 Stand(Leg leg, Leg other, int side, float lift, float over, bool onFeet, in Hold hold, float dt)
     {
         Vector3 clip = leg.Foot.position - hold.Carried + leg.Shift;
-        bool keep = onFeet && hold.Stands && over < DownHeight && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
+        bool settingOff = !hold.Stands && leg.Kept;
+        bool keep = onFeet && (hold.Stands || settingOff) && over < (settingOff ? DownHeight + LiftsFrom : DownHeight)
+            && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
         leg.StepLift = 0f;
         // A step the turn on the spot leads (TurnPlanner): up off its place and round to where the clip has it under the
         // hips' new heading, as far as the turn's step has gone; down there once the step is over.
@@ -455,6 +461,11 @@ internal sealed class FootPlanting
             }
         }
         if (!keep) leg.Kept = false;
+        // Setting off it lets go once its leg can't reach it; it never steps (a step is the standing body's).
+        else if (settingOff)
+        {
+            if (OutOfReach(leg, lift, leg.Place, hold.MaxDrop)) leg.Kept = false;
+        }
         else if (leg.Kept)
         {
             // While a turn leads the steps the standing foot pivots where it stands, however far the hips turn over it, and

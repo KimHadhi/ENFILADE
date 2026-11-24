@@ -51,11 +51,11 @@ public sealed class ClipMotion
     // began in (its own metres: x right, z ahead).
     private readonly float[] turned, facing, wayX, wayZ;
     // How far it has gone at the same moments as a body carried over the ground by it feels it (its own metres): its pace
-    // smoothed over GlideOver either side, within each stretch between its markers (Down, Rises, LegsUnder, Up), each stretch
-    // still going as far as the clip does there, so a move that goes by it goes the clip's way and passes each marker where the
-    // clip does. A clip's own root lurches through a tumble (RollToRun_F: 2.7 to 7.7 m/s within a tenth of a second), and the
-    // capsule that carries the camera on the eyes went by it frame by frame until 0.9.394 (the experts' speed contract,
-    // 2026-11-24; the user: "다이브롤 이후 … 부자연스럽고 튀는데").
+    // smoothed over GlideOver either side across the whole clip, going as far as the clip does. A clip's own root lurches
+    // through a tumble (RollToRun_F: 2.7 to 7.7 m/s within a tenth of a second), and the capsule that carries the camera on the
+    // eyes went by it frame by frame until 0.9.394 (the experts' speed contract, 2026-11-24; the user: "다이브롤 이후 …
+    // 부자연스럽고 튀는데"). 0.9.394 smoothed each stretch between the clip's markers apart, and the pace stepped where they met:
+    // 6.3 to 2.7 m/s in three frames as a roll's body came down (걸음 기록 of 2026-11-24 19:2x).
     private readonly float[] glided;
     private const float GlideOver = .1f;
 
@@ -108,49 +108,33 @@ public sealed class ClipMotion
         LegsUnder = RiseAt(LegsShare);
         OnFeet = RiseAt(FeetShare);
         Up = RiseAt(UpShare);
-        glided = Glide(gone, length, new[] { Down, Rises, LegsUnder, Up });
+        glided = Glide(gone, length);
     }
 
-    // The distance curve of the pace smoothed with a Gaussian of GlideOver, stretch by stretch between these moments, each
-    // stretch scaled back to the distance the clip goes in it.
-    private static float[] Glide(float[] gone, float length, float[] marks)
+    // The distance curve of the pace smoothed with a Gaussian of GlideOver, scaled back to the distance the clip goes.
+    private static float[] Glide(float[] gone, float length)
     {
         int last = gone.Length - 1;
         var glided = new float[last + 1];
         if (last < 1 || length <= 0f) return glided;
-        float step = length / last;
+        float step = length / last, sum = 0f, smoothSum = 0f;
         var pace = new float[last];
-        for (int i = 0; i < last; i++) pace[i] = gone[i + 1] - gone[i];
-        var cuts = new List<int> { 0, last };
-        foreach (float mark in marks)
-        {
-            int at = Mathf.Clamp(Mathf.RoundToInt(mark / step), 0, last);
-            if (!cuts.Contains(at)) cuts.Add(at);
-        }
-        cuts.Sort();
+        for (int i = 0; i < last; i++) sum += pace[i] = gone[i + 1] - gone[i];
         var smoothed = new float[last];
         int reach = Mathf.Max(1, Mathf.CeilToInt(3f * GlideOver / step));
-        for (int c = 0; c + 1 < cuts.Count; c++)
+        for (int i = 0; i < last; i++)
         {
-            int from = cuts[c], to = cuts[c + 1];
-            float sum = 0f, smoothSum = 0f;
-            for (int i = from; i < to; i++) sum += pace[i];
-            for (int i = from; i < to; i++)
+            float weights = 0f, value = 0f;
+            for (int j = Mathf.Max(0, i - reach); j <= Mathf.Min(last - 1, i + reach); j++)
             {
-                float weights = 0f, value = 0f;
-                for (int j = Mathf.Max(from, i - reach); j <= Mathf.Min(to - 1, i + reach); j++)
-                {
-                    float x = (j - i) * step / GlideOver, weight = Mathf.Exp(-.5f * x * x);
-                    weights += weight;
-                    value += weight * pace[j];
-                }
-                smoothed[i] = weights > 0f ? value / weights : pace[i];
-                smoothSum += smoothed[i];
+                float x = (j - i) * step / GlideOver, weight = Mathf.Exp(-.5f * x * x);
+                weights += weight;
+                value += weight * pace[j];
             }
-            float scale = smoothSum > 1e-6f ? sum / smoothSum : 1f;
-            for (int i = from; i < to; i++) smoothed[i] *= scale;
+            smoothSum += smoothed[i] = value / weights;
         }
-        for (int i = 0; i < last; i++) glided[i + 1] = glided[i] + smoothed[i];
+        float scale = smoothSum > 1e-6f ? sum / smoothSum : 1f;
+        for (int i = 0; i < last; i++) glided[i + 1] = glided[i] + smoothed[i] * scale;
         return glided;
     }
 
