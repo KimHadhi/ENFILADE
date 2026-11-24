@@ -113,7 +113,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
     /// <summary>On the ground, what the legs are asked to carry (world, m/s): the keys' way at the gait's speed, eased
     /// (LocomotionState). The body goes as the legs carry it (LegsCarry), not at this.</summary>
-    internal Vector3 Stride { get; set; }
+    internal Vector3 Stride
+    {
+        get => stride;
+        set { stride = value; StrideFrame = Time.frameCount; }
+    }
+    private Vector3 stride;
+    /// <summary>The frame the stride was last asked: in any other (a surge, a hold, the air) something else moves the body, and
+    /// the legs follow what it does (PlayerBody.Locomotion).</summary>
+    internal int StrideFrame { get; private set; } = -10;
     public float VerticalVelocity { get => Motor.VerticalVelocity; set => Motor.VerticalVelocity = value; }
     public Vector3 SlideDirection { get => Actions.SlideDirection; set => Actions.SlideDirection = value; }
     /// <summary>The way the sliding body faces, held for the slide whatever the view does (MovementActions.SlideFacesBack).</summary>

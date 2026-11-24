@@ -640,6 +640,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         legYawLeft = legYaw;
         rootYawKnown = true;
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        HoldHipsPlace();
         KeepPlaceAsTheViewTurns();
         PlaceBody();
         PlacePaired();
@@ -770,6 +771,16 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // wherever the clip has the head; walls keep it out (BodyCamera).
     private Vector3 hipsPlace;
     private int hipsPlaceFrame = -10;
+
+    // Walking, the body's place off the capsule is laid under the hips as they face this frame, before it is placed (PlaceBody):
+    // eased after the animation pass (SitOnHips) and placed the next frame in the view's frame it had then, it swung round the
+    // capsule by each frame's turn of the view (the review of 2026-11-25).
+    private void HoldHipsPlace()
+    {
+        if (hipsPlaceFrame != Time.frameCount - 1) return;
+        Vector3 flat = Quaternion.Euler(0f, yaw, 0f) * hipsPlace;
+        headAlignment = new Vector3(flat.x, headAlignment.y, flat.z);
+    }
 
     private void SitOnHips(float dt)
     {

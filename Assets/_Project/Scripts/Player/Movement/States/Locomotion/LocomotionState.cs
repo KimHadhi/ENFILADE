@@ -137,7 +137,10 @@ public sealed class LocomotionState : MovementBaseState
             // stride, the legs followed it at a pace fitted to it, and where the two parted (a turn, a flick of the view, a
             // start) the feet were held, dragged and caught up foot by foot (the user, 2026-11-25: "아무리 해결해도 문제가
             // 발생하는 건 근본이 잘못돼서 그런 거 아니에요").
-            ctx.HorizontalVelocity = ctx.LegsCarry(out Vector3 carried) ? carried : ctx.Stride;
+            // What went into a wall stays asked: the wall stops it all the same, and what reads the run sees it (a vault's run-up,
+            // a climb's speed: ParkourTraversal). Cut from the velocity too in 0.9.415, a jog into a rail read as standing and
+            // jumped the slow clamber (the review of 2026-11-25).
+            ctx.HorizontalVelocity = (ctx.LegsCarry(out Vector3 carried) ? carried : ctx.Stride) + (stride - ctx.Stride);
         }
         else if (!ctx.Abilities.Landing.IsKnockedBack) // A blow's throw flies on untouched.
         {

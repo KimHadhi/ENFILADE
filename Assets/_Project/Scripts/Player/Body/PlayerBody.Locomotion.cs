@@ -109,9 +109,13 @@ public sealed partial class PlayerBody
     // (m, in the body's own frame: x right, y ahead).
     private float mixWeight, mixStride;
     private Vector2 mixLength;
-    // How the player's own legs carry the body over the ground (world, m/s), and the frame they last did (LegsCarry).
+    // How the player's own legs carry the body over the ground (world, m/s), and the frame they last did (LegsCarry); whether
+    // the movement asked them this frame (PlayerMovement.Stride), and the body's facing they were laid under (degrees off the
+    // view).
     private Vector3 legsVelocity;
     private int legsFrame = -10;
+    private bool legsAsked;
+    private float layYaw;
     // The frame the cycles last played on (a landing or a jump plays none), and the numbers behind their pace for the /gait
     // readout.
     private int strideFrame = -1;
@@ -260,12 +264,14 @@ public sealed partial class PlayerBody
     private void Locomotion(bool crouched, float dt)
     {
         // The player's own legs go as the player asks (PlayerMovement.Stride: the keys' way at the gait's speed, eased), and the
-        // body goes as they carry it (LegsCarry). Another PC's go as its body is seen to go, followed in the world so turning the
-        // view doesn't drag them behind it.
-        if (player.IsNetworkDriven)
-            stride = FollowStride(stride, Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up),
-                strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
-        else stride = Vector3.ProjectOnPlane(player.Stride, Vector3.up);
+        // body goes as they carry it (LegsCarry). Where something else moves the body this frame (a surge, a hold) and another
+        // PC's always, they go as the body is seen to go, followed in the world so turning the view doesn't drag them behind it.
+        // 0.9.415 played the player's own on the last stride asked whatever moved the body, and a held body sprinted on the
+        // spot (the review of 2026-11-25).
+        legsAsked = !player.IsNetworkDriven && player.StrideFrame == Time.frameCount;
+        if (legsAsked) stride = Vector3.ProjectOnPlane(player.Stride, Vector3.up);
+        else stride = FollowStride(stride, Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up),
+            strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
@@ -294,8 +300,21 @@ public sealed partial class PlayerBody
         // The gun's run goes ahead only: at a slant ahead the hips turn to the way it runs and the run plays, the spine turning
         // the chest back to the view (SpineLook). The user, 2026-11-22: "WA, WD까진 허용할 수 있도록 한다. 자연스럽게".
         float turn = gunRuns ? Mathf.Clamp(heading, -GunRunSlant, GunRunSlant) : 0f;
-        // The way the legs go against the way the body faces, which follows the view a moment behind (FacingLagMost).
-        float legs = Mathf.DeltaAngle(0f, heading - yaw), moving = 0f;
+        // Running ahead the hips are laid first (below), so the legs are laid under where the body faces this frame and it goes
+        // the way they carry it (Pace): under last frame's, a sprint's arc turned 2.5 degrees a frame beneath them and their feet
+        // slid aside (the review of 2026-11-25). Otherwise the facing follows the view a moment behind (FacingLagMost).
+        bool ahead = !crouched && !legsPlanted && player.RunsAhead && !still;
+        layYaw = yaw;
+        if (ahead)
+        {
+            // With the run once they face its way, as it curves; coming round to it at HipsCatch times its arc's rate (a strafe
+            // pressed on ahead), so they never swing round in a frame. Followed at the view's pace instead, they trailed a
+            // sprint's arc by a fifth of a turn and the legs mixed in the strafe beside it.
+            float view = transform.eulerAngles.y;
+            layYaw = Mathf.DeltaAngle(view, Mathf.MoveTowardsAngle(legYaw, view + heading, ArcRate * HipsCatch * dt));
+        }
+        // The way the legs go against the way the body faces.
+        float legs = Mathf.DeltaAngle(0f, heading - layYaw), moving = 0f;
         var gaitNow = player.Actions != null ? player.Actions.Gait : null;
         // Down into a crouch or up out of it on the move, the two stances share the legs as far as the body is down
         // (PlayerBody.Posture).
@@ -309,7 +328,7 @@ public sealed partial class PlayerBody
             // their feet carry on this body: our bodies' feet carry 20-35% less than the clips' own travel, so each gait played
             // half of the next one's clip (the jog half the run, the run a quarter of the sprint), and the run and the sprint
             // looked alike (the user, 2026-11-21: "달리기랑 전력 질주랑 걍 모션 똑같은 거 같은데").
-            gaitPlace = gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, heading)) * (1f - aim);
+            gaitPlace = gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, legs)) * (1f - aim);
             moving += MixSets(plainSet, legs, speed, scale, 1f - postureDown);
             Bank();
         }
@@ -334,19 +353,12 @@ public sealed partial class PlayerBody
         // sideways and backwards (StrafeSprint_R135, _B) under a body that swung up to 65 degrees a frame to keep within 90 of
         // it (the user, 2026-11-24: "모션이 전반적으로 … 우스꽝스러워졌는데"), and 0.9.411 faced a body coasting to a stop its
         // own way only when it was within 30 degrees of it.
-        if (!crouched && !legsPlanted)
+        if (ahead)
         {
-            if (player.RunsAhead && !still)
-            {
-                // With the run once they face its way, as it curves; coming round to it at HipsCatch times its arc's rate (a
-                // strafe pressed on ahead), so they never swing round in a frame. Followed at the view's pace instead, they
-                // trailed a sprint's arc by a fifth of a turn and the legs mixed in the strafe beside it.
-                float view = transform.eulerAngles.y;
-                targetYaw = Mathf.DeltaAngle(view, Mathf.MoveTowardsAngle(legYaw, view + heading, ArcRate * HipsCatch * dt));
-                legsPlanted = rootFollowed = true;
-            }
-            else targetYaw = turn;
+            targetYaw = layYaw;
+            legsPlanted = rootFollowed = true;
         }
+        else if (!crouched && !legsPlanted) targetYaw = turn;
         if (!still) walkedFrame = Time.frameCount;
         Pace(speed, legs, moving, dt);
     }
@@ -713,12 +725,14 @@ public sealed partial class PlayerBody
     // 25 cm in a frame (the user, 2026-11-24: "보폭 늘리기라는 시스템 때문에 지금 이랬다고? 그럼 없애면 되잖아").
     private void Pace(float speed, float legs, float moving, float dt)
     {
-        bool carries = !player.IsNetworkDriven;
-        if (!carries) FollowStep(dt);
+        bool carries = legsAsked;
+        if (player.IsNetworkDriven) FollowStep(dt);
         gaitSpeed = speed;
         runCalmShare = moving;
         legsVelocity = Vector3.zero;
-        if (carries) legsFrame = Time.frameCount;
+        // A body with no cycles the way it is asked (none measured) carries nothing: it goes as asked (LocomotionState). 0.9.415
+        // said it carried nothing at any speed, and such a body stood (the review of 2026-11-25).
+        if (carries && (mixWeight > 0f || speed < StillEnter)) legsFrame = Time.frameCount;
         if (mixWeight <= 0f)
         {
             gaitNatural = 0f;
@@ -734,7 +748,9 @@ public sealed partial class PlayerBody
         float rate = 1f, fastest = Mathf.Max(gaitRate.x, gaitRate.y);
         if (along > .05f && speed > .05f) rate = Mathf.Clamp(speed / along, carries ? 1f : Mathf.Min(gaitRate.x, gaitRate.y), fastest);
         // Into the world as the legs were laid out (the heading against the body's facing, Locomotion).
-        if (carries) legsVelocity = Quaternion.Euler(0f, transform.eulerAngles.y + yaw, 0f) * new Vector3(own.x, 0f, own.y) * (mixWeight * rate);
+        // The lean and arc cycles banked in after (Bank) step with their straight one, a run curving under hips that turn with
+        // it, at its pace within a fiftieth; their own measured ways are the chord of their turn, not where they carry the hips.
+        if (carries) legsVelocity = Quaternion.Euler(0f, transform.eulerAngles.y + layYaw, 0f) * new Vector3(own.x, 0f, own.y) * (mixWeight * rate);
         phase += dt * rate / strideTime;
         strideCycle = strideTime / Mathf.Max(.05f, rate);
         if (phase >= 1f)

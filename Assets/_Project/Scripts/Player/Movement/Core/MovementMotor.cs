@@ -228,21 +228,38 @@ public sealed class MovementMotor
     /// </summary>
     internal Vector3 AlongWalls(Vector3 travel, float dt)
     {
+        // Along the wall met, then along the next one that way leads into: in a corner the stride went from one wall's way
+        // to the other's every frame (the review of 2026-11-25). Along the second back into the first is no way at all.
+        Vector3 first = Vector3.zero;
+        for (int pass = 0; pass < 2; pass++)
+        {
+            if (!WallAhead(travel, dt, out Vector3 wall)) return travel;
+            float into = Vector3.Dot(travel, wall);
+            if (into >= 0f) return travel;
+            travel -= wall * into;
+            if (pass == 1 && Vector3.Dot(travel, first) < -1e-4f) return Vector3.zero;
+            first = wall;
+        }
+        return travel;
+    }
+
+    // The wall the capsule meets going this way this frame, above a step and not a prop: its face, level (unit).
+    private bool WallAhead(Vector3 travel, float dt, out Vector3 wall)
+    {
+        wall = Vector3.zero;
         float speed = travel.magnitude;
-        if (speed < 1e-3f || dt <= 0f || !controller.enabled) return travel;
-        Vector3 way = travel / speed;
+        if (speed < 1e-3f || dt <= 0f || !controller.enabled) return false;
         float half = controller.height * .5f - controller.radius;
         Vector3 bottom = ctx.transform.TransformPoint(controller.center - Vector3.up * half);
         Vector3 top = ctx.transform.TransformPoint(controller.center + Vector3.up * half);
         bottom.y = Mathf.Min(bottom.y + ctx.Posture.defaultStepOffset * Mathf.Abs(ctx.transform.lossyScale.y), top.y);
-        if (!Physics.CapsuleCast(bottom, top, WorldControllerRadius * .95f, way, out RaycastHit hit,
+        if (!Physics.CapsuleCast(bottom, top, WorldControllerRadius * .95f, travel / speed, out RaycastHit hit,
                 WorldSkinWidth + speed * dt + WallLook, ctx.groundLayers, QueryTriggerInteraction.Ignore)
-            || hit.normal.y >= WallSteep || PhysicsProp.Of(hit.collider) != null) return travel;
-        Vector3 wall = Vector3.ProjectOnPlane(hit.normal, Vector3.up);
-        if (wall.sqrMagnitude < 1e-6f) return travel;
+            || hit.normal.y >= WallSteep || PhysicsProp.Of(hit.collider) != null) return false;
+        wall = Vector3.ProjectOnPlane(hit.normal, Vector3.up);
+        if (wall.sqrMagnitude < 1e-6f) return false;
         wall.Normalize();
-        float into = Vector3.Dot(travel, wall);
-        return into < 0f ? travel - wall * into : travel;
+        return true;
     }
 
     // A face this steep or steeper is a wall (the normal's height), looked for this far past the coming move (m).
