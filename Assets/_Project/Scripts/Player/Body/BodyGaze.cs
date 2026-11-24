@@ -26,6 +26,10 @@ internal sealed class BodyGaze
     private Quaternion headToGaze = Quaternion.identity, chestToGaze = Quaternion.identity;
     private Quaternion rotation = Quaternion.identity, actionTurn = Quaternion.identity;
     private float actionWeight, faceWeight;
+    // The carried head's turn over the body's right (degrees) and its turn on the last frame (Update).
+    private float overTurn;
+    private Quaternion overWas = Quaternion.identity;
+    private bool overKnown;
     private float strength = .65f, follow = 1f, time = .1f, cone = 20f;
     private Vector3 limits = new Vector3(18f, 12f, 10f);
     // The most the neck bends the head from the chest to follow the view: up (x), down (y), degrees.
@@ -109,7 +113,18 @@ internal sealed class BodyGaze
         // and a roll moved the view by 12 degrees while the head went over; until 0.9.398 it was read from whichever of the
         // head's ahead and up lay more in that plane, two readings that differ once the head turns or tilts and swapped
         // wherever the two came level, as an upright head's do.
-        float over = Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(authored.x, authored.w) * Mathf.Rad2Deg);
+        // While a clip carries the view it is summed from each frame's step, so a roll whose head goes over another way (to the
+        // side, on a diagonal) can't send it round past 180 in a frame where the whole turn's reading is ill-defined (the audit
+        // of 2026-11-24); with nothing carrying it is the whole turn's, an upright head's near nothing.
+        if (carried > 0f && overKnown)
+        {
+            Quaternion step = authored * Quaternion.Inverse(overWas);
+            overTurn += Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(step.x, step.w) * Mathf.Rad2Deg);
+        }
+        else overTurn = Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(authored.x, authored.w) * Mathf.Rad2Deg);
+        overWas = authored;
+        overKnown = true;
+        float over = overTurn;
         float sideways = Mathf.Clamp01(led + carried);
         // About the body's own right, not the view's: a dive roll out of a slide goes the slide's way with the view looking aside.
         Quaternion target = Quaternion.AngleAxis(over * carried, Quaternion.Inverse(input) * (model.rotation * Vector3.right))

@@ -439,6 +439,15 @@ public sealed class PlayerLook : MonoBehaviour
             low = Mathf.Max(low, -limits.x);
             high = Mathf.Min(high, limits.y);
         }
+        // A limit only stops the view going further past it: a view already past one a state brings in (lying back out of a
+        // slide, a dive landing on the back, a slide begun looking down) comes within it at LimitReturn degrees a second rather
+        // than in a frame. Until 0.9.400 it was set at the limit at once (the audit of 2026-11-24).
+        float back = LimitReturn * Time.deltaTime;
+        if (pitch < low) low = Mathf.Min(low, pitch + back);
+        if (pitch > high) high = Mathf.Max(high, pitch - back);
         return Mathf.Clamp(candidate, low, high);
     }
+
+    // How fast a view past a pitch limit is brought within it (degrees a second).
+    private const float LimitReturn = 240f;
 }

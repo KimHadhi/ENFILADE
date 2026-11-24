@@ -410,7 +410,10 @@ internal sealed class FootPlanting
         bool settingOff = !hold.Stands && leg.Kept;
         bool keep = onFeet && (hold.Stands || settingOff) && over < (settingOff ? DownHeight + LiftsFrom : DownHeight)
             && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
-        leg.StepLift = 0f;
+        // A step's lift eases off as its place does when the step is cut short (the body set off or left the ground): until
+        // 0.9.400 it went to nothing in a frame and the stepping foot dropped up to 8 cm (the audit of 2026-11-24). A step
+        // under way sets it again below.
+        leg.StepLift *= hold.Release > 0f ? Mathf.Exp(-dt / hold.Release) : 0f;
         // A step the turn on the spot leads (TurnPlanner): up off its place and round to where the clip has it under the
         // hips' new heading, as far as the turn's step has gone; down there once the step is over.
         if (keep && hold.Lead == side && hold.LeadShare < 1f)

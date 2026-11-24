@@ -601,17 +601,43 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         ChoosePose(dt);
         Blend(dt);
         BlendLayers(dt);
-        if (legsPlanted) { yaw = targetYaw; yawVelocity = 0f; }
+        float view = transform.eulerAngles.y;
+        // Any jump of the body's root, as a state faces a way of its own at once (a slide, a vault, a roll, lying down) or sets
+        // the facing outside the follow below (a run's turn handing back), has the pose the bones carry turned back as much and
+        // eased round (BodyInertia), so the body comes round over the blend and not in a frame. Until 0.9.400 only the run's turn
+        // did, by hand (out of a strafe into a slide the whole body turned 45 to 90 degrees in a frame: the audit of 2026-11-24).
+        float jump = !rootYawKnown ? 0f : legsPlanted ? Mathf.DeltaAngle(legYawLeft, view + targetYaw) : Mathf.DeltaAngle(legYawLeft, legYaw);
+        if (Mathf.Abs(jump) > RootJumpLeast)
+        {
+            bodyInertia.Begin(blendTime);
+            bodyInertia.Reroot(jump);
+        }
+        if (legsPlanted)
+        {
+            yaw = targetYaw;
+            yawVelocity = 0f;
+            legYaw = view + yaw;
+        }
         else
         {
             // The facing follows in the world, not as a turn off the view: a view flicked round has the body come round after it,
             // FacingLagMost at most behind. Until 0.9.386 the body turned with the view in the same frame, and its legs ran
             // backwards under it until the run had come round (걸음 기록 of 2026-11-24; the experts' review).
-            float view = transform.eulerAngles.y;
+            // The limit is on the lag from where the body is to face, and only stops it growing: a state that asks for a facing
+            // far round (out of a hang, onto a ladder) has the body come round to it rather than snap to the limit, and a lag
+            // near the back can't be clamped onto the other side. Until 0.9.400 the lag off the view was clamped to targetYaw's
+            // window unwrapped (the audit of 2026-11-24).
             float facing = Mathf.SmoothDampAngle(legYaw, view + targetYaw, ref yawVelocity, .12f);
-            yaw = Mathf.Clamp(Mathf.DeltaAngle(view, facing), targetYaw - FacingLagMost, targetYaw + FacingLagMost);
+            if (Mathf.Abs(Mathf.DeltaAngle(targetYawWas, targetYaw)) > .5f)
+                facingLagMost = Mathf.Max(facingLagMost, Mathf.Abs(Mathf.DeltaAngle(view + targetYaw, legYaw)));
+            float lag = Mathf.Clamp(Mathf.DeltaAngle(view + targetYaw, facing), -facingLagMost, facingLagMost);
+            facingLagMost = Mathf.Max(FacingLagMost, Mathf.Abs(lag));
+            yaw = targetYaw + lag;
             legYaw = view + yaw;
         }
+        targetYawWas = targetYaw;
+        legYawLeft = legYaw;
+        rootYawKnown = true;
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
         KeepPlaceAsTheViewTurns();
         PlaceBody();
@@ -1127,13 +1153,25 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         channel.Playable.SetSpeed(1);
     }
 
-    private static void Restart(Channel channel)
+    // A clip begun again from its start while it shows (a dodge chained the same way, a second step-up on the first's clip, a
+    // touchdown again) jumps the pose as much as a switch of clips does: the bones ease from where they were (BodyInertia).
+    // Until 0.9.400 only a change of the mixer's weights began that, and a clip begun again at full weight snapped from its end
+    // to its start (the audit of 2026-11-24).
+    private void Restart(Channel channel)
     {
         if (channel == null || channel.Synced) return;
+        if (channel.Given > RestartShows) bodyInertia.Begin(blendTime);
         channel.Playable.SetSpeed(1);
         channel.Playable.SetTime(0);
         channel.Playable.SetDone(false);
     }
+
+    // A clip showing more than this share is eased from when it is begun again (Restart).
+    private const float RestartShows = .05f;
+    // The body's facing set further than this in a frame outside its follow (degrees) jumped (Update); where the follow left it.
+    private const float RootJumpLeast = 5f;
+    private float legYawLeft, targetYawWas, facingLagMost = FacingLagMost;
+    private bool rootYawKnown;
 
     // A one-shot clip held at the share of its length the movement has reached (a vault's progress), so the body
     // takes exactly as long as the move.

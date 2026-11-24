@@ -271,8 +271,15 @@ public sealed partial class PlayerBody
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
-        float heading = speed > StillTravel ? Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg : 0f;
-        keepsPlace = speed < StillTravel;
+        // Still or moving is one flag, with a gap between its two speeds, and the heading is the travel's whenever it has one,
+        // kept as the body slows to a stop: the moving share fades it. Until 0.9.400 one speed (StillTravel) switched the
+        // heading to straight ahead, the place keeping, the turn on the spot and the cycles' shares all at once, so a backward or
+        // sideways start or stop swapped the legs to the forward cycle in a frame, and a speed hovering there flipped all five
+        // every frame (the audit of 2026-11-24).
+        still = still ? speed < StillLeave : speed < StillEnter;
+        if (speed > HeadingLeast) travelHeading = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
+        float heading = travelHeading;
+        keepsPlace = still;
         float scale = GaitScale;
         mixWeight = mixStride = mixSpeed = 0f;
         mixVelocity = Vector2.zero;
@@ -319,13 +326,16 @@ public sealed partial class PlayerBody
         }
         postureClip = null;
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
-        TurnOnTheSpot(speed < StillTravel, dt);
+        TurnOnTheSpot(still, dt);
         if (!crouched && !legsPlanted) targetYaw = turn;
         Pace(speed, legs, moving, dt);
     }
 
-    // Below this the travel has no heading: the body stands (m/s).
-    private const float StillTravel = .3f;
+    // Slower than StillEnter the body stands, faster than StillLeave it moves (m/s); its travel has a heading faster than
+    // HeadingLeast. StillTravel is a curve's least speed (Leans).
+    private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
+    private bool still = true;
+    private float travelHeading;
 
     // The stride follows the travel's way and its speed each on their own, the way turning round at the same speed. Followed
     // as one, a way that swung round fast went through short in between: running on at 4-5 m/s through a sharp turn the legs
@@ -366,7 +376,7 @@ public sealed partial class PlayerBody
         float left = part, moving = 0f;
         for (int i = 0; i < asking.Count && left > 1e-4f; i++)
         {
-            float share = left * Mathf.Clamp01(wanting[i]) * (speed < StillTravel ? 1f : Carries(asking[i], heading, gaitPlace));
+            float share = left * Mathf.Clamp01(wanting[i]) * (still ? 1f : Carries(asking[i], heading, gaitPlace));
             if (share <= 0f) continue;
             moving += Mix(asking[i], stance, share, heading, speed, scale);
             left -= share;
