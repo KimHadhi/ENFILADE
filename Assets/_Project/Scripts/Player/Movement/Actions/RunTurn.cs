@@ -3,7 +3,8 @@ using State = PlayerMovement.MovementState;
 
 /// <summary>
 /// A run's turn back: running at least Ability.runTurnSpeed with the keys ahead, the way the keys want at least
-/// Ability.runTurnAngle from the way the body runs (the view flicked round), the body plants, brakes and pushes off the new way
+/// Ability.runTurnAngle from the way the body (its hips) faces (the view flicked round on the run, the body left facing the old
+/// way), the body plants, brakes and pushes off the new way
 /// on BIPER Female Runner's own turn (Jog_ and Sprint_Turn{L,R}_{L,R}foot, Ability.runTurns: the sprint's from half way between
 /// the jog and the sprint, turning the way the body is behind the view), come into where its stride stands as the run's does:
 /// of the way round's two clips (the pivot on either foot) and their moments before the root turns with the chest twisted no
@@ -45,8 +46,12 @@ using State = PlayerMovement.MovementState;
 /// Until 0.9.386 a flick of the view on the run swung the run round at full speed in a loop: the body turned with the view in
 /// the frame and its legs ran the back and side sprints, then the walk's clips at 5 m/s, then banked into the arc (the user:
 /// "달리다가 바로 반대편으로 돌면 캐릭터 모션이 굉장히 우스꽝스러워지는데 turn 애니메이션 넣어야 하나?").
-/// Only a run that went ahead of the view a moment before turns back so (RanAheadWithin): running backwards and pressing ahead
-/// is a strafe's reversal, the body already facing the way the keys want.
+/// The body's facing tells it, not the way it went: running backwards and pressing ahead the hips already face the keys' way,
+/// and a body that faces the view has nothing to turn. Until 0.9.427 it was the way the body went against the keys, with a
+/// run ahead of the view no more than 0.3 s before (RanAheadWithin): keys rolled round started it with the view still, the
+/// clip's 180 degrees were bent back to nothing to end facing the view, and its legs pivoted on the spot, the planted foot
+/// sweeping the ground at 3 to 13 m/s for up to 0.6 s (10 of 12 turns in the feet record of 2026-11-25 06:46; the user:
+/// "이게 뭐냐고 시발 날라다니잖아"; the programmer's review).
 /// </summary>
 public sealed class RunTurn
 {
@@ -68,12 +73,9 @@ public sealed class RunTurn
     private const float EntryBlend = .15f;
     // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
     private const float WayOver = .08f;
-    // A turn back is of a run that went ahead of the view this short a while ago (s): the view flicked round from it. Running
-    // backwards and pressing ahead is no turn: the body already faces the way the keys want.
-    private const float RanAheadWithin = .3f;
 
     private readonly PlayerMovement ctx;
-    private float startedAt, outAt, warp, frameYaw, ranAheadAt = float.NegativeInfinity;
+    private float startedAt, outAt, warp, frameYaw;
     /// <summary>Turns begun on this PC, its own or mirrored: a new one, even on the same clip (PlayerBody.RunTurnPose).</summary>
     public int Serial { get; private set; }
     // How much faster and which other way than the clip at its entry the body came in (world, m/s), fading over EntryBlend.
@@ -127,20 +129,18 @@ public sealed class RunTurn
 
     /// <summary>
     /// Running on the ground with the keys ahead (<paramref name="input"/>, their way <paramref name="wanted"/> in the world)
-    /// turned far enough from the way the body runs: the turn begins. <paramref name="bodyYaw"/>: the way the body faces (world
-    /// yaw), which tells the side the view went round.
+    /// turned far enough from the way the body faces (<paramref name="bodyYaw"/>, world yaw): the turn begins, round the side
+    /// the view went.
     /// </summary>
     internal bool TryStart(Vector2 input, Vector3 wanted, float bodyYaw)
     {
         var settings = ctx.AbilitySettings;
         Vector3 now = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
         float speed = now.magnitude;
-        if (speed >= settings.runTurnSpeed && Vector3.Angle(now, Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up)) <= AheadWithin)
-            ranAheadAt = Time.time;
         if (active || ctx.CurrentState != State.Standing || !ctx.IsGrounded || input.y <= .1f
             || Vector2.Angle(input, Vector2.up) > AheadWithin || wanted.sqrMagnitude < .01f) return false;
-        if (speed < settings.runTurnSpeed || Vector3.Angle(now, wanted) < settings.runTurnAngle
-            || Time.time - ranAheadAt > RanAheadWithin) return false;
+        if (speed < settings.runTurnSpeed
+            || Vector3.Angle(Quaternion.Euler(0f, bodyYaw, 0f) * Vector3.forward, wanted) < settings.runTurnAngle) return false;
         // Round the way the body is behind the view (the way the view went round), else the short way.
         float view = ctx.transform.eulerAngles.y, behind = Mathf.DeltaAngle(view, bodyYaw);
         bool left = Mathf.Abs(behind) > 1f ? behind > 0f : Vector3.SignedAngle(now, wanted, Vector3.up) < 0f;
