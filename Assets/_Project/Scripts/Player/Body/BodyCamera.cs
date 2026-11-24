@@ -37,6 +37,10 @@ internal sealed class BodyCamera
     // (bodySway). In the capsule's frame, so a turn or the capsule's own move never lags.
     private Vector3 easedEyes;
     private bool eased;
+    // The capsule's height the eased path is kept from, followed this quickly on the ground (s): the capsule pops up and down a
+    // stair at a time, and in its own frame the eased path took a part of every pop at once (the experts' review of 2026-11-24).
+    private float anchorHeight;
+    private const float StepFollow = .1f;
 
     /// <summary>The player's camera, or null if it has none.</summary>
     internal Transform View => view;
@@ -160,6 +164,10 @@ internal sealed class BodyCamera
     // path is in the capsule's frame from its anchor, so a crouch still takes the camera down.
     private Vector3 Sway(Vector3 eye, Vector3 anchor, float dt, float swayTime, float calm, float hold)
     {
+        // On the ground from the capsule's height eased over its pops up and down steps; in the air as it goes.
+        anchorHeight = eased && dt > 0f && player != null && player.IsGrounded
+            ? Mathf.Lerp(anchorHeight, anchor.y, 1f - Mathf.Exp(-dt / StepFollow)) : anchor.y;
+        anchor.y = anchorHeight;
         Vector3 offset = owner.InverseTransformVector(eye - anchor);
         hold = Mathf.Clamp01(hold);
         if (!eased || dt <= 0f || swayTime <= 0f) easedEyes = offset;

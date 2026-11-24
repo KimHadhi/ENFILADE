@@ -10,7 +10,17 @@ using UnityEngine;
 ///   length, so the ankle does not twist (GMod's IK Foot only ever bends thigh and calf on their pitch axis).
 /// - Each foot moves by the height of the ground under it, so the clip's own stride and foot lift stay as they are.
 /// - Ground and hip heights are kept in world space, so the capsule popping up or down a step never drags a foot
-///   through it. Higher ground is taken at once; lower ground and the hips settle over the settle time.
+///   through it. Standing, higher ground is taken at once and lower ground settles over the settle time.
+/// - Walking or running (Walk, 0.9.390) a foot that comes down (its clip's sole at its floor) keeps the place and the height
+///   it came down on until it lifts; a foot that lifts swings from the ground it left to the ground where it will come down
+///   (Land: the hips carried on for the time left to its footfall, half a step ahead of them), over what rises between,
+///   instead of following the ground under it frame by frame. The hips stand on what the feet stand on, under the capsule's
+///   floor eased (it pops up and down a stair at a time), and come down as far as they may for a leg that can't reach.
+///   Until then the feet were held only standing still, and the ground under a swinging foot was read every frame and taken
+///   at once where higher: running up stairs each foot jumped a tread's height in a frame about twenty times a second, a
+///   back leg that couldn't reach locked straight with the foot in the air, and the hips and the eyes rode every pop of the
+///   capsule (the experts' review of 2026-11-24; the user: "달리다가 … 발이 텔레포트하거나 디딜 곳을 못 찾거나 … 계단을 뛰어
+///   오를 때").
 /// - No part of the sole comes below the ground: a clip made for other proportions (a deep crouch, toes pointed down on
 ///   a long foot) has the ankle stand that much higher.
 /// - Planted feet tilt to the slope.
@@ -55,6 +65,27 @@ internal sealed class FootPlanting
 
         public static Stride None => default;
         public bool Stretches => Weight > 0f && Mathf.Abs(Scale - 1f) > 1e-3f && Way.sqrMagnitude > .5f;
+    }
+
+    /// <summary>
+    /// The walk's or run's steps this frame (PlayerBody.Pace): how fast and which way the body goes over the ground (world,
+    /// level, m/s), how long a whole stride of both feet takes (s; 0 for none) and where in it the legs are (0 the left foot
+    /// coming down, .5 the right; GaitClips' measure, the same on every PC).
+    /// </summary>
+    internal readonly struct Steps
+    {
+        public readonly Vector3 Travel;
+        public readonly float Cycle, Phase;
+
+        public Steps(Vector3 travel, float cycle, float phase)
+        {
+            Travel = Vector3.ProjectOnPlane(travel, Vector3.up);
+            Cycle = Mathf.Max(0f, cycle);
+            Phase = Mathf.Repeat(phase, 1f);
+        }
+
+        /// <summary>How long until this foot next comes down (s).</summary>
+        public float ToFall(bool left) => Cycle > 0f ? Mathf.Repeat((left ? 0f : .5f) - Phase, 1f) * Cycle : PlainSwing;
     }
 
     /// <summary>
@@ -119,6 +150,12 @@ internal sealed class FootPlanting
         public Vector3 HeelSole, TipSole;
         /// <summary>Smoothed world height of the ground under the foot (m).</summary>
         public float Ground;
+        /// <summary>Walking or running (Walk): the foot is down and keeps the ground it came down on; else it swings from
+        /// LiftGround to LandGround (easing to LandTarget, refreshed while it swings) over SwingTime, Clearance higher at the
+        /// middle. Supported: there is ground where it stands or will come down.</summary>
+        public bool Down, Supported;
+        public float LiftGround, LandGround, LandTarget, Clearance, SwingTime, SwingClock;
+        public int LandRefresh;
         /// <summary>The collider under the foot, or null when it has no support.</summary>
         public Collider Surface;
         public float SupportWeight;
@@ -138,8 +175,27 @@ internal sealed class FootPlanting
     private readonly Transform body, owner;
     // How far over the body's root its drawn soles are (m): where the floor of the clips and of the ankles' heights is.
     private readonly float sole;
-    private float hipFloor, lastFloor, strideDrop;
+    private float hipFloor, lastFloor, strideDrop, smoothFloor;
     private bool settled;
+
+    /// <summary>For the feet record (PlayerBody.RecordFeet): where the hips' floor stands (world height), the capsule's floor
+    /// eased, and how far the stride's reach has the hips down (m).</summary>
+    public float HipFloor => hipFloor;
+    public float SmoothFloor => smoothFloor;
+    public float StrideDrop => strideDrop;
+
+    // The capsule's floor is followed this quickly for the hips (s): it pops up and down a stair at a time.
+    private const float FloorFollow = .1f;
+    // A foot that is down lifts once its clip's sole is this much higher than it came down at (m), so a sole that hovers at the
+    // line doesn't come down and up frame by frame.
+    private const float LiftsFrom = .015f;
+    // A swinging foot's landing is looked for again every this many frames; it takes the new ground this quickly (s); a swing
+    // lasts at least this long (s), and one the stride can't time this long (s); it rises at most this far over what lies
+    // between (m).
+    private const int LandEvery = 3;
+    private const float LandEase = .05f, LeastSwing = .06f, PlainSwing = .3f, MostClearance = .3f;
+    // A leg that can't reach at all asks the hips down this far, as far as they may go (m).
+    private const float Unreachable = 1f;
 
     // The stride's hips follow a reach this quickly (s): fast enough for a step, slow enough that one frame's reach never
     // pops the hips (and the camera on the eyes).
@@ -217,12 +273,12 @@ internal sealed class FootPlanting
     /// <paramref name="stride"/> while the feet stand, and each standing foot kept where it stands as
     /// <paramref name="hold"/> says.
     /// </summary>
-    public void Plant(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride, in Hold hold)
+    public void Plant(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride, in Hold hold, in Steps steps)
     {
         // In every state, whatever the clip or the IK does, an ankle stays within what a real one can do: held once so a
         // planted foot is levelled from a sane foot, and again after the legs have bent.
         HoldAnkles(tuning);
-        StandOnGround(onFeet, floor, ground, tuning, dt, stride, hold);
+        StandOnGround(onFeet, floor, ground, tuning, dt, stride, hold, steps);
         HoldAnkles(tuning);
     }
 
@@ -232,7 +288,7 @@ internal sealed class FootPlanting
         Right.Ankle?.Apply(tuning.MaxAnkleTurn, tuning.MaxAnkleRoll);
     }
 
-    private void StandOnGround(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride, in Hold hold)
+    private void StandOnGround(bool onFeet, float floor, LayerMask ground, in Tuning tuning, float dt, in Stride stride, in Hold hold, in Steps steps)
     {
         OnGround = onFeet;
         Weight = Mathf.MoveTowards(Weight, onFeet ? 1f : 0f, dt / tuning.BlendTime);
@@ -244,31 +300,12 @@ internal sealed class FootPlanting
             settled = false;
             strideDrop = 0f;
             Left.Kept = Right.Kept = Left.Stepping = Right.Stepping = Left.Led = Right.Led = false;
+            Left.Down = Right.Down = false;
+            Left.SwingTime = Right.SwingTime = 0f;
             Left.StepLift = Right.StepLift = 0f;
             Left.Off = Right.Off = Vector3.zero;
             return;
         }
-        if (onFeet)
-        {
-            float follow = settled ? 1f - Mathf.Exp(-dt / tuning.SettleTime) : 1f;
-            Probe(Left, floor, ground, follow, tuning, dt);
-            Probe(Right, floor, ground, follow, tuning, dt);
-            // A missing support fades toward the clip instead of snapping a leg or the hips.
-            float lowest = Mathf.Min(Mathf.Lerp(floor, Left.Ground, Left.SupportWeight),
-                Mathf.Lerp(floor, Right.Ground, Right.SupportWeight));
-            lowest = Mathf.Clamp(lowest, floor - tuning.MaxHipDrop, floor);
-            hipFloor = Mathf.Clamp(Mathf.Lerp(hipFloor, lowest, follow), floor - tuning.MaxHipDrop, floor);
-            settled = true;
-        }
-        else
-        {
-            // Leaving the ground: hold the last heights relative to the capsule while the weight fades.
-            float moved = floor - lastFloor;
-            hipFloor += moved;
-            Left.Ground += moved;
-            Right.Ground += moved;
-        }
-        lastFloor = floor;
 
         // A clip made for other proportions can put a foot through the floor: a deep crouch holds the ankle lower than the
         // sole lets it stand, and pointing the toes down drives a longer foot's toe tip in. No part of the sole comes
@@ -280,6 +317,44 @@ internal sealed class FootPlanting
         // How far the clip holds each sole over its floor. The sole, not the ankle: a foot on its toes with the heel up
         // (a crouch) is as much on the ground as a flat one, and its ankle stands centimetres higher.
         float leftOver = leftLift - leftDepth, rightOver = rightLift - rightDepth, lowerOver = Mathf.Min(leftOver, rightOver);
+
+        if (onFeet)
+        {
+            float follow = settled ? 1f - Mathf.Exp(-dt / tuning.SettleTime) : 1f;
+            // The capsule's floor eased: it pops up and down a stair at a time, and the hips, and the eyes on them, follow the
+            // feet's ground under it rather than its pops.
+            smoothFloor = settled
+                ? Mathf.Clamp(Mathf.Lerp(smoothFloor, floor, 1f - Mathf.Exp(-dt / FloorFollow)), floor - tuning.MaxHipDrop, floor + tuning.MaxHipDrop)
+                : floor;
+            if (!hold.Stands)
+            {
+                Walk(Left, true, leftOver, floor, ground, tuning, steps, dt);
+                Walk(Right, false, rightOver, floor, ground, tuning, steps, dt);
+            }
+            else
+            {
+                Left.Down = Right.Down = false;
+                Left.SwingTime = Right.SwingTime = 0f;
+                Probe(Left, floor, ground, follow, tuning, dt);
+                Probe(Right, floor, ground, follow, tuning, dt);
+            }
+            // A missing support fades toward the clip instead of snapping a leg or the hips.
+            float lowest = Mathf.Min(Mathf.Lerp(smoothFloor, Left.Ground, Left.SupportWeight),
+                Mathf.Lerp(smoothFloor, Right.Ground, Right.SupportWeight));
+            lowest = Mathf.Clamp(lowest, smoothFloor - tuning.MaxHipDrop, smoothFloor);
+            hipFloor = Mathf.Clamp(Mathf.Lerp(hipFloor, lowest, follow), smoothFloor - tuning.MaxHipDrop, smoothFloor);
+            settled = true;
+        }
+        else
+        {
+            // Leaving the ground: hold the last heights relative to the capsule while the weight fades.
+            float moved = floor - lastFloor;
+            hipFloor += moved;
+            smoothFloor = floor;
+            Left.Ground += moved;
+            Right.Ground += moved;
+        }
+        lastFloor = floor;
         body.position += Vector3.up * ((hipFloor - clipFloor) * Weight);
         // Where each foot stands, level: the clip's place with the stride's stretch, the place it keeps, or where a step has
         // it (Hold). Turning to the right the right foot leads, to the left the left one.
@@ -320,6 +395,29 @@ internal sealed class FootPlanting
     private Vector3 Stand(Leg leg, Leg other, int side, float lift, float over, bool onFeet, in Hold hold, float dt)
     {
         Vector3 clip = leg.Foot.position - hold.Carried + leg.Shift;
+        if (onFeet && !hold.Stands)
+        {
+            // Walking or running: a foot that is down (Walk) keeps where it came down as far as its leg reaches; a swinging one
+            // goes where the clip and the stride have it, easing in from where it last stood. Until 0.9.390 a moving foot was
+            // wherever the clip had it, so whatever moved the pose over a footfall (a blend, the follow of the head, the eased
+            // switch of clips) slid the foot on the ground.
+            leg.Stepping = leg.Led = false;
+            leg.StepLift = 0f;
+            if (leg.Down && leg.SupportWeight > 0f)
+            {
+                if (!leg.Kept)
+                {
+                    leg.Kept = true;
+                    leg.Place = clip + leg.Off;
+                    leg.KeptYaw = hold.Yaw;
+                }
+                else if (OutOfReach(leg, lift, leg.Place, hold.MaxDrop)) leg.Kept = false;
+            }
+            else leg.Kept = false;
+            if (leg.Kept) leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
+            else leg.Off *= Mathf.Exp(-dt / hold.Release);
+            return clip + leg.Off;
+        }
         bool keep = onFeet && hold.Stands && over < DownHeight && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
         leg.StepLift = 0f;
         // A step the turn on the spot leads (TurnPlanner): up off its place and round to where the clip has it under the
@@ -452,7 +550,9 @@ internal sealed class FootPlanting
             if (off.x * off.x + off.z * off.z < 1e-8f) return 0f;
             need = Added(leg, lift, at);
         }
-        return float.IsPositiveInfinity(need) ? 0f : Mathf.Max(0f, need) * leg.SupportWeight;
+        // Out of reach altogether the hips come down as far as they may (until 0.9.390 not at all: the leg locked straight and
+        // the foot hung short of the ground).
+        return (float.IsPositiveInfinity(need) ? Unreachable : Mathf.Max(0f, need)) * leg.SupportWeight;
     }
 
     // How high the ankle has to stand for the heel and the toe tip to stay on or above the ground, the foot turned as the
@@ -471,9 +571,7 @@ internal sealed class FootPlanting
         bool found = false;
         float reach = tuning.Reach;
         // Under the foot where the stretched stride puts it.
-        Sample(leg.Foot.TransformPoint(leg.Heel) + leg.Shift);
-        Sample(leg.Foot.position + leg.Shift);
-        Sample(leg.Foot.TransformPoint(leg.Tip) + leg.Shift);
+        found = Underfoot(leg, floor, ground, reach, out height, out normal, out surface);
         float previousWeight = leg.SupportWeight;
         leg.SupportWeight = Mathf.MoveTowards(previousWeight, found ? 1f : 0f, dt / Mathf.Max(.01f, tuning.SettleTime));
         if (!found)
@@ -486,26 +584,120 @@ internal sealed class FootPlanting
         leg.Ground = previousWeight <= 0f || height > leg.Ground ? height : Mathf.Lerp(leg.Ground, height, follow);
         leg.Normal = previousWeight <= 0f ? normal : Vector3.Slerp(leg.Normal, normal, follow);
         leg.Surface = surface;
+    }
 
-        // The first thing below the point that isn't the player itself, if it is something to stand on (not a wall's side).
-        void Sample(Vector3 point)
+    // The highest ground under the foot's heel, ankle and toe tip where the stretched stride puts it.
+    private bool Underfoot(Leg leg, float floor, LayerMask ground, float reach, out float height, out Vector3 normal, out Collider surface)
+    {
+        height = floor;
+        normal = Vector3.up;
+        surface = null;
+        bool found = false;
+        Take(leg.Foot.TransformPoint(leg.Heel) + leg.Shift, ref found, ref height, ref normal, ref surface);
+        Take(leg.Foot.position + leg.Shift, ref found, ref height, ref normal, ref surface);
+        Take(leg.Foot.TransformPoint(leg.Tip) + leg.Shift, ref found, ref height, ref normal, ref surface);
+        return found;
+
+        void Take(Vector3 point, ref bool found, ref float height, ref Vector3 normal, ref Collider surface)
         {
-            int count = Physics.RaycastNonAlloc(new Vector3(point.x, floor + reach, point.z), Vector3.down, Hits, reach * 2f,
-                ground, QueryTriggerInteraction.Ignore);
-            int nearest = -1;
-            for (int i = 0; i < count; i++)
-                if ((nearest < 0 || Hits[i].distance < Hits[nearest].distance) && !Hits[i].collider.transform.IsChildOf(owner))
-                    nearest = i;
-            if (nearest < 0) return;
-            var hit = Hits[nearest];
-            if (hit.normal.y > .5f && (!found || hit.point.y > height))
-            {
-                height = hit.point.y;
-                normal = hit.normal;
-                surface = hit.collider;
-                found = true;
-            }
+            if (!GroundAt(point, floor, ground, reach, out float at, out Vector3 facing, out Collider what) || (found && at <= height)) return;
+            height = at;
+            normal = facing;
+            surface = what;
+            found = true;
         }
+    }
+
+    // The first thing below the point, within the reach of the capsule's floor, that isn't the player itself, if it is something
+    // to stand on (not a wall's side).
+    private bool GroundAt(Vector3 point, float floor, LayerMask ground, float reach, out float height, out Vector3 normal, out Collider surface)
+    {
+        height = floor;
+        normal = Vector3.up;
+        surface = null;
+        int count = Physics.RaycastNonAlloc(new Vector3(point.x, floor + reach, point.z), Vector3.down, Hits, reach * 2f,
+            ground, QueryTriggerInteraction.Ignore);
+        int nearest = -1;
+        for (int i = 0; i < count; i++)
+            if ((nearest < 0 || Hits[i].distance < Hits[nearest].distance) && !Hits[i].collider.transform.IsChildOf(owner))
+                nearest = i;
+        if (nearest < 0 || Hits[nearest].normal.y <= .5f) return false;
+        height = Hits[nearest].point.y;
+        normal = Hits[nearest].normal;
+        surface = Hits[nearest].collider;
+        return true;
+    }
+
+    // Walking or running, the ground a foot stands on: a foot coming down (its clip's sole at its floor) takes the ground under
+    // it and keeps it until it lifts; a foot that lifts swings from the ground it left to the ground where it will come down
+    // (Land), smoothly, over what rises between, rather than the ground under it frame by frame.
+    private void Walk(Leg leg, bool left, float over, float floor, LayerMask ground, in Tuning tuning, in Steps steps, float dt)
+    {
+        float settle = dt / Mathf.Max(.01f, tuning.SettleTime);
+        if (over < (leg.Down ? DownHeight + LiftsFrom : DownHeight))
+        {
+            if (!leg.Down)
+            {
+                leg.Down = true;
+                leg.Supported = Underfoot(leg, floor, ground, tuning.Reach, out float height, out Vector3 normal, out Collider surface);
+                leg.Surface = surface;
+                if (leg.Supported)
+                {
+                    leg.Ground = height;
+                    leg.Normal = normal;
+                }
+            }
+            leg.SupportWeight = Mathf.MoveTowards(leg.SupportWeight, leg.Supported ? 1f : 0f, settle);
+            return;
+        }
+        if (leg.Down || leg.SwingTime <= 0f)
+        {
+            leg.Down = false;
+            leg.LiftGround = leg.SupportWeight > 0f ? leg.Ground : floor;
+            leg.SwingTime = Mathf.Max(LeastSwing, steps.ToFall(left));
+            leg.SwingClock = 0f;
+            Land(leg, left, floor, ground, tuning.Reach, steps, true);
+        }
+        leg.SwingClock += dt;
+        if (--leg.LandRefresh <= 0) Land(leg, left, floor, ground, tuning.Reach, steps, false);
+        leg.LandGround = Mathf.Lerp(leg.LandGround, leg.LandTarget, 1f - Mathf.Exp(-dt / LandEase));
+        float s = Mathf.Clamp01(leg.SwingClock / leg.SwingTime), eased = s * s * (3f - 2f * s);
+        leg.Ground = Mathf.Lerp(leg.LiftGround, leg.LandGround, eased) + leg.Clearance * Mathf.Sin(Mathf.PI * s);
+        leg.SupportWeight = Mathf.MoveTowards(leg.SupportWeight, leg.Supported ? 1f : 0f, settle);
+    }
+
+    // Where a swinging foot will come down: the hips carried on at the travel's speed for the time left to its footfall, half a
+    // step ahead of them, the foot's own way aside of them; and the ground there. As the swing begins also how far the ground
+    // between rises over the straight way from where it left (Clearance), from three rays along it.
+    private void Land(Leg leg, bool left, float floor, LayerMask ground, float reach, in Steps steps, bool start)
+    {
+        leg.LandRefresh = LandEvery;
+        Vector3 hips = (Left.Upper.position + Right.Upper.position) * .5f;
+        Vector3 travel = steps.Travel;
+        float speed = travel.magnitude;
+        Vector3 way = speed > .1f ? travel / speed : Vector3.ProjectOnPlane(body.forward, Vector3.up).normalized;
+        Vector3 foot = leg.Foot.position + leg.Shift;
+        Vector3 aside = Vector3.ProjectOnPlane(foot - hips, Vector3.up);
+        aside -= way * Vector3.Dot(aside, way);
+        float remaining = Mathf.Max(0f, leg.SwingTime - leg.SwingClock);
+        Vector3 at = new Vector3(hips.x, foot.y, hips.z) + travel * remaining + way * (speed * steps.Cycle * .25f) + aside;
+        leg.Supported = GroundAt(at, floor, ground, reach, out float height, out Vector3 normal, out Collider surface);
+        leg.LandTarget = leg.Supported ? height : leg.LiftGround;
+        if (leg.Supported)
+        {
+            leg.Surface = surface;
+            leg.Normal = normal;
+        }
+        if (!start) return;
+        leg.LandGround = leg.LandTarget;
+        leg.Clearance = 0f;
+        for (int i = 1; i <= 3; i++)
+        {
+            float share = i * .25f;
+            if (GroundAt(Vector3.Lerp(foot, at, share), floor, ground, reach, out float between, out _, out _))
+                leg.Clearance = Mathf.Max(leg.Clearance, between - Mathf.Lerp(leg.LiftGround, leg.LandGround, share * share * (3f - 2f * share)));
+        }
+        leg.Clearance = Mathf.Min(leg.Clearance, MostClearance);
     }
 
     // lift: how high the clip holds this ankle above its own floor. above: how far over the clip's lower foot.

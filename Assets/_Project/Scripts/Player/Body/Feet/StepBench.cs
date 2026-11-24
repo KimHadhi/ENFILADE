@@ -99,7 +99,8 @@ internal static class StepBench
                 root.SetPositionAndRotation(Vector3.zero, Quaternion.Euler(0f, legYaw, 0f));
                 root.localScale = rootScale * scale;
                 feet.Plant(true, 0f, Physics.DefaultRaycastLayers, tuning, Dt, FootPlanting.Stride.None,
-                    new FootPlanting.Hold(true, Vector3.zero, root.eulerAngles.y, Twist, Drop, Release, StepTime, StepHeight, planner.Lead, planner.Share));
+                    new FootPlanting.Hold(true, Vector3.zero, root.eulerAngles.y, Twist, Drop, Release, StepTime, StepHeight, planner.Lead, planner.Share),
+                    new FootPlanting.Steps(Vector3.zero, 0f, 0f));
                 Note(feet.Left, "L", time, ref leftWas, ref leftKept, ref leftSlid, steps);
                 Note(feet.Right, "R", time, ref rightWas, ref rightKept, ref rightSlid, steps);
                 while (shot < shots.Count && time >= shots[shot] - Dt * .5f)

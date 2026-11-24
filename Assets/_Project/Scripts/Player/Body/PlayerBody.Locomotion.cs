@@ -343,6 +343,10 @@ public sealed partial class PlayerBody
     // This frame's gait for the cycles (0 walk, 1 jog, 2 sprint): the gait gone, no faster than the speed reached.
     private float gaitPlace;
 
+    // How long a whole stride of both feet takes now at the pace the cycles play (s; 0 with no cycle playing): the feet time
+    // their swings by it (FootPlanting.Steps).
+    private float strideCycle;
+
     // Standing still this frame (Locomotion): the body keeps its place on the ground (PlaceBody, FollowHead).
     private bool keepsPlace;
 
@@ -654,6 +658,7 @@ public sealed partial class PlayerBody
             strideStretch = FootPlanting.Stride.None;
             gaitNatural = 0f;
             gaitRateNow = gaitStretchNow = 1f;
+            strideCycle = 0f;
             return;
         }
         float strideTime = Mathf.Max(.05f, mixStride / mixWeight);
@@ -673,6 +678,7 @@ public sealed partial class PlayerBody
             }
         }
         phase += dt * rate / strideTime;
+        strideCycle = strideTime / Mathf.Max(.05f, rate);
         if (phase >= 1f)
         {
             strideCount += Mathf.FloorToInt(phase);
