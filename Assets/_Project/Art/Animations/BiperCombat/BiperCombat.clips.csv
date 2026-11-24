@@ -19,8 +19,8 @@ P_AimWalk_FR,1,1,0,0,0,0,,,35,Combat Girls 권총: AimWalk_FR
 P_AimWalk_L,1,1,0,0,0,0,,,35,Combat Girls 권총: AimWalk_L
 P_AimWalk_R,1,1,0,0,0,0,,,35,Combat Girls 권총: AimWalk_R
 P_Crouch_AimIdle,1,0,0,0,0,0,,,68,Combat Girls 권총: Crouch_AimIdle
-P_Crouch_AimTurn_L90,0,0,0,0,0,0,,,41,Combat Girls 권총: Crouch_AimTurn_L90
-P_Crouch_AimTurn_R90,0,0,0,0,0,0,,,41,Combat Girls 권총: Crouch_AimTurn_R90
+P_Crouch_AimTurn_L90,0,0,0,1,0,0,,,41,Combat Girls 권총: Crouch_AimTurn_L90
+P_Crouch_AimTurn_R90,0,0,0,1,0,0,,,41,Combat Girls 권총: Crouch_AimTurn_R90
 P_Crouch_AimWalk_B,1,1,0,0,0,0,,,35,Combat Girls 권총: Crouch_AimWalk_B
 P_Crouch_AimWalk_BL,1,1,0,0,0,0,,,35,Combat Girls 권총: Crouch_AimWalk_BL
 P_Crouch_AimWalk_BR,1,1,0,0,0,0,,,35,Combat Girls 권총: Crouch_AimWalk_BR
@@ -56,8 +56,8 @@ R_AimWalk_FL,1,1,0,0,0,0,,,35,Combat Girls 소총: AimWalk_FL
 R_AimWalk_FR,1,1,0,0,0,0,,,35,Combat Girls 소총: AimWalk_FR
 R_AutoShoot,1,0,0,0,0,0,,,30,Combat Girls 소총: AutoShoot
 R_Crouch_AimIdle,1,0,0,0,0,0,,,68,Combat Girls 소총: Crouch_AimIdle
-R_Crouch_AimTurn_L90,0,0,0,0,0,0,,,41,Combat Girls 소총: Crouch_AimTurn_L90
-R_Crouch_AimTurn_R90,0,0,0,0,0,0,,,41,Combat Girls 소총: Crouch_AimTurn_R90
+R_Crouch_AimTurn_L90,0,0,0,1,0,0,,,41,Combat Girls 소총: Crouch_AimTurn_L90
+R_Crouch_AimTurn_R90,0,0,0,1,0,0,,,41,Combat Girls 소총: Crouch_AimTurn_R90
 R_Crouch_AimWalk_B,1,1,0,0,0,0,,,35,Combat Girls 소총: Crouch_AimWalk_B
 R_Crouch_AimWalk_BL,1,1,0,0,0,0,,,35,Combat Girls 소총: Crouch_AimWalk_BL
 R_Crouch_AimWalk_BR,1,1,0,0,0,0,,,35,Combat Girls 소총: Crouch_AimWalk_BR
@@ -94,8 +94,8 @@ S_AimWalk_F,1,1,0,0,0,0,,,35,Combat Girls 샷건: AimWalk_F
 S_AimWalk_FL,1,1,0,0,0,0,,,35,Combat Girls 샷건: AimWalk_FL
 S_AimWalk_FR,1,1,0,0,0,0,,,35,Combat Girls 샷건: AimWalk_FR
 S_Crouch_AimIdle,1,0,0,0,0,0,,,68,Combat Girls 샷건: Crouch_AimIdle
-S_Crouch_AimTurn_L90,0,0,0,0,0,0,,,41,Combat Girls 샷건: Crouch_AimTurn_L90
-S_Crouch_AimTurn_R90,0,0,0,0,0,0,,,41,Combat Girls 샷건: Crouch_AimTurn_R90
+S_Crouch_AimTurn_L90,0,0,0,1,0,0,,,41,Combat Girls 샷건: Crouch_AimTurn_L90
+S_Crouch_AimTurn_R90,0,0,0,1,0,0,,,41,Combat Girls 샷건: Crouch_AimTurn_R90
 S_Crouch_AimWalk_B,1,1,0,0,0,0,,,35,Combat Girls 샷건: Crouch_AimWalk_B
 S_Crouch_AimWalk_BL,1,1,0,0,0,0,,,35,Combat Girls 샷건: Crouch_AimWalk_BL
 S_Crouch_AimWalk_BR,1,1,0,0,0,0,,,35,Combat Girls 샷건: Crouch_AimWalk_BR

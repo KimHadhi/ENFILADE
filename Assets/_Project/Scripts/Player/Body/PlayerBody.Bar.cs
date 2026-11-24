@@ -47,7 +47,6 @@ public sealed partial class PlayerBody
         legYaw = Mathf.MoveTowardsAngle(legYaw, Mathf.Atan2(barFacing.x, barFacing.z) * Mathf.Rad2Deg, FacingTurnRate * dt);
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
         legsPlanted = true;
-        turning = 0;
     }
 
     // Before the hands are measured (Grip): the body turns about its feet by the swing's angle.

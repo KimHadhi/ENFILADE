@@ -336,7 +336,6 @@ public sealed partial class PlayerBody
             legYaw = Mathf.MoveTowardsAngle(legYaw, Mathf.Atan2(back.x, back.z) * Mathf.Rad2Deg, FacingTurnRate * dt);
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
         legsPlanted = true;
-        turning = 0;
     }
 
     // Keep the lower body in the slide's world frame, the feet-first slide and the slide on the back alike. Clamping or
@@ -358,7 +357,6 @@ public sealed partial class PlayerBody
         slideWorldOffset = frame * slideBodyOffset;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
         legsPlanted = true;
-        turning = 0;
     }
 
     // Sliding on the back, the clips keep the head far from where the slide began (lying back from the feet-first slide,

@@ -6,8 +6,8 @@ using UnityEngine;
 /// Console /lean: the lean measured without anyone pressing Q or E. It carries the lean of this PC's player from upright
 /// to the full right, back, to the full left and back over a few seconds, in whatever stance and with whatever is in the
 /// hands just then, and writes to Logs/lean-probe.txt how far each ankle went from where it stood (the feet must stay:
-/// the user, 2026-11-18: "제자리에서 상체만 기울어야 하나 ... 발(하체)까지 옆으로 이동"), whether each foot kept its place
-/// (FootPlanting.Hold), and how far the hips and the eyes went, which is the lean itself. Run it once with nothing in
+/// the user, 2026-11-18: "제자리에서 상체만 기울어야 하나 ... 발(하체)까지 옆으로 이동"; FootPlanting.Stance.Carried takes the
+/// lean's shift back out of them), and how far the hips and the eyes went, which is the lean itself. Run it once with nothing in
 /// hand, once with the fists and once with a gun, standing and crouched, on each body to be checked (the mannequin too):
 /// each run is one line.
 ///
@@ -30,7 +30,7 @@ internal sealed class LeanProbe : MonoBehaviour
     private Transform hips, eyes;
     private Vector3 leftStart, rightStart, hipsStart, eyesStart;
     private float time, leftMost, rightMost, leftRise, rightRise, hipsMost, hipsDown, eyesMost, leanMost;
-    private bool started, leftKept, rightKept, lostKeep;
+    private bool started;
 
     /// <summary>Starts a run on this player; says what it is doing.</summary>
     public static string Run(PlayerMovement player)
@@ -83,7 +83,6 @@ internal sealed class LeanProbe : MonoBehaviour
             rightStart = right.Ankle;
             hipsStart = hips != null ? hips.position : Vector3.zero;
             eyesStart = eyes != null ? eyes.position : Vector3.zero;
-            body.TryReadKeptFeet(out leftKept, out rightKept, out _, out _);
             return;
         }
         leanMost = Mathf.Max(leanMost, Mathf.Abs(player.Abilities.Lean.Share));
@@ -97,7 +96,6 @@ internal sealed class LeanProbe : MonoBehaviour
             hipsDown = Mathf.Max(hipsDown, hipsStart.y - hips.position.y);
         }
         if (eyes != null) eyesMost = Mathf.Max(eyesMost, Mathf.Abs(Vector3.Dot(eyes.position - eyesStart, transform.right)));
-        if (body.TryReadKeptFeet(out bool l, out bool r, out _, out _) && (l != leftKept || r != rightKept)) lostKeep = true;
     }
 
     private static float Level(Vector3 way) => new Vector2(way.x, way.z).magnitude;
@@ -110,7 +108,7 @@ internal sealed class LeanProbe : MonoBehaviour
         var animator = body.GetComponentInChildren<Animator>();
         string model = animator != null ? animator.gameObject.name : "?";
         string line = $"body {model}, hands {hands}, {player.CurrentState}: feet L {leftMost * 100f:0.0} cm (up/down {leftRise * 100f:0.0}) R {rightMost * 100f:0.0} cm (up/down {rightRise * 100f:0.0})"
-            + $" (kept at start L {leftKept} R {rightKept}{(lostKeep ? ", a foot let go or took a place during the run" : "")});"
+            + ";"
             + $" hips {hipsMost * 100f:0.0} cm, hips down {hipsDown * 100f:0.0} cm, eyes {eyesMost * 100f:0.0} cm, lean reached {leanMost:0.00}"
             + (started ? "" : " -- NOTHING MEASURED (the feet were not on the ground)");
         PlayRecord.Line(Log, Heading, line);

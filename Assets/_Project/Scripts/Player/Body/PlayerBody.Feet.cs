@@ -41,18 +41,8 @@ public sealed partial class PlayerBody
     [SerializeField, Range(0f, 180f), Tooltip("Most a foot rolls onto its side, either way, in any clip (degrees).")]
     private float maxAnkleRoll = 25f;
 
-    [Header("Feet keep their place")]
-    [SerializeField, Range(1f, 90f), Tooltip("A kept foot steps once the legs have turned this far over it (degrees), when no turn on the spot leads the steps.")]
-    private float footHoldTwist = 25f;
-    [SerializeField, Min(.05f), Tooltip("How long a foot's step takes, up off its place and down in its new one (s).")]
-    private float footStepTime = .22f;
-    [SerializeField, Min(0f), Tooltip("How high a stepping foot comes up at the middle of its step (m).")]
-    private float footStepHeight = .08f;
-    [SerializeField, Min(0f), Tooltip("The hips come down at most this far for a leg to reach a kept foot they have gone over away from (m). Further, the foot lets go.")]
+    [SerializeField, Min(0f), Tooltip("The hips come down at most this far for a leg to reach where the lean's shift left its foot (m).")]
     private float footHoldDrop = .05f;
-    [SerializeField, Min(.01f), Tooltip("How long a foot that let go takes to ease to where the clip has it (s).")]
-    private float footHoldRelease = .12f;
-
     [Header("What the feet stand in")]
     [SerializeField, Min(0f), Tooltip("Heels at least this high (m, at the size the body is drawn) sound like heels: the feet play "
         + "the '@Heels' versions of their cues in SoundCues.csv. Measured from the dressed look (DrawnHeels), any character or shoe.")]
@@ -77,24 +67,6 @@ public sealed partial class PlayerBody
     // What moved the hips sideways this frame that is no step (the lean), for the feet to take back out.
     private Vector3 hipsCarried;
 
-    /// <summary>
-    /// How far each ankle is from the place it keeps, level (m), after this frame's leg IK; zero for a foot that keeps
-    /// none. And whether it keeps one. For the console's /lean, which measures that a lean does not carry the feet.
-    /// </summary>
-    internal bool TryReadKeptFeet(out bool leftKept, out bool rightKept, out float leftOff, out float rightOff)
-    {
-        leftKept = rightKept = false;
-        leftOff = rightOff = 0f;
-        if (feet == null || !feet.OnGround) return false;
-        leftKept = feet.Left.Kept;
-        rightKept = feet.Right.Kept;
-        leftOff = leftKept ? Level(feet.Left.Foot.position - feet.Left.Place) : 0f;
-        rightOff = rightKept ? Level(feet.Right.Foot.position - feet.Right.Place) : 0f;
-        return true;
-
-        static float Level(Vector3 way) => new Vector2(way.x, way.z).magnitude;
-    }
-
     // The legs as the feet measured them, for what else keeps them out of things (a tuck, a heave, a wall).
     private FootPlanting.Leg leftLeg => feet?.Left;
     private FootPlanting.Leg rightLeg => feet?.Right;
@@ -117,30 +89,22 @@ public sealed partial class PlayerBody
         // A paired execution's clip has the feet where it was made beside the zombie (PlayerBody.Execution).
         bool onFeet = !dead && !playingOut && !heaving && !PlaysPaired && player.IsGrounded
             && (state == MovementState.Standing || state == MovementState.Crouching);
-        // The body stands while it neither travels nor turns: then each foot that is down keeps its place on the ground,
-        // whatever moves the hips over it (FootPlanting.Hold). What the lean moved the hips by is taken out of the feet
-        // in any case. The turn is the legs' own, the model's: standing, they keep their facing while the view turns
-        // (TurnOnTheSpot) and the feet under them stay; the player's own facing is the view's and says nothing of the feet.
-        float yaw = body.eulerAngles.y;
-        Vector3 travel = player.ActualVelocity;
-        // The legs turning on the spot no longer carry the feet round with them (as up to 0.9.278, over 40° a second): the
-        // feet stay where they stand and step round themselves (FootPlanting.Stand), at any speed of turn.
-        // By the body's one still-or-moving flag (Locomotion: a gap between its two speeds), and never through a run's turn,
-        // whose clip steps the feet itself as it brakes and sets off. Until 0.9.403 the feet had a speed of their own
-        // (Body.footHoldSpeed .15 m/s, no gap), and a run's turn braking through it switched them between standing (the
-        // ground read under each foot) and walking (the ground each came down on) frame by frame: on stairs a foot's ground
-        // went -34, -2, -18 cm in three frames (the feet record of 2026-11-24 21:3x; the user: "급하게 turn 해서 turn 애니메이션
-        // 나오고 다시 걷기 시작할 때 발이 … 살짝 꺾이는").
+        // The body stands while it neither travels nor turns: the feet read the ground under them (FootPlanting.Probe), and
+        // never through a run's turn, whose clip steps the feet as it brakes and sets off. What the lean moved the hips by is
+        // taken out of the feet in any case. By the body's one still-or-moving flag (Locomotion: a gap between its two
+        // speeds). Until 0.9.403 the feet had a speed of their own (Body.footHoldSpeed .15 m/s, no gap), and a run's turn
+        // braking through it switched them between standing and walking frame by frame: on stairs a foot's ground went -34,
+        // -2, -18 cm in three frames (the feet record of 2026-11-24 21:3x). Every foot is where its clip has it (0.9.430;
+        // until then a foot that was down kept its place and stepped by itself, FootPlanting).
         bool stands = onFeet && still && turnClip == null;
-        var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight,
-            turnPlanner.Lead, turnPlanner.Share);
-        // Walking or running, each foot keeps the place and the ground it came down on and swings to where it will come down,
-        // timed by the stride (FootPlanting.Walk, Stand). Where the clip had the ankles before it, for the feet record.
+        var stance = new FootPlanting.Stance(stands, hipsCarried, footHoldDrop);
+        Vector3 travel = player.ActualVelocity;
+        // Where the clip had the ankles before the ground moved them, for the feet record.
         leftClipAnkle = feet.Left.Foot.position;
         rightClipAnkle = feet.Right.Foot.position;
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
             new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,
-            hold, new FootPlanting.Steps(travel, strideCycle, phase));
+            stance, new FootPlanting.Steps(travel, strideCycle, phase));
         RecordFeet(dt, onFeet);
     }
 
@@ -165,8 +129,7 @@ public sealed partial class PlayerBody
         + "그 끝이 땅에서 뜬 높이(cm), 그 끝이 땅 위로 미끄러진 빠르기(cm/s, 지난 프레임에도 같은 끝이 닿아 있었을 때만), 발목이 제 엉덩이 "
         + "관절에서 앞(+)·바깥(+)으로 떨어진 거리(cm), 무릎이 굽은 각도(0 곧음), 발끝이 몸이 보는 쪽에서 바깥(+)으로 돈 각도, IK가 발목을 "
         + "클립 자리에서 옮긴 거리(cm), 땅 높이(캡슐 바닥 기준 cm)와 이 프레임 변화(cm), 발목 목표가 땅에서 뜬 높이(cm), IK 뒤 실제 발목이 "
-        + "목표에서 벗어난 거리(cm), 엉덩이에서 목표까지가 다리 길이의 몇 %인지, 지키는 자리가 클립의 발 자리에서 벗어난 거리(cm, 지키지 "
-        + "않으면 -); 지난 프레임 카메라 높이 변화(cm)";
+        + "목표에서 벗어난 거리(cm), 엉덩이에서 목표까지가 다리 길이의 몇 %인지; 지난 프레임 카메라 높이 변화(cm)";
     // A sole's end within this of the ground under it is on the ground (m).
     private const float FeetRecordFor = 1f, FeetRecordSpeed = 4f, FeetRecordPop = .03f, SoleOnGround = .02f;
     private float feetRecordLeft, feetRecordFrom, feetFloorWas, feetCameraWas, feetViewWas, leftGroundWas, rightGroundWas;
@@ -241,8 +204,7 @@ public sealed partial class PlayerBody
             feetLine.Append($" | {name} {(leg.Down ? "D" : "S")} {(end == 1 ? "뒤꿈치" : end == 2 ? "발끝" : "뜸")} {over * 100f:0} 미끄러짐 {slid} ")
                 .Append($"앞 {off.z * 100f:+0;-0} 바깥 {off.x * outward * 100f:+0;-0} 무릎 {knee:0}° 발 {points:+0;-0}° IK {(ankle - clipAnkle).magnitude * 100f:0} ")
                 .Append($"땅 {(leg.Ground - floor) * 100f:+0;-0} {(leg.Ground - groundWas) * 100f:+0;-0} ")
-                .Append($"목표 {(leg.Target.y - leg.Ground) * 100f:0} 어긋남 {(ankle - leg.Target).magnitude * 100f:0} 닿음 {reach * 100f:0}% ")
-                .Append($"지킴 {(leg.Kept ? (new Vector2(leg.Off.x, leg.Off.z).magnitude * 100f).ToString("0") : "-")}");
+                .Append($"목표 {(leg.Target.y - leg.Ground) * 100f:0} 어긋남 {(ankle - leg.Target).magnitude * 100f:0} 닿음 {reach * 100f:0}%");
         }
     }
 

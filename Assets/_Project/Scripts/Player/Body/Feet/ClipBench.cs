@@ -26,7 +26,6 @@ using Object = UnityEngine.Object;
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
 ///   cyclefilm=Run_Lfoot,Sprint_Lfoot   cycles side by side, eight moments each (StepBench.Cycles)
 ///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
-///   stepfilm=Idle,R_Idle              a turn on the spot as the game steps it (StepBench): pictures and each step
 ///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
 ///                                     head face, how fast the hands move against the chest and how the body and head lean (Track),
 ///                                     and the clip's motion as the game reads it: its root's turn, its chest against its root
@@ -75,7 +74,7 @@ internal static class ClipBench
     {
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string[] stepped = Array.Empty<string>(), lifted = Array.Empty<string>(), cycled = Array.Empty<string>();
+        string[] lifted = Array.Empty<string>(), cycled = Array.Empty<string>();
         foreach (string raw in lines)
         {
             int cut = raw.IndexOf('=');
@@ -87,7 +86,6 @@ internal static class ClipBench
                 case "skins": skins = values; break;
                 case "models": models = values; break;
                 case "clips": only = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
-                case "stepfilm": stepped = values; break;
                 case "lifts": lifted = values; break;
                 case "cyclefilm": cycled = values; break;
                 case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
@@ -150,15 +148,6 @@ internal static class ClipBench
                         .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
                     foreach (string name in lifted)
                         if (takes.TryGetValue(name, out var take)) StepBench.Lifts(animator, scale, take, text);
-                        else text.AppendLine($"  ! no clip '{name}'");
-                }
-                if (stepped.Length > 0)
-                {
-                    text.AppendLine("-- stepfilm");
-                    var stances = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
-                        .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
-                    foreach (string name in stepped)
-                        if (stances.TryGetValue(name, out var stance)) StepBench.Film(animator, scale, stance, $"{Folder}/steps-{name}-{id}.png", text);
                         else text.AppendLine($"  ! no clip '{name}'");
                 }
                 foreach (string folder in folders)

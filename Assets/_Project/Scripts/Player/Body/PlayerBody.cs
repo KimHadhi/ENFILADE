@@ -876,6 +876,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
 
         KeepRunTurn();
+        KeepStandTurn();
         switch (state)
         {
             case MovementState.Standing:
@@ -883,6 +884,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 bool crouched = state == MovementState.Crouching;
                 TickPosture(crouched, dt);
                 if (onGround && !crouched && RunTurnPose()) break;
+                if (onGround && StandTurnPose(dt)) break;
                 if (onGround) Locomotion(crouched, dt);
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();

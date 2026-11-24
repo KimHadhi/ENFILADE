@@ -44,11 +44,8 @@ public sealed partial class PlayerBody
 
     [Header("Turning on the spot")]
     [SerializeField, Range(10f, 120f), Tooltip("Standing still, the legs stay planted until the view has turned this far "
-        + "from them (degrees); the chest twists toward the view meanwhile. Then the legs step round.")]
+        + "from them (degrees); the chest twists toward the view meanwhile. Then they turn on the stance's turn clip (StandTurn).")]
     private float turnStartAngle = 60f;
-    [SerializeField, Min(.05f), Tooltip("Turning on the spot, how long a step that turns the hips 45° takes (s); a step that turns "
-        + "further takes longer, by the square root (TurnPlanner).")]
-    private float turnStepTime = .3f;
     [SerializeField, Min(0f), Tooltip("How quickly the legs follow a change in the way and speed of travel (s). Quick A/D or "
         + "W taps even out instead of flipping the stride from one side to the other.")]
     private float strideFollowTime = .12f;
@@ -78,6 +75,8 @@ public sealed partial class PlayerBody
     {
         public Channel Idle;
         public readonly List<Way> Ways = new List<Way>();
+        // Its turns on the spot (BodyMoves.csv turns, PlayerBody.StandTurn).
+        public readonly List<StandTurnClip> Turns = new List<StandTurnClip>();
     }
 
     // A gun kind's sets: held at the hip, aimed, and both crouched; any may be missing (null), and what a set can't carry
@@ -100,11 +99,7 @@ public sealed partial class PlayerBody
     private int gunRunsFrame = -10;
     private float sprintSeen;
     private float legYaw;
-    // How the feet step a turn on the spot (TurnOnTheSpot, FootPlanting), and the frame it was last ticked.
-    private readonly TurnPlanner turnPlanner = new TurnPlanner();
-    private int plannedFrame = -10;
     private Vector3 stride;
-    private int turning;
     private bool legsPlanted;
     // This body's leg, hip joint to ankle (m).
     private float legLength = .9f;
@@ -145,7 +140,6 @@ public sealed partial class PlayerBody
         }
         // The forward cycles' leaning and arcing ones, banked into by the view's turn (PlayerBody.Leans).
         AddLeans();
-        turning = 0;
         strideCount = 0;
     }
 
@@ -201,6 +195,7 @@ public sealed partial class PlayerBody
             if (sum.sqrMagnitude > 1e-6f) way.Angle = Mathf.Repeat(Mathf.Atan2(sum.x, sum.y) * Mathf.Rad2Deg, 360f);
         }
         set.Ways.Sort((a, b) => a.Angle.CompareTo(b.Angle));
+        AddStandTurns(set, row.Text("turns"));
         return set.Idle == null && set.Ways.Count == 0 ? null : set;
     }
 
@@ -337,8 +332,9 @@ public sealed partial class PlayerBody
             moving += MixSets(crouchSet, legs, speed, scale, postureDown);
         }
         postureClip = null;
-        // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
-        TurnOnTheSpot(still, dt);
+        // Standing or crouched the legs keep their facing until the view has gone turnStartAngle away, then turn on the
+        // stance's turn clip (StandTurn).
+        TurnOnTheSpot(still, crouched);
         // The hips face the view and the legs go the way the keys ask beneath them, the gun's run turned to a slant ahead; a view
         // flicked round on the run is a turn back (RunTurn). From 0.9.416 to 0.9.428 a jog or a sprint ahead ran ahead of the
         // view, the hips facing the way it ran (RunsAhead).
@@ -744,26 +740,4 @@ public sealed partial class PlayerBody
         return text.ToString();
     }
 
-    // Standing still, the legs keep their place while the view turns, the chest twisting toward it (SpineLook), and once it
-    // has gone turnStartAngle away they step round to it as people do (TurnPlanner): the foot on the side of the turn first,
-    // carrying most of it, the other foot closing, the hips turning while a foot is in the air and the standing foot
-    // pivoting (FootPlanting). At any speed and angle, in any stance and on any body.
-    // From 0.9.261 to 0.9.278 the legs stepped round with BIPER's turn-on-the-spot clips instead: whole-body turns made for a
-    // body turning from rest to a new heading, 2.27 s, glued on once the view had gone 60° away ("구조와 근본의 문제인 듯").
-    // 0.9.279 let the hips turn at their own speed and the feet catch up every 25° of it: four quick steps to a 90° turn
-    // ("발을 네 번이나 뚝뚝뚝뚝 하는 건 좀 투머치"); the captured turns take two, and turn with them.
-    private void TurnOnTheSpot(bool still, float dt)
-    {
-        // Another state had the legs meanwhile (a slide, a ladder, a bar): a turn that was under way is over, and the view's
-        // turn meanwhile is none of this frame's.
-        if (turning == 0 && turnPlanner.Lead != 0) turnPlanner.Reset();
-        if (plannedFrame != Time.frameCount - 1) turnPlanner.Forget();
-        plannedFrame = Time.frameCount;
-        float look = transform.eulerAngles.y;
-        legYaw = turnPlanner.Tick(look, legYaw, still, dt, turnStartAngle, turnStepTime, turnStartAngle + 30f);
-        turning = turnPlanner.Lead;
-        if (!still) return;
-        targetYaw = Mathf.DeltaAngle(look, legYaw);
-        legsPlanted = true;
-    }
 }
