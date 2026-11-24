@@ -598,17 +598,17 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (StaysLimp()) return;
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
-        legsPlanted = keepsPlace = false;
+        legsPlanted = keepsPlace = rootByClip = false;
         ChoosePose(dt);
         Blend(dt);
         BlendLayers(dt);
         float view = transform.eulerAngles.y;
         // Any jump of the body's root, as a state faces a way of its own at once (a slide, a vault, a roll, lying down) or sets
-        // the facing outside the follow below (a run's turn handing back), has the pose the bones carry turned back as much and
+        // the facing outside the follow below (a run's turn coming in from the way the run went), has the pose the bones carry turned back as much and
         // eased round (BodyInertia), so the body comes round over the blend and not in a frame. Until 0.9.400 only the run's turn
         // did, by hand (out of a strafe into a slide the whole body turned 45 to 90 degrees in a frame: the audit of 2026-11-24).
         float jump = !rootYawKnown ? 0f : legsPlanted ? Mathf.DeltaAngle(legYawLeft, view + targetYaw) : Mathf.DeltaAngle(legYawLeft, legYaw);
-        if (Mathf.Abs(jump) > RootJumpLeast)
+        if (!rootByClip && Mathf.Abs(jump) > RootJumpLeast)
         {
             bodyInertia.Begin(blendTime);
             bodyInertia.Reroot(jump);
@@ -1178,6 +1178,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // The body's facing set further than this in a frame outside its follow (degrees) jumped (Update); where the follow left it.
     private const float RootJumpLeast = 5f;
     private float legYawLeft, viewWas;
+    // This frame the body's root turns by a clip's own motion (a run's turn: RunTurnPose), which is no jump.
+    private bool rootByClip;
     private bool rootYawKnown;
 
     // A one-shot clip held at the share of its length the movement has reached (a vault's progress), so the body

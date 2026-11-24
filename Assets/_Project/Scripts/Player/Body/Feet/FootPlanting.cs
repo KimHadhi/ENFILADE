@@ -400,13 +400,14 @@ internal sealed class FootPlanting
     private const float DownHeight = .03f, Arrived = .005f;
 
     // Where this foot stands this frame (world; only its level place is used). The clip's place is the foot's with what
-    // carried the hips sideways taken back out and the stride's stretch added. One rule, standing or on the move: a foot that
+    // carried the hips sideways taken back out. One rule, standing or on the move: a foot that
     // is down keeps the place it came down on, and the body goes on over it and turns on it as on a pivot, until its clip
     // lifts it; then it goes onto the clip's place over its swing, coming down where the clip comes down (Catching), and
-    // takes a place again there. On the move a kept place is drawn in toward the hip only as far as the leg reaches without the hips
-    // lower than the clip's own leg has them (Reachable): the foot gives at the least the reach forces, the hips never dip
-    // for it. Standing, the body's clip never lifts a foot, so one the leg can no longer reach with the hips down as far as
-    // Hold.MaxDrop, or that the legs have turned too far over, steps: up off its place, round to where the clip has it now
+    // takes a place again there. On the move it is a small correction: where the body goes otherwise than the clip's feet
+    // were made to, the kept place gives way past MovingSlack off the clip's (0.9.412; the animation expert's review: a lock
+    // held further than that hides a fault upstream, as the run's turn's own path was). Standing, the body's clip never lifts
+    // a foot, so one the leg can no longer reach with the hips down as far as Hold.MaxDrop, or that the legs have turned too
+    // far over, steps: up off its place, round to where the clip has it now
     // and down, one foot at a time (<paramref name="other"/>) unless this one can no longer reach; a turn on the spot leads
     // its own steps (TurnPlanner). Until 0.9.279 a standing foot let go and slid to its new place.
     // Until 0.9.406 only a standing foot kept its place (and one setting off, 0.9.396): on the move a foot was wherever the
@@ -486,7 +487,13 @@ internal sealed class FootPlanting
                     return clip + leg.Off;
                 }
             }
-            else leg.Place = Reachable(leg, lift, leg.Place, clip);
+            // On the move the kept place is a small correction to the clip, never a fight with it: it stays within MovingSlack
+            // of where the clip has the foot, giving way past that, and lets go only as the clip lifts the foot.
+            else
+            {
+                Vector3 off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
+                if (off.sqrMagnitude > MovingSlack * MovingSlack) leg.Place -= off * (1f - MovingSlack / off.magnitude);
+            }
         }
         // It comes down where it is shown, on the move at once; standing, once it has eased onto the clip's place, so the
         // stance stands as its clip has it.
@@ -525,19 +532,8 @@ internal sealed class FootPlanting
         return place;
     }
 
-    // A place on the ground drawn in toward the hip, level, as far as the leg reaches it without the hips lower than the
-    // clip's own leg at <paramref name="clip"/> has them (Need): never nearer the hip than the clip's own foot needs.
-    private static Vector3 Reachable(Leg leg, float lift, Vector3 place, Vector3 clip)
-    {
-        float own = Need(leg, lift, clip);
-        if (float.IsPositiveInfinity(own)) return place;
-        float most = ((leg.Lower.position - leg.Upper.position).magnitude + (leg.Foot.position - leg.Lower.position).magnitude) * StrideReach;
-        Vector3 from = leg.Upper.position;
-        float down = Mathf.Max(0f, from.y - (leg.Ground + lift) - Mathf.Max(0f, own));
-        float reach = Mathf.Sqrt(Mathf.Max(0f, most * most - down * down));
-        Vector3 level = Vector3.ProjectOnPlane(place - from, Vector3.up);
-        return level.sqrMagnitude > reach * reach ? place - level + level * (reach / level.magnitude) : place;
-    }
+    // On the move a kept place stays within this of where the clip has the foot (m).
+    private const float MovingSlack = .05f;
 
     // Whether the leg cannot reach a place on the ground even with the hips as far down as they may go for it.
     private static bool OutOfReach(Leg leg, float lift, Vector3 place, float maxDrop) => Added(leg, lift, place) > maxDrop;

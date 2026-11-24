@@ -127,7 +127,7 @@ internal sealed class BodyInertia
 
     /// <summary>
     /// The body's root turns this frame by <paramref name="degrees"/> (about the world's up, + to the right) only as a change of
-    /// where its pose is held from: a run's turn back sets the root where its clip's turn has it (PlayerBody.RunTurn). The hips
+    /// where its pose is held from: a state faces a way of its own at once (PlayerBody.Update, a jump of the root). The hips
     /// carried over a switch, and kept for the next, are turned back as much, so they show where they were instead of swinging
     /// round over the switch.
     /// </summary>

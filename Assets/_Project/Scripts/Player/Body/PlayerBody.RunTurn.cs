@@ -3,16 +3,17 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// The body's side of a run's turn back (RunTurn): its clip on the turn's own clock, the body's root coming in where the body
-/// faced and turning its share of the clip's turn so the turn ends facing the way the view looked as it began, the spine
-/// turning the chest back toward the view from where the clip has it (AimLook: RunTurnFacing), and the walk or run taking the
-/// stride from the clip's footfall as it ends (StepFrom). As it ends the root goes back under the chest; like any jump of the
-/// root, the pose the bones carry is turned back as much (PlayerBody.Update, BodyInertia.Reroot), so the hips don't swing round.
+/// faced and turning as the clip's root turns (with the turn's small bend toward the view), the spine turning the chest back
+/// toward the view from where the clip has it (AimLook: RunTurnFacing), and the walk or run taking the stride from the clip's
+/// footfall as it ends (StepFrom), the chest then back over the root: nothing jumps. The root's turn is the clip's own motion,
+/// so it is no jump to be eased away (rootByClip, PlayerBody.Update). Until 0.9.412 the root went under the chest at the end
+/// at once, eased away as a jump, and every frame of the turn faster than 5 degrees was taken for one too.
 /// </summary>
 public sealed partial class PlayerBody
 {
-    // The turn's clip playing (null for none), and which way its chest faced on the last frame (world yaw, degrees).
+    // The turn's clip playing (null for none), and the turn it plays for (RunTurn.Serial).
     private string turnClip;
-    private float turnChest;
+    private int turnSerial = -1;
 
     /// <summary>Where the stride is (0 the left foot landing, .5 the right): the foot a turn plants (RunTurn).</summary>
     internal float StridePhase => phase;
@@ -53,14 +54,17 @@ public sealed partial class PlayerBody
         var channel = Find(turn.Clip);
         if (channel == null || channel.Synced) return false;
         float root = turn.RootYaw;
-        if (turnClip == null)
+        // A new turn (on the same clip too) starts its clip again; its first frame sets the root from where the body faced to
+        // the way the run went, a jump the bones ease (PlayerBody.Update), and from then on the root turns by the clip.
+        if (turnSerial != turn.Serial)
         {
             Restart(channel);
             turnClip = turn.Clip;
+            turnSerial = turn.Serial;
         }
+        else rootByClip = true;
         Drive(turn.Clip, turn.Moment / Mathf.Max(.05f, channel.Length));
         legYaw = root;
-        turnChest = turn.ChestYaw;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, root);
         legsPlanted = true;
         return true;
@@ -68,7 +72,6 @@ public sealed partial class PlayerBody
 
     private void EndRunTurn()
     {
-        legYaw = turnChest;
         yawVelocity = 0f;
         var channel = Find(turnClip);
         turnClip = null;
