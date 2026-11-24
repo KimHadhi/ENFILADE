@@ -219,6 +219,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
     public Vector2 CurrentInput => InputAvailable && !ControlLocked && !IsGettingUp && Input != null ? Input.Move : Vector2.zero;
+    /// <summary>The movement keys are held, on every PC (another's from its pose: MovementMirror).</summary>
+    public bool SteersMove => IsNetworkDriven ? mirroredSteers : CurrentInput.sqrMagnitude > .01f;
+    internal bool mirroredSteers;
     /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
     public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;
     /// <summary>Getting up off the back (Ability.supineRiseTime): the body can't move off until it is up; the hands stay free

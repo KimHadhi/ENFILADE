@@ -319,13 +319,23 @@ public sealed partial class PlayerBody
         postureClip = null;
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
         TurnOnTheSpot(still, dt);
-        if (!crouched && !legsPlanted) targetYaw = turn;
+        // Coasting to a stop with no keys, a body that already faces about the way it still goes (out of a run's turn the view
+        // went on past) keeps facing it until it stands, and turns to the view on its feet after (TurnOnTheSpot): the legs run
+        // out the way they go, not sideways under a body turning to the view (the user, 2026-11-24: "180도 턴하고 가만히 있으면
+        // 갑자기 왼쪽이나 오른쪽으로 걸어가는데", "그렇게 바꿔"). One facing the view as it slides another way (a strafe let go)
+        // goes on facing the view.
+        float coast = still || player.SteersMove ? 0f
+            : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(CoastAligned * 2f, CoastAligned, Mathf.Abs(Mathf.DeltaAngle(yaw, heading))));
+        if (!crouched && !legsPlanted) targetYaw = Mathf.LerpAngle(turn, Mathf.Clamp(heading, -FacingLagMost, FacingLagMost), coast);
         Pace(speed, legs, moving, dt);
     }
 
     // Slower than StillEnter the body stands, faster than StillLeave it moves (m/s); its travel has a heading faster than
     // HeadingLeast. StillTravel is a curve's least speed (Leans).
     private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
+    // Coasting without keys, the body keeps facing the way it goes while it is within CoastAligned of it, none past twice that
+    // (degrees).
+    private const float CoastAligned = 15f;
     private bool still = true;
     private float travelHeading;
 

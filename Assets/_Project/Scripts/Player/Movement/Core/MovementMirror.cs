@@ -58,6 +58,7 @@ public sealed class MovementMirror
         if (ctx.IsGrounded) marks |= Marks.Grounded;
         if (ctx.IsAirCrouching) marks |= Marks.AirCrouching;
         if (ctx.IsBigFall) marks |= Marks.BigFall;
+        if (ctx.SteersMove) marks |= Marks.Steers;
         // A held F's point and whether friends may poke them (PlayerPoint): the way they point is the look above.
         marks |= PlayerPoint.MarksOf(ctx);
         switch (ctx.CurrentState)
@@ -169,6 +170,7 @@ public sealed class MovementMirror
         ctx.Actions.sprintProgress = pose.RunIntent;
         ctx.Actions.Gait.Mirror(pose.Gait);
         ctx.Posture.airCrouching = Has(pose, Marks.AirCrouching);
+        ctx.mirroredSteers = Has(pose, Marks.Steers);
         PlayerPoint.Mirror(ctx, Has(pose, Marks.Pointing), Has(pose, Marks.NoPoke), Has(pose, Marks.PingPoint), Has(pose, Marks.PointAway));
         if (Body != null) Body.Step = pose.Step;
         abilities.Lean.Share = Mathf.Lerp(abilities.Lean.Share, pose.Lean, follow);
