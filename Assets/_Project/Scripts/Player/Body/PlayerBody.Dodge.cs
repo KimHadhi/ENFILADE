@@ -95,6 +95,7 @@ public sealed partial class PlayerBody
     // it had left off before them, and the legs swapped as it took over (the experts' read of 2026-11-23).
     private void StepFrom(Channel channel)
     {
+        StartGaitRecord($"넘어감: {channel?.Clip ?? "-"} @{(channel != null && channel.Playable.IsValid() ? channel.Playable.GetTime() : 0f):0.00}, {HorizontalSpeed():0.0} m/s");
         if (channel != null && !channel.Synced && channel.Playable.IsValid() && motions.TryGetValue(channel.Clip, out var motion)
             && motion != null && motion.StepAt((float)channel.Playable.GetTime(), out float place))
         {

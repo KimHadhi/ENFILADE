@@ -613,6 +613,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         PlaceBody();
         PlacePaired();
         AimLook(dt);
+        RecordGait(dt);
     }
 
     /// <summary>
