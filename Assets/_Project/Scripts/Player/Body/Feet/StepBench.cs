@@ -98,7 +98,7 @@ internal static class StepBench
                 ClipSampler.Sample(idle, animator.gameObject, time % Mathf.Max(.01f, idle.length));
                 root.SetPositionAndRotation(Vector3.zero, Quaternion.Euler(0f, legYaw, 0f));
                 root.localScale = rootScale * scale;
-                feet.Plant(true, 0f, Physics.DefaultRaycastLayers, tuning, Dt, FootPlanting.Stride.None,
+                feet.Plant(true, 0f, Physics.DefaultRaycastLayers, tuning, Dt,
                     new FootPlanting.Hold(true, Vector3.zero, root.eulerAngles.y, Twist, Drop, Release, StepTime, StepHeight, planner.Lead, planner.Share),
                     new FootPlanting.Steps(Vector3.zero, 0f, 0f));
                 Note(feet.Left, "L", time, ref leftWas, ref leftKept, ref leftSlid, steps);

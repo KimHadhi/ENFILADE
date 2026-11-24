@@ -31,10 +31,6 @@ public sealed partial class PlayerBody
     [Header("Stride")]
     [SerializeField, Tooltip("How much slower (x) and faster (y) than its own pace a cycle may play.")]
     private Vector2 gaitRate = new Vector2(.85f, 1.2f);
-    [SerializeField, Tooltip("How much shorter (x) and longer (y) than its own a cycle's stride may be stretched.")]
-    private Vector2 gaitStretch = new Vector2(.8f, 1.3f);
-    [SerializeField, Range(0f, .3f), Tooltip("The most the hips come down for a stretched stride's leg to reach, as a share of the leg.")]
-    private float gaitStretchDrop = .08f;
     [SerializeField, Range(0f, 1f), Tooltip("Sprinting with a gun out from this far into the sprint (PlayerMovement.SprintProgress), the "
         + "gun's run has the whole body (GunRuns).")]
     private float gunRunFrom = .5f;
@@ -108,16 +104,13 @@ public sealed partial class PlayerBody
     // carry the body at (m/s, in the body's own frame: x right, y ahead).
     private float mixWeight, mixStride, mixSpeed;
     private Vector2 mixVelocity;
-    // What the feet stretch the stride by (PlantFeet), the frame it was worked out on (a landing or a jump plays no cycles and
-    // stretches nothing), and the numbers behind it for the /gait readout.
-    private FootPlanting.Stride strideStretch;
+    // The frame the cycles last played on (a landing or a jump plays none), and the numbers behind their pace for the /gait
+    // readout.
     private int strideFrame = -1;
-    private float gaitSpeed, gaitNatural, gaitRateNow = 1f, gaitStretchNow = 1f;
+    private float gaitSpeed, gaitNatural, gaitRateNow = 1f;
     // How much of the body was on its cycles this frame rather than standing, for the run's calm camera (PlayerBody.Look).
     private float runCalmShare;
 
-    /// <summary>This frame's stride stretch for the feet, none unless the walk and run cycles played this frame.</summary>
-    private FootPlanting.Stride StrideNow => strideFrame == Time.frameCount ? strideStretch : FootPlanting.Stride.None;
 
     private void AddLocomotionChannels()
     {
@@ -144,7 +137,6 @@ public sealed partial class PlayerBody
         AddLeans();
         turning = 0;
         strideCount = 0;
-        strideStretch = FootPlanting.Stride.None;
     }
 
     private static float LegOf(Animator animator)
@@ -654,10 +646,13 @@ public sealed partial class PlayerBody
         mixVelocity += weight * velocity;
     }
 
-    // The step's pace and the stride's stretch. The cycles play as they were made where the body goes as fast as they do;
-    // what it goes faster or slower (its own legs against the four the speeds are for, a class's pace, a guard's slow walk) the
-    // pace and the stride share evenly, and what two ways lose blended (a diagonal of two steps at a right angle is three
-    // quarters as long as either) the stride makes up alone. Within gaitRate and gaitStretch; past both the feet slide.
+    // The step's pace. The cycles play as they were made where the body goes as fast as they do; what it goes faster or
+    // slower (its own legs against the four the speeds are for, a class's pace, a guard's slow walk, a diagonal of two steps
+    // at a right angle, three quarters as long as either) their pace makes up, within gaitRate. A foot that is down keeps
+    // its place whatever the pace (FootPlanting), so nothing skates past it either. Until 0.9.410 the stride was also
+    // stretched to the speed (Body.gaitStretch), each foot moved ahead or back of the hips; with the feet kept where they come
+    // down it did nothing but move them, and, coming on whole as a run took over from a turn's clip, it threw the swinging
+    // foot 15 to 25 cm in a frame (the user, 2026-11-24: "보폭 늘리기라는 시스템 때문에 지금 이랬다고? 그럼 없애면 되잖아").
     private void Pace(float speed, float legs, float moving, float dt)
     {
         if (player.IsNetworkDriven) FollowStep(dt);
@@ -665,28 +660,17 @@ public sealed partial class PlayerBody
         runCalmShare = moving;
         if (mixWeight <= 0f)
         {
-            strideStretch = FootPlanting.Stride.None;
             gaitNatural = 0f;
-            gaitRateNow = gaitStretchNow = 1f;
+            gaitRateNow = 1f;
             strideCycle = 0f;
             return;
         }
         float strideTime = Mathf.Max(.05f, mixStride / mixWeight);
         float rad = legs * Mathf.Deg2Rad;
         float along = Vector2.Dot(mixVelocity / mixWeight, new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)));
-        float rate = 1f, stretch = 1f;
+        float rate = 1f;
         if (along > .05f && speed > .05f)
-        {
-            float lo = Mathf.Min(gaitRate.x, gaitRate.y), hi = Mathf.Max(gaitRate.x, gaitRate.y);
-            float shortest = Mathf.Min(gaitStretch.x, gaitStretch.y), longest = Mathf.Max(gaitStretch.x, gaitStretch.y);
-            rate = Mathf.Clamp(Mathf.Sqrt(speed / Mathf.Max(.05f, mixSpeed / mixWeight)), lo, hi);
-            stretch = speed / (rate * along);
-            if (stretch > longest || stretch < shortest)
-            {
-                stretch = Mathf.Clamp(stretch, shortest, longest);
-                rate = Mathf.Clamp(speed / (stretch * along), lo, hi);
-            }
-        }
+            rate = Mathf.Clamp(speed / along, Mathf.Min(gaitRate.x, gaitRate.y), Mathf.Max(gaitRate.x, gaitRate.y));
         phase += dt * rate / strideTime;
         strideCycle = strideTime / Mathf.Max(.05f, rate);
         if (phase >= 1f)
@@ -696,33 +680,28 @@ public sealed partial class PlayerBody
         }
         gaitNatural = along;
         gaitRateNow = rate;
-        gaitStretchNow = stretch;
-        // Not while a layer has the legs (a reload kick): its feet aren't the cycles' stride.
-        float legsOwn = 1f - kickWeight;
-        strideStretch = new FootPlanting.Stride(stride, stretch, moving * legsOwn, gaitStretchDrop * legLength);
         strideFrame = Time.frameCount;
     }
 
-    /// <summary>This frame's run for the /gait averages: the speed (m/s), steps a minute, the stride's stretch and how fast the
-    /// feet still slide (m/s); false when no walk or run cycle played this frame.</summary>
-    internal bool TryGaitNow(out float speed, out float steps, out float stretch, out float slide)
+    /// <summary>This frame's run for the /gait averages: the speed (m/s), steps a minute and how much faster the body goes than
+    /// its cycles carry it at their pace (m/s); false when no walk or run cycle played this frame.</summary>
+    internal bool TryGaitNow(out float speed, out float steps, out float slide)
     {
         float strideTime = mixWeight > 0f ? mixStride / mixWeight : 0f;
         speed = gaitSpeed;
         steps = strideTime > 0f ? 120f * gaitRateNow / strideTime : 0f;
-        stretch = gaitStretchNow;
-        slide = Mathf.Max(0f, gaitSpeed - gaitNatural * gaitRateNow * gaitStretchNow);
+        slide = Mathf.Max(0f, gaitSpeed - gaitNatural * gaitRateNow);
         return strideFrame == Time.frameCount && mixWeight > 0f;
     }
 
     /// <summary>The stride as this body runs it now, for the /gait readout: the speed, the speed its cycles carry it at their own
-    /// pace, the pace against theirs, the stretch, steps a minute and how fast the feet still slide (m/s).</summary>
+    /// pace, the pace against theirs, steps a minute and how much faster the body goes than they carry it (m/s).</summary>
     internal string GaitReadout()
     {
-        TryGaitNow(out _, out float steps, out _, out float slide);
+        TryGaitNow(out _, out float steps, out float slide);
         if (mixWeight <= 0f) slide = 0f;
         var text = new System.Text.StringBuilder();
-        text.Append($"속도 {gaitSpeed:0.00} m/s · 클립 제 속도 {gaitNatural:0.00} · 박자 ×{gaitRateNow:0.00} · 보폭 ×{gaitStretchNow:0.00}");
+        text.Append($"속도 {gaitSpeed:0.00} m/s · 클립 제 속도 {gaitNatural:0.00} · 박자 ×{gaitRateNow:0.00}");
         text.Append($" · 분당 {steps:0}걸음 · 미끄러짐 {slide:0.00} m/s · 골반 {yaw:0}° · 다리 {legLength:0.00} m");
         foreach (var channel in channels)
             if (channel.Gait != null && channel.Target > .05f)
