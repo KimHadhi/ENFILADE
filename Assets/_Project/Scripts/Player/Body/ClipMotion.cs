@@ -50,6 +50,14 @@ public sealed class ClipMotion
     // faces against its root (degrees, + to the right, without jumps at the back), and where its root has gone in the frame it
     // began in (its own metres: x right, z ahead).
     private readonly float[] turned, facing, wayX, wayZ;
+    // How far it has gone at the same moments as a body carried over the ground by it feels it (its own metres): its pace
+    // smoothed over GlideOver either side, within each stretch between its markers (Down, Rises, LegsUnder, Up), each stretch
+    // still going as far as the clip does there, so a move that goes by it goes the clip's way and passes each marker where the
+    // clip does. A clip's own root lurches through a tumble (RollToRun_F: 2.7 to 7.7 m/s within a tenth of a second), and the
+    // capsule that carries the camera on the eyes went by it frame by frame until 0.9.394 (the experts' speed contract,
+    // 2026-11-24; the user: "다이브롤 이후 … 부자연스럽고 튀는데").
+    private readonly float[] glided;
+    private const float GlideOver = .1f;
 
     /// <summary>The clip's length (s).</summary>
     public float Length { get; }
@@ -100,7 +108,62 @@ public sealed class ClipMotion
         LegsUnder = RiseAt(LegsShare);
         OnFeet = RiseAt(FeetShare);
         Up = RiseAt(UpShare);
+        glided = Glide(gone, length, new[] { Down, Rises, LegsUnder, Up });
     }
+
+    // The distance curve of the pace smoothed with a Gaussian of GlideOver, stretch by stretch between these moments, each
+    // stretch scaled back to the distance the clip goes in it.
+    private static float[] Glide(float[] gone, float length, float[] marks)
+    {
+        int last = gone.Length - 1;
+        var glided = new float[last + 1];
+        if (last < 1 || length <= 0f) return glided;
+        float step = length / last;
+        var pace = new float[last];
+        for (int i = 0; i < last; i++) pace[i] = gone[i + 1] - gone[i];
+        var cuts = new List<int> { 0, last };
+        foreach (float mark in marks)
+        {
+            int at = Mathf.Clamp(Mathf.RoundToInt(mark / step), 0, last);
+            if (!cuts.Contains(at)) cuts.Add(at);
+        }
+        cuts.Sort();
+        var smoothed = new float[last];
+        int reach = Mathf.Max(1, Mathf.CeilToInt(3f * GlideOver / step));
+        for (int c = 0; c + 1 < cuts.Count; c++)
+        {
+            int from = cuts[c], to = cuts[c + 1];
+            float sum = 0f, smoothSum = 0f;
+            for (int i = from; i < to; i++) sum += pace[i];
+            for (int i = from; i < to; i++)
+            {
+                float weights = 0f, value = 0f;
+                for (int j = Mathf.Max(from, i - reach); j <= Mathf.Min(to - 1, i + reach); j++)
+                {
+                    float x = (j - i) * step / GlideOver, weight = Mathf.Exp(-.5f * x * x);
+                    weights += weight;
+                    value += weight * pace[j];
+                }
+                smoothed[i] = weights > 0f ? value / weights : pace[i];
+                smoothSum += smoothed[i];
+            }
+            float scale = smoothSum > 1e-6f ? sum / smoothSum : 1f;
+            for (int i = from; i < to; i++) smoothed[i] *= scale;
+        }
+        for (int i = 0; i < last; i++) glided[i + 1] = glided[i] + smoothed[i];
+        return glided;
+    }
+
+    /// <summary>How fast it goes at its moment as a body carried over the ground by it feels it (m/s): its pace smoothed (Glide).</summary>
+    public float GlideAt(float time)
+    {
+        float step = Length / Mathf.Max(1, glided.Length - 1);
+        float from = Mathf.Clamp(time - step, 0f, Length), to = Mathf.Clamp(time + step, 0f, Length);
+        return to - from > 1e-4f ? (At(glided, to) - At(glided, from)) * Metres / (to - from) : 0f;
+    }
+
+    /// <summary>How far it has gone at its moment by its smoothed pace (m).</summary>
+    public float GlidedAt(float time) => At(glided, time) * Metres;
 
     /// <summary>How far it has gone at its moment (m).</summary>
     public float GoneAt(float time) => At(gone, time) * Metres;

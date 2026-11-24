@@ -12,11 +12,12 @@ using State = PlayerMovement.MovementState;
 /// - Heavy (Dynamic Landing), once the fall hurts (faster than safeFallSpeed after more than safeFallDistance): fall
 ///   damage, which bypasses dodge i-frames, then the HeavyLanding state takes the player down and up again without
 ///   control: onto hands and knees, flat on the face from a huge fall, or onto the back when moving backwards.
-/// - Ctrl within rollInputWindow before a hard or heavy touchdown rolls instead: no damage, no slowdown, speed kept. As its
-///   body begins to rise the keys choose again how it ends (Choose), and while its body is down it carries the speed it came
-///   in with (Carry).
-///   Slower than rollLandSpeed, or pulling back, it lands on the spot for its clip's length instead, as Beatrun's safety roll
-///   does, and still takes rollInPlaceDamageShare of the damage. A fall that
+/// - Ctrl within rollInputWindow before a hard or heavy touchdown rolls instead: no damage, no slowdown, speed kept. It goes
+///   on one speed contract (RollSpeed): its clip's smoothed pace (ClipMotion.GlideAt), scaled to the speed it came in with
+///   until its legs are under it, its run-out played at the rate that brings its pace to the gait the keys ask for; as its body
+///   begins to rise the keys choose again how it ends (Choose): running on, down into a crouch, or standing up.
+///   Slower than rollLandSpeed it lands on the spot for its clip's length instead, as Beatrun's safety roll does, and still
+///   takes rollInPlaceDamageShare of the damage. A fall that
 ///   turned into a big fall can't be rolled: in
 ///   Beatrun the panic starts at the speed where no roll saves you.
 /// - KnockBack throws the player; they land heavily on their back facing the blow, hurt or not.
@@ -80,35 +81,44 @@ public sealed class MovementLanding
     /// <summary>The roll under way, and its clip (the PlayerBody profile's name).</summary>
     public Roll RollKind { get; private set; }
     public string RollClip { get; private set; } = "";
-    /// <summary>The clip's moment at the roll's start (s): 0, or for a slide's jump where its body has thrown itself on, for it
-    /// comes up out of a slide. A late choice (Choose) moves it, so the clip that takes over plays on from the same point of the
-    /// roll: its moment is this and the time in the roll.</summary>
-    public float RollFrom { get; private set; }
-    /// <summary>How long the roll under way lasts (s): one that stands up until its body is back up, one that runs on until its
-    /// first footfall once its legs are under it (where the walk or run takes its stride: PlayerBody.HasStepped), a landing on
-    /// the spot its clip's length.</summary>
-    public float RollTime => RollMotion == null ? PlainRoll : RollKind == Roll.OnTheSpot ? RollMotion.Length : RollEnd - RollFrom;
+    /// <summary>The roll's clip's moment now (s): the body plays its clip there (PlayerBody), the other PCs get it with the pose.</summary>
+    public float RollMoment => rollTime;
+    /// <summary>The roll ends down in a crouch where its legs come under it (Ctrl held as its body begins to rise: Choose).</summary>
+    public bool RollCrouches { get; private set; }
+    /// <summary>The roll is over: a moving one that runs on at its first footfall once its legs are under it (where the walk or
+    /// run takes its stride: PlayerBody.HasStepped), one that goes down into a crouch where its legs are under it, one that stands
+    /// up once its body is back up, a landing on the spot at its clip's end.</summary>
+    public bool RollOver => rollTime >= RollEndAt;
     /// <summary>How long into the roll its body meets the ground (s).</summary>
-    public float RollDown => RollMotion != null ? RollMotion.Down - RollFrom : 0f;
+    public float RollDown => RollMotion != null ? RollMotion.Down - rollFrom : 0f;
     /// <summary>A slide's jump, either way it ends.</summary>
     public bool Dives => RollKind == Roll.Dive || RollKind == Roll.DiveRunsOn;
     /// <summary>Rolling over out of a slide's jump.</summary>
     public bool DiveRolls => ctx.CurrentState == State.LandingRoll && Dives;
-    /// <summary>When in the roll the keys chose again how it ends and changed its clip (s; 0 not), for the copies (MovementMirror).</summary>
-    public float RollChosenAt { get; private set; }
     private ClipMotion RollMotion => ctx.MotionOf(RollClip);
-    // The moving roll's travel as its clip goes.
-    private readonly ClipTravel roll = new ClipTravel();
-    // The way the roll goes from the way the body faced as it began (degrees), whether the keys have had their late choice, and
-    // the speed it went at last (m/s).
-    private float rollHeading, rollSpeed;
+    // The way the roll goes from the way the body faced as it began (degrees), and whether the keys have had their late choice.
+    private float rollHeading;
     private bool rollChose;
-    // While its body is down (Carry): from what speed to what (m/s), over how long, and how far into that (s).
-    private float carryFrom, carryTo, carryLength, carryTime;
+    // The roll on its clip: the moment it began at and its moment now (s), the share of the clip's pace it goes at as it came
+    // in (from what it landed at to 1 by the clip's LegsUnder: no planted foot slides), and the rate its run-out plays at (from
+    // 1 at the clip's Rises to this by its LegsUnder).
+    private float rollFrom, rollTime, rollIn = 1f, rollRate = 1f;
+    // A copy's roll moment goes on between poses at the clip's pace, and is set again by one further off than this (s).
+    private const float MirrorSlack = .15f;
     /// <summary>The roll under way runs on out of itself (a landing's, or a slide's jump).</summary>
     public bool RunsOut => RollKind == Roll.RunsOn || RollKind == Roll.DiveRunsOn;
-    // Where in its clip a moving roll ends (s): see RollTime.
-    private float RollEnd => RunsOut && RollMotion.StepAfter(RollMotion.LegsUnder, out float step) ? step : RollMotion.Up;
+    // Where in its clip the roll ends (s): see RollOver.
+    private float RollEndAt
+    {
+        get
+        {
+            var motion = RollMotion;
+            if (motion == null) return rollFrom + PlainRoll;
+            if (RollKind == Roll.OnTheSpot) return motion.Length;
+            if (RollCrouches) return motion.LegsUnder;
+            return RunsOut && motion.StepAfter(motion.LegsUnder, out float step) ? step : motion.Up;
+        }
+    }
     /// <summary>Thrown by a blow and not down yet.</summary>
     public bool IsKnockedBack { get; private set; }
     /// <summary>The player has no control: thrown by a blow, or down after a heavy landing.</summary>
@@ -306,7 +316,7 @@ public sealed class MovementLanding
         var settings = ctx.AbilitySettings;
         float speed = ctx.HorizontalVelocity.magnitude;
         SetRoll(inPlace ? Roll.OnTheSpot : speed >= settings.rollRunSpeed ? Roll.RunsOn : Roll.StandsUp, HeadingOf(direction, ctx.transform.eulerAngles.y));
-        if (!inPlace && !roll.Begin(RollMotion, 0f, settings.clipTravelMost)) SetRoll(Roll.OnTheSpot, 0f);
+        if (!inPlace && RollMotion == null) SetRoll(Roll.OnTheSpot, 0f);
         StartRoll(0f, speed);
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
@@ -335,13 +345,12 @@ public sealed class MovementLanding
         Roll before = RollKind;
         string clip = RollClip;
         SetRoll(GoesOn ? Roll.DiveRunsOn : Roll.Dive, 0f);
-        float from = RollMotion != null ? RollMotion.BurstTo : 0f;
-        if (!roll.Begin(RollMotion, from, ctx.AbilitySettings.clipTravelMost))
+        if (RollMotion == null)
         {
             (RollKind, RollClip) = (before, clip);
             return false;
         }
-        StartRoll(from, ctx.HorizontalVelocity.magnitude);
+        StartRoll(RollMotion.BurstTo, ctx.HorizontalVelocity.magnitude);
         ctx.Abilities.ActionDirection = direction;
         ctx.ChangeState(State.LandingRoll);
         return true;
@@ -350,11 +359,13 @@ public sealed class MovementLanding
     // A roll begins at its clip's moment `from`, the body coming in at `speed` (m/s).
     private void StartRoll(float from, float speed)
     {
-        RollFrom = from;
-        RollChosenAt = 0f;
-        rollChose = false;
-        rollSpeed = speed;
-        Carry(speed);
+        rollFrom = rollTime = from;
+        rollChose = RollCrouches = false;
+        rollRate = 1f;
+        var motion = RollMotion;
+        float pace = motion != null ? motion.GlideAt(from) : 0f;
+        Vector2 warp = ctx.AbilitySettings.travelWarp;
+        rollIn = RollKind == Roll.OnTheSpot || pace < .1f ? 1f : Mathf.Clamp(speed / pace, Mathf.Min(warp.x, warp.y), Mathf.Max(warp.x, warp.y));
     }
 
     // The keys held on ahead: within RunsOnWithin of the way the view faces.
@@ -366,51 +377,36 @@ public sealed class MovementLanding
     /// 2026-11-24: "Include dive roll"). The roll began on the speed it landed at (Ability.rollRunSpeed) or, a slide's jump, on
     /// the keys then. The clip that takes over plays on from the same point of the roll, its own Rises (BIPER's rolls share their
     /// tumble: RollToRun_F and Roll_F are two frames apart there, the experts' measure), the bones easing the switch
-    /// (BodyInertia). Only a way that has a roll running on (ahead: Ability.rollRunWays) has the choice.
+    /// (BodyInertia). Only a way that has a roll running on (ahead: Ability.rollRunWays) has the choice to run on. Ctrl held, it
+    /// goes down into a crouch instead where its legs come under it, never standing up first (0.9.394; the user: "다이브롤 이후
+    /// 앉거나 … 부자연스럽고 튀는데"). Running on, its run-out plays at the rate (Ability.runOutRate) that brings its pace to the
+    /// gait the keys ask for, the body's speed with it, so the walk or run takes over at its own speed (the experts' contract).
     /// </summary>
     private void Choose()
     {
         var motion = RollMotion;
-        if (rollChose || RollKind == Roll.OnTheSpot || motion == null || roll.Time < motion.Rises) return;
+        if (rollChose || RollKind == Roll.OnTheSpot || motion == null || rollTime < motion.Rises) return;
         rollChose = true;
-        Roll want = Dives ? (GoesOn ? Roll.DiveRunsOn : Roll.Dive) : GoesOn ? Roll.RunsOn : Roll.StandsUp;
-        if (want == RollKind) return;
-        Roll before = RollKind;
-        string clip = RollClip;
-        SetRoll(want, rollHeading);
-        if (RollKind == before || RollMotion == null)
+        bool crouch = ctx.Input.CrouchHeld;
+        bool goesOn = GoesOn && !crouch;
+        Roll want = Dives ? (goesOn ? Roll.DiveRunsOn : Roll.Dive) : goesOn ? Roll.RunsOn : Roll.StandsUp;
+        if (want != RollKind)
         {
-            (RollKind, RollClip) = (before, clip);
-            return;
+            Roll before = RollKind;
+            string clip = RollClip;
+            SetRoll(want, rollHeading);
+            if (RollKind == before || RollMotion == null) (RollKind, RollClip) = (before, clip);
+            // The clip that takes over plays on from its own Rises: the same point of the roll.
+            else rollTime = RollMotion.Rises;
         }
-        RollChosenAt = Mathf.Max(.001f, ctx.CurrentStateDuration);
-        RollFrom = RollMotion.Rises - RollChosenAt;
-        roll.Begin(RollMotion, RollMotion.Rises, ctx.AbilitySettings.clipTravelMost);
-        Carry(rollSpeed);
-    }
-
-    /// <summary>
-    /// While the roll's body is down, to its clip's LegsUnder, it goes from the speed it is at evenly to its clip's pace there,
-    /// no shorter a way than the clip goes and no more than Ability.rollReachMost times as far; from there at the clip's own
-    /// travel, its feet stepping as the clip's. The slide's dive roll that stands up goes as its clip does all the way,
-    /// Ability.diveRollReach times as far, as the user asked of it (2026-11-23): evenly at that reach it would set off at about
-    /// 10 m/s. Tumbling, no foot is planted, so the speed carried shows nowhere as a foot sliding (the experts'
-    /// speed contract, 2026-11-24: out of a sprint at 6.1 m/s the roll took the clip's pace from its first frame, about 4.5, and
-    /// the sprint then sped it up again; the clip's own travel through a tumble lurches between 2.7 and 6.9, felt at the eyes).
-    /// </summary>
-    private void Carry(float speed)
-    {
-        carryLength = carryTime = 0f;
-        var motion = RollMotion;
-        if (motion == null || RollKind == Roll.OnTheSpot || RollKind == Roll.Dive) return;
-        float now = roll.Time, end = motion.LegsUnder, length = end - now;
-        float clip = motion.GoneAt(end) - motion.GoneAt(now);
-        if (length <= .02f || clip <= .01f) return;
-        float most = Mathf.Max(1f, ctx.AbilitySettings.rollReachMost);
-        carryTo = motion.PaceAt(end);
-        // Evenly from `from` to carryTo goes (from + carryTo) / 2 * length.
-        carryFrom = Mathf.Clamp(speed, Mathf.Max(0f, 2f * clip / length - carryTo), Mathf.Max(0f, 2f * most * clip / length - carryTo));
-        carryLength = length;
+        RollCrouches = crouch;
+        motion = RollMotion;
+        rollRate = 1f;
+        if (!RunsOut || !motion.StepAfter(motion.LegsUnder, out float exit) || exit <= motion.LegsUnder) return;
+        // The run-out's own pace, from its legs under it to its first footfall, brought to the gait's.
+        float pace = (motion.GlidedAt(exit) - motion.GlidedAt(motion.LegsUnder)) / (exit - motion.LegsUnder);
+        Vector2 rate = ctx.AbilitySettings.runOutRate;
+        if (pace > .1f) rollRate = Mathf.Clamp(ctx.Actions.Gait.SpeedFor(ctx.CurrentInput) / pace, Mathf.Min(rate.x, rate.y), Mathf.Max(rate.x, rate.y));
     }
 
     // The clip a roll of this kind going this way (degrees from the way they face) is: running on out of it where the pack has
@@ -432,12 +428,21 @@ public sealed class MovementLanding
 
     /// <summary>Another PC's roll as its pose says: the same kind and way are the same clip, and one the keys chose again
     /// <paramref name="chosenAt"/> s into it (0 not) plays on from its own Rises there, as on the PC that rolls.</summary>
-    internal void MirrorRoll(Roll kind, Vector3 direction, float yaw, float chosenAt)
+    internal void MirrorRoll(Roll kind, bool crouches, Vector3 direction, float yaw, float moment)
     {
-        SetRoll(kind, HeadingOf(direction, yaw));
-        RollChosenAt = chosenAt;
-        var motion = RollMotion;
-        RollFrom = motion == null ? 0f : chosenAt > 0f ? motion.Rises - chosenAt : Dives ? motion.BurstTo : 0f;
+        bool fresh = ctx.CurrentState != State.LandingRoll;
+        if (fresh || kind != RollKind)
+        {
+            SetRoll(kind, HeadingOf(direction, yaw));
+            if (fresh) rollFrom = moment;
+            rollTime = moment;
+        }
+        else
+        {
+            float on = rollTime + Time.deltaTime;
+            rollTime = Mathf.Abs(on - moment) > MirrorSlack ? moment : on;
+        }
+        RollCrouches = crouches;
     }
 
     // A way this far from every running roll's is none of theirs (degrees).
@@ -510,25 +515,40 @@ public sealed class MovementLanding
         rollBuffer = LastImpactSpeed = LastFallDistance = recoverLeft = noSprintLeft = 0f;
         IsKnockedBack = false;
         RollKind = Roll.StandsUp;
-        RollFrom = RollChosenAt = 0f;
+        rollFrom = rollTime = 0f;
+        RollCrouches = false;
         LastTier = Tier.Light;
     }
 
-    /// <summary>How fast the moving roll goes over this frame (m/s): while its body is down evenly from the speed it came in with
-    /// (Carry), then its clip's travel from now to a frame on, in the clip's own time and with the clip played as it is (the user,
-    /// 2026-11-23: "걸리는 시간 바꾸지 마시고요... 애니메이션 그대로 쓰라고"); the slide's dive roll that stands up further than its
-    /// clip (Ability.diveRollReach; "다이브롤 거리인지 속도인지 암튼 상향해 주시고"). The keys' late choice comes first (Choose).</summary>
+    /// <summary>How fast the roll goes over this frame (m/s), its clip's moment going on with it: the clip's smoothed pace
+    /// (ClipMotion.GlideAt), times the share it came in at (rollIn, easing to 1 by the clip's LegsUnder), times the rate its run-out
+    /// plays at (rollRate, from the clip's Rises). The tumble itself plays at the clip's own time (the user, 2026-11-23: "걸리는
+    /// 시간 바꾸지 마시고요... 애니메이션 그대로 쓰라고"); a run-out at most Ability.runOutRate faster or slower ("속도가 조절되도
+    /// 좋으니 … 너무 극단적으론 가진 말고", 2026-11-24). Until 0.9.394 the body went evenly from the speed it landed at to the clip's
+    /// pace at its LegsUnder and from there by the clip's own root frame by frame: 4.6, 6.0, 3.6, 2.5, 7.3, 3.3 m/s through one
+    /// roll's end (걸음 기록 of 2026-11-24 16:52), and the run took over at 3.3 m/s and sped to 5.5 in 0.2 s. On the spot it goes
+    /// nowhere and its clip plays at its own pace. The keys' late choice comes first (Choose).</summary>
     internal float RollSpeed(float dt)
     {
         if (dt <= 0f) return 0f;
-        Choose();
-        if (carryTime < carryLength)
+        var motion = RollMotion;
+        if (motion == null || RollKind == Roll.OnTheSpot)
         {
-            carryTime += dt;
-            roll.Pass(dt);
-            rollSpeed = Mathf.Lerp(carryFrom, carryTo, carryTime / carryLength);
+            rollTime += dt;
+            return 0f;
         }
-        else rollSpeed = roll.Go(dt) / dt * (RollKind == Roll.Dive ? ctx.AbilitySettings.diveRollReach : 1f);
-        return rollSpeed;
+        Choose();
+        float rate = rollTime <= motion.Rises || motion.LegsUnder <= motion.Rises ? 1f
+            : Mathf.Lerp(1f, rollRate, Smooth((rollTime - motion.Rises) / (motion.LegsUnder - motion.Rises)));
+        rollTime += dt * rate;
+        float warp = rollTime >= motion.LegsUnder || motion.LegsUnder <= rollFrom ? 1f
+            : Mathf.Lerp(rollIn, 1f, Smooth((rollTime - rollFrom) / (motion.LegsUnder - rollFrom)));
+        return warp * rate * motion.GlideAt(rollTime);
+    }
+
+    private static float Smooth(float share)
+    {
+        share = Mathf.Clamp01(share);
+        return share * share * (3f - 2f * share);
     }
 }

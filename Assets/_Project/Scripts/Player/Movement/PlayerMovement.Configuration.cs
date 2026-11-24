@@ -79,6 +79,9 @@ public sealed partial class PlayerMovement
     [Tooltip("Out of a one-off that runs on faster than the gait the keys ask for (a slide's getting up, a roll, a landing on the "
         + "run), how quickly the body comes down to the gait (m/s a second), the legs' gait with it (MovementGait.Carry).")]
     [SerializeField, Min(.1f)] internal float runOutCoast = 2.5f;
+    [Tooltip("Out of a one-off that runs on slower than the gait the keys ask for (a roll's run-out), how quickly the body speeds "
+        + "up to it (m/s a second), the legs' gait with it (MovementGait.Carry).")]
+    [SerializeField, Min(.1f)] internal float runOutAccel = 4.5f;
     [SerializeField, Min(0f)] internal float airControlSharpness = 5.0f;
     [SerializeField, Min(0f)] internal float jumpHeight = 1.3f;
     [SerializeField] internal float gravity = -24f;

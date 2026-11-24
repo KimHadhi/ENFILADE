@@ -68,7 +68,8 @@ public sealed class MovementGait
     internal void Mirror(float value) => position = Mathf.Clamp(value, 0f, Sprint);
 
     /// <summary>The body goes this fast (m/s) out of a one-off that runs on (while its clip runs out, and as a roll that runs on
-    /// ends): from there it comes down to the gait the keys ask for at Move.runOutCoast, the legs' gait with it.</summary>
+    /// ends): from there it goes to the gait the keys ask for, down at Move.runOutCoast or up at Move.runOutAccel, the legs' gait
+    /// with it. Until 0.9.394 it only came down; faster keys went at the run's own pull, 3.3 to 5.5 m/s in 0.2 s out of a roll.</summary>
     internal void Carry(float speed) => carried = Mathf.Max(0f, speed);
 
     /// <summary>How fast the body still goes out of a one-off that ran on (m/s); 0 once it is down to its gait.</summary>
@@ -130,12 +131,14 @@ public sealed class MovementGait
         float heading = Heading(input);
         if (carried > 0f)
         {
-            // Only standing on the ground and going on ahead; stopped, turned or down to the gait, it is the gait's again.
-            carried -= ctx.runOutCoast * dt;
+            // Only standing on the ground and going on ahead; stopped, turned or at the gait's speed, it is the gait's again.
+            float gait = Legs(heading, Asked, ctx.AimShare);
+            carried = Mathf.MoveTowards(carried, gait, (carried > gait ? ctx.runOutCoast : ctx.runOutAccel) * dt);
             bool goesOn = input.y > .1f && ctx.Motor.isGrounded && ctx.CurrentState == PlayerMovement.MovementState.Standing;
-            if (!goesOn || carried <= Legs(heading, Asked, ctx.AimShare)) carried = 0f;
+            if (!goesOn || Mathf.Abs(carried - gait) < .01f) carried = 0f;
         }
         position = Mathf.MoveTowards(position, Asked, dt / GaitChange);
-        if (carried > 0f) position = Mathf.Max(position, PlaceOf(carried, heading));
+        // The legs at the speed the body goes.
+        if (carried > 0f) position = PlaceOf(carried, heading);
     }
 }

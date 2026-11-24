@@ -862,7 +862,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 // playing on from the same point of the roll (MovementLanding.Choose), the bones easing the switch.
                 rollClip = player.Abilities.Landing.RollClip;
                 if (player.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot) Want(rollClip);
-                else Drive(rollClip, (player.Abilities.Landing.RollFrom + stateTime) / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
+                else Drive(rollClip, player.Abilities.Landing.RollMoment / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
                 if (player.Abilities.Landing.Dives) FaceRoll();
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
@@ -927,8 +927,10 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (from == MovementState.Sliding && (to == MovementState.Crouching || (onGround && SlideStops(from, to)))) SlowBlend(slideCrouchTime);
         if (from == MovementState.DashPush && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(dashPush);
-        if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
-            PlayOn(rollClip);
+        // Out of a roll standing the roll plays on; down into a crouch where its legs came under it the crouch's pose takes over
+        // from the roll's as from a slide's (0.9.394: it played the roll on up to standing and then crouched again).
+        if (from == MovementState.LandingRoll && onGround && to == MovementState.Standing) PlayOn(rollClip);
+        if (from == MovementState.LandingRoll && onGround && to == MovementState.Crouching) SlowBlend(slideCrouchTime);
         if (from == MovementState.StepDodge && onGround) LeaveDodge(to);
         StartLying(from, to);
         if (to == MovementState.Proning) EnterProne(from);

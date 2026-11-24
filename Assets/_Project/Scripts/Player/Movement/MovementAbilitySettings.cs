@@ -238,11 +238,12 @@ public sealed class MovementAbilitySettings
     [Tooltip("A slide's jump, a dive roll: its clips, standing up out of it and running on (chosen by the keys: MovementLanding). "
         + "From where its body has thrown itself on, at the clip's own time.")]
     public string diveRoll = "DiveRoll_F", diveRollRun = "DiveRollToRun_F";
-    [Tooltip("How much further than its clip the dive roll that stands up goes (1 as the clip does), in the clip's own time.")]
-    [Min(.1f)] public float diveRollReach = 1.25f;
-    [Tooltip("While its body is down a roll keeps the speed it came in with, going up to this many times as far as its clip does "
-        + "there (MovementLanding.Carry); its feet step as the clip does once its legs are under it.")]
-    [Min(1f)] public float rollReachMost = 1.25f;
+    [Tooltip("A roll goes at its clip's smoothed pace times the speed it came in with over the clip's there, kept within these "
+        + "(lowest; highest), easing to the clip's own by the time its legs are under it (MovementLanding.RollSpeed).")]
+    public Vector2 travelWarp = new Vector2(.8f, 1.35f);
+    [Tooltip("A roll's run-out plays at the rate that brings its pace to the gait the keys ask for, within these (lowest; "
+        + "highest), the body's speed with it (MovementLanding.Choose).")]
+    public Vector2 runOutRate = new Vector2(.85f, 1.2f);
     [Tooltip("A run's turn back (RunTurn): its clips by gait, side and the foot down, in this order: jog left (left foot, right "
         + "foot), jog right, sprint left, sprint right.")]
     public string runTurns = "Jog_TurnL_Lfoot;Jog_TurnL_Rfoot;Jog_TurnR_Lfoot;Jog_TurnR_Rfoot;Sprint_TurnL_Lfoot;Sprint_TurnL_Rfoot;Sprint_TurnR_Lfoot;Sprint_TurnR_Rfoot";

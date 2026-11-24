@@ -17,7 +17,7 @@ public sealed class GroundBurstState : MovementBaseState
     public override string Name => kind.ToString();
     // A dash push stays upright, so a run that carries on after it never dips the body.
     public override MovementPosture Posture => kind == State.DashPush ? MovementPosture.Standing : MovementPosture.Crouching;
-    private float Duration => kind == State.LandingRoll ? ctx.Abilities.Landing.RollTime : ctx.AbilitySettings.dashPushDuration;
+    private bool Over => kind == State.LandingRoll ? ctx.Abilities.Landing.RollOver : ctx.CurrentStateDuration >= ctx.AbilitySettings.dashPushDuration;
     public override void Enter() { rollStopped = false; expected = 0f; initialSpeed = ctx.HorizontalVelocity.magnitude; ctx.Actions.ClearJumpBuffer(); }
     public override void UpdateLogic(float dt)
     {
@@ -29,14 +29,14 @@ public sealed class GroundBurstState : MovementBaseState
         }
         if (kind == State.LandingRoll && expected > .01f && (ctx.Motor.lastMoveFlags & CollisionFlags.Sides) != 0
             && Vector3.Dot(ctx.transform.position - frameStart, ctx.Abilities.ActionDirection) < expected * HeldBackShare) StopRoll();
-        if (!ctx.IsGrounded || ctx.CurrentStateDuration >= Duration) ctx.Abilities.ReturnToLocomotion();
+        if (!ctx.IsGrounded || Over) ctx.Abilities.ReturnToLocomotion();
     }
     public override void UpdatePhysics(float dt)
     {
-        // A roll carries its speed while its body is down and then goes at its clip's own travel (MovementLanding.RollSpeed); a
-        // landing on the spot stops dead.
-        float speed = kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed
-            : rollStopped || ctx.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot ? 0f : ctx.Abilities.Landing.RollSpeed(dt);
+        // A roll goes on its speed contract (MovementLanding.RollSpeed), its clip's moment with it even when a wall has stopped it
+        // or it lands on the spot.
+        float speed = kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed : ctx.Abilities.Landing.RollSpeed(dt);
+        if (rollStopped) speed = 0f;
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
         expected = speed * dt;
@@ -46,7 +46,7 @@ public sealed class GroundBurstState : MovementBaseState
     {
         if (kind == State.DashPush) ctx.Abilities.Combat.EndDashPush();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(initialSpeed, ctx.WalkSpeed));
-        // A roll that runs on hands its pace to the gait, which comes down from it (MovementGait.Carry).
+        // A roll that runs on hands its speed to the gait, which goes on from it to the keys' (MovementGait.Carry).
         if (kind == State.LandingRoll && ctx.Abilities.Landing.RunsOut) ctx.Actions.Gait.Carry(ctx.HorizontalVelocity.magnitude);
     }
     public override void OnColliderHit(ControllerColliderHit hit)

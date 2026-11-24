@@ -82,10 +82,10 @@ public sealed class MovementMirror
             case State.HeavyLanding: pose.Detail = landing.HeavyYaw; break;
             // The kind and the way: the copies pick the same clip.
             case State.LandingRoll:
-                pose.Detail = (float)landing.RollKind;
+                // Its kind, ten more ending in a crouch, and its clip's moment: the copies play the same clip at the same point.
+                pose.Detail = (float)landing.RollKind + (landing.RollCrouches ? 10f : 0f);
                 pose.Direction = abilities.ActionDirection;
-                // When the keys chose again how it ends (MovementLanding.Choose): the copies play the new clip on from there.
-                pose.Extent = landing.RollChosenAt;
+                pose.Extent = landing.RollMoment;
                 break;
             case State.Vault:
             case State.Mantle:
@@ -208,8 +208,8 @@ public sealed class MovementMirror
                 break;
             case State.LandingRoll:
                 abilities.ActionDirection = pose.Direction;
-                abilities.Landing.MirrorRoll((MovementLanding.Roll)Mathf.Clamp(Mathf.RoundToInt(pose.Detail), 0, 4), pose.Direction, pose.Yaw,
-                    pose.Extent);
+                abilities.Landing.MirrorRoll((MovementLanding.Roll)Mathf.Clamp(Mathf.RoundToInt(pose.Detail) % 10, 0, 4),
+                    Mathf.RoundToInt(pose.Detail) >= 10, pose.Direction, pose.Yaw, pose.Extent);
                 break;
             case State.Vault:
             case State.Mantle:
