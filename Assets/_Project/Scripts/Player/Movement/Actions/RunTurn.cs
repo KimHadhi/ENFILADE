@@ -140,9 +140,12 @@ public sealed class RunTurn
         float speed = now.magnitude;
         if (active || ctx.CurrentState != State.Standing || !ctx.IsGrounded || input.y <= .1f
             || Vector2.Angle(input, Vector2.up) > AheadWithin || wanted.sqrMagnitude < .01f) return false;
+        // A run that goes ahead on its legs (the way it goes within AheadWithin of the way the body faces): a back strafe's
+        // hips are turned up to 60 degrees off the view (PlayerBody.WarpWay), which is no flick of the view.
         float view = ctx.transform.eulerAngles.y, behind = Mathf.DeltaAngle(view, bodyYaw);
         if (speed < settings.runTurnSpeed || Vector3.Angle(now, wanted) < settings.runTurnAngle
-            || Mathf.Abs(behind) < ViewLedLeast) return false;
+            || Mathf.Abs(behind) < ViewLedLeast
+            || Vector3.Angle(now, Quaternion.Euler(0f, bodyYaw, 0f) * Vector3.forward) > AheadWithin) return false;
         // Round the way the body is behind the view (the way the view went round), else the short way.
         bool left = Mathf.Abs(behind) > 1f ? behind > 0f : Vector3.SignedAngle(now, wanted, Vector3.up) < 0f;
         // Of the way round's two clips (the pivot on the left foot or the right), the one and the moment whose stride stands

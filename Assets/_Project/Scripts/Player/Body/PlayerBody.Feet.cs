@@ -110,7 +110,7 @@ public sealed partial class PlayerBody
 
     // 발 기록 (Logs/feet.txt, "발 기록 봐 줘"): a line a frame while the legs walk or run or the keys ask them to (and a second
     // after), and for a second from when the body runs at FeetRecordSpeed or faster, the capsule's floor jumps FeetRecordPop or
-    // more in a frame (a step up or down a stair) or a run's turn plays: what the feet stood on, how the hips and the eyes
+    // more in a frame (a step up or down a stair) or a run's turn or a turn on the spot plays: what the feet stood on, how the hips and the eyes
     // followed, and what the legs looked like and what made them so (the clips and the switch easing between them; each foot
     // off its hip, its knee's bend, which way it points, how far the IK moved it off the clip's place), so a foot that jumps or
     // slides or a leg that looks wrong shows in numbers without playing it (the user, 2026-11-24: "달리다가 … 발이 텔레포트하거나
@@ -122,7 +122,7 @@ public sealed partial class PlayerBody
     // 존나 확실히 잘 해야 할 거야").
     private const string FeetRecord = "feet";
     private const string FeetRecordHeading = "발 기록 (PlayerBody.RecordFeet): 다리가 걷거나 달리거나 키가 다리를 부르는 동안(그리고 멈춘 뒤 1초), "
-        + "4m/s 넘게 달리거나 캡슐 바닥이 한 프레임에 3cm 넘게 뛰거나 달리다 돌기가 나올 때부터 1초 동안 프레임마다 한 줄: 지난 초, 속도(m/s), "
+        + "4m/s 넘게 달리거나 캡슐 바닥이 한 프레임에 3cm 넘게 뛰거나 달리다 돌기·제자리 돌기가 나올 때부터 1초 동안 프레임마다 한 줄: 지난 초, 속도(m/s), "
         + "키가 다리에게 가라는 쪽·다리가 가는 쪽(발을 디딜 때 바뀜)·실제로 가는 쪽·몸(골반)이 보는 쪽(시선 기준 도), 시선이 도는 빠르기(도/초), 걸음 자리(0 왼발 디딤, .5 오른발), "
         + "클립 사이를 잇는 관성이 남은 시간(초), 무게가 큰 클립 셋; 캡슐 바닥 높이와 이 프레임 변화(cm), 고른 바닥과 엉덩이 바닥이 캡슐 바닥에서 "
         + "떨어진 정도(cm), 다리가 닿게 내린 엉덩이(cm); 발마다 디딤(D)·흔들림(S), 땅에 닿은 발바닥 끝(뒤꿈치·발끝, 땅에서 2cm 안이 아니면 뜸)과 "
@@ -151,7 +151,7 @@ public sealed partial class PlayerBody
         int rightEnd = SoleEnd(feet.Right, rightSoleEndWas, out Vector3 rightSole, out float rightOver);
         // The legs walk or run or the keys ask them to: every frame, and a second after. Anything else starts a second.
         bool walks = walkedFrame == Time.frameCount || player.StrideFrame == Time.frameCount && player.Stride.sqrMagnitude > .01f;
-        string why = walks ? "걷기·달리기" : turnClip != null ? "달리다 돌기" : speed >= FeetRecordSpeed ? "빠르게 달리기"
+        string why = walks ? "걷기·달리기" : turnClip != null ? "달리다 돌기" : standTurn != null ? "제자리 돌기" : speed >= FeetRecordSpeed ? "빠르게 달리기"
             : Mathf.Abs(pop) >= FeetRecordPop ? "캡슐 바닥 뜀" : null;
         if (onFeet && why != null)
         {

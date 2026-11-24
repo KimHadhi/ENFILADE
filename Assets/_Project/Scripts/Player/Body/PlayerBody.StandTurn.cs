@@ -6,12 +6,15 @@ using MovementState = PlayerMovement.MovementState;
 /// A turn on the spot (0.9.430). Standing still, the legs keep their facing while the view turns, the chest twisting toward
 /// it (SpineLook); once the view has gone turnStartAngle away they turn on BIPER's own turn clip for the stance
 /// (BodyMoves.csv turns: TurnIP_L/R 90, 135 and 180 bare-handed or with a gun at the hip, a gun's AimTurn_L/R90 aimed): the
-/// one on the side the view went whose own turn is nearest how far it went, come into where its root begins to turn and
-/// played at its own pace to its end. The body's root turns as the clip's root does, drawn out or in (TurnBendMost) to end
-/// facing where the view was as it began, so the feet go as the clip's go. Keys that ask the legs to go end it and the
-/// walk takes over from its pose (BodyInertia); once its root is done turning, a view gone round again past the angle starts
-/// the next. A stance with no turn clip (crouched with nothing or a gun at the hip) brings its legs round with the view past
-/// the angle, the feet with them.
+/// one on the side the view went whose own turn is nearest how far it has gone, picked again as the view comes to rest
+/// until the clip's root begins to turn; come into a moment before then and played to its end, faster as far as the view is
+/// round ahead of the body (up to TurnHurryMost). The body's root turns as the clip's root does, drawn out or in
+/// (TurnBendMost) to end facing the view, so the feet go as the clip's go. Keys that ask the legs to go end it and the walk
+/// takes over from its pose (BodyInertia); once its root has turned TurnHandOn of its way, a view gone round again past the
+/// angle starts the next. A stance with no turn clip (crouched with nothing or a gun at the hip) brings its legs round with
+/// the view past the angle, the feet with them. 0.9.430 picked the clip as the view passed the angle, played it at its own
+/// pace and began the next only once its root was done: a view flicked 180 turned 90 and then 90 again, slowly (the user:
+/// "고개 돌리는 건 turn in place가 존나 느린데").
 /// From 0.9.279 to 0.9.429 the feet stepped round by themselves (TurnPlanner, FootPlanting): lifted 3 to 6 cm under a
 /// standing pose that turned whole, it looked like no turn at all (the feet record of 2026-11-25 07:31; the user: "turn in
 /// place는 왜 모션 없음?", "turn in place도 시발 안 됨", "다 죽여"). From 0.9.261 to 0.9.278 the same clips were layered on
@@ -35,8 +38,12 @@ public sealed partial class PlayerBody
     private float standTurnAt, standTurnBend, standTurnFrom;
     private bool standTurnBegins;
 
-    // The clip's root turns no more than this many times its own turn, nor less than its inverse.
-    private const float TurnBendMost = 1.4f;
+    // The clip's root turns no more than this many times its own turn, nor less than its inverse. It plays up to TurnHurryMost
+    // times its pace as the view is round ahead of the body from the angle to HurryRange past it, and hands on to the next
+    // turn once its root has turned TurnHandOn of its way.
+    private const float TurnBendMost = 1.4f, TurnHurryMost = 1.5f, HurryRange = 90f, TurnHandOn = .7f;
+    // The stance's turns the playing one was picked from.
+    private List<StandTurnClip> standTurns;
     // A clip's root is still within this of where it begins or ends (degrees); it is come into this long before its root turns
     // (s), the first foot lifting.
     private const float TurnRootStill = 2f, TurnLeadIn = .15f;
@@ -93,18 +100,26 @@ public sealed partial class PlayerBody
     private bool BeginStandTurn(bool crouched, float lead)
     {
         var turns = StandTurns(crouched);
-        if (turns == null) return false;
-        StandTurnClip best = null;
-        foreach (var turn in turns)
-            if (turn.Turn * lead > 0f && (best == null || Mathf.Abs(Mathf.Abs(turn.Turn) - Mathf.Abs(lead)) < Mathf.Abs(Mathf.Abs(best.Turn) - Mathf.Abs(lead))))
-                best = turn;
+        var best = NearestTurn(turns, lead);
         if (best == null) return false;
+        standTurns = turns;
         standTurn = best;
         standTurnAt = best.From;
         standTurnBend = Mathf.Clamp(lead / best.Turn, 1f / TurnBendMost, TurnBendMost);
         standTurnFrom = legYaw;
         standTurnBegins = true;
         return true;
+    }
+
+    // Of these turns, the one on the lead's side whose own turn is nearest it; null for none.
+    private static StandTurnClip NearestTurn(List<StandTurnClip> turns, float lead)
+    {
+        StandTurnClip best = null;
+        if (turns == null) return null;
+        foreach (var turn in turns)
+            if (turn.Turn * lead > 0f && (best == null || Mathf.Abs(Mathf.Abs(turn.Turn) - Mathf.Abs(lead)) < Mathf.Abs(Mathf.Abs(best.Turn) - Mathf.Abs(lead))))
+                best = turn;
+        return best;
     }
 
     // On the ground standing or crouched: true while a turn on the spot has the legs.
@@ -117,12 +132,26 @@ public sealed partial class PlayerBody
             EndStandTurn();
             return false;
         }
-        if (!standTurnBegins) standTurnAt += dt;
+        float look = transform.eulerAngles.y, ahead = Mathf.Abs(Mathf.DeltaAngle(legYaw, look));
+        // Until its root begins to turn, a bigger turn is picked for a view that has gone on round (a flick still going on).
+        if (standTurnAt < standTurn.From + TurnLeadIn)
+        {
+            float lead = Mathf.DeltaAngle(standTurnFrom, look);
+            var better = NearestTurn(standTurns, lead);
+            if (better != null && Mathf.Abs(better.Turn) > Mathf.Abs(standTurn.Turn))
+            {
+                standTurn = better;
+                standTurnAt = better.From;
+                standTurnBegins = true;
+            }
+            if (lead * standTurn.Turn > 0f) standTurnBend = Mathf.Clamp(lead / standTurn.Turn, 1f / TurnBendMost, TurnBendMost);
+        }
+        if (!standTurnBegins) standTurnAt += dt * Mathf.Lerp(1f, TurnHurryMost, Mathf.InverseLerp(turnStartAngle, turnStartAngle + HurryRange, ahead));
         var turn = standTurn;
-        float length = turn.Channel.Length, look = transform.eulerAngles.y;
-        // Done turning, a view gone round again past the angle starts the next turn; at its end the stance has the legs again.
-        bool done = standTurnAt >= turn.Done;
-        if (standTurnAt >= length || done && Mathf.Abs(Mathf.DeltaAngle(legYaw, look)) > turnStartAngle)
+        float length = turn.Channel.Length;
+        // Most of the way round, a view gone round again past the angle starts the next turn; at its end the stance has the legs.
+        float turned = (turn.Motion.TurnedAt(Mathf.Min(standTurnAt, length)) - turn.Motion.TurnedAt(turn.From)) / turn.Turn;
+        if (standTurnAt >= length || (standTurnAt >= turn.Done || turned >= TurnHandOn) && ahead > turnStartAngle)
         {
             EndStandTurn();
             return false;
@@ -150,6 +179,7 @@ public sealed partial class PlayerBody
     private void EndStandTurn()
     {
         standTurn = null;
+        standTurns = null;
         yawVelocity = 0f;
     }
 
