@@ -24,6 +24,8 @@ public sealed partial class PlayerBody
     private readonly List<Lean> leans = new List<Lean>();
     private float turnRate, lastFacing;
     private bool facingKnown;
+    // The frame the view's turn was last followed (FollowTurn runs only while the legs walk or run).
+    private int followedTurnAt = -10;
 
     private void AddLeans()
     {
@@ -43,8 +45,20 @@ public sealed partial class PlayerBody
     }
 
     // The view's turn now (degrees a second, + to the right), eased.
+    // Back on the legs after something else had them (a slide, a roll, a landing or a vault playing out, the air), the view's
+    // turn meanwhile is no turn of the run, so the measure starts again from nothing. Until 0.9.385 it went on from the last
+    // frame the legs had: the view's turn over the whole slide or roll came back as one turn of a frame, and every run after
+    // one banked hard into its arc for half a second with the view still (걸음 기록 of 2026-11-24: Jog_Arc_R90 at 0.6 and the
+    // leaning jog, whose own pace is slower, played a seventh faster; the user: "슬라이딩 후 조깅 여전히 좀 빠른 것 같은데
+    // 그니까 모션이 어색하다고").
     private void FollowTurn(float dt)
     {
+        if (Time.frameCount - followedTurnAt > 1)
+        {
+            facingKnown = false;
+            turnRate = 0f;
+        }
+        followedTurnAt = Time.frameCount;
         float facing = transform.eulerAngles.y;
         float rate = facingKnown && dt > 0f ? Mathf.DeltaAngle(lastFacing, facing) / dt : 0f;
         lastFacing = facing;
