@@ -10,6 +10,10 @@ public sealed class LocomotionState : MovementBaseState
     private const float KeepsPaceFrom = .5f;
     // The frame the stride was last eased: one missed, something else moved the body meanwhile.
     private int strideFrame = -10;
+    // The keys run ahead within this of straight on (degrees), and stop running ahead past the second: W+A and W+D are 45.
+    private const float RunsAheadWithin = 50f, RunsAheadLeave = 60f;
+    // At least this far up the gaits' ladder (0 the walk, 1 the jog) the keys run ahead; a walk strafes under the view.
+    private const float RunsAheadGait = .5f;
 
     public override bool TryJump()
     {
@@ -36,6 +40,17 @@ public sealed class LocomotionState : MovementBaseState
     {
         Vector2 input = ctx.CurrentInput;
         float inputMagnitude = Mathf.Clamp01(input.magnitude);
+        // Running ahead (PlayerMovement.RunsAhead): a jog or a sprint asked within a slant of straight on, standing and not
+        // aimed; with no keys it stays as it was, so a run coasts to a stop facing its own way. The hips face the way it runs
+        // and the head the view. Until 0.9.416 the hips always followed the view, and a view flicked on the run had the legs
+        // sprint sideways and backwards under a body that swung up to 65 degrees a frame (the user, 2026-11-24:
+        // "모션이 전반적으로 … 우스꽝스러워졌는데").
+        if (ctx.IsGrounded && inputMagnitude > .1f)
+        {
+            float off = Mathf.Abs(Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg);
+            ctx.runsAhead = ctx.CurrentState == PlayerMovement.MovementState.Standing && ctx.AimShare < .5f
+                && ctx.Actions.Gait.Position >= RunsAheadGait && off <= (ctx.runsAhead ? RunsAheadLeave : RunsAheadWithin);
+        }
 
         // The way the keys point. Its speed is the gait's that way (MovementGait); the side's 1.15x "so a side step doesn't
         // look slow" went in 0.9.245, the side clips being measured now.
@@ -98,6 +113,16 @@ public sealed class LocomotionState : MovementBaseState
                 stride = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
             else
                 stride = Vector3.Lerp(now, targetVelocity, t);
+            // Running ahead the way curves no faster than the run's own arc clip does (PlayerMovement.ArcRate: a sprint's 90
+            // degrees in 0.6 s, a jog's in 0.93 s), the hips with it, and the legs bank into that arc (PlayerBody.Leans): the body
+            // curves as BIPER's runner was made to, the view going ahead of it. Further round than a run comes about is a turn
+            // back (RunTurn).
+            if (ctx.runsAhead && speedNow > KeepsPaceFrom && stride.sqrMagnitude > KeepsPaceFrom * KeepsPaceFrom)
+            {
+                float turned = Vector3.SignedAngle(now, stride, Vector3.up), most = ctx.ArcRate * dt;
+                if (Mathf.Abs(turned) > most)
+                    stride = Quaternion.AngleAxis(Mathf.Sign(turned) * most, Vector3.up) * (now / speedNow) * stride.magnitude;
+            }
             if (stride.sqrMagnitude < 0.0001f) stride = Vector3.zero;
             // Into a wall the legs go along it or stand at it, not on the spot (MovementMotor.AlongWalls).
             ctx.Stride = ctx.Motor.AlongWalls(stride, dt);

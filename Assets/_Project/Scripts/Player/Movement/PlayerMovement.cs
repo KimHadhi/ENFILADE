@@ -222,9 +222,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
     public Vector2 CurrentInput => InputAvailable && !ControlLocked && !IsGettingUp && Input != null ? Input.Move : Vector2.zero;
-    /// <summary>The movement keys are held, on every PC (another's from its pose: MovementMirror).</summary>
-    public bool SteersMove => IsNetworkDriven ? mirroredSteers : CurrentInput.sqrMagnitude > .01f;
-    internal bool mirroredSteers;
+    /// <summary>The legs run ahead, on every PC (another's from its pose: MovementMirror): the keys ask a jog or a sprint within
+    /// a slant of straight on, standing and not aimed (LocomotionState). The hips then face the way the body runs, which curves
+    /// no faster than the run's own arc clip (ArcRate), and the head turns to the view; otherwise the hips face the view and
+    /// the legs strafe (PlayerBody.Locomotion).</summary>
+    public bool RunsAhead => IsNetworkDriven ? mirroredAhead : runsAhead;
+    internal bool runsAhead, mirroredAhead;
+    /// <summary>How fast a run may curve (degrees a second): its arc clip's own turn at the legs' gait (PlayerBody.ArcRate).</summary>
+    internal float ArcRate => Body != null ? Body.ArcRate : 720f;
     /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
     public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;
     /// <summary>Getting up off the back (Ability.supineRiseTime): the body can't move off until it is up; the hands stay free

@@ -596,7 +596,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (StaysLimp()) return;
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
-        legsPlanted = keepsPlace = rootByClip = false;
+        legsPlanted = keepsPlace = rootByClip = rootFollowed = false;
         ChoosePose(dt);
         Blend(dt);
         BlendLayers(dt);
@@ -606,7 +606,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         // eased round (BodyInertia), so the body comes round over the blend and not in a frame. Until 0.9.400 only the run's turn
         // did, by hand (out of a strafe into a slide the whole body turned 45 to 90 degrees in a frame: the audit of 2026-11-24).
         float jump = !rootYawKnown ? 0f : legsPlanted ? Mathf.DeltaAngle(legYawLeft, view + targetYaw) : Mathf.DeltaAngle(legYawLeft, legYaw);
-        if (!rootByClip && Mathf.Abs(jump) > RootJumpLeast)
+        if (!rootByClip && !rootFollowed && Mathf.Abs(jump) > RootJumpLeast)
         {
             bodyInertia.Begin(blendTime);
             bodyInertia.Reroot(jump);
@@ -682,7 +682,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
             HoldHeadPlace();
-            if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
+            if (gripWeight <= 0f && walkedFrame == Time.frameCount) SitOnHips(Time.deltaTime);
+            else if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
             else if (gripWeight <= 0f && slideBodyAnchored && !ClipCarriesBody) FollowHeadAlongSlide(Time.deltaTime);
             HoldEyesInAir(Time.deltaTime);
             using (GripMarker.Auto()) Grip(Time.deltaTime);
@@ -759,6 +760,26 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         float follow = quick ? Mathf.Min(headFollowTime, quickFollowTime) : headFollowTime;
         headAlignment += error * (1f - Mathf.Exp(-dt / follow));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
+    }
+
+    // Walking or running, the body stands on its hips: its place off the capsule is held as the hips turn, not as the view
+    // does, and eases to the rest place behind the eyes (backOffset) in the hips' own frame, so the body goes over the ground
+    // exactly as its legs carry the capsule (PlayerBody.LegsCarry). FollowHead (the head eased under the camera's pivot) held
+    // it in the view's frame until 0.9.416: every flick of the view swung the body and both its feet round the capsule, and
+    // the clip's own lean, followed, slid the feet under it (the expert's review of 2026-11-25). The camera rides the eyes
+    // wherever the clip has the head; walls keep it out (BodyCamera).
+    private Vector3 hipsPlace;
+    private int hipsPlaceFrame = -10;
+
+    private void SitOnHips(float dt)
+    {
+        var hips = Quaternion.Euler(0f, yaw, 0f);
+        if (hipsPlaceFrame != Time.frameCount - 1)
+            hipsPlace = Quaternion.Inverse(hips) * new Vector3(headAlignment.x, 0f, headAlignment.z);
+        hipsPlaceFrame = Time.frameCount;
+        hipsPlace = Vector3.Lerp(hipsPlace, Vector3.back * backOffset, 1f - Mathf.Exp(-dt / headFollowTime));
+        Vector3 flat = hips * hipsPlace;
+        headAlignment = new Vector3(flat.x, headAlignment.y, flat.z);
     }
 
     // Lying back from a slide or a dive, Beatrun's clips carry the whole body on ahead: meslideendprone moves it about
@@ -1176,8 +1197,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // The body's facing set further than this in a frame outside its follow (degrees) jumped (Update); where the follow left it.
     private const float RootJumpLeast = 5f;
     private float legYawLeft, viewWas;
-    // This frame the body's root turns by a clip's own motion (a run's turn: RunTurnPose), which is no jump.
-    private bool rootByClip;
+    // This frame the body's root turns by a clip's own motion (a run's turn: RunTurnPose), or follows a run ahead at its arc's
+    // pace (Locomotion), which is no jump.
+    private bool rootByClip, rootFollowed;
     private bool rootYawKnown;
 
     // A one-shot clip held at the share of its length the movement has reached (a vault's progress), so the body

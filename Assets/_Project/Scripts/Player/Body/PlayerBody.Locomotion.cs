@@ -325,24 +325,62 @@ public sealed partial class PlayerBody
         postureClip = null;
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
         TurnOnTheSpot(still, dt);
-        // Coasting to a stop with no keys, a body that already faces about the way it still goes (out of a run's turn the view
-        // went on past) keeps facing it until it stands, and turns to the view on its feet after (TurnOnTheSpot): the legs run
-        // out the way they go, not sideways under a body turning to the view (the user, 2026-11-24: "180도 턴하고 가만히 있으면
-        // 갑자기 왼쪽이나 오른쪽으로 걸어가는데", "그렇게 바꿔"). One facing the view as it slides another way (a strafe let go)
-        // goes on facing the view.
-        float coast = still || player.SteersMove ? 0f
-            : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(CoastAligned * 2f, CoastAligned, Mathf.Abs(Mathf.DeltaAngle(yaw, heading))));
-        if (!crouched && !legsPlanted) targetYaw = Mathf.LerpAngle(turn, Mathf.Clamp(heading, -FacingLagMost, FacingLagMost), coast);
+        // Running ahead (PlayerMovement.RunsAhead: a jog or a sprint asked within a slant of straight on, standing and not aimed)
+        // the hips face the way the body runs, which curves no faster than the run's own arc clip (LocomotionState), and the
+        // spine and neck turn the head to the view (SpineLook); further round than the run comes about is a turn back (RunTurn).
+        // A run let go runs ahead still, so it coasts to a stop facing its own way and turns to the view on its feet after
+        // (TurnOnTheSpot). Otherwise the hips face the view and the legs go the way the keys ask beneath them, the gun's run
+        // turned to a slant ahead. Until 0.9.416 the hips always followed the view: a view flicked on the run had the legs sprint
+        // sideways and backwards (StrafeSprint_R135, _B) under a body that swung up to 65 degrees a frame to keep within 90 of
+        // it (the user, 2026-11-24: "모션이 전반적으로 … 우스꽝스러워졌는데"), and 0.9.411 faced a body coasting to a stop its
+        // own way only when it was within 30 degrees of it.
+        if (!crouched && !legsPlanted)
+        {
+            if (player.RunsAhead && !still)
+            {
+                // With the run once they face its way, as it curves; coming round to it at HipsCatch times its arc's rate (a
+                // strafe pressed on ahead), so they never swing round in a frame. Followed at the view's pace instead, they
+                // trailed a sprint's arc by a fifth of a turn and the legs mixed in the strafe beside it.
+                float view = transform.eulerAngles.y;
+                targetYaw = Mathf.DeltaAngle(view, Mathf.MoveTowardsAngle(legYaw, view + heading, ArcRate * HipsCatch * dt));
+                legsPlanted = rootFollowed = true;
+            }
+            else targetYaw = turn;
+        }
+        if (!still) walkedFrame = Time.frameCount;
         Pace(speed, legs, moving, dt);
     }
 
     // Slower than StillEnter the body stands, faster than StillLeave it moves (m/s); its travel has a heading faster than
     // HeadingLeast. StillTravel is a curve's least speed (Leans).
     private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
-    // Coasting without keys, the body keeps facing the way it goes while it is within CoastAligned of it, none past twice that
-    // (degrees).
-    private const float CoastAligned = 15f;
     private bool still = true;
+    // The frame the legs last walked or ran (Locomotion, not standing): the body sits on its hips (SitOnHips).
+    private int walkedFrame = -10;
+
+    /// <summary>How fast a run may curve at the legs' gait now (degrees a second): its arc clip's own turn (BodyLeans.csv
+    /// arcRate), between two gaits by the place between them; the fastest of a gait's where it has more (the sprint's over the
+    /// run's). A body with no arcs turns as fast as it likes.</summary>
+    internal float ArcRate
+    {
+        get
+        {
+            float belowRank = float.NegativeInfinity, aboveRank = float.PositiveInfinity, below = 0f, above = 0f;
+            foreach (var lean in leans)
+            {
+                float rank = lean.Straight.Rank;
+                if (rank <= gaitPlace && (rank > belowRank || rank == belowRank && lean.ArcRate > below)) { belowRank = rank; below = lean.ArcRate; }
+                if (rank >= gaitPlace && (rank < aboveRank || rank == aboveRank && lean.ArcRate > above)) { aboveRank = rank; above = lean.ArcRate; }
+            }
+            if (below <= 0f) return above > 0f ? above : FreeArc;
+            if (above <= 0f || aboveRank <= belowRank) return below;
+            return Mathf.Lerp(below, above, (gaitPlace - belowRank) / (aboveRank - belowRank));
+        }
+    }
+
+    // A body with no arc clips curves this fast at most (degrees a second). Hips coming round to a run ahead turn this many
+    // times its arc's rate, so they catch up with a run that curves at it.
+    private const float FreeArc = 720f, HipsCatch = 1.5f;
     private float travelHeading;
 
     // The stride follows the travel's way and its speed each on their own, the way turning round at the same speed. Followed
