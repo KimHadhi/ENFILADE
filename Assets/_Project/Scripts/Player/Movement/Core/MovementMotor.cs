@@ -219,6 +219,35 @@ public sealed class MovementMotor
         }
     }
 
+    /// <summary>
+    /// The way the legs are asked to go (world, m/s), along any wall it runs into: what goes into a wall taller than a step is
+    /// taken out, so the legs walk along the wall or stand at it rather than run on the spot under a capsule it stops (the legs
+    /// carry the body, PlayerBody.LegsCarry). A stair's riser is no wall, and a physics prop is pushed, not walked along. Swept
+    /// ahead rather than read off the last move's contacts: a stride stopped at the wall touches it no more, and read so it
+    /// came and went every other frame.
+    /// </summary>
+    internal Vector3 AlongWalls(Vector3 travel, float dt)
+    {
+        float speed = travel.magnitude;
+        if (speed < 1e-3f || dt <= 0f || !controller.enabled) return travel;
+        Vector3 way = travel / speed;
+        float half = controller.height * .5f - controller.radius;
+        Vector3 bottom = ctx.transform.TransformPoint(controller.center - Vector3.up * half);
+        Vector3 top = ctx.transform.TransformPoint(controller.center + Vector3.up * half);
+        bottom.y = Mathf.Min(bottom.y + ctx.Posture.defaultStepOffset * Mathf.Abs(ctx.transform.lossyScale.y), top.y);
+        if (!Physics.CapsuleCast(bottom, top, WorldControllerRadius * .95f, way, out RaycastHit hit,
+                WorldSkinWidth + speed * dt + WallLook, ctx.groundLayers, QueryTriggerInteraction.Ignore)
+            || hit.normal.y >= WallSteep || PhysicsProp.Of(hit.collider) != null) return travel;
+        Vector3 wall = Vector3.ProjectOnPlane(hit.normal, Vector3.up);
+        if (wall.sqrMagnitude < 1e-6f) return travel;
+        wall.Normalize();
+        float into = Vector3.Dot(travel, wall);
+        return into < 0f ? travel - wall * into : travel;
+    }
+
+    // A face this steep or steeper is a wall (the normal's height), looked for this far past the coming move (m).
+    private const float WallSteep = .7f, WallLook = .05f;
+
     // The feet are the capsule's bottom.
     private Vector3 ControllerFeet => ctx.transform.TransformPoint(
         controller.center - Vector3.up * (controller.height * 0.5f));

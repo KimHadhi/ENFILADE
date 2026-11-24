@@ -8,6 +8,8 @@ public sealed class LocomotionState : MovementBaseState
 
     // Below this (m/s) a velocity has no way to turn: it starts or stops as a blend.
     private const float KeepsPaceFrom = .5f;
+    // The frame the stride was last eased: one missed, something else moved the body meanwhile.
+    private int strideFrame = -10;
 
     public override bool TryJump()
     {
@@ -80,24 +82,32 @@ public sealed class LocomotionState : MovementBaseState
 
         if (ctx.IsGrounded)
         {
-            // A change of way keeps the pace: the velocity turns toward the keys at the ground's ease while its speed eases
-            // to the new way's on its own, so a strafe off a run runs on at a run's pace. Blending the two velocities straight
-            // cut the corner: halfway from W to D the speed fell to 70% (a sprint's 6.0 m/s to 4.35, under the sprint's own
-            // thresholds, and the legs dropped to the jog's clips), and the strafe felt like braking (the user, 2026-11-21:
-            // "달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"). Setting off, stopping and a turn back further than
-            // Move.groundKeepPaceTurn still go through the middle: a body that reverses slows down to turn.
+            // The stride: what the legs are asked to carry. A change of way keeps the pace: it turns toward the keys at the
+            // ground's ease while its speed eases to the new way's on its own, so a strafe off a run runs on at a run's pace.
+            // Blending the two straight cut the corner: halfway from W to D the speed fell to 70% (a sprint's 6.0 m/s to 4.35,
+            // under the sprint's own thresholds, and the legs dropped to the jog's clips), and the strafe felt like braking (the
+            // user, 2026-11-21: "달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"). Setting off, stopping and a turn back
+            // further than Move.groundKeepPaceTurn still go through the middle: a body that reverses slows down to turn. Taken
+            // up from the way the body goes wherever something else moved it a moment ago (a run's turn, a surge, a slide, the air).
+            if (strideFrame != Time.frameCount - 1) ctx.Stride = ctx.HorizontalVelocity;
+            strideFrame = Time.frameCount;
             float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
-            Vector3 now = ctx.HorizontalVelocity;
+            Vector3 now = ctx.Stride, stride;
             float speedNow = now.magnitude, speedWanted = targetVelocity.magnitude;
             if (speedNow > KeepsPaceFrom && speedWanted > KeepsPaceFrom && Vector3.Angle(now, targetVelocity) <= ctx.GroundKeepPaceTurn)
-                ctx.HorizontalVelocity = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
+                stride = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
             else
-                ctx.HorizontalVelocity = Vector3.Lerp(now, targetVelocity, t);
-
-            if (ctx.HorizontalVelocity.sqrMagnitude < 0.0001f)
-            {
-                ctx.HorizontalVelocity = Vector3.zero;
-            }
+                stride = Vector3.Lerp(now, targetVelocity, t);
+            if (stride.sqrMagnitude < 0.0001f) stride = Vector3.zero;
+            // Into a wall the legs go along it or stand at it, not on the spot (MovementMotor.AlongWalls).
+            ctx.Stride = ctx.Motor.AlongWalls(stride, dt);
+            // The body goes as its legs carry it: as far and the way the walk or run's own feet carry it at their own pace
+            // (PlayerBody.LegsCarry), so a foot that is down stays where it came down with nothing to hold it there. Where no
+            // walk or run has the legs (a clip that plays out, no body) it goes as asked. Until 0.9.415 the body went at the
+            // stride, the legs followed it at a pace fitted to it, and where the two parted (a turn, a flick of the view, a
+            // start) the feet were held, dragged and caught up foot by foot (the user, 2026-11-25: "아무리 해결해도 문제가
+            // 발생하는 건 근본이 잘못돼서 그런 거 아니에요").
+            ctx.HorizontalVelocity = ctx.LegsCarry(out Vector3 carried) ? carried : ctx.Stride;
         }
         else if (!ctx.Abilities.Landing.IsKnockedBack) // A blow's throw flies on untouched.
         {

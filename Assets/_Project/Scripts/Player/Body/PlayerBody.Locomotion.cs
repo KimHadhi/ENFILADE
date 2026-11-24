@@ -10,12 +10,16 @@ using UnityEngine.Playables;
 ///   along the travel: a slow side cycle takes more of a diagonal than a fast forward one, so neither skates sideways.
 /// - Every cycle shares one step: each stride starts with the left foot down, wherever its file starts or however many
 ///   strides it holds.
-/// - The game goes at the cycles' own speeds (LegSpeed, MovementGait), so they play at their own pace and stride; what a body goes
-///   faster or slower than its cycles is shared evenly between the two, within gaitRate and gaitStretch (Pace,
-///   FootPlanting.Stride), so the feet cover the ground the body covers and stay where they come down. Until 0.8.260 the
-///   cycles played at their own pace whatever the speed and the feet skated 30-60% of it (the user, 2026-11-12: "우스꽝스럽고
-///   초보 같고 급하던데"), and until 0.9.350 the pace was a person's for the speed (gaitCadence), which stepped BIPER's walks
-///   a tenth faster and shorter than they are made.
+/// - The legs carry the body (0.9.415): the player's own body goes over the ground as far and the way its cycles' feet carry it
+///   at their own pace (LegsCarry; PlayerMovement.Stride is only what the legs are asked), so a foot that is down stays where it
+///   came down with nothing holding it there. Another PC's body goes where the network has it, its cycles played at the pace
+///   that carries it so, within gaitRate (Pace). Until 0.9.415 every body went at the keys' speed eased on its own, its cycles
+///   followed what it was seen to do at a pace fitted to it, and where the two parted (a turn, a flick of the view, a start)
+///   the feet were held, dragged and caught up one by one (FootPlanting): fifteen versions of fixes in a day (the user,
+///   2026-11-25: "아무리 해결해도 문제가 발생하는 건 근본이 잘못돼서 그런 거 아니에요", "리스크를 짊어질 준비가 되었어").
+///   Until 0.8.260 the cycles played at their own pace whatever the speed and the feet skated 30-60% of it (the user,
+///   2026-11-12: "우스꽝스럽고 초보 같고 급하던데"), and until 0.9.350 the pace was a person's for the speed (gaitCadence),
+///   which stepped BIPER's walks a tenth faster and shorter than they are made.
 /// - Sprinting with a gun out the gun's run has the whole body (GunRuns); it goes ahead only, so the gun sprints ahead or
 ///   at a slant ahead (SprintsToward: W, W+A, W+D), the hips turned to the way it runs and the spine turning the chest
 ///   back to the view (SpineLook).
@@ -29,7 +33,8 @@ public sealed partial class PlayerBody
     // any order and the body measures which way and how fast each one goes (GaitClips).
 
     [Header("Stride")]
-    [SerializeField, Tooltip("How much slower (x) and faster (y) than its own pace a cycle may play.")]
+    [SerializeField, Tooltip("How much slower (x) and faster (y) than its own pace a cycle may play: another PC's to carry its body "
+        + "as the network has it; the player's own only faster, for what the gait's speed is put above its cycles' (a class's pace).")]
     private Vector2 gaitRate = new Vector2(.85f, 1.2f);
     [SerializeField, Range(0f, 1f), Tooltip("Sprinting with a gun out from this far into the sprint (PlayerMovement.SprintProgress), the "
         + "gun's run has the whole body (GunRuns).")]
@@ -100,10 +105,13 @@ public sealed partial class PlayerBody
     private bool legsPlanted;
     // This body's leg, hip joint to ankle (m).
     private float legLength = .9f;
-    // This frame's blend of cycles: their weight, weight by stride time (s), weight by the speed and by the velocity their feet
-    // carry the body at (m/s, in the body's own frame: x right, y ahead).
-    private float mixWeight, mixStride, mixSpeed;
-    private Vector2 mixVelocity;
+    // This frame's blend of cycles: their weight, weight by stride time (s) and by how far their feet carry the body in a stride
+    // (m, in the body's own frame: x right, y ahead).
+    private float mixWeight, mixStride;
+    private Vector2 mixLength;
+    // How the player's own legs carry the body over the ground (world, m/s), and the frame they last did (LegsCarry).
+    private Vector3 legsVelocity;
+    private int legsFrame = -10;
     // The frame the cycles last played on (a landing or a jump plays none), and the numbers behind their pace for the /gait
     // readout.
     private int strideFrame = -1;
@@ -211,12 +219,6 @@ public sealed partial class PlayerBody
         if (channel.Gait == null && channel.Playable.IsValid())
             channel.Gait = GaitClips.For(loadedModel, channel.Playable.GetAnimationClip(), animator);
         if (channel.Rank < 0f) channel.Rank = RankOf(clipName, channel);
-        if (channel.Own <= 0f)
-        {
-            // A cycle made on the spot (a mod's, one polished in Blender) goes as fast as its feet here carry it.
-            channel.Own = ClipMotion.CycleSpeed(channel.Playable.GetAnimationClip());
-            if (channel.Own < .1f && channel.Gait != null) channel.Own = channel.Gait.Speed * GaitScale;
-        }
         return channel;
     }
 
@@ -257,9 +259,13 @@ public sealed partial class PlayerBody
 
     private void Locomotion(bool crouched, float dt)
     {
-        // Followed in the world, so turning the view doesn't drag the legs behind it.
-        Vector3 travel = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
-        stride = FollowStride(stride, travel, strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
+        // The player's own legs go as the player asks (PlayerMovement.Stride: the keys' way at the gait's speed, eased), and the
+        // body goes as they carry it (LegsCarry). Another PC's go as its body is seen to go, followed in the world so turning the
+        // view doesn't drag them behind it.
+        if (player.IsNetworkDriven)
+            stride = FollowStride(stride, Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up),
+                strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
+        else stride = Vector3.ProjectOnPlane(player.Stride, Vector3.up);
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
@@ -273,8 +279,8 @@ public sealed partial class PlayerBody
         float heading = travelHeading;
         keepsPlace = still;
         float scale = GaitScale;
-        mixWeight = mixStride = mixSpeed = 0f;
-        mixVelocity = Vector2.zero;
+        mixWeight = mixStride = 0f;
+        mixLength = Vector2.zero;
         postureClip = PostureClip(crouched);
         FollowTurn(dt);
 
@@ -480,8 +486,9 @@ public sealed partial class PlayerBody
 
     /// <summary>How fast the legs' own clips go this way (m/s; degrees from ahead, + to the right): at this gait (0 walk, 1 jog,
     /// 2 sprint) or crouched, and this far aimed (0-1). The sets share it as they share the legs (MixSets), each way's clips
-    /// at their own speed (ClipMotion.CycleSpeed). The movement goes at it (MovementGait), so whatever clips a set lists, the
-    /// game goes as they do. 0 for a body with none.</summary>
+    /// at the speed their feet carry this body (GaitClips). The legs are asked for it (MovementGait), so whatever clips a set
+    /// lists, the game goes as they do. 0 for a body with none. Until 0.9.415 it was their root's speed
+    /// (ClipMotion.CycleSpeed x Body.clipMetres), which no foot of ours goes at: the jog's 2.74 m/s against its feet's 2.52.</summary>
     internal float LegSpeed(float heading, float place, bool crouched, float aim)
     {
         var stance = crouched ? crouchSet : plainSet;
@@ -491,28 +498,29 @@ public sealed partial class PlayerBody
         place = crouched ? 0f : place * (1f - aim);
         // The hips turn to the way the gun's run goes (Locomotion).
         if (gun != null && place >= 1f + gunRunFrom) heading -= Mathf.Clamp(heading, -GunRunSlant, GunRunSlant);
-        float left = 1f, speed = 0f;
+        float left = 1f, speed = 0f, scale = GaitScale;
         if (gun != null)
         {
             Take(crouched ? gun.CrouchAim : gun.Aim, aim, ref left, ref speed);
             Take(crouched ? gun.Crouch : gun.Hip, 1f, ref left, ref speed);
         }
-        return speed + left * OwnSpeed(stance, heading, place);
+        return speed + left * OwnSpeed(stance, heading, place, scale);
 
         void Take(MoveSet set, float want, ref float left, ref float speed)
         {
             if (set == null || want <= 0f) return;
             float share = left * Mathf.Clamp01(want) * Carries(set, heading, place);
-            speed += share * OwnSpeed(set, heading, place);
+            speed += share * OwnSpeed(set, heading, place, scale);
             left -= share;
         }
     }
 
     /// <summary>The fastest the legs go ahead (m/s): the empty hands' sprint.</summary>
-    private float SprintOwn => plainSet != null ? OwnSpeed(plainSet, 0f, 2f) : 0f;
+    private float SprintOwn => plainSet != null ? OwnSpeed(plainSet, 0f, 2f, GaitScale) : 0f;
 
-    // A set's own speed this way at this gait: its two ways' either side, joined by the angle.
-    private static float OwnSpeed(MoveSet set, float heading, float place)
+    // A set's own speed this way at this gait (m/s): its two ways' either side, joined by the angle, each as fast as its cycles'
+    // feet carry this body (the Animator's units to metres by its scale).
+    private static float OwnSpeed(MoveSet set, float heading, float place, float scale)
     {
         if (!Pair(set, heading, out var a, out var b, out float toward)) return 0f;
         return Mathf.Lerp(WayOwn(a), WayOwn(b), toward);
@@ -520,7 +528,7 @@ public sealed partial class PlayerBody
         float WayOwn(Way way)
         {
             Bracket(way.Cycles, place, out int low, out int high, out float t);
-            return Mathf.Lerp(way.Cycles[low].Own, way.Cycles[high].Own, t);
+            return Mathf.Lerp(way.Cycles[low].Gait.Speed, way.Cycles[high].Gait.Speed, t) * scale;
         }
     }
 
@@ -582,9 +590,11 @@ public sealed partial class PlayerBody
     }
 
     // Shares the weight between the two ways either side of the heading so their blended feet push back along it: each
-    // way's cycles at this speed carry the body their own way at their own speed, and the share is the one whose sum of the
-    // two points down the heading. Shared by angle alone, a fast forward run and a slow side step blended into a stride
-    // that pointed well off the travel, and the feet slid sideways.
+    // way's cycles carry the body their own way as far as a stride takes them, and the share is the one whose sum of the two
+    // points down the heading. The cycles share one step (Blend), so the blended feet go the summed stride lengths in the
+    // summed stride times; summed speeds point elsewhere where the two step at different paces (the jog's 0.93 s stride
+    // against a strafe's 0.8), and until 0.9.415 they were what was summed. Shared by angle alone, a fast forward run and a
+    // slow side step blended into a stride that pointed well off the travel, and the feet slid sideways.
     private void Ways(MoveSet set, float heading, float speed, float weight, float scale)
     {
         if (weight <= 0f || !Pair(set, heading, out var a, out var b, out float toward)) return;
@@ -598,7 +608,7 @@ public sealed partial class PlayerBody
         {
             float rad = heading * Mathf.Deg2Rad;
             var way = new Vector2(Mathf.Sin(rad), Mathf.Cos(rad));
-            Vector2 first = LadderVelocity(a.Cycles, gaitPlace, scale), second = LadderVelocity(b.Cycles, gaitPlace, scale);
+            Vector2 first = LadderLength(a.Cycles, gaitPlace, scale), second = LadderLength(b.Cycles, gaitPlace, scale);
             float x = Cross(first, way), y = Cross(second, way);
             if (Mathf.Abs(x - y) > 1e-4f) share = Mathf.Clamp01(x / (x - y));
         }
@@ -619,10 +629,10 @@ public sealed partial class PlayerBody
         if (high != low) MixCycle(cycles[high], weight * t, scale);
     }
 
-    private static Vector2 LadderVelocity(List<Channel> cycles, float place, float scale)
+    private static Vector2 LadderLength(List<Channel> cycles, float place, float scale)
     {
         Bracket(cycles, place, out int low, out int high, out float t);
-        return Velocity(cycles[low], scale) * (1f - t) + Velocity(cycles[high], scale) * t;
+        return Length(cycles[low], scale) * (1f - t) + Length(cycles[high], scale) * t;
     }
 
     private static void Bracket(List<Channel> cycles, float place, out int low, out int high, out float t)
@@ -644,6 +654,8 @@ public sealed partial class PlayerBody
     }
 
     private static Vector2 Velocity(Channel cycle, float scale) => cycle.Gait.Way * (cycle.Gait.Speed * scale);
+    // How far a cycle's feet carry the body in a stride of both feet (m, the body's frame).
+    private static Vector2 Length(Channel cycle, float scale) => Velocity(cycle, scale) * cycle.Gait.Stride;
 
     private void MixCycle(Channel cycle, float weight, float scale)
     {
@@ -651,23 +663,24 @@ public sealed partial class PlayerBody
         cycle.Target += weight;
         mixWeight += weight;
         mixStride += weight * cycle.Gait.Stride;
-        Vector2 velocity = Velocity(cycle, scale);
-        mixSpeed += weight * velocity.magnitude;
-        mixVelocity += weight * velocity;
+        mixLength += weight * Length(cycle, scale);
     }
 
-    // The step's pace. The cycles play as they were made where the body goes as fast as they do; what it goes faster or
-    // slower (its own legs against the four the speeds are for, a class's pace, a guard's slow walk, a diagonal of two steps
-    // at a right angle, three quarters as long as either) their pace makes up, within gaitRate. A foot that is down keeps
-    // its place whatever the pace (FootPlanting), so nothing skates past it either. Until 0.9.410 the stride was also
-    // stretched to the speed (Body.gaitStretch), each foot moved ahead or back of the hips; with the feet kept where they come
-    // down it did nothing but move them, and, coming on whole as a run took over from a turn's clip, it threw the swinging
-    // foot 15 to 25 cm in a frame (the user, 2026-11-24: "보폭 늘리기라는 시스템 때문에 지금 이랬다고? 그럼 없애면 되잖아").
+    // The step's pace and what it carries. The cycles share one step (Blend), so their feet go the summed stride lengths in the
+    // summed stride times. The player's own play at their own pace and the body goes as they carry it (LegsCarry), the idle's
+    // share standing; faster only for what the gait's speed is put above the fastest of them (a class's pace), within
+    // gaitRate. Another PC's play at the pace that carries its body as the network has it, within gaitRate. Until 0.9.415 every
+    // body was carried by the keys and its cycles' pace made up the difference; until 0.9.410 the stride was also stretched to
+    // the speed (Body.gaitStretch), which, coming on whole as a run took over from a turn's clip, threw the swinging foot 15 to
+    // 25 cm in a frame (the user, 2026-11-24: "보폭 늘리기라는 시스템 때문에 지금 이랬다고? 그럼 없애면 되잖아").
     private void Pace(float speed, float legs, float moving, float dt)
     {
-        if (player.IsNetworkDriven) FollowStep(dt);
+        bool carries = !player.IsNetworkDriven;
+        if (!carries) FollowStep(dt);
         gaitSpeed = speed;
         runCalmShare = moving;
+        legsVelocity = Vector3.zero;
+        if (carries) legsFrame = Time.frameCount;
         if (mixWeight <= 0f)
         {
             gaitNatural = 0f;
@@ -676,11 +689,14 @@ public sealed partial class PlayerBody
             return;
         }
         float strideTime = Mathf.Max(.05f, mixStride / mixWeight);
+        // What the cycles' feet carry the body at their own pace (m/s, the body's frame).
+        Vector2 own = mixLength / Mathf.Max(1e-4f, mixStride);
         float rad = legs * Mathf.Deg2Rad;
-        float along = Vector2.Dot(mixVelocity / mixWeight, new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)));
-        float rate = 1f;
-        if (along > .05f && speed > .05f)
-            rate = Mathf.Clamp(speed / along, Mathf.Min(gaitRate.x, gaitRate.y), Mathf.Max(gaitRate.x, gaitRate.y));
+        float along = Vector2.Dot(own, new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)));
+        float rate = 1f, fastest = Mathf.Max(gaitRate.x, gaitRate.y);
+        if (along > .05f && speed > .05f) rate = Mathf.Clamp(speed / along, carries ? 1f : Mathf.Min(gaitRate.x, gaitRate.y), fastest);
+        // Into the world as the legs were laid out (the heading against the body's facing, Locomotion).
+        if (carries) legsVelocity = Quaternion.Euler(0f, transform.eulerAngles.y + yaw, 0f) * new Vector3(own.x, 0f, own.y) * (mixWeight * rate);
         phase += dt * rate / strideTime;
         strideCycle = strideTime / Mathf.Max(.05f, rate);
         if (phase >= 1f)
@@ -691,6 +707,15 @@ public sealed partial class PlayerBody
         gaitNatural = along;
         gaitRateNow = rate;
         strideFrame = Time.frameCount;
+    }
+
+    /// <summary>How the player's own walk or run carries the body over the ground (world, m/s): as far and the way its cycles'
+    /// feet go at their pace, the idle's share standing (Pace). The movement goes at it (LocomotionState), so the body goes as
+    /// its legs do. False when they didn't walk or run last frame (a clip played out, the air, another state had them).</summary>
+    internal bool LegsCarry(out Vector3 velocity)
+    {
+        velocity = legsVelocity;
+        return legsFrame == Time.frameCount - 1;
     }
 
     /// <summary>This frame's run for the /gait averages: the speed (m/s), steps a minute and how much faster the body goes than

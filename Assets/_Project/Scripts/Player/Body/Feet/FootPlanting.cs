@@ -420,12 +420,12 @@ internal sealed class FootPlanting
     // carried the hips sideways taken back out. One rule, standing or on the move: a foot that
     // is down keeps the place it came down on, and the body goes on over it and turns on it as on a pivot, until its clip
     // lifts it; then it goes onto the clip's place over its swing, coming down where the clip comes down (Catching), and
-    // takes a place again there. On the move a kept place is drawn in toward the hip only as far as the leg reaches without
-    // the hips lower than the clip's own leg has them (Reachable): the foot gives at the least the reach forces, the hips never
-    // dip for it. 0.9.412 and 0.9.413 let it give way once 5 cm off the clip's: a run's clip has its sole low a good deal
-    // longer than the foot really stands (a quarter of a second of a sprint's 0.3 s step, the body going 1.5 m on), and a foot
-    // that was down went over the ground at 2 to 4 m/s again running straight, as before 0.9.406 (the feet record of
-    // 2026-11-24 23:53; the user: "모션이 전반적으로 … 우스꽝스러워졌는데"). Standing, the body's clip never lifts
+    // takes a place again there. On the move a foot takes no place: the body goes as its walk or run's feet carry it
+    // (PlayerBody.LegsCarry, 0.9.415), so the clip's foot that is down is down where it came down; one kept from standing stays
+    // until its clip lifts it. From 0.9.406 to 0.9.414 the body went at the keys' speed and a moving foot was kept and drawn
+    // in toward the hip as far as the leg reached (Reachable), or given 5 cm (0.9.412-0.9.413): a run's clip has its sole low
+    // a good deal longer than the foot really stands (a quarter of a second of a sprint's 0.3 s step, the body going 1.5 m
+    // on), so it was dragged, and slid at 2 to 4 m/s with the slack. Standing, the body's clip never lifts
     // a foot, so one the leg can no longer reach with the hips down as far as Hold.MaxDrop, or that the legs have turned too
     // far over, steps: up off its place, round to where the clip has it now
     // and down, one foot at a time (<paramref name="other"/>) unless this one can no longer reach; a turn on the spot leads
@@ -507,11 +507,13 @@ internal sealed class FootPlanting
                     return clip + leg.Off;
                 }
             }
-            else leg.Place = Reachable(leg, lift, leg.Place, clip);
+            // On the move a foot kept from standing stays where it stood until its clip lifts it: the body goes as the clip's
+            // feet carry it (PlayerBody.LegsCarry), so the clip's place goes nowhere from it.
         }
-        // It comes down where it is shown, on the move at once; standing, once it has eased onto the clip's place, so the
-        // stance stands as its clip has it.
-        else if (!hold.Stands || leg.Off.sqrMagnitude < Arrived * Arrived) return Keep(leg, clip + leg.Off, hold.Yaw, clip);
+        // Standing, a foot comes down where it is shown once it has eased onto the clip's place, so the stance stands as its clip
+        // has it. On the move it takes none: the body goes as the clip's feet carry it, so a foot the clip has down is down where
+        // it came down already.
+        else if (hold.Stands && leg.Off.sqrMagnitude < Arrived * Arrived) return Keep(leg, clip + leg.Off, hold.Yaw, clip);
         if (leg.Kept) leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
         else
         {
@@ -544,20 +546,6 @@ internal sealed class FootPlanting
         leg.KeptYaw = yaw;
         leg.Off = clip.HasValue ? Vector3.ProjectOnPlane(place - clip.Value, Vector3.up) : Vector3.zero;
         return place;
-    }
-
-    // A place on the ground drawn in toward the hip, level, as far as the leg reaches it without the hips lower than the
-    // clip's own leg at <paramref name="clip"/> has them (Need): never nearer the hip than the clip's own foot needs.
-    private static Vector3 Reachable(Leg leg, float lift, Vector3 place, Vector3 clip)
-    {
-        float own = Need(leg, lift, clip);
-        if (float.IsPositiveInfinity(own)) return place;
-        float most = ((leg.Lower.position - leg.Upper.position).magnitude + (leg.Foot.position - leg.Lower.position).magnitude) * StrideReach;
-        Vector3 from = leg.Upper.position;
-        float down = Mathf.Max(0f, from.y - (leg.Ground + lift) - Mathf.Max(0f, own));
-        float reach = Mathf.Sqrt(Mathf.Max(0f, most * most - down * down));
-        Vector3 level = Vector3.ProjectOnPlane(place - from, Vector3.up);
-        return level.sqrMagnitude > reach * reach ? place - level + level * (reach / level.magnitude) : place;
     }
 
     // Whether the leg cannot reach a place on the ground even with the hips as far down as they may go for it.

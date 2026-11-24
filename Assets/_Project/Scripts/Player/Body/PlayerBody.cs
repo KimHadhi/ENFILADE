@@ -85,8 +85,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public GaitClips.Gait Gait;
         /// <summary>Which gait a cycle is (0 walk, 1 jog, 2 sprint), by its name (PlayerBody.RankOf); -1 none.</summary>
         public float Rank = -1f;
-        /// <summary>How fast a cycle's own body goes over the ground (m/s, ClipMotion.CycleSpeed).</summary>
-        public float Own;
     }
 
     private readonly List<Channel> channels = new List<Channel>();

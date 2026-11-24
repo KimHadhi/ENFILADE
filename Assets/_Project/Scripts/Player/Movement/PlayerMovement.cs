@@ -111,6 +111,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float LeanOffset => Abilities != null ? Abilities.Lean.Offset : 0f;
 
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
+    /// <summary>On the ground, what the legs are asked to carry (world, m/s): the keys' way at the gait's speed, eased
+    /// (LocomotionState). The body goes as the legs carry it (LegsCarry), not at this.</summary>
+    internal Vector3 Stride { get; set; }
     public float VerticalVelocity { get => Motor.VerticalVelocity; set => Motor.VerticalVelocity = value; }
     public Vector3 SlideDirection { get => Actions.SlideDirection; set => Actions.SlideDirection = value; }
     /// <summary>The way the sliding body faces, held for the slide whatever the view does (MovementActions.SlideFacesBack).</summary>
@@ -310,6 +313,13 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal ClipMotion MotionOf(string clip) => Body != null ? Body.MotionOf(clip) : null;
     /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
     internal float AimShare => Body != null ? Body.AimShare : 0f;
+    /// <summary>How the legs' walk or run carries the body over the ground (world, m/s; PlayerBody.LegsCarry); false when they
+    /// didn't walk or run last frame, or there is no body.</summary>
+    internal bool LegsCarry(out Vector3 velocity)
+    {
+        velocity = Vector3.zero;
+        return Body != null && Body.LegsCarry(out velocity);
+    }
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>
     internal float RunOutPace => Body != null ? Body.RunOutPace : 0f;
 
