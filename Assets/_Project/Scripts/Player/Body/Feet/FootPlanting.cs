@@ -11,16 +11,19 @@ using UnityEngine;
 /// - Each foot moves by the height of the ground under it, so the clip's own stride and foot lift stay as they are.
 /// - Ground and hip heights are kept in world space, so the capsule popping up or down a step never drags a foot
 ///   through it. Standing, higher ground is taken at once and lower ground settles over the settle time.
-/// - Walking or running (Walk, 0.9.390) a foot that comes down (its clip's sole at its floor) keeps the place and the height
-///   it came down on until it lifts; a foot that lifts swings from the ground it left to the ground where it will come down
-///   (Land: the hips carried on for the time left to its footfall, half a step ahead of them), over what rises between,
-///   instead of following the ground under it frame by frame. The hips stand on what the feet stand on, under the capsule's
-///   floor eased (it pops up and down a stair at a time), and come down as far as they may for a leg that can't reach.
-///   Until then the feet were held only standing still, and the ground under a swinging foot was read every frame and taken
-///   at once where higher: running up stairs each foot jumped a tread's height in a frame about twenty times a second, a
-///   back leg that couldn't reach locked straight with the foot in the air, and the hips and the eyes rode every pop of the
+/// - Walking or running (Walk, 0.9.390) a foot that comes down (its clip's sole at its floor) keeps the height it came down
+///   on until it lifts; a foot that lifts swings from the ground it left to the ground where it will come down (Land: the
+///   hips carried on for the time left to its footfall, half a step ahead of them), over what rises between, instead of
+///   following the ground under it frame by frame. Along the ground a moving foot is where the clip and the stride have it.
+///   The hips stand on what the feet stand on, under the capsule's floor eased (it pops up and down a stair at a time).
+///   Until then the ground under a swinging foot was read every frame and taken at once where higher: running up stairs each
+///   foot jumped a tread's height in a frame about twenty times a second, and the hips and the eyes rode every pop of the
 ///   capsule (the experts' review of 2026-11-24; the user: "달리다가 … 발이 텔레포트하거나 디딜 곳을 못 찾거나 … 계단을 뛰어
-///   오를 때").
+///   오를 때"). 0.9.390 also kept a moving foot that was down at the place it came down on, and had the hips come down as
+///   far as they might for a leg that could not reach it: the run's cycles hold a sole near their floor longer than the
+///   body can pass over one place, so at every running step the leg ran out of reach (117% of its length at 6 m/s), the
+///   ankle dragged short of its place, the hips dropped 6 cm, and the foot then eased back to the clip's place: a hitch
+///   at every step (the feet record of 2026-11-24 16:19; the user: "굉장히 버벅거리고 끊기는 느낌"). 0.9.391 took both out.
 /// - No part of the sole comes below the ground: a clip made for other proportions (a deep crouch, toes pointed down on
 ///   a long foot) has the ankle stand that much higher.
 /// - Planted feet tilt to the slope.
@@ -194,8 +197,6 @@ internal sealed class FootPlanting
     // between (m).
     private const int LandEvery = 3;
     private const float LandEase = .05f, LeastSwing = .06f, PlainSwing = .3f, MostClearance = .3f;
-    // A leg that can't reach at all asks the hips down this far, as far as they may go (m).
-    private const float Unreachable = 1f;
 
     // The stride's hips follow a reach this quickly (s): fast enough for a step, slow enough that one frame's reach never
     // pops the hips (and the camera on the eyes).
@@ -395,29 +396,6 @@ internal sealed class FootPlanting
     private Vector3 Stand(Leg leg, Leg other, int side, float lift, float over, bool onFeet, in Hold hold, float dt)
     {
         Vector3 clip = leg.Foot.position - hold.Carried + leg.Shift;
-        if (onFeet && !hold.Stands)
-        {
-            // Walking or running: a foot that is down (Walk) keeps where it came down as far as its leg reaches; a swinging one
-            // goes where the clip and the stride have it, easing in from where it last stood. Until 0.9.390 a moving foot was
-            // wherever the clip had it, so whatever moved the pose over a footfall (a blend, the follow of the head, the eased
-            // switch of clips) slid the foot on the ground.
-            leg.Stepping = leg.Led = false;
-            leg.StepLift = 0f;
-            if (leg.Down && leg.SupportWeight > 0f)
-            {
-                if (!leg.Kept)
-                {
-                    leg.Kept = true;
-                    leg.Place = clip + leg.Off;
-                    leg.KeptYaw = hold.Yaw;
-                }
-                else if (OutOfReach(leg, lift, leg.Place, hold.MaxDrop)) leg.Kept = false;
-            }
-            else leg.Kept = false;
-            if (leg.Kept) leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
-            else leg.Off *= Mathf.Exp(-dt / hold.Release);
-            return clip + leg.Off;
-        }
         bool keep = onFeet && hold.Stands && over < DownHeight && leg.SupportWeight > 0f && leg.Shift.sqrMagnitude < 1e-8f;
         leg.StepLift = 0f;
         // A step the turn on the spot leads (TurnPlanner): up off its place and round to where the clip has it under the
@@ -550,9 +528,7 @@ internal sealed class FootPlanting
             if (off.x * off.x + off.z * off.z < 1e-8f) return 0f;
             need = Added(leg, lift, at);
         }
-        // Out of reach altogether the hips come down as far as they may (until 0.9.390 not at all: the leg locked straight and
-        // the foot hung short of the ground).
-        return (float.IsPositiveInfinity(need) ? Unreachable : Mathf.Max(0f, need)) * leg.SupportWeight;
+        return float.IsPositiveInfinity(need) ? 0f : Mathf.Max(0f, need) * leg.SupportWeight;
     }
 
     // How high the ankle has to stand for the heel and the toe tip to stay on or above the ground, the foot turned as the
