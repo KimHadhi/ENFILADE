@@ -71,10 +71,10 @@ public sealed partial class PlayerBody
         }
         else rootByClip = true;
         Drive(turn.Clip, turn.Moment / Mathf.Max(.05f, channel.Length));
-        // The body stands on its hips through the turn as it does walking (SitOnHips). Until 0.9.422 the head was followed
-        // under the camera's pivot meanwhile (FollowHead), in the view's frame: with the view swung round over the turn the
-        // body was pulled about the capsule, 8 to 11 cm a frame against the capsule's 3.7, and pumped back and forth (the gait
-        // record of 2026-11-25 05:31; the user: "몸이 앞뒤로 pump할 때가 있어").
+        // The foot the clip has down carries the body through the turn as it does walking (FootCarry). Until 0.9.422 the head
+        // was followed under the camera's pivot meanwhile (FollowHead), in the view's frame: with the view swung round over the
+        // turn the body was pulled about the capsule, 8 to 11 cm a frame against the capsule's 3.7, and pumped back and forth
+        // (the gait record of 2026-11-25 05:31; the user: "몸이 앞뒤로 pump할 때가 있어").
         walkedFrame = Time.frameCount;
         legYaw = root;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, root);

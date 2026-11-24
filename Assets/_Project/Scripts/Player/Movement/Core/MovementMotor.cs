@@ -27,6 +27,12 @@ public sealed class MovementMotor
     private bool slideSupported;
     private PlayerMovement carrierCandidate;
     private Vector3 carrierPosition;
+    // How far the last ride moved the capsule and on which frame (Ride).
+    private Vector3 rode;
+    private int rodeFrame = -10;
+    /// <summary>How far someone this player stands on moved the capsule this frame (Ride): the body's planted foot goes with
+    /// it (FootCarry.Ride).</summary>
+    internal Vector3 RodeNow => rodeFrame == Time.frameCount ? rode : Vector3.zero;
     /// <summary>Someone this player stood on in the last move: their moves carry it (Ride).</summary>
     internal PlayerMovement Carrier { get; private set; }
     internal float SupportAngle => ctx.IsSliding ? Mathf.Max(controller.slopeLimit, ctx.AbilitySettings.slideMaxSlopeAngle) : controller.slopeLimit;
@@ -129,7 +135,9 @@ public sealed class MovementMotor
         if (moved.sqrMagnitude < 1e-8f || moved.sqrMagnitude > 1f) return;
         Vector3 before = ctx.transform.position;
         controller.Move(moved);
-        previousPosition += ctx.transform.position - before;
+        rode = ctx.transform.position - before;
+        rodeFrame = Time.frameCount;
+        previousPosition += rode;
     }
 
     // A body slide, dive or dash push that runs into a physics prop kicks it ahead and keeps whatever momentum it did not
@@ -222,7 +230,7 @@ public sealed class MovementMotor
     /// <summary>
     /// The way the legs are asked to go (world, m/s), along any wall it runs into: what goes into a wall taller than a step is
     /// taken out, so the legs walk along the wall or stand at it rather than run on the spot under a capsule it stops (the legs
-    /// carry the body, PlayerBody.LegsCarry). A stair's riser is no wall, and a physics prop is pushed, not walked along. Swept
+    /// carry the body, FootCarry). A stair's riser is no wall, and a physics prop is pushed, not walked along. Swept
     /// ahead rather than read off the last move's contacts: a stride stopped at the wall touches it no more, and read so it
     /// came and went every other frame.
     /// </summary>

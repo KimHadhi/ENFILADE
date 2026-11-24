@@ -13,9 +13,10 @@ using State = PlayerMovement.MovementState;
 /// pose up to half a stride off within the 0.15 s blend (BodyInertia), and the planted foot swept the ground at 10 to 12 m/s
 /// for a tenth of a second at every turn (the feet record of 2026-11-25 02:19; the user: "turn 애니메이션 나올 때 … 한 프레임
 /// 정도 … 갑작스럽게 움직이는 느낌").
-/// The clip moves the body (root motion): the capsule goes the way and at the pace the clip's own root goes, turned into the
-/// world from where the body faced (StartYaw), and the body's root turns as the clip's root turns, so the body moves as the
-/// clip's feet were made to and a foot that is down stays down where the clip put it. The one bend (motion warping): so the
+/// The clip moves the body: the body's root turns as the clip's root turns from where the body faced (StartYaw), and the foot
+/// the clip has down carries it over the ground (FootCarry), the capsule after it, so a foot that is down stays where the
+/// clip put it. Until 0.9.425 the capsule went the way and at the pace the clip's own root curve went, and the foot slid
+/// wherever the two parted (the feet record of 2026-11-25 05:51). The one bend (motion warping): so the
 /// turn ends with the chest where the view looked as it began (EndYaw), the root's whole turn is what the body needs from where
 /// it faced, the clip's own turn drawn out or in to it over the clip's own turning, the way it goes bending with it: a body
 /// that had already turned part of the way after a flicked view (as far as the head lets it lag, PlayerBody) turns the rest,
@@ -23,8 +24,7 @@ using State = PlayerMovement.MovementState;
 /// degrees, came round to the view: by then the body had turned 45 to 90 degrees of a 100 to 140 degree flick, the clip's
 /// 180 never fitted, and the run came round as before 0.9.386, the legs sprinting sideways and backwards (StrafeSprint_R135,
 /// _B) while the body swung up to 65 degrees a frame (the gait and pops records of 2026-11-24 23:53; the user: "모션이
-/// 전반적으로 … 우스꽝스러워졌는데"). The speed the body came in at goes over to the clip's own in EntryBlend. 0.9.412 laid
-/// the clip from the way the run went instead, which
+/// 전반적으로 … 우스꽝스러워졌는데"). 0.9.412 laid the clip from the way the run went instead, which
 /// turned a body already half round back away from the view at once, and the head, the neck and the arms swung round 105 to
 /// 175 degrees in a frame (the pops record of 2026-11-24 23:40; the user: "더 괴랄해졌는데요 … 튕기고 터지고").
 /// It hands over at the clip's first footfall once its root is done turning and its chest is back over its root
@@ -64,20 +64,14 @@ public sealed class RunTurn
     private const float PhaseTie = .04f;
     // The keys asking a way further than this off the one the turn turns to (degrees) give it up (Go).
     private const float GiveUpWithin = 90f;
-    // The speed the body came in at goes over to the clip's own in this long (s).
-    private const float EntryBlend = .15f;
-    // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
-    private const float WayOver = .08f;
     // A turn back is of a run that went ahead of the view this short a while ago (s): the view flicked round from it. Running
     // backwards and pressing ahead is no turn: the body already faces the way the keys want.
     private const float RanAheadWithin = .3f;
 
     private readonly PlayerMovement ctx;
-    private float startedAt, outAt, warp, frameYaw, ranAheadAt = float.NegativeInfinity;
+    private float startedAt, outAt, warp, ranAheadAt = float.NegativeInfinity;
     /// <summary>Turns begun on this PC, its own or mirrored: a new one, even on the same clip (PlayerBody.RunTurnPose).</summary>
     public int Serial { get; private set; }
-    // How much faster and which other way than the clip at its entry the body came in (world, m/s), fading over EntryBlend.
-    private Vector3 entryOff;
     private bool active;
 
     internal RunTurn(PlayerMovement context) { ctx = context; }
@@ -164,7 +158,6 @@ public sealed class RunTurn
         if (motion == null) return false;
         string clip = ClipAt(index);
         Begin(index, clip, from, view, bodyYaw, motion);
-        entryOff = now - ClipVelocity(motion, From);
         Count++;
         return true;
     }
@@ -178,12 +171,11 @@ public sealed class RunTurn
         if (motion != null) Begin(index, clip, from, endYaw, startYaw, motion);
     }
 
-    /// <summary>This frame's velocity while the turn goes on: the clip's own root's, the speed the body came in at fading into
-    /// it. False once it is over or given up, <paramref name="wanted"/> (the keys' way in the world, none for no keys) gone
-    /// back more than GiveUpWithin off the way it turns to included; the gait takes the pace over (Stop).</summary>
-    internal bool Go(Vector3 wanted, out Vector3 velocity)
+    /// <summary>The turn goes on this frame. False once it is over or given up, <paramref name="wanted"/> (the keys' way in the
+    /// world, none for no keys) gone back more than GiveUpWithin off the way it turns to included; the gait takes the pace
+    /// over (Stop).</summary>
+    internal bool Go(Vector3 wanted)
     {
-        velocity = Vector3.zero;
         var motion = Motion;
         bool changedMind = wanted.sqrMagnitude > .01f
             && Vector3.Angle(wanted, Quaternion.Euler(0f, EndYaw, 0f) * Vector3.forward) > GiveUpWithin;
@@ -192,18 +184,7 @@ public sealed class RunTurn
             Stop();
             return false;
         }
-        float t = Moment, fade = 1f - Mathf.Clamp01((t - From) / EntryBlend);
-        velocity = ClipVelocity(motion, t) + entryOff * (fade * fade * (3f - 2f * fade));
         return true;
-    }
-
-    // The clip's root velocity at its moment in the world (m/s): its way in the frame it began in, read over WayOver either side,
-    // turned to where that frame lies for this turn and by the root's bend so far.
-    private Vector3 ClipVelocity(ClipMotion motion, float time)
-    {
-        float from = Mathf.Clamp(time - WayOver, 0f, motion.Length), to = Mathf.Clamp(time + WayOver, 0f, motion.Length);
-        Vector2 way = to - from > 1e-3f ? (motion.WayAt(to) - motion.WayAt(from)) / (to - from) : Vector2.zero;
-        return Quaternion.Euler(0f, frameYaw + Warped(motion, time), 0f) * new Vector3(way.x, 0f, way.y);
     }
 
     /// <summary>The turn is over or given up: the gait takes the pace over and comes down from it (MovementGait.Carry).</summary>
@@ -227,9 +208,6 @@ public sealed class RunTurn
         EndYaw = endYaw;
         StartYaw = startYaw;
         startedAt = Time.time;
-        entryOff = Vector3.zero;
-        // The world's yaw of the frame the clip began in: the root at From faces where the body faced.
-        frameYaw = startYaw - motion.TurnedAt(from);
         outAt = HandOver(motion, from);
         warp = Bend(motion, from, outAt, startYaw, endYaw);
     }

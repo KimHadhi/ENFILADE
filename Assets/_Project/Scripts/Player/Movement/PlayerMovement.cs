@@ -112,7 +112,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
     /// <summary>On the ground, what the legs are asked to carry (world, m/s): the keys' way at the gait's speed, eased
-    /// (LocomotionState). The body goes as the legs carry it (LegsCarry), not at this.</summary>
+    /// (LocomotionState). The body goes as its planted foot carries it (BodyCarry), not at this.</summary>
     internal Vector3 Stride
     {
         get => stride;
@@ -326,13 +326,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal ClipMotion MotionOf(string clip) => Body != null ? Body.MotionOf(clip) : null;
     /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
     internal float AimShare => Body != null ? Body.AimShare : 0f;
-    /// <summary>How the legs' walk or run carries the body over the ground (world, m/s; PlayerBody.LegsCarry); false when they
-    /// didn't walk or run last frame, or there is no body.</summary>
-    internal bool LegsCarry(out Vector3 velocity)
+    /// <summary>How fast the capsule goes after the body its planted foot carries (world, m/s; PlayerBody.BodyCarry); false
+    /// when the feet didn't carry it last frame, or there is no body.</summary>
+    internal bool BodyCarry(out Vector3 velocity)
     {
         velocity = Vector3.zero;
-        return Body != null && Body.LegsCarry(out velocity);
+        return Body != null && Body.BodyCarry(out velocity);
     }
+    /// <summary>How far someone this player stands on moved them this frame (MovementMotor.Ride).</summary>
+    internal Vector3 RodeNow => Motor != null ? Motor.RodeNow : Vector3.zero;
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>
     internal float RunOutPace => Body != null ? Body.RunOutPace : 0f;
 

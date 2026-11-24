@@ -10,9 +10,12 @@ using UnityEngine.Playables;
 ///   along the travel: a slow side cycle takes more of a diagonal than a fast forward one, so neither skates sideways.
 /// - Every cycle shares one step: each stride starts with the left foot down, wherever its file starts or however many
 ///   strides it holds.
-/// - The legs carry the body (0.9.415): the player's own body goes over the ground as far and the way its cycles' feet carry it
-///   at their own pace (LegsCarry; PlayerMovement.Stride is only what the legs are asked), so a foot that is down stays where it
-///   came down with nothing holding it there. Another PC's body goes where the network has it, its cycles played at the pace
+/// - The planted foot carries the body (0.9.425, FootCarry): the cycles play at their own pace (PlayerMovement.Stride is only
+///   what the legs are asked), and the player's own body goes over the ground as the foot its pose has down pushes it, so a
+///   foot that is down stays where it came down with nothing holding it there. From 0.9.415 to 0.9.424 it went as far and the
+///   way the cycles' feet were measured to carry it at their pace (LegsCarry), and the foot that was down slid wherever the
+///   pose went otherwise: in a turn of the hips, a bank into an arc, a blend between clips (the feet record of 2026-11-25
+///   05:51: a third of its frames). Another PC's body goes where the network has it, its cycles played at the pace
 ///   that carries it so, within gaitRate (Pace). Until 0.9.415 every body went at the keys' speed eased on its own, its cycles
 ///   followed what it was seen to do at a pace fitted to it, and where the two parted (a turn, a flick of the view, a start)
 ///   the feet were held, dragged and caught up one by one (FootPlanting): fifteen versions of fixes in a day (the user,
@@ -110,11 +113,8 @@ public sealed partial class PlayerBody
     // (m, in the body's own frame: x right, y ahead).
     private float mixWeight, mixStride;
     private Vector2 mixLength;
-    // How the player's own legs carry the body over the ground (world, m/s), and the frame they last did (LegsCarry); whether
-    // the movement asked them this frame (PlayerMovement.Stride), and the body's facing they were laid under (degrees off the
-    // view).
-    private Vector3 legsVelocity;
-    private int legsFrame = -10;
+    // Whether the movement asked the player's own legs this frame (PlayerMovement.Stride), and the body's facing they were laid
+    // under (degrees off the view).
     private bool legsAsked;
     private float layYaw;
     // The frame the cycles last played on (a landing or a jump plays none), and the numbers behind their pace for the /gait
@@ -265,7 +265,7 @@ public sealed partial class PlayerBody
     private void Locomotion(bool crouched, float dt)
     {
         // The player's own legs go as the player asks (PlayerMovement.Stride: the keys' way at the gait's speed, eased), and the
-        // body goes as they carry it (LegsCarry). Where something else moves the body this frame (a surge, a hold) and another
+        // foot they have down carries the body (FootCarry). Where something else moves the body this frame (a surge, a hold) and another
         // PC's always, they go as the body is seen to go, followed in the world so turning the view doesn't drag them behind it.
         // 0.9.415 played the player's own on the last stride asked whatever moved the body, and a held body sprinted on the
         // spot (the review of 2026-11-25).
@@ -360,7 +360,9 @@ public sealed partial class PlayerBody
             legsPlanted = rootFollowed = true;
         }
         else if (!crouched && !legsPlanted) targetYaw = turn;
-        if (!still) walkedFrame = Time.frameCount;
+        // A body with no cycles the way it is asked (none measured) has no foot to carry it: it goes as asked (LocomotionState).
+        // 0.9.415 said it carried nothing at any speed, and such a body stood (the review of 2026-11-25).
+        if (!still && mixWeight > 0f) walkedFrame = Time.frameCount;
         Pace(speed, legs, moving, dt);
     }
 
@@ -368,8 +370,8 @@ public sealed partial class PlayerBody
     // HeadingLeast. StillTravel is a curve's least speed (Leans).
     private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
     private bool still = true;
-    // The frame the legs last walked or ran (Locomotion, not standing) or a run's turn had them (RunTurnPose): the body sits on
-    // its hips (SitOnHips).
+    // The frame the legs last walked or ran (Locomotion, not standing) or a run's turn had them (RunTurnPose): the foot they
+    // have down carries the body (CarryOnFeet), or it sits on its hips (SitOnHips).
     private int walkedFrame = -10;
 
     /// <summary>How fast a run may curve at the legs' gait now (degrees a second): its arc clip's own turn (BodyLeans.csv
@@ -718,23 +720,17 @@ public sealed partial class PlayerBody
         mixLength += weight * Length(cycle, scale);
     }
 
-    // The step's pace and what it carries. The cycles share one step (Blend), so their feet go the summed stride lengths in the
-    // summed stride times. The player's own play at their own pace and the body goes as they carry it (LegsCarry), the idle's
-    // share standing; faster only for what the gait's speed is put above the fastest of them (a class's pace), within
+    // The step's pace. The cycles share one step (Blend), so their feet go the summed stride lengths in the summed stride
+    // times. The player's own play at their own pace and the foot they have down carries the body (FootCarry); faster only for what the gait's speed is put above the fastest of them (a class's pace), within
     // gaitRate. Another PC's play at the pace that carries its body as the network has it, within gaitRate. Until 0.9.415 every
     // body was carried by the keys and its cycles' pace made up the difference; until 0.9.410 the stride was also stretched to
     // the speed (Body.gaitStretch), which, coming on whole as a run took over from a turn's clip, threw the swinging foot 15 to
     // 25 cm in a frame (the user, 2026-11-24: "보폭 늘리기라는 시스템 때문에 지금 이랬다고? 그럼 없애면 되잖아").
     private void Pace(float speed, float legs, float moving, float dt)
     {
-        bool carries = legsAsked;
         if (player.IsNetworkDriven) FollowStep(dt);
         gaitSpeed = speed;
         runCalmShare = moving;
-        legsVelocity = Vector3.zero;
-        // A body with no cycles the way it is asked (none measured) carries nothing: it goes as asked (LocomotionState). 0.9.415
-        // said it carried nothing at any speed, and such a body stood (the review of 2026-11-25).
-        if (carries && (mixWeight > 0f || speed < StillEnter)) legsFrame = Time.frameCount;
         if (mixWeight <= 0f)
         {
             gaitNatural = 0f;
@@ -748,11 +744,7 @@ public sealed partial class PlayerBody
         float rad = legs * Mathf.Deg2Rad;
         float along = Vector2.Dot(own, new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)));
         float rate = 1f, fastest = Mathf.Max(gaitRate.x, gaitRate.y);
-        if (along > .05f && speed > .05f) rate = Mathf.Clamp(speed / along, carries ? 1f : Mathf.Min(gaitRate.x, gaitRate.y), fastest);
-        // Into the world as the legs were laid out (the heading against the body's facing, Locomotion).
-        // The lean and arc cycles banked in after (Bank) step with their straight one, a run curving under hips that turn with
-        // it, at its pace within a fiftieth; their own measured ways are the chord of their turn, not where they carry the hips.
-        if (carries) legsVelocity = Quaternion.Euler(0f, transform.eulerAngles.y + layYaw, 0f) * new Vector3(own.x, 0f, own.y) * (mixWeight * rate);
+        if (along > .05f && speed > .05f) rate = Mathf.Clamp(speed / along, legsAsked ? 1f : Mathf.Min(gaitRate.x, gaitRate.y), fastest);
         phase += dt * rate / strideTime;
         strideCycle = strideTime / Mathf.Max(.05f, rate);
         if (phase >= 1f)
@@ -765,13 +757,13 @@ public sealed partial class PlayerBody
         strideFrame = Time.frameCount;
     }
 
-    /// <summary>How the player's own walk or run carries the body over the ground (world, m/s): as far and the way its cycles'
-    /// feet go at their pace, the idle's share standing (Pace). The movement goes at it (LocomotionState), so the body goes as
-    /// its legs do. False when they didn't walk or run last frame (a clip played out, the air, another state had them).</summary>
-    internal bool LegsCarry(out Vector3 velocity)
+    /// <summary>How fast the capsule goes after the player's own body its planted foot carries (world, level, m/s; FootCarry):
+    /// the body's pace, closing on it. The movement goes at it (LocomotionState), so the capsule goes as the body does. False
+    /// when the feet didn't carry it last frame (standing, the air, another state had the legs).</summary>
+    internal bool BodyCarry(out Vector3 velocity)
     {
-        velocity = legsVelocity;
-        return legsFrame == Time.frameCount - 1;
+        velocity = carry.Wanted;
+        return carry.Carried;
     }
 
     /// <summary>This frame's run for the /gait averages: the speed (m/s), steps a minute and how much faster the body goes than

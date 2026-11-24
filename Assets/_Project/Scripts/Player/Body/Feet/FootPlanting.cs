@@ -416,12 +416,30 @@ internal sealed class FootPlanting
     // within this of the clip's has arrived and may take a place again (m).
     private const float DownHeight = .03f, Arrived = .005f;
 
+    /// <summary>A sole <paramref name="over"/> its floor (m) is down: within DownHeight, or LiftsFrom more for one that
+    /// <paramref name="was"/> down, so a sole that hovers at the line doesn't come down and up frame by frame.</summary>
+    internal static bool SoleDown(float over, bool was) => over < (was ? DownHeight + LiftsFrom : DownHeight);
+
+    /// <summary>
+    /// The end of <paramref name="leg"/>'s sole the clip has lowest now, its heel or its toe tip (world; <paramref name="heel"/>
+    /// which), and how high the sole's lowest stands over the clips' floor (m). The end it stood on
+    /// (<paramref name="heelWas"/>) stays the one until the other is <paramref name="swap"/> lower. Read on the clip's pose
+    /// before the feet are planted, for which foot carries the body and where (FootCarry).
+    /// </summary>
+    internal float SoleUnder(Leg leg, bool heelWas, float swap, out Vector3 point, out bool heel)
+    {
+        Vector3 heelAt = leg.Foot.TransformPoint(leg.HeelSole), tipAt = leg.Foot.TransformPoint(leg.TipSole);
+        heel = heelWas ? heelAt.y <= tipAt.y + swap : heelAt.y < tipAt.y - swap;
+        point = heel ? heelAt : tipAt;
+        return Mathf.Max(0f, Mathf.Min(heelAt.y, tipAt.y) - (body.position.y + sole));
+    }
+
     // Where this foot stands this frame (world; only its level place is used). The clip's place is the foot's with what
     // carried the hips sideways taken back out. One rule, standing or on the move: a foot that
     // is down keeps the place it came down on, and the body goes on over it and turns on it as on a pivot, until its clip
     // lifts it; then it goes onto the clip's place over its swing, coming down where the clip comes down (Catching), and
-    // takes a place again there. On the move a foot takes no place: the body goes as its walk or run's feet carry it
-    // (PlayerBody.LegsCarry, 0.9.415), so the clip's foot that is down is down where it came down; one kept from standing stays
+    // takes a place again there. On the move a foot takes no place: the foot the clip has down carries the body
+    // (FootCarry, 0.9.425), so it is down where it came down; one kept from standing stays
     // until its clip lifts it. From 0.9.406 to 0.9.414 the body went at the keys' speed and a moving foot was kept and drawn
     // in toward the hip as far as the leg reached (Reachable), or given 5 cm (0.9.412-0.9.413): a run's clip has its sole low
     // a good deal longer than the foot really stands (a quarter of a second of a sprint's 0.3 s step, the body going 1.5 m
@@ -441,7 +459,7 @@ internal sealed class FootPlanting
         Vector3 clip = leg.Foot.position - hold.Carried;
         // On the move down is the walk's reading, the sole on its own floor (Walk): the lower foot of a run's flight is in the
         // air. Standing, the lower foot is down.
-        bool down = hold.Stands ? over < (leg.Kept ? DownHeight + LiftsFrom : DownHeight) : leg.Down;
+        bool down = hold.Stands ? SoleDown(over, leg.Kept) : leg.Down;
         bool keep = onFeet && down && leg.SupportWeight > 0f;
         // A step's lift eases off as its place does when the step is cut short (the body set off or left the ground): until
         // 0.9.400 it went to nothing in a frame and the stepping foot dropped up to 8 cm (the audit of 2026-11-24). A step
@@ -508,7 +526,7 @@ internal sealed class FootPlanting
                 }
             }
             // On the move a foot kept from standing stays where it stood until its clip lifts it: the body goes as the clip's
-            // feet carry it (PlayerBody.LegsCarry), so the clip's place goes nowhere from it.
+            // foot carries it (FootCarry), so the clip's place goes nowhere from it.
         }
         // Standing, a foot comes down where it is shown once it has eased onto the clip's place, so the stance stands as its clip
         // has it. On the move it takes none: the body goes as the clip's feet carry it, so a foot the clip has down is down where
@@ -664,7 +682,7 @@ internal sealed class FootPlanting
     private void Walk(Leg leg, bool left, float over, float floor, LayerMask ground, in Tuning tuning, in Steps steps, float dt)
     {
         float settle = dt / Mathf.Max(.01f, tuning.SettleTime);
-        if (over < (leg.Down || leg.Kept ? DownHeight + LiftsFrom : DownHeight))
+        if (SoleDown(over, leg.Down || leg.Kept))
         {
             if (!leg.Down)
             {
