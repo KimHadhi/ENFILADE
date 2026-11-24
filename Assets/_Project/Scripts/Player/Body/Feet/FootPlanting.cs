@@ -325,7 +325,7 @@ internal sealed class FootPlanting
         Weight = Mathf.MoveTowards(Weight, onFeet ? 1f : 0f, dt / tuning.BlendTime);
         // The floor the clip stands the soles on: the root, and the drawn soles over it (Measure).
         float clipFloor = body.position.y + sole;
-        StretchStride(stride);
+        StretchStride(stride, tuning.BlendTime, dt);
         if (Weight <= 0f)
         {
             settled = false;
@@ -592,18 +592,32 @@ internal sealed class FootPlanting
     }
 
     // Where the stretched stride moves each foot: its distance ahead of or behind the hips along the way of travel, scaled.
-    // The swinging foot is moved the same way, so it reaches as far forward as the planted one goes back.
-    private void StretchStride(in Stride stride)
+    // The swinging foot is moved the same way, so it reaches as far forward as the planted one goes back. The stretch comes
+    // and goes over the clips' blend time, as the cycles that it stretches do (a run's turn, a landing, a jump stretch
+    // nothing): until 0.9.409 it came on whole in the frame the run took over from a turn's clip, the turn still four fifths
+    // of the pose, and the foot swinging went 15 to 25 cm in that frame (the pops record of 2026-11-24 22:53; the user: "turn
+    // 애니메이션에서 걷기나 달리기로 전환될 때 발이 … 너무 빠르게").
+    private void StretchStride(in Stride stride, float blendTime, float dt)
     {
         Left.Shift = Right.Shift = Vector3.zero;
-        if (!stride.Stretches) return;
+        if (stride.Stretches)
+        {
+            stretchWay = stride.Way;
+            stretchScale = stride.Scale;
+        }
+        stretchShown = Mathf.MoveTowards(stretchShown, stride.Stretches ? stride.Weight : 0f, dt / Mathf.Max(.01f, blendTime));
+        if (stretchShown <= 0f || stretchWay.sqrMagnitude < .5f) return;
         Vector3 hips = (Left.Upper.position + Right.Upper.position) * .5f;
-        Left.Shift = Shift(Left, stride, hips);
-        Right.Shift = Shift(Right, stride, hips);
+        Left.Shift = Shift(Left, hips);
+        Right.Shift = Shift(Right, hips);
 
-        static Vector3 Shift(Leg leg, in Stride stride, Vector3 hips)
-            => stride.Way * (Vector3.Dot(leg.Foot.position - hips, stride.Way) * (stride.Scale - 1f) * stride.Weight);
+        Vector3 Shift(Leg leg, Vector3 hips)
+            => stretchWay * (Vector3.Dot(leg.Foot.position - hips, stretchWay) * (stretchScale - 1f) * stretchShown);
     }
+
+    // The stretch as the feet show it: its share eased (StretchStride), and the way and scale it last had.
+    private float stretchShown, stretchScale = 1f;
+    private Vector3 stretchWay;
 
     // How far the hips must come down for this leg to reach where its foot stands (m). A foot standing where the hips
     // have it needs none. A stretched stride asks for all the leg lacks, as it has since 0.8.260 (its look was tuned so);
