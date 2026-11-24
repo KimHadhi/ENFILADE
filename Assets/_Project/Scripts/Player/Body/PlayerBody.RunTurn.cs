@@ -54,8 +54,8 @@ public sealed partial class PlayerBody
         var channel = Find(turn.Clip);
         if (channel == null || channel.Synced) return false;
         float root = turn.RootYaw;
-        // A new turn (on the same clip too) starts its clip again; its first frame sets the root from where the body faced to
-        // the way the run went, a jump the bones ease (PlayerBody.Update), and from then on the root turns by the clip.
+        // A new turn (on the same clip too) starts its clip again; from its second frame on the root turns by the clip (its
+        // first comes in where the body faced, and anything else there is a jump the bones ease: PlayerBody.Update).
         if (turnSerial != turn.Serial)
         {
             Restart(channel);

@@ -8,13 +8,15 @@ using State = PlayerMovement.MovementState;
 /// the jog and the sprint, turning the way the body is behind the view, planting the foot that is down), entered at its last
 /// moment before its root turns where its chest is twisted no more than Ability.runTurnEntry against its root (EntryOf).
 /// The clip moves the body (root motion): the capsule goes the way and at the pace the clip's own root goes, turned into the
-/// world from the way the run went (StartYaw: the clip's root runs ahead as it comes in, as the run did, whatever way the body
-/// had turned toward the view by then), and the body's root turns as the clip's root turns, so the body moves just as the
+/// world from where the body faced (StartYaw), and the body's root turns as the clip's root turns, so the body moves as the
 /// clip's feet were made to and a foot that is down stays down where the clip put it. The one bend (motion warping): so the
 /// turn ends with the chest where the view looked as it began (EndYaw), the root turns up to MostWarp more or less than the
-/// clip's own turn, spread over the clip's own turning, the way it goes bending with it; a turn the clip can't make within that
-/// (a view gone round less than about 150 degrees) is no turn back, and the run comes round keeping its pace as on any other
-/// change of way. The speed the body came in at is brought to the clip's own over EntryBlend.
+/// clip's own turn, spread over the clip's own turning, the way it goes bending with it: a body that had already turned part
+/// of the way after a flicked view (as far as the head lets it lag, PlayerBody) turns the rest. A turn the clip can't make
+/// within that is no turn back, and the run comes round keeping its pace as on any other change of way. The speed the body
+/// came in at goes over to the clip's own in EntryBlend. 0.9.412 laid the clip from the way the run went instead, which
+/// turned a body already half round back away from the view at once, and the head, the neck and the arms swung round 105 to
+/// 175 degrees in a frame (the pops record of 2026-11-24 23:40; the user: "더 괴랄해졌는데요 … 튕기고 터지고").
 /// It hands over at the clip's first footfall once its root is done turning and its chest is back over its root
 /// (ChestAligned): the walk or run takes the stride there (PlayerBody.StepFrom) at the clip's own pace (MovementGait.Carry),
 /// with nothing to turn back. Jumping, sliding, crouching or leaving the ground gives it up. The other PCs start the same turn
@@ -44,7 +46,7 @@ public sealed class RunTurn
     // A clip's root has not begun, or is done, turning while it is within this of where it began or ends (degrees).
     private const float RootStill = 2f;
     // The most the root turns past or short of the clip's own turn to end where the view looked (degrees).
-    private const float MostWarp = 30f;
+    private const float MostWarp = 90f;
     // The speed the body came in at goes over to the clip's own in this long (s).
     private const float EntryBlend = .15f;
     // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
@@ -130,11 +132,10 @@ public sealed class RunTurn
         string clip = ClipAt(index);
         var motion = ctx.MotionOf(clip);
         if (motion == null) return false;
-        // The clip's path is laid from the way the run went, and the turn is the clip's only if its own turn, bent by no more
-        // than MostWarp, brings the chest round to the view.
-        float from = EntryOf(motion, settings.runTurnEntry), ran = Mathf.Atan2(now.x, now.z) * Mathf.Rad2Deg;
-        if (Mathf.Abs(Bend(motion, from, HandOver(motion, from), ran, view)) > MostWarp) return false;
-        Begin(index, clip, from, view, ran, motion);
+        // The turn is the clip's only if its own turn, bent by no more than MostWarp, brings the chest round to the view.
+        float from = EntryOf(motion, settings.runTurnEntry);
+        if (Mathf.Abs(Bend(motion, from, HandOver(motion, from), bodyYaw, view)) > MostWarp) return false;
+        Begin(index, clip, from, view, bodyYaw, motion);
         entryOff = now - ClipVelocity(motion, From);
         Count++;
         return true;

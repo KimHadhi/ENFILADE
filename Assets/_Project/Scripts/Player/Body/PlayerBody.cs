@@ -604,7 +604,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         BlendLayers(dt);
         float view = transform.eulerAngles.y;
         // Any jump of the body's root, as a state faces a way of its own at once (a slide, a vault, a roll, lying down) or sets
-        // the facing outside the follow below (a run's turn coming in from the way the run went), has the pose the bones carry turned back as much and
+        // the facing outside the follow below, has the pose the bones carry turned back as much and
         // eased round (BodyInertia), so the body comes round over the blend and not in a frame. Until 0.9.400 only the run's turn
         // did, by hand (out of a strafe into a slide the whole body turned 45 to 90 degrees in a frame: the audit of 2026-11-24).
         float jump = !rootYawKnown ? 0f : legsPlanted ? Mathf.DeltaAngle(legYawLeft, view + targetYaw) : Mathf.DeltaAngle(legYawLeft, legYaw);

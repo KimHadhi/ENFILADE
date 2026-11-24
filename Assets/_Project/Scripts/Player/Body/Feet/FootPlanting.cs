@@ -128,15 +128,29 @@ internal sealed class FootPlanting
         /// <summary>The knee's hinge in the thigh bone's own frame, measured in the rest pose (MakeLeg).</summary>
         public Vector3 KneeLocal;
         /// <summary>
-        /// The way the knee bends about, as the thigh has it now (world): the rest pose's hinge turned with the thigh, so it
-        /// is the knee's own whatever the clip does with the leg against the hips, bent or straight. Every leg IK bends the
-        /// knee about it (here, the hanging legs, the ladder's feet, the sweep). Until 0.9.408 each read the clip's bend
-        /// against the hips' line and took the hips' line where the two disagreed and the clip's bend was under 15 degrees:
-        /// in a run's turn the pelvis turns over the planted leg, the leg's knee faces off the hips' line, and the hinge
-        /// swapped between the two as the bend crossed 15 degrees, the shin turning 75 degrees and the knee going 40 cm in a
-        /// frame (the pops record of 2026-11-24 22:39, Sprint_TurnR_Rfoot; the user: "다리 뒤집힘").
+        /// The way the knee bends about now (world), read off the clip's leg before any IK bends it: the clip's own bend where
+        /// it bends the knee clearly (bent up a sprint's heel to the hips, an IK on any other axis put the foot a few cm off and
+        /// turned the whole leg round to point it back: 171 to 180 degrees in a frame in 0.9.408's strafing sprint, the pops
+        /// record of 2026-11-24 23:40), and where the leg is all but straight the rest pose's hinge turned with the thigh, the
+        /// knee's own whatever the clip does with the leg against the hips; between, by how far it is bent (KneeBent), the
+        /// clip's taken on the hinge's side so it can't turn over. Every leg IK bends the knee about it (here, the hanging legs,
+        /// the ladder's feet, the sweep). Until 0.9.408 each took the hips' line where the clip's bend lay its other side and was
+        /// under 15 degrees: in a run's turn the pelvis turns over the planted leg, and the hinge swapped between the two as the
+        /// bend crossed 15 degrees, the shin turning 75 degrees and the knee going 40 cm in a frame (22:39; the user: "다리 뒤집힘").
         /// </summary>
-        public Vector3 KneeAxis => Upper.rotation * KneeLocal;
+        public Vector3 KneeAxis
+        {
+            get
+            {
+                Vector3 hinge = Upper.rotation * KneeLocal;
+                Vector3 thigh = Lower.position - Upper.position, shin = Foot.position - Lower.position, own = Vector3.Cross(thigh, shin);
+                float bent = Mathf.Clamp01(own.magnitude / Mathf.Max(1e-6f, thigh.magnitude * shin.magnitude) / KneeBent);
+                if (bent <= 0f) return hinge;
+                return Vector3.Lerp(hinge, own.normalized * (Vector3.Dot(own, hinge) < 0f ? -1f : 1f), bent);
+            }
+        }
+        // A knee bent this far (the sine of 15 degrees) bends about the clip's own axis (KneeAxis).
+        private const float KneeBent = .26f;
         /// <summary>The ankle's height above the sole, measured in the rest pose (m).</summary>
         public float Sole;
         /// <summary>Heel and toe tip in the foot bone's space; only their place over the ground is used.</summary>
