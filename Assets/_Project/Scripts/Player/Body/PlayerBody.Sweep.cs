@@ -48,13 +48,9 @@ public sealed partial class PlayerBody
         float drop = Mathf.Max(0f, hip.y - floor);
         float along = Mathf.Sqrt(Mathf.Max(.01f, length * length - drop * drop));
         Vector3 target = new Vector3(hip.x, floor, hip.z) + facing * along;
-        // The knee bends about its own axis from the crouch, as on a ladder; straight, about the hips' line.
-        Vector3 thigh = leg.Lower.position - hip, shin = foot - leg.Lower.position;
-        Vector3 own = Vector3.Cross(thigh, shin);
-        Vector3 hinge = own.sqrMagnitude > 1e-6f ? own.normalized
-            : leftLeg != null ? Vector3.ProjectOnPlane(hip - leftLeg.Upper.position, thigh).normalized : transform.right;
+        // The knee bends about its own hinge (FootPlanting.Leg.KneeAxis).
         Quaternion turn = leg.Foot.rotation;
-        TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, Vector3.Lerp(foot, target, weight), hinge);
+        TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, Vector3.Lerp(foot, target, weight), leg.KneeAxis);
         leg.Foot.rotation = turn;
     }
 }

@@ -151,6 +151,18 @@ internal sealed class FootPlanting
         public float StepClock, StepLift;
         public Vector3 StepFrom;
         public AnkleLimit Ankle;
+        /// <summary>The knee's hinge in the thigh bone's own frame, measured in the rest pose (MakeLeg).</summary>
+        public Vector3 KneeLocal;
+        /// <summary>
+        /// The way the knee bends about, as the thigh has it now (world): the rest pose's hinge turned with the thigh, so it
+        /// is the knee's own whatever the clip does with the leg against the hips, bent or straight. Every leg IK bends the
+        /// knee about it (here, the hanging legs, the ladder's feet, the sweep). Until 0.9.408 each read the clip's bend
+        /// against the hips' line and took the hips' line where the two disagreed and the clip's bend was under 15 degrees:
+        /// in a run's turn the pelvis turns over the planted leg, the leg's knee faces off the hips' line, and the hinge
+        /// swapped between the two as the bend crossed 15 degrees, the shin turning 75 degrees and the knee going 40 cm in a
+        /// frame (the pops record of 2026-11-24 22:39, Sprint_TurnR_Rfoot; the user: "다리 뒤집힘").
+        /// </summary>
+        public Vector3 KneeAxis => Upper.rotation * KneeLocal;
         /// <summary>The ankle's height above the sole, measured in the rest pose (m).</summary>
         public float Sole;
         /// <summary>Heel and toe tip in the foot bone's space; only their place over the ground is used.</summary>
@@ -268,9 +280,12 @@ internal sealed class FootPlanting
                 tipDistance = Mathf.Max(tipDistance, Vector3.Dot(bone.position - ankle, along / ballDistance));
         tipDistance = Mathf.Min(tipDistance, ballDistance * 2.5f);
         Vector3 floor = Vector3.down * (ankle.y - floorY);
+        // The knee's hinge at rest is the body's own right across the thigh (a knee bends the shin back about it).
+        Vector3 knee = Vector3.ProjectOnPlane(Vector3.Cross(Vector3.up, forward), lower.position - upper.position).normalized;
         return new Leg
         {
             Upper = upper, Lower = lower, Foot = foot, Sole = ankle.y - floorY,
+            KneeLocal = Quaternion.Inverse(upper.rotation) * knee,
             Heel = foot.InverseTransformPoint(ankle - along * .35f), Tip = foot.InverseTransformPoint(ankle + along * 1.4f),
             HeelSole = foot.InverseTransformPoint(ankle - along * .35f + floor),
             TipSole = foot.InverseTransformPoint(ankle + along / ballDistance * tipDistance + floor)
@@ -403,10 +418,9 @@ internal sealed class FootPlanting
         reach = Mathf.Min(reach, Mathf.Max(stride.Stretches ? stride.MaxDrop : 0f, held ? hold.MaxDrop : 0f));
         strideDrop = Mathf.Lerp(strideDrop, reach, 1f - Mathf.Exp(-dt / StrideDropTime));
         body.position += Vector3.down * (strideDrop * Weight);
-        Vector3 hips = (Right.Upper.position - Left.Upper.position).normalized;
         // A stepping foot is that much off the ground, and swings at the clip's angle rather than lying on the slope.
-        Place(Left, leftLift + Left.StepLift, leftLift + Left.StepLift - lowerLift, hips, tuning, leftAt);
-        Place(Right, rightLift + Right.StepLift, rightLift + Right.StepLift - lowerLift, hips, tuning, rightAt);
+        Place(Left, leftLift + Left.StepLift, leftLift + Left.StepLift - lowerLift, tuning, leftAt);
+        Place(Right, rightLift + Right.StepLift, rightLift + Right.StepLift - lowerLift, tuning, rightAt);
     }
 
     // The clip has a foot down when its sole is within this of its lower foot's (m); a foot whose place has eased to
@@ -767,8 +781,8 @@ internal sealed class FootPlanting
     }
 
     // lift: how high the clip holds this ankle above its own floor. above: how far over the clip's lower foot.
-    // hips: from the left hip joint to the right one. at: where the foot stands, level (Stand).
-    private void Place(Leg leg, float lift, float above, Vector3 hips, in Tuning tuning, Vector3 at)
+    // at: where the foot stands, level (Stand).
+    private void Place(Leg leg, float lift, float above, in Tuning tuning, Vector3 at)
     {
         Vector3 foot = leg.Foot.position;
         float weight = Weight * leg.SupportWeight;
@@ -780,13 +794,7 @@ internal sealed class FootPlanting
         Quaternion rotation = leg.Foot.rotation;
         // Its place and the ground's height as far as the feet stand (both were worked out at full weight).
         leg.Target = new Vector3(Mathf.Lerp(foot.x, at.x, weight), Mathf.Lerp(foot.y, leg.Ground + lift, weight), Mathf.Lerp(foot.z, at.z, weight));
-        // The knee bends about the clip's own knee axis. A nearly straight leg has no clear axis, so it bends
-        // forward about the hips' sideways line instead (a clip knee bent slightly backward counts as straight).
-        Vector3 thigh = leg.Lower.position - leg.Upper.position, shin = foot - leg.Lower.position;
-        Vector3 own = Vector3.Cross(thigh, shin), straight = Vector3.ProjectOnPlane(hips, thigh).normalized;
-        float bent = Mathf.Clamp01(own.magnitude / Mathf.Max(1e-6f, thigh.magnitude * shin.magnitude) / .26f);
-        if (Vector3.Dot(own, straight) < 0f && bent < 1f) bent = 0f;
-        TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, leg.Target, Vector3.Lerp(straight, own.normalized, bent));
+        TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, leg.Target, leg.KneeAxis);
         // A foot on the ground lies along the slope; a swinging one keeps the clip's angle.
         float planted = (1f - Mathf.Clamp01(above / .1f)) * weight;
         Quaternion tilt = Quaternion.RotateTowards(Quaternion.identity, Quaternion.FromToRotation(Vector3.up, leg.Normal), tuning.MaxTilt);
