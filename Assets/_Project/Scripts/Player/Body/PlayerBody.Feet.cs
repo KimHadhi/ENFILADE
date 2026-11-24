@@ -42,8 +42,6 @@ public sealed partial class PlayerBody
     private float maxAnkleRoll = 25f;
 
     [Header("Feet keep their place")]
-    [SerializeField, Min(0f), Tooltip("The body stands (its feet keep their places) while it travels slower than this over the ground (m/s).")]
-    private float footHoldSpeed = .15f;
     [SerializeField, Range(1f, 90f), Tooltip("A kept foot steps once the legs have turned this far over it (degrees), when no turn on the spot leads the steps.")]
     private float footHoldTwist = 25f;
     [SerializeField, Min(.05f), Tooltip("How long a foot's step takes, up off its place and down in its new one (s).")]
@@ -127,7 +125,13 @@ public sealed partial class PlayerBody
         Vector3 travel = player.ActualVelocity;
         // The legs turning on the spot no longer carry the feet round with them (as up to 0.9.278, over 40° a second): the
         // feet stay where they stand and step round themselves (FootPlanting.Stand), at any speed of turn.
-        bool stands = onFeet && new Vector2(travel.x, travel.z).magnitude < footHoldSpeed;
+        // By the body's one still-or-moving flag (Locomotion: a gap between its two speeds), and never through a run's turn,
+        // whose clip steps the feet itself as it brakes and sets off. Until 0.9.403 the feet had a speed of their own
+        // (Body.footHoldSpeed .15 m/s, no gap), and a run's turn braking through it switched them between standing (the
+        // ground read under each foot) and walking (the ground each came down on) frame by frame: on stairs a foot's ground
+        // went -34, -2, -18 cm in three frames (the feet record of 2026-11-24 21:3x; the user: "급하게 turn 해서 turn 애니메이션
+        // 나오고 다시 걷기 시작할 때 발이 … 살짝 꺾이는").
+        bool stands = onFeet && still && turnClip == null;
         var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight,
             turnPlanner.Lead, turnPlanner.Share);
         // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.

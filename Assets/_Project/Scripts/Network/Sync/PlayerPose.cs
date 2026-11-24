@@ -29,7 +29,7 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     public Vector3 Anchor;
     /// <summary>Where they look. It travels here, not through NetworkTransform, whose buffer makes a turn arrive late and trail off.</summary>
     public float Yaw, Pitch;
-    public float Lean, RunIntent, FallSpeed, LandImpact, Tuck;
+    public float Lean, RunIntent, FallSpeed, LandImpact;
     /// <summary>Which gait the legs go, 0 walk, 1 jog, 2 sprint (MovementGait.Position): the clips the legs play.</summary>
     public float Gait;
     /// <summary>The state's own numbers, see MovementMirror.</summary>

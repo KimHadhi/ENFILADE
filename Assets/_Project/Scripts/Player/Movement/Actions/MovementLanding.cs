@@ -87,8 +87,12 @@ public sealed class MovementLanding
     public bool RollCrouches { get; private set; }
     /// <summary>The roll is over: a moving one that runs on at its first footfall once its legs are under it (where the walk or
     /// run takes its stride: PlayerBody.HasStepped), one that goes down into a crouch where its legs are under it, one that stands
-    /// up once its body is back up, a landing on the spot at its clip's end.</summary>
-    public bool RollOver => rollTime >= RollEndAt;
+    /// up, or a landing on the spot, at its clip's end; one that stands up also as soon as the keys set it going once its body
+    /// is back up.</summary>
+    public bool RollOver => rollTime >= RollEndAt || StandsAndSetsOff;
+    // Up on its feet in a roll that stands up, the keys have the body go: it ends there and the walk or run takes over.
+    private bool StandsAndSetsOff => !RunsOut && !RollCrouches && RollKind != Roll.OnTheSpot && RollMotion is ClipMotion motion
+        && rollTime >= motion.Up && ctx.CurrentInput.sqrMagnitude > .01f;
     /// <summary>How long into the roll its body meets the ground (s).</summary>
     public float RollDown => RollMotion != null ? RollMotion.Down - rollFrom : 0f;
     /// <summary>A slide's jump, either way it ends.</summary>
@@ -114,9 +118,13 @@ public sealed class MovementLanding
         {
             var motion = RollMotion;
             if (motion == null) return rollFrom + PlainRoll;
-            if (RollKind == Roll.OnTheSpot) return motion.Length;
             if (RollCrouches) return motion.LegsUnder;
-            return RunsOut && motion.StepAfter(motion.LegsUnder, out float step) ? step : motion.Up;
+            if (RunsOut && motion.StepAfter(motion.LegsUnder, out float step)) return step;
+            // Standing up it plays to its clip's end, the body carried by the clip's own root (RollSpeed) until it comes to
+            // rest, as on the spot. Until 0.9.403 it ended where the body was back up (Roll_F at 1.05 of 1.47 s): the capsule
+            // stopped there while the clip's root went on at 0.45 m/s, so a planted foot slid back over the ground and the
+            // feet then stepped it back (the user, 2026-11-24: "랜딩 롤 이후 서기는 발이 한 번 뒤로 빠지려다 돌아오는데").
+            return motion.Length;
         }
     }
     /// <summary>Thrown by a blow and not down yet.</summary>
@@ -229,16 +237,6 @@ public sealed class MovementLanding
     /// <summary>The speed a body dropped from rest reaches after falling this far (m/s).</summary>
     public static float SpeedOfDrop(float height, float gravity) => Mathf.Sqrt(2f * Mathf.Max(0f, gravity) * Mathf.Max(0f, height));
 
-    /// <summary>
-    /// How fast the feet meet the ground, given how fast the capsule's bottom did and how far the legs were tucked up
-    /// (m/s). Tucked in the air the capsule's bottom rides that much above where the feet would hang, so it falls that
-    /// much further before it touches; the feet would have met the ground that much sooner and slower. Without this a
-    /// crouch pressed in the air made every drop count 0.85 m higher than it was: a storey's drop became a hard landing,
-    /// and a fall just short of hurting hurt.
-    /// </summary>
-    public static float FeetImpact(float capsuleImpact, float tuck, float gravity)
-        => Mathf.Sqrt(Mathf.Max(0f, capsuleImpact * capsuleImpact - 2f * Mathf.Max(0f, gravity) * Mathf.Max(0f, tuck)));
-
     /// <summary>How hard a touchdown at this speed is, hurting or thrown aside: for whoever asks without landing (the console's /drop).</summary>
     public Tier TierOf(float feetImpact, float fallDistance)
     {
@@ -247,21 +245,12 @@ public sealed class MovementLanding
         return hurts ? Tier.Heavy : feetImpact >= HardSpeed ? Tier.Hard : Tier.Light;
     }
 
-    /// <summary>How far the legs were tucked up when the last touchdown came (m), and the capsule's own speed then.</summary>
-    public float LastTuck { get; private set; }
-    public float LastCapsuleImpact { get; private set; }
-
-    /// <param name="tuck">How far an air crouch had drawn the capsule's bottom up above the feet as it touched down (m).</param>
-    internal bool OnLanding(float tuck = 0f)
+    internal bool OnLanding()
     {
         var settings = ctx.AbilitySettings;
         Touchdown = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
-        // Judged where the feet were, not where the tucked capsule's bottom was (FeetImpact).
-        float gravity = Mathf.Abs(ctx.gravity * (ctx.IsDiving ? ctx.diveGravityScale : 1f));
-        LastTuck = tuck;
-        LastCapsuleImpact = impactSpeed;
-        LastImpactSpeed = FeetImpact(impactSpeed, tuck, gravity);
-        LastFallDistance = trackingFall ? Mathf.Max(0f, fallDistance - tuck) : 0f;
+        LastImpactSpeed = impactSpeed;
+        LastFallDistance = trackingFall ? Mathf.Max(0f, fallDistance) : 0f;
         bool bigFall = panicked;
         ClearFall();
         bool knocked = IsKnockedBack;

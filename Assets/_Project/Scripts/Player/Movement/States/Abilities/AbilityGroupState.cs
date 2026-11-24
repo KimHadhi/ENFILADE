@@ -15,7 +15,6 @@ public sealed class AbilityGroupState : MovementBaseState
     public override void Enter()
     {
         ctx.Actions.ClearJumpBuffer();
-        if (ctx.Posture.airBodyTucked || ctx.Posture.airCrouching) ctx.Posture.RebaseAirCrouchFeet();
         if (label == "Parkour") ctx.Abilities.Dodge.CancelWindow();
     }
 }

@@ -259,16 +259,16 @@ public sealed class PlayerMovementAudio : MonoBehaviour
         => LandingCue(tier, impact, crouched, null, landMinSpeed, landSoftSpeed);
 
     // Each touchdown of this PC's player, with what it was judged by, for whoever checks a play afterwards
-    // (Logs/landings.txt): the capsule's speed and the tuck it had, the feet's speed that the tier is judged by, the
-    // height a plain drop would need for it, the stance and the sound.
+    // (Logs/landings.txt): the speed the tier is judged by, the height a plain drop would need for it, the stance and the
+    // sound.
     private void Record(float impact, MovementLanding.Tier tier, bool crouched, string cue)
     {
         if (!player.IsLocal || !PlayRecord.On || impact < landMinSpeed) return;
         var landing = player.Abilities.Landing;
         float gravity = Mathf.Abs(player.gravity);
         float drop = gravity > 0f ? impact * impact / (2f * gravity) : 0f;
-        PlayRecord.Line("landings", "each landing: feet speed (capsule speed, tuck) = a plain drop of so many m; hard from Ability.hardLandingHeight; stance; cue (Tables/SoundCues)",
-            $"feet {impact:0.0} m/s (capsule {landing.LastCapsuleImpact:0.0}, tuck {landing.LastTuck:0.00} m) = drop {drop:0.00} m, hard from {player.AbilitySettings.hardLandingHeight:0.00} m"
+        PlayRecord.Line("landings", "each landing: feet speed = a plain drop of so many m; hard from Ability.hardLandingHeight; stance; cue (Tables/SoundCues)",
+            $"feet {impact:0.0} m/s = drop {drop:0.00} m, hard from {player.AbilitySettings.hardLandingHeight:0.00} m"
             + $" ({landing.HardSpeed:0.0} m/s) -> {tier}, {(crouched ? "crouched" : "upright")}, cue {cue ?? "(none)"}");
     }
 

@@ -391,7 +391,7 @@ Ability.ziplineAcceleration,6.25,집라인 가속(m/s²). 기울기와 상관없
 Ability.ziplineReleaseShare,0.75,놓을 때 남는 속도 비율
 Ability.ziplineRegrabDelay,0.75,놓은 뒤 줄이 다시 잡히기까지(초)
 # 능력: 착지 단계·구르기·낙하 피해 (MovementLanding. 디버그 HUD의 Last landing),,
-Ability.hardLandingHeight,3.5,"이 높이(m)에서 그냥 떨어진 것만큼, 또는 그보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지. 높이로 적는다: 맵을 짓는 단위가 높이라서다. 기준은 건물 한 층 3.0m이고 그보다 0.5m 높게 잡았다: 한 층은 세게 착지가 아니어야 앉은 채 한 층을 조용히 내려설 수 있다(사용자 2026-11-18). 중력 24에서 3.5m는 13.0m/s. 예전 값은 속도 12m/s(= 3.0m, 한 층이 딱 걸렸다). 공중에서 Ctrl로 다리를 접어도 착지는 발이 닿았을 높이로 잰다(접은 0.85m만큼 더 떨어진 것으로 치지 않는다)"
+Ability.hardLandingHeight,3.5,"이 높이(m)에서 그냥 떨어진 것만큼, 또는 그보다 세게 발로 착지하면 세게 착지(Beatrun): 쌓인 속도가 출발 속도로 깎이고 잠깐 느려지며 질주 금지. 높이로 적는다: 맵을 짓는 단위가 높이라서다. 기준은 건물 한 층 3.0m이고 그보다 0.5m 높게 잡았다: 한 층은 세게 착지가 아니어야 앉은 채 한 층을 조용히 내려설 수 있다(사용자 2026-11-18). 중력 24에서 3.5m는 13.0m/s. 예전 값은 속도 12m/s(= 3.0m, 한 층이 딱 걸렸다)."
 Ability.hardLandingRecoverTime,1,"세게 착지한 뒤 원래 이동 속도로 돌아오기까지(초). 달리며 세게 착지해 달려 나가는 클립(Body.landRunHard·landRunStumble·landSlam)이 나오는 동안은 그 클립의 빠르기로 간다(PlayerBody.RunOutPace, 0.9.351)"
 Ability.hardLandingMoveScale,0.1,세게 착지한 직후 이동 속도 배율. hardLandingRecoverTime에 걸쳐 1로 돌아온다
 Ability.hardLandingNoSprintTime,0.5,세게 착지한 뒤 Shift나 W 달리기로 속도를 쌓지 못하는 시간(초)
@@ -567,8 +567,6 @@ Body.landRunSpeed,4,"땅에 닿은 속도가 이보다 빠르면(m/s) 세게 착
 Body.mantleStepHeight,0.7,이보다 낮으면 턱 올라서기(m)
 Body.mantleLowHeight,1.1,이보다 낮으면 손 짚고 올라서기(m)
 Body.mantleMidHeight,1.6,이보다 낮으면 높게 손 짚고 올라서기 / 이상이면 기어오르기(m)
-Body.vaultClipSpeed,1,넘기·올라서기 애니메이션 재생 속도. 몸이 먼저 넘어가고 클립은 발이 땅에 닿아 움직일 때까지 이어진다
-Body.ontoClipSpeed,1.15,낮은 장애물에 올라타는 애니메이션 재생 속도
 Body.blendTime,0.15,"동작이 바뀔 때 몸이 직전 자세에서 움직이던 속도를 이어받아 새 동작으로 내려앉는 시간(초, 관성 블렌딩 BodyInertia, 0.9.379). 0.9.378까지는 두 동작을 이 시간 동안 겹쳐 섞었다. 시선이 동작을 따라가는 정도처럼 섞는 비율을 보는 곳은 이 시간에 걸쳐 바뀌는 값을 본다"
 Body.touchdownSeconds,0.12,땅에 닿자마자 다시 뛰었을 때 착지 동작을 보여 주는 시간(초). 그 뒤 점프 동작이 비행 시간에 맞춰 이어진다
 Body.walkClipSpeed,1.7,이보다 빠르면 움직이며 빠져나가는 것으로 본다(m/s): 착지·슬라이드 끝 동작을 끝까지 보여 주지 않고 웅크렸다 착지할 때는 달리는 쪽 동작을 쓴다. 걸음 클립의 제 속도는 몸이 잰다(GaitClips). 예전 Body.runClipSpeed 4.9·sprintClipSpeed 7.9·crouchClipSpeed 2.8은 이동 속도에 맞춘 값이라 클립이 늘 제 박자로 돌고 발이 속도의 30~60%만큼 미끄러졌다(2026-11-12 잰 값: mx_run은 마요를 3.0m/s로 나른다)
@@ -651,11 +649,9 @@ Body.ladderExitRight,ladderexittoprighthand,꼭대기로 넘어가기 - 오른�
 Body.ziplineStart,ziplinestart,집라인 잡기
 Body.zipline,zipline,집라인 타기
 Body.vaultChainTime,1.5,넘기를 이 시간(초) 안에 다시 하면 다른 넘기 동작을 쓴다. 같은 동작이 연달아 나오면 처음 프레임으로 튀어서
-Body.tuckFollowSpeed,8,공중 웅크리기에서 발이 캡슐 아래로 내려가지 않게 몸이 따라 올라가는 속도(m/s)
 Body.maxHipDrop,0.3,발이 낮은 땅(내려가는 계단·경사)에 닿도록 골반을 내리는 최대 거리(m). 눈과 카메라도 같이 내려간다
 Body.footReach,0.5,발마다 캡슐 바닥 위아래로 땅을 찾는 거리(m)
 Body.footSettleTime,0.08,골반과 발이 낮아진 땅으로 내려가 맞춰지는 시간(초). 높아진 땅에는 바로 올라선다
-Body.footHoldSpeed,0.15,"발이 디딘 자리를 지키는 것은 몸이 서 있을 때다: 땅 위를 이보다 느리게 움직이는 동안(m/s). 서 있는 발은 디딘 자리를 지키고, 골반이 그 위에서 무엇으로 움직이든(기울이기, 총의 기울기가 골반을 돌리는 것, 머리 따라가기, 숨쉬기 흔들림) 따라가지 않는다(FootPlanting.Hold). 2026-11-18 전에는 발의 높이만 땅에 맞추고 자리는 골반이 끌고 가는 대로였다"
 Body.footHoldTwist,45,"제자리 돌기가 이끌지 않을 때, 서 있는 발 위로 다리가 이만큼 돌면 발을 들어 옮긴다(도). 제자리 돌기는 TurnPlanner가 걸음을 이끈다(Body.turnStepTime). 0.9.280 전에는 25°로 돌기의 걸음도 이것이 정해 90°에 네 걸음이었다"
 Body.footStepTime,0.22,발 한 걸음이 땅을 떠나 새 자리에 내려앉기까지(초). 제자리 돌기·서서 몸이 비틀릴 때. 0.9.279
 Body.footStepHeight,0.05,걸음 한가운데에서 발이 땅에서 뜨는 높이(m). BIPER가 찍은 돌기의 걸음은 3~10cm. 0.9.280 전에는 0.08

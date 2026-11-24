@@ -7,12 +7,7 @@ public enum MovementPosture { Standing, Crouching, Sliding, Prone, Supine }
 public sealed class MovementPostureController
 {
     private readonly PlayerMovement ctx;
-    internal bool airCrouching, airBodyTucked;
-    internal float airCrouchTop, airCameraOffset;
-    internal float mirroredTuck, tuckRebase;
-    /// <summary>How far an air crouch has drawn the capsule's bottom up above the feet transform (m).</summary>
-    internal float AirTuck => ctx.IsNetworkDriven ? mirroredTuck
-        : Mathf.Max(0f, ctx.Motor.controller.center.y - ctx.Motor.controller.height * 0.5f);
+    internal bool airCrouching;
     internal readonly float standingColliderHeight, standingColliderRadius, defaultStepOffset;
     private readonly float baseCameraY;
     private float currentOffset;
@@ -21,8 +16,7 @@ public sealed class MovementPostureController
 
     internal void BeginDive()
     {
-        // Preserve the actual entry pose, including an interrupted crouch or tucked air jump.
-        if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
+        // Preserve the actual entry pose, including an interrupted crouch.
         diveEntryOffset = currentOffset;
         diveEntryHeight = ctx.Motor.controller.height;
     }
@@ -40,67 +34,29 @@ public sealed class MovementPostureController
         if (ctx.crouchPivot != null) currentOffset = ctx.crouchPivot.localPosition.y - baseCameraY;
     }
 
+    // An air crouch is the body's tuck alone: the legs come up under a head that stays where a jump's does (PlayerBody.AirPose,
+    // HoldEyesInAir), and the landing goes on crouched while the key is held (MovementMotor). The capsule stays as it is.
+    // Until 0.9.403 it drew the capsule's bottom 0.75 m up under the same top and the body rose with it to keep its feet on
+    // that bottom: the view went up in the air and tops that high were cleared (the user, 2026-11-24: "덕 점프 했을 때 원래
+    // 높이보다 살짝 뜨는데", "공중에 더 추가로 올라가는 것만 막으시면 돼요"), and what looked for a way onto something
+    // looked from the feet below it (0.9.401).
     internal void UpdateAirCrouch()
     {
-        // Dive owns a timed takeoff-to-prone pose. Air crouch must not override it.
-        if (ctx.IsDiving)
+        bool canDuck = (ctx.CurrentState == MovementState.Standing || ctx.CurrentState == MovementState.Crouching)
+            && ctx.StateMachine.Current.AllowsAutomaticPosture && !ctx.IsDiving;
+        if (ctx.Motor.isGrounded || !canDuck)
         {
-            if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
+            airCrouching = false;
             return;
         }
-        if (!ctx.StateMachine.Current.AllowsAutomaticPosture)
-        {
-            if (airCrouching || airBodyTucked) RebaseAirCrouchFeet();
-            return;
-        }
-        bool canDuck = ctx.CurrentState == MovementState.Standing || ctx.CurrentState == MovementState.Crouching;
-        bool compactMovement = ctx.IsDiving || ctx.IsSliding;
-        if (ctx.Motor.isGrounded || (!canDuck && !compactMovement))
-        {
-            if (airBodyTucked || airCrouching) RebaseAirCrouchFeet();
-            return;
-        }
-
-        bool crouchHeld = ctx.Input.CrouchHeld;
-        bool crouchJustPressed = ctx.Input.CrouchPressed;
         // In a long fall Ctrl only readies the landing roll (MovementLanding); the legs come out of a tuck and flail.
-        airCrouching = canDuck && !ctx.IsBigFall && (airCrouching || crouchHeld || crouchJustPressed);
-
-        if ((airCrouching || compactMovement) && !airBodyTucked)
-        {
-            airCrouchTop = ctx.Motor.controller.center.y + ctx.Motor.controller.height * 0.5f;
-            airCameraOffset = currentOffset;
-            airBodyTucked = true;
-        }
+        airCrouching = !ctx.IsBigFall && (airCrouching || ctx.Input.CrouchHeld || ctx.Input.CrouchPressed);
     }
-
-    internal void RebaseAirCrouchFeet()
-    {
-        float feetOffset = ctx.Motor.controller.center.y - ctx.Motor.controller.height * 0.5f;
-        if (Mathf.Abs(feetOffset) > 0.0001f)
-        {
-            Vector3 shift = ctx.transform.TransformVector(Vector3.up * feetOffset);
-            ctx.transform.position += shift;
-            tuckRebase += feetOffset;
-            ctx.Motor.controller.center -= Vector3.up * feetOffset;
-            ctx.Motor.previousPosition += shift;
-            currentOffset -= feetOffset;
-            if (ctx.crouchPivot != null)
-            {
-                Vector3 position = ctx.crouchPivot.localPosition;
-                position.y -= feetOffset;
-                ctx.crouchPivot.localPosition = position;
-            }
-        }
-        airCrouching = false;
-        airBodyTucked = false;
-    }
-
     public bool HasCeilingAbove(float targetHeightToCheck)
     {
         if (Mathf.Approximately(targetHeightToCheck, ctx.crouchColliderHeight))
             return CrouchBlockedAt(ctx.transform.position);
-        if (!airCrouching && ctx.Motor.controller.height >= targetHeightToCheck - 0.01f) return false;
+        if (ctx.Motor.controller.height >= targetHeightToCheck - 0.01f) return false;
 
         float radius = Mathf.Min(standingColliderRadius, ctx.Motor.controller.radius) * 0.9f;
         Vector3 feetPos = ctx.transform.position;
@@ -209,13 +165,6 @@ public sealed class MovementPostureController
             case MovementPosture.Supine: targetColliderHeight = ctx.proneColliderHeight; targetOffset = ctx.supineOffset; break;
         }
 
-        if (airCrouching) targetColliderHeight = ctx.crouchColliderHeight;
-        if (airBodyTucked)
-        {
-            targetColliderHeight = Mathf.Min(targetColliderHeight, airCrouchTop);
-            targetOffset = airCameraOffset;
-        }
-
         // A copy on another PC runs no dive, so it has no flight to take this pose from.
         if (ctx.IsDiving && !ctx.IsNetworkDriven)
         {
@@ -238,17 +187,7 @@ public sealed class MovementPostureController
 
         float targetRadius = Mathf.Min(standingColliderRadius, newHeight * 0.5f);
 
-        float centerY;
-        if (airBodyTucked)
-        {
-            centerY = airCrouchTop - newHeight * 0.5f;
-        }
-        else
-        {
-            centerY = newHeight * 0.5f;
-        }
-
-        Vector3 targetCenter = new Vector3(0f, centerY, 0f);
+        Vector3 targetCenter = new Vector3(0f, newHeight * 0.5f, 0f);
         bool isCrawling = ctx.CurrentState == MovementState.Proning || ctx.CurrentState == MovementState.Supine;
         bool canStep = ctx.Motor.isGrounded && (ctx.CurrentState == MovementState.Standing ||
                              ctx.CurrentState == MovementState.Crouching ||

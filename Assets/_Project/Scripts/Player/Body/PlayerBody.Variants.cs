@@ -56,11 +56,6 @@ public sealed partial class PlayerBody
     private float landRunSpeed = 4f;
     [SerializeField, Min(0f), Tooltip("For a mantle off a bar, which has no move of its own (m): below the first a step up, below the second a low step onto it, below the third a high one, above it a full climb.")]
     private float mantleStepHeight = .7f, mantleLowHeight = 1.1f, mantleMidHeight = 1.6f;
-    [SerializeField, Min(.1f), Tooltip("Playback speed of the vault and climb clips. The player is over before the clip is, "
-        + "and it plays on until the feet are down and moving.")]
-    private float vaultClipSpeed = 1f;
-    [SerializeField, Min(.1f), Tooltip("Playback speed of the climb onto a low obstacle.")]
-    private float ontoClipSpeed = 1.15f;
     [SerializeField, Min(0f), Tooltip("A vault this soon after the last one (s) takes the other vault clip: one clip cannot "
         + "crossfade into itself, so a repeat would snap back to its first frame.")]
     private float vaultChainTime = 1.5f;
@@ -136,8 +131,6 @@ public sealed partial class PlayerBody
         return clip;
     }
 
-    private float ObstacleClipSpeed => player.Abilities.Traversal.Obstacle.Kind == VaultKind.Onto ? ontoClipSpeed : vaultClipSpeed;
-
     // Clips of the moves without a VaultKind follow the route's progress instead.
     private void StartObstacleClip()
     {
@@ -145,7 +138,7 @@ public sealed partial class PlayerBody
         var channel = Find(obstacleClip);
         if (channel == null || traversal.Obstacle.Kind == VaultKind.None) return;
         Restart(channel);
-        channel.Playable.SetSpeed(ObstacleClipSpeed);
+        channel.Playable.SetSpeed(1);
         obstacleYaw = transform.eulerAngles.y;
         if (traversal.Obstacle.Kind != VaultKind.Heave) return;
         StartHeave();
@@ -181,7 +174,7 @@ public sealed partial class PlayerBody
     {
         var channel = Find(obstacleClip);
         if (channel != null && channel.Playable.IsValid() && channel.Playable.GetSpeed() <= 0f)
-            channel.Playable.SetSpeed(ObstacleClipSpeed);
+            channel.Playable.SetSpeed(1);
     }
 
     // In one of these moves the model stays on the capsule, as in GMod: easing the head back would pull the hands off.
@@ -213,7 +206,7 @@ public sealed partial class PlayerBody
         }
         else
         {
-            float left = (channel.Length - (float)channel.Playable.GetTime()) / ObstacleClipSpeed;
+            float left = channel.Length - (float)channel.Playable.GetTime();
             if (left <= blendTime) return;
             transitionLeft = left;
         }

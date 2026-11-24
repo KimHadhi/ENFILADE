@@ -42,37 +42,34 @@ public static class MovementCommands
         return text.ToString();
     }
 
-    // What a plain drop of a height comes to with the tables as they are now: nothing is dropped. The tuck column shows
-    // the same drop with the legs drawn up in the air (the capsule falls further, the feet's speed is the same).
+    // What a plain drop of a height comes to with the tables as they are now: nothing is dropped.
     private static string Drop(string args)
     {
         if (!Application.isPlaying) return "이 명령어는 Play 중에 사용할 수 있습니다."; // dev-text
         var mine = PlayerRoster.Local;
         if (mine == null || mine.Abilities == null || !mine.TryGetComponent(out PlayerMovementAudio audio)) return "대상 플레이어를 찾지 못했습니다."; // dev-text
         var landing = mine.Abilities.Landing;
-        float gravity = Mathf.Abs(mine.gravity), tuck = Mathf.Max(0f, mine.StandingColliderHeight - mine.CrouchColliderHeight);
+        float gravity = Mathf.Abs(mine.gravity);
         var text = new System.Text.StringBuilder();
         text.Append($"세게 착지는 {mine.AbilitySettings.hardLandingHeight:0.00}m({landing.HardSpeed:0.0}m/s)부터 · 다치는 낙하는 {mine.AbilitySettings.safeFallSpeed:0.0}m/s·{mine.AbilitySettings.safeFallDistance:0.0}m부터"); // dev-text
         string trimmed = (args ?? "").Trim();
         if (trimmed.Length > 0)
         {
             if (!TableCells.TryNumber(trimmed, out float height) || height < 0f) return "사용법: /drop [높이 m]"; // dev-text
-            text.Append('\n').Append(DropLine(mine, audio, height, gravity, tuck));
+            text.Append('\n').Append(DropLine(mine, audio, height, gravity));
             return text.ToString();
         }
-        for (float height = .5f; height <= 6.01f; height += .5f) text.Append('\n').Append(DropLine(mine, audio, height, gravity, tuck));
+        for (float height = .5f; height <= 6.01f; height += .5f) text.Append('\n').Append(DropLine(mine, audio, height, gravity));
         return text.ToString();
     }
 
-    private static string DropLine(PlayerMovement mine, PlayerMovementAudio audio, float height, float gravity, float tuck)
+    private static string DropLine(PlayerMovement mine, PlayerMovementAudio audio, float height, float gravity)
     {
         var landing = mine.Abilities.Landing;
         float feet = MovementLanding.SpeedOfDrop(height, gravity);
-        // Tucked, the capsule's bottom falls this much further; judged at the feet it is the same landing.
-        float tucked = MovementLanding.FeetImpact(MovementLanding.SpeedOfDrop(height + tuck, gravity), tuck, gravity);
         var tier = landing.TierOf(feet, height);
         string upright = audio.LandingCueFor(tier, feet, false), crouched = audio.LandingCueFor(tier, feet, true);
-        return $"{height:0.0}m: 발 {feet:0.0}m/s (다리 접고 {tucked:0.0}) {tier} · 서서 {Heard(upright)} · 앉아서 {Heard(crouched)}"; // dev-text
+        return $"{height:0.0}m: 발 {feet:0.0}m/s {tier} · 서서 {Heard(upright)} · 앉아서 {Heard(crouched)}"; // dev-text
     }
 
     // A cue and how far zombies hear it (Tables/SoundCues noise, m); 0 is not heard at all.

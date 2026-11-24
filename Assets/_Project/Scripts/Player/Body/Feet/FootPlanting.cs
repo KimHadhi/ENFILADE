@@ -414,7 +414,7 @@ internal sealed class FootPlanting
     // slid to its new place on the ground, which is why the turns on the spot were clips (0.9.261-0.9.278).
     // Setting off, a foot that stood keeps its place until its clip lifts it, or its leg can no longer reach it: the walk's
     // first step leaves from where the foot stood, the other keeps its place until its own lift, and each lets go in the air.
-    // Until 0.9.396 both let go the moment the body moved (Body.footHoldSpeed) and slid to the clip's places on the ground
+    // Until 0.9.396 both let go the moment the body moved and slid to the clip's places on the ground
     // over Body.footHoldRelease, and the legs flicked at every start (the user, 2026-11-24: "걷기 시작할 때 다리가 튕겨나").
     private Vector3 Stand(Leg leg, Leg other, int side, float lift, float over, bool onFeet, in Hold hold, float dt)
     {

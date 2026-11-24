@@ -296,7 +296,7 @@ public sealed class ParkourDetector
         Vector3 nextNormal = candidate.Surface.transform.TransformDirection(candidate.LocalNormal);
         if (Vector3.Dot(normal, nextNormal) < 0.95f || Mathf.Abs(nextFeet.y - feet.y) > 0.15f
             || Vector3.Distance(nextFeet, feet) > 0.15f
-            || !ClearPath(ctx.Feet, nextFeet, ctx.StandingColliderHeight)) return false;
+            || !ClearPath(ctx.transform.position, nextFeet, ctx.StandingColliderHeight)) return false;
         next = candidate;
         return true;
     }
@@ -308,7 +308,7 @@ public sealed class ParkourDetector
         if (!Physics.Raycast(grip + Vector3.up * 0.5f, Vector3.down, out RaycastHit top, 1f,
             ctx.groundLayers, QueryTriggerInteraction.Ignore) || top.collider.GetComponentInParent<SwingBar>() != bar
             || top.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return false;
-        Vector3 feet = ctx.Feet, end = top.point + Vector3.up * 0.1f;
+        Vector3 feet = ctx.transform.position, end = top.point + Vector3.up * 0.1f;
         if (!ClearCapsule(end, ctx.StandingColliderHeight)) return false;
         // Climb the way the player faces along the swing (PlayerBody.BarFacingFor), not away from the feet: swung past the
         // bar's middle, the feet are on its far side and the body turned round to climb back (user, 2026-11-08).
@@ -329,7 +329,6 @@ public sealed class ParkourDetector
     internal bool TryBar(out SwingBar bar, out Vector3 grip)
     {
         bar = null; grip = Vector3.zero;
-        // The hands reach from the capsule's top, which an air crouch leaves where it was (it draws the bottom up: Feet).
         Vector3 hands = ctx.transform.position + Vector3.up * ctx.StandingColliderHeight;
         float best = ctx.AbilitySettings.barGrabReach;
         foreach (var candidate in SwingBar.ActiveBars)
@@ -337,11 +336,11 @@ public sealed class ParkourDetector
             if (candidate == null || !candidate.isActiveAndEnabled || !ctx.Abilities.Traversal.CanGrab(candidate)) continue;
             Vector3 point = candidate.ClosestGrip(hands);
             float distance = Vector3.Distance(hands, point);
-            if (distance >= best || point.y < ctx.Feet.y + ctx.StandingColliderHeight * 0.55f) continue;
+            if (distance >= best || point.y < ctx.transform.position.y + ctx.StandingColliderHeight * 0.55f) continue;
             if (Physics.Linecast(hands, point, out RaycastHit obstruction, ctx.groundLayers, QueryTriggerInteraction.Ignore)
                 && !obstruction.transform.IsChildOf(candidate.transform)) continue;
             Vector3 destination = point - Vector3.up * candidate.HangLength;
-            if (!ClearPath(ctx.Feet, destination, ctx.CrouchColliderHeight)) continue;
+            if (!ClearPath(ctx.transform.position, destination, ctx.CrouchColliderHeight)) continue;
             best = distance; bar = candidate; grip = point;
         }
         return bar != null;

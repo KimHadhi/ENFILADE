@@ -37,7 +37,7 @@ public sealed class VaultFinder
     internal bool TryAir(Vector3 forward, float sinceJump, float groundY, out ObstacleTarget target)
     {
         u = ctx.HeightUnit;
-        Vector3 feet = ctx.Feet;
+        Vector3 feet = ctx.transform.position;
         if (!float.IsPositiveInfinity(sinceJump))
             feet.y = Mathf.Min(feet.y, groundY + Mathf.Max(0f, (JumpSpeed - .5f * JumpGravity * sinceJump) * sinceJump) * u);
         return Over(feet, forward, out target) || Kong(feet, forward, out target) || Onto(feet, forward, out target);
@@ -65,7 +65,7 @@ public sealed class VaultFinder
         u = ctx.HeightUnit;
         for (int step = 1; step <= RiseSamples; step++)
         {
-            Vector3 feet = ctx.Feet + Vector3.up * (rise * step / RiseSamples);
+            Vector3 feet = ctx.transform.position + Vector3.up * (rise * step / RiseSamples);
             if (Over(feet, forward, out target) || Kong(feet, forward, out target)
                 || High(feet, forward, ctx.VerticalVelocity, true, false, out target)) return true;
         }
@@ -80,7 +80,7 @@ public sealed class VaultFinder
     internal bool TryHigh(Vector3 forward, float verticalSpeed, bool wallClimb, out ObstacleTarget target)
     {
         u = ctx.HeightUnit;
-        return High(ctx.Feet, forward, verticalSpeed, false, wallClimb, out target);
+        return High(ctx.transform.position, forward, verticalSpeed, false, wallClimb, out target);
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed class VaultFinder
     internal bool TryHighBelow(Vector3 edge, Vector3 forward, float verticalSpeed, bool wallClimb, out ObstacleTarget target)
     {
         u = ctx.HeightUnit;
-        Vector3 feet = ctx.Feet;
+        Vector3 feet = ctx.transform.position;
         feet.y = edge.y - 60f * u;
         return High(feet, forward, verticalSpeed, true, wallClimb, out target);
     }
@@ -243,7 +243,7 @@ public sealed class VaultFinder
         if (Line(hair, hair + forward * (75f * u)) || Line(high, high - Up(Hair))
             || !Line(chest, chest + forward * (150f * u))) return false;
         Vector3 end = feet + forward * (65f * u) + Up(HighLift);
-        if (!detector.StraightTarget(surface, ctx.Feet, end, true, out target)) return false;
+        if (!detector.StraightTarget(surface, ctx.transform.position, end, true, out target)) return false;
         Finish(ref target, VaultKind.OverHigh, edge, normal);
         Approach(ref target, feet);
         return true;
@@ -263,7 +263,7 @@ public sealed class VaultFinder
             if (Inside(origin) || !Down(origin, Neck, out RaycastHit top)
                 || (reach < OntoReach && !Down(origin + forward * ctx.ControllerRadius, Neck, out _))
                 || Line(origin - forward * (reach * u), origin)
-                || !detector.StraightTarget(top.collider, ctx.Feet, top.point + Up(MantleLift), false, out target)) continue;
+                || !detector.StraightTarget(top.collider, ctx.transform.position, top.point + Up(MantleLift), false, out target)) continue;
             Finish(ref target, VaultKind.OntoHigh, edge, normal);
             Approach(ref target, feet);
             return true;
@@ -275,7 +275,7 @@ public sealed class VaultFinder
     // waits in mid-air away from the wall. Where the floor is in the way it keeps its height and only closes the distance.
     private void Approach(ref ObstacleTarget target, Vector3 atWall)
     {
-        Vector3 feet = ctx.Feet, level = atWall;
+        Vector3 feet = ctx.transform.position, level = atWall;
         level.y = feet.y;
         foreach (Vector3 spot in new[] { atWall, level })
         {

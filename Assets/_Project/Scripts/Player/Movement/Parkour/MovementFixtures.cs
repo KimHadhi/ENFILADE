@@ -116,7 +116,7 @@ public sealed class MovementFixtures
         if (TryLadderFromTop()) return true;
         if (ctx.CurrentInput.y <= .1f) return false;
         var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.Feet, facing = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
+        Vector3 feet = ctx.transform.position, facing = Vector3.ProjectOnPlane(ctx.transform.forward, Vector3.up).normalized;
         float minFacing = Mathf.Cos(settings.ladderFacingAngle * Mathf.Deg2Rad);
         foreach (var candidate in Ladder.Active)
         {
@@ -208,7 +208,7 @@ public sealed class MovementFixtures
         ladder = null; over = hold = Vector3.zero;
         if (!ctx.IsGrounded) return false;
         var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.Feet, heading;
+        Vector3 feet = ctx.transform.position, heading;
         float minHeading, back, sideReach;
         if (walking)
         {
@@ -282,7 +282,7 @@ public sealed class MovementFixtures
     {
         var settings = ctx.AbilitySettings;
         var detector = ctx.Abilities.Traversal.Detector;
-        Vector3 feet = ctx.Feet;
+        Vector3 feet = ctx.transform.position;
         Vector3 origin = feet + Vector3.up * settings.ladderExitProbeHeight - Ladder.Outward * settings.ladderExitReach;
         if (!Physics.Raycast(origin, Vector3.down, out RaycastHit floor, settings.ladderExitProbeHeight, ctx.groundLayers, QueryTriggerInteraction.Ignore)
             || floor.normal.y < Mathf.Cos(ctx.SlopeLimit * Mathf.Deg2Rad)) return false;
@@ -321,7 +321,7 @@ public sealed class MovementFixtures
     {
         if (ziplineLock > 0f || !ReachesForCable) return false;
         var settings = ctx.AbilitySettings;
-        Vector3 feet = ctx.Feet;
+        Vector3 feet = ctx.transform.position;
         Vector3 hands = feet + Vector3.up * (settings.ziplineReachHeight.x + settings.ziplineReachHeight.y) * .5f;
         foreach (var candidate in Zipline.Active)
         {

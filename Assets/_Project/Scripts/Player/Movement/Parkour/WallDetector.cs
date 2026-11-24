@@ -24,7 +24,7 @@ public sealed class WallDetector
     /// <summary>The wall this way against the torso, from 0.45 m up: what keeps a wall climb going on it.</summary>
     public bool TryContact(Vector3 direction, out RaycastHit hit)
     {
-        Vector3 feet = ctx.Feet;
+        Vector3 feet = ctx.transform.position;
         return Physics.CapsuleCast(feet + Vector3.up * 0.45f,
             feet + Vector3.up * (ctx.StandingColliderHeight * 0.85f), CastRadius,
             direction.normalized, out hit, ctx.AbilitySettings.wallReach, ctx.groundLayers, QueryTriggerInteraction.Ignore)
@@ -46,7 +46,7 @@ public sealed class WallDetector
     {
         best = default;
         float bestScore = float.NegativeInfinity, u = ctx.HeightUnit;
-        Vector3 feet = ctx.Feet;
+        Vector3 feet = ctx.transform.position;
         Vector3 low = feet + Vector3.up * ((EyeUnits - LowUnder) * u), high = feet + Vector3.up * ((EyeUnits - HighUnder) * u);
         foreach (float angle in EntryAngles)
         {

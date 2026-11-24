@@ -653,7 +653,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     /// 1. the look bend (SpineLook), keeping the clip's head first: its turn, then how far the spine may bend down (SpineRoom,
     ///    PlayerBody.Clearance), then its bend within that;
     /// 2. the aim's steady hips, then the body placed under the camera (HoldHeadPlace, FollowHead) or by the hands (Grip);
-    /// 3. the legs (tucked feet, the lean's hips, planted feet, ladder feet, legs off walls);
+    /// 3. the legs (the lean's hips, planted feet, ladder feet, legs off walls);
     /// 4. the eyes and the camera (Look: the hanging lean arm, the head to the gaze, the camera).
     /// Then the gun kept in view (FPSBody), the weapons, the hands' IK (PlayerBodyHands), FPSAF's late work
     /// (FPSBodyAnimator) and the cloth run in their own LateUpdates, in the order FrameOrder sets.
@@ -688,7 +688,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             using (GripMarker.Auto()) Grip(Time.deltaTime);
             using (FeetMarker.Auto())
             {
-                LiftTuckedFeet(Time.deltaTime);
                 hipsCarried = bodyLean.MoveHips(hips, bendWeight, dead, leftLeg?.Upper, rightLeg?.Upper);
                 PlantFeet(Time.deltaTime);
                 PlantLadderFeet(Time.deltaTime);
@@ -731,7 +730,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void HoldEyesInAir(float dt)
     {
         if (head == null || dt <= 0f) return;
-        bool inAir = !dead && state == MovementState.Standing && !player.IsGrounded && !tucked && !flailing && !ClipCarriesBody
+        bool inAir = !dead && state == MovementState.Standing && !player.IsGrounded && !flailing && !ClipCarriesBody
             && transition == null;
         // By where the head is, not the eyes: a look up or down moves those about the head as it does standing.
         float target = inAir ? bodyCamera.Anchor().y - (head.position.y + eyeOverHead) : 0f;
