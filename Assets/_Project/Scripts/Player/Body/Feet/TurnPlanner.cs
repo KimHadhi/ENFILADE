@@ -79,8 +79,8 @@ internal sealed class TurnPlanner
             }
         }
         // The view going on round away from legs already past `limit` behind it, faster than the steps, takes them with it as
-        // far as it goes, and the step goes on from there. Legs that came to a stop further round than that (a run ahead that
-        // coasted to a stop facing its own way, a run's turn the view went on past) are not pulled in: the steps bring them round.
+        // far as it goes, and the step goes on from there. Legs that came to a stop further round than that (a run's turn the view
+        // went on past) are not pulled in: the steps bring them round.
         // Until 0.9.420 they were put at `limit` in the frame they stopped: after a run's turn that ended 160 to 170 degrees off
         // the view the hips swung 66 to 77 degrees in a frame, the arms 40 degrees, and the head and chest flipped after (the gait
         // and pops records of 2026-11-25 05:00; the user: "모션 바뀔 때 잠깐 버벅거리는 게 한 프레임? 정도").

@@ -10,12 +10,6 @@ public sealed class LocomotionState : MovementBaseState
     private const float KeepsPaceFrom = .5f;
     // The frame the stride was last eased: one missed, something else moved the body meanwhile.
     private int strideFrame = -10;
-    // The keys run ahead within this of straight on (degrees), and stop running ahead past the second: W+A and W+D are 45.
-    private const float RunsAheadWithin = 50f, RunsAheadLeave = 60f;
-    // At least this far up the gaits' ladder (0 the walk, 1 the jog) the keys run ahead; a walk strafes under the view.
-    private const float RunsAheadGait = .5f;
-    // A run ahead curves at its arc's rate once the hips face within this of its way (degrees).
-    private const float RunsAheadAligned = 20f;
 
     public override bool TryJump()
     {
@@ -42,18 +36,6 @@ public sealed class LocomotionState : MovementBaseState
     {
         Vector2 input = ctx.CurrentInput;
         float inputMagnitude = Mathf.Clamp01(input.magnitude);
-        // Running ahead (PlayerMovement.RunsAhead): a jog or a sprint asked within a slant of straight on, standing and not
-        // aimed; with no keys it stays as it was, so a run coasts to a stop facing its own way. The hips face the way it runs
-        // and the head the view. Until 0.9.416 the hips always followed the view, and a view flicked on the run had the legs
-        // sprint sideways and backwards under a body that swung up to 65 degrees a frame (the user, 2026-11-24:
-        // "모션이 전반적으로 … 우스꽝스러워졌는데").
-        if (ctx.IsGrounded && inputMagnitude > .1f)
-        {
-            float off = Mathf.Abs(Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg);
-            ctx.runsAhead = ctx.CurrentState == PlayerMovement.MovementState.Standing && ctx.AimShare < .5f
-                && ctx.Actions.Gait.Position >= RunsAheadGait && off <= (ctx.runsAhead ? RunsAheadLeave : RunsAheadWithin);
-        }
-
         // The way the keys point. Its speed is the gait's that way (MovementGait); the side's 1.15x "so a side step doesn't
         // look slow" went in 0.9.245, the side clips being measured now.
         Vector3 inputDirection = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
@@ -115,34 +97,15 @@ public sealed class LocomotionState : MovementBaseState
                 stride = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
             else
                 stride = Vector3.Lerp(now, targetVelocity, t);
-            // Running ahead the way curves no faster than the run's own arc clip does (PlayerMovement.ArcRate: a sprint's 90
-            // degrees in 0.6 s, a jog's in 0.93 s), the hips with it, and the legs bank into that arc (PlayerBody.Leans): the body
-            // curves as BIPER's runner was made to, the view going ahead of it. Further round than a run comes about is a turn
-            // back (RunTurn). Only once the hips face its way: a strafe pressed on ahead swings round under hips that face the
-            // view as a strafe does, and the hips meet it there; held to the arc's rate it took a second and the hips swung out
-            // toward the strafe and back. Only a run ahead: 0.9.427 held every way to it, and a back strafe turned to the other
-            // side arced round at speed (the user: "한 바퀴 호를 그려서 가야 하네? 흠 병신 같은데"). A strafe's legs change
-            // their way by stepping instead (PlayerBody.StepWay).
-            if (ctx.runsAhead && speedNow > KeepsPaceFrom && stride.sqrMagnitude > KeepsPaceFrom * KeepsPaceFrom
-                && Mathf.Abs(Mathf.DeltaAngle(ctx.BodyFacingYaw, Mathf.Atan2(now.x, now.z) * Mathf.Rad2Deg)) <= RunsAheadAligned)
-            {
-                float turned = Vector3.SignedAngle(now, stride, Vector3.up), most = ctx.ArcRate * dt;
-                if (Mathf.Abs(turned) > most)
-                    stride = Quaternion.AngleAxis(Mathf.Sign(turned) * most, Vector3.up) * (now / speedNow) * stride.magnitude;
-            }
             if (stride.sqrMagnitude < 0.0001f) stride = Vector3.zero;
             // Into a wall the legs go along it or stand at it, not on the spot (MovementMotor.AlongWalls).
             ctx.Stride = ctx.Motor.AlongWalls(stride, dt);
-            // The body goes as its legs carry it: as far and the way the walk or run's own feet carry it at their own pace
-            // (PlayerBody.LegsCarry), so a foot that is down stays where it came down with nothing to hold it there. Where no
-            // walk or run has the legs (a clip that plays out, no body) it goes as asked. Until 0.9.415 the body went at the
-            // stride, the legs followed it at a pace fitted to it, and where the two parted (a turn, a flick of the view, a
-            // start) the feet were held, dragged and caught up foot by foot (the user, 2026-11-25: "아무리 해결해도 문제가
-            // 발생하는 건 근본이 잘못돼서 그런 거 아니에요").
-            // What went into a wall stays asked: the wall stops it all the same, and what reads the run sees it (a vault's run-up,
-            // a climb's speed: ParkourTraversal). Cut from the velocity too in 0.9.415, a jog into a rail read as standing and
-            // jumped the slow clamber (the review of 2026-11-25).
-            ctx.HorizontalVelocity = (ctx.LegsCarry(out Vector3 carried) ? carried : ctx.Stride) + (stride - ctx.Stride);
+            // The body goes as the keys ask, and the legs fit their pace to it (PlayerBody.Pace): it starts, stops and turns as
+            // smoothly as the stride does. From 0.9.415 to 0.9.428 it went as the legs' cycles were measured to carry it
+            // (LegsCarry), and the walk went stiff (the user, 2026-11-25: "걍 wasd만 눌러봐도 부드럽게 안 움직이고 개
+            // 딱딱한데"). What went into a wall stays asked: the wall stops it all the same, and what reads the run sees it (a
+            // vault's run-up, a climb's speed: ParkourTraversal).
+            ctx.HorizontalVelocity = stride;
         }
         else if (!ctx.Abilities.Landing.IsKnockedBack) // A blow's throw flies on untouched.
         {

@@ -4,8 +4,7 @@ using UnityEngine;
 /// <summary>
 /// A run that curves leans into it: each forward cycle hands its share over to its leaning cycle (BIPER Female Runner's
 /// Lean, a lean held while running straight) as the curve tightens, and on to its arc cycle (Arc, the run of someone curving
-/// round, its own turn taken out of the pose) as it reaches the arc's own rate (Tables/Player/BodyLeans.csv), the rate a run
-/// ahead curves at most (PlayerBody.ArcRate, LocomotionState), so at its tightest the run is the arc as it was made. The rate
+/// round, its own turn taken out of the pose) as it reaches the arc's own rate (Tables/Player/BodyLeans.csv). The rate
 /// is the way the legs go turning (the stride), as every PC sees it, so friends see the same lean: a flick of the view while
 /// the run goes on straight banks nothing. Until 0.9.416 it was the view's turn as far as the run's turned with it, eased
 /// over 0.2 s: a run that went on curving after the view had stopped didn't bank, and the arc came a fifth of a second

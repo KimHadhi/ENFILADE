@@ -58,7 +58,6 @@ public sealed class MovementMirror
         if (ctx.IsGrounded) marks |= Marks.Grounded;
         if (ctx.IsAirCrouching) marks |= Marks.AirCrouching;
         if (ctx.IsBigFall) marks |= Marks.BigFall;
-        if (ctx.RunsAhead) marks |= Marks.Ahead;
         if (ctx.Actions.RunTurn.Turning) marks |= Marks.Turning;
         // A held F's point and whether friends may poke them (PlayerPoint): the way they point is the look above.
         marks |= PlayerPoint.MarksOf(ctx);
@@ -171,7 +170,6 @@ public sealed class MovementMirror
         ctx.Actions.sprintProgress = pose.RunIntent;
         ctx.Actions.Gait.Mirror(pose.Gait);
         ctx.Posture.airCrouching = Has(pose, Marks.AirCrouching);
-        ctx.mirroredAhead = Has(pose, Marks.Ahead);
         // The player's turn back is over or given up: the copy's goes with it, nothing handed over (its legs follow the body).
         if (!Has(pose, Marks.Turning)) ctx.Actions.RunTurn.Reset();
         PlayerPoint.Mirror(ctx, Has(pose, Marks.Pointing), Has(pose, Marks.NoPoke), Has(pose, Marks.PingPoint), Has(pose, Marks.PointAway));

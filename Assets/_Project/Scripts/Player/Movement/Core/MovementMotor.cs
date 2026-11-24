@@ -222,7 +222,7 @@ public sealed class MovementMotor
     /// <summary>
     /// The way the legs are asked to go (world, m/s), along any wall it runs into: what goes into a wall taller than a step is
     /// taken out, so the legs walk along the wall or stand at it rather than run on the spot under a capsule it stops (the legs
-    /// carry the body, PlayerBody.LegsCarry). A stair's riser is no wall, and a physics prop is pushed, not walked along. Swept
+    /// fit their pace to the body, PlayerBody.Pace). A stair's riser is no wall, and a physics prop is pushed, not walked along. Swept
     /// ahead rather than read off the last move's contacts: a stride stopped at the wall touches it no more, and read so it
     /// came and went every other frame.
     /// </summary>

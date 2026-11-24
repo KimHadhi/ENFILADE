@@ -420,8 +420,8 @@ internal sealed class FootPlanting
     // carried the hips sideways taken back out. One rule, standing or on the move: a foot that
     // is down keeps the place it came down on, and the body goes on over it and turns on it as on a pivot, until its clip
     // lifts it; then it goes onto the clip's place over its swing, coming down where the clip comes down (Catching), and
-    // takes a place again there. On the move a foot takes no place: the body goes as its walk or run's feet carry it
-    // (PlayerBody.LegsCarry, 0.9.415), so the clip's foot that is down is down where it came down; one kept from standing stays
+    // takes a place again there. On the move a foot takes no place: it is where its clip has it under a body the keys move,
+    // the clip's pace fitted to it (PlayerBody.Pace; from 0.9.415 to 0.9.428 the legs carried the body); one kept from standing stays
     // until its clip lifts it. From 0.9.406 to 0.9.414 the body went at the keys' speed and a moving foot was kept and drawn
     // in toward the hip as far as the leg reached (Reachable), or given 5 cm (0.9.412-0.9.413): a run's clip has its sole low
     // a good deal longer than the foot really stands (a quarter of a second of a sprint's 0.3 s step, the body going 1.5 m
@@ -508,7 +508,7 @@ internal sealed class FootPlanting
                 }
             }
             // On the move a foot kept from standing stays where it stood until its clip lifts it: the body goes as the clip's
-            // feet carry it (PlayerBody.LegsCarry), so the clip's place goes nowhere from it.
+            // feet are fitted to it (PlayerBody.Pace), so the clip's place goes nowhere much from it.
         }
         // Standing, a foot comes down where it is shown once it has eased onto the clip's place, so the stance stands as its clip
         // has it. On the move it takes none: the body goes as the clip's feet carry it, so a foot the clip has down is down where

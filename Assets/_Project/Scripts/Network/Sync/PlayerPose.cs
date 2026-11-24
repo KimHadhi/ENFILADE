@@ -20,8 +20,6 @@ public struct PlayerPose : INetworkSerializeByMemcpy
         // The point is a tap's ping's, at the foe the ping named (PlayerNetworkCombat), not along the look; and a ping's
         // point that turning away cut short is dropping back (PlayerPoint.TurnAway), so every copy drops it alike.
         PingPoint = 2048, PointAway = 4096,
-        // The legs run ahead (PlayerMovement.RunsAhead): the hips face the way the body runs, not the view.
-        Ahead = 8192,
         // A run's turn back goes on (RunTurn.Turning): a copy gives its own up when this goes, as the player gave it up.
         Turning = 16384
     }
