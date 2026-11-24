@@ -15,6 +15,10 @@ using UnityEngine.Rendering.Universal;
 /// - each sample's distance from the camera gives how much of it shows: none nearer than PlayerBody.ownHeadFade's first
 ///   number, all of it from the second, in between that share of its colour (as an eye sees a strand at its lashes: not
 ///   sharp, not cut);
+/// - and how far it lies off where the head looks, seen from the head's eyes: all of it within PlayerBody.ownHeadSight's
+///   first angle, none past the second. Where the camera turns further than the head (a climb's clip keeping the head at the
+///   wall while the view looks up, as far as the neck bends: BodyGaze.FaceHead) it would see what the head's own eyes can't,
+///   the inside of the hat and the ears from below (the user, 2026-11-24: "모자랑 동물 귀까지 뚫려 보이는데");
 /// - the camera's own depth still decides what is in front, so another player's finger at the face covers the hair behind it;
 /// - laid after the transparent queue, as what it is: the nearest thing there is, a few centimetres from the eyes. Smoke,
 ///   fire, glass, tracers, a muzzle's flame and the boards standing about the map (world-space canvases) all lie further off,
@@ -41,7 +45,9 @@ public sealed class OwnHeadView : MonoBehaviour
     private const string ShaderPath = "Combat/Shaders/OwnHeadView";
     private const int ColourPass = 0, MarkPass = 1;
     private static readonly int ColourId = Shader.PropertyToID("_OwnHeadColor"), DepthId = Shader.PropertyToID("_OwnHeadDepth"),
-        FadeId = Shader.PropertyToID("_OwnHeadFade"), SizeId = Shader.PropertyToID("_OwnHeadSize");
+        FadeId = Shader.PropertyToID("_OwnHeadFade"), SizeId = Shader.PropertyToID("_OwnHeadSize"),
+        EyeId = Shader.PropertyToID("_OwnHeadEye"), GazeId = Shader.PropertyToID("_OwnHeadGaze"),
+        SightId = Shader.PropertyToID("_OwnHeadSight");
     // The passes URP's own opaque and transparent passes draw, in their order (DrawObjectsPass).
     private static readonly List<ShaderTagId> Tags = new List<ShaderTagId>
         { new ShaderTagId("SRPDefaultUnlit"), new ShaderTagId("UniversalForward"), new ShaderTagId("UniversalForwardOnly") };
@@ -154,6 +160,7 @@ public sealed class OwnHeadView : MonoBehaviour
     }
 
     private Vector2 Fade => body != null ? body.OwnHeadFade : new Vector2(.02f, .05f);
+    private Vector2 Sight => body != null ? body.OwnHeadSight : new Vector2(80f, 95f);
 
     /// <summary>The head drawn into its own picture, then laid over the camera's.</summary>
     private sealed class HeadPass : ScriptableRenderPass
@@ -167,7 +174,7 @@ public sealed class OwnHeadView : MonoBehaviour
         {
             public Material Lay;
             public TextureHandle Colour, Depth;
-            public Vector4 Fade, Size;
+            public Vector4 Fade, Size, Eye, Gaze, Sight;
             public readonly MaterialPropertyBlock Block = new MaterialPropertyBlock();
         }
 
@@ -245,15 +252,30 @@ public sealed class OwnHeadView : MonoBehaviour
                 });
             }
 
-            Vector2 fade = owner.Fade;
+            Vector2 fade = owner.Fade, sight = owner.Sight;
             float tanUp = Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad);
+            // The picture's rows run from the view's bottom up in a texture URP renders into (its projection is flipped where
+            // textures start at the top) and on OpenGL, from the top down on the screen itself.
+            bool bottomUp = !SystemInfo.graphicsUVStartsAtTop || !resources.isActiveTargetBackBuffer;
+            // The head's eyes and the way it looks, in the camera's own terms (x right, y up, z ahead), as the body was last
+            // posed this frame (after BodyGaze.FaceHead and HeadReach).
+            Vector3 eye = Vector3.zero, looks = Vector3.forward;
+            if (owner.body != null && owner.body.OwnEyes(out Vector3 eyeAt, out Vector3 gaze))
+            {
+                Quaternion toCamera = Quaternion.Inverse(camera.transform.rotation);
+                eye = toCamera * (eyeAt - camera.transform.position);
+                looks = (toCamera * gaze).normalized;
+            }
             using (var builder = graph.AddRasterRenderPass<LayData>("Own head lay", out var data))
             {
                 data.Lay = lay;
                 data.Colour = colour;
                 data.Depth = headDepth;
                 data.Fade = new Vector4(Mathf.Max(0f, fade.x), Mathf.Max(fade.x + .001f, fade.y), 0f, 0f);
-                data.Size = new Vector4(width, height, tanUp * width / height, tanUp);
+                data.Size = new Vector4(width, height, tanUp * width / height, bottomUp ? tanUp : -tanUp);
+                data.Eye = eye;
+                data.Gaze = looks;
+                data.Sight = new Vector4(Mathf.Cos(sight.x * Mathf.Deg2Rad), Mathf.Cos(Mathf.Max(sight.x + .1f, sight.y) * Mathf.Deg2Rad), 0f, 0f);
                 builder.UseTexture(colour, AccessFlags.Read);
                 builder.UseTexture(headDepth, AccessFlags.Read);
                 builder.SetRenderAttachment(target, 0, AccessFlags.Write);
@@ -267,6 +289,9 @@ public sealed class OwnHeadView : MonoBehaviour
                     block.SetTexture(DepthId, ((RTHandle)job.Depth).rt);
                     block.SetVector(FadeId, job.Fade);
                     block.SetVector(SizeId, job.Size);
+                    block.SetVector(EyeId, job.Eye);
+                    block.SetVector(GazeId, job.Gaze);
+                    block.SetVector(SightId, job.Sight);
                     // One triangle over the whole picture: the colour, then the mark where it shows.
                     context.cmd.DrawProcedural(Matrix4x4.identity, job.Lay, ColourPass, MeshTopology.Triangles, 3, 1, block);
                     context.cmd.DrawProcedural(Matrix4x4.identity, job.Lay, MarkPass, MeshTopology.Triangles, 3, 1, block);

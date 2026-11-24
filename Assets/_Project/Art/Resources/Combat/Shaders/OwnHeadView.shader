@@ -5,7 +5,12 @@
 // the face covers the hair). Pass 0 lays the colour; pass 1 leaves the own-view mark (stencil bit 128, OwnViewMask) where at
 // least half of it shows. Neither writes depth: it is laid after the transparent queue, the nearest thing there is, and
 // what is drawn after it (the see-through outlines) keeps off it by the mark.
-// _OwnHeadSize: x, y the picture's pixels; z, w how far a pixel at the picture's right and top edges looks aside per metre ahead.
+// A solid sample also shows only as much as the head's own eyes could see it: all within the angle whose cosine is
+// _OwnHeadSight.x off where the head looks, none past _OwnHeadSight.y's. A camera turned further than the head (a climb's clip
+// keeping the head at the wall) would otherwise see the inside of the hat and the ears from below.
+// _OwnHeadSize: x, y the picture's pixels; z, w how far a pixel at the picture's right and last row looks aside per metre
+// ahead (w negative where the rows run from the top down). _OwnHeadEye, _OwnHeadGaze: the head's eyes and the way it looks,
+// in the camera's own terms (x right, y up, z ahead).
 Shader "Hidden/ENFILADE/OwnHeadView"
 {
     SubShader
@@ -42,6 +47,9 @@ Shader "Hidden/ENFILADE/OwnHeadView"
 
         float4 _OwnHeadFade;
         float4 _OwnHeadSize;
+        float4 _OwnHeadEye;
+        float4 _OwnHeadGaze;
+        float4 _OwnHeadSight;
 
         struct Varyings { float4 positionCS : SV_POSITION; };
 
@@ -72,8 +80,11 @@ Shader "Hidden/ENFILADE/OwnHeadView"
             if (solid)
             {
                 float2 aside = (positionCS.xy / _OwnHeadSize.xy * 2.0 - 1.0) * _OwnHeadSize.zw;
-                float away = LinearEyeDepth(rawDepth, _ZBufferParams) * length(float3(aside, 1.0));
-                fade = (half)saturate((away - _OwnHeadFade.x) / max(0.0001, _OwnHeadFade.y - _OwnHeadFade.x));
+                float3 at = float3(aside, 1.0) * LinearEyeDepth(rawDepth, _ZBufferParams);
+                fade = (half)saturate((length(at) - _OwnHeadFade.x) / max(0.0001, _OwnHeadFade.y - _OwnHeadFade.x));
+                float3 fromEye = at - _OwnHeadEye.xyz;
+                float seen = dot(fromEye, _OwnHeadGaze.xyz) * rsqrt(max(dot(fromEye, fromEye), 1e-8));
+                fade *= (half)saturate((seen - _OwnHeadSight.y) / max(0.0001, _OwnHeadSight.x - _OwnHeadSight.y));
             }
             colour = half4(drawn.rgb * fade, cover * fade);
             return colour.a > 0.0h;

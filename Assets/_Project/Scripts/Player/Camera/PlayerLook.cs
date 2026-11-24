@@ -28,6 +28,10 @@ public sealed class PlayerLook : MonoBehaviour
     private readonly RecoilSpring recoil = new RecoilSpring();
     private Vector2 pendingClimb;
     private float recoilResponse = 24f;
+    // The climb whose pitch limits hold the view (ClimbPitch), and how far up and down they let it look now (degrees).
+    private PlayerMovement.MovementState climbLookState;
+    private bool climbLooking;
+    private float climbLookUp, climbLookDown;
 
     private void Awake()
     {
@@ -94,6 +98,7 @@ public sealed class PlayerLook : MonoBehaviour
         TryMouseTurnOnBar(mouseX);
         TryMouseRollOver(mouseX);
         SteerSlide(mouseX);
+        mouseY = ClimbPitch(mouseY);
         yaw += mouseX;
         yaw = ClampLookYaw(yaw);
         pitch = ClampLookPitch(pitch + mouseY);
@@ -368,6 +373,49 @@ public sealed class PlayerLook : MonoBehaviour
         float held = Mathf.Clamp(from + Mathf.DeltaAngle(now, candidate), lo, hi);
         if (from < lo - .01f || from > hi + .01f) held = Mathf.MoveTowards(from, held, 360f * Time.deltaTime);
         return facing + held;
+    }
+
+    // Climbing (a wall, up onto a top, a bar's swing) the view looks up and down only so far from level (PlayerBody.
+    // ClimbLookPitch), softly: over the last band before a limit the mouse turns it less and less toward it, the share of the
+    // band left squared, so it comes to rest there without a stop. Only the mouse's push out is slowed: the view never moves
+    // by itself, and a view already past a limit as the climb begins keeps where it is, the limit closing in only as the
+    // player looks back in. A head kept by the climb's clip looking at the wall can't follow a view far past it (BodyGaze.
+    // FaceHead, as far as the neck bends), and the camera on its eyes then saw the inside of its own hat and ears (the user,
+    // 2026-11-24: "벽 mantling 하거나 오를 때 위에 보면 모자랑 동물 귀까지 뚫려 보이는데", then "오를 때 카메라 각도를
+    // 제한하면 되지 않을까?"). The slide's and the back dive's hard limits snap the view on the way in (ClampLookPitch).
+    private float ClimbPitch(float mouseY)
+    {
+        if (body == null) body = GetComponent<PlayerBody>();
+        var state = movement != null ? movement.CurrentState : PlayerMovement.MovementState.Standing;
+        if (body == null || !body.ClimbLookPitch(state, out Vector2 limits, out float band))
+        {
+            climbLooking = false;
+            return mouseY;
+        }
+        if (!climbLooking || state != climbLookState)
+        {
+            climbLooking = true;
+            climbLookState = state;
+            climbLookUp = Mathf.Max(limits.x, -pitch);
+            climbLookDown = Mathf.Max(limits.y, pitch);
+        }
+        climbLookUp = Mathf.Max(limits.x, Mathf.Min(climbLookUp, -pitch));
+        climbLookDown = Mathf.Max(limits.y, Mathf.Min(climbLookDown, pitch));
+        if (mouseY < 0f) return -Softly(climbLookUp + pitch, -mouseY, band);
+        if (mouseY > 0f) return Softly(climbLookDown - pitch, mouseY, band);
+        return 0f;
+    }
+
+    // How far a push of `push` degrees toward an edge `left` degrees off takes the view: all of it until the edge is `band`
+    // off, then as the band's share left squared, worked out over the whole push so it is the same at any frame rate.
+    private static float Softly(float left, float push, float band)
+    {
+        if (left <= 0f) return 0f;
+        if (band <= 0f) return Mathf.Min(push, left);
+        float free = Mathf.Max(0f, left - band);
+        if (push <= free) return push;
+        float near = Mathf.Min(left, band);
+        return free + near - 1f / (1f / near + (push - free) / (band * band));
     }
 
     private float ClampLookPitch(float candidate)

@@ -20,7 +20,9 @@ using MovementState = PlayerMovement.MovementState;
 ///   in Blender, 2026-11-22), so a reach read each frame opened to 120 degrees left and shut to 12 again, and a view caught
 ///   outside it was flung. A step dodge has none: the body turns with the view through it.
 /// - The neck's guard (FaceHead): a clip that turns the chest away faster than the view is held could still wring the head
-///   for a frame, so the head itself stops a little past the same limit.
+///   for a frame, so the head itself stops a little past the same limit. An action clip's head that follows the view past
+///   its cone (Body.actionHeadCone) bends from the chest no further than Body.neckPitchLimits up and down and this limit
+///   round, unless the clip itself bends it further.
 /// - The record (카메라 기록, Logs/camera-head.txt): each time the camera is off the eyes by more than CameraOffMetres or
 ///   looks more than CameraTurnDegrees away from where the head looks, one line when it is back: how long, how far, in which
 ///   state and clip, and what had it off (a ladder's or a punch's steadying, the run's calm, the lean, a wall, an action
@@ -31,6 +33,9 @@ public sealed partial class PlayerBody
     [SerializeField, Range(30f, 150f), Tooltip("The most the head turns from the chest (degrees): the neck's own turn. The view turns "
         + "no further on a pose whose legs don't step round after it.")]
     private float neckTurnLimit = 75f;
+    [SerializeField, Tooltip("The most the neck bends the head from the chest to follow the view during an action clip: up; down "
+        + "(degrees). A clip's own bend beyond it stays.")]
+    private Vector2 neckPitchLimits = new Vector2(60f, 50f);
 
     // The share of the look's turn the spine bones take between them (SpineLook.SpineYawShare).
     private const float SpineTwistShare = .6f;

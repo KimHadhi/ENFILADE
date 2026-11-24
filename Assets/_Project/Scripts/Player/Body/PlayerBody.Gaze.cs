@@ -17,6 +17,9 @@ public sealed partial class PlayerBody
     private Vector3 animationViewLimits = new Vector3(18f, 12f, 10f);
     [SerializeField, Min(.01f), Tooltip("Response time of animation rotation only (s); mouse look is never smoothed.")]
     private float animationViewTime = .1f;
+    [SerializeField, Range(0f, 90f), Tooltip("An action clip's head keeps its own nods and turns within this far of the view "
+        + "(degrees); past it the head follows the view, as far as the neck bends (Body.neckPitchLimits, Body.neckTurnLimit).")]
+    private float actionHeadCone = 20f;
 
     private readonly BodyGaze bodyGaze = new BodyGaze();
     private readonly HashSet<Channel> animationViewChannels = new HashSet<Channel>();
@@ -76,5 +79,6 @@ public sealed partial class PlayerBody
         return shownTotal > .0001f ? weight / shownTotal : 0f;
     }
 
-    private void TuneGaze() => bodyGaze.Tune(animationViewStrength, animationViewFollow, animationViewLimits, animationViewTime);
+    private void TuneGaze() => bodyGaze.Tune(animationViewStrength, animationViewFollow, animationViewLimits, animationViewTime,
+        actionHeadCone, neckPitchLimits);
 }

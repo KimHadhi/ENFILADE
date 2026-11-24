@@ -38,6 +38,10 @@ public sealed partial class PlayerBody
     [SerializeField, Tooltip("In first person the own hair, ears and hat show nothing of themselves nearer the camera than x and all "
         + "of themselves from y (m), thinning out between (OwnHeadView).")]
     private Vector2 ownHeadFade = new Vector2(.02f, .05f);
+    [SerializeField, Tooltip("In first person the own hair, ears and hat show all of themselves within x degrees of where the head "
+        + "looks, seen from its eyes, and nothing past y, thinning out between (OwnHeadView): what the head's own eyes couldn't "
+        + "see, the camera turned further than the head doesn't either.")]
+    private Vector2 ownHeadSight = new Vector2(80f, 95f);
     [SerializeField, Tooltip("Sliding, how far the view turns from the way the slide faces: left; right (degrees). The legs keep following "
         + "travel; the torso turns at most SlideTwistLimit of it and the head the rest. To the left it stops short: the slide's clips "
         + "(BIPER SlideToRun) sit turned to the right, the chest 40-70 degrees round, and a look further left turned the head into "
@@ -60,6 +64,15 @@ public sealed partial class PlayerBody
         + "(degrees), as Beatrun holds its high climb (45). The camera rides the head, so looking back over the shoulder "
         + "would look through the own neck.")]
     private float mantleTurnLimit = 45f;
+    [SerializeField, Tooltip("Climbing a wall: how far the view looks up; down from level (degrees). It slows into the limit over "
+        + "climbPitchBand and never moves by itself.")]
+    private Vector2 wallClimbPitchLimits = new Vector2(70f, 45f);
+    [SerializeField, Tooltip("Climbing up onto a top (a mantle, a climb up from a hang, a clamber) and swinging on a bar: how far "
+        + "the view looks up; down from level (degrees), as wallClimbPitchLimits.")]
+    private Vector2 climbPitchLimits = new Vector2(60f, 60f);
+    [SerializeField, Min(0f), Tooltip("Within this far of a climb's pitch limit the mouse turns the view less and less toward it "
+        + "(degrees): the share left of this, squared.")]
+    private float climbPitchBand = 15f;
     [SerializeField, Min(0f), Tooltip("Where the camera steadies off the eyes, the most the body bends the head to it (m, HeadReach). "
         + "Past this the camera keeps the rest off the head, as before.")]
     private float headReachMove = .08f;
@@ -89,6 +102,30 @@ public sealed partial class PlayerBody
     public float SupineDiveLookYawLimit => Mathf.Clamp(supineDiveTurnLimit, 0f, 90f);
     public Vector2 SupineDiveLookPitchLimits => new Vector2(Mathf.Clamp(supineDivePitchLimits.x, 0f, 89f), Mathf.Clamp(supineDivePitchLimits.y, 0f, 89f));
     public float MantleLookYawLimit => Mathf.Clamp(mantleTurnLimit, 0f, 180f);
+
+    /// <summary>
+    /// In a climb, how far the view looks up (x) and down (y) from level, degrees, and over how many degrees before them it
+    /// slows (PlayerLook). False where the view looks up and down as far as it likes.
+    /// </summary>
+    internal bool ClimbLookPitch(MovementState climb, out Vector2 limits, out float band)
+    {
+        band = Mathf.Max(0f, climbPitchBand);
+        switch (climb)
+        {
+            case MovementState.WallClimb:
+                limits = wallClimbPitchLimits;
+                break;
+            case MovementState.Mantle:
+            case MovementState.BarSwing:
+                limits = climbPitchLimits;
+                break;
+            default:
+                limits = default;
+                return false;
+        }
+        limits = new Vector2(Mathf.Clamp(limits.x, 0f, 89f), Mathf.Clamp(limits.y, 0f, 89f));
+        return true;
+    }
     public Vector2 SlideLookPitchLimits => new Vector2(Mathf.Clamp(slidePitchLimits.x, 0f, 85f), Mathf.Clamp(slidePitchLimits.y, 0f, 85f));
     /// <summary>Share of a downward / upward look the spine takes (SpineLook); neck and head take the rest.</summary>
     internal float SpineBendDown => Mathf.Clamp01(spineBendDown);
@@ -362,6 +399,21 @@ public sealed partial class PlayerBody
     /// <summary>How near the camera the own hair, ears and hat thin out in first person (m: none of them nearer than x, all
     /// from y; OwnHeadView).</summary>
     internal Vector2 OwnHeadFade => ownHeadFade;
+
+    /// <summary>How far off where the head looks, seen from its eyes, the own hair, ears and hat thin out in first person
+    /// (degrees: all of them within x, none past y; OwnHeadView).</summary>
+    internal Vector2 OwnHeadSight => ownHeadSight;
+
+    /// <summary>The head's eyes and the way the head looks (world), as the body is posed now (OwnHeadView). False with no
+    /// head.</summary>
+    internal bool OwnEyes(out Vector3 eye, out Vector3 gaze)
+    {
+        eye = gaze = default;
+        if (head == null) return false;
+        eye = head.TransformPoint(eyeLocal);
+        gaze = bodyGaze.HeadGaze * Vector3.forward;
+        return true;
+    }
 
     // In first person the camera's own passes draw none of the head: the hair, ears and hat are laid over the view by
     // OwnHeadView when the Esc menu says so, thinning out as they come up to the camera, and the face never shows, only its

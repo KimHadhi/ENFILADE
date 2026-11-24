@@ -8,22 +8,28 @@ using UnityEngine;
 ///   the way, so a roll turns the view over with the head (the user, 2026-11-21: the view held ahead through a dive roll
 ///   or a jump, "억지로 앞에 강제로 닭처럼 고정된 느낌"); their turn about up and ahead stays bounded, so the aim keeps its way
 ///   round and the horizon about level;
-/// - in every state the head turns to look where the view looks, as far as a committed action's clip doesn't carry it, as
-///   it did up to 0.7.34: with the look bend only upright or sliding, a vault, hang, roll or rung left the head where the
-///   clip had it, away from the aim in the F5 view and on friends' screens (user picked it back, 2026-11-08). Q/E tilts it
-///   only as far as the view rolls; the neck takes back the spine's tip. While FPS Animation Framework holds a gun the
-///   head is its (its Look lines the sight up on the eyes, the gun hangs from the head), so this steps back (FaceHead).
+/// - in every state the head turns to look where the view looks, as it did up to 0.7.34: with the look bend only upright or
+///   sliding, a vault, hang, roll or rung left the head where the clip had it, away from the aim in the F5 view and on
+///   friends' screens (user picked it back, 2026-11-08). An action clip's head keeps its own nods within a cone round the
+///   view and follows the view past it, no further than a neck bends from the chest (FaceHead). Q/E tilts it only as far as
+///   the view rolls; the neck takes back the spine's tip. While FPS Animation Framework holds a gun the head is its (its
+///   Look lines the sight up on the eyes, the gun hangs from the head), so this steps back (FaceHead).
 /// The camera takes Rotation, with the camera effects' turn on top of Input (BodyCamera).
 /// A plain class PlayerBody owns (stage 3 of the body restructure, 2026-11-09). The numbers stay PlayerBody's table-bound
 /// fields (Player.csv Body.animationViewStrength, Body.animationViewLimits, Body.animationViewTime), handed over by Tune.
 /// </summary>
 internal sealed class BodyGaze
 {
-    private Transform root, lookPivot, model, head, neck;
-    private Quaternion headToGaze = Quaternion.identity, rotation = Quaternion.identity, actionTurn = Quaternion.identity;
+    private Transform root, lookPivot, model, head, neck, chest;
+    // The head's gaze from its bone, and the way a head looks from the chest bone with the neck straight (both from the rest
+    // pose).
+    private Quaternion headToGaze = Quaternion.identity, chestToGaze = Quaternion.identity;
+    private Quaternion rotation = Quaternion.identity, actionTurn = Quaternion.identity;
     private float actionWeight, faceWeight;
-    private float strength = .65f, follow = 1f, time = .1f;
+    private float strength = .65f, follow = 1f, time = .1f, cone = 20f;
     private Vector3 limits = new Vector3(18f, 12f, 10f);
+    // The most the neck bends the head from the chest to follow the view: up (x), down (y), degrees.
+    private Vector2 neckPitch = new Vector2(60f, 50f);
 
     /// <summary>Where the view looks this frame: the mouse's look with the action clips' share on top.</summary>
     internal Quaternion Rotation => rotation;
@@ -53,20 +59,25 @@ internal sealed class BodyGaze
         this.head = head;
         this.neck = neck;
         headToGaze = Quaternion.Inverse(head.rotation) * Quaternion.LookRotation(restForward, model.up);
+        chest = neck != null ? neck.parent : head.parent;
+        chestToGaze = chest != null ? Quaternion.Inverse(chest.rotation) * Quaternion.LookRotation(restForward, model.up) : Quaternion.identity;
         actionTurn = Quaternion.identity;
         actionWeight = 0f;
         rotation = Input;
     }
 
     /// <summary>How much the action clips lead the view (0-1), how much of their head's turn over the body's right the
-    /// carrying clips give it (0-1), the most the leading clips turn it (degrees: pitch, yaw, roll), and how quickly their
-    /// turn follows (s).</summary>
-    internal void Tune(float strength, float follow, Vector3 limits, float time)
+    /// carrying clips give it (0-1), the most the leading clips turn it (degrees: pitch, yaw, roll), how quickly their
+    /// turn follows (s), how far from the view an action clip's head keeps its own turn (degrees), and the most the neck
+    /// bends the head from the chest to follow the view past that (degrees: up, down).</summary>
+    internal void Tune(float strength, float follow, Vector3 limits, float time, float cone, Vector2 neckPitch)
     {
         this.strength = strength;
         this.follow = follow;
         this.limits = limits;
         this.time = time;
+        this.cone = Mathf.Max(0f, cone);
+        this.neckPitch = new Vector2(Mathf.Clamp(neckPitch.x, 0f, 90f), Mathf.Clamp(neckPitch.y, 0f, 90f));
     }
 
     /// <summary>
@@ -110,10 +121,11 @@ internal sealed class BodyGaze
 
     /// <summary>
     /// Turns the head (and a little of the neck) to the gaze, tilted by <paramref name="leanRoll"/> (degrees, the view's
-    /// Q/E roll), as far as the action clips don't carry it. <paramref name="off"/>: the head isn't this one's (dead, or
-    /// FPSAF holds a gun); it hands over and takes it back over <paramref name="blendTime"/> (s). With
-    /// <paramref name="neckLimit"/> above 0 the head turns no further than that (degrees) from <paramref name="chestAhead"/>,
-    /// the way the chest faces; true when it had to stop there (PlayerBody.Neck).
+    /// Q/E roll); an action clip's head only as far as it is off the view past the cone. <paramref name="off"/>: the head
+    /// isn't this one's (dead, or FPSAF holds a gun); it hands over and takes it back over <paramref name="blendTime"/> (s).
+    /// With <paramref name="neckLimit"/> above 0 the head turns no further than that (degrees) from
+    /// <paramref name="chestAhead"/>, the way the chest faces; true when it had to stop there or at the neck's bend
+    /// (PlayerBody.Neck).
     /// </summary>
     internal bool FaceHead(bool off, float leanRoll, float blendTime, float dt, Vector3 chestAhead = default, float neckLimit = 0f)
     {
@@ -134,11 +146,49 @@ internal sealed class BodyGaze
                 held = true;
             }
         }
-        Quaternion target = Quaternion.Slerp(gaze * Quaternion.Inverse(headToGaze), head.rotation, actionWeight);
+        Quaternion target = gaze * Quaternion.Inverse(headToGaze);
+        if (actionWeight > 0f)
+        {
+            // An action clip's head (a climb's, a vault's, a landing's) keeps its own nods and turns as far as they stay within
+            // a cone round the view (Body.actionHeadCone), and past it follows the view, no further than a neck bends from the
+            // chest (Body.neckPitchLimits, Body.neckTurnLimit). Until 0.9.380 the clip kept the head whatever the view did:
+            // looking up from a mantle or a wall climb, the camera on the eyes turned 60 to 90 degrees up inside a head still
+            // looking at the wall, and saw the inside of its own hat and ears (the user, 2026-11-24: "벽 mantling 하거나 오를
+            // 때 위에 보면 모자랑 동물 귀까지 뚫려 보이는데").
+            Quaternion clip = head.rotation;
+            float apart = Quaternion.Angle(clip, target), allowed = cone * actionWeight;
+            Quaternion follows = apart > allowed ? Quaternion.RotateTowards(clip, target, apart - allowed) : clip;
+            Quaternion bent = WithinNeck(follows, clip, neckLimit, out bool stopped);
+            target = Quaternion.Slerp(follows, bent, actionWeight);
+            held |= stopped;
+        }
         target = Quaternion.Slerp(head.rotation, target, faceWeight);
         if (neck != null)
             neck.rotation = Quaternion.Slerp(Quaternion.identity, target * Quaternion.Inverse(head.rotation), .3f) * neck.rotation;
         head.rotation = target;
         return held;
+    }
+
+    // The head's rotation held within the neck's bend from the chest (pitch neckPitch, yaw yawLimit, from the way a head
+    // looks off the chest with the neck straight), or as far as the clip itself bends it, if further: the limit stops the
+    // following of the view, never the clip's own pose. True when it had to stop.
+    private Quaternion WithinNeck(Quaternion rotation, Quaternion clip, float yawLimit, out bool stopped)
+    {
+        stopped = false;
+        if (chest == null) return rotation;
+        Quaternion frame = chest.rotation * chestToGaze, back = Quaternion.Inverse(frame);
+        Vector3 ahead = back * (rotation * headToGaze * Vector3.forward), own = back * (clip * headToGaze * Vector3.forward);
+        Vector2 at = Angles(ahead), clipAt = Angles(own);
+        Vector2 held = new Vector2(
+            Mathf.Clamp(at.x, Mathf.Min(-neckPitch.x, clipAt.x), Mathf.Max(neckPitch.y, clipAt.x)),
+            yawLimit > 0f ? Mathf.Clamp(at.y, Mathf.Min(-yawLimit, clipAt.y), Mathf.Max(yawLimit, clipAt.y)) : at.y);
+        if ((held - at).sqrMagnitude < 1e-4f) return rotation;
+        stopped = true;
+        Vector3 to = Quaternion.Euler(held.x, held.y, 0f) * Vector3.forward;
+        return frame * Quaternion.FromToRotation(ahead, to) * back * rotation;
+
+        // A direction's pitch (down positive) and yaw (right positive), degrees.
+        static Vector2 Angles(Vector3 way) =>
+            new Vector2(Mathf.Atan2(-way.y, new Vector2(way.x, way.z).magnitude), Mathf.Atan2(way.x, way.z)) * Mathf.Rad2Deg;
     }
 }
