@@ -140,8 +140,8 @@ public sealed class RunTurn
         float speed = now.magnitude;
         if (active || ctx.CurrentState != State.Standing || !ctx.IsGrounded || input.y <= .1f
             || Vector2.Angle(input, Vector2.up) > AheadWithin || wanted.sqrMagnitude < .01f) return false;
-        // A run that goes ahead on its legs (the way it goes within AheadWithin of the way the body faces): a back strafe's
-        // hips are turned up to 60 degrees off the view (PlayerBody.WarpWay), which is no flick of the view.
+        // A run that goes ahead on its legs (the way it goes within AheadWithin of the way the body faces): a turn back is the
+        // turn of a run ahead, not of a strafe or a backpedal.
         float view = ctx.transform.eulerAngles.y, behind = Mathf.DeltaAngle(view, bodyYaw);
         if (speed < settings.runTurnSpeed || Vector3.Angle(now, wanted) < settings.runTurnAngle
             || Mathf.Abs(behind) < ViewLedLeast

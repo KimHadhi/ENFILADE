@@ -44,6 +44,11 @@ public sealed partial class PlayerBody
     private const float TurnBendMost = 1.4f, TurnHurryMost = 1.5f, HurryRange = 90f, TurnHandOn = .7f;
     // The stance's turns the playing one was picked from.
     private List<StandTurnClip> standTurns;
+    // How far the view has gone round ahead of the legs (degrees, + to the right), followed frame by frame so a view flicked
+    // past 180 is still the way it went (LookLead), and the view's and the legs' yaw it was followed from; the frame it last
+    // was.
+    private float lookLead, leadLookWas, leadLegsWas;
+    private int leadFrame = -10;
     // A clip's root is still within this of where it begins or ends (degrees); it is come into this long before its root turns
     // (s), the first foot lifting.
     private const float TurnRootStill = 2f, TurnLeadIn = .15f;
@@ -89,9 +94,13 @@ public sealed partial class PlayerBody
     private void TurnOnTheSpot(bool still, bool crouched)
     {
         if (!still) return;
-        float look = transform.eulerAngles.y, lead = Mathf.DeltaAngle(legYaw, look);
+        float look = transform.eulerAngles.y, lead = LookLead();
         if (Mathf.Abs(lead) > turnStartAngle && !BeginStandTurn(crouched, lead))
+        {
             legYaw = look - Mathf.Sign(lead) * turnStartAngle;
+            lookLead = Mathf.Sign(lead) * turnStartAngle;
+            leadLegsWas = legYaw;
+        }
         targetYaw = Mathf.DeltaAngle(look, legYaw);
         legsPlanted = true;
     }
@@ -132,11 +141,11 @@ public sealed partial class PlayerBody
             EndStandTurn();
             return false;
         }
-        float look = transform.eulerAngles.y, ahead = Mathf.Abs(Mathf.DeltaAngle(legYaw, look));
+        float look = transform.eulerAngles.y, ahead = Mathf.Abs(LookLead());
         // Until its root begins to turn, a bigger turn is picked for a view that has gone on round (a flick still going on).
         if (standTurnAt < standTurn.From + TurnLeadIn)
         {
-            float lead = Mathf.DeltaAngle(standTurnFrom, look);
+            float lead = lookLead + Mathf.DeltaAngle(standTurnFrom, legYaw);
             var better = NearestTurn(standTurns, lead);
             if (better != null && Mathf.Abs(better.Turn) > Mathf.Abs(standTurn.Turn))
             {
@@ -181,6 +190,24 @@ public sealed partial class PlayerBody
         standTurn = null;
         standTurns = null;
         yawVelocity = 0f;
+    }
+
+    // How far the view is round ahead of the legs (degrees, + to the right), the way it went: carried on from the last frame by
+    // the view's turn and the legs' since, read afresh where it was not followed then. Read afresh each frame, a view flicked
+    // past 180 read the other way: a flick 180 to the left turned the body 180 to the right, the head and the neck the long
+    // way round after it, and a flick 270 to the left turned it 129 to the right (Logs/move-test.txt of 2026-11-25 08:05; the
+    // user: "180도 회전을 반대 방향으로 모가지를 꺾으면 어떡해").
+    private float LookLead()
+    {
+        float look = transform.eulerAngles.y;
+        if (leadFrame >= Time.frameCount - 1) lookLead += Mathf.DeltaAngle(leadLookWas, look) - Mathf.DeltaAngle(leadLegsWas, legYaw);
+        else lookLead = Mathf.DeltaAngle(legYaw, look);
+        // Never further than the same reading a whole turn off it: past that the view went round more than once.
+        lookLead = Mathf.Clamp(lookLead, -359f, 359f);
+        leadLookWas = look;
+        leadLegsWas = legYaw;
+        leadFrame = Time.frameCount;
+        return lookLead;
     }
 
     // How fast the legs are asked to go this frame (m/s): the player's own by the movement's stride, another PC's as it goes.

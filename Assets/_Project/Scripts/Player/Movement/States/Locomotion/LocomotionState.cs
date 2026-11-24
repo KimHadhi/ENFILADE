@@ -97,6 +97,14 @@ public sealed class LocomotionState : MovementBaseState
                 stride = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
             else
                 stride = Vector3.Lerp(now, targetVelocity, t);
+            // No faster than legs push off (Move.groundAccelMost), the way and the speed together. Eased alone, keys stepped
+            // round fast (W, D, S, A in turn) swung a jog's velocity round in a tenth of a second, and the legs' cycles were
+            // swapped as fast under it, the feet on the ground going over it at 3-7 m/s: kept to what legs push, the body
+            // slows as the keys swing and the legs go round with it at a pace their feet can keep (the legs' test of 2026-11-25:
+            // a foot faster than 3 m/s on the ground in 437 frames of the six changes of way, 237-282 with it; the user:
+            // "빠르게 다이아몬드 스텝을 밟으면 발이 갈피를 못 잡아서 튕겨져 날라감"). A sprint stops in 0.4 s, comes round to a
+            // side in half a second.
+            stride = now + Vector3.ClampMagnitude(stride - now, ctx.groundAccelMost * dt);
             if (stride.sqrMagnitude < 0.0001f) stride = Vector3.zero;
             // Into a wall the legs go along it or stand at it, not on the spot (MovementMotor.AlongWalls).
             ctx.Stride = ctx.Motor.AlongWalls(stride, dt);

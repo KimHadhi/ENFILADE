@@ -67,6 +67,14 @@ public sealed partial class PlayerBody
     // What moved the hips sideways this frame that is no step (the lean), for the feet to take back out.
     private Vector3 hipsCarried;
 
+    /// <summary>The legs as the feet measured them, after this frame's leg IK (MoveTest reads their soles).</summary>
+    internal bool TryReadLegs(out FootPlanting.Leg left, out FootPlanting.Leg right)
+    {
+        left = feet?.Left;
+        right = feet?.Right;
+        return left != null && right != null && feet.OnGround;
+    }
+
     // The legs as the feet measured them, for what else keeps them out of things (a tuck, a heave, a wall).
     private FootPlanting.Leg leftLeg => feet?.Left;
     private FootPlanting.Leg rightLeg => feet?.Right;

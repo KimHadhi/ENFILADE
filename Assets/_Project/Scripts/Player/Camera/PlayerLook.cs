@@ -94,6 +94,12 @@ public sealed class PlayerLook : MonoBehaviour
         float mouseX = delta.x * scale;
         float mouseY = delta.y * scale * (settings.invertY ? 1f : -1f);
 
+        // A test turns the view itself (ScriptedInput, MoveTest).
+        if (ScriptedInput.On)
+        {
+            mouseX = ScriptedInput.Turn();
+            mouseY = 0f;
+        }
         if (HoldDiveRoll()) mouseX = mouseY = 0f;
         TryMouseTurnOnBar(mouseX);
         TryMouseRollOver(mouseX);
