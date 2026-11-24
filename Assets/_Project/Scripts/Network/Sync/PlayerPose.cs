@@ -37,9 +37,9 @@ public struct PlayerPose : INetworkSerializeByMemcpy
     public byte State, LandingTier, HeavyPose, LadderSteps, Vault;
     public byte Jumps, Landings, DashHits;
     /// <summary>A run's turn back (RunTurn): turns begun (an event), its clip's place in Ability.runTurns, the clip's moment it
-    /// began at (s) and the way it ends facing (world yaw).</summary>
+    /// began at (s), the way it ends facing and the way the body faced as it began (world yaw).</summary>
     public byte Turns, TurnClip;
-    public float TurnFrom, TurnYaw;
+    public float TurnFrom, TurnYaw, TurnStart;
     /// <summary>Where the stride is, so the legs step in time on every PC.</summary>
     public byte Step;
     public Marks Flags;

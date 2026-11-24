@@ -48,7 +48,7 @@ public sealed class MovementMirror
             State = (byte)ctx.CurrentState, LandingTier = (byte)landing.LastTier, HeavyPose = (byte)landing.HeavyPose,
             Jumps = jumps, Landings = landings, DashHits = dashHits, LadderSteps = (byte)fixtures.LadderSteps,
             Turns = ctx.Actions.RunTurn.Count, TurnClip = (byte)ctx.Actions.RunTurn.Index, TurnFrom = ctx.Actions.RunTurn.From,
-            TurnYaw = ctx.Actions.RunTurn.EndYaw,
+            TurnYaw = ctx.Actions.RunTurn.EndYaw, TurnStart = ctx.Actions.RunTurn.StartYaw,
             Velocity = ctx.ActualVelocity, RunIntent = ctx.RunIntent, Gait = ctx.Actions.Gait.Position, FallSpeed = ctx.FallSpeed, LandImpact = landImpact,
             Lean = abilities.Lean.Share, Yaw = ctx.transform.eulerAngles.y,
             Pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f
@@ -276,7 +276,7 @@ public sealed class MovementMirror
         if (applied && pose.Jumps != jumps) ctx.RaiseJumped();
         if (applied && pose.Landings != landings) ctx.RaiseLanded(pose.LandImpact);
         if (applied && pose.DashHits != dashHits) ctx.RaiseDashPushHit(ctx.transform.position);
-        if (applied && pose.Turns != turns) ctx.Actions.RunTurn.Mirror(pose.TurnClip, pose.TurnFrom, pose.TurnYaw);
+        if (applied && pose.Turns != turns) ctx.Actions.RunTurn.Mirror(pose.TurnClip, pose.TurnFrom, pose.TurnYaw, pose.TurnStart);
         applied = true;
         jumps = pose.Jumps;
         landings = pose.Landings;

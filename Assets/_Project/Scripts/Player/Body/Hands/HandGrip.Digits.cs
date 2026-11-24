@@ -310,12 +310,14 @@ internal sealed partial class HandGrip
         root.rotation = Quaternion.AngleAxis(degrees, axis) * root.rotation;
     }
 
-    private void SolvePose(Contact contact, Vector3 forward, Vector3 palm, float clearance, Quaternion[] pose)
+    // With <paramref name="only"/> (a finger's index) just that finger is found into the pose, the fingers before it standing as
+    // the pose already has them (HandGrip.Ledge, a finger a frame).
+    private void SolvePose(Contact contact, Vector3 forward, Vector3 palm, float clearance, Quaternion[] pose, int only = -1)
     {
-        Fit(contact, forward, palm, clearance, 1f);
+        Fit(contact, forward, palm, clearance, 1f, only, only >= 0 ? pose : null);
         if (contact.IsLedge)
             foreach (var finger in fingers)
-                if (finger.Thumb)
+                if (finger.Thumb && (only < 0 || fingers[only] == finger))
                 {
                     if (normals == null) normals = HandSkinCorrection.For(animator);
                     normals.Prepare(finger.Bones, left, point => contact.Clear(point, point, clearance));
@@ -323,7 +325,7 @@ internal sealed partial class HandGrip
         for (int i = 0; i < fingers.Length; i++)
             for (int joint = 0; joint < 3; joint++)
             {
-                pose[i * 3 + joint] = fingers[i].Bones[joint].localRotation;
+                if (only < 0 || i == only) pose[i * 3 + joint] = fingers[i].Bones[joint].localRotation;
                 fingers[i].Bones[joint].localRotation = fingers[i].Before[joint];
             }
     }
@@ -339,8 +341,14 @@ internal sealed partial class HandGrip
             }
     }
 
+    // A finger joint bends toward its first contact this many degrees a try, then the contact is narrowed by halving the last
+    // step this many times. A ledge is thick, no finger passes through it between two tries, so its scan steps twice as far for
+    // the same answer (a hand on a ledge tried some thousands of points a search).
+    private const float ScanStep = 3f, LedgeScanStep = 6f;
+    private const int Refines = 7, LedgeRefines = 8;
+
     // With <paramref name="only"/> (a finger's index) just that finger is solved, the fingers before it set from
-    // <paramref name="solved"/> as a whole solve would have left them (SolveStep).
+    // <paramref name="solved"/> as a whole solve would have left them (SolvePose).
     private void Fit(Contact contact, Vector3 forward, Vector3 palm, float clearance, float weight, int only = -1, Quaternion[] solved = null)
     {
         if (weight <= 0f) return;
@@ -417,16 +425,17 @@ internal sealed partial class HandGrip
                 Vector3 axis = bone.InverseTransformDirection(hinge);
                 float limit = finger.Thumb ? (i == 0 ? 20f : i == 1 ? 30f : 40f)
                     : i == 0 ? 85f : i == 1 ? 105f : 80f;
-                float safe = 0f;
+                float safe = 0f, scan = contact.IsLedge ? LedgeScanStep : ScanStep;
+                int refines = contact.IsLedge ? LedgeRefines : Refines;
                 // Stop at first contact, rather than jumping through a thin surface to another free angle.
-                for (float angle = 3f; angle <= limit + 3f; angle += 3f)
+                for (float angle = scan; angle <= limit + scan; angle += scan)
                 {
                     float trial = Mathf.Min(angle, limit);
                     bone.localRotation = straight * Quaternion.AngleAxis(trial, axis);
                     if (!Clear())
                     {
                         float blocked = trial;
-                        for (int refine = 0; refine < 7; refine++)
+                        for (int refine = 0; refine < refines; refine++)
                         {
                             float middle = (safe + blocked) * .5f;
                             bone.localRotation = straight * Quaternion.AngleAxis(middle, axis);

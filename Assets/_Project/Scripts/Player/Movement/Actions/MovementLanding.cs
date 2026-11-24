@@ -288,8 +288,13 @@ public sealed class MovementLanding
 
     private bool TryRoll()
     {
-        Vector3 direction = ctx.Abilities.InputDirection(ctx.transform.forward);
-        bool inPlace = ctx.HorizontalVelocity.magnitude < ctx.AbilitySettings.rollLandSpeed || ctx.CurrentInput.y < -0.1f;
+        // The way the keys ask, else the way the body comes down going: a fall backwards rolls backwards (Roll_B). Until 0.9.392
+        // holding S landed on the spot (Beatrun's rule) and a roll with no keys went the way the body faced: falling backwards
+        // at 4.8 m/s with S held and rolling, the body stood still for Land_1h's whole length (걸음 기록 of 2026-11-24 16:31; the
+        // user: "뒤로 떨어지면서 랜딩롤 시도하면 걍 가만히 멈추는데").
+        Vector3 travel = Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up);
+        Vector3 direction = ctx.Abilities.InputDirection(travel.sqrMagnitude > .01f ? travel : ctx.transform.forward);
+        bool inPlace = travel.magnitude < ctx.AbilitySettings.rollLandSpeed;
         if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) return false;
         // Backlog 155: a wall where the roll would go used to cancel the roll and leave a plain crouched landing. Now it
         // rolls on the spot, so the view and the body play the same move.

@@ -2,12 +2,12 @@ using UnityEngine;
 using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
-/// The body's side of a run's turn back (RunTurn): its clip on the turn's own clock, the body's root where the clip's turn has
-/// it so the turn ends facing the way the view looked as it began, the spine turning the chest back toward the view from where
-/// the clip has it (AimLook: RunTurnFacing), and the walk or run taking the stride from the clip's footfall as it ends
-/// (StepFrom). A clip that turns the body in its own pose has the root round where the pose is held from as the turn begins and
-/// back under the chest as it ends, and the pose the bones carry over each switch is turned back as much (BodyInertia.Reroot),
-/// so the hips don't swing round over it.
+/// The body's side of a run's turn back (RunTurn): its clip on the turn's own clock, the body's root coming in where the body
+/// faced and turning its share of the clip's turn so the turn ends facing the way the view looked as it began, the spine
+/// turning the chest back toward the view from where the clip has it (AimLook: RunTurnFacing), and the walk or run taking the
+/// stride from the clip's footfall as it ends (StepFrom). As it ends the root goes back under the chest, and the pose the bones
+/// carry over that switch is turned back as much (BodyInertia.Reroot), so the hips don't swing round over it; another PC's
+/// body that faced a little otherwise as the turn began is turned back so too.
 /// </summary>
 public sealed partial class PlayerBody
 {

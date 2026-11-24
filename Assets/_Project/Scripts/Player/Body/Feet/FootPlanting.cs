@@ -14,7 +14,10 @@ using UnityEngine;
 /// - Walking or running (Walk, 0.9.390) a foot that comes down (its clip's sole at its floor) keeps the height it came down
 ///   on until it lifts; a foot that lifts swings from the ground it left to the ground where it will come down (Land: the
 ///   hips carried on for the time left to its footfall, half a step ahead of them), over what rises between, instead of
-///   following the ground under it frame by frame. Along the ground a moving foot is where the clip and the stride have it.
+///   following the ground under it frame by frame; from half way down its swing it comes down on the ground under it
+///   (0.9.392: the guess alone put a running foot's landing a tread or two off on stairs, so it went down through the last of
+///   the air 15 to 29 cm in a frame as it touched, the feet record of 2026-11-24 16:31; the user: "계단은 달리면서 이동하면 발이
+///   허공에 살짝 뜨는 것 같고"). Along the ground a moving foot is where the clip and the stride have it.
 ///   The hips stand on what the feet stand on, under the capsule's floor eased (it pops up and down a stair at a time).
 ///   Until then the ground under a swinging foot was read every frame and taken at once where higher: running up stairs each
 ///   foot jumped a tread's height in a frame about twenty times a second, and the hips and the eyes rode every pop of the
@@ -197,6 +200,10 @@ internal sealed class FootPlanting
     // between (m).
     private const int LandEvery = 3;
     private const float LandEase = .05f, LeastSwing = .06f, PlainSwing = .3f, MostClearance = .3f;
+    // From this share of its swing a foot comes down on the ground under it rather than on the guess (Walk); the guess puts the
+    // foot ahead of the hips by a quarter of the stride but never further than a foot lands ahead of them (m): a sprint's
+    // quarter stride is 0.9 m, its foot lands about 0.35 m ahead.
+    private const float LateSwing = .5f, LandLeadMost = .4f;
 
     // The stride's hips follow a reach this quickly (s): fast enough for a step, slow enough that one frame's reach never
     // pops the hips (and the camera on the eyes).
@@ -635,15 +642,26 @@ internal sealed class FootPlanting
             Land(leg, left, floor, ground, tuning.Reach, steps, true);
         }
         leg.SwingClock += dt;
-        if (--leg.LandRefresh <= 0) Land(leg, left, floor, ground, tuning.Reach, steps, false);
-        leg.LandGround = Mathf.Lerp(leg.LandGround, leg.LandTarget, 1f - Mathf.Exp(-dt / LandEase));
         float s = Mathf.Clamp01(leg.SwingClock / leg.SwingTime), eased = s * s * (3f - 2f * s);
+        if (s >= LateSwing)
+        {
+            // Coming down: the ground under the foot, eased in, so it touches what is there.
+            if (Underfoot(leg, floor, ground, tuning.Reach, out float under, out Vector3 normal, out Collider surface))
+            {
+                leg.Supported = true;
+                leg.LandTarget = under;
+                leg.Normal = normal;
+                leg.Surface = surface;
+            }
+        }
+        else if (--leg.LandRefresh <= 0) Land(leg, left, floor, ground, tuning.Reach, steps, false);
+        leg.LandGround = Mathf.Lerp(leg.LandGround, leg.LandTarget, 1f - Mathf.Exp(-dt / LandEase));
         leg.Ground = Mathf.Lerp(leg.LiftGround, leg.LandGround, eased) + leg.Clearance * Mathf.Sin(Mathf.PI * s);
         leg.SupportWeight = Mathf.MoveTowards(leg.SupportWeight, leg.Supported ? 1f : 0f, settle);
     }
 
     // Where a swinging foot will come down: the hips carried on at the travel's speed for the time left to its footfall, half a
-    // step ahead of them, the foot's own way aside of them; and the ground there. As the swing begins also how far the ground
+    // step ahead of them (at most LandLeadMost), the foot's own way aside of them; and the ground there. As the swing begins also how far the ground
     // between rises over the straight way from where it left (Clearance), from three rays along it.
     private void Land(Leg leg, bool left, float floor, LayerMask ground, float reach, in Steps steps, bool start)
     {
@@ -656,7 +674,7 @@ internal sealed class FootPlanting
         Vector3 aside = Vector3.ProjectOnPlane(foot - hips, Vector3.up);
         aside -= way * Vector3.Dot(aside, way);
         float remaining = Mathf.Max(0f, leg.SwingTime - leg.SwingClock);
-        Vector3 at = new Vector3(hips.x, foot.y, hips.z) + travel * remaining + way * (speed * steps.Cycle * .25f) + aside;
+        Vector3 at = new Vector3(hips.x, foot.y, hips.z) + travel * remaining + way * Mathf.Min(speed * steps.Cycle * .25f, LandLeadMost) + aside;
         leg.Supported = GroundAt(at, floor, ground, reach, out float height, out Vector3 normal, out Collider surface);
         leg.LandTarget = leg.Supported ? height : leg.LiftGround;
         if (leg.Supported)

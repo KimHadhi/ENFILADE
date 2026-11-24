@@ -95,6 +95,15 @@ internal sealed partial class HandGrip
     private Quaternion ledgeFrame;
     private int ledgeShape;
     private float ledgeClearance;
+    // A ledge's fingers found again a finger a frame (Ledge): the next finger to find (-1 none), the pose they go into, and the
+    // contact, hand and key they are found for, all as they were when the search began.
+    private readonly Quaternion[] ledgeNextPose;
+    private int ledgeNextFinger = -1;
+    private Contact ledgeNextContact;
+    private Vector3 ledgeNextForward, ledgeNextPalm, ledgeNextWrist, ledgeNextMin, ledgeNextMax;
+    private Quaternion ledgeNextRotation, ledgeNextFrame;
+    private int ledgeNextShape;
+    private float ledgeNextClearance;
     public Vector3 PalmLocal { get; }
     public float PalmDepth { get; }
     public float HalfWidth { get; }
@@ -108,6 +117,7 @@ internal sealed partial class HandGrip
         palmInHand = hand.InverseTransformDirection(palm);
         barPose = new Quaternion[fingers.Length * 3];
         ledgePose = new Quaternion[fingers.Length * 3];
+        ledgeNextPose = new Quaternion[fingers.Length * 3];
         displayedLedgePose = new Quaternion[fingers.Length * 3];
         thumb = System.Array.Find(fingers, finger => finger.Thumb);
         if (thumb != null) System.Array.Copy(thumb.Rest, relaxedThumb, 3);
@@ -338,7 +348,6 @@ internal sealed partial class HandGrip
     public void Ledge(Collider surface, Vector3 forward, Vector3 palm, Vector3 wrist, Quaternion rotation, float clearance, float weight)
     {
         if (weight <= 0f) { ClearLedgeSkin(); return; }
-        var contact = new Contact(surface, forward, palm, wrist);
         Vector3 originalPosition = hand.localPosition;
         Quaternion originalRotation = hand.localRotation;
         try
@@ -346,14 +355,40 @@ internal sealed partial class HandGrip
             // Evaluate at the intended contact, not the animated wrist's tracking error. Looking around must not
             // change the geometry key or make a finger choose another branch of the contact search.
             hand.SetPositionAndRotation(wrist, rotation);
-            contact.Key(hand, HalfWidth + .15f, out Vector3 min, out Vector3 max, out Quaternion frame, out int shape);
-            if (!ledgeCached || shape != ledgeShape || Mathf.Abs(clearance - ledgeClearance) > 1e-7f || (min - ledgeMin).sqrMagnitude > 2.5e-7f
-                || (max - ledgeMax).sqrMagnitude > 2.5e-7f || Quaternion.Angle(frame, ledgeFrame) > .2f)
+            // The hand's first hold is found whole at once, so it never shows the clip's open fingers on the ledge. After it, a
+            // hand that moved against the ledge has its fingers found again a finger a frame, for where it was as that began, and
+            // the pose shown eases to each one finished. Found whole each time, a hand moving along or off a ledge took 14 to
+            // 24 ms a frame four or five frames on end at every reach (the hitch record of 2026-11-24 16:33; the user: "ledge
+            // hanging하고 왼쪽 오른쪽 이동할 때마다 엄청 끊기는데").
+            if (ledgeNextFinger < 0)
             {
-                SolvePose(contact, forward, palm, clearance, ledgePose);
-                ledgeMin = min; ledgeMax = max; ledgeFrame = frame; ledgeShape = shape;
-                ledgeClearance = clearance;
-                ledgeCached = true;
+                var contact = new Contact(surface, forward, palm, wrist);
+                contact.Key(hand, HalfWidth + .15f, out Vector3 min, out Vector3 max, out Quaternion frame, out int shape);
+                if (!ledgeCached)
+                {
+                    SolvePose(contact, forward, palm, clearance, ledgePose);
+                    KeepLedgeKey(min, max, frame, shape, clearance);
+                }
+                else if (shape != ledgeShape || Mathf.Abs(clearance - ledgeClearance) > 1e-7f || (min - ledgeMin).sqrMagnitude > 2.5e-7f
+                    || (max - ledgeMax).sqrMagnitude > 2.5e-7f || Quaternion.Angle(frame, ledgeFrame) > .2f)
+                {
+                    ledgeNextFinger = 0;
+                    ledgeNextContact = contact;
+                    ledgeNextForward = forward; ledgeNextPalm = palm; ledgeNextWrist = wrist; ledgeNextRotation = rotation;
+                    ledgeNextClearance = clearance;
+                    ledgeNextMin = min; ledgeNextMax = max; ledgeNextFrame = frame; ledgeNextShape = shape;
+                }
+            }
+            if (ledgeNextFinger >= 0)
+            {
+                hand.SetPositionAndRotation(ledgeNextWrist, ledgeNextRotation);
+                SolvePose(ledgeNextContact, ledgeNextForward, ledgeNextPalm, ledgeNextClearance, ledgeNextPose, ledgeNextFinger);
+                if (++ledgeNextFinger >= fingers.Length)
+                {
+                    System.Array.Copy(ledgeNextPose, ledgePose, ledgePose.Length);
+                    KeepLedgeKey(ledgeNextMin, ledgeNextMax, ledgeNextFrame, ledgeNextShape, ledgeNextClearance);
+                    ledgeNextFinger = -1;
+                }
             }
         }
         finally
@@ -370,6 +405,14 @@ internal sealed partial class HandGrip
     }
 
     public void ClearLedgeSkin() => normals.OrNull()?.SetWeight(left, 0f);
+
+    // The ledge pose now shown was found for this hand against the ledge (Contact.Key).
+    private void KeepLedgeKey(Vector3 min, Vector3 max, Quaternion frame, int shape, float clearance)
+    {
+        ledgeMin = min; ledgeMax = max; ledgeFrame = frame; ledgeShape = shape;
+        ledgeClearance = clearance;
+        ledgeCached = true;
+    }
 
     /// <summary>The way the palm faces, as measured on this hand.</summary>
     public Vector3 PalmFacing => hand.TransformDirection(palmInHand);
