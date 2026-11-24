@@ -5,9 +5,12 @@ using UnityEngine;
 /// Measures, from a move's own clip on a body, how its hands carry the body over an obstacle, for WarpedTraversal. The clip
 /// is sampled on the body itself (its pose put back afterwards) in the Animator's space, x right, y up, z ahead, and read
 /// like this:
-/// - A hand plants where it reaches furthest ahead of the hips, below its shoulder, early in the clip: putting a hand down
-///   on something is reaching ahead, and afterwards the body goes over it and it falls behind. It counts only if it
-///   reaches far enough ahead (handAhead, a share of the arm's length) and the body then goes over it.
+/// - A hand plants where it reaches furthest ahead of the hips, below its shoulder, early in the clip, come to rest there
+///   (HandStill): putting a hand down on something is reaching ahead and stopping on it, and afterwards the body goes over it
+///   and it falls behind. It counts only if it reaches far enough ahead (handAhead, a share of the arm's length) and the body
+///   then goes over it. A hand that only swings past on its way up to a ledge over the head (a climb's) is down on nothing:
+///   until 0.9.423 it counted, vaultontohigh's swing up read as a plant let go of 0.09 s in, and the climb onto a high ledge
+///   went in that, 22 to 48 m/s (the pops record of 2026-11-25 05:36; the user: "mantling 버그 나서 순간이동함").
 /// - It leaves once the hips have gone a share of an arm past it (handPass) or it has lifted that share off its lowest
 ///   (handLift), whichever comes first.
 /// The support is while every planting hand is down. Nothing here is written for one clip or one character, so a clip
@@ -116,8 +119,8 @@ internal static class ObstacleClipContacts
         }
         if (arm <= 1e-3f) return null;
 
-        bool left = Plants(leftSamples, leftShoulders, hipSamples, arm, rules, out int leftPlant, out int leftRelease);
-        bool right = Plants(rightSamples, rightShoulders, hipSamples, arm, rules, out int rightPlant, out int rightRelease);
+        bool left = Plants(leftSamples, leftShoulders, hipSamples, arm, step, rules, out int leftPlant, out int leftRelease);
+        bool right = Plants(rightSamples, rightShoulders, hipSamples, arm, step, rules, out int rightPlant, out int rightRelease);
         if (!left && !right)
         {
             // Not reached down ahead: a clip that grabs high and pushes up over its hands, as the climb off a ladder's top
@@ -134,6 +137,18 @@ internal static class ObstacleClipContacts
             Length = clip.length, PlantTime = plant * step, ReleaseTime = release * step, Step = step,
             Left = left, Right = right, LeftHand = leftSamples, RightHand = rightSamples
         };
+    }
+
+    // A hand is at rest (on something) while it goes slower than this many arm's lengths a second: the clips carry the body over
+    // the obstacle in their pose (their travel is not taken out, BeatrunBody.clips.csv inPlace 0), so a hand down on it stays
+    // put in the clip's space, and one swinging up for a ledge goes three to five.
+    private const float HandStill = 1f;
+
+    private static bool AtRest(Vector3[] hand, int i, float arm, float step)
+    {
+        int before = Mathf.Max(0, i - 1), after = Mathf.Min(hand.Length - 1, i + 1);
+        if (after == before) return true;
+        return (hand[after] - hand[before]).magnitude / ((after - before) * step) <= HandStill * arm;
     }
 
     // A hand that grabs high and pushes the body up over it: it plants at its highest early on (the first 60% of the
@@ -156,17 +171,17 @@ internal static class ObstacleClipContacts
         return release > plant + 1;
     }
 
-    // Where one hand plants (reaching furthest ahead of the hips, below its shoulder, early on) and leaves (the hips gone a
-    // share of an arm past it, or lifted that share off its lowest). False when it never reaches ahead enough or the body
-    // never goes over it.
-    private static bool Plants(Vector3[] hand, Vector3[] shoulder, Vector3[] hips, float arm, in Rules rules, out int plant, out int release)
+    // Where one hand plants (reaching furthest ahead of the hips, below its shoulder, early on, come to rest) and leaves (the
+    // hips gone a share of an arm past it, or lifted that share off its lowest). False when it never reaches ahead enough at
+    // rest or the body never goes over it.
+    private static bool Plants(Vector3[] hand, Vector3[] shoulder, Vector3[] hips, float arm, float step, in Rules rules, out int plant, out int release)
     {
         plant = release = -1;
         int last = hand.Length - 1, window = Mathf.Clamp(Mathf.FloorToInt(rules.PlantWindow * last), 1, last);
         float best = float.NegativeInfinity;
         for (int i = 0; i <= window; i++)
         {
-            if (hand[i].y >= shoulder[i].y) continue;
+            if (hand[i].y >= shoulder[i].y || !AtRest(hand, i, arm, step)) continue;
             float ahead = hand[i].z - hips[i].z;
             if (ahead > best) { best = ahead; plant = i; }
         }
