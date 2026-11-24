@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -411,6 +412,40 @@ public sealed class HubMirror : MonoBehaviour
             renderer.shadowCastingMode = ShadowCastingMode.On;
             shown.Add(renderer);
         }
+        RecordMirror();
+    }
+
+    // 거울 기록 (Logs/mirror.txt, "거울 기록 봐 줘"): while smoke hangs, every few seconds the mirror draws, what of this PC's own
+    // player it draws and how, and how far the smoke's clouds are: in the smoke the own hair showed clear in the glass while the
+    // rest of the body was grey with it (the user, 2026-11-24: "연막 속에서 유리창에 보이는 내 머리카락은 저렇게 혼자만 정상인
+    // 게 거슬리고요"), though the hair's materials draw before the smoke by their queue. Nothing in it changes the play.
+    private const string MirrorRecord = "mirror";
+    private const string MirrorRecordHeading = "거울 기록 (HubMirror): 연막이 있는 동안 거울이 그릴 때 MirrorRecordEvery초마다 한 번: 연막 구름마다 "
+        + "거울 카메라에서 그 그림 가운데까지 거리와 그리기 순서, 그리고 내 플레이어의 렌더러마다 이름, 레이어, 그림자 모드(1인칭에서 그림자만이라 "
+        + "거울에서만 켠 것은 '거울에서 켬'), 거울 카메라에서 가운데까지 거리(m), 재질마다 셰이더와 그리기 순서(queue: 2500까지 불투명, 3000부터 반투명. "
+        + "반투명끼리는 먼 것부터 그린다)";
+    private const float MirrorRecordEvery = 5f;
+    private float mirrorRecordAt = float.NegativeInfinity;
+    private readonly StringBuilder mirrorLine = new StringBuilder();
+
+    private void RecordMirror()
+    {
+        if (!PlayRecord.On || SmokeScreen.Count == 0 || lens == null || Time.unscaledTime - mirrorRecordAt < MirrorRecordEvery) return;
+        mirrorRecordAt = Time.unscaledTime;
+        Vector3 from = lens.transform.position;
+        mirrorLine.Clear().Append($"연막 {SmokeScreen.Count}");
+        foreach (var smoke in FindObjectsByType<SmokeScreen>(FindObjectsSortMode.None))
+            if (smoke.TryGetComponent(out ParticleSystemRenderer puffs))
+                mirrorLine.Append($" | 구름 {Vector3.Distance(from, puffs.bounds.center):0.0}m q{(puffs.sharedMaterial != null ? puffs.sharedMaterial.renderQueue : 0)}");
+        foreach (var renderer in own)
+        {
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy || renderer is ParticleSystemRenderer) continue;
+            mirrorLine.Append($"\n    {renderer.name} 레이어 {renderer.gameObject.layer} {(shown.Contains(renderer) ? "거울에서 켬" : renderer.shadowCastingMode.ToString())} "
+                + $"{Vector3.Distance(from, renderer.bounds.center):0.0}m:");
+            foreach (var material in renderer.sharedMaterials)
+                if (material != null) mirrorLine.Append($" {material.name}({material.shader.name} q{material.renderQueue})");
+        }
+        PlayRecord.Line(MirrorRecord, MirrorRecordHeading, mirrorLine.ToString());
     }
 
     private void ShowOwnAgain()
