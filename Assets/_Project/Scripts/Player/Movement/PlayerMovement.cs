@@ -280,7 +280,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float SupineSlideCancelMaxSpeed => supineSlideCancelMaxSpeed;
     public float SlideBrakeDeceleration => slideBrakeDeceleration;
     public float SlideCancelMinDuration => slideCancelMinDuration;
-    public float SlideCooldown => slideCooldown;
     public float SlideCooldownTimer { get => Actions.slideCooldownTimer; set => Actions.slideCooldownTimer = value; }
     public float SlideSteerSharpness => slideSteerSharpness;
     public float SlideLookSteerRate => slideLookSteerRate;

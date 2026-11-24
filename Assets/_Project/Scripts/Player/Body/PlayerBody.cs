@@ -79,7 +79,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public int Input;
         /// <summary>Weight: its share eased over the blend's time, for what reads how much a clip shows (the gaze's lead, a climb's
         /// settling). Target: the share it is to have. Given: the share the mixer plays it at, which is Target's at once.</summary>
-        public float Length, AuthoredSpeed, Weight, Target, Given;
+        public float Length, Weight, Target, Given;
         public bool Synced;
         /// <summary>A walk or run cycle's measured gait on this body (GaitClips), or null.</summary>
         public GaitClips.Gait Gait;
@@ -570,7 +570,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         var channel = new Channel
         {
             Playable = playable, Clip = clipName, Input = input, Length = Mathf.Max(.01f, clip.length),
-            AuthoredSpeed = authoredSpeed, Synced = authoredSpeed > 0f
+            Synced = authoredSpeed > 0f
         };
         // Locomotion cycles share one phase so blending between them never puts the feet out of step.
         if (channel.Synced) playable.SetSpeed(0);

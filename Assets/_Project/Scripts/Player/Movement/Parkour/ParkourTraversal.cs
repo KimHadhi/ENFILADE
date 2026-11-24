@@ -16,8 +16,6 @@ public sealed class ParkourTraversal
     internal Vector3 LedgeJumpVelocity;
     /// <summary>Share of the current vault or mantle's time that has passed (0–1); the body plays its clip in step.</summary>
     public float ObstacleProgress { get; internal set; }
-    /// <summary>A warped move's clip times (s) its hands are down from and until (WarpedTraversal); zero without one.</summary>
-    public Vector2 ObstacleSupport { get; internal set; }
     /// <summary>
     /// The clip time (s) a vault carried by its clip's hands is at (WarpedTraversal); the body plays its clip there. Negative
     /// when the clip runs by itself.

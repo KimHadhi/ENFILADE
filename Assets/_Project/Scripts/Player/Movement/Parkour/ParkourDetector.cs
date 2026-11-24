@@ -39,7 +39,7 @@ public struct ObstacleTarget
 /// <summary>
 /// A ledge the body holds or could hold (LedgeFinder finds it), in the space of the collider its top is on, so a ledge
 /// that moves carries it: where the fingers go over (LocalEdge), the way the face looks (LocalNormal, outward), the way
-/// the top faces under the palms (LocalUp), where the feet are when the body hangs (LocalHang), and how the body gets
+/// where the feet are when the body hangs (LocalHang), and how the body gets
 /// from the hang onto the top: where it then stands (LocalStand) and in what posture (Climb; None for a ledge to hang
 /// from only). The climb is planned again when it is asked for, so Climb and LocalStand say what was so when the ledge
 /// was last looked at (caught, or shimmied along).
@@ -48,7 +48,7 @@ public struct LedgeTarget
 {
     public Collider Surface;
     public Vector3 LocalHang, LocalEdge, LocalNormal;
-    public Vector3 LocalUp, LocalStand;
+    public Vector3 LocalStand;
     public LedgeClimb Climb;
 }
 

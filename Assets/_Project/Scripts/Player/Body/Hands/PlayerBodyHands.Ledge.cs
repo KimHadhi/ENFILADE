@@ -24,9 +24,9 @@ public sealed partial class PlayerBodyHands
     private readonly struct LedgeContact
     {
         public readonly Collider Surface;
-        public readonly Vector3 Palm, Fingers, Normal, Side;
-        public LedgeContact(Collider surface, Vector3 palm, Vector3 fingers, Vector3 normal, Vector3 side)
-        { Surface = surface; Palm = palm; Fingers = fingers; Normal = normal; Side = side; }
+        public readonly Vector3 Palm, Fingers, Normal;
+        public LedgeContact(Collider surface, Vector3 palm, Vector3 fingers, Vector3 normal)
+        { Surface = surface; Palm = palm; Fingers = fingers; Normal = normal; }
     }
 
     // One hand's hold: the top under its palm and the way that top faces, in the space of the collider it is on (a moving
@@ -225,7 +225,7 @@ public sealed partial class PlayerBodyHands
 
     // The palm on a hold: on its top, fingers over it away from the wall. On its way the hand goes from the last top to the
     // next, lifting off and coming back down a little out from the wall, so it never drags along the top or cuts the edge.
-    private LedgeContact PalmOnHold(ArmIK arm, LedgeHold hold, Vector3 outward, Vector3 side, bool lifted)
+    private LedgeContact PalmOnHold(ArmIK arm, LedgeHold hold, Vector3 outward, bool lifted)
     {
         Vector3 top = hold.TopNow, up = hold.UpNow;
         if (hold.Moving)
@@ -238,7 +238,7 @@ public sealed partial class PlayerBodyHands
         if (lifted && hold.Moving)
             palm += (Vector3.up + outward * .5f) * (player.AbilitySettings.ledgeHandLift * Mathf.Sin(Mathf.PI * hold.Progress));
         Vector3 fingers = Vector3.ProjectOnPlane(-outward, up).normalized;
-        return new LedgeContact(hold.Surface, palm, fingers, up, side);
+        return new LedgeContact(hold.Surface, palm, fingers, up);
     }
 
     private bool FindLedgeContact(ArmIK arm, bool isLeft, out LedgeContact contact, bool lifted = true)
@@ -247,9 +247,9 @@ public sealed partial class PlayerBodyHands
         var ledge = player.Abilities.Traversal.Ledge;
         if (ledge.Surface == null || arm == null) return false;
         UpdateLedgeHolds();
-        if (ledgeHoldsSet && ledgeHolds[isLeft ? 0 : 1].Valid && LedgeFrame(ledge, out _, out Vector3 holdOutward, out Vector3 holdAlong))
+        if (ledgeHoldsSet && ledgeHolds[isLeft ? 0 : 1].Valid && LedgeFrame(ledge, out _, out Vector3 holdOutward, out _))
         {
-            contact = PalmOnHold(arm, ledgeHolds[isLeft ? 0 : 1], holdOutward, holdAlong * (isLeft ? -1f : 1f), lifted);
+            contact = PalmOnHold(arm, ledgeHolds[isLeft ? 0 : 1], holdOutward, lifted);
             return true;
         }
         Transform support = ledge.Surface.transform;
@@ -268,7 +268,7 @@ public sealed partial class PlayerBodyHands
             if (!ledge.Surface.Raycast(new Ray(probe, Vector3.down), out RaycastHit top, .5f) || top.normal.y < .3f) continue;
             Vector3 fingers = Vector3.ProjectOnPlane(-outward, top.normal).normalized;
             contact = new LedgeContact(ledge.Surface, top.point + top.normal * (arm.PalmDepth + fingerSurfaceClearance),
-                fingers, top.normal, side);
+                fingers, top.normal);
             return true;
         }
         return false;

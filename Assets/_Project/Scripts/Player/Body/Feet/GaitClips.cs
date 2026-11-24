@@ -40,8 +40,6 @@ internal static class GaitClips
         public Vector2 Way;
         /// <summary>How fast the down feet carry the body, in the Animator's own units a second (its scale makes it m/s).</summary>
         public float Speed;
-        /// <summary>Hip joint to ankle, in the Animator's own units.</summary>
-        public float Leg;
 
         public bool Moves => Speed > 1e-3f && Way.sqrMagnitude > .5f;
         /// <summary>One stride's time at the clip's own pace (s).</summary>
@@ -122,7 +120,7 @@ internal static class GaitClips
         }
         if (leg <= 1e-4f) return null;
 
-        var gait = new Gait { Length = length, Leg = leg };
+        var gait = new Gait { Length = length };
         var down = new[] { Down(feet[0], toes[0], leg), Down(feet[1], toes[1], leg) };
         var heels = new[] { Heel(feet[0], toes[0], turns[0]), Heel(feet[1], toes[1], turns[1]) };
 
