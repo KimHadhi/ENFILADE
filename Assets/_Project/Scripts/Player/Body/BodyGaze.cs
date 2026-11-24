@@ -104,14 +104,15 @@ internal sealed class BodyGaze
             Mathf.Atan2(forward.x, Mathf.Abs(forward.z)),
             Mathf.Atan2(right.y, Mathf.Abs(up.y))) * Mathf.Rad2Deg;
         angles = new Vector3(Limit(angles.x, limits.x), Limit(angles.y, limits.y), Limit(angles.z, limits.z));
-        // The carrying clips' turn over the body's right, all of it: read from whichever of the head's ahead and up lies more
-        // in that plane, so it goes on round past upside down without a jump. Until 0.9.286 it was folded into the bounded
-        // pitch, and a roll moved the view by 12 degrees while the head went over.
-        float over = new Vector2(forward.y, forward.z).sqrMagnitude >= new Vector2(up.y, up.z).sqrMagnitude
-            ? Mathf.Atan2(-forward.y, forward.z) : Mathf.Atan2(up.z, up.y);
+        // The carrying clips' turn over the body's right, all of it: the part of the head's turn about that axis (its twist),
+        // one formula that goes on round past upside down without a jump. Until 0.9.286 it was folded into the bounded pitch,
+        // and a roll moved the view by 12 degrees while the head went over; until 0.9.398 it was read from whichever of the
+        // head's ahead and up lay more in that plane, two readings that differ once the head turns or tilts and swapped
+        // wherever the two came level, as an upright head's do.
+        float over = Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(authored.x, authored.w) * Mathf.Rad2Deg);
         float sideways = Mathf.Clamp01(led + carried);
         // About the body's own right, not the view's: a dive roll out of a slide goes the slide's way with the view looking aside.
-        Quaternion target = Quaternion.AngleAxis(over * Mathf.Rad2Deg * carried, Quaternion.Inverse(input) * (model.rotation * Vector3.right))
+        Quaternion target = Quaternion.AngleAxis(over * carried, Quaternion.Inverse(input) * (model.rotation * Vector3.right))
             * Quaternion.Euler(angles.x * led, angles.y * sideways, angles.z * sideways);
         actionTurn = Quaternion.Slerp(actionTurn, target, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, time)));
         rotation = input * actionTurn;
@@ -156,8 +157,7 @@ internal sealed class BodyGaze
             // looking at the wall, and saw the inside of its own hat and ears (the user, 2026-11-24: "벽 mantling 하거나 오를
             // 때 위에 보면 모자랑 동물 귀까지 뚫려 보이는데").
             Quaternion clip = head.rotation;
-            float apart = Quaternion.Angle(clip, target), allowed = cone * actionWeight;
-            Quaternion follows = apart > allowed ? Quaternion.RotateTowards(clip, target, apart - allowed) : clip;
+            Quaternion follows = Toward(clip, target, cone * actionWeight, 1f - actionWeight);
             Quaternion bent = WithinNeck(follows, clip, neckLimit, out bool stopped);
             target = Quaternion.Slerp(follows, bent, actionWeight);
             held |= stopped;
@@ -167,6 +167,29 @@ internal sealed class BodyGaze
             neck.rotation = Quaternion.Slerp(Quaternion.identity, target * Quaternion.Inverse(head.rotation), .3f) * neck.rotation;
         head.rotation = target;
         return held;
+    }
+
+    // The clip's head turned toward the target's: its look to within `allowed` degrees of the target's look, then its tilt
+    // about that look by `tiltShare` of what lies between them, each by its own angle, so a head tumbling far round from the
+    // view turns toward it the same way frame after frame. Until 0.9.398 the whole rotation went the shortest way from the
+    // clip's to the target's, and that way turned round to the other side as the two passed 180 degrees apart: as a roll came
+    // up (RollToRun_F at 0.86 s, the head 71 degrees down, 101 round and tilted 80), the head and its hair swung 30 degrees
+    // for two frames and back in every play (the gait record of 2026-11-24 19:5x; the user: "랜딩 롤 이후 … 부자연스럽게 터지는
+    // 느낌").
+    private Quaternion Toward(Quaternion clip, Quaternion target, float allowed, float tiltShare)
+    {
+        Quaternion from = clip * headToGaze, to = target * headToGaze;
+        Vector3 look = from * Vector3.forward, want = to * Vector3.forward;
+        float apart = Vector3.Angle(look, want);
+        Vector3 now = apart > allowed ? Vector3.RotateTowards(look, want, (apart - allowed) * Mathf.Deg2Rad, 0f) : look;
+        Quaternion gaze = Quaternion.FromToRotation(look, now) * from;
+        if (tiltShare > 0f)
+        {
+            Vector3 up = Vector3.ProjectOnPlane(gaze * Vector3.up, now), wantUp = Vector3.ProjectOnPlane(to * Vector3.up, now);
+            if (up.sqrMagnitude > 1e-6f && wantUp.sqrMagnitude > 1e-6f)
+                gaze = Quaternion.AngleAxis(Vector3.SignedAngle(up, wantUp, now) * tiltShare, now) * gaze;
+        }
+        return gaze * Quaternion.Inverse(headToGaze);
     }
 
     // The head's rotation held within the neck's bend from the chest (pitch neckPitch, sideways yawLimit, from the way a head
