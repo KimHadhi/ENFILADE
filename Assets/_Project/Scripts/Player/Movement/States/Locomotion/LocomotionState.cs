@@ -14,6 +14,8 @@ public sealed class LocomotionState : MovementBaseState
     private const float RunsAheadWithin = 50f, RunsAheadLeave = 60f;
     // At least this far up the gaits' ladder (0 the walk, 1 the jog) the keys run ahead; a walk strafes under the view.
     private const float RunsAheadGait = .5f;
+    // A run ahead curves at its arc's rate once the hips face within this of its way (degrees).
+    private const float RunsAheadAligned = 20f;
 
     public override bool TryJump()
     {
@@ -116,8 +118,11 @@ public sealed class LocomotionState : MovementBaseState
             // Running ahead the way curves no faster than the run's own arc clip does (PlayerMovement.ArcRate: a sprint's 90
             // degrees in 0.6 s, a jog's in 0.93 s), the hips with it, and the legs bank into that arc (PlayerBody.Leans): the body
             // curves as BIPER's runner was made to, the view going ahead of it. Further round than a run comes about is a turn
-            // back (RunTurn).
-            if (ctx.runsAhead && speedNow > KeepsPaceFrom && stride.sqrMagnitude > KeepsPaceFrom * KeepsPaceFrom)
+            // back (RunTurn). Only once the hips face its way: a strafe pressed on ahead swings round under hips that face the
+            // view as a strafe does, and the hips meet it there; held to the arc's rate it took a second and the hips swung out
+            // toward the strafe and back.
+            if (ctx.runsAhead && speedNow > KeepsPaceFrom && stride.sqrMagnitude > KeepsPaceFrom * KeepsPaceFrom
+                && Mathf.Abs(Mathf.DeltaAngle(ctx.BodyFacingYaw, Mathf.Atan2(now.x, now.z) * Mathf.Rad2Deg)) <= RunsAheadAligned)
             {
                 float turned = Vector3.SignedAngle(now, stride, Vector3.up), most = ctx.ArcRate * dt;
                 if (Mathf.Abs(turned) > most)
