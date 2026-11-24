@@ -81,14 +81,13 @@ public sealed partial class PlayerBody
         return false;
     }
 
-    // A clip that ends running, given up or never played on. A body going on lets it play on at its own pace under the walk or
-    // run as it fades (held still, as until 0.9.378, half of the cross-fade was a pose standing still and the legs half
-    // stopped). A body that has stopped holds its pose where it is while what follows takes over, so no running step shows as it
-    // fades, and settles into standing slowly (Body.standSettleTime), as there is no clip from those poses to standing.
+    // A clip that ends running, given up or never played on: a body that has stopped settles into standing over
+    // Body.standSettleTime, as there is no clip from those poses to standing; the switch is at once (BodyInertia), so no running
+    // step of it shows. Until 0.9.379, when the clips crossfaded, its pose was held still for that (and until 0.9.378 for a body
+    // going on as well, and half of that crossfade was a pose standing still).
     private void GiveUpRunOut(Channel channel)
     {
         if (channel == null || channel.Synced || HorizontalSpeed() > walkClipSpeed) return;
-        channel.Playable.SetSpeed(0);
         SlowBlend(standSettleTime);
     }
 }

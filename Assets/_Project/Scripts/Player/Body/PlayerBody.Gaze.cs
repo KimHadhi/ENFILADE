@@ -67,12 +67,13 @@ public sealed partial class PlayerBody
     private float CarriedClipWeight() => Weight(carriedViewChannels);
     private float GazeClipWeight() => LedClipWeight() + CarriedClipWeight();
 
+    // A set of clips' share of the body, eased over the blend's time: the mixer switches at once (Blend), and the camera's lead
+    // must not.
     private float Weight(HashSet<Channel> channels)
     {
         float weight = 0f;
-        if (mixer.IsValid())
-            foreach (var channel in channels) weight += mixer.GetInputWeight(channel.Input);
-        return weight;
+        foreach (var channel in channels) weight += channel.Weight;
+        return shownTotal > .0001f ? weight / shownTotal : 0f;
     }
 
     private void TuneGaze() => bodyGaze.Tune(animationViewStrength, animationViewFollow, animationViewLimits, animationViewTime);

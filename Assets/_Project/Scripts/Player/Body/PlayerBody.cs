@@ -57,7 +57,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField] private string death = "diestand";
 
     [Header("Feel")]
-    [SerializeField, Min(.01f), Tooltip("Crossfade between clips (s).")]
+    [SerializeField, Min(.01f), Tooltip("How long the body eases from one clip to the next as they switch (s, BodyInertia).")]
     private float blendTime = .15f;
     // A while (slowBlendLeft, s) when the clips cross over this slowly instead (slowBlendTime, s): standing up from the
     // crouch a climb ends in, going from a slide into a crouch (SlowBlend).
@@ -83,9 +83,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         /// <summary>The clip's name in the profile.</summary>
         public string Clip;
         public int Input;
-        public float Length, AuthoredSpeed, Weight, Target;
-        /// <summary>How fast its weight is going toward its target (a second; Blend).</summary>
-        public float Rate;
+        /// <summary>Weight: its share eased over the blend's time, for what reads how much a clip shows (the gaze's lead, a climb's
+        /// settling). Target: the share it is to have. Given: the share the mixer plays it at, which is Target's at once.</summary>
+        public float Length, AuthoredSpeed, Weight, Target, Given;
         public bool Synced;
         /// <summary>A walk or run cycle's measured gait on this body (GaitClips), or null.</summary>
         public GaitClips.Gait Gait;
@@ -308,6 +308,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         heaving = false;
         heaveClip = null;
         hips = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
+        bodyInertia.Bind(animator);
         obstacleClip = vault; wallKickClip = wallKick; rollClip = ""; downClip = heavyLand; tucked = flailing = false;
         var rest = Find(idle);
         if (rest != null) rest.Weight = rest.Target = 1f;
@@ -631,6 +632,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (body != null && !limp) PlayClipsInOnePlace();
         if (body != null && !limp)
         {
+            // First the clips' switch eased (BodyInertia), so all the pose work after it starts from where the body goes on.
+            bodyInertia.Apply(Time.deltaTime, UpperBodyFromFramework);
             // Where the clip has the chest, before the look bends it: how far the head can turn (PlayerBody.Neck).
             MeasureClipChest();
             // First, as the last step of the animation pass: the spine, neck and head bend with the view.
@@ -797,8 +800,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 }
                 return;
             }
-            // Going on, the walk or run takes the stride where the clip giving way has its feet (StepFrom), and a clip that
-            // ends running plays on under it at its own pace; it is held still only for a body that stops (GiveUpRunOut).
+            // Going on, the walk or run takes the stride where the clip giving way has its feet (StepFrom); a body that stops
+            // settles into standing slowly (GiveUpRunOut).
             if (onFeet && upright && HorizontalSpeed() > walkClipSpeed) StepFrom(transition);
             if (RunsOut(transition)) GiveUpRunOut(transition);
             transition = null;
@@ -990,54 +993,39 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
     }
 
-    // A channel's weight goes to its target in the blend's time (blendTime, or a slow blend's) for the whole way, easing into
-    // and out of its pace over this share of it, so a cross-fade starts and ends without a kink. It went at one even pace until
-    // 0.9.378, and every cross-fade (a run taking over from a landing, a roll, a slide's end) began and ended with a jolt in
-    // the legs and the eyes on them (the experts' read of 2026-11-23).
-    private const float BlendEase = .3f;
+    // The clips are eased over by the bones (BodyInertia), not by crossfading them: the mixer plays each at the share it is to
+    // have at once, and a frame where this much of the mix moves (every clip's change added up) is a switch, eased over the
+    // blend's time (blendTime, or a slow blend's). Less is the mix drifting as the speed and the way change (a run's sets), which
+    // the mixer follows as it goes. Until 0.9.379 the clips were crossfaded over the blend's time (BodyInertia says why no more).
+    private const float SwitchLeast = .25f;
+    private readonly BodyInertia bodyInertia = new BodyInertia();
+    // The channels' eased weights added up, for what reads a clip's share of them (Gaze.Weight).
+    private float shownTotal = 1f;
 
     private void Blend(float dt)
     {
-        float time = Mathf.Max(.01f, slowBlendLeft > 0f ? slowBlendTime : blendTime), total = 0f;
+        float time = Mathf.Max(.01f, slowBlendLeft > 0f ? slowBlendTime : blendTime), step = dt / time, shown = 0f, wanted = 0f, moved = 0f;
         slowBlendLeft -= dt;
-        float ease = time * BlendEase, most = 1f / (time - ease), push = most / ease;
         foreach (var channel in channels)
         {
-            channel.Weight = Follow(channel.Weight, channel.Target, ref channel.Rate, most, push, dt);
-            total += channel.Weight;
+            channel.Weight = Mathf.MoveTowards(channel.Weight, channel.Target, step);
+            shown += channel.Weight;
+            wanted += channel.Target;
         }
-        if (total <= .0001f) return;
+        shownTotal = shown;
+        if (wanted <= .0001f) return;
         foreach (var channel in channels)
         {
-            mixer.SetInputWeight(channel.Input, channel.Weight / total);
+            float given = channel.Target / wanted;
+            moved += Mathf.Abs(given - channel.Given);
+            channel.Given = given;
+            mixer.SetInputWeight(channel.Input, given);
             // A measured cycle is put at the same moment of the step as every other (its own left foot down at phase 0,
             // its strides in turn); an unmeasured one at the same share of its length.
             if (channel.Synced)
                 channel.Playable.SetTime((channel.Gait != null ? channel.Gait.ShareAt(strideCount, phase) : phase) * channel.Length);
         }
-    }
-
-    // Toward its target at most `most` a second, its pace changing at most `push` a second each second and slowing in time to
-    // stop on the target, never past it.
-    private static float Follow(float weight, float target, ref float rate, float most, float push, float dt)
-    {
-        float left = target - weight;
-        if (Mathf.Abs(left) < 1e-4f)
-        {
-            rate = 0f;
-            return target;
-        }
-        float want = Mathf.Sign(left) * Mathf.Min(most, Mathf.Sqrt(2f * push * Mathf.Abs(left)));
-        float before = rate;
-        rate = Mathf.MoveTowards(rate, want, push * dt);
-        // At the mean of its pace over the step, so it takes the same time at any frame rate.
-        float next = weight + (before + rate) * .5f * dt;
-        if ((next - target) * left > 0f)
-        {
-            rate = 0f;
-            return target;
-        }
-        return Mathf.Clamp01(next);
+        if (moved >= SwitchLeast) bodyInertia.Begin(time);
     }
 
     private void Want(string clipName)
