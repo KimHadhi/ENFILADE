@@ -28,7 +28,9 @@ using Object = UnityEngine.Object;
 ///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
 ///   stepfilm=Idle,R_Idle              a turn on the spot as the game steps it (StepBench): pictures and each step
 ///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
-///                                     head face, how fast the hands move against the chest and how the body and head lean (Track)
+///                                     head face, how fast the hands move against the chest and how the body and head lean (Track),
+///                                     and the clip's motion as the game reads it: its root's turn, its chest against its root
+///                                     and against where it began, its root's way, its pace and its footfalls (TrackMotion)
 /// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
 /// </summary>
 [InitializeOnLoad]
@@ -165,7 +167,11 @@ internal static class ClipBench
                     foreach (var clip in ClipsIn(AnimationsFolder + folder).Where(c => only == null || only.Contains(c.name)))
                     {
                         text.AppendLine(Measure(model, clip, animator, scale));
-                        if (tracked.Contains(clip.name)) Track(clip, animator, scale, text);
+                        if (tracked.Contains(clip.name))
+                        {
+                            Track(clip, animator, scale, text);
+                            TrackMotion(clip, animator, text);
+                        }
                         measured++;
                     }
                 }
@@ -430,6 +436,29 @@ internal static class ClipBench
                 if (bones[i] != null) bones[i].SetLocalPositionAndRotation(poses[i].localPosition, poses[i].localRotation);
             root.SetPositionAndRotation(rootPosition, rootRotation);
         }
+    }
+
+    // The clip's motion as the game reads it (ClipMotion), TrackRate times a second: how far round its root has turned, which
+    // way its chest faces against its root and so against where it began (degrees, + to the right), where its root has gone
+    // in the frame it began in (m: x right, y ahead), its pace (m/s); then its footfalls (s, L or R).
+    private static void TrackMotion(AnimationClip clip, Animator animator, StringBuilder text)
+    {
+        if (!(ClipMotion.Of(clip, animator) is ClipMotion motion)) return;
+        text.AppendLine("    motion: t  root turned  chest (root)  chest (start) | root way x, y m | pace m/s");
+        int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * TrackRate));
+        for (int i = 0; i <= count; i++)
+        {
+            float t = clip.length * i / count, turned = motion.TurnedAt(t), chest = motion.FacingAt(t);
+            Vector2 way = motion.WayAt(t);
+            text.AppendLine(Invariant($"    {t,5:0.00} {turned,6:0} {chest,6:0} {turned + chest,6:0} | {way.x,5:0.00} {way.y,5:0.00} | {motion.PaceAt(t),4:0.0}"));
+        }
+        var steps = new StringBuilder("    footfalls:");
+        for (int i = 0; i < motion.StepCount; i++)
+        {
+            var (time, place) = motion.Step(i);
+            steps.Append(Invariant($" {time:0.00}{(place < .25f ? "L" : "R")}"));
+        }
+        text.AppendLine(steps.ToString());
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

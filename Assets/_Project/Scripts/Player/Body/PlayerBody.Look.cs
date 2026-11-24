@@ -226,7 +226,8 @@ public sealed partial class PlayerBody
         bendWeight = Mathf.MoveTowards(bendWeight, upright || sliding ? 1f : 0f, dt / blendTime);
 
         float pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f;
-        float twist = Mathf.DeltaAngle(yaw, 0f);
+        // Back to the view from where the chest is: a run's turn clip has it round in its own pose (RunTurnFacing).
+        float twist = Mathf.DeltaAngle(yaw + RunTurnFacing, 0f);
         if (sliding)
         {
             Vector2 limits = SlideLookPitchLimits;

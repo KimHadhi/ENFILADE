@@ -7,7 +7,10 @@ using UnityEngine;
 /// (Arc, the run of someone curving round, its own turn taken out of the pose) as the turn reaches the arc's own rate
 /// (Tables/Player/BodyLeans.csv). The body itself always turns with the view; these only bank the stride, which a body
 /// turning in its tracks at a run otherwise doesn't (the user, 2026-11-21: "출발 멈춤 꺾기"). The rate is the view's turn
-/// as every PC sees it, so friends see the same lean.
+/// as far as the way the body runs turns with it, as every PC sees them, so friends see the same lean: a run that curves
+/// banks, a flick of the view or a cut aside while the run goes on straight doesn't. Until 0.9.386 it was the view's turn
+/// alone, and a flick of the view banked the run into its arc for half a second after the view had stopped (걸음 기록 of
+/// 2026-11-24: Jog_Arc and Sprint_Arc for 0.5 s after the view's turn back).
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -22,8 +25,8 @@ public sealed partial class PlayerBody
     }
 
     private readonly List<Lean> leans = new List<Lean>();
-    private float turnRate, lastFacing;
-    private bool facingKnown;
+    private float turnRate, lastFacing, lastRunWay;
+    private bool facingKnown, runWayKnown;
     // The frame the view's turn was last followed (FollowTurn runs only while the legs walk or run).
     private int followedTurnAt = -10;
 
@@ -55,7 +58,7 @@ public sealed partial class PlayerBody
     {
         if (Time.frameCount - followedTurnAt > 1)
         {
-            facingKnown = false;
+            facingKnown = runWayKnown = false;
             turnRate = 0f;
         }
         followedTurnAt = Time.frameCount;
@@ -63,6 +66,17 @@ public sealed partial class PlayerBody
         float rate = facingKnown && dt > 0f ? Mathf.DeltaAngle(lastFacing, facing) / dt : 0f;
         lastFacing = facing;
         facingKnown = true;
+        // The way the run goes (the stride, Locomotion) turns too, or it is no curve.
+        float runs = 0f;
+        if (stride.sqrMagnitude > StillTravel * StillTravel)
+        {
+            float way = Mathf.Atan2(stride.x, stride.z) * Mathf.Rad2Deg;
+            if (runWayKnown && dt > 0f) runs = Mathf.DeltaAngle(lastRunWay, way) / dt;
+            lastRunWay = way;
+            runWayKnown = true;
+        }
+        else runWayKnown = false;
+        rate = rate * runs > 0f ? Mathf.Sign(rate) * Mathf.Min(Mathf.Abs(rate), Mathf.Abs(runs)) : 0f;
         turnRate = Mathf.Lerp(turnRate, rate, 1f - Mathf.Exp(-dt / LeanFollowTime));
     }
 

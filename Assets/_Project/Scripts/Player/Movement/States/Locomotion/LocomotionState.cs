@@ -57,6 +57,18 @@ public sealed class LocomotionState : MovementBaseState
         if (ctx.MeleeCombat != null) baseSpeed = ctx.MeleeCombat.LimitMoveSpeed(baseSpeed);
         Vector3 targetVelocity = inputDirection * (baseSpeed * inputMagnitude);
 
+        // A run's turn back has the run while it goes (RunTurn); not while a one-off's clip runs out.
+        var turn = ctx.Actions.RunTurn;
+        if (ctx.IsGrounded && runsOut <= 0f && (turn.Turning || turn.TryStart(input, inputDirection, ctx.BodyFacingYaw)))
+        {
+            if (turn.Go(inputDirection, out Vector3 turning))
+            {
+                ctx.HorizontalVelocity = turning;
+                return;
+            }
+        }
+        else turn.Stop();
+
         // A surge (GroundSurge: toward a vault until the jump goes, or a Détente's run to the friend it doses) carries the
         // run on at its own pace, whatever the keys say.
         Vector3 surge = ctx.Abilities.Surge.Velocity;

@@ -267,7 +267,7 @@ public sealed partial class PlayerBody
     {
         // Followed in the world, so turning the view doesn't drag the legs behind it.
         Vector3 travel = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
-        stride = Vector3.Lerp(stride, travel, strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
+        stride = FollowStride(stride, travel, strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
@@ -289,7 +289,8 @@ public sealed partial class PlayerBody
         // The gun's run goes ahead only: at a slant ahead the hips turn to the way it runs and the run plays, the spine turning
         // the chest back to the view (SpineLook). The user, 2026-11-22: "WA, WD까진 허용할 수 있도록 한다. 자연스럽게".
         float turn = gunRuns ? Mathf.Clamp(heading, -GunRunSlant, GunRunSlant) : 0f;
-        float legs = Mathf.DeltaAngle(0f, heading - turn), moving = 0f;
+        // The way the legs go against the way the body faces, which follows the view a moment behind (FacingLagMost).
+        float legs = Mathf.DeltaAngle(0f, heading - yaw), moving = 0f;
         var gaitNow = player.Actions != null ? player.Actions.Gait : null;
         // Down into a crouch or up out of it on the move, the two stances share the legs as far as the body is down
         // (PlayerBody.Posture).
@@ -325,6 +326,19 @@ public sealed partial class PlayerBody
 
     // Below this the travel has no heading: the body stands (m/s).
     private const float StillTravel = .3f;
+
+    // The stride follows the travel's way and its speed each on their own, the way turning round at the same speed. Followed
+    // as one, a way that swung round fast went through short in between: running on at 4-5 m/s through a sharp turn the legs
+    // read 2 and played the walk's clips (걸음 기록 of 2026-11-24, a sprint's flick of the view back: StrafeWalk under a body
+    // going 5 m/s for a fifth of a second).
+    private static Vector3 FollowStride(Vector3 stride, Vector3 travel, float follow)
+    {
+        float speed = Mathf.Lerp(stride.magnitude, travel.magnitude, follow);
+        if (travel.sqrMagnitude < 1e-6f) return stride.sqrMagnitude > 1e-6f ? stride.normalized * speed : Vector3.zero;
+        if (stride.sqrMagnitude < 1e-6f) return travel.normalized * speed;
+        float turn = Vector3.SignedAngle(stride, travel, Vector3.up);
+        return Quaternion.AngleAxis(turn * follow, Vector3.up) * stride.normalized * speed;
+    }
 
     // This frame's gait for the cycles (0 walk, 1 jog, 2 sprint): the gait gone, no faster than the speed reached.
     private float gaitPlace;

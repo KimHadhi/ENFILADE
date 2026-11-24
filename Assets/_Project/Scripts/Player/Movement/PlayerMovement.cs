@@ -321,6 +321,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>
     internal float RunOutPace => Body != null ? Body.RunOutPace : 0f;
 
+    /// <summary>Where the legs' stride is (0 the left foot landing, .5 the right; PlayerBody.StridePhase).</summary>
+    internal float StridePhase => Body != null ? Body.StridePhase : 0f;
+
+    /// <summary>Which way the body faces (world yaw, degrees; PlayerBody.FacingYaw): the view's for a body without one.</summary>
+    internal float BodyFacingYaw => Body != null ? Body.FacingYaw : transform.eulerAngles.y;
+
     /// <summary>The pace a slide's getting up starts at (m/s; PlayerBody.SlideExitPace), 0 for none.</summary>
     internal float SlideExitPace => Body != null ? Body.SlideExitPace : 0f;
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>

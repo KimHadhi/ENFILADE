@@ -257,6 +257,12 @@ public sealed class MovementAbilitySettings
     [Tooltip("While its body is down a roll keeps the speed it came in with, going up to this many times as far as its clip does "
         + "there (MovementLanding.Carry); its feet step as the clip does once its legs are under it.")]
     [Min(1f)] public float rollReachMost = 1.25f;
+    [Tooltip("A run's turn back (RunTurn): its clips by gait, side and the foot down, in this order: jog left (left foot, right "
+        + "foot), jog right, sprint left, sprint right.")]
+    public string runTurns = "Jog_TurnL_Lfoot;Jog_TurnL_Rfoot;Jog_TurnR_Lfoot;Jog_TurnR_Rfoot;Sprint_TurnL_Lfoot;Sprint_TurnL_Rfoot;Sprint_TurnR_Lfoot;Sprint_TurnR_Rfoot";
+    [Tooltip("Running at least runTurnSpeed (m/s) with the keys ahead, a way wanted at least runTurnAngle (degrees) from the way "
+        + "the body runs turns back on its clip, entered where its chest is within runTurnEntry (degrees) of the way it ends.")]
+    [Min(0f)] public float runTurnSpeed = 2.2f, runTurnAngle = 100f, runTurnEntry = 90f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;

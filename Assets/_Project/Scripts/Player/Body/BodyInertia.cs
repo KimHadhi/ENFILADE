@@ -125,6 +125,28 @@ internal sealed class BodyInertia
         if (seen < 2) seen++;
     }
 
+    /// <summary>
+    /// The body's root turns this frame by <paramref name="degrees"/> (about the world's up, + to the right) only as a change of
+    /// where its pose is held from: a run's turn back sets the root where its clip's turn has it (PlayerBody.RunTurn). The hips
+    /// carried over a switch, and kept for the next, are turned back as much, so they show where they were instead of swinging
+    /// round over the switch.
+    /// </summary>
+    internal void Reroot(float degrees)
+    {
+        int i = hips != null ? bones.IndexOf(hips) : -1;
+        if (i < 0 || Mathf.Abs(degrees) < .01f) return;
+        Vector3 axis = hips.parent != null ? hips.parent.InverseTransformDirection(Vector3.up) : Vector3.up;
+        Quaternion back = Quaternion.AngleAxis(-degrees, axis);
+        last[i] = back * last[i];
+        before[i] = back * before[i];
+        from[i] = back * from[i];
+        spin[i] = back * spin[i];
+        lastHips = back * lastHips;
+        beforeHips = back * beforeHips;
+        fromHips = back * fromHips;
+        hipsSpeed = back * hipsSpeed;
+    }
+
     // From where the bones were last shown, moving as they were then.
     private void Start()
     {

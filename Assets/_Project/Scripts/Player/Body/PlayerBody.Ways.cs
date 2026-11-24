@@ -28,6 +28,7 @@ public sealed partial class PlayerBody
                 yield return clip;
         yield return moves.diveRoll;
         yield return moves.diveRollRun;
+        foreach (string clip in (moves.runTurns ?? "").Split(';')) yield return clip.Trim();
         yield return landRunLight;
         yield return landRunMid;
         yield return landRunHard;

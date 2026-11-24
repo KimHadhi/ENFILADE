@@ -124,6 +124,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private Channel transition;
     private MovementState state;
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
+    // Moving, the body's facing follows the view's in the world about a tenth of a second behind, and never further behind
+    // than this (degrees): as far as the spine and neck turn the head back, as when the legs stand while the view turns.
+    private const float FacingLagMost = 90f;
     // Strides taken so far, for cycles holding more than one stride (GaitClips.Gait.ShareAt); phase is within the stride.
     private int strideCount;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
@@ -605,8 +608,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (legsPlanted) { yaw = targetYaw; yawVelocity = 0f; }
         else
         {
-            yaw = Mathf.SmoothDampAngle(yaw, targetYaw, ref yawVelocity, .12f);
-            legYaw = transform.eulerAngles.y + yaw;
+            // The facing follows in the world, not as a turn off the view: a view flicked round has the body come round after it,
+            // FacingLagMost at most behind. Until 0.9.386 the body turned with the view in the same frame, and its legs ran
+            // backwards under it until the run had come round (걸음 기록 of 2026-11-24; the experts' review).
+            float view = transform.eulerAngles.y;
+            float facing = Mathf.SmoothDampAngle(legYaw, view + targetYaw, ref yawVelocity, .12f);
+            yaw = Mathf.Clamp(Mathf.DeltaAngle(view, facing), targetYaw - FacingLagMost, targetYaw + FacingLagMost);
+            legYaw = view + yaw;
         }
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
         KeepPlaceAsTheViewTurns();
@@ -809,12 +817,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             playingOut = transitionRuns = false;
         }
 
+        KeepRunTurn();
         switch (state)
         {
             case MovementState.Standing:
             case MovementState.Crouching:
                 bool crouched = state == MovementState.Crouching;
                 TickPosture(crouched, dt);
+                if (onGround && !crouched && RunTurnPose()) break;
                 if (onGround) Locomotion(crouched, dt);
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();

@@ -12,7 +12,9 @@ using UnityEngine.Playables;
 /// move goes as far whoever makes it.
 /// Until 0.9.352 the way was baked off the clips' curves into a table in the editor (GaitMoves.csv, GaitMoveBake), and the
 /// moments and lengths were numbers of the tables', each measured once and typed.
-/// It also marks the clip's own footfalls (StepAt), so a run taking over from it takes the stride where the clip has its feet.
+/// It also marks the clip's own footfalls (StepAt), so a run taking over from it takes the stride where the clip has its feet,
+/// and keeps how its root turns and goes and which way its chest faces (TurnedAt, WayAt, FacingAt), for a clip that turns the
+/// body round (a run's turn back, RunTurn).
 /// </summary>
 public sealed class ClipMotion
 {
@@ -44,6 +46,10 @@ public sealed class ClipMotion
     // Its footfalls in order: when (s) and which foot, as a stride's place (0 the left, .5 the right), as GaitClips marks a
     // walk or run cycle's: the foot at its furthest ahead of the hips, just before it comes down.
     private readonly float[] stepTimes, stepPlaces;
+    // Along the clip at the same moments: how far round its root has turned (degrees, + to the right), which way its chest
+    // faces against its root (degrees, + to the right, without jumps at the back), and where its root has gone in the frame it
+    // began in (its own metres: x right, z ahead).
+    private readonly float[] turned, facing, wayX, wayZ;
 
     /// <summary>The clip's length (s).</summary>
     public float Length { get; }
@@ -61,11 +67,16 @@ public sealed class ClipMotion
     public float OnFeet { get; }
     public float Up { get; }
 
-    private ClipMotion(float length, float[] gone, float[] height, List<(float time, float place)> steps)
+    private ClipMotion(float length, float[] gone, float[] height, List<(float time, float place)> steps, float[] turned,
+        float[] facing, float[] wayX, float[] wayZ)
     {
         Length = length;
         this.gone = gone;
         this.height = height;
+        this.turned = turned;
+        this.facing = facing;
+        this.wayX = wayX;
+        this.wayZ = wayZ;
         stepTimes = new float[steps.Count];
         stepPlaces = new float[steps.Count];
         for (int i = 0; i < steps.Count; i++) (stepTimes[i], stepPlaces[i]) = steps[i];
@@ -163,6 +174,22 @@ public sealed class ClipMotion
         return true;
     }
 
+    /// <summary>How far round its root has turned by its moment (degrees, + to the right): 0 for a clip whose turn is in its
+    /// pose instead.</summary>
+    public float TurnedAt(float time) => At(turned, time);
+
+    /// <summary>Which way its chest faces at its moment against its root (degrees, + to the right; on past 180 rather than
+    /// jumping round).</summary>
+    public float FacingAt(float time) => At(facing, time);
+
+    /// <summary>Where its root has gone by its moment (m), in the frame it began in: x to the right, y ahead.</summary>
+    public Vector2 WayAt(float time) => new Vector2(At(wayX, time), At(wayZ, time)) * Metres;
+
+    /// <summary>How many footfalls it has (StepAt), and the one numbered <paramref name="index"/>: when (s) and which foot
+    /// (0 the left, .5 the right).</summary>
+    public int StepCount => stepTimes.Length;
+    public (float time, float place) Step(int index) => (stepTimes[index], stepPlaces[index]);
+
     /// <summary>The clip's first footfall at or after <paramref name="time"/> (s), as StepAt reads them; false for none.</summary>
     public bool StepAfter(float time, out float at)
     {
@@ -210,6 +237,7 @@ public sealed class ClipMotion
     {
         Transform root = animator.transform, hips = animator.GetBoneTransform(HumanBodyBones.Hips);
         Transform[] feet = { animator.GetBoneTransform(HumanBodyBones.LeftFoot), animator.GetBoneTransform(HumanBodyBones.RightFoot) };
+        Transform[] arms = { animator.GetBoneTransform(HumanBodyBones.LeftUpperArm), animator.GetBoneTransform(HumanBodyBones.RightUpperArm) };
         int count = Mathf.Max(8, Mathf.CeilToInt(clip.length * SampleRate));
         float step = clip.length / count;
         // The clip's own metres: the root's motion goes with the body's size.
@@ -219,7 +247,12 @@ public sealed class ClipMotion
         // Each foot: how far ahead of the hips (along the body's facing) and how high off the floor (the clip's own metres).
         var reach = new[] { new float[count + 1], new float[count + 1] };
         var lift = new[] { new float[count + 1], new float[count + 1] };
-        bool hasFeet = hips != null && feet[0] != null && feet[1] != null;
+        bool hasFeet = hips != null && feet[0] != null && feet[1] != null, hasArms = arms[0] != null && arms[1] != null;
+        var turned = new float[count + 1];
+        var facing = new float[count + 1];
+        var wayX = new float[count + 1];
+        var wayZ = new float[count + 1];
+        Quaternion begun = root.rotation;
 
         // Played where the body stands and put back as it was: its own graph poses it again before it is drawn.
         var bones = root.GetComponentsInChildren<Transform>();
@@ -249,6 +282,16 @@ public sealed class ClipMotion
                     graph.Evaluate(step);
                     Vector3 went = Vector3.ProjectOnPlane(animator.deltaPosition, Vector3.up);
                     gone[i] = gone[i - 1] + went.magnitude * own;
+                    turned[i] = turned[i - 1] + Mathf.DeltaAngle(0f, animator.deltaRotation.eulerAngles.y);
+                    Vector3 there = Quaternion.Inverse(begun) * went;
+                    wayX[i] = wayX[i - 1] + there.x * own;
+                    wayZ[i] = wayZ[i - 1] + there.z * own;
+                }
+                if (hasArms)
+                {
+                    Vector3 ahead = root.InverseTransformDirection(Vector3.Cross(arms[1].position - arms[0].position, root.up));
+                    float faces = Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
+                    facing[i] = i == 0 ? faces : facing[i - 1] + Mathf.DeltaAngle(facing[i - 1], faces);
                 }
                 height[i] = Vector3.Dot(hips.position - root.position, root.up) * own;
                 if (!hasFeet) continue;
@@ -277,7 +320,7 @@ public sealed class ClipMotion
         for (int i = 0; i <= count; i++) height[i] = (height[i] - lowest) / dip;
         var steps = new List<(float time, float place)>();
         if (hasFeet) Footfalls(clip.length, gone, upright, reach, lift, steps);
-        return new ClipMotion(clip.length, gone, height, steps);
+        return new ClipMotion(clip.length, gone, height, steps, turned, facing, wayX, wayZ);
     }
 
     // Each foot at its furthest ahead of the hips while the body is up and going, low to the floor: the moment before it comes
