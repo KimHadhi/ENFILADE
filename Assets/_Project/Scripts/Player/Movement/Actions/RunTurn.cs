@@ -5,8 +5,14 @@ using State = PlayerMovement.MovementState;
 /// A run's turn back: running at least Ability.runTurnSpeed with the keys ahead, the way the keys want at least
 /// Ability.runTurnAngle from the way the body runs (the view flicked round), the body plants, brakes and pushes off the new way
 /// on BIPER Female Runner's own turn (Jog_ and Sprint_Turn{L,R}_{L,R}foot, Ability.runTurns: the sprint's from half way between
-/// the jog and the sprint, turning the way the body is behind the view, planting the foot that is down), entered at its last
-/// moment before its root turns where its chest is twisted no more than Ability.runTurnEntry against its root (EntryOf).
+/// the jog and the sprint, turning the way the body is behind the view), come into where its stride stands as the run's does:
+/// of the way round's two clips (the pivot on either foot) and their moments before the root turns with the chest twisted no
+/// more than Ability.runTurnEntry against it, the one whose own stride (ClipMotion.StepAt) stands nearest the run's now, the
+/// latest of those as near (EntryOf). The legs go on into the clip as they were. Until 0.9.419 the clip was the one pivoting
+/// on the foot that was down, come into at its last such moment whatever its legs did there: the run's legs went over to a
+/// pose up to half a stride off within the 0.15 s blend (BodyInertia), and the planted foot swept the ground at 10 to 12 m/s
+/// for a tenth of a second at every turn (the feet record of 2026-11-25 02:19; the user: "turn 애니메이션 나올 때 … 한 프레임
+/// 정도 … 갑작스럽게 움직이는 느낌").
 /// The clip moves the body (root motion): the capsule goes the way and at the pace the clip's own root goes, turned into the
 /// world from where the body faced (StartYaw), and the body's root turns as the clip's root turns, so the body moves as the
 /// clip's feet were made to and a foot that is down stays down where the clip put it. The one bend (motion warping): so the
@@ -49,6 +55,8 @@ public sealed class RunTurn
     private const float ReadRate = 60f;
     // A clip's root has not begun, or is done, turning while it is within this of where it began or ends (degrees).
     private const float RootStill = 2f;
+    // Moments whose stride stands within this share of a stride of the nearest are as near: the latest is come into (EntryOf).
+    private const float PhaseTie = .04f;
     // The speed the body came in at goes over to the clip's own in this long (s).
     private const float EntryBlend = .15f;
     // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
@@ -129,12 +137,26 @@ public sealed class RunTurn
         // Round the way the body is behind the view (the way the view went round), else the short way.
         float view = ctx.transform.eulerAngles.y, behind = Mathf.DeltaAngle(view, bodyYaw);
         bool left = Mathf.Abs(behind) > 1f ? behind > 0f : Vector3.SignedAngle(now, wanted, Vector3.up) < 0f;
-        bool sprint = ctx.Actions.Gait.Position >= SprintFrom, leftFoot = Mathf.Repeat(ctx.StridePhase, 1f) < .5f;
-        int index = (sprint ? 4 : 0) + (left ? 0 : 2) + (leftFoot ? 0 : 1);
-        string clip = ClipAt(index);
-        var motion = ctx.MotionOf(clip);
+        // Of the way round's two clips (the pivot on the left foot or the right), the one and the moment whose stride stands
+        // nearest where the run's stands now (EntryOf), so the legs go on into it as they were.
+        bool sprint = ctx.Actions.Gait.Position >= SprintFrom;
+        int first = (sprint ? 4 : 0) + (left ? 0 : 2), index = -1;
+        float from = 0f, apart = float.MaxValue, phase = Mathf.Repeat(ctx.StridePhase, 1f);
+        ClipMotion motion = null;
+        for (int foot = 0; foot < 2; foot++)
+        {
+            var candidate = ctx.MotionOf(ClipAt(first + foot));
+            if (candidate == null) continue;
+            float at = EntryOf(candidate, settings.runTurnEntry, phase, out float off);
+            if (off >= apart) continue;
+            apart = off;
+            from = at;
+            index = first + foot;
+            motion = candidate;
+        }
         if (motion == null) return false;
-        Begin(index, clip, EntryOf(motion, settings.runTurnEntry), view, bodyYaw, motion);
+        string clip = ClipAt(index);
+        Begin(index, clip, from, view, bodyYaw, motion);
         entryOff = now - ClipVelocity(motion, From);
         Count++;
         return true;
@@ -223,16 +245,28 @@ public sealed class RunTurn
         return need - turn;
     }
 
-    // The last moment before the clip's root begins to turn at which its chest is twisted no more than `within` degrees against
-    // its root (its start if none): the running body comes into it as it was, root and chest, with nothing to swing round.
-    private static float EntryOf(ClipMotion motion, float within)
+    // The moment to come into the clip at: before its root begins to turn, its chest twisted no more than `within` degrees
+    // against its root (the running body comes in as it was, root and chest, nothing to swing round), the one whose own stride
+    // (ClipMotion.StepAt) stands nearest `phase`, the run's now (0 the left foot about to come down, .5 the right), the latest
+    // within PhaseTie of that (the sooner it turns). `apart`: how far that one's stride is off the run's (a share of a stride).
+    // A clip whose feet never step comes in at its last such moment.
+    private static float EntryOf(ClipMotion motion, float within, float phase, out float apart)
     {
-        float entry = 0f, start = motion.TurnedAt(0f);
-        for (float t = 0f; t < motion.Length; t += 1f / ReadRate)
-        {
-            if (Mathf.Abs(Mathf.DeltaAngle(start, motion.TurnedAt(t))) > RootStill) break;
-            if (Mathf.Abs(motion.FacingAt(t)) <= within) entry = t;
-        }
+        float start = motion.TurnedAt(0f), nearest = float.MaxValue, step = 1f / ReadRate, entry = 0f;
+        apart = 1f;
+        for (int pass = 0; pass < 2; pass++)
+            for (float t = 0f; t < motion.Length; t += step)
+            {
+                if (Mathf.Abs(Mathf.DeltaAngle(start, motion.TurnedAt(t))) > RootStill) break;
+                if (Mathf.Abs(motion.FacingAt(t)) > within) continue;
+                float off = motion.StrideOff(t, phase);
+                if (pass == 0) nearest = Mathf.Min(nearest, off);
+                else if (off <= nearest + PhaseTie)
+                {
+                    entry = t;
+                    apart = off;
+                }
+            }
         return entry;
     }
 
