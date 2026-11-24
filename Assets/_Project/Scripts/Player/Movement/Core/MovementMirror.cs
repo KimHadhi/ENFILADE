@@ -100,6 +100,9 @@ public sealed class MovementMirror
                 WriteLedge(ref pose, traversal.Ledge);
                 // How long the catch's hands take to reach the edge: every PC's body catches in that time (PlayerBody.LedgeCatch).
                 pose.Extent = traversal.LedgeCatchTime;
+                // A step along it: its way times one and how far through it (MirrorLedgeStep); 0 for none.
+                pose.Detail = traversal.LedgeStepShare < 1f && traversal.LedgeStepSide != 0f
+                    ? Mathf.Sign(traversal.LedgeStepSide) * (1f + traversal.LedgeStepShare) : 0f;
                 break;
             case State.BarGrab:
             case State.BarSwing:
@@ -131,6 +134,21 @@ public sealed class MovementMirror
         if (ledge.Surface == null) return;
         pose.Anchor = ledge.Surface.transform.TransformPoint(ledge.LocalEdge);
         pose.Direction = ledge.Surface.transform.TransformDirection(ledge.LocalNormal);
+    }
+
+    // Between poses a step along a ledge goes on at its own pace, so the body's clip and the hands move every frame and not at
+    // the network's rate, at most LedgeStepAhead past the last pose; a pose that says otherwise (a new step, the other way, a
+    // stop) is taken as it comes.
+    private const float LedgeStepAhead = .25f;
+    private void MirrorLedgeStep(float detail, float dt)
+    {
+        var traversal = ctx.Abilities.Traversal;
+        float side = Mathf.Abs(detail) >= 1f ? Mathf.Sign(detail) : 0f;
+        float share = side != 0f ? Mathf.Clamp01(Mathf.Abs(detail) - 1f) : 1f;
+        float on = traversal.LedgeStepShare + dt / Mathf.Max(.01f, ctx.AbilitySettings.ledgeShimmyStepTime);
+        bool follows = side != 0f && side == traversal.LedgeStepSide && traversal.LedgeStepShare < 1f && on >= share && on - share <= LedgeStepAhead;
+        traversal.LedgeStepSide = side;
+        traversal.LedgeStepShare = follows ? Mathf.Min(on, 1f) : share;
     }
 
     internal void Apply(in PlayerPose pose, float dt)
@@ -205,6 +223,7 @@ public sealed class MovementMirror
             case State.LedgeHang:
                 MirrorLedge(pose);
                 traversal.LedgeCatchTime = pose.Extent;
+                MirrorLedgeStep(pose.Detail, Time.deltaTime);
                 break;
             case State.BarGrab:
             case State.BarSwing:

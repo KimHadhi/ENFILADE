@@ -971,7 +971,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.LedgeHang:
                 Restart(Find(ledgeCatch));
                 hangYaw = 0f;
-                shimmyClip = null;
                 break;
             case MovementState.LacheRelease: Restart(Find(barRelease)); break;
             case MovementState.LedgeJump: Restart(Find(ledgeJump)); break;

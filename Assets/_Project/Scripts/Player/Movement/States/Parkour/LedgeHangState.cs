@@ -61,6 +61,7 @@ public sealed class LedgeHangState : MovementBaseState
             catchVelocity = NoOvershoot(catchVelocity, contact - catchStart, catchTime);
         }
         stepShare = 1f;
+        Publish();
         traversal.LedgeCatchTime = catchTime;
         forwardWasHeld = ctx.CurrentInput.y > 0.1f;
         requestMantle = requestJump = false;
@@ -174,20 +175,40 @@ public sealed class LedgeHangState : MovementBaseState
     // A tick is far shorter than a step, so it holds at most the rest of one step and the start of the next: two parts, a
     // fixed count. 0.9.301 looped while time was left, and a sliver of it too small to move a share near 1 by one float
     // step never ran out: the game froze holding A or D on a ledge (user, 2026-11-22: had to end it from Task Manager).
+    // The capsule goes along by ParkourTraversal.LedgeStepTravel, the step's clip's own timing: until 0.9.393 it went at one
+    // speed from the step's first frame to its last, 0 to 0.74 m/s and back in a frame, under a clip whose hands reach and take
+    // hold at their own moments.
     private void Step(float dt)
     {
         float left = dt / Mathf.Max(.01f, ctx.AbilitySettings.ledgeShimmyStepTime);
         for (int part = 0; part < 2 && left > 0f; part++)
         {
-            if (stepShare >= 1f && !StartStep()) return;
+            if (stepShare >= 1f && !StartStep()) break;
             float rest = 1f - stepShare;
             bool ends = left >= rest;
             float share = ends ? rest : left;
             left = ends ? left - rest : 0f;
+            float after = ends ? 1f : stepShare + share;
             // The ledge stopped short of what was measured as the step began (it moved, or something came into the way).
-            if (!Along(stepSide * stepLength * share)) { stepShare = 1f; return; }
-            stepShare = ends ? 1f : stepShare + share;
+            float gone = ParkourTraversal.LedgeStepTravel(after) - ParkourTraversal.LedgeStepTravel(stepShare);
+            if (!Along(stepSide * stepLength * gone)) { stepShare = 1f; break; }
+            stepShare = after;
         }
+        Publish();
+    }
+
+    // The step as the body and the hands go by it (ParkourTraversal.LedgeStepShare).
+    private void Publish()
+    {
+        var traversal = ctx.Abilities.Traversal;
+        traversal.LedgeStepShare = stepShare;
+        traversal.LedgeStepSide = stepShare < 1f ? stepSide : 0f;
+    }
+
+    public override void Exit()
+    {
+        stepShare = 1f;
+        Publish();
     }
 
     // A step starts the way the keys say, as far as the ledge goes within a step's length (Beatrun looks a step ahead before

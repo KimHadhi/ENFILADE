@@ -350,7 +350,8 @@ public sealed partial class PlayerBodyHands : MonoBehaviour
         }
         holding[isLeft ? 0 : 1] = Mathf.Clamp01(total + elsewhere);
         if (total <= 0f) return;
-        arm.Solve(position / total, rotation, hint / total, Mathf.Clamp01(total), 1f, shoulderReach);
+        // Hanging, an arm nearly straight eases into its reach rather than snapping (soft IK), as it hangs and reaches.
+        arm.Solve(position / total, rotation, hint / total, Mathf.Clamp01(total), 1f, shoulderReach, soft: weights[(int)Hold.Ledge] >= .5f);
     }
 
     // A hand on the gun where FPSBody keeps it while the move's clip has the upper body: the palm where KINEMATION's own pose

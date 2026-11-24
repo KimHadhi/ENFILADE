@@ -332,22 +332,16 @@ Ability.ledgeProbeInset,0.08,벽면에서 이만큼 안쪽에서 윗면을 찾�
 Ability.ledgeHandRoom,0.08,"손이 모서리를 넘어와 얹히려면 윗면 위에 비어 있어야 하는 높이(m). 이만큼 비어 있지 않은 윗면은 렛지가 아니다: 천장 슬래브가 얹힌 벽 윗면(이음매), 바로 위에 돌출부가 덮인 턱. 이동과 손이 같은 규칙을 쓴다(LedgeFinder.HandRoom)"
 Ability.ledgeCatchDuration,0.14,렛지를 잡은 뒤 점프·올라가기가 가능해지기까지(초)
 Ability.ledgeRegrabDelay,0.4,렛지를 놓은 뒤 다시 잡을 수 있기까지(초)
-Ability.ledgeShimmyStep,0.74,"매달려 좌우로 한 번 옮기는 거리(m). Beatrun hangstrafe의 30유닛(climb.lua)을 사다리 한 칸 15.75유닛 = 0.39m와 같은 비율로 옮긴 값. A·D를 누르면 한 걸음이 시작되고 키를 떼도 그 걸음은 끝까지 간다. 키를 누르고 있으면 걸음이 끝나는 순간 다음 걸음이 바로 이어진다. 난간이 한 걸음보다 짧게 남았으면 남은 만큼만 간다. 0.9.301 전에는 Ability.ledgeShimmySpeed(1m/s)로 미끄러지듯 계속 움직였다"
-Ability.ledgeShimmyStepTime,1,"매달려 좌우 한 걸음에 걸리는 시간(초). Beatrun과 같은 1초(ClimbingTimes 3·4). 걸음마다 Beatrun hangstrafeleft·hangstraferight 클립을 처음부터 제 속도로 튼다"
+Ability.ledgeShimmyStep,0.42,매달려 좌우로 한 걸음 옮기는 거리(m): 걸음 클립(Beatrun hangstrafe)이 한 번 다 도는 동안. 클립의 손이 뻗고 잡는 거리에 맞춘 값(클립 검사대 11-24 17:06: 1.17초 동안 앞손이 0.22m 뻗고 뒷손이 0.24m 따라온다). 0.9.392까지는 0.74m(Beatrun climb.lua의 30유닛)라 손이 클립보다 2.5배 빨리 옮겨야 했다
+Ability.ledgeShimmyStepTime,0.8,"매달려 좌우 한 걸음에 걸리는 시간(초). 걸음 클립은 이 시간에 처음부터 끝까지 한 번 돌고(제 빠르기의 1.46배), 몸은 그 박자대로(손을 바꿔 잡을 때 느리고 두 손이 다 잡았을 때 빠르게) 가며, 두 손은 클립이 손을 뻗는 때 뻗어 잡는다(ParkourTraversal.LedgeStepShare, 0.9.393). 키를 누르고 있으면 다음 걸음이 바로 이어진다. 평균 0.53m/s(0.9.392까지 0.74m/s)"
 Ability.airTraversalMaxFallSpeed,8.75,이보다 빠르게 떨어지는 중에는 공중에서 렛지·벽을 잡지 않는다(m/s)
 Ability.ledgeJumpLookAngle,42,렛지에서 점프 방향을 시선으로 고를 때의 허용 각도(도)
 Ability.ledgeJumpSpeed,8.5,렛지 점프 수평 속도(m/s)
 Ability.ledgeJumpUpSpeed,6.5,렛지 점프 위쪽 속도(m/s)
 Ability.ledgeCatchTimes,0.18;0.35,난간을 잡을 때 손이 모서리에 닿기까지의 시간 범위(초): 가장 짧게;가장 길게. 잡는 클립의 손이 닿는 프레임에서 손이 난간 끝에 오는 캡슐 자리까지 들어오던 속도로 가는 시간에 맞추되 이 안에서만(Motion Warping). 가장 짧은 값은 손이 잡은 뒤 캡슐이 매달릴 자리로 옮겨 가는 시간이기도 하다(몸은 손에 매달려 있어 보이지 않는다)
 Ability.ledgeCatchWarp,1,난간을 잡을 때 잡는 클립의 손에 맞춰 캡슐을 옮긴다(Motion Warping). 0이면 0.8.318 전처럼 속도를 그 자리에서 끊고 ledgeCatchDuration 동안 매달릴 자리로 끌어온다. 콘솔 /hang으로 전후를 비교할 때 쓴다
-Ability.ledgeHandOverHand,1,매달린 손이 손마다 잡은 자리를 두고 한 손씩 옮겨 잡는다. 0이면 0.8.318 전처럼 두 손이 몸과 같이 난간을 미끄러진다. 콘솔 /hang으로 전후를 비교할 때 쓴다
 Ability.ledgeCatchLeastSpeed,2,잡을 때 들어오던 속도로 보는 가장 느린 속도(m/s). 거의 멈춰서 잡아도 손이 늦게 닿지 않게
-Ability.ledgeHandStepTime,0.22,매달려 옆으로 갈 때 손 하나를 다음 자리로 옮겨 잡는 시간(초). 한 손이 옮기는 동안 다른 손은 잡고 있다
-Ability.ledgeHandLag,0.12,옆으로 갈 때 뒷손이 어깨 너비 제자리보다 가는 쪽 뒤로 이만큼 처지면 따라 잡는다(m). 앞손은 몸이 움직이기 시작하면 바로 뻗는다
-Ability.ledgeHandLead,0.15,옮겨 잡는 손이 어깨 너비 제자리보다 가는 쪽으로 이만큼 앞을 잡는다(m). 손이 닿을 때 몸이 와 있을 자리로 셈한다
-Ability.ledgeHandMostLag,0.4,잡은 손이 제자리에서 이보다 더 처지면 팔이 다 펴지지 않게 난간을 따라 미끄러져 따라온다(m)
 Ability.ledgeHandLift,0.06,옮겨 잡는 손이 윗면 위로 드는 높이. 난간을 잡을 때도 손이 벽을 뚫지 않고 모서리 위로 이만큼 넘어와 잡는다(m)
-Ability.ledgeHandSettle,0.2,멈춘 뒤 이만큼 지나면 벌어진 손을 하나씩 다시 어깨 너비로 모은다(초)
 # 능력: 벽,,
 Ability.wallReach,0.85,벽을 찾는 거리(m)
 Ability.wallClimbTime,1.5,벽 오르기 한 번의 기본 시간(초). Beatrun 원본 1.5. 처음엔 키의 2.8배(초당 200단위) 속도로 오르다 남은 시간에 맞춰 느려져 한 번에 키의 약 2.1배(약 3.7m)를 오른다. 위로 뛰어오르는 중이면 최대 1.1배 길고 떨어지는 중(초당 75단위 이상)이면 시작하지 않는다. 끝나고 2초 안에 다시 오르면 세 번째부터 0.6배·0.25배

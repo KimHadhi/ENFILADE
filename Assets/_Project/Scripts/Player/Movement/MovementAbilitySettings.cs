@@ -95,10 +95,10 @@ public sealed class MovementAbilitySettings
     [Min(0.01f)] public float ledgeHandRoom = 0.08f;
     [Min(0.05f)] public float ledgeCatchDuration = 0.14f;
     [Min(0.1f)] public float ledgeRegrabDelay = 0.4f;
-    [Tooltip("Hanging, one step along the ledge as Beatrun's hangstrafe takes it (climb.lua: 30 units, at the scale a rung's 15.75 "
-        + "units is ladderRungHeight): how far (m); how long (s). A held key starts the next as one ends.")]
-    [Min(.05f)] public float ledgeShimmyStep = .74f;
-    [Min(.1f)] public float ledgeShimmyStepTime = 1f;
+    [Tooltip("Hanging, one step along the ledge, one whole play of the step's clip (Beatrun's hangstrafe): how far (m); how long (s). "
+        + "A held key starts the next as one ends.")]
+    [Min(.05f)] public float ledgeShimmyStep = .42f;
+    [Min(.1f)] public float ledgeShimmyStepTime = .8f;
     [Min(0f)] public float airTraversalMaxFallSpeed = 8.75f;
     [Range(1f, 89f)] public float ledgeJumpLookAngle = 42f;
     [Min(0f)] public float ledgeJumpSpeed = 8.5f;
@@ -111,24 +111,10 @@ public sealed class MovementAbilitySettings
     [Tooltip("Catching a ledge warps the capsule onto the catch clip's hands (LedgeHangState). Off, it goes as before 0.8.318: the "
         + "speed cut at once and the capsule pulled to the hang in ledgeCatchDuration, for comparing by the console's /hang.")]
     public bool ledgeCatchWarp = true;
-    [Tooltip("Hanging, each hand keeps its own hold and they go hand over hand (PlayerBodyHands.Ledge). Off, as before 0.8.318: "
-        + "both hands slide along the edge with the body, for comparing by the console's /hang.")]
-    public bool ledgeHandOverHand = true;
     [Tooltip("The slowest a catch counts as coming in (m/s), so catching at a near standstill doesn't stretch the reach.")]
     [Min(.1f)] public float ledgeCatchLeastSpeed = 2f;
-    [Tooltip("Hand over hand along a ledge (PlayerBodyHands.Ledge): how long one hand takes to move to its next hold (s).")]
-    [Min(.05f)] public float ledgeHandStepTime = .22f;
-    [Tooltip("The trailing hand moves on once the body has left it this far behind its place at shoulder width (m). The leading "
-        + "hand reaches on as soon as the body moves off; one hand always holds while the other moves.")]
-    [Min(0f)] public float ledgeHandLag = .12f;
-    [Tooltip("A moving hand takes its next hold this far ahead of its place at shoulder width, where the body will be as it lands (m).")]
-    [Min(0f)] public float ledgeHandLead = .15f;
-    [Tooltip("A held hand left further behind than this slides along the edge with the body, so the arm never runs out (m).")]
-    [Min(.05f)] public float ledgeHandMostLag = .4f;
     [Tooltip("How high a hand lifts over the edge on its way to its next hold, and reaching for the edge as it catches (m).")]
     [Min(0f)] public float ledgeHandLift = .06f;
-    [Tooltip("This long after the body stops along the ledge (s), hands left apart come back to shoulder width, one at a time.")]
-    [Min(0f)] public float ledgeHandSettle = .2f;
 
     [Header("Wall Movement")]
     [Min(0.1f)] public float wallReach = 0.85f;

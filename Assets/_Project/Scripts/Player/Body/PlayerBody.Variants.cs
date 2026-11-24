@@ -357,53 +357,30 @@ public sealed partial class PlayerBody
         else Want(player.FallSpeed > fallClipSpeed ? fall : air);
     }
 
-    // The step clip playing along a ledge and when it began (s into the hang); null with none.
-    private string shimmyClip;
-    private float shimmyAt;
-
-    // Catch the ledge and hang facing the wall wherever the player looks. Along it the body steps as Beatrun's hangstrafe
-    // does: one clip a step, from the moment the step begins (LedgeHangState.Step) at the clip's own pace, again for each step
-    // that follows on, and the last one played out into the hang. Every PC sees a step by the capsule moving along the wall,
-    // and each step lasts Ability.ledgeShimmyStepTime, so every PC starts the clip at the same moments. Before, a Mixamo
-    // shimmy looped at a pace fitted to the sideways speed (user, 2026-11-22: moving on a ledge wasn't Beatrun's animation).
+    // Catch the ledge and hang facing the wall wherever the player looks. Along it each step plays Beatrun's hangstrafe whole,
+    // once a step, on the step's own clock (ParkourTraversal.LedgeStepShare), the same clock the capsule goes along by and the
+    // hands lift and take hold by, on every PC; the clip ends in the pose it starts from (the clip bench, 2026-11-24 17:06), so
+    // steps follow on without a seam, and a last step hands over to the hang as the mixer eases it (BodyInertia). Until 0.9.393
+    // the clip was started again every second from the sideways speed, cutting its last sixth, and the hands stepped on a
+    // clock of their own (the user: "ledge hanging도 왼쪽 오른쪽 갈 때 모션 끊기고 팔은 버벅거리잖아").
     private void LedgePose()
     {
-        var ledge = player.Abilities.Traversal.Ledge;
+        var traversal = player.Abilities.Traversal;
+        var ledge = traversal.Ledge;
         Vector3 inward = ledge.Surface != null ? -ledge.Surface.transform.TransformDirection(ledge.LocalNormal) : transform.forward;
         inward = Vector3.ProjectOnPlane(inward, Vector3.up);
         if (inward.sqrMagnitude > .01f) targetYaw = Vector3.SignedAngle(transform.forward, inward, Vector3.up);
-        float side = Vector3.Dot(player.ActualVelocity, Vector3.Cross(Vector3.up, inward.normalized));
-        float catchTime = player.Abilities.Traversal.LedgeCatchTime;
+        float catchTime = traversal.LedgeCatchTime;
         // The catch's warp may swing the body along the wall before the hands hold; that is no step.
-        if (LedgeCatchShare >= 1f && Mathf.Abs(side) > .1f)
+        if (LedgeCatchShare >= 1f && traversal.LedgeStepShare < 1f && traversal.LedgeStepSide != 0f)
         {
-            string step = side < 0f ? ledgeShimmyLeft : ledgeShimmyRight;
-            if (step != shimmyClip || stateTime - shimmyAt >= player.AbilitySettings.ledgeShimmyStepTime)
-            {
-                // The clip ends in the pose it starts from, so the next step's start takes over from it without a jump.
-                shimmyClip = step;
-                shimmyAt = stateTime;
-                Restart(Find(step));
-            }
-            Want(step);
-            FaceWall(Time.deltaTime);
-        }
-        else if (shimmyClip != null && Find(shimmyClip) is Channel stepping && stateTime - shimmyAt < stepping.Length - blendTime)
-        {
-            Want(shimmyClip);
+            Drive(traversal.LedgeStepSide < 0f ? ledgeShimmyLeft : ledgeShimmyRight, traversal.LedgeStepShare);
             FaceWall(Time.deltaTime);
         }
         // The catch clip starts on the frame its body has come down under the hands (BeatrunBody.clips.csv): held there while
         // the warp brings the hands to the edge (PlayerBody.LedgeCatch), and played on from the moment they touch it.
         else if (Find(ledgeCatch) is Channel catching && stateTime < catchTime + catching.Length - blendTime)
-        {
-            shimmyClip = null;
             Drive(ledgeCatch, Mathf.Max(0f, stateTime - catchTime) / Mathf.Max(.01f, catching.Length));
-        }
-        else
-        {
-            shimmyClip = null;
-            HangLook(inward.normalized, Time.deltaTime);
-        }
+        else HangLook(inward.normalized, Time.deltaTime);
     }
 }

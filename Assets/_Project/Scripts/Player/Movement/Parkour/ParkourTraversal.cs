@@ -29,6 +29,23 @@ public sealed class ParkourTraversal
     /// get it with the pose (MovementMirror). Zero when nothing set it, and then the hands are on at once.
     /// </summary>
     public float LedgeCatchTime { get; internal set; }
+    /// <summary>
+    /// A step along a ledge hung from (LedgeHangState): how far through it (0-1; 1 none) and which way along the wall (-1 left,
+    /// 1 right as one faces it; 0 none). It is the one clock of a step: the capsule goes along by it (LedgeStepTravel), the body
+    /// plays the step's clip by it (PlayerBody.LedgePose) and the hands lift and take hold by it (PlayerBodyHands.UpdateLedgeHolds).
+    /// The other PCs get it with the pose (MovementMirror).
+    /// </summary>
+    public float LedgeStepShare { get; internal set; } = 1f;
+    public float LedgeStepSide { get; internal set; }
+
+    /// <summary>How far through its length a step along a ledge has taken the body at this share of it (0-1): slow as each hand
+    /// lets go and takes hold at the step's ends, fastest in its middle with both hands on, as the step's clip (Beatrun's
+    /// hangstrafe) has its hands; from one step into the next it goes on without a jolt.</summary>
+    internal static float LedgeStepTravel(float share)
+    {
+        share = Mathf.Clamp01(share);
+        return share - Mathf.Sin(2f * Mathf.PI * share) / (2f * Mathf.PI);
+    }
     private float wallLock, barLock, ledgeLock;
     // The wall climbs of this time in the air, as Beatrun counts them: how many came one after another, when the last is
     // planned to end (on this clock), and which way its wall faces, since the same wall isn't climbed twice before the
@@ -499,6 +516,8 @@ public sealed class ParkourTraversal
         wallLock = barLock = ledgeLock = 0f; Bar = lastBar = null; Obstacle = default; Ledge = default; Wall = default;
         Angle = AngularSpeed = 0f; ReleaseVelocity = LedgeJumpVelocity = Vector3.zero;
         LedgeCatchTime = 0f;
+        LedgeStepShare = 1f;
+        LedgeStepSide = 0f;
         traversedObstacles.Clear();
     }
 }

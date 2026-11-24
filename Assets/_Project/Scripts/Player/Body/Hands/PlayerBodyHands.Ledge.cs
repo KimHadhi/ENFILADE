@@ -3,15 +3,15 @@ using MovementState = PlayerMovement.MovementState;
 
 /// <summary>
 /// Hands on a ledge. Hanging, each hand keeps its own hold on the edge, the top under its palm, and stays there while the
-/// body moves (LedgeHold): still, the holds are a shoulder width apart (Hands.ledgeHandSpacing); going along the ledge they
-/// go hand over hand (Ability.ledgeHand*). The leading hand lets go and reaches on as the body starts to move, taking hold
-/// ledgeHandLead ahead of its place, where the body will be as it lands; the body goes on under the hands, and the other
-/// hand follows once it is left ledgeHandLag behind, only while the first holds again, so one hand always holds, and it
-/// takes hold a shoulder width from the first, never nearer. A hand on
-/// its way lifts over the top (ledgeHandLift) with its fingers open. Stopped for ledgeHandSettle, a hand left apart comes
-/// back to its place. A hold is only ever taken where a palm can rest: a top within a hand's height of the edge's, with
-/// room over it, so at the ledge's end, a gap or an inside corner the hand holds the furthest such place short of it
-/// instead of the air or a wall. Before, both hands slid along the edge with the body (user, 2026-11-13).
+/// body moves (LedgeHold): still, the holds are a shoulder width apart (Hands.ledgeHandSpacing). A step along the ledge goes
+/// hand over hand on the step's own clock (ParkourTraversal.LedgeStepShare), as the step's clip moves its hands: the hand on
+/// the way the body goes lets go as the step begins and takes hold by LeadHolds of it, the other lets go at TrailLifts and
+/// takes hold as the step ends, each at its place beside where the body will be as the step ends, so one hand always holds.
+/// A hand on its way lifts over the top (ledgeHandLift) with its fingers open. A hold is only ever taken where a palm can
+/// rest: a top within a hand's height of the edge's, with room over it, so at the ledge's end, a gap or an inside corner the
+/// hand holds the furthest such place short of it instead of the air or a wall. Before, both hands slid along the edge with
+/// the body (user, 2026-11-13); until 0.9.393 the hands went on a clock of their own, a hand every 0.22 s from the capsule's
+/// speed, two and a half times the clip's (the user: "ledge hanging도 왼쪽 오른쪽 갈 때 … 팔은 버벅거리잖아").
 /// Catching a ledge, the hands reach for their holds over the edge and land as the warp ends (PlayerBody.LedgeCatchShare).
 /// Everything here comes from the capsule's place along the ledge, the ledge itself and the time in the hang, which every PC
 /// has, so every PC shows the same hands, and they are the hands the player sees in first person.
@@ -68,19 +68,18 @@ public sealed partial class PlayerBodyHands
     private readonly LedgeHold[] ledgeHolds = { new LedgeHold(), new LedgeHold() };
     private int ledgeHoldsFrame = -1;
     private bool ledgeHoldsSet;
-    private float ledgeStill, ledgeSpeed, ledgeRetry, ledgeHungFor;
-    private Vector3 ledgeLastCentre;
+    private float ledgeHungFor, ledgeLastShare = 1f;
+    // When in a step each hand moves (ParkourTraversal.LedgeStepShare), as Beatrun's hangstrafeleft/right move theirs (the clip
+    // bench, 2026-11-24 17:06: of its 1.17 s the leading hand reaches out from 0 to 0.45, the other follows from 0.65 to its
+    // end); a hand still on its way when a step stops short lands in FinishTime (s).
+    private const float LeadHolds = .385f, TrailLifts = .556f, FinishTime = .15f;
 
     // A palm rests on a top within this of the edge's height (m), probed from this far above it (m), with a hand's room over
     // it (the ledge's own rule and number: LedgeFinder.HandRoom, Ability.ledgeHandRoom).
     private const float TopTolerance = .1f, TopProbe = .25f;
     // A hand moves to a new hold only if it gets at least this far (m), looking back from where it was going in these
-    // steps (m); a move that found nowhere waits this long before looking again (s).
-    private const float LeastMove = .03f, MoveSearchStep = .03f, RetryTime = .15f;
-    // Slower along the ledge than this the body counts as still (m/s); how quickly its speed along is read (s).
-    private const float StillSpeed = .05f, SpeedFollow = .08f;
-    // Stopped, a hand further than this from its place at shoulder width comes back to it (m).
-    private const float SettleSlack = .03f;
+    // steps (m).
+    private const float LeastMove = .03f, MoveSearchStep = .03f;
     // Catching, the fingers close over the last quarter of the reach.
     private const float CatchCloses = .75f;
 
@@ -144,8 +143,7 @@ public sealed partial class PlayerBodyHands
         float hungFor = hanging ? body.StateTime : 0f;
         if (hungFor < ledgeHungFor) ledgeHoldsSet = false;
         ledgeHungFor = hungFor;
-        // Ability.ledgeHandOverHand off (to compare by /hang): no holds, the hands slide with the body as before 0.8.318.
-        if (left == null || right == null || body.IsDead || (!hanging && !(heaving && ledgeHoldsSet)) || !player.AbilitySettings.ledgeHandOverHand
+        if (left == null || right == null || body.IsDead || (!hanging && !(heaving && ledgeHoldsSet))
             || !LedgeFrame(traversal.Ledge, out Vector3 edge, out Vector3 outward, out Vector3 along))
         {
             ledgeHoldsSet = false;
@@ -153,7 +151,6 @@ public sealed partial class PlayerBodyHands
         }
         float dt = Time.deltaTime;
         var settings = player.AbilitySettings;
-        float stepTime = Mathf.Max(.05f, settings.ledgeHandStepTime);
         Vector3 centre = edge + along * Vector3.Dot(transform.position - edge, along);
         if (!ledgeHoldsSet)
         {
@@ -164,92 +161,50 @@ public sealed partial class PlayerBodyHands
             ledgeHolds[0].Take(leftTop);
             ledgeHolds[1].Take(rightTop);
             ledgeHoldsSet = true;
-            ledgeStill = ledgeSpeed = ledgeRetry = 0f;
-            ledgeLastCentre = centre;
+            ledgeLastShare = 1f;
             return;
         }
-        bool moving = false;
         foreach (var hold in ledgeHolds)
-        {
             // The collider it held went away.
             if (!hold.Valid) { ledgeHoldsSet = false; return; }
-            if (hold.Moving) hold.Progress = Mathf.MoveTowards(hold.Progress, 1f, dt / stepTime);
-            moving |= hold.Moving;
-        }
-        // Climbing up, or still catching: the hands stay where they hold.
-        if (!hanging || body.LedgeCatchShare < 1f)
+        float share = traversal.LedgeStepShare, way = traversal.LedgeStepSide;
+        // Climbing up, still catching, or no step under way: the hands stay where they hold, one still on its way landing.
+        if (!hanging || body.LedgeCatchShare < 1f || share >= 1f || way == 0f)
         {
-            ledgeLastCentre = centre;
+            foreach (var hold in ledgeHolds)
+                if (hold.Moving) hold.Progress = Mathf.MoveTowards(hold.Progress, 1f, dt / FinishTime);
+            ledgeLastShare = 1f;
             return;
         }
-
-        // The body's speed along the ledge, from the capsule's own move: the same on every PC that sees it move.
-        float speed = dt > 0f ? Vector3.Dot(centre - ledgeLastCentre, along) / dt : 0f;
-        ledgeLastCentre = centre;
-        ledgeSpeed = Mathf.Lerp(ledgeSpeed, speed, 1f - Mathf.Exp(-dt / SpeedFollow));
-        int way = ledgeSpeed > StillSpeed ? 1 : ledgeSpeed < -StillSpeed ? -1 : 0;
         float half = LedgeHalfSpan;
-
-        // A held hand left too far behind slides along the edge rather than have its arm run out.
+        int lead = way > 0f ? 1 : 0;
+        // A step began this frame (the first, or the next on from the last).
+        bool began = share < ledgeLastShare;
         for (int hand = 0; hand < 2; hand++)
         {
-            float off = Off(hand);
-            if (ledgeHolds[hand].Moving || Mathf.Abs(off) <= settings.ledgeHandMostLag) continue;
-            var arm = hand == 0 ? left : right;
-            if (TopAt(centre + along * (Place(hand) + Mathf.Sign(off) * settings.ledgeHandMostLag), outward, LedgeInset(arm), edge.y, out RaycastHit slid))
-                ledgeHolds[hand].Take(slid);
+            bool leads = hand == lead;
+            float lift = leads ? 0f : TrailLifts, holds = leads ? LeadHolds : 1f;
+            if (leads ? began : share >= lift && (began || ledgeLastShare < lift))
+                // To its place beside where the body will be as the step ends: the step's whole length on from where it began
+                // (the table's, as every PC knows it; a step the ledge cut short finds the furthest top short of it).
+                MoveHold(hand, Off(hand), way * settings.ledgeShimmyStep * (1f - ParkourTraversal.LedgeStepTravel(share)));
+            var held = ledgeHolds[hand];
+            if (held.Moving) held.Progress = Mathf.Max(held.Progress, Mathf.InverseLerp(lift, holds, share));
         }
-        ledgeRetry = Mathf.Max(0f, ledgeRetry - dt);
-        if (way != 0) ledgeStill = 0f;
-        else ledgeStill += dt;
-        if (moving || ledgeRetry > 0f) return;
-        // 1: a hand moved; 0: none had to; -1: one had to but found no top to take, so it waits a moment before looking again.
-        int result = 0;
-        if (way != 0)
-        {
-            // The hand on the way the body goes leads, as soon as it is no longer ahead of its place; the other follows
-            // once it is left ledgeHandLag behind.
-            int lead = way > 0 ? 1 : 0;
-            result = Step(lead, 0f);
-            if (result == 0) result = Step(1 - lead, settings.ledgeHandLag);
-        }
-        else if (ledgeStill >= settings.ledgeHandSettle)
-        {
-            // Stopped: the hand furthest from its place comes back to it.
-            // Where the other stands in its way, that one goes first.
-            int far = Mathf.Abs(Off(0)) >= Mathf.Abs(Off(1)) ? 0 : 1;
-            for (int i = 0; i < 2 && result == 0; i++)
-            {
-                int hand = i == 0 ? far : 1 - far;
-                if (Mathf.Abs(Off(hand)) > SettleSlack) result = MoveHold(hand, Off(hand), 0f);
-            }
-        }
-        if (result < 0) ledgeRetry = RetryTime;
+        ledgeLastShare = share;
 
         float Place(int hand) => hand == 0 ? -half : half;
         // How far a hold is from its place at shoulder width beside the body, along the ledge to the right (m).
         float Off(int hand) => Vector3.Dot(ledgeHolds[hand].TopNow - centre, along) - Place(hand);
 
-        // Left behind by at least lag the way the body goes: on to lead ahead of its place, where the body will be as it lands.
-        int Step(int hand, float lag)
-        {
-            float off = Off(hand);
-            if (off * way > -lag) return 0;
-            // The pace of a step along the ledge, which every one goes at from its start (LedgeHangState.Step): the speed read off
-            // the body is still rising as the first hand reaches, and it took hold short.
-            float pace = settings.ledgeShimmyStep / Mathf.Max(.01f, settings.ledgeShimmyStepTime);
-            return MoveHold(hand, off, way * (settings.ledgeHandLead + pace * stepTime));
-        }
-
         // From off to as near to as has a top, looking back from it, if that gets the hand at least LeastMove.
-        int MoveHold(int hand, float off, float to)
+        void MoveHold(int hand, float off, float to)
         {
-            // Never nearer the other hand than a shoulder width. Both reached as far ahead of their places, so the one that
-            // followed landed beside the first or on it: at the 0.74 m/s of Beatrun's step (0.9.301) the body had come up under
-            // the first by then (the user, 2026-11-22: "ledge hanging 후 왼쪽 오른쪽 이동할 때 손이 겹친다").
+            // Never nearer the other hand than a shoulder width (the user, 2026-11-22: "ledge hanging 후 왼쪽 오른쪽 이동할 때 손이
+            // 겹친다").
             float other = Off(1 - hand);
             to = hand == 0 ? Mathf.Min(to, other) : Mathf.Max(to, other);
-            if (Mathf.Abs(to - off) < LeastMove) return 0;
+            if (Mathf.Abs(to - off) < LeastMove) return;
             float direction = Mathf.Sign(to - off);
             var arm = hand == 0 ? left : right;
             float inset = LedgeInset(arm);
@@ -257,9 +212,8 @@ public sealed partial class PlayerBodyHands
             {
                 if (!TopAt(centre + along * (Place(hand) + at), outward, inset, edge.y, out RaycastHit top)) continue;
                 ledgeHolds[hand].MoveTo(top);
-                return 1;
+                return;
             }
-            return -1;
         }
     }
 
@@ -327,8 +281,10 @@ public sealed partial class PlayerBodyHands
         if (lifted && catching < 1f)
             palm += (Vector3.up - contact.Fingers * .5f) * (player.AbilitySettings.ledgeHandLift * Mathf.Sin(Mathf.PI * catching));
         position = arm.WristAtPalm(palm, rotation);
-        // Looking away, the look clip already has the elbow somewhere an arm can go from that way round.
-        hint = Vector3.Lerp(arm.Upper.position + contact.Side * .3f - contact.Normal * .1f, arm.Elbow, body.HangTurn);
+        // The clip's own elbow: the step's clip bends it as its hand reaches and holds, and looking away the look clip has it
+        // somewhere an arm can go from that way round. Until 0.9.393 the bend was turned toward a point beside the shoulder
+        // whatever the clip did, and a nearly straight arm flipped about it.
+        hint = arm.Elbow;
         return true;
     }
 

@@ -238,8 +238,7 @@ internal sealed class HangReadoutView : MonoBehaviour
     private string Switches()
     {
         var settings = player.AbilitySettings;
-        return "잡기 워핑 " + (settings.ledgeCatchWarp ? "켬" : "끔") + " · 한 손씩 옮겨 잡기 " + (settings.ledgeHandOverHand ? "켬" : "끔")
-            + " · 실제 벽 다리 " + (body.HangRealWall ? "켬" : "끔");
+        return "잡기 워핑 " + (settings.ledgeCatchWarp ? "켬" : "끔") + " · 실제 벽 다리 " + (body.HangRealWall ? "켬" : "끔");
     }
 
     private string Result()
