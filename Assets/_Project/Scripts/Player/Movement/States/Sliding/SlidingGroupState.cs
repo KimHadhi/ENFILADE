@@ -3,6 +3,8 @@ using UnityEngine;
 public sealed class SlidingGroupState : MovementBaseState
 {
     private const float HEAD_ON_COLLISION_DOT_THRESHOLD = 0.55f;
+    // Up a slope the slide is held back this much per unit of the slope's rise along it (m/s²).
+    private const float UphillPull = 15f;
 
     public SlidingGroupState(PlayerMovement context, MovementBaseState parent) : base(context, parent) { }
 
@@ -36,42 +38,40 @@ public sealed class SlidingGroupState : MovementBaseState
         bool crouchHeld = ctx.Input.CrouchHeld;
         if (!crouchHeld) ctx.SlideBrakeArmed = true;
         bool wantsBrake = ctx.InputAvailable && ((ctx.SlideBrakeArmed && crouchHeld) || IsBrakeInput(input));
-        ctx.Actions.SlidePace.Tick(dt);
 
-        // 계단 접촉 법선으로 수평 진행 방향을 꺾지 않습니다.
+        // Down a stair's edge the contact's normal never turns the way along.
         float slopeDot = ctx.IsGrounded ? ctx.GetSlideSlopeDot(direction) : 0f;
-        float activeFriction = ctx.IsGrounded ? ctx.StateMachine.Current.SlideFriction : ctx.StateMachine.Current.SlideFriction * ctx.AirSlideFrictionMultiplier;
-
-        if (ctx.IsGrounded && slopeDot > 0.05f)
+        float brake = ctx.IsGrounded && wantsBrake ? ctx.SlideBrakeDeceleration + Mathf.Max(0f, slopeDot) * ctx.SlopeSlideGravity : 0f;
+        if (ctx.CurrentState == PlayerMovement.MovementState.Sliding && ctx.Actions.SlideMove.Now != SlideMove.Phase.Over)
         {
-            ctx.CurrentSlideSpeed += slopeDot * ctx.SlopeSlideGravity * dt;
+            // The feet-first slide goes on its clip (SlideMove): the slope pulls it on down and holds it back up.
+            float slope = slopeDot > .05f ? slopeDot * ctx.SlopeSlideGravity : slopeDot < -.05f ? slopeDot * UphillPull : 0f;
+            bool keys = input.sqrMagnitude > .01f && !wantsBrake;
+            ctx.CurrentSlideSpeed = ctx.Actions.SlideMove.Step(dt, ctx.CurrentSlideSpeed, keys, brake, slope,
+                ctx.IsGrounded ? 1f : ctx.AirSlideFrictionMultiplier);
         }
         else
         {
-            float uphillResistance = ctx.IsGrounded && slopeDot < -0.05f ? Mathf.Abs(slopeDot) * 15f : 0f;
-            // Friction takes it down no further than SlidePace's even way from its start to its getting up's pace while the keys
-            // go on; one slower than that from the start keeps what it has.
-            float floor = input.sqrMagnitude > .01f && !wantsBrake
-                ? Mathf.Min(ctx.CurrentSlideSpeed, ctx.StateMachine.Current.SlideFloor) : 0f;
-            ctx.CurrentSlideSpeed = Mathf.Max(ctx.CurrentSlideSpeed - activeFriction * dt, floor) - uphillResistance * dt;
-        }
-
-        if (ctx.IsGrounded && wantsBrake)
-        {
-            float downhillAcceleration = Mathf.Max(0f, slopeDot) * ctx.SlopeSlideGravity;
-            ctx.CurrentSlideSpeed -= (ctx.SlideBrakeDeceleration + downhillAcceleration) * dt;
+            float activeFriction = ctx.IsGrounded ? ctx.StateMachine.Current.SlideFriction : ctx.StateMachine.Current.SlideFriction * ctx.AirSlideFrictionMultiplier;
+            if (ctx.IsGrounded && slopeDot > 0.05f) ctx.CurrentSlideSpeed += slopeDot * ctx.SlopeSlideGravity * dt;
+            else
+            {
+                float uphill = ctx.IsGrounded && slopeDot < -0.05f ? Mathf.Abs(slopeDot) * UphillPull : 0f;
+                ctx.CurrentSlideSpeed = Mathf.Max(ctx.CurrentSlideSpeed - activeFriction * dt, 0f) - uphill * dt;
+            }
+            ctx.CurrentSlideSpeed -= brake * dt;
         }
 
         ctx.CurrentSlideSpeed = Mathf.Max(ctx.CurrentSlideSpeed, 0f);
         ctx.HorizontalVelocity = direction * ctx.CurrentSlideSpeed;
 
-        // 수평 이동과 하향 밀착을 PlayerMovement에서 분리합니다.
+        // Held to the ground as it goes along it.
         if (ctx.IsGrounded) ctx.VerticalVelocity = -2f;
     }
 
     public override void OnColliderHit(ControllerColliderHit hit)
     {
-        // 순수 하향 밀착 중의 계단 모서리 접촉은 정면 벽 충돌이 아닙니다.
+        // A stair's edge touched while held down to the ground is no wall ahead.
         if (ctx.IsSlideGroundSnap || ctx.DodgePassThrough.IsResolving) return;
         if (hit.normal.y >= Mathf.Cos(ctx.Motor.SupportAngle * Mathf.Deg2Rad)) return;
 
@@ -101,7 +101,7 @@ public sealed class SlidingGroupState : MovementBaseState
             return;
         }
 
-        // 높이만으로 모든 낮은 벽을 무시하지 않고, 실제 걸어 올라갈 면을 확인합니다.
+        // A low wall is gone over only where there is a top to step up onto.
         if (ctx.IsSlideStepContact(hit)) return;
 
         if (impactDot < HEAD_ON_COLLISION_DOT_THRESHOLD)

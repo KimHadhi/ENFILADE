@@ -28,19 +28,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // 0.9.333 walking, running and sideways jumps had clips of their own.
     [SerializeField] private string jump = "jumpstill", air = "jumpidle", fall = "mx_fall";
     [SerializeField] private string land = "mx_fall_land";
-    [SerializeField] private string slideEnd = "slideend";
     // The moves' clips the movement goes by too are its own (MovementAbilitySettings).
-    private string slideStart => player.AbilitySettings.slideStart;
-    private string slide => player.AbilitySettings.slide;
     private string heavyLand => player.AbilitySettings.heavyLand;
     private string rollLand => player.AbilitySettings.rollLand;
     private string rollLandLow => player.AbilitySettings.rollLandLow;
-    [SerializeField, Min(.01f), Tooltip("A slide that ends in a crouch goes from the slide's pose into the crouch this slowly (s). "
-        + "No pack has a clip for it; the slide's getting up (slideEnd) stood the body up first.")]
+    [SerializeField, Min(.01f), Tooltip("A slide or a roll that ends in a crouch goes from its pose into the crouch this slowly (s). "
+        + "No pack has a clip for it.")]
     private float slideCrouchTime = .3f;
-    [SerializeField, Min(.01f), Tooltip("Out of a slide into its getting up (slideEnd) the poses cross over this slowly (s): the "
-        + "slide lies another way round by then than the clip begins.")]
-    private float slideEndTime = .25f;
     [SerializeField, Min(.01f), Tooltip("A clip that ends running, given up because the body has stopped, holds its pose and the "
         + "standing takes over this slowly (s).")]
     private float standSettleTime = .3f;
@@ -286,7 +280,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         mixer = AnimationMixerPlayable.Create(graph, 0);
         bodyOutput = (AnimationPlayableOutput)graph.GetOutputByType<AnimationPlayableOutput>(0);
         bodyOutput.SetSourcePlayable(BuildLayers());
-        foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land, slideStart, slide, slideEnd,
+        foreach (string clip in new[] { idle, crouchIdle, jump, air, fall, land,
                      diveStart, dive, supineDiveStart, supineDive, bellySlideStart, bellySlide, bellySlideEnd,
                      supineSlideStart, supineSlide, supineSlideEnd,
                      prone, supine, dashPush,
@@ -786,8 +780,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // A landing that runs on out of itself (Land_ToRun) holds on the move, and gives way once the body is no longer
             // going as it does (RunOutPace) or leaves its feet. Up out of a slide, the getting up plays whatever the body does.
             runOutGrace = Mathf.Max(0f, runOutGrace - dt);
-            bool getsUp = transition == Find(slideEnd) && transition.Playable.GetTime() < (MotionOf(slideEnd)?.OnFeet ?? 0f);
-            bool hold = transitionRuns ? onFeet && upright && !HasStepped(transition) && (getsUp || runOutGrace > 0f
+            bool hold = transitionRuns ? onFeet && upright && !HasStepped(transition) && (runOutGrace > 0f
                     || (HorizontalSpeed() > Mathf.Min(walkClipSpeed, RunOutPace * RunOutLeast)
                         && Mathf.Abs(HeadingOf(player.ActualVelocity)) < RunOutAhead))
                 : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
@@ -906,18 +899,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             || to == MovementState.Supine))
         {
             string exit = SlideEndFor(from, to);
-            // The slide's end gets up and runs on (SlideToRun_Exit), the body at its pace, until the walk or run takes over at its
-            // first footfall (HasStepped). Stopped, it gets up as from a crouch (SlideStops). Until 0.9.382 a stopped slide played
-            // that getting up to where its body was on its feet (ClipMotion.OnFeet) and then settled into standing: legs that
-            // stepped for 3.5 m/s under a body that stood (the user, 2026-11-24: "슬라이딩 후 서기는 다리가 뭔가 움직이는 게
-            // 있는데 모션도 없고"); before 0.9.351 it played whole and ran in place (2026-11-21).
-            if (exit == slideEnd && SlideStops(from, to)) exit = null;
             if (exit != null) PlayTransition(exit);
-            if (exit != null && exit == slideEnd)
-            {
-                SlowBlend(slideEndTime);
-                transitionRuns = true;
-            }
+            // A slide that got up in its own clip (SlideMove) ran on to its first footfall: the walk or run takes the stride from
+            // it. Stopped, it gets up as from a crouch (SlideStops).
+            if (from == MovementState.Sliding && to == MovementState.Standing && !SlideStops(from, to))
+                PlayOn(player.Actions.SlideMove.ClipName);
         }
         if ((from == MovementState.Vault || from == MovementState.Mantle) && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOutObstacle();
@@ -936,7 +922,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (to == MovementState.Proning) EnterProne(from);
         switch (to)
         {
-            case MovementState.Sliding: Restart(Find(slideStart)); break;
             case MovementState.SupineSliding:
                 // Down from a dive on the back still sliding: Beatrun lands its jump turn with jumpturnland at any speed.
                 slidesOnBack = from == MovementState.SupineDiving;
@@ -1095,9 +1080,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     internal float RunOutPace => !transitionRuns || transition == null || !transition.Playable.IsValid() ? 0f
         : Mathf.Min(MotionOf(transition.Clip)?.PaceAt((float)transition.Playable.GetTime()) ?? 0f, SprintOwn);
 
-    /// <summary>The pace a slide's getting up (Body.slideEnd) starts at (m/s): a slide with the keys held slows to it
-    /// (SlidePace). 0 for none.</summary>
-    internal float SlideExitPace => MotionOf(slideEnd)?.PaceAt(0f) ?? 0f;
 
     // A clip that ends running gives the body its legs back at its first footfall once they are under it (ClipMotion): from
     // there the walk or run the keys ask for takes over, at the foot the clip has going (StepFrom), and none of the clip's own

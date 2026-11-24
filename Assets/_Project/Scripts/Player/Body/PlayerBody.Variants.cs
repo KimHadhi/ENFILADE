@@ -295,22 +295,14 @@ public sealed partial class PlayerBody
         turning = 0;
     }
 
-    // The slide: down into it, then the slide's clip from its start, where the entry leaves off (hips 58-61 degrees round,
-    // chest 64-66), on to its middle and swaying about there for as long as it lasts. Until 0.9.336 the clip went
-    // round as a loop on a clock of its own, never begun with the slide: it took over anywhere in itself, and its end jumped
-    // back to its start, 34 degrees of hips and 45 of chest, about once a slide (the user, 2026-11-22: "슬라이딩 중에 모션 한번
-    // 버벅이고").
+    // The slide on its clip at the slide's own moment (SlideMove): down into it, along it matched to the distance left, held on
+    // the slide's loop while more is left than the clip shows, and up out of it, the same on every PC.
     private void SlidePose()
     {
-        var entry = Find(slideStart);
-        float time = entry != null ? stateTime - (entry.Length - blendTime) : stateTime;
-        if (time < 0f) { Want(slideStart); return; }
-        // Between where its body is down and where it begins to get up.
-        var motion = MotionOf(slide);
-        float centre = motion != null ? (motion.Down + motion.Rises) * .5f : 0f, sway = motion != null ? (motion.Rises - motion.Down) * .5f : 0f;
-        // At the clip's own pace up to the middle and through it, so nothing starts or stops there.
-        if (time > centre) time = sway > 0f ? centre + sway * Mathf.Sin((time - centre) / sway) : centre;
-        Drive(slide, time / Mathf.Max(.05f, Find(slide)?.Length ?? 1f));
+        var slide = player.Actions.SlideMove;
+        if (slide.Now == SlideMove.Phase.Held) { Want(slide.HoldClip); return; }
+        string clip = slide.ClipName;
+        if (Find(clip) is Channel channel) Drive(clip, slide.Moment / Mathf.Max(.05f, channel.Length));
     }
 
     private string SlideEndFor(MovementState from, MovementState to)
@@ -326,9 +318,9 @@ public sealed partial class PlayerBody
             case MovementState.Supine:
                 return to == MovementState.Standing ? (HoldsGun ? supineGetUpGun : supineGetUp)
                     : to == MovementState.Crouching ? supineGetUpCrouch : null;
-            // The slide's end gets up and runs on (SlideToRun_Exit): into a crouch the slide's pose turns straight into it
-            // (SlowBlend), where it stood up first (the user, 2026-11-21: "섰다가 앉기로 가서 부자연스러워").
-            case MovementState.Sliding: return to == MovementState.Proning || to == MovementState.Crouching ? null : slideEnd;
+            // The slide gets up in its own clip (SlideMove); into a crouch its pose turns straight into it (SlowBlend), where it
+            // stood up first (the user, 2026-11-21: "섰다가 앉기로 가서 부자연스러워").
+            case MovementState.Sliding: return null;
             case MovementState.SupineSliding:
                 return to == MovementState.Proning ? supineSlideEndProne : to == MovementState.Crouching ? supineSlideEndCrouch : supineSlideEnd;
             case MovementState.HeadFirstSliding:

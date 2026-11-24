@@ -40,7 +40,7 @@ public sealed class MovementActions
     public Vector3 DiveBodyForward = Vector3.forward;
     public MovementDive Dive { get; }
     /// <summary>The feet-first slide's pace, its clips' own.</summary>
-    internal SlidePace SlidePace { get; }
+    internal SlideMove SlideMove { get; }
     /// <summary>The legs' gait and how fast it goes each way (walk mode, Shift).</summary>
     public MovementGait Gait { get; }
     /// <summary>A run's turn back on its clip (the view flicked round on the run).</summary>
@@ -54,7 +54,7 @@ public sealed class MovementActions
         ctx = context;
         Dive = new MovementDive(ctx);
         Gait = new MovementGait(ctx);
-        SlidePace = new SlidePace(ctx);
+        SlideMove = new SlideMove(ctx);
         RunTurn = new RunTurn(ctx);
     }
 
@@ -79,7 +79,7 @@ public sealed class MovementActions
     public void StartSlide(float currentSpeed, bool applyBoost = true)
     {
         ctx.ChangeState(MovementState.Sliding);
-        SlidePace.Begin(currentSpeed);
+        float start = SlideMove.Begin(currentSpeed);
         sprintProgress = 0f;
         Vector2 input = ctx.CurrentInput;
         Vector3 inputDir = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
@@ -88,7 +88,7 @@ public sealed class MovementActions
         // The body drops into the slide facing the way the player looks: along the slide, or back along it when the run
         // carried them backwards. That holds for the slide; looking round in it doesn't turn it (SlideFacesBack).
         FaceSlideFrom(ctx.transform.eulerAngles.y);
-        CurrentSlideSpeed = applyBoost ? SlidePace.Start : currentSpeed;
+        CurrentSlideSpeed = applyBoost ? start : currentSpeed;
         SlideBrakeArmed = !ctx.Input.CrouchHeld;
         slideCooldownTimer = ctx.slideCooldown;
     }

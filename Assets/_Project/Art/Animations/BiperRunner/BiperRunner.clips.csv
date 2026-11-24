@@ -139,7 +139,7 @@ ShiftToSprint_L,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_L
 ShiftToSprint_L45,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_L45
 ShiftToSprint_R,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_R
 ShiftToSprint_R45,0,1,0,0,0,0,,,23,Female Runner: ShiftToSprint_R45
-SlideToRun_10m,1,1,0,1,0,0,21,58,81,Female Runner: SlideToRun_10m의 가운데(0.70~1.93초: 엉덩이가 바닥 가까이 머무는 동안)만 고리로. Body.slide(0.9.285). 이 동안 몸이 22° 돌아서 돌기는 뺐다(inPlaceYaw 1): 고리마다 되돌아가지 않게
+SlideToRun_10m,0,1,0,1,0,0,,,81,Female Runner: SlideToRun_10m 전체(내려가기·미끄러지기·일어나 달리기). Ability.slideClips(0.9.395). 미끄러지며 몸이 22° 돌아서 돌기는 뺐다(inPlaceYaw 1). 0.9.394까지는 가운데(21~58프레임)만 고리로 썼다
 SlideToRun_5m,0,1,0,0,0,0,,,46,Female Runner: SlideToRun_5m
 SlideToRun_Enter,0,1,0,0,0,0,,,22,Female Runner: SlideToRun_Enter
 SlideToRun_Exit,0,1,0,0,0,0,,,25,Female Runner: SlideToRun_Exit

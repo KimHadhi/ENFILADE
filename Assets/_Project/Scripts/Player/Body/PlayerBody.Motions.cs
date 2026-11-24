@@ -29,6 +29,6 @@ public sealed partial class PlayerBody
     private void ReadMotions()
     {
         foreach (string clip in WayClips()) MotionOf(clip);
-        foreach (string clip in new[] { slideStart, slide, slideEnd, crouchDown, standUp, heavyLand, rollLand, rollLandLow }) MotionOf(clip);
+        foreach (string clip in new[] { crouchDown, standUp, heavyLand, rollLand, rollLandLow }) MotionOf(clip);
     }
 }

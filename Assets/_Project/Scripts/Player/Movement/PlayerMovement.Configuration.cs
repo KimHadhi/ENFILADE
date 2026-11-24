@@ -41,7 +41,8 @@ public sealed partial class PlayerMovement
     [SerializeField, Range(0.05f, 0.8f)] internal float airSlideFrictionMultiplier = 0.25f;
     [SerializeField, Min(0f)] internal float slopeSlideGravity = 28f;
     [SerializeField, Min(0f)] internal float slideEndSpeed = 1.5f;
-    [SerializeField, Min(1f)] internal float slideCancelMaxSpeed = 5.5f;
+    [Tooltip("Sliding with the keys held, the fastest the slope takes it (m/s; SlideMove).")]
+    [SerializeField, Min(1f)] internal float slideMaxSpeed = 9f;
     [SerializeField, Min(1f)] internal float diveSlideCancelMaxSpeed = 2.0f;
     [Tooltip("Sliding on the back, Shift with a move key or Space gets up once the slide is this slow (m/s) and slideCancelMinDuration old.")]
     [SerializeField, Min(1f)] internal float supineSlideCancelMaxSpeed = 5.0f;
@@ -91,8 +92,6 @@ public sealed partial class PlayerMovement
     [Header("Impact & Destruction")]
     [SerializeField, Min(0f)] internal float doorBreakSpeedThreshold = 6.0f;
     [SerializeField, Range(0.1f, 1f)] internal float doorBreakSpeedRetention = 0.85f;
-    [SerializeField, Min(0f)] internal float wallBounceBounciness = 0.5f;
-    [SerializeField, Min(0f)] internal float supineBounceThreshold = 7.0f;
 
     [Header("Collision & Layers")]
     [SerializeField] internal LayerMask groundLayers = ~0;

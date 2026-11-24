@@ -14,7 +14,7 @@ using MovementState = PlayerMovement.MovementState;
 /// took a step as the clip ended (the user, 2026-11-23: "움직이면서 앉다가 속도 0인채 일어나면 덜컥 거리는 느낌").
 /// Turned back on its way, the other clip goes on at once from the height the body is at.
 /// A slide that has stopped gets up the same way, from the crouch's lowest (SlideStops): no pack has a getting up of a slide's
-/// own, and the slide's stepping one (SlideToRun_Exit) is for a body that runs on.
+/// own, and the one in the slide's clip (SlideMove) is for a body that runs on.
 /// Down and up over and over, the body tires as in CS2 (the user, 2026-11-23: "한번 CS2처럼 해 볼래?", the one place a clip
 /// is played slower than its own pace, at the user's word): each start down or up takes Ability.crouchTire of its pace, down to
 /// crouchTiredPace, and it gets crouchRest back a second; the first press after a rest is free, so a crouch now and then is

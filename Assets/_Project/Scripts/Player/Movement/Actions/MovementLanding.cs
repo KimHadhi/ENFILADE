@@ -288,6 +288,25 @@ public sealed class MovementLanding
         return true;
     }
 
+    /// <summary>Into a wall sliding fast (SlidingState.HandleWallCollision): down onto hands and knees, facing the wall.</summary>
+    internal void Slam()
+    {
+        LastTier = Tier.Heavy;
+        HeavyPose = Pose.Front;
+        HeavyYaw = ctx.transform.eulerAngles.y;
+        recoverLeft = noSprintLeft = 0f;
+        ctx.ChangeState(State.HeavyLanding);
+        ctx.Abilities.InputConsumed = true;
+        ctx.Actions.ClearJumpBuffer();
+    }
+
+    /// <summary>Into a wall sliding at a run's speed (SlidingState.HandleWallCollision): a hard landing's slowdown follows.</summary>
+    internal void Stumble()
+    {
+        recoverLeft = ctx.AbilitySettings.hardLandingRecoverTime;
+        noSprintLeft = ctx.AbilitySettings.hardLandingNoSprintTime;
+    }
+
     /// <summary>Hurts the player; false when that killed them.</summary>
     private bool TakeFallDamage(float amount)
     {

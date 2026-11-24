@@ -273,7 +273,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float AirSlideFrictionMultiplier => airSlideFrictionMultiplier;
     public float SlopeSlideGravity => slopeSlideGravity;
     public float SlideEndSpeed => slideEndSpeed;
-    public float SlideCancelMaxSpeed => slideCancelMaxSpeed;
+    public float SlideMaxSpeed => slideMaxSpeed;
     public float DiveSlideCancelMaxSpeed => diveSlideCancelMaxSpeed;
     public float SupineSlideCancelMaxSpeed => supineSlideCancelMaxSpeed;
     public float SlideBrakeDeceleration => slideBrakeDeceleration;
@@ -285,8 +285,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
 
     public float DoorBreakSpeedThreshold => doorBreakSpeedThreshold;
     public float DoorBreakSpeedRetention => doorBreakSpeedRetention;
-    public float WallBounceBounciness => wallBounceBounciness;
-    public float SupineBounceThreshold => supineBounceThreshold;
 
     public float StandingColliderHeight => Posture.standingColliderHeight;
     /// <summary>
@@ -327,8 +325,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     /// <summary>Which way the body faces (world yaw, degrees; PlayerBody.FacingYaw): the view's for a body without one.</summary>
     internal float BodyFacingYaw => Body != null ? Body.FacingYaw : transform.eulerAngles.y;
 
-    /// <summary>The pace a slide's getting up starts at (m/s; PlayerBody.SlideExitPace), 0 for none.</summary>
-    internal float SlideExitPace => Body != null ? Body.SlideExitPace : 0f;
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
     public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     /// <summary>Fall speed from actual descent, excluding time held against an edge (m/s).</summary>

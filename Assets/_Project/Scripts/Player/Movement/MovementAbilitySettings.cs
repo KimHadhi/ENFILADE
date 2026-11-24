@@ -233,8 +233,12 @@ public sealed class MovementAbilitySettings
     public string rollRunWays = "RollToRun_F@0";
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
     [Min(0f)] public float rollRunSpeed = 4f;
-    [Tooltip("The slide's clips, down into it and along: the slide goes at their pace (SlidePace) and the body plays them (PlayerBody.SlidePose).")]
-    public string slideStart = "SlideToRun_Enter", slide = "SlideToRun_10m";
+    [Tooltip("The slide's whole clips, down into it, along and up running, one chosen as it begins by how far it will go; and the "
+        + "loop the body holds on while more is left than the clip shows (SlideMove).")]
+    public string slideClips = "SlideToRun_5m;SlideToRun_10m", slideHold = "SlideToRun_Loop";
+    [Tooltip("Head-on into a wall sliding, at least this fast into it (m/s) the body stumbles into a crouch; at least the second, "
+        + "it goes down onto hands and knees (SlidingState.HandleWallCollision).")]
+    public Vector2 slideImpact = new Vector2(2.5f, 7f);
     [Tooltip("A slide's jump, a dive roll: its clips, standing up out of it and running on (chosen by the keys: MovementLanding). "
         + "From where its body has thrown itself on, at the clip's own time.")]
     public string diveRoll = "DiveRoll_F", diveRollRun = "DiveRollToRun_F";

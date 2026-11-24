@@ -68,6 +68,13 @@ public sealed class MovementMirror
             case State.SupineSliding:
                 pose.Direction = ctx.SlideDirection;
                 pose.Detail = ctx.Actions.SlideFacesBack ? 1f : 0f;
+                // The feet-first slide's clip, where in it and its moment (SlideMove.Mirror).
+                if (ctx.CurrentState == State.Sliding)
+                {
+                    var slide = ctx.Actions.SlideMove;
+                    pose.Detail += 10f * (int)slide.Now + 100f * (slide.Clip + 1);
+                    pose.Extent = slide.Moment;
+                }
                 break;
             // The way the dive flies: a dive on the back faces back along it.
             case State.Diving:
@@ -196,7 +203,11 @@ public sealed class MovementMirror
             case State.SupineSliding:
                 ctx.SlideDirection = pose.Direction;
                 // The facing goes as it was decided on the PC that plays the slide, not worked out again from here.
-                ctx.Actions.SlideFacesBack = pose.Detail > .5f;
+                int slideCode = Mathf.RoundToInt(pose.Detail);
+                ctx.Actions.SlideFacesBack = slideCode % 10 > 0;
+                if (state == State.Sliding)
+                    ctx.Actions.SlideMove.Mirror(slideCode / 100 - 1, (SlideMove.Phase)Mathf.Clamp(slideCode / 10 % 10, 0, 4), pose.Extent,
+                        ctx.CurrentState != State.Sliding);
                 break;
             case State.Diving:
             case State.SupineDiving: ctx.DiveBodyForward = pose.Direction; break;

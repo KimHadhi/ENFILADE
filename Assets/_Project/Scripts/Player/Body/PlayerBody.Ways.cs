@@ -29,6 +29,8 @@ public sealed partial class PlayerBody
         yield return moves.diveRoll;
         yield return moves.diveRollRun;
         foreach (string clip in (moves.runTurns ?? "").Split(';')) yield return clip.Trim();
+        foreach (string clip in (moves.slideClips ?? "").Split(';')) yield return clip.Trim();
+        yield return moves.slideHold;
         yield return landRunLight;
         yield return landRunMid;
         yield return landRunHard;
@@ -69,15 +71,17 @@ public sealed partial class PlayerBody
         return Find(landSlam) != null ? landSlam : null;
     }
 
-    // The one-offs that end running: up out of a slide (slideEnd), a landing or a roll on the run, a dodge's coming up into
+    // The one-offs that end running: up out of a slide (its clip), a landing or a roll on the run, a dodge's coming up into
     // the sprint. Their last steps are a run's, so they play out only while the body runs on; a body that has
     // stopped never shows them (the user, 2026-11-21: a slide's end ran in place, "갑자기 와다닥 달리는 모션하다 서기로").
     private bool RunsOut(Channel channel)
     {
         if (channel == null) return false;
-        if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunMid) || channel == Find(landRunHard)
+        if (channel == Find(landRunLight) || channel == Find(landRunMid) || channel == Find(landRunHard)
             || channel == Find(landRunStumble) || channel == Find(landSlam) || channel == Find(player.AbilitySettings.diveRollRun))
             return true;
+        foreach (string clip in (player.AbilitySettings.slideClips ?? "").Split(';'))
+            if (channel == Find(clip.Trim())) return true;
         foreach (string set in new[] { player.AbilitySettings.rollRunWays, player.AbilitySettings.dodgeSprintWays })
             foreach (var (clip, _) in ClipWays.Of(set))
                 if (channel == Find(clip)) return true;

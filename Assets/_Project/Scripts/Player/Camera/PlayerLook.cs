@@ -428,10 +428,12 @@ public sealed class PlayerLook : MonoBehaviour
             low = Mathf.Max(low, -limits.x);
             high = Mathf.Min(high, limits.y);
         }
-        else if (movement != null && movement.CurrentState == PlayerMovement.MovementState.SupineDiving && !movement.IsGrounded)
+        else if (movement != null && (movement.CurrentState == PlayerMovement.MovementState.SupineDiving
+            || movement.CurrentState == PlayerMovement.MovementState.SupineSliding || movement.CurrentState == PlayerMovement.MovementState.Supine))
         {
-            // Flying on the back the view looks down only so far: past that the head bent into the chest and the camera on
-            // the eyes went into the body (the user, 2026-11-21: "아래를 보면 내 몸을 뚫고 머리가 안으로 들어가").
+            // On the back, flying, sliding or lying, the view looks down only so far: past that the head bent into the chest and
+            // the camera on the eyes went into the body (the user, 2026-11-21: "아래를 보면 내 몸을 뚫고 머리가 안으로 들어가"; sliding
+            // and lying until 0.9.395, 2026-11-24: "supine 상태에선 아래를 보면 내 몸 안을 뚫고 보임").
             if (body == null) body = GetComponent<PlayerBody>();
             Vector2 limits = body != null ? body.SupineDiveLookPitchLimits : new Vector2(85f, 20f);
             low = Mathf.Max(low, -limits.x);
