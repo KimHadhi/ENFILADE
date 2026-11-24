@@ -169,9 +169,14 @@ internal sealed class BodyGaze
         return held;
     }
 
-    // The head's rotation held within the neck's bend from the chest (pitch neckPitch, yaw yawLimit, from the way a head
+    // The head's rotation held within the neck's bend from the chest (pitch neckPitch, sideways yawLimit, from the way a head
     // looks off the chest with the neck straight), or as far as the clip itself bends it, if further: the limit stops the
     // following of the view, never the clip's own pose. True when it had to stop.
+    // The pitch is read all the way round over the chest's right and the sideways turn off that plane, so a view up past
+    // the top (a ledge climb's chest bent over the edge, the view straight up: 100 degrees and more off the chest) has a
+    // steady side. Read as a turn round the chest's up and then a pitch, as in 0.9.380, the turn of a way pointing up and
+    // back went from +180 to -180 with every hair of the mouse, the limit put it at +85 or -85 in turn, and the head and
+    // its hat swung left and right (the user, 2026-11-24: "맨 위를 쳐다보고 있으면 모자가 왼쪽 오른쪽 왼쪽 오른쪽 움직여요").
     private Quaternion WithinNeck(Quaternion rotation, Quaternion clip, float yawLimit, out bool stopped)
     {
         stopped = false;
@@ -184,11 +189,13 @@ internal sealed class BodyGaze
             yawLimit > 0f ? Mathf.Clamp(at.y, Mathf.Min(-yawLimit, clipAt.y), Mathf.Max(yawLimit, clipAt.y)) : at.y);
         if ((held - at).sqrMagnitude < 1e-4f) return rotation;
         stopped = true;
-        Vector3 to = Quaternion.Euler(held.x, held.y, 0f) * Vector3.forward;
+        float pitch = held.x * Mathf.Deg2Rad, side = held.y * Mathf.Deg2Rad;
+        Vector3 to = new Vector3(Mathf.Sin(side), -Mathf.Cos(side) * Mathf.Sin(pitch), Mathf.Cos(side) * Mathf.Cos(pitch));
         return frame * Quaternion.FromToRotation(ahead, to) * back * rotation;
 
-        // A direction's pitch (down positive) and yaw (right positive), degrees.
+        // A direction's pitch over the right (down positive, all the way round) and how far it leans off that to the right,
+        // degrees.
         static Vector2 Angles(Vector3 way) =>
-            new Vector2(Mathf.Atan2(-way.y, new Vector2(way.x, way.z).magnitude), Mathf.Atan2(way.x, way.z)) * Mathf.Rad2Deg;
+            new Vector2(Mathf.Atan2(-way.y, way.z), Mathf.Asin(Mathf.Clamp(way.x / Mathf.Max(1e-6f, way.magnitude), -1f, 1f))) * Mathf.Rad2Deg;
     }
 }
