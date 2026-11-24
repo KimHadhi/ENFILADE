@@ -737,7 +737,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         float target = inAir ? bodyCamera.Anchor().y - (head.position.y + eyeOverHead) : 0f;
         // Never more than a leg: a pose that far off its place is not a jump's.
         target = Mathf.Clamp(target, -legLength * .5f, legLength * .5f);
-        airLift = Mathf.Lerp(airLift, target, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, airLiftTime)));
+        // Caught quickly as the jump starts, let go over the blend's time as it ends (a landing, a state that takes the body),
+        // as the clips cross over: until 0.9.402 both went at airLiftTime, and the eyes, and the camera on them, dropped as
+        // much as the jump's clip had lifted them in about three frames (the audit of 2026-11-24).
+        float ease = inAir ? airLiftTime : blendTime;
+        airLift = Mathf.Lerp(airLift, target, 1f - Mathf.Exp(-dt / Mathf.Max(.01f, ease)));
         if (Mathf.Abs(airLift) > 1e-4f) body.position += Vector3.up * airLift;
     }
 

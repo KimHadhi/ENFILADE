@@ -10,9 +10,15 @@ internal static class TwoBoneIK
     /// <summary>Bends in the limb's current plane, then turns the middle joint (elbow) round toward a hint, <paramref name="swing"/> of the way.</summary>
     public static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 hint, float swing = 1f)
     {
-        Vector3 a = upper.position, bc = end.position - lower.position;
-        Vector3 hinge = Vector3.Cross(lower.position - a, bc);
-        if (hinge.sqrMagnitude < 1e-8f) hinge = Vector3.Cross(hint - a, bc);
+        Vector3 a = upper.position, ab = lower.position - a, bc = end.position - lower.position;
+        // The side the middle joint sticks out to: the limb's own (away from where its lower bone turns), nudged toward the
+        // hint by HintBend's worth of bend, so a limb all but straight bends to the hint's side and not to whichever side its
+        // last degree of bend went. Until 0.9.402 it bent that way, and the swing toward the hint then turned the whole arm
+        // 160 to 180 degrees about its length in a frame whenever that degree changed sides (hanging from a ledge and moving
+        // along it: the pops record of 2026-11-24 20:3x). A limb clearly bent keeps its own side.
+        Vector3 side = -Vector3.ProjectOnPlane(bc, ab), toHint = Vector3.ProjectOnPlane(hint - a, ab);
+        if (toHint.sqrMagnitude > 1e-8f) side += toHint.normalized * (bc.magnitude * HintBend);
+        Vector3 hinge = Vector3.Cross(side, ab);
         if (hinge.sqrMagnitude < 1e-8f) hinge = Vector3.Cross(target - a, Vector3.up);
         Reach(upper, lower, end, target, hinge);
 
@@ -43,6 +49,9 @@ internal static class TwoBoneIK
         }
         upper.rotation = Quaternion.FromToRotation(end.position - a, target - a) * upper.rotation;
     }
+
+    // How far a limb's own bend must go before its side, not the hint's, says which way it bends: the sine of 10 degrees.
+    private const float HintBend = .17f;
 
     // The angle (radians) between sides b and c of a triangle whose third side is a.
     private static float TriangleAngle(float a, float b, float c)

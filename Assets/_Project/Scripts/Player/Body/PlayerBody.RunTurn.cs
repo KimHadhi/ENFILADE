@@ -21,7 +21,20 @@ public sealed partial class PlayerBody
     internal float FacingYaw => legYaw;
 
     // How far the turn's clip has the chest round against the body's root (degrees), for the spine's turn back to the view.
-    private float RunTurnFacing => turnClip != null && player.Actions != null ? player.Actions.RunTurn.PoseFacing : 0f;
+    // Which way the turn's clip has the chest against the body's root, by as much as the clip shows (its share of the pose),
+    // so it comes in and goes out with the clip's crossfade. Until 0.9.402 it was all of the clip's from the frame the turn
+    // began, with the clip a tenth of the pose, and the spine, the neck and the head turned back by it in a frame (the head 31
+    // to 38 degrees: the pops record of 2026-11-24 20:3x).
+    private float RunTurnFacing
+    {
+        get
+        {
+            if (turnClip == null || player.Actions == null) return 0f;
+            var channel = Find(turnClip);
+            float shows = channel != null && shownTotal > .0001f ? Mathf.Clamp01(channel.Weight / shownTotal) : 1f;
+            return player.Actions.RunTurn.PoseFacing * shows;
+        }
+    }
 
     // Before the pose is chosen: a turn that is over, or that the body has left (a jump, a slide), hands the body back.
     private void KeepRunTurn()

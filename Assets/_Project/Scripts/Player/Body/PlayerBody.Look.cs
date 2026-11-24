@@ -49,6 +49,11 @@ public sealed partial class PlayerBody
     private Vector2 slideLookLimits = new Vector2(35f, 120f);
     // The torso's own share of a slide's look: past this the spine would wring, so the head and neck turn the rest.
     private const float SlideTwistLimit = 90f;
+    // The most the look turns the spine, neck and head back toward the view from the chest (degrees), and its turn on the
+    // last frame (AimLook).
+    private const float LookTwistMost = 150f;
+    private float lookTwist;
+    private bool lookTwistKnown;
     [SerializeField, Tooltip("Sliding look pitch limits in degrees: up, down. Shared with the camera to keep the torso and view together.")]
     private Vector2 slidePitchLimits = new Vector2(40f, 55f);
     [SerializeField, Range(0f, 180f), Tooltip("Down after a heavy landing, look limit either side of the way the body faces "
@@ -226,8 +231,15 @@ public sealed partial class PlayerBody
         bendWeight = Mathf.MoveTowards(bendWeight, upright || sliding ? 1f : 0f, dt / blendTime);
 
         float pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f;
-        // Back to the view from where the chest is: a run's turn clip has it round in its own pose (RunTurnFacing).
-        float twist = Mathf.DeltaAngle(yaw + RunTurnFacing, 0f);
+        // Back to the view from where the chest is: a run's turn clip has it round in its own pose (RunTurnFacing). Carried on
+        // from the last frame's turn rather than read afresh within +-180, and held within what a spine and neck turn
+        // (LookTwistMost): in a run's turn the chest swings round past the back of the view, where the reading went from +170
+        // to -170 in a frame, and the spine and the arms on it swung 160 degrees round and back, three times in a turn (the
+        // pops record of 2026-11-24 20:3x, Jog_TurnR at 80 s). Until 0.9.402 it was read afresh.
+        float twistNow = Mathf.DeltaAngle(yaw + RunTurnFacing, 0f);
+        float twist = lookTwistKnown ? Mathf.Clamp(lookTwist + Mathf.DeltaAngle(lookTwist, twistNow), -LookTwistMost, LookTwistMost) : twistNow;
+        lookTwist = twist;
+        lookTwistKnown = true;
         if (sliding)
         {
             Vector2 limits = SlideLookPitchLimits;
