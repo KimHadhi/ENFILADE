@@ -98,8 +98,9 @@ public sealed partial class PlayerBody
     private int gunRunsFrame = -10;
     private float sprintSeen;
     private float legYaw;
-    // How the feet step a turn on the spot (TurnOnTheSpot, FootPlanting).
+    // How the feet step a turn on the spot (TurnOnTheSpot, FootPlanting), and the frame it was last ticked.
     private readonly TurnPlanner turnPlanner = new TurnPlanner();
+    private int plannedFrame = -10;
     private Vector3 stride;
     private int turning;
     private bool legsPlanted;
@@ -809,8 +810,11 @@ public sealed partial class PlayerBody
     // ("발을 네 번이나 뚝뚝뚝뚝 하는 건 좀 투머치"); the captured turns take two, and turn with them.
     private void TurnOnTheSpot(bool still, float dt)
     {
-        // Another state had the legs meanwhile (a slide, a ladder, a bar): a turn that was under way is over.
+        // Another state had the legs meanwhile (a slide, a ladder, a bar): a turn that was under way is over, and the view's
+        // turn meanwhile is none of this frame's.
         if (turning == 0 && turnPlanner.Lead != 0) turnPlanner.Reset();
+        if (plannedFrame != Time.frameCount - 1) turnPlanner.Forget();
+        plannedFrame = Time.frameCount;
         float look = transform.eulerAngles.y;
         legYaw = turnPlanner.Tick(look, legYaw, still, dt, turnStartAngle, turnStepTime, turnStartAngle + 30f);
         turning = turnPlanner.Lead;
