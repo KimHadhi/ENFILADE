@@ -159,7 +159,7 @@ public sealed partial class PlayerBody
     private const string FeetRecord = "feet";
     private const string FeetRecordHeading = "발 기록 (PlayerBody.RecordFeet): 다리가 걷거나 달리거나 키가 다리를 부르는 동안(그리고 멈춘 뒤 1초), "
         + "4m/s 넘게 달리거나 캡슐 바닥이 한 프레임에 3cm 넘게 뛰거나 달리다 돌기가 나올 때부터 1초 동안 프레임마다 한 줄: 지난 초, 속도(m/s), "
-        + "키가 다리에게 가라는 쪽·실제로 가는 쪽·몸(골반)이 보는 쪽(시선 기준 도), 시선이 도는 빠르기(도/초), 걸음 자리(0 왼발 디딤, .5 오른발), "
+        + "키가 다리에게 가라는 쪽·다리가 가는 쪽(발을 디딜 때 바뀜)·실제로 가는 쪽·몸(골반)이 보는 쪽(시선 기준 도), 시선이 도는 빠르기(도/초), 걸음 자리(0 왼발 디딤, .5 오른발), "
         + "클립 사이를 잇는 관성이 남은 시간(초), 무게가 큰 클립 셋; 캡슐 바닥 높이와 이 프레임 변화(cm), 고른 바닥과 엉덩이 바닥이 캡슐 바닥에서 "
         + "떨어진 정도(cm), 다리가 닿게 내린 엉덩이(cm); 발마다 디딤(D)·흔들림(S), 땅에 닿은 발바닥 끝(뒤꿈치·발끝, 땅에서 2cm 안이 아니면 뜸)과 "
         + "그 끝이 땅에서 뜬 높이(cm), 그 끝이 땅 위로 미끄러진 빠르기(cm/s, 지난 프레임에도 같은 끝이 닿아 있었을 때만), 발목이 제 엉덩이 "
@@ -203,7 +203,7 @@ public sealed partial class PlayerBody
         {
             feetRecordLeft -= dt;
             feetLine.Clear().Append($"+{Time.time - feetRecordFrom:0.00} {speed:0.0}m/s 키 {HeadingOf(player.Stride):0}° ")
-                .Append($"가는 쪽 {HeadingOf(player.ActualVelocity):0}° 몸 {yaw:0}° 시선 {viewTurn:0}°/s 걸음 {phase:0.00} ")
+                .Append($"다리 {travelHeading:0}° 가는 쪽 {HeadingOf(player.ActualVelocity):0}° 몸 {yaw:0}° 시선 {viewTurn:0}°/s 걸음 {phase:0.00} ")
                 .Append($"관성 {bodyInertia.Left:0.00} |");
             AppendTopClips(feetLine);
             feetLine.Append($" | 캡슐 {floor:0.00} {pop * 100f:+0;-0}cm ")

@@ -231,14 +231,12 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 ActualVelocity => Motor.actualVelocity;
     public Vector2 CurrentInput => InputAvailable && !ControlLocked && !IsGettingUp && Input != null ? Input.Move : Vector2.zero;
     /// <summary>The legs run ahead, on every PC (another's from its pose: MovementMirror): the keys ask a jog or a sprint within
-    /// a slant of straight on, standing and not aimed, entered once the way the legs go has come round within it too
-    /// (LocomotionState). The hips then face the way the body runs, which curves no faster than the run's own arc clip
-    /// (ArcRate, as every way does), and the head turns to the view; otherwise the hips face the view and the legs strafe
-    /// (PlayerBody.Locomotion).</summary>
+    /// a slant of straight on, standing and not aimed (LocomotionState). The hips then face the way the body runs, which curves
+    /// no faster than the run's own arc clip (ArcRate), and the head turns to the view; otherwise the hips face the view and
+    /// the legs strafe (PlayerBody.Locomotion).</summary>
     public bool RunsAhead => IsNetworkDriven ? mirroredAhead : runsAhead;
     internal bool runsAhead, mirroredAhead;
-    /// <summary>How fast the way the legs go may turn (degrees a second): the arc clip's own turn at the legs' gait
-    /// (PlayerBody.ArcRate).</summary>
+    /// <summary>How fast a run may curve (degrees a second): its arc clip's own turn at the legs' gait (PlayerBody.ArcRate).</summary>
     internal float ArcRate => Body != null ? Body.ArcRate : 720f;
     /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
     public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;

@@ -150,6 +150,7 @@ public sealed partial class PlayerBody
         AddLeans();
         turning = 0;
         strideCount = 0;
+        legsWayKnown = false;
     }
 
     private static float LegOf(Animator animator)
@@ -275,14 +276,23 @@ public sealed partial class PlayerBody
             strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
-        float speed = local.magnitude;
+        float speed = StepWay(local);
         // Still or moving is one flag, with a gap between its two speeds, and the heading is the travel's whenever it has one,
         // kept as the body slows to a stop: the moving share fades it. Until 0.9.400 one speed (StillTravel) switched the
         // heading to straight ahead, the place keeping, the turn on the spot and the cycles' shares all at once, so a backward or
         // sideways start or stop swapped the legs to the forward cycle in a frame, and a speed hovering there flipped all five
-        // every frame (the audit of 2026-11-24).
-        still = still ? speed < StillLeave : speed < StillEnter;
-        if (speed > HeadingLeast) travelHeading = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
+        // every frame (the audit of 2026-11-24). It stands once it has been slower than StillEnter for StillAfter: a reversal
+        // (A then D, W then S) goes through no speed for a frame or two and is no standing. Until 0.9.428 it stood that frame,
+        // the feet were kept where they were (FootPlanting.Stand), and as the body went on the other way a kept foot was left
+        // up to 70 cm off where its clip had it and swung back across when it lifted, 67 times in one play (the feet record of
+        // 2026-11-25 07:11; the user: "여전한디?").
+        if (still) still = speed < StillLeave;
+        else
+        {
+            slowFor = speed < StillEnter ? slowFor + dt : 0f;
+            still = slowFor >= StillAfter;
+        }
+        if (still) slowFor = 0f;
         float heading = travelHeading;
         keepsPlace = still;
         float scale = GaitScale;
@@ -366,8 +376,10 @@ public sealed partial class PlayerBody
 
     // Slower than StillEnter the body stands, faster than StillLeave it moves (m/s); its travel has a heading faster than
     // HeadingLeast. StillTravel is a curve's least speed (Leans).
-    private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
+    private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f, StillAfter = .15f;
     private bool still = true;
+    // How long the body has been slower than StillEnter while moving (s).
+    private float slowFor;
     // The frame the legs last walked or ran (Locomotion, not standing) or a run's turn had them (RunTurnPose): the body sits on
     // its hips (SitOnHips).
     private int walkedFrame = -10;
@@ -395,7 +407,41 @@ public sealed partial class PlayerBody
     // A body with no arc clips curves this fast at most (degrees a second). Hips coming round to a run ahead turn this many
     // times its arc's rate, so they catch up with a run that curves at it.
     private const float FreeArc = 720f, HipsCatch = 1.5f;
-    private float travelHeading;
+    // The way the legs go (degrees off the view), and held from footfall to footfall in the world (StepWay): the way, the half
+    // stride it was taken up at, and whether there is one.
+    private float travelHeading, legsWay;
+    private int legsStep;
+    private bool legsWayKnown;
+
+    // The legs change their way by stepping: the way they go (world yaw) is taken up as a foot comes down (each half stride of
+    // Pace's phase) and held to the next, the speed they are asked going on only as far as it lies along it. Standing, setting
+    // off, or once the way asked has turned a quarter round (nothing left along the held way: a reversal slows to it), it is
+    // taken up at once. Returns that speed, and sets travelHeading. Until 0.9.428 the way followed the stride every frame:
+    // turned faster than the legs step (the keys rolled round, A and D in turn) the eight ways' clips were swapped under the
+    // planted foot frame by frame, the switch's easing (BodyInertia) began again nearly every frame, and the foot on the
+    // ground slid at 2 to 4.5 m/s (the feet records of 2026-11-25 06:46 and 07:11; the user: "날라다니잖아"). 0.9.427 held
+    // every way to the arc clip's turn instead, and a back strafe turned to the other side arced round at speed (the user:
+    // "한 바퀴 호를 그려서 가야 하네? 흠 병신 같은데").
+    private float StepWay(Vector3 local)
+    {
+        float asked = local.magnitude, view = transform.eulerAngles.y;
+        if (asked > HeadingLeast)
+        {
+            float way = view + Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
+            int step = strideCount * 2 + (phase >= .5f ? 1 : 0);
+            float along = legsWayKnown ? asked * Mathf.Cos(Mathf.DeltaAngle(legsWay, way) * Mathf.Deg2Rad) : asked;
+            if (!legsWayKnown || still || step != legsStep || along < StillEnter)
+            {
+                legsWay = way;
+                legsStep = step;
+                legsWayKnown = true;
+                along = asked;
+            }
+            asked = Mathf.Max(0f, along);
+        }
+        if (legsWayKnown) travelHeading = Mathf.DeltaAngle(view, legsWay);
+        return asked;
+    }
 
     // The stride follows the travel's way and its speed each on their own, the way turning round at the same speed. Followed
     // as one, a way that swung round fast went through short in between: running on at 4-5 m/s through a sharp turn the legs

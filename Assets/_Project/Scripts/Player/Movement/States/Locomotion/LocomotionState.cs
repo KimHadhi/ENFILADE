@@ -14,6 +14,8 @@ public sealed class LocomotionState : MovementBaseState
     private const float RunsAheadWithin = 50f, RunsAheadLeave = 60f;
     // At least this far up the gaits' ladder (0 the walk, 1 the jog) the keys run ahead; a walk strafes under the view.
     private const float RunsAheadGait = .5f;
+    // A run ahead curves at its arc's rate once the hips face within this of its way (degrees).
+    private const float RunsAheadAligned = 20f;
 
     public override bool TryJump()
     {
@@ -45,20 +47,11 @@ public sealed class LocomotionState : MovementBaseState
         // and the head the view. Until 0.9.416 the hips always followed the view, and a view flicked on the run had the legs
         // sprint sideways and backwards under a body that swung up to 65 degrees a frame (the user, 2026-11-24:
         // "모션이 전반적으로 … 우스꽝스러워졌는데").
-        // Into it once the way the legs go (the stride, which comes round no faster than the gait's arc, below) is within the
-        // slant too, on in it by the keys alone: pressing W off a strafe the hips turn ahead only as the way comes round to
-        // them, and a view turned on the run keeps the run ahead under the hips until the turn back (RunTurn). Read off the
-        // keys alone going in, the hips swung out toward a way the body was not yet going and back (the programmer's review
-        // of 2026-11-25); setting off, the stride has no way yet and the keys tell it.
         if (ctx.IsGrounded && inputMagnitude > .1f)
         {
-            float keysOff = Mathf.Abs(Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg);
-            Vector3 going = ctx.transform.InverseTransformDirection(ctx.Stride);
-            float wayOff = going.x * going.x + going.z * going.z > KeepsPaceFrom * KeepsPaceFrom
-                ? Mathf.Abs(Mathf.Atan2(going.x, going.z) * Mathf.Rad2Deg) : keysOff;
+            float off = Mathf.Abs(Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg);
             ctx.runsAhead = ctx.CurrentState == PlayerMovement.MovementState.Standing && ctx.AimShare < .5f
-                && ctx.Actions.Gait.Position >= RunsAheadGait
-                && (ctx.runsAhead ? keysOff <= RunsAheadLeave : keysOff <= RunsAheadWithin && wayOff <= RunsAheadWithin);
+                && ctx.Actions.Gait.Position >= RunsAheadGait && off <= (ctx.runsAhead ? RunsAheadLeave : RunsAheadWithin);
         }
 
         // The way the keys point. Its speed is the gait's that way (MovementGait); the side's 1.15x "so a side step doesn't
@@ -122,16 +115,16 @@ public sealed class LocomotionState : MovementBaseState
                 stride = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
             else
                 stride = Vector3.Lerp(now, targetVelocity, t);
-            // The way turns no faster than the gait's own arc clip does (PlayerMovement.ArcRate: a walk's 90 degrees in 1.1 s, a
-            // jog's in 0.93 s, a sprint's in 0.6 s), whichever way the legs go: legs come round by stepping. A run ahead curves
-            // as BIPER's runner was made to, the hips with it and the legs banking into the arc (PlayerBody.Leans), the view
-            // going ahead of it, and further round is a turn back (RunTurn); a strafe's way comes round with its steps. A
-            // reversal goes through a stop (above). Until 0.9.427 only a run ahead was held to it (0.9.416; from 0.9.417 once
-            // the hips faced its way): with the keys rolled round the way went round in 0.6 s at up to 6 m/s, the legs' clips of
-            // every way were swapped under it 13 times a second, the switch's easing (BodyInertia) began again nearly every
-            // frame, and the foot on the ground slid at 4.5 m/s (the feet record of 2026-11-25 06:46; the user: "이게 뭐냐고
-            // 시발 날라다니잖아"; the programmer's review).
-            if (speedNow > KeepsPaceFrom && stride.sqrMagnitude > KeepsPaceFrom * KeepsPaceFrom)
+            // Running ahead the way curves no faster than the run's own arc clip does (PlayerMovement.ArcRate: a sprint's 90
+            // degrees in 0.6 s, a jog's in 0.93 s), the hips with it, and the legs bank into that arc (PlayerBody.Leans): the body
+            // curves as BIPER's runner was made to, the view going ahead of it. Further round than a run comes about is a turn
+            // back (RunTurn). Only once the hips face its way: a strafe pressed on ahead swings round under hips that face the
+            // view as a strafe does, and the hips meet it there; held to the arc's rate it took a second and the hips swung out
+            // toward the strafe and back. Only a run ahead: 0.9.427 held every way to it, and a back strafe turned to the other
+            // side arced round at speed (the user: "한 바퀴 호를 그려서 가야 하네? 흠 병신 같은데"). A strafe's legs change
+            // their way by stepping instead (PlayerBody.StepWay).
+            if (ctx.runsAhead && speedNow > KeepsPaceFrom && stride.sqrMagnitude > KeepsPaceFrom * KeepsPaceFrom
+                && Mathf.Abs(Mathf.DeltaAngle(ctx.BodyFacingYaw, Mathf.Atan2(now.x, now.z) * Mathf.Rad2Deg)) <= RunsAheadAligned)
             {
                 float turned = Vector3.SignedAngle(now, stride, Vector3.up), most = ctx.ArcRate * dt;
                 if (Mathf.Abs(turned) > most)
