@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Text;
+using MagicaCloth2;
 using UnityEngine;
 using UnityEngine.Playables;
 using MovementState = PlayerMovement.MovementState;
@@ -19,8 +21,9 @@ public sealed partial class PlayerBody
     private const string GaitRecordHeading = "걸음 기록 (PlayerBody.GaitRecord): 한 번 트는 동작에서 걸음으로 넘어갈 때(슬라이딩에서 일어나기, "
         + "구르기, 달리며 착지)와 움직이며(서서 2.2m/s, 앉아서 1m/s 이상) 시선을 확 돌릴 때부터 1.2초 동안 프레임마다 한 줄: 지난 초, 상태, 실제 속도(m/s), 걸음새(0 걷기, 1 조깅, "
         + "2 전력질주)와 다리가 트는 자리, 분당 걸음, 박자와 보폭 배율, 발 미끄러짐(m/s), 가는 쪽(시선 기준 도), 몸이 시선에서 돈 각도, "
-        + "시선이 도는 빠르기(도/초), 이 프레임에 몸(모델)·엉덩이·머리가 움직인 거리(cm)와 몸이 돈 각도(도), 머리카락처럼 매달린 뼈가 머리보다 "
-        + "더 움직인 가장 큰 거리(cm, 머리카락 물리가 리셋되면 크게 튄다), 넘겨주는 클립과 그 시각, 무게가 큰 클립 셋. 착지 구르기는 시작부터 남긴다";
+        + "시선이 도는 빠르기(도/초), 구르는 중이면 구르기 클립 시각, 넘겨주는 클립과 그 시각, 무게가 큰 클립 셋, 이 프레임에 몸(모델)·엉덩이·머리가 "
+        + "움직인 거리(cm)와 몸이 돈 각도·머리가 몸에 대해 돈 각도(도), 그리고 지난 프레임 천 물리가 끝난 뒤의 매달린 뼈(머리카락·치마·리본) 중 몸에 "
+        + "대해 가장 많이 움직인 뼈(cm)와 그 사슬이 매달린 몸 뼈, 사슬이 매달린 몸 뼈 중 가장 많이 움직이고 돈 뼈(cm, 도). 착지 구르기는 시작부터 남긴다";
     // How long a capture goes on (s); the view's turn on the move that starts one (degrees a second, at least m/s standing and
     // crouched).
     private const float GaitRecordFor = 1.2f, SharpViewTurn = 300f, SharpTurnSpeed = 2.2f, SharpTurnCrouched = 1f;
@@ -30,14 +33,34 @@ public sealed partial class PlayerBody
     // Where the body, its hips, its head and each hanging bone (PlayerBodyCloth.Hanging) were on the last frame, and its yaw.
     private Vector3 gaitBodyWas, gaitHipsWas, gaitHeadWas;
     private float gaitBodyYawWas;
-    private readonly System.Collections.Generic.Dictionary<Transform, Vector3> gaitHangingWas = new System.Collections.Generic.Dictionary<Transform, Vector3>();
+    private Quaternion gaitHeadTurnWas = Quaternion.identity;
+    // The cloth as Magica leaves it after each frame's simulation (ReadHanging), against the body: each hanging bone's place and
+    // each body bone a chain hangs from (its place and turn) on the last frame, which chain hangs from what, and what moved most.
+    private readonly Dictionary<Transform, Vector3> gaitHangingWas = new Dictionary<Transform, Vector3>();
+    private readonly Dictionary<Transform, (Vector3 place, Quaternion turn)> gaitAnchorWas = new Dictionary<Transform, (Vector3, Quaternion)>();
+    private readonly Dictionary<Transform, Transform> gaitAnchorOf = new Dictionary<Transform, Transform>();
+    private readonly HashSet<Transform> gaitAnchorsNow = new HashSet<Transform>();
+    private float gaitHangMost, gaitAnchorMove, gaitAnchorTurn;
+    private string gaitHangName, gaitHangFrom, gaitAnchorName;
+    private bool gaitHooked;
     private PlayerBodyCloth gaitCloth;
 
     // A capture begins, or goes on from now, saying why.
     private void StartGaitRecord(string why)
     {
         if (!PlayRecord.On || player == null || !player.IsLocal) return;
-        if (gaitRecordLeft <= 0f) gaitRecordFrom = Time.time;
+        if (!gaitHooked)
+        {
+            MagicaManager.OnPostSimulation += ReadHanging;
+            gaitHooked = true;
+        }
+        if (gaitRecordLeft <= 0f)
+        {
+            gaitRecordFrom = Time.time;
+            gaitHangingWas.Clear();
+            gaitAnchorWas.Clear();
+            gaitHangName = null;
+        }
         gaitRecordLeft = GaitRecordFor;
         PlayRecord.Line(GaitRecord, GaitRecordHeading, "-- " + why);
     }
@@ -61,6 +84,7 @@ public sealed partial class PlayerBody
         gaitLine.Append($"+{Time.time - gaitRecordFrom:0.00} {state} {speed:0.00}m/s 걸음새 {position:0.00} 다리 {gaitPlace:0.00} ")
             .Append($"분당 {steps:0} 박자 x{gaitRateNow:0.00} 보폭 x{stretch:0.00} 미끄러짐 {slide:0.00} ")
             .Append($"가는 쪽 {HeadingOf(player.ActualVelocity):0}° 몸 {yaw:0}° 시선 {viewTurn:0}°/s");
+        if (state == MovementState.LandingRoll && player.Abilities != null) gaitLine.Append($" 구르기@{player.Abilities.Landing.RollMoment:0.00}");
         if (transition != null && transition.Playable.IsValid())
             gaitLine.Append($" | 넘겨주는 {transition.Clip}@{transition.Playable.GetTime():0.00}");
         gaitTop.Clear();
@@ -73,33 +97,93 @@ public sealed partial class PlayerBody
         PlayRecord.Line(GaitRecord, GaitRecordHeading, gaitLine.ToString());
     }
 
-    // How far the body, its hips and head went this frame (cm) and how far its yaw turned; and the most any hanging bone went
-    // beyond the head (cm): hair whose simulation is reset jumps there.
+    // How far the body, its hips and head went this frame (cm), how far its yaw and its head against it turned (degrees); and,
+    // as Magica left the cloth after the last frame's simulation (ReadHanging), the hanging bone that moved most against the
+    // body (cm) with the body bone its chain hangs from, and the body bone hung from that moved and turned most against the body
+    // (cm, degrees): a bone of the pose that pops pulls its chains with it (their felt speed, VrcSway), and this names it. Until
+    // 0.9.397 the hanging bones were read here in Update, as drawn before Magica moved them, and a parent's pop was read as the
+    // hair's own (the cloth review of 2026-11-24: a 40 cm jump out and back at RollToRun_F's 0.85 s in two plays).
     private void AppendPlaces()
     {
         if (body == null || hips == null || head == null) return;
         Vector3 bodyAt = body.position, hipsAt = hips.position, headAt = head.position;
         float bodyYaw = body.eulerAngles.y;
-        bool first = gaitRecordFrom == Time.time;
-        Vector3 headMoved = headAt - gaitHeadWas;
-        if (!first)
-            gaitLine.Append($" | 몸 {(bodyAt - gaitBodyWas).magnitude * 100f:0}cm {Mathf.DeltaAngle(gaitBodyYawWas, bodyYaw):0}° 엉덩이 {(hipsAt - gaitHipsWas).magnitude * 100f:0}cm 머리 {headMoved.magnitude * 100f:0}cm");
-        if (gaitCloth == null) player.TryGetComponent(out gaitCloth);
-        if (gaitCloth != null)
+        Quaternion headTurn = Quaternion.Inverse(body.rotation) * head.rotation;
+        if (gaitRecordFrom != Time.time)
         {
-            float most = 0f;
-            foreach (var bone in gaitCloth.Hanging)
-            {
-                if (bone == null) continue;
-                Vector3 at = bone.position;
-                if (!first && gaitHangingWas.TryGetValue(bone, out var was)) most = Mathf.Max(most, (at - was - headMoved).magnitude);
-                gaitHangingWas[bone] = at;
-            }
-            if (!first) gaitLine.Append($" 매달린 뼈 {most * 100f:0}cm");
+            gaitLine.Append($" | 몸 {(bodyAt - gaitBodyWas).magnitude * 100f:0}cm {Mathf.DeltaAngle(gaitBodyYawWas, bodyYaw):0}° 엉덩이 {(hipsAt - gaitHipsWas).magnitude * 100f:0}cm ")
+                .Append($"머리 {(headAt - gaitHeadWas).magnitude * 100f:0}cm {Quaternion.Angle(gaitHeadTurnWas, headTurn):0}°");
+            if (gaitHangName != null)
+                gaitLine.Append($" | 매달린 뼈 {gaitHangMost * 100f:0}cm {gaitHangName}←{gaitHangFrom} 뿌리 {gaitAnchorName} {gaitAnchorMove * 100f:0}cm {gaitAnchorTurn:0}°");
         }
         gaitBodyWas = bodyAt;
         gaitHipsWas = hipsAt;
         gaitHeadWas = headAt;
         gaitBodyYawWas = bodyYaw;
+        gaitHeadTurnWas = headTurn;
+    }
+
+    // After Magica's simulation, while a capture goes on: the cloth as it will be drawn, against the body.
+    private void ReadHanging()
+    {
+        if (gaitRecordLeft <= 0f || body == null || player == null) return;
+        if (gaitCloth == null) player.TryGetComponent(out gaitCloth);
+        if (gaitCloth == null) return;
+        Quaternion into = Quaternion.Inverse(body.rotation);
+        float most = 0f, anchorMove = 0f, anchorTurn = 0f;
+        Transform moved = null, anchorMoved = null;
+        gaitAnchorsNow.Clear();
+        foreach (var bone in gaitCloth.Hanging)
+        {
+            if (bone == null) continue;
+            Vector3 at = into * (bone.position - body.position);
+            if (gaitHangingWas.TryGetValue(bone, out var was) && (at - was).magnitude > most)
+            {
+                most = (at - was).magnitude;
+                moved = bone;
+            }
+            gaitHangingWas[bone] = at;
+            if (AnchorOf(bone) is Transform anchor) gaitAnchorsNow.Add(anchor);
+        }
+        foreach (var anchor in gaitAnchorsNow)
+        {
+            Vector3 at = into * (anchor.position - body.position);
+            Quaternion turn = into * anchor.rotation;
+            if (gaitAnchorWas.TryGetValue(anchor, out var was))
+            {
+                float gone = (at - was.place).magnitude, turned = Quaternion.Angle(was.turn, turn);
+                // A centimetre counts as a degree.
+                if (gone * 100f + turned > anchorMove * 100f + anchorTurn)
+                {
+                    anchorMove = gone;
+                    anchorTurn = turned;
+                    anchorMoved = anchor;
+                }
+            }
+            gaitAnchorWas[anchor] = (at, turn);
+        }
+        gaitHangMost = most;
+        gaitHangName = moved != null ? moved.name : null;
+        gaitHangFrom = moved != null && AnchorOf(moved) is Transform from ? from.name : "-";
+        gaitAnchorName = anchorMoved != null ? anchorMoved.name : "-";
+        gaitAnchorMove = anchorMove;
+        gaitAnchorTurn = anchorTurn;
+    }
+
+    // The body bone a hanging bone's chain hangs from: the first above it that doesn't hang.
+    private Transform AnchorOf(Transform bone)
+    {
+        if (gaitAnchorOf.TryGetValue(bone, out var anchor)) return anchor;
+        anchor = bone.parent;
+        while (anchor != null && gaitCloth.Hanging.Contains(anchor)) anchor = anchor.parent;
+        gaitAnchorOf[bone] = anchor;
+        return anchor;
+    }
+
+    private void UnhookGaitRecord()
+    {
+        if (!gaitHooked) return;
+        MagicaManager.OnPostSimulation -= ReadHanging;
+        gaitHooked = false;
     }
 }

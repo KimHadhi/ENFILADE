@@ -438,6 +438,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void Teardown()
     {
         GameSettings.Changed -= OnSettingsChanged;
+        UnhookGaitRecord();
         UnbindHops();
         // The graph is the Animator's; it goes with the body.
         graph = default;
