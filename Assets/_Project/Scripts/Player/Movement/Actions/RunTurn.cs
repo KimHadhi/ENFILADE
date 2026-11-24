@@ -10,11 +10,15 @@ using State = PlayerMovement.MovementState;
 /// The clip moves the body (root motion): the capsule goes the way and at the pace the clip's own root goes, turned into the
 /// world from where the body faced (StartYaw), and the body's root turns as the clip's root turns, so the body moves as the
 /// clip's feet were made to and a foot that is down stays down where the clip put it. The one bend (motion warping): so the
-/// turn ends with the chest where the view looked as it began (EndYaw), the root turns up to MostWarp more or less than the
-/// clip's own turn, spread over the clip's own turning, the way it goes bending with it: a body that had already turned part
-/// of the way after a flicked view (as far as the head lets it lag, PlayerBody) turns the rest. A turn the clip can't make
-/// within that is no turn back, and the run comes round keeping its pace as on any other change of way. The speed the body
-/// came in at goes over to the clip's own in EntryBlend. 0.9.412 laid the clip from the way the run went instead, which
+/// turn ends with the chest where the view looked as it began (EndYaw), the root's whole turn is what the body needs from where
+/// it faced, the clip's own turn drawn out or in to it over the clip's own turning, the way it goes bending with it: a body
+/// that had already turned part of the way after a flicked view (as far as the head lets it lag, PlayerBody) turns the rest,
+/// on the clip's own footwork. 0.9.412 and 0.9.413 took the clip only where its turn, bent by no more than 30 and then 90
+/// degrees, came round to the view: by then the body had turned 45 to 90 degrees of a 100 to 140 degree flick, the clip's
+/// 180 never fitted, and the run came round as before 0.9.386, the legs sprinting sideways and backwards (StrafeSprint_R135,
+/// _B) while the body swung up to 65 degrees a frame (the gait and pops records of 2026-11-24 23:53; the user: "모션이
+/// 전반적으로 … 우스꽝스러워졌는데"). The speed the body came in at goes over to the clip's own in EntryBlend. 0.9.412 laid
+/// the clip from the way the run went instead, which
 /// turned a body already half round back away from the view at once, and the head, the neck and the arms swung round 105 to
 /// 175 degrees in a frame (the pops record of 2026-11-24 23:40; the user: "더 괴랄해졌는데요 … 튕기고 터지고").
 /// It hands over at the clip's first footfall once its root is done turning and its chest is back over its root
@@ -45,8 +49,6 @@ public sealed class RunTurn
     private const float ReadRate = 60f;
     // A clip's root has not begun, or is done, turning while it is within this of where it began or ends (degrees).
     private const float RootStill = 2f;
-    // The most the root turns past or short of the clip's own turn to end where the view looked (degrees).
-    private const float MostWarp = 90f;
     // The speed the body came in at goes over to the clip's own in this long (s).
     private const float EntryBlend = .15f;
     // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
@@ -132,10 +134,7 @@ public sealed class RunTurn
         string clip = ClipAt(index);
         var motion = ctx.MotionOf(clip);
         if (motion == null) return false;
-        // The turn is the clip's only if its own turn, bent by no more than MostWarp, brings the chest round to the view.
-        float from = EntryOf(motion, settings.runTurnEntry);
-        if (Mathf.Abs(Bend(motion, from, HandOver(motion, from), bodyYaw, view)) > MostWarp) return false;
-        Begin(index, clip, from, view, bodyYaw, motion);
+        Begin(index, clip, EntryOf(motion, settings.runTurnEntry), view, bodyYaw, motion);
         entryOff = now - ClipVelocity(motion, From);
         Count++;
         return true;
@@ -200,7 +199,7 @@ public sealed class RunTurn
         // The world's yaw of the frame the clip began in: the root at From faces where the body faced.
         frameYaw = startYaw - motion.TurnedAt(from);
         outAt = HandOver(motion, from);
-        warp = Mathf.Clamp(Bend(motion, from, outAt, startYaw, endYaw), -MostWarp, MostWarp);
+        warp = Bend(motion, from, outAt, startYaw, endYaw);
     }
 
     // The hand-over (s): the clip's first footfall once its root is done turning and its chest is back over its root.

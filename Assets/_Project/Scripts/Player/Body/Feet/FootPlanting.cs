@@ -132,8 +132,11 @@ internal sealed class FootPlanting
         /// it bends the knee clearly (bent up a sprint's heel to the hips, an IK on any other axis put the foot a few cm off and
         /// turned the whole leg round to point it back: 171 to 180 degrees in a frame in 0.9.408's strafing sprint, the pops
         /// record of 2026-11-24 23:40), and where the leg is all but straight the rest pose's hinge turned with the thigh, the
-        /// knee's own whatever the clip does with the leg against the hips; between, by how far it is bent (KneeBent), the
-        /// clip's taken on the hinge's side so it can't turn over. Every leg IK bends the knee about it (here, the hanging legs,
+        /// knee's own whatever the clip does with the leg against the hips; between, by how far it is bent (KneeBent, the angle
+        /// between thigh and shin), the clip's taken on the hinge's side so it can't turn over. 0.9.413 told how far by the
+        /// sine of that angle, as small for a leg folded heel to hips as for one all but straight, and took the hinge for the
+        /// first too: the knee swung 118 degrees and 70 cm in a frame (the pops record of 2026-11-24 23:53, sprinting sideways
+        /// and back). Every leg IK bends the knee about it (here, the hanging legs,
         /// the ladder's feet, the sweep). Until 0.9.408 each took the hips' line where the clip's bend lay its other side and was
         /// under 15 degrees: in a run's turn the pelvis turns over the planted leg, and the hinge swapped between the two as the
         /// bend crossed 15 degrees, the shin turning 75 degrees and the knee going 40 cm in a frame (22:39; the user: "다리 뒤집힘").
@@ -144,13 +147,13 @@ internal sealed class FootPlanting
             {
                 Vector3 hinge = Upper.rotation * KneeLocal;
                 Vector3 thigh = Lower.position - Upper.position, shin = Foot.position - Lower.position, own = Vector3.Cross(thigh, shin);
-                float bent = Mathf.Clamp01(own.magnitude / Mathf.Max(1e-6f, thigh.magnitude * shin.magnitude) / KneeBent);
+                float bent = Mathf.Clamp01(Vector3.Angle(thigh, shin) / KneeBent);
                 if (bent <= 0f) return hinge;
                 return Vector3.Lerp(hinge, own.normalized * (Vector3.Dot(own, hinge) < 0f ? -1f : 1f), bent);
             }
         }
-        // A knee bent this far (the sine of 15 degrees) bends about the clip's own axis (KneeAxis).
-        private const float KneeBent = .26f;
+        // A knee bent this far (degrees between thigh and shin) bends about the clip's own axis (KneeAxis).
+        private const float KneeBent = 15f;
         /// <summary>The ankle's height above the sole, measured in the rest pose (m).</summary>
         public float Sole;
         /// <summary>Heel and toe tip in the foot bone's space; only their place over the ground is used.</summary>
@@ -417,9 +420,12 @@ internal sealed class FootPlanting
     // carried the hips sideways taken back out. One rule, standing or on the move: a foot that
     // is down keeps the place it came down on, and the body goes on over it and turns on it as on a pivot, until its clip
     // lifts it; then it goes onto the clip's place over its swing, coming down where the clip comes down (Catching), and
-    // takes a place again there. On the move it is a small correction: where the body goes otherwise than the clip's feet
-    // were made to, the kept place gives way past MovingSlack off the clip's (0.9.412; the animation expert's review: a lock
-    // held further than that hides a fault upstream, as the run's turn's own path was). Standing, the body's clip never lifts
+    // takes a place again there. On the move a kept place is drawn in toward the hip only as far as the leg reaches without
+    // the hips lower than the clip's own leg has them (Reachable): the foot gives at the least the reach forces, the hips never
+    // dip for it. 0.9.412 and 0.9.413 let it give way once 5 cm off the clip's: a run's clip has its sole low a good deal
+    // longer than the foot really stands (a quarter of a second of a sprint's 0.3 s step, the body going 1.5 m on), and a foot
+    // that was down went over the ground at 2 to 4 m/s again running straight, as before 0.9.406 (the feet record of
+    // 2026-11-24 23:53; the user: "모션이 전반적으로 … 우스꽝스러워졌는데"). Standing, the body's clip never lifts
     // a foot, so one the leg can no longer reach with the hips down as far as Hold.MaxDrop, or that the legs have turned too
     // far over, steps: up off its place, round to where the clip has it now
     // and down, one foot at a time (<paramref name="other"/>) unless this one can no longer reach; a turn on the spot leads
@@ -501,13 +507,7 @@ internal sealed class FootPlanting
                     return clip + leg.Off;
                 }
             }
-            // On the move the kept place is a small correction to the clip, never a fight with it: it stays within MovingSlack
-            // of where the clip has the foot, giving way past that, and lets go only as the clip lifts the foot.
-            else
-            {
-                Vector3 off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
-                if (off.sqrMagnitude > MovingSlack * MovingSlack) leg.Place -= off * (1f - MovingSlack / off.magnitude);
-            }
+            else leg.Place = Reachable(leg, lift, leg.Place, clip);
         }
         // It comes down where it is shown, on the move at once; standing, once it has eased onto the clip's place, so the
         // stance stands as its clip has it.
@@ -546,8 +546,19 @@ internal sealed class FootPlanting
         return place;
     }
 
-    // On the move a kept place stays within this of where the clip has the foot (m).
-    private const float MovingSlack = .05f;
+    // A place on the ground drawn in toward the hip, level, as far as the leg reaches it without the hips lower than the
+    // clip's own leg at <paramref name="clip"/> has them (Need): never nearer the hip than the clip's own foot needs.
+    private static Vector3 Reachable(Leg leg, float lift, Vector3 place, Vector3 clip)
+    {
+        float own = Need(leg, lift, clip);
+        if (float.IsPositiveInfinity(own)) return place;
+        float most = ((leg.Lower.position - leg.Upper.position).magnitude + (leg.Foot.position - leg.Lower.position).magnitude) * StrideReach;
+        Vector3 from = leg.Upper.position;
+        float down = Mathf.Max(0f, from.y - (leg.Ground + lift) - Mathf.Max(0f, own));
+        float reach = Mathf.Sqrt(Mathf.Max(0f, most * most - down * down));
+        Vector3 level = Vector3.ProjectOnPlane(place - from, Vector3.up);
+        return level.sqrMagnitude > reach * reach ? place - level + level * (reach / level.magnitude) : place;
+    }
 
     // Whether the leg cannot reach a place on the ground even with the hips as far down as they may go for it.
     private static bool OutOfReach(Leg leg, float lift, Vector3 place, float maxDrop) => Added(leg, lift, place) > maxDrop;
