@@ -368,7 +368,8 @@ public sealed partial class PlayerBody
     // HeadingLeast. StillTravel is a curve's least speed (Leans).
     private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
     private bool still = true;
-    // The frame the legs last walked or ran (Locomotion, not standing): the body sits on its hips (SitOnHips).
+    // The frame the legs last walked or ran (Locomotion, not standing) or a run's turn had them (RunTurnPose): the body sits on
+    // its hips (SitOnHips).
     private int walkedFrame = -10;
 
     /// <summary>How fast a run may curve at the legs' gait now (degrees a second): its arc clip's own turn (BodyLeans.csv
