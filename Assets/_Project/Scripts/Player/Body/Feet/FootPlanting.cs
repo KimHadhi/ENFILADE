@@ -10,7 +10,9 @@ using UnityEngine;
 ///   length, so the ankle does not twist (GMod's IK Foot only ever bends thigh and calf on their pitch axis).
 /// - Each foot moves by the height of the ground under it, so the clip's own stride and foot lift stay as they are.
 /// - Ground and hip heights are kept in world space, so the capsule popping up or down a step never drags a foot
-///   through it. Standing, higher ground is taken at once and lower ground settles over the settle time.
+///   through it. Standing, higher ground is taken at once and lower ground settles over the settle time. They hold only
+///   while the feet stand: once off their feet (a jump, a fall, a roll, a vault) the legs forget them and read the ground
+///   afresh as the feet come back (0.9.401).
 /// - Walking or running (Walk, 0.9.390) a foot that comes down (its clip's sole at its floor) keeps the height it came down
 ///   on until it lifts; a foot that lifts swings from the ground it left to the ground where it will come down (Land: the
 ///   hips carried on for the time left to its footfall, half a step ahead of them), over what rises between, instead of
@@ -312,6 +314,16 @@ internal sealed class FootPlanting
             Left.SwingTime = Right.SwingTime = 0f;
             Left.StepLift = Right.StepLift = 0f;
             Left.Off = Right.Off = Vector3.zero;
+            // The ground the legs knew is world heights, kept only while the feet stand: off them the body goes elsewhere, so
+            // the legs forget it and take the ground afresh, from no support, as the feet come back. Until 0.9.401 a leg kept
+            // its support and the height it last stood on: back on its feet after a landing roll 4.7 m below the ledge it had
+            // jumped from, a leg that came back swinging swung down from the ledge's height, out of reach (259% of its length)
+            // for a fifth of a second, and folded 138 degrees in a frame as it came within reach; after a high vault or a step
+            // up the same (the feet and pops records of 2026-11-24 20:3x; the user: "랜딩 롤은 여전히 튀는데").
+            Left.SupportWeight = Right.SupportWeight = 0f;
+            Left.Supported = Right.Supported = false;
+            Left.Ground = Right.Ground = floor;
+            lastFloor = floor;
             return;
         }
 

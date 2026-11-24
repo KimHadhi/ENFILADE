@@ -138,7 +138,7 @@ public sealed class ParkourTraversal
         if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= 0.1f || ledgeLock > 0f
             || ctx.Abilities.SwingHoldsBody || settings.clamberHighest <= 0f) return false;
         if (Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude > settings.clamberMaxSpeed) return false;
-        if (!Detector.TryClamber(ctx.transform.position, ctx.transform.forward, settings.clamberReach, settings.clamberLowest,
+        if (!Detector.TryClamber(ctx.Feet, ctx.transform.forward, settings.clamberReach, settings.clamberLowest,
                 settings.clamberHighest, out ObstacleTarget target) || traversedObstacles.Contains(target.Surface)) return false;
         StopSurge();
         Begin(target);
@@ -232,7 +232,7 @@ public sealed class ParkourTraversal
             StopSurge();
             return false;
         }
-        Vector3 forward = ctx.transform.forward, feet = ctx.transform.position, way = (surging ? Surge.Velocity : run).normalized;
+        Vector3 forward = ctx.transform.forward, feet = ctx.Feet, way = (surging ? Surge.Velocity : run).normalized;
         float speed = surging ? Surge.Velocity.magnitude : run.magnitude;
         // Close enough: the vault starts here and now, from the ground. Left to the next frame's first look, a frame a little
         // longer or shorter could carry a body at surge speed past the rail's narrow band (about 0.65 m), and the move came
@@ -316,7 +316,7 @@ public sealed class ParkourTraversal
     internal bool TryCatchLedge(Vector3? facing = null)
     {
         if (ledgeLock > 0f) return false;
-        bool found = Detector.TryLedgeAt(ctx.transform.position, facing ?? ctx.transform.forward, out Ledge, out LedgeFinder.Probe probe);
+        bool found = Detector.TryLedgeAt(ctx.Feet, facing ?? ctx.transform.forward, out Ledge, out LedgeFinder.Probe probe);
         Record(found, probe);
         if (!found) return false;
         // As Beatrun's ClimbingCheck: holding W, a caught ledge is climbed straight over or onto when there's room, and
@@ -349,7 +349,7 @@ public sealed class ParkourTraversal
         recordedWhy = probe.Result;
         recordedAt = probe.Point;
         string on = PlayRecord.PathOf(probe.On != null ? probe.On.transform : null);
-        float above = probe.Point.y - ctx.transform.position.y;
+        float above = probe.Point.y - ctx.Feet.y;
         PlayRecord.Line(LedgeLog, LedgeLogHeading, found
             ? $"FOUND edge {PlayRecord.At(probe.Point)} ({above:0.00} m over the feet) on {on}, climb {Ledge.Climb}"
             : $"REFUSED {probe.Result} top {PlayRecord.At(probe.Point)} ({above:0.00} m over the feet) on {on}");
@@ -368,7 +368,7 @@ public sealed class ParkourTraversal
     {
         if (!WallDetector.CanUseSurface(Ledge.Surface)) return false;
         Transform support = Ledge.Surface.transform;
-        Vector3 edge = support.TransformPoint(Ledge.LocalEdge), feet = ctx.transform.position;
+        Vector3 edge = support.TransformPoint(Ledge.LocalEdge), feet = ctx.Feet;
         Vector3 inward = Vector3.ProjectOnPlane(-support.TransformDirection(Ledge.LocalNormal), Vector3.up).normalized;
         Vector3 along = Vector3.Cross(Vector3.up, inward);
         edge += along * Vector3.Dot(feet - edge, along);

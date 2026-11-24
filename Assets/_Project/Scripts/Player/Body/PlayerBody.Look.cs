@@ -271,8 +271,9 @@ public sealed partial class PlayerBody
         bodyLean.HangArm(spineLookRoll * spineLookWeight, dead, HoldsGun);
         // The head to the gaze, Q/E tilting it as far as the view rolls; FPSAF's while it holds a gun (BodyGaze).
         // No further from the chest than a neck turns (PlayerBody.Neck).
+        Vector3 chestAhead = GuardedChestAhead(out float upright);
         bool neckHeld = bodyGaze.FaceHead(dead || UpperBodyFromFramework, player.LeanRoll * bendWeight, blendTime, dt,
-            GuardedChestAhead(), neckTurnLimit + NeckGuardSlack);
+            chestAhead, neckTurnLimit + NeckGuardSlack, upright);
         Vector3 eye = head.TransformPoint(eyeLocal), eyeOnHead = eye;
         // Aiming on the gun's aim clips (AimsOnClip) the camera goes to the right eye, and the gun, sighted on the camera
         // (FPSBody.KeepGunInView), lines up with the right eye and the stock runs by the right cheek; the head stays as the

@@ -215,6 +215,15 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public bool IsAirCrouching => Posture.airCrouching;
     /// <summary>How far an air crouch has drawn the capsule's bottom up above the feet (m).</summary>
     public float AirTuck => Posture.AirTuck;
+    /// <summary>
+    /// Where the body's feet are: the capsule's bottom. An air crouch draws the bottom up and leaves the transform where the
+    /// feet were until landing (MovementPostureController.RebaseAirCrouchFeet), so what looks for a way over or onto something
+    /// (a vault, a mantle, a clamber, a ledge, a wall, a ladder) goes from here and not from the transform. Until 0.9.401 it
+    /// went from the transform, 0.75 m below the tucked body: jumping crouched, a top the body was already over looked like
+    /// one above the feet, and it mantled onto it out of the air (the user, 2026-11-24: "점프 하면서 앉았다가 풀면 …
+    /// 허공에서 … 오르기 mantling").
+    /// </summary>
+    internal Vector3 Feet => transform.position + transform.up * Posture.AirTuck;
     /// <summary>How far landing has moved the feet up to the capsule since the last call (m).</summary>
     internal float TakeTuckRebase()
     {

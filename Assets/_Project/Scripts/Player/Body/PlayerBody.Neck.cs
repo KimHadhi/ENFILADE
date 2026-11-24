@@ -20,9 +20,10 @@ using MovementState = PlayerMovement.MovementState;
 ///   in Blender, 2026-11-22), so a reach read each frame opened to 120 degrees left and shut to 12 again, and a view caught
 ///   outside it was flung. A step dodge has none: the body turns with the view through it.
 /// - The neck's guard (FaceHead): a clip that turns the chest away faster than the view is held could still wring the head
-///   for a frame, so the head itself stops a little past the same limit. An action clip's head that follows the view past
-///   its cone (Body.actionHeadCone) bends from the chest no further than Body.neckPitchLimits up and down and this limit
-///   round, unless the clip itself bends it further.
+///   for a frame, so the head itself stops a little past the same limit, as far as the body is upright (TorsoUpFrom to
+///   TorsoUpBy, eased: a body tumbling up out of a roll takes it on over the frames it comes up in, 0.9.401). An action
+///   clip's head that follows the view past its cone (Body.actionHeadCone) bends from the chest no further than
+///   Body.neckPitchLimits up and down and this limit round, unless the clip itself bends it further.
 /// - The record (카메라 기록, Logs/camera-head.txt): each time the camera is off the eyes by more than CameraOffMetres or
 ///   looks more than CameraTurnDegrees away from where the head looks, one line when it is back: how long, how far, in which
 ///   state and clip, and what had it off (a ladder's or a punch's steadying, the run's calm, the lean, a wall, an action
@@ -39,15 +40,16 @@ public sealed partial class PlayerBody
 
     // The share of the look's turn the spine bones take between them (SpineLook.SpineYawShare).
     private const float SpineTwistShare = .6f;
-    // A body whose hips-to-head line leans further than this from upright (its y) has no chest facing to turn the head from.
-    private const float TorsoUpright = .35f;
+    // How upright the body is, from its hips-to-head line's y: no chest facing to turn the head from below TorsoUpFrom, all of
+    // one from TorsoUpBy; the view's reach holds from half way (HeadReachArc).
+    private const float TorsoUpFrom = .2f, TorsoUpBy = .5f;
     // The head's own guard stops this far past the view's reach, so it only catches a frame the view was not held in time.
     private const float NeckGuardSlack = 10f;
 
     // Where the clip turns the chest from the body's facing (degrees, + to the right), read after the animation pass; and
-    // whether the body is upright enough to have one.
-    private float clipChestTurn, restYawOffset;
-    private bool torsoUpright, chestMeasured;
+    // how upright the body is to have one (0-1).
+    private float clipChestTurn, restYawOffset, torsoUp;
+    private bool chestMeasured;
 
     // From SetUpLook: how far the rest pose's facing (the shoulders' line) is from the model's own ahead.
     private void SetUpNeck()
@@ -70,7 +72,7 @@ public sealed partial class PlayerBody
         if (ahead.sqrMagnitude < 1e-6f) return;
         clipChestTurn = Mathf.DeltaAngle(BodyFacingYaw, Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg);
         Vector3 up = head.position - hips.position;
-        torsoUpright = up.sqrMagnitude > 1e-6f && up.normalized.y > TorsoUpright;
+        torsoUp = up.sqrMagnitude > 1e-6f ? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(TorsoUpFrom, TorsoUpBy, up.normalized.y)) : 0f;
         chestMeasured = true;
     }
 
@@ -103,7 +105,7 @@ public sealed partial class PlayerBody
     internal bool HeadReachArc(out float facing, out float lo, out float hi)
     {
         facing = lo = hi = 0f;
-        if (body == null || !chestMeasured || !torsoUpright || dead || limp || !ReachHolds(state)) return false;
+        if (body == null || !chestMeasured || torsoUp < .5f || dead || limp || !ReachHolds(state)) return false;
         facing = BodyFacingYaw;
         // The spine twists its share of the view's turn (AimLook); the neck turns the rest, as far as it can.
         float share = SpineTwistShare * Mathf.Clamp01(spineLookWeight);
@@ -113,10 +115,13 @@ public sealed partial class PlayerBody
         return hi > lo;
     }
 
-    // The chest's ahead now, after the look's bend, for the neck's guard; zero where there is none to turn from.
-    private Vector3 GuardedChestAhead()
+    // The chest's ahead now, after the look's bend, for the neck's guard, and how far the guard holds by it (how upright the
+    // body is); zero where there is none to turn from.
+    private Vector3 GuardedChestAhead(out float upright)
     {
-        if (!chestMeasured || !torsoUpright || leftUpperArm == null || rightUpperArm == null) return Vector3.zero;
+        upright = 0f;
+        if (!chestMeasured || leftUpperArm == null || rightUpperArm == null) return Vector3.zero;
+        upright = torsoUp;
         return Vector3.Cross(rightUpperArm.position - leftUpperArm.position, Vector3.up);
     }
 

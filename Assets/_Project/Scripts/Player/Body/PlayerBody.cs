@@ -611,6 +611,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         {
             bodyInertia.Begin(blendTime);
             bodyInertia.Reroot(jump);
+            NotePopReroot(jump);
         }
         if (legsPlanted)
         {

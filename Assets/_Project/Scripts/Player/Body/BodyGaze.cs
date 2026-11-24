@@ -31,6 +31,8 @@ internal sealed class BodyGaze
     private Quaternion overWas = Quaternion.identity;
     private bool overKnown;
     private float strength = .65f, follow = 1f, time = .1f, cone = 20f;
+    // The neck's guard has a view to hold from LevelFrom of its ahead along the ground, fully by LevelBy (FaceHead).
+    private const float LevelFrom = .1f, LevelBy = .3f;
     private Vector3 limits = new Vector3(18f, 12f, 10f);
     // The most the neck bends the head from the chest to follow the view: up (x), down (y), degrees.
     private Vector2 neckPitch = new Vector2(60f, 50f);
@@ -115,11 +117,15 @@ internal sealed class BodyGaze
         // wherever the two came level, as an upright head's do.
         // While a clip carries the view it is summed from each frame's step, so a roll whose head goes over another way (to the
         // side, on a diagonal) can't send it round past 180 in a frame where the whole turn's reading is ill-defined (the audit
-        // of 2026-11-24); with nothing carrying it is the whole turn's, an upright head's near nothing.
+        // of 2026-11-24); with nothing carrying it is the whole turn's, an upright head's near nothing. The sum is kept within
+        // +-180, as the whole turn's reading is: the view takes `carried` of it, and as a roll's clip hands over that share
+        // must come back to nothing the short way. 0.9.400 summed it unbounded, a whole roll came to 360, and as the roll
+        // handed over to the stand or the run the view, and the head on it, turned over through upside down with the share
+        // (head and neck 48 to 78 degrees in a frame: the pops record of 2026-11-24 20:3x).
         if (carried > 0f && overKnown)
         {
             Quaternion step = authored * Quaternion.Inverse(overWas);
-            overTurn += Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(step.x, step.w) * Mathf.Rad2Deg);
+            overTurn = Mathf.DeltaAngle(0f, overTurn + Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(step.x, step.w) * Mathf.Rad2Deg));
         }
         else overTurn = Mathf.DeltaAngle(0f, 2f * Mathf.Atan2(authored.x, authored.w) * Mathf.Rad2Deg);
         overWas = authored;
@@ -140,25 +146,34 @@ internal sealed class BodyGaze
     /// Q/E roll); an action clip's head only as far as it is off the view past the cone. <paramref name="off"/>: the head
     /// isn't this one's (dead, or FPSAF holds a gun); it hands over and takes it back over <paramref name="blendTime"/> (s).
     /// With <paramref name="neckLimit"/> above 0 the head turns no further than that (degrees) from
-    /// <paramref name="chestAhead"/>, the way the chest faces; true when it had to stop there or at the neck's bend
-    /// (PlayerBody.Neck).
+    /// <paramref name="chestAhead"/>, the way the chest faces, by <paramref name="upright"/> (0-1: how upright the body is to
+    /// have a facing); true when it had to stop there or at the neck's bend (PlayerBody.Neck).
     /// </summary>
-    internal bool FaceHead(bool off, float leanRoll, float blendTime, float dt, Vector3 chestAhead = default, float neckLimit = 0f)
+    internal bool FaceHead(bool off, float leanRoll, float blendTime, float dt, Vector3 chestAhead = default, float neckLimit = 0f,
+        float upright = 0f)
     {
         faceWeight = Mathf.MoveTowards(faceWeight, off ? 0f : 1f, dt / blendTime);
         if (faceWeight <= 0f || head == null) return false;
         Quaternion gaze = rotation * Quaternion.Euler(0f, 0f, leanRoll);
         bool held = false;
         // The view is held where the head can turn (PlayerLook, PlayerBody.HeadReachArc); this catches a frame a clip turned
-        // the chest away faster than that, so the head never turns into the shoulder.
+        // the chest away faster than that, so the head never turns into the shoulder. It is a turn about the world's up, so
+        // it holds by how much it has to go on, each eased in: a body upright enough to have a facing, a view looking more
+        // along the ground than up or down, and no action clip, whose head the neck's own bend from the chest holds instead
+        // (WithinNeck, below). Until 0.9.401 each was yes or no: as a roll's body came up past upright (RollToRun_F at 0.27 s,
+        // the hips-to-head line from 149 degrees over to 64) the guard came on all at once against a view still turned over
+        // with the head, and turned the head and its hair 23 degrees in a frame in every play (the pops record of 2026-11-24
+        // 20:3x; the user: "랜딩 롤은 여전히 튀는데").
         Vector3 ahead = Vector3.ProjectOnPlane(gaze * Vector3.forward, Vector3.up);
         Vector3 chest = Vector3.ProjectOnPlane(chestAhead, Vector3.up);
-        if (neckLimit > 0f && chest.sqrMagnitude > 1e-6f && ahead.sqrMagnitude > .04f)
+        float guard = Mathf.Clamp01(upright) * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(LevelFrom, LevelBy, ahead.magnitude))
+            * (1f - actionWeight);
+        if (neckLimit > 0f && guard > 0f && chest.sqrMagnitude > 1e-6f)
         {
             float turn = Vector3.SignedAngle(chest, ahead, Vector3.up);
             if (Mathf.Abs(turn) > neckLimit)
             {
-                gaze = Quaternion.AngleAxis(Mathf.Sign(turn) * neckLimit - turn, Vector3.up) * gaze;
+                gaze = Quaternion.AngleAxis((Mathf.Sign(turn) * neckLimit - turn) * guard, Vector3.up) * gaze;
                 held = true;
             }
         }
