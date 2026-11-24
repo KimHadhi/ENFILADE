@@ -338,7 +338,7 @@ internal sealed partial class HandGrip
     public void Ledge(Collider surface, Vector3 forward, Vector3 palm, Vector3 wrist, Quaternion rotation, float clearance, float weight)
     {
         if (weight <= 0f) { ClearLedgeSkin(); return; }
-        var contact = new Contact(surface, forward, palm);
+        var contact = new Contact(surface, forward, palm, wrist);
         Vector3 originalPosition = hand.localPosition;
         Quaternion originalRotation = hand.localRotation;
         try

@@ -953,6 +953,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.LandingRoll:
                 rollClip = player.Abilities.Landing.RollClip;
                 Restart(Find(rollClip));
+                StartGaitRecord($"구르기 시작: {rollClip}, {HorizontalSpeed():0.0} m/s");
                 break;
             case MovementState.HeavyLanding: downClip = DownClip(player.Abilities.Landing.HeavyPose); break;
             case MovementState.DashPush: Restart(Find(dashPush)); break;

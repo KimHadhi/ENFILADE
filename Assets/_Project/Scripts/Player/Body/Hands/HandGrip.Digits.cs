@@ -470,6 +470,12 @@ internal sealed partial class HandGrip
         private readonly Vector3 boxSize;
         private readonly Quaternion boxFrame;
         private readonly GunSurface gunSurface;
+        // A ledge that is no box, as two faces met at its edge (the four-argument constructor): a point on its top and on its
+        // front, and the ways into the solid through each.
+        private readonly bool wedge;
+        private readonly Vector3 topPoint, topIn, frontPoint, frontIn;
+        // The faces are looked for this far either side of the hand (m), the front this far under the top.
+        private const float Probe = .4f, FrontBelow = .03f;
         public bool IsLedge => surface != null;
         // How far a straight finger may bend back to clear the surface. On a gun the palm already rests outside it, so a
         // finger bent far back is a finger thrown open off the gun (user, 2026-11-08).
@@ -478,11 +484,13 @@ internal sealed partial class HandGrip
         {
             this.gunSurface = gunSurface; this.forward = forward; this.palm = palm;
             surface = null; centre = boxSize = Vector3.zero; half = 0f; boxFrame = Quaternion.identity; box = false;
+            wedge = false; topPoint = topIn = frontPoint = frontIn = Vector3.zero;
         }
         public Contact(Collider surface, Vector3 forward, Vector3 palm)
         {
             this.surface = surface; this.forward = forward; this.palm = palm; gunSurface = null;
             centre = boxSize = Vector3.zero; half = 0f; boxFrame = Quaternion.identity; box = false;
+            wedge = false; topPoint = topIn = frontPoint = frontIn = Vector3.zero;
             if (surface is BoxCollider bounds)
             {
                 box = true;
@@ -496,6 +504,32 @@ internal sealed partial class HandGrip
         {
             surface = null; this.centre = centre; this.forward = forward; this.palm = palm; this.half = half;
             box = false; boxSize = Vector3.zero; boxFrame = Quaternion.identity; gunSurface = null;
+            wedge = false; topPoint = topIn = frontPoint = frontIn = Vector3.zero;
+        }
+
+        /// <summary>
+        /// A ledge's contact at the hand (<paramref name="near"/>). A ledge that is no box has its top and its front measured there
+        /// once, two rays, and stands for them as two faces meeting at its edge (a wedge): the fingers' search then tests each
+        /// point it tries against them by arithmetic, as a box ledge's, and a hand sliding along the edge keeps its pose (Key).
+        /// Until 0.9.389 every point the search tried cast two rays at the mesh, a few thousand for one hand, and a hand that
+        /// moved half a millimetre along it searched again: hanging and moving along a ledge the fingers took 13 to 24 ms a frame
+        /// (the hitch records of 2026-11-24; the user: "ledge hanging 후 왼쪽 오른쪽으로 붙잡고 이동할 때 엄청 끊겨"). Where
+        /// the two faces are not found, or meet at no edge, the rays are cast as before.
+        /// </summary>
+        public Contact(Collider surface, Vector3 forward, Vector3 palm, Vector3 near) : this(surface, forward, palm)
+        {
+            if (box || surface == null) return;
+            forward.Normalize();
+            palm.Normalize();
+            if (!surface.Raycast(new Ray(near - palm * Probe, palm), out RaycastHit top, 2f * Probe)) return;
+            if (!surface.Raycast(new Ray(top.point + palm * FrontBelow - forward * Probe, forward), out RaycastHit front, 2f * Probe)) return;
+            float between = Vector3.Angle(top.normal, front.normal);
+            if (between < 30f || between > 150f) return;
+            wedge = true;
+            topPoint = top.point;
+            topIn = -top.normal;
+            frontPoint = front.point;
+            frontIn = -front.normal;
         }
 
         public void Key(Transform hand, float reach, out Vector3 min, out Vector3 max, out Quaternion frame, out int shape)
@@ -508,6 +542,16 @@ internal sealed partial class HandGrip
                 for (int i = 0; i < 3; i++) { min[i] = Mathf.Clamp(min[i], -reach, reach); max[i] = Mathf.Clamp(max[i], -reach, reach); }
                 frame = Quaternion.Inverse(hand.rotation) * Quaternion.Inverse(boxFrame);
                 shape = 0;
+            }
+            else if (wedge)
+            {
+                // Along the edge the faces are the same: how far under the top and in from the front the hand is, how the faces
+                // meet, and the hand's turn against them key the pose, so sliding along the edge reuses it.
+                Vector3 point = hand.position;
+                min = new Vector3(Vector3.Dot(point - topPoint, topIn), Vector3.Dot(point - frontPoint, frontIn), 0f);
+                max = new Vector3(Vector3.Dot(topIn, frontIn), 0f, 0f);
+                frame = Quaternion.Inverse(hand.rotation) * Quaternion.LookRotation(frontIn, -topIn);
+                shape = 1;
             }
             else
             {
@@ -524,6 +568,7 @@ internal sealed partial class HandGrip
             if (surface != null)
             {
                 if (box) return BoxClear(boxFrame * (start - centre), boxFrame * (end - centre), boxSize, padding);
+                if (wedge) return WedgeClear(start, end, padding);
                 Vector3 line = end - start;
                 float length = line.magnitude;
                 if (length > .0001f && surface.Raycast(new Ray(start, line / length), out _, length)) return false;
@@ -549,6 +594,27 @@ internal sealed partial class HandGrip
             distance = Mathf.Min(distance, PointSegment(new Vector2(half, -half), a, b));
             distance = Mathf.Min(distance, PointSegment(new Vector2(half, half), a, b));
             return distance >= padding * padding;
+        }
+
+        // A segment clear of the wedge by the padding, tried at points as close as the rays' path tries them.
+        private bool WedgeClear(Vector3 start, Vector3 end, float padding)
+        {
+            float length = (end - start).magnitude;
+            int samples = length > .0001f ? Mathf.Clamp(Mathf.CeilToInt(length / Mathf.Max(.001f, padding * .5f)), 2, 24) : 0;
+            for (int i = 0; i <= samples; i++)
+                if (WedgeDistance(samples == 0 ? start : Vector3.Lerp(start, end, i / (float)samples)) < padding) return false;
+            return true;
+        }
+
+        // How far a point is from the wedge (m): under the top and in from the front it is inside; over one face and beside the
+        // other, that face's distance; past both, the edge's.
+        private float WedgeDistance(Vector3 point)
+        {
+            float under = Vector3.Dot(point - topPoint, topIn), within = Vector3.Dot(point - frontPoint, frontIn);
+            if (under >= 0f && within >= 0f) return 0f;
+            if (within >= 0f) return -under;
+            if (under >= 0f) return -within;
+            return Mathf.Sqrt(under * under + within * within);
         }
 
         private bool NearFace(Vector3 point, Vector3 inward, float padding)
