@@ -33,7 +33,8 @@ public sealed class GroundBurstState : MovementBaseState
     }
     public override void UpdatePhysics(float dt)
     {
-        // A roll goes at its clip's own travel (MovementLanding.RollSpeed, 0.9.288); a landing on the spot stops dead.
+        // A roll carries its speed while its body is down and then goes at its clip's own travel (MovementLanding.RollSpeed); a
+        // landing on the spot stops dead.
         float speed = kind != State.LandingRoll ? ctx.Abilities.Combat.DashSpeed
             : rollStopped || ctx.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot ? 0f : ctx.Abilities.Landing.RollSpeed(dt);
         ctx.HorizontalVelocity = ctx.Abilities.ActionDirection * speed;

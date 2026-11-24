@@ -6,8 +6,9 @@ using UnityEngine.Playables;
 /// One-off moves that go a way of their own, picked by the way the body goes (the user, 2026-11-21, on BIPER Female Runner:
 /// "점프 착지 구르기 회피"): a roll and a dodge have a clip for each way their pack made them, and the movement picks the one whose
 /// way is nearest and goes as it does (MovementLanding, DodgeMove). A roll at a run comes up running (RollToRun) where a
-/// slower one stands up (Roll); a landing on the move runs on out of it (Land_ToRun, Land_ToStumble). A jump has one clip
-/// whatever its way (Body.jump).
+/// slower one stands up (Roll), the keys choosing again as its body begins to rise (MovementLanding.Choose); a landing on the
+/// move runs on out of it (Land_ToRun, Land_ToStumble). Whatever runs out gives way to the walk or run at its first footfall
+/// (PlayerBody.HasStepped). A jump has one clip whatever its way (Body.jump).
 /// </summary>
 public sealed partial class PlayerBody
 {
@@ -26,6 +27,7 @@ public sealed partial class PlayerBody
             foreach (var (clip, _) in ClipWays.Of(set))
                 yield return clip;
         yield return moves.diveRoll;
+        yield return moves.diveRollRun;
         yield return landRunLight;
         yield return landRunMid;
         yield return landRunHard;
@@ -73,7 +75,7 @@ public sealed partial class PlayerBody
     {
         if (channel == null) return false;
         if (channel == Find(slideEnd) || channel == Find(landRunLight) || channel == Find(landRunMid) || channel == Find(landRunHard)
-            || channel == Find(landRunStumble) || channel == Find(landSlam))
+            || channel == Find(landRunStumble) || channel == Find(landSlam) || channel == Find(player.AbilitySettings.diveRollRun))
             return true;
         foreach (string set in new[] { player.AbilitySettings.rollRunWays, player.AbilitySettings.dodgeSprintWays })
             foreach (var (clip, _) in ClipWays.Of(set))

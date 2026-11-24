@@ -320,6 +320,9 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal float AimShare => Body != null ? Body.AimShare : 0f;
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>
     internal float RunOutPace => Body != null ? Body.RunOutPace : 0f;
+
+    /// <summary>The pace a slide's getting up starts at (m/s; PlayerBody.SlideExitPace), 0 for none.</summary>
+    internal float SlideExitPace => Body != null ? Body.SlideExitPace : 0f;
     /// <summary>The fall is a long one (Ability.bigFallHeight): wind, heartbeat, screen warp and flailing.</summary>
     public bool IsBigFall => Abilities != null && Abilities.Landing.IsBigFall;
     /// <summary>Fall speed from actual descent, excluding time held against an edge (m/s).</summary>

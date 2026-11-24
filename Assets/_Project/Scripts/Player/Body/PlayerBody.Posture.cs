@@ -13,6 +13,8 @@ using MovementState = PlayerMovement.MovementState;
 /// had still stopping in (stride) was kept, the feet and the way the body faces were let go of and caught again, and the body
 /// took a step as the clip ended (the user, 2026-11-23: "움직이면서 앉다가 속도 0인채 일어나면 덜컥 거리는 느낌").
 /// Turned back on its way, the other clip goes on at once from the height the body is at.
+/// A slide that has stopped gets up the same way, from the crouch's lowest (SlideStops): no pack has a getting up of a slide's
+/// own, and the slide's stepping one (SlideToRun_Exit) is for a body that runs on.
 /// Down and up over and over, the body tires as in CS2 (the user, 2026-11-23: "한번 CS2처럼 해 볼래?", the one place a clip
 /// is played slower than its own pace, at the user's word): each start down or up takes Ability.crouchTire of its pace, down to
 /// crouchTiredPace, and it gets crouchRest back a second; the first press after a rest is free, so a crouch now and then is
@@ -65,8 +67,8 @@ public sealed partial class PlayerBody
     // From Enter: on the ground a body goes down or gets up from the height it is at.
     private void StartPosture(MovementState from, MovementState to, bool onGround)
     {
-        bool down = to == MovementState.Crouching;
-        if (!onGround || !(down ? from == MovementState.Standing : from == MovementState.Crouching && to == MovementState.Standing))
+        bool down = to == MovementState.Crouching, fromSlide = onGround && SlideStops(from, to);
+        if (!onGround || !(down ? from == MovementState.Standing : (from == MovementState.Crouching || fromSlide) && to == MovementState.Standing))
         {
             posturing = false;
             return;
@@ -81,12 +83,19 @@ public sealed partial class PlayerBody
             postureDown = 1f;
             return;
         }
-        if (!posturing) postureDown = down ? 0f : 1f;
+        if (!posturing || fromSlide) postureDown = down ? 0f : 1f;
         posturing = true;
-        TirePosture();
+        // A slide's getting up is not a press of the crouch key: CS2's tiring is for those.
+        if (!fromSlide) TirePosture();
         var motion = PostureMotion(down);
         postureMoment = motion != null ? motion.MomentAt(Mathf.Clamp(1f - postureDown, SetsOff, 1f - SetsOff)) : 0f;
     }
+
+    // A slide that ends stopped (no faster than a walk's clip, so every PC's copy, which sees only the speed, agrees) and stands:
+    // it gets up as from a crouch, CrouchToIdle from its start, the slide's pose turning into it over Body.slideCrouchTime (the
+    // body's hips sit lower in the slide than in the crouch, so the crouch's lowest is the nearest).
+    private bool SlideStops(MovementState from, MovementState to)
+        => from == MovementState.Sliding && to == MovementState.Standing && HorizontalSpeed() <= walkClipSpeed;
 
     // From ChoosePose, standing or crouched: how far down the body is now.
     private void TickPosture(bool crouched, float dt)

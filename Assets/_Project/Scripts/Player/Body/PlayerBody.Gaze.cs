@@ -48,7 +48,8 @@ public sealed partial class PlayerBody
         // head that went over (the user, 2026-11-21: "닭처럼 고정된 느낌").
         foreach (string clip in new[]
         {
-            land, landCrouch, player.AbilitySettings.diveRoll, fallFromEdge, landRunHard, landRunStumble, landSlam
+            land, landCrouch, player.AbilitySettings.diveRoll, player.AbilitySettings.diveRollRun, fallFromEdge, landRunHard,
+            landRunStumble, landSlam
         })
             Add(carriedViewChannels, clip);
         foreach (string set in new[] { player.AbilitySettings.rollWays, player.AbilitySettings.rollRunWays })

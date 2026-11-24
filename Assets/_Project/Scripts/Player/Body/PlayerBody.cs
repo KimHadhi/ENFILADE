@@ -778,7 +778,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // going as it does (RunOutPace) or leaves its feet. Up out of a slide, the getting up plays whatever the body does.
             runOutGrace = Mathf.Max(0f, runOutGrace - dt);
             bool getsUp = transition == Find(slideEnd) && transition.Playable.GetTime() < (MotionOf(slideEnd)?.OnFeet ?? 0f);
-            bool hold = transitionRuns ? onFeet && upright && (getsUp || runOutGrace > 0f
+            bool hold = transitionRuns ? onFeet && upright && !HasStepped(transition) && (getsUp || runOutGrace > 0f
                     || (HorizontalSpeed() > Mathf.Min(walkClipSpeed, RunOutPace * RunOutLeast)
                         && Mathf.Abs(HeadingOf(player.ActualVelocity)) < RunOutAhead))
                 : playingOut ? upright && (!onGround || !movingOff) : onFeet && !movingOff;
@@ -846,11 +846,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             case MovementState.Supine: Want(supine); FaceLying(dt); break;
             case MovementState.StepDodge: DodgePose(); break;
             case MovementState.LandingRoll:
-                // A moving roll plays on its own clock and the move goes at its clip's own travel
-                // (MovementLanding.RollSpeed); a landing on the spot plays at its own pace and outlasts the move.
+                // A moving roll plays on its own clock and the move goes as MovementLanding.RollSpeed says; a landing on the
+                // spot plays at its own pace and outlasts the move. The keys' late choice changes the clip on the way, the new one
+                // playing on from the same point of the roll (MovementLanding.Choose), the bones easing the switch.
+                rollClip = player.Abilities.Landing.RollClip;
                 if (player.Abilities.Landing.RollKind == MovementLanding.Roll.OnTheSpot) Want(rollClip);
                 else Drive(rollClip, (player.Abilities.Landing.RollFrom + stateTime) / Mathf.Max(.05f, Find(rollClip)?.Length ?? 1f));
-                if (player.Abilities.Landing.RollKind == MovementLanding.Roll.Dive) FaceRoll();
+                if (player.Abilities.Landing.Dives) FaceRoll();
                 break;
             case MovementState.HeavyLanding: DownPose(); break;
             case MovementState.DashPush: Want(dashPush); break;
@@ -893,10 +895,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             || to == MovementState.Supine))
         {
             string exit = SlideEndFor(from, to);
+            // The slide's end gets up and runs on (SlideToRun_Exit), the body at its pace, until the walk or run takes over at its
+            // first footfall (HasStepped). Stopped, it gets up as from a crouch (SlideStops). Until 0.9.382 a stopped slide played
+            // that getting up to where its body was on its feet (ClipMotion.OnFeet) and then settled into standing: legs that
+            // stepped for 3.5 m/s under a body that stood (the user, 2026-11-24: "슬라이딩 후 서기는 다리가 뭔가 움직이는 게
+            // 있는데 모션도 없고"); before 0.9.351 it played whole and ran in place (2026-11-21).
+            if (exit == slideEnd && SlideStops(from, to)) exit = null;
             if (exit != null) PlayTransition(exit);
-            // The slide's end gets up and runs on (SlideToRun_Exit), the body at its pace; stopped on the spot it gets up only
-            // (ClipMotion.OnFeet), and its running steps never show (GiveUpRunOut). It played whole, so a slide that stopped ran in
-            // place before standing (the user, 2026-11-21).
             if (exit != null && exit == slideEnd)
             {
                 SlowBlend(slideEndTime);
@@ -906,8 +911,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if ((from == MovementState.Vault || from == MovementState.Mantle) && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOutObstacle();
         if (heaving && from == MovementState.Mantle) SlowBlend(heaveStandTime);
-        // Out of a slide straight into a crouch: no clip goes there, so the slide's pose turns into the crouch's slowly.
-        if (from == MovementState.Sliding && to == MovementState.Crouching) SlowBlend(slideCrouchTime);
+        // Out of a slide straight into a crouch, or stopped into the getting up from one: no clip goes from the slide's pose
+        // there, so it turns into the crouch's slowly.
+        if (from == MovementState.Sliding && (to == MovementState.Crouching || (onGround && SlideStops(from, to)))) SlowBlend(slideCrouchTime);
         if (from == MovementState.DashPush && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(dashPush);
         if (from == MovementState.LandingRoll && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
@@ -1076,6 +1082,23 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     internal float RunOutPace => !transitionRuns || transition == null || !transition.Playable.IsValid() ? 0f
         : Mathf.Min(MotionOf(transition.Clip)?.PaceAt((float)transition.Playable.GetTime()) ?? 0f, SprintOwn);
 
+    /// <summary>The pace a slide's getting up (Body.slideEnd) starts at (m/s): a slide with the keys held slows to it
+    /// (SlidePace). 0 for none.</summary>
+    internal float SlideExitPace => MotionOf(slideEnd)?.PaceAt(0f) ?? 0f;
+
+    // A clip that ends running gives the body its legs back at its first footfall once they are under it (ClipMotion): from
+    // there the walk or run the keys ask for takes over, at the foot the clip has going (StepFrom), and none of the clip's own
+    // run-out steps play. BIPER made them for a run of about 4 m/s, which the game has none of (a key alone jogs at 2.7, with
+    // Shift it sprints at 6.1: MovementGait), so played to their end every one braked a sprint and then sped it up again, or
+    // dropped to the jog after (the user, 2026-11-24: "슬라이딩 후 걷기나 달리기 전환, 랜딩 롤 이후 걷기나 달리기 전환할 때
+    // 어색하게 … 속도", the experts' review). A dodge's run-out is left out: it ends in the sprint it hands over to.
+    private bool HasStepped(Channel channel)
+    {
+        if (channel == null || OutOfDodge(channel) || !channel.Playable.IsValid()) return false;
+        var motion = MotionOf(channel.Clip);
+        return motion != null && motion.StepAfter(motion.LegsUnder, out float step) && channel.Playable.GetTime() >= step;
+    }
+
     // A one-shot clip carries on from where it is as a landing-like transition: the barge recovers on the spot when a
     // dash push stops on someone, and gives way at once to a run that carries on.
     private void PlayOn(string clipName)
@@ -1083,14 +1106,15 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         var channel = Find(clipName);
         if (channel == null || channel.Synced) return;
         float left = channel.Length - (float)channel.Playable.GetTime();
-        if (left <= blendTime)
+        // One that ends running plays on only on the run (RunsOut); on the spot its steps would run in place.
+        bool runs = RunsOut(channel);
+        if (left <= blendTime || (runs && HorizontalSpeed() > walkClipSpeed && HasStepped(channel)))
         {
-            // Too near its end to play on, it gives way at once: a body going on takes its stride from it all the same.
+            // Too near its end to play on, or a run-out past its first footfall, it gives way at once: a body going on takes its
+            // stride from it all the same.
             if (HorizontalSpeed() > walkClipSpeed) StepFrom(channel);
             return;
         }
-        // One that ends running plays on only on the run (RunsOut); on the spot its steps would run in place.
-        bool runs = RunsOut(channel);
         if (runs && HorizontalSpeed() <= walkClipSpeed)
         {
             GiveUpRunOut(channel);

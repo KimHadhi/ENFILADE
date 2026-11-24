@@ -163,6 +163,19 @@ public sealed class ClipMotion
         return true;
     }
 
+    /// <summary>The clip's first footfall at or after <paramref name="time"/> (s), as StepAt reads them; false for none.</summary>
+    public bool StepAfter(float time, out float at)
+    {
+        foreach (float step in stepTimes)
+            if (step >= time)
+            {
+                at = step;
+                return true;
+            }
+        at = 0f;
+        return false;
+    }
+
     private float At(float[] values, float time)
     {
         float at = Mathf.Clamp01(time / Length) * (values.Length - 1);

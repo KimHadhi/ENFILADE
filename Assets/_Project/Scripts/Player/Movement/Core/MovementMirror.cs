@@ -82,6 +82,8 @@ public sealed class MovementMirror
             case State.LandingRoll:
                 pose.Detail = (float)landing.RollKind;
                 pose.Direction = abilities.ActionDirection;
+                // When the keys chose again how it ends (MovementLanding.Choose): the copies play the new clip on from there.
+                pose.Extent = landing.RollChosenAt;
                 break;
             case State.Vault:
             case State.Mantle:
@@ -186,7 +188,8 @@ public sealed class MovementMirror
                 break;
             case State.LandingRoll:
                 abilities.ActionDirection = pose.Direction;
-                abilities.Landing.MirrorRoll((MovementLanding.Roll)Mathf.Clamp(Mathf.RoundToInt(pose.Detail), 0, 3), pose.Direction, pose.Yaw);
+                abilities.Landing.MirrorRoll((MovementLanding.Roll)Mathf.Clamp(Mathf.RoundToInt(pose.Detail), 0, 4), pose.Direction, pose.Yaw,
+                    pose.Extent);
                 break;
             case State.Vault:
             case State.Mantle:

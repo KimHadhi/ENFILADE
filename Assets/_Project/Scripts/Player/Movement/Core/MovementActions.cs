@@ -75,7 +75,7 @@ public sealed class MovementActions
     public void StartSlide(float currentSpeed, bool applyBoost = true)
     {
         ctx.ChangeState(MovementState.Sliding);
-        SlidePace.Begin();
+        SlidePace.Begin(currentSpeed);
         sprintProgress = 0f;
         Vector2 input = ctx.CurrentInput;
         Vector3 inputDir = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
@@ -84,7 +84,7 @@ public sealed class MovementActions
         // The body drops into the slide facing the way the player looks: along the slide, or back along it when the run
         // carried them backwards. That holds for the slide; looking round in it doesn't turn it (SlideFacesBack).
         FaceSlideFrom(ctx.transform.eulerAngles.y);
-        CurrentSlideSpeed = applyBoost ? Mathf.Max(currentSpeed, SlidePace.Speed) : currentSpeed;
+        CurrentSlideSpeed = applyBoost ? SlidePace.Start : currentSpeed;
         SlideBrakeArmed = !ctx.Input.CrouchHeld;
         slideCooldownTimer = ctx.slideCooldown;
     }

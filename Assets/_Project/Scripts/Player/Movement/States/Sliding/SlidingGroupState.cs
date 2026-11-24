@@ -49,8 +49,8 @@ public sealed class SlidingGroupState : MovementBaseState
         else
         {
             float uphillResistance = ctx.IsGrounded && slopeDot < -0.05f ? Mathf.Abs(slopeDot) * 15f : 0f;
-            // Friction takes it down to the clip's own pace and no further while the keys go on (SlidePace); one slower than
-            // the clip from the start keeps what it has.
+            // Friction takes it down no further than SlidePace's even way from its start to its getting up's pace while the keys
+            // go on; one slower than that from the start keeps what it has.
             float floor = input.sqrMagnitude > .01f && !wantsBrake
                 ? Mathf.Min(ctx.CurrentSlideSpeed, ctx.StateMachine.Current.SlideFloor) : 0f;
             ctx.CurrentSlideSpeed = Mathf.Max(ctx.CurrentSlideSpeed - activeFriction * dt, floor) - uphillResistance * dt;

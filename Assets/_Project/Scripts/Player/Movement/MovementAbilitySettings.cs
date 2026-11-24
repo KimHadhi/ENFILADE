@@ -244,15 +244,19 @@ public sealed class MovementAbilitySettings
     [Min(0.01f)] public float rollInputWindow = 0.5f;
     [Tooltip("The landing rolls' clips by the way they go (clip@degrees;…, 0 ahead, 90 right): standing up out of it, and running on. The roll goes as far and at the pace its clip does (ClipMotion).")]
     public string rollWays = "Roll_F@0;Roll_R45@45;Roll_R@90;Roll_R135@135;Roll_B@180;Roll_L135@-135;Roll_L@-90;Roll_L45@-45";
-    public string rollRunWays = "RollToRun_F@0;RollToRun_R45@45;RollToRun_R@90;RollToRun_L@-90;RollToRun_L45@-45";
+    public string rollRunWays = "RollToRun_F@0";
     [Tooltip("At least this fast (m/s) when it lands, a roll runs on out of itself.")]
     [Min(0f)] public float rollRunSpeed = 4f;
     [Tooltip("The slide's clips, down into it and along: the slide goes at their pace (SlidePace) and the body plays them (PlayerBody.SlidePose).")]
     public string slideStart = "SlideToRun_Enter", slide = "SlideToRun_10m";
-    [Tooltip("A slide's jump, a dive roll: its clip. It goes as far and at the pace the clip does, from where its body has thrown itself on (ClipMotion).")]
-    public string diveRoll = "DiveRoll_F";
-    [Tooltip("How much further than its clip the dive roll goes (1 as the clip does), in the clip's own time.")]
+    [Tooltip("A slide's jump, a dive roll: its clips, standing up out of it and running on (chosen by the keys: MovementLanding). "
+        + "From where its body has thrown itself on, at the clip's own time.")]
+    public string diveRoll = "DiveRoll_F", diveRollRun = "DiveRollToRun_F";
+    [Tooltip("How much further than its clip the dive roll that stands up goes (1 as the clip does), in the clip's own time.")]
     [Min(.1f)] public float diveRollReach = 1.25f;
+    [Tooltip("While its body is down a roll keeps the speed it came in with, going up to this many times as far as its clip does "
+        + "there (MovementLanding.Carry); its feet step as the clip does once its legs are under it.")]
+    [Min(1f)] public float rollReachMost = 1.25f;
     [Tooltip("Slower than this across the ground (m/s), or pulling back, a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;
