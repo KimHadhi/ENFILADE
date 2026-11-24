@@ -163,6 +163,11 @@ internal sealed class FootPlanting
         /// LiftGround to LandGround (easing to LandTarget, refreshed while it swings) over SwingTime, Clearance higher at the
         /// middle. Supported: there is ground where it stands or will come down.</summary>
         public bool Down, Supported;
+        /// <summary>A foot that let go goes from OffFrom (how far off the clip's place it was) onto the clip's place over
+        /// CatchTime (s), CatchClock into it (Stand).</summary>
+        public bool Catching;
+        public Vector3 OffFrom;
+        public float CatchClock, CatchTime;
         public float LiftGround, LandGround, LandTarget, Clearance, SwingTime, SwingClock;
         public int LandRefresh;
         /// <summary>The collider under the foot, or null when it has no support.</summary>
@@ -315,6 +320,7 @@ internal sealed class FootPlanting
             Left.SwingTime = Right.SwingTime = 0f;
             Left.StepLift = Right.StepLift = 0f;
             Left.Off = Right.Off = Vector3.zero;
+            Left.Catching = Right.Catching = false;
             // The ground the legs knew is world heights, kept only while the feet stand: off them the body goes elsewhere, so
             // the legs forget it and take the ground afresh, from no support, as the feet come back. Until 0.9.401 a leg kept
             // its support and the height it last stood on: back on its feet after a landing roll 4.7 m below the ledge it had
@@ -410,8 +416,8 @@ internal sealed class FootPlanting
     // Where this foot stands this frame (world; only its level place is used). The clip's place is the foot's with what
     // carried the hips sideways taken back out and the stride's stretch added. One rule, standing or on the move: a foot that
     // is down keeps the place it came down on, and the body goes on over it and turns on it as on a pivot, until its clip
-    // lifts it; then it eases onto the clip's place as it swings (Off, over Hold.Release) and takes a place again where it
-    // next comes down. On the move a kept place is drawn in toward the hip only as far as the leg reaches without the hips
+    // lifts it; then it goes onto the clip's place over its swing, coming down where the clip comes down (Catching), and
+    // takes a place again there. On the move a kept place is drawn in toward the hip only as far as the leg reaches without the hips
     // lower than the clip's own leg has them (Reachable): the foot gives at the least the reach forces, the hips never dip
     // for it. Standing, the body's clip never lifts a foot, so one the leg can no longer reach with the hips down as far as
     // Hold.MaxDrop, or that the legs have turned too far over, steps: up off its place, round to where the clip has it now
@@ -442,7 +448,7 @@ internal sealed class FootPlanting
             if (!leg.Stepping || !leg.Led)
             {
                 leg.StepFrom = leg.Kept ? leg.Place : clip + leg.Off;
-                leg.Kept = false;
+                leg.Kept = leg.Catching = false;
                 leg.Stepping = leg.Led = true;
             }
             float share = hold.LeadShare, swing = share * share * (3f - 2f * share);
@@ -486,7 +492,7 @@ internal sealed class FootPlanting
                 bool twisted = hold.Lead == 0 && Mathf.Abs(Mathf.DeltaAngle(leg.KeptYaw, hold.Yaw)) > hold.Twist;
                 if ((far || twisted) && (!other.Stepping || far))
                 {
-                    leg.Kept = false;
+                    leg.Kept = leg.Catching = false;
                     leg.Stepping = true;
                     leg.StepClock = 0f;
                     leg.StepFrom = leg.Place;
@@ -500,7 +506,24 @@ internal sealed class FootPlanting
         // stance stands as its clip has it.
         else if (!hold.Stands || leg.Off.sqrMagnitude < Arrived * Arrived) return Keep(leg, clip + leg.Off, hold.Yaw, clip);
         if (leg.Kept) leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
-        else leg.Off *= hold.Release > 0f ? Mathf.Exp(-dt / hold.Release) : 0f;
+        else
+        {
+            // Let go, it goes onto the clip's place over the rest of its swing, coming down where the clip comes down: a
+            // walk's or run's own time to its next footfall (Walk), at least Hold.Release. Until 0.9.407 it went at once on
+            // Hold.Release's curve (0.12 s), an eighth of the way in the first frame: out of a run's turn, a foot planted ahead
+            // and wanted behind by the run went up to 20 cm a frame, 75 cm and 171 degrees in one (the pops and feet records of
+            // 2026-11-24 22:39; the user: "발이 갑자기 turn할 땐 앞인데 조깅하려면 뒤로 가야하니까 … 거의 텔포하고 꺾이고").
+            if (!leg.Catching)
+            {
+                leg.Catching = true;
+                leg.OffFrom = leg.Off;
+                leg.CatchClock = 0f;
+                leg.CatchTime = Mathf.Max(hold.Release, leg.SwingTime - leg.SwingClock);
+            }
+            leg.CatchClock += dt;
+            float s = Mathf.Clamp01(leg.CatchClock / leg.CatchTime);
+            leg.Off = leg.OffFrom * (1f - s * s * (3f - 2f * s));
+        }
         return clip + leg.Off;
     }
 
@@ -509,6 +532,7 @@ internal sealed class FootPlanting
     private static Vector3 Keep(Leg leg, Vector3 place, float yaw, Vector3? clip = null)
     {
         leg.Kept = true;
+        leg.Catching = false;
         leg.Place = place;
         leg.KeptYaw = yaw;
         leg.Off = clip.HasValue ? Vector3.ProjectOnPlane(place - clip.Value, Vector3.up) : Vector3.zero;
