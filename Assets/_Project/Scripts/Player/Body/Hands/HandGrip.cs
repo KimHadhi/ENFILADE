@@ -355,21 +355,16 @@ internal sealed partial class HandGrip
             // Evaluate at the intended contact, not the animated wrist's tracking error. Looking around must not
             // change the geometry key or make a finger choose another branch of the contact search.
             hand.SetPositionAndRotation(wrist, rotation);
-            // The hand's first hold is found whole at once, so it never shows the clip's open fingers on the ledge. After it, a
-            // hand that moved against the ledge has its fingers found again a finger a frame, for where it was as that began, and
-            // the pose shown eases to each one finished. Found whole each time, a hand moving along or off a ledge took 14 to
-            // 24 ms a frame four or five frames on end at every reach (the hitch record of 2026-11-24 16:33; the user: "ledge
-            // hanging하고 왼쪽 오른쪽 이동할 때마다 엄청 끊기는데").
+            // A hold's fingers are found a finger a frame, for where the hand was as that began, and the pose shown eases to
+            // each one finished; the first hold's show once found, five frames in, while a catch's fingers are yet to close.
+            // Found whole each time, a hand moving along or off a ledge took 14 to 24 ms a frame four or five frames on end at
+            // every reach (the hitch record of 2026-11-24 16:33; the user: "ledge hanging하고 왼쪽 오른쪽 이동할 때마다 엄청
+            // 끊기는데"); until 0.9.404 the first was still found whole, 23 ms in the frame a hang began (21:2x).
             if (ledgeNextFinger < 0)
             {
                 var contact = new Contact(surface, forward, palm, wrist);
                 contact.Key(hand, HalfWidth + .15f, out Vector3 min, out Vector3 max, out Quaternion frame, out int shape);
-                if (!ledgeCached)
-                {
-                    SolvePose(contact, forward, palm, clearance, ledgePose);
-                    KeepLedgeKey(min, max, frame, shape, clearance);
-                }
-                else if (shape != ledgeShape || Mathf.Abs(clearance - ledgeClearance) > 1e-7f || (min - ledgeMin).sqrMagnitude > 2.5e-7f
+                if (!ledgeCached || shape != ledgeShape || Mathf.Abs(clearance - ledgeClearance) > 1e-7f || (min - ledgeMin).sqrMagnitude > 2.5e-7f
                     || (max - ledgeMax).sqrMagnitude > 2.5e-7f || Quaternion.Angle(frame, ledgeFrame) > .2f)
                 {
                     ledgeNextFinger = 0;
@@ -397,6 +392,7 @@ internal sealed partial class HandGrip
             hand.localPosition = originalPosition;
             hand.localRotation = originalRotation;
         }
+        if (!ledgeCached) return;
         if (!ledgeDisplayed) { System.Array.Copy(ledgePose, displayedLedgePose, ledgePose.Length); ledgeDisplayed = true; }
         float follow = Time.deltaTime > 0f ? 1f - Mathf.Exp(-Time.deltaTime / .06f) : 1f;
         for (int i = 0; i < ledgePose.Length; i++) displayedLedgePose[i] = Quaternion.Slerp(displayedLedgePose[i], ledgePose[i], follow);

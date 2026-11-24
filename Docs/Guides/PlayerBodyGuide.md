@@ -520,6 +520,14 @@ Beatrun의 `meslideendprone`·`jumpturnland`는 몸 전체를 앞으로 옮긴�
 
 매달려 있는 동안 몸은 어디를 보든 벽을 향한다. 클립이 자세를 잡은 뒤에는 양손의 측정된 손바닥 접촉 위치에서 손목 목표를 계산하고, 그 목표에 맞춰 몸 전체를 옮긴다. 손과 몸이 같은 기준을 쓰며 눈 시점도 그 뒤에 놓는다. 손 접촉을 계산할 수 없을 때는 기존 `Body.ledgeGrip` 위치를 몸 정렬의 기준으로 쓴다. 매달리기의 클립은 모두 Beatrun 한 세트다(0.9.301): 잡기 `hanghardstart`, 매달림 `hang`, 둘러보기 `hangpose_*`, 좌우 한 걸음 `hangstrafeleft`·`hangstraferight`. 좌우는 한 걸음씩 간다: A·D를 누르면 `Ability.ledgeShimmyStep`(0.42m)을 `Ability.ledgeShimmyStepTime`(0.8초)에 가고, 키를 누르고 있으면 걸음이 끝나는 순간 다음 걸음이 이어진다([LedgeHangState](../../Assets/_Project/Scripts/Player/Movement/States/Parkour/LedgeHangState.cs)). 걸음은 시계 하나로 간다(`ParkourTraversal.LedgeStepShare`, 0.9.393): 캡슐은 그 시계의 `LedgeStepTravel` 곡선대로(손을 바꿔 잡는 처음·끝에 느리고 가운데에 빠르게) 가고, 몸은 걸음 클립을 그 시계로 한 번 다 틀고(`PlayerBody.LedgePose`, 클립은 제자리이고 끝과 처음이 같다: 클립 검사대 11-24 17:06), 손은 클립이 손을 뻗는 때 옮겨 잡는다(가는 쪽 손 0~38%, 다른 손 56~100%, [PlayerBodyHands.Ledge](../../Assets/_Project/Scripts/Player/Body/Hands/PlayerBodyHands.Ledge.cs)). 팔은 클립의 팔꿈치를 굽힐 쪽으로 삼고, 거의 펴진 팔은 부드럽게 다 편다(soft IK). 다른 PC는 포즈의 Detail(방향 × (1 + 진행))로 같은 시계를 받고, 포즈 사이는 걸음 박자대로 잇는다(`MovementMirror.MirrorLedgeStep`). 0.9.392까지는 옆으로 가는 속도를 보고 1초마다 1.17초짜리 클립을 처음부터 다시 틀어(끝 1/6이 잘려 자세가 튐) 손은 캡슐 속도로 0.22초마다 제 박자로 옮겨 잡고, 팔꿈치는 어깨 옆 한 점 쪽으로 굽혔다(분석 11-24, 사용자: "ledge hanging도 왼쪽 오른쪽 갈 때 모션 끊기고 팔은 버벅거리잖아"). 잡는 클립은 `BeatrunBody.clips.csv`에서 5프레임부터다: 몸이 손 밑으로 내려와 머리가 매달린 자세만큼(손목 아래) 오는 프레임. 0.9.301 전에는 Mixamo `mx_ledge_catch_air`의 손이 닿는 프레임부터였는데, 그 프레임은 점프가 아직 올라가는 중이라 머리가 손목보다 0.31m 위(매달리면 0.26m 아래)였다. 시야가 눈에 붙어 있으니 잡을 때 반 미터쯤 더 떴다 떨어졌다(사용자 2026-11-22: "점프로 ledge hanging할 때 뭔가 위로 살짝 더 뜨는 느낌"). 같은 때 잡는 곡선도 고쳤다: 들어오던 속도가 손이 닿는 자리를 지나칠 만큼이면 축마다 그만큼만 남긴다(Fritsch–Carlson, `LedgeHangState.NoOvershoot`).
 
+렛지에서 옆으로 갈 때 끊기는 느낌은 프레임 시간이 아니었다(매달림 평균 11.6ms, 서 있을 때보다 빠름). 보이는 자세가 튀었다(전문가 검토 11-24, 0.9.404).
+- 걸음이 이어지면 클립이 끝에서 처음으로 돌아간다. 이제 보이던 클립을 뒤로 돌려 잡으면(`PlayerBody.Drive`, 길이의 10% 넘게) 다시 틀 때처럼 관성 블렌딩한다. 그 전에는 0.8초마다 오른 정강이가 23°, 눈이 2~3cm 한 프레임에 튀었다.
+- 팔꿈치는 클립이 마지막으로 뚜렷하게(10° 넘게) 굽혔던 쪽으로 굽는다(`ArmIK.ClipElbowHint`). 그 전에는 클립의 팔꿈치 자체를 힌트로 써서, 거의 편 팔은 클립의 마지막 1° 굽힘 방향으로 굽었다. 그래서 손이 날아가는 동안 팔이 제 길이 축으로 한 프레임에 90° 돌았다(1분에 23번).
+- 다음 걸음이 시작되면 아직 가던 손을 내려앉힌다. 그 전에는 뒷손이 반쯤 편 채 다음 반 걸음 동안 떠 있다가 다시 들 때 튀었다.
+- 손가락은 손이 날아가는 자리가 아니라 내려앉을 자리로 찾는다. 첫 잡기도 한 프레임에 손가락 하나씩 찾고, 찾은 뒤 보인다. 그 전에는 날아가는 동안 매 프레임 다시 찾느라 0.6ms가 들었고, 매달리기 시작하는 프레임에 한 번에 다 찾느라 23ms 멈췄다.
+- 몸 높이는 손마다 잡고 있는 만큼(`HoldGrip`)으로 맞춘다. 그 전에는 뻗는 손의 들린 손목까지 쳐서 뻗을 때마다 몸과 카메라가 살짝 내려갔다.
+- 렛지를 따라 5cm마다 하는 탐색은 렛지만 찾는다. 어떻게 올라설지는 걸음이 끝날 때 한 번 정한다(`LedgeHangState.Step`). 그 전에는 탐색마다 15~40번, 걸음을 시작하는 프레임에 150~400번 물리 검사를 했다.
+
 ## 발 IK
 
 코드는 [FootPlanting](../../Assets/_Project/Scripts/Player/Body/Feet/FootPlanting.cs)이고 [PlayerBody.Feet](../../Assets/_Project/Scripts/Player/Body/PlayerBody.Feet.cs)가 표 수치를 넘겨 켠다. GMod IK Foot 애드온의 방식을 따랐다. 2026-11-07에 KINEMATION CAS Foot IK로 바꿨다가 무릎이 걸음마다 옆·뒤로 비틀려 이 방식으로 되돌렸다. CAS에서 자기 캐릭터 충돌체를 땅으로 치지 않는 점만 가져왔다(플레이어의 캡슐·히트박스·든 총은 땅이 아니다).

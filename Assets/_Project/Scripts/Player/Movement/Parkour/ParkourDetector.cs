@@ -291,7 +291,12 @@ public sealed class ParkourDetector
         Transform support = current.Surface.transform;
         Vector3 normal = support.TransformDirection(current.LocalNormal);
         Vector3 feet = support.TransformPoint(current.LocalHang) + displacement;
-        if (!TryLedgeAt(feet, -normal, out LedgeTarget candidate, out _)) return false;
+        // The ledge's own search alone: how its top is climbed is planned as a step ends (LedgeHangState.Step), the plan
+        // before going on meanwhile. Planned at every 5 cm probe, as until 0.9.404, it cost 15 to 40 physics queries a probe,
+        // 150 to 400 in the frame a step began (the experts' review of 2026-11-24).
+        if (!LedgeFinder.Find(Body, LedgeRules, feet, -normal, out LedgeTarget candidate, out _)) return false;
+        candidate.Climb = current.Climb;
+        candidate.LocalStand = current.LocalStand;
         Vector3 nextFeet = candidate.Surface.transform.TransformPoint(candidate.LocalHang);
         Vector3 nextNormal = candidate.Surface.transform.TransformDirection(candidate.LocalNormal);
         if (Vector3.Dot(normal, nextNormal) < 0.95f || Mathf.Abs(nextFeet.y - feet.y) > 0.15f

@@ -178,8 +178,14 @@ public sealed partial class PlayerBodyHands
         }
         float half = LedgeHalfSpan;
         int lead = way > 0f ? 1 : 0;
-        // A step began this frame (the first, or the next on from the last).
+        // A step began this frame (the first, or the next on from the last). One that follows on lands what the last still had
+        // on its way: the trailing hand holds only at a step's very end, which the share skips going from about .98 to .01,
+        // and until 0.9.404 it hovered half open over its hold through the next half step, then snapped as it lifted again
+        // (the experts' review of 2026-11-24).
         bool began = share < ledgeLastShare;
+        if (began)
+            foreach (var hold in ledgeHolds)
+                hold.Progress = 1f;
         for (int hand = 0; hand < 2; hand++)
         {
             bool leads = hand == lead;
@@ -281,10 +287,11 @@ public sealed partial class PlayerBodyHands
         if (lifted && catching < 1f)
             palm += (Vector3.up - contact.Fingers * .5f) * (player.AbilitySettings.ledgeHandLift * Mathf.Sin(Mathf.PI * catching));
         position = arm.WristAtPalm(palm, rotation);
-        // The clip's own elbow: the step's clip bends it as its hand reaches and holds, and looking away the look clip has it
-        // somewhere an arm can go from that way round. Until 0.9.393 the bend was turned toward a point beside the shoulder
-        // whatever the clip did, and a nearly straight arm flipped about it.
-        hint = arm.Elbow;
+        // The clip's own elbow side: the step's clip bends it as its hand reaches and holds, and looking away the look clip has
+        // it somewhere an arm can go from that way round (ArmIK.ClipElbowHint keeps it for an arm the clip has straight). Until
+        // 0.9.393 the bend was turned toward a point beside the shoulder whatever the clip did, and a nearly straight arm
+        // flipped about it.
+        hint = arm.ClipElbowHint();
         return true;
     }
 
@@ -297,7 +304,10 @@ public sealed partial class PlayerBodyHands
         if (left == null || right == null
             || !LedgeHandTarget(left, true, out Vector3 l, out _, out _, false)
             || !LedgeHandTarget(right, false, out Vector3 r, out _, out _, false)) return false;
-        float leftShare = Mathf.Max(edgeShares[0], .001f), rightShare = Mathf.Max(edgeShares[1], .001f), total = leftShare + rightShare;
+        // Each hand by as much as it holds (HoldGrip: none half way between holds): the clip's hand lifts as it reaches, and
+        // counted whole it dipped the body, and the camera, at every reach until 0.9.404 (the experts' review of 2026-11-24).
+        float leftShare = Mathf.Max(edgeShares[0] * HoldGrip(true), .001f), rightShare = Mathf.Max(edgeShares[1] * HoldGrip(false), .001f);
+        float total = leftShare + rightShare;
         centre = (l * leftShare + r * rightShare) / total;
         held = (left.Hand.position * leftShare + right.Hand.position * rightShare) / total;
         return true;
@@ -356,7 +366,11 @@ public sealed partial class PlayerBodyHands
     private void CurlLedgeFingers(ArmIK arm, bool isLeft)
     {
         float weight = weights[(int)Hold.Ledge] * edgeContacts[isLeft ? 0 : 1] * HoldGrip(isLeft);
-        if (weight <= 0f || !FindLedgeContact(arm, isLeft, out var contact)) return;
+        // Where the hand holds, not where it flies on its way (it opens there: HoldGrip), so the fingers' search key holds
+        // still and nothing is found again until the hand moves to another hold. Found for the lifted palm, it was found
+        // again every frame of every reach, 0.6 ms a frame while hanging, for a hand in the air (the experts' review of
+        // 2026-11-24).
+        if (weight <= 0f || !FindLedgeContact(arm, isLeft, out var contact, false)) return;
         arm.GripLedge(contact.Surface, contact.Fingers, -contact.Normal, contact.Palm, fingerSurfaceClearance, weight);
     }
 }

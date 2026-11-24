@@ -1170,8 +1170,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         channel.Playable.SetDone(false);
     }
 
-    // A clip showing more than this share is eased from when it is begun again (Restart).
-    private const float RestartShows = .05f;
+    // A clip showing more than this share is eased from when it is begun again (Restart), or driven back by more than
+    // DriveBack of its length (Drive).
+    private const float RestartShows = .05f, DriveBack = .1f;
     // The body's facing set further than this in a frame outside its follow (degrees) jumped (Update); where the follow left it.
     private const float RootJumpLeast = 5f;
     private float legYawLeft, targetYawWas, facingLagMost = FacingLagMost;
@@ -1183,6 +1184,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         var channel = Find(clipName);
         if (channel == null || channel.Synced) { Want(clipName); return; }
+        // Driven back to an earlier moment while it shows (a step along a ledge that follows the last, from its clip's start
+        // again), the pose jumps as much as a clip begun again does: the bones ease from where they were (BodyInertia), the
+        // rule Restart keeps. Until 0.9.404 each such step went from its clip's end to its start in a frame, the right shin 23
+        // degrees and the eyes 2 to 3 cm, every 0.8 s while A or D was held (the experts' review of 2026-11-24; pops record).
+        if (channel.Given > RestartShows && Mathf.Clamp01(share) * channel.Length < (float)channel.Playable.GetTime() - DriveBack * channel.Length)
+            bodyInertia.Begin(blendTime);
         HoldAt(channel, share);
         channel.Target = 1f;
     }

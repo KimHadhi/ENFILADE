@@ -181,6 +181,7 @@ public sealed class LedgeHangState : MovementBaseState
     private void Step(float dt)
     {
         float left = dt / Mathf.Max(.01f, ctx.AbilitySettings.ledgeShimmyStepTime);
+        bool ended = false;
         for (int part = 0; part < 2 && left > 0f; part++)
         {
             if (stepShare >= 1f && !StartStep()) break;
@@ -191,9 +192,12 @@ public sealed class LedgeHangState : MovementBaseState
             float after = ends ? 1f : stepShare + share;
             // The ledge stopped short of what was measured as the step began (it moved, or something came into the way).
             float gone = ParkourTraversal.LedgeStepTravel(after) - ParkourTraversal.LedgeStepTravel(stepShare);
-            if (!Along(stepSide * stepLength * gone)) { stepShare = 1f; break; }
+            if (!Along(stepSide * stepLength * gone)) { stepShare = 1f; ended = true; break; }
             stepShare = after;
+            ended |= ends;
         }
+        // Where a step ended, how the top is climbed from here (the probes along it look for the ledge alone).
+        if (ended) ctx.Abilities.Traversal.Detector.PlanClimb(ref ctx.Abilities.Traversal.Ledge);
         Publish();
     }
 

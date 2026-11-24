@@ -36,6 +36,28 @@ internal sealed class ArmIK
     public float Reach => Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
 
     /// <summary>
+    /// A hint that keeps the elbow on the clip's own side, read off the clip's pose before the arm is bent: where the clip
+    /// bends the arm clearly, the side its elbow sticks out to; where it has the arm all but straight (hanging), the side it
+    /// last clearly bent to, kept in the upper arm's frame. The clip's elbow itself as the hint lies on the arm's own line
+    /// there, so the bend took whichever side the clip's last fraction of a degree went: hanging from a ledge and moving
+    /// along it, the arm turned 90 degrees about its length in a frame, 23 times in a minute, until 0.9.404 (the experts'
+    /// review of 2026-11-24; pops record).
+    /// </summary>
+    public Vector3 ClipElbowHint()
+    {
+        Vector3 ab = lower.position - upper.position, bc = hand.position - lower.position;
+        Vector3 side = -Vector3.ProjectOnPlane(bc, ab);
+        if (side.magnitude > bc.magnitude * ClearBend || (elbowSide == Vector3.zero && side.sqrMagnitude > 1e-10f))
+            elbowSide = Quaternion.Inverse(upper.rotation) * side.normalized;
+        return elbowSide == Vector3.zero ? lower.position : lower.position + upper.rotation * elbowSide * ab.magnitude;
+    }
+
+    // The elbow's side as the clip last clearly bent it (the upper arm's frame), and how far a clip must bend the arm for its
+    // own side to count: the sine of 10 degrees (ClipElbowHint).
+    private Vector3 elbowSide;
+    private const float ClearBend = .17f;
+
+    /// <summary>
     /// From this share of an arm's length a target eases in (Soften): Player.csv Hands.softReachFrom, set by PlayerBodyHands.
     /// </summary>
     internal static float SoftReachFrom = .93f;
