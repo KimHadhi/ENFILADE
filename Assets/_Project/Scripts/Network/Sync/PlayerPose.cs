@@ -21,7 +21,9 @@ public struct PlayerPose : INetworkSerializeByMemcpy
         // point that turning away cut short is dropping back (PlayerPoint.TurnAway), so every copy drops it alike.
         PingPoint = 2048, PointAway = 4096,
         // The legs run ahead (PlayerMovement.RunsAhead): the hips face the way the body runs, not the view.
-        Ahead = 8192
+        Ahead = 8192,
+        // A run's turn back goes on (RunTurn.Turning): a copy gives its own up when this goes, as the player gave it up.
+        Turning = 16384
     }
 
     public Vector3 Velocity;

@@ -264,25 +264,14 @@ public sealed class PlayerLook : MonoBehaviour
 
     // Each move's own arc first (ClampStateYaw); on top, the view turns no further than the head can on the pose the body is
     // in (PlayerBody.HeadReachArc): the camera is the head, and the head never turns into the body (the user, 2026-11-21).
-    // On its feet the view leads the hips no further than a spine and a neck turn (PlayerBody.FeetReach): the mouse waits for
-    // the body to come round.
+    // On the feet nothing holds it: 0.9.422 held the view within 135 degrees of the hips there, and the user took it out
+    // ("왜 돌릴 때 막아요 카메라를...?").
     private float ClampLookYaw(float candidate)
     {
         candidate = ClampStateYaw(candidate);
         if (body == null) body = GetComponent<PlayerBody>();
-        if (body == null) return candidate;
-        if (body.HeadReachArc(out float facing, out float lo, out float hi)) return WithinArc(facing, lo, hi, candidate);
-        if (body.FeetReach(out facing, out float reach)) return HeldWithin(facing, reach, candidate);
-        return candidate;
-    }
-
-    // The view turns on toward the facing freely and away from it no further than `reach` degrees, or than it already is: a
-    // view already further round (the body came onto its feet facing another way) is never brought back by itself; the body
-    // coming round brings it in.
-    private float HeldWithin(float facing, float reach, float candidate)
-    {
-        float now = transform.eulerAngles.y, from = Mathf.DeltaAngle(facing, now);
-        return facing + Mathf.Clamp(from + Mathf.DeltaAngle(now, candidate), Mathf.Min(-reach, from), Mathf.Max(reach, from));
+        if (body == null || !body.HeadReachArc(out float facing, out float lo, out float hi)) return candidate;
+        return WithinArc(facing, lo, hi, candidate);
     }
 
     private float ClampStateYaw(float candidate)

@@ -45,9 +45,6 @@ public sealed partial class PlayerBody
     private const float TorsoUpFrom = .2f, TorsoUpBy = .5f;
     // The head's own guard stops this far past the view's reach, so it only catches a frame the view was not held in time.
     private const float NeckGuardSlack = 10f;
-    // On its feet the view leads the hips' facing by no more than this (degrees, FeetReach): a spine's turn and a neck's on it,
-    // 81 and 54, a look over the shoulder.
-    private const float FeetLookReach = 135f;
 
     // Where the clip turns the chest from the body's facing (degrees, + to the right), read after the animation pass; and
     // how upright the body is to have one (0-1).
@@ -116,23 +113,6 @@ public sealed partial class PlayerBody
         lo = Mathf.Max(-180f, Edge(-1f));
         hi = Mathf.Min(180f, Edge(1f));
         return hi > lo;
-    }
-
-    /// <summary>
-    /// On its feet (standing or crouched, the air of a jump too), how far the view may lead the way the hips face
-    /// (<paramref name="facing"/>, world yaw): <paramref name="reach"/> degrees either side, a spine's turn and a neck's on it.
-    /// The mouse waits there for the body (PlayerLook), which comes round after the view at its own pace: its steps standing,
-    /// its follow, a run ahead's curve, a run's turn back on its clip. Until 0.9.422 the view went on round as fast as the
-    /// mouse did and the head was left to follow: spun round faster than a run's turn, the head swung from one shoulder to the
-    /// other, past what a neck turns, and the chest and arms with it (the pops record of 2026-11-25 05:10 and 05:31; the
-    /// user, of the three ways the experts laid out, chose this one: "2번안으로 가고").
-    /// </summary>
-    internal bool FeetReach(out float facing, out float reach)
-    {
-        facing = legYaw;
-        reach = FeetLookReach;
-        return body != null && rootYawKnown && !dead && !limp
-            && (state == MovementState.Standing || state == MovementState.Crouching);
     }
 
     // The chest's ahead now, after the look's bend, for the neck's guard, and how far the guard holds by it (how upright the
