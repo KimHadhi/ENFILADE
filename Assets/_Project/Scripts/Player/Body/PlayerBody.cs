@@ -120,7 +120,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private float transitionLeft, stateTime, airTime, phase, yaw, yawVelocity, targetYaw;
     // Moving, the body's facing follows the view's in the world about a tenth of a second behind, and never further behind
     // than this (degrees): as far as the spine and neck turn the head back, as when the legs stand while the view turns.
-    private const float FacingLagMost = 90f;
+    // The body falls behind the view by FacingLagMost at most, carried with the view's turn from FacingCarryFrom (degrees).
+    private const float FacingLagMost = 90f, FacingCarryFrom = 45f;
     // Strides taken so far, for cycles holding more than one stride (GaitClips.Gait.ShareAt); phase is within the stride.
     private int strideCount;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
@@ -621,22 +622,23 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         else
         {
-            // The facing follows in the world, not as a turn off the view: a view flicked round has the body come round after it,
-            // FacingLagMost at most behind. Until 0.9.386 the body turned with the view in the same frame, and its legs ran
-            // backwards under it until the run had come round (걸음 기록 of 2026-11-24; the experts' review).
-            // The limit is on the lag from where the body is to face, and only stops it growing: a state that asks for a facing
-            // far round (out of a hang, onto a ladder) has the body come round to it rather than snap to the limit, and a lag
-            // near the back can't be clamped onto the other side. Until 0.9.400 the lag off the view was clamped to targetYaw's
-            // window unwrapped (the audit of 2026-11-24).
-            float facing = Mathf.SmoothDampAngle(legYaw, view + targetYaw, ref yawVelocity, .12f);
-            if (Mathf.Abs(Mathf.DeltaAngle(targetYawWas, targetYaw)) > .5f)
-                facingLagMost = Mathf.Max(facingLagMost, Mathf.Abs(Mathf.DeltaAngle(view + targetYaw, legYaw)));
-            float lag = Mathf.Clamp(Mathf.DeltaAngle(view + targetYaw, facing), -facingLagMost, facingLagMost);
-            facingLagMost = Mathf.Max(FacingLagMost, Mathf.Abs(lag));
-            yaw = targetYaw + lag;
-            legYaw = view + yaw;
+            // The facing follows in the world, not as a turn off the view: a view flicked round has the body come round after it
+            // (until 0.9.386 the body turned with the view in the same frame, and its legs ran backwards under it). Fallen behind
+            // past FacingCarryFrom, the body is carried with the view's own turn away from it, more the further behind, all of
+            // it by FacingLagMost: the head is the camera and turns no further from the body than a neck and a spine do, and the
+            // body's turn comes up to the view's pace smoothly. Until 0.9.405 the lag was clamped at FacingLagMost, and a view
+            // flicked round had the body follow at its own pace up to it and then at the view's at once: its turn went from 6-9
+            // to 19-32 degrees a frame in a frame, the legs with it, at every flick (the pops record of 2026-11-24 22:01; the
+            // user: "돌았을 때 갑자기 발이 튀는"). Only the view's turn is carried, so a facing a state asks for far round (out
+            // of a hang, onto a ladder) is come round to at the follow's pace.
+            float wanted = view + targetYaw, behind = Mathf.DeltaAngle(wanted, legYaw);
+            float viewStep = rootYawKnown ? Mathf.DeltaAngle(viewWas, view) : 0f;
+            legYaw = Mathf.SmoothDampAngle(legYaw, wanted, ref yawVelocity, .12f);
+            if (behind * viewStep < 0f)
+                legYaw += viewStep * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(FacingCarryFrom, FacingLagMost, Mathf.Abs(behind)));
+            yaw = Mathf.DeltaAngle(view, legYaw);
         }
-        targetYawWas = targetYaw;
+        viewWas = view;
         legYawLeft = legYaw;
         rootYawKnown = true;
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
@@ -1175,7 +1177,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private const float RestartShows = .05f, DriveBack = .1f;
     // The body's facing set further than this in a frame outside its follow (degrees) jumped (Update); where the follow left it.
     private const float RootJumpLeast = 5f;
-    private float legYawLeft, targetYawWas, facingLagMost = FacingLagMost;
+    private float legYawLeft, viewWas;
     private bool rootYawKnown;
 
     // A one-shot clip held at the share of its length the movement has reached (a vault's progress), so the body

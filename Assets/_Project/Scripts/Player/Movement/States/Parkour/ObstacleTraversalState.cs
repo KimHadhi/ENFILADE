@@ -49,7 +49,9 @@ public sealed class ObstacleTraversalState : MovementBaseState
         ctx.Abilities.Traversal.ObstacleSupport = Vector2.zero;
         
         warp =target.ExitLadder != null ? StartLadderWarp(target) : StartWarp(target);
-        straightLine = warp == null && target.StraightLine ? new StraightLineTraversal(ctx, target, entryVelocity.magnitude) : null;
+        straightLine = warp == null && target.StraightLine
+            ? new StraightLineTraversal(ctx, target, entryVelocity.magnitude, ctx.ObstacleMotions != null ? ctx.ObstacleMotions.ObstacleMoveTime(target.Kind) : 0f)
+            : null;
         path = target.StraightLine ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
         duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target));
         EntrySerial++;

@@ -42,8 +42,6 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float lyingRollMousePush = 25f;
     [Tooltip("How long rolling over carries the view round (s).")]
     [Min(0.05f)] public float lyingRollDuration = 0.3f;
-    [Tooltip("넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본.")]
-    [Min(0.1f)] public float vaultRate = 1f;
     [Tooltip("달리며 낮은 장애물 앞에서 일찍 누른 점프가 넘기가 걸리는 자리까지 빠르게 달려가 넘는 최대 거리(m). 0이면 Beatrun처럼 약 1.2m 안에서 눌러야 넘는다.")]
     [Min(0f)] public float vaultSurgeDistance = 2f;
     [Tooltip("그렇게 달려갈 때의 가장 느린 속도(m/s). 이미 더 빠르면 그 속도를 유지한다.")]
@@ -67,10 +65,6 @@ public sealed class MovementAbilitySettings
     [Min(0f)] public float vaultPalmInset = .04f;
     [Tooltip("손 짚는 자리까지 발이 가야 할 거리가 이보다 멀면 손 짚는 넘기를 하지 않고 Beatrun 직선 경로로 넘는다(m).")]
     [Min(.1f)] public float vaultWarpReach = 2.5f;
-    [Tooltip("바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본.")]
-    [Min(0.1f)] public float mountRate = 1f;
-    [Tooltip("매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초).")]
-    [Min(0.1f)] public float heaveRate = 1f;
     [Tooltip("바·사다리 꼭대기처럼 경로를 따로 쓰는 올라서기의 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter.")]
     [Min(0.1f)] public float mantleDuration = 0.45f;
     [Min(0f)] public float mantleDurationPerMeter = 0.3f;

@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// How Beatrun carries the player along a vault or climb: the per-kind lerp rates of vaulting.lua and climb.lua, in its
 /// 66.66 Hz ticks, and when it hands control back. Speeds are in its units per second (see PlayerMovement.HeightUnit).
-/// Ability.vaultRate, mountRate and heaveRate scale the rates; 1 is the original.
+/// The moves keep Beatrun's shape and go at the pace of the clip the body plays (StraightLineTraversal, TimeToArrive).
 /// </summary>
 public static class VaultMotion
 {
@@ -14,38 +14,54 @@ public static class VaultMotion
     public const float ApproachTime = .2f;
 
     /// <summary>The lerp after dt seconds.</summary>
-    public static float Step(VaultKind kind, float lerp, float dt, float entrySpeed, MovementAbilitySettings settings)
+    public static float Step(VaultKind kind, float lerp, float dt, float entrySpeed)
     {
         float tick = dt * TickRate, rate;
         switch (kind)
         {
             case VaultKind.StepUp:
-                return Mathf.Lerp(lerp, 1f, .075f * tick * settings.mountRate);
+                return Mathf.Lerp(lerp, 1f, .075f * tick);
             case VaultKind.Onto:
-                rate = .075f * tick * settings.mountRate;
+                rate = .075f * tick;
                 if (lerp > .01f && lerp < .65f) rate *= lerp / .5f;
                 return Mathf.Lerp(lerp, 1f, rate);
             case VaultKind.Over:
-                rate = .06f * .75f * tick * settings.vaultRate;
+                rate = .06f * .75f * tick;
                 if (lerp > .1f && lerp < .25f) rate *= Mathf.Max(.5f, .5f + entrySpeed / 375f * .3f - .2f);
                 return Mathf.MoveTowards(lerp, 1f, rate);
             case VaultKind.Kong:
-                rate = .06f * tick * settings.vaultRate * Mathf.Max(.75f, .75f + entrySpeed / 350f * .3f - .2f);
+                rate = .06f * tick * Mathf.Max(.75f, .75f + entrySpeed / 350f * .3f - .2f);
                 return Mathf.MoveTowards(lerp, 1f, rate);
             case VaultKind.OverHigh:
-                rate = .03f * tick * settings.vaultRate;
+                rate = .03f * tick;
                 if (lerp < .0575f) rate *= .1f;
                 if (lerp > .3f) rate *= 1.5f;
                 return Mathf.MoveTowards(lerp, 1f, rate);
             case VaultKind.OntoHigh:
-                rate = .03f * tick * settings.mountRate;
+                rate = .03f * tick;
                 rate *= lerp < .0575f ? .1f : lerp < .7f ? .8f : .6f;
                 return Mathf.MoveTowards(lerp, 1f, rate);
             default:
-                rate = 1.25f * dt * settings.heaveRate;
+                rate = 1.25f * dt;
                 return Mathf.MoveTowards(lerp, 1f, lerp > .5f ? rate * .75f : rate);
         }
     }
+
+    /// <summary>How long this kind of move takes Beatrun to arrive (s), for this entry speed (its units a second).</summary>
+    public static float TimeToArrive(VaultKind kind, float entrySpeed)
+    {
+        const float tick = 1f / TickRate;
+        float lerp = 0f, time = 0f;
+        for (int i = 0; i < MostTicks && !Arrived(kind, lerp); i++)
+        {
+            lerp = Step(kind, lerp, tick, entrySpeed);
+            time += tick;
+        }
+        return time;
+    }
+
+    // Ticks TimeToArrive looks through at most (a minute).
+    private const int MostTicks = 4000;
 
     /// <summary>The move is over whatever the player is touching.</summary>
     public static bool Arrived(VaultKind kind, float lerp)

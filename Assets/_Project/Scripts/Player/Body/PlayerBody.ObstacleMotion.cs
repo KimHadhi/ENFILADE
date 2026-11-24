@@ -54,6 +54,23 @@ public sealed partial class PlayerBody : IObstacleMotionSource
         return true;
     }
 
+    public float ObstacleMoveTime(VaultKind kind)
+    {
+        if (animator == null || !animator.isHuman || dead || limp || loadedModel == null) return 0f;
+        // The same pick the body's Enter plays (PickObstacleClip): a second pick would take the other vault clip.
+        if (pickedObstacleClip == null || Time.frameCount - pickedAtFrame > PickedFrames)
+        {
+            pickedObstacleClip = ObstacleClip();
+            pickedAtFrame = Time.frameCount;
+        }
+        var channel = Find(pickedObstacleClip);
+        var clip = channel != null && channel.Playable.IsValid() ? channel.Playable.GetAnimationClip() : null;
+        if (clip == null) return 0f;
+        if (kind == VaultKind.Heave) return clip.length;
+        var contacts = ObstacleClipContacts.For(loadedModel, clip, animator, ContactRules);
+        return contacts != null && contacts.ReleaseTime > 0f ? contacts.ReleaseTime : clip.length;
+    }
+
     // The clip picked for the movement this frame or the last, else a fresh pick.
     private string PickObstacleClip()
     {
@@ -66,11 +83,11 @@ public sealed partial class PlayerBody : IObstacleMotionSource
         return ObstacleClip();
     }
 
-    // Measured as the body is made: the three vaults, plain and with a gun.
+    // Measured as the body is made: the three vaults and the climbs onto a top, plain and with a gun.
     private void MeasureObstacleClips()
     {
         if (animator == null || !animator.isHuman || loadedModel == null) return;
-        foreach (string name in new[] { vault, vaultKong, vaultHigh })
+        foreach (string name in new[] { vault, vaultKong, vaultHigh, stepUp, mantleLow, mantleMid })
             foreach (string variant in new[] { name, name + rifleSuffix, name + pistolSuffix })
                 if (!string.IsNullOrEmpty(variant) && byName.TryGetValue(variant, out var channel) && channel.Playable.IsValid())
                     ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);

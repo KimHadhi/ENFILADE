@@ -1,15 +1,20 @@
 using UnityEngine;
 
 /// <summary>
-/// Carries the player over or onto an obstacle in a straight line from Start to End, at the pace VaultMotion gives each
+/// Carries the player over or onto an obstacle in a straight line from Start to End, along the curve VaultMotion gives each
 /// kind of move, passing through that obstacle only. The other way through, TraversalPath, follows a curve round it.
+/// The curve goes at the pace of the clip the body plays at its own speed: it arrives where the clip's hands leave the
+/// obstacle (or at the clip's end, for a clip that puts no hand down), as the body measures the clip (PlayerBody,
+/// ObstacleClipContacts). Until 0.9.405 it went at Beatrun's own pace, about twice the clips': the body was over a box in
+/// 0.38 s while its vault (vaultover, 0.87 s) was still reaching for it, and the clip played on after (the user, 2026-11-24:
+/// "파쿠르 근데 너무 빠른 것 같은데 모션대로예요?", "넘기 올라서기는 클립에 맞춰 줘. 하드코딩하지 말고").
 /// </summary>
 public sealed class StraightLineTraversal
 {
     private readonly PlayerMovement ctx;
     private readonly ObstacleTarget target;
     private readonly ParkourDetector detector;
-    private readonly float entryUnits;
+    private readonly float entryUnits, pace;
     private Vector3 lastClearPosition;
     private float lerp, clock;
     private bool finishing;
@@ -19,18 +24,22 @@ public sealed class StraightLineTraversal
     public bool Complete { get; private set; }
     public float Progress => lerp;
 
-    internal StraightLineTraversal(PlayerMovement context, ObstacleTarget obstacle, float entrySpeed)
+    /// <param name="clipTime">How far into the body's clip the move is over (s; IObstacleMotionSource.ObstacleMoveTime); 0 for
+    /// none known, and it goes at Beatrun's pace.</param>
+    internal StraightLineTraversal(PlayerMovement context, ObstacleTarget obstacle, float entrySpeed, float clipTime)
     {
         ctx = context; target = obstacle; detector = ctx.Abilities.Traversal.Detector;
         lastClearPosition = obstacle.Start;
         entryUnits = entrySpeed / ctx.HeightUnit;
+        float beatrun = VaultMotion.TimeToArrive(obstacle.Kind, entryUnits);
+        pace = clipTime > 0f && beatrun > 0f ? beatrun / clipTime : 1f;
     }
 
     internal bool Advance(float dt)
     {
         if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy) return false;
-        float next = VaultMotion.Step(target.Kind, lerp, Mathf.Max(0f, dt), entryUnits, ctx.AbilitySettings);
-        clock += Mathf.Max(0f, dt);
+        float next = VaultMotion.Step(target.Kind, lerp, Mathf.Max(0f, dt) * pace, entryUnits);
+        clock += Mathf.Max(0f, dt) * pace;
         // The high moves start at the wall, whatever the jump left of the distance to it.
         Vector3 from = target.HasApproach ? Vector3.Lerp(target.Start, target.Approach, clock / VaultMotion.ApproachTime) : target.Start;
         Vector3 position = Vector3.Lerp(from, target.End, next);

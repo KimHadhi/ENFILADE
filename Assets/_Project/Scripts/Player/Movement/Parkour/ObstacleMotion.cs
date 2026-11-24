@@ -29,6 +29,12 @@ public interface IObstacleMotionSource
     /// </summary>
     bool TryObstacleMotion(VaultKind kind, out IObstacleMotion motion);
     /// <summary>
+    /// How far into the clip this obstacle will play its move is over (s): where the clip's hands leave the obstacle (the body
+    /// over it or up on it), or the clip's end for one that puts no hand down or a climb the movement drives whole (a heave);
+    /// 0 when there is no clip to tell. The straight move goes at that pace (StraightLineTraversal).
+    /// </summary>
+    float ObstacleMoveTime(VaultKind kind);
+    /// <summary>
     /// How the clip that climbs off a ladder's top (by the hand that went up last) carries the body on its hands onto the
     /// floor up there, or false when its hands put down on nothing or nothing could be measured.
     /// </summary>

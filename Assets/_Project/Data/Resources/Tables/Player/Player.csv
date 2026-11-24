@@ -302,7 +302,6 @@ Ability.crouchRest,0.5,앉기 연타로 잃은 빠르기가 1초에 돌아오는
 Ability.stepHeight,0.3,걸어서 넘는 턱 높이(m)
 Ability.proneStepHeight,0.05,엎드리거나 누워서 넘는 턱 높이(m)
 Ability.mantleDuration,0.45,바·사다리 꼭대기처럼 경로를 따로 쓰는 올라서기의 시간(초) = 이 값 + 높이 1m마다 mantleDurationPerMeter
-Ability.vaultRate,1,넘기 세 종류의 이동 속도 배율. 1이면 Beatrun 원본
 Ability.vaultSurgeDistance,2,"달리며 낮은 장애물 앞에서 일찍 누른 점프는 넘기가 걸리는 자리까지 이만큼(m) 앞에서도 그 자리로 빠르게 달려가 바로 넘는다. 순간이동 없이 땅을 달려가며 달리기 동작도 빨라진다. 0이면 Beatrun처럼 장애물 앞면 약 1.2m 안에서 눌러야 넘는다(2026-11-06 사용자 요청: 대기 말고 빠르고 시원하게). 0.9.283 전에는 3: 걸음새가 느려진 만큼 너무 멀리서 끌려갔다(사용자 11-21: ""써지 좀 너프해 줘, 속도에 비해 너무 빨라서 써지 거리나 그런 거"")"
 Ability.vaultSurgeSpeed,7,그렇게 달려가는 가장 느린 속도(m/s): 전력질주보다 조금 빠르게. 이미 더 빠르면 그 속도를 유지한다. 데탕트가 동료에게 달려가는 써지도 이 속도다. 넘기 자체는 누르기 전 달리던 속도로 한다: 이 속도로 들어가면 넘기 클립이 빨리 감기처럼 잘려 보였다
 Ability.vaultSurgeKick,25;120,"달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전과 시야각을 넓히는 양(도/초, 스프링에 주는 속도). 속도에 따른 시야각 넓힘이 그 뒤를 잇는다. 화면 흔들림 설정을 따른다"
@@ -317,8 +316,6 @@ Ability.vaultWarpRates,0.7;1.8,손 짚는 넘기에서 클립 재생 속도의 �
 Ability.vaultWarpLeastSpeed,3,손 짚는 넘기의 접근 속도로 보는 가장 느린 속도(m/s). 천천히 다가가 넘어도 클립이 늘어지지 않게
 Ability.vaultPalmInset,0.04,손바닥을 장애물 앞 모서리에서 윗면 안쪽으로 이만큼 들여 짚는다(m)
 Ability.vaultWarpReach,2.5,손 짚는 자리까지 발이 가야 할 거리가 이보다 멀면 손 짚는 넘기 대신 Beatrun 직선 경로로 넘는다(m)
-Ability.mountRate,1,바로 올라타기와 높은 올라서기의 이동 속도 배율. 1이면 Beatrun 원본
-Ability.heaveRate,1,매달린 뒤 올라가기의 이동 속도 배율. 1이면 Beatrun 원본(약 0.93초)
 Ability.mantleDurationPerMeter,0.3,경로를 따로 쓰는 올라서기가 높이 1m마다 늘어나는 시간(초)
 Ability.slideMaxSlopeAngle,65,슬라이드 중 바닥으로 인정하는 최대 경사(도)
 Ability.slideClips,SlideToRun_5m;SlideToRun_10m,"슬라이딩 클립(BIPER Female Runner, 내려가기·미끄러지기·일어나 달리기가 하나로 된 것). 시작할 때 들어온 속도로 이 클립처럼 느려지면 얼마나 갈지 재어 미끄러지는 거리가 가장 가까운 것을 고른다(둘보다 길면 긴 것). 내려가기는 클립 시간대로 들어온 속도를 이어 (Ability.travelWarp), 미끄러지기는 남은 거리에 클립 시각을 맞추고(거리 맞추기, 클립 빠르기의 0.5~2배), 일어나 달리기는 클립 시간대로 끝 걸음을 키의 걸음 빠르기에 맞춘다(Ability.runOutRate). 그 끝 첫 발에서 걸음이 그 속도로 이어받는다(SlideMove, 0.9.395, 전문가 안). 0.9.394까지는 SlideToRun_Enter·SlideToRun_10m 가운데를 사인으로 흔든 고리·SlideToRun_Exit를 이어 붙이고 속도는 클립과 상관없이 직선으로 줄었다"
