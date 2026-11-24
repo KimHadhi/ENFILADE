@@ -46,6 +46,8 @@ public sealed class GroundBurstState : MovementBaseState
     {
         if (kind == State.DashPush) ctx.Abilities.Combat.EndDashPush();
         ctx.HorizontalVelocity = Vector3.ClampMagnitude(ctx.HorizontalVelocity, Mathf.Max(initialSpeed, ctx.WalkSpeed));
+        // A roll that runs on hands its pace to the gait, which comes down from it (MovementGait.Carry).
+        if (kind == State.LandingRoll && ctx.Abilities.Landing.RunsOut) ctx.Actions.Gait.Carry(ctx.HorizontalVelocity.magnitude);
     }
     public override void OnColliderHit(ControllerColliderHit hit)
     {

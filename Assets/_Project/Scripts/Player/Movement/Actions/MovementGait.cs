@@ -27,6 +27,13 @@ using UnityEngine;
 /// 시작하는 모션 없이 앞만 있는 거라면 이 기능 없애는 게 나을 듯").
 /// Until 0.9.245 a run built up the way Beatrun's move limit does (W alone 3.6 → 4.9 → 7.9 → 8.9 m/s, sideways and back
 /// held at 4.9 x 1.15, cut by sharp turns and walls) and every cycle was stretched to whatever that speed was.
+/// Out of a one-off that runs on faster than the gait the keys ask for (a slide's getting up, a roll or a slide's dive roll
+/// that runs on, a landing on the run: BIPER made them end at a run of about 4 m/s), the body comes down to the gait at
+/// Move.runOutCoast, and the legs with it: the gait goes no lower than that speed's place between the gaits (Carry), so they
+/// play the jog and the sprint blended to it, as when Shift changes them. Until 0.9.383 the legs went to the jog's clips in a
+/// quarter of a second and the body to its speed in a tenth (Move.groundSharpness), and the jog's clips ran fast to keep up
+/// (the user, 2026-11-24: "슬라이딩 후 조깅은 달리려다가 갑자기 빠르게 조깅으로 되돌아와서 어색하고 다이브롤 후 조깅도 …
+/// 끊기는 것 같아").
 /// </summary>
 public sealed class MovementGait
 {
@@ -39,6 +46,8 @@ public sealed class MovementGait
 
     private readonly PlayerMovement ctx;
     private float jogShare, position = Jog;
+    // How fast the body still goes out of a one-off that ran on (m/s; Carry); 0 for none.
+    private float carried;
 
     internal MovementGait(PlayerMovement context) { ctx = context; }
 
@@ -57,6 +66,13 @@ public sealed class MovementGait
 
     /// <summary>Another PC's gait as its pose says (MovementMirror).</summary>
     internal void Mirror(float value) => position = Mathf.Clamp(value, 0f, Sprint);
+
+    /// <summary>The body goes this fast (m/s) out of a one-off that runs on (while its clip runs out, and as a roll that runs on
+    /// ends): from there it comes down to the gait the keys ask for at Move.runOutCoast, the legs' gait with it.</summary>
+    internal void Carry(float speed) => carried = Mathf.Max(0f, speed);
+
+    /// <summary>How fast the body still goes out of a one-off that ran on (m/s); 0 once it is down to its gait.</summary>
+    internal float Carried => carried;
 
     /// <summary>
     /// Where a speed lies on the gaits' ladder the way it goes (<paramref name="heading"/>, degrees from ahead): 0 at the
@@ -101,7 +117,7 @@ public sealed class MovementGait
     // Degrees from ahead, + to the right.
     private static float Heading(Vector2 input) => input.sqrMagnitude > 1e-6f ? Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg : 0f;
 
-    internal void Reset() => jogShare = 0f;
+    internal void Reset() => jogShare = carried = 0f;
 
     /// <summary>Walk mode's Shift brings the jog in as the sprint's does the sprint, standing on the ground and moving.</summary>
     internal void Tick(float dt, Vector2 input)
@@ -111,6 +127,15 @@ public sealed class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
+        float heading = Heading(input);
+        if (carried > 0f)
+        {
+            // Only standing on the ground and going on ahead; stopped, turned or down to the gait, it is the gait's again.
+            carried -= ctx.runOutCoast * dt;
+            bool goesOn = input.y > .1f && ctx.Motor.isGrounded && ctx.CurrentState == PlayerMovement.MovementState.Standing;
+            if (!goesOn || carried <= Legs(heading, Asked, ctx.AimShare)) carried = 0f;
+        }
         position = Mathf.MoveTowards(position, Asked, dt / GaitChange);
+        if (carried > 0f) position = Mathf.Max(position, PlaceOf(carried, heading));
     }
 }

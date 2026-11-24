@@ -76,6 +76,9 @@ public sealed partial class PlayerMovement
     [Tooltip("A change of way on the ground up to this far round (degrees) keeps the pace: the velocity turns. Further, it slows "
         + "through a stop as a body reversing does.")]
     [SerializeField, Range(0f, 180f)] internal float groundKeepPaceTurn = 120f;
+    [Tooltip("Out of a one-off that runs on faster than the gait the keys ask for (a slide's getting up, a roll, a landing on the "
+        + "run), how quickly the body comes down to the gait (m/s a second), the legs' gait with it (MovementGait.Carry).")]
+    [SerializeField, Min(.1f)] internal float runOutCoast = 2.5f;
     [SerializeField, Min(0f)] internal float airControlSharpness = 5.0f;
     [SerializeField, Min(0f)] internal float jumpHeight = 1.3f;
     [SerializeField] internal float gravity = -24f;

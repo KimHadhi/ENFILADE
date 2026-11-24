@@ -105,7 +105,8 @@ public sealed class MovementLanding
     private bool rollChose;
     // While its body is down (Carry): from what speed to what (m/s), over how long, and how far into that (s).
     private float carryFrom, carryTo, carryLength, carryTime;
-    private bool RunsOut => RollKind == Roll.RunsOn || RollKind == Roll.DiveRunsOn;
+    /// <summary>The roll under way runs on out of itself (a landing's, or a slide's jump).</summary>
+    public bool RunsOut => RollKind == Roll.RunsOn || RollKind == Roll.DiveRunsOn;
     // Where in its clip a moving roll ends (s): see RollTime.
     private float RollEnd => RunsOut && RollMotion.StepAfter(RollMotion.LegsUnder, out float step) ? step : RollMotion.Up;
     /// <summary>Thrown by a blow and not down yet.</summary>
