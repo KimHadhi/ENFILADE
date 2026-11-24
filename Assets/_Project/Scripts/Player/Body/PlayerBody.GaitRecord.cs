@@ -87,14 +87,20 @@ public sealed partial class PlayerBody
         if (state == MovementState.LandingRoll && player.Abilities != null) gaitLine.Append($" 구르기@{player.Abilities.Landing.RollMoment:0.00}");
         if (transition != null && transition.Playable.IsValid())
             gaitLine.Append($" | 넘겨주는 {transition.Clip}@{transition.Playable.GetTime():0.00}");
+        gaitLine.Append(" |");
+        AppendTopClips(gaitLine);
+        AppendPlaces();
+        PlayRecord.Line(GaitRecord, GaitRecordHeading, gaitLine.ToString());
+    }
+
+    // The three clips with the most weight in the pose now and their weights, for the records.
+    private void AppendTopClips(System.Text.StringBuilder line)
+    {
         gaitTop.Clear();
         foreach (var channel in channels)
             if (channel.Weight > .05f) gaitTop.Add(channel);
         gaitTop.Sort((a, b) => b.Weight.CompareTo(a.Weight));
-        gaitLine.Append(" |");
-        for (int i = 0; i < gaitTop.Count && i < 3; i++) gaitLine.Append($" {gaitTop[i].Clip} {gaitTop[i].Weight:0.00}");
-        AppendPlaces();
-        PlayRecord.Line(GaitRecord, GaitRecordHeading, gaitLine.ToString());
+        for (int i = 0; i < gaitTop.Count && i < 3; i++) line.Append($" {gaitTop[i].Clip} {gaitTop[i].Weight:0.00}");
     }
 
     // How far the body, its hips and head went this frame (cm), how far its yaw and its head against it turned (degrees); and,

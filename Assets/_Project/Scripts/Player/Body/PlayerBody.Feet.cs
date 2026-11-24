@@ -135,27 +135,45 @@ public sealed partial class PlayerBody
         var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight,
             turnPlanner.Lead, turnPlanner.Share);
         // Walking or running, each foot keeps the place and the ground it came down on and swings to where it will come down,
-        // timed by the stride (FootPlanting.Walk, Stand).
+        // timed by the stride (FootPlanting.Walk, Stand). Where the clip had the ankles before it, for the feet record.
+        leftClipAnkle = feet.Left.Foot.position;
+        rightClipAnkle = feet.Right.Foot.position;
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
             new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,
             hold, new FootPlanting.Steps(travel, strideCycle, phase));
         RecordFeet(dt, onFeet);
     }
 
-    // 발 기록 (Logs/feet.txt, "발 기록 봐 줘"): a second, a line a frame, from when the body runs at FeetRecordSpeed or faster or
-    // the capsule's floor jumps FeetRecordPop or more in a frame (a step up or down a stair): what the feet stood on and how the
-    // hips and the eyes followed, so a foot that jumps, slides or can't reach shows in numbers without playing it (the user,
-    // 2026-11-24: "달리다가 … 발이 텔레포트하거나 디딜 곳을 못 찾거나 … 계단을 뛰어 오를 때"; the experts' review).
+    // 발 기록 (Logs/feet.txt, "발 기록 봐 줘"): a line a frame while the legs walk or run or the keys ask them to (and a second
+    // after), and for a second from when the body runs at FeetRecordSpeed or faster, the capsule's floor jumps FeetRecordPop or
+    // more in a frame (a step up or down a stair) or a run's turn plays: what the feet stood on, how the hips and the eyes
+    // followed, and what the legs looked like and what made them so (the clips and the switch easing between them; each foot
+    // off its hip, its knee's bend, which way it points, how far the IK moved it off the clip's place), so a foot that jumps or
+    // slides or a leg that looks wrong shows in numbers without playing it (the user, 2026-11-24: "달리다가 … 발이 텔레포트하거나
+    // 디딜 곳을 못 찾거나 … 계단을 뛰어 오를 때"; the experts' review). A foot slides when the end of its sole that is on the
+    // ground (its heel or its toe tip, within SoleOnGround of the ground under it) goes over it. Until 0.9.426 the slide was the
+    // ankle's while the clip's sole was low, which a foot rolling from heel to toe on its place moves too, and walking and
+    // jogging (WASD under 4 m/s) were not recorded at all: the record read a third of the frames as sliding, 0.9.425 rebuilt
+    // the movement on that and the legs went wrong (the user, 2026-11-25: "발목? 걍 다리가 존나 이상했는데 너 문제 파악을
+    // 존나 확실히 잘 해야 할 거야").
     private const string FeetRecord = "feet";
-    private const string FeetRecordHeading = "발 기록 (PlayerBody.RecordFeet): 4m/s 넘게 달리거나 캡슐 바닥이 한 프레임에 3cm 넘게 뛸 때부터 1초 동안 "
-        + "프레임마다 한 줄: 지난 초, 속도(m/s), 캡슐 바닥 높이와 이 프레임 변화(cm), 고른 바닥과 엉덩이 바닥이 캡슐 바닥에서 떨어진 정도(cm), "
-        + "다리가 닿게 내린 엉덩이(cm); 발마다 디딤(D)·흔들림(S), 땅 높이(캡슐 바닥 기준 cm)와 이 프레임 변화(cm), 발목 목표가 땅에서 뜬 높이(cm), "
-        + "IK 뒤 실제 발목이 목표에서 벗어난 거리(cm), 엉덩이에서 목표까지가 다리 길이의 몇 %인지, 받침 비율, 디딘 동안 실제 발목이 땅 위로 "
-        + "미끄러진 빠르기(cm/s), 지키는 자리가 클립의 발 자리에서 벗어난 거리(cm, 지키지 않으면 -); 지난 프레임 카메라 높이 변화(cm). "
-        + "달리다 돌기가 시작될 때도 남긴다";
-    private const float FeetRecordFor = 1f, FeetRecordSpeed = 4f, FeetRecordPop = .03f;
-    private float feetRecordLeft, feetRecordFrom, feetFloorWas, feetCameraWas, leftGroundWas, rightGroundWas;
-    private Vector3 leftAnkleWas, rightAnkleWas;
+    private const string FeetRecordHeading = "발 기록 (PlayerBody.RecordFeet): 다리가 걷거나 달리거나 키가 다리를 부르는 동안(그리고 멈춘 뒤 1초), "
+        + "4m/s 넘게 달리거나 캡슐 바닥이 한 프레임에 3cm 넘게 뛰거나 달리다 돌기가 나올 때부터 1초 동안 프레임마다 한 줄: 지난 초, 속도(m/s), "
+        + "키가 다리에게 가라는 쪽·실제로 가는 쪽·몸(골반)이 보는 쪽(시선 기준 도), 시선이 도는 빠르기(도/초), 걸음 자리(0 왼발 디딤, .5 오른발), "
+        + "클립 사이를 잇는 관성이 남은 시간(초), 무게가 큰 클립 셋; 캡슐 바닥 높이와 이 프레임 변화(cm), 고른 바닥과 엉덩이 바닥이 캡슐 바닥에서 "
+        + "떨어진 정도(cm), 다리가 닿게 내린 엉덩이(cm); 발마다 디딤(D)·흔들림(S), 땅에 닿은 발바닥 끝(뒤꿈치·발끝, 땅에서 2cm 안이 아니면 뜸)과 "
+        + "그 끝이 땅에서 뜬 높이(cm), 그 끝이 땅 위로 미끄러진 빠르기(cm/s, 지난 프레임에도 같은 끝이 닿아 있었을 때만), 발목이 제 엉덩이 "
+        + "관절에서 앞(+)·바깥(+)으로 떨어진 거리(cm), 무릎이 굽은 각도(0 곧음), 발끝이 몸이 보는 쪽에서 바깥(+)으로 돈 각도, IK가 발목을 "
+        + "클립 자리에서 옮긴 거리(cm), 땅 높이(캡슐 바닥 기준 cm)와 이 프레임 변화(cm), 발목 목표가 땅에서 뜬 높이(cm), IK 뒤 실제 발목이 "
+        + "목표에서 벗어난 거리(cm), 엉덩이에서 목표까지가 다리 길이의 몇 %인지, 지키는 자리가 클립의 발 자리에서 벗어난 거리(cm, 지키지 "
+        + "않으면 -); 지난 프레임 카메라 높이 변화(cm)";
+    // A sole's end within this of the ground under it is on the ground (m).
+    private const float FeetRecordFor = 1f, FeetRecordSpeed = 4f, FeetRecordPop = .03f, SoleOnGround = .02f;
+    private float feetRecordLeft, feetRecordFrom, feetFloorWas, feetCameraWas, feetViewWas, leftGroundWas, rightGroundWas;
+    // Where the clip had each ankle before the feet were planted this frame; where the end of each sole on the ground was last
+    // frame, and which end (0 none, 1 the heel, 2 the toe tip).
+    private Vector3 leftClipAnkle, rightClipAnkle, leftSoleWas, rightSoleWas;
+    private int leftSoleEndWas, rightSoleEndWas;
     private bool feetRecordKnown;
     private readonly System.Text.StringBuilder feetLine = new System.Text.StringBuilder();
 
@@ -165,41 +183,80 @@ public sealed partial class PlayerBody
         float floor = transform.position.y, pop = feetRecordKnown ? floor - feetFloorWas : 0f;
         float speed = new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;
         float camera = bodyCamera.HasPlace ? bodyCamera.Placed.y : 0f;
-        if (feetRecordLeft <= 0f && onFeet && (speed >= FeetRecordSpeed || Mathf.Abs(pop) >= FeetRecordPop || turnClip != null))
+        float view = transform.eulerAngles.y, viewTurn = feetRecordKnown ? Mathf.DeltaAngle(feetViewWas, view) / dt : 0f;
+        int leftEnd = SoleEnd(feet.Left, leftSoleEndWas, out Vector3 leftSole, out float leftOver);
+        int rightEnd = SoleEnd(feet.Right, rightSoleEndWas, out Vector3 rightSole, out float rightOver);
+        // The legs walk or run or the keys ask them to: every frame, and a second after. Anything else starts a second.
+        bool walks = walkedFrame == Time.frameCount || player.StrideFrame == Time.frameCount && player.Stride.sqrMagnitude > .01f;
+        string why = walks ? "걷기·달리기" : turnClip != null ? "달리다 돌기" : speed >= FeetRecordSpeed ? "빠르게 달리기"
+            : Mathf.Abs(pop) >= FeetRecordPop ? "캡슐 바닥 뜀" : null;
+        if (onFeet && why != null)
         {
-            feetRecordLeft = FeetRecordFor;
-            feetRecordFrom = Time.time;
-            PlayRecord.Line(FeetRecord, FeetRecordHeading, $"-- {state} {speed:0.0} m/s, 캡슐 {pop * 100f:+0;-0}cm");
+            if (feetRecordLeft <= 0f)
+            {
+                feetRecordFrom = Time.time;
+                PlayRecord.Line(FeetRecord, FeetRecordHeading, $"-- {why}: {state} {speed:0.0} m/s, 캡슐 {pop * 100f:+0;-0}cm");
+            }
+            if (walks || feetRecordLeft <= 0f) feetRecordLeft = FeetRecordFor;
         }
         if (feetRecordLeft > 0f && feetRecordKnown)
         {
             feetRecordLeft -= dt;
-            feetLine.Clear().Append($"+{Time.time - feetRecordFrom:0.00} {speed:0.0}m/s 캡슐 {floor:0.00} {pop * 100f:+0;-0}cm ")
+            feetLine.Clear().Append($"+{Time.time - feetRecordFrom:0.00} {speed:0.0}m/s 키 {HeadingOf(player.Stride):0}° ")
+                .Append($"가는 쪽 {HeadingOf(player.ActualVelocity):0}° 몸 {yaw:0}° 시선 {viewTurn:0}°/s 걸음 {phase:0.00} ")
+                .Append($"관성 {bodyInertia.Left:0.00} |");
+            AppendTopClips(feetLine);
+            feetLine.Append($" | 캡슐 {floor:0.00} {pop * 100f:+0;-0}cm ")
                 .Append($"고른 {(feet.SmoothFloor - floor) * 100f:+0;-0} 엉덩이 {(feet.HipFloor - floor) * 100f:+0;-0} 내림 {feet.ReachDropNow * 100f:0}");
-            Leg("왼", feet.Left, leftGroundWas, leftAnkleWas);
-            Leg("오", feet.Right, rightGroundWas, rightAnkleWas);
+            Leg("왼", feet.Left, true, leftGroundWas, leftClipAnkle, leftEnd, leftSole, leftOver, leftSoleEndWas, leftSoleWas);
+            Leg("오", feet.Right, false, rightGroundWas, rightClipAnkle, rightEnd, rightSole, rightOver, rightSoleEndWas, rightSoleWas);
             feetLine.Append($" | 카메라 {(camera - feetCameraWas) * 100f:+0;-0}cm");
             PlayRecord.Line(FeetRecord, FeetRecordHeading, feetLine.ToString());
         }
         feetFloorWas = floor;
         feetCameraWas = camera;
+        feetViewWas = view;
         leftGroundWas = feet.Left.Ground;
         rightGroundWas = feet.Right.Ground;
-        leftAnkleWas = feet.Left.Foot.position;
-        rightAnkleWas = feet.Right.Foot.position;
+        leftSoleWas = leftSole;
+        rightSoleWas = rightSole;
+        leftSoleEndWas = leftEnd;
+        rightSoleEndWas = rightEnd;
         feetRecordKnown = true;
 
-        void Leg(string name, FootPlanting.Leg leg, float groundWas, Vector3 ankleWas)
+        void Leg(string name, FootPlanting.Leg leg, bool left, float groundWas, Vector3 clipAnkle, int end, Vector3 sole, float over,
+            int endWas, Vector3 soleWas)
         {
             Vector3 ankle = leg.Foot.position;
             float length = (leg.Lower.position - leg.Upper.position).magnitude + (ankle - leg.Lower.position).magnitude;
             float reach = (leg.Target - leg.Upper.position).magnitude / Mathf.Max(.01f, length);
-            Vector3 slid = ankle - ankleWas;
-            float slip = leg.Down ? new Vector2(slid.x, slid.z).magnitude / dt : 0f;
-            feetLine.Append($" | {name} {(leg.Down ? "D" : "S")} 땅 {(leg.Ground - floor) * 100f:+0;-0} {(leg.Ground - groundWas) * 100f:+0;-0} ")
+            string slid = end != 0 && end == endWas ? (new Vector2(sole.x - soleWas.x, sole.z - soleWas.z).magnitude / dt * 100f).ToString("0") : "-";
+            // Where the foot is off its own hip and which way it points, in the frame the hips face; outward is + on either side.
+            var facing = Quaternion.Euler(0f, body.eulerAngles.y, 0f);
+            Vector3 off = Quaternion.Inverse(facing) * (ankle - leg.Upper.position);
+            float outward = left ? -1f : 1f;
+            float knee = Vector3.Angle(leg.Lower.position - leg.Upper.position, ankle - leg.Lower.position);
+            Vector3 toes = Vector3.ProjectOnPlane(leg.Foot.TransformPoint(leg.Tip) - leg.Foot.TransformPoint(leg.Heel), Vector3.up);
+            float points = toes.sqrMagnitude > 1e-6f ? Vector3.SignedAngle(facing * Vector3.forward, toes, Vector3.up) * outward : 0f;
+            feetLine.Append($" | {name} {(leg.Down ? "D" : "S")} {(end == 1 ? "뒤꿈치" : end == 2 ? "발끝" : "뜸")} {over * 100f:0} 미끄러짐 {slid} ")
+                .Append($"앞 {off.z * 100f:+0;-0} 바깥 {off.x * outward * 100f:+0;-0} 무릎 {knee:0}° 발 {points:+0;-0}° IK {(ankle - clipAnkle).magnitude * 100f:0} ")
+                .Append($"땅 {(leg.Ground - floor) * 100f:+0;-0} {(leg.Ground - groundWas) * 100f:+0;-0} ")
                 .Append($"목표 {(leg.Target.y - leg.Ground) * 100f:0} 어긋남 {(ankle - leg.Target).magnitude * 100f:0} 닿음 {reach * 100f:0}% ")
-                .Append($"받침 {leg.SupportWeight:0.0} 미끄러짐 {slip * 100f:0} 지킴 {(leg.Kept ? (new Vector2(leg.Off.x, leg.Off.z).magnitude * 100f).ToString("0") : "-")}");
+                .Append($"지킴 {(leg.Kept ? (new Vector2(leg.Off.x, leg.Off.z).magnitude * 100f).ToString("0") : "-")}");
         }
+    }
+
+    // Which end of the leg's sole is on the ground (1 the heel, 2 the toe tip; 0 neither within SoleOnGround of the ground under
+    // it), where it is (world) and how high over that ground (m): the end it stood on last frame (`was`) while it still does, so a
+    // foot flat on the ground keeps one end and its slide reads off one point; else the lower end.
+    private static int SoleEnd(FootPlanting.Leg leg, int was, out Vector3 point, out float over)
+    {
+        Vector3 heel = leg.Foot.TransformPoint(leg.HeelSole), tip = leg.Foot.TransformPoint(leg.TipSole);
+        float heelOver = heel.y - leg.Ground, tipOver = tip.y - leg.Ground;
+        int end = was == 1 && heelOver <= SoleOnGround ? 1 : was == 2 && tipOver <= SoleOnGround ? 2 : heelOver <= tipOver ? 1 : 2;
+        point = end == 1 ? heel : tip;
+        over = end == 1 ? heelOver : tipOver;
+        return over <= SoleOnGround ? end : 0;
     }
 
     // Select the player in the Scene view: the line is the ground each foot found, the sphere where its ankle goes.

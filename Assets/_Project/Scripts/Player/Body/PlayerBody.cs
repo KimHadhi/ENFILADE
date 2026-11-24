@@ -677,19 +677,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // of walls, with nothing in hand as with a gun (FPSAF's Look is given the same limit: SpineRoomLayer).
             MeasureSpineRoom(Time.deltaTime);
             spineLook.Bend(spineLookWeight, spineLookPitch, spineRoom.Most);
-            // Walking, running and through a run's turn the foot the pose has down carries the body (FootCarry), read on the
-            // clip's own pose before the aim steadies the hips.
-            bool walked = gripWeight <= 0f && walkedFrame == Time.frameCount, carried = walked && CarryOnFeet(Time.deltaTime);
             // Then the steadied body, so the feet, the hands and the camera all work from it.
             SteadyAim(Time.deltaTime);
             // Hanging, the hands hold the body in place instead of the head following the camera. FollowHead aims at
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
             HoldHeadPlace();
-            if (walked)
-            {
-                if (!carried) SitOnHips(Time.deltaTime);
-            }
+            if (gripWeight <= 0f && walkedFrame == Time.frameCount) SitOnHips(Time.deltaTime);
             else if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
             else if (gripWeight <= 0f && slideBodyAnchored && !ClipCarriesBody) FollowHeadAlongSlide(Time.deltaTime);
             HoldEyesInAir(Time.deltaTime);
@@ -722,9 +716,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     private void KeepPlaceAsTheViewTurns()
     {
         float view = transform.eulerAngles.y;
-        // Not on the frame a carry ends: its place is already the world's under this frame's view (HoldHipsPlace), and turned
-        // back again the body went 4 to 10 cm round the capsule as a walk stopped under a flick (the review of 2026-11-25).
-        if (keepsPlace && hasViewYaw && !slideBodyAnchored && !carry.Carried)
+        if (keepsPlace && hasViewYaw && !slideBodyAnchored)
             headAlignment = Quaternion.Euler(0f, -Mathf.DeltaAngle(lastViewYaw, view), 0f) * headAlignment;
         lastViewYaw = view;
         hasViewYaw = true;
@@ -771,61 +763,23 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
     }
 
-    // Walking or running, the player's own body is carried by the foot its pose has down (FootCarry, CarryOnFeet); another
-    // PC's, and one off the ground or without feet, stands on its hips: its place off the capsule is held as the hips turn,
-    // not as the view does, and eases to the rest place behind the eyes (backOffset) in the hips' own frame, so the body goes
-    // over the ground as the capsule does. FollowHead (the head eased under the camera's pivot) held it in the view's frame
-    // until 0.9.416: every flick of the view swung the body and both its feet round the capsule, and the clip's own lean,
-    // followed, slid the feet under it (the expert's review of 2026-11-25). The camera rides the eyes wherever the clip has
-    // the head; walls keep it out (BodyCamera).
+    // Walking or running, the body stands on its hips: its place off the capsule is held as the hips turn, not as the view
+    // does, and eases to the rest place behind the eyes (backOffset) in the hips' own frame, so the body goes over the ground
+    // exactly as its legs carry the capsule (PlayerBody.LegsCarry). FollowHead (the head eased under the camera's pivot) held
+    // it in the view's frame until 0.9.416: every flick of the view swung the body and both its feet round the capsule, and
+    // the clip's own lean, followed, slid the feet under it (the expert's review of 2026-11-25). The camera rides the eyes
+    // wherever the clip has the head; walls keep it out (BodyCamera).
     private Vector3 hipsPlace;
     private int hipsPlaceFrame = -10;
-    private readonly FootCarry carry = new FootCarry();
-    // A body its feet carry stays within this of its capsule (m): its lead, the eyes' offset and a frame's going on.
-    private const float CarryReach = 1f;
 
     // Walking, the body's place off the capsule is laid under the hips as they face this frame, before it is placed (PlaceBody):
     // eased after the animation pass (SitOnHips) and placed the next frame in the view's frame it had then, it swung round the
     // capsule by each frame's turn of the view (the review of 2026-11-25).
     private void HoldHipsPlace()
     {
-        if (carry.Carried)
-        {
-            // Carried by its feet last frame, the body goes on at its pace in the world before its pose is read (FootCarry). One
-            // left further than CarryReach off the capsule was put somewhere else with it (PlayerMovement.MoveTo, a skill's
-            // step): the carry stops and the body keeps its place over the capsule. Held in the world, it stayed where the
-            // capsule had been, the camera on its eyes with it (the review of 2026-11-25).
-            Vector3 ahead = carry.Ahead(Time.deltaTime), off = ahead - transform.position;
-            if (off.x * off.x + off.z * off.z > CarryReach * CarryReach)
-            {
-                carry.Drop();
-                return;
-            }
-            Vector3 local = transform.InverseTransformPoint(ahead);
-            headAlignment = new Vector3(local.x, headAlignment.y, local.z);
-            return;
-        }
         if (hipsPlaceFrame != Time.frameCount - 1) return;
         Vector3 flat = Quaternion.Euler(0f, yaw, 0f) * hipsPlace;
         headAlignment = new Vector3(flat.x, headAlignment.y, flat.z);
-    }
-
-    // The player's own body on its feet, walking or running as the player asks or through a run's turn: the foot its pose has
-    // down keeps its place and the body goes over it (FootCarry), within its lead of its rest place over the capsule (behind the
-    // eyes, as the hips face), and the capsule goes after it (BodyCarry). False for a body it can't carry: another PC's (it
-    // goes where the network has it), one off the ground or without feet, and legs that follow what something else does with
-    // the body (a surge toward a vault: the capsule goes at the surge's pace, and the body carried apart from it ran 0.2 m off
-    // it, the review of 2026-11-25).
-    private bool CarryOnFeet(float dt)
-    {
-        if (player.IsNetworkDriven || feet == null || !player.IsGrounded || dt <= 0f || !legsAsked && turnClip == null) return false;
-        carry.Ride(player.RodeNow);
-        Vector3 rest = transform.position + Quaternion.Euler(0f, legYaw, 0f) * (Vector3.back * backOffset);
-        Vector3 root = carry.Step(feet, body.position, rest, player.ActualVelocity, dt);
-        body.position = root;
-        Vector3 local = transform.InverseTransformPoint(root);
-        headAlignment = new Vector3(local.x, headAlignment.y, local.z);
-        return true;
     }
 
     private void SitOnHips(float dt)

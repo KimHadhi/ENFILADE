@@ -73,6 +73,9 @@ internal sealed class BodyInertia
     }
 
     /// <summary>The clips switched this frame: ease over <paramref name="time"/> (s).</summary>
+    /// <summary>How long the switch under way has left to ease (s); 0 when none (for the feet record).</summary>
+    internal float Left => blending ? Mathf.Max(0f, length - played) : 0f;
+
     internal void Begin(float time)
     {
         asked = true;
