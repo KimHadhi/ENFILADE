@@ -202,7 +202,7 @@ FMOD와 Wwise를 고르지 않는 이유도 있다. 둘 다 별도 프로그램�
 | 소리 | 지금 | 언제 | 바꿀 것 |
 | --- | --- | --- | --- |
 | 기사 궁극기 `knight` | 낮은 종, 칼 뽑기 | 궁극기 | "low bell toll + sword unsheathe". 칼 층: **`katana_deploy_01.ogg`**, **`pull_out_blade_1-3.wav`** |
-| 돌격 궁극기 `assault` | 나팔 세 음 + 북 | 궁극기 | **11-20의 돌격 나팔 시안**(`ArtSource/Audio/FieldBugle`, `SoftTrumpet/04_three_notes.wav`, `ShortCharge`). 이 시안이 궁극기용인지 CHARGE 키(5.9)용인지는 사용자가 정한다 |
+| 돌격 궁극기 `assault` | 나팔 세 음 + 북 | 궁극기 | "bugle charge, three notes + drum". 11-20의 돌격 나팔 시안(`ArtSource/Audio`)은 11-25에 사용자 결정으로 지웠다. 다시 보려면 커밋 bcc8c1302에서 꺼낸다 |
 | 고스트 궁극기 `ghost` | 높은 쇳소리 한 번, 숨. **높음**(2.4 kHz) | 궁극기 | "metallic shimmer, short, low" |
 | 포인트 궁극기 `point` | 리볼버 실린더 돌림, 공이치기 | 궁극기 | **KINEMATION `TacticalShooterPack/SFX/R08/S_R08_OpenCylinder.WAV`, `S_R08_CloseCylinder.WAV`**, **`A/Weapons/Fatebringer/Fatebringer_CraneClose.wav`** |
 | 데탕트 궁극기 `detente` | 심장 두 번, 맑은 종 | 궁극기 | **`heartbeat_beat_*.wav`**에 "soft clear chime"(낮게)을 더해서 |
