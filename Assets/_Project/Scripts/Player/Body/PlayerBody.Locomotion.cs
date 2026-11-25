@@ -698,6 +698,12 @@ public sealed partial class PlayerBody
             return;
         }
         float strideTime = Mathf.Max(.05f, mixStride / mixWeight);
+        // Setting off, from standing or through the stop of a reversal, the stride waits where the feet pass each other
+        // (SetOffPhase). Taken up from wherever it last stopped, a start brought the stride in whole in a tenth of a second
+        // with both feet on the ground and apart, and they slid 40-50 cm across it (the feet record of 2026-11-25 08:49: a
+        // sole on the ground faster than 3 m/s in 42% of a reversal's frames and 23% of a start's; the user: "빠르게 다이아몬드
+        // 스텝을 밟으면 발이 갈피를 못 잡아서 튕겨져 날라감").
+        if (moving < SetOffBelow) phase = SetOffPhase(legs);
         // What the cycles' feet carry the body at their own pace (m/s, the body's frame).
         Vector2 own = mixLength / Mathf.Max(1e-4f, mixStride);
         float rad = legs * Mathf.Deg2Rad;
@@ -714,6 +720,23 @@ public sealed partial class PlayerBody
         gaitNatural = along;
         gaitRateNow = rate;
         strideFrame = Time.frameCount;
+    }
+
+    // Under this share of the legs on their cycles they are setting off (Pace); within SetOffSide of ahead or straight back
+    // (degrees) neither foot leads.
+    private const float SetOffBelow = .1f, SetOffSide = 20f;
+
+    // The moment of the stride a start takes up (0-1, the left foot down at 0): where the foot on the side the legs go swings
+    // past the other, so the first step puts it down that way; ahead or back, the next of the two. From the walk the legs go
+    // nearest that way (GaitClips.Gait.RightPass, LeftPass).
+    private float SetOffPhase(float legs)
+    {
+        var set = postureDown >= .5f ? crouchSet : plainSet;
+        if (set == null || !Pair(set, legs, out var a, out var b, out float toward)) return phase;
+        var gait = (toward > .5f ? b : a).Cycles[0].Gait;
+        float side = Mathf.Abs(legs);
+        if (side > SetOffSide && side < 180f - SetOffSide) return legs > 0f ? gait.RightPass : gait.LeftPass;
+        return Mathf.Repeat(gait.RightPass - phase, 1f) <= Mathf.Repeat(gait.LeftPass - phase, 1f) ? gait.RightPass : gait.LeftPass;
     }
 
     /// <summary>This frame's run for the /gait averages: the speed (m/s), steps a minute and how much faster the body goes than

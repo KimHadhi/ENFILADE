@@ -8,8 +8,9 @@ using UnityEngine;
 /// The legs tested without anyone at the keys (Logs/move-test.txt). Started by the editor on request
 /// (MoveTestOnRequest: Temp/enfilade-movetest.request), it waits for this PC's player to stand in the scene, then drives the
 /// keys and the mouse itself (ScriptedInput) through the moves the user found the legs worst at: a jog, keys stepped round
-/// in a diamond at a jog and a sprint, A and D in turn, and standing, the view flicked 180 degrees either way, 90, 270 and
-/// turned slowly round. For each it writes one line of what the legs did, from the drawn body after this frame's leg IK:
+/// in a diamond (a key every 0.12 s and every 0.25 s, at a jog and a sprint), A and D in turn (every 0.2 s and 0.5 s), D and
+/// W tapped, W then D at a jog and a sprint, and standing, the view flicked 180 degrees either way, 90, 270 and turned slowly
+/// round, each move from where the player first stood. For each it writes one line of what the legs did, from the drawn body after this frame's leg IK:
 /// how fast a sole on the ground went over it (median and the tenth worst, m/s) and how often faster than 3 m/s, how often
 /// a knee swung over 45 degrees or an ankle went over 25 cm in a frame, how often the body's facing turned over 20 degrees in a
 /// frame, the most the view stood off the chest (the neck's turn) and the chest off the hips (the spine's), and how far the
@@ -57,6 +58,8 @@ internal sealed class MoveTest : MonoBehaviour
     private readonly int[] endWas = new int[2];
     private readonly float[] kneeWas = new float[2];
     private bool known;
+    // Where the player stood as the test began: each move starts there, so none runs into a wall the last one led to.
+    private Vector3 home;
     // When the keys last changed in this phase (s), and whether the body has gone their way since.
     private float keysChanged;
     private bool keysMet = true;
@@ -81,6 +84,9 @@ internal sealed class MoveTest : MonoBehaviour
         Add("diamond .25", 4f, (t, dt) => ScriptedInput.Move = keys[(int)(t / .25f) % 4]);
         Add("diamond sprint", 3f, (t, dt) => { ScriptedInput.Sprint = true; ScriptedInput.Move = keys[(int)(t / .12f) % 4]; });
         Add("A/D", 3f, (t, dt) => { ScriptedInput.Sprint = false; ScriptedInput.Move = (int)(t / .2f) % 2 == 0 ? Vector2.left : Vector2.right; });
+        Add("A/D .5", 3f, (t, dt) => ScriptedInput.Move = (int)(t / .5f) % 2 == 0 ? Vector2.left : Vector2.right);
+        Add("tap D", 3f, (t, dt) => ScriptedInput.Move = (int)(t / .4f) % 2 == 0 ? Vector2.right : Vector2.zero);
+        Add("tap W", 3f, (t, dt) => ScriptedInput.Move = (int)(t / .4f) % 2 == 0 ? Vector2.up : Vector2.zero);
         Add("W then D", 2.5f, (t, dt) => ScriptedInput.Move = t < 1.2f ? Vector2.up : Vector2.right);
         Add("sprint W then D", 2.5f, (t, dt) => { ScriptedInput.Sprint = true; ScriptedInput.Move = t < 1.5f ? Vector2.up : Vector2.right; });
         Add("stop", 1.5f, (t, dt) => { ScriptedInput.Sprint = false; ScriptedInput.Move = Vector2.zero; });
@@ -160,6 +166,8 @@ internal sealed class MoveTest : MonoBehaviour
 
     private void Begin(int index)
     {
+        if (index == 0) home = player.transform.position;
+        else player.MoveTo(home + Vector3.up * .05f);
         at = index;
         clock = 0f;
         tally = new Tally();
