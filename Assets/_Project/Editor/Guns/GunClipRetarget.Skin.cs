@@ -200,6 +200,7 @@ internal static partial class GunClipRetarget
                 {
                     var clip = fingers.Apply(sourceClip, BakeClip(baker, sourceClip, path));
                     if (sourceClip != null && clip == null) failed = true;
+                    ThinKeys(clip);
                     return clip;
                 }
                 entry.pose = Baked(gun.sourcePose, $"{dir}/{name}_Pose.anim");

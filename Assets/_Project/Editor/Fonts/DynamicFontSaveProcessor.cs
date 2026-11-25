@@ -15,6 +15,9 @@ using UnityEngine;
 /// and clearing them would blank the screen; the first save after Play writes them, cleared.
 /// Until 2026-11-12 every save left dynamic fonts out, so a settings change was dropped without a word unless the menu
 /// below was used.
+/// The font feature table (ligatures, kerning pairs, mark positions) is cleared with the glyphs: TMP fills it for each
+/// glyph it draws, and ClearFontAssetData leaves it, so on 2026-11-20 four Pretendard weights went in at 9.6 MB each
+/// (21,000 kerning pairs, 340,000 lines) and Unity was slow to import them. TMP reads the features again as it draws.
 /// </summary>
 public class DynamicFontSaveProcessor : UnityEditor.AssetModificationProcessor
 {
@@ -28,7 +31,7 @@ public class DynamicFontSaveProcessor : UnityEditor.AssetModificationProcessor
             if (font != null)
             {
                 if (playing) continue;
-                if (HoldsGlyphs(font)) font.ClearFontAssetData(setAtlasSizeToZero: true);
+                if (HoldsGlyphs(font)) Clear(font);
             }
             kept.Add(path);
         }
@@ -45,13 +48,52 @@ public class DynamicFontSaveProcessor : UnityEditor.AssetModificationProcessor
         return font != null && font.atlasPopulationMode == AtlasPopulationMode.Dynamic ? font : null;
     }
 
-    /// <summary>Whether a font asset holds drawn glyphs: table entries, a grown atlas or extra atlas pages.</summary>
+    private static readonly string[] FeatureLists =
+    {
+        "m_FontFeatureTable.m_MultipleSubstitutionRecords", "m_FontFeatureTable.m_LigatureSubstitutionRecords",
+        "m_FontFeatureTable.m_GlyphPairAdjustmentRecords", "m_FontFeatureTable.m_MarkToBaseAdjustmentRecords",
+        "m_FontFeatureTable.m_MarkToMarkAdjustmentRecords",
+    };
+
+    /// <summary>Empties the glyphs, the atlas and the font feature table.</summary>
+    internal static void Clear(TMP_FontAsset font)
+    {
+        font.ClearFontAssetData(setAtlasSizeToZero: true);
+        var data = new SerializedObject(font);
+        bool cleared = false;
+        foreach (string name in FeatureLists)
+        {
+            var list = data.FindProperty(name);
+            if (list == null || !list.isArray || list.arraySize == 0) continue;
+            list.ClearArray();
+            cleared = true;
+        }
+        if (!cleared) return;
+        data.ApplyModifiedPropertiesWithoutUndo();
+        font.ReadFontAssetDefinition();
+    }
+
+    /// <summary>Whether any of the font feature lists holds records.</summary>
+    private static bool HoldsFeatures(TMP_FontAsset font)
+    {
+        var data = new SerializedObject(font);
+        foreach (string name in FeatureLists)
+        {
+            var list = data.FindProperty(name);
+            if (list != null && list.isArray && list.arraySize > 0) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Whether a font asset holds drawn glyphs or what came with them: table entries, a grown atlas, extra atlas
+    /// pages or font feature records.</summary>
     internal static bool HoldsGlyphs(TMP_FontAsset font)
     {
         if (font.glyphTable != null && font.glyphTable.Count > 0) return true;
         if (font.characterTable != null && font.characterTable.Count > 0) return true;
         var textures = font.atlasTextures;
-        return textures != null && (textures.Length > 1 || (textures.Length == 1 && textures[0] != null && textures[0].width > 1));
+        if (textures != null && (textures.Length > 1 || (textures.Length == 1 && textures[0] != null && textures[0].width > 1))) return true;
+        return HoldsFeatures(font);
     }
 
     /// <summary>Empty every dynamic font's atlas now and save the fonts (a save does this by itself; this is for all at once).</summary>
@@ -68,7 +110,7 @@ public class DynamicFontSaveProcessor : UnityEditor.AssetModificationProcessor
         {
             var font = DynamicFontAt(AssetDatabase.GUIDToAssetPath(guid));
             if (font == null || !HoldsGlyphs(font)) continue;
-            font.ClearFontAssetData(setAtlasSizeToZero: true);
+            Clear(font);
             EditorUtility.SetDirty(font);
             count++;
         }
