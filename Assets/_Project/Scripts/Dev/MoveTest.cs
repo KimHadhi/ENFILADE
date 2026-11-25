@@ -29,7 +29,7 @@ internal sealed class MoveTest : MonoBehaviour
     private const string Heading = "/movetest: one line a move. slide = how fast a sole on the ground went over it (median, tenth worst, m/s), "
         + "skates = frames faster than 3 m/s; knees = a knee swung over 45° in a frame; ankles = an ankle went over 25 cm in a frame; "
         + "pops = the body's facing turned over 20° in a frame; neck = the most the view stood off the chest, spine = the chest off the hips (°); "
-        + "react = the longest the body took to go within 20° of the keys' new way (s); "
+        + "react = the longest the body took to go within 20° of the keys' new way (s); pivot = frames a pivot had the hips and legs (PlayerBody.Pivot), pivots = which began how often; "
         + "view, body = how far each turned (°, + right); settle = until the facing was within 30° of the view (s); "
         + "slack = the most the drawn body stood off the capsule (cm, PlayerBody.Slack). Lines named out ... are the same moves seen "
         + "from outside (friends' copies, F5), where the slack shows.";
@@ -51,7 +51,10 @@ internal sealed class MoveTest : MonoBehaviour
     private sealed class Tally
     {
         public readonly List<float> Slides = new List<float>(), Carried = new List<float>(), Speeds = new List<float>();
-        public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StandTurns;
+        public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StandTurns, Pivots;
+        // How many times each pivot began (PlayerBody.PivotPlaying), and the one playing last frame.
+        public readonly SortedDictionary<string, int> PivotsBegun = new SortedDictionary<string, int>();
+        public string PivotWas;
         public float Slowest = float.MaxValue;
         public float Neck, Spine, View, Body, Settled, React, Slack;
     }
@@ -231,6 +234,10 @@ internal sealed class MoveTest : MonoBehaviour
         t.Slack = Mathf.Max(t.Slack, body.SlackNow);
         if (player.Actions != null && player.Actions.RunTurn.Turning) t.RunTurns++;
         if (body.StandTurning) t.StandTurns++;
+        if (body.Pivoting) t.Pivots++;
+        string pivot = body.PivotPlaying;
+        if (pivot != null && pivot != t.PivotWas) t.PivotsBegun[pivot] = t.PivotsBegun.TryGetValue(pivot, out int begun) ? begun + 1 : 1;
+        t.PivotWas = pivot;
         if (known)
         {
             float viewStep = Mathf.DeltaAngle(viewWas, view), facingStep = Mathf.DeltaAngle(facingWas, facing);
@@ -301,8 +308,9 @@ internal sealed class MoveTest : MonoBehaviour
         t.Speeds.Sort();
         float carried = t.Carried.Count > 0 ? t.Carried[t.Carried.Count / 2] : 0f, speed = t.Speeds.Count > 0 ? t.Speeds[t.Speeds.Count / 2] : 0f;
         PlayRecord.Line(Log, Heading, $"{name,-15} n {t.Frames,4}/{t.All,-4} | speed {speed:0.00} pose-carry {carried:0.00} | slide {median:0.00} {worst:0.00} skates {t.Skates,3} | knees {t.Knees,2} ankles {t.Ankles,2} pops {t.Pops,2} "
-            + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} stand-turn {t.StandTurns,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s "
-            + $"| slack {t.Slack * 100f:0}cm");
+            + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} stand-turn {t.StandTurns,3} pivot {t.Pivots,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s "
+            + $"| slack {t.Slack * 100f:0}cm"
+            + (t.PivotsBegun.Count > 0 ? " | pivots " + string.Join(" ", System.Linq.Enumerable.Select(t.PivotsBegun, b => $"{b.Key.Replace("enf_pivot_", "")}x{b.Value}")) : ""));
     }
 
     private void Finish(string trouble)

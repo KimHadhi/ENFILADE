@@ -20,7 +20,7 @@ using MovementState = PlayerMovement.MovementState;
 /// </summary>
 public sealed partial class PlayerBody
 {
-    private const int EmoteLayer = 5, EmoteLegsLayer = 6;
+    private const int EmoteLayer = 6, EmoteLegsLayer = 7;
 
     private AnimationMixerPlayable emoteMixer, emoteLegsMixer;
     private AvatarMask hipsLegsMask;

@@ -6,13 +6,16 @@
 
 Each pivot starts again from its draft (build_pivot_workspace.py: BIPER's old way's cycle up to its outside foot coming
 down, the span, the new way's cycle from that foot about to push off), its span made GAP frames long (the draft's 8 kept
-the foot down 0.37 s; a cut's plant is 0.15-0.25 s), and the span keyed frame by frame, as a side-step cut goes:
+the foot down 0.37 s; a cut's plant is 0.15-0.25 s), the new way's cycle moved over the ground so the planted foot's ball
+comes to it where it stood at the span's start (the draft lines the two cycles up by the ankle across the way only: along
+it the walks' were 10 cm apart), and the span keyed frame by frame, as a side-step cut goes:
 - the hips: on from the old way's speed into the new way's (a cubic between the two speeds), so they brake over the
   planted foot, stop and push back, and dip (DIP) at the brace;
 - the trunk leans off the plant toward the new way (LEAN, shared up the spine), the head kept level over it: the view
   and the chest still face ahead;
-- the planted foot stays down, settling from how it came down to how it pushes off (two-bone IK on the legs' own FK
-  bones: the knee in the plane it bent in at the span's ends), the other foot carried across in the air on an arc (LIFT);
+- the planted foot stays down on its ball, turning from how it came down to how it pushes off, the heel rising (two-bone
+  IK on the legs' own FK bones: the knee in the plane it bent in at the span's ends), the other foot carried across in the
+  air on an arc (LIFT);
 - the arms and the rest eased across between the two ends.
 The marks follow: 디딤 where the hips stop along the old way, 들어옴 three frames before the plant, 나감 three into the new
 way's cycle. With --send the changed pivots go to the game (pivot_tools.send_changed) and the workspace is saved; without
@@ -86,6 +89,20 @@ def shift_after(action, first, by):
         curve.update()
 
 
+def shift_hips_after(action, first, local):
+    """Every Hips location key at or after frame `first` moved by `local` (the bone's own frame)."""
+    for curve in one_click().curves(action):
+        if curve.data_path != 'pose.bones["Hips"].location':
+            continue
+        for point in curve.keyframe_points:
+            if point.co.x >= first - .01:
+                by = local[curve.array_index]
+                point.co.y += by
+                point.handle_left.y += by
+                point.handle_right.y += by
+        curve.update()
+
+
 def read_pose(context, rig, frame):
     """At a frame: each role's world turn, the hips' and every role's head in the world."""
     scene = context.scene
@@ -131,9 +148,22 @@ def make(context, rig, key, gap):
     A, B = before, before + gap + 1
     side = build.planting_side(a, b)
     free = 'Right' if side == 'Left' else 'Left'
+    planted, ball = LEGS[side][2], LEGS[side][3]
     qA, hA = read_pose(context, rig, A)
     _q, hA0 = read_pose(context, rig, A - 1)
     qB, hB = read_pose(context, rig, B)
+    # The new way's cycle placed so the planted foot's ball comes to it where it stood at the span's start: the draft lines
+    # the two cycles up by the ankle across the way only, and along it the walks' were 10 cm apart and the jogs' 3 to 4,
+    # which the span dragged the planted foot across.
+    off = hA[ball] - hB[ball]
+    off.z = 0.0
+    if off.length > .002:
+        bones = rig.data.bones
+        parent = bones[build.KAZUSA['Hips']].parent
+        rel = parent.matrix_local.inverted() @ bones[build.KAZUSA['Hips']].matrix_local
+        to_world = rig.matrix_world.to_3x3() @ rig.pose.bones[parent.name].matrix.to_3x3() @ rel.to_3x3()
+        shift_hips_after(action, B, to_world.inverted() @ off)
+        qB, hB = read_pose(context, rig, B)
     _q, hB1 = read_pose(context, rig, B + 1)
     span = B - A
     # The hips' way on: from the old way's speed (per frame) to the new way's, over the span (Hermite in frames).
@@ -144,6 +174,10 @@ def make(context, rig, key, gap):
     up = Vector((0, 0, 1))
     lean_axis = up.cross(new_way)
     lean_axis = lean_axis.normalized() if lean_axis.length > 1e-4 else Vector((1, 0, 0))
+    # The planted foot stands on its ball: the ankle hangs off it as the foot turns from how it came down to how it pushes
+    # off, the heel rising, rather than the ankle pinned with the ball swept round it (a walk's push-off swept the ball 10 to
+    # 30 cm over the ground). Its reach from the ankle, in the foot's own turn.
+    reach = qA[planted].inverted() @ (hA[ball] - hA[planted])
     # The legs' lengths, from the rest.
     bones = rig.data.bones
     lengths = {}
@@ -179,9 +213,8 @@ def make(context, rig, key, gap):
             world_q[role] = Quaternion(lean_axis, lean * share) @ world_q[role]
         # The feet: the planted one settling from how it came down to how it pushes off (the heel down, a few cm: no jump
         # where the new way's cycle takes it), the other carried across on an arc.
-        planted, toes = LEGS[side][2], LEGS[side][3]
-        world_q[planted], world_q[toes] = qA[planted].slerp(qB[planted], ease), qA[toes].slerp(qB[toes], ease)
-        targets = {side: hA[planted].lerp(hB[planted], ease),
+        world_q[planted], world_q[ball] = qA[planted].slerp(qB[planted], ease), qA[ball].slerp(qB[ball], ease)
+        targets = {side: hA[ball].lerp(hB[ball], ease) - world_q[planted] @ reach,
                    free: hA[LEGS[free][2]].lerp(hB[LEGS[free][2]], ease) + up * (LIFT * math.sin(math.pi * s))}
         posed = build.pose_from(world_q, hips_at, inv_world, rel, parent_of, center)
         world = rig.matrix_world
@@ -213,7 +246,8 @@ def make(context, rig, key, gap):
     action['enf_mark_디딤'] = stop_frame
     action['enf_mark_나감'] = B + 3
     action['enf_auto'] = f'auto_pivot.py: span {gap}, dip {DIP}, lean {LEAN}, lift {LIFT}'
-    print(f'  {key}: span {A + 1}-{B - 1} of {total}, {side} foot planted, stops at {stop_frame}', flush=True)
+    print(f'  {key}: span {A + 1}-{B - 1} of {total}, {side} foot planted, stops at {stop_frame}, new way moved '
+          f'{off.length * 100:.1f} cm', flush=True)
     return action
 
 

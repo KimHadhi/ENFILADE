@@ -30,5 +30,8 @@ public sealed partial class PlayerBody
     {
         foreach (string clip in WayClips()) MotionOf(clip);
         foreach (string clip in new[] { crouchDown, standUp, heavyLand, rollLand, rollLandLow }) MotionOf(clip);
+        // The pivots too: each is played on the body to be read, and read at the first pivot of a play all of them went in
+        // one frame (PlayerBody.Pivot).
+        foreach (var pivot in pivots) Measure(pivot);
     }
 }

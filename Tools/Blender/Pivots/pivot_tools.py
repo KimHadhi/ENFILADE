@@ -16,7 +16,8 @@ planted foot) and 나감 (where the new way's cycle takes over again).
 - On open: the last pivot, the rig in Pose mode, the Dope Sheet with the keys and the marks, the 피벗 tab.
 - 피벗 고르기 picks one: its action, its frames, its marks, and BIPER's own two cycles beside Kazusa (보기용).
 - Saving (Ctrl+S) sends every pivot changed since it was last sent: the original skeleton baked to
-  Assets/_Project/Art/Animations/Pivots/Pivot_<key>.fbx with its .clips.csv (one play, travel kept: root motion) and
+  Assets/_Project/Art/Animations/Pivots/Pivot_<key>.fbx with its .clips.csv (one play, its travel as root motion out of
+  the pose: the game plays it over the body it moves itself, PlayerBody.Pivot) and
   Pivot_<key>.marks.csv (the three marks in seconds). Unity takes it with Kazusa's avatar (ModelImportRules). A pivot
   nobody changed stays out of the game; 게임에서 빼기 deletes its files.
 Nothing here changes Blender's preferences.
@@ -286,13 +287,17 @@ def export_pivot(context, key):
     oc.write_meta(marks, oc.TEXT_META)
     oc.write_meta(path)
     truefps().export_active_clip(context, rig, str(path))
-    # One play, its travel and its rise kept (the plant's dip and the push's lift), turned half round as every whole-body
-    # clip on the player's body is (run_tools.export_cycle says why).
-    oc.write_text(clips, CSV_HEADER + f'{clip},0,0,0,0,180,0,,\n')
+    # One play, turned half round as every whole-body clip on the player's body is (run_tools.export_cycle says why). Its
+    # travel comes out of the pose as root motion (inPlace 1): the game moves the body itself and plays the pivot over it,
+    # matched by the travel it measures off the clip (PlayerBody.Pivot, ClipMotion); its rise and fall stay (the dip).
+    # The clip inside is named after the action it was baked from (enf_pivot_<key>): that is the name its rows go by and the
+    # name the game finds it by (ModelImportRules names a clip after its take; PlayerBody.Pivot).
+    take = PREFIX + key
+    oc.write_text(clips, CSV_HEADER + f'{take},0,1,0,0,180,0,,\n')
     fps = scene.render.fps / scene.render.fps_base
     found = marks_of(key)
     oc.write_text(marks, 'clip,' + ','.join(('enter', 'plant', 'exit')) + '\n'
-                  + clip + ',' + ','.join(f'{(found[m] - 1) / fps:.4f}' if m in found else '' for m in MARKS) + '\n')
+                  + take + ',' + ','.join(f'{(found[m] - 1) / fps:.4f}' if m in found else '' for m in MARKS) + '\n')
     oc.mark_sent(bpy.data.actions.get(PREFIX + key), fingerprint(key))
     return path
 

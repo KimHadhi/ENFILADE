@@ -14,7 +14,7 @@ using UnityEngine.Playables;
 public sealed partial class PlayerBody
 {
     // Over every other layer, the feelings' two (PlayerBody.Emote: 6, 7) included.
-    private const int ExecutionLayer = 7;
+    private const int ExecutionLayer = 8;
 
     private AnimationClipPlayable pairedClip;
     private bool paired;

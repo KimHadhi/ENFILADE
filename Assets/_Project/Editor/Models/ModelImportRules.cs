@@ -286,7 +286,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
             clip.lockRootHeightY = !Flag(row, "inPlaceY");
             clip.keepOriginalPositionY = true;
             clip.lockRootPositionXZ = !Flag(row, "inPlace");
-            clip.keepOriginalPositionXZ = true;
+            // Travel taken out of a Blender True FPS workspace's clip goes by the body's centre of mass: its exports carry the
+            // travel on the hips over a root node that never moves, so taken by that node none came out, and the pivots of
+            // 2026-11-25 dragged the hips and legs a metre off the body as they came in (PlayerBody.Pivot).
+            clip.keepOriginalPositionXZ = !(Flag(row, "inPlace") && IsTrueFpsWorkspaceClip(assetPath));
             // Which share of a loop it starts at, so cycles that blend together put down the same foot first.
             clip.cycleOffset = Number(row, "cycleOffset");
             // from/to keep only those frames, counted from the clip's first one (a landing starts at touchdown).

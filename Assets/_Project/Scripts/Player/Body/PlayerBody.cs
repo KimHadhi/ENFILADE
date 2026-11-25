@@ -685,7 +685,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (body != null && !limp)
         {
             // First the clips' switch eased (BodyInertia), so all the pose work after it starts from where the body goes on.
-            bodyInertia.Apply(Time.deltaTime, UpperBodyFromFramework);
+            bodyInertia.Apply(Time.deltaTime, UpperBodyFromFramework, pivotWeight);
             // Where the clip has the chest, before the look bends it: how far the head can turn (PlayerBody.Neck).
             MeasureClipChest();
             // First, as the last step of the animation pass: the spine, neck and head bend with the view.
@@ -904,7 +904,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 TickPosture(crouched, dt);
                 if (onGround && !crouched && RunTurnPose()) break;
                 if (onGround && StandTurnPose(dt)) break;
-                if (onGround) Locomotion(crouched, dt);
+                if (onGround)
+                {
+                    Locomotion(crouched, dt);
+                    KeepPivot(crouched, dt);
+                }
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
                 break;

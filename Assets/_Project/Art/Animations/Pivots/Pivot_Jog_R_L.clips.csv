@@ -1,2 +1,2 @@
 clip,loop,inPlace,inPlaceY,inPlaceYaw,yawOffset,cycleOffset,from,to
-Pivot_Jog_R_L,0,0,0,0,180,0,,
+enf_pivot_Jog_R_L,0,1,0,0,180,0,,

@@ -17,6 +17,8 @@ using MovementState = PlayerMovement.MovementState;
 ///   of the capsule's ground rule, 2026-11-25).
 /// - The legs read the drawn body's speed (PlayerBody.Locomotion), so the cycles carry the body that is drawn and its feet
 ///   stay down; the feet's footfalls read it too (PlantFeet).
+/// - While a pivot plays (PlayerBody.Pivot, 0.9.442) its clip's own travel carries the drawn body instead, as it was made,
+///   so its planted foot stays put; the slack it leaves shows as it is, up to the bound, and the pivot ends at the bound.
 /// - A wall stops the slack: the body never goes into one past the capsule (a sprint into a wall stops the capsule, and
 ///   the body would have run on into the wall).
 /// - Only on the feet (standing or crouched, on the ground, the keys moving it: PlayerMovement.StrideFrame), and none
@@ -131,6 +133,23 @@ public sealed partial class PlayerBody
             slackGap = Vector3.zero;
             slackVelocity = capsule;
         }
+        else if (PivotCarries(dt, capsule, out Vector3 carry))
+        {
+            // A pivot's own travel carries the drawn body, as the clip was made on it (PlayerBody.Pivot), so the foot it
+            // plants stays where it planted it: the slack shown is what that travel has left between the body and the
+            // capsule, as it is (the soft bound eased the body's speed off the clip's as the slack grew: a third of it at
+            // 20 cm), never past the bound (the pivot ends at its edge). The gap the soft bound takes on from is what shows
+            // that far.
+            // From the body's own speed, at once but for what the clip never asks (PivotCatch): coming in, the clip goes only
+            // its way in, and the body may have gone a little aside of it.
+            slackVelocity = Vector3.MoveTowards(slackVelocity, carry, PivotCatch * dt);
+            slackShown = Vector3.ClampMagnitude(slackShown + (slackVelocity - capsule) * dt, slackLimit);
+            slackShown.y = 0f;
+            slackGap = Unshown(slackShown, slackLimit);
+            KeepSlackOutOfWalls(capsule);
+            slackShownVelocity = (slackShown - shownWas) / dt;
+            return;
+        }
         else
         {
             // Toward the capsule's speed, and toward the capsule itself, no faster than legs change a body's speed.
@@ -160,6 +179,14 @@ public sealed partial class PlayerBody
         return gap * (limit * (float)System.Math.Tanh(length / limit) / length);
     }
 
+    // The gap that shows this much slack (the inverse of Shown), within the bound's reach.
+    private static Vector3 Unshown(Vector3 shown, float limit)
+    {
+        float length = shown.magnitude;
+        if (limit <= SlackNone || length <= SlackNone) return Vector3.zero;
+        return shown * (Mathf.Min(limit * Atanh(length / limit), limit * SlackReach) / length);
+    }
+
     // The body goes no further off the capsule than the capsule could go itself: a wall that way stops it there, and what
     // the gap held past it goes, so it never comes back out of the wall later.
     private void KeepSlackOutOfWalls(Vector3 capsule)
@@ -180,10 +207,8 @@ public sealed partial class PlayerBody
         if (!Physics.CapsuleCast(top, bottom, radius, way, out RaycastHit hit, length, walls, QueryTriggerInteraction.Ignore)) return;
         float free = Mathf.Max(0f, hit.distance - .01f);
         slackShown = way * free;
-        // The gap goes back to what shows that far (the inverse of Shown), and the body's speed into the wall goes.
-        float limit = Mathf.Max(SlackNone, slackLimit);
-        float inner = free >= limit * .999f ? limit * SlackReach : limit * Atanh(free / limit);
-        slackGap = way * Mathf.Min(inner, limit * SlackReach);
+        // The gap goes back to what shows that far, and the body's speed into the wall goes.
+        slackGap = Unshown(slackShown, slackLimit);
         float into = Vector3.Dot(slackVelocity - capsule, way);
         if (into > 0f) slackVelocity -= way * into;
     }

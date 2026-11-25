@@ -154,6 +154,13 @@ public sealed class PlayerBodyProfile : ScriptableObject
         variantId = split < 0 ? "" : look.Substring(split + 1);
     }
 
+    /// <summary>The library's clips whose names begin so, in its order (PlayerBody's pivots: "Pivot_").</summary>
+    public System.Collections.Generic.IEnumerable<AnimationClip> Named(string prefix)
+    {
+        foreach (var clip in clips)
+            if (clip != null && clip.name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) yield return clip;
+    }
+
     public AnimationClip Find(string clipName)
     {
         if (string.IsNullOrEmpty(clipName)) return null;
