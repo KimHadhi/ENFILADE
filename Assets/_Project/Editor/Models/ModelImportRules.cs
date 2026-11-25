@@ -41,9 +41,10 @@ internal sealed class ModelImportRules : AssetPostprocessor
     // take her avatar as they are, so a polish exported from Blender plays with no step in Unity (the shove workspace's
     // round trip; the TrueFPS guide had the user pick Copy From Other Avatar by hand).
     // Run/ holds the walk and run cycles polished in the Blender run workspace (Tools/Blender/Run), enf_<cycle>, which the body
-    // plays instead of <cycle> (PlayerBody.Locomotion).
+    // plays instead of <cycle> (PlayerBody.Locomotion). Pivots/ holds the pivots the user animates in the Blender pivot
+    // workspace (Tools/Blender/Pivots), Pivot_<way>, with their travel and marks (Pivot_<way>.marks.csv).
     private static readonly string[] TrueFpsAnimationFolders =
-        { AnimationsFolder + "Shove/", AnimationsFolder + "Custom/", AnimationsFolder + "Run/" };
+        { AnimationsFolder + "Shove/", AnimationsFolder + "Custom/", AnimationsFolder + "Run/", AnimationsFolder + "Pivots/" };
     // Executions/ holds the paired executions from the Blender execution workspace (Tools/Blender/Executions): each pair's
     // player clip on KazusaBand's skeleton (enf_exe_<pair>_p) and its zombie clip on the Synty zombie's (enf_exe_<pair>_z).
     // The workspace writes a bare .meta (its GUID) with each new file, so these settings are made on every import rather
