@@ -303,6 +303,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         state = player.CurrentState;
         grounded = player.IsGrounded;
         stateTime = airTime = gripWeight = slowBlendLeft = 0f;
+        ResetSlack();
         heaving = false;
         heaveClip = null;
         hips = animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Hips) : null;
@@ -595,10 +596,12 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             thirdPerson = !thirdPerson;
             ApplyView();
         }
-        if (StaysLimp()) return;
+        if (StaysLimp()) { ResetSlack(); return; }
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
         legsPlanted = keepsPlace = rootByClip = false;
+        // The drawn body's slack off the capsule first, so the legs read the speed of the body that is drawn (PlayerBody.Slack).
+        FollowCapsule(dt);
         ChoosePose(dt);
         Blend(dt);
         BlendLayers(dt);
@@ -657,6 +660,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         HoldHipsPlace();
         KeepPlaceAsTheViewTurns();
         PlaceBody();
+        ShowSlack();
         PlacePaired();
         AimLook(dt);
         RecordGait(dt);
@@ -767,8 +771,9 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         if (head == null || view == null || view.parent == null || dt <= 0f) return;
         Vector3 camera = transform.InverseTransformPoint(view.parent.position) - Vector3.forward * backOffset;
-        // Not the Q/E lean's part of where the head is: followed, it walked the body back under the pivot (BodyLean).
-        Vector3 error = camera - transform.InverseTransformPoint(spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt));
+        // Not the Q/E lean's part of where the head is: followed, it walked the body back under the pivot (BodyLean). Nor the
+        // body's slack (PlayerBody.Slack), which this would otherwise ease away under it.
+        Vector3 error = camera - transform.InverseTransformPoint(spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt) - slackShown);
         error.y = 0f;
         // In the air and through a dodge the head stays over the capsule closer, so the trunk's swing doesn't move the view.
         bool quick = state == MovementState.StepDodge || (!player.IsGrounded && state == MovementState.Standing);

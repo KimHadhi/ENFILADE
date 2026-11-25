@@ -261,10 +261,18 @@ public sealed partial class PlayerBody
         // PC's always, they go as the body is seen to go, followed in the world so turning the view doesn't drag them behind it.
         // 0.9.415 played the player's own on the last stride asked whatever moved the body, and a held body sprinted on the
         // spot (the review of 2026-11-25).
+        // On both, the body's slack off the capsule adds its own speed (PlayerBody.Slack): the legs carry the body as it is drawn
+        // over the ground, which changes its speed no faster than legs do. A copy's stride is eased as before only as far as
+        // its slack is shut (SlackShare): with it open the drawn body's speed is already a body's, and easing it again would
+        // leave the legs strideFollowTime behind the body they carry.
         legsAsked = !player.IsNetworkDriven && player.StrideFrame == Time.frameCount;
-        if (legsAsked) stride = Vector3.ProjectOnPlane(player.Stride, Vector3.up);
-        else stride = FollowStride(stride, Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up),
-            strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f);
+        if (legsAsked) stride = Vector3.ProjectOnPlane(player.Stride + SlackSpeed, Vector3.up);
+        else
+        {
+            float follow = strideFollowTime > 0f ? 1f - Mathf.Exp(-dt / strideFollowTime) : 1f;
+            stride = FollowStride(stride, Vector3.ProjectOnPlane(player.ActualVelocity + SlackSpeed, Vector3.up),
+                Mathf.Lerp(follow, 1f, SlackShare));
+        }
         Vector3 local = transform.InverseTransformDirection(stride);
         local.y = 0f;
         float speed = local.magnitude;
@@ -758,7 +766,7 @@ public sealed partial class PlayerBody
         if (mixWeight <= 0f) slide = 0f;
         var text = new System.Text.StringBuilder();
         text.Append($"속도 {gaitSpeed:0.00} m/s · 클립 제 속도 {gaitNatural:0.00} · 박자 ×{gaitRateNow:0.00}");
-        text.Append($" · 분당 {steps:0}걸음 · 미끄러짐 {slide:0.00} m/s · 골반 {yaw:0}° · 다리 {legLength:0.00} m");
+        text.Append($" · 분당 {steps:0}걸음 · 미끄러짐 {slide:0.00} m/s · 골반 {yaw:0}° · 다리 {legLength:0.00} m · 여유 {SlackNow * 100f:0} cm");
         foreach (var channel in channels)
             if (channel.Gait != null && channel.Target > .05f)
                 text.Append($"\n  {channel.Playable.GetAnimationClip().OrNull()?.name} {channel.Target:0.00} ({channel.Gait.Speed * GaitScale:0.00} m/s, "

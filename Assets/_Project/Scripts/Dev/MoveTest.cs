@@ -16,7 +16,9 @@ using UnityEngine;
 /// a knee swung over 45 degrees or an ankle went over 25 cm in a frame, how often the body's facing turned over 20 degrees in a
 /// frame, the most the view stood off the chest (the neck's turn) and the chest off the hips (the spine's), and how far the
 /// view and the body's facing turned and how long until the facing was within 30 degrees of the view. Then it ends the play.
-/// The user, 2026-11-25: "모든 걸 고쳐. 네가 알아서 테스팅까지 다 해서".
+/// The user, 2026-11-25: "모든 걸 고쳐. 네가 알아서 테스팅까지 다 해서". Since 0.9.437 every move runs twice: through the eyes, then
+/// seen from outside (out ..., PlayerBody.ShowFromOutside), where the drawn body's slack off the capsule shows (PlayerBody.Slack);
+/// react is the capsule's in both, so the two passes have the same controls.
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Body + 1)]
 internal sealed class MoveTest : MonoBehaviour
@@ -28,7 +30,9 @@ internal sealed class MoveTest : MonoBehaviour
         + "skates = frames faster than 3 m/s; knees = a knee swung over 45° in a frame; ankles = an ankle went over 25 cm in a frame; "
         + "pops = the body's facing turned over 20° in a frame; neck = the most the view stood off the chest, spine = the chest off the hips (°); "
         + "react = the longest the body took to go within 20° of the keys' new way (s); "
-        + "view, body = how far each turned (°, + right); settle = until the facing was within 30° of the view (s).";
+        + "view, body = how far each turned (°, + right); settle = until the facing was within 30° of the view (s); "
+        + "slack = the most the drawn body stood off the capsule (cm, PlayerBody.Slack). Lines named out ... are the same moves seen "
+        + "from outside (friends' copies, F5), where the slack shows.";
     // Ready this long after the player stands, and given up this long after the play began with no player.
     private const float Settle = 1.5f, GiveUp = 60f;
 
@@ -38,6 +42,9 @@ internal sealed class MoveTest : MonoBehaviour
         public float Seconds;
         // It starts facing the way the player first faced (a move with keys), not where the last left the view (a flick).
         public bool FaceHome;
+        // The body is seen from outside through it (a friend's copy, F5: PlayerBody.ShowFromOutside), where its slack off the
+        // capsule shows (PlayerBody.Slack).
+        public bool Outside;
         public System.Action<float, float> Drive;
     }
 
@@ -46,7 +53,7 @@ internal sealed class MoveTest : MonoBehaviour
         public readonly List<float> Slides = new List<float>(), Carried = new List<float>(), Speeds = new List<float>();
         public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StandTurns;
         public float Slowest = float.MaxValue;
-        public float Neck, Spine, View, Body, Settled, React;
+        public float Neck, Spine, View, Body, Settled, React, Slack;
     }
 
     private readonly List<Phase> phases = new List<Phase>();
@@ -105,6 +112,14 @@ internal sealed class MoveTest : MonoBehaviour
         Add("flick L270", 3f, Flick(-270f, .2f), false);
         Add("slow R360", 4f, Flick(360f, 3f), false);
         Add("jog W again", 1.5f, (t, dt) => ScriptedInput.Move = Vector2.up);
+        // Then every move again with the body seen from outside, as friends and F5 see it: its slack off the capsule shows
+        // there (PlayerBody.Slack, 0.9.437), and the first pass, through the eyes, stays comparable with the lines before it.
+        int through = phases.Count;
+        for (int i = 0; i < through; i++)
+        {
+            var eyes = phases[i];
+            phases.Add(new Phase { Name = "out " + eyes.Name, Seconds = eyes.Seconds, FaceHome = eyes.FaceHome, Outside = true, Drive = eyes.Drive });
+        }
     }
 
     private void Add(string name, float seconds, System.Action<float, float> drive, bool faceHome = true)
@@ -195,6 +210,7 @@ internal sealed class MoveTest : MonoBehaviour
             player.HorizontalVelocity = Vector3.zero;
             if (phases[index].FaceHome && player.TryGetComponent(out PlayerLook look)) look.FaceYaw(homeYaw);
         }
+        if (body != null) body.ShowFromOutside(phases[index].Outside);
         at = index;
         clock = 0f;
         tally = new Tally();
@@ -212,6 +228,7 @@ internal sealed class MoveTest : MonoBehaviour
         Vector3 root = animator.transform.position, velocity = player.ActualVelocity;
         t.Speeds.Add(new Vector2(velocity.x, velocity.z).magnitude);
         t.Slowest = Mathf.Min(t.Slowest, new Vector2(velocity.x, velocity.z).magnitude);
+        t.Slack = Mathf.Max(t.Slack, body.SlackNow);
         if (player.Actions != null && player.Actions.RunTurn.Turning) t.RunTurns++;
         if (body.StandTurning) t.StandTurns++;
         if (known)
@@ -284,13 +301,15 @@ internal sealed class MoveTest : MonoBehaviour
         t.Speeds.Sort();
         float carried = t.Carried.Count > 0 ? t.Carried[t.Carried.Count / 2] : 0f, speed = t.Speeds.Count > 0 ? t.Speeds[t.Speeds.Count / 2] : 0f;
         PlayRecord.Line(Log, Heading, $"{name,-15} n {t.Frames,4}/{t.All,-4} | speed {speed:0.00} pose-carry {carried:0.00} | slide {median:0.00} {worst:0.00} skates {t.Skates,3} | knees {t.Knees,2} ankles {t.Ankles,2} pops {t.Pops,2} "
-            + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} stand-turn {t.StandTurns,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s");
+            + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} stand-turn {t.StandTurns,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s "
+            + $"| slack {t.Slack * 100f:0}cm");
     }
 
     private void Finish(string trouble)
     {
         if (trouble != null) PlayRecord.Line(Log, Heading, "-- " + trouble);
         else PlayRecord.Line(Log, Heading, "-- done");
+        if (body != null) body.ShowFromOutside(false);
         ScriptedInput.Off();
         try { File.Delete(Running); } catch (IOException) { }
         enabled = false;

@@ -315,7 +315,11 @@ public sealed partial class PlayerBody
         float calmTarget = dead || strideFrame != Time.frameCount ? 0f
             : runCalmShare * Mathf.InverseLerp(runCalmSpeeds.x, Mathf.Max(runCalmSpeeds.x + .01f, runCalmSpeeds.y), gaitSpeed);
         runCalmWeight = Mathf.MoveTowards(runCalmWeight, calmTarget, dt / RunCalmEase);
-        bodyCamera.Place(eye, eyeBefore, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
+        // Through its own eyes the camera keeps where the capsule has it: the body's slack off the capsule (PlayerBody.Slack)
+        // is taken out, so a body left behind never leaves the view behind, and the head bends after the camera (HeadReach).
+        // Seen from outside (a friend's copy, F5) the eyes, the gun held on them (PlayerView) and the camera go with the body.
+        Vector3 ownSlack = SeenFromOutside ? Vector3.zero : slackShown;
+        bodyCamera.Place(eye - ownSlack, eyeBefore - ownSlack, bodyGaze.Rotation, bodyGaze.Input, CameraIgnores(),
             dt, bodySwayTime, runCalm * runCalmWeight, Mathf.Max(FlinchHold, EmoteHold));
         // Then the head goes where the camera went: off the eyes (a punch, a slip's dip, a wall, less body
         // sway) the spine, chest and neck bend it there, so the view is never outside the head, seen from outside too (the
@@ -369,7 +373,7 @@ public sealed partial class PlayerBody
         if (dead || state != MovementState.SupineSliding || head == null || view == null || view.parent == null || dt <= 0f) return;
         Quaternion frame = Quaternion.Euler(0f, legYaw, 0f);
         Vector3 wanted = view.parent.position - frame * Vector3.forward * backOffset;
-        Vector3 error = wanted - (spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt));
+        Vector3 error = wanted - (spineLook.ClipHeadPosition - bodyLean.ClipHeadOffset(dead, dt) - slackShown);
         error.y = 0f;
         slideBodyOffset += Quaternion.Inverse(frame) * error * (1f - Mathf.Exp(-dt / headFollowTime));
         slideBodyOffset = Vector3.ClampMagnitude(slideBodyOffset, 1.5f);

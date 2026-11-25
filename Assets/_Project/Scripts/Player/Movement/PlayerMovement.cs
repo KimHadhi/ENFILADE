@@ -605,6 +605,8 @@ public sealed partial class PlayerMovement : MonoBehaviour
         transform.position = position;
         controller.enabled = true;
         ResetVelocity();
+        // The drawn body carries no slack over to where the player was put (PlayerBody.Slack).
+        if (TryGetComponent(out PlayerBody body)) body.DropSlack();
     }
     /// <summary>
     /// Throws the player at this velocity (meant for big enemies' blows; aim it upward). Without control until they
