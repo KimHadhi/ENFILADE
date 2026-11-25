@@ -464,4 +464,6 @@ def main():
     print('PIVOT WORKSPACE', out, flush=True)
 
 
-main()
+# Run by Blender (--python), not when auto_pivot.py takes its posing helpers.
+if __name__ == '__main__':
+    main()
