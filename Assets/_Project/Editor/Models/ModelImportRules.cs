@@ -102,6 +102,18 @@ internal sealed class ModelImportRules : AssetPostprocessor
         else if (IsTrueFpsWorkspaceClip(assetPath))
         {
             var model = (ModelImporter)assetImporter;
+            // The workspaces write a bare .meta (its GUID) before each new file (one_click.write_meta), so to Unity its
+            // settings are not missing and Apply never runs: they are made here on every import, as an execution clip's
+            // are (ExecutionClip). Left to Unity's own, the user's first two pivots (2026-11-25) came in as Legacy clips
+            // without an avatar, which can't be given one ("avatarSetup can't be changed when AnimationType is None or
+            // Legacy"), and no humanoid body could play them.
+            model.importCameras = false;
+            model.importLights = false;
+            model.isReadable = false;
+            model.materialImportMode = ModelImporterMaterialImportMode.None;
+            model.animationType = ModelImporterAnimationType.Human;
+            model.importAnimation = true;
+            model.bakeAxisConversion = true;
             // KazusaBand.fbx keeps its rig node (KazusaBandRig) under the root. An export holds only that rig, which Unity
             // folds into the root unless told not to, and her avatar then refuses the clip ("Parent for 'Center' differs").
             model.preserveHierarchy = true;
