@@ -131,6 +131,9 @@ public sealed partial class PlayerBody
         return best;
     }
 
+    /// <summary>A turn on the spot has the legs (MoveTest counts it).</summary>
+    internal bool StandTurning => standTurn != null;
+
     // On the ground standing or crouched: true while a turn on the spot has the legs.
     private bool StandTurnPose(float dt)
     {

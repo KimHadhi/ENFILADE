@@ -120,6 +120,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // than this (degrees): as far as the spine and neck turn the head back, as when the legs stand while the view turns.
     // The body falls behind the view by FacingLagMost at most, carried with the view's turn from FacingCarryFrom (degrees).
     private const float FacingLagMost = 90f, FacingCarryFrom = 45f;
+    // On its feet the body's facing turns no faster than this (degrees a second).
+    private const float FacingTurnMost = 540f;
     // Strides taken so far, for cycles holding more than one stride (GaitClips.Gait.ShareAt); phase is within the stride.
     private int strideCount;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
@@ -630,10 +632,22 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // user: "돌았을 때 갑자기 발이 튀는"). Only the view's turn is carried, so a facing a state asks for far round (out
             // of a hang, onto a ladder) is come round to at the follow's pace.
             float wanted = view + targetYaw, behind = Mathf.DeltaAngle(wanted, legYaw);
-            float viewStep = rootYawKnown ? Mathf.DeltaAngle(viewWas, view) : 0f;
+            float viewStep = rootYawKnown ? Mathf.DeltaAngle(viewWas, view) : 0f, was = legYaw;
             legYaw = Mathf.SmoothDampAngle(legYaw, wanted, ref yawVelocity, .12f);
             if (behind * viewStep < 0f)
                 legYaw += viewStep * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(FacingCarryFrom, FacingLagMost, Mathf.Abs(behind)));
+            // On its feet the body turns no faster than legs turn a body (FacingTurnMost): a view flicked round on the move
+            // leads, the spine and the neck turning the chest and the head after it, and the body comes round over a few
+            // frames. Only the drawn body: the view and the keys go at once. Carried with the view's own turn it spun round in two or three frames, over 20 degrees a frame, the
+            // legs running backwards under it a moment and a run's turn back finding the body already round (the legs' test of
+            // 2026-11-25: a jog flicked 180 jumped the facing over 20 degrees in a frame 4 to 5 times; the user: "화면 전환할
+            // 때 굉장히 몸이 자유분방한데").
+            if (grounded && (state == MovementState.Standing || state == MovementState.Crouching))
+            {
+                float most = FacingTurnMost * dt;
+                legYaw = was + Mathf.Clamp(Mathf.DeltaAngle(was, legYaw), -most, most);
+                yawVelocity = Mathf.Clamp(yawVelocity, -FacingTurnMost, FacingTurnMost);
+            }
             yaw = Mathf.DeltaAngle(view, legYaw);
         }
         viewWas = view;

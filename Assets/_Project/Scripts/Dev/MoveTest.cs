@@ -9,8 +9,9 @@ using UnityEngine;
 /// (MoveTestOnRequest: Temp/enfilade-movetest.request), it waits for this PC's player to stand in the scene, then drives the
 /// keys and the mouse itself (ScriptedInput) through the moves the user found the legs worst at: a jog, keys stepped round
 /// in a diamond (a key every 0.12 s and every 0.25 s, at a jog and a sprint), A and D in turn (every 0.2 s and 0.5 s), D and
-/// W tapped, W then D at a jog and a sprint, and standing, the view flicked 180 degrees either way, 90, 270 and turned slowly
-/// round, each move from where the player first stood. For each it writes one line of what the legs did, from the drawn body after this frame's leg IK:
+/// W tapped, W then D at a jog and a sprint, the view flicked round on the move (180 and 90 at a jog, 180 sprinting and
+/// walking), and standing, the view flicked 180 degrees either way, 90, 270 and turned slowly round; each move from where the
+/// player first stood, a move with keys from a stop and facing the way it first faced. For each it writes one line of what the legs did, from the drawn body after this frame's leg IK:
 /// how fast a sole on the ground went over it (median and the tenth worst, m/s) and how often faster than 3 m/s, how often
 /// a knee swung over 45 degrees or an ankle went over 25 cm in a frame, how often the body's facing turned over 20 degrees in a
 /// frame, the most the view stood off the chest (the neck's turn) and the chest off the hips (the spine's), and how far the
@@ -35,13 +36,16 @@ internal sealed class MoveTest : MonoBehaviour
     {
         public string Name;
         public float Seconds;
+        // It starts facing the way the player first faced (a move with keys), not where the last left the view (a flick).
+        public bool FaceHome;
         public System.Action<float, float> Drive;
     }
 
     private sealed class Tally
     {
         public readonly List<float> Slides = new List<float>(), Carried = new List<float>(), Speeds = new List<float>();
-        public int Frames, Skates, Knees, Ankles, Pops;
+        public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StandTurns;
+        public float Slowest = float.MaxValue;
         public float Neck, Spine, View, Body, Settled, React;
     }
 
@@ -58,8 +62,9 @@ internal sealed class MoveTest : MonoBehaviour
     private readonly int[] endWas = new int[2];
     private readonly float[] kneeWas = new float[2];
     private bool known;
-    // Where the player stood as the test began: each move starts there, so none runs into a wall the last one led to.
+    // Where the player stood and faced as the test began: each move starts there, so none runs into a wall the last one led to.
     private Vector3 home;
+    private float homeYaw;
     // When the keys last changed in this phase (s), and whether the body has gone their way since.
     private float keysChanged;
     private bool keysMet = true;
@@ -89,17 +94,30 @@ internal sealed class MoveTest : MonoBehaviour
         Add("tap W", 3f, (t, dt) => ScriptedInput.Move = (int)(t / .4f) % 2 == 0 ? Vector2.up : Vector2.zero);
         Add("W then D", 2.5f, (t, dt) => ScriptedInput.Move = t < 1.2f ? Vector2.up : Vector2.right);
         Add("sprint W then D", 2.5f, (t, dt) => { ScriptedInput.Sprint = true; ScriptedInput.Move = t < 1.5f ? Vector2.up : Vector2.right; });
+        Add("jog flick R180", 3f, OnTheRun(false, 180f, .8f, .15f));
+        Add("sprint flick L180", 3.5f, OnTheRun(true, -180f, 1.2f, .15f));
+        Add("jog flick R90", 2.5f, OnTheRun(false, 90f, .8f, .1f));
+        Add("walk flick L180", 3f, OnTheRun(false, -180f, .8f, .15f, .5f));
         Add("stop", 1.5f, (t, dt) => { ScriptedInput.Sprint = false; ScriptedInput.Move = Vector2.zero; });
-        Add("flick R180", 2.5f, Flick(180f, .1f));
-        Add("flick L180", 2.5f, Flick(-180f, .1f));
-        Add("flick R90", 2f, Flick(90f, .1f));
-        Add("flick L270", 3f, Flick(-270f, .2f));
-        Add("slow R360", 4f, Flick(360f, 3f));
+        Add("flick R180", 2.5f, Flick(180f, .1f), false);
+        Add("flick L180", 2.5f, Flick(-180f, .1f), false);
+        Add("flick R90", 2f, Flick(90f, .1f), false);
+        Add("flick L270", 3f, Flick(-270f, .2f), false);
+        Add("slow R360", 4f, Flick(360f, 3f), false);
         Add("jog W again", 1.5f, (t, dt) => ScriptedInput.Move = Vector2.up);
     }
 
-    private void Add(string name, float seconds, System.Action<float, float> drive)
-        => phases.Add(new Phase { Name = name, Seconds = seconds, Drive = drive });
+    private void Add(string name, float seconds, System.Action<float, float> drive, bool faceHome = true)
+        => phases.Add(new Phase { Name = name, Seconds = seconds, Drive = drive, FaceHome = faceHome });
+
+    // W held (half way for a walk, with the sprint key or not) and the view turned by `degrees` over `over` seconds from `at`.
+    private static System.Action<float, float> OnTheRun(bool sprint, float degrees, float at, float over, float keys = 1f) => (t, dt) =>
+    {
+        ScriptedInput.Sprint = sprint;
+        ScriptedInput.Move = Vector2.up * keys;
+        float before = Mathf.Clamp01((t - dt - at) / over), now = Mathf.Clamp01((t - at) / over);
+        if (now > before) ScriptedInput.AddYaw(degrees * (now - before));
+    };
 
     // The view turned by `degrees` over `over` seconds from the phase's start.
     private static System.Action<float, float> Flick(float degrees, float over) => (t, dt) =>
@@ -166,8 +184,17 @@ internal sealed class MoveTest : MonoBehaviour
 
     private void Begin(int index)
     {
-        if (index == 0) home = player.transform.position;
-        else player.MoveTo(home + Vector3.up * .05f);
+        if (index == 0)
+        {
+            home = player.transform.position;
+            homeYaw = player.transform.eulerAngles.y;
+        }
+        else
+        {
+            player.MoveTo(home + Vector3.up * .05f);
+            player.HorizontalVelocity = Vector3.zero;
+            if (phases[index].FaceHome && player.TryGetComponent(out PlayerLook look)) look.FaceYaw(homeYaw);
+        }
         at = index;
         clock = 0f;
         tally = new Tally();
@@ -177,12 +204,16 @@ internal sealed class MoveTest : MonoBehaviour
 
     private void Measure(float dt)
     {
+        if (tally != null) tally.All++;
         if (body == null || !body.TryReadLegs(out var left, out var right)) return;
         float view = player.transform.eulerAngles.y, facing = body.FacingYaw;
         var t = tally;
         t.Frames++;
         Vector3 root = animator.transform.position, velocity = player.ActualVelocity;
         t.Speeds.Add(new Vector2(velocity.x, velocity.z).magnitude);
+        t.Slowest = Mathf.Min(t.Slowest, new Vector2(velocity.x, velocity.z).magnitude);
+        if (player.Actions != null && player.Actions.RunTurn.Turning) t.RunTurns++;
+        if (body.StandTurning) t.StandTurns++;
         if (known)
         {
             float viewStep = Mathf.DeltaAngle(viewWas, view), facingStep = Mathf.DeltaAngle(facingWas, facing);
@@ -252,8 +283,8 @@ internal sealed class MoveTest : MonoBehaviour
         t.Carried.Sort();
         t.Speeds.Sort();
         float carried = t.Carried.Count > 0 ? t.Carried[t.Carried.Count / 2] : 0f, speed = t.Speeds.Count > 0 ? t.Speeds[t.Speeds.Count / 2] : 0f;
-        PlayRecord.Line(Log, Heading, $"{name,-15} n {t.Frames,4} | speed {speed:0.00} pose-carry {carried:0.00} | slide {median:0.00} {worst:0.00} skates {t.Skates,3} | knees {t.Knees,2} ankles {t.Ankles,2} pops {t.Pops,2} "
-            + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s");
+        PlayRecord.Line(Log, Heading, $"{name,-15} n {t.Frames,4}/{t.All,-4} | speed {speed:0.00} pose-carry {carried:0.00} | slide {median:0.00} {worst:0.00} skates {t.Skates,3} | knees {t.Knees,2} ankles {t.Ankles,2} pops {t.Pops,2} "
+            + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} stand-turn {t.StandTurns,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s");
     }
 
     private void Finish(string trouble)
