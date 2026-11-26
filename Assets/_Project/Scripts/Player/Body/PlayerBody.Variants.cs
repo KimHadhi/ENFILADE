@@ -155,6 +155,7 @@ public sealed partial class PlayerBody
         legYaw = obstacleYaw;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, obstacleYaw);
         legsPlanted = true;
+        turning = 0;
         var traversal = player.Abilities.Traversal;
         if (traversal.Obstacle.Kind == VaultKind.Heave) Drive(obstacleClip, traversal.ObstacleProgress);
         // A vault carried by its clip's hands (WarpedTraversal) plays the clip at the time the movement drives, so the hands
@@ -267,6 +268,7 @@ public sealed partial class PlayerBody
         if (way.sqrMagnitude > 1e-4f) legYaw = Mathf.Atan2(way.x, way.z) * Mathf.Rad2Deg;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
         legsPlanted = true;
+        turning = 0;
     }
 
     private string DownClip(MovementLanding.Pose pose) =>
@@ -283,6 +285,7 @@ public sealed partial class PlayerBody
         legYaw = landing.HeavyYaw;
         targetYaw = Mathf.DeltaAngle(transform.eulerAngles.y, legYaw);
         legsPlanted = true;
+        turning = 0;
     }
 
     // The slide on its clip at the slide's own moment (SlideMove): down into it, along it matched to the distance left, held on

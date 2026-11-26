@@ -111,7 +111,7 @@ public static class LedgeFinder
             ledge = new LedgeTarget
             {
                 Surface = top.collider, LocalHang = support.InverseTransformPoint(hang), LocalEdge = support.InverseTransformPoint(edge),
-                LocalNormal = support.InverseTransformDirection(outward)
+                LocalNormal = support.InverseTransformDirection(outward), LocalUp = support.InverseTransformDirection(top.normal)
             };
             probe = new Probe { Result = Why.Found, Point = edge, On = top.collider };
             return true;

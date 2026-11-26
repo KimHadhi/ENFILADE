@@ -20,7 +20,7 @@ public sealed partial class PlayerBody
     private const string GaitRecord = "gait";
     private const string GaitRecordHeading = "걸음 기록 (PlayerBody.GaitRecord): 한 번 트는 동작에서 걸음으로 넘어갈 때(슬라이딩에서 일어나기, "
         + "구르기, 달리며 착지)와 움직이며(서서 2.2m/s, 앉아서 1m/s 이상) 시선을 확 돌릴 때부터 1.2초 동안 프레임마다 한 줄: 지난 초, 상태, 실제 속도(m/s), 걸음새(0 걷기, 1 조깅, "
-        + "2 전력질주)와 다리가 트는 자리, 분당 걸음, 박자 배율, 클립보다 더 가는 빠르기(m/s), 가는 쪽(시선 기준 도), 몸이 시선에서 돈 각도, "
+        + "2 전력질주)와 다리가 트는 자리, 분당 걸음, 박자와 보폭 배율, 발 미끄러짐(m/s), 가는 쪽(시선 기준 도), 몸이 시선에서 돈 각도, "
         + "시선이 도는 빠르기(도/초), 구르는 중이면 구르기 클립 시각, 넘겨주는 클립과 그 시각, 무게가 큰 클립 셋, 이 프레임에 몸(모델)·엉덩이·머리가 "
         + "움직인 거리(cm)와 몸이 돈 각도·머리가 몸에 대해 돈 각도(도), 그리고 지난 프레임 천 물리가 끝난 뒤의 매달린 뼈(머리카락·치마·리본) 중 몸에 "
         + "대해 가장 많이 움직인 뼈(cm)와 그 사슬이 매달린 몸 뼈, 사슬이 매달린 몸 뼈 중 가장 많이 움직이고 돈 뼈(cm, 도). 착지 구르기는 시작부터 남긴다";
@@ -78,29 +78,23 @@ public sealed partial class PlayerBody
             StartGaitRecord($"시선 확 돌기 {viewTurn:0}°/s, {speed:0.0} m/s, {state}");
         if (gaitRecordLeft <= 0f) return;
         gaitRecordLeft -= dt;
-        TryGaitNow(out _, out float steps, out float slide);
+        TryGaitNow(out _, out float steps, out float stretch, out float slide);
         float position = player.Actions != null ? player.Actions.Gait.Position : 0f;
         gaitLine.Clear();
         gaitLine.Append($"+{Time.time - gaitRecordFrom:0.00} {state} {speed:0.00}m/s 걸음새 {position:0.00} 다리 {gaitPlace:0.00} ")
-            .Append($"분당 {steps:0} 박자 x{gaitRateNow:0.00} 미끄러짐 {slide:0.00} ")
+            .Append($"분당 {steps:0} 박자 x{gaitRateNow:0.00} 보폭 x{stretch:0.00} 미끄러짐 {slide:0.00} ")
             .Append($"가는 쪽 {HeadingOf(player.ActualVelocity):0}° 몸 {yaw:0}° 시선 {viewTurn:0}°/s");
         if (state == MovementState.LandingRoll && player.Abilities != null) gaitLine.Append($" 구르기@{player.Abilities.Landing.RollMoment:0.00}");
         if (transition != null && transition.Playable.IsValid())
             gaitLine.Append($" | 넘겨주는 {transition.Clip}@{transition.Playable.GetTime():0.00}");
-        gaitLine.Append(" |");
-        AppendTopClips(gaitLine);
-        AppendPlaces();
-        PlayRecord.Line(GaitRecord, GaitRecordHeading, gaitLine.ToString());
-    }
-
-    // The three clips with the most weight in the pose now and their weights, for the records.
-    private void AppendTopClips(System.Text.StringBuilder line)
-    {
         gaitTop.Clear();
         foreach (var channel in channels)
             if (channel.Weight > .05f) gaitTop.Add(channel);
         gaitTop.Sort((a, b) => b.Weight.CompareTo(a.Weight));
-        for (int i = 0; i < gaitTop.Count && i < 3; i++) line.Append($" {gaitTop[i].Clip} {gaitTop[i].Weight:0.00}");
+        gaitLine.Append(" |");
+        for (int i = 0; i < gaitTop.Count && i < 3; i++) gaitLine.Append($" {gaitTop[i].Clip} {gaitTop[i].Weight:0.00}");
+        AppendPlaces();
+        PlayRecord.Line(GaitRecord, GaitRecordHeading, gaitLine.ToString());
     }
 
     // How far the body, its hips and head went this frame (cm), how far its yaw and its head against it turned (degrees); and,

@@ -111,17 +111,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float LeanOffset => Abilities != null ? Abilities.Lean.Offset : 0f;
 
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
-    /// <summary>On the ground, what the legs are asked to carry (world, m/s): the keys' way at the gait's speed, eased
-    /// (LocomotionState); the body goes at it, into walls too.</summary>
-    internal Vector3 Stride
-    {
-        get => stride;
-        set { stride = value; StrideFrame = Time.frameCount; }
-    }
-    private Vector3 stride;
-    /// <summary>The frame the stride was last asked: in any other (a surge, a hold, the air) something else moves the body, and
-    /// the legs follow what it does (PlayerBody.Locomotion).</summary>
-    internal int StrideFrame { get; private set; } = -10;
     public float VerticalVelocity { get => Motor.VerticalVelocity; set => Motor.VerticalVelocity = value; }
     public Vector3 SlideDirection { get => Actions.SlideDirection; set => Actions.SlideDirection = value; }
     /// <summary>The way the sliding body faces, held for the slide whatever the view does (MovementActions.SlideFacesBack).</summary>
@@ -280,6 +269,7 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float SupineSlideCancelMaxSpeed => supineSlideCancelMaxSpeed;
     public float SlideBrakeDeceleration => slideBrakeDeceleration;
     public float SlideCancelMinDuration => slideCancelMinDuration;
+    public float SlideCooldown => slideCooldown;
     public float SlideCooldownTimer { get => Actions.slideCooldownTimer; set => Actions.slideCooldownTimer = value; }
     public float SlideSteerSharpness => slideSteerSharpness;
     public float SlideLookSteerRate => slideLookSteerRate;

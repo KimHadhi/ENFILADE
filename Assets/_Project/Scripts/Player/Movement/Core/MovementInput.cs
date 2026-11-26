@@ -30,7 +30,6 @@ public sealed class MovementInput
     {
         get
         {
-            if (ScriptedInput.On) return ScriptedInput.Sprint;
             if (sprintAction == null || !sprintAction.enabled) return false;
             if (sprintAction.IsPressed()) return true;
             // Sprint is a held intent. A re-enabled Button action can wait for a new press
@@ -124,6 +123,5 @@ public sealed class MovementInput
     /// in a heavy landing, and ShovePressed stays false all the while, but V still bursts the shield (PlayerHold).
     /// </summary>
     internal bool ShoveKeyPressed => InputFocus.Pressed(shoveAction);
-    // A test drives the keys itself (ScriptedInput, MoveTest).
-    public Vector2 Move => ScriptedInput.On ? ScriptedInput.Move : moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
+    public Vector2 Move => moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
 }

@@ -73,9 +73,6 @@ internal sealed class BodyInertia
     }
 
     /// <summary>The clips switched this frame: ease over <paramref name="time"/> (s).</summary>
-    /// <summary>How long the switch under way has left to ease (s); 0 when none (for the feet record).</summary>
-    internal float Left => blending ? Mathf.Max(0f, length - played) : 0f;
-
     internal void Begin(float time)
     {
         asked = true;
@@ -130,7 +127,7 @@ internal sealed class BodyInertia
 
     /// <summary>
     /// The body's root turns this frame by <paramref name="degrees"/> (about the world's up, + to the right) only as a change of
-    /// where its pose is held from: a state faces a way of its own at once (PlayerBody.Update, a jump of the root). The hips
+    /// where its pose is held from: a run's turn back sets the root where its clip's turn has it (PlayerBody.RunTurn). The hips
     /// carried over a switch, and kept for the next, are turned back as much, so they show where they were instead of swinging
     /// round over the switch.
     /// </summary>

@@ -19,9 +19,7 @@ public struct PlayerPose : INetworkSerializeByMemcpy
         Pointing = 512, NoPoke = 1024,
         // The point is a tap's ping's, at the foe the ping named (PlayerNetworkCombat), not along the look; and a ping's
         // point that turning away cut short is dropping back (PlayerPoint.TurnAway), so every copy drops it alike.
-        PingPoint = 2048, PointAway = 4096,
-        // A run's turn back goes on (RunTurn.Turning): a copy gives its own up when this goes, as the player gave it up.
-        Turning = 16384
+        PingPoint = 2048, PointAway = 4096
     }
 
     public Vector3 Velocity;

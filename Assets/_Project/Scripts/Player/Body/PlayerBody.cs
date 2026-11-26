@@ -79,12 +79,14 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         public int Input;
         /// <summary>Weight: its share eased over the blend's time, for what reads how much a clip shows (the gaze's lead, a climb's
         /// settling). Target: the share it is to have. Given: the share the mixer plays it at, which is Target's at once.</summary>
-        public float Length, Weight, Target, Given;
+        public float Length, AuthoredSpeed, Weight, Target, Given;
         public bool Synced;
         /// <summary>A walk or run cycle's measured gait on this body (GaitClips), or null.</summary>
         public GaitClips.Gait Gait;
         /// <summary>Which gait a cycle is (0 walk, 1 jog, 2 sprint), by its name (PlayerBody.RankOf); -1 none.</summary>
         public float Rank = -1f;
+        /// <summary>How fast a cycle's own body goes over the ground (m/s, ClipMotion.CycleSpeed).</summary>
+        public float Own;
     }
 
     private readonly List<Channel> channels = new List<Channel>();
@@ -120,8 +122,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // than this (degrees): as far as the spine and neck turn the head back, as when the legs stand while the view turns.
     // The body falls behind the view by FacingLagMost at most, carried with the view's turn from FacingCarryFrom (degrees).
     private const float FacingLagMost = 90f, FacingCarryFrom = 45f;
-    // On its feet the body's facing turns no faster than this (degrees a second).
-    private const float FacingTurnMost = 540f;
     // Strides taken so far, for cycles holding more than one stride (GaitClips.Gait.ShareAt); phase is within the stride.
     private int strideCount;
     private bool started, grounded, jumped, dead, thirdPerson, rebuild, playingOut, springing;
@@ -572,7 +572,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         var channel = new Channel
         {
             Playable = playable, Clip = clipName, Input = input, Length = Mathf.Max(.01f, clip.length),
-            Synced = authoredSpeed > 0f
+            AuthoredSpeed = authoredSpeed, Synced = authoredSpeed > 0f
         };
         // Locomotion cycles share one phase so blending between them never puts the feet out of step.
         if (channel.Synced) playable.SetSpeed(0);
@@ -598,17 +598,17 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (StaysLimp()) return;
         foreach (var channel in channels) channel.Target = 0f;
         targetYaw = 0f;
-        legsPlanted = keepsPlace = rootByClip = false;
+        legsPlanted = keepsPlace = false;
         ChoosePose(dt);
         Blend(dt);
         BlendLayers(dt);
         float view = transform.eulerAngles.y;
         // Any jump of the body's root, as a state faces a way of its own at once (a slide, a vault, a roll, lying down) or sets
-        // the facing outside the follow below, has the pose the bones carry turned back as much and
+        // the facing outside the follow below (a run's turn handing back), has the pose the bones carry turned back as much and
         // eased round (BodyInertia), so the body comes round over the blend and not in a frame. Until 0.9.400 only the run's turn
         // did, by hand (out of a strafe into a slide the whole body turned 45 to 90 degrees in a frame: the audit of 2026-11-24).
         float jump = !rootYawKnown ? 0f : legsPlanted ? Mathf.DeltaAngle(legYawLeft, view + targetYaw) : Mathf.DeltaAngle(legYawLeft, legYaw);
-        if (!rootByClip && Mathf.Abs(jump) > RootJumpLeast)
+        if (Mathf.Abs(jump) > RootJumpLeast)
         {
             bodyInertia.Begin(blendTime);
             bodyInertia.Reroot(jump);
@@ -632,29 +632,16 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // user: "돌았을 때 갑자기 발이 튀는"). Only the view's turn is carried, so a facing a state asks for far round (out
             // of a hang, onto a ladder) is come round to at the follow's pace.
             float wanted = view + targetYaw, behind = Mathf.DeltaAngle(wanted, legYaw);
-            float viewStep = rootYawKnown ? Mathf.DeltaAngle(viewWas, view) : 0f, was = legYaw;
+            float viewStep = rootYawKnown ? Mathf.DeltaAngle(viewWas, view) : 0f;
             legYaw = Mathf.SmoothDampAngle(legYaw, wanted, ref yawVelocity, .12f);
             if (behind * viewStep < 0f)
                 legYaw += viewStep * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(FacingCarryFrom, FacingLagMost, Mathf.Abs(behind)));
-            // On its feet the body turns no faster than legs turn a body (FacingTurnMost): a view flicked round on the move
-            // leads, the spine and the neck turning the chest and the head after it, and the body comes round over a few
-            // frames. Only the drawn body: the view and the keys go at once. Carried with the view's own turn it spun round in two or three frames, over 20 degrees a frame, the
-            // legs running backwards under it a moment and a run's turn back finding the body already round (the legs' test of
-            // 2026-11-25: a jog flicked 180 jumped the facing over 20 degrees in a frame 4 to 5 times; the user: "화면 전환할
-            // 때 굉장히 몸이 자유분방한데").
-            if (grounded && (state == MovementState.Standing || state == MovementState.Crouching))
-            {
-                float most = FacingTurnMost * dt;
-                legYaw = was + Mathf.Clamp(Mathf.DeltaAngle(was, legYaw), -most, most);
-                yawVelocity = Mathf.Clamp(yawVelocity, -FacingTurnMost, FacingTurnMost);
-            }
             yaw = Mathf.DeltaAngle(view, legYaw);
         }
         viewWas = view;
         legYawLeft = legYaw;
         rootYawKnown = true;
         body.localRotation = Quaternion.Euler(0f, yaw, 0f);
-        HoldHipsPlace();
         KeepPlaceAsTheViewTurns();
         PlaceBody();
         PlacePaired();
@@ -697,8 +684,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             // the camera's pivot, not the camera, so it keeps running while the camera rides the eyes: the camera
             // stays over the capsule and takes the head's dips and quick sway.
             HoldHeadPlace();
-            if (gripWeight <= 0f && walkedFrame == Time.frameCount) SitOnHips(Time.deltaTime);
-            else if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
+            if (gripWeight <= 0f && !slideBodyAnchored && !ClipCarriesBody && !keepsPlace) FollowHead(Time.deltaTime);
             else if (gripWeight <= 0f && slideBodyAnchored && !ClipCarriesBody) FollowHeadAlongSlide(Time.deltaTime);
             HoldEyesInAir(Time.deltaTime);
             using (GripMarker.Auto()) Grip(Time.deltaTime);
@@ -775,36 +761,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         float follow = quick ? Mathf.Min(headFollowTime, quickFollowTime) : headFollowTime;
         headAlignment += error * (1f - Mathf.Exp(-dt / follow));
         headAlignment = Vector3.ClampMagnitude(headAlignment, 1.5f);
-    }
-
-    // Walking or running, the body stands on its hips: its place off the capsule is held as the hips turn, not as the view
-    // does, and eases to the rest place behind the eyes (backOffset) in the hips' own frame, so the body goes over the ground
-    // exactly as the capsule does. FollowHead (the head eased under the camera's pivot) held
-    // it in the view's frame until 0.9.416: every flick of the view swung the body and both its feet round the capsule, and
-    // the clip's own lean, followed, slid the feet under it (the expert's review of 2026-11-25). The camera rides the eyes
-    // wherever the clip has the head; walls keep it out (BodyCamera).
-    private Vector3 hipsPlace;
-    private int hipsPlaceFrame = -10;
-
-    // Walking, the body's place off the capsule is laid under the hips as they face this frame, before it is placed (PlaceBody):
-    // eased after the animation pass (SitOnHips) and placed the next frame in the view's frame it had then, it swung round the
-    // capsule by each frame's turn of the view (the review of 2026-11-25).
-    private void HoldHipsPlace()
-    {
-        if (hipsPlaceFrame != Time.frameCount - 1) return;
-        Vector3 flat = Quaternion.Euler(0f, yaw, 0f) * hipsPlace;
-        headAlignment = new Vector3(flat.x, headAlignment.y, flat.z);
-    }
-
-    private void SitOnHips(float dt)
-    {
-        var hips = Quaternion.Euler(0f, yaw, 0f);
-        if (hipsPlaceFrame != Time.frameCount - 1)
-            hipsPlace = Quaternion.Inverse(hips) * new Vector3(headAlignment.x, 0f, headAlignment.z);
-        hipsPlaceFrame = Time.frameCount;
-        hipsPlace = Vector3.Lerp(hipsPlace, Vector3.back * backOffset, 1f - Mathf.Exp(-dt / headFollowTime));
-        Vector3 flat = hips * hipsPlace;
-        headAlignment = new Vector3(flat.x, headAlignment.y, flat.z);
     }
 
     // Lying back from a slide or a dive, Beatrun's clips carry the whole body on ahead: meslideendprone moves it about
@@ -890,7 +846,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
 
         KeepRunTurn();
-        KeepStandTurn();
         switch (state)
         {
             case MovementState.Standing:
@@ -898,7 +853,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
                 bool crouched = state == MovementState.Crouching;
                 TickPosture(crouched, dt);
                 if (onGround && !crouched && RunTurnPose()) break;
-                if (onGround && StandTurnPose(dt)) break;
                 if (onGround) Locomotion(crouched, dt);
                 else if (ShowsTouchdown) Want(touchdown);
                 else AirPose();
@@ -1224,8 +1178,6 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     // The body's facing set further than this in a frame outside its follow (degrees) jumped (Update); where the follow left it.
     private const float RootJumpLeast = 5f;
     private float legYawLeft, viewWas;
-    // This frame the body's root turns by a clip's own motion (a run's turn: RunTurnPose), which is no jump.
-    private bool rootByClip;
     private bool rootYawKnown;
 
     // A one-shot clip held at the share of its length the movement has reached (a vault's progress), so the body

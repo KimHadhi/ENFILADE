@@ -111,7 +111,7 @@ internal sealed class BodyLean
     /// Before the feet are planted: the weight goes onto the leaning side, the legs leaning over from the feet, and the
     /// pelvis tips after them. Everything above the hips moves as one.
     /// Returns how far it moved the hips (world): the legs hang from them, so the feet went that far too, and the feet's
-    /// owner takes it back out (FootPlanting.Stance.Carried). This comment used to say "PlantFeet keeps the feet where they
+    /// owner takes it back out (FootPlanting.Hold.Carried). This comment used to say "PlantFeet keeps the feet where they
     /// stood", which nothing did: the feet's height was the ground's and their place wherever the hips had gone, so the
     /// lean slid both feet sideways with the pelvis.
     /// </summary>

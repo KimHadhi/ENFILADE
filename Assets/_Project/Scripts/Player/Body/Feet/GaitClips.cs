@@ -40,9 +40,8 @@ internal static class GaitClips
         public Vector2 Way;
         /// <summary>How fast the down feet carry the body, in the Animator's own units a second (its scale makes it m/s).</summary>
         public float Speed;
-        /// <summary>Where in a stride (0 to 1, the left foot down at 0) the right foot swings past the left along the travel,
-        /// and the left past the right: the feet side by side, the one passing in the air.</summary>
-        public float RightPass = .25f, LeftPass = .75f;
+        /// <summary>Hip joint to ankle, in the Animator's own units.</summary>
+        public float Leg;
 
         public bool Moves => Speed > 1e-3f && Way.sqrMagnitude > .5f;
         /// <summary>One stride's time at the clip's own pace (s).</summary>
@@ -123,7 +122,7 @@ internal static class GaitClips
         }
         if (leg <= 1e-4f) return null;
 
-        var gait = new Gait { Length = length };
+        var gait = new Gait { Length = length, Leg = leg };
         var down = new[] { Down(feet[0], toes[0], leg), Down(feet[1], toes[1], leg) };
         var heels = new[] { Heel(feet[0], toes[0], turns[0]), Heel(feet[1], toes[1], turns[1]) };
 
@@ -211,30 +210,6 @@ internal static class GaitClips
         }
         gait.Cycles = Mathf.Max(1, touchdowns.Count);
         gait.LeftDown = touchdowns.Count > 0 ? touchdowns[0] / (float)count : 0f;
-        // Where each foot swings past the other along the travel in the first stride: a start takes the stride up there, the
-        // foot that leads the way in the air (PlayerBody.SetOffPhase).
-        if (gait.Moves && touchdowns.Count > 0)
-        {
-            int start = touchdowns[0], span = Mathf.Max(2, count / gait.Cycles);
-            gait.RightPass = Pass(1, 0, gait.RightPass);
-            gait.LeftPass = Pass(0, 1, gait.LeftPass);
-
-            float Pass(int swing, int other, float none)
-            {
-                for (int k = 1; k <= span; k++)
-                {
-                    int i = (start + k) % count, before = (start + k - 1) % count;
-                    if (Ahead(swing, before) - Ahead(other, before) < 0f && Ahead(swing, i) - Ahead(other, i) >= 0f) return k / (float)span;
-                }
-                return none;
-            }
-
-            float Ahead(int foot, int i)
-            {
-                Vector3 off = feet[foot][i] - hip[i];
-                return off.x * gait.Way.x + off.z * gait.Way.y;
-            }
-        }
         return gait;
     }
 

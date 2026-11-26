@@ -92,5 +92,6 @@ public sealed partial class PlayerBody
         legYaw = facing;
         targetYaw = Mathf.DeltaAngle(view, facing);
         legsPlanted = true;
+        turning = 0;
     }
 }

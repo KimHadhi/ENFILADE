@@ -8,8 +8,6 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Animations;
-using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -28,13 +26,12 @@ using Object = UnityEngine.Object;
 ///   models=Assets/…/X.fbx             any humanoid model by path too (a pack's own body)
 ///   cyclefilm=Run_Lfoot,Sprint_Lfoot   cycles side by side, eight moments each (StepBench.Cycles)
 ///   lifts=TurnIP_R90                  when and how a captured turn's feet come up (StepBench.Lifts)
+///   stepfilm=Idle,R_Idle              a turn on the spot as the game steps it (StepBench): pictures and each step
 ///   track=Jump_1h,SlideToRun_Loop     a timeline for these too: the body's rise, the hips, which way the hips, chest and
 ///                                     head face, how fast the hands move against the chest and how the body and head lean (Track),
 ///                                     and the clip's motion as the game reads it: its root's turn, its chest against its root
 ///                                     and against where it began, its root's way, its pace and its footfalls (TrackMotion)
-/// Logs/ClipBench/report.txt has a line a clip, and a pivot's (enf_pivot_..., folders=Pivots) a second: how its feet stand on
-/// the ground as its travel carries the body (Plant), the gate for every pivot made. It lives beside GaitClips because it
-/// measures with it.
+/// Logs/ClipBench/report.txt has a line a clip. It lives beside GaitClips because it measures with it.
 /// </summary>
 [InitializeOnLoad]
 internal static class ClipBench
@@ -78,7 +75,7 @@ internal static class ClipBench
     {
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string[] lifted = Array.Empty<string>(), cycled = Array.Empty<string>();
+        string[] stepped = Array.Empty<string>(), lifted = Array.Empty<string>(), cycled = Array.Empty<string>();
         foreach (string raw in lines)
         {
             int cut = raw.IndexOf('=');
@@ -90,6 +87,7 @@ internal static class ClipBench
                 case "skins": skins = values; break;
                 case "models": models = values; break;
                 case "clips": only = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
+                case "stepfilm": stepped = values; break;
                 case "lifts": lifted = values; break;
                 case "cyclefilm": cycled = values; break;
                 case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
@@ -154,13 +152,21 @@ internal static class ClipBench
                         if (takes.TryGetValue(name, out var take)) StepBench.Lifts(animator, scale, take, text);
                         else text.AppendLine($"  ! no clip '{name}'");
                 }
+                if (stepped.Length > 0)
+                {
+                    text.AppendLine("-- stepfilm");
+                    var stances = ClipsIn(AnimationsFolder + "BiperRunner").Concat(ClipsIn(AnimationsFolder + "BiperCombat"))
+                        .GroupBy(c => c.name).ToDictionary(g => g.Key, g => g.First());
+                    foreach (string name in stepped)
+                        if (stances.TryGetValue(name, out var stance)) StepBench.Film(animator, scale, stance, $"{Folder}/steps-{name}-{id}.png", text);
+                        else text.AppendLine($"  ! no clip '{name}'");
+                }
                 foreach (string folder in folders)
                 {
                     text.AppendLine($"-- {folder}");
                     foreach (var clip in ClipsIn(AnimationsFolder + folder).Where(c => only == null || only.Contains(c.name)))
                     {
                         text.AppendLine(Measure(model, clip, animator, scale));
-                        if (clip.name.StartsWith(PivotPrefix, StringComparison.Ordinal)) Plant(clip, animator, scale, text);
                         if (tracked.Contains(clip.name))
                         {
                             Track(clip, animator, scale, text);
@@ -393,7 +399,7 @@ internal static class ClipBench
         }
         try
         {
-            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s | gone m | lean ahead side | head down roll | left foot (x,y,z)  right foot (x,y,z)  hips (x,y,z)");
+            text.AppendLine("    track: t  rise  hips | face hips chest head | left hand (x,y,z)  right hand (x,y,z)  hand m/s | gone m | lean ahead side | head down roll");
             int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * TrackRate));
             Vector3 lastLeft = Vector3.zero, lastRight = Vector3.zero;
             float first = rootY != null ? rootY.Evaluate(0f) : 0f;
@@ -421,11 +427,7 @@ internal static class ClipBench
                 // How far the body centre has gone over the ground since the start (m).
                 float gone = rootX != null && rootZ != null
                     ? new Vector2(rootX.Evaluate(t) - rootX.Evaluate(0f), rootZ.Evaluate(t) - rootZ.Evaluate(0f)).magnitude * human : 0f;
-                // Each foot and the hips against the root (m, x right, y up, z ahead): a clip carried in place shows a planted
-                // foot going back under the body as fast as the body goes on, and standing still where the body stops.
-                Vector3 leftAt = root.InverseTransformPoint(leftFoot.position) * scale, rightAt = root.InverseTransformPoint(rightFoot.position) * scale;
-                Vector3 hipsAt = root.InverseTransformPoint(hips.position) * scale;
-                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0} | {gone,5:0.00} | {leanAhead,5:0} {leanSide,5:0} | {headDown,5:0} {headRoll,5:0} | ({leftAt.x,5:0.00},{leftAt.y,5:0.00},{leftAt.z,5:0.00}) ({rightAt.x,5:0.00},{rightAt.y,5:0.00},{rightAt.z,5:0.00}) ({hipsAt.x,5:0.00},{hipsAt.y,5:0.00},{hipsAt.z,5:0.00})"));
+                text.AppendLine(Invariant($"    {t,5:0.00} {rise,5:0.00} {over,4:0.00} | {Facing(leftLeg.position, rightLeg.position),5:0} {Facing(leftArm.position, rightArm.position),5:0} {headYaw,5:0} | ({left.x,5:0.00},{left.y,5:0.00},{left.z,5:0.00}) ({right.x,5:0.00},{right.y,5:0.00},{right.z,5:0.00}) {speed,5:0.0} | {gone,5:0.00} | {leanAhead,5:0} {leanSide,5:0} | {headDown,5:0} {headRoll,5:0}"));
             }
         }
         finally
@@ -457,127 +459,6 @@ internal static class ClipBench
             steps.Append(Invariant($" {time:0.00}{(place < .25f ? "L" : "R")}"));
         }
         text.AppendLine(steps.ToString());
-    }
-
-    // A pivot's clips (the Blender pivot workspace, ArtSource/Pivots), read as if their travel carried the body.
-    private const string PivotPrefix = "enf_pivot_";
-    // Samples a second for a clip's feet over the ground; a foot within PlantDown of the clip's lowest is down (m), and a
-    // contact is one foot down at least PlantLeast (s) on end.
-    private const float PlantRate = 60f, PlantDown = .03f, PlantLeast = .08f;
-
-    // How a pivot's feet stand on the ground as the game plays it: its travel (ClipMotion, as the game reads it) carries
-    // the body, so a foot is where its pose has it off the root plus where the root has gone. Each contact (a foot down)
-    // should stand where it came down: how far it slips over the ground within each (cm, the game's size), the worst and the
-    // contact over the clip's stop (where its travel is slowest), which foot, and how long. The gate for a pivot made by hand
-    // or by auto_pivot.py: its planted foot as Unity's import and Kazusa's avatar give it back, on the game's body. Played
-    // as the game plays it (a graph on the Animator, its foot goals off: PlayerBody.ClipPlayable), with the feet off the
-    // root at moments around the stop to set beside the game's. A speed a frame was read here first: sixty frames a second
-    // made a slip of half a centimetre read 30 cm/s, the same for a foot that stood as for one that slid.
-    private static void Plant(AnimationClip clip, Animator animator, float scale, StringBuilder text)
-    {
-        if (!(ClipMotion.Of(clip, animator) is ClipMotion motion)) return;
-        int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * PlantRate));
-        float step = clip.length / count;
-        // Its stop: where its travel is slowest, away from its ends.
-        int stop = count / 2;
-        float slowest = float.MaxValue;
-        for (int i = count / 10; i <= count - count / 10; i++)
-        {
-            float pace = motion.PaceAt(i * step);
-            if (pace < slowest) { slowest = pace; stop = i; }
-        }
-        if (!FeetOver(clip, animator, scale, count, step, out var leftAt, out var rightAt)) return;
-        var feet = new[] { new Vector3[count + 1], new Vector3[count + 1] };
-        for (int i = 0; i <= count; i++)
-        {
-            // Each foot over the ground: x right and z ahead off where the root began, y up.
-            Vector2 way = motion.WayAt(i * step);
-            feet[0][i] = leftAt[i] + new Vector3(way.x, 0f, way.y);
-            feet[1][i] = rightAt[i] + new Vector3(way.x, 0f, way.y);
-        }
-        float ground = float.MaxValue;
-        for (int i = 0; i <= count; i++) ground = Mathf.Min(ground, feet[0][i].y, feet[1][i].y);
-        float worst = 0f, atStop = -1f;
-        string worstAt = "none", stopAt = "no foot down";
-        int contacts = 0;
-        for (int side = 0; side < 2; side++)
-        {
-            var foot = feet[side];
-            for (int i = 0; i <= count; i++)
-            {
-                if (foot[i].y > ground + PlantDown) continue;
-                int from = i;
-                while (i < count && foot[i + 1].y <= ground + PlantDown) i++;
-                if ((i - from) * step < PlantLeast) continue;
-                contacts++;
-                float slip = 0f;
-                for (int j = from; j <= i; j++)
-                    slip = Mathf.Max(slip, new Vector2(foot[j].x - foot[from].x, foot[j].z - foot[from].z).magnitude * 100f);
-                string what = Invariant($"{(side == 0 ? "L" : "R")} {from * step:0.00}-{i * step:0.00}s {slip:0}cm");
-                if (slip > worst) { worst = slip; worstAt = what; }
-                if (from <= stop && stop <= i) { atStop = slip; stopAt = what; }
-            }
-        }
-        text.AppendLine(Invariant($"    plant: {contacts} contacts, slip worst {worst:0} cm ({worstAt}) | over the stop {stop * step:0.00}s: {stopAt}"));
-        var at = new StringBuilder("      feet off the root (x, z):");
-        foreach (float off in new[] { -.06f, 0f, .06f, .1f })
-        {
-            int i = Mathf.Clamp(stop + Mathf.RoundToInt(off / step), 0, count);
-            at.Append(Invariant($" {i * step:0.00}s L({leftAt[i].x:0.00},{leftAt[i].z:0.00}) R({rightAt[i].x:0.00},{rightAt[i].z:0.00})"));
-        }
-        text.AppendLine(at.ToString());
-    }
-
-    // Each foot's ball off the root over the clip (the game's size: x right, y up, z ahead) as the game plays it: through a graph on
-    // the Animator, its foot goals off (PlayerBody.ClipPlayable). The model's pose is put back afterwards.
-    private static bool FeetOver(AnimationClip clip, Animator animator, float scale, int count, float step,
-        out Vector3[] left, out Vector3[] right)
-    {
-        left = new Vector3[count + 1];
-        right = new Vector3[count + 1];
-        var root = animator.transform;
-        // The ball of each foot (its toes' joint), the ankle for a body without one: a foot stands on it from flat to
-        // pushing off, while the ankle rolls forward over a heel come down (a walk's heel strike read as 20 cm of slip).
-        var leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftToes) ?? animator.GetBoneTransform(HumanBodyBones.LeftFoot);
-        var rightFoot = animator.GetBoneTransform(HumanBodyBones.RightToes) ?? animator.GetBoneTransform(HumanBodyBones.RightFoot);
-        if (leftFoot == null || rightFoot == null) return false;
-        var bones = root.GetComponentsInChildren<Transform>();
-        var poses = bones.Select(b => (b.localPosition, b.localRotation)).ToArray();
-        Vector3 rootPosition = root.position;
-        Quaternion rootRotation = root.rotation;
-        bool rootMotion = animator.applyRootMotion;
-        var culling = animator.cullingMode;
-        var graph = PlayableGraph.Create("ClipBench plant");
-        try
-        {
-            animator.applyRootMotion = false;
-            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-            var output = AnimationPlayableOutput.Create(graph, "Plant", animator);
-            var playable = AnimationClipPlayable.Create(graph, clip);
-            playable.SetApplyFootIK(false);
-            playable.SetSpeed(0);
-            output.SetSourcePlayable(playable);
-            for (int i = 0; i <= count; i++)
-            {
-                float t = i * step;
-                playable.SetTime(t);
-                playable.SetTime(t);
-                graph.Evaluate();
-                left[i] = root.InverseTransformPoint(leftFoot.position) * scale;
-                right[i] = root.InverseTransformPoint(rightFoot.position) * scale;
-            }
-        }
-        finally
-        {
-            graph.Destroy();
-            animator.applyRootMotion = rootMotion;
-            animator.cullingMode = culling;
-            for (int i = 0; i < bones.Length; i++)
-                if (bones[i] != null) bones[i].SetLocalPositionAndRotation(poses[i].localPosition, poses[i].localRotation);
-            root.SetPositionAndRotation(rootPosition, rootRotation);
-        }
-        return true;
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

@@ -51,6 +51,7 @@ internal sealed class FleshFollow
     private sealed class Followed
     {
         public Transform Shape, Owner;
+        public ColliderComponent Collider;
         // A rod's far end; null for a ball.
         public End Start, Finish;
         // A rod's turn and its line from start to end as drawn, in the owner's space.
@@ -101,7 +102,7 @@ internal sealed class FleshFollow
         Vector3 start = shape.transform.position;
         var followed = new Followed
         {
-            Shape = shape.transform, Owner = owner, RestTurn = shape.transform.localRotation,
+            Shape = shape.transform, Owner = owner, Collider = shape, RestTurn = shape.transform.localRotation,
             Start = MakeEnd(owner, start, swungAt ?? start, startBones, startShares)
         };
         if (shape is MagicaCapsuleCollider)

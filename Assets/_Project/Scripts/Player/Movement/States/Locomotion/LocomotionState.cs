@@ -8,8 +8,6 @@ public sealed class LocomotionState : MovementBaseState
 
     // Below this (m/s) a velocity has no way to turn: it starts or stops as a blend.
     private const float KeepsPaceFrom = .5f;
-    // The frame the stride was last eased: one missed, something else moved the body meanwhile.
-    private int strideFrame = -10;
 
     public override bool TryJump()
     {
@@ -36,6 +34,7 @@ public sealed class LocomotionState : MovementBaseState
     {
         Vector2 input = ctx.CurrentInput;
         float inputMagnitude = Mathf.Clamp01(input.magnitude);
+
         // The way the keys point. Its speed is the gait's that way (MovementGait); the side's 1.15x "so a side step doesn't
         // look slow" went in 0.9.245, the side clips being measured now.
         Vector3 inputDirection = (ctx.transform.right * input.x + ctx.transform.forward * input.y).normalized;
@@ -62,7 +61,7 @@ public sealed class LocomotionState : MovementBaseState
         var turn = ctx.Actions.RunTurn;
         if (ctx.IsGrounded && runsOut <= 0f && (turn.Turning || turn.TryStart(input, inputDirection, ctx.BodyFacingYaw)))
         {
-            if (turn.Go(inputDirection * inputMagnitude, out Vector3 turning))
+            if (turn.Go(inputDirection, out Vector3 turning))
             {
                 ctx.HorizontalVelocity = turning;
                 return;
@@ -81,36 +80,24 @@ public sealed class LocomotionState : MovementBaseState
 
         if (ctx.IsGrounded)
         {
-            // The stride: what the legs are asked to carry. A change of way keeps the pace: it turns toward the keys at the
-            // ground's ease while its speed eases to the new way's on its own, so a strafe off a run runs on at a run's pace.
-            // Blending the two straight cut the corner: halfway from W to D the speed fell to 70% (a sprint's 6.0 m/s to 4.35,
-            // under the sprint's own thresholds, and the legs dropped to the jog's clips), and the strafe felt like braking (the
-            // user, 2026-11-21: "달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"). Setting off, stopping and a turn back
-            // further than Move.groundKeepPaceTurn still go through the middle: a body that reverses slows down to turn. Taken
-            // up from the way the body goes wherever something else moved it a moment ago (a run's turn, a surge, a slide, the air).
-            if (strideFrame != Time.frameCount - 1) ctx.Stride = ctx.HorizontalVelocity;
-            strideFrame = Time.frameCount;
+            // A change of way keeps the pace: the velocity turns toward the keys at the ground's ease while its speed eases
+            // to the new way's on its own, so a strafe off a run runs on at a run's pace. Blending the two velocities straight
+            // cut the corner: halfway from W to D the speed fell to 70% (a sprint's 6.0 m/s to 4.35, under the sprint's own
+            // thresholds, and the legs dropped to the jog's clips), and the strafe felt like braking (the user, 2026-11-21:
+            // "달리면서 스트레이핑이 안 되고 속도가 줄어드는 느낌"). Setting off, stopping and a turn back further than
+            // Move.groundKeepPaceTurn still go through the middle: a body that reverses slows down to turn.
             float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
-            Vector3 now = ctx.Stride, stride;
+            Vector3 now = ctx.HorizontalVelocity;
             float speedNow = now.magnitude, speedWanted = targetVelocity.magnitude;
             if (speedNow > KeepsPaceFrom && speedWanted > KeepsPaceFrom && Vector3.Angle(now, targetVelocity) <= ctx.GroundKeepPaceTurn)
-                stride = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
+                ctx.HorizontalVelocity = Vector3.Slerp(now / speedNow, targetVelocity / speedWanted, t) * Mathf.Lerp(speedNow, speedWanted, t);
             else
-                stride = Vector3.Lerp(now, targetVelocity, t);
-            // The keys have the body at once, as a game's do: the legs never hold it back. 0.9.433 and 0.9.434 kept its change
-            // to what legs push off (Move.groundAccelMost, 15 m/s a second) so the feet slid less as the keys swung round, and
-            // a sprint took 0.4 s to stop and half a second to cut to a side (the user, 2026-11-25: "조작감 자체가 너무 구려
-            // 답답하고. 게임 같지가 않아"). What the feet can't keep up with the clips must show (the legs' own turns), not
-            // the keys wait for.
-            if (stride.sqrMagnitude < 0.0001f) stride = Vector3.zero;
-            // Into a wall the legs go along it or stand at it, not on the spot (MovementMotor.AlongWalls).
-            ctx.Stride = ctx.Motor.AlongWalls(stride, dt);
-            // The body goes as the keys ask, and the legs fit their pace to it (PlayerBody.Pace): it starts, stops and turns as
-            // smoothly as the stride does. From 0.9.415 to 0.9.428 it went as the legs' cycles were measured to carry it
-            // (LegsCarry), and the walk went stiff (the user, 2026-11-25: "걍 wasd만 눌러봐도 부드럽게 안 움직이고 개
-            // 딱딱한데"). What went into a wall stays asked: the wall stops it all the same, and what reads the run sees it (a
-            // vault's run-up, a climb's speed: ParkourTraversal).
-            ctx.HorizontalVelocity = stride;
+                ctx.HorizontalVelocity = Vector3.Lerp(now, targetVelocity, t);
+
+            if (ctx.HorizontalVelocity.sqrMagnitude < 0.0001f)
+            {
+                ctx.HorizontalVelocity = Vector3.zero;
+            }
         }
         else if (!ctx.Abilities.Landing.IsKnockedBack) // A blow's throw flies on untouched.
         {

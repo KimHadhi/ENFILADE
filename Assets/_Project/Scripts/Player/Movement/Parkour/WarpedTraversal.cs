@@ -204,6 +204,10 @@ public sealed class WarpedTraversal
         }
     }
 
+    /// <summary>The clip time span the hands are down (support), for the hands' reach onto the edge.</summary>
+    internal float PlantTime => motion.PlantTime;
+    internal float ReleaseTime => motion.ReleaseTime;
+
     internal bool Advance(float dt)
     {
         // The obstacle went.

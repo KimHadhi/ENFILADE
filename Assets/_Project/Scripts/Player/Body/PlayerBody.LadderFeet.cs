@@ -24,6 +24,7 @@ public sealed partial class PlayerBody
         bool on = !dead && state == MovementState.Ladder && ladder != null && ladder.isActiveAndEnabled && !fixtures.LadderSliding;
         ladderFeetWeight = Mathf.MoveTowards(ladderFeetWeight, on ? 1f : 0f, dt / blendTime);
         if (ladderFeetWeight <= 0f || ladder == null || leftLeg == null || rightLeg == null) return;
+        Vector3 hips = rightLeg.Upper.position - leftLeg.Upper.position;
         OnRung(leftLeg);
         OnRung(rightLeg);
 
@@ -39,8 +40,12 @@ public sealed partial class PlayerBody
             if (weight <= 0f) return;
             Vector3 target = top + up * leg.Sole + ladder.Outward * (Ladder.BarThickness * .5f + rungAnkleOut);
             Quaternion rotation = leg.Foot.rotation;
-            // The knee bends about its own hinge (FootPlanting.Leg.KneeAxis).
-            TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, Vector3.Lerp(foot, target, weight), leg.KneeAxis);
+            // The knee bends about its own axis from the clip, as FootPlanting does; a straight leg about the hips' line.
+            Vector3 thigh = leg.Lower.position - leg.Upper.position, shin = foot - leg.Lower.position;
+            Vector3 own = Vector3.Cross(thigh, shin), straight = Vector3.ProjectOnPlane(hips, thigh).normalized;
+            float bent = Mathf.Clamp01(own.magnitude / Mathf.Max(1e-6f, thigh.magnitude * shin.magnitude) / .26f);
+            if (Vector3.Dot(own, straight) < 0f && bent < 1f) bent = 0f;
+            TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, Vector3.Lerp(foot, target, weight), Vector3.Lerp(straight, own.normalized, bent));
             leg.Foot.rotation = rotation;
         }
     }
