@@ -116,6 +116,9 @@ internal sealed class FootPlanting
         /// <summary>The foot keeps its place (Hold): where it stands (world, level) and the body's yaw when it took it.</summary>
         public bool Kept;
         public Vector3 Place;
+        // Kept on the move (Stand: while its clip has it down, until the clip's place goes UnlockRadius off it), and whether
+        // this footfall has let go of such a keep already (no keeping it again until the foot lifts).
+        public bool KeptMoving, LockSpent;
         public float KeptYaw;
         /// <summary>How far the foot stands from where the clip has it (world, level): the kept place's, or what is left of it easing away.</summary>
         public Vector3 Off;
@@ -415,6 +418,8 @@ internal sealed class FootPlanting
     // The clip has a foot down when its sole is within this of its lower foot's (m); a foot whose place has eased to
     // within this of the clip's has arrived and may take a place again (m).
     private const float DownHeight = .03f, Arrived = .005f;
+    // On the move a foot down stays where it came down while the clips' place for it stays within this of it (m, level).
+    private const float UnlockRadius = .2f;
 
     // Where this foot stands this frame (world; only its level place is used). The clip's place is the foot's with what
     // carried the hips sideways taken back out. One rule, standing or on the move: a foot that
@@ -487,7 +492,7 @@ internal sealed class FootPlanting
                 return clip + leg.Off;
             }
         }
-        if (!keep) leg.Kept = false;
+        if (!keep) leg.Kept = leg.KeptMoving = leg.LockSpent = false;
         else if (leg.Kept)
         {
             if (hold.Stands)
@@ -507,13 +512,36 @@ internal sealed class FootPlanting
                     return clip + leg.Off;
                 }
             }
-            // On the move a foot kept from standing stays where it stood until its clip lifts it: the body goes as the clip's
-            // feet carry it (PlayerBody.LegsCarry), so the clip's place goes nowhere from it.
+            // On the move a foot down stays where it came down while the clips' place for it stays near: the eight ways' cycles
+            // mixed as the keys turn put a planted foot in different places at the same moment of the stride, and the foot went
+            // over the ground with the mix (the experts' review of 2026-11-26: a foot held in the world till it lifts or drifts
+            // past a radius, then eased back, is how shipped games keep feet planted under quick changes of way). Past
+            // UnlockRadius it lets go over Hold.Release and keeps no more until it lifts.
+            else if (leg.KeptMoving && Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up).sqrMagnitude <= UnlockRadius * UnlockRadius) { }
+            else
+            {
+                leg.LockSpent = leg.KeptMoving;
+                leg.KeptMoving = false;
+                // A foot kept from standing, or kept on the move past UnlockRadius, lets go at once and eases onto the clip's place
+                // over Hold.Release. Kept until its clip lifted it, a foot held where it stood was left behind as the body went on
+                // the other way (a reversal), then swung across when it lifted (the experts' review of 2026-11-26).
+                leg.Kept = false;
+                leg.Catching = true;
+                leg.OffFrom = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
+                leg.CatchClock = 0f;
+                leg.CatchTime = Mathf.Max(.01f, hold.Release);
+            }
         }
         // Standing, a foot comes down where it is shown once it has eased onto the clip's place, so the stance stands as its clip
-        // has it. On the move it takes none: the body goes as the clip's feet carry it, so a foot the clip has down is down where
-        // it came down already.
+        // has it. On the move it comes down where it is shown too, once eased onto the clip's place, and keeps that place while
+        // the clips' place for it stays within UnlockRadius (above).
         else if (hold.Stands && leg.Off.sqrMagnitude < Arrived * Arrived) return Keep(leg, clip + leg.Off, hold.Yaw, clip);
+        else if (!hold.Stands && !leg.LockSpent && leg.Off.sqrMagnitude < Arrived * Arrived)
+        {
+            var at = Keep(leg, clip + leg.Off, hold.Yaw, clip);
+            leg.KeptMoving = true;
+            return at;
+        }
         if (leg.Kept) leg.Off = Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up);
         else
         {
@@ -541,6 +569,7 @@ internal sealed class FootPlanting
     private static Vector3 Keep(Leg leg, Vector3 place, float yaw, Vector3? clip = null)
     {
         leg.Kept = true;
+        leg.KeptMoving = false;
         leg.Catching = false;
         leg.Place = place;
         leg.KeptYaw = yaw;

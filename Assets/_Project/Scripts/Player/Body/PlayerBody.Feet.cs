@@ -95,6 +95,14 @@ public sealed partial class PlayerBody
         static float Level(Vector3 way) => new Vector2(way.x, way.z).magnitude;
     }
 
+    /// <summary>The legs as the feet measured them, after this frame's leg IK (MoveTest reads their soles).</summary>
+    internal bool TryReadLegs(out FootPlanting.Leg left, out FootPlanting.Leg right)
+    {
+        left = feet?.Left;
+        right = feet?.Right;
+        return left != null && right != null && feet.OnGround;
+    }
+
     // The legs as the feet measured them, for what else keeps them out of things (a tuck, a heave, a wall).
     private FootPlanting.Leg leftLeg => feet?.Left;
     private FootPlanting.Leg rightLeg => feet?.Right;

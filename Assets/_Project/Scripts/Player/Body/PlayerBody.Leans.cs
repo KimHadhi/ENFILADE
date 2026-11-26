@@ -62,13 +62,15 @@ public sealed partial class PlayerBody
             turnRate = 0f;
         }
         followedTurnAt = Time.frameCount;
-        // The way the run goes (the stride, Locomotion) turning.
+        // The body's own turn on the move (its facing, as Update last laid it), not the way the stride swings: keys swept round
+        // under a body that faces the view (a diamond, A and D) turn no body, and read off the stride they leaned and arced the
+        // ahead cycles in the mix with the view still (the gait record of 2026-11-26: Jog_Arc_R90 at .42 and Walk_Arc_R90 at .35
+        // with the view still; the experts' review). A run ahead curving and the view turned on the move still turn it.
         float rate = 0f;
         if (stride.sqrMagnitude > StillTravel * StillTravel)
         {
-            float way = Mathf.Atan2(stride.x, stride.z) * Mathf.Rad2Deg;
-            if (runWayKnown && dt > 0f) rate = Mathf.DeltaAngle(lastRunWay, way) / dt;
-            lastRunWay = way;
+            if (runWayKnown && dt > 0f) rate = Mathf.DeltaAngle(lastRunWay, legYaw) / dt;
+            lastRunWay = legYaw;
             runWayKnown = true;
         }
         else runWayKnown = false;

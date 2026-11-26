@@ -73,6 +73,9 @@ internal sealed class BodyInertia
     }
 
     /// <summary>The clips switched this frame: ease over <paramref name="time"/> (s).</summary>
+    /// <summary>A switch is being eased over now, or was asked this frame.</summary>
+    internal bool Blending => blending || asked;
+
     internal void Begin(float time)
     {
         asked = true;
@@ -148,8 +151,12 @@ internal sealed class BodyInertia
     }
 
     // From where the bones were last shown, moving as they were then.
+    /// <summary>Switches eased over since the body was made (MoveTest counts them).</summary>
+    internal int Starts { get; private set; }
+
     private void Start()
     {
+        Starts++;
         int count = bones.Count;
         bool moving = seen >= 2 && lastDt > 0f;
         for (int i = 0; i < count; i++)

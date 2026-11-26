@@ -17,10 +17,10 @@ using UnityEngine.InputSystem;
 public static class InputFocus
 {
     /// <summary>The body's keys are the player's: the window has the focus and no screen holds them.</summary>
-    public static bool TakesMove() => Application.isFocused && !InputHold.Any(Held.Move);
+    public static bool TakesMove() => (Application.isFocused || ScriptedInput.On) && !InputHold.Any(Held.Move);
 
     /// <summary>The mouse turns the view: the window has the focus and no screen holds the view or the pointer.</summary>
-    public static bool TakesLook() => Application.isFocused && !InputHold.Any(Held.Look);
+    public static bool TakesLook() => (Application.isFocused || ScriptedInput.On) && !InputHold.Any(Held.Look);
 
     /// <summary>The trigger, the sights and the reload are the player's: no screen holds the hands or the pointer.</summary>
     public static bool TakesCombat() => Application.isFocused && !InputHold.Any(Held.Combat);

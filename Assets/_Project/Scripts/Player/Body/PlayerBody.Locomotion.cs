@@ -281,7 +281,18 @@ public sealed partial class PlayerBody
         // heading to straight ahead, the place keeping, the turn on the spot and the cycles' shares all at once, so a backward or
         // sideways start or stop swapped the legs to the forward cycle in a frame, and a speed hovering there flipped all five
         // every frame (the audit of 2026-11-24).
-        still = still ? speed < StillLeave : speed < StillEnter;
+        // It stands once it has been slower than StillEnter for StillAfter: a reversal (A then D, W then S) goes through no speed
+        // for a frame or two and is no standing. Standing that frame, the feet were kept where they were (FootPlanting.Stand),
+        // and as the body went on the other way a kept foot was left up to 70 cm off where its clip had it and swung back
+        // across when it lifted, 67 times in one play (the feet record of 2026-11-25 07:11, fixed in 0.9.428 and lost with
+        // the rollback to 0.9.424; the experts' review of 2026-11-26).
+        if (still) still = speed < StillLeave;
+        else
+        {
+            slowFor = speed < StillEnter ? slowFor + dt : 0f;
+            still = slowFor >= StillAfter;
+        }
+        if (still) slowFor = 0f;
         if (speed > HeadingLeast) travelHeading = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
         float heading = travelHeading;
         keepsPlace = still;
@@ -296,8 +307,11 @@ public sealed partial class PlayerBody
         var gun = GunInHand();
         float aim = gun != null ? AimBlend() : 0f;
         bool sprinting = SprintingNow();
+        bool gunRan = GunRuns;
         gunRuns = !crouched && gun != null && sprinting;
         gunRunsFrame = Time.frameCount;
+        // The gun's run takes the whole body at once, or gives it back: that is a switch within the legs' mix (Blend).
+        if (gunRuns != gunRan && mixedFrame == Time.frameCount - 1) bodyInertia.Begin(blendTime);
         // The gun's run goes ahead only: at a slant ahead the hips turn to the way it runs and the run plays, the spine turning
         // the chest back to the view (SpineLook). The user, 2026-11-22: "WA, WD까진 허용할 수 있도록 한다. 자연스럽게".
         float turn = gunRuns ? Mathf.Clamp(heading, -GunRunSlant, GunRunSlant) : 0f;
@@ -361,13 +375,20 @@ public sealed partial class PlayerBody
         }
         else if (!crouched && !legsPlanted) targetYaw = turn;
         if (!still) walkedFrame = Time.frameCount;
+        mixedFrame = Time.frameCount;
         Pace(speed, legs, moving, dt);
     }
 
     // Slower than StillEnter the body stands, faster than StillLeave it moves (m/s); its travel has a heading faster than
     // HeadingLeast. StillTravel is a curve's least speed (Leans).
-    private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f;
+    private const float StillTravel = .3f, StillEnter = .25f, StillLeave = .35f, HeadingLeast = .05f, StillAfter = .15f;
     private bool still = true;
+    // How long the body has been slower than StillEnter while moving (s).
+    private float slowFor;
+    // The frame the legs' own mix last ran (Locomotion), and whether it ran the frame before: within it the clips' shares follow
+    // the speed and the way as they go, which is no switch to ease over (Blend).
+    private int mixedFrame = -10;
+    private bool mixedBefore;
     // The frame the legs last walked or ran (Locomotion, not standing) or a run's turn had them (RunTurnPose): the body sits on
     // its hips (SitOnHips).
     private int walkedFrame = -10;
@@ -753,6 +774,11 @@ public sealed partial class PlayerBody
         // The lean and arc cycles banked in after (Bank) step with their straight one, a run curving under hips that turn with
         // it, at its pace within a fiftieth; their own measured ways are the chord of their turn, not where they carry the hips.
         if (carries) legsVelocity = Quaternion.Euler(0f, transform.eulerAngles.y + layYaw, 0f) * new Vector3(own.x, 0f, own.y) * (mixWeight * rate);
+        // Setting off, from standing or through the stop of a reversal, the stride waits where the feet pass each other
+        // (SetOffPhase). Taken up from wherever it last stopped, a start brought the stride in whole in a tenth of a second
+        // with both feet on the ground and apart, and they slid 40-50 cm across it (the feet record of 2026-11-25 08:49; found
+        // in 0.9.434 and lost with the rollback to 0.9.424; the experts' review of 2026-11-26).
+        if (moving < SetOffBelow) phase = SetOffPhase(legs);
         phase += dt * rate / strideTime;
         strideCycle = strideTime / Mathf.Max(.05f, rate);
         if (phase >= 1f)
@@ -763,6 +789,23 @@ public sealed partial class PlayerBody
         gaitNatural = along;
         gaitRateNow = rate;
         strideFrame = Time.frameCount;
+    }
+
+    // Under this share of the legs on their cycles they are setting off (Pace); within SetOffSide of ahead or straight back
+    // (degrees) neither foot leads.
+    private const float SetOffBelow = .1f, SetOffSide = 20f;
+
+    // The moment of the stride a start takes up (0-1, the left foot down at 0): where the foot on the side the legs go swings
+    // past the other, so the first step puts it down that way; ahead or back, the next of the two. From the walk the legs go
+    // nearest that way (GaitClips.Gait.RightPass, LeftPass).
+    private float SetOffPhase(float legs)
+    {
+        var set = postureDown >= .5f ? crouchSet : plainSet;
+        if (set == null || !Pair(set, legs, out var a, out var b, out float toward)) return phase;
+        var gait = (toward > .5f ? b : a).Cycles[0].Gait;
+        float side = Mathf.Abs(legs);
+        if (side > SetOffSide && side < 180f - SetOffSide) return legs > 0f ? gait.RightPass : gait.LeftPass;
+        return Mathf.Repeat(gait.RightPass - phase, 1f) <= Mathf.Repeat(gait.LeftPass - phase, 1f) ? gait.RightPass : gait.LeftPass;
     }
 
     /// <summary>How the player's own walk or run carries the body over the ground (world, m/s): as far and the way its cycles'

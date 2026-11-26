@@ -667,6 +667,13 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         if (body != null && !limp)
         {
             // First the clips' switch eased (BodyInertia), so all the pose work after it starts from where the body goes on.
+            // Where the clips have the ankles before the ease and the legs' work move them (MoveTest: how far the legs drawn go
+            // off the animation).
+            if (leftLeg != null && rightLeg != null)
+            {
+                clipLeftAnkle = leftLeg.Foot.position;
+                clipRightAnkle = rightLeg.Foot.position;
+            }
             bodyInertia.Apply(Time.deltaTime, UpperBodyFromFramework);
             // Where the clip has the chest, before the look bends it: how far the head can turn (PlayerBody.Neck).
             MeasureClipChest();
@@ -700,6 +707,20 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         }
         if (thirdPerson) PlaceViewBehind();
     }
+
+    // The ankles as the clips have them this frame, before any of the late pose work (TryReadClipAnkles).
+    private Vector3 clipLeftAnkle, clipRightAnkle;
+
+    /// <summary>The ankles as the clips have them this frame, before the ease over a switch and the legs' work (MoveTest).</summary>
+    internal bool TryReadClipAnkles(out Vector3 left, out Vector3 right)
+    {
+        left = clipLeftAnkle;
+        right = clipRightAnkle;
+        return leftLeg != null && rightLeg != null;
+    }
+
+    /// <summary>How many switches have been eased over since the body was made (MoveTest).</summary>
+    internal int InertiaStarts => bodyInertia.Starts;
 
     // Named spans of the late pose work, so the profiler and HitchProbe can tell which part of it a stall is in.
     private static readonly Unity.Profiling.ProfilerMarker GripMarker = new Unity.Profiling.ProfilerMarker("PlayerBody.Grip"),
@@ -1075,6 +1096,15 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     {
         float time = Mathf.Max(.01f, slowBlendLeft > 0f ? slowBlendTime : blendTime), step = dt / time, shown = 0f, wanted = 0f, moved = 0f;
         slowBlendLeft -= dt;
+        // The legs' own mix this frame and the last (Locomotion): its shares of the eight ways, the stand and the gaits follow
+        // the speed and the way, and a big change of them (the keys turned) is eased once, not begun again while that ease runs.
+        // Begun again at every frame the keys moved, the bones started over from where they were, followed the clips by a
+        // fiftieth a frame and swung on as they had been going: the legs flew about as the keys changed, in every version since
+        // 0.9.379 (the experts' review of 2026-11-26; the user: "wasd 누르니까 발이 그냥 주체를 못 하고 막 날라다녀"). Not
+        // eased at all, the legs jumped between the ways' footing in a frame (the legs' test: half again as many soles over
+        // 3 m/s). A switch within the mix begins the ease itself (a gun's run).
+        bool mixing = mixedFrame == Time.frameCount && mixedBefore;
+        mixedBefore = mixedFrame == Time.frameCount;
         foreach (var channel in channels)
         {
             channel.Weight = Mathf.MoveTowards(channel.Weight, channel.Target, step);
@@ -1094,7 +1124,7 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
             if (channel.Synced)
                 channel.Playable.SetTime((channel.Gait != null ? channel.Gait.ShareAt(strideCount, phase) : phase) * channel.Length);
         }
-        if (moved >= SwitchLeast) bodyInertia.Begin(time);
+        if (moved >= SwitchLeast && (!mixing || !bodyInertia.Blending)) bodyInertia.Begin(time);
     }
 
     private void Want(string clipName)
