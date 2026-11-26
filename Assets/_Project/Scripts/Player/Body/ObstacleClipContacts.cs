@@ -5,24 +5,25 @@ using UnityEngine;
 /// Measures, from a move's own clip on a body, how its hands carry the body over an obstacle, for WarpedTraversal. The clip
 /// is sampled on the body itself (its pose put back afterwards) in the Animator's space, x right, y up, z ahead, and read
 /// like this:
-/// - A hand plants where it reaches furthest ahead of the hips, below its shoulder, early in the clip, come to rest there
-///   (HandStill): putting a hand down on something is reaching ahead and stopping on it, and afterwards the body goes over it
-///   and it falls behind. It counts only if it reaches far enough ahead (handAhead, a share of the arm's length) and the body
-///   then goes over it. A hand that only swings past on its way up to a ledge over the head (a climb's) is down on nothing:
-///   until 0.9.423 it counted, vaultontohigh's swing up read as a plant let go of 0.09 s in, and the climb onto a high ledge
-///   went in that, 22 to 48 m/s (the pops record of 2026-11-25 05:36; the user: "mantling 버그 나서 순간이동함"). In the
-///   editor's play it read on, 0.00 to 0.08 s: there the clip was posed turned round until 0.9.450 (ClipSampler), and the
-///   climb still went in 0.08 s until 0.9.449, when the straight move stopped letting a clip's time hurry it
-///   (StraightLineTraversal). Beatrun's clips play in place (the capsule carries the body), so a hand down on the obstacle
-///   slides back under the hips in the clip's space rather than resting, and the hand read is the one that goes with the
-///   body: vaultover's planted left, slid back for 0.55 s, never rests, and its right, held out at the shoulder a moment,
-///   is read as down from 0.00 to 0.23 s (the clip bench's hand paths, contacts=, 2026-11-26). Read against the hips (a hand
-///   the body goes over goes back and down against them, whoever carries the body) both kinds come out right, vaultover's
-///   left from 0.00 to 0.28 s; but the straight moves take their time from this (StraightLineTraversal), and vaultonto and
-///   vaultoverhigh, now read as no hand down and so going their clips' whole 0.77 and 1.30 s, would go at Beatrun's pace,
-///   about 0.4 and 0.64 s, and the climbs off a ladder's top and the clambers would warp on other moments.
+/// - A hand plants where it reaches furthest ahead of the hips, below its shoulder, early in the clip, bearing the body
+///   (Bears): putting a hand down on something is reaching ahead and stopping on it, and then the body goes over it and it
+///   falls behind. Read against the hips that is one thing whoever carries the body: a clip that carries it in its pose
+///   (BIPER's) rests the hand while the hips go on, one that plays in place (Beatrun's: the capsule carries the body) keeps
+///   the hips and slides the hand back; either way the hand goes back and down against the hips, never ahead or up. It
+///   counts only if it reaches far enough ahead (handAhead, a share of the arm's length) and the body then goes over it. A
+///   hand that only swings past on its way up to a ledge over the head (a climb's) goes up against the hips and is down on
+///   nothing: until 0.9.423 it counted, vaultontohigh's swing up read as a plant let go of 0.09 s in, and the climb onto a
+///   high ledge went in that, 22 to 48 m/s (the pops record of 2026-11-25 05:36; the user: "mantling 버그 나서 순간이동함").
+/// - Two hands read as down at once are on one top at one height: one held higher than the other by a hand's lift (handLift)
+///   is out in the air, as vaultover's right is, out at the shoulder while the left takes the box.
 /// - It leaves once the hips have gone a share of an arm past it (handPass) or it has lifted that share off its lowest
 ///   (handLift), whichever comes first.
+/// From 0.9.423 to 0.9.455 a hand had to come to rest in the clip (AtRest), which only a clip that carries the body does. In
+/// Beatrun's the hand down on the obstacle slid back and never rested, and the hand read was one going along with the body,
+/// or none: vaultover's right, out at the shoulder, 0.00 to 0.23 s; vaultonto and vaultoverhigh none, so the straight move
+/// took their whole clips' 0.77 and 1.30 s for Beatrun's 0.45 and 0.66 (StraightLineTraversal), the body behind its clip and
+/// the planted hand pushing on the air 40 cm short of the box (the vault trace of 2026-11-26; the user: "손 짚기 해결법은
+/// 그게 더 자연스러운 거면 그걸로 하도록").
 /// The support is while every planting hand is down. Nothing here is written for one clip or one character, so a clip
 /// swapped in later, on any humanoid, measures itself; a clip that puts no hand down has no support and is left to the
 /// straight move. One clip on one model is measured once and kept.
@@ -150,6 +151,15 @@ internal static class ObstacleClipContacts
 
         bool left = Plants(leftSamples, leftShoulders, hipSamples, arm, step, rules, out int leftPlant, out int leftRelease);
         bool right = Plants(rightSamples, rightShoulders, hipSamples, arm, step, rules, out int rightPlant, out int rightRelease);
+        // Two hands on one top are at one height: as the later of them goes down, one held higher than the other by a hand's
+        // lift is out in the air (vaultover's right, out at the shoulder while the left takes the box).
+        if (left && right)
+        {
+            int both = Mathf.Max(leftPlant, rightPlant);
+            float over = leftSamples[both].y - rightSamples[both].y;
+            if (over > rules.HandLift * arm) left = false;
+            else if (-over > rules.HandLift * arm) right = false;
+        }
         if (!left && !right)
         {
             // Not reached down ahead: a clip that grabs high and pushes up over its hands, as the climb off a ladder's top
@@ -168,16 +178,17 @@ internal static class ObstacleClipContacts
         };
     }
 
-    // A hand is at rest (on something) while it goes slower than this many arm's lengths a second: a clip that carries the body
-    // over the obstacle in its pose keeps a hand down on it put in the clip's space, and one swinging up for a ledge goes three
-    // to five. (Not so in a clip that plays in place: see the class.)
+    // A hand bears the body while, against the hips, it goes no faster than this many arm's lengths a second ahead or up: the
+    // body going on over a hand down on something, forward and up over it, takes it back and down against the hips, at any
+    // pace and whoever carries the body; one swinging out or up for a ledge goes ahead or up three to five.
     private const float HandStill = 1f;
 
-    private static bool AtRest(Vector3[] hand, int i, float arm, float step)
+    private static bool Bears(Vector3[] hand, Vector3[] hips, int i, float arm, float step)
     {
         int before = Mathf.Max(0, i - 1), after = Mathf.Min(hand.Length - 1, i + 1);
         if (after == before) return true;
-        return (hand[after] - hand[before]).magnitude / ((after - before) * step) <= HandStill * arm;
+        Vector3 moved = (hand[after] - hips[after] - (hand[before] - hips[before])) / ((after - before) * step);
+        return moved.z <= HandStill * arm && moved.y <= HandStill * arm;
     }
 
     // A hand that grabs high and pushes the body up over it: it plants at its highest early on (the first 60% of the
@@ -200,9 +211,9 @@ internal static class ObstacleClipContacts
         return release > plant + 1;
     }
 
-    // Where one hand plants (reaching furthest ahead of the hips, below its shoulder, early on, come to rest) and leaves (the
-    // hips gone a share of an arm past it, or lifted that share off its lowest). False when it never reaches ahead enough at
-    // rest or the body never goes over it.
+    // Where one hand plants (reaching furthest ahead of the hips, below its shoulder, early on, bearing the body) and leaves
+    // (the hips gone a share of an arm past it, or lifted that share off its lowest). False when it never reaches ahead enough
+    // bearing the body or the body never goes over it.
     private static bool Plants(Vector3[] hand, Vector3[] shoulder, Vector3[] hips, float arm, float step, in Rules rules, out int plant, out int release)
     {
         plant = release = -1;
@@ -210,7 +221,7 @@ internal static class ObstacleClipContacts
         float best = float.NegativeInfinity;
         for (int i = 0; i <= window; i++)
         {
-            if (hand[i].y >= shoulder[i].y || !AtRest(hand, i, arm, step)) continue;
+            if (hand[i].y >= shoulder[i].y || !Bears(hand, hips, i, arm, step)) continue;
             float ahead = hand[i].z - hips[i].z;
             if (ahead > best) { best = ahead; plant = i; }
         }

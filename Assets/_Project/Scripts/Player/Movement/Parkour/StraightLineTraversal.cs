@@ -40,13 +40,13 @@ public sealed class StraightLineTraversal
         entryUnits = entrySpeed / ctx.HeightUnit;
         this.clipTime = clipTime;
         beatrun = VaultMotion.TimeToArrive(obstacle.Kind, entryUnits);
-        // The clip's time slows Beatrun's carry, never hurries it: Beatrun's rates were made with these very clips, and a
-        // clip time shorter than the carry is the measure reading the clip wrong: Beatrun's clips play in place, the body
-        // carried by this curve, so a hand down on the obstacle slides back in the clip and one that rides along with the
-        // body reads as resting. vaultontohigh, posed turned round in the editor until 0.9.450 (ClipSampler), read its hands
-        // gone 0.08 s in, and the climb onto a 2.2 m wall went at 11.5 times Beatrun's pace, 30 to 50 m/s (the climb record
-        // of 2026-11-26; the user: "벽 위로 mantling 할 때 텔포하는데 똑똑하게 고쳐 주고"); faced ahead, vaultover reads its
-        // free hand leaving at 0.23 s, before Beatrun's own 0.38.
+        // The clip's time slows Beatrun's carry, never hurries it: Beatrun's rates were made with these very clips, which play
+        // in place with the body carried by this curve, so their hands leave the obstacle before the body has come down past
+        // it (vaultover's left at 0.28 s, Beatrun's carry 0.38; vaultonto's at 0.18, 0.45). vaultontohigh, posed turned round
+        // in the editor until 0.9.450 (ClipSampler), read its hands gone 0.08 s in, and the climb onto a 2.2 m wall went at
+        // 11.5 times Beatrun's pace, 30 to 50 m/s (the climb record of 2026-11-26; the user: "벽 위로 mantling 할 때 텔포하는데
+        // 똑똑하게 고쳐 주고"). Until 0.9.456 the measure found no hand down in vaultonto or vaultoverhigh (ObstacleClipContacts)
+        // and their moves took the clips' whole 0.77 and 1.30 s, twice Beatrun's.
         pace = clipTime > 0f && beatrun > 0f ? Mathf.Min(1f, beatrun / clipTime) : 1f;
     }
 
