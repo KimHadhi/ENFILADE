@@ -29,8 +29,13 @@ using State = PlayerMovement.MovementState;
 /// 175 degrees in a frame (the pops record of 2026-11-24 23:40; the user: "더 괴랄해졌는데요 … 튕기고 터지고").
 /// It hands over at the clip's first footfall once its root is done turning and its chest is back over its root
 /// (ChestAligned): the walk or run takes the stride there (PlayerBody.StepFrom) at the clip's own pace (MovementGait.Carry),
-/// with nothing to turn back. Jumping, sliding, crouching or leaving the ground gives it up. The other PCs start the same turn
-/// on the pose's count and play it on their own clock (MovementMirror).
+/// with nothing to turn back. Jumping, sliding, crouching or leaving the ground gives it up, and so does the player changing
+/// their mind: the keys asking a way more than GiveUpWithin off the one it turns to (the view flicked back the way it came),
+/// and the run goes on the way they ask from where the turn had got to. Until 0.9.424 it played on to its end, turning the
+/// body round to where the view no longer was, and the head was left to turn back past the shoulder to the view behind it
+/// (the user, 2026-11-25: "돌리고 나서 잉 구라야 사실 그쪽으로 안 갈 거야 하고 다시 원방향을 볼 때 문제가 발생하는 건데").
+/// The other PCs start the same turn on the pose's count, play it on their own clock and give it up as the pose stops
+/// saying it goes on (MovementMirror, PlayerPose.Marks.Turning).
 /// Until 0.9.412 the turn made up its own path: the capsule braked in a straight line the old way, then pushed off along the
 /// keys at the clip's pace, the root turned up to 1.25 times the clip's turn, and at the end the root was put under the chest
 /// at once. The body then went otherwise than the clip's feet, and what kept them on the ground (a planted foot held, a let-go
@@ -57,6 +62,8 @@ public sealed class RunTurn
     private const float RootStill = 2f;
     // Moments whose stride stands within this share of a stride of the nearest are as near: the latest is come into (EntryOf).
     private const float PhaseTie = .04f;
+    // The keys asking a way further than this off the one the turn turns to (degrees) give it up (Go).
+    private const float GiveUpWithin = 90f;
     // The speed the body came in at goes over to the clip's own in this long (s).
     private const float EntryBlend = .15f;
     // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
@@ -172,12 +179,15 @@ public sealed class RunTurn
     }
 
     /// <summary>This frame's velocity while the turn goes on: the clip's own root's, the speed the body came in at fading into
-    /// it. False once it is over or given up; the gait takes the pace over (Stop).</summary>
-    internal bool Go(out Vector3 velocity)
+    /// it. False once it is over or given up, <paramref name="wanted"/> (the keys' way in the world, none for no keys) gone
+    /// back more than GiveUpWithin off the way it turns to included; the gait takes the pace over (Stop).</summary>
+    internal bool Go(Vector3 wanted, out Vector3 velocity)
     {
         velocity = Vector3.zero;
         var motion = Motion;
-        if (!Turning || motion == null || ctx.CurrentState != State.Standing || !ctx.IsGrounded)
+        bool changedMind = wanted.sqrMagnitude > .01f
+            && Vector3.Angle(wanted, Quaternion.Euler(0f, EndYaw, 0f) * Vector3.forward) > GiveUpWithin;
+        if (!Turning || motion == null || ctx.CurrentState != State.Standing || !ctx.IsGrounded || changedMind)
         {
             Stop();
             return false;

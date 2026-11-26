@@ -80,7 +80,7 @@ public sealed class LocomotionState : MovementBaseState
         var turn = ctx.Actions.RunTurn;
         if (ctx.IsGrounded && runsOut <= 0f && (turn.Turning || turn.TryStart(input, inputDirection, ctx.BodyFacingYaw)))
         {
-            if (turn.Go(out Vector3 turning))
+            if (turn.Go(inputDirection * inputMagnitude, out Vector3 turning))
             {
                 ctx.HorizontalVelocity = turning;
                 return;

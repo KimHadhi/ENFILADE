@@ -264,6 +264,8 @@ public sealed class PlayerLook : MonoBehaviour
 
     // Each move's own arc first (ClampStateYaw); on top, the view turns no further than the head can on the pose the body is
     // in (PlayerBody.HeadReachArc): the camera is the head, and the head never turns into the body (the user, 2026-11-21).
+    // On the feet nothing holds it: 0.9.422 held the view within 135 degrees of the hips there, and the user took it out
+    // ("왜 돌릴 때 막아요 카메라를...?").
     private float ClampLookYaw(float candidate)
     {
         candidate = ClampStateYaw(candidate);

@@ -26,6 +26,13 @@ internal sealed class BodyGaze
     private Quaternion headToGaze = Quaternion.identity, chestToGaze = Quaternion.identity;
     private Quaternion rotation = Quaternion.identity, actionTurn = Quaternion.identity;
     private float actionWeight, faceWeight;
+    // The neck guard's turn from the chest the head was let go to on the last frame and the view's reading then (degrees), and
+    // whether there was one (FaceHead).
+    private float guardTurn, guardWas;
+    private bool guardKnown;
+    // The guard goes over from one shoulder to the other at this (degrees a second) past what the view turned, and keeps a
+    // shoulder while the view is within GuardSideSlack of the back on the other side.
+    private const float GuardSwapRate = 720f, GuardSideSlack = 30f;
     // The carried head's turn over the body's right (degrees) and its turn on the last frame (Update).
     private float overTurn;
     private Quaternion overWas = Quaternion.identity;
@@ -53,6 +60,7 @@ internal sealed class BodyGaze
         this.root = root;
         this.lookPivot = lookPivot;
         faceWeight = 0f;
+        guardKnown = false;
     }
 
     /// <summary>
@@ -168,15 +176,31 @@ internal sealed class BodyGaze
         Vector3 chest = Vector3.ProjectOnPlane(chestAhead, Vector3.up);
         float guard = Mathf.Clamp01(upright) * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(LevelFrom, LevelBy, ahead.magnitude))
             * (1f - actionWeight);
+        // With the view behind the chest the head keeps the shoulder it is held over, and goes over to the other through the
+        // front at GuardSwapRate once the view is well round to it. Until 0.9.421 it went to whichever shoulder the view read
+        // nearer each frame: as the view passed behind, the head swung from one shoulder to the other in a frame, 170 degrees,
+        // the neck 51 and the eyes 15 cm (the pops record of 2026-11-25 05:10, the animation expert's review).
         if (neckLimit > 0f && guard > 0f && chest.sqrMagnitude > 1e-6f)
         {
             float turn = Vector3.SignedAngle(chest, ahead, Vector3.up);
-            if (Mathf.Abs(turn) > neckLimit)
+            float allowed = Mathf.Clamp(turn, -neckLimit, neckLimit);
+            if (guardKnown)
             {
-                gaze = Quaternion.AngleAxis((Mathf.Sign(turn) * neckLimit - turn) * guard, Vector3.up) * gaze;
+                if (Mathf.Abs(guardTurn) >= neckLimit - 1f && guardTurn * turn < 0f && Mathf.Abs(turn) > 180f - GuardSideSlack)
+                    allowed = guardTurn;
+                allowed = Mathf.MoveTowards(guardTurn, allowed, Mathf.Abs(Mathf.DeltaAngle(guardWas, turn)) + GuardSwapRate * dt);
+            }
+            guardTurn = allowed;
+            guardWas = turn;
+            guardKnown = true;
+            float fix = Mathf.DeltaAngle(turn, allowed);
+            if (Mathf.Abs(fix) > .01f)
+            {
+                gaze = Quaternion.AngleAxis(fix * guard, Vector3.up) * gaze;
                 held = true;
             }
         }
+        else guardKnown = false;
         Quaternion target = gaze * Quaternion.Inverse(headToGaze);
         if (actionWeight > 0f)
         {

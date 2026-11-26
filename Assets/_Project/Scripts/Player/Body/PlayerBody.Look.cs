@@ -49,10 +49,11 @@ public sealed partial class PlayerBody
     private Vector2 slideLookLimits = new Vector2(35f, 120f);
     // The torso's own share of a slide's look: past this the spine would wring, so the head and neck turn the rest.
     private const float SlideTwistLimit = 90f;
-    // The most the look turns the spine, neck and head back toward the view from the chest (degrees), and its turn on the
-    // last frame (AimLook).
-    private const float LookTwistMost = 150f;
-    private float lookTwist;
+    // The most the look turns the spine, neck and head back toward the view from the chest (degrees), and its turn and its
+    // reading on the last frame (AimLook). A turn held over a shoulder keeps that side while the view is within LookSideSlack
+    // of the back on the other, and goes over to it at LookSwapRate (degrees a second) past what the view itself turned.
+    private const float LookTwistMost = 150f, LookSideSlack = 20f, LookSwapRate = 900f;
+    private float lookTwist, lookReading;
     private bool lookTwistKnown;
     [SerializeField, Tooltip("Sliding look pitch limits in degrees: up, down. Shared with the camera to keep the torso and view together.")]
     private Vector2 slidePitchLimits = new Vector2(40f, 55f);
@@ -231,13 +232,25 @@ public sealed partial class PlayerBody
         bendWeight = Mathf.MoveTowards(bendWeight, upright || sliding ? 1f : 0f, dt / blendTime);
 
         float pitch = lookPivot != null ? Mathf.DeltaAngle(0f, lookPivot.localEulerAngles.x) : 0f;
-        // Back to the view from where the chest is: a run's turn clip has it round in its own pose (RunTurnFacing). Carried on
-        // from the last frame's turn rather than read afresh within +-180, and held within what a spine and neck turn
-        // (LookTwistMost): in a run's turn the chest swings round past the back of the view, where the reading went from +170
-        // to -170 in a frame, and the spine and the arms on it swung 160 degrees round and back, three times in a turn (the
-        // pops record of 2026-11-24 20:3x, Jog_TurnR at 80 s). Until 0.9.402 it was read afresh.
-        float twistNow = Mathf.DeltaAngle(yaw + RunTurnFacing, 0f);
-        float twist = lookTwistKnown ? Mathf.Clamp(lookTwist + Mathf.DeltaAngle(lookTwist, twistNow), -LookTwistMost, LookTwistMost) : twistNow;
+        // Back to the view from where the chest is: a run's turn clip has it round in its own pose (RunTurnFacing). Within what a
+        // spine and neck turn (LookTwistMost) it is the reading's, the short way, as the hips come round. With the view behind,
+        // past that, it keeps the side it is turned to, so a reading going from +170 to -170 as the chest swings past the back
+        // doesn't swing the spine round (0.9.402: the spine and the arms on it swung 160 degrees round and back three times in a
+        // run's turn); once the view is well round on the other side it goes over to it through the front, at LookSwapRate past
+        // what the view turned. From 0.9.402 to 0.9.420 it was carried on the long way and held at the limit while the hips came
+        // back the short way: once the real turn was 330 round the held one wrapped, and the spine and the arms on it swung 108
+        // degrees in a frame (the pops record of 2026-11-25 05:10; the user: "고개를 … 휙휙 돌렸을 때 가끔 … 사람이 돌릴 수
+        // 없을 정도로 꺾이거나"; the animation expert's review).
+        float twistNow = Mathf.DeltaAngle(yaw + RunTurnFacing, 0f), twist = twistNow;
+        if (lookTwistKnown)
+        {
+            float side = Mathf.Abs(lookTwist) > LookTwistMost - LookSideSlack ? Mathf.Sign(lookTwist) : 0f;
+            bool behind = Mathf.Abs(twistNow) > LookTwistMost
+                || side * twistNow < 0f && Mathf.Abs(twistNow) > LookTwistMost - LookSideSlack;
+            float wanted = behind ? (side != 0f ? side : Mathf.Sign(twistNow)) * LookTwistMost : twistNow;
+            twist = Mathf.MoveTowards(lookTwist, wanted, Mathf.Abs(Mathf.DeltaAngle(lookReading, twistNow)) + LookSwapRate * dt);
+        }
+        lookReading = twistNow;
         lookTwist = twist;
         lookTwistKnown = true;
         if (sliding)
