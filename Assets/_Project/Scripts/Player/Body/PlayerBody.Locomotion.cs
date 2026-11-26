@@ -408,6 +408,14 @@ public sealed partial class PlayerBody
 
     private bool Dances(Vector3 stride, float speed)
     {
+        // Taken up afresh as the legs come back to walking from anything else (a vault, a slide, the air): the way they went
+        // before it is no turn of the keys, and a dance from before it is over.
+        if (mixedFrame != Time.frameCount - 1)
+        {
+            danceTurns.Clear();
+            danceTurned = 0f;
+            danceWayKnown = dancing = false;
+        }
         float now = Time.time;
         if (speed > StillLeave)
         {
