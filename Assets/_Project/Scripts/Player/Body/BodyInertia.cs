@@ -83,12 +83,8 @@ internal sealed class BodyInertia
     }
 
     /// <summary>Right after the animation pass: the bones eased from where they were if a switch is under way, and kept for
-    /// the next. <paramref name="aboveHeld"/>: FPSAF has the upper body (a gun), which is left as it is.
-    /// <paramref name="legsTaken"/>: how far a pivot has the hips and legs (PlayerBody.Pivot, 0-1); they show it that far
-    /// whatever the switch. It plants a foot where its clip has it, and the cycles under it switch as the drawn body turns
-    /// back through the middle: eased from the legs before, those switches held the old legs over the pivot until its foot
-    /// was planted (the pivot trace of 2026-11-25: at its stop the clip's planted left foot showed in the air, 50 cm out).</summary>
-    internal void Apply(float dt, bool aboveHeld, float legsTaken)
+    /// the next. <paramref name="aboveHeld"/>: FPSAF has the upper body (a gun), which is left as it is.</summary>
+    internal void Apply(float dt, bool aboveHeld)
     {
         int count = bones.Count;
         if (count == 0 || dt <= 0f) return;
@@ -111,13 +107,13 @@ internal sealed class BodyInertia
                 if (angle > 1e-6f) from[i] = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, turn / angle) * from[i];
                 spin[i] *= keep;
                 if (aboveHeld && above[i]) continue;
-                bone.localRotation = Quaternion.Slerp(from[i], bone.localRotation, above[i] ? ease : Mathf.Max(ease, legsTaken));
+                bone.localRotation = Quaternion.Slerp(from[i], bone.localRotation, ease);
             }
             if (hips != null)
             {
                 fromHips += hipsSpeed * dt;
                 hipsSpeed *= keep;
-                hips.localPosition = Vector3.Lerp(fromHips, hips.localPosition, Mathf.Max(ease, legsTaken));
+                hips.localPosition = Vector3.Lerp(fromHips, hips.localPosition, ease);
             }
             if (share >= 1f) blending = false;
         }

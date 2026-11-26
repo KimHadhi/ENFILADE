@@ -16,9 +16,8 @@ using UnityEngine.Playables;
 public sealed partial class PlayerBody
 {
     // The turn-on-the-spot clips' layer went in 0.9.279: the feet step round themselves (FootPlanting). A blow's flinch
-    // (0.9.299) is under the fists' own clips: a punch thrown as it lands keeps the arm and chest. A pivot (PlayerBody.Pivot,
-    // 0.9.442) is right over the moves, under all the rest: a kick, a feeling or a pair takes the legs from it.
-    private const int MovesLayer = 0, PivotLayer = 1, ClenchLayer = 2, FlinchLayer = 3, PunchLayer = 4, KickLayer = 5;
+    // (0.9.299) is under the fists' own clips: a punch thrown as it lands keeps the arm and chest.
+    private const int MovesLayer = 0, ClenchLayer = 1, FlinchLayer = 2, PunchLayer = 3, KickLayer = 4;
 
     [Header("Fists")]
     [SerializeField, Tooltip("Looped while fists are up. Only its fingers play, so the hands make fists.")]
@@ -51,7 +50,6 @@ public sealed partial class PlayerBody
         layers = AnimationLayerMixerPlayable.Create(graph, ExecutionLayer + 1);
         graph.Connect(mixer, 0, layers, MovesLayer);
         layers.SetInputWeight(MovesLayer, 1f);
-        BuildPivots();
 
         fingerMask = Mask(AvatarMaskBodyPart.LeftFingers, AvatarMaskBodyPart.RightFingers);
         layers.SetLayerMaskFromAvatarMask(ClenchLayer, fingerMask);
@@ -82,13 +80,11 @@ public sealed partial class PlayerBody
         TeardownEmotes();
         TeardownExecution();
         TeardownKick();
-        TeardownPivots();
         if (fingerMask != null) Destroy(fingerMask);
         if (upperMask != null) Destroy(upperMask);
     }
 
-    // A humanoid mask's Body part has the hips' turn as well as the spine: a layer with it turns the hips, and the legs under
-    // them (PlayerBody.Pivot found it: with the Root and the legs alone its legs hung from the hips the moves had turned).
+    // Hips stay out of every mask (the Root part), so the layers never turn or lift the legs under them.
     private static AvatarMask Mask(params AvatarMaskBodyPart[] parts)
     {
         var mask = new AvatarMask();
@@ -142,7 +138,6 @@ public sealed partial class PlayerBody
     private void BlendLayers(float dt)
     {
         layers.SetInputWeight(ClenchLayer, hands != null ? hands.FistsWeight : 0f);
-        BlendPivot(dt);
         BlendKick(dt);
         BlendFlinch(dt);
         BlendEmote(dt);

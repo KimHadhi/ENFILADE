@@ -106,8 +106,7 @@ public sealed partial class PlayerBody
         // until then a foot that was down kept its place and stepped by itself, FootPlanting).
         bool stands = onFeet && still && turnClip == null;
         var stance = new FootPlanting.Stance(stands, hipsCarried, footHoldDrop);
-        // The drawn body's travel: the capsule's and the slack's (PlayerBody.Slack).
-        Vector3 travel = player.ActualVelocity + SlackSpeed;
+        Vector3 travel = player.ActualVelocity;
         // Where the clip had the ankles before the ground moved them, for the feet record.
         leftClipAnkle = feet.Left.Foot.position;
         rightClipAnkle = feet.Right.Foot.position;

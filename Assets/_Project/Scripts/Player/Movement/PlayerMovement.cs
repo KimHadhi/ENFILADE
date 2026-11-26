@@ -119,10 +119,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
         set { stride = value; StrideFrame = Time.frameCount; }
     }
     private Vector3 stride;
-    /// <summary>On the ground, the keys' way at the gait's speed as the keys ask it this frame (world, m/s), before the stride
-    /// eases to it: a turn back shows here the frame the keys turn, and in the stride only as it crosses none 0.07 s later
-    /// (Move.groundSharpness 10). A pivot starts from it (PlayerBody.Pivot).</summary>
-    internal Vector3 StrideAsked { get; set; }
     /// <summary>The frame the stride was last asked: in any other (a surge, a hold, the air) something else moves the body, and
     /// the legs follow what it does (PlayerBody.Locomotion).</summary>
     internal int StrideFrame { get; private set; } = -10;
@@ -609,8 +605,6 @@ public sealed partial class PlayerMovement : MonoBehaviour
         transform.position = position;
         controller.enabled = true;
         ResetVelocity();
-        // The drawn body carries no slack over to where the player was put (PlayerBody.Slack).
-        if (TryGetComponent(out PlayerBody body)) body.DropSlack();
     }
     /// <summary>
     /// Throws the player at this velocity (meant for big enemies' blows; aim it upward). Without control until they

@@ -459,7 +459,7 @@ internal static class ClipBench
         text.AppendLine(steps.ToString());
     }
 
-    // A pivot's clips (PlayerBody.Pivot), whose travel carries the drawn body in the game while they play.
+    // A pivot's clips (the Blender pivot workspace, ArtSource/Pivots), read as if their travel carried the body.
     private const string PivotPrefix = "enf_pivot_";
     // Samples a second for a clip's feet over the ground; a foot within PlantDown of the clip's lowest is down (m), and a
     // contact is one foot down at least PlantLeast (s) on end.

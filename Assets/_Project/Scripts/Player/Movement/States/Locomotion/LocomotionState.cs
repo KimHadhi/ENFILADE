@@ -90,7 +90,6 @@ public sealed class LocomotionState : MovementBaseState
             // up from the way the body goes wherever something else moved it a moment ago (a run's turn, a surge, a slide, the air).
             if (strideFrame != Time.frameCount - 1) ctx.Stride = ctx.HorizontalVelocity;
             strideFrame = Time.frameCount;
-            ctx.StrideAsked = targetVelocity;
             float t = 1f - Mathf.Exp(-ctx.GroundSharpness * dt);
             Vector3 now = ctx.Stride, stride;
             float speedNow = now.magnitude, speedWanted = targetVelocity.magnitude;
