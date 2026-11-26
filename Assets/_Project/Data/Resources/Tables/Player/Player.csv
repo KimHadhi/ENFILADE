@@ -258,7 +258,7 @@ Move.diveSlideFriction,9,머리부터 미끄러지기 감속(m/s²)
 Move.supineSlideFriction,9,누워 미끄러지기 감속(m/s²)
 Move.airSlideFrictionMultiplier,0.25,슬라이드 중 공중에 뜬 동안의 감속 배율
 Move.slopeSlideGravity,28,내리막에서 슬라이드가 빨라지는 정도(m/s²)
-Move.slideEndSpeed,1.5,이 속도 아래로 느려지면 슬라이드가 끝난다(m/s). 키를 누르고 있으면 그 전에 클립이 일어나 달려 나가며 끝난다(SlideMove)
+Move.slideEndSpeed,1.5,이 속도 아래로 느려지면 슬라이드가 끝난다(m/s). 키를 누르고 있으면 그 전에 클립이 일어나 달려 나가며 끝나고 걸음이 그 속도를 이어받는다(SlideMove와 MovementGait.Carry). 앉기 키를 누르고 있으면 클립이 일어나기 시작할 때 앉는다(0.9.455)
 Move.slideMaxSpeed,9,"키를 누른 슬라이드가 경사에서 가장 빨리 가는 속도(m/s, SlideMove)"
 Move.diveSlideCancelMaxSpeed,2,머리부터 미끄러지기를 직접 멈출 수 있는 최대 속도(m/s)
 Move.supineSlideCancelMaxSpeed,5,누워 미끄러지는 중 Shift+이동 키나 Space로 바로 일어날 수 있는 최대 속도(m/s). 미끄럼이 Move.slideCancelMinDuration만큼 이어진 뒤부터다. Ctrl을 누르고 있으면 앉으며 일어난다

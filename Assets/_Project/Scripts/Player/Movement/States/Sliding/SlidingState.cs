@@ -14,8 +14,18 @@ public sealed class SlidingState : MovementBaseState
         // Got up out of its clip, or slowed to a stop: it ends. Until 0.9.395 Shift with W stood a slide up at once into a sprint
         // once its body was down (Beatrun's slide cancel), no getting up shown (the user, 2026-11-24: "슬라이딩도 달리면 빠르게
         // 끊고 달리는 기능이 있던 거 같은데 … 옛날 코드들 쓸데없으면 다 리팩토링").
-        if (ctx.Actions.SlideMove.Now == SlideMove.Phase.Over || ctx.CurrentSlideSpeed <= ctx.SlideEndSpeed) StopSlide();
+        // Not getting up (the crouch key held, or no room to stand), it ends where its clip's body begins to rise, and goes
+        // into the crouch from the slide's own pose (PlayerBody: Body.slideCrouchTime). From 0.9.395 it got up and ran out in
+        // its clip whatever the keys, and only then crouched: the eyes went up from 0.62 to 1.37 m and back down to 0.94 m, the
+        // body from 4.3 to 2.5 m/s in a frame (the slide trace of 2026-11-26). 0.9.266 had done away with the same once, when the
+        // slide's end was a clip of its own (Body.slideEnd).
+        var slide = ctx.Actions.SlideMove;
+        if (slide.Now == SlideMove.Phase.Over || ctx.CurrentSlideSpeed <= ctx.SlideEndSpeed || (slide.Now == SlideMove.Phase.Up && !StandsUp))
+            StopSlide();
     }
+
+    // Out of the slide the body stands: the crouch key let go and room over it to stand.
+    private bool StandsUp => !ctx.Input.CrouchHeld && !ctx.HasCeilingAbove(ctx.StandingColliderHeight);
 
     public override bool TryJump()
     {
@@ -28,7 +38,17 @@ public sealed class SlidingState : MovementBaseState
     private void StopSlide()
     {
         if (ctx.HasCeilingAbove(ctx.CrouchColliderHeight)) ctx.ChangeState(PlayerMovement.MovementState.Proning);
-        else if (!ctx.Input.CrouchHeld && !ctx.HasCeilingAbove(ctx.StandingColliderHeight)) ctx.ChangeState(PlayerMovement.MovementState.Standing);
+        else if (StandsUp)
+        {
+            // Got up running in its clip: the walk or run the keys ask for takes the slide's speed on from the clip's last step
+            // and comes to its own from there, the legs blended to that speed (MovementGait.Carry), as out of every one-off that
+            // runs on. From 0.9.395, when the getting up went into the slide's own clip, nothing handed it on: the legs took
+            // their gait in a frame, W alone dropping the body from 4.3 to 3 m/s and Shift dipping it to 3.5 and up to 6.5 in
+            // 0.3 s, the clip's leaning run turned into an upright jog in a tenth of a second and the eyes rose 10 cm (the slide
+            // trace and pictures of 2026-11-26; the user: "슬라이딩 끝날 때 모션이 갑자기 바뀌어서 불편").
+            if (ctx.Actions.SlideMove.Now == SlideMove.Phase.Over) ctx.Actions.Gait.Carry(ctx.CurrentSlideSpeed);
+            ctx.ChangeState(PlayerMovement.MovementState.Standing);
+        }
         else ctx.ChangeState(PlayerMovement.MovementState.Crouching);
     }
 

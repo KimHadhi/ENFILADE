@@ -19,8 +19,15 @@ using UnityEngine;
 /// Hub's wall a climb went up through in a frame or two (climb), jumps and holds W, and writes how long the climb took and
 /// the fastest the capsule went in it (Logs/climbs.txt has the climb's own lines); then it puts a ladder up that wall for the
 /// move (ladder), climbs it with W and off its top, and writes the same. Then it ends the play. A slide (slide: a sprint,
-/// then the crouch key) writes how fast the eyes dropped against the capsule and the biggest change of their pace from one
-/// frame to the next (eye drop, jolt), and the moves the request's film= line names are pictured (MoveFilm).
+/// then the crouch key, W held on; slide sprint: Shift held through it too; slide let go: the keys let go as it slides; slide
+/// crouched: the crouch key held through it) writes how fast the eyes dropped against the
+/// capsule and the biggest change of their pace from one frame to the next (eye drop, jolt), and from its getting up the
+/// biggest change of the body's speed from one frame to the next (end jump); Logs/slide-trace.txt has it a frame at a time.
+/// After the climb it jogs at boxes it puts up ahead (vault over, vault onto, vault over high) and walks at two (clamber low,
+/// clamber high), and writes how long each took
+/// and how a hand on the box's top went over it (hands on top: how long, how fast it slid, middle and most, and how far);
+/// Logs/vault-trace.txt has both hands against the top a frame at a time. The moves the request's film= line names are
+/// pictured (MoveFilm).
 /// The user, 2026-11-25: "모든 걸 고쳐. 네가 알아서 테스팅까지 다 해서".
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Body + 1)]
@@ -56,8 +63,13 @@ internal sealed class MoveTest : MonoBehaviour
         public float Neck, Spine, View, Body, Settled, React;
         // In a vault or a climb: how long, and the fastest the capsule went (m/s); hanging from a ledge: how long.
         public float ClimbTime, ClimbFastest, HangTime, LadderTime;
+        // Over a box (the vaults): how long a hand was on its top and how far and fast it went over the top meanwhile.
+        public readonly List<float> TopSlides = new List<float>();
+        public float OnTop, TopPath;
         // The fastest the eyes went down against the capsule, and the most their pace against it changed in a frame (m/s).
         public float EyeDrop, EyeJolt;
+        // Out of a slide's getting up, the most the body's speed changed from one frame to the next (m/s); -1 no slide.
+        public float EndJump = -1f;
     }
 
     private readonly List<Phase> phases = new List<Phase>();
@@ -67,7 +79,7 @@ internal sealed class MoveTest : MonoBehaviour
     private PlayerMovement player;
     private PlayerBody body;
     private Animator animator;
-    private Transform leftShoulder, rightShoulder, leftHip, rightHip;
+    private Transform leftShoulder, rightShoulder, leftHip, rightHip, leftHand, rightHand;
     private float viewWas, facingWas;
     private readonly Vector3[] soleWas = new Vector3[2], ankleWas = new Vector3[2], soleOffWas = new Vector3[2];
     private readonly int[] endWas = new int[2];
@@ -123,14 +135,23 @@ internal sealed class MoveTest : MonoBehaviour
         Add("flick L270", 3f, Flick(-270f, .2f), false);
         Add("slow R360", 4f, Flick(360f, 3f), false);
         Add("jog W again", 1.5f, (t, dt) => ScriptedInput.Move = Vector2.up);
-        Add("slide", 4.8f, (t, dt) =>
-        {
-            ScriptedInput.Sprint = t < SlideAt;
-            ScriptedInput.Move = Vector2.up;
-            if (t >= SlideAt && t - dt < SlideAt) ScriptedInput.PressCrouch();
-            else if (t >= SlideAt + SlideHeld) ScriptedInput.Crouch = false;
-        });
+        // Up out of the slide into a jog (W) and into a sprint (Shift held through it): the moment it gets up and the walk or
+        // run takes over (the user, 2026-11-26: "슬라이딩 끝날 때 모션이 갑자기 바뀌어서 불편").
+        Add("slide", 5.6f, Slide(false));
+        Add("slide sprint", 5.6f, Slide(true));
+        // The other ends: the keys let go as it slides (it slows to a stop and gets up), and the crouch key held through it.
+        Add("slide let go", 6f, Slide(false, false));
+        Add("slide crouched", 5.6f, Slide(false, true, true));
         phases.Add(new Phase { Name = "climb", Seconds = 3f, Drive = Climb, Place = PlaceAtWall });
+        // Jogged at a box and jumped: a rail gone over, a deep one climbed onto, a wall too high for the rail's vault and thin
+        // enough to land behind. How long each took, and whether the hand on the top stays where it went down or slides over it
+        // (the user, 2026-11-26: "손 짚기 해결법은 그게 더 자연스러운 거면"; Logs/vault-trace.txt).
+        Vault("vault over", 2f, 1f, .3f, .8f);
+        Vault("vault onto", 2f, 1f, 6f, ClimbJumpAt);
+        Vault("vault over high", 2f, 1.7f, .3f, ClimbJumpAt);
+        // Walked at (W half way, under Ability.clamberMaxSpeed) and jumped close: clambered onto, at the hips and at the head.
+        Vault("clamber low", 2f, 1f, 6f, ClimbJumpAt, .5f, 5.5f);
+        Vault("clamber high", 2f, 1.9f, 6f, ClimbJumpAt, .5f, 6.5f);
         phases.Add(new Phase { Name = "ladder", Seconds = 8f, Drive = (t, dt) => ScriptedInput.Move = t < WallSettle ? Vector2.zero : Vector2.up,
             Place = PutUpLadder });
         // Only the moves the request named (only=climb,jog W; MoveTestOnRequest carries the request on in the marker).
@@ -139,11 +160,24 @@ internal sealed class MoveTest : MonoBehaviour
         film = MoveFilm.From(Running);
     }
 
-    // The slide: a sprint this long, then the crouch key down this long (s); its first SlideTrace seconds are traced.
-    private const float SlideAt = 1.4f, SlideHeld = .2f, SlideTrace = .8f;
-    private const string SlideTraceHeading = "slide trace (MoveTest): from the slide's start, a line a frame: time, where in its clip "
-        + "(SlideMove phase, clip, moment s), the capsule's speed, the eyes over the capsule's floor";
-    private float slidFrom = -1f;
+    // The slide: a sprint this long, then the crouch key down this long (s); traced from its start to SlideAfter after it ends.
+    private const float SlideAt = 1.4f, SlideHeld = .2f, SlideAfter = .8f;
+    private const string SlideTraceHeading = "slide trace (MoveTest): from the slide's start to 0.8 s after it ends, a line a frame: "
+        + "the move, time, where in its clip (SlideMove phase, clip, moment s) or after it the state and the legs' gait (1 jog, 2 sprint), "
+        + "the capsule's speed, the eyes over the capsule's floor";
+    // When the slide began and ended in this move (s, -1 not yet), and the capsule's ground speed last frame (EndJump).
+    private float slidFrom = -1f, slidTo = -1f, paceWas = -1f;
+
+    // A sprint, then the crouch key down from SlideAt, for SlideHeld or on to the end when `crouched`; W held on, or let go with
+    // the crouch key unless `keys` (let go with it, the crouch key alone was a crouch, no slide); Shift held through the slide
+    // too when `sprint`.
+    private static System.Action<float, float> Slide(bool sprint, bool keys = true, bool crouched = false) => (t, dt) =>
+    {
+        ScriptedInput.Sprint = sprint || t < SlideAt;
+        ScriptedInput.Move = keys || t < SlideAt + SlideHeld ? Vector2.up : Vector2.zero;
+        if (t >= SlideAt && t - dt < SlideAt) ScriptedInput.PressCrouch();
+        else if (t >= SlideAt + SlideHeld && !crouched) ScriptedInput.Crouch = false;
+    };
 
     private static HashSet<string> Only()
     {
@@ -204,6 +238,106 @@ internal sealed class MoveTest : MonoBehaviour
     {
         if (ladder != null) Destroy(ladder.gameObject);
         ladder = null;
+        if (box != null) Destroy(box);
+        box = null;
+    }
+
+    // A box BoxAhead ahead of where the test began, as wide, high and deep as asked (m), on the floor's own layer, so the moves
+    // see it as they see the floor: the player jogs at it with W from a stop and jumps `jumpAt` from its near face (further
+    // off, a deep box was jumped onto with no move: the onto move looks down from the eyes, and over the top they were too
+    // high by then). Taken down with the ladder as the move ends.
+    private const float BoxAhead = 3f, VaultJumpHeld = .2f;
+    private GameObject box;
+    private float boxJumpAt, boxKeys;
+
+    // `keys`: how far W is held (1 a jog, .5 a walk); `seconds`: how long the move runs.
+    private void Vault(string name, float width, float height, float depth, float jumpAt, float keys = 1f, float seconds = 3f)
+        => phases.Add(new Phase { Name = name, Seconds = seconds, FaceHome = true, Drive = VaultDrive, Place = () =>
+        {
+            Vector3 ahead = Quaternion.Euler(0f, homeYaw, 0f) * Vector3.forward;
+            box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.name = "Move Test Box";
+            if (Physics.Raycast(home + Vector3.up * .5f, Vector3.down, out RaycastHit floor, 2f, ~0, QueryTriggerInteraction.Ignore))
+                box.layer = floor.collider.gameObject.layer;
+            box.transform.SetPositionAndRotation(home + ahead * (BoxAhead + depth * .5f) + Vector3.up * (height * .5f), Quaternion.Euler(0f, homeYaw, 0f));
+            box.transform.localScale = new Vector3(width, height, depth);
+            boxJumpAt = jumpAt;
+            boxKeys = keys;
+            climbJumped = false;
+            return true;
+        } });
+
+    private void VaultDrive(float t, float dt)
+    {
+        ScriptedInput.Sprint = false;
+        ScriptedInput.Move = Vector2.up * boxKeys;
+        if (box == null) return;
+        Vector3 local = box.transform.InverseTransformPoint(player.transform.position);
+        float toFace = (-.5f - local.z) * box.transform.localScale.z;
+        if (!climbJumped && toFace <= boxJumpAt)
+        {
+            climbJumped = true;
+            climbJumpedAt = t;
+            ScriptedInput.PressJump();
+        }
+        if (climbJumped && t - climbJumpedAt > VaultJumpHeld) ScriptedInput.Jump = false;
+    }
+
+    // A hand on the box's top (its wrist within a hand's height over it, over the top), and how far it went over the top since
+    // the frame before.
+    private bool HandOnTop(Transform hand, int side, float dt)
+    {
+        if (box == null || hand == null || tally == null) return false;
+        Vector3 local = box.transform.InverseTransformPoint(hand.position), size = box.transform.localScale;
+        float over = hand.position.y - (box.transform.position.y + size.y * .5f);
+        bool on = Mathf.Abs(local.x) <= .5f && Mathf.Abs(local.z) <= .5f + .15f / size.z && over >= -.05f && over <= .15f;
+        if (on && handWasOn[side])
+        {
+            float moved = new Vector2(hand.position.x - handWas[side].x, hand.position.z - handWas[side].z).magnitude;
+            tally.TopSlides.Add(moved / dt);
+            tally.TopPath += moved;
+        }
+        handWasOn[side] = on;
+        handWas[side] = hand.position;
+        return on;
+    }
+    private readonly bool[] handWasOn = new bool[2];
+    private readonly Vector3[] handWas = new Vector3[2];
+
+    // A vault over a box a line a frame (Logs/vault-trace.txt), from the move's start to VaultAfter after it: the time into it
+    // (its clip plays from there at its own pace), the state, and each hand's wrist against the box's top: how high over it,
+    // how far past its near face, and how fast it went over the ground (cm, cm, m/s). A hand down on the top keeps its place
+    // while the body goes over it.
+    private const float VaultAfter = .3f;
+    private const string VaultTraceHeading = "vault trace (MoveTest): a vault over a box a line a frame from its start to 0.3 s after: "
+        + "the move, time into it (its clip plays from there at its own pace), the state, then each hand's wrist: over the top (cm), "
+        + "past the near face (cm) and its speed over the ground (m/s)";
+    private float vaultFrom = -1f, vaultTo = -1f;
+    private readonly Vector3[] wristWas = new Vector3[2];
+
+    private void TraceVault()
+    {
+        if (box == null || leftHand == null || rightHand == null) return;
+        bool moving = player.CurrentState == PlayerMovement.MovementState.Vault || player.CurrentState == PlayerMovement.MovementState.Mantle;
+        if (moving && vaultFrom < 0f) vaultFrom = clock;
+        if (moving) vaultTo = -1f;
+        else if (vaultFrom >= 0f && vaultTo < 0f) vaultTo = clock;
+        float dt = Time.deltaTime;
+        if (vaultFrom >= 0f && (moving || clock - vaultTo <= VaultAfter) && dt > 0f)
+        {
+            Vector3 size = box.transform.localScale;
+            float top = box.transform.position.y + size.y * .5f;
+            string Wrist(Transform hand, int side)
+            {
+                Vector3 local = box.transform.InverseTransformPoint(hand.position);
+                float speed = new Vector2(hand.position.x - wristWas[side].x, hand.position.z - wristWas[side].z).magnitude / dt;
+                return $"{(hand.position.y - top) * 100f,5:0} {(local.z + .5f) * size.z * 100f,5:0} {speed,5:0.00}";
+            }
+            PlayRecord.Line("vault-trace", VaultTraceHeading, $"{phases[at].Name} {clock - vaultFrom:0.000}s {player.CurrentState,-8} "
+                + $"L {Wrist(leftHand, 0)} | R {Wrist(rightHand, 1)}");
+        }
+        wristWas[0] = leftHand.position;
+        wristWas[1] = rightHand.position;
     }
 
     // The wall's face under ClimbEdge, which way it faces and the floor out in front of it, a climb's height under the top.
@@ -330,6 +464,8 @@ internal sealed class MoveTest : MonoBehaviour
             rightShoulder = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
             leftHip = animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
             rightHip = animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
+            leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
+            rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
         }
         bool standing = player.IsGrounded && player.CurrentState == PlayerMovement.MovementState.Standing && !LoadingScreen.Visible;
         if (!standing) ready = 0f;
@@ -350,13 +486,17 @@ internal sealed class MoveTest : MonoBehaviour
             if (phases[index].FaceHome && player.TryGetComponent(out PlayerLook look)) look.FaceYaw(homeYaw);
         }
         TakeDownLadder();
+        // A crouch key a move held on (slide crouched) is let go before the next.
+        ScriptedInput.Crouch = false;
         if (phases[index].Place != null && !phases[index].Place())
             PlayRecord.Line(Log, Heading, $"-- {phases[index].Name}: no place for it in this scene, run from where the test began");
         at = index;
         clock = 0f;
         climbKnown = false;
+        handWasOn[0] = handWasOn[1] = false;
+        vaultFrom = vaultTo = -1f;
         eyeFrames = 0;
-        slidFrom = -1f;
+        slidFrom = slidTo = paceWas = -1f;
         film?.Begin(phases[index].Name, player.transform);
         tally = new Tally();
         known = false;
@@ -375,23 +515,35 @@ internal sealed class MoveTest : MonoBehaviour
         }
         if (tally != null && player.CurrentState == PlayerMovement.MovementState.LedgeHang) tally.HangTime += dt;
         if (tally != null && player.CurrentState == PlayerMovement.MovementState.Ladder) tally.LadderTime += dt;
+        bool leftOn = HandOnTop(leftHand, 0, dt), rightOn = HandOnTop(rightHand, 1, dt);
+        if (tally != null && (leftOn || rightOn)) tally.OnTop += dt;
+        TraceVault();
         // On the ground the body going under 60% of the speed the keys ask (over 1 m/s): the legs holding it back.
         Vector3 asked = Vector3.ProjectOnPlane(player.Stride, Vector3.up), went = Vector3.ProjectOnPlane(player.ActualVelocity, Vector3.up);
         if (tally != null && player.IsGrounded && player.StrideFrame == Time.frameCount && asked.magnitude > 1f
             && went.magnitude < .6f * asked.magnitude) tally.HeldBack++;
         climbWas = at;
         climbKnown = true;
-        // A slide's first SlideTrace seconds, a line a frame (Logs/slide-trace.txt): where its clip is and how fast it goes,
-        // and how high the eyes are over the floor.
-        if (player.CurrentState == PlayerMovement.MovementState.Sliding)
+        // A slide a line a frame (Logs/slide-trace.txt) from its start to SlideAfter after it ends: where its clip is, or after
+        // it the walk or run that took over, how fast the body goes and how high the eyes are over the floor. From its getting up
+        // on, the biggest change of the body's speed from one frame to the next (EndJump): the hand-over to the legs.
+        var slideMove = player.Actions.SlideMove;
+        bool sliding = player.CurrentState == PlayerMovement.MovementState.Sliding;
+        if (sliding && slidFrom < 0f) slidFrom = clock;
+        if (sliding) slidTo = -1f;
+        else if (slidFrom >= 0f && slidTo < 0f) slidTo = clock;
+        float ground = new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;
+        if (slidFrom >= 0f && (sliding || clock - slidTo <= SlideAfter))
         {
-            if (slidFrom < 0f) slidFrom = clock;
-            var slide = player.Actions.SlideMove;
             var eyes = Camera.main;
-            if (clock - slidFrom <= SlideTrace)
-                PlayRecord.Line("slide-trace", SlideTraceHeading, $"{clock - slidFrom:0.000}s {slide.Now} {slide.ClipName} @{slide.Moment:0.000} "
-                    + $"{new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude:0.00}m/s eyes {(eyes != null ? eyes.transform.position.y - at.y : 0f):0.000}m");
+            string where = sliding ? $"{slideMove.Now} {slideMove.ClipName} @{slideMove.Moment:0.000}"
+                : $"{player.CurrentState} gait {player.Actions.Gait.Position:0.00}";
+            PlayRecord.Line("slide-trace", SlideTraceHeading, $"{phases[this.at].Name} {clock - slidFrom:0.000}s {where} {ground:0.00}m/s "
+                + $"eyes {(eyes != null ? eyes.transform.position.y - at.y : 0f):0.000}m");
+            if (tally != null && paceWas >= 0f && (!sliding || slideMove.Now == SlideMove.Phase.Up))
+                tally.EndJump = Mathf.Max(tally.EndJump, Mathf.Abs(ground - paceWas));
         }
+        paceWas = ground;
         // The eyes against the capsule: how fast they drop, and the biggest change of their pace in a frame.
         var lens = Camera.main;
         if (tally != null && lens != null)
@@ -475,6 +627,19 @@ internal sealed class MoveTest : MonoBehaviour
         }
     }
 
+    private static float Middle(List<float> values)
+    {
+        values.Sort();
+        return values.Count > 0 ? values[values.Count / 2] : 0f;
+    }
+
+    private static float Most(List<float> values)
+    {
+        float most = 0f;
+        foreach (float value in values) most = Mathf.Max(most, value);
+        return most;
+    }
+
     // The facing of a line drawn from the left to the right (degrees): the way ahead of it.
     private static float Yaw(Vector3 leftToRight)
     {
@@ -500,7 +665,9 @@ internal sealed class MoveTest : MonoBehaviour
             + (t.ClimbTime > 0f ? $" | climb {t.ClimbTime:0.00}s fastest {t.ClimbFastest:0.0}m/s" : "")
             + (t.HangTime > 0f ? $" | hung {t.HangTime:0.00}s" : "")
             + (t.LadderTime > 0f ? $" | on the ladder {t.LadderTime:0.00}s" : "")
-            + $" | eye drop {t.EyeDrop:0.0} jolt {t.EyeJolt:0.0}m/s");
+            + (t.TopSlides.Count > 0 ? $" | hands on top {t.OnTop:0.00}s slide {Middle(t.TopSlides):0.00} most {Most(t.TopSlides):0.00}m/s path {t.TopPath * 100f:0}cm" : "")
+            + $" | eye drop {t.EyeDrop:0.0} jolt {t.EyeJolt:0.0}m/s"
+            + (t.EndJump >= 0f ? $" | end jump {t.EndJump:0.00}m/s" : ""));
     }
 
     private void Finish(string trouble)

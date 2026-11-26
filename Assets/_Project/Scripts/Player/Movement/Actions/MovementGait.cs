@@ -46,8 +46,11 @@ public sealed class MovementGait
 
     private readonly PlayerMovement ctx;
     private float jogShare, position = Jog;
-    // How fast the body still goes out of a one-off that ran on (m/s; Carry); 0 for none.
-    private float carried;
+    // How fast the body still goes out of a one-off that ran on (m/s; Carry); 0 for none. The speed of the gait the keys asked
+    // for at the last Tick while it did (m/s; -1 none yet): it ends only once that holds still.
+    private float carried, gaitWas = -1f;
+    // The way the keys pointed at the last Tick (degrees from ahead).
+    private float heading;
 
     internal MovementGait(PlayerMovement context) { ctx = context; }
 
@@ -69,8 +72,15 @@ public sealed class MovementGait
 
     /// <summary>The body goes this fast (m/s) out of a one-off that runs on (while its clip runs out, and as a roll that runs on
     /// ends): from there it goes to the gait the keys ask for, down at Move.runOutCoast or up at Move.runOutAccel, the legs' gait
-    /// with it. Until 0.9.394 it only came down; faster keys went at the run's own pull, 3.3 to 5.5 m/s in 0.2 s out of a roll.</summary>
-    internal void Carry(float speed) => carried = Mathf.Max(0f, speed);
+    /// with it. Until 0.9.394 it only came down; faster keys went at the run's own pull, 3.3 to 5.5 m/s in 0.2 s out of a roll.
+    /// The legs go to that speed's place at once: handed on as a one-off gives way (a slide getting up), after this frame's
+    /// Tick, they would play the gait the keys ask for for a frame first.</summary>
+    internal void Carry(float speed)
+    {
+        carried = Mathf.Max(0f, speed);
+        gaitWas = -1f;
+        if (carried > 0f) position = PlaceOf(carried, heading);
+    }
 
     /// <summary>How fast the body still goes out of a one-off that ran on (m/s); 0 once it is down to its gait.</summary>
     internal float Carried => carried;
@@ -130,14 +140,19 @@ public sealed class MovementGait
             && input.sqrMagnitude > .01f && ctx.CurrentState == PlayerMovement.MovementState.Standing;
         float ramp = Mathf.Max(.01f, ctx.sprintRampUpDuration);
         jogShare = Mathf.MoveTowards(jogShare, jog ? 1f : 0f, dt / (jog ? ramp : ramp * 1.5f));
-        float heading = Heading(input);
+        heading = Heading(input);
         if (carried > 0f)
         {
-            // Only standing on the ground and going on ahead; stopped, turned or at the gait's speed, it is the gait's again.
+            // Only standing on the ground and going on ahead; stopped, turned, or come to the gait's speed while the keys hold
+            // that still, it is the gait's again. A gait on its way to another passed through the carried speed and ended it there:
+            // Shift's sprint coming back on as a slide got up took the body from 4.2 to 5.6 m/s in a tenth of a second at the
+            // ground's own pull instead of at Move.runOutAccel (the slide trace of 2026-11-26).
             float gait = Legs(heading, Asked, ctx.AimShare);
             carried = Mathf.MoveTowards(carried, gait, (carried > gait ? ctx.runOutCoast : ctx.runOutAccel) * dt);
             bool goesOn = input.y > .1f && ctx.Motor.isGrounded && ctx.CurrentState == PlayerMovement.MovementState.Standing;
-            if (!goesOn || Mathf.Abs(carried - gait) < .01f) carried = 0f;
+            bool settled = Mathf.Abs(gait - gaitWas) < .01f;
+            gaitWas = gait;
+            if (!goesOn || (settled && Mathf.Abs(carried - gait) < .01f)) carried = 0f;
         }
         position = Mathf.MoveTowards(position, Asked, dt / GaitChange);
         // The legs at the speed the body goes.
