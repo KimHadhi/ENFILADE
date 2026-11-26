@@ -13,8 +13,14 @@ using UnityEngine;
 ///   went in that, 22 to 48 m/s (the pops record of 2026-11-25 05:36; the user: "mantling 버그 나서 순간이동함"). In the
 ///   editor's play it read on, 0.00 to 0.08 s: there the clip was posed turned round until 0.9.450 (ClipSampler), and the
 ///   climb still went in 0.08 s until 0.9.449, when the straight move stopped letting a clip's time hurry it
-///   (StraightLineTraversal). Beatrun's clips play in place, so a hand down on the obstacle slides back in the clip's space
-///   rather than resting, and the straight moves go no faster than Beatrun's own for that.
+///   (StraightLineTraversal). Beatrun's clips play in place (the capsule carries the body), so a hand down on the obstacle
+///   slides back under the hips in the clip's space rather than resting, and the hand read is the one that goes with the
+///   body: vaultover's planted left, slid back for 0.55 s, never rests, and its right, held out at the shoulder a moment,
+///   is read as down from 0.00 to 0.23 s (the clip bench's hand paths, contacts=, 2026-11-26). Read against the hips (a hand
+///   the body goes over goes back and down against them, whoever carries the body) both kinds come out right, vaultover's
+///   left from 0.00 to 0.28 s; but the straight moves take their time from this (StraightLineTraversal), and vaultonto and
+///   vaultoverhigh, now read as no hand down and so going their clips' whole 0.77 and 1.30 s, would go at Beatrun's pace,
+///   about 0.4 and 0.64 s, and the climbs off a ladder's top and the clambers would warp on other moments.
 /// - It leaves once the hips have gone a share of an arm past it (handPass) or it has lifted that share off its lowest
 ///   (handLift), whichever comes first.
 /// The support is while every planting hand is down. Nothing here is written for one clip or one character, so a clip
@@ -74,7 +80,17 @@ internal static class ObstacleClipContacts
         return made;
     }
 
-    private static Contacts Measure(AnimationClip clip, Animator animator, in Rules rules)
+    /// <summary>A clip's hands, hips and shoulders on a body at SampleRate, in the Animator's space (x right, y up, z ahead),
+    /// and the body's arm (shoulder to wrist) in the same units.</summary>
+    internal sealed class Paths
+    {
+        public float Step, Arm;
+        public Vector3[] LeftHand, RightHand, Hips, LeftShoulder, RightShoulder;
+    }
+
+    /// <summary><paramref name="clip"/> played on <paramref name="animator"/>'s body, read as Paths; null for a body without
+    /// the bones. The body is put back as it was.</summary>
+    internal static Paths Sample(AnimationClip clip, Animator animator)
     {
         Transform root = animator.transform;
         var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
@@ -87,31 +103,30 @@ internal static class ObstacleClipContacts
             return null;
 
         int count = Mathf.Max(2, Mathf.CeilToInt(clip.length * SampleRate) + 1);
-        float step = clip.length / (count - 1);
-        var leftSamples = new Vector3[count];
-        var rightSamples = new Vector3[count];
-        var hipSamples = new Vector3[count];
-        var leftShoulders = new Vector3[count];
-        var rightShoulders = new Vector3[count];
+        var paths = new Paths
+        {
+            Step = clip.length / (count - 1),
+            LeftHand = new Vector3[count], RightHand = new Vector3[count], Hips = new Vector3[count],
+            LeftShoulder = new Vector3[count], RightShoulder = new Vector3[count]
+        };
 
         // The body is sampled where it stands and put back as it was: its own graph poses it again before it is drawn.
         var bones = root.GetComponentsInChildren<Transform>();
         var poses = new (Vector3 position, Quaternion rotation, Vector3 scale)[bones.Length];
         for (int i = 0; i < bones.Length; i++) poses[i] = (bones[i].localPosition, bones[i].localRotation, bones[i].localScale);
-        float arm;
         try
         {
             ClipSampler.Sample(clip, animator.gameObject, 0f);
-            arm = (Vector3.Distance(leftShoulder.position, leftElbow.position) + Vector3.Distance(leftElbow.position, leftHand.position))
+            paths.Arm = (Vector3.Distance(leftShoulder.position, leftElbow.position) + Vector3.Distance(leftElbow.position, leftHand.position))
                 / Mathf.Max(1e-4f, Mathf.Abs(root.lossyScale.y));
             for (int i = 0; i < count; i++)
             {
-                ClipSampler.Sample(clip, animator.gameObject, i * step);
-                leftSamples[i] = root.InverseTransformPoint(leftHand.position);
-                rightSamples[i] = root.InverseTransformPoint(rightHand.position);
-                hipSamples[i] = root.InverseTransformPoint(hips.position);
-                leftShoulders[i] = root.InverseTransformPoint(leftShoulder.position);
-                rightShoulders[i] = root.InverseTransformPoint(rightShoulder.position);
+                ClipSampler.Sample(clip, animator.gameObject, i * paths.Step);
+                paths.LeftHand[i] = root.InverseTransformPoint(leftHand.position);
+                paths.RightHand[i] = root.InverseTransformPoint(rightHand.position);
+                paths.Hips[i] = root.InverseTransformPoint(hips.position);
+                paths.LeftShoulder[i] = root.InverseTransformPoint(leftShoulder.position);
+                paths.RightShoulder[i] = root.InverseTransformPoint(rightShoulder.position);
             }
         }
         finally
@@ -121,7 +136,17 @@ internal static class ObstacleClipContacts
             for (int i = 0; i < bones.Length; i++)
                 if (bones[i] != null) bones[i].localScale = poses[i].scale;
         }
-        if (arm <= 1e-3f) return null;
+        return paths;
+    }
+
+    private static Contacts Measure(AnimationClip clip, Animator animator, in Rules rules)
+    {
+        var paths = Sample(clip, animator);
+        if (paths == null || paths.Arm <= 1e-3f) return null;
+        int count = paths.LeftHand.Length;
+        float step = paths.Step, arm = paths.Arm;
+        Vector3[] leftSamples = paths.LeftHand, rightSamples = paths.RightHand, hipSamples = paths.Hips;
+        Vector3[] leftShoulders = paths.LeftShoulder, rightShoulders = paths.RightShoulder;
 
         bool left = Plants(leftSamples, leftShoulders, hipSamples, arm, step, rules, out int leftPlant, out int leftRelease);
         bool right = Plants(rightSamples, rightShoulders, hipSamples, arm, step, rules, out int rightPlant, out int rightRelease);
@@ -143,9 +168,9 @@ internal static class ObstacleClipContacts
         };
     }
 
-    // A hand is at rest (on something) while it goes slower than this many arm's lengths a second: the clips carry the body over
-    // the obstacle in their pose (their travel is not taken out, BeatrunBody.clips.csv inPlace 0), so a hand down on it stays
-    // put in the clip's space, and one swinging up for a ledge goes three to five.
+    // A hand is at rest (on something) while it goes slower than this many arm's lengths a second: a clip that carries the body
+    // over the obstacle in its pose keeps a hand down on it put in the clip's space, and one swinging up for a ledge goes three
+    // to five. (Not so in a clip that plays in place: see the class.)
     private const float HandStill = 1f;
 
     private static bool AtRest(Vector3[] hand, int i, float arm, float step)

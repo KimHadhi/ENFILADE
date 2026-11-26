@@ -479,6 +479,21 @@ internal static class ClipBench
         text.AppendLine(contacts == null ? "    contacts: no hand down (the move goes over the clip's length)"
             : Invariant($"    contacts: plant {contacts.PlantTime:0.00}s release {contacts.ReleaseTime:0.00}s of {contacts.Length:0.00}s, hands {(contacts.Left ? "L" : "")}{(contacts.Right ? "R" : "")}")
                 + Invariant($" at ({contacts.HandsAt(contacts.PlantTime).x:0.00}, {contacts.HandsAt(contacts.PlantTime).y:0.00}, {contacts.HandsAt(contacts.PlantTime).z:0.00}) from the feet as they plant (x right, z ahead, the model's own m)"));
+        // What it was read from, a fifteenth of a second apart: which hand rests on what, and when, is seen here.
+        animator.applyRootMotion = false;
+        var paths = ObstacleClipContacts.Sample(clip, animator);
+        animator.applyRootMotion = motion;
+        if (paths == null || paths.Arm <= 1e-3f) return;
+        text.AppendLine("    hands: t | left x y z, speed | right x y z, speed | hips y z | shoulders y left right (the Animator's space, the "
+            + "model's own m; speed in arms a second)");
+        int last = paths.LeftHand.Length - 1, every = Mathf.Max(1, Mathf.RoundToInt(1f / (15f * paths.Step)));
+        float Speed(Vector3[] path, int i) => (path[Mathf.Min(last, i + 1)] - path[Mathf.Max(0, i - 1)]).magnitude
+            / (Mathf.Max(1, Mathf.Min(last, i + 1) - Mathf.Max(0, i - 1)) * paths.Step) / paths.Arm;
+        for (int i = 0; i <= last; i += every)
+        {
+            Vector3 l = paths.LeftHand[i], r = paths.RightHand[i], h = paths.Hips[i];
+            text.AppendLine(Invariant($"     {i * paths.Step,4:0.00} | {l.x,5:0.00} {l.y,5:0.00} {l.z,5:0.00} {Speed(paths.LeftHand, i),4:0.0} | {r.x,5:0.00} {r.y,5:0.00} {r.z,5:0.00} {Speed(paths.RightHand, i),4:0.0} | {h.y,5:0.00} {h.z,5:0.00} | {paths.LeftShoulder[i].y,5:0.00} {paths.RightShoulder[i].y,5:0.00}"));
+        }
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
