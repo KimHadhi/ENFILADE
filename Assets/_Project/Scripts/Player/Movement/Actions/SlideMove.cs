@@ -8,21 +8,23 @@ using UnityEngine;
 ///   longer.
 /// - Down into it [0, Down] on the clip's own time: the body at the clip's smoothed pace (ClipMotion.GlideAt) times the speed it
 ///   came in with over the clip's there (Ability.travelWarp), so a sprint's speed goes on into the slide.
-/// - Along it [Down, Rises], keys held: on the clip's own time too, the body keeping that share of the clip's own speed as the
-///   clip slows hard once down and then glides, the slope's pull on top, no faster than Move.slideMaxSpeed. While the slope
-///   pulls it on harder than its clip slows, or it goes faster than travelWarp's most of the clip's own speed (down stairs, a
-///   long slope, a boost), the body holds on the slide's loop (Ability.slideHold) at the middle of the clip's slide, slowing as
-///   the clip does on the whole, and goes on in the clip from there once neither is so (Holds).
+/// - Along it [Down, Rises], keys held: on the clip's own time too, the body slowing evenly from the speed it came down at to
+///   the clip's own where its body begins to rise, over the clip's own time to that (the slide's slowing, set as its body is
+///   down), the slope's pull and a brake on top, no faster than Move.slideMaxSpeed. While it could not slow to that by then (the
+///   slope pulls it on, down stairs or a long slope, or a boost), the body holds on the slide's loop (Ability.slideHold) at the
+///   middle of the clip's slide, slowing all the same, and goes on in the clip from there once it can (Late).
 /// - With no keys, Move.slideFriction slows it and the body holds in the slide until it stops (PlayerBody.SlideStops).
 /// - Up out of it [Rises, the first footfall once its legs are under it] on the clip's time, its share of the clip's speed going
 ///   from the slide's to the rate that brings its run-out to the gait the keys ask for (Ability.runOutRate), where the walk or
 ///   run takes over at its speed (MovementGait.Carry). The pose's pace comes into it from the slide's (Advance).
 /// The other PCs play the same clip at the same moment (MovementMirror).
-/// Until 0.9.459 the body slowed evenly along it (by its clip's slowing on the whole) and the clip's moment was matched to the
-/// distance left to its getting up (distance matching, at half to twice its own pace): the clip slows hard just after its body
-/// is down (7.7 to 4.4 m/s) and then glides at 3.4 to 4.3, so the pose went at 0.6 of its pace for the first half second, then
-/// at up to twice it, while the body slowed evenly (the slide trace of 2026-11-26; the user, asked whether to end that:
-/// "남은 것도 뭐 해 줘").
+/// Until 0.9.459 the clip's moment was matched to the distance left to its getting up (distance matching, at half to twice its
+/// own pace) while the body slowed evenly: the clip slows hard just after its body is down (7.7 to 4.4 m/s) and then glides at
+/// 3.4 to 4.3, so the pose went at 0.6 of its pace for the first half second, then at up to twice it (the slide trace of
+/// 2026-11-26; the user, asked whether to end that: "남은 것도 뭐 해 줘"). 0.9.459 put the clip on its own time by having the
+/// body keep its share of the clip's own speed instead, and the slide went 1.5 m less and was fast for half as far: a door
+/// broken up to 3.7 m from its start instead of 6.8, a wall hit hard up to 3.2 m instead of 4.6 (the move test against 0.9.458;
+/// the user: "남은 거 고치자"). The even slowing timed to the clip keeps both: the clip on its own time, the slide as it went.
 /// Until 0.9.395 a slide played SlideToRun_Enter, then a cut of SlideToRun_10m's middle swaying on a sine, then SlideToRun_Exit,
 /// at a speed that eased in a line from the run's to the getting up's whatever the clips did; Shift with W stood it up at once
 /// into a sprint; SlideToRun_5m went unused (the user, 2026-11-24: "슬라이딩은 5m 모션이랑 10m 모션 있잖아 … 계단에서 내려갈 때
@@ -33,9 +35,9 @@ public sealed class SlideMove
     /// <summary>Where in its clip the slide is: down into it, along it, held on the loop, up out of it, or over (got up).</summary>
     public enum Phase { Down, Along, Held, Up, Over }
 
-    // The least a clip's own slide slows by on the whole (m/s²), so one that hardly slows still ends; a slope pulling to within
-    // NoEnd of that holds the slide on its loop (Holds).
-    private const float LeastSlowing = .5f, NoEnd = .2f;
+    // The least a slide slows by (m/s²), so one that hardly slows still ends; a slope pulling to within NoEnd of the slide's
+    // slowing holds it on its loop (Late), as does needing more than HoldSlack (s) longer than its clip has left to slow down.
+    private const float LeastSlowing = .5f, NoEnd = .2f, HoldSlack = .15f;
     // The slope's pull is followed this quickly (s), so a stair's edges don't jolt the slide.
     private const float SlopeFollow = .2f;
     // The clip's pace (a share of its own) changes by no more than this a second, from one part of the slide to the next too
@@ -46,8 +48,9 @@ public sealed class SlideMove
 
     private readonly PlayerMovement ctx;
     // The share of the clip's pace it went down into it at, the rate its run-out plays at, the share of the clip's speed the
-    // body had as it began to rise, the slope's pull followed (m/s²), and the clip's pace (a share of its own).
-    private float warp = 1f, rate = 1f, risen = 1f, pull, along = 1f;
+    // body had as it began to rise, the slide's slowing along it (m/s²), the slope's pull followed (m/s²), and the clip's pace
+    // (a share of its own).
+    private float warp = 1f, rate = 1f, risen = 1f, slowing = LeastSlowing, pull, along = 1f;
 
     internal SlideMove(PlayerMovement context) { ctx = context; }
 
@@ -73,6 +76,7 @@ public sealed class SlideMove
     {
         Moment = pull = 0f;
         rate = warp = risen = along = 1f;
+        slowing = LeastSlowing;
         Now = Phase.Down;
         Clip = -1;
         int count = (ctx.AbilitySettings.slideClips ?? "").Split(';').Length;
@@ -115,8 +119,16 @@ public sealed class SlideMove
         if (Now == Phase.Down)
         {
             Moment += dt;
-            if (Moment >= motion.Down) Now = Phase.Along;
-            return warp * motion.GlideAt(Moment);
+            float down = warp * motion.GlideAt(Moment);
+            if (Moment >= motion.Down)
+            {
+                // Its body down, the slide's slowing: from this speed to the clip's own where its body begins to rise, over
+                // the clip's own time to that.
+                Now = Phase.Along;
+                slowing = Mathf.Max(LeastSlowing, (Mathf.Min(down, ctx.SlideMaxSpeed) - motion.GlideAt(motion.Rises))
+                    / Mathf.Max(dt, motion.Rises - Moment));
+            }
+            return down;
         }
         if (Now == Phase.Up)
         {
@@ -145,23 +157,19 @@ public sealed class SlideMove
             }
             return speed;
         }
+        // Along it or held on the loop: the slide's slowing (less off the ground), the slope's pull and a brake on top.
+        speed = Mathf.Clamp(speed - (slowing * grip - pull + brake) * dt, 0f, ctx.SlideMaxSpeed);
         if (Now == Phase.Held)
         {
-            // Held on the loop it slows as its clip does on the whole, the slope's pull on top.
-            if (Holds(motion, speed, hold))
-                return Mathf.Clamp(speed - (Slowing(motion) * grip - pull + brake) * dt, 0f, ctx.SlideMaxSpeed);
+            if (Late(motion, speed, hold) > HoldSlack) return speed;
             Now = Phase.Along;
             Moment = hold;
             along = 1f;
         }
-        // Along it: the clip on its own time, and the body keeping its share of the clip's speed as the clip slows hard once
-        // down and then glides (off the ground, the grip's share of the clip's change), the slope's pull and a brake on top.
-        float before = Moment, was = motion.GlideAt(Moment);
+        // Along it, the clip on its own time.
+        float before = Moment;
         Advance(1f, dt);
-        float now = motion.GlideAt(Moment);
-        if (was > .1f) speed *= 1f + grip * (now / was - 1f);
-        speed = Mathf.Clamp(speed + (pull - brake) * dt, 0f, ctx.SlideMaxSpeed);
-        if (before < hold && Moment >= hold && Holds(motion, speed, hold))
+        if (before < hold && Moment >= hold && Late(motion, speed, hold) > HoldSlack)
         {
             Now = Phase.Held;
             Moment = hold;
@@ -171,6 +179,7 @@ public sealed class SlideMove
         {
             Now = Phase.Up;
             rate = RunOutRate(motion);
+            float now = motion.GlideAt(Moment);
             risen = now > .1f ? speed / now : 1f;
         }
         return speed;
@@ -185,12 +194,14 @@ public sealed class SlideMove
         Moment += along * dt;
     }
 
-    // Whether the slide holds on the loop at the middle of its clip (hold): the slope pulls it on harder than its clip slows on
-    // the whole, or it goes faster than travelWarp's most of the clip's own speed there, more than the clip can carry.
-    private bool Holds(ClipMotion motion, float speed, float hold)
+    // How much longer than its clip has left from this moment to its body rising the slide needs to slow to the clip's own speed
+    // there, at its slowing less the slope's pull (s): more than HoldSlack holds it on the loop. Infinite where the slope pulls
+    // about as hard as it slows.
+    private float Late(ClipMotion motion, float speed, float from)
     {
-        Vector2 warps = ctx.AbilitySettings.travelWarp;
-        return Slowing(motion) - pull < NoEnd || speed > Mathf.Max(warps.x, warps.y) * motion.GlideAt(hold);
+        float net = slowing - pull;
+        if (net < NoEnd) return float.PositiveInfinity;
+        return (speed - motion.GlideAt(motion.Rises)) / net - (motion.Rises - from);
     }
 
     /// <summary>Another PC's slide as its pose says: the same clip, where in it and its moment, going on between poses at the
