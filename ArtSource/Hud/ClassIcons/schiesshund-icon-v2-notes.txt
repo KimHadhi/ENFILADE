@@ -1,0 +1,16 @@
+Schießhund / 시순트 class icon v2, 2026-11-20.
+
+The user specified the animal as a Deutscher Schäferhund (German Shepherd).
+This built-in image_gen edit refines the approved v1 icon for that breed:
+broader triangular upright ears, a stronger wedge-shaped head and lower jaw,
+and a fuller cheek and neck ruff expressed with a few broad contour tufts.
+The left profile, sweeping base, diagonal collar and shoulder bounty diamond
+remain the same class motif and composition. See the adjacent saved prompt.
+
+Canonical source: ArtSource/Hud/ClassIconArt/schiesshund.png.
+Versioned original: ArtSource/Hud/ClassIcons/schiesshund-icon-v2.png.
+Runtime asset: Assets/_Project/Art/Resources/UI/Icons/Class_schiesshund.png.
+The v1 source remains available alongside v2 for comparison.
+
+Export uses the existing Tools/Icons/class_icons.py from_drawing pipeline
+to produce a 512x512 white RGBA mask. The Unity GUID is retained.

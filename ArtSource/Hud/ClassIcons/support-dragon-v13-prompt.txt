@@ -1,0 +1,22 @@
+Generation mode: built-in image_gen edit.
+Edit basis: v10; v11-v12 exaggerated facial changes rejected by user.
+User direction: a recognizably draconic design must retain the same elegant reduced design philosophy as other class icons; ugliness and exaggerated anatomy are not the solution.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Support class icon v13.
+Image 1 (dragon v10) is the EDIT TARGET. Images 2 and 3 (Knight horse, Ghost tiger) are the PRIMARY DESIGN-PHILOSOPHY references.
+
+The user wants a BEAUTIFULLY REDUCED CHINESE DRAGON in this family. Their icons idealize animals into elegant white shapes. Create that same graceful, composed, intentional quality.
+
+Refine v10's head with a SMALL NUMBER OF LARGE BEAUTIFUL CURVES:
+A long, refined dragon muzzle with a smooth slightly concave bridge, a gently lifted but understated nose tip, a clean continuous lower jaw, and one small sharp angular eye. Keep the forehead and brow continuous and poised. Let the head narrow gently toward the muzzle. The expression is calm, proud and focused.
+ONE graceful backward-sweeping antler-like horn with one short branch and one root. NO EARS.
+Suggest the dragon's whisker/cheek flow through ONE long tapering contour that flows from the REAR cheek directly into the neck's existing S-curve, as the references use mane/stripe curves. Keep this contour behind the eye and joined to the body. The dragon character comes from the relationship of this sweep, long muzzle, horn and supple neck.
+
+Prioritize flowing curve rhythm, proportion and generous clean white face area. Each feature should be as economical as the horse's face or tiger's cheek. Avoid the exaggerated knotted nose, stepped lumpy brow, craggy wrinkles, bulging cheeks, dangling beard, ornamental curls or aggressive monster caricature of a literal traditional-dragon illustration. No added facial detailing.
+
+Keep the head large and the composition compact beside the reference classes. Preserve v10's main neck/body S-curve and FOUR linked rifle cartridges; refine only adjacent curve transitions if needed so the neck and ammo-belt body read as one coherent sculpted mark. Preserve their position, size, bold spacing, lower silhouette and overall visual weight.
+
+STRICT FAMILY RULE: NO MOUTH, lip line, grin, open jaw, teeth, fangs, tongue or nostril. Face interior has ONLY the angular black eye. No black curl across the cheek. One horn, no ears.
+Pure solid WHITE shapes with BLACK negative space on a pure BLACK square. Clean polished two-tone emblem, same margins and optical scale as the family, few bold cuts and deliberate tapering points. No texture, shading, gray, glow, frame, text, UI or additional elements. Output ONE refined icon.
+

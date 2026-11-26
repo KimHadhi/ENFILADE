@@ -1,0 +1,16 @@
+Support Chinese dragon v18-v22, 2026-11-20.
+Generation: built-in image_gen.
+v18: reset both head and body from approved family references only, without earlier rejected dragon images. Explicit no-whisker direction.
+v19: reworked face planes and crosswise linked cartridges.
+v20: removed small detached case-rim details and smoothed the inner neck cusp.
+
+Latest user steering after v19/v20: current direction is promising; change to TWO horns, rear horn visibly behind; eye less fierce and aligned with other class icons; neck needs refinement; ammunition must not bend.
+v21: layered smaller rear horn behind main horn, plain triangular eye, simplified neck/throat, straight cartridge directions.
+v22: targeted cleanup of cartridge sides, axes and bases, preserving v21's horns/eye/neck. Visual review shows straight-sided parallel rounds; geometric identity is an art-direction target, not a measured pixel-identical claim.
+
+Current review output: support-dragon-v22.png.
+Exact final prompt: support-dragon-v22-prompt.txt.
+Broader requested changes: support-dragon-v21-prompt.txt.
+No whiskers, beard, barbels, ears, mouth line, teeth or nostril. Two horn silhouettes, smaller lower rear horn separated behind front one. Four crosswise cartridges and curved connector retained.
+Saved PNG copy verified by SHA256. This is a review candidate; no user final approval or runtime asset replacement.
+

@@ -1,0 +1,14 @@
+Support Chinese dragon v28-v29, 2026-11-20.
+Generation: built-in image_gen edits.
+Latest user requirement: exactly FOUR ammunition shapes with visual consistency.
+
+v28: changed v27's two rounds into four matching shapes using one master silhouette as direction; head/neck/body retained.
+v29: uniformly enlarged the four motifs and reduced gaps to keep a substantial lower-body rhythm. The requested 20% enlargement and identical-copy relationship are art-direction targets, not measured pixel-identity claims.
+
+Current review output: support-dragon-v29.png.
+Exact final prompt: support-dragon-v29-prompt.txt.
+Initial four-round prompt: support-dragon-v28-prompt.txt.
+Visual checks: exactly four white cartridge-derived silhouettes; similar size, profile and repeated tip/shoulder/case/base treatment; straight axes; no facial additions; no whiskers/beard/ears/mouth/nostril.
+Sampled lower-region white proportion: 29.6% (selected original reference 32.2%; same x15%-85%, y60%-90% region at 4px intervals).
+PNG copy verified by SHA256. User approval pending; previous versions preserved; runtime asset not replaced.
+

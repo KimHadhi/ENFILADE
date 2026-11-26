@@ -1,0 +1,22 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v25.png.
+Design choice: two larger straight ammunition silhouettes rather than four undersized or squat cells, to retain the user's selected lower-body fullness while keeping recognizable proportions. Cartridge count was not a user-fixed requirement.
+Head/neck/crown/horns remain as in the restored full design.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: flat fictional-game Support dragon emblem v27.
+Image 1 (v25) is the EDIT TARGET and the correct FULL design baseline. Image 2 (v24) is only a reference for a clean slender stylized ammunition outline.
+
+Keep the ENTIRE head, muzzle, horns, eye, neck, inner crescent, rear contour points, long upper body sweep, silhouette position and black margins unchanged.
+
+CHANGE ONLY THE LOWER DIAGONAL AMMUNITION-BODY BAND:
+Replace the four stubby segmented cells with TWO MUCH LARGER COMPLETE STRAIGHT RIFLE-CARTRIDGE SILHOUETTES, nose-to-tail along the same diagonal lower sweep.
+Make each round approximately half of the lower sweep's usable length, and large enough that its broad white casing occupies most of the band's available thickness. The TWO large rounds together must restore the same substantial white mass as the existing lower band, not leave a black channel with little objects.
+Each round has roughly 5:1 overall length-to-case-width proportion: a long straight case, understated shoulder narrowing to a short neck, a relatively short pointed tapered projectile, and a simple flat base. No interior component-divider bands. The silhouette alone identifies a complete rifle round.
+Use TWO matching rigid copies, each rotated slightly to follow the diagonal placement. Straight central axes, parallel straight case walls, bases perpendicular to axes. No curvature, warping, stubby boxes, capsule noses, oversized rims, collars or mechanical microdetail.
+Both projectile tips must be visible; leave one deliberate black separating notch between the two complete rounds, not several black bars that turn one bullet into a segmented tube.
+Their large white case faces form the OUTER LOWER EDGE of the dragon body. The cases share local joins/contours with the continuing dragon neck rather than sit inside an enclosing rail. Keep the original tapered lower-left finish and the same overall lower band footprint. No thin cage outline, floating round icons, extra bullets or decorative pieces.
+
+Prioritize the user's selected filled sculptural design while making two clear, well-proportioned ammunition silhouettes. Keep roughly the existing amount of white in the lower third.
+Pure WHITE on pure BLACK square. No whiskers, beard, ears, mouth line/opening, teeth, nostril, gray, shading, texture, lighting, text, frame, UI or watermark. Output ONE refined game emblem.
+

@@ -1,0 +1,5 @@
+v33: Built-in image generation edit based on the user's red body-width marker on v31.
+v32 first pass left visible width differences; v33 widened the left bend and returning tail and reduced the variation around the right turn.
+Visual check: the lower coil has a more consistent broad cross-section; final tail tip tapers; four matching straight cartridge silhouettes and the head remain; no red mark or extra facial elements.
+Generated output copied into the project and verified with SHA256. No runtime asset replacement.
+Prompt: support-dragon-v33-prompt.txt.

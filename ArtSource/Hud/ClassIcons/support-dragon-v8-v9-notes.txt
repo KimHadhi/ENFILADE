@@ -1,0 +1,21 @@
+Support dragon v8-v9 family match, 2026-11-20.
+Generation: built-in image_gen.
+User correction: Support v7 looks inconsistent beside other class icons.
+
+v8 redesign uses the approved Knight, Assault and Ghost icons as primary proportions/style references. Face enlarged; neck/body curve compressed into the compact family footprint; white mass increased; lower curve still carries the ammo motif.
+v9 removes the mouth-like internal cheek curl from v8, and replaces end-to-end ammunition with parallel cartridges linked across the lower body curve.
+
+Current review candidate: support-dragon-v9.png.
+Exact final prompt: support-dragon-v9-prompt.txt.
+Earlier redesign prompt: support-dragon-v8-prompt.txt.
+
+White-area samples, same 8px sampling interval:
+Knight: 28%
+Assault: 29.3%
+Ghost: 27.8%
+Support v9: 25.4%
+Rejected v7: 13.5%.
+
+Visual inspection: large left-profile head, substantial white areas and curved black cuts consistent with references; compact neck/belt form; no mouth line or teeth; four cartridges joined side by side.
+PNG copy verified by SHA256. Previous versions retained. Existing runtime icons untouched.
+

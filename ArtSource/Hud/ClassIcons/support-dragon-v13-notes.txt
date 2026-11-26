@@ -1,0 +1,16 @@
+Support Chinese dragon v13, 2026-11-20.
+Generation: built-in image_gen edit.
+Edit basis: v10, with approved Knight/Ghost as design-philosophy references.
+User correction: dragon recognition must follow the same refined design philosophy as the other class icons; exaggerated unattractive anatomy is not the solution.
+
+Direction:
+- Restore smooth broad face planes and one clean angular eye.
+- Use a restrained lifted muzzle, one horn and continuous cheek/neck flow.
+- Remove the lumpy brow/nose and dangling beard treatment of v11-v12.
+- Keep the compact family footprint and four-round linked ammo-body.
+
+Visual inspection: smooth continuous forehead and jaw; single visible horn root; no ears, internal mouth line, nostril or teeth; four linked rounds retained. This is a review concept, not a user-approved final.
+Exact final prompt: support-dragon-v13-prompt.txt.
+Output: support-dragon-v13.png.
+PNG copy verified by SHA256. Prior versions preserved; runtime icon not replaced.
+

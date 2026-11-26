@@ -1,0 +1,27 @@
+Generation mode: built-in image_gen edit.
+Edit target: user's newly attached preferred composition, codex-clipboard-1275ea77-011b-4d49-82a2-9ddfa3440598.png (v18 design).
+User direction: overall design feels good; make ammunition recognizable and improve muzzle/crown dragon identity while retaining the design.
+Earlier still-applicable direction: layered rear horn, calmer simple eye, straight cartridges; no whiskers, ears or mouth.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon Support emblem v23.
+Input image 1 is the EXACT EDIT TARGET selected by the user as their preferred overall design (v18). Image 2 (approved Ghost tiger) is a restraint/proportion reference only.
+The user likes this image's flowing composition and integration of the lower body. Preserve that design and refine it locally; do not substitute the composition of a later dragon draft.
+
+PRESERVE THE GOOD STRUCTURE:
+The large left-profile head, compact square footprint, generous plain white face, coiling neck and its internal black channel, two broad rear-neck contour points, the long diagonal lower body sweep and the lower-left taper. Preserve the neck/body curves and silhouette footprint as close as possible. Keep the same bold white/black density, margins and simple angular eye. No new body loop, broad torso, necklace, shield panel or generic ribbon stack.
+
+REFINE TWO HEAD AREAS:
+- Snout: keep the same compact eye-to-nose distance. Give the upper nose profile a restrained upward-lifted ridge and the front a softly squared reptilian plane. Join bridge, brow and short firm jaw into a beautiful draconic profile. Do not elongate the snout, puff it into a buffalo nose or add knotted monster anatomy.
+- Crown: replace the smooth horse-like forehead arc and small forward-facing crown spike with one clean sculpted Chinese-dragon crown ridge, resolving naturally into the horn root. Use a low deliberate change of plane/curve, not a lumpy brow or a sharp ornamental crown. A dignified dragon skull, no wrinkles or added facial markings.
+Carry forward the user's earlier TWO-HORN request discreetly: retain the primary horn and show a smaller narrower far horn emerging from behind it, its root hidden by the foreground root. Lower placement and a clear black overlap gap establish that it is BEHIND, not a third branch growing from the same stem. Keep the horns restrained and the head legible. No ears.
+
+MAKE THE LOWER BODY READ AS AMMUNITION WITHOUT LOSING ITS FLOW:
+The current lower row reads as one segmented tube. Within that SAME diagonal curved lower-body envelope, show FOUR complete linked rifle cartridges SIDE BY SIDE, their axes across the lower sweep, not one long bullet cut into blocks.
+Each round needs a pointed projectile, a short clear shoulder into a longer straight casing, and a flat case base. Construct one simple straight round and repeat its proportions four times. Each axis and casing wall stays STRAIGHT, casing sides parallel; only the placement/linking strip follows the body's curve. Small rigid rotations are allowed; no warped or banana-shaped rounds.
+Cartridge tips sit along the inner edge of the existing lower sweep, cases/bases along its outer edge. A single slim linking strip joins them near the bases and continues into the body's existing curves. Keep the lower silhouette tapered and cohesive rather than a straight ammunition rack hanging below the animal. No floating rim pills, extra dots, mechanical microdetail or heavy outlines.
+
+ABSOLUTE FAMILY/USER RULES:
+NO WHISKERS, beard, barbels, moustache, chin tendrils or facial hair. NO EARS. NO mouth seam, opening, lips, smile, teeth, fangs, tongue, nostril or internal cheek curl. The eye is the only black facial mark.
+Pure solid WHITE and BLACK on a black square. Same reduced sculptural class-family style, few broad purposeful cuts, beautiful curve rhythm and tapered points, legible at 44px. No gray, texture, shading, glow, text, border, UI, watermark, wings or legs. Output ONE locally refined icon.
+

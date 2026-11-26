@@ -1,0 +1,21 @@
+Generation mode: built-in image_gen edit.
+Clean target: support-dragon-v29.png.
+Path guide: user's red annotated image codex-clipboard-de0f3649-1235-4571-8072-ce131c347f56.png.
+User direction: extend the dragon body along the indicated lower path so the body itself acts as an ammunition belt. Preserve the four matching cartridges and existing head design.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: flat fictional-game Support dragon emblem v30.
+Image 1 is the CLEAN EDIT TARGET, v29. Image 2 is the user's ANNOTATED GUIDE: the RED STROKE indicates the requested continuation of the dragon body beneath the four existing motifs.
+
+MAIN EDIT: EXTEND THE DRAGON'S OWN BODY ALONG THAT RED-GUIDED FLOW.
+Continue the existing long white body from its lower-left tapered end. Turn that end smoothly beneath the four existing cartridge silhouettes, sweep to the RIGHT closely below their lower edges, then make a graceful rounded return at the far right and flow back toward the lower middle/left, ending in a clean tapered tail. Follow the user's red path for the general route and compact placement.
+Make this a continuous SOLID WHITE body ribbon with smoothly changing thickness, roughly 30-45px through its main run in the 1254px image, tapering at the final end. The original lower-left body end must visibly continue into this new length, not remain as a separate point beside a detached loop.
+The extended body becomes the cartridge-belt connector. It should pass close beneath the existing four shapes and connect naturally to their lower case/base region through restrained local white joins. Keep enough simple black clearance to read each of the FOUR existing matching silhouettes. Keep their axes straight.
+The curve should read as one long supple coiling Eastern-dragon body serving as the belt, with an elegant U-turn and return tail. Not a rectangular box, thin outlined speech bubble, separate oval badge, broad solid pedestal or new chest. Preserve the original sculptural white-mass / black-channel style.
+
+PRESERVE EVERYTHING ABOVE THIS EXTENSION:
+The entire head and muzzle, calm eye, crown, layered horn silhouettes, neck, existing inner crescent, rear contour points and current upper body sweep remain unchanged. The FOUR existing cartridge silhouettes retain their exact count, shape, size, orientation and placement. Do not redraw or add more rounds. Use the extension to join the existing design, rather than rearrange it.
+Keep the same square canvas and safe black margin; fit the new lower return within the spare black area shown in the annotated guide.
+
+Remove ALL red markup in the finished image. Pure WHITE on pure BLACK only. No whiskers, beard, ears, mouth line, teeth, nostril, gray, texture, shading, lighting, glow, text, frame, watermark or UI. Output ONE edited emblem.
+

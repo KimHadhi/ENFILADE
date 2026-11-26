@@ -1,0 +1,21 @@
+Support Chinese dragon v24, 2026-11-20.
+Generation: built-in image_gen edit.
+Target: support-dragon-v23.png.
+Latest request: extend the muzzle somewhat for dragon identity; redraw the poorly proportioned ammunition, rather than merely adding divisions between components.
+
+Reference work:
+- Aguila manufacturer .223 cartridge photo inspected for the overall slender outline, case/neck/shoulder proportions and understated rim:
+  https://www.aguilaammo.com/products/223-rem-full-metal-jacket
+  Local: support-cartridge-reference-aguila-223.png
+- Sellier & Bellot image support-cartridge-reference-m193.png contains the projectile only and was not used as the complete-cartridge reference.
+
+The first image request with the actual cartridge photo as image input was blocked by the image tool at input moderation (violence category). No output exists for that first prompt.
+A subsequent request explicitly for the flat fictional-game emblem and original stylized ammunition pictograms succeeded, using ONLY v23 as the image input.
+Exact successful final prompt: support-dragon-v24-retry-prompt.txt.
+Initial blocked prompt: support-dragon-v24-prompt.txt.
+
+Visible outcome: muzzle projects farther forward; four lower motifs have longer thinner straight cartridge silhouettes with visible shoulder/neck/tapered tip, no drawn transverse component bands or oversized base rings. Chosen neck/body and diagonal channel retained. Two horn silhouettes, no whiskers/beard/ears/mouth/nostril, plain angular eye.
+Review candidate: support-dragon-v24.png.
+The requested 15% muzzle increase and silhouette proportions are direction targets, not measured output claims.
+PNG copy verified by SHA256. Previous versions preserved; runtime icon not replaced.
+

@@ -1,0 +1,20 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v18.png.
+Refinements: compact reptilian outer facial planes and proper transverse linked cartridges in the new diagonal body sweep.
+Explicit user prohibition: no whiskers or beard of any kind.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon SUPPORT class icon v19.
+Input image is the EDIT TARGET, the fresh v18 composition. Keep its large head scale, compact curved body path, single horn, simple white/black family style and margins.
+
+ABSOLUTE: NO WHISKERS, NO BEARD, NO BARBELS, NO MOUSTACHE, NO CHIN TENDRILS. NO EARS. NO depicted mouth, lips, smile, opening, teeth, fangs, tongue or nostril. Only the angular black eye inside the face.
+
+TWO REFINEMENTS:
+1. Turn the head's smooth mammal-like nose/forehead into a more unmistakable CHINESE DRAGON SKULL using only the OUTER SILHOUETTE. Give it a compact softly squared reptilian snout with a slight lifted upper nose ridge, a clear subtle brow ledge and a firm slim chin. A measured change of plane from nose bridge to forehead, with the eye settled naturally below it. More horizontal skull structure and less of the long smooth sloping horse wedge. Keep the eye-to-nose distance compact and the white face area broad, clean and elegant. No craggy bumps, wrinkles, puffy jowls, beard appendage or new internal facial cuts. Keep the single horn rooted naturally in the rear crown and the nape crest connected to the body.
+
+2. Replace the LOWER DIAGONAL ROW OF SEGMENTS. It currently looks like ONE LONG BULLET cut into blocks. Instead it must be FOUR COMPLETE RIFLE CARTRIDGES SIDE BY SIDE, LINKED INTO THE CURVED LOWER BODY.
+The belt's path is the existing diagonal lower sweep from bottom-left toward middle-right. EACH cartridge's long axis points UPWARD/INWARD ACROSS that path, not along it. Four pointed projectiles follow the upper/inner edge of the lower body; four long simple rectangular casings and their bases follow the lower/outer edge. Fan their axes gently through the bend. A single continuous white linking strip crosses the casings near their lower third and joins all four.
+Use broad black spaces between the cartridge bodies, no small mechanism details. The linked rounds themselves form this lower neck/body continuation: the body's right turn flows into the belt and its left end tapers away. No torso panel behind them, no straight upright row on a plinth, no end-to-end bullet chain. Keep the same compact flowing diagonal composition and intentional white/black density, modifying only the needed lower-band width for cartridge geometry.
+
+Do not add new body loops, long thin hairs, separate symbols or extra features. Keep one horn and no ears. Pure solid WHITE on BLACK square, bold sculptural curves and pointed terminations matching the class family. No gray, shade, texture, glow, border, text, watermark or UI. Output ONE refined icon.
+

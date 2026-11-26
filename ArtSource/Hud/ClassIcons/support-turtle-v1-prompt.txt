@@ -1,0 +1,15 @@
+Generation mode: built-in image_gen.
+Concept: B · 거북 / Chinese Support class.
+Status: concept exploration; existing runtime assets are not replaced.
+
+Use case: logo-brand.
+Asset type: first concept for ENFILADE's Chinese SUPPORT class emblem, part of an established seven-class animal-icon family.
+Input images 1, 2 and 3 are APPROVED STYLE REFERENCES ONLY (Knight horse, Assault eagle, Ghost tiger). Create ONLY the new animal described below; do not redraw the references or make a comparison sheet.
+Design language: a left-facing animal head and short neck/shoulder bust, one compact roughly square composition, centered at 78-82% canvas occupancy with generous black safety margins. Pure solid WHITE graphic masses with bold BLACK negative-space incisions on a pure BLACK square background. Smooth sculptural curves ending in a few decisive wedge points, one narrow angular black eye. Match the supplied references' restraint, mass, optical scale and deliberate curves.
+Most important invariant: these animal emblems DO NOT HAVE MOUTHS. Draw no mouth line, no lip, no open jaw cavity, no teeth, no smile, no nostril details. The muzzle is one uninterrupted white mass. Convey personality with eye and outer contour only.
+Class identity: Support supplies teammates' ammunition, carries a machine gun, builds and repairs barricades. Integrate the support motif specified below INTO the animal's anatomy: contours and negative spaces do double duty, as the horse's sword is a neck turn and the eagle's bullet trails are feathers. The animal and motif must feel like one designed mark, not an animal portrait above a separate object.
+Keep the form legible at 44px. Broad white areas, at most a few large internal cuts, no microdetail. Output a single polished icon. No text, lettering, label, numeral, flag, national badge, circle, shield frame, decorative border, panel layout, watermark, gradient, grey, shadow, glow, texture, realistic lighting or 3D. Do not include a second animal or human.
+
+Subject: a sturdy TORTOISE guardian, a clearly recognizable left-facing turtle head with a short broad beak-like snout (no mouth seam), one sharp black eye, a thick short curved neck and a large high domed SHELL rising behind the neck to the right. A HEAD-AND-SHELL SHOULDER BUST, not a full crawling animal: no legs, feet or tail, no ocean flippers.
+Support integration: the shell is built from THREE broad interlocking plate-like masses. Two deliberate thick black seams and one angled reinforcing brace suggest a BARRICADE's planks and structural bracing, while also remaining a natural shell pattern. Make the shell rim the icon's confident sweeping lower shoulder/base. No hexagonal mosaic, bolts, fine woodgrain, separate fence badge, shield frame or toolbox. Bold quiet dependable fortification, simple enough to belong beside the horse and eagle.
+

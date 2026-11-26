@@ -1,0 +1,59 @@
+{
+  "class": "schiesshund",
+  "version": 2,
+  "date": "2026-11-20",
+  "animal": "Deutscher Schaeferhund / German Shepherd",
+  "generator": "built-in image_gen edit",
+  "edit_target": "ArtSource/Hud/ClassIcons/schiesshund-icon-v1.png",
+  "source_size": [
+    1254,
+    1254
+  ],
+  "runtime_size": [
+    512,
+    512
+  ],
+  "runtime_mode": "RGBA",
+  "runtime_alpha_bbox": [
+    73,
+    44,
+    445,
+    462
+  ],
+  "runtime_sha256": "259fd8127ad88e7c2ce46f0a587df101a263c4c6e4214fe8ff1de5a66eab4ce4",
+  "runtime_rgb_all_white": true,
+  "unity_guid_preserved": true,
+  "only_runtime_class_asset_changed": [
+    "Assets/_Project/Art/Resources/UI/Icons/Class_schiesshund.png"
+  ],
+  "small_sizes": {
+    "44": {
+      "alpha_bbox": [
+        4,
+        1,
+        41,
+        42
+      ],
+      "max_alpha": 255
+    },
+    "24": {
+      "alpha_bbox": [
+        1,
+        0,
+        23,
+        24
+      ],
+      "max_alpha": 255
+    },
+    "16": {
+      "alpha_bbox": [
+        0,
+        0,
+        16,
+        16
+      ],
+      "max_alpha": 255
+    }
+  },
+  "in_game_visual_check": "not performed"
+}

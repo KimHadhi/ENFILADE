@@ -1,0 +1,13 @@
+Support Chinese dragon v11-v12, 2026-11-20.
+Generation: built-in image_gen edits.
+User request: develop the current design to look more recognizably like a dragon.
+
+v11: reshaped stepped brow, sculpted raised snout and jaw; added a short outer cheek/beard curve; retained one branching horn and the linked four-round ammo-body. Output added unnecessary nostril and ear-like rear-cheek groove.
+v12: removed those two interior marks while keeping the newly sculpted dragon profile and outer beard curve.
+
+Current review image: support-dragon-v12.png.
+Exact final cleanup prompt: support-dragon-v12-prompt.txt.
+Main development prompt: support-dragon-v11-prompt.txt.
+Visual review: one visible horn root, no ears, no internal mouth line/teeth/nostril; larger head and compact silhouette retained; four linked rounds at the lower curve.
+Final PNG copy verified with SHA256. Prior versions preserved. Runtime class asset not replaced.
+

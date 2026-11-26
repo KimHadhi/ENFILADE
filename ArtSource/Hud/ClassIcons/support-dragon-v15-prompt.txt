@@ -1,0 +1,22 @@
+Generation mode: built-in image_gen edit.
+Body/layout target: support-dragon-v14.png; face rejected and to be fully redesigned.
+User direction: preserve class-family proportion and refined shape language while making the animal recognizably an Eastern dragon.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon SUPPORT class emblem v15.
+Image 1 is the body/layout EDIT TARGET, dragon v14. Its mammal-like face is REJECTED and must be fully redrawn. Images 2 and 3 are approved Ghost/Assault icons: copy their economical graphic design language, not their species.
+
+PRIMARY CRITERION: immediately recognizable CHINESE / EASTERN DRAGON, gracefully reduced to the same few white masses and black cuts as the reference family.
+
+COMPLETELY REDESIGN THE HEAD:
+A COMPACT angular dragon skull, a short-to-medium softly squared REPTILIAN muzzle, a clear sculpted upper nose ridge, a smoothly sloping forehead with one purposeful projecting brow plane, and a small sharp angular black eye set beneath it. The nose-to-eye projection must remain compact like the Ghost reference. The muzzle is neither the long thin snout of v13 nor the rounded bull/lion/deer snout of v14. Shape nose, bridge, eye, brow and cheek as an integrated DRAGON PROFILE rather than modifying the mammal muzzle.
+ONE antler-like horn with one root and a short fork sweeps backward from the rear crown. NO EARS.
+Give the dragon ONE recognizably long, elegant WHISKER rooted at the SIDE OF THE UPPER SNOUT. It projects outside the face and sweeps backward along the external jaw/throat space, ending in a single confident curved taper that joins the neck flow. Use a broad WHITE sculptural strand against black with enough thickness for small HUD sizes, not a tiny hairline. The main jaw stays continuous and mouthless. This is the characteristic Eastern-dragon whisker, not a beard under the chin, fang, lip or an internal black smile. Keep the strand restrained and integrated; no collection of curly ornaments.
+The rear cheek and nape use one or two broad sweeping contour points, as reduced and deliberate as the tiger's stripe rhythm. A beautiful dignified dragon, not a craggy snarling monster. Broad plain white face area with just the black eye inside, no other facial details.
+
+KEEP THE LOWER TWO THIRDS' CORE STRUCTURE:
+The existing flowing neck/body S-curve, FOUR linked ammunition cartridges, connecting strip and lower silhouette. Preserve their scale, spacing and square footprint; make only the necessary head-to-neck transition. No large western-dragon chest, new wings, limbs or full-body loop.
+Match the other classes' large head, compact mass, broad black channels, smooth curves resolving in a few sharp tips and consistent margins. The whisker should reinforce the same neck/belt curve, not clutter the face.
+
+STRICT: NO depicted mouth, seam, lips, smile, mouth opening, teeth, fang, tongue or nostril. No second horn or ear. Pure WHITE on pure BLACK square. No gray, shading, texture, lighting, glow, text, frame, UI, labels, watermark or additional animal. ONE revised icon.
+

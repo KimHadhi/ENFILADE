@@ -1,0 +1,12 @@
+Chinese Support dragon refinements v2-v4, 2026-11-20.
+Generated using the built-in image_gen tool.
+User feedback: likes the buffalo's design, prefers dragon as the animal, dislikes the current dragon design.
+
+v2: heavier head and short neck, small three-round ammunition harness.
+v3: longer S-curve neck and compact ammunition harness.
+v4: fresh silhouette using buffalo, Knight and Ghost as style references only; previous dragon removed from image references. Separate curved antler-like horns, connected cheek/beard curve, ammunition cutouts in lower shoulder.
+
+Every image is stored beside its exact final -prompt.txt.
+Visual inspection: left-facing white silhouette on black, closed uninterrupted muzzle, no internal mouth seam or teeth.
+Original files preserved. These are review concepts; no runtime assets replaced.
+

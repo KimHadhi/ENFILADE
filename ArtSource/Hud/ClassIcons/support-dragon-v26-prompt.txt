@@ -1,0 +1,21 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v25.png.
+Target: retain restored original filled lower body; refine its large cartridge-derived cells through local black seam/contour changes instead of inserting tiny separate illustrations.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: original black-and-white fantasy-game class emblem, Support dragon v26.
+The input is the EDIT TARGET v25. Its restored substantial filled composition is the desired baseline. This is a LOCAL refinement of the lower linked-body forms only.
+
+Keep ALL head and neck geometry unchanged: modestly extended muzzle, eye, crown, horns, coiling neck, negative crescent, overall scale, white/black style and margins.
+
+Within the LOWER DIAGONAL LINKED WHITE BAND, make the FOUR large white cells more recognizable as stylized rifle-cartridge body links:
+- Keep each cell's substantial case mass and its participation in the OUTER LOWER EDGE. Do not shrink the cells into little isolated objects.
+- Refine the left/forward portion of each cell into a clear pointed projectile, short narrow neck and clean shoulder leading into the broad straight case. Use the existing black gaps as the separating cuts around those narrowed portions. The black seam changes shape to reveal the cartridge profile, while the main white case remains large.
+- Give each case straight unbowed sides and a clean flat base, not a curved sausage segment. Rotate complete rigid forms gently through the arc rather than bending them.
+- Keep a few generous deliberate black cuts only. NO drawn component-divider rings, oversized collars, tiny rims, extra dots or dense mechanical details.
+The result is an IDEALIZED GRAPHIC EMBLEM: preserve the original thick filled white rhythm rather than imposing a thin product-photo proportion. The linked cartridge-derived forms ARE the lower body. Their edges and local white joins share the animal's contour, as the other class icons fuse their traits into anatomy.
+
+Preserve at least roughly 90% of the existing lower-region white area. No enclosing thin rail and no black moat with small floating cartridge illustrations inside. No change to the lower band's overall position, sweep, generous thickness, lower-left point or broad connection into the neck. Use shaped black seams and local contour refinements to suggest the individual complete rounds while keeping that FULL silhouette.
+
+Pure WHITE on BLACK. No whiskers, beard, barbels, ears, mouth line/opening, lips, smile, teeth or nostril. No text, gray, texture, lighting, glow, border, watermark, UI or additional elements. Output ONE cohesive flat game emblem.
+

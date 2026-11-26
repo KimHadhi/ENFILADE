@@ -1,0 +1,6 @@
+v30: Built-in image generation edit of v29 using the user's red body-extension guide.
+Extended the existing lower-left body into a white ribbon beneath four matching straight cartridges, with a rightward U-turn and tapered return tail.
+Visual check: four cartridges retained; head, eye, layered horns and upper neck retained; no red guide, whiskers, ears or added facial details.
+Saved output copied into this folder and verified against the generated original with SHA256.
+Exact prompt: support-dragon-v30-prompt.txt.
+No runtime asset replacement.

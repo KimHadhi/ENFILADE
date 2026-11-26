@@ -1,0 +1,29 @@
+Generation mode: built-in image_gen; new composition from approved family references only.
+User direction: both v17 head and body rejected; must read as an Eastern dragon within the existing class-family design philosophy. User expressly prohibits whiskers.
+
+Use case: logo-brand.
+Asset type: ENFILADE Chinese/Eastern DRAGON Support class emblem, completely new design v18.
+Input images 1, 2 and 3 are approved Knight, Assault and Ghost icons. They are the PRIMARY graphic-style references. Create a new sibling emblem in this exact family; do not draw those animals.
+
+This is a RESET OF BOTH HEAD AND BODY, not a tweak of a previous dragon draft.
+
+NONNEGOTIABLE USER CONSTRAINTS:
+NO WHISKERS of any kind. No beard, moustache, barbels, chin tendrils or dangling hair.
+ONE visible horn, NO EARS.
+NO MOUTH depiction: no mouth line, lips, opening, grin, fangs, teeth, tongue or nostril. The face is a solid white shape with one angular black eye.
+
+ELEGANT COMPACT EASTERN-DRAGON HEAD:
+A proud sculptural dragon skull with a compact gently squared REPTILIAN snout, a restrained raised upper nose ridge, a clear low brow plane and a clean firm jaw. Distinctive silhouette transitions between nose, brow, crown and cheek make it a dragon, without adding facial wrinkles or grotesque bumps. The eye-to-nose projection is compact like the Ghost reference; no long thin horse-like snout and no round cow-like nose.
+ONE naturally tapering antler-like horn grows from the REAR crown, sweeping backward along the head/neck gesture, with at most one short branch. It has a believable root on the skull, not an oversized flame growing out of the forehead. No ear or ear-shaped leaf.
+A short restrained dorsal crest along the nape may use TWO large sculptural turns to reinforce the dragon identity. They belong to the neck's outer contour, not fur or separate facial appendages.
+
+NEW BODY: THE SERPENTINE NECK ITSELF BECOMES THE AMMO BELT:
+The LARGE head occupies the upper half. From the rear skull a supple neck curves down the right, coils closely beneath the jaw, then sweeps diagonally back toward the lower left as one strong compact S-shaped body gesture. The head fills the top of this coil; leave only modest generous black channels between turns, not a huge empty ring or a tiny head on a snake.
+Develop a coherent neck with smoothly changing thickness, an elegant tighter turn, and a clear tapering lower return. It should read as the long coiling body of an EASTERN DRAGON rather than a broad Western-dragon chest, layered mane or two generic swoosh ribbons.
+Along the TURNING LOWER RETURN, the dragon's belly/body transitions into FOUR connected rifle cartridges. Fan the cartridges gently around the curve, with their long axes across the belt. Their tips form the belly edge; their casings and one continuous connector form the opposite edge. Bold black separations double as the body's divisions. The belt IS the continuing body, with no torso panel behind it.
+Make this a curved diagonal wrap integrated into the coil, not a straight row of upright bullets across the bottom and not a necklace on a big chest. Retain accurate simple cartridge shapes, omit tiny mechanical details.
+
+FAMILY PHILOSOPHY:
+Large immediately readable animal head, compact roughly square silhouette, approximately the reference icons' white/black density and safe margins. Broad connected WHITE masses, a few bold BLACK cuts, smooth deliberate curves ending in just a few decisive tips. Beautiful idealized animal mark, calm controlled expression and elegant proportions. Legible at 44px, not a literal detailed mythical illustration.
+Pure solid WHITE on pure BLACK square. No gray, texture, lighting, gradients, glow, frame, label, text, UI, flag, watermark, limbs, wings or extra animals. Output ONE new finished emblem only.
+

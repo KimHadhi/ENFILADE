@@ -1,0 +1,16 @@
+Support Chinese dragon v5, 2026-11-20.
+Generation: built-in image_gen edit.
+Target: user-attached copy of support-dragon-v4.png.
+User feedback: v4 is the best design basis so far, but muzzle/face are unattractive, ear position and shape are wrong, neck/mane structure is unclear, and the class motif should be an ammunition belt.
+
+Visible v5 changes:
+- Redrawn muzzle bridge, nose silhouette, cheek and jaw.
+- Smaller backward-swept ear at rear horn root.
+- Removed dangling front beard/ribbon and simplified nape into continuous neck.
+- Five white linked cartridges in a curved black shoulder band.
+
+Visual review: left-facing white/black composition retained; two branching antlers retained; muzzle has no mouth line, opening or teeth; ammunition strip is visibly linked.
+Exact final prompt: support-dragon-v5-prompt.txt.
+Saved image: support-dragon-v5.png.
+Previous versions preserved; no runtime icon replaced.
+

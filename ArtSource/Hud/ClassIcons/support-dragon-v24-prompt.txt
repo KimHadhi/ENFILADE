@@ -1,0 +1,28 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v23.png.
+Latest user direction: make the muzzle a little longer for dragon identity; previous cartridge drawing rejected despite the component divisions.
+Ammunition geometry reference: manufacturer's actual .223 cartridge photograph, support-cartridge-reference-aguila-223.png.
+Source page: https://www.aguilaammo.com/products/223-rem-full-metal-jacket
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon Support icon v24.
+Image 1 (v23) is the EDIT TARGET. Image 2 is a MANUFACTURER PHOTOGRAPH OF A REAL .223 RIFLE CARTRIDGE, GEOMETRY/PROPORTION REFERENCE ONLY.
+
+MAKE TWO CHANGES:
+
+1. SLIGHTLY LONGER DRAGON MUZZLE.
+Increase the existing eye-to-nose projection by ONLY about 15%. Extend the nose a little farther left and let the bridge and jaw flow into that extra length smoothly. Keep the current muzzle height, eye placement, large head scale and balanced crown. A modest low forward reach for a more draconic profile, not the excessively stretched thin snout of an earlier draft. Keep the nose softly squared and understated. No lumps, beard, whisker, nostril or mouth.
+
+2. REDRAW THE FOUR ROUNDS FROM THE ACTUAL PHOTO'S OUTER SILHOUETTE.
+The current rounds are too short, thick and toy-like. Remove their chunky cartoon shapes and oversized bands completely.
+Study image 2: a LONG SLENDER straight case, a clear angled shoulder narrowing into a short neck, a pointed OGIVE projectile, and a thin understated base rim no wider than the body. The overall length is roughly 5.5-6 times the maximum case width. Reproduce that elegant whole-round outline as a SINGLE UNBROKEN SOLID WHITE SILHOUETTE, with the photo's proportions. Do not add transverse black divider lines. Recognition should come from the correct outer shape, not drawing separate component bands.
+The long case is most of the round; the exposed projectile is relatively short. No fat capsule nose, huge triangle cap, mushroom rim, bulbous disk, rounded rectangular cartridge or bent case.
+Use FOUR equal copies of that same correct straight silhouette. Keep the existing row's inline diagonal arrangement in the lower body sweep: projectiles point down-left along the sweep. Translate and rotate the complete rigid rounds slightly to follow the placement; do NOT bend, shear, squash or warp their axes/case walls. Keep a narrow black clearance around them.
+Keep the dragon's surrounding body curves and lower strip as close to the input as possible. Fit the slimmer rounds inside the existing lower channel; do not widen the body, convert them to an upright rack or redesign the composition.
+Ignore ALL photo color, shine, texture and background. Only borrow its accurate outline and proportions. The result stays flat white/black.
+
+PRESERVE:
+The chosen coiling neck/body, its black channels, lower-left taper, crown, TWO layered horns with smaller rear horn behind the main one, simple angular eye, canvas position, safe margins and optical weight.
+NO WHISKERS, beard, moustache, barbels, tendrils or ears. NO mouth seam, lips, smile, opening, teeth, fangs, tongue or nostril. Face interior has only the angular eye.
+Pure solid WHITE on pure BLACK square. No gray, texture, shading, lighting, glow, frame, text, labels, watermark or extra elements. ONE refined icon.
+

@@ -1,0 +1,19 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v27.png.
+Latest user requirement: exactly four bullets, consistent shape. One master silhouette repeated at one uniform scale, preserving all other design features and the filled lower-body rhythm.
+
+Use case: precise-object-edit.
+Asset type: flat fictional-game dragon class emblem v28.
+The input image v27 is the EDIT TARGET.
+
+CHANGE ONLY THE TWO LOWER AMMUNITION SHAPES INTO EXACTLY FOUR MATCHING COPIES.
+Use the LEFT cartridge in the input as the ONE master silhouette: same pointed tip, shoulder, neck, straight casing, flat base and small rim. Repeat that SAME shape four times at ONE uniform scale. All four must have identical length, width, proportions and silhouette details. Do not invent four different cartridge shapes.
+Arrange the four copies in a single close inline diagonal row along the existing lower body sweep, tips pointing down-left. Translation and small rigid rotations only; do not bend, shear, distort or vary individual sizes. Keep even purposeful gaps.
+Make the four casings substantial enough to retain the selected lower body's filled white rhythm. Use most of the existing lower band's width/thickness; do not create tiny skinny objects inside a thin enclosing frame. Keep the lower-left taper and outer lower silhouette cohesive with the animal.
+
+PRESERVE EVERYTHING ELSE AS CLOSE TO PIXEL-IDENTICAL AS POSSIBLE:
+Head, muzzle length, eye, crown, two layered horns, no ears, all neck/body curves, inner crescent, rear contour points, black channels, canvas position, margins and white/black palette. Do not redesign or add details elsewhere.
+
+Exactly FOUR complete consistent ammunition silhouettes, no fifth segment or extra projectile. Straight axes and straight case sides. No oversized divider rings or detached rim pieces.
+No whiskers, beard, barbels, mouth line, teeth, nostril, gray, texture, shading, glow, text, border, watermark or UI. Output ONE edited emblem.
+

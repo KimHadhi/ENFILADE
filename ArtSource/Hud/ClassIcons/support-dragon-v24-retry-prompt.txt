@@ -1,0 +1,14 @@
+Generation mode: built-in image_gen edit.
+The earlier v24 request with a real cartridge photograph was rejected at input by the image tool's violence moderation category.
+This attempt explicitly requests the original flat fictional-game emblem and stylized ammunition pictograms, using only the existing icon as input. It does not use the real photograph as an image input.
+
+Use case: precise-object-edit / logo-brand.
+This is a flat black-and-white UI emblem for a fictional video-game character class. Edit the supplied emblem as stylized graphic art. No photorealistic weapon imagery or practical weapon instructions are requested.
+
+Make the dragon's muzzle modestly longer: extend the nose slightly to the left, roughly 15% more eye-to-nose reach, with a low graceful bridge and clean closed jaw. Preserve head height and the eye/crown, without stretching the entire head.
+
+Improve the four small stylized ammunition motifs in the lower diagonal strip. The present short chunky capsules are poorly proportioned. Replace them with four matching slender rifle-cartridge PICTOGRAMS, rendered as simple solid-white silhouettes: a long straight casing with an understated shoulder narrowing into a short neck and pointed tapered tip. Keep each axis straight and the body sides straight. Use a subtle flat base, no oversized disk or band. Their whole outline should be recognizable without any drawn interior divisions. No photorealism, metallic surfaces, engineering dimensions, labels or mechanical detail.
+Keep the current inline diagonal row, pointing left along the lower sweep. Place four rigid copies in that channel using small rotations only; do not bend them or redesign the surrounding dragon body. Keep the chosen flowing neck and lower body contours.
+
+Preserve the compact class-icon composition, generous white facial plane, two layered horn silhouettes, plain angular eye and black channels. No whiskers, beard, barbels, ears, mouth line, lips, smile, teeth or nostril. Pure WHITE on BLACK square, same margins. No gray, texture, lighting, glow, text, border or extra elements. Output ONE original stylized game icon.
+

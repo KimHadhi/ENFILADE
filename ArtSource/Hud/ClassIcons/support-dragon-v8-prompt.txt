@@ -1,0 +1,26 @@
+Generation mode: built-in image_gen.
+Primary references: approved Knight, Assault, Ghost; match family head scale, compact footprint and white/black density.
+Measured sampled white area: Knight 28.0%, Assault 29.3%, Ghost 27.8%, rejected Support v7 13.5%.
+User direction: match the other class icons while preserving Eastern-dragon neck/body integrated with ammo belt.
+
+Use case: logo-brand.
+Asset type: ENFILADE Chinese dragon SUPPORT class icon, revision v8, MATCH AN EXISTING ICON FAMILY.
+Input images 1, 2, 3 are the APPROVED Knight, Assault and Ghost icons. They are PRIMARY STYLE AND PROPORTION REFERENCES. Create a fourth sibling icon that looks designed by the SAME ARTIST in the SAME SET. Output ONLY the new dragon.
+
+THE FAMILY MATCH IS THE HIGHEST PRIORITY:
+Study the references before designing: LARGE DOMINANT ANIMAL HEAD, compact roughly square head/neck silhouette, substantial unbroken white masses, a few broad black cuts, smooth concave curves ending in decisive points, one black angular eye, short sweeping lower structure, black backdrop. Match their head scale, white/black density, curve widths and optical weight.
+The references each have about 28-29% white area across the full square. Aim around 27-30%, rather than a thin sparse line drawing. Match their margins and approximately 75-80% occupied width/height. The face should dominate the UPPER TWO THIRDS, the lower neck/trait stays within the LOWER THIRD. The head must be as visually large and substantial as the tiger's head. Horns are brief accents above that head, not substitutes for head mass.
+
+SUBJECT:
+An unmistakable CHINESE / EASTERN LONG DRAGON head in LEFT SIDE PROFILE. Long slender elegant draconic muzzle relative to its strong skull, clean low brow and small angular black eye, a softly squared slightly raised nose tip, firm continuous slim jaw. Broad white face plane with no tiny internal detailing. Two compact backward-flowing antler-like horns, each with at most one short fork, enough thickness to survive small HUD sizing. One small low swept ear behind the rear horn root. At most one short cheek-whisker gesture, integrated into the throat curve.
+NO mouth depiction: no mouth line, opening, lip, smile, teeth, fangs, tongue or nostril. Entire muzzle is one continuous white mass. No hooked eagle beak, stubby buffalo snout or bulky cow-like cheeks.
+
+EASTERN NECK AND AMMO AS ONE FORM, COMPRESSED INTO THE FAMILY FOOTPRINT:
+The lower rear of the head continues into a supple elongated dragon neck/body, but its curves are FOLDED CLOSE BELOW THE LARGE HEAD. A single compressed S-shaped neck turn fits within the lower third of the mark. This is the suggestion of a long serpent-like neck within a compact CLASS BUST, not a full dragon/tail floating around an empty loop.
+Keep substantial white neck bands comparable to the eagle's wing bands. Use one broad black concave throat/neck cut and one sweeping lower turn. The neck is a ribbonlike continuation, not a swollen western-dragon chest or an enormous shoulder triangle. Do not put a giant black hole in the center of the composition. The neck sits close under the jaw and the lower curve, creating the same compact white/black density as the references.
+The very SAME lower neck sweep becomes a LINKED AMMUNITION BELT: FOUR simple large rifle cartridges side by side, connected by one continuous strip. The cartridges rotate naturally along the compressed lower curve; projectile tips and simple casings are readable. Let the pointed projectiles participate in the neck's tapered outer contour, and their broad black separating cuts double as the dragon's belly divisions. The BELT IS THAT LOWER BODY CURVE, not a separate belt sticker across a big torso. Integrate it with the same restraint as the horse's sword and the eagle's ammunition trails. Keep the tip/casing separation and one connector bold, omit tiny links.
+
+LAYOUT GOAL:
+A large proud dragon head FIRST, short restrained forked horns SECOND, a flowing compact neck with integrated ammo belt THIRD. Beautiful broad sculptural masses that stand confidently beside horse, eagle and tiger at identical display sizes. Not a sparse floating long-neck emblem, not a full snake with tiny head, not a circular ring composition, not a triangular chest with a belt laid across it.
+One pure WHITE graphic with BLACK cutouts on solid BLACK square. No gray, gradients, shade, texture, glow, realistic lighting, thin linework, detailed scales, text, label, numeral, frame, shield, flag, watermark, UI, extra animal, wing, foot, hand, comparison sheet or multiple variants.
+

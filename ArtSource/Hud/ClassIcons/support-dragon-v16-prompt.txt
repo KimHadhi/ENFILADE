@@ -1,0 +1,15 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v15.png.
+Targeted cleanup: remove internal mouth-like stroke, preserve newly redrawn angular dragon profile and compact proportions.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Chinese dragon Support emblem v16, ONE facial cleanup.
+Input image is the edit target, v15. Preserve the image as close to pixel-identical as possible except the following single change.
+
+REMOVE THE LONG BLACK WAVY STROKE ACROSS THE FACE. It begins near the front muzzle around (330,570) and sweeps back across the cheek toward (850,500). It reads as a mouth/grin and violates the class-icon style. Fill that entire internal black stroke WHITE. Merge the white strip below it completely into the solid white face.
+The face must be one uninterrupted WHITE shape with only ONE angular BLACK EYE inside. Do not replace the removed stroke with another curl, mouth, whisker line, nostril, lips, teeth or extra detail.
+
+Keep the NEW ANGULAR DRAGON HEAD'S OUTER SILHOUETTE: squared compact snout, nose ridge, clean projecting brow, rear skull, ONE antler-like horn, no ears, one or two broad rear crest contour points. Do not return to the round mammal muzzle of earlier versions.
+Keep the actual EXTERNAL BLACK THROAT SPACE below the jaw unchanged; it is not the facial stroke being removed. Keep the entire neck/body S-curve, four connected rifle rounds, connector, lower contour, white/black weight, square canvas and margins unchanged.
+No new adornments, no gray, shadow, lighting, texture, text, numeral, frame or UI. Output ONE cleaned-up icon.
+

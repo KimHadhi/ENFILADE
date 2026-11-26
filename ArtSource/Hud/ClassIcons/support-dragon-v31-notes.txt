@@ -1,0 +1,5 @@
+v31: Built-in image generation edit of v30 in response to the lower body appearing too thin.
+Expanded the white mass of the lower-left bend, body beneath the ammunition and right return. The inner negative space is smaller and the returning tail tapers.
+Visual check: exactly four matching straight cartridge silhouettes; head, horns and upper neck retained; no mouth, ears, whiskers or red markup.
+Output copied into the project and SHA256 verified. No runtime asset replacement.
+Prompt: support-dragon-v31-prompt.txt.

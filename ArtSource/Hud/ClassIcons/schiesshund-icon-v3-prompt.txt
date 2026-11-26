@@ -1,0 +1,14 @@
+Generator: built-in image_gen edit.
+Edit target: schiesshund-icon-v2.png.
+User correction: no mouth depiction; retain the existing class-family silhouette language.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Schießhund class emblem v3.
+Input image 1 is the EDIT TARGET. Make ONE strictly local correction: completely REMOVE the mouth.
+
+The black upward-curved slit across the lower muzzle is an unwanted drawn mouth/smile. Fill that entire slit with pure white, merging the upper muzzle and the narrow white lower-lip band into ONE uninterrupted solid-white muzzle. Remove the pointed inner endpoint of the mouth slit as well. There must be NO mouth line, NO slit, NO opening, NO lips, NO separate lower-lip band, NO teeth and NO smile. Let the existing outside bottom contour alone describe the chin. The dog's expression must come only from the angular eye and the outer muzzle silhouette. The large black sculpted cheek/neck cut farther RIGHT stays exactly as is; do not mistake that for the mouth correction.
+
+Strict preservation: keep every other aspect of the supplied design as close to pixel-identical as possible: the same left-facing German Shepherd / Deutscher Schäferhund head, two broad upright ears and their inner cuts, eye, forehead, upper muzzle bridge, nose silhouette, cheek/neck cut, neck tufts, sweeping shoulder base, single diagonal collar and single bounty diamond in the lower right. Retain identical placement, proportions, square canvas, safe margins and pure black background. No extra facial features. Do not add any detail, shading or decoration.
+
+Output ONE clean white silhouette emblem on pure black, same flat class-family style. This correction is driven by the user's rule: these class animal icons DO NOT depict mouths.
+

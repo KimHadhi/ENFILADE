@@ -1,0 +1,17 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v30.png.
+Latest user feedback: the body became too thin by literally following the red guide. Rebalance the lower body mass and flowing silhouette.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Support class icon, v31.
+Input image: v30 is the EDIT TARGET, a flat white Eastern-dragon emblem on black.
+
+Redesign ONLY the extended LOWER BODY. The user rejected its thin, uniform, outline-like appearance. Make a visibly thicker, sculpted serpent body that harmonizes with the broad white masses of the head and neck.
+
+Keep the overall coiling route: the diagonal neck flows around the lower left, runs beneath the FOUR cartridges toward the right, turns back gracefully, and ends in a tapered tail. But interpret that route as a substantial organic BODY, not a traced guide line.
+Give the lower-left bend a broad, unpinched transition from the neck. Enlarge the long white body beneath the cartridge row to roughly 2.5–3 TIMES its current thickness, comparable in visual weight to the existing diagonal neck above the cartridges. Expand into the available lower black space. Vary the thickness smoothly: a broad flowing belly and generous right bend, then a confident taper into the returning tail.
+Reshape and reduce the hollow inside the return into one graceful black crescent. The lower section should read as a thick coiled dragon, not an oval outline, handle, paperclip, uniform stroke, rectangular belt frame, solid pedestal, or bulky chest. Use big simple white masses and deliberate black cutouts. The body itself serves as the ammunition belt, with the four rounds integrated along its upper edge; the white body must carry real visual weight beneath them.
+Make this an obvious silhouette improvement, not a barely visible outline dilation.
+
+Preserve the entire head, muzzle, eye, two layered horns, upper neck, and nape points exactly. Preserve exactly FOUR cartridges, their matching shape, straight axes, size, position and direction. Keep sufficient black clearance around each to remain individually readable.
+Same square black canvas and safe margins. Pure solid white and black, crisp flat silhouette, no gradient, texture, shadow, text or border. No ears, whiskers, beard, nostril, mouth line or teeth. Output one revised emblem.

@@ -114,6 +114,3 @@ MonoBehaviour:
   - key: HitFeedback/KillMark
     clips:
     - {fileID: 8300000, guid: 3485ec042eb0407897079fb38b07c669, type: 3}
-  - key: PlayerHud/Select
-    clips:
-    - {fileID: 8300000, guid: e6fec8ef930943c8a8bfdc574d34a671, type: 3}

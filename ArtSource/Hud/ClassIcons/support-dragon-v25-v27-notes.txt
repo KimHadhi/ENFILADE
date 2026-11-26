@@ -1,0 +1,22 @@
+Support Chinese dragon v25-v27, 2026-11-20.
+Generation: built-in image_gen edits.
+Latest feedback: user again attached the original substantial v18-family design and prefers its composition; v24's thinner ammunition row failed to preserve that design.
+
+v25: restored the original full lower white body cells and selected neck/body composition while retaining the modest muzzle extension. Lower-region white sample: 36.6%.
+v26: attempted local seam changes to those four large cells. Output became blocky and was not selected as the review result; no workspace PNG delivered for that study.
+v27: two larger complete straight cartridge-derived shapes replace the four undersized/squat cells. Cartridge count was an implementation choice, never a user-fixed requirement. The two larger white casings make the lower outer silhouette directly, without a thin enclosing frame.
+
+Density check, same x15%-85%, y60%-90% region sampled every 4px:
+Selected reference: 32.2% white.
+Rejected v24: 24.3%.
+Restored v25: 36.6%.
+Current v27: 31.9%.
+These are visual-density samples, not proof of aesthetic equivalence.
+
+Current review output: support-dragon-v27.png.
+Exact selected attachment: support-dragon-v25-reference.png.
+Exact final prompt: support-dragon-v27-prompt.txt.
+Restore-baseline prompt: support-dragon-v25-prompt.txt.
+Visual review: broad filled body, two large pointed straight case silhouettes, no thin cage; head/neck retained from v25, no whiskers/beard/ears/mouth/nostril.
+PNG copies verified by SHA256. User approval remains pending; existing runtime icon not replaced.
+

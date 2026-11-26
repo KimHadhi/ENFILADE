@@ -1,0 +1,17 @@
+Generator: built-in image_gen edit (no CLI/API fallback).
+Edit target: ArtSource/Hud/ClassIcons/schiesshund-icon-v1.png.
+User correction: the animal is a Deutscher Schäferhund (German Shepherd).
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Schießhund (시순트) class icon, refinement v2.
+Input image 1 is the EDIT TARGET: the already-approved white canine emblem on black. Refine this particular design, retaining its identity, composition and class motif. The user clarified that the animal is a DEUTSCHER SCHÄFERHUND, a German Shepherd, and now asks to polish the icon accordingly.
+
+Change the canine anatomy to a confident alert German Shepherd:
+- Replace the excessively long, narrow blade-shaped ears with distinctly natural German Shepherd upright triangular ears: about 20% shorter, appreciably broader at the bases, with gently curved outside edges, a visible gap between the two ears and a simple bold inner-ear negative-space cut. Ears should have solid volume, not look like thin horns.
+- Give the head the breed's strong wedge shape and a slightly broader, more substantial skull/forehead with a modest forehead-to-muzzle step.
+- Keep the long LEFT-facing closed muzzle, but make it a little stronger, slightly shorter and deeper, with the straight tapering nasal bridge and substantial lower jaw of a German Shepherd rather than the very slender smooth Doberman/pinscher face. Keep a calm, focused, determined expression and the strong sharp eye.
+- Make the cheek and back of the neck fuller, using only TWO broad, restrained angular fur tufts in the outer neck contour and a generous sculpted cheek cut, so its short dense neck ruff reads as German Shepherd. The fur shapes must be simple and strong, without fine hairs or intricate decoration.
+
+Preserve invariants: pure white silhouette on solid pure black square background; same left profile; same overall square occupancy and generous safe margins; same elegant sweeping broad shoulder and tapered base; same single bold diagonal collar cut; ONE same hollow black diamond bounty marking with a white central diamond in the lower right shoulder, in the same location and scale. Preserve the clean class-family style, sharp tapered black negative spaces, broad white shapes, balance and visual weight. This is a moderate breed-focused refinement of the approved design, not a new emblem concept. Keep clear readable eyes, muzzle, ears, collar and diamond at 44 pixels.
+One polished final emblem only. No text, border, floating badges, weapons, gradients, texture, shading, thin linework, fur hatching, tongue, teeth, open snarling mouth, color, extra symbols or comparison sheet.
+

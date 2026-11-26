@@ -1,0 +1,16 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v19.png.
+Cleanup: remove detached cartridge-rim details; smooth the small inner neck cusp. Preserve the newly composed head/body and the explicit no-whisker rule.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Chinese dragon Support emblem v20, local graphic cleanup.
+Input image is the edit target, v19. Preserve it as close to pixel-identical as possible except the following two small simplifications.
+
+1. Remove the FOUR DETACHED WHITE ROUNDED PILLS underneath the diagonal ammunition linking strip. These tiny case-rim pieces float separately below the main belt. Fill only those four detached pill shapes BLACK. Keep all four main cartridge casings, their pointed projectiles and the continuous white linking strip intact. The cartridges should end cleanly at the belt's lower envelope without tiny floating pieces.
+
+2. Smooth the small inward-pointing WHITE CUSP directly beneath the rear jaw, at the top of the inner neck bend. Resolve it into a clean continuous throat/neck curve, so it cannot read as a chin lock or facial appendage. Keep the body connection and overall S-curve; no new ornament.
+
+Do not change the head, compact muzzle proportions, eye, single horn, outer nape crest, body composition, four cartridge positions, silhouette scale or black margins. Do not add any facial details.
+ABSOLUTE USER RULE: NO WHISKERS, NO BEARD, NO BARBELS, NO MOUSTACHE, NO CHIN TENDRILS, NO HAIR STRANDS. One horn, no ears, no mouth line/opening/lips/teeth/nostril.
+Pure white graphic on black square, same bold class-family style, no gray, texture, lighting, text, frame or UI. Output ONE cleaned-up icon.
+

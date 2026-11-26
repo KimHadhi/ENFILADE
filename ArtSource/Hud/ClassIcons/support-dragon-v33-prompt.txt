@@ -1,0 +1,16 @@
+Generation mode: built-in image_gen edit.
+Edit target: generated v32 thickness study, exec-4ab128b0-5220-46dc-80e4-39727e5246df.png.
+Direction: consistent body width, especially left bend and returning tail, based on the user's red cross-section marker on v31.
+
+Use case: precise-object-edit.
+Edit target: the attached flat white dragon icon. Refine ONLY the lower coiled body.
+
+The body still varies too much in thickness. Make the lower coil a genuinely UNIFORM-WIDTH ribbon, about 130px thick, measured normal to its path. This is a specific contour correction:
+1. Keep the diagonal white body above the four cartridges as the width standard.
+2. The left U-turn is too narrow: extend its OUTSIDE contour leftward and downward to give it the SAME width as the diagonal standard. Keep its inside curve smooth around the first cartridge.
+3. The straight diagonal white band beneath the cartridge row must have the same width.
+4. The right hairpin must stay the same width, with its inner and outer arcs concentric, without a swollen round end.
+5. The returning white tail below the black hollow is MUCH TOO THIN. Make this return segment the SAME 130px width through most of its run. Lift its inner contour and lower its outer contour as needed. The black hollow may become a slimmer crescent. Only taper the very last short tip at the lower left, over the final 15% of its length.
+Use close-to-parallel inner and outer contours along both straight and curved sections. No early long taper, no thin lower strand, no extra bulge. Keep substantial bold white masses. Fit within the square canvas; retain a black margin.
+
+Keep the exact head, face, eye, two horns, upper neck decoration and nape silhouette. Keep EXACTLY FOUR existing matching straight cartridge silhouettes in their current positions, sizes and orientations, separated by the same black gap. No new elements. White and black only, flat clean icon, no text, no mouth, teeth, nostril, ears, beard or whiskers. One result.

@@ -1,0 +1,14 @@
+Support Chinese dragon v15-v16, 2026-11-20.
+Generation: built-in image_gen edits.
+User rejection: v14's compressed mammal-like face does not read as a dragon.
+
+v15 redraw: compact angular muzzle, a clear nose-to-brow plane, revised eye, one horn root, rear contour points; existing four-cartridge body retained. Added whisker was rendered as an internal mouth-like stroke.
+v16 cleanup: removed the full internal stroke, retained the newly drawn angular head silhouette. Face interior has only the eye.
+
+Current review candidate: support-dragon-v16.png.
+Exact final cleanup prompt: support-dragon-v16-prompt.txt.
+Head redesign prompt: support-dragon-v15-prompt.txt.
+Visual review: compact eye-to-nose projection, one visible horn root, no leaf-shaped ear, no internal mouth/nostril, no teeth, connected four-round belt, compact family footprint.
+This is a review candidate; user acceptance remains pending.
+Final PNG copy verified by SHA256. Prior versions preserved; runtime asset not replaced.
+

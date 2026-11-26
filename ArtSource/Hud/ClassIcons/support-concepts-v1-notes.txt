@@ -1,0 +1,28 @@
+Support animal concept exploration v1, 2026-11-20.
+Generation: built-in image_gen, one independent call per concept.
+Status: four exploratory concepts for selection; no runtime icon replacement.
+
+User-confirmed class associations:
+Knight: Japan / horse.
+Assault: United States / eagle.
+Ghost: Korea / tiger.
+Point: United Kingdom / lion.
+Detente: France / dove.
+Schiesshund: Germany / German Shepherd.
+Support: China / animal being selected.
+
+Shared references:
+ArtSource/Hud/ClassIconArt/knight.png
+ArtSource/Hud/ClassIconArt/assault.png
+ArtSource/Hud/ClassIconArt/ghost.png
+
+Shared brief: white animal head/shoulder facing left on black, broad shapes and negative spaces, angular eye, no mouth or teeth, compact square bust.
+
+A: support-dragon-v1.png - Chinese dragon, ammunition-derived lower neck.
+B: support-turtle-v1.png - turtle, barricade bracing integrated into shell.
+C: support-monkey-v1.png - macaque, open-end wrench integrated into shoulder/base.
+D: support-buffalo-v1.png - water buffalo, ammunition harness integrated into shoulder.
+
+Each exact final prompt is in the correspondingly named -prompt.txt.
+Visual review: all four have left-facing white silhouettes, black backgrounds and no internal mouth line. The four motifs are concept directions; selected anatomy and support motif can be refined after user review.
+

@@ -1,0 +1,18 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v8.png.
+Corrections: remove mouth-like cheek curl and orient linked cartridges across the compressed lower sweep, preserving family scale/density.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Chinese dragon Support class emblem v9, final corrections to the family-matched composition.
+Image 1 is the EDIT TARGET (compact dragon v8). KEEP its complete outer silhouette, large face scale, horns, tiny ear, head placement, compressed S-shaped neck, lower sweep footprint, margins, solid white/black palette and overall visual weight. The family match in this version must be preserved.
+Image 2 is a SUPPORTING GEOMETRY REFERENCE ONLY for the arrangement of linked parallel ammunition across its lower band. Ignore its face, buffalo-like skull, thick chest, silhouette, horns and proportions. Use ONLY the idea of parallel cartridges connected across a strip.
+
+MAKE EXACTLY TWO CORRECTIONS:
+1. REMOVE THE BLACK CURLING LINE ON THE CHEEK. The long black S-curl between the snout and the back cheek reads as a mouth/smile. Erase that entire curl and fill it WHITE, fully merging it into the uninterrupted face. The small angular eye is the ONLY dark detail within the face. Keep the ear cut behind the skull. No replacement mouth line, lips, fangs, nostril, cheek decoration, smile or open jaw. Preserve the current nose, outer jaw and the external black throat cut; only remove the internal cheek curl.
+
+2. REBUILD THE LOWER SWEEP AS A PROPER LINKED AMMUNITION BELT. The current four bullets point along the lower sweep END TO END, like beads. Replace that geometry. The SAME existing lower sweep remains in the same footprint, but now FOUR RIFLE CARTRIDGES sit SIDE BY SIDE across a curved linking strip, as in the supporting belt geometry.
+Their long axes are TRANSVERSE to the belt's path, approximately upward-left across the lower band. Their casing bases follow the existing lower outer curve and their pointed projectile tips follow its inner curve. Gently rotate the four round axes to follow the bend. A SINGLE slim WHITE CURVED CONNECTING STRIP crosses all casings near their lower third. Broad black gaps separate the cartridge bodies, and the white strip visibly joins them. The white linked belt itself is the dragon's lower body continuation; connect it smoothly into the neck at the right and taper at the left. No big solid white chest behind it.
+Simple bold cartridge silhouettes: long rectangular case and pointed tapered projectile, no microdetail or individual thick black outline boxes. Keep this compact with about the same white/black density as the original lower sweep. The four rounds must NOT run nose-to-tail in a chain and must NOT appear as four horizontal bullet stickers along the curve. They are crosswise parallel rounds linked into ONE curved belt.
+
+Everything else stays unchanged. Match the approved class family: compact substantial head and neck mark, broad white masses, a few black cuts, clean decisive curves and points, black square background. No gray, lighting, texture, glow, frame, text, numerals, UI, watermark or extra elements. ONE corrected icon only.
+

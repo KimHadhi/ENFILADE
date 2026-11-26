@@ -1,0 +1,18 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v28.png.
+Refinement: keep exactly four matching cartridge shapes; uniformly enlarge the whole repeated unit and reduce gaps to retain the user's preferred filled lower-body weight.
+
+Use case: precise-object-edit.
+Asset type: flat fictional-game emblem v29, uniform size adjustment of four existing motifs.
+The input image v28 is the EDIT TARGET.
+
+There are exactly FOUR matching white stylized ammunition silhouettes along the lower diagonal sweep. KEEP exactly FOUR and preserve their current shape, proportions and orientation pattern.
+
+ENLARGE ALL FOUR BY THE SAME UNIFORM FACTOR, approximately 20% in BOTH length and width, to restore the original substantial filled lower-body rhythm. Reposition the enlarged rigid copies with SMALL EVEN black gaps. Use the full available diagonal sweep: the first pointed tip approaches the lower-left taper; the last flat base tucks close under the rear neck turn. Reduce gaps before reducing thickness.
+Each is a rigid uniformly scaled copy of ONE identical master silhouette. No stretching along one axis, no different individual sizes, no bending/shearing, no new divider bands, collars or detached pieces. Keep four clearly distinguishable complete shapes.
+
+The enlarged case masses should form the substantial lower outside silhouette, not tiny floating icons. Do not add an enclosing outline/frame, new body backing or extra motif.
+Keep EVERYTHING ELSE as close to pixel-identical as possible: head/muzzle/eye/crown, layered horns, entire neck/body white shapes and black channels, canvas, black margins, color and style. No changes above the lower row.
+
+Pure white on black. No whiskers, beard, ears, mouth line, teeth, nostril, gray, texture, shading, light, text, frame or watermark. Output ONE edited emblem.
+

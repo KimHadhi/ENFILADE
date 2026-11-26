@@ -1,0 +1,23 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v13.png.
+User correction: muzzle and face proportions must match the compact class-family design; v13's long protruding snout rejected.
+Primary correction: shorten eye-to-nose projection and rebalance cheek/jaw, preserving body and belt.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Support class icon v14, FACIAL PROPORTION CORRECTION.
+Image 1 is the EDIT TARGET, dragon v13. Image 2 (Ghost tiger) and image 3 (Point lion) are FACIAL PROPORTION REFERENCES ONLY. Their compact nose-eye-cheek relationship is the standard; do not copy their species, stripes, mane or weapons.
+
+The user explicitly rejects v13's overlong thin snout and stretched face. Make a clearly visible proportion correction, not a tiny contour adjustment.
+
+SHORTEN THE FACE:
+Reduce the horizontal projection from the EYE to the NOSE TIP by about 40%. In this 1254px image the nose is currently near x=165; bring its front back to approximately x=290-310 while leaving the eye around its current position. Do NOT push the nose further left or keep the existing long nasal bridge.
+Make the head a COMPACT, BALANCED WHITE MASS like the tiger/lion's head, rather than a shallow elongated wedge. Give the cheek and jaw about 15-20% more vertical depth, with a short firm chin and one graceful transition into the existing throat curve. Rebalance the upper bridge, compact muzzle and jaw together; don't just flatten/squeeze the nose tip.
+Keep the muzzle clean, softly squared and understated, with only a slight rise of the upper nose contour. No rounded buffalo bulb, lumpy dragon nostrils, overhanging brow, snarling bumps or fancy beard. One simple angular eye, smooth large white face plane. The expression is composed and proud, and the whole face reads as a single intentional compact shape.
+
+Keep the existing draconic identity through the ONE horn, no ears, and flowing neck/body. The LONG quality belongs to the NECK/BODY, not the snout.
+
+PRESERVE EVERYTHING ELSE AS CLOSE TO PIXEL-IDENTICAL AS POSSIBLE:
+The single horn and root, no ears; the neck/body S-curve, black throat channel apart from the minimum jaw junction needed, the lower contour and all FOUR linked cartridges and connector. Preserve their placement, shape, size, existing black margins, square canvas and solid white/black styling. Do not shrink the whole head, move the entire animal, enlarge its body or alter the belt.
+
+STRICT FAMILY RULE: no mouth depiction, mouth seam, lips, grin, open jaw, teeth, fangs, tongue, nostril or internal cheek curl. Face interior has only the existing angular black eye. No additional details, text, frame, gray, texture, shadow, lighting or glow. Output ONE corrected icon.
+

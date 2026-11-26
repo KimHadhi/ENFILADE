@@ -766,6 +766,7 @@ AssetOrigin:
   serializedVersion: 1
   productId: 268209
   packageName: Zombie Animation Set
-  packageVersion: 1.0
-  assetPath: Assets/Nephilite Studios/Zombie Animation Set/Animations/zombie_turn_R180_01.fbx
-  uploadId: 620862
+  packageVersion: 1.1
+  assetPath: Assets/ThirdParty/Nephilite Studios/Zombie Animation Set/Animations/Root
+    Motion/zombie_turn_R180_01.fbx
+  uploadId: 895480

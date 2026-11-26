@@ -1,0 +1,17 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v11.png.
+Targeted cleanup: remove small nostril and ear-like rear-cheek interior curve while preserving the newly developed Eastern-dragon silhouette.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Chinese dragon Support icon v12, minimal facial cleanup.
+The input image is the edit target, dragon v11. Preserve it as close to pixel-identical as possible EXCEPT TWO BLACK INTERIOR MARKS.
+
+1. Erase the small black nostril slash near the upper front of the snout, filling it WHITE.
+2. Erase the large black ear-like hooked curve INSIDE the rear cheek/nape behind the eye, filling that interior hook WHITE and merging it into the solid white skull/neck. It is not an ear and must not remain as an ear-shaped groove. Do not change the EXTERNAL black throat opening or the outer white beard silhouette.
+
+The whole interior of the head should now have ONLY ONE BLACK ANGULAR EYE. No nostril, no ear, no extra facial curl. No depicted mouth line, lip, smile, teeth, open jaw or tongue.
+
+KEEP EVERYTHING ELSE EXACTLY:
+The newly sculpted raised dragon nose and stepped brow; the long low muzzle and firm jaw; the WHITE curved beard/whisker lock projecting from the rear jaw OUTSIDE the face; ONE branching horn with ONE root; no ears; head size/position; the nape outline; the compact flowing neck/body and entire four-round linked ammo-belt structure; all original margins and placement.
+Do not add detail, appendages, extra horn or new cutouts. Do not redraw the belt or change the outer silhouette. Pure solid WHITE on pure solid BLACK, same square. No text, labels, gray, texture, lighting or frame. Output one cleaned-up icon.
+

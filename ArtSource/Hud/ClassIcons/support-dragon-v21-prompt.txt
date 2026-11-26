@@ -1,0 +1,31 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v20.png, cleaned-up continuation of v19.
+Latest user direction: two horns with obvious rear-horn depth, calmer family-style eye, improved neck, rigid straight cartridges along a curved belt.
+No whiskers/beard, no ears and no mouth remain required.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon Support class icon v21.
+Image 1 (v20) is the EDIT TARGET, continuing the current direction the user now likes. Images 2 (Ghost) and 3 (Knight) are references specifically for the understated simple angular EYE and disciplined graphic style. Refine the target, do not reset the composition.
+
+USER REQUESTS FOUR CONCRETE CHANGES:
+
+1. TWO HORNS WITH CLEAR DEPTH.
+Keep the main near-side antler-like horn. Add its far-side counterpart BEHIND it, about 25% smaller and narrower, placed lower and slightly farther right. Both sweep naturally backward from the rear crown.
+The FAR horn's root is OCCLUDED by the near horn/skull: only its emerging upper stem and tip are visible. Use one deliberate BLACK separating wedge where the near horn overlaps the far horn, so they are visibly layered in flat white/black. The near horn is the dominant foreground shape; the smaller rear horn clearly sits behind it. Avoid two equally large horns sticking out of the same flat plane, a floating disconnected horn, or ear-shaped roots. Exactly TWO horn roots in the implied anatomy, no ears.
+
+2. CALMER EYE, MATCH THE FAMILY.
+Replace the current long hooked scowling eye with ONE simple angular wedge like the Ghost/Knight references. Slightly smaller, shorter and less steep; remove the downturned inner hook and the exaggerated aggressive outer tail. A clean triangle/slim wedge with a composed alert expression. Not round, cute, smiling or cartoonish. Do not add eyebrow strokes.
+
+3. CLEANER NECK ANATOMY.
+Keep the compact head size and the new diagonal coiling body direction. Redraw the awkward inner hooked crescent and jaw-to-neck transition into a smoother continuous S-curve with gradually changing white-band widths. The nape follows naturally from the skull through the bend into the lower body; the throat has one confident open concavity. Simplify the redundant inner moon-shaped cut and abrupt pinch instead of adding more curls. It should feel like one supple Eastern-dragon neck/body, not a mane or overlapping detached ribbons. Retain a few broad white masses and generous simple black channels; no huge empty ring or big chest.
+
+4. RIGID STRAIGHT AMMUNITION, CURVED BELT ONLY.
+Rebuild the FOUR cartridges as FOUR IDENTICAL COPIES OF ONE STRAIGHT RIFLE ROUND. Each round has a perfectly straight central axis, two PARALLEL STRAIGHT CASING SIDES, a flat straight base perpendicular to that axis, and a simple pointed projectile aligned with that same straight axis.
+Place the four rigid rounds SIDE BY SIDE and rotate each complete round slightly to follow the curved diagonal belt. Use ONLY uniform scaling and rigid rotation; NEVER bend, warp, shear, curl or bow the cartridge or its casing walls. Each complete cartridge stays straight even though the linking strip curves.
+The linking strip passes across the casings near their lower third and joins all four. Keep the cartridges crosswise to the diagonal belt rather than end-to-end. Their tips contribute to the body's inner edge and bases to its outer edge. No tiny floating case-rim pills.
+
+PRESERVE THE CURRENT CORE:
+Compact balanced dragon muzzle, large plain white head, diagonal flowing neck/body and linked ammo motif, existing class-family optical weight, scale and black margins.
+NO WHISKERS, NO BEARD, NO BARBELS, NO TENDRILS. NO EARS. NO mouth, lips, grin, opening, teeth, fangs, tongue, nostril or inner facial curl. Only the angular eye inside the face.
+Pure solid WHITE on pure BLACK square. No gray, texture, shading, light, glow, outline frame, text, UI, watermark or additional elements. ONE refined icon.
+

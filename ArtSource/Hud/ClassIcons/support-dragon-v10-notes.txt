@@ -1,0 +1,19 @@
+Support Chinese dragon v10, 2026-11-20.
+Generation: built-in image_gen edit.
+Target: user-attached v9 design.
+User direction: one horn, no ears, develop the body.
+
+Visible revisions:
+- One visible foreground horn with one root and one short branch.
+- Removed rear horn and leaf-shaped ear.
+- Smoothed crown/nape and simplified back-neck projections.
+- Redrawn continuous neck turn and lower body/belt connection.
+- Four linked rounds follow a smoother lower curve.
+
+Visual review: face and eye scale retained, compact class-family footprint retained, no mouth line/teeth, white on black.
+White mass sampled every 8px: 24.6% (approved Knight 28.0%, Assault 29.3%, Ghost 27.8%).
+PNG: 1254 x 1254; copied image verified by SHA256.
+Exact final prompt: support-dragon-v10-prompt.txt.
+Review output: support-dragon-v10.png.
+Prior images preserved. Existing runtime icon unchanged.
+

@@ -1,0 +1,14 @@
+Support Chinese dragon v23, 2026-11-20.
+Generation: built-in image_gen edit.
+User selected a newly attached image visually matching the v18 composition: likes the overall feeling/design; ammunition is not recognizable and muzzle/crown do not yet feel enough like a dragon.
+Exact selected attachment preserved as support-dragon-v23-reference.png. Its file hash differs from support-dragon-v18.png; the exact attachment, not the earlier file, was used as the edit target.
+
+v23 retains the chosen coiling neck, black channel, diagonal lower-body sweep and left taper. Four complete cartridges now show projectile, casing and base/rim. The visible output arranges the cartridges tangent along the lower sweep, preserving the chosen inline flow, rather than the crosswise arrangement requested in the prompt. It should be judged by the user's preferred composition before reorienting them again.
+Muzzle/crown outer contours refined locally; smaller far-horn tip shown behind main horn to carry forward the earlier two-horn request.
+No whiskers, beard, barbels, ears, mouth line, teeth or nostril. Plain angular eye and white/black family style retained.
+
+Current review image: support-dragon-v23.png.
+Exact final prompt: support-dragon-v23-prompt.txt.
+Both reference and generated PNG copies verified by SHA256.
+This is a review candidate, not a user-approved final asset. Previous versions preserved; runtime icon not replaced.
+

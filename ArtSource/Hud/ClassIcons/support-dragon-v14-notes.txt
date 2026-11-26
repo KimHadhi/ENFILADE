@@ -1,0 +1,13 @@
+Support Chinese dragon v14, 2026-11-20.
+Generation: built-in image_gen edit.
+Edit target: support-dragon-v13.png.
+Facial-proportion references: approved Ghost and Point.
+User correction: v13's snout is disproportionately long; preserve the established class-family design philosophy and proportions.
+
+Visible revision: nose projection shortened substantially, muzzle made compact, cheek and jaw given more depth; existing horn, earless head, neck/body curves and four-round linked belt retained.
+Visual inspection: no mouth seam, nostril or teeth; eye remains the sole dark facial mark. This is an unapproved review concept.
+Prompt requests approximately 40% shorter eye-to-nose projection; that percentage is an art-direction target, not a measured output claim.
+Exact final prompt: support-dragon-v14-prompt.txt.
+Output: support-dragon-v14.png.
+Final PNG copy verified by SHA256. Previous versions preserved; runtime icon not replaced.
+

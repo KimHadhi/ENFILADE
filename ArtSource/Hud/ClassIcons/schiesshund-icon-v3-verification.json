@@ -1,0 +1,48 @@
+{
+  "class": "schiesshund",
+  "version": 3,
+  "animal": "Deutscher Schaeferhund / German Shepherd",
+  "correction": "Removed mouth slit and separate lower lip; muzzle is one solid white shape.",
+  "generator": "built-in image_gen edit",
+  "runtime_size": [
+    512,
+    512
+  ],
+  "runtime_mode": "RGBA",
+  "runtime_sha256": "d1f07f436b59ade359347fd7b5feefda1b33df8f9c09594c2a9a97f63da260f0",
+  "runtime_alpha_bbox": [
+    73,
+    44,
+    445,
+    462
+  ],
+  "unity_guid_preserved": true,
+  "other_class_runtime_files_and_all_import_settings_unchanged": true,
+  "small_sizes": {
+    "44": {
+      "alpha_bbox": [
+        4,
+        1,
+        41,
+        42
+      ]
+    },
+    "24": {
+      "alpha_bbox": [
+        1,
+        0,
+        23,
+        24
+      ]
+    },
+    "16": {
+      "alpha_bbox": [
+        0,
+        0,
+        16,
+        16
+      ]
+    }
+  },
+  "in_game_visual_check": "not performed"
+}

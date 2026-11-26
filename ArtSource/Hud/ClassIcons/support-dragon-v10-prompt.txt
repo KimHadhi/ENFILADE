@@ -1,0 +1,30 @@
+Generation mode: built-in image_gen edit.
+Edit target: user-attached v9 design, codex-clipboard-65d7f286-3235-4c2a-a790-937856a08d05.png.
+User direction: one horn, no ears, develop the body; preserve established class-family proportions.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon SUPPORT class icon v10.
+Input image 1 is the EDIT TARGET chosen by the user, dragon v9. Images 2, 3, 4 are the approved Knight, Assault, Ghost FAMILY REFERENCES ONLY. Refine image 1 as another member of that same set. Output only the revised dragon.
+
+USER REQUEST:
+The head silhouette is hard to distinguish. Reduce it to ONE HORN, REMOVE THE EAR, and further develop the BODY. Keep the recently corrected family proportions and substantial white graphic weight.
+
+HEAD SIMPLIFICATION:
+Keep image 1's eye, nose, muzzle, continuous closed jaw, head size, left-facing angle and general face shape unchanged.
+Keep only ONE visible horn: the main FOREGROUND horn rising from just behind the brow, sweeping elegantly backward/upward. It has ONE root and at most the single short branch already on that foreground horn. Remove the entire second rear/right horn and its root, then resolve the crown into a clean continuous skull contour. Do not replace the removed horn with another spike.
+Remove the entire leaf-shaped EAR below the rear horn. Leave NO ear and no internal ear-shaped black groove. Smoothly join the back of the skull into the nape, with clear separation between the one remaining horn and neck. Simplify the extra upper nape spikes so none reads as a second horn or hidden ear. Make the head silhouette immediately legible with one horn and one angular eye.
+
+DEVELOP THE NECK / BODY AS A FINISHED COHESIVE SHAPE:
+Preserve the current compact, close-folded S movement under the large head; do not revert to the sparse tiny-headed long-ring composition. Make the neck, its returning lower curve and the ammo belt one convincing continuous Eastern-dragon flow.
+The outside nape should sweep down and turn gracefully into the lower body. The inner throat starts under the jaw and becomes ONE bold tapering black concavity; let that channel and the lower return describe the long supple neck through purposeful curves. Use broad confident white bands whose widths change smoothly through the turn. Remove awkward bulbous shoulders, abrupt kinks and redundant hair/flame tufts. Shape the back-neck turn and lower-left taper together, so the body feels structurally connected rather than a big bust above a loose band.
+Keep only one or two broad negative-space channels, with curve width and pointed endings as deliberate as the Knight/Assault references. No new scale patterns, decorative fins or body anatomy details.
+
+AMMO BELT IS THE LOWER BODY:
+Refine the FOUR LINKED RIFLE CARTRIDGES along the lower return. Keep them side by side, with their long axes transverse to the belt, their tips pointing upward/inward, gently rotating through the bend. Give each a clean pointed projectile and long simple casing. All case bases should follow ONE graceful lower envelope, not hang at random heights. Connect them with a clear continuous strip that shares the body's curve.
+The belt's right end should turn smoothly into the nape/neck and its left end should taper seamlessly into the front lower sweep. The spaces between rounds and the neck channel work together as a few bold black cuts. The continuing neck and linked belt form the body itself. Avoid a separate necklace, ammunition sticker, triangular torso backing or a rectangular base behind the rounds. No tiny mechanical link details and no end-to-end bullet chain.
+
+PRESERVE FAMILY STYLE:
+Large dominant left-profile head, compact square silhouette, similar overall white/black density and optical scale to Knight/Assault/Ghost (roughly 27-29% white across the full square), generous black margins, broad sculptural white masses and clean confident curves with a few sharp tips.
+NO MOUTH: no mouth seam, smile, lip, open jaw, teeth, fangs, tongue, nostril or cheek curl. Face interior is uninterrupted white except the one black eye.
+Pure WHITE on pure BLACK. No gray, shading, gradient, glow, realistic texture, outline frame, text, numerals, watermark, flag, wing, limb, additional animal or comparison sheet. ONE revised icon.
+

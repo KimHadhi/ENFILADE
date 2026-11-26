@@ -1,0 +1,12 @@
+Support Chinese dragon v17, 2026-11-20.
+Generation: built-in image_gen edit.
+Target: support-dragon-v16.png; approved Ghost and Knight are style references.
+User direction: make it more dragon-like, integrate the horn naturally, develop the neck.
+
+Visible changes: horn root moved toward rear crown and tapered into one branching stem; forehead/crown/nape junction smoothed; inner throat and outer neck curves redrawn; lower return and linked four-cartridge body integrated with the revised neck.
+Visual review: compact eye-to-nose proportion retained, one horn root, no ears, no mouth seam/teeth/nostril, four linked rounds, pure white/black class-icon palette.
+Review candidate only; user acceptance pending.
+Output: support-dragon-v17.png.
+Exact final prompt: support-dragon-v17-prompt.txt.
+PNG copy verified by SHA256. Earlier versions preserved; runtime asset not replaced.
+

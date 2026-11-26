@@ -1,0 +1,17 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v6.png.
+Targeted revision: keep elongated ammo-belt body and correct beak-like muzzle into a long blunt Eastern-dragon snout.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Chinese/Eastern dragon SUPPORT emblem, refinement v7.
+The input image is the EDIT TARGET. The newly elongated serpentine body that becomes an ammunition belt is the desired direction. Preserve the entire body/belt, its S-curve path, width, cartridge shapes, negative-space openings, taper, canvas position and black/white styling as close to pixel-identical as possible. Preserve the slender forked horns and small swept ear.
+
+CHANGE ONLY THE HEAD'S MUZZLE / FACE:
+The current muzzle ends in a large DOWNWARD HOOK like an eagle's beak. Replace that entire hooked silhouette with a true long, low, BLUNT CHINESE DRAGON SNOUT and a slender firm lower jaw.
+Draw an elongated narrow draconic muzzle projecting LEFT from the brow. The nose tip has a mostly upright short front edge with softly rounded corners and a very slight raised upper nose ridge. Its underside has a short definite flat chin plane flowing gently back into a long slim jaw. The long snout has nearly parallel top and bottom planes with slight taper. There is NO downward hook or beak shape at the front, NO curved pointed bird bill, no bulging buffalo/dog muzzle, and no thick drooping lip.
+Keep a controlled proud low brow and a single small angular black eye. The back cheek can retain one restrained swept whisker-like shape already in the target. Make the head recognizably a long Eastern dragon: slender elongated face, clean sculptural nose and jaw, antler-like horns, tiny swept ear. The face should have enough white mass to remain legible but stay graceful.
+
+ABSOLUTE RULE: no depicted mouth. The whole nose and muzzle remain ONE uninterrupted white mass; no mouth seam, lip line, smile, teeth, tongue, nostril or open jaw. Expression comes from the eye and outer silhouette only.
+
+Everything from the back of the head down through the serpentine neck and linked ammunition-body stays unchanged. No big chest, shoulder plinth, bulky torso, wings or limbs. One finished pure white/black icon on the same black square with the same margins. No gray, texture, shading, text, frame, watermark or extra elements.
+

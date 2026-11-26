@@ -1,0 +1,16 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v21.png.
+Targeted geometry correction: four equal, straight, rigid, parallel cartridges joined by a curved strip; preserve the two-horn layering, calmer eye and revised neck.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Chinese dragon Support icon v22, AMMUNITION GEOMETRY CORRECTION ONLY.
+The input image is the edit target v21. Keep the ENTIRE dragon head, TWO layered horns, calmer triangular eye, neck, body contours, canvas, margins and white/black mass unchanged.
+
+Rebuild ONLY the FOUR rifle cartridges in the lower diagonal belt:
+Make ONE clean straight round, then use FOUR IDENTICAL COPIES. All four have the SAME LENGTH, WIDTH, PROPORTIONS and ANGLE, with parallel central axes leaning upward-right about 60 degrees above the horizontal. Move the copies along the belt curve using translation only. Do not fan their angles in this pass.
+Each casing is a straight RECTANGLE with two exactly PARALLEL STRAIGHT sides. Each base is a flat straight end PERPENDICULAR to the round's axis, not cut along the belt's sloping edge. One simple pointed projectile is centered on the same straight axis. No bowed casing, curved central axis, trapezoidal case taper, perspective distortion, unequal body lengths or stretched projectiles.
+Each full casing remains one CONTINUOUS WHITE shape through and below the connector. The single linking strip can curve BEHIND the rounds and join them, but it does not bend, cut off, shorten or distort any casing. Do not outline or detach the bottom portions. Remove the current irregular disconnected base polygons and replace them with the actual straight continuous casing ends. No tiny floating rims or pills.
+Keep the overall diagonal belt position, spacing and scale similar to the input, with FOUR equal rigid parallel rounds. Only the linking strip curves.
+
+No changes elsewhere. Exactly TWO horns with the smaller rear horn behind the front horn. No whiskers, beard, barbels, ears, mouth, teeth or nostril. Pure solid white on solid black. No text, shading, gray, texture, frame or new elements. Output ONE corrected icon.
+

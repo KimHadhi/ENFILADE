@@ -1,0 +1,63 @@
+{
+  "class": "schiesshund",
+  "date": "2026-11-20",
+  "generator": "built-in image_gen",
+  "source": "ArtSource/Hud/ClassIconArt/schiesshund.png",
+  "source_size": [
+    1254,
+    1254
+  ],
+  "runtime": "Assets/_Project/Art/Resources/UI/Icons/Class_schiesshund.png",
+  "runtime_size": [
+    512,
+    512
+  ],
+  "runtime_mode": "RGBA",
+  "runtime_rgb_all_white": true,
+  "runtime_alpha_extrema": [
+    0,
+    255
+  ],
+  "runtime_alpha_bbox": [
+    70,
+    37,
+    445,
+    461
+  ],
+  "runtime_sha256": "5912c3d1801edc19f91a31a9a17d7793e98e4a57c14cde541475110d9ea53e2c",
+  "matches_existing_from_drawing_pipeline": true,
+  "unity_guid_preserved": true,
+  "small_size_preview": {
+    "44": {
+      "alpha_bbox": [
+        4,
+        1,
+        41,
+        42
+      ],
+      "max_alpha": 255
+    },
+    "24": {
+      "alpha_bbox": [
+        1,
+        0,
+        23,
+        24
+      ],
+      "max_alpha": 255
+    },
+    "16": {
+      "alpha_bbox": [
+        0,
+        0,
+        16,
+        16
+      ],
+      "max_alpha": 255
+    }
+  },
+  "preview": "ArtSource/Hud/ClassIcons/schiesshund-icon-v1-preview.png",
+  "in_game_visual_check": "not performed",
+  "other_class_runtime_files_and_all_import_settings_unchanged": true,
+  "visual_review": "Compared against all five supplied references; inspected white and teal previews at 44, 24 and 16 pixels."
+}

@@ -34,6 +34,7 @@ internal sealed class TextEditorWindow : EditorWindow
     [SerializeField] private string search = "";
     [SerializeField] private int area;
     [SerializeField] private bool onlyChanged, onlyProblems, onlyMissing, excelNote;
+    [SerializeField] private bool showHelp = true;
     [SerializeField] private string editLanguage = Texts.Korean;
     [SerializeField] private string selectedId = "";
     [SerializeField] private int selectedOccurrence;
@@ -49,7 +50,7 @@ internal sealed class TextEditorWindow : EditorWindow
     private readonly HashSet<TextScan.Kind> open = new HashSet<TextScan.Kind> { TextScan.Kind.CodeWords, TextScan.Kind.MissingId, TextScan.Kind.BrokenRow };
     private Dictionary<string, List<string>> calloutLines;
     private Dictionary<string, string> spoken;
-    private bool dragging, addingLanguage;
+    private bool dragging, addingLanguage, resetEditing;
     private string newLanguage = "";
     private Rect wordsArea;
 
@@ -67,6 +68,7 @@ internal sealed class TextEditorWindow : EditorWindow
         var window = GetWindow<TextEditorWindow>("글자 편집기");
         window.minSize = new Vector2(760f, 480f);
         window.tab = tab;
+        window.resetEditing = true;
         if (tab == 1) window.findings = null;
         window.Show();
     }
@@ -82,7 +84,8 @@ internal sealed class TextEditorWindow : EditorWindow
         // Another tool, session or a hand edit saved the file: take its rows, keeping the edits here.
         if (sheet != null && sheet.ChangedOnDisk)
         {
-            try { sheet.Refresh(); } catch (IOException error) { loadError = error.Message; }
+            try { sheet.Refresh(); loadError = null; } catch (IOException error) { loadError = error.Message; }
+            resetEditing = true;
             Changed();
         }
     }
@@ -106,6 +109,7 @@ internal sealed class TextEditorWindow : EditorWindow
             int column = sheet.Column(edit.column);
             if (row != null && column > 0) row.Words[column] = edit.words;
         }
+        resetEditing = true;
         Changed();
     }
 
@@ -132,6 +136,11 @@ internal sealed class TextEditorWindow : EditorWindow
 
     private void OnGUI()
     {
+        if (resetEditing)
+        {
+            EndTextEditing();
+            resetEditing = false;
+        }
         wrap ??= new GUIStyle(EditorStyles.label) { wordWrap = true, richText = false };
         changedId ??= new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = new Color(1f, .45f, .65f) } };
         muted ??= new GUIStyle(EditorStyles.miniLabel) { wordWrap = false, richText = false, clipping = TextClipping.Clip };
@@ -139,8 +148,14 @@ internal sealed class TextEditorWindow : EditorWindow
         {
             Save();
             Event.current.Use();
+            RestartGUI();
         }
-        tab = GUILayout.Toolbar(tab, Tabs, EditorStyles.toolbarButton);
+        int pickedTab = GUILayout.Toolbar(tab, Tabs, EditorStyles.toolbarButton);
+        if (pickedTab != tab)
+        {
+            tab = pickedTab;
+            RestartGUI();
+        }
         if (loadError != null || sheet == null)
         {
             EditorGUILayout.HelpBox("Texts.csv를 읽지 못했어요: " + loadError + "\n파일을 잠근 프로그램(엑셀 등)을 닫고 다시 읽어 주세요.", MessageType.Error);
@@ -157,6 +172,13 @@ internal sealed class TextEditorWindow : EditorWindow
     {
         DrawLanguageToolbar();
         DrawFilters();
+        if (showHelp)
+            EditorGUILayout.HelpBox(
+                "1. 편집 언어를 고르고 검색해요(id·모든 언어·메모·구역 제목). 목록의 어느 칸이든 누르면 아래에 편집란이 열려요.\n" +
+                "2. 아래에서 선택한 언어의 문구와 '어디' 메모를 고쳐요. 원문·참고 번역은 읽기 전용이에요. Enter로 줄을 나눠요.\n" +
+                "3. 저장 버튼이나 Ctrl+S로 모든 언어의 고친 칸을 함께 저장해요. 줄·언어를 옮겨도 수정은 남고, 자동 저장되지는 않아요.\n" +
+                "{0}·{1}·{Knight.coverCooldown}은 코드가 채우는 자리라 남겨요. [F]는 설정한 키로 표시돼요.\n" +
+                "고르기 칩·슬라이더 양 끝의 |는 칸 구분이라 개수를 맞춰요. <b>·<color=…> 같은 꾸밈 태그도 짝을 맞춰요.", MessageType.Info);
         Filter();
         if (sheet.ChangedOnDisk)
             EditorGUILayout.HelpBox("다른 곳에서 Texts.csv가 바뀌었어요. 창을 다시 누르면 새 줄을 가져와요(고친 글자는 남아요).", MessageType.Info);
@@ -167,9 +189,7 @@ internal sealed class TextEditorWindow : EditorWindow
         if (row == null)
         {
             DrawList(wordsArea);
-            EditorGUILayout.HelpBox("위 목록에서 id를 누르면 여기서 여러 줄로 고치고, 어디에 쓰이는지 볼 수 있어요. 줄은 Enter로 바꿔요(파일에는 \\n으로 들어가요). " +
-                                    "이야기 카드는 줄마다 한 줄씩 나오고 줄 수는 자유예요.\n" +
-                                    "{0} {1}은 코드가 채우는 자리. 체형의 고르기 칩·슬라이더 양 끝 글자만 | 로 칸을 나누고 그 수를 맞춰요. [F] 같은 대괄호 키는 플레이어가 고른 키로 보여요.", MessageType.None);
+            EditorGUILayout.HelpBox("목록에서 고칠 줄을 누르세요. 아래 편집란에서 문구와 메모를 고칠 수 있어요.", MessageType.None);
         }
         else
         {
@@ -206,13 +226,22 @@ internal sealed class TextEditorWindow : EditorWindow
                 if (picked != editLanguage)
                 {
                     editLanguage = picked;
-                    GUI.FocusControl(null);
                     detailScroll = Vector2.zero;
                     shownKey = null;
+                    RestartGUI();
                 }
             }
             if (GUILayout.Button("언어 추가", EditorStyles.toolbarButton, GUILayout.Width(72f)))
+            {
                 addingLanguage = !addingLanguage;
+                RestartGUI();
+            }
+            bool help = GUILayout.Toggle(showHelp, new GUIContent("사용법", "편집·저장 방법과 문구에 쓰는 특수 기호를 설명해요."), EditorStyles.toolbarButton, GUILayout.Width(54f));
+            if (help != showHelp)
+            {
+                showHelp = help;
+                RestartGUI();
+            }
             GUILayout.FlexibleSpace();
             int column = EditingColumn;
             if (column > 0)
@@ -225,6 +254,7 @@ internal sealed class TextEditorWindow : EditorWindow
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
             GUILayout.Label("언어 코드", EditorStyles.miniLabel);
+            GUI.SetNextControlName("texts.newLanguage");
             newLanguage = EditorGUILayout.TextField(newLanguage, GUILayout.Width(100f));
             GUILayout.Label("예  ja, fr, pt-br", EditorStyles.miniLabel);
             if (GUILayout.Button("추가", EditorStyles.toolbarButton, GUILayout.Width(50f))) AddLanguage();
@@ -246,9 +276,9 @@ internal sealed class TextEditorWindow : EditorWindow
             addingLanguage = false;
             newLanguage = "";
             detailScroll = Vector2.zero;
-            GUI.FocusControl(null);
             Changed();
             if (!written) ShowNotification(new GUIContent("파일 잠금이 풀리면 새 언어 열이 저장돼요."), 3f);
+            RestartGUI();
         }
         catch (IOException error)
         {
@@ -271,12 +301,13 @@ internal sealed class TextEditorWindow : EditorWindow
     {
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
+            GUI.SetNextControlName("texts.search");
             search = GUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(160f));
             var areas = new[] { "구역: 전체" }.Concat(TextSheet.Areas.Select(a => a.name)).Concat(new[] { "기타" }).ToArray();
             area = EditorGUILayout.Popup(area, areas, EditorStyles.toolbarPopup, GUILayout.Width(120f));
-            onlyMissing = GUILayout.Toggle(onlyMissing, "미번역만", EditorStyles.toolbarButton);
-            onlyChanged = GUILayout.Toggle(onlyChanged, "고친 줄만", EditorStyles.toolbarButton);
-            onlyProblems = GUILayout.Toggle(onlyProblems, "문제 있는 줄만", EditorStyles.toolbarButton);
+            onlyMissing = GUILayout.Toggle(onlyMissing, new GUIContent("미번역만", "선택한 언어가 저장된 파일에서 비어 있는 줄. 입력 중인 줄은 저장할 때까지 남아요."), EditorStyles.toolbarButton);
+            onlyChanged = GUILayout.Toggle(onlyChanged, new GUIContent("고친 줄만", "언어·메모 중 하나라도 저장하지 않은 수정이 있는 줄이에요."), EditorStyles.toolbarButton);
+            onlyProblems = GUILayout.Toggle(onlyProblems, new GUIContent("문제 있는 줄만", "문구의 필수 기호에 오류가 있거나 다른 곳의 수정과 충돌한 줄이에요."), EditorStyles.toolbarButton);
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{shown.Count}줄", EditorStyles.miniLabel);
         }
@@ -326,6 +357,8 @@ internal sealed class TextEditorWindow : EditorWindow
         if (showReference) GUI.Label(referenceRect, column == english ? "한국어 원문" : "영어 참고", EditorStyles.miniBoldLabel);
         if (note > 0) GUI.Label(noteRect, "어디 (#어디)", EditorStyles.miniBoldLabel);
 
+        bool clickedList = Event.current.type == EventType.MouseDown && Event.current.button == 0
+                           && viewport.Contains(Event.current.mousePosition);
         listScroll = GUI.BeginScrollView(viewport, listScroll, new Rect(0f, 0f, contentWidth, contentHeight));
         if (shown.Count == 0) GUI.Label(new Rect(4f, 0f, contentWidth, RowHeight), "조건에 맞는 줄이 없어요.", muted);
         int first = Mathf.Max(0, Mathf.FloorToInt(listScroll.y / RowHeight));
@@ -338,8 +371,19 @@ internal sealed class TextEditorWindow : EditorWindow
             if (selected) EditorGUI.DrawRect(rect, new Color(.24f, .48f, .9f, .25f));
             else if (row.Conflict != null) EditorGUI.DrawRect(rect, new Color(1f, .3f, .2f, .15f));
             Columns(rect, showReference, out idRect, out wordsRect, out referenceRect, out noteRect);
-            if (GUI.Button(idRect, row.Id, row.Dirty ? changedId : EditorStyles.label)) Select(row, true);
-            if (column > 0) Field(wordsRect, row, column);
+            // Visible rows are recycled as the list scrolls. Draw labels without per-row controls, so the number
+            // of visible rows cannot change the detail fields' control IDs and move their shared edit buffer.
+            var e = Event.current;
+            if (clickedList && e.type == EventType.MouseDown && rect.Contains(e.mousePosition)
+                && GUIUtility.hotControl == 0)
+            {
+                EndTextEditing();
+                e.Use();
+                Select(row);
+            }
+            EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+            GUI.Label(idRect, new GUIContent(row.Id, row.Id + (row.Dirty ? " · 저장하지 않은 수정이 있어요." : "")), row.Dirty ? changedId : EditorStyles.label);
+            if (column > 0) ListLabel(wordsRect, row.Words[column]);
             if (showReference) ListLabel(referenceRect, row.Words[reference]);
             if (note > 0) ListLabel(noteRect, row.Words[note]);
         }
@@ -348,17 +392,6 @@ internal sealed class TextEditorWindow : EditorWindow
 
     private void ListLabel(Rect rect, string value) =>
         GUI.Label(rect, new GUIContent(string.IsNullOrWhiteSpace(value) ? "–" : value, value), muted);
-
-    private void Field(Rect rect, TextSheet.Row row, int column)
-    {
-        string now = EditorGUI.TextField(rect, row.Words[column] ?? "");
-        if (now == row.Words[column]) return;
-        row.Words[column] = now;
-        // Typing stays in the field: the row is picked without taking the keyboard away.
-        Select(row, false);
-        Changed();
-    }
-
 
     private static void Columns(Rect rect, bool showReference, out Rect id, out Rect words, out Rect reference, out Rect note)
     {
@@ -372,13 +405,14 @@ internal sealed class TextEditorWindow : EditorWindow
         note = new Rect(words.xMax + 4f + referenceWidth, id.y, noteWidth - 6f, id.height);
     }
 
-    private void Select(TextSheet.Row row, bool takeFocus)
+    private void Select(TextSheet.Row row)
     {
         if (row.Id == selectedId && row.Occurrence == selectedOccurrence) return;
         selectedId = row.Id;
         selectedOccurrence = row.Occurrence;
-        if (takeFocus) GUI.FocusControl(null);
         detailScroll = Vector2.zero;
+        // Stop this pass: DrawWords still holds the old row, and the next row needs a fresh text editor.
+        RestartGUI();
     }
 
     private void DrawSplitter(Rect bar, float height, float minHeight, float maxHeight)
@@ -409,20 +443,25 @@ internal sealed class TextEditorWindow : EditorWindow
             EditorGUILayout.SelectableLabel(row.Id, EditorStyles.boldLabel, GUILayout.Height(18f));
             GUILayout.Label($"{TextSheet.AreaOf(row.Id)}{(row.Section.Length > 0 ? " · " + row.Section : "")} · {row.Line}번째 줄", EditorStyles.miniLabel);
             GUILayout.FlexibleSpace();
-            if (row.Dirty && GUILayout.Button("이 줄 되돌리기", GUILayout.Width(100f)))
+            // Keep the button in the control sequence even before the first edit, so typing cannot move focus.
+            using (new EditorGUI.DisabledScope(!row.Dirty))
             {
-                Array.Copy(row.Saved, row.Words, row.Words.Length);
-                row.Conflict = null;
-                GUI.FocusControl(null);
-                Changed();
+                if (GUILayout.Button(new GUIContent("이 줄 되돌리기", "이 줄의 모든 언어와 메모를 마지막으로 읽거나 저장한 값으로 돌려요."), GUILayout.Width(100f)))
+                {
+                    Array.Copy(row.Saved, row.Words, row.Words.Length);
+                    row.Conflict = null;
+                    Changed();
+                    RestartGUI();
+                }
             }
             if (GUILayout.Button("상세 닫기", GUILayout.Width(80f)))
             {
                 selectedId = "";
                 detailScroll = Vector2.zero;
-                GUI.FocusControl(null);
+                RestartGUI();
             }
         }
+        GUILayout.Label($"편집 중: {LanguageLabel(editLanguage)} · {(row.Dirty ? "이 줄에 저장하지 않은 수정이 있어요" : "저장된 상태")}", EditorStyles.miniLabel);
         if (row.Conflict != null) EditorGUILayout.HelpBox(row.Conflict, MessageType.Warning);
         if (column > 0) Area(row, column, LanguageLabel(sheet.Columns[column]));
         if (ko > 0 && column != ko) DrawReference("한국어 원문", row.Words[ko]);
@@ -430,8 +469,10 @@ internal sealed class TextEditorWindow : EditorWindow
         int note = sheet.Note;
         if (note > 0)
         {
-            string now = EditorGUILayout.TextField("어디 (메모)", row.Words[note] ?? "");
-            if (now != row.Words[note]) { row.Words[note] = now; Changed(); }
+            GUI.SetNextControlName(CellControl(row, note));
+            EditorGUI.BeginChangeCheck();
+            string now = EditorGUILayout.TextField(new GUIContent("어디 (메모)", "이 문구가 나오는 화면·상황을 적어요. 모든 언어가 함께 쓰는 메모이며 게임에는 표시되지 않아요."), row.Words[note] ?? "");
+            if (EditorGUI.EndChangeCheck() && now != row.Words[note]) { row.Words[note] = now; Changed(); }
         }
         var problems = sheet.Problems(row);
         foreach (var (error, what) in problems) EditorGUILayout.HelpBox(what, error ? MessageType.Error : MessageType.Warning);
@@ -458,8 +499,10 @@ internal sealed class TextEditorWindow : EditorWindow
     {
         GUILayout.Label(label + "  · Enter로 줄바꿈" + (row.Changed(column) ? "  (고침 · 원래: " + Short(row.Saved[column]) + ")" : ""), EditorStyles.miniBoldLabel);
         string shownWords = (row.Words[column] ?? "").Replace("\\n", "\n");
+        GUI.SetNextControlName(CellControl(row, column));
+        EditorGUI.BeginChangeCheck();
         string typed = EditorGUILayout.TextArea(shownWords, GUILayout.MinHeight(38f));
-        if (typed == shownWords) return;
+        if (!EditorGUI.EndChangeCheck() || typed == shownWords) return;
         row.Words[column] = typed.Replace("\r\n", "\n").Replace("\n", "\\n");
         Changed();
     }
@@ -519,11 +562,12 @@ internal sealed class TextEditorWindow : EditorWindow
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
             int count = sheet.Rows.Count(r => r.Dirty);
-            if (GUILayout.Button("다시 읽기", EditorStyles.toolbarButton, GUILayout.Width(70f)))
+            if (GUILayout.Button(new GUIContent("다시 읽기", "파일의 최신 값을 가져와요. 이 창에서 고친 내용은 남기고 같은 칸의 외부 수정은 충돌로 표시해요."), EditorStyles.toolbarButton, GUILayout.Width(70f)))
             {
-                try { sheet.Refresh(); } catch (IOException error) { loadError = error.Message; }
+                try { sheet.Refresh(); loadError = null; } catch (IOException error) { loadError = error.Message; }
                 usage = null;
                 Changed();
+                RestartGUI();
             }
             using (new EditorGUI.DisabledScope(count == 0))
             {
@@ -531,11 +575,16 @@ internal sealed class TextEditorWindow : EditorWindow
                     && EditorUtility.DisplayDialog("글자 편집기", $"고친 {count}줄을 모두 저장 전으로 되돌릴까요?", "되돌리기", "취소"))
                 {
                     foreach (var row in sheet.Rows) { for (int c = 0; c < row.Words.Length; c++) row.Words[c] = row.Saved[c]; row.Conflict = null; }
-                    GUI.FocusControl(null);
                     Changed();
+                    RestartGUI();
                 }
-                if (GUILayout.Button(count > 0 ? $"저장 ({count}줄)" : "저장", EditorStyles.toolbarButton, GUILayout.Width(100f))) Save();
+                if (GUILayout.Button(new GUIContent(count > 0 ? $"저장 ({count}줄)" : "저장", "Ctrl+S · 필터와 현재 편집 언어에 관계없이 모든 언어·메모의 고친 칸을 저장해요."), EditorStyles.toolbarButton, GUILayout.Width(100f)))
+                {
+                    Save();
+                    RestartGUI();
+                }
             }
+            GUILayout.Label($"저장 안 함 {count}줄 · {pending.Count}칸", EditorStyles.miniLabel);
             excelNote = GUILayout.Toggle(excelNote, "엑셀로 열면 안 되는 까닭", EditorStyles.toolbarButton);
             GUILayout.FlexibleSpace();
             if (Application.isPlaying) GUILayout.Label("Play 중: 저장하면 떠 있는 글자도 바로 바뀌어요", EditorStyles.miniLabel);
@@ -553,6 +602,7 @@ internal sealed class TextEditorWindow : EditorWindow
 
     private void Save()
     {
+        resetEditing = true;
         if (sheet == null || !sheet.Rows.Any(r => r.Dirty)) return;
         var errors = sheet.Rows.Where(r => r.Dirty).SelectMany(r => sheet.Problems(r).Where(p => p.error).Select(p => r.Id + ": " + p.what)).ToList();
         if (errors.Count > 0 && !EditorUtility.DisplayDialog("글자 편집기",
@@ -624,6 +674,8 @@ internal sealed class TextEditorWindow : EditorWindow
         {
             EditorUtility.DisplayProgressBar("하드코딩 검사", "코드·표·프리팹을 읽는 중…", .5f);
             sheet.Refresh();
+            resetEditing = true;
+            Changed();
             findings = TextScan.Run(sheet);
         }
         catch (IOException error)
@@ -637,6 +689,25 @@ internal sealed class TextEditorWindow : EditorWindow
     }
 
     // ---- Shared ----
+
+    private string CellControl(TextSheet.Row row, int column) => $"texts.cell.{row.Id}\n{row.Occurrence}\n{sheet.Columns[column]}";
+
+    private static void EndTextEditing()
+    {
+        GUI.FocusControl(null);
+        GUIUtility.keyboardControl = 0;
+        GUIUtility.hotControl = 0;
+        EditorGUIUtility.editingTextField = false;
+    }
+
+    // Changing a row, language or layout replaces text controls. End their shared edit session and start a fresh
+    // GUI pass before drawing the replacement; otherwise Unity can keep the old cell's text for the new control.
+    private void RestartGUI()
+    {
+        EndTextEditing();
+        Repaint();
+        GUIUtility.ExitGUI();
+    }
 
     // Code opens at the line in the script editor; a table, prefab or scene is shown in the Project window (a table
     // opened by the system could land in Excel, which this window warns about).

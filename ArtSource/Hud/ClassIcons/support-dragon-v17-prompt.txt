@@ -1,0 +1,29 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v16.png.
+User direction: strengthen dragon identity, integrate the horn naturally, develop the neck; retain family proportions and simplified mouthless icon style.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon Support class icon v17.
+Image 1 (v16) is the EDIT TARGET. Images 2 and 3 (Ghost, Knight) are STYLE REFERENCES for compact animal proportions, broad sculpted white masses and elegant tapering curves. Do not copy their animal anatomy.
+
+USER DIRECTION: strengthen the dragon identity, make the single horn grow naturally from the skull, and further develop the neck. Refine the design as a coherent whole rather than add decorations.
+
+1. NATURAL SINGLE HORN:
+Redesign the current oversized forehead extension as ONE antler-like dragon horn arising from the REAR CROWN, just behind and above the eye. Move its root back from the forehead into the upper rear skull. The skull remains a clearly rounded continuous mass in front of that root.
+Give the root believable thickness, then a smooth backward sweep and steady taper to the tip. One short secondary branch grows from the same stem, not a separate horn. Make the fork restrained and fluid, around 15% smaller in overall horn area than the target. The root, crown and nape must meet through smoothly related curves. No pasted-on flame shape, sudden thick triangular root or detached antler. ONE root, no ears.
+
+2. REFINED DRAGON FACE:
+Keep the existing compact eye-to-nose distance and balanced head size. Refine the nose ridge into a subtly lifted softly squared Chinese-dragon snout and join it to the low brow in one purposeful silhouette. The cheek has a firm sculptural turn into the rear jaw, not a rounded mammal jowl.
+Use the one angular eye and OUTER face contour only. A composed noble Eastern dragon, not a wrinkled monster, elongated horse or thick buffalo. No extra whisker line, knotted brow, forehead bumps or long snout.
+
+3. DEVELOP THE SUPPLE NECK:
+Recompose the white neck bands and their black channel into a cleaner, more anatomical continuous S-flow from the rear skull down around the turn and into the ammo-belt body.
+The nape should narrow smoothly below the head, deepen through the bend, then taper into the lower return. Give its rear edge ONE broad swept draconic crest, integrated with that same bend rather than several little tufts. The inner throat should grow naturally out of the rear jaw and follow a long flowing concavity. Use one or two LARGE deliberate black channels with consistent graceful widening and tapering, like the reference icons.
+The front sweep, rear nape and lower return must feel like connected parts of one long coiling dragon neck, not a mane above a strap or a bulky western-dragon chest. Keep the curves compressed close under the large head, with the same compact family footprint. No giant hollow loop or tiny head.
+
+Keep the FOUR linked cartridges, connecting strip and their recognizable geometry in the lower body. Adjust only the ends and nearby body curves so the neck flows seamlessly into that linked belt. No ammunition sticker or separate shoulder plinth.
+
+STRICT INVARIANTS:
+One horn, NO EARS. NO MOUTH seam, opening, lip, smile, teeth, fang, tongue, nostril or internal cheek curl; the eye is the sole internal facial mark.
+Same solid WHITE/BLACK style, black square and generous margins; compact large-head scale, few broad shapes, elegant curve rhythm, bold cutouts readable at 44px. No gray, texture, shade, lighting, glow, frame, text, labels, watermark, wing, limb or extra elements. ONE finished revised icon.
+

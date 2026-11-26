@@ -1,0 +1,15 @@
+Generation mode: built-in image_gen edit.
+Clean target: support-dragon-v31.png.
+Thickness guide: codex-clipboard-f63cca84-cb37-4309-861d-f9315237754f.png.
+
+Use case: precise-object-edit.
+Asset type: ENFILADE Support class icon, v32.
+Inputs: Image 1 is the CLEAN EDIT TARGET, v31. Image 2 is the user's ANNOTATED COPY. The short RED mark is a thickness measurement across the white body, NOT a cut, seam or added design feature.
+
+Primary request: make the dragon's coiled body consistently thick.
+Use the white body's width at the red measurement as the standard: approximately 125–135 pixels measured PERPENDICULAR to the local body flow on this square source image. Carry that same apparent width continuously from the diagonal body above the ammunition, around the lower-left U bend, along the body beneath the four cartridges, around the far-right return, and through the returning lower tail. Only the FINAL short tail tip should taper to a point.
+In the current image, the left bend pinches while the right bend balloons. Correct BOTH. Widen the pinched left turn and slim the swollen right return so the body reads as one even, substantial, supple ribbon. Rebalance the inner and outer curves together with smooth close-to-parallel offset contours, paying attention to the normal cross-section around bends. The black hollow inside the lower return must stay open and clean. No abrupt bulges, waist, thick blob, or premature thinning along the tail.
+Keep the route and composition: the body coils around the four-round belt, flows to the right, and returns to a left-facing pointed tail. Keep the current bold visual weight; do NOT revert to a skinny outline. This is a precise contour correction, not a new emblem.
+
+Invariants: preserve head, muzzle, calm eye, layered two-horn arrangement, nape points, upper neck crescent and overall square placement. Preserve EXACTLY FOUR cartridge silhouettes with identical existing shape, straight axes, size, position, spacing and direction; do not bend or redraw them. Adjust only the surrounding lower-body contours.
+Pure white silhouette on black, same safe margins. Remove the red mark completely. No red, gray, outline strokes, new internal seams, texture, shading, text, frame, mouth line, teeth, nostril, ears, whiskers or beard. Output ONE finished revised icon.

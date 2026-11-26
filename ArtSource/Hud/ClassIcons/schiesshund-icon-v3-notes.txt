@@ -1,0 +1,15 @@
+Schießhund / 시순트 class icon v3, 2026-11-20.
+
+User correction: the class animal icons must not depict mouths. The v2 mouth
+slit and separate lower lip have been removed. The muzzle is one solid white
+mass; the eye and outer silhouette provide the expression. The German Shepherd
+ears, cheek/neck cut, collar, shoulder diamond and sweeping base are retained.
+
+Created with built-in image_gen edit, using v2 as the edit target. The exact
+prompt is saved alongside. The shared no-mouth rule and German Shepherd breed
+are recorded in this directory's AGENTS.md for subsequent icon work.
+
+Canonical source: ArtSource/Hud/ClassIconArt/schiesshund.png.
+Versioned original: ArtSource/Hud/ClassIcons/schiesshund-icon-v3.png.
+Runtime asset: Assets/_Project/Art/Resources/UI/Icons/Class_schiesshund.png.
+Export uses Tools/Icons/class_icons.py from_drawing at 512x512 white RGBA.

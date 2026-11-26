@@ -1,0 +1,23 @@
+Generation mode: built-in image_gen edit.
+Edit target: support-dragon-v10.png.
+User direction: develop the design to look more recognizably like a dragon; retain one horn, no ears, mouthless family style and integrated ammo-belt body.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: ENFILADE Chinese dragon Support class icon v11.
+Image 1 is the EDIT TARGET, current dragon v10. Image 2 is the approved Ghost tiger, STYLE REFERENCE ONLY for reduced sculptural facial planes and expressive angular brow; do not copy its animal or stripes.
+
+PRIMARY REQUEST: make the animal recognizably an EASTERN / CHINESE LONG DRAGON. The current head looks too much like a horse/deer with an antler. Substantially refine the HEAD'S CHARACTER while keeping the compact class-family graphic style. Keep ONE HORN, NO EARS.
+
+DRAGON HEAD:
+- Redraw the forehead/nose transition into a more distinctive draconic stepped brow and long low nasal bridge. A small projecting brow ridge above the existing narrow angular eye gives a powerful guarded expression.
+- Give the nose a measured slightly raised and flared upper ridge and a blunt softly squared front, with a clean firm slimmer lower jaw. A sculpted long dragon muzzle rather than a smooth equine wedge, rounded buffalo nose or hooked bird beak. Suggest the characteristic Chinese-dragon nose through the OUTER CONTOUR only, not a black nostril.
+- Reshape the back cheek into one confident curved dragon jaw/beard form. Add ONE broad, restrained WHITE backward-swept whisker/beard lock originating at the REAR CHEEK, outside the main jaw silhouette. It should flow back into the neck as a short elegant curved taper. It is part of the dragon's outer silhouette and lives against the external black throat area, not a black line drawn across the face. Distinct from a fang: it starts at the back cheek, not under the front muzzle. No floating thread, giant hanging ribbon or dense hair.
+- The one antler-like horn can sweep a little more backward to reinforce the head's forward flow, with one short branch and ONE root. Keep it thick and simple enough for the existing 44px HUD style. No second horn, no ears or leaf-shaped ear substitutes.
+- Give the skull-to-nape transition one controlled flowing dragon crest that joins the existing neck turn. Keep it as a broad designed contour, not a bushy mane, tiny flame spikes or western armored spine.
+
+ABSOLUTE FAMILY RULE: NO MOUTH. No mouth seam, black cheek curl, grin, lips, mouth opening, teeth, fangs, tongue or nostril. The muzzle and face remain one broad WHITE mass with just the single black eye inside. The short WHITE whisker/beard lock is outside the rear jaw, not an internal mouth line. This is a mouthless emblem, not an anatomical illustration.
+
+PRESERVE:
+The large dominant head scale; left profile; one-horn/no-ear simplification; compressed square footprint; broad black throat channel; continuous S-flow of neck into the lower body; the FOUR linked cartridges and the existing ammo-belt path. Do not redesign the belt, add more ammunition or create a larger chest. The head, flowing neck and ammo-body must stay one cohesive icon. Keep the approved family's broad white masses, few bold black cuts, deliberate curves and tapered tips, with roughly the same white mass and optical size as the input.
+Pure WHITE on pure BLACK square with the same black margins. No gray, shadow, gradient, texture, glow, outline frame, letters, labels, numerals, watermark, UI, wing, limb or separate symbol. Output ONE finished edited icon.
+

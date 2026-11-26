@@ -1,0 +1,12 @@
+Support Chinese/Eastern dragon v6-v7, 2026-11-20.
+Generation: built-in image_gen; v6 new composition, v7 targeted face edit.
+User correction: the previous head reads as water buffalo, and its big torso reads as Western dragon. They want a long narrow Eastern-dragon neck/body whose flow harmoniously becomes an ammunition belt.
+
+v6: removed the broad chest/shoulder-base construction. A narrow serpentine neck curves down the right and returns across the lower half as linked cartridge-derived body segments. Eagle used as graphic-style reference only; resulting head was too beak-like.
+v7: preserved v6's body/belt curve and changed the hooked bill into a long low blunt muzzle. Current review candidate: support-dragon-v7.png.
+
+Visual inspection: slender continuous neck/body and belt share the curve; no large torso backing; left-facing head; small eye; two slim forked horns; no mouth seam or teeth; white graphic on black.
+Exact prompts are saved as support-dragon-v6-prompt.txt and support-dragon-v7-prompt.txt.
+User's long Eastern-dragon/body-as-ammo-belt direction recorded in AGENTS.md.
+Previous versions preserved; runtime icon not replaced.
+

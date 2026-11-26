@@ -1,0 +1,25 @@
+Generation mode: built-in image_gen edit.
+Primary edit target: user's reattached preferred full composition, codex-clipboard-82fb5a21-212b-4595-8b79-810b749db129.png.
+Supporting reference: v24's modestly longer muzzle and simpler ammunition outline only.
+User correction: prefers the original design's substantial filled body; later small isolated cartridges do not fulfill that design.
+Sampled lower region (x15%-85%, y60%-90%): selected reference 32.2% white; v24 24.3% white. Preserve the selected reference's visual mass.
+
+Use case: precise-object-edit / logo-brand.
+Asset type: original black-and-white fantasy-game class emblem, Support dragon v25.
+Image 1 is the user's REPEATEDLY SELECTED DESIGN BASELINE. Image 2 (v24) is supporting reference ONLY for the slightly longer muzzle and simplified cartridge outline. The user says the latest drawing lost the substantial filled design of image 1.
+
+HIGHEST PRIORITY: RESTORE IMAGE 1'S EXACT SCULPTURAL COMPOSITION AND FULLNESS.
+Keep image 1's large connected white masses, coiling neck, crescent-shaped negative channel, rear neck contour points, thick diagonal lower body band, lower-left taper and generous margins. The original lower white cells form the animal's actual OUTER SILHOUETTE. Preserve their substantial size and their close relationship with the upper neck sweep.
+Do not turn the bottom into a thin enclosing rail with little white objects floating inside a large black channel. No sparse tiny symbols and no new outline frame. The whole design should look as full, solid and cohesive as image 1.
+
+INTEGRATE THE AMMUNITION INTO THOSE EXISTING LARGE WHITE LOWER-BODY CELLS:
+The FOUR substantial white case-derived masses ARE the lower body, as the horse's sword or eagle's bullets share their anatomy. Use the original cell locations, visual weight, widths and lower contour. Refine their silhouettes so their short shoulder/neck and pointed cartridge-derived tips are recognizable, with straight unwarped axes and case sides.
+The white case masses must reach and PARTICIPATE IN THE OUTER LOWER EDGE of the dragon, not sit inset as separate small stickers. Let case edges merge locally with the continuing white neck/body; use only a few bold black separating seams to define the linked forms. Keep most of the original white area. Small rigid rotations follow the existing arc; never bend a casing.
+Use image 2's cleaner ammunition silhouette vocabulary, but enlarge and integrate it to fit image 1's substantial graphic masses. This is an idealized game emblem, not a literal product diagram. Prioritize beautiful coherent shape and fullness, with recognizable pointed tips and straight case geometry. No chunky decorative base rings, tiny mechanical parts, transverse component bands or separate enclosing cage.
+
+HEAD:
+Carry over the modestly longer muzzle from image 2, without further lengthening or thinning it. Keep the calm simple angular eye and clean crown. Retain the near horn; show the small far-horn tip behind it with its base occluded as in image 2. No new ornaments or changes to the head scale.
+
+STRICT: NO whiskers, beard, moustache, barbels, ears, mouth line, opening, lips, teeth, nostril or internal facial curl. Only the eye inside the face.
+Same pure WHITE masses and BLACK cutouts on BLACK square. No gray, texture, shading, realistic light, glow, frame, text, UI, watermark, wing or limb. ONE cohesive refined emblem.
+

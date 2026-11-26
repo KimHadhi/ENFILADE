@@ -1,0 +1,17 @@
+Schießhund / 시순트 class icon, 2026-11-20.
+
+Created with built-in image_gen using the user's KNIGHT, ASSAULT, Ghost_Alt,
+POINT, and DETENTE images as style references. The prompt is saved alongside.
+
+Design: left-facing hunting dog, two pointed ears, a long muzzle, sharp eye,
+broad curved neck, a diagonal collar cut and one bounty diamond in the shoulder.
+White silhouette and black negative space match the supplied class family.
+
+Canonical source: ArtSource/Hud/ClassIconArt/schiesshund.png.
+Versioned original: ArtSource/Hud/ClassIcons/schiesshund-icon-v1.png.
+Runtime asset: Assets/_Project/Art/Resources/UI/Icons/Class_schiesshund.png.
+
+The existing Tools/Icons/class_icons.py source-art pipeline exports this source
+as a 512x512 white RGBA mask with transparent background and negative space.
+Running that generator again uses the canonical source instead of the original
+procedural dog. The existing Unity asset GUID and import settings are retained.
