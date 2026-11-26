@@ -472,6 +472,7 @@ Body.fallFromEdgeDrop,1,발밑 땅이 이보다 깊으면(m) 턱에서 떨어지
 Body.land,Land_3h,세게 착지(Ability.hardLandingHeight 이상): 무릎을 깊게 굽힌다. BIPER Female Runner(엉덩이가 발 위 0.38m까지). 달리며 세게 착지하면 Body.landRunHard. 0.9.262 전에는 mx_fall_land
 Body.landMid,Land_2h,"서서 가볍게 착지하되 Body.landMidHeight 이상에서 떨어졌을 때: 점프 착지(Land_1h)보다 깊게 무릎으로 받는다(엉덩이가 발 위 0.40m까지). 세게 착지(Ability.hardLandingHeight 3.5m)는 Body.land. BIPER Female Runner, 0.9.285"
 Body.landMidHeight,2,이 높이(m) 이상에서 떨어진 가벼운 착지는 Body.landMid·landRunMid. 제자리 점프(1.3m)보다 높고 세게 착지(3.5m)보다 낮게. 착지 속도로 판단해 모든 PC에서 같다
+Body.slideEnterTime,0.25,"슬라이딩이 시작될 때 달리던 자세가 슬라이딩 클립으로 넘어가는 시간(초, 관성 블렌딩). 클립의 첫 프레임은 아무 걸음 순간의 달리기이고 처음 0.1초에 몸을 세웠다가(눈 12cm 위로) 0.18초에 57cm 내려가서, 기본 0.15초로는 다리와 머리가 그 사이를 툭 건너뛰었다(0.9.452, 사용자: ""슬라이딩 모션이 갑작스러움"")"
 Body.slideCrouchTime,0.3,"슬라이딩이 웅크리기로 끝날 때, 또는 멈춘 채 끝나 앉았다 일어설 때(0.9.382) 슬라이딩 자세에서 웅크린 자세로 바뀌는 시간(초). 그리로 가는 클립이 없어 두 자세 사이를 관성 블렌딩으로 잇는다. 0.9.266 전에는 일어나 달려 나가는 Body.slideEnd를 틀어 섰다가 앉았다"
 Body.standSettleTime,0.3,"달려 나가며 끝나는 동작(달리며 착지·달리며 구르기·달리기로 잇는 회피)을 몸이 멈춰 놓을 때 서 있기로 넘어가는 시간(초). 서 있기로 바로 바뀌고 관성 블렌딩이 이 시간에 걸쳐 이어 준다(0.9.379. 그 전에는 그 자세를 멈춘 채 천천히 섞었다). 그런 자세에서 서는 클립이 없다. 멈춘 슬라이딩은 앉았다 일어서기로 선다(Body.slideEnd, 0.9.382). 0.9.271"
 Body.diveStart,divestart,다이브 시작

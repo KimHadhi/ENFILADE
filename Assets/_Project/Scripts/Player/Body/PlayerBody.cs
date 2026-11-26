@@ -35,6 +35,8 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
     [SerializeField, Min(.01f), Tooltip("A slide or a roll that ends in a crouch goes from its pose into the crouch this slowly (s). "
         + "No pack has a clip for it.")]
     private float slideCrouchTime = .3f;
+    [SerializeField, Min(.01f), Tooltip("A slide begins: the run's pose goes into the slide's clip this slowly (s, BodyInertia).")]
+    private float slideEnterTime = .25f;
     [SerializeField, Min(.01f), Tooltip("A clip that ends running, given up because the body has stopped, holds its pose and the "
         + "standing takes over this slowly (s).")]
     private float standSettleTime = .3f;
@@ -997,6 +999,11 @@ public sealed partial class PlayerBody : MonoBehaviour, ITableBound
         // Out of a slide straight into a crouch, or stopped into the getting up from one: no clip goes from the slide's pose
         // there, so it turns into the crouch's slowly.
         if (from == MovementState.Sliding && (to == MovementState.Crouching || (onGround && SlideStops(from, to)))) SlowBlend(slideCrouchTime);
+        // Into a slide the run's pose eases into the clip over Body.slideEnterTime: at the clip's first frame the body is a
+        // runner at whatever moment of the stride the key came, and in its first tenth of a second it stands up straight (the
+        // eyes 12 cm up) before it drops 57 cm in 0.18 s (the slide trace of 2026-11-26). Over the plain blend's 0.15 s the
+        // legs and the head went from the run into that in a snap (the user: "슬라이딩 모션이 갑작스러움").
+        if (to == MovementState.Sliding) SlowBlend(slideEnterTime);
         if (from == MovementState.DashPush && onGround && (to == MovementState.Standing || to == MovementState.Crouching))
             PlayOn(dashPush);
         // Out of a roll standing the roll plays on; down into a crouch where its legs came under it the crouch's pose takes over

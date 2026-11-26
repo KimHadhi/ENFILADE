@@ -32,14 +32,16 @@ public sealed class SlideMove
     private const float LeastSlowing = .5f, NoEnd = .2f;
     // The slope's pull is followed this quickly (s), so a stair's edges don't jolt the match.
     private const float SlopeFollow = .2f;
-    // Along the slide the clip's moment goes at least and at most this many times its own pace.
-    private const float SlowestMatch = .5f, FastestMatch = 2f;
+    // Along the slide the clip's moment goes at least and at most this many times its own pace, and that pace changes no
+    // quicker than from one end to the other in MatchEase (s).
+    private const float SlowestMatch = .5f, FastestMatch = 2f, MatchEase = .5f;
     // A copy's moment goes on between poses at the clip's pace, and is set again by one further off than this (s).
     private const float MirrorSlack = .15f;
 
     private readonly PlayerMovement ctx;
-    // The share of the clip's pace it went down into it at, the rate its run-out plays at, and the slope's pull followed (m/s²).
-    private float warp = 1f, rate = 1f, pull;
+    // The share of the clip's pace it went down into it at, the rate its run-out plays at, the slope's pull followed (m/s²),
+    // and the pace along it (a share of the clip's own).
+    private float warp = 1f, rate = 1f, pull, along = 1f;
 
     internal SlideMove(PlayerMovement context) { ctx = context; }
 
@@ -64,7 +66,7 @@ public sealed class SlideMove
     internal float Begin(float carried)
     {
         Moment = pull = 0f;
-        rate = warp = 1f;
+        rate = warp = along = 1f;
         Now = Phase.Down;
         Clip = -1;
         int count = (ctx.AbilitySettings.slideClips ?? "").Split(';').Length;
@@ -137,9 +139,15 @@ public sealed class SlideMove
             if (left > fits) return speed;
             Now = Phase.Along;
             Moment = hold;
+            along = 1f;
         }
         float before = Moment;
-        Moment = Mathf.Clamp(MomentLeft(motion, left), Moment + SlowestMatch * dt, Moment + FastestMatch * dt);
+        // The pace that matches the distance left, eased into from the pace it had: down into the slide on the clip's own
+        // time and then at once to the distance's (half its pace, coming in faster than the clip), the pose went into slow
+        // motion in a frame as the body came down (the slide trace of 2026-11-26: the eyes dropping 3.5 m/s, then 1.8).
+        float wanted = Mathf.Clamp((MomentLeft(motion, left) - Moment) / dt, SlowestMatch, FastestMatch);
+        along = Mathf.MoveTowards(along, wanted, (FastestMatch - SlowestMatch) / MatchEase * dt);
+        Moment += along * dt;
         if (before < hold && Moment >= hold && left > fits)
         {
             Now = Phase.Held;
