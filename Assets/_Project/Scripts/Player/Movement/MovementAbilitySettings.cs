@@ -248,7 +248,7 @@ public sealed class MovementAbilitySettings
     [Tooltip("Running at least runTurnSpeed (m/s) with the keys ahead, a way wanted at least runTurnAngle (degrees) from the way "
         + "the body runs turns back on its clip, entered at its last moment before its root turns where its chest is twisted no "
         + "more than runTurnEntry (degrees) against its root.")]
-    [Min(0f)] public float runTurnSpeed = 2.2f, runTurnAngle = 100f, runTurnEntry = 35f;
+    [Min(0f)] public float runTurnSpeed = 2.2f, runTurnAngle = 125f, runTurnEntry = 35f;
     [Tooltip("Slower than this across the ground (m/s), a landing roll lands on the spot instead of rolling. "
         + "Below the walk's start speed, so a walk off a drop rolls too; Beatrun's 200 units/s is about the walk speed itself.")]
     [Min(0f)] public float rollLandSpeed = 2f;

@@ -21,6 +21,9 @@ internal sealed class TurnPlanner
 
     private float from, angle, duration;
     private int taken;
+    // The view's yaw last frame, for how far it went round since (Tick).
+    private float lookWas;
+    private bool lookKnown;
 
     // Below this the view is close enough ahead of the legs: no further step (degrees).
     private const float Close = 10f;
@@ -36,14 +39,20 @@ internal sealed class TurnPlanner
         taken = 0;
     }
 
+    /// <summary>Something else had the legs since the last tick: the view's turn meanwhile is none of this frame's.</summary>
+    internal void Forget() => lookKnown = false;
+
     /// <summary>
     /// Where the legs face after this frame (world yaw), from where they face and the view's yaw. Standing still
     /// (<paramref name="still"/>) they keep their place until the view is <paramref name="startAngle"/> away, then step
-    /// round, each step <paramref name="stepTime"/> s for 45° of it. Never further than <paramref name="limit"/> behind the
-    /// view: past that it drags them.
+    /// round, each step <paramref name="stepTime"/> s for 45° of it. Past <paramref name="limit"/> behind the view, the view
+    /// going on round away from them takes them with it.
     /// </summary>
     internal float Tick(float look, float legs, bool still, float dt, float startAngle, float stepTime, float limit)
     {
+        float viewStep = lookKnown ? Mathf.DeltaAngle(lookWas, look) : 0f;
+        lookWas = look;
+        lookKnown = true;
         if (!still)
         {
             Reset();
@@ -69,13 +78,17 @@ internal sealed class TurnPlanner
                 else Reset();
             }
         }
-        // The view went on round faster than the steps: it takes the legs with it, and the step goes on from there.
+        // The view going on round away from legs already past `limit` behind it, faster than the steps, takes them with it as
+        // far as it goes, and the step goes on from there. Legs that came to a stop further round than that (a run ahead that
+        // coasted to a stop facing its own way, a run's turn the view went on past) are not pulled in: the steps bring them round.
+        // Until 0.9.420 they were put at `limit` in the frame they stopped: after a run's turn that ended 160 to 170 degrees off
+        // the view the hips swung 66 to 77 degrees in a frame, the arms 40 degrees, and the head and chest flipped after (the gait
+        // and pops records of 2026-11-25 05:00; the user: "모션 바뀔 때 잠깐 버벅거리는 게 한 프레임? 정도").
         float behind = Mathf.DeltaAngle(look, legs);
-        if (Mathf.Abs(behind) > limit)
+        if (Mathf.Abs(behind) > limit && behind * viewStep < 0f)
         {
-            float dragged = look + Mathf.Sign(behind) * limit;
-            from += Mathf.DeltaAngle(legs, dragged);
-            legs = dragged;
+            from += viewStep;
+            legs += viewStep;
         }
         return legs;
     }

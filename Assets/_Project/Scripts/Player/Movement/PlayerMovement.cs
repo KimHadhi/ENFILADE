@@ -111,6 +111,17 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public float LeanOffset => Abilities != null ? Abilities.Lean.Offset : 0f;
 
     public Vector3 HorizontalVelocity { get => Motor.HorizontalVelocity; set => Motor.HorizontalVelocity = value; }
+    /// <summary>On the ground, what the legs are asked to carry (world, m/s): the keys' way at the gait's speed, eased
+    /// (LocomotionState). The body goes as the legs carry it (LegsCarry), not at this.</summary>
+    internal Vector3 Stride
+    {
+        get => stride;
+        set { stride = value; StrideFrame = Time.frameCount; }
+    }
+    private Vector3 stride;
+    /// <summary>The frame the stride was last asked: in any other (a surge, a hold, the air) something else moves the body, and
+    /// the legs follow what it does (PlayerBody.Locomotion).</summary>
+    internal int StrideFrame { get; private set; } = -10;
     public float VerticalVelocity { get => Motor.VerticalVelocity; set => Motor.VerticalVelocity = value; }
     public Vector3 SlideDirection { get => Actions.SlideDirection; set => Actions.SlideDirection = value; }
     /// <summary>The way the sliding body faces, held for the slide whatever the view does (MovementActions.SlideFacesBack).</summary>
@@ -219,6 +230,14 @@ public sealed partial class PlayerMovement : MonoBehaviour
     public Vector3 Velocity => HorizontalVelocity + Vector3.up * VerticalVelocity;
     public Vector3 ActualVelocity => Motor.actualVelocity;
     public Vector2 CurrentInput => InputAvailable && !ControlLocked && !IsGettingUp && Input != null ? Input.Move : Vector2.zero;
+    /// <summary>The legs run ahead, on every PC (another's from its pose: MovementMirror): the keys ask a jog or a sprint within
+    /// a slant of straight on, standing and not aimed (LocomotionState). The hips then face the way the body runs, which curves
+    /// no faster than the run's own arc clip (ArcRate), and the head turns to the view; otherwise the hips face the view and
+    /// the legs strafe (PlayerBody.Locomotion).</summary>
+    public bool RunsAhead => IsNetworkDriven ? mirroredAhead : runsAhead;
+    internal bool runsAhead, mirroredAhead;
+    /// <summary>How fast a run may curve (degrees a second): its arc clip's own turn at the legs' gait (PlayerBody.ArcRate).</summary>
+    internal float ArcRate => Body != null ? Body.ArcRate : 720f;
     /// <summary>Down after a heavy landing or thrown by a blow: movement keys and buttons do nothing (the view still turns).</summary>
     public bool ControlLocked => Abilities != null && Abilities.Landing.LocksControl;
     /// <summary>Getting up off the back (Ability.supineRiseTime): the body can't move off until it is up; the hands stay free
@@ -307,6 +326,13 @@ public sealed partial class PlayerMovement : MonoBehaviour
     internal ClipMotion MotionOf(string clip) => Body != null ? Body.MotionOf(clip) : null;
     /// <summary>How far the legs are on the gun's aim walk (0-1).</summary>
     internal float AimShare => Body != null ? Body.AimShare : 0f;
+    /// <summary>How the legs' walk or run carries the body over the ground (world, m/s; PlayerBody.LegsCarry); false when they
+    /// didn't walk or run last frame, or there is no body.</summary>
+    internal bool LegsCarry(out Vector3 velocity)
+    {
+        velocity = Vector3.zero;
+        return Body != null && Body.LegsCarry(out velocity);
+    }
     /// <summary>How fast a clip that ends running carries the body now (m/s), 0 for none (PlayerBody.RunOutPace).</summary>
     internal float RunOutPace => Body != null ? Body.RunOutPace : 0f;
 

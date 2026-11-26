@@ -99,8 +99,10 @@ public sealed class MovementGait
     internal float SprintAhead => Legs(0f, Sprint, 0f);
 
     /// <summary>The speed for this input standing (m/s): the gait now, the way the input points; the aim's as far as the
-    /// sights are up.</summary>
-    internal float SpeedFor(Vector2 input) => Legs(Heading(input), Asked, ctx.AimShare);
+    /// sights are up.
+    /// Running ahead the legs run straight on under hips turned to the way (PlayerMovement.RunsAhead): the forward run's speed,
+    /// not a slant's strafe (W+A asked StrafeJog_L45's 3.4 m/s of the jog's 2.5 in 0.9.416, the review of 2026-11-25).</summary>
+    internal float SpeedFor(Vector2 input) => Legs(ctx.RunsAhead ? 0f : Heading(input), Asked, ctx.AimShare);
 
     /// <summary>The speed for this input crouched (m/s): the crouched walk's, walk mode or not.</summary>
     internal float CrouchSpeedFor(Vector2 input)

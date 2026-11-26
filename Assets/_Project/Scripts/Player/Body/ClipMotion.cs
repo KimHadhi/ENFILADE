@@ -221,6 +221,12 @@ public sealed class ClipMotion
         return true;
     }
 
+    /// <summary>How far the clip's stride at its moment stands from <paramref name="phase"/> (a share of a stride, 0 to .5: 0
+    /// the same foot as far through its step), by its own footfalls (StepAt); 0 for a clip whose feet never step. A one-off
+    /// come into from a walk or run comes in where this is least, so the legs go on into it as they were (RunTurn.EntryOf).</summary>
+    public float StrideOff(float time, float phase)
+        => StepAt(time, out float place) ? Mathf.Abs(Mathf.DeltaAngle(place * 360f, phase * 360f)) / 360f : 0f;
+
     /// <summary>How far round its root has turned by its moment (degrees, + to the right): 0 for a clip whose turn is in its
     /// pose instead.</summary>
     public float TurnedAt(float time) => At(turned, time);

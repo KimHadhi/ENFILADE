@@ -134,12 +134,11 @@ public sealed partial class PlayerBody
         bool stands = onFeet && still && turnClip == null;
         var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight,
             turnPlanner.Lead, turnPlanner.Share);
-        // Running, the stride stretched to the ground the body covers (PlayerBody.Locomotion), so the feet don't skate.
-        // Walking or running, each foot keeps the ground it came down on and swings to where it will come down, timed by the
-        // stride (FootPlanting.Walk).
+        // Walking or running, each foot keeps the place and the ground it came down on and swings to where it will come down,
+        // timed by the stride (FootPlanting.Walk, Stand).
         feet.Plant(onFeet, transform.position.y, player.groundLayers,
             new FootPlanting.Tuning(maxHipDrop, footReach, footSettleTime, maxFootTilt, maxAnkleTurn, maxAnkleRoll, blendTime), dt,
-            onFeet ? StrideNow : FootPlanting.Stride.None, hold, new FootPlanting.Steps(travel, strideCycle, phase));
+            hold, new FootPlanting.Steps(travel, strideCycle, phase));
         RecordFeet(dt, onFeet);
     }
 
@@ -150,9 +149,10 @@ public sealed partial class PlayerBody
     private const string FeetRecord = "feet";
     private const string FeetRecordHeading = "발 기록 (PlayerBody.RecordFeet): 4m/s 넘게 달리거나 캡슐 바닥이 한 프레임에 3cm 넘게 뛸 때부터 1초 동안 "
         + "프레임마다 한 줄: 지난 초, 속도(m/s), 캡슐 바닥 높이와 이 프레임 변화(cm), 고른 바닥과 엉덩이 바닥이 캡슐 바닥에서 떨어진 정도(cm), "
-        + "보폭 때문에 내린 엉덩이(cm); 발마다 디딤(D)·흔들림(S), 땅 높이(캡슐 바닥 기준 cm)와 이 프레임 변화(cm), 발목 목표가 땅에서 뜬 높이(cm), "
+        + "다리가 닿게 내린 엉덩이(cm); 발마다 디딤(D)·흔들림(S), 땅 높이(캡슐 바닥 기준 cm)와 이 프레임 변화(cm), 발목 목표가 땅에서 뜬 높이(cm), "
         + "IK 뒤 실제 발목이 목표에서 벗어난 거리(cm), 엉덩이에서 목표까지가 다리 길이의 몇 %인지, 받침 비율, 디딘 동안 실제 발목이 땅 위로 "
-        + "미끄러진 빠르기(cm/s); 지난 프레임 카메라 높이 변화(cm)";
+        + "미끄러진 빠르기(cm/s), 지키는 자리가 클립의 발 자리에서 벗어난 거리(cm, 지키지 않으면 -); 지난 프레임 카메라 높이 변화(cm). "
+        + "달리다 돌기가 시작될 때도 남긴다";
     private const float FeetRecordFor = 1f, FeetRecordSpeed = 4f, FeetRecordPop = .03f;
     private float feetRecordLeft, feetRecordFrom, feetFloorWas, feetCameraWas, leftGroundWas, rightGroundWas;
     private Vector3 leftAnkleWas, rightAnkleWas;
@@ -165,7 +165,7 @@ public sealed partial class PlayerBody
         float floor = transform.position.y, pop = feetRecordKnown ? floor - feetFloorWas : 0f;
         float speed = new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;
         float camera = bodyCamera.HasPlace ? bodyCamera.Placed.y : 0f;
-        if (feetRecordLeft <= 0f && onFeet && (speed >= FeetRecordSpeed || Mathf.Abs(pop) >= FeetRecordPop))
+        if (feetRecordLeft <= 0f && onFeet && (speed >= FeetRecordSpeed || Mathf.Abs(pop) >= FeetRecordPop || turnClip != null))
         {
             feetRecordLeft = FeetRecordFor;
             feetRecordFrom = Time.time;
@@ -175,7 +175,7 @@ public sealed partial class PlayerBody
         {
             feetRecordLeft -= dt;
             feetLine.Clear().Append($"+{Time.time - feetRecordFrom:0.00} {speed:0.0}m/s 캡슐 {floor:0.00} {pop * 100f:+0;-0}cm ")
-                .Append($"고른 {(feet.SmoothFloor - floor) * 100f:+0;-0} 엉덩이 {(feet.HipFloor - floor) * 100f:+0;-0} 보폭 {feet.StrideDrop * 100f:0}");
+                .Append($"고른 {(feet.SmoothFloor - floor) * 100f:+0;-0} 엉덩이 {(feet.HipFloor - floor) * 100f:+0;-0} 내림 {feet.ReachDropNow * 100f:0}");
             Leg("왼", feet.Left, leftGroundWas, leftAnkleWas);
             Leg("오", feet.Right, rightGroundWas, rightAnkleWas);
             feetLine.Append($" | 카메라 {(camera - feetCameraWas) * 100f:+0;-0}cm");
@@ -198,7 +198,7 @@ public sealed partial class PlayerBody
             float slip = leg.Down ? new Vector2(slid.x, slid.z).magnitude / dt : 0f;
             feetLine.Append($" | {name} {(leg.Down ? "D" : "S")} 땅 {(leg.Ground - floor) * 100f:+0;-0} {(leg.Ground - groundWas) * 100f:+0;-0} ")
                 .Append($"목표 {(leg.Target.y - leg.Ground) * 100f:0} 어긋남 {(ankle - leg.Target).magnitude * 100f:0} 닿음 {reach * 100f:0}% ")
-                .Append($"받침 {leg.SupportWeight:0.0} 미끄러짐 {slip * 100f:0}");
+                .Append($"받침 {leg.SupportWeight:0.0} 미끄러짐 {slip * 100f:0} 지킴 {(leg.Kept ? (new Vector2(leg.Off.x, leg.Off.z).magnitude * 100f).ToString("0") : "-")}");
         }
     }
 

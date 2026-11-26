@@ -96,7 +96,6 @@ public sealed partial class PlayerBody
         // Over the ledge's top there is no wall under it to keep off.
         float top = support.TransformPoint(ledge.LocalEdge).y;
         int layers = HangWall.Layers(player.groundLayers);
-        Vector3 hipLine = rightLeg.Upper.position - leftLeg.Upper.position;
         bool hanging = state == MovementState.LedgeHang;
         Fit(leftLeg);
         Fit(rightLeg);
@@ -124,13 +123,9 @@ public sealed partial class PlayerBody
             Vector3 hangsFree = hip + Vector3.down * (length * hangLegDangle.x) + inward * (length * hangLegDangle.y);
             Vector3 onIt = ankle + inward * ((wall ? gap : 0f) - hangWallGap);
             Vector3 target = Vector3.Lerp(ankle, Vector3.Lerp(hangsFree, onIt, onWall), gripWeight);
-            // The knee bends about the clip's own axis, as the foot IK bends it (FootPlanting); the foot keeps its turn.
+            // The knee bends about its own hinge (FootPlanting.Leg.KneeAxis); the foot keeps its turn.
             Quaternion turn = leg.Foot.rotation;
-            Vector3 thigh = leg.Lower.position - hip, below = ankle - leg.Lower.position;
-            Vector3 own = Vector3.Cross(thigh, below), straight = Vector3.ProjectOnPlane(hipLine, thigh).normalized;
-            float bent = Mathf.Clamp01(own.magnitude / Mathf.Max(1e-6f, thigh.magnitude * below.magnitude) / .26f);
-            if (Vector3.Dot(own, straight) < 0f && bent < 1f) bent = 0f;
-            TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, target, Vector3.Lerp(straight, own.normalized, bent));
+            TwoBoneIK.Reach(leg.Upper, leg.Lower, leg.Foot, target, leg.KneeAxis);
             leg.Foot.rotation = turn;
         }
 

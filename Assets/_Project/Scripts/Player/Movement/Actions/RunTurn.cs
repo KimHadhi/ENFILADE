@@ -5,24 +5,41 @@ using State = PlayerMovement.MovementState;
 /// A run's turn back: running at least Ability.runTurnSpeed with the keys ahead, the way the keys want at least
 /// Ability.runTurnAngle from the way the body runs (the view flicked round), the body plants, brakes and pushes off the new way
 /// on BIPER Female Runner's own turn (Jog_ and Sprint_Turn{L,R}_{L,R}foot, Ability.runTurns: the sprint's from half way between
-/// the jog and the sprint, turning the way the body is behind the view, planting the foot that is down), entered at its last
-/// moment before its root turns where its chest is twisted no more than Ability.runTurnEntry against its root (EntryOf). The
-/// body's root comes in where the body faced (StartYaw) and turns as much of the clip's turn as brings the chest round to the
-/// way the view looked as the turn began (share, Begin): the clip's timing, the body's own angle. The mouse is never held: the body
-/// only lags the view, no further than the spine and neck turn back (as standing, TurnOnTheSpot).
-/// Until 0.9.392 the clip was entered where its chest was within 90 degrees of its end and the root set where the clip's own
-/// turn had it: there the sprint's clips hold the chest 60 degrees round against their root, so at every sprint's turn the
-/// body's root swung 64 to 72 degrees in a frame and the head 40 to 57 cm, the hair 65 to 77 cm, over the next two (걸음 기록
-/// of 2026-11-24 16:31; the user: "급하게 턴 하거나 뭐 방향 전환해서 움직일 땐 여전히 텔포하거나 지직거리는 느낌").
-/// While the clip's own root still goes the old way the run brakes evenly from the speed it came in at to a stop; from there it
-/// pushes off along the keys at the clip's own pace, and the walk or run takes over at the clip's first footfall once its chest
-/// has come round within AroundWithin (PlayerBody.StepFrom), the gait coming down from that pace (MovementGait.Carry). Jumping,
-/// sliding, crouching or leaving the ground gives it up. The other PCs start the same turn on the pose's count and play it on
-/// their own clock (MovementMirror).
+/// the jog and the sprint, turning the way the body is behind the view), come into where its stride stands as the run's does:
+/// of the way round's two clips (the pivot on either foot) and their moments before the root turns with the chest twisted no
+/// more than Ability.runTurnEntry against it, the one whose own stride (ClipMotion.StepAt) stands nearest the run's now, the
+/// latest of those as near (EntryOf). The legs go on into the clip as they were. Until 0.9.419 the clip was the one pivoting
+/// on the foot that was down, come into at its last such moment whatever its legs did there: the run's legs went over to a
+/// pose up to half a stride off within the 0.15 s blend (BodyInertia), and the planted foot swept the ground at 10 to 12 m/s
+/// for a tenth of a second at every turn (the feet record of 2026-11-25 02:19; the user: "turn 애니메이션 나올 때 … 한 프레임
+/// 정도 … 갑작스럽게 움직이는 느낌").
+/// The clip moves the body (root motion): the capsule goes the way and at the pace the clip's own root goes, turned into the
+/// world from where the body faced (StartYaw), and the body's root turns as the clip's root turns, so the body moves as the
+/// clip's feet were made to and a foot that is down stays down where the clip put it. The one bend (motion warping): so the
+/// turn ends with the chest where the view looked as it began (EndYaw), the root's whole turn is what the body needs from where
+/// it faced, the clip's own turn drawn out or in to it over the clip's own turning, the way it goes bending with it: a body
+/// that had already turned part of the way after a flicked view (as far as the head lets it lag, PlayerBody) turns the rest,
+/// on the clip's own footwork. 0.9.412 and 0.9.413 took the clip only where its turn, bent by no more than 30 and then 90
+/// degrees, came round to the view: by then the body had turned 45 to 90 degrees of a 100 to 140 degree flick, the clip's
+/// 180 never fitted, and the run came round as before 0.9.386, the legs sprinting sideways and backwards (StrafeSprint_R135,
+/// _B) while the body swung up to 65 degrees a frame (the gait and pops records of 2026-11-24 23:53; the user: "모션이
+/// 전반적으로 … 우스꽝스러워졌는데"). The speed the body came in at goes over to the clip's own in EntryBlend. 0.9.412 laid
+/// the clip from the way the run went instead, which
+/// turned a body already half round back away from the view at once, and the head, the neck and the arms swung round 105 to
+/// 175 degrees in a frame (the pops record of 2026-11-24 23:40; the user: "더 괴랄해졌는데요 … 튕기고 터지고").
+/// It hands over at the clip's first footfall once its root is done turning and its chest is back over its root
+/// (ChestAligned): the walk or run takes the stride there (PlayerBody.StepFrom) at the clip's own pace (MovementGait.Carry),
+/// with nothing to turn back. Jumping, sliding, crouching or leaving the ground gives it up. The other PCs start the same turn
+/// on the pose's count and play it on their own clock (MovementMirror).
+/// Until 0.9.412 the turn made up its own path: the capsule braked in a straight line the old way, then pushed off along the
+/// keys at the clip's pace, the root turned up to 1.25 times the clip's turn, and at the end the root was put under the chest
+/// at once. The body then went otherwise than the clip's feet, and what kept them on the ground (a planted foot held, a let-go
+/// foot caught up, the root's jump eased away) threw them about at every turn: 75 cm and 171 degrees in a frame, a knee
+/// flipped, 15 to 25 cm at the hand-over (the user, 2026-11-24: "그냥 클립 모션대로 하면 되는 거 아닌가?"; the animation and
+/// gameplay experts' review: the turn's own path was where it all began).
 /// Until 0.9.386 a flick of the view on the run swung the run round at full speed in a loop: the body turned with the view in
-/// the frame and its legs ran the back and side sprints, then the walk's clips at 5 m/s, then banked into the arc (걸음 기록 of
-/// 2026-11-24; the user: "달리다가 바로 반대편으로 돌면 캐릭터 모션이 굉장히 우스꽝스러워지는데 turn 애니메이션 넣어야 하나?",
-/// the experts' review, then "Yes, all of it"). A sprint's turn back now takes the third to half a second a body's does.
+/// the frame and its legs ran the back and side sprints, then the walk's clips at 5 m/s, then banked into the arc (the user:
+/// "달리다가 바로 반대편으로 돌면 캐릭터 모션이 굉장히 우스꽝스러워지는데 turn 애니메이션 넣어야 하나?").
 /// Only a run that went ahead of the view a moment before turns back so (RanAheadWithin): running backwards and pressing ahead
 /// is a strafe's reversal, the body already facing the way the keys want.
 /// </summary>
@@ -32,26 +49,29 @@ public sealed class RunTurn
     private const float AheadWithin = 45f;
     // From here on the gait's ladder (MovementGait.Position: 1 the jog, 2 the sprint) it is the sprint's turn.
     private const float SprintFrom = 1.5f;
-    // Its chest within this of the way it ends (degrees), the turn hands over at the clip's next footfall.
-    private const float AroundWithin = 30f;
-    // The brake takes at least this long (s), for a clip whose root has turned before the turn is entered.
-    private const float BrakeLeast = .1f;
+    // Its root done turning, its chest within this of its root (degrees), the turn hands over at the clip's next footfall.
+    private const float ChestAligned = 10f;
     // The clips are read at this many moments a second.
     private const float ReadRate = 60f;
-    // A clip's root has not begun to turn while it is within this of where it began (degrees).
+    // A clip's root has not begun, or is done, turning while it is within this of where it began or ends (degrees).
     private const float RootStill = 2f;
-    // The root takes at most this share of the clip's turn (a body further behind the view comes the rest of the way after).
-    private const float MostShare = 1.25f;
+    // Moments whose stride stands within this share of a stride of the nearest are as near: the latest is come into (EntryOf).
+    private const float PhaseTie = .04f;
+    // The speed the body came in at goes over to the clip's own in this long (s).
+    private const float EntryBlend = .15f;
+    // The clip's root velocity is read over this long either side of its moment (s): the root sways over the feet.
+    private const float WayOver = .08f;
     // A turn back is of a run that went ahead of the view this short a while ago (s): the view flicked round from it. Running
     // backwards and pressing ahead is no turn: the body already faces the way the keys want.
     private const float RanAheadWithin = .3f;
 
     private readonly PlayerMovement ctx;
-    private float startedAt, inSpeed, brakeTo, outAt, ranAheadAt = float.NegativeInfinity;
-    private Vector3 inWay;
+    private float startedAt, outAt, warp, frameYaw, ranAheadAt = float.NegativeInfinity;
+    /// <summary>Turns begun on this PC, its own or mirrored: a new one, even on the same clip (PlayerBody.RunTurnPose).</summary>
+    public int Serial { get; private set; }
+    // How much faster and which other way than the clip at its entry the body came in (world, m/s), fading over EntryBlend.
+    private Vector3 entryOff;
     private bool active;
-    // How much of the clip's own turn from the moment it began the root takes (Begin).
-    private float share = 1f;
 
     internal RunTurn(PlayerMovement context) { ctx = context; }
 
@@ -73,32 +93,25 @@ public sealed class RunTurn
 
     private ClipMotion Motion => ctx.MotionOf(Clip);
 
-    // How far the root has turned at the clip's moment from where the turn began (degrees, + to the right): its share of the
-    // clip's own turn since From.
-    private float Rooted(ClipMotion motion, float time) => share * (motion.TurnedAt(time) - motion.TurnedAt(From));
+    // How far the clip's own root has turned since the turn began (degrees, + to the right).
+    private float ClipTurned(ClipMotion motion, float time) => motion.TurnedAt(time) - motion.TurnedAt(From);
 
-    // Which way the chest faces at the clip's moment against the way the body faced as the turn began (degrees): the root's
-    // turn and the pose's own.
-    private float Chest(ClipMotion motion, float time) => Rooted(motion, time) + motion.FacingAt(time);
+    // How much of the root's bend past the clip's turn is done by the clip's moment: as much as the clip's own turn to the
+    // hand-over is.
+    private float Warped(ClipMotion motion, float time)
+    {
+        float whole = ClipTurned(motion, outAt);
+        return Mathf.Abs(whole) > 1f ? warp * Mathf.Clamp01(ClipTurned(motion, time) / whole) : warp;
+    }
 
-    /// <summary>Which way the body's root faces now (world yaw, degrees): from where the body faced, its share of the clip's
-    /// turn, ending with the chest on EndYaw.</summary>
+    /// <summary>Which way the body's root faces now (world yaw, degrees): from where the body faced, the clip's own turn and its
+    /// bend.</summary>
     public float RootYaw
     {
         get
         {
             var motion = Motion;
-            return motion == null ? EndYaw : StartYaw + Rooted(motion, Moment);
-        }
-    }
-
-    /// <summary>Which way the body's chest faces now (world yaw, degrees).</summary>
-    public float ChestYaw
-    {
-        get
-        {
-            var motion = Motion;
-            return motion == null ? EndYaw : StartYaw + Chest(motion, Moment);
+            return motion == null ? EndYaw : StartYaw + ClipTurned(motion, Moment) + Warped(motion, Moment);
         }
     }
 
@@ -124,14 +137,27 @@ public sealed class RunTurn
         // Round the way the body is behind the view (the way the view went round), else the short way.
         float view = ctx.transform.eulerAngles.y, behind = Mathf.DeltaAngle(view, bodyYaw);
         bool left = Mathf.Abs(behind) > 1f ? behind > 0f : Vector3.SignedAngle(now, wanted, Vector3.up) < 0f;
-        bool sprint = ctx.Actions.Gait.Position >= SprintFrom, leftFoot = Mathf.Repeat(ctx.StridePhase, 1f) < .5f;
-        int index = (sprint ? 4 : 0) + (left ? 0 : 2) + (leftFoot ? 0 : 1);
-        string clip = ClipAt(index);
-        var motion = ctx.MotionOf(clip);
+        // Of the way round's two clips (the pivot on the left foot or the right), the one and the moment whose stride stands
+        // nearest where the run's stands now (EntryOf), so the legs go on into it as they were.
+        bool sprint = ctx.Actions.Gait.Position >= SprintFrom;
+        int first = (sprint ? 4 : 0) + (left ? 0 : 2), index = -1;
+        float from = 0f, apart = float.MaxValue, phase = Mathf.Repeat(ctx.StridePhase, 1f);
+        ClipMotion motion = null;
+        for (int foot = 0; foot < 2; foot++)
+        {
+            var candidate = ctx.MotionOf(ClipAt(first + foot));
+            if (candidate == null) continue;
+            float at = EntryOf(candidate, settings.runTurnEntry, phase, out float off);
+            if (off >= apart) continue;
+            apart = off;
+            from = at;
+            index = first + foot;
+            motion = candidate;
+        }
         if (motion == null) return false;
-        Begin(index, clip, EntryOf(motion, settings.runTurnEntry), view, bodyYaw, motion);
-        inWay = now / speed;
-        inSpeed = speed;
+        string clip = ClipAt(index);
+        Begin(index, clip, from, view, bodyYaw, motion);
+        entryOff = now - ClipVelocity(motion, From);
         Count++;
         return true;
     }
@@ -145,12 +171,9 @@ public sealed class RunTurn
         if (motion != null) Begin(index, clip, from, endYaw, startYaw, motion);
     }
 
-    /// <summary>
-    /// This frame's velocity while the turn goes on (<paramref name="wanted"/>: the way the keys want, in the world): braking the
-    /// old way, then pushing off along the keys at the clip's pace. False once it is over or given up; the gait takes the pace
-    /// over (Stop).
-    /// </summary>
-    internal bool Go(Vector3 wanted, out Vector3 velocity)
+    /// <summary>This frame's velocity while the turn goes on: the clip's own root's, the speed the body came in at fading into
+    /// it. False once it is over or given up; the gait takes the pace over (Stop).</summary>
+    internal bool Go(out Vector3 velocity)
     {
         velocity = Vector3.zero;
         var motion = Motion;
@@ -159,15 +182,18 @@ public sealed class RunTurn
             Stop();
             return false;
         }
-        float t = Moment;
-        if (t < brakeTo)
-        {
-            velocity = inWay * (inSpeed * Mathf.Clamp01(1f - (t - From) / Mathf.Max(.01f, brakeTo - From)));
-            return true;
-        }
-        Vector3 way = wanted.sqrMagnitude > .01f ? wanted.normalized : Quaternion.Euler(0f, EndYaw, 0f) * Vector3.forward;
-        velocity = way * motion.PaceAt(t);
+        float t = Moment, fade = 1f - Mathf.Clamp01((t - From) / EntryBlend);
+        velocity = ClipVelocity(motion, t) + entryOff * (fade * fade * (3f - 2f * fade));
         return true;
+    }
+
+    // The clip's root velocity at its moment in the world (m/s): its way in the frame it began in, read over WayOver either side,
+    // turned to where that frame lies for this turn and by the root's bend so far.
+    private Vector3 ClipVelocity(ClipMotion motion, float time)
+    {
+        float from = Mathf.Clamp(time - WayOver, 0f, motion.Length), to = Mathf.Clamp(time + WayOver, 0f, motion.Length);
+        Vector2 way = to - from > 1e-3f ? (motion.WayAt(to) - motion.WayAt(from)) / (to - from) : Vector2.zero;
+        return Quaternion.Euler(0f, frameYaw + Warped(motion, time), 0f) * new Vector3(way.x, 0f, way.y);
     }
 
     /// <summary>The turn is over or given up: the gait takes the pace over and comes down from it (MovementGait.Carry).</summary>
@@ -184,43 +210,63 @@ public sealed class RunTurn
     private void Begin(int index, string clip, float from, float endYaw, float startYaw, ClipMotion motion)
     {
         active = true;
+        Serial++;
         Index = index;
         Clip = clip;
         From = from;
         EndYaw = endYaw;
         StartYaw = startYaw;
         startedAt = Time.time;
-        // The root's share of the clip's turn from here: as much as brings the chest onto EndYaw at the clip's end, the long way
-        // round where the clip turns that way.
-        float turn = motion.TurnedAt(motion.Length) - motion.TurnedAt(from);
-        float need = Mathf.DeltaAngle(startYaw, endYaw - motion.FacingAt(motion.Length));
-        if (need * turn < 0f && Mathf.Abs(need) > 90f) need -= 360f * Mathf.Sign(need);
-        share = Mathf.Abs(turn) > 1f ? Mathf.Clamp(need / turn, 0f, MostShare) : 0f;
-        float end = Chest(motion, motion.Length), step = 1f / ReadRate;
-        // Where the clip's root comes to its turn: furthest on the way it began.
-        float turnsAt = 0f, furthest = float.NegativeInfinity;
-        for (float t = 0f; t <= motion.Length; t += step)
-        {
-            float ahead = motion.WayAt(t).y;
-            if (ahead > furthest) { furthest = ahead; turnsAt = t; }
-        }
-        brakeTo = Mathf.Max(turnsAt, from + BrakeLeast);
-        float round = motion.Length;
-        for (float t = from; t <= motion.Length; t += step)
-            if (Mathf.Abs(end - Chest(motion, t)) <= AroundWithin) { round = t; break; }
-        outAt = motion.StepAfter(Mathf.Max(round, brakeTo), out float footfall) ? footfall : motion.Length;
+        entryOff = Vector3.zero;
+        // The world's yaw of the frame the clip began in: the root at From faces where the body faced.
+        frameYaw = startYaw - motion.TurnedAt(from);
+        outAt = HandOver(motion, from);
+        warp = Bend(motion, from, outAt, startYaw, endYaw);
     }
 
-    // The last moment before the clip's root begins to turn at which its chest is twisted no more than `within` degrees against
-    // its root (its start if none): the running body comes into it as it was, root and chest, with nothing to swing round.
-    private static float EntryOf(ClipMotion motion, float within)
+    // The hand-over (s): the clip's first footfall once its root is done turning and its chest is back over its root.
+    private static float HandOver(ClipMotion motion, float from)
     {
-        float entry = 0f, start = motion.TurnedAt(0f);
-        for (float t = 0f; t < motion.Length; t += 1f / ReadRate)
-        {
-            if (Mathf.Abs(Mathf.DeltaAngle(start, motion.TurnedAt(t))) > RootStill) break;
-            if (Mathf.Abs(motion.FacingAt(t)) <= within) entry = t;
-        }
+        float step = 1f / ReadRate, end = motion.TurnedAt(motion.Length), turned = motion.Length, aligned = motion.Length;
+        for (float t = from; t <= motion.Length; t += step)
+            if (Mathf.Abs(Mathf.DeltaAngle(end, motion.TurnedAt(t))) <= RootStill) { turned = t; break; }
+        for (float t = turned; t <= motion.Length; t += step)
+            if (Mathf.Abs(motion.FacingAt(t)) <= ChestAligned) { aligned = t; break; }
+        return motion.StepAfter(aligned, out float footfall) ? footfall : motion.Length;
+    }
+
+    // The bend (degrees): what the root turns past or short of the clip's own turn from `from` to `to` for the chest to end
+    // facing `endYaw` from a root that began at `startYaw` (the long way round where the clip turns that way).
+    private static float Bend(ClipMotion motion, float from, float to, float startYaw, float endYaw)
+    {
+        float turn = motion.TurnedAt(to) - motion.TurnedAt(from);
+        float need = Mathf.DeltaAngle(startYaw, endYaw - motion.FacingAt(to));
+        if (need * turn < 0f && Mathf.Abs(need) > 90f) need -= 360f * Mathf.Sign(need);
+        return need - turn;
+    }
+
+    // The moment to come into the clip at: before its root begins to turn, its chest twisted no more than `within` degrees
+    // against its root (the running body comes in as it was, root and chest, nothing to swing round), the one whose own stride
+    // (ClipMotion.StepAt) stands nearest `phase`, the run's now (0 the left foot about to come down, .5 the right), the latest
+    // within PhaseTie of that (the sooner it turns). `apart`: how far that one's stride is off the run's (a share of a stride).
+    // A clip whose feet never step comes in at its last such moment.
+    private static float EntryOf(ClipMotion motion, float within, float phase, out float apart)
+    {
+        float start = motion.TurnedAt(0f), nearest = float.MaxValue, step = 1f / ReadRate, entry = 0f;
+        apart = 1f;
+        for (int pass = 0; pass < 2; pass++)
+            for (float t = 0f; t < motion.Length; t += step)
+            {
+                if (Mathf.Abs(Mathf.DeltaAngle(start, motion.TurnedAt(t))) > RootStill) break;
+                if (Mathf.Abs(motion.FacingAt(t)) > within) continue;
+                float off = motion.StrideOff(t, phase);
+                if (pass == 0) nearest = Mathf.Min(nearest, off);
+                else if (off <= nearest + PhaseTie)
+                {
+                    entry = t;
+                    apart = off;
+                }
+            }
         return entry;
     }
 
