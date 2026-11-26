@@ -26,6 +26,12 @@ public sealed class ObstacleTraversalState : MovementBaseState
     private bool landing;
     private float landingLeft;
     private const float LandingReach = 60f, LandingTime = .6f;
+    // Each vault and climb of this PC's player, for whoever checks a play afterwards (Logs/climbs.txt): how it goes and what
+    // set its time (START), and how long it took (END, ABORTED and why). The body adds what its clips' hands measured to.
+    internal const string ClimbLog = "climbs";
+    internal const string ClimbLogHeading = "vaults and climbs: START how the move goes and what set its time, END or ABORTED how long it took; "
+        + "MEASURED when a clip's hands are down on this body (as it is made), TIMED which clip set a move's time and from what";
+    private float startedAt;
     public ObstacleTraversalState(PlayerMovement ctx, MovementBaseState parent, bool vault) : base(ctx, parent) { this.vault = vault; }
     public override string Name => vault ? "Vault" : "Mantle";
     public override MovementPosture Posture => MovesInStraightLine ? MovementPosture.Standing : MovementPosture.Crouching;
@@ -55,6 +61,20 @@ public sealed class ObstacleTraversalState : MovementBaseState
         path = target.StraightLine ? null : new TraversalPath(target, ctx.Abilities.Traversal.Detector, ctx.CrouchColliderHeight);
         duration = Mathf.Max(0.05f, TraversalTiming.Duration(ctx.AbilitySettings, target));
         EntrySerial++;
+        startedAt = Time.time;
+        if (ctx.IsLocal && PlayRecord.On)
+            PlayRecord.Line(ClimbLog, ClimbLogHeading, $"START {Name} {target.Kind} "
+                + (warp != null ? $"on its clip's hands, about {warp.Seconds:0.00} s" : straightLine != null ? straightLine.Timing : $"along a route over {duration:0.00} s")
+                + $": {target.End.y - target.Start.y:0.00} m up and {Vector3.ProjectOnPlane(target.End - target.Start, Vector3.up).magnitude:0.00} m on, to {PlayRecord.At(target.End)}");
+    }
+
+    // The end of this move in the climb record.
+    private void Record(string how, string why = null)
+    {
+        if (!ctx.IsLocal || !PlayRecord.On) return;
+        float done = straightLine != null ? straightLine.Progress : warp != null ? warp.Progress : progress;
+        PlayRecord.Line(ClimbLog, ClimbLogHeading, $"{how} {Name} after {Time.time - startedAt:0.00} s, {done:0.00} of the way"
+            + (why != null ? ": " + why : ""));
     }
     public override void ProcessInput(Vector2 input)
     {
@@ -78,6 +98,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
         if (straightLine != null || warp != null)
         {
             if (!(straightLine?.Complete ?? warp.Complete)) return;
+            Record("END");
             // The clip runs on by itself from here, through the landing.
             traversal.ObstacleClipTime = -1f;
             ctx.Abilities.Landing.SupportedByTraversal();
@@ -95,6 +116,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
         if (finished)
         {
             if (Vector3.Distance(ctx.transform.position, finishPosition) > 0.15f) { Abort(); return; }
+            Record("END");
             ctx.Abilities.Landing.SupportedByTraversal();
             ctx.Abilities.ReturnToLocomotion();
             ctx.HorizontalVelocity = entryVelocity;
@@ -199,6 +221,7 @@ public sealed class ObstacleTraversalState : MovementBaseState
     }
     private void Abort()
     {
+        Record("ABORTED", straightLine?.Stopped);
         // Held W must not immediately turn a blocked vault into a wall action
         // or another automatic grab before the body has recovered.
         if (straightLine != null || warp != null) ctx.Abilities.Traversal.LockLedge();

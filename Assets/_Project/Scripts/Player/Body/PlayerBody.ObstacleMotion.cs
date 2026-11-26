@@ -66,9 +66,29 @@ public sealed partial class PlayerBody : IObstacleMotionSource
         var channel = Find(pickedObstacleClip);
         var clip = channel != null && channel.Playable.IsValid() ? channel.Playable.GetAnimationClip() : null;
         if (clip == null) return 0f;
-        if (kind == VaultKind.Heave) return clip.length;
+        if (kind == VaultKind.Heave) return Timed(clip, clip.length, "the whole of the climb's clip");
         var contacts = ObstacleClipContacts.For(loadedModel, clip, animator, ContactRules);
-        return contacts != null && contacts.ReleaseTime > 0f ? contacts.ReleaseTime : clip.length;
+        return contacts != null && contacts.ReleaseTime > 0f ? Timed(clip, contacts.ReleaseTime, "where its hands leave the obstacle")
+            : Timed(clip, clip.length, "its whole length, no hand down");
+    }
+
+    // A move's time and the clip that set it, in the climb record (Logs/climbs.txt).
+    private float Timed(AnimationClip clip, float time, string from)
+    {
+        if (player != null && player.IsLocal && PlayRecord.On)
+            PlayRecord.Line(ObstacleTraversalState.ClimbLog, ObstacleTraversalState.ClimbLogHeading, $"TIMED {clip.name}: {time:0.00} s, {from}");
+        return time;
+    }
+
+    // One clip's hands measured on this body as it is made, and written in the climb record.
+    private void MeasureObstacleClip(AnimationClip clip)
+    {
+        var contacts = ObstacleClipContacts.For(loadedModel, clip, animator, ContactRules);
+        if (clip == null || player == null || !player.IsLocal || !PlayRecord.On) return;
+        PlayRecord.Line(ObstacleTraversalState.ClimbLog, ObstacleTraversalState.ClimbLogHeading, contacts == null
+            ? $"MEASURED {clip.name} on {loadedModel.name}: no hand down, {clip.length:0.00} s"
+            : $"MEASURED {clip.name} on {loadedModel.name}: hands down {contacts.PlantTime:0.00} to {contacts.ReleaseTime:0.00} s of {contacts.Length:0.00} s "
+                + $"({(contacts.Left ? "L" : "")}{(contacts.Right ? "R" : "")})");
     }
 
     // The clip picked for the movement this frame or the last, else a fresh pick.
@@ -90,16 +110,16 @@ public sealed partial class PlayerBody : IObstacleMotionSource
         foreach (string name in new[] { vault, vaultKong, vaultHigh, stepUp, mantleLow, mantleMid })
             foreach (string variant in new[] { name, name + rifleSuffix, name + pistolSuffix })
                 if (!string.IsNullOrEmpty(variant) && byName.TryGetValue(variant, out var channel) && channel.Playable.IsValid())
-                    ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);
+                    MeasureObstacleClip(channel.Playable.GetAnimationClip());
         // The climbs off a ladder's top, warped onto the floor up there the same way (TryLadderExitMotion).
         foreach (string name in new[] { ladderExitLeft, ladderExitRight })
             foreach (string variant in new[] { name, name + rifleSuffix, name + pistolSuffix })
                 if (!string.IsNullOrEmpty(variant) && byName.TryGetValue(variant, out var channel) && channel.Playable.IsValid())
-                    ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);
+                    MeasureObstacleClip(channel.Playable.GetAnimationClip());
         // The clambers from a walk, warped onto the top's near edge the same way (VaultKind.Clamber).
         foreach (string name in new[] { clamberLow, clamberHigh })
             if (!string.IsNullOrEmpty(name) && byName.TryGetValue(name, out var channel) && channel.Playable.IsValid())
-                ObstacleClipContacts.For(loadedModel, channel.Playable.GetAnimationClip(), animator, ContactRules);
+                MeasureObstacleClip(channel.Playable.GetAnimationClip());
         // The ledge catch's hands on their first frame, warped onto the edge the same way (PlayerBody.LedgeCatch).
         MeasureCatchWrists();
     }

@@ -16,6 +16,20 @@ internal static class ScriptedInput
     internal static Vector2 Move;
     /// <summary>The sprint key is held.</summary>
     internal static bool Sprint;
+    /// <summary>The jump key is held (PressJump puts it down).</summary>
+    internal static bool Jump;
+    // The frame the jump key goes down on: the one after PressJump, when the movement next reads its keys.
+    private static int jumpDown = -1;
+
+    /// <summary>Puts the jump key down from the next frame; it stays held until Jump is let go.</summary>
+    internal static void PressJump()
+    {
+        Jump = true;
+        jumpDown = Time.frameCount + 1;
+    }
+
+    /// <summary>The jump key went down this frame.</summary>
+    internal static bool JumpPressed => Jump && Time.frameCount == jumpDown;
     // The view's turn still to give (degrees, + to the right).
     private static float yaw;
 
@@ -33,7 +47,8 @@ internal static class ScriptedInput
     /// <summary>The player has the keys and the mouse again.</summary>
     internal static void Off()
     {
-        On = Sprint = false;
+        On = Sprint = Jump = false;
+        jumpDown = -1;
         Move = Vector2.zero;
         yaw = 0f;
     }

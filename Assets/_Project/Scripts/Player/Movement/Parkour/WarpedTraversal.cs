@@ -33,6 +33,8 @@ public sealed class WarpedTraversal
     public float ClipTime => clipTime;
     /// <summary>Share of the move done (0-1).</summary>
     public float Progress => Complete ? 1f : Mathf.Clamp01(elapsed / Mathf.Max(.01f, estimatedTime));
+    /// <summary>About how long the move takes (s), for the climb record (ObstacleTraversalState).</summary>
+    internal float Seconds => estimatedTime;
 
     private WarpedTraversal(PlayerMovement ctx, in ObstacleTarget target, IObstacleMotion motion, Vector3 contact, float rate,
         float exitSpeed, float estimatedTime, float lift, float floor, float climbScale)

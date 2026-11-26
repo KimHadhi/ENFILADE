@@ -75,6 +75,7 @@ internal static class ClipBench
     {
         string[] folders = DefaultFolders, skins = { "ichigo" }, models = Array.Empty<string>();
         HashSet<string> only = null, tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var contacted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string[] stepped = Array.Empty<string>(), lifted = Array.Empty<string>(), cycled = Array.Empty<string>();
         foreach (string raw in lines)
         {
@@ -91,6 +92,7 @@ internal static class ClipBench
                 case "lifts": lifted = values; break;
                 case "cyclefilm": cycled = values; break;
                 case "track": tracked = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
+                case "contacts": contacted = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase); break;
             }
         }
 
@@ -167,6 +169,7 @@ internal static class ClipBench
                     foreach (var clip in ClipsIn(AnimationsFolder + folder).Where(c => only == null || only.Contains(c.name)))
                     {
                         text.AppendLine(Measure(model, clip, animator, scale));
+                        if (contacted.Contains(clip.name)) Contacts(model, clip, animator, text);
                         if (tracked.Contains(clip.name))
                         {
                             Track(clip, animator, scale, text);
@@ -459,6 +462,23 @@ internal static class ClipBench
             steps.Append(Invariant($" {time:0.00}{(place < .25f ? "L" : "R")}"));
         }
         text.AppendLine(steps.ToString());
+    }
+
+    // How a climb's or a vault's hands meet the obstacle on this body, as the movement reads it to time the move
+    // (ObstacleClipContacts with the table's rules, Body.vaultHand*): when the hands go down and leave (s), which hands.
+    private static void Contacts(GameObject model, AnimationClip clip, Animator animator, StringBuilder text)
+    {
+        var rules = new ObstacleClipContacts.Rules(GameTables.Number("Player", "Body", "vaultHandAhead", .25f),
+            GameTables.Number("Player", "Body", "vaultHandPass", .6f), GameTables.Number("Player", "Body", "vaultHandLift", .15f),
+            GameTables.Number("Player", "Body", "vaultPlantWindow", .65f));
+        // With root motion off, as the game's body has it (PlayerBody.Build), so the bench reads what the game reads: on, as
+        // the model comes, Beatrun's clips are posed faced ahead and measure otherwise (ClipSampler).
+        bool motion = animator.applyRootMotion;
+        animator.applyRootMotion = false;
+        var contacts = ObstacleClipContacts.For(model, clip, animator, rules);
+        animator.applyRootMotion = motion;
+        text.AppendLine(contacts == null ? "    contacts: no hand down (the move goes over the clip's length)"
+            : Invariant($"    contacts: plant {contacts.PlantTime:0.00}s release {contacts.ReleaseTime:0.00}s of {contacts.Length:0.00}s, hands {(contacts.Left ? "L" : "")}{(contacts.Right ? "R" : "")}"));
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

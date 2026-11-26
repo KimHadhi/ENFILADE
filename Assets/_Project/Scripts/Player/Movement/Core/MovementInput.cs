@@ -72,8 +72,9 @@ public sealed class MovementInput
         var settings = GameSettings.Current;
         bool move = available && moving;
         if (move) UpdateLatches(settings);
-        JumpPressed = move && InputFocus.Pressed(jumpAction);
-        JumpHeld = move && Held(jumpAction);
+        // A test presses the jump itself (ScriptedInput, MoveTest).
+        JumpPressed = move && (ScriptedInput.On ? ScriptedInput.JumpPressed : InputFocus.Pressed(jumpAction));
+        JumpHeld = move && (ScriptedInput.On ? ScriptedInput.Jump : Held(jumpAction));
         CrouchPressed = move && InputFocus.Pressed(crouchAction);
         // A crouch taken on toggle is the body's posture, not a key held down: it stays while a screen has the keys (a
         // word typed crouched behind a zombie stood the player up in its sight). A key held down reads as let go then.

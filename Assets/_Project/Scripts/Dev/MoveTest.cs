@@ -15,7 +15,9 @@ using UnityEngine;
 /// how fast a sole on the ground went over it (median and the tenth worst, m/s) and how often faster than 3 m/s, how often
 /// a knee swung over 45 degrees or an ankle went over 25 cm in a frame, how often the body's facing turned over 20 degrees in a
 /// frame, the most the view stood off the chest (the neck's turn) and the chest off the hips (the spine's), and how far the
-/// view and the body's facing turned and how long until the facing was within 30 degrees of the view. Then it ends the play.
+/// view and the body's facing turned and how long until the facing was within 30 degrees of the view. Last it jogs at the
+/// Hub's wall a climb went up through in a frame or two (climb), jumps and holds W, and writes how long the climb took and
+/// the fastest the capsule went in it (Logs/climbs.txt has the climb's own lines). Then it ends the play.
 /// The user, 2026-11-25: "모든 걸 고쳐. 네가 알아서 테스팅까지 다 해서".
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Body + 1)]
@@ -39,6 +41,8 @@ internal sealed class MoveTest : MonoBehaviour
         // It starts facing the way the player first faced (a move with keys), not where the last left the view (a flick).
         public bool FaceHome;
         public System.Action<float, float> Drive;
+        // Stands the player where the move starts instead of where the test began; false when there is no such place.
+        public System.Func<bool> Place;
     }
 
     private sealed class Tally
@@ -47,6 +51,8 @@ internal sealed class MoveTest : MonoBehaviour
         public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StartsFrom = -1, Starts;
         public float Slowest = float.MaxValue;
         public float Neck, Spine, View, Body, Settled, React;
+        // In a vault or a climb: how long, and the fastest the capsule went (m/s); hanging from a ledge: how long.
+        public float ClimbTime, ClimbFastest, HangTime;
     }
 
     private readonly List<Phase> phases = new List<Phase>();
@@ -105,10 +111,79 @@ internal sealed class MoveTest : MonoBehaviour
         Add("flick L270", 3f, Flick(-270f, .2f), false);
         Add("slow R360", 4f, Flick(360f, 3f), false);
         Add("jog W again", 1.5f, (t, dt) => ScriptedInput.Move = Vector2.up);
+        phases.Add(new Phase { Name = "climb", Seconds = 3f, Drive = Climb, Place = PlaceAtWall });
+        // Only the moves the request named (only=climb,jog W; MoveTestOnRequest carries the request on in the marker).
+        var only = Only();
+        if (only.Count > 0) phases.RemoveAll(phase => !only.Contains(phase.Name));
+    }
+
+    private static HashSet<string> Only()
+    {
+        var names = new HashSet<string>();
+        try
+        {
+            foreach (string line in File.ReadAllLines(Running))
+                if (line.StartsWith("only=", System.StringComparison.OrdinalIgnoreCase))
+                    foreach (string name in line.Substring(5).Split(','))
+                        if (name.Trim().Length > 0) names.Add(name.Trim());
+        }
+        catch (IOException) { }
+        return names;
     }
 
     private void Add(string name, float seconds, System.Action<float, float> drive, bool faceHome = true)
         => phases.Add(new Phase { Name = name, Seconds = seconds, Drive = drive, FaceHome = faceHome });
+
+    // The wall a climb went up through in a frame or two (the ledge record of 2026-11-26 10:43: the Hub's Stairs, the top's
+    // edge at (7.28, 2.85, -16.21), 2.19 m over the feet of a jump; the user: "벽 위로 mantling 할 때 텔포하는데"). The
+    // player stands ClimbBack out from its face, jogs at it with W and jumps ClimbJumpAt from it, as that climb went.
+    private static readonly Vector3 ClimbEdge = new Vector3(7.28f, 2.85f, -16.21f);
+    // Jumped from 0.9 m the ledge came within reach only on the way down, too fast for the climb (VaultFinder.OntoHigh), and
+    // the test hung from it instead; the user's jump caught it 0.09 s after leaving the ground (the gait record of 10:43).
+    private const float ClimbBack = 2.5f, ClimbJumpAt = .5f, ClimbJumpHeld = .4f;
+    private Vector3 wallFace, wallNormal, climbWas;
+    private bool climbJumped, climbKnown;
+    private float climbJumpedAt;
+
+    private bool PlaceAtWall()
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            // From out in front of the edge, just under it, back at the face under it.
+            Vector3 way = Quaternion.Euler(0f, i * 22.5f, 0f) * Vector3.forward, from = ClimbEdge + way * 1.5f + Vector3.down * .5f;
+            if (Physics.CheckSphere(from, .05f, ~0, QueryTriggerInteraction.Ignore)
+                || !Physics.Raycast(from, -way, out RaycastHit face, 2f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            Vector3 normal = Vector3.ProjectOnPlane(face.normal, Vector3.up);
+            if (normal.sqrMagnitude < .8f || Vector3.Dot(normal.normalized, way) < .7f
+                || Vector3.ProjectOnPlane(face.point - ClimbEdge, Vector3.up).magnitude > .6f) continue;
+            normal.Normalize();
+            // Floor out there, the top a climb's height over it.
+            Vector3 stand = face.point + normal * ClimbBack;
+            if (!Physics.Raycast(stand + Vector3.up, Vector3.down, out RaycastHit floor, 4f, ~0, QueryTriggerInteraction.Ignore)
+                || ClimbEdge.y - floor.point.y < 2f) continue;
+            wallFace = face.point;
+            wallNormal = normal;
+            player.MoveTo(floor.point + Vector3.up * .05f);
+            player.HorizontalVelocity = Vector3.zero;
+            if (player.TryGetComponent(out PlayerLook look)) look.FaceYaw(Mathf.Atan2(-normal.x, -normal.z) * Mathf.Rad2Deg);
+            climbJumped = climbKnown = false;
+            return true;
+        }
+        return false;
+    }
+
+    private void Climb(float t, float dt)
+    {
+        ScriptedInput.Sprint = false;
+        ScriptedInput.Move = Vector2.up;
+        if (!climbJumped && Vector3.Dot(player.transform.position - wallFace, wallNormal) <= ClimbJumpAt)
+        {
+            climbJumped = true;
+            climbJumpedAt = t;
+            ScriptedInput.PressJump();
+        }
+        if (climbJumped && t - climbJumpedAt > ClimbJumpHeld) ScriptedInput.Jump = false;
+    }
 
     // W held (half way for a walk, with the sprint key or not) and the view turned by `degrees` over `over` seconds from `at`.
     private static System.Action<float, float> OnTheRun(bool sprint, float degrees, float at, float over, float keys = 1f) => (t, dt) =>
@@ -141,6 +216,11 @@ internal sealed class MoveTest : MonoBehaviour
             }
             ready += dt;
             if (ready < Settle) return;
+            if (phases.Count == 0)
+            {
+                Finish("the request named no move this test has");
+                return;
+            }
             ScriptedInput.Off();
             ScriptedInput.On = true;
             Begin(0);
@@ -195,8 +275,11 @@ internal sealed class MoveTest : MonoBehaviour
             player.HorizontalVelocity = Vector3.zero;
             if (phases[index].FaceHome && player.TryGetComponent(out PlayerLook look)) look.FaceYaw(homeYaw);
         }
+        if (phases[index].Place != null && !phases[index].Place())
+            PlayRecord.Line(Log, Heading, $"-- {phases[index].Name}: no place for it in this scene, run from where the test began");
         at = index;
         clock = 0f;
+        climbKnown = false;
         tally = new Tally();
         known = false;
         keysChanged = 0f;
@@ -205,6 +288,16 @@ internal sealed class MoveTest : MonoBehaviour
     private void Measure(float dt)
     {
         if (tally != null) tally.All++;
+        // A vault or a climb: how long it took and the fastest the capsule went in it.
+        Vector3 at = player.transform.position;
+        if (tally != null && (player.CurrentState == PlayerMovement.MovementState.Mantle || player.CurrentState == PlayerMovement.MovementState.Vault))
+        {
+            tally.ClimbTime += dt;
+            if (climbKnown) tally.ClimbFastest = Mathf.Max(tally.ClimbFastest, (at - climbWas).magnitude / dt);
+        }
+        if (tally != null && player.CurrentState == PlayerMovement.MovementState.LedgeHang) tally.HangTime += dt;
+        climbWas = at;
+        climbKnown = true;
         if (body == null || !body.TryReadLegs(out var left, out var right)) return;
         float view = player.transform.eulerAngles.y, facing = body.FacingYaw;
         var t = tally;
@@ -297,7 +390,9 @@ internal sealed class MoveTest : MonoBehaviour
         float carried = t.Carried.Count > 0 ? t.Carried[t.Carried.Count / 2] : 0f, speed = t.Speeds.Count > 0 ? t.Speeds[t.Speeds.Count / 2] : 0f;
         PlayRecord.Line(Log, Heading, $"{name,-15} n {t.Frames,4}/{t.All,-4} | speed {speed:0.00} pose-carry {carried:0.00} | slide {median:0.00} {worst:0.00} skates {t.Skates,3} | knees {t.Knees,2} ankles {t.Ankles,2} pops {t.Pops,2} "
             + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s "
-            + $"| off-clip {offMid * 100f:0} {offWorst * 100f:0} {offMost * 100f:0}cm eases {t.Starts,3}");
+            + $"| off-clip {offMid * 100f:0} {offWorst * 100f:0} {offMost * 100f:0}cm eases {t.Starts,3}"
+            + (t.ClimbTime > 0f ? $" | climb {t.ClimbTime:0.00}s fastest {t.ClimbFastest:0.0}m/s" : "")
+            + (t.HangTime > 0f ? $" | hung {t.HangTime:0.00}s" : ""));
     }
 
     private void Finish(string trouble)

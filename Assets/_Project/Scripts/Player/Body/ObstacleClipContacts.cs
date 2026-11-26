@@ -10,7 +10,9 @@ using UnityEngine;
 ///   and it falls behind. It counts only if it reaches far enough ahead (handAhead, a share of the arm's length) and the body
 ///   then goes over it. A hand that only swings past on its way up to a ledge over the head (a climb's) is down on nothing:
 ///   until 0.9.423 it counted, vaultontohigh's swing up read as a plant let go of 0.09 s in, and the climb onto a high ledge
-///   went in that, 22 to 48 m/s (the pops record of 2026-11-25 05:36; the user: "mantling 버그 나서 순간이동함").
+///   went in that, 22 to 48 m/s (the pops record of 2026-11-25 05:36; the user: "mantling 버그 나서 순간이동함"). In the
+///   editor's play it read on, 0.00 to 0.08 s: there the clip is posed turned round (ClipSampler), and the climb still went
+///   in 0.08 s until 0.9.449, when the straight move stopped letting a clip's time hurry it (StraightLineTraversal).
 /// - It leaves once the hips have gone a share of an arm past it (handPass) or it has lifted that share off its lowest
 ///   (handLift), whichever comes first.
 /// The support is while every planting hand is down. Nothing here is written for one clip or one character, so a clip

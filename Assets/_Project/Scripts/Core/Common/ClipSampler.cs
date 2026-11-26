@@ -14,7 +14,10 @@ using UnityEngine.Playables;
 /// and let go per sample with its root motion held off meanwhile; or for a bare copy, one added without an avatar (its
 /// clips are generic, bound by path from the model's root as SampleAnimation binds them), its graph kept for the next
 /// sample of the same copy. Time is set twice so no clip event fires. In the editor it stays SampleAnimation, which
-/// everything was measured and tuned with.
+/// everything was measured and tuned with. Where the two part: a clip imported turned (Beatrun's, its import's root turn
+/// 180°) comes out of SampleAnimation turned back round while the Animator's root motion is off, as the bodies have it, so
+/// in the editor its front is read as its back; a build's graph turns it as the game plays it (the climb record of
+/// 2026-11-26: vaultontohigh's hands read as down 0.00 to 0.08 s in the editor's play, 0.58 to 0.63 s faced ahead).
 /// </summary>
 public static class ClipSampler
 {

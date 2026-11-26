@@ -7,14 +7,15 @@ using UnityEngine;
 /// obstacle (or at the clip's end, for a clip that puts no hand down), as the body measures the clip (PlayerBody,
 /// ObstacleClipContacts). Until 0.9.405 it went at Beatrun's own pace, about twice the clips': the body was over a box in
 /// 0.38 s while its vault (vaultover, 0.87 s) was still reaching for it, and the clip played on after (the user, 2026-11-24:
-/// "파쿠르 근데 너무 빠른 것 같은데 모션대로예요?", "넘기 올라서기는 클립에 맞춰 줘. 하드코딩하지 말고").
+/// "파쿠르 근데 너무 빠른 것 같은데 모션대로예요?", "넘기 올라서기는 클립에 맞춰 줘. 하드코딩하지 말고"). The clip
+/// only ever slows Beatrun's carry, never hurries it (the constructor says why).
 /// </summary>
 public sealed class StraightLineTraversal
 {
     private readonly PlayerMovement ctx;
     private readonly ObstacleTarget target;
     private readonly ParkourDetector detector;
-    private readonly float entryUnits, pace;
+    private readonly float entryUnits, pace, clipTime, beatrun;
     private Vector3 lastClearPosition;
     private float lerp, clock;
     private bool finishing;
@@ -23,6 +24,12 @@ public sealed class StraightLineTraversal
     private Vector3 finishStart, finishVelocity, lastVelocity;
     public bool Complete { get; private set; }
     public float Progress => lerp;
+    /// <summary>What set the move's pace, for the climb record (ObstacleTraversalState).</summary>
+    internal string Timing => clipTime <= 0f ? $"straight at Beatrun's pace, {beatrun:0.00} s"
+        : pace >= 1f ? $"straight at Beatrun's pace, {beatrun:0.00} s (the clip's {clipTime:0.00} s would hurry it)"
+        : $"straight at its clip's pace: the clip's {clipTime:0.00} s for Beatrun's {beatrun:0.00} s, x{pace:0.00}";
+    /// <summary>Why it stopped short (Advance false), for the climb record.</summary>
+    internal string Stopped { get; private set; }
 
     /// <param name="clipTime">How far into the body's clip the move is over (s; IObstacleMotionSource.ObstacleMoveTime); 0 for
     /// none known, and it goes at Beatrun's pace.</param>
@@ -31,13 +38,23 @@ public sealed class StraightLineTraversal
         ctx = context; target = obstacle; detector = ctx.Abilities.Traversal.Detector;
         lastClearPosition = obstacle.Start;
         entryUnits = entrySpeed / ctx.HeightUnit;
-        float beatrun = VaultMotion.TimeToArrive(obstacle.Kind, entryUnits);
-        pace = clipTime > 0f && beatrun > 0f ? beatrun / clipTime : 1f;
+        this.clipTime = clipTime;
+        beatrun = VaultMotion.TimeToArrive(obstacle.Kind, entryUnits);
+        // The clip's time slows Beatrun's carry, never hurries it: Beatrun's rates were made with these very clips, and a
+        // clip time shorter than the carry is the measure reading the clip wrong. Beatrun's clips play in place, so where
+        // their hands leave is uncertain, and the editor poses them turned round (ClipSampler): vaultontohigh read its hands
+        // gone 0.08 s in, and the climb onto a 2.2 m wall went at 11.5 times Beatrun's pace, 30 to 50 m/s (the climb record
+        // of 2026-11-26; the user: "벽 위로 mantling 할 때 텔포하는데 똑똑하게 고쳐 주고").
+        pace = clipTime > 0f && beatrun > 0f ? Mathf.Min(1f, beatrun / clipTime) : 1f;
     }
 
     internal bool Advance(float dt)
     {
-        if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy) return false;
+        if (target.Surface == null || !target.Surface.enabled || !target.Surface.gameObject.activeInHierarchy)
+        {
+            Stopped = "its obstacle is gone";
+            return false;
+        }
         float next = VaultMotion.Step(target.Kind, lerp, Mathf.Max(0f, dt) * pace, entryUnits);
         clock += Mathf.Max(0f, dt) * pace;
         // The high moves start at the wall, whatever the jump left of the distance to it.
@@ -68,8 +85,16 @@ public sealed class StraightLineTraversal
                 + (t3 - t2) * FinishDuration * exitVelocity;
             finish = finishTime >= FinishDuration;
         }
-        if (!detector.ClearStraightPath(ctx.transform.position, position, target.Surface)
-            || (finish && !detector.ClearStraightExit(position))) return false;
+        if (!detector.ClearStraightPath(ctx.transform.position, position, target.Surface))
+        {
+            Stopped = "something else in the way";
+            return false;
+        }
+        if (finish && !detector.ClearStraightExit(position))
+        {
+            Stopped = "no room where it ends";
+            return false;
+        }
         lerp = next; Complete = finish;
         if (detector.ClearStraightExit(position)) lastClearPosition = position;
         Vector3 velocity = (position - ctx.transform.position) / Mathf.Max(dt, 0.001f);
