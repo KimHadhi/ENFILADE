@@ -308,15 +308,26 @@ public sealed partial class PlayerBody
         bool sprinting = SprintingNow();
         gunRuns = !crouched && gun != null && sprinting;
         gunRunsFrame = Time.frameCount;
-        // The legs go the way the keys ask under hips that face the view, the two ways' cycles either side of it mixed; the
-        // gun's run goes ahead only, at a slant ahead the hips turning to it (the user, 2026-11-22: "WA, WD까진 허용할 수
-        // 있도록 한다. 자연스럽게"), the spine turning the chest back to the view (SpineLook). The way is against the way the
-        // body faces, which follows the view a moment behind (FacingLagMost). In 0.9.432 the legs ran one of four ways and the
-        // hips turned by the rest (WarpWay): with the keys stepped round it swapped the whole cycle every quarter turn, and a
-        // foot on the ground went over it faster than 3 m/s half again as often as with the ways mixed (the legs' test of
-        // 2026-11-25, Logs/move-test.txt; the user: "빠르게 다이아몬드 스텝을 밟으면 발이 갈피를 못 잡아서 튕겨져 날라감").
-        float turn = gunRuns ? Mathf.Clamp(heading, -GunRunSlant, GunRunSlant) : 0f, moving = 0f;
-        float legs = Mathf.DeltaAngle(0f, heading - yaw);
+        // Moving, the legs run one of four ways off the hips, ahead, either side or back (WarpWay), and the hips turn to the
+        // rest of the way the body goes, the spine turning the chest back to the view (SpineLook): a slant or a way the keys
+        // swing through turns the hips under one stride that runs on, as shipped games turn their legs, instead of mixing the
+        // eight ways' cycles. The gun's run goes ahead only, at a slant ahead (the user, 2026-11-22: "WA, WD까진 허용할 수
+        // 있도록 한다. 자연스럽게"). Standing, the way the legs go against the way the body faces, which follows the view a
+        // moment behind (FacingLagMost). 0.9.433 to 0.9.442 mixed the eight ways again, the hips on the view, as the legs'
+        // test slid a planted foot less that way; with the keys on WASD the legs still looked broken (the user, 2026-11-26:
+        // "wasd해도 망함. 걍 1번으로 가자").
+        float legs, turn = 0f, moving = 0f;
+        if (gunRuns)
+        {
+            turn = Mathf.Clamp(heading, -GunRunSlant, GunRunSlant);
+            legs = Mathf.DeltaAngle(0f, heading - yaw);
+        }
+        else if (!still)
+        {
+            legs = legsWay = WarpWay(heading);
+            turn = Mathf.DeltaAngle(legs, heading);
+        }
+        else legs = Mathf.DeltaAngle(0f, heading - yaw);
         var gaitNow = player.Actions != null ? player.Actions.Gait : null;
         // Down into a crouch or up out of it on the move, the two stances share the legs as far as the body is down
         // (PlayerBody.Posture).
@@ -347,8 +358,9 @@ public sealed partial class PlayerBody
         // Standing or crouched the legs keep their facing until the view has gone turnStartAngle away, then turn on the
         // stance's turn clip (StandTurn).
         TurnOnTheSpot(still, crouched);
-        // The hips face the view, turned to the gun's run's slant; a view flicked round on the run is a turn back (RunTurn).
-        // From 0.9.416 to 0.9.428 a jog or a sprint ahead ran ahead of the view, the hips facing the way it ran (RunsAhead).
+        // The hips face the view, turned by the rest of the way past the legs' own (WarpWay) or the gun's run's slant; a view
+        // flicked round on the run is a turn back (RunTurn). From 0.9.416 to 0.9.428 a jog or a sprint ahead ran ahead of the
+        // view, the hips facing the way it ran (RunsAhead).
         if (!legsPlanted) targetYaw = turn;
         if (!still) walkedFrame = Time.frameCount;
         Pace(speed, legs, moving, dt);
@@ -364,8 +376,23 @@ public sealed partial class PlayerBody
     // its hips (SitOnHips).
     private int walkedFrame = -10;
 
-    // The way the legs go (degrees off the view), kept as the body slows to a stop.
-    private float travelHeading;
+    // The way the legs go (degrees off the view), kept as the body slows to a stop; the one of four ways their cycles run off
+    // the hips (WarpWay: 0 ahead, 90 right, 180 back, -90 left).
+    private float travelHeading, legsWay;
+    // The legs keep their way while the heading is within 45 degrees and this of it (degrees), so a heading at a slant doesn't
+    // swap them from one way to the next and back.
+    private const float WarpHold = 15f;
+
+    // Which of ahead, either side and back the legs run for this heading (degrees off the view): the way they run now while
+    // the heading is within 45 + WarpHold of it, else the nearest. Their cycles play that way alone and the hips turn by the
+    // rest (Locomotion): keys swung round (W, D, S, A in turn) turn the hips under a stride that runs on rather than swap the
+    // legs between unlike cycles frame by frame (the feet record of 2026-11-25 07:47: mixed, the foot on the ground slid
+    // 2.2 m/s; the user: "wasd로 다이아몬드 스텝 밟으면 발이 존나 프로펠러마냥").
+    private float WarpWay(float heading)
+    {
+        if (Mathf.Abs(Mathf.DeltaAngle(heading, legsWay)) <= 45f + WarpHold) return legsWay;
+        return Mathf.DeltaAngle(0f, Mathf.Round(heading / 90f) * 90f);
+    }
 
     // The stride follows the travel's way and its speed each on their own, the way turning round at the same speed. Followed
     // as one, a way that swung round fast went through short in between: running on at 4-5 m/s through a sharp turn the legs
@@ -518,8 +545,9 @@ public sealed partial class PlayerBody
         var gun = GunInHand();
         if (gun == null) aim = 0f;
         place = crouched ? 0f : place * (1f - aim);
-        // The hips turn to the way the gun's run goes (Locomotion).
+        // The hips turn to the way the gun's run goes, or past the legs' own way (Locomotion, WarpWay).
         if (gun != null && place >= 1f + gunRunFrom) heading -= Mathf.Clamp(heading, -GunRunSlant, GunRunSlant);
+        else heading = WarpWay(heading);
         float left = 1f, speed = 0f, scale = GaitScale;
         if (gun != null)
         {

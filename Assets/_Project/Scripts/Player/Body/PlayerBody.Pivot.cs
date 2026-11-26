@@ -131,13 +131,14 @@ public sealed partial class PlayerBody
     }
 
     // A pivot measured on this body: its way in and out, its speeds, its stop, its end and its travel's speed throughout.
-    // False for one that doesn't turn back on itself (or a body that can't read it yet: asked again).
+    // False for one that doesn't turn back on itself or can't be read. Read once (at build, ReadMotions): reading plays the
+    // clip on the body, and one asked again at every pivot's choosing played it on the body in the middle of a run.
     private bool Measure(Pivot p)
     {
         if (p.Measured) return p.Usable;
-        p.Motion = MotionOf(p.Clip);
-        if (p.Motion == null) return false;
         p.Measured = true;
+        p.Motion = MotionOf(p.Clip);
+        if (p.Motion == null) return p.Usable = false;
         int count = Mathf.Max(8, Mathf.CeilToInt(p.Length * PivotSampleRate));
         p.Step = p.Length / count;
         var way = new Vector2[count + 1];
