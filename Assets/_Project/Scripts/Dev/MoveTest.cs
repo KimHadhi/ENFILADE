@@ -68,8 +68,9 @@ internal sealed class MoveTest : MonoBehaviour
         public float OnTop, TopPath;
         // The fastest the eyes went down against the capsule, and the most their pace against it changed in a frame (m/s).
         public float EyeDrop, EyeJolt;
-        // Out of a slide's getting up, the most the body's speed changed from one frame to the next (m/s); -1 no slide.
-        public float EndJump = -1f;
+        // Out of a slide's getting up, the most the body's speed changed from one frame to the next, and the camera's speed over
+        // the ground (what the player sees: the body's own travel and the head's in its pose together) (m/s); -1 no slide.
+        public float EndJump = -1f, ViewJump = -1f;
     }
 
     private readonly List<Phase> phases = new List<Phase>();
@@ -164,9 +165,11 @@ internal sealed class MoveTest : MonoBehaviour
     private const float SlideAt = 1.4f, SlideHeld = .2f, SlideAfter = .8f;
     private const string SlideTraceHeading = "slide trace (MoveTest): from the slide's start to 0.8 s after it ends, a line a frame: "
         + "the move, time, where in its clip (SlideMove phase, clip, moment s) or after it the state and the legs' gait (1 jog, 2 sprint), "
-        + "the capsule's speed, the eyes over the capsule's floor";
-    // When the slide began and ended in this move (s, -1 not yet), and the capsule's ground speed last frame (EndJump).
-    private float slidFrom = -1f, slidTo = -1f, paceWas = -1f;
+        + "the capsule's speed, the eyes over the capsule's floor, the camera's speed over the ground";
+    // When the slide began and ended in this move (s, -1 not yet), the capsule's and the camera's ground speed last frame (EndJump,
+    // ViewJump), and where the camera was.
+    private float slidFrom = -1f, slidTo = -1f, paceWas = -1f, lensPaceWas = -1f;
+    private Vector3 lensWas;
 
     // A sprint, then the crouch key down from SlideAt, for SlideHeld or on to the end when `crouched`; W held on, or let go with
     // the crouch key unless `keys` (let go with it, the crouch key alone was a crouch, no slide); Shift held through the slide
@@ -496,7 +499,7 @@ internal sealed class MoveTest : MonoBehaviour
         handWasOn[0] = handWasOn[1] = false;
         vaultFrom = vaultTo = -1f;
         eyeFrames = 0;
-        slidFrom = slidTo = paceWas = -1f;
+        slidFrom = slidTo = paceWas = lensPaceWas = -1f;
         film?.Begin(phases[index].Name, player.transform);
         tally = new Tally();
         known = false;
@@ -533,17 +536,24 @@ internal sealed class MoveTest : MonoBehaviour
         if (sliding) slidTo = -1f;
         else if (slidFrom >= 0f && slidTo < 0f) slidTo = clock;
         float ground = new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude;
+        var eyes = Camera.main;
+        Vector3 lensAt = eyes != null ? eyes.transform.position : at;
+        float lensPace = lensPaceWas >= -.5f && dt > 0f ? new Vector2(lensAt.x - lensWas.x, lensAt.z - lensWas.z).magnitude / dt : -1f;
         if (slidFrom >= 0f && (sliding || clock - slidTo <= SlideAfter))
         {
-            var eyes = Camera.main;
             string where = sliding ? $"{slideMove.Now} {slideMove.ClipName} @{slideMove.Moment:0.000}"
                 : $"{player.CurrentState} gait {player.Actions.Gait.Position:0.00}";
             PlayRecord.Line("slide-trace", SlideTraceHeading, $"{phases[this.at].Name} {clock - slidFrom:0.000}s {where} {ground:0.00}m/s "
-                + $"eyes {(eyes != null ? eyes.transform.position.y - at.y : 0f):0.000}m");
-            if (tally != null && paceWas >= 0f && (!sliding || slideMove.Now == SlideMove.Phase.Up))
-                tally.EndJump = Mathf.Max(tally.EndJump, Mathf.Abs(ground - paceWas));
+                + $"eyes {lensAt.y - at.y:0.000}m view {lensPace:0.00}m/s");
+            bool risen = !sliding || slideMove.Now == SlideMove.Phase.Up;
+            if (tally != null && paceWas >= 0f && risen) tally.EndJump = Mathf.Max(tally.EndJump, Mathf.Abs(ground - paceWas));
+            if (tally != null && lensPaceWas >= 0f && lensPace >= 0f && risen)
+                tally.ViewJump = Mathf.Max(tally.ViewJump, Mathf.Abs(lensPace - lensPaceWas));
         }
         paceWas = ground;
+        // The camera's ground speed is known from the second frame of a move (lensPaceWas -1: no place yet, -0.5: a place).
+        lensPaceWas = lensPace >= 0f ? lensPace : -.5f;
+        lensWas = lensAt;
         // The eyes against the capsule: how fast they drop, and the biggest change of their pace in a frame.
         var lens = Camera.main;
         if (tally != null && lens != null)
@@ -667,7 +677,7 @@ internal sealed class MoveTest : MonoBehaviour
             + (t.LadderTime > 0f ? $" | on the ladder {t.LadderTime:0.00}s" : "")
             + (t.TopSlides.Count > 0 ? $" | hands on top {t.OnTop:0.00}s slide {Middle(t.TopSlides):0.00} most {Most(t.TopSlides):0.00}m/s path {t.TopPath * 100f:0}cm" : "")
             + $" | eye drop {t.EyeDrop:0.0} jolt {t.EyeJolt:0.0}m/s"
-            + (t.EndJump >= 0f ? $" | end jump {t.EndJump:0.00}m/s" : ""));
+            + (t.EndJump >= 0f ? $" | end jump {t.EndJump:0.00} view {t.ViewJump:0.00}m/s" : ""));
     }
 
     private void Finish(string trouble)

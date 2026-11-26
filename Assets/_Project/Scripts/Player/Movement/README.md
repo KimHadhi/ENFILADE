@@ -26,7 +26,7 @@
 | [Dodge/](Dodge/) | 공통 회피 창, 경로 성공 판정, 기울이기, 적 통과, 어느 클립으로 회피하는가([DodgeMove](Dodge/DodgeMove.cs)), 회피 이펙트(DodgeDash) |
 | [Actions/ClipTravel.cs](Actions/ClipTravel.cs) / [ClipWays.cs](Actions/ClipWays.cs) | 클립대로 가는 동작(구르기·다이브 롤·회피)이 매 프레임 갈 거리([ClipMotion](../Body/ClipMotion.cs)이 클립에서 읽음) / 가는 쪽마다의 클립(`클립@도`) |
 | [Actions/RunTurn.cs](Actions/RunTurn.cs) | 달리다 반대로 확 돌기: 돌기 클립이 몸을 움직임(루트 모션, 클립의 회전을 몸이 시선까지 남은 만큼으로 늘이거나 줄임), 가슴이 뿌리 위로 돌아온 첫 발에서 걸음으로 (몸 쪽은 PlayerBody.RunTurn) |
-| [Actions/SlideMove.cs](Actions/SlideMove.cs) | 발 먼저 슬라이딩: 들어온 속도로 SlideToRun_5m·10m 중 미끄러질 거리에 맞는 클립 하나를 골라, 내려가기·미끄러지기(남은 거리에 클립 시각을 맞춤, 길면 Loop로 버팀)·일어나 달리기를 그 클립으로 (0.9.395) |
+| [Actions/SlideMove.cs](Actions/SlideMove.cs) | 발 먼저 슬라이딩: 들어온 속도로 SlideToRun_5m·10m 중 미끄러질 거리에 맞는 클립 하나를 골라, 내려가기·미끄러지기(클립 시간대로 몸이 클립 자신의 빠르기를 따라감, 0.9.459; 경사가 세게 끌거나 너무 빠르면 Loop로 버팀)·일어나 달리기를 그 클립으로 (0.9.395) |
 | [Parkour/](Parkour/) | 장애물·벽·렛지·봉 탐지와 이동 경로, 사다리·집라인 잡기([MovementFixtures](Parkour/MovementFixtures.cs). 사다리 꼭대기는 걸어 나가 몸이 사다리에 닿으면 레포데처럼 저절로, 또는 F. 집라인은 뛰어오른 공중이나 Space를 누른 채일 때만) |
 | [States/](States/) | 자세·행동별 입력, 전환, 물리 정책 |
 | [../Combat/SlideCombat.cs](../../Melee/SlideCombat.cs) | 슬라이딩의 적 접촉·가속·저스트 판정 |
