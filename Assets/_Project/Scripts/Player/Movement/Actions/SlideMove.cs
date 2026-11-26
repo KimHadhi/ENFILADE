@@ -15,7 +15,7 @@ using UnityEngine;
 /// - With no keys, Move.slideFriction slows it and the body holds in the slide until it stops (PlayerBody.SlideStops).
 /// - Up out of it [Rises, the first footfall once its legs are under it] on the clip's time, its run-out at the rate that brings
 ///   its pace to the gait the keys ask for (Ability.runOutRate), where the walk or run takes over at its speed
-///   (MovementGait.Carry).
+///   (MovementGait.Carry). The pose's pace comes into it from the slide's (Advance).
 /// The other PCs play the same clip at the same moment (MovementMirror).
 /// Until 0.9.395 a slide played SlideToRun_Enter, then a cut of SlideToRun_10m's middle swaying on a sine, then SlideToRun_Exit,
 /// at a speed that eased in a line from the run's to the getting up's whatever the clips did; Shift with W stood it up at once
@@ -32,8 +32,8 @@ public sealed class SlideMove
     private const float LeastSlowing = .5f, NoEnd = .2f;
     // The slope's pull is followed this quickly (s), so a stair's edges don't jolt the match.
     private const float SlopeFollow = .2f;
-    // Along the slide the clip's moment goes at least and at most this many times its own pace, and that pace changes no
-    // quicker than from one end to the other in MatchEase (s).
+    // Along the slide the clip's moment goes at least and at most this many times its own pace, and its pace changes no
+    // quicker than from one end to the other in MatchEase (s), into and out of the slide too (Advance).
     private const float SlowestMatch = .5f, FastestMatch = 2f, MatchEase = .5f;
     // A copy's moment goes on between poses at the clip's pace, and is set again by one further off than this (s).
     private const float MirrorSlack = .15f;
@@ -104,9 +104,11 @@ public sealed class SlideMove
         var motion = Motion;
         if (motion == null || dt <= 0f || Now == Phase.Over) return speed;
         pull = Mathf.Lerp(pull, slope, 1f - Mathf.Exp(-dt / SlopeFollow));
+        // From one part of the slide to the next the moment goes on past where the part ends: held there, the pose stood still for
+        // the rest of that frame.
         if (Now == Phase.Down)
         {
-            Moment = Mathf.Min(Moment + dt, motion.Down);
+            Moment += dt;
             if (Moment >= motion.Down) Now = Phase.Along;
             return warp * motion.GlideAt(Moment);
         }
@@ -114,7 +116,11 @@ public sealed class SlideMove
         {
             float share = motion.LegsUnder > motion.Rises ? Mathf.Clamp01((Moment - motion.Rises) / (motion.LegsUnder - motion.Rises)) : 1f;
             float r = Mathf.Lerp(1f, rate, share * share * (3f - 2f * share));
-            Moment += dt * r;
+            // The getting up comes in from the pace the slide had: at once at its own, the slide's last moments in slow motion
+            // (distance matching held at half pace) turned into the getting up at full pace in a frame (x0.5 to x1, the slide
+            // trace of 2026-11-26; the user: "슬라이딩 중과 슬라이딩 마무리 모션 전환"). The body goes at the getting up's own
+            // pace all the same, so its speed carries on from the slide's.
+            Advance(r, dt);
             if (Moment >= ExitAt(motion)) Now = Phase.Over;
             return r * motion.GlideAt(Moment);
         }
@@ -128,7 +134,8 @@ public sealed class SlideMove
             if (Now == Phase.Held) return speed;
             if (Moment < hold)
             {
-                Moment = Mathf.Min(hold, Moment + dt);
+                Advance(1f, dt);
+                Moment = Mathf.Min(hold, Moment);
                 if (Moment >= hold) Now = Phase.Held;
             }
             return speed;
@@ -145,9 +152,7 @@ public sealed class SlideMove
         // The pace that matches the distance left, eased into from the pace it had: down into the slide on the clip's own
         // time and then at once to the distance's (half its pace, coming in faster than the clip), the pose went into slow
         // motion in a frame as the body came down (the slide trace of 2026-11-26: the eyes dropping 3.5 m/s, then 1.8).
-        float wanted = Mathf.Clamp((MomentLeft(motion, left) - Moment) / dt, SlowestMatch, FastestMatch);
-        along = Mathf.MoveTowards(along, wanted, (FastestMatch - SlowestMatch) / MatchEase * dt);
-        Moment += along * dt;
+        Advance(Mathf.Clamp((MomentLeft(motion, left) - Moment) / dt, SlowestMatch, FastestMatch), dt);
         if (before < hold && Moment >= hold && left > fits)
         {
             Now = Phase.Held;
@@ -156,11 +161,20 @@ public sealed class SlideMove
         }
         if (Moment >= motion.Rises)
         {
-            Moment = motion.Rises;
             Now = Phase.Up;
             rate = RunOutRate(motion);
         }
         return speed;
+    }
+
+    // The clip's moment goes on this frame at the pace this part of the slide asks for (a share of the clip's own): along it
+    // the distance's, let go its own on to the hold, getting up the run-out's. The pace comes to it no quicker than from one
+    // end of the distance's range to the other in MatchEase, from one part to the next too, so the pose never changes pace in
+    // a frame.
+    private void Advance(float pace, float dt)
+    {
+        along = Mathf.MoveTowards(along, pace, (FastestMatch - SlowestMatch) / MatchEase * dt);
+        Moment += along * dt;
     }
 
     /// <summary>Another PC's slide as its pose says: the same clip, where in it and its moment, going on between poses at the
