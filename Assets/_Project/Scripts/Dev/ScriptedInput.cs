@@ -16,6 +16,8 @@ internal static class ScriptedInput
     internal static Vector2 Move;
     /// <summary>The sprint key is held.</summary>
     internal static bool Sprint;
+    /// <summary>Walk mode is on (MovementInput.WalkMode), as the Caps Lock switch would have it.</summary>
+    internal static bool Walk;
     /// <summary>The jump key is held (PressJump puts it down).</summary>
     internal static bool Jump;
     // The frame the jump key goes down on: the one after PressJump, when the movement next reads its keys.

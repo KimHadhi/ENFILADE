@@ -150,9 +150,12 @@ internal sealed class MoveTest : MonoBehaviour
         Vault("vault over", 2f, 1f, .3f, .8f);
         Vault("vault onto", 2f, 1f, 6f, ClimbJumpAt);
         Vault("vault over high", 2f, 1.7f, .3f, ClimbJumpAt);
-        // Walked at (W half way, under Ability.clamberMaxSpeed) and jumped close: clambered onto, at the hips and at the head.
-        Vault("clamber low", 2f, 1f, 6f, ClimbJumpAt, .5f, 5.5f);
-        Vault("clamber high", 2f, 1.9f, 6f, ClimbJumpAt, .5f, 6.5f);
+        // Walked at in walk mode (Caps Lock) and jumped close: clambered onto, at the hips and at the head. Jumped at from a stop
+        // right before it without walk mode: the quick climb (until 0.9.461 the slow clamber, the body being under 2 m/s).
+        Vault("clamber low", 2f, 1f, 6f, ClimbJumpAt, true, 5.5f);
+        Vault("clamber high", 2f, 1.9f, 6f, ClimbJumpAt, true, 6.5f);
+        Vault("onto from a stop", 2f, 1f, 6f, 1f, false, 3f, StopAhead);
+        Vault("climb from a stop", 2f, 1.9f, 6f, 1f, false, 3f, StopAhead);
         phases.Add(new Phase { Name = "ladder", Seconds = 8f, Drive = (t, dt) => ScriptedInput.Move = t < WallSettle ? Vector2.zero : Vector2.up,
             Place = PutUpLadder });
         // Only the moves the request named (only=climb,jog W; MoveTestOnRequest carries the request on in the marker).
@@ -245,16 +248,19 @@ internal sealed class MoveTest : MonoBehaviour
         box = null;
     }
 
-    // A box BoxAhead ahead of where the test began, as wide, high and deep as asked (m), on the floor's own layer, so the moves
-    // see it as they see the floor: the player jogs at it with W from a stop and jumps `jumpAt` from its near face (further
-    // off, a deep box was jumped onto with no move: the onto move looks down from the eyes, and over the top they were too
-    // high by then). Taken down with the ladder as the move ends.
-    private const float BoxAhead = 3f, VaultJumpHeld = .2f;
+    // A box BoxAhead ahead of where the test began (or as near as asked), as wide, high and deep as asked (m), on the floor's own
+    // layer, so the moves see it as they see the floor: the player jogs (or walks) at it with W from a stop and jumps `jumpAt`
+    // from its near face (further off, a deep box was jumped onto with no move: the onto move looks down from the eyes, and over
+    // the top they were too high by then). StopAhead puts it right before the player, to jump at from a stop. Taken down with
+    // the ladder as the move ends.
+    private const float BoxAhead = 3f, StopAhead = .7f, VaultJumpHeld = .2f;
     private GameObject box;
-    private float boxJumpAt, boxKeys;
+    private float boxJumpAt;
+    private bool boxWalk;
 
-    // `keys`: how far W is held (1 a jog, .5 a walk); `seconds`: how long the move runs.
-    private void Vault(string name, float width, float height, float depth, float jumpAt, float keys = 1f, float seconds = 3f)
+    // `walk`: walk mode on (Caps Lock) instead of a jog; `seconds`: how long the move runs; `from`: the box's near face ahead (m).
+    private void Vault(string name, float width, float height, float depth, float jumpAt, bool walk = false, float seconds = 3f,
+        float from = BoxAhead)
         => phases.Add(new Phase { Name = name, Seconds = seconds, FaceHome = true, Drive = VaultDrive, Place = () =>
         {
             Vector3 ahead = Quaternion.Euler(0f, homeYaw, 0f) * Vector3.forward;
@@ -262,10 +268,10 @@ internal sealed class MoveTest : MonoBehaviour
             box.name = "Move Test Box";
             if (Physics.Raycast(home + Vector3.up * .5f, Vector3.down, out RaycastHit floor, 2f, ~0, QueryTriggerInteraction.Ignore))
                 box.layer = floor.collider.gameObject.layer;
-            box.transform.SetPositionAndRotation(home + ahead * (BoxAhead + depth * .5f) + Vector3.up * (height * .5f), Quaternion.Euler(0f, homeYaw, 0f));
+            box.transform.SetPositionAndRotation(home + ahead * (from + depth * .5f) + Vector3.up * (height * .5f), Quaternion.Euler(0f, homeYaw, 0f));
             box.transform.localScale = new Vector3(width, height, depth);
             boxJumpAt = jumpAt;
-            boxKeys = keys;
+            boxWalk = walk;
             climbJumped = false;
             return true;
         } });
@@ -273,7 +279,8 @@ internal sealed class MoveTest : MonoBehaviour
     private void VaultDrive(float t, float dt)
     {
         ScriptedInput.Sprint = false;
-        ScriptedInput.Move = Vector2.up * boxKeys;
+        ScriptedInput.Walk = boxWalk;
+        ScriptedInput.Move = Vector2.up;
         if (box == null) return;
         Vector3 local = box.transform.InverseTransformPoint(player.transform.position);
         float toFace = (-.5f - local.z) * box.transform.localScale.z;
@@ -490,7 +497,7 @@ internal sealed class MoveTest : MonoBehaviour
         }
         TakeDownLadder();
         // A crouch key a move held on (slide crouched) is let go before the next.
-        ScriptedInput.Crouch = false;
+        ScriptedInput.Crouch = ScriptedInput.Walk = false;
         if (phases[index].Place != null && !phases[index].Place())
             PlayRecord.Line(Log, Heading, $"-- {phases[index].Name}: no place for it in this scene, run from where the test began");
         at = index;

@@ -48,9 +48,10 @@ public sealed class MovementAbilitySettings
     [Min(1f)] public float vaultSurgeSpeed = 7f;
     [Tooltip("달려가기 시작할 때 카메라를 미는 힘: 앞으로 숙이는 회전(도/초), 시야각을 넓히는 양(도/초). 화면 흔들림 설정을 따른다.")]
     public Vector2 vaultSurgeKick = new Vector2(25f, 120f);
-    [Tooltip("Walking up to a top (no faster than clamberMaxSpeed, m/s), the jump clambers onto it slowly: a top clamberLowest "
-        + "to clamberHighest over the feet (m), its face within clamberReach (m) of the body's side.")]
-    [Min(0f)] public float clamberMaxSpeed = 2f, clamberLowest = .7f, clamberHighest = 2.3f, clamberReach = .6f;
+    [Tooltip("Walking up to a top in walk mode (Caps Lock, Shift not jogging), the jump clambers onto it slowly: a top "
+        + "clamberLowest to clamberHighest over the feet (m), its face within clamberReach (m) of the body's side. Not walking "
+        + "and no faster than standClimbSpeed (m/s), the jump climbs quickly onto such a top up to the waist from where the body stands.")]
+    [Min(0f)] public float clamberLowest = .7f, clamberHighest = 2.3f, clamberReach = .6f, standClimbSpeed = 2f;
     [Tooltip("긴 넘기(kong)를 클립의 손이 장애물을 짚는 대로 옮긴다(WarpedTraversal). 끄면 Beatrun 직선 경로.")]
     public bool warpKong = true;
     [Tooltip("보통 넘기(over)를 클립의 손이 장애물을 짚는 대로 옮긴다.")]

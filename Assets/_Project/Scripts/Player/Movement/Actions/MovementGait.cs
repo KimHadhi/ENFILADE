@@ -60,6 +60,10 @@ public sealed class MovementGait
     /// <summary>The gait's speed straight ahead now (m/s).</summary>
     public float Speed => Legs(0f, Asked, 0f);
 
+    /// <summary>The keys ask for a walk: walk mode on (Caps Lock) and Shift not bringing the jog in. A jump at a top then
+    /// clambers onto it slowly (ParkourTraversal.TryClamber).</summary>
+    internal bool Walks => ctx.Input.WalkMode && jogShare < .5f;
+
     /// <summary>
     /// Which gait the legs go (0 walk, 1 jog, 2 sprint; between while Shift or walk mode changes it): the clips they play
     /// are that gait's own (PlayerBody.Locomotion), not the ones whose feet happen to match the speed. Kept by the player's

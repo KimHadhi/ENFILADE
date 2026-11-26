@@ -23,9 +23,10 @@ public sealed class MovementInput
     /// <summary>
     /// Walk mode is on (Player/WalkMode, Caps Lock: a press turns it on, the next off): the keys walk, and jog with Shift,
     /// instead of running and sprinting (MovementGait). The game's own switch, not the keyboard's Caps Lock light, which
-    /// another window can change behind the game's back.
+    /// another window can change behind the game's back. A test sets it (ScriptedInput.Walk).
     /// </summary>
-    public bool WalkMode { get; private set; }
+    public bool WalkMode => ScriptedInput.On ? ScriptedInput.Walk : walkMode;
+    private bool walkMode;
     internal bool SprintButtonHeld
     {
         get
@@ -83,7 +84,7 @@ public sealed class MovementInput
         DodgePressed = move && InputFocus.Pressed(dodgeAction);
         ShovePressed = available && InputFocus.Pressed(shoveAction);
         // A switch, not a move: it flips whenever the keys are the game's, getting up off the back included.
-        if (available && InputFocus.Pressed(walkModeAction)) WalkMode = !WalkMode;
+        if (available && InputFocus.Pressed(walkModeAction)) walkMode = !walkMode;
         
         int heldSide = (Held(leanRightAction) ? 1 : 0) - (Held(leanLeftAction) ? 1 : 0);
         // As the crouch: a lean on toggle stays put while a screen has the keys; a lean on a held key reads as let go.

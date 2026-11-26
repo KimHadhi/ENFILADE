@@ -169,12 +169,27 @@ public sealed class VaultFinder
         return Target(VaultKind.Kong, surface, feet, forward, start + forward * (60f * u), out target);
     }
 
+    /// <summary>
+    /// The quick climb onto a top right before a body standing on the ground, not walking (ParkourTraversal.TryClamber): Onto,
+    /// from where the body stands, looking down onto the top StandLookPast in from its face <paramref name="face"/> (m) ahead
+    /// when that is further than Beatrun's look. A jump from there came down short of the face, the look found no top, and
+    /// nothing was climbed. False for a top above the waist (Onto's own reach), which a jump's wall moves take.
+    /// </summary>
+    internal bool OntoFromStand(Vector3 forward, float face, out ObstacleTarget target)
+    {
+        u = ctx.HeightUnit;
+        return Onto(ctx.transform.position, forward, out target, Mathf.Max(0f, face + StandLookPast - OntoLook * u));
+    }
+
+    // Onto looks down this far ahead of the feet (units; Beatrun's), and from a stand this far in from the face at least (m).
+    private const float OntoLook = 25f, StandLookPast = .15f;
+
     // Vault1: straight down in front of the eyes onto a top no higher than the waist; a low one is stepped onto, a thin one
-    // gone over (OverThin).
-    private bool Onto(Vector3 feet, Vector3 forward, out ObstacleTarget target)
+    // gone over (OverThin). The look goes `ahead` (m) further on from a stand (OntoFromStand).
+    private bool Onto(Vector3 feet, Vector3 forward, out ObstacleTarget target, float ahead = 0f)
     {
         target = default;
-        Vector3 origin = feet + Up(Eye) + forward * (25f * u);
+        Vector3 origin = feet + Up(Eye) + forward * (OntoLook * u + ahead);
         if (Inside(origin)) return false;
         if (!Down(origin, Neck, out RaycastHit top)) return false;
         if (!WallDetector.CanUseSurface(top.collider)) return false;

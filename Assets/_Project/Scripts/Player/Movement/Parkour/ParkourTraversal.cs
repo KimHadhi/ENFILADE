@@ -126,20 +126,30 @@ public sealed class ParkourTraversal
     internal bool CanGrab(SwingBar candidate) => barLock <= 0f || candidate != lastBar;
 
     /// <summary>
-    /// Walking up to a box or a wall's top (W held, no faster than Ability.clamberMaxSpeed), the jump clambers onto it
-    /// slowly, turned side-on with a knee up, on BIPER Female Runner's Jump_Climb (0.9.285; the user chose it for a walk
-    /// only: "걸을 때만 천천히 오르기"): the clip's hands on the near edge and the clip at its own pace (WarpedTraversal),
-    /// 2.6 s onto a top at the hips, 3.1 s onto one at the head. Jogging or sprinting, the press is the quick climb or vault
-    /// it always was (SurgesToVault, the jump's own). True when it began.
+    /// Walking up to a box or a wall's top in walk mode (Caps Lock, W held, Shift not jogging: MovementGait.Walks), the jump
+    /// clambers onto it slowly, turned side-on with a knee up, on BIPER Female Runner's Jump_Climb (0.9.285; the user chose it
+    /// for a walk only: "걸을 때만 천천히 오르기"): the clip's hands on the near edge and the clip at its own pace
+    /// (WarpedTraversal), 2.6 s onto a top at the hips, 3.1 s onto one at the head. Not walking and no faster than
+    /// Ability.standClimbSpeed, the press climbs quickly onto a top up to the waist from where the body stands (Onto,
+    /// VaultFinder.OntoFromStand). Otherwise it is the quick climb or vault it always was (SurgesToVault, the jump's own).
+    /// True when it began.
+    /// Until 0.9.461 any body slower than 2 m/s clambered slowly, walk mode or not: a jog only just set off from a stop at the
+    /// box, or slowed by a turn, came under it, and the same box was climbed in 0.3 s or 2.6 s by how fast the body happened to
+    /// be (the climb record of 2026-11-27 01:15: 16 quick, 6 slow; the user: "엄청 느린 맨틀링이 뜰 때도 있고 굉장히 빠른
+    /// 맨틀링이 뜰 때가 있는데 걍 랜덤인가?", "걸을 때만 느린 맨틀링하게 해 줘").
     /// </summary>
     internal bool TryClamber()
     {
         var settings = ctx.AbilitySettings;
         if (!ctx.IsGrounded || ctx.CurrentState != State.Standing || ctx.CurrentInput.y <= 0.1f || ledgeLock > 0f
             || ctx.Abilities.SwingHoldsBody || settings.clamberHighest <= 0f) return false;
-        if (Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude > settings.clamberMaxSpeed) return false;
+        bool walks = ctx.Actions.Gait.Walks;
+        if (!walks && Vector3.ProjectOnPlane(ctx.HorizontalVelocity, Vector3.up).magnitude > settings.standClimbSpeed) return false;
         if (!Detector.TryClamber(ctx.transform.position, ctx.transform.forward, settings.clamberReach, settings.clamberLowest,
                 settings.clamberHighest, out ObstacleTarget target) || traversedObstacles.Contains(target.Surface)) return false;
+        if (!walks && (!Detector.Vaults.OntoFromStand(ctx.transform.forward,
+                Vector3.Dot(target.Edge - ctx.transform.position, ctx.transform.forward), out target)
+            || traversedObstacles.Contains(target.Surface))) return false;
         StopSurge();
         Begin(target);
         return true;
