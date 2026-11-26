@@ -471,14 +471,14 @@ internal static class ClipBench
         var rules = new ObstacleClipContacts.Rules(GameTables.Number("Player", "Body", "vaultHandAhead", .25f),
             GameTables.Number("Player", "Body", "vaultHandPass", .6f), GameTables.Number("Player", "Body", "vaultHandLift", .15f),
             GameTables.Number("Player", "Body", "vaultPlantWindow", .65f));
-        // With root motion off, as the game's body has it (PlayerBody.Build), so the bench reads what the game reads: on, as
-        // the model comes, Beatrun's clips are posed faced ahead and measure otherwise (ClipSampler).
+        // With root motion off, as the game's body has it (PlayerBody.Build), so the bench reads what the game reads.
         bool motion = animator.applyRootMotion;
         animator.applyRootMotion = false;
         var contacts = ObstacleClipContacts.For(model, clip, animator, rules);
         animator.applyRootMotion = motion;
         text.AppendLine(contacts == null ? "    contacts: no hand down (the move goes over the clip's length)"
-            : Invariant($"    contacts: plant {contacts.PlantTime:0.00}s release {contacts.ReleaseTime:0.00}s of {contacts.Length:0.00}s, hands {(contacts.Left ? "L" : "")}{(contacts.Right ? "R" : "")}"));
+            : Invariant($"    contacts: plant {contacts.PlantTime:0.00}s release {contacts.ReleaseTime:0.00}s of {contacts.Length:0.00}s, hands {(contacts.Left ? "L" : "")}{(contacts.Right ? "R" : "")}")
+                + Invariant($" at ({contacts.HandsAt(contacts.PlantTime).x:0.00}, {contacts.HandsAt(contacts.PlantTime).y:0.00}, {contacts.HandsAt(contacts.PlantTime).z:0.00}) from the feet as they plant (x right, z ahead, the model's own m)"));
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

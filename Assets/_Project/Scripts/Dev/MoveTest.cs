@@ -48,7 +48,7 @@ internal sealed class MoveTest : MonoBehaviour
     private sealed class Tally
     {
         public readonly List<float> Slides = new List<float>(), Carried = new List<float>(), Speeds = new List<float>(), OffClip = new List<float>();
-        public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StartsFrom = -1, Starts;
+        public int All, Frames, Skates, Knees, Ankles, Pops, RunTurns, StartsFrom = -1, Starts, Dances;
         public float Slowest = float.MaxValue;
         public float Neck, Spine, View, Body, Settled, React;
         // In a vault or a climb: how long, and the fastest the capsule went (m/s); hanging from a ledge: how long.
@@ -306,6 +306,7 @@ internal sealed class MoveTest : MonoBehaviour
         t.Speeds.Add(new Vector2(velocity.x, velocity.z).magnitude);
         t.Slowest = Mathf.Min(t.Slowest, new Vector2(velocity.x, velocity.z).magnitude);
         if (player.Actions != null && player.Actions.RunTurn.Turning) t.RunTurns++;
+        if (body.Dancing) t.Dances++;
         // How often the clips' switches were eased over, and how far each ankle drawn stands off where the clips have it (m,
         // level): the legs going their own way, off the animation (the experts' review of 2026-11-26).
         if (t.StartsFrom < 0) t.StartsFrom = body.InertiaStarts;
@@ -390,7 +391,7 @@ internal sealed class MoveTest : MonoBehaviour
         float carried = t.Carried.Count > 0 ? t.Carried[t.Carried.Count / 2] : 0f, speed = t.Speeds.Count > 0 ? t.Speeds[t.Speeds.Count / 2] : 0f;
         PlayRecord.Line(Log, Heading, $"{name,-15} n {t.Frames,4}/{t.All,-4} | speed {speed:0.00} pose-carry {carried:0.00} | slide {median:0.00} {worst:0.00} skates {t.Skates,3} | knees {t.Knees,2} ankles {t.Ankles,2} pops {t.Pops,2} "
             + $"| neck {t.Neck:0}° spine {t.Spine:0}° | react {t.React:0.00}s | slowest {t.Slowest:0.0} run-turn {t.RunTurns,3} | view {t.View:+0;-0} body {t.Body:+0;-0} settle {t.Settled:0.00}s "
-            + $"| off-clip {offMid * 100f:0} {offWorst * 100f:0} {offMost * 100f:0}cm eases {t.Starts,3}"
+            + $"| off-clip {offMid * 100f:0} {offWorst * 100f:0} {offMost * 100f:0}cm eases {t.Starts,3} dance {(t.Frames > 0 ? 100f * t.Dances / t.Frames : 0f),3:0}%"
             + (t.ClimbTime > 0f ? $" | climb {t.ClimbTime:0.00}s fastest {t.ClimbFastest:0.0}m/s" : "")
             + (t.HangTime > 0f ? $" | hung {t.HangTime:0.00}s" : ""));
     }

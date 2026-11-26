@@ -286,13 +286,19 @@ public sealed partial class PlayerBody
         // and as the body went on the other way a kept foot was left up to 70 cm off where its clip had it and swung back
         // across when it lifted, 67 times in one play (the feet record of 2026-11-25 07:11, fixed in 0.9.428 and lost with
         // the rollback to 0.9.424; the experts' review of 2026-11-26).
-        if (still) still = speed < StillLeave;
+        // Keys swept round faster than a stride can step stand the legs where they are, the body going as asked over them
+        // (Dances).
+        dancing = Dances(stride, speed);
+        if (dancing) still = true;
+        else if (still) still = speed < StillLeave;
         else
         {
             slowFor = speed < StillEnter ? slowFor + dt : 0f;
             still = slowFor >= StillAfter;
         }
         if (still) slowFor = 0f;
+        // What the legs walk or run at: nothing while they dance.
+        float pace = dancing ? 0f : speed;
         if (speed > HeadingLeast) travelHeading = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
         float heading = travelHeading;
         keepsPlace = still;
@@ -308,7 +314,7 @@ public sealed partial class PlayerBody
         float aim = gun != null ? AimBlend() : 0f;
         bool sprinting = SprintingNow();
         bool gunRan = GunRuns;
-        gunRuns = !crouched && gun != null && sprinting;
+        gunRuns = !crouched && gun != null && sprinting && !dancing;
         gunRunsFrame = Time.frameCount;
         // The gun's run takes the whole body at once, or gives it back: that is a switch within the legs' mix (Blend).
         if (gunRuns != gunRan && mixedFrame == Time.frameCount - 1) bodyInertia.Begin(blendTime);
@@ -343,8 +349,8 @@ public sealed partial class PlayerBody
             // their feet carry on this body: our bodies' feet carry 20-35% less than the clips' own travel, so each gait played
             // half of the next one's clip (the jog half the run, the run a quarter of the sprint), and the run and the sprint
             // looked alike (the user, 2026-11-21: "달리기랑 전력 질주랑 걍 모션 똑같은 거 같은데").
-            gaitPlace = gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(speed, legs)) * (1f - aim);
-            moving += MixSets(plainSet, legs, speed, scale, 1f - postureDown);
+            gaitPlace = gaitNow == null ? 0f : Mathf.Min(gaitNow.Position, gaitNow.PlaceOf(pace, legs)) * (1f - aim);
+            moving += MixSets(plainSet, legs, pace, scale, 1f - postureDown);
             Bank();
         }
         if (postureDown > 0f)
@@ -354,7 +360,7 @@ public sealed partial class PlayerBody
             if (gun != null) { Ask(gun.CrouchAim, aim); Ask(gun.Crouch, 1f); }
             // Crouched, the crouched walk.
             gaitPlace = 0f;
-            moving += MixSets(crouchSet, legs, speed, scale, postureDown);
+            moving += MixSets(crouchSet, legs, pace, scale, postureDown);
         }
         postureClip = null;
         // Crouched too since 0.9.279: the legs keep their place until the view has gone far enough, and the feet step.
@@ -376,7 +382,51 @@ public sealed partial class PlayerBody
         else if (!crouched && !legsPlanted) targetYaw = turn;
         if (!still) walkedFrame = Time.frameCount;
         mixedFrame = Time.frameCount;
-        Pace(speed, legs, moving, dt);
+        Pace(pace, legs, moving, dt);
+    }
+
+    // Keys swept round faster than a stride can step: a diamond (a key every 0.12 s) turns the way the legs are asked to go
+    // about 300 degrees in DanceWindow, A and D in turn every 0.2 s 360. No walk or run cycle can step that, and as the eight
+    // ways' cycles were mixed round with the way the place a foot down had in them went round too: the feet down slid over the
+    // ground at 3 m/s or more for half of such a dance, and the legs flailed (the move test of 2026-11-26: diamond slide
+    // median 3.2 m/s, 159 frames over 3 m/s in 4 s; A and D every 0.2 s, 94; the user: "극단적인 다이아몬드 스텝에서 문제가
+    // 발생하면 어떻게 하면 고칠 수 있을까", "전부 다 고쳐라"). So the legs stand while the way turns DanceTurn degrees or
+    // more in DanceWindow, until it turns no more than DanceSettled: the feet stay where they are down and the hips go round
+    // over them, the body going as asked and not as the legs carry it (Pace), so the keys answer at once as ever; a foot the
+    // body leaves out of its reach steps after it (FootPlanting.Stand). A single reversal turns the way 180 degrees, a
+    // diamond of a key every 0.25 s about 145, and a run's own curve no more than its arc's 60: those still step. The way is
+    // read only above StillLeave: at a crawl, through the stop of a reversal, it says little.
+    private const float DanceWindow = .4f, DanceTurn = 270f, DanceSettled = 180f;
+    private bool dancing;
+
+    /// <summary>The legs stand while the keys sweep round faster than a stride can step (Dances; MoveTest counts it).</summary>
+    internal bool Dancing => dancing;
+    // The way's turns within the last DanceWindow (time, degrees), oldest first, their sum, and the way last frame.
+    private readonly Queue<Vector2> danceTurns = new Queue<Vector2>();
+    private float danceTurned, danceWay;
+    private bool danceWayKnown;
+
+    private bool Dances(Vector3 stride, float speed)
+    {
+        float now = Time.time;
+        if (speed > StillLeave)
+        {
+            float way = Mathf.Atan2(stride.x, stride.z) * Mathf.Rad2Deg;
+            if (danceWayKnown)
+            {
+                float turn = Mathf.Abs(Mathf.DeltaAngle(danceWay, way));
+                if (turn > 0f)
+                {
+                    danceTurns.Enqueue(new Vector2(now, turn));
+                    danceTurned += turn;
+                }
+            }
+            danceWay = way;
+            danceWayKnown = true;
+        }
+        while (danceTurns.Count > 0 && now - danceTurns.Peek().x > DanceWindow) danceTurned -= danceTurns.Dequeue().y;
+        if (danceTurns.Count == 0) danceTurned = 0f;
+        return dancing ? danceTurned > DanceSettled : danceTurned >= DanceTurn;
     }
 
     // Slower than StillEnter the body stands, faster than StillLeave it moves (m/s); its travel has a heading faster than
@@ -748,7 +798,8 @@ public sealed partial class PlayerBody
     // 25 cm in a frame (the user, 2026-11-24: "보폭 늘리기라는 시스템 때문에 지금 이랬다고? 그럼 없애면 되잖아").
     private void Pace(float speed, float legs, float moving, float dt)
     {
-        bool carries = legsAsked;
+        // Dancing on the spot the legs carry nothing: the body goes as asked (Dances).
+        bool carries = legsAsked && !dancing;
         if (player.IsNetworkDriven) FollowStep(dt);
         gaitSpeed = speed;
         runCalmShare = moving;

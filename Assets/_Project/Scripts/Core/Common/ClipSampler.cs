@@ -14,10 +14,7 @@ using UnityEngine.Playables;
 /// and let go per sample with its root motion held off meanwhile; or for a bare copy, one added without an avatar (its
 /// clips are generic, bound by path from the model's root as SampleAnimation binds them), its graph kept for the next
 /// sample of the same copy. Time is set twice so no clip event fires. In the editor it stays SampleAnimation, which
-/// everything was measured and tuned with. Where the two part: a clip imported turned (Beatrun's, its import's root turn
-/// 180°) comes out of SampleAnimation turned back round while the Animator's root motion is off, as the bodies have it, so
-/// in the editor its front is read as its back; a build's graph turns it as the game plays it (the climb record of
-/// 2026-11-26: vaultontohigh's hands read as down 0.00 to 0.08 s in the editor's play, 0.58 to 0.63 s faced ahead).
+/// everything was measured and tuned with, but a clip its import turns (Turned) is sampled with root motion on.
 /// </summary>
 public static class ClipSampler
 {
@@ -40,6 +37,21 @@ public static class ClipSampler
     {
         if (clip == null || root == null) return;
 #if UNITY_EDITOR
+        // A clip whose import turns its root (Beatrun's, by 180°) comes out of SampleAnimation turned back round while the
+        // Animator's root motion is off, as the bodies have it: its front was read as its back, and vaultontohigh's hands as
+        // down 0.00 to 0.08 s where a build reads 0.58 to 0.63 (the climb record of 2026-11-26; the user: "벽 위로 mantling
+        // 할 때 텔포"). With root motion on SampleAnimation turns the root by the import's turn and poses the body facing
+        // ahead of it, as the game's graph plays the clip and a build samples it; the root is put back after.
+        var animator = root.GetComponent<Animator>();
+        if (animator != null && !animator.applyRootMotion && Turned(clip))
+        {
+            root.transform.GetLocalPositionAndRotation(out Vector3 place, out Quaternion turn);
+            animator.applyRootMotion = true;
+            clip.SampleAnimation(root, time);
+            animator.applyRootMotion = false;
+            root.transform.SetLocalPositionAndRotation(place, turn);
+            return;
+        }
         clip.SampleAnimation(root, time);
 #else
         var own = root.GetComponent<Animator>();
@@ -73,6 +85,30 @@ public static class ClipSampler
         Evaluate(copyGraph, copyOutput, clip, time);
 #endif
     }
+
+#if UNITY_EDITOR
+    private static readonly System.Collections.Generic.Dictionary<AnimationClip, bool> turned = new();
+
+    // Whether the clip's import turns its root (the model importer's Root Transform Rotation offset), once a clip.
+    private static bool Turned(AnimationClip clip)
+    {
+        if (turned.TryGetValue(clip, out bool known)) return known;
+        bool turns = false;
+        if (UnityEditor.AssetImporter.GetAtPath(UnityEditor.AssetDatabase.GetAssetPath(clip)) is UnityEditor.ModelImporter importer)
+        {
+            var takes = importer.clipAnimations;
+            if (takes == null || takes.Length == 0) takes = importer.defaultClipAnimations;
+            foreach (var take in takes)
+                if (take.name == clip.name)
+                {
+                    turns = Mathf.Abs(Mathf.DeltaAngle(0f, take.rotationOffset)) > .5f;
+                    break;
+                }
+        }
+        turned[clip] = turns;
+        return turns;
+    }
+#endif
 
     /// <summary>Lets go of the graph kept for the last bare copy sampled (and of the Animator added to it); the editor keeps none.</summary>
     public static void Release()
