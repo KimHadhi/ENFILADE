@@ -18,7 +18,9 @@ using UnityEngine;
 /// view and the body's facing turned and how long until the facing was within 30 degrees of the view. Last it jogs at the
 /// Hub's wall a climb went up through in a frame or two (climb), jumps and holds W, and writes how long the climb took and
 /// the fastest the capsule went in it (Logs/climbs.txt has the climb's own lines); then it puts a ladder up that wall for the
-/// move (ladder), climbs it with W and off its top, and writes the same. Then it ends the play.
+/// move (ladder), climbs it with W and off its top, and writes the same. Then it ends the play. A slide (slide: a sprint,
+/// then the crouch key) writes how fast the eyes dropped against the capsule and the biggest change of their pace from one
+/// frame to the next (eye drop, jolt), and the moves the request's film= line names are pictured (MoveFilm).
 /// The user, 2026-11-25: "모든 걸 고쳐. 네가 알아서 테스팅까지 다 해서".
 /// </summary>
 [DisallowMultipleComponent, DefaultExecutionOrder(FrameOrder.Body + 1)]
@@ -54,6 +56,8 @@ internal sealed class MoveTest : MonoBehaviour
         public float Neck, Spine, View, Body, Settled, React;
         // In a vault or a climb: how long, and the fastest the capsule went (m/s); hanging from a ledge: how long.
         public float ClimbTime, ClimbFastest, HangTime, LadderTime;
+        // The fastest the eyes went down against the capsule, and the most their pace against it changed in a frame (m/s).
+        public float EyeDrop, EyeJolt;
     }
 
     private readonly List<Phase> phases = new List<Phase>();
@@ -76,6 +80,10 @@ internal sealed class MoveTest : MonoBehaviour
     private float keysChanged;
     private bool keysMet = true;
     private Vector2 keysWas;
+    // The eyes against the capsule last frame and how fast they went then (EyeDrop, EyeJolt).
+    private Vector3 eyeWas, eyePaceWas;
+    private int eyeFrames;
+    private MoveFilm film;
 
 #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -93,7 +101,10 @@ internal sealed class MoveTest : MonoBehaviour
         var keys = new[] { Vector2.up, Vector2.right, Vector2.down, Vector2.left };
         Add("jog W", 2f, (t, dt) => ScriptedInput.Move = Vector2.up);
         Add("diamond jog", 4f, (t, dt) => ScriptedInput.Move = keys[(int)(t / .12f) % 4]);
+        Add("diamond .18", 4f, (t, dt) => ScriptedInput.Move = keys[(int)(t / .18f) % 4]);
         Add("diamond .25", 4f, (t, dt) => ScriptedInput.Move = keys[(int)(t / .25f) % 4]);
+        // Out of keys swept round into a jog ahead: the legs from standing to the stride (the user, 2026-11-26: "모션으로 나갈 때").
+        Add("diamond to W", 3.2f, (t, dt) => ScriptedInput.Move = t < 1.6f ? keys[(int)(t / .18f) % 4] : Vector2.up);
         Add("diamond sprint", 3f, (t, dt) => { ScriptedInput.Sprint = true; ScriptedInput.Move = keys[(int)(t / .12f) % 4]; });
         Add("A/D", 3f, (t, dt) => { ScriptedInput.Sprint = false; ScriptedInput.Move = (int)(t / .2f) % 2 == 0 ? Vector2.left : Vector2.right; });
         Add("A/D .5", 3f, (t, dt) => ScriptedInput.Move = (int)(t / .5f) % 2 == 0 ? Vector2.left : Vector2.right);
@@ -112,13 +123,27 @@ internal sealed class MoveTest : MonoBehaviour
         Add("flick L270", 3f, Flick(-270f, .2f), false);
         Add("slow R360", 4f, Flick(360f, 3f), false);
         Add("jog W again", 1.5f, (t, dt) => ScriptedInput.Move = Vector2.up);
+        Add("slide", 4.8f, (t, dt) =>
+        {
+            ScriptedInput.Sprint = t < SlideAt;
+            ScriptedInput.Move = Vector2.up;
+            if (t >= SlideAt && t - dt < SlideAt) ScriptedInput.PressCrouch();
+            else if (t >= SlideAt + SlideHeld) ScriptedInput.Crouch = false;
+        });
         phases.Add(new Phase { Name = "climb", Seconds = 3f, Drive = Climb, Place = PlaceAtWall });
         phases.Add(new Phase { Name = "ladder", Seconds = 8f, Drive = (t, dt) => ScriptedInput.Move = t < WallSettle ? Vector2.zero : Vector2.up,
             Place = PutUpLadder });
         // Only the moves the request named (only=climb,jog W; MoveTestOnRequest carries the request on in the marker).
         var only = Only();
         if (only.Count > 0) phases.RemoveAll(phase => !only.Contains(phase.Name));
+        film = MoveFilm.From(Running);
     }
+
+    // The slide: a sprint this long, then the crouch key down this long (s); its first SlideTrace seconds are traced.
+    private const float SlideAt = 1.4f, SlideHeld = .2f, SlideTrace = .8f;
+    private const string SlideTraceHeading = "slide trace (MoveTest): from the slide's start, a line a frame: time, where in its clip "
+        + "(SlideMove phase, clip, moment s), the capsule's speed, the eyes over the capsule's floor";
+    private float slidFrom = -1f;
 
     private static HashSet<string> Only()
     {
@@ -284,6 +309,7 @@ internal sealed class MoveTest : MonoBehaviour
             phase = phases[at];
         }
         phase.Drive(clock, dt);
+        film?.Shoot(player.transform, clock);
         if (ScriptedInput.Move != keysWas)
         {
             keysWas = ScriptedInput.Move;
@@ -329,6 +355,9 @@ internal sealed class MoveTest : MonoBehaviour
         at = index;
         clock = 0f;
         climbKnown = false;
+        eyeFrames = 0;
+        slidFrom = -1f;
+        film?.Begin(phases[index].Name, player.transform);
         tally = new Tally();
         known = false;
         keysChanged = 0f;
@@ -352,6 +381,28 @@ internal sealed class MoveTest : MonoBehaviour
             && went.magnitude < .6f * asked.magnitude) tally.HeldBack++;
         climbWas = at;
         climbKnown = true;
+        // A slide's first SlideTrace seconds, a line a frame (Logs/slide-trace.txt): where its clip is and how fast it goes,
+        // and how high the eyes are over the floor.
+        if (player.CurrentState == PlayerMovement.MovementState.Sliding)
+        {
+            if (slidFrom < 0f) slidFrom = clock;
+            var slide = player.Actions.SlideMove;
+            var eyes = Camera.main;
+            if (clock - slidFrom <= SlideTrace)
+                PlayRecord.Line("slide-trace", SlideTraceHeading, $"{clock - slidFrom:0.000}s {slide.Now} {slide.ClipName} @{slide.Moment:0.000} "
+                    + $"{new Vector2(player.ActualVelocity.x, player.ActualVelocity.z).magnitude:0.00}m/s eyes {(eyes != null ? eyes.transform.position.y - at.y : 0f):0.000}m");
+        }
+        // The eyes against the capsule: how fast they drop, and the biggest change of their pace in a frame.
+        var lens = Camera.main;
+        if (tally != null && lens != null)
+        {
+            Vector3 eye = lens.transform.position - at, pace = (eye - eyeWas) / dt;
+            if (eyeFrames >= 1) tally.EyeDrop = Mathf.Max(tally.EyeDrop, -pace.y);
+            if (eyeFrames >= 2) tally.EyeJolt = Mathf.Max(tally.EyeJolt, (pace - eyePaceWas).magnitude);
+            eyeWas = eye;
+            eyePaceWas = pace;
+            eyeFrames++;
+        }
         if (body == null || !body.TryReadLegs(out var left, out var right)) return;
         float view = player.transform.eulerAngles.y, facing = body.FacingYaw;
         var t = tally;
@@ -448,12 +499,14 @@ internal sealed class MoveTest : MonoBehaviour
             + $"| off-clip {offMid * 100f:0} {offWorst * 100f:0} {offMost * 100f:0}cm eases {t.Starts,3} dance {(t.Frames > 0 ? 100f * t.Dances / t.Frames : 0f),3:0}% held {t.HeldBack,3}"
             + (t.ClimbTime > 0f ? $" | climb {t.ClimbTime:0.00}s fastest {t.ClimbFastest:0.0}m/s" : "")
             + (t.HangTime > 0f ? $" | hung {t.HangTime:0.00}s" : "")
-            + (t.LadderTime > 0f ? $" | on the ladder {t.LadderTime:0.00}s" : ""));
+            + (t.LadderTime > 0f ? $" | on the ladder {t.LadderTime:0.00}s" : "")
+            + $" | eye drop {t.EyeDrop:0.0} jolt {t.EyeJolt:0.0}m/s");
     }
 
     private void Finish(string trouble)
     {
         TakeDownLadder();
+        film?.Dispose();
         if (trouble != null) PlayRecord.Line(Log, Heading, "-- " + trouble);
         else PlayRecord.Line(Log, Heading, "-- done");
         ScriptedInput.Off();
@@ -464,5 +517,9 @@ internal sealed class MoveTest : MonoBehaviour
 #endif
     }
 
-    private void OnDestroy() => ScriptedInput.Off();
+    private void OnDestroy()
+    {
+        ScriptedInput.Off();
+        film?.Dispose();
+    }
 }

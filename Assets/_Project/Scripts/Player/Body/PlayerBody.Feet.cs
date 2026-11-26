@@ -140,8 +140,11 @@ public sealed partial class PlayerBody
         // went -34, -2, -18 cm in three frames (the feet record of 2026-11-24 21:3x; the user: "급하게 turn 해서 turn 애니메이션
         // 나오고 다시 걷기 시작할 때 발이 … 살짝 꺾이는").
         bool stands = onFeet && still && turnClip == null;
+        // Dancing on the spot (Dances) the body goes as asked over feet that stand: each steps after it once it has gone
+        // DanceRoom off, so the feet keep up a step at a time. Left to step only out of reach, they stood until the legs
+        // stretched out straight under a body leaning away from them (the move test's pictures of 2026-11-26).
         var hold = new FootPlanting.Hold(stands, hipsCarried, yaw, footHoldTwist, footHoldDrop, footHoldRelease, footStepTime, footStepHeight,
-            turnPlanner.Lead, turnPlanner.Share);
+            turnPlanner.Lead, turnPlanner.Share, dancing ? DanceRoom : 0f);
         // Walking or running, each foot keeps the place and the ground it came down on and swings to where it will come down,
         // timed by the stride (FootPlanting.Walk, Stand).
         feet.Plant(onFeet, transform.position.y, player.groundLayers,

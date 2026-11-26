@@ -7,7 +7,8 @@ using UnityEditor;
 /// nobody at the editor: make the file Temp/enfilade-movetest.request. Within half a second, once nothing compiles and
 /// nothing plays, the editor deletes it, leaves Temp/enfilade-movetest.running for the test to find and enters play; the
 /// test writes Logs/move-test.txt and ends the play. A play that ends otherwise takes the marker with it, so the next play
-/// by hand is no test. A line only=climb,jog W in the request runs only those moves (the marker carries the request on).
+/// by hand is no test. A line only=climb,jog W in the request runs only those moves, and film=slide pictures those
+/// (MoveFilm, Logs/MoveTest); the marker carries the request on.
 /// </summary>
 [InitializeOnLoad]
 internal static class MoveTestOnRequest

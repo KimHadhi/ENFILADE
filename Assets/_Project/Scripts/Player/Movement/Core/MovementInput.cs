@@ -75,10 +75,11 @@ public sealed class MovementInput
         // A test presses the jump itself (ScriptedInput, MoveTest).
         JumpPressed = move && (ScriptedInput.On ? ScriptedInput.JumpPressed : InputFocus.Pressed(jumpAction));
         JumpHeld = move && (ScriptedInput.On ? ScriptedInput.Jump : Held(jumpAction));
-        CrouchPressed = move && InputFocus.Pressed(crouchAction);
+        CrouchPressed = move && (ScriptedInput.On ? ScriptedInput.CrouchPressed : InputFocus.Pressed(crouchAction));
         // A crouch taken on toggle is the body's posture, not a key held down: it stays while a screen has the keys (a
         // word typed crouched behind a zombie stood the player up in its sight). A key held down reads as let go then.
-        CrouchHeld = settings.crouchToggle ? crouchLatched : available && Held(crouchAction);
+        // A test holds it as a key whatever the setting (ScriptedInput).
+        CrouchHeld = ScriptedInput.On ? available && ScriptedInput.Crouch : settings.crouchToggle ? crouchLatched : available && Held(crouchAction);
         DodgePressed = move && InputFocus.Pressed(dodgeAction);
         ShovePressed = available && InputFocus.Pressed(shoveAction);
         // A switch, not a move: it flips whenever the keys are the game's, getting up off the back included.

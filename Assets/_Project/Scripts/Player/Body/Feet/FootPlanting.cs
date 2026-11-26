@@ -85,8 +85,10 @@ internal sealed class FootPlanting
     /// has it now over <see cref="StepTime"/> s, <see cref="StepHeight"/> m up at the middle, one foot at a time and the
     /// one on the side the body turns to first (0.9.279). A turn on the spot leads its own steps (<see cref="Lead"/>,
     /// <see cref="LeadShare"/>: TurnPlanner, 0.9.280): that foot steps as far as the turn's step has gone while the other
-    /// pivots where it stands. A foot that stops standing (the body sets off) lets go and eases to the clip's place over
-    /// <see cref="Release"/> s.
+    /// pivots where it stands. With <see cref="Room"/> a foot also steps once where the stance has it now is that far from
+    /// where it stands: the body going over the feet (the legs standing through keys swept round, PlayerBody.Dances) is
+    /// followed a step at a time, not left to stretch a leg out of reach first. A foot that stops standing (the body sets
+    /// off) lets go and eases to the clip's place over <see cref="Release"/> s.
     /// Until 2026-11-18 a foot's height was the ground's and its place was wherever the hips had carried it, so a lean
     /// slid both feet sideways with the pelvis (the user: "제자리에서 상체만 기울어야 하나 ... 발(하체)까지 옆으로 이동").
     /// </summary>
@@ -94,14 +96,15 @@ internal sealed class FootPlanting
     {
         public readonly bool Stands;
         public readonly Vector3 Carried;
-        public readonly float Yaw, Twist, MaxDrop, Release, StepTime, StepHeight, LeadShare;
+        public readonly float Yaw, Twist, MaxDrop, Release, StepTime, StepHeight, LeadShare, Room;
         // The foot a turn on the spot steps: 0 none, 1 the left, 2 the right.
         public readonly int Lead;
 
         public Hold(bool stands, Vector3 carried, float yaw, float twist, float maxDrop, float release, float stepTime, float stepHeight,
-            int lead = 0, float leadShare = 0f)
+            int lead = 0, float leadShare = 0f, float room = 0f)
         {
             Lead = lead;
+            Room = Mathf.Max(0f, room);
             LeadShare = Mathf.Clamp01(leadShare);
             Stands = stands;
             Carried = Vector3.ProjectOnPlane(carried, Vector3.up);
@@ -502,7 +505,8 @@ internal sealed class FootPlanting
                 if (hold.Lead != 0) leg.KeptYaw = hold.Yaw;
                 bool far = OutOfReach(leg, lift, leg.Place, hold.MaxDrop);
                 bool twisted = hold.Lead == 0 && Mathf.Abs(Mathf.DeltaAngle(leg.KeptYaw, hold.Yaw)) > hold.Twist;
-                if ((far || twisted) && (!other.Stepping || far))
+                bool left = hold.Room > 0f && Vector3.ProjectOnPlane(leg.Place - clip, Vector3.up).sqrMagnitude > hold.Room * hold.Room;
+                if ((far || twisted || left) && (!other.Stepping || far))
                 {
                     leg.Kept = leg.Catching = false;
                     leg.Stepping = true;

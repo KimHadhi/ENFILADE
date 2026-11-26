@@ -392,11 +392,19 @@ public sealed partial class PlayerBody
     // median 3.2 m/s, 159 frames over 3 m/s in 4 s; A and D every 0.2 s, 94; the user: "극단적인 다이아몬드 스텝에서 문제가
     // 발생하면 어떻게 하면 고칠 수 있을까", "전부 다 고쳐라"). So the legs stand while the way turns DanceTurn degrees or
     // more in DanceWindow, until it turns no more than DanceSettled: the feet stay where they are down and the hips go round
-    // over them, the body going as asked and not as the legs carry it (Pace), so the keys answer at once as ever; a foot the
-    // body leaves out of its reach steps after it (FootPlanting.Stand). A single reversal turns the way 180 degrees, a
-    // diamond of a key every 0.25 s about 145, and a run's own curve no more than its arc's 60: those still step. The way is
-    // read only above StillLeave: at a crawl, through the stop of a reversal, it says little.
-    private const float DanceWindow = .4f, DanceTurn = 270f, DanceSettled = 180f;
+    // over them, the body going as asked and not as the legs carry it (Pace), so the keys answer at once as ever; a foot steps
+    // after the body once it has gone DanceRoom off it (FootPlanting.Stand), one foot at a time.
+    // Until 0.9.452 only 270 degrees in 0.4 s stood them (a key every 0.13 s or quicker): a diamond a little slower went back
+    // to the cycles, and the legs kicked out whole jog strides while the body hardly left the spot (the move test's pictures
+    // of 2026-11-26: a key every 0.18 s, a down sole sliding 1.8 m/s on the median, 72 frames over 3 m/s; the user: "제자리
+    // 다이아몬드 스텝이 골반만 움직일 때보다 살짝 느리게 해서 모션으로 나갈 때는 부자연스러운 느낌인데 이게 연결 동작이
+    // 없어서 그런 건지"). No clip steps short and quick on the spot, so up to a key every 0.25 s (216 degrees in 0.6 s) and A
+    // and D in turn every 0.5 s the legs stand and step as well; and the feet stepped only once out of reach, so a body
+    // going about at a jog leaned off legs stretched straight before they caught up. A single reversal turns the way 180
+    // degrees and a run's own curve no more than its arc's 60 in the window: those still stride; the view flicked round at a
+    // walk can sway past 200 and stand the legs for a moment, a turn on planted feet (the move test: a fifth of the move).
+    // The way is read only above StillLeave: at a crawl, through the stop of a reversal, it says little.
+    private const float DanceWindow = .6f, DanceTurn = 200f, DanceSettled = 150f, DanceRoom = .2f;
     private bool dancing;
 
     /// <summary>The legs stand while the keys sweep round faster than a stride can step (Dances; MoveTest counts it).</summary>
